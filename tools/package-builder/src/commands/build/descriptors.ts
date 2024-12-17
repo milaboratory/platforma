@@ -16,7 +16,7 @@ export default class Descriptors extends Command {
     ...cmdOpts.DirHashFlag,
     ...cmdOpts.PackageIDFlag,
     ...cmdOpts.VersionFlag,
-    ...cmdOpts.SourceFlag
+    ...cmdOpts.SourceFlag,
   };
 
   public async run(): Promise<void> {
@@ -31,7 +31,7 @@ export default class Descriptors extends Command {
     core.buildDescriptors({
       packageIds: flags['package-id'] ? flags['package-id'] : undefined,
       entrypoints: flags.entrypoint ? flags.entrypoint : undefined,
-      sources: flags.source ? (flags.source as util.SoftwareSource[]) : undefined
+      sources: flags.source ? (flags.source as util.SoftwareSource[]) : undefined,
     });
   }
 }

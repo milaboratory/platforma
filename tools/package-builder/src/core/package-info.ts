@@ -1,8 +1,8 @@
-import * as fs from 'fs';
-import * as path from 'path';
-import winston from 'winston';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import type winston from 'winston';
 
-import { z, ZodError } from 'zod';
+import { z } from 'zod';
 import * as util from './util';
 import * as envs from './envs';
 import * as artifacts from './schemas/artifacts';
@@ -20,11 +20,11 @@ export interface PackageArchiveInfo extends artifacts.archiveRules {
   contentRoot: (platform: util.PlatformType) => string; // absolute path to package's content root
 }
 
-const softwareEntrypointsList = z.record(z.string(), entrypoint.softwareOptionsSchema);
-export type SoftwareEntrypoints = z.infer<typeof softwareEntrypointsList>;
+const _softwareEntrypointsList = z.record(z.string(), entrypoint.softwareOptionsSchema);
+export type SoftwareEntrypoints = z.infer<typeof _softwareEntrypointsList>;
 
-const environmentEntrypointsList = z.record(z.string(), entrypoint.environmentOptionsSchema);
-export type EnvironmentEntrypoints = z.infer<typeof softwareEntrypointsList>;
+const _environmentEntrypointsList = z.record(z.string(), entrypoint.environmentOptionsSchema);
+export type EnvironmentEntrypoints = z.infer<typeof _environmentEntrypointsList>;
 
 export interface AssetPackage extends artifacts.assetPackageConfig, PackageArchiveInfo {
   type: 'asset';
@@ -137,11 +137,11 @@ export interface EnvironmentEntrypoint {
 
 export type PackageEntrypoint = AssetEntrypoint | SoftwareEntrypoint | EnvironmentEntrypoint;
 export type Entrypoint = ReferenceEntrypoint | PackageEntrypoint;
-export type EntrypointType = Extract<Entrypoint, { type: any }>['type'];
+export type EntrypointType = Extract<Entrypoint, { type: string }>['type'];
 
 const storagePresetSchema = z.object({
   downloadURL: z.string().optional(),
-  storageURL: z.string().optional()
+  storageURL: z.string().optional(),
 });
 type storagePreset = z.infer<typeof storagePresetSchema>;
 
@@ -149,26 +149,26 @@ const binaryRegistryPresetsSchema = z.record(z.string(), storagePresetSchema);
 type binaryRegistryPresets = z.infer<typeof binaryRegistryPresetsSchema>;
 
 const packageJsonSchema = z.object({
-  name: z.string(),
-  version: z.string(),
+  'name': z.string(),
+  'version': z.string(),
 
   'block-software': z.object({
     registries: z
       .object({
-        binary: binaryRegistryPresetsSchema.optional()
+        binary: binaryRegistryPresetsSchema.optional(),
       })
       .optional(),
 
     artifacts: artifacts.listSchema.optional(),
-    entrypoints: entrypoint.listSchema
-  })
+    entrypoints: entrypoint.listSchema,
+  }),
 });
 type packageJson = z.infer<typeof packageJsonSchema>;
 
 const wellKnownRegistries: Record<string, storagePreset> = {
   'platforma-open': {
-    downloadURL: 'https://bin.pl-open.science/'
-  }
+    downloadURL: 'https://bin.pl-open.science/',
+  },
 };
 
 /*
@@ -215,7 +215,7 @@ export class PackageInfo {
     options?: {
       packageRoot?: string;
       pkgJsonData?: string;
-    }
+    },
   ) {
     this.logger.debug('Reading package information...');
 
@@ -254,7 +254,7 @@ export class PackageInfo {
         list.set(epName, {
           type: 'reference',
           name: epName,
-          reference: ep.reference!
+          reference: ep.reference,
         });
         continue;
       }
@@ -266,19 +266,19 @@ export class PackageInfo {
           name: epName,
           package: this.getPackage(packageID),
           cmd: ep.binary.cmd,
-          env: ep.binary.envVars ?? []
+          env: ep.binary.envVars ?? [],
         });
         continue;
       }
 
       if (ep.environment) {
-        const packageID =
-          typeof ep.environment.artifact === 'string' ? ep.environment.artifact : epName;
+        const packageID
+          = typeof ep.environment.artifact === 'string' ? ep.environment.artifact : epName;
         list.set(epName, {
           type: 'environment',
           name: epName,
           package: this.getPackage(packageID),
-          env: ep.environment.envVars ?? []
+          env: ep.environment.envVars ?? [],
         });
         continue;
       }
@@ -288,13 +288,13 @@ export class PackageInfo {
         list.set(epName, {
           type: 'asset',
           name: epName,
-          package: this.getPackage(packageID)
+          package: this.getPackage(packageID),
         });
         continue;
       }
 
       throw new Error(
-        `entrypoint '${epName}' type is not supported by current platforma package builder`
+        `entrypoint '${epName}' type is not supported by current platforma package builder`,
       );
     }
 
@@ -309,13 +309,13 @@ export class PackageInfo {
    * Resolves entrypoint reference to full entrypoint file path and type
    */
   public resolveReference(epName: string, ep: ReferenceEntrypoint): string {
-    this.logger.debug(`resolving entrypoint '${epName}' reference '${ep.reference}'. packageRoot='${this.packageRoot}'`)
+    this.logger.debug(`resolving entrypoint '${epName}' reference '${ep.reference}'. packageRoot='${this.packageRoot}'`);
 
     const refInfo = ep.reference.match(entrypoint.EnyrypointReferencePattern)?.groups;
 
     if (!refInfo) {
       this.logger.error(
-        `entrypoint reference '${epName}' has incorrect reference format. <full package name>/<path to entrypoint> is expected`
+        `entrypoint reference '${epName}' has incorrect reference format. <full package name>/<path to entrypoint> is expected`,
       );
       throw new Error(`invalid entrypoint '${epName}' reference format`);
     }
@@ -351,8 +351,8 @@ export class PackageInfo {
     const pkgRoot = this.packageRoot;
     const artifact = this.getArtifact(id);
 
-    const crossplatform =
-      artifact.roots !== undefined ? false : artifacts.isCrossPlatform(artifact.type);
+    const crossplatform
+      = artifact.roots !== undefined ? false : artifacts.isCrossPlatform(artifact.type);
 
     return {
       id: id,
@@ -386,7 +386,7 @@ export class PackageInfo {
         const root = this.root ?? this.roots?.[platform];
         if (!root) {
           throw new Error(
-            `root path for software archive of platform ${platform} is undefined for binary package`
+            `root path for software archive of platform ${platform} is undefined for binary package`,
           );
         }
 
@@ -398,10 +398,10 @@ export class PackageInfo {
         if (artifact?.roots) return Object.keys(artifact.roots) as util.PlatformType[];
 
         throw new Error(
-          `no platforms are defined as supported for package '${id}' in binary mode ` +
-            `(no 'root' or 'roots' are defined)`
+          `no platforms are defined as supported for package '${id}' in binary mode `
+          + `(no 'root' or 'roots' are defined)`,
         );
-      }
+      },
     };
   }
 
@@ -416,14 +416,14 @@ export class PackageInfo {
     const ep = entrypoints[id];
     if (!ep) {
       throw new Error(
-        `artifact with id '${id}' not found neither in 'entrypoints', nor in 'artifacts'`
+        `artifact with id '${id}' not found neither in 'entrypoints', nor in 'artifacts'`,
       );
     }
 
     if (ep.asset && typeof ep.asset !== 'string') {
       return {
         type: 'asset',
-        ...ep.asset
+        ...ep.asset,
       };
     }
 
@@ -438,7 +438,7 @@ export class PackageInfo {
     }
 
     throw new Error(
-      `entrypoint '${id}' points to artifact '${idOrArtifact}' which does not exist in 'artifacts'`
+      `entrypoint '${id}' points to artifact '${idOrArtifact}' which does not exist in 'artifacts'`,
     );
   }
 
@@ -465,10 +465,10 @@ export class PackageInfo {
   private binRegistryFor(registry: artifacts.registry | string | undefined): artifacts.registry {
     const registries = this.binaryRegistries;
 
-    var result: artifacts.registry = {
+    const result: artifacts.registry = {
       name: 'default',
       downloadURL: registries.default?.downloadURL,
-      storageURL: registries.default?.storageURL
+      storageURL: registries.default?.storageURL,
     };
 
     if (registry) {
@@ -480,10 +480,10 @@ export class PackageInfo {
       } else {
         result.name = registry.name;
         const regDefault = wellKnownRegistries[result.name];
-        result.downloadURL =
-          registry.downloadURL ?? registries[result.name]?.downloadURL ?? regDefault?.downloadURL;
-        result.storageURL =
-          registry.storageURL ?? registries[result.name]?.storageURL ?? regDefault?.storageURL;
+        result.downloadURL
+          = registry.downloadURL ?? registries[result.name]?.downloadURL ?? regDefault?.downloadURL;
+        result.storageURL
+          = registry.storageURL ?? registries[result.name]?.storageURL ?? regDefault?.storageURL;
       }
     }
 
@@ -503,7 +503,7 @@ export class PackageInfo {
       const u = new URL(result.downloadURL, 'file:/nonexistent'); // check download URL is valid URL
       if (!['https:', 'http:'].includes(u.protocol)) {
         throw new Error(
-          `registry ${result.name} download URL is not valid. Only 'https://' and 'http://' schemes are supported for now`
+          `registry ${result.name} download URL is not valid. Only 'https://' and 'http://' schemes are supported for now`,
         );
       }
     }
@@ -512,7 +512,7 @@ export class PackageInfo {
   }
 
   private validateConfig() {
-    var hasErrors: boolean = false;
+    let hasErrors: boolean = false;
 
     const blockSoftware = this.pkgJson['block-software'];
 
@@ -526,7 +526,7 @@ export class PackageInfo {
 
         if (!artifact) {
           this.logger.error(
-            `entrypoint '${epName}' refers to artifact '${ep.binary.artifact}' which is not defined in '${util.softwareConfigName}'`
+            `entrypoint '${epName}' refers to artifact '${artifactName}' which is not defined in '${util.softwareConfigName}'`,
           );
           hasErrors = true;
         }
@@ -537,27 +537,27 @@ export class PackageInfo {
 
         if (!artifacts.isBuildable(artifact.type)) {
           this.logger.error(
-            `entrypoint '${epName}' artifact type '${artifact.type}' is not buildable to binary package`
+            `entrypoint '${epName}' artifact type '${artifact.type}' is not buildable to binary package`,
           );
           hasErrors = true;
         }
 
         if (artifact.type === 'environment') {
           this.logger.error(
-            `entrypoint '${epName}' artifact type '${artifact.type}' cannot be build into software pacakge. Use 'environment' entrypoint`
+            `entrypoint '${epName}' artifact type '${artifact.type}' cannot be build into software pacakge. Use 'environment' entrypoint`,
           );
           hasErrors = true;
         }
       }
 
       if (ep.environment) {
-        const artifactName =
-          typeof ep.environment.artifact === 'string' ? ep.environment.artifact : epName;
+        const artifactName
+          = typeof ep.environment.artifact === 'string' ? ep.environment.artifact : epName;
         const artifact = this.getArtifact(artifactName);
 
         if (!artifact) {
           this.logger.error(
-            `entrypoint '${epName}' refers to artifact '${ep.environment.artifact}' which is not defined in '${util.softwareConfigName}'`
+            `entrypoint '${epName}' refers to artifact '${artifactName}' which is not defined in '${util.softwareConfigName}'`,
           );
           hasErrors = true;
         }
@@ -568,7 +568,7 @@ export class PackageInfo {
 
         if (artifact.type !== 'environment') {
           this.logger.error(
-            `entrypoint '${epName}' with 'environment' settings should refer to 'environment' artifact type`
+            `entrypoint '${epName}' with 'environment' settings should refer to 'environment' artifact type`,
           );
           hasErrors = true;
         }
@@ -593,7 +593,7 @@ export class PackageInfo {
       const uniqueName = `${name}-${version}`;
       if (uniquePackageNames.has(uniqueName)) {
         this.logger.error(
-          `found two packages with the same name '${name}' and version '${version}'`
+          `found two packages with the same name '${name}' and version '${version}'`,
         );
         hasErrors = true;
       }
@@ -603,7 +603,7 @@ export class PackageInfo {
 
     if (hasErrors) {
       throw new Error(
-        `${util.softwareConfigName} has xconfiguration errors in 'block-software' section. See error log messages above for details`
+        `${util.softwareConfigName} has xconfiguration errors in 'block-software' section. See error log messages above for details`,
       );
     }
   }
@@ -612,7 +612,7 @@ export class PackageInfo {
     if (artifacts.isBuildable(artifact.type)) {
       if (artifact.root && artifact.roots) {
         this.logger.error(
-          `${artifact.type} artifact '${artifactName}' has both 'root' and 'roots' options. 'root' and 'roots' are mutually exclusive.`
+          `${artifact.type} artifact '${artifactName}' has both 'root' and 'roots' options. 'root' and 'roots' are mutually exclusive.`,
         );
 
         return false;
@@ -633,9 +633,9 @@ export class PackageInfo {
 
 const readPackageJson = (filePath: string) => parsePackageJson(fs.readFileSync(filePath, 'utf8'));
 function parsePackageJson(data: string) {
-  const parsedData = JSON.parse(data);
+  const parsedData: unknown = JSON.parse(data);
   // TODO: try/catch and transform errors on human-readable format
-  return packageJsonSchema.parse(parsedData) as packageJson;
+  return packageJsonSchema.parse(parsedData);
 }
 
 function archiveFullName(
@@ -643,7 +643,7 @@ function archiveFullName(
   name: string,
   version: string,
   platform: util.PlatformType,
-  extension: string
+  extension: string,
 ): string {
   if (crossplatform) {
     return `${name}/${version}.${extension}`;
@@ -657,7 +657,7 @@ function archiveAddressPattern(
   crossplatform: boolean,
   name: string,
   version: string,
-  extension: string
+  extension: string,
 ): string {
   if (crossplatform) {
     return `${name}/${version}.${extension}`;

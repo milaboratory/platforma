@@ -4,8 +4,8 @@ import * as util from '../../core/util';
 import { Core } from '../../core/core';
 
 export default class Packages extends Command {
-  static override description =
-    'Pack software into platforma package (.tgz archive for binary registry)';
+  static override description
+    = 'Pack software into platforma package (.tgz archive for binary registry)';
 
   static override examples = ['<%= config.bin %> <%= command.id %>'];
 
@@ -18,7 +18,7 @@ export default class Packages extends Command {
     ...cmdOpts.ArchiveFlag,
     ...cmdOpts.ContentRootFlag,
     ...cmdOpts.PackageIDFlag,
-    ...cmdOpts.DirHashFlag
+    ...cmdOpts.DirHashFlag,
   };
 
   public async run(): Promise<void> {
@@ -35,11 +35,11 @@ export default class Packages extends Command {
 
     await core.buildPackages({
       ids: flags['package-id'],
-      forceBuild: flags.force,
+      forceBuild: flags.force as boolean,
 
       archivePath: flags.archive,
       contentRoot: flags['content-root'],
-      skipIfEmpty: flags['package-id'] ? false : true // do not skip 'non-binary' packages if their IDs were set as args
+      skipIfEmpty: flags['package-id'] ? false : true, // do not skip 'non-binary' packages if their IDs were set as args
     });
   }
 }

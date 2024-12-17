@@ -1,15 +1,14 @@
-import fs from 'fs';
-import path from 'path';
-import { spawnSync } from 'child_process';
-import winston from 'winston';
-import { PackageInfo, PackageConfig, Entrypoint } from './package-info';
+import fs from 'node:fs';
+import path from 'node:path';
+import { spawnSync } from 'node:child_process';
+import type winston from 'winston';
+import type { PackageConfig, Entrypoint } from './package-info';
+import { PackageInfo } from './package-info';
 import {
   Renderer,
   listPackageEntrypoints,
   readEntrypointDescriptor,
-  readSoftwareEntrypoint
 } from './renderer';
-import * as binSchema from './schemas/artifacts';
 import * as util from './util';
 import * as archive from './archive';
 import * as storage from './storage';
@@ -61,7 +60,7 @@ export class Core {
   public get packages(): Map<string, PackageConfig> {
     const pkgs = new Map<string, PackageConfig>();
 
-    for (const [id, ep] of this.entrypoints.entries()) {
+    for (const [_, ep] of this.entrypoints.entries()) {
       if (ep.type === 'reference') {
         // References have no pacakge definitions inside
         continue;
@@ -118,7 +117,7 @@ export class Core {
         const packageEntrypoints = index.get(pkgId);
         if (!packageEntrypoints || packageEntrypoints.length === 0) {
           throw new Error(
-            `cannot build descriptor for package ${pkgId}: no entrypoints found for package`
+            `cannot build descriptor for package ${pkgId}: no entrypoints found for package`,
           );
         }
 
@@ -126,14 +125,14 @@ export class Core {
       }
     }
 
-    var entrypoints = Array.from(this.entrypoints.entries());
+    let entrypoints = Array.from(this.entrypoints.entries());
     if (entrypointNames.length > 0) {
       entrypoints = entrypoints.filter(([epName, _]) => entrypointNames.includes(epName));
     }
 
     const infos = this.renderer.renderSoftwareEntrypoints(this.buildMode, new Map(entrypoints), {
       sources: options?.sources,
-      fullDirHash: this.fullDirHash
+      fullDirHash: this.fullDirHash,
     });
 
     for (const swJson of infos.values()) {
@@ -160,7 +159,7 @@ export class Core {
 
     if (packagesToBuild.length > 1 && options?.archivePath && !options.forceBuild) {
       this.logger.error(
-        "Attempt to build several packages targeting single package archive. This will simply overwrite the archive several times. If you know what you are doing, add '--force' flag"
+        'Attempt to build several packages targeting single package archive. This will simply overwrite the archive several times. If you know what you are doing, add \'--force\' flag',
       );
       throw new Error('attempt to build several packages using the same software package archive');
     }
@@ -175,7 +174,7 @@ export class Core {
       } else if (this.allPlatforms && !pkg.isMultiroot) {
         const currentPlatform = util.currentPlatform();
         this.logger.warn(
-          `packages are requested to be build for all supported platforms, but package '${pkgID}' has single archive root for all platforms and will be built only for '${currentPlatform}'`
+          `packages are requested to be build for all supported platforms, but package '${pkgID}' has single archive root for all platforms and will be built only for '${currentPlatform}'`,
         );
         await this.buildPackage(pkg, currentPlatform, options);
       } else if (this.allPlatforms) {
@@ -195,7 +194,7 @@ export class Core {
       archivePath?: string;
       contentRoot?: string;
       skipIfEmpty?: boolean;
-    }
+    },
   ) {
     this.logger.info(`Building software package '${pkg.id}' for platform '${platform}'...`);
     const { os, arch } = util.splitPlatform(platform);
@@ -205,7 +204,7 @@ export class Core {
         this.logger.info(`  archive build was skipped: package '${pkg.id}' is not buildable`);
       }
       this.logger.error(
-        `  not buildable: artifact '${pkg.id}' archive build is impossible for configuration inside '${util.softwareConfigName}'`
+        `  not buildable: artifact '${pkg.id}' archive build is impossible for configuration inside '${util.softwareConfigName}'`,
       );
       throw new Error('not a buildable artifact');
     }
@@ -220,7 +219,7 @@ export class Core {
 
     if (this.buildMode === 'dev-local') {
       this.logger.info(
-        `  no need to build software archive in '${this.buildMode}' mode: archive build was skipped`
+        `  no need to build software archive in '${this.buildMode}' mode: archive build was skipped`,
       );
       return;
     }
@@ -236,10 +235,10 @@ export class Core {
     archivePath: string,
     contentRoot: string,
     os: string,
-    arch: string
+    arch: string,
   ) {
     this.logger.debug(
-      `  rendering 'package.sw.json' to be embedded into ${packageContentType} archive`
+      `  rendering 'package.sw.json' to be embedded into ${packageContentType} archive`,
     );
     const swJson = this.renderer.renderPackageDescriptor(this.buildMode, pkg);
 
@@ -265,7 +264,7 @@ export class Core {
 
     if (names.length === 0) {
       throw new Error(
-        `No software entrypoints found in package during 'publish descriptors' action. Nothing to publish`
+        `No software entrypoints found in package during 'publish descriptors' action. Nothing to publish`,
       );
     }
 
@@ -273,17 +272,17 @@ export class Core {
       const epDescr = readEntrypointDescriptor(this.pkg.packageName, epInfo.name, epInfo.path);
       if (epDescr.isDev) {
         this.logger.error(
-          "You are trying to publish entrypoint descriptor generated in 'dev' mode. This software would not be accepted for execution by any production environment."
+          'You are trying to publish entrypoint descriptor generated in \'dev\' mode. This software would not be accepted for execution by any production environment.',
         );
-        throw new Error("attempt to publish 'dev' entrypoint descriptor");
+        throw new Error('attempt to publish \'dev\' entrypoint descriptor');
       }
     }
 
-    this.logger.info("Running 'npm publish' to publish NPM package with entrypoint descriptors...");
+    this.logger.info('Running \'npm publish\' to publish NPM package with entrypoint descriptors...');
 
     const args = ['publish'];
     if (options?.npmPublishArgs) {
-      args.push(...options!.npmPublishArgs!);
+      args.push(...options.npmPublishArgs);
     }
 
     const result = spawnSync('npm', args, { stdio: 'inherit', cwd: this.pkg.packageRoot });
@@ -291,7 +290,7 @@ export class Core {
       throw result.error;
     }
     if (result.status !== 0) {
-      throw new Error("'npm publish' failed with non-zero exit code");
+      throw new Error('\'npm publish\' failed with non-zero exit code');
     }
   }
 
@@ -309,10 +308,10 @@ export class Core {
 
     if (packagesToPublish.length > 1 && options?.archivePath && !options.ignoreArchiveOverlap) {
       this.logger.error(
-        "Attempt to publish several pacakges using single package archive. This will upload the same archive under several different names. If you know what you are doing, add '--force' flag"
+        'Attempt to publish several pacakges using single package archive. This will upload the same archive under several different names. If you know what you are doing, add \'--force\' flag',
       );
       throw new Error(
-        'attempt to publish several packages using the same software package archive'
+        'attempt to publish several packages using the same software package archive',
       );
     }
 
@@ -345,13 +344,13 @@ export class Core {
 
       failExisting?: boolean;
       forceReupload?: boolean;
-    }
+    },
   ) {
     const { os, arch } = util.splitPlatform(platform);
 
     const storageURL = options?.storageURL ?? pkg.registry.storageURL;
 
-    var archivePath = options?.archivePath ?? this.archivePath(pkg, os, arch);
+    const archivePath = options?.archivePath ?? this.archivePath(pkg, os, arch);
 
     const dstName = pkg.fullName(platform);
 
@@ -359,19 +358,19 @@ export class Core {
       const regNameUpper = pkg.registry.name.toUpperCase();
       this.logger.error(`no storage URL is set for registry ${pkg.registry.name}`);
       throw new Error(
-        `'registry.storageURL' of package '${pkg.id}' is empty. Set it as command option, in '${util.softwareConfigName}' file or via environment variable 'PL_REGISTRY_${regNameUpper}_UPLOAD_URL'`
+        `'registry.storageURL' of package '${pkg.id}' is empty. Set it as command option, in '${util.softwareConfigName}' file or via environment variable 'PL_REGISTRY_${regNameUpper}_UPLOAD_URL'`,
       );
     }
 
     const signatureSuffixes = this.findSignatures(archivePath);
 
     this.logger.info(
-      `Publishing package '${pkg.name}' for platform '${platform}' into registry '${pkg.registry.name}'`
+      `Publishing package '${pkg.name}' for platform '${platform}' into registry '${pkg.registry.name}'`,
     );
     this.logger.debug(`  registry storage URL: '${storageURL}'`);
     this.logger.debug(`  archive to publish: '${archivePath}'`);
     if (signatureSuffixes.length > 0)
-      this.logger.debug(`  detected signatures: '${signatureSuffixes}'`);
+      this.logger.debug(`  detected signatures: ${signatureSuffixes.join(', ')}`);
     this.logger.debug(`  target package name: '${dstName}'`);
 
     const s = await storage.initByUrl(storageURL, this.pkg.packageRoot);
@@ -380,12 +379,12 @@ export class Core {
     if (exists && !options?.forceReupload) {
       if (options?.failExisting) {
         throw new Error(
-          `software package '${dstName}' already exists in registry '${pkg.registry.name}'. To re-upload it, use 'force' flag. To not fail, remove 'fail-existing-packages' flag`
+          `software package '${dstName}' already exists in registry '${pkg.registry.name}'. To re-upload it, use 'force' flag. To not fail, remove 'fail-existing-packages' flag`,
         );
       }
 
       this.logger.warn(
-        `software package '${dstName}' already exists in registry '${pkg.registry.name}'. Upload was skipped.`
+        `software package '${dstName}' already exists in registry '${pkg.registry.name}'. Upload was skipped.`,
       );
       return;
     }
@@ -397,7 +396,7 @@ export class Core {
       s.putFile(dstName, archive).finally(() => {
         archive.close();
         return;
-      })
+      }),
     );
 
     for (const sig of signatureSuffixes) {
@@ -406,7 +405,7 @@ export class Core {
         s.putFile(`${dstName}${sig}`, signature).finally(() => {
           signature.close();
           return;
-        })
+        }),
       );
     }
 
@@ -426,7 +425,7 @@ export class Core {
 
     if (packagesToSign.length > 1 && options?.archivePath) {
       this.logger.warn(
-        "Call of 'sign' action for several packages targeting single package archive."
+        'Call of \'sign\' action for several packages targeting single package archive.',
       );
     }
 
@@ -456,19 +455,19 @@ export class Core {
     options?: {
       archivePath?: string;
       signCommand?: string;
-    }
+    },
   ) {
     if (!options?.signCommand) {
       throw new Error(
-        "current version of pl-package-builder supports only package signature with external utility. Provide 'sign command' option to sign package"
+        'current version of pl-package-builder supports only package signature with external utility. Provide \'sign command\' option to sign package',
       );
     }
-    const signCommand = JSON.parse(options.signCommand);
-    const commandFormatIsValid =
-      Array.isArray(signCommand) && signCommand.every((item) => typeof item === 'string');
+    const signCommand: unknown = JSON.parse(options.signCommand);
+    const commandFormatIsValid
+      = Array.isArray(signCommand) && signCommand.every((item) => typeof item === 'string');
     if (!commandFormatIsValid) {
       throw new Error(
-        'sign command must be valid JSON array with command and arguments (["cmd", "arg", "arg", "..."])'
+        'sign command must be valid JSON array with command and arguments (["cmd", "arg", "arg", "..."])',
       );
     }
 
@@ -483,7 +482,7 @@ export class Core {
 
     const result = spawnSync(toExecute[0], toExecute.slice(1), {
       stdio: 'inherit',
-      cwd: this.pkg.packageRoot
+      cwd: this.pkg.packageRoot,
     });
     if (result.error) {
       throw result.error;
@@ -526,7 +525,7 @@ export class Core {
     pkg: PackageConfig,
     os: util.OSType,
     arch: util.ArchType,
-    archiveType: archive.archiveType
+    archiveType: archive.archiveType,
   ): archive.archiveOptions {
     return {
       packageRoot: this.pkg.packageRoot,
@@ -536,7 +535,7 @@ export class Core {
       crossplatform: pkg.crossplatform,
       os: os,
       arch: arch,
-      ext: archiveType
+      ext: archiveType,
     };
   }
 }
