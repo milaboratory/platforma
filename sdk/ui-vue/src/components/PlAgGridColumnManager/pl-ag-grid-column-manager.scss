@@ -1,7 +1,12 @@
+@import '@milaboratories/uikit/src/assets/mixins.scss';
+
 .pl-ag-columns {
     display: flex;
     flex-direction: column;
     gap: 6px;
+    height: 100%;
+    overflow-y: auto;
+    @include scrollbar(true);
 
     .sortable__item {
         border-radius: 6px;
