@@ -30,17 +30,18 @@ import {
   PTableRecordSingleValueFilterV2,
   PTableRecordFilter,
   PColumnValues,
-  extractAllColumns,
+  extractAllColumns
 } from '@platforma-sdk/model';
 import { RefCountResourcePool } from './ref_count_pool';
 import { allBlobs, makeDataInfoResource, mapBlobs, parseDataInfoResource } from './data';
-import { createHash } from 'crypto';
-import { assertNever } from '@milaboratories/ts-helpers';
+import { createHash, randomUUID } from 'crypto';
+import { assertNever, MiLogger } from '@milaboratories/ts-helpers';
 import canonicalize from 'canonicalize';
 import { PFrame } from '@milaboratories/pframes-node';
 import * as fsp from 'node:fs/promises';
 import { LRUCache } from 'lru-cache';
 import { ConcurrencyLimitingExecutor } from '@milaboratories/ts-helpers';
+import { getDebugFlags } from '../debug';
 
 function blobKey(res: ResourceInfo): string {
   return String(res.id);
@@ -54,11 +55,11 @@ function migrateFilters(filters: PTableRecordFilter[]): PTableRecordSingleValueF
   const filtersV1 = [];
   const filtersV2: PTableRecordSingleValueFilterV2[] = [];
   for (const filter of filters) {
-    if (filter.type as unknown === 'bySingleColumn') {
+    if ((filter.type as unknown) === 'bySingleColumn') {
       filtersV1.push(filter);
       filtersV2.push({
         ...filter,
-        type: 'bySingleColumnV2',
+        type: 'bySingleColumnV2'
       });
     } else {
       filtersV2.push(filter);
@@ -66,7 +67,9 @@ function migrateFilters(filters: PTableRecordFilter[]): PTableRecordSingleValueF
   }
   if (filtersV1.length > 0) {
     const filtersV1Json = JSON.stringify(filtersV1);
-    console.warn(`type overriten from 'bySingleColumn' to 'bySingleColumnV2' for filters: ${filtersV1Json}`);
+    console.warn(
+      `type overriten from 'bySingleColumn' to 'bySingleColumnV2' for filters: ${filtersV1Json}`
+    );
   }
   return filters as PTableRecordSingleValueFilterV2[];
 }
@@ -155,7 +158,10 @@ export class PFrameDriver implements SdkPFrameDriver {
   /** Limits concurrent requests to PFrame API to prevent deadlock with Node's IO threads */
   private readonly concurrencyLimiter: ConcurrencyLimitingExecutor;
 
-  constructor(private readonly blobDriver: DownloadDriver) {
+  constructor(
+    private readonly blobDriver: DownloadDriver,
+    private readonly logger: MiLogger
+  ) {
     const blobContentCache = new LRUCache<string, Uint8Array>({
       maxSize: 1_000_000_000, // 1Gb
       fetchMethod: async (key) => await fsp.readFile(key),
@@ -164,7 +170,7 @@ export class PFrameDriver implements SdkPFrameDriver {
     const concurrencyLimiter = new ConcurrencyLimitingExecutor(1);
     this.blobContentCache = blobContentCache;
     this.concurrencyLimiter = concurrencyLimiter;
-    
+
     this.pFrames = new (class extends RefCountResourcePool<InternalPFrameData, PFrameHolder> {
       constructor(private readonly blobDriver: DownloadDriver) {
         super();
@@ -188,13 +194,14 @@ export class PFrameDriver implements SdkPFrameDriver {
       }
       protected async createNewResource(params: FullPTableDef): Promise<PFrameInternal.PTableV2> {
         const pFrame = this.pFrames.getByKey(params.pFrameHandle);
-        const rawPTable = await concurrencyLimiter.run(
-          async () =>
-            await pFrame.pFrame.createTable({
-              src: joinEntryToInternal(params.def.src),
-              filters: migrateFilters(params.def.filters),
-            })
-        );
+        const rawPTable = await concurrencyLimiter.run(async () => {
+          if (getDebugFlags().logPFrameRequests)
+            logger.info(`Create PTable: ` + JSON.stringify(params));
+          return await pFrame.pFrame.createTable({
+            src: joinEntryToInternal(params.def.src),
+            filters: migrateFilters(params.def.filters)
+          });
+        });
         return params.def.sorting.length !== 0 ? rawPTable.sort(params.def.sorting) : rawPTable;
       }
       protected calculateParamsKey(params: FullPTableDef): string {
@@ -211,10 +218,13 @@ export class PFrameDriver implements SdkPFrameDriver {
     def: PFrameDef<PlTreeNodeAccessor | PColumnValues>,
     ctx: ComputableCtx
   ): PFrameHandle {
-    const internalData = def.filter((c) => valueTypes.find((t) => t === c.spec.valueType))
-      .map((c) => mapPObjectData(c, (d) =>
-        isPlTreeNodeAccessor(d) ? parseDataInfoResource(d) : makeDataInfoResource(c.spec, d)
-      ));
+    const internalData = def
+      .filter((c) => valueTypes.find((t) => t === c.spec.valueType))
+      .map((c) =>
+        mapPObjectData(c, (d) =>
+          isPlTreeNodeAccessor(d) ? parseDataInfoResource(d) : makeDataInfoResource(c.spec, d)
+        )
+      );
     const res = this.pFrames.acquire(internalData);
     ctx.addOnDestroy(res.unref);
     return res.key as PFrameHandle;
@@ -275,7 +285,7 @@ export class PFrameDriver implements SdkPFrameDriver {
       async () =>
         await this.pFrames.getByKey(handle).pFrame.createTable({
           src: joinEntryToInternal(request.src),
-          filters: migrateFilters(request.filters),
+          filters: migrateFilters(request.filters)
         })
     );
 
@@ -304,10 +314,11 @@ export class PFrameDriver implements SdkPFrameDriver {
     request: UniqueValuesRequest
   ): Promise<UniqueValuesResponse> {
     return await this.concurrencyLimiter.run(
-      async () => await this.pFrames.getByKey(handle).pFrame.getUniqueValues({
-        ...request,
-        filters: migrateFilters(request.filters),
-      })
+      async () =>
+        await this.pFrames.getByKey(handle).pFrame.getUniqueValues({
+          ...request,
+          filters: migrateFilters(request.filters)
+        })
     );
   }
 

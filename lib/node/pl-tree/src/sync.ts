@@ -1,5 +1,6 @@
 import {
   FieldData,
+  isNotNullResourceId,
   isNullResourceId,
   OptionalResourceId,
   PlTransaction,
