@@ -11,7 +11,7 @@ export default class Version extends Command {
   static override flags = {
     ...cmdOpts.GlobalFlags,
 
-    ...cmdOpts.PackageIDRequiredFlag
+    ...cmdOpts.PackageIDRequiredFlag,
   };
 
   static strict: boolean = false;

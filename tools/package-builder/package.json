@@ -33,6 +33,7 @@
     "@jest/globals": "catalog:",
     "@milaboratories/oclif-index": "workspace:*",
     "@milaboratories/platforma-build-configs": "workspace:*",
+    "@milaboratories/eslint-config": "workspace:^",
     "@types/archiver": "^6.0.3",
     "@types/jest": "catalog:",
     "@types/node": "catalog:",

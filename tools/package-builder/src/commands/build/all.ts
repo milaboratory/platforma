@@ -4,8 +4,8 @@ import * as util from '../../core/util';
 import { Core } from '../../core/core';
 
 export default class BuildAll extends Command {
-  static override description =
-    'Build all targets (entrypoint descriptors, binary pacakges and so on)';
+  static override description
+    = 'Build all targets (entrypoint descriptors, binary pacakges and so on)';
 
   static override examples = ['<%= config.bin %> <%= command.id %>'];
 
@@ -22,7 +22,7 @@ export default class BuildAll extends Command {
     ...cmdOpts.DirHashFlag,
 
     ...cmdOpts.ArchiveFlag,
-    ...cmdOpts.ContentRootFlag
+    ...cmdOpts.ContentRootFlag,
   };
 
   public async run(): Promise<void> {
@@ -45,7 +45,7 @@ export default class BuildAll extends Command {
       core.buildDescriptors({
         packageIds: flags['package-id'] ? flags['package-id'] : undefined,
         entrypoints: flags.entrypoint ? flags.entrypoint : undefined,
-        sources: flags.source ? (flags.source as util.SoftwareSource[]) : undefined
+        sources: flags.source ? (flags.source as util.SoftwareSource[]) : undefined,
       });
 
       for (const source of sources) {
@@ -57,13 +57,13 @@ export default class BuildAll extends Command {
 
               archivePath: flags.archive,
               contentRoot: flags['content-root'],
-              skipIfEmpty: flags['package-id'] ? false : true // do not skip 'non-binary' packages if their IDs were set as args
+              skipIfEmpty: flags['package-id'] ? false : true, // do not skip 'non-binary' packages if their IDs were set as args
             });
             break;
 
-          // case 'docker':
-          //     core.buildDocker()
-          //     break
+            // case 'docker':
+            //     core.buildDocker()
+            //     break
 
           default:
             util.assertNever(source);
