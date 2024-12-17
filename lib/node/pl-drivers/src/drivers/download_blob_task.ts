@@ -34,6 +34,17 @@ export class DownloadBlobTask {
     private readonly handle: LocalBlobHandle
   ) {}
 
+  /** Returns a simple object that describes this task. */
+  public info() {
+    return {
+      rInfo: this.rInfo,
+      path: this.path,
+      done: this.done,
+      size: this.size,
+      error: this.error
+    };
+  }
+
   public attach(w: Watcher, callerId: string) {
     this.counter.inc(callerId);
     if (!this.done) this.change.attachWatcher(w);

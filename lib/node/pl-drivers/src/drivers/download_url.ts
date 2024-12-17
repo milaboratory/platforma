@@ -17,6 +17,8 @@ import * as tar from 'tar-fs';
 import { Dispatcher } from 'undici';
 import { NetworkError400, RemoteFileDownloader } from '../helpers/download';
 import { FilesCache } from './helpers/files_cache';
+import { stringifyWithResourceId } from '@milaboratories/pl-client';
+import { DownloadBlobTask } from './download_blob_task';
 
 export interface DownloadUrlSyncReader {
   /** Returns a Computable that (when the time will come)
@@ -128,21 +130,25 @@ export class DownloadUrlDriver implements DownloadUrlSyncReader {
       const toDelete = this.cache.removeFile(task.path, callerId);
 
       await Promise.all(
-        toDelete.map(async (task) => {
+        toDelete.map(async (task: DownloadByUrlTask) => {
           await rmRFDir(task.path);
           this.cache.removeCache(task);
 
           this.removeTask(
             task,
-            `the task ${JSON.stringify(task)} was removed` +
-              `from cache along with ${JSON.stringify(toDelete)}`
+            `the task ${stringifyWithResourceId(task.info())} was removed` +
+              `from cache along with ${stringifyWithResourceId(toDelete.map((t) => t.info()))}`
           );
         })
       );
     } else {
       // The task is still in a downloading queue.
       const deleted = task.counter.dec(callerId);
-      if (deleted) this.removeTask(task, `the task ${JSON.stringify(task)} was removed from cache`);
+      if (deleted)
+        this.removeTask(
+          task,
+          `the task ${stringifyWithResourceId(task.info())} was removed from cache`
+        );
     }
   }
 
@@ -155,7 +161,10 @@ export class DownloadUrlDriver implements DownloadUrlSyncReader {
         await rmRFDir(task.path);
         this.cache.removeCache(task);
 
-        this.removeTask(task, `the task ${task} was released when the driver was closed`);
+        this.removeTask(
+          task,
+          `the task ${stringifyWithResourceId(task.info())} was released when the driver was closed`
+        );
       })
     );
   }
@@ -194,6 +203,16 @@ class DownloadByUrlTask {
     readonly path: string,
     readonly url: URL
   ) {}
+
+  public info() {
+    return {
+      url: this.url.toString(),
+      path: this.path,
+      done: this.done,
+      size: this.size,
+      error: this.error
+    };
+  }
 
   attach(w: Watcher, callerId: string) {
     this.counter.inc(callerId);
