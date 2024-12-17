@@ -1,5 +1,11 @@
 # @platforma-sdk/test
 
+## 1.20.20
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.22.4
+
 ## 1.20.18
 
 ### Patch Changes
