@@ -1,5 +1,11 @@
 # @platforma-sdk/package-builder
 
+## 2.14.1
+
+### Patch Changes
+
+- f8e40c7: Do not try to load list of entrypoints from absent directories
+
 ## 2.14.0
 
 ### Minor Changes
