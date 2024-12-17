@@ -218,25 +218,34 @@ const softwareFileExtension = '.sw.json';
 const assetFileExtension = '.as.json';
 
 export function listPackageEntrypoints(packageRoot: string): { name: string; path: string }[] {
+  const entrypoints = [];
+
   const swDir = entrypointFilePath(packageRoot, 'software');
-  const swItems = fs.readdirSync(swDir);
-  const swEntrypoints: { name: string; path: string }[] = swItems
-    .filter((fName: string) => fName.endsWith(softwareFileExtension))
-    .map((fName: string) => ({
-      name: fName.slice(0, -softwareFileExtension.length),
-      path: path.join(swDir, fName)
-    }));
+  if (fs.existsSync(swDir)) {
+    const swItems = fs.readdirSync(swDir);
+    const swEntrypoints: { name: string; path: string }[] = swItems
+      .filter((fName: string) => fName.endsWith(softwareFileExtension))
+      .map((fName: string) => ({
+        name: fName.slice(0, -softwareFileExtension.length),
+        path: path.join(swDir, fName)
+      }));
+
+    entrypoints.push(...swEntrypoints);
+  }
 
   const assetDir = entrypointFilePath(packageRoot, 'asset');
-  const assetItems = fs.readdirSync(assetDir);
-  const assetEntrypoints = assetItems
-    .filter((fName: string) => fName.endsWith(assetFileExtension))
-    .map((fName: string) => ({
-      name: fName.slice(0, -assetFileExtension.length),
-      path: path.join(swDir, fName)
-    }));
+  if (fs.existsSync(assetDir)) {
+    const assetItems = fs.readdirSync(assetDir);
+    const assetEntrypoints = assetItems
+      .filter((fName: string) => fName.endsWith(assetFileExtension))
+      .map((fName: string) => ({
+        name: fName.slice(0, -assetFileExtension.length),
+        path: path.join(swDir, fName)
+      }));
 
-  const entrypoints = [...swEntrypoints, ...assetEntrypoints];
+    entrypoints.push(...assetEntrypoints);
+  }
+
   entrypoints.sort();
 
   for (let i = 0; i < entrypoints.length - 1; i++) {

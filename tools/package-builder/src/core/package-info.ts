@@ -309,6 +309,8 @@ export class PackageInfo {
    * Resolves entrypoint reference to full entrypoint file path and type
    */
   public resolveReference(epName: string, ep: ReferenceEntrypoint): string {
+    this.logger.debug(`resolving entrypoint '${epName}' reference '${ep.reference}'. packageRoot='${this.packageRoot}'`)
+
     const refInfo = ep.reference.match(entrypoint.EnyrypointReferencePattern)?.groups;
 
     if (!refInfo) {
