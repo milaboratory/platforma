@@ -52,18 +52,7 @@ export class DownloadBlobTask {
 
   public async download() {
     try {
-      await ensureDirExists(path.dirname(this.path));
-      const { content, size } = await this.clientDownload.downloadBlob(this.rInfo);
-
-      if (await fileExists(this.path)) {
-        await content.cancel(`the file already exists.`); // finalize body
-      } else {
-        await createPathAtomically(this.logger, this.path, async (fPath: string) => {
-          const f = Writable.toWeb(fs.createWriteStream(fPath, { flags: 'wx' }));
-          await content.pipeTo(f);
-        });
-      }
-
+      const size = await this.ensureDownloaded();
       this.setDone(size);
       this.change.markChanged();
     } catch (e: any) {
@@ -76,6 +65,25 @@ export class DownloadBlobTask {
 
       throw e;
     }
+  }
+
+  private async ensureDownloaded() {
+    await ensureDirExists(path.dirname(this.path));
+
+    if (await fileExists(this.path)) {
+      this.logger.info(`a blob was already downloaded: ${this.path}`);
+      const stat = await fsp.stat(this.path);
+      return stat.size;
+    }
+
+    const { content, size } = await this.clientDownload.downloadBlob(this.rInfo);
+
+    await createPathAtomically(this.logger, this.path, async (fPath: string) => {
+      const f = Writable.toWeb(fs.createWriteStream(fPath, { flags: 'wx' }));
+      await content.pipeTo(f);
+    });
+
+    return size;
   }
 
   public abort(reason: string) {
