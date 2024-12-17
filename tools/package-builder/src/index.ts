@@ -28,5 +28,5 @@ export const COMMANDS = {
   'sign:packages': Cmd9,
   'get:package:name': Cmd10,
   'get:package:path': Cmd11,
-  'get:package:version': Cmd12
+  'get:package:version': Cmd12,
 };
