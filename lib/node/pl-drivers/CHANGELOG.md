@@ -1,5 +1,11 @@
 # @milaboratories/pl-drivers
 
+## 1.5.5
+
+### Patch Changes
+
+- 95d7801: drivers: download: fix JSON.strinfigy in logs; don't call S3 just because of size; enable tests
+
 ## 1.5.4
 
 ### Patch Changes
