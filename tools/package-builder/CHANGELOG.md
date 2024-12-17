@@ -1,5 +1,11 @@
 # @platforma-sdk/package-builder
 
+## 2.14.2
+
+### Patch Changes
+
+- 0d34428: publish packages by default, not descriptors
+
 ## 2.14.1
 
 ### Patch Changes
