@@ -1,11 +1,9 @@
-import { PColumnSpec, PColumnValues, PObjectId, PObjectSpec } from '@platforma-sdk/model';
+import { PColumnSpec, PColumnValues, PlRef, PObjectId, PObjectSpec } from '@platforma-sdk/model';
 import { PFrameInternal } from '@milaboratories/pl-model-middle-layer';
 import { PlTreeNodeAccessor, ResourceInfo } from '@milaboratories/pl-tree';
 import { assertNever } from '@milaboratories/ts-helpers';
-import { createHash } from 'crypto';
 import canonicalize from 'canonicalize';
 import {
-  isNullResourceId,
   resourceType,
   resourceTypeToString,
   resourceTypesEqual
@@ -250,9 +248,10 @@ export function makeDataInfoResource(
   };
 }
 
-export function derivePObjectId(spec: PObjectSpec, data: PlTreeNodeAccessor): PObjectId {
-  const hash = createHash('sha256');
-  hash.update(canonicalize(spec)!);
-  hash.update(String(!isNullResourceId(data.originalId) ? data.originalId : data.id));
-  return hash.digest().toString('hex') as PObjectId;
+export function deriveGlobalPObjectId(blockId: string, exportName: string): PObjectId {
+  return canonicalize({ __isRef: true, blockId, name: exportName } satisfies PlRef)! as PObjectId;
+}
+
+export function deriveLocalPObjectId(outputName: string): PObjectId {
+  return outputName as PObjectId;
 }
