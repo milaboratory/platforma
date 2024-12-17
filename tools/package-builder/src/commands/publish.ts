@@ -1,5 +1,5 @@
-import Descriptors from './publish/descriptors';
+import Packages from './publish/packages';
 
 // eslint-disable-next-line @stylistic/spaced-comment
 //oclif-index: export-command
-export default Descriptors;
+export default Packages;
