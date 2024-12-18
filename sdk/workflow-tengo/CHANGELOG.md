@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 2.8.5
+
+### Patch Changes
+
+- f2899c9: Fix line numbering
+
 ## 2.8.4
 
 ### Patch Changes
