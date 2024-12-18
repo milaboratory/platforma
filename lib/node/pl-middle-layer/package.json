@@ -51,10 +51,10 @@
     "@milaboratories/pl-local": "workspace:^"
   },
   "devDependencies": {
-    "semver": "catalog:",
-    "@types/semver": "catalog:",
     "@milaboratories/platforma-build-configs": "workspace:*",
     "@milaboratories/eslint-config": "workspace:^",
+    "semver": "catalog:",
+    "@types/semver": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
     "@types/jest": "catalog:",

@@ -53,7 +53,7 @@ const SoftwareInfoRenderer: Renderer<TemplateSoftwareData> = {
   },
   render(resource, tx, _creator) {
     const sw = PlTemplateSoftwareV1.fromV2Data(resource);
-    const ref = tx.createStruct(PlTemplateSoftwareV1.type, sw.data);
+    const ref = tx.createStruct(PlTemplateSoftwareV1.type, JSON.stringify(sw.data));
     tx.setKValue(ref, PlTemplateSoftwareV1.metaNameKey, JSON.stringify(sw.name));
     return ref;
   },
@@ -87,9 +87,11 @@ const TemplateRenderer: Renderer<TemplateData> = {
     }
   },
   render(resource, tx, _creator) {
+    console.log('Creating template for:\n' + JSON.stringify(resource));
+
     return tx.createStruct(
       PlTemplateV1.type,
-      JSON.stringify(PlTemplateV1.fromV2Data(resource)),
+      JSON.stringify(PlTemplateV1.fromV2Data(resource).data),
     );
   },
 };
@@ -101,7 +103,7 @@ const HashOverrideRenderer: Renderer<TemplateData> = {
       .update(PlTemplateOverrideV1.type.version)
       .update(resource.hashOverride ?? '');
   },
-  render(resource, tx, creator) {
+  render(resource, tx, _creator) {
     return tx.createStruct(
       PlTemplateOverrideV1.type,
       JSON.stringify(PlTemplateOverrideV1.fromV2Data(resource)),
