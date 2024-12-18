@@ -3,3 +3,4 @@ node_modules/
 test_config.json
 .test_auth.json
 /.tags
+/src.orig.*
