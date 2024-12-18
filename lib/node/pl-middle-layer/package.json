@@ -54,6 +54,7 @@
     "semver": "catalog:",
     "@types/semver": "catalog:",
     "@milaboratories/platforma-build-configs": "workspace:*",
+    "@milaboratories/eslint-config": "workspace:^",
     "typescript": "catalog:",
     "vite": "catalog:",
     "@types/jest": "catalog:",

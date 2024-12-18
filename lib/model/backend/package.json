@@ -21,8 +21,12 @@
     "./dist/**/*",
     "./src/**/*"
   ],
-  "dependencies": {},
+  "dependencies": {
+    "canonicalize": "catalog:",
+    "@milaboratories/pl-client": "workspace:"
+  },
   "devDependencies": {
+    "@milaboratories/eslint-config": "workspace:^",
     "@milaboratories/platforma-build-configs": "workspace:*",
     "@types/node": "catalog:",
     "typescript": "catalog:",
