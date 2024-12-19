@@ -53,8 +53,9 @@ const SoftwareInfoRenderer: Renderer<TemplateSoftwareData> = {
   },
   render(resource, tx, _creator) {
     const sw = PlTemplateSoftwareV1.fromV2Data(resource);
-    const ref = tx.createStruct(PlTemplateSoftwareV1.type, JSON.stringify(sw.data));
+    const ref = tx.createStruct(PlTemplateSoftwareV1.type, sw.data);
     tx.setKValue(ref, PlTemplateSoftwareV1.metaNameKey, JSON.stringify(sw.name));
+    tx.lock(ref);
     return ref;
   },
 };
@@ -87,8 +88,6 @@ const TemplateRenderer: Renderer<TemplateData> = {
     }
   },
   render(resource, tx, _creator) {
-    console.log('Creating template for:\n' + JSON.stringify(resource));
-
     return tx.createStruct(
       PlTemplateV1.type,
       JSON.stringify(PlTemplateV1.fromV2Data(resource).data),
@@ -157,6 +156,8 @@ function createTemplateV2Tree(tx: PlTransaction, tplInfo: TemplateData, resource
     tx.setField(fld, createTemplateV2Tree(tx, depTpl, resourceCache));
   }
 
+  tx.lock(tplRef);
+
   if (!tplInfo.hashOverride) {
     return tplRef;
   }
@@ -166,5 +167,6 @@ function createTemplateV2Tree(tx: PlTransaction, tplInfo: TemplateData, resource
   const fld = PlTemplateOverrideV1.tplField(overrideRef);
   tx.createField(fld, 'Service');
   tx.setField(fld, tplRef);
+  tx.lock(tplRef);
   return overrideRef;
 }

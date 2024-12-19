@@ -50,7 +50,7 @@ export namespace PlTemplateSoftwareV1 {
 
   export function fromV2Data(info: infoV2.TemplateSoftwareData | infoV2.TemplateAssetData): ResourceStructure {
     return {
-      data: Buffer.from(info.src, 'utf8').toString('base64'),
+      data: info.src,
       name: {
         Name: info.name,
         Version: info.version,
