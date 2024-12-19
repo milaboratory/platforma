@@ -1,5 +1,13 @@
 # @milaboratories/pl-middle-layer
 
+## 1.22.6
+
+### Patch Changes
+
+- 7942c42: PObjectId schema change
+- Updated dependencies [8043f5d]
+  - @platforma-sdk/model@1.20.24
+
 ## 1.22.5
 
 ### Patch Changes

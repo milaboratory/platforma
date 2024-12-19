@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.20.24
+
+### Patch Changes
+
+- 8043f5d: TreeNodeAccessor track resolve path
+
 ## 1.20.11
 
 ### Patch Changes

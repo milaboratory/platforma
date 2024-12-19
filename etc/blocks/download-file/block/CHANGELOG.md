@@ -1,5 +1,14 @@
 # @milaboratories/milaboratories.test-download-file
 
+## 1.0.44
+
+### Patch Changes
+
+- Updated dependencies [8043f5d]
+  - @platforma-sdk/model@1.20.24
+  - @milaboratories/milaboratories.test-download-file.model@1.0.9
+  - @milaboratories/milaboratories.test-download-file.ui@1.0.44
+
 ## 1.0.43
 
 ### Patch Changes
