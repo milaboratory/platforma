@@ -4,11 +4,13 @@ import { PlTreeNodeAccessor, ResourceInfo } from '@milaboratories/pl-tree';
 import { assertNever } from '@milaboratories/ts-helpers';
 import canonicalize from 'canonicalize';
 import {
+  isNullResourceId,
   resourceType,
   resourceTypeToString,
   resourceTypesEqual
 } from '@milaboratories/pl-client';
 import { Writable } from 'utility-types';
+import { createHash } from 'crypto';
 
 export function* allBlobs<B>(data: PFrameInternal.DataInfo<B>): Generator<B> {
   switch (data.type) {
@@ -252,6 +254,13 @@ export function deriveGlobalPObjectId(blockId: string, exportName: string): PObj
   return canonicalize({ __isRef: true, blockId, name: exportName } satisfies PlRef)! as PObjectId;
 }
 
-export function deriveLocalPObjectId(outputName: string): PObjectId {
-  return outputName as PObjectId;
+export function deriveUnstablePObjectId(spec: PObjectSpec, data: PlTreeNodeAccessor): PObjectId {
+  const hash = createHash('sha256');
+  hash.update(canonicalize(spec)!);
+  hash.update(String(!isNullResourceId(data.originalId) ? data.originalId : data.id));
+  return hash.digest().toString('hex') as PObjectId;
+}
+
+export function deriveLocalPObjectId(resolvePath: string[], outputName: string): PObjectId {
+  return canonicalize({ resolvePath, name: outputName })! as PObjectId
 }

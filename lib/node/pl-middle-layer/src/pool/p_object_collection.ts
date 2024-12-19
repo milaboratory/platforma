@@ -3,7 +3,7 @@ import { PObject, PObjectId, PObjectSpec, ValueOrError } from '@platforma-sdk/mo
 import { notEmpty } from '@milaboratories/ts-helpers';
 import assert from 'assert';
 import { Writable } from 'utility-types';
-import { deriveLocalPObjectId } from './data';
+import { deriveLocalPObjectId, deriveUnstablePObjectId } from './data';
 
 /** Represents specific staging or prod ctx data */
 export interface RawPObjectCollection {
@@ -99,7 +99,8 @@ export function parseRawPObjectCollection(
 export function parseFinalPObjectCollection(
   node: PlTreeNodeAccessor,
   errorOnUnknownField: boolean = true,
-  prefix: string = ''
+  prefix: string = '',
+  resolvePath: string[],
 ): Record<string, PObject<PlTreeNodeAccessor>> {
   if (!node.getIsReadyOrError()) throw new Error('resource is not ready');
   const rawCollection = parseRawPObjectCollection(node, errorOnUnknownField, false, prefix);
@@ -113,7 +114,9 @@ export function parseFinalPObjectCollection(
     if (data === undefined) throw new Error(`no data for key ${outputName}`);
     if (!data.ok) throw new PlError(data.error);
     collection[outputName] = {
-      id: deriveLocalPObjectId(outputName),
+      id: resolvePath.length === 0
+        ? deriveUnstablePObjectId(result.spec, data.value) // for old blocks opened in new desktop
+        : deriveLocalPObjectId(resolvePath, outputName),
       spec: result.spec,
       data: data.value
     };

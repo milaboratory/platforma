@@ -215,11 +215,12 @@ export class JsExecutionContext
   parsePObjectCollection(
     handle: string,
     errorOnUnknownField: boolean,
-    prefix: string
+    prefix: string,
+    ...resolveSteps: string[]
   ): Record<string, PObject<string>> | undefined {
     const acc = this.getAccessor(handle);
     if (!acc.getIsReadyOrError()) return undefined;
-    const accResult = parseFinalPObjectCollection(acc, errorOnUnknownField, prefix);
+    const accResult = parseFinalPObjectCollection(acc, errorOnUnknownField, prefix, resolveSteps);
     const result: Record<string, PObject<string>> = {};
     for (const [key, obj] of Object.entries(accResult)) {
       result[key] = mapPObjectData(obj, (d) => this.wrapAccessor(d));
@@ -666,12 +667,13 @@ export class JsExecutionContext
       // Accessor helpers
       //
 
-      exportCtxFunction('parsePObjectCollection', (handle, errorOnUnknownField, prefix) => {
+      exportCtxFunction('parsePObjectCollection', (handle, errorOnUnknownField, prefix, ...resolveSteps) => {
         return this.exportObjectUniversal(
           this.parsePObjectCollection(
             this.vm.getString(handle),
             this.vm.dump(errorOnUnknownField) as boolean,
-            this.vm.getString(prefix)
+            this.vm.getString(prefix),
+            ...resolveSteps.map(this.vm.getString),
           ),
           undefined
         );
