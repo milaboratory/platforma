@@ -1,5 +1,17 @@
 # @milaboratories/pl-middle-layer
 
+## 1.23.0
+
+### Minor Changes
+
+- 87790da: Middle layer now renders template tree on its own instead of uploading template pack to the server
+
+### Patch Changes
+
+- Updated dependencies [87790da]
+  - @milaboratories/pl-model-backend@1.0.1
+  - @platforma-sdk/workflow-tengo@2.8.5
+
 ## 1.22.6
 
 ### Patch Changes
