@@ -74,6 +74,8 @@ function migrateFilters(filters: PTableRecordFilter[]): PTableRecordSingleValueF
   return filters as PTableRecordSingleValueFilterV2[];
 }
 
+const bigintReplacer = (_: string, v: any) => (typeof v === 'bigint' ? v.toString() : v);
+
 class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
   public readonly pFrame = new PFrame();
   private readonly blobIdToResource = new Map<string, ResourceInfo>();
@@ -176,6 +178,10 @@ export class PFrameDriver implements SdkPFrameDriver {
         super();
       }
       protected createNewResource(params: InternalPFrameData): PFrameHolder {
+        if (getDebugFlags().logPFrameRequests)
+          logger.info(
+            `Create PFrame (${this.calculateParamsKey(params)}): ${JSON.stringify(params, bigintReplacer)}`
+          );
         return new PFrameHolder(this.blobDriver, blobContentCache, params);
       }
       protected calculateParamsKey(params: InternalPFrameData): string {
@@ -196,7 +202,9 @@ export class PFrameDriver implements SdkPFrameDriver {
         const pFrame = this.pFrames.getByKey(params.pFrameHandle);
         const rawPTable = await concurrencyLimiter.run(async () => {
           if (getDebugFlags().logPFrameRequests)
-            logger.info(`Create PTable: ` + JSON.stringify(params));
+            logger.info(
+              `Create PTable (${this.calculateParamsKey(params)}): ${JSON.stringify(params, bigintReplacer)}`
+            );
           return await pFrame.pFrame.createTable({
             src: joinEntryToInternal(params.def.src),
             filters: migrateFilters(params.def.filters)
@@ -281,13 +289,16 @@ export class PFrameDriver implements SdkPFrameDriver {
     handle: PFrameHandle,
     request: CalculateTableDataRequest<PObjectId>
   ): Promise<CalculateTableDataResponse> {
-    let table = await this.concurrencyLimiter.run(
-      async () =>
-        await this.pFrames.getByKey(handle).pFrame.createTable({
-          src: joinEntryToInternal(request.src),
-          filters: migrateFilters(request.filters)
-        })
-    );
+    let table = await this.concurrencyLimiter.run(async () => {
+      if (getDebugFlags().logPFrameRequests)
+        this.logger.info(
+          `calculateTableData, handle = ${handle}, request = ${JSON.stringify(request, bigintReplacer)}`
+        );
+      return await this.pFrames.getByKey(handle).pFrame.createTable({
+        src: joinEntryToInternal(request.src),
+        filters: migrateFilters(request.filters)
+      });
+    });
 
     if (request.sorting.length > 0) {
       const sortedTable = await this.concurrencyLimiter.run(
@@ -313,13 +324,16 @@ export class PFrameDriver implements SdkPFrameDriver {
     handle: PFrameHandle,
     request: UniqueValuesRequest
   ): Promise<UniqueValuesResponse> {
-    return await this.concurrencyLimiter.run(
-      async () =>
-        await this.pFrames.getByKey(handle).pFrame.getUniqueValues({
-          ...request,
-          filters: migrateFilters(request.filters)
-        })
-    );
+    return await this.concurrencyLimiter.run(async () => {
+      if (getDebugFlags().logPFrameRequests)
+        this.logger.info(
+          `getUniqueValues, handle = ${handle}, request = ${JSON.stringify(request, bigintReplacer)}`
+        );
+      return await this.pFrames.getByKey(handle).pFrame.getUniqueValues({
+        ...request,
+        filters: migrateFilters(request.filters)
+      });
+    });
   }
 
   //
