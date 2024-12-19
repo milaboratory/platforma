@@ -370,12 +370,20 @@ function stableKeyFromFullPTableDef(data: FullPTableDef): string {
 
 function stableKeyFromPFrameData(data: PColumn<PFrameInternal.DataInfo<ResourceInfo>>[]): string {
   const orderedData = [...data].map((column) => mapPObjectData(column, (r) => {
-    let result: { payload: { key: string; }[]; };
+    let result: {
+      type: string,
+      keyLength: number,
+      payload: {
+        key: string;
+        value: null | number | string | [string, string]
+      }[];
+    };
     const type = r.type;
     switch (type) {
       case 'Json':
         result = {
-          ...r,
+          type: r.type,
+          keyLength: r.keyLength,
           payload: Object.entries(r.data).map(([part, value]) => ({
             key: part,
             value,
@@ -384,20 +392,21 @@ function stableKeyFromPFrameData(data: PColumn<PFrameInternal.DataInfo<ResourceI
         break;
       case 'JsonPartitioned':
         result = {
-          ...r,
+          type: r.type,
+          keyLength: r.partitionKeyLength,
           payload: Object.entries(r.parts).map(([part, info]) => ({
             key: part,
-            blobId: info.id.toString(),
+            value: info.id.toString(),
           }))
         };
         break;
       case 'BinaryPartitioned':
         result = {
-          ...r,
+          type: r.type,
+          keyLength: r.partitionKeyLength,
           payload: Object.entries(r.parts).map(([part, info]) => ({
             key: part,
-            indexBlobId: info.index.id.toString(),
-            valuesBlobId: info.values.id.toString(),
+            value: [info.index.id.toString(), info.values.id.toString()] as const,
           }))
         };
         break;
