@@ -19,6 +19,7 @@ import DraftsPage from './pages/DraftsPage.vue';
 import LayoutPage from './pages/LayoutPage.vue';
 import ButtonsPage from './pages/ButtonsPage.vue';
 import NotificationsPage from './pages/NotificationsPage.vue';
+import StackedBarPage from './pages/StackedBarPage/StackedBarPage.vue';
 
 export const sdkPlugin = defineApp(platforma, (base) => {
   // Additional data
@@ -78,6 +79,7 @@ export const sdkPlugin = defineApp(platforma, (base) => {
       '/drafts': () => DraftsPage,
       '/buttons': () => ButtonsPage,
       '/notifications': () => NotificationsPage,
+      '/stacked-bar': () => StackedBarPage,
     },
   };
 }, {
