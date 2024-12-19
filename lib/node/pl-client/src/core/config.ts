@@ -87,11 +87,11 @@ export const DEFAULT_AUTH_MAX_REFRESH = 12 * 24 * 60 * 60;
 export const DEFAULT_MAX_CACHE_BYTES = 128_000_000; // 128 Mb
 
 export const DEFAULT_RETRY_BACKOFF_ALGORITHM = 'exponential';
-export const DEFAULT_RETRY_MAX_ATTEMPTS = 10;
-export const DEFAULT_RETRY_INITIAL_DELAY = 4; // 4 ms
-export const DEFAULT_RETRY_EXPONENTIAL_BACKOFF_MULTIPLIER = 2; // + 100% on each round
+export const DEFAULT_RETRY_MAX_ATTEMPTS = 15; // 1st attempt + 14 retries
+export const DEFAULT_RETRY_INITIAL_DELAY = 20; // 20 ms * <jitter> of sleep after first failure
+export const DEFAULT_RETRY_EXPONENTIAL_BACKOFF_MULTIPLIER = 1.5; // + 50% on each round
 export const DEFAULT_RETRY_LINEAR_BACKOFF_STEP = 50; // + 50 ms
-export const DEFAULT_RETRY_JITTER = 0.3; // 30%
+export const DEFAULT_RETRY_JITTER = 0.5; // 50%
 
 type PlConfigOverrides = Partial<
   Pick<

@@ -5,6 +5,7 @@ packages:
 
   - lib/model/common
   - lib/model/middle-layer
+  - lib/model/backend
 
   - lib/node/ts-helpers
   - lib/node/ts-helpers-oclif
@@ -185,7 +186,7 @@ catalog:
   # SW
 
   '@milaboratories/software-pframes-conv': *pframes-version
-  '@platforma-open/milaboratories.software-small-binaries': ^1.15.0
+  '@platforma-open/milaboratories.software-small-binaries': ^1.15.4
 
   # Test
 
