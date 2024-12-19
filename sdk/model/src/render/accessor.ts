@@ -13,16 +13,8 @@ import { FutureRef } from './future';
 import { AccessorHandle } from './internal';
 import { CommonFieldTraverseOps, FieldTraversalStep, ResourceType } from './traversal_ops';
 
-function ifDef<T, R>(value: T | undefined, cb: (value: T) => R): R | undefined {
+export function ifDef<T, R>(value: T | undefined, cb: (value: T) => R): R | undefined {
   return value === undefined ? undefined : cb(value);
-}
-
-function wrapBuffer(buf: ArrayBuffer | undefined): Uint8Array | undefined {
-  return buf === undefined ? undefined : new Uint8Array(buf);
-}
-
-function wrapAccessor(handle: AccessorHandle | undefined): TreeNodeAccessor | undefined {
-  return handle === undefined ? undefined : new TreeNodeAccessor(handle);
 }
 
 type FieldMapOps = {
@@ -45,7 +37,10 @@ type FieldMapOps = {
 
 /** Represent resource tree node accessor */
 export class TreeNodeAccessor {
-  constructor(public readonly handle: AccessorHandle) {}
+  constructor(
+    public readonly handle: AccessorHandle,
+    public readonly resolvePath: string[],
+  ) {}
 
   /** Shortcut for {@link resolveInput} */
   public resolve(
@@ -126,7 +121,14 @@ export class TreeNodeAccessor {
     commonOptions: CommonFieldTraverseOps,
     ...steps: (FieldTraversalStep | string)[]
   ): TreeNodeAccessor | undefined {
-    return wrapAccessor(getCfgRenderCtx().resolveWithCommon(this.handle, commonOptions, ...steps));
+    const resolvePath = [
+      ...this.resolvePath,
+      ...steps.map((step) => typeof step === 'string' ? step : step.field),
+    ];
+    return ifDef(
+      getCfgRenderCtx().resolveWithCommon(this.handle, commonOptions, ...steps),
+      (accessor) => new TreeNodeAccessor(accessor, resolvePath),
+    );
   }
 
   public get resourceType(): ResourceType {
@@ -150,7 +152,11 @@ export class TreeNodeAccessor {
   }
 
   public getError(): TreeNodeAccessor | undefined {
-    return wrapAccessor(getCfgRenderCtx().getError(this.handle));
+    const resolvePath = [...this.resolvePath, 'error'];
+    return ifDef(
+      getCfgRenderCtx().getError(this.handle),
+      (accsessor) => new TreeNodeAccessor(accsessor, resolvePath),
+    );
   }
 
   public listInputFields(): string[] {
@@ -221,12 +227,15 @@ export class TreeNodeAccessor {
     const pObjects = getCfgRenderCtx().parsePObjectCollection(
       this.handle,
       errorOnUnknownField,
-      prefix
+      prefix,
+      ...this.resolvePath,
     );
     if (pObjects === undefined) return undefined;
     const result: Record<string, PObject<TreeNodeAccessor>> = {};
-    for (const [key, value] of Object.entries(pObjects))
-      result[key] = mapPObjectData(value, (c) => new TreeNodeAccessor(c));
+    for (const [key, value] of Object.entries(pObjects)) {
+      const resolvePath = [...this.resolvePath, key];
+      result[key] = mapPObjectData(value, (c) => new TreeNodeAccessor(c, resolvePath));
+    }
     return result;
   }
 

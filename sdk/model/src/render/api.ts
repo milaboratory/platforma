@@ -26,7 +26,7 @@ import {
 } from '@milaboratories/pl-model-common';
 import { Optional } from 'utility-types';
 import { getCfgRenderCtx } from '../internal';
-import { TreeNodeAccessor } from './accessor';
+import { TreeNodeAccessor, ifDef } from './accessor';
 import { FutureRef } from './future';
 import { GlobalCfgRenderCtx, MainAccessorName, StagingAccessorName } from './internal';
 import { LabelDerivationOps, deriveLabels } from './util/label';
@@ -76,7 +76,7 @@ export class ResultPool {
         ref: e.ref,
         obj: {
           ...e.obj,
-          data: new TreeNodeAccessor(e.obj.data)
+          data: new TreeNodeAccessor(e.obj.data, [e.ref.blockId, e.ref.name])
         }
       }))
     };
@@ -101,7 +101,10 @@ export class ResultPool {
         ref: e.ref,
         obj: {
           ...e.obj,
-          data: mapValueInVOE(e.obj.data, (handle) => new TreeNodeAccessor(handle))
+          data: mapValueInVOE(
+            e.obj.data,
+            (handle) => new TreeNodeAccessor(handle, [e.ref.blockId, e.ref.name]),
+          )
         }
       }))
     };
@@ -130,7 +133,7 @@ export class ResultPool {
       )?.obj;
     return mapPObjectData(
       this.ctx.getDataFromResultPoolByRef(ref.blockId, ref.name),
-      (handle) => new TreeNodeAccessor(handle)
+      (handle) => new TreeNodeAccessor(handle, [ref.blockId, ref.name]),
     );
   }
 
@@ -243,8 +246,10 @@ export class RenderCtx<Args, UiState> {
   }
 
   private getNamedAccessor(name: string): TreeNodeAccessor | undefined {
-    const accessorId = this.ctx.getAccessorHandleByName(name);
-    return accessorId ? new TreeNodeAccessor(accessorId) : undefined;
+    return ifDef(
+      this.ctx.getAccessorHandleByName(name),
+      (accessor) => new TreeNodeAccessor(accessor, [name]),
+    );
   }
 
   public get prerun(): TreeNodeAccessor | undefined {
