@@ -28,6 +28,7 @@ import { DriverKit } from '@platforma-sdk/model';
 import { DefaultVirtualLocalStorages, DownloadUrlDriver } from '@milaboratories/pl-drivers';
 import { V2RegistryProvider } from '../block_registry';
 import { Dispatcher, RetryAgent } from 'undici';
+import { getDebugFlags } from '../debug';
 
 export interface MiddleLayerEnvironment {
   readonly pl: PlClient;
@@ -196,9 +197,7 @@ export class MiddleLayer {
       ..._ops
     };
 
-    if (process.env.MI_LOG_TREE_STAT)
-      ops.defaultTreeOptions.logStat =
-        process.env.MI_LOG_TREE_STAT === 'cumulative' ? 'cumulative' : 'per-request';
+    ops.defaultTreeOptions.logStat = getDebugFlags().logTreeStats;
 
     const projects = await pl.withWriteTx('MLInitialization', async (tx) => {
       const projectsField = field(tx.clientRoot, ProjectsField);
