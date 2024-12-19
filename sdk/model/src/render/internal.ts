@@ -70,7 +70,8 @@ export interface GlobalCfgRenderCtxMethods<AHandle = AccessorHandle, FHandle = F
   parsePObjectCollection(
     handle: AHandle,
     errorOnUnknownField: boolean,
-    prefix: string
+    prefix: string,
+    ...resolvePath: string[]
   ): Record<string, PObject<AHandle>> | undefined;
 
   //

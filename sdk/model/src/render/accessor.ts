@@ -227,7 +227,8 @@ export class TreeNodeAccessor {
     const pObjects = getCfgRenderCtx().parsePObjectCollection(
       this.handle,
       errorOnUnknownField,
-      prefix
+      prefix,
+      ...this.resolvePath,
     );
     if (pObjects === undefined) return undefined;
     const result: Record<string, PObject<TreeNodeAccessor>> = {};
