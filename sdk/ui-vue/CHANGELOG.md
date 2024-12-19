@@ -1,5 +1,16 @@
 # @platforma-sdk/ui-vue
 
+## 1.20.27
+
+### Patch Changes
+
+- f48b25e: Prioritize "desc" sorting in PlAgDataTable
+- 354291e: Minor improvements for row selection in PlAgDataTable
+- Updated dependencies [079f50e]
+- Updated dependencies [32f7bf7]
+  - @platforma-sdk/model@1.20.27
+  - @milaboratories/uikit@2.2.39
+
 ## 1.20.24
 
 ### Patch Changes

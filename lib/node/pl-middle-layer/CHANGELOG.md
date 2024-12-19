@@ -1,5 +1,20 @@
 # @milaboratories/pl-middle-layer
 
+## 1.23.2
+
+### Patch Changes
+
+- 5bf3799: Additional logging for PFrames driver
+- Updated dependencies [079f50e]
+- Updated dependencies [079f50e]
+- Updated dependencies [079f50e]
+  - @platforma-sdk/model@1.20.27
+  - @milaboratories/pl-model-common@1.10.2
+  - @platforma-sdk/workflow-tengo@2.8.6
+  - @milaboratories/pl-model-middle-layer@1.6.9
+  - @milaboratories/pl-drivers@1.5.6
+  - @platforma-sdk/block-tools@2.5.1
+
 ## 1.23.1
 
 ### Patch Changes
