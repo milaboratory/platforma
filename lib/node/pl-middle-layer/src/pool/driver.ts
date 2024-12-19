@@ -364,20 +364,52 @@ function joinEntryToInternal(entry: JoinEntry<PObjectId>): PFrameInternal.JoinEn
 
 function stableKeyFromFullPTableDef(data: FullPTableDef): string {
   const hash = createHash('sha256');
-  hash.update(data.pFrameHandle);
   hash.update(canonicalize(data.def)!);
   return hash.digest().toString('hex');
 }
 
-function stableKeyFromPFrameData(data: PColumn<unknown>[]): string {
-  // PObject IDs derived from the PObjects canonical identity, so represents the content
-  const ids = data.map((d) => d.id).sort();
+function stableKeyFromPFrameData(data: PColumn<PFrameInternal.DataInfo<ResourceInfo>>[]): string {
+  const orderedData = [...data].map((column) => mapPObjectData(column, (r) => {
+    let result: { payload: { key: string; }[]; };
+    const type = r.type;
+    switch (type) {
+      case 'Json':
+        result = {
+          ...r,
+          payload: Object.entries(r.data).map(([part, value]) => ({
+            key: part,
+            value,
+          }))
+        };
+        break;
+      case 'JsonPartitioned':
+        result = {
+          ...r,
+          payload: Object.entries(r.parts).map(([part, info]) => ({
+            key: part,
+            blobId: info.id.toString(),
+          }))
+        };
+        break;
+      case 'BinaryPartitioned':
+        result = {
+          ...r,
+          payload: Object.entries(r.parts).map(([part, info]) => ({
+            key: part,
+            indexBlobId: info.index.id.toString(),
+            valuesBlobId: info.values.id.toString(),
+          }))
+        };
+        break;
+      default:
+        throw Error(`unsupported resource type: ${ type satisfies never }`);
+    }
+    result.payload.sort((lhs, rhs) => lhs.key.localeCompare(rhs.key));
+    return result;
+  }));
+  orderedData.sort((lhs, rhs) => lhs.id.localeCompare(rhs.id));
+
   const hash = createHash('sha256');
-  let previous = '';
-  for (const id of ids) {
-    if (previous === id) continue; // only unique ids
-    hash.update(id);
-    previous = id;
-  }
+  hash.update(canonicalize(orderedData)!);
   return hash.digest().toString('hex');
 }
