@@ -119,6 +119,12 @@ tplTest.for([
   { partitionKeyLength: 2, storageFormat: 'Json' }
 ])(
   'should read p-frame from csv file for partitionKeyLength = $partitionKeyLength ( $storageFormat )',
+  // This timeout has additional 5-7 seconds due to very slow performance of Platforma on large transactions,
+  // where thousands of fields and resources are created.
+  // The test itself is not large, but first test in a batch also loads 'pframes' binary from network.
+  // Also, because of tests execution nature in CI (when we several parallel test threads each creating large resource tree)
+  // it shares Platforma Backend performance with other massive parallel tests, making overall test time large even when actual
+  // execution takes 1-2 seconds at most.
   { timeout: 20000 },
   async ({ partitionKeyLength, storageFormat }, { helper, expect, driverKit }) => {
     var spec = baseSpec;
