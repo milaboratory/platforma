@@ -34,6 +34,7 @@
     "@milaboratories/pl-drivers": "workspace:^",
     "@milaboratories/pl-model-common": "workspace:^",
     "@milaboratories/pl-model-middle-layer": "workspace:^",
+    "@milaboratories/pl-model-backend": "workspace:^",
     "@milaboratories/pl-tree": "workspace:^",
     "@platforma-sdk/model": "workspace:^",
     "@milaboratories/ts-helpers": "workspace:^",
@@ -50,9 +51,10 @@
     "@milaboratories/pl-local": "workspace:^"
   },
   "devDependencies": {
+    "@milaboratories/platforma-build-configs": "workspace:*",
+    "@milaboratories/eslint-config": "workspace:^",
     "semver": "catalog:",
     "@types/semver": "catalog:",
-    "@milaboratories/platforma-build-configs": "workspace:*",
     "typescript": "catalog:",
     "vite": "catalog:",
     "@types/jest": "catalog:",

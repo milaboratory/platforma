@@ -58,6 +58,7 @@ export const node = tseslint.config(
       'n': eslintN,
     },
     rules: {
+      '@typescript-eslint/no-namespace': 'off',
       'n/global-require': 'error',
       'n/no-callback-literal': 'off',
       'n/no-extraneous-require': 'error',

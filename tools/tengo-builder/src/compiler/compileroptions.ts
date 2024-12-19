@@ -1,5 +1,5 @@
+import { TemplateData, TemplateLibData } from '@milaboratories/pl-model-backend';
 import { CompilerOption } from './package';
-import { TemplateData, TemplateLibData } from './template';
 import * as util from './util';
 
 export function applyTemplateCompilerOptions(opts: CompilerOption[], tpl: TemplateData) {
