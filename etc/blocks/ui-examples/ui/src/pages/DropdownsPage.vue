@@ -7,6 +7,7 @@ import {
   PlContainer,
   PlDropdown,
   PlDropdownMulti,
+  PlDropdownMultiRef,
   PlDropdownRef,
   PlRow,
 } from '@platforma-sdk/ui-vue';
@@ -18,6 +19,13 @@ const data = reactive({
   clearable: true,
   model: 1,
   multi: [],
+  multiRefSelected: [
+    {
+      __isRef: true as const,
+      blockId: '1',
+      name: 'Block 1 Ref',
+    },
+  ],
   ref: undefined,
 });
 
@@ -58,6 +66,27 @@ const refOptions = ref(
         __isRef: true as const,
         blockId: '2',
         name: 'Block 2',
+      },
+    },
+  ]),
+);
+
+const refOptionsMulti = ref(
+  undef([
+    {
+      label: 'Block 1 label Ref',
+      ref: {
+        __isRef: true as const,
+        blockId: '1',
+        name: 'Block 1 Ref',
+      },
+    },
+    {
+      label: 'Block 2 label Ref',
+      ref: {
+        __isRef: true as const,
+        blockId: '2',
+        name: 'Block 2 Ref',
       },
     },
   ]),
@@ -108,11 +137,35 @@ const showOptionsLoading = () => {
         label="PlDropdownRef"
         :options="refOptions"
       />
+
       <PlDropdownMulti
         v-model="data.multi"
-        label="PlDropdownMulti"
+        :disabled="data.disabled"
         :options="simpleOptions ?? []"
+        label="PlDropdownMulti"
       />
+
+      <PlDropdownMultiRef
+        v-model="data.multiRefSelected"
+        :disabled="data.disabled"
+        :options="refOptionsMulti ?? []"
+        label="PlDropdownMultiRef"
+      />
+
+      <PlDropdownMulti
+        v-model="data.multi"
+        :disabled="data.disabled"
+        :options="undefined"
+        label="PlDropdownMulti"
+      />
+
+      <PlDropdownMultiRef
+        v-model="data.multi"
+        :disabled="data.disabled"
+        :options="undefined"
+        label="PlDropdownMultiRef"
+      />
+
       <div v-if="false" style="height: 1200px; background-color: green; width: 50px"/>
     </PlContainer>
     <pre>{{ data }}</pre>
