@@ -1,5 +1,13 @@
 # @platforma-sdk/model
 
+## 1.20.27
+
+### Patch Changes
+
+- 079f50e: uiState in model rendering context now has no forced '| undefined' type mixed into user-provided UiState template parameter
+- Updated dependencies [079f50e]
+  - @milaboratories/pl-model-common@1.10.2
+
 ## 1.20.24
 
 ### Patch Changes

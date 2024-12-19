@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.39
+
+### Patch Changes
+
+- 32f7bf7: TabOption exported
+
 ## 2.2.38
 
 ### Patch Changes

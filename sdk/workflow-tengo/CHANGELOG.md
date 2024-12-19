@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 2.8.6
+
+### Patch Changes
+
+- 079f50e: Fix for SmartResource.getError() method
+
 ## 2.8.5
 
 ### Patch Changes
