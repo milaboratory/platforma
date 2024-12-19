@@ -6,7 +6,10 @@ const templateArchiveDecoder = new TextDecoder();
 
 export function parseTemplate(content: Uint8Array): TemplateData {
   const data = JSON.parse(templateArchiveDecoder.decode(gunzipSync(content))) as TemplateData;
-  if (data.type !== 'pl.tengo-template.v2') throw new Error('malformed template');
+  if (data.type !== 'pl.tengo-template.v2') {
+    throw new Error('malformed template');
+  }
+
   return data;
 }
 

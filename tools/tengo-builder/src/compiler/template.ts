@@ -32,9 +32,7 @@ export class Template {
       throw new Error('Both data and content are provided for template constructor');
 
     if (data === undefined) data = parseTemplate(content!);
-
-    if (content === undefined)
-      content = serializeTemplate(data);
+    if (content === undefined) content = serializeTemplate(data);
 
     const nameFromData: FullArtifactNameWithoutType = parseArtefactNameAndVersion(data);
 
