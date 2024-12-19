@@ -352,7 +352,7 @@ resource = func(r) {
 			if !self.info().HasErrors {
 				ll.panic("no error set in resource")
 			}
-			return self.getField("resourceError").getValue()
+			return self.getField("resourceError").getError()
 		},
 
 		_hasField: func(fieldMapName, fieldName) {

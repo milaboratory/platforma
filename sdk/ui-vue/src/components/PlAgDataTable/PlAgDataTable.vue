@@ -15,6 +15,7 @@ import {
   ClipboardModule,
   CellSelectionModule,
   ServerSideRowModelModule,
+  isColumnSelectionCol,
 } from 'ag-grid-enterprise';
 import { AgGridVue } from 'ag-grid-vue3';
 import { PlDropdownLine } from '@milaboratories/uikit';
@@ -201,13 +202,14 @@ const firstDataRenderedTracker = makeOnceTracker<GridApi<PlAgDataTableRow>>();
 const gridOptions = shallowRef<GridOptions<PlAgDataTableRow>>({
   animateRows: false,
   suppressColumnMoveAnimation: true,
-  cellSelection: true,
+  cellSelection: selectedRows.value === undefined,
   initialState: gridState.value,
   autoSizeStrategy: { type: 'fitCellContents' },
-  rowSelection: selectedRows.value
+  rowSelection: selectedRows.value !== undefined
     ? {
-        mode: 'multiRow',
-      }
+      mode: 'multiRow',
+      enableClickSelection: true
+    }
     : undefined,
   selectionColumnDef: {
     mainMenuItems: [],
@@ -240,6 +242,7 @@ const gridOptions = shallowRef<GridOptions<PlAgDataTableRow>>({
   },
   defaultColDef: {
     suppressHeaderMenuButton: true,
+    sortingOrder: ["desc", "asc", null],
   },
   maintainColumnOrder: true,
   localeText: {
@@ -339,6 +342,7 @@ watch(
           .map((def) => def.colId)
           .filter((colId) => colId !== undefined)
           .filter((colId) => colId !== PlAgDataTableRowNumberColId)
+          .filter((colId) => !isColumnSelectionCol(colId))
           .map((colId) => parseColId(colId)) ?? [];
       emit('columnsChanged', columns);
     }
@@ -449,25 +453,15 @@ watch(
   <div class="ap-ag-data-table-container">
     <PlAgGridColumnManager v-if="gridApi && showColumnsPanel" :api="gridApi" />
     <PlAgCsvExporter v-if="gridApi && showExportButton" :api="gridApi" />
-    <div v-if="settings?.sourceType === 'ptable' && !!settings.sheets && settings.sheets.length > 0" class="ap-ag-data-table-sheets">
-      <PlDropdownLine
-        v-for="(sheet, i) in settings.sheets"
-        :key="i"
-        :model-value="sheetsState[makeSheetId(sheet.axis)]"
+    <div v-if="settings?.sourceType === 'ptable' && !!settings.sheets && settings.sheets.length > 0"
+      class="ap-ag-data-table-sheets">
+      <PlDropdownLine v-for="(sheet, i) in settings.sheets" :key="i" :model-value="sheetsState[makeSheetId(sheet.axis)]"
         :options="sheet.options"
         :prefix="(sheet.axis.annotations?.['pl7.app/label']?.trim() ?? `Unlabeled axis ${i}`) + ':'"
-        @update:model-value="(newValue) => onSheetChanged(makeSheetId(sheet.axis), newValue)"
-      />
+        @update:model-value="(newValue) => onSheetChanged(makeSheetId(sheet.axis), newValue)" />
     </div>
-    <AgGridVue
-      :key="reloadKey"
-      :theme="AgGridTheme"
-      class="ap-ag-data-table-grid"
-      :grid-options="gridOptions"
-      @grid-ready="onGridReady"
-      @state-updated="onStateUpdated"
-      @grid-pre-destroyed="onGridPreDestroyed"
-    />
+    <AgGridVue :key="reloadKey" :theme="AgGridTheme" class="ap-ag-data-table-grid" :grid-options="gridOptions"
+      @grid-ready="onGridReady" @state-updated="onStateUpdated" @grid-pre-destroyed="onGridPreDestroyed" />
   </div>
 </template>
 
