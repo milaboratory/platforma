@@ -15,6 +15,7 @@ import {
   ClipboardModule,
   CellSelectionModule,
   ServerSideRowModelModule,
+  isColumnSelectionCol,
 } from 'ag-grid-enterprise';
 import { AgGridVue } from 'ag-grid-vue3';
 import { PlDropdownLine } from '@milaboratories/uikit';
@@ -341,6 +342,7 @@ watch(
           .map((def) => def.colId)
           .filter((colId) => colId !== undefined)
           .filter((colId) => colId !== PlAgDataTableRowNumberColId)
+          .filter((colId) => !isColumnSelectionCol(colId))
           .map((colId) => parseColId(colId)) ?? [];
       emit('columnsChanged', columns);
     }
