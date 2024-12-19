@@ -241,6 +241,7 @@ const gridOptions = shallowRef<GridOptions<PlAgDataTableRow>>({
   },
   defaultColDef: {
     suppressHeaderMenuButton: true,
+    sortingOrder: ["desc", "asc", null],
   },
   maintainColumnOrder: true,
   localeText: {
