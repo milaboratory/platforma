@@ -26,9 +26,9 @@ export function makeRowNumberColDef(): ColDef {
     suppressSizeToFit: true,
     suppressAutoSize: true,
     cellStyle: {
-      'color': 'var(--txt-03)',
+      color: 'var(--txt-03)',
       'background-color': 'var(--bg-base-light)',
-      'overflow': 'visible !important',
+      overflow: 'visible !important',
       'text-align': 'center',
     },
     sortable: false,
@@ -88,7 +88,7 @@ function fixColumnOrder(gridApi: GridApi) {
   if (numRowsIndex !== -1) {
     if (selectionIndex !== -1) {
       if (selectionIndex !== 0 || numRowsIndex !== 1) {
-        gridApi.moveColumns([columns[selectionIndex], columns[numRowsIndex]], 0);
+        gridApi.moveColumns([columns[numRowsIndex], columns[selectionIndex]], 0);
       }
     } else {
       if (numRowsIndex !== 0) {
@@ -113,9 +113,9 @@ export function autoSizeRowNumberColumn(gridApi: GridApi) {
   });
   gridApi.addEventListener('columnResized', (event) => {
     if (
-      event.finished
-      && event.source === 'autosizeColumns'
-      && event.columns?.some((column) => column.isVisible() && column.getColId() === PlAgDataTableRowNumberColId)
+      event.finished &&
+      event.source === 'autosizeColumns' &&
+      event.columns?.some((column) => column.isVisible() && column.getColId() === PlAgDataTableRowNumberColId)
     ) {
       adjustRowNumberColumnWidth(event.api, cellFake, true);
     }
