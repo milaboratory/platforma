@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import {
-  PlBlockPage,
   PlRow,
   Gradient,
   PlChartStackedBar,
@@ -40,17 +39,12 @@ const settings = computed(() => {
 </script>
 
 <template>
-  <PlBlockPage :class="$style.components" style="max-width: 100%">
-    <template #title>
-      PlStackedBar
-    </template>
-    <PlRow>
-      <PlChartStackedBar :settings="settings" />
-    </PlRow>
-    <PlRow>
-      <pre>{{ JSON.stringify(settings, null, 2) }}</pre>
-    </PlRow>
-  </PlBlockPage>
+  <PlRow>
+    <PlChartStackedBar :settings="settings" />
+  </PlRow>
+  <PlRow>
+    <pre>{{ JSON.stringify(settings, null, 2) }}</pre>
+  </PlRow>
 </template>
 
 <style module>

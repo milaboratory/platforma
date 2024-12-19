@@ -1,41 +1,8 @@
 import type { Palette } from './palette';
 import { palettes } from './palette';
+import { Color } from './color';
 
-export function Color(r: number, g: number, b: number, a: number = 1) {
-  return new class {
-    constructor(
-      public readonly r: number,
-      public readonly g: number,
-      public readonly b: number,
-      public readonly a: number = 1,
-    ) {}
-
-    get hex() {
-      const hexR = r.toString(16).padStart(2, '0');
-      const hexG = g.toString(16).padStart(2, '0');
-      const hexB = b.toString(16).padStart(2, '0');
-      const hexA = Math.round(a * 255).toString(16).padStart(2, '0'); // Alpha in 2-digit hex
-
-      return `#${hexR}${hexG}${hexB}${hexA}`;
-    }
-
-    get rgba() {
-      return `rgb(${r}, ${g}, ${b}, ${a})`;
-    }
-
-    toString() {
-      return this.hex;
-    }
-
-    toJSON() {
-      return this.hex;
-    }
-  }(r, g, b, a);
-}
-
-export type Color = ReturnType<typeof Color>;
-
-type RawGradient = (string | Color)[] | Palette;
+export type GradientSource = (string | Color)[] | Palette;
 
 Color.fromHex = (hex: string): Color => {
   hex = hex.replace('#', '');
@@ -58,6 +25,9 @@ Color.fromHex = (hex: string): Color => {
   return Color(r, g, b, a);
 };
 
+/**
+ * Parses a color string (attention: currently supports only HEX, @todo)
+ */
 Color.fromString = (str: string) => {
   if (str.startsWith('#')) {
     return Color.fromHex(str);
@@ -70,6 +40,14 @@ function lerp(a: number, b: number, t: number): number {
   return a + t * (b - a);
 }
 
+/**
+ * Interpolates between two colors.
+ *
+ * @param {Color} color1 - Start color.
+ * @param {Color} color2 - End color.
+ * @param {number} t - Interpolation factor [0, 1].
+ * @returns {Color} Interpolated color.
+ */
 export function interpolateColor(color1: Color, color2: Color, t: number): Color {
   const r = Math.round(lerp(color1.r, color2.r, t));
   const g = Math.round(lerp(color1.g, color2.g, t));
@@ -77,7 +55,13 @@ export function interpolateColor(color1: Color, color2: Color, t: number): Color
   return Color(r, g, b);
 }
 
-export function normalizeGradient(raw: RawGradient): Color[] {
+/**
+ * Normalizes a gradient definition into an array of Color objects.
+ *
+ * @param {GradientSource} raw - A gradient defined as an array of strings, Colors, or a Palette.
+ * @returns {Color[]} Array of normalized Color objects.
+ */
+export function normalizeGradient(raw: GradientSource): Color[] {
   if (typeof raw === 'string') {
     return palettes[raw].map((it) => Color.fromString(it));
   }
@@ -91,16 +75,22 @@ export function normalizeGradient(raw: RawGradient): Color[] {
   });
 }
 
-export function Gradient(gradient: RawGradient) {
+/**
+ * Creates a gradient with utilities to sample or split colors.
+ */
+export function Gradient(gradient: GradientSource) {
   return new class {
     constructor(public readonly colors: Color[]) {}
 
     /**
+     * Samples a color at a specific point in the gradient.
      *
-     * @param t number [0, 1]
-     * @returns
+     * @param {number} t - A value in [0, 1] representing the position in the gradient.
      */
     fromInterval(t: number) {
+      if (t < 0) throw new Error('t must be greater than or equal to 0');
+      if (t > 1) throw new Error('t must be less than or equal to 1');
+
       const colors = this.colors;
 
       const segments = colors.length - 1;
@@ -115,12 +105,21 @@ export function Gradient(gradient: RawGradient) {
       return interpolateColor(color1, color2, localT);
     }
 
-    takeNthOf(n: number, segments: number) {
+    /**
+     * Gets the nth color in a gradient divided into segments.
+     *
+     * @param {number} n - Index of the color (1-based).
+     * @param {number} segments - Total number of segments.
+     */
+    getNthOf(n: number, segments: number) {
       if (n <= 0) throw new Error('n must be greater than 0');
       if (n > segments) throw Error('n must be lower or equal than count of segments');
       return this.fromInterval((n - 1) / (segments - 1));
     }
 
+    /**
+     * Splits the gradient into n evenly spaced colors.
+     */
     split(n: number) {
       if (n <= 0) throw new Error('n must be greater than 0');
 
