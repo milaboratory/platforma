@@ -70,19 +70,19 @@ const TemplateRenderer: Renderer<TemplateData> = {
       .update(resource.version)
       .update(resource.src);
 
-    for (const [libId, lib] of Object.entries(resource.libs)) {
+    for (const [libId, lib] of Object.entries(resource.libs ?? {})) {
       hash.update('lib:' + libId);
       LibRenderer.hash(lib, hash);
     }
-    for (const [swId, sw] of Object.entries(resource.software)) {
+    for (const [swId, sw] of Object.entries(resource.software ?? {})) {
       hash.update('soft:' + swId);
       SoftwareInfoRenderer.hash(sw, hash);
     }
-    for (const [swId, sw] of Object.entries(resource.assets)) {
+    for (const [swId, sw] of Object.entries(resource.assets ?? {})) {
       hash.update('asset:' + swId);
       SoftwareInfoRenderer.hash(sw, hash);
     }
-    for (const [tplId, tpl] of Object.entries(resource.templates)) {
+    for (const [tplId, tpl] of Object.entries(resource.templates ?? {})) {
       hash.update('tpl:' + tplId);
       this.hash(tpl, hash);
     }
@@ -131,26 +131,26 @@ function createTemplateV2Tree(tx: PlTransaction, tplInfo: TemplateData, resource
   const tplRef = createResource(tplInfo, TemplateRenderer);
 
   // Render libraries
-  for (const [libId, lib] of Object.entries(tplInfo.libs)) {
+  for (const [libId, lib] of Object.entries(tplInfo.libs ?? {})) {
     const fld = PlTemplateV1.libField(tplRef, libId);
     tx.createField(fld, 'Input');
     tx.setField(fld, createResource(lib, LibRenderer));
   }
 
   // Render software and assets
-  for (const [swId, sw] of Object.entries(tplInfo.software)) {
+  for (const [swId, sw] of Object.entries(tplInfo.software ?? {})) {
     const fld = PlTemplateV1.swField(tplRef, swId);
     tx.createField(fld, 'Input');
     tx.setField(fld, createResource(sw, SoftwareInfoRenderer));
   }
-  for (const [swId, sw] of Object.entries(tplInfo.assets)) {
+  for (const [swId, sw] of Object.entries(tplInfo.assets ?? {})) {
     const fld = PlTemplateV1.swField(tplRef, swId);
     tx.createField(fld, 'Input');
     tx.setField(fld, createResource(sw, SoftwareInfoRenderer));
   }
 
   // Render dependency templates
-  for (const [depTplId, depTpl] of Object.entries(tplInfo.templates)) {
+  for (const [depTplId, depTpl] of Object.entries(tplInfo.templates ?? {})) {
     const fld = PlTemplateV1.tplField(tplRef, depTplId);
     tx.createField(fld, 'Input');
     tx.setField(fld, createTemplateV2Tree(tx, depTpl, resourceCache));
