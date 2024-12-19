@@ -250,15 +250,15 @@ export function makeDataInfoResource(
   };
 }
 
-export function deriveGlobalPObjectId(blockId: string, exportName: string): PObjectId {
-  return canonicalize({ __isRef: true, blockId, name: exportName } satisfies PlRef)! as PObjectId;
-}
-
-export function deriveUnstablePObjectId(spec: PObjectSpec, data: PlTreeNodeAccessor): PObjectId {
+export function deriveLegacyPObjectId(spec: PObjectSpec, data: PlTreeNodeAccessor): PObjectId {
   const hash = createHash('sha256');
   hash.update(canonicalize(spec)!);
   hash.update(String(!isNullResourceId(data.originalId) ? data.originalId : data.id));
   return hash.digest().toString('hex') as PObjectId;
+}
+
+export function deriveGlobalPObjectId(blockId: string, exportName: string): PObjectId {
+  return canonicalize({ __isRef: true, blockId, name: exportName } satisfies PlRef)! as PObjectId;
 }
 
 export function deriveLocalPObjectId(resolvePath: string[], outputName: string): PObjectId {
