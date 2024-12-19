@@ -1,10 +1,10 @@
 <script lang="ts" setup>
 import { tapIf } from '@milaboratories/helpers';
 import { computed } from 'vue';
-import type { StakedBarSegment } from './types';
+import type { PlChartStackedBarSegment } from './types';
 
 const props = defineProps<{
-  value: StakedBarSegment[];
+  value: PlChartStackedBarSegment[];
   height?: number;
   showFractionInLabel?: boolean;
 }>();
@@ -64,42 +64,54 @@ const parts = computed(() => {
   </div>
 </template>
 
-<style lang="css" module>
+<style lang="scss" module>
 .component {
-  padding: 6px;
   height: auto;
   position: relative;
   overflow: visible;
   border: 1px solid green;
 
   border: 1px solid var(--txt-01);
-  padding: 12px 12px;
+  padding: 12px 6px;
   border-radius: 0;
   margin-bottom: 24px;
+}
+
+.container {
+  display: flex;
+  flex-direction: row;
+  gap: 1px;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  overflow: hidden;
+  > div {
+    height: 100%;
+    display: flex;
+    align-items: center;
+  }
 }
 
 .track {
   position: absolute;
   top: 0;
-  left: 12px;
-  right: 12px;
+  left: 6px;
+  right: 6px;
   bottom: 0;
   /* z-index: 1; */
-}
-
-.track > div {
-  height: 100%;
-  position: absolute;
-  bottom: 0;
-  border-left: 1px solid #e1e3eb;
-}
-
-.track > div::after {
-  position: absolute;
-  content: attr(data-content);
-  left: 0;
-  bottom: -24px;
-  transform: translateX(-50%);
+  > div {
+    height: 100%;
+    position: absolute;
+    bottom: 0;
+    border-left: 1px solid #e1e3eb;
+    &::after {
+      position: absolute;
+      content: attr(data-content);
+      left: 0;
+      bottom: -24px;
+      transform: translateX(-50%);
+    }
+  }
 }
 
 .notReady {
@@ -116,20 +128,5 @@ const parts = computed(() => {
 .component .container {
   position: relative;
   z-index: 1;
-}
-
-.container {
-  display: flex;
-  width: 100%;
-  height: 100%;
-  align-items: center;
-  border-radius: 6px;
-  overflow: hidden;
-}
-
-.container > div {
-  height: 100%;
-  display: flex;
-  align-items: center;
 }
 </style>
