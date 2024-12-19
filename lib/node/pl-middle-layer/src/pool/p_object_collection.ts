@@ -3,7 +3,7 @@ import { PObject, PObjectId, PObjectSpec, ValueOrError } from '@platforma-sdk/mo
 import { notEmpty } from '@milaboratories/ts-helpers';
 import assert from 'assert';
 import { Writable } from 'utility-types';
-import { deriveLocalPObjectId, deriveUnstablePObjectId } from './data';
+import { deriveLegacyPObjectId, deriveLocalPObjectId } from './data';
 
 /** Represents specific staging or prod ctx data */
 export interface RawPObjectCollection {
@@ -115,7 +115,7 @@ export function parseFinalPObjectCollection(
     if (!data.ok) throw new PlError(data.error);
     collection[outputName] = {
       id: resolvePath.length === 0
-        ? deriveUnstablePObjectId(result.spec, data.value) // for old blocks opened in new desktop
+        ? deriveLegacyPObjectId(result.spec, data.value) // for old blocks opened in new desktop
         : deriveLocalPObjectId(resolvePath, outputName),
       spec: result.spec,
       data: data.value
