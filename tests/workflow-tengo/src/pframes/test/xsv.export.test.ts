@@ -135,7 +135,7 @@ tplTest.for([
   // Also, because of tests execution nature in CI (when we several parallel test threads each creating large resource tree)
   // it shares Platforma Backend performance with other massive parallel tests, making overall test time large even when actual
   // execution takes 1-2 seconds at most.
-  { timeout: 300000 },
+  { timeout: 30000 },
   async ({ partitionKeyLength, storageFormat }, { helper, expect, driverKit }) => {
     var spec = baseSpec;
     spec.partitionKeyLength = partitionKeyLength;
@@ -249,7 +249,7 @@ tplTest.for([
   { superPartitionKeyLength: 1, partitionKeyLength: 1, storageFormat: 'Json' }
 ])(
   'should export super-partitioned p-frame to csv file - superPartitionKeyLength: $superPartitionKeyLength, partitionKeyLength: $partitionKeyLength',
-  { timeout: 300000 },
+  { timeout: 30000 },
   async (
     { superPartitionKeyLength, partitionKeyLength, storageFormat },
     { helper, expect, driverKit }
