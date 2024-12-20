@@ -1131,6 +1131,7 @@ createJsonResource = func(value) {
 	// value = ll.ensureNonStrict(value)
 
 	encoded := json.encode(value)
+
 	return createValueResource(constants.RTYPE_JSON, encoded)
 }
 

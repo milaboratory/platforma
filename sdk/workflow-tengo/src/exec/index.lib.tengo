@@ -15,6 +15,7 @@ enum := import("enum")
 oop := import(":oop")
 validation := import(":validation")
 constants := import(":constants")
+monetization := import(":exec.monetization")
 
 _HEAVY_QUEUE    := "heavy"
 _MEDIUM_QUEUE   := "medium"
@@ -70,6 +71,27 @@ builder := func() {
 	assetDescriptors := {}
 	assetRules := {}
 	assetCache := {}
+
+	mnz := monetization.init()
+
+	/** Gets mnz key from opts or undefined. */
+	_getMnzOption := func(...opts) {
+		if slices.length(opts) < 1 {
+			return undefined
+		}
+		opt := opts[0]["mnz"]
+
+		// readability if: we can return undefined here
+		return is_undefined(opt) ? undefined : opt
+	}
+
+	/** Adds a monetization option if it's defined into mnzFileParams. */
+	_addMnzOption := func(fileName, ...opts) {
+		opt := _getMnzOption(opts...)
+		if !is_undefined(opt) {
+			monetization.addFileParams(mnz, fileName, opt)
+		}
+	}
 
 	stdout := "stdout.txt"
 	stderr := "stderr.txt"
@@ -392,15 +414,24 @@ builder := func() {
 			return self
 		},
 
+		enableMnz: func(productName) {
+			monetization.enable(mnz, productName)
+			return self
+		},
+
 		/**
 		 * Adds a file to the working directory
 		 *
 		 * @param fileName: string - the name of the input file.
 		 * @param file: reference - a resource id of the file or a field that points to it.
 		 */
-		addFile: func(fileName, file) {
+		addFile: func(fileName, file, ...opts) {
+			ll.assert(is_string(fileName), "exec.builder().addFile: fileName must be a string")
+			ll.assert(smart.isReference(file), "exec.builder().addFile: file must be a reference")
+
 			fileName = path.canonize(fileName)
 			filesToAdd[fileName] = file
+			_addMnzOption(fileName, opts...)
 			return self
 		},
 
@@ -409,8 +440,11 @@ builder := func() {
 		 *
 		 * @param filesMap: map[string]reference - a map of file names to files' references.
 		 */
-		addFiles: func(filesMap) {
-			enum.each(filesMap, self.addFile)
+		addFiles: func(filesMap, ...opts) {
+			ll.assert(ll.isMap(filesMap), "exec.builder().addFiles: filesMap must be map of file names to file resources")
+			for fileName, file in filesMap {
+				self.addFile(fileName, file, opts...)
+			}
 			return self
 		},
 
@@ -421,7 +455,7 @@ builder := func() {
 		 * @param data: bytes|reference - a primitive tengo value (map or array) or a reference to
 		 *        a resource from which data we create a file.
 		 */
-		writeFile: func(fileName, data) {
+		writeFile: func(fileName, data, ...opts) {
 			validation.assertJsonSchema(data, ["or",
 				"string",
 				"bytes",
@@ -430,6 +464,7 @@ builder := func() {
 			fileName = path.canonize(fileName)
 
 			filesToWrite[fileName] = data
+			_addMnzOption(fileName, opts...)
 
 			return self
 		},
@@ -585,20 +620,22 @@ builder := func() {
 			ll.assert(entrypointSet,
 				"incomplete command: cmd() or software() must be provided to exec.builder")
 
+			runOptions := {
+				cmd: cmd,
+				args: args,
+				envs: envs,
+				secrets: secrets,
+				queue: queue,
+				stdout: stdout,
+				stderr: stderr,
+				nErrorLines: nErrorLines
+			}
+
 			execInputs := {
 				filesToAdd: smart.createMapResource(filesToAdd),
 				filesToWrite: smart.createMapResource(filesToWriteRefs),
 				dirsToCreate: slices.fromSet(dirsToCreate),
-				runOptions: {
-					cmd: cmd,
-					args: args,
-					envs: envs,
-					secrets: secrets,
-					queue: queue,
-					stdout: stdout,
-					stderr: stderr,
-					nErrorLines: nErrorLines
-				},
+				runOptions: runOptions,
 				filesToSave: slices.fromSet(filesToSave),
 				filesContentToSave: slices.fromSet(filesContentToSave),
 				fileSetsToSave: fileSetsToSave,
@@ -609,6 +646,13 @@ builder := func() {
 				assetDescriptors: assetDescriptors,
 				assetRules: assetRules,
 				assetCache: assetCache
+			}
+
+			// We add monetization only if it's enabled
+			// to not break a deduplication of exec's
+			// that were created before this feature existed.
+			if monetization.shouldRun(mnz) {
+				execInputs.runOptions.monetization = monetization.toJson(mnz)
 			}
 
 			if !is_undefined(soft) {

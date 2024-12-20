@@ -16,6 +16,7 @@ pkg := import(":exec.package")
 runcmd := import(":exec.runcmd")
 python := import(":exec.python")
 R := import(":exec.R")
+validation := import(":validation")
 
 // Variables, substituted in command arguments and environment variable values
 _ARG_VAR_PKG            := "{pkg}"  // abs path to software package
@@ -23,6 +24,7 @@ _ARG_VAR_JAVA           := "{java}" // abs path to 'java' run environment
 _ARG_VAR_PYTHON         := "{python}" // abs path to 'python' run environment
 _ARG_VAR_R              := "{R}" // abs path to 'R' run environment runtime
 _ARG_VAR_R_VENV         := "{rVenv}" // abs path to 'R' portable virtual environment
+_ARG_VAR_MNZ            := "{monetization}" // monetization env value
 
 /**
  * Create new argument marking it as 'with' or 'without' variables inside.
@@ -45,29 +47,20 @@ _newRefVar := func(varName, refName, reference) {
 }
 
 _installSoftware := func(registry, pkgName) {
+	ll.assert(is_string(registry), "exec.internal._installSoftware(): registry is not a string, got: %v", registry, pkgName)
+	ll.assert(is_string(pkgName), "exec.internal._installSoftware(): pkgName is not a string, got: %v", pkgName, registry)
+
 	archive := pkg.get(registry, pkgName).archive()
 	return pkg.install(archive).package()
 }
 
 _directCallOptions := func(runOptions) {
-	cmd := _newArg(false, runOptions.cmd)
-	args := []
-	envs := {}
-
-	for name, arg in runOptions.args {
-		args = append(args, _newArg(false, arg))
-	}
-
-	for name, val in runOptions.envs {
-		envs[name] = _newArg(false, val)
-	}
-
-	return oop.inherit(runOptions, {
+	return ll.toStrict({
 		variables: [],
 		customPaths: [],
-		cmd: cmd,
-		args: args,
-		envs: envs
+		cmd: _newArg(false, runOptions.cmd),
+		args: [],
+		envs: {}
 	})
 }
 
@@ -176,7 +169,7 @@ _loadRunEnvironment := func(operationMode, descriptor, softName, softPackage) {
 /**
  * @param operationMode: 'remote' | 'dev-local'
  */
-_binPackageCallOptions := func(operationMode, runOptions, variables, descriptor, softPackage) {
+_binPackageCallOptions := func(operationMode, softwareName, variables, descriptor, softPackage) {
 	customPaths := []
 	envs := ll.toStrict({})
 	args := []
@@ -185,7 +178,7 @@ _binPackageCallOptions := func(operationMode, runOptions, variables, descriptor,
 	// Real command should be:
 	//   [<runEnv bin>] [<runEnv options>] [<entrypoint bin>] [<entrypoint options>] <cmd> <args>
 	if (maps.containsKey(descriptor, "runEnv")) {
-		runEnvInfo := _loadRunEnvironment(operationMode, descriptor, runOptions.software.name, softPackage)
+		runEnvInfo := _loadRunEnvironment(operationMode, descriptor, softwareName, softPackage)
 
 		runEnvType = runEnvInfo.runEnvType
 		if len(runEnvInfo.variables) > 0 {
@@ -208,15 +201,8 @@ _binPackageCallOptions := func(operationMode, runOptions, variables, descriptor,
 	for arg in splice(descriptor.cmd, 1) {
 		args = append(args, _newArg(true, arg))
 	}
-	for arg in runOptions.args {
-		args = append(args, _newArg(false, arg))
-	}
 
-	for name, val in runOptions.envs {
-		envs[name] = _newArg(false, val)
-	}
-
-	return oop.inherit(runOptions, {
+	return ll.toStrict({
 		runEnvType: runEnvType,
 		variables: variables,
 		customPaths: customPaths,
@@ -226,56 +212,101 @@ _binPackageCallOptions := func(operationMode, runOptions, variables, descriptor,
 	})
 }
 
-_devLocalPackageCallOptions := func(runOptions) {
-	software := runOptions.software
-	localDescriptor := software.descriptor.local
-
+_devLocalPackageCallOptions := func(softwareName, localDescriptor) {
 	softPackage := pkg.use({
 		hash: localDescriptor.hash,
 		path: localDescriptor.path,
-		descriptor: json.encode(ll.fromStrict(software.descriptor)),
+		descriptor: json.encode(ll.fromStrict(localDescriptor)),
 		origin: {
 			registry: "dev-local",
 			url: "file://" + localDescriptor.path,
-			packageName: software.descriptor.name
+			packageName: softwareName
 		}
 	}).package()
 
-	variables := [ _newRefVar(_ARG_VAR_PKG, software.name, softPackage) ]
+	variables := [ _newRefVar(_ARG_VAR_PKG, softwareName, softPackage) ]
 
-	return _binPackageCallOptions("dev-local", runOptions, variables, localDescriptor, softPackage)
+	return _binPackageCallOptions("dev-local", softwareName, variables, localDescriptor, softPackage)
 }
 
-_remotePackageCallOptions := func(runOptions) {
-	software := runOptions.software
-	binaryDescriptor := software.descriptor.binary
+_remotePackageCallOptions := func(softwareName, binaryDescriptor) {
 	softPackage := _installSoftware(binaryDescriptor.registry, binaryDescriptor.package)
 
-	variables := [ _newRefVar(_ARG_VAR_PKG, software.name, softPackage) ]
+	variables := [ _newRefVar(_ARG_VAR_PKG, softwareName, softPackage) ]
 
-	return _binPackageCallOptions("remote", runOptions, variables, binaryDescriptor, softPackage)
+	return _binPackageCallOptions("remote", softwareName, variables, binaryDescriptor, softPackage)
 }
 
-binaryRunOptions := func(runOptions) {
+/** Turns a given software to a list of options that needs to be passed to run cmd builder.
+ * Creates resources to install a software
+ * and runs R or Python env builder templates
+ * if it's necessary. */
+swToRunCmdOptions := func(softwareName, softwareVersion, softwareDescriptor) {
+	ll.assert(is_string(softwareName),
+		"exec.internal.swToRunCmdOptions: software name must be a string, got %v", softwareName)
+	ll.assert(is_string(softwareVersion),
+		"exec.internal.swToRunCmdOptions: software version must be a string, got %v", softwareVersion)
+	validation.assertJsonSchema(softwareDescriptor, pkg.descriptorScheme,
+		"exec.internal.swToRunCmdOptions: descriptor does not fit schema")
+
+	result := undefined
+	if maps.containsKey(softwareDescriptor, "local") {
+		result = _devLocalPackageCallOptions(softwareName, softwareDescriptor.local)
+	} else if maps.containsKey(softwareDescriptor, "binary") {
+		result = _remotePackageCallOptions(softwareName, softwareDescriptor.binary)
+	} else {
+		ll.panic(
+			"Unable to run software %s v%s: 'binary' execution mode is not enabled in software descriptor",
+			softwareName, softwareVersion)
+	}
+
+	// Clone result fields explicitly here
+	// just to have a gist of what the function returns.
+	return ll.toStrict({
+		runEnvType: result.runEnvType,
+		variables: result.variables,
+		customPaths: result.customPaths,
+		cmd: result.cmd,
+		args: result.args,
+		envs: result.envs
+	})
+}
+
+binaryRunOptions := func(runOptions, mnzEnvs) {
+	validation.assertJsonSchema(mnzEnvs, {"any": validation.reference})
+
+	runCmdOpts := undefined
 	if (is_undefined(ll.fromStrict(runOptions).software)) {
 		//
 		// Simple local command run, no software packages involved (backward compatibility)
 		//
-		return _directCallOptions(runOptions)
+		runCmdOpts = _directCallOptions(runOptions)
+	} else {
+		software := runOptions.software
+		descriptor := software.descriptor
+
+		runCmdOpts = swToRunCmdOptions(software.name, software.version, descriptor)
 	}
 
-	software := runOptions.software
-	descriptor := software.descriptor
-
-	if (maps.containsKey(descriptor, "local")) {
-		return _devLocalPackageCallOptions(runOptions)
+	// adds exec builder's defined options from run options.
+	for arg in runOptions.args {
+		runCmdOpts.args = append(runCmdOpts.args, _newArg(false, arg))
+	}
+	for name, val in runOptions.envs {
+		runCmdOpts.envs[name] = _newArg(false, val)
 	}
 
-	if (maps.containsKey(descriptor, "binary")) {
-		return _remotePackageCallOptions(runOptions)
+	for name, val in mnzEnvs { // can be empty
+		// if it's not empty, then we create an env that has
+		// a result of monetization client.
+		runCmdOpts.envs[name] = _newArg(true, _ARG_VAR_MNZ)
+
+		runCmdOpts.variables = append(runCmdOpts.variables,
+			_newRefVar(_ARG_VAR_MNZ, "monetization", val))
 	}
 
-	ll.panic("Unable to run software %s v%s: 'binary' execution mode is not enabled in software descriptor", software.name, software.version)
+
+	return oop.inherit(runOptions, ll.fromStrict(runCmdOpts))
 }
 
 prepareCommandRun := func(wd, opts) {
@@ -328,6 +359,7 @@ prepareWDForRunEnvironment := func(wd, opts) {
 }
 
 export {
+	swToRunCmdOptions           : swToRunCmdOptions,
 	binaryRunOptions			: binaryRunOptions,
 
 	prepareWDForRunEnvironment	: prepareWDForRunEnvironment,
