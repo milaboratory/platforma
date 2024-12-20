@@ -12,7 +12,7 @@ const props = withDefaults(defineProps<PlProgressCellProps>(), {
   error: '',
 });
 
-const canShowWhiteBg = computed(() => props.stage === 'not_started');
+const canShowWhiteBg = computed(() => props.stage !== 'not_started');
 
 const currentProgress = computed(() => props.stage === 'done' ? 100 : Math.min(100, props.progress || 0));
 
