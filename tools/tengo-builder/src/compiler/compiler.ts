@@ -1,5 +1,5 @@
 import { ArtifactSource } from './source';
-import { Template, TemplateData } from './template';
+import { Template } from './template';
 import {
   TypedArtifactName,
   fullNameToString,
@@ -11,6 +11,7 @@ import {
 import { ArtifactStore } from './artifactset';
 import { assertNever } from './util';
 import { applyLibraryCompilerOptions, applyTemplateCompilerOptions } from './compileroptions';
+import { TemplateData } from '@milaboratories/pl-model-backend';
 
 export interface TemplatesAndLibs {
   templates: Template[],

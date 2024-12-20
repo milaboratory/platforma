@@ -16,7 +16,7 @@ export default class Sign extends Command {
     ...cmdOpts.VersionFlag,
 
     ...cmdOpts.ArchiveFlag,
-    ...cmdOpts.SignFlags
+    ...cmdOpts.SignFlags,
   };
 
   public async run(): Promise<void> {
@@ -29,11 +29,11 @@ export default class Sign extends Command {
     core.targetPlatform = flags.platform as util.PlatformType;
     core.allPlatforms = flags['all-platforms'];
 
-    core.signPackages({
+    await core.signPackages({
       ids: flags['package-id'],
 
       archivePath: flags.archive,
-      signCommand: flags['sign-command']
+      signCommand: flags['sign-command'],
     });
   }
 }

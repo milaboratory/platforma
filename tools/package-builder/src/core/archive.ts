@@ -1,7 +1,7 @@
-import fs from 'fs';
-import path from 'path';
-import * as winston from 'winston';
-import * as util from './util';
+import fs from 'node:fs';
+import path from 'node:path';
+import type * as winston from 'winston';
+import type * as util from './util';
 import * as archiver from 'archiver';
 
 const tarArchiveType = 'tgz';
@@ -26,24 +26,24 @@ export function getPath(options: archiveOptions): string {
   if (options && !options.crossplatform) {
     return path.resolve(
       options.packageRoot,
-      `pkg-${packageName}-${options.packageVersion}-${options.os}-${options.arch}.${options.ext}`
+      `pkg-${packageName}-${options.packageVersion}-${options.os}-${options.arch}.${options.ext}`,
     );
   }
 
   return path.resolve(
     options.packageRoot,
-    `pkg-${packageName}-${options.packageVersion}.${options.ext}`
+    `pkg-${packageName}-${options.packageVersion}.${options.ext}`,
   );
 }
 
 export async function create(
   logger: winston.Logger,
   contentRoot: string,
-  dstArchivePath: string
+  dstArchivePath: string,
 ): Promise<void> {
   const compressionLevel = 9;
 
-  var format = '';
+  let format = '';
   if (dstArchivePath.endsWith('.tgz') || dstArchivePath.endsWith('.tar.gz')) {
     format = 'tar';
   }
@@ -53,7 +53,7 @@ export async function create(
 
   if (format == '') {
     throw new Error(
-      `Archive ${dstArchivePath} has unsupported extension. Cannot create archive of unknown format`
+      `Archive ${dstArchivePath} has unsupported extension. Cannot create archive of unknown format`,
     );
   }
 
@@ -61,7 +61,7 @@ export async function create(
   const a = archiver.create(format, {
     gzip: true,
     gzipOptions: { level: compressionLevel },
-    zlib: { level: compressionLevel }
+    zlib: { level: compressionLevel },
   });
 
   return new Promise((resolve, reject) => {
@@ -83,6 +83,6 @@ export async function create(
     a.directory(contentRoot, false);
 
     // Finalize the archive (i.e. we are done appending files but streams have to finish yet)
-    a.finalize();
+    a.finalize().catch(reject);
   });
 }

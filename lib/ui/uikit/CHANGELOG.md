@@ -1,5 +1,36 @@
 # @milaboratories/uikit
 
+## 2.2.39
+
+### Patch Changes
+
+- 32f7bf7: TabOption exported
+
+## 2.2.38
+
+### Patch Changes
+
+- 28b2b5c: [sdk/ui-vue] Proportion box with legend (standalone)
+- 0cce397: Add the first implementation of the PlChartStackedBar component
+
+## 2.2.37
+
+### Patch Changes
+
+- 54cdf0f: added scroll support for sortable
+
+## 2.2.36
+
+### Patch Changes
+
+- 4208dcf: added PlLoaderCircular
+
+## 2.2.35
+
+### Patch Changes
+
+- 22685b6: uikit: forbid text wrapping in PlBtnGroup options
+
 ## 2.2.34
 
 ### Patch Changes

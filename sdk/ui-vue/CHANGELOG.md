@@ -1,5 +1,81 @@
 # @platforma-sdk/ui-vue
 
+## 1.20.28
+
+### Patch Changes
+
+- 7a235ba: Ag Grid version update
+
+## 1.20.27
+
+### Patch Changes
+
+- f48b25e: Prioritize "desc" sorting in PlAgDataTable
+- 354291e: Minor improvements for row selection in PlAgDataTable
+- Updated dependencies [079f50e]
+- Updated dependencies [32f7bf7]
+  - @platforma-sdk/model@1.20.27
+  - @milaboratories/uikit@2.2.39
+
+## 1.20.24
+
+### Patch Changes
+
+- Updated dependencies [8043f5d]
+  - @platforma-sdk/model@1.20.24
+  - @milaboratories/uikit@2.2.38
+
+## 1.20.23
+
+### Patch Changes
+
+- 28b2b5c: [sdk/ui-vue] Proportion box with legend (standalone)
+- 0cce397: Add the first implementation of the PlChartStackedBar component
+- Updated dependencies [28b2b5c]
+- Updated dependencies [0cce397]
+  - @milaboratories/uikit@2.2.38
+
+## 1.20.21
+
+### Patch Changes
+
+- 54cdf0f: added scroll support for sortable
+- Updated dependencies [54cdf0f]
+  - @milaboratories/uikit@2.2.37
+
+## 1.20.19
+
+### Patch Changes
+
+- 4208dcf: added PlLoaderCircular
+- Updated dependencies [4208dcf]
+  - @milaboratories/uikit@2.2.36
+
+## 1.20.17
+
+### Patch Changes
+
+- e654872: PlAgDataTable row butting click type fix
+
+## 1.20.16
+
+### Patch Changes
+
+- 52b19cf: added cellButtonClicked event
+
+## 1.20.15
+
+### Patch Changes
+
+- 7f72aa4: Ag Grid major version upgrade
+
+## 1.20.14
+
+### Patch Changes
+
+- Updated dependencies [22685b6]
+  - @milaboratories/uikit@2.2.35
+
 ## 1.20.13
 
 ### Patch Changes

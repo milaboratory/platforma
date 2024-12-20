@@ -1,9 +1,18 @@
-import type { ColDef, IServerSideDatasource, RowModelType } from '@ag-grid-community/core';
-import type { AxisSpec, PColumnSpec, PTableColumnSpec, PTableShape, PTableVector, PVectorDataString } from '@platforma-sdk/model';
-import { getAxisId } from '@platforma-sdk/model';
+import type { ColDef, IServerSideDatasource, RowModelType } from 'ag-grid-enterprise';
+import type {
+  AxisSpec,
+  PColumnSpec,
+  PTableColumnSpec,
+  PTableShape,
+  PTableValue,
+  PTableVector,
+  PVectorDataString,
+} from '@platforma-sdk/model';
+import { getAxisId, pTableValue } from '@platforma-sdk/model';
 import canonicalize from 'canonicalize';
 import * as lodash from 'lodash';
 import { defaultValueFormatter } from './table-source';
+import type { PlAgDataTableRow } from '../types';
 
 type HeterogeneousColumnInfo = {
   /**
@@ -57,7 +66,7 @@ export function getHeterogeneousColumns(specs: PTableColumnSpec[], indices: numb
 }
 
 // auxiliary function to get a field for i-th axis-value
-const hColumnField = (originalLength: number, i: number) => 'hC' + (originalLength + i).toString();
+const hColumnField = (originalLength: number, i: number): `hC${number}` => `hC${originalLength + i}`;
 
 /**
  * Calculate GridOptions for p-table data source type
@@ -80,7 +89,7 @@ export function updatePFrameGridOptionsHeterogeneousAxes(
     columnDefs: ColDef[];
     serverSideDatasource?: IServerSideDatasource;
     rowModelType: RowModelType;
-    rowData?: unknown[];
+    rowData?: PlAgDataTableRow[];
   } {
   // recalculate indices of h-cols to the positions in the resulting data
   // index of axis & column in indices array
@@ -150,47 +159,29 @@ function calculateRowData(
   columnIdx: number,
   hAxisValues: string[],
   nRows: number,
-): unknown[] {
-  // do not use `any` please
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const uniqueRowsMap: Map<string, Record<string, any>> = new Map();
-
-  // transposed iRow
-  let iRowT = 0;
+): PlAgDataTableRow[] {
+  const uniqueRowsMap = new Map<string, PlAgDataTableRow>();
   for (let iRow = 0; iRow < nRows; iRow++) {
-    // do not use `any` please
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const rowPart: Record<string, any> = {};
-
+    const rowPart: { [field: `${number}`]: PTableValue } = {};
     for (let iCol = 0; iCol < data.length; ++iCol) {
       if (iCol === axisIdx || iCol === columnIdx) continue;
-      const field = fields[iCol].toString();
-      rowPart[field] = data[iCol].data[iRow];
+      const field = fields[iCol].toString() as `${number}`;
+      rowPart[field] = pTableValue(data[iCol], iRow);
     }
 
-    // do not use `any` please
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let row: Record<string, any>;
+    let row: PlAgDataTableRow;
     const id = canonicalize(Object.values(rowPart)) ?? '';
     if (!uniqueRowsMap.has(id)) {
-      uniqueRowsMap.set(id, rowPart);
-      row = rowPart;
-      row['id'] = iRowT.toString();
-      iRowT++;
+      row = { id: uniqueRowsMap.size.toString(), ...rowPart };
+      uniqueRowsMap.set(id, row);
     } else {
       row = uniqueRowsMap.get(id)!;
     }
 
     const idx = hAxisValues.indexOf(data[axisIdx].data[iRow] as string);
-    if (idx === -1) {
-      throw Error('index not found');
-    }
-
+    if (idx === -1) throw Error('index not found');
     const field = hColumnField(data.length, idx);
-    row[field] = data[columnIdx].data[iRow];
+    row[field] = pTableValue(data[columnIdx], iRow);
   }
-
-  const result = Array.from(uniqueRowsMap.values());
-
-  return result;
+  return [...uniqueRowsMap.values()];
 }

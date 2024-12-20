@@ -1,5 +1,68 @@
 # @milaboratories/pl-middle-layer
 
+## 1.23.2
+
+### Patch Changes
+
+- 5bf3799: Additional logging for PFrames driver
+- Updated dependencies [079f50e]
+- Updated dependencies [079f50e]
+- Updated dependencies [079f50e]
+  - @platforma-sdk/model@1.20.27
+  - @milaboratories/pl-model-common@1.10.2
+  - @platforma-sdk/workflow-tengo@2.8.6
+  - @milaboratories/pl-model-middle-layer@1.6.9
+  - @milaboratories/pl-drivers@1.5.6
+  - @platforma-sdk/block-tools@2.5.1
+
+## 1.23.1
+
+### Patch Changes
+
+- Updated dependencies [95bdff7]
+  - @milaboratories/pl-local@1.10.0
+
+## 1.23.0
+
+### Minor Changes
+
+- 87790da: Middle layer now renders template tree on its own instead of uploading template pack to the server
+
+### Patch Changes
+
+- Updated dependencies [87790da]
+  - @milaboratories/pl-model-backend@1.0.1
+  - @platforma-sdk/workflow-tengo@2.8.5
+
+## 1.22.6
+
+### Patch Changes
+
+- 7942c42: PObjectId schema change
+- Updated dependencies [8043f5d]
+  - @platforma-sdk/model@1.20.24
+
+## 1.22.5
+
+### Patch Changes
+
+- Updated dependencies [f2899c9]
+  - @platforma-sdk/workflow-tengo@2.8.5
+
+## 1.22.4
+
+### Patch Changes
+
+- Updated dependencies [95d7801]
+  - @milaboratories/pl-drivers@1.5.5
+
+## 1.22.3
+
+### Patch Changes
+
+- Updated dependencies [345d088]
+  - @platforma-sdk/workflow-tengo@2.8.4
+
 ## 1.22.2
 
 ### Patch Changes

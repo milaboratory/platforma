@@ -5,6 +5,7 @@ packages:
 
   - lib/model/common
   - lib/model/middle-layer
+  - lib/model/backend
 
   - lib/node/ts-helpers
   - lib/node/ts-helpers-oclif
@@ -179,27 +180,13 @@ catalog:
   'vitepress': '1.5.0'
   'highlight.js': '11.10.0'
 
-  '@ag-grid-community/core': &ag-grid ^32.3.3
-  '@ag-grid-community/client-side-row-model': *ag-grid
-  '@ag-grid-community/infinite-row-model': *ag-grid
-  '@ag-grid-enterprise/server-side-row-model': *ag-grid
-  '@ag-grid-community/styles': *ag-grid
-  '@ag-grid-community/vue3': *ag-grid
-  '@ag-grid-community/csv-export': *ag-grid
-  '@ag-grid-enterprise/core': *ag-grid
-  '@ag-grid-enterprise/rich-select': *ag-grid
-  '@ag-grid-enterprise/menu': *ag-grid
-  '@ag-grid-enterprise/excel-export': *ag-grid
-  '@ag-grid-enterprise/clipboard': *ag-grid
-  '@ag-grid-enterprise/range-selection': *ag-grid
-  '@ag-grid-community/theming': *ag-grid
-  '@ag-grid-enterprise/side-bar': *ag-grid
-  '@ag-grid-enterprise/column-tool-panel': *ag-grid
+  'ag-grid-enterprise': &ag-grid ^33.0.3
+  'ag-grid-vue3': *ag-grid
 
   # SW
 
   '@milaboratories/software-pframes-conv': *pframes-version
-  '@platforma-open/milaboratories.software-small-binaries': ^1.15.0
+  '@platforma-open/milaboratories.software-small-binaries': ^1.15.4
 
   # Test
 

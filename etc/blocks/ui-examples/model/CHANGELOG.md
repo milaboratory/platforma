@@ -1,5 +1,26 @@
 # @milaboratories/milaboratories.ui-examples.model
 
+## 1.1.7
+
+### Patch Changes
+
+- Updated dependencies [079f50e]
+  - @platforma-sdk/model@1.20.27
+
+## 1.1.6
+
+### Patch Changes
+
+- Updated dependencies [8043f5d]
+  - @platforma-sdk/model@1.20.24
+
+## 1.1.5
+
+### Patch Changes
+
+- 28b2b5c: [sdk/ui-vue] Proportion box with legend (standalone)
+- 0cce397: Add the first implementation of the PlChartStackedBar component
+
 ## 1.1.4
 
 ### Patch Changes

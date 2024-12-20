@@ -1,12 +1,14 @@
-import { AnyRef, field, Pl, PlTransaction, ResourceType } from '@milaboratories/pl-client';
+import type { AnyRef, PlTransaction, ResourceType } from '@milaboratories/pl-client';
+import { field, Pl } from '@milaboratories/pl-client';
 import fs from 'node:fs';
-import {
+import type {
   ExplicitTemplate,
   TemplateFromRegistry,
   TemplateSpecAny,
-  TemplateSpecPrepared
+  TemplateSpecPrepared,
 } from '../../model/template_spec';
 import { assertNever } from '@milaboratories/ts-helpers';
+import { loadTemplateFromExplicitDirect } from './direct_template_loader';
 
 //
 // Resource schema
@@ -20,7 +22,7 @@ export const TengoTemplateGetTemplate = 'template';
 export const TengoTemplatePack: ResourceType = { name: 'TengoTemplatePack', version: '1' };
 export const TengoTemplatePackConvert: ResourceType = {
   name: 'TengoTemplatePackConvert',
-  version: '1'
+  version: '1',
 };
 export const TengoTemplatePackConvertTemplatePack = 'templatePack';
 export const TengoTemplatePackConvertTemplate = 'template';
@@ -30,7 +32,7 @@ export async function prepareTemplateSpec(tpl: TemplateSpecAny): Promise<Templat
     case 'from-file':
       return {
         type: 'explicit',
-        content: await fs.promises.readFile(tpl.path)
+        content: await fs.promises.readFile(tpl.path),
       };
     case 'from-registry':
     case 'explicit':
@@ -70,7 +72,8 @@ export function loadTemplate(tx: PlTransaction, spec: TemplateSpecPrepared): Any
     case 'from-registry':
       return loadTemplateFromRegistry(tx, spec);
     case 'explicit':
-      return loadTemplateFromExplicit(tx, spec);
+      return loadTemplateFromExplicitDirect(tx, spec);
+      // return loadTemplateFromExplicit(tx, spec);
     default:
       return assertNever(spec);
   }

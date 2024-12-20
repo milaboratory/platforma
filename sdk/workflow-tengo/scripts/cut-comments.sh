@@ -13,10 +13,10 @@ drop-comments() {
     awk '
         BEGIN { in_comment = 0 }
 
-         /^\s*\/\*/ { in_comment = 1 }                               # Start of comment block
-             /\*\// { if (in_comment) { in_comment = 0; next } }     # End of comment block
-        !in_comment && !/^[ \t]*\/\// { sub(/^[ \t]+/, ""); print }  # Print lines that are not within comment blocks
-         in_comment { printf "\n" }                                  # Print empty lines instead of comments to keep lines numbering
+         /^\s*\/\*/ { in_comment = 1 }                                          # Start of comment block
+             /\*\// { if (in_comment) { in_comment = 0; printf "\n"; next } }   # End of comment block
+        !in_comment && !/^[ \t]*\/\// { sub(/^[ \t]+/, ""); print }             # Print lines that are not within comment blocks
+         in_comment || /^[ \t]*\/\// { printf "\n" }                            # Print empty lines instead of comments to keep lines numbering
     '
 }
 
@@ -47,8 +47,8 @@ if [ "${operation_mode}" = "compact" ]; then
     fi
 
     bkp_suffix=$(random)
-    rsync -a ./src/ "./src.${bkp_suffix}"
-    echo "${bkp_suffix}" >./src/.compacted
+    rsync -a ./src/ "./src.orig.${bkp_suffix}"
+    echo "$(realpath "./src.orig.${bkp_suffix}")" >./src/.compacted
 
     echo "$0: removing comments and indentation from tengo sources to make them more compact..."
     while read -r file; do
@@ -64,8 +64,8 @@ elif [ "${operation_mode}" = "restore" ]; then
         exit 0
     fi
 
-    bkp_suffix=$(cat ./src/.compacted)
+    bkp_path=$(cat ./src/.compacted)
 
     rm -r ./src
-    mv "./src.${bkp_suffix}" ./src
+    mv "${bkp_path}" ./src
 fi

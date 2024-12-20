@@ -1,9 +1,9 @@
 import { PlError, PlTreeNodeAccessor } from '@milaboratories/pl-tree';
-import { PObject, PObjectSpec, ValueOrError } from '@platforma-sdk/model';
+import { PObject, PObjectId, PObjectSpec, ValueOrError } from '@platforma-sdk/model';
 import { notEmpty } from '@milaboratories/ts-helpers';
 import assert from 'assert';
 import { Writable } from 'utility-types';
-import { derivePObjectId } from './data';
+import { deriveLegacyPObjectId, deriveLocalPObjectId } from './data';
 
 /** Represents specific staging or prod ctx data */
 export interface RawPObjectCollection {
@@ -99,21 +99,24 @@ export function parseRawPObjectCollection(
 export function parseFinalPObjectCollection(
   node: PlTreeNodeAccessor,
   errorOnUnknownField: boolean = true,
-  prefix: string = ''
+  prefix: string = '',
+  resolvePath: string[],
 ): Record<string, PObject<PlTreeNodeAccessor>> {
   if (!node.getIsReadyOrError()) throw new Error('resource is not ready');
   const rawCollection = parseRawPObjectCollection(node, errorOnUnknownField, false, prefix);
   assert(rawCollection.locked);
   const collection: Record<string, PObject<PlTreeNodeAccessor>> = {};
-  for (const [exportName, result] of rawCollection.results) {
-    if (result.spec === undefined) throw new Error(`no spec for key ${exportName}`);
+  for (const [outputName, result] of rawCollection.results) {
+    if (result.spec === undefined) throw new Error(`no spec for key ${outputName}`);
     if (result.hasData !== true || result.data === undefined)
-      throw new Error(`no data for key ${exportName}`);
+      throw new Error(`no data for key ${outputName}`);
     const data = result.data();
-    if (data === undefined) throw new Error(`no data for key ${exportName}`);
+    if (data === undefined) throw new Error(`no data for key ${outputName}`);
     if (!data.ok) throw new PlError(data.error);
-    collection[exportName] = {
-      id: derivePObjectId(result.spec, data.value),
+    collection[outputName] = {
+      id: resolvePath.length === 0
+        ? deriveLegacyPObjectId(result.spec, data.value) // for old blocks opened in new desktop
+        : deriveLocalPObjectId(resolvePath, outputName),
       spec: result.spec,
       data: data.value
     };

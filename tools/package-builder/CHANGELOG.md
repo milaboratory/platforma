@@ -1,5 +1,29 @@
 # @platforma-sdk/package-builder
 
+## 2.14.2
+
+### Patch Changes
+
+- 0d34428: publish packages by default, not descriptors
+
+## 2.14.1
+
+### Patch Changes
+
+- f8e40c7: Do not try to load list of entrypoints from absent directories
+
+## 2.14.0
+
+### Minor Changes
+
+- ec3a952: Skip existing packages reupload by default
+
+## 2.13.0
+
+### Minor Changes
+
+- a1b295e: Entrypoint references support: now entrypoint catalogues are made easier
+
 ## 2.12.0
 
 ### Minor Changes

@@ -1,5 +1,11 @@
 # @milaboratories/pl-local
 
+## 1.10.0
+
+### Minor Changes
+
+- 95bdff7: Use pl=1.18.0 as default version in Desktop app and pl-bootstrap
+
 ## 1.9.1
 
 ### Patch Changes

@@ -1,4 +1,4 @@
-import { Command, Flags } from '@oclif/core';
+import { Command } from '@oclif/core';
 import * as cmdOpts from '../../../core/cmd-opts';
 import * as util from '../../../core/util';
 import { Core } from '../../../core/core';
@@ -12,7 +12,7 @@ export default class Name extends Command {
     ...cmdOpts.GlobalFlags,
     ...cmdOpts.PlatformFlags,
 
-    ...cmdOpts.PackageIDRequiredFlag
+    ...cmdOpts.PackageIDRequiredFlag,
   };
 
   static strict: boolean = false;

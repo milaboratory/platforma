@@ -1,5 +1,11 @@
 # @platforma-sdk/oclif-index
 
+## 1.1.1
+
+### Patch Changes
+
+- 51625f1: Make list of exported commands to end with comma
+
 ## 1.1.0
 
 ### Minor Changes

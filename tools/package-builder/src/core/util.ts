@@ -1,13 +1,14 @@
-import * as path from 'path';
-import * as os from 'os';
-import fs from 'fs';
-import { createHash, Hash } from 'crypto';
+import * as path from 'node:path';
+import * as os from 'node:os';
+import fs from 'node:fs';
+import type { Hash } from 'node:crypto';
+import { createHash } from 'node:crypto';
 import winston from 'winston';
 
 export const packageJsonName = 'package.json';
 export const softwareConfigName = 'package.json';
 
-export function assertNever(a: never) {
+export function assertNever(_a: never) {
   throw new Error('code logic error: assertNever() call');
 }
 
@@ -29,7 +30,7 @@ export function hashDirMetaSync(folder: string, hasher?: Hash): Hash {
   const hash = hasher ? hasher : createHash('sha256');
   const info = fs.readdirSync(folder, { withFileTypes: true });
 
-  for (let item of info) {
+  for (const item of info) {
     const fullPath = path.join(folder, item.name);
 
     if (item.isFile()) {
@@ -50,7 +51,7 @@ export function hashDirSync(rootDir: string, hasher?: Hash, subdir?: string): Ha
 
   const info = fs.readdirSync(folder, { withFileTypes: true });
 
-  for (let item of info) {
+  for (const item of info) {
     const relPath = path.join(subdir ?? '.', item.name);
     const fullPath = path.join(folder, item.name);
 
@@ -111,14 +112,14 @@ export function findNodeModules(logger: winston.Logger, startPath?: string): str
 export function findInstalledModule(
   logger: winston.Logger,
   packageName: string,
-  startPath?: string
+  startPath?: string,
 ): string {
   const nodeModules = findNodeModules(logger, startPath);
   const packagePath = path.resolve(nodeModules, packageName);
 
   if (!fs.existsSync(packagePath)) {
     throw new Error(
-      `package '${packageName}' not found in '${nodeModules}'. Did you forget to add it as a dependency?`
+      `package '${packageName}' not found in '${nodeModules}'. Did you forget to add it as a dependency?`,
     );
   }
 
@@ -135,7 +136,7 @@ function searchPathUp(startPath: string, pathToCheck: string, itemToCheck: strin
   const parentDir = path.dirname(pathToCheck);
   if (parentDir === pathToCheck || pathToCheck === '') {
     throw new Error(
-      `failed to find '${itemToCheck}' file in any of parent directories starting from '${startPath}'`
+      `failed to find '${itemToCheck}' file in any of parent directories starting from '${startPath}'`,
     );
   }
 
@@ -165,9 +166,9 @@ export function createLogger(level: string = 'debug'): winston.Logger {
     transports: [
       new winston.transports.Console({
         stderrLevels: ['error', 'warn', 'info', 'debug'],
-        handleExceptions: true
-      })
-    ]
+        handleExceptions: true,
+      }),
+    ],
   });
 }
 
@@ -192,6 +193,7 @@ export function urlJoin(url: string, appendPath: string): string {
   return u.toString();
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function wrapErr(e: any, msg: string): any {
   if (!(e instanceof Error)) {
     return e;
@@ -212,6 +214,7 @@ export function wrapErr(e: any, msg: string): any {
  * @param input: any
  * @returns number - '1' or '0'
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function toInt(input: any): number {
   return input ? 1 : 0;
 }
@@ -230,8 +233,8 @@ export function currentOS(): OSType {
       return 'windows';
     default:
       throw new Error(
-        `operating system '${platform}' is not currently supported by Platforma ecosystem. The list of OSes supported: ` +
-          JSON.stringify(OSes)
+        `operating system '${platform}' is not currently supported by Platforma ecosystem. The list of OSes supported: `
+        + JSON.stringify(OSes),
       );
   }
 }
@@ -248,8 +251,8 @@ export function currentArch(): ArchType {
       return 'x64';
     default:
       throw new Error(
-        `processor architecture '${arch}' is not currently supported by Platforma ecosystem. The list of architectures supported: ` +
-          JSON.stringify(Arches)
+        `processor architecture '${arch}' is not currently supported by Platforma ecosystem. The list of architectures supported: `
+        + JSON.stringify(Arches),
       );
   }
 }
@@ -260,7 +263,7 @@ export const AllPlatforms: `${OSType}-${ArchType}`[] = [
   'linux-aarch64',
   'macosx-x64',
   'macosx-aarch64',
-  'windows-x64'
+  'windows-x64',
 ] as const;
 export type PlatformType = (typeof AllPlatforms)[number];
 
@@ -269,7 +272,7 @@ export function splitPlatform(platform: PlatformType): { os: OSType; arch: ArchT
 
   return {
     os: parts[0] as OSType,
-    arch: parts[1] as ArchType
+    arch: parts[1] as ArchType,
   };
 }
 
@@ -295,12 +298,12 @@ export function artifactIDFromString(s: string): artifactID {
   const parts = s.split(':', 2);
   if (parts.length < 2) {
     throw new Error(
-      `string '${s}' is not an artifact ID (artifact ID format is <packageName>:<artifactName>)`
+      `string '${s}' is not an artifact ID (artifact ID format is <packageName>:<artifactName>)`,
     );
   }
   return {
     package: parts[0],
-    name: parts[1]
+    name: parts[1],
   };
 }
 

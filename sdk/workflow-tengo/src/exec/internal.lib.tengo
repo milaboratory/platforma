@@ -177,10 +177,11 @@ _loadRRunEnvironment := func(operationMode, descriptor, softName, softPkg) {
 		variables: [ rRefVar, rEnvRefVar ],
 		customPaths: [ _newArg(false, rBinDir) ],
 		envs: {
-			"R_HOME_DIR": _newArg(false, _expr(_ARG_VAR_R)),
-			"RENV_PATHS_ROOT": _newArg(false, path.join(_expr(_ARG_VAR_R), "renv-root")),
-			"RENV_PATHS_RENV": _newArg(false, path.join(_expr(_ARG_VAR_R_VENV), "renv")),
-			"RENV_PATHS_LOCKFILE": _newArg(false, path.join(_expr(_ARG_VAR_PKG), descriptor.dependencies.lockFile)),
+			"R_HOME_DIR": _newArg(false, _ARG_VAR_R),
+			"RHOME": _newArg(false, _ARG_VAR_R),
+			"RENV_PATHS_ROOT": _newArg(false, path.join(_ARG_VAR_R, "renv-root")),
+			"RENV_PATHS_RENV": _newArg(false, path.join(_ARG_VAR_R_VENV, "renv")),
+			"RENV_PATHS_LOCKFILE": _newArg(false, path.join(_ARG_VAR_PKG, descriptor.dependencies.lockFile)),
 			"RENV_CONFIG_AUTO_SNAPSHOT": _newArg(true, "FALSE"),
 			"RENV_CONFIG_SYNCHRONIZED_CHECK": _newArg(true, "FALSE")
 		}
