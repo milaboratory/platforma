@@ -21,7 +21,7 @@ runRBuilder := func(wd, rPackage, rDescriptor) {
 		substitutionRule("R", "r-run-environment").
 		addToPath(constants.ARG_TYPE_EXPRESSION, path.join("{R}", rDescriptor.binDir)).
 		envExpression("R_HOME_DIR", "{R}").
-		envVar("RHOME", "{R}").
+		envExpression("RHOME", "{R}").
 		envExpression("RENV_PATHS_ROOT", path.join("{R}", "renv-root"))
 }
 
