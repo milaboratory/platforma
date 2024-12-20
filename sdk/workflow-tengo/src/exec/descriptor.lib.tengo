@@ -16,7 +16,7 @@ binaryScheme := {
 	package: "string",
 	cmd: ["string"], // deprecated, remove after 15 Mar 2025
 	command: ["string"],
-	runEnv: runEnvScheme
+	"runEnv,?": runEnvScheme
 }
 
 assetScheme := {

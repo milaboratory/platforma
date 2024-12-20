@@ -27,7 +27,6 @@ _unmarshal := func(resource, preprocessors) {
 
 	// instance of this
 	self := func(resource) { return _unmarshal(resource, preprocessors) }
-
 	// try preprocessors first
 	for preproc in preprocessors {
 		if preproc.canParse(resource) {
