@@ -1,0 +1,17 @@
+/** A pure template that gets a resource's data of monetization as bytes,
+ * trims new lines, converts it to a string
+ * and creates a json/object value resource from it. */
+
+self := import(":tpl")
+text := import("text")
+
+self.defineOutputs("jsonedData")
+
+self.body(func(inputs) {
+	data := inputs.resource.getData()
+	trimmed := text.trim(string(data), "\n \r\t")
+
+	return {
+		jsonedData: trimmed
+	}
+})

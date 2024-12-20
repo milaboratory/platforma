@@ -25,6 +25,7 @@ _ARG_VAR_JAVA           := "java" // abs path to 'java' run environment
 _ARG_VAR_PYTHON         := "python" // abs path to 'python' run environment
 _ARG_VAR_R              := "R" // abs path to 'R' run environment runtime
 _ARG_VAR_R_VENV         := "rVenv" // abs path to 'R' portable virtual environment
+_ARG_VAR_MNZ            := "monetization" // monetization env value
 
 /** Converts the args above to the expressions. */
 _expr := func(varName) {
@@ -75,11 +76,15 @@ _newRefVar := func(varName, refName, reference) {
 }
 
 _installSoftware := func(registry, pkgName) {
+	ll.assert(is_string(registry), "exec.internal._installSoftware(): registry is not a string, got: %v", registry, pkgName)
+	ll.assert(is_string(pkgName), "exec.internal._installSoftware(): pkgName is not a string, got: %v", pkgName, registry)
+
 	archive := pkg.get(registry, pkgName).archive()
 	return pkg.install(archive).package()
 }
 
 _directCallOptions := func(runOptions) {
+	<<<<<<< HEAD
 	cmd := _newArg(true, runOptions.cmd)
 	args := []
 	envs := {}
@@ -93,277 +98,341 @@ _directCallOptions := func(runOptions) {
 	}
 
 	return oop.inherit(runOptions, {
-		variables: [],
-		customPaths: [],
-		cmd: cmd,
-		args: args,
-		envs: envs
-	})
-}
-
-_loadJavaRunEnvironment := func(operationMode, descriptor) {
-	javaPkg := _installSoftware(descriptor.runEnv.registry, descriptor.runEnv.package)
-	javaRefVar := _newRefVar(_ARG_VAR_JAVA, descriptor.runEnv.name, javaPkg)
-
-	return ll.toStrict({
-		runEnvType: "java",
-
-		variables: [ javaRefVar ],
-		customPaths: [ _newArg(false, path.join(_expr(_ARG_VAR_JAVA), descriptor.runEnv.binDir)) ],
-		envs: {}
-	})
-}
-
-_loadPythonRunEnvironment := func(operationMode, descriptor, softName, softPkg) {
-	venvBuilder := python.venvBuilder().
-		software(softPkg).
-		runEnvDescriptor(descriptor.runEnv).
-		dependencies(descriptor.dependencies)
-
-	if !is_undefined(descriptor.toolset) && descriptor.toolset != "" {
-		venvBuilder.useToolset(descriptor.toolset)
+		=======
+			return ll.toStrict({
+				>>>>>>> wf_tengo_mnz
+				variables: [],
+				customPaths: [],
+				cmd: _newArg(false, runOptions.cmd),
+				args: [],
+				envs: {}
+			})
 	}
 
-	venv := venvBuilder.
-		cacheDays(7).
-		build().
-		venv()
+		_loadJavaRunEnvironment := func(operationMode, descriptor) {
+			javaPkg := _installSoftware(descriptor.runEnv.registry, descriptor.runEnv.package)
+			javaRefVar := _newRefVar(_ARG_VAR_JAVA, descriptor.runEnv.name, javaPkg)
 
-	venvRoot := path.join(_expr(_ARG_VAR_PYTHON), "venv")
-	venvRefKey := softName + "/venv"
+			return ll.toStrict({
+				runEnvType: "java",
 
-	pythonRefVar := _newRefVar(_ARG_VAR_PYTHON, venvRefKey, venv)
-
-	return ll.toStrict({
-		runEnvType: "python",
-
-		variables: [ pythonRefVar ],
-		customPaths: [ _newArg(false, path.join(venvRoot, "bin")) ],
-		envs: {
-			"VIRTUAL_ENV": _newArg(false, venvRoot)
+				variables: [ javaRefVar ],
+				customPaths: [ _newArg(false, path.join(_expr(_ARG_VAR_JAVA), descriptor.runEnv.binDir)) ],
+				envs: {}
+			})
 		}
-	})
-}
 
-_loadRRunEnvironment := func(operationMode, descriptor, softName, softPkg) {
-	renvBuilder := R.rVenvBuilder().
-		operationMode(operationMode).
-		software(softPkg).
-		runEnvDescriptor(descriptor.runEnv).
-		dependencies(descriptor.dependencies)
+		_loadPythonRunEnvironment := func(operationMode, descriptor, softName, softPkg) {
+			venvBuilder := python.venvBuilder().
+				software(softPkg).
+				runEnvDescriptor(descriptor.runEnv).
+				dependencies(descriptor.dependencies)
 
-	if !is_undefined(descriptor.toolset) && descriptor.toolset != "" {
-		renvBuilder.useToolset(descriptor.toolset)
-	}
-
-	rRuntime := renvBuilder.
-		cacheDays(7).
-		build()
-
-	rEnv := rRuntime.venv()
-	rPackage := rRuntime.R()
-
-	rBinDir := path.join(_expr(_ARG_VAR_R), descriptor.runEnv.binDir)
-
-	rRefKey := softName + "/R-runtime"
-	rRefVar := _newRefVar(_ARG_VAR_R, rRefKey, rPackage)
-
-	rEnvRefKey := softName + "/R-virtual-env"
-	rEnvRefVar := _newRefVar(_ARG_VAR_R_VENV, rEnvRefKey, rEnv)
-
-	return ll.toStrict({
-		runEnvType: "R",
-
-		variables: [ rRefVar, rEnvRefVar ],
-		customPaths: [ _newArg(false, rBinDir) ],
-		envs: {
-			"R_HOME_DIR": _newArg(false, _ARG_VAR_R),
-			"RHOME": _newArg(false, _ARG_VAR_R),
-			"RENV_PATHS_ROOT": _newArg(false, path.join(_ARG_VAR_R, "renv-root")),
-			"RENV_PATHS_RENV": _newArg(false, path.join(_ARG_VAR_R_VENV, "renv")),
-			"RENV_PATHS_LOCKFILE": _newArg(false, path.join(_ARG_VAR_PKG, descriptor.dependencies.lockFile)),
-			"RENV_CONFIG_AUTO_SNAPSHOT": _newArg(true, "FALSE"),
-			"RENV_CONFIG_SYNCHRONIZED_CHECK": _newArg(true, "FALSE")
-		}
-	})
-}
-
-
-_loadRunEnvironment := func(operationMode, descriptor, softName, softPackage) {
-	if descriptor.runEnv.type == "java" {
-		return _loadJavaRunEnvironment(operationMode, descriptor)
-	}
-	if descriptor.runEnv.type == "python" {
-		return _loadPythonRunEnvironment(operationMode, descriptor, softName, softPackage)
-	}
-	if descriptor.runEnv.type == "R" {
-		return _loadRRunEnvironment(operationMode, descriptor, softName, softPackage)
-	}
-
-	ll.panic("run environment type %q is not currently supported by workflow-sdk",	descriptor.runEnv.type)
-}
-
-/**
- * @param operationMode: 'remote' | 'dev-local'
- */
-_binPackageCallOptions := func(operationMode, runOptions, variables, descriptor, softPackage) {
-	customPaths := []
-	envs := ll.toStrict({})
-	args := []
-	runEnvType := "binary"
-
-	// Real command should be:
-	//   [<runEnv bin>] [<runEnv options>] [<entrypoint bin>] [<entrypoint options>] <cmd> <args>
-	if (maps.containsKey(descriptor, "runEnv")) {
-		runEnvInfo := _loadRunEnvironment(
-			operationMode,
-			descriptor,
-			runOptions.software.name,
-			softPackage
-		)
-
-		runEnvType = runEnvInfo.runEnvType
-		if len(runEnvInfo.variables) > 0 {
-			variables = append(variables, runEnvInfo.variables...)
-		}
-		if len(runEnvInfo.customPaths) > 0 {
-			customPaths = append(customPaths, runEnvInfo.customPaths...)
-		}
-		if len(runEnvInfo.envs) > 0 {
-			for n, v in runEnvInfo.envs {
-				envs[n] = v
+			if !is_undefined(descriptor.toolset) && descriptor.toolset != "" {
+				venvBuilder.useToolset(descriptor.toolset)
 			}
+
+			venv := venvBuilder.
+				cacheDays(7).
+				build().
+				venv()
+
+			venvRoot := path.join(_expr(_ARG_VAR_PYTHON), "venv")
+			venvRefKey := softName + "/venv"
+
+			pythonRefVar := _newRefVar(_ARG_VAR_PYTHON, venvRefKey, venv)
+
+			return ll.toStrict({
+				runEnvType: "python",
+
+				variables: [ pythonRefVar ],
+				customPaths: [ _newArg(false, path.join(venvRoot, "bin")) ],
+				envs: {
+					"VIRTUAL_ENV": _newArg(false, venvRoot)
+				}
+			})
 		}
-	}
 
-	ll.assert(
-		len(descriptor.cmd) != 0,
-		"cannot render final command for software: empty 'cmd' and 'command' in software descriptor")
+		_loadRRunEnvironment := func(operationMode, descriptor, softName, softPkg) {
+			renvBuilder := R.rVenvBuilder().
+				operationMode(operationMode).
+				software(softPkg).
+				runEnvDescriptor(descriptor.runEnv).
+				dependencies(descriptor.dependencies)
 
-	cmd := _newArg(false, descriptor.cmd[0])
+			if !is_undefined(descriptor.toolset) && descriptor.toolset != "" {
+				renvBuilder.useToolset(descriptor.toolset)
+			}
 
-	for arg in splice(descriptor.cmd, 1) {
-		args = append(args, _newArg(false, arg))
-	}
-	for arg in runOptions.args {
-		args = append(args, _newArg(true, arg))
-	}
+			rRuntime := renvBuilder.
+				cacheDays(7).
+				build()
 
-	for name, val in runOptions.envs {
-		envs[name] = _newArg(true, val)
-	}
+			rEnv := rRuntime.venv()
+			rPackage := rRuntime.R()
 
-	return oop.inherit(runOptions, {
-		runEnvType: runEnvType,
-		variables: variables,
-		customPaths: customPaths,
-		cmd: cmd,
-		args: args,
-		envs: envs
-	})
-}
+			rBinDir := path.join(_expr(_ARG_VAR_R), descriptor.runEnv.binDir)
 
-_devLocalPackageCallOptions := func(runOptions) {
-	software := runOptions.software
-	localDescriptor := software.descriptor.local
+			rRefKey := softName + "/R-runtime"
+			rRefVar := _newRefVar(_ARG_VAR_R, rRefKey, rPackage)
 
-	softPackage := pkg.use({
-		hash: localDescriptor.hash,
-		path: localDescriptor.path,
-		descriptor: json.encode(ll.fromStrict(software.descriptor)),
-		origin: {
-			registry: "dev-local",
-			url: "file://" + localDescriptor.path,
-			packageName: software.descriptor.name
+			rEnvRefKey := softName + "/R-virtual-env"
+			rEnvRefVar := _newRefVar(_ARG_VAR_R_VENV, rEnvRefKey, rEnv)
+
+			return ll.toStrict({
+				runEnvType: "R",
+
+				variables: [ rRefVar, rEnvRefVar ],
+				customPaths: [ _newArg(false, rBinDir) ],
+				envs: {
+					"R_HOME_DIR": _newArg(false, _ARG_VAR_R),
+					"RHOME": _newArg(false, _ARG_VAR_R),
+					"RENV_PATHS_ROOT": _newArg(false, path.join(_ARG_VAR_R, "renv-root")),
+					"RENV_PATHS_RENV": _newArg(false, path.join(_ARG_VAR_R_VENV, "renv")),
+					"RENV_PATHS_LOCKFILE": _newArg(false, path.join(_ARG_VAR_PKG, descriptor.dependencies.lockFile)),
+					"RENV_CONFIG_AUTO_SNAPSHOT": _newArg(true, "FALSE"),
+					"RENV_CONFIG_SYNCHRONIZED_CHECK": _newArg(true, "FALSE")
+				}
+			})
 		}
-	}).package()
 
-	variables := [ _newRefVar(_ARG_VAR_PKG, software.name, softPackage) ]
 
-	return _binPackageCallOptions("dev-local", runOptions, variables, localDescriptor, softPackage)
-}
+		_loadRunEnvironment := func(operationMode, descriptor, softName, softPackage) {
+			if descriptor.runEnv.type == "java" {
+				return _loadJavaRunEnvironment(operationMode, descriptor)
+			}
+			if descriptor.runEnv.type == "python" {
+				return _loadPythonRunEnvironment(operationMode, descriptor, softName, softPackage)
+			}
+			if descriptor.runEnv.type == "R" {
+				return _loadRRunEnvironment(operationMode, descriptor, softName, softPackage)
+			}
 
-_remotePackageCallOptions := func(runOptions) {
-	software := runOptions.software
-	binaryDescriptor := software.descriptor.binary
+			ll.panic("run environment type %q is not currently supported by workflow-sdk",	descriptor.runEnv.type)
+		}
 
-	softPackage := _installSoftware(binaryDescriptor.registry, binaryDescriptor.package)
+		/**
+		 * @param operationMode: 'remote' | 'dev-local'
+		 */
+		_binPackageCallOptions := func(operationMode, softwareName, variables, descriptor, softPackage) {
+			customPaths := []
+			envs := ll.toStrict({})
+			args := []
+			runEnvType := "binary"
 
-	variables := [ _newRefVar(_ARG_VAR_PKG, software.name, softPackage) ]
+			// Real command should be:
+			//   [<runEnv bin>] [<runEnv options>] [<entrypoint bin>] [<entrypoint options>] <cmd> <args>
+			if (maps.containsKey(descriptor, "runEnv")) {
+				<<<<<<< HEAD
+				runEnvInfo := _loadRunEnvironment(
+					operationMode,
+					descriptor,
+					runOptions.software.name,
+					softPackage
+				)
+				=======
+					runEnvInfo := _loadRunEnvironment(operationMode, descriptor, softwareName, softPackage)
+				>>>>>>> wf_tengo_mnz
 
-	return _binPackageCallOptions("remote", runOptions, variables, binaryDescriptor, softPackage)
-}
+				runEnvType = runEnvInfo.runEnvType
+				if len(runEnvInfo.variables) > 0 {
+					variables = append(variables, runEnvInfo.variables...)
+				}
+				if len(runEnvInfo.customPaths) > 0 {
+					customPaths = append(customPaths, runEnvInfo.customPaths...)
+				}
+				if len(runEnvInfo.envs) > 0 {
+					for n, v in runEnvInfo.envs {
+						envs[n] = v
+					}
+				}
+			}
 
-binaryRunOptions := func(runOptions) {
-	if (is_undefined(ll.fromStrict(runOptions).software)) {
-		//
-		// Simple local command run, no software packages involved (backward compatibility)
-		//
-		return _directCallOptions(runOptions)
-	}
+			ll.assert(
+				len(descriptor.cmd) != 0,
+				"cannot render final command for software: empty 'cmd' and 'command' in software descriptor")
 
-	software := runOptions.software
-	descriptor := software.descriptor
+			cmd := _newArg(false, descriptor.cmd[0])
 
-	if (maps.containsKey(descriptor, "local")) {
-		return _devLocalPackageCallOptions(runOptions)
-	}
+			for arg in splice(descriptor.cmd, 1) {
+				args = append(args, _newArg(false, arg))
+			}
+			<<<<<<< HEAD
+			for arg in runOptions.args {
+				args = append(args, _newArg(true, arg))
+			}
 
-	if (maps.containsKey(descriptor, "binary")) {
-		return _remotePackageCallOptions(runOptions)
-	}
+			for name, val in runOptions.envs {
+				envs[name] = _newArg(true, val)
+			}
 
-	ll.panic("Unable to run software %s v%s: 'binary' execution mode is not enabled in software descriptor", software.name, software.version)
-}
+			return oop.inherit(runOptions, {
+				=======
 
-prepareCommandRun := func(wd, opts) {
-	runBuilder := runcmd.builder(wd)
+					return ll.toStrict({
+						>>>>>>> wf_tengo_mnz
+						runEnvType: runEnvType,
+						variables: variables,
+						customPaths: customPaths,
+						cmd: cmd,
+						args: args,
+						envs: envs
+					})
+			}
 
-	// Make installed packages to be available for the command run
-	for varInfo in opts.variables {
-		runBuilder.ref(varInfo.refName, varInfo.reference)
-		runBuilder.substitutionRule(varInfo.varName, varInfo.refName)
-	}
+				_devLocalPackageCallOptions := func(softwareName, localDescriptor) {
+					softPackage := pkg.use({
+						hash: localDescriptor.hash,
+						path: localDescriptor.path,
+						descriptor: json.encode(ll.fromStrict(localDescriptor)),
+						origin: {
+							registry: "dev-local",
+							url: "file://" + localDescriptor.path,
+							packageName: softwareName
+						}
+					}).package()
 
-	// Patch command's PATH env variable
-	for p in opts.customPaths {
-		runBuilder.addToPath(p.type, p.value)
-	}
+					variables := [ _newRefVar(_ARG_VAR_PKG, softwareName, softPackage) ]
 
-	// Configure environment variables required for correct command run environment setup
-	for name, value in opts.envs {
-		runBuilder.envTyped(name, value.type, value.value)
-	}
+					return _binPackageCallOptions("dev-local", softwareName, variables, localDescriptor, softPackage)
+				}
 
-	return runBuilder
-}
+				<<<<<<< HEAD
+				_remotePackageCallOptions := func(runOptions) {
+					software := runOptions.software
+					binaryDescriptor := software.descriptor.binary
 
-_activateRenv := func(wd, opts) {
-	activateRenv := prepareCommandRun(wd, opts)
-	activateRenv.
-		cmd("R").
-		arg("-e").arg("renv::activate()")
+					=======
+						_remotePackageCallOptions := func(softwareName, binaryDescriptor) {
+						>>>>>>> wf_tengo_mnz
+						softPackage := _installSoftware(binaryDescriptor.registry, binaryDescriptor.package)
 
-	activateRenvRun := activateRenv.build()
+						variables := [ _newRefVar(_ARG_VAR_PKG, softwareName, softPackage) ]
 
-	return activateRenvRun
-}
+						return _binPackageCallOptions("remote", softwareName, variables, binaryDescriptor, softPackage)
+					}
 
-prepareWDForRunEnvironment := func(wd, opts) {
-	if (!maps.containsKey(opts, "runEnvType")) {
-		return wd
-	}
+					/** Turns a given software to a list of options that needs to be passed to run cmd builder.
+					 * Creates resources to install a software
+					 * and runs R or Python env builder templates
+					 * if it's necessary. */
+					swToRunCmdOptions := func(softwareName, softwareVersion, softwareDescriptor) {
+						ll.assert(is_string(softwareName),
+							"exec.internal.swToRunCmdOptions: software name must be a string, got %v", softwareName)
+						ll.assert(is_string(softwareVersion),
+							"exec.internal.swToRunCmdOptions: software version must be a string, got %v", softwareVersion)
+						validation.assertJsonSchema(softwareDescriptor, pkg.descriptorScheme,
+							"exec.internal.swToRunCmdOptions: descriptor does not fit schema")
 
-	if (opts.runEnvType == "R") {
-		return _activateRenv(wd, opts).workdir
-	}
+						result := undefined
+						if maps.containsKey(softwareDescriptor, "local") {
+							result = _devLocalPackageCallOptions(softwareName, softwareDescriptor.local)
+						} else if maps.containsKey(softwareDescriptor, "binary") {
+							result = _remotePackageCallOptions(softwareName, softwareDescriptor.binary)
+						} else {
+							ll.panic(
+								"Unable to run software %s v%s: 'binary' execution mode is not enabled in software descriptor",
+								softwareName, softwareVersion)
+						}
 
-	return wd
-}
+						// Clone result fields explicitly here
+						// just to have a gist of what the function returns.
+						return ll.toStrict({
+							runEnvType: result.runEnvType,
+							variables: result.variables,
+							customPaths: result.customPaths,
+							cmd: result.cmd,
+							args: result.args,
+							envs: result.envs
+						})
+					}
 
-export {
-	binaryRunOptions			: binaryRunOptions,
+					binaryRunOptions := func(runOptions, mnzEnvs) {
+						validation.assertJsonSchema(mnzEnvs, {"any": validation.reference})
 
-	prepareWDForRunEnvironment	: prepareWDForRunEnvironment,
-	prepareCommandRun			: prepareCommandRun
-}
+						runCmdOpts := undefined
+						if (is_undefined(ll.fromStrict(runOptions).software)) {
+							//
+							// Simple local command run, no software packages involved (backward compatibility)
+							//
+							runCmdOpts = _directCallOptions(runOptions)
+						} else {
+							software := runOptions.software
+							descriptor := software.descriptor
+
+							runCmdOpts = swToRunCmdOptions(software.name, software.version, descriptor)
+						}
+
+						// adds exec builder's defined options from run options.
+						for arg in runOptions.args {
+							runCmdOpts.args = append(runCmdOpts.args, _newArg(false, arg))
+						}
+						for name, val in runOptions.envs {
+							runCmdOpts.envs[name] = _newArg(false, val)
+						}
+
+						for name, val in mnzEnvs { // can be empty
+							// if it's not empty, then we create an env that has
+							// a result of monetization client.
+							runCmdOpts.envs[name] = _newArg(true, _ARG_VAR_MNZ)
+
+							runCmdOpts.variables = append(runCmdOpts.variables,
+								_newRefVar(_ARG_VAR_MNZ, "monetization", val))
+						}
+
+
+						return oop.inherit(runOptions, ll.fromStrict(runCmdOpts))
+					}
+
+					prepareCommandRun := func(wd, opts) {
+						runBuilder := runcmd.builder(wd)
+
+						// Make installed packages to be available for the command run
+						for varInfo in opts.variables {
+							runBuilder.ref(varInfo.refName, varInfo.reference)
+							runBuilder.substitutionRule(varInfo.varName, varInfo.refName)
+						}
+
+						// Patch command's PATH env variable
+						for p in opts.customPaths {
+							runBuilder.addToPath(p.type, p.value)
+						}
+
+						// Configure environment variables required for correct command run environment setup
+						for name, value in opts.envs {
+							runBuilder.envTyped(name, value.type, value.value)
+						}
+
+						return runBuilder
+					}
+
+					_activateRenv := func(wd, opts) {
+						activateRenv := prepareCommandRun(wd, opts)
+						activateRenv.
+							cmd("R").
+							arg("-e").arg("renv::activate()")
+
+						activateRenvRun := activateRenv.build()
+
+						return activateRenvRun
+					}
+
+					prepareWDForRunEnvironment := func(wd, opts) {
+						if (!maps.containsKey(opts, "runEnvType")) {
+							return wd
+						}
+
+						if (opts.runEnvType == "R") {
+							return _activateRenv(wd, opts).workdir
+						}
+
+						return wd
+					}
+
+					export {
+						swToRunCmdOptions           : swToRunCmdOptions,
+						binaryRunOptions			: binaryRunOptions,
+
+						prepareWDForRunEnvironment	: prepareWDForRunEnvironment,
+						prepareCommandRun			: prepareCommandRun
+					}
