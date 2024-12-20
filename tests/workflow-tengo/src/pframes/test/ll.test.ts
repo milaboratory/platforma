@@ -56,7 +56,7 @@ tplTest.for([
   }
 ])(
   'should correctly execute low level aggregation routine $name',
-  { timeout: 300000 },
+  { timeout: 10000 },
   async ({ indices, expectedResult, nested, base }, { helper, expect }) => {
     const result = await helper.renderTemplate(
       true,
