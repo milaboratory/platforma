@@ -9,6 +9,8 @@ text := import("text")
 runcmd := import(":exec.runcmd")
 workdir := import(":workdir")
 render := import(":render")
+desc := import(":exec.descriptor")
+constants := import(":exec.constants")
 
 _JWT_TOKEN_RESULT_ENV := "PLATFORMA_MNZ_JWT"
 
@@ -104,19 +106,22 @@ run := func(mnz, wd, queue) {
 	mnzSw := assets.importSoftware("@platforma-open/milaboratories.software-small-binaries:mnz-client")
 
 	builder := runcmd.builder(wd)
-	builder.envVar("MI_LICENSE", "{secrets.MI_LICENSE}")
+
+	exprType := desc.canBackendUseExpressions() ? constants.ARG_TYPE_EXPRESSION : constants.ARG_TYPE_VAR
+
+	builder.envTyped("MI_LICENSE", exprType, "{secrets.MI_LICENSE}")
 
 	opts := internal.swToRunCmdOptions(mnzSw.name, mnzSw.version, mnzSw.descriptor)
-	// load {pkg} var that points to mnz-client location.
+	// load pkg var that points to mnz-client location.
 	for _, varInfo in opts.variables {
 		builder.ref(varInfo.refName, varInfo.reference)
 		builder.substitutionRule(varInfo.varName, varInfo.refName)
 	}
 
-	builder.cmdVar(opts.cmd.value)
+	builder.cmdTyped(exprType, opts.cmd.value)
 	for _, arg in opts.args {
 		// now mnz-client doesn't have additional args; this line is just in case.
-		builder.argVar(arg)
+		builder.argTyped(exprType, arg)
 	}
 	builder.arg("-productName").arg(mnz.productName)
 
