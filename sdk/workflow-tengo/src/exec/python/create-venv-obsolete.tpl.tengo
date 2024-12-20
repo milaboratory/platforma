@@ -11,7 +11,7 @@ assets := import(":assets")
 path := import(":path")
 validation := import(":validation")
 runenv := import(":exec.runenv")
-internal := import(":exec.python.internal")
+internal := import(":exec.python.internal-obsolete")
 constants := import(":exec.constants")
 
 _createVenv := func(pythonPackage, pythonDescriptor) {
@@ -20,8 +20,8 @@ _createVenv := func(pythonPackage, pythonDescriptor) {
 	venvBuilder := runcmd.builder(wdBefore)
 	venvBuilder.
 		ref("python-run-environment", pythonPackage).
-		substitutionRule("python", "python-run-environment").
-		addToPath(constants.ARG_TYPE_EXPRESSION, path.join("{python}", pythonDescriptor.binDir))
+		substitutionRule("{python}", "python-run-environment").
+		addToPath(constants.ARG_TYPE_VAR, path.join("{python}", pythonDescriptor.binDir))
 
 	venvBuilder.
 		cmd("python").
@@ -47,7 +47,7 @@ _createVenv := func(pythonPackage, pythonDescriptor) {
 	return runEnvSaver.build().runEnv()
 }
 
-installPyDeps := assets.importTemplate(":exec.python.install-deps")
+installPyDeps := assets.importTemplate(":exec.python.install-deps-obsolete")
 
 self.defineOutputs("runEnv")
 
