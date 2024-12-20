@@ -1,0 +1,35 @@
+test := import(":test")
+monetization := import(":exec.monetization")
+
+Test_monetization_enable := func() {
+	mnz := monetization.init()
+	monetization.enable(mnz, "test_product")
+
+	test.isTrue(mnz.enabled)
+	test.isEqual(mnz.productName, "test_product")
+}
+
+Test_monetization_addFileParams := func() {
+	mnz := monetization.init()
+	monetization.enable(mnz, "test_product")
+	monetization.addFileParams(mnz, "abc.txt", {
+		"arg": "abc",
+		"collect": ["lines", "sha256"]
+	})
+
+	test.isEqual(mnz.fileParams, {"abc.txt": {
+		"arg": "abc",
+		"collect": ["lines", "sha256"]
+	}})
+}
+
+Test_monetization_shouldRun := func() {
+	mnz := monetization.init()
+	monetization.enable(mnz, "test_product")
+	monetization.addFileParams(mnz, "abc.txt", {
+		"arg": "abc",
+		"collect": ["lines", "sha256"]
+	})
+
+	test.isTrue(monetization.shouldRun(mnz))
+}

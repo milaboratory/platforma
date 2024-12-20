@@ -15,6 +15,7 @@ enum := import("enum")
 oop := import(":oop")
 validation := import(":validation")
 constants := import(":constants")
+monetization := import(":exec.monetization")
 
 _HEAVY_QUEUE    := "heavy"
 _MEDIUM_QUEUE   := "medium"
@@ -75,11 +76,13 @@ builder := func() {
 
 	/** Gets mnz key from opts or undefined. */
 	_getMnzOption := func(...opts) {
-		if !slices.length(opts) < 1 {
+		if slices.length(opts) < 1 {
 			return undefined
 		}
-		mnz := opts[0]["mnz"]
-		return is_undefined(mnz) ? undefined : mnz
+		opt := opts[0]["mnz"]
+
+		// readability if: we can return undefined here
+		return is_undefined(opt) ? undefined : opt
 	}
 
 	/** Adds a monetization option if it's defined into mnzFileParams. */
@@ -424,7 +427,7 @@ builder := func() {
 		 */
 		addFile: func(fileName, file, ...opts) {
 			ll.assert(is_string(fileName), "exec.builder().addFile: fileName must be a string")
-			ll.assert(ll.isReference(file), "exec.builder().addFile: file must be a reference")
+			ll.assert(smart.isReference(file), "exec.builder().addFile: file must be a reference")
 
 			fileName = path.canonize(fileName)
 			filesToAdd[fileName] = file
@@ -625,14 +628,7 @@ builder := func() {
 				queue: queue,
 				stdout: stdout,
 				stderr: stderr,
-				nErrorLines: nErrorLines,
-			}
-
-			// We add monetization only if it's enabled
-			// to not break a deduplication of exec's
-			// that were created before this feature existed.
-			if monetization.isEnabled(mnz) {
-				runOptions.monetization = mnz
+				nErrorLines: nErrorLines
 			}
 
 			execInputs := {
@@ -650,6 +646,13 @@ builder := func() {
 				assetDescriptors: assetDescriptors,
 				assetRules: assetRules,
 				assetCache: assetCache
+			}
+
+			// We add monetization only if it's enabled
+			// to not break a deduplication of exec's
+			// that were created before this feature existed.
+			if monetization.shouldRun(mnz) {
+				execInputs.runOptions.monetization = monetization.toJson(mnz)
 			}
 
 			if !is_undefined(soft) {

@@ -21,7 +21,7 @@ binaryDescriptorScheme := {
 	registry: "string",
 	package: "string",
 	cmd: ["string"],
-	runEnv: runEnvDescriptorScheme
+	"runEnv,?": runEnvDescriptorScheme
 }
 
 assetDescriptorScheme := {
