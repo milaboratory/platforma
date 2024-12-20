@@ -180,7 +180,7 @@ catalog:
   'vitepress': '1.5.0'
   'highlight.js': '11.10.0'
 
-  'ag-grid-enterprise': &ag-grid ^33.0.2
+  'ag-grid-enterprise': &ag-grid ^33.0.3
   'ag-grid-vue3': *ag-grid
 
   # SW
