@@ -1,5 +1,13 @@
 # @platforma-sdk/ui-vue
 
+## 1.20.30
+
+### Patch Changes
+
+- 78d049b: added PlProgressCell
+- Updated dependencies [78d049b]
+  - @milaboratories/uikit@2.2.40
+
 ## 1.20.28
 
 ### Patch Changes
