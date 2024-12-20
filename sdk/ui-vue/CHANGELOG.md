@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.20.28
+
+### Patch Changes
+
+- 7a235ba: Ag Grid version update
+
 ## 1.20.27
 
 ### Patch Changes
