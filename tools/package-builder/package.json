@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/package-builder",
-  "version": "2.12.0",
+  "version": "2.14.2",
   "description": "MiLaboratories Platforma Package builder",
   "scripts": {
     "type-check": "tsc --noEmit --composite false",
@@ -26,12 +26,14 @@
     "tar": "catalog:",
     "winston": "catalog:",
     "yaml": "catalog:",
-    "zod": "catalog:"
+    "zod": "catalog:",
+    "@milaboratories/resolve-helper": "workspace:^"
   },
   "devDependencies": {
     "@jest/globals": "catalog:",
     "@milaboratories/oclif-index": "workspace:*",
     "@milaboratories/platforma-build-configs": "workspace:*",
+    "@milaboratories/eslint-config": "workspace:^",
     "@types/archiver": "^6.0.3",
     "@types/jest": "catalog:",
     "@types/node": "catalog:",

@@ -49,6 +49,7 @@ export * from './components/PlTabs';
 export * from './components/PlSectionSeparator';
 export * from './components/PlAccordion';
 export * from './components/PlStatusTag';
+export * from './components/PlLoaderCircular';
 
 export * from './components/PlFileDialog';
 export * from './components/PlFileInput';
@@ -58,6 +59,10 @@ export * from './components/PlMaskIcon16';
 export * from './components/PlMaskIcon24';
 export * from './components/PlIcon16';
 export * from './components/PlIcon24';
+
+export * from './components/PlChartStackedBar';
+
+export * from './colors';
 
 // @TODO review (may be private)
 import DropdownListItem from './components/DropdownListItem.vue';
@@ -81,6 +86,7 @@ export { useMouseCapture } from './composition/useMouseCapture';
 export { useHover } from './composition/useHover';
 export { useMouse } from './composition/useMouse';
 export { useSortable } from './composition/useSortable';
+export { useSortable2 } from './composition/useSortable2';
 export { useInterval } from './composition/useInterval';
 export { useFormState } from './composition/useFormState';
 export { useQuery } from './composition/useQuery.ts';

@@ -1,4 +1,4 @@
-import type { ColDef, GridApi, ValueGetterParams } from '@ag-grid-community/core';
+import { isColumnSelectionCol, type ColDef, type GridApi, type ValueGetterParams } from 'ag-grid-enterprise';
 import { nextTick } from 'vue';
 
 export const PlAgDataTableRowNumberColId = '"##RowNumberColumnId##"';
@@ -26,9 +26,9 @@ export function makeRowNumberColDef(): ColDef {
     suppressSizeToFit: true,
     suppressAutoSize: true,
     cellStyle: {
-      'color': 'var(--txt-03)',
+      color: 'var(--txt-03)',
       'background-color': 'var(--bg-base-light)',
-      'overflow': 'visible !important',
+      overflow: 'visible !important',
       'text-align': 'center',
     },
     sortable: false,
@@ -49,6 +49,10 @@ function createCellFake(): HTMLDivElement {
 
   document.body.appendChild(div);
   return div;
+}
+
+function destroyCellFake(cellFake: HTMLDivElement) {
+  document.body.removeChild(cellFake);
 }
 
 function adjustRowNumberColumnWidth(gridApi: GridApi, cellFake: HTMLDivElement, force?: boolean) {
@@ -77,8 +81,21 @@ function adjustRowNumberColumnWidth(gridApi: GridApi, cellFake: HTMLDivElement, 
   });
 }
 
-function destroyCellFake(cellFake: HTMLDivElement) {
-  document.body.removeChild(cellFake);
+function fixColumnOrder(gridApi: GridApi) {
+  const columns = gridApi.getAllGridColumns();
+  const selectionIndex = columns.findIndex(isColumnSelectionCol);
+  const numRowsIndex = columns.findIndex((column) => column.getId() === PlAgDataTableRowNumberColId);
+  if (numRowsIndex !== -1) {
+    if (selectionIndex !== -1) {
+      if (selectionIndex !== 0 || numRowsIndex !== 1) {
+        gridApi.moveColumns([columns[numRowsIndex], columns[selectionIndex]], 0);
+      }
+    } else {
+      if (numRowsIndex !== 0) {
+        gridApi.moveColumns([columns[numRowsIndex]], 0);
+      }
+    }
+  }
 }
 
 export function autoSizeRowNumberColumn(gridApi: GridApi) {
@@ -96,9 +113,9 @@ export function autoSizeRowNumberColumn(gridApi: GridApi) {
   });
   gridApi.addEventListener('columnResized', (event) => {
     if (
-      event.finished
-      && event.source === 'autosizeColumns'
-      && event.columns?.some((column) => column.isVisible() && column.getColId() === PlAgDataTableRowNumberColId)
+      event.finished &&
+      event.source === 'autosizeColumns' &&
+      event.columns?.some((column) => column.isVisible() && column.getColId() === PlAgDataTableRowNumberColId)
     ) {
       adjustRowNumberColumnWidth(event.api, cellFake, true);
     }
@@ -108,6 +125,9 @@ export function autoSizeRowNumberColumn(gridApi: GridApi) {
   });
   gridApi.addEventListener('filterChanged', (event) => {
     event.api.refreshCells();
+  });
+  gridApi.addEventListener('displayedColumnsChanged', (event) => {
+    fixColumnOrder(event.api);
   });
   gridApi.addEventListener('gridPreDestroyed', () => {
     destroyCellFake(cellFake);

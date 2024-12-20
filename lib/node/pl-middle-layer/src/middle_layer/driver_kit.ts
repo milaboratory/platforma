@@ -96,7 +96,7 @@ export async function initDriverKit(
     ops.virtualLocalStoragesOverride
   );
 
-  const pFrameDriver = new PFrameDriver(blobDriver);
+  const pFrameDriver = new PFrameDriver(blobDriver, ops.logger);
 
   return {
     blobDriver,

@@ -4,8 +4,8 @@ import * as util from '../../../core/util';
 import { Core } from '../../../core/core';
 
 export default class Path extends Command {
-  static override description =
-    'get default path of software package archive to be built and published';
+  static override description
+    = 'get default path of software package archive to be built and published';
 
   static override examples = ['<%= config.bin %> <%= command.id %>'];
 
@@ -13,7 +13,7 @@ export default class Path extends Command {
     ...cmdOpts.GlobalFlags,
     ...cmdOpts.PlatformFlags,
 
-    ...cmdOpts.PackageIDRequiredFlag
+    ...cmdOpts.PackageIDRequiredFlag,
   };
 
   static strict: boolean = false;

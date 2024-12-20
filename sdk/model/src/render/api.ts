@@ -26,7 +26,7 @@ import {
 } from '@milaboratories/pl-model-common';
 import { Optional } from 'utility-types';
 import { getCfgRenderCtx } from '../internal';
-import { TreeNodeAccessor } from './accessor';
+import { TreeNodeAccessor, ifDef } from './accessor';
 import { FutureRef } from './future';
 import { GlobalCfgRenderCtx, MainAccessorName, StagingAccessorName } from './internal';
 import { LabelDerivationOps, deriveLabels } from './util/label';
@@ -76,7 +76,7 @@ export class ResultPool {
         ref: e.ref,
         obj: {
           ...e.obj,
-          data: new TreeNodeAccessor(e.obj.data)
+          data: new TreeNodeAccessor(e.obj.data, [e.ref.blockId, e.ref.name])
         }
       }))
     };
@@ -101,7 +101,10 @@ export class ResultPool {
         ref: e.ref,
         obj: {
           ...e.obj,
-          data: mapValueInVOE(e.obj.data, (handle) => new TreeNodeAccessor(handle))
+          data: mapValueInVOE(
+            e.obj.data,
+            (handle) => new TreeNodeAccessor(handle, [e.ref.blockId, e.ref.name]),
+          )
         }
       }))
     };
@@ -130,7 +133,7 @@ export class ResultPool {
       )?.obj;
     return mapPObjectData(
       this.ctx.getDataFromResultPoolByRef(ref.blockId, ref.name),
-      (handle) => new TreeNodeAccessor(handle)
+      (handle) => new TreeNodeAccessor(handle, [ref.blockId, ref.name]),
     );
   }
 
@@ -234,17 +237,19 @@ export class RenderCtx<Args, UiState> {
   private readonly ctx: GlobalCfgRenderCtx;
 
   public readonly args: Args;
-  public readonly uiState: UiState | undefined;
+  public readonly uiState: UiState;
 
   constructor() {
     this.ctx = getCfgRenderCtx();
     this.args = JSON.parse(this.ctx.args);
-    this.uiState = this.ctx.uiState !== undefined ? JSON.parse(this.ctx.uiState) : undefined;
+    this.uiState = this.ctx.uiState !== undefined ? JSON.parse(this.ctx.uiState) : {};
   }
 
   private getNamedAccessor(name: string): TreeNodeAccessor | undefined {
-    const accessorId = this.ctx.getAccessorHandleByName(name);
-    return accessorId ? new TreeNodeAccessor(accessorId) : undefined;
+    return ifDef(
+      this.ctx.getAccessorHandleByName(name),
+      (accessor) => new TreeNodeAccessor(accessor, [name]),
+    );
   }
 
   public get prerun(): TreeNodeAccessor | undefined {
@@ -313,16 +318,16 @@ export class RenderCtx<Args, UiState> {
   }
 
   private verifyInlineColumnsSupport(columns: PColumn<TreeNodeAccessor | PColumnValues>[]) {
-    const hasInlineColumns = columns.some((c) => !(c.data instanceof TreeNodeAccessor))
+    const hasInlineColumns = columns.some((c) => !(c.data instanceof TreeNodeAccessor));
     const inlineColumnsSupport = this.ctx.featureFlags?.inlineColumnsSupport === true;
     if (hasInlineColumns && !inlineColumnsSupport) throw Error(`inline columns not supported`);
   }
 
   public createPFrame(def: PFrameDef<TreeNodeAccessor | PColumnValues>): PFrameHandle {
     this.verifyInlineColumnsSupport(def);
-    return this.ctx.createPFrame(def.map((c) => mapPObjectData(c, (d) => 
-      d instanceof TreeNodeAccessor ? d.handle : d
-    )));
+    return this.ctx.createPFrame(
+      def.map((c) => mapPObjectData(c, (d) => (d instanceof TreeNodeAccessor ? d.handle : d)))
+    );
   }
 
   public createPTable(def: PTableDef<PColumn<TreeNodeAccessor | PColumnValues>>): PTableHandle;
@@ -356,9 +361,11 @@ export class RenderCtx<Args, UiState> {
       rawDef = def;
     }
     this.verifyInlineColumnsSupport(extractAllColumns(rawDef.src));
-    return this.ctx.createPTable(mapPTableDef(rawDef, (po) => mapPObjectData(po, (d) => 
-      d instanceof TreeNodeAccessor ? d.handle : d
-    )));
+    return this.ctx.createPTable(
+      mapPTableDef(rawDef, (po) =>
+        mapPObjectData(po, (d) => (d instanceof TreeNodeAccessor ? d.handle : d))
+      )
+    );
   }
 
   /** @deprecated scheduled for removal from SDK */

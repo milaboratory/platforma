@@ -31,7 +31,16 @@ export const base = tseslint.config(
 );
 
 export const node = tseslint.config(
-  { ignores: ['*.d.ts', '**/coverage', '**/dist', 'eslint.config.mjs', 'eslint.config.js', 'vite.config.mts'] },
+  { ignores: [
+    '*.d.ts',
+    '**/coverage',
+    '**/dist',
+    '**/bin',
+    'eslint.config.mjs',
+    'eslint.config.js',
+    'jest.config.cjs',
+    'vite.config.mts',
+    'vite.config.mts.*' ] },
   eslint.configs.recommended,
   tseslint.configs.recommendedTypeChecked,
   {
@@ -49,6 +58,7 @@ export const node = tseslint.config(
       'n': eslintN,
     },
     rules: {
+      '@typescript-eslint/no-namespace': 'off',
       'n/global-require': 'error',
       'n/no-callback-literal': 'off',
       'n/no-extraneous-require': 'error',

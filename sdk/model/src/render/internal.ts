@@ -70,7 +70,8 @@ export interface GlobalCfgRenderCtxMethods<AHandle = AccessorHandle, FHandle = F
   parsePObjectCollection(
     handle: AHandle,
     errorOnUnknownField: boolean,
-    prefix: string
+    prefix: string,
+    ...resolvePath: string[]
   ): Record<string, PObject<AHandle>> | undefined;
 
   //
@@ -147,7 +148,7 @@ export const GlobalCfgRenderCtxFeatureFlags = {
 
 export interface GlobalCfgRenderCtx extends GlobalCfgRenderCtxMethods {
   readonly args: string;
-  readonly uiState?: string;
+  readonly uiState: string;
   readonly callbackRegistry: Record<string, Function>;
   readonly featureFlags?: typeof GlobalCfgRenderCtxFeatureFlags;
 }

@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.10.2
+
+### Patch Changes
+
+- 079f50e: PlId type moved to SDK model
+
 ## 1.10.1
 
 ### Patch Changes

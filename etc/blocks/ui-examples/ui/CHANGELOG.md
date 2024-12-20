@@ -1,5 +1,43 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.3.11
+
+### Patch Changes
+
+- Updated dependencies [079f50e]
+  - @platforma-sdk/model@1.20.27
+  - @milaboratories/milaboratories.ui-examples.model@1.1.7
+
+## 1.3.10
+
+### Patch Changes
+
+- Updated dependencies [8043f5d]
+  - @platforma-sdk/model@1.20.24
+  - @milaboratories/milaboratories.ui-examples.model@1.1.6
+
+## 1.3.9
+
+### Patch Changes
+
+- 28b2b5c: [sdk/ui-vue] Proportion box with legend (standalone)
+- 0cce397: Add the first implementation of the PlChartStackedBar component
+- Updated dependencies [28b2b5c]
+- Updated dependencies [0cce397]
+  - @milaboratories/milaboratories.ui-examples.model@1.1.5
+
+## 1.3.8
+
+### Patch Changes
+
+- 7f72aa4: Ag Grid major version upgrade
+
+## 1.3.7
+
+### Patch Changes
+
+- 22685b6: uikit: forbid text wrapping in PlBtnGroup options
+
 ## 1.3.6
 
 ### Patch Changes

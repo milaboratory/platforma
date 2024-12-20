@@ -22,7 +22,7 @@ import {
 } from '../model/project_model';
 import { allBlocks, stagingGraph } from '../model/project_model_util';
 import { Optional } from 'utility-types';
-import { derivePObjectId } from './data';
+import { deriveGlobalPObjectId } from './data';
 import {
   RawPObjectCollection,
   RawPObjectEntry,
@@ -100,7 +100,7 @@ export class ResultPool {
     let data = result?.data?.();
     if (result !== undefined && result.spec !== undefined && data !== undefined)
       return mapValueInVOE(data, (value) => ({
-        id: derivePObjectId(result!.spec!, value),
+        id: deriveGlobalPObjectId(blockId, exportName),
         spec: result!.spec!,
         data: value
       }));
@@ -161,7 +161,7 @@ export class ResultPool {
           entries.push({
             ref: outputRef(blockId, exportName),
             obj: {
-              id: data.ok ? derivePObjectId(result.spec, data.value) : undefined,
+              id: data.ok ? deriveGlobalPObjectId(blockId, exportName) : undefined,
               spec: result.spec,
               data
             }
