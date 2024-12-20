@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo-tests
 
+## 1.4.1
+
+### Patch Changes
+
+- ca3e9fa: wf: exec: add monetization
+
 ## 1.4.0
 
 ### Minor Changes
