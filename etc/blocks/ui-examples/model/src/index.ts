@@ -69,6 +69,7 @@ export const platforma = BlockModel.create('Heavy')
 
   .sections((ctx) => {
     return [
+      { type: 'link', href: '/loaders', label: 'Loaders' },
       { type: 'link', href: '/', label: 'Icons/Masks' },
       { type: 'link', href: '/layout', label: 'Layout' },
       { type: 'link', href: '/form-components', label: 'Form Components' },
