@@ -104,10 +104,10 @@ methodExists := func(module, methodName) {
 	method := module[methodName]
 
 	if is_undefined(method) {
-        return false
-    }
+		return false
+	}
 
-    return is_callable(method)
+	return is_callable(method)
 }
 
 /**

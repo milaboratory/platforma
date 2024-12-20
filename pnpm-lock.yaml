@@ -40,8 +40,8 @@ catalogs:
       specifier: ^4.0.37
       version: 4.0.37
     '@platforma-open/milaboratories.software-small-binaries':
-      specifier: ^1.15.4
-      version: 1.15.5
+      specifier: ^1.15.6
+      version: 1.15.6
     '@protobuf-ts/grpc-transport':
       specifier: ^2.9.4
       version: 2.9.4
@@ -601,7 +601,7 @@ importers:
     dependencies:
       '@platforma-open/milaboratories.software-small-binaries':
         specifier: 'catalog:'
-        version: 1.15.5
+        version: 1.15.6
     devDependencies:
       '@platforma-sdk/tengo-builder':
         specifier: workspace:*
@@ -1901,7 +1901,7 @@ importers:
         version: 2.1.2
       '@platforma-open/milaboratories.software-small-binaries':
         specifier: 'catalog:'
-        version: 1.15.5
+        version: 1.15.6
     devDependencies:
       '@platforma-sdk/tengo-builder':
         specifier: workspace:^
@@ -2068,6 +2068,9 @@ importers:
 
   tests/workflow-tengo:
     devDependencies:
+      '@milaboratories/eslint-config':
+        specifier: workspace:^
+        version: link:../../tools/eslint-config
       '@milaboratories/pl-middle-layer':
         specifier: workspace:*
         version: link:../../lib/node/pl-middle-layer
@@ -2079,7 +2082,7 @@ importers:
         version: 2.1.2
       '@platforma-open/milaboratories.software-small-binaries':
         specifier: 'catalog:'
-        version: 1.15.5
+        version: 1.15.6
       '@platforma-sdk/tengo-builder':
         specifier: workspace:*
         version: link:../../tools/tengo-builder
@@ -3847,8 +3850,8 @@ packages:
   '@platforma-open/milaboratories.software-small-binaries.java-stub@1.0.3':
     resolution: {integrity: sha512-xTHTJ4Kqvz3egmGdGDlBZeNoUi3rQRvm7KY/ru+DnkH+5tEzudnv4be5jiQ1yk0aFboeFuQjlYXwBMTlCuVB1g==}
 
-  '@platforma-open/milaboratories.software-small-binaries.mnz-client@1.3.1':
-    resolution: {integrity: sha512-4zkrCxPI0YyMnfZOUJx45UpbzvCqZmYjXgypR49nx08wtdZPnKfZUHglQLWqFvMjeVUCeSw8Gs19qtm7ykMgfA==}
+  '@platforma-open/milaboratories.software-small-binaries.mnz-client@1.4.0':
+    resolution: {integrity: sha512-2pApcgqPu/I4QbBeswkJVB1dFAjgJ4Mqm1R+Pck47d1g6rQgg9Gn7RQmkkHhUC0amRKxn4ZaknE+WM6Nq+bPzg==}
 
   '@platforma-open/milaboratories.software-small-binaries.python-stub@1.0.3':
     resolution: {integrity: sha512-cDhQwgS/0GFp4qVzuFbFit6/GSWR6So7mPpk4b7cggktvjkKUBbn0qFcGU6fVSVhEYCKalwwnoTPBGtq1hAj2Q==}
@@ -3871,8 +3874,8 @@ packages:
   '@platforma-open/milaboratories.software-small-binaries.table-converter@1.2.3':
     resolution: {integrity: sha512-QYcfovRxtvbiciLLfHQzziaBr0v2jDu8RWFv3QuWFJW+FBJKQQiaFu2FC4DY2A0yE0+624WaeCuG3c4bzAxnfA==}
 
-  '@platforma-open/milaboratories.software-small-binaries@1.15.5':
-    resolution: {integrity: sha512-CnwFBTYO5ZAWh9O2irok2SRU5pwlW729XtD89PEuN7JlEn9VBg1zrsnpNeJ4omKzuv9wDpHBdABsZDk4KKK5tg==}
+  '@platforma-open/milaboratories.software-small-binaries@1.15.6':
+    resolution: {integrity: sha512-5DwOZseYx6/sas3wIS2WuE2FtOPlgcKpFIw1eoP2YCuzPWRcSiTVu68IKvVz9f3Nv+HKi4glDBK83xsS3e9gIA==}
 
   '@pnpm/config.env-replace@1.1.0':
     resolution: {integrity: sha512-htyl8TWnKL7K/ESFa1oW2UB5lVDxuF5DpM7tBi6Hu2LNL3mWkIzNLG6N4zoCUP1lCKNxWy/3iu8mS8MvToGd6w==}
@@ -9950,7 +9953,7 @@ snapshots:
 
   '@platforma-open/milaboratories.software-small-binaries.java-stub@1.0.3': {}
 
-  '@platforma-open/milaboratories.software-small-binaries.mnz-client@1.3.1': {}
+  '@platforma-open/milaboratories.software-small-binaries.mnz-client@1.4.0': {}
 
   '@platforma-open/milaboratories.software-small-binaries.python-stub@1.0.3': {}
 
@@ -9966,13 +9969,13 @@ snapshots:
 
   '@platforma-open/milaboratories.software-small-binaries.table-converter@1.2.3': {}
 
-  '@platforma-open/milaboratories.software-small-binaries@1.15.5':
+  '@platforma-open/milaboratories.software-small-binaries@1.15.6':
     dependencies:
       '@platforma-open/milaboratories.software-small-binaries.guided-command': 1.0.4
       '@platforma-open/milaboratories.software-small-binaries.hello-world': 1.0.4
       '@platforma-open/milaboratories.software-small-binaries.hello-world-py': 1.0.4
       '@platforma-open/milaboratories.software-small-binaries.java-stub': 1.0.3
-      '@platforma-open/milaboratories.software-small-binaries.mnz-client': 1.3.1
+      '@platforma-open/milaboratories.software-small-binaries.mnz-client': 1.4.0
       '@platforma-open/milaboratories.software-small-binaries.python-stub': 1.0.3
       '@platforma-open/milaboratories.software-small-binaries.read-with-sleep': 1.0.4
       '@platforma-open/milaboratories.software-small-binaries.runenv-java-stub': 1.0.5

@@ -1,0 +1,30 @@
+/** Runs a hello world with a turned on monetization, and returns a jwt token. */
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+ll := import("@platforma-sdk/workflow-tengo:ll")
+
+self.defineOutputs(["out"])
+
+self.body(func(inputs) {
+	run := exec.builder().
+		cmd("/usr/bin/env").
+		arg("bash").
+		arg("-c").
+		arg("echo -n $PLATFORMA_MNZ_JWT"). // -n means no newline. It's needed for test assertions.
+		enableMnz("test_product"). // it was manually added to the database. Other products returns 404.
+		writeFile("abc.txt", "1\n2\n3\n",
+			{"mnz": {
+				"arg": "abc.txt",
+				"collect": ["lines"]
+			}}
+		).
+		saveStdoutContent().
+		run()
+
+	return {
+		out: run.getStdoutFileContent()
+	}
+})

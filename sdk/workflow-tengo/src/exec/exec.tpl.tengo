@@ -16,6 +16,7 @@ execInternal := import(":exec.internal")
 pkg := import(":exec.package")
 validation := import(":validation")
 blobs := import(":file.internal")
+monetization := import(":exec.monetization")
 
 self.defineOutputs(
 	"files", "filesContent", "fileSets", "fileSetsContent", "progress", "fileStreams", "wdProcessors"
@@ -57,9 +58,19 @@ _runBinaryCommand := func(inputs) {
 	wdBuilder.writeFiles(self.rawInputs().filesToWrite.getValue().inputs())
 
 	// working directory with input files added; before run
-	wdBefore := wdBuilder.build()
+	wdWithAllFiles := wdBuilder.build()
 
-	opts := execInternal.binaryRunOptions(inputs.runOptions)
+	// run monetization if it's defined and return a workdir after.
+	wdBefore := wdWithAllFiles
+	mnzEnvs := {}
+	mnz := ll.fromStrict(inputs.runOptions).monetization
+	if !is_undefined(mnz) {
+		result := monetization.run(mnz, wdWithAllFiles, inputs.runOptions.queue)
+		wdBefore = result.wdAfter
+		mnzEnvs[result.jwtEnvName] = result.jwtEnvValue
+	}
+
+	opts := execInternal.binaryRunOptions(inputs.runOptions, mnzEnvs)
 
 	// Working directory after run environment preparation steps.
 	// The same as wdBefore, but might get additional files if they are required for run environment,
@@ -167,31 +178,31 @@ _runBinaryCommand := func(inputs) {
 
 self.body(func(inputs) {
 	// assert we have inputs we expect.
-	// validation.assertJsonSchema(inputs, {
-	// 	"softwareInfo,?": validation.resource(),
-	// 	filesToAdd: { any: validation.resource() },
-	// 	filesToWrite: { any: validation.resource() },
-	// 	values: { any: "any" },
-	// 	"dirs,?": ["string"],
-	// 	runOptions: {
-	// 		"software,?": pkg.softwareInfoScheme,
-	// 		"cmd,?": "string",
-	// 		args: ["string"],
-	// 		envs: { any: "string" },
-	// 		secrets: { any: "string" },
-	// 		queue: "string",
-	// 		stdout: "string",
-	// 		stderr: "string",
-	// 		nErrorLines: "number"
-	// 	},
-	// 	"saveFiles,?": ["string"],
-	// 	"saveFilesContents,?": ["string"],
-	// 	"streams,?": ["string"],
-	// 	"assets,?": { any: validation.resource() },
-	// 	"assetDescriptors,?": { any: pkg.assetDescriptorScheme },
-	// 	"assetRules,?": { any: { any: ["string"] } },
-	// 	"assetCache,?": { any: "number" }
-	// })
+	validation.assertJsonSchema(inputs, {
+		"softwareInfo,?": validation.resource(),
+		filesToAdd: { any: validation.resource() },
+		filesToWrite: { any: validation.resource() },
+		"dirsToCreate,?": ["string"],
+		runOptions: {
+			"software,?": pkg.softwareInfoScheme,
+			"cmd,?": "string",
+			args: ["string"],
+			envs: { any: "string" },
+			secrets: { any: "string" },
+			queue: "string",
+			stdout: "string",
+			stderr: "string",
+			nErrorLines: "number",
+			"monetization,?": monetization.schema
+		},
+		"saveFiles,?": ["string"],
+		"saveFilesContents,?": ["string"],
+		"streams,?": ["string"],
+		"assets,?": { any: validation.resource() },
+		"assetDescriptors,?": { any: pkg.assetDescriptorScheme },
+		"assetRules,?": { any: { any: ["string"] } },
+		"assetCache,?": { any: "number" }
+	})
 
 	ll.toStrict(inputs)
 	inputs.runOptions = ll.toStrict(inputs.runOptions)

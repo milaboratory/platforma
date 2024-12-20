@@ -2,6 +2,15 @@
 
 ll := import(":ll")
 validation := import(":validation")
+assets := import(":assets")
+internal := import(":exec.internal")
+fmt := import("fmt")
+text := import("text")
+runcmd := import(":exec.runcmd")
+workdir := import(":workdir")
+render := import(":render")
+
+_JWT_TOKEN_RESULT_ENV := "PLATFORMA_MNZ_JWT"
 
 /** Just creates a new monetization as a map of params. */
 init := func() {
@@ -11,20 +20,29 @@ init := func() {
 		// product name of monetization, e.g. "mixcr_analyze"
 		productName: "",
 
-		// file name to the param, e.g. {fileName: { arg: "dataset", collect: ["size", "linesNum"] }}
+		// file name to the param, e.g. {fileName: { arg: "dataset", collect: ["size", "lines", "sha256"] }}
 		fileParams: {}
 	})
 }
 
 fileParamsSchema := {
 	"arg": "string",
-	"collect": [`string,regex=size|linesNum|hash`]
+	"collect": [`string,regex=size|lines|sha256`]
 }
 
 schema := {
 	"enabled": "bool",
 	"productName": "string",
-	"fileParams": {",any": fileParamsSchema}
+	"fileParams": {"any": fileParamsSchema}
+}
+
+_assertIsReady := func(mnz) {
+	validation.assertJsonSchema(mnz, schema,
+		"monetization.assertIsReady(): monetization does not fit schema")
+	ll.assert(len(mnz.productName) > 0,
+		"monetization.assertIsReady(): product name must be set")
+	ll.assert(len(mnz.fileParams) > 0,
+		"monetization.assertIsReady(): at least 1 file param must be set")
 }
 
 /** Enables the monetization for a product. */
@@ -36,11 +54,24 @@ enable := func(mnz, productName) {
 		"monetization.enable(): mnz object does not fit schema")
 
 	mnz.enabled = true
+	mnz.productName = productName
 }
 
-/** Is this monetization enabled? */
-isEnabled := func(mnz) {
-	return mnz.enabled
+/** Is this monetization enabled and should run? */
+shouldRun := func(mnz) {
+	if mnz.enabled {
+		_assertIsReady(mnz)
+		return true
+	}
+
+	return false
+}
+
+toJson := func(mnz) {
+	validation.assertJsonSchema(mnz, schema,
+		"monetization.toJson(): monetization object does not fit json schema")
+
+	return ll.fromStrict(mnz)
 }
 
 /** Adds monetization parameters by a file. */
@@ -60,10 +91,83 @@ addFileParams := func(mnz, fileName, params) {
 	mnz.fileParams[fileName] = params
 }
 
+/**
+ * Runs monetization binary on a workdir with all files, and returns a new workdir and a resulted jwt token.
+ * All resources are ephemeral,
+ * the deduplication should be above this level.
+ *
+ * @param: mnz: monetization -- see a beginning of this file.
+ * @param: wd: workdir -- workdir where all files from mnz.fileParams already exist. */
+run := func(mnz, wd, queue) {
+	_assertIsReady(mnz)
+
+	mnzSw := assets.importSoftware("@platforma-open/milaboratories.software-small-binaries:mnz-client")
+
+	builder := runcmd.builder(wd)
+	builder.envVar("MI_LICENSE", "{secrets.MI_LICENSE}")
+
+	opts := internal.swToRunCmdOptions(mnzSw.name, mnzSw.version, mnzSw.descriptor)
+	// load {pkg} var that points to mnz-client location.
+	for _, varInfo in opts.variables {
+		builder.ref(varInfo.refName, varInfo.reference)
+		builder.substitutionRule(varInfo.varName, varInfo.refName)
+	}
+
+	builder.cmdVar(opts.cmd.value)
+	for _, arg in opts.args {
+		// now mnz-client doesn't have additional args; this line is just in case.
+		builder.argVar(arg)
+	}
+	builder.arg("-productName").arg(mnz.productName)
+
+	// load file params
+	for fileName, param in mnz.fileParams {
+		// param is of fileParamsSchema type
+		toCollect := text.join(param.collect, ",")
+		arg := fmt.sprintf("%s:file:%s:%s", param.arg, fileName, toCollect)
+		builder.arg(arg)
+	}
+
+	builder.inQueue(queue)
+	stdout := "mnz_stdout.txt"
+	builder.stdout(stdout)
+	run := builder.build()
+
+	// save mnz_stdout.txt
+	savedWd := workdir.save(run.workdir).
+		saveFileContent(stdout).
+		build()
+
+	jwtResultAsBytes := savedWd.filesContent.getFutureInputField(stdout)
+
+	// runcmd refs gets only json/objects as values,
+	// but workdir save returns binary:1 resource type.
+	// Hence here we have to convert it to the json's string.
+	jwtResultAsString := render.create(
+		assets.importTemplate(":exec.monetization_to_json"),
+		{ resource: jwtResultAsBytes }
+	).output("jsonedData")
+
+	return ll.toStrict({
+		// other commands should run on this wd,
+		// or else they will run concurrently
+		// with monetization.
+		wdAfter: savedWd.workdir,
+
+		// mnz-client returns jwt token
+		// that we will pass to the next command as env.
+		// If we need to change env to a file, that's the place.
+		jwtEnvName: _JWT_TOKEN_RESULT_ENV,
+		jwtEnvValue: jwtResultAsString
+	})
+}
+
 export ll.toStrict({
 	init: init,
 	schema: schema,
 	enable: enable,
-	isEnabled: isEnabled,
-	addFileParams: addFileParams
+	shouldRun: shouldRun,
+	toJson: toJson,
+	addFileParams: addFileParams,
+	run: run
 })
