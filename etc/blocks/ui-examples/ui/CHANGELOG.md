@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.3.12
+
+### Patch Changes
+
+- 78d049b: added PlProgressCell
+- Updated dependencies [78d049b]
+  - @milaboratories/milaboratories.ui-examples.model@1.1.8
+
 ## 1.3.11
 
 ### Patch Changes
