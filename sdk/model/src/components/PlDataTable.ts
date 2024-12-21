@@ -401,7 +401,7 @@ export function createPlDataTable<A, U>(
     return undefined;
 
   let coreColumns = columns;
-  const secondaryColumns: typeof columns = [...labelColumns.values()];
+  const secondaryColumns: typeof columns = [];
 
   if (ops?.coreColumnPredicate) {
     coreColumns = [];
@@ -410,12 +410,14 @@ export function createPlDataTable<A, U>(
       else secondaryColumns.push(c);
   }
 
+  secondaryColumns.push(...labelColumns.values());
+
   return ctx.createPTable({
     src: {
       type: 'outer',
       primary: {
         type: ops?.coreJoinType ?? 'full',
-        entries: columns.map((c) => ({ type: 'column', column: c }))
+        entries: coreColumns.map((c) => ({ type: 'column', column: c }))
       },
       secondary: secondaryColumns.map((c) => ({ type: 'column', column: c }))
     },
