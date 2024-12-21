@@ -98,6 +98,49 @@ filterKeysValues := func(map, predicateFnK, predicateFnV) {
 }
 
 /**
+ * Returns a deep copy of a map or an array.
+ * Optionally removes keys having undefined value.
+ *
+ * @param obj 	- object to be cloned
+ * @param ops 	- additional options
+ *					{
+ *						removeUndefs: boolean
+ *					}
+ */
+clone := func(obj, ...ops) {
+	removeUndefs := false
+	if len(ops) == 1 {
+		removeUndefs = ops[0].removeUndefs
+	}
+
+	if is_map(obj) || ll.isStrict(obj) {
+		res := {}
+		strict := ll.isStrict(obj)
+		if strict {
+			obj = ll.fromStrict(obj)
+		}
+		for k, v in obj {
+			if !removeUndefs || !is_undefined(v) {
+				res[k] = clone(v, ops...)
+			}
+		}
+		if strict {
+			return ll.toStrict(res)
+		} else {
+			return res
+		}
+	} else if is_array(obj) {
+		res := []
+		for v in obj {
+			res = append(res, clone(v, ops...))
+		}
+		return res
+	}
+
+	return obj
+}
+
+/**
  * Do shallow merge of arbitrary number of maps.
  * Add {... key: undefined ...} to remove the "key" from the map collected from maps before.
  */
@@ -140,6 +183,7 @@ export ll.toStrict({
 	map : map,
 	merge: merge,
 	deepMerge: deepMerge,
+	clone: clone,
 	mapKeys : mapKeys,
 	mapValues : mapValues,
 	filter : filter,
