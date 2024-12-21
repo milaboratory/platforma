@@ -6,6 +6,7 @@ import {
   matchAxisId,
   PColumn,
   PColumnIdAndSpec,
+  PColumnSpec,
   PColumnValues,
   PObjectId,
   PTableHandle,
@@ -282,6 +283,31 @@ export type PlTableFiltersModel = {
   filters?: PTableRecordFilter[];
 };
 
+export type CreatePlDataTableOps = {
+  /** Table filters, should contain */
+  filters?: PTableRecordFilter[];
+
+  /**
+   * Selects columns for which will be inner-joined to the table.
+   *
+   * Default behaviour: all columns are considered to be core
+   */
+  coreColumnPredicate?: (spec: PColumnSpec) => boolean;
+
+  /**
+   * Determines how core columns should be joined together:
+   *   inner - so user will only see records present in all core columns
+   *   full - so user will only see records present in any of the core columns
+   *
+   * All non-core columns will be left joined to the table produced by the core
+   * columns, in other words records form the pool of non-core columns will only
+   * make their way into the final table if core table contins corresponding key.
+   *
+   * Default: 'full'
+   */
+  coreJoinType?: 'inner' | 'full';
+};
+
 /**
  * Create p-table handle given ui table state
  *
@@ -293,9 +319,32 @@ export type PlTableFiltersModel = {
 export function createPlDataTable<A, U>(
   ctx: RenderCtx<A, U>,
   columns: PColumn<TreeNodeAccessor | PColumnValues>[],
-  tableState?: PlDataTableState,
-  filters?: PTableRecordFilter[]
+  tableState: PlDataTableState | undefined
+): PTableHandle | undefined;
+export function createPlDataTable<A, U>(
+  ctx: RenderCtx<A, U>,
+  columns: PColumn<TreeNodeAccessor | PColumnValues>[],
+  tableState: PlDataTableState | undefined,
+  ops: CreatePlDataTableOps
+): PTableHandle | undefined;
+/** @deprecated use method with extended ops as the last argument */
+export function createPlDataTable<A, U>(
+  ctx: RenderCtx<A, U>,
+  columns: PColumn<TreeNodeAccessor | PColumnValues>[],
+  tableState: PlDataTableState | undefined,
+  filters: PTableRecordFilter[]
+): PTableHandle | undefined;
+export function createPlDataTable<A, U>(
+  ctx: RenderCtx<A, U>,
+  columns: PColumn<TreeNodeAccessor | PColumnValues>[],
+  tableState: PlDataTableState | undefined,
+  ops?: PTableRecordFilter[] | CreatePlDataTableOps
 ): PTableHandle | undefined {
+  // ops migration for backward compatibility with previous deprecated API
+  if (Array.isArray(ops)) {
+    ops = { filters: ops };
+  }
+
   const allLabelCols = ctx.resultPool
     .getData()
     .entries.map((d) => d.obj)
@@ -351,16 +400,26 @@ export function createPlDataTable<A, U>(
   )
     return undefined;
 
+  let coreColumns = columns;
+  const secondaryColumns: typeof columns = [...labelColumns.values()];
+
+  if (ops?.coreColumnPredicate) {
+    coreColumns = [];
+    for (const c of columns)
+      if (ops.coreColumnPredicate(c.spec)) coreColumns.push(c);
+      else secondaryColumns.push(c);
+  }
+
   return ctx.createPTable({
     src: {
       type: 'outer',
       primary: {
-        type: 'full',
+        type: ops?.coreJoinType ?? 'full',
         entries: columns.map((c) => ({ type: 'column', column: c }))
       },
-      secondary: [...labelColumns.values()].map((c) => ({ type: 'column', column: c }))
+      secondary: secondaryColumns.map((c) => ({ type: 'column', column: c }))
     },
-    filters: [...(tableState?.pTableParams?.filters ?? []), ...(filters ?? [])],
+    filters: [...(ops?.filters ?? []), ...(tableState?.pTableParams?.filters ?? [])],
     sorting: tableState?.pTableParams?.sorting ?? []
   });
 }
