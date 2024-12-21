@@ -1,7 +1,6 @@
 /* Low level pl API */
 
 plapi := import("plapi")
-json := import("json")
 fmt := import("fmt")
 log := import("log")
 text := import("text")
