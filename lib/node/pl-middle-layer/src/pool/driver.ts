@@ -243,6 +243,13 @@ export class PFrameDriver implements SdkPFrameDriver {
     ctx: ComputableCtx
   ): PTableHandle {
     const pFrameHandle = this.createPFrame(extractAllColumns(def.src), ctx);
+    if (getDebugFlags().logPFrameRequests)
+      this.logger.info(
+        `Create PTable call (${pFrameHandle}): ${JSON.stringify(
+          mapPTableDef(def, (c) => c.spec),
+          bigintReplacer
+        )}`
+      );
     const defIds = mapPTableDef(def, (c) => c.id);
     const res = this.pTables.acquire({ def: defIds, pFrameHandle });
     ctx.addOnDestroy(res.unref); // in addition to pframe unref added in createPFrame above
@@ -394,53 +401,55 @@ function stableKeyFromFullPTableDef(data: FullPTableDef): string {
 }
 
 function stableKeyFromPFrameData(data: PColumn<PFrameInternal.DataInfo<ResourceInfo>>[]): string {
-  const orderedData = [...data].map((column) => mapPObjectData(column, (r) => {
-    let result: {
-      type: string,
-      keyLength: number,
-      payload: {
-        key: string;
-        value: null | number | string | [string, string]
-      }[];
-    };
-    const type = r.type;
-    switch (type) {
-      case 'Json':
-        result = {
-          type: r.type,
-          keyLength: r.keyLength,
-          payload: Object.entries(r.data).map(([part, value]) => ({
-            key: part,
-            value,
-          }))
-        };
-        break;
-      case 'JsonPartitioned':
-        result = {
-          type: r.type,
-          keyLength: r.partitionKeyLength,
-          payload: Object.entries(r.parts).map(([part, info]) => ({
-            key: part,
-            value: info.id.toString(),
-          }))
-        };
-        break;
-      case 'BinaryPartitioned':
-        result = {
-          type: r.type,
-          keyLength: r.partitionKeyLength,
-          payload: Object.entries(r.parts).map(([part, info]) => ({
-            key: part,
-            value: [info.index.id.toString(), info.values.id.toString()] as const,
-          }))
-        };
-        break;
-      default:
-        throw Error(`unsupported resource type: ${ type satisfies never }`);
-    }
-    result.payload.sort((lhs, rhs) => lhs.key.localeCompare(rhs.key));
-    return result;
-  }));
+  const orderedData = [...data].map((column) =>
+    mapPObjectData(column, (r) => {
+      let result: {
+        type: string;
+        keyLength: number;
+        payload: {
+          key: string;
+          value: null | number | string | [string, string];
+        }[];
+      };
+      const type = r.type;
+      switch (type) {
+        case 'Json':
+          result = {
+            type: r.type,
+            keyLength: r.keyLength,
+            payload: Object.entries(r.data).map(([part, value]) => ({
+              key: part,
+              value
+            }))
+          };
+          break;
+        case 'JsonPartitioned':
+          result = {
+            type: r.type,
+            keyLength: r.partitionKeyLength,
+            payload: Object.entries(r.parts).map(([part, info]) => ({
+              key: part,
+              value: info.id.toString()
+            }))
+          };
+          break;
+        case 'BinaryPartitioned':
+          result = {
+            type: r.type,
+            keyLength: r.partitionKeyLength,
+            payload: Object.entries(r.parts).map(([part, info]) => ({
+              key: part,
+              value: [info.index.id.toString(), info.values.id.toString()] as const
+            }))
+          };
+          break;
+        default:
+          throw Error(`unsupported resource type: ${type satisfies never}`);
+      }
+      result.payload.sort((lhs, rhs) => lhs.key.localeCompare(rhs.key));
+      return result;
+    })
+  );
   orderedData.sort((lhs, rhs) => lhs.id.localeCompare(rhs.id));
 
   const hash = createHash('sha256');
