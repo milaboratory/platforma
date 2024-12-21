@@ -72,6 +72,11 @@ packages:
   - etc/blocks/model-test/ui
   - etc/blocks/model-test/block
 
+  - etc/blocks/pool-explorer/workflow
+  - etc/blocks/pool-explorer/model
+  - etc/blocks/pool-explorer/ui
+  - etc/blocks/pool-explorer/block
+
   # Tests
 
   - tests/workflow-tengo

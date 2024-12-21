@@ -1,0 +1,14 @@
+{
+  "name": "@milaboratories/milaboratories.pool-explorer.workflow",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Tengo-based template",
+  "scripts": {
+    "build": "rm -rf dist && pl-tengo check && pl-tengo build"
+  },
+  "devDependencies": {
+    "@platforma-sdk/workflow-tengo": "workspace:*",
+    "@platforma-sdk/tengo-builder": "workspace:*"
+  }
+}
