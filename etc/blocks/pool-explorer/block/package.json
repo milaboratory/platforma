@@ -1,0 +1,36 @@
+{
+  "name": "@milaboratories/milaboratories.pool-explorer",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "rm -rf ./block-pack && block-tools pack"
+  },
+  "files": [
+    "index.d.ts",
+    "index.js"
+  ],
+  "dependencies": {
+    "@platforma-sdk/model": "workspace:*",
+    "@milaboratories/milaboratories.pool-explorer.workflow": "workspace:*",
+    "@milaboratories/milaboratories.pool-explorer.model": "workspace:*",
+    "@milaboratories/milaboratories.pool-explorer.ui": "workspace:*"
+  },
+  "devDependencies": {
+    "@platforma-sdk/block-tools": "workspace:*"
+  },
+  "block": {
+    "components": {
+      "workflow": "@milaboratories/milaboratories.pool-explorer.workflow/dist/tengo/tpl/main.plj.gz",
+      "model": "@milaboratories/milaboratories.pool-explorer.model/dist/model.json",
+      "ui": "@milaboratories/milaboratories.pool-explorer.ui/dist"
+    },
+    "meta": {
+      "title": "Pool Explorer",
+      "description": "Pool Explorer Block",
+      "organization": {
+        "name": "MiLaboratories Inc",
+        "url": "https://milaboratories.com/"
+      },
+      "marketplaceRanking": 10
+    }
+  }
+}
