@@ -1,5 +1,12 @@
 # @milaboratories/milaboratories.test-sum-numbers.model
 
+## 1.0.11
+
+### Patch Changes
+
+- Updated dependencies [05c8c1c]
+  - @platforma-sdk/model@1.21.0
+
 ## 1.0.10
 
 ### Patch Changes
