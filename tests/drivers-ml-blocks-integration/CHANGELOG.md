@@ -1,5 +1,22 @@
 # @milaboratories/drivers-ml-blocks-integration
 
+## 1.0.73
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-download-file@1.0.48
+- @milaboratories/milaboratories.test-download-file.model@1.0.11
+- @milaboratories/milaboratories.test-enter-numbers@1.0.170
+- @milaboratories/milaboratories.test-enter-numbers.model@1.0.41
+- @milaboratories/milaboratories.test-read-logs@1.0.48
+- @milaboratories/milaboratories.test-read-logs.model@1.0.11
+- @milaboratories/milaboratories.test-sum-numbers@1.0.48
+- @milaboratories/milaboratories.test-sum-numbers.model@1.0.11
+- @milaboratories/milaboratories.test-upload-file@1.0.48
+- @milaboratories/milaboratories.test-upload-file.model@1.0.11
+- @milaboratories/pl-middle-layer@1.23.5
+- @platforma-sdk/test@1.21.0
+
 ## 1.0.72
 
 ### Patch Changes
