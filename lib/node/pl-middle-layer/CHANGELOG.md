@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 1.23.6
+
+### Patch Changes
+
+- c367623: Fixes PTable handle derivation algorithm, now also takes into account parent pFrameHandle
+
 ## 1.23.5
 
 ### Patch Changes
