@@ -1,0 +1,54 @@
+/** Everything about software descriptors
+ * The scheme is here:
+ * https://github.com/milaboratory/platforma/blob/main/tools/package-builder/src/core/renderer.ts#L161 */
+
+ll := import(":ll")
+
+runEnvScheme := {
+	registry: "string",
+	package: "string",
+	type: "string",
+	binDir: "string"
+}
+
+binaryScheme := {
+	registry: "string",
+	package: "string",
+	cmd: ["string"],
+	"runEnv,?": runEnvScheme
+}
+
+assetScheme := {
+	registry: "string",
+	package: "string",
+	url: "string"
+}
+
+localScheme := {
+	hash: "string",
+	path: "string",
+	cmd: ["string"],
+	runEnv: runEnvScheme
+}
+
+scheme := {
+	"isDev,?": "bool",
+	"schemaVersion,?": "number",
+	"binary,?": binaryScheme,
+	"asset,?": assetScheme,
+	"local,?": localScheme
+}
+
+/** True if Platforma Backend supports expression refs. */
+canBackendUseExpressions := func() {
+	return ll.apiVersion() >= 2
+}
+
+export {
+	runEnvScheme: runEnvScheme,
+	binaryScheme: binaryScheme,
+	assetScheme: assetScheme,
+	localScheme: localScheme,
+	scheme: scheme,
+	canBackendUseExpressions: canBackendUseExpressions
+}

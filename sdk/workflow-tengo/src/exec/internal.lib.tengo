@@ -16,29 +16,59 @@ pkg := import(":exec.package")
 runcmd := import(":exec.runcmd")
 python := import(":exec.python")
 R := import(":exec.R")
+constants := import(":exec.constants")
+desc := import(":exec.descriptor")
 validation := import(":validation")
 
-// Variables, substituted in command arguments and environment variable values
-_ARG_VAR_PKG            := "{pkg}"  // abs path to software package
-_ARG_VAR_JAVA           := "{java}" // abs path to 'java' run environment
-_ARG_VAR_PYTHON         := "{python}" // abs path to 'python' run environment
-_ARG_VAR_R              := "{R}" // abs path to 'R' run environment runtime
-_ARG_VAR_R_VENV         := "{rVenv}" // abs path to 'R' portable virtual environment
-_ARG_VAR_MNZ            := "{monetization}" // monetization env value
+// Variables, substituted in command arguments and environment variable values.
+_ARG_VAR_PKG            := "pkg"  // abs path to software package
+_ARG_VAR_JAVA           := "java" // abs path to 'java' run environment
+_ARG_VAR_PYTHON         := "python" // abs path to 'python' run environment
+_ARG_VAR_R              := "R" // abs path to 'R' run environment runtime
+_ARG_VAR_R_VENV         := "rVenv" // abs path to 'R' portable virtual environment
+_ARG_VAR_MNZ            := "monetization" // monetization env value
+
+/** Converts the args above to the expressions. */
+_expr := func(varName) {
+	return "{" + varName + "}"
+}
 
 /**
- * Create new argument marking it as 'with' or 'without' variables inside.
- * The outcome of 'hasVariables' flag value is wether the value will be treated
- * by Platforma Backend on server side before being given to the actual command.
+ * Create new argument with a type. The type can be either string, expression or variable.
+ * Decides whether we need a simple argument or an expression one.
+ * For a month, we keep deprecated variable arguments.
+ *
+ * @param isString: boolean - whether it is a string or a difficult (expression) argument.
  */
-_newArg := func(hasVariables, value) {
+_newArg := func(isString, value) {
+	if isString {
+		return ll.toStrict({
+			type: constants.ARG_TYPE_STRING,
+			value: value
+		})
+	}
+	if desc.canBackendUseExpressions() {
+		return ll.toStrict({
+			type: constants.ARG_TYPE_EXPRESSION,
+			value: value
+		})
+	}
 	return ll.toStrict({
-		hasVars: hasVariables,
+		type: constants.ARG_TYPE_VAR,
 		value: value
 	})
 }
 
 _newRefVar := func(varName, refName, reference) {
+	// deprecated, remove on 15 Mar 2025
+	if !desc.canBackendUseExpressions() {
+		return ll.toStrict({
+			varName: "{" + varName + "}",
+			refName: refName,
+			reference: reference
+		})
+	}
+
 	return ll.toStrict({
 		varName: varName,
 		refName: refName,
@@ -58,7 +88,7 @@ _directCallOptions := func(runOptions) {
 	return ll.toStrict({
 		variables: [],
 		customPaths: [],
-		cmd: _newArg(false, runOptions.cmd),
+		cmd: _newArg(true, runOptions.cmd),
 		args: [],
 		envs: {}
 	})
@@ -72,7 +102,7 @@ _loadJavaRunEnvironment := func(operationMode, descriptor) {
 		runEnvType: "java",
 
 		variables: [ javaRefVar ],
-		customPaths: [ _newArg(true, path.join(_ARG_VAR_JAVA, descriptor.runEnv.binDir)) ],
+		customPaths: [ _newArg(false, path.join(_expr(_ARG_VAR_JAVA), descriptor.runEnv.binDir)) ],
 		envs: {}
 	})
 }
@@ -92,7 +122,7 @@ _loadPythonRunEnvironment := func(operationMode, descriptor, softName, softPkg) 
 		build().
 		venv()
 
-	venvRoot := path.join(_ARG_VAR_PYTHON, "venv")
+	venvRoot := path.join(_expr(_ARG_VAR_PYTHON), "venv")
 	venvRefKey := softName + "/venv"
 
 	pythonRefVar := _newRefVar(_ARG_VAR_PYTHON, venvRefKey, venv)
@@ -101,9 +131,9 @@ _loadPythonRunEnvironment := func(operationMode, descriptor, softName, softPkg) 
 		runEnvType: "python",
 
 		variables: [ pythonRefVar ],
-		customPaths: [ _newArg(true, path.join(venvRoot, "bin")) ],
+		customPaths: [ _newArg(false, path.join(venvRoot, "bin")) ],
 		envs: {
-			"VIRTUAL_ENV": _newArg(true, venvRoot)
+			"VIRTUAL_ENV": _newArg(false, venvRoot)
 		}
 	})
 }
@@ -126,7 +156,7 @@ _loadRRunEnvironment := func(operationMode, descriptor, softName, softPkg) {
 	rEnv := rRuntime.venv()
 	rPackage := rRuntime.R()
 
-	rBinDir := path.join(_ARG_VAR_R, descriptor.runEnv.binDir)
+	rBinDir := path.join(_expr(_ARG_VAR_R), descriptor.runEnv.binDir)
 
 	rRefKey := softName + "/R-runtime"
 	rRefVar := _newRefVar(_ARG_VAR_R, rRefKey, rPackage)
@@ -138,15 +168,15 @@ _loadRRunEnvironment := func(operationMode, descriptor, softName, softPkg) {
 		runEnvType: "R",
 
 		variables: [ rRefVar, rEnvRefVar ],
-		customPaths: [ _newArg(true, rBinDir) ],
+		customPaths: [ _newArg(false, rBinDir) ],
 		envs: {
-			"R_HOME_DIR": _newArg(true, _ARG_VAR_R),
-			"RHOME": _newArg(true, _ARG_VAR_R),
-			"RENV_PATHS_ROOT": _newArg(true, path.join(_ARG_VAR_R, "renv-root")),
-			"RENV_PATHS_RENV": _newArg(true, path.join(_ARG_VAR_R_VENV, "renv")),
-			"RENV_PATHS_LOCKFILE": _newArg(true, path.join(_ARG_VAR_PKG, descriptor.dependencies.lockFile)),
-			"RENV_CONFIG_AUTO_SNAPSHOT": _newArg(false, "FALSE"),
-			"RENV_CONFIG_SYNCHRONIZED_CHECK": _newArg(false, "FALSE")
+			"R_HOME_DIR": _newArg(false, _expr(_ARG_VAR_R)),
+			"RHOME": _newArg(false, _expr(_ARG_VAR_R)),
+			"RENV_PATHS_ROOT": _newArg(false, path.join(_expr(_ARG_VAR_R), "renv-root")),
+			"RENV_PATHS_RENV": _newArg(false, path.join(_expr(_ARG_VAR_R_VENV), "renv")),
+			"RENV_PATHS_LOCKFILE": _newArg(false, path.join(_expr(_ARG_VAR_PKG), descriptor.dependencies.lockFile)),
+			"RENV_CONFIG_AUTO_SNAPSHOT": _newArg(true, "FALSE"),
+			"RENV_CONFIG_SYNCHRONIZED_CHECK": _newArg(true, "FALSE")
 		}
 	})
 }
@@ -194,12 +224,14 @@ _binPackageCallOptions := func(operationMode, softwareName, variables, descripto
 		}
 	}
 
-	ll.assert(len(descriptor.cmd) != 0, "cannot render final command for software: empty 'cmd' in software descritor")
+	ll.assert(
+		len(descriptor.cmd) != 0,
+		"cannot render final command for software: empty 'cmd' and 'command' in software descriptor")
 
-	cmd := _newArg(true, descriptor.cmd[0])
+	cmd := _newArg(false, descriptor.cmd[0])
 
 	for arg in splice(descriptor.cmd, 1) {
-		args = append(args, _newArg(true, arg))
+		args = append(args, _newArg(false, arg))
 	}
 
 	return ll.toStrict({
@@ -246,7 +278,7 @@ swToRunCmdOptions := func(softwareName, softwareVersion, softwareDescriptor) {
 		"exec.internal.swToRunCmdOptions: software name must be a string, got %v", softwareName)
 	ll.assert(is_string(softwareVersion),
 		"exec.internal.swToRunCmdOptions: software version must be a string, got %v", softwareVersion)
-	validation.assertJsonSchema(softwareDescriptor, pkg.descriptorScheme,
+	validation.assertJsonSchema(softwareDescriptor, desc.scheme,
 		"exec.internal.swToRunCmdOptions: descriptor does not fit schema")
 
 	result := undefined
@@ -276,11 +308,13 @@ binaryRunOptions := func(runOptions, mnzEnvs) {
 	validation.assertJsonSchema(mnzEnvs, {"any": validation.reference})
 
 	runCmdOpts := undefined
+	onlyStrings := false
 	if (is_undefined(ll.fromStrict(runOptions).software)) {
 		//
 		// Simple local command run, no software packages involved (backward compatibility)
 		//
 		runCmdOpts = _directCallOptions(runOptions)
+		onlyStrings = true
 	} else {
 		software := runOptions.software
 		descriptor := software.descriptor
@@ -290,16 +324,16 @@ binaryRunOptions := func(runOptions, mnzEnvs) {
 
 	// adds exec builder's defined options from run options.
 	for arg in runOptions.args {
-		runCmdOpts.args = append(runCmdOpts.args, _newArg(false, arg))
+		runCmdOpts.args = append(runCmdOpts.args, _newArg(onlyStrings, arg))
 	}
 	for name, val in runOptions.envs {
-		runCmdOpts.envs[name] = _newArg(false, val)
+		runCmdOpts.envs[name] = _newArg(onlyStrings, val)
 	}
 
 	for name, val in mnzEnvs { // can be empty
 		// if it's not empty, then we create an env that has
 		// a result of monetization client.
-		runCmdOpts.envs[name] = _newArg(true, _ARG_VAR_MNZ)
+		runCmdOpts.envs[name] = _newArg(false, _expr(_ARG_VAR_MNZ))
 
 		runCmdOpts.variables = append(runCmdOpts.variables,
 			_newRefVar(_ARG_VAR_MNZ, "monetization", val))
@@ -320,16 +354,12 @@ prepareCommandRun := func(wd, opts) {
 
 	// Patch command's PATH env variable
 	for p in opts.customPaths {
-		runBuilder.addToPath(p.value, p.hasVars)
+		runBuilder.addToPath(p.type, p.value)
 	}
 
 	// Configure environment variables required for correct command run environment setup
 	for name, value in opts.envs {
-		if value.hasVars {
-			runBuilder.envVar(name, value.value)
-		} else {
-			runBuilder.env(name, value.value)
-		}
+		runBuilder.envTyped(name, value.type, value.value)
 	}
 
 	return runBuilder

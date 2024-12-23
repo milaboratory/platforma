@@ -96,14 +96,14 @@ createBlobMapResource := undefined
  * Returns true if given object is a smart.Resource
  */
 isResource := func(f) {
-	return ll.isStrict(f) && ll.fromStrict(f)["_type"] == "resource"
+	return ll.isStrict(f) && maps.containsKey(f, "_type") && f["_type"] == "resource"
 }
 
 /**
  * Returns true if given object is a smart.Field
  */
 isField := func(f) {
-	return ll.isStrict(f) && ll.fromStrict(f)["_type"] == "field"
+	return ll.isStrict(f) && maps.containsKey(f, "_type") && f["_type"] == "field"
 }
 
 /**

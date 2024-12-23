@@ -17,7 +17,8 @@ getKeys := func(map) {
 }
 
 /**
- * Returns true if map contains specified key. Note: current implementation is O(N)
+ * Returns true if map contains specified key.
+ * Note: fallback implementation is O(N). You can remove it after 05.2025
  */
 containsKey := func(map, key) {
 	for k, _ in map {

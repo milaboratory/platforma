@@ -1,8 +1,9 @@
 ll := import(":ll")
 validation := import(":validation")
 runcmd := import(":exec.runcmd")
-pkg := import(":exec.package")
 path := import(":path")
+desc := import(":exec.descriptor")
+constants := import(":exec.constants")
 
 rVenvInputSchema := {
 	operationMode: "string",
@@ -10,18 +11,21 @@ rVenvInputSchema := {
 	dependencies: {"any": "string"},
 	software: validation.reference,
 
-	rDescriptor: pkg.runEnvDescriptorScheme,
+	rDescriptor: desc.runEnvScheme,
 	R: validation.reference
 }
 
 runRBuilder := func(wd, rPackage, rDescriptor) {
+	t := desc.canBackendUseExpressions() ? constants.ARG_TYPE_EXPRESSION : constants.ARG_TYPE_VAR
+	rule := desc.canBackendUseExpressions() ? "R" : "{R}"
+
 	return runcmd.builder(wd).
 		ref("r-run-environment", rPackage).
-		substitutionRule("{R}", "r-run-environment").
-		addToPath(path.join("{R}", rDescriptor.binDir), true).
-		envVar("R_HOME_DIR", "{R}").
-		envVar("RHOME", "{R}").
-		envVar("RENV_PATHS_ROOT", path.join("{R}", "renv-root"))
+		substitutionRule(rule, "r-run-environment").
+		addToPath(t, path.join("{R}", rDescriptor.binDir)).
+		envTyped("R_HOME_DIR", t, "{R}").
+		envTyped("RHOME", t, "{R}").
+		envTyped("RENV_PATHS_ROOT", t, path.join("{R}", "renv-root"))
 }
 
 export ll.toStrict({
