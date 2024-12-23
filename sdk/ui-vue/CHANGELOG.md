@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.21.3
+
+### Patch Changes
+
+- 2639fac: added AgGrid context menu styles
+
 ## 1.21.0
 
 ### Patch Changes
