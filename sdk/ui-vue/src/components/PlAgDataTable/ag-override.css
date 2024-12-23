@@ -1,3 +1,27 @@
 .ag-header {
     border-bottom: 1px solid var(--border-color-default);
 }
+
+.ag-column-menu,
+.ag-menu.ag-ltr.ag-popup-child {
+    border-radius: 12px;
+    border: none;
+    background: var(--bg-elevated-01);
+    box-shadow: none;
+    background: var(--bg-base-dark);
+}
+
+.ag-column-menu *,
+.ag-menu.ag-ltr.ag-popup-child * {
+    color: var(--txt-00);
+}
+
+.ag-column-menu .ag-icon,
+.ag-menu.ag-ltr.ag-popup-child .ag-icon {
+    color: var(--ic-00);
+}
+
+
+.ag-menu-separator-part:after {
+    border-color: var(--btn-sec-hover-grey);
+}

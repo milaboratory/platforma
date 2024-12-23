@@ -27,6 +27,7 @@ import PlAgTextAndButtonCell from '../../PlAgTextAndButtonCell/PlAgTextAndButton
 import type { PlAgDataTableRow, PTableRowKey } from '../types';
 import { makeRowNumberColDef, PlAgDataTableRowNumberColId } from './row-number';
 import { getHeterogeneousColumns, updatePFrameGridOptionsHeterogeneousAxes } from './table-source-heterogeneous';
+import { defaultMainMenuItems } from './menu-items';
 
 type PlAgCellButtonAxisParams = {
   showCellButtonForAxisId?: AxisId;
@@ -66,6 +67,7 @@ function makeColDef(iCol: number, spec: PTableColumnSpec, hiddenColIds?: string[
   const valueType = spec.type === 'axis' ? spec.spec.type : spec.spec.valueType;
   return {
     colId,
+    mainMenuItems: defaultMainMenuItems,
     context: spec,
     field: iCol.toString(),
     headerName: spec.spec.annotations?.['pl7.app/label']?.trim() ?? 'Unlabeled ' + spec.type + ' ' + iCol.toString(),
