@@ -356,7 +356,8 @@ builder := func(workdir) {
 			// TODO: add assertions about the state
 
 			ll.assert(!(hasPatternArgs || hasExpressionArgs) || len(substRules) != 0,
-				"found pattern argument, but no substitution rules were set")
+				"found pattern argument, but no substitution rules were set: hasPatternArgs: %v, substRules: %v, cmd: %v, args: %v, envs: %v",
+				hasPatternArgs, substRules, cmd, args, envs)
 			ll.assert(!hasExpressionArgs || desc.canBackendUseExpressions(),
 				"runcmd.builder().build: expression arguments must be enabled only if platforma backend supports expressions, found: %v",
 				hasExpressionArgs)

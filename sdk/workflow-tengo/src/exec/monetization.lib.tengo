@@ -38,7 +38,15 @@ schema := {
 	"fileParams": {"any": fileParamsSchema}
 }
 
-_assertIsReady := func(mnz) {
+/** Same as validation.assertJsonSchema(params, fileParamsSchema, ...),
+ * but with prettier errors for clients. */
+_validateParams := func(params) {
+	ll.assert(ll.isMap(params), "monetization.validateParams(): mnz params must be a map")
+	ll.assert(is_string(params.arg), "monetization.validateParams(): 'arg' in {\"mnz\": {...}} param must be a string")
+	ll.assert(is_array(params.collect) && len(params.collect) > 0, "monetization.validateParams(): 'collect' in {\"mnz\": {...}} param must be non-empty an array")
+}
+
+_validateIsReady := func(mnz) {
 	validation.assertJsonSchema(mnz, schema,
 		"monetization.assertIsReady(): monetization does not fit schema")
 	ll.assert(len(mnz.productName) > 0,
@@ -62,7 +70,7 @@ enable := func(mnz, productName) {
 /** Is this monetization enabled and should run? */
 shouldRun := func(mnz) {
 	if mnz.enabled {
-		_assertIsReady(mnz)
+		_validateIsReady(mnz)
 		return true
 	}
 
@@ -80,6 +88,8 @@ toJson := func(mnz) {
 addFileParams := func(mnz, fileName, params) {
 	validation.assertJsonSchema(mnz, schema,
 		"monetization.addFileParams(): monetization object does not fit json schema")
+
+	_validateParams(params)
 
 	validation.assertJsonSchema(params, fileParamsSchema,
 		"monetization.addFileParams(): file params does not fit json schema")
@@ -101,7 +111,7 @@ addFileParams := func(mnz, fileName, params) {
  * @param: mnz: monetization -- see a beginning of this file.
  * @param: wd: workdir -- workdir where all files from mnz.fileParams already exist. */
 run := func(mnz, wd, queue) {
-	_assertIsReady(mnz)
+	_validateIsReady(mnz)
 
 	mnzSw := assets.importSoftware("@platforma-open/milaboratories.software-small-binaries:mnz-client")
 

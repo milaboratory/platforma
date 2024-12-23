@@ -11,6 +11,8 @@ workdir := import(":workdir")
 validation := import(":validation")
 runenv := import(":exec.runenv")
 internal := import(":exec.R.internal")
+desc := import(":exec.descriptor")
+constants := import(":exec.constants")
 
 //
 // Function declarations (see definitions below)
@@ -75,11 +77,16 @@ _toolsetRenvCreate = func(operationMode, swPackage, rPackage, rDescriptor, depen
 	//
 	// Install dependencies into activated run environment
 	//
+
+	// DEPRECATED: remove after 15 Mar 2025
+	t := desc.canBackendUseExpressions() ? constants.ARG_TYPE_EXPRESSION : constants.ARG_TYPE_VAR
+	rule := desc.canBackendUseExpressions() ? "pkg" : "{pkg}"
+
 	depsInstaller := internal.runRBuilder(activateRenvRun.workdir, rPackage, rDescriptor).
 		env("RENV_PATHS_RENV", "./renv").
 		ref("r-software-pkg", swPackage).
-		substitutionRule("pkg", "r-software-pkg").
-		envExpression("RENV_PATHS_LOCKFILE", "{pkg}/"+dependencies.lockFile)
+		substitutionRule(rule, "r-software-pkg").
+		envTyped("RENV_PATHS_LOCKFILE", t, "{pkg}/"+dependencies.lockFile)
 
 	depsInstaller.
 		cmd("R").
@@ -104,11 +111,15 @@ _toolsetRenvCreate = func(operationMode, swPackage, rPackage, rDescriptor, depen
 }
 
 _toolsetRenvRefreshSwPackage = func(wd, swPackage, rPackage, rDescriptor, dependencies) {
+	// DEPRECATED: remove after 15 Mar 2025
+	t := desc.canBackendUseExpressions() ? constants.ARG_TYPE_EXPRESSION : constants.ARG_TYPE_VAR
+	rule := desc.canBackendUseExpressions() ? "pkg" : "{pkg}"
+
 	swRefreshener := internal.runRBuilder(wd, rPackage, rDescriptor).
 		ref("r-software-pkg", swPackage).
-		substitutionRule("pkg", "r-software-pkg").
-		envExpression("R_PROJECT_DIR", "{pkg}").
-		envExpression("RENV_PATHS_LOCKFILE", "{pkg}/"+dependencies.lockFile).
+		substitutionRule(rule, "r-software-pkg").
+		envTyped("R_PROJECT_DIR", t, "{pkg}").
+		envTyped("RENV_PATHS_LOCKFILE", t, "{pkg}/"+dependencies.lockFile).
 		env("TRICK_DEDUPLICATION", "" + times.time_unix(times.now()))
 
 	swRefreshener.
