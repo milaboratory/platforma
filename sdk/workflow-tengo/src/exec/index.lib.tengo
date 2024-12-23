@@ -15,6 +15,7 @@ enum := import("enum")
 oop := import(":oop")
 validation := import(":validation")
 constants := import(":constants")
+desc := import(":exec.descriptor")
 monetization := import(":exec.monetization")
 
 _HEAVY_QUEUE    := "heavy"
@@ -779,5 +780,6 @@ builder := func() {
 }
 
 export ll.toStrict({
-	builder: builder
+	builder: builder,
+	canBackendUseExpressions: desc.canBackendUseExpressions
 })

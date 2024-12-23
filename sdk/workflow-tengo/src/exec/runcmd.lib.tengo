@@ -7,6 +7,9 @@ maps := import(":maps")
 oop := import(":oop")
 smart := import(":smart")
 json := import("json")
+constants := import(":exec.constants")
+slices := import(":slices")
+desc := import(":exec.descriptor")
 
 _RTYPE_RUN_COMMAND := { Name: "RunCommand/executor", Version: "1" }
 _RTYPE_RUN_COMMAND_CMD := { Name: "RunCommandCmd", Version: "1" }
@@ -21,18 +24,33 @@ _RTYPE_RUN_COMMAND_REFS := { Name: "RunCommandRefs", Version: "1" }
  */
 _createSimpleArg := func(argument) {
 	return {
-		type: "string",
+		type: constants.ARG_TYPE_STRING,
 		value: argument
 	}
 }
 
 /**
+ * @deprecated, use _createRenderedArg
  * Creates 'variableRef' argument.
  * @param argTpl: string - argument value in any form with variables inside (e.g. "file://{pkg}/some-file" or "o-{java}-o")
  */
 _createVariableArg := func(argTpl) {
 	return {
-		type: "variableRef",
+		type: constants.ARG_TYPE_VAR,
+		value: argTpl
+	}
+}
+
+/**
+ * Creates 'expressionRef' arguments
+ * @param argTpl: string - arguments value in any form with expressions inside, e.g.:
+ *   - `–Xms{env.PL_EXEC_HARD_MEMORY_LIMIT_MB * 80 / 100}m`
+ *   - `file://{pkg}/some-file`
+ *   - `o-{java}-o`
+ */
+_createExpressionArg := func(argTpl) {
+	return {
+		type: constants.ARG_TYPE_EXPRESSION,
 		value: argTpl
 	}
 }
@@ -56,7 +74,8 @@ builder := func(workdir) {
 	refs := {}
 
 	substRules := {}
-	hasPatternArgs := false
+	hasPatternArgs := false // TODO: deprecated, remove after a month of expressionRefs in prod.
+	hasExpressionArgs := false
 	customPaths := []
 
 	stdout := "stdout.txt"
@@ -89,6 +108,35 @@ builder := func(workdir) {
 		},
 
 		/**
+		 * Sets the command with expressions inside to be rendered using rules
+		 * from .substitutionRules().
+		 *
+		 * @param commandTpl: string - string with '{any expression}' substitutions to be replaced with
+		 *                             software paths. Replace rules are defined by .substitutionRule()
+		 *                             and .substitutionRules(),
+		 */
+		cmdExpression: func(commandTpl) {
+			cmd = _createExpressionArg(commandTpl)
+			hasExpressionArgs = true
+			return self
+		},
+
+		cmdTyped: func(type, value) {
+			ll.assert(slices.hasElement(constants.ARG_TYPES, type),
+				"runcmd.builder().cmdTyped: unknown type %s, expect: %v", type, constants.ARG_TYPES)
+
+			if type == constants.ARG_TYPE_STRING {
+				return self.cmd(value)
+			} else if type == constants.ARG_TYPE_EXPRESSION {
+				return self.cmdExpression(value)
+			} else if type == constants.ARG_TYPE_VAR {
+				return self.cmdVar(value)
+			}
+
+			ll.panic("runcmd.builder().cmdTyped: unknown type %s, expect: %v", type, constants.ARG_TYPES)
+		},
+
+		/**
 		 * Adds an argument to the command.
 		 *
 		 * @param arg: string - the argument to add.
@@ -112,6 +160,41 @@ builder := func(workdir) {
 			return self
 		},
 
+		/**
+		 * Adds an argument with variables inside to be rendered using rules
+		 * from .substitutionRules().
+		 *
+		 * @param argTpl: string - string with '{expression}' substitutions to be replaced with
+		 *                         expression value. Replace rules are defined by .substitutionRule()
+		 *                         and .substitutionRules(),
+		 */
+		argExpression: func(argTpl) {
+			args = append(args, _createExpressionArg(argTpl))
+			hasExpressionArgs = true
+			return self
+		},
+
+		argTyped: func(type, value) {
+			ll.assert(slices.hasElement(constants.ARG_TYPES, type),
+				"runcmd.builder().argTyped: unknown type %s, expect: %v", type, constants.ARG_TYPES)
+
+			if type == constants.ARG_TYPE_STRING {
+				return self.arg(value)
+			} else if type == constants.ARG_TYPE_EXPRESSION {
+				return self.argExpression(value)
+			} else if type == constants.ARG_TYPE_VAR {
+				return self.argVar(value)
+			}
+
+			ll.panic("runcmd.builder().argTyped: unknown type %s, expect: %v", type, constants.ARG_TYPES)
+		},
+
+		/**
+		 * Adds a reference for using it in expressions next.
+		 *
+		 * @param refKey: string - the name of the ref
+		 * @param ref: reference - a reference to the valid field or resource
+		 */
 		ref: func(refKey, ref) {
 			ll.assert(smart.isReference(ref),
 				"runcmd.builder().ref() must be a reference (valid field or resource)")
@@ -147,19 +230,56 @@ builder := func(workdir) {
 			return self
 		},
 
+		/**
+		 * Sets environment variable with substitution inside value, to be rendered
+		 * using rules from .substitutionRules().
+		 *
+		 * @param name: string - the name of the environment variable.
+		 * @param valueTpl: string - the value of the environment variable.
+		 */
+		envExpression: func(name, valueTpl) {
+			envs[name] = _createExpressionArg(valueTpl)
+			hasExpressionArgs = true
+			return self
+		},
+
+		envTyped: func(name, type, value) {
+			ll.assert(slices.hasElement(constants.ARG_TYPES, type),
+				"runcmd.builder().envTyped: unknown type %s, expect: %v", type, constants.ARG_TYPES)
+
+			if type == constants.ARG_TYPE_STRING {
+				return self.env(name, value)
+			} else if type == constants.ARG_TYPE_EXPRESSION {
+				return self.envExpression(name, value)
+			} else if type == constants.ARG_TYPE_VAR {
+				return self.envVar(name, value)
+			}
+
+			ll.panic("runcmd.builder().envTyped: unknown type %s, expect: %v", type, constants.ARG_TYPES)
+		},
+
 		/*
 		 * Patch 'PATH' environment variable, adding software path to it.
 		 *
+		 * @param type: constants.ARG_TYPES - whether Platforma Backend should try to substitute variables or expressions inside <value> on server side
 		 * @param value: string - the value of the environment variable with variables to be replaced to software path.
-		 * @param hasVars: boolean - wether Platforma Backend should try to substitute variables inside <value> on server side
 		 */
-		addToPath: func(value, hasVars) {
-			if hasVars {
+		addToPath: func(type, value) {
+			ll.assert(slices.hasElement(constants.ARG_TYPES, type),
+				"runcmd.builder().addToPath: unknown type %s, expect: %v", type, constants.ARG_TYPES)
+
+			if type == constants.ARG_TYPE_STRING {
+				customPaths = append(customPaths, _createSimpleArg(value))
+			} else if type == constants.ARG_TYPE_EXPRESSION {
+				customPaths = append(customPaths, _createExpressionArg(value))
+				hasExpressionArgs = true
+			} else if type == constants.ARG_TYPE_VAR {
 				customPaths = append(customPaths, _createVariableArg(value))
 				hasPatternArgs = true
 			} else {
-				customPaths = append(customPaths, _createSimpleArg(value))
+				ll.panic("runcmd.builder().addToPath: unknown type %s, expect: %v", type, constants.ARG_TYPES)
 			}
+
 			return self
 		},
 
@@ -235,8 +355,12 @@ builder := func(workdir) {
 		build: func() {
 			// TODO: add assertions about the state
 
-			ll.assert(!hasPatternArgs || len(substRules) != 0,
-				"found pattern argument, but no substitution rules were set")
+			ll.assert(!(hasPatternArgs || hasExpressionArgs) || len(substRules) != 0,
+				"found pattern argument, but no substitution rules were set: hasPatternArgs: %v, substRules: %v, cmd: %v, args: %v, envs: %v",
+				hasPatternArgs, substRules, cmd, args, envs)
+			ll.assert(!hasExpressionArgs || desc.canBackendUseExpressions(),
+				"runcmd.builder().build: expression arguments must be enabled only if platforma backend supports expressions, found: %v",
+				hasExpressionArgs)
 
 			refsRes := smart.createMapResourceWithType(_RTYPE_RUN_COMMAND_REFS, refs)
 			self.getField("refs").set(refsRes)

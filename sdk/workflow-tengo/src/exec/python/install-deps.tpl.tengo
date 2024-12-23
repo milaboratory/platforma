@@ -9,17 +9,24 @@ workdir := import(":workdir")
 runcmd := import(":exec.runcmd")
 path := import(":path")
 validation := import(":validation")
+constants := import(":exec.constants")
+desc := import(":exec.descriptor")
 
 self.defineOutputs("runEnv")
 
 _runInVenv := func(python, venv, wd) {
+	// DEPRECATED: remove after 15 Mar 2025
+	t := desc.canBackendUseExpressions() ? constants.ARG_TYPE_EXPRESSION : constants.ARG_TYPE_VAR
+	pythonRule := desc.canBackendUseExpressions() ? "python" : "{python}"
+	pythonRunenvRule := desc.canBackendUseExpressions() ? "python_runenv" : "{python_runenv}"
+
 	return runcmd.builder(wd).
 		ref("python-venv", venv).
 		ref("python-run-environment", python).
-		substitutionRule("{python}", "python-venv").
-		substitutionRule("{python-runenv}", "python-run-environment").
-		addToPath(path.join("{python}", "venv", "bin"), true).
-		envVar("VIRTUAL_ENV", path.join("{python}", "venv"))
+		substitutionRule(pythonRule, "python-venv").
+		substitutionRule(pythonRunenvRule, "python-run-environment").
+		addToPath(t, path.join("{python}", "venv", "bin")).
+		envTyped("VIRTUAL_ENV", t, path.join("{python}", "venv"))
 }
 
 _installPipDependencies := func(python, venv, dependencies) {
@@ -31,11 +38,14 @@ _installPipDependencies := func(python, venv, dependencies) {
 
 	depsBuilder := _runInVenv(python, venv, wdForDeps)
 
+	// DEPRECATED: remove after 15 Mar 2025
+	t := desc.canBackendUseExpressions() ? constants.ARG_TYPE_EXPRESSION : constants.ARG_TYPE_VAR
+
 	depsBuilder.
 		cmd("python").arg("-m").
 		arg("pip").arg("install").
 		arg("--requirement").arg("requirements.txt").
-		arg("--find-links").argVar("{python-runenv}/packages/")
+		arg("--find-links").argTyped(t, "{python_runenv}/packages/")
 
 	depsBuilder.
 		inQueue("light").
