@@ -88,7 +88,7 @@ _directCallOptions := func(runOptions) {
 	return ll.toStrict({
 		variables: [],
 		customPaths: [],
-		cmd: _newArg(false, runOptions.cmd),
+		cmd: _newArg(true, runOptions.cmd),
 		args: [],
 		envs: {}
 	})
@@ -278,7 +278,7 @@ swToRunCmdOptions := func(softwareName, softwareVersion, softwareDescriptor) {
 		"exec.internal.swToRunCmdOptions: software name must be a string, got %v", softwareName)
 	ll.assert(is_string(softwareVersion),
 		"exec.internal.swToRunCmdOptions: software version must be a string, got %v", softwareVersion)
-	validation.assertJsonSchema(softwareDescriptor, pkg.descriptorScheme,
+	validation.assertJsonSchema(softwareDescriptor, desc.scheme,
 		"exec.internal.swToRunCmdOptions: descriptor does not fit schema")
 
 	result := undefined
@@ -308,11 +308,13 @@ binaryRunOptions := func(runOptions, mnzEnvs) {
 	validation.assertJsonSchema(mnzEnvs, {"any": validation.reference})
 
 	runCmdOpts := undefined
+	onlyStrings := false
 	if (is_undefined(ll.fromStrict(runOptions).software)) {
 		//
 		// Simple local command run, no software packages involved (backward compatibility)
 		//
 		runCmdOpts = _directCallOptions(runOptions)
+		onlyStrings = true
 	} else {
 		software := runOptions.software
 		descriptor := software.descriptor
@@ -322,10 +324,10 @@ binaryRunOptions := func(runOptions, mnzEnvs) {
 
 	// adds exec builder's defined options from run options.
 	for arg in runOptions.args {
-		runCmdOpts.args = append(runCmdOpts.args, _newArg(false, arg))
+		runCmdOpts.args = append(runCmdOpts.args, _newArg(onlyStrings, arg))
 	}
 	for name, val in runOptions.envs {
-		runCmdOpts.envs[name] = _newArg(false, val)
+		runCmdOpts.envs[name] = _newArg(onlyStrings, val)
 	}
 
 	for name, val in mnzEnvs { // can be empty

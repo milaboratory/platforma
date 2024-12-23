@@ -16,13 +16,16 @@ rVenvInputSchema := {
 }
 
 runRBuilder := func(wd, rPackage, rDescriptor) {
+	t := desc.canBackendUseExpressions() ? constants.ARG_TYPE_EXPRESSION : constants.ARG_TYPE_VAR
+	rule := desc.canBackendUseExpressions() ? "R" : "{R}"
+
 	return runcmd.builder(wd).
 		ref("r-run-environment", rPackage).
-		substitutionRule("R", "r-run-environment").
-		addToPath(constants.ARG_TYPE_EXPRESSION, path.join("{R}", rDescriptor.binDir)).
-		envExpression("R_HOME_DIR", "{R}").
-		envExpression("RHOME", "{R}").
-		envExpression("RENV_PATHS_ROOT", path.join("{R}", "renv-root"))
+		substitutionRule(rule, "r-run-environment").
+		addToPath(t, path.join("{R}", rDescriptor.binDir)).
+		envTyped("R_HOME_DIR", t, "{R}").
+		envTyped("RHOME", t, "{R}").
+		envTyped("RENV_PATHS_ROOT", t, path.join("{R}", "renv-root"))
 }
 
 export ll.toStrict({
