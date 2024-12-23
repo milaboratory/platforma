@@ -16,6 +16,7 @@ export * from './components/PlAgCellStatusTag';
 export * from './components/PlAgDataTable/types';
 export * from './components/PlAgDataTable/sources/row-number';
 export * from './components/PlAgDataTable/sources/focus-row';
+export * from './components/PlAgDataTable/sources/menu-items';
 
 export * from './components/PlAgCsvExporter';
 
