@@ -20,7 +20,8 @@ defineProps<{
 
 <style lang="css">
 .grid-overlay-container {
-  height: 100%;
+  height: calc(100% - 1px);
+  margin-top: 1px;
   width: 100%;
   display: flex;
   flex-direction: column;
