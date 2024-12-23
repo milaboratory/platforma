@@ -1,5 +1,11 @@
 # @platforma-sdk/package-builder
 
+## 2.15.0
+
+### Minor Changes
+
+- 4fc63d8: breaking change: package builder: cmd -> command; workflow-tengo: exec expressionRefs
+
 ## 2.14.2
 
 ### Patch Changes

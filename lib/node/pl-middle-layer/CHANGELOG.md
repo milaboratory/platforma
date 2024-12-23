@@ -1,5 +1,12 @@
 # @milaboratories/pl-middle-layer
 
+## 1.23.7
+
+### Patch Changes
+
+- Updated dependencies [4fc63d8]
+  - @platforma-sdk/workflow-tengo@2.9.0
+
 ## 1.23.6
 
 ### Patch Changes
