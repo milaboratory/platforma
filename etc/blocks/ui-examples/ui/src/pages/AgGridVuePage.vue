@@ -16,6 +16,7 @@ import {
   type PlAgHeaderComponentParams,
   PlAgCsvExporter,
   PlAgCellProgress,
+  defaultMainMenuItems,
 } from '@platforma-sdk/ui-vue';
 import { AgGridVue } from 'ag-grid-vue3';
 import type { ColDef, GridApi, GridOptions, GridReadyEvent } from 'ag-grid-enterprise';
@@ -36,6 +37,7 @@ const columnDefs: ColDef[] = [
     colId: 'id',
     field: 'id',
     headerName: 'ID',
+    mainMenuItems: defaultMainMenuItems,
     headerComponent: PlAgColumnHeader,
     headerComponentParams: { type: 'Number' } satisfies PlAgHeaderComponentParams,
   },
