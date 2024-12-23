@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.3.14
+
+### Patch Changes
+
+- 2639fac: added AgGrid context menu styles
+
 ## 1.3.13
 
 ### Patch Changes
