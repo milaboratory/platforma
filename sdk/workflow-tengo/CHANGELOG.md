@@ -1,5 +1,17 @@
 # @platforma-sdk/workflow-tengo
 
+## 2.8.8
+
+### Patch Changes
+
+- 3e516a3: maps.clone utility method with removeUndefs option
+
+## 2.8.7
+
+### Patch Changes
+
+- ca3e9fa: wf: exec: add monetization
+
 ## 2.8.6
 
 ### Patch Changes

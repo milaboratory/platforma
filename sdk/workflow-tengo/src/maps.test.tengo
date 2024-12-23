@@ -13,6 +13,39 @@ Test_map_DeepMerge := func() {
 	)
 }
 
+Test_map_Clone_1 := func() {
+	test.isEqual(
+		maps.clone(
+			{a: {b: 3}, d: {a: {b: {c: undefined, d: 23}, d: 1}}},
+			{removeUndefs: true}
+		),
+		{a: {b: 3}, d: {a: {b: {d: 23}, d: 1}}},
+		"unexpected result from maps.clone"
+	)
+}
+
+Test_map_Clone_2 := func() {
+	test.isEqual(
+		maps.clone(
+			{a: {b: 3}, d: {a: ll.toStrict({b: {c: undefined, d: 23}, d: 1})}},
+			{removeUndefs: true}
+		),
+		{a: {b: 3}, d: {a: ll.toStrict({b: {d: 23}, d: 1})}},
+		"unexpected result from maps.clone"
+	)
+}
+
+Test_map_Clone_3 := func() {
+	a := {a: {b: 3}, d: [{a: ll.toStrict({b: {c: undefined, d: 23}, d: 1})}]}
+	aCopy := maps.clone(a)
+	a.d = []
+	test.isEqual(
+		aCopy,
+		{a: {b: 3}, d: [{a: ll.toStrict({b: {c: undefined, d: 23}, d: 1})}]},
+		"unexpected result from maps.clone"
+	)
+}
+
 Test_map_ContainsKey := func() {
 	test.isTrue(maps.containsKey({a: undefined}, "a"), "map.containsKey() wrong result for regular map with existing key and undefined value")
 	test.isTrue(maps.containsKey({b: 1}, "b"), "map.containsKey() wrong result for regular map with existing key and truthful value")

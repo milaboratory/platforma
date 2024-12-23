@@ -147,6 +147,10 @@ class BlockInfo {
     return this.fields.prodCtx !== undefined;
   }
 
+  get productionHasErrors(): boolean {
+    return this.fields.prodUiCtx?.status === 'Error';
+  }
+
   private readonly productionStaleC: () => boolean = cached(
     () => `${this.fields.currentArgs!.modCount}_${this.fields.prodArgs?.modCount}`,
     () =>
@@ -154,12 +158,12 @@ class BlockInfo {
       Buffer.compare(this.fields.currentArgs!.value!, this.fields.prodArgs.value!) !== 0
   );
 
-  get productionStale(): boolean {
-    return this.productionRendered && this.productionStaleC();
-  }
+  // get productionStale(): boolean {
+  //   return this.productionRendered && this.productionStaleC() && ;
+  // }
 
   get requireProductionRendering(): boolean {
-    return !this.productionRendered || this.productionStaleC();
+    return !this.productionRendered || this.productionStaleC() || this.productionHasErrors;
   }
 
   get actualProductionInputs(): any | undefined {

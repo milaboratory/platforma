@@ -180,7 +180,7 @@ export class PFrameDriver implements SdkPFrameDriver {
       protected createNewResource(params: InternalPFrameData): PFrameHolder {
         if (getDebugFlags().logPFrameRequests)
           logger.info(
-            `Create PFrame (${this.calculateParamsKey(params)}): ${JSON.stringify(params, bigintReplacer)}`
+            `PFrame creation (pFrameHandle = ${this.calculateParamsKey(params)}): ${JSON.stringify(params, bigintReplacer)}`
           );
         return new PFrameHolder(this.blobDriver, blobContentCache, params);
       }
@@ -203,7 +203,7 @@ export class PFrameDriver implements SdkPFrameDriver {
         const rawPTable = await concurrencyLimiter.run(async () => {
           if (getDebugFlags().logPFrameRequests)
             logger.info(
-              `Create PTable (${this.calculateParamsKey(params)}): ${JSON.stringify(params, bigintReplacer)}`
+              `PTable creation (pTableHandle = ${this.calculateParamsKey(params)}): ${JSON.stringify(params, bigintReplacer)}`
             );
           return await pFrame.pFrame.createTable({
             src: joinEntryToInternal(params.def.src),
@@ -245,6 +245,13 @@ export class PFrameDriver implements SdkPFrameDriver {
     const pFrameHandle = this.createPFrame(extractAllColumns(def.src), ctx);
     const defIds = mapPTableDef(def, (c) => c.id);
     const res = this.pTables.acquire({ def: defIds, pFrameHandle });
+    if (getDebugFlags().logPFrameRequests)
+      this.logger.info(
+        `Create PTable call (pFrameHandle = ${pFrameHandle}; pTableHandle = ${res}): ${JSON.stringify(
+          mapPTableDef(def, (c) => c.spec),
+          bigintReplacer
+        )}`
+      );
     ctx.addOnDestroy(res.unref); // in addition to pframe unref added in createPFrame above
     return res.key as PTableHandle;
   }
@@ -292,7 +299,7 @@ export class PFrameDriver implements SdkPFrameDriver {
     let table = await this.concurrencyLimiter.run(async () => {
       if (getDebugFlags().logPFrameRequests)
         this.logger.info(
-          `calculateTableData, handle = ${handle}, request = ${JSON.stringify(request, bigintReplacer)}`
+          `Call calculateTableData, handle = ${handle}, request = ${JSON.stringify(request, bigintReplacer)}`
         );
       return await this.pFrames.getByKey(handle).pFrame.createTable({
         src: joinEntryToInternal(request.src),
@@ -327,7 +334,7 @@ export class PFrameDriver implements SdkPFrameDriver {
     return await this.concurrencyLimiter.run(async () => {
       if (getDebugFlags().logPFrameRequests)
         this.logger.info(
-          `getUniqueValues, handle = ${handle}, request = ${JSON.stringify(request, bigintReplacer)}`
+          `Call getUniqueValues, handle = ${handle}, request = ${JSON.stringify(request, bigintReplacer)}`
         );
       return await this.pFrames.getByKey(handle).pFrame.getUniqueValues({
         ...request,
@@ -389,58 +396,60 @@ function joinEntryToInternal(entry: JoinEntry<PObjectId>): PFrameInternal.JoinEn
 
 function stableKeyFromFullPTableDef(data: FullPTableDef): string {
   const hash = createHash('sha256');
-  hash.update(canonicalize(data.def)!);
+  hash.update(canonicalize(data)!);
   return hash.digest().toString('hex');
 }
 
 function stableKeyFromPFrameData(data: PColumn<PFrameInternal.DataInfo<ResourceInfo>>[]): string {
-  const orderedData = [...data].map((column) => mapPObjectData(column, (r) => {
-    let result: {
-      type: string,
-      keyLength: number,
-      payload: {
-        key: string;
-        value: null | number | string | [string, string]
-      }[];
-    };
-    const type = r.type;
-    switch (type) {
-      case 'Json':
-        result = {
-          type: r.type,
-          keyLength: r.keyLength,
-          payload: Object.entries(r.data).map(([part, value]) => ({
-            key: part,
-            value,
-          }))
-        };
-        break;
-      case 'JsonPartitioned':
-        result = {
-          type: r.type,
-          keyLength: r.partitionKeyLength,
-          payload: Object.entries(r.parts).map(([part, info]) => ({
-            key: part,
-            value: info.id.toString(),
-          }))
-        };
-        break;
-      case 'BinaryPartitioned':
-        result = {
-          type: r.type,
-          keyLength: r.partitionKeyLength,
-          payload: Object.entries(r.parts).map(([part, info]) => ({
-            key: part,
-            value: [info.index.id.toString(), info.values.id.toString()] as const,
-          }))
-        };
-        break;
-      default:
-        throw Error(`unsupported resource type: ${ type satisfies never }`);
-    }
-    result.payload.sort((lhs, rhs) => lhs.key.localeCompare(rhs.key));
-    return result;
-  }));
+  const orderedData = [...data].map((column) =>
+    mapPObjectData(column, (r) => {
+      let result: {
+        type: string;
+        keyLength: number;
+        payload: {
+          key: string;
+          value: null | number | string | [string, string];
+        }[];
+      };
+      const type = r.type;
+      switch (type) {
+        case 'Json':
+          result = {
+            type: r.type,
+            keyLength: r.keyLength,
+            payload: Object.entries(r.data).map(([part, value]) => ({
+              key: part,
+              value
+            }))
+          };
+          break;
+        case 'JsonPartitioned':
+          result = {
+            type: r.type,
+            keyLength: r.partitionKeyLength,
+            payload: Object.entries(r.parts).map(([part, info]) => ({
+              key: part,
+              value: info.id.toString()
+            }))
+          };
+          break;
+        case 'BinaryPartitioned':
+          result = {
+            type: r.type,
+            keyLength: r.partitionKeyLength,
+            payload: Object.entries(r.parts).map(([part, info]) => ({
+              key: part,
+              value: [info.index.id.toString(), info.values.id.toString()] as const
+            }))
+          };
+          break;
+        default:
+          throw Error(`unsupported resource type: ${type satisfies never}`);
+      }
+      result.payload.sort((lhs, rhs) => lhs.key.localeCompare(rhs.key));
+      return result;
+    })
+  );
   orderedData.sort((lhs, rhs) => lhs.id.localeCompare(rhs.id));
 
   const hash = createHash('sha256');

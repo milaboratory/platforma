@@ -15,6 +15,7 @@ import {
   PlAgColumnHeader,
   type PlAgHeaderComponentParams,
   PlAgCsvExporter,
+  PlAgCellProgress,
 } from '@platforma-sdk/ui-vue';
 import { AgGridVue } from 'ag-grid-vue3';
 import type { ColDef, GridApi, GridOptions, GridReadyEvent } from 'ag-grid-enterprise';
@@ -51,6 +52,29 @@ const columnDefs: ColDef[] = [
     },
   },
   {
+    colId: 'progress',
+    field: 'progress',
+    headerName: 'Progress',
+    cellRendererSelector: (cellData) => {
+      console.log(cellData);
+      return {
+        component: PlAgCellProgress,
+        params: {
+          progress: cellData.value,
+          progressString: cellData.value,
+          step: cellData.value === undefined ? 'Calculations' : 'Loading',
+          stage: 'running',
+        },
+      };
+    },
+    cellStyle: {
+      '--ag-cell-horizontal-padding': '0px',
+      '--ag-cell-vertical-padding': '0px',
+    },
+    headerComponent: PlAgColumnHeader,
+    headerComponentParams: { type: 'Text' } satisfies PlAgHeaderComponentParams,
+  },
+  {
     colId: 'date',
     field: 'date',
     headerName: 'Date',
@@ -84,10 +108,11 @@ const columnDefs: ColDef[] = [
   },
 ];
 
-const result = times(100, () => {
+const result = times(100, (i) => {
   return {
     id: faker.number.int(),
     label: faker.company.buzzNoun(),
+    progress: i % 2 === 0 ? undefined : faker.number.int({ min: 24, max: 100 }),
     date: faker.date.birthdate(),
     file: '',
     link: faker.internet.url(),
@@ -105,6 +130,7 @@ const gridOptions: GridOptions = {
     console.log('Example "Open" button was clicked', e);
   },
   components: {
+    PlAgCellProgress,
     LinkComponent,
     PlAgCellFile,
     PlAgTextAndButtonCell,

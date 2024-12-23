@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.21.0
+
+### Minor Changes
+
+- 05c8c1c: Advanced createPlDataTable
+
 ## 1.20.27
 
 ### Patch Changes
