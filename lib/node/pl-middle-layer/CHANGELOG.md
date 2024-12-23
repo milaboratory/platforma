@@ -1,5 +1,33 @@
 # @milaboratories/pl-middle-layer
 
+## 1.23.6
+
+### Patch Changes
+
+- c367623: Fixes PTable handle derivation algorithm, now also takes into account parent pFrameHandle
+
+## 1.23.5
+
+### Patch Changes
+
+- Updated dependencies [05c8c1c]
+  - @platforma-sdk/model@1.21.0
+
+## 1.23.4
+
+### Patch Changes
+
+- 3e516a3: Now block will be actually restarted if it had errors but all the args remained the same
+- Updated dependencies [3e516a3]
+  - @platforma-sdk/workflow-tengo@2.8.8
+
+## 1.23.3
+
+### Patch Changes
+
+- Updated dependencies [ca3e9fa]
+  - @platforma-sdk/workflow-tengo@2.8.7
+
 ## 1.23.2
 
 ### Patch Changes

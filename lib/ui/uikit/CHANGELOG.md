@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.40
+
+### Patch Changes
+
+- 78d049b: added PlProgressCell
+
 ## 2.2.39
 
 ### Patch Changes
