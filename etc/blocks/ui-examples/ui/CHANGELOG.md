@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.3.15
+
+### Patch Changes
+
+- af400eb: Fixed types
+
 ## 1.3.14
 
 ### Patch Changes
