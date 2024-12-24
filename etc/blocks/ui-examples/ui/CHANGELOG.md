@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.3.17
+
+### Patch Changes
+
+- ad4719e: added dropdownmultiref and loading status
+
 ## 1.3.16
 
 ### Patch Changes
