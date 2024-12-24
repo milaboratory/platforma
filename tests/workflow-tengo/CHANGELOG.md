@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo-tests
 
+## 1.4.2
+
+### Patch Changes
+
+- 762425d: wf: exec: add new `argWithVar`, envWithVar, changing old broke forward compat
+
 ## 1.4.1
 
 ### Patch Changes
