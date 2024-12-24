@@ -324,10 +324,10 @@ binaryRunOptions := func(runOptions, mnzEnvs) {
 
 	// adds exec builder's defined options from run options.
 	for arg in runOptions.args {
-		runCmdOpts.args = append(runCmdOpts.args, _newArg(onlyStrings, arg))
+		runCmdOpts.args = append(runCmdOpts.args, _newArg(true, arg))
 	}
 	for name, val in runOptions.envs {
-		runCmdOpts.envs[name] = _newArg(onlyStrings, val)
+		runCmdOpts.envs[name] = _newArg(true, val)
 	}
 
 	for name, val in mnzEnvs { // can be empty
