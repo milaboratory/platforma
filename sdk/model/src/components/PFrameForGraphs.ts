@@ -8,6 +8,7 @@ import {
 } from '@milaboratories/pl-model-common';
 import { RenderCtx, TreeNodeAccessor } from '../render';
 
+/** Create id for column copy with added keys in axes domains */
 const colId = (id: PObjectId, domains: (Record<string, string> | undefined)[]) => {
     let wid = id.toString();
     domains?.forEach(domain => {
@@ -21,7 +22,7 @@ const colId = (id: PObjectId, domains: (Record<string, string> | undefined)[]) =
     return wid;
 };
 
-// all combinations with 1 key from each list
+/** All combinations with 1 key from each list */
 function getKeysCombinations(idsLists: AxisId[][]) {
     if (!idsLists.length) {
         return [];
@@ -37,8 +38,8 @@ function getKeysCombinations(idsLists: AxisId[][]) {
     return result;
 }
 
-// main column can have additional domains, if secondary column (meta-column) has all axes match main column axes
-// we can add its copy with missed domain fields for compatibility
+/** Main column can have additional domains, if secondary column (meta-column) has all axes match main column axes
+we can add its copy with missed domain fields for compatibility */
 function getAdditionalColumnsForPair(
     mainColumn: PColumn<TreeNodeAccessor | PColumnValues>,
     secondaryColumn: PColumn<TreeNodeAccessor | PColumnValues>
