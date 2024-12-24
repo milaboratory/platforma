@@ -295,12 +295,17 @@ export class PFrameDriver implements SdkPFrameDriver {
           ? [{ axesSpec: request.compatibleWith, qualifications: [] }]
           : [],
     };
+    const responce = await this.concurrencyLimiter.run(
+      async () => await this.pFrames.getByKey(handle).pFrame.findColumns(iRequest),
+    );
     return {
-      hits: (
-        await this.concurrencyLimiter.run(
-          async () => await this.pFrames.getByKey(handle).pFrame.findColumns(iRequest),
-        )
-      ).hits.map((h) => h.hit),
+      hits: responce.hits
+        .filter((h) => // only exactly matching columns
+          h.mappingVariants.length === 0
+          || h.mappingVariants.some((v) =>
+            v.qualifications.forHit.length === 0
+            && v.qualifications.forQueries.every((q) => q.length === 0)))
+        .map((h) => h.hit),
     };
   }
 
