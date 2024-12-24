@@ -28,11 +28,11 @@ catalogs:
       specifier: ^29.7.0
       version: 29.7.0
     '@milaboratories/pframes-node':
-      specifier: 2.1.2
-      version: 2.1.2
+      specifier: 2.1.3
+      version: 2.1.3
     '@milaboratories/software-pframes-conv':
-      specifier: 2.1.2
-      version: 2.1.2
+      specifier: 2.1.3
+      version: 2.1.3
     '@milaboratories/tengo-tester':
       specifier: ^1.5.0
       version: 1.5.0
@@ -1502,7 +1502,7 @@ importers:
         version: link:../computable
       '@milaboratories/pframes-node':
         specifier: 'catalog:'
-        version: 2.1.2(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)
+        version: 2.1.3(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)
       '@milaboratories/pl-client':
         specifier: workspace:^
         version: link:../pl-client
@@ -1973,7 +1973,7 @@ importers:
     dependencies:
       '@milaboratories/software-pframes-conv':
         specifier: 'catalog:'
-        version: 2.1.2
+        version: 2.1.3
       '@platforma-open/milaboratories.software-small-binaries':
         specifier: 'catalog:'
         version: 1.15.6
@@ -2154,7 +2154,7 @@ importers:
         version: link:../../lib/util/build-configs
       '@milaboratories/software-pframes-conv':
         specifier: 'catalog:'
-        version: 2.1.2
+        version: 2.1.3
       '@platforma-open/milaboratories.software-small-binaries':
         specifier: 'catalog:'
         version: 1.15.6
@@ -3873,8 +3873,8 @@ packages:
   '@microsoft/tsdoc@0.15.1':
     resolution: {integrity: sha512-4aErSrCR/On/e5G2hDP0wjooqDdauzEbIq8hIkIe5pXV0rtWJZvdCEKL0ykZxex+IxIwBp0eGeV48hQN07dXtw==}
 
-  '@milaboratories/pframes-node@2.1.2':
-    resolution: {integrity: sha512-qfrlijU7l0W1CPdd0NbWzGLhd+EwCfMvWW8T7BVeLOzhYWBxcG86BI50G/jUjtxlccXKY0af1r8wakDoVuWNag==}
+  '@milaboratories/pframes-node@2.1.3':
+    resolution: {integrity: sha512-a7Khaw9Gzd155PnjY3r/Q9DnQFV3MXXowBeCsws1GFhH6dsW4XRMpRBL/jlOZYuimxBGCjejoml+6bMyAaRqTQ==}
     peerDependencies:
       '@milaboratories/pl-model-common': '*'
 
@@ -3884,8 +3884,8 @@ packages:
   '@milaboratories/pl-model-middle-layer@1.6.2':
     resolution: {integrity: sha512-0utwNRv8M/2rgv9Zlt5zTixUEyBjxJyC6GthxAgVHX28U5TCWfi51K6A3FK9dDqVBhRnaHYU9+dV6P0m3Xuskw==}
 
-  '@milaboratories/software-pframes-conv@2.1.2':
-    resolution: {integrity: sha512-wDQEurhw7XD74WmGt3YtBAT38A0zPsMrN4ayYvUBOCPl9wvhkttGWQyaF/ACEP2ZEpM3mQMHsyONS8+PdftmbQ==}
+  '@milaboratories/software-pframes-conv@2.1.3':
+    resolution: {integrity: sha512-ahpiLbsLYA69E9YG5Zwgi/WbWpSG04dZMfeCTQ7vamhZBBw6m6ZhcqFFXeE3a5M/a4LCBz5VrwMzwrKrDEunPA==}
 
   '@milaboratories/tengo-tester@1.5.0':
     resolution: {integrity: sha512-WBG9/aVBGePBU+7+cKzrmydEJGGWPGy+SSJrJ5XRm613hAeCGIp5I3MJBkgJjiovTYoaiD9peTQD6uhr5o1fNw==}
@@ -5032,6 +5032,7 @@ packages:
   are-we-there-yet@2.0.0:
     resolution: {integrity: sha512-Ci/qENmwHnsYo9xKIcUJN5LeDKdJ6R1Z1j9V/J5wyq8nh/mYPEpIKJbBZXtZjG04HiK7zV/p6Vs9952MrMeUIw==}
     engines: {node: '>=10'}
+    deprecated: This package is no longer supported.
 
   arg@4.1.3:
     resolution: {integrity: sha512-58S9QDqG0Xx27YwPSt9fJxivjYl432YCwfDMfZ+71RAqUrZef7LrKQZ3LHLOwCS4FLNBplP533Zx895SeOCHvA==}
@@ -5936,6 +5937,7 @@ packages:
   gauge@3.0.2:
     resolution: {integrity: sha512-+5J6MS/5XksCuXq++uFRsnUd7Ovu1XenbeuIuNRJxYWjgQbPuFhT14lAvsWfqfAmnwluf1OwMjz39HjfLPci0Q==}
     engines: {node: '>=10'}
+    deprecated: This package is no longer supported.
 
   gensync@1.0.0-beta.2:
     resolution: {integrity: sha512-3hN7NaskYvMDLQY55gnW3NQ+mesEAepTqlg+VEbj7zzqEMBVNhzcGYYeqFo/TlYz6eQiFcp1HcsCZO+nGgS8zg==}
@@ -6810,6 +6812,7 @@ packages:
 
   npmlog@5.0.1:
     resolution: {integrity: sha512-AqZtDUWOMKs1G/8lwylVjrdYgqA4d9nu8hc+0gzRxlDb1I10+FHBGMXs6aiQHFdCUUlqH99MUMuLfzWDNDtfxw==}
+    deprecated: This package is no longer supported.
 
   nth-check@2.1.1:
     resolution: {integrity: sha512-lqjrjmaOoAnWfMmBPL+XNnynZh2+swxiX3WUE0s4yEHI6m+AwrK2UZOimIRl3X/4QctVqS8AiZjFqyOGrMXb/w==}
@@ -7149,9 +7152,6 @@ packages:
     resolution: {integrity: sha512-o/3ikDxtXaA59BmZuZrJZDJv8NMDGSj+6j6XaeBmHw8eY1i1qd9+6H+LjVvQXx3HN6aRCGa1cUdJ9RaJZUugnQ==}
     engines: {node: '>=14'}
 
-  remeda@2.17.4:
-    resolution: {integrity: sha512-pviU2Ag7Qx9mOCAKO4voxDx/scfLzdhp3v85qDO4xxntQsU76uE9sgrAAdK1ATn4zzaOJqCXYMMNRP+O9F4Wiw==}
-
   remeda@2.18.0:
     resolution: {integrity: sha512-wvHvaApA7crz46HWhGTotPawkzd45w1iXzPK7r4ECQgbmcSqHLrVio2LOr7ZEp1pu5QDH1U391ZKu+qra7OoLw==}
 
@@ -7209,6 +7209,7 @@ packages:
 
   rimraf@3.0.2:
     resolution: {integrity: sha512-JZkJMZkAGFFPP2YqXZXPbMlMBgsxzE8ILs4lMIX/2o0L9UBw9O/Y3o6wFw/i9YLapcUJWwqbi3kdxIPdC62TIA==}
+    deprecated: Rimraf versions prior to v4 are no longer supported
     hasBin: true
 
   rimraf@5.0.10:
@@ -7736,10 +7737,6 @@ packages:
   type-fest@0.21.3:
     resolution: {integrity: sha512-t0rzBq87m3fVcduHDUFhKmyyX+9eo6WQjZvf51Ea/M0Q7+T374Jp1aUiyUl0GKxp8M/OETVHSDvmkyPgvX+X2w==}
     engines: {node: '>=10'}
-
-  type-fest@4.29.0:
-    resolution: {integrity: sha512-RPYt6dKyemXJe7I6oNstcH24myUGSReicxcHTvCLgzm4e0n8y05dGvcGB15/SoPRBmhlMthWQ9pvKyL81ko8nQ==}
-    engines: {node: '>=16'}
 
   type-fest@4.30.2:
     resolution: {integrity: sha512-UJShLPYi1aWqCdq9HycOL/gwsuqda1OISdBO3t8RlXQC4QvtuIz4b5FCfe2dQIWEpmlRExKmcTBfP1r9bhY7ig==}
@@ -10315,7 +10312,7 @@ snapshots:
 
   '@microsoft/tsdoc@0.15.1': {}
 
-  '@milaboratories/pframes-node@2.1.2(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)':
+  '@milaboratories/pframes-node@2.1.3(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)':
     dependencies:
       '@mapbox/node-pre-gyp': 1.0.11(encoding@0.1.13)
       '@milaboratories/pl-model-common': link:lib/model/common
@@ -10331,11 +10328,11 @@ snapshots:
   '@milaboratories/pl-model-middle-layer@1.6.2':
     dependencies:
       '@milaboratories/pl-model-common': 1.8.0
-      remeda: 2.17.4
+      remeda: 2.18.0
       utility-types: 3.11.0
       zod: 3.23.8
 
-  '@milaboratories/software-pframes-conv@2.1.2': {}
+  '@milaboratories/software-pframes-conv@2.1.3': {}
 
   '@milaboratories/tengo-tester@1.5.0': {}
 
@@ -11691,7 +11688,7 @@ snapshots:
 
   agent-base@6.0.2:
     dependencies:
-      debug: 4.3.7
+      debug: 4.4.0(supports-color@8.1.1)
     transitivePeerDependencies:
       - supports-color
 
@@ -13039,7 +13036,7 @@ snapshots:
   https-proxy-agent@5.0.1:
     dependencies:
       agent-base: 6.0.2
-      debug: 4.3.7
+      debug: 4.4.0(supports-color@8.1.1)
     transitivePeerDependencies:
       - supports-color
 
@@ -14334,10 +14331,6 @@ snapshots:
     dependencies:
       '@pnpm/npm-conf': 2.3.1
 
-  remeda@2.17.4:
-    dependencies:
-      type-fest: 4.29.0
-
   remeda@2.18.0:
     dependencies:
       type-fest: 4.30.2
@@ -15000,8 +14993,6 @@ snapshots:
   type-fest@0.20.2: {}
 
   type-fest@0.21.3: {}
-
-  type-fest@4.29.0: {}
 
   type-fest@4.30.2: {}
 

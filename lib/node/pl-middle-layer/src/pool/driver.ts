@@ -80,7 +80,7 @@ function migrateFilters(filters: PTableRecordFilter[]): PTableRecordSingleValueF
 const bigintReplacer = (_: string, v: unknown) => (typeof v === 'bigint' ? v.toString() : v);
 
 class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
-  public readonly pFrame = new PFrame();
+  public readonly pFrame;
   private readonly blobIdToResource = new Map<string, ResourceInfo>();
   private readonly blobHandleComputables = new Map<
     string,
@@ -89,10 +89,24 @@ class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
 
   constructor(
     private readonly blobDriver: DownloadDriver,
+    private readonly logger: MiLogger,
     private readonly blobContentCache: LRUCache<string, Uint8Array>,
     private readonly columns: InternalPFrameData,
   ) {
     // pframe initialization
+    this.pFrame = new PFrame(
+      (level: 'info' | 'warn' | 'error', message: string) => {
+        switch (level) {
+          default:
+          case 'info':
+            return this.logger.info(message);
+          case 'warn':
+            return this.logger.warn(message);
+          case 'error':
+            return this.logger.error(message);
+        }
+      },
+    );
     this.pFrame.setDataSource(this);
     for (const column of columns) {
       for (const blob of allBlobs(column.data)) this.blobIdToResource.set(blobKey(blob), blob);
@@ -177,7 +191,10 @@ export class PFrameDriver implements SdkPFrameDriver {
     this.concurrencyLimiter = concurrencyLimiter;
 
     this.pFrames = new (class extends RefCountResourcePool<InternalPFrameData, PFrameHolder> {
-      constructor(private readonly blobDriver: DownloadDriver) {
+      constructor(
+        private readonly blobDriver: DownloadDriver,
+        private readonly logger: MiLogger,
+      ) {
         super();
       }
 
@@ -186,13 +203,13 @@ export class PFrameDriver implements SdkPFrameDriver {
           logger.info(
             `PFrame creation (pFrameHandle = ${this.calculateParamsKey(params)}): ${JSON.stringify(params, bigintReplacer)}`,
           );
-        return new PFrameHolder(this.blobDriver, blobContentCache, params);
+        return new PFrameHolder(this.blobDriver, this.logger, blobContentCache, params);
       }
 
       protected calculateParamsKey(params: InternalPFrameData): string {
         return stableKeyFromPFrameData(params);
       }
-    })(this.blobDriver);
+    })(this.blobDriver, this.logger);
 
     this.pTables = new (class extends RefCountResourcePool<
       FullPTableDef,
