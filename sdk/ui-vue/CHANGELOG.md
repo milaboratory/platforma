@@ -1,5 +1,13 @@
 # @platforma-sdk/ui-vue
 
+## 1.21.5
+
+### Patch Changes
+
+- 16c729a: [sdk/ui-vue] Proportion box with legend (cell)
+- Updated dependencies [16c729a]
+  - @milaboratories/uikit@2.2.41
+
 ## 1.21.3
 
 ### Patch Changes

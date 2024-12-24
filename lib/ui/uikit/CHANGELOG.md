@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.41
+
+### Patch Changes
+
+- 16c729a: [sdk/ui-vue] Proportion box with legend (cell)
+
 ## 2.2.40
 
 ### Patch Changes
