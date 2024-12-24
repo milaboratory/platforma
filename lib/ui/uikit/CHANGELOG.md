@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.42
+
+### Patch Changes
+
+- af400eb: Fixed types
+
 ## 2.2.41
 
 ### Patch Changes
