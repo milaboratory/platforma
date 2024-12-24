@@ -38,6 +38,7 @@ export * from './components/PlTooltip';
 export * from './components/PlProgressBar';
 export * from './components/PlNumberField';
 export * from './components/PlDropdownMulti';
+export * from './components/PlDropdownMultiRef';
 export * from './components/PlCheckbox';
 export * from './components/PlCheckboxGroup';
 export * from './components/PlChip';

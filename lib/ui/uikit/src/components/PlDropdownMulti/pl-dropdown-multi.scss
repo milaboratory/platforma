@@ -289,6 +289,11 @@
     --label-color: var(--color-dis-01);
     cursor: not-allowed;
     pointer-events: none;
+
+    .mask-loading {
+      animation: spin 2.5s linear infinite;
+      background-color: #07AD3E;
+    }
   }
 
   &__open-chips-container {
