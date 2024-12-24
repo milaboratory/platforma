@@ -21,6 +21,10 @@ export class UploadTask {
   /** If failed, then getting a progress is terminally failed. */
   public failed?: boolean;
 
+  /** True if the blob was existed.
+   * At this case, the task will show progress == 1.0. */
+  private alreadyExisted = false;
+
   constructor(
     private readonly logger: MiLogger,
     private readonly clientBlob: ClientUpload,
@@ -107,10 +111,13 @@ export class UploadTask {
       const status = await this.clientProgress.getStatus(this.res);
 
       const oldStatus = this.progress.status;
-      this.progress.status = protoToStatus(status);
+      const newStatus = doneProgressIfExisted(this.alreadyExisted, protoToStatus(status));
+      this.progress.status = newStatus;
       this.setDone(status.done);
 
-      if (status.done || status.progress != oldStatus?.progress) this.change.markChanged();
+      if (status.done || this.progress.status.progress != oldStatus?.progress) {
+        this.change.markChanged();
+      }
     } catch (e: any) {
       this.setRetriableError(e);
 
@@ -147,7 +154,10 @@ export class UploadTask {
   }
 
   public setDoneIfOutputSet(res: ImportResourceSnapshot) {
-    if (isImportResourceOutputSet(res)) this.setDone(true);
+    if (isImportResourceOutputSet(res)) {
+      this.setDone(true);
+      this.alreadyExisted = true;
+    }
   }
 
   private setDone(done: boolean) {
@@ -237,6 +247,23 @@ function protoToStatus(proto: ProgressStatus): sdk.ImportStatus {
     bytesProcessed: Number(proto.bytesProcessed),
     bytesTotal: Number(proto.bytesTotal)
   };
+}
+
+/** Special hack: if we didn't even start to upload the blob
+  * to backend because the result was already there,
+  * the backend does show us a status that nothing were uploaded,
+  * but we need to show the client that everything is OK.
+  * Thus, here we set progress to be 1.0 and all bytes are become processed. */
+function doneProgressIfExisted(alreadyExisted: boolean, status: sdk.ImportStatus) {
+  if (alreadyExisted && status.bytesTotal != 0 && status.bytesProcessed == 0) {
+    return {
+      progress: 1.0,
+      bytesProcessed: Number(status.bytesTotal),
+      bytesTotal: Number(status.bytesTotal)
+    };
+  }
+
+  return status;
 }
 
 export function isResourceWasDeletedError(e: any) {
