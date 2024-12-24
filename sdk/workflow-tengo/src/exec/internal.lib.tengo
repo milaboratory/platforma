@@ -33,30 +33,28 @@ _expr := func(varName) {
 	return "{" + varName + "}"
 }
 
+_newTypedArg := func(type, value) {
+	return ll.toStrict({
+		type: type,
+		value: value
+	})
+}
+
 /**
  * Create new argument with a type. The type can be either string, expression or variable.
  * Decides whether we need a simple argument or an expression one.
- * For a month, we keep deprecated variable arguments.
+ * Until 15 Mar 2025, we keep deprecated variable arguments.
  *
  * @param isString: boolean - whether it is a string or a difficult (expression) argument.
  */
 _newArg := func(isString, value) {
 	if isString {
-		return ll.toStrict({
-			type: constants.ARG_TYPE_STRING,
-			value: value
-		})
+		return _newTypedArg(constants.ARG_TYPE_STRING, value)
 	}
 	if desc.canBackendUseExpressions() {
-		return ll.toStrict({
-			type: constants.ARG_TYPE_EXPRESSION,
-			value: value
-		})
+		return _newTypedArg(constants.ARG_TYPE_EXPRESSION, value)
 	}
-	return ll.toStrict({
-		type: constants.ARG_TYPE_VAR,
-		value: value
-	})
+	return _newTypedArg(constants.ARG_TYPE_VAR, value)
 }
 
 _newRefVar := func(varName, refName, reference) {
@@ -308,13 +306,11 @@ binaryRunOptions := func(runOptions, mnzEnvs) {
 	validation.assertJsonSchema(mnzEnvs, {"any": validation.reference})
 
 	runCmdOpts := undefined
-	onlyStrings := false
 	if (is_undefined(ll.fromStrict(runOptions).software)) {
 		//
 		// Simple local command run, no software packages involved (backward compatibility)
 		//
 		runCmdOpts = _directCallOptions(runOptions)
-		onlyStrings = true
 	} else {
 		software := runOptions.software
 		descriptor := software.descriptor
@@ -323,11 +319,22 @@ binaryRunOptions := func(runOptions, mnzEnvs) {
 	}
 
 	// adds exec builder's defined options from run options.
-	for arg in runOptions.args {
-		runCmdOpts.args = append(runCmdOpts.args, _newArg(true, arg))
+	// If argsTyped or envsTyped are set (which is a new API from exec.builder),
+	// then pass them directly.
+	// Otherwise, pass args and envs the old way, without possible expression evaluating.
+	opts := ll.fromStrict(runOptions)
+	shouldUseNewTyped := !is_undefined(opts.argsTyped) || !is_undefined(opts.envsTyped)
+
+	args := shouldUseNewTyped ? runOptions.argsTyped : runOptions.args
+	for _, arg in args {
+		typedArg := shouldUseNewTyped ? _newTypedArg(arg.type, arg.value) :	_newArg(true, arg)
+		runCmdOpts.args = append(runCmdOpts.args, typedArg)
 	}
-	for name, val in runOptions.envs {
-		runCmdOpts.envs[name] = _newArg(true, val)
+
+	envs := shouldUseNewTyped ? runOptions.envsTyped : runOptions.envs
+	for name, v in envs {
+		typedEnv := shouldUseNewTyped ? _newTypedArg(v.type, v.value) : _newArg(true, v)
+		runCmdOpts.envs[name] = typedEnv
 	}
 
 	for name, val in mnzEnvs { // can be empty

@@ -17,6 +17,7 @@ validation := import(":validation")
 constants := import(":constants")
 desc := import(":exec.descriptor")
 monetization := import(":exec.monetization")
+execConstants := import(":exec.constants")
 
 _HEAVY_QUEUE    := "heavy"
 _MEDIUM_QUEUE   := "medium"
@@ -33,7 +34,14 @@ builder := func() {
 
 	soft := undefined
 	cmd := undefined
-	args := []
+	args := [] // list of strings
+	argsTyped := [] // list of {type: expression|string, value: string}
+	typedArgSet := false
+	typedEnvSet := false
+	envs := {} // map of names to values-strings
+	envsTyped := {} // map of names to {type: expression|string, value: string}
+	secrets := {} // { "env_name": "{secrets.secret_name}", ... }
+
 	entrypointSet := false
 
 	assertEntrypointNotSet := func() {
@@ -41,8 +49,6 @@ builder := func() {
 			"either a command with arguments or a software were already set.")
 	}
 
-	envs := {}
-	secrets := {} // { "env_name": "{secrets.secret_name}", ... }
 	queue := _HEAVY_QUEUE
 	cache := 0
 	nErrorLines := 200
@@ -137,10 +143,31 @@ builder := func() {
 		 * @param arg: string - the argument to add.
 		 */
 		arg: func(arg) {
-			if is_undefined(arg) {
-				ll.panic("exec: arg can't be undefined")
-			}
+			ll.assert(is_string(arg), "exec.arg(): argument must be a string, got: %v", arg)
 			args = append(args, arg)
+			argsTyped = append(argsTyped, {
+				type: execConstants.ARG_TYPE_STRING,
+				value: arg
+			})
+			return self
+		},
+
+		/**
+		 * Adds an argument that will be evaluated as expression in the command.
+		 *
+		 * @param arg: string - e.g. -Xms{system.memory_mb * 80 / 100}m
+		 */
+		argWithVar: func(arg) {
+			ll.assert(is_string(arg), "exec.argWithVar(): argument with var must be a string, got: %v", arg)
+
+			// deprecated: remove ARG_TYPE_VAR and this check after 15 Mar 2025
+			t := desc.canBackendUseExpressions() ? execConstants.ARG_TYPE_EXPRESSION : execConstants.ARG_TYPE_VAR
+			argsTyped = append(argsTyped, {
+				type: t,
+				value: arg
+			})
+			typedArgSet = true
+
 			return self
 		},
 
@@ -153,6 +180,30 @@ builder := func() {
 		env: func(name, value) {
 			validation.assertJsonSchema([name, value], ["string"])
 			envs[name] = value
+			envsTyped[name] = {
+				type: execConstants.ARG_TYPE_STRING,
+				value: value
+			}
+			return self
+		},
+
+		/**
+		 * Sets an environment variable.
+		 *
+		 * @param name: string - the name of the environment variable.
+		 * @param value: string - the value of the environment variable.
+		 */
+		envWithVar: func(name, value) {
+			validation.assertJsonSchema([name, value], ["string"])
+
+			// deprecated: remove ARG_TYPE_VAR and this check after 15 Mar 2025
+			t := desc.canBackendUseExpressions() ? execConstants.ARG_TYPE_EXPRESSION : execConstants.ARG_TYPE_VAR
+			envsTyped[name] = {
+				type: t,
+				value: value
+			}
+			typedEnvSet = true
+
 			return self
 		},
 
@@ -654,6 +705,13 @@ builder := func() {
 			// that were created before this feature existed.
 			if monetization.shouldRun(mnz) {
 				execInputs.runOptions.monetization = monetization.toJson(mnz)
+			}
+
+			// We add new argsTyped and envsTyped only when they were added
+			// to not break a deduplication on old pl backend.
+			if typedArgSet || typedEnvSet {
+				execInputs.runOptions.argsTyped = argsTyped
+				execInputs.runOptions.envsTyped = envsTyped
 			}
 
 			if !is_undefined(soft) {

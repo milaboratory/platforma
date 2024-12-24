@@ -187,6 +187,8 @@ self.body(func(inputs) {
 			"cmd,?": "string",
 			args: ["string"],
 			envs: { any: "string" },
+			"argsTyped,?": [{type: "string", value: "string"}],
+			"envsTyped,?": {"any": {type: "string", value: "string"}},
 			secrets: { any: "string" },
 			queue: "string",
 			stdout: "string",
