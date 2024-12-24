@@ -1,5 +1,11 @@
 # @milaboratories/pl-drivers
 
+## 1.5.7
+
+### Patch Changes
+
+- ddb29cf: upload: done progress if a blob already existed
+
 ## 1.5.6
 
 ### Patch Changes
