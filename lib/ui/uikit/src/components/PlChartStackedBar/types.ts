@@ -7,18 +7,20 @@ export type PlChartStackedBarSegment = {
   color: string | Color;
 };
 
-export type PlChartStackedBarSettings = {
-  /**
-   * The title of the chart.
-   * This will be displayed at the top of the chart, if provided.
-   */
-  title?: string;
-
+export type PlChartStackedBarSettingsCompact = {
   /**
    * The data to be displayed in the chart.
    * Each entry represents a segment of a stacked bar.
    */
   data: PlChartStackedBarSegment[];
+};
+
+export type PlChartStackedBarSettings = PlChartStackedBarSettingsCompact & {
+  /**
+   * The title of the chart.
+   * This will be displayed at the top of the chart, if provided.
+   */
+  title?: string;
 
   /**
    * The maximum number of legends displayed in a single column.

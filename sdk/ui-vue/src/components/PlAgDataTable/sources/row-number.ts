@@ -26,9 +26,9 @@ export function makeRowNumberColDef(): ColDef {
     suppressSizeToFit: true,
     suppressAutoSize: true,
     cellStyle: {
-      color: 'var(--txt-03)',
+      'color': 'var(--txt-03)',
       'background-color': 'var(--bg-base-light)',
-      overflow: 'visible !important',
+      'overflow': 'visible !important',
       'text-align': 'center',
     },
     sortable: false,
@@ -113,9 +113,9 @@ export function autoSizeRowNumberColumn(gridApi: GridApi) {
   });
   gridApi.addEventListener('columnResized', (event) => {
     if (
-      event.finished &&
-      event.source === 'autosizeColumns' &&
-      event.columns?.some((column) => column.isVisible() && column.getColId() === PlAgDataTableRowNumberColId)
+      event.finished
+      && event.source === 'autosizeColumns'
+      && event.columns?.some((column) => column.isVisible() && column.getColId() === PlAgDataTableRowNumberColId)
     ) {
       adjustRowNumberColumnWidth(event.api, cellFake, true);
     }
