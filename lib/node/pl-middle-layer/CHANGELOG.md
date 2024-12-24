@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 1.23.9
+
+### Patch Changes
+
+- 5aa245a: PFrames driver findColumns fix - return only exactly matching columns
+
 ## 1.23.8
 
 ### Patch Changes
