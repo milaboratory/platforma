@@ -1,7 +1,7 @@
 {
   "name": "@platforma-sdk/workflow-tengo-tests",
   "private": true,
-  "version": "1.4.1",
+  "version": "1.4.2",
   "description": "Tengo SDK library tests",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
