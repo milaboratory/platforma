@@ -24,6 +24,11 @@ setInterval(() => {
         <PlProgressCell stage="running" step="Step 1" progressString="running"/>
       </div>
 
+      <div class="text-m">Stage "running" passed only stage prop</div>
+      <div class="test-cell-container" >
+        <PlProgressCell stage="running"/>
+      </div>
+
       <div class="text-m">Stage "done" no progress</div>
       <div class="test-cell-container" >
         <PlProgressCell stage="done" step="Step 1" progressString="done"/>
