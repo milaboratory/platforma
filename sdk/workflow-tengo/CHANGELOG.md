@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 2.9.2
+
+### Patch Changes
+
+- 9be2ff2: wf: exec: revert old arg behaviour for expressions
+
 ## 2.9.1
 
 ### Patch Changes
