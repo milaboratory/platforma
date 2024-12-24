@@ -1,16 +1,14 @@
 <script lang="ts" setup>
-import { tapIf } from '@milaboratories/helpers';
 import { computed } from 'vue';
 import type { PlChartStackedBarSegment } from './types';
 
 const props = defineProps<{
   value: PlChartStackedBarSegment[];
   height?: number;
-  showFractionInLabel?: boolean;
 }>();
 
 const style = computed(() => ({
-  height: '100%',
+  height: props.height ?? '100%',
   minHeight: '82px',
 }));
 
@@ -19,14 +17,7 @@ const parts = computed(() => {
   const total = parts.reduce((res, it) => res + it.value, 0);
   return parts.map((p) => {
     const fraction = (p.value / total) * 100;
-    const fractionString = ((p.value / total) * 100).toFixed(1);
-    const label = tapIf(p.label, (label) => {
-      if (props.showFractionInLabel) {
-        return `${label} ${fractionString}%`;
-      }
-
-      return label;
-    });
+    const label = p.label;
     return {
       color: p.color.toString(),
       description: p.description,
@@ -35,6 +26,8 @@ const parts = computed(() => {
     };
   });
 });
+
+const trackTransforms = [-40, -50, -50, -50, -80];
 </script>
 
 <template>
@@ -45,7 +38,10 @@ const parts = computed(() => {
       <div
         v-for="(v, i) in [0, 25, 50, 75, 100]"
         :key="i"
-        :style="`left: ${v}%`"
+        :style="{
+          left: `${v}%`,
+          '--transform': `translateX(${trackTransforms[i]}%)`
+        }"
         :data-content="`${v}%`"
       />
     </div>
@@ -69,8 +65,6 @@ const parts = computed(() => {
   height: auto;
   position: relative;
   overflow: visible;
-  border: 1px solid green;
-
   border: 1px solid var(--txt-01);
   padding: 12px 6px;
   border-radius: 0;
@@ -80,7 +74,6 @@ const parts = computed(() => {
 .container {
   display: flex;
   flex-direction: row;
-  gap: 1px;
   width: 100%;
   height: 100%;
   align-items: center;
@@ -107,9 +100,9 @@ const parts = computed(() => {
     &::after {
       position: absolute;
       content: attr(data-content);
+      transform: var(--transform);
       left: 0;
       bottom: -24px;
-      transform: translateX(-50%);
     }
   }
 }

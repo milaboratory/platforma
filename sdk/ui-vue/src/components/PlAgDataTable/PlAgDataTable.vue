@@ -207,9 +207,9 @@ const gridOptions = shallowRef<GridOptions<PlAgDataTableRow>>({
   autoSizeStrategy: { type: 'fitCellContents' },
   rowSelection: selectedRows.value !== undefined
     ? {
-      mode: 'multiRow',
-      enableClickSelection: true
-    }
+        mode: 'multiRow',
+        enableClickSelection: true,
+      }
     : undefined,
   selectionColumnDef: {
     mainMenuItems: [],
@@ -242,7 +242,7 @@ const gridOptions = shallowRef<GridOptions<PlAgDataTableRow>>({
   },
   defaultColDef: {
     suppressHeaderMenuButton: true,
-    sortingOrder: ["desc", "asc", null],
+    sortingOrder: ['desc', 'asc', null],
   },
   maintainColumnOrder: true,
   localeText: {
@@ -453,15 +453,21 @@ watch(
   <div class="ap-ag-data-table-container">
     <PlAgGridColumnManager v-if="gridApi && showColumnsPanel" :api="gridApi" />
     <PlAgCsvExporter v-if="gridApi && showExportButton" :api="gridApi" />
-    <div v-if="settings?.sourceType === 'ptable' && !!settings.sheets && settings.sheets.length > 0"
-      class="ap-ag-data-table-sheets">
-      <PlDropdownLine v-for="(sheet, i) in settings.sheets" :key="i" :model-value="sheetsState[makeSheetId(sheet.axis)]"
+    <div
+      v-if="settings?.sourceType === 'ptable' && !!settings.sheets && settings.sheets.length > 0"
+      class="ap-ag-data-table-sheets"
+    >
+      <PlDropdownLine
+        v-for="(sheet, i) in settings.sheets" :key="i" :model-value="sheetsState[makeSheetId(sheet.axis)]"
         :options="sheet.options"
         :prefix="(sheet.axis.annotations?.['pl7.app/label']?.trim() ?? `Unlabeled axis ${i}`) + ':'"
-        @update:model-value="(newValue) => onSheetChanged(makeSheetId(sheet.axis), newValue)" />
+        @update:model-value="(newValue) => onSheetChanged(makeSheetId(sheet.axis), newValue)"
+      />
     </div>
-    <AgGridVue :key="reloadKey" :theme="AgGridTheme" class="ap-ag-data-table-grid" :grid-options="gridOptions"
-      @grid-ready="onGridReady" @state-updated="onStateUpdated" @grid-pre-destroyed="onGridPreDestroyed" />
+    <AgGridVue
+      :key="reloadKey" :theme="AgGridTheme" class="ap-ag-data-table-grid" :grid-options="gridOptions"
+      @grid-ready="onGridReady" @state-updated="onStateUpdated" @grid-pre-destroyed="onGridPreDestroyed"
+    />
   </div>
 </template>
 
