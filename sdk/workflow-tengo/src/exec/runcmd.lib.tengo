@@ -355,7 +355,7 @@ builder := func(workdir) {
 		build: func() {
 			// TODO: add assertions about the state
 
-			ll.assert(!(hasPatternArgs || hasExpressionArgs) || len(substRules) != 0,
+			ll.assert(!hasPatternArgs || len(substRules) != 0,
 				"found pattern argument, but no substitution rules were set: hasPatternArgs: %v, substRules: %v, cmd: %v, args: %v, envs: %v",
 				hasPatternArgs, substRules, cmd, args, envs)
 			ll.assert(!hasExpressionArgs || desc.canBackendUseExpressions(),
