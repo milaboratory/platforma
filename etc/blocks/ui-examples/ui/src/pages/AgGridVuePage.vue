@@ -17,6 +17,7 @@ import {
   PlAgCsvExporter,
   PlAgCellProgress,
   defaultMainMenuItems,
+  PlAgChartStackedBarCell,
 } from '@platforma-sdk/ui-vue';
 import { AgGridVue } from 'ag-grid-vue3';
 import type { ColDef, GridApi, GridOptions, GridReadyEvent } from 'ag-grid-enterprise';
@@ -64,8 +65,8 @@ const columnDefs: ColDef[] = [
         params: {
           progress: cellData.value,
           progressString: cellData.value,
-          step: cellData.value === undefined ? 'Calculations' : 'Loading',
-          stage: 'running',
+          step: cellData.value === undefined ? 'Queued' : 'Loading',
+          stage: cellData.value === undefined ? 'not_started' : 'running',
         },
       };
     },
@@ -75,6 +76,19 @@ const columnDefs: ColDef[] = [
     },
     headerComponent: PlAgColumnHeader,
     headerComponentParams: { type: 'Text' } satisfies PlAgHeaderComponentParams,
+  },
+  {
+    colId: 'stacked_bar',
+    headerName: 'StackedBar',
+    cellRendererSelector: (_cellData) => {
+      const value = {
+        data: undefined,
+      };
+      return {
+        component: PlAgChartStackedBarCell,
+        params: { value },
+      };
+    },
   },
   {
     colId: 'date',
