@@ -1,4 +1,9 @@
-import { PFrameFactoryAPI, PFrameReadAPIV2 } from './index';
+import type { PFrameFactoryAPI } from './api_factory';
+import type { PFrameReadAPIV2 } from './api_read';
 
-export interface PFrameV2 extends PFrameFactoryAPI, PFrameReadAPIV2 {
-}
+export type Logger = (
+  level: 'info' | 'warn' | 'error',
+  message: string
+) => void;
+
+export interface PFrameV2 extends PFrameFactoryAPI, PFrameReadAPIV2 {}
