@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.6.10
+
+### Patch Changes
+
+- c2161da: PFrameInternal export Logger type
+
 ## 1.6.9
 
 ### Patch Changes
