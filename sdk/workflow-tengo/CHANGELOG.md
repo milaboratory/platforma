@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 2.9.5
+
+### Patch Changes
+
+- 5067916: Correct path to R local packages index
+
 ## 2.9.4
 
 ### Patch Changes
