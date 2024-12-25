@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.44
+
+### Patch Changes
+
+- 178c642: fix PlAgChartStackedBarCell styling
+
 ## 2.2.43
 
 ### Patch Changes

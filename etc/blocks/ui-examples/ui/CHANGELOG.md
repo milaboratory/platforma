@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.3.18
+
+### Patch Changes
+
+- 178c642: fix PlAgChartStackedBarCell styling
+
 ## 1.3.17
 
 ### Patch Changes
