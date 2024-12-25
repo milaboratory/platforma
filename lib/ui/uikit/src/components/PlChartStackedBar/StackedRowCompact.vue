@@ -56,10 +56,12 @@ const parts = computed(() => {
   border-radius: 2px;
 
   .notReady {
-    font-size: larger;
-    font-weight: bolder;
-    color: var(--txt-mask);
-    margin-left: 24px;
+    color: var(--txt-01);
+    font-family: var(--font-family-base);
+    font-size: 14px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: 20px;
   }
 
   .container {
