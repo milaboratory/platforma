@@ -28,11 +28,11 @@ catalogs:
       specifier: ^29.7.0
       version: 29.7.0
     '@milaboratories/pframes-node':
-      specifier: 2.1.3
-      version: 2.1.3
+      specifier: 2.1.4
+      version: 2.1.4
     '@milaboratories/software-pframes-conv':
-      specifier: 2.1.3
-      version: 2.1.3
+      specifier: 2.1.4
+      version: 2.1.4
     '@milaboratories/tengo-tester':
       specifier: ^1.5.0
       version: 1.5.0
@@ -1502,7 +1502,7 @@ importers:
         version: link:../computable
       '@milaboratories/pframes-node':
         specifier: 'catalog:'
-        version: 2.1.3(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)
+        version: 2.1.4(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)
       '@milaboratories/pl-client':
         specifier: workspace:^
         version: link:../pl-client
@@ -1973,7 +1973,7 @@ importers:
     dependencies:
       '@milaboratories/software-pframes-conv':
         specifier: 'catalog:'
-        version: 2.1.3
+        version: 2.1.4
       '@platforma-open/milaboratories.software-small-binaries':
         specifier: 'catalog:'
         version: 1.15.6
@@ -2154,7 +2154,7 @@ importers:
         version: link:../../lib/util/build-configs
       '@milaboratories/software-pframes-conv':
         specifier: 'catalog:'
-        version: 2.1.3
+        version: 2.1.4
       '@platforma-open/milaboratories.software-small-binaries':
         specifier: 'catalog:'
         version: 1.15.6
@@ -3873,19 +3873,19 @@ packages:
   '@microsoft/tsdoc@0.15.1':
     resolution: {integrity: sha512-4aErSrCR/On/e5G2hDP0wjooqDdauzEbIq8hIkIe5pXV0rtWJZvdCEKL0ykZxex+IxIwBp0eGeV48hQN07dXtw==}
 
-  '@milaboratories/pframes-node@2.1.3':
-    resolution: {integrity: sha512-a7Khaw9Gzd155PnjY3r/Q9DnQFV3MXXowBeCsws1GFhH6dsW4XRMpRBL/jlOZYuimxBGCjejoml+6bMyAaRqTQ==}
+  '@milaboratories/pframes-node@2.1.4':
+    resolution: {integrity: sha512-hAmZzFEO4Y8D6X4NKI2kklly3XqWw55M64rWt3vq824hJBY1v8EH/wufL5SdsgA3xrDSpAW0Ev84ZwBohSxdmQ==}
     peerDependencies:
       '@milaboratories/pl-model-common': '*'
 
-  '@milaboratories/pl-model-common@1.8.0':
-    resolution: {integrity: sha512-g2sPNcqcOQowf1dRDOswF7o1i4r8knahTF9ZL+nsgjdE8dW3uUyw+78kPYAXndV8LU6daw4psiADO4RdRSJq5g==}
+  '@milaboratories/pl-model-common@1.10.2':
+    resolution: {integrity: sha512-Us12k9U3S20fGoxFIfSkdo5gkA6xuDHFrp9/jZn+/xK+L08lpWBVzH9z/5Y47NgG2QvVrA2uaZmmJa1I1FYNjA==}
 
-  '@milaboratories/pl-model-middle-layer@1.6.2':
-    resolution: {integrity: sha512-0utwNRv8M/2rgv9Zlt5zTixUEyBjxJyC6GthxAgVHX28U5TCWfi51K6A3FK9dDqVBhRnaHYU9+dV6P0m3Xuskw==}
+  '@milaboratories/pl-model-middle-layer@1.6.10':
+    resolution: {integrity: sha512-UYGSr/8SaXAB/7YxyAv2ecHJBfmizMH8HbFDbgE+r1IUERJBPgpB10tNlZFEtO+sMFP54TkuLj+h9q1kGR+qhw==}
 
-  '@milaboratories/software-pframes-conv@2.1.3':
-    resolution: {integrity: sha512-ahpiLbsLYA69E9YG5Zwgi/WbWpSG04dZMfeCTQ7vamhZBBw6m6ZhcqFFXeE3a5M/a4LCBz5VrwMzwrKrDEunPA==}
+  '@milaboratories/software-pframes-conv@2.1.4':
+    resolution: {integrity: sha512-g/j+hmAulBENQf+3TZzRdClr6noaD91Ji6ta5tkJ4smkFrpj5bb5ufPv1BuehHIQLVhhNeiI4dhLWvxVOT/dgg==}
 
   '@milaboratories/tengo-tester@1.5.0':
     resolution: {integrity: sha512-WBG9/aVBGePBU+7+cKzrmydEJGGWPGy+SSJrJ5XRm613hAeCGIp5I3MJBkgJjiovTYoaiD9peTQD6uhr5o1fNw==}
@@ -10312,27 +10312,27 @@ snapshots:
 
   '@microsoft/tsdoc@0.15.1': {}
 
-  '@milaboratories/pframes-node@2.1.3(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)':
+  '@milaboratories/pframes-node@2.1.4(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)':
     dependencies:
       '@mapbox/node-pre-gyp': 1.0.11(encoding@0.1.13)
       '@milaboratories/pl-model-common': link:lib/model/common
-      '@milaboratories/pl-model-middle-layer': 1.6.2
+      '@milaboratories/pl-model-middle-layer': 1.6.10
     transitivePeerDependencies:
       - encoding
       - supports-color
 
-  '@milaboratories/pl-model-common@1.8.0':
+  '@milaboratories/pl-model-common@1.10.2':
     dependencies:
       zod: 3.23.8
 
-  '@milaboratories/pl-model-middle-layer@1.6.2':
+  '@milaboratories/pl-model-middle-layer@1.6.10':
     dependencies:
-      '@milaboratories/pl-model-common': 1.8.0
+      '@milaboratories/pl-model-common': 1.10.2
       remeda: 2.18.0
       utility-types: 3.11.0
       zod: 3.23.8
 
-  '@milaboratories/software-pframes-conv@2.1.3': {}
+  '@milaboratories/software-pframes-conv@2.1.4': {}
 
   '@milaboratories/tengo-tester@1.5.0': {}
 
