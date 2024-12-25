@@ -8,6 +8,7 @@ self := import(":tpl")
 
 ll := import(":ll")
 workdir := import(":workdir")
+path := import(":path")
 validation := import(":validation")
 runenv := import(":exec.runenv")
 internal := import(":exec.R.internal")
@@ -57,7 +58,7 @@ _toolsetRenvCreate = func(operationMode, swPackage, rPackage, rDescriptor, depen
 	//
 	// Activate run environment in current working directory
 	//
-	renvBuilder := internal.runRBuilder(wdBefore, rPackage, rDescriptor).
+	renvBuilder := internal.runRBuilder(operationMode, wdBefore, rPackage, rDescriptor).
 		env("RENV_PATHS_RENV", "./renv")
 
 	renvBuilder.
@@ -82,7 +83,7 @@ _toolsetRenvCreate = func(operationMode, swPackage, rPackage, rDescriptor, depen
 	t := desc.canBackendUseExpressions() ? constants.ARG_TYPE_EXPRESSION : constants.ARG_TYPE_VAR
 	rule := desc.canBackendUseExpressions() ? "pkg" : "{pkg}"
 
-	depsInstaller := internal.runRBuilder(activateRenvRun.workdir, rPackage, rDescriptor).
+	depsInstaller := internal.runRBuilder(operationMode, activateRenvRun.workdir, rPackage, rDescriptor).
 		env("RENV_PATHS_RENV", "./renv").
 		ref("r-software-pkg", swPackage).
 		substitutionRule(rule, "r-software-pkg").
@@ -115,11 +116,11 @@ _toolsetRenvRefreshSwPackage = func(wd, swPackage, rPackage, rDescriptor, depend
 	t := desc.canBackendUseExpressions() ? constants.ARG_TYPE_EXPRESSION : constants.ARG_TYPE_VAR
 	rule := desc.canBackendUseExpressions() ? "pkg" : "{pkg}"
 
-	swRefreshener := internal.runRBuilder(wd, rPackage, rDescriptor).
+	swRefreshener := internal.runRBuilder("dev-local", wd, rPackage, rDescriptor).
 		ref("r-software-pkg", swPackage).
 		substitutionRule(rule, "r-software-pkg").
 		envTyped("R_PROJECT_DIR", t, "{pkg}").
-		envTyped("RENV_PATHS_LOCKFILE", t, "{pkg}/"+dependencies.lockFile).
+		envTyped("RENV_PATHS_LOCKFILE", t, path.join("{pkg}", dependencies.lockFile)).
 		env("TRICK_DEDUPLICATION", "" + times.time_unix(times.now()))
 
 	swRefreshener.
