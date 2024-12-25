@@ -170,7 +170,7 @@ catalog:
   'winston': ^3.17.0
 
   '@milaboratories/tengo-tester': ^1.5.0
-  '@milaboratories/pframes-node': &pframes-version 2.1.3
+  '@milaboratories/pframes-node': &pframes-version 2.1.4
 
   'remeda': ^2.18.0
 
