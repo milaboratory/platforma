@@ -178,7 +178,7 @@ _loadRRunEnvironment := func(operationMode, descriptor, softName, softPkg) {
 	if (operationMode != "dev-local") {
 		// In production we can use only locally cached packages: most of commercials have
 		// Platforma Backend executed in a very restricted environment with limited access to the internet.
-		envs["RENV_CONFIG_REPOS_OVERRIDE"] = _newArg(false, path.join(renvRootArg, "packages"))
+		envs["RENV_CONFIG_REPOS_OVERRIDE"] = _newArg(false, path.join(_expr(_ARG_VAR_R), "packages"))
 	}
 
 	return ll.toStrict({
