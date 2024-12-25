@@ -200,7 +200,7 @@ self.body(func(inputs) {
 		"saveFilesContents,?": ["string"],
 		"streams,?": ["string"],
 		"assets,?": { any: validation.resource() },
-		"assetDescriptors,?": { any: desc.assetScheme },
+		"assetDescriptors,?": { any: {asset: desc.assetScheme } },
 		"assetRules,?": { any: { any: ["string"] } },
 		"assetCache,?": { any: "number" }
 	})

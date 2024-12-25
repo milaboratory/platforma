@@ -162,20 +162,31 @@ _loadRRunEnvironment := func(operationMode, descriptor, softName, softPkg) {
 	rEnvRefKey := softName + "/R-virtual-env"
 	rEnvRefVar := _newRefVar(_ARG_VAR_R_VENV, rEnvRefKey, rEnv)
 
+	renvRootArg := path.join(_expr(_ARG_VAR_R), "renv-root")
+
+	envs := {
+		"RHOME": _newArg(false, _expr(_ARG_VAR_R)), // for Rscript (it uses RHOME instead of R_HOME)
+		"R_HOME_DIR": _newArg(false, _expr(_ARG_VAR_R)), // for R startup script. It configures all the rest required for R to start.
+		"RENV_PATHS_ROOT": _newArg(false, renvRootArg),
+		"RENV_PATHS_BINARY": _newArg(false, path.join(renvRootArg, "binaries")),
+		"RENV_PATHS_SOURCE": _newArg(false, path.join(renvRootArg, "sources")),
+		"RENV_PATHS_CACHE": _newArg(false, path.join(renvRootArg, "cache")),
+		"RENV_PATHS_RENV": _newArg(false, path.join(_expr(_ARG_VAR_R_VENV), "renv")),
+		"RENV_PATHS_LOCKFILE": _newArg(false, path.join(_expr(_ARG_VAR_PKG), descriptor.dependencies.lockFile))
+	}
+
+	if (operationMode != "dev-local") {
+		// In production we can use only locally cached packages: most of commercials have
+		// Platforma Backend executed in a very restricted environment with limited access to the internet.
+		envs["RENV_CONFIG_REPOS_OVERRIDE"] = _newArg(false, path.join(renvRootArg, "packages"))
+	}
+
 	return ll.toStrict({
 		runEnvType: "R",
 
 		variables: [ rRefVar, rEnvRefVar ],
 		customPaths: [ _newArg(false, rBinDir) ],
-		envs: {
-			"R_HOME_DIR": _newArg(false, _expr(_ARG_VAR_R)),
-			"RHOME": _newArg(false, _expr(_ARG_VAR_R)),
-			"RENV_PATHS_ROOT": _newArg(false, path.join(_expr(_ARG_VAR_R), "renv-root")),
-			"RENV_PATHS_RENV": _newArg(false, path.join(_expr(_ARG_VAR_R_VENV), "renv")),
-			"RENV_PATHS_LOCKFILE": _newArg(false, path.join(_expr(_ARG_VAR_PKG), descriptor.dependencies.lockFile)),
-			"RENV_CONFIG_AUTO_SNAPSHOT": _newArg(true, "FALSE"),
-			"RENV_CONFIG_SYNCHRONIZED_CHECK": _newArg(true, "FALSE")
-		}
+		envs: envs
 	})
 }
 
@@ -195,7 +206,7 @@ _loadRunEnvironment := func(operationMode, descriptor, softName, softPackage) {
 }
 
 /**
- * @param operationMode: 'remote' | 'dev-local'
+ * @param operationMode: "remote" | "dev-local"
  */
 _binPackageCallOptions := func(operationMode, softwareName, variables, descriptor, softPackage) {
 	customPaths := []
