@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 2.9.4
+
+### Patch Changes
+
+- be4e18a: Enable R to run in restricted network on linux and mac
+
 ## 2.9.3
 
 ### Patch Changes
