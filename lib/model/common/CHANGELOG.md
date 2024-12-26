@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.10.3
+
+### Patch Changes
+
+- 32966e6: [desktop] Custom design for “+ add graph“ etc. sections
+
 ## 1.10.2
 
 ### Patch Changes

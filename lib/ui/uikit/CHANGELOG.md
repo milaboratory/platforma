@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.45
+
+### Patch Changes
+
+- 32966e6: [desktop] Custom design for “+ add graph“ etc. sections
+
 ## 2.2.44
 
 ### Patch Changes

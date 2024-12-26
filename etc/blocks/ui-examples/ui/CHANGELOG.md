@@ -1,5 +1,14 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.3.19
+
+### Patch Changes
+
+- 32966e6: [desktop] Custom design for “+ add graph“ etc. sections
+- Updated dependencies [32966e6]
+  - @milaboratories/milaboratories.ui-examples.model@1.1.11
+  - @platforma-sdk/model@1.21.20
+
 ## 1.3.18
 
 ### Patch Changes

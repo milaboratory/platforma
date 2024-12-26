@@ -1,5 +1,14 @@
 # @platforma-sdk/ui-vue
 
+## 1.21.20
+
+### Patch Changes
+
+- 32966e6: [desktop] Custom design for “+ add graph“ etc. sections
+- Updated dependencies [32966e6]
+  - @milaboratories/uikit@2.2.45
+  - @platforma-sdk/model@1.21.20
+
 ## 1.21.18
 
 ### Patch Changes
