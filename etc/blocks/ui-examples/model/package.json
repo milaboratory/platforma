@@ -7,7 +7,8 @@
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "tsup && vite build && block-tools build-model"
+    "build": "tsup && vite build && block-tools build-model",
+    "lint": "eslint ."
   },
   "dependencies": {
     "@platforma-sdk/model": "workspace:*",

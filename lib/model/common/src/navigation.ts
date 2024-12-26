@@ -11,11 +11,19 @@ export type BlockSectionLink = {
   /** Internal block section identifier */
   readonly href: `/${string}`;
 
+  /** Link visual appearance */
+  readonly appearance?: BlockSectionLinkAppearance;
+
   /** Visible section title, can also be used in the window header. */
   readonly label: string;
 };
 
-/** Create a horisontal line between sections */
+/** Different variants for link section appearance */
+export type BlockSectionLinkAppearance = 
+  /** Shows a section of type `link` with a `+` icon and a certain specific style */
+  'add-section';
+
+/** Create a horizontal line between sections */
 export type BlockSectionDelimiter = {
   readonly type: 'delimiter';
 };

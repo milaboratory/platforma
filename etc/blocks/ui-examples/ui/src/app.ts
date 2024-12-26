@@ -21,8 +21,11 @@ import ButtonsPage from './pages/ButtonsPage.vue';
 import NotificationsPage from './pages/NotificationsPage.vue';
 import StackedBarPage from './pages/StackedBarPage/StackedBarPage.vue';
 import LoadersPage from './pages/LoadersPage.vue';
+import AddSectionPage from './pages/AddSectionPage.vue';
+import { uniqueId } from '@milaboratories/helpers';
+import SectionPage from './pages/SectionPage.vue';
 
-export const sdkPlugin = defineApp(platforma, (base) => {
+export const sdkPlugin = defineApp(platforma, (app) => {
   // Additional data
   const data = reactive({
     counter: 0,
@@ -32,7 +35,7 @@ export const sdkPlugin = defineApp(platforma, (base) => {
     data.counter++;
   }
 
-  const argsAsJson = computed(() => JSON.stringify(base.snapshot.args));
+  const argsAsJson = computed(() => JSON.stringify(app.snapshot.args));
 
   const progressRef = ref<boolean | number>();
 
@@ -52,12 +55,22 @@ export const sdkPlugin = defineApp(platforma, (base) => {
     });
   }
 
+  function createSection(label: string) {
+    const id = uniqueId();
+    app.model.ui.dynamicSections.push({
+      id,
+      label,
+    });
+    return id;
+  }
+
   return {
     data,
     incrementCounter,
     argsAsJson,
     showInfiniteProgress: showLoader,
     showProgress,
+    createSection,
     progress: () => {
       return progressRef.value;
     },
@@ -82,6 +95,8 @@ export const sdkPlugin = defineApp(platforma, (base) => {
       '/notifications': () => NotificationsPage,
       '/stacked-bar': () => StackedBarPage,
       '/loaders': () => LoadersPage,
+      '/add-section': () => AddSectionPage,
+      '/section': () => SectionPage,
     },
   };
 }, {

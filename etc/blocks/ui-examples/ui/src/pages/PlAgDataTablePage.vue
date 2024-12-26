@@ -13,13 +13,11 @@ import type { PTableColumnSpec } from '@platforma-sdk/model';
 const app = useApp();
 
 if (!app.model.ui?.dataTableState) {
-  app.model.ui = {
-    dataTableState: {
-      tableState: {
-        gridState: {},
-      },
-      filterModel: {},
+  app.model.ui.dataTableState = {
+    tableState: {
+      gridState: {},
     },
+    filterModel: {},
   };
 }
 
