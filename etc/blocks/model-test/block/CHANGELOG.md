@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.test-block-model
 
+## 1.0.96
+
+### Patch Changes
+
+- @platforma-sdk/model@1.21.20
+- @milaboratories/milaboratories.test-block-model.ui@1.0.96
+- @milaboratories/milaboratories.test-block-model.model@1.0.23
+
 ## 1.0.95
 
 ### Patch Changes
