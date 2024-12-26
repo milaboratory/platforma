@@ -21,6 +21,7 @@
     "@jest/globals": "catalog:",
     "ts-jest": "catalog:",
     "@types/jest": "catalog:",
-    "@types/node": "catalog:"
+    "@types/node": "catalog:",
+    "canonicalize": "catalog:"
   }
 }
