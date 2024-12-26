@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.21.18
+
+### Patch Changes
+
+- 53e35de: [ui-vue] use fast IsJsonEqual implementation everywhere
+
 ## 1.21.17
 
 ### Patch Changes
