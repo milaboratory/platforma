@@ -1,5 +1,13 @@
 # @milaboratories/pl-middle-layer
 
+## 1.23.18
+
+### Patch Changes
+
+- f129da8: PFrames update
+- Updated dependencies [f129da8]
+  - @platforma-sdk/workflow-tengo@2.9.6
+
 ## 1.23.17
 
 ### Patch Changes
