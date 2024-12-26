@@ -2131,6 +2131,9 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 20.16.15
+      canonicalize:
+        specifier: 'catalog:'
+        version: 2.0.0
       jest:
         specifier: 'catalog:'
         version: 29.7.0(@types/node@20.16.15)(ts-node@10.9.2(@types/node@20.16.15)(typescript@5.5.4))
