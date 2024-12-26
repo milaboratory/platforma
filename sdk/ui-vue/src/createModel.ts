@@ -1,7 +1,7 @@
 import { reactive, computed, ref, watch, unref } from 'vue';
 import type { ModelOptions, Model } from './types';
-import { deepClone } from '@milaboratories/helpers';
-import { isJsonEqual, identity, ensureError, isZodError, formatZodError } from './utils';
+import { deepClone, isJsonEqual } from '@milaboratories/helpers';
+import { identity, ensureError, isZodError, formatZodError } from './utils';
 
 export function createModel<M, V = unknown>(options: ModelOptions<M, V>): Model<M> {
   const validate = options.validate ?? identity;
@@ -77,7 +77,7 @@ export function createModel<M, V = unknown>(options: ModelOptions<M, V>): Model<
   const valid = computed(() => !error.value);
 
   const isChanged = computed(() => {
-    return !isJsonEqual(options.get(), unref(local)); // @TODO, can be slow
+    return !isJsonEqual(options.get(), unref(local));
   });
 
   const errorString = computed(() => (error.value ? error.value.message : ''));
