@@ -50,7 +50,6 @@
         }
     }
 
-
     &__item {
         padding: 10px 12px;
         display: flex;
@@ -61,15 +60,25 @@
         background: var(--bg-elevated-01);
         height: 40px;
 
+
+
         &:hover {
             border-color: var(--border-color-focus);
         }
+    }
+
+    &__item.pinned {
+        background: var(--bg-base-light) !important;
+        border: 1px solid var(--border-color-div-grey);
     }
 
     &__title {
         flex-grow: 1;
         color: var(--txt-03);
         text-transform: none;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        text-wrap: nowrap;
 
         &.visible {
             color: var(--txt-01);
