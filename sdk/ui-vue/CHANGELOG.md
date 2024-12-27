@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.21.21
+
+### Patch Changes
+
+- 93b8d8d: fix styles
+
 ## 1.21.20
 
 ### Patch Changes

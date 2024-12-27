@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/milaboratories.pool-explorer",
-  "version": "1.0.10",
+  "version": "1.0.11",
   "scripts": {
     "build": "rm -rf ./block-pack && block-tools pack"
   },
