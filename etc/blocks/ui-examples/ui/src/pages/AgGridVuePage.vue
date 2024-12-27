@@ -45,7 +45,10 @@ const columnDefs: ColDef[] = [
   {
     colId: 'label',
     field: 'label',
-    headerName: 'Sample label long text for overflow',
+    pinned: 'left',
+    lockPinned: true,
+    lockPosition: true,
+    headerName: 'Sample label long text for overflow label long text for overflow',
     cellRenderer: 'PlAgTextAndButtonCell',
     headerComponent: PlAgColumnHeader,
     headerComponentParams: { type: 'Text' } satisfies PlAgHeaderComponentParams,
