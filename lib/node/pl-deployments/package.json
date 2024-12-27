@@ -1,6 +1,6 @@
 {
-  "name": "@milaboratories/pl-local",
-  "version": "1.10.0",
+  "name": "@milaboratories/pl-deployments",
+  "version": "1.0.0",
   "pl-version": "1.18.0",
   "description": "MiLaboratories Platforma Backend code service run wrapper",
   "types": "./dist/index.d.ts",
@@ -42,7 +42,8 @@
     "jest": "catalog:",
     "tsconfig-paths": "catalog:",
     "utility-types": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "@types/ssh2": "catalog:"
   },
   "dependencies": {
     "decompress": "catalog:",
@@ -50,6 +51,8 @@
     "@milaboratories/ts-helpers": "workspace:^",
     "tar": "catalog:",
     "yaml": "catalog:",
-    "zod": "catalog:"
+    "zod": "catalog:",
+    "ssh2": "catalog:",
+    "node-scp": "catalog:"
   }
 }
