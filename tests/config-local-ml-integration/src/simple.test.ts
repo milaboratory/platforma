@@ -2,7 +2,7 @@ import { test } from 'vitest';
 import { generateLocalPlConfigs, PlConfigGeneratorOptions } from '@milaboratories/pl-config';
 import { ConsoleLoggerAdapter, sleep } from '@milaboratories/ts-helpers';
 import path from 'path';
-import { LocalPlOptions, Pl, platformaInit } from '@milaboratories/pl-local';
+import { LocalPlOptions, LocalPl, localPlatformaInit } from '@milaboratories/pl-deployments';
 import { PlClient, UnauthenticatedPlClient } from '@milaboratories/pl-client';
 import { MiddleLayer } from '@milaboratories/pl-middle-layer';
 
@@ -27,10 +27,10 @@ test(
     const genResult = await generateLocalPlConfigs(configOpts);
 
     // start local platforma
-    const plLocal = await platformaInit(logger, {
+    const plLocal = await localPlatformaInit(logger, {
       workingDir: genResult.workingDir,
       config: genResult.plConfigContent,
-      onCloseAndErrorNoStop: async (pl: Pl) => await pl.start()
+      onCloseAndErrorNoStop: async (pl: LocalPl) => await pl.start()
     });
 
     // start pl-client

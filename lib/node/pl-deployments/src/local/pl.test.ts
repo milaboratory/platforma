@@ -1,8 +1,7 @@
 import { test } from 'vitest';
-import { LocalPlOptions, platformaInit } from './pl';
+import { LocalPlOptions, localPlatformaInit } from './pl';
 import { ConsoleLoggerAdapter, sleep } from '@milaboratories/ts-helpers';
 import * as fs from 'fs/promises';
-import { createWriteStream } from 'fs';
 import * as path from 'path';
 import { processStop } from './process';
 import * as yaml from 'yaml';
@@ -17,7 +16,7 @@ test(
 
     const dir = await prepareDirForTestConfig();
 
-    const pl = await platformaInit(logger, {
+    const pl = await localPlatformaInit(logger, {
       workingDir: dir,
       config,
       closeOld: false
@@ -47,12 +46,12 @@ test(
       config
     };
 
-    const oldPl = await platformaInit(logger, options);
+    const oldPl = await localPlatformaInit(logger, options);
     await sleep(5000);
     console.log(`OldPlatforma: %o`, oldPl.debugInfo());
 
     expect(await oldPl.isAlive()).toBeTruthy();
-    const newPl = await platformaInit(logger, options);
+    const newPl = await localPlatformaInit(logger, options);
     expect(await oldPl.isAlive()).toBeFalsy();
     await sleep(5000);
 
@@ -73,7 +72,7 @@ test(
     const config = await readTestConfig();
     const dir = await prepareDirForTestConfig();
 
-    const pl = await platformaInit(logger, {
+    const pl = await localPlatformaInit(logger, {
       workingDir: dir,
       config,
       closeOld: false,

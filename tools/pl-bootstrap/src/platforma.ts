@@ -6,7 +6,7 @@ import path from 'path';
 import * as tar from 'tar';
 import winston from 'winston';
 import state from './state';
-import { getDefaultPlVersion } from '@milaboratories/pl-local';
+import { getDefaultPlVersion } from '@milaboratories/pl-deployments';
 
 export const OSes = ['linux', 'macos', 'windows'] as const;
 export type OSType = (typeof OSes)[number];
