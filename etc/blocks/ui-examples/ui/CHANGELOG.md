@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.3.20
+
+### Patch Changes
+
+- 93b8d8d: fix styles
+
 ## 1.3.19
 
 ### Patch Changes
