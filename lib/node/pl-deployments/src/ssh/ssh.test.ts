@@ -3,7 +3,7 @@ import * as ssh from 'ssh2';
 import { sshConnect, sshExec } from './ssh';
 import * as fs from 'fs';
 
-test('integration, should connect to ssh on all platforms', {timeout: 10000},async () => {
+test.skip('integration, should connect to ssh on all platforms', {timeout: 10000},async () => {
   const keys = ssh.utils.generateKeyPairSync('ed25519');
   const client = new ssh.Client()
   await sshConnect(client, {

@@ -16,6 +16,21 @@ import { createDefaultPackageSettings } from './packageloader';
 import { FSKVStorage } from './fskvstorage';
 import * as crypto from 'node:crypto';
 
+/**
+   TODO:
+   - main storage use minio
+   - 127.0.0.1 -> 0.0.0.0
+   - root -> remote_root storage
+   - minio password and user,
+       - probably should be got from remote system?
+       - they should be generated only if Pl is not running
+       - MINIO_ROOT_USER, MINIO_ROOT_PASSWORD
+       - MINIO_PORT, MINIO_CONSOLE_PORT
+       - MINIO_ROOT_USER=testuser MINIO_ROOT_PASSWORD=testpassword ./minio server /home/pl-doctor/platforma_backend/storages/main/
+       - presignEndpoint!
+   - users.htpasswd
+ */
+
 export type PlConfigGeneratorOptions = {
   /** Logger for Middle-Layer */
   logger: MiLogger;
