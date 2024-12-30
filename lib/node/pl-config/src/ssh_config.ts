@@ -1,8 +1,9 @@
 import type { MiLogger } from '@milaboratories/ts-helpers';
+import { notEmpty } from '@milaboratories/ts-helpers';
 import path from 'path';
 import yaml from 'yaml';
-import type { Endpoints, PlConfigPorts } from './common/ports';
-import { getLocalhostEndpoints, getPorts, withHost } from './common/ports';
+import type { Endpoints, PlConfigPortsCustomWithMinio } from './common/ports';
+import { getEndpoints, getPorts, PlConfigPorts, withHost } from './common/ports';
 import type { PlConfig } from './common/types';
 import type {
   License,
@@ -15,21 +16,39 @@ import {
 } from './common/license';
 import { createHtpasswdFile, getDefaultAuthMethods } from './common/auth';
 import type { StoragesSettings } from './common/storages';
-import { createDefaultLocalStorages, getDefaultLocalStorages } from './common/storages';
+import { createDefaultLocalStorages, getRemoteConfigStorages as getDefaultRemoteStorages } from './common/storages';
 import { createDefaultPackageSettings } from './common/packageloader';
 import { FSKVStorage } from './common/fskvstorage';
 import * as crypto from 'node:crypto';
-import * as fs from 'fs/promises';
 
-export type LocalPlConfigGeneratorOptions = {
+/**
+   TODO:
+   - 127.0.0.1 -> 0.0.0.0
+   - root -> remote_root storage
+   - minio password and user,
+       - probably should be got from remote system?
+       - they should be generated only if Pl is not running
+       - MINIO_ROOT_USER, MINIO_ROOT_PASSWORD
+       - MINIO_PORT, MINIO_CONSOLE_PORT
+       - MINIO_ROOT_USER=testuser MINIO_ROOT_PASSWORD=testpassword ./minio server /home/pl-doctor/platforma_backend/storages/main/
+       - presignEndpoint!
+   - users.htpasswd
+ */
+
+export type SshPlConfigGeneratorOptions = {
   /** Logger for Middle-Layer */
   logger: MiLogger;
   /** Working dir for a local platforma. */
   workingDir: string;
+
+  /** The host the client connects to by SSH. */
+  host: string;
+
   /** How to choose ports for platforma. */
-  portsMode: PlConfigPorts;
+  portsMode: PlConfigPortsCustomWithMinio;
   /** How to get license. */
   licenseMode: PlLicenseMode;
+
   /**
    * A hook that allows to override any default configuration.
    * Check the docs of platforma configuration for the specific fields.
@@ -53,7 +72,7 @@ export type LocalStorageProjection = {
   readonly localPath: string;
 };
 
-export type LocalPlConfigGenerationResult = {
+export type SshPlConfigGenerationResult = {
   //
   // Pl Instance data
   //
@@ -82,9 +101,9 @@ export type LocalPlConfigGenerationResult = {
   readonly localStorageProjections: LocalStorageProjection[];
 };
 
-export async function generateLocalPlConfigs(
-  opts: LocalPlConfigGeneratorOptions,
-): Promise<LocalPlConfigGenerationResult> {
+export async function generateSshPlConfigs(
+  opts: SshPlConfigGeneratorOptions,
+): Promise<SshPlConfigGenerationResult> {
   const workdir = path.resolve(opts.workingDir);
 
   // settings that must be persisted between independent generation invocations
@@ -94,9 +113,15 @@ export async function generateLocalPlConfigs(
   const password = await kv.getOrCreate('password', () => crypto.randomBytes(16).toString('hex'));
   const jwt = await kv.getOrCreate('jwt', () => crypto.randomBytes(32).toString('hex'));
 
-  const ports = await getLocalhostEndpoints(opts.portsMode);
+  const ports = await getEndpoints(opts.host, opts.portsMode);
 
-  const storages = await createDefaultLocalStorages(workdir);
+  const storages = getDefaultRemoteStorages(workdir, {
+    endpoint: `http://127.0.0.1:${notEmpty(ports.minio)}`,
+    presignEndpoint: `http://127.0.0.1:${notEmpty(ports.minio)}`,
+    key: 'static:testuser',
+    secret: 'static:testpassword',
+    bucketName: 'main-bucket',
+  });
 
   return {
     workingDir: opts.workingDir,
@@ -117,7 +142,7 @@ export async function generateLocalPlConfigs(
 }
 
 async function createDefaultPlLocalConfig(
-  opts: LocalPlConfigGeneratorOptions,
+  opts: SshPlConfigGeneratorOptions,
   ports: Endpoints,
   user: string,
   password: string,
@@ -129,7 +154,7 @@ async function createDefaultPlLocalConfig(
 
   const packageLoaderPath = await createDefaultPackageSettings(opts.workingDir);
 
-  let config = getPlConfig(ports, license, htpasswdAuth, jwtKey, packageLoaderPath, storages);
+  let config = getPlConfig(opts, ports, license, htpasswdAuth, jwtKey, packageLoaderPath, storages);
 
   if (opts.plConfigPostprocessing) config = opts.plConfigPostprocessing(config);
 
@@ -137,6 +162,7 @@ async function createDefaultPlLocalConfig(
 }
 
 function getPlConfig(
+  opts: SshPlConfigGeneratorOptions,
   ports: Endpoints,
   license: License,
   htpasswdAuth: string,

@@ -1,4 +1,4 @@
-import * as ssh from "ssh2";
+import type * as ssh from 'ssh2';
 
 export class SshPl {
   constructor(

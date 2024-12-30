@@ -54,18 +54,18 @@ export type PlDbSettings = {
 
 export type PlAuthDriver =
   | {
-      driver: 'ldap';
-      serverUrl: string; // 'ldaps://ldap.example.com:1111'
-      defaultDN: string; // 'cn=%u,ou=users,ou=users,dc=example,dc=com'
-    }
+    driver: 'ldap';
+    serverUrl: string; // 'ldaps://ldap.example.com:1111'
+    defaultDN: string; // 'cn=%u,ou=users,ou=users,dc=example,dc=com'
+  }
   | {
-      driver: 'jwt';
-      key: string;
-    }
+    driver: 'jwt';
+    key: string;
+  }
   | {
-      driver: 'htpasswd';
-      path: string;
-    };
+    driver: 'htpasswd';
+    path: string;
+  };
 
 export type PlGrpcSettings = {
   listen: string;
@@ -74,14 +74,14 @@ export type PlGrpcSettings = {
 
 export type PlTlsSettings =
   | {
-      enabled: false;
-    }
+    enabled: false;
+  }
   | {
-      enabled: true;
-      clientAuthMode: PlTlsAuthMode;
-      certFile: string;
-      keyFile: string;
-    };
+    enabled: true;
+    clientAuthMode: PlTlsAuthMode;
+    certFile: string;
+    keyFile: string;
+  };
 
 export type PlTlsAuthMode =
   | 'NoAuth'
@@ -173,12 +173,12 @@ export type PlControllerPackageLoaderRegistry = {
 
 export type PlControllerPackageLoaderEndpoint =
   | {
-      type: 'local';
-      path: string;
-    }
+    type: 'local';
+    path: string;
+  }
   | {
-      type: 'url';
-      url: string;
-    };
+    type: 'url';
+    url: string;
+  };
 
 export type PlControllerWorkflowsSettings = {};
