@@ -1,20 +1,25 @@
-import { MiLogger } from '@milaboratories/ts-helpers';
+import type { MiLogger } from '@milaboratories/ts-helpers';
 import path from 'path';
 import yaml from 'yaml';
-import { Endpoints, getPorts, PlConfigPorts, withLocalhost } from './common/ports';
-import { PlConfig } from './common/types';
+import type { Endpoints, PlConfigPorts } from './common/ports';
+import { getLocalhostEndpoints, getPorts, withHost } from './common/ports';
+import type { PlConfig } from './common/types';
+import type {
+  License,
+  PlLicenseMode,
+} from './common/license';
 import {
   getLicense,
-  License,
   licenseEnvsForMixcr,
   licenseForConfig,
-  PlLicenseMode
 } from './common/license';
 import { createHtpasswdFile, getDefaultAuthMethods } from './common/auth';
-import { createDefaultLocalStorages, StoragesSettings } from './common/storages';
+import type { StoragesSettings } from './common/storages';
+import { createDefaultLocalStorages, getDefaultLocalStorages } from './common/storages';
 import { createDefaultPackageSettings } from './common/packageloader';
 import { FSKVStorage } from './common/fskvstorage';
 import * as crypto from 'node:crypto';
+import * as fs from 'fs/promises';
 
 export type LocalPlConfigGeneratorOptions = {
   /** Logger for Middle-Layer */
@@ -78,7 +83,7 @@ export type LocalPlConfigGenerationResult = {
 };
 
 export async function generateLocalPlConfigs(
-  opts: LocalPlConfigGeneratorOptions
+  opts: LocalPlConfigGeneratorOptions,
 ): Promise<LocalPlConfigGenerationResult> {
   const workdir = path.resolve(opts.workingDir);
 
@@ -89,7 +94,7 @@ export async function generateLocalPlConfigs(
   const password = await kv.getOrCreate('password', () => crypto.randomBytes(16).toString('hex'));
   const jwt = await kv.getOrCreate('jwt', () => crypto.randomBytes(32).toString('hex'));
 
-  const ports = withLocalhost(await getPorts(opts.portsMode));
+  const ports = await getLocalhostEndpoints(opts.portsMode);
 
   const storages = await createDefaultLocalStorages(workdir);
 
@@ -106,8 +111,8 @@ export async function generateLocalPlConfigs(
       .filter((s) => s.main.downloadable && s.localPath !== undefined)
       .map((s) => ({
         storageId: s.storage.id,
-        localPath: s.localPath!
-      }))
+        localPath: s.localPath!,
+      })),
   };
 }
 
@@ -117,7 +122,7 @@ async function createDefaultPlLocalConfig(
   user: string,
   password: string,
   jwtKey: string,
-  storages: StoragesSettings
+  storages: StoragesSettings,
 ): Promise<string> {
   const license = await getLicense(opts.licenseMode);
   const htpasswdAuth = await createHtpasswdFile(opts.workingDir, [{ user, password }]);
@@ -137,7 +142,7 @@ function getPlConfig(
   htpasswdAuth: string,
   jwtKey: string,
   packageLoaderPath: string,
-  storages: StoragesSettings
+  storages: StoragesSettings,
 ): PlConfig {
   const dbPath = 'db';
   const logPath = 'platforma.log';
@@ -146,46 +151,46 @@ function getPlConfig(
     license: licenseForConfig(license),
     logging: {
       level: 'info',
-      destinations: [{ path: logPath }]
+      destinations: [{ path: logPath }],
     },
     monitoring: {
       enabled: true,
-      listen: ports.monitoring
+      listen: ports.monitoring,
     },
     debug: {
       enabled: true,
-      listen: ports.debug
+      listen: ports.debug,
     },
     core: {
       logging: {
         extendedInfo: true,
-        dumpResourceData: true
+        dumpResourceData: true,
       },
       grpc: {
         listen: ports.grpc,
-        tls: { enabled: false }
+        tls: { enabled: false },
       },
       authEnabled: true,
       auth: getDefaultAuthMethods(htpasswdAuth, jwtKey),
-      db: { path: dbPath }
+      db: { path: dbPath },
     },
     controllers: {
       workflows: {},
       packageLoader: {
-        packagesRoot: packageLoaderPath
+        packagesRoot: packageLoaderPath,
       },
       runner: {
         type: 'local',
         storageRoot: storages.runner,
         workdirCacheOnFailure: '1h',
-        secrets: [{ map: licenseEnvsForMixcr(license) }]
+        secrets: [{ map: licenseEnvsForMixcr(license) }],
       },
       data: {
         main: {
-          storages: Object.fromEntries(storages.storages.map((s) => [s.storage.id, s.main]))
+          storages: Object.fromEntries(storages.storages.map((s) => [s.storage.id, s.main])),
         },
-        storages: storages.storages.map((s) => s.storage)
-      }
-    }
+        storages: storages.storages.map((s) => s.storage),
+      },
+    },
   };
 }

@@ -1,7 +1,8 @@
 import path from 'path';
 import os from 'os';
 import { assertNever, fileExists } from '@milaboratories/ts-helpers';
-import { PlConfig, PlLicenseSettings } from './types';
+import type { PlLicenseSettings } from './types';
+import { PlConfig } from './types';
 
 export type PlLicenseMode = PlLicenseEnv | PlLicensePlain;
 
@@ -45,7 +46,7 @@ export async function getLicenseFromEnv(): Promise<License> {
   if (license !== undefined)
     return {
       type: 'value',
-      value: license
+      value: license,
     };
 
   let licenseFile = undefined;
@@ -57,7 +58,7 @@ export async function getLicenseFromEnv(): Promise<License> {
   if (licenseFile !== undefined)
     return {
       type: 'file',
-      file: licenseFile
+      file: licenseFile,
     };
 
   throw new Error('no license in envs');

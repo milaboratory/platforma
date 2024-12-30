@@ -6,7 +6,7 @@ export class FSKVStorage {
 
   public async getOrCreate(
     key: string,
-    generator: () => Promise<string> | string
+    generator: () => Promise<string> | string,
   ): Promise<string> {
     const fullPath = path.join(this.root, key);
     try {

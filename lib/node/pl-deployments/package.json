@@ -31,6 +31,8 @@
   "keywords": [],
   "license": "UNLICENSED",
   "devDependencies": {
+    "@milaboratories/eslint-config": "workspace:^",
+    "eslint": "catalog:",
     "@milaboratories/platforma-build-configs": "workspace:*",
     "vite": "catalog:",
     "vitest": "catalog:",
