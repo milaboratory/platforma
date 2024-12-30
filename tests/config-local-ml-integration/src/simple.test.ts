@@ -1,8 +1,8 @@
 import { test } from 'vitest';
-import { generateLocalPlConfigs, PlConfigGeneratorOptions } from '@milaboratories/pl-config';
+import { generateLocalPlConfigs, LocalPlConfigGeneratorOptions } from '@milaboratories/pl-config';
 import { ConsoleLoggerAdapter, sleep } from '@milaboratories/ts-helpers';
 import path from 'path';
-import { LocalPlOptions, LocalPl, localPlatformaInit } from '@milaboratories/pl-deployments';
+import { LocalPl, localPlatformaInit } from '@milaboratories/pl-deployments';
 import { PlClient, UnauthenticatedPlClient } from '@milaboratories/pl-client';
 import { MiddleLayer } from '@milaboratories/pl-middle-layer';
 
@@ -14,7 +14,7 @@ test(
     const workingDir = path.resolve(path.join(__dirname, '..', '.test'));
 
     // create configs for everything
-    const configOpts: PlConfigGeneratorOptions = {
+    const configOpts: LocalPlConfigGeneratorOptions = {
       logger,
       workingDir,
       portsMode: {
