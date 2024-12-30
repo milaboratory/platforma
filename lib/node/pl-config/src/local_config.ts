@@ -1,37 +1,22 @@
 import { MiLogger } from '@milaboratories/ts-helpers';
 import path from 'path';
 import yaml from 'yaml';
-import { Endpoints, getPorts, PlConfigPorts, withLocalhost } from './ports';
-import { PlConfig } from './types';
+import { Endpoints, getPorts, PlConfigPorts, withLocalhost } from './common/ports';
+import { PlConfig } from './common/types';
 import {
   getLicense,
   License,
   licenseEnvsForMixcr,
   licenseForConfig,
   PlLicenseMode
-} from './license';
-import { createHtpasswdFile, getDefaultAuthMethods } from './auth';
-import { createDefaultLocalStorages, StoragesSettings } from './storages';
-import { createDefaultPackageSettings } from './packageloader';
-import { FSKVStorage } from './fskvstorage';
+} from './common/license';
+import { createHtpasswdFile, getDefaultAuthMethods } from './common/auth';
+import { createDefaultLocalStorages, StoragesSettings } from './common/storages';
+import { createDefaultPackageSettings } from './common/packageloader';
+import { FSKVStorage } from './common/fskvstorage';
 import * as crypto from 'node:crypto';
 
-/**
-   TODO:
-   - main storage use minio
-   - 127.0.0.1 -> 0.0.0.0
-   - root -> remote_root storage
-   - minio password and user,
-       - probably should be got from remote system?
-       - they should be generated only if Pl is not running
-       - MINIO_ROOT_USER, MINIO_ROOT_PASSWORD
-       - MINIO_PORT, MINIO_CONSOLE_PORT
-       - MINIO_ROOT_USER=testuser MINIO_ROOT_PASSWORD=testpassword ./minio server /home/pl-doctor/platforma_backend/storages/main/
-       - presignEndpoint!
-   - users.htpasswd
- */
-
-export type PlConfigGeneratorOptions = {
+export type LocalPlConfigGeneratorOptions = {
   /** Logger for Middle-Layer */
   logger: MiLogger;
   /** Working dir for a local platforma. */
@@ -93,7 +78,7 @@ export type LocalPlConfigGenerationResult = {
 };
 
 export async function generateLocalPlConfigs(
-  opts: PlConfigGeneratorOptions
+  opts: LocalPlConfigGeneratorOptions
 ): Promise<LocalPlConfigGenerationResult> {
   const workdir = path.resolve(opts.workingDir);
 
@@ -127,7 +112,7 @@ export async function generateLocalPlConfigs(
 }
 
 async function createDefaultPlLocalConfig(
-  opts: PlConfigGeneratorOptions,
+  opts: LocalPlConfigGeneratorOptions,
   ports: Endpoints,
   user: string,
   password: string,
@@ -139,7 +124,7 @@ async function createDefaultPlLocalConfig(
 
   const packageLoaderPath = await createDefaultPackageSettings(opts.workingDir);
 
-  let config = getPlConfig(opts, ports, license, htpasswdAuth, jwtKey, packageLoaderPath, storages);
+  let config = getPlConfig(ports, license, htpasswdAuth, jwtKey, packageLoaderPath, storages);
 
   if (opts.plConfigPostprocessing) config = opts.plConfigPostprocessing(config);
 
@@ -147,7 +132,6 @@ async function createDefaultPlLocalConfig(
 }
 
 function getPlConfig(
-  opts: PlConfigGeneratorOptions,
   ports: Endpoints,
   license: License,
   htpasswdAuth: string,
