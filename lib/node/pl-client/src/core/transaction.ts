@@ -30,6 +30,7 @@ import { isNotFoundError } from './errors';
 import { FinalResourceDataPredicate } from './final';
 import { LRUCache } from 'lru-cache';
 import { ResourceDataCacheRecord } from './cache';
+import { initialTxStat, TxStat } from './stat';
 
 /** Reference to resource, used only within transaction */
 export interface ResourceRef {
@@ -154,6 +155,8 @@ export class PlTransaction {
 
   private globalTxIdWasAwaited: boolean = false;
 
+  public readonly stat: TxStat = initialTxStat();
+
   constructor(
     private readonly ll: LLPlTransaction,
     public readonly name: string,
@@ -182,6 +185,9 @@ export class PlTransaction {
         console.warn(err);
       }
     });
+
+    // Adding stats
+    this.stat.txCount++;
   }
 
   private async drainAndAwaitPendingOps(): Promise<void> {
@@ -367,6 +373,7 @@ export class PlTransaction {
   }
 
   public createRoot(type: ResourceType): ResourceRef {
+    this.stat.rootsCreated++;
     return this.createResource(
       true,
       (localId) => ({ oneofKind: 'resourceCreateRoot', resourceCreateRoot: { type, id: localId } }),
@@ -375,6 +382,8 @@ export class PlTransaction {
   }
 
   public createStruct(type: ResourceType, data?: Uint8Array | string): ResourceRef {
+    this.stat.structsCreated++;
+    this.stat.structsCreatedDataBytes += data?.length ?? 0;
     return this.createResource(
       false,
       (localId) => ({
@@ -390,6 +399,8 @@ export class PlTransaction {
   }
 
   public createEphemeral(type: ResourceType, data?: Uint8Array | string): ResourceRef {
+    this.stat.ephemeralsCreated++;
+    this.stat.ephemeralsCreatedDataBytes += data?.length ?? 0;
     return this.createResource(
       false,
       (localId) => ({
@@ -409,6 +420,8 @@ export class PlTransaction {
     data: Uint8Array | string,
     errorIfExists: boolean = false
   ): ResourceRef {
+    this.stat.valuesCreated++;
+    this.stat.valuesCreatedDataBytes += data?.length ?? 0;
     return this.createResource(
       false,
       (localId) => ({
@@ -496,8 +509,16 @@ export class PlTransaction {
       // checking if we can return result from cache
       const fromCache = this.sharedResourceDataCache.get(rId);
       if (fromCache && fromCache.cacheTxOpenTimestamp < this.txOpenTimestamp) {
-        if (!loadFields) return fromCache.basicData;
-        else if (fromCache.data) return fromCache.data;
+        if (!loadFields) {
+          this.stat.rGetDataCacheHits++;
+          this.stat.rGetDataCacheBytes += fromCache.basicData.data?.length ?? 0;
+          return fromCache.basicData;
+        } else if (fromCache.data) {
+          this.stat.rGetDataCacheHits++;
+          this.stat.rGetDataCacheBytes += fromCache.basicData.data?.length ?? 0;
+          this.stat.rGetDataCacheFields += fromCache.data.fields.length;
+          return fromCache.data;
+        }
       }
     }
 
@@ -508,6 +529,10 @@ export class PlTransaction {
       },
       (r) => protoToResource(notEmpty(r.resourceGet.resource))
     );
+
+    this.stat.rGetDataNetRequests++;
+    this.stat.rGetDataNetBytes += result.data?.length ?? 0;
+    this.stat.rGetDataNetFields += result.fields.length;
 
     // we will cache only final resource data states
     // caching result even if we were ignore the cache
@@ -575,6 +600,7 @@ export class PlTransaction {
    * have their values, if inputs list is not locked.
    */
   public lockInputs(rId: AnyResourceRef): void {
+    this.stat.inputsLocked++;
     this.sendVoidAsync({
       oneofKind: 'resourceLockInputs',
       resourceLockInputs: { resourceId: toResourceId(rId) }
@@ -586,6 +612,7 @@ export class PlTransaction {
    * This is required for resource to pass deduplication.
    */
   public lockOutputs(rId: AnyResourceRef): void {
+    this.stat.outputsLocked++;
     this.sendVoidAsync({
       oneofKind: 'resourceLockOutputs',
       resourceLockOutputs: { resourceId: toResourceId(rId) }
@@ -602,6 +629,7 @@ export class PlTransaction {
   //
 
   public createField(fId: AnyFieldRef, fieldType: FieldType, value?: AnyRef): void {
+    this.stat.fieldsCreated++;
     this.sendVoidAsync({
       oneofKind: 'fieldCreate',
       fieldCreate: { type: fieldTypeToProto(fieldType), id: toFieldId(fId) }
@@ -620,6 +648,7 @@ export class PlTransaction {
   }
 
   public setField(fId: AnyFieldRef, ref: AnyRef): void {
+    this.stat.fieldsSet++;
     if (isResource(ref))
       this.sendVoidAsync({
         oneofKind: 'fieldSet',
@@ -642,6 +671,7 @@ export class PlTransaction {
   }
 
   public setFieldError(fId: AnyFieldRef, ref: AnyResourceRef): void {
+    this.stat.fieldsSet++;
     this.sendVoidAsync({
       oneofKind: 'fieldSetError',
       fieldSetError: { field: toFieldId(fId), errResourceId: toResourceId(ref) }
@@ -649,6 +679,7 @@ export class PlTransaction {
   }
 
   public async getField(fId: AnyFieldRef): Promise<FieldData> {
+    this.stat.fieldsGet++;
     return await this.sendSingleAndParse(
       { oneofKind: 'fieldGet', fieldGet: { field: toFieldId(fId) } },
       (r) => protoToField(notEmpty(r.fieldGet.field))
@@ -672,13 +703,19 @@ export class PlTransaction {
   //
 
   public async listKeyValues(rId: AnyResourceRef): Promise<KeyValue[]> {
-    return await this.sendMultiAndParse(
+    const result = await this.sendMultiAndParse(
       {
         oneofKind: 'resourceKeyValueList',
         resourceKeyValueList: { resourceId: toResourceId(rId), startFrom: '', limit: 0 }
       },
       (r) => r.map((e) => e.resourceKeyValueList.record!)
     );
+
+    this.stat.kvListRequests++;
+    this.stat.kvListEntries += result.length;
+    for (const kv of result) this.stat.kvListBytes += kv.key.length + kv.value.length;
+
+    return result;
   }
 
   public async listKeyValuesString(rId: AnyResourceRef): Promise<KeyValueString[]> {
@@ -699,6 +736,8 @@ export class PlTransaction {
   }
 
   public setKValue(rId: AnyResourceRef, key: string, value: Uint8Array | string): void {
+    this.stat.kvSetRequests++;
+    this.stat.kvSetBytes++;
     this.sendVoidAsync({
       oneofKind: 'resourceKeyValueSet',
       resourceKeyValueSet: {
@@ -720,13 +759,18 @@ export class PlTransaction {
   }
 
   public async getKValue(rId: AnyResourceRef, key: string): Promise<Uint8Array> {
-    return await this.sendSingleAndParse(
+    const result = await this.sendSingleAndParse(
       {
         oneofKind: 'resourceKeyValueGet',
         resourceKeyValueGet: { resourceId: toResourceId(rId), key }
       },
       (r) => r.resourceKeyValueGet.value
     );
+
+    this.stat.kvGetRequests++;
+    this.stat.kvGetBytes += result.length;
+
+    return result;
   }
 
   public async getKValueString(rId: AnyResourceRef, key: string): Promise<string> {
@@ -741,7 +785,7 @@ export class PlTransaction {
     rId: AnyResourceRef,
     key: string
   ): Promise<Uint8Array | undefined> {
-    return await this.sendSingleAndParse(
+    const result = await this.sendSingleAndParse(
       {
         oneofKind: 'resourceKeyValueGetIfExists',
         resourceKeyValueGetIfExists: { resourceId: toResourceId(rId), key }
@@ -749,6 +793,11 @@ export class PlTransaction {
       (r) =>
         r.resourceKeyValueGetIfExists.exists ? r.resourceKeyValueGetIfExists.value : undefined
     );
+
+    this.stat.kvGetRequests++;
+    this.stat.kvGetBytes += result?.length ?? 0;
+
+    return result;
   }
 
   public async getKValueStringIfExists(
