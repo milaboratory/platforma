@@ -1,6 +1,7 @@
 import type { ConnectConfig, ClientChannel } from 'ssh2';
-import { Client, Connection } from 'ssh2';
+import { Client } from 'ssh2';
 import net from 'net';
+import dns from 'dns';
 
 /** Promisified exec on ssh connection. */
 export function sshExec(client: Client, command: string): Promise<{ stdout: string; stderr: string }> {
@@ -63,7 +64,7 @@ export async function sshGetAuthTypes(host: string) {
   });
 }
 
-function extractAuthMethods(log: string): string[] {
+export function extractAuthMethods(log: string): string[] {
   const newFormatMatch = log.match(/Inbound: Received USERAUTH_FAILURE \((.+)\)/);
   if (newFormatMatch && newFormatMatch[1]) {
     return newFormatMatch[1].split(',').map((method) => method.trim());
@@ -71,95 +72,68 @@ function extractAuthMethods(log: string): string[] {
   return [];
 }
 
-export function forwardMultiplePorts(config: ConnectConfig, ports: { remotePort: number; localPort: number; localHost?: string }) {
-  const conn = new Client();
-  conn.on('ready', () => {
-    console.log(`[SSH] Подключено к ${config.host}. Открываем локальный сервер на порт ${ports.localPort}.`);
-    console.log(`[SSH] Трафик будет перенаправлен на :${ports.remotePort}`);
-    // Создаём локальный TCP-сервер, слушающий localhost:localPort
-    net.createServer((localSocket) => {
-      console.log('localSocket');
-      // При каждом новом входящем соединении открываем канал forwardOut
-      conn.forwardOut(
-        // Эмулируем, что "источник" — это 127.0.0.1:0
-        '127.0.0.1',
-        0,
-        'localhost', // remoteHost,
-        ports.remotePort,
-        (err, stream) => {
-          if (err) {
-            console.error('Ошибка при открытии SSH-канала:', err.message);
-            localSocket.end();
-            return;
-          }
-          // Перенаправляем все данные socket <-> stream
-          localSocket.pipe(stream);
-          stream.pipe(localSocket);
-        },
-      );
-    }).listen(ports.localPort, '127.0.0.1', () => {
-      console.log(`[+] Порт ${ports.localPort} доступен локально → :${ports.remotePort}`);
-      console.log('Откройте свой gRPC (или другой) клиент на localhost:' + ports.localPort);
+export function forwardPort(config: ConnectConfig, ports: { remotePort: number; localPort: number; localHost?: string }): Promise<{ server: net.Server }> {
+  return new Promise((resolve, reject) => {
+    const conn = new Client();
+    let server: net.Server;
+    conn.on('ready', () => {
+      console.log(`[SSH] Connection to ${config.host}. Remote port ${ports.remotePort} will be available locally on the ${ports.localPort}`);
+      server = net.createServer({ pauseOnConnect: true }, (localSocket) => {
+        conn.forwardOut('127.0.0.1', 0, '127.0.0.1', ports.remotePort,
+          (err, stream) => {
+            if (err) {
+              console.error('Error opening SSH channel:', err.message);
+              localSocket.end();
+              return;
+            }
+            localSocket.pipe(stream);
+            stream.pipe(localSocket);
+            localSocket.resume();
+          },
+        );
+      });
+      server.listen(ports.localPort, '127.0.0.1', () => {
+        console.log(`[+] Port local ${ports.localPort} available locally for remote port → :${ports.remotePort}`);
+        resolve({ server });
+      });
+
+      server.on('error', (err) => {
+        conn.end();
+        server.close();
+        reject(err);
+      });
+
+      server.on('close', () => {
+        console.log(`Server closed ${JSON.stringify(ports)}`);
+        if (conn) {
+          console.log(`End SSH connection`);
+          conn.end();
+        }
+      });
+    });
+
+    conn.on('error', (err) => {
+      console.error('[SSH] SSH connection error', 'ports', ports, err.message);
+      server?.close();
+      reject(err);
+    });
+
+    conn.on('close', () => {
+      console.log('[SSH] Connection closed', 'ports', ports);
+    });
+
+    conn.connect(config);
+  });
+}
+
+export function isValidHostname(hostname: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    dns.lookup(hostname, (err) => {
+      if (err) {
+        resolve(false);
+      } else {
+        resolve(true);
+      }
     });
   });
-
-  conn.on('error', (err) => {
-    console.error('[SSH] Ошибка при SSH-подключении:', err.message);
-  });
-
-  conn.on('close', () => {
-    console.log('[SSH] Подключение закрыто');
-  });
-
-  // Инициируем SSH-подключение
-  conn.connect({ ...config, debug(err: string) {
-    console.log(err);
-  } });
 }
-// export function forwardMultiplePorts(config: ConnectConfig, ports: { remotePort: number; localPort: number; localHost?: string }) {
-//   const conn = new Client();
-
-//   conn.on('ready', () => {
-//     console.log(`[SSH] Подключено к ${config.host}. Открываем локальный сервер на порт ${ports.localPort}.`);
-//     console.log(`[SSH] Трафик будет перенаправлен на :${ports.remotePort}`);
-
-//     // Создаём локальный TCP-сервер, слушающий localhost:localPort
-//     net.createServer((localSocket) => {
-//       localSocket.setKeepAlive(true, 60000);
-//       // При каждом новом входящем соединении открываем канал forwardOut
-//       conn.forwardOut(
-//         // Эмулируем, что "источник" — это 127.0.0.1:0
-//         '127.0.0.1',
-//         0,
-//         'localhost', // remoteHost,
-//         ports.remotePort,
-//         (err, stream) => {
-//           if (err) {
-//             console.error('Ошибка при открытии SSH-канала:', err.message);
-//             localSocket.end();
-//             return;
-//           }
-//           // Перенаправляем все данные socket <-> stream
-//           localSocket.pipe(stream);
-//           stream.pipe(localSocket);
-//         },
-//       );
-//     }).listen(ports.localPort, '127.0.0.1', () => {
-//       console.log(`[+] Порт ${ports.localPort} доступен локально → :${ports.remotePort}`);
-//       console.log('Откройте свой gRPC (или другой) клиент на localhost:' + ports.localPort);
-//     });
-//   });
-
-//   conn.on('error', (err) => {
-//     console.error('[SSH] Ошибка при SSH-подключении:', err.message);
-//   });
-
-//   conn.on('close', () => {
-//     console.log('[SSH] Подключение закрыто');
-//   });
-
-//   // Инициируем SSH-подключение
-//   conn.connect({ ...config, debug(err: string) {
-//     console.log(err);
-//   } });
-// }
