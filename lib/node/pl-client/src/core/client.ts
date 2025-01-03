@@ -23,6 +23,7 @@ import { Dispatcher } from 'undici';
 import { LRUCache } from 'lru-cache';
 import { ResourceDataCacheRecord } from './cache';
 import { DefaultFinalResourceDataPredicate, FinalResourceDataPredicate } from './final';
+import { addStat, AllTxStat, initialTxStat, TxStat } from './stat';
 
 export type TxOps = PlCallOps & {
   sync?: boolean;
@@ -58,6 +59,10 @@ export class PlClient {
   private _clientRoot: OptionalResourceId = NullResourceId;
 
   private _serverInfo: MaintenanceAPI_Ping_Response | undefined = undefined;
+
+  private _txCommittedStat: TxStat = initialTxStat();
+  private _txConflictStat: TxStat = initialTxStat();
+  private _txErrorStat: TxStat = initialTxStat();
 
   //
   // Caching
@@ -108,6 +113,30 @@ export class PlClient {
       default:
         assertNever(conf.retryBackoffAlgorithm);
     }
+  }
+
+  public get txCommittedStat(): TxStat {
+    return { ...this._txCommittedStat };
+  }
+
+  public get txConflictStat(): TxStat {
+    return { ...this._txConflictStat };
+  }
+
+  public get txErrorStat(): TxStat {
+    return { ...this._txErrorStat };
+  }
+
+  public get txTotalStat(): TxStat {
+    return addStat(addStat(this._txCommittedStat, this._txConflictStat), this._txErrorStat);
+  }
+
+  public get allTxStat(): AllTxStat {
+    return {
+      committed: this.txCommittedStat,
+      conflict: this.txConflictStat,
+      error: this.txErrorStat
+    };
   }
 
   public async ping(): Promise<MaintenanceAPI_Ping_Response> {
@@ -234,13 +263,18 @@ export class PlClient {
       try {
         // executing transaction body
         result = await body(tx);
+        // collecting stat
+        this._txCommittedStat = addStat(this._txCommittedStat, tx.stat);
         ok = true;
       } catch (e: unknown) {
         // the only recoverable
         if (e instanceof TxCommitConflict) {
           // ignoring
-          // TODO collect stats
+          // collecting stat
+          this._txConflictStat = addStat(this._txConflictStat, tx.stat);
         } else {
+          // collecting stat
+          this._txErrorStat = addStat(this._txErrorStat, tx.stat);
           throw e;
         }
       } finally {
