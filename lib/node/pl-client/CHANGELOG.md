@@ -1,5 +1,11 @@
 # @milaboratories/pl-client
 
+## 2.7.2
+
+### Patch Changes
+
+- a9b0749: Transaction stats
+
 ## 2.7.1
 
 ### Patch Changes

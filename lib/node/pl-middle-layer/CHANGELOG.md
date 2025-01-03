@@ -1,5 +1,18 @@
 # @milaboratories/pl-middle-layer
 
+## 1.24.0
+
+### Minor Changes
+
+- a9b0749: Minor fix for direct template creation method
+
+### Patch Changes
+
+- Updated dependencies [a9b0749]
+  - @milaboratories/pl-client@2.7.2
+  - @milaboratories/pl-drivers@1.5.9
+  - @milaboratories/pl-tree@1.4.21
+
 ## 1.23.19
 
 ### Patch Changes
