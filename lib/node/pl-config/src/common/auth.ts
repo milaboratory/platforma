@@ -1,6 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { PlAuthDriver } from './types';
+import type { PlAuthDriver } from './types';
 import { randomBytes } from 'crypto';
 
 export interface HtpasswdLine {
@@ -24,14 +24,14 @@ export async function createHtpasswdFile(dir: string, config: HtpasswdConfig) {
 export function getDefaultAuthMethods(htpasswdAuth: string, jwtKey: string): PlAuthDriver[] {
   return [
     {
-      driver: "jwt",
-      key: jwtKey
+      driver: 'jwt',
+      key: jwtKey,
     },
     {
       driver: 'htpasswd',
-      path: htpasswdAuth
-    }
-  ]
+      path: htpasswdAuth,
+    },
+  ];
 }
 
 export function randomStr(len: number): string {

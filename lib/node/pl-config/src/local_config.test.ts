@@ -2,7 +2,8 @@ import { test } from 'vitest';
 import { ConsoleLoggerAdapter, sleep } from '@milaboratories/ts-helpers';
 import fs from 'fs/promises';
 import path from 'path';
-import { generateLocalPlConfigs, PlConfigGeneratorOptions } from './config';
+import type { PlConfigGeneratorOptions } from './config';
+import { generateLocalPlConfigs } from './config';
 import yaml from 'yaml';
 
 test('should return right configs', async ({ expect }) => {
@@ -17,9 +18,9 @@ test('should return right configs', async ({ expect }) => {
       ports: {
         grpc: 11234,
         monitoring: 11235,
-        debug: 11236
-      }
-    }
+        debug: 11236,
+      },
+    },
   };
 
   const got = await generateLocalPlConfigs(opts);
@@ -27,7 +28,7 @@ test('should return right configs', async ({ expect }) => {
   expect(got.plAddress).toStrictEqual('127.0.0.1:11234');
   expect(got.localStorageProjections.find((s) => s.storageId === 'root')).toStrictEqual({
     storageId: 'root',
-    localPath: ''
+    localPath: '',
   });
 
   const testConfig = await fs.readFile(path.join(__dirname, 'config.test.yaml'));
