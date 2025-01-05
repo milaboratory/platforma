@@ -24,6 +24,7 @@ import LoadersPage from './pages/LoadersPage.vue';
 import AddSectionPage from './pages/AddSectionPage.vue';
 import { uniqueId } from '@milaboratories/helpers';
 import SectionPage from './pages/SectionPage.vue';
+import HistogramPage from './pages/HistogramPage/HistogramPage.vue';
 
 export const sdkPlugin = defineApp(platforma, (app) => {
   // Additional data
@@ -94,6 +95,7 @@ export const sdkPlugin = defineApp(platforma, (app) => {
       '/buttons': () => ButtonsPage,
       '/notifications': () => NotificationsPage,
       '/stacked-bar': () => StackedBarPage,
+      '/histogram': () => HistogramPage,
       '/loaders': () => LoadersPage,
       '/add-section': () => AddSectionPage,
       '/section': () => SectionPage,

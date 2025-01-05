@@ -35,7 +35,8 @@
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "dependencies": {
-    "vue": "catalog:"
+    "vue": "catalog:",
+    "d3": "catalog:"
   },
   "devDependencies": {
     "@milaboratories/eslint-config": "workspace:^",
@@ -51,6 +52,7 @@
     "vite": "catalog:",
     "vue-tsc": "catalog:",
     "yarpm": "catalog:",
-    "svgo": "catalog:"
+    "svgo": "catalog:",
+    "@types/d3": "catalog:"
   }
 }

@@ -118,15 +118,6 @@ const settings = computed<PlChartStackedBarSettings>(() => {
 </template>
 
 <style module>
-.components pre {
-  border: 1px solid var(--txt-01);
-  padding: 12px;
-  font-weight: bolder;
-  overflow: auto;
-  max-width: 50vw;
-  background-color: #eeeeee55;
-}
-
 .chip {
   width: 120px;
   height: 120px;
