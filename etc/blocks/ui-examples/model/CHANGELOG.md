@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.model
 
+## 1.1.12
+
+### Patch Changes
+
+- 9b5a692: [sdk/ui-vue] Histogram
+
 ## 1.1.11
 
 ### Patch Changes

@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.3.21
+
+### Patch Changes
+
+- 9b5a692: [sdk/ui-vue] Histogram
+- Updated dependencies [9b5a692]
+  - @milaboratories/milaboratories.ui-examples.model@1.1.12
+
 ## 1.3.20
 
 ### Patch Changes

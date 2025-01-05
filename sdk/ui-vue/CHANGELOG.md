@@ -1,5 +1,13 @@
 # @platforma-sdk/ui-vue
 
+## 1.21.23
+
+### Patch Changes
+
+- 9b5a692: [sdk/ui-vue] Histogram
+- Updated dependencies [9b5a692]
+  - @milaboratories/uikit@2.2.46
+
 ## 1.21.21
 
 ### Patch Changes
