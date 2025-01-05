@@ -17,8 +17,6 @@ const canShowWhiteBg = computed(() => props.stage !== 'not_started');
 const currentProgress = computed(() => props.stage === 'done' ? 100 : Math.min(100, props.progress || 0));
 
 const canShowInfinityLoader = computed(() => props.progress === undefined && props.stage !== 'done' && props.stage !== 'not_started' && !props.error);
-
-console.log(props);
 </script>
 
 <template>

@@ -166,8 +166,6 @@ const toggleModel = () => (data.open = !data.open);
 const onFocusOut = (event: FocusEvent) => {
   const relatedTarget = event.relatedTarget as Node | null;
 
-  console.log('>>>> overlay.value?.$el', overlay.value?.$el);
-
   if (!rootRef.value?.contains(relatedTarget) && !overlay.value?.listRef?.contains(relatedTarget)) {
     data.search = '';
     data.open = false;

@@ -97,6 +97,7 @@ export const platforma = BlockModel.create('Heavy')
       { type: 'link', href: '/text-fields', label: 'PlTextField' },
       { type: 'link', href: '/tabs', label: 'PlTabs' },
       { type: 'link', href: '/stacked-bar', label: 'PlChartStackedBar' },
+      { type: 'link', href: '/histogram', label: 'PlChartHistogram' },
       { type: 'link', href: '/buttons', label: 'ButtonsPage' },
       { type: 'link', href: '/notifications', label: 'Notifications' },
       { type: 'link', href: '/drafts', label: 'Drafts' },
