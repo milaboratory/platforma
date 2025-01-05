@@ -16,7 +16,7 @@ import { computed, type Component, type ComputedRef } from 'vue';
  * @example
  * ```ts
  * import { ref, defineComponent } from 'vue';
- * import { useComponentProp } from './path-to-function';
+ * import { useComponentProp } from '@platforma-sdk/ui-vue';
  *
  * const MyComponent = defineComponent({
  *   props: {
