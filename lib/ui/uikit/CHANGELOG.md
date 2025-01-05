@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.46
+
+### Patch Changes
+
+- 9b5a692: [sdk/ui-vue] Histogram
+
 ## 2.2.45
 
 ### Patch Changes
