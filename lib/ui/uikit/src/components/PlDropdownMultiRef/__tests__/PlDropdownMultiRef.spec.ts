@@ -43,11 +43,9 @@ describe('PlDropdownMultiRef', () => {
 
     const options = getOptions();
 
-    console.log('options', options);
-
     expect(options.length).toBe(2);
 
-    console.log(wrapper.props('modelValue'), 'mv');
+    // console.log(wrapper.props('modelValue'), 'mv');
     options[0].click();
 
     await delay(20);

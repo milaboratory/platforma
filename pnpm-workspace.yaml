@@ -184,6 +184,8 @@ catalog:
   'sass': ~1.81.0
   'vitepress': '1.5.0'
   'highlight.js': '11.10.0'
+  'd3': '^7.9.0'
+  '@types/d3': '^7.4.3'
 
   'ag-grid-enterprise': &ag-grid ^33.0.3
   'ag-grid-vue3': *ag-grid

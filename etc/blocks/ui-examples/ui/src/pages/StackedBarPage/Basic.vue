@@ -46,20 +46,3 @@ const settings = computed(() => {
     <pre>{{ JSON.stringify(settings, null, 2) }}</pre>
   </PlRow>
 </template>
-
-<style module>
-.drag-and-drop {
-  border: 1px solid var(--txt-01);
-  padding: 24px;
-  width: 600px;
-}
-
-.components pre {
-  border: 1px solid var(--txt-01);
-  padding: 12px;
-  font-weight: bolder;
-  overflow: auto;
-  max-width: 50vw;
-  background-color: #eeeeee55;
-}
-</style>
