@@ -13,6 +13,7 @@ export * from './components/PlAgCellFile';
 export * from './components/PlAgCellProgress';
 export * from './components/PlAgCellStatusTag';
 export * from './components/PlAgChartStackedBarCell';
+export * from './components/PlAgChartHistogramCell';
 
 export * from './components/PlAgDataTable/types';
 export * from './components/PlAgDataTable/sources/row-number';

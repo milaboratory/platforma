@@ -14,8 +14,6 @@ describe('Colors', () => {
 
     const viridis15 = Gradient(viridis).split(15);
 
-    console.log('viridis15', JSON.stringify(viridis15));
-
     expect(viridis.map((it) => it + 'FF').join(',')).toEqual(viridis15.map((it) => it.hex.toUpperCase()).join(','));
   });
 
