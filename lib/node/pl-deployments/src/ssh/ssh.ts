@@ -3,6 +3,9 @@ import { Client } from 'ssh2';
 import net from 'net';
 import dns from 'dns';
 
+export type SshAuthMethods = 'publickey' | 'password';
+export type SshAuthMethodsResult = SshAuthMethods[];
+
 /** Promisified exec on ssh connection. */
 export function sshExec(client: Client, command: string): Promise<{ stdout: string; stderr: string }> {
   return new Promise((resolve, reject) => {
@@ -46,7 +49,7 @@ export function sshConnect(client: Client, config: ConnectConfig): Promise<undef
  * @param host - remote host
  * @returns string[] //['publickey', 'password']
  */
-export async function sshGetAuthTypes(host: string) {
+export async function sshGetAuthTypes(host: string): Promise<SshAuthMethodsResult> {
   return new Promise((resolve) => {
     let stdout = '';
     sshConnect(new Client(), {
@@ -64,10 +67,10 @@ export async function sshGetAuthTypes(host: string) {
   });
 }
 
-export function extractAuthMethods(log: string): string[] {
+export function extractAuthMethods(log: string): SshAuthMethodsResult | [] {
   const newFormatMatch = log.match(/Inbound: Received USERAUTH_FAILURE \((.+)\)/);
   if (newFormatMatch && newFormatMatch[1]) {
-    return newFormatMatch[1].split(',').map((method) => method.trim());
+    return newFormatMatch[1].split(',').map((method) => method.trim()) as SshAuthMethodsResult;
   }
   return [];
 }
@@ -126,7 +129,7 @@ export function forwardPort(config: ConnectConfig, ports: { remotePort: number; 
   });
 }
 
-export function isValidHostname(hostname: string): Promise<boolean> {
+export function sshCheckHostAvailability(hostname: string): Promise<boolean> {
   return new Promise((resolve) => {
     dns.lookup(hostname, (err) => {
       if (err) {
@@ -136,4 +139,48 @@ export function isValidHostname(hostname: string): Promise<boolean> {
       }
     });
   });
+}
+
+export async function sshIsPassphraseRequiredForKey(privateKey: string): Promise<boolean> {
+  return new Promise((resolve, reject) => {
+    const conn = new Client();
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    conn.on('error', (err: any) => {
+      if (err.message.includes('Cannot parse privateKey')) {
+        resolve(true);
+      } else {
+        if (err.code === 'ECONNREFUSED') {
+          resolve(false);
+        } else {
+          reject(err);
+        }
+      }
+    });
+
+    conn.on('ready', () => {
+      conn.end();
+      resolve(false);
+    });
+
+    try {
+      conn.connect({
+        username: 'someuser',
+        privateKey: privateKey,
+      });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {
+      if (err.message.includes('Cannot parse privateKey')) {
+        resolve(true);
+      } else {
+        reject(err);
+      }
+    }
+
+    resolve(false);
+  });
+}
+
+export function createClient() {
+  return new Client();
 }
