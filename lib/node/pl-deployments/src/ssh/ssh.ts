@@ -184,3 +184,39 @@ export async function sshIsPassphraseRequiredForKey(privateKey: string): Promise
 export function createClient() {
   return new Client();
 }
+
+export async function uploadFilesToServer(config: ConnectConfig, localPath: string, remotePath: string) {
+  return new Promise((resolve, reject) => {
+    const client = new Client();
+    sshConnect(client, config).then(() => {
+      client.sftp((err, sftp) => {
+        sftp.fastPut(localPath, remotePath, (err) => {
+          if (err) throw err;
+          client.end();
+          resolve(true);
+        });
+      });
+    }).catch((err) => {
+      console.log(err);
+      reject(err);
+    });
+  });
+}
+
+export async function downloadFileFromServer(config: ConnectConfig, remotePath: string, localPath: string) {
+  return new Promise((resolve, reject) => {
+    const client = new Client();
+    sshConnect(client, config).then(() => {
+      client.sftp((err, sftp) => {
+        sftp.fastGet(remotePath, localPath, (err) => {
+          if (err) throw err;
+          client.end();
+          resolve(true);
+        });
+      });
+    }).catch((err) => {
+      console.log(err);
+      reject(err);
+    });
+  });
+}
