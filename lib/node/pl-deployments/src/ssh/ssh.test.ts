@@ -1,8 +1,9 @@
 import { describe, expect, it, test, vi } from 'vitest';
 import * as ssh from 'ssh2';
-import { forwardPort, isValidHostname, sshConnect, sshExec, sshGetAuthTypes } from './ssh';
+import { forwardPort, sshCheckHostAvailability, sshConnect, sshExec, sshGetAuthTypes, sshIsPassphraseRequiredForKey } from './ssh';
 import { Client } from 'ssh2';
 import net from 'net';
+import { TEST_PRIVATE_KEY_PROTECTED, TEST_PRIVATE_KEY_NOT_PROTECTED } from './connections.secret';
 
 vi.mock('ssh2', () => {
   // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
@@ -108,10 +109,19 @@ describe('forwardPort', () => {
   });
 });
 
-describe('isValidHostname', () => {
+describe('sshCheckHostAvailability', () => {
   it('check', async () => {
-    expect(await isValidHostname('127.0.0.1')).toBe(true);
-    expect(await isValidHostname('127.0.0.1d')).toBe(false);
-    expect(await isValidHostname('somedata')).toBe(false);
+    expect(await sshCheckHostAvailability('127.0.0.1')).toBe(true);
+    expect(await sshCheckHostAvailability('127.0.0.1d')).toBe(false);
+    expect(await sshCheckHostAvailability('somedata')).toBe(false);
+  });
+});
+
+describe('sshIsPassphraseRequiredForKey', () => {
+  it('Check required pass', async () => {
+    expect(await sshIsPassphraseRequiredForKey(TEST_PRIVATE_KEY_PROTECTED)).toBe(true);
+  });
+  it('Check not required pass', async () => {
+    expect(await sshIsPassphraseRequiredForKey(TEST_PRIVATE_KEY_NOT_PROTECTED)).toBe(false);
   });
 });
