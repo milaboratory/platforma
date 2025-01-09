@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.3.22
+
+### Patch Changes
+
+- 93e9a66: [sdk/ui-vue] Align PlDialogModal with figma (size props, etc)
+
 ## 1.3.21
 
 ### Patch Changes
