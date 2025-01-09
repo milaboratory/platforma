@@ -53,19 +53,25 @@ export type PlDbSettings = {
 };
 
 export type PlAuthDriver =
-  | {
-    driver: 'ldap';
-    serverUrl: string; // 'ldaps://ldap.example.com:1111'
-    defaultDN: string; // 'cn=%u,ou=users,ou=users,dc=example,dc=com'
-  }
-  | {
-    driver: 'jwt';
-    key: string;
-  }
-  | {
-    driver: 'htpasswd';
-    path: string;
-  };
+  | PlAuthDriverLdap
+  | PlAuthDriverJwt
+  | PlAuthDriverHtpasswd;
+
+export type PlAuthDriverLdap = {
+  driver: 'ldap';
+  serverUrl: string; // 'ldaps://ldap.example.com:1111'
+  defaultDN: string; // 'cn=%u,ou=users,ou=users,dc=example,dc=com'
+};
+
+export type PlAuthDriverJwt = {
+  driver: 'jwt';
+  key: string;
+};
+
+export type PlAuthDriverHtpasswd = {
+  driver: 'htpasswd';
+  path: string;
+};
 
 export type PlGrpcSettings = {
   listen: string;

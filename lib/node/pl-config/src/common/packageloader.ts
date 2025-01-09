@@ -1,9 +1,14 @@
 import fs from 'fs/promises';
 import path from 'path';
 
-export async function createDefaultPackageSettings(dir: string) {
-  const fPath = 'packages';
-  await fs.mkdir(path.join(dir, fPath), { recursive: true });
+/** Gets a default software loader path and creates it locally. */
+export async function createDefaultLocalPackageSettings(dir: string) {
+  const fPath = newDefaultPackageSettings(dir);
+  await fs.mkdir(fPath, { recursive: true });
 
   return fPath;
+}
+
+export function newDefaultPackageSettings(dir: string) {
+  return path.join(dir, 'packages');
 }

@@ -1,0 +1,89 @@
+# a config for tests, the generated config is more or less the same
+license:
+  value: 'abc'
+  file: ''
+
+logging:
+  level: info
+  destinations:
+    - path: platforma.log
+
+monitoring:
+  enabled: true
+  listen: 127.0.0.1:37659
+
+debug:
+  enabled: true
+  listen: 127.0.0.1:39841
+
+core:
+  logging:
+    extendedInfo: true
+    dumpResourceData: true
+
+  grpc:
+    listen: 127.0.0.1:42097
+    tls:
+      enabled: false
+
+  authEnabled: true
+  auth:
+    - driver: jwt
+      key: jwtkey
+    - driver: htpasswd
+      path: /home/pl-doctor/platforma_backend/users.htpasswd
+  db:
+    path: db
+
+controllers:
+  workflows: {}
+
+  packageLoader:
+    packagesRoot: /home/pl-doctor/platforma_backend/packages
+
+  runner:
+    type: local
+    storageRoot: /home/pl-doctor/platforma_backend/storages/work
+    workdirCacheOnFailure: 1h
+    secrets:
+      - map:
+          MI_LICENSE: 'abc'
+
+  data:
+    main:
+      storages:
+        remoteRoot:
+          mode: passive
+          downloadable: true
+        work:
+          mode: active
+          downloadable: false
+        main:
+          mode: primary
+          downloadable: true
+
+    storages:
+      - id: remoteRoot
+        type: FS
+        indexCachePeriod: 1m
+        rootPath: ""
+
+      - id: work
+        type: FS
+        indexCachePeriod: 1m
+        rootPath: /home/pl-doctor/platforma_backend/storages/work
+
+      - id: main
+        type: S3
+        indexCachePeriod: "0s"
+        endpoint: 127.0.0.1:9000
+        region: ""
+        presignEndpoint: 127.0.0.1:9000
+        bucketName: main-bucket
+        createBucket: true
+        forcePathStyle: true
+        key: static:minio-user
+        secret: 'thesecret'
+        keyPrefix: ""
+        accessPrefixes: [""]
+        uploadKeyPrefix: ""

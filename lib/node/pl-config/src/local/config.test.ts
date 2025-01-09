@@ -1,15 +1,16 @@
 import { test } from 'vitest';
-import { ConsoleLoggerAdapter, sleep } from '@milaboratories/ts-helpers';
+import { ConsoleLoggerAdapter } from '@milaboratories/ts-helpers';
 import fs from 'fs/promises';
 import path from 'path';
-import type { PlConfigGeneratorOptions } from './config';
+import type { LocalPlConfigGeneratorOptions } from './config';
 import { generateLocalPlConfigs } from './config';
 import yaml from 'yaml';
+import type { PlAuthDriverJwt, PlConfig } from '../common/types';
 
 test('should return right configs', async ({ expect }) => {
   const logger = new ConsoleLoggerAdapter();
-  const workingDir = path.resolve(path.join(__dirname, '..', '.test'));
-  const opts: PlConfigGeneratorOptions = {
+  const workingDir = path.resolve(path.join(__dirname, '..', '..', '.test'));
+  const opts: LocalPlConfigGeneratorOptions = {
     logger,
     workingDir,
     licenseMode: { type: 'plain', value: 'abc' },
@@ -21,6 +22,10 @@ test('should return right configs', async ({ expect }) => {
         debug: 11236,
       },
     },
+    plConfigPostprocessing: (config: PlConfig) => {
+      (config.core.auth[0] as PlAuthDriverJwt).key = 'jwtkey';
+      return config;
+    },
   };
 
   const got = await generateLocalPlConfigs(opts);
@@ -31,18 +36,16 @@ test('should return right configs', async ({ expect }) => {
     localPath: '',
   });
 
-  const testConfig = await fs.readFile(path.join(__dirname, 'config.test.yaml'));
+  const testConfig = await fs.readFile(path.join(__dirname, 'config_test.yaml'));
   const expected = yaml.parse(testConfig.toString());
 
   // the simplest way to pass absolute paths in storages
-  // (TODO: no absolute paths in database and softwareRoot though?)
+  // (TODO: no absolute paths in database though?)
   expected.controllers.runner.storageRoot = path.resolve(workingDir, expected.controllers.runner.storageRoot);
   expected.controllers.data.storages[1].rootPath = path.resolve(workingDir, expected.controllers.data.storages[1].rootPath);
   expected.controllers.data.storages[2].rootPath = path.resolve(workingDir, expected.controllers.data.storages[2].rootPath);
+  expected.core.auth[1].path = path.resolve(workingDir, expected.core.auth[1].path);
+  expected.controllers.packageLoader.packagesRoot = path.resolve(workingDir, expected.controllers.packageLoader.packagesRoot);
 
-  // mock a bit more
-  const gotParsed = yaml.parse(got.plConfigContent);
-  gotParsed.core.auth[0].key = 'jwtkey';
-
-  expect(gotParsed).toStrictEqual(expected);
+  expect(yaml.parse(got.plConfigContent)).toStrictEqual(expected);
 });
