@@ -58,11 +58,8 @@ export type Ports = {
 
   // the following fields are not empty only when the client provided them at creation.
 
-  minioPort?: number;
-  minioConsolePort?: number;
-
-  /** Url that will be presigned by Pl Backend when a client downloads files. */
-  minioPresignUrl?: string;
+  minio?: number;
+  minioConsole?: number;
 };
 
 export type Endpoints = {
@@ -74,7 +71,6 @@ export type Endpoints = {
 
   minio?: string;
   minioConsole?: string;
-  minioPresign?: string;
 };
 
 export type PortsWithMinio = {
@@ -82,10 +78,8 @@ export type PortsWithMinio = {
   monitoring: number;
   debug: number;
 
-  minioPort: number;
-  minioConsolePort: number;
-
-  minioPresignUrl: string;
+  minio: number;
+  minioConsole: number;
 };
 
 export type PlConfigPorts =
@@ -138,9 +132,7 @@ export function withHost(host: string, ports: Ports): Endpoints {
     monitoring: endp(ports.monitoring),
     debug: endp(ports.debug),
 
-    minio: ports.minioPort ? endp(ports.minioPort) : undefined,
-    minioConsole: ports.minioConsolePort ? endp(ports.minioConsolePort) : undefined,
-
-    minioPresign: ports.minioPresignUrl,
+    minio: ports.minio ? endp(ports.minio) : undefined,
+    minioConsole: ports.minioConsole ? endp(ports.minioConsole) : undefined,
   };
 }

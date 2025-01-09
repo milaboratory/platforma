@@ -1,25 +1,22 @@
 import type { MiLogger } from '@milaboratories/ts-helpers';
 import path from 'path';
 import yaml from 'yaml';
-import type { Endpoints, PlConfigPorts } from './common/ports';
-import { getLocalhostEndpoints, getPorts, withHost } from './common/ports';
-import type { PlConfig } from './common/types';
+import type { Endpoints, PlConfigPorts } from '../common/ports';
+import { getLocalhostEndpoints } from '../common/ports';
+import type { PlConfig } from '../common/types';
 import type {
-  License,
   PlLicenseMode,
-} from './common/license';
+} from '../common/license';
 import {
   getLicense,
-  licenseEnvsForMixcr,
-  licenseForConfig,
-} from './common/license';
-import { createHtpasswdFile, getDefaultAuthMethods } from './common/auth';
-import type { StoragesSettings } from './common/storages';
-import { createDefaultLocalStorages, getDefaultLocalStorages } from './common/storages';
-import { createDefaultPackageSettings } from './common/packageloader';
-import { FSKVStorage } from './common/fskvstorage';
+} from '../common/license';
+import { createLocalHtpasswdFile } from '../common/auth';
+import type { StoragesSettings } from '../common/storages';
+import { createDefaultLocalStorages } from '../common/storages';
+import { createDefaultLocalPackageSettings } from '../common/packageloader';
+import { FSKVStorage } from './fs_kv_storage';
 import * as crypto from 'node:crypto';
-import * as fs from 'fs/promises';
+import { newDefaultPlConfig } from '../common/config';
 
 export type LocalPlConfigGeneratorOptions = {
   /** Logger for Middle-Layer */
@@ -125,72 +122,13 @@ async function createDefaultPlLocalConfig(
   storages: StoragesSettings,
 ): Promise<string> {
   const license = await getLicense(opts.licenseMode);
-  const htpasswdAuth = await createHtpasswdFile(opts.workingDir, [{ user, password }]);
+  const htpasswdAuth = await createLocalHtpasswdFile(opts.workingDir, [{ user, password }]);
 
-  const packageLoaderPath = await createDefaultPackageSettings(opts.workingDir);
+  const packageLoaderPath = await createDefaultLocalPackageSettings(opts.workingDir);
 
-  let config = getPlConfig(ports, license, htpasswdAuth, jwtKey, packageLoaderPath, storages);
+  let config = newDefaultPlConfig(ports, license, htpasswdAuth, jwtKey, packageLoaderPath, storages);
 
   if (opts.plConfigPostprocessing) config = opts.plConfigPostprocessing(config);
 
   return yaml.stringify(config);
-}
-
-function getPlConfig(
-  ports: Endpoints,
-  license: License,
-  htpasswdAuth: string,
-  jwtKey: string,
-  packageLoaderPath: string,
-  storages: StoragesSettings,
-): PlConfig {
-  const dbPath = 'db';
-  const logPath = 'platforma.log';
-
-  return {
-    license: licenseForConfig(license),
-    logging: {
-      level: 'info',
-      destinations: [{ path: logPath }],
-    },
-    monitoring: {
-      enabled: true,
-      listen: ports.monitoring,
-    },
-    debug: {
-      enabled: true,
-      listen: ports.debug,
-    },
-    core: {
-      logging: {
-        extendedInfo: true,
-        dumpResourceData: true,
-      },
-      grpc: {
-        listen: ports.grpc,
-        tls: { enabled: false },
-      },
-      authEnabled: true,
-      auth: getDefaultAuthMethods(htpasswdAuth, jwtKey),
-      db: { path: dbPath },
-    },
-    controllers: {
-      workflows: {},
-      packageLoader: {
-        packagesRoot: packageLoaderPath,
-      },
-      runner: {
-        type: 'local',
-        storageRoot: storages.runner,
-        workdirCacheOnFailure: '1h',
-        secrets: [{ map: licenseEnvsForMixcr(license) }],
-      },
-      data: {
-        main: {
-          storages: Object.fromEntries(storages.storages.map((s) => [s.storage.id, s.main])),
-        },
-        storages: storages.storages.map((s) => s.storage),
-      },
-    },
-  };
 }

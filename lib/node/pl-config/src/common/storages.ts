@@ -2,10 +2,15 @@ import path from 'path';
 import fs from 'fs/promises';
 import type { PlControllerDataMainStoragesSettings, PlControllerDataStoragesSettings } from './types';
 
+/** Settings that are needed for config generation:
+ * runner's working dir (usually this is "work" storage),
+ * dirs that needs to be created (Pl Backend couldn't do it itself at the moment),
+ * storages configs and a path to the main storage (minio could use it). */
 export interface StoragesSettings {
   runner: string;
   dirsToCreate: string[];
   storages: StorageSettings[];
+  mainStoragePath: string;
 }
 
 export interface StorageSettings {
@@ -26,11 +31,12 @@ export interface RemoteMinioSettings {
   bucketName: string;
 }
 
-export function getRemoteConfigStorages(
+export function newRemoteConfigStorages(
   workdir: string,
   minioOpts: RemoteMinioSettings,
 ): StoragesSettings {
   const workPath = path.join(workdir, 'storages', 'work');
+  const mainPath = path.join(workdir, 'storages', 'main');
 
   const main: StorageSettings = {
     main: {
@@ -47,8 +53,8 @@ export function getRemoteConfigStorages(
       bucketName: minioOpts.bucketName,
       createBucket: true,
       forcePathStyle: true,
-      key: minioOpts.key,
-      secret: minioOpts.secret,
+      key: `static:${minioOpts.key}`,
+      secret: `static:${minioOpts.secret}`,
       keyPrefix: '',
       accessPrefixes: [''],
       uploadKeyPrefix: '',
@@ -84,13 +90,14 @@ export function getRemoteConfigStorages(
 
   return {
     runner: workPath,
-    dirsToCreate: [],
+    dirsToCreate: [workPath, mainPath],
     storages: [remoteRoot, work, main],
+    mainStoragePath: mainPath,
   };
 }
 
 export async function createDefaultLocalStorages(workdir: string): Promise<StoragesSettings> {
-  const storages = getDefaultLocalStorages(workdir);
+  const storages = newDefaultLocalStorages(workdir);
 
   for (const d of storages.dirsToCreate) {
     await fs.mkdir(d, { recursive: true });
@@ -99,10 +106,13 @@ export async function createDefaultLocalStorages(workdir: string): Promise<Stora
   return storages;
 }
 
-export function getDefaultLocalStorages(workdir: string): StoragesSettings {
+export function newDefaultLocalStorages(workdir: string): StoragesSettings {
   const workPath = path.join(workdir, 'storages', 'work');
   const mainPath = path.join(workdir, 'storages', 'main');
 
+  // root storage will be ignored in a local pl deployments in the driver
+  // (Platforma needs to be able to upload any file by absolute paths
+  // in the local deployment, that's why it exists.)
   const root: StorageSettings = {
     localPath: '',
     main: {
@@ -148,5 +158,6 @@ export function getDefaultLocalStorages(workdir: string): StoragesSettings {
     runner: workPath,
     dirsToCreate: [workPath, mainPath],
     storages: [root, work, main],
+    mainStoragePath: mainPath,
   };
 }
