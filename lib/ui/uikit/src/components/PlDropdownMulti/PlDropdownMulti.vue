@@ -73,6 +73,7 @@ const props = withDefaults(
     placeholder: '...',
     required: false,
     disabled: false,
+    options: undefined,
   },
 );
 
