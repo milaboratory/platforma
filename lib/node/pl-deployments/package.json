@@ -32,29 +32,30 @@
   "license": "UNLICENSED",
   "devDependencies": {
     "@milaboratories/eslint-config": "workspace:^",
-    "eslint": "catalog:",
     "@milaboratories/platforma-build-configs": "workspace:*",
-    "vite": "catalog:",
-    "vitest": "catalog:",
+    "@types/decompress": "catalog:",
     "@types/jest": "catalog:",
     "@types/node": "catalog:",
-    "@types/decompress": "catalog:",
-    "prettier": "catalog:",
-    "ts-jest": "catalog:",
+    "@types/ssh2": "catalog:",
+    "eslint": "catalog:",
     "jest": "catalog:",
+    "prettier": "catalog:",
+    "testcontainers": "catalog:",
+    "ts-jest": "catalog:",
     "tsconfig-paths": "catalog:",
-    "utility-types": "catalog:",
     "typescript": "catalog:",
-    "@types/ssh2": "catalog:"
+    "utility-types": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:"
   },
   "dependencies": {
-    "decompress": "catalog:",
-    "undici": "catalog:",
     "@milaboratories/ts-helpers": "workspace:^",
-    "tar": "catalog:",
-    "yaml": "catalog:",
-    "zod": "catalog:",
+    "decompress": "catalog:",
+    "node-scp": "catalog:",
     "ssh2": "catalog:",
-    "node-scp": "catalog:"
+    "tar": "catalog:",
+    "undici": "catalog:",
+    "yaml": "catalog:",
+    "zod": "catalog:"
   }
 }

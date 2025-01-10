@@ -49,11 +49,12 @@ export function sshConnect(client: Client, config: ConnectConfig): Promise<undef
  * @param host - remote host
  * @returns string[] //['publickey', 'password']
  */
-export async function sshGetAuthTypes(host: string): Promise<SshAuthMethodsResult> {
+export async function sshGetAuthTypes(host: string, port: number): Promise<SshAuthMethodsResult> {
   return new Promise((resolve) => {
     let stdout = '';
     sshConnect(new Client(), {
       host,
+      port,
       username: new Date().getTime().toString(),
       debug: (err: string) => {
         stdout += `${err} \n`;

@@ -148,6 +148,7 @@ catalog:
 
   # Util & other libs
 
+  'testcontainers': ^10.16.0
   'utility-types': ^3.11.0
   'denque': ^2.1.0
   'lru-cache': ^11.0.2
