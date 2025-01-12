@@ -17,6 +17,8 @@ import { MiddleLayerEnvironment } from './middle_layer';
 import {
   AuthorMarker,
   BlockCalculationStatus,
+  BlockSettings,
+  BlockStateOverview,
   ProjectMeta,
   ProjectOverview
 } from '@milaboratories/pl-model-middle-layer';
@@ -165,6 +167,14 @@ export function projectOverview(
             };
           }) || {};
 
+        const settings = prj
+          .traverse({
+            field: projectFieldName(id, 'blockSettings'),
+            assertFieldType: 'Dynamic',
+            errorIfFieldNotSet: true
+          })
+          .getDataAsJson() as BlockSettings;
+
         const updatedBlockPack = ifNotUndef(bp, ({ info }) =>
           env.blockUpdateWatcher.get(info.source)
         );
@@ -182,9 +192,10 @@ export function projectOverview(
           outputErrors: info.prod?.outputError === true,
           outputsError: info.prod?.outputsError,
           exportsError: info.prod?.exportsError,
+          settings,
           sections,
           inputsValid,
-          // settings,
+          updateInfo: {},
           currentBlockPack: bp?.info?.source,
           updatedBlockPack,
           sdkVersion,
