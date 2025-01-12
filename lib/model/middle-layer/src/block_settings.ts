@@ -1,10 +1,10 @@
 /**
  * What part of block version should be locked against updates.
- * 
+ *
  *   - `major` - 1.2.3 can be updated to 1.4.7
  *   - `minor` - 1.2.3 can be updated to 1.2.5
  *   - `patch` - version of the block is completely locked
- * 
+ *
  * */
 export type VersionLock = 'major' | 'minor' | 'patch';
 
@@ -23,3 +23,5 @@ export type BlockSettings = {
    * */
   versionLock?: VersionLock;
 };
+
+export const InitialBlockSettings: BlockSettings = {};

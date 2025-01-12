@@ -135,7 +135,7 @@ export type BlockStateOverview = {
   updatedBlockPack: BlockPackSpec | undefined;
 
   /** Current block settings */
-  blockSettings: BlockSettings;
+  settings: BlockSettings;
 
   /** Detailed update options */
   updateInfo: BlockUpdateInfo;

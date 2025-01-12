@@ -10,6 +10,7 @@ import { PlClient } from '@milaboratories/pl-client';
 import {
   ImportFileHandle,
   InferBlockState,
+  InitialBlockSettings,
   LocalBlobHandleAndSize,
   MiddleLayer,
   PlRef,
@@ -206,6 +207,7 @@ test('simple project manipulations test', { timeout: 20000 }, async ({ expect })
     expect(overviewSnapshot1.lastModified.valueOf()).toBeGreaterThan(lastModInitial);
 
     overviewSnapshot1.blocks.forEach((block) => {
+      expect(block.settings).toMatchObject(InitialBlockSettings);
       expect(block.sections).toBeDefined();
       expect(block.canRun).toEqual(false);
       expect(block.stale).toEqual(false);
@@ -213,7 +215,7 @@ test('simple project manipulations test', { timeout: 20000 }, async ({ expect })
       if (block.id === block1Id) expect(block.navigationState).toStrictEqual({ href: '/section1' });
       else expect(block.navigationState).toStrictEqual({ href: '/' });
     });
-    console.dir(overviewSnapshot1, { depth: 5 });
+    // console.dir(overviewSnapshot1, { depth: 5 });
     const block1StableFrontend = await prj.getBlockFrontend(block1Id).awaitStableValue();
     expect(block1StableFrontend.path).toBeDefined();
     expect(block1StableFrontend.sdkVersion).toBeDefined();
@@ -223,7 +225,7 @@ test('simple project manipulations test', { timeout: 20000 }, async ({ expect })
     const block3StableFrontend = await prj.getBlockFrontend(block3Id).awaitStableValue();
     expect(block3StableFrontend.path).toBeDefined();
     expect(block3StableFrontend.sdkVersion).toBeDefined();
-    console.dir({ block1StableFrontend, block2StableFrontend, block3StableFrontend }, { depth: 5 });
+    // console.dir({ block1StableFrontend, block2StableFrontend, block3StableFrontend }, { depth: 5 });
 
     const block1StableState1 = await prj.getBlockState(block1Id).awaitStableValue();
     const block2StableState1 = await prj.getBlockState(block2Id).awaitStableValue();
@@ -241,6 +243,7 @@ test('simple project manipulations test', { timeout: 20000 }, async ({ expect })
     });
 
     await prj.resetBlockArgsAndUiState(block2Id);
+    await prj.setBlockSettings(block2Id, { versionLock: 'patch' });
 
     const block2Inputs = await prj.getBlockState(block2Id).getValue();
     expect(block2Inputs.args).toEqual({ numbers: [] });
@@ -249,6 +252,9 @@ test('simple project manipulations test', { timeout: 20000 }, async ({ expect })
     expect(overviewSnapshot2.blocks.find((b) => b.id === block3Id)?.canRun).toEqual(false);
     expect(overviewSnapshot2.blocks.find((b) => b.id === block3Id)?.stale).toEqual(true);
     expect(overviewSnapshot2.blocks.find((b) => b.id === block2Id)?.stale).toEqual(true);
+    expect(overviewSnapshot2.blocks.find((b) => b.id === block2Id)?.settings).toEqual({
+      versionLock: 'patch'
+    });
   });
 });
 

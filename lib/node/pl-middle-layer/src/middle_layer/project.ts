@@ -25,7 +25,8 @@ import { BlockPackInfo } from '../model/block_pack';
 import {
   ProjectOverview,
   AuthorMarker,
-  BlockStateInternal
+  BlockStateInternal,
+  BlockSettings
 } from '@milaboratories/pl-model-middle-layer';
 import { activeConfigs } from './active_cfg';
 import { NavigationStates } from './navigation_states';
@@ -267,6 +268,14 @@ export class Project {
     await withProjectAuthored(this.env.pl, this.rid, author, (mut) => {
       mut.setArgs([{ blockId, args: JSON.stringify(args) }]);
       mut.setUiState(blockId, JSON.stringify(uiState));
+    });
+    await this.projectTree.refreshState();
+  }
+
+  /** Update block settings */
+  public async setBlockSettings(blockId: string, newValue: BlockSettings) {
+    await withProjectAuthored(this.env.pl, this.rid, undefined, (mut) => {
+      mut.setBlockSettings(blockId, newValue);
     });
     await this.projectTree.refreshState();
   }
