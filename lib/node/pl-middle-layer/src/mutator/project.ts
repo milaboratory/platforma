@@ -620,10 +620,15 @@ export class ProjectMutator {
       const bp = createBlockPack(this.tx, spec.blockPack);
       this.setBlockField(blockId, 'blockPack', Pl.wrapInHolder(this.tx, bp), 'NotReady');
 
+      // settings
+      this.setBlockFieldObj(
+        blockId,
+        'blockSettings',
+        this.createJsonFieldValue(InitialBlockSettings)
+      );
+
       // args
-      const binArgs = Buffer.from(spec.args);
-      const argsRes = this.tx.createValue(Pl.JsonObject, binArgs);
-      this.setBlockField(blockId, 'currentArgs', argsRes, 'Ready', binArgs);
+      this.setBlockFieldObj(blockId, 'currentArgs', this.createJsonFieldValueByContent(spec.args));
 
       // uiState
       if (spec.uiState /* this check is for compatibility with old configs */) {
