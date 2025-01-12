@@ -184,6 +184,7 @@ export function projectOverview(
           exportsError: info.prod?.exportsError,
           sections,
           inputsValid,
+          // settings,
           currentBlockPack: bp?.info?.source,
           updatedBlockPack,
           sdkVersion,
