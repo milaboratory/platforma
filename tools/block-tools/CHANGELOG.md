@@ -1,5 +1,11 @@
 # @platforma-sdk/block-tools
 
+## 2.5.5
+
+### Patch Changes
+
+- c4dd069: Fix for getUpdateSuggestions method with changel === "any"
+
 ## 2.5.4
 
 ### Patch Changes
