@@ -2,9 +2,11 @@ import { describe, it, beforeAll, afterAll, expect } from 'vitest';
 import type { StartedTestContainer } from 'testcontainers';
 import { GenericContainer } from 'testcontainers';
 import { writeFileSync, readFileSync, unlinkSync, existsSync } from 'fs';
-import { downloadFileFromServer, forwardPort, sshConnect, sshExec, sshGetAuthTypes, uploadFilesToServer } from './ssh';
 import path from 'path';
-import ssh, { Client } from 'ssh2';
+import { SshClient } from './ssh';
+import ssh from 'ssh2';
+
+let client: SshClient;
 
 let container: StartedTestContainer;
 const SSH_PORT = [22, 3001];
@@ -79,21 +81,19 @@ function cleanUp() {
   if (existsSync(localFileDownload))
     unlinkSync(localFileDownload);
 }
+
 beforeAll(async () => {
   await initContainer();
+  client = await SshClient.init(getConnectionForSsh());
 });
 
 describe('SSH Tests', () => {
   it('should upload a file to the SSH server', async () => {
     const data = `Test data ${new Date().getTime()}`;
-    // const localFile = './test-file.txt';
     const remoteFile = '/home/pl-doctor/uploaded-file.txt';
-
     writeFileSync(localFileUpload, data);
-
-    const result = await uploadFilesToServer(getConnectionForSsh(), localFileUpload, remoteFile);
+    const result = await client.uploadFile(localFileUpload, remoteFile);
     expect(result).toBe(true);
-
     const execResult = await container.exec(['cat', remoteFile]);
     const output = execResult.output.trim();
     expect(output).toBe(data);
@@ -106,10 +106,10 @@ describe('SSH Tests', () => {
 
     writeFileSync(localFileDownload, data);
 
-    const uploadResult = await uploadFilesToServer(getConnectionForSsh(), localFileDownload, remoteFile);
+    const uploadResult = await client.uploadFile(localFileDownload, remoteFile);
     expect(uploadResult).toBe(true);
 
-    const downloadResult = await downloadFileFromServer(getConnectionForSsh(), remoteFile, localFileDownload);
+    const downloadResult = await client.downloadFile(remoteFile, localFileDownload);
     expect(downloadResult).toBe(true);
     expect(readFileSync(localFileDownload, { encoding: 'utf-8' })).toBe(data);
   });
@@ -120,7 +120,7 @@ describe('SSH Tests', () => {
     const resFailed = await fetch(`http://127.0.0.1:${localPort}`).catch((err) => console.log('Must fail'));
     expect(resFailed).toBe(undefined);
 
-    const { server } = await forwardPort(getConnectionForSsh(), {
+    const { server } = await client.forwardPort({
       remotePort: localPort,
       localPort,
     });
@@ -133,55 +133,45 @@ describe('SSH Tests', () => {
 
   it('Auth types', async () => {
     const hostData = getContainerHostAndPort();
-    const types = await sshGetAuthTypes(hostData.host, hostData.port);
+    const types = await client.getAuthTypes(hostData.host, hostData.port);
     expect(types[0]).toBe('publickey');
   });
 });
 
 describe('sshConnect', () => {
   it('should successfully connect to the SSH server', async () => {
-    const client = new Client();
-    await expect(sshConnect(client, getConnectionForSsh())).resolves.toBeUndefined();
-    client.end();
+    const client = new SshClient();
+    await expect(client.connect(getConnectionForSsh())).resolves.toBeUndefined();
+    client.close();
   });
 
   it('should fail with invalid credentials', async () => {
-    const client = new Client();
-
-    await expect(sshConnect(client, { ...getConnectionForSsh(), privateKey: '123' })).rejects.toThrow();
-
-    client.end();
+    const client = new SshClient();
+    await expect(client.connect({ ...getConnectionForSsh(), privateKey: '123' })).rejects.toThrow();
+    client.close();
   });
 
   it('should timeout if the server is unreachable', async () => {
-    const client = new Client();
-
-    await expect(sshConnect(client, { ...getConnectionForSsh(), port: 3233 })).rejects.toThrow('');
-
-    client.end();
+    const client = new SshClient();
+    await expect(client.connect({ ...getConnectionForSsh(), port: 3233 })).rejects.toThrow('');
+    client.close();
   });
 });
 
 describe('sshExec', () => {
   it('should execute a valid command and return stdout', async () => {
-    const client = new Client();
-    await sshConnect(client, getConnectionForSsh());
-    const { stdout, stderr } = await sshExec(client, 'echo "Hello, SSH"');
+    const { stdout, stderr } = await client.exec('echo "Hello, SSH"');
     expect(stdout.trim()).toBe('Hello, SSH');
     expect(stderr).toBe('');
   });
 
   it('should capture stderr for an invalid command', async () => {
     const command = 'nonexistentcommand';
-    const client = new Client();
-    await sshConnect(client, getConnectionForSsh());
-    await expect(sshExec(client, command)).rejects.toThrow();
+    await expect(client.exec(command)).rejects.toThrow();
   });
 
   it('should handle a command with both stdout and stderr', async () => {
-    const client = new Client();
-    await sshConnect(client, getConnectionForSsh());
-    const { stdout, stderr } = await sshExec(client, 'sh -c "echo stdout && echo stderr >&2"');
+    const { stdout, stderr } = await client.exec('sh -c "echo stdout && echo stderr >&2"');
     expect(stdout.trim()).toBe('stdout');
     expect(stderr.trim()).toBe('stderr');
   });
