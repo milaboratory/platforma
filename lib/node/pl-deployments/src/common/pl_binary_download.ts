@@ -1,4 +1,3 @@
-import os from 'os';
 import fs from 'fs';
 import fsp from 'fs/promises';
 import path from 'path';
@@ -8,14 +7,22 @@ import { text } from 'stream/consumers';
 import * as tar from 'tar';
 import { assertNever, fileExists, MiLogger } from '@milaboratories/ts-helpers';
 import decompress from 'decompress';
+import { ArchType, OSType, newOs, newArch } from './os_and_arch';
+import os from 'os';
+
+export async function downloadLocalBinary(logger: MiLogger,  baseDir: string,  plVersion: string): Promise<string> {
+  return await downloadBinary(logger, baseDir, plVersion, os.arch(), os.platform());
+}
 
 export async function downloadBinary(
   logger: MiLogger,
   baseDir: string,
-  plVersion: string
+  plVersion: string,
+  arch: string,
+  platform: string,
 ): Promise<string> {
-  const { archiveUrl, archivePath, archiveType, targetFolder, binaryPath } = prepareOptions(
-    plVersion, baseDir, archiveArch(), archiveOS(),
+  const { archiveUrl, archivePath, archiveType, targetFolder, binaryPath } = localDownloadOptions(
+    plVersion, baseDir, newArch(arch), newOs(platform),
   );
   await downloadArchive(logger, archiveUrl, archivePath);
   await extractArchive(logger, archivePath, archiveType, targetFolder);
@@ -23,7 +30,7 @@ export async function downloadBinary(
   return binaryPath;
 }
 
-function prepareOptions(plVersion: string, baseDir: string, arch: ArchType, os: OSType) {
+function localDownloadOptions(plVersion: string, baseDir: string, arch: ArchType, os: OSType) {
   const baseName = `pl-${plVersion}-${arch}`;
   const archiveType = osToArchiveType[os];
 
@@ -131,46 +138,6 @@ export async function extractArchive(
   await fsp.writeFile(markerFilePath, 'ok');
 
   logger.info(`  ... unpack done.`);
-}
-
-export const OSes = ['linux', 'macos', 'windows'] as const;
-export type OSType = (typeof OSes)[number];
-
-export function archiveOS(osName?: string): OSType {
-  const platform = osName ?? os.platform();
-
-  switch (platform) {
-    case 'darwin':
-      return 'macos';
-    case 'linux':
-      return 'linux';
-    case 'win32':
-      return 'windows';
-    default:
-      throw new Error(
-        `operating system '${platform}' is not currently supported by Platforma ecosystem. The list of OSes supported: ` +
-          JSON.stringify(OSes)
-      );
-  }
-}
-
-export const Arches = ['amd64', 'arm64'] as const;
-export type ArchType = (typeof Arches)[number];
-
-export function archiveArch(archName?: string): ArchType {
-  const arch = archName ?? os.arch();
-
-  switch (arch) {
-    case 'arm64':
-      return 'arm64';
-    case 'x64':
-      return 'amd64';
-    default:
-      throw new Error(
-        `processor architecture '${arch}' is not currently supported by Platforma ecosystem. The list of architectures supported: ` +
-          JSON.stringify(Arches)
-      );
-  }
 }
 
 export type ArchiveType = 'tgz' | 'zip';

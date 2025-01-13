@@ -1,8 +1,10 @@
 import path from 'path';
 import os from 'os';
 import { assertNever, fileExists } from '@milaboratories/ts-helpers';
-import { PlConfig, PlLicenseSettings } from './types';
+import type { PlLicenseSettings } from './types';
+import * as fs from 'fs/promises';
 
+/** How to get a license. */
 export type PlLicenseMode = PlLicenseEnv | PlLicensePlain;
 
 export type PlLicenseEnv = {
@@ -14,6 +16,7 @@ export type PlLicensePlain = {
   readonly value: string;
 };
 
+/** A normalized license value. */
 export type License = LicenseValue | LicenseFile;
 
 export type LicenseValue = {
@@ -38,6 +41,19 @@ export async function getLicense(opts: PlLicenseMode) {
   }
 }
 
+/** Gets a license as a value even if it's stored in a file (it reads the file). */
+export async function getLicenseValue(opts: PlLicenseMode): Promise<LicenseValue> {
+  const license = await getLicense(opts);
+
+  if (license.type == 'file') {
+    const value = await fs.readFile(license.file);
+    return { type: 'value', value: value.toString() };
+  }
+
+  return license;
+}
+
+/** Gets MI_LICENSE, PL_LICENSE envs or reads a file stored in a homedir or is pointed by envs. */
 export async function getLicenseFromEnv(): Promise<License> {
   let license = undefined;
   if ((process.env.MI_LICENSE ?? '') != '') license = process.env.MI_LICENSE;
@@ -45,7 +61,7 @@ export async function getLicenseFromEnv(): Promise<License> {
   if (license !== undefined)
     return {
       type: 'value',
-      value: license
+      value: license,
     };
 
   let licenseFile = undefined;
@@ -57,12 +73,13 @@ export async function getLicenseFromEnv(): Promise<License> {
   if (licenseFile !== undefined)
     return {
       type: 'file',
-      file: licenseFile
+      file: licenseFile,
     };
 
   throw new Error('no license in envs');
 }
 
+/** Compiles a license secret for MiXCR software. */
 export function licenseEnvsForMixcr(license: License): Record<string, string> {
   const t = license.type;
   switch (t) {
@@ -75,6 +92,7 @@ export function licenseEnvsForMixcr(license: License): Record<string, string> {
   }
 }
 
+/** Compiles a license for Platforma Backend config. */
 export function licenseForConfig(license: License): PlLicenseSettings {
   const t = license.type;
   switch (t) {
