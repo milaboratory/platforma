@@ -1,5 +1,13 @@
 # @platforma-sdk/ui-vue
 
+## 1.21.25
+
+### Patch Changes
+
+- 3ff9dcd: Enable nested source maps in dev sdk mode
+- Updated dependencies [3ff9dcd]
+  - @milaboratories/uikit@2.2.48
+
 ## 1.21.24
 
 ### Patch Changes
