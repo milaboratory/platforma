@@ -1,5 +1,17 @@
 # @milaboratories/pl-middle-layer
 
+## 1.25.0
+
+### Minor Changes
+
+- 3da2292: BlockSettings, update locking, version skipping & detailed UpdateInfo
+
+### Patch Changes
+
+- Updated dependencies [3da2292]
+  - @milaboratories/pl-model-middle-layer@1.7.0
+  - @platforma-sdk/block-tools@2.5.4
+
 ## 1.24.0
 
 ### Minor Changes

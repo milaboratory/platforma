@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.7.0
+
+### Minor Changes
+
+- 3da2292: BlockSettings, update locking, version skipping & detailed UpdateInfo
+
 ## 1.6.11
 
 ### Patch Changes
