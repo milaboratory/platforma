@@ -6,6 +6,7 @@ import {
   BlockPackMetaEmbeddedBytes,
   BlockPackMetaManifest,
   BlockPackOverview,
+  UpdateSuggestions,
   SingleBlockPackOverview
 } from '@milaboratories/pl-model-middle-layer';
 import { FolderReader } from '../../io';
@@ -20,6 +21,7 @@ import {
 } from './schema_public';
 import { BlockComponentsAbsoluteUrl, BlockPackMetaEmbedBytes } from '../model';
 import { LRUCache } from 'lru-cache';
+import semver from 'semver';
 import { calculateSha256 } from '../../util';
 import { retry, Retry2TimesWithDelay } from '@milaboratories/ts-helpers';
 
@@ -36,6 +38,28 @@ const DefaultRegistryV2ReaderOps: RegistryV2ReaderOps = {
   cacheBlockListFor: 45e3, // 45 seconds
   keepStaleBlockListFor: 300e3 // 5 minutes
 };
+
+/** @param availableVersions must be reverse sorted (from highest version to lowest) */
+export function inferUpdateSuggestions(currentVersion: string, availableVersions: string[]) {
+  const nextMinor = semver.inc(currentVersion, 'minor')!;
+  const nextMajor = semver.inc(currentVersion, 'major')!;
+
+  // first found = the highest (given the search criteria)
+
+  const suggestions: UpdateSuggestions<string> = [];
+
+  const patch = availableVersions.find(
+    (v) => semver.gt(v, currentVersion) && semver.lt(v, nextMinor)
+  );
+  const minor = availableVersions.find((v) => semver.gte(v, nextMinor) && semver.lt(v, nextMajor));
+  const major = availableVersions.find((v) => semver.gte(v, nextMajor));
+
+  if (patch) suggestions.push({ type: 'patch', update: patch });
+  if (minor) suggestions.push({ type: 'minor', update: minor });
+  if (major) suggestions.push({ type: 'major', update: major });
+
+  return suggestions;
+}
 
 export class RegistryV2Reader {
   private readonly v2RootFolderReader: FolderReader;
@@ -151,13 +175,30 @@ export class RegistryV2Reader {
     id: BlockPackIdNoVersion,
     channel: string
   ): Promise<SingleBlockPackOverview | undefined> {
-    return await retry(async () => {
-      const overview = (await this.listBlockPacks()).find((e) =>
-        blockPackIdNoVersionEquals(id, e.id)
-      );
-      if (overview === undefined) return undefined;
-      return overview.latestByChannel[channel];
-    }, Retry2TimesWithDelay);
+    const overview = (await this.listBlockPacks()).find((e) =>
+      blockPackIdNoVersionEquals(id, e.id)
+    );
+    if (overview === undefined) return undefined;
+    return overview.latestByChannel[channel];
+  }
+
+  public async getUpdateSuggestions(
+    id: BlockPackId,
+    channel: string
+  ): Promise<UpdateSuggestions<string> | undefined> {
+    const overview = (await this.listBlockPacks()).find((e) =>
+      blockPackIdNoVersionEquals(id, e.id)
+    );
+    if (overview === undefined) return undefined;
+
+    const versionCandidates = overview.allVersions
+      .filter((v) => v.channels.indexOf(channel) >= 0)
+      .map((v) => v.version);
+
+    // versions are sorted
+    versionCandidates.reverse(); // changing sorting order to opposite
+
+    return inferUpdateSuggestions(id.version, versionCandidates);
   }
 
   public async getSpecificOverview(

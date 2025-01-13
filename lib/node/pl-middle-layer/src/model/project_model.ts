@@ -15,7 +15,7 @@ export interface Block {
   /** Unique block id */
   readonly id: string;
 
-  /** 
+  /**
    * Label shown to the user
    * @deprecated
    * */
@@ -114,6 +114,7 @@ export interface ProjectField {
   blockId: string;
   fieldName:
     | 'blockPack'
+    | 'blockSettings'
     | 'prodArgs'
     | 'currentArgs'
     | 'prodCtx'
@@ -135,7 +136,7 @@ export function projectFieldName(blockId: string, fieldName: ProjectField['field
 }
 
 const projectFieldPattern =
-  /^(?<blockId>.*)-(?<fieldName>blockPack|prodArgs|currentArgs|prodCtx|prodUiCtx|prodOutput|prodCtxPrevious|prodUiCtxPrevious|prodOutputPrevious|stagingCtx|stagingUiCtx|stagingOutput|stagingCtxPrevious|stagingUiCtxPrevious|stagingOutputPrevious)$/;
+  /^(?<blockId>.*)-(?<fieldName>blockPack|blockSettings|prodArgs|currentArgs|prodCtx|prodUiCtx|prodOutput|prodCtxPrevious|prodUiCtxPrevious|prodOutputPrevious|stagingCtx|stagingUiCtx|stagingOutput|stagingCtxPrevious|stagingUiCtxPrevious|stagingOutputPrevious)$/;
 
 export function parseProjectField(name: string): ProjectField | undefined {
   const match = name.match(projectFieldPattern);
