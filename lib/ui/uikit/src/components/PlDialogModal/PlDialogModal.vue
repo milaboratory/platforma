@@ -7,7 +7,7 @@ export default {
 <script lang="ts" setup>
 import { useEventListener } from '@/composition/useEventListener';
 import './pl-dialog-modal.scss';
-import { computed, ref, useAttrs, useSlots } from 'vue';
+import { computed, ref, useSlots } from 'vue';
 import PlCloseModalBtn from '@/utils/PlCloseModalBtn.vue';
 import type { Size } from '@/types';
 
@@ -108,8 +108,6 @@ const style = computed(() => {
 
   return { width, height, minHeight, maxHeight };
 });
-
-const $attrs = useAttrs();
 
 function onClickShadow(ev: Event) {
   if (modal.value && props.closeOnOutsideClick && document.contains(ev.target as Node) && !modal.value.contains(ev.target as Node)) {
