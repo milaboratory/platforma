@@ -7,7 +7,8 @@ import {
   BlockPackMetaManifest,
   BlockPackOverview,
   UpdateSuggestions,
-  SingleBlockPackOverview
+  SingleBlockPackOverview,
+  AnyChannel
 } from '@milaboratories/pl-model-middle-layer';
 import { FolderReader } from '../../io';
 import canonicalize from 'canonicalize';
@@ -192,7 +193,7 @@ export class RegistryV2Reader {
     if (overview === undefined) return undefined;
 
     const versionCandidates = overview.allVersions
-      .filter((v) => v.channels.indexOf(channel) >= 0)
+      .filter((v) => channel === AnyChannel || v.channels.indexOf(channel) >= 0)
       .map((v) => v.version);
 
     // versions are sorted
