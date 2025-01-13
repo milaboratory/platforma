@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { debounce, notEmpty } from '../helpers/utils';
+import { debounce, notEmpty } from '@milaboratories/helpers';
 
 const hasElementEllipsis = ref(false);
 
