@@ -1,6 +1,6 @@
 import type { Ref } from 'vue';
 import { ref, watch } from 'vue';
-import { notEmpty } from '@/helpers/utils';
+import { notEmpty } from '@milaboratories/helpers';
 
 const $store = new Map<string, Ref<string | null>>();
 

@@ -24,6 +24,7 @@
     "@milaboratories/helpers": "workspace:^",
     "zod": "catalog:",
     "ag-grid-enterprise": "catalog:",
-    "ag-grid-vue3": "catalog:"
+    "ag-grid-vue3": "catalog:",
+    "rollup-plugin-sourcemaps": "catalog:"
   }
 }

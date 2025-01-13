@@ -4,14 +4,6 @@ export function call<R>(f: () => R): R {
   return f();
 }
 
-export function notEmpty<T>(v: T | null | undefined, message: string): T {
-  if (v === null || v === undefined) {
-    throw Error(message);
-  }
-
-  return v;
-}
-
 export function requestTick<P>(cb: (...args: P[]) => void) {
   let tick = false;
 
@@ -108,17 +100,6 @@ export function animateInfinite(options: { getFraction: (dt: number) => number; 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type AnyFunction = (...args: any[]) => any;
 
-export function debounce<F extends AnyFunction>(func: F, delay: number) {
-  let timerId = -1;
-  return (...args: Parameters<F>) => {
-    if (timerId !== -1) {
-      clearTimeout(timerId);
-      timerId = -1;
-    }
-    timerId = window.setTimeout(() => func(...args), delay);
-  };
-}
-
 export function throttle<F extends AnyFunction>(callback: F, ms: number, trailing = true): (...args: Parameters<F>) => void {
   let t = 0,
     call: AnyFunction | null;
@@ -142,6 +123,10 @@ export function listToOptions<T>(list: T[] | readonly T[]): ListOption<T>[] {
 }
 
 export function normalizeListOptions<V = unknown>(options: Readonly<ListOption<V>[]>) {
+  if (!Array.isArray(options)) {
+    throw Error('Invalid component options: ' + String(options));
+  }
+
   return options.map((it) => ({
     label: 'label' in it ? it.label : it.text,
     value: it.value,
