@@ -5,7 +5,7 @@ import {
   processWaitStopped,
   processRun
 } from './process';
-import { resolvePlBinaryPath, PlBinarySource, getDefaultPlBinarySource } from './pl_binary';
+import { resolveLocalPlBinaryPath, PlBinarySource, newDefaultPlBinarySource } from '../common/pl_binary';
 import { MiLogger, notEmpty } from '@milaboratories/ts-helpers';
 import { ChildProcess, SpawnOptions } from 'child_process';
 import { filePid, readPid, writePid } from './pid';
@@ -138,7 +138,7 @@ type LocalPlOptionsFull = Required<LocalPlOptions, 'plBinary' | 'spawnOptions' |
 export async function localPlatformaInit(logger: MiLogger, _ops: LocalPlOptions): Promise<LocalPl> {
   // filling-in default values
   const ops = {
-    plBinary: getDefaultPlBinarySource(),
+    plBinary: newDefaultPlBinarySource(),
     spawnOptions: {},
     closeOld: true,
     ..._ops
@@ -160,7 +160,7 @@ export async function localPlatformaInit(logger: MiLogger, _ops: LocalPlOptions)
 
     const binaryPath = trace(
       'binaryPath',
-      await resolvePlBinaryPath(logger, path.join(workDir, 'binaries'), ops.plBinary)
+      await resolveLocalPlBinaryPath(logger, path.join(workDir, 'binaries'), ops.plBinary)
     );
 
     const processOpts: ProcessOptions = {
