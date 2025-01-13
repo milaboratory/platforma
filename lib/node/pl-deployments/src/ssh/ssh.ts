@@ -6,218 +6,268 @@ import dns from 'dns';
 export type SshAuthMethods = 'publickey' | 'password';
 export type SshAuthMethodsResult = SshAuthMethods[];
 
-/** Promisified exec on ssh connection. */
-export function sshExec(client: Client, command: string): Promise<{ stdout: string; stderr: string }> {
-  return new Promise((resolve, reject) => {
-    client.exec(command, (err: any, stream: ClientChannel) => {
-      if (err) return reject(err);
+export class SshClient {
+  private client: Client = new Client();
+  private config?: ConnectConfig;
 
-      let stdout = '';
-      let stderr = '';
+  /**
+   * Initializes the SshClient and establishes a connection using the provided configuration.
+   * @param config - The connection configuration object for the SSH client.
+   * @returns A new instance of SshClient with an active connection.
+   */
+  public static async init(config: ConnectConfig): Promise<SshClient> {
+    const client = new SshClient();
+    await client.connect(config);
+    return client;
+  }
 
-      stream.on('close', (code: number) => {
-        if (code === 0) {
-          resolve({ stdout, stderr });
-        } else {
-          reject(new Error(`Command exited with code ${code}`));
-        }
-      }).on('data', (data: ArrayBuffer) => {
-        stdout += data.toString();
-      }).stderr.on('data', (data: ArrayBuffer) => {
-        stderr += data.toString();
+  /**
+   * Connects to the SSH server using the specified configuration.
+   * @param config - The connection configuration object for the SSH client.
+   * @returns A promise that resolves when the connection is established or rejects on error.
+   */
+  public async connect(config: ConnectConfig) {
+    this.config = config;
+    return new Promise((resolve, reject) => {
+      this.client.on('ready', () => {
+        resolve(undefined);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      }).on('error', (err: any) => {
+        reject(err);
+      }).on('timeout', () => {
+        reject(new Error(`timeout was occurred while waiting for SSH connection.`));
+      }).connect(config);
+    });
+  }
+
+  /**
+   * Executes a command on the SSH server.
+   * @param command - The command to execute on the remote server.
+   * @returns A promise resolving with the command's stdout and stderr outputs.
+   */
+  public async exec(command: string): Promise<{ stdout: string; stderr: string }> {
+    return new Promise((resolve, reject) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      this.client.exec(command, (err: any, stream: ClientChannel) => {
+        if (err) return reject(err);
+
+        let stdout = '';
+        let stderr = '';
+
+        stream.on('close', (code: number) => {
+          if (code === 0) {
+            resolve({ stdout, stderr });
+          } else {
+            reject(new Error(`Command exited with code ${code}`));
+          }
+        }).on('data', (data: ArrayBuffer) => {
+          stdout += data.toString();
+        }).stderr.on('data', (data: ArrayBuffer) => {
+          stderr += data.toString();
+        });
       });
     });
-  });
-}
-
-/**
- * Promisified connect function for ssh Client.
- */
-export function sshConnect(client: Client, config: ConnectConfig): Promise<undefined> {
-  return new Promise((resolve, reject) => {
-    client.on('ready', () => {
-      resolve(undefined);
-    }).on('error', (err: any) => {
-      reject(err);
-    }).on('timeout', () => {
-      reject(new Error(`timeout was occurred while waiting for SSH connection.`));
-    }).connect(config);
-  });
-}
-/**
- * Get auth types for host
- * @param host - remote host
- * @returns string[] //['publickey', 'password']
- */
-export async function sshGetAuthTypes(host: string, port: number): Promise<SshAuthMethodsResult> {
-  return new Promise((resolve) => {
-    let stdout = '';
-    sshConnect(new Client(), {
-      host,
-      port,
-      username: new Date().getTime().toString(),
-      debug: (err: string) => {
-        stdout += `${err} \n`;
-      },
-    })
-      .catch((err) => err)
-      .finally(() => {
-        const types = extractAuthMethods(stdout);
-        resolve(types.length === 0 ? ['publickey', 'password'] : types);
-      });
-  });
-}
-
-export function extractAuthMethods(log: string): SshAuthMethodsResult | [] {
-  const newFormatMatch = log.match(/Inbound: Received USERAUTH_FAILURE \((.+)\)/);
-  if (newFormatMatch && newFormatMatch[1]) {
-    return newFormatMatch[1].split(',').map((method) => method.trim()) as SshAuthMethodsResult;
   }
-  return [];
-}
 
-export function forwardPort(config: ConnectConfig, ports: { remotePort: number; localPort: number; localHost?: string }): Promise<{ server: net.Server }> {
-  return new Promise((resolve, reject) => {
-    const conn = new Client();
-    let server: net.Server;
-    conn.on('ready', () => {
-      console.log(`[SSH] Connection to ${config.host}. Remote port ${ports.remotePort} will be available locally on the ${ports.localPort}`);
-      server = net.createServer({ pauseOnConnect: true }, (localSocket) => {
-        conn.forwardOut('127.0.0.1', 0, '127.0.0.1', ports.remotePort,
-          (err, stream) => {
-            if (err) {
-              console.error('Error opening SSH channel:', err.message);
-              localSocket.end();
-              return;
-            }
-            localSocket.pipe(stream);
-            stream.pipe(localSocket);
-            localSocket.resume();
-          },
-        );
-      });
-      server.listen(ports.localPort, '127.0.0.1', () => {
-        console.log(`[+] Port local ${ports.localPort} available locally for remote port → :${ports.remotePort}`);
-        resolve({ server });
-      });
+  /**
+   * Retrieves the supported authentication methods for a given host and port.
+   * @param host - The hostname or IP address of the server.
+   * @param port - The port number to connect to on the server.
+   * @returns 'publickey' | 'password'[] A promise resolving with a list of supported authentication methods.
+   */
+  public async getAuthTypes(host: string, port: number): Promise<SshAuthMethodsResult> {
+    return new Promise((resolve) => {
+      let stdout = '';
+      const conn = new Client();
 
-      server.on('error', (err) => {
+      conn.on('ready', () => {
         conn.end();
-        server.close();
+        const types = this.extractAuthMethods(stdout);
+        resolve(types.length === 0 ? ['publickey', 'password'] : types as SshAuthMethodsResult);
+      });
+
+      conn.on('error', () => {
+        conn.end();
+        resolve(['publickey', 'password']);
+      });
+
+      conn.connect({
+        host,
+        port,
+        username: new Date().getTime().toString(),
+        debug: (err) => {
+          stdout += `${err}\n`;
+        },
+      });
+    });
+  }
+
+  /**
+   * Extracts authentication methods from debug logs.
+   * @param log - The debug log output containing authentication information.
+   * @returns An array of extracted authentication methods.
+   */
+  private extractAuthMethods(log: string): string[] {
+    const match = log.match(/Inbound: Received USERAUTH_FAILURE \((.+)\)/);
+    return match && match[1] ? match[1].split(',').map((method) => method.trim()) : [];
+  }
+
+  /**
+   * Sets up port forwarding between a remote port on the SSH server and a local port.
+   * A new connection is used for this operation instead of an existing one.
+   * @param ports - An object specifying the remote and local port configuration.
+   * @param config - Optional connection configuration for the SSH client.
+   * @returns { server: net.Server } A promise resolving with the created server instance.
+   */
+  public async forwardPort(ports: { remotePort: number; localPort: number; localHost?: string }, config?: ConnectConfig): Promise<{ server: net.Server }> {
+    config = config ?? this.config;
+    return new Promise((resolve, reject) => {
+      if (!config) {
+        reject('No config defined');
+        return;
+      }
+      const conn = new Client();
+      let server: net.Server;
+      conn.on('ready', () => {
+        console.log(`[SSH] Connection to ${config.host}. Remote port ${ports.remotePort} will be available locally on the ${ports.localPort}`);
+        server = net.createServer({ pauseOnConnect: true }, (localSocket) => {
+          conn.forwardOut('127.0.0.1', 0, '127.0.0.1', ports.remotePort,
+            (err, stream) => {
+              if (err) {
+                console.error('Error opening SSH channel:', err.message);
+                localSocket.end();
+                return;
+              }
+              localSocket.pipe(stream);
+              stream.pipe(localSocket);
+              localSocket.resume();
+            },
+          );
+        });
+        server.listen(ports.localPort, '127.0.0.1', () => {
+          console.log(`[+] Port local ${ports.localPort} available locally for remote port → :${ports.remotePort}`);
+          resolve({ server });
+        });
+
+        server.on('error', (err) => {
+          conn.end();
+          server.close();
+          reject(err);
+        });
+
+        server.on('close', () => {
+          console.log(`Server closed ${JSON.stringify(ports)}`);
+          if (conn) {
+            console.log(`End SSH connection`);
+            conn.end();
+          }
+        });
+      });
+
+      conn.on('error', (err) => {
+        console.error('[SSH] SSH connection error', 'ports', ports, err.message);
+        server?.close();
         reject(err);
       });
 
-      server.on('close', () => {
-        console.log(`Server closed ${JSON.stringify(ports)}`);
-        if (conn) {
-          console.log(`End SSH connection`);
-          conn.end();
-        }
+      conn.on('close', () => {
+        console.log('[SSH] Connection closed', 'ports', ports);
+      });
+
+      conn.connect(config);
+    });
+  }
+
+  /**
+  * Checks if a specified host is available by performing a DNS lookup.
+  * @param hostname - The hostname or IP address to check.
+  * @returns A promise resolving with `true` if the host is reachable, otherwise `false`.
+  */
+  public static async checkHostAvailability(hostname: string): Promise<boolean> {
+    return new Promise((resolve) => {
+      dns.lookup(hostname, (err) => {
+        resolve(!err);
       });
     });
+  }
 
-    conn.on('error', (err) => {
-      console.error('[SSH] SSH connection error', 'ports', ports, err.message);
-      server?.close();
-      reject(err);
-    });
+  /**
+   * Determines whether a private key requires a passphrase for use.
+   * @param privateKey - The private key content to check.
+   * @returns A promise resolving with `true` if a passphrase is required, otherwise `false`.
+   */
+  public static async isPassphraseRequiredForKey(privateKey: string): Promise<boolean> {
+    return new Promise((resolve, reject) => {
+      const conn = new Client();
 
-    conn.on('close', () => {
-      console.log('[SSH] Connection closed', 'ports', ports);
-    });
+      conn.on('error', (err) => {
+        if (err.message.includes('Cannot parse privateKey')) {
+          resolve(true);
+        } else {
+          reject(err);
+        }
+      });
 
-    conn.connect(config);
-  });
-}
-
-export function sshCheckHostAvailability(hostname: string): Promise<boolean> {
-  return new Promise((resolve) => {
-    dns.lookup(hostname, (err) => {
-      if (err) {
+      conn.on('ready', () => {
+        conn.end();
         resolve(false);
-      } else {
-        resolve(true);
-      }
-    });
-  });
-}
+      });
 
-export async function sshIsPassphraseRequiredForKey(privateKey: string): Promise<boolean> {
-  return new Promise((resolve, reject) => {
-    const conn = new Client();
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    conn.on('error', (err: any) => {
-      if (err.message.includes('Cannot parse privateKey')) {
-        resolve(true);
-      } else {
-        if (err.code === 'ECONNREFUSED') {
-          resolve(false);
+      try {
+        conn.connect({ username: 'someuser', privateKey });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } catch (err: any) {
+        if (err.message.includes('Cannot parse privateKey')) {
+          resolve(true);
         } else {
           reject(err);
         }
       }
     });
+  }
 
-    conn.on('ready', () => {
-      conn.end();
-      resolve(false);
-    });
+  /**
+   * Uploads a local file to a remote server via SFTP.
+   * @param localPath - The local file path.
+   * @param remotePath - The remote file path on the server.
+   * @returns A promise resolving with `true` if the file was successfully uploaded.
+   */
+  public async uploadFile(localPath: string, remotePath: string): Promise<boolean> {
+    return new Promise((resolve, reject) => {
+      this.client.sftp((err, sftp) => {
+        if (err) return reject(err);
 
-    try {
-      conn.connect({
-        username: 'someuser',
-        privateKey: privateKey,
-      });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-      if (err.message.includes('Cannot parse privateKey')) {
-        resolve(true);
-      } else {
-        reject(err);
-      }
-    }
-
-    resolve(false);
-  });
-}
-
-export function createClient() {
-  return new Client();
-}
-
-export async function uploadFilesToServer(config: ConnectConfig, localPath: string, remotePath: string) {
-  return new Promise((resolve, reject) => {
-    const client = new Client();
-    sshConnect(client, config).then(() => {
-      client.sftp((err, sftp) => {
         sftp.fastPut(localPath, remotePath, (err) => {
-          if (err) throw err;
-          client.end();
+          if (err) return reject(err);
           resolve(true);
         });
       });
-    }).catch((err) => {
-      console.log(err);
-      reject(err);
     });
-  });
-}
+  }
 
-export async function downloadFileFromServer(config: ConnectConfig, remotePath: string, localPath: string) {
-  return new Promise((resolve, reject) => {
-    const client = new Client();
-    sshConnect(client, config).then(() => {
-      client.sftp((err, sftp) => {
+  /**
+   * Downloads a file from the remote server to a local path via SFTP.
+   * @param remotePath - The remote file path on the server.
+   * @param localPath - The local file path to save the file.
+   * @returns A promise resolving with `true` if the file was successfully downloaded.
+   */
+  public async downloadFile(remotePath: string, localPath: string): Promise<boolean> {
+    return new Promise((resolve, reject) => {
+      this.client.sftp((err, sftp) => {
+        if (err) return reject(err);
+
         sftp.fastGet(remotePath, localPath, (err) => {
-          if (err) throw err;
-          client.end();
+          if (err) return reject(err);
           resolve(true);
         });
       });
-    }).catch((err) => {
-      console.log(err);
-      reject(err);
     });
-  });
+  }
+
+  /**
+   * Closes the SSH client connection.
+   */
+  public close(): void {
+    this.client.end();
+  }
 }
