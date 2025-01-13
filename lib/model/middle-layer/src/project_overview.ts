@@ -2,7 +2,7 @@ import { ProjectMeta } from './project';
 import { BlockPackSpec } from './block_registry/block_pack_spec';
 import { BlockRenderingMode, BlockSection, NavigationState } from '@milaboratories/pl-model-common';
 import { AuthorMarker } from './author_marker';
-import { BlockUpdateInfo } from './update_info';
+import { UpdateSuggestions } from './update_info';
 import { BlockSettings } from './block_settings';
 
 /** Generalized block status, to be used in block item "styling". */
@@ -138,7 +138,7 @@ export type BlockStateOverview = {
   settings: BlockSettings;
 
   /** Detailed update options */
-  updateInfo: BlockUpdateInfo;
+  updateSuggestions: UpdateSuggestions;
 
   /** Current navigation state of the block */
   navigationState: NavigationState;

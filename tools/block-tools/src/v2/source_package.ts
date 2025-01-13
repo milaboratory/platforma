@@ -7,7 +7,6 @@ import {
   BlockPackDescriptionFromPackageJsonRaw,
   BlockPackDescriptionRaw,
   BlockPackId,
-  BlockPackMetaDescriptionRaw,
   SemVer
 } from '@milaboratories/pl-model-middle-layer';
 
@@ -50,9 +49,10 @@ export async function tryLoadPackDescription(
     const descriptionParsingResult =
       await ResolvedBlockPackDescriptionFromPackageJson(moduleRoot).safeParseAsync(descriptionRaw);
     if (descriptionParsingResult.success) return descriptionParsingResult.data;
+    logger?.warn(descriptionParsingResult.error);
     return undefined;
   } catch (e: any) {
-    logger?.info(e);
+    logger?.warn(e);
     return undefined;
   }
 }
