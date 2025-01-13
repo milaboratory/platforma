@@ -17,6 +17,8 @@ import { MiddleLayerEnvironment } from './middle_layer';
 import {
   AuthorMarker,
   BlockCalculationStatus,
+  BlockSettings,
+  BlockStateOverview,
   ProjectMeta,
   ProjectOverview
 } from '@milaboratories/pl-model-middle-layer';
@@ -165,8 +167,16 @@ export function projectOverview(
             };
           }) || {};
 
-        const updatedBlockPack = ifNotUndef(bp, ({ info }) =>
-          env.blockUpdateWatcher.get(info.source)
+        const settings = prj
+          .traverse({
+            field: projectFieldName(id, 'blockSettings'),
+            assertFieldType: 'Dynamic',
+            errorIfFieldNotSet: true
+          })
+          .getDataAsJson() as BlockSettings;
+
+        const updates = ifNotUndef(bp, ({ info }) =>
+          env.blockUpdateWatcher.get({ currentSpec: info.source, settings })
         );
 
         return {
@@ -182,10 +192,12 @@ export function projectOverview(
           outputErrors: info.prod?.outputError === true,
           outputsError: info.prod?.outputsError,
           exportsError: info.prod?.exportsError,
+          settings,
           sections,
           inputsValid,
+          updateInfo: {},
           currentBlockPack: bp?.info?.source,
-          updatedBlockPack,
+          updates,
           sdkVersion,
           navigationState: navigationStates.getState(id)
         };
@@ -214,7 +226,15 @@ export function projectOverview(
               Boolean(b.inputsValid) &&
               !b.missingReference &&
               b.upstreams.findIndex((u) => cantRun.has(u)) === -1;
-            return { ...b, canRun, stale };
+            const bb = {
+              ...b,
+              canRun,
+              stale,
+              updateSuggestions: b.updates?.suggestions ?? [],
+              updatedBlockPack: b.updates?.mainSuggestion
+            };
+            delete bb['updates'];
+            return bb;
           })
         };
       }

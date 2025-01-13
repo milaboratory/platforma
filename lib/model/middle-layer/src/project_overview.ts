@@ -2,6 +2,8 @@ import { ProjectMeta } from './project';
 import { BlockPackSpec } from './block_registry/block_pack_spec';
 import { BlockRenderingMode, BlockSection, NavigationState } from '@milaboratories/pl-model-common';
 import { AuthorMarker } from './author_marker';
+import { UpdateSuggestions } from './update_info';
+import { BlockSettings } from './block_settings';
 
 /** Generalized block status, to be used in block item "styling". */
 export type BlockCalculationStatus = 'NotCalculated' | 'Running' | 'Done' | 'Limbo';
@@ -38,7 +40,7 @@ export type BlockStateOverview = {
   /**
    * Blocks label visible to the user.
    * Udefined when block-pack for this block is not yet materialized.
-   * 
+   *
    * @deprecated use title
    * */
   label: string | undefined;
@@ -131,6 +133,12 @@ export type BlockStateOverview = {
    * perform the update
    * */
   updatedBlockPack: BlockPackSpec | undefined;
+
+  /** Current block settings */
+  settings: BlockSettings;
+
+  /** Detailed update options */
+  updateSuggestions: UpdateSuggestions;
 
   /** Current navigation state of the block */
   navigationState: NavigationState;
