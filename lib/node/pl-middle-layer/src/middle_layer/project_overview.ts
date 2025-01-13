@@ -175,8 +175,8 @@ export function projectOverview(
           })
           .getDataAsJson() as BlockSettings;
 
-        const updatedBlockPack = ifNotUndef(bp, ({ info }) =>
-          env.blockUpdateWatcher.get(info.source)
+        const updates = ifNotUndef(bp, ({ info }) =>
+          env.blockUpdateWatcher.get({ currentSpec: info.source, settings })
         );
 
         return {
@@ -197,7 +197,7 @@ export function projectOverview(
           inputsValid,
           updateInfo: {},
           currentBlockPack: bp?.info?.source,
-          updatedBlockPack,
+          updates,
           sdkVersion,
           navigationState: navigationStates.getState(id)
         };
@@ -226,7 +226,15 @@ export function projectOverview(
               Boolean(b.inputsValid) &&
               !b.missingReference &&
               b.upstreams.findIndex((u) => cantRun.has(u)) === -1;
-            return { ...b, canRun, stale };
+            const bb = {
+              ...b,
+              canRun,
+              stale,
+              updateSuggestions: b.updates?.suggestions ?? [],
+              updatedBlockPack: b.updates?.mainSuggestion
+            };
+            delete bb['updates'];
+            return bb;
           })
         };
       }

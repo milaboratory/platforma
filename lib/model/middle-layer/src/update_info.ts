@@ -1,13 +1,10 @@
 import { BlockPackSpec } from './block_registry';
 
-/** Communicates possible block update options */
-export type BlockUpdateInfo = {
-  /** Possible update changing major version register */
-  major?: BlockPackSpec;
-
-  /** Possible update keeping the same major version */
-  minor?: BlockPackSpec;
-
-  /** Possible update keeping the same minor and major version */
-  patch?: BlockPackSpec;
+/** Communicates possible block update option */
+export type UpdateSuggestion<V = BlockPackSpec> = {
+  type: 'major' | 'minor' | 'patch';
+  update: V;
 };
+
+/** Communicates possible block update options */
+export type UpdateSuggestions<V = BlockPackSpec> = UpdateSuggestion<V>[];
