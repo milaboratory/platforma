@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.48
+
+### Patch Changes
+
+- 3ff9dcd: Enable nested source maps in dev sdk mode
+
 ## 2.2.47
 
 ### Patch Changes

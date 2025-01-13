@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.3.23
+
+### Patch Changes
+
+- 3ff9dcd: Enable nested source maps in dev sdk mode
+
 ## 1.3.22
 
 ### Patch Changes
