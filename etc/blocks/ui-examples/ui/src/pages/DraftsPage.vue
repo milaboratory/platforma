@@ -95,7 +95,7 @@ const triggerError = () => {
       <PlDropdownLine v-model="data.value" prefix="Option:" clearable :label="data.title" :options="data.options" />
     </PlRow>
     <PlRow>
-      <PlBtnPrimary @click="triggerError">Trigger ui vue error {{ test.uikitError }}</PlBtnPrimary>
+      <PlBtnPrimary @click="triggerError">Trigger ui vue error</PlBtnPrimary>
     </PlRow>
   </PlBlockPage>
 </template>
