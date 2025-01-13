@@ -1,5 +1,5 @@
 import { SpawnOptions } from 'child_process';
-import { PlBinarySource } from './pl_binary';
+import { PlBinarySource } from '../common/pl_binary';
 
 /** Options to start a local pl-core. */
 export type LocalPlOptions = {
@@ -7,8 +7,6 @@ export type LocalPlOptions = {
   readonly workingDir: string;
   /** A string representation of yaml config. */
   readonly config: string;
-  /** Should we read environment variables for license and other secrets? */
-  readonly shouldGetLicenseFromEnv: boolean;
   /** How to get a binary, download it or get an existing one. */
   readonly binary: PlBinarySource;
   /** Additional options for a process, environments, stdout, stderr etc. */
