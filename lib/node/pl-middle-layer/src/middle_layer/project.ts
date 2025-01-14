@@ -12,7 +12,7 @@ import { Computable, ComputableStableDefined } from '@milaboratories/computable'
 import { projectOverview } from './project_overview';
 import { BlockPackSpecAny } from '../model';
 import { randomUUID } from 'node:crypto';
-import { withProject, withProjectAuthored } from '../mutator/project';
+import { ProjectMutator, withProject, withProjectAuthored } from '../mutator/project';
 import { ExtendedResourceData, SynchronizedTreeState } from '@milaboratories/pl-tree';
 import { setTimeout } from 'node:timers/promises';
 import { frontendData } from './frontend_path';
@@ -387,6 +387,10 @@ export class Project {
   }
 
   public static async init(env: MiddleLayerEnvironment, rid: ResourceId): Promise<Project> {
+    // Doing a no-op mutation to apply all migration and schema fixes
+    await withProject(env.pl, rid, (_) => {});
+
+    // Loading project tree
     const projectTree = await SynchronizedTreeState.init(
       env.pl,
       rid,
@@ -396,6 +400,7 @@ export class Project {
       },
       env.logger
     );
+    
     return new Project(env, rid, projectTree);
   }
 }
