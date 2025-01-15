@@ -88,7 +88,6 @@ export const platforma = BlockModel.create('Heavy')
       { type: 'link', href: '/modals', label: 'Modals' },
       { type: 'link', href: '/select-files', label: 'Select Files' },
       { type: 'link', href: '/inject-env', label: 'Inject env' },
-      { type: 'link', href: '/dropdowns', label: 'Dropdowns' },
       { type: 'link', href: '/use-watch-fetch', label: 'useWatchFetch' },
       { type: 'link', href: '/typography', label: 'Typography' },
       { type: 'link', href: '/ag-grid-vue', label: 'AgGridVue' },

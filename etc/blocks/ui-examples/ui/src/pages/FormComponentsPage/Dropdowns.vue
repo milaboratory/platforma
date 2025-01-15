@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { undef } from '@milaboratories/helpers';
 import {
-  PlBlockPage,
   PlBtnPrimary,
   PlCheckbox,
   PlContainer,
@@ -109,65 +108,69 @@ const showOptionsLoading = () => {
 </script>
 
 <template>
-  <PlBlockPage style="max-width: 100%">
+  <PlContainer>
     <PlRow>
       <PlCheckbox v-model="data.disabled">Disabled</PlCheckbox>
       <PlCheckbox v-model="data.clearable">Clearable</PlCheckbox>
       <PlBtnPrimary @click="showOptionsLoading">Show options loading</PlBtnPrimary>
     </PlRow>
-    <PlContainer width="400px">
-      <PlDropdown
-        v-model="data.model"
-        :disabled="data.disabled"
-        :clearable="data.clearable"
-        label="PlDropdown"
-        :options="simpleOptions"
-      />
-      <PlDropdown
-        v-model="data.model"
-        :disabled="data.disabled"
-        :clearable="data.clearable"
-        label="PlDropdown"
-        :options="simpleOptions"
-      />
-      <PlDropdownRef
-        v-model="data.ref"
-        :disabled="data.disabled"
-        :clearable="data.clearable"
-        label="PlDropdownRef"
-        :options="refOptions"
-      />
+    <PlRow>
+      <PlContainer width="400px">
+        <PlDropdown
+          v-model="data.model"
+          :disabled="data.disabled"
+          :clearable="data.clearable"
+          label="PlDropdown"
+          :options="simpleOptions"
+        />
+        <PlDropdown
+          v-model="data.model"
+          :disabled="data.disabled"
+          :clearable="data.clearable"
+          label="PlDropdown"
+          :options="simpleOptions"
+        />
+        <PlDropdownRef
+          v-model="data.ref"
+          :disabled="data.disabled"
+          :clearable="data.clearable"
+          label="PlDropdownRef"
+          :options="refOptions"
+        />
 
-      <PlDropdownMulti
-        v-model="data.multi"
-        :disabled="data.disabled"
-        :options="simpleOptions ?? []"
-        label="PlDropdownMulti"
-      />
+        <PlDropdownMulti
+          v-model="data.multi"
+          :disabled="data.disabled"
+          :options="simpleOptions ?? []"
+          label="PlDropdownMulti"
+        />
 
-      <PlDropdownMultiRef
-        v-model="data.multiRefSelected"
-        :disabled="data.disabled"
-        :options="refOptionsMulti ?? []"
-        label="PlDropdownMultiRef"
-      />
+        <PlDropdownMultiRef
+          v-model="data.multiRefSelected"
+          :disabled="data.disabled"
+          :options="refOptionsMulti ?? []"
+          label="PlDropdownMultiRef"
+        />
 
-      <PlDropdownMulti
-        v-model="data.multi"
-        :disabled="data.disabled"
-        :options="undefined"
-        label="PlDropdownMulti"
-      />
+        <PlDropdownMulti
+          v-model="data.multi"
+          :disabled="data.disabled"
+          :options="undefined"
+          label="PlDropdownMulti"
+        />
 
-      <PlDropdownMultiRef
-        v-model="data.multi"
-        :disabled="data.disabled"
-        :options="undefined"
-        label="PlDropdownMultiRef"
-      />
+        <PlDropdownMultiRef
+          v-model="data.multi"
+          :disabled="data.disabled"
+          :options="undefined"
+          label="PlDropdownMultiRef"
+        />
 
-      <div v-if="false" style="height: 1200px; background-color: green; width: 50px"/>
-    </PlContainer>
-    <pre>{{ data }}</pre>
-  </PlBlockPage>
+        <div v-if="false" style="height: 1200px; background-color: green; width: 50px"/>
+      </PlContainer>
+    </PlRow>
+    <PlRow>
+      <pre>{{ data }}</pre>
+    </PlRow>
+  </PlContainer>
 </template>

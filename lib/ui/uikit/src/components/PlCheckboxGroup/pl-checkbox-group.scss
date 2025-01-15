@@ -1,4 +1,4 @@
-.ui-checkbox-group {
+.pl-checkbox-group {
   --color-label: var(--color-text);
   --cursor-label: pointer;
   display: flex;
@@ -9,11 +9,12 @@
     --cursor-label: default;
     pointer-events: none;
   }
-  label {
+  > label {
     color: var(--color-label);
     cursor: var(--cursor-label);
-  }
-  > label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
     margin-bottom: 6px;
     font-size: 14px;
     font-weight: 600;

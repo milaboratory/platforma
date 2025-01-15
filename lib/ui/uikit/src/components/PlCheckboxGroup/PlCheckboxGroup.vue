@@ -11,6 +11,10 @@ export default {
 import './pl-checkbox-group.scss';
 import type { SimpleOption } from '@/types';
 import PlCheckboxBase from '@/components/PlCheckbox/PlCheckboxBase.vue';
+import { PlTooltip } from '../PlTooltip';
+import { useSlots } from 'vue';
+
+const slots = useSlots();
 
 const emit = defineEmits<{
   (e: 'update:modelValue', v: M[]): void;
@@ -46,8 +50,15 @@ const updateModel = (value: M) => {
 </script>
 
 <template>
-  <div class="ui-checkbox-group" :class="{ disabled }">
-    <label v-if="label">{{ label }}</label>
+  <div class="pl-checkbox-group" :class="{ disabled }">
+    <label v-if="label">
+      <span>{{ label }}</span>
+      <PlTooltip v-if="slots.tooltip" class="info" position="top">
+        <template #tooltip>
+          <slot name="tooltip" />
+        </template>
+      </PlTooltip>
+    </label>
     <div v-for="(opt, i) in options.map((it) => ({ label: 'label' in it ? it.label : it.text, value: it.value }))" :key="i">
       <PlCheckboxBase :disabled="disabled" :label="opt.label" :model-value="hasValue(opt.value)" @update:model-value="() => updateModel(opt.value)" />
       <label @click.stop="() => updateModel(opt.value)">{{ opt.label }}</label>
