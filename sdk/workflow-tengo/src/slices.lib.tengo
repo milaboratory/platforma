@@ -152,6 +152,105 @@ reduce := func(slice, fn) {
 	return result
 }
 
+//
+// Simple quick-sort implementations:
+//   - with user-provided ordering
+//   - and with native sorting
+//
+
+_quickSortFn := func(arr, left, right, less) {
+    if is_undefined(arr) || len(arr) <= 1 || left < 0 || left >= len(arr) || right < 0 || right >= len(arr) || left >= right {
+        return arr
+    }
+    idx := left
+    for i := left; i < right; i++ {
+        if less(arr[i], arr[right]) {
+			temp := arr[i]
+			arr[i] = arr[idx]
+			arr[idx] = temp
+            idx++
+        }
+    }
+	temp := arr[right]
+	arr[right] = arr[idx]
+	arr[idx] = temp
+    _quickSortFn(arr, left, idx-1, less)
+    _quickSortFn(arr, idx+1, right, less)
+    return arr
+}
+
+_quickSort := func(arr, left, right) {
+    if is_undefined(arr) || len(arr) <= 1 || left < 0 || left >= len(arr) || right < 0 || right >= len(arr) || left >= right {
+        return arr
+    }
+    idx := left
+    for i := left; i < right; i++ {
+        if arr[i] < arr[right] {
+			temp := arr[i]
+			arr[i] = arr[idx]
+			arr[idx] = temp
+            idx++
+        }
+    }
+	temp := arr[right]
+	arr[right] = arr[idx]
+	arr[idx] = temp
+    _quickSort(arr, left, idx-1)
+    _quickSort(arr, idx+1, right)
+    return arr
+}
+
+/**
+ * Sorts slice in-place, using native ordering.
+ *
+ * @param s: []any - a slice of elements of any comparable type
+ * @return s: []any the same slice after sorting
+ *
+ */
+quickSortInPlace := func(s) {
+	_quickSort(s, 0, len(s)-1)
+	return s
+}
+
+/**
+ * Copy the slice and returtn sorted slice according to native ordering.
+ *
+ * @param s: []any - a slice of elements of any comparable type
+ * @return s: []any sorted slice
+ *
+ */
+quickSort := func(s) {
+	s = copy(s)
+	_quickSort(s, 0, len(s)-1)
+	return s
+}
+
+/**
+ * Sorts slice in-place, using provided ordering function.
+ *
+ * @param s: []any - a slice of elements of any comparable type
+ * @param less: func(a, b): boolean - define ordering, must return true, if a < b
+ * @return s: []any the same slice after sorting
+ */
+quickSortInPlaceFn := func(s, less) {
+	_quickSortFn(s, 0, len(s)-1, less)
+	return s
+}
+
+/**
+ * Copy the slice and returtn sorted slice according to using provided ordering function.
+ *
+ * @param s: []any - a slice of elements of any comparable type
+ * @param less: func(a, b): boolean - define ordering, must return true, if a < b
+ * @return s: []any sorted slice
+ *
+ */
+quickSortFn := func(s, less) {
+	s = copy(s)
+	_quickSortFn(s, 0, len(s)-1, less)
+	return s
+}
+
 /**
  * Creates a copy of a slice and sorts it using a stable bubble sort.
  *
@@ -196,6 +295,10 @@ export ll.toStrict({
 	filter: filter,
 	map: map,
 	reduce: reduce,
+	quickSortInPlace: quickSortInPlace,
+	quickSort: quickSort,
+	quickSortFn: quickSortFn,
+	quickSortInPlaceFn: quickSortInPlaceFn,
 	sortByFn: sortByFn,
 	fromSet: fromSet,
 	slice: slice
