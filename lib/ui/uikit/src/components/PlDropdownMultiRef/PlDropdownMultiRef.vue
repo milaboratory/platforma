@@ -1,7 +1,10 @@
 <script lang="ts" setup>
 import type { ModelRef, RefOption } from '@/types';
 import PlDropdownMulti from '../PlDropdownMulti/PlDropdownMulti.vue';
-import { computed } from 'vue';
+import { computed, useSlots } from 'vue';
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const slots: any = useSlots();
 
 defineEmits<{
   /**
@@ -70,5 +73,9 @@ const options = computed(() =>
     v-bind="props"
     :options="options"
     @update:model-value="$emit('update:modelValue', $event)"
-  />
+  >
+    <template v-if="slots.tooltip" #tooltip>
+      <slot name="tooltip" />
+    </template>
+  </PlDropdownMulti>
 </template>
