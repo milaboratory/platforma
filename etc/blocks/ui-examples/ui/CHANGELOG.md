@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.3.24
+
+### Patch Changes
+
+- ca66b2a: [ui-kit] Check that all standard components have tooltip slot
+- Updated dependencies [ca66b2a]
+  - @milaboratories/milaboratories.ui-examples.model@1.1.13
+
 ## 1.3.23
 
 ### Patch Changes

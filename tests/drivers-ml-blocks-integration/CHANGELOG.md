@@ -1,5 +1,15 @@
 # @milaboratories/drivers-ml-blocks-integration
 
+## 1.0.102
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-download-file@1.0.61
+- @milaboratories/milaboratories.test-enter-numbers@1.0.183
+- @milaboratories/milaboratories.test-read-logs@1.0.61
+- @milaboratories/milaboratories.test-sum-numbers@1.0.61
+- @milaboratories/milaboratories.test-upload-file@1.0.61
+
 ## 1.0.101
 
 ### Patch Changes
