@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.50
+
+### Patch Changes
+
+- 56f7e84: Migrate from scss imports to use & forward rules
+
 ## 2.2.49
 
 ### Patch Changes
