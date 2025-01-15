@@ -1,5 +1,5 @@
 import { describe, it, beforeAll, expect, afterAll } from 'vitest';
-import { initContainer, getConnectionForSsh } from './common-utils';
+import { initContainer, getConnectionForSsh, testContainer } from './common-utils';
 import { SshPl } from '../pl';
 import path, { resolve } from 'path';
 import { getDefaultPlVersion } from '../../common/pl_version';
@@ -51,12 +51,17 @@ describe('SshPl', async () => {
   //   await sshPl?.platformaInit(downloadDestination);
   // });
 
-  // it('Transfer Platforma to server', async () => {
-  //   const plPath = await sshPl?.downloadPlatformaBinaries(downloadDestination);
-  //   const dirPath = path.resolve(downloadDestination, path.basename(path.dirname(path.dirname(plPath!))));
-  //   await sshPl?.sshClient.uploadDirectory(dirPath, '/home/pl-doctor/qqq');
-  //   console.log(plPath, dirPath);
-  // });
+  it('Transfer Platforma to server', async () => {
+    const plPath = await sshPl?.downloadPlatformaBinaries(downloadDestination);
+    const plFolderName = path.basename(path.dirname(path.dirname(plPath!)));
+    const dirPath = path.resolve(downloadDestination, plFolderName);
+    await sshPl?.sshClient.uploadDirectory(dirPath, `/home/pl-doctor/${plFolderName}`);
+    console.log(plPath, dirPath);
+
+    const execResult2 = await testContainer.exec(['cat', `/home/pl-doctor/${plFolderName}/.ok`]);
+    const output2 = execResult2.output.trim();
+    expect(output2).toBe('ok');
+  });
 });
 
 describe('SshPl download binaries', async () => {

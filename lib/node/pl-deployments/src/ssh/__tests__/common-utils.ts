@@ -3,6 +3,7 @@ import { GenericContainer } from 'testcontainers';
 import { writeFileSync, readFileSync, unlinkSync, existsSync } from 'fs';
 import { mkdir, rm } from 'fs/promises';
 import path from 'path';
+import type { ConnectConfig } from 'ssh2';
 import ssh from 'ssh2';
 import fs from 'fs';
 
@@ -25,7 +26,19 @@ export async function createTestDirForRecursiveUpload() {
   await mkdir(pathBase, { recursive: true });
   await mkdir(path2, { recursive: true });
 
-  writeFileSync(path.resolve(pathBase, 'test.txt'), 'test-1');
+  for (let i = 0; i < 19; i++) {
+    const path2 = path.resolve(__dirname, '..', 'test-assets', 'downloads', 'rec-upload', 'sub-1', `sub-1-${i}`);
+    await mkdir(path2, { recursive: true });
+
+    for (let i = 0; i < 3; i++) {
+      writeFileSync(path.resolve(path2, `test-${i}.txt`), `test-${i}`);
+    }
+  }
+
+  for (let i = 1; i < 100; i++) {
+    writeFileSync(path.resolve(pathBase, `test-${i}.txt`), `test-${i}`);
+  }
+  writeFileSync(path.resolve(pathBase, `test.txt`), `test-1`);
   writeFileSync(path.resolve(path2, 'test-5.txt'), 'test-5');
 }
 
@@ -90,7 +103,7 @@ function logToFile(message: string) {
   });
 }
 
-export function getConnectionForSsh(debug: boolean = false) {
+export function getConnectionForSsh(debug: boolean = false): ConnectConfig {
   const hostData = getContainerHostAndPort();
 
   return {

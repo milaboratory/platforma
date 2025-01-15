@@ -245,6 +245,7 @@ export class SshClient {
 
   /**
    * Uploads a local file to a remote server via SFTP.
+   * This function creates new SFTP connection
    * @param localPath - The local file path.
    * @param remotePath - The remote file path on the server.
    * @returns A promise resolving with `true` if the file was successfully uploaded.
@@ -268,6 +269,45 @@ export class SshClient {
     });
   }
 
+  public uploadFileUsingExistingSftp(sftp: SFTPWrapper, localPath: string, remotePath: string) {
+    return new Promise((resolve, reject) => {
+      sftp.fastPut(localPath, remotePath, (err) => {
+        if (err) return reject(err);
+        resolve(true);
+      });
+    });
+  }
+
+  private async __uploadDirectory(sftp: SFTPWrapper, localDir: string, remoteDir: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      fs.readdir(localDir, async (err, files) => {
+        if (err) {
+          return reject(err);
+        }
+
+        try {
+          await this.__createRemoteDirectory(sftp, remoteDir);
+
+          for (const file of files) {
+            const localPath = path.join(localDir, file);
+            const remotePath = `${remoteDir}/${file}`;
+
+            if (fs.lstatSync(localPath).isDirectory()) {
+              await this.__uploadDirectory(sftp, localPath, remotePath);
+            } else {
+              await this.uploadFileUsingExistingSftp(sftp, localPath, remotePath);
+              console.log(`Uploaded file: ${localPath} -> ${remotePath}`);
+            }
+          }
+
+          resolve();
+        } catch (err) {
+          reject(err);
+        }
+      });
+    });
+  }
+
   /**
    * Uploads a local directory and its contents (including subdirectories) to the remote server via SFTP.
    * @param localDir - The path to the local directory to upload.
@@ -276,37 +316,15 @@ export class SshClient {
    */
   public async uploadDirectory(localDir: string, remoteDir: string): Promise<void> {
     return new Promise((resolve, reject) => {
-      fs.readdir(localDir, (err, files) => {
+      this.client.sftp(async (err, sftp) => {
         if (err) {
+          sftp.end();
           return reject(err);
         }
 
-        this.client.sftp(async (err, sftp) => {
-          if (err) {
-            sftp.end();
-            return reject(err);
-          }
-
-          try {
-            await this.__createRemoteDirectory(sftp, remoteDir);
-
-            for (const file of files) {
-              const localPath = path.join(localDir, file);
-              const remotePath = `${remoteDir}/${file}`;
-
-              if (fs.lstatSync(localPath).isDirectory()) {
-                await this.uploadDirectory(localPath, remotePath);
-              } else {
-                await this.uploadFile(localPath, remotePath);
-                console.log(`Uploaded file: ${localPath} -> ${remotePath}`);
-              }
-            }
-
-            resolve();
-          } catch (err) {
-            reject(err);
-          }
-        });
+        await this.__uploadDirectory(sftp, localDir, remoteDir);
+        sftp.end();
+        resolve();
       });
     });
   }

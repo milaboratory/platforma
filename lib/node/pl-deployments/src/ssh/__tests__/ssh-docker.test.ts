@@ -28,6 +28,10 @@ describe('SSH Tests', () => {
     const execResult1 = await testContainer.exec(['cat', `${remoteDir}/rec-upload/sub-1/sub-1-1/test-5.txt`]);
     const output1 = execResult1.output.trim();
     expect(output1).toBe('test-5');
+
+    const execResult2 = await testContainer.exec(['cat', `${remoteDir}/rec-upload/sub-1/sub-1-18/test-2.txt`]);
+    const output2 = execResult2.output.trim();
+    expect(output2).toBe('test-2');
   });
 
   it('should upload a file to the SSH server', async () => {
