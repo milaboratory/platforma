@@ -1,4 +1,4 @@
-@import "@/assets/mixins";
+@use "@/assets/mixins" as *;
 
 .pl-dropdown-multi {
   $root: &;
