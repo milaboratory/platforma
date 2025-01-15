@@ -14,3 +14,28 @@ TestMiSliceAppend := func() {
 	test.isEqual(slices.safeAppend([], 1, 2, 3), [1, 2, 3], "slices.safeAppend([], 1, 2, 3) is wrong")
 	test.isEqual(slices.safeAppend(undefined, 1, 2, 3), [1, 2, 3], "slices.safeAppend(undefined, 1, 2, 3) is wrong")
 }
+
+TestSortSimple := func() {
+	test.isEqual(slices.quickSort([11, 4, 3, 23, 8]), [3, 4, 8, 11, 23], "incorrect sorting")
+	test.isEqual(slices.quickSort([3, 4, 8, 11, 23]), [3, 4, 8, 11, 23], "incorrect resorting")
+	test.isEqual(slices.quickSortInPlace([23, 11, 8, 4, 3]), [3, 4, 8, 11, 23], "incorrect sorting of reversed")
+}
+
+TestSortLambda := func() {
+	test.isEqual(slices.quickSortFn([11, 4, 3, 23, 8], func(a, b) { return a < b }), [3, 4, 8, 11, 23], "incorrect sorting")
+	test.isEqual(slices.quickSortFn([3, 4, 8, 11, 23], func(a, b) { return a < b }), [3, 4, 8, 11, 23], "incorrect resorting")
+	test.isEqual(slices.quickSortInPlaceFn([23, 11, 8, 4, 3], func(a, b) { return a < b }), [3, 4, 8, 11, 23], "incorrect sorting of reversed")
+}
+
+TestSortStructure := func() {
+	test.isEqual(
+		slices.quickSortInPlaceFn([{a: "cab", v: 44}, {a: "bab", v: 2}, {a: "aab", v: 7}, {a: "zab", v: 42}],
+		func(a, b) { return a.a < b.a }),
+		[{a: "aab", v: 7}, {a: "bab", v: 2}, {a: "cab", v: 44}, {a: "zab", v: 42}],
+		"incorrect sorting")
+	test.isEqual(
+		slices.quickSortFn([{a: "aab", v: 7}, {a: "bab", v: 2}, {a: "cab", v: 44}, {a: "zab", v: 42}],
+		func(a, b) { return a.a < b.a }),
+		[{a: "aab", v: 7}, {a: "bab", v: 2}, {a: "cab", v: 44}, {a: "zab", v: 42}],
+		 "incorrect resorting")
+}

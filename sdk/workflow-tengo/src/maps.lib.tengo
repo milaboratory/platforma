@@ -13,7 +13,7 @@ getKeys := func(map) {
 		res = append(res, k)
 	}
 
-	return slices.sortByFn(res, func(elem) { return elem })
+	return slices.quickSort(res)
 }
 
 /**
