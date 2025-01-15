@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.49
+
+### Patch Changes
+
+- ca66b2a: [ui-kit] Check that all standard components have tooltip slot
+
 ## 2.2.48
 
 ### Patch Changes
