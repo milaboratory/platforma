@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 2.9.7
+
+### Patch Changes
+
+- 37ecd10: Adding quick-sort methods in slices tengo sdk
+
 ## 2.9.6
 
 ### Patch Changes
