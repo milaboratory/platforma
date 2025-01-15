@@ -5,16 +5,33 @@ import { request } from 'undici';
 import { Writable, Readable } from 'stream';
 import { text } from 'stream/consumers';
 import * as tar from 'tar';
-import { assertNever, fileExists, MiLogger } from '@milaboratories/ts-helpers';
+import type { MiLogger } from '@milaboratories/ts-helpers';
+import { assertNever, fileExists } from '@milaboratories/ts-helpers';
 import decompress from 'decompress';
-import { ArchType, OSType, newOs, newArch } from './os_and_arch';
+import type { ArchType, OSType } from './os_and_arch';
+import { newOs, newArch } from './os_and_arch';
 import os from 'os';
 
-export async function downloadLocalBinary(logger: MiLogger,  baseDir: string,  plVersion: string): Promise<string> {
-  return await downloadBinary(logger, baseDir, plVersion, os.arch(), os.platform());
+export async function downloadLocalBinary(logger: MiLogger, baseDir: string, plVersion: string): Promise<string> {
+  return await downloadPlBinary(logger, baseDir, plVersion, os.arch(), os.platform());
 }
 
 export async function downloadBinary(
+  logger: MiLogger,
+  baseDir: string,
+  softwareName: string,
+  tgzName: string,
+  arch: string,
+  platform: string,
+) {
+  const { archiveUrl, archivePath, archiveType, targetFolder, binaryPath } = getPathsForDownload(softwareName, tgzName, baseDir, newArch(arch), newOs(platform));
+  await downloadArchive(logger, archiveUrl, archivePath);
+  await extractArchive(logger, archivePath, archiveType, targetFolder);
+
+  return binaryPath;
+}
+
+export async function downloadPlBinary(
   logger: MiLogger,
   baseDir: string,
   plVersion: string,
@@ -28,6 +45,24 @@ export async function downloadBinary(
   await extractArchive(logger, archivePath, archiveType, targetFolder);
 
   return binaryPath;
+}
+
+function getPathsForDownload(softwareName: string, tgzName: string, baseDir: string, arch: ArchType, os: OSType) {
+  const baseName = `${tgzName}-${arch}`;
+  const archiveType = osToArchiveType[os];
+  const archiveFileName = `${baseName}.${archiveType}`;
+  const archiveUrl = `https://cdn.platforma.bio/software/${softwareName}/${os}/${archiveFileName}`;
+  const archivePath = path.join(baseDir, archiveFileName);
+  // folder where binary distribution of pl will be unpacked
+  const targetFolder = path.join(baseDir, baseName);
+  const binaryPath = path.join(targetFolder);
+  return {
+    archiveUrl,
+    archivePath,
+    archiveType,
+    targetFolder,
+    binaryPath,
+  };
 }
 
 function localDownloadOptions(plVersion: string, baseDir: string, arch: ArchType, os: OSType) {
@@ -48,7 +83,7 @@ function localDownloadOptions(plVersion: string, baseDir: string, arch: ArchType
     archivePath,
     archiveType,
     targetFolder,
-    binaryPath
+    binaryPath,
   };
 }
 
@@ -86,7 +121,7 @@ export async function extractArchive(
   logger: MiLogger,
   archivePath: string,
   archiveType: ArchiveType,
-  dstFolder: string
+  dstFolder: string,
 ) {
   logger.info('extracting archive...');
   logger.info(`  archive path: '${archivePath}'`);
@@ -114,7 +149,7 @@ export async function extractArchive(
   await fsp.mkdir(dstFolder, { recursive: true });
 
   logger.info(
-    `Unpacking Platforma Backend archive:\n  Archive:   ${archivePath}\n  Target dir: ${dstFolder}`
+    `Unpacking Platforma Backend archive:\n  Archive:   ${archivePath}\n  Target dir: ${dstFolder}`,
   );
 
   switch (archiveType) {
@@ -122,7 +157,7 @@ export async function extractArchive(
       await tar.x({
         file: archivePath,
         cwd: dstFolder,
-        gzip: true
+        gzip: true,
       });
       break;
 
@@ -145,11 +180,11 @@ export type ArchiveType = 'tgz' | 'zip';
 const osToArchiveType: Record<OSType, ArchiveType> = {
   linux: 'tgz',
   macos: 'tgz',
-  windows: 'zip'
-}
+  windows: 'zip',
+};
 
 const osToBinaryName: Record<OSType, string> = {
   linux: 'platforma',
   macos: 'platforma',
-  windows: 'platforma.exe'
-}
+  windows: 'platforma.exe',
+};

@@ -1,86 +1,9 @@
 import { describe, it, beforeAll, afterAll, expect } from 'vitest';
-import type { StartedTestContainer } from 'testcontainers';
-import { GenericContainer } from 'testcontainers';
-import { writeFileSync, readFileSync, unlinkSync, existsSync } from 'fs';
-import path from 'path';
-import { SshClient } from './ssh';
-import ssh from 'ssh2';
+import { writeFileSync, readFileSync } from 'fs';
+import { SshClient } from '../ssh';
+import { downloadsFolder, cleanUp, testContainer, getConnectionForSsh, getContainerHostAndPort, initContainer, localFileDownload, localFileUpload } from './common-utils';
 
 let client: SshClient;
-
-let container: StartedTestContainer;
-const SSH_PORT = [22, 3001];
-let privateKey = '';
-
-const publicKeyPath = getPathForFile('pub-key.pub');
-const privateKeyPath = getPathForFile('private-key.private');
-
-const localFileUpload = getPathForFile('test-file.txt');
-const localFileDownload = getPathForFile('test-file-download.txt');
-
-function getPathForFile(fileName: string) {
-  return path.resolve(__dirname, 'test-assets', fileName);
-}
-
-function generateKeys() {
-  const keys = ssh.utils.generateKeyPairSync('ed25519');
-  privateKey = keys.private;
-  writeFileSync(publicKeyPath, keys.public);
-  writeFileSync(privateKeyPath, keys.private);
-}
-
-function initPrivateKey() {
-  privateKey = readFileSync(privateKeyPath, { encoding: 'utf-8' });
-}
-
-async function initContainer() {
-  const fromCacheContainer = await new GenericContainer('pl-ssh-test-container:1.0.0')
-    .withExposedPorts(...SSH_PORT)
-    .withReuse()
-    .start().catch((err) => console.log('No wories we just need create new container', err));
-  console.log('container exist', !!fromCacheContainer);
-
-  if (!fromCacheContainer) {
-    generateKeys();
-    const container1 = await GenericContainer
-      .fromDockerfile(path.resolve(__dirname))
-      .withCache(true)
-      .build('pl-ssh-test-container:1.0.0', { deleteOnExit: false });
-
-    container = await container1.withExposedPorts(...SSH_PORT).withReuse().start();
-  } else {
-    container = fromCacheContainer;
-  }
-  initPrivateKey();
-  const hostData = getContainerHostAndPort();
-  console.log(`SSH доступен на ${hostData.host}:${hostData.port}`);
-}
-
-function getContainerHostAndPort() {
-  return {
-    port: container.getMappedPort(22),
-    host: container.getHost(),
-  };
-}
-
-function getConnectionForSsh(debug: boolean = false) {
-  const hostData = getContainerHostAndPort();
-
-  return {
-    host: hostData.host,
-    port: hostData.port,
-    username: 'pl-doctor',
-    privateKey: privateKey,
-    debug: debug ? console.log : undefined,
-  };
-}
-
-function cleanUp() {
-  if (existsSync(localFileUpload))
-    unlinkSync(localFileUpload);
-  if (existsSync(localFileDownload))
-    unlinkSync(localFileDownload);
-}
 
 beforeAll(async () => {
   await initContainer();
@@ -88,13 +11,32 @@ beforeAll(async () => {
 });
 
 describe('SSH Tests', () => {
+  it('User home direcory', async () => {
+    expect(client.homeDir).toBe('/home/pl-doctor');
+    const home = await client.getUserHomeDirectory();
+    expect(home).toBe('/home/pl-doctor');
+  });
+
+  it('Upload directory', async () => {
+    const remoteDir = '/home/pl-doctor';
+    await client.uploadDirectory(`${downloadsFolder}/rec-upload`, '/home/pl-doctor/rec-upload');
+
+    const execResult = await testContainer.exec(['cat', `${remoteDir}/rec-upload/sub-1/test.txt`]);
+    const output = execResult.output.trim();
+    expect(output).toBe('test-1');
+
+    const execResult1 = await testContainer.exec(['cat', `${remoteDir}/rec-upload/sub-1/sub-1-1/test-5.txt`]);
+    const output1 = execResult1.output.trim();
+    expect(output1).toBe('test-5');
+  });
+
   it('should upload a file to the SSH server', async () => {
     const data = `Test data ${new Date().getTime()}`;
     const remoteFile = '/home/pl-doctor/uploaded-file.txt';
     writeFileSync(localFileUpload, data);
     const result = await client.uploadFile(localFileUpload, remoteFile);
     expect(result).toBe(true);
-    const execResult = await container.exec(['cat', remoteFile]);
+    const execResult = await testContainer.exec(['cat', remoteFile]);
     const output = execResult.output.trim();
     expect(output).toBe(data);
   });
@@ -178,8 +120,8 @@ describe('sshExec', () => {
 });
 
 afterAll(async () => {
-  if (container) {
-    await container.stop();
+  if (testContainer) {
+    await testContainer.stop();
   }
-  cleanUp();
+  await cleanUp();
 });
