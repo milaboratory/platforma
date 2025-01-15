@@ -1,5 +1,14 @@
 # @milaboratories/ui-vue-playground
 
+## 0.0.188
+
+### Patch Changes
+
+- 56f7e84: Migrate from scss imports to use & forward rules
+- Updated dependencies [56f7e84]
+  - @milaboratories/uikit@2.2.50
+  - @platforma-sdk/ui-vue@1.21.30
+
 ## 0.0.187
 
 ### Patch Changes
