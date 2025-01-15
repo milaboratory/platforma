@@ -1,4 +1,4 @@
-@import '@milaboratories/uikit/src/assets/mixins.scss';
+@use '@milaboratories/uikit/src/assets/mixins.scss' as *;
 
 .pl-app-notification-alert {
     position: fixed;

@@ -1,6 +1,6 @@
-@import '../mixins.scss';
-@import './icons-16-generated.scss';
-@import './icons-24-generated.scss';
+@use '../mixins.scss' as *;
+@use './icons-16-generated.scss' as *;
+@use './icons-24-generated.scss' as *;
 
 .icon-16 {
   --icon-size: 16px;
