@@ -1,4 +1,4 @@
-@import "@/assets/mixins";
+@use "@/assets/mixins" as *;
 
 .pl-log-view {
   --log-background: var(--bg-base-light);

@@ -1,4 +1,4 @@
-@import "@/assets/mixins.scss";
+@use "@/assets/mixins" as *;
 
 .grid-table {
   --cell-font-family: var(--font-family-base);

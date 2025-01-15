@@ -1,4 +1,4 @@
-@import '@/assets/mixins.scss';
+@use "@/assets/mixins" as *;
 
 .pl-slide-modal {
   --padding-top: 24px;

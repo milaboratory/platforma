@@ -187,8 +187,8 @@ catalogs:
       specifier: ^0.6.3
       version: 0.6.3
     sass:
-      specifier: ~1.81.0
-      version: 1.81.0
+      specifier: ~1.83.4
+      version: 1.83.4
     semver:
       specifier: ^7.6.3
       version: 7.6.3
@@ -324,7 +324,7 @@ importers:
         version: 5.5.4
       vite:
         specifier: 'catalog:'
-        version: 5.4.11(@types/node@22.5.5)(sass@1.81.0)
+        version: 5.4.11(@types/node@22.5.5)(sass@1.83.4)
 
   etc/blocks/download-file/ui:
     dependencies:
@@ -346,13 +346,13 @@ importers:
         version: link:../../../../lib/util/helpers
       '@vitejs/plugin-vue':
         specifier: 'catalog:'
-        version: 5.2.1(vite@5.4.11(@types/node@22.5.5)(sass@1.81.0))(vue@3.5.13(typescript@5.5.4))
+        version: 5.2.1(vite@5.4.11(@types/node@22.5.5)(sass@1.83.4))(vue@3.5.13(typescript@5.5.4))
       typescript:
         specifier: 'catalog:'
         version: 5.5.4
       vite:
         specifier: 'catalog:'
-        version: 5.4.11(@types/node@22.5.5)(sass@1.81.0)
+        version: 5.4.11(@types/node@22.5.5)(sass@1.83.4)
       vue-tsc:
         specifier: 'catalog:'
         version: 2.1.10(typescript@5.5.4)
@@ -408,7 +408,7 @@ importers:
         version: 5.5.4
       vite:
         specifier: 'catalog:'
-        version: 5.4.11(@types/node@22.5.5)(sass@1.81.0)
+        version: 5.4.11(@types/node@22.5.5)(sass@1.83.4)
 
   etc/blocks/enter-numbers/ui:
     dependencies:
@@ -430,13 +430,13 @@ importers:
         version: link:../../../../lib/util/helpers
       '@vitejs/plugin-vue':
         specifier: 'catalog:'
-        version: 5.2.1(vite@5.4.11(@types/node@22.5.5)(sass@1.81.0))(vue@3.5.13(typescript@5.5.4))
+        version: 5.2.1(vite@5.4.11(@types/node@22.5.5)(sass@1.83.4))(vue@3.5.13(typescript@5.5.4))
       typescript:
         specifier: 'catalog:'
         version: 5.5.4
       vite:
         specifier: 'catalog:'
-        version: 5.4.11(@types/node@22.5.5)(sass@1.81.0)
+        version: 5.4.11(@types/node@22.5.5)(sass@1.83.4)
       vue-tsc:
         specifier: 'catalog:'
         version: 2.1.10(typescript@5.5.4)
@@ -489,7 +489,7 @@ importers:
         version: 5.5.4
       vite:
         specifier: 'catalog:'
-        version: 5.4.11(@types/node@22.5.5)(sass@1.81.0)
+        version: 5.4.11(@types/node@22.5.5)(sass@1.83.4)
 
   etc/blocks/model-test/ui:
     dependencies:
@@ -505,13 +505,13 @@ importers:
     devDependencies:
       '@vitejs/plugin-vue':
         specifier: 'catalog:'
-        version: 5.2.1(vite@5.4.11(@types/node@22.5.5)(sass@1.81.0))(vue@3.5.13(typescript@5.5.4))
+        version: 5.2.1(vite@5.4.11(@types/node@22.5.5)(sass@1.83.4))(vue@3.5.13(typescript@5.5.4))
       typescript:
         specifier: 'catalog:'
         version: 5.5.4
       vite:
         specifier: 'catalog:'
-        version: 5.4.11(@types/node@22.5.5)(sass@1.81.0)
+        version: 5.4.11(@types/node@22.5.5)(sass@1.83.4)
       vue-tsc:
         specifier: 'catalog:'
         version: 2.1.10(typescript@5.5.4)
@@ -564,7 +564,7 @@ importers:
         version: 5.5.4
       vite:
         specifier: 'catalog:'
-        version: 5.4.11(@types/node@22.5.5)(sass@1.81.0)
+        version: 5.4.11(@types/node@22.5.5)(sass@1.83.4)
 
   etc/blocks/pool-explorer/ui:
     dependencies:
@@ -580,13 +580,13 @@ importers:
     devDependencies:
       '@vitejs/plugin-vue':
         specifier: 'catalog:'
-        version: 5.2.1(vite@5.4.11(@types/node@22.5.5)(sass@1.81.0))(vue@3.5.13(typescript@5.5.4))
+        version: 5.2.1(vite@5.4.11(@types/node@22.5.5)(sass@1.83.4))(vue@3.5.13(typescript@5.5.4))
       typescript:
         specifier: 'catalog:'
         version: 5.5.4
       vite:
         specifier: 'catalog:'
-        version: 5.4.11(@types/node@22.5.5)(sass@1.81.0)
+        version: 5.4.11(@types/node@22.5.5)(sass@1.83.4)
       vue-tsc:
         specifier: 'catalog:'
         version: 2.1.10(typescript@5.5.4)
@@ -642,7 +642,7 @@ importers:
         version: 5.5.4
       vite:
         specifier: 'catalog:'
-        version: 5.4.11(@types/node@22.5.5)(sass@1.81.0)
+        version: 5.4.11(@types/node@22.5.5)(sass@1.83.4)
 
   etc/blocks/read-logs/ui:
     dependencies:
@@ -667,13 +667,13 @@ importers:
         version: link:../../../../lib/util/helpers
       '@vitejs/plugin-vue':
         specifier: 'catalog:'
-        version: 5.2.1(vite@5.4.11(@types/node@22.5.5)(sass@1.81.0))(vue@3.5.13(typescript@5.5.4))
+        version: 5.2.1(vite@5.4.11(@types/node@22.5.5)(sass@1.83.4))(vue@3.5.13(typescript@5.5.4))
       typescript:
         specifier: 'catalog:'
         version: 5.5.4
       vite:
         specifier: 'catalog:'
-        version: 5.4.11(@types/node@22.5.5)(sass@1.81.0)
+        version: 5.4.11(@types/node@22.5.5)(sass@1.83.4)
       vue-tsc:
         specifier: 'catalog:'
         version: 2.1.10(typescript@5.5.4)
@@ -733,7 +733,7 @@ importers:
         version: 5.5.4
       vite:
         specifier: 'catalog:'
-        version: 5.4.11(@types/node@22.5.5)(sass@1.81.0)
+        version: 5.4.11(@types/node@22.5.5)(sass@1.83.4)
 
   etc/blocks/sum-numbers/ui:
     dependencies:
@@ -755,13 +755,13 @@ importers:
         version: link:../../../../lib/util/helpers
       '@vitejs/plugin-vue':
         specifier: 'catalog:'
-        version: 5.2.1(vite@5.4.11(@types/node@22.5.5)(sass@1.81.0))(vue@3.5.13(typescript@5.5.4))
+        version: 5.2.1(vite@5.4.11(@types/node@22.5.5)(sass@1.83.4))(vue@3.5.13(typescript@5.5.4))
       typescript:
         specifier: 'catalog:'
         version: 5.5.4
       vite:
         specifier: 'catalog:'
-        version: 5.4.11(@types/node@22.5.5)(sass@1.81.0)
+        version: 5.4.11(@types/node@22.5.5)(sass@1.83.4)
       vue-tsc:
         specifier: 'catalog:'
         version: 2.1.10(typescript@5.5.4)
@@ -817,7 +817,7 @@ importers:
         version: 5.5.4
       vite:
         specifier: 'catalog:'
-        version: 5.4.11(@types/node@22.5.5)(sass@1.81.0)
+        version: 5.4.11(@types/node@22.5.5)(sass@1.83.4)
 
   etc/blocks/ui-examples/ui:
     dependencies:
@@ -842,7 +842,7 @@ importers:
         version: link:../../../../sdk/ui-vue
       '@vitejs/plugin-vue':
         specifier: 'catalog:'
-        version: 5.2.1(vite@5.4.11(@types/node@22.5.5)(sass@1.81.0))(vue@3.5.13(typescript@5.5.4))
+        version: 5.2.1(vite@5.4.11(@types/node@22.5.5)(sass@1.83.4))(vue@3.5.13(typescript@5.5.4))
       ag-grid-enterprise:
         specifier: 'catalog:'
         version: 33.0.3
@@ -857,7 +857,7 @@ importers:
         version: 5.5.4
       vite:
         specifier: 'catalog:'
-        version: 5.4.11(@types/node@22.5.5)(sass@1.81.0)
+        version: 5.4.11(@types/node@22.5.5)(sass@1.83.4)
       vue-tsc:
         specifier: 'catalog:'
         version: 2.1.10(typescript@5.5.4)
@@ -913,7 +913,7 @@ importers:
         version: 5.5.4
       vite:
         specifier: 'catalog:'
-        version: 5.4.11(@types/node@22.5.5)(sass@1.81.0)
+        version: 5.4.11(@types/node@22.5.5)(sass@1.83.4)
 
   etc/blocks/upload-file/ui:
     dependencies:
@@ -935,13 +935,13 @@ importers:
         version: link:../../../../lib/util/helpers
       '@vitejs/plugin-vue':
         specifier: 'catalog:'
-        version: 5.2.1(vite@5.4.11(@types/node@22.5.5)(sass@1.81.0))(vue@3.5.13(typescript@5.5.4))
+        version: 5.2.1(vite@5.4.11(@types/node@22.5.5)(sass@1.83.4))(vue@3.5.13(typescript@5.5.4))
       typescript:
         specifier: 'catalog:'
         version: 5.5.4
       vite:
         specifier: 'catalog:'
-        version: 5.4.11(@types/node@22.5.5)(sass@1.81.0)
+        version: 5.4.11(@types/node@22.5.5)(sass@1.83.4)
       vue-tsc:
         specifier: 'catalog:'
         version: 2.1.10(typescript@5.5.4)
@@ -987,10 +987,10 @@ importers:
         version: link:../../tools/eslint-config
       sass:
         specifier: 'catalog:'
-        version: 1.81.0
+        version: 1.83.4
       vitepress:
         specifier: 'catalog:'
-        version: 1.5.0(@algolia/client-search@4.24.0)(@types/node@22.5.5)(postcss@8.4.49)(sass@1.81.0)(search-insights@2.17.2)(typescript@5.6.3)
+        version: 1.5.0(@algolia/client-search@4.24.0)(@types/node@22.5.5)(postcss@8.4.49)(sass@1.83.4)(search-insights@2.17.2)(typescript@5.6.3)
 
   etc/ui-vue-playground:
     dependencies:
@@ -1027,7 +1027,7 @@ importers:
         version: 20.16.15
       '@vitejs/plugin-vue':
         specifier: 'catalog:'
-        version: 5.2.1(vite@5.4.11(@types/node@20.16.15)(sass@1.81.0))(vue@3.5.13(typescript@5.5.4))
+        version: 5.2.1(vite@5.4.11(@types/node@20.16.15)(sass@1.83.4))(vue@3.5.13(typescript@5.5.4))
       '@vue/test-utils':
         specifier: 'catalog:'
         version: 2.4.6
@@ -1054,16 +1054,16 @@ importers:
         version: 1.5.1
       sass:
         specifier: 'catalog:'
-        version: 1.81.0
+        version: 1.83.4
       typescript:
         specifier: 'catalog:'
         version: 5.5.4
       vite:
         specifier: 'catalog:'
-        version: 5.4.11(@types/node@20.16.15)(sass@1.81.0)
+        version: 5.4.11(@types/node@20.16.15)(sass@1.83.4)
       vitest:
         specifier: 'catalog:'
-        version: 2.1.8(@types/node@20.16.15)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.81.0)
+        version: 2.1.8(@types/node@20.16.15)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4)
       vue-tsc:
         specifier: 'catalog:'
         version: 2.1.10(typescript@5.5.4)
@@ -1085,16 +1085,16 @@ importers:
         version: link:../../lib/util/helpers
       '@vitejs/plugin-vue':
         specifier: 'catalog:'
-        version: 5.2.1(vite@5.4.11(@types/node@22.5.5)(sass@1.81.0))(vue@3.5.13(typescript@5.5.4))
+        version: 5.2.1(vite@5.4.11(@types/node@22.5.5)(sass@1.83.4))(vue@3.5.13(typescript@5.5.4))
       typescript:
         specifier: 'catalog:'
         version: 5.5.4
       vite:
         specifier: 'catalog:'
-        version: 5.4.11(@types/node@22.5.5)(sass@1.81.0)
+        version: 5.4.11(@types/node@22.5.5)(sass@1.83.4)
       vitest:
         specifier: 'catalog:'
-        version: 2.1.8(@types/node@22.5.5)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.81.0)
+        version: 2.1.8(@types/node@22.5.5)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4)
       vue:
         specifier: 'catalog:'
         version: 3.5.13(typescript@5.5.4)
@@ -1128,7 +1128,7 @@ importers:
         version: 5.5.4
       vite:
         specifier: 'catalog:'
-        version: 5.4.11(@types/node@20.16.15)(sass@1.81.0)
+        version: 5.4.11(@types/node@20.16.15)(sass@1.83.4)
 
   lib/model/common:
     dependencies:
@@ -1144,7 +1144,7 @@ importers:
         version: 5.5.4
       vite:
         specifier: 'catalog:'
-        version: 5.4.11(@types/node@22.5.5)(sass@1.81.0)
+        version: 5.4.11(@types/node@22.5.5)(sass@1.83.4)
 
   lib/model/middle-layer:
     dependencies:
@@ -1169,7 +1169,7 @@ importers:
         version: 5.5.4
       vite:
         specifier: 'catalog:'
-        version: 5.4.11(@types/node@22.5.5)(sass@1.81.0)
+        version: 5.4.11(@types/node@22.5.5)(sass@1.83.4)
 
   lib/node/computable:
     dependencies:
@@ -1203,7 +1203,7 @@ importers:
         version: 5.5.4
       vite:
         specifier: 'catalog:'
-        version: 5.4.11(@types/node@20.16.15)(sass@1.81.0)
+        version: 5.4.11(@types/node@20.16.15)(sass@1.83.4)
 
   lib/node/node-streams:
     devDependencies:
@@ -1218,7 +1218,7 @@ importers:
         version: 5.5.4
       vite:
         specifier: 'catalog:'
-        version: 5.4.11(@types/node@20.16.15)(sass@1.81.0)
+        version: 5.4.11(@types/node@20.16.15)(sass@1.83.4)
 
   lib/node/pl-client:
     dependencies:
@@ -1297,7 +1297,7 @@ importers:
         version: 5.5.4
       vite:
         specifier: 'catalog:'
-        version: 5.4.11(@types/node@20.16.15)(sass@1.81.0)
+        version: 5.4.11(@types/node@20.16.15)(sass@1.83.4)
 
   lib/node/pl-config:
     dependencies:
@@ -1340,10 +1340,10 @@ importers:
         version: 5.5.4
       vite:
         specifier: 'catalog:'
-        version: 5.4.11(@types/node@20.16.15)(sass@1.81.0)
+        version: 5.4.11(@types/node@20.16.15)(sass@1.83.4)
       vitest:
         specifier: 'catalog:'
-        version: 2.1.8(@types/node@20.16.15)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.81.0)
+        version: 2.1.8(@types/node@20.16.15)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4)
 
   lib/node/pl-drivers:
     dependencies:
@@ -1416,7 +1416,7 @@ importers:
         version: 5.5.4
       vite:
         specifier: 'catalog:'
-        version: 5.4.11(@types/node@20.16.15)(sass@1.81.0)
+        version: 5.4.11(@types/node@20.16.15)(sass@1.83.4)
 
   lib/node/pl-http:
     dependencies:
@@ -1444,10 +1444,10 @@ importers:
         version: 5.5.4
       vite:
         specifier: 'catalog:'
-        version: 5.4.11(@types/node@20.16.15)(sass@1.81.0)
+        version: 5.4.11(@types/node@20.16.15)(sass@1.83.4)
       vitest:
         specifier: 'catalog:'
-        version: 2.1.8(@types/node@20.16.15)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.81.0)
+        version: 2.1.8(@types/node@20.16.15)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4)
 
   lib/node/pl-local:
     dependencies:
@@ -1502,10 +1502,10 @@ importers:
         version: 3.11.0
       vite:
         specifier: 'catalog:'
-        version: 5.4.11(@types/node@20.16.15)(sass@1.81.0)
+        version: 5.4.11(@types/node@20.16.15)(sass@1.83.4)
       vitest:
         specifier: 'catalog:'
-        version: 2.1.8(@types/node@20.16.15)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.81.0)
+        version: 2.1.8(@types/node@20.16.15)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4)
 
   lib/node/pl-middle-layer:
     dependencies:
@@ -1614,7 +1614,7 @@ importers:
         version: 5.5.4
       vite:
         specifier: 'catalog:'
-        version: 5.4.11(@types/node@20.16.15)(sass@1.81.0)
+        version: 5.4.11(@types/node@20.16.15)(sass@1.83.4)
 
   lib/node/pl-tree:
     dependencies:
@@ -1657,7 +1657,7 @@ importers:
         version: 5.5.4
       vite:
         specifier: 'catalog:'
-        version: 5.4.11(@types/node@22.5.5)(sass@1.81.0)
+        version: 5.4.11(@types/node@22.5.5)(sass@1.83.4)
 
   lib/node/resolve-helper: {}
 
@@ -1690,7 +1690,7 @@ importers:
         version: 5.5.4
       vite:
         specifier: 'catalog:'
-        version: 5.4.11(@types/node@20.16.15)(sass@1.81.0)
+        version: 5.4.11(@types/node@20.16.15)(sass@1.83.4)
 
   lib/node/ts-helpers-oclif:
     dependencies:
@@ -1709,7 +1709,7 @@ importers:
         version: 5.5.4
       vite:
         specifier: 'catalog:'
-        version: 5.4.11(@types/node@22.5.5)(sass@1.81.0)
+        version: 5.4.11(@types/node@22.5.5)(sass@1.83.4)
 
   lib/node/ts-helpers-winston:
     dependencies:
@@ -1728,7 +1728,7 @@ importers:
         version: 5.5.4
       vite:
         specifier: 'catalog:'
-        version: 5.4.11(@types/node@22.5.5)(sass@1.81.0)
+        version: 5.4.11(@types/node@22.5.5)(sass@1.83.4)
 
   lib/ui/uikit:
     dependencies:
@@ -1753,7 +1753,7 @@ importers:
         version: 7.4.3
       '@vitejs/plugin-vue':
         specifier: 'catalog:'
-        version: 5.2.1(vite@5.4.11(@types/node@22.5.5)(sass@1.81.0))(vue@3.5.13(typescript@5.6.3))
+        version: 5.2.1(vite@5.4.11(@types/node@22.5.5)(sass@1.83.4))(vue@3.5.13(typescript@5.6.3))
       '@vue/test-utils':
         specifier: 'catalog:'
         version: 2.4.6
@@ -1774,10 +1774,10 @@ importers:
         version: 1.8.10
       vite:
         specifier: 'catalog:'
-        version: 5.4.11(@types/node@22.5.5)(sass@1.81.0)
+        version: 5.4.11(@types/node@22.5.5)(sass@1.83.4)
       vitest:
         specifier: 'catalog:'
-        version: 2.1.8(@types/node@22.5.5)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.81.0)
+        version: 2.1.8(@types/node@22.5.5)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4)
       vue-tsc:
         specifier: 'catalog:'
         version: 2.1.10(typescript@5.6.3)
@@ -1798,10 +1798,10 @@ importers:
         version: 8.3.5(@microsoft/api-extractor@7.48.1(@types/node@20.16.15))(postcss@8.4.49)(tsx@4.19.1)(typescript@5.5.4)(yaml@2.6.1)
       vite:
         specifier: 'catalog:'
-        version: 5.4.11(@types/node@20.16.15)(sass@1.81.0)
+        version: 5.4.11(@types/node@20.16.15)(sass@1.83.4)
       vite-plugin-dts:
         specifier: 'catalog:'
-        version: 4.4.0(@types/node@20.16.15)(rollup@4.27.4)(typescript@5.5.4)(vite@5.4.11(@types/node@20.16.15)(sass@1.81.0))
+        version: 4.4.0(@types/node@20.16.15)(rollup@4.27.4)(typescript@5.5.4)(vite@5.4.11(@types/node@20.16.15)(sass@1.83.4))
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -1823,7 +1823,7 @@ importers:
         version: 5.5.4
       vite:
         specifier: 'catalog:'
-        version: 5.4.11(@types/node@22.5.5)(sass@1.81.0)
+        version: 5.4.11(@types/node@22.5.5)(sass@1.83.4)
 
   lib/util/sequences:
     devDependencies:
@@ -1835,7 +1835,7 @@ importers:
         version: 5.5.4
       vite:
         specifier: 'catalog:'
-        version: 5.4.11(@types/node@22.5.5)(sass@1.81.0)
+        version: 5.4.11(@types/node@22.5.5)(sass@1.83.4)
 
   sdk/model:
     dependencies:
@@ -1869,7 +1869,7 @@ importers:
         version: 5.5.4
       vite:
         specifier: 'catalog:'
-        version: 5.4.11(@types/node@22.5.5)(sass@1.81.0)
+        version: 5.4.11(@types/node@22.5.5)(sass@1.83.4)
 
   sdk/test:
     dependencies:
@@ -1893,7 +1893,7 @@ importers:
         version: link:../model
       vitest:
         specifier: 'catalog:'
-        version: 2.1.8(@types/node@20.16.15)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.81.0)
+        version: 2.1.8(@types/node@20.16.15)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4)
     devDependencies:
       '@milaboratories/platforma-build-configs':
         specifier: workspace:*
@@ -1906,7 +1906,7 @@ importers:
         version: 5.5.4
       vite:
         specifier: 'catalog:'
-        version: 5.4.11(@types/node@20.16.15)(sass@1.81.0)
+        version: 5.4.11(@types/node@20.16.15)(sass@1.83.4)
 
   sdk/ui-vue:
     dependencies:
@@ -1952,7 +1952,7 @@ importers:
         version: 7.5.8
       '@vitejs/plugin-vue':
         specifier: 'catalog:'
-        version: 5.2.1(vite@5.4.11(@types/node@20.16.15)(sass@1.81.0))(vue@3.5.13(typescript@5.5.4))
+        version: 5.2.1(vite@5.4.11(@types/node@20.16.15)(sass@1.83.4))(vue@3.5.13(typescript@5.5.4))
       '@vueuse/core':
         specifier: 'catalog:'
         version: 12.0.0(typescript@5.5.4)
@@ -1967,7 +1967,7 @@ importers:
         version: 0.6.3(@types/node@20.16.15)(rollup@4.27.4)
       sass:
         specifier: 'catalog:'
-        version: 1.81.0
+        version: 1.83.4
       semver:
         specifier: 'catalog:'
         version: 7.6.3
@@ -1976,10 +1976,10 @@ importers:
         version: 5.5.4
       vite:
         specifier: 'catalog:'
-        version: 5.4.11(@types/node@20.16.15)(sass@1.81.0)
+        version: 5.4.11(@types/node@20.16.15)(sass@1.83.4)
       vitest:
         specifier: 'catalog:'
-        version: 2.1.8(@types/node@20.16.15)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.81.0)
+        version: 2.1.8(@types/node@20.16.15)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4)
       vue-tsc:
         specifier: 'catalog:'
         version: 2.1.10(typescript@5.5.4)
@@ -2025,7 +2025,7 @@ importers:
         version: 2.18.0
       vitest:
         specifier: 'catalog:'
-        version: 2.1.8(@types/node@20.16.15)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.81.0)
+        version: 2.1.8(@types/node@20.16.15)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4)
 
   tests/config-local-ml-integration:
     dependencies:
@@ -2056,10 +2056,10 @@ importers:
         version: 5.5.4
       vite:
         specifier: 'catalog:'
-        version: 5.4.11(@types/node@20.16.15)(sass@1.81.0)
+        version: 5.4.11(@types/node@20.16.15)(sass@1.83.4)
       vitest:
         specifier: 'catalog:'
-        version: 2.1.8(@types/node@20.16.15)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.81.0)
+        version: 2.1.8(@types/node@20.16.15)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4)
 
   tests/drivers-ml-blocks-integration:
     dependencies:
@@ -2120,10 +2120,10 @@ importers:
         version: 5.5.4
       vite:
         specifier: 'catalog:'
-        version: 5.4.11(@types/node@20.16.15)(sass@1.81.0)
+        version: 5.4.11(@types/node@20.16.15)(sass@1.83.4)
       vitest:
         specifier: 'catalog:'
-        version: 2.1.8(@types/node@20.16.15)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.81.0)
+        version: 2.1.8(@types/node@20.16.15)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4)
 
   tests/helper:
     dependencies:
@@ -2196,7 +2196,7 @@ importers:
         version: 20.16.15
       vitest:
         specifier: 'catalog:'
-        version: 2.1.8(@types/node@20.16.15)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.81.0)
+        version: 2.1.8(@types/node@20.16.15)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4)
 
   tools/block-tools:
     dependencies:
@@ -2290,10 +2290,10 @@ importers:
         version: 5.5.4
       vite:
         specifier: 'catalog:'
-        version: 5.4.11(@types/node@20.16.15)(sass@1.81.0)
+        version: 5.4.11(@types/node@20.16.15)(sass@1.83.4)
       vite-plugin-dts:
         specifier: 'catalog:'
-        version: 4.4.0(@types/node@20.16.15)(rollup@4.27.4)(typescript@5.5.4)(vite@5.4.11(@types/node@20.16.15)(sass@1.81.0))
+        version: 4.4.0(@types/node@20.16.15)(rollup@4.27.4)(typescript@5.5.4)(vite@5.4.11(@types/node@20.16.15)(sass@1.83.4))
 
   tools/eslint-config:
     dependencies:
@@ -2354,7 +2354,7 @@ importers:
         version: 5.5.4
       vite:
         specifier: 'catalog:'
-        version: 5.4.11(@types/node@20.16.15)(sass@1.81.0)
+        version: 5.4.11(@types/node@20.16.15)(sass@1.83.4)
 
   tools/package-builder:
     dependencies:
@@ -2421,7 +2421,7 @@ importers:
         version: 5.5.4
       vite:
         specifier: 'catalog:'
-        version: 5.4.11(@types/node@20.16.15)(sass@1.81.0)
+        version: 5.4.11(@types/node@20.16.15)(sass@1.83.4)
 
   tools/pl-bootstrap:
     dependencies:
@@ -2491,7 +2491,7 @@ importers:
         version: 5.5.4
       vite:
         specifier: 'catalog:'
-        version: 5.4.11(@types/node@20.16.15)(sass@1.81.0)
+        version: 5.4.11(@types/node@20.16.15)(sass@1.83.4)
 
   tools/tengo-builder:
     dependencies:
@@ -2540,7 +2540,7 @@ importers:
         version: 5.5.4
       vite:
         specifier: 'catalog:'
-        version: 5.4.11(@types/node@20.16.15)(sass@1.81.0)
+        version: 5.4.11(@types/node@20.16.15)(sass@1.83.4)
 
 packages:
 
@@ -7542,8 +7542,8 @@ packages:
   safer-buffer@2.1.2:
     resolution: {integrity: sha512-YZo3K82SD7Riyi0E1EQPojLz7kpepnSQI9IyPbHHg1XXXevb5dJI7tpyN2ADxGcQbHG7vcyRHk0cbwqcQriUtg==}
 
-  sass@1.81.0:
-    resolution: {integrity: sha512-Q4fOxRfhmv3sqCLoGfvrC9pRV8btc0UtqL9mN6Yrv6Qi9ScL55CVH1vlPP863ISLEEMNLLuu9P+enCeGHlnzhA==}
+  sass@1.83.4:
+    resolution: {integrity: sha512-B1bozCeNQiOgDcLd33e2Cs2U60wZwjUUXzh900ZyQF5qUasvMdDZYbQ566LJu7cqR+sAHlAfO6RMkaID5s6qpA==}
     engines: {node: '>=14.0.0'}
     hasBin: true
 
@@ -11794,19 +11794,19 @@ snapshots:
 
   '@ungap/structured-clone@1.2.0': {}
 
-  '@vitejs/plugin-vue@5.2.1(vite@5.4.11(@types/node@20.16.15)(sass@1.81.0))(vue@3.5.13(typescript@5.5.4))':
+  '@vitejs/plugin-vue@5.2.1(vite@5.4.11(@types/node@20.16.15)(sass@1.83.4))(vue@3.5.13(typescript@5.5.4))':
     dependencies:
-      vite: 5.4.11(@types/node@20.16.15)(sass@1.81.0)
+      vite: 5.4.11(@types/node@20.16.15)(sass@1.83.4)
       vue: 3.5.13(typescript@5.5.4)
 
-  '@vitejs/plugin-vue@5.2.1(vite@5.4.11(@types/node@22.5.5)(sass@1.81.0))(vue@3.5.13(typescript@5.5.4))':
+  '@vitejs/plugin-vue@5.2.1(vite@5.4.11(@types/node@22.5.5)(sass@1.83.4))(vue@3.5.13(typescript@5.5.4))':
     dependencies:
-      vite: 5.4.11(@types/node@22.5.5)(sass@1.81.0)
+      vite: 5.4.11(@types/node@22.5.5)(sass@1.83.4)
       vue: 3.5.13(typescript@5.5.4)
 
-  '@vitejs/plugin-vue@5.2.1(vite@5.4.11(@types/node@22.5.5)(sass@1.81.0))(vue@3.5.13(typescript@5.6.3))':
+  '@vitejs/plugin-vue@5.2.1(vite@5.4.11(@types/node@22.5.5)(sass@1.83.4))(vue@3.5.13(typescript@5.6.3))':
     dependencies:
-      vite: 5.4.11(@types/node@22.5.5)(sass@1.81.0)
+      vite: 5.4.11(@types/node@22.5.5)(sass@1.83.4)
       vue: 3.5.13(typescript@5.6.3)
 
   '@vitest/expect@2.1.8':
@@ -11816,21 +11816,21 @@ snapshots:
       chai: 5.1.2
       tinyrainbow: 1.2.0
 
-  '@vitest/mocker@2.1.8(vite@5.4.11(@types/node@20.16.15)(sass@1.81.0))':
+  '@vitest/mocker@2.1.8(vite@5.4.11(@types/node@20.16.15)(sass@1.83.4))':
     dependencies:
       '@vitest/spy': 2.1.8
       estree-walker: 3.0.3
       magic-string: 0.30.12
     optionalDependencies:
-      vite: 5.4.11(@types/node@20.16.15)(sass@1.81.0)
+      vite: 5.4.11(@types/node@20.16.15)(sass@1.83.4)
 
-  '@vitest/mocker@2.1.8(vite@5.4.11(@types/node@22.5.5)(sass@1.81.0))':
+  '@vitest/mocker@2.1.8(vite@5.4.11(@types/node@22.5.5)(sass@1.83.4))':
     dependencies:
       '@vitest/spy': 2.1.8
       estree-walker: 3.0.3
       magic-string: 0.30.12
     optionalDependencies:
-      vite: 5.4.11(@types/node@22.5.5)(sass@1.81.0)
+      vite: 5.4.11(@types/node@22.5.5)(sass@1.83.4)
 
   '@vitest/pretty-format@2.1.8':
     dependencies:
@@ -15033,7 +15033,7 @@ snapshots:
 
   safer-buffer@2.1.2: {}
 
-  sass@1.81.0:
+  sass@1.83.4:
     dependencies:
       chokidar: 4.0.1
       immutable: 5.0.3
@@ -15710,13 +15710,13 @@ snapshots:
       '@types/unist': 3.0.3
       vfile-message: 4.0.2
 
-  vite-node@2.1.8(@types/node@20.16.15)(sass@1.81.0):
+  vite-node@2.1.8(@types/node@20.16.15)(sass@1.83.4):
     dependencies:
       cac: 6.7.14
       debug: 4.3.7
       es-module-lexer: 1.5.4
       pathe: 1.1.2
-      vite: 5.4.11(@types/node@20.16.15)(sass@1.81.0)
+      vite: 5.4.11(@types/node@20.16.15)(sass@1.83.4)
     transitivePeerDependencies:
       - '@types/node'
       - less
@@ -15728,13 +15728,13 @@ snapshots:
       - supports-color
       - terser
 
-  vite-node@2.1.8(@types/node@22.5.5)(sass@1.81.0):
+  vite-node@2.1.8(@types/node@22.5.5)(sass@1.83.4):
     dependencies:
       cac: 6.7.14
       debug: 4.3.7
       es-module-lexer: 1.5.4
       pathe: 1.1.2
-      vite: 5.4.11(@types/node@22.5.5)(sass@1.81.0)
+      vite: 5.4.11(@types/node@22.5.5)(sass@1.83.4)
     transitivePeerDependencies:
       - '@types/node'
       - less
@@ -15746,7 +15746,7 @@ snapshots:
       - supports-color
       - terser
 
-  vite-plugin-dts@4.4.0(@types/node@20.16.15)(rollup@4.27.4)(typescript@5.5.4)(vite@5.4.11(@types/node@20.16.15)(sass@1.81.0)):
+  vite-plugin-dts@4.4.0(@types/node@20.16.15)(rollup@4.27.4)(typescript@5.5.4)(vite@5.4.11(@types/node@20.16.15)(sass@1.83.4)):
     dependencies:
       '@microsoft/api-extractor': 7.48.1(@types/node@20.16.15)
       '@rollup/pluginutils': 5.1.4(rollup@4.27.4)
@@ -15759,13 +15759,13 @@ snapshots:
       magic-string: 0.30.17
       typescript: 5.5.4
     optionalDependencies:
-      vite: 5.4.11(@types/node@20.16.15)(sass@1.81.0)
+      vite: 5.4.11(@types/node@20.16.15)(sass@1.83.4)
     transitivePeerDependencies:
       - '@types/node'
       - rollup
       - supports-color
 
-  vite@5.4.11(@types/node@20.16.15)(sass@1.81.0):
+  vite@5.4.11(@types/node@20.16.15)(sass@1.83.4):
     dependencies:
       esbuild: 0.21.5
       postcss: 8.4.49
@@ -15773,9 +15773,9 @@ snapshots:
     optionalDependencies:
       '@types/node': 20.16.15
       fsevents: 2.3.3
-      sass: 1.81.0
+      sass: 1.83.4
 
-  vite@5.4.11(@types/node@22.5.5)(sass@1.81.0):
+  vite@5.4.11(@types/node@22.5.5)(sass@1.83.4):
     dependencies:
       esbuild: 0.21.5
       postcss: 8.4.49
@@ -15783,9 +15783,9 @@ snapshots:
     optionalDependencies:
       '@types/node': 22.5.5
       fsevents: 2.3.3
-      sass: 1.81.0
+      sass: 1.83.4
 
-  vitepress@1.5.0(@algolia/client-search@4.24.0)(@types/node@22.5.5)(postcss@8.4.49)(sass@1.81.0)(search-insights@2.17.2)(typescript@5.6.3):
+  vitepress@1.5.0(@algolia/client-search@4.24.0)(@types/node@22.5.5)(postcss@8.4.49)(sass@1.83.4)(search-insights@2.17.2)(typescript@5.6.3):
     dependencies:
       '@docsearch/css': 3.6.2
       '@docsearch/js': 3.6.2(@algolia/client-search@4.24.0)(search-insights@2.17.2)
@@ -15794,7 +15794,7 @@ snapshots:
       '@shikijs/transformers': 1.24.0
       '@shikijs/types': 1.24.0
       '@types/markdown-it': 14.1.2
-      '@vitejs/plugin-vue': 5.2.1(vite@5.4.11(@types/node@22.5.5)(sass@1.81.0))(vue@3.5.13(typescript@5.6.3))
+      '@vitejs/plugin-vue': 5.2.1(vite@5.4.11(@types/node@22.5.5)(sass@1.83.4))(vue@3.5.13(typescript@5.6.3))
       '@vue/devtools-api': 7.6.5
       '@vue/shared': 3.5.13
       '@vueuse/core': 11.1.0(vue@3.5.13(typescript@5.6.3))
@@ -15803,7 +15803,7 @@ snapshots:
       mark.js: 8.11.1
       minisearch: 7.1.0
       shiki: 1.24.0
-      vite: 5.4.11(@types/node@22.5.5)(sass@1.81.0)
+      vite: 5.4.11(@types/node@22.5.5)(sass@1.83.4)
       vue: 3.5.13(typescript@5.6.3)
     optionalDependencies:
       postcss: 8.4.49
@@ -15835,10 +15835,10 @@ snapshots:
       - typescript
       - universal-cookie
 
-  vitest@2.1.8(@types/node@20.16.15)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.81.0):
+  vitest@2.1.8(@types/node@20.16.15)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4):
     dependencies:
       '@vitest/expect': 2.1.8
-      '@vitest/mocker': 2.1.8(vite@5.4.11(@types/node@20.16.15)(sass@1.81.0))
+      '@vitest/mocker': 2.1.8(vite@5.4.11(@types/node@20.16.15)(sass@1.83.4))
       '@vitest/pretty-format': 2.1.8
       '@vitest/runner': 2.1.8
       '@vitest/snapshot': 2.1.8
@@ -15854,8 +15854,8 @@ snapshots:
       tinyexec: 0.3.1
       tinypool: 1.0.1
       tinyrainbow: 1.2.0
-      vite: 5.4.11(@types/node@20.16.15)(sass@1.81.0)
-      vite-node: 2.1.8(@types/node@20.16.15)(sass@1.81.0)
+      vite: 5.4.11(@types/node@20.16.15)(sass@1.83.4)
+      vite-node: 2.1.8(@types/node@20.16.15)(sass@1.83.4)
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/node': 20.16.15
@@ -15872,10 +15872,10 @@ snapshots:
       - supports-color
       - terser
 
-  vitest@2.1.8(@types/node@22.5.5)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.81.0):
+  vitest@2.1.8(@types/node@22.5.5)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4):
     dependencies:
       '@vitest/expect': 2.1.8
-      '@vitest/mocker': 2.1.8(vite@5.4.11(@types/node@22.5.5)(sass@1.81.0))
+      '@vitest/mocker': 2.1.8(vite@5.4.11(@types/node@22.5.5)(sass@1.83.4))
       '@vitest/pretty-format': 2.1.8
       '@vitest/runner': 2.1.8
       '@vitest/snapshot': 2.1.8
@@ -15891,8 +15891,8 @@ snapshots:
       tinyexec: 0.3.1
       tinypool: 1.0.1
       tinyrainbow: 1.2.0
-      vite: 5.4.11(@types/node@22.5.5)(sass@1.81.0)
-      vite-node: 2.1.8(@types/node@22.5.5)(sass@1.81.0)
+      vite: 5.4.11(@types/node@22.5.5)(sass@1.83.4)
+      vite-node: 2.1.8(@types/node@22.5.5)(sass@1.83.4)
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/node': 22.5.5
