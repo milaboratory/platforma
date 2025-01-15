@@ -1,4 +1,4 @@
-@import "@/assets/mixins";
+@use "@/assets/mixins" as *;
 
 .pl-checkbox-base {
   --base-icon: url('@/assets/images/24_checkbox-base.svg');

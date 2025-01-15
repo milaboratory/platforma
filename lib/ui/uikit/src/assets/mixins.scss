@@ -1,4 +1,4 @@
-@import './base-btn';
+@forward './base-btn';
 
 @mixin mask-var($bg) {
   -webkit-mask-image: $bg;
