@@ -1,7 +1,9 @@
-import type { ConnectConfig, ClientChannel } from 'ssh2';
+import type { ConnectConfig, ClientChannel, SFTPWrapper } from 'ssh2';
 import { Client } from 'ssh2';
 import net from 'net';
 import dns from 'dns';
+import fs from 'fs';
+import path from 'path';
 
 export type SshAuthMethods = 'publickey' | 'password';
 export type SshAuthMethodsResult = SshAuthMethods[];
@@ -9,6 +11,7 @@ export type SshAuthMethodsResult = SshAuthMethods[];
 export class SshClient {
   private client: Client = new Client();
   private config?: ConnectConfig;
+  public homeDir?: string;
 
   /**
    * Initializes the SshClient and establishes a connection using the provided configuration.
@@ -18,7 +21,21 @@ export class SshClient {
   public static async init(config: ConnectConfig): Promise<SshClient> {
     const client = new SshClient();
     await client.connect(config);
+    await client.getUserHomeDirectory();
     return client;
+  }
+
+  public async getUserHomeDirectory() {
+    if (this.homeDir) {
+      return this.homeDir;
+    }
+    const { stdout, stderr } = await this.exec('echo $HOME');
+    if (stderr) {
+      console.warn('Can not get user home directory');
+      return `/home/${this.config?.username}`;
+    }
+    this.homeDir = stdout.trim();
+    return this.homeDir;
   }
 
   /**
@@ -241,6 +258,128 @@ export class SshClient {
           if (err) return reject(err);
           resolve(true);
         });
+      });
+    });
+  }
+
+  delay(delay: number): Promise<void> {
+    return new Promise((res, rej) => {
+      setTimeout(() => res(), delay);
+    });
+  }
+
+  /**
+   * Uploads a local directory and its contents (including subdirectories) to the remote server via SFTP.
+   * @param localDir - The path to the local directory to upload.
+   * @param remoteDir - The path to the remote directory on the server.
+   * @returns A promise that resolves when the directory and its contents are uploaded.
+   */
+  public async uploadDirectory(localDir: string, remoteDir: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      fs.readdir(localDir, (err, files) => {
+        if (err) {
+          return reject(err);
+        }
+
+        this.client.sftp(async (err, sftp) => {
+          if (err) {
+            sftp.end();
+            return reject(err);
+          }
+
+          try {
+            await this.__createRemoteDirectory(sftp, remoteDir);
+
+            for (const file of files) {
+              const localPath = path.join(localDir, file);
+              const remotePath = `${remoteDir}/${file}`;
+
+              if (fs.lstatSync(localPath).isDirectory()) {
+                await this.uploadDirectory(localPath, remotePath);
+              } else {
+                await this.uploadFile(localPath, remotePath);
+                console.log(`Uploaded file: ${localPath} -> ${remotePath}`);
+              }
+            }
+
+            resolve();
+          } catch (err) {
+            reject(err);
+          }
+        });
+      });
+    });
+  }
+
+  /**
+   * Ensures that a remote directory and all its parent directories exist.
+   * @param sftp - The SFTP wrapper.
+   * @param remotePath - The path to the remote directory.
+   * @returns A promise that resolves when the directory is created.
+   */
+  private __createRemoteDirectory(sftp: SFTPWrapper, remotePath: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const directories = remotePath.split('/');
+      let currentPath = '';
+
+      const createNext = (index: number) => {
+        if (index >= directories.length) {
+          return resolve();
+        }
+
+        currentPath += `${directories[index]}/`;
+
+        sftp.stat(currentPath, (err) => {
+          if (err) {
+            sftp.mkdir(currentPath, (err) => {
+              if (err) return reject(err);
+              createNext(index + 1);
+            });
+          } else {
+            createNext(index + 1);
+          }
+        });
+      };
+
+      createNext(0);
+    });
+  }
+
+  /**
+   * Ensures that a remote directory and all its parent directories exist.
+   * @param sftp - The SFTP wrapper.
+   * @param remotePath - The path to the remote directory.
+   * @returns A promise that resolves when the directory is created.
+   */
+  public createRemoteDirectory(remotePath: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      this.client.sftp((err, sftp) => {
+        if (err)reject(err);
+
+        const directories = remotePath.split('/');
+        let currentPath = '';
+
+        const createNext = (index: number) => {
+          if (index >= directories.length) {
+            return resolve();
+          }
+
+          currentPath += `${directories[index]}/`;
+
+          sftp.stat(currentPath, (err) => {
+            if (err) {
+              sftp.mkdir(currentPath, (err) => {
+                console.debug('');
+                if (err) return reject(err);
+                createNext(index + 1);
+              });
+            } else {
+              createNext(index + 1);
+            }
+          });
+        };
+
+        createNext(0);
       });
     });
   }
