@@ -8,7 +8,7 @@ export default {
 </script>
 
 <script lang="ts" setup>
-import { computed, ref, watch } from 'vue';
+import { computed, ref, useSlots, watch } from 'vue';
 import { PlMaskIcon24 } from '../PlMaskIcon24';
 import './pl-log-view.scss';
 import { okOptional, tapIf } from '@milaboratories/helpers';
@@ -23,6 +23,8 @@ const getOutputError = <T>(o?: ValueOrErrors<T>) => {
     return o.errors.join('\n');
   }
 };
+
+const slots = useSlots();
 
 const props = defineProps<{
   /**
@@ -114,7 +116,14 @@ const onContentScroll = (ev: Event) => {
 
 <template>
   <div ref="root" class="pl-log-view" :class="{ 'has-error': computedError }">
-    <label v-if="label"> {{ label }} </label>
+    <label v-if="label">
+      <span>{{ label }}</span>
+      <PlTooltip v-if="slots.tooltip" class="info" position="top">
+        <template #tooltip>
+          <slot name="tooltip" />
+        </template>
+      </PlTooltip>
+    </label>
     <DoubleContour class="pl-log-view__contour" />
     <div class="pl-log-view__copy">
       <PlTooltip :close-delay="800" position="top">

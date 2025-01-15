@@ -4,9 +4,7 @@ import { computed, reactive, ref } from 'vue';
 import LogViewPage from './pages/LogViewPage.vue';
 import ModalsPage from './pages/ModalsPage.vue';
 import InjectEnvPage from './pages/InjectEnvPage.vue';
-import DropdownsPage from './pages/DropdownsPage.vue';
 import UseWatchFetchPage from './pages/UseWatchFetchPage.vue';
-import FormComponentsPage from './pages/FormComponentsPage.vue';
 import TypographyPage from './pages/TypographyPage.vue';
 import AgGridVuePage from './pages/AgGridVuePage.vue';
 import SelectFilesPage from './pages/SelectFilesPage.vue';
@@ -19,12 +17,13 @@ import DraftsPage from './pages/DraftsPage.vue';
 import LayoutPage from './pages/LayoutPage.vue';
 import ButtonsPage from './pages/ButtonsPage.vue';
 import NotificationsPage from './pages/NotificationsPage.vue';
-import StackedBarPage from './pages/StackedBarPage/StackedBarPage.vue';
 import LoadersPage from './pages/LoadersPage.vue';
 import AddSectionPage from './pages/AddSectionPage.vue';
 import { uniqueId } from '@milaboratories/helpers';
 import SectionPage from './pages/SectionPage.vue';
-import HistogramPage from './pages/HistogramPage/HistogramPage.vue';
+import { FormComponentsPage } from './pages/FormComponentsPage';
+import { HistogramPage } from './pages/HistogramPage';
+import { StackedBarPage } from './pages/StackedBarPage';
 
 export const sdkPlugin = defineApp(platforma, (app) => {
   // Additional data
@@ -81,7 +80,6 @@ export const sdkPlugin = defineApp(platforma, (app) => {
       '/log-view': () => LogViewPage,
       '/modals': () => ModalsPage,
       '/inject-env': () => InjectEnvPage,
-      '/dropdowns': () => DropdownsPage,
       '/use-watch-fetch': () => UseWatchFetchPage,
       '/form-components': () => FormComponentsPage,
       '/typography': () => TypographyPage,
