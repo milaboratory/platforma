@@ -16,6 +16,9 @@ export type DriverKitOpsPaths = {
   /** Common root where to put downloaded blobs / downloaded blob cache */
   readonly blobDownloadPath: string;
 
+  /** Common root where to put downloaded blobs with */
+  readonly blobDownloadFolderURLPath: string;
+
   /**
    * List of pl storages that have projections in local file system.
    *

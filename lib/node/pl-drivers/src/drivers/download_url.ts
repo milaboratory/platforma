@@ -18,7 +18,6 @@ import { Dispatcher } from 'undici';
 import { NetworkError400, RemoteFileDownloader } from '../helpers/download';
 import { FilesCache } from './helpers/files_cache';
 import { stringifyWithResourceId } from '@milaboratories/pl-client';
-import { DownloadBlobTask } from './download_blob_task';
 
 export interface DownloadUrlSyncReader {
   /** Returns a Computable that (when the time will come)
