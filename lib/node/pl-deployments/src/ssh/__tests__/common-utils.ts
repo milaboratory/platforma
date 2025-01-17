@@ -47,7 +47,7 @@ export function getPathForFile(fileName: string) {
 }
 
 export function generateKeys() {
-  const keys = ssh.utils.generateKeyPairSync('ed25519');
+  const keys = ssh.utils.generateKeyPairSync('ecdsa', { bits: 256, comment: 'node.js rules!' });
   privateKey = keys.private;
   writeFileSync(publicKeyPath, keys.public);
   writeFileSync(privateKeyPath, keys.private);
@@ -58,6 +58,9 @@ export function initPrivateKey() {
 }
 
 export async function initContainer() {
+  if (testContainer) {
+    return;
+  }
   createTestDirForRecursiveUpload();
   const fromCacheContainer = await new GenericContainer('pl-ssh-test-container:1.0.0')
     .withExposedPorts(...SSH_PORT)
@@ -68,7 +71,7 @@ export async function initContainer() {
   if (!fromCacheContainer) {
     generateKeys();
     const container1 = await GenericContainer
-      .fromDockerfile(path.resolve(__dirname))
+      .fromDockerfile(path.resolve(__dirname, '..'))
       .withCache(true)
       .build('pl-ssh-test-container:1.0.0', { deleteOnExit: false });
 
@@ -105,17 +108,21 @@ function logToFile(message: string) {
 
 export function getConnectionForSsh(debug: boolean = false): ConnectConfig {
   const hostData = getContainerHostAndPort();
-
-  return {
+  const config = {
     host: hostData.host,
     port: hostData.port,
     username: 'pl-doctor',
     privateKey: privateKey,
     debug: debug ? logToFile : undefined,
   };
+  logToFile(JSON.stringify(config, null, 4));
+  return config;
 }
 
 export async function cleanUp() {
+  if (testContainer) {
+    await testContainer.stop();
+  }
   if (existsSync(localFileUpload))
     unlinkSync(localFileUpload);
   if (existsSync(localFileDownload))

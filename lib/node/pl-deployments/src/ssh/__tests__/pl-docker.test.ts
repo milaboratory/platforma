@@ -25,7 +25,7 @@ async function cleanUp() {
 }
 beforeAll(async () => {
   await initContainer();
-  sshPl = await SshPl.init(getConnectionForSsh());
+  sshPl = await SshPl.init(getConnectionForSsh(true));
 });
 
 afterAll(async () => {
@@ -47,9 +47,14 @@ describe('SshPl', async () => {
     expect(!!path).toBe(true);
   });
 
-  // it('platformaInit', async () => {
-  //   await sshPl?.platformaInit(downloadDestination);
-  // });
+  it('platformaInit', async () => {
+    const result = await sshPl?.platformaInit(downloadDestination);
+    for (const [path, content] of Object.entries(result!.filesToCreate)) {
+      const execResult = await testContainer!.exec(['cat', path]);
+      expect(await sshPl?.sshClient.checkFileExists(path)).toBe(true);
+      expect(execResult.output).toBe(content);
+    }
+  });
 
   it('Transfer Platforma to server', async () => {
     const plPath = await sshPl?.downloadPlatformaBinaries(downloadDestination);
@@ -58,9 +63,46 @@ describe('SshPl', async () => {
     await sshPl?.sshClient.uploadDirectory(dirPath, `/home/pl-doctor/${plFolderName}`);
     console.log(plPath, dirPath);
 
-    const execResult2 = await testContainer.exec(['cat', `/home/pl-doctor/${plFolderName}/.ok`]);
+    const execResult2 = await testContainer!.exec(['cat', `/home/pl-doctor/${plFolderName}/.ok`]);
     const output2 = execResult2.output.trim();
     expect(output2).toBe('ok');
+  });
+
+  it('Get free port', async () => {
+    await sshPl?.platformaInit(downloadDestination);
+    const port = await sshPl?.getFreePortForPlatformaOnServer();
+    expect(typeof port).toBe('number');
+  });
+
+  it('fetchPorts', async () => {
+    const ports = await sshPl?.fetchPorts();
+    if (ports) {
+      Object.entries(ports).forEach(([, port]) => {
+        expect(typeof port.local).toBe('number');
+        expect(typeof port.remote).toBe('number');
+      });
+    }
+
+    expect(ports?.grpc).toMatchObject({
+      local: expect.anything(),
+      remote: expect.anything(),
+    });
+    expect(ports?.monitoring).toMatchObject({
+      local: expect.anything(),
+      remote: expect.anything(),
+    });
+    expect(ports?.debug).toMatchObject({
+      local: expect.anything(),
+      remote: expect.anything(),
+    });
+    expect(ports?.minioPort).toMatchObject({
+      local: expect.anything(),
+      remote: expect.anything(),
+    });
+    expect(ports?.minioConsolePort).toMatchObject({
+      local: expect.anything(),
+      remote: expect.anything(),
+    });
   });
 });
 

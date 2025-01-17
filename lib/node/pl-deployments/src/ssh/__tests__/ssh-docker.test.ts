@@ -1,4 +1,4 @@
-import { describe, it, beforeAll, afterAll, expect } from 'vitest';
+import { describe, it, beforeAll, afterAll, expect, beforeEach } from 'vitest';
 import { writeFileSync, readFileSync } from 'fs';
 import { SshClient } from '../ssh';
 import { downloadsFolder, cleanUp, testContainer, getConnectionForSsh, getContainerHostAndPort, initContainer, localFileDownload, localFileUpload } from './common-utils';
@@ -11,6 +11,42 @@ beforeAll(async () => {
 });
 
 describe('SSH Tests', () => {
+  it('should create file from string', async () => {
+    await expect(client.writeFileOnTheServer('/home/pl-doctor/from-string.txt', 'hello'));
+
+    const execResult = await testContainer.exec(['cat', `/home/pl-doctor/from-string.txt`]);
+    const output = execResult.output.trim();
+    expect(output).toBe('hello');
+  });
+  it('should create all directories if none exist', async () => {
+    const remotePath = '/home/pl-doctor/upload/nested/directory';
+    await expect(client.createRemoteDirectory(remotePath)).resolves.not.toThrow();
+
+    // Additional check to ensure the directory exists
+    await client.withSftp(async (sftp) => {
+      const stat = await new Promise((resolve, reject) => {
+        sftp.stat(remotePath, (err, stats) => {
+          if (err) return reject(err);
+          resolve(stats);
+        });
+      });
+      expect(stat).toBeDefined();
+    });
+  });
+
+  it('should handle existing directories gracefully', async () => {
+    const remotePath = '/home/pl-doctor/upload/nested';
+
+    await expect(client.createRemoteDirectory(remotePath)).resolves.not.toThrow();
+    await expect(client.createRemoteDirectory(remotePath)).resolves.not.toThrow();
+  });
+
+  it('should throw an error if an invalid path is provided', async () => {
+    const remotePath = '/invalid_path/nested';
+
+    await expect(client.createRemoteDirectory(remotePath)).rejects.toThrow();
+  });
+
   it('User home direcory', async () => {
     expect(client.homeDir).toBe('/home/pl-doctor');
     const home = await client.getUserHomeDirectory();
@@ -124,8 +160,5 @@ describe('sshExec', () => {
 });
 
 afterAll(async () => {
-  if (testContainer) {
-    await testContainer.stop();
-  }
   await cleanUp();
 });
