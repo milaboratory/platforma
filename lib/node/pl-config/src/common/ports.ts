@@ -96,7 +96,7 @@ async function getFreePorts(): Promise<Ports> {
   };
 }
 
-async function getFreePort(): Promise<number> {
+export async function getFreePort(): Promise<number> {
   return new Promise((res) => {
     const srv = net.createServer();
     srv.listen(0, () => {

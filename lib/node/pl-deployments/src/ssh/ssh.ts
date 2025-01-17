@@ -3,6 +3,7 @@ import { Client } from 'ssh2';
 import net from 'net';
 import dns from 'dns';
 import fs from 'fs';
+import { readFile } from 'fs/promises';
 import path from 'path';
 
 export type SshAuthMethods = 'publickey' | 'password';
@@ -251,10 +252,8 @@ export class SshClient {
    * @returns A promise resolving with `true` if the file was successfully uploaded.
    */
   public async uploadFile(localPath: string, remotePath: string): Promise<boolean> {
-    return new Promise((resolve, reject) => {
-      this.client.sftp((err, sftp) => {
-        if (err) return reject(err);
-
+    return this.withSftp(async (sftp) => {
+      return new Promise((resolve, reject) => {
         sftp.fastPut(localPath, remotePath, (err) => {
           if (err) return reject(err);
           resolve(true);
@@ -269,16 +268,67 @@ export class SshClient {
     });
   }
 
-  public uploadFileUsingExistingSftp(sftp: SFTPWrapper, localPath: string, remotePath: string) {
+  public async withSftp<R>(callback: (sftp: SFTPWrapper) => Promise<R>): Promise<R> {
     return new Promise((resolve, reject) => {
-      sftp.fastPut(localPath, remotePath, (err) => {
+      this.client.sftp((err, sftp) => {
+        if (err) {
+          return reject(err);
+        }
+
+        callback(sftp)
+          .then(resolve)
+          .catch(reject)
+          .finally(() => {
+            sftp?.end();
+          });
+      });
+    });
+  }
+
+  public async writeFileOnTheServer(remotePath: string, data: string | Buffer, mode: number = 0o660) {
+    return this.withSftp(async (sftp) => {
+      return this.writeFile(sftp, remotePath, data, mode);
+    });
+  }
+
+  async checkFileExists(remotePath: string) {
+    return this.withSftp(async (sftp) => {
+      return new Promise((resolve, reject) => {
+        sftp.stat(remotePath, (err, stats) => {
+          if (err) {
+            if ((err as Error & { code: number }).code === 2) {
+              return resolve(false);
+            }
+            return reject(err);
+          }
+          resolve(stats.isFile());
+        });
+      });
+    });
+  }
+
+  private async writeFile(sftp: SFTPWrapper, remotePath: string, data: string | Buffer, mode: number = 0o660): Promise<boolean> {
+    return new Promise((resolve, reject) => {
+      sftp.writeFile(remotePath, data, { mode }, (err) => {
         if (err) return reject(err);
         resolve(true);
       });
     });
   }
 
-  private async __uploadDirectory(sftp: SFTPWrapper, localDir: string, remoteDir: string): Promise<void> {
+  public uploadFileUsingExistingSftp(sftp: SFTPWrapper, localPath: string, remotePath: string, mode: number = 0o660) {
+    return new Promise((resolve, reject) => {
+      readFile(localPath).then(async (result) => {
+        this.writeFile(sftp, remotePath, result, mode)
+          .then(() => {
+            resolve(undefined);
+          })
+          .catch((err) => reject(err));
+      });
+    });
+  }
+
+  private async __uploadDirectory(sftp: SFTPWrapper, localDir: string, remoteDir: string, mode: number = 0o660): Promise<void> {
     return new Promise((resolve, reject) => {
       fs.readdir(localDir, async (err, files) => {
         if (err) {
@@ -293,9 +343,9 @@ export class SshClient {
             const remotePath = `${remoteDir}/${file}`;
 
             if (fs.lstatSync(localPath).isDirectory()) {
-              await this.__uploadDirectory(sftp, localPath, remotePath);
+              await this.__uploadDirectory(sftp, localPath, remotePath, mode);
             } else {
-              await this.uploadFileUsingExistingSftp(sftp, localPath, remotePath);
+              await this.uploadFileUsingExistingSftp(sftp, localPath, remotePath, mode);
               console.log(`Uploaded file: ${localPath} -> ${remotePath}`);
             }
           }
@@ -314,16 +364,10 @@ export class SshClient {
    * @param remoteDir - The path to the remote directory on the server.
    * @returns A promise that resolves when the directory and its contents are uploaded.
    */
-  public async uploadDirectory(localDir: string, remoteDir: string): Promise<void> {
+  public async uploadDirectory(localDir: string, remoteDir: string, mode: number = 0o660): Promise<void> {
     return new Promise((resolve, reject) => {
-      this.client.sftp(async (err, sftp) => {
-        if (err) {
-          sftp.end();
-          return reject(err);
-        }
-
-        await this.__uploadDirectory(sftp, localDir, remoteDir);
-        sftp.end();
+      this.withSftp(async (sftp: SFTPWrapper) => {
+        await this.__uploadDirectory(sftp, localDir, remoteDir, mode);
         resolve();
       });
     });
@@ -369,36 +413,30 @@ export class SshClient {
    * @param remotePath - The path to the remote directory.
    * @returns A promise that resolves when the directory is created.
    */
-  public createRemoteDirectory(remotePath: string): Promise<void> {
-    return new Promise((resolve, reject) => {
-      this.client.sftp((err, sftp) => {
-        if (err)reject(err);
+  public createRemoteDirectory(remotePath: string, mode: number = 0o755): Promise<void> {
+    return this.withSftp(async (sftp) => {
+      const directories = remotePath.split('/');
+      let currentPath = '';
 
-        const directories = remotePath.split('/');
-        let currentPath = '';
+      for (const directory of directories) {
+        currentPath += `${directory}/`;
 
-        const createNext = (index: number) => {
-          if (index >= directories.length) {
-            return resolve();
-          }
+        try {
+          await new Promise<void>((resolve, reject) => {
+            sftp.stat(currentPath, (err) => {
+              if (!err) return resolve();
 
-          currentPath += `${directories[index]}/`;
-
-          sftp.stat(currentPath, (err) => {
-            if (err) {
-              sftp.mkdir(currentPath, (err) => {
-                console.debug('');
+              sftp.mkdir(currentPath, { mode }, (err) => {
                 if (err) return reject(err);
-                createNext(index + 1);
+                resolve();
               });
-            } else {
-              createNext(index + 1);
-            }
+            });
           });
-        };
-
-        createNext(0);
-      });
+        } catch (error) {
+          console.error(`Failed to create directory: ${currentPath}`, error);
+          throw error;
+        }
+      }
     });
   }
 
@@ -409,10 +447,8 @@ export class SshClient {
    * @returns A promise resolving with `true` if the file was successfully downloaded.
    */
   public async downloadFile(remotePath: string, localPath: string): Promise<boolean> {
-    return new Promise((resolve, reject) => {
-      this.client.sftp((err, sftp) => {
-        if (err) return reject(err);
-
+    return this.withSftp(async (sftp) => {
+      return new Promise((resolve, reject) => {
         sftp.fastGet(remotePath, localPath, (err) => {
           if (err) return reject(err);
           resolve(true);
