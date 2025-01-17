@@ -7,11 +7,11 @@ import net from 'net';
 
 /** Gets ports according to options, and concatenated them with the host. */
 export async function getEndpoints(host: string, opts: PlConfigPorts): Promise<Endpoints> {
-  return withHost(host, await getPorts(opts));
+  return withHost(host, '127.0.0.1', await getPorts(opts));
 }
 
 export async function getLocalhostEndpoints(opts: PlConfigPorts): Promise<Endpoints> {
-  return withHost('127.0.0.1', await getPorts(opts));
+  return withHost('127.0.0.1', '127.0.0.1', await getPorts(opts));
 }
 
 export async function getPorts(opts: PlConfigPorts): Promise<Ports> {
@@ -133,18 +133,18 @@ function getRandomPorts(opts: PlConfigPortsRandom): Ports {
 }
 
 /** Turns ports to endpoints by adding host */
-export function withHost(host: string, ports: Ports): Endpoints {
-  const endp = (port: number) => `${host}:${port}`;
+export function withHost(host: string, localHost: string, ports: Ports): Endpoints {
+  const endp = (host: string, port: number) => `${host}:${port}`;
 
   return {
-    grpc: endp(ports.grpc),
-    monitoring: endp(ports.monitoring),
-    debug: endp(ports.debug),
+    grpc: endp(host, ports.grpc),
+    monitoring: endp(host, ports.monitoring),
+    debug: endp(host, ports.debug),
 
-    minio: ports.minio ? endp(ports.minio) : undefined,
-    minioConsole: ports.minioConsole ? endp(ports.minioConsole) : undefined,
+    minio: ports.minio ? endp(host, ports.minio) : undefined,
+    minioConsole: ports.minioConsole ? endp(host, ports.minioConsole) : undefined,
 
-    grpcLocal: ports.grpcLocal ? endp(ports.grpcLocal) : undefined,
-    minioLocal: ports.minioLocal ? endp(ports.minioLocal) : undefined,
+    grpcLocal: ports.grpcLocal ? endp(localHost, ports.grpcLocal) : undefined,
+    minioLocal: ports.minioLocal ? endp(localHost, ports.minioLocal) : undefined,
   };
 }
