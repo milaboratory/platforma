@@ -24,6 +24,9 @@ test('should return right configs', async ({ expect }) => {
 
         minio: 9000,
         minioConsole: 9001,
+
+        grpcLocal: 11111,
+        minioLocal: 22222,
       },
     },
     plConfigPostprocessing: (config: PlConfig) => {
@@ -54,7 +57,7 @@ test('should return right configs', async ({ expect }) => {
     storageDir: path.join(workingDir, 'storages', 'main'),
   });
 
-  expect(got.plAddress).toStrictEqual('127.0.0.1:42097');
+  expect(got.plAddress).toStrictEqual('127.0.0.1:11111');
   expect(got.plUser).toStrictEqual('default-user');
   // expect(got.plPassword).toStrictEqual('abc') // random generated.
 

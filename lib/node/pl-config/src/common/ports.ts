@@ -60,6 +60,9 @@ export type Ports = {
 
   minio?: number;
   minioConsole?: number;
+
+  grpcLocal?: number;
+  minioLocal?: number;
 };
 
 export type Endpoints = {
@@ -71,6 +74,9 @@ export type Endpoints = {
 
   minio?: string;
   minioConsole?: string;
+
+  grpcLocal?: string;
+  minioLocal?: string;
 };
 
 export type PortsWithMinio = {
@@ -80,6 +86,9 @@ export type PortsWithMinio = {
 
   minio: number;
   minioConsole: number;
+
+  grpcLocal: number;
+  minioLocal: number;
 };
 
 export type PlConfigPorts =
@@ -134,5 +143,8 @@ export function withHost(host: string, ports: Ports): Endpoints {
 
     minio: ports.minio ? endp(ports.minio) : undefined,
     minioConsole: ports.minioConsole ? endp(ports.minioConsole) : undefined,
+
+    grpcLocal: ports.grpcLocal ? endp(ports.grpcLocal) : undefined,
+    minioLocal: ports.minioLocal ? endp(ports.minioLocal) : undefined,
   };
 }
