@@ -174,6 +174,9 @@ export class SshPl {
           minio: ports.minioPort.remote,
           minioConsole: ports.minioConsolePort.remote,
           monitoring: ports.monitoring.remote,
+
+          grpcLocal: ports.grpc.local,
+          minioLocal: ports.minioPort.local,
         },
       },
       licenseMode: {

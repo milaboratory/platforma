@@ -103,7 +103,7 @@ export async function generateSshPlConfigs(
 
   const storages = newRemoteConfigStorages(opts.workingDir, {
     endpoint: endpoints.minio!,
-    presignEndpoint: endpoints.minio!,
+    presignEndpoint: endpoints.minioLocal!,
     key: minioUser,
     secret: minioPassword,
     bucketName,
@@ -129,7 +129,7 @@ export async function generateSshPlConfigs(
     plConfig: { configPath },
     minioConfig: newMinioConfig(minioUser, minioPassword, storages.mainStoragePath, minioPort, minioConsolePort),
 
-    plAddress: endpoints.grpc,
+    plAddress: endpoints.grpcLocal!,
     plUser: plUser,
     plPassword: plPassword,
   };
