@@ -101,21 +101,25 @@ export class BlockUpdateWatcher extends PollComputablePool<
             if (versionLock === 'patch') return { suggestions: [] };
             const registry = this.registryProvider.getRegistry(cSpec.registryUrl);
             let spec: BlockPackSpec | undefined;
-            let channel: string | undefined;
+            let channel: string | undefined = this.preferredUpdateChannel;
 
-            if (cSpec.channel === undefined) {
-              const a1 = await registry.getLatestOverview(cSpec.id, StableChannel);
-              if (a1) channel = StableChannel;
-              else {
-                // forcing update from non-existent channel to stable
-                const a2 = await registry.getLatestOverview(cSpec.id, AnyChannel);
-                if (a2 === undefined) {
-                  this.logger.error(`No "any" channel record for ${blockPackIdToString(cSpec.id)}`);
-                  return { suggestions: [] };
+            if (channel === undefined) {
+              if (cSpec.channel === undefined) {
+                const a1 = await registry.getLatestOverview(cSpec.id, StableChannel);
+                if (a1) channel = StableChannel;
+                else {
+                  // forcing update from non-existent channel to stable
+                  const a2 = await registry.getLatestOverview(cSpec.id, AnyChannel);
+                  if (a2 === undefined) {
+                    this.logger.error(
+                      `No "any" channel record for ${blockPackIdToString(cSpec.id)}`
+                    );
+                    return { suggestions: [] };
+                  }
+                  channel = AnyChannel;
                 }
-                channel = AnyChannel;
-              }
-            } else channel = cSpec.channel;
+              } else channel = cSpec.channel;
+            }
 
             const vSuggestions = await registry.getUpdateSuggestions(cSpec.id, channel);
             if (vSuggestions === undefined || vSuggestions.length === 0) return { suggestions: [] };
@@ -151,8 +155,7 @@ export class BlockUpdateWatcher extends PollComputablePool<
             };
 
             // warming cache
-            // noinspection ES6MissingAwait
-            (async () => {
+            void (async () => {
               try {
                 await registry.getComponents(mainSuggestion.id);
               } catch (e: unknown) {
