@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 1.25.5
+
+### Patch Changes
+
+- 659a62a: Fixes problem where block update watcher ignored preferred channel setting
+
 ## 1.25.4
 
 ### Patch Changes
