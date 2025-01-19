@@ -93,6 +93,7 @@ export class BlockModel<
    * @param key output cell name, that can be later used to retrieve the rendered value
    * @param cfg configuration describing how to render cell value from the blocks
    *            workflow outputs
+   * @deprecated use lambda-based API
    * */
   public output<const Key extends string, const Cfg extends TypedConfig>(
     key: Key,
@@ -168,14 +169,8 @@ export class BlockModel<
     return this.output(key, rf, { retentive: true });
   }
 
-  /** @deprecated */
-  public canRun<Cfg extends TypedConfig>(
-    cfg: Cfg & InputsValidCfgChecked<Cfg, Args, UiState>
-  ): BlockModel<Args, OutputsCfg, UiState, Href> {
-    return this.inputsValid(cfg as any);
-  }
-
-  /** Sets custom configuration predicate on the block args at which block can be executed */
+  /** Sets custom configuration predicate on the block args at which block can be executed
+   * @deprecated use lambda-based API */
   public argsValid<Cfg extends TypedConfig>(
     cfg: Cfg & InputsValidCfgChecked<Cfg, Args, UiState>
   ): BlockModel<Args, OutputsCfg, UiState, Href>;
@@ -212,24 +207,12 @@ export class BlockModel<
       );
   }
 
-  /** @deprecated use argsValid()  */
-  public inputsValid<Cfg extends TypedConfig>(
-    cfg: Cfg & InputsValidCfgChecked<Cfg, Args, UiState>
-  ): BlockModel<Args, OutputsCfg, UiState, Href>;
-  /** @deprecated use argsValid()  */
-  public inputsValid<RF extends RenderFunction<Args, UiState, boolean>>(
-    rf: RF
-  ): BlockModel<Args, OutputsCfg, UiState, Href>;
-  public inputsValid(
-    cfgOrRf: TypedConfig | Function
-  ): BlockModel<Args, OutputsCfg, UiState, `/${string}`> {
-    return this.argsValid(cfgOrRf as any);
-  }
-
-  /** Sets the config to generate list of section in the left block overviews panel */
+  /** Sets the config to generate list of section in the left block overviews panel
+   * @deprecated use lambda-based API */
   public sections<const S extends SectionsExpectedType>(
     rf: S
   ): BlockModel<Args, OutputsCfg, UiState, DeriveHref<S>>;
+  /** Sets the config to generate list of section in the left block overviews panel */
   public sections<
     const Ret extends SectionsExpectedType,
     const RF extends RenderFunction<Args, UiState, Ret>
@@ -270,6 +253,7 @@ export class BlockModel<
       );
   }
 
+  /** Sets a rendering function to derive block title, shown for the block in the left blocks-overview panel. */
   public title(
     rf: RenderFunction<Args, UiState, string>
   ): BlockModel<Args, OutputsCfg, UiState, Href> {
