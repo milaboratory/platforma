@@ -103,7 +103,7 @@ export class ResultPool {
           ...e.obj,
           data: mapValueInVOE(
             e.obj.data,
-            (handle) => new TreeNodeAccessor(handle, [e.ref.blockId, e.ref.name]),
+            (handle) => new TreeNodeAccessor(handle, [e.ref.blockId, e.ref.name])
           )
         }
       }))
@@ -133,7 +133,7 @@ export class ResultPool {
       )?.obj;
     return mapPObjectData(
       this.ctx.getDataFromResultPoolByRef(ref.blockId, ref.name),
-      (handle) => new TreeNodeAccessor(handle, [ref.blockId, ref.name]),
+      (handle) => new TreeNodeAccessor(handle, [ref.blockId, ref.name])
     );
   }
 
@@ -245,10 +245,24 @@ export class RenderCtx<Args, UiState> {
     this.uiState = this.ctx.uiState !== undefined ? JSON.parse(this.ctx.uiState) : {};
   }
 
+  private _activeArgsCache?: { v?: Args };
+
+  /**
+   * Returns args snapshot the block was executed for (i.e. when "Run" button was pressed).
+   * Returns undefined, if block was never executed or stopped mid-way execution, so that the result was cleared.
+   * */
+  public get activeArgs(): Args | undefined {
+    if (this._activeArgsCache === undefined)
+      this._activeArgsCache = {
+        v: this.ctx.activeArgs ? JSON.parse(this.ctx.activeArgs) : undefined
+      };
+    return this._activeArgsCache.v;
+  }
+
   private getNamedAccessor(name: string): TreeNodeAccessor | undefined {
     return ifDef(
       this.ctx.getAccessorHandleByName(name),
-      (accessor) => new TreeNodeAccessor(accessor, [name]),
+      (accessor) => new TreeNodeAccessor(accessor, [name])
     );
   }
 
@@ -256,29 +270,8 @@ export class RenderCtx<Args, UiState> {
     return this.getNamedAccessor(StagingAccessorName);
   }
 
-  /**
-   * @deprecated use prerun
-   */
-  public get precalc(): TreeNodeAccessor | undefined {
-    return this.prerun;
-  }
-
-  /**
-   * @deprecated use prerun
-   */
-  public get stagingOutput(): TreeNodeAccessor | undefined {
-    return this.precalc;
-  }
-
   public get outputs(): TreeNodeAccessor | undefined {
     return this.getNamedAccessor(MainAccessorName);
-  }
-
-  /**
-   * @deprecated use outputs
-   */
-  public get mainOutput(): TreeNodeAccessor | undefined {
-    return this.outputs;
   }
 
   public readonly resultPool = new ResultPool();

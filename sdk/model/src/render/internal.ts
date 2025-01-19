@@ -149,6 +149,7 @@ export const GlobalCfgRenderCtxFeatureFlags = {
 export interface GlobalCfgRenderCtx extends GlobalCfgRenderCtxMethods {
   readonly args: string;
   readonly uiState: string;
+  readonly activeArgs?: string;
   readonly callbackRegistry: Record<string, Function>;
   readonly featureFlags?: typeof GlobalCfgRenderCtxFeatureFlags;
 }
