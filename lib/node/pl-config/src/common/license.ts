@@ -47,7 +47,7 @@ export async function getLicenseValue(opts: PlLicenseMode): Promise<LicenseValue
 
   if (license.type == 'file') {
     const value = await fs.readFile(license.file);
-    return { type: 'value', value: value.toString() };
+    return { type: 'value', value: value.toString().trim() };
   }
 
   return license;

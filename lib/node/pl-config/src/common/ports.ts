@@ -6,10 +6,6 @@ import type { AddressInfo } from 'net';
 import net from 'net';
 
 /** Gets ports according to options, and concatenated them with the host. */
-export async function getEndpoints(host: string, opts: PlConfigPorts): Promise<Endpoints> {
-  return withHost(host, '127.0.0.1', await getPorts(opts));
-}
-
 export async function getLocalhostEndpoints(opts: PlConfigPorts): Promise<Endpoints> {
   return withHost('127.0.0.1', '127.0.0.1', await getPorts(opts));
 }
@@ -137,6 +133,7 @@ export function withHost(host: string, localHost: string, ports: Ports): Endpoin
   const endp = (host: string, port: number) => `${host}:${port}`;
 
   return {
+    // Platforma Backend can't parse these endpoints when the protocol is provided.
     grpc: endp(host, ports.grpc),
     monitoring: endp(host, ports.monitoring),
     debug: endp(host, ports.debug),
