@@ -1,5 +1,12 @@
 # @milaboratories/milaboratories.pool-explorer
 
+## 1.0.17
+
+### Patch Changes
+
+- Updated dependencies [415f69c]
+  - @milaboratories/milaboratories.pool-explorer.ui@1.1.0
+
 ## 1.0.16
 
 ### Patch Changes
