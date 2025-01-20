@@ -12,7 +12,9 @@
   "dependencies": {
     "@milaboratories/milaboratories.pool-explorer.model": "workspace:*",
     "@platforma-sdk/ui-vue": "workspace:^",
-    "vue": "catalog:"
+    "vue": "catalog:",
+    "monaco-editor": "catalog:",
+    "@milaboratories/helpers": "workspace:^"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "catalog:",
