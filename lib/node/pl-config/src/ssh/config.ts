@@ -98,12 +98,11 @@ export async function generateSshPlConfigs(
   const bucketName = 'main-bucket';
   const minioPassword = crypto.randomBytes(16).toString('hex');
 
-  const { minio: minioPort, minioConsole: minioConsolePort } = opts.portsMode.ports;
   const endpoints = await getLocalhostEndpoints(opts.portsMode);
 
   const storages = newRemoteConfigStorages(opts.workingDir, {
-    endpoint: endpoints.minio!,
-    presignEndpoint: endpoints.minioLocal!,
+    endpoint: 'http://' + endpoints.minio!,
+    presignEndpoint: 'http://' + endpoints.minioLocal!,
     key: minioUser,
     secret: minioPassword,
     bucketName,
@@ -127,9 +126,9 @@ export async function generateSshPlConfigs(
     filesToCreate,
     dirsToCreate: storages.dirsToCreate.concat([packageLoaderPath]),
     plConfig: { configPath },
-    minioConfig: newMinioConfig(minioUser, minioPassword, storages.mainStoragePath, minioPort, minioConsolePort),
+    minioConfig: newMinioConfig(minioUser, minioPassword, storages.mainStoragePath, endpoints.minio!, endpoints.minioConsole!),
 
-    plAddress: endpoints.grpcLocal!,
+    plAddress: 'http://' + endpoints.grpcLocal!,
     plUser: plUser,
     plPassword: plPassword,
   };
@@ -138,14 +137,14 @@ export async function generateSshPlConfigs(
 function newMinioConfig(
   user: string, password: string,
   storageDir: string,
-  port: number, consolePort: number,
+  minioAddress: string, minioConsoleAddress: string,
 ): MinioConfig {
   return {
     envs: {
       MINIO_ROOT_USER: user,
       MINIO_ROOT_PASSWORD: password,
-      MINIO_PORT: String(port),
-      MINIO_CONSOLE_PORT: String(consolePort),
+      MINIO_ADDRESS: minioAddress,
+      MINIO_CONSOLE_ADDRESS: minioConsoleAddress,
     },
     storageDir: storageDir,
   };

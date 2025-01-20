@@ -19,17 +19,17 @@ export async function downloadBinary(
   arch: string,
   platform: string,
 ) {
-  const { archiveUrl, archivePath, archiveType, targetFolder } = getPathsForDownload(softwareName, tgzName, baseDir, newArch(arch), newOs(platform));
+  const { archiveUrl, archivePath, archiveType, targetFolder, baseName } = getPathsForDownload(softwareName, tgzName, baseDir, newArch(arch), newOs(platform));
   await downloadArchive(logger, archiveUrl, archivePath);
   await extractArchive(logger, archivePath, archiveType, targetFolder);
 
-  return targetFolder;
+  return { dir: targetFolder, dirBaseName: baseName };
 }
 
 export type DownloadPlBinaryResult = {
   binaryPath: string;
   archivePath: string;
-}
+};
 
 export async function downloadPlBinary(
   logger: MiLogger,
@@ -63,7 +63,8 @@ function getPathsForDownload(softwareName: string, tgzName: string, baseDir: str
     archiveUrl,
     archivePath,
     archiveType,
-    targetFolder
+    targetFolder,
+    baseName,
   };
 }
 
