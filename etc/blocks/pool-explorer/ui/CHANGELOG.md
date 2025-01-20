@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.pool-explorer.ui
 
+## 1.1.0
+
+### Minor Changes
+
+- 415f69c: [tooling] Create result pool block
+
 ## 1.0.16
 
 ### Patch Changes
