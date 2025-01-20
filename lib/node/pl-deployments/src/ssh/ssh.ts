@@ -346,7 +346,7 @@ export class SshClient {
               await this.__uploadDirectory(sftp, localPath, remotePath, mode);
             } else {
               await this.uploadFileUsingExistingSftp(sftp, localPath, remotePath, mode);
-              console.log(`Uploaded file: ${localPath} -> ${remotePath}`);
+              // console.log(`Uploaded file: ${localPath} -> ${remotePath}`);
             }
           }
 

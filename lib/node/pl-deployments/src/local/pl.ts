@@ -5,7 +5,7 @@ import {
   processWaitStopped,
   processRun
 } from './process';
-import { resolveLocalPlBinaryPath, PlBinarySource, newDefaultPlBinarySource } from '../common/pl_binary';
+import { PlBinarySource, newDefaultPlBinarySource, resolveLocalPlBinaryPath } from '../common/pl_binary';
 import { MiLogger, notEmpty } from '@milaboratories/ts-helpers';
 import { ChildProcess, SpawnOptions } from 'child_process';
 import { filePid, readPid, writePid } from './pid';
