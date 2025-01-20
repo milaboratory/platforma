@@ -191,6 +191,8 @@ catalog:
   'ag-grid-enterprise': &ag-grid ^33.0.3
   'ag-grid-vue3': *ag-grid
 
+  'monaco-editor': ^0.52.2
+
   # SW
 
   '@milaboratories/software-pframes-conv': *pframes-version
