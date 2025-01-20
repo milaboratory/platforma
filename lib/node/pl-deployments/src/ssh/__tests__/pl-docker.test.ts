@@ -49,6 +49,7 @@ describe('SshPl', async () => {
 
   it('platformaInit', async () => {
     const result = await sshPl?.platformaInit(downloadDestination);
+    expect(result).toBe('');
     for (const [path, content] of Object.entries(result!.filesToCreate)) {
       const execResult = await testContainer!.exec(['cat', path]);
       expect(await sshPl?.sshClient.checkFileExists(path)).toBe(true);
