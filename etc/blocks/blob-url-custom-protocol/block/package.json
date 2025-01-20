@@ -1,0 +1,38 @@
+{
+  "name": "@milaboratories/milaboratories.test-blob-url-custom-protocol",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "rm -rf ./block-pack && block-tools pack"
+  },
+  "files": [
+    "index.d.ts",
+    "index.js"
+  ],
+  "dependencies": {
+    "@platforma-sdk/model": "workspace:*",
+    "@milaboratories/milaboratories.test-blob-url-custom-protocol.workflow": "workspace:*",
+    "@milaboratories/milaboratories.test-blob-url-custom-protocol.model": "workspace:*",
+    "@milaboratories/milaboratories.test-blob-url-custom-protocol.ui": "workspace:*"
+  },
+  "devDependencies": {
+    "@platforma-sdk/block-tools": "workspace:*"
+  },
+  "block": {
+    "components": {
+      "workflow": "@milaboratories/milaboratories.test-blob-url-custom-protocol.workflow/dist/tengo/tpl/main.plj.gz",
+      "model": "@milaboratories/milaboratories.test-blob-url-custom-protocol.model/dist/model.json",
+      "ui": "@milaboratories/milaboratories.test-blob-url-custom-protocol.ui/dist"
+    },
+    "meta": {
+      "title": "Test Custom Protocols",
+      "description": "Test Custom Protocols",
+      "logo": "file:logos/block-logo.png",
+      "organization": {
+        "name": "MiLaboratories Inc",
+        "url": "https://milaboratories.com/",
+        "logo": "file:logos/organization-logo.png"
+      }
+    }
+  }
+}

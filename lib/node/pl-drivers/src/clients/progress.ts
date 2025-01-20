@@ -1,11 +1,13 @@
 import { ProgressClient } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/progressapi/protocol.client';
-import { GrpcTransport } from '@protobuf-ts/grpc-transport';
+import type { GrpcTransport } from '@protobuf-ts/grpc-transport';
 import type { RpcOptions } from '@protobuf-ts/runtime-rpc';
 import { Duration } from '../proto/google/protobuf/duration';
-import { PlClient, addRTypeToMetadata } from '@milaboratories/pl-client';
-import { MiLogger, notEmpty } from '@milaboratories/ts-helpers';
-import { Dispatcher } from 'undici';
-import { ResourceInfo } from '@milaboratories/pl-tree';
+import type { PlClient } from '@milaboratories/pl-client';
+import { addRTypeToMetadata } from '@milaboratories/pl-client';
+import type { MiLogger } from '@milaboratories/ts-helpers';
+import { notEmpty } from '@milaboratories/ts-helpers';
+import type { Dispatcher } from 'undici';
+import type { ResourceInfo } from '@milaboratories/pl-tree';
 
 export type ProgressStatus = {
   done: boolean;
@@ -25,7 +27,7 @@ export class ClientProgress {
     public readonly grpcTransport: GrpcTransport,
     _: Dispatcher,
     public readonly client: PlClient,
-    public readonly logger: MiLogger
+    public readonly logger: MiLogger,
   ) {
     this.grpcClient = new ProgressClient(this.grpcTransport);
   }
@@ -36,7 +38,7 @@ export class ClientProgress {
   async getStatus({ id, type }: ResourceInfo, options?: RpcOptions): Promise<ProgressStatus> {
     const status = await this.grpcClient.getStatus(
       { resourceId: id },
-      addRTypeToMetadata(type, options)
+      addRTypeToMetadata(type, options),
     );
 
     const report = notEmpty(status.response.report);
@@ -45,7 +47,7 @@ export class ClientProgress {
       done: report.done,
       progress: report.progress,
       bytesProcessed: String(report.bytesProcessed),
-      bytesTotal: String(report.bytesTotal)
+      bytesTotal: String(report.bytesTotal),
     };
   }
 
@@ -54,7 +56,7 @@ export class ClientProgress {
   async *realtimeStatus(
     { id, type }: ResourceInfo,
     updateIntervalMs: number = 100,
-    options?: RpcOptions
+    options?: RpcOptions,
   ) {
     options = addRTypeToMetadata(type, options);
 
@@ -62,19 +64,19 @@ export class ClientProgress {
     const nanos = (updateIntervalMs - secs * 1000) * 1000000;
     const updateInterval = Duration.create({
       seconds: BigInt(secs),
-      nanos: nanos
+      nanos: nanos,
     });
 
     try {
       const { responses } = this.grpcClient.realtimeStatus(
         {
           resourceId: id,
-          updateInterval: updateInterval
+          updateInterval: updateInterval,
         },
-        options
+        options,
       );
 
-      yield* responses;
+      yield * responses;
     } catch (e) {
       this.logger.warn('Failed to get realtime status' + e);
       throw e;

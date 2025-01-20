@@ -1,6 +1,7 @@
 import { TemporalSynchronizedTreeOps } from './types';
 import {
   DefaultVirtualLocalStorages,
+  DownloadBlobToURLDriverOps,
   DownloadDriverOps,
   OpenFileDialogCallback,
   VirtualLocalStorageSpec
@@ -17,7 +18,7 @@ export type DriverKitOpsPaths = {
   readonly blobDownloadPath: string;
 
   /** Common root where to put downloaded blobs with */
-  readonly blobDownloadFolderURLPath: string;
+  readonly downloadBlobToURLPath: string;
 
   /**
    * List of pl storages that have projections in local file system.
@@ -71,6 +72,12 @@ export type DriverKitOpsSettings = {
   readonly blobDriverOps: DownloadDriverOps;
 
   //
+  // Blob To URL Driver
+  //
+
+  readonly downloadBlobToURLDriverOps: DownloadBlobToURLDriverOps;
+
+  //
   // Upload Driver
   //
 
@@ -105,10 +112,18 @@ export type DriverKitOps = DriverKitOpsPaths & DriverKitOpsSettings;
 /** Some defaults fot MiddleLayerOps. */
 export const DefaultDriverKitOpsSettings: Pick<
   DriverKitOpsSettings,
-  'logger' | 'blobDriverOps' | 'uploadDriverOps' | 'logStreamDriverOps'
+  | 'logger'
+  | 'blobDriverOps'
+  | 'downloadBlobToURLDriverOps'
+  | 'uploadDriverOps'
+  | 'logStreamDriverOps'
 > = {
   logger: new ConsoleLoggerAdapter(),
   blobDriverOps: {
+    cacheSoftSizeBytes: 100 * 1024 * 1024, // 100MB
+    nConcurrentDownloads: 10
+  },
+  downloadBlobToURLDriverOps: {
     cacheSoftSizeBytes: 100 * 1024 * 1024, // 100MB
     nConcurrentDownloads: 10
   },
@@ -127,9 +142,12 @@ export const DefaultDriverKitOpsSettings: Pick<
 
 export function DefaultDriverKitOpsPaths(
   workDir: string
-): Pick<DriverKitOpsPaths, 'blobDownloadPath'> {
+): Pick<DriverKitOpsPaths,
+  | 'blobDownloadPath'
+  | 'downloadBlobToURLPath'> {
   return {
-    blobDownloadPath: path.join(workDir, 'download')
+    blobDownloadPath: path.join(workDir, 'download'),
+    downloadBlobToURLPath: path.join(workDir, 'downloadToURL')
   };
 }
 

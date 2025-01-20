@@ -5,6 +5,7 @@ import {
   createUploadBlobClient,
   createUploadProgressClient,
   DownloadDriver,
+  DownloadBlobToURLDriver,
   InternalLsDriver,
   LogsDriver,
   LogsStreamDriver,
@@ -32,6 +33,8 @@ import {
 export interface MiddleLayerDriverKit extends Sdk.DriverKit {
   // override with wider interface
   readonly blobDriver: DownloadDriver;
+  // override with wider interface
+  readonly blobToURLDriver: DownloadBlobToURLDriver;
   // override with wider interface
   readonly logDriver: LogsDriver;
   // override with wider interface
@@ -78,6 +81,15 @@ export async function initDriverKit(
     signer,
     ops.blobDriverOps
   );
+
+  const blobToURLDriver = new DownloadBlobToURLDriver(
+    ops.logger,
+    signer,
+    downloadClient,
+    ops.downloadBlobToURLPath,
+    ops.downloadBlobToURLDriverOps,
+  );
+
   const uploadDriver = new UploadDriver(
     ops.logger,
     signer,
@@ -100,6 +112,7 @@ export async function initDriverKit(
 
   return {
     blobDriver,
+    blobToURLDriver: blobToURLDriver,
     logDriver,
     lsDriver,
     signer,

@@ -1,10 +1,14 @@
-import { ChangeSource, Watcher } from '@milaboratories/computable';
+import type { Watcher } from '@milaboratories/computable';
+import { ChangeSource } from '@milaboratories/computable';
 import { stringifyWithResourceId } from '@milaboratories/pl-client';
-import * as sdk from '@milaboratories/pl-model-common';
-import { asyncPool, CallersCounter, MiLogger, Signer } from '@milaboratories/ts-helpers';
-import { ClientProgress, ProgressStatus } from '../clients/progress';
-import { ClientUpload, MTimeError, NoFileForUploading, UnexpectedEOF } from '../clients/upload';
-import { ImportFileHandleUploadData, ImportResourceSnapshot } from './types';
+import type * as sdk from '@milaboratories/pl-model-common';
+import type { MiLogger, Signer } from '@milaboratories/ts-helpers';
+import { asyncPool, CallersCounter } from '@milaboratories/ts-helpers';
+import type { ClientProgress, ProgressStatus } from '../clients/progress';
+import type { ClientUpload } from '../clients/upload';
+import { MTimeError, NoFileForUploading, UnexpectedEOF } from '../clients/upload';
+import type { ImportResourceSnapshot } from './types';
+import { ImportFileHandleUploadData } from './types';
 import assert from 'node:assert';
 
 /** Holds all info needed to upload a file and a status of uploading
@@ -31,7 +35,7 @@ export class UploadTask {
     private readonly clientProgress: ClientProgress,
     private readonly nConcurrentPartsUpload: number,
     signer: Signer,
-    public readonly res: ImportResourceSnapshot
+    public readonly res: ImportResourceSnapshot,
   ) {
     const { uploadData, progress } = newProgress(res, signer);
     this.uploadData = uploadData;
@@ -61,8 +65,8 @@ export class UploadTask {
       if (this.isComputableDone()) return;
       const parts = await this.clientBlob.initUpload(this.res);
       this.logger.info(
-        `started to upload blob ${this.res.id},` +
-          ` parts overall: ${parts.overall}, parts remained: ${parts.toUpload.length}`
+        `started to upload blob ${this.res.id},`
+        + ` parts overall: ${parts.overall}, parts remained: ${parts.toUpload.length}`,
       );
 
       const partUploadFn = (part: bigint) => async () => {
@@ -71,7 +75,7 @@ export class UploadTask {
           this.res,
           this.uploadData!.localPath,
           BigInt(this.uploadData!.modificationTime),
-          part
+          part,
         );
         this.logger.info(`uploaded chunk ${part}/${parts.overall} of resource: ${this.res.id}`);
       };
@@ -128,7 +132,7 @@ export class UploadTask {
 
       if (isResourceWasDeletedError(e)) {
         this.logger.warn(
-          `resource was not found while updating a status of BlobImport: ${e}, ${stringifyWithResourceId(this.res)}`
+          `resource was not found while updating a status of BlobImport: ${e}, ${stringifyWithResourceId(this.res)}`,
         );
         this.change.markChanged();
         this.setDone(true);
@@ -194,8 +198,8 @@ function newProgress(res: ImportResourceSnapshot, signer: Signer) {
       status: undefined,
       isUpload: isUpload(res),
       isUploadSignMatch: isUploadSignMatch,
-      lastError: undefined
-    }
+      lastError: undefined,
+    },
   };
 }
 
@@ -209,14 +213,14 @@ function cloneProgress(progress: sdk.ImportProgress): sdk.ImportProgress {
     done: progress.done,
     isUpload: progress.isUpload,
     isUploadSignMatch: progress.isUploadSignMatch,
-    lastError: progress.lastError
+    lastError: progress.lastError,
   };
 
   if (progress.status)
     cloned.status = {
       progress: progress.status.progress,
       bytesProcessed: progress.status.bytesProcessed,
-      bytesTotal: progress.status.bytesTotal
+      bytesTotal: progress.status.bytesTotal,
     };
 
   return progress;
@@ -245,7 +249,7 @@ function protoToStatus(proto: ProgressStatus): sdk.ImportStatus {
   return {
     progress: proto.progress ?? 0,
     bytesProcessed: Number(proto.bytesProcessed),
-    bytesTotal: Number(proto.bytesTotal)
+    bytesTotal: Number(proto.bytesTotal),
   };
 }
 
@@ -259,7 +263,7 @@ function doneProgressIfExisted(alreadyExisted: boolean, status: sdk.ImportStatus
     return {
       progress: 1.0,
       bytesProcessed: Number(status.bytesTotal),
-      bytesTotal: Number(status.bytesTotal)
+      bytesTotal: Number(status.bytesTotal),
     };
   }
 
@@ -268,8 +272,8 @@ function doneProgressIfExisted(alreadyExisted: boolean, status: sdk.ImportStatus
 
 export function isResourceWasDeletedError(e: any) {
   return (
-    e.name == 'RpcError' &&
-    (e.code == 'NOT_FOUND' || e.code == 'ABORTED' || e.code == 'ALREADY_EXISTS')
+    e.name == 'RpcError'
+    && (e.code == 'NOT_FOUND' || e.code == 'ABORTED' || e.code == 'ALREADY_EXISTS')
   );
 }
 

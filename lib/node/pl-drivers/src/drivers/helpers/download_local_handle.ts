@@ -1,8 +1,8 @@
 /** Handle of locally downloaded blob. This handle is issued only after the
  * blob's content is downloaded locally, and ready for quick access. */
 
-import { LocalBlobHandle } from '@milaboratories/pl-model-common';
-import { Signer } from '@milaboratories/ts-helpers';
+import type { LocalBlobHandle } from '@milaboratories/pl-model-common';
+import type { Signer } from '@milaboratories/ts-helpers';
 
 // https://regex101.com/r/kfnBVX/1
 const localHandleRegex = /^blob\+local:\/\/download\/(?<path>.*)#(?<signature>.*)$/;

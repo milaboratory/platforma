@@ -45,11 +45,11 @@ export class DownloadClient implements IDownloadClient, ServiceInfo {
    */
   getDownloadURL(
     input: DownloadAPI_GetDownloadURL_Request,
-    options?: RpcOptions
+    options?: RpcOptions,
   ): UnaryCall<
-    DownloadAPI_GetDownloadURL_Request,
-    DownloadAPI_GetDownloadURL_Response
-  > {
+      DownloadAPI_GetDownloadURL_Request,
+      DownloadAPI_GetDownloadURL_Response
+    > {
     const method = this.methods[0],
       opt = this._transport.mergeOptions(options);
     return stackIntercept<

@@ -1,19 +1,19 @@
 /** Handle of remote blob. This handle is issued as soon as the data becomes
  * available on the remote server. */
 
-import { Signer } from '@milaboratories/ts-helpers';
-import { OnDemandBlobResourceSnapshot } from '../types';
-import { RemoteBlobHandle } from '@milaboratories/pl-model-common';
-import { ResourceInfo } from '@milaboratories/pl-tree';
+import type { Signer } from '@milaboratories/ts-helpers';
+import type { OnDemandBlobResourceSnapshot } from '../types';
+import type { RemoteBlobHandle } from '@milaboratories/pl-model-common';
+import type { ResourceInfo } from '@milaboratories/pl-tree';
 import { bigintToResourceId } from '@milaboratories/pl-client';
 
 // https://regex101.com/r/rvbPZt/1
-const remoteHandleRegex =
-  /^blob\+remote:\/\/download\/(?<content>(?<resourceType>.*)\/(?<resourceVersion>.*)\/(?<resourceId>.*))#(?<signature>.*)$/;
+const remoteHandleRegex
+  = /^blob\+remote:\/\/download\/(?<content>(?<resourceType>.*)\/(?<resourceVersion>.*)\/(?<resourceId>.*))#(?<signature>.*)$/;
 
 export function newRemoteHandle(
   rInfo: OnDemandBlobResourceSnapshot,
-  signer: Signer
+  signer: Signer,
 ): RemoteBlobHandle {
   const content = `${rInfo.type.name}/${rInfo.type.version}/${BigInt(rInfo.id)}`;
   return `blob+remote://download/${content}#${signer.sign(content)}` as RemoteBlobHandle;
@@ -35,6 +35,6 @@ export function parseRemoteHandle(handle: RemoteBlobHandle, signer: Signer): Res
 
   return {
     id: bigintToResourceId(BigInt(resourceId)),
-    type: { name: resourceType, version: resourceVersion }
+    type: { name: resourceType, version: resourceVersion },
   };
 }

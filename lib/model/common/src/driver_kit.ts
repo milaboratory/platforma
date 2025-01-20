@@ -1,9 +1,12 @@
-import { BlobDriver, LogsDriver, LsDriver, PFrameDriver } from './drivers';
+import { BlobDriver, BlobToURLDriver, LogsDriver, LsDriver, PFrameDriver } from './drivers';
 
 /** Set of all drivers exposed in UI SDK via the platforma object. */
 export interface DriverKit {
   /** Driver allowing to retrieve blob data */
   readonly blobDriver: BlobDriver;
+
+  /** Driver allowing to retrieve folders of data from blobs */
+  readonly blobToURLDriver: BlobToURLDriver;
 
   /** Driver allowing to dynamically work with logs */
   readonly logDriver: LogsDriver;

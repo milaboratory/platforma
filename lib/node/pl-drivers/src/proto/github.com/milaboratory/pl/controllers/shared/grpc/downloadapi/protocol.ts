@@ -59,31 +59,34 @@ class DownloadAPI$Type extends MessageType<DownloadAPI> {
   constructor() {
     super('MiLaboratories.Controller.Shared.DownloadAPI', []);
   }
+
   create(value?: PartialMessage<DownloadAPI>): DownloadAPI {
     const message = globalThis.Object.create(this.messagePrototype!);
     if (value !== undefined)
       reflectionMergePartial<DownloadAPI>(this, message, value);
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: DownloadAPI
+    target?: DownloadAPI,
   ): DownloadAPI {
     return target ?? this.create();
   }
+
   internalBinaryWrite(
     message: DownloadAPI,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -97,33 +100,36 @@ class DownloadAPI_GetDownloadURL$Type extends MessageType<DownloadAPI_GetDownloa
   constructor() {
     super('MiLaboratories.Controller.Shared.DownloadAPI.GetDownloadURL', []);
   }
+
   create(
-    value?: PartialMessage<DownloadAPI_GetDownloadURL>
+    value?: PartialMessage<DownloadAPI_GetDownloadURL>,
   ): DownloadAPI_GetDownloadURL {
     const message = globalThis.Object.create(this.messagePrototype!);
     if (value !== undefined)
       reflectionMergePartial<DownloadAPI_GetDownloadURL>(this, message, value);
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: DownloadAPI_GetDownloadURL
+    target?: DownloadAPI_GetDownloadURL,
   ): DownloadAPI_GetDownloadURL {
     return target ?? this.create();
   }
+
   internalBinaryWrite(
     message: DownloadAPI_GetDownloadURL,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -142,14 +148,15 @@ class DownloadAPI_GetDownloadURL_Request$Type extends MessageType<DownloadAPI_Ge
           no: 1,
           name: 'resource_id',
           kind: 'scalar',
-          T: 4 /*ScalarType.UINT64*/,
-          L: 0 /*LongType.BIGINT*/
-        }
-      ]
+          T: 4 /* ScalarType.UINT64 */,
+          L: 0, /* LongType.BIGINT */
+        },
+      ],
     );
   }
+
   create(
-    value?: PartialMessage<DownloadAPI_GetDownloadURL_Request>
+    value?: PartialMessage<DownloadAPI_GetDownloadURL_Request>,
   ): DownloadAPI_GetDownloadURL_Request {
     const message = globalThis.Object.create(this.messagePrototype!);
     message.resourceId = 0n;
@@ -157,57 +164,59 @@ class DownloadAPI_GetDownloadURL_Request$Type extends MessageType<DownloadAPI_Ge
       reflectionMergePartial<DownloadAPI_GetDownloadURL_Request>(
         this,
         message,
-        value
+        value,
       );
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: DownloadAPI_GetDownloadURL_Request
+    target?: DownloadAPI_GetDownloadURL_Request,
   ): DownloadAPI_GetDownloadURL_Request {
-    let message = target ?? this.create(),
+    const message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
+      const [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
         case /* uint64 resource_id */ 1:
           message.resourceId = reader.uint64().toBigInt();
           break;
         default:
-          let u = options.readUnknownField;
+          const u = options.readUnknownField;
           if (u === 'throw')
             throw new globalThis.Error(
-              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`
+              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
             );
-          let d = reader.skip(wireType);
+          const d = reader.skip(wireType);
           if (u !== false)
             (u === true ? UnknownFieldHandler.onRead : u)(
               this.typeName,
               message,
               fieldNo,
               wireType,
-              d
+              d,
             );
       }
     }
     return message;
   }
+
   internalBinaryWrite(
     message: DownloadAPI_GetDownloadURL_Request,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
     /* uint64 resource_id = 1; */
     if (message.resourceId !== 0n)
       writer.tag(1, WireType.Varint).uint64(message.resourceId);
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -215,8 +224,8 @@ class DownloadAPI_GetDownloadURL_Request$Type extends MessageType<DownloadAPI_Ge
 /**
  * @generated MessageType for protobuf message MiLaboratories.Controller.Shared.DownloadAPI.GetDownloadURL.Request
  */
-export const DownloadAPI_GetDownloadURL_Request =
-  new DownloadAPI_GetDownloadURL_Request$Type();
+export const DownloadAPI_GetDownloadURL_Request
+  = new DownloadAPI_GetDownloadURL_Request$Type();
 // @generated message type with reflection information, may provide speed optimized methods
 class DownloadAPI_GetDownloadURL_HTTPHeader$Type extends MessageType<DownloadAPI_GetDownloadURL_HTTPHeader> {
   constructor() {
@@ -228,20 +237,21 @@ class DownloadAPI_GetDownloadURL_HTTPHeader$Type extends MessageType<DownloadAPI
           name: 'Name',
           kind: 'scalar',
           jsonName: 'Name',
-          T: 9 /*ScalarType.STRING*/
+          T: 9, /* ScalarType.STRING */
         },
         {
           no: 2,
           name: 'Value',
           kind: 'scalar',
           jsonName: 'Value',
-          T: 9 /*ScalarType.STRING*/
-        }
-      ]
+          T: 9, /* ScalarType.STRING */
+        },
+      ],
     );
   }
+
   create(
-    value?: PartialMessage<DownloadAPI_GetDownloadURL_HTTPHeader>
+    value?: PartialMessage<DownloadAPI_GetDownloadURL_HTTPHeader>,
   ): DownloadAPI_GetDownloadURL_HTTPHeader {
     const message = globalThis.Object.create(this.messagePrototype!);
     message.name = '';
@@ -250,50 +260,52 @@ class DownloadAPI_GetDownloadURL_HTTPHeader$Type extends MessageType<DownloadAPI
       reflectionMergePartial<DownloadAPI_GetDownloadURL_HTTPHeader>(
         this,
         message,
-        value
+        value,
       );
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: DownloadAPI_GetDownloadURL_HTTPHeader
+    target?: DownloadAPI_GetDownloadURL_HTTPHeader,
   ): DownloadAPI_GetDownloadURL_HTTPHeader {
-    let message = target ?? this.create(),
+    const message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
+      const [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
-        case /* string Name = 1 [json_name = "Name"];*/ 1:
+        case /* string Name = 1 [json_name = "Name"]; */ 1:
           message.name = reader.string();
           break;
-        case /* string Value = 2 [json_name = "Value"];*/ 2:
+        case /* string Value = 2 [json_name = "Value"]; */ 2:
           message.value = reader.string();
           break;
         default:
-          let u = options.readUnknownField;
+          const u = options.readUnknownField;
           if (u === 'throw')
             throw new globalThis.Error(
-              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`
+              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
             );
-          let d = reader.skip(wireType);
+          const d = reader.skip(wireType);
           if (u !== false)
             (u === true ? UnknownFieldHandler.onRead : u)(
               this.typeName,
               message,
               fieldNo,
               wireType,
-              d
+              d,
             );
       }
     }
     return message;
   }
+
   internalBinaryWrite(
     message: DownloadAPI_GetDownloadURL_HTTPHeader,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
     /* string Name = 1 [json_name = "Name"]; */
     if (message.name !== '')
@@ -301,12 +313,12 @@ class DownloadAPI_GetDownloadURL_HTTPHeader$Type extends MessageType<DownloadAPI
     /* string Value = 2 [json_name = "Value"]; */
     if (message.value !== '')
       writer.tag(2, WireType.LengthDelimited).string(message.value);
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -314,8 +326,8 @@ class DownloadAPI_GetDownloadURL_HTTPHeader$Type extends MessageType<DownloadAPI
 /**
  * @generated MessageType for protobuf message MiLaboratories.Controller.Shared.DownloadAPI.GetDownloadURL.HTTPHeader
  */
-export const DownloadAPI_GetDownloadURL_HTTPHeader =
-  new DownloadAPI_GetDownloadURL_HTTPHeader$Type();
+export const DownloadAPI_GetDownloadURL_HTTPHeader
+  = new DownloadAPI_GetDownloadURL_HTTPHeader$Type();
 // @generated message type with reflection information, may provide speed optimized methods
 class DownloadAPI_GetDownloadURL_Response$Type extends MessageType<DownloadAPI_GetDownloadURL_Response> {
   constructor() {
@@ -326,20 +338,21 @@ class DownloadAPI_GetDownloadURL_Response$Type extends MessageType<DownloadAPI_G
           no: 1,
           name: 'download_url',
           kind: 'scalar',
-          T: 9 /*ScalarType.STRING*/
+          T: 9, /* ScalarType.STRING */
         },
         {
           no: 2,
           name: 'headers',
           kind: 'message',
-          repeat: 1 /*RepeatType.PACKED*/,
-          T: () => DownloadAPI_GetDownloadURL_HTTPHeader
-        }
-      ]
+          repeat: 1 /* RepeatType.PACKED */,
+          T: () => DownloadAPI_GetDownloadURL_HTTPHeader,
+        },
+      ],
     );
   }
+
   create(
-    value?: PartialMessage<DownloadAPI_GetDownloadURL_Response>
+    value?: PartialMessage<DownloadAPI_GetDownloadURL_Response>,
   ): DownloadAPI_GetDownloadURL_Response {
     const message = globalThis.Object.create(this.messagePrototype!);
     message.downloadUrl = '';
@@ -348,20 +361,21 @@ class DownloadAPI_GetDownloadURL_Response$Type extends MessageType<DownloadAPI_G
       reflectionMergePartial<DownloadAPI_GetDownloadURL_Response>(
         this,
         message,
-        value
+        value,
       );
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: DownloadAPI_GetDownloadURL_Response
+    target?: DownloadAPI_GetDownloadURL_Response,
   ): DownloadAPI_GetDownloadURL_Response {
-    let message = target ?? this.create(),
+    const message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
+      const [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
         case /* string download_url */ 1:
           message.downloadUrl = reader.string();
@@ -371,33 +385,34 @@ class DownloadAPI_GetDownloadURL_Response$Type extends MessageType<DownloadAPI_G
             DownloadAPI_GetDownloadURL_HTTPHeader.internalBinaryRead(
               reader,
               reader.uint32(),
-              options
-            )
+              options,
+            ),
           );
           break;
         default:
-          let u = options.readUnknownField;
+          const u = options.readUnknownField;
           if (u === 'throw')
             throw new globalThis.Error(
-              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`
+              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
             );
-          let d = reader.skip(wireType);
+          const d = reader.skip(wireType);
           if (u !== false)
             (u === true ? UnknownFieldHandler.onRead : u)(
               this.typeName,
               message,
               fieldNo,
               wireType,
-              d
+              d,
             );
       }
     }
     return message;
   }
+
   internalBinaryWrite(
     message: DownloadAPI_GetDownloadURL_Response,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
     /* string download_url = 1; */
     if (message.downloadUrl !== '')
@@ -407,14 +422,14 @@ class DownloadAPI_GetDownloadURL_Response$Type extends MessageType<DownloadAPI_G
       DownloadAPI_GetDownloadURL_HTTPHeader.internalBinaryWrite(
         message.headers[i],
         writer.tag(2, WireType.LengthDelimited).fork(),
-        options
+        options,
       ).join();
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -422,8 +437,8 @@ class DownloadAPI_GetDownloadURL_Response$Type extends MessageType<DownloadAPI_G
 /**
  * @generated MessageType for protobuf message MiLaboratories.Controller.Shared.DownloadAPI.GetDownloadURL.Response
  */
-export const DownloadAPI_GetDownloadURL_Response =
-  new DownloadAPI_GetDownloadURL_Response$Type();
+export const DownloadAPI_GetDownloadURL_Response
+  = new DownloadAPI_GetDownloadURL_Response$Type();
 /**
  * @generated ServiceType for protobuf service MiLaboratories.Controller.Shared.Download
  */
@@ -433,10 +448,10 @@ export const Download = new ServiceType(
     {
       name: 'GetDownloadURL',
       options: {
-        'google.api.http': { get: '/resources/{resource_id}/get-download-url' }
+        'google.api.http': { get: '/resources/{resource_id}/get-download-url' },
       },
       I: DownloadAPI_GetDownloadURL_Request,
-      O: DownloadAPI_GetDownloadURL_Response
-    }
-  ]
+      O: DownloadAPI_GetDownloadURL_Response,
+    },
+  ],
 );

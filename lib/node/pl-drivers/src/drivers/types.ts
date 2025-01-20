@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { InferSnapshot, rsSchema } from '@milaboratories/pl-tree';
+import type { InferSnapshot } from '@milaboratories/pl-tree';
+import { rsSchema } from '@milaboratories/pl-tree';
 
 //
 // download
@@ -8,9 +9,9 @@ import { InferSnapshot, rsSchema } from '@milaboratories/pl-tree';
 export const OnDemandBlobResourceSnapshot = rsSchema({
   kv: {
     'ctl/file/blobInfo': z.object({
-      sizeBytes: z.coerce.number()
-    })
-  }
+      sizeBytes: z.coerce.number(),
+    }),
+  },
 });
 
 export type OnDemandBlobResourceSnapshot = InferSnapshot<typeof OnDemandBlobResourceSnapshot>;
@@ -31,7 +32,7 @@ export const ImportFileHandleUploadData = z.object({
   /** File size in bytes */
   sizeBytes: z.string(),
   /** Modification time unix timestamp in seconds */
-  modificationTime: z.string()
+  modificationTime: z.string(),
 });
 export type ImportFileHandleUploadData = z.infer<typeof ImportFileHandleUploadData>;
 
@@ -39,13 +40,13 @@ export const ImportFileHandleIndexData = z.object({
   /** Pl storage id */
   storageId: z.string(),
   /** Path inside storage */
-  path: z.string()
+  path: z.string(),
 });
 export type ImportFileHandleIndexData = z.infer<typeof ImportFileHandleIndexData>;
 
 export const ImportFileHandleData = z.union([
   ImportFileHandleUploadData,
-  ImportFileHandleIndexData
+  ImportFileHandleIndexData,
 ]);
 export type ImportFileHandleData = z.infer<typeof ImportFileHandleData>;
 
@@ -55,14 +56,14 @@ export type ImportFileHandleData = z.infer<typeof ImportFileHandleData>;
 export const UploadResourceSnapshot = rsSchema({
   data: ImportFileHandleUploadData,
   fields: {
-    blob: false
-  }
+    blob: false,
+  },
 });
 
 export const IndexResourceSnapshot = rsSchema({
   fields: {
-    incarnation: false
-  }
+    incarnation: false,
+  },
 });
 
 export type UploadResourceSnapshot = InferSnapshot<typeof UploadResourceSnapshot>;

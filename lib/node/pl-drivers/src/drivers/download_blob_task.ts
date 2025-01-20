@@ -1,19 +1,23 @@
-import { ChangeSource, Watcher } from '@milaboratories/computable';
-import { LocalBlobHandle, LocalBlobHandleAndSize } from '@milaboratories/pl-model-common';
-import { ResourceSnapshot } from '@milaboratories/pl-tree';
+import type { Watcher } from '@milaboratories/computable';
+import { ChangeSource } from '@milaboratories/computable';
+import type { LocalBlobHandle, LocalBlobHandleAndSize } from '@milaboratories/pl-model-common';
+import type { ResourceSnapshot } from '@milaboratories/pl-tree';
+import type {
+  ValueOrError,
+  MiLogger,
+} from '@milaboratories/ts-helpers';
 import {
   CallersCounter,
-  ValueOrError,
   ensureDirExists,
   fileExists,
   createPathAtomically,
-  MiLogger
 } from '@milaboratories/ts-helpers';
 import fs from 'node:fs';
 import * as fsp from 'node:fs/promises';
 import * as path from 'node:path';
 import { Writable } from 'node:stream';
-import { ClientDownload, UnknownStorageError, WrongLocalFileUrl } from '../clients/download';
+import type { ClientDownload } from '../clients/download';
+import { UnknownStorageError, WrongLocalFileUrl } from '../clients/download';
 import { NetworkError400 } from '../helpers/download';
 
 /** Downloads a blob. */
@@ -31,7 +35,7 @@ export class DownloadBlobTask {
     private readonly clientDownload: ClientDownload,
     readonly rInfo: ResourceSnapshot,
     readonly path: string,
-    private readonly handle: LocalBlobHandle
+    private readonly handle: LocalBlobHandle,
   ) {}
 
   /** Returns a simple object that describes this task. */
@@ -41,7 +45,7 @@ export class DownloadBlobTask {
       path: this.path,
       done: this.done,
       size: this.size,
-      error: this.error
+      error: this.error,
     };
   }
 
@@ -93,15 +97,15 @@ export class DownloadBlobTask {
   public getBlob():
     | { done: false }
     | {
-        done: true;
-        result: ValueOrError<LocalBlobHandleAndSize>;
-      } {
+      done: true;
+      result: ValueOrError<LocalBlobHandleAndSize>;
+    } {
     if (!this.done) return { done: false };
 
     if (this.error)
       return {
         done: true,
-        result: { ok: false, error: this.error }
+        result: { ok: false, error: this.error },
       };
 
     return {
@@ -110,9 +114,9 @@ export class DownloadBlobTask {
         ok: true,
         value: {
           handle: this.handle,
-          size: this.size
-        }
-      }
+          size: this.size,
+        },
+      },
     };
   }
 
@@ -129,14 +133,14 @@ export class DownloadBlobTask {
 
 export function nonRecoverableError(e: any) {
   return (
-    e instanceof DownloadAborted ||
-    e instanceof NetworkError400 ||
-    e instanceof UnknownStorageError ||
-    e instanceof WrongLocalFileUrl ||
+    e instanceof DownloadAborted
+    || e instanceof NetworkError400
+    || e instanceof UnknownStorageError
+    || e instanceof WrongLocalFileUrl
     // file that we downloads from was moved or deleted.
-    e?.code == 'ENOENT' ||
+    || e?.code == 'ENOENT'
     // A resource was deleted.
-    (e.name == 'RpcError' && (e.code == 'NOT_FOUND' || e.code == 'ABORTED'))
+    || (e.name == 'RpcError' && (e.code == 'NOT_FOUND' || e.code == 'ABORTED'))
   );
 }
 
