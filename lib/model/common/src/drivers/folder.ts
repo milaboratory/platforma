@@ -5,7 +5,7 @@ export type FolderURL = `plblob+folder://${string}`
 
 export type ArchiveFormat = 'zip' | 'tar' | 'tgz';
 
-
-// export interface DownloadFolderURL {
-//   extractArchiveAndGetURL(format: ArchiveFormat): FutureRef<FolderURL | undefined>
-// }
+export interface BlobToURLDriver {
+  getPathForCustomProtocol(url: FolderURL): string;
+  info(): any;
+}

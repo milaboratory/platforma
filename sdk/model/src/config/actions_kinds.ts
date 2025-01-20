@@ -3,7 +3,8 @@ import { And, IsA, SyncConfAction } from './type_util';
 import {
   LocalBlobHandleAndSize,
   RemoteBlobHandleAndSize,
-  ImportProgress
+  ImportProgress,
+  FolderURL
 } from '@milaboratories/pl-model-common';
 import { AnyLogHandle } from '@milaboratories/pl-model-common';
 
@@ -201,6 +202,17 @@ export interface ActGetOnDemandBlobContent<Source extends ConfAction> extends Co
   new: (
     x: this['ctx']
   ) => ActionResult<Source, typeof x> extends PlResourceEntry ? RemoteBlobHandleAndSize : unknown;
+  isSync: IsA<Source, SyncConfAction>;
+}
+
+//
+// Download Blobs to URLs
+//
+
+export interface ActExtractFolderAndGetURL<Source extends ConfAction> extends ConfAction {
+  new: (
+    x: this['ctx']
+  ) => ActionResult<Source, typeof x> extends PlResourceEntry? FolderURL : unknown;
   isSync: IsA<Source, SyncConfAction>;
 }
 

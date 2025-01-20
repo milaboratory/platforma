@@ -288,6 +288,90 @@ importers:
         specifier: 'catalog:'
         version: 2.3.3
 
+  etc/blocks/blob-url-custom-protocol/block:
+    dependencies:
+      '@milaboratories/milaboratories.test-blob-url-custom-protocol.model':
+        specifier: workspace:*
+        version: link:../model
+      '@milaboratories/milaboratories.test-blob-url-custom-protocol.ui':
+        specifier: workspace:*
+        version: link:../ui
+      '@milaboratories/milaboratories.test-blob-url-custom-protocol.workflow':
+        specifier: workspace:*
+        version: link:../workflow
+      '@platforma-sdk/model':
+        specifier: workspace:*
+        version: link:../../../../sdk/model
+    devDependencies:
+      '@platforma-sdk/block-tools':
+        specifier: workspace:*
+        version: link:../../../../tools/block-tools
+
+  etc/blocks/blob-url-custom-protocol/model:
+    dependencies:
+      '@platforma-sdk/model':
+        specifier: workspace:*
+        version: link:../../../../sdk/model
+      zod:
+        specifier: 'catalog:'
+        version: 3.23.8
+    devDependencies:
+      '@platforma-sdk/block-tools':
+        specifier: workspace:*
+        version: link:../../../../tools/block-tools
+      tsup:
+        specifier: 'catalog:'
+        version: 8.3.5(@microsoft/api-extractor@7.48.1(@types/node@22.5.5))(postcss@8.4.49)(tsx@4.19.1)(typescript@5.5.4)(yaml@2.6.1)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.5.4
+      vite:
+        specifier: 'catalog:'
+        version: 5.4.11(@types/node@22.5.5)(sass@1.81.0)
+
+  etc/blocks/blob-url-custom-protocol/ui:
+    dependencies:
+      '@milaboratories/milaboratories.test-blob-url-custom-protocol.model':
+        specifier: workspace:*
+        version: link:../model
+      '@platforma-sdk/ui-vue':
+        specifier: workspace:^
+        version: link:../../../../sdk/ui-vue
+      vue:
+        specifier: 'catalog:'
+        version: 3.5.13(typescript@5.5.4)
+    devDependencies:
+      '@faker-js/faker':
+        specifier: 'catalog:'
+        version: 9.2.0
+      '@milaboratories/helpers':
+        specifier: workspace:^
+        version: link:../../../../lib/util/helpers
+      '@vitejs/plugin-vue':
+        specifier: 'catalog:'
+        version: 5.2.1(vite@5.4.11(@types/node@22.5.5)(sass@1.81.0))(vue@3.5.13(typescript@5.5.4))
+      typescript:
+        specifier: 'catalog:'
+        version: 5.5.4
+      vite:
+        specifier: 'catalog:'
+        version: 5.4.11(@types/node@22.5.5)(sass@1.81.0)
+      vue-tsc:
+        specifier: 'catalog:'
+        version: 2.1.10(typescript@5.5.4)
+      zod:
+        specifier: 'catalog:'
+        version: 3.23.8
+
+  etc/blocks/blob-url-custom-protocol/workflow:
+    devDependencies:
+      '@platforma-sdk/tengo-builder':
+        specifier: workspace:*
+        version: link:../../../../tools/tengo-builder
+      '@platforma-sdk/workflow-tengo':
+        specifier: workspace:*
+        version: link:../../../../sdk/workflow-tengo
+
   etc/blocks/download-file/block:
     dependencies:
       '@milaboratories/milaboratories.test-download-file.model':
@@ -1402,6 +1486,9 @@ importers:
       '@jest/globals':
         specifier: 'catalog:'
         version: 29.7.0
+      '@milaboratories/eslint-config':
+        specifier: workspace:^
+        version: link:../../../tools/eslint-config
       '@milaboratories/platforma-build-configs':
         specifier: workspace:*
         version: link:../../util/build-configs
@@ -1414,6 +1501,9 @@ importers:
       '@types/tar-fs':
         specifier: 'catalog:'
         version: 2.0.4
+      eslint:
+        specifier: 'catalog:'
+        version: 9.16.0
       jest:
         specifier: 'catalog:'
         version: 29.7.0(@types/node@20.16.15)(ts-node@10.9.2(@types/node@20.16.15)(typescript@5.5.4))
@@ -2072,6 +2162,12 @@ importers:
 
   tests/drivers-ml-blocks-integration:
     dependencies:
+      '@milaboratories/milaboratories.test-blob-url-custom-protocol':
+        specifier: workspace:*
+        version: link:../../etc/blocks/blob-url-custom-protocol/block
+      '@milaboratories/milaboratories.test-blob-url-custom-protocol.model':
+        specifier: workspace:*
+        version: link:../../etc/blocks/blob-url-custom-protocol/model
       '@milaboratories/milaboratories.test-download-file':
         specifier: workspace:*
         version: link:../../etc/blocks/download-file/block
@@ -10054,7 +10150,7 @@ snapshots:
   '@eslint/config-array@0.19.1':
     dependencies:
       '@eslint/object-schema': 2.1.5
-      debug: 4.3.7
+      debug: 4.4.0(supports-color@8.1.1)
       minimatch: 3.1.2
     transitivePeerDependencies:
       - supports-color
@@ -10066,7 +10162,7 @@ snapshots:
   '@eslint/eslintrc@3.2.0':
     dependencies:
       ajv: 6.12.6
-      debug: 4.3.7
+      debug: 4.4.0(supports-color@8.1.1)
       espree: 10.3.0
       globals: 14.0.0
       ignore: 5.3.2
@@ -13199,7 +13295,7 @@ snapshots:
 
   eslint@9.16.0:
     dependencies:
-      '@eslint-community/eslint-utils': 4.4.0(eslint@9.16.0)
+      '@eslint-community/eslint-utils': 4.4.1(eslint@9.16.0)
       '@eslint-community/regexpp': 4.12.1
       '@eslint/config-array': 0.19.1
       '@eslint/core': 0.9.1
@@ -13214,7 +13310,7 @@ snapshots:
       ajv: 6.12.6
       chalk: 4.1.2
       cross-spawn: 7.0.6
-      debug: 4.3.7
+      debug: 4.4.0(supports-color@8.1.1)
       escape-string-regexp: 4.0.0
       eslint-scope: 8.2.0
       eslint-visitor-keys: 4.2.0

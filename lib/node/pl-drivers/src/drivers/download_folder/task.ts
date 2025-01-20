@@ -4,19 +4,21 @@ import * as tar from 'tar-fs';
 import path from 'path';
 import * as fsp from 'fs/promises';
 import { NetworkError400 } from '../../helpers/download';
-import { ChangeSource, Watcher } from "@milaboratories/computable";
-import { CallersCounter, createPathAtomically, ensureDirExists, fileExists, MiLogger, notEmpty } from "@milaboratories/ts-helpers";
-import { DownloadableBlobSnapshot } from './snapshot';
-import { ClientDownload } from '../../clients/download';
-import { FolderURL } from '@milaboratories/pl-model-common';
+import type { Watcher } from '@milaboratories/computable';
+import { ChangeSource } from '@milaboratories/computable';
+import type { MiLogger } from '@milaboratories/ts-helpers';
+import { CallersCounter, createPathAtomically, ensureDirExists, fileExists, notEmpty } from '@milaboratories/ts-helpers';
+import type { DownloadableBlobSnapshot } from './snapshot';
+import type { ClientDownload } from '../../clients/download';
+import type { FolderURL } from '@milaboratories/pl-model-common';
 
 export type URLResult = {
   url?: FolderURL;
   error?: string;
-}
+};
 
 /** Downloads and extracts an archive to a directory. */
-export class DownloadFolderTask {
+export class DownloadAndUnarchiveTask {
   readonly counter = new CallersCounter();
   readonly change = new ChangeSource();
   private readonly signalCtl = new AbortController();
@@ -27,6 +29,7 @@ export class DownloadFolderTask {
 
   constructor(
     private readonly logger: MiLogger,
+    readonly saveDir: string,
     readonly path: string,
     readonly rInfo: DownloadableBlobSnapshot,
     private readonly clientDownload: ClientDownload,
@@ -38,7 +41,7 @@ export class DownloadFolderTask {
       path: this.path,
       done: this.done,
       size: this.size,
-      error: this.error
+      error: this.error,
     };
   }
 
@@ -67,7 +70,7 @@ export class DownloadFolderTask {
 
   private async downloadAndUntar(
     withGunzip: boolean,
-    signal: AbortSignal
+    signal: AbortSignal,
   ): Promise<number> {
     await ensureDirExists(path.dirname(this.path));
 
@@ -105,8 +108,9 @@ export class DownloadFolderTask {
     this.done = true;
     this.size = size;
     // TODO: signature
-    const sign: string = "sign";
-    this.url = `plblob+folder://${sign}.${this.path}`;
+    const sign: string = 'sign';
+    const p = path.relative(this.saveDir, this.path);
+    this.url = `plblob+folder://${sign}.${p}`;
   }
 
   private setError(e: any) {
@@ -132,7 +136,7 @@ async function dirSize(dir: string): Promise<number> {
 
       const stat = await fsp.stat(fPath);
       return stat.size;
-    })
+    }),
   );
 
   return sizes.reduce((sum, size) => sum + size, 0);

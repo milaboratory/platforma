@@ -23,11 +23,13 @@ import {
   ActImportProgress,
   ActGetLastLogs,
   ActGetProgressLog,
-  ActGetLogHandle
+  ActGetLogHandle,
+ActExtractFolderAndGetURL
 } from './actions_kinds';
 import { ExtractAction, POCExtractAction, PrimitiveOrConfig, TypedConfig } from './type_engine';
 import { Cfg } from './model';
 import { CheckedSyncConf } from './type_util';
+import { ArchiveFormat } from '@milaboratories/pl-model-common';
 
 //
 // Helpers
@@ -375,6 +377,21 @@ export function getOnDemandBlobContent<const Source extends TypedConfig>(
 ): TypedConfig<ActGetOnDemandBlobContent<ExtractAction<Source>>> {
   return {
     type: 'GetOnDemandBlobContent',
+    source: primitiveToConfig(source)
+  } as Cfg as any;
+}
+
+//
+// Download Blobs to URLs
+//
+
+export function extractFolderAndGetURL<const Source extends TypedConfig>(
+  source: Source,
+  format: ArchiveFormat,
+): TypedConfig<ActExtractFolderAndGetURL<ExtractAction<Source>>> {
+  return {
+    type: 'ExtractFolderAndGetURL',
+    format,
     source: primitiveToConfig(source)
   } as Cfg as any;
 }

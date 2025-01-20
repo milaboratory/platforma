@@ -91,7 +91,7 @@ test('should ok when list files from local storage in ls driver and correctly ap
       client,
       signer,
       [{ storageId: 'test_storage', localPath: path.join(assetsPath, 'ls_dir_structure_test') }],
-      async () => [dialogRet]
+      async () => [dialogRet],
     );
 
     const storages = await driver.getStorageList();
@@ -128,7 +128,7 @@ test('should ok when get file using local dialog, and read its content', async (
   const logger = new ConsoleLoggerAdapter();
   await TestHelpers.withTempRoot(async (client) => {
     const driver = await LsDriver.init(logger, client, signer, [], async () => [
-      path.join(assetsPath, 'answer_to_the_ultimate_question.txt')
+      path.join(assetsPath, 'answer_to_the_ultimate_question.txt'),
     ]);
 
     const result = await driver.showOpenSingleFileDialog();

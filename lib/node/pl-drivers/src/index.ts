@@ -6,6 +6,8 @@ export * from './clients/logs';
 export * from './clients/constructors';
 
 export * from './drivers/download_blob';
+export * from './drivers/download_folder/driver';
+export * from './drivers/download_folder/snapshot';
 export * from './drivers/upload';
 export * from './drivers/logs_stream';
 export * from './drivers/logs';
