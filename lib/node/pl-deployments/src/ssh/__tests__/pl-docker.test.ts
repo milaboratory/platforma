@@ -59,7 +59,7 @@ describe('SshPl', async () => {
 
   it('Transfer Platforma to server', async () => {
     const plPath = await sshPl?.downloadPlatformaBinaries(downloadDestination);
-    const plFolderName = path.basename(path.dirname(path.dirname(plPath!)));
+    const plFolderName = path.basename(plPath!.archivePath);
     const dirPath = path.resolve(downloadDestination, plFolderName);
     await sshPl?.sshClient.uploadDirectory(dirPath, `/home/pl-doctor/${plFolderName}`);
     console.log(plPath, dirPath);

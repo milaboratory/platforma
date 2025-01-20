@@ -10,11 +10,6 @@ import { assertNever, fileExists } from '@milaboratories/ts-helpers';
 import decompress from 'decompress';
 import type { ArchType, OSType } from './os_and_arch';
 import { newOs, newArch } from './os_and_arch';
-import os from 'os';
-
-export async function downloadLocalBinary(logger: MiLogger, baseDir: string, plVersion: string): Promise<string> {
-  return await downloadPlBinary(logger, baseDir, plVersion, os.arch(), os.platform());
-}
 
 export async function downloadBinary(
   logger: MiLogger,
@@ -24,11 +19,16 @@ export async function downloadBinary(
   arch: string,
   platform: string,
 ) {
-  const { archiveUrl, archivePath, archiveType, targetFolder, binaryPath } = getPathsForDownload(softwareName, tgzName, baseDir, newArch(arch), newOs(platform));
+  const { archiveUrl, archivePath, archiveType, targetFolder } = getPathsForDownload(softwareName, tgzName, baseDir, newArch(arch), newOs(platform));
   await downloadArchive(logger, archiveUrl, archivePath);
   await extractArchive(logger, archivePath, archiveType, targetFolder);
 
-  return binaryPath;
+  return targetFolder;
+}
+
+export type DownloadPlBinaryResult = {
+  binaryPath: string;
+  archivePath: string;
 }
 
 export async function downloadPlBinary(
@@ -37,14 +37,17 @@ export async function downloadPlBinary(
   plVersion: string,
   arch: string,
   platform: string,
-): Promise<string> {
+): Promise<DownloadPlBinaryResult> {
   const { archiveUrl, archivePath, archiveType, targetFolder, binaryPath } = localDownloadOptions(
     plVersion, baseDir, newArch(arch), newOs(platform),
   );
   await downloadArchive(logger, archiveUrl, archivePath);
   await extractArchive(logger, archivePath, archiveType, targetFolder);
 
-  return binaryPath;
+  return {
+    binaryPath,
+    archivePath: targetFolder,
+  };
 }
 
 function getPathsForDownload(softwareName: string, tgzName: string, baseDir: string, arch: ArchType, os: OSType) {
@@ -55,13 +58,12 @@ function getPathsForDownload(softwareName: string, tgzName: string, baseDir: str
   const archivePath = path.join(baseDir, archiveFileName);
   // folder where binary distribution of pl will be unpacked
   const targetFolder = path.join(baseDir, baseName);
-  const binaryPath = path.join(targetFolder);
+
   return {
     archiveUrl,
     archivePath,
     archiveType,
-    targetFolder,
-    binaryPath,
+    targetFolder
   };
 }
 
@@ -76,7 +78,7 @@ function localDownloadOptions(plVersion: string, baseDir: string, arch: ArchType
   // folder where binary distribution of pl will be unpacked
   const targetFolder = path.join(baseDir, baseName);
 
-  const binaryPath = path.join(targetFolder, 'binaries', osToBinaryName[os]);
+  const binaryPath = path.join(baseName, 'binaries', osToBinaryName[os]);
 
   return {
     archiveUrl,

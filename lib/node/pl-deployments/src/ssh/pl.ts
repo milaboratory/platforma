@@ -108,8 +108,8 @@ export class SshPl {
   public async downloadPlatformaBinaries(dirname: string) {
     const platformInfo = await this.getArch();
     if (platformInfo) {
-      const path = downloadPlBinary(new ConsoleLoggerAdapter(), dirname, getDefaultPlVersion(), platformInfo?.arch, platformInfo?.platform);
-      return path;
+      const result = downloadPlBinary(new ConsoleLoggerAdapter(), dirname, getDefaultPlVersion(), platformInfo?.arch, platformInfo?.platform);
+      return result;
     }
     return null;
   }
@@ -150,9 +150,9 @@ export class SshPl {
     const supervisordSoftwareName = 'supervisord';
     const minioSoftwareName = 'minio';
 
-    const plPath = await this.downloadPlatformaBinaries(plWorkingDirname);
+    const downloadedPl = await this.downloadPlatformaBinaries(plWorkingDirname);
 
-    const supervisordPath = await downloadBinary(
+    const supervisordDir = await downloadBinary(
       new ConsoleLoggerAdapter(),
       plWorkingDirname,
       supervisordSoftwareName,
@@ -160,8 +160,9 @@ export class SshPl {
       platformInfo!.arch,
       platformInfo!.platform,
     );
+    const supervisordRelPath = `${this.supervisordSubDirName}/supervisord`;
 
-    const minioPath = await downloadBinary(
+    const minioDir = await downloadBinary(
       new ConsoleLoggerAdapter(),
       plWorkingDirname,
       minioSoftwareName,
@@ -169,15 +170,16 @@ export class SshPl {
       platformInfo!.arch,
       platformInfo!.platform,
     );
+    const minioRelPath = `minio`;
 
-    console.log('supervisordPath, minioPath', supervisordPath, minioPath);
+    console.log('supervisordPath, minioPath', supervisordDir, supervisordRelPath, minioDir, minioRelPath);
 
     const binBasePath = await this.getBinariesHomeDir();
     await this.sshClient.createRemoteDirectory(binBasePath);
     const binDirs = [
-      path.basename(path.dirname(path.dirname(plPath!))),
-      path.basename(supervisordPath!),
-      path.basename(minioPath!),
+      path.basename(downloadedPl!.archivePath),
+      path.basename(supervisordDir!),
+      path.basename(minioDir!),
     ];
 
     for (const dir of binDirs) {
@@ -226,7 +228,7 @@ export class SshPl {
       console.log(`Created directory ${dir}`);
     }
 
-    const supervisorConfig = await this.generateSupervisordConfig(config);
+    const supervisorConfig = await this.generateSupervisordConfig(config, minioRelPath, downloadedPl!.binaryPath);
 
     logToFile(supervisorConfig);
 
@@ -251,13 +253,12 @@ export class SshPl {
     };
   }
 
-  public async generateSupervisordConfig(config: SshPlConfigGenerationResult) {
+  public async generateSupervisordConfig(config: SshPlConfigGenerationResult, minioPath: string, plPath: string) {
     const minioEnvStr = Object.entries(config.minioConfig.envs).map((arr) => arr.join('=')).join(', ');
     const sshPlatforma = await this.getBinariesHomeDir();
     const password = randomBytes(16).toString('hex');
     const freePort = await this.getFreePortForPlatformaOnServer();
     const plDirName = await this.getPlatformaDirName();
-    const osInfo = await this.getArch();
 
     return `
 [supervisord]
@@ -275,13 +276,13 @@ serverurl=http://127.0.0.1:${freePort}
 
 [program:platforma]
 depends_on=minio
-command=${path.join(config.workingDir, 'binaries', plDirName, 'binaries', 'platforma')} --config ${config.plConfig.configPath}
+command=binaries/${plPath} --config ${config.plConfig.configPath}
 directory=${config.workingDir}
 autorestart=true
 
 [program:minio]
 environment=${minioEnvStr}
-command=${path.join(config.workingDir, 'binaries', `${this.minioDirName}-${newArch(osInfo!.arch)}`, 'minio')} ${config.minioConfig.storageDir}
+command=binaries/${minioPath} ${config.minioConfig.storageDir}
 directory=${config.workingDir}
 autorestart=true
 `;
