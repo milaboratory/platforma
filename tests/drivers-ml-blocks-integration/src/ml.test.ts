@@ -192,9 +192,15 @@ test('simple project manipulations test', { timeout: 20000 }, async ({ expect })
       expect(block.navigationState).toStrictEqual({ href: '/' });
     });
 
-    await prj.getBlockState(block1Id).awaitStableValue();
-    await prj.getBlockState(block2Id).awaitStableValue();
-    await prj.getBlockState(block3Id).awaitStableValue();
+    const block1StableState0 = await prj.getBlockState(block1Id).awaitStableValue();
+    const block2StableState0 = await prj.getBlockState(block2Id).awaitStableValue();
+    const block3StableState0 = await prj.getBlockState(block3Id).awaitStableValue();
+
+    expect(block1StableState0.outputs!['activeArgs']).toStrictEqual({
+      ok: true,
+      value: undefined
+    });
+
     await prj.setNavigationState(block1Id, { href: '/section1' });
     await prj.setBlockArgs(block1Id, { numbers: [1, 2, 3] });
     await prj.setBlockArgs(block2Id, { numbers: [3, 4, 5] });
@@ -236,6 +242,11 @@ test('simple project manipulations test', { timeout: 20000 }, async ({ expect })
     console.dir(block1StableState1, { depth: 5 });
     console.dir(block2StableState1, { depth: 5 });
     console.dir(block3StableState1, { depth: 5 });
+
+    expect(block1StableState1.outputs!['activeArgs']).toStrictEqual({
+      ok: true,
+      value: { numbers: [1, 2, 3] }
+    });
 
     expect(block3StableState1.outputs!['sum']).toStrictEqual({
       ok: true,

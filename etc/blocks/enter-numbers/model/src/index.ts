@@ -21,6 +21,8 @@ export const platforma = BlockModel.create('Heavy')
 
   .output('numbers', (ctx) => ctx.outputs?.resolve('numbers')?.getDataAsJson<number[]>())
 
+  .output('activeArgs', (ctx) => ctx.activeArgs)
+
   .argsValid((ctx) => ctx.args.numbers.length > 0)
 
   .sections((ctx) => {
