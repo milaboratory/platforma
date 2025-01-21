@@ -144,9 +144,13 @@ export interface GlobalCfgRenderCtxMethods<AHandle = AccessorHandle, FHandle = F
 
 export const GlobalCfgRenderCtxFeatureFlags = {
   inlineColumnsSupport: true as const,
-}
+  activeArgs: true as const
+};
 
 export interface GlobalCfgRenderCtx extends GlobalCfgRenderCtxMethods {
+  // Note: strings below are used because, anyway, using strings is the only way
+  // to get data inside the QuickJS context, as it is implemented now. With this
+  // approach deserialization can be lazily postponed until it is actually needed.
   readonly args: string;
   readonly uiState: string;
   readonly activeArgs?: string;
