@@ -5,7 +5,7 @@ export default defineConfig({
   ...viteCfg,
   test: {
     watch: false,
-    testTimeout: 180000,
-    hookTimeout: 180000, 
+    testTimeout: 80000,
+    hookTimeout: 80000, 
   }
 });

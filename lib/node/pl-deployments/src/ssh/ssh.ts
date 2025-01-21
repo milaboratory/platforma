@@ -5,6 +5,7 @@ import dns from 'dns';
 import fs from 'fs';
 import { readFile } from 'fs/promises';
 import path from 'path';
+import { rejects } from 'assert';
 
 export type SshAuthMethods = 'publickey' | 'password';
 export type SshAuthMethodsResult = SshAuthMethods[];
@@ -291,6 +292,19 @@ export class SshClient {
     });
   }
 
+  public async readFile(remotePath: string): Promise<string> {
+    return this.withSftp(async (sftp) => {
+      return new Promise((resolve, reject) => {
+        sftp.readFile(remotePath, (err, buffer) => {
+          if (err) {
+            return reject(err);
+          }
+          resolve(buffer.toString());
+        });
+      });
+    });
+  }
+
   async checkFileExists(remotePath: string) {
     return this.withSftp(async (sftp) => {
       return new Promise((resolve, reject) => {
@@ -302,6 +316,26 @@ export class SshClient {
             return reject(err);
           }
           resolve(stats.isFile());
+        });
+      });
+    });
+  }
+
+  async checkPathExists(remotePath: string): Promise<{ exists: boolean; isFile: boolean; isDirectory: boolean }> {
+    return this.withSftp(async (sftp) => {
+      return new Promise((resolve, reject) => {
+        sftp.stat(remotePath, (err, stats) => {
+          if (err) {
+            if ((err as Error & { code: number }).code === 2) {
+              return resolve({ exists: false, isFile: false, isDirectory: false });
+            }
+            return reject(err);
+          }
+          resolve({
+            exists: true,
+            isFile: stats.isFile(),
+            isDirectory: stats.isDirectory(),
+          });
         });
       });
     });

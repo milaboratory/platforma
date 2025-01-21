@@ -47,14 +47,33 @@ describe('SshPl', async () => {
     expect(!!path).toBe(true);
   });
 
+  it('Check start/stop cmd', async () => {
+    await sshPl?.platformaInit(downloadDestination);
+    await sshPl?.stop();
+    let isAlive = await sshPl?.isAlive();
+    expect(isAlive).toBe(false);
+    await sshPl?.start();
+    isAlive = await sshPl?.isAlive();
+    expect(isAlive).toBe(true);
+  });
+
+  it('downloadBinariesAndUploadToServer', async () => {
+    await sshPl?.stop();
+    await sshPl?.downloadBinariesAndUploadToTheServer(downloadDestination);
+
+    const pathSupervisor = `${await sshPl?.getSupervisorBinDirOnServer()}/supervisord`;
+    const pathMinio = `${await sshPl?.getMinioBinDirOnServer()}/minio`;
+
+    expect((await sshPl?.sshClient.checkPathExists(pathSupervisor))?.exists).toBe(true);
+    expect((await sshPl?.sshClient.checkPathExists(pathMinio))?.exists).toBe(true);
+  });
+
   it('platformaInit', async () => {
     const result = await sshPl?.platformaInit(downloadDestination);
-    expect(result).toBe('');
-    for (const [path, content] of Object.entries(result!.filesToCreate)) {
-      const execResult = await testContainer!.exec(['cat', path]);
-      expect(await sshPl?.sshClient.checkFileExists(path)).toBe(true);
-      expect(execResult.output).toBe(content);
-    }
+    expect(await sshPl?.sshClient.checkFileExists(`${await sshPl?.getPlatformaRemoteWorkingDir()}/config.yaml`)).toBe(true);
+    expect(typeof result?.ports).toBe('object');
+    expect(result?.plPassword).toBeTruthy();
+    expect(result?.plUser).toBeTruthy();
   });
 
   it('Transfer Platforma to server', async () => {
@@ -71,6 +90,8 @@ describe('SshPl', async () => {
 
   it('Get free port', async () => {
     await sshPl?.platformaInit(downloadDestination);
+    const isAlive = await sshPl?.isAlive();
+    expect(isAlive).toBe(true);
     const port = await sshPl?.getFreePortForPlatformaOnServer();
     expect(typeof port).toBe('number');
   });
