@@ -2,15 +2,53 @@
 import * as monaco from 'monaco-editor';
 // @ts-expect-error @todo
 import jsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker';
-import { onMounted, reactive, ref, watchEffect } from 'vue';
+import { onMounted, reactive, ref, watch } from 'vue';
 import { notEmpty } from '@milaboratories/helpers';
+import escapeStringRegexp from 'escape-string-regexp';
 
-const emit = defineEmits<{
-  (e: 'change', value: T): void;
-}>();
+function highlightSubstring(editor: monaco.editor.IStandaloneCodeEditor, key: string) {
+  monaco.languages.registerDocumentSemanticTokensProvider('json', {
+    getLegend: function () {
+      return {
+        tokenTypes: ['customHighlight'],
+        tokenModifiers: [],
+      };
+    },
+    provideDocumentSemanticTokens: function (model) {
+      const lines = model.getLinesContent();
+      const tokens: number[] = [];
+
+      if (!key) {
+        return { data: new Uint32Array([]) };
+      }
+
+      const regex = new RegExp(escapeStringRegexp(key), 'g');
+
+      lines.forEach((line, lineIndex) => {
+        let match;
+        while ((match = regex.exec(line)) !== null) {
+          const startIndex = match.index + 0;
+          const length = match[0].length;
+          // console.log(key, ' -> match', match, 'push', lineIndex, startIndex, length, 0, 0);
+          tokens.push(lineIndex, startIndex, length, 0, 0);
+        }
+      });
+
+      console.log('tokens', tokens);
+
+      return { data: new Uint32Array(tokens) };
+    },
+    releaseDocumentSemanticTokens: function () {
+    },
+  });
+
+  // Trigger a refresh
+  monaco.editor.setModelLanguage(editor.getModel()!, 'json');
+}
 
 const props = defineProps<{
   value: T;
+  highlightString?: string;
 }>();
 
 const data = reactive({
@@ -42,39 +80,39 @@ self.MonacoEnvironment = {
   },
 };
 
-watchEffect(() => {
-  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-  props.value;
-  raw.editor?.getModel()?.setValue(JSON.stringify(props.value, null, 2));
+// Define a custom theme with a highlight style
+monaco.editor.defineTheme('custom-theme', {
+  base: 'vs-dark',
+  inherit: true,
+  rules: [{ token: 'customHighlight', foreground: 'ff0000', background: 'ffffff', fontStyle: 'bold' }],
+  colors: {},
 });
 
-onMounted(() => {
-  const editor = (raw.editor = monaco.editor.create(notEmpty(editorRef.value), {
-    value: '',
-    language: 'json',
-    automaticLayout: true,
-    theme: 'vs-dark',
-    readOnly: true,
-  }));
+watch(props, () => {
+  const editor = raw.editor;
+
+  if (!editor) {
+    return;
+  }
 
   editor.getModel()?.setValue(JSON.stringify(props.value, null, 2));
 
-  const getValue = () => {
-    try {
-      return JSON.parse(editor.getModel()?.getValue() ?? '');
-    } catch {
-      data.error = 'Invalid json';
-      return undefined;
-    }
-  };
+  console.log('key', props.highlightString);
 
-  editor.getModel()?.onDidChangeContent(() => {
-    const value = getValue();
-    if (value) {
-      data.error = '';
-      emit('change', value);
-    }
-  });
+  highlightSubstring(editor, props.highlightString ?? '');
+}, { immediate: true });
+
+onMounted(() => {
+  const editor = (raw.editor = monaco.editor.create(notEmpty(editorRef.value), {
+    'value': '',
+    'language': 'json',
+    'automaticLayout': true,
+    'theme': 'custom-theme',
+    'readOnly': true,
+    'semanticHighlighting.enabled': true,
+  }));
+
+  editor.getModel()?.setValue(JSON.stringify(props.value, null, 2));
 });
 </script>
 

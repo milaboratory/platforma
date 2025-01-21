@@ -26,9 +26,14 @@ const filtered = computed(() => {
 
   const { entries, isComplete } = allSpecs;
 
-  return {
+  const result = {
     entries: search ? entries.filter((it) => containsValue(it, { search, withKeys, caseSensitive })) : entries,
     isComplete,
+  };
+
+  return {
+    result,
+    search,
   };
 });
 
@@ -38,7 +43,7 @@ const editor = useTemplateRef('editor');
 <template>
   <PlBlockPage>
     <template #title>
-      Pool explorer
+      Pool explorer 1
     </template>
     <template #append>
       <PlBtnPrimary size="small" :disabled="!editor" @click="editor?.fold()">Fold</PlBtnPrimary>
@@ -51,8 +56,8 @@ const editor = useTemplateRef('editor');
       <PlCheckbox v-model="data.withKeys">With keys</PlCheckbox>
       <PlCheckbox v-model="data.caseSensitive">Case sensitive</PlCheckbox>
       <PlSpacer />
-      <PlChip>Total entries: {{ filtered?.entries.length }}</PlChip>
+      <PlChip>Total entries: {{ filtered?.result.entries.length }}</PlChip>
     </PlRow>
-    <JsonView v-if="filtered" ref="editor" :value="filtered" />
+    <JsonView v-if="filtered" ref="editor" :value="filtered.result" :highlight-string="filtered.search" />
   </PlBlockPage>
 </template>

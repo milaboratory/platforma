@@ -192,6 +192,7 @@ catalog:
   'ag-grid-vue3': *ag-grid
 
   'monaco-editor': ^0.52.2
+  'escape-string-regexp': ^5.0.0
 
   # SW
 

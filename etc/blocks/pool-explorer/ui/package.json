@@ -7,14 +7,16 @@
     "dev": "vite",
     "watch": "vue-tsc && vite build --watch",
     "build": "vue-tsc -b && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "lint": "eslint ."
   },
   "dependencies": {
     "@milaboratories/milaboratories.pool-explorer.model": "workspace:*",
     "@platforma-sdk/ui-vue": "workspace:^",
     "vue": "catalog:",
     "monaco-editor": "catalog:",
-    "@milaboratories/helpers": "workspace:^"
+    "@milaboratories/helpers": "workspace:^",
+    "escape-string-regexp": "catalog:"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "catalog:",
