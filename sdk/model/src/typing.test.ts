@@ -147,12 +147,13 @@ test('test config 2', () => {
     )
     .output('cell2', (ctx) => 42)
     .output('cell3', () => undefined)
-    .inputsValid(isEmpty(getJsonField(Args, 'a')))
+    .withArgs(isEmpty(getJsonField(Args, 'a')))
     .sections(
-      getImmediate([
-        { type: 'link', href: '/', label: 'Main' },
-        { type: 'link', href: '/subsection', label: 'Subsection' }
-      ])
+      () =>
+        [
+          { type: 'link', href: '/', label: 'Main' },
+          { type: 'link', href: '/subsection', label: 'Subsection' }
+        ] satisfies BlockSection[]
     )
     .done();
 
