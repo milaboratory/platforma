@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.22.0
+
+### Minor Changes
+
+- c0d5856: Model lambda ctx now have activeArgs field, that can be used to retrieve arguments with which block was executed.
+
 ## 1.21.20
 
 ### Patch Changes
