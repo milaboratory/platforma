@@ -233,6 +233,7 @@ function matchDomain(query?: Record<string, string>, target?: Record<string, str
   return true;
 }
 
+/** Main entry point to the API available within model lambdas (like outputs, sections, etc..) */
 export class RenderCtx<Args, UiState> {
   private readonly ctx: GlobalCfgRenderCtx;
 
@@ -245,6 +246,7 @@ export class RenderCtx<Args, UiState> {
     this.uiState = this.ctx.uiState !== undefined ? JSON.parse(this.ctx.uiState) : {};
   }
 
+  // lazy rendering because this feature is rarely used
   private _activeArgsCache?: { v?: Args };
 
   /**
@@ -258,6 +260,11 @@ export class RenderCtx<Args, UiState> {
       };
     return this._activeArgsCache.v;
   }
+
+  // /** Can be used to determine features provided by the desktop instance. */
+  // public get featureFlags() {
+  //   return this.ctx.featureFlags;
+  // }
 
   private getNamedAccessor(name: string): TreeNodeAccessor | undefined {
     return ifDef(
