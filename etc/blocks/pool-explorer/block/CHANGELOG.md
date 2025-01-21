@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.pool-explorer
 
+## 1.0.18
+
+### Patch Changes
+
+- 26bf7c9: Publish pool explorer block
+
 ## 1.0.17
 
 ### Patch Changes
