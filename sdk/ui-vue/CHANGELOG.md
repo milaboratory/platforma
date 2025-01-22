@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.22.1
+
+### Patch Changes
+
+- 02860e7: rollup-plugin-sourcemaps -> rollup-plugin-sourcemaps2
+
 ## 1.22.0
 
 ### Patch Changes
