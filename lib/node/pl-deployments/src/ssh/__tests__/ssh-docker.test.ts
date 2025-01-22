@@ -1,7 +1,8 @@
-import { describe, it, beforeAll, afterAll, expect, beforeEach } from 'vitest';
+import { describe, it, beforeAll, afterAll, expect } from 'vitest';
 import { writeFileSync, readFileSync } from 'fs';
 import { SshClient } from '../ssh';
-import { downloadsFolder, cleanUp, testContainer, getConnectionForSsh, getContainerHostAndPort, initContainer, localFileDownload, localFileUpload } from './common-utils';
+import ssh from 'ssh2';
+import { downloadsFolder, cleanUp, testContainer, getConnectionForSsh, getContainerHostAndPort, initContainer, localFileDownload, localFileUpload, privateKey } from './common-utils';
 
 let client: SshClient;
 
@@ -11,6 +12,26 @@ beforeAll(async () => {
 });
 
 describe('SSH Tests', () => {
+  it('isPassphraseRequiredForKey', async () => {
+    const k1 = ssh.utils.generateKeyPairSync('rsa', {
+      passphrase: 'password',
+      cipher: 'aes256-cbc',
+      bits: 2048,
+    });
+    expect(await SshClient.isPassphraseRequiredForKey(k1.private)).toBe(true);
+
+    const k2 = ssh.utils.generateKeyPairSync('rsa', {
+      cipher: 'aes256-cbc',
+      bits: 2048,
+    });
+    expect(await SshClient.isPassphraseRequiredForKey(k2.private)).toBe(false);
+
+    const k3 = ssh.utils.generateKeyPairSync('ecdsa', { bits: 256, comment: 'node.js rules!', passphrase: 'password', cipher: 'aes256-cbc' });
+    expect(await SshClient.isPassphraseRequiredForKey(k3.private)).toBe(true);
+
+    const k4 = ssh.utils.generateKeyPairSync('ecdsa', { bits: 256, comment: 'node.js rules!', cipher: 'aes256-cbc' });
+    expect(await SshClient.isPassphraseRequiredForKey(k4.private)).toBe(false);
+  });
   it('should create file from string', async () => {
     await expect(client.writeFileOnTheServer('/home/pl-doctor/from-string.txt', 'hello'));
 
@@ -115,7 +136,7 @@ describe('SSH Tests', () => {
 
   it('Auth types', async () => {
     const hostData = getContainerHostAndPort();
-    const types = await client.getAuthTypes(hostData.host, hostData.port);
+    const types = await SshClient.getAuthTypes(hostData.host, hostData.port);
     expect(types[0]).toBe('publickey');
   });
 });
