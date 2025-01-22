@@ -327,7 +327,7 @@ importers:
         version: 5.5.4
       vite:
         specifier: 'catalog:'
-        version: 5.4.11(@types/node@22.5.5)(sass@1.81.0)
+        version: 5.4.11(@types/node@22.5.5)(sass@1.83.4)
 
   etc/blocks/blob-url-custom-protocol/ui:
     dependencies:
@@ -349,13 +349,13 @@ importers:
         version: link:../../../../lib/util/helpers
       '@vitejs/plugin-vue':
         specifier: 'catalog:'
-        version: 5.2.1(vite@5.4.11(@types/node@22.5.5)(sass@1.81.0))(vue@3.5.13(typescript@5.5.4))
+        version: 5.2.1(vite@5.4.11(@types/node@22.5.5)(sass@1.83.4))(vue@3.5.13(typescript@5.5.4))
       typescript:
         specifier: 'catalog:'
         version: 5.5.4
       vite:
         specifier: 'catalog:'
-        version: 5.4.11(@types/node@22.5.5)(sass@1.81.0)
+        version: 5.4.11(@types/node@22.5.5)(sass@1.83.4)
       vue-tsc:
         specifier: 'catalog:'
         version: 2.1.10(typescript@5.5.4)
