@@ -1,5 +1,18 @@
 # @milaboratories/milaboratories.test-blob-url-custom-protocol
 
+## 1.0.1
+
+### Patch Changes
+
+- ce558f9: add blob to url driver that decompress the folder and returns url to the blob
+- b41709a: new driver: blob to url that unarchive things
+- Updated dependencies [ce558f9]
+- Updated dependencies [b41709a]
+  - @milaboratories/milaboratories.test-blob-url-custom-protocol.workflow@1.0.1
+  - @milaboratories/milaboratories.test-blob-url-custom-protocol.model@1.0.14
+  - @milaboratories/milaboratories.test-blob-url-custom-protocol.ui@1.0.1
+  - @platforma-sdk/model@1.22.2
+
 ## 1.0.60
 
 ### Patch Changes
