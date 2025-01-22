@@ -1,5 +1,24 @@
 # @milaboratories/drivers-ml-blocks-integration
 
+## 1.0.109
+
+### Patch Changes
+
+- Updated dependencies [32c7f91]
+  - @milaboratories/pl-client@2.7.3
+  - @milaboratories/pl-middle-layer@1.26.1
+  - @platforma-sdk/test@1.22.1
+  - @milaboratories/milaboratories.test-download-file@1.0.64
+  - @milaboratories/milaboratories.test-download-file.model@1.0.14
+  - @milaboratories/milaboratories.test-enter-numbers@1.0.186
+  - @milaboratories/milaboratories.test-enter-numbers.model@1.0.44
+  - @milaboratories/milaboratories.test-read-logs@1.0.64
+  - @milaboratories/milaboratories.test-read-logs.model@1.0.14
+  - @milaboratories/milaboratories.test-sum-numbers@1.0.64
+  - @milaboratories/milaboratories.test-sum-numbers.model@1.0.14
+  - @milaboratories/milaboratories.test-upload-file@1.0.64
+  - @milaboratories/milaboratories.test-upload-file.model@1.0.14
+
 ## 1.0.108
 
 ### Patch Changes

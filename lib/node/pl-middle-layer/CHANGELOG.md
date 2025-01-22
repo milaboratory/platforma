@@ -1,5 +1,17 @@
 # @milaboratories/pl-middle-layer
 
+## 1.26.1
+
+### Patch Changes
+
+- Updated dependencies [02860e7]
+- Updated dependencies [32c7f91]
+  - @milaboratories/pl-http@1.0.3
+  - @milaboratories/pl-client@2.7.3
+  - @platforma-sdk/block-tools@2.5.6
+  - @milaboratories/pl-drivers@1.5.10
+  - @milaboratories/pl-tree@1.4.22
+
 ## 1.26.0
 
 ### Minor Changes
