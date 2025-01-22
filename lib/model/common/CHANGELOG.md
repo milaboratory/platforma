@@ -1,5 +1,12 @@
 # @milaboratories/pl-model-common
 
+## 1.10.4
+
+### Patch Changes
+
+- ce558f9: add blob to url driver that decompress the folder and returns url to the blob
+- b41709a: new driver: blob to url that unarchive things
+
 ## 1.10.3
 
 ### Patch Changes

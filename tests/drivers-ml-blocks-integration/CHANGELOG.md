@@ -1,5 +1,28 @@
 # @milaboratories/drivers-ml-blocks-integration
 
+## 1.0.110
+
+### Patch Changes
+
+- ce558f9: add blob to url driver that decompress the folder and returns url to the blob
+- b41709a: new driver: blob to url that unarchive things
+- Updated dependencies [ce558f9]
+- Updated dependencies [b41709a]
+  - @milaboratories/milaboratories.test-blob-url-custom-protocol@1.0.1
+  - @milaboratories/milaboratories.test-blob-url-custom-protocol.model@1.0.14
+  - @milaboratories/pl-middle-layer@1.26.2
+  - @platforma-sdk/test@1.22.2
+  - @milaboratories/milaboratories.test-download-file@1.0.65
+  - @milaboratories/milaboratories.test-download-file.model@1.0.15
+  - @milaboratories/milaboratories.test-enter-numbers@1.0.187
+  - @milaboratories/milaboratories.test-enter-numbers.model@1.0.45
+  - @milaboratories/milaboratories.test-read-logs@1.0.65
+  - @milaboratories/milaboratories.test-read-logs.model@1.0.15
+  - @milaboratories/milaboratories.test-sum-numbers@1.0.65
+  - @milaboratories/milaboratories.test-sum-numbers.model@1.0.15
+  - @milaboratories/milaboratories.test-upload-file@1.0.65
+  - @milaboratories/milaboratories.test-upload-file.model@1.0.15
+
 ## 1.0.109
 
 ### Patch Changes
