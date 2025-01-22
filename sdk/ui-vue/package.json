@@ -57,6 +57,6 @@
     "yarpm": "catalog:",
     "semver": "catalog:",
     "@types/semver": "catalog:",
-    "rollup-plugin-sourcemaps": "catalog:"
+    "rollup-plugin-sourcemaps2": "catalog:"
   }
 }
