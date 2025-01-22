@@ -7,5 +7,4 @@ export type ArchiveFormat = 'zip' | 'tar' | 'tgz';
 
 export interface BlobToURLDriver {
   getPathForCustomProtocol(url: FolderURL): string;
-  info(): any;
 }

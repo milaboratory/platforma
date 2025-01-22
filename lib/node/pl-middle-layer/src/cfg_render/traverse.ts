@@ -31,7 +31,7 @@ export function* traverseCfg(cfg: Cfg, guide?: (cfg: Cfg) => boolean): Generator
     case 'Flatten':
     case 'GetResourceValueAsJson':
     case 'GetBlobContent':
-    case 'ExtractFolderAndGetURL':
+    case 'ExtractArchiveAndGetURL':
     case 'GetBlobContentAsString':
     case 'GetBlobContentAsJson':
     case 'GetDownloadedBlobContent':

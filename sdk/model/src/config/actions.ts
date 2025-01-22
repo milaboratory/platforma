@@ -24,7 +24,7 @@ import {
   ActGetLastLogs,
   ActGetProgressLog,
   ActGetLogHandle,
-ActExtractFolderAndGetURL
+  ActExtractArchiveAndGetURL
 } from './actions_kinds';
 import { ExtractAction, POCExtractAction, PrimitiveOrConfig, TypedConfig } from './type_engine';
 import { Cfg } from './model';
@@ -385,12 +385,12 @@ export function getOnDemandBlobContent<const Source extends TypedConfig>(
 // Download Blobs to URLs
 //
 
-export function extractFolderAndGetURL<const Source extends TypedConfig>(
+export function extractArchiveAndGetURL<const Source extends TypedConfig>(
   source: Source,
   format: ArchiveFormat,
-): TypedConfig<ActExtractFolderAndGetURL<ExtractAction<Source>>> {
+): TypedConfig<ActExtractArchiveAndGetURL<ExtractAction<Source>>> {
   return {
-    type: 'ExtractFolderAndGetURL',
+    type: 'ExtractArchiveAndGetURL',
     format,
     source: primitiveToConfig(source)
   } as Cfg as any;

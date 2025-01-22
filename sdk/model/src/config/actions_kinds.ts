@@ -209,7 +209,7 @@ export interface ActGetOnDemandBlobContent<Source extends ConfAction> extends Co
 // Download Blobs to URLs
 //
 
-export interface ActExtractFolderAndGetURL<Source extends ConfAction> extends ConfAction {
+export interface ActExtractArchiveAndGetURL<Source extends ConfAction> extends ConfAction {
   new: (
     x: this['ctx']
   ) => ActionResult<Source, typeof x> extends PlResourceEntry? FolderURL : unknown;

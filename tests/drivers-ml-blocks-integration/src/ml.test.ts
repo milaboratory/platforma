@@ -551,13 +551,10 @@ blockTest(
   async ({ rawPrj: project, ml, expect }) => {
     const blockId = await project.addBlock('DownloadBlobUrl', downloadBlobURLSpec);
 
-    const inputHandle = await lsDriverGetFileHandleFromAssets(
-      ml,
-      expect,
-      'funny_cats_site.tar.gz',
-    );
+    const inputTgzHandle = await lsDriverGetFileHandleFromAssets(ml, expect, 'funny_cats_site.tar.gz');
+    const inputZipHandle = await lsDriverGetFileHandleFromAssets(ml, expect, 'funny_cats_site.zip');
 
-    await project.setBlockArgs(blockId, { inputHandle });
+    await project.setBlockArgs(blockId, { inputTgzHandle, inputZipHandle });
 
     await project.runBlock(blockId);
 
