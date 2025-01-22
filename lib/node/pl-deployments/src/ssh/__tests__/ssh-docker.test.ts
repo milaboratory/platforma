@@ -2,7 +2,7 @@ import { describe, it, beforeAll, afterAll, expect } from 'vitest';
 import { writeFileSync, readFileSync } from 'fs';
 import { SshClient } from '../ssh';
 import ssh from 'ssh2';
-import { downloadsFolder, cleanUp, testContainer, getConnectionForSsh, getContainerHostAndPort, initContainer, localFileDownload, localFileUpload, privateKey } from './common-utils';
+import { downloadsFolder, cleanUp, testContainer, getConnectionForSsh, getContainerHostAndPort, initContainer, localFileDownload, localFileUpload } from './common-utils';
 
 let client: SshClient;
 
