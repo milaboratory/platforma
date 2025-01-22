@@ -101,7 +101,7 @@ export class LLPlClient {
     this.grpcTransport = new GrpcTransport(grpcOptions);
     this.grpcPl = new PlatformClient(this.grpcTransport);
 
-    this.httpDispatcher = defaultHttpDispatcher();
+    this.httpDispatcher = defaultHttpDispatcher(this.conf.httpProxy);
 
     if (statusListener !== undefined) {
       this.statusListener = statusListener;
