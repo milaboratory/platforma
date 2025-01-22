@@ -22,7 +22,7 @@ export type Cfg =
   | CfgBlobContentAsJson
   | CfgDownloadedBlobContent
   | CfgOnDemandBlobContent
-  | CfgExtractFolderAndGetURL
+  | CfgExtractArchiveAndGetURL
   | CfgImportProgress
   | CfgLastLogs
   | CfgProgressLog
@@ -173,8 +173,8 @@ export type CfgOnDemandBlobContent = {
 // Download Blobs to URLs
 //
 
-export type CfgExtractFolderAndGetURL = {
-  type: 'ExtractFolderAndGetURL';
+export type CfgExtractArchiveAndGetURL = {
+  type: 'ExtractArchiveAndGetURL';
   format: ArchiveFormat;
   source: Cfg;
 };

@@ -301,7 +301,7 @@ export class TreeNodeAccessor {
    * @returns the url to the extracted folder
    */
   public extractArchiveAndGetURL(format: ArchiveFormat): FutureRef<FolderURL | undefined> {
-    return new FutureRef(getCfgRenderCtx().getOnDemandBlobContentHandle(this.handle));
+    return new FutureRef(getCfgRenderCtx().extractArchiveAndGetURL(this.handle, format));
   }
 
   public getImportProgress(): FutureRef<ImportProgress> {

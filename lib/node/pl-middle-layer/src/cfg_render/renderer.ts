@@ -269,7 +269,7 @@ const SRGetOnDemandBlobContent: Subroutine = (args) => {
   };
 };
 
-const SRExtractFolderAndGetURL: (format: ArchiveFormat) => Subroutine = (format) => (args) => {
+const SRExtractArchiveAndGetURL: (format: ArchiveFormat) => Subroutine = (format) => (args) => {
   const source = args.source as PlTreeEntry | undefined;
   if (source === undefined) return resOp(undefined);
 
@@ -508,10 +508,10 @@ export function renderCfg(ctx: Record<string, unknown>, cfg: Cfg): Operation {
         }
       });
 
-    case 'ExtractFolderAndGetURL':
+    case 'ExtractArchiveAndGetURL':
       return () => ({
         type: 'ScheduleSubroutine',
-        subroutine: SRExtractFolderAndGetURL(cfg.format),
+        subroutine: SRExtractArchiveAndGetURL(cfg.format),
         args: {
           source: renderCfg(ctx, cfg.source)
         }

@@ -2,6 +2,7 @@ import { Optional } from 'utility-types';
 import { Branded } from '../branding';
 import { CommonFieldTraverseOps, FieldTraversalStep, ResourceType } from './traversal_ops';
 import {
+  ArchiveFormat,
   Option,
   PColumn,
   PColumnValues,
@@ -85,6 +86,12 @@ export interface GlobalCfgRenderCtxMethods<AHandle = AccessorHandle, FHandle = F
   getDownloadedBlobContentHandle(handle: AHandle): FHandle; // LocalBlobHandleAndSize | undefined;
 
   getOnDemandBlobContentHandle(handle: AHandle): FHandle; // RemoteBlobHandleAndSize | undefined;
+
+  //
+  // Blobs to URLs
+  //
+
+  extractArchiveAndGetURL(handle: AHandle, format: ArchiveFormat): FHandle;
 
   //
   // Import progress

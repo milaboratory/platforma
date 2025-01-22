@@ -1,6 +1,6 @@
 import {
   BlockModel,
-  extractFolderAndGetURL,
+  extractArchiveAndGetURL,
   getResourceField,
   ImportFileHandle,
   InferHrefType,
@@ -33,9 +33,9 @@ export const platforma = BlockModel.create('Heavy')
   .output('handleTgz', (ctx) => ctx.outputs?.resolve('handleTgz')?.getImportProgress())
   .output('handleZip', (ctx) => ctx.outputs?.resolve('handleZip')?.getImportProgress())
 
-  .output('tgz_content', extractFolderAndGetURL(getResourceField(MainOutputs, 'siteTgz'), 'tgz'))
-  .output('zip_content', extractFolderAndGetURL(getResourceField(MainOutputs, 'siteZip'), 'zip'))
+  .output('tgz_content', extractArchiveAndGetURL(getResourceField(MainOutputs, 'siteTgz'), 'tgz'))
 
+  .output('zip_content', (ctx) => ctx.outputs?.resolve('siteZip')?.extractArchiveAndGetURL('zip'))
   .sections((ctx) => {
     return [{ type: 'link', href: '/', label: 'Main' }];
   })
