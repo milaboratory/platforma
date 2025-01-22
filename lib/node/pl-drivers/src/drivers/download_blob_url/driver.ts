@@ -1,12 +1,3 @@
-/*
-  TODO:
-  - rename to just DownloadBlobToURLDriver
-  - signatures
-  - refactor, extract blob url
-  - more archive types
-
-  */
-
 import type { ComputableCtx, Watcher } from '@milaboratories/computable';
 import { Computable } from '@milaboratories/computable';
 import type {
@@ -17,7 +8,6 @@ import {
 } from '@milaboratories/ts-helpers';
 import { randomUUID } from 'node:crypto';
 import * as path from 'node:path';
-import * as fs from 'node:fs/promises';
 import { FilesCache } from '../helpers/files_cache';
 import type { ResourceId } from '@milaboratories/pl-client';
 import { stringifyWithResourceId } from '@milaboratories/pl-client';
@@ -28,6 +18,9 @@ import type { PlTreeEntry } from '@milaboratories/pl-tree';
 import { isPlTreeEntry } from '@milaboratories/pl-tree';
 import { DownloadAndUnarchiveTask, rmRFDir } from './task';
 import type { ClientDownload } from '../../clients/download';
+import { getPathForFolderURL, isFolderURL } from './url';
+import {Id, newId} from './driver_id';
+import { nonRecoverableError } from '../download_blob_task';
 
 export type DownloadBlobToURLDriverOps = {
   cacheSoftSizeBytes: number;
@@ -37,7 +30,7 @@ export type DownloadBlobToURLDriverOps = {
 /** Downloads .tar, .tar.gz or zip archives,
  * extracts them into saveDir and gets a url for it. */
 export class DownloadBlobToURLDriver implements BlobToURLDriver {
-  private idToDownload: Map<ResourceId, DownloadAndUnarchiveTask> = new Map();
+  private idToDownload: Map<Id, DownloadAndUnarchiveTask> = new Map();
   private downloadQueue: TaskProcessor;
 
   /** Writes and removes files to a hard drive and holds a counter for every
@@ -54,7 +47,13 @@ export class DownloadBlobToURLDriver implements BlobToURLDriver {
       nConcurrentDownloads: 50,
     },
   ) {
-    this.downloadQueue = new TaskProcessor(this.logger, this.opts.nConcurrentDownloads);
+    this.downloadQueue = new TaskProcessor(this.logger, this.opts.nConcurrentDownloads, {
+      type: 'exponentialWithMaxDelayBackoff',
+      initialDelay: 10000,
+      maxDelay: 30000,
+      backoffMultiplier: 1.5,
+      jitter: 0.5,
+    });
     this.cache = new FilesCache(this.opts.cacheSoftSizeBytes);
   }
 
@@ -72,16 +71,11 @@ export class DownloadBlobToURLDriver implements BlobToURLDriver {
    * @returns full path to the referenced file
    */
   getPathForCustomProtocol(url: FolderURL): string {
-    const parsed = new URL(url);
-    const signAndSubfolder = parsed.host;
-    const subfolder = signAndSubfolder.slice(signAndSubfolder.indexOf('.') + 1);
-    // TODO: add signature validation
-    let fPath = path.join(this.saveDir, subfolder, parsed.pathname);
+    if (isFolderURL(url)) {
+      return getPathForFolderURL(this.signer, url, this.saveDir);
+    }
 
-    if (parsed.pathname == '' || parsed.pathname == '/')
-      fPath = path.join(fPath, 'index.html');
-
-    return path.resolve(fPath);
+    throw new Error(`getPathForCustomProtocol: ${url} is invalid`);
   }
 
   extractArchiveAndGetURL(
@@ -110,31 +104,37 @@ export class DownloadBlobToURLDriver implements BlobToURLDriver {
 
     const callerId = randomUUID();
 
-    ctx.addOnDestroy(() => this.releasePath(rInfo.id, callerId));
+    ctx.addOnDestroy(() => this.releasePath(rInfo.id, format, callerId));
 
-    const result = this.extractArchiveAndGetURLNoCtx(rInfo, ctx.watcher, callerId);
+    const result = this.extractArchiveAndGetURLNoCtx(rInfo, format, ctx.watcher, callerId);
     if (result?.url === undefined)
       ctx.markUnstable(
-        `a path to the downloaded and untared archive might be undefined. The current result: ${result}`,
+        `a path to the downloaded archive might be undefined. The current result: ${result}`,
       );
+
     if (result?.error !== undefined)
       throw result?.error;
 
     return result?.url;
   }
 
-  private extractArchiveAndGetURLNoCtx(rInfo: DownloadableBlobSnapshot, w: Watcher, callerId: string) {
-    const task = this.idToDownload.get(rInfo.id);
+  private extractArchiveAndGetURLNoCtx(
+    rInfo: DownloadableBlobSnapshot,
+    format: ArchiveFormat,
+    w: Watcher,
+    callerId: string,
+  ) {
+    const task = this.idToDownload.get(newId(rInfo.id, format));
 
     if (task != undefined) {
       task.attach(w, callerId);
       return task.getURL();
     }
 
-    const newTask = this.setNewTask(w, rInfo, callerId);
+    const newTask = this.setNewTask(w, rInfo, format, callerId);
     this.downloadQueue.push({
       fn: async () => this.downloadUrl(newTask, callerId),
-      recoverableErrorPredicate: (e) => true,
+      recoverableErrorPredicate: (e) => !nonRecoverableError(e),
     });
 
     return newTask.getURL();
@@ -142,15 +142,15 @@ export class DownloadBlobToURLDriver implements BlobToURLDriver {
 
   /** Downloads and extracts a tar archive if it wasn't downloaded yet. */
   async downloadUrl(task: DownloadAndUnarchiveTask, callerId: string) {
-    await task.download(true);
+    await task.download();
     // Might be undefined if a error happened
     if (task.getURL()?.url != undefined) this.cache.addCache(task, callerId);
   }
 
   /** Removes a directory and aborts a downloading task when all callers
    * are not interested in it. */
-  async releasePath(id: ResourceId, callerId: string): Promise<void> {
-    const task = this.idToDownload.get(id);
+  async releasePath(id: ResourceId, format: ArchiveFormat, callerId: string): Promise<void> {
+    const task = this.idToDownload.get(newId(id, format));
     if (task == undefined) return;
 
     if (this.cache.existsFile(task.path)) {
@@ -184,7 +184,7 @@ export class DownloadBlobToURLDriver implements BlobToURLDriver {
     this.downloadQueue.stop();
 
     await Promise.all(
-      Array.from(this.idToDownload.entries()).map(async ([id, task]) => {
+      Array.from(this.idToDownload.entries()).map(async ([_, task]) => {
         await rmRFDir(task.path);
         this.cache.removeCache(task);
 
@@ -196,10 +196,18 @@ export class DownloadBlobToURLDriver implements BlobToURLDriver {
     );
   }
 
-  private setNewTask(w: Watcher, rInfo: DownloadableBlobSnapshot, callerId: string) {
-    const result = new DownloadAndUnarchiveTask(this.logger, this.saveDir, this.getFilePath(rInfo.id), rInfo, this.clientDownload);
+  private setNewTask(w: Watcher, rInfo: DownloadableBlobSnapshot, format: ArchiveFormat, callerId: string) {
+    const result = new DownloadAndUnarchiveTask(
+      this.logger,
+      this.signer,
+      this.saveDir,
+      this.getFilePath(rInfo.id, format),
+      rInfo,
+      format,
+      this.clientDownload,
+    );
     result.attach(w, callerId);
-    this.idToDownload.set(rInfo.id, result);
+    this.idToDownload.set(newId(rInfo.id, format), result);
 
     return result;
   }
@@ -207,10 +215,10 @@ export class DownloadBlobToURLDriver implements BlobToURLDriver {
   private removeTask(task: DownloadAndUnarchiveTask, reason: string) {
     task.abort(reason);
     task.change.markChanged();
-    this.idToDownload.delete(task.rInfo.id);
+    this.idToDownload.delete(newId(task.rInfo.id, task.format));
   }
 
-  private getFilePath(id: ResourceId): string {
-    return path.join(this.saveDir, String(BigInt(id)));
+  private getFilePath(id: ResourceId, format: ArchiveFormat): string {
+    return path.join(this.saveDir, `${String(BigInt(id))}_${format}`);
   }
 }

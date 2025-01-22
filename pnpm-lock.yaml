@@ -1470,6 +1470,9 @@ importers:
       '@protobuf-ts/runtime-rpc':
         specifier: 'catalog:'
         version: 2.9.4
+      decompress:
+        specifier: 'catalog:'
+        version: 4.2.1
       denque:
         specifier: 'catalog:'
         version: 2.1.0
@@ -1492,6 +1495,9 @@ importers:
       '@milaboratories/platforma-build-configs':
         specifier: workspace:*
         version: link:../../util/build-configs
+      '@types/decompress':
+        specifier: 'catalog:'
+        version: 4.2.7
       '@types/jest':
         specifier: 'catalog:'
         version: 29.5.14
