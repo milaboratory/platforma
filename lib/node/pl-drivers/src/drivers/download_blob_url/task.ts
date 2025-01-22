@@ -95,7 +95,7 @@ export class DownloadAndUnarchiveTask {
       return await dirSize(this.path);
     }
 
-    let { content, size } = await this.clientDownload.downloadBlob(
+    const { content, size } = await this.clientDownload.downloadBlob(
       this.rInfo, {}, signal,
     );
     this.state.downloaded = true;
@@ -105,23 +105,23 @@ export class DownloadAndUnarchiveTask {
       this.state!.archiveFormat = this.format;
 
       switch (this.format) {
-      case 'tar':
+        case 'tar':
           await fsp.mkdir(fPath); // throws if a directory already exists.
           const simpleUntar = Writable.toWeb(tar.extract(fPath));
           await content.pipeTo(simpleUntar, { signal });
           return;
 
-      case 'tgz':
+        case 'tgz':
           await fsp.mkdir(fPath); // throws if a directory already exists.
           const gunzip = Transform.toWeb(zlib.createGunzip());
           const untar = Writable.toWeb(tar.extract(fPath));
 
-          await content.
-            pipeThrough(gunzip, { signal }).
-            pipeTo(untar, { signal });
+          await content
+            .pipeThrough(gunzip, { signal })
+            .pipeTo(untar, { signal });
           return;
 
-      case 'zip':
+        case 'zip':
           this.state!.zipPath = this.path + '.zip';
 
           const f = Writable.toWeb(fs.createWriteStream(this.state!.zipPath));
@@ -135,7 +135,7 @@ export class DownloadAndUnarchiveTask {
 
           return;
 
-      default:
+        default:
           assertNever(this.format);
       }
     });

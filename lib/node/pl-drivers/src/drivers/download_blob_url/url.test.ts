@@ -1,7 +1,8 @@
 import path from 'path';
 import { describe, test, expect } from '@jest/globals';
-import {isFolderURL, getPathForFolderURL} from './url';
-import { HmacSha256Signer, Signer } from '@milaboratories/ts-helpers';
+import { isFolderURL, getPathForFolderURL } from './url';
+import type { Signer } from '@milaboratories/ts-helpers';
+import { HmacSha256Signer } from '@milaboratories/ts-helpers';
 import { FolderURL } from '@milaboratories/pl-model-common';
 
 describe('isFolderURL', () => {
@@ -26,7 +27,7 @@ describe('getPathForFolderURL', () => {
     sign: (data: string | Uint8Array) => 'signature',
 
     verify: (data: string | Uint8Array, signature: string, validationErrorMessage?: string) => null,
-  }
+  };
 
   test('should be ok', () => {
     const folderURL = 'plblob+folder://signature.blob-subfolder/path/to/resource.html';
