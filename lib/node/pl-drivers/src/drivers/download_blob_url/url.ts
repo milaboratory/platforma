@@ -1,5 +1,6 @@
-import { ArchiveFormat, FolderURL } from '@milaboratories/pl-model-common';
-import { Signer } from '@milaboratories/ts-helpers';
+import type { FolderURL } from '@milaboratories/pl-model-common';
+import { ArchiveFormat } from '@milaboratories/pl-model-common';
+import type { Signer } from '@milaboratories/ts-helpers';
 import path from 'path';
 
 export function newFolderURL(signer: Signer, saveDir: string, fPath: string): FolderURL {

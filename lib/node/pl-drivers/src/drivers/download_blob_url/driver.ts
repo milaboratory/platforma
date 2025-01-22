@@ -19,7 +19,8 @@ import { isPlTreeEntry } from '@milaboratories/pl-tree';
 import { DownloadAndUnarchiveTask, rmRFDir } from './task';
 import type { ClientDownload } from '../../clients/download';
 import { getPathForFolderURL, isFolderURL } from './url';
-import {Id, newId} from './driver_id';
+import type { Id } from './driver_id';
+import { newId } from './driver_id';
 import { nonRecoverableError } from '../download_blob_task';
 
 export type DownloadBlobToURLDriverOps = {
