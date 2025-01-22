@@ -5,29 +5,27 @@ import { computed } from 'vue';
 
 const app = useApp();
 
-const progress = computed(() => {
-    const handle = app.snapshot.outputs.handle;
-
-    if (!handle) return undefined;
-
-    if (!handle.ok) return undefined;
-
-    return handle.value;
-})
 </script>
 
 <template>
     <PlBlockPage style="max-width: 100%">
-        <PlFileInput v-model="app.model.args.inputHandle" label="Select file to import" :progress="progress" />
+        <PlFileInput v-model="app.model.args.inputTgzHandle" label="Select tgz file to import" />
+        <PlFileInput v-model="app.model.args.inputZipHandle" label="Select zip file to import" />
 
         <PlAlert type="success">
-            Blob content:
-            {{ app.model.outputs.tar_gz_content }}
+            Blob tgz content:
+            {{ app.model.outputs.tgz_content }}
+        </PlAlert>
+
+        <PlAlert type="success">
+            Blob zip content:
+            {{ app.model.outputs.zip_content }}
         </PlAlert>
 
         <PlAlert v-if="app.error" type="error">
             {{ app.error }}
         </PlAlert>
+
         <fieldset>
             <legend>Args (app.model.args)</legend>
             {{ app.model.args }}
@@ -41,5 +39,8 @@ const progress = computed(() => {
         <PlAlert type="error" v-if="app.hasErrors">
             {{ app.model.outputErrors }}
         </PlAlert>
+
+        <iframe title="Frame tgz Example" width="600" height="600" :src="app.model.outputs.tgz_content" />
+        <iframe title="Frame zip Example" width="600" height="600" :src="app.model.outputs.zip_content" />
     </PlBlockPage>
 </template>

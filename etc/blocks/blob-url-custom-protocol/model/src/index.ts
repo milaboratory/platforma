@@ -17,7 +17,8 @@ export const ImportFileHandleSchema = z
   );
 
 export const BlockArgs = z.object({
-  inputHandle: ImportFileHandleSchema
+  inputTgzHandle: ImportFileHandleSchema,
+  inputZipHandle: ImportFileHandleSchema
 });
 
 export type BlockArgs = z.infer<typeof BlockArgs>;
@@ -25,12 +26,15 @@ export type BlockArgs = z.infer<typeof BlockArgs>;
 export const platforma = BlockModel.create('Heavy')
 
   .withArgs({
-    inputHandle: undefined
+    inputTgzHandle: undefined,
+    inputZipHandle: undefined
   })
 
-  .output('handle', (ctx) => ctx.outputs?.resolve('handle')?.getImportProgress())
+  .output('handleTgz', (ctx) => ctx.outputs?.resolve('handleTgz')?.getImportProgress())
+  .output('handleZip', (ctx) => ctx.outputs?.resolve('handleZip')?.getImportProgress())
 
-  .output('tar_gz_content', extractFolderAndGetURL(getResourceField(MainOutputs, 'tar_gz_site'), 'tgz'))
+  .output('tgz_content', extractFolderAndGetURL(getResourceField(MainOutputs, 'siteTgz'), 'tgz'))
+  .output('zip_content', extractFolderAndGetURL(getResourceField(MainOutputs, 'siteZip'), 'zip'))
 
   .sections((ctx) => {
     return [{ type: 'link', href: '/', label: 'Main' }];

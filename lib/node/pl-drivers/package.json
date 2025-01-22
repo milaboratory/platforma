@@ -24,6 +24,7 @@
     "src/**/*"
   ],
   "dependencies": {
+    "decompress": "catalog:",
     "@grpc/grpc-js": "catalog:",
     "@milaboratories/ts-helpers": "workspace:^",
     "@milaboratories/computable": "workspace:^",
@@ -41,6 +42,7 @@
   },
   "devDependencies": {
     "eslint": "catalog:",
+    "@types/decompress": "catalog:",
     "@milaboratories/eslint-config": "workspace:^",
     "@milaboratories/platforma-build-configs": "workspace:*",
     "typescript": "catalog:",

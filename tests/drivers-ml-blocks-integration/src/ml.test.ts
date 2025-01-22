@@ -574,15 +574,16 @@ blockTest(
 
       const outputs = state.outputs;
 
-      if (outputs.tar_gz_content.ok) {
-        const url = outputs.tar_gz_content.value;
+      if (outputs.tgz_content.ok) {
+        const url = outputs.tgz_content.value;
         expect(url).not.toBeUndefined();
-        console.dir(ml.driverKit.blobToURLDriver.info(), { depth: 150 });
+        console.dir(ml.internalDriverKit.blobToURLDriver.info(), { depth: 150 });
 
-        const defaultUrl = ml.driverKit.blobToURLDriver.getPathForCustomProtocol(url);
+        const defaultUrl = ml.internalDriverKit.blobToURLDriver.getPathForCustomProtocol(url);
         expect(defaultUrl).matches(/.*index.html$/);
 
-        const styles = ml.driverKit.blobToURLDriver.getPathForCustomProtocol((url + '/styles.css') as FolderURL);
+        const styles = ml.internalDriverKit.blobToURLDriver.getPathForCustomProtocol((url + '/styles.css') as FolderURL);
+
         expect(styles).matches(/.*\/styles.css/);
 
         return;
