@@ -1,11 +1,10 @@
 import type { ConnectConfig, ClientChannel, SFTPWrapper } from 'ssh2';
-import { Client } from 'ssh2';
+import ssh, { Client } from 'ssh2';
 import net from 'net';
 import dns from 'dns';
 import fs from 'fs';
 import { readFile } from 'fs/promises';
 import path from 'path';
-import { rejects } from 'assert';
 
 export type SshAuthMethods = 'publickey' | 'password';
 export type SshAuthMethodsResult = SshAuthMethods[];
@@ -94,7 +93,7 @@ export class SshClient {
    * @param port - The port number to connect to on the server.
    * @returns 'publickey' | 'password'[] A promise resolving with a list of supported authentication methods.
    */
-  public async getAuthTypes(host: string, port: number): Promise<SshAuthMethodsResult> {
+  public static async getAuthTypes(host: string, port: number): Promise<SshAuthMethodsResult> {
     return new Promise((resolve) => {
       let stdout = '';
       const conn = new Client();
@@ -126,7 +125,7 @@ export class SshClient {
    * @param log - The debug log output containing authentication information.
    * @returns An array of extracted authentication methods.
    */
-  private extractAuthMethods(log: string): string[] {
+  private static extractAuthMethods(log: string): string[] {
     const match = log.match(/Inbound: Received USERAUTH_FAILURE \((.+)\)/);
     return match && match[1] ? match[1].split(',').map((method) => method.trim()) : [];
   }
@@ -217,30 +216,15 @@ export class SshClient {
    */
   public static async isPassphraseRequiredForKey(privateKey: string): Promise<boolean> {
     return new Promise((resolve, reject) => {
-      const conn = new Client();
-
-      conn.on('error', (err) => {
-        if (err.message.includes('Cannot parse privateKey')) {
-          resolve(true);
-        } else {
-          reject(err);
-        }
-      });
-
-      conn.on('ready', () => {
-        conn.end();
-        resolve(false);
-      });
-
       try {
-        conn.connect({ username: 'someuser', privateKey });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } catch (err: any) {
-        if (err.message.includes('Cannot parse privateKey')) {
+        const keyOrError = ssh.utils.parseKey(privateKey);
+        if (keyOrError instanceof Error) {
           resolve(true);
-        } else {
-          reject(err);
         }
+        return resolve(false);
+      } catch (err: unknown) {
+        console.log('Error parsing privateKey');
+        reject(err);
       }
     });
   }
