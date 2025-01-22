@@ -1,17 +1,18 @@
 import { addRTypeToMetadata } from '@milaboratories/pl-client';
-import { ResourceInfo } from '@milaboratories/pl-tree';
-import { MiLogger } from '@milaboratories/ts-helpers';
-import { GrpcTransport } from '@protobuf-ts/grpc-transport';
+import type { ResourceInfo } from '@milaboratories/pl-tree';
+import type { MiLogger } from '@milaboratories/ts-helpers';
+import type { GrpcTransport } from '@protobuf-ts/grpc-transport';
 import type { RpcOptions } from '@protobuf-ts/runtime-rpc';
 import * as fs from 'node:fs';
 import * as fsp from 'node:fs/promises';
 import * as path from 'node:path';
 import { Readable } from 'node:stream';
-import { Dispatcher } from 'undici';
-import { LocalStorageProjection } from '../drivers/types';
-import { DownloadResponse, RemoteFileDownloader } from '../helpers/download';
+import type { Dispatcher } from 'undici';
+import type { LocalStorageProjection } from '../drivers/types';
+import type { DownloadResponse } from '../helpers/download';
+import { RemoteFileDownloader } from '../helpers/download';
 import { validateAbsolute } from '../helpers/validate';
-import { DownloadAPI_GetDownloadURL_Response } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/downloadapi/protocol';
+import type { DownloadAPI_GetDownloadURL_Response } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/downloadapi/protocol';
 import { DownloadClient } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/downloadapi/protocol.client';
 import { toHeadersMap } from './helpers';
 
@@ -29,7 +30,7 @@ export class ClientDownload {
     public readonly httpClient: Dispatcher,
     public readonly logger: MiLogger,
     /** Pl storages available locally */
-    localProjections: LocalStorageProjection[]
+    localProjections: LocalStorageProjection[],
   ) {
     this.grpcClient = new DownloadClient(this.grpcTransport);
     this.remoteFileDownloader = new RemoteFileDownloader(httpClient);
@@ -41,7 +42,7 @@ export class ClientDownload {
   async downloadBlob(
     info: ResourceInfo,
     options?: RpcOptions,
-    signal?: AbortSignal
+    signal?: AbortSignal,
   ): Promise<DownloadResponse> {
     const { downloadUrl, headers } = await this.grpcGetDownloadUrl(info, options, signal);
 
@@ -58,21 +59,21 @@ export class ClientDownload {
 
     return {
       content: Readable.toWeb(fs.createReadStream(fullPath)),
-      size: (await fsp.stat(fullPath)).size
+      size: (await fsp.stat(fullPath)).size,
     };
   }
 
   private async grpcGetDownloadUrl(
     { id, type }: ResourceInfo,
     options?: RpcOptions,
-    signal?: AbortSignal
+    signal?: AbortSignal,
   ): Promise<DownloadAPI_GetDownloadURL_Response> {
     const withAbort = options ?? {};
     withAbort.abort = signal;
 
     return await this.grpcClient.getDownloadURL(
       { resourceId: id },
-      addRTypeToMetadata(type, withAbort)
+      addRTypeToMetadata(type, withAbort),
     ).response;
   }
 }
@@ -84,14 +85,14 @@ export function parseLocalUrl(url: string) {
 
   return {
     storageId: parsed.host,
-    relativePath: decodeURIComponent(parsed.pathname.slice(1))
+    relativePath: decodeURIComponent(parsed.pathname.slice(1)),
   };
 }
 
 export function getFullPath(
   storageId: string,
   localStorageIdsToRoot: Map<string, string>,
-  relativePath: string
+  relativePath: string,
 ) {
   const root = localStorageIdsToRoot.get(storageId);
   if (root === undefined) throw new UnknownStorageError(`Unknown storage location: ${storageId}`);

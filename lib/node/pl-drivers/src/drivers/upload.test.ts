@@ -1,5 +1,7 @@
-import { PlClient, PlTransaction, ResourceId, TestHelpers } from '@milaboratories/pl-client';
-import { ConsoleLoggerAdapter, HmacSha256Signer, Signer } from '@milaboratories/ts-helpers';
+import type { PlClient, PlTransaction, ResourceId } from '@milaboratories/pl-client';
+import { TestHelpers } from '@milaboratories/pl-client';
+import type { Signer } from '@milaboratories/ts-helpers';
+import { ConsoleLoggerAdapter, HmacSha256Signer } from '@milaboratories/ts-helpers';
 import * as fsp from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
@@ -8,7 +10,7 @@ import { createUploadBlobClient, createUploadProgressClient } from '../clients/c
 import { expect, test } from '@jest/globals';
 import { Computable } from '@milaboratories/computable';
 import { SynchronizedTreeState } from '@milaboratories/pl-tree';
-import { ImportResourceSnapshot } from './types';
+import type { ImportResourceSnapshot } from './types';
 
 test('upload a blob', async () => {
   await withTest(async ({ client, uploader, signer }: TestArg) => {
@@ -177,7 +179,7 @@ test('upload lots of duplicate blobs concurrently', async () => {
       logger,
       signer,
       createUploadBlobClient(client, logger),
-      createUploadProgressClient(client, logger)
+      createUploadProgressClient(client, logger),
     );
 
     const tmpDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test'));
@@ -189,7 +191,7 @@ test('upload lots of duplicate blobs concurrently', async () => {
         'DuplicateBlobsFileContent',
         signer,
         tmpDir,
-        `testUploadABlob_${i}.txt`
+        `testUploadABlob_${i}.txt`,
       );
 
       settings.push(stat);
@@ -225,7 +227,7 @@ test('index a blob', async () => {
     const uploadId = await createBlobIndex(
       client,
       './another_answer_to_the_ultimate_question.txt',
-      'library'
+      'library',
     );
     const handleRes = await getSnapshot(client, uploadId);
 
@@ -260,7 +262,7 @@ async function withTest(cb: (arg: TestArg) => Promise<void>) {
       logger,
       signer,
       createUploadBlobClient(client, logger),
-      createUploadProgressClient(client, logger)
+      createUploadProgressClient(client, logger),
     );
 
     await cb({ client, uploader, signer });
@@ -280,7 +282,7 @@ async function writeFile(
   fileContent: string,
   signer: Signer,
   tmpDir?: string,
-  fileName: string = 'testUploadABlob.txt'
+  fileName: string = 'testUploadABlob.txt',
 ): Promise<FileStat> {
   if (tmpDir == undefined) tmpDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test'));
 
@@ -320,10 +322,10 @@ async function createMapOfUploads(c: PlClient, n: number, settings: FileStat[]) 
 
       return {
         mapId: await mapId.globalId,
-        uploadIds: uploads
+        uploadIds: uploads,
       };
     },
-    {}
+    {},
   );
 }
 
@@ -338,7 +340,7 @@ async function createBlobUpload(c: PlClient, stat: FileStat): Promise<ResourceId
 
       return uploadId;
     },
-    {}
+    {},
   );
 }
 
@@ -347,7 +349,7 @@ async function createBlobUploadTx(tx: PlTransaction, stat: FileStat): Promise<Re
     modificationTime: stat.mtime.toString(),
     localPath: stat.fPath,
     pathSignature: stat.fileSignature,
-    sizeBytes: stat.size.toString()
+    sizeBytes: stat.size.toString(),
   };
   const data = new TextEncoder().encode(JSON.stringify(settings));
   const upload = tx.createStruct({ name: 'BlobUpload', version: '1' }, data);
@@ -361,30 +363,30 @@ async function createBlobIndex(c: PlClient, path: string, storageId: string): Pr
     async (tx: PlTransaction) => {
       const settings = {
         storageId: storageId,
-        path: path
+        path: path,
       };
       const data = new TextEncoder().encode(JSON.stringify(settings));
       const importInternal = tx.createStruct({ name: 'BlobImportInternal', version: '1' }, data);
       tx.createField(
         { resourceId: c.clientRoot, fieldName: 'project1' },
         'Dynamic',
-        importInternal
+        importInternal,
       );
       await tx.commit();
 
       return await importInternal.globalId;
     },
-    {}
+    {},
   );
 }
 
 async function getSnapshot(
   client: PlClient,
-  uploadId: ResourceId
+  uploadId: ResourceId,
 ): Promise<ImportResourceSnapshot> {
   const tree = await SynchronizedTreeState.init(client, uploadId, {
     stopPollingDelay: 600,
-    pollingInterval: 300
+    pollingInterval: 300,
   });
   try {
     const computable = Computable.make((ctx) => {

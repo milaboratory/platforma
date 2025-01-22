@@ -107,7 +107,7 @@ export class StreamingClient implements IStreamingClient, ServiceInfo {
    */
   streamBinary(
     input: StreamingAPI_StreamBinary,
-    options?: RpcOptions
+    options?: RpcOptions,
   ): ServerStreamingCall<StreamingAPI_StreamBinary, StreamingAPI_Response> {
     const method = this.methods[0],
       opt = this._transport.mergeOptions(options);
@@ -116,9 +116,10 @@ export class StreamingClient implements IStreamingClient, ServiceInfo {
       this._transport,
       method,
       opt,
-      input
+      input,
     );
   }
+
   /**
    * ReadBinary allows to read remote item in chunks using stream-like API.
    * The difference to StreamBinary is that the client receives single response for each
@@ -129,7 +130,7 @@ export class StreamingClient implements IStreamingClient, ServiceInfo {
    */
   readBinary(
     input: StreamingAPI_ReadBinary,
-    options?: RpcOptions
+    options?: RpcOptions,
   ): UnaryCall<StreamingAPI_ReadBinary, StreamingAPI_Response> {
     const method = this.methods[1],
       opt = this._transport.mergeOptions(options);
@@ -138,9 +139,10 @@ export class StreamingClient implements IStreamingClient, ServiceInfo {
       this._transport,
       method,
       opt,
-      input
+      input,
     );
   }
+
   /**
    * StreamText provides stream of textual file, splitting the data by newline symbol.
    * Each response message keeps one single line of text from data source.
@@ -149,7 +151,7 @@ export class StreamingClient implements IStreamingClient, ServiceInfo {
    */
   streamText(
     input: StreamingAPI_StreamText,
-    options?: RpcOptions
+    options?: RpcOptions,
   ): ServerStreamingCall<StreamingAPI_StreamText, StreamingAPI_Response> {
     const method = this.methods[2],
       opt = this._transport.mergeOptions(options);
@@ -158,9 +160,10 @@ export class StreamingClient implements IStreamingClient, ServiceInfo {
       this._transport,
       method,
       opt,
-      input
+      input,
     );
   }
+
   /**
    * ReadBinary allows to read remote item in chunks using stream-like API.
    * The difference to StreamBinary is that the client receives single response for each
@@ -171,7 +174,7 @@ export class StreamingClient implements IStreamingClient, ServiceInfo {
    */
   readText(
     input: StreamingAPI_ReadText,
-    options?: RpcOptions
+    options?: RpcOptions,
   ): UnaryCall<StreamingAPI_ReadText, StreamingAPI_Response> {
     const method = this.methods[3],
       opt = this._transport.mergeOptions(options);
@@ -180,9 +183,10 @@ export class StreamingClient implements IStreamingClient, ServiceInfo {
       this._transport,
       method,
       opt,
-      input
+      input,
     );
   }
+
   /**
    * LastLines provides single message with the last lines from data source.
    * When search pattern is specified, the last lines matching the given pattern are returned.
@@ -197,7 +201,7 @@ export class StreamingClient implements IStreamingClient, ServiceInfo {
    */
   lastLines(
     input: StreamingAPI_LastLines,
-    options?: RpcOptions
+    options?: RpcOptions,
   ): UnaryCall<StreamingAPI_LastLines, StreamingAPI_Response> {
     const method = this.methods[4],
       opt = this._transport.mergeOptions(options);
@@ -206,7 +210,7 @@ export class StreamingClient implements IStreamingClient, ServiceInfo {
       this._transport,
       method,
       opt,
-      input
+      input,
     );
   }
 }

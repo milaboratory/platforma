@@ -1,5 +1,7 @@
 import { blockSpec as downloadFileSpec } from '@milaboratories/milaboratories.test-download-file';
 import { platforma as downloadFileModel } from '@milaboratories/milaboratories.test-download-file.model';
+import { blockSpec as downloadBlobURLSpec } from '@milaboratories/milaboratories.test-blob-url-custom-protocol';
+import { platforma as downloadBlobURLModel } from '@milaboratories/milaboratories.test-blob-url-custom-protocol.model';
 import { blockSpec as enterNumberSpec } from '@milaboratories/milaboratories.test-enter-numbers';
 import { blockSpec as readLogsSpec } from '@milaboratories/milaboratories.test-read-logs';
 import { platforma as readLogsModel } from '@milaboratories/milaboratories.test-read-logs.model';
@@ -8,6 +10,7 @@ import { blockSpec as uploadFileSpec } from '@milaboratories/milaboratories.test
 import { platforma as uploadFileModel } from '@milaboratories/milaboratories.test-upload-file.model';
 import { PlClient } from '@milaboratories/pl-client';
 import {
+  FolderURL,
   ImportFileHandle,
   InferBlockState,
   InitialBlockSettings,
@@ -22,7 +25,6 @@ import { awaitStableState, blockTest } from '@platforma-sdk/test';
 import fs from 'fs';
 import { randomUUID } from 'node:crypto';
 import path from 'path';
-import { setTimeout } from 'timers/promises';
 import { test } from 'vitest';
 
 export async function withMl(
@@ -536,6 +538,50 @@ blockTest(
         expect(
           Buffer.from(await ml.driverKit.blobDriver.getContent(remoteBlob.handle)).toString('utf-8')
         ).toEqual('42\n');
+
+        return;
+      }
+    }
+  }
+);
+
+blockTest(
+  'should create blob-url-custom-protocol block, render it and gets outputs from its config',
+  {timeout: 30000},
+  async ({ rawPrj: project, ml, expect }) => {
+    const blockId = await project.addBlock('DownloadBlobUrl', downloadBlobURLSpec);
+
+    const inputTgzHandle = await lsDriverGetFileHandleFromAssets(ml, expect, 'funny_cats_site.tar.gz');
+    const inputZipHandle = await lsDriverGetFileHandleFromAssets(ml, expect, 'funny_cats_site.zip');
+
+    await project.setBlockArgs(blockId, { inputTgzHandle, inputZipHandle });
+
+    await project.runBlock(blockId);
+
+    while (true) {
+      const state = (await awaitStableState(
+        project.getBlockState(blockId),
+        13000
+      )) as InferBlockState<typeof downloadBlobURLModel>;
+      // console.dir(state, { depth: 5 });
+
+      const blockFrontend = await project.getBlockFrontend(blockId).awaitStableValue();
+      expect(blockFrontend).toBeDefined();
+      console.dir(blockFrontend, { depth: 5 });
+
+      const outputs = state.outputs;
+
+      if (outputs.tgz_content.ok) {
+        const url = outputs.tgz_content.value;
+        expect(url).not.toBeUndefined();
+        console.dir(ml.internalDriverKit.blobToURLDriver.info(), { depth: 150 });
+
+        const defaultUrl = ml.internalDriverKit.blobToURLDriver.getPathForCustomProtocol(url);
+        expect(defaultUrl).matches(/.*index.html$/);
+
+        const styles = ml.internalDriverKit.blobToURLDriver.getPathForCustomProtocol((url + '/styles.css') as FolderURL);
+
+        expect(styles).matches(/.*\/styles.css/);
 
         return;
       }

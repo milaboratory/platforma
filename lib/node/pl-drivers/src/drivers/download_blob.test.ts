@@ -1,13 +1,14 @@
 import { expect, test } from '@jest/globals';
-import {
+import type {
   FieldId,
   FieldRef,
-  jsonToData,
   PlClient,
   PlTransaction,
+  PollTxAccessor } from '@milaboratories/pl-client';
+import {
+  jsonToData,
   poll,
-  PollTxAccessor,
-  TestHelpers
+  TestHelpers,
 } from '@milaboratories/pl-client';
 import { ConsoleLoggerAdapter, HmacSha256Signer } from '@milaboratories/ts-helpers';
 import * as fsp from 'node:fs/promises';
@@ -16,7 +17,7 @@ import * as path from 'node:path';
 import { scheduler } from 'node:timers/promises';
 import { createDownloadClient, createLogsClient } from '../clients/constructors';
 import { DownloadDriver } from './download_blob';
-import { OnDemandBlobResourceSnapshot } from './types';
+import type { OnDemandBlobResourceSnapshot } from './types';
 
 const fileName = 'answer_to_the_ultimate_question.txt';
 
@@ -31,7 +32,7 @@ test('should download a blob and read its content', async () => {
       createLogsClient(client, logger),
       dir,
       new HmacSha256Signer(HmacSha256Signer.generateSecret()),
-      { cacheSoftSizeBytes: 700 * 1024, nConcurrentDownloads: 10 }
+      { cacheSoftSizeBytes: 700 * 1024, nConcurrentDownloads: 10 },
     );
     const downloadable = await makeDownloadableBlobFromAssets(client, fileName);
 
@@ -62,7 +63,7 @@ test('should not redownload a blob a file already exists', async () => {
       createLogsClient(client, logger),
       dir,
       signer,
-      { cacheSoftSizeBytes: 700 * 1024, nConcurrentDownloads: 10 }
+      { cacheSoftSizeBytes: 700 * 1024, nConcurrentDownloads: 10 },
     );
 
     console.log('Download the first time');
@@ -83,7 +84,7 @@ test('should not redownload a blob a file already exists', async () => {
       createLogsClient(client, logger),
       dir,
       signer,
-      { cacheSoftSizeBytes: 700 * 1024, nConcurrentDownloads: 10 }
+      { cacheSoftSizeBytes: 700 * 1024, nConcurrentDownloads: 10 },
     );
 
     console.log('Download the second time');
@@ -107,7 +108,7 @@ test('should get on demand blob without downloading a blob', async () => {
       createLogsClient(client, logger),
       dir,
       new HmacSha256Signer(HmacSha256Signer.generateSecret()),
-      { cacheSoftSizeBytes: 700 * 1024, nConcurrentDownloads: 10 }
+      { cacheSoftSizeBytes: 700 * 1024, nConcurrentDownloads: 10 },
     );
 
     const downloadable = await makeDownloadableBlobFromAssets(client, fileName);
@@ -132,7 +133,7 @@ test('should get undefined when releasing a blob from a small cache and the blob
       createLogsClient(client, logger),
       dir,
       new HmacSha256Signer(HmacSha256Signer.generateSecret()),
-      { cacheSoftSizeBytes: 1, nConcurrentDownloads: 10 }
+      { cacheSoftSizeBytes: 1, nConcurrentDownloads: 10 },
     );
     const downloadable = await makeDownloadableBlobFromAssets(client, fileName);
 
@@ -169,7 +170,7 @@ test('should get the blob when releasing a blob, but a cache is big enough and i
       createLogsClient(client, logger),
       dir,
       new HmacSha256Signer(HmacSha256Signer.generateSecret()),
-      { cacheSoftSizeBytes: 700 * 1024, nConcurrentDownloads: 10 }
+      { cacheSoftSizeBytes: 700 * 1024, nConcurrentDownloads: 10 },
     );
     const downloadable = await makeDownloadableBlobFromAssets(client, fileName);
 
@@ -202,30 +203,30 @@ async function makeDownloadableBlobFromAssets(client: PlClient, fileName: string
   await client.withWriteTx('MakeAssetDownloadable', async (tx: PlTransaction) => {
     const importSettings = jsonToData({
       path: fileName,
-      storageId: 'library'
+      storageId: 'library',
     });
     const importer = tx.createStruct({ name: 'BlobImportInternal', version: '1' }, importSettings);
     const importerBlob: FieldRef = {
       resourceId: importer,
-      fieldName: 'blob'
+      fieldName: 'blob',
     };
 
     const download = tx.createStruct({
       name: 'BlobDownload',
-      version: '2'
+      version: '2',
     });
     const downloadBlob: FieldRef = {
       resourceId: download,
-      fieldName: 'blob'
+      fieldName: 'blob',
     };
     const downloadDownloadable: FieldRef = {
       resourceId: download,
-      fieldName: 'downloadable'
+      fieldName: 'downloadable',
     };
 
     const dynamicId: FieldId = {
       resourceId: client.clientRoot,
-      fieldName: 'result'
+      fieldName: 'result',
     };
 
     tx.setField(downloadBlob, importerBlob);
@@ -247,8 +248,8 @@ async function makeDownloadableBlobFromAssets(client: PlClient, fileName: string
     fields: undefined,
     kv: {
       'ctl/file/blobInfo': {
-        sizeBytes: Number(kv.sizeBytes)
-      }
-    }
+        sizeBytes: Number(kv.sizeBytes),
+      },
+    },
   } as OnDemandBlobResourceSnapshot;
 }
