@@ -1,6 +1,6 @@
 import { expect, test } from '@jest/globals';
 import { Computable } from '@milaboratories/computable';
-import {
+import type {
   AnyFieldRef,
   FieldId,
   FieldRef,
@@ -8,10 +8,11 @@ import {
   PlTransaction,
   ResourceId,
   ResourceRef,
-  ResourceType,
+  ResourceType } from '@milaboratories/pl-client';
+import {
   TestHelpers,
   jsonToData,
-  stringifyWithResourceId
+  stringifyWithResourceId,
 } from '@milaboratories/pl-client';
 import { SynchronizedTreeState } from '@milaboratories/pl-tree';
 import { ConsoleLoggerAdapter, HmacSha256Signer, notEmpty } from '@milaboratories/ts-helpers';
@@ -30,7 +31,7 @@ test('should get all logs', async () => {
 
     const tree = await SynchronizedTreeState.init(client, client.clientRoot, {
       stopPollingDelay: 10,
-      pollingInterval: 10
+      pollingInterval: 10,
     });
     const logsStream = new LogsStreamDriver(logger, createLogsClient(client, logger));
     const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-logs-1-'));
@@ -40,7 +41,7 @@ test('should get all logs', async () => {
       createLogsClient(client, logger),
       dir,
       new HmacSha256Signer(HmacSha256Signer.generateSecret()),
-      { cacheSoftSizeBytes: 700 * 1024, nConcurrentDownloads: 10 }
+      { cacheSoftSizeBytes: 700 * 1024, nConcurrentDownloads: 10 },
     );
     const logs = new LogsDriver(logger, logsStream, download);
 
@@ -75,7 +76,7 @@ test('should get last line with a prefix', async () => {
 
     const tree = await SynchronizedTreeState.init(client, client.clientRoot, {
       stopPollingDelay: 10,
-      pollingInterval: 10
+      pollingInterval: 10,
     });
     const logsStream = new LogsStreamDriver(logger, createLogsClient(client, logger));
     const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-logs-2-'));
@@ -85,7 +86,7 @@ test('should get last line with a prefix', async () => {
       createLogsClient(client, logger),
       dir,
       new HmacSha256Signer(HmacSha256Signer.generateSecret()),
-      { cacheSoftSizeBytes: 700 * 1024, nConcurrentDownloads: 10 }
+      { cacheSoftSizeBytes: 700 * 1024, nConcurrentDownloads: 10 },
     );
     const logs = new LogsDriver(logger, logsStream, download);
 
@@ -103,7 +104,7 @@ test('should get last line with a prefix', async () => {
 
     await createRunCommandWithStdoutStream(client, 'bash', [
       '-c',
-      'echo PREFIX1; echo PREFIX2; echo 3; sleep 0.1; echo PREFIX4'
+      'echo PREFIX1; echo PREFIX2; echo 3; sleep 0.1; echo PREFIX4',
     ]);
 
     while (true) {
@@ -125,7 +126,7 @@ test('should get log smart object and get log lines from that', async () => {
 
     const tree = await SynchronizedTreeState.init(client, client.clientRoot, {
       stopPollingDelay: 10,
-      pollingInterval: 10
+      pollingInterval: 10,
     });
     const logsStream = new LogsStreamDriver(logger, createLogsClient(client, logger));
     const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-logs-3-'));
@@ -135,7 +136,7 @@ test('should get log smart object and get log lines from that', async () => {
       createLogsClient(client, logger),
       dir,
       new HmacSha256Signer(HmacSha256Signer.generateSecret()),
-      { cacheSoftSizeBytes: 700 * 1024, nConcurrentDownloads: 10 }
+      { cacheSoftSizeBytes: 700 * 1024, nConcurrentDownloads: 10 },
     );
     const logs = new LogsDriver(logger, logsStream, download);
 
@@ -181,7 +182,7 @@ test('should get log smart object and get log lines from that', async () => {
 async function createRunCommandWithStdoutStream(
   client: PlClient,
   cmd: string,
-  args: string[]
+  args: string[],
 ): Promise<ResourceId> {
   return await client.withWriteTx('CreateRunCommandWithStreaming', async (tx: PlTransaction) => {
     const wdFId: FieldRef = createWd(tx);
@@ -192,7 +193,7 @@ async function createRunCommandWithStdoutStream(
 
     const dynamicId: FieldId = {
       resourceId: client.clientRoot,
-      fieldName: 'result'
+      fieldName: 'result',
     };
     tx.createField(dynamicId, 'Dynamic', streamManagerId);
 
@@ -211,18 +212,18 @@ function createRunCommand(
   tx: PlTransaction,
   wdFId: FieldRef,
   cmd: string,
-  args: string[]
+  args: string[],
 ): FieldRef {
   const refsId = tx.createStruct({ name: 'RunCommandRefs', version: '1' });
   tx.lock(refsId);
   const cmdData = {
     type: 'string',
-    value: cmd
+    value: cmd,
   };
   const argsData = args.map((arg) => {
     return {
       type: 'string',
-      value: arg
+      value: arg,
     };
   });
   const optsData = {
@@ -230,7 +231,7 @@ function createRunCommand(
     errorLines: 200,
     redirectStdout: 'logs.txt',
     redirectStderr: 'logs.txt',
-    envs: []
+    envs: [],
   };
 
   const runCmdId = tx.createEphemeral({ name: 'RunCommand/executor', version: '1' });
@@ -257,9 +258,9 @@ function createWdSave(tx: PlTransaction, workdirOut: FieldRef): FieldRef {
       {
         blobKey: 'logs.txt',
         type: 'file',
-        filePath: 'logs.txt'
-      }
-    ])
+        filePath: 'logs.txt',
+      },
+    ]),
   );
   tx.setField({ resourceId: wdSave, fieldName: 'workdirIn' }, workdirOut);
   tx.setField({ resourceId: wdSave, fieldName: 'rules' }, wdSaveRules);
@@ -271,7 +272,7 @@ function createDownloadableBlobFromStdout(tx: PlTransaction, blobsOut: FieldRef)
   const blobOut = tx.getFutureFieldValue(blobsOut, 'logs.txt', 'Input');
   const blobDownloadId = tx.createStruct({
     name: 'BlobDownload',
-    version: '2'
+    version: '2',
   });
   tx.setField({ resourceId: blobDownloadId, fieldName: 'blob' }, blobOut);
 
@@ -281,7 +282,7 @@ function createDownloadableBlobFromStdout(tx: PlTransaction, blobsOut: FieldRef)
 function createStreamManager(
   tx: PlTransaction,
   wdFId: FieldRef,
-  downloadableFId: AnyFieldRef
+  downloadableFId: AnyFieldRef,
 ): ResourceRef {
   const streamId = tx.createEphemeral({ name: 'CreateStream', version: '2' });
   tx.setField({ resourceId: streamId, fieldName: 'workdir' }, wdFId);
@@ -291,7 +292,7 @@ function createStreamManager(
 
   const streamManagerId = tx.createEphemeral({
     name: 'StreamManager',
-    version: '2'
+    version: '2',
   });
   tx.setField({ resourceId: streamManagerId, fieldName: 'downloadable' }, downloadableFId);
   tx.setField({ resourceId: streamManagerId, fieldName: 'stream' }, streamFId);

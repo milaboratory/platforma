@@ -2,6 +2,7 @@ import type { ComputableCtx } from '@milaboratories/computable';
 import { Computable } from '@milaboratories/computable';
 import type { PlTreeNodeAccessor } from '@milaboratories/pl-tree';
 import type {
+  ArchiveFormat,
   CommonFieldTraverseOps as CommonFieldTraverseOpsFromSDK,
   FieldTraversalStep as FieldTraversalStepFromSDK,
   Option,
@@ -285,6 +286,18 @@ export class JsExecutionContext
     return this.registerComputable(
       'getOnDemandBlobContentHandle',
       this.env.driverKit.blobDriver.getOnDemandBlob(resource)
+    );
+  }
+
+  //
+  // Blobs to URLs
+  //
+
+  public extractArchiveAndGetURL(handle: string, format: ArchiveFormat): string {
+    const resource = this.getAccessor(handle).persist();
+    return this.registerComputable(
+      'extractArchiveAndGetURL',
+      this.env.driverKit.blobToURLDriver.extractArchiveAndGetURL(resource, format)
     );
   }
 
@@ -717,6 +730,16 @@ export class JsExecutionContext
           undefined
         );
       });
+
+      //
+      // Blobs to URLs
+      //
+
+      exportCtxFunction('extractArchiveAndGetURL', (handle, format) => {
+        return this.exportSingleValue(
+          this.extractArchiveAndGetURL(this.vm.getString(handle), this.vm.getString(format) as ArchiveFormat),
+          undefined)
+      })
 
       //
       // ImportProgress

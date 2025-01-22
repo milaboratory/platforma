@@ -198,31 +198,34 @@ class uploadapi$Type extends MessageType<uploadapi> {
   constructor() {
     super('MiLaboratories.Controller.Shared.uploadapi', []);
   }
+
   create(value?: PartialMessage<uploadapi>): uploadapi {
     const message = globalThis.Object.create(this.messagePrototype!);
     if (value !== undefined)
       reflectionMergePartial<uploadapi>(this, message, value);
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: uploadapi
+    target?: uploadapi,
   ): uploadapi {
     return target ?? this.create();
   }
+
   internalBinaryWrite(
     message: uploadapi,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -236,31 +239,34 @@ class uploadapi_Init$Type extends MessageType<uploadapi_Init> {
   constructor() {
     super('MiLaboratories.Controller.Shared.uploadapi.Init', []);
   }
+
   create(value?: PartialMessage<uploadapi_Init>): uploadapi_Init {
     const message = globalThis.Object.create(this.messagePrototype!);
     if (value !== undefined)
       reflectionMergePartial<uploadapi_Init>(this, message, value);
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: uploadapi_Init
+    target?: uploadapi_Init,
   ): uploadapi_Init {
     return target ?? this.create();
   }
+
   internalBinaryWrite(
     message: uploadapi_Init,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -277,13 +283,14 @@ class uploadapi_Init_Request$Type extends MessageType<uploadapi_Init_Request> {
         no: 1,
         name: 'resource_id',
         kind: 'scalar',
-        T: 4 /*ScalarType.UINT64*/,
-        L: 0 /*LongType.BIGINT*/
-      }
+        T: 4 /* ScalarType.UINT64 */,
+        L: 0, /* LongType.BIGINT */
+      },
     ]);
   }
+
   create(
-    value?: PartialMessage<uploadapi_Init_Request>
+    value?: PartialMessage<uploadapi_Init_Request>,
   ): uploadapi_Init_Request {
     const message = globalThis.Object.create(this.messagePrototype!);
     message.resourceId = 0n;
@@ -291,53 +298,55 @@ class uploadapi_Init_Request$Type extends MessageType<uploadapi_Init_Request> {
       reflectionMergePartial<uploadapi_Init_Request>(this, message, value);
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: uploadapi_Init_Request
+    target?: uploadapi_Init_Request,
   ): uploadapi_Init_Request {
-    let message = target ?? this.create(),
+    const message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
+      const [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
         case /* uint64 resource_id */ 1:
           message.resourceId = reader.uint64().toBigInt();
           break;
         default:
-          let u = options.readUnknownField;
+          const u = options.readUnknownField;
           if (u === 'throw')
             throw new globalThis.Error(
-              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`
+              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
             );
-          let d = reader.skip(wireType);
+          const d = reader.skip(wireType);
           if (u !== false)
             (u === true ? UnknownFieldHandler.onRead : u)(
               this.typeName,
               message,
               fieldNo,
               wireType,
-              d
+              d,
             );
       }
     }
     return message;
   }
+
   internalBinaryWrite(
     message: uploadapi_Init_Request,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
     /* uint64 resource_id = 1; */
     if (message.resourceId !== 0n)
       writer.tag(1, WireType.Varint).uint64(message.resourceId);
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -354,21 +363,22 @@ class uploadapi_Init_Response$Type extends MessageType<uploadapi_Init_Response> 
         no: 1,
         name: 'parts_count',
         kind: 'scalar',
-        T: 4 /*ScalarType.UINT64*/,
-        L: 0 /*LongType.BIGINT*/
+        T: 4 /* ScalarType.UINT64 */,
+        L: 0, /* LongType.BIGINT */
       },
       {
         no: 2,
         name: 'uploaded_parts',
         kind: 'scalar',
-        repeat: 1 /*RepeatType.PACKED*/,
-        T: 4 /*ScalarType.UINT64*/,
-        L: 0 /*LongType.BIGINT*/
-      }
+        repeat: 1 /* RepeatType.PACKED */,
+        T: 4 /* ScalarType.UINT64 */,
+        L: 0, /* LongType.BIGINT */
+      },
     ]);
   }
+
   create(
-    value?: PartialMessage<uploadapi_Init_Response>
+    value?: PartialMessage<uploadapi_Init_Response>,
   ): uploadapi_Init_Response {
     const message = globalThis.Object.create(this.messagePrototype!);
     message.partsCount = 0n;
@@ -377,49 +387,51 @@ class uploadapi_Init_Response$Type extends MessageType<uploadapi_Init_Response> 
       reflectionMergePartial<uploadapi_Init_Response>(this, message, value);
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: uploadapi_Init_Response
+    target?: uploadapi_Init_Response,
   ): uploadapi_Init_Response {
-    let message = target ?? this.create(),
+    const message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
+      const [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
         case /* uint64 parts_count */ 1:
           message.partsCount = reader.uint64().toBigInt();
           break;
         case /* repeated uint64 uploaded_parts */ 2:
           if (wireType === WireType.LengthDelimited)
-            for (let e = reader.int32() + reader.pos; reader.pos < e; )
+            for (let e = reader.int32() + reader.pos; reader.pos < e;)
               message.uploadedParts.push(reader.uint64().toBigInt());
           else message.uploadedParts.push(reader.uint64().toBigInt());
           break;
         default:
-          let u = options.readUnknownField;
+          const u = options.readUnknownField;
           if (u === 'throw')
             throw new globalThis.Error(
-              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`
+              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
             );
-          let d = reader.skip(wireType);
+          const d = reader.skip(wireType);
           if (u !== false)
             (u === true ? UnknownFieldHandler.onRead : u)(
               this.typeName,
               message,
               fieldNo,
               wireType,
-              d
+              d,
             );
       }
     }
     return message;
   }
+
   internalBinaryWrite(
     message: uploadapi_Init_Response,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
     /* uint64 parts_count = 1; */
     if (message.partsCount !== 0n)
@@ -431,12 +443,12 @@ class uploadapi_Init_Response$Type extends MessageType<uploadapi_Init_Response> 
         writer.uint64(message.uploadedParts[i]);
       writer.join();
     }
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -450,33 +462,36 @@ class uploadapi_UpdateProgress$Type extends MessageType<uploadapi_UpdateProgress
   constructor() {
     super('MiLaboratories.Controller.Shared.uploadapi.UpdateProgress', []);
   }
+
   create(
-    value?: PartialMessage<uploadapi_UpdateProgress>
+    value?: PartialMessage<uploadapi_UpdateProgress>,
   ): uploadapi_UpdateProgress {
     const message = globalThis.Object.create(this.messagePrototype!);
     if (value !== undefined)
       reflectionMergePartial<uploadapi_UpdateProgress>(this, message, value);
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: uploadapi_UpdateProgress
+    target?: uploadapi_UpdateProgress,
   ): uploadapi_UpdateProgress {
     return target ?? this.create();
   }
+
   internalBinaryWrite(
     message: uploadapi_UpdateProgress,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -493,20 +508,21 @@ class uploadapi_UpdateProgress_Request$Type extends MessageType<uploadapi_Update
         no: 1,
         name: 'resource_id',
         kind: 'scalar',
-        T: 4 /*ScalarType.UINT64*/,
-        L: 0 /*LongType.BIGINT*/
+        T: 4 /* ScalarType.UINT64 */,
+        L: 0, /* LongType.BIGINT */
       },
       {
         no: 2,
         name: 'bytes_processed',
         kind: 'scalar',
-        T: 3 /*ScalarType.INT64*/,
-        L: 0 /*LongType.BIGINT*/
-      }
+        T: 3 /* ScalarType.INT64 */,
+        L: 0, /* LongType.BIGINT */
+      },
     ]);
   }
+
   create(
-    value?: PartialMessage<uploadapi_UpdateProgress_Request>
+    value?: PartialMessage<uploadapi_UpdateProgress_Request>,
   ): uploadapi_UpdateProgress_Request {
     const message = globalThis.Object.create(this.messagePrototype!);
     message.resourceId = 0n;
@@ -515,20 +531,21 @@ class uploadapi_UpdateProgress_Request$Type extends MessageType<uploadapi_Update
       reflectionMergePartial<uploadapi_UpdateProgress_Request>(
         this,
         message,
-        value
+        value,
       );
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: uploadapi_UpdateProgress_Request
+    target?: uploadapi_UpdateProgress_Request,
   ): uploadapi_UpdateProgress_Request {
-    let message = target ?? this.create(),
+    const message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
+      const [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
         case /* uint64 resource_id */ 1:
           message.resourceId = reader.uint64().toBigInt();
@@ -537,28 +554,29 @@ class uploadapi_UpdateProgress_Request$Type extends MessageType<uploadapi_Update
           message.bytesProcessed = reader.int64().toBigInt();
           break;
         default:
-          let u = options.readUnknownField;
+          const u = options.readUnknownField;
           if (u === 'throw')
             throw new globalThis.Error(
-              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`
+              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
             );
-          let d = reader.skip(wireType);
+          const d = reader.skip(wireType);
           if (u !== false)
             (u === true ? UnknownFieldHandler.onRead : u)(
               this.typeName,
               message,
               fieldNo,
               wireType,
-              d
+              d,
             );
       }
     }
     return message;
   }
+
   internalBinaryWrite(
     message: uploadapi_UpdateProgress_Request,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
     /* uint64 resource_id = 1; */
     if (message.resourceId !== 0n)
@@ -566,12 +584,12 @@ class uploadapi_UpdateProgress_Request$Type extends MessageType<uploadapi_Update
     /* int64 bytes_processed = 2; */
     if (message.bytesProcessed !== 0n)
       writer.tag(2, WireType.Varint).int64(message.bytesProcessed);
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -579,47 +597,50 @@ class uploadapi_UpdateProgress_Request$Type extends MessageType<uploadapi_Update
 /**
  * @generated MessageType for protobuf message MiLaboratories.Controller.Shared.uploadapi.UpdateProgress.Request
  */
-export const uploadapi_UpdateProgress_Request =
-  new uploadapi_UpdateProgress_Request$Type();
+export const uploadapi_UpdateProgress_Request
+  = new uploadapi_UpdateProgress_Request$Type();
 // @generated message type with reflection information, may provide speed optimized methods
 class uploadapi_UpdateProgress_Response$Type extends MessageType<uploadapi_UpdateProgress_Response> {
   constructor() {
     super(
       'MiLaboratories.Controller.Shared.uploadapi.UpdateProgress.Response',
-      []
+      [],
     );
   }
+
   create(
-    value?: PartialMessage<uploadapi_UpdateProgress_Response>
+    value?: PartialMessage<uploadapi_UpdateProgress_Response>,
   ): uploadapi_UpdateProgress_Response {
     const message = globalThis.Object.create(this.messagePrototype!);
     if (value !== undefined)
       reflectionMergePartial<uploadapi_UpdateProgress_Response>(
         this,
         message,
-        value
+        value,
       );
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: uploadapi_UpdateProgress_Response
+    target?: uploadapi_UpdateProgress_Response,
   ): uploadapi_UpdateProgress_Response {
     return target ?? this.create();
   }
+
   internalBinaryWrite(
     message: uploadapi_UpdateProgress_Response,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -627,38 +648,41 @@ class uploadapi_UpdateProgress_Response$Type extends MessageType<uploadapi_Updat
 /**
  * @generated MessageType for protobuf message MiLaboratories.Controller.Shared.uploadapi.UpdateProgress.Response
  */
-export const uploadapi_UpdateProgress_Response =
-  new uploadapi_UpdateProgress_Response$Type();
+export const uploadapi_UpdateProgress_Response
+  = new uploadapi_UpdateProgress_Response$Type();
 // @generated message type with reflection information, may provide speed optimized methods
 class uploadapi_GetPartURL$Type extends MessageType<uploadapi_GetPartURL> {
   constructor() {
     super('MiLaboratories.Controller.Shared.uploadapi.GetPartURL', []);
   }
+
   create(value?: PartialMessage<uploadapi_GetPartURL>): uploadapi_GetPartURL {
     const message = globalThis.Object.create(this.messagePrototype!);
     if (value !== undefined)
       reflectionMergePartial<uploadapi_GetPartURL>(this, message, value);
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: uploadapi_GetPartURL
+    target?: uploadapi_GetPartURL,
   ): uploadapi_GetPartURL {
     return target ?? this.create();
   }
+
   internalBinaryWrite(
     message: uploadapi_GetPartURL,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -675,27 +699,28 @@ class uploadapi_GetPartURL_Request$Type extends MessageType<uploadapi_GetPartURL
         no: 1,
         name: 'resource_id',
         kind: 'scalar',
-        T: 4 /*ScalarType.UINT64*/,
-        L: 0 /*LongType.BIGINT*/
+        T: 4 /* ScalarType.UINT64 */,
+        L: 0, /* LongType.BIGINT */
       },
       {
         no: 2,
         name: 'part_number',
         kind: 'scalar',
-        T: 4 /*ScalarType.UINT64*/,
-        L: 0 /*LongType.BIGINT*/
+        T: 4 /* ScalarType.UINT64 */,
+        L: 0, /* LongType.BIGINT */
       },
       {
         no: 3,
         name: 'uploaded_part_size',
         kind: 'scalar',
-        T: 4 /*ScalarType.UINT64*/,
-        L: 0 /*LongType.BIGINT*/
-      }
+        T: 4 /* ScalarType.UINT64 */,
+        L: 0, /* LongType.BIGINT */
+      },
     ]);
   }
+
   create(
-    value?: PartialMessage<uploadapi_GetPartURL_Request>
+    value?: PartialMessage<uploadapi_GetPartURL_Request>,
   ): uploadapi_GetPartURL_Request {
     const message = globalThis.Object.create(this.messagePrototype!);
     message.resourceId = 0n;
@@ -705,20 +730,21 @@ class uploadapi_GetPartURL_Request$Type extends MessageType<uploadapi_GetPartURL
       reflectionMergePartial<uploadapi_GetPartURL_Request>(
         this,
         message,
-        value
+        value,
       );
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: uploadapi_GetPartURL_Request
+    target?: uploadapi_GetPartURL_Request,
   ): uploadapi_GetPartURL_Request {
-    let message = target ?? this.create(),
+    const message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
+      const [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
         case /* uint64 resource_id */ 1:
           message.resourceId = reader.uint64().toBigInt();
@@ -730,28 +756,29 @@ class uploadapi_GetPartURL_Request$Type extends MessageType<uploadapi_GetPartURL
           message.uploadedPartSize = reader.uint64().toBigInt();
           break;
         default:
-          let u = options.readUnknownField;
+          const u = options.readUnknownField;
           if (u === 'throw')
             throw new globalThis.Error(
-              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`
+              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
             );
-          let d = reader.skip(wireType);
+          const d = reader.skip(wireType);
           if (u !== false)
             (u === true ? UnknownFieldHandler.onRead : u)(
               this.typeName,
               message,
               fieldNo,
               wireType,
-              d
+              d,
             );
       }
     }
     return message;
   }
+
   internalBinaryWrite(
     message: uploadapi_GetPartURL_Request,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
     /* uint64 resource_id = 1; */
     if (message.resourceId !== 0n)
@@ -762,12 +789,12 @@ class uploadapi_GetPartURL_Request$Type extends MessageType<uploadapi_GetPartURL
     /* uint64 uploaded_part_size = 3; */
     if (message.uploadedPartSize !== 0n)
       writer.tag(3, WireType.Varint).uint64(message.uploadedPartSize);
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -775,8 +802,8 @@ class uploadapi_GetPartURL_Request$Type extends MessageType<uploadapi_GetPartURL
 /**
  * @generated MessageType for protobuf message MiLaboratories.Controller.Shared.uploadapi.GetPartURL.Request
  */
-export const uploadapi_GetPartURL_Request =
-  new uploadapi_GetPartURL_Request$Type();
+export const uploadapi_GetPartURL_Request
+  = new uploadapi_GetPartURL_Request$Type();
 // @generated message type with reflection information, may provide speed optimized methods
 class uploadapi_GetPartURL_HTTPHeader$Type extends MessageType<uploadapi_GetPartURL_HTTPHeader> {
   constructor() {
@@ -786,19 +813,20 @@ class uploadapi_GetPartURL_HTTPHeader$Type extends MessageType<uploadapi_GetPart
         name: 'Name',
         kind: 'scalar',
         jsonName: 'Name',
-        T: 9 /*ScalarType.STRING*/
+        T: 9, /* ScalarType.STRING */
       },
       {
         no: 2,
         name: 'Value',
         kind: 'scalar',
         jsonName: 'Value',
-        T: 9 /*ScalarType.STRING*/
-      }
+        T: 9, /* ScalarType.STRING */
+      },
     ]);
   }
+
   create(
-    value?: PartialMessage<uploadapi_GetPartURL_HTTPHeader>
+    value?: PartialMessage<uploadapi_GetPartURL_HTTPHeader>,
   ): uploadapi_GetPartURL_HTTPHeader {
     const message = globalThis.Object.create(this.messagePrototype!);
     message.name = '';
@@ -807,50 +835,52 @@ class uploadapi_GetPartURL_HTTPHeader$Type extends MessageType<uploadapi_GetPart
       reflectionMergePartial<uploadapi_GetPartURL_HTTPHeader>(
         this,
         message,
-        value
+        value,
       );
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: uploadapi_GetPartURL_HTTPHeader
+    target?: uploadapi_GetPartURL_HTTPHeader,
   ): uploadapi_GetPartURL_HTTPHeader {
-    let message = target ?? this.create(),
+    const message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
+      const [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
-        case /* string Name = 1 [json_name = "Name"];*/ 1:
+        case /* string Name = 1 [json_name = "Name"]; */ 1:
           message.name = reader.string();
           break;
-        case /* string Value = 2 [json_name = "Value"];*/ 2:
+        case /* string Value = 2 [json_name = "Value"]; */ 2:
           message.value = reader.string();
           break;
         default:
-          let u = options.readUnknownField;
+          const u = options.readUnknownField;
           if (u === 'throw')
             throw new globalThis.Error(
-              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`
+              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
             );
-          let d = reader.skip(wireType);
+          const d = reader.skip(wireType);
           if (u !== false)
             (u === true ? UnknownFieldHandler.onRead : u)(
               this.typeName,
               message,
               fieldNo,
               wireType,
-              d
+              d,
             );
       }
     }
     return message;
   }
+
   internalBinaryWrite(
     message: uploadapi_GetPartURL_HTTPHeader,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
     /* string Name = 1 [json_name = "Name"]; */
     if (message.name !== '')
@@ -858,12 +888,12 @@ class uploadapi_GetPartURL_HTTPHeader$Type extends MessageType<uploadapi_GetPart
     /* string Value = 2 [json_name = "Value"]; */
     if (message.value !== '')
       writer.tag(2, WireType.LengthDelimited).string(message.value);
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -871,39 +901,40 @@ class uploadapi_GetPartURL_HTTPHeader$Type extends MessageType<uploadapi_GetPart
 /**
  * @generated MessageType for protobuf message MiLaboratories.Controller.Shared.uploadapi.GetPartURL.HTTPHeader
  */
-export const uploadapi_GetPartURL_HTTPHeader =
-  new uploadapi_GetPartURL_HTTPHeader$Type();
+export const uploadapi_GetPartURL_HTTPHeader
+  = new uploadapi_GetPartURL_HTTPHeader$Type();
 // @generated message type with reflection information, may provide speed optimized methods
 class uploadapi_GetPartURL_Response$Type extends MessageType<uploadapi_GetPartURL_Response> {
   constructor() {
     super('MiLaboratories.Controller.Shared.uploadapi.GetPartURL.Response', [
-      { no: 1, name: 'upload_url', kind: 'scalar', T: 9 /*ScalarType.STRING*/ },
-      { no: 2, name: 'method', kind: 'scalar', T: 9 /*ScalarType.STRING*/ },
+      { no: 1, name: 'upload_url', kind: 'scalar', T: 9 /* ScalarType.STRING */ },
+      { no: 2, name: 'method', kind: 'scalar', T: 9 /* ScalarType.STRING */ },
       {
         no: 3,
         name: 'headers',
         kind: 'message',
-        repeat: 1 /*RepeatType.PACKED*/,
-        T: () => uploadapi_GetPartURL_HTTPHeader
+        repeat: 1 /* RepeatType.PACKED */,
+        T: () => uploadapi_GetPartURL_HTTPHeader,
       },
       {
         no: 4,
         name: 'chunk_start',
         kind: 'scalar',
-        T: 4 /*ScalarType.UINT64*/,
-        L: 0 /*LongType.BIGINT*/
+        T: 4 /* ScalarType.UINT64 */,
+        L: 0, /* LongType.BIGINT */
       },
       {
         no: 5,
         name: 'chunk_end',
         kind: 'scalar',
-        T: 4 /*ScalarType.UINT64*/,
-        L: 0 /*LongType.BIGINT*/
-      }
+        T: 4 /* ScalarType.UINT64 */,
+        L: 0, /* LongType.BIGINT */
+      },
     ]);
   }
+
   create(
-    value?: PartialMessage<uploadapi_GetPartURL_Response>
+    value?: PartialMessage<uploadapi_GetPartURL_Response>,
   ): uploadapi_GetPartURL_Response {
     const message = globalThis.Object.create(this.messagePrototype!);
     message.uploadUrl = '';
@@ -915,20 +946,21 @@ class uploadapi_GetPartURL_Response$Type extends MessageType<uploadapi_GetPartUR
       reflectionMergePartial<uploadapi_GetPartURL_Response>(
         this,
         message,
-        value
+        value,
       );
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: uploadapi_GetPartURL_Response
+    target?: uploadapi_GetPartURL_Response,
   ): uploadapi_GetPartURL_Response {
-    let message = target ?? this.create(),
+    const message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
+      const [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
         case /* string upload_url */ 1:
           message.uploadUrl = reader.string();
@@ -941,8 +973,8 @@ class uploadapi_GetPartURL_Response$Type extends MessageType<uploadapi_GetPartUR
             uploadapi_GetPartURL_HTTPHeader.internalBinaryRead(
               reader,
               reader.uint32(),
-              options
-            )
+              options,
+            ),
           );
           break;
         case /* uint64 chunk_start */ 4:
@@ -952,28 +984,29 @@ class uploadapi_GetPartURL_Response$Type extends MessageType<uploadapi_GetPartUR
           message.chunkEnd = reader.uint64().toBigInt();
           break;
         default:
-          let u = options.readUnknownField;
+          const u = options.readUnknownField;
           if (u === 'throw')
             throw new globalThis.Error(
-              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`
+              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
             );
-          let d = reader.skip(wireType);
+          const d = reader.skip(wireType);
           if (u !== false)
             (u === true ? UnknownFieldHandler.onRead : u)(
               this.typeName,
               message,
               fieldNo,
               wireType,
-              d
+              d,
             );
       }
     }
     return message;
   }
+
   internalBinaryWrite(
     message: uploadapi_GetPartURL_Response,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
     /* string upload_url = 1; */
     if (message.uploadUrl !== '')
@@ -987,7 +1020,7 @@ class uploadapi_GetPartURL_Response$Type extends MessageType<uploadapi_GetPartUR
         .internalBinaryWrite(
           message.headers[i],
           writer.tag(3, WireType.LengthDelimited).fork(),
-          options
+          options,
         )
         .join();
     /* uint64 chunk_start = 4; */
@@ -996,12 +1029,12 @@ class uploadapi_GetPartURL_Response$Type extends MessageType<uploadapi_GetPartUR
     /* uint64 chunk_end = 5; */
     if (message.chunkEnd !== 0n)
       writer.tag(5, WireType.Varint).uint64(message.chunkEnd);
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -1009,38 +1042,41 @@ class uploadapi_GetPartURL_Response$Type extends MessageType<uploadapi_GetPartUR
 /**
  * @generated MessageType for protobuf message MiLaboratories.Controller.Shared.uploadapi.GetPartURL.Response
  */
-export const uploadapi_GetPartURL_Response =
-  new uploadapi_GetPartURL_Response$Type();
+export const uploadapi_GetPartURL_Response
+  = new uploadapi_GetPartURL_Response$Type();
 // @generated message type with reflection information, may provide speed optimized methods
 class uploadapi_Finalize$Type extends MessageType<uploadapi_Finalize> {
   constructor() {
     super('MiLaboratories.Controller.Shared.uploadapi.Finalize', []);
   }
+
   create(value?: PartialMessage<uploadapi_Finalize>): uploadapi_Finalize {
     const message = globalThis.Object.create(this.messagePrototype!);
     if (value !== undefined)
       reflectionMergePartial<uploadapi_Finalize>(this, message, value);
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: uploadapi_Finalize
+    target?: uploadapi_Finalize,
   ): uploadapi_Finalize {
     return target ?? this.create();
   }
+
   internalBinaryWrite(
     message: uploadapi_Finalize,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -1057,13 +1093,14 @@ class uploadapi_Finalize_Request$Type extends MessageType<uploadapi_Finalize_Req
         no: 1,
         name: 'resource_id',
         kind: 'scalar',
-        T: 4 /*ScalarType.UINT64*/,
-        L: 0 /*LongType.BIGINT*/
-      }
+        T: 4 /* ScalarType.UINT64 */,
+        L: 0, /* LongType.BIGINT */
+      },
     ]);
   }
+
   create(
-    value?: PartialMessage<uploadapi_Finalize_Request>
+    value?: PartialMessage<uploadapi_Finalize_Request>,
   ): uploadapi_Finalize_Request {
     const message = globalThis.Object.create(this.messagePrototype!);
     message.resourceId = 0n;
@@ -1071,53 +1108,55 @@ class uploadapi_Finalize_Request$Type extends MessageType<uploadapi_Finalize_Req
       reflectionMergePartial<uploadapi_Finalize_Request>(this, message, value);
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: uploadapi_Finalize_Request
+    target?: uploadapi_Finalize_Request,
   ): uploadapi_Finalize_Request {
-    let message = target ?? this.create(),
+    const message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
+      const [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
         case /* uint64 resource_id */ 1:
           message.resourceId = reader.uint64().toBigInt();
           break;
         default:
-          let u = options.readUnknownField;
+          const u = options.readUnknownField;
           if (u === 'throw')
             throw new globalThis.Error(
-              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`
+              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
             );
-          let d = reader.skip(wireType);
+          const d = reader.skip(wireType);
           if (u !== false)
             (u === true ? UnknownFieldHandler.onRead : u)(
               this.typeName,
               message,
               fieldNo,
               wireType,
-              d
+              d,
             );
       }
     }
     return message;
   }
+
   internalBinaryWrite(
     message: uploadapi_Finalize_Request,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
     /* uint64 resource_id = 1; */
     if (message.resourceId !== 0n)
       writer.tag(1, WireType.Varint).uint64(message.resourceId);
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -1131,33 +1170,36 @@ class uploadapi_Finalize_Response$Type extends MessageType<uploadapi_Finalize_Re
   constructor() {
     super('MiLaboratories.Controller.Shared.uploadapi.Finalize.Response', []);
   }
+
   create(
-    value?: PartialMessage<uploadapi_Finalize_Response>
+    value?: PartialMessage<uploadapi_Finalize_Response>,
   ): uploadapi_Finalize_Response {
     const message = globalThis.Object.create(this.messagePrototype!);
     if (value !== undefined)
       reflectionMergePartial<uploadapi_Finalize_Response>(this, message, value);
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: uploadapi_Finalize_Response
+    target?: uploadapi_Finalize_Response,
   ): uploadapi_Finalize_Response {
     return target ?? this.create();
   }
+
   internalBinaryWrite(
     message: uploadapi_Finalize_Response,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -1165,8 +1207,8 @@ class uploadapi_Finalize_Response$Type extends MessageType<uploadapi_Finalize_Re
 /**
  * @generated MessageType for protobuf message MiLaboratories.Controller.Shared.uploadapi.Finalize.Response
  */
-export const uploadapi_Finalize_Response =
-  new uploadapi_Finalize_Response$Type();
+export const uploadapi_Finalize_Response
+  = new uploadapi_Finalize_Response$Type();
 /**
  * @generated ServiceType for protobuf service MiLaboratories.Controller.Shared.Upload
  */
@@ -1177,25 +1219,25 @@ export const Upload = new ServiceType(
       name: 'Init',
       options: {},
       I: uploadapi_Init_Request,
-      O: uploadapi_Init_Response
+      O: uploadapi_Init_Response,
     },
     {
       name: 'GetPartURL',
       options: {},
       I: uploadapi_GetPartURL_Request,
-      O: uploadapi_GetPartURL_Response
+      O: uploadapi_GetPartURL_Response,
     },
     {
       name: 'UpdateProgress',
       options: {},
       I: uploadapi_UpdateProgress_Request,
-      O: uploadapi_UpdateProgress_Response
+      O: uploadapi_UpdateProgress_Response,
     },
     {
       name: 'Finalize',
       options: {},
       I: uploadapi_Finalize_Request,
-      O: uploadapi_Finalize_Response
-    }
-  ]
+      O: uploadapi_Finalize_Response,
+    },
+  ],
 );

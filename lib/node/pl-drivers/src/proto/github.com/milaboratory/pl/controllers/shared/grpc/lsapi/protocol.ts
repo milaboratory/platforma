@@ -121,31 +121,34 @@ class LsAPI$Type extends MessageType<LsAPI> {
   constructor() {
     super('MiLaboratories.Controller.Shared.LsAPI', []);
   }
+
   create(value?: PartialMessage<LsAPI>): LsAPI {
     const message = globalThis.Object.create(this.messagePrototype!);
     if (value !== undefined)
       reflectionMergePartial<LsAPI>(this, message, value);
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: LsAPI
+    target?: LsAPI,
   ): LsAPI {
     return target ?? this.create();
   }
+
   internalBinaryWrite(
     message: LsAPI,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -158,21 +161,22 @@ export const LsAPI = new LsAPI$Type();
 class LsAPI_ListItem$Type extends MessageType<LsAPI_ListItem> {
   constructor() {
     super('MiLaboratories.Controller.Shared.LsAPI.ListItem', [
-      { no: 1, name: 'name', kind: 'scalar', T: 9 /*ScalarType.STRING*/ },
+      { no: 1, name: 'name', kind: 'scalar', T: 9 /* ScalarType.STRING */ },
       {
         no: 2,
         name: 'size',
         kind: 'scalar',
-        T: 4 /*ScalarType.UINT64*/,
-        L: 0 /*LongType.BIGINT*/
+        T: 4 /* ScalarType.UINT64 */,
+        L: 0, /* LongType.BIGINT */
       },
-      { no: 3, name: 'is_dir', kind: 'scalar', T: 8 /*ScalarType.BOOL*/ },
-      { no: 10, name: 'full_name', kind: 'scalar', T: 9 /*ScalarType.STRING*/ },
-      { no: 11, name: 'directory', kind: 'scalar', T: 9 /*ScalarType.STRING*/ },
+      { no: 3, name: 'is_dir', kind: 'scalar', T: 8 /* ScalarType.BOOL */ },
+      { no: 10, name: 'full_name', kind: 'scalar', T: 9 /* ScalarType.STRING */ },
+      { no: 11, name: 'directory', kind: 'scalar', T: 9 /* ScalarType.STRING */ },
       { no: 12, name: 'last_modified', kind: 'message', T: () => Timestamp },
-      { no: 13, name: 'version', kind: 'scalar', T: 9 /*ScalarType.STRING*/ }
+      { no: 13, name: 'version', kind: 'scalar', T: 9 /* ScalarType.STRING */ },
     ]);
   }
+
   create(value?: PartialMessage<LsAPI_ListItem>): LsAPI_ListItem {
     const message = globalThis.Object.create(this.messagePrototype!);
     message.name = '';
@@ -185,16 +189,17 @@ class LsAPI_ListItem$Type extends MessageType<LsAPI_ListItem> {
       reflectionMergePartial<LsAPI_ListItem>(this, message, value);
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: LsAPI_ListItem
+    target?: LsAPI_ListItem,
   ): LsAPI_ListItem {
-    let message = target ?? this.create(),
+    const message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
+      const [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
         case /* string name */ 1:
           message.name = reader.string();
@@ -216,35 +221,36 @@ class LsAPI_ListItem$Type extends MessageType<LsAPI_ListItem> {
             reader,
             reader.uint32(),
             options,
-            message.lastModified
+            message.lastModified,
           );
           break;
         case /* string version */ 13:
           message.version = reader.string();
           break;
         default:
-          let u = options.readUnknownField;
+          const u = options.readUnknownField;
           if (u === 'throw')
             throw new globalThis.Error(
-              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`
+              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
             );
-          let d = reader.skip(wireType);
+          const d = reader.skip(wireType);
           if (u !== false)
             (u === true ? UnknownFieldHandler.onRead : u)(
               this.typeName,
               message,
               fieldNo,
               wireType,
-              d
+              d,
             );
       }
     }
     return message;
   }
+
   internalBinaryWrite(
     message: LsAPI_ListItem,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
     /* string name = 1; */
     if (message.name !== '')
@@ -266,17 +272,17 @@ class LsAPI_ListItem$Type extends MessageType<LsAPI_ListItem> {
       Timestamp.internalBinaryWrite(
         message.lastModified,
         writer.tag(12, WireType.LengthDelimited).fork(),
-        options
+        options,
       ).join();
     /* string version = 13; */
     if (message.version !== '')
       writer.tag(13, WireType.LengthDelimited).string(message.version);
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -290,31 +296,34 @@ class LsAPI_List$Type extends MessageType<LsAPI_List> {
   constructor() {
     super('MiLaboratories.Controller.Shared.LsAPI.List', []);
   }
+
   create(value?: PartialMessage<LsAPI_List>): LsAPI_List {
     const message = globalThis.Object.create(this.messagePrototype!);
     if (value !== undefined)
       reflectionMergePartial<LsAPI_List>(this, message, value);
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: LsAPI_List
+    target?: LsAPI_List,
   ): LsAPI_List {
     return target ?? this.create();
   }
+
   internalBinaryWrite(
     message: LsAPI_List,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -331,12 +340,13 @@ class LsAPI_List_Request$Type extends MessageType<LsAPI_List_Request> {
         no: 1,
         name: 'resource_id',
         kind: 'scalar',
-        T: 4 /*ScalarType.UINT64*/,
-        L: 0 /*LongType.BIGINT*/
+        T: 4 /* ScalarType.UINT64 */,
+        L: 0, /* LongType.BIGINT */
       },
-      { no: 2, name: 'location', kind: 'scalar', T: 9 /*ScalarType.STRING*/ }
+      { no: 2, name: 'location', kind: 'scalar', T: 9 /* ScalarType.STRING */ },
     ]);
   }
+
   create(value?: PartialMessage<LsAPI_List_Request>): LsAPI_List_Request {
     const message = globalThis.Object.create(this.messagePrototype!);
     message.resourceId = 0n;
@@ -345,16 +355,17 @@ class LsAPI_List_Request$Type extends MessageType<LsAPI_List_Request> {
       reflectionMergePartial<LsAPI_List_Request>(this, message, value);
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: LsAPI_List_Request
+    target?: LsAPI_List_Request,
   ): LsAPI_List_Request {
-    let message = target ?? this.create(),
+    const message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
+      const [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
         case /* uint64 resource_id */ 1:
           message.resourceId = reader.uint64().toBigInt();
@@ -363,28 +374,29 @@ class LsAPI_List_Request$Type extends MessageType<LsAPI_List_Request> {
           message.location = reader.string();
           break;
         default:
-          let u = options.readUnknownField;
+          const u = options.readUnknownField;
           if (u === 'throw')
             throw new globalThis.Error(
-              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`
+              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
             );
-          let d = reader.skip(wireType);
+          const d = reader.skip(wireType);
           if (u !== false)
             (u === true ? UnknownFieldHandler.onRead : u)(
               this.typeName,
               message,
               fieldNo,
               wireType,
-              d
+              d,
             );
       }
     }
     return message;
   }
+
   internalBinaryWrite(
     message: LsAPI_List_Request,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
     /* uint64 resource_id = 1; */
     if (message.resourceId !== 0n)
@@ -392,12 +404,12 @@ class LsAPI_List_Request$Type extends MessageType<LsAPI_List_Request> {
     /* string location = 2; */
     if (message.location !== '')
       writer.tag(2, WireType.LengthDelimited).string(message.location);
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -414,12 +426,13 @@ class LsAPI_List_Response$Type extends MessageType<LsAPI_List_Response> {
         no: 1,
         name: 'items',
         kind: 'message',
-        repeat: 1 /*RepeatType.PACKED*/,
-        T: () => LsAPI_ListItem
+        repeat: 1 /* RepeatType.PACKED */,
+        T: () => LsAPI_ListItem,
       },
-      { no: 2, name: 'delimiter', kind: 'scalar', T: 9 /*ScalarType.STRING*/ }
+      { no: 2, name: 'delimiter', kind: 'scalar', T: 9 /* ScalarType.STRING */ },
     ]);
   }
+
   create(value?: PartialMessage<LsAPI_List_Response>): LsAPI_List_Response {
     const message = globalThis.Object.create(this.messagePrototype!);
     message.items = [];
@@ -428,65 +441,67 @@ class LsAPI_List_Response$Type extends MessageType<LsAPI_List_Response> {
       reflectionMergePartial<LsAPI_List_Response>(this, message, value);
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: LsAPI_List_Response
+    target?: LsAPI_List_Response,
   ): LsAPI_List_Response {
-    let message = target ?? this.create(),
+    const message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
+      const [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
         case /* repeated MiLaboratories.Controller.Shared.LsAPI.ListItem items */ 1:
           message.items.push(
-            LsAPI_ListItem.internalBinaryRead(reader, reader.uint32(), options)
+            LsAPI_ListItem.internalBinaryRead(reader, reader.uint32(), options),
           );
           break;
         case /* string delimiter */ 2:
           message.delimiter = reader.string();
           break;
         default:
-          let u = options.readUnknownField;
+          const u = options.readUnknownField;
           if (u === 'throw')
             throw new globalThis.Error(
-              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`
+              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
             );
-          let d = reader.skip(wireType);
+          const d = reader.skip(wireType);
           if (u !== false)
             (u === true ? UnknownFieldHandler.onRead : u)(
               this.typeName,
               message,
               fieldNo,
               wireType,
-              d
+              d,
             );
       }
     }
     return message;
   }
+
   internalBinaryWrite(
     message: LsAPI_List_Response,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
     /* repeated MiLaboratories.Controller.Shared.LsAPI.ListItem items = 1; */
     for (let i = 0; i < message.items.length; i++)
       LsAPI_ListItem.internalBinaryWrite(
         message.items[i],
         writer.tag(1, WireType.LengthDelimited).fork(),
-        options
+        options,
       ).join();
     /* string delimiter = 2; */
     if (message.delimiter !== '')
       writer.tag(2, WireType.LengthDelimited).string(message.delimiter);
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -499,5 +514,5 @@ export const LsAPI_List_Response = new LsAPI_List_Response$Type();
  * @generated ServiceType for protobuf service MiLaboratories.Controller.Shared.LS
  */
 export const LS = new ServiceType('MiLaboratories.Controller.Shared.LS', [
-  { name: 'List', options: {}, I: LsAPI_List_Request, O: LsAPI_List_Response }
+  { name: 'List', options: {}, I: LsAPI_List_Request, O: LsAPI_List_Response },
 ]);

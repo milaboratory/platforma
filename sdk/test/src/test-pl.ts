@@ -24,11 +24,19 @@ export const plTest = test.extend<{
   rootTree: SynchronizedTreeState;
   tmpFolder: string;
 }>({
-  tmpFolder: async ({}, use) => {
+  tmpFolder: async ({ onTestFinished }, use) => {
     const workFolder = path.resolve(`work/${randomUUID()}`);
     await fsp.mkdir(workFolder, { recursive: true });
     await use(workFolder);
-    await fsp.rm(workFolder, { recursive: true });
+    onTestFinished(async (task) => {
+      if (task.errors !== undefined) {
+        console.log(
+          `TEST FAILED TMP FOLDER IS PRESERVED: ${workFolder}`
+        );
+      } else {
+        await fsp.rm(workFolder, { recursive: true });
+      }
+    });
   },
 
   pl: async ({ onTestFinished }, use) => {

@@ -48,7 +48,7 @@ export class LSClient implements ILSClient, ServiceInfo {
    */
   list(
     input: LsAPI_List_Request,
-    options?: RpcOptions
+    options?: RpcOptions,
   ): UnaryCall<LsAPI_List_Request, LsAPI_List_Response> {
     const method = this.methods[0],
       opt = this._transport.mergeOptions(options);
@@ -57,7 +57,7 @@ export class LSClient implements ILSClient, ServiceInfo {
       this._transport,
       method,
       opt,
-      input
+      input,
     );
   }
 }

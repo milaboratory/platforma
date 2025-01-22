@@ -96,31 +96,34 @@ class ProgressAPI$Type extends MessageType<ProgressAPI> {
   constructor() {
     super('MiLaboratories.Controller.Shared.ProgressAPI', []);
   }
+
   create(value?: PartialMessage<ProgressAPI>): ProgressAPI {
     const message = globalThis.Object.create(this.messagePrototype!);
     if (value !== undefined)
       reflectionMergePartial<ProgressAPI>(this, message, value);
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: ProgressAPI
+    target?: ProgressAPI,
   ): ProgressAPI {
     return target ?? this.create();
   }
+
   internalBinaryWrite(
     message: ProgressAPI,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -133,25 +136,26 @@ export const ProgressAPI = new ProgressAPI$Type();
 class ProgressAPI_Report$Type extends MessageType<ProgressAPI_Report> {
   constructor() {
     super('MiLaboratories.Controller.Shared.ProgressAPI.Report', [
-      { no: 1, name: 'progress', kind: 'scalar', T: 2 /*ScalarType.FLOAT*/ },
+      { no: 1, name: 'progress', kind: 'scalar', T: 2 /* ScalarType.FLOAT */ },
       {
         no: 2,
         name: 'bytes_processed',
         kind: 'scalar',
-        T: 4 /*ScalarType.UINT64*/,
-        L: 0 /*LongType.BIGINT*/
+        T: 4 /* ScalarType.UINT64 */,
+        L: 0, /* LongType.BIGINT */
       },
       {
         no: 3,
         name: 'bytes_total',
         kind: 'scalar',
-        T: 4 /*ScalarType.UINT64*/,
-        L: 0 /*LongType.BIGINT*/
+        T: 4 /* ScalarType.UINT64 */,
+        L: 0, /* LongType.BIGINT */
       },
-      { no: 4, name: 'done', kind: 'scalar', T: 8 /*ScalarType.BOOL*/ },
-      { no: 5, name: 'name', kind: 'scalar', T: 9 /*ScalarType.STRING*/ }
+      { no: 4, name: 'done', kind: 'scalar', T: 8 /* ScalarType.BOOL */ },
+      { no: 5, name: 'name', kind: 'scalar', T: 9 /* ScalarType.STRING */ },
     ]);
   }
+
   create(value?: PartialMessage<ProgressAPI_Report>): ProgressAPI_Report {
     const message = globalThis.Object.create(this.messagePrototype!);
     message.progress = 0;
@@ -163,16 +167,17 @@ class ProgressAPI_Report$Type extends MessageType<ProgressAPI_Report> {
       reflectionMergePartial<ProgressAPI_Report>(this, message, value);
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: ProgressAPI_Report
+    target?: ProgressAPI_Report,
   ): ProgressAPI_Report {
-    let message = target ?? this.create(),
+    const message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
+      const [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
         case /* float progress */ 1:
           message.progress = reader.float();
@@ -190,28 +195,29 @@ class ProgressAPI_Report$Type extends MessageType<ProgressAPI_Report> {
           message.name = reader.string();
           break;
         default:
-          let u = options.readUnknownField;
+          const u = options.readUnknownField;
           if (u === 'throw')
             throw new globalThis.Error(
-              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`
+              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
             );
-          let d = reader.skip(wireType);
+          const d = reader.skip(wireType);
           if (u !== false)
             (u === true ? UnknownFieldHandler.onRead : u)(
               this.typeName,
               message,
               fieldNo,
               wireType,
-              d
+              d,
             );
       }
     }
     return message;
   }
+
   internalBinaryWrite(
     message: ProgressAPI_Report,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
     /* float progress = 1; */
     if (message.progress !== 0)
@@ -228,12 +234,12 @@ class ProgressAPI_Report$Type extends MessageType<ProgressAPI_Report> {
     /* string name = 5; */
     if (message.name !== '')
       writer.tag(5, WireType.LengthDelimited).string(message.name);
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -247,31 +253,34 @@ class ProgressAPI_GetStatus$Type extends MessageType<ProgressAPI_GetStatus> {
   constructor() {
     super('MiLaboratories.Controller.Shared.ProgressAPI.GetStatus', []);
   }
+
   create(value?: PartialMessage<ProgressAPI_GetStatus>): ProgressAPI_GetStatus {
     const message = globalThis.Object.create(this.messagePrototype!);
     if (value !== undefined)
       reflectionMergePartial<ProgressAPI_GetStatus>(this, message, value);
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: ProgressAPI_GetStatus
+    target?: ProgressAPI_GetStatus,
   ): ProgressAPI_GetStatus {
     return target ?? this.create();
   }
+
   internalBinaryWrite(
     message: ProgressAPI_GetStatus,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -288,13 +297,14 @@ class ProgressAPI_GetStatus_Request$Type extends MessageType<ProgressAPI_GetStat
         no: 1,
         name: 'resource_id',
         kind: 'scalar',
-        T: 4 /*ScalarType.UINT64*/,
-        L: 0 /*LongType.BIGINT*/
-      }
+        T: 4 /* ScalarType.UINT64 */,
+        L: 0, /* LongType.BIGINT */
+      },
     ]);
   }
+
   create(
-    value?: PartialMessage<ProgressAPI_GetStatus_Request>
+    value?: PartialMessage<ProgressAPI_GetStatus_Request>,
   ): ProgressAPI_GetStatus_Request {
     const message = globalThis.Object.create(this.messagePrototype!);
     message.resourceId = 0n;
@@ -302,57 +312,59 @@ class ProgressAPI_GetStatus_Request$Type extends MessageType<ProgressAPI_GetStat
       reflectionMergePartial<ProgressAPI_GetStatus_Request>(
         this,
         message,
-        value
+        value,
       );
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: ProgressAPI_GetStatus_Request
+    target?: ProgressAPI_GetStatus_Request,
   ): ProgressAPI_GetStatus_Request {
-    let message = target ?? this.create(),
+    const message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
+      const [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
         case /* uint64 resource_id */ 1:
           message.resourceId = reader.uint64().toBigInt();
           break;
         default:
-          let u = options.readUnknownField;
+          const u = options.readUnknownField;
           if (u === 'throw')
             throw new globalThis.Error(
-              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`
+              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
             );
-          let d = reader.skip(wireType);
+          const d = reader.skip(wireType);
           if (u !== false)
             (u === true ? UnknownFieldHandler.onRead : u)(
               this.typeName,
               message,
               fieldNo,
               wireType,
-              d
+              d,
             );
       }
     }
     return message;
   }
+
   internalBinaryWrite(
     message: ProgressAPI_GetStatus_Request,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
     /* uint64 resource_id = 1; */
     if (message.resourceId !== 0n)
       writer.tag(1, WireType.Varint).uint64(message.resourceId);
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -360,83 +372,86 @@ class ProgressAPI_GetStatus_Request$Type extends MessageType<ProgressAPI_GetStat
 /**
  * @generated MessageType for protobuf message MiLaboratories.Controller.Shared.ProgressAPI.GetStatus.Request
  */
-export const ProgressAPI_GetStatus_Request =
-  new ProgressAPI_GetStatus_Request$Type();
+export const ProgressAPI_GetStatus_Request
+  = new ProgressAPI_GetStatus_Request$Type();
 // @generated message type with reflection information, may provide speed optimized methods
 class ProgressAPI_GetStatus_Response$Type extends MessageType<ProgressAPI_GetStatus_Response> {
   constructor() {
     super('MiLaboratories.Controller.Shared.ProgressAPI.GetStatus.Response', [
-      { no: 1, name: 'report', kind: 'message', T: () => ProgressAPI_Report }
+      { no: 1, name: 'report', kind: 'message', T: () => ProgressAPI_Report },
     ]);
   }
+
   create(
-    value?: PartialMessage<ProgressAPI_GetStatus_Response>
+    value?: PartialMessage<ProgressAPI_GetStatus_Response>,
   ): ProgressAPI_GetStatus_Response {
     const message = globalThis.Object.create(this.messagePrototype!);
     if (value !== undefined)
       reflectionMergePartial<ProgressAPI_GetStatus_Response>(
         this,
         message,
-        value
+        value,
       );
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: ProgressAPI_GetStatus_Response
+    target?: ProgressAPI_GetStatus_Response,
   ): ProgressAPI_GetStatus_Response {
-    let message = target ?? this.create(),
+    const message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
+      const [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
         case /* MiLaboratories.Controller.Shared.ProgressAPI.Report report */ 1:
           message.report = ProgressAPI_Report.internalBinaryRead(
             reader,
             reader.uint32(),
             options,
-            message.report
+            message.report,
           );
           break;
         default:
-          let u = options.readUnknownField;
+          const u = options.readUnknownField;
           if (u === 'throw')
             throw new globalThis.Error(
-              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`
+              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
             );
-          let d = reader.skip(wireType);
+          const d = reader.skip(wireType);
           if (u !== false)
             (u === true ? UnknownFieldHandler.onRead : u)(
               this.typeName,
               message,
               fieldNo,
               wireType,
-              d
+              d,
             );
       }
     }
     return message;
   }
+
   internalBinaryWrite(
     message: ProgressAPI_GetStatus_Response,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
     /* MiLaboratories.Controller.Shared.ProgressAPI.Report report = 1; */
     if (message.report)
       ProgressAPI_Report.internalBinaryWrite(
         message.report,
         writer.tag(1, WireType.LengthDelimited).fork(),
-        options
+        options,
       ).join();
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -444,40 +459,43 @@ class ProgressAPI_GetStatus_Response$Type extends MessageType<ProgressAPI_GetSta
 /**
  * @generated MessageType for protobuf message MiLaboratories.Controller.Shared.ProgressAPI.GetStatus.Response
  */
-export const ProgressAPI_GetStatus_Response =
-  new ProgressAPI_GetStatus_Response$Type();
+export const ProgressAPI_GetStatus_Response
+  = new ProgressAPI_GetStatus_Response$Type();
 // @generated message type with reflection information, may provide speed optimized methods
 class ProgressAPI_RealtimeStatus$Type extends MessageType<ProgressAPI_RealtimeStatus> {
   constructor() {
     super('MiLaboratories.Controller.Shared.ProgressAPI.RealtimeStatus', []);
   }
+
   create(
-    value?: PartialMessage<ProgressAPI_RealtimeStatus>
+    value?: PartialMessage<ProgressAPI_RealtimeStatus>,
   ): ProgressAPI_RealtimeStatus {
     const message = globalThis.Object.create(this.messagePrototype!);
     if (value !== undefined)
       reflectionMergePartial<ProgressAPI_RealtimeStatus>(this, message, value);
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: ProgressAPI_RealtimeStatus
+    target?: ProgressAPI_RealtimeStatus,
   ): ProgressAPI_RealtimeStatus {
     return target ?? this.create();
   }
+
   internalBinaryWrite(
     message: ProgressAPI_RealtimeStatus,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -496,15 +514,16 @@ class ProgressAPI_RealtimeStatus_Request$Type extends MessageType<ProgressAPI_Re
           no: 1,
           name: 'resource_id',
           kind: 'scalar',
-          T: 4 /*ScalarType.UINT64*/,
-          L: 0 /*LongType.BIGINT*/
+          T: 4 /* ScalarType.UINT64 */,
+          L: 0, /* LongType.BIGINT */
         },
-        { no: 2, name: 'update_interval', kind: 'message', T: () => Duration }
-      ]
+        { no: 2, name: 'update_interval', kind: 'message', T: () => Duration },
+      ],
     );
   }
+
   create(
-    value?: PartialMessage<ProgressAPI_RealtimeStatus_Request>
+    value?: PartialMessage<ProgressAPI_RealtimeStatus_Request>,
   ): ProgressAPI_RealtimeStatus_Request {
     const message = globalThis.Object.create(this.messagePrototype!);
     message.resourceId = 0n;
@@ -512,20 +531,21 @@ class ProgressAPI_RealtimeStatus_Request$Type extends MessageType<ProgressAPI_Re
       reflectionMergePartial<ProgressAPI_RealtimeStatus_Request>(
         this,
         message,
-        value
+        value,
       );
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: ProgressAPI_RealtimeStatus_Request
+    target?: ProgressAPI_RealtimeStatus_Request,
   ): ProgressAPI_RealtimeStatus_Request {
-    let message = target ?? this.create(),
+    const message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
+      const [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
         case /* uint64 resource_id */ 1:
           message.resourceId = reader.uint64().toBigInt();
@@ -535,32 +555,33 @@ class ProgressAPI_RealtimeStatus_Request$Type extends MessageType<ProgressAPI_Re
             reader,
             reader.uint32(),
             options,
-            message.updateInterval
+            message.updateInterval,
           );
           break;
         default:
-          let u = options.readUnknownField;
+          const u = options.readUnknownField;
           if (u === 'throw')
             throw new globalThis.Error(
-              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`
+              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
             );
-          let d = reader.skip(wireType);
+          const d = reader.skip(wireType);
           if (u !== false)
             (u === true ? UnknownFieldHandler.onRead : u)(
               this.typeName,
               message,
               fieldNo,
               wireType,
-              d
+              d,
             );
       }
     }
     return message;
   }
+
   internalBinaryWrite(
     message: ProgressAPI_RealtimeStatus_Request,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
     /* uint64 resource_id = 1; */
     if (message.resourceId !== 0n)
@@ -570,14 +591,14 @@ class ProgressAPI_RealtimeStatus_Request$Type extends MessageType<ProgressAPI_Re
       Duration.internalBinaryWrite(
         message.updateInterval,
         writer.tag(2, WireType.LengthDelimited).fork(),
-        options
+        options,
       ).join();
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -585,84 +606,87 @@ class ProgressAPI_RealtimeStatus_Request$Type extends MessageType<ProgressAPI_Re
 /**
  * @generated MessageType for protobuf message MiLaboratories.Controller.Shared.ProgressAPI.RealtimeStatus.Request
  */
-export const ProgressAPI_RealtimeStatus_Request =
-  new ProgressAPI_RealtimeStatus_Request$Type();
+export const ProgressAPI_RealtimeStatus_Request
+  = new ProgressAPI_RealtimeStatus_Request$Type();
 // @generated message type with reflection information, may provide speed optimized methods
 class ProgressAPI_RealtimeStatus_Response$Type extends MessageType<ProgressAPI_RealtimeStatus_Response> {
   constructor() {
     super(
       'MiLaboratories.Controller.Shared.ProgressAPI.RealtimeStatus.Response',
-      [{ no: 1, name: 'report', kind: 'message', T: () => ProgressAPI_Report }]
+      [{ no: 1, name: 'report', kind: 'message', T: () => ProgressAPI_Report }],
     );
   }
+
   create(
-    value?: PartialMessage<ProgressAPI_RealtimeStatus_Response>
+    value?: PartialMessage<ProgressAPI_RealtimeStatus_Response>,
   ): ProgressAPI_RealtimeStatus_Response {
     const message = globalThis.Object.create(this.messagePrototype!);
     if (value !== undefined)
       reflectionMergePartial<ProgressAPI_RealtimeStatus_Response>(
         this,
         message,
-        value
+        value,
       );
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: ProgressAPI_RealtimeStatus_Response
+    target?: ProgressAPI_RealtimeStatus_Response,
   ): ProgressAPI_RealtimeStatus_Response {
-    let message = target ?? this.create(),
+    const message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
+      const [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
         case /* MiLaboratories.Controller.Shared.ProgressAPI.Report report */ 1:
           message.report = ProgressAPI_Report.internalBinaryRead(
             reader,
             reader.uint32(),
             options,
-            message.report
+            message.report,
           );
           break;
         default:
-          let u = options.readUnknownField;
+          const u = options.readUnknownField;
           if (u === 'throw')
             throw new globalThis.Error(
-              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`
+              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
             );
-          let d = reader.skip(wireType);
+          const d = reader.skip(wireType);
           if (u !== false)
             (u === true ? UnknownFieldHandler.onRead : u)(
               this.typeName,
               message,
               fieldNo,
               wireType,
-              d
+              d,
             );
       }
     }
     return message;
   }
+
   internalBinaryWrite(
     message: ProgressAPI_RealtimeStatus_Response,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
     /* MiLaboratories.Controller.Shared.ProgressAPI.Report report = 1; */
     if (message.report)
       ProgressAPI_Report.internalBinaryWrite(
         message.report,
         writer.tag(1, WireType.LengthDelimited).fork(),
-        options
+        options,
       ).join();
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -670,8 +694,8 @@ class ProgressAPI_RealtimeStatus_Response$Type extends MessageType<ProgressAPI_R
 /**
  * @generated MessageType for protobuf message MiLaboratories.Controller.Shared.ProgressAPI.RealtimeStatus.Response
  */
-export const ProgressAPI_RealtimeStatus_Response =
-  new ProgressAPI_RealtimeStatus_Response$Type();
+export const ProgressAPI_RealtimeStatus_Response
+  = new ProgressAPI_RealtimeStatus_Response$Type();
 /**
  * @generated ServiceType for protobuf service MiLaboratories.Controller.Shared.Progress
  */
@@ -681,17 +705,17 @@ export const Progress = new ServiceType(
     {
       name: 'GetStatus',
       options: {
-        'google.api.http': { get: '/resources/{resource_id}/get-progress' }
+        'google.api.http': { get: '/resources/{resource_id}/get-progress' },
       },
       I: ProgressAPI_GetStatus_Request,
-      O: ProgressAPI_GetStatus_Response
+      O: ProgressAPI_GetStatus_Response,
     },
     {
       name: 'RealtimeStatus',
       serverStreaming: true,
       options: {},
       I: ProgressAPI_RealtimeStatus_Request,
-      O: ProgressAPI_RealtimeStatus_Response
-    }
-  ]
+      O: ProgressAPI_RealtimeStatus_Response,
+    },
+  ],
 );

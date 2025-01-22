@@ -1,12 +1,14 @@
-import { ChangeSource, Computable, ComputableCtx, Watcher } from '@milaboratories/computable';
+import type { ComputableCtx, Watcher } from '@milaboratories/computable';
+import { ChangeSource, Computable } from '@milaboratories/computable';
+import type {
+  MiLogger } from '@milaboratories/ts-helpers';
 import {
   CallersCounter,
-  MiLogger,
   TaskProcessor,
   createPathAtomically,
   ensureDirExists,
   fileExists,
-  notEmpty
+  notEmpty,
 } from '@milaboratories/ts-helpers';
 import { createHash, randomUUID } from 'node:crypto';
 import * as fsp from 'node:fs/promises';
@@ -14,11 +16,10 @@ import * as path from 'node:path';
 import { Transform, Writable } from 'node:stream';
 import * as zlib from 'node:zlib';
 import * as tar from 'tar-fs';
-import { Dispatcher } from 'undici';
+import type { Dispatcher } from 'undici';
 import { NetworkError400, RemoteFileDownloader } from '../helpers/download';
 import { FilesCache } from './helpers/files_cache';
 import { stringifyWithResourceId } from '@milaboratories/pl-client';
-import { DownloadBlobTask } from './download_blob_task';
 
 export interface DownloadUrlSyncReader {
   /** Returns a Computable that (when the time will come)
@@ -59,8 +60,8 @@ export class DownloadUrlDriver implements DownloadUrlSyncReader {
     private readonly opts: DownloadUrlDriverOps = {
       cacheSoftSizeBytes: 50 * 1024 * 1024,
       withGunzip: true,
-      nConcurrentDownloads: 50
-    }
+      nConcurrentDownloads: 50,
+    },
   ) {
     this.downloadQueue = new TaskProcessor(this.logger, this.opts.nConcurrentDownloads);
     this.cache = new FilesCache(this.opts.cacheSoftSizeBytes);
@@ -75,7 +76,7 @@ export class DownloadUrlDriver implements DownloadUrlSyncReader {
 
   getPath(
     url: URL,
-    ctx?: ComputableCtx
+    ctx?: ComputableCtx,
   ): Computable<PathResult | undefined> | PathResult | undefined {
     // wrap result as computable, if we were not given an existing computable context
     if (ctx === undefined) return Computable.make((c) => this.getPath(url, c));
@@ -88,7 +89,7 @@ export class DownloadUrlDriver implements DownloadUrlSyncReader {
     const result = this.getPathNoCtx(url, ctx.watcher, callerId);
     if (result?.path === undefined)
       ctx.markUnstable(
-        `a path to the downloaded and untared archive might be undefined. The current result: ${result}`
+        `a path to the downloaded and untared archive might be undefined. The current result: ${result}`,
       );
 
     return result;
@@ -106,7 +107,7 @@ export class DownloadUrlDriver implements DownloadUrlSyncReader {
     const newTask = this.setNewTask(w, url, callerId);
     this.downloadQueue.push({
       fn: async () => this.downloadUrl(newTask, callerId),
-      recoverableErrorPredicate: (e) => true
+      recoverableErrorPredicate: (e) => true,
     });
 
     return newTask.getPath();
@@ -136,10 +137,10 @@ export class DownloadUrlDriver implements DownloadUrlSyncReader {
 
           this.removeTask(
             task,
-            `the task ${stringifyWithResourceId(task.info())} was removed` +
-              `from cache along with ${stringifyWithResourceId(toDelete.map((t) => t.info()))}`
+            `the task ${stringifyWithResourceId(task.info())} was removed`
+            + `from cache along with ${stringifyWithResourceId(toDelete.map((t) => t.info()))}`,
           );
-        })
+        }),
       );
     } else {
       // The task is still in a downloading queue.
@@ -147,7 +148,7 @@ export class DownloadUrlDriver implements DownloadUrlSyncReader {
       if (deleted)
         this.removeTask(
           task,
-          `the task ${stringifyWithResourceId(task.info())} was removed from cache`
+          `the task ${stringifyWithResourceId(task.info())} was removed from cache`,
         );
     }
   }
@@ -163,9 +164,9 @@ export class DownloadUrlDriver implements DownloadUrlSyncReader {
 
         this.removeTask(
           task,
-          `the task ${stringifyWithResourceId(task.info())} was released when the driver was closed`
+          `the task ${stringifyWithResourceId(task.info())} was released when the driver was closed`,
         );
-      })
+      }),
     );
   }
 
@@ -201,7 +202,7 @@ class DownloadByUrlTask {
   constructor(
     private readonly logger: MiLogger,
     readonly path: string,
-    readonly url: URL
+    readonly url: URL,
   ) {}
 
   public info() {
@@ -210,7 +211,7 @@ class DownloadByUrlTask {
       path: this.path,
       done: this.done,
       size: this.size,
-      error: this.error
+      error: this.error,
     };
   }
 
@@ -240,7 +241,7 @@ class DownloadByUrlTask {
   private async downloadAndUntar(
     clientDownload: RemoteFileDownloader,
     withGunzip: boolean,
-    signal: AbortSignal
+    signal: AbortSignal,
   ): Promise<number> {
     await ensureDirExists(path.dirname(this.path));
 
@@ -301,7 +302,7 @@ async function dirSize(dir: string): Promise<number> {
 
       const stat = await fsp.stat(fPath);
       return stat.size;
-    })
+    }),
   );
 
   return sizes.reduce((sum, size) => sum + size, 0);

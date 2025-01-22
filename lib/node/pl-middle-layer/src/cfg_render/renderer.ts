@@ -1,4 +1,5 @@
 import {
+  ArchiveFormat,
   Cfg,
   CfgMapArrayValues,
   CfgMapRecordValues,
@@ -268,6 +269,18 @@ const SRGetOnDemandBlobContent: Subroutine = (args) => {
   };
 };
 
+const SRExtractArchiveAndGetURL: (format: ArchiveFormat) => Subroutine = (format) => (args) => {
+  const source = args.source as PlTreeEntry | undefined;
+  if (source === undefined) return resOp(undefined);
+
+  return ({ drivers }) => {
+    return {
+      type: 'ScheduleComputable',
+      computable: drivers.blobToURLDriver.extractArchiveAndGetURL(source, format)
+    };
+  };
+};
+
 const SRGetImportProgress: Subroutine = (args) => {
   const source = args.source as PlTreeEntry | undefined;
   if (source === undefined) return resOp(undefined);
@@ -490,6 +503,15 @@ export function renderCfg(ctx: Record<string, unknown>, cfg: Cfg): Operation {
       return () => ({
         type: 'ScheduleSubroutine',
         subroutine: SRGetOnDemandBlobContent,
+        args: {
+          source: renderCfg(ctx, cfg.source)
+        }
+      });
+
+    case 'ExtractArchiveAndGetURL':
+      return () => ({
+        type: 'ScheduleSubroutine',
+        subroutine: SRExtractArchiveAndGetURL(cfg.format),
         args: {
           source: renderCfg(ctx, cfg.source)
         }
