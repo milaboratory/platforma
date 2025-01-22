@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
-import sourceMaps from 'rollup-plugin-sourcemaps';
+import sourcemaps from 'rollup-plugin-sourcemaps2';
 import { resolve } from 'path';
 
 // https://vitejs.dev/config/
@@ -17,7 +17,7 @@ export default defineConfig({
       fileName: 'lib',
     },
     rollupOptions: {
-      plugins: [sourceMaps()],
+      plugins: [sourcemaps()],
       external: [
         'vue',
         'ag-grid-enterprise',
