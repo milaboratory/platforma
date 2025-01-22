@@ -25,6 +25,6 @@
     "zod": "catalog:",
     "ag-grid-enterprise": "catalog:",
     "ag-grid-vue3": "catalog:",
-    "rollup-plugin-sourcemaps": "catalog:"
+    "rollup-plugin-sourcemaps2": "catalog:"
   }
 }
