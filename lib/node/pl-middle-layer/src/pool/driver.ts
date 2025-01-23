@@ -123,7 +123,7 @@ class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
     }
 
     const createSpecPFrame = (): PFrameInternal.PFrameV2 => {
-      const pFrame = new PFrame(getDebugFlags().logPFrameRequests ? logFunc : undefined);
+      const pFrame = getDebugFlags().logPFrameRequests ? new PFrame(logFunc) : new PFrame();
       for (const column of columns) {
         try {
           pFrame.addColumnSpec(column.id, column.spec);
