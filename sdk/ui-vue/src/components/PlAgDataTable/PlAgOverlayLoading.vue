@@ -4,6 +4,7 @@ import { PlLoaderCircular } from '@milaboratories/uikit';
 defineProps<{
   params: {
     notReady: Readonly<boolean>;
+    message?: Readonly<string>;
   };
 }>();
 </script>
@@ -12,7 +13,7 @@ defineProps<{
   <div class="grid-overlay-container">
     <template v-if="params.notReady">
       <div class="grid-icon-cat-in-bag"/>
-      <span class="text-subtitle-m">No datasource</span>
+      <span class="text-subtitle-m">{{ params.message ?? 'No datasource' }}</span>
     </template>
     <PlLoaderCircular v-else size="48" />
   </div>
