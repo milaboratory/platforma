@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 1.26.3
+
+### Patch Changes
+
+- 36a365b: Recreate PFrame on each data request
+
 ## 1.26.2
 
 ### Patch Changes
