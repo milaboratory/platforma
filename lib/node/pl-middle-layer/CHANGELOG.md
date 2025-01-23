@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 1.26.4
+
+### Patch Changes
+
+- 7228856: PFrame driver fix logger forwarding
+
 ## 1.26.3
 
 ### Patch Changes
