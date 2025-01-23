@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.22.4
+
+### Patch Changes
+
+- c5269a5: Custom message for empty table
+
 ## 1.22.2
 
 ### Patch Changes
