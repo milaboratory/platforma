@@ -9,6 +9,7 @@ import {
   PlDropdownLine,
   PlTextField,
   PlBtnGhost,
+  Color,
 } from '@platforma-sdk/ui-vue';
 import { computed, reactive, ref } from 'vue';
 
@@ -57,6 +58,10 @@ const onClickSettings = () => {
   loading.value = true;
   setTimeout(() => loading.value = false, 2000);
 };
+
+const triggerError = () => {
+  Color.fromString('invalid color');
+};
 </script>
 
 <template>
@@ -88,6 +93,9 @@ const onClickSettings = () => {
     <PlRow>
       <PlDropdownLine v-model="data.value" clearable :label="data.title" :options="data.options" />
       <PlDropdownLine v-model="data.value" prefix="Option:" clearable :label="data.title" :options="data.options" />
+    </PlRow>
+    <PlRow>
+      <PlBtnPrimary @click="triggerError">Trigger ui vue error</PlBtnPrimary>
     </PlRow>
   </PlBlockPage>
 </template>

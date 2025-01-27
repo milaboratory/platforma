@@ -1,5 +1,173 @@
 # @milaboratories/pl-middle-layer
 
+## 1.26.4
+
+### Patch Changes
+
+- 7228856: PFrame driver fix logger forwarding
+
+## 1.26.3
+
+### Patch Changes
+
+- 36a365b: Recreate PFrame on each data request
+
+## 1.26.2
+
+### Patch Changes
+
+- ce558f9: add blob to url driver that decompress the folder and returns url to the blob
+- b41709a: new driver: blob to url that unarchive things
+- Updated dependencies [ce558f9]
+- Updated dependencies [b41709a]
+  - @milaboratories/pl-drivers@1.5.11
+  - @milaboratories/pl-model-common@1.10.4
+  - @platforma-sdk/model@1.22.2
+  - @milaboratories/pl-model-middle-layer@1.7.1
+  - @platforma-sdk/block-tools@2.5.7
+
+## 1.26.1
+
+### Patch Changes
+
+- Updated dependencies [02860e7]
+- Updated dependencies [32c7f91]
+  - @milaboratories/pl-http@1.0.3
+  - @milaboratories/pl-client@2.7.3
+  - @platforma-sdk/block-tools@2.5.6
+  - @milaboratories/pl-drivers@1.5.10
+  - @milaboratories/pl-tree@1.4.22
+
+## 1.26.0
+
+### Minor Changes
+
+- c0d5856: Model lambda ctx now have activeArgs field, that can be used to retrieve arguments with which block was executed.
+
+### Patch Changes
+
+- Updated dependencies [c0d5856]
+  - @platforma-sdk/model@1.22.0
+
+## 1.25.6
+
+### Patch Changes
+
+- Updated dependencies [0d1ffc8]
+  - @platforma-sdk/workflow-tengo@2.9.9
+
+## 1.25.5
+
+### Patch Changes
+
+- 659a62a: Fixes problem where block update watcher ignored preferred channel setting
+
+## 1.25.4
+
+### Patch Changes
+
+- Updated dependencies [87453b5]
+  - @platforma-sdk/workflow-tengo@2.9.8
+
+## 1.25.3
+
+### Patch Changes
+
+- Updated dependencies [37ecd10]
+  - @platforma-sdk/workflow-tengo@2.9.7
+
+## 1.25.2
+
+### Patch Changes
+
+- 9ad75ac: Fix: now project schema migrations are applied during project open
+
+## 1.25.1
+
+### Patch Changes
+
+- Updated dependencies [c4dd069]
+  - @platforma-sdk/block-tools@2.5.5
+
+## 1.25.0
+
+### Minor Changes
+
+- 3da2292: BlockSettings, update locking, version skipping & detailed UpdateInfo
+
+### Patch Changes
+
+- Updated dependencies [3da2292]
+  - @milaboratories/pl-model-middle-layer@1.7.0
+  - @platforma-sdk/block-tools@2.5.4
+
+## 1.24.0
+
+### Minor Changes
+
+- a9b0749: Minor fix for direct template creation method
+
+### Patch Changes
+
+- Updated dependencies [a9b0749]
+  - @milaboratories/pl-client@2.7.2
+  - @milaboratories/pl-drivers@1.5.9
+  - @milaboratories/pl-tree@1.4.21
+
+## 1.23.19
+
+### Patch Changes
+
+- Updated dependencies [32966e6]
+  - @milaboratories/pl-model-common@1.10.3
+  - @milaboratories/pl-model-middle-layer@1.6.11
+  - @milaboratories/pl-drivers@1.5.8
+  - @platforma-sdk/model@1.21.20
+  - @platforma-sdk/block-tools@2.5.3
+
+## 1.23.18
+
+### Patch Changes
+
+- f129da8: PFrames update
+- Updated dependencies [f129da8]
+  - @platforma-sdk/workflow-tengo@2.9.6
+
+## 1.23.17
+
+### Patch Changes
+
+- Updated dependencies [5067916]
+  - @platforma-sdk/workflow-tengo@2.9.5
+
+## 1.23.16
+
+### Patch Changes
+
+- Updated dependencies [be4e18a]
+  - @platforma-sdk/workflow-tengo@2.9.4
+
+## 1.23.15
+
+### Patch Changes
+
+- 5f504ad: PFrames update
+
+## 1.23.14
+
+### Patch Changes
+
+- Updated dependencies [c2161da]
+  - @milaboratories/pl-model-middle-layer@1.6.10
+  - @platforma-sdk/block-tools@2.5.2
+
+## 1.23.13
+
+### Patch Changes
+
+- Updated dependencies [762425d]
+  - @platforma-sdk/workflow-tengo@2.9.3
+
 ## 1.23.12
 
 ### Patch Changes

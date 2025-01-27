@@ -1,0 +1,24 @@
+wf := import("@platforma-sdk/workflow-tengo:workflow")
+ll := import("@platforma-sdk/workflow-tengo:ll")
+text := import("text")
+file := import("@platforma-sdk/workflow-tengo:file")
+maps := import("@platforma-sdk/workflow-tengo:maps")
+
+wf.body(func(args) {
+	importedTgz := file.importFile(args.inputTgzHandle)
+	resultTgz := file.exportFile(importedTgz.file)
+
+	importedZip := file.importFile(args.inputZipHandle)
+	resultZip := file.exportFile(importedZip.file)
+
+	return {
+		outputs: {
+			handleTgz: importedTgz.handle,
+			siteTgz: resultTgz,
+
+			handleZip: importedZip.handle,
+			siteZip: resultZip
+		},
+		exports: {}
+	}
+})

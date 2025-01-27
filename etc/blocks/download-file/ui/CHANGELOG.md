@@ -1,5 +1,101 @@
 # @milaboratories/milaboratories.test-download-file.ui
 
+## 1.0.66
+
+### Patch Changes
+
+- Updated dependencies [c5269a5]
+  - @platforma-sdk/ui-vue@1.22.4
+
+## 1.0.65
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-download-file.model@1.0.15
+- @platforma-sdk/ui-vue@1.22.2
+
+## 1.0.64
+
+### Patch Changes
+
+- Updated dependencies [02860e7]
+  - @platforma-sdk/ui-vue@1.22.1
+  - @milaboratories/milaboratories.test-download-file.model@1.0.14
+
+## 1.0.63
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-download-file.model@1.0.14
+- @platforma-sdk/ui-vue@1.22.0
+
+## 1.0.62
+
+### Patch Changes
+
+- Updated dependencies [56f7e84]
+  - @platforma-sdk/ui-vue@1.21.30
+
+## 1.0.61
+
+### Patch Changes
+
+- @platforma-sdk/ui-vue@1.21.29
+
+## 1.0.60
+
+### Patch Changes
+
+- Updated dependencies [3ff9dcd]
+  - @platforma-sdk/ui-vue@1.21.25
+
+## 1.0.59
+
+### Patch Changes
+
+- @platforma-sdk/ui-vue@1.21.24
+
+## 1.0.58
+
+### Patch Changes
+
+- Updated dependencies [9b5a692]
+  - @platforma-sdk/ui-vue@1.21.23
+
+## 1.0.57
+
+### Patch Changes
+
+- Updated dependencies [93b8d8d]
+  - @platforma-sdk/ui-vue@1.21.21
+
+## 1.0.56
+
+### Patch Changes
+
+- Updated dependencies [32966e6]
+  - @platforma-sdk/ui-vue@1.21.20
+  - @milaboratories/milaboratories.test-download-file.model@1.0.13
+
+## 1.0.55
+
+### Patch Changes
+
+- Updated dependencies [53e35de]
+  - @platforma-sdk/ui-vue@1.21.18
+
+## 1.0.54
+
+### Patch Changes
+
+- @platforma-sdk/ui-vue@1.21.17
+
+## 1.0.53
+
+### Patch Changes
+
+- @platforma-sdk/ui-vue@1.21.12
+
 ## 1.0.52
 
 ### Patch Changes

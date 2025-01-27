@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { faker } from '@faker-js/faker';
 import { listToOptions } from '@milaboratories/helpers';
+import type {
+  Size } from '@platforma-sdk/ui-vue';
 import {
   PlBlockPage,
   PlTextField,
@@ -27,7 +29,8 @@ const dialogData = reactive({
   title: true,
   actions: true,
   actionsHasTopBorder: true,
-  dialogWidth: '448px', // default,
+  size: undefined as Size | undefined,
+  dialogWidth: 448, // default,
   maxHeight: 440,
   contentHeight: 216,
   closeOnOutsideClick: true,
@@ -65,6 +68,20 @@ for (const example of modalVariants) {
 }
 
 const lorem = faker.lorem.paragraph(100);
+
+const sizeOptions = [{
+  label: 'Small',
+  value: 'small',
+}, {
+  label: 'Medium',
+  value: 'medium',
+}, {
+  label: 'Large',
+  value: 'large',
+}, {
+  label: 'Unset',
+  value: undefined,
+}];
 </script>
 
 <template>
@@ -77,6 +94,11 @@ const lorem = faker.lorem.paragraph(100);
             Open PlDialogModal
           </PlBtnPrimary>
         </PlRow>
+        <PlDropdown v-model="dialogData.size" label="Size (Takes precedence over (min | max)(width | height) properties)" :options="sizeOptions" />
+        <PlNumberField
+          v-model="dialogData.dialogWidth"
+          label="Dialog width in px (without gutters)"
+        />
         <PlNumberField
           v-model="dialogData.contentHeight"
           label="Content height in px (without gutters)"
@@ -118,7 +140,8 @@ const lorem = faker.lorem.paragraph(100);
     <!--Dialog modal-->
     <PlDialogModal
       v-model="dialogData.dialogModal"
-      :width="dialogData.dialogWidth"
+      :size="dialogData.size"
+      :width="`${dialogData.dialogWidth}px`"
       :close-on-outside-click="dialogData.closeOnOutsideClick"
       :actions-has-top-border="dialogData.actionsHasTopBorder"
       :max-height="`${dialogData.maxHeight}px`"
@@ -139,7 +162,7 @@ const lorem = faker.lorem.paragraph(100);
     <!--Examples-->
     <PlDialogModal
       v-model="append.newProject"
-      :width="dialogData.dialogWidth"
+      :width="`${dialogData.dialogWidth}px`"
       :close-on-outside-click="dialogData.closeOnOutsideClick"
       :actions-has-top-border="dialogData.actionsHasTopBorder"
     >
@@ -153,7 +176,7 @@ const lorem = faker.lorem.paragraph(100);
 
     <PlDialogModal
       v-model="append.newProject2"
-      :width="dialogData.dialogWidth"
+      :width="`${dialogData.dialogWidth}px`"
       :close-on-outside-click="dialogData.closeOnOutsideClick"
       :actions-has-top-border="dialogData.actionsHasTopBorder"
     >

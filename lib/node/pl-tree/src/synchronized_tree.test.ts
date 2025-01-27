@@ -4,6 +4,7 @@ import { TestStructuralResourceType1 } from './test_utils';
 import { Computable } from '@milaboratories/computable';
 import { SynchronizedTreeState } from './synchronized_tree';
 import { ConsoleLoggerAdapter } from '@milaboratories/ts-helpers';
+import tp from 'timers/promises';
 
 test('simple synchronized tree test', async () => {
   await TestHelpers.withTempRoot(async (pl) => {
@@ -54,6 +55,7 @@ test('simple synchronized tree test', async () => {
       },
       { sync: true }
     );
+    await tp.setTimeout(10);
 
     await theComputable.refreshState();
 
@@ -75,6 +77,7 @@ test('simple synchronized tree test', async () => {
       },
       { sync: true }
     );
+    await tp.setTimeout(10);
 
     await theComputable.refreshState();
 
@@ -93,6 +96,7 @@ test('simple synchronized tree test', async () => {
       },
       { sync: true }
     );
+    await tp.setTimeout(10);
 
     await theComputable.refreshState();
 
@@ -155,6 +159,7 @@ test('synchronized tree test with KV', async () => {
       },
       { sync: true }
     );
+    await tp.setTimeout(10);
 
     await theComputable.refreshState();
 
@@ -168,6 +173,7 @@ test('synchronized tree test with KV', async () => {
       tx.setKValue(r2, 'b', 'hi!');
       await tx.commit();
     });
+    await tp.setTimeout(10);
 
     await theComputable.refreshState();
 
@@ -195,6 +201,7 @@ test('termination test', async () => {
       },
       { sync: true }
     );
+    await tp.setTimeout(10);
 
     const treeState = await SynchronizedTreeState.init(
       pl,

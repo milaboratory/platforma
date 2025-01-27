@@ -215,3 +215,21 @@ tplTest(
     expect(out).toMatch(/eyJhbGciOi.*/)
   }
 );
+
+tplTest(
+  'should run exec and eval all arguments as expressions',
+  async ({ helper, expect }) => {
+    const result = await helper.renderTemplate(
+      false,
+      'exec.test.run.arg_with_var',
+      ['out'],
+      (_) => ({})
+    );
+
+    const out = await result
+      .computeOutput('out', (out) => out?.getDataAsString())
+      .awaitStableValue();
+
+    expect(out).toBe('4{2}')
+  }
+);

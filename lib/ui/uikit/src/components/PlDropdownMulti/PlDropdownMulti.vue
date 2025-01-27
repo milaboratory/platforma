@@ -20,6 +20,7 @@ import DropdownListItem from '@/components/DropdownListItem.vue';
 import { deepEqual, deepIncludes } from '@/helpers/objects';
 import { normalizeListOptions } from '@/helpers/utils';
 import DropdownOverlay from '@/utils/DropdownOverlay/DropdownOverlay.vue';
+import { PlMaskIcon24 } from '../PlMaskIcon24';
 
 const emit = defineEmits<{
   (e: 'update:modelValue', v: M[]): void;
@@ -42,7 +43,7 @@ const props = withDefaults(
     /**
      * List of available options for the dropdown
      */
-    options: Readonly<ListOption<M>[]>;
+    options?: Readonly<ListOption<M>[]>;
     /**
      * A helper text displayed below the dropdown when there are no errors (optional).
      */
@@ -72,6 +73,7 @@ const props = withDefaults(
     placeholder: '...',
     required: false,
     disabled: false,
+    options: undefined,
   },
 );
 
@@ -98,13 +100,13 @@ const placeholderRef = computed(() => {
 });
 
 const selectedOptionsRef = computed(() => {
-  return normalizeListOptions(props.options).filter((opt) => deepIncludes(selectedValuesRef.value, opt.value));
+  return normalizeListOptions(props.options ?? []).filter((opt) => deepIncludes(selectedValuesRef.value, opt.value));
 });
 
 const filteredOptionsRef = computed(() => {
   const selectedValues = unref(selectedValuesRef);
 
-  const options = normalizeListOptions(props.options);
+  const options = normalizeListOptions(props.options ?? []);
 
   return (
     data.search
@@ -128,7 +130,19 @@ const filteredOptionsRef = computed(() => {
   }));
 });
 
-const tabindex = computed(() => (props.disabled ? undefined : '0'));
+const isLoadingOptions = computed(() => {
+  return props.options === undefined;
+});
+
+const isDisabled = computed(() => {
+  if (isLoadingOptions.value) {
+    return true;
+  }
+
+  return props.disabled;
+});
+
+const tabindex = computed(() => (isDisabled.value ? undefined : '0'));
 
 const updateActiveOption = () => {
   data.activeOption = tap(
@@ -152,8 +166,6 @@ const toggleModel = () => (data.open = !data.open);
 
 const onFocusOut = (event: FocusEvent) => {
   const relatedTarget = event.relatedTarget as Node | null;
-
-  console.log('>>>> overlay.value?.$el', overlay.value?.$el);
 
   if (!rootRef.value?.contains(relatedTarget) && !overlay.value?.listRef?.contains(relatedTarget)) {
     data.search = '';
@@ -223,7 +235,7 @@ watchPostEffect(() => {
       ref="rootRef"
       :tabindex="tabindex"
       class="pl-dropdown-multi"
-      :class="{ open: data.open, error, disabled }"
+      :class="{ open: data.open, error, disabled: isDisabled }"
       @keydown="handleKeydown"
       @focusout="onFocusOut"
     >
@@ -234,7 +246,7 @@ watchPostEffect(() => {
             v-model="data.search"
             type="text"
             tabindex="-1"
-            :disabled="disabled"
+            :disabled="isDisabled"
             :placeholder="placeholderRef"
             spellcheck="false"
             autocomplete="chrome-off"
@@ -245,7 +257,8 @@ watchPostEffect(() => {
               {{ opt.label || opt.value }}
             </PlChip>
           </div>
-          <div class="arrow" @click.stop="toggleModel" />
+          <PlMaskIcon24 v-if="isLoadingOptions" name="loading" />
+          <div v-if="!isLoadingOptions" class="arrow" @click.stop="toggleModel" />
           <div class="pl-dropdown-multi__append">
             <slot name="append" />
           </div>

@@ -12,7 +12,7 @@ import { Computable, ComputableStableDefined } from '@milaboratories/computable'
 import { projectOverview } from './project_overview';
 import { BlockPackSpecAny } from '../model';
 import { randomUUID } from 'node:crypto';
-import { withProject, withProjectAuthored } from '../mutator/project';
+import { ProjectMutator, withProject, withProjectAuthored } from '../mutator/project';
 import { ExtendedResourceData, SynchronizedTreeState } from '@milaboratories/pl-tree';
 import { setTimeout } from 'node:timers/promises';
 import { frontendData } from './frontend_path';
@@ -25,7 +25,8 @@ import { BlockPackInfo } from '../model/block_pack';
 import {
   ProjectOverview,
   AuthorMarker,
-  BlockStateInternal
+  BlockStateInternal,
+  BlockSettings
 } from '@milaboratories/pl-model-middle-layer';
 import { activeConfigs } from './active_cfg';
 import { NavigationStates } from './navigation_states';
@@ -271,6 +272,14 @@ export class Project {
     await this.projectTree.refreshState();
   }
 
+  /** Update block settings */
+  public async setBlockSettings(blockId: string, newValue: BlockSettings) {
+    await withProjectAuthored(this.env.pl, this.rid, undefined, (mut) => {
+      mut.setBlockSettings(blockId, newValue);
+    });
+    await this.projectTree.refreshState();
+  }
+
   /** Resets arguments and ui state of the block to initial state */
   public async resetBlockArgsAndUiState(blockId: string, author?: AuthorMarker): Promise<void> {
     await this.env.pl.withWriteTx('BlockInputsReset', async (tx) => {
@@ -378,6 +387,10 @@ export class Project {
   }
 
   public static async init(env: MiddleLayerEnvironment, rid: ResourceId): Promise<Project> {
+    // Doing a no-op mutation to apply all migration and schema fixes
+    await withProject(env.pl, rid, (_) => {});
+
+    // Loading project tree
     const projectTree = await SynchronizedTreeState.init(
       env.pl,
       rid,
@@ -387,6 +400,7 @@ export class Project {
       },
       env.logger
     );
+    
     return new Project(env, rid, projectTree);
   }
 }

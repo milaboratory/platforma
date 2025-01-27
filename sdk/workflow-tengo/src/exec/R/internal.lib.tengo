@@ -15,17 +15,28 @@ rVenvInputSchema := {
 	R: validation.reference
 }
 
-runRBuilder := func(wd, rPackage, rDescriptor) {
+runRBuilder := func(operationMode, wd, rPackage, rDescriptor) {
 	t := desc.canBackendUseExpressions() ? constants.ARG_TYPE_EXPRESSION : constants.ARG_TYPE_VAR
 	rule := desc.canBackendUseExpressions() ? "R" : "{R}"
 
-	return runcmd.builder(wd).
+	builder := runcmd.builder(wd).
 		ref("r-run-environment", rPackage).
 		substitutionRule(rule, "r-run-environment").
 		addToPath(t, path.join("{R}", rDescriptor.binDir)).
-		envTyped("R_HOME_DIR", t, "{R}").
 		envTyped("RHOME", t, "{R}").
-		envTyped("RENV_PATHS_ROOT", t, path.join("{R}", "renv-root"))
+		envTyped("R_HOME_DIR", t, "{R}").
+		envTyped("RENV_PATHS_ROOT", t, path.join("{R}", "renv-root")).
+		envTyped("RENV_PATHS_BINARY", t, path.join("{R}", "renv-root", "binaries")).
+		envTyped("RENV_PATHS_SOURCE", t, path.join("{R}", "renv-root", "sources")).
+		envTyped("RENV_PATHS_CACHE", t, path.join("{R}", "renv-root", "cache"))
+
+	if (operationMode != "dev-local") {
+		// In production we can use only locally cached packages: most of commercials have
+		// Platforma Backend executed in a very restricted environment with limited access to the internet.
+		builder.envTyped("RENV_CONFIG_REPOS_OVERRIDE", t, path.join("{R}", "packages"))
+	}
+
+	return builder
 }
 
 export ll.toStrict({

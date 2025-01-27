@@ -1,30 +1,33 @@
-import { isNotNullResourceId, PlClient, ResourceData, ResourceId } from '@milaboratories/pl-client';
-import { MiLogger, Signer } from '@milaboratories/ts-helpers';
-import * as sdk from '@milaboratories/pl-model-common';
-import {
-  isImportFileHandleIndex,
+import type { PlClient, ResourceData, ResourceId } from '@milaboratories/pl-client';
+import { isNotNullResourceId } from '@milaboratories/pl-client';
+import type { MiLogger, Signer } from '@milaboratories/ts-helpers';
+import type * as sdk from '@milaboratories/pl-model-common';
+import type {
   LocalImportFileHandle,
   LsEntry,
   OpenDialogOps,
   OpenMultipleFilesResponse,
   OpenSingleFileResponse,
-  TableRange
+  TableRange,
 } from '@milaboratories/pl-model-common';
-import { ClientLs } from '../clients/ls_api';
+import {
+  isImportFileHandleIndex,
+} from '@milaboratories/pl-model-common';
+import type { ClientLs } from '../clients/ls_api';
 import * as path from 'node:path';
 import * as fsp from 'node:fs/promises';
 import {
   createIndexImportHandle,
   createUploadImportHandle,
   parseIndexHandle,
-  parseUploadHandle
+  parseUploadHandle,
 } from './helpers/ls_remote_import_handle';
 import {
   createLocalStorageHandle,
   createRemoteStorageHandle,
-  parseStorageHandle
+  parseStorageHandle,
 } from './helpers/ls_storage_entry';
-import { LocalStorageProjection, VirtualLocalStorageSpec } from './types';
+import type { LocalStorageProjection, VirtualLocalStorageSpec } from './types';
 import { validateAbsolute } from '../helpers/validate';
 import { DefaultVirtualLocalStorages } from './virtual_storages';
 import { createLsFilesClient } from '../clients/constructors';
@@ -57,12 +60,12 @@ export class LsDriver implements InternalLsDriver {
     private readonly virtualStoragesMap: Map<string, VirtualLocalStorageSpec>,
     /** Local projections by storageId */
     private readonly localProjectionsMap: Map<string, LocalStorageProjection>,
-    private readonly openFileDialogCallback: OpenFileDialogCallback
+    private readonly openFileDialogCallback: OpenFileDialogCallback,
   ) {}
 
   public async getLocalFileContent(
     file: LocalImportFileHandle,
-    range?: TableRange
+    range?: TableRange,
   ): Promise<Uint8Array> {
     const localPath = await this.tryResolveLocalFileHandle(file);
     if (range) throw new Error('Range request not yet supported.');
@@ -76,12 +79,12 @@ export class LsDriver implements InternalLsDriver {
   }
 
   public async showOpenMultipleFilesDialog(
-    ops?: OpenDialogOps
+    ops?: OpenDialogOps,
   ): Promise<OpenMultipleFilesResponse> {
     const result = await this.openFileDialogCallback(true, ops);
     if (result === undefined) return {};
     return {
-      files: await Promise.all(result.map((localPath) => this.getLocalFileHandle(localPath)))
+      files: await Promise.all(result.map((localPath) => this.getLocalFileHandle(localPath))),
     };
   }
 
@@ -89,7 +92,7 @@ export class LsDriver implements InternalLsDriver {
     const result = await this.openFileDialogCallback(false, ops);
     if (result === undefined) return {};
     return {
-      file: await this.getLocalFileHandle(result[0])
+      file: await this.getLocalFileHandle(result[0]),
     };
   }
 
@@ -112,7 +115,7 @@ export class LsDriver implements InternalLsDriver {
       this.signer.verify(
         handleData.localPath,
         handleData.pathSignature,
-        'Failed to validate local file handle signature.'
+        'Failed to validate local file handle signature.',
       );
 
       const localPath = handleData.localPath;
@@ -126,7 +129,7 @@ export class LsDriver implements InternalLsDriver {
   }
 
   public async getLocalFileHandle(
-    localPath: string
+    localPath: string,
   ): Promise<sdk.ImportFileHandle & LocalImportFileHandle> {
     validateAbsolute(localPath);
 
@@ -138,11 +141,11 @@ export class LsDriver implements InternalLsDriver {
         // Just in case:
         //  > path.relative("/a/b", "/a/b/c");
         //    'c'
-        const pathWithinStorage =
-          lp.localPath === '' ? localPath : path.relative(lp.localPath, localPath);
+        const pathWithinStorage
+          = lp.localPath === '' ? localPath : path.relative(lp.localPath, localPath);
         return createIndexImportHandle(
           lp.storageId,
-          pathWithinStorage
+          pathWithinStorage,
         ) as sdk.ImportFileHandleIndex & LocalImportFileHandle;
       }
     }
@@ -154,7 +157,7 @@ export class LsDriver implements InternalLsDriver {
       localPath,
       this.signer,
       stat.size,
-      stat.mtimeMs / 1000n // integer division
+      stat.mtimeMs / 1000n, // integer division
     ) as sdk.ImportFileHandleUpload & LocalImportFileHandle;
   }
 
@@ -162,7 +165,7 @@ export class LsDriver implements InternalLsDriver {
     const virtualStorages = [...this.virtualStoragesMap.values()].map((s) => ({
       name: s.name,
       handle: createLocalStorageHandle(s.name, s.root),
-      initialFullPath: s.initialPath
+      initialFullPath: s.initialPath,
     }));
 
     const otherStorages = Object.entries(this.storageIdToResourceId!).map(
@@ -170,8 +173,8 @@ export class LsDriver implements InternalLsDriver {
         name: storageId,
         handle: createRemoteStorageHandle(storageId, resourceId),
         initialFullPath: '', // we don't have any additional information from where to start browsing remote storages
-        isInitialPathHome: false
-      })
+        isInitialPathHome: false,
+      }),
     );
 
     // root must be a storage so we can index any file,
@@ -185,7 +188,7 @@ export class LsDriver implements InternalLsDriver {
 
   public async listFiles(
     storageHandle: sdk.StorageHandle,
-    fullPath: string
+    fullPath: string,
   ): Promise<sdk.ListFilesResult> {
     const storageData = parseStorageHandle(storageHandle);
 
@@ -196,8 +199,8 @@ export class LsDriver implements InternalLsDriver {
           type: e.isDir ? 'dir' : 'file',
           name: e.name,
           fullPath: e.fullName,
-          handle: createIndexImportHandle(storageData.name, e.fullName)
-        }))
+          handle: createIndexImportHandle(storageData.name, e.fullName),
+        })),
       };
     }
 
@@ -221,7 +224,7 @@ export class LsDriver implements InternalLsDriver {
         type: dirent.isFile() ? 'file' : 'dir',
         name: dirent.name,
         fullPath: absolutePath,
-        handle: await this.getLocalFileHandle(absolutePath)
+        handle: await this.getLocalFileHandle(absolutePath),
       });
     }
 
@@ -230,7 +233,7 @@ export class LsDriver implements InternalLsDriver {
 
   public async fileToImportHandle(file: sdk.FileLike): Promise<sdk.ImportFileHandle> {
     throw new Error(
-      'Not implemented. This method must be implemented and intercepted in desktop preload script.'
+      'Not implemented. This method must be implemented and intercepted in desktop preload script.',
     );
   }
 
@@ -241,7 +244,7 @@ export class LsDriver implements InternalLsDriver {
     /** Pl storages available locally */
     localProjections: LocalStorageProjection[],
     openFileDialogCallback: OpenFileDialogCallback,
-    virtualStorages?: VirtualLocalStorageSpec[]
+    virtualStorages?: VirtualLocalStorageSpec[],
   ): Promise<LsDriver> {
     const lsClient = createLsFilesClient(client, logger);
 
@@ -257,11 +260,11 @@ export class LsDriver implements InternalLsDriver {
 
     // validating there is no intersection
     if (
-      new Set([...virtualStoragesMap.keys(), ...localProjectionsMap.keys()]).size !==
-      virtualStoragesMap.size + localProjectionsMap.size
+      new Set([...virtualStoragesMap.keys(), ...localProjectionsMap.keys()]).size
+        !== virtualStoragesMap.size + localProjectionsMap.size
     )
       throw new Error(
-        'Intersection between local projection storage ids and virtual storages names detected.'
+        'Intersection between local projection storage ids and virtual storages names detected.',
       );
 
     return new LsDriver(
@@ -271,7 +274,7 @@ export class LsDriver implements InternalLsDriver {
       signer,
       virtualStoragesMap,
       localProjectionsMap,
-      openFileDialogCallback
+      openFileDialogCallback,
     );
   }
 }
@@ -289,6 +292,6 @@ function providerToStorageIds(provider: ResourceData) {
   return Object.fromEntries(
     provider.fields
       .filter((f) => f.type == 'Dynamic' && isNotNullResourceId(f.value))
-      .map((f) => [f.name.substring('storage/'.length), f.value as ResourceId])
+      .map((f) => [f.name.substring('storage/'.length), f.value as ResourceId]),
   );
 }

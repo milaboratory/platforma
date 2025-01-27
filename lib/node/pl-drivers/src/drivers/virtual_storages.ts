@@ -2,7 +2,7 @@ import path from 'path';
 import os from 'os';
 import util from 'util';
 import { exec } from 'child_process';
-import { VirtualLocalStorageSpec } from './types';
+import type { VirtualLocalStorageSpec } from './types';
 
 export async function DefaultVirtualLocalStorages(): Promise<VirtualLocalStorageSpec[]> {
   const home = os.homedir();
@@ -11,8 +11,8 @@ export async function DefaultVirtualLocalStorages(): Promise<VirtualLocalStorage
       {
         name: 'local',
         root: '/',
-        initialPath: home
-      }
+        initialPath: home,
+      },
     ];
   else {
     // determine the drive on which user's home folder is stored
@@ -35,7 +35,7 @@ export async function DefaultVirtualLocalStorages(): Promise<VirtualLocalStorage
         return {
           name: `local_disk_${drive}`,
           root: `${drive}:\\`,
-          initialPath: isHomeDrive ? home : `${drive}:\\`
+          initialPath: isHomeDrive ? home : `${drive}:\\`,
         };
       });
     } catch (e: any) {
@@ -43,8 +43,8 @@ export async function DefaultVirtualLocalStorages(): Promise<VirtualLocalStorage
         {
           name: `local_disk_${homeDrive}`,
           root: `${homeDrive}:\\`,
-          initialPath: home
-        }
+          initialPath: home,
+        },
       ];
     }
   }

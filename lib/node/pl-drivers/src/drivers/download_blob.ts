@@ -1,12 +1,15 @@
+import type {
+  ComputableCtx,
+  ComputableStableDefined,
+  Watcher,
+} from '@milaboratories/computable';
 import {
   ChangeSource,
   Computable,
-  ComputableCtx,
-  ComputableStableDefined,
-  Watcher
 } from '@milaboratories/computable';
-import { ResourceId, ResourceType, stringifyWithResourceId } from '@milaboratories/pl-client';
-import {
+import type { ResourceId, ResourceType } from '@milaboratories/pl-client';
+import { stringifyWithResourceId } from '@milaboratories/pl-client';
+import type {
   AnyLogHandle,
   BlobDriver,
   LocalBlobHandle,
@@ -14,17 +17,19 @@ import {
   ReadyLogHandle,
   RemoteBlobHandle,
   RemoteBlobHandleAndSize,
-  StreamingApiResponse
+  StreamingApiResponse,
 } from '@milaboratories/pl-model-common';
+import type {
+  PlTreeEntry,
+  ResourceInfo,
+  ResourceSnapshot } from '@milaboratories/pl-tree';
 import {
   isPlTreeEntry,
   makeResourceSnapshot,
-  PlTreeEntry,
-  ResourceInfo,
-  ResourceSnapshot,
-  treeEntryToResourceInfo
+  treeEntryToResourceInfo,
 } from '@milaboratories/pl-tree';
-import { CallersCounter, MiLogger, Signer, TaskProcessor } from '@milaboratories/ts-helpers';
+import type { MiLogger, Signer } from '@milaboratories/ts-helpers';
+import { CallersCounter, TaskProcessor } from '@milaboratories/ts-helpers';
 import Denque from 'denque';
 import * as fs from 'fs';
 import { randomUUID } from 'node:crypto';
@@ -34,20 +39,20 @@ import * as path from 'node:path';
 import * as readline from 'node:readline/promises';
 import { Readable, Writable } from 'node:stream';
 import { buffer } from 'node:stream/consumers';
-import { ClientDownload } from '../clients/download';
-import { ClientLogs } from '../clients/logs';
+import type { ClientDownload } from '../clients/download';
+import type { ClientLogs } from '../clients/logs';
 import { DownloadBlobTask, nonRecoverableError } from './download_blob_task';
 import { FilesCache } from './helpers/files_cache';
 import {
   isLocalBlobHandle,
   newLocalHandle,
-  parseLocalHandle
+  parseLocalHandle,
 } from './helpers/download_local_handle';
 import { getSize, OnDemandBlobResourceSnapshot } from './types';
 import {
   isRemoteBlobHandle,
   newRemoteHandle,
-  parseRemoteHandle
+  parseRemoteHandle,
 } from './helpers/download_remote_handle';
 import { getResourceInfoFromLogHandle, newLogHandle } from './helpers/logs_handle';
 import { Updater, WrongResourceTypeError } from './helpers/helpers';
@@ -92,7 +97,7 @@ export class DownloadDriver implements BlobDriver {
     private readonly clientLogs: ClientLogs,
     saveDir: string,
     private readonly signer: Signer,
-    ops: DownloadDriverOps
+    ops: DownloadDriverOps,
   ) {
     this.cache = new FilesCache(ops.cacheSoftSizeBytes);
     this.downloadQueue = new TaskProcessor(this.logger, ops.nConcurrentDownloads);
@@ -100,7 +105,7 @@ export class DownloadDriver implements BlobDriver {
     this.saveDir = path.resolve(saveDir);
   }
 
-  /** Gets a blob by its resource id or downloads a blob and sets it in a cache.*/
+  /** Gets a blob by its resource id or downloads a blob and sets it in a cache. */
   public getDownloadedBlob(
     res: ResourceInfo | PlTreeEntry,
     ctx: ComputableCtx
@@ -110,7 +115,7 @@ export class DownloadDriver implements BlobDriver {
   ): ComputableStableDefined<LocalBlobHandleAndSize>;
   public getDownloadedBlob(
     res: ResourceInfo | PlTreeEntry,
-    ctx?: ComputableCtx
+    ctx?: ComputableCtx,
   ): Computable<LocalBlobHandleAndSize | undefined> | LocalBlobHandleAndSize | undefined {
     if (ctx === undefined) return Computable.make((ctx) => this.getDownloadedBlob(res, ctx));
 
@@ -128,7 +133,7 @@ export class DownloadDriver implements BlobDriver {
   private getDownloadedBlobNoCtx(
     w: Watcher,
     rInfo: ResourceSnapshot,
-    callerId: string
+    callerId: string,
   ): LocalBlobHandleAndSize | undefined {
     validateDownloadableResourceType('getDownloadedBlob', rInfo.type);
 
@@ -139,7 +144,7 @@ export class DownloadDriver implements BlobDriver {
       const newTask = this.setNewDownloadTask(rInfo);
       this.downloadQueue.push({
         fn: () => this.downloadBlob(newTask, callerId),
-        recoverableErrorPredicate: (e) => !nonRecoverableError(e)
+        recoverableErrorPredicate: (e) => !nonRecoverableError(e),
       });
       task = newTask;
     }
@@ -158,7 +163,7 @@ export class DownloadDriver implements BlobDriver {
       this.clientDownload,
       rInfo,
       fPath,
-      newLocalHandle(fPath, this.signer)
+      newLocalHandle(fPath, this.signer),
     );
     this.idToDownload.set(rInfo.id, result);
 
@@ -183,7 +188,7 @@ export class DownloadDriver implements BlobDriver {
   ): RemoteBlobHandleAndSize;
   public getOnDemandBlob(
     res: OnDemandBlobResourceSnapshot | PlTreeEntry,
-    ctx?: ComputableCtx
+    ctx?: ComputableCtx,
   ): ComputableStableDefined<RemoteBlobHandleAndSize> | RemoteBlobHandleAndSize | undefined {
     if (ctx === undefined) return Computable.make((ctx) => this.getOnDemandBlob(res, ctx));
 
@@ -203,7 +208,7 @@ export class DownloadDriver implements BlobDriver {
 
   private getOnDemandBlobNoCtx(
     info: OnDemandBlobResourceSnapshot,
-    callerId: string
+    callerId: string,
   ): RemoteBlobHandleAndSize {
     validateDownloadableResourceType('getOnDemandBlob', info.type);
 
@@ -254,7 +259,7 @@ export class DownloadDriver implements BlobDriver {
   public getLastLogs(
     res: ResourceInfo | PlTreeEntry,
     lines: number,
-    ctx?: ComputableCtx
+    ctx?: ComputableCtx,
   ): Computable<string | undefined> | string | undefined {
     if (ctx == undefined) return Computable.make((ctx) => this.getLastLogs(res, lines, ctx));
 
@@ -273,7 +278,7 @@ export class DownloadDriver implements BlobDriver {
     w: Watcher,
     rInfo: ResourceSnapshot,
     lines: number,
-    callerId: string
+    callerId: string,
   ): string | undefined {
     validateDownloadableResourceType('getLastLogs', rInfo.type);
     const blob = this.getDownloadedBlobNoCtx(w, rInfo, callerId);
@@ -309,7 +314,7 @@ export class DownloadDriver implements BlobDriver {
   public getProgressLog(
     res: ResourceInfo | PlTreeEntry,
     patternToSearch: string,
-    ctx?: ComputableCtx
+    ctx?: ComputableCtx,
   ): Computable<string | undefined> | string | undefined {
     if (ctx == undefined)
       return Computable.make((ctx) => this.getProgressLog(res, patternToSearch, ctx));
@@ -322,7 +327,7 @@ export class DownloadDriver implements BlobDriver {
       ctx.watcher,
       r as ResourceSnapshot,
       patternToSearch,
-      callerId
+      callerId,
     );
     if (result === undefined)
       ctx.markUnstable('either a file was not downloaded or a progress log was not read');
@@ -334,7 +339,7 @@ export class DownloadDriver implements BlobDriver {
     w: Watcher,
     rInfo: ResourceSnapshot,
     patternToSearch: string,
-    callerId: string
+    callerId: string,
   ): string | undefined {
     validateDownloadableResourceType('getProgressLog', rInfo.type);
 
@@ -363,7 +368,7 @@ export class DownloadDriver implements BlobDriver {
   public getLogHandle(res: ResourceInfo | PlTreeEntry, ctx: ComputableCtx): AnyLogHandle;
   public getLogHandle(
     res: ResourceInfo | PlTreeEntry,
-    ctx?: ComputableCtx
+    ctx?: ComputableCtx,
   ): Computable<AnyLogHandle> | AnyLogHandle {
     if (ctx == undefined) return Computable.make((ctx) => this.getLogHandle(res, ctx));
 
@@ -381,13 +386,13 @@ export class DownloadDriver implements BlobDriver {
     handle: ReadyLogHandle,
     lineCount: number,
     offsetBytes?: number, // if 0n, then start from the end.
-    searchStr?: string
+    searchStr?: string,
   ): Promise<StreamingApiResponse> {
     const resp = await this.clientLogs.lastLines(
       getResourceInfoFromLogHandle(handle),
       lineCount,
       BigInt(offsetBytes ?? 0),
-      searchStr
+      searchStr,
     );
 
     return {
@@ -395,7 +400,7 @@ export class DownloadDriver implements BlobDriver {
       shouldUpdateHandle: false,
       data: resp.data,
       size: Number(resp.size),
-      newOffset: Number(resp.newOffset)
+      newOffset: Number(resp.newOffset),
     };
   }
 
@@ -403,13 +408,13 @@ export class DownloadDriver implements BlobDriver {
     handle: ReadyLogHandle,
     lineCount: number,
     offsetBytes?: number,
-    searchStr?: string
+    searchStr?: string,
   ): Promise<StreamingApiResponse> {
     const resp = await this.clientLogs.readText(
       getResourceInfoFromLogHandle(handle),
       lineCount,
       BigInt(offsetBytes ?? 0),
-      searchStr
+      searchStr,
     );
 
     return {
@@ -417,7 +422,7 @@ export class DownloadDriver implements BlobDriver {
       shouldUpdateHandle: false,
       data: resp.data,
       size: Number(resp.size),
-      newOffset: Number(resp.newOffset)
+      newOffset: Number(resp.newOffset),
     };
   }
 
@@ -435,10 +440,10 @@ export class DownloadDriver implements BlobDriver {
 
           this.removeTask(
             task,
-            `the task ${stringifyWithResourceId(task.info())} was removed` +
-              `from cache along with ${stringifyWithResourceId(toDelete.map((d) => d.info()))}`
+            `the task ${stringifyWithResourceId(task.info())} was removed`
+            + `from cache along with ${stringifyWithResourceId(toDelete.map((d) => d.info()))}`,
           );
-        })
+        }),
       );
     } else {
       // The task is still in a downloading queue.
@@ -446,7 +451,7 @@ export class DownloadDriver implements BlobDriver {
       if (deleted) {
         this.removeTask(
           task,
-          `the task ${stringifyWithResourceId(task.info())} was removed from cache`
+          `the task ${stringifyWithResourceId(task.info())} was removed from cache`,
         );
       }
     }
@@ -486,7 +491,7 @@ class OnDemandBlobHolder {
 
   constructor(
     private readonly size: number,
-    private readonly handle: RemoteBlobHandle
+    private readonly handle: RemoteBlobHandle,
   ) {}
 
   public getHandle(): RemoteBlobHandleAndSize {
@@ -511,7 +516,7 @@ class LastLinesGetter {
   constructor(
     private readonly path: string,
     private readonly lines: number,
-    private readonly patternToSearch?: string
+    private readonly patternToSearch?: string,
   ) {
     this.updater = new Updater(async () => this.update());
   }
@@ -526,7 +531,7 @@ class LastLinesGetter {
 
     return {
       log: this.log,
-      error: this.error
+      error: this.error,
     };
   }
 

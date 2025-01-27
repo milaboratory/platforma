@@ -49,7 +49,12 @@ import {
 } from '../model/project_model_util';
 import { BlockPackSpecPrepared } from '../model';
 import { notEmpty } from '@milaboratories/ts-helpers';
-import { AuthorMarker, ProjectMeta } from '@milaboratories/pl-model-middle-layer';
+import {
+  AuthorMarker,
+  BlockSettings,
+  InitialBlockSettings,
+  ProjectMeta
+} from '@milaboratories/pl-model-middle-layer';
 import Denque from 'denque';
 import { exportContext, getPreparedExportTemplateEnvelope } from './context_export';
 import { loadTemplate } from './template/template_loading';
@@ -64,6 +69,7 @@ interface BlockFieldState {
 }
 
 type BlockFieldStates = Partial<Record<ProjectField['fieldName'], BlockFieldState>>;
+type BlockFieldStateValue = Omit<BlockFieldState, 'modCount'>;
 
 interface BlockInfoState {
   readonly id: string;
@@ -234,7 +240,8 @@ export class ProjectMutator {
     private readonly ctxExportTplHolder: AnyResourceRef
   ) {}
 
-  private fixProblems() {
+  private fixProblemsAndMigrate() {
+    // Fixing problems introduced by old code
     this.blockInfos.forEach((blockInfo) => {
       if (
         blockInfo.fields.prodArgs === undefined ||
@@ -242,6 +249,16 @@ export class ProjectMutator {
         blockInfo.fields.prodCtx === undefined
       )
         this.deleteBlockFields(blockInfo.id, 'prodArgs', 'prodOutput', 'prodCtx');
+    });
+
+    // Migration for addition of block settings field
+    let initialBlockSettings: Omit<BlockFieldState, 'modCount'> | undefined;
+    this.blockInfos.forEach((blockInfo) => {
+      if (blockInfo.fields.blockSettings === undefined) {
+        if (initialBlockSettings === undefined)
+          initialBlockSettings = this.createJsonFieldValue(InitialBlockSettings);
+        this.setBlockFieldObj(blockInfo.id, 'blockSettings', initialBlockSettings);
+      }
     });
   }
 
@@ -297,7 +314,19 @@ export class ProjectMutator {
   //
 
   private getBlockInfo(blockId: string): BlockInfo {
-    return notEmpty(this.blockInfos.get(blockId));
+    const info = this.blockInfos.get(blockId);
+    if (info === undefined) throw new Error(`No such block: ${blockId}`);
+    return info;
+  }
+
+  private createJsonFieldValueByContent(content: string): BlockFieldStateValue {
+    const value = Buffer.from(content);
+    const ref = this.tx.createValue(Pl.JsonObject, value);
+    return { ref, value, status: 'Ready' };
+  }
+
+  private createJsonFieldValue(obj: unknown): BlockFieldStateValue {
+    return this.createJsonFieldValueByContent(JSON.stringify(obj));
   }
 
   private getBlock(blockId: string): Block {
@@ -308,7 +337,7 @@ export class ProjectMutator {
   private setBlockFieldObj(
     blockId: string,
     fieldName: keyof BlockFieldStates,
-    state: Omit<BlockFieldState, 'modCount'>
+    state: BlockFieldStateValue
   ) {
     const fid = field(this.rid, projectFieldName(blockId, fieldName));
 
@@ -444,6 +473,11 @@ export class ProjectMutator {
     this.changedBlockFrontendStates.add(blockId);
     // will be assigned our author marker
     this.blocksWithChangedInputs.add(blockId);
+    this.updateLastModified();
+  }
+
+  public setBlockSettings(blockId: string, newValue: BlockSettings): void {
+    this.setBlockFieldObj(blockId, 'blockSettings', this.createJsonFieldValue(newValue));
     this.updateLastModified();
   }
 
@@ -586,10 +620,15 @@ export class ProjectMutator {
       const bp = createBlockPack(this.tx, spec.blockPack);
       this.setBlockField(blockId, 'blockPack', Pl.wrapInHolder(this.tx, bp), 'NotReady');
 
+      // settings
+      this.setBlockFieldObj(
+        blockId,
+        'blockSettings',
+        this.createJsonFieldValue(InitialBlockSettings)
+      );
+
       // args
-      const binArgs = Buffer.from(spec.args);
-      const argsRes = this.tx.createValue(Pl.JsonObject, binArgs);
-      this.setBlockField(blockId, 'currentArgs', argsRes, 'Ready', binArgs);
+      this.setBlockFieldObj(blockId, 'currentArgs', this.createJsonFieldValueByContent(spec.args));
 
       // uiState
       if (spec.uiState /* this check is for compatibility with old configs */) {
@@ -1052,7 +1091,7 @@ export class ProjectMutator {
       ctxExportTplHolder
     );
 
-    prj.fixProblems();
+    prj.fixProblemsAndMigrate();
 
     return prj;
   }

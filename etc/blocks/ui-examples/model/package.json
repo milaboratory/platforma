@@ -1,13 +1,14 @@
 {
   "name": "@milaboratories/milaboratories.ui-examples.model",
-  "version": "1.1.10",
+  "version": "1.1.15",
   "description": "Block model",
   "type": "module",
   "main": "dist/index.cjs",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "tsup && vite build && block-tools build-model"
+    "build": "tsup && vite build && block-tools build-model",
+    "lint": "eslint ."
   },
   "dependencies": {
     "@platforma-sdk/model": "workspace:*",

@@ -1,7 +1,50 @@
 import { expect, test } from '@jest/globals';
-import { isJsonEqual, isPlainObject } from '@milaboratories/helpers';
+import { isJsonEqual, isPlainObject, timer, randomString } from '@milaboratories/helpers';
+import canonicalize from 'canonicalize';
 
-test.only('is json equal', async () => {
+function generateLargeObject(depth: number = 3, breadth: number = 3): unknown {
+  const randomData = (): unknown => {
+    const types = [
+      () => Math.random(),
+      () => randomString(10),
+      () => Math.floor(Math.random() * 100),
+      () => Math.random() < 0.5,
+      () => null,
+    ];
+    return types[Math.floor(Math.random() * types.length)]();
+  };
+
+  const buildObject = (currentDepth: number): unknown => {
+    if (currentDepth === 0) {
+      return randomData();
+    }
+
+    const obj: Record<string, unknown> = {};
+
+    for (let i = 0; i < breadth; i++) {
+      const key = `key_${randomString(3)}`;
+      const shouldNest = Math.random() < 0.5;
+
+      obj[key] = shouldNest
+        ? buildObject(currentDepth - 1)
+        : randomData();
+    }
+
+    const includeArray = Math.random() < 0.5;
+    if (includeArray) {
+      obj[`array_${randomString(3)}`] = Array.from(
+        { length: breadth },
+        () => randomData(),
+      );
+    }
+
+    return obj;
+  };
+
+  return buildObject(depth);
+}
+
+test('is json equal', async () => {
   expect(isPlainObject([])).toBeFalsy();
   expect(isPlainObject(new Date())).toBeFalsy();
   expect(isPlainObject({})).toBeTruthy();
@@ -119,3 +162,25 @@ test.only('is json equal', async () => {
     });
   }).toThrowError();
 }, 1000);
+
+test.skip('speed', async () => {
+  function isJsonEqualSlow(a: unknown, b: unknown) {
+    return canonicalize(a) === canonicalize(b);
+  }
+
+  const obj1 = generateLargeObject(9, 9);
+
+  const obj2 = structuredClone(obj1);
+
+  const dt = timer();
+
+  const res = isJsonEqual(obj1, obj2);
+
+  console.log('isJsonEqual', dt(), res);
+
+  const dt2 = timer();
+
+  const res2 = isJsonEqualSlow(obj1, obj2);
+
+  console.log('isJsonEqualSlow', dt2(), res2);
+});

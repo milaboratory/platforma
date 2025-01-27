@@ -4,8 +4,6 @@ import { PlProgressCell } from '@milaboratories/uikit';
 import type { ICellRendererParams } from 'ag-grid-enterprise';
 
 const props = defineProps<{ params: ICellRendererParams & PlProgressCellProps }>();
-
-console.log(props);
 </script>
 
 <template>

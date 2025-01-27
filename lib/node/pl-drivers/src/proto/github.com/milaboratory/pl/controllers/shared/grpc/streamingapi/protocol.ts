@@ -252,31 +252,34 @@ class StreamingAPI$Type extends MessageType<StreamingAPI> {
   constructor() {
     super('MiLaboratories.Controller.Shared.StreamingAPI', []);
   }
+
   create(value?: PartialMessage<StreamingAPI>): StreamingAPI {
     const message = globalThis.Object.create(this.messagePrototype!);
     if (value !== undefined)
       reflectionMergePartial<StreamingAPI>(this, message, value);
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: StreamingAPI
+    target?: StreamingAPI,
   ): StreamingAPI {
     return target ?? this.create();
   }
+
   internalBinaryWrite(
     message: StreamingAPI,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -293,35 +296,36 @@ class StreamingAPI_StreamBinary$Type extends MessageType<StreamingAPI_StreamBina
         no: 1,
         name: 'resource_id',
         kind: 'scalar',
-        T: 4 /*ScalarType.UINT64*/,
-        L: 0 /*LongType.BIGINT*/
+        T: 4 /* ScalarType.UINT64 */,
+        L: 0, /* LongType.BIGINT */
       },
       {
         no: 2,
         name: 'offset',
         kind: 'scalar',
-        T: 3 /*ScalarType.INT64*/,
-        L: 0 /*LongType.BIGINT*/
+        T: 3 /* ScalarType.INT64 */,
+        L: 0, /* LongType.BIGINT */
       },
       {
         no: 11,
         name: 'chunk_size',
         kind: 'scalar',
         opt: true,
-        T: 13 /*ScalarType.UINT32*/
+        T: 13, /* ScalarType.UINT32 */
       },
       {
         no: 20,
         name: 'read_limit',
         kind: 'scalar',
         opt: true,
-        T: 3 /*ScalarType.INT64*/,
-        L: 0 /*LongType.BIGINT*/
-      }
+        T: 3 /* ScalarType.INT64 */,
+        L: 0, /* LongType.BIGINT */
+      },
     ]);
   }
+
   create(
-    value?: PartialMessage<StreamingAPI_StreamBinary>
+    value?: PartialMessage<StreamingAPI_StreamBinary>,
   ): StreamingAPI_StreamBinary {
     const message = globalThis.Object.create(this.messagePrototype!);
     message.resourceId = 0n;
@@ -330,16 +334,17 @@ class StreamingAPI_StreamBinary$Type extends MessageType<StreamingAPI_StreamBina
       reflectionMergePartial<StreamingAPI_StreamBinary>(this, message, value);
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: StreamingAPI_StreamBinary
+    target?: StreamingAPI_StreamBinary,
   ): StreamingAPI_StreamBinary {
-    let message = target ?? this.create(),
+    const message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
+      const [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
         case /* uint64 resource_id */ 1:
           message.resourceId = reader.uint64().toBigInt();
@@ -354,28 +359,29 @@ class StreamingAPI_StreamBinary$Type extends MessageType<StreamingAPI_StreamBina
           message.readLimit = reader.int64().toBigInt();
           break;
         default:
-          let u = options.readUnknownField;
+          const u = options.readUnknownField;
           if (u === 'throw')
             throw new globalThis.Error(
-              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`
+              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
             );
-          let d = reader.skip(wireType);
+          const d = reader.skip(wireType);
           if (u !== false)
             (u === true ? UnknownFieldHandler.onRead : u)(
               this.typeName,
               message,
               fieldNo,
               wireType,
-              d
+              d,
             );
       }
     }
     return message;
   }
+
   internalBinaryWrite(
     message: StreamingAPI_StreamBinary,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
     /* uint64 resource_id = 1; */
     if (message.resourceId !== 0n)
@@ -389,12 +395,12 @@ class StreamingAPI_StreamBinary$Type extends MessageType<StreamingAPI_StreamBina
     /* optional int64 read_limit = 20; */
     if (message.readLimit !== undefined)
       writer.tag(20, WireType.Varint).int64(message.readLimit);
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -411,27 +417,28 @@ class StreamingAPI_ReadBinary$Type extends MessageType<StreamingAPI_ReadBinary> 
         no: 1,
         name: 'resource_id',
         kind: 'scalar',
-        T: 4 /*ScalarType.UINT64*/,
-        L: 0 /*LongType.BIGINT*/
+        T: 4 /* ScalarType.UINT64 */,
+        L: 0, /* LongType.BIGINT */
       },
       {
         no: 2,
         name: 'offset',
         kind: 'scalar',
-        T: 3 /*ScalarType.INT64*/,
-        L: 0 /*LongType.BIGINT*/
+        T: 3 /* ScalarType.INT64 */,
+        L: 0, /* LongType.BIGINT */
       },
       {
         no: 11,
         name: 'chunk_size',
         kind: 'scalar',
         opt: true,
-        T: 13 /*ScalarType.UINT32*/
-      }
+        T: 13, /* ScalarType.UINT32 */
+      },
     ]);
   }
+
   create(
-    value?: PartialMessage<StreamingAPI_ReadBinary>
+    value?: PartialMessage<StreamingAPI_ReadBinary>,
   ): StreamingAPI_ReadBinary {
     const message = globalThis.Object.create(this.messagePrototype!);
     message.resourceId = 0n;
@@ -440,16 +447,17 @@ class StreamingAPI_ReadBinary$Type extends MessageType<StreamingAPI_ReadBinary> 
       reflectionMergePartial<StreamingAPI_ReadBinary>(this, message, value);
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: StreamingAPI_ReadBinary
+    target?: StreamingAPI_ReadBinary,
   ): StreamingAPI_ReadBinary {
-    let message = target ?? this.create(),
+    const message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
+      const [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
         case /* uint64 resource_id */ 1:
           message.resourceId = reader.uint64().toBigInt();
@@ -461,28 +469,29 @@ class StreamingAPI_ReadBinary$Type extends MessageType<StreamingAPI_ReadBinary> 
           message.chunkSize = reader.uint32();
           break;
         default:
-          let u = options.readUnknownField;
+          const u = options.readUnknownField;
           if (u === 'throw')
             throw new globalThis.Error(
-              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`
+              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
             );
-          let d = reader.skip(wireType);
+          const d = reader.skip(wireType);
           if (u !== false)
             (u === true ? UnknownFieldHandler.onRead : u)(
               this.typeName,
               message,
               fieldNo,
               wireType,
-              d
+              d,
             );
       }
     }
     return message;
   }
+
   internalBinaryWrite(
     message: StreamingAPI_ReadBinary,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
     /* uint64 resource_id = 1; */
     if (message.resourceId !== 0n)
@@ -493,12 +502,12 @@ class StreamingAPI_ReadBinary$Type extends MessageType<StreamingAPI_ReadBinary> 
     /* optional uint32 chunk_size = 11; */
     if (message.chunkSize !== undefined)
       writer.tag(11, WireType.Varint).uint32(message.chunkSize);
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -515,42 +524,43 @@ class StreamingAPI_StreamText$Type extends MessageType<StreamingAPI_StreamText> 
         no: 1,
         name: 'resource_id',
         kind: 'scalar',
-        T: 4 /*ScalarType.UINT64*/,
-        L: 0 /*LongType.BIGINT*/
+        T: 4 /* ScalarType.UINT64 */,
+        L: 0, /* LongType.BIGINT */
       },
       {
         no: 2,
         name: 'offset',
         kind: 'scalar',
-        T: 3 /*ScalarType.INT64*/,
-        L: 0 /*LongType.BIGINT*/
+        T: 3 /* ScalarType.INT64 */,
+        L: 0, /* LongType.BIGINT */
       },
       {
         no: 20,
         name: 'read_limit',
         kind: 'scalar',
         opt: true,
-        T: 3 /*ScalarType.INT64*/,
-        L: 0 /*LongType.BIGINT*/
+        T: 3 /* ScalarType.INT64 */,
+        L: 0, /* LongType.BIGINT */
       },
       {
         no: 21,
         name: 'search',
         kind: 'scalar',
         opt: true,
-        T: 9 /*ScalarType.STRING*/
+        T: 9, /* ScalarType.STRING */
       },
       {
         no: 22,
         name: 'search_re',
         kind: 'scalar',
         opt: true,
-        T: 9 /*ScalarType.STRING*/
-      }
+        T: 9, /* ScalarType.STRING */
+      },
     ]);
   }
+
   create(
-    value?: PartialMessage<StreamingAPI_StreamText>
+    value?: PartialMessage<StreamingAPI_StreamText>,
   ): StreamingAPI_StreamText {
     const message = globalThis.Object.create(this.messagePrototype!);
     message.resourceId = 0n;
@@ -559,16 +569,17 @@ class StreamingAPI_StreamText$Type extends MessageType<StreamingAPI_StreamText> 
       reflectionMergePartial<StreamingAPI_StreamText>(this, message, value);
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: StreamingAPI_StreamText
+    target?: StreamingAPI_StreamText,
   ): StreamingAPI_StreamText {
-    let message = target ?? this.create(),
+    const message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
+      const [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
         case /* uint64 resource_id */ 1:
           message.resourceId = reader.uint64().toBigInt();
@@ -586,28 +597,29 @@ class StreamingAPI_StreamText$Type extends MessageType<StreamingAPI_StreamText> 
           message.searchRe = reader.string();
           break;
         default:
-          let u = options.readUnknownField;
+          const u = options.readUnknownField;
           if (u === 'throw')
             throw new globalThis.Error(
-              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`
+              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
             );
-          let d = reader.skip(wireType);
+          const d = reader.skip(wireType);
           if (u !== false)
             (u === true ? UnknownFieldHandler.onRead : u)(
               this.typeName,
               message,
               fieldNo,
               wireType,
-              d
+              d,
             );
       }
     }
     return message;
   }
+
   internalBinaryWrite(
     message: StreamingAPI_StreamText,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
     /* uint64 resource_id = 1; */
     if (message.resourceId !== 0n)
@@ -624,12 +636,12 @@ class StreamingAPI_StreamText$Type extends MessageType<StreamingAPI_StreamText> 
     /* optional string search_re = 22; */
     if (message.searchRe !== undefined)
       writer.tag(22, WireType.LengthDelimited).string(message.searchRe);
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -646,40 +658,41 @@ class StreamingAPI_ReadText$Type extends MessageType<StreamingAPI_ReadText> {
         no: 1,
         name: 'resource_id',
         kind: 'scalar',
-        T: 4 /*ScalarType.UINT64*/,
-        L: 0 /*LongType.BIGINT*/
+        T: 4 /* ScalarType.UINT64 */,
+        L: 0, /* LongType.BIGINT */
       },
       {
         no: 2,
         name: 'offset',
         kind: 'scalar',
-        T: 3 /*ScalarType.INT64*/,
-        L: 0 /*LongType.BIGINT*/
+        T: 3 /* ScalarType.INT64 */,
+        L: 0, /* LongType.BIGINT */
       },
       {
         no: 20,
         name: 'read_limit',
         kind: 'scalar',
         opt: true,
-        T: 3 /*ScalarType.INT64*/,
-        L: 0 /*LongType.BIGINT*/
+        T: 3 /* ScalarType.INT64 */,
+        L: 0, /* LongType.BIGINT */
       },
       {
         no: 21,
         name: 'search',
         kind: 'scalar',
         opt: true,
-        T: 9 /*ScalarType.STRING*/
+        T: 9, /* ScalarType.STRING */
       },
       {
         no: 22,
         name: 'search_re',
         kind: 'scalar',
         opt: true,
-        T: 9 /*ScalarType.STRING*/
-      }
+        T: 9, /* ScalarType.STRING */
+      },
     ]);
   }
+
   create(value?: PartialMessage<StreamingAPI_ReadText>): StreamingAPI_ReadText {
     const message = globalThis.Object.create(this.messagePrototype!);
     message.resourceId = 0n;
@@ -688,16 +701,17 @@ class StreamingAPI_ReadText$Type extends MessageType<StreamingAPI_ReadText> {
       reflectionMergePartial<StreamingAPI_ReadText>(this, message, value);
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: StreamingAPI_ReadText
+    target?: StreamingAPI_ReadText,
   ): StreamingAPI_ReadText {
-    let message = target ?? this.create(),
+    const message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
+      const [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
         case /* uint64 resource_id */ 1:
           message.resourceId = reader.uint64().toBigInt();
@@ -715,28 +729,29 @@ class StreamingAPI_ReadText$Type extends MessageType<StreamingAPI_ReadText> {
           message.searchRe = reader.string();
           break;
         default:
-          let u = options.readUnknownField;
+          const u = options.readUnknownField;
           if (u === 'throw')
             throw new globalThis.Error(
-              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`
+              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
             );
-          let d = reader.skip(wireType);
+          const d = reader.skip(wireType);
           if (u !== false)
             (u === true ? UnknownFieldHandler.onRead : u)(
               this.typeName,
               message,
               fieldNo,
               wireType,
-              d
+              d,
             );
       }
     }
     return message;
   }
+
   internalBinaryWrite(
     message: StreamingAPI_ReadText,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
     /* uint64 resource_id = 1; */
     if (message.resourceId !== 0n)
@@ -753,12 +768,12 @@ class StreamingAPI_ReadText$Type extends MessageType<StreamingAPI_ReadText> {
     /* optional string search_re = 22; */
     if (message.searchRe !== undefined)
       writer.tag(22, WireType.LengthDelimited).string(message.searchRe);
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -775,42 +790,43 @@ class StreamingAPI_LastLines$Type extends MessageType<StreamingAPI_LastLines> {
         no: 1,
         name: 'resource_id',
         kind: 'scalar',
-        T: 4 /*ScalarType.UINT64*/,
-        L: 0 /*LongType.BIGINT*/
+        T: 4 /* ScalarType.UINT64 */,
+        L: 0, /* LongType.BIGINT */
       },
       {
         no: 2,
         name: 'offset',
         kind: 'scalar',
         opt: true,
-        T: 3 /*ScalarType.INT64*/,
-        L: 0 /*LongType.BIGINT*/
+        T: 3 /* ScalarType.INT64 */,
+        L: 0, /* LongType.BIGINT */
       },
       {
         no: 3,
         name: 'line_count',
         kind: 'scalar',
         opt: true,
-        T: 5 /*ScalarType.INT32*/
+        T: 5, /* ScalarType.INT32 */
       },
       {
         no: 21,
         name: 'search',
         kind: 'scalar',
         opt: true,
-        T: 9 /*ScalarType.STRING*/
+        T: 9, /* ScalarType.STRING */
       },
       {
         no: 22,
         name: 'search_re',
         kind: 'scalar',
         opt: true,
-        T: 9 /*ScalarType.STRING*/
-      }
+        T: 9, /* ScalarType.STRING */
+      },
     ]);
   }
+
   create(
-    value?: PartialMessage<StreamingAPI_LastLines>
+    value?: PartialMessage<StreamingAPI_LastLines>,
   ): StreamingAPI_LastLines {
     const message = globalThis.Object.create(this.messagePrototype!);
     message.resourceId = 0n;
@@ -818,16 +834,17 @@ class StreamingAPI_LastLines$Type extends MessageType<StreamingAPI_LastLines> {
       reflectionMergePartial<StreamingAPI_LastLines>(this, message, value);
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: StreamingAPI_LastLines
+    target?: StreamingAPI_LastLines,
   ): StreamingAPI_LastLines {
-    let message = target ?? this.create(),
+    const message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
+      const [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
         case /* uint64 resource_id */ 1:
           message.resourceId = reader.uint64().toBigInt();
@@ -845,28 +862,29 @@ class StreamingAPI_LastLines$Type extends MessageType<StreamingAPI_LastLines> {
           message.searchRe = reader.string();
           break;
         default:
-          let u = options.readUnknownField;
+          const u = options.readUnknownField;
           if (u === 'throw')
             throw new globalThis.Error(
-              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`
+              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
             );
-          let d = reader.skip(wireType);
+          const d = reader.skip(wireType);
           if (u !== false)
             (u === true ? UnknownFieldHandler.onRead : u)(
               this.typeName,
               message,
               fieldNo,
               wireType,
-              d
+              d,
             );
       }
     }
     return message;
   }
+
   internalBinaryWrite(
     message: StreamingAPI_LastLines,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
     /* uint64 resource_id = 1; */
     if (message.resourceId !== 0n)
@@ -883,12 +901,12 @@ class StreamingAPI_LastLines$Type extends MessageType<StreamingAPI_LastLines> {
     /* optional string search_re = 22; */
     if (message.searchRe !== undefined)
       writer.tag(22, WireType.LengthDelimited).string(message.searchRe);
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -901,23 +919,24 @@ export const StreamingAPI_LastLines = new StreamingAPI_LastLines$Type();
 class StreamingAPI_Response$Type extends MessageType<StreamingAPI_Response> {
   constructor() {
     super('MiLaboratories.Controller.Shared.StreamingAPI.Response', [
-      { no: 1, name: 'data', kind: 'scalar', T: 12 /*ScalarType.BYTES*/ },
+      { no: 1, name: 'data', kind: 'scalar', T: 12 /* ScalarType.BYTES */ },
       {
         no: 2,
         name: 'size',
         kind: 'scalar',
-        T: 4 /*ScalarType.UINT64*/,
-        L: 0 /*LongType.BIGINT*/
+        T: 4 /* ScalarType.UINT64 */,
+        L: 0, /* LongType.BIGINT */
       },
       {
         no: 3,
         name: 'new_offset',
         kind: 'scalar',
-        T: 4 /*ScalarType.UINT64*/,
-        L: 0 /*LongType.BIGINT*/
-      }
+        T: 4 /* ScalarType.UINT64 */,
+        L: 0, /* LongType.BIGINT */
+      },
     ]);
   }
+
   create(value?: PartialMessage<StreamingAPI_Response>): StreamingAPI_Response {
     const message = globalThis.Object.create(this.messagePrototype!);
     message.data = new Uint8Array(0);
@@ -927,16 +946,17 @@ class StreamingAPI_Response$Type extends MessageType<StreamingAPI_Response> {
       reflectionMergePartial<StreamingAPI_Response>(this, message, value);
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: StreamingAPI_Response
+    target?: StreamingAPI_Response,
   ): StreamingAPI_Response {
-    let message = target ?? this.create(),
+    const message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
+      const [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
         case /* bytes data */ 1:
           message.data = reader.bytes();
@@ -948,28 +968,29 @@ class StreamingAPI_Response$Type extends MessageType<StreamingAPI_Response> {
           message.newOffset = reader.uint64().toBigInt();
           break;
         default:
-          let u = options.readUnknownField;
+          const u = options.readUnknownField;
           if (u === 'throw')
             throw new globalThis.Error(
-              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`
+              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
             );
-          let d = reader.skip(wireType);
+          const d = reader.skip(wireType);
           if (u !== false)
             (u === true ? UnknownFieldHandler.onRead : u)(
               this.typeName,
               message,
               fieldNo,
               wireType,
-              d
+              d,
             );
       }
     }
     return message;
   }
+
   internalBinaryWrite(
     message: StreamingAPI_Response,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
     /* bytes data = 1; */
     if (message.data.length)
@@ -980,12 +1001,12 @@ class StreamingAPI_Response$Type extends MessageType<StreamingAPI_Response> {
     /* uint64 new_offset = 3; */
     if (message.newOffset !== 0n)
       writer.tag(3, WireType.Varint).uint64(message.newOffset);
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -1005,32 +1026,32 @@ export const Streaming = new ServiceType(
       serverStreaming: true,
       options: {},
       I: StreamingAPI_StreamBinary,
-      O: StreamingAPI_Response
+      O: StreamingAPI_Response,
     },
     {
       name: 'ReadBinary',
       options: {},
       I: StreamingAPI_ReadBinary,
-      O: StreamingAPI_Response
+      O: StreamingAPI_Response,
     },
     {
       name: 'StreamText',
       serverStreaming: true,
       options: {},
       I: StreamingAPI_StreamText,
-      O: StreamingAPI_Response
+      O: StreamingAPI_Response,
     },
     {
       name: 'ReadText',
       options: {},
       I: StreamingAPI_ReadText,
-      O: StreamingAPI_Response
+      O: StreamingAPI_Response,
     },
     {
       name: 'LastLines',
       options: {},
       I: StreamingAPI_LastLines,
-      O: StreamingAPI_Response
-    }
-  ]
+      O: StreamingAPI_Response,
+    },
+  ],
 );

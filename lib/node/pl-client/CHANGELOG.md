@@ -1,5 +1,19 @@
 # @milaboratories/pl-client
 
+## 2.7.3
+
+### Patch Changes
+
+- 32c7f91: Fixes http-proxy bug in pl-client
+- Updated dependencies [02860e7]
+  - @milaboratories/pl-http@1.0.3
+
+## 2.7.2
+
+### Patch Changes
+
+- a9b0749: Transaction stats
+
 ## 2.7.1
 
 ### Patch Changes

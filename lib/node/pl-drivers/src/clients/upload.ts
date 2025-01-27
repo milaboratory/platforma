@@ -1,14 +1,16 @@
-import { PlClient, ResourceId, ResourceType, addRTypeToMetadata } from '@milaboratories/pl-client';
-import { ResourceInfo } from '@milaboratories/pl-tree';
-import { MiLogger } from '@milaboratories/ts-helpers';
-import { GrpcTransport } from '@protobuf-ts/grpc-transport';
+import type { PlClient, ResourceId, ResourceType } from '@milaboratories/pl-client';
+import { addRTypeToMetadata } from '@milaboratories/pl-client';
+import type { ResourceInfo } from '@milaboratories/pl-tree';
+import type { MiLogger } from '@milaboratories/ts-helpers';
+import type { GrpcTransport } from '@protobuf-ts/grpc-transport';
 import type { RpcOptions } from '@protobuf-ts/runtime-rpc';
 import * as fs from 'node:fs/promises';
-import { Dispatcher, request } from 'undici';
-import { uploadapi_GetPartURL_Response } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/uploadapi/protocol';
+import type { Dispatcher } from 'undici';
+import { request } from 'undici';
+import type { uploadapi_GetPartURL_Response } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/uploadapi/protocol';
 import { UploadClient } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/uploadapi/protocol.client';
 import { toHeadersMap } from './helpers';
-import { IncomingHttpHeaders } from 'undici/types/header';
+import type { IncomingHttpHeaders } from 'undici/types/header';
 
 export class MTimeError extends Error {}
 
@@ -29,7 +31,7 @@ export class ClientUpload {
     public readonly grpcTransport: GrpcTransport,
     public readonly httpClient: Dispatcher,
     _: PlClient,
-    public readonly logger: MiLogger
+    public readonly logger: MiLogger,
   ) {
     this.grpcClient = new UploadClient(this.grpcTransport);
   }
@@ -38,15 +40,15 @@ export class ClientUpload {
 
   public async initUpload(
     { id, type }: ResourceInfo,
-    options?: RpcOptions
+    options?: RpcOptions,
   ): Promise<{
-    overall: bigint;
-    toUpload: bigint[];
-  }> {
+      overall: bigint;
+      toUpload: bigint[];
+    }> {
     const init = await this.grpcInit(id, type, options);
     return {
       overall: init.partsCount,
-      toUpload: this.partsToUpload(init.partsCount, init.uploadedParts)
+      toUpload: this.partsToUpload(init.partsCount, init.uploadedParts),
     };
   }
 
@@ -55,13 +57,13 @@ export class ClientUpload {
     path: string,
     expectedMTimeUnix: bigint,
     partNumber: bigint,
-    options?: RpcOptions
+    options?: RpcOptions,
   ) {
     const info = await this.grpcGetPartUrl(
       { id, type },
       partNumber,
       0n, // we update progress as a separate call later.
-      options
+      options,
     );
 
     const chunk = await readFileChunk(path, info.chunkStart, info.chunkEnd);
@@ -70,12 +72,12 @@ export class ClientUpload {
     const {
       body: rawBody,
       statusCode,
-      headers
+      headers,
     } = await request(info.uploadUrl, {
       dispatcher: this.httpClient,
       body: chunk,
       headers: toHeadersMap(info.headers),
-      method: info.method.toUpperCase() as Dispatcher.HttpMethod
+      method: info.method.toUpperCase() as Dispatcher.HttpMethod,
     });
 
     // always read the body for resources to be garbage collected.
@@ -111,25 +113,25 @@ export class ClientUpload {
     { id, type }: ResourceInfo,
     partNumber: bigint,
     uploadedPartSize: bigint,
-    options?: RpcOptions
+    options?: RpcOptions,
   ) {
     return await this.grpcClient.getPartURL(
       { resourceId: id, partNumber, uploadedPartSize },
-      addRTypeToMetadata(type, options)
+      addRTypeToMetadata(type, options),
     ).response;
   }
 
   private async grpcUpdateProgress(
     { id, type }: ResourceInfo,
     bytesProcessed: bigint,
-    options?: RpcOptions
+    options?: RpcOptions,
   ) {
     await this.grpcClient.updateProgress(
       {
         resourceId: id,
-        bytesProcessed
+        bytesProcessed,
       },
-      addRTypeToMetadata(type, options)
+      addRTypeToMetadata(type, options),
     ).response;
   }
 
@@ -166,7 +168,7 @@ async function readBytesFromPosition(f: fs.FileHandle, b: Buffer, len: number, p
       b,
       bytesReadTotal,
       len - bytesReadTotal,
-      position + bytesReadTotal
+      position + bytesReadTotal,
     );
     if (bytesRead === 0) {
       throw new UnexpectedEOF('file ended earlier than expected.');
@@ -188,12 +190,12 @@ function checkStatusCodeOk(
   statusCode: number,
   body: string,
   headers: IncomingHttpHeaders,
-  info: uploadapi_GetPartURL_Response
+  info: uploadapi_GetPartURL_Response,
 ) {
   if (statusCode != 200) {
     throw new NetworkError(
-      `response is not ok, status code: ${statusCode},` +
-        ` body: ${body}, headers: ${headers}, url: ${info.uploadUrl}`
+      `response is not ok, status code: ${statusCode},`
+      + ` body: ${body}, headers: ${headers}, url: ${info.uploadUrl}`,
     );
   }
 }

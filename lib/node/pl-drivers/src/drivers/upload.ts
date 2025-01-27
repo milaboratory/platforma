@@ -1,32 +1,37 @@
 import { randomUUID } from 'node:crypto';
-import { ResourceId, ResourceType } from '@milaboratories/pl-client';
-import {
+import type { ResourceId, ResourceType } from '@milaboratories/pl-client';
+import type {
   Watcher,
-  ComputableCtx,
+  ComputableCtx } from '@milaboratories/computable';
+import {
   Computable,
-  PollingComputableHooks
+  PollingComputableHooks,
 } from '@milaboratories/computable';
-import { MiLogger, asyncPool, TaskProcessor, Signer } from '@milaboratories/ts-helpers';
-import * as sdk from '@milaboratories/pl-model-common';
-import { ClientProgress } from '../clients/progress';
-import { ClientUpload } from '../clients/upload';
+import type { MiLogger, Signer } from '@milaboratories/ts-helpers';
+import { asyncPool, TaskProcessor } from '@milaboratories/ts-helpers';
+import type * as sdk from '@milaboratories/pl-model-common';
+import type { ClientProgress } from '../clients/progress';
+import type { ClientUpload } from '../clients/upload';
+import type {
+  PlTreeEntry,
+  PlTreeEntryAccessor,
+  PlTreeNodeAccessor,
+} from '@milaboratories/pl-tree';
 import {
   isPlTreeEntry,
   isPlTreeEntryAccessor,
   makeResourceSnapshot,
-  PlTreeEntry,
-  PlTreeEntryAccessor,
-  PlTreeNodeAccessor
 } from '@milaboratories/pl-tree';
 import { scheduler } from 'node:timers/promises';
-import { PollingOps } from './helpers/polling_ops';
-import { ImportResourceSnapshot, IndexResourceSnapshot, UploadResourceSnapshot } from './types';
+import type { PollingOps } from './helpers/polling_ops';
+import type { ImportResourceSnapshot } from './types';
+import { IndexResourceSnapshot, UploadResourceSnapshot } from './types';
 import { nonRecoverableError, UploadTask } from './upload_task';
 import { WrongResourceTypeError } from './helpers/helpers';
 
 export function makeBlobImportSnapshot(
   entryOrAccessor: PlTreeEntry | PlTreeNodeAccessor | PlTreeEntryAccessor,
-  ctx: ComputableCtx
+  ctx: ComputableCtx,
 ): ImportResourceSnapshot {
   const node = isPlTreeEntry(entryOrAccessor)
     ? ctx.accessor(entryOrAccessor).node()
@@ -69,22 +74,22 @@ export class UploadDriver {
       nConcurrentPartUploads: 10,
       nConcurrentGetProgresses: 10,
       pollingInterval: 1000,
-      stopPollingDelay: 1000
-    }
+      stopPollingDelay: 1000,
+    },
   ) {
     this.uploadQueue = new TaskProcessor(this.logger, 1, {
       type: 'exponentialWithMaxDelayBackoff',
       initialDelay: 20,
       maxDelay: 15000, // 15 seconds
       backoffMultiplier: 1.5,
-      jitter: 0.5
+      jitter: 0.5,
     });
 
     this.hooks = new PollingComputableHooks(
       () => this.startUpdating(),
       () => this.stopUpdating(),
       { stopDebounce: opts.stopPollingDelay },
-      (resolve, reject) => this.scheduleOnNextState(resolve, reject)
+      (resolve, reject) => this.scheduleOnNextState(resolve, reject),
     );
   }
 
@@ -98,7 +103,7 @@ export class UploadDriver {
   ): sdk.ImportProgress;
   getProgressId(
     handleResource: ImportResourceSnapshot | PlTreeEntry,
-    ctx?: ComputableCtx
+    ctx?: ComputableCtx,
   ): Computable<sdk.ImportProgress> | sdk.ImportProgress {
     if (ctx == undefined) return Computable.make((ctx) => this.getProgressId(handleResource, ctx));
 
@@ -118,7 +123,7 @@ export class UploadDriver {
   private getProgressIdNoCtx(
     w: Watcher,
     res: ImportResourceSnapshot,
-    callerId: string
+    callerId: string,
   ): sdk.ImportProgress {
     validateResourceType('getProgressId', res.type);
 
@@ -135,7 +140,7 @@ export class UploadDriver {
       this.clientProgress,
       this.opts.nConcurrentPartUploads,
       this.signer,
-      res
+      res,
     );
 
     this.idToProgress.set(res.id, newTask);
@@ -143,7 +148,7 @@ export class UploadDriver {
     if (newTask.shouldScheduleUpload())
       this.uploadQueue.push({
         fn: () => newTask.uploadBlobTask(),
-        recoverableErrorPredicate: (e) => !nonRecoverableError(e)
+        recoverableErrorPredicate: (e) => !nonRecoverableError(e),
       });
 
     newTask.setDoneIfOutputSet(res);
@@ -194,7 +199,7 @@ export class UploadDriver {
       try {
         await asyncPool(
           this.opts.nConcurrentGetProgresses,
-          this.getAllNotDoneProgresses().map((p) => async () => await p.updateStatus())
+          this.getAllNotDoneProgresses().map((p) => async () => await p.updateStatus()),
         );
 
         toNotify.forEach((n) => n.resolve());
@@ -229,8 +234,8 @@ type ScheduledRefresh = {
 function validateResourceType(methodName: string, rType: ResourceType) {
   if (!rType.name.startsWith('BlobUpload') && !rType.name.startsWith('BlobIndex')) {
     throw new WrongResourceTypeError(
-      `${methodName}: wrong resource type: ${rType.name}, ` +
-        `expected: a resource of either type 'BlobUpload' or 'BlobIndex'.`
+      `${methodName}: wrong resource type: ${rType.name}, `
+      + `expected: a resource of either type 'BlobUpload' or 'BlobIndex'.`,
     );
   }
 }

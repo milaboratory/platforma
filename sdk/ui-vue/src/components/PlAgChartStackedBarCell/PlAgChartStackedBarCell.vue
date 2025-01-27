@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import type { ICellRendererParams } from 'ag-grid-enterprise';
 import type {
-  PlChartStackedBarSettings } from '@milaboratories/uikit';
+  PlChartStackedBarSettings,
+} from '@milaboratories/uikit';
 import {
   PlChartStackedBarCompact,
 } from '@milaboratories/uikit';
@@ -17,6 +18,7 @@ const settings = computed(() => props.params.value || undefined);
 <template>
   <div class="pl-ag-chart-stacked-bar-cell">
     <PlChartStackedBarCompact v-if="settings" :settings="settings" />
+    <div v-else class="pl-ag-chart-stacked-bar-cell__not-ready">Not ready</div>
   </div>
 </template>
 
@@ -26,5 +28,9 @@ const settings = computed(() => props.params.value || undefined);
   display: flex;
   flex-direction: row;
   align-items: center;
+}
+
+.pl-ag-chart-stacked-bar-cell__not-ready {
+  color: var(--txt-03) !important;
 }
 </style>

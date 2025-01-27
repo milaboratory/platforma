@@ -52,6 +52,11 @@ packages:
   - etc/blocks/upload-file/ui
   - etc/blocks/upload-file/block
 
+  - etc/blocks/blob-url-custom-protocol/workflow
+  - etc/blocks/blob-url-custom-protocol/model
+  - etc/blocks/blob-url-custom-protocol/ui
+  - etc/blocks/blob-url-custom-protocol/block
+
   - etc/blocks/download-file/workflow
   - etc/blocks/download-file/model
   - etc/blocks/download-file/ui
@@ -101,6 +106,7 @@ catalog:
   'vite': ^5.4.11
   'rollup-plugin-node-externals': ^7.1.3
   '@rollup/plugin-node-resolve': ^16.0.0
+  'rollup-plugin-sourcemaps2': ^0.4.3
   'vite-plugin-dts': ^4.4.0
   'tsc-alias': ^1.8.10
   'yarpm': ^1.2.0
@@ -136,14 +142,14 @@ catalog:
 
   # Net
 
-  'undici': ^7.2.0
+  'undici': ^7.2.3
   '@grpc/grpc-js': ^1.12.5
   '@protobuf-ts/grpc-transport': ^2.9.4
   '@protobuf-ts/runtime': ^2.9.4
   '@protobuf-ts/runtime-rpc': ^2.9.4
   'https-proxy-agent': ^7.0.6
-  '@aws-sdk/client-s3': ^3.717.0
-  '@aws-sdk/lib-storage': ^3.717.0
+  '@aws-sdk/client-s3': ^3.732.0
+  '@aws-sdk/lib-storage': ^3.732.0
   'cacheable-lookup': ^6.1.0
 
   # Util & other libs
@@ -153,12 +159,12 @@ catalog:
   'denque': ^2.1.0
   'lru-cache': ^11.0.2
   'canonicalize': ^2.0.0
-  'long': ^5.2.3
+  'long': ^5.2.4
   'mime-types': ^2.1.35
   'semver': ^7.6.3
 
   'tar': ^7.4.3
-  'tar-fs': ^3.0.6
+  'tar-fs': ^3.0.8
   'decompress': ^4.2.1
   'readline-sync': ^1.4.10
   'ssh2': ^1.16.0
@@ -173,23 +179,27 @@ catalog:
   'winston': ^3.17.0
 
   '@milaboratories/tengo-tester': ^1.5.0
-  '@milaboratories/pframes-node': &pframes-version 2.1.3
+  '@milaboratories/pframes-node': &pframes-version 2.1.7
 
-  'remeda': ^2.18.0
+  'remeda': ^2.19.2
 
   'quickjs-emscripten': ^0.31.0
 
   # UI
 
   'vue': ^3.5.13
-  '@vueuse/core': ^12.0.0
+  '@vueuse/core': ^12.4.0
   'vue-tsc': ^2.1.10
-  'sass': ~1.81.0
+  'sass': ~1.83.4
   'vitepress': '1.5.0'
   'highlight.js': '11.10.0'
+  'd3': '^7.9.0'
+  '@types/d3': '^7.4.3'
 
-  'ag-grid-enterprise': &ag-grid ^33.0.3
+  'ag-grid-enterprise': &ag-grid ^33.0.4
   'ag-grid-vue3': *ag-grid
+
+  'monaco-editor': ^0.52.2
 
   # SW
 
@@ -223,5 +233,5 @@ catalog:
 
   # To remove
 
-  'lodash': ^4.17.21
+  'lodash': ^4.17.14
   '@types/lodash': ^4.17.13

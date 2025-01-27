@@ -16,7 +16,7 @@ test('should download a tar archive and extracts its content and then deleted', 
     const driver = new DownloadUrlDriver(logger, client.httpDispatcher, dir);
 
     const url = new URL(
-      'https://block.registry.platforma.bio/releases/v1/milaboratory/enter-numbers/0.4.1/frontend.tgz'
+      'https://block.registry.platforma.bio/releases/v1/milaboratory/enter-numbers/0.4.1/frontend.tgz',
     );
 
     const c = driver.getPath(url);
@@ -48,7 +48,7 @@ test('should show a error when 404 status code', async () => {
       const driver = new DownloadUrlDriver(logger, client.httpDispatcher, dir);
 
       const url = new URL(
-        'https://block.registry.platforma.bio/releases/v1/milaboratory/NOT_FOUND'
+        'https://block.registry.platforma.bio/releases/v1/milaboratory/NOT_FOUND',
       );
 
       const c = driver.getPath(url);
@@ -74,7 +74,7 @@ test('should abort a downloading process when we reset a state of a computable',
     const driver = new DownloadUrlDriver(logger, client.httpDispatcher, dir);
 
     const url = new URL(
-      'https://block.registry.platforma.bio/releases/v1/milaboratory/enter-numbers/0.4.1/frontend.tgz'
+      'https://block.registry.platforma.bio/releases/v1/milaboratory/enter-numbers/0.4.1/frontend.tgz',
     );
 
     const c = driver.getPath(url);
