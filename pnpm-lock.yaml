@@ -2564,6 +2564,9 @@ importers:
         specifier: 'catalog:'
         version: 3.23.8
     devDependencies:
+      '@milaboratories/eslint-config':
+        specifier: workspace:^
+        version: link:../eslint-config
       '@milaboratories/oclif-index':
         specifier: workspace:*
         version: link:../oclif-index
