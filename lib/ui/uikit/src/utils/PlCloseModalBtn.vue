@@ -5,7 +5,7 @@
 </template>
 
 <style lang="scss" module>
-@import '@/assets/mixins';
+@use '@/assets/mixins' as *;
 
 .component {
   display: flex;

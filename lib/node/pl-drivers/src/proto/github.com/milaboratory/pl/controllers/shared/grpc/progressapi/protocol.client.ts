@@ -55,7 +55,7 @@ export class ProgressClient implements IProgressClient, ServiceInfo {
    */
   getStatus(
     input: ProgressAPI_GetStatus_Request,
-    options?: RpcOptions
+    options?: RpcOptions,
   ): UnaryCall<ProgressAPI_GetStatus_Request, ProgressAPI_GetStatus_Response> {
     const method = this.methods[0],
       opt = this._transport.mergeOptions(options);
@@ -64,16 +64,17 @@ export class ProgressClient implements IProgressClient, ServiceInfo {
       ProgressAPI_GetStatus_Response
     >('unary', this._transport, method, opt, input);
   }
+
   /**
    * @generated from protobuf rpc: RealtimeStatus(MiLaboratories.Controller.Shared.ProgressAPI.RealtimeStatus.Request) returns (stream MiLaboratories.Controller.Shared.ProgressAPI.RealtimeStatus.Response);
    */
   realtimeStatus(
     input: ProgressAPI_RealtimeStatus_Request,
-    options?: RpcOptions
+    options?: RpcOptions,
   ): ServerStreamingCall<
-    ProgressAPI_RealtimeStatus_Request,
-    ProgressAPI_RealtimeStatus_Response
-  > {
+      ProgressAPI_RealtimeStatus_Request,
+      ProgressAPI_RealtimeStatus_Response
+    > {
     const method = this.methods[1],
       opt = this._transport.mergeOptions(options);
     return stackIntercept<

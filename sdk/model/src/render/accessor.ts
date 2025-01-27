@@ -5,6 +5,8 @@ import {
   PColumn,
   PObject,
   RemoteBlobHandleAndSize,
+  FolderURL,
+  ArchiveFormat,
   isPColumn,
   mapPObjectData
 } from '@milaboratories/pl-model-common';
@@ -19,7 +21,7 @@ export function ifDef<T, R>(value: T | undefined, cb: (value: T) => R): R | unde
 
 type FieldMapOps = {
   /**
-   * Type of fields to interate over.
+   * Type of fields to iterate over.
    * (default 'Input')
    * */
   readonly fieldType?: 'Input' | 'Output' | 'Dynamic';
@@ -293,6 +295,13 @@ export class TreeNodeAccessor {
    */
   public getOnDemandBlobHandle(): FutureRef<RemoteBlobHandleAndSize | undefined> {
     return this.getRemoteFileHandle();
+  }
+
+  /**
+   * @returns the url to the extracted folder
+   */
+  public extractArchiveAndGetURL(format: ArchiveFormat): FutureRef<FolderURL | undefined> {
+    return new FutureRef(getCfgRenderCtx().extractArchiveAndGetURL(this.handle, format));
   }
 
   public getImportProgress(): FutureRef<ImportProgress> {

@@ -1,5 +1,32 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.7.1
+
+### Patch Changes
+
+- Updated dependencies [ce558f9]
+- Updated dependencies [b41709a]
+  - @milaboratories/pl-model-common@1.10.4
+
+## 1.7.0
+
+### Minor Changes
+
+- 3da2292: BlockSettings, update locking, version skipping & detailed UpdateInfo
+
+## 1.6.11
+
+### Patch Changes
+
+- Updated dependencies [32966e6]
+  - @milaboratories/pl-model-common@1.10.3
+
+## 1.6.10
+
+### Patch Changes
+
+- c2161da: PFrameInternal export Logger type
+
 ## 1.6.9
 
 ### Patch Changes

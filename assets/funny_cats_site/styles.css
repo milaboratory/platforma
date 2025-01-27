@@ -1,0 +1,50 @@
+/* A funny-looking CSS style */
+body {
+    background: linear-gradient(45deg, #559a9e, #fad0c4);
+    font-family: 'Comic Sans MS', cursive, sans-serif;
+    color: #333;
+    text-align: center;
+    padding: 20px;
+}
+
+h1 {
+    color: #ff6f61;
+    text-shadow: 2px 2px #ffff00;
+}
+
+p {
+    font-size: 1.2em;
+    color: #555;
+}
+
+img {
+    border: 5px dashed #ff6f61;
+    border-radius: 20px;
+    margin: 20px 0;
+}
+
+nav ul {
+    list-style: none;
+    padding: 0;
+}
+
+nav li {
+    display: inline-block;
+    margin: 0 10px;
+}
+
+nav a {
+    color: #ff6f61;
+    text-decoration: none;
+    font-weight: bold;
+    padding: 5px 10px;
+    border: 2px dotted #ff6f61;
+    border-radius: 10px;
+    background-color: #fff;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+nav a:hover {
+    background-color: #ff6f61;
+    color: #fff;
+}

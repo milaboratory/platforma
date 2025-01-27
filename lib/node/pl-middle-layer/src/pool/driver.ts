@@ -80,12 +80,23 @@ function migrateFilters(filters: PTableRecordFilter[]): PTableRecordSingleValueF
 const bigintReplacer = (_: string, v: unknown) => (typeof v === 'bigint' ? v.toString() : v);
 
 class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
-  public readonly pFrame;
+  public readonly specPFrame: PFrameInternal.PFrameV2;
   private readonly blobIdToResource = new Map<string, ResourceInfo>();
   private readonly blobHandleComputables = new Map<
     string,
     ComputableStableDefined<LocalBlobHandleAndSize>
   >();
+
+  private readonly createDataPFrame: () => PFrameInternal.PFrameV2;
+  public get disposableDataPFrame() {
+    const dataPFrame = this.createDataPFrame();
+    return {
+      dataPFrame,
+      [Symbol.dispose]: () => {
+        dataPFrame.dispose();
+      },
+    };
+  }
 
   constructor(
     private readonly blobDriver: DownloadDriver,
@@ -93,33 +104,56 @@ class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
     private readonly blobContentCache: LRUCache<string, Uint8Array>,
     private readonly columns: InternalPFrameData,
   ) {
-    // pframe initialization
-    this.pFrame = new PFrame(
-      (level: 'info' | 'warn' | 'error', message: string) => {
-        switch (level) {
-          default:
-          case 'info':
-            return this.logger.info(message);
-          case 'warn':
-            return this.logger.warn(message);
-          case 'error':
-            return this.logger.error(message);
-        }
-      },
-    );
-    this.pFrame.setDataSource(this);
+    const logFunc: PFrameInternal.Logger = (level: 'info' | 'warn' | 'error', message: string) => {
+      switch (level) {
+        default:
+        case 'info':
+          return this.logger.info(message);
+        case 'warn':
+          return this.logger.warn(message);
+        case 'error':
+          return this.logger.error(message);
+      }
+    };
+
     for (const column of columns) {
-      for (const blob of allBlobs(column.data)) this.blobIdToResource.set(blobKey(blob), blob);
-      const dataInfo = mapBlobs(column.data, blobKey);
-      try {
-        this.pFrame.addColumnSpec(column.id, column.spec);
-        this.pFrame.setColumnData(column.id, dataInfo);
-      } catch (err: unknown) {
-        throw new Error(
-          `Adding column ${column.id} to PFrame failed: ${err as Error}; Spec: ${JSON.stringify(column.spec)}, DataInfo: ${JSON.stringify(dataInfo)}.`,
-        );
+      for (const blob of allBlobs(column.data)) {
+        this.blobIdToResource.set(blobKey(blob), blob);
       }
     }
+
+    const createSpecPFrame = (): PFrameInternal.PFrameV2 => {
+      const pFrame = getDebugFlags().logPFrameRequests ? new PFrame(logFunc) : new PFrame();
+      for (const column of columns) {
+        try {
+          pFrame.addColumnSpec(column.id, column.spec);
+        } catch (err: unknown) {
+          throw new Error(
+            `Adding column ${column.id} to PFrame failed: ${err as Error}; Spec: ${JSON.stringify(column.spec)}.`,
+          );
+        }
+      }
+      return pFrame;
+    };
+
+    const createDataPFrame = (): PFrameInternal.PFrameV2 => {
+      const pFrame = createSpecPFrame();
+      pFrame.setDataSource(this);
+      for (const column of columns) {
+        const dataInfo = mapBlobs(column.data, blobKey);
+        try {
+          pFrame.setColumnData(column.id, dataInfo);
+        } catch (err: unknown) {
+          throw new Error(
+            `Setting column ${column.id} data to PFrame failed: ${err as Error}; Spec: ${JSON.stringify(column.spec)}, DataInfo: ${JSON.stringify(dataInfo)}.`,
+          );
+        }
+      }
+      return pFrame;
+    };
+
+    this.specPFrame = createSpecPFrame();
+    this.createDataPFrame = createDataPFrame;
   }
 
   private getOrCreateComputableForBlob(blobId: string) {
@@ -161,7 +195,7 @@ class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
 
   [Symbol.dispose](): void {
     for (const computable of this.blobHandleComputables.values()) computable.resetState();
-    this.pFrame.dispose();
+    this.specPFrame.dispose();
   }
 }
 
@@ -222,13 +256,14 @@ export class PFrameDriver implements SdkPFrameDriver {
       }
 
       protected async createNewResource(params: FullPTableDef): Promise<PFrameInternal.PTableV2> {
-        const pFrame = this.pFrames.getByKey(params.pFrameHandle);
+        const handle: PFrameHandle = params.pFrameHandle;
         const rawPTable = await concurrencyLimiter.run(async () => {
           if (getDebugFlags().logPFrameRequests)
             logger.info(
               `PTable creation (pTableHandle = ${this.calculateParamsKey(params)}): ${JSON.stringify(params, bigintReplacer)}`,
             );
-          return await pFrame.pFrame.createTable({
+          using disposableDataPFrame = this.pFrames.getByKey(handle).disposableDataPFrame;
+          return await disposableDataPFrame.dataPFrame.createTable({
             src: joinEntryToInternal(params.def.src),
             filters: migrateFilters(params.def.filters),
           });
@@ -296,7 +331,7 @@ export class PFrameDriver implements SdkPFrameDriver {
           : [],
     };
     const responce = await this.concurrencyLimiter.run(
-      async () => await this.pFrames.getByKey(handle).pFrame.findColumns(iRequest),
+      async () => await this.pFrames.getByKey(handle).specPFrame.findColumns(iRequest),
     );
     return {
       hits: responce.hits
@@ -311,13 +346,13 @@ export class PFrameDriver implements SdkPFrameDriver {
 
   public async getColumnSpec(handle: PFrameHandle, columnId: PObjectId): Promise<PColumnSpec> {
     return await this.concurrencyLimiter.run(
-      async () => await this.pFrames.getByKey(handle).pFrame.getColumnSpec(columnId),
+      async () => await this.pFrames.getByKey(handle).specPFrame.getColumnSpec(columnId),
     );
   }
 
   public async listColumns(handle: PFrameHandle): Promise<PColumnIdAndSpec[]> {
     return await this.concurrencyLimiter.run(
-      async () => await this.pFrames.getByKey(handle).pFrame.listColumns(),
+      async () => await this.pFrames.getByKey(handle).specPFrame.listColumns(),
     );
   }
 
@@ -330,7 +365,8 @@ export class PFrameDriver implements SdkPFrameDriver {
         this.logger.info(
           `Call calculateTableData, handle = ${handle}, request = ${JSON.stringify(request, bigintReplacer)}`,
         );
-      return await this.pFrames.getByKey(handle).pFrame.createTable({
+      using disposableDataPFrame = this.pFrames.getByKey(handle).disposableDataPFrame;
+      return await disposableDataPFrame.dataPFrame.createTable({
         src: joinEntryToInternal(request.src),
         filters: migrateFilters(request.filters),
       });
@@ -365,7 +401,8 @@ export class PFrameDriver implements SdkPFrameDriver {
         this.logger.info(
           `Call getUniqueValues, handle = ${handle}, request = ${JSON.stringify(request, bigintReplacer)}`,
         );
-      return await this.pFrames.getByKey(handle).pFrame.getUniqueValues({
+      using disposableDataPFrame = this.pFrames.getByKey(handle).disposableDataPFrame;
+      return await disposableDataPFrame.dataPFrame.getUniqueValues({
         ...request,
         filters: migrateFilters(request.filters),
       });

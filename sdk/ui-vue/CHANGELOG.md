@@ -1,5 +1,107 @@
 # @platforma-sdk/ui-vue
 
+## 1.22.4
+
+### Patch Changes
+
+- c5269a5: Custom message for empty table
+
+## 1.22.2
+
+### Patch Changes
+
+- Updated dependencies [ce558f9]
+- Updated dependencies [b41709a]
+  - @platforma-sdk/model@1.22.2
+  - @milaboratories/uikit@2.2.50
+
+## 1.22.1
+
+### Patch Changes
+
+- 02860e7: rollup-plugin-sourcemaps -> rollup-plugin-sourcemaps2
+
+## 1.22.0
+
+### Patch Changes
+
+- Updated dependencies [c0d5856]
+  - @platforma-sdk/model@1.22.0
+  - @milaboratories/uikit@2.2.50
+
+## 1.21.30
+
+### Patch Changes
+
+- 56f7e84: Migrate from scss imports to use & forward rules
+- Updated dependencies [56f7e84]
+  - @milaboratories/uikit@2.2.50
+
+## 1.21.29
+
+### Patch Changes
+
+- Updated dependencies [ca66b2a]
+  - @milaboratories/uikit@2.2.49
+
+## 1.21.25
+
+### Patch Changes
+
+- 3ff9dcd: Enable nested source maps in dev sdk mode
+- Updated dependencies [3ff9dcd]
+  - @milaboratories/uikit@2.2.48
+
+## 1.21.24
+
+### Patch Changes
+
+- Updated dependencies [93e9a66]
+  - @milaboratories/uikit@2.2.47
+
+## 1.21.23
+
+### Patch Changes
+
+- 9b5a692: [sdk/ui-vue] Histogram
+- Updated dependencies [9b5a692]
+  - @milaboratories/uikit@2.2.46
+
+## 1.21.21
+
+### Patch Changes
+
+- 93b8d8d: fix styles
+
+## 1.21.20
+
+### Patch Changes
+
+- 32966e6: [desktop] Custom design for “+ add graph“ etc. sections
+- Updated dependencies [32966e6]
+  - @milaboratories/uikit@2.2.45
+  - @platforma-sdk/model@1.21.20
+
+## 1.21.18
+
+### Patch Changes
+
+- 53e35de: [ui-vue] use fast IsJsonEqual implementation everywhere
+
+## 1.21.17
+
+### Patch Changes
+
+- Updated dependencies [178c642]
+  - @milaboratories/uikit@2.2.44
+
+## 1.21.12
+
+### Patch Changes
+
+- Updated dependencies [ad4719e]
+  - @milaboratories/uikit@2.2.43
+
 ## 1.21.10
 
 ### Patch Changes

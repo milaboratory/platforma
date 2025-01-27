@@ -1,5 +1,147 @@
 # @platforma-sdk/test
 
+## 1.22.5
+
+### Patch Changes
+
+- Updated dependencies [7228856]
+  - @milaboratories/pl-middle-layer@1.26.4
+
+## 1.22.3
+
+### Patch Changes
+
+- Updated dependencies [36a365b]
+  - @milaboratories/pl-middle-layer@1.26.3
+
+## 1.22.2
+
+### Patch Changes
+
+- ce558f9: add blob to url driver that decompress the folder and returns url to the blob
+- b41709a: new driver: blob to url that unarchive things
+- Updated dependencies [ce558f9]
+- Updated dependencies [b41709a]
+  - @milaboratories/pl-middle-layer@1.26.2
+  - @platforma-sdk/model@1.22.2
+
+## 1.22.1
+
+### Patch Changes
+
+- Updated dependencies [32c7f91]
+  - @milaboratories/pl-client@2.7.3
+  - @milaboratories/pl-middle-layer@1.26.1
+  - @milaboratories/pl-tree@1.4.22
+
+## 1.22.0
+
+### Patch Changes
+
+- Updated dependencies [c0d5856]
+  - @milaboratories/pl-middle-layer@1.26.0
+  - @platforma-sdk/model@1.22.0
+
+## 1.21.34
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.25.6
+
+## 1.21.33
+
+### Patch Changes
+
+- Updated dependencies [659a62a]
+  - @milaboratories/pl-middle-layer@1.25.5
+
+## 1.21.32
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.25.4
+
+## 1.21.31
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.25.3
+
+## 1.21.28
+
+### Patch Changes
+
+- Updated dependencies [9ad75ac]
+  - @milaboratories/pl-middle-layer@1.25.2
+
+## 1.21.27
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.25.1
+
+## 1.21.26
+
+### Patch Changes
+
+- Updated dependencies [3da2292]
+  - @milaboratories/pl-middle-layer@1.25.0
+
+## 1.21.22
+
+### Patch Changes
+
+- Updated dependencies [a9b0749]
+- Updated dependencies [a9b0749]
+  - @milaboratories/pl-client@2.7.2
+  - @milaboratories/pl-middle-layer@1.24.0
+  - @milaboratories/pl-tree@1.4.21
+
+## 1.21.20
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.23.19
+- @platforma-sdk/model@1.21.20
+
+## 1.21.19
+
+### Patch Changes
+
+- Updated dependencies [f129da8]
+  - @milaboratories/pl-middle-layer@1.23.18
+
+## 1.21.16
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.23.17
+
+## 1.21.15
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.23.16
+
+## 1.21.14
+
+### Patch Changes
+
+- Updated dependencies [5f504ad]
+  - @milaboratories/pl-middle-layer@1.23.15
+
+## 1.21.13
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.23.14
+
+## 1.21.11
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.23.13
+
 ## 1.21.10
 
 ### Patch Changes

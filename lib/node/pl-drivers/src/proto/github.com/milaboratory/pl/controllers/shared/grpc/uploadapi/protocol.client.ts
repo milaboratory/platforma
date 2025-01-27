@@ -95,7 +95,7 @@ export class UploadClient implements IUploadClient, ServiceInfo {
    */
   init(
     input: uploadapi_Init_Request,
-    options?: RpcOptions
+    options?: RpcOptions,
   ): UnaryCall<uploadapi_Init_Request, uploadapi_Init_Response> {
     const method = this.methods[0],
       opt = this._transport.mergeOptions(options);
@@ -104,9 +104,10 @@ export class UploadClient implements IUploadClient, ServiceInfo {
       this._transport,
       method,
       opt,
-      input
+      input,
     );
   }
+
   /**
    *
    * GetPartURL provides URL for uploading chunk of the data.
@@ -117,7 +118,7 @@ export class UploadClient implements IUploadClient, ServiceInfo {
    */
   getPartURL(
     input: uploadapi_GetPartURL_Request,
-    options?: RpcOptions
+    options?: RpcOptions,
   ): UnaryCall<uploadapi_GetPartURL_Request, uploadapi_GetPartURL_Response> {
     const method = this.methods[1],
       opt = this._transport.mergeOptions(options);
@@ -126,6 +127,7 @@ export class UploadClient implements IUploadClient, ServiceInfo {
       uploadapi_GetPartURL_Response
     >('unary', this._transport, method, opt, input);
   }
+
   /**
    *
    * UpdateProgress of the upload, so other clients can see how it is going.
@@ -135,11 +137,11 @@ export class UploadClient implements IUploadClient, ServiceInfo {
    */
   updateProgress(
     input: uploadapi_UpdateProgress_Request,
-    options?: RpcOptions
+    options?: RpcOptions,
   ): UnaryCall<
-    uploadapi_UpdateProgress_Request,
-    uploadapi_UpdateProgress_Response
-  > {
+      uploadapi_UpdateProgress_Request,
+      uploadapi_UpdateProgress_Response
+    > {
     const method = this.methods[2],
       opt = this._transport.mergeOptions(options);
     return stackIntercept<
@@ -147,6 +149,7 @@ export class UploadClient implements IUploadClient, ServiceInfo {
       uploadapi_UpdateProgress_Response
     >('unary', this._transport, method, opt, input);
   }
+
   /**
    *
    * Finalize informs Controller that the upload process is done.
@@ -158,7 +161,7 @@ export class UploadClient implements IUploadClient, ServiceInfo {
    */
   finalize(
     input: uploadapi_Finalize_Request,
-    options?: RpcOptions
+    options?: RpcOptions,
   ): UnaryCall<uploadapi_Finalize_Request, uploadapi_Finalize_Response> {
     const method = this.methods[3],
       opt = this._transport.mergeOptions(options);

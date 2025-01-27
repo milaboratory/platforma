@@ -1,9 +1,10 @@
-import { Computable, ComputableCtx } from '@milaboratories/computable';
-import { PlTreeNodeAccessor } from '@milaboratories/pl-tree';
-import {
+import type { ComputableCtx } from '@milaboratories/computable';
+import { Computable } from '@milaboratories/computable';
+import type { PlTreeNodeAccessor } from '@milaboratories/pl-tree';
+import type {
+  ArchiveFormat,
   CommonFieldTraverseOps as CommonFieldTraverseOpsFromSDK,
   FieldTraversalStep as FieldTraversalStepFromSDK,
-  JsRenderInternal,
   Option,
   PColumn,
   PColumnValues,
@@ -16,20 +17,24 @@ import {
   PTableHandle,
   ResourceType as ResourceTypeFromSDK,
   ResultCollection,
-  ValueOrError,
+  ValueOrError
+} from '@platforma-sdk/model';
+import {
+  JsRenderInternal,
   mapPObjectData,
   mapPTableDef,
   mapValueInVOE
 } from '@platforma-sdk/model';
 import { notEmpty } from '@milaboratories/ts-helpers';
 import { randomUUID } from 'node:crypto';
-import { QuickJSContext, QuickJSHandle, Scope, VmFunctionImplementation } from 'quickjs-emscripten';
-import { Optional } from 'utility-types';
-import { BlockContextAny } from '../middle_layer/block_ctx';
-import { MiddleLayerEnvironment } from '../middle_layer/middle_layer';
-import { Block } from '../model/project_model';
+import type { QuickJSContext, QuickJSHandle, VmFunctionImplementation } from 'quickjs-emscripten';
+import { Scope } from 'quickjs-emscripten';
+import type { Optional } from 'utility-types';
+import type { BlockContextAny } from '../middle_layer/block_ctx';
+import type { MiddleLayerEnvironment } from '../middle_layer/middle_layer';
+import type { Block } from '../model/project_model';
 import { parseFinalPObjectCollection } from '../pool/p_object_collection';
-import { ResultPool } from '../pool/result_pool';
+import type { ResultPool } from '../pool/result_pool';
 
 function isArrayBufferOrView(obj: unknown): obj is ArrayBufferLike {
   return obj instanceof ArrayBuffer || ArrayBuffer.isView(obj);
@@ -285,6 +290,18 @@ export class JsExecutionContext
   }
 
   //
+  // Blobs to URLs
+  //
+
+  public extractArchiveAndGetURL(handle: string, format: ArchiveFormat): string {
+    const resource = this.getAccessor(handle).persist();
+    return this.registerComputable(
+      'extractArchiveAndGetURL',
+      this.env.driverKit.blobToURLDriver.extractArchiveAndGetURL(resource, format)
+    );
+  }
+
+  //
   // Import progress
   //
 
@@ -416,9 +433,7 @@ export class JsExecutionContext
         "can't instantiate PFrames from this context (most porbably called from the future mapper)"
       );
     return this.env.driverKit.pFrameDriver.createPFrame(
-      def.map((c) => mapPObjectData(c, (d) => 
-        typeof d === 'string' ? this.getAccessor(d) : d
-      )),
+      def.map((c) => mapPObjectData(c, (d) => (typeof d === 'string' ? this.getAccessor(d) : d))),
       this.computableCtx
     );
   }
@@ -429,9 +444,9 @@ export class JsExecutionContext
         "can't instantiate PTable from this context (most porbably called from the future mapper)"
       );
     return this.env.driverKit.pFrameDriver.createPTable(
-      mapPTableDef(def, (c) => mapPObjectData(c, (d) => 
-        typeof d === 'string' ? this.getAccessor(d) : d
-      )),
+      mapPTableDef(def, (c) =>
+        mapPObjectData(c, (d) => (typeof d === 'string' ? this.getAccessor(d) : d))
+      ),
       this.computableCtx
     );
   }
@@ -556,11 +571,13 @@ export class JsExecutionContext
       // Exporting props
 
       const args = this.blockCtx.args(this.computableCtx!);
+      const activeArgs = this.blockCtx.activeArgs(this.computableCtx!);
       const uiState = this.blockCtx.uiState(this.computableCtx!);
       this.vm.setProp(configCtx, 'args', localScope.manage(this.vm.newString(args)));
       if (uiState !== undefined)
         this.vm.setProp(configCtx, 'uiState', localScope.manage(this.vm.newString(uiState)));
-
+      if (activeArgs !== undefined)
+        this.vm.setProp(configCtx, 'activeArgs', localScope.manage(this.vm.newString(activeArgs)));
       this.vm.setProp(configCtx, 'callbackRegistry', this.callbackRegistry);
       this.vm.setProp(
         configCtx,
@@ -667,17 +684,20 @@ export class JsExecutionContext
       // Accessor helpers
       //
 
-      exportCtxFunction('parsePObjectCollection', (handle, errorOnUnknownField, prefix, ...resolveSteps) => {
-        return this.exportObjectUniversal(
-          this.parsePObjectCollection(
-            this.vm.getString(handle),
-            this.vm.dump(errorOnUnknownField) as boolean,
-            this.vm.getString(prefix),
-            ...resolveSteps.map(this.vm.getString),
-          ),
-          undefined
-        );
-      });
+      exportCtxFunction(
+        'parsePObjectCollection',
+        (handle, errorOnUnknownField, prefix, ...resolveSteps) => {
+          return this.exportObjectUniversal(
+            this.parsePObjectCollection(
+              this.vm.getString(handle),
+              this.vm.dump(errorOnUnknownField) as boolean,
+              this.vm.getString(prefix),
+              ...resolveSteps.map(this.vm.getString)
+            ),
+            undefined
+          );
+        }
+      );
 
       //
       // Blobs
@@ -710,6 +730,16 @@ export class JsExecutionContext
           undefined
         );
       });
+
+      //
+      // Blobs to URLs
+      //
+
+      exportCtxFunction('extractArchiveAndGetURL', (handle, format) => {
+        return this.exportSingleValue(
+          this.extractArchiveAndGetURL(this.vm.getString(handle), this.vm.getString(format) as ArchiveFormat),
+          undefined)
+      })
 
       //
       // ImportProgress
@@ -798,8 +828,7 @@ export class JsExecutionContext
 
       exportCtxFunction('createPFrame', (def) => {
         return this.exportSingleValue(
-          this.createPFrame(
-            this.importObjectViaJson(def) as PFrameDef<string | PColumnValues>),
+          this.createPFrame(this.importObjectViaJson(def) as PFrameDef<string | PColumnValues>),
           undefined
         );
       });

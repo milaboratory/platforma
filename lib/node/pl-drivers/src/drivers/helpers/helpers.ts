@@ -4,7 +4,7 @@ import {
   isNullResourceId,
   PlClient,
   ResourceId,
-  valErr
+  valErr,
 } from '@milaboratories/pl-client';
 
 /** Throws when a driver gets a resource with a wrong resource type. */

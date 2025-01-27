@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Component } from 'vue';
-import { h, ref } from 'vue';
+import { computed, h, ref } from 'vue';
 import {
   PlBlockPage,
   PlAgOverlayLoading,
@@ -17,11 +17,15 @@ import {
   PlAgCsvExporter,
   PlAgCellProgress,
   defaultMainMenuItems,
+  PlAgChartStackedBarCell,
+  PlAgChartHistogramCell,
+  Gradient,
 } from '@platforma-sdk/ui-vue';
 import { AgGridVue } from 'ag-grid-vue3';
 import type { ColDef, GridApi, GridOptions, GridReadyEvent } from 'ag-grid-enterprise';
 import { times } from '@milaboratories/helpers';
 import { faker } from '@faker-js/faker';
+import bins from './HistogramPage/assets/bins';
 
 const LinkComponent: Component = {
   props: ['params'],
@@ -30,6 +34,48 @@ const LinkComponent: Component = {
       h('a', { href: props.params.value, style: 'text-decoration: underline' }, props.params.value);
   },
 };
+
+const data = [{
+  label: 'The best',
+  value: 100,
+}, {
+  label: 'Good but not great',
+  value: 60,
+}, {
+  label: 'A little worse',
+  value: 40,
+}, {
+  label: 'Not good',
+  value: 33,
+}, {
+  label: 'Awful',
+  value: 330,
+}, {
+  label: 'Nightmare',
+  value: 30,
+}, {
+  label: 'Hell',
+  value: 30,
+}];
+
+const stackedSettings = computed(() => {
+  const colors = Gradient('viridis').split(data.length);
+
+  return {
+    data: data.map((it, i) => ({ ...it, color: colors[i] })),
+  };
+});
+
+const histogramSettings = computed(() => {
+  return {
+    type: 'log-bins' as const,
+    title: 'Predefined bins (log x scale)',
+    bins,
+    threshold: 19.0,
+    yAxisLabel: 'Number of UMIs',
+    xAxisLabel: 'Number of reads per UMI',
+  };
+});
 
 const columnDefs: ColDef[] = [
   makeRowNumberColDef(),
@@ -44,7 +90,10 @@ const columnDefs: ColDef[] = [
   {
     colId: 'label',
     field: 'label',
-    headerName: 'Sample label long text for overflow',
+    pinned: 'left',
+    lockPinned: true,
+    lockPosition: true,
+    headerName: 'Sample label long text for overflow label long text for overflow',
     cellRenderer: 'PlAgTextAndButtonCell',
     headerComponent: PlAgColumnHeader,
     headerComponentParams: { type: 'Text' } satisfies PlAgHeaderComponentParams,
@@ -58,14 +107,13 @@ const columnDefs: ColDef[] = [
     field: 'progress',
     headerName: 'Progress',
     cellRendererSelector: (cellData) => {
-      console.log(cellData);
       return {
         component: PlAgCellProgress,
         params: {
           progress: cellData.value,
           progressString: cellData.value,
-          step: cellData.value === undefined ? 'Calculations' : 'Loading',
-          stage: 'running',
+          step: cellData.value === undefined ? 'Queued' : 'Loading',
+          stage: cellData.value === undefined ? 'not_started' : 'running',
         },
       };
     },
@@ -75,6 +123,32 @@ const columnDefs: ColDef[] = [
     },
     headerComponent: PlAgColumnHeader,
     headerComponentParams: { type: 'Text' } satisfies PlAgHeaderComponentParams,
+  },
+  {
+    colId: 'stacked_bar',
+    headerName: 'StackedBar',
+    cellRendererSelector: (_cellData) => {
+      const value = Math.random() > 0.5
+        ? stackedSettings.value
+        : undefined;
+      return {
+        component: PlAgChartStackedBarCell,
+        params: { value },
+      };
+    },
+  },
+  {
+    colId: 'histogram',
+    headerName: 'Histogram',
+    cellRendererSelector: (_cellData) => {
+      const value = Math.random() > 0.5
+        ? histogramSettings.value
+        : undefined;
+      return {
+        component: PlAgChartHistogramCell,
+        params: { value },
+      };
+    },
   },
   {
     colId: 'date',

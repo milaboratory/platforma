@@ -1,5 +1,39 @@
 # @milaboratories/milaboratories.ui-examples.model
 
+## 1.1.15
+
+### Patch Changes
+
+- Updated dependencies [ce558f9]
+- Updated dependencies [b41709a]
+  - @platforma-sdk/model@1.22.2
+
+## 1.1.14
+
+### Patch Changes
+
+- Updated dependencies [c0d5856]
+  - @platforma-sdk/model@1.22.0
+
+## 1.1.13
+
+### Patch Changes
+
+- ca66b2a: [ui-kit] Check that all standard components have tooltip slot
+
+## 1.1.12
+
+### Patch Changes
+
+- 9b5a692: [sdk/ui-vue] Histogram
+
+## 1.1.11
+
+### Patch Changes
+
+- 32966e6: [desktop] Custom design for “+ add graph“ etc. sections
+  - @platforma-sdk/model@1.21.20
+
 ## 1.1.10
 
 ### Patch Changes

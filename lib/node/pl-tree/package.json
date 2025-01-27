@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-tree",
-  "version": "1.4.20",
+  "version": "1.4.22",
   "description": "Reactive pl tree state",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",

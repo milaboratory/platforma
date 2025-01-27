@@ -1,5 +1,118 @@
 # @milaboratories/ui-vue-playground
 
+## 0.0.192
+
+### Patch Changes
+
+- Updated dependencies [c5269a5]
+  - @platforma-sdk/ui-vue@1.22.4
+
+## 0.0.191
+
+### Patch Changes
+
+- Updated dependencies [ce558f9]
+- Updated dependencies [b41709a]
+  - @platforma-sdk/model@1.22.2
+  - @milaboratories/uikit@2.2.50
+  - @platforma-sdk/ui-vue@1.22.2
+
+## 0.0.190
+
+### Patch Changes
+
+- Updated dependencies [02860e7]
+  - @platforma-sdk/ui-vue@1.22.1
+
+## 0.0.189
+
+### Patch Changes
+
+- Updated dependencies [c0d5856]
+  - @platforma-sdk/model@1.22.0
+  - @milaboratories/uikit@2.2.50
+  - @platforma-sdk/ui-vue@1.22.0
+
+## 0.0.188
+
+### Patch Changes
+
+- 56f7e84: Migrate from scss imports to use & forward rules
+- Updated dependencies [56f7e84]
+  - @milaboratories/uikit@2.2.50
+  - @platforma-sdk/ui-vue@1.21.30
+
+## 0.0.187
+
+### Patch Changes
+
+- Updated dependencies [ca66b2a]
+  - @milaboratories/uikit@2.2.49
+  - @platforma-sdk/ui-vue@1.21.29
+
+## 0.0.186
+
+### Patch Changes
+
+- Updated dependencies [3ff9dcd]
+  - @milaboratories/uikit@2.2.48
+  - @platforma-sdk/ui-vue@1.21.25
+
+## 0.0.185
+
+### Patch Changes
+
+- Updated dependencies [93e9a66]
+  - @milaboratories/uikit@2.2.47
+  - @platforma-sdk/ui-vue@1.21.24
+
+## 0.0.184
+
+### Patch Changes
+
+- Updated dependencies [9b5a692]
+  - @milaboratories/uikit@2.2.46
+  - @platforma-sdk/ui-vue@1.21.23
+
+## 0.0.183
+
+### Patch Changes
+
+- Updated dependencies [93b8d8d]
+  - @platforma-sdk/ui-vue@1.21.21
+
+## 0.0.182
+
+### Patch Changes
+
+- Updated dependencies [32966e6]
+  - @milaboratories/uikit@2.2.45
+  - @platforma-sdk/ui-vue@1.21.20
+  - @platforma-sdk/model@1.21.20
+
+## 0.0.181
+
+### Patch Changes
+
+- Updated dependencies [53e35de]
+  - @platforma-sdk/ui-vue@1.21.18
+
+## 0.0.180
+
+### Patch Changes
+
+- Updated dependencies [178c642]
+  - @milaboratories/uikit@2.2.44
+  - @platforma-sdk/ui-vue@1.21.17
+
+## 0.0.179
+
+### Patch Changes
+
+- Updated dependencies [ad4719e]
+  - @milaboratories/uikit@2.2.43
+  - @platforma-sdk/ui-vue@1.21.12
+
 ## 0.0.178
 
 ### Patch Changes

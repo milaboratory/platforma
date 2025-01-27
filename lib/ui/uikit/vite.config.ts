@@ -40,8 +40,8 @@ export default defineConfig({
     },
   },
   build: {
-    sourcemap: process.env.DEV_SOURCE_MAP === '1',
-    emptyOutDir: false,
+    sourcemap: true,
+    emptyOutDir: true,
     lib: {
       // Could also be a dictionary or array of multiple entry points
       entry: [resolve(__dirname, 'src/index.ts')],
@@ -55,6 +55,13 @@ export default defineConfig({
         globals: {
           vue: 'Vue',
         },
+      },
+    },
+  },
+  css: {
+    preprocessorOptions: {
+      scss: {
+        api: 'modern-compiler',
       },
     },
   },

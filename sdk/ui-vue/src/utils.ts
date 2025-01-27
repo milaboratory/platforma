@@ -1,7 +1,6 @@
 import type { ValueOrErrors } from '@platforma-sdk/model';
 import type { OptionalResult } from './types';
 import type { ZodError } from 'zod';
-import canonicalize from 'canonicalize';
 
 export class UnresolvedError extends Error {}
 
@@ -58,10 +57,6 @@ export function unwrapOptionalResult<V>(result: OptionalResult<V>): V {
 
 export function isDefined<T>(v: T | undefined): v is T {
   return v !== undefined;
-}
-
-export function isJsonEqual(a: unknown, b: unknown) {
-  return canonicalize(a) === canonicalize(b);
 }
 
 export const identity = <T, V = T>(v: T): V => v as unknown as V;

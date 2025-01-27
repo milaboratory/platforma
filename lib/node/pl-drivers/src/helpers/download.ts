@@ -1,6 +1,7 @@
-import { Dispatcher, request } from 'undici';
+import type { Dispatcher } from 'undici';
+import { request } from 'undici';
 import { Readable } from 'node:stream';
-import { ReadableStream } from 'node:stream/web';
+import type { ReadableStream } from 'node:stream/web';
 import { text } from 'node:stream/consumers';
 
 export interface DownloadResponse {
@@ -17,12 +18,12 @@ export class RemoteFileDownloader {
   async download(
     url: string,
     reqHeaders: Record<string, string>,
-    signal?: AbortSignal
+    signal?: AbortSignal,
   ): Promise<DownloadResponse> {
     const { statusCode, body, headers } = await request(url, {
       dispatcher: this.httpClient,
       headers: reqHeaders,
-      signal
+      signal,
     });
 
     const webBody = Readable.toWeb(body);
@@ -30,7 +31,7 @@ export class RemoteFileDownloader {
 
     return {
       content: webBody,
-      size: Number(headers['content-length'])
+      size: Number(headers['content-length']),
     };
   }
 }
@@ -41,11 +42,10 @@ async function checkStatusCodeOk(statusCode: number, webBody: ReadableStream<any
 
     if (400 <= statusCode && statusCode < 500) {
       throw new NetworkError400(
-        `Http error: statusCode: ${statusCode} ` +
-        `url: ${url.toString()}, beginning of body: ${beginning}`);
+        `Http error: statusCode: ${statusCode} `
+        + `url: ${url.toString()}, beginning of body: ${beginning}`);
     }
 
     throw new Error(`Http error: statusCode: ${statusCode} url: ${url.toString()}`);
   }
 }
-

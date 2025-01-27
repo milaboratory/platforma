@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/ui-vue",
-  "version": "1.21.10",
+  "version": "1.22.4",
   "type": "module",
   "main": "dist/lib.umd.cjs",
   "module": "dist/lib.js",
@@ -56,6 +56,7 @@
     "zod": "catalog:",
     "yarpm": "catalog:",
     "semver": "catalog:",
-    "@types/semver": "catalog:"
+    "@types/semver": "catalog:",
+    "rollup-plugin-sourcemaps2": "catalog:"
   }
 }

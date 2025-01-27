@@ -1,5 +1,11 @@
 # @milaboratories/helper-tests
 
+## 1.1.13
+
+### Patch Changes
+
+- 53e35de: [ui-vue] use fast IsJsonEqual implementation everywhere
+
 ## 1.1.12
 
 ### Patch Changes

@@ -1,5 +1,7 @@
 import { blockSpec as downloadFileSpec } from '@milaboratories/milaboratories.test-download-file';
 import { platforma as downloadFileModel } from '@milaboratories/milaboratories.test-download-file.model';
+import { blockSpec as downloadBlobURLSpec } from '@milaboratories/milaboratories.test-blob-url-custom-protocol';
+import { platforma as downloadBlobURLModel } from '@milaboratories/milaboratories.test-blob-url-custom-protocol.model';
 import { blockSpec as enterNumberSpec } from '@milaboratories/milaboratories.test-enter-numbers';
 import { blockSpec as readLogsSpec } from '@milaboratories/milaboratories.test-read-logs';
 import { platforma as readLogsModel } from '@milaboratories/milaboratories.test-read-logs.model';
@@ -8,8 +10,10 @@ import { blockSpec as uploadFileSpec } from '@milaboratories/milaboratories.test
 import { platforma as uploadFileModel } from '@milaboratories/milaboratories.test-upload-file.model';
 import { PlClient } from '@milaboratories/pl-client';
 import {
+  FolderURL,
   ImportFileHandle,
   InferBlockState,
+  InitialBlockSettings,
   LocalBlobHandleAndSize,
   MiddleLayer,
   PlRef,
@@ -21,7 +25,6 @@ import { awaitStableState, blockTest } from '@platforma-sdk/test';
 import fs from 'fs';
 import { randomUUID } from 'node:crypto';
 import path from 'path';
-import { setTimeout } from 'timers/promises';
 import { test } from 'vitest';
 
 export async function withMl(
@@ -42,6 +45,7 @@ export async function withMl(
     try {
       await cb(ml, workFolder);
     } finally {
+      console.log(JSON.stringify(pl.allTxStat));
       await ml.close();
     }
   });
@@ -132,6 +136,10 @@ test('project list manipulations test', async ({ expect }) => {
 });
 
 test('simple project manipulations test', { timeout: 20000 }, async ({ expect }) => {
+  // Baseline stat:
+  // (1a) {"committed":{"txCount":41,"rootsCreated":0,"structsCreated":18,"structsCreatedDataBytes":487161,"ephemeralsCreated":125,"ephemeralsCreatedDataBytes":3033,"valuesCreated":113,"valuesCreatedDataBytes":574938,"kvSetRequests":33,"kvSetBytes":33,"inputsLocked":79,"outputsLocked":59,"fieldsCreated":439,"fieldsSet":516,"fieldsGet":3,"rGetDataCacheHits":180,"rGetDataCacheFields":0,"rGetDataCacheBytes":160264,"rGetDataNetRequests":129,"rGetDataNetFields":578,"rGetDataNetBytes":478364,"kvListRequests":121,"kvListEntries":283,"kvListBytes":19773,"kvGetRequests":75,"kvGetBytes":5212},"conflict":{"txCount":1,"rootsCreated":0,"structsCreated":0,"structsCreatedDataBytes":0,"ephemeralsCreated":24,"ephemeralsCreatedDataBytes":630,"valuesCreated":4,"valuesCreatedDataBytes":86,"kvSetRequests":1,"kvSetBytes":1,"inputsLocked":10,"outputsLocked":6,"fieldsCreated":26,"fieldsSet":40,"fieldsGet":0,"rGetDataCacheHits":21,"rGetDataCacheFields":0,"rGetDataCacheBytes":434,"rGetDataNetRequests":4,"rGetDataNetFields":31,"rGetDataNetBytes":0,"kvListRequests":1,"kvListEntries":9,"kvListBytes":703,"kvGetRequests":5,"kvGetBytes":427},"error":{"txCount":0,"rootsCreated":0,"structsCreated":0,"structsCreatedDataBytes":0,"ephemeralsCreated":0,"ephemeralsCreatedDataBytes":0,"valuesCreated":0,"valuesCreatedDataBytes":0,"kvSetRequests":0,"kvSetBytes":0,"inputsLocked":0,"outputsLocked":0,"fieldsCreated":0,"fieldsSet":0,"fieldsGet":0,"rGetDataCacheHits":0,"rGetDataCacheFields":0,"rGetDataCacheBytes":0,"rGetDataNetRequests":0,"rGetDataNetFields":0,"rGetDataNetBytes":0,"kvListRequests":0,"kvListEntries":0,"kvListBytes":0,"kvGetRequests":0,"kvGetBytes":0}}
+  // (2a) {"committed":{"txCount":41,"rootsCreated":0,"structsCreated":18,"structsCreatedDataBytes":487161,"ephemeralsCreated":113,"ephemeralsCreatedDataBytes":2718,"valuesCreated":111,"valuesCreatedDataBytes":574895,"kvSetRequests":32,"kvSetBytes":32,"inputsLocked":74,"outputsLocked":56,"fieldsCreated":432,"fieldsSet":496,"fieldsGet":3,"rGetDataCacheHits":180,"rGetDataCacheFields":0,"rGetDataCacheBytes":160269,"rGetDataNetRequests":128,"rGetDataNetFields":573,"rGetDataNetBytes":478364,"kvListRequests":120,"kvListEntries":284,"kvListBytes":19830,"kvGetRequests":75,"kvGetBytes":5212},"conflict":{"txCount":1,"rootsCreated":0,"structsCreated":0,"structsCreatedDataBytes":0,"ephemeralsCreated":0,"ephemeralsCreatedDataBytes":0,"valuesCreated":1,"valuesCreatedDataBytes":14,"kvSetRequests":2,"kvSetBytes":2,"inputsLocked":0,"outputsLocked":0,"fieldsCreated":0,"fieldsSet":7,"fieldsGet":2,"rGetDataCacheHits":34,"rGetDataCacheFields":0,"rGetDataCacheBytes":158963,"rGetDataNetRequests":1,"rGetDataNetFields":34,"rGetDataNetBytes":0,"kvListRequests":1,"kvListEntries":9,"kvListBytes":703,"kvGetRequests":5,"kvGetBytes":427},"error":{"txCount":0,"rootsCreated":0,"structsCreated":0,"structsCreatedDataBytes":0,"ephemeralsCreated":0,"ephemeralsCreatedDataBytes":0,"valuesCreated":0,"valuesCreatedDataBytes":0,"kvSetRequests":0,"kvSetBytes":0,"inputsLocked":0,"outputsLocked":0,"fieldsCreated":0,"fieldsSet":0,"fieldsGet":0,"rGetDataCacheHits":0,"rGetDataCacheFields":0,"rGetDataCacheBytes":0,"rGetDataNetRequests":0,"rGetDataNetFields":0,"rGetDataNetBytes":0,"kvListRequests":0,"kvListEntries":0,"kvListBytes":0,"kvGetRequests":0,"kvGetBytes":0}}
+  // (1b) {"committed":{"txCount":41,"rootsCreated":0,"structsCreated":18,"structsCreatedDataBytes":487161,"ephemeralsCreated":113,"ephemeralsCreatedDataBytes":2718,"valuesCreated":111,"valuesCreatedDataBytes":574895,"kvSetRequests":32,"kvSetBytes":32,"inputsLocked":71,"outputsLocked":53,"fieldsCreated":377,"fieldsSet":441,"fieldsGet":3,"rGetDataCacheHits":180,"rGetDataCacheFields":0,"rGetDataCacheBytes":160269,"rGetDataNetRequests":127,"rGetDataNetFields":569,"rGetDataNetBytes":478364,"kvListRequests":118,"kvListEntries":284,"kvListBytes":19830,"kvGetRequests":75,"kvGetBytes":5212},"conflict":{"txCount":3,"rootsCreated":0,"structsCreated":0,"structsCreatedDataBytes":0,"ephemeralsCreated":24,"ephemeralsCreatedDataBytes":630,"valuesCreated":6,"valuesCreatedDataBytes":119,"kvSetRequests":4,"kvSetBytes":4,"inputsLocked":10,"outputsLocked":6,"fieldsCreated":26,"fieldsSet":48,"fieldsGet":2,"rGetDataCacheHits":67,"rGetDataCacheFields":0,"rGetDataCacheBytes":159215,"rGetDataNetRequests":4,"rGetDataNetFields":72,"rGetDataNetBytes":0,"kvListRequests":3,"kvListEntries":27,"kvListBytes":2109,"kvGetRequests":15,"kvGetBytes":1281},"error":{"txCount":0,"rootsCreated":0,"structsCreated":0,"structsCreatedDataBytes":0,"ephemeralsCreated":0,"ephemeralsCreatedDataBytes":0,"valuesCreated":0,"valuesCreatedDataBytes":0,"kvSetRequests":0,"kvSetBytes":0,"inputsLocked":0,"outputsLocked":0,"fieldsCreated":0,"fieldsSet":0,"fieldsGet":0,"rGetDataCacheHits":0,"rGetDataCacheFields":0,"rGetDataCacheBytes":0,"rGetDataNetRequests":0,"rGetDataNetFields":0,"rGetDataNetBytes":0,"kvListRequests":0,"kvListEntries":0,"kvListBytes":0,"kvGetRequests":0,"kvGetBytes":0}}
   await withMl(async (ml) => {
     const projectList = ml.projectList;
     expect(await projectList.awaitStableValue()).toEqual([]);
@@ -186,9 +194,15 @@ test('simple project manipulations test', { timeout: 20000 }, async ({ expect })
       expect(block.navigationState).toStrictEqual({ href: '/' });
     });
 
-    await prj.getBlockState(block1Id).awaitStableValue();
-    await prj.getBlockState(block2Id).awaitStableValue();
-    await prj.getBlockState(block3Id).awaitStableValue();
+    const block1StableState0 = await prj.getBlockState(block1Id).awaitStableValue();
+    const block2StableState0 = await prj.getBlockState(block2Id).awaitStableValue();
+    const block3StableState0 = await prj.getBlockState(block3Id).awaitStableValue();
+
+    expect(block1StableState0.outputs!['activeArgs']).toStrictEqual({
+      ok: true,
+      value: undefined
+    });
+
     await prj.setNavigationState(block1Id, { href: '/section1' });
     await prj.setBlockArgs(block1Id, { numbers: [1, 2, 3] });
     await prj.setBlockArgs(block2Id, { numbers: [3, 4, 5] });
@@ -201,6 +215,7 @@ test('simple project manipulations test', { timeout: 20000 }, async ({ expect })
     expect(overviewSnapshot1.lastModified.valueOf()).toBeGreaterThan(lastModInitial);
 
     overviewSnapshot1.blocks.forEach((block) => {
+      expect(block.settings).toMatchObject(InitialBlockSettings);
       expect(block.sections).toBeDefined();
       expect(block.canRun).toEqual(false);
       expect(block.stale).toEqual(false);
@@ -208,7 +223,7 @@ test('simple project manipulations test', { timeout: 20000 }, async ({ expect })
       if (block.id === block1Id) expect(block.navigationState).toStrictEqual({ href: '/section1' });
       else expect(block.navigationState).toStrictEqual({ href: '/' });
     });
-    console.dir(overviewSnapshot1, { depth: 5 });
+    // console.dir(overviewSnapshot1, { depth: 5 });
     const block1StableFrontend = await prj.getBlockFrontend(block1Id).awaitStableValue();
     expect(block1StableFrontend.path).toBeDefined();
     expect(block1StableFrontend.sdkVersion).toBeDefined();
@@ -218,7 +233,7 @@ test('simple project manipulations test', { timeout: 20000 }, async ({ expect })
     const block3StableFrontend = await prj.getBlockFrontend(block3Id).awaitStableValue();
     expect(block3StableFrontend.path).toBeDefined();
     expect(block3StableFrontend.sdkVersion).toBeDefined();
-    console.dir({ block1StableFrontend, block2StableFrontend, block3StableFrontend }, { depth: 5 });
+    // console.dir({ block1StableFrontend, block2StableFrontend, block3StableFrontend }, { depth: 5 });
 
     const block1StableState1 = await prj.getBlockState(block1Id).awaitStableValue();
     const block2StableState1 = await prj.getBlockState(block2Id).awaitStableValue();
@@ -230,12 +245,18 @@ test('simple project manipulations test', { timeout: 20000 }, async ({ expect })
     console.dir(block2StableState1, { depth: 5 });
     console.dir(block3StableState1, { depth: 5 });
 
+    expect(block1StableState1.outputs!['activeArgs']).toStrictEqual({
+      ok: true,
+      value: { numbers: [1, 2, 3] }
+    });
+
     expect(block3StableState1.outputs!['sum']).toStrictEqual({
       ok: true,
       value: 18
     });
 
     await prj.resetBlockArgsAndUiState(block2Id);
+    await prj.setBlockSettings(block2Id, { versionLock: 'patch' });
 
     const block2Inputs = await prj.getBlockState(block2Id).getValue();
     expect(block2Inputs.args).toEqual({ numbers: [] });
@@ -244,6 +265,9 @@ test('simple project manipulations test', { timeout: 20000 }, async ({ expect })
     expect(overviewSnapshot2.blocks.find((b) => b.id === block3Id)?.canRun).toEqual(false);
     expect(overviewSnapshot2.blocks.find((b) => b.id === block3Id)?.stale).toEqual(true);
     expect(overviewSnapshot2.blocks.find((b) => b.id === block2Id)?.stale).toEqual(true);
+    expect(overviewSnapshot2.blocks.find((b) => b.id === block2Id)?.settings).toEqual({
+      versionLock: 'patch'
+    });
   });
 });
 
@@ -514,6 +538,50 @@ blockTest(
         expect(
           Buffer.from(await ml.driverKit.blobDriver.getContent(remoteBlob.handle)).toString('utf-8')
         ).toEqual('42\n');
+
+        return;
+      }
+    }
+  }
+);
+
+blockTest(
+  'should create blob-url-custom-protocol block, render it and gets outputs from its config',
+  {timeout: 30000},
+  async ({ rawPrj: project, ml, expect }) => {
+    const blockId = await project.addBlock('DownloadBlobUrl', downloadBlobURLSpec);
+
+    const inputTgzHandle = await lsDriverGetFileHandleFromAssets(ml, expect, 'funny_cats_site.tar.gz');
+    const inputZipHandle = await lsDriverGetFileHandleFromAssets(ml, expect, 'funny_cats_site.zip');
+
+    await project.setBlockArgs(blockId, { inputTgzHandle, inputZipHandle });
+
+    await project.runBlock(blockId);
+
+    while (true) {
+      const state = (await awaitStableState(
+        project.getBlockState(blockId),
+        13000
+      )) as InferBlockState<typeof downloadBlobURLModel>;
+      // console.dir(state, { depth: 5 });
+
+      const blockFrontend = await project.getBlockFrontend(blockId).awaitStableValue();
+      expect(blockFrontend).toBeDefined();
+      console.dir(blockFrontend, { depth: 5 });
+
+      const outputs = state.outputs;
+
+      if (outputs.tgz_content.ok) {
+        const url = outputs.tgz_content.value;
+        expect(url).not.toBeUndefined();
+        console.dir(ml.internalDriverKit.blobToURLDriver.info(), { depth: 150 });
+
+        const defaultUrl = ml.internalDriverKit.blobToURLDriver.getPathForCustomProtocol(url);
+        expect(defaultUrl).matches(/.*index.html$/);
+
+        const styles = ml.internalDriverKit.blobToURLDriver.getPathForCustomProtocol((url + '/styles.css') as FolderURL);
+
+        expect(styles).matches(/.*\/styles.css/);
 
         return;
       }

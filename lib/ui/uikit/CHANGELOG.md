@@ -1,5 +1,53 @@
 # @milaboratories/uikit
 
+## 2.2.50
+
+### Patch Changes
+
+- 56f7e84: Migrate from scss imports to use & forward rules
+
+## 2.2.49
+
+### Patch Changes
+
+- ca66b2a: [ui-kit] Check that all standard components have tooltip slot
+
+## 2.2.48
+
+### Patch Changes
+
+- 3ff9dcd: Enable nested source maps in dev sdk mode
+
+## 2.2.47
+
+### Patch Changes
+
+- 93e9a66: [sdk/ui-vue] Align PlDialogModal with figma (size props, etc)
+
+## 2.2.46
+
+### Patch Changes
+
+- 9b5a692: [sdk/ui-vue] Histogram
+
+## 2.2.45
+
+### Patch Changes
+
+- 32966e6: [desktop] Custom design for “+ add graph“ etc. sections
+
+## 2.2.44
+
+### Patch Changes
+
+- 178c642: fix PlAgChartStackedBarCell styling
+
+## 2.2.43
+
+### Patch Changes
+
+- ad4719e: added dropdownmultiref and loading status
+
 ## 2.2.42
 
 ### Patch Changes

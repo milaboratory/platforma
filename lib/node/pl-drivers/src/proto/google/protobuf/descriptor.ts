@@ -428,7 +428,7 @@ export enum FieldDescriptorProto_Type {
    *
    * @generated from protobuf enum value: TYPE_SINT64 = 18;
    */
-  SINT64 = 18
+  SINT64 = 18,
 }
 /**
  * @generated from protobuf enum google.protobuf.FieldDescriptorProto.Label
@@ -451,7 +451,7 @@ export enum FieldDescriptorProto_Label {
   /**
    * @generated from protobuf enum value: LABEL_REPEATED = 3;
    */
-  REPEATED = 3
+  REPEATED = 3,
 }
 /**
  * Describes a oneof.
@@ -829,7 +829,7 @@ export enum FileOptions_OptimizeMode {
    *
    * @generated from protobuf enum value: LITE_RUNTIME = 3;
    */
-  LITE_RUNTIME = 3
+  LITE_RUNTIME = 3,
 }
 /**
  * @generated from protobuf message google.protobuf.MessageOptions
@@ -1033,7 +1033,7 @@ export enum FieldOptions_CType {
   /**
    * @generated from protobuf enum value: STRING_PIECE = 2;
    */
-  STRING_PIECE = 2
+  STRING_PIECE = 2,
 }
 /**
  * @generated from protobuf enum google.protobuf.FieldOptions.JSType
@@ -1056,7 +1056,7 @@ export enum FieldOptions_JSType {
    *
    * @generated from protobuf enum value: JS_NUMBER = 2;
    */
-  JS_NUMBER = 2
+  JS_NUMBER = 2,
 }
 /**
  * @generated from protobuf message google.protobuf.OneofOptions
@@ -1193,7 +1193,7 @@ export enum MethodOptions_IdempotencyLevel {
    *
    * @generated from protobuf enum value: IDEMPOTENT = 2;
    */
-  IDEMPOTENT = 2
+  IDEMPOTENT = 2,
 }
 /**
  * A message representing a option the parser does not recognize. This only
@@ -1476,11 +1476,12 @@ class FileDescriptorSet$Type extends MessageType<FileDescriptorSet> {
         no: 1,
         name: 'file',
         kind: 'message',
-        repeat: 2 /*RepeatType.UNPACKED*/,
-        T: () => FileDescriptorProto
-      }
+        repeat: 2 /* RepeatType.UNPACKED */,
+        T: () => FileDescriptorProto,
+      },
     ]);
   }
+
   create(value?: PartialMessage<FileDescriptorSet>): FileDescriptorSet {
     const message = globalThis.Object.create(this.messagePrototype!);
     message.file = [];
@@ -1488,63 +1489,65 @@ class FileDescriptorSet$Type extends MessageType<FileDescriptorSet> {
       reflectionMergePartial<FileDescriptorSet>(this, message, value);
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: FileDescriptorSet
+    target?: FileDescriptorSet,
   ): FileDescriptorSet {
-    let message = target ?? this.create(),
+    const message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
+      const [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
         case /* repeated google.protobuf.FileDescriptorProto file */ 1:
           message.file.push(
             FileDescriptorProto.internalBinaryRead(
               reader,
               reader.uint32(),
-              options
-            )
+              options,
+            ),
           );
           break;
         default:
-          let u = options.readUnknownField;
+          const u = options.readUnknownField;
           if (u === 'throw')
             throw new globalThis.Error(
-              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`
+              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
             );
-          let d = reader.skip(wireType);
+          const d = reader.skip(wireType);
           if (u !== false)
             (u === true ? UnknownFieldHandler.onRead : u)(
               this.typeName,
               message,
               fieldNo,
               wireType,
-              d
+              d,
             );
       }
     }
     return message;
   }
+
   internalBinaryWrite(
     message: FileDescriptorSet,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
     /* repeated google.protobuf.FileDescriptorProto file = 1; */
     for (let i = 0; i < message.file.length; i++)
       FileDescriptorProto.internalBinaryWrite(
         message.file[i],
         writer.tag(1, WireType.LengthDelimited).fork(),
-        options
+        options,
       ).join();
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -1562,80 +1565,81 @@ class FileDescriptorProto$Type extends MessageType<FileDescriptorProto> {
         name: 'name',
         kind: 'scalar',
         opt: true,
-        T: 9 /*ScalarType.STRING*/
+        T: 9, /* ScalarType.STRING */
       },
       {
         no: 2,
         name: 'package',
         kind: 'scalar',
         opt: true,
-        T: 9 /*ScalarType.STRING*/
+        T: 9, /* ScalarType.STRING */
       },
       {
         no: 3,
         name: 'dependency',
         kind: 'scalar',
-        repeat: 2 /*RepeatType.UNPACKED*/,
-        T: 9 /*ScalarType.STRING*/
+        repeat: 2 /* RepeatType.UNPACKED */,
+        T: 9, /* ScalarType.STRING */
       },
       {
         no: 10,
         name: 'public_dependency',
         kind: 'scalar',
-        repeat: 2 /*RepeatType.UNPACKED*/,
-        T: 5 /*ScalarType.INT32*/
+        repeat: 2 /* RepeatType.UNPACKED */,
+        T: 5, /* ScalarType.INT32 */
       },
       {
         no: 11,
         name: 'weak_dependency',
         kind: 'scalar',
-        repeat: 2 /*RepeatType.UNPACKED*/,
-        T: 5 /*ScalarType.INT32*/
+        repeat: 2 /* RepeatType.UNPACKED */,
+        T: 5, /* ScalarType.INT32 */
       },
       {
         no: 4,
         name: 'message_type',
         kind: 'message',
-        repeat: 2 /*RepeatType.UNPACKED*/,
-        T: () => DescriptorProto
+        repeat: 2 /* RepeatType.UNPACKED */,
+        T: () => DescriptorProto,
       },
       {
         no: 5,
         name: 'enum_type',
         kind: 'message',
-        repeat: 2 /*RepeatType.UNPACKED*/,
-        T: () => EnumDescriptorProto
+        repeat: 2 /* RepeatType.UNPACKED */,
+        T: () => EnumDescriptorProto,
       },
       {
         no: 6,
         name: 'service',
         kind: 'message',
-        repeat: 2 /*RepeatType.UNPACKED*/,
-        T: () => ServiceDescriptorProto
+        repeat: 2 /* RepeatType.UNPACKED */,
+        T: () => ServiceDescriptorProto,
       },
       {
         no: 7,
         name: 'extension',
         kind: 'message',
-        repeat: 2 /*RepeatType.UNPACKED*/,
-        T: () => FieldDescriptorProto
+        repeat: 2 /* RepeatType.UNPACKED */,
+        T: () => FieldDescriptorProto,
       },
       { no: 8, name: 'options', kind: 'message', T: () => FileOptions },
       {
         no: 9,
         name: 'source_code_info',
         kind: 'message',
-        T: () => SourceCodeInfo
+        T: () => SourceCodeInfo,
       },
       {
         no: 12,
         name: 'syntax',
         kind: 'scalar',
         opt: true,
-        T: 9 /*ScalarType.STRING*/
-      }
+        T: 9, /* ScalarType.STRING */
+      },
     ]);
   }
+
   create(value?: PartialMessage<FileDescriptorProto>): FileDescriptorProto {
     const message = globalThis.Object.create(this.messagePrototype!);
     message.dependency = [];
@@ -1649,16 +1653,17 @@ class FileDescriptorProto$Type extends MessageType<FileDescriptorProto> {
       reflectionMergePartial<FileDescriptorProto>(this, message, value);
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: FileDescriptorProto
+    target?: FileDescriptorProto,
   ): FileDescriptorProto {
-    let message = target ?? this.create(),
+    const message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
+      const [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
         case /* optional string name */ 1:
           message.name = reader.string();
@@ -1671,19 +1676,19 @@ class FileDescriptorProto$Type extends MessageType<FileDescriptorProto> {
           break;
         case /* repeated int32 public_dependency */ 10:
           if (wireType === WireType.LengthDelimited)
-            for (let e = reader.int32() + reader.pos; reader.pos < e; )
+            for (let e = reader.int32() + reader.pos; reader.pos < e;)
               message.publicDependency.push(reader.int32());
           else message.publicDependency.push(reader.int32());
           break;
         case /* repeated int32 weak_dependency */ 11:
           if (wireType === WireType.LengthDelimited)
-            for (let e = reader.int32() + reader.pos; reader.pos < e; )
+            for (let e = reader.int32() + reader.pos; reader.pos < e;)
               message.weakDependency.push(reader.int32());
           else message.weakDependency.push(reader.int32());
           break;
         case /* repeated google.protobuf.DescriptorProto message_type */ 4:
           message.messageType.push(
-            DescriptorProto.internalBinaryRead(reader, reader.uint32(), options)
+            DescriptorProto.internalBinaryRead(reader, reader.uint32(), options),
           );
           break;
         case /* repeated google.protobuf.EnumDescriptorProto enum_type */ 5:
@@ -1691,8 +1696,8 @@ class FileDescriptorProto$Type extends MessageType<FileDescriptorProto> {
             EnumDescriptorProto.internalBinaryRead(
               reader,
               reader.uint32(),
-              options
-            )
+              options,
+            ),
           );
           break;
         case /* repeated google.protobuf.ServiceDescriptorProto service */ 6:
@@ -1700,8 +1705,8 @@ class FileDescriptorProto$Type extends MessageType<FileDescriptorProto> {
             ServiceDescriptorProto.internalBinaryRead(
               reader,
               reader.uint32(),
-              options
-            )
+              options,
+            ),
           );
           break;
         case /* repeated google.protobuf.FieldDescriptorProto extension */ 7:
@@ -1709,8 +1714,8 @@ class FileDescriptorProto$Type extends MessageType<FileDescriptorProto> {
             FieldDescriptorProto.internalBinaryRead(
               reader,
               reader.uint32(),
-              options
-            )
+              options,
+            ),
           );
           break;
         case /* optional google.protobuf.FileOptions options */ 8:
@@ -1718,7 +1723,7 @@ class FileDescriptorProto$Type extends MessageType<FileDescriptorProto> {
             reader,
             reader.uint32(),
             options,
-            message.options
+            message.options,
           );
           break;
         case /* optional google.protobuf.SourceCodeInfo source_code_info */ 9:
@@ -1726,35 +1731,36 @@ class FileDescriptorProto$Type extends MessageType<FileDescriptorProto> {
             reader,
             reader.uint32(),
             options,
-            message.sourceCodeInfo
+            message.sourceCodeInfo,
           );
           break;
         case /* optional string syntax */ 12:
           message.syntax = reader.string();
           break;
         default:
-          let u = options.readUnknownField;
+          const u = options.readUnknownField;
           if (u === 'throw')
             throw new globalThis.Error(
-              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`
+              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
             );
-          let d = reader.skip(wireType);
+          const d = reader.skip(wireType);
           if (u !== false)
             (u === true ? UnknownFieldHandler.onRead : u)(
               this.typeName,
               message,
               fieldNo,
               wireType,
-              d
+              d,
             );
       }
     }
     return message;
   }
+
   internalBinaryWrite(
     message: FileDescriptorProto,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
     /* optional string name = 1; */
     if (message.name !== undefined)
@@ -1776,52 +1782,52 @@ class FileDescriptorProto$Type extends MessageType<FileDescriptorProto> {
       DescriptorProto.internalBinaryWrite(
         message.messageType[i],
         writer.tag(4, WireType.LengthDelimited).fork(),
-        options
+        options,
       ).join();
     /* repeated google.protobuf.EnumDescriptorProto enum_type = 5; */
     for (let i = 0; i < message.enumType.length; i++)
       EnumDescriptorProto.internalBinaryWrite(
         message.enumType[i],
         writer.tag(5, WireType.LengthDelimited).fork(),
-        options
+        options,
       ).join();
     /* repeated google.protobuf.ServiceDescriptorProto service = 6; */
     for (let i = 0; i < message.service.length; i++)
       ServiceDescriptorProto.internalBinaryWrite(
         message.service[i],
         writer.tag(6, WireType.LengthDelimited).fork(),
-        options
+        options,
       ).join();
     /* repeated google.protobuf.FieldDescriptorProto extension = 7; */
     for (let i = 0; i < message.extension.length; i++)
       FieldDescriptorProto.internalBinaryWrite(
         message.extension[i],
         writer.tag(7, WireType.LengthDelimited).fork(),
-        options
+        options,
       ).join();
     /* optional google.protobuf.FileOptions options = 8; */
     if (message.options)
       FileOptions.internalBinaryWrite(
         message.options,
         writer.tag(8, WireType.LengthDelimited).fork(),
-        options
+        options,
       ).join();
     /* optional google.protobuf.SourceCodeInfo source_code_info = 9; */
     if (message.sourceCodeInfo)
       SourceCodeInfo.internalBinaryWrite(
         message.sourceCodeInfo,
         writer.tag(9, WireType.LengthDelimited).fork(),
-        options
+        options,
       ).join();
     /* optional string syntax = 12; */
     if (message.syntax !== undefined)
       writer.tag(12, WireType.LengthDelimited).string(message.syntax);
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -1839,67 +1845,68 @@ class DescriptorProto$Type extends MessageType<DescriptorProto> {
         name: 'name',
         kind: 'scalar',
         opt: true,
-        T: 9 /*ScalarType.STRING*/
+        T: 9, /* ScalarType.STRING */
       },
       {
         no: 2,
         name: 'field',
         kind: 'message',
-        repeat: 2 /*RepeatType.UNPACKED*/,
-        T: () => FieldDescriptorProto
+        repeat: 2 /* RepeatType.UNPACKED */,
+        T: () => FieldDescriptorProto,
       },
       {
         no: 6,
         name: 'extension',
         kind: 'message',
-        repeat: 2 /*RepeatType.UNPACKED*/,
-        T: () => FieldDescriptorProto
+        repeat: 2 /* RepeatType.UNPACKED */,
+        T: () => FieldDescriptorProto,
       },
       {
         no: 3,
         name: 'nested_type',
         kind: 'message',
-        repeat: 2 /*RepeatType.UNPACKED*/,
-        T: () => DescriptorProto
+        repeat: 2 /* RepeatType.UNPACKED */,
+        T: () => DescriptorProto,
       },
       {
         no: 4,
         name: 'enum_type',
         kind: 'message',
-        repeat: 2 /*RepeatType.UNPACKED*/,
-        T: () => EnumDescriptorProto
+        repeat: 2 /* RepeatType.UNPACKED */,
+        T: () => EnumDescriptorProto,
       },
       {
         no: 5,
         name: 'extension_range',
         kind: 'message',
-        repeat: 2 /*RepeatType.UNPACKED*/,
-        T: () => DescriptorProto_ExtensionRange
+        repeat: 2 /* RepeatType.UNPACKED */,
+        T: () => DescriptorProto_ExtensionRange,
       },
       {
         no: 8,
         name: 'oneof_decl',
         kind: 'message',
-        repeat: 2 /*RepeatType.UNPACKED*/,
-        T: () => OneofDescriptorProto
+        repeat: 2 /* RepeatType.UNPACKED */,
+        T: () => OneofDescriptorProto,
       },
       { no: 7, name: 'options', kind: 'message', T: () => MessageOptions },
       {
         no: 9,
         name: 'reserved_range',
         kind: 'message',
-        repeat: 2 /*RepeatType.UNPACKED*/,
-        T: () => DescriptorProto_ReservedRange
+        repeat: 2 /* RepeatType.UNPACKED */,
+        T: () => DescriptorProto_ReservedRange,
       },
       {
         no: 10,
         name: 'reserved_name',
         kind: 'scalar',
-        repeat: 2 /*RepeatType.UNPACKED*/,
-        T: 9 /*ScalarType.STRING*/
-      }
+        repeat: 2 /* RepeatType.UNPACKED */,
+        T: 9, /* ScalarType.STRING */
+      },
     ]);
   }
+
   create(value?: PartialMessage<DescriptorProto>): DescriptorProto {
     const message = globalThis.Object.create(this.messagePrototype!);
     message.field = [];
@@ -1914,16 +1921,17 @@ class DescriptorProto$Type extends MessageType<DescriptorProto> {
       reflectionMergePartial<DescriptorProto>(this, message, value);
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: DescriptorProto
+    target?: DescriptorProto,
   ): DescriptorProto {
-    let message = target ?? this.create(),
+    const message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
+      const [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
         case /* optional string name */ 1:
           message.name = reader.string();
@@ -1933,8 +1941,8 @@ class DescriptorProto$Type extends MessageType<DescriptorProto> {
             FieldDescriptorProto.internalBinaryRead(
               reader,
               reader.uint32(),
-              options
-            )
+              options,
+            ),
           );
           break;
         case /* repeated google.protobuf.FieldDescriptorProto extension */ 6:
@@ -1942,13 +1950,13 @@ class DescriptorProto$Type extends MessageType<DescriptorProto> {
             FieldDescriptorProto.internalBinaryRead(
               reader,
               reader.uint32(),
-              options
-            )
+              options,
+            ),
           );
           break;
         case /* repeated google.protobuf.DescriptorProto nested_type */ 3:
           message.nestedType.push(
-            DescriptorProto.internalBinaryRead(reader, reader.uint32(), options)
+            DescriptorProto.internalBinaryRead(reader, reader.uint32(), options),
           );
           break;
         case /* repeated google.protobuf.EnumDescriptorProto enum_type */ 4:
@@ -1956,8 +1964,8 @@ class DescriptorProto$Type extends MessageType<DescriptorProto> {
             EnumDescriptorProto.internalBinaryRead(
               reader,
               reader.uint32(),
-              options
-            )
+              options,
+            ),
           );
           break;
         case /* repeated google.protobuf.DescriptorProto.ExtensionRange extension_range */ 5:
@@ -1965,8 +1973,8 @@ class DescriptorProto$Type extends MessageType<DescriptorProto> {
             DescriptorProto_ExtensionRange.internalBinaryRead(
               reader,
               reader.uint32(),
-              options
-            )
+              options,
+            ),
           );
           break;
         case /* repeated google.protobuf.OneofDescriptorProto oneof_decl */ 8:
@@ -1974,8 +1982,8 @@ class DescriptorProto$Type extends MessageType<DescriptorProto> {
             OneofDescriptorProto.internalBinaryRead(
               reader,
               reader.uint32(),
-              options
-            )
+              options,
+            ),
           );
           break;
         case /* optional google.protobuf.MessageOptions options */ 7:
@@ -1983,7 +1991,7 @@ class DescriptorProto$Type extends MessageType<DescriptorProto> {
             reader,
             reader.uint32(),
             options,
-            message.options
+            message.options,
           );
           break;
         case /* repeated google.protobuf.DescriptorProto.ReservedRange reserved_range */ 9:
@@ -1991,36 +1999,37 @@ class DescriptorProto$Type extends MessageType<DescriptorProto> {
             DescriptorProto_ReservedRange.internalBinaryRead(
               reader,
               reader.uint32(),
-              options
-            )
+              options,
+            ),
           );
           break;
         case /* repeated string reserved_name */ 10:
           message.reservedName.push(reader.string());
           break;
         default:
-          let u = options.readUnknownField;
+          const u = options.readUnknownField;
           if (u === 'throw')
             throw new globalThis.Error(
-              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`
+              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
             );
-          let d = reader.skip(wireType);
+          const d = reader.skip(wireType);
           if (u !== false)
             (u === true ? UnknownFieldHandler.onRead : u)(
               this.typeName,
               message,
               fieldNo,
               wireType,
-              d
+              d,
             );
       }
     }
     return message;
   }
+
   internalBinaryWrite(
     message: DescriptorProto,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
     /* optional string name = 1; */
     if (message.name !== undefined)
@@ -2030,66 +2039,66 @@ class DescriptorProto$Type extends MessageType<DescriptorProto> {
       FieldDescriptorProto.internalBinaryWrite(
         message.field[i],
         writer.tag(2, WireType.LengthDelimited).fork(),
-        options
+        options,
       ).join();
     /* repeated google.protobuf.FieldDescriptorProto extension = 6; */
     for (let i = 0; i < message.extension.length; i++)
       FieldDescriptorProto.internalBinaryWrite(
         message.extension[i],
         writer.tag(6, WireType.LengthDelimited).fork(),
-        options
+        options,
       ).join();
     /* repeated google.protobuf.DescriptorProto nested_type = 3; */
     for (let i = 0; i < message.nestedType.length; i++)
       DescriptorProto.internalBinaryWrite(
         message.nestedType[i],
         writer.tag(3, WireType.LengthDelimited).fork(),
-        options
+        options,
       ).join();
     /* repeated google.protobuf.EnumDescriptorProto enum_type = 4; */
     for (let i = 0; i < message.enumType.length; i++)
       EnumDescriptorProto.internalBinaryWrite(
         message.enumType[i],
         writer.tag(4, WireType.LengthDelimited).fork(),
-        options
+        options,
       ).join();
     /* repeated google.protobuf.DescriptorProto.ExtensionRange extension_range = 5; */
     for (let i = 0; i < message.extensionRange.length; i++)
       DescriptorProto_ExtensionRange.internalBinaryWrite(
         message.extensionRange[i],
         writer.tag(5, WireType.LengthDelimited).fork(),
-        options
+        options,
       ).join();
     /* repeated google.protobuf.OneofDescriptorProto oneof_decl = 8; */
     for (let i = 0; i < message.oneofDecl.length; i++)
       OneofDescriptorProto.internalBinaryWrite(
         message.oneofDecl[i],
         writer.tag(8, WireType.LengthDelimited).fork(),
-        options
+        options,
       ).join();
     /* optional google.protobuf.MessageOptions options = 7; */
     if (message.options)
       MessageOptions.internalBinaryWrite(
         message.options,
         writer.tag(7, WireType.LengthDelimited).fork(),
-        options
+        options,
       ).join();
     /* repeated google.protobuf.DescriptorProto.ReservedRange reserved_range = 9; */
     for (let i = 0; i < message.reservedRange.length; i++)
       DescriptorProto_ReservedRange.internalBinaryWrite(
         message.reservedRange[i],
         writer.tag(9, WireType.LengthDelimited).fork(),
-        options
+        options,
       ).join();
     /* repeated string reserved_name = 10; */
     for (let i = 0; i < message.reservedName.length; i++)
       writer.tag(10, WireType.LengthDelimited).string(message.reservedName[i]);
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -2107,45 +2116,47 @@ class DescriptorProto_ExtensionRange$Type extends MessageType<DescriptorProto_Ex
         name: 'start',
         kind: 'scalar',
         opt: true,
-        T: 5 /*ScalarType.INT32*/
+        T: 5, /* ScalarType.INT32 */
       },
       {
         no: 2,
         name: 'end',
         kind: 'scalar',
         opt: true,
-        T: 5 /*ScalarType.INT32*/
+        T: 5, /* ScalarType.INT32 */
       },
       {
         no: 3,
         name: 'options',
         kind: 'message',
-        T: () => ExtensionRangeOptions
-      }
+        T: () => ExtensionRangeOptions,
+      },
     ]);
   }
+
   create(
-    value?: PartialMessage<DescriptorProto_ExtensionRange>
+    value?: PartialMessage<DescriptorProto_ExtensionRange>,
   ): DescriptorProto_ExtensionRange {
     const message = globalThis.Object.create(this.messagePrototype!);
     if (value !== undefined)
       reflectionMergePartial<DescriptorProto_ExtensionRange>(
         this,
         message,
-        value
+        value,
       );
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: DescriptorProto_ExtensionRange
+    target?: DescriptorProto_ExtensionRange,
   ): DescriptorProto_ExtensionRange {
-    let message = target ?? this.create(),
+    const message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
+      const [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
         case /* optional int32 start */ 1:
           message.start = reader.int32();
@@ -2158,32 +2169,33 @@ class DescriptorProto_ExtensionRange$Type extends MessageType<DescriptorProto_Ex
             reader,
             reader.uint32(),
             options,
-            message.options
+            message.options,
           );
           break;
         default:
-          let u = options.readUnknownField;
+          const u = options.readUnknownField;
           if (u === 'throw')
             throw new globalThis.Error(
-              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`
+              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
             );
-          let d = reader.skip(wireType);
+          const d = reader.skip(wireType);
           if (u !== false)
             (u === true ? UnknownFieldHandler.onRead : u)(
               this.typeName,
               message,
               fieldNo,
               wireType,
-              d
+              d,
             );
       }
     }
     return message;
   }
+
   internalBinaryWrite(
     message: DescriptorProto_ExtensionRange,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
     /* optional int32 start = 1; */
     if (message.start !== undefined)
@@ -2196,14 +2208,14 @@ class DescriptorProto_ExtensionRange$Type extends MessageType<DescriptorProto_Ex
       ExtensionRangeOptions.internalBinaryWrite(
         message.options,
         writer.tag(3, WireType.LengthDelimited).fork(),
-        options
+        options,
       ).join();
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -2211,8 +2223,8 @@ class DescriptorProto_ExtensionRange$Type extends MessageType<DescriptorProto_Ex
 /**
  * @generated MessageType for protobuf message google.protobuf.DescriptorProto.ExtensionRange
  */
-export const DescriptorProto_ExtensionRange =
-  new DescriptorProto_ExtensionRange$Type();
+export const DescriptorProto_ExtensionRange
+  = new DescriptorProto_ExtensionRange$Type();
 // @generated message type with reflection information, may provide speed optimized methods
 class DescriptorProto_ReservedRange$Type extends MessageType<DescriptorProto_ReservedRange> {
   constructor() {
@@ -2222,39 +2234,41 @@ class DescriptorProto_ReservedRange$Type extends MessageType<DescriptorProto_Res
         name: 'start',
         kind: 'scalar',
         opt: true,
-        T: 5 /*ScalarType.INT32*/
+        T: 5, /* ScalarType.INT32 */
       },
       {
         no: 2,
         name: 'end',
         kind: 'scalar',
         opt: true,
-        T: 5 /*ScalarType.INT32*/
-      }
+        T: 5, /* ScalarType.INT32 */
+      },
     ]);
   }
+
   create(
-    value?: PartialMessage<DescriptorProto_ReservedRange>
+    value?: PartialMessage<DescriptorProto_ReservedRange>,
   ): DescriptorProto_ReservedRange {
     const message = globalThis.Object.create(this.messagePrototype!);
     if (value !== undefined)
       reflectionMergePartial<DescriptorProto_ReservedRange>(
         this,
         message,
-        value
+        value,
       );
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: DescriptorProto_ReservedRange
+    target?: DescriptorProto_ReservedRange,
   ): DescriptorProto_ReservedRange {
-    let message = target ?? this.create(),
+    const message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
+      const [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
         case /* optional int32 start */ 1:
           message.start = reader.int32();
@@ -2263,28 +2277,29 @@ class DescriptorProto_ReservedRange$Type extends MessageType<DescriptorProto_Res
           message.end = reader.int32();
           break;
         default:
-          let u = options.readUnknownField;
+          const u = options.readUnknownField;
           if (u === 'throw')
             throw new globalThis.Error(
-              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`
+              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
             );
-          let d = reader.skip(wireType);
+          const d = reader.skip(wireType);
           if (u !== false)
             (u === true ? UnknownFieldHandler.onRead : u)(
               this.typeName,
               message,
               fieldNo,
               wireType,
-              d
+              d,
             );
       }
     }
     return message;
   }
+
   internalBinaryWrite(
     message: DescriptorProto_ReservedRange,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
     /* optional int32 start = 1; */
     if (message.start !== undefined)
@@ -2292,12 +2307,12 @@ class DescriptorProto_ReservedRange$Type extends MessageType<DescriptorProto_Res
     /* optional int32 end = 2; */
     if (message.end !== undefined)
       writer.tag(2, WireType.Varint).int32(message.end);
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -2305,8 +2320,8 @@ class DescriptorProto_ReservedRange$Type extends MessageType<DescriptorProto_Res
 /**
  * @generated MessageType for protobuf message google.protobuf.DescriptorProto.ReservedRange
  */
-export const DescriptorProto_ReservedRange =
-  new DescriptorProto_ReservedRange$Type();
+export const DescriptorProto_ReservedRange
+  = new DescriptorProto_ReservedRange$Type();
 // @generated message type with reflection information, may provide speed optimized methods
 class ExtensionRangeOptions$Type extends MessageType<ExtensionRangeOptions> {
   constructor() {
@@ -2315,11 +2330,12 @@ class ExtensionRangeOptions$Type extends MessageType<ExtensionRangeOptions> {
         no: 999,
         name: 'uninterpreted_option',
         kind: 'message',
-        repeat: 2 /*RepeatType.UNPACKED*/,
-        T: () => UninterpretedOption
-      }
+        repeat: 2 /* RepeatType.UNPACKED */,
+        T: () => UninterpretedOption,
+      },
     ]);
   }
+
   create(value?: PartialMessage<ExtensionRangeOptions>): ExtensionRangeOptions {
     const message = globalThis.Object.create(this.messagePrototype!);
     message.uninterpretedOption = [];
@@ -2327,63 +2343,65 @@ class ExtensionRangeOptions$Type extends MessageType<ExtensionRangeOptions> {
       reflectionMergePartial<ExtensionRangeOptions>(this, message, value);
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: ExtensionRangeOptions
+    target?: ExtensionRangeOptions,
   ): ExtensionRangeOptions {
-    let message = target ?? this.create(),
+    const message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
+      const [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
         case /* repeated google.protobuf.UninterpretedOption uninterpreted_option */ 999:
           message.uninterpretedOption.push(
             UninterpretedOption.internalBinaryRead(
               reader,
               reader.uint32(),
-              options
-            )
+              options,
+            ),
           );
           break;
         default:
-          let u = options.readUnknownField;
+          const u = options.readUnknownField;
           if (u === 'throw')
             throw new globalThis.Error(
-              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`
+              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
             );
-          let d = reader.skip(wireType);
+          const d = reader.skip(wireType);
           if (u !== false)
             (u === true ? UnknownFieldHandler.onRead : u)(
               this.typeName,
               message,
               fieldNo,
               wireType,
-              d
+              d,
             );
       }
     }
     return message;
   }
+
   internalBinaryWrite(
     message: ExtensionRangeOptions,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
     /* repeated google.protobuf.UninterpretedOption uninterpreted_option = 999; */
     for (let i = 0; i < message.uninterpretedOption.length; i++)
       UninterpretedOption.internalBinaryWrite(
         message.uninterpretedOption[i],
         writer.tag(999, WireType.LengthDelimited).fork(),
-        options
+        options,
       ).join();
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -2401,14 +2419,14 @@ class FieldDescriptorProto$Type extends MessageType<FieldDescriptorProto> {
         name: 'name',
         kind: 'scalar',
         opt: true,
-        T: 9 /*ScalarType.STRING*/
+        T: 9, /* ScalarType.STRING */
       },
       {
         no: 3,
         name: 'number',
         kind: 'scalar',
         opt: true,
-        T: 5 /*ScalarType.INT32*/
+        T: 5, /* ScalarType.INT32 */
       },
       {
         no: 4,
@@ -2418,8 +2436,8 @@ class FieldDescriptorProto$Type extends MessageType<FieldDescriptorProto> {
         T: () => [
           'google.protobuf.FieldDescriptorProto.Label',
           FieldDescriptorProto_Label,
-          'LABEL_'
-        ]
+          'LABEL_',
+        ],
       },
       {
         no: 5,
@@ -2429,43 +2447,43 @@ class FieldDescriptorProto$Type extends MessageType<FieldDescriptorProto> {
         T: () => [
           'google.protobuf.FieldDescriptorProto.Type',
           FieldDescriptorProto_Type,
-          'TYPE_'
-        ]
+          'TYPE_',
+        ],
       },
       {
         no: 6,
         name: 'type_name',
         kind: 'scalar',
         opt: true,
-        T: 9 /*ScalarType.STRING*/
+        T: 9, /* ScalarType.STRING */
       },
       {
         no: 2,
         name: 'extendee',
         kind: 'scalar',
         opt: true,
-        T: 9 /*ScalarType.STRING*/
+        T: 9, /* ScalarType.STRING */
       },
       {
         no: 7,
         name: 'default_value',
         kind: 'scalar',
         opt: true,
-        T: 9 /*ScalarType.STRING*/
+        T: 9, /* ScalarType.STRING */
       },
       {
         no: 9,
         name: 'oneof_index',
         kind: 'scalar',
         opt: true,
-        T: 5 /*ScalarType.INT32*/
+        T: 5, /* ScalarType.INT32 */
       },
       {
         no: 10,
         name: 'json_name',
         kind: 'scalar',
         opt: true,
-        T: 9 /*ScalarType.STRING*/
+        T: 9, /* ScalarType.STRING */
       },
       { no: 8, name: 'options', kind: 'message', T: () => FieldOptions },
       {
@@ -2473,26 +2491,28 @@ class FieldDescriptorProto$Type extends MessageType<FieldDescriptorProto> {
         name: 'proto3_optional',
         kind: 'scalar',
         opt: true,
-        T: 8 /*ScalarType.BOOL*/
-      }
+        T: 8, /* ScalarType.BOOL */
+      },
     ]);
   }
+
   create(value?: PartialMessage<FieldDescriptorProto>): FieldDescriptorProto {
     const message = globalThis.Object.create(this.messagePrototype!);
     if (value !== undefined)
       reflectionMergePartial<FieldDescriptorProto>(this, message, value);
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: FieldDescriptorProto
+    target?: FieldDescriptorProto,
   ): FieldDescriptorProto {
-    let message = target ?? this.create(),
+    const message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
+      const [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
         case /* optional string name */ 1:
           message.name = reader.string();
@@ -2526,35 +2546,36 @@ class FieldDescriptorProto$Type extends MessageType<FieldDescriptorProto> {
             reader,
             reader.uint32(),
             options,
-            message.options
+            message.options,
           );
           break;
         case /* optional bool proto3_optional */ 17:
           message.proto3Optional = reader.bool();
           break;
         default:
-          let u = options.readUnknownField;
+          const u = options.readUnknownField;
           if (u === 'throw')
             throw new globalThis.Error(
-              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`
+              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
             );
-          let d = reader.skip(wireType);
+          const d = reader.skip(wireType);
           if (u !== false)
             (u === true ? UnknownFieldHandler.onRead : u)(
               this.typeName,
               message,
               fieldNo,
               wireType,
-              d
+              d,
             );
       }
     }
     return message;
   }
+
   internalBinaryWrite(
     message: FieldDescriptorProto,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
     /* optional string name = 1; */
     if (message.name !== undefined)
@@ -2588,17 +2609,17 @@ class FieldDescriptorProto$Type extends MessageType<FieldDescriptorProto> {
       FieldOptions.internalBinaryWrite(
         message.options,
         writer.tag(8, WireType.LengthDelimited).fork(),
-        options
+        options,
       ).join();
     /* optional bool proto3_optional = 17; */
     if (message.proto3Optional !== undefined)
       writer.tag(17, WireType.Varint).bool(message.proto3Optional);
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -2616,27 +2637,29 @@ class OneofDescriptorProto$Type extends MessageType<OneofDescriptorProto> {
         name: 'name',
         kind: 'scalar',
         opt: true,
-        T: 9 /*ScalarType.STRING*/
+        T: 9, /* ScalarType.STRING */
       },
-      { no: 2, name: 'options', kind: 'message', T: () => OneofOptions }
+      { no: 2, name: 'options', kind: 'message', T: () => OneofOptions },
     ]);
   }
+
   create(value?: PartialMessage<OneofDescriptorProto>): OneofDescriptorProto {
     const message = globalThis.Object.create(this.messagePrototype!);
     if (value !== undefined)
       reflectionMergePartial<OneofDescriptorProto>(this, message, value);
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: OneofDescriptorProto
+    target?: OneofDescriptorProto,
   ): OneofDescriptorProto {
-    let message = target ?? this.create(),
+    const message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
+      const [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
         case /* optional string name */ 1:
           message.name = reader.string();
@@ -2646,32 +2669,33 @@ class OneofDescriptorProto$Type extends MessageType<OneofDescriptorProto> {
             reader,
             reader.uint32(),
             options,
-            message.options
+            message.options,
           );
           break;
         default:
-          let u = options.readUnknownField;
+          const u = options.readUnknownField;
           if (u === 'throw')
             throw new globalThis.Error(
-              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`
+              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
             );
-          let d = reader.skip(wireType);
+          const d = reader.skip(wireType);
           if (u !== false)
             (u === true ? UnknownFieldHandler.onRead : u)(
               this.typeName,
               message,
               fieldNo,
               wireType,
-              d
+              d,
             );
       }
     }
     return message;
   }
+
   internalBinaryWrite(
     message: OneofDescriptorProto,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
     /* optional string name = 1; */
     if (message.name !== undefined)
@@ -2681,14 +2705,14 @@ class OneofDescriptorProto$Type extends MessageType<OneofDescriptorProto> {
       OneofOptions.internalBinaryWrite(
         message.options,
         writer.tag(2, WireType.LengthDelimited).fork(),
-        options
+        options,
       ).join();
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -2706,32 +2730,33 @@ class EnumDescriptorProto$Type extends MessageType<EnumDescriptorProto> {
         name: 'name',
         kind: 'scalar',
         opt: true,
-        T: 9 /*ScalarType.STRING*/
+        T: 9, /* ScalarType.STRING */
       },
       {
         no: 2,
         name: 'value',
         kind: 'message',
-        repeat: 2 /*RepeatType.UNPACKED*/,
-        T: () => EnumValueDescriptorProto
+        repeat: 2 /* RepeatType.UNPACKED */,
+        T: () => EnumValueDescriptorProto,
       },
       { no: 3, name: 'options', kind: 'message', T: () => EnumOptions },
       {
         no: 4,
         name: 'reserved_range',
         kind: 'message',
-        repeat: 2 /*RepeatType.UNPACKED*/,
-        T: () => EnumDescriptorProto_EnumReservedRange
+        repeat: 2 /* RepeatType.UNPACKED */,
+        T: () => EnumDescriptorProto_EnumReservedRange,
       },
       {
         no: 5,
         name: 'reserved_name',
         kind: 'scalar',
-        repeat: 2 /*RepeatType.UNPACKED*/,
-        T: 9 /*ScalarType.STRING*/
-      }
+        repeat: 2 /* RepeatType.UNPACKED */,
+        T: 9, /* ScalarType.STRING */
+      },
     ]);
   }
+
   create(value?: PartialMessage<EnumDescriptorProto>): EnumDescriptorProto {
     const message = globalThis.Object.create(this.messagePrototype!);
     message.value = [];
@@ -2741,16 +2766,17 @@ class EnumDescriptorProto$Type extends MessageType<EnumDescriptorProto> {
       reflectionMergePartial<EnumDescriptorProto>(this, message, value);
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: EnumDescriptorProto
+    target?: EnumDescriptorProto,
   ): EnumDescriptorProto {
-    let message = target ?? this.create(),
+    const message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
+      const [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
         case /* optional string name */ 1:
           message.name = reader.string();
@@ -2760,8 +2786,8 @@ class EnumDescriptorProto$Type extends MessageType<EnumDescriptorProto> {
             EnumValueDescriptorProto.internalBinaryRead(
               reader,
               reader.uint32(),
-              options
-            )
+              options,
+            ),
           );
           break;
         case /* optional google.protobuf.EnumOptions options */ 3:
@@ -2769,7 +2795,7 @@ class EnumDescriptorProto$Type extends MessageType<EnumDescriptorProto> {
             reader,
             reader.uint32(),
             options,
-            message.options
+            message.options,
           );
           break;
         case /* repeated google.protobuf.EnumDescriptorProto.EnumReservedRange reserved_range */ 4:
@@ -2777,36 +2803,37 @@ class EnumDescriptorProto$Type extends MessageType<EnumDescriptorProto> {
             EnumDescriptorProto_EnumReservedRange.internalBinaryRead(
               reader,
               reader.uint32(),
-              options
-            )
+              options,
+            ),
           );
           break;
         case /* repeated string reserved_name */ 5:
           message.reservedName.push(reader.string());
           break;
         default:
-          let u = options.readUnknownField;
+          const u = options.readUnknownField;
           if (u === 'throw')
             throw new globalThis.Error(
-              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`
+              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
             );
-          let d = reader.skip(wireType);
+          const d = reader.skip(wireType);
           if (u !== false)
             (u === true ? UnknownFieldHandler.onRead : u)(
               this.typeName,
               message,
               fieldNo,
               wireType,
-              d
+              d,
             );
       }
     }
     return message;
   }
+
   internalBinaryWrite(
     message: EnumDescriptorProto,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
     /* optional string name = 1; */
     if (message.name !== undefined)
@@ -2816,31 +2843,31 @@ class EnumDescriptorProto$Type extends MessageType<EnumDescriptorProto> {
       EnumValueDescriptorProto.internalBinaryWrite(
         message.value[i],
         writer.tag(2, WireType.LengthDelimited).fork(),
-        options
+        options,
       ).join();
     /* optional google.protobuf.EnumOptions options = 3; */
     if (message.options)
       EnumOptions.internalBinaryWrite(
         message.options,
         writer.tag(3, WireType.LengthDelimited).fork(),
-        options
+        options,
       ).join();
     /* repeated google.protobuf.EnumDescriptorProto.EnumReservedRange reserved_range = 4; */
     for (let i = 0; i < message.reservedRange.length; i++)
       EnumDescriptorProto_EnumReservedRange.internalBinaryWrite(
         message.reservedRange[i],
         writer.tag(4, WireType.LengthDelimited).fork(),
-        options
+        options,
       ).join();
     /* repeated string reserved_name = 5; */
     for (let i = 0; i < message.reservedName.length; i++)
       writer.tag(5, WireType.LengthDelimited).string(message.reservedName[i]);
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -2858,39 +2885,41 @@ class EnumDescriptorProto_EnumReservedRange$Type extends MessageType<EnumDescrip
         name: 'start',
         kind: 'scalar',
         opt: true,
-        T: 5 /*ScalarType.INT32*/
+        T: 5, /* ScalarType.INT32 */
       },
       {
         no: 2,
         name: 'end',
         kind: 'scalar',
         opt: true,
-        T: 5 /*ScalarType.INT32*/
-      }
+        T: 5, /* ScalarType.INT32 */
+      },
     ]);
   }
+
   create(
-    value?: PartialMessage<EnumDescriptorProto_EnumReservedRange>
+    value?: PartialMessage<EnumDescriptorProto_EnumReservedRange>,
   ): EnumDescriptorProto_EnumReservedRange {
     const message = globalThis.Object.create(this.messagePrototype!);
     if (value !== undefined)
       reflectionMergePartial<EnumDescriptorProto_EnumReservedRange>(
         this,
         message,
-        value
+        value,
       );
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: EnumDescriptorProto_EnumReservedRange
+    target?: EnumDescriptorProto_EnumReservedRange,
   ): EnumDescriptorProto_EnumReservedRange {
-    let message = target ?? this.create(),
+    const message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
+      const [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
         case /* optional int32 start */ 1:
           message.start = reader.int32();
@@ -2899,28 +2928,29 @@ class EnumDescriptorProto_EnumReservedRange$Type extends MessageType<EnumDescrip
           message.end = reader.int32();
           break;
         default:
-          let u = options.readUnknownField;
+          const u = options.readUnknownField;
           if (u === 'throw')
             throw new globalThis.Error(
-              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`
+              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
             );
-          let d = reader.skip(wireType);
+          const d = reader.skip(wireType);
           if (u !== false)
             (u === true ? UnknownFieldHandler.onRead : u)(
               this.typeName,
               message,
               fieldNo,
               wireType,
-              d
+              d,
             );
       }
     }
     return message;
   }
+
   internalBinaryWrite(
     message: EnumDescriptorProto_EnumReservedRange,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
     /* optional int32 start = 1; */
     if (message.start !== undefined)
@@ -2928,12 +2958,12 @@ class EnumDescriptorProto_EnumReservedRange$Type extends MessageType<EnumDescrip
     /* optional int32 end = 2; */
     if (message.end !== undefined)
       writer.tag(2, WireType.Varint).int32(message.end);
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -2941,8 +2971,8 @@ class EnumDescriptorProto_EnumReservedRange$Type extends MessageType<EnumDescrip
 /**
  * @generated MessageType for protobuf message google.protobuf.EnumDescriptorProto.EnumReservedRange
  */
-export const EnumDescriptorProto_EnumReservedRange =
-  new EnumDescriptorProto_EnumReservedRange$Type();
+export const EnumDescriptorProto_EnumReservedRange
+  = new EnumDescriptorProto_EnumReservedRange$Type();
 // @generated message type with reflection information, may provide speed optimized methods
 class EnumValueDescriptorProto$Type extends MessageType<EnumValueDescriptorProto> {
   constructor() {
@@ -2952,36 +2982,38 @@ class EnumValueDescriptorProto$Type extends MessageType<EnumValueDescriptorProto
         name: 'name',
         kind: 'scalar',
         opt: true,
-        T: 9 /*ScalarType.STRING*/
+        T: 9, /* ScalarType.STRING */
       },
       {
         no: 2,
         name: 'number',
         kind: 'scalar',
         opt: true,
-        T: 5 /*ScalarType.INT32*/
+        T: 5, /* ScalarType.INT32 */
       },
-      { no: 3, name: 'options', kind: 'message', T: () => EnumValueOptions }
+      { no: 3, name: 'options', kind: 'message', T: () => EnumValueOptions },
     ]);
   }
+
   create(
-    value?: PartialMessage<EnumValueDescriptorProto>
+    value?: PartialMessage<EnumValueDescriptorProto>,
   ): EnumValueDescriptorProto {
     const message = globalThis.Object.create(this.messagePrototype!);
     if (value !== undefined)
       reflectionMergePartial<EnumValueDescriptorProto>(this, message, value);
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: EnumValueDescriptorProto
+    target?: EnumValueDescriptorProto,
   ): EnumValueDescriptorProto {
-    let message = target ?? this.create(),
+    const message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
+      const [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
         case /* optional string name */ 1:
           message.name = reader.string();
@@ -2994,32 +3026,33 @@ class EnumValueDescriptorProto$Type extends MessageType<EnumValueDescriptorProto
             reader,
             reader.uint32(),
             options,
-            message.options
+            message.options,
           );
           break;
         default:
-          let u = options.readUnknownField;
+          const u = options.readUnknownField;
           if (u === 'throw')
             throw new globalThis.Error(
-              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`
+              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
             );
-          let d = reader.skip(wireType);
+          const d = reader.skip(wireType);
           if (u !== false)
             (u === true ? UnknownFieldHandler.onRead : u)(
               this.typeName,
               message,
               fieldNo,
               wireType,
-              d
+              d,
             );
       }
     }
     return message;
   }
+
   internalBinaryWrite(
     message: EnumValueDescriptorProto,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
     /* optional string name = 1; */
     if (message.name !== undefined)
@@ -3032,14 +3065,14 @@ class EnumValueDescriptorProto$Type extends MessageType<EnumValueDescriptorProto
       EnumValueOptions.internalBinaryWrite(
         message.options,
         writer.tag(3, WireType.LengthDelimited).fork(),
-        options
+        options,
       ).join();
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -3057,20 +3090,21 @@ class ServiceDescriptorProto$Type extends MessageType<ServiceDescriptorProto> {
         name: 'name',
         kind: 'scalar',
         opt: true,
-        T: 9 /*ScalarType.STRING*/
+        T: 9, /* ScalarType.STRING */
       },
       {
         no: 2,
         name: 'method',
         kind: 'message',
-        repeat: 2 /*RepeatType.UNPACKED*/,
-        T: () => MethodDescriptorProto
+        repeat: 2 /* RepeatType.UNPACKED */,
+        T: () => MethodDescriptorProto,
       },
-      { no: 3, name: 'options', kind: 'message', T: () => ServiceOptions }
+      { no: 3, name: 'options', kind: 'message', T: () => ServiceOptions },
     ]);
   }
+
   create(
-    value?: PartialMessage<ServiceDescriptorProto>
+    value?: PartialMessage<ServiceDescriptorProto>,
   ): ServiceDescriptorProto {
     const message = globalThis.Object.create(this.messagePrototype!);
     message.method = [];
@@ -3078,16 +3112,17 @@ class ServiceDescriptorProto$Type extends MessageType<ServiceDescriptorProto> {
       reflectionMergePartial<ServiceDescriptorProto>(this, message, value);
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: ServiceDescriptorProto
+    target?: ServiceDescriptorProto,
   ): ServiceDescriptorProto {
-    let message = target ?? this.create(),
+    const message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
+      const [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
         case /* optional string name */ 1:
           message.name = reader.string();
@@ -3097,8 +3132,8 @@ class ServiceDescriptorProto$Type extends MessageType<ServiceDescriptorProto> {
             MethodDescriptorProto.internalBinaryRead(
               reader,
               reader.uint32(),
-              options
-            )
+              options,
+            ),
           );
           break;
         case /* optional google.protobuf.ServiceOptions options */ 3:
@@ -3106,32 +3141,33 @@ class ServiceDescriptorProto$Type extends MessageType<ServiceDescriptorProto> {
             reader,
             reader.uint32(),
             options,
-            message.options
+            message.options,
           );
           break;
         default:
-          let u = options.readUnknownField;
+          const u = options.readUnknownField;
           if (u === 'throw')
             throw new globalThis.Error(
-              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`
+              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
             );
-          let d = reader.skip(wireType);
+          const d = reader.skip(wireType);
           if (u !== false)
             (u === true ? UnknownFieldHandler.onRead : u)(
               this.typeName,
               message,
               fieldNo,
               wireType,
-              d
+              d,
             );
       }
     }
     return message;
   }
+
   internalBinaryWrite(
     message: ServiceDescriptorProto,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
     /* optional string name = 1; */
     if (message.name !== undefined)
@@ -3141,21 +3177,21 @@ class ServiceDescriptorProto$Type extends MessageType<ServiceDescriptorProto> {
       MethodDescriptorProto.internalBinaryWrite(
         message.method[i],
         writer.tag(2, WireType.LengthDelimited).fork(),
-        options
+        options,
       ).join();
     /* optional google.protobuf.ServiceOptions options = 3; */
     if (message.options)
       ServiceOptions.internalBinaryWrite(
         message.options,
         writer.tag(3, WireType.LengthDelimited).fork(),
-        options
+        options,
       ).join();
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -3173,21 +3209,21 @@ class MethodDescriptorProto$Type extends MessageType<MethodDescriptorProto> {
         name: 'name',
         kind: 'scalar',
         opt: true,
-        T: 9 /*ScalarType.STRING*/
+        T: 9, /* ScalarType.STRING */
       },
       {
         no: 2,
         name: 'input_type',
         kind: 'scalar',
         opt: true,
-        T: 9 /*ScalarType.STRING*/
+        T: 9, /* ScalarType.STRING */
       },
       {
         no: 3,
         name: 'output_type',
         kind: 'scalar',
         opt: true,
-        T: 9 /*ScalarType.STRING*/
+        T: 9, /* ScalarType.STRING */
       },
       { no: 4, name: 'options', kind: 'message', T: () => MethodOptions },
       {
@@ -3195,33 +3231,35 @@ class MethodDescriptorProto$Type extends MessageType<MethodDescriptorProto> {
         name: 'client_streaming',
         kind: 'scalar',
         opt: true,
-        T: 8 /*ScalarType.BOOL*/
+        T: 8, /* ScalarType.BOOL */
       },
       {
         no: 6,
         name: 'server_streaming',
         kind: 'scalar',
         opt: true,
-        T: 8 /*ScalarType.BOOL*/
-      }
+        T: 8, /* ScalarType.BOOL */
+      },
     ]);
   }
+
   create(value?: PartialMessage<MethodDescriptorProto>): MethodDescriptorProto {
     const message = globalThis.Object.create(this.messagePrototype!);
     if (value !== undefined)
       reflectionMergePartial<MethodDescriptorProto>(this, message, value);
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: MethodDescriptorProto
+    target?: MethodDescriptorProto,
   ): MethodDescriptorProto {
-    let message = target ?? this.create(),
+    const message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
+      const [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
         case /* optional string name */ 1:
           message.name = reader.string();
@@ -3237,7 +3275,7 @@ class MethodDescriptorProto$Type extends MessageType<MethodDescriptorProto> {
             reader,
             reader.uint32(),
             options,
-            message.options
+            message.options,
           );
           break;
         case /* optional bool client_streaming */ 5:
@@ -3247,28 +3285,29 @@ class MethodDescriptorProto$Type extends MessageType<MethodDescriptorProto> {
           message.serverStreaming = reader.bool();
           break;
         default:
-          let u = options.readUnknownField;
+          const u = options.readUnknownField;
           if (u === 'throw')
             throw new globalThis.Error(
-              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`
+              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
             );
-          let d = reader.skip(wireType);
+          const d = reader.skip(wireType);
           if (u !== false)
             (u === true ? UnknownFieldHandler.onRead : u)(
               this.typeName,
               message,
               fieldNo,
               wireType,
-              d
+              d,
             );
       }
     }
     return message;
   }
+
   internalBinaryWrite(
     message: MethodDescriptorProto,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
     /* optional string name = 1; */
     if (message.name !== undefined)
@@ -3284,7 +3323,7 @@ class MethodDescriptorProto$Type extends MessageType<MethodDescriptorProto> {
       MethodOptions.internalBinaryWrite(
         message.options,
         writer.tag(4, WireType.LengthDelimited).fork(),
-        options
+        options,
       ).join();
     /* optional bool client_streaming = 5; */
     if (message.clientStreaming !== undefined)
@@ -3292,12 +3331,12 @@ class MethodDescriptorProto$Type extends MessageType<MethodDescriptorProto> {
     /* optional bool server_streaming = 6; */
     if (message.serverStreaming !== undefined)
       writer.tag(6, WireType.Varint).bool(message.serverStreaming);
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -3315,35 +3354,35 @@ class FileOptions$Type extends MessageType<FileOptions> {
         name: 'java_package',
         kind: 'scalar',
         opt: true,
-        T: 9 /*ScalarType.STRING*/
+        T: 9, /* ScalarType.STRING */
       },
       {
         no: 8,
         name: 'java_outer_classname',
         kind: 'scalar',
         opt: true,
-        T: 9 /*ScalarType.STRING*/
+        T: 9, /* ScalarType.STRING */
       },
       {
         no: 10,
         name: 'java_multiple_files',
         kind: 'scalar',
         opt: true,
-        T: 8 /*ScalarType.BOOL*/
+        T: 8, /* ScalarType.BOOL */
       },
       {
         no: 20,
         name: 'java_generate_equals_and_hash',
         kind: 'scalar',
         opt: true,
-        T: 8 /*ScalarType.BOOL*/
+        T: 8, /* ScalarType.BOOL */
       },
       {
         no: 27,
         name: 'java_string_check_utf8',
         kind: 'scalar',
         opt: true,
-        T: 8 /*ScalarType.BOOL*/
+        T: 8, /* ScalarType.BOOL */
       },
       {
         no: 9,
@@ -3352,116 +3391,117 @@ class FileOptions$Type extends MessageType<FileOptions> {
         opt: true,
         T: () => [
           'google.protobuf.FileOptions.OptimizeMode',
-          FileOptions_OptimizeMode
-        ]
+          FileOptions_OptimizeMode,
+        ],
       },
       {
         no: 11,
         name: 'go_package',
         kind: 'scalar',
         opt: true,
-        T: 9 /*ScalarType.STRING*/
+        T: 9, /* ScalarType.STRING */
       },
       {
         no: 16,
         name: 'cc_generic_services',
         kind: 'scalar',
         opt: true,
-        T: 8 /*ScalarType.BOOL*/
+        T: 8, /* ScalarType.BOOL */
       },
       {
         no: 17,
         name: 'java_generic_services',
         kind: 'scalar',
         opt: true,
-        T: 8 /*ScalarType.BOOL*/
+        T: 8, /* ScalarType.BOOL */
       },
       {
         no: 18,
         name: 'py_generic_services',
         kind: 'scalar',
         opt: true,
-        T: 8 /*ScalarType.BOOL*/
+        T: 8, /* ScalarType.BOOL */
       },
       {
         no: 42,
         name: 'php_generic_services',
         kind: 'scalar',
         opt: true,
-        T: 8 /*ScalarType.BOOL*/
+        T: 8, /* ScalarType.BOOL */
       },
       {
         no: 23,
         name: 'deprecated',
         kind: 'scalar',
         opt: true,
-        T: 8 /*ScalarType.BOOL*/
+        T: 8, /* ScalarType.BOOL */
       },
       {
         no: 31,
         name: 'cc_enable_arenas',
         kind: 'scalar',
         opt: true,
-        T: 8 /*ScalarType.BOOL*/
+        T: 8, /* ScalarType.BOOL */
       },
       {
         no: 36,
         name: 'objc_class_prefix',
         kind: 'scalar',
         opt: true,
-        T: 9 /*ScalarType.STRING*/
+        T: 9, /* ScalarType.STRING */
       },
       {
         no: 37,
         name: 'csharp_namespace',
         kind: 'scalar',
         opt: true,
-        T: 9 /*ScalarType.STRING*/
+        T: 9, /* ScalarType.STRING */
       },
       {
         no: 39,
         name: 'swift_prefix',
         kind: 'scalar',
         opt: true,
-        T: 9 /*ScalarType.STRING*/
+        T: 9, /* ScalarType.STRING */
       },
       {
         no: 40,
         name: 'php_class_prefix',
         kind: 'scalar',
         opt: true,
-        T: 9 /*ScalarType.STRING*/
+        T: 9, /* ScalarType.STRING */
       },
       {
         no: 41,
         name: 'php_namespace',
         kind: 'scalar',
         opt: true,
-        T: 9 /*ScalarType.STRING*/
+        T: 9, /* ScalarType.STRING */
       },
       {
         no: 44,
         name: 'php_metadata_namespace',
         kind: 'scalar',
         opt: true,
-        T: 9 /*ScalarType.STRING*/
+        T: 9, /* ScalarType.STRING */
       },
       {
         no: 45,
         name: 'ruby_package',
         kind: 'scalar',
         opt: true,
-        T: 9 /*ScalarType.STRING*/
+        T: 9, /* ScalarType.STRING */
       },
       {
         no: 999,
         name: 'uninterpreted_option',
         kind: 'message',
-        repeat: 2 /*RepeatType.UNPACKED*/,
-        T: () => UninterpretedOption
-      }
+        repeat: 2 /* RepeatType.UNPACKED */,
+        T: () => UninterpretedOption,
+      },
     ]);
   }
+
   create(value?: PartialMessage<FileOptions>): FileOptions {
     const message = globalThis.Object.create(this.messagePrototype!);
     message.uninterpretedOption = [];
@@ -3469,16 +3509,17 @@ class FileOptions$Type extends MessageType<FileOptions> {
       reflectionMergePartial<FileOptions>(this, message, value);
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: FileOptions
+    target?: FileOptions,
   ): FileOptions {
-    let message = target ?? this.create(),
+    const message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
+      const [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
         case /* optional string java_package */ 1:
           message.javaPackage = reader.string();
@@ -3489,7 +3530,7 @@ class FileOptions$Type extends MessageType<FileOptions> {
         case /* optional bool java_multiple_files */ 10:
           message.javaMultipleFiles = reader.bool();
           break;
-        case /* optional bool java_generate_equals_and_hash = 20 [deprecated = true];*/ 20:
+        case /* optional bool java_generate_equals_and_hash = 20 [deprecated = true]; */ 20:
           message.javaGenerateEqualsAndHash = reader.bool();
           break;
         case /* optional bool java_string_check_utf8 */ 27:
@@ -3545,33 +3586,34 @@ class FileOptions$Type extends MessageType<FileOptions> {
             UninterpretedOption.internalBinaryRead(
               reader,
               reader.uint32(),
-              options
-            )
+              options,
+            ),
           );
           break;
         default:
-          let u = options.readUnknownField;
+          const u = options.readUnknownField;
           if (u === 'throw')
             throw new globalThis.Error(
-              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`
+              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
             );
-          let d = reader.skip(wireType);
+          const d = reader.skip(wireType);
           if (u !== false)
             (u === true ? UnknownFieldHandler.onRead : u)(
               this.typeName,
               message,
               fieldNo,
               wireType,
-              d
+              d,
             );
       }
     }
     return message;
   }
+
   internalBinaryWrite(
     message: FileOptions,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
     /* optional string java_package = 1; */
     if (message.javaPackage !== undefined)
@@ -3642,14 +3684,14 @@ class FileOptions$Type extends MessageType<FileOptions> {
       UninterpretedOption.internalBinaryWrite(
         message.uninterpretedOption[i],
         writer.tag(999, WireType.LengthDelimited).fork(),
-        options
+        options,
       ).join();
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -3667,38 +3709,39 @@ class MessageOptions$Type extends MessageType<MessageOptions> {
         name: 'message_set_wire_format',
         kind: 'scalar',
         opt: true,
-        T: 8 /*ScalarType.BOOL*/
+        T: 8, /* ScalarType.BOOL */
       },
       {
         no: 2,
         name: 'no_standard_descriptor_accessor',
         kind: 'scalar',
         opt: true,
-        T: 8 /*ScalarType.BOOL*/
+        T: 8, /* ScalarType.BOOL */
       },
       {
         no: 3,
         name: 'deprecated',
         kind: 'scalar',
         opt: true,
-        T: 8 /*ScalarType.BOOL*/
+        T: 8, /* ScalarType.BOOL */
       },
       {
         no: 7,
         name: 'map_entry',
         kind: 'scalar',
         opt: true,
-        T: 8 /*ScalarType.BOOL*/
+        T: 8, /* ScalarType.BOOL */
       },
       {
         no: 999,
         name: 'uninterpreted_option',
         kind: 'message',
-        repeat: 2 /*RepeatType.UNPACKED*/,
-        T: () => UninterpretedOption
-      }
+        repeat: 2 /* RepeatType.UNPACKED */,
+        T: () => UninterpretedOption,
+      },
     ]);
   }
+
   create(value?: PartialMessage<MessageOptions>): MessageOptions {
     const message = globalThis.Object.create(this.messagePrototype!);
     message.uninterpretedOption = [];
@@ -3706,16 +3749,17 @@ class MessageOptions$Type extends MessageType<MessageOptions> {
       reflectionMergePartial<MessageOptions>(this, message, value);
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: MessageOptions
+    target?: MessageOptions,
   ): MessageOptions {
-    let message = target ?? this.create(),
+    const message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
+      const [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
         case /* optional bool message_set_wire_format */ 1:
           message.messageSetWireFormat = reader.bool();
@@ -3734,33 +3778,34 @@ class MessageOptions$Type extends MessageType<MessageOptions> {
             UninterpretedOption.internalBinaryRead(
               reader,
               reader.uint32(),
-              options
-            )
+              options,
+            ),
           );
           break;
         default:
-          let u = options.readUnknownField;
+          const u = options.readUnknownField;
           if (u === 'throw')
             throw new globalThis.Error(
-              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`
+              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
             );
-          let d = reader.skip(wireType);
+          const d = reader.skip(wireType);
           if (u !== false)
             (u === true ? UnknownFieldHandler.onRead : u)(
               this.typeName,
               message,
               fieldNo,
               wireType,
-              d
+              d,
             );
       }
     }
     return message;
   }
+
   internalBinaryWrite(
     message: MessageOptions,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
     /* optional bool message_set_wire_format = 1; */
     if (message.messageSetWireFormat !== undefined)
@@ -3779,14 +3824,14 @@ class MessageOptions$Type extends MessageType<MessageOptions> {
       UninterpretedOption.internalBinaryWrite(
         message.uninterpretedOption[i],
         writer.tag(999, WireType.LengthDelimited).fork(),
-        options
+        options,
       ).join();
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -3804,59 +3849,60 @@ class FieldOptions$Type extends MessageType<FieldOptions> {
         name: 'ctype',
         kind: 'enum',
         opt: true,
-        T: () => ['google.protobuf.FieldOptions.CType', FieldOptions_CType]
+        T: () => ['google.protobuf.FieldOptions.CType', FieldOptions_CType],
       },
       {
         no: 2,
         name: 'packed',
         kind: 'scalar',
         opt: true,
-        T: 8 /*ScalarType.BOOL*/
+        T: 8, /* ScalarType.BOOL */
       },
       {
         no: 6,
         name: 'jstype',
         kind: 'enum',
         opt: true,
-        T: () => ['google.protobuf.FieldOptions.JSType', FieldOptions_JSType]
+        T: () => ['google.protobuf.FieldOptions.JSType', FieldOptions_JSType],
       },
       {
         no: 5,
         name: 'lazy',
         kind: 'scalar',
         opt: true,
-        T: 8 /*ScalarType.BOOL*/
+        T: 8, /* ScalarType.BOOL */
       },
       {
         no: 15,
         name: 'unverified_lazy',
         kind: 'scalar',
         opt: true,
-        T: 8 /*ScalarType.BOOL*/
+        T: 8, /* ScalarType.BOOL */
       },
       {
         no: 3,
         name: 'deprecated',
         kind: 'scalar',
         opt: true,
-        T: 8 /*ScalarType.BOOL*/
+        T: 8, /* ScalarType.BOOL */
       },
       {
         no: 10,
         name: 'weak',
         kind: 'scalar',
         opt: true,
-        T: 8 /*ScalarType.BOOL*/
+        T: 8, /* ScalarType.BOOL */
       },
       {
         no: 999,
         name: 'uninterpreted_option',
         kind: 'message',
-        repeat: 2 /*RepeatType.UNPACKED*/,
-        T: () => UninterpretedOption
-      }
+        repeat: 2 /* RepeatType.UNPACKED */,
+        T: () => UninterpretedOption,
+      },
     ]);
   }
+
   create(value?: PartialMessage<FieldOptions>): FieldOptions {
     const message = globalThis.Object.create(this.messagePrototype!);
     message.uninterpretedOption = [];
@@ -3864,16 +3910,17 @@ class FieldOptions$Type extends MessageType<FieldOptions> {
       reflectionMergePartial<FieldOptions>(this, message, value);
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: FieldOptions
+    target?: FieldOptions,
   ): FieldOptions {
-    let message = target ?? this.create(),
+    const message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
+      const [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
         case /* optional google.protobuf.FieldOptions.CType ctype */ 1:
           message.ctype = reader.int32();
@@ -3901,33 +3948,34 @@ class FieldOptions$Type extends MessageType<FieldOptions> {
             UninterpretedOption.internalBinaryRead(
               reader,
               reader.uint32(),
-              options
-            )
+              options,
+            ),
           );
           break;
         default:
-          let u = options.readUnknownField;
+          const u = options.readUnknownField;
           if (u === 'throw')
             throw new globalThis.Error(
-              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`
+              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
             );
-          let d = reader.skip(wireType);
+          const d = reader.skip(wireType);
           if (u !== false)
             (u === true ? UnknownFieldHandler.onRead : u)(
               this.typeName,
               message,
               fieldNo,
               wireType,
-              d
+              d,
             );
       }
     }
     return message;
   }
+
   internalBinaryWrite(
     message: FieldOptions,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
     /* optional google.protobuf.FieldOptions.CType ctype = 1; */
     if (message.ctype !== undefined)
@@ -3955,14 +4003,14 @@ class FieldOptions$Type extends MessageType<FieldOptions> {
       UninterpretedOption.internalBinaryWrite(
         message.uninterpretedOption[i],
         writer.tag(999, WireType.LengthDelimited).fork(),
-        options
+        options,
       ).join();
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -3979,11 +4027,12 @@ class OneofOptions$Type extends MessageType<OneofOptions> {
         no: 999,
         name: 'uninterpreted_option',
         kind: 'message',
-        repeat: 2 /*RepeatType.UNPACKED*/,
-        T: () => UninterpretedOption
-      }
+        repeat: 2 /* RepeatType.UNPACKED */,
+        T: () => UninterpretedOption,
+      },
     ]);
   }
+
   create(value?: PartialMessage<OneofOptions>): OneofOptions {
     const message = globalThis.Object.create(this.messagePrototype!);
     message.uninterpretedOption = [];
@@ -3991,63 +4040,65 @@ class OneofOptions$Type extends MessageType<OneofOptions> {
       reflectionMergePartial<OneofOptions>(this, message, value);
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: OneofOptions
+    target?: OneofOptions,
   ): OneofOptions {
-    let message = target ?? this.create(),
+    const message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
+      const [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
         case /* repeated google.protobuf.UninterpretedOption uninterpreted_option */ 999:
           message.uninterpretedOption.push(
             UninterpretedOption.internalBinaryRead(
               reader,
               reader.uint32(),
-              options
-            )
+              options,
+            ),
           );
           break;
         default:
-          let u = options.readUnknownField;
+          const u = options.readUnknownField;
           if (u === 'throw')
             throw new globalThis.Error(
-              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`
+              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
             );
-          let d = reader.skip(wireType);
+          const d = reader.skip(wireType);
           if (u !== false)
             (u === true ? UnknownFieldHandler.onRead : u)(
               this.typeName,
               message,
               fieldNo,
               wireType,
-              d
+              d,
             );
       }
     }
     return message;
   }
+
   internalBinaryWrite(
     message: OneofOptions,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
     /* repeated google.protobuf.UninterpretedOption uninterpreted_option = 999; */
     for (let i = 0; i < message.uninterpretedOption.length; i++)
       UninterpretedOption.internalBinaryWrite(
         message.uninterpretedOption[i],
         writer.tag(999, WireType.LengthDelimited).fork(),
-        options
+        options,
       ).join();
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -4065,24 +4116,25 @@ class EnumOptions$Type extends MessageType<EnumOptions> {
         name: 'allow_alias',
         kind: 'scalar',
         opt: true,
-        T: 8 /*ScalarType.BOOL*/
+        T: 8, /* ScalarType.BOOL */
       },
       {
         no: 3,
         name: 'deprecated',
         kind: 'scalar',
         opt: true,
-        T: 8 /*ScalarType.BOOL*/
+        T: 8, /* ScalarType.BOOL */
       },
       {
         no: 999,
         name: 'uninterpreted_option',
         kind: 'message',
-        repeat: 2 /*RepeatType.UNPACKED*/,
-        T: () => UninterpretedOption
-      }
+        repeat: 2 /* RepeatType.UNPACKED */,
+        T: () => UninterpretedOption,
+      },
     ]);
   }
+
   create(value?: PartialMessage<EnumOptions>): EnumOptions {
     const message = globalThis.Object.create(this.messagePrototype!);
     message.uninterpretedOption = [];
@@ -4090,16 +4142,17 @@ class EnumOptions$Type extends MessageType<EnumOptions> {
       reflectionMergePartial<EnumOptions>(this, message, value);
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: EnumOptions
+    target?: EnumOptions,
   ): EnumOptions {
-    let message = target ?? this.create(),
+    const message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
+      const [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
         case /* optional bool allow_alias */ 2:
           message.allowAlias = reader.bool();
@@ -4112,33 +4165,34 @@ class EnumOptions$Type extends MessageType<EnumOptions> {
             UninterpretedOption.internalBinaryRead(
               reader,
               reader.uint32(),
-              options
-            )
+              options,
+            ),
           );
           break;
         default:
-          let u = options.readUnknownField;
+          const u = options.readUnknownField;
           if (u === 'throw')
             throw new globalThis.Error(
-              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`
+              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
             );
-          let d = reader.skip(wireType);
+          const d = reader.skip(wireType);
           if (u !== false)
             (u === true ? UnknownFieldHandler.onRead : u)(
               this.typeName,
               message,
               fieldNo,
               wireType,
-              d
+              d,
             );
       }
     }
     return message;
   }
+
   internalBinaryWrite(
     message: EnumOptions,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
     /* optional bool allow_alias = 2; */
     if (message.allowAlias !== undefined)
@@ -4151,14 +4205,14 @@ class EnumOptions$Type extends MessageType<EnumOptions> {
       UninterpretedOption.internalBinaryWrite(
         message.uninterpretedOption[i],
         writer.tag(999, WireType.LengthDelimited).fork(),
-        options
+        options,
       ).join();
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -4176,17 +4230,18 @@ class EnumValueOptions$Type extends MessageType<EnumValueOptions> {
         name: 'deprecated',
         kind: 'scalar',
         opt: true,
-        T: 8 /*ScalarType.BOOL*/
+        T: 8, /* ScalarType.BOOL */
       },
       {
         no: 999,
         name: 'uninterpreted_option',
         kind: 'message',
-        repeat: 2 /*RepeatType.UNPACKED*/,
-        T: () => UninterpretedOption
-      }
+        repeat: 2 /* RepeatType.UNPACKED */,
+        T: () => UninterpretedOption,
+      },
     ]);
   }
+
   create(value?: PartialMessage<EnumValueOptions>): EnumValueOptions {
     const message = globalThis.Object.create(this.messagePrototype!);
     message.uninterpretedOption = [];
@@ -4194,16 +4249,17 @@ class EnumValueOptions$Type extends MessageType<EnumValueOptions> {
       reflectionMergePartial<EnumValueOptions>(this, message, value);
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: EnumValueOptions
+    target?: EnumValueOptions,
   ): EnumValueOptions {
-    let message = target ?? this.create(),
+    const message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
+      const [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
         case /* optional bool deprecated */ 1:
           message.deprecated = reader.bool();
@@ -4213,33 +4269,34 @@ class EnumValueOptions$Type extends MessageType<EnumValueOptions> {
             UninterpretedOption.internalBinaryRead(
               reader,
               reader.uint32(),
-              options
-            )
+              options,
+            ),
           );
           break;
         default:
-          let u = options.readUnknownField;
+          const u = options.readUnknownField;
           if (u === 'throw')
             throw new globalThis.Error(
-              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`
+              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
             );
-          let d = reader.skip(wireType);
+          const d = reader.skip(wireType);
           if (u !== false)
             (u === true ? UnknownFieldHandler.onRead : u)(
               this.typeName,
               message,
               fieldNo,
               wireType,
-              d
+              d,
             );
       }
     }
     return message;
   }
+
   internalBinaryWrite(
     message: EnumValueOptions,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
     /* optional bool deprecated = 1; */
     if (message.deprecated !== undefined)
@@ -4249,14 +4306,14 @@ class EnumValueOptions$Type extends MessageType<EnumValueOptions> {
       UninterpretedOption.internalBinaryWrite(
         message.uninterpretedOption[i],
         writer.tag(999, WireType.LengthDelimited).fork(),
-        options
+        options,
       ).join();
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -4274,17 +4331,18 @@ class ServiceOptions$Type extends MessageType<ServiceOptions> {
         name: 'deprecated',
         kind: 'scalar',
         opt: true,
-        T: 8 /*ScalarType.BOOL*/
+        T: 8, /* ScalarType.BOOL */
       },
       {
         no: 999,
         name: 'uninterpreted_option',
         kind: 'message',
-        repeat: 2 /*RepeatType.UNPACKED*/,
-        T: () => UninterpretedOption
-      }
+        repeat: 2 /* RepeatType.UNPACKED */,
+        T: () => UninterpretedOption,
+      },
     ]);
   }
+
   create(value?: PartialMessage<ServiceOptions>): ServiceOptions {
     const message = globalThis.Object.create(this.messagePrototype!);
     message.uninterpretedOption = [];
@@ -4292,16 +4350,17 @@ class ServiceOptions$Type extends MessageType<ServiceOptions> {
       reflectionMergePartial<ServiceOptions>(this, message, value);
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: ServiceOptions
+    target?: ServiceOptions,
   ): ServiceOptions {
-    let message = target ?? this.create(),
+    const message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
+      const [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
         case /* optional bool deprecated */ 33:
           message.deprecated = reader.bool();
@@ -4311,33 +4370,34 @@ class ServiceOptions$Type extends MessageType<ServiceOptions> {
             UninterpretedOption.internalBinaryRead(
               reader,
               reader.uint32(),
-              options
-            )
+              options,
+            ),
           );
           break;
         default:
-          let u = options.readUnknownField;
+          const u = options.readUnknownField;
           if (u === 'throw')
             throw new globalThis.Error(
-              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`
+              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
             );
-          let d = reader.skip(wireType);
+          const d = reader.skip(wireType);
           if (u !== false)
             (u === true ? UnknownFieldHandler.onRead : u)(
               this.typeName,
               message,
               fieldNo,
               wireType,
-              d
+              d,
             );
       }
     }
     return message;
   }
+
   internalBinaryWrite(
     message: ServiceOptions,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
     /* optional bool deprecated = 33; */
     if (message.deprecated !== undefined)
@@ -4347,14 +4407,14 @@ class ServiceOptions$Type extends MessageType<ServiceOptions> {
       UninterpretedOption.internalBinaryWrite(
         message.uninterpretedOption[i],
         writer.tag(999, WireType.LengthDelimited).fork(),
-        options
+        options,
       ).join();
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -4372,7 +4432,7 @@ class MethodOptions$Type extends MessageType<MethodOptions> {
         name: 'deprecated',
         kind: 'scalar',
         opt: true,
-        T: 8 /*ScalarType.BOOL*/
+        T: 8, /* ScalarType.BOOL */
       },
       {
         no: 34,
@@ -4381,18 +4441,19 @@ class MethodOptions$Type extends MessageType<MethodOptions> {
         opt: true,
         T: () => [
           'google.protobuf.MethodOptions.IdempotencyLevel',
-          MethodOptions_IdempotencyLevel
-        ]
+          MethodOptions_IdempotencyLevel,
+        ],
       },
       {
         no: 999,
         name: 'uninterpreted_option',
         kind: 'message',
-        repeat: 2 /*RepeatType.UNPACKED*/,
-        T: () => UninterpretedOption
-      }
+        repeat: 2 /* RepeatType.UNPACKED */,
+        T: () => UninterpretedOption,
+      },
     ]);
   }
+
   create(value?: PartialMessage<MethodOptions>): MethodOptions {
     const message = globalThis.Object.create(this.messagePrototype!);
     message.uninterpretedOption = [];
@@ -4400,16 +4461,17 @@ class MethodOptions$Type extends MessageType<MethodOptions> {
       reflectionMergePartial<MethodOptions>(this, message, value);
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: MethodOptions
+    target?: MethodOptions,
   ): MethodOptions {
-    let message = target ?? this.create(),
+    const message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
+      const [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
         case /* optional bool deprecated */ 33:
           message.deprecated = reader.bool();
@@ -4422,33 +4484,34 @@ class MethodOptions$Type extends MessageType<MethodOptions> {
             UninterpretedOption.internalBinaryRead(
               reader,
               reader.uint32(),
-              options
-            )
+              options,
+            ),
           );
           break;
         default:
-          let u = options.readUnknownField;
+          const u = options.readUnknownField;
           if (u === 'throw')
             throw new globalThis.Error(
-              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`
+              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
             );
-          let d = reader.skip(wireType);
+          const d = reader.skip(wireType);
           if (u !== false)
             (u === true ? UnknownFieldHandler.onRead : u)(
               this.typeName,
               message,
               fieldNo,
               wireType,
-              d
+              d,
             );
       }
     }
     return message;
   }
+
   internalBinaryWrite(
     message: MethodOptions,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
     /* optional bool deprecated = 33; */
     if (message.deprecated !== undefined)
@@ -4461,14 +4524,14 @@ class MethodOptions$Type extends MessageType<MethodOptions> {
       UninterpretedOption.internalBinaryWrite(
         message.uninterpretedOption[i],
         writer.tag(999, WireType.LengthDelimited).fork(),
-        options
+        options,
       ).join();
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -4485,55 +4548,56 @@ class UninterpretedOption$Type extends MessageType<UninterpretedOption> {
         no: 2,
         name: 'name',
         kind: 'message',
-        repeat: 2 /*RepeatType.UNPACKED*/,
-        T: () => UninterpretedOption_NamePart
+        repeat: 2 /* RepeatType.UNPACKED */,
+        T: () => UninterpretedOption_NamePart,
       },
       {
         no: 3,
         name: 'identifier_value',
         kind: 'scalar',
         opt: true,
-        T: 9 /*ScalarType.STRING*/
+        T: 9, /* ScalarType.STRING */
       },
       {
         no: 4,
         name: 'positive_int_value',
         kind: 'scalar',
         opt: true,
-        T: 4 /*ScalarType.UINT64*/,
-        L: 0 /*LongType.BIGINT*/
+        T: 4 /* ScalarType.UINT64 */,
+        L: 0, /* LongType.BIGINT */
       },
       {
         no: 5,
         name: 'negative_int_value',
         kind: 'scalar',
         opt: true,
-        T: 3 /*ScalarType.INT64*/,
-        L: 0 /*LongType.BIGINT*/
+        T: 3 /* ScalarType.INT64 */,
+        L: 0, /* LongType.BIGINT */
       },
       {
         no: 6,
         name: 'double_value',
         kind: 'scalar',
         opt: true,
-        T: 1 /*ScalarType.DOUBLE*/
+        T: 1, /* ScalarType.DOUBLE */
       },
       {
         no: 7,
         name: 'string_value',
         kind: 'scalar',
         opt: true,
-        T: 12 /*ScalarType.BYTES*/
+        T: 12, /* ScalarType.BYTES */
       },
       {
         no: 8,
         name: 'aggregate_value',
         kind: 'scalar',
         opt: true,
-        T: 9 /*ScalarType.STRING*/
-      }
+        T: 9, /* ScalarType.STRING */
+      },
     ]);
   }
+
   create(value?: PartialMessage<UninterpretedOption>): UninterpretedOption {
     const message = globalThis.Object.create(this.messagePrototype!);
     message.name = [];
@@ -4541,24 +4605,25 @@ class UninterpretedOption$Type extends MessageType<UninterpretedOption> {
       reflectionMergePartial<UninterpretedOption>(this, message, value);
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: UninterpretedOption
+    target?: UninterpretedOption,
   ): UninterpretedOption {
-    let message = target ?? this.create(),
+    const message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
+      const [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
         case /* repeated google.protobuf.UninterpretedOption.NamePart name */ 2:
           message.name.push(
             UninterpretedOption_NamePart.internalBinaryRead(
               reader,
               reader.uint32(),
-              options
-            )
+              options,
+            ),
           );
           break;
         case /* optional string identifier_value */ 3:
@@ -4580,35 +4645,36 @@ class UninterpretedOption$Type extends MessageType<UninterpretedOption> {
           message.aggregateValue = reader.string();
           break;
         default:
-          let u = options.readUnknownField;
+          const u = options.readUnknownField;
           if (u === 'throw')
             throw new globalThis.Error(
-              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`
+              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
             );
-          let d = reader.skip(wireType);
+          const d = reader.skip(wireType);
           if (u !== false)
             (u === true ? UnknownFieldHandler.onRead : u)(
               this.typeName,
               message,
               fieldNo,
               wireType,
-              d
+              d,
             );
       }
     }
     return message;
   }
+
   internalBinaryWrite(
     message: UninterpretedOption,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
     /* repeated google.protobuf.UninterpretedOption.NamePart name = 2; */
     for (let i = 0; i < message.name.length; i++)
       UninterpretedOption_NamePart.internalBinaryWrite(
         message.name[i],
         writer.tag(2, WireType.LengthDelimited).fork(),
-        options
+        options,
       ).join();
     /* optional string identifier_value = 3; */
     if (message.identifierValue !== undefined)
@@ -4628,12 +4694,12 @@ class UninterpretedOption$Type extends MessageType<UninterpretedOption> {
     /* optional string aggregate_value = 8; */
     if (message.aggregateValue !== undefined)
       writer.tag(8, WireType.LengthDelimited).string(message.aggregateValue);
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -4646,12 +4712,13 @@ export const UninterpretedOption = new UninterpretedOption$Type();
 class UninterpretedOption_NamePart$Type extends MessageType<UninterpretedOption_NamePart> {
   constructor() {
     super('google.protobuf.UninterpretedOption.NamePart', [
-      { no: 1, name: 'name_part', kind: 'scalar', T: 9 /*ScalarType.STRING*/ },
-      { no: 2, name: 'is_extension', kind: 'scalar', T: 8 /*ScalarType.BOOL*/ }
+      { no: 1, name: 'name_part', kind: 'scalar', T: 9 /* ScalarType.STRING */ },
+      { no: 2, name: 'is_extension', kind: 'scalar', T: 8 /* ScalarType.BOOL */ },
     ]);
   }
+
   create(
-    value?: PartialMessage<UninterpretedOption_NamePart>
+    value?: PartialMessage<UninterpretedOption_NamePart>,
   ): UninterpretedOption_NamePart {
     const message = globalThis.Object.create(this.messagePrototype!);
     message.namePart = '';
@@ -4660,20 +4727,21 @@ class UninterpretedOption_NamePart$Type extends MessageType<UninterpretedOption_
       reflectionMergePartial<UninterpretedOption_NamePart>(
         this,
         message,
-        value
+        value,
       );
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: UninterpretedOption_NamePart
+    target?: UninterpretedOption_NamePart,
   ): UninterpretedOption_NamePart {
-    let message = target ?? this.create(),
+    const message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
+      const [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
         case /* string name_part */ 1:
           message.namePart = reader.string();
@@ -4682,28 +4750,29 @@ class UninterpretedOption_NamePart$Type extends MessageType<UninterpretedOption_
           message.isExtension = reader.bool();
           break;
         default:
-          let u = options.readUnknownField;
+          const u = options.readUnknownField;
           if (u === 'throw')
             throw new globalThis.Error(
-              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`
+              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
             );
-          let d = reader.skip(wireType);
+          const d = reader.skip(wireType);
           if (u !== false)
             (u === true ? UnknownFieldHandler.onRead : u)(
               this.typeName,
               message,
               fieldNo,
               wireType,
-              d
+              d,
             );
       }
     }
     return message;
   }
+
   internalBinaryWrite(
     message: UninterpretedOption_NamePart,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
     /* string name_part = 1; */
     if (message.namePart !== '')
@@ -4711,12 +4780,12 @@ class UninterpretedOption_NamePart$Type extends MessageType<UninterpretedOption_
     /* bool is_extension = 2; */
     if (message.isExtension !== false)
       writer.tag(2, WireType.Varint).bool(message.isExtension);
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -4724,8 +4793,8 @@ class UninterpretedOption_NamePart$Type extends MessageType<UninterpretedOption_
 /**
  * @generated MessageType for protobuf message google.protobuf.UninterpretedOption.NamePart
  */
-export const UninterpretedOption_NamePart =
-  new UninterpretedOption_NamePart$Type();
+export const UninterpretedOption_NamePart
+  = new UninterpretedOption_NamePart$Type();
 // @generated message type with reflection information, may provide speed optimized methods
 class SourceCodeInfo$Type extends MessageType<SourceCodeInfo> {
   constructor() {
@@ -4734,11 +4803,12 @@ class SourceCodeInfo$Type extends MessageType<SourceCodeInfo> {
         no: 1,
         name: 'location',
         kind: 'message',
-        repeat: 2 /*RepeatType.UNPACKED*/,
-        T: () => SourceCodeInfo_Location
-      }
+        repeat: 2 /* RepeatType.UNPACKED */,
+        T: () => SourceCodeInfo_Location,
+      },
     ]);
   }
+
   create(value?: PartialMessage<SourceCodeInfo>): SourceCodeInfo {
     const message = globalThis.Object.create(this.messagePrototype!);
     message.location = [];
@@ -4746,63 +4816,65 @@ class SourceCodeInfo$Type extends MessageType<SourceCodeInfo> {
       reflectionMergePartial<SourceCodeInfo>(this, message, value);
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: SourceCodeInfo
+    target?: SourceCodeInfo,
   ): SourceCodeInfo {
-    let message = target ?? this.create(),
+    const message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
+      const [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
         case /* repeated google.protobuf.SourceCodeInfo.Location location */ 1:
           message.location.push(
             SourceCodeInfo_Location.internalBinaryRead(
               reader,
               reader.uint32(),
-              options
-            )
+              options,
+            ),
           );
           break;
         default:
-          let u = options.readUnknownField;
+          const u = options.readUnknownField;
           if (u === 'throw')
             throw new globalThis.Error(
-              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`
+              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
             );
-          let d = reader.skip(wireType);
+          const d = reader.skip(wireType);
           if (u !== false)
             (u === true ? UnknownFieldHandler.onRead : u)(
               this.typeName,
               message,
               fieldNo,
               wireType,
-              d
+              d,
             );
       }
     }
     return message;
   }
+
   internalBinaryWrite(
     message: SourceCodeInfo,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
     /* repeated google.protobuf.SourceCodeInfo.Location location = 1; */
     for (let i = 0; i < message.location.length; i++)
       SourceCodeInfo_Location.internalBinaryWrite(
         message.location[i],
         writer.tag(1, WireType.LengthDelimited).fork(),
-        options
+        options,
       ).join();
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -4819,41 +4891,42 @@ class SourceCodeInfo_Location$Type extends MessageType<SourceCodeInfo_Location> 
         no: 1,
         name: 'path',
         kind: 'scalar',
-        repeat: 1 /*RepeatType.PACKED*/,
-        T: 5 /*ScalarType.INT32*/
+        repeat: 1 /* RepeatType.PACKED */,
+        T: 5, /* ScalarType.INT32 */
       },
       {
         no: 2,
         name: 'span',
         kind: 'scalar',
-        repeat: 1 /*RepeatType.PACKED*/,
-        T: 5 /*ScalarType.INT32*/
+        repeat: 1 /* RepeatType.PACKED */,
+        T: 5, /* ScalarType.INT32 */
       },
       {
         no: 3,
         name: 'leading_comments',
         kind: 'scalar',
         opt: true,
-        T: 9 /*ScalarType.STRING*/
+        T: 9, /* ScalarType.STRING */
       },
       {
         no: 4,
         name: 'trailing_comments',
         kind: 'scalar',
         opt: true,
-        T: 9 /*ScalarType.STRING*/
+        T: 9, /* ScalarType.STRING */
       },
       {
         no: 6,
         name: 'leading_detached_comments',
         kind: 'scalar',
-        repeat: 2 /*RepeatType.UNPACKED*/,
-        T: 9 /*ScalarType.STRING*/
-      }
+        repeat: 2 /* RepeatType.UNPACKED */,
+        T: 9, /* ScalarType.STRING */
+      },
     ]);
   }
+
   create(
-    value?: PartialMessage<SourceCodeInfo_Location>
+    value?: PartialMessage<SourceCodeInfo_Location>,
   ): SourceCodeInfo_Location {
     const message = globalThis.Object.create(this.messagePrototype!);
     message.path = [];
@@ -4863,26 +4936,27 @@ class SourceCodeInfo_Location$Type extends MessageType<SourceCodeInfo_Location> 
       reflectionMergePartial<SourceCodeInfo_Location>(this, message, value);
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: SourceCodeInfo_Location
+    target?: SourceCodeInfo_Location,
   ): SourceCodeInfo_Location {
-    let message = target ?? this.create(),
+    const message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
+      const [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
-        case /* repeated int32 path = 1 [packed = true];*/ 1:
+        case /* repeated int32 path = 1 [packed = true]; */ 1:
           if (wireType === WireType.LengthDelimited)
-            for (let e = reader.int32() + reader.pos; reader.pos < e; )
+            for (let e = reader.int32() + reader.pos; reader.pos < e;)
               message.path.push(reader.int32());
           else message.path.push(reader.int32());
           break;
-        case /* repeated int32 span = 2 [packed = true];*/ 2:
+        case /* repeated int32 span = 2 [packed = true]; */ 2:
           if (wireType === WireType.LengthDelimited)
-            for (let e = reader.int32() + reader.pos; reader.pos < e; )
+            for (let e = reader.int32() + reader.pos; reader.pos < e;)
               message.span.push(reader.int32());
           else message.span.push(reader.int32());
           break;
@@ -4896,28 +4970,29 @@ class SourceCodeInfo_Location$Type extends MessageType<SourceCodeInfo_Location> 
           message.leadingDetachedComments.push(reader.string());
           break;
         default:
-          let u = options.readUnknownField;
+          const u = options.readUnknownField;
           if (u === 'throw')
             throw new globalThis.Error(
-              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`
+              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
             );
-          let d = reader.skip(wireType);
+          const d = reader.skip(wireType);
           if (u !== false)
             (u === true ? UnknownFieldHandler.onRead : u)(
               this.typeName,
               message,
               fieldNo,
               wireType,
-              d
+              d,
             );
       }
     }
     return message;
   }
+
   internalBinaryWrite(
     message: SourceCodeInfo_Location,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
     /* repeated int32 path = 1 [packed = true]; */
     if (message.path.length) {
@@ -4944,12 +5019,12 @@ class SourceCodeInfo_Location$Type extends MessageType<SourceCodeInfo_Location> 
       writer
         .tag(6, WireType.LengthDelimited)
         .string(message.leadingDetachedComments[i]);
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -4966,11 +5041,12 @@ class GeneratedCodeInfo$Type extends MessageType<GeneratedCodeInfo> {
         no: 1,
         name: 'annotation',
         kind: 'message',
-        repeat: 2 /*RepeatType.UNPACKED*/,
-        T: () => GeneratedCodeInfo_Annotation
-      }
+        repeat: 2 /* RepeatType.UNPACKED */,
+        T: () => GeneratedCodeInfo_Annotation,
+      },
     ]);
   }
+
   create(value?: PartialMessage<GeneratedCodeInfo>): GeneratedCodeInfo {
     const message = globalThis.Object.create(this.messagePrototype!);
     message.annotation = [];
@@ -4978,63 +5054,65 @@ class GeneratedCodeInfo$Type extends MessageType<GeneratedCodeInfo> {
       reflectionMergePartial<GeneratedCodeInfo>(this, message, value);
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: GeneratedCodeInfo
+    target?: GeneratedCodeInfo,
   ): GeneratedCodeInfo {
-    let message = target ?? this.create(),
+    const message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
+      const [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
         case /* repeated google.protobuf.GeneratedCodeInfo.Annotation annotation */ 1:
           message.annotation.push(
             GeneratedCodeInfo_Annotation.internalBinaryRead(
               reader,
               reader.uint32(),
-              options
-            )
+              options,
+            ),
           );
           break;
         default:
-          let u = options.readUnknownField;
+          const u = options.readUnknownField;
           if (u === 'throw')
             throw new globalThis.Error(
-              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`
+              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
             );
-          let d = reader.skip(wireType);
+          const d = reader.skip(wireType);
           if (u !== false)
             (u === true ? UnknownFieldHandler.onRead : u)(
               this.typeName,
               message,
               fieldNo,
               wireType,
-              d
+              d,
             );
       }
     }
     return message;
   }
+
   internalBinaryWrite(
     message: GeneratedCodeInfo,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
     /* repeated google.protobuf.GeneratedCodeInfo.Annotation annotation = 1; */
     for (let i = 0; i < message.annotation.length; i++)
       GeneratedCodeInfo_Annotation.internalBinaryWrite(
         message.annotation[i],
         writer.tag(1, WireType.LengthDelimited).fork(),
-        options
+        options,
       ).join();
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -5051,34 +5129,35 @@ class GeneratedCodeInfo_Annotation$Type extends MessageType<GeneratedCodeInfo_An
         no: 1,
         name: 'path',
         kind: 'scalar',
-        repeat: 1 /*RepeatType.PACKED*/,
-        T: 5 /*ScalarType.INT32*/
+        repeat: 1 /* RepeatType.PACKED */,
+        T: 5, /* ScalarType.INT32 */
       },
       {
         no: 2,
         name: 'source_file',
         kind: 'scalar',
         opt: true,
-        T: 9 /*ScalarType.STRING*/
+        T: 9, /* ScalarType.STRING */
       },
       {
         no: 3,
         name: 'begin',
         kind: 'scalar',
         opt: true,
-        T: 5 /*ScalarType.INT32*/
+        T: 5, /* ScalarType.INT32 */
       },
       {
         no: 4,
         name: 'end',
         kind: 'scalar',
         opt: true,
-        T: 5 /*ScalarType.INT32*/
-      }
+        T: 5, /* ScalarType.INT32 */
+      },
     ]);
   }
+
   create(
-    value?: PartialMessage<GeneratedCodeInfo_Annotation>
+    value?: PartialMessage<GeneratedCodeInfo_Annotation>,
   ): GeneratedCodeInfo_Annotation {
     const message = globalThis.Object.create(this.messagePrototype!);
     message.path = [];
@@ -5086,24 +5165,25 @@ class GeneratedCodeInfo_Annotation$Type extends MessageType<GeneratedCodeInfo_An
       reflectionMergePartial<GeneratedCodeInfo_Annotation>(
         this,
         message,
-        value
+        value,
       );
     return message;
   }
+
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: GeneratedCodeInfo_Annotation
+    target?: GeneratedCodeInfo_Annotation,
   ): GeneratedCodeInfo_Annotation {
-    let message = target ?? this.create(),
+    const message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
+      const [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
-        case /* repeated int32 path = 1 [packed = true];*/ 1:
+        case /* repeated int32 path = 1 [packed = true]; */ 1:
           if (wireType === WireType.LengthDelimited)
-            for (let e = reader.int32() + reader.pos; reader.pos < e; )
+            for (let e = reader.int32() + reader.pos; reader.pos < e;)
               message.path.push(reader.int32());
           else message.path.push(reader.int32());
           break;
@@ -5117,28 +5197,29 @@ class GeneratedCodeInfo_Annotation$Type extends MessageType<GeneratedCodeInfo_An
           message.end = reader.int32();
           break;
         default:
-          let u = options.readUnknownField;
+          const u = options.readUnknownField;
           if (u === 'throw')
             throw new globalThis.Error(
-              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`
+              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
             );
-          let d = reader.skip(wireType);
+          const d = reader.skip(wireType);
           if (u !== false)
             (u === true ? UnknownFieldHandler.onRead : u)(
               this.typeName,
               message,
               fieldNo,
               wireType,
-              d
+              d,
             );
       }
     }
     return message;
   }
+
   internalBinaryWrite(
     message: GeneratedCodeInfo_Annotation,
     writer: IBinaryWriter,
-    options: BinaryWriteOptions
+    options: BinaryWriteOptions,
   ): IBinaryWriter {
     /* repeated int32 path = 1 [packed = true]; */
     if (message.path.length) {
@@ -5156,12 +5237,12 @@ class GeneratedCodeInfo_Annotation$Type extends MessageType<GeneratedCodeInfo_An
     /* optional int32 end = 4; */
     if (message.end !== undefined)
       writer.tag(4, WireType.Varint).int32(message.end);
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
         message,
-        writer
+        writer,
       );
     return writer;
   }
@@ -5169,5 +5250,5 @@ class GeneratedCodeInfo_Annotation$Type extends MessageType<GeneratedCodeInfo_An
 /**
  * @generated MessageType for protobuf message google.protobuf.GeneratedCodeInfo.Annotation
  */
-export const GeneratedCodeInfo_Annotation =
-  new GeneratedCodeInfo_Annotation$Type();
+export const GeneratedCodeInfo_Annotation
+  = new GeneratedCodeInfo_Annotation$Type();

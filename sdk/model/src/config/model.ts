@@ -1,3 +1,5 @@
+import { ArchiveFormat } from "@milaboratories/pl-model-common";
+
 export type Cfg =
   | CfgGetFromCtx
   | CfgIsolate
@@ -20,6 +22,7 @@ export type Cfg =
   | CfgBlobContentAsJson
   | CfgDownloadedBlobContent
   | CfgOnDemandBlobContent
+  | CfgExtractArchiveAndGetURL
   | CfgImportProgress
   | CfgLastLogs
   | CfgProgressLog
@@ -163,6 +166,16 @@ export type CfgDownloadedBlobContent = {
 
 export type CfgOnDemandBlobContent = {
   type: 'GetOnDemandBlobContent';
+  source: Cfg;
+};
+
+//
+// Download Blobs to URLs
+//
+
+export type CfgExtractArchiveAndGetURL = {
+  type: 'ExtractArchiveAndGetURL';
+  format: ArchiveFormat;
   source: Cfg;
 };
 

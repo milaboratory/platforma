@@ -9,7 +9,7 @@ export function requestTick<P>(cb: (...args: P[]) => void) {
       });
       tick = true;
     } else {
-      console.log('handle pressure');
+      // console.log('handle pressure');
     }
   };
 }

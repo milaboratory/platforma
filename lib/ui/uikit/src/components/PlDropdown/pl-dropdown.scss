@@ -1,4 +1,4 @@
-@import "@/assets/mixins";
+@use "@/assets/mixins" as *;
 
 .pl-dropdown__options {
   --option-hover-bg: var(--btn-sec-hover-grey);

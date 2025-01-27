@@ -15,6 +15,7 @@ import { ResultPool } from '../pool/result_pool';
 export type BlockContextArgsOnly = {
   readonly blockId: string;
   readonly args: (cCtx: ComputableCtx) => string;
+  readonly activeArgs: (cCtx: ComputableCtx) => string | undefined;
   readonly uiState: (cCtx: ComputableCtx) => string | undefined;
   readonly blockMeta: (cCtx: ComputableCtx) => Map<string, Block>;
 };
@@ -42,11 +43,21 @@ export function constructBlockContextArgsOnly(
         })
         .getDataAsString()
     );
+  const activeArgs = (cCtx: ComputableCtx) =>
+    cCtx
+      .accessor(projectEntry)
+      .node()
+      .traverse({
+        field: projectFieldName(blockId, 'prodArgs'),
+        stableIfNotFound: true
+      })
+      ?.getDataAsString();
   const uiState = (cCtx: ComputableCtx) =>
     cCtx.accessor(projectEntry).node().getKeyValueAsString(blockFrontendStateKey(blockId));
   return {
     blockId,
     args,
+    activeArgs,
     uiState,
     blockMeta: (cCtx: ComputableCtx) => {
       const prj = cCtx.accessor(projectEntry).node();

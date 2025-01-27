@@ -1,5 +1,44 @@
 # @platforma-sdk/block-tools
 
+## 2.5.7
+
+### Patch Changes
+
+- @milaboratories/pl-model-middle-layer@1.7.1
+
+## 2.5.6
+
+### Patch Changes
+
+- Updated dependencies [02860e7]
+  - @milaboratories/pl-http@1.0.3
+
+## 2.5.5
+
+### Patch Changes
+
+- c4dd069: Fix for getUpdateSuggestions method with changel === "any"
+
+## 2.5.4
+
+### Patch Changes
+
+- Updated dependencies [3da2292]
+  - @milaboratories/pl-model-middle-layer@1.7.0
+
+## 2.5.3
+
+### Patch Changes
+
+- @milaboratories/pl-model-middle-layer@1.6.11
+
+## 2.5.2
+
+### Patch Changes
+
+- Updated dependencies [c2161da]
+  - @milaboratories/pl-model-middle-layer@1.6.10
+
 ## 2.5.1
 
 ### Patch Changes

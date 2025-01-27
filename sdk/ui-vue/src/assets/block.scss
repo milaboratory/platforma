@@ -1,4 +1,4 @@
-@import '@milaboratories/uikit/src/assets/mixins.scss';
+@use '@milaboratories/uikit/src/assets/mixins.scss' as *;
 
 .block {
   flex: 1;

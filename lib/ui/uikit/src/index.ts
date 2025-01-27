@@ -38,6 +38,7 @@ export * from './components/PlTooltip';
 export * from './components/PlProgressBar';
 export * from './components/PlNumberField';
 export * from './components/PlDropdownMulti';
+export * from './components/PlDropdownMultiRef';
 export * from './components/PlCheckbox';
 export * from './components/PlCheckboxGroup';
 export * from './components/PlChip';
@@ -62,6 +63,7 @@ export * from './components/PlIcon16';
 export * from './components/PlIcon24';
 
 export * from './components/PlChartStackedBar';
+export * from './components/PlChartHistogram';
 
 export * from './colors';
 
@@ -92,6 +94,7 @@ export { useInterval } from './composition/useInterval';
 export { useFormState } from './composition/useFormState';
 export { useQuery } from './composition/useQuery.ts';
 export { useDraggable } from './composition/useDraggable';
+export { useComponentProp } from './composition/useComponentProp';
 
 /**
  * Utils/Partials

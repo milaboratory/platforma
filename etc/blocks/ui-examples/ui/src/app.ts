@@ -4,9 +4,7 @@ import { computed, reactive, ref } from 'vue';
 import LogViewPage from './pages/LogViewPage.vue';
 import ModalsPage from './pages/ModalsPage.vue';
 import InjectEnvPage from './pages/InjectEnvPage.vue';
-import DropdownsPage from './pages/DropdownsPage.vue';
 import UseWatchFetchPage from './pages/UseWatchFetchPage.vue';
-import FormComponentsPage from './pages/FormComponentsPage.vue';
 import TypographyPage from './pages/TypographyPage.vue';
 import AgGridVuePage from './pages/AgGridVuePage.vue';
 import SelectFilesPage from './pages/SelectFilesPage.vue';
@@ -19,10 +17,15 @@ import DraftsPage from './pages/DraftsPage.vue';
 import LayoutPage from './pages/LayoutPage.vue';
 import ButtonsPage from './pages/ButtonsPage.vue';
 import NotificationsPage from './pages/NotificationsPage.vue';
-import StackedBarPage from './pages/StackedBarPage/StackedBarPage.vue';
 import LoadersPage from './pages/LoadersPage.vue';
+import AddSectionPage from './pages/AddSectionPage.vue';
+import { uniqueId } from '@milaboratories/helpers';
+import SectionPage from './pages/SectionPage.vue';
+import { FormComponentsPage } from './pages/FormComponentsPage';
+import { HistogramPage } from './pages/HistogramPage';
+import { StackedBarPage } from './pages/StackedBarPage';
 
-export const sdkPlugin = defineApp(platforma, (base) => {
+export const sdkPlugin = defineApp(platforma, (app) => {
   // Additional data
   const data = reactive({
     counter: 0,
@@ -32,7 +35,7 @@ export const sdkPlugin = defineApp(platforma, (base) => {
     data.counter++;
   }
 
-  const argsAsJson = computed(() => JSON.stringify(base.snapshot.args));
+  const argsAsJson = computed(() => JSON.stringify(app.snapshot.args));
 
   const progressRef = ref<boolean | number>();
 
@@ -52,12 +55,22 @@ export const sdkPlugin = defineApp(platforma, (base) => {
     });
   }
 
+  function createSection(label: string) {
+    const id = uniqueId();
+    app.model.ui.dynamicSections.push({
+      id,
+      label,
+    });
+    return id;
+  }
+
   return {
     data,
     incrementCounter,
     argsAsJson,
     showInfiniteProgress: showLoader,
     showProgress,
+    createSection,
     progress: () => {
       return progressRef.value;
     },
@@ -67,7 +80,6 @@ export const sdkPlugin = defineApp(platforma, (base) => {
       '/log-view': () => LogViewPage,
       '/modals': () => ModalsPage,
       '/inject-env': () => InjectEnvPage,
-      '/dropdowns': () => DropdownsPage,
       '/use-watch-fetch': () => UseWatchFetchPage,
       '/form-components': () => FormComponentsPage,
       '/typography': () => TypographyPage,
@@ -81,7 +93,10 @@ export const sdkPlugin = defineApp(platforma, (base) => {
       '/buttons': () => ButtonsPage,
       '/notifications': () => NotificationsPage,
       '/stacked-bar': () => StackedBarPage,
+      '/histogram': () => HistogramPage,
       '/loaders': () => LoadersPage,
+      '/add-section': () => AddSectionPage,
+      '/section': () => SectionPage,
     },
   };
 }, {

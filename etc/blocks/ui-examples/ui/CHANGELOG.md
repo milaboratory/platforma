@@ -1,5 +1,77 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.3.26
+
+### Patch Changes
+
+- Updated dependencies [ce558f9]
+- Updated dependencies [b41709a]
+  - @platforma-sdk/model@1.22.2
+  - @milaboratories/milaboratories.ui-examples.model@1.1.15
+
+## 1.3.25
+
+### Patch Changes
+
+- Updated dependencies [c0d5856]
+  - @platforma-sdk/model@1.22.0
+  - @milaboratories/milaboratories.ui-examples.model@1.1.14
+
+## 1.3.24
+
+### Patch Changes
+
+- ca66b2a: [ui-kit] Check that all standard components have tooltip slot
+- Updated dependencies [ca66b2a]
+  - @milaboratories/milaboratories.ui-examples.model@1.1.13
+
+## 1.3.23
+
+### Patch Changes
+
+- 3ff9dcd: Enable nested source maps in dev sdk mode
+
+## 1.3.22
+
+### Patch Changes
+
+- 93e9a66: [sdk/ui-vue] Align PlDialogModal with figma (size props, etc)
+
+## 1.3.21
+
+### Patch Changes
+
+- 9b5a692: [sdk/ui-vue] Histogram
+- Updated dependencies [9b5a692]
+  - @milaboratories/milaboratories.ui-examples.model@1.1.12
+
+## 1.3.20
+
+### Patch Changes
+
+- 93b8d8d: fix styles
+
+## 1.3.19
+
+### Patch Changes
+
+- 32966e6: [desktop] Custom design for “+ add graph“ etc. sections
+- Updated dependencies [32966e6]
+  - @milaboratories/milaboratories.ui-examples.model@1.1.11
+  - @platforma-sdk/model@1.21.20
+
+## 1.3.18
+
+### Patch Changes
+
+- 178c642: fix PlAgChartStackedBarCell styling
+
+## 1.3.17
+
+### Patch Changes
+
+- ad4719e: added dropdownmultiref and loading status
+
 ## 1.3.16
 
 ### Patch Changes

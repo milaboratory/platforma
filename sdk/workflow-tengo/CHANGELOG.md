@@ -1,5 +1,47 @@
 # @platforma-sdk/workflow-tengo
 
+## 2.9.9
+
+### Patch Changes
+
+- 0d1ffc8: pfconv update
+
+## 2.9.8
+
+### Patch Changes
+
+- 87453b5: pfconv update
+
+## 2.9.7
+
+### Patch Changes
+
+- 37ecd10: Adding quick-sort methods in slices tengo sdk
+
+## 2.9.6
+
+### Patch Changes
+
+- f129da8: PFrames update
+
+## 2.9.5
+
+### Patch Changes
+
+- 5067916: Correct path to R local packages index
+
+## 2.9.4
+
+### Patch Changes
+
+- be4e18a: Enable R to run in restricted network on linux and mac
+
+## 2.9.3
+
+### Patch Changes
+
+- 762425d: wf: exec: add new `argWithVar`, envWithVar, changing old broke forward compat
+
 ## 2.9.2
 
 ### Patch Changes

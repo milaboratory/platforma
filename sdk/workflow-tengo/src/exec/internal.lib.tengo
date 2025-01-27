@@ -33,30 +33,28 @@ _expr := func(varName) {
 	return "{" + varName + "}"
 }
 
+_newTypedArg := func(type, value) {
+	return ll.toStrict({
+		type: type,
+		value: value
+	})
+}
+
 /**
  * Create new argument with a type. The type can be either string, expression or variable.
  * Decides whether we need a simple argument or an expression one.
- * For a month, we keep deprecated variable arguments.
+ * Until 15 Mar 2025, we keep deprecated variable arguments.
  *
  * @param isString: boolean - whether it is a string or a difficult (expression) argument.
  */
 _newArg := func(isString, value) {
 	if isString {
-		return ll.toStrict({
-			type: constants.ARG_TYPE_STRING,
-			value: value
-		})
+		return _newTypedArg(constants.ARG_TYPE_STRING, value)
 	}
 	if desc.canBackendUseExpressions() {
-		return ll.toStrict({
-			type: constants.ARG_TYPE_EXPRESSION,
-			value: value
-		})
+		return _newTypedArg(constants.ARG_TYPE_EXPRESSION, value)
 	}
-	return ll.toStrict({
-		type: constants.ARG_TYPE_VAR,
-		value: value
-	})
+	return _newTypedArg(constants.ARG_TYPE_VAR, value)
 }
 
 _newRefVar := func(varName, refName, reference) {
@@ -164,20 +162,31 @@ _loadRRunEnvironment := func(operationMode, descriptor, softName, softPkg) {
 	rEnvRefKey := softName + "/R-virtual-env"
 	rEnvRefVar := _newRefVar(_ARG_VAR_R_VENV, rEnvRefKey, rEnv)
 
+	renvRootArg := path.join(_expr(_ARG_VAR_R), "renv-root")
+
+	envs := {
+		"RHOME": _newArg(false, _expr(_ARG_VAR_R)), // for Rscript (it uses RHOME instead of R_HOME)
+		"R_HOME_DIR": _newArg(false, _expr(_ARG_VAR_R)), // for R startup script. It configures all the rest required for R to start.
+		"RENV_PATHS_ROOT": _newArg(false, renvRootArg),
+		"RENV_PATHS_BINARY": _newArg(false, path.join(renvRootArg, "binaries")),
+		"RENV_PATHS_SOURCE": _newArg(false, path.join(renvRootArg, "sources")),
+		"RENV_PATHS_CACHE": _newArg(false, path.join(renvRootArg, "cache")),
+		"RENV_PATHS_RENV": _newArg(false, path.join(_expr(_ARG_VAR_R_VENV), "renv")),
+		"RENV_PATHS_LOCKFILE": _newArg(false, path.join(_expr(_ARG_VAR_PKG), descriptor.dependencies.lockFile))
+	}
+
+	if (operationMode != "dev-local") {
+		// In production we can use only locally cached packages: most of commercials have
+		// Platforma Backend executed in a very restricted environment with limited access to the internet.
+		envs["RENV_CONFIG_REPOS_OVERRIDE"] = _newArg(false, path.join(_expr(_ARG_VAR_R), "packages"))
+	}
+
 	return ll.toStrict({
 		runEnvType: "R",
 
 		variables: [ rRefVar, rEnvRefVar ],
 		customPaths: [ _newArg(false, rBinDir) ],
-		envs: {
-			"R_HOME_DIR": _newArg(false, _expr(_ARG_VAR_R)),
-			"RHOME": _newArg(false, _expr(_ARG_VAR_R)),
-			"RENV_PATHS_ROOT": _newArg(false, path.join(_expr(_ARG_VAR_R), "renv-root")),
-			"RENV_PATHS_RENV": _newArg(false, path.join(_expr(_ARG_VAR_R_VENV), "renv")),
-			"RENV_PATHS_LOCKFILE": _newArg(false, path.join(_expr(_ARG_VAR_PKG), descriptor.dependencies.lockFile)),
-			"RENV_CONFIG_AUTO_SNAPSHOT": _newArg(true, "FALSE"),
-			"RENV_CONFIG_SYNCHRONIZED_CHECK": _newArg(true, "FALSE")
-		}
+		envs: envs
 	})
 }
 
@@ -197,7 +206,7 @@ _loadRunEnvironment := func(operationMode, descriptor, softName, softPackage) {
 }
 
 /**
- * @param operationMode: 'remote' | 'dev-local'
+ * @param operationMode: "remote" | "dev-local"
  */
 _binPackageCallOptions := func(operationMode, softwareName, variables, descriptor, softPackage) {
 	customPaths := []
@@ -308,13 +317,11 @@ binaryRunOptions := func(runOptions, mnzEnvs) {
 	validation.assertJsonSchema(mnzEnvs, {"any": validation.reference})
 
 	runCmdOpts := undefined
-	onlyStrings := false
 	if (is_undefined(ll.fromStrict(runOptions).software)) {
 		//
 		// Simple local command run, no software packages involved (backward compatibility)
 		//
 		runCmdOpts = _directCallOptions(runOptions)
-		onlyStrings = true
 	} else {
 		software := runOptions.software
 		descriptor := software.descriptor
@@ -323,11 +330,22 @@ binaryRunOptions := func(runOptions, mnzEnvs) {
 	}
 
 	// adds exec builder's defined options from run options.
-	for arg in runOptions.args {
-		runCmdOpts.args = append(runCmdOpts.args, _newArg(true, arg))
+	// If argsTyped or envsTyped are set (which is a new API from exec.builder),
+	// then pass them directly.
+	// Otherwise, pass args and envs the old way, without possible expression evaluating.
+	opts := ll.fromStrict(runOptions)
+	shouldUseNewTyped := !is_undefined(opts.argsTyped) || !is_undefined(opts.envsTyped)
+
+	args := shouldUseNewTyped ? runOptions.argsTyped : runOptions.args
+	for _, arg in args {
+		typedArg := shouldUseNewTyped ? _newTypedArg(arg.type, arg.value) :	_newArg(true, arg)
+		runCmdOpts.args = append(runCmdOpts.args, typedArg)
 	}
-	for name, val in runOptions.envs {
-		runCmdOpts.envs[name] = _newArg(true, val)
+
+	envs := shouldUseNewTyped ? runOptions.envsTyped : runOptions.envs
+	for name, v in envs {
+		typedEnv := shouldUseNewTyped ? _newTypedArg(v.type, v.value) : _newArg(true, v)
+		runCmdOpts.envs[name] = typedEnv
 	}
 
 	for name, val in mnzEnvs { // can be empty

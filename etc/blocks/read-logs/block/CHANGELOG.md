@@ -1,5 +1,99 @@
 # @milaboratories/milaboratories.test-read-logs
 
+## 1.0.66
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-read-logs.ui@1.0.66
+
+## 1.0.65
+
+### Patch Changes
+
+- Updated dependencies [ce558f9]
+- Updated dependencies [b41709a]
+  - @platforma-sdk/model@1.22.2
+  - @milaboratories/milaboratories.test-read-logs.model@1.0.15
+  - @milaboratories/milaboratories.test-read-logs.ui@1.0.65
+
+## 1.0.64
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-read-logs.ui@1.0.64
+- @milaboratories/milaboratories.test-read-logs.model@1.0.14
+
+## 1.0.63
+
+### Patch Changes
+
+- Updated dependencies [c0d5856]
+  - @platforma-sdk/model@1.22.0
+  - @milaboratories/milaboratories.test-read-logs.model@1.0.14
+  - @milaboratories/milaboratories.test-read-logs.ui@1.0.63
+
+## 1.0.62
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-read-logs.ui@1.0.62
+
+## 1.0.61
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-read-logs.ui@1.0.61
+
+## 1.0.60
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-read-logs.ui@1.0.60
+
+## 1.0.59
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-read-logs.ui@1.0.59
+
+## 1.0.58
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-read-logs.ui@1.0.58
+
+## 1.0.57
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-read-logs.ui@1.0.57
+
+## 1.0.56
+
+### Patch Changes
+
+- @platforma-sdk/model@1.21.20
+- @milaboratories/milaboratories.test-read-logs.ui@1.0.56
+- @milaboratories/milaboratories.test-read-logs.model@1.0.13
+
+## 1.0.55
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-read-logs.ui@1.0.55
+
+## 1.0.54
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-read-logs.ui@1.0.54
+
+## 1.0.53
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-read-logs.ui@1.0.53
+
 ## 1.0.52
 
 ### Patch Changes

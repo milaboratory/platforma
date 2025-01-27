@@ -7,8 +7,9 @@ export default {
 <script lang="ts" setup>
 import { useEventListener } from '@/composition/useEventListener';
 import './pl-dialog-modal.scss';
-import { ref, useAttrs, useSlots } from 'vue';
+import { computed, ref, useSlots } from 'vue';
 import PlCloseModalBtn from '@/utils/PlCloseModalBtn.vue';
+import type { Size } from '@/types';
 
 const slots = useSlots();
 
@@ -56,6 +57,10 @@ const props = withDefaults(
      * If `true`, the modal window closes when clicking outside the modal area (default: `true`)
      */
     closeOnOutsideClick?: boolean;
+    /**
+     * Predefined size (standard small | medium | large). Takes precedence over (min|max)(width|height) properties. Not defined by default.
+     */
+    size?: Size | undefined;
   }>(),
   {
     width: '448px',
@@ -65,12 +70,44 @@ const props = withDefaults(
     closable: true,
     noContentGutters: false,
     actionsHasTopBorder: true,
+    size: undefined,
   },
 );
 
 const modal = ref<HTMLElement>();
 
-const $attrs = useAttrs();
+const style = computed(() => {
+  const { width, height, minHeight, maxHeight, size } = props;
+
+  if (size === 'small') {
+    return {
+      width: '448px',
+      height: '440px',
+      minHeight: 'auto',
+      maxHeight: 'auto',
+    };
+  }
+
+  if (size === 'medium') {
+    return {
+      width: '720px',
+      height: '720px',
+      minHeight: 'auto',
+      maxHeight: 'auto',
+    };
+  }
+
+  if (size === 'large') {
+    return {
+      width: '1080px',
+      height: '880px',
+      minHeight: 'auto',
+      maxHeight: 'auto',
+    };
+  }
+
+  return { width, height, minHeight, maxHeight };
+});
 
 function onClickShadow(ev: Event) {
   if (modal.value && props.closeOnOutsideClick && document.contains(ev.target as Node) && !modal.value.contains(ev.target as Node)) {
@@ -94,7 +131,7 @@ useEventListener(document.body, 'keyup', (ev) => {
           ref="modal"
           class="pl-dialog-modal"
           :class="{ 'has-title': slots.title, 'has-content': slots.default }"
-          :style="{ width, height, minHeight, maxHeight }"
+          :style="style"
         >
           <PlCloseModalBtn v-if="closable" class="close-modal-btn" @click.stop="emit('update:modelValue', false)" />
           <div v-if="slots.title" class="pl-dialog-modal__title">
