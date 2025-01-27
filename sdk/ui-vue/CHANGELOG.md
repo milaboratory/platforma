@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.22.7
+
+### Patch Changes
+
+- 698c647: Add columnsPanelWidth property to the PlAgDataTable
+
 ## 1.22.4
 
 ### Patch Changes
