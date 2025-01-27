@@ -62,6 +62,10 @@ const props = defineProps<{
    */
   showColumnsPanel?: boolean;
   /**
+   * Css width of the Column Manager (Panel) modal (default value is `368px`)
+   */
+  columnsPanelWidth?: string;
+  /**
    * The showExportButton prop controls the display of a button that allows
    * to export table data in CSV format. To make the button functional
    * and visible, you must also include the PlAgDataTableToolsPanel component in your layout.
@@ -451,7 +455,7 @@ watch(
 
 <template>
   <div class="ap-ag-data-table-container">
-    <PlAgGridColumnManager v-if="gridApi && showColumnsPanel" :api="gridApi" />
+    <PlAgGridColumnManager v-if="gridApi && showColumnsPanel" :api="gridApi" :width="columnsPanelWidth" />
     <PlAgCsvExporter v-if="gridApi && showExportButton" :api="gridApi" />
     <div
       v-if="settings?.sourceType === 'ptable' && !!settings.sheets && settings.sheets.length > 0"
