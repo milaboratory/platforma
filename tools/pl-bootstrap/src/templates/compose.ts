@@ -31,8 +31,7 @@ export function render(
   }
 
   const composeSrcData = fs.readFileSync(composeSource, { encoding: 'utf-8' });
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const compose: ComposeYamlSpec = YAML.parse(composeSrcData.toString());
+  const compose = YAML.parse(composeSrcData.toString()) as ComposeYamlSpec;
 
   if (!compose.services) {
     throw new Error(`file '${composeSource}' seems to be not a docker-compose file or has unsupported version`);

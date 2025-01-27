@@ -206,30 +206,6 @@ export default class Core {
     return binPath;
   }
 
-  public composeRenderTest(
-    localRoot: string,
-  ) {
-    const storagePath = (...s: string[]) => path.join(localRoot, ...s);
-    util.ensureDir(storagePath());
-    composeCfg.render(
-      pkg.assets('compose-backend.yaml'),
-      storagePath('compose.yaml'),
-      new Map([
-        ['backend', {
-          envs: { PL_DEBUG_ENABLED: 'true' },
-          mounts: [
-            {
-              hostPath: '/Users/denkoren/work/milaboratory/platforma/blocks/public/star-read-mapping/software',
-              containerPath: '/Users/denkoren/work/milaboratory/platforma/blocks/public/star-read-mapping/software',
-            },
-          ],
-        }],
-      ]),
-    );
-
-    console.log(storagePath('compose.yaml'));
-  }
-
   public startDockerS3(
     localRoot: string,
     options?: {
@@ -267,26 +243,6 @@ export default class Core {
       return p;
     };
 
-    const composeDstPath = storagePath('compose.yaml');
-    if (fs.existsSync(composeDstPath)) {
-      this.logger.info(`replacing docker compose file ${composeDstPath}`);
-    }
-
-    const backendMounts: composeCfg.VolumeMountOption[] = [];
-    for (const mnt of options?.customMounts ?? []) {
-      backendMounts.push({
-        hostPath: mnt.hostPath,
-        containerPath: mnt.containerPath ?? mnt.hostPath,
-      });
-    }
-    composeCfg.render(composeS3Path, composeDstPath, new Map([
-      ['minio', {}],
-      ['backend', {
-        platform: options?.platformOverride,
-        mounts: backendMounts,
-      }],
-    ]));
-
     const logFilePath = storagePath('logs', 'platforma.log');
     if (!fs.existsSync(logFilePath)) {
       fs.mkdirSync(path.dirname(logFilePath), { recursive: true });
@@ -313,6 +269,26 @@ export default class Core {
     if (!fs.existsSync(usersFSPath)) {
       fs.copyFileSync(pkg.assets('users.htpasswd'), usersFSPath);
     }
+
+    const composeDstPath = storagePath('compose.yaml');
+    if (fs.existsSync(composeDstPath)) {
+      this.logger.info(`replacing docker compose file ${composeDstPath}`);
+    }
+
+    const backendMounts: composeCfg.VolumeMountOption[] = [];
+    for (const mnt of options?.customMounts ?? []) {
+      backendMounts.push({
+        hostPath: mnt.hostPath,
+        containerPath: mnt.containerPath ?? mnt.hostPath,
+      });
+    }
+    composeCfg.render(composeS3Path, composeDstPath, new Map([
+      ['minio', {}],
+      ['backend', {
+        platform: options?.platformOverride,
+        mounts: backendMounts,
+      }],
+    ]));
 
     const envs: NodeJS.ProcessEnv = {
       MINIO_IMAGE: 'quay.io/minio/minio',
@@ -377,7 +353,7 @@ export default class Core {
       },
       {
         plImage: image,
-        composePath: composeS3Path,
+        composePath: composeDstPath,
       },
     );
 
