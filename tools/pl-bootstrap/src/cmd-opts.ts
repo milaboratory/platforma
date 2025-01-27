@@ -21,6 +21,16 @@ export const VersionFlag = {
   })
 };
 
+export const ArchFlag = {
+  arch: Flags.string({
+    description: 'override architecture. You can start amd64 linux image on arm-based host (say, Apple M family processor)',
+    options: [
+      "amd64",
+      "arm64",
+    ]
+  })
+}
+
 export const LicenseFlags = {
   license: Flags.string({
     description: 'pass a license code. The license can be got from "https://licensing.milaboratories.com".'
@@ -81,6 +91,13 @@ export const S3AddressesFlags = {
 export const StorageFlag = {
   storage: Flags.string({
     description: 'specify path on host to be used as storage for all Platforma Backend data'
+  })
+};
+
+export const MountFlag = {
+  mount: Flags.string({
+    multiple: true,
+    description: 'things to be mounted into platforma docker container. Targets will appear inside the container under the same absolute paths'
   })
 };
 
