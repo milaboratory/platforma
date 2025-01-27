@@ -2,13 +2,13 @@ import { describe, it, beforeAll, afterAll, expect } from 'vitest';
 import { writeFileSync, readFileSync } from 'fs';
 import { SshClient } from '../ssh';
 import ssh from 'ssh2';
-import { downloadsFolder, cleanUp, testContainer, getConnectionForSsh, getContainerHostAndPort, initContainer, localFileDownload, localFileUpload } from './common-utils';
+import { downloadsFolder, cleanUp, getConnectionForSsh, getContainerHostAndPort, initContainer, localFileDownload, localFileUpload } from './common-utils';
 
 let client: SshClient;
+const testContainer = await initContainer('ssh');
 
 beforeAll(async () => {
-  await initContainer();
-  client = await SshClient.init(getConnectionForSsh());
+  client = await SshClient.init(getConnectionForSsh(testContainer));
 });
 
 describe('SSH Tests', () => {
@@ -135,7 +135,7 @@ describe('SSH Tests', () => {
   });
 
   it('Auth types', async () => {
-    const hostData = getContainerHostAndPort();
+    const hostData = getContainerHostAndPort(testContainer);
     const types = await SshClient.getAuthTypes(hostData.host, hostData.port);
     expect(types[0]).toBe('publickey');
   });
@@ -144,19 +144,19 @@ describe('SSH Tests', () => {
 describe('sshConnect', () => {
   it('should successfully connect to the SSH server', async () => {
     const client = new SshClient();
-    await expect(client.connect(getConnectionForSsh())).resolves.toBeUndefined();
+    await expect(client.connect(getConnectionForSsh(testContainer))).resolves.toBeUndefined();
     client.close();
   });
 
   it('should fail with invalid credentials', async () => {
     const client = new SshClient();
-    await expect(client.connect({ ...getConnectionForSsh(), privateKey: '123' })).rejects.toThrow();
+    await expect(client.connect({ ...getConnectionForSsh(testContainer), privateKey: '123' })).rejects.toThrow();
     client.close();
   });
 
   it('should timeout if the server is unreachable', async () => {
     const client = new SshClient();
-    await expect(client.connect({ ...getConnectionForSsh(), port: 3233 })).rejects.toThrow('');
+    await expect(client.connect({ ...getConnectionForSsh(testContainer), port: 3233 })).rejects.toThrow('');
     client.close();
   });
 });
@@ -181,5 +181,5 @@ describe('sshExec', () => {
 });
 
 afterAll(async () => {
-  await cleanUp();
+  await cleanUp(testContainer);
 });

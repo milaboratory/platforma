@@ -1,5 +1,5 @@
 import { describe, it, beforeAll, expect, afterAll } from 'vitest';
-import { initContainer, getConnectionForSsh, testContainer } from './common-utils';
+import { initContainer, getConnectionForSsh, cleanUp as cleanUpT } from './common-utils';
 import { SshPl } from '../pl';
 import path, { resolve } from 'path';
 import { getDefaultPlVersion } from '../../common/pl_version';
@@ -9,6 +9,7 @@ import { downloadBinary } from '../../common/pl_binary_download';
 import { ConsoleLoggerAdapter } from '@milaboratories/ts-helpers';
 
 let sshPl: SshPl | null;
+const testContainer = await initContainer('pl');
 
 const downloadDestination = resolve(__dirname, '..', 'test-assets', 'downloads');
 
@@ -19,17 +20,10 @@ async function cleanUp() {
 
   unlinkSync(`${downloadDestination}/pl-${version}-${newArch(platformInfo!.arch)}.tgz`);
   unlinkSync(`${downloadDestination}/${tgzName}-${newArch(platformInfo!.arch)}.tgz`);
-
-  // rmSync(`${destination}/pl-${version}-${newArch(platformInfo!.arch)}`, { recursive: true, force: true });
-  // rmSync(`${destination}/${tgzName}-${newArch(platformInfo!.arch)}`, { recursive: true, force: true });
+  rmSync(downloadDestination, { recursive: true });
 }
 beforeAll(async () => {
-  await initContainer();
-  sshPl = await SshPl.init(getConnectionForSsh(true));
-});
-
-afterAll(async () => {
-  // await cleanUp();
+  sshPl = await SshPl.init(getConnectionForSsh(testContainer, true));
 });
 
 describe('SshPl', async () => {
@@ -148,4 +142,9 @@ describe('SshPl download binaries', async () => {
     expect(!!path).toBe(true);
     expect(existsSync(`${downloadDestination}/${tgzName}-${newArch(platformInfo!.arch)}.tgz`)).toBe(true);
   });
+});
+
+afterAll(async () => {
+  await cleanUpT(testContainer);
+  cleanUp();
 });
