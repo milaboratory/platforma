@@ -23,7 +23,7 @@ async function cleanUp() {
   rmSync(downloadDestination, { recursive: true });
 }
 beforeAll(async () => {
-  sshPl = await SshPl.init(getConnectionForSsh(testContainer, true));
+  sshPl = await SshPl.init(getConnectionForSsh(testContainer));
 });
 
 describe('SshPl', async () => {
