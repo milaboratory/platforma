@@ -7,9 +7,7 @@ import type { ConnectConfig } from 'ssh2';
 import ssh from 'ssh2';
 import fs from 'fs';
 
-export let testContainer: StartedTestContainer;
 const SSH_PORT = [22, 3001];
-let privateKey = '';
 
 const publicKeyPath = getPathForFile('pub-key.pub');
 const privateKeyPath = getPathForFile('private-key.private');
@@ -48,46 +46,42 @@ export function getPathForFile(fileName: string) {
 
 export function generateKeys() {
   const keys = ssh.utils.generateKeyPairSync('ecdsa', { bits: 256, comment: 'node.js rules!' });
-  privateKey = keys.private;
-  writeFileSync(publicKeyPath, keys.public);
-  writeFileSync(privateKeyPath, keys.private);
-}
-
-export function initPrivateKey() {
-  privateKey = readFileSync(privateKeyPath, { encoding: 'utf-8' });
-}
-
-export async function initContainer() {
-  if (testContainer) {
-    return;
+  if (!existsSync(publicKeyPath) || !existsSync(privateKeyPath)) {
+    writeFileSync(publicKeyPath, keys.public);
+    writeFileSync(privateKeyPath, keys.private);
   }
-  createTestDirForRecursiveUpload();
-  const fromCacheContainer = await new GenericContainer('pl-ssh-test-container:1.0.0')
+}
+
+export function initPrivateKey(): string {
+  generateKeys();
+  return readFileSync(privateKeyPath, { encoding: 'utf-8' });
+}
+
+export async function initContainer(name: string): Promise<StartedTestContainer> {
+  await createTestDirForRecursiveUpload();
+
+  const fromCacheContainer = await new GenericContainer(`pl-ssh-test-container-${name}:1.0.0`)
     .withExposedPorts(...SSH_PORT)
     .withReuse()
-    .start().catch((err) => console.log('No wories we just need create new container', err));
-  console.log('container exist', !!fromCacheContainer);
+    .start()
+    .catch((err) => console.log('No worries, creating a new container', err));
 
   if (!fromCacheContainer) {
     generateKeys();
-    const container1 = await GenericContainer
-      .fromDockerfile(path.resolve(__dirname, '..'))
+    const container1 = await GenericContainer.fromDockerfile(path.resolve(__dirname, '..'))
       .withCache(true)
-      .build('pl-ssh-test-container:1.0.0', { deleteOnExit: false });
+      .build(`pl-ssh-test-container-${name}:1.0.0`, { deleteOnExit: false });
 
-    testContainer = await container1.withExposedPorts(...SSH_PORT).withReuse().start();
-  } else {
-    testContainer = fromCacheContainer;
+    return container1.withExposedPorts(...SSH_PORT).withReuse().start();
   }
-  initPrivateKey();
-  const hostData = getContainerHostAndPort();
-  console.log(`SSH available on ${hostData.host}:${hostData.port}`);
+
+  return fromCacheContainer;
 }
 
-export function getContainerHostAndPort() {
+export function getContainerHostAndPort(container: StartedTestContainer) {
   return {
-    port: testContainer.getMappedPort(22),
-    host: testContainer.getHost(),
+    port: container.getMappedPort(22),
+    host: container.getHost(),
   };
 }
 
@@ -98,16 +92,16 @@ function logToFile(message: string) {
   const timestamp = new Date().toISOString();
   const logMessage = `[${timestamp}] ${message}\n`;
 
-  // eslint-disable-next-line @stylistic/type-annotation-spacing, @typescript-eslint/no-explicit-any
-  fs.appendFile(logFilePath, logMessage, (err:any) => {
+  fs.appendFile(logFilePath, logMessage, (err) => {
     if (err) {
-      console.error('Error write to log file:', err);
+      console.error('Error writing to log file:', err);
     }
   });
 }
 
-export function getConnectionForSsh(debug: boolean = false): ConnectConfig {
-  const hostData = getContainerHostAndPort();
+export function getConnectionForSsh(container: StartedTestContainer, debug: boolean = false): ConnectConfig {
+  const hostData = getContainerHostAndPort(container);
+  const privateKey = initPrivateKey();
   const config = {
     host: hostData.host,
     port: hostData.port,
@@ -119,14 +113,18 @@ export function getConnectionForSsh(debug: boolean = false): ConnectConfig {
   return config;
 }
 
-export async function cleanUp() {
-  if (testContainer) {
-    await testContainer.stop();
-  }
-  if (existsSync(localFileUpload))
+export async function cleanUp(container: StartedTestContainer) {
+  await container.stop();
+
+  if (existsSync(localFileUpload)) {
     unlinkSync(localFileUpload);
-  if (existsSync(localFileDownload))
+  }
+
+  if (existsSync(localFileDownload)) {
     unlinkSync(localFileDownload);
-  if (existsSync(recUpload))
+  }
+
+  if (existsSync(recUpload)) {
     await rm(recUpload, { recursive: true });
+  }
 }
