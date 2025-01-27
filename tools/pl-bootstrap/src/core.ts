@@ -1,16 +1,18 @@
-import { ChildProcess, SpawnSyncReturns, spawn, spawnSync } from 'child_process';
+import type { ChildProcess, SpawnSyncReturns } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import yaml from 'yaml';
-import fs from 'fs';
-import os from 'os';
-import path from 'path';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import * as pkg from './package';
 import * as run from './run';
+import * as composeCfg from './templates/compose';
 import * as plCfg from './templates/pl-config';
-import * as types from './templates/types';
+import type * as types from './templates/types';
 import * as platforma from './platforma';
 import state from './state';
 import * as util from './util';
-import winston from 'winston';
+import type winston from 'winston';
 
 export default class Core {
   constructor(private readonly logger: winston.Logger) { }
@@ -22,7 +24,7 @@ export default class Core {
 
   public startLocal(options?: startLocalOptions): ChildProcess {
     const cmd = options?.binaryPath ?? platforma.binaryPath(options?.version, 'binaries', 'platforma');
-    var configPath = options?.configPath;
+    let configPath = options?.configPath;
     const workdir: string = options?.workdir ?? (configPath ? process.cwd() : state.path());
 
     if (options?.primaryURL) {
@@ -30,8 +32,8 @@ export default class Core {
         ...options.configOptions,
         storages: {
           ...options.configOptions?.storages,
-          primary: plCfg.storageSettingsFromURL(options.primaryURL, workdir, options.configOptions?.storages?.primary)
-        }
+          primary: plCfg.storageSettingsFromURL(options.primaryURL, workdir, options.configOptions?.storages?.primary),
+        },
       };
     }
     if (options?.libraryURL) {
@@ -39,8 +41,8 @@ export default class Core {
         ...options.configOptions,
         storages: {
           ...options.configOptions?.storages,
-          library: plCfg.storageSettingsFromURL(options.libraryURL, workdir, options.configOptions?.storages?.library)
-        }
+          library: plCfg.storageSettingsFromURL(options.libraryURL, workdir, options.configOptions?.storages?.library),
+        },
       };
     }
 
@@ -52,7 +54,7 @@ export default class Core {
     const storageDirs: string[] = [
       `${configOptions.localRoot}/packages`,
       `${configOptions.localRoot}/packages-local`,
-      `${configOptions.localRoot}/blocks-local`
+      `${configOptions.localRoot}/blocks-local`,
     ];
     if (configOptions.storages.primary.type === 'FS') {
       storageDirs.push(configOptions.storages.primary.rootPath);
@@ -95,7 +97,7 @@ export default class Core {
       logPath: configOptions.log.path,
       primary: configOptions.storages.primary,
       work: configOptions.storages.work,
-      library: configOptions.storages.library
+      library: configOptions.storages.library,
     });
 
     this.logger.info(`Starting platforma:\n${runInfo}`);
@@ -106,23 +108,23 @@ export default class Core {
       ['-config', configPath],
       {
         cwd: workdir,
-        stdio: 'inherit'
+        stdio: 'inherit',
       },
       {
-        storagePath: configOptions.localRoot
-      }
+        storagePath: configOptions.localRoot,
+      },
     );
   }
 
   public startLocalS3(options?: startLocalS3Options): ChildProcess {
-    this.logger.debug("starting platforma in 'local s3' mode...");
+    this.logger.debug('starting platforma in \'local s3\' mode...');
 
     const minioPort = options?.minioPort ?? 9000;
     const localRoot = options?.configOptions?.localRoot;
     this.startMinio({
       minioPort: minioPort,
       minioConsolePort: options?.minioConsolePort,
-      storage: localRoot ? path.join(localRoot, 'minio') : undefined
+      storage: localRoot ? path.join(localRoot, 'minio') : undefined,
     });
 
     return this.startLocal({
@@ -130,7 +132,7 @@ export default class Core {
       primaryURL:
         options?.primaryURL ?? `s3e://testuser:testpassword@localhost:${minioPort}/main-bucket/?region=no-region`,
       libraryURL:
-        options?.libraryURL ?? `s3e://testuser:testpassword@localhost:${minioPort}/library-bucket/?region=no-region`
+        options?.libraryURL ?? `s3e://testuser:testpassword@localhost:${minioPort}/library-bucket/?region=no-region`,
     });
   }
 
@@ -142,17 +144,17 @@ export default class Core {
     storage?: string;
   }) {
     this.logger.debug('  starting minio...');
-    var composeMinio = pkg.assets('compose-backend.yaml');
+    const composeMinio = pkg.assets('compose-backend.yaml');
 
-    const version = options?.version ? `:${options.version!}` : '';
+    const version = options?.version ? `:${options.version}` : '';
     this.logger.debug(`    minio version: ${version}`);
     const image = options?.image ?? `quay.io/minio/minio${version}`;
     this.logger.debug(`    minio image: ${image}`);
 
     const storage = options?.storage ?? state.data('minio');
-    util.ensureDir(storage, { mode: "0775" })
+    util.ensureDir(storage, { mode: '0775' });
     const stubStorage = state.data('stub');
-    util.ensureDir(stubStorage)
+    util.ensureDir(stubStorage);
 
     const minioPort = options?.minioPort ?? 9000;
     const minioConsolePort = options?.minioConsolePort ?? 9001;
@@ -168,7 +170,7 @@ export default class Core {
       PL_DATA_LIBRARY_ROOT: stubStorage,
       PL_DATA_WORKDIR_ROOT: stubStorage,
       PL_DATA_PACKAGE_ROOT: stubStorage,
-      PL_IMAGE: 'scratch'
+      PL_IMAGE: 'scratch',
     };
 
     this.logger.debug(`    spawning child 'docker' process...`);
@@ -178,10 +180,10 @@ export default class Core {
       {
         env: {
           ...process.env,
-          ...envs
+          ...envs,
         },
-        stdio: 'inherit'
-      }
+        stdio: 'inherit',
+      },
     );
 
     checkRunError(result, 'failed to start MinIO service in docker');
@@ -197,11 +199,35 @@ export default class Core {
 
     const result = spawnSync('go', ['build', '-o', binPath, '.'], {
       cwd: cmdPath,
-      stdio: 'inherit'
+      stdio: 'inherit',
     });
 
-    checkRunError(result, "failed to build platforma binary from sources using 'go build' command");
+    checkRunError(result, 'failed to build platforma binary from sources using \'go build\' command');
     return binPath;
+  }
+
+  public composeRenderTest(
+    localRoot: string,
+  ) {
+    const storagePath = (...s: string[]) => path.join(localRoot, ...s);
+    util.ensureDir(storagePath());
+    composeCfg.render(
+      pkg.assets('compose-backend.yaml'),
+      storagePath('compose.yaml'),
+      new Map([
+        ['backend', {
+          envs: { PL_DEBUG_ENABLED: 'true' },
+          mounts: [
+            {
+              hostPath: '/Users/denkoren/work/milaboratory/platforma/blocks/public/star-read-mapping/software',
+              containerPath: '/Users/denkoren/work/milaboratory/platforma/blocks/public/star-read-mapping/software',
+            },
+          ],
+        }],
+      ]),
+    );
+
+    console.log(storagePath('compose.yaml'));
   }
 
   public startDockerS3(
@@ -209,8 +235,9 @@ export default class Core {
     options?: {
       image?: string;
       version?: string;
-      logLevel?: string;
+      platformOverride?: string;
 
+      logLevel?: string;
       auth?: types.authOptions;
 
       license?: string;
@@ -224,7 +251,9 @@ export default class Core {
 
       debugPort?: number;
       debugAddr?: string;
-    }
+
+      customMounts?: { hostPath: string; containerPath?: string }[];
+    },
   ) {
     const composeS3Path = pkg.assets('compose-backend.yaml');
     const image = options?.image ?? pkg.plImageTag(options?.version);
@@ -233,10 +262,30 @@ export default class Core {
 
     const storagePath = (...s: string[]) => path.join(localRoot, ...s);
     const storageDir = (s: string) => {
-      const p = storagePath(s)
-      util.ensureDir(p, { mode: "0775" })
-      return p
+      const p = storagePath(s);
+      util.ensureDir(p, { mode: '0775' });
+      return p;
+    };
+
+    const composeDstPath = storagePath('compose.yaml');
+    if (fs.existsSync(composeDstPath)) {
+      this.logger.info(`replacing docker compose file ${composeDstPath}`);
     }
+
+    const backendMounts: composeCfg.VolumeMountOption[] = [];
+    for (const mnt of options?.customMounts ?? []) {
+      backendMounts.push({
+        hostPath: mnt.hostPath,
+        containerPath: mnt.containerPath ?? mnt.hostPath,
+      });
+    }
+    composeCfg.render(composeS3Path, composeDstPath, new Map([
+      ['minio', {}],
+      ['backend', {
+        platform: options?.platformOverride,
+        mounts: backendMounts,
+      }],
+    ]));
 
     const logFilePath = storagePath('logs', 'platforma.log');
     if (!fs.existsSync(logFilePath)) {
@@ -246,7 +295,7 @@ export default class Core {
 
     const primary = plCfg.storageSettingsFromURL('s3e://testuser:testpassword@minio:9000/main-bucket');
     if (primary.type !== 'S3') {
-      throw new Error("primary storage must have 'S3' type in 'docker s3' configuration");
+      throw new Error('primary storage must have \'S3\' type in \'docker s3\' configuration');
     } else {
       primary.presignEndpoint = 'http://localhost:9000';
     }
@@ -258,11 +307,11 @@ export default class Core {
       library.presignEndpoint = 'http://localhost:9000';
     }
 
-    const dbFSPath = storageDir('db')
+    const dbFSPath = storageDir('db');
     const workFSPath = storageDir('work');
-    const usersFSPath = storagePath('users.htpasswd')
+    const usersFSPath = storagePath('users.htpasswd');
     if (!fs.existsSync(usersFSPath)) {
-      fs.copyFileSync(pkg.assets('users.htpasswd'), usersFSPath)
+      fs.copyFileSync(pkg.assets('users.htpasswd'), usersFSPath);
     }
 
     const envs: NodeJS.ProcessEnv = {
@@ -286,7 +335,7 @@ export default class Core {
       PL_DATA_PACKAGE_ROOT: storageDir('packages'),
 
       ...this.configureDockerStorage('primary', primary),
-      ...this.configureDockerStorage('library', library)
+      ...this.configureDockerStorage('library', library),
     };
 
     if (options?.grpcAddr) envs.PL_GRPC_ADDR = options.grpcAddr;
@@ -314,22 +363,22 @@ export default class Core {
       this.logger,
       [
         'compose',
-        `--file=${composeS3Path}`,
+        `--file=${composeDstPath}`,
         'up',
         '--detach',
         '--remove-orphans',
         '--pull=missing',
         'minio',
-        'backend'
+        'backend',
       ],
       {
         env: envs,
-        stdio: 'inherit'
+        stdio: 'inherit',
       },
       {
         plImage: image,
-        composePath: composeS3Path
-      }
+        composePath: composeS3Path,
+      },
     );
 
     checkRunError(result, 'failed to start Platforma Backend in Docker');
@@ -342,7 +391,7 @@ export default class Core {
       primary: primary,
       work: { type: 'FS', rootPath: workFSPath },
       library: library,
-      dbPath: dbFSPath
+      dbPath: dbFSPath,
     });
 
     this.logger.info(`Started platforma:\n${runInfo}`);
@@ -354,9 +403,11 @@ export default class Core {
       primaryStorageURL?: string;
       workStoragePath?: string;
       libraryStorageURL?: string;
+      customMounts?: { hostPath: string; containerPath?: string }[];
 
       image?: string;
       version?: string;
+      platformOverride?: string;
 
       logLevel?: string;
 
@@ -372,19 +423,19 @@ export default class Core {
 
       debugPort?: number;
       debugAddr?: string;
-    }
+    },
   ) {
-    var composeFSPath = pkg.assets('compose-backend.yaml');
+    const composeFSPath = pkg.assets('compose-backend.yaml');
     const image = options?.image ?? pkg.plImageTag(options?.version);
 
     this.checkLicense(options?.license, options?.licenseFile);
 
     const storagePath = (...s: string[]) => path.join(localRoot, ...s);
     const storageDir = (s: string) => {
-      const p = storagePath(s)
-      util.ensureDir(p, { mode: "0775" })
-      return p
-    }
+      const p = storagePath(s);
+      util.ensureDir(p, { mode: '0775' });
+      return p;
+    };
 
     const logFilePath = storagePath('logs', 'platforma.log');
     if (!fs.existsSync(logFilePath)) {
@@ -392,14 +443,34 @@ export default class Core {
       fs.writeFileSync(logFilePath, '');
     }
 
-    const dbFSPath = storageDir('db')
-    const primaryFSPath = storageDir('primary')
-    const libraryFSPath = storageDir('library')
-    const workFSPath = storageDir('work')
-    const usersFSPath = storagePath('users.htpasswd')
+    const dbFSPath = storageDir('db');
+    const primaryFSPath = storageDir('primary');
+    const libraryFSPath = storageDir('library');
+    const workFSPath = storageDir('work');
+    const usersFSPath = storagePath('users.htpasswd');
     if (!fs.existsSync(usersFSPath)) {
-      fs.copyFileSync(pkg.assets('users.htpasswd'), usersFSPath)
+      fs.copyFileSync(pkg.assets('users.htpasswd'), usersFSPath);
     }
+
+    const composeDstPath = storagePath('compose.yaml');
+    if (fs.existsSync(composeDstPath)) {
+      this.logger.info(`replacing docker compose file ${composeDstPath}`);
+    }
+
+    const backendMounts: composeCfg.VolumeMountOption[] = [];
+    for (const mnt of options?.customMounts ?? []) {
+      backendMounts.push({
+        hostPath: mnt.hostPath,
+        containerPath: mnt.containerPath ?? mnt.hostPath,
+      });
+    }
+    this.logger.debug(`Rendering docker compose file '${composeDstPath}' using '${composeFSPath}' as base template`);
+    composeCfg.render(composeFSPath, composeDstPath, new Map([
+      ['backend', {
+        platform: options?.platformOverride,
+        mounts: backendMounts,
+      }],
+    ]));
 
     const primary = plCfg.storageSettingsFromURL(options?.primaryStorageURL ?? `file:${primaryFSPath}`, '.');
     const library = plCfg.storageSettingsFromURL(options?.libraryStorageURL ?? `file:${libraryFSPath}`, '.');
@@ -424,7 +495,7 @@ export default class Core {
       PL_DATA_PACKAGE_ROOT: storageDir('packages'),
 
       ...this.configureDockerStorage('primary', primary),
-      ...this.configureDockerStorage('library', library)
+      ...this.configureDockerStorage('library', library),
     };
 
     if (options?.grpcAddr) envs.PL_GRPC_ADDR = options.grpcAddr;
@@ -451,18 +522,18 @@ export default class Core {
 
     const result = run.runDocker(
       this.logger,
-      ['compose', `--file=${composeFSPath}`, 'up', '--detach', '--remove-orphans', '--pull=missing', 'backend'],
+      ['compose', `--file=${composeDstPath}`, 'up', '--detach', '--remove-orphans', '--pull=missing'],
       {
         env: envs,
-        stdio: 'inherit'
+        stdio: 'inherit',
       },
       {
         plImage: image,
-        composePath: composeFSPath,
+        composePath: composeDstPath,
         primaryPath: primaryFSPath,
         workPath: workFSPath,
-        libraryPath: libraryFSPath
-      }
+        libraryPath: libraryFSPath,
+      },
     );
 
     checkRunError(result, 'failed to start Platforma Backend in Docker');
@@ -475,7 +546,7 @@ export default class Core {
       primary: primary,
       work: { type: 'FS', rootPath: workFSPath },
       library: library,
-      dbPath: dbFSPath
+      dbPath: dbFSPath,
     });
 
     this.logger.info(`Started platforma:\n${runInfo}`);
@@ -490,25 +561,25 @@ export default class Core {
     const lastRun = state.lastRun!;
 
     switch (lastRun.mode) {
-      case 'docker':
+      case 'docker': {
         const result = spawnSync('docker', ['compose', '--file', lastRun.docker!.composePath!, 'down'], {
           env: {
             ...process.env,
-            ...lastRun.envs
+            ...lastRun.envs,
           },
-          stdio: 'inherit'
+          stdio: 'inherit',
         });
         state.isActive = false;
         if (result.status !== 0) process.exit(result.status);
         return;
-
-      case 'process':
+      }
+      case 'process': {
         if (state.isValidPID) {
           process.kill(lastRun.process!.pid!);
         }
         state.isActive = false;
         return;
-
+      }
       default:
         util.assertNever(lastRun.mode);
     }
@@ -516,8 +587,8 @@ export default class Core {
 
   public cleanup() {
     const removeWarns = [
-      "last command run cache ('pl-service start' shorthand will stop working until next full start command call)",
-      `'platforma' docker compose service containers and volumes`
+      'last command run cache (\'pl-service start\' shorthand will stop working until next full start command call)',
+      `'platforma' docker compose service containers and volumes`,
     ];
     const defaultDataRoot = state.data();
     const dirsToRemove: string[] = [defaultDataRoot];
@@ -543,12 +614,12 @@ export default class Core {
       }
     }
 
-    const storageWarns =
-      dirsToRemove.length > 0
+    const storageWarns
+      = dirsToRemove.length > 0
         ? `  - storages (you'll loose all projects and calculation results stored in service instances):\n    - ${dirsToRemove.join('\n    - ')}`
         : '';
 
-    var warnMessage = `
+    const warnMessage = `
 You are going to reset the state of platforma service
 Things to be removed:
   - ${removeWarns.join('\n  - ')}
@@ -579,11 +650,11 @@ ${storageWarns}
     fs.rmSync(state.path(), { recursive: true, force: true });
 
     this.logger.info(
-      `\nIf you want to remove all downloaded platforma binaries, delete '${state.binaries()}' dir manually\n`
+      `\nIf you want to remove all downloaded platforma binaries, delete '${state.binaries()}' dir manually\n`,
     );
   }
 
-  public mergeLicenseEnvs(flags: { license?: string; 'license-file'?: string }) {
+  public mergeLicenseEnvs(flags: { 'license'?: string; 'license-file'?: string }) {
     if (flags.license === undefined) {
       if ((process.env.MI_LICENSE ?? '') != '') flags.license = process.env.MI_LICENSE;
       else if ((process.env.PL_LICENSE ?? '') != '') flags.license = process.env.PL_LICENSE;
@@ -605,25 +676,25 @@ ${storageWarns}
       'auth-ldap-server'?: string;
       'auth-ldap-default-dn'?: string;
     },
-    workdir: string
+    workdir: string,
   ): types.authDriver[] | undefined {
-    var authDrivers: types.authDriver[] = [];
+    const authDrivers: types.authDriver[] = [];
     if (flags['auth-htpasswd-file']) {
       authDrivers.push({
         driver: 'htpasswd',
-        path: path.resolve(workdir, flags['auth-htpasswd-file'])
+        path: path.resolve(workdir, flags['auth-htpasswd-file']),
       });
     }
 
     if (Boolean(flags['auth-ldap-server']) !== Boolean(flags['auth-ldap-default-dn'])) {
-      throw new Error("LDAP auth settings require both 'server' and 'default DN' options to be set");
+      throw new Error('LDAP auth settings require both \'server\' and \'default DN\' options to be set');
     }
 
     if (flags['auth-ldap-server']) {
       authDrivers.push({
         driver: 'ldap',
         serverUrl: flags['auth-ldap-server'],
-        defaultDN: flags['auth-ldap-default-dn']!
+        defaultDN: flags['auth-ldap-default-dn']!,
       });
     }
 
@@ -640,9 +711,9 @@ ${storageWarns}
     const encoding = 'utf-8';
 
     let lastJwt = '';
-    try {
+    if (fs.existsSync(jwtFile)) {
       lastJwt = fs.readFileSync(jwtFile, { encoding });
-    } catch (e: any) { }
+    }
 
     if (lastJwt == '') {
       lastJwt = util.randomStr(64);
@@ -666,9 +737,9 @@ ${storageWarns}
         PL_DATA_PACKAGE_ROOT: stubStoragePath,
 
         MINIO_IMAGE: 'scratch',
-        MINIO_STORAGE: stubStoragePath
+        MINIO_STORAGE: stubStoragePath,
       },
-      stdio: 'inherit'
+      stdio: 'inherit',
     });
 
     if (result.status !== 0) process.exit(result.status);
@@ -735,7 +806,7 @@ You can obtain the license from "https://licensing.milaboratories.com".`);
       work?: types.fsStorageOptions;
       library?: types.storageOptions;
     },
-    indent: number = 10
+    indent: number = 10,
   ) {
     const report: string[] = [];
 
@@ -767,7 +838,7 @@ You can obtain the license from "https://licensing.milaboratories.com".`);
 
       case 'S3':
         report.push(
-          `${column('primary')}: S3 at '${runInfo.primary!.endpoint ?? 'AWS'}', bucket '${runInfo.primary!.bucketName!}', prefix: '${runInfo.primary!.keyPrefix ?? ''}'`
+          `${column('primary')}: S3 at '${runInfo.primary!.endpoint ?? 'AWS'}', bucket '${runInfo.primary!.bucketName!}', prefix: '${runInfo.primary!.keyPrefix ?? ''}'`,
         );
         break;
 
@@ -786,7 +857,7 @@ You can obtain the license from "https://licensing.milaboratories.com".`);
 
       case 'S3':
         report.push(
-          `${column('library')}: S3 at '${runInfo.library!.endpoint ?? 'AWS'}', bucket '${runInfo.library!.bucketName!}', prefix: '${runInfo.library!.keyPrefix ?? ''}'`
+          `${column('library')}: S3 at '${runInfo.library!.endpoint ?? 'AWS'}', bucket '${runInfo.library!.bucketName!}', prefix: '${runInfo.library!.keyPrefix ?? ''}'`,
         );
         break;
 
@@ -805,11 +876,13 @@ You can obtain the license from "https://licensing.milaboratories.com".`);
     return report.join('\n');
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private readComposeFile(fPath: string): any {
     const yamlData = fs.readFileSync(fPath);
     return yaml.parse(yamlData.toString());
   }
-  private writeComposeFile(fPath: string, data: any) {
+
+  private writeComposeFile(fPath: string, data: unknown) {
     fs.writeFileSync(fPath, yaml.stringify(data));
   }
 }
