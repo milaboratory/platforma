@@ -1,5 +1,11 @@
 # @milaboratories/pl-drivers
 
+## 1.5.12
+
+### Patch Changes
+
+- 3c474bd: drivers: fix unzipping nested dirs in blob_to_url driver
+
 ## 1.5.11
 
 ### Patch Changes
