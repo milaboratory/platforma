@@ -18,10 +18,12 @@ export default class Docker extends Command {
     ...cmdOpts.AddressesFlags,
     ...cmdOpts.ImageFlag,
     ...cmdOpts.VersionFlag,
+    ...cmdOpts.ArchFlag,
 
     ...cmdOpts.AuthFlags,
     ...cmdOpts.LicenseFlags,
 
+    ...cmdOpts.MountFlag,
     ...cmdOpts.StorageFlag,
     ...cmdOpts.StoragePrimaryURLFlag,
     ...cmdOpts.StorageWorkPathFlag,
@@ -44,6 +46,13 @@ export default class Docker extends Command {
       : undefined;
     const storage = flags.storage ? path.join('.', flags.storage) : state.data('docker');
 
+    const mounts: { hostPath: string; containerPath?: string }[] = [];
+    for (const p of flags.mount ?? []) {
+      mounts.push({ hostPath: p });
+    }
+
+    const platformOverride = flags.arch ? `linux/${flags.arch}` : undefined;
+
     core.startDocker(storage, {
       primaryStorageURL: flags['storage-primary'],
       workStoragePath: flags['storage-work'],
@@ -51,6 +60,9 @@ export default class Docker extends Command {
 
       image: flags.image,
       version: flags.version,
+
+      platformOverride: platformOverride,
+      customMounts: mounts,
 
       license: flags['license'],
       licenseFile: flags['license-file'],

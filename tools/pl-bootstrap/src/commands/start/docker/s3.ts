@@ -18,11 +18,13 @@ export default class S3 extends Command {
     ...cmdOpts.AddressesFlags,
     ...cmdOpts.ImageFlag,
     ...cmdOpts.VersionFlag,
+    ...cmdOpts.ArchFlag,
 
-    ...cmdOpts.StorageFlag,
-
+    ...cmdOpts.AuthFlags,
     ...cmdOpts.LicenseFlags,
-    ...cmdOpts.AuthFlags
+
+    ...cmdOpts.MountFlag,
+    ...cmdOpts.StorageFlag,
   };
 
   public async run(): Promise<void> {
@@ -42,12 +44,22 @@ export default class S3 extends Command {
 
     const storage = flags.storage ? path.join('.', flags.storage) : state.data('docker-s3');
 
+    const mounts: { hostPath: string; containerPath?: string }[] = [];
+    for (const p of flags.mount ?? []) {
+      mounts.push({ hostPath: p });
+    }
+
+    const platformOverride = flags.arch ? `linux/${flags.arch}` : undefined;
+
     core.startDockerS3(storage, {
       image: flags.image,
       version: flags.version,
 
       license: flags['license'],
       licenseFile: flags['license-file'],
+
+      platformOverride: platformOverride,
+      customMounts: mounts,
 
       auth: authOptions,
 
@@ -58,7 +70,7 @@ export default class S3 extends Command {
       monitoringPort: flags['monitoring-port'],
 
       debugAddr: flags['debug-listen'],
-      debugPort: flags['debug-port']
+      debugPort: flags['debug-port'],
     });
   }
 }

@@ -24,6 +24,7 @@
   "devDependencies": {
     "@milaboratories/platforma-build-configs": "workspace:*",
     "@milaboratories/oclif-index": "workspace:*",
+    "@milaboratories/eslint-config": "workspace:^",
     "@types/decompress": "catalog:",
     "@types/jest": "catalog:",
     "@types/node": "catalog:",
