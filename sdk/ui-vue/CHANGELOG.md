@@ -1,5 +1,17 @@
 # @platforma-sdk/ui-vue
 
+## 1.22.8
+
+### Patch Changes
+
+- 9bdc9d2: Row numbers error fix
+
+## 1.22.7
+
+### Patch Changes
+
+- 698c647: Add columnsPanelWidth property to the PlAgDataTable
+
 ## 1.22.4
 
 ### Patch Changes

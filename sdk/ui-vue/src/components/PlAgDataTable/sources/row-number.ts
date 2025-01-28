@@ -82,7 +82,7 @@ function adjustRowNumberColumnWidth(gridApi: GridApi, cellFake: HTMLDivElement, 
 }
 
 function fixColumnOrder(gridApi: GridApi) {
-  const columns = gridApi.getAllGridColumns();
+  const columns = gridApi.getAllGridColumns() ?? [];
   const selectionIndex = columns.findIndex(isColumnSelectionCol);
   const numRowsIndex = columns.findIndex((column) => column.getId() === PlAgDataTableRowNumberColId);
   if (numRowsIndex !== -1) {
@@ -133,4 +133,5 @@ export function autoSizeRowNumberColumn(gridApi: GridApi) {
     destroyCellFake(cellFake);
   });
   adjustRowNumberColumnWidth(gridApi, cellFake);
+  fixColumnOrder(gridApi);
 }
