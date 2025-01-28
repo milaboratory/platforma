@@ -75,7 +75,9 @@ useEventListener(document, 'keydown', (evt: KeyboardEvent) => {
       >
         <div class="close-dialog-btn" @click="emit('update:modelValue', false)" />
         <div v-if="slots.title" class="pl-slide-modal__title">
-          <slot name="title" />
+          <span class="pl-slide-modal__title-content">
+            <slot name="title" />
+          </span>
         </div>
         <div class="pl-slide-modal__content">
           <slot />
