@@ -33,7 +33,7 @@ describe('SSH Tests', () => {
     expect(await SshClient.isPassphraseRequiredForKey(k4.private)).toBe(false);
   });
   it('should create file from string', async () => {
-    await expect(client.writeFileOnTheServer('/home/pl-doctor/from-string.txt', 'hello'));
+    expect(await client.writeFileOnTheServer('/home/pl-doctor/from-string.txt', 'hello'));
 
     const execResult = await testContainer.exec(['cat', `/home/pl-doctor/from-string.txt`]);
     const output = execResult.output.trim();

@@ -33,6 +33,8 @@ export type SshPlatformaPorts = {
   };
 };
 
+type Arch = { platform: string; arch: string };
+
 export type SshInitReturnTypes = {
   plUser: string;
   plPassword: string;
@@ -44,7 +46,7 @@ export class SshPl {
   public readonly supervisordDirName = 'supervisord-0.7.3';
   public readonly supervisordSubDirName = 'supervisord_0.7.3_Linux_64-bit';
 
-  public serverInfo: Awaited<ReturnType <typeof this.getArch>> = { platform: '', arch: '' };
+  // public serverInfo: Arch = { platform: '', arch: '' };
 
   constructor(
     public readonly sshClient: SshClient,
@@ -61,20 +63,17 @@ export class SshPl {
     }
   }
 
-  public async getArch(): Promise<{ platform: string; arch: string } | null> {
-    if (this.serverInfo?.platform && this.serverInfo.arch) {
-      return this.serverInfo;
-    }
+  public async getArch(): Promise<Arch> {
     const { stdout, stderr } = await this.sshClient.exec('uname -s && uname -m');
-    if (stderr) return null;
+    if (stderr)
+      throw new Error(`getArch: stderr is not empty: ${stderr}, stdout: ${stdout}`);
+
     const arr = stdout.split('\n');
 
-    this.serverInfo = {
+     return {
       platform: arr[0],
       arch: arr[1],
-    };
-
-    return this.serverInfo;
+     };
   }
 
   public async isAlive(): Promise<boolean> {
@@ -116,35 +115,34 @@ export class SshPl {
     }
   }
 
-  public async fetchPorts(): Promise<SshPlatformaPorts> {
+  public async fetchPorts(arch: Arch): Promise<SshPlatformaPorts> {
     const ports: SshPlatformaPorts = {
       grpc: {
         local: await getFreePort(),
-        remote: await this.getFreePortForPlatformaOnServer(),
+        remote: await this.getFreePortForPlatformaOnServer(arch),
       },
       monitoring: {
         local: await getFreePort(),
-        remote: await this.getFreePortForPlatformaOnServer(),
+        remote: await this.getFreePortForPlatformaOnServer(arch),
       },
       debug: {
         local: await getFreePort(),
-        remote: await this.getFreePortForPlatformaOnServer(),
+        remote: await this.getFreePortForPlatformaOnServer(arch),
       },
       minioPort: {
         local: await getFreePort(),
-        remote: await this.getFreePortForPlatformaOnServer(),
+        remote: await this.getFreePortForPlatformaOnServer(arch),
       },
       minioConsolePort: {
         local: await getFreePort(),
-        remote: await this.getFreePortForPlatformaOnServer(),
+        remote: await this.getFreePortForPlatformaOnServer(arch),
       },
     };
 
     return ports;
   }
 
-  public async downloadPlatformaBinaries(dirname: string) {
-    const platformInfo = await this.getArch();
+  public async downloadPlatformaBinaries(platformInfo: Arch, dirname: string) {
     if (platformInfo) {
       const result = downloadPlBinary(new ConsoleLoggerAdapter(), dirname, getDefaultPlVersion(), platformInfo?.arch, platformInfo?.platform);
       return result;
@@ -170,16 +168,15 @@ export class SshPl {
     return [await this.getBinariesHomeDir(), 'minio-2024-12-18T13-15-44Z-amd64'].join('/');
   }
 
-  public async getPlatformaBinDirOnTheServer() {
-    return [await this.getBinariesHomeDir(), await this.getPlatformaDirName(), 'binaries'].join('/');
+  public async getPlatformaBinDirOnTheServer(arch: Arch) {
+    return [await this.getBinariesHomeDir(), await this.getPlatformaDirName(arch), 'binaries'].join('/');
   }
 
   public async getSupervisorConfOnServer() {
     return [await this.getPlatformaRemoteWorkingDir(), 'supervisor.conf'].join('/');
   }
 
-  public async getPlatformaDirName() {
-    const info = await this.getArch();
+  public async getPlatformaDirName(info: Arch) {
     return `pl-${getDefaultPlVersion()}-${newArch(info!.arch)}`;
   }
 
@@ -193,14 +190,14 @@ export class SshPl {
     });
   }
 
-  public async downloadBinariesAndUploadToTheServer(plWorkingDirname: string) {
+  public async downloadBinariesAndUploadToTheServer(platformInfo: Arch, plWorkingDirname: string) {
     await this.stop();
 
-    const platformInfo = await this.getArch();
+    // const platformInfo = await this.getArch();
     const supervisordSoftwareName = 'supervisord';
     const minioSoftwareName = 'minio';
 
-    const downloadedPl = await this.downloadPlatformaBinaries(plWorkingDirname);
+    const downloadedPl = await this.downloadPlatformaBinaries(platformInfo, plWorkingDirname);
 
     const supervisordDirInfo = await downloadBinary(
       new ConsoleLoggerAdapter(),
@@ -239,10 +236,10 @@ export class SshPl {
     return { minioRelPath, downloadedPl };
   }
 
-  public async needDownload() {
+  public async needDownload(arch: Arch) {
     const checkPathSupervisor = `${await this.getSupervisorBinDirOnServer()}/supervisord`;
     const checkPathMinio = `${await this.getMinioBinDirOnServer()}/minio`;
-    const checkPathPlatforma = `${await this.getPlatformaBinDirOnTheServer()}/platforma`;
+    const checkPathPlatforma = `${await this.getPlatformaBinDirOnTheServer(arch)}/platforma`;
 
     if (!await this.sshClient.checkFileExists(checkPathPlatforma)
       || !await this.sshClient.checkFileExists(checkPathMinio)
@@ -263,6 +260,7 @@ export class SshPl {
   }
 
   public async platformaInit(plWorkingDirname: string): Promise<SshInitReturnTypes> {
+    const arch = await this.getArch();
     try {
       const isAlive = await this.isAlive();
 
@@ -274,9 +272,9 @@ export class SshPl {
         return userCredentials;
       }
 
-      const binPaths = await this.downloadBinariesAndUploadToTheServer(plWorkingDirname);
+      const binPaths = await this.downloadBinariesAndUploadToTheServer(arch, plWorkingDirname);
 
-      const ports = await this.fetchPorts();
+      const ports = await this.fetchPorts(arch);
 
       if (!ports.debug.remote || !ports.grpc.remote || !ports.minioPort.remote || !ports.minioConsolePort.remote || !ports.monitoring.remote) {
         return null;
@@ -313,7 +311,7 @@ export class SshPl {
         console.log(`Created directory ${dir}`);
       }
 
-      const supervisorConfig = await this.generateSupervisordConfig(config, binPaths.minioRelPath, binPaths.downloadedPl!.binaryPath);
+      const supervisorConfig = await this.generateSupervisordConfig(arch, config, binPaths.minioRelPath, binPaths.downloadedPl!.binaryPath);
 
       const writeResult = await this.sshClient.writeFileOnTheServer(await this.getSupervisorConfOnServer(), supervisorConfig);
       if (!writeResult) {
@@ -381,10 +379,10 @@ export class SshPl {
     });
   }
 
-  public async generateSupervisordConfig(config: SshPlConfigGenerationResult, minioPath: string, plPath: string) {
+  public async generateSupervisordConfig(arch: Arch, config: SshPlConfigGenerationResult, minioPath: string, plPath: string) {
     const minioEnvStr = Object.entries(config.minioConfig.envs).map(([key, value]) => `${key}="${value}"`).join(',');
     const password = randomBytes(16).toString('hex');
-    const freePort = await this.getFreePortForPlatformaOnServer();
+    const freePort = await this.getFreePortForPlatformaOnServer(arch);
 
     return `
 [supervisord]
@@ -416,9 +414,9 @@ autorestart=true
 `;
   }
 
-  public async getFreePortForPlatformaOnServer(): Promise<number> {
+  public async getFreePortForPlatformaOnServer(arch: Arch): Promise<number> {
     const binHomeDir = await this.getBinariesHomeDir();
-    const freePortBin = [binHomeDir, await this.getPlatformaDirName(), 'binaries', 'free-port'].join('/');
+    const freePortBin = [binHomeDir, await this.getPlatformaDirName(arch), 'binaries', 'free-port'].join('/');
     const { stdout, stderr } = await this.sshClient.exec(`${freePortBin}`);
     if (stderr) {
       console.error(`CMD ${freePortBin}`);
