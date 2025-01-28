@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/bootstrap",
-  "version": "2.8.5",
+  "version": "2.9.1",
   "description": "MiLaboratories Platforma Backend bootstrap code: configuration generators, service run wrappers and so on",
   "scripts": {
     "type-check": "tsc --noEmit --composite false",
@@ -24,6 +24,7 @@
   "devDependencies": {
     "@milaboratories/platforma-build-configs": "workspace:*",
     "@milaboratories/oclif-index": "workspace:*",
+    "@milaboratories/eslint-config": "workspace:^",
     "@types/decompress": "catalog:",
     "@types/jest": "catalog:",
     "@types/node": "catalog:",
