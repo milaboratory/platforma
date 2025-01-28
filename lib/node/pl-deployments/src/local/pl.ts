@@ -5,7 +5,7 @@ import {
   processWaitStopped,
   processRun
 } from './process';
-import { resolvePlBinaryPath, PlBinarySource, getDefaultPlBinarySource } from './pl_binary';
+import { PlBinarySource, newDefaultPlBinarySource, resolveLocalPlBinaryPath } from '../common/pl_binary';
 import { MiLogger, notEmpty } from '@milaboratories/ts-helpers';
 import { ChildProcess, SpawnOptions } from 'child_process';
 import { filePid, readPid, writePid } from './pid';
@@ -21,7 +21,7 @@ export const LocalConfigYaml = 'config-local.yaml';
  * and has methods to start, check if it's running, stop and wait for stopping it.
  * Also, a hook on pl-core closed can be provided.
  */
-export class Pl {
+export class LocalPl {
   private instance?: ChildProcess;
   public pid?: number;
   private nRuns: number = 0;
@@ -33,10 +33,10 @@ export class Pl {
     private readonly workingDir: string,
     private readonly startOptions: ProcessOptions,
     private readonly initialStartHistory: Trace,
-    private readonly onClose?: (pl: Pl) => Promise<void>,
-    private readonly onError?: (pl: Pl) => Promise<void>,
-    private readonly onCloseAndError?: (pl: Pl) => Promise<void>,
-    private readonly onCloseAndErrorNoStop?: (pl: Pl) => Promise<void>
+    private readonly onClose?: (pl: LocalPl) => Promise<void>,
+    private readonly onError?: (pl: LocalPl) => Promise<void>,
+    private readonly onCloseAndError?: (pl: LocalPl) => Promise<void>,
+    private readonly onCloseAndErrorNoStop?: (pl: LocalPl) => Promise<void>
   ) {}
 
   async start() {
@@ -67,8 +67,8 @@ export class Pl {
       trace('started', true);
 
       const pidFile = trace('pidFile', filePid(this.workingDir));
-      trace('pid', instance.pid!);
-      trace('pidWritten', await writePid(pidFile, instance.pid!));
+      trace('pid', notEmpty(instance.pid));
+      trace('pidWritten', await writePid(pidFile, notEmpty(instance.pid)));
 
       this.nRuns++;
       this.instance = instance;
@@ -124,10 +124,10 @@ export type LocalPlOptions = {
    */
   readonly closeOld?: boolean;
 
-  readonly onClose?: (pl: Pl) => Promise<void>;
-  readonly onError?: (pl: Pl) => Promise<void>;
-  readonly onCloseAndError?: (pl: Pl) => Promise<void>;
-  readonly onCloseAndErrorNoStop?: (pl: Pl) => Promise<void>;
+  readonly onClose?: (pl: LocalPl) => Promise<void>;
+  readonly onError?: (pl: LocalPl) => Promise<void>;
+  readonly onCloseAndError?: (pl: LocalPl) => Promise<void>;
+  readonly onCloseAndErrorNoStop?: (pl: LocalPl) => Promise<void>;
 };
 
 type LocalPlOptionsFull = Required<LocalPlOptions, 'plBinary' | 'spawnOptions' | 'closeOld'>;
@@ -135,10 +135,10 @@ type LocalPlOptionsFull = Required<LocalPlOptions, 'plBinary' | 'spawnOptions' |
 /**
  * Starts pl-core, if the option was provided downloads a binary, reads license environments etc.
  */
-export async function platformaInit(logger: MiLogger, _ops: LocalPlOptions): Promise<Pl> {
+export async function localPlatformaInit(logger: MiLogger, _ops: LocalPlOptions): Promise<LocalPl> {
   // filling-in default values
   const ops = {
-    plBinary: getDefaultPlBinarySource(),
+    plBinary: newDefaultPlBinarySource(),
     spawnOptions: {},
     closeOld: true,
     ..._ops
@@ -150,7 +150,7 @@ export async function platformaInit(logger: MiLogger, _ops: LocalPlOptions): Pro
     const workDir = path.resolve(ops.workingDir);
 
     if (ops.closeOld) {
-      trace('closeOld', await platformaReadPidAndStop(logger, workDir));
+      trace('closeOld', await localPlatformaReadPidAndStop(logger, workDir));
     }
 
     const configPath = path.join(workDir, LocalConfigYaml);
@@ -158,10 +158,8 @@ export async function platformaInit(logger: MiLogger, _ops: LocalPlOptions): Pro
     logger.info(`writing configuration '${configPath}'...`);
     await fsp.writeFile(configPath, ops.config);
 
-    const binaryPath = trace(
-      'binaryPath',
-      await resolvePlBinaryPath(logger, path.join(workDir, 'binaries'), ops.plBinary)
-    );
+    const baseBinaryPath = await resolveLocalPlBinaryPath(logger, path.join(workDir, 'binaries'), ops.plBinary);
+    const binaryPath = trace('binaryPath', path.join('binaries', baseBinaryPath));
 
     const processOpts: ProcessOptions = {
       cmd: binaryPath,
@@ -180,7 +178,7 @@ export async function platformaInit(logger: MiLogger, _ops: LocalPlOptions): Pro
       cwd: processOpts.opts.cwd
     });
 
-    const pl = new Pl(
+    const pl = new LocalPl(
       logger,
       ops.workingDir,
       processOpts,
@@ -198,7 +196,7 @@ export async function platformaInit(logger: MiLogger, _ops: LocalPlOptions): Pro
 
 /** Reads a pid of the old pl-core if it was started in the same working directory,
  * and closes it. */
-async function platformaReadPidAndStop(
+async function localPlatformaReadPidAndStop(
   logger: MiLogger,
   workingDir: string
 ): Promise<Record<string, any>> {
