@@ -1,5 +1,11 @@
 # @platforma-sdk/bootstrap
 
+## 2.9.1
+
+### Patch Changes
+
+- 94ef070: Use 'minio' in presign URL in docker s3 instance
+
 ## 2.9.0
 
 ### Minor Changes
