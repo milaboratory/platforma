@@ -128,7 +128,14 @@ export class DownloadAndUnarchiveTask {
           await content.pipeTo(f, { signal });
           this.state!.zipPathCreated = true;
 
-          await decompress(this.path + '.zip', fPath);
+          // Without this filter it fails with
+          // "EISDIR: illegal operation on a directory".
+          // The workaround is from
+          // https://github.com/kevva/decompress/issues/46#issuecomment-525048104
+          await decompress(this.state!.zipPath, fPath, {
+            filter: file => !file.path.endsWith('/'),
+          });
+          this.state!.zipDecompressed = true;
 
           await fs.promises.rm(this.state!.zipPath);
           this.state!.zipPathDeleted = true;
@@ -199,6 +206,7 @@ type DownloadCtx = {
   tempPath?: string;
   zipPath?: string;
   zipPathCreated?: boolean;
+  zipDecompressed?: boolean;
   zipPathDeleted?: boolean;
   pathCreated?: boolean;
 };

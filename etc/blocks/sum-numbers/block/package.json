@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/milaboratories.test-sum-numbers",
-  "version": "1.0.65",
+  "version": "1.0.68",
   "private": true,
   "scripts": {
     "build": "rm -rf ./block-pack && block-tools pack"

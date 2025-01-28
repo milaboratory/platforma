@@ -13,7 +13,12 @@ const props = defineProps<{
    * trigger specific actions.
    */
   api: GridApi;
+  /**
+   * Css Column Manager (Panel) modal width (default value is `368px`)
+   */
+  width?: string;
 }>();
+
 const { api: gridApi } = toRefs(props);
 
 const columns = ref<Column[]>([]);
@@ -60,7 +65,7 @@ watch(
       </PlBtnGhost>
     </Teleport>
 
-    <PlSlideModal v-model="slideModal" :width="'368px'" close-on-outside-click>
+    <PlSlideModal v-model="slideModal" :width="width" close-on-outside-click>
       <template #title>Manage Columns</template>
 
       <div ref="listRef" :key="listKey" class="pl-ag-columns pl-2 pr-2">

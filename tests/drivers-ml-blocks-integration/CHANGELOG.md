@@ -1,5 +1,61 @@
 # @milaboratories/drivers-ml-blocks-integration
 
+## 1.0.116
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-blob-url-custom-protocol@1.0.4
+- @milaboratories/milaboratories.test-download-file@1.0.68
+- @milaboratories/milaboratories.test-enter-numbers@1.0.190
+- @milaboratories/milaboratories.test-read-logs@1.0.68
+- @milaboratories/milaboratories.test-sum-numbers@1.0.68
+- @milaboratories/milaboratories.test-upload-file@1.0.68
+
+## 1.0.115
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-blob-url-custom-protocol@1.0.3
+- @milaboratories/milaboratories.test-download-file@1.0.67
+- @milaboratories/milaboratories.test-enter-numbers@1.0.189
+- @milaboratories/milaboratories.test-read-logs@1.0.67
+- @milaboratories/milaboratories.test-sum-numbers@1.0.67
+- @milaboratories/milaboratories.test-upload-file@1.0.67
+
+## 1.0.114
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.26.5
+- @platforma-sdk/test@1.22.6
+
+## 1.0.113
+
+### Patch Changes
+
+- Updated dependencies [7228856]
+  - @milaboratories/pl-middle-layer@1.26.4
+  - @platforma-sdk/test@1.22.5
+
+## 1.0.112
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-blob-url-custom-protocol@1.0.2
+- @milaboratories/milaboratories.test-download-file@1.0.66
+- @milaboratories/milaboratories.test-enter-numbers@1.0.188
+- @milaboratories/milaboratories.test-read-logs@1.0.66
+- @milaboratories/milaboratories.test-sum-numbers@1.0.66
+- @milaboratories/milaboratories.test-upload-file@1.0.66
+
+## 1.0.111
+
+### Patch Changes
+
+- Updated dependencies [36a365b]
+  - @milaboratories/pl-middle-layer@1.26.3
+  - @platforma-sdk/test@1.22.3
+
 ## 1.0.110
 
 ### Patch Changes

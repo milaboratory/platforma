@@ -1,5 +1,24 @@
 # @milaboratories/pl-middle-layer
 
+## 1.26.5
+
+### Patch Changes
+
+- Updated dependencies [3c474bd]
+  - @milaboratories/pl-drivers@1.5.12
+
+## 1.26.4
+
+### Patch Changes
+
+- 7228856: PFrame driver fix logger forwarding
+
+## 1.26.3
+
+### Patch Changes
+
+- 36a365b: Recreate PFrame on each data request
+
 ## 1.26.2
 
 ### Patch Changes
