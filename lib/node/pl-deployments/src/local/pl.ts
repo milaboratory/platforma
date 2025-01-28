@@ -67,8 +67,8 @@ export class LocalPl {
       trace('started', true);
 
       const pidFile = trace('pidFile', filePid(this.workingDir));
-      trace('pid', instance.pid!);
-      trace('pidWritten', await writePid(pidFile, instance.pid!));
+      trace('pid', notEmpty(instance.pid));
+      trace('pidWritten', await writePid(pidFile, notEmpty(instance.pid)));
 
       this.nRuns++;
       this.instance = instance;
@@ -158,10 +158,8 @@ export async function localPlatformaInit(logger: MiLogger, _ops: LocalPlOptions)
     logger.info(`writing configuration '${configPath}'...`);
     await fsp.writeFile(configPath, ops.config);
 
-    const binaryPath = trace(
-      'binaryPath',
-      await resolveLocalPlBinaryPath(logger, path.join(workDir, 'binaries'), ops.plBinary)
-    );
+    const baseBinaryPath = await resolveLocalPlBinaryPath(logger, path.join(workDir, 'binaries'), ops.plBinary);
+    const binaryPath = trace('binaryPath', path.join('binaries', baseBinaryPath));
 
     const processOpts: ProcessOptions = {
       cmd: binaryPath,

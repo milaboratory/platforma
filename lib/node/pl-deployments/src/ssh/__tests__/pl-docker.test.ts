@@ -6,9 +6,9 @@ import { getDefaultPlVersion } from '../../common/pl_version';
 import { existsSync, unlinkSync, rmSync } from 'fs';
 import { newArch } from '../../common/os_and_arch';
 import { downloadBinary } from '../../common/pl_binary_download';
-import { ConsoleLoggerAdapter } from '@milaboratories/ts-helpers';
+import { ConsoleLoggerAdapter, notEmpty } from '@milaboratories/ts-helpers';
 
-let sshPl: SshPl | null;
+let sshPl: SshPl;
 const testContainer = await initContainer('pl');
 
 const downloadDestination = resolve(__dirname, '..', 'test-assets', 'downloads');
@@ -23,7 +23,7 @@ async function cleanUp() {
   rmSync(downloadDestination, { recursive: true });
 }
 beforeAll(async () => {
-  sshPl = await SshPl.init(getConnectionForSsh(testContainer));
+  sshPl = notEmpty(await SshPl.init(getConnectionForSsh(testContainer)), `beforeAll: sshPl is null`);
 });
 
 describe('SshPl', async () => {
@@ -37,7 +37,9 @@ describe('SshPl', async () => {
   });
 
   it('Download binaries', async () => {
-    const path = await sshPl?.downloadPlatformaBinaries(resolve(__dirname, '..', 'test-assets', 'downloads'));
+    const path = await sshPl?.downloadPlatformaBinaries(
+      await sshPl!.getArch(),
+      resolve(__dirname, '..', 'test-assets', 'downloads'));
     expect(!!path).toBe(true);
   });
 
@@ -53,7 +55,7 @@ describe('SshPl', async () => {
 
   it('downloadBinariesAndUploadToServer', async () => {
     await sshPl?.stop();
-    await sshPl?.downloadBinariesAndUploadToTheServer(downloadDestination);
+    await sshPl?.downloadBinariesAndUploadToTheServer(await sshPl!.getArch(), downloadDestination);
 
     const pathSupervisor = `${await sshPl?.getSupervisorBinDirOnServer()}/supervisord`;
     const pathMinio = `${await sshPl?.getMinioBinDirOnServer()}/minio`;
@@ -71,7 +73,7 @@ describe('SshPl', async () => {
   });
 
   it('Transfer Platforma to server', async () => {
-    const plPath = await sshPl?.downloadPlatformaBinaries(downloadDestination);
+    const plPath = await sshPl?.downloadPlatformaBinaries(await sshPl!.getArch(), downloadDestination);
     const plFolderName = path.basename(plPath!.archivePath);
     const dirPath = path.resolve(downloadDestination, plFolderName);
     await sshPl?.sshClient.uploadDirectory(dirPath, `/home/pl-doctor/${plFolderName}`);
@@ -86,12 +88,12 @@ describe('SshPl', async () => {
     await sshPl?.platformaInit(downloadDestination);
     const isAlive = await sshPl?.isAlive();
     expect(isAlive).toBe(true);
-    const port = await sshPl?.getFreePortForPlatformaOnServer();
+    const port = await sshPl?.getFreePortForPlatformaOnServer(await sshPl!.getArch());
     expect(typeof port).toBe('number');
   });
 
   it('fetchPorts', async () => {
-    const ports = await sshPl?.fetchPorts();
+    const ports = await sshPl?.fetchPorts(await sshPl!.getArch());
     if (ports) {
       Object.entries(ports).forEach(([, port]) => {
         expect(typeof port.local).toBe('number');
@@ -123,9 +125,9 @@ describe('SshPl', async () => {
 });
 
 describe('SshPl download binaries', async () => {
-  it('Doanload pl. We have archive and extracted data', async () => {
-    const platformInfo = await sshPl?.getArch();
-    const path = await sshPl?.downloadPlatformaBinaries(downloadDestination);
+  it('Download pl. We have archive and extracted data', async () => {
+    const platformInfo = await sshPl!.getArch();
+    const path = await sshPl?.downloadPlatformaBinaries(platformInfo!, downloadDestination);
     const version = getDefaultPlVersion();
     expect(!!path).toBe(true);
     expect(existsSync(`${downloadDestination}/pl-${version}-${newArch(platformInfo!.arch)}.tgz`)).toBe(true);
@@ -145,6 +147,6 @@ describe('SshPl download binaries', async () => {
 });
 
 afterAll(async () => {
+  await cleanUp();
   await cleanUpT(testContainer);
-  cleanUp();
 });
