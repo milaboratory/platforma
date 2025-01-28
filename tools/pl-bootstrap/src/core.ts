@@ -222,6 +222,8 @@ export default class Core {
       grpcPort?: number;
       grpcAddr?: string;
 
+      presignHost?: string;
+
       monitoringPort?: number;
       monitoringAddr?: string;
 
@@ -249,18 +251,20 @@ export default class Core {
       fs.writeFileSync(logFilePath, '');
     }
 
-    const primary = plCfg.storageSettingsFromURL('s3e://testuser:testpassword@minio:9000/main-bucket');
+    const presignHost = options?.presignHost ?? 'localhost';
+
+    const primary = plCfg.storageSettingsFromURL(`s3e://testuser:testpassword@minio:9000/main-bucket`);
     if (primary.type !== 'S3') {
       throw new Error('primary storage must have \'S3\' type in \'docker s3\' configuration');
     } else {
-      primary.presignEndpoint = 'http://localhost:9000';
+      primary.presignEndpoint = `http://${presignHost}:9000`;
     }
 
-    const library = plCfg.storageSettingsFromURL('s3e://testuser:testpassword@minio:9000/library-bucket');
+    const library = plCfg.storageSettingsFromURL(`s3e://testuser:testpassword@minio:9000/library-bucket`);
     if (library.type !== 'S3') {
       throw new Error(`${library.type} storage type is not supported for library storage`);
     } else {
-      library.presignEndpoint = 'http://localhost:9000';
+      library.presignEndpoint = `http://${presignHost}:9000`;
     }
 
     const dbFSPath = storageDir('db');
