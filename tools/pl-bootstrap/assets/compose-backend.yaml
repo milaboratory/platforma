@@ -90,10 +90,3 @@ services:
       - ${PL_DATA_PACKAGE_ROOT}:/storage/controllers/packageLoader/
 
     restart: always
-
-volumes:
-  primary:
-  library:
-  work:
-  packages:
-  db:
