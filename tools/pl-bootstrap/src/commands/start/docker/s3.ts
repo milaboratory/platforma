@@ -25,6 +25,7 @@ export default class S3 extends Command {
 
     ...cmdOpts.MountFlag,
     ...cmdOpts.StorageFlag,
+    ...cmdOpts.MinioPresignHostFlag,
   };
 
   public async run(): Promise<void> {
@@ -50,6 +51,7 @@ export default class S3 extends Command {
     }
 
     const platformOverride = flags.arch ? `linux/${flags.arch}` : undefined;
+    const presignHost = flags['minio-presign-host'] ? 'minio' : 'localhost';
 
     core.startDockerS3(storage, {
       image: flags.image,
@@ -71,6 +73,8 @@ export default class S3 extends Command {
 
       debugAddr: flags['debug-listen'],
       debugPort: flags['debug-port'],
+
+      presignHost: presignHost,
     });
   }
 }

@@ -94,6 +94,12 @@ export const StorageFlag = {
   })
 };
 
+export const MinioPresignHostFlag = {
+  ['minio-presign-host']: Flags.boolean({
+    description: 'use \'minio\' host instead of \'localhost\' in presign URLs'
+  })
+};
+
 export const MountFlag = {
   mount: Flags.string({
     multiple: true,
