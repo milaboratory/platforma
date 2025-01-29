@@ -190,7 +190,7 @@ export class SshPl {
       if (state.isAlive) {
         state.userCredentials = await this.getUserCredentials(state.remoteHome);
         if (!state.userCredentials) {
-          return null;
+          throw new Error(`SshPl.platformaInit: platforma is alive but userCredentials are not found`);
         }
         return state.userCredentials;
       }
@@ -200,7 +200,7 @@ export class SshPl {
       state.ports = await this.fetchPorts(state.remoteHome, state.arch);
 
       if (!state.ports.debug.remote || !state.ports.grpc.remote || !state.ports.minioPort.remote || !state.ports.minioConsolePort.remote || !state.ports.monitoring.remote) {
-        return null;
+        throw new Error(`SshPl.platformaInit: remote ports are not defined`);
       }
 
       const config = await generateSshPlConfigs({
@@ -224,7 +224,6 @@ export class SshPl {
         },
       });
       state.generatedConfig = {...config };
-      // state.generatedConfig.plConfig = 'too wordy';
 
       for (const [filePath, content] of Object.entries(config.filesToCreate)) {
         await this.sshClient.writeFileOnTheServer(filePath, content);
@@ -240,19 +239,23 @@ export class SshPl {
 
       const writeResult = await this.sshClient.writeFileOnTheServer(plpath.getSupervisorConfOnServer(state.remoteHome), supervisorConfig);
       if (!writeResult) {
-        console.error(`Can not write supervisord config on the server ${plpath.getPlatformaRemoteWorkingDir(state.remoteHome)}`);
+        throw new Error(`Can not write supervisord config on the server ${plpath.getPlatformaRemoteWorkingDir(state.remoteHome)}`);
       }
 
+      state.connectionInfo = {
+        plUser: config.plUser,
+        plPassword: config.plPassword,
+        ports: state.ports,
+      };
       await this.sshClient.writeFileOnTheServer(
         plpath.getConnectionFilePath(state.remoteHome),
-        JSON.stringify({
-          plUser: config.plUser,
-          plPassword: config.plPassword,
-          ports: state.ports,
-        }, undefined, 2),
+        JSON.stringify(state.connectionInfo, undefined, 2),
       );
 
       await this.start();
+      state.started = true;
+
+      this.logger.info(`SshPl.platformaInit: platforma has started, state: ${JSON.stringify(state)}`);
 
       return {
         plUser: config.plUser,
@@ -467,4 +470,6 @@ type PlatformaInitState = {
   binPaths?: BinPaths;
   ports?: SshPlatformaPorts;
   generatedConfig?: SshPlConfigGenerationResult;
+  connectionInfo?: SshInitReturnTypes;
+  started?: boolean;
 }
