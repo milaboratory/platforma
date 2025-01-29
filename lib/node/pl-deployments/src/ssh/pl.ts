@@ -69,8 +69,7 @@ export class SshPl {
 
       return false;
     } catch (e: unknown) {
-      this.logger.error(`isAlive: error ${e} occurred, result: ${JSON.stringify(result)}`);
-      throw e;
+      this.logger.warn(`isAlive: error ${e} occurred, result: ${JSON.stringify(result)}`);
 
       return false;
     }
