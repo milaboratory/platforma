@@ -1,4 +1,4 @@
-import path from 'path';
+import upath from 'upath';
 import os from 'os';
 import { assertNever, fileExists } from '@milaboratories/ts-helpers';
 import type { PlLicenseSettings } from './types';
@@ -67,8 +67,8 @@ export async function getLicenseFromEnv(): Promise<License> {
   let licenseFile = undefined;
   if ((process.env.MI_LICENSE_FILE ?? '') != '') licenseFile = process.env.MI_LICENSE_FILE;
   else if ((process.env.PL_LICENSE_FILE ?? '') != '') licenseFile = process.env.PL_LICENSE_FILE;
-  else if (await fileExists(path.resolve(os.homedir(), '.pl.license')))
-    licenseFile = path.resolve(os.homedir(), '.pl.license');
+  else if (await fileExists(upath.resolve(os.homedir(), '.pl.license')))
+    licenseFile = upath.resolve(os.homedir(), '.pl.license');
 
   if (licenseFile !== undefined)
     return {

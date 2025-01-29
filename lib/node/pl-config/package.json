@@ -48,6 +48,7 @@
     "undici": "catalog:",
     "@milaboratories/ts-helpers": "workspace:^",
     "yaml": "catalog:",
-    "zod": "catalog:"
+    "zod": "catalog:",
+    "upath": "catalog:"
   }
 }

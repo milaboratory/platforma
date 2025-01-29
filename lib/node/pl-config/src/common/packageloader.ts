@@ -1,5 +1,5 @@
 import fs from 'fs/promises';
-import path from 'path';
+import upath from 'upath';
 
 /** Gets a default software loader path and creates it locally. */
 export async function createDefaultLocalPackageSettings(dir: string) {
@@ -10,5 +10,5 @@ export async function createDefaultLocalPackageSettings(dir: string) {
 }
 
 export function newDefaultPackageSettings(dir: string) {
-  return path.join(dir, 'packages');
+  return upath.join(dir, 'packages');
 }

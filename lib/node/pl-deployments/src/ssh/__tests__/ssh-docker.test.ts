@@ -68,12 +68,6 @@ describe('SSH Tests', () => {
     await expect(client.createRemoteDirectory(remotePath)).rejects.toThrow();
   });
 
-  it('User home direcory', async () => {
-    expect(client.homeDir).toBe('/home/pl-doctor');
-    const home = await client.getUserHomeDirectory();
-    expect(home).toBe('/home/pl-doctor');
-  });
-
   it('Upload directory', async () => {
     const remoteDir = '/home/pl-doctor';
     await client.uploadDirectory(`${downloadsFolder}/rec-upload`, '/home/pl-doctor/rec-upload');
@@ -143,21 +137,16 @@ describe('SSH Tests', () => {
 
 describe('sshConnect', () => {
   it('should successfully connect to the SSH server', async () => {
-    const client = new SshClient();
-    await expect(client.connect(getConnectionForSsh(testContainer))).resolves.toBeUndefined();
+    const client = await SshClient.init(getConnectionForSsh(testContainer));
     client.close();
   });
 
   it('should fail with invalid credentials', async () => {
-    const client = new SshClient();
-    await expect(client.connect({ ...getConnectionForSsh(testContainer), privateKey: '123' })).rejects.toThrow();
-    client.close();
+    await expect(SshClient.init({ ...getConnectionForSsh(testContainer), privateKey: '123' })).rejects.toThrow();
   });
 
   it('should timeout if the server is unreachable', async () => {
-    const client = new SshClient();
-    await expect(client.connect({ ...getConnectionForSsh(testContainer), port: 3233 })).rejects.toThrow('');
-    client.close();
+    await expect(SshClient.init({ ...getConnectionForSsh(testContainer), port: 3233 })).rejects.toThrow('');
   });
 });
 

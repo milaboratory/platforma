@@ -165,9 +165,6 @@ catalogs:
     monaco-editor:
       specifier: ^0.52.2
       version: 0.52.2
-    node-scp:
-      specifier: ^0.0.23
-      version: 0.0.23
     oclif:
       specifier: ^4.16.2
       version: 4.16.2
@@ -243,6 +240,9 @@ catalogs:
     undici:
       specifier: ^7.2.3
       version: 7.2.3
+    upath:
+      specifier: ^2.0.1
+      version: 2.0.1
     utility-types:
       specifier: ^3.11.0
       version: 3.11.0
@@ -1412,6 +1412,9 @@ importers:
       undici:
         specifier: 'catalog:'
         version: 7.2.3
+      upath:
+        specifier: 'catalog:'
+        version: 2.0.1
       yaml:
         specifier: 'catalog:'
         version: 2.6.1
@@ -1467,9 +1470,6 @@ importers:
       decompress:
         specifier: 'catalog:'
         version: 4.2.1
-      node-scp:
-        specifier: 'catalog:'
-        version: 0.0.23
       ssh2:
         specifier: 'catalog:'
         version: 1.16.0
@@ -1479,6 +1479,9 @@ importers:
       undici:
         specifier: 'catalog:'
         version: 7.2.3
+      upath:
+        specifier: 'catalog:'
+        version: 2.0.1
       yaml:
         specifier: 'catalog:'
         version: 2.6.1
@@ -7425,9 +7428,6 @@ packages:
   node-releases@2.0.18:
     resolution: {integrity: sha512-d9VeXT4SJ7ZeOqGX6R5EM022wpL+eWPooLI+5UpWn2jCT1aosUQEhQP214x33Wkwx3JQMvIm+tIoVOdodFS40g==}
 
-  node-scp@0.0.23:
-    resolution: {integrity: sha512-He+Jxt1WwuAZBfdPxoq+wQSrXMSHobB4+oo1LUDhKGqzbub7D/Q6JpDja3SzFvaxIhhnhgituP91BU97viCMjA==}
-
   nopt@5.0.0:
     resolution: {integrity: sha512-Tbj67rffqceeLpcRXrT7vKAN8CwfPeIBgM7E6iBkmKLV7bEMwpGgYLGv0jACUsECaa/vuxP0IjEont6umdMgtQ==}
     engines: {node: '>=6'}
@@ -8506,6 +8506,10 @@ packages:
   universalify@0.1.2:
     resolution: {integrity: sha512-rBJeI5CXAlmy1pV+617WB9J63U6XcazHHF2f2dbJix4XzpUF0RS3Zbj0FGIOCAva5P/d/GBOYaACQ1w+0azUkg==}
     engines: {node: '>= 4.0.0'}
+
+  upath@2.0.1:
+    resolution: {integrity: sha512-1uEe95xksV1O0CYKXo8vQvN1JEbtJp7lb7C5U9HMsIp6IVwntkH/oNUzyVNQSd4S1sYk2FpSSW44FqMc8qee5w==}
+    engines: {node: '>=4'}
 
   update-browserslist-db@1.1.0:
     resolution: {integrity: sha512-EdRAaAyk2cUE1wOf2DkEhzxqOQvFOoRJFNS6NeyJ01Gp2beMRpBAINjM2iDXE3KCuKhwnvHIQCJm6ThL2Z+HzQ==}
@@ -15197,10 +15201,6 @@ snapshots:
 
   node-releases@2.0.18: {}
 
-  node-scp@0.0.23:
-    dependencies:
-      ssh2: 1.16.0
-
   nopt@5.0.0:
     dependencies:
       abbrev: 1.1.1
@@ -16391,6 +16391,8 @@ snapshots:
       unist-util-visit-parents: 6.0.1
 
   universalify@0.1.2: {}
+
+  upath@2.0.1: {}
 
   update-browserslist-db@1.1.0(browserslist@4.23.3):
     dependencies:

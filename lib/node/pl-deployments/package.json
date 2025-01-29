@@ -52,7 +52,7 @@
     "@milaboratories/pl-config": "workspace:^",
     "@milaboratories/ts-helpers": "workspace:^",
     "decompress": "catalog:",
-    "node-scp": "catalog:",
+    "upath": "catalog:",
     "ssh2": "catalog:",
     "tar": "catalog:",
     "undici": "catalog:",

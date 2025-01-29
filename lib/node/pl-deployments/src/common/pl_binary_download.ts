@@ -1,6 +1,6 @@
 import fs from 'fs';
 import fsp from 'fs/promises';
-import path from 'path';
+import upath from 'upath';
 import { request } from 'undici';
 import { Writable, Readable } from 'stream';
 import { text } from 'stream/consumers';
@@ -41,6 +41,7 @@ export async function downloadPlBinary(
   const { archiveUrl, archivePath, archiveType, targetFolder, binaryPath } = localDownloadOptions(
     plVersion, baseDir, newArch(arch), newOs(platform),
   );
+
   await downloadArchive(logger, archiveUrl, archivePath);
   await extractArchive(logger, archivePath, archiveType, targetFolder);
 
@@ -55,9 +56,9 @@ function getPathsForDownload(softwareName: string, tgzName: string, baseDir: str
   const archiveType = osToArchiveType[os];
   const archiveFileName = `${baseName}.${archiveType}`;
   const archiveUrl = `https://cdn.platforma.bio/software/${softwareName}/${os}/${archiveFileName}`;
-  const archivePath = path.join(baseDir, archiveFileName);
+  const archivePath = upath.join(baseDir, archiveFileName);
   // folder where binary distribution of pl will be unpacked
-  const targetFolder = path.join(baseDir, baseName);
+  const targetFolder = upath.join(baseDir, baseName);
 
   return {
     archiveUrl,
@@ -74,12 +75,12 @@ function localDownloadOptions(plVersion: string, baseDir: string, arch: ArchType
 
   const archiveFileName = `${baseName}.${archiveType}`;
   const archiveUrl = `https://cdn.platforma.bio/software/pl/${os}/${archiveFileName}`;
-  const archivePath = path.join(baseDir, archiveFileName);
+  const archivePath = upath.join(baseDir, archiveFileName);
 
   // folder where binary distribution of pl will be unpacked
-  const targetFolder = path.join(baseDir, baseName);
+  const targetFolder = upath.join(baseDir, baseName);
 
-  const binaryPath = path.join(baseName, 'binaries', osToBinaryName[os]);
+  const binaryPath = upath.join(baseName, 'binaries', osToBinaryName[os]);
 
   return {
     archiveUrl,
@@ -96,7 +97,7 @@ export async function downloadArchive(logger: MiLogger, archiveUrl: string, dstA
     return dstArchiveFile;
   }
 
-  await fsp.mkdir(path.dirname(dstArchiveFile), { recursive: true });
+  await fsp.mkdir(upath.dirname(dstArchiveFile), { recursive: true });
 
   logger.info(`Downloading Platforma Backend archive:\n  URL: ${archiveUrl}\n Save to: ${dstArchiveFile}`);
 
@@ -136,7 +137,7 @@ export async function extractArchive(
     throw new Error(msg);
   }
 
-  const markerFilePath = path.join(dstFolder, MarkerFileName);
+  const markerFilePath = upath.join(dstFolder, MarkerFileName);
 
   if (await fileExists(markerFilePath)) {
     logger.info(`Platforma Backend binaries unpack skipped: '${dstFolder}' exists`);

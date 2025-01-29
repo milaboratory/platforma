@@ -1,5 +1,5 @@
 import fs from 'fs/promises';
-import path from 'path';
+import upath from 'upath';
 import type { PlAuthDriver } from './types';
 
 /** A line in a users.htpasswd config */
@@ -27,7 +27,7 @@ export async function createLocalHtpasswdFile(dir: string, config: HtpasswdConfi
 
 export function newHtpasswdFile(dir: string, config: HtpasswdConfig): Htpasswd {
   return {
-    filePath: path.join(dir, 'users.htpasswd'),
+    filePath: upath.join(dir, 'users.htpasswd'),
     content: stringifyHtpasswdConfig(config),
   };
 }

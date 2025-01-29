@@ -1,5 +1,5 @@
 import type { MiLogger } from '@milaboratories/ts-helpers';
-import path from 'path';
+import upath from 'upath';
 import yaml from 'yaml';
 import type { PlConfigPortsCustomWithMinio } from '../common/ports';
 import { getLocalhostEndpoints } from '../common/ports';
@@ -112,7 +112,7 @@ export async function generateSshPlConfigs(
   const htpasswd = newHtpasswdFile(opts.workingDir, [{ user: plUser, password: plPassword }]);
   const packageLoaderPath = newDefaultPackageSettings(opts.workingDir);
 
-  const configPath = path.join(opts.workingDir, 'config.yaml');
+  const configPath = upath.join(opts.workingDir, 'config.yaml');
   let config = newDefaultPlConfig(endpoints, license, htpasswd.filePath, plJwt, packageLoaderPath, storages);
   if (opts.plConfigPostprocessing)
     config = opts.plConfigPostprocessing(config);
