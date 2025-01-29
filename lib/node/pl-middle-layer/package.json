@@ -28,6 +28,7 @@
     "@milaboratories/pl-http": "workspace:^",
     "@milaboratories/computable": "workspace:^",
     "@milaboratories/pframes-node": "catalog:",
+    "@milaboratories/pframes-rs-node": "catalog:",
     "@milaboratories/resolve-helper": "workspace:^",
     "@platforma-sdk/block-tools": "workspace:^",
     "@milaboratories/pl-client": "workspace:^",
