@@ -8,8 +8,12 @@ export const minioDirName = 'minio-2024-12-18T13-15-44Z';
 export const supervisordDirName = 'supervisord-0.7.3';
 export const supervisordSubDirName = 'supervisord_0.7.3_Linux_64-bit';
 
-export function binariesDir(home: string) {
-  return upath.join(home, 'platforma_ssh', 'binaries');
+export function workDir(remoteHome: string) {
+  return upath.join(remoteHome, 'platforma_ssh');
+}
+
+export function binariesDir(remoteHome: string) {
+  return upath.join(remoteHome, 'platforma_ssh', 'binaries');
 }
 
 export function platformaBaseDir(arch: string) {
@@ -20,23 +24,31 @@ export function platformaDir(remoteHome: string, arch: string) {
   return upath.join(binariesDir(remoteHome), platformaBaseDir(arch), 'binaries');
 }
 
+export function platformaBin(remoteHome: string, arch: string) {
+  return upath.join(platformaDir(remoteHome, arch), 'platforma');
+}
+
+export function platformaFreePortBin(remoteHome: string, arch: string): string {
+  return upath.join(platformaDir(remoteHome, arch), 'free-port');
+}
+
 export function minioDir(remoteHome: string, arch: string) {
   return upath.join(binariesDir(remoteHome), `minio-2024-12-18T13-15-44Z-${newArch(arch)}`);
 }
 
-export function getPlatformaRemoteWorkingDir(remoteHome: string) {
-  return upath.join(remoteHome, 'platforma_ssh');
-}
-
-export function getSupervisorBinDirOnServer(remoteHome: string, arch: string) {
+export function supervisorBinDir(remoteHome: string, arch: string) {
   return upath.join(binariesDir(remoteHome), `supervisord-0.7.3-${newArch(arch)}`, supervisordSubDirName);
 }
 
-export function getSupervisorConfOnServer(remoteHome: string) {
-  return upath.join(getPlatformaRemoteWorkingDir(remoteHome), 'supervisor.conf');
+export function supervisorConf(remoteHome: string) {
+  return upath.join(workDir(remoteHome), 'supervisor.conf');
 }
 
-export function getConnectionFilePath(remoteHome: string) {
-  return upath.join(getPlatformaRemoteWorkingDir(remoteHome), `connection.txt`);
+export function supervisorBin(remoteHome: string, arch: string): string {
+  return upath.join(supervisorBinDir(remoteHome, arch), 'supervisord');
+}
+
+export function connectionInfo(remoteHome: string) {
+  return upath.join(workDir(remoteHome), `connection.txt`);
 }
 

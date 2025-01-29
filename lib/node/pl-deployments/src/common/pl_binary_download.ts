@@ -11,6 +11,15 @@ import decompress from 'decompress';
 import type { ArchType, OSType } from './os_and_arch';
 import { newOs, newArch } from './os_and_arch';
 
+export type DownloadBinaryResult = {
+  archiveUrl: string;
+  archivePath: string;
+  archiveType: ArchiveType;
+  targetFolder: string;
+  baseName: string;
+  binaryPath?: string;
+}
+
 export async function downloadBinary(
   logger: MiLogger,
   baseDir: string,
@@ -18,18 +27,15 @@ export async function downloadBinary(
   tgzName: string,
   arch: string,
   platform: string,
-) {
-  const { archiveUrl, archivePath, archiveType, targetFolder, baseName } = getPathsForDownload(softwareName, tgzName, baseDir, newArch(arch), newOs(platform));
+): Promise<DownloadBinaryResult> {
+  const opts = getPathsForDownload(softwareName, tgzName, baseDir, newArch(arch), newOs(platform));
+  const { archiveUrl, archivePath, archiveType, targetFolder, baseName } = opts;
+
   await downloadArchive(logger, archiveUrl, archivePath);
   await extractArchive(logger, archivePath, archiveType, targetFolder);
 
-  return { dir: targetFolder, dirBaseName: baseName };
+  return opts;
 }
-
-export type DownloadPlBinaryResult = {
-  binaryPath: string;
-  archivePath: string;
-};
 
 export async function downloadPlBinary(
   logger: MiLogger,
@@ -37,21 +43,23 @@ export async function downloadPlBinary(
   plVersion: string,
   arch: string,
   platform: string,
-): Promise<DownloadPlBinaryResult> {
-  const { archiveUrl, archivePath, archiveType, targetFolder, binaryPath } = localDownloadOptions(
-    plVersion, baseDir, newArch(arch), newOs(platform),
-  );
+): Promise<DownloadBinaryResult> {
+  const opts = localDownloadOptions(plVersion, baseDir, newArch(arch), newOs(platform));
+  const { archiveUrl, archivePath, archiveType, targetFolder, binaryPath } = opts;
 
   await downloadArchive(logger, archiveUrl, archivePath);
   await extractArchive(logger, archivePath, archiveType, targetFolder);
 
-  return {
-    binaryPath,
-    archivePath: targetFolder,
-  };
+  return opts;
 }
 
-function getPathsForDownload(softwareName: string, tgzName: string, baseDir: string, arch: ArchType, os: OSType) {
+function getPathsForDownload(
+  softwareName: string,
+  tgzName: string,
+  baseDir: string,
+  arch: ArchType,
+  os: OSType,
+): DownloadBinaryResult {
   const baseName = `${tgzName}-${arch}`;
   const archiveType = osToArchiveType[os];
   const archiveFileName = `${baseName}.${archiveType}`;
@@ -69,7 +77,12 @@ function getPathsForDownload(softwareName: string, tgzName: string, baseDir: str
   };
 }
 
-function localDownloadOptions(plVersion: string, baseDir: string, arch: ArchType, os: OSType) {
+function localDownloadOptions(
+  plVersion: string,
+  baseDir: string,
+  arch: ArchType,
+  os: OSType,
+): DownloadBinaryResult {
   const baseName = `pl-${plVersion}-${arch}`;
   const archiveType = osToArchiveType[os];
 
@@ -88,6 +101,7 @@ function localDownloadOptions(plVersion: string, baseDir: string, arch: ArchType
     archiveType,
     targetFolder,
     binaryPath,
+    baseName,
   };
 }
 
