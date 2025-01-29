@@ -3,12 +3,13 @@ import { writeFileSync, readFileSync } from 'fs';
 import { SshClient } from '../ssh';
 import ssh from 'ssh2';
 import { downloadsFolder, cleanUp, getConnectionForSsh, getContainerHostAndPort, initContainer, localFileDownload, localFileUpload } from './common-utils';
+import { ConsoleLoggerAdapter } from '@milaboratories/ts-helpers';
 
 let client: SshClient;
 const testContainer = await initContainer('ssh');
 
 beforeAll(async () => {
-  client = await SshClient.init(getConnectionForSsh(testContainer));
+  client = await SshClient.init(new ConsoleLoggerAdapter(), getConnectionForSsh(testContainer));
 });
 
 describe('SSH Tests', () => {
@@ -137,16 +138,16 @@ describe('SSH Tests', () => {
 
 describe('sshConnect', () => {
   it('should successfully connect to the SSH server', async () => {
-    const client = await SshClient.init(getConnectionForSsh(testContainer));
+    const client = await SshClient.init(new ConsoleLoggerAdapter(), getConnectionForSsh(testContainer));
     client.close();
   });
 
   it('should fail with invalid credentials', async () => {
-    await expect(SshClient.init({ ...getConnectionForSsh(testContainer), privateKey: '123' })).rejects.toThrow();
+    await expect(SshClient.init(new ConsoleLoggerAdapter(), { ...getConnectionForSsh(testContainer), privateKey: '123' })).rejects.toThrow();
   });
 
   it('should timeout if the server is unreachable', async () => {
-    await expect(SshClient.init({ ...getConnectionForSsh(testContainer), port: 3233 })).rejects.toThrow('');
+    await expect(SshClient.init(new ConsoleLoggerAdapter(), { ...getConnectionForSsh(testContainer), port: 3233 })).rejects.toThrow('');
   });
 });
 

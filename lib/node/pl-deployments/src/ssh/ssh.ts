@@ -4,7 +4,8 @@ import net from 'net';
 import dns from 'dns';
 import fs from 'fs';
 import { readFile } from 'fs/promises';
-import path from 'path';
+import upath from 'upath';
+import { MiLogger } from '@milaboratories/ts-helpers';
 
 export type SshAuthMethods = 'publickey' | 'password';
 export type SshAuthMethodsResult = SshAuthMethods[];
@@ -14,6 +15,7 @@ export class SshClient {
   public homeDir?: string;
 
   constructor(
+    private readonly logger: MiLogger,
     private readonly client: Client,
   ) {}
 
@@ -22,8 +24,8 @@ export class SshClient {
    * @param config - The connection configuration object for the SSH client.
    * @returns A new instance of SshClient with an active connection.
    */
-  public static async init(config: ConnectConfig): Promise<SshClient> {
-    const client = new SshClient(new Client());
+  public static async init(logger: MiLogger, config: ConnectConfig): Promise<SshClient> {
+    const client = new SshClient(logger, new Client());
     await client.connect(config);
 
     return client;
@@ -331,7 +333,10 @@ export class SshClient {
           .then(() => {
             resolve(undefined);
           })
-          .catch((err) => reject(err));
+          .catch((err) => {
+            this.logger.error(`uploadFileUsingExistingSftp: error ${err} occurred`);
+            reject(err);
+          });
       });
     });
   }
@@ -345,17 +350,19 @@ export class SshClient {
 
         try {
           await this.__createRemoteDirectory(sftp, remoteDir);
+          this.logger.info(`uploadDirectory: trying to upload files: ${JSON.stringify(files)}`);
 
           for (const file of files) {
-            const localPath = path.join(localDir, file);
+            const localPath = upath.join(localDir, file);
             const remotePath = `${remoteDir}/${file}`;
 
             if (fs.lstatSync(localPath).isDirectory()) {
               await this.__uploadDirectory(sftp, localPath, remotePath, mode);
             } else {
               await this.uploadFileUsingExistingSftp(sftp, localPath, remotePath, mode);
-              // console.log(`Uploaded file: ${localPath} -> ${remotePath}`);
             }
+
+            this.logger.info(`uploadDirectory: uploaded ${localPath} -> ${remotePath}`);
           }
 
           resolve();

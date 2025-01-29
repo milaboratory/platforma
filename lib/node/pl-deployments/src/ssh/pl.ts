@@ -20,7 +20,7 @@ export class SshPl {
 
   public static async init(logger: MiLogger, config: ssh.ConnectConfig): Promise<SshPl> {
     try {
-      const sshClient = await SshClient.init(config);
+      const sshClient = await SshClient.init(logger, config);
       return new SshPl(logger, sshClient, notEmpty(config.username));
     } catch (e: unknown) {
       logger.error(`Connection error in SshClient.init: ${e}`);
@@ -69,7 +69,7 @@ export class SshPl {
 
       return false;
     } catch (e: unknown) {
-      this.logger.warn(`isAlive: error ${e} occurred, result: ${JSON.stringify(result)}`);
+      this.logger.warn(`isAlive: ${e} occurred, result: ${JSON.stringify(result)}`);
 
       return false;
     }
