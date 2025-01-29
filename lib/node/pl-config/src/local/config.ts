@@ -1,5 +1,5 @@
 import type { MiLogger } from '@milaboratories/ts-helpers';
-import path from 'path';
+import upath from 'upath';
 import yaml from 'yaml';
 import type { Endpoints, PlConfigPorts } from '../common/ports';
 import { getLocalhostEndpoints } from '../common/ports';
@@ -82,10 +82,10 @@ export type LocalPlConfigGenerationResult = {
 export async function generateLocalPlConfigs(
   opts: LocalPlConfigGeneratorOptions,
 ): Promise<LocalPlConfigGenerationResult> {
-  const workdir = path.resolve(opts.workingDir);
+  const workdir = upath.resolve(opts.workingDir);
 
   // settings that must be persisted between independent generation invocations
-  const kv = await FSKVStorage.init(path.join(workdir, 'gen'));
+  const kv = await FSKVStorage.init(upath.join(workdir, 'gen'));
 
   const user = 'default-user';
   const password = await kv.getOrCreate('password', () => crypto.randomBytes(16).toString('hex'));

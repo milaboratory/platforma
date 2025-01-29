@@ -10,9 +10,12 @@ export type SshAuthMethods = 'publickey' | 'password';
 export type SshAuthMethodsResult = SshAuthMethods[];
 
 export class SshClient {
-  private client: Client = new Client();
   private config?: ConnectConfig;
   public homeDir?: string;
+
+  constructor(
+    private readonly client: Client,
+  ) {}
 
   /**
    * Initializes the SshClient and establishes a connection using the provided configuration.
@@ -20,23 +23,10 @@ export class SshClient {
    * @returns A new instance of SshClient with an active connection.
    */
   public static async init(config: ConnectConfig): Promise<SshClient> {
-    const client = new SshClient();
+    const client = new SshClient(new Client());
     await client.connect(config);
-    await client.getUserHomeDirectory();
-    return client;
-  }
 
-  public async getUserHomeDirectory() {
-    if (this.homeDir) {
-      return this.homeDir;
-    }
-    const { stdout, stderr } = await this.exec('echo $HOME');
-    if (stderr) {
-      console.warn('Can not get user home directory');
-      return `/home/${this.config?.username}`;
-    }
-    this.homeDir = stdout.trim();
-    return this.homeDir;
+    return client;
   }
 
   /**

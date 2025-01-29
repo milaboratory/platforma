@@ -76,9 +76,9 @@ controllers:
       - id: main
         type: S3
         indexCachePeriod: "0s"
-        endpoint: 127.0.0.1:9000
+        endpoint: http://127.0.0.1:9000
         region: ""
-        presignEndpoint: 127.0.0.1:22222
+        presignEndpoint: http://127.0.0.1:22222
         bucketName: main-bucket
         createBucket: true
         forcePathStyle: true

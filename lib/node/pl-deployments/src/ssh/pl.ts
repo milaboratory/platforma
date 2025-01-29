@@ -1,10 +1,11 @@
 import type * as ssh from 'ssh2';
 import { SshClient } from './ssh';
-import { ConsoleLoggerAdapter } from '@milaboratories/ts-helpers';
+import { ConsoleLoggerAdapter, MiLogger, notEmpty } from '@milaboratories/ts-helpers';
 import { downloadBinary, downloadPlBinary } from '../common/pl_binary_download';
-import path from 'path';
+import upath from 'upath';
+import * as plpath from './pl_paths';
 import { getDefaultPlVersion } from '../common/pl_version';
-import { newArch } from '../common/os_and_arch';
+
 import net from 'net';
 import type { SshPlConfigGenerationResult } from '@milaboratories/pl-config';
 import { generateSshPlConfigs, getFreePort } from '@milaboratories/pl-config';
@@ -42,53 +43,39 @@ export type SshInitReturnTypes = {
 } | null;
 
 export class SshPl {
-  public readonly minioDirName = 'minio-2024-12-18T13-15-44Z';
-  public readonly supervisordDirName = 'supervisord-0.7.3';
-  public readonly supervisordSubDirName = 'supervisord_0.7.3_Linux_64-bit';
-
-  // public serverInfo: Arch = { platform: '', arch: '' };
 
   constructor(
+    private readonly logger: MiLogger,
     public readonly sshClient: SshClient,
+    private readonly username: string,
   ) {}
 
-  public static async init(config: ssh.ConnectConfig) {
+  public static async init(logger: MiLogger, config: ssh.ConnectConfig): Promise<SshPl> {
     try {
       const sshClient = await SshClient.init(config);
-      return new SshPl(sshClient);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (e: any) {
-      console.error('Connection error in SshClient.init', e);
-      return null;
+      return new SshPl(logger, sshClient, notEmpty(config.username));
+    } catch (e: unknown) {
+      logger.error(`Connection error in SshClient.init: ${e}`);
+      throw e;
     }
   }
 
-  public async getArch(): Promise<Arch> {
-    const { stdout, stderr } = await this.sshClient.exec('uname -s && uname -m');
-    if (stderr)
-      throw new Error(`getArch: stderr is not empty: ${stderr}, stdout: ${stdout}`);
-
-    const arr = stdout.split('\n');
-
-     return {
-      platform: arr[0],
-      arch: arr[1],
-     };
-  }
-
   public async isAlive(): Promise<boolean> {
+    const arch = await this.getArch();
+    const remoteHome = await this.getUserHomeDirectory();
+
     const isProgramRunning = (output: string, programName: string) => {
       // eslint-disable-next-line no-control-regex
       const stripAnsi = (str: string) => str.replace(/\x1B\[[0-9;]*m/g, '');
       const cleanedOutput = stripAnsi(output);
       return cleanedOutput.split('\n').some((line) => {
-        const [name, status] = line.trim().split(/\s{2,}/); // Разделяем строку по 2+ пробелам
+        const [name, status] = line.trim().split(/\s{2,}/); // Split string by 2 spaces.
         return name === programName && status === 'Running';
       });
     };
 
     try {
-      const cmd = `${await this.getSupervisorBinDirOnServer()}/supervisord --configuration ${await this.getSupervisorConfOnServer()} ctl status`;
+      const cmd = `${plpath.getSupervisorBinDirOnServer(remoteHome, arch.arch)}/supervisord --configuration ${plpath.getSupervisorConfOnServer(remoteHome)} ctl status`;
       const result = await this.sshClient.exec(cmd);
 
       if (result.stderr) {
@@ -115,27 +102,27 @@ export class SshPl {
     }
   }
 
-  public async fetchPorts(arch: Arch): Promise<SshPlatformaPorts> {
+  public async fetchPorts(remoteHome: string, arch: Arch): Promise<SshPlatformaPorts> {
     const ports: SshPlatformaPorts = {
       grpc: {
         local: await getFreePort(),
-        remote: await this.getFreePortForPlatformaOnServer(arch),
+        remote: await this.getFreePortForPlatformaOnServer(remoteHome, arch),
       },
       monitoring: {
         local: await getFreePort(),
-        remote: await this.getFreePortForPlatformaOnServer(arch),
+        remote: await this.getFreePortForPlatformaOnServer(remoteHome, arch),
       },
       debug: {
         local: await getFreePort(),
-        remote: await this.getFreePortForPlatformaOnServer(arch),
+        remote: await this.getFreePortForPlatformaOnServer(remoteHome, arch),
       },
       minioPort: {
         local: await getFreePort(),
-        remote: await this.getFreePortForPlatformaOnServer(arch),
+        remote: await this.getFreePortForPlatformaOnServer(remoteHome, arch),
       },
       minioConsolePort: {
         local: await getFreePort(),
-        remote: await this.getFreePortForPlatformaOnServer(arch),
+        remote: await this.getFreePortForPlatformaOnServer(remoteHome, arch),
       },
     };
 
@@ -150,36 +137,6 @@ export class SshPl {
     return null;
   }
 
-  public async getPlatformaRemoteWorkingDir() {
-    return [await this.sshClient.getUserHomeDirectory(), 'platforma_ssh'].join('/');
-  }
-
-  public async getBinariesHomeDir() {
-    return [await this.sshClient.getUserHomeDirectory(), 'platforma_ssh/binaries'].join('/');
-  }
-
-  public async getSupervisorBinDirOnServer() {
-    // FIXME Coordinate the paths
-    return [await this.getBinariesHomeDir(), 'supervisord-0.7.3-amd64', this.supervisordSubDirName].join('/');
-  }
-
-  public async getMinioBinDirOnServer() {
-    // FIXME Coordinate the paths
-    return [await this.getBinariesHomeDir(), 'minio-2024-12-18T13-15-44Z-amd64'].join('/');
-  }
-
-  public async getPlatformaBinDirOnTheServer(arch: Arch) {
-    return [await this.getBinariesHomeDir(), await this.getPlatformaDirName(arch), 'binaries'].join('/');
-  }
-
-  public async getSupervisorConfOnServer() {
-    return [await this.getPlatformaRemoteWorkingDir(), 'supervisor.conf'].join('/');
-  }
-
-  public async getPlatformaDirName(info: Arch) {
-    return `pl-${getDefaultPlVersion()}-${newArch(info!.arch)}`;
-  }
-
   public async getLocalFreePort(): Promise<number> {
     return new Promise((res) => {
       const srv = net.createServer();
@@ -190,56 +147,56 @@ export class SshPl {
     });
   }
 
-  public async downloadBinariesAndUploadToTheServer(platformInfo: Arch, plWorkingDirname: string) {
+  public async downloadBinariesAndUploadToTheServer(localWorkdir: string, remoteHome: string, arch: Arch) {
     await this.stop();
 
     // const platformInfo = await this.getArch();
     const supervisordSoftwareName = 'supervisord';
     const minioSoftwareName = 'minio';
 
-    const downloadedPl = await this.downloadPlatformaBinaries(platformInfo, plWorkingDirname);
+    const downloadedPl = await this.downloadPlatformaBinaries(arch, localWorkdir);
 
     const supervisordDirInfo = await downloadBinary(
       new ConsoleLoggerAdapter(),
-      plWorkingDirname,
+      localWorkdir,
       supervisordSoftwareName,
-      this.supervisordDirName,
-      platformInfo!.arch,
-      platformInfo!.platform,
+      plpath.supervisordDirName,
+      arch!.arch,
+      arch!.platform,
     );
 
     const minioDirInfo = await downloadBinary(
       new ConsoleLoggerAdapter(),
-      plWorkingDirname,
+      localWorkdir,
       minioSoftwareName,
-      this.minioDirName,
-      platformInfo!.arch,
-      platformInfo!.platform,
+      plpath.minioDirName,
+      arch!.arch,
+      arch!.platform,
     );
     const minioRelPath = `${minioDirInfo.dirBaseName}/minio`;
 
-    const binBasePath = await this.getBinariesHomeDir();
+    const binBasePath = plpath.binariesDir(remoteHome);
     await this.sshClient.createRemoteDirectory(binBasePath);
     const binDirs = [
-      path.basename(downloadedPl!.archivePath),
-      path.basename(supervisordDirInfo.dir!),
-      path.basename(minioDirInfo.dir!),
+      upath.basename(downloadedPl!.archivePath),
+      upath.basename(supervisordDirInfo.dir!),
+      upath.basename(minioDirInfo.dir!),
     ];
 
     for (const dir of binDirs) {
       await this.sshClient.uploadDirectory(
-        path.resolve(plWorkingDirname, dir),
-        path.resolve(binBasePath, dir),
+        upath.resolve(localWorkdir, dir),
+        upath.resolve(binBasePath, dir),
         0o760,
       );
     }
     return { minioRelPath, downloadedPl };
   }
 
-  public async needDownload(arch: Arch) {
-    const checkPathSupervisor = `${await this.getSupervisorBinDirOnServer()}/supervisord`;
-    const checkPathMinio = `${await this.getMinioBinDirOnServer()}/minio`;
-    const checkPathPlatforma = `${await this.getPlatformaBinDirOnTheServer(arch)}/platforma`;
+  public async needDownload(remoteHome: string, arch: Arch) {
+    const checkPathSupervisor = `${plpath.getSupervisorBinDirOnServer(remoteHome, arch.arch)}/supervisord`;
+    const checkPathMinio = plpath.minioDir(remoteHome, arch.arch);
+    const checkPathPlatforma = `${plpath.platformaDir(remoteHome, arch.arch)}/platforma`;
 
     if (!await this.sshClient.checkFileExists(checkPathPlatforma)
       || !await this.sshClient.checkFileExists(checkPathMinio)
@@ -250,31 +207,29 @@ export class SshPl {
     return false;
   }
 
-  public async getUserCredentials(): Promise<SshInitReturnTypes> {
-    const connectionInfo = await this.sshClient.readFile(await this.getConnectionFilePath());
+  public async getUserCredentials(remoteHome: string): Promise<SshInitReturnTypes> {
+    const connectionInfo = await this.sshClient.readFile(plpath.getConnectionFilePath(remoteHome));
     return JSON.parse(connectionInfo) as SshInitReturnTypes;
   }
 
-  public async getConnectionFilePath() {
-    return `${await this.getPlatformaRemoteWorkingDir()}/connection.txt`;
-  }
-
-  public async platformaInit(plWorkingDirname: string): Promise<SshInitReturnTypes> {
+  public async platformaInit(localWorkdir: string): Promise<SshInitReturnTypes> {
     const arch = await this.getArch();
+    const remoteHome = await this.getUserHomeDirectory();
+
     try {
       const isAlive = await this.isAlive();
 
       if (isAlive) {
-        const userCredentials = await this.getUserCredentials();
+        const userCredentials = await this.getUserCredentials(remoteHome);
         if (!userCredentials) {
           return null;
         }
         return userCredentials;
       }
 
-      const binPaths = await this.downloadBinariesAndUploadToTheServer(arch, plWorkingDirname);
+      const binPaths = await this.downloadBinariesAndUploadToTheServer(localWorkdir, remoteHome, arch);
 
-      const ports = await this.fetchPorts(arch);
+      const ports = await this.fetchPorts(remoteHome, arch);
 
       if (!ports.debug.remote || !ports.grpc.remote || !ports.minioPort.remote || !ports.minioConsolePort.remote || !ports.monitoring.remote) {
         return null;
@@ -282,7 +237,7 @@ export class SshPl {
 
       const config = await generateSshPlConfigs({
         logger: new ConsoleLoggerAdapter(),
-        workingDir: await this.getPlatformaRemoteWorkingDir(),
+        workingDir: plpath.getPlatformaRemoteWorkingDir(remoteHome),
         portsMode: {
           type: 'customWithMinio',
           ports: {
@@ -311,15 +266,15 @@ export class SshPl {
         console.log(`Created directory ${dir}`);
       }
 
-      const supervisorConfig = await this.generateSupervisordConfig(arch, config, binPaths.minioRelPath, binPaths.downloadedPl!.binaryPath);
+      const supervisorConfig = await this.generateSupervisordConfig(remoteHome, arch, config, binPaths.minioRelPath, binPaths.downloadedPl!.binaryPath);
 
-      const writeResult = await this.sshClient.writeFileOnTheServer(await this.getSupervisorConfOnServer(), supervisorConfig);
+      const writeResult = await this.sshClient.writeFileOnTheServer(plpath.getSupervisorConfOnServer(remoteHome), supervisorConfig);
       if (!writeResult) {
-        console.error(`Can not write supervisord config on the server ${await this.getPlatformaRemoteWorkingDir()}`);
+        console.error(`Can not write supervisord config on the server ${plpath.getPlatformaRemoteWorkingDir(remoteHome)}`);
       }
 
       await this.sshClient.writeFileOnTheServer(
-        await this.getConnectionFilePath(),
+        plpath.getConnectionFilePath(remoteHome),
         JSON.stringify({
           plUser: config.plUser,
           plPassword: config.plPassword,
@@ -379,10 +334,16 @@ export class SshPl {
     });
   }
 
-  public async generateSupervisordConfig(arch: Arch, config: SshPlConfigGenerationResult, minioPath: string, plPath: string) {
+  public async generateSupervisordConfig(
+    homeDir: string,
+    arch: Arch,
+    config: SshPlConfigGenerationResult,
+    minioPath: string,
+    plPath: string,
+  ) {
     const minioEnvStr = Object.entries(config.minioConfig.envs).map(([key, value]) => `${key}="${value}"`).join(',');
     const password = randomBytes(16).toString('hex');
-    const freePort = await this.getFreePortForPlatformaOnServer(arch);
+    const freePort = await this.getFreePortForPlatformaOnServer(homeDir, arch);
 
     return `
 [supervisord]
@@ -414,9 +375,9 @@ autorestart=true
 `;
   }
 
-  public async getFreePortForPlatformaOnServer(arch: Arch): Promise<number> {
-    const binHomeDir = await this.getBinariesHomeDir();
-    const freePortBin = [binHomeDir, await this.getPlatformaDirName(arch), 'binaries', 'free-port'].join('/');
+  public async getFreePortForPlatformaOnServer(remoteHome: string, arch: Arch): Promise<number> {
+    const binHomeDir = plpath.binariesDir(remoteHome);
+    const freePortBin = upath.join(binHomeDir, plpath.platformaBaseDir(arch.arch), 'binaries', 'free-port');
     const { stdout, stderr } = await this.sshClient.exec(`${freePortBin}`);
     if (stderr) {
       console.error(`CMD ${freePortBin}`);
@@ -426,7 +387,13 @@ autorestart=true
   }
 
   public async start() {
-    const command = `${path.join(await this.getSupervisorBinDirOnServer(), 'supervisord')} --configuration ${await this.getSupervisorConfOnServer()} --daemon`;
+    const arch = await this.getArch();
+    const remoteHome = await this.getUserHomeDirectory();
+
+    const supervisordCmd = upath.join(plpath.getSupervisorBinDirOnServer(remoteHome, arch.arch), 'supervisord');
+    const supervisorConf = plpath.getSupervisorConfOnServer(remoteHome);
+    const command = `${supervisordCmd} --configuration ${supervisorConf} --daemon`;
+
     const runSupervisord = await this.sshClient.exec(command);
     if (runSupervisord.stderr) {
       throw new Error(`Can not run ssh Platforma ${runSupervisord.stderr}`);
@@ -436,8 +403,14 @@ autorestart=true
   }
 
   public async stop() {
+    const arch = await this.getArch();
+    const remoteHome = await this.getUserHomeDirectory();
+
     try {
-      const command = `${path.join(await this.getSupervisorBinDirOnServer(), 'supervisord')} --configuration ${await this.getSupervisorConfOnServer()} ctl shutdown`;
+      const supervisorCmd = upath.join(plpath.getSupervisorBinDirOnServer(remoteHome, arch.arch), 'supervisord');
+      const supervisorConf = plpath.getSupervisorConfOnServer(remoteHome);
+
+      const command = `${supervisorCmd} --configuration ${supervisorConf} ctl shutdown`;
       const runSupervisord = await this.sshClient.exec(command);
       if (runSupervisord.stderr) {
         throw new Error(`Can not stop ssh Platforma ${runSupervisord.stderr}`);
@@ -447,5 +420,31 @@ autorestart=true
       console.log(e);
       return false;
     }
+  }
+
+  public async getArch(): Promise<Arch> {
+    const { stdout, stderr } = await this.sshClient.exec('uname -s && uname -m');
+    if (stderr)
+      throw new Error(`getArch: stderr is not empty: ${stderr}, stdout: ${stdout}`);
+
+    const arr = stdout.split('\n');
+
+    return {
+      platform: arr[0],
+      arch: arr[1],
+    };
+  }
+
+  public async getUserHomeDirectory() {
+    const { stdout, stderr } = await this.sshClient.exec('echo $HOME');
+
+    if (stderr) {
+      const home = `/home/${this.username}`;
+      console.warn(`getUserHomeDirectory: stderr is not empty: ${stderr}, stdout: ${stdout}, will get a default home: ${home}`);
+
+      return home;
+    }
+
+    return stdout.trim();
   }
 }

@@ -163,12 +163,12 @@ catalog:
   'mime-types': ^2.1.35
   'semver': ^7.6.3
 
+  'upath': ^2.0.1
   'tar': ^7.4.3
   'tar-fs': ^3.0.8
   'decompress': ^4.2.1
   'readline-sync': ^1.4.10
   'ssh2': ^1.16.0
-  'node-scp': ^0.0.23
 
   'zod': ~3.23.8
 

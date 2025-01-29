@@ -1,4 +1,4 @@
-import path from 'node:path';
+import upath from 'upath';
 import * as fsp from 'node:fs/promises';
 
 export class FSKVStorage {
@@ -8,7 +8,7 @@ export class FSKVStorage {
     key: string,
     generator: () => Promise<string> | string,
   ): Promise<string> {
-    const fullPath = path.join(this.root, key);
+    const fullPath = upath.join(this.root, key);
     try {
       return await fsp.readFile(fullPath, { encoding: 'utf8' });
     } catch (err: any) {
@@ -23,7 +23,7 @@ export class FSKVStorage {
   }
 
   public static async init(folder: string): Promise<FSKVStorage> {
-    const root = path.resolve(folder);
+    const root = upath.resolve(folder);
     await fsp.mkdir(root, { recursive: true });
     return new FSKVStorage(root);
   }

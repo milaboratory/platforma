@@ -3,13 +3,13 @@ import { ConsoleLoggerAdapter } from '@milaboratories/ts-helpers';
 import type { SshPlConfigGeneratorOptions } from './config';
 import { generateSshPlConfigs } from './config';
 import fs from 'fs/promises';
-import path from 'path';
+import upath from 'upath';
 import yaml from 'yaml';
 import type { PlAuthDriverJwt, PlConfig, PlS3StorageSettings } from '../common/types';
 
 test('should return right configs', async ({ expect }) => {
   const logger = new ConsoleLoggerAdapter();
-  const workingDir = path.join('/', 'home', 'pl-doctor', 'platforma_backend');
+  const workingDir = upath.join('/', 'home', 'pl-doctor', 'platforma_backend');
 
   const opts: SshPlConfigGeneratorOptions = {
     logger,
@@ -40,32 +40,32 @@ test('should return right configs', async ({ expect }) => {
 
   expect(got.workingDir).toStrictEqual(workingDir);
   expect(got.dirsToCreate).toEqual([
-    path.join(workingDir, 'storages', 'work'),
-    path.join(workingDir, 'storages', 'main'),
-    path.join(workingDir, 'packages'),
+    upath.join(workingDir, 'storages', 'work'),
+    upath.join(workingDir, 'storages', 'main'),
+    upath.join(workingDir, 'packages'),
   ]);
   expect(got.plConfig).toMatchObject({
-    configPath: path.join(workingDir, 'config.yaml'),
+    configPath: upath.join(workingDir, 'config.yaml'),
   });
   expect(got.minioConfig).toMatchObject({
     envs: {
       MINIO_ROOT_USER: 'minio-user',
       // MINIO_ROOT_PASSWORD: 'abc', // random generated, couldn't check here.
-      MINIO_PORT: '9000',
-      MINIO_CONSOLE_PORT: '9001',
+      MINIO_ADDRESS: '127.0.0.1:9000',
+      MINIO_CONSOLE_ADDRESS: '127.0.0.1:9001',
     },
-    storageDir: path.join(workingDir, 'storages', 'main'),
+    storageDir: upath.join(workingDir, 'storages', 'main'),
   });
 
-  expect(got.plAddress).toStrictEqual('127.0.0.1:11111');
+  expect(got.plAddress).toStrictEqual('http://127.0.0.1:11111');
   expect(got.plUser).toStrictEqual('default-user');
   // expect(got.plPassword).toStrictEqual('abc') // random generated.
 
-  const testConfig = await fs.readFile(path.join(__dirname, 'config_test.yaml'));
+  const testConfig = await fs.readFile(upath.join(__dirname, 'config_test.yaml'));
   const expectedConfig = yaml.parse(testConfig.toString());
 
-  const configPath = path.join(workingDir, 'config.yaml');
-  const usersPath = path.join(workingDir, 'users.htpasswd');
+  const configPath = upath.join(workingDir, 'config.yaml');
+  const usersPath = upath.join(workingDir, 'users.htpasswd');
   expect(got.filesToCreate).keys(configPath, usersPath);
   expect(yaml.parse(got.filesToCreate[configPath])).toStrictEqual(expectedConfig);
   expect(got.filesToCreate[usersPath].startsWith('default-user:')).toBeTruthy();

@@ -1,4 +1,4 @@
-import path from 'path';
+import upath from 'upath';
 import fs from 'fs/promises';
 import type { PlControllerDataMainStoragesSettings, PlControllerDataStoragesSettings } from './types';
 
@@ -35,8 +35,8 @@ export function newRemoteConfigStorages(
   workdir: string,
   minioOpts: RemoteMinioSettings,
 ): StoragesSettings {
-  const workPath = path.join(workdir, 'storages', 'work');
-  const mainPath = path.join(workdir, 'storages', 'main');
+  const workPath = upath.join(workdir, 'storages', 'work');
+  const mainPath = upath.join(workdir, 'storages', 'main');
 
   const main: StorageSettings = {
     main: {
@@ -107,8 +107,8 @@ export async function createDefaultLocalStorages(workdir: string): Promise<Stora
 }
 
 export function newDefaultLocalStorages(workdir: string): StoragesSettings {
-  const workPath = path.join(workdir, 'storages', 'work');
-  const mainPath = path.join(workdir, 'storages', 'main');
+  const workPath = upath.join(workdir, 'storages', 'work');
+  const mainPath = upath.join(workdir, 'storages', 'main');
 
   // root storage will be ignored in a local pl deployments in the driver
   // (Platforma needs to be able to upload any file by absolute paths

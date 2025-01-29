@@ -2,7 +2,7 @@ import { test } from 'vitest';
 import { LocalPlOptions, localPlatformaInit } from './pl';
 import { ConsoleLoggerAdapter, sleep } from '@milaboratories/ts-helpers';
 import * as fs from 'fs/promises';
-import * as path from 'path';
+import upath from 'upath';
 import { processStop } from './process';
 import * as yaml from 'yaml';
 import * as os from 'os';
@@ -28,6 +28,7 @@ test(
 
     expect(await pl.isAlive()).toBeTruthy();
     expect(pl.pid).not.toBeUndefined();
+
     pl.stop();
     await pl.waitStopped();
   }
@@ -99,7 +100,7 @@ test(
 );
 
 async function readTestConfig() {
-  const testConfig = path.join(__dirname, 'config.test.yaml');
+  const testConfig = upath.join(__dirname, 'config.test.yaml');
   const config = (await fs.readFile(testConfig)).toString();
 
   const parsed = yaml.parse(config);
@@ -107,7 +108,7 @@ async function readTestConfig() {
   if ((parsed.license.value ?? '') == '') {
     parsed.license.file = process.env.MI_LICENSE_FILE;
     if ((parsed.license.file ?? '') == '') {
-      parsed.license.file = path.join(os.homedir(), '.pl.license');
+      parsed.license.file = upath.join(os.homedir(), '.pl.license');
     }
   }
 
@@ -115,13 +116,13 @@ async function readTestConfig() {
 }
 
 async function prepareDirForTestConfig() {
-  const dir = path.join(__dirname, '..', '.test');
+  const dir = upath.join(__dirname, '..', '.test');
   await fs.rm(dir, { recursive: true, force: true });
   await fs.mkdir(dir);
 
-  await fs.mkdir(path.join(dir, 'storages', 'work'), { recursive: true });
-  await fs.mkdir(path.join(dir, 'storages', 'main'), { recursive: true });
-  await fs.mkdir(path.join(dir, 'packages'), { recursive: true });
+  await fs.mkdir(upath.join(dir, 'storages', 'work'), { recursive: true });
+  await fs.mkdir(upath.join(dir, 'storages', 'main'), { recursive: true });
+  await fs.mkdir(upath.join(dir, 'packages'), { recursive: true });
 
   return dir;
 }

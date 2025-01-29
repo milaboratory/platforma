@@ -10,7 +10,7 @@ import { MiLogger, notEmpty } from '@milaboratories/ts-helpers';
 import { ChildProcess, SpawnOptions } from 'child_process';
 import { filePid, readPid, writePid } from './pid';
 import { Trace, withTrace } from './trace';
-import path from 'path';
+import upath from 'upath';
 import fsp from 'fs/promises';
 import { Required } from 'utility-types';
 
@@ -84,7 +84,7 @@ export class LocalPl {
   }
 
   async waitStopped() {
-    await processWaitStopped(notEmpty(this.pid), 10000);
+    await processWaitStopped(notEmpty(this.pid), 15000);
   }
 
   stopped() {
@@ -147,19 +147,19 @@ export async function localPlatformaInit(logger: MiLogger, _ops: LocalPlOptions)
   return await withTrace(logger, async (trace, t) => {
     trace('startOptions', { ...ops, config: 'too wordy' });
 
-    const workDir = path.resolve(ops.workingDir);
+    const workDir = upath.resolve(ops.workingDir);
 
     if (ops.closeOld) {
       trace('closeOld', await localPlatformaReadPidAndStop(logger, workDir));
     }
 
-    const configPath = path.join(workDir, LocalConfigYaml);
+    const configPath = upath.join(workDir, LocalConfigYaml);
 
     logger.info(`writing configuration '${configPath}'...`);
     await fsp.writeFile(configPath, ops.config);
 
-    const baseBinaryPath = await resolveLocalPlBinaryPath(logger, path.join(workDir, 'binaries'), ops.plBinary);
-    const binaryPath = trace('binaryPath', path.join('binaries', baseBinaryPath));
+    const baseBinaryPath = await resolveLocalPlBinaryPath(logger, upath.join(workDir, 'binaries'), ops.plBinary);
+    const binaryPath = trace('binaryPath', upath.join('binaries', baseBinaryPath));
 
     const processOpts: ProcessOptions = {
       cmd: binaryPath,
