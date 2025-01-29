@@ -90,7 +90,7 @@ describe('SshPl', async () => {
       arch.platform,
     );
 
-    const plFolderName = upath.basename(plPath.archivePath);
+    const plFolderName = upath.basename(plPath.targetFolder);
     const dirPath = upath.resolve(downloadDestination, plFolderName);
     await sshPl.sshClient.uploadDirectory(dirPath, `/home/pl-doctor/${plFolderName}`);
 

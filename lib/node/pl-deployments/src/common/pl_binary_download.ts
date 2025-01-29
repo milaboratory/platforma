@@ -37,6 +37,21 @@ export async function downloadBinary(
   return opts;
 }
 
+export async function downloadPlBinaryNoExtract(
+  logger: MiLogger,
+  baseDir: string,
+  plVersion: string,
+  arch: string,
+  platform: string,
+): Promise<DownloadBinaryResult> {
+  const opts = localDownloadPlOptions(plVersion, baseDir, newArch(arch), newOs(platform));
+  const { archiveUrl, archivePath } = opts;
+
+  await downloadArchive(logger, archiveUrl, archivePath);
+
+  return opts;
+}
+
 export async function downloadPlBinary(
   logger: MiLogger,
   baseDir: string,
@@ -44,7 +59,7 @@ export async function downloadPlBinary(
   arch: string,
   platform: string,
 ): Promise<DownloadBinaryResult> {
-  const opts = localDownloadOptions(plVersion, baseDir, newArch(arch), newOs(platform));
+  const opts = localDownloadPlOptions(plVersion, baseDir, newArch(arch), newOs(platform));
   const { archiveUrl, archivePath, archiveType, targetFolder, binaryPath } = opts;
 
   await downloadArchive(logger, archiveUrl, archivePath);
@@ -77,7 +92,7 @@ function getPathsForDownload(
   };
 }
 
-function localDownloadOptions(
+export function localDownloadPlOptions(
   plVersion: string,
   baseDir: string,
   arch: ArchType,
