@@ -1,7 +1,7 @@
 import type * as ssh from 'ssh2';
 import { SshClient } from './ssh';
 import { MiLogger, sleep, notEmpty } from '@milaboratories/ts-helpers';
-import { downloadBinary, DownloadBinaryResult, downloadPlBinary } from '../common/pl_binary_download';
+import { downloadBinary, DownloadBinaryResult, downloadPlBinary, downloadPlBinaryNoExtract } from '../common/pl_binary_download';
 import upath from 'upath';
 import * as plpath from './pl_paths';
 import { getDefaultPlVersion } from '../common/pl_version';
@@ -274,13 +274,25 @@ autorestart=true
     try {
       const supervisordSoftwareName = 'supervisord';
       const minioSoftwareName = 'minio';
+      state.binBasePath = plpath.binariesDir(remoteHome);
 
-      state.localPl = await downloadPlBinary(
+      // we have to extract pl in the remote server,
+      // because Windows doesn't support symlinks
+      // that are found in linux pl binaries tgz archive.
+      state.localPl = await downloadPlBinaryNoExtract(
         this.logger,
         localWorkdir,
         getDefaultPlVersion(),
         arch.arch,
         arch.platform,
+      );
+      const remoteArchivePl = upath.join(state.binBasePath, state.localPl.baseName + '.tgz');
+      await this.sshClient.uploadFile(
+        upath.resolve(state.localPl.archivePath),
+        remoteArchivePl,
+      );
+      const result = await this.sshClient.exec(
+        `tar xvf ${remoteArchivePl} --directory=${plpath.platformaDir(remoteHome, arch.arch)}`,
       );
 
       state.localSupervisord = await downloadBinary(
@@ -302,12 +314,11 @@ autorestart=true
       );
       state.minioRelPath = `${state.localMinio.baseName}/minio`;
 
-      state.binBasePath = plpath.binariesDir(remoteHome);
       await this.sshClient.createRemoteDirectory(state.binBasePath);
       state.binBasePathCreated = true;
 
       state.binDirs = [
-        upath.basename(state.localPl.targetFolder),
+        // upath.basename(state.localPl.targetFolder),
         upath.basename(state.localSupervisord.targetFolder),
         upath.basename(state.localMinio.targetFolder),
       ];
@@ -459,11 +470,11 @@ type BinPaths = {
 }
 
 type DownloadBinariesState = {
+  binBasePath?: string;
   localPl?: DownloadBinaryResult;
   localSupervisord?: DownloadBinaryResult;
   localMinio?: DownloadBinaryResult;
   minioRelPath?: string;
-  binBasePath?: string;
   binBasePathCreated?: boolean;
   binDirs?: string[];
 }
