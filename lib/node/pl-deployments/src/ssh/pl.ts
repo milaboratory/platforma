@@ -42,7 +42,7 @@ export class SshPl {
       });
     };
 
-    let result = {};
+    let result: {stdout: string; stderr: string} = {stdout: '', stderr: ''};
     try {
       const supervisorCmd = plpath.supervisorBin(remoteHome, arch.arch);
       const supervisorConf = plpath.supervisorConf(remoteHome);
