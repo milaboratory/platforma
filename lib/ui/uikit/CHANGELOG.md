@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.51
+
+### Patch Changes
+
+- 3df530d: text wrap
+
 ## 2.2.50
 
 ### Patch Changes
