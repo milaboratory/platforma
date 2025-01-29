@@ -1,6 +1,6 @@
 import type { MiLogger } from '@milaboratories/ts-helpers';
 import { assertNever } from '@milaboratories/ts-helpers';
-import { downloadPlBinary, DownloadPlBinaryResult } from './pl_binary_download';
+import { downloadPlBinary, DownloadBinaryResult } from './pl_binary_download';
 import { getDefaultPlVersion } from './pl_version';
 import os from 'os';
 
@@ -28,7 +28,7 @@ export async function resolveLocalPlBinaryPath(
 ): Promise<string> {
   switch (src.type) {
     case 'Download':
-      return (await downloadPlBinary(logger, downloadDir, src.version, os.arch(), os.platform())).binaryPath;
+      return (await downloadPlBinary(logger, downloadDir, src.version, os.arch(), os.platform())).binaryPath!;
 
     case 'Local':
       return src.path;
