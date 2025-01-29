@@ -11,39 +11,7 @@ import type { SshPlConfigGenerationResult } from '@milaboratories/pl-config';
 import { generateSshPlConfigs, getFreePort } from '@milaboratories/pl-config';
 import { randomBytes } from 'crypto';
 
-export type SshPlatformaPorts = {
-  grpc: {
-    local: number;
-    remote: number ;
-  };
-  monitoring: {
-    local: number;
-    remote: number ;
-  };
-  debug: {
-    local: number;
-    remote: number ;
-  };
-  minioPort: {
-    local: number;
-    remote: number ;
-  };
-  minioConsolePort: {
-    local: number;
-    remote: number ;
-  };
-};
-
-type Arch = { platform: string; arch: string };
-
-export type SshInitReturnTypes = {
-  plUser: string;
-  plPassword: string;
-  ports: SshPlatformaPorts;
-} | null;
-
 export class SshPl {
-
   constructor(
     private readonly logger: MiLogger,
     public readonly sshClient: SshClient,
@@ -150,7 +118,6 @@ export class SshPl {
   public async downloadBinariesAndUploadToTheServer(localWorkdir: string, remoteHome: string, arch: Arch) {
     await this.stop();
 
-    // const platformInfo = await this.getArch();
     const supervisordSoftwareName = 'supervisord';
     const minioSoftwareName = 'minio';
 
@@ -213,48 +180,51 @@ export class SshPl {
   }
 
   public async platformaInit(localWorkdir: string): Promise<SshInitReturnTypes> {
-    const arch = await this.getArch();
-    const remoteHome = await this.getUserHomeDirectory();
+    const state: PlatformaInitState = {localWorkdir};
 
     try {
-      const isAlive = await this.isAlive();
+      state.arch = await this.getArch();
+      state.remoteHome = await this.getUserHomeDirectory();
+      state.isAlive = await this.isAlive();
 
-      if (isAlive) {
-        const userCredentials = await this.getUserCredentials(remoteHome);
-        if (!userCredentials) {
+      if (state.isAlive) {
+        state.userCredentials = await this.getUserCredentials(state.remoteHome);
+        if (!state.userCredentials) {
           return null;
         }
-        return userCredentials;
+        return state.userCredentials;
       }
 
-      const binPaths = await this.downloadBinariesAndUploadToTheServer(localWorkdir, remoteHome, arch);
+      state.binPaths = await this.downloadBinariesAndUploadToTheServer(localWorkdir, state.remoteHome, state.arch);
 
-      const ports = await this.fetchPorts(remoteHome, arch);
+      state.ports = await this.fetchPorts(state.remoteHome, state.arch);
 
-      if (!ports.debug.remote || !ports.grpc.remote || !ports.minioPort.remote || !ports.minioConsolePort.remote || !ports.monitoring.remote) {
+      if (!state.ports.debug.remote || !state.ports.grpc.remote || !state.ports.minioPort.remote || !state.ports.minioConsolePort.remote || !state.ports.monitoring.remote) {
         return null;
       }
 
       const config = await generateSshPlConfigs({
         logger: new ConsoleLoggerAdapter(),
-        workingDir: plpath.getPlatformaRemoteWorkingDir(remoteHome),
+        workingDir: plpath.getPlatformaRemoteWorkingDir(state.remoteHome),
         portsMode: {
           type: 'customWithMinio',
           ports: {
-            debug: ports.debug.remote,
-            grpc: ports.grpc.remote,
-            minio: ports.minioPort.remote,
-            minioConsole: ports.minioConsolePort.remote,
-            monitoring: ports.monitoring.remote,
+            debug: state.ports.debug.remote,
+            grpc: state.ports.grpc.remote,
+            minio: state.ports.minioPort.remote,
+            minioConsole: state.ports.minioConsolePort.remote,
+            monitoring: state.ports.monitoring.remote,
 
-            grpcLocal: ports.grpc.local,
-            minioLocal: ports.minioPort.local,
+            grpcLocal: state.ports.grpc.local,
+            minioLocal: state.ports.minioPort.local,
           },
         },
         licenseMode: {
           type: 'env',
         },
       });
+      state.generatedConfig = {...config };
+      // state.generatedConfig.plConfig = 'too wordy';
 
       for (const [filePath, content] of Object.entries(config.filesToCreate)) {
         await this.sshClient.writeFileOnTheServer(filePath, content);
@@ -266,19 +236,19 @@ export class SshPl {
         console.log(`Created directory ${dir}`);
       }
 
-      const supervisorConfig = await this.generateSupervisordConfig(remoteHome, arch, config, binPaths.minioRelPath, binPaths.downloadedPl!.binaryPath);
+      const supervisorConfig = await this.generateSupervisordConfig(state.remoteHome, state.arch, config, state.binPaths.minioRelPath, state.binPaths.downloadedPl!.binaryPath);
 
-      const writeResult = await this.sshClient.writeFileOnTheServer(plpath.getSupervisorConfOnServer(remoteHome), supervisorConfig);
+      const writeResult = await this.sshClient.writeFileOnTheServer(plpath.getSupervisorConfOnServer(state.remoteHome), supervisorConfig);
       if (!writeResult) {
-        console.error(`Can not write supervisord config on the server ${plpath.getPlatformaRemoteWorkingDir(remoteHome)}`);
+        console.error(`Can not write supervisord config on the server ${plpath.getPlatformaRemoteWorkingDir(state.remoteHome)}`);
       }
 
       await this.sshClient.writeFileOnTheServer(
-        plpath.getConnectionFilePath(remoteHome),
+        plpath.getConnectionFilePath(state.remoteHome),
         JSON.stringify({
           plUser: config.plUser,
           plPassword: config.plPassword,
-          ports: ports,
+          ports: state.ports,
         }, undefined, 2),
       );
 
@@ -287,10 +257,13 @@ export class SshPl {
       return {
         plUser: config.plUser,
         plPassword: config.plPassword,
-        ports,
+        ports: state.ports,
       };
     } catch (e: unknown) {
-      return null;
+      const msg = `SshPl.platformaInit: error occurred: ${e}, state: ${JSON.stringify(state)}`;
+      this.logger.error(msg);
+
+      throw new Error(msg);
     }
   }
 
@@ -447,4 +420,51 @@ autorestart=true
 
     return stdout.trim();
   }
+}
+
+export type SshPlatformaPorts = {
+  grpc: {
+    local: number;
+    remote: number;
+  };
+  monitoring: {
+    local: number;
+    remote: number;
+  };
+  debug: {
+    local: number;
+    remote: number;
+  };
+  minioPort: {
+    local: number;
+    remote: number;
+  };
+  minioConsolePort: {
+    local: number;
+    remote: number;
+  };
+};
+
+type Arch = { platform: string; arch: string };
+
+export type SshInitReturnTypes = {
+  plUser: string;
+  plPassword: string;
+  ports: SshPlatformaPorts;
+} | null;
+
+type BinPaths = {
+  minioRelPath: string;
+  downloadedPl: any;
+}
+
+type PlatformaInitState = {
+  localWorkdir?: string;
+  arch?: Arch;
+  remoteHome?: string;
+  isAlive?: boolean;
+  userCredentials?: SshInitReturnTypes;
+  binPaths?: BinPaths;
+  ports?: SshPlatformaPorts;
+  generatedConfig?: SshPlConfigGenerationResult;
 }
