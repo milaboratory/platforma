@@ -66,7 +66,7 @@ export class SshClient {
           if (code === 0) {
             resolve({ stdout, stderr });
           } else {
-            reject(new Error(`Command exited with code ${code}`));
+            reject(new Error(`Command ${command} exited with code ${code}`));
           }
         }).on('data', (data: ArrayBuffer) => {
           stdout += data.toString();

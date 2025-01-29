@@ -1,6 +1,6 @@
 import type * as ssh from 'ssh2';
 import { SshClient } from './ssh';
-import { MiLogger, notEmpty } from '@milaboratories/ts-helpers';
+import { MiLogger, sleep, notEmpty } from '@milaboratories/ts-helpers';
 import { downloadBinary, DownloadBinaryResult, downloadPlBinary } from '../common/pl_binary_download';
 import upath from 'upath';
 import * as plpath from './pl_paths';
@@ -42,12 +42,16 @@ export class SshPl {
       });
     };
 
+    let result = {};
     try {
-      const cmd = `${plpath.supervisorBinDir(remoteHome, arch.arch)}/supervisord --configuration ${plpath.supervisorConf(remoteHome)} ctl status`;
-      const result = await this.sshClient.exec(cmd);
+      const supervisorCmd = plpath.supervisorBin(remoteHome, arch.arch);
+      const supervisorConf = plpath.supervisorConf(remoteHome);
+
+      const cmd = `${supervisorCmd} --configuration ${supervisorConf} ctl status`;
+      result = await this.sshClient.exec(cmd);
 
       if (result.stderr) {
-        console.log(result.stderr);
+        this.logger.warn(`isAlive: ctl status: stderr occurred: ${result.stderr}, stdout: ${result.stdout}`);
         return false;
       }
 
@@ -56,16 +60,18 @@ export class SshPl {
       }
 
       if (!isProgramRunning(result.stdout, 'minio')) {
-        console.error('Minio not running on the server');
+        this.logger.warn('Minio not running on the server');
       }
 
       if (!isProgramRunning(result.stdout, 'platforma')) {
-        console.error('Platforma not running on the server');
+        this.logger.warn('Platforma not running on the server');
       }
 
       return false;
     } catch (e: unknown) {
-      console.log(e);
+      this.logger.error(`isAlive: error ${e} occurred, result: ${JSON.stringify(result)}`);
+      throw e;
+
       return false;
     }
   }
@@ -83,7 +89,7 @@ export class SshPl {
       throw new Error(`Can not run ssh Platforma ${runSupervisord.stderr}`);
     }
     // We are waiting for Platforma to run to ensure that it has started.
-    return await this.checkIsAliveWithInteval();
+    return await this.checkIsAliveWithInterval();
   }
 
   public async stop() {
@@ -99,7 +105,7 @@ export class SshPl {
       if (runSupervisord.stderr) {
         throw new Error(`Can not stop ssh Platforma ${runSupervisord.stderr}`);
       }
-      return await this.checkIsAliveWithInteval(undefined, 5);
+      return await this.checkIsAliveWithInterval(undefined, 5);
     } catch (e: unknown) {
       console.log(e);
       return false;
@@ -206,44 +212,17 @@ export class SshPl {
     }
   }
 
-  public async checkIsAliveWithInteval(interval: number = 1000, count: number = 15) {
-    let intervalId: NodeJS.Timeout;
-    let iteration = 0;
-    return new Promise((resolve, reject) => {
-      intervalId = setInterval(async () => {
-        try {
-          if (iteration >= count) {
-            clearInterval(intervalId);
-            resolve(false);
-            return;
-          }
-          iteration++;
-          const result = await this.isAlive();
-          if (result) {
-            clearInterval(intervalId);
-            resolve(true);
-            return;
-          }
-        } catch (e: unknown) {
-          clearInterval(intervalId);
-          reject(e);
-          return;
-        }
-      }, interval);
+  public async checkIsAliveWithInterval(interval: number = 1000, count = 15) {
+    const maxMs = count * interval;
 
-      (async () => {
-        try {
-          const initialResult = await this.isAlive();
-          if (initialResult) {
-            clearInterval(intervalId);
-            resolve(true);
-          }
-        } catch (e: unknown) {
-          clearInterval(intervalId);
-          reject(e);
-        }
-      })();
-    });
+    let total = 0;
+    while (!(await this.isAlive())) {
+      await sleep(interval);
+      total += interval;
+      if (total > maxMs) {
+        throw new Error(`isAliveWithInterval: The process did not stopped after ${maxMs} ms.`);
+      }
+    }
   }
 
   public async generateSupervisordConfig(
