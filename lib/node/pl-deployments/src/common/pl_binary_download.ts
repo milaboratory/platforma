@@ -151,7 +151,7 @@ export async function downloadArchive(
     await fsp.mkdir(upath.dirname(dstArchiveFile), { recursive: true });
     state.dirnameCreated = true;
 
-    logger.info(`Downloading Platforma Backend archive:\n  URL: ${archiveUrl}\n Save to: ${dstArchiveFile}`);
+    logger.info(`Downloading archive:\n  URL: ${archiveUrl}\n Save to: ${dstArchiveFile}`);
 
     const { body, statusCode } = await request(archiveUrl);
     state.statusCode = statusCode;

@@ -66,7 +66,7 @@ export class SshPl {
 
     try {
       await supervisorCtlShutdown(this.sshClient, remoteHome, arch.arch);
-      return await this.checkIsAliveWithInterval();
+      return await this.checkIsAliveWithInterval(undefined, undefined, false);
     } catch (e: unknown) {
       console.log(e);
       return false;
@@ -214,6 +214,10 @@ export class SshPl {
     }
   }
 
+  /** We have to extract pl in the remote server,
+  * because Windows doesn't support symlinks
+  * that are found in linux pl binaries tgz archive.
+  * For this reason, we extract all to the remote server. */
   public async downloadAndUntar(
     localWorkdir: string,
     remoteHome: string,
@@ -221,23 +225,32 @@ export class SshPl {
     softwareName: string,
     tgzName: string,
   ): Promise<DownloadAndUntarState> {
-    // we have to extract pl in the remote server,
-    // because Windows doesn't support symlinks
-    // that are found in linux pl binaries tgz archive.
-    // For this reason, we extract all to the remote server.
 
     const state: DownloadAndUntarState = {};
     state.binBasePath = plpath.binariesDir(remoteHome);
     await this.sshClient.createRemoteDirectory(state.binBasePath);
     state.binBasePathCreated = true;
 
-    state.downloadResult = await downloadBinaryNoExtract(
-      this.logger,
-      localWorkdir,
-      softwareName,
-      tgzName,
-      arch.arch, arch.platform,
-    );
+    let downloadBinaryResult: DownloadBinaryResult | null = null;
+    const attempts = 5;
+    for (let i = 1; i <= attempts; i++) {
+      try {
+         downloadBinaryResult = await downloadBinaryNoExtract(
+          this.logger,
+          localWorkdir,
+          softwareName,
+          tgzName,
+          arch.arch, arch.platform,
+        );
+        break;
+      } catch(e: unknown) {
+        await sleep(300);
+        if (i == attempts) {
+          throw new Error(`downloadAndUntar: ${attempts} attempts, last error: ${e}`);
+        }
+      }
+    }
+    state.downloadResult = notEmpty(downloadBinaryResult);
 
     state.localArchivePath = upath.resolve(state.downloadResult.archivePath);
     state.remoteDir = upath.join(state.binBasePath, state.downloadResult.baseName);
@@ -271,16 +284,18 @@ export class SshPl {
     return false;
   }
 
-  public async checkIsAliveWithInterval(interval: number = 1000, count = 15) {
+  public async checkIsAliveWithInterval(interval: number = 1000, count = 15, shouldStart = true) {
     const maxMs = count * interval;
 
     let total = 0;
-    while (!(await this.isAlive())) {
+    let alive = await this.isAlive();
+    while (shouldStart ? !alive : alive) {
       await sleep(interval);
       total += interval;
       if (total > maxMs) {
         throw new Error(`isAliveWithInterval: The process did not stopped after ${maxMs} ms.`);
       }
+      alive = await this.isAlive();
     }
   }
 
@@ -405,6 +420,7 @@ type DownloadAndUntarState = {
   binBasePath?: string;
   binBasePathCreated?: boolean;
   downloadResult?: DownloadBinaryResult;
+  attempts?: number;
 
   localArchivePath?: string;
   remoteDir?: string;
