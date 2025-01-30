@@ -1,5 +1,5 @@
-import { resolve, join } from 'path';
-import fs from 'fs';
+import { resolve, join } from 'node:path';
+import fs from 'node:fs';
 import { getDefaultPlVersion } from '@milaboratories/pl-local';
 
 export function path(...p: string[]): string {
