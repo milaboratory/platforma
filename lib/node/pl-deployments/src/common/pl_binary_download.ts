@@ -120,31 +120,65 @@ export function localDownloadPlOptions(
   };
 }
 
-export async function downloadArchive(logger: MiLogger, archiveUrl: string, dstArchiveFile: string) {
-  if (await fileExists(dstArchiveFile)) {
-    logger.info(`Platforma Backend archive download skipped: '${dstArchiveFile}' already exists`);
-    return dstArchiveFile;
-  }
+export type DownloadInfo = {
+  dstArchive?: string;
+  fileExisted?: boolean;
+  dirnameCreated?: boolean;
+  statusCode?: number;
+  errorMsg?: string;
+  tmpPath?: string;
+  wroteTmp?: boolean;
+  tmpExisted?: boolean;
+  renamed?: boolean;
+  newExisted?: boolean;
+}
 
-  await fsp.mkdir(upath.dirname(dstArchiveFile), { recursive: true });
+export async function downloadArchive(
+  logger: MiLogger, archiveUrl: string, dstArchiveFile: string,
+): Promise<DownloadInfo> {
+  const state: DownloadInfo = {};
+  state.dstArchive = dstArchiveFile;
 
-  logger.info(`Downloading Platforma Backend archive:\n  URL: ${archiveUrl}\n Save to: ${dstArchiveFile}`);
+  try {
+    state.fileExisted = await fileExists(dstArchiveFile);
+    if (state.fileExisted) {
+      logger.info(`Platforma Backend archive download skipped: '${dstArchiveFile}' already exists`);
+      return state;
+    }
 
-  const { body, statusCode } = await request(archiveUrl);
-  if (statusCode != 200) {
-    // completely draining the stream to prevent leaving open connections
-    const textBody = await text(body);
-    const msg = `failed to download archive: ${statusCode}, response: ${textBody.slice(0, 1000)}`;
+    await fsp.mkdir(upath.dirname(dstArchiveFile), { recursive: true });
+    state.dirnameCreated = true;
+
+    logger.info(`Downloading Platforma Backend archive:\n  URL: ${archiveUrl}\n Save to: ${dstArchiveFile}`);
+
+    const { body, statusCode } = await request(archiveUrl);
+    state.statusCode = statusCode;
+    if (statusCode != 200) {
+      // completely draining the stream to prevent leaving open connections
+      const textBody = await text(body);
+      state.errorMsg = `failed to download archive: ${statusCode}, response: ${textBody.slice(0, 1000)}`;
+      logger.error(state.errorMsg);
+      throw new Error(state.errorMsg);
+    }
+
+    // to prevent incomplete downloads we first write in a temp file
+    state.tmpPath = dstArchiveFile + '.tmp';
+    await Readable.toWeb(body).pipeTo(Writable.toWeb(fs.createWriteStream(state.tmpPath)));
+    state.wroteTmp = true;
+    state.tmpExisted = await fileExists(state.tmpPath);
+
+    // and then atomically rename it
+    await fsp.rename(state.tmpPath, dstArchiveFile);
+    state.renamed = true;
+    state.newExisted = await fileExists(dstArchiveFile);
+
+    logger.info(`downloadArchive state: ${JSON.stringify(state)}`);
+    return state;
+  } catch(e: unknown) {
+    const msg = `downloadArchive: error ${String(e)} occurred, state: ${JSON.stringify(state)}`
     logger.error(msg);
-    throw new Error(msg);
+    throw new Error(msg)
   }
-
-  // to prevent incomplete downloads we first write in a temp file
-  const tmpPath = dstArchiveFile + '.tmp';
-  await Readable.toWeb(body).pipeTo(Writable.toWeb(fs.createWriteStream(tmpPath)));
-
-  // and then atomically rename it
-  await fsp.rename(tmpPath, dstArchiveFile);
 }
 
 /** Used to prevent mid-way interrupted unarchived folders to be used */

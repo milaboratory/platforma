@@ -5,7 +5,7 @@ import dns from 'dns';
 import fs from 'fs';
 import { readFile } from 'fs/promises';
 import upath from 'upath';
-import { MiLogger } from '@milaboratories/ts-helpers';
+import { fileExists, MiLogger } from '@milaboratories/ts-helpers';
 
 export type SshAuthMethods = 'publickey' | 'password';
 export type SshAuthMethodsResult = SshAuthMethods[];
@@ -43,7 +43,7 @@ export class SshClient {
         resolve(undefined);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       }).on('error', (err: any) => {
-        reject(err);
+        reject(new Error(`ssh.connect: error occurred: ${err}`));
       }).on('timeout', () => {
         reject(new Error(`timeout was occurred while waiting for SSH connection.`));
       }).connect(config);
@@ -59,7 +59,9 @@ export class SshClient {
     return new Promise((resolve, reject) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       this.client.exec(command, (err: any, stream: ClientChannel) => {
-        if (err) return reject(err);
+        if (err) {
+          return reject(`ssh.exec: ${command}, error occurred: ${err}`);
+        }
 
         let stdout = '';
         let stderr = '';
@@ -139,7 +141,7 @@ export class SshClient {
       const conn = new Client();
       let server: net.Server;
       conn.on('ready', () => {
-        console.log(`[SSH] Connection to ${config.host}. Remote port ${ports.remotePort} will be available locally on the ${ports.localPort}`);
+        this.logger.info(`[SSH] Connection to ${config.host}. Remote port ${ports.remotePort} will be available locally on the ${ports.localPort}`);
         server = net.createServer({ pauseOnConnect: true }, (localSocket) => {
           conn.forwardOut('127.0.0.1', 0, '127.0.0.1', ports.remotePort,
             (err, stream) => {
@@ -155,20 +157,20 @@ export class SshClient {
           );
         });
         server.listen(ports.localPort, '127.0.0.1', () => {
-          console.log(`[+] Port local ${ports.localPort} available locally for remote port → :${ports.remotePort}`);
+          this.logger.info(`[+] Port local ${ports.localPort} available locally for remote port → :${ports.remotePort}`);
           resolve({ server });
         });
 
         server.on('error', (err) => {
           conn.end();
           server.close();
-          reject(err);
+          reject(new Error(`ssh.forwardPort: server error: ${err}`));
         });
 
         server.on('close', () => {
-          console.log(`Server closed ${JSON.stringify(ports)}`);
+          this.logger.info(`Server closed ${JSON.stringify(ports)}`);
           if (conn) {
-            console.log(`End SSH connection`);
+            this.logger.info(`End SSH connection`);
             conn.end();
           }
         });
@@ -177,11 +179,11 @@ export class SshClient {
       conn.on('error', (err) => {
         console.error('[SSH] SSH connection error', 'ports', ports, err.message);
         server?.close();
-        reject(err);
+        reject(`ssh.forwardPort: conn.err: ${err}`);
       });
 
       conn.on('close', () => {
-        console.log('[SSH] Connection closed', 'ports', ports);
+        this.logger.info(`[SSH] Connection closed, ports: ${ports}`);
       });
 
       conn.connect(config);
@@ -216,7 +218,7 @@ export class SshClient {
         return resolve(false);
       } catch (err: unknown) {
         console.log('Error parsing privateKey');
-        reject(err);
+        reject(new Error(`ssh.isPassphraseRequiredForKey: err ${err}`));
       }
     });
   }
@@ -229,10 +231,14 @@ export class SshClient {
    * @returns A promise resolving with `true` if the file was successfully uploaded.
    */
   public async uploadFile(localPath: string, remotePath: string): Promise<boolean> {
-    return this.withSftp(async (sftp) => {
+    return await this.withSftp(async (sftp) => {
       return new Promise((resolve, reject) => {
         sftp.fastPut(localPath, remotePath, (err) => {
-          if (err) return reject(err);
+          if (err) {
+            const newErr = new Error(
+              `ssh.uploadFile: err: ${err}, localPath: ${localPath}, remotePath: ${remotePath}`);
+            return reject(newErr);
+          }
           resolve(true);
         });
       });
@@ -249,12 +255,14 @@ export class SshClient {
     return new Promise((resolve, reject) => {
       this.client.sftp((err, sftp) => {
         if (err) {
-          return reject(err);
+          return reject(new Error(`ssh.withSftp: sftp err: ${err}`));
         }
 
         callback(sftp)
           .then(resolve)
-          .catch(reject)
+          .catch((err)=> {
+            reject(new Error(`ssh.withSftp.callback: err ${err}`))
+          })
           .finally(() => {
             sftp?.end();
           });
@@ -273,7 +281,7 @@ export class SshClient {
       return new Promise((resolve, reject) => {
         sftp.readFile(remotePath, (err, buffer) => {
           if (err) {
-            return reject(err);
+            return reject(new Error(`ssh.readFile: err occurred ${err}`));
           }
           resolve(buffer.toString());
         });
@@ -289,7 +297,7 @@ export class SshClient {
             if ((err as Error & { code: number }).code === 2) {
               return resolve(false);
             }
-            return reject(err);
+            return reject(new Error(`ssh.checkFileExists: err ${err}`));
           }
           resolve(stats.isFile());
         });
@@ -305,7 +313,7 @@ export class SshClient {
             if ((err as Error & { code: number }).code === 2) {
               return resolve({ exists: false, isFile: false, isDirectory: false });
             }
-            return reject(err);
+            return reject(new Error(`ssh.checkPathExists: ${err}`));
           }
           resolve({
             exists: true,
@@ -320,7 +328,9 @@ export class SshClient {
   private async writeFile(sftp: SFTPWrapper, remotePath: string, data: string | Buffer, mode: number = 0o660): Promise<boolean> {
     return new Promise((resolve, reject) => {
       sftp.writeFile(remotePath, data, { mode }, (err) => {
-        if (err) return reject(err);
+        if (err) {
+          return reject(new Error(`ssh.writeFile: err ${err}, remotePath: ${remotePath}`));
+        }
         resolve(true);
       });
     });
@@ -334,8 +344,9 @@ export class SshClient {
             resolve(undefined);
           })
           .catch((err) => {
-            this.logger.error(`uploadFileUsingExistingSftp: error ${err} occurred`);
-            reject(err);
+            const msg = `uploadFileUsingExistingSftp: error ${err} occurred`;
+            this.logger.error(msg);
+            reject(new Error(msg));
           });
       });
     });
@@ -345,7 +356,7 @@ export class SshClient {
     return new Promise((resolve, reject) => {
       fs.readdir(localDir, async (err, files) => {
         if (err) {
-          return reject(err);
+          return reject(new Error(`ssh.__uploadDir: err ${err}, localDir: ${localDir}, remoteDir: ${remoteDir}`));
         }
 
         try {
@@ -367,7 +378,9 @@ export class SshClient {
 
           resolve();
         } catch (err) {
-          reject(err);
+          const msg = `ssh.__uploadDir: catched err ${err}`;
+          this.logger.error(msg)
+          reject(new Error(msg));
         }
       });
     });
@@ -409,7 +422,9 @@ export class SshClient {
         sftp.stat(currentPath, (err) => {
           if (err) {
             sftp.mkdir(currentPath, (err) => {
-              if (err) return reject(err);
+              if (err) {
+                return reject(new Error(`ssh.__createRemDir: err ${err}, remotePath: ${remotePath}`));
+              }
               createNext(index + 1);
             });
           } else {
@@ -442,7 +457,9 @@ export class SshClient {
               if (!err) return resolve();
 
               sftp.mkdir(currentPath, { mode }, (err) => {
-                if (err) return reject(err);
+                if (err) {
+                  return reject(new Error(`ssh.createRemoteDir: err ${err}, remotePath: ${remotePath}`));
+                }
                 resolve();
               });
             });
@@ -465,7 +482,9 @@ export class SshClient {
     return this.withSftp(async (sftp) => {
       return new Promise((resolve, reject) => {
         sftp.fastGet(remotePath, localPath, (err) => {
-          if (err) return reject(err);
+          if (err) {
+            return reject(new Error(`ssh.downloadFile: err ${err}, remotePath: ${remotePath}, localPath: ${localPath}`));
+          }
           resolve(true);
         });
       });
