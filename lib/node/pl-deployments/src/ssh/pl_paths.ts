@@ -16,12 +16,12 @@ export function binariesDir(remoteHome: string) {
   return upath.join(remoteHome, 'platforma_ssh', 'binaries');
 }
 
-export function platformaBaseDir(arch: string) {
-  return `pl-${getDefaultPlVersion()}-${newArch(arch)}`;
+export function platformaBaseDir(remoteHome: string, arch: string) {
+  return upath.join(binariesDir(remoteHome), `pl-${getDefaultPlVersion()}-${newArch(arch)}`);
 }
 
 export function platformaDir(remoteHome: string, arch: string) {
-  return upath.join(binariesDir(remoteHome), platformaBaseDir(arch), 'binaries');
+  return upath.join(platformaBaseDir(remoteHome, arch), 'binaries');
 }
 
 export function platformaBin(remoteHome: string, arch: string) {

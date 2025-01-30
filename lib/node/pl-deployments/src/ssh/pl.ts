@@ -1,6 +1,6 @@
 import type * as ssh from 'ssh2';
 import { SshClient } from './ssh';
-import { MiLogger, sleep, notEmpty } from '@milaboratories/ts-helpers';
+import { MiLogger, sleep, notEmpty, fileExists } from '@milaboratories/ts-helpers';
 import { downloadBinary, DownloadBinaryResult, downloadPlBinary, downloadPlBinaryNoExtract } from '../common/pl_binary_download';
 import upath from 'upath';
 import * as plpath from './pl_paths';
@@ -104,7 +104,7 @@ export class SshPl {
       if (runSupervisord.stderr) {
         throw new Error(`Can not stop ssh Platforma ${runSupervisord.stderr}`);
       }
-      return await this.checkIsAliveWithInterval(undefined, 5);
+      return await this.checkIsAliveWithInterval();
     } catch (e: unknown) {
       console.log(e);
       return false;
@@ -275,6 +275,8 @@ autorestart=true
       const supervisordSoftwareName = 'supervisord';
       const minioSoftwareName = 'minio';
       state.binBasePath = plpath.binariesDir(remoteHome);
+      await this.sshClient.createRemoteDirectory(state.binBasePath);
+      state.binBasePathCreated = true;
 
       // we have to extract pl in the remote server,
       // because Windows doesn't support symlinks
@@ -285,14 +287,6 @@ autorestart=true
         getDefaultPlVersion(),
         arch.arch,
         arch.platform,
-      );
-      const remoteArchivePl = upath.join(state.binBasePath, state.localPl.baseName + '.tgz');
-      await this.sshClient.uploadFile(
-        upath.resolve(state.localPl.archivePath),
-        remoteArchivePl,
-      );
-      const result = await this.sshClient.exec(
-        `tar xvf ${remoteArchivePl} --directory=${plpath.platformaDir(remoteHome, arch.arch)}`,
       );
 
       state.localSupervisord = await downloadBinary(
@@ -314,9 +308,6 @@ autorestart=true
       );
       state.minioRelPath = `${state.localMinio.baseName}/minio`;
 
-      await this.sshClient.createRemoteDirectory(state.binBasePath);
-      state.binBasePathCreated = true;
-
       state.binDirs = [
         // upath.basename(state.localPl.targetFolder),
         upath.basename(state.localSupervisord.targetFolder),
@@ -330,6 +321,23 @@ autorestart=true
           0o760,
         );
       }
+
+      state.localPlArchivePath = upath.resolve(state.localPl.archivePath);
+      state.localPlArchiveExisted = await fileExists(state.localPlArchivePath);
+      state.remotePlArchivePath = upath.join(state.binBasePath, state.localPl.baseName + '.tgz');
+      await this.sshClient.uploadFile(
+        state.localPlArchivePath, state.remotePlArchivePath,
+      );
+      state.plUploadDone = true;
+      const remoteDir = plpath.platformaBaseDir(remoteHome, arch.arch);
+      await this.sshClient.createRemoteDirectory(remoteDir);
+      const result = await this.sshClient.exec(
+        `tar xvf ${state.remotePlArchivePath} --directory=${remoteDir}`,
+      );
+      if (result.stderr)
+        throw new Error(`downloadPlBinaries: untar: stderr occurred: ${result.stderr}, stdout: ${result.stdout}`);
+
+      state.plUntarDone = true;
 
       return {
         history: state,
@@ -471,12 +479,18 @@ type BinPaths = {
 
 type DownloadBinariesState = {
   binBasePath?: string;
+  binBasePathCreated?: boolean;
   localPl?: DownloadBinaryResult;
   localSupervisord?: DownloadBinaryResult;
   localMinio?: DownloadBinaryResult;
   minioRelPath?: string;
-  binBasePathCreated?: boolean;
   binDirs?: string[];
+
+  localPlArchivePath?: string;
+  localPlArchiveExisted?: boolean;
+  remotePlArchivePath?: string;
+  plUploadDone?: boolean;
+  plUntarDone?: boolean;
 }
 
 type PlatformaInitState = {
