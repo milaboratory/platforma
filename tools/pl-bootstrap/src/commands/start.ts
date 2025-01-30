@@ -1,4 +1,4 @@
-import { Command, Flags } from '@oclif/core';
+import { Command } from '@oclif/core';
 import Core from '../core';
 import * as cmdOpts from '../cmd-opts';
 import * as util from '../util';
@@ -9,7 +9,7 @@ export default class Start extends Command {
   static override examples = ['<%= config.bin %> <%= command.id %>'];
 
   static override flags = {
-    ...cmdOpts.GlobalFlags
+    ...cmdOpts.GlobalFlags,
   };
 
   public async run(): Promise<void> {

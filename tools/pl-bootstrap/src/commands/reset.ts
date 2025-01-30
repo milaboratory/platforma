@@ -18,6 +18,6 @@ export default class Reset extends Command {
 
     const logger = util.createLogger(flags['log-level']);
     const core = new Core(logger);
-    core.cleanup();
+    core.cleanupInstance();
   }
 }

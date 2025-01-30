@@ -90,3 +90,23 @@ export function getProcessName(pid: number): string {
     return '';
   }
 }
+
+export type dockerComposeStatus = {
+  Name: string;
+  Status: string;
+  ConfigFiles: string;
+};
+
+export function getDockerComposeInfo(serviceName: string): dockerComposeStatus | undefined {
+  const result = execSync(`docker compose ls --filter name=${serviceName} --format json`, { encoding: 'utf8' }).trim();
+
+  const report = JSON.parse(result) as dockerComposeStatus[];
+
+  for (const st of report) {
+    if (st.Name === serviceName) {
+      return st;
+    }
+  }
+
+  return undefined;
+}

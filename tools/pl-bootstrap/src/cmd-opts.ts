@@ -9,6 +9,13 @@ export const GlobalFlags = {
   }),
 };
 
+export const InstanceName = {
+  name: Flags.string({
+    description: 'name of instance',
+    required: false,
+  }),
+};
+
 export const ImageFlag = {
   image: Flags.string({
     description: 'use custom docker image to run platforma',
@@ -75,13 +82,13 @@ export const AddressesFlags = {
 };
 
 export const S3AddressesFlags = {
-  's3-address-port': Flags.integer({
+  's3-port': Flags.integer({
     description: 'port that S3 will listen, default is 9000',
     default: 9000,
     env: 'PLATFORMA_S3_PORT',
   }),
 
-  's3-console-address-port': Flags.integer({
+  's3-console-port': Flags.integer({
     description: 'port that a console of S3 will listen, default is 9001',
     default: 9001,
     env: 'PLATFORMA_S3_CONSOLE_PORT',

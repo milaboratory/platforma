@@ -37,6 +37,8 @@ export default class Docker extends Command {
     const core = new Core(logger);
     core.mergeLicenseEnvs(flags);
 
+    const instanceName = 'docker';
+
     const authEnabled = flags['auth-enabled'];
     const authOptions: types.authOptions | undefined = authEnabled
       ? {
@@ -44,7 +46,7 @@ export default class Docker extends Command {
           drivers: core.initAuthDriversList(flags, '.'),
         }
       : undefined;
-    const storage = flags.storage ? path.join('.', flags.storage) : state.data('docker');
+    const storage = flags.storage ? path.join('.', flags.storage) : state.instanceDir(instanceName);
 
     const mounts: { hostPath: string; containerPath?: string }[] = [];
     for (const p of flags.mount ?? []) {
@@ -53,7 +55,7 @@ export default class Docker extends Command {
 
     const platformOverride = flags.arch ? `linux/${flags.arch}` : undefined;
 
-    core.startDocker(storage, {
+    const instance = core.createDocker(instanceName, storage, {
       primaryStorageURL: flags['storage-primary'],
       workStoragePath: flags['storage-work'],
       libraryStorageURL: flags['storage-library'],
@@ -78,5 +80,7 @@ export default class Docker extends Command {
       debugAddr: flags['debug-listen'],
       debugPort: flags['debug-port'],
     });
+
+    core.switchInstance(instance);
   }
 }
