@@ -1,5 +1,25 @@
 # @platforma-sdk/ui-vue
 
+## 1.22.11
+
+### Patch Changes
+
+- 6d3d92d: [sdk/ui-vue] Error when PlAgDataTableToolsPanel was not mounted
+
+## 1.22.10
+
+### Patch Changes
+
+- Updated dependencies [821c240]
+  - @milaboratories/uikit@2.2.52
+
+## 1.22.9
+
+### Patch Changes
+
+- Updated dependencies [3df530d]
+  - @milaboratories/uikit@2.2.51
+
 ## 1.22.8
 
 ### Patch Changes

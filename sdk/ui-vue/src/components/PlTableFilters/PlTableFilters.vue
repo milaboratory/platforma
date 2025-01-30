@@ -15,9 +15,9 @@ import * as lodash from 'lodash';
 import type { PlTableFiltersDefault, PlTableFiltersRestriction } from '../PlAgDataTable/types';
 import PlTableFilterEntry from './PlTableFilterEntry.vue';
 import PlTableAddFilter from './PlTableAddFilter.vue';
-import { PlAgDataTableToolsPanelId } from '../PlAgDataTableToolsPanel/PlAgDataTableToolsPanelId';
 import { filterTypesNumber, filterTypesString, getColumnName, getFilterDefault, getFilterLabel, makeColumnId, makePredicate } from './filters_logic';
 import './pl-table-filters.scss';
+import { useDataTableToolsPanelTarget } from '../PlAgDataTableToolsPanel';
 
 const model = defineModel<PlTableFiltersModel>({ required: true });
 const props = defineProps<{
@@ -205,10 +205,12 @@ onBeforeUnmount(() => {
     observer.disconnect();
   }
 });
+
+const teleportTarget = useDataTableToolsPanelTarget();
 </script>
 
 <template>
-  <Teleport v-if="mounted" :to="`#${PlAgDataTableToolsPanelId}`">
+  <Teleport v-if="mounted && teleportTarget" :to="teleportTarget">
     <PlBtnGhost @click.stop="showManager = true">
       Filters
       <template #append>
