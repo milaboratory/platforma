@@ -45,6 +45,7 @@ describe('SshPl', async () => {
 
   it('Check start/stop cmd', async () => {
     await sshPl.platformaInit(downloadDestination);
+    expect(await sshPl.isAlive()).toBe(true);
     await sshPl.stop();
     let isAlive = await sshPl.isAlive();
     expect(isAlive).toBe(false);
