@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import './pl-splash.module.scss';
+import style from './pl-splash.module.scss';
 import { PlLoaderCircular } from '@/components/PlLoaderCircular';
 
 withDefaults(defineProps<{
@@ -11,5 +11,5 @@ withDefaults(defineProps<{
 
 <template>
   <PlLoaderCircular :size="size" />
-  <h3 :class="$style.text">{{ text }}</h3>
+  <h3 :class="style.text">{{ text }}</h3>
 </template>
