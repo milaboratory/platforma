@@ -17,7 +17,9 @@
     "type-check": "tsc --noEmit --composite false",
     "build": "vite build",
     "test": "vitest",
-    "do-pack": "rm -rf src/.test && rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
+    "do-pack": "rm -rf src/.test && rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
+    "cleanup-docker": "docker container stop pl-ssh-test-pl pl-ssh-test-ssh && docker container rm pl-ssh-test-pl pl-ssh-test-ssh && docker image rm pl-ssh-test-container-ssh:1.0.0 pl-ssh-test-container-pl:1.0.0",
+    "exec-docker": "docker exec -ti pl-ssh-test-pl bash"
   },
   "files": [
     "./dist/**/*",

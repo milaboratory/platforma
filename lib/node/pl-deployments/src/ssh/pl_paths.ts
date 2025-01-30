@@ -36,19 +36,22 @@ export function minioDir(remoteHome: string, arch: string) {
   return upath.join(binariesDir(remoteHome), `minio-2024-12-18T13-15-44Z-${newArch(arch)}`);
 }
 
-export function supervisorBinDir(remoteHome: string, arch: string) {
-  return upath.join(binariesDir(remoteHome), `supervisord-0.7.3-${newArch(arch)}`, supervisordSubDirName);
+export function minioBin(remoteHome: string, arch: string) {
+  return upath.join(minioDir(remoteHome, arch), 'minio');
 }
 
-export function supervisorConf(remoteHome: string) {
-  return upath.join(workDir(remoteHome), 'supervisor.conf');
+export function supervisorBinDir(remoteHome: string, arch: string) {
+  return upath.join(binariesDir(remoteHome), `supervisord-0.7.3-${newArch(arch)}`, supervisordSubDirName);
 }
 
 export function supervisorBin(remoteHome: string, arch: string): string {
   return upath.join(supervisorBinDir(remoteHome, arch), 'supervisord');
 }
 
+export function supervisorConf(remoteHome: string) {
+  return upath.join(workDir(remoteHome), 'supervisor.conf');
+}
+
 export function connectionInfo(remoteHome: string) {
   return upath.join(workDir(remoteHome), `connection.txt`);
 }
-

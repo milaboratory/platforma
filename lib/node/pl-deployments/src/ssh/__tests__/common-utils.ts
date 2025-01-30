@@ -63,8 +63,9 @@ export async function initContainer(name: string): Promise<StartedTestContainer>
   const fromCacheContainer = await new GenericContainer(`pl-ssh-test-container-${name}:1.0.0`)
     .withExposedPorts(...SSH_PORT)
     .withReuse()
+    .withName(`pl-ssh-test-${name}`)
     .start()
-    .catch((err) => console.log('No worries, creating a new container', err));
+    .catch((err) => console.log('No worries, creating a new container'));
 
   if (!fromCacheContainer) {
     generateKeys();

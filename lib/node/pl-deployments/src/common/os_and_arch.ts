@@ -14,8 +14,8 @@ export function newOs(osName: string): OSType {
       return 'windows';
     default:
       throw new Error(
-        `operating system '${osName}' is not currently supported by Platforma ecosystem. The list of OSes supported: ` +
-          JSON.stringify(OSes)
+        `operating system '${osName}' is not currently supported by Platforma ecosystem. The list of OSes supported: `
+        + JSON.stringify(OSes),
       );
   }
 }
@@ -37,8 +37,8 @@ export function newArch(arch: string): ArchType {
 
     default:
       throw new Error(
-        `processor architecture '${arch}' is not currently supported by Platforma ecosystem. The list of architectures supported: ` +
-          JSON.stringify(Arches)
+        `processor architecture '${arch}' is not currently supported by Platforma ecosystem. The list of architectures supported: `
+        + JSON.stringify(Arches),
       );
   }
 }

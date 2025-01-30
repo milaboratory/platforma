@@ -1,5 +1,6 @@
 import { test } from 'vitest';
-import { LocalPlOptions, localPlatformaInit } from './pl';
+import type { LocalPlOptions } from './pl';
+import { localPlatformaInit } from './pl';
 import { ConsoleLoggerAdapter, sleep } from '@milaboratories/ts-helpers';
 import * as fs from 'fs/promises';
 import upath from 'upath';
@@ -19,7 +20,7 @@ test(
     const pl = await localPlatformaInit(logger, {
       workingDir: dir,
       config,
-      closeOld: false
+      closeOld: false,
     });
 
     await sleep(5000);
@@ -31,7 +32,7 @@ test(
 
     pl.stop();
     await pl.waitStopped();
-  }
+  },
 );
 
 test(
@@ -44,7 +45,7 @@ test(
     const dir = await prepareDirForTestConfig();
     const options: LocalPlOptions = {
       workingDir: dir,
-      config
+      config,
     };
 
     const oldPl = await localPlatformaInit(logger, options);
@@ -62,7 +63,7 @@ test(
     expect(newPl.pid).not.toBeUndefined();
     newPl.stop();
     await newPl.waitStopped();
-  }
+  },
 );
 
 test(
@@ -77,7 +78,7 @@ test(
       workingDir: dir,
       config,
       closeOld: false,
-      onCloseAndErrorNoStop: async (pl) => await pl.start()
+      onCloseAndErrorNoStop: async (pl) => await pl.start(),
     });
     await sleep(1000);
 
@@ -96,7 +97,7 @@ test(
 
     pl.stop();
     await pl.waitStopped();
-  }
+  },
 );
 
 async function readTestConfig() {
