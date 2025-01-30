@@ -1,10 +1,10 @@
-import os from 'os';
-import fs from 'fs';
-import path from 'path';
-import { execSync } from 'child_process';
+import os from 'node:os';
+import fs from 'node:fs';
+import path from 'node:path';
+import { execSync } from 'node:child_process';
 
 import winston from 'winston';
-import { randomBytes } from 'crypto';
+import { randomBytes } from 'node:crypto';
 import readlineSync from 'readline-sync';
 
 export function askYN(prompt: string): boolean {
@@ -39,9 +39,9 @@ export function createLogger(level: string = 'debug'): winston.Logger {
     transports: [
       new winston.transports.Console({
         stderrLevels: ['error', 'warn', 'info', 'debug'],
-        handleExceptions: true
-      })
-    ]
+        handleExceptions: true,
+      }),
+    ],
   });
 }
 
@@ -59,15 +59,15 @@ export function resolveTilde(p: string): string {
 }
 
 export function ensureDir(p: string, options?: {
-  mode?: fs.Mode
+  mode?: fs.Mode;
 }) {
   if (fs.existsSync(p)) {
-    return
+    return;
   }
 
-  fs.mkdirSync(p, { recursive: true })
+  fs.mkdirSync(p, { recursive: true });
   if (options?.mode) {
-    fs.chmodSync(p, options.mode)
+    fs.chmodSync(p, options.mode);
   }
 }
 
