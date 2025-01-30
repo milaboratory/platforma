@@ -1,5 +1,5 @@
-import { SpawnOptions } from 'child_process';
-import { PlBinarySource } from '../common/pl_binary';
+import type { SpawnOptions } from 'child_process';
+import type { PlBinarySource } from '../common/pl_binary';
 
 /** Options to start a local pl-core. */
 export type LocalPlOptions = {

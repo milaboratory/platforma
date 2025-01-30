@@ -24,7 +24,7 @@ async function cleanUp() {
   rmSync(downloadDestination, { recursive: true });
 }
 beforeAll(async () => {
-  const logger = new ConsoleLoggerAdapter()
+  const logger = new ConsoleLoggerAdapter();
   sshPl = await SshPl.init(logger, getConnectionForSsh(testContainer));
 });
 

@@ -1,18 +1,22 @@
+import type {
+  ProcessOptions } from './process';
 import {
   isProcessAlive,
-  ProcessOptions,
   processStop,
   processWaitStopped,
-  processRun
+  processRun,
 } from './process';
-import { PlBinarySource, newDefaultPlBinarySource, resolveLocalPlBinaryPath } from '../common/pl_binary';
-import { MiLogger, notEmpty } from '@milaboratories/ts-helpers';
-import { ChildProcess, SpawnOptions } from 'child_process';
+import type { PlBinarySource } from '../common/pl_binary';
+import { newDefaultPlBinarySource, resolveLocalPlBinaryPath } from '../common/pl_binary';
+import type { MiLogger } from '@milaboratories/ts-helpers';
+import { notEmpty } from '@milaboratories/ts-helpers';
+import type { ChildProcess, SpawnOptions } from 'child_process';
 import { filePid, readPid, writePid } from './pid';
-import { Trace, withTrace } from './trace';
+import type { Trace } from './trace';
+import { withTrace } from './trace';
 import upath from 'upath';
 import fsp from 'fs/promises';
-import { Required } from 'utility-types';
+import type { Required } from 'utility-types';
 
 export const LocalConfigYaml = 'config-local.yaml';
 
@@ -36,7 +40,7 @@ export class LocalPl {
     private readonly onClose?: (pl: LocalPl) => Promise<void>,
     private readonly onError?: (pl: LocalPl) => Promise<void>,
     private readonly onCloseAndError?: (pl: LocalPl) => Promise<void>,
-    private readonly onCloseAndErrorNoStop?: (pl: LocalPl) => Promise<void>
+    private readonly onCloseAndErrorNoStop?: (pl: LocalPl) => Promise<void>,
   ) {}
 
   async start() {
@@ -45,7 +49,7 @@ export class LocalPl {
       const instance = processRun(this.logger, this.startOptions);
       instance.on('error', (e: any) => {
         this.logger.error(
-          `error '${e}', while running platforma, started opts: ${JSON.stringify(this.debugInfo())}`
+          `error '${e}', while running platforma, started opts: ${JSON.stringify(this.debugInfo())}`,
         );
 
         // keep in mind there are no awaits here, it will be asynchronous
@@ -102,7 +106,7 @@ export class LocalPl {
       pid: this.pid,
       workingDir: this.workingDir,
       initialStartHistory: this.initialStartHistory,
-      wasStopped: this.wasStopped
+      wasStopped: this.wasStopped,
     };
   }
 }
@@ -141,7 +145,7 @@ export async function localPlatformaInit(logger: MiLogger, _ops: LocalPlOptions)
     plBinary: newDefaultPlBinarySource(),
     spawnOptions: {},
     closeOld: true,
-    ..._ops
+    ..._ops,
   } satisfies LocalPlOptionsFull;
 
   return await withTrace(logger, async (trace, t) => {
@@ -169,13 +173,13 @@ export async function localPlatformaInit(logger: MiLogger, _ops: LocalPlOptions)
         cwd: workDir,
         stdio: ['pipe', 'ignore', 'inherit'],
         windowsHide: true, // hide a terminal on Windows
-        ...ops.spawnOptions
-      }
+        ...ops.spawnOptions,
+      },
     };
     trace('processOpts', {
       cmd: processOpts.cmd,
       args: processOpts.args,
-      cwd: processOpts.opts.cwd
+      cwd: processOpts.opts.cwd,
     });
 
     const pl = new LocalPl(
@@ -186,7 +190,7 @@ export async function localPlatformaInit(logger: MiLogger, _ops: LocalPlOptions)
       ops.onClose,
       ops.onError,
       ops.onCloseAndError,
-      ops.onCloseAndErrorNoStop
+      ops.onCloseAndErrorNoStop,
     );
     await pl.start();
 
@@ -198,7 +202,7 @@ export async function localPlatformaInit(logger: MiLogger, _ops: LocalPlOptions)
  * and closes it. */
 async function localPlatformaReadPidAndStop(
   logger: MiLogger,
-  workingDir: string
+  workingDir: string,
 ): Promise<Record<string, any>> {
   return await withTrace(logger, async (trace, t) => {
     const file = trace('pidFilePath', filePid(workingDir));

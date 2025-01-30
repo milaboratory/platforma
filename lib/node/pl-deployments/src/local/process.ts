@@ -1,5 +1,7 @@
-import { SpawnOptions, ChildProcess, spawn } from 'child_process';
-import { MiLogger, sleep } from '@milaboratories/ts-helpers';
+import type { SpawnOptions, ChildProcess } from 'child_process';
+import { spawn } from 'child_process';
+import type { MiLogger } from '@milaboratories/ts-helpers';
+import { sleep } from '@milaboratories/ts-helpers';
 
 export type ProcessOptions = {
   cmd: string;

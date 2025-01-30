@@ -1,7 +1,9 @@
 import type * as ssh from 'ssh2';
 import { SshClient } from './ssh';
-import { MiLogger, sleep, notEmpty, fileExists } from '@milaboratories/ts-helpers';
-import { downloadBinary, DownloadBinaryResult, downloadPlBinary, downloadPlBinaryNoExtract } from '../common/pl_binary_download';
+import type { MiLogger } from '@milaboratories/ts-helpers';
+import { sleep, notEmpty, fileExists } from '@milaboratories/ts-helpers';
+import type { DownloadBinaryResult } from '../common/pl_binary_download';
+import { downloadBinaryNoExtract } from '../common/pl_binary_download';
 import upath from 'upath';
 import * as plpath from './pl_paths';
 import { getDefaultPlVersion } from '../common/pl_version';
@@ -9,14 +11,22 @@ import { getDefaultPlVersion } from '../common/pl_version';
 import net from 'net';
 import type { SshPlConfigGenerationResult } from '@milaboratories/pl-config';
 import { generateSshPlConfigs, getFreePort } from '@milaboratories/pl-config';
-import { randomBytes } from 'crypto';
+import { supervisorStatus, supervisorStop as supervisorCtlShutdown, generateSupervisordConfig, supervisorCtlStart } from './supervisord';
 
 export class SshPl {
+  private initState: PlatformaInitState = {};
   constructor(
     public readonly logger: MiLogger,
     public readonly sshClient: SshClient,
     private readonly username: string,
   ) {}
+
+  public info() {
+    return {
+      username: this.username,
+      initState: this.initState,
+    };
+  }
 
   public static async init(logger: MiLogger, config: ssh.ConnectConfig): Promise<SshPl> {
     try {
@@ -32,45 +42,10 @@ export class SshPl {
     const arch = await this.getArch();
     const remoteHome = await this.getUserHomeDirectory();
 
-    const isProgramRunning = (output: string, programName: string) => {
-      // eslint-disable-next-line no-control-regex
-      const stripAnsi = (str: string) => str.replace(/\x1B\[[0-9;]*m/g, '');
-      const cleanedOutput = stripAnsi(output);
-      return cleanedOutput.split('\n').some((line) => {
-        const [name, status] = line.trim().split(/\s{2,}/); // Split string by 2 spaces.
-        return name === programName && status === 'Running';
-      });
-    };
-
-    let result: {stdout: string; stderr: string} = {stdout: '', stderr: ''};
     try {
-      const supervisorCmd = plpath.supervisorBin(remoteHome, arch.arch);
-      const supervisorConf = plpath.supervisorConf(remoteHome);
-
-      const cmd = `${supervisorCmd} --configuration ${supervisorConf} ctl status`;
-      result = await this.sshClient.exec(cmd);
-
-      if (result.stderr) {
-        this.logger.warn(`isAlive: ctl status: stderr occurred: ${result.stderr}, stdout: ${result.stdout}`);
-        return false;
-      }
-
-      if (isProgramRunning(result.stdout, 'minio') && isProgramRunning(result.stdout, 'platforma')) {
-        return true;
-      }
-
-      if (!isProgramRunning(result.stdout, 'minio')) {
-        this.logger.warn('Minio not running on the server');
-      }
-
-      if (!isProgramRunning(result.stdout, 'platforma')) {
-        this.logger.warn('Platforma not running on the server');
-      }
-
-      return false;
+      return await supervisorStatus(this.logger, this.sshClient, remoteHome, arch.arch);
     } catch (e: unknown) {
-      this.logger.warn(`isAlive: ${e} occurred, result: ${JSON.stringify(result)}`);
-
+      // probably there are no supervisor on the server.
       return false;
     }
   }
@@ -79,14 +54,8 @@ export class SshPl {
     const arch = await this.getArch();
     const remoteHome = await this.getUserHomeDirectory();
 
-    const supervisordCmd = plpath.supervisorBin(remoteHome, arch.arch);
-    const supervisorConf = plpath.supervisorConf(remoteHome);
-    const command = `${supervisordCmd} --configuration ${supervisorConf} --daemon`;
+    await supervisorCtlStart(this.sshClient, remoteHome, arch.arch);
 
-    const runSupervisord = await this.sshClient.exec(command);
-    if (runSupervisord.stderr) {
-      throw new Error(`Can not run ssh Platforma ${runSupervisord.stderr}`);
-    }
     // We are waiting for Platforma to run to ensure that it has started.
     return await this.checkIsAliveWithInterval();
   }
@@ -96,14 +65,7 @@ export class SshPl {
     const remoteHome = await this.getUserHomeDirectory();
 
     try {
-      const supervisorCmd = plpath.supervisorBin(remoteHome, arch.arch);
-      const supervisorConf = plpath.supervisorConf(remoteHome);
-
-      const command = `${supervisorCmd} --configuration ${supervisorConf} ctl shutdown`;
-      const runSupervisord = await this.sshClient.exec(command);
-      if (runSupervisord.stderr) {
-        throw new Error(`Can not stop ssh Platforma ${runSupervisord.stderr}`);
-      }
+      await supervisorCtlShutdown(this.sshClient, remoteHome, arch.arch);
       return await this.checkIsAliveWithInterval();
     } catch (e: unknown) {
       console.log(e);
@@ -111,13 +73,8 @@ export class SshPl {
     }
   }
 
-  public async getUserCredentials(remoteHome: string): Promise<SshInitReturnTypes> {
-    const connectionInfo = await this.sshClient.readFile(plpath.connectionInfo(remoteHome));
-    return JSON.parse(connectionInfo) as SshInitReturnTypes;
-  }
-
   public async platformaInit(localWorkdir: string): Promise<SshInitReturnTypes> {
-    const state: PlatformaInitState = {localWorkdir};
+    const state: PlatformaInitState = { localWorkdir };
 
     try {
       state.arch = await this.getArch();
@@ -132,10 +89,10 @@ export class SshPl {
         return state.userCredentials;
       }
 
-       const downloadRes = await this.downloadBinariesAndUploadToTheServer(
-        localWorkdir, state.remoteHome, state.arch
+      const downloadRes = await this.downloadBinariesAndUploadToTheServer(
+        localWorkdir, state.remoteHome, state.arch,
       );
-      state.binPaths = {...downloadRes, history: undefined};
+      state.binPaths = { ...downloadRes, history: undefined };
       state.downloadedBinaries = downloadRes.history;
 
       state.ports = await this.fetchPorts(state.remoteHome, state.arch);
@@ -164,19 +121,27 @@ export class SshPl {
           type: 'env',
         },
       });
-      state.generatedConfig = { ...config, filesToCreate: { skipped: 'it is too wordy'} };
+      state.generatedConfig = { ...config, filesToCreate: { skipped: 'it is too wordy' } };
 
       for (const [filePath, content] of Object.entries(config.filesToCreate)) {
         await this.sshClient.writeFileOnTheServer(filePath, content);
-        console.log(`Created file ${filePath}`);
+        this.logger.info(`Created file ${filePath}`);
       }
 
       for (const dir of config.dirsToCreate) {
         await this.sshClient.createRemoteDirectory(dir);
-        console.log(`Created directory ${dir}`);
+        this.logger.info(`Created directory ${dir}`);
       }
 
-      const supervisorConfig = await this.generateSupervisordConfig(state.remoteHome, state.arch, config, state.binPaths.minioRelPath, state.binPaths.downloadedPl.binaryPath);
+      const supervisorConfig = generateSupervisordConfig(
+        config.minioConfig.storageDir,
+        config.minioConfig.envs,
+        await this.getFreePortForPlatformaOnServer(state.remoteHome, state.arch),
+        config.workingDir,
+        config.plConfig.configPath,
+        state.binPaths.minioRelPath,
+        state.binPaths.downloadedPl,
+      );
 
       const writeResult = await this.sshClient.writeFileOnTheServer(plpath.supervisorConf(state.remoteHome), supervisorConfig);
       if (!writeResult) {
@@ -195,8 +160,7 @@ export class SshPl {
 
       await this.start();
       state.started = true;
-
-      this.logger.info(`SshPl.platformaInit: platforma has started, state: ${JSON.stringify(state)}`);
+      this.initState = state;
 
       return {
         plUser: config.plUser,
@@ -209,6 +173,102 @@ export class SshPl {
 
       throw new Error(msg);
     }
+  }
+
+  public async downloadBinariesAndUploadToTheServer(
+    localWorkdir: string,
+    remoteHome: string,
+    arch: Arch,
+  ) {
+    const state: DownloadAndUntarState[] = [];
+    try {
+      const pl = await this.downloadAndUntar(
+        localWorkdir, remoteHome, arch,
+        'pl', `pl-${getDefaultPlVersion()}`,
+      );
+      state.push(pl);
+
+      const supervisor = await this.downloadAndUntar(
+        localWorkdir, remoteHome, arch,
+        'supervisord', plpath.supervisordDirName,
+      );
+      state.push(supervisor);
+
+      const minioPath = plpath.minioBin(remoteHome, arch.arch);
+      const minio = await this.downloadAndUntar(
+        localWorkdir, remoteHome, arch,
+        'minio', plpath.minioDirName,
+      );
+      state.push(minio);
+      await this.sshClient.chmod(minioPath, 0o750);
+
+      return {
+        history: state,
+        minioRelPath: minioPath,
+        downloadedPl: plpath.platformaBin(remoteHome, arch.arch),
+      };
+    } catch (e: unknown) {
+      const msg = `SshPl.downloadBinariesAndUploadToServer: error ${e} occurred, state: ${JSON.stringify(state)}`;
+      this.logger.error(msg);
+      throw e;
+    }
+  }
+
+  public async downloadAndUntar(
+    localWorkdir: string,
+    remoteHome: string,
+    arch: Arch,
+    softwareName: string,
+    tgzName: string,
+  ): Promise<DownloadAndUntarState> {
+    // we have to extract pl in the remote server,
+    // because Windows doesn't support symlinks
+    // that are found in linux pl binaries tgz archive.
+    // For this reason, we extract all to the remote server.
+
+    const state: DownloadAndUntarState = {};
+    state.binBasePath = plpath.binariesDir(remoteHome);
+    await this.sshClient.createRemoteDirectory(state.binBasePath);
+    state.binBasePathCreated = true;
+
+    state.downloadResult = await downloadBinaryNoExtract(
+      this.logger,
+      localWorkdir,
+      softwareName,
+      tgzName,
+      arch.arch, arch.platform,
+    );
+
+    state.localArchivePath = upath.resolve(state.downloadResult.archivePath);
+    state.remoteDir = upath.join(state.binBasePath, state.downloadResult.baseName);
+    state.remoteArchivePath = state.remoteDir + '.tgz';
+
+    await this.sshClient.createRemoteDirectory(state.remoteDir);
+    await this.sshClient.uploadFile(state.localArchivePath, state.remoteArchivePath);
+
+    const untarResult = await this.sshClient.exec(
+      `tar xvf ${state.remoteArchivePath} --directory=${state.remoteDir}`,
+    );
+    if (untarResult.stderr)
+      throw new Error(`downloadAndUntar: untar: stderr occurred: ${untarResult.stderr}, stdout: ${untarResult.stdout}`);
+
+    state.plUntarDone = true;
+
+    return state;
+  }
+
+  public async needDownload(remoteHome: string, arch: Arch) {
+    const checkPathSupervisor = plpath.supervisorBin(remoteHome, arch.arch);
+    const checkPathMinio = plpath.minioDir(remoteHome, arch.arch);
+    const checkPathPlatforma = plpath.platformaBin(remoteHome, arch.arch);
+
+    if (!await this.sshClient.checkFileExists(checkPathPlatforma)
+      || !await this.sshClient.checkFileExists(checkPathMinio)
+      || !await this.sshClient.checkFileExists(checkPathSupervisor)) {
+      return true;
+    }
+
+    return false;
   }
 
   public async checkIsAliveWithInterval(interval: number = 1000, count = 15) {
@@ -224,145 +284,9 @@ export class SshPl {
     }
   }
 
-  public async generateSupervisordConfig(
-    homeDir: string,
-    arch: Arch,
-    config: SshPlConfigGenerationResult,
-    minioPath: string,
-    plPath: string,
-  ) {
-    const minioEnvStr = Object.entries(config.minioConfig.envs).map(([key, value]) => `${key}="${value}"`).join(',');
-    const password = randomBytes(16).toString('hex');
-    const freePort = await this.getFreePortForPlatformaOnServer(homeDir, arch);
-
-    return `
-[supervisord]
-logfile=${config.workingDir}/supervisord.log
-loglevel=info
-pidfile=${config.workingDir}/supervisord.pid
-
-[inet_http_server]
-port=127.0.0.1:${freePort}
-username=default-user
-password=${password}
-
-[supervisorctl]
-serverurl=http://127.0.0.1:${freePort}
-username=default-user
-password=${password}
-
-[program:platforma]
-depends_on=minio
-command=binaries/${plPath} --config ${config.plConfig.configPath}
-directory=${config.workingDir}
-autorestart=true
-
-[program:minio]
-environment=${minioEnvStr}
-command=binaries/${minioPath} server ${config.minioConfig.storageDir}
-directory=${config.workingDir}
-autorestart=true
-`;
-  }
-
-  public async downloadBinariesAndUploadToTheServer(
-    localWorkdir: string,
-    remoteHome: string,
-    arch: Arch,
-  ) {
-    const state: DownloadBinariesState = {};
-    try {
-      const supervisordSoftwareName = 'supervisord';
-      const minioSoftwareName = 'minio';
-      state.binBasePath = plpath.binariesDir(remoteHome);
-      await this.sshClient.createRemoteDirectory(state.binBasePath);
-      state.binBasePathCreated = true;
-
-      // we have to extract pl in the remote server,
-      // because Windows doesn't support symlinks
-      // that are found in linux pl binaries tgz archive.
-      state.localPl = await downloadPlBinaryNoExtract(
-        this.logger,
-        localWorkdir,
-        getDefaultPlVersion(),
-        arch.arch,
-        arch.platform,
-      );
-
-      state.localSupervisord = await downloadBinary(
-        this.logger,
-        localWorkdir,
-        supervisordSoftwareName,
-        plpath.supervisordDirName,
-        arch.arch,
-        arch.platform,
-      );
-
-      state.localMinio = await downloadBinary(
-        this.logger,
-        localWorkdir,
-        minioSoftwareName,
-        plpath.minioDirName,
-        arch.arch,
-        arch.platform,
-      );
-      state.minioRelPath = `${state.localMinio.baseName}/minio`;
-
-      state.binDirs = [
-        // upath.basename(state.localPl.targetFolder),
-        upath.basename(state.localSupervisord.targetFolder),
-        upath.basename(state.localMinio.targetFolder),
-      ];
-
-      for (const dir of state.binDirs) {
-        await this.sshClient.uploadDirectory(
-          upath.resolve(localWorkdir, dir),
-          upath.join(state.binBasePath, dir),
-          0o760,
-        );
-      }
-
-      state.localPlArchivePath = upath.resolve(state.localPl.archivePath);
-      state.localPlArchiveExisted = await fileExists(state.localPlArchivePath);
-      state.remotePlArchivePath = upath.join(state.binBasePath, state.localPl.baseName + '.tgz');
-      await this.sshClient.uploadFile(
-        state.localPlArchivePath, state.remotePlArchivePath,
-      );
-      state.plUploadDone = true;
-      const remoteDir = plpath.platformaBaseDir(remoteHome, arch.arch);
-      await this.sshClient.createRemoteDirectory(remoteDir);
-      const result = await this.sshClient.exec(
-        `tar xvf ${state.remotePlArchivePath} --directory=${remoteDir}`,
-      );
-      if (result.stderr)
-        throw new Error(`downloadPlBinaries: untar: stderr occurred: ${result.stderr}, stdout: ${result.stdout}`);
-
-      state.plUntarDone = true;
-
-      return {
-        history: state,
-        minioRelPath: state.minioRelPath,
-        downloadedPl: state.localPl
-      };
-    } catch (e: unknown) {
-      const msg = `SshPl.downloadBinariesAndUploadToServer: error ${e} occurred, state: ${JSON.stringify(state)}`;
-      this.logger.error(msg);
-      throw e;
-    }
-  }
-
-  public async needDownload(remoteHome: string, arch: Arch) {
-    const checkPathSupervisor = plpath.supervisorBin(remoteHome, arch.arch);
-    const checkPathMinio = plpath.minioDir(remoteHome, arch.arch);
-    const checkPathPlatforma = plpath.platformaBin(remoteHome, arch.arch);
-
-    if (!await this.sshClient.checkFileExists(checkPathPlatforma)
-      || !await this.sshClient.checkFileExists(checkPathMinio)
-      || !await this.sshClient.checkFileExists(checkPathSupervisor)) {
-      return true;
-    }
-
-    return false;
+  public async getUserCredentials(remoteHome: string): Promise<SshInitReturnTypes> {
+    const connectionInfo = await this.sshClient.readFile(plpath.connectionInfo(remoteHome));
+    return JSON.parse(connectionInfo) as SshInitReturnTypes;
   }
 
   public async fetchPorts(remoteHome: string, arch: Arch): Promise<SshPlatformaPorts> {
@@ -472,26 +396,22 @@ export type SshInitReturnTypes = {
 } | null;
 
 type BinPaths = {
-  history?: DownloadBinariesState;
+  history?: DownloadAndUntarState[];
   minioRelPath: string;
   downloadedPl: any;
-}
+};
 
-type DownloadBinariesState = {
+type DownloadAndUntarState = {
   binBasePath?: string;
   binBasePathCreated?: boolean;
-  localPl?: DownloadBinaryResult;
-  localSupervisord?: DownloadBinaryResult;
-  localMinio?: DownloadBinaryResult;
-  minioRelPath?: string;
-  binDirs?: string[];
+  downloadResult?: DownloadBinaryResult;
 
-  localPlArchivePath?: string;
-  localPlArchiveExisted?: boolean;
-  remotePlArchivePath?: string;
+  localArchivePath?: string;
+  remoteDir?: string;
+  remoteArchivePath?: string;
   plUploadDone?: boolean;
   plUntarDone?: boolean;
-}
+};
 
 type PlatformaInitState = {
   localWorkdir?: string;
@@ -499,10 +419,10 @@ type PlatformaInitState = {
   remoteHome?: string;
   isAlive?: boolean;
   userCredentials?: SshInitReturnTypes;
-  downloadedBinaries?: DownloadBinariesState;
+  downloadedBinaries?: DownloadAndUntarState[];
   binPaths?: BinPaths;
   ports?: SshPlatformaPorts;
   generatedConfig?: SshPlConfigGenerationResult;
   connectionInfo?: SshInitReturnTypes;
   started?: boolean;
-}
+};

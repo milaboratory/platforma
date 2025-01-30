@@ -5,7 +5,8 @@ import dns from 'dns';
 import fs from 'fs';
 import { readFile } from 'fs/promises';
 import upath from 'upath';
-import { fileExists, MiLogger } from '@milaboratories/ts-helpers';
+import type { MiLogger } from '@milaboratories/ts-helpers';
+import { fileExists } from '@milaboratories/ts-helpers';
 
 export type SshAuthMethods = 'publickey' | 'password';
 export type SshAuthMethodsResult = SshAuthMethods[];
@@ -55,7 +56,7 @@ export class SshClient {
    * @param command - The command to execute on the remote server.
    * @returns A promise resolving with the command's stdout and stderr outputs.
    */
-  public async exec(command: string): Promise<{ stdout: string; stderr: string }> {
+  public async exec(command: string): Promise<SshExecResult> {
     return new Promise((resolve, reject) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       this.client.exec(command, (err: any, stream: ClientChannel) => {
@@ -260,8 +261,8 @@ export class SshClient {
 
         callback(sftp)
           .then(resolve)
-          .catch((err)=> {
-            reject(new Error(`ssh.withSftp.callback: err ${err}`))
+          .catch((err) => {
+            reject(new Error(`ssh.withSftp.callback: err ${err}`));
           })
           .finally(() => {
             sftp?.end();
@@ -284,6 +285,19 @@ export class SshClient {
             return reject(new Error(`ssh.readFile: err occurred ${err}`));
           }
           resolve(buffer.toString());
+        });
+      });
+    });
+  }
+
+  async chmod(path: string, mode: number) {
+    return this.withSftp(async (sftp) => {
+      return new Promise((resolve, reject) => {
+        sftp.chmod(path, mode, (err) => {
+          if (err) {
+            return reject(new Error(`ssh.chmod: ${err}, path: ${path}, mode: ${mode}`));
+          }
+          return resolve(undefined);
         });
       });
     });
@@ -361,8 +375,6 @@ export class SshClient {
 
         try {
           await this.__createRemoteDirectory(sftp, remoteDir);
-          this.logger.info(`uploadDirectory: trying to upload files: ${JSON.stringify(files)}`);
-
           for (const file of files) {
             const localPath = upath.join(localDir, file);
             const remotePath = `${remoteDir}/${file}`;
@@ -372,14 +384,12 @@ export class SshClient {
             } else {
               await this.uploadFileUsingExistingSftp(sftp, localPath, remotePath, mode);
             }
-
-            this.logger.info(`uploadDirectory: uploaded ${localPath} -> ${remotePath}`);
           }
 
           resolve();
         } catch (err) {
           const msg = `ssh.__uploadDir: catched err ${err}`;
-          this.logger.error(msg)
+          this.logger.error(msg);
           reject(new Error(msg));
         }
       });
@@ -498,3 +508,5 @@ export class SshClient {
     this.client.end();
   }
 }
+
+export type SshExecResult = { stdout: string; stderr: string };

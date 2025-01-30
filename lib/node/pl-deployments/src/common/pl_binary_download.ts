@@ -18,9 +18,9 @@ export type DownloadBinaryResult = {
   targetFolder: string;
   baseName: string;
   binaryPath?: string;
-}
+};
 
-export async function downloadBinary(
+export async function downloadBinaryNoExtract(
   logger: MiLogger,
   baseDir: string,
   softwareName: string,
@@ -29,25 +29,26 @@ export async function downloadBinary(
   platform: string,
 ): Promise<DownloadBinaryResult> {
   const opts = getPathsForDownload(softwareName, tgzName, baseDir, newArch(arch), newOs(platform));
-  const { archiveUrl, archivePath, archiveType, targetFolder, baseName } = opts;
+  const { archiveUrl, archivePath } = opts;
 
   await downloadArchive(logger, archiveUrl, archivePath);
-  await extractArchive(logger, archivePath, archiveType, targetFolder);
 
   return opts;
 }
 
-export async function downloadPlBinaryNoExtract(
+export async function downloadBinary(
   logger: MiLogger,
   baseDir: string,
-  plVersion: string,
+  softwareName: string,
+  archiveName: string,
   arch: string,
   platform: string,
 ): Promise<DownloadBinaryResult> {
-  const opts = localDownloadPlOptions(plVersion, baseDir, newArch(arch), newOs(platform));
-  const { archiveUrl, archivePath } = opts;
+  const opts = getPathsForDownload(softwareName, archiveName, baseDir, newArch(arch), newOs(platform));
+  const { archiveUrl, archivePath, archiveType, targetFolder, baseName } = opts;
 
   await downloadArchive(logger, archiveUrl, archivePath);
+  await extractArchive(logger, archivePath, archiveType, targetFolder);
 
   return opts;
 }
@@ -70,13 +71,14 @@ export async function downloadPlBinary(
 
 function getPathsForDownload(
   softwareName: string,
-  tgzName: string,
+  archiveName: string,
   baseDir: string,
   arch: ArchType,
   os: OSType,
 ): DownloadBinaryResult {
-  const baseName = `${tgzName}-${arch}`;
+  const baseName = `${archiveName}-${arch}`;
   const archiveType = osToArchiveType[os];
+
   const archiveFileName = `${baseName}.${archiveType}`;
   const archiveUrl = `https://cdn.platforma.bio/software/${softwareName}/${os}/${archiveFileName}`;
   const archivePath = upath.join(baseDir, archiveFileName);
@@ -131,7 +133,7 @@ export type DownloadInfo = {
   tmpExisted?: boolean;
   renamed?: boolean;
   newExisted?: boolean;
-}
+};
 
 export async function downloadArchive(
   logger: MiLogger, archiveUrl: string, dstArchiveFile: string,
@@ -172,12 +174,11 @@ export async function downloadArchive(
     state.renamed = true;
     state.newExisted = await fileExists(dstArchiveFile);
 
-    logger.info(`downloadArchive state: ${JSON.stringify(state)}`);
     return state;
-  } catch(e: unknown) {
-    const msg = `downloadArchive: error ${String(e)} occurred, state: ${JSON.stringify(state)}`
+  } catch (e: unknown) {
+    const msg = `downloadArchive: error ${JSON.stringify(e)} occurred, state: ${JSON.stringify(state)}`;
     logger.error(msg);
-    throw new Error(msg)
+    throw new Error(msg);
   }
 }
 
