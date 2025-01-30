@@ -1,13 +1,15 @@
-import fs from 'fs';
-import { spawnSync, SpawnOptions, SpawnSyncReturns, ChildProcess, spawn } from 'child_process';
-import state, { dockerRunInfo, processRunInfo } from './state';
-import winston from 'winston';
+import fs from 'node:fs';
+import type { SpawnOptions, SpawnSyncReturns, ChildProcess } from 'node:child_process';
+import { spawnSync, spawn } from 'node:child_process';
+import type { dockerRunInfo, processRunInfo } from './state';
+import state from './state';
+import type winston from 'winston';
 
 export function runDocker(
   logger: winston.Logger,
   args: readonly string[],
   options: SpawnOptions,
-  stateToSave?: dockerRunInfo
+  stateToSave?: dockerRunInfo,
 ) {
   state.lastRun = {
     ...state.lastRun,
@@ -20,8 +22,8 @@ export function runDocker(
 
     docker: {
       ...state.lastRun?.docker,
-      ...stateToSave
-    }
+      ...stateToSave,
+    },
   };
 
   return runSync(logger, 'docker', args, options);
@@ -32,7 +34,7 @@ export function runProcess(
   cmd: string,
   args: readonly string[],
   options: SpawnOptions,
-  stateToSave?: processRunInfo
+  stateToSave?: processRunInfo,
 ): ChildProcess {
   state.lastRun = {
     ...state.lastRun,
@@ -45,14 +47,14 @@ export function runProcess(
 
     process: {
       ...state.lastRun?.process,
-      ...stateToSave
-    }
+      ...stateToSave,
+    },
   };
 
   const result = run(logger, cmd, args, options);
   state.lastRun.process = {
     ...state.lastRun.process,
-    pid: result.pid
+    pid: result.pid,
   };
   return result;
 }
@@ -66,9 +68,9 @@ export function rerunLast(logger: winston.Logger, options: SpawnOptions): SpawnS
     cwd: state.lastRun.workdir,
     env: {
       ...state.lastRun.envs,
-      ...options.env
+      ...options.env,
     },
-    ...options
+    ...options,
   };
 
   return runSync(logger, state.lastRun.cmd, state.lastRun.args, options);
@@ -76,13 +78,13 @@ export function rerunLast(logger: winston.Logger, options: SpawnOptions): SpawnS
 
 function run(logger: winston.Logger, cmd: string, args: readonly string[], options: SpawnOptions): ChildProcess {
   logger.debug(
-    `Running:\n  env: ${JSON.stringify(options.env)}\n  cmd: ${JSON.stringify([cmd, ...args])}\n  wd: ${options.cwd}`
+    `Running:\n  env: ${JSON.stringify(options.env)}\n  cmd: ${JSON.stringify([cmd, ...args])}\n  wd: ${options.cwd}`,
   );
 
   options.env = { ...process.env, ...options.env };
   logger.debug('  spawning child process');
   const child = spawn(cmd, args, options);
-  var exitAfterChild: boolean = false;
+  let exitAfterChild: boolean = false;
 
   //
   // Ensure Ctrl+C causes right finalization order: first stop child process, then stop the parent.
@@ -109,10 +111,10 @@ function runSync(
   logger: winston.Logger,
   cmd: string,
   args: readonly string[],
-  options: SpawnOptions
+  options: SpawnOptions,
 ): SpawnSyncReturns<Buffer> {
   logger.debug(
-    `Running:\n  env: ${JSON.stringify(options.env)}\n  cmd: ${JSON.stringify([cmd, ...args])}\n  wd: ${options.cwd}`
+    `Running:\n  env: ${JSON.stringify(options.env)}\n  cmd: ${JSON.stringify([cmd, ...args])}\n  wd: ${options.cwd}`,
   );
 
   options.env = { ...process.env, ...options.env };

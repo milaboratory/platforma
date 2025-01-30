@@ -1,14 +1,14 @@
-import path from 'path';
+import path from 'node:path';
 
 import { Command } from '@oclif/core';
 import Core from '../../core';
 import * as cmdOpts from '../../cmd-opts';
 import * as util from '../../util';
-import * as types from '../../templates/types';
+import type * as types from '../../templates/types';
 import state from '../../state';
 
 export default class Docker extends Command {
-  static override description = "Run platforma backend service with 'FS' primary storage type";
+  static override description = 'Run platforma backend service with \'FS\' primary storage type';
 
   static override examples = ['<%= config.bin %> <%= command.id %>'];
 
@@ -27,7 +27,7 @@ export default class Docker extends Command {
     ...cmdOpts.StorageFlag,
     ...cmdOpts.StoragePrimaryURLFlag,
     ...cmdOpts.StorageWorkPathFlag,
-    ...cmdOpts.StorageLibraryURLFlag
+    ...cmdOpts.StorageLibraryURLFlag,
   };
 
   public async run(): Promise<void> {
@@ -41,7 +41,7 @@ export default class Docker extends Command {
     const authOptions: types.authOptions | undefined = authEnabled
       ? {
           enabled: authEnabled,
-          drivers: core.initAuthDriversList(flags, '.')
+          drivers: core.initAuthDriversList(flags, '.'),
         }
       : undefined;
     const storage = flags.storage ? path.join('.', flags.storage) : state.data('docker');
@@ -76,7 +76,7 @@ export default class Docker extends Command {
       monitoringPort: flags['monitoring-port'],
 
       debugAddr: flags['debug-listen'],
-      debugPort: flags['debug-port']
+      debugPort: flags['debug-port'],
     });
   }
 }

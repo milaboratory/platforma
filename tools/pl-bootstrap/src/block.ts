@@ -1,9 +1,9 @@
-import { createWriteStream } from 'fs';
-import * as fs from 'fs/promises';
-import path from 'path';
-import winston from 'winston';
+import { createWriteStream } from 'node:fs';
+import * as fs from 'node:fs/promises';
+import path from 'node:path';
+import type winston from 'winston';
 import { Writable, Transform } from 'node:stream';
-import os from 'os';
+import os from 'node:os';
 import readlineSync from 'readline-sync';
 import { z } from 'zod';
 import decompress from 'decompress';
@@ -19,8 +19,8 @@ const CreateBlockOptions = z.object({
   orgName: z.string().min(1),
   blockName: z.string().min(1),
   softwarePlatforms: z.array(CreateBlockPlatforms).refine((p) => new Set(p).size === p.length, {
-    message: 'Must be an array of unique software platforms'
-  })
+    message: 'Must be an array of unique software platforms',
+  }),
 });
 export type CreateBlockOptions = z.infer<typeof CreateBlockOptions>;
 
@@ -35,7 +35,7 @@ export async function createBlock(logger: winston.Logger) {
     // 'platforma-block-boilerplate-software_platforms',
     'https://github.com/milaboratory/platforma-block-boilerplate/archive/refs/heads/main.zip',
     'platforma-block-boilerplate-main',
-    targetPath
+    targetPath,
   );
 
   const platformsToRemove = allPlatforms.filter((p) => softwarePlatforms.indexOf(p) < 0);
@@ -57,13 +57,13 @@ export async function createBlock(logger: winston.Logger) {
 
     { from: /my-org/g, to: orgName },
 
-    { from: /block-boilerplate/g, to: blockName }
+    { from: /block-boilerplate/g, to: blockName },
   ]);
 }
 
 function askForOptions(): CreateBlockOptions {
   let npmOrgName = readlineSync.question(
-    'Write an organization name for npm. Default is "platforma-open": '
+    'Write an organization name for npm. Default is "platforma-open": ',
   );
   if (npmOrgName === '') {
     npmOrgName = 'platforma-open';
@@ -71,7 +71,7 @@ function askForOptions(): CreateBlockOptions {
   const orgName = readlineSync.question('Write an organization name, e.g. "my-org": ');
   const blockName = readlineSync.question('Write a name of the block, e.g. "hello-world": ');
 
-  const needSoftware = readlineSync.keyInYN("Create package for block's software?");
+  const needSoftware = readlineSync.keyInYN('Create package for block\'s software?');
   let softwarePlatforms = ['Tengo'];
   if (needSoftware) {
     while (softwarePlatforms.length < allPlatforms.length) {
@@ -110,33 +110,33 @@ async function removePlatform(dir: string, platform: CreateBlockPlatform) {
   // https://regex101.com/r/oCTyHk/1
   await deleteRegexInFile(
     path.join(dir, 'ui', 'src', 'pages', 'MainPage.vue'),
-    new RegExp(`.*${p}Message.*\\n\\n`, 'g')
+    new RegExp(`.*${p}Message.*\\n\\n`, 'g'),
   );
 
   // Remove an output from the model.
   await deleteRegexInFile(
     path.join(dir, 'model', 'src', 'index.ts'),
-    new RegExp(`.*${p}Message.*\\n\\n`, 'g')
+    new RegExp(`.*${p}Message.*\\n\\n`, 'g'),
   );
 
   // This regexp represents a block of code until the empty line.
   // https://regex101.com/r/Os8kX1/1
   await deleteRegexInFile(
     path.join(dir, 'workflow', 'src', 'main.tpl.tengo'),
-    new RegExp(`.*${p}.*exec.builder.*[\\s\\S]*?\\n\\n`, 'g')
+    new RegExp(`.*${p}.*exec.builder.*[\\s\\S]*?\\n\\n`, 'g'),
   );
 
   // Remove a line from the workflow output.
   // https://regex101.com/r/PkHwQ8/1
   await deleteRegexInFile(
     path.join(dir, 'workflow', 'src', 'main.tpl.tengo'),
-    new RegExp(`.*${p}Message.*\\n`, 'g')
+    new RegExp(`.*${p}Message.*\\n`, 'g'),
   );
 
   // Remove 2 lines: the one with the language message and the one with expect
   await deleteRegexInFile(
     path.join(dir, 'workflow', 'src', 'wf.test.ts'),
-    new RegExp(`.*${p}Message.*\\n.*expect.*\\n\\n`, 'g')
+    new RegExp(`.*${p}Message.*\\n.*expect.*\\n\\n`, 'g'),
   );
 
   await fs.rm(path.join(dir, 'software', `src_${p}`), { recursive: true });
@@ -148,8 +148,8 @@ async function removePlatform(dir: string, platform: CreateBlockPlatform) {
       delete json['block-software']['artifacts'][`hello-${p}-artifact`];
       delete json['block-software']['entrypoints'][`hello-world-${p}`];
       return JSON.stringify(json, null, 2);
-    }
-  )
+    },
+  );
 }
 
 /** Removes software directory completely and all references to it from the workspace. */
@@ -160,20 +160,20 @@ async function removePlatformsCompletely(dir: string) {
     path.join(dir, 'workflow', 'package.json'),
     (content) => {
       const json = JSON.parse(content);
-      delete json['dependencies']["@platforma-open/my-org.block-boilerplate.software"];
+      delete json['dependencies']['@platforma-open/my-org.block-boilerplate.software'];
       return JSON.stringify(json, null, 2);
-    }
+    },
   );
 
   await deleteRegexInFile(
     path.join(dir, 'pnpm-workspace.yaml'),
-    /.*- software$\n/gm
+    /.*- software$\n/gm,
   );
 }
 
 async function replaceRegexInAllFiles(
   dir: string,
-  patterns: { from: RegExp; to: string }[]
+  patterns: { from: RegExp; to: string }[],
 ) {
   const files = await getAllFiles(dir);
   for (const { from, to } of patterns) {
@@ -186,7 +186,7 @@ async function replaceRegexInAllFiles(
 async function getAllFiles(dir: string): Promise<string[]> {
   const allDirents = await fs.readdir(dir, {
     withFileTypes: true,
-    recursive: true
+    recursive: true,
   });
 
   return allDirents.filter((f) => f.isFile()).map((f) => path.join(f.parentPath, f.name));
