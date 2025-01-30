@@ -61,18 +61,18 @@ export type dbOptions = Partial<dbSettings>;
 
 export type authDriver =
   | {
-      driver: 'ldap';
-      serverUrl: string; // 'ldaps://ldap.example.com:1111'
-      defaultDN: string; // 'cn=%u,ou=users,ou=users,dc=example,dc=com'
-    }
+    driver: 'ldap';
+    serverUrl: string; // 'ldaps://ldap.example.com:1111'
+    defaultDN: string; // 'cn=%u,ou=users,ou=users,dc=example,dc=com'
+  }
   | {
-      driver: 'jwt';
-      key: string;
-    }
+    driver: 'jwt';
+    key: string;
+  }
   | {
-      driver: 'htpasswd';
-      path: string;
-    };
+    driver: 'htpasswd';
+    path: string;
+  };
 
 export type grpcSettings = {
   listen: string;
@@ -126,7 +126,7 @@ export function emptyS3Settings(id: string): s3StorageSettings {
     secret: '',
     keyPrefix: '',
     accessPrefixes: [],
-    uploadKeyPrefix: ''
+    uploadKeyPrefix: '',
   };
 }
 
@@ -152,7 +152,7 @@ export function emptyFSSettings(id: string): fsStorageSettings {
     id: id,
     type: 'FS',
     indexCachePeriod: '0s',
-    rootPath: ''
+    rootPath: '',
   };
 }
 

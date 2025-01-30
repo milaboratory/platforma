@@ -1,14 +1,14 @@
-import path from 'path';
+import path from 'node:path';
 
 import { Command } from '@oclif/core';
 import Core from '../../../core';
 import * as cmdOpts from '../../../cmd-opts';
 import * as util from '../../../util';
-import * as types from '../../../templates/types';
+import type * as types from '../../../templates/types';
 import state from '../../../state';
 
 export default class S3 extends Command {
-  static override description = "Run platforma backend service with 'S3' primary storage type";
+  static override description = 'Run platforma backend service with \'S3\' primary storage type';
 
   static override examples = ['<%= config.bin %> <%= command.id %>'];
 
@@ -39,7 +39,7 @@ export default class S3 extends Command {
     const authOptions: types.authOptions | undefined = authEnabled
       ? {
           enabled: authEnabled,
-          drivers: core.initAuthDriversList(flags, '.')
+          drivers: core.initAuthDriversList(flags, '.'),
         }
       : undefined;
 
