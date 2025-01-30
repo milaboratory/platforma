@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { PlLoaderCircular } from '@milaboratories/uikit';
+import { PlSplash } from '@milaboratories/uikit';
 
 defineProps<{
   params: {
@@ -10,41 +10,43 @@ defineProps<{
 </script>
 
 <template>
-  <div class="grid-overlay-container">
-    <template v-if="params.notReady">
-      <div class="grid-icon-cat-in-bag"/>
-      <span class="text-subtitle-m" style="white-space: pre">{{ params.message ?? 'No datasource' }}</span>
-    </template>
-    <PlLoaderCircular v-else size="48" />
+  <div :class="$style.container">
+    <div v-if="params.notReady" :class="$style.wrapper">
+      <div :class="$style.iconCatInBag" />
+      <h3 :class="$style.text">{{ params.message || 'No datasource' }}</h3>
+    </div>
+    <PlSplash v-else size="48" text="Loading" />
   </div>
 </template>
 
-<style lang="css">
-.grid-overlay-container {
+<style module>
+.container {
   height: calc(100% - 1px);
   margin-top: 1px;
   width: 100%;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  background-color: var(--bg-base-light)
+  background-color: var(--bg-base-light);
+  color: var(--txt-mask);
 }
 
-.grid-icon-cat-in-bag {
+.wrapper {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+}
+
+.iconCatInBag {
   background-image: url(./assets/loading-cat.png);
   background-repeat: no-repeat;
+  height: 212px;
+  width: 400px;
+  background-size: contain;
 }
 
-.grid-overlay-container > div {
-  height: 200px !important;
-  width: 300px !important;
-  mask-size: contain !important;
-  mask-position: center !important;
-  background-size: contain;
-  background-position: center;
-}
-.grid-overlay-container > span {
-  color: var(--txt-mask);
+.text {
+  margin-top: 24px;
+  white-space: pre;
 }
 </style>

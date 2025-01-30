@@ -12,6 +12,13 @@ withDefaults(defineProps<{
 <template>
   <div class="pl-splash">
     <PlLoaderCircular :size="size" />
-    <span class="pl-spash__text">{{ text }}</span>
+    <h3 :class="$style.text">{{ text }}</h3>
   </div>
 </template>
+
+<style module>
+.text {
+  margin-top: 24px;
+  color: var(--txt-mask);
+}
+</style>
