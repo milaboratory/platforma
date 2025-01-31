@@ -32,10 +32,10 @@
     "license": "UNLICENSED",
     "dependencies": {},
     "devDependencies": {
-      "@platforma-sdk/package-builder": "file:../../../tools/package-builder",
-      "example-pl-package-asset-1": "file:../10.asset",
-      "example-pl-package-runenv-1": "file:../20.runenv",
-      "example-pl-package-integration-1": "file:../30.software-pkg"
+      "@platforma-sdk/package-builder": "workspace:",
+      "example-pl-package-asset-1": "workspace:",
+      "example-pl-package-runenv-1": "workspace:",
+      "example-pl-package-integration-1": "workspace:"
     }
   }
   
