@@ -1,11 +1,10 @@
 {
   "name": "@milaboratories/example-pl-package-runenv-1",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Example of software to be used as runenv",
   "scripts": {
     "cleanup": "rm -rf ./dist/ && rm -f ./pkg-*.tgz",
     "reset": "npm run cleanup && rm -rf ./node_modules/",
-
     "build": "rm -rf dist && pl-pkg build"
   },
   "block-software": {
@@ -14,7 +13,6 @@
         "environment": {
           "artifact": {
             "registry": "example",
-
             "type": "environment",
             "runtime": "python",
             "root": "./src",
@@ -26,7 +24,6 @@
         "environment": {
           "artifact": {
             "registry": "example",
-
             "type": "environment",
             "runtime": "java",
             "root": "./src",
@@ -38,7 +35,6 @@
         "environment": {
           "artifact": {
             "registry": "example",
-
             "type": "environment",
             "runtime": "R",
             "root": "./src",
