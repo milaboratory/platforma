@@ -1,50 +1,30 @@
 <script setup lang="ts">
-import { PlLoaderCircular } from '@milaboratories/uikit';
+import style from './pl-ag-overlay-loading.module.scss';
+import { PlSplash } from '@milaboratories/uikit';
 
 defineProps<{
+  /**
+   * Required object that contains props from loadingOverlayComponentParams.
+   */
   params: {
+    /**
+     * Required flag, that shows catInBag icon with message if `true`, shows PlSplash component if `false`.
+     */
     notReady: Readonly<boolean>;
+    /**
+     * Optional prop that provide custom text message under catInBag icon.
+     */
     message?: Readonly<string>;
   };
 }>();
 </script>
 
 <template>
-  <div class="grid-overlay-container">
-    <template v-if="params.notReady">
-      <div class="grid-icon-cat-in-bag"/>
-      <span class="text-subtitle-m" style="white-space: pre">{{ params.message ?? 'No datasource' }}</span>
-    </template>
-    <PlLoaderCircular v-else size="48" />
+  <div :class="style.container">
+    <div v-if="params.notReady" :class="style.wrapper">
+      <div :class="style.iconCatInBag" />
+      <h3 :class="style.text">{{ params.message || 'No datasource' }}</h3>
+    </div>
+    <PlSplash v-else size="48" text="Loading" />
   </div>
 </template>
-
-<style lang="css">
-.grid-overlay-container {
-  height: calc(100% - 1px);
-  margin-top: 1px;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background-color: var(--bg-base-light)
-}
-
-.grid-icon-cat-in-bag {
-  background-image: url(./assets/loading-cat.png);
-  background-repeat: no-repeat;
-}
-
-.grid-overlay-container > div {
-  height: 200px !important;
-  width: 300px !important;
-  mask-size: contain !important;
-  mask-position: center !important;
-  background-size: contain;
-  background-position: center;
-}
-.grid-overlay-container > span {
-  color: var(--txt-mask);
-}
-</style>
