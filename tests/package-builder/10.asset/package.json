@@ -1,5 +1,5 @@
 {
-  "name": "example-pl-package-asset-1",
+  "name": "@milaboratories/example-pl-package-asset-1",
   "version": "1.0.0",
   "description": "Example of software to be used as runenv",
   "scripts": {
