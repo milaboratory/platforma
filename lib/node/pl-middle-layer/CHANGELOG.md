@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 1.26.6
+
+### Patch Changes
+
+- 42e8e09: Use PFrames Rust for spec requests (feature MI_USE_PFRAMES_RS)
+
 ## 1.26.5
 
 ### Patch Changes
