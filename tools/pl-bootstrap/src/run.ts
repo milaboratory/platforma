@@ -1,88 +1,65 @@
-import fs from 'fs';
-import { spawnSync, SpawnOptions, SpawnSyncReturns, ChildProcess, spawn } from 'child_process';
-import state, { dockerRunInfo, processRunInfo } from './state';
-import winston from 'winston';
+import type { SpawnOptions, SpawnSyncReturns, ChildProcess } from 'node:child_process';
+import { spawnSync, spawn } from 'node:child_process';
+import type { instanceCommand } from './state';
+import state from './state';
+import type winston from 'winston';
 
-export function runDocker(
-  logger: winston.Logger,
-  args: readonly string[],
-  options: SpawnOptions,
-  stateToSave?: dockerRunInfo
-) {
-  state.lastRun = {
-    ...state.lastRun,
+type runResult = {
+  executed: SpawnSyncReturns<Buffer>[];
+  spawned: ChildProcess[];
+};
 
-    mode: 'docker',
-    cmd: 'docker',
-    args: args,
-    workdir: options.cwd as string,
-    envs: options.env,
+export function runCommands(logger: winston.Logger, cmds: instanceCommand[], options?: SpawnOptions): runResult {
+  const buffers: SpawnSyncReturns<Buffer>[] = [];
+  const children: ChildProcess[] = [];
+  for (const cmd of cmds) {
+    options = {
+      cwd: cmd.workdir,
+      env: {
+        ...cmd.envs,
+        ...options?.env,
+      },
+      ...cmd.runOpts,
+      ...options,
+    };
 
-    docker: {
-      ...state.lastRun?.docker,
-      ...stateToSave
+    if (cmd.async) {
+      const child = run(logger, cmd.cmd, cmd.args, options);
+      children.push(child);
+    } else {
+      const result = runSync(logger, cmd.cmd, cmd.args, options);
+      buffers.push(result);
+      if (result.error || result.status !== 0) {
+        break;
+      }
     }
   };
 
-  return runSync(logger, 'docker', args, options);
+  return {
+    executed: buffers,
+    spawned: children,
+  };
 }
 
-export function runProcess(
-  logger: winston.Logger,
-  cmd: string,
-  args: readonly string[],
-  options: SpawnOptions,
-  stateToSave?: processRunInfo
-): ChildProcess {
-  state.lastRun = {
-    ...state.lastRun,
+export function rerunLast(logger: winston.Logger, options: SpawnOptions): runResult {
+  const instance = state.currentInstance;
 
-    mode: 'process',
-    cmd: cmd,
-    args: args,
-    workdir: options.cwd as string,
-    envs: options.env,
-
-    process: {
-      ...state.lastRun?.process,
-      ...stateToSave
-    }
-  };
-
-  const result = run(logger, cmd, args, options);
-  state.lastRun.process = {
-    ...state.lastRun.process,
-    pid: result.pid
-  };
-  return result;
-}
-
-export function rerunLast(logger: winston.Logger, options: SpawnOptions): SpawnSyncReturns<Buffer> {
-  if (!state.lastRun) {
+  if (!instance) {
     throw new Error('no previous run info found: this is the first run after package installation');
   }
 
-  options = {
-    cwd: state.lastRun.workdir,
-    env: {
-      ...state.lastRun.envs,
-      ...options.env
-    },
-    ...options
-  };
-
-  return runSync(logger, state.lastRun.cmd, state.lastRun.args, options);
+  return runCommands(logger, instance.upCommands, options);
 }
 
-function run(logger: winston.Logger, cmd: string, args: readonly string[], options: SpawnOptions): ChildProcess {
+export function run(logger: winston.Logger, cmd: string, args: readonly string[], options: SpawnOptions): ChildProcess {
   logger.debug(
-    `Running:\n  env: ${JSON.stringify(options.env)}\n  cmd: ${JSON.stringify([cmd, ...args])}\n  wd: ${options.cwd}`
+    `Running:\n  env: ${JSON.stringify(options.env)}\n  cmd: ${JSON.stringify([cmd, ...args])}\n  wd: ${options.cwd?.toString()}`,
   );
 
   options.env = { ...process.env, ...options.env };
   logger.debug('  spawning child process');
   const child = spawn(cmd, args, options);
-  var exitAfterChild: boolean = false;
+  let exitAfterChild: boolean = false;
 
   //
   // Ensure Ctrl+C causes right finalization order: first stop child process, then stop the parent.
@@ -105,14 +82,14 @@ function run(logger: winston.Logger, cmd: string, args: readonly string[], optio
   return child;
 }
 
-function runSync(
+export function runSync(
   logger: winston.Logger,
   cmd: string,
   args: readonly string[],
-  options: SpawnOptions
+  options: SpawnOptions,
 ): SpawnSyncReturns<Buffer> {
   logger.debug(
-    `Running:\n  env: ${JSON.stringify(options.env)}\n  cmd: ${JSON.stringify([cmd, ...args])}\n  wd: ${options.cwd}`
+    `Running:\n  cmd: ${JSON.stringify([cmd, ...args])}\n  opts: ${JSON.stringify(options)}`,
   );
 
   options.env = { ...process.env, ...options.env };

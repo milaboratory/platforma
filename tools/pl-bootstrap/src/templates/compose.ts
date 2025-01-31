@@ -13,23 +13,25 @@ export type ServiceOptions = {
 };
 
 type ComposeYamlSpec = {
+  name: string;
   services: Record<string, {
     platform?: string;
     environment?: string[];
     volumes?: string[];
   }>;
+
+  volumes?: unknown;
 };
 
 export function render(
   composeSource: string,
   composeDest: string,
+  deployName: string,
   services?: Map<string, ServiceOptions>,
+  options?: {
+    dropVolumes: boolean;
+  },
 ) {
-  if (!services || services.size == 0) {
-    fs.copyFileSync(composeSource, composeDest);
-    return;
-  }
-
   const composeSrcData = fs.readFileSync(composeSource, { encoding: 'utf-8' });
   const compose = YAML.parse(composeSrcData.toString()) as ComposeYamlSpec;
 
@@ -37,13 +39,17 @@ export function render(
     throw new Error(`file '${composeSource}' seems to be not a docker-compose file or has unsupported version`);
   }
 
-  for (const svcName of Object.keys(compose.services)) {
-    if (!services.has(svcName)) {
-      delete compose.services[svcName];
+  if (services) {
+    for (const svcName of Object.keys(compose.services)) {
+      if (!services.has(svcName)) {
+        delete compose.services[svcName];
+      }
     }
   }
 
-  for (const [svcName, options] of services.entries()) {
+  compose.name = deployName;
+
+  for (const [svcName, options] of services?.entries() ?? []) {
     const svcSpec = compose.services[svcName];
 
     if (!svcSpec) {
@@ -87,6 +93,10 @@ export function render(
         svcSpec.volumes.push(`${mount.hostPath}:${mount.containerPath}`);
       }
     }
+  }
+
+  if (options?.dropVolumes) {
+    delete compose.volumes;
   }
 
   fs.writeFileSync(composeDest, YAML.stringify(compose));

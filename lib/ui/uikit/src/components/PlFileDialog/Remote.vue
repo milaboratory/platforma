@@ -132,9 +132,11 @@ const selectFile = (ev: MouseEvent, file: FileDialogItem) => {
 
   ev.preventDefault();
 
+  const items = visibleItems.value;
+
   if (file.canBeSelected) {
     if (!props.multi) {
-      data.items.forEach((f) => (f.selected = false));
+      items.forEach((f) => (f.selected = false));
     }
 
     file.selected = !file.selected;
@@ -144,7 +146,7 @@ const selectFile = (ev: MouseEvent, file: FileDialogItem) => {
     }
 
     if (!ctrlOrMetaKey && !shiftKey) {
-      data.items.forEach((f) => {
+      items.forEach((f) => {
         if (f.id !== file.id) {
           f.selected = false;
         }
@@ -152,7 +154,7 @@ const selectFile = (ev: MouseEvent, file: FileDialogItem) => {
     }
 
     if (shiftKey && lastSelected !== undefined) {
-      data.items.forEach((f) => {
+      items.forEach((f) => {
         if (between(f.id, lastSelected, file.id)) {
           f.selected = true;
         }
@@ -170,7 +172,7 @@ const changeAll = (selected: boolean) => {
     return;
   }
 
-  data.items
+  visibleItems.value
     .filter((f) => f.canBeSelected)
     .forEach((file) => {
       file.selected = selected;

@@ -1,5 +1,17 @@
 # @milaboratories/uikit
 
+## 2.2.52
+
+### Patch Changes
+
+- 821c240: [sdk/ui-vue] PlFileDialog search doesn’t affect “select all”
+
+## 2.2.51
+
+### Patch Changes
+
+- 3df530d: text wrap
+
 ## 2.2.50
 
 ### Patch Changes

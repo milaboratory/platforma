@@ -6,8 +6,15 @@ import Cmd2 from './commands/start';
 import Cmd3 from './commands/stop';
 import Cmd4 from './commands/start/docker';
 import Cmd5 from './commands/start/local';
-import Cmd6 from './commands/start/docker/s3';
-import Cmd7 from './commands/start/local/s3';
+import Cmd6 from './commands/svc/delete';
+import Cmd7 from './commands/svc/down';
+import Cmd8 from './commands/svc/list';
+import Cmd9 from './commands/svc/up';
+import Cmd10 from './commands/start/docker/s3';
+import Cmd11 from './commands/start/local/s3';
+import Cmd12 from './commands/svc/create/docker';
+import Cmd13 from './commands/svc/create/local';
+import Cmd14 from './commands/svc/create/docker/s3';
 
 // prettier-ignore
 export const COMMANDS = {
@@ -17,6 +24,13 @@ export const COMMANDS = {
   'stop': Cmd3,
   'start:docker': Cmd4,
   'start:local': Cmd5,
-  'start:docker:s3': Cmd6,
-  'start:local:s3': Cmd7,
+  'svc:delete': Cmd6,
+  'svc:down': Cmd7,
+  'svc:list': Cmd8,
+  'svc:up': Cmd9,
+  'start:docker:s3': Cmd10,
+  'start:local:s3': Cmd11,
+  'svc:create:docker': Cmd12,
+  'svc:create:local': Cmd13,
+  'svc:create:docker:s3': Cmd14,
 };

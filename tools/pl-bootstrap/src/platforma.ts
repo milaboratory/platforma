@@ -1,10 +1,10 @@
-import os from 'os';
-import fs from 'fs';
+import os from 'node:os';
+import fs from 'node:fs';
 import https from 'https';
-import path from 'path';
+import path from 'node:path';
 
 import * as tar from 'tar';
-import winston from 'winston';
+import type winston from 'winston';
 import state from './state';
 import { getDefaultPlVersion } from '@milaboratories/pl-deployments';
 
@@ -23,8 +23,8 @@ export function archiveOS(osName?: string): OSType {
       return 'windows';
     default:
       throw new Error(
-        `operating system '${platform}' is not currently supported by Platforma ecosystem. The list of OSes supported: ` +
-          JSON.stringify(OSes)
+        `operating system '${platform}' is not currently supported by Platforma ecosystem. The list of OSes supported: `
+        + JSON.stringify(OSes),
       );
   }
 }
@@ -42,8 +42,8 @@ export function archiveArch(archName?: string): ArchType {
       return 'amd64';
     default:
       throw new Error(
-        `processor architecture '${arch}' is not currently supported by Platforma ecosystem. The list of architectures supported: ` +
-          JSON.stringify(Arches)
+        `processor architecture '${arch}' is not currently supported by Platforma ecosystem. The list of architectures supported: `
+        + JSON.stringify(Arches),
       );
   }
 }
@@ -55,7 +55,7 @@ export function downloadArchive(
     showProgress?: boolean;
     downloadURL?: string;
     saveTo?: string;
-  }
+  },
 ): Promise<string> {
   const version = options?.version ?? getDefaultPlVersion();
   const showProgress = options?.showProgress ?? process.stdout.isTTY;
@@ -127,7 +127,7 @@ export function extractArchive(
     version?: string;
     archivePath?: string;
     extractTo?: string;
-  }
+  },
 ): string {
   logger.debug('extracting archive...');
 
@@ -163,7 +163,7 @@ export function extractArchive(
     file: archivePath,
     cwd: targetDir,
     gzip: true,
-    sync: true
+    sync: true,
   });
 
   logger.info(`  ... unpack done.`);
@@ -173,7 +173,7 @@ export function extractArchive(
 
 export function getBinary(
   logger: winston.Logger,
-  options?: { version?: string; showProgress?: boolean }
+  options?: { version?: string; showProgress?: boolean },
 ): Promise<string> {
   return downloadArchive(logger, options).then((archivePath) => extractArchive(logger, { archivePath }));
 }
