@@ -3,8 +3,17 @@ import style from './pl-ag-overlay-loading.module.scss';
 import { PlSplash } from '@milaboratories/uikit';
 
 defineProps<{
+  /**
+   * Required object that contains props from loadingOverlayComponentParams.
+   */
   params: {
+    /**
+     * Required flag, that shows catInBag icon with message if `true`, shows PlSplash component if `false`.
+     */
     notReady: Readonly<boolean>;
+    /**
+     * Optional prop that provide custom text message under catInBag icon.
+     */
     message?: Readonly<string>;
   };
 }>();
