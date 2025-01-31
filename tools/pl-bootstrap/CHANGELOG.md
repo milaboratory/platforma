@@ -1,5 +1,12 @@
 # @platforma-sdk/bootstrap
 
+## 3.0.0
+
+### Major Changes
+
+- 2e2d310: Introduce 'services' control in pl-bootsrap
+  Rename pl-service to pl-dev
+
 ## 2.9.1
 
 ### Patch Changes
