@@ -49,7 +49,7 @@
     "zod": "catalog:"
   },
   "oclif": {
-    "bin": "pl-service",
+    "bin": "pl-dev",
     "commands": {
       "strategy": "explicit",
       "target": "./dist/index.js",

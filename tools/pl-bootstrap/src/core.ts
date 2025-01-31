@@ -667,7 +667,7 @@ export default class Core {
 
       if (instanceName === state.currentInstanceName) {
         removeWarns.push(
-          'last command run cache (\'pl-service start\' shorthand will stop working until next full start command call)',
+          'last command run cache (\'pl-dev start\' shorthand will stop working until next full start command call)',
         );
       }
 
@@ -681,7 +681,7 @@ You are going to reset the state of platforma service '${instanceName}':
       }
 
       removeWarns.push(
-        'last command run cache (\'pl-service start\' shorthand will stop working until next full start command call)',
+        'last command run cache (\'pl-dev start\' shorthand will stop working until next full start command call)',
         `all service configurations stored in: ${state.instanceDir()} (including all associated docker containers and volumes)`,
       );
 
