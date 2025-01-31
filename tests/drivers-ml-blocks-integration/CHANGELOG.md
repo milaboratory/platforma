@@ -1,5 +1,38 @@
 # @milaboratories/drivers-ml-blocks-integration
 
+## 1.0.119
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-blob-url-custom-protocol@1.0.7
+- @milaboratories/milaboratories.test-download-file@1.0.71
+- @milaboratories/milaboratories.test-enter-numbers@1.0.193
+- @milaboratories/milaboratories.test-read-logs@1.0.71
+- @milaboratories/milaboratories.test-sum-numbers@1.0.71
+- @milaboratories/milaboratories.test-upload-file@1.0.71
+
+## 1.0.118
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-blob-url-custom-protocol@1.0.6
+- @milaboratories/milaboratories.test-download-file@1.0.70
+- @milaboratories/milaboratories.test-enter-numbers@1.0.192
+- @milaboratories/milaboratories.test-read-logs@1.0.70
+- @milaboratories/milaboratories.test-sum-numbers@1.0.70
+- @milaboratories/milaboratories.test-upload-file@1.0.70
+
+## 1.0.117
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-blob-url-custom-protocol@1.0.5
+- @milaboratories/milaboratories.test-download-file@1.0.69
+- @milaboratories/milaboratories.test-enter-numbers@1.0.191
+- @milaboratories/milaboratories.test-read-logs@1.0.69
+- @milaboratories/milaboratories.test-sum-numbers@1.0.69
+- @milaboratories/milaboratories.test-upload-file@1.0.69
+
 ## 1.0.116
 
 ### Patch Changes

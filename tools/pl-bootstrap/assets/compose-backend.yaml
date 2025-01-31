@@ -83,10 +83,17 @@ services:
       - ${PL_AUTH_HTPASSWD_PATH-/dev/null}:/etc/platforma/users.htpasswd
       - ${PL_LICENSE_FILE:-/dev/null}:/storage/mi.license
       - ${PL_LOG_DIR:-/dev/null}:/storage/log/
-      - ${PL_DATA_DB_ROOT}:/storage/rocksdb
-      - ${PL_DATA_PRIMARY_ROOT}:/storage/controllers/data/primary/
-      - ${PL_DATA_LIBRARY_ROOT}:/storage/controllers/data/library/
-      - ${PL_DATA_WORKDIR_ROOT}:/storage/controllers/data/work/
-      - ${PL_DATA_PACKAGE_ROOT}:/storage/controllers/packageLoader/
+      - ${PL_DATA_DB_ROOT:-storage-db}:/storage/rocksdb
+      - ${PL_DATA_PRIMARY_ROOT:-storage-primary}:/storage/controllers/data/primary/
+      - ${PL_DATA_LIBRARY_ROOT:-storage-library}:/storage/controllers/data/library/
+      - ${PL_DATA_WORKDIR_ROOT:-storage-workdir}:/storage/controllers/data/work/
+      - ${PL_DATA_PACKAGE_ROOT:-storage-package}:/storage/controllers/packageLoader/
 
     restart: always
+
+volumes:
+  storage-db:
+  storage-primary:
+  storage-library:
+  storage-workdir:
+  storage-package:

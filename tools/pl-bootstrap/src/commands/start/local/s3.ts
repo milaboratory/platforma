@@ -1,7 +1,8 @@
-import path from 'path';
+import path from 'node:path';
 
 import { Command } from '@oclif/core';
-import Core, { startLocalS3Options } from '../../../core';
+import type { startLocalS3Options } from '../../../core';
+import Core from '../../../core';
 import * as cmdOpts from '../../../cmd-opts';
 import * as platforma from '../../../platforma';
 import * as util from '../../../util';
@@ -32,7 +33,7 @@ export default class S3 extends Command {
 
     ...cmdOpts.PlLogFileFlag,
     ...cmdOpts.PlWorkdirFlag,
-    ...cmdOpts.AuthFlags
+    ...cmdOpts.AuthFlags,
   };
 
   public async run(): Promise<void> {
@@ -42,27 +43,29 @@ export default class S3 extends Command {
     const core = new Core(logger);
     core.mergeLicenseEnvs(flags);
 
+    const instanceName = 'local-s3';
+
     const workdir = flags['pl-workdir'] ?? '.';
-    const storage = flags.storage ? path.join(workdir, flags.storage) : state.data('local-s3');
+    const storage = flags.storage ? path.join(workdir, flags.storage) : state.instanceDir(instanceName);
     const logFile = flags['pl-log-file'] ? path.join(workdir, flags['pl-log-file']) : undefined;
 
     const authDrivers = core.initAuthDriversList(flags, workdir);
     const authEnabled = flags['auth-enabled'] ?? authDrivers !== undefined;
 
-    var binaryPath = flags['pl-binary'];
+    let binaryPath = flags['pl-binary'];
     if (flags['pl-sources']) {
       binaryPath = core.buildPlatforma({ repoRoot: flags['pl-sources'] });
     }
 
-    var listenGrpc: string = '127.0.0.1:6345';
+    let listenGrpc: string = '127.0.0.1:6345';
     if (flags['grpc-listen']) listenGrpc = flags['grpc-listen'];
     else if (flags['grpc-port']) listenGrpc = `127.0.0.1:${flags['grpc-port']}`;
 
-    var listenMon: string = '127.0.0.1:9090';
+    let listenMon: string = '127.0.0.1:9090';
     if (flags['monitoring-listen']) listenMon = flags['monitoring-listen'];
     else if (flags['monitoring-port']) listenMon = `127.0.0.1:${flags['monitoring-port']}`;
 
-    var listenDbg: string = '127.0.0.1:9091';
+    let listenDbg: string = '127.0.0.1:9091';
     if (flags['debug-listen']) listenDbg = flags['debug-listen'];
     else if (flags['debug-port']) listenDbg = `127.0.0.1:${flags['debug-port']}`;
 
@@ -75,8 +78,8 @@ export default class S3 extends Command {
       primaryURL: flags['storage-primary'],
       libraryURL: flags['storage-library'],
 
-      minioPort: flags['s3-address-port'],
-      minioConsolePort: flags['s3-console-address-port'],
+      minioPort: flags['s3-port'],
+      minioConsolePort: flags['s3-console-port'],
 
       configOptions: {
         grpc: { listen: listenGrpc },
@@ -86,20 +89,29 @@ export default class S3 extends Command {
         log: { path: logFile },
         localRoot: storage,
         core: {
-          auth: { enabled: authEnabled, drivers: authDrivers }
+          auth: { enabled: authEnabled, drivers: authDrivers },
         },
         storages: {
-          work: { type: 'FS', rootPath: flags['storage-work'] }
-        }
-      }
+          work: { type: 'FS', rootPath: flags['storage-work'] },
+        },
+      },
     };
 
+    const instance = core.createLocalS3(instanceName, startOptions);
+
     if (startOptions.binaryPath) {
-      core.startLocalS3(startOptions);
+      core.switchInstance(instance);
     } else {
       platforma
         .getBinary(logger, { version: flags.version })
-        .then(() => core.startLocalS3(startOptions))
+        .then(() => {
+          const children = core.switchInstance(instance);
+          setTimeout(() => {
+            for (const child of children) {
+              child.unref();
+            }
+          }, 1000);
+        })
         .catch(function (err: Error) {
           logger.error(err.message);
         });

@@ -1,5 +1,18 @@
 # @platforma-sdk/bootstrap
 
+## 3.0.1
+
+### Patch Changes
+
+- 35148cd: Add README, fix small issues in help messages
+
+## 3.0.0
+
+### Major Changes
+
+- 2e2d310: Introduce 'services' control in pl-bootsrap
+  Rename pl-service to pl-dev
+
 ## 2.9.1
 
 ### Patch Changes

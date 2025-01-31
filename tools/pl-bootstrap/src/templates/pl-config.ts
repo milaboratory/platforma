@@ -1,4 +1,4 @@
-import fs from 'fs';
+import fs from 'node:fs';
 import * as types from './types';
 import { assertNever, resolveTilde } from '../util';
 import state from '../state';
@@ -8,7 +8,7 @@ export type { plOptions } from './types';
 export function storageSettingsFromURL(
   storageURL: string,
   baseDir?: string,
-  defaults?: types.storageOptions
+  defaults?: types.storageOptions,
 ): types.storageOptions {
   storageURL = resolveTilde(storageURL);
   const url = new URL(storageURL, `file:${baseDir}`);
@@ -23,7 +23,7 @@ export function storageSettingsFromURL(
 
         type: 'S3',
         bucketName,
-        region
+        region,
       } as types.storageOptions;
 
     case 's3e:':
@@ -40,7 +40,7 @@ export function storageSettingsFromURL(
         keyPrefix,
         region: url.searchParams.get('region'),
         key: url.username ? `static:${url.username}` : '',
-        secret: url.password ? `static:${url.password}` : ''
+        secret: url.password ? `static:${url.password}` : '',
       } as types.storageOptions;
 
     case 's3es:':
@@ -57,13 +57,13 @@ export function storageSettingsFromURL(
         keyPrefix,
         region: url.searchParams.get('region'),
         key: url.username ? `static:${url.username}` : '',
-        secret: url.password ? `static:${url.password}` : ''
+        secret: url.password ? `static:${url.password}` : '',
       } as types.storageOptions;
 
     case 'file:':
       return {
         type: 'FS',
-        rootPath: url.pathname
+        rootPath: url.pathname,
       };
 
     default:
@@ -72,11 +72,11 @@ export function storageSettingsFromURL(
 }
 
 export function loadDefaults(jwtKey: string, options?: types.plOptions): types.plSettings {
-  const localRoot = options?.localRoot ?? state.data('local-custom');
+  const localRoot = options?.localRoot ?? state.instanceDir('default');
 
   const log: types.logSettings = {
     level: options?.log?.level ?? 'info',
-    path: options?.log?.path ?? `${localRoot}/logs/platforma.log`
+    path: options?.log?.path ?? `${localRoot}/logs/platforma.log`,
   };
 
   const grpc: types.grpcSettings = {
@@ -87,8 +87,8 @@ export function loadDefaults(jwtKey: string, options?: types.plOptions): types.p
       certFile: options?.grpc?.tls?.certFile ?? `${localRoot}/certs/tls.cert`,
       keyFile: options?.grpc?.tls?.keyFile ?? `${localRoot}/certs/tls.key`,
 
-      ...options?.grpc?.tls
-    }
+      ...options?.grpc?.tls,
+    },
   };
 
   const core: types.coreSettings = {
@@ -96,22 +96,22 @@ export function loadDefaults(jwtKey: string, options?: types.plOptions): types.p
       enabled: options?.core?.auth?.enabled ?? false,
       drivers: options?.core?.auth?.drivers ?? [
         { driver: 'jwt', key: jwtKey },
-        { driver: 'htpasswd', path: `${localRoot}/users.htpasswd` }
-      ]
+        { driver: 'htpasswd', path: `${localRoot}/users.htpasswd` },
+      ],
     },
     db: {
-      path: `${localRoot}/db`
-    }
+      path: `${localRoot}/db`,
+    },
   };
 
   const primary = defaultStorageSettings(
     'main',
     `${localRoot}/storages/main`,
     'main-bucket',
-    options?.storages?.primary
+    options?.storages?.primary,
   );
 
-  var work: types.storageSettings;
+  let work: types.storageSettings;
   const wType = options?.storages?.work?.type;
   switch (wType) {
     case undefined:
@@ -122,27 +122,27 @@ export function loadDefaults(jwtKey: string, options?: types.plOptions): types.p
       break;
 
     default:
-      throw new Error("work storage MUST have 'FS' type as it is used for working directories management");
+      throw new Error('work storage MUST have \'FS\' type as it is used for working directories management');
   }
 
   const library = defaultStorageSettings(
     'library',
     `${localRoot}/storages/library`,
     'library-bucket',
-    options?.storages?.library
+    options?.storages?.library,
   );
 
   const monitoring: types.monitoringSettings = {
     enabled: defaultBool(options?.monitoring?.enabled, true),
-    listen: options?.monitoring?.listen ?? '127.0.0.1:9090'
+    listen: options?.monitoring?.listen ?? '127.0.0.1:9090',
   };
   const debug: types.debugSettings = {
     enabled: defaultBool(options?.debug?.enabled, true),
-    listen: options?.debug?.listen ?? '127.0.0.1:9091'
+    listen: options?.debug?.listen ?? '127.0.0.1:9091',
   };
   const license: types.licenseSettings = {
     value: options?.license?.value ?? '',
-    file: options?.license?.file ?? ''
+    file: options?.license?.file ?? '',
   };
 
   return {
@@ -154,7 +154,7 @@ export function loadDefaults(jwtKey: string, options?: types.plOptions): types.p
     monitoring,
     debug,
     storages: { primary, work, library },
-    hacks: { libraryDownloadable: true }
+    hacks: { libraryDownloadable: true },
   };
 }
 
@@ -162,9 +162,9 @@ function defaultStorageSettings(
   storageID: string,
   defaultLocation: string,
   defaultBucket: string,
-  options?: types.storageOptions
+  options?: types.storageOptions,
 ): types.storageSettings {
-  var storage: types.storageSettings;
+  let storage: types.storageSettings;
   const pType = options?.type;
   switch (pType) {
     case undefined:
@@ -201,7 +201,7 @@ export function render(options: types.plSettings): string {
   const disableDbg = options.debug.enabled ? '' : ' disabled';
   const libraryDownloadable = options.hacks.libraryDownloadable ? 'true' : 'false';
 
-  var miLicenseSecret = options.license.value;
+  let miLicenseSecret = options.license.value;
   if (options.license.file != '') {
     miLicenseSecret = fs.readFileSync(options.license.file).toString().trimEnd();
   }
@@ -270,7 +270,7 @@ controllers:
 
   runner:
     type: local
-    storageRoot: '${(options.storages.work as types.fsStorageSettings).rootPath}'
+    storageRoot: '${(options.storages.work).rootPath}'
     workdirCacheOnFailure: 1h
     secrets:
       - map:
