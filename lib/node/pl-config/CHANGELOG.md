@@ -1,5 +1,11 @@
 # @milaboratories/pl-config
 
+## 1.4.0
+
+### Minor Changes
+
+- dc94ca3: pl-deployments: add ssh support
+
 ## 1.3.3
 
 ### Patch Changes

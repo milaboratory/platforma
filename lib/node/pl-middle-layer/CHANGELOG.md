@@ -1,5 +1,17 @@
 # @milaboratories/pl-middle-layer
 
+## 1.27.0
+
+### Minor Changes
+
+- dc94ca3: pl-deployments: add ssh support
+
+### Patch Changes
+
+- Updated dependencies [dc94ca3]
+  - @milaboratories/pl-deployments@1.1.0
+  - @milaboratories/pl-config@1.4.0
+
 ## 1.26.6
 
 ### Patch Changes
