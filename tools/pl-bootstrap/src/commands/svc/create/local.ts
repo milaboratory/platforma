@@ -1,14 +1,13 @@
+import { Command, Args } from '@oclif/core';
 import path from 'node:path';
-
-import { Command } from '@oclif/core';
-import type { startLocalS3Options } from '../../../core';
+import type { startLocalOptions } from '../../../core';
 import Core from '../../../core';
 import * as cmdOpts from '../../../cmd-opts';
-import * as platforma from '../../../platforma';
 import * as util from '../../../util';
 import state from '../../../state';
+import * as platforma from '../../../platforma';
 
-export default class S3 extends Command {
+export default class Local extends Command {
   static override description = 'Run Platforma Backend service as local process on current host (no docker container)';
 
   static override examples = ['<%= config.bin %> <%= command.id %>'];
@@ -17,8 +16,8 @@ export default class S3 extends Command {
     ...cmdOpts.GlobalFlags,
     ...cmdOpts.VersionFlag,
 
-    ...cmdOpts.AddressesFlags,
     ...cmdOpts.S3AddressesFlags,
+    ...cmdOpts.AddressesFlags,
     ...cmdOpts.PlBinaryFlag,
     ...cmdOpts.PlSourcesFlag,
 
@@ -36,14 +35,19 @@ export default class S3 extends Command {
     ...cmdOpts.AuthFlags,
   };
 
+  static args = {
+    name: Args.string({ required: true }),
+    mode: Args.string({ options: ['s3'], required: false }),
+  };
+
   public async run(): Promise<void> {
-    const { flags } = await this.parse(S3);
+    const { flags, args } = await this.parse(Local);
 
     const logger = util.createLogger(flags['log-level']);
     const core = new Core(logger);
     core.mergeLicenseEnvs(flags);
 
-    const instanceName = 'local-s3';
+    const instanceName = args.name;
 
     const workdir = flags['pl-workdir'] ?? '.';
     const storage = flags.storage ? path.join(workdir, flags.storage) : state.instanceDir(instanceName);
@@ -69,7 +73,7 @@ export default class S3 extends Command {
     if (flags['debug-listen']) listenDbg = flags['debug-listen'];
     else if (flags['debug-port']) listenDbg = `127.0.0.1:${flags['debug-port']}`;
 
-    const startOptions: startLocalS3Options = {
+    const startOptions: startLocalOptions = {
       binaryPath: binaryPath,
       version: flags.version,
       configPath: flags.config,
@@ -78,9 +82,6 @@ export default class S3 extends Command {
       primaryURL: flags['storage-primary'],
       libraryURL: flags['storage-library'],
 
-      minioPort: flags['s3-port'],
-      minioConsolePort: flags['s3-console-port'],
-
       configOptions: {
         grpc: { listen: listenGrpc },
         monitoring: { listen: listenMon },
@@ -88,33 +89,49 @@ export default class S3 extends Command {
         license: { value: flags['license'], file: flags['license-file'] },
         log: { path: logFile },
         localRoot: storage,
-        core: {
-          auth: { enabled: authEnabled, drivers: authDrivers },
-        },
+        core: { auth: { enabled: authEnabled, drivers: authDrivers } },
         storages: {
           work: { type: 'FS', rootPath: flags['storage-work'] },
         },
       },
     };
 
-    const instance = core.createLocalS3(instanceName, startOptions);
+    const mode = args.mode;
+
+    switch (mode) {
+      case 's3': {
+        logger.info(`Creating instance configuration, data directory and other stuff...`);
+        core.createLocalS3(instanceName, {
+          ...startOptions,
+
+          minioPort: flags['s3-port'],
+          minioConsolePort: flags['s3-console-port'],
+        });
+        break;
+      }
+      case undefined: {
+        if (flags['s3-port']) {
+          logger.warn('flag \'s3-port\' is only for \'s3\' mode');
+        }
+        if (flags['s3-console-port']) {
+          logger.warn('flag \'s3-console-port\' is only for \'s3\' mode');
+        }
+
+        core.createLocal(instanceName, startOptions);
+        break;
+      }
+    }
 
     if (startOptions.binaryPath) {
-      core.switchInstance(instance);
-    } else {
-      platforma
-        .getBinary(logger, { version: flags.version })
-        .then(() => {
-          const children = core.switchInstance(instance);
-          setTimeout(() => {
-            for (const child of children) {
-              child.unref();
-            }
-          }, 1000);
-        })
-        .catch(function (err: Error) {
-          logger.error(err.message);
-        });
+      logger.info(`Instance '${instanceName}' was created. To start it run 'up' command`);
+      return;
     }
+
+    platforma
+      .getBinary(logger, { version: flags.version })
+      .then(() => logger.info(`Instance '${instanceName}' was created. To start it run 'pl up' command`))
+      .catch(function (err: Error) {
+        logger.error(err.message);
+      });
   }
 }

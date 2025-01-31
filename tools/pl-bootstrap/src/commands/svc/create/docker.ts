@@ -1,14 +1,13 @@
+import { Command, Args } from '@oclif/core';
 import path from 'node:path';
-
-import { Command } from '@oclif/core';
-import Core from '../../core';
-import * as cmdOpts from '../../cmd-opts';
-import * as util from '../../util';
-import type * as types from '../../templates/types';
-import state from '../../state';
+import type * as types from '../../../templates/types';
+import Core from '../../../core';
+import * as cmdOpts from '../../../cmd-opts';
+import * as util from '../../../util';
+import state from '../../../state';
 
 export default class Docker extends Command {
-  static override description = 'Run platforma backend service with \'FS\' primary storage type';
+  static override description = 'Run Platforma Backend service as docker container on current host';
 
   static override examples = ['<%= config.bin %> <%= command.id %>'];
 
@@ -30,14 +29,18 @@ export default class Docker extends Command {
     ...cmdOpts.StorageLibraryURLFlag,
   };
 
+  static args = {
+    name: Args.string({ required: true }),
+  };
+
   public async run(): Promise<void> {
-    const { flags } = await this.parse(Docker);
+    const { flags, args } = await this.parse(Docker);
 
     const logger = util.createLogger(flags['log-level']);
     const core = new Core(logger);
     core.mergeLicenseEnvs(flags);
 
-    const instanceName = 'docker';
+    const instanceName = args.name;
 
     const authEnabled = flags['auth-enabled'];
     const authOptions: types.authOptions | undefined = authEnabled
@@ -46,6 +49,7 @@ export default class Docker extends Command {
           drivers: core.initAuthDriversList(flags, '.'),
         }
       : undefined;
+
     const storage = flags.storage ? path.join('.', flags.storage) : state.instanceDir(instanceName);
 
     const mounts: { hostPath: string; containerPath?: string }[] = [];
@@ -55,7 +59,7 @@ export default class Docker extends Command {
 
     const platformOverride = flags.arch ? `linux/${flags.arch}` : undefined;
 
-    const instance = core.createDocker(instanceName, storage, {
+    core.createDocker(instanceName, storage, {
       primaryStorageURL: flags['storage-primary'],
       workStoragePath: flags['storage-work'],
       libraryStorageURL: flags['storage-library'],
@@ -81,6 +85,6 @@ export default class Docker extends Command {
       debugPort: flags['debug-port'],
     });
 
-    core.switchInstance(instance);
+    logger.info(`Instance '${instanceName}' was created. To start it run 'up' command`);
   }
 }

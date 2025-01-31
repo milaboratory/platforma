@@ -9,7 +9,7 @@
     "test": "jest --passWithNoTests"
   },
   "bin": {
-    "pl-service": "./bin/run.js"
+    "pl-dev": "./bin/run.js"
   },
   "files": [
     "./dist/**/*",

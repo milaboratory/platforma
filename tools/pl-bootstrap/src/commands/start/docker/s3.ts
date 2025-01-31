@@ -35,6 +35,8 @@ export default class S3 extends Command {
     const core = new Core(logger);
     core.mergeLicenseEnvs(flags);
 
+    const instanceName = 'docker-s3';
+
     const authEnabled = flags['auth-enabled'];
     const authOptions: types.authOptions | undefined = authEnabled
       ? {
@@ -43,7 +45,7 @@ export default class S3 extends Command {
         }
       : undefined;
 
-    const storage = flags.storage ? path.join('.', flags.storage) : state.data('docker-s3');
+    const storage = flags.storage ? path.join('.', flags.storage) : state.instanceDir(instanceName);
 
     const mounts: { hostPath: string; containerPath?: string }[] = [];
     for (const p of flags.mount ?? []) {
@@ -53,7 +55,7 @@ export default class S3 extends Command {
     const platformOverride = flags.arch ? `linux/${flags.arch}` : undefined;
     const presignHost = flags['minio-presign-host'] ? 'minio' : 'localhost';
 
-    core.startDockerS3(storage, {
+    const instance = core.createDockerS3(instanceName, storage, {
       image: flags.image,
       version: flags.version,
 
@@ -76,5 +78,7 @@ export default class S3 extends Command {
 
       presignHost: presignHost,
     });
+
+    core.switchInstance(instance);
   }
 }
