@@ -54,10 +54,16 @@ export class SshPl {
     const arch = await this.getArch();
     const remoteHome = await this.getUserHomeDirectory();
 
-    await supervisorCtlStart(this.sshClient, remoteHome, arch.arch);
+    try {
+      await supervisorCtlStart(this.sshClient, remoteHome, arch.arch);
 
-    // We are waiting for Platforma to run to ensure that it has started.
-    return await this.checkIsAliveWithInterval();
+      // We are waiting for Platforma to run to ensure that it has started.
+      return await this.checkIsAliveWithInterval();
+    } catch (e: unknown) {
+      const msg = `ssh.start: error occurred ${e}`
+      this.logger.error(msg);
+      throw new Error(msg);
+    }
   }
 
   public async stop() {

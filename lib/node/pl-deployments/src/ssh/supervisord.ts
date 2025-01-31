@@ -39,6 +39,7 @@ export async function supervisorStatus(
 ): Promise<boolean> {
   const result = await supervisorCtlExec(sshClient, remoteHome, arch, 'ctl status');
 
+  logger.info(`HERE: ${result.stdout}, stderr: ${result.stderr}` )
   if (result.stderr) {
     logger.info(`supervisord ctl status: stderr occurred: ${result.stderr}, stdout: ${result.stdout}`);
 
@@ -96,12 +97,14 @@ username=default-user
 password=${password}
 
 [program:platforma]
+autostart=true
 depends_on=minio
 command=${plPath} --config ${platformaConfigPath}
 directory=${remoteWorkDir}
 autorestart=true
 
 [program:minio]
+autostart=true
 environment=${minioEnvStr}
 command=${minioPath} server ${minioStorageDir}
 directory=${remoteWorkDir}
