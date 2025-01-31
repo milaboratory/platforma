@@ -43,8 +43,10 @@ export default class S3 extends Command {
     const core = new Core(logger);
     core.mergeLicenseEnvs(flags);
 
+    const instanceName = 'local-s3';
+
     const workdir = flags['pl-workdir'] ?? '.';
-    const storage = flags.storage ? path.join(workdir, flags.storage) : state.data('local-s3');
+    const storage = flags.storage ? path.join(workdir, flags.storage) : state.instanceDir(instanceName);
     const logFile = flags['pl-log-file'] ? path.join(workdir, flags['pl-log-file']) : undefined;
 
     const authDrivers = core.initAuthDriversList(flags, workdir);
@@ -76,8 +78,8 @@ export default class S3 extends Command {
       primaryURL: flags['storage-primary'],
       libraryURL: flags['storage-library'],
 
-      minioPort: flags['s3-address-port'],
-      minioConsolePort: flags['s3-console-address-port'],
+      minioPort: flags['s3-port'],
+      minioConsolePort: flags['s3-console-port'],
 
       configOptions: {
         grpc: { listen: listenGrpc },
@@ -95,12 +97,21 @@ export default class S3 extends Command {
       },
     };
 
+    const instance = core.createLocalS3(instanceName, startOptions);
+
     if (startOptions.binaryPath) {
-      core.startLocalS3(startOptions);
+      core.switchInstance(instance);
     } else {
       platforma
         .getBinary(logger, { version: flags.version })
-        .then(() => core.startLocalS3(startOptions))
+        .then(() => {
+          const children = core.switchInstance(instance);
+          setTimeout(() => {
+            for (const child of children) {
+              child.unref();
+            }
+          }, 1000);
+        })
         .catch(function (err: Error) {
           logger.error(err.message);
         });

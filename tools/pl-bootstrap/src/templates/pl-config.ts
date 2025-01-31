@@ -72,7 +72,7 @@ export function storageSettingsFromURL(
 }
 
 export function loadDefaults(jwtKey: string, options?: types.plOptions): types.plSettings {
-  const localRoot = options?.localRoot ?? state.data('local-custom');
+  const localRoot = options?.localRoot ?? state.instanceDir('default');
 
   const log: types.logSettings = {
     level: options?.log?.level ?? 'info',

@@ -10,6 +10,7 @@ import * as composeCfg from './templates/compose';
 import * as plCfg from './templates/pl-config';
 import type * as types from './templates/types';
 import * as platforma from './platforma';
+import type { instanceInfo, instanceCommand } from './state';
 import state from './state';
 import * as util from './util';
 import type winston from 'winston';
@@ -17,15 +18,84 @@ import type winston from 'winston';
 export default class Core {
   constructor(private readonly logger: winston.Logger) { }
 
-  public startLast() {
-    const result = run.rerunLast(this.logger, { stdio: 'inherit' });
-    checkRunError(result, 'failed to bring back Platforma Backend in the last started configuration');
+  public startLast(): ChildProcess[] {
+    const instance = state.currentInstance;
+    if (!instance) {
+      this.logger.error('failed to bring back Platforma Backend in the last started configuration: no last configuration found');
+      throw new Error('no previous run info found');
+    }
+
+    return this.startInstance(instance);
   }
 
-  public startLocal(options?: startLocalOptions): ChildProcess {
+  public startInstance(instance: instanceInfo): ChildProcess[] {
+    if (instance.runInfo) {
+      const runInfo = this.renderRunInfo(instance.runInfo);
+      this.logger.info(`Starting platforma backend instance '${instance.name}':\n${runInfo}`);
+    }
+
+    const result = run.runCommands(
+      this.logger,
+      instance.upCommands,
+    );
+    checkRunError(result.executed);
+
+    if (result.spawned.length > 0 && instance.type === 'process') {
+      instance.pid = result.spawned[result.spawned.length - 1].pid;
+      state.setInstanceInfo(instance.name, instance);
+      this.logger.info(`instance '${instance.name}' started`);
+    }
+
+    state.currentInstanceName = instance.name;
+
+    return result.spawned;
+  }
+
+  public stopInstance(instance: instanceInfo) {
+    if (!state.isInstanceActive(instance)) {
+      this.logger.info(`instance '${instance.name}' is not running`);
+      return;
+    }
+
+    this.logger.info(`stopping platforma backend instance '${instance.name}'...`);
+    const result = run.runCommands(this.logger, instance.downCommands);
+    checkRunError(result.executed);
+
+    const iType = instance.type;
+    switch (iType) {
+      case 'docker': {
+        return;
+      }
+
+      case 'process': {
+        if (instance.pid && state.isValidPID(instance.pid)) {
+          process.kill(instance.pid);
+        }
+        return;
+      }
+      default:
+        util.assertNever(iType);
+    }
+  }
+
+  public switchInstance(instance: instanceInfo): ChildProcess[] {
+    // Stop all other active instances before switching to new one;
+    for (const iName of state.instanceList) {
+      if (iName !== instance.name) {
+        const iToStop = state.getInstanceInfo(iName);
+        if (state.isInstanceActive(iToStop)) {
+          this.stopInstance(iToStop);
+        }
+      }
+    }
+
+    return this.startInstance(instance);
+  }
+
+  public createLocal(instanceName: string, options?: startLocalOptions): instanceInfo {
     const cmd = options?.binaryPath ?? platforma.binaryPath(options?.version, 'binaries', 'platforma');
     let configPath = options?.configPath;
-    const workdir: string = options?.workdir ?? (configPath ? process.cwd() : state.path());
+    const workdir: string = options?.workdir ?? (configPath ? process.cwd() : state.instanceDir(instanceName));
 
     if (options?.primaryURL) {
       options.configOptions = {
@@ -90,71 +160,101 @@ export default class Core {
       fs.writeFileSync(configPath, plCfg.render(configOptions));
     }
 
-    const runInfo = this.renderRunInfo({
-      configPath,
-      dbPath: configOptions.core.db.path,
-      apiAddr: configOptions.grpc.listen,
-      logPath: configOptions.log.path,
-      primary: configOptions.storages.primary,
-      work: configOptions.storages.work,
-      library: configOptions.storages.library,
+    state.setInstanceInfo(instanceName, {
+      type: 'process',
+      upCommands: [
+        {
+          async: true,
+          cmd: cmd,
+          args: ['-config', configPath],
+          workdir: workdir,
+          runOpts: { stdio: 'inherit' },
+        },
+      ],
+      downCommands: [],
+      cleanupCommands: [],
+      runInfo: {
+        configPath,
+        dbPath: configOptions.core.db.path,
+        apiAddr: configOptions.grpc.listen,
+        logPath: configOptions.log.path,
+        primary: configOptions.storages.primary,
+        work: configOptions.storages.work,
+        library: configOptions.storages.library,
+      },
     });
 
-    this.logger.info(`Starting platforma:\n${runInfo}`);
-
-    return run.runProcess(
-      this.logger,
-      cmd,
-      ['-config', configPath],
-      {
-        cwd: workdir,
-        stdio: 'inherit',
-      },
-      {
-        storagePath: configOptions.localRoot,
-      },
-    );
+    return state.getInstanceInfo(instanceName);
   }
 
-  public startLocalS3(options?: startLocalS3Options): ChildProcess {
-    this.logger.debug('starting platforma in \'local s3\' mode...');
+  public createLocalS3(instanceName: string, options?: startLocalS3Options): instanceInfo {
+    this.logger.debug('creating platforma instance in \'local s3\' mode...');
 
     const minioPort = options?.minioPort ?? 9000;
+
+    const instance = this.createLocal(instanceName, {
+      ...options,
+      primaryURL: options?.primaryURL ?? `s3e://testuser:testpassword@localhost:${minioPort}/main-bucket/?region=no-region`,
+      libraryURL: options?.libraryURL ?? `s3e://testuser:testpassword@localhost:${minioPort}/library-bucket/?region=no-region`,
+    });
+
     const localRoot = options?.configOptions?.localRoot;
-    this.startMinio({
+    const minioRunCmd = this.createMinio(instanceName, {
       minioPort: minioPort,
       minioConsolePort: options?.minioConsolePort,
       storage: localRoot ? path.join(localRoot, 'minio') : undefined,
     });
 
-    return this.startLocal({
-      ...options,
-      primaryURL:
-        options?.primaryURL ?? `s3e://testuser:testpassword@localhost:${minioPort}/main-bucket/?region=no-region`,
-      libraryURL:
-        options?.libraryURL ?? `s3e://testuser:testpassword@localhost:${minioPort}/library-bucket/?region=no-region`,
-    });
+    instance.upCommands = [
+      minioRunCmd.start,
+      ...instance.upCommands,
+    ];
+
+    instance.downCommands = [
+      minioRunCmd.stop,
+      ...instance.downCommands,
+    ];
+
+    instance.cleanupCommands = [
+      minioRunCmd.cleanup,
+      ...instance.cleanupCommands,
+    ];
+
+    state.setInstanceInfo(instanceName, instance);
+    return instance;
   }
 
-  public startMinio(options?: {
-    image?: string;
-    version?: string;
-    minioPort?: number;
-    minioConsolePort?: number;
-    storage?: string;
-  }) {
-    this.logger.debug('  starting minio...');
-    const composeMinio = pkg.assets('compose-backend.yaml');
+  public createMinio(
+    instanceName: string,
+    options?: {
+      image?: string;
+      version?: string;
+      minioPort?: number;
+      minioConsolePort?: number;
+      storage?: string;
+    }): {
+      start: instanceCommand;
+      stop: instanceCommand;
+      cleanup: instanceCommand;
+    } {
+    this.logger.debug('  creating docker compose for minio service...');
+    const composeSrc = pkg.assets('compose-backend.yaml');
+    const composeMinio = state.instanceDir(instanceName, 'compose-minio.yaml');
+
+    composeCfg.render(composeSrc, composeMinio, `pl-${instanceName}-minio`,
+      new Map([
+        ['minio', {}],
+      ]),
+      { dropVolumes: true },
+    );
 
     const version = options?.version ? `:${options.version}` : '';
     this.logger.debug(`    minio version: ${version}`);
     const image = options?.image ?? `quay.io/minio/minio${version}`;
     this.logger.debug(`    minio image: ${image}`);
 
-    const storage = options?.storage ?? state.data('minio');
+    const storage = options?.storage ?? state.instanceDir(instanceName, 'minio');
     util.ensureDir(storage, { mode: '0775' });
-    const stubStorage = state.data('stub');
-    util.ensureDir(stubStorage);
 
     const minioPort = options?.minioPort ?? 9000;
     const minioConsolePort = options?.minioConsolePort ?? 9001;
@@ -164,29 +264,31 @@ export default class Core {
       MINIO_STORAGE: path.resolve(storage),
       MINIO_PORT: minioPort.toString(),
       MINIO_CONSOLE_PORT: minioConsolePort.toString(),
-
-      PL_DATA_DB_ROOT: stubStorage,
-      PL_DATA_PRIMARY_ROOT: stubStorage,
-      PL_DATA_LIBRARY_ROOT: stubStorage,
-      PL_DATA_WORKDIR_ROOT: stubStorage,
-      PL_DATA_PACKAGE_ROOT: stubStorage,
-      PL_IMAGE: 'scratch',
     };
 
-    this.logger.debug(`    spawning child 'docker' process...`);
-    const result = spawnSync(
-      'docker',
-      ['compose', `--file=${composeMinio}`, 'up', '--detach', '--remove-orphans', '--pull=missing', 'minio'],
-      {
-        env: {
-          ...process.env,
-          ...envs,
-        },
-        stdio: 'inherit',
+    return {
+      start: {
+        cmd: 'docker',
+        args: ['compose', `--file=${composeMinio}`, 'up', '--detach', '--remove-orphans', '--pull=missing'],
+        envs: envs,
+        workdir: state.instanceDir(instanceName),
+        runOpts: { stdio: 'inherit' },
       },
-    );
-
-    checkRunError(result, 'failed to start MinIO service in docker');
+      stop: {
+        cmd: 'docker',
+        args: ['compose', `--file=${composeMinio}`, 'down'],
+        envs: envs,
+        workdir: state.instanceDir(instanceName),
+        runOpts: { stdio: 'inherit' },
+      },
+      cleanup: {
+        cmd: 'docker',
+        args: ['compose', `--file=${composeMinio}`, 'down', '--volumes', '--remove-orphans'],
+        envs: envs,
+        workdir: state.instanceDir(instanceName),
+        runOpts: { stdio: 'inherit' },
+      },
+    };
   }
 
   public buildPlatforma(options: { repoRoot: string; binPath?: string }): string {
@@ -202,11 +304,12 @@ export default class Core {
       stdio: 'inherit',
     });
 
-    checkRunError(result, 'failed to build platforma binary from sources using \'go build\' command');
+    checkRunError([result], 'failed to build platforma binary from sources using \'go build\' command');
     return binPath;
   }
 
-  public startDockerS3(
+  public createDockerS3(
+    instanceName: string,
     localRoot: string,
     options?: {
       image?: string;
@@ -232,7 +335,9 @@ export default class Core {
 
       customMounts?: { hostPath: string; containerPath?: string }[];
     },
-  ) {
+  ): instanceInfo {
+    this.logger.debug('creating platforma instance in \'docker s3\' mode...');
+
     const composeS3Path = pkg.assets('compose-backend.yaml');
     const image = options?.image ?? pkg.plImageTag(options?.version);
 
@@ -286,7 +391,7 @@ export default class Core {
         containerPath: mnt.containerPath ?? mnt.hostPath,
       });
     }
-    composeCfg.render(composeS3Path, composeDstPath, new Map([
+    composeCfg.render(composeS3Path, composeDstPath, `pl-${instanceName}`, new Map([
       ['minio', {}],
       ['backend', {
         platform: options?.platformOverride,
@@ -312,7 +417,9 @@ export default class Core {
       PL_DATA_PRIMARY_ROOT: storageDir('primary'),
       PL_DATA_LIBRARY_ROOT: storageDir('library'),
       PL_DATA_WORKDIR_ROOT: workFSPath,
-      PL_DATA_PACKAGE_ROOT: storageDir('packages'),
+
+      // Mount packages storage as volume, because APFS is case-insensitive on Mac OS X and this breaks some pl software installation.
+      // PL_DATA_PACKAGE_ROOT: storageDir('packages'),
 
       ...this.configureDockerStorage('primary', primary),
       ...this.configureDockerStorage('library', library),
@@ -339,45 +446,42 @@ export default class Core {
       }
     }
 
-    const result = run.runDocker(
-      this.logger,
-      [
-        'compose',
-        `--file=${composeDstPath}`,
-        'up',
-        '--detach',
-        '--remove-orphans',
-        '--pull=missing',
-        'minio',
-        'backend',
-      ],
-      {
-        env: envs,
-        stdio: 'inherit',
+    state.setInstanceInfo(instanceName, {
+      type: 'docker',
+      upCommands: [{
+        cmd: 'docker',
+        args: ['compose', `--file=${composeDstPath}`, 'up', '--detach', '--remove-orphans', '--pull=missing'],
+        envs: envs,
+        runOpts: { stdio: 'inherit' },
+      }],
+      downCommands: [{
+        cmd: 'docker',
+        args: ['compose', `--file=${composeDstPath}`, 'down'],
+        envs: envs,
+        runOpts: { stdio: 'inherit' },
+      }],
+      cleanupCommands: [{
+        cmd: 'docker',
+        args: ['compose', `--file=${composeDstPath}`, 'down', '--volumes', '--remove-orphans'],
+        envs: envs,
+        runOpts: { stdio: 'inherit' },
+      }],
+      runInfo: {
+        apiPort: options?.grpcPort,
+        apiAddr: options?.grpcAddr,
+        logPath: logFilePath,
+        primary: primary,
+        work: { type: 'FS', rootPath: workFSPath },
+        library: library,
+        dbPath: dbFSPath,
       },
-      {
-        plImage: image,
-        composePath: composeDstPath,
-      },
-    );
-
-    checkRunError(result, 'failed to start Platforma Backend in Docker');
-    state.isActive = true;
-
-    const runInfo = this.renderRunInfo({
-      apiPort: options?.grpcPort,
-      apiAddr: options?.grpcAddr,
-      logPath: logFilePath,
-      primary: primary,
-      work: { type: 'FS', rootPath: workFSPath },
-      library: library,
-      dbPath: dbFSPath,
     });
 
-    this.logger.info(`Started platforma:\n${runInfo}`);
+    return state.getInstanceInfo(instanceName);
   }
 
-  public startDocker(
+  public createDocker(
+    instanceName: string,
     localRoot: string,
     options?: {
       primaryStorageURL?: string;
@@ -404,7 +508,9 @@ export default class Core {
       debugPort?: number;
       debugAddr?: string;
     },
-  ) {
+  ): instanceInfo {
+    this.logger.debug('creating platforma instance in \'docker\' mode...');
+
     const composeFSPath = pkg.assets('compose-backend.yaml');
     const image = options?.image ?? pkg.plImageTag(options?.version);
 
@@ -445,7 +551,7 @@ export default class Core {
       });
     }
     this.logger.debug(`Rendering docker compose file '${composeDstPath}' using '${composeFSPath}' as base template`);
-    composeCfg.render(composeFSPath, composeDstPath, new Map([
+    composeCfg.render(composeFSPath, composeDstPath, `pl-${instanceName}`, new Map([
       ['backend', {
         platform: options?.platformOverride,
         mounts: backendMounts,
@@ -500,134 +606,112 @@ export default class Core {
       }
     }
 
-    const result = run.runDocker(
-      this.logger,
-      ['compose', `--file=${composeDstPath}`, 'up', '--detach', '--remove-orphans', '--pull=missing'],
-      {
-        env: envs,
-        stdio: 'inherit',
+    state.setInstanceInfo(instanceName, {
+      type: 'docker',
+      upCommands: [{
+        cmd: 'docker',
+        args: ['compose', `--file=${composeDstPath}`, 'up', '--detach', '--remove-orphans', '--pull=missing'],
+        envs: envs,
+        runOpts: { stdio: 'inherit' },
+      }],
+      downCommands: [{
+        cmd: 'docker',
+        args: ['compose', `--file=${composeDstPath}`, 'down'],
+        envs: envs,
+        runOpts: { stdio: 'inherit' },
+      }],
+      cleanupCommands: [{
+        cmd: 'docker',
+        args: ['compose', `--file=${composeDstPath}`, 'down', '--volumes', '--remove-orphans'],
+        envs: envs,
+        runOpts: { stdio: 'inherit' },
+      }],
+      runInfo: {
+        apiPort: options?.grpcPort,
+        apiAddr: options?.grpcAddr,
+        logPath: logFilePath,
+        primary: primary,
+        work: { type: 'FS', rootPath: workFSPath },
+        library: library,
+        dbPath: dbFSPath,
       },
-      {
-        plImage: image,
-        composePath: composeDstPath,
-        primaryPath: primaryFSPath,
-        workPath: workFSPath,
-        libraryPath: libraryFSPath,
-      },
-    );
-
-    checkRunError(result, 'failed to start Platforma Backend in Docker');
-    state.isActive = true;
-
-    const runInfo = this.renderRunInfo({
-      apiPort: options?.grpcPort,
-      apiAddr: options?.grpcAddr,
-      logPath: logFilePath,
-      primary: primary,
-      work: { type: 'FS', rootPath: workFSPath },
-      library: library,
-      dbPath: dbFSPath,
     });
 
-    this.logger.info(`Started platforma:\n${runInfo}`);
+    return state.getInstanceInfo(instanceName);
   }
 
-  public stop() {
-    if (!state.isActive) {
-      console.log('no running service detected');
-      return;
-    }
+  public cleanupInstance(instanceName?: string) {
+    const removeWarns: string[] = [];
+    const instancesToDrop = new Map<string, instanceInfo>();
+    let warnMessage: string = '';
 
-    const lastRun = state.lastRun!;
-
-    switch (lastRun.mode) {
-      case 'docker': {
-        const result = spawnSync('docker', ['compose', '--file', lastRun.docker!.composePath!, 'down'], {
-          env: {
-            ...process.env,
-            ...lastRun.envs,
-          },
-          stdio: 'inherit',
-        });
-        state.isActive = false;
-        if (result.status !== 0) process.exit(result.status);
-        return;
-      }
-      case 'process': {
-        if (state.isValidPID) {
-          process.kill(lastRun.process!.pid!);
+    if (instanceName) {
+      const instance = state.getInstanceInfo(instanceName);
+      instancesToDrop.set(instanceName, instance);
+      const iType = instance.type;
+      switch (iType) {
+        case 'docker':{
+          removeWarns.push(`docker service 'pl-${instanceName}', including all its volumes and data in '${state.instanceDir(instanceName)}' will be destroyed`);
+          break;
         }
-        state.isActive = false;
-        return;
+        case 'process':{
+          removeWarns.push(`directory '${state.instanceDir(instanceName)}' would be deleted`);
+          if (instance.downCommands) {
+            removeWarns.push(`associated docker service, including all volumes and data will be destroyed`);
+          }
+          break;
+        }
+        default:
+          util.assertNever(iType);
       }
-      default:
-        util.assertNever(lastRun.mode);
-    }
-  }
 
-  public cleanup() {
-    const removeWarns = [
-      'last command run cache (\'pl-service start\' shorthand will stop working until next full start command call)',
-      `'platforma' docker compose service containers and volumes`,
-    ];
-    const defaultDataRoot = state.data();
-    const dirsToRemove: string[] = [defaultDataRoot];
-
-    if (state.lastRun?.docker?.primaryPath) {
-      const dockerStoragePath = state.lastRun?.docker?.primaryPath;
-      if (!dockerStoragePath.startsWith(defaultDataRoot)) {
-        dirsToRemove.push(dockerStoragePath);
+      if (instanceName === state.currentInstanceName) {
+        removeWarns.push(
+          'last command run cache (\'pl-service start\' shorthand will stop working until next full start command call)',
+        );
       }
-    }
 
-    if (state.lastRun?.docker?.workPath) {
-      const workStoragePath = state.lastRun?.docker?.workPath;
-      if (!workStoragePath.startsWith(defaultDataRoot)) {
-        dirsToRemove.push(workStoragePath);
-      }
-    }
-
-    if (state.lastRun?.process?.storagePath) {
-      const localStoragePath = state.lastRun?.process?.storagePath;
-      if (!localStoragePath.startsWith(defaultDataRoot)) {
-        dirsToRemove.push(localStoragePath);
-      }
-    }
-
-    const storageWarns
-      = dirsToRemove.length > 0
-        ? `  - storages (you'll loose all projects and calculation results stored in service instances):\n    - ${dirsToRemove.join('\n    - ')}`
-        : '';
-
-    const warnMessage = `
-You are going to reset the state of platforma service
-Things to be removed:
+      warnMessage = `
+You are going to reset the state of platforma service '${instanceName}':
   - ${removeWarns.join('\n  - ')}
-${storageWarns}
 `;
+    } else {
+      for (const iName of state.instanceList) {
+        instancesToDrop.set(iName, state.getInstanceInfo(iName));
+      }
+
+      removeWarns.push(
+        'last command run cache (\'pl-service start\' shorthand will stop working until next full start command call)',
+        `all service configurations stored in: ${state.instanceDir()} (including all associated docker containers and volumes)`,
+      );
+
+      warnMessage = `
+You are going to reset the state of all platforma services configured with pl-bootstrap package.
+  - ${removeWarns.join('\n  - ')}
+`;
+    }
+
     this.logger.warn(warnMessage);
     if (!util.askYN('Are you sure?')) {
       this.logger.info('Reset action was canceled');
       return;
     }
 
-    const composeToDestroy = new Set<string>(pkg.composeFiles());
-    if (state.lastRun?.docker?.composePath) {
-      composeToDestroy.add(state.lastRun.docker.composePath);
+    for (const [name, instance] of instancesToDrop.entries()) {
+      if (instance.cleanupCommands.length) {
+        this.logger.info(`Wiping instance ${name} services`);
+        const result = run.runCommands(this.logger, instance.cleanupCommands);
+        checkRunError(result.executed, `failed to wipe instance ${name} services`);
+      }
+
+      this.logger.info(`Destroying instance '${name}' data directory`);
+      fs.rmSync(state.instanceDir(name), { recursive: true, force: true });
     }
 
-    for (const composeFile of composeToDestroy) {
-      this.logger.info(`Destroying docker compose '${composeFile}'`);
-      this.destroyDocker(composeFile, pkg.plImageTag());
+    if (!instanceName) {
+      this.logger.info(`Destroying state dir '${state.path()}'`);
+      fs.rmSync(state.path(), { recursive: true, force: true });
     }
-
-    for (const dir of dirsToRemove) {
-      this.logger.info(`Destroying '${dir}'`);
-      fs.rmSync(dir, { recursive: true, force: true });
-    }
-
-    this.logger.info(`Destroying state dir '${state.path()}'`);
-    fs.rmSync(state.path(), { recursive: true, force: true });
 
     this.logger.info(
       `\nIf you want to remove all downloaded platforma binaries, delete '${state.binaries()}' dir manually\n`,
@@ -701,28 +785,6 @@ ${storageWarns}
     }
 
     return lastJwt;
-  }
-
-  private destroyDocker(composePath: string, image: string) {
-    const stubStoragePath = state.data('stub');
-    const result = spawnSync('docker', ['compose', '--file', composePath, 'down', '--volumes', '--remove-orphans'], {
-      env: {
-        ...process.env,
-        PL_IMAGE: 'scratch',
-
-        PL_DATA_DB_ROOT: stubStoragePath,
-        PL_DATA_PRIMARY_ROOT: stubStoragePath,
-        PL_DATA_LIBRARY_ROOT: stubStoragePath,
-        PL_DATA_WORKDIR_ROOT: stubStoragePath,
-        PL_DATA_PACKAGE_ROOT: stubStoragePath,
-
-        MINIO_IMAGE: 'scratch',
-        MINIO_STORAGE: stubStoragePath,
-      },
-      stdio: 'inherit',
-    });
-
-    if (result.status !== 0) process.exit(result.status);
   }
 
   private checkLicense(value?: string, file?: string) {
@@ -867,15 +929,17 @@ You can obtain the license from "https://licensing.milaboratories.com".`);
   }
 }
 
-export function checkRunError(result: SpawnSyncReturns<Buffer>, message?: string) {
-  if (result.error) {
-    throw result.error;
-  }
+export function checkRunError(result: SpawnSyncReturns<Buffer>[], message?: string) {
+  for (const buffer of result) {
+    if (buffer.error) {
+      throw buffer.error;
+    }
 
-  const msg = message ?? 'failed to run command';
+    const msg = message ?? 'failed to run command';
 
-  if (result.status !== 0) {
-    throw new Error(`${msg}, process exited with code '${result.status}'`);
+    if (buffer.status !== 0) {
+      throw new Error(`${msg}, process exited with code '${buffer.status}'`);
+    }
   }
 }
 
