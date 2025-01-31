@@ -68,8 +68,9 @@ export class SshPl {
       await supervisorCtlShutdown(this.sshClient, remoteHome, arch.arch);
       return await this.checkIsAliveWithInterval(undefined, undefined, false);
     } catch (e: unknown) {
-      console.log(e);
-      return false;
+      const msg = `ssh.stop: error occurred ${e}`
+      this.logger.error(msg);
+      throw new Error(msg)
     }
   }
 
@@ -293,7 +294,7 @@ export class SshPl {
       await sleep(interval);
       total += interval;
       if (total > maxMs) {
-        throw new Error(`isAliveWithInterval: The process did not stopped after ${maxMs} ms.`);
+        throw new Error(`isAliveWithInterval: The process did not ${shouldStart ? 'started' : 'stopped'} after ${maxMs} ms.`);
       }
       alive = await this.isAlive();
     }

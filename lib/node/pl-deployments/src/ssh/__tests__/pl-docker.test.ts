@@ -46,12 +46,12 @@ describe('SshPl', async () => {
   it('Check start/stop cmd', async () => {
     await sshPl.platformaInit(downloadDestination);
     expect(await sshPl.isAlive()).toBe(true);
+
     await sshPl.stop();
-    let isAlive = await sshPl.isAlive();
-    expect(isAlive).toBe(false);
+    expect(await sshPl.isAlive()).toBe(false);
+
     await sshPl.start();
-    isAlive = await sshPl.isAlive();
-    expect(isAlive).toBe(true);
+    expect(await sshPl.isAlive()).toBe(true);
   });
 
   it('downloadBinariesAndUploadToServer', async () => {
