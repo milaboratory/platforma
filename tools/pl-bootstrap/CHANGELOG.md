@@ -1,5 +1,16 @@
 # @platforma-sdk/bootstrap
 
+## 3.1.0
+
+### Minor Changes
+
+- dc94ca3: pl-deployments: add ssh support
+
+### Patch Changes
+
+- Updated dependencies [dc94ca3]
+  - @milaboratories/pl-deployments@1.1.0
+
 ## 3.0.1
 
 ### Patch Changes
