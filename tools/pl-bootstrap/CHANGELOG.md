@@ -1,5 +1,11 @@
 # @platforma-sdk/bootstrap
 
+## 3.0.1
+
+### Patch Changes
+
+- 35148cd: Add README, fix small issues in help messages
+
 ## 3.0.0
 
 ### Major Changes
