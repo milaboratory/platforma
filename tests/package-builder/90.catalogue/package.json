@@ -1,5 +1,5 @@
 {
-    "name": "example-pl-package-catalogue-1",
+    "name": "@milaboratories/example-pl-package-catalogue-1",
     "version": "1.0.0",
     "description": "The software description example",
     "scripts": {
@@ -12,16 +12,16 @@
   
     "block-software": {
       "entrypoints": {
-        "1.2.3-data": { "reference": "example-pl-package-asset-1/dist/tengo/asset/1.2.3.as.json"},
-        "python": { "reference": "example-pl-package-runenv-1/dist/tengo/software/python.sw.json" },
-        "java": { "reference": "example-pl-package-runenv-1/dist/tengo/software/java.sw.json" },
-        "r": { "reference": "example-pl-package-runenv-1/dist/tengo/software/r.sw.json" },
-        "hello": { "reference": "example-pl-package-integration-1/dist/tengo/software/hello.sw.json" },
-        "goodbye": { "reference": "example-pl-package-integration-1/dist/tengo/software/goodbye.sw.json" },
-        "yes-java": { "reference": "example-pl-package-integration-1/dist/tengo/software/yes-java.sw.json" },
-        "yes-r": { "reference": "example-pl-package-integration-1/dist/tengo/software/yes-r.sw.json" },
-        "hello2": { "reference": "example-pl-package-integration-1/dist/tengo/software/hello2.sw.json" },
-        "starter": { "reference": "example-pl-package-integration-1/dist/tengo/software/starter.sw.json" }
+        "1.2.3-data": { "reference": "@milaboratories/example-pl-package-asset-1/dist/tengo/asset/1.2.3.as.json"},
+        "python": { "reference": "@milaboratories/example-pl-package-runenv-1/dist/tengo/software/python.sw.json" },
+        "java": { "reference": "@milaboratories/example-pl-package-runenv-1/dist/tengo/software/java.sw.json" },
+        "r": { "reference": "@milaboratories/example-pl-package-runenv-1/dist/tengo/software/r.sw.json" },
+        "hello": { "reference": "@milaboratories/example-pl-package-integration-1/dist/tengo/software/hello.sw.json" },
+        "goodbye": { "reference": "@milaboratories/example-pl-package-integration-1/dist/tengo/software/goodbye.sw.json" },
+        "yes-java": { "reference": "@milaboratories/example-pl-package-integration-1/dist/tengo/software/yes-java.sw.json" },
+        "yes-r": { "reference": "@milaboratories/example-pl-package-integration-1/dist/tengo/software/yes-r.sw.json" },
+        "hello2": { "reference": "@milaboratories/example-pl-package-integration-1/dist/tengo/software/hello2.sw.json" },
+        "starter": { "reference": "@milaboratories/example-pl-package-integration-1/dist/tengo/software/starter.sw.json" }
       }
     },
   
@@ -33,9 +33,9 @@
     "dependencies": {},
     "devDependencies": {
       "@platforma-sdk/package-builder": "workspace:",
-      "example-pl-package-asset-1": "workspace:",
-      "example-pl-package-runenv-1": "workspace:",
-      "example-pl-package-integration-1": "workspace:"
+      "@milaboratories/example-pl-package-asset-1": "workspace:",
+      "@milaboratories/example-pl-package-runenv-1": "workspace:",
+      "@milaboratories/example-pl-package-integration-1": "workspace:"
     }
   }
   
