@@ -26,8 +26,8 @@ directories.forEach((directory) => {
   try {
     process.stdout.write(`  ${formatWidth(directory, width)}: `);
 
-    execSync('pnpm install --frozen-lockfile', { cwd: path.join(scriptDir, directory), stdio: 'pipe' })
-    execSync('pnpm run build', { cwd: path.join(scriptDir, directory), stdio: 'pipe' });
+    execSync('pnpm install', { cwd: path.join(scriptDir, directory) })
+    execSync('pnpm run build', { cwd: path.join(scriptDir, directory) });
 
     process.stdout.write(`OK\n`);
   } catch (error) {

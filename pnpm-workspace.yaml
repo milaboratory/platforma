@@ -90,6 +90,11 @@ packages:
   - tests/config-local-ml-integration
   - tests/drivers-ml-blocks-integration
 
+  - tests/package-builder/10.asset
+  - tests/package-builder/20.runenv
+  - tests/package-builder/30.software-pkg
+  - tests/package-builder/90.catalogue
+
   # Etc
 
   - etc/ui-vue-playground
