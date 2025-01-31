@@ -9,7 +9,7 @@ export async function supervisorCtlStart(
   sshClient: SshClient,
   remoteHome: string, arch: string,
 ) {
-  const result = await supervisorCtlExec(sshClient, remoteHome, arch, '--daemon');
+  const result = await supervisorExec(sshClient, remoteHome, arch, '--daemon');
 
   if (result.stderr) {
     throw new Error(`Can not run ssh Platforma ${result.stderr}`);
@@ -20,7 +20,7 @@ export async function supervisorStop(
   sshClient: SshClient,
   remoteHome: string, arch: string,
 ) {
-  const result = await supervisorCtlExec(sshClient, remoteHome, arch, 'ctl shutdown');
+  const result = await supervisorExec(sshClient, remoteHome, arch, 'ctl shutdown');
 
   if (result.stderr) {
     throw new Error(`Can not stop ssh Platforma ${result.stderr}`);
@@ -37,9 +37,8 @@ export async function supervisorStatus(
   sshClient: SshClient,
   remoteHome: string, arch: string,
 ): Promise<boolean> {
-  const result = await supervisorCtlExec(sshClient, remoteHome, arch, 'ctl status');
+  const result = await supervisorExec(sshClient, remoteHome, arch, 'ctl status');
 
-  logger.info(`HERE: ${result.stdout}, stderr: ${result.stderr}` )
   if (result.stderr) {
     logger.info(`supervisord ctl status: stderr occurred: ${result.stderr}, stdout: ${result.stdout}`);
 
@@ -112,7 +111,7 @@ autorestart=true
 `;
 }
 
-export async function supervisorCtlExec(
+export async function supervisorExec(
   sshClient: SshClient,
   remoteHome: string, arch: string,
   command: string,
