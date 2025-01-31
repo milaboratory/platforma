@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.53
+
+### Patch Changes
+
+- 9fc0f34: Added new component PlSplash
+
 ## 2.2.52
 
 ### Patch Changes
