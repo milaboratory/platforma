@@ -41,6 +41,7 @@ import type { MiLogger } from '@milaboratories/ts-helpers';
 import { assertNever } from '@milaboratories/ts-helpers';
 import canonicalize from 'canonicalize';
 import { PFrame } from '@milaboratories/pframes-node';
+import { PFrame as PFrameRs } from '@milaboratories/pframes-rs-node';
 import * as fsp from 'node:fs/promises';
 import { LRUCache } from 'lru-cache';
 import { ConcurrencyLimitingExecutor } from '@milaboratories/ts-helpers';
@@ -123,29 +124,38 @@ class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
     }
 
     const createSpecPFrame = (): PFrameInternal.PFrameV2 => {
-      const pFrame = getDebugFlags().logPFrameRequests ? new PFrame(logFunc) : new PFrame();
-      for (const column of columns) {
-        try {
+      if (getDebugFlags().usePFrameRs) {
+        const pFrame = new PFrameRs(getDebugFlags().logPFrameRequests ? logFunc : undefined);
+        for (const column of columns) {
           pFrame.addColumnSpec(column.id, column.spec);
-        } catch (err: unknown) {
-          throw new Error(
-            `Adding column ${column.id} to PFrame failed: ${err as Error}; Spec: ${JSON.stringify(column.spec)}.`,
-          );
         }
+        return pFrame;
+      } else {
+        const pFrame = getDebugFlags().logPFrameRequests ? new PFrame(logFunc) : new PFrame();
+        for (const column of columns) {
+          try {
+            pFrame.addColumnSpec(column.id, column.spec);
+          } catch (err: unknown) {
+            throw new Error(
+              `Adding column ${column.id} to PFrame failed: ${err as Error}; Spec: ${JSON.stringify(column.spec)}.`,
+            );
+          }
+        }
+        return pFrame;
       }
-      return pFrame;
     };
 
     const createDataPFrame = (): PFrameInternal.PFrameV2 => {
-      const pFrame = createSpecPFrame();
+      const pFrame = getDebugFlags().logPFrameRequests ? new PFrame(logFunc) : new PFrame();
       pFrame.setDataSource(this);
       for (const column of columns) {
         const dataInfo = mapBlobs(column.data, blobKey);
         try {
+          pFrame.addColumnSpec(column.id, column.spec);
           pFrame.setColumnData(column.id, dataInfo);
         } catch (err: unknown) {
           throw new Error(
-            `Setting column ${column.id} data to PFrame failed: ${err as Error}; Spec: ${JSON.stringify(column.spec)}, DataInfo: ${JSON.stringify(dataInfo)}.`,
+            `Adding column ${column.id} to PFrame failed: ${err as Error}; Spec: ${JSON.stringify(column.spec)}, DataInfo: ${JSON.stringify(dataInfo)}.`,
           );
         }
       }
@@ -327,7 +337,14 @@ export class PFrameDriver implements SdkPFrameDriver {
       ...request,
       compatibleWith:
         request.compatibleWith.length !== 0
-          ? [{ axesSpec: request.compatibleWith, qualifications: [] }]
+          ? [{
+              axesSpec: [
+                ...new Map(request.compatibleWith.map(
+                  (item) => [canonicalize(item)!, item] as const,
+                )).values(),
+              ],
+              qualifications: [],
+            }]
           : [],
     };
     const responce = await this.concurrencyLimiter.run(
