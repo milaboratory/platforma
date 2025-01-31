@@ -16,6 +16,8 @@ withDefaults(defineProps<{
 </script>
 
 <template>
-  <PlLoaderCircular :size="size" />
-  <h3 :class="style.text">{{ text }}</h3>
+  <div :class="style.container">
+    <PlLoaderCircular :size="size" />
+    <h3 :class="style.text">{{ text }}</h3>
+  </div>
 </template>
