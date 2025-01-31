@@ -35,10 +35,14 @@
     "ts-node": "catalog:",
     "tsconfig-paths": "catalog:",
     "typescript": "catalog:",
-    "vite": "catalog:"
+    "vite": "catalog:",
+    "tsup": "catalog:",
+    "rollup-plugin-node-externals": "catalog:",
+    "@rollup/plugin-node-resolve": "catalog:",
+    "vite-plugin-dts": "catalog:"
   },
   "dependencies": {
-    "@milaboratories/pl-local": "workspace:*",
+    "@milaboratories/pl-deployments": "workspace:*",
     "@oclif/core": "catalog:",
     "canonicalize": "catalog:",
     "decompress": "catalog:",

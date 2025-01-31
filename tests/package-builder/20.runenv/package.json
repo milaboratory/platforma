@@ -54,6 +54,6 @@
   "license": "UNLICENSED",
   "dependencies": {},
   "devDependencies": {
-    "@platforma-sdk/package-builder": "file:../../../tools/package-builder"
+    "@platforma-sdk/package-builder": "workspace:"
   }
 }

@@ -18,7 +18,7 @@ packages:
   - lib/node/pl-tree
   - lib/node/pl-drivers
   - lib/node/pl-middle-layer
-  - lib/node/pl-local
+  - lib/node/pl-deployments
   - lib/node/pl-config
 
   - lib/ui/uikit
@@ -90,6 +90,11 @@ packages:
   - tests/config-local-ml-integration
   - tests/drivers-ml-blocks-integration
 
+  - tests/package-builder/10.asset
+  - tests/package-builder/20.runenv
+  - tests/package-builder/30.software-pkg
+  - tests/package-builder/90.catalogue
+
   # Etc
 
   - etc/ui-vue-playground
@@ -154,6 +159,7 @@ catalog:
 
   # Util & other libs
 
+  'testcontainers': ^10.16.0
   'utility-types': ^3.11.0
   'denque': ^2.1.0
   'lru-cache': ^11.0.2
@@ -162,10 +168,12 @@ catalog:
   'mime-types': ^2.1.35
   'semver': ^7.6.3
 
+  'upath': ^2.0.1
   'tar': ^7.4.3
   'tar-fs': ^3.0.8
   'decompress': ^4.2.1
   'readline-sync': ^1.4.10
+  'ssh2': ^1.16.0
 
   'zod': ~3.23.8
 
@@ -227,6 +235,7 @@ catalog:
   '@types/semver': ^7.5.8
   '@types/mime-types': ^2.1.4
   '@types/tar-fs': ^2.0.4
+  '@types/ssh2': ^1.15.1
 
   # To remove
 

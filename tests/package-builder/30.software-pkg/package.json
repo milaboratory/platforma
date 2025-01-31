@@ -24,14 +24,14 @@
 
         "type": "java",
         "root": "./src",
-        "environment": "pl-package-builder-runenv-1:java"
+        "environment": "example-pl-package-runenv-1:java"
       },
       "with-py-environment": {
         "registry": "custom",
 
         "type": "python",
         "root": "./src",
-        "environment": "pl-package-builder-runenv-1:python",
+        "environment": "example-pl-package-runenv-1:python",
         "dependencies": {
           "toolset": "pip",
           "requirements": "./requirements.txt"
@@ -43,7 +43,7 @@
 
         "type": "R",
         "root": "./src",
-        "environment": "pl-package-builder-runenv-1:r",
+        "environment": "example-pl-package-runenv-1:r",
         "dependencies": {
           "toolset": "renv",
           "lockFile": "./renv.lock"
@@ -118,7 +118,7 @@
   "license": "UNLICENSED",
   "dependencies": {},
   "devDependencies": {
-    "@platforma-sdk/package-builder": "file:../../../tools/package-builder",
-    "pl-package-builder-runenv-1": "file:../20.runenv"
+    "@platforma-sdk/package-builder": "workspace:",
+    "example-pl-package-runenv-1": "workspace:"
   }
 }

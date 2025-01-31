@@ -13,7 +13,7 @@
     "@milaboratories/pl-client": "workspace:*",
     "@milaboratories/pl-middle-layer": "workspace:*",
     "@milaboratories/pl-config": "workspace:*",
-    "@milaboratories/pl-local": "workspace:*"
+    "@milaboratories/pl-deployments": "workspace:*"
   },
   "devDependencies": {
     "@milaboratories/platforma-build-configs": "workspace:*",

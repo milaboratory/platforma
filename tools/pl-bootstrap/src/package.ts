@@ -1,6 +1,6 @@
-import { resolve, join } from 'node:path';
-import fs from 'node:fs';
-import { getDefaultPlVersion } from '@milaboratories/pl-local';
+import { resolve, join } from 'path';
+import fs from 'fs';
+import { getDefaultPlVersion } from '@milaboratories/pl-deployments';
 
 export function path(...p: string[]): string {
   return resolve(__dirname, '..', ...p);
