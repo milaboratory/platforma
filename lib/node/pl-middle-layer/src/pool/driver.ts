@@ -124,42 +124,54 @@ class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
     }
 
     const createSpecPFrame = (): PFrameInternal.PFrameV2 => {
-      if (getDebugFlags().usePFrameRs) {
-        const pFrame = new PFrameRs(getDebugFlags().logPFrameRequests ? logFunc : undefined);
-        for (const column of columns) {
-          pFrame.addColumnSpec(column.id, column.spec);
-        }
-        return pFrame;
-      } else {
-        const pFrame = getDebugFlags().logPFrameRequests ? new PFrame(logFunc) : new PFrame();
-        for (const column of columns) {
-          try {
+      try {
+        if (getDebugFlags().usePFrameRs) {
+          const pFrame = new PFrameRs(getDebugFlags().logPFrameRequests ? logFunc : undefined);
+          for (const column of columns) {
             pFrame.addColumnSpec(column.id, column.spec);
-          } catch (err: unknown) {
-            throw new Error(
-              `Adding column ${column.id} to PFrame failed: ${err as Error}; Spec: ${JSON.stringify(column.spec)}.`,
-            );
           }
+          return pFrame;
+        } else {
+          const pFrame = getDebugFlags().logPFrameRequests ? new PFrame(logFunc) : new PFrame();
+          for (const column of columns) {
+            try {
+              pFrame.addColumnSpec(column.id, column.spec);
+            } catch (err: unknown) {
+              throw new Error(
+                `Adding column ${column.id} to PFrame failed: ${err as Error}; Spec: ${JSON.stringify(column.spec)}.`,
+              );
+            }
+          }
+          return pFrame;
         }
-        return pFrame;
+      } catch (err: unknown) {
+        throw new Error(
+          `Spec PFrame creation failed, columns: ${JSON.stringify(columns)}, error: ${err as Error}`,
+        );
       }
     };
 
     const createDataPFrame = (): PFrameInternal.PFrameV2 => {
-      const pFrame = getDebugFlags().logPFrameRequests ? new PFrame(logFunc) : new PFrame();
-      pFrame.setDataSource(this);
-      for (const column of columns) {
-        const dataInfo = mapBlobs(column.data, blobKey);
-        try {
-          pFrame.addColumnSpec(column.id, column.spec);
-          pFrame.setColumnData(column.id, dataInfo);
-        } catch (err: unknown) {
-          throw new Error(
-            `Adding column ${column.id} to PFrame failed: ${err as Error}; Spec: ${JSON.stringify(column.spec)}, DataInfo: ${JSON.stringify(dataInfo)}.`,
-          );
+      try {
+        const pFrame = getDebugFlags().logPFrameRequests ? new PFrame(logFunc) : new PFrame();
+        pFrame.setDataSource(this);
+        for (const column of columns) {
+          const dataInfo = mapBlobs(column.data, blobKey);
+          try {
+            pFrame.addColumnSpec(column.id, column.spec);
+            pFrame.setColumnData(column.id, dataInfo);
+          } catch (err: unknown) {
+            throw new Error(
+              `Adding column ${column.id} to PFrame failed: ${err as Error}; Spec: ${JSON.stringify(column.spec)}, DataInfo: ${JSON.stringify(dataInfo)}.`,
+            );
+          }
         }
+        return pFrame;
+      } catch (err: unknown) {
+        throw new Error(
+          `Data PFrame creation failed, columns: ${JSON.stringify(columns)}, error: ${err as Error}`,
+        );
       }
-      return pFrame;
     };
 
     this.specPFrame = createSpecPFrame();
