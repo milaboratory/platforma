@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 1.27.1
+
+### Patch Changes
+
+- 7955cb0: PFrameRs version bump, log full pframe creation request on error
+
 ## 1.27.0
 
 ### Minor Changes
