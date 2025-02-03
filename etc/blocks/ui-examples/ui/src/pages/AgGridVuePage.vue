@@ -230,6 +230,11 @@ const onGridReady = (e: GridReadyEvent) => {
     </template>
 
     <AgGridVue
+      :rowSelection="{
+        mode: 'multiRow',
+        checkboxes: false,
+        headerCheckbox: false,
+      }"
       :theme="AgGridTheme"
       :style="{ height: '100%' }"
       :row-data="result"
