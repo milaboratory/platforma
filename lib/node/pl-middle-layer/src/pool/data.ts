@@ -1,16 +1,16 @@
-import { PColumnSpec, PColumnValues, PlRef, PObjectId, PObjectSpec } from '@platforma-sdk/model';
-import { PFrameInternal } from '@milaboratories/pl-model-middle-layer';
-import { PlTreeNodeAccessor, ResourceInfo } from '@milaboratories/pl-tree';
+import type { PColumnSpec, PColumnValues, PlRef, PObjectId, PObjectSpec } from '@platforma-sdk/model';
+import type { PFrameInternal } from '@milaboratories/pl-model-middle-layer';
+import type { PlTreeNodeAccessor, ResourceInfo } from '@milaboratories/pl-tree';
 import { assertNever } from '@milaboratories/ts-helpers';
 import canonicalize from 'canonicalize';
 import {
   isNullResourceId,
   resourceType,
   resourceTypeToString,
-  resourceTypesEqual
+  resourceTypesEqual,
 } from '@milaboratories/pl-client';
-import { Writable } from 'utility-types';
-import { createHash } from 'crypto';
+import type { Writable } from 'utility-types';
+import { createHash } from 'node:crypto';
 
 export function* allBlobs<B>(data: PFrameInternal.DataInfo<B>): Generator<B> {
   switch (data.type) {
@@ -32,16 +32,17 @@ export function* allBlobs<B>(data: PFrameInternal.DataInfo<B>): Generator<B> {
 
 function mapValues<T extends object, TResult>(
   obj: T,
-  callback: (v: T[keyof T], key: keyof T) => TResult
-): { [P in keyof T]: TResult } {
+  callback: (v: T[keyof T], key: keyof T) => TResult,
+): { [K in keyof T]: TResult } {
   return Object.fromEntries(
-    Object.entries(obj).map(([key, value]) => [key, callback(value, key as any)])
-  ) as any;
+    (Object.entries(obj) as { [K in keyof T]: [K, T[K]]; }[keyof T][])
+      .map(([key, value]) => [key, callback(value, key)]),
+  ) as { [K in keyof T]: TResult };
 }
 
 export function mapBlobs<B1, B2>(
   data: PFrameInternal.DataInfo<B1>,
-  mapping: (blob: B1) => B2
+  mapping: (blob: B1) => B2,
 ): PFrameInternal.DataInfo<B2> {
   switch (data.type) {
     case 'Json':
@@ -53,8 +54,8 @@ export function mapBlobs<B1, B2>(
         ...data,
         parts: mapValues(data.parts, (v) => ({
           index: mapping(v.index),
-          values: mapping(v.values)
-        }))
+          values: mapping(v.values),
+        })),
       };
     default:
       assertNever(data);
@@ -64,12 +65,12 @@ export function mapBlobs<B1, B2>(
 export const PColumnDataJsonPartitioned = resourceType('PColumnData/JsonPartitioned', '1');
 export const PColumnDataJsonSuperPartitioned = resourceType(
   'PColumnData/Partitioned/JsonPartitioned',
-  '1'
+  '1',
 );
 export const PColumnDataBinaryPartitioned = resourceType('PColumnData/BinaryPartitioned', '1');
 export const PColumnDataBinarySuperPartitioned = resourceType(
   'PColumnData/Partitioned/BinaryPartitioned',
-  '1'
+  '1',
 );
 export const PColumnDataJson = resourceType('PColumnData/Json', '1');
 
@@ -88,7 +89,7 @@ export type PColumnDataSuperPartitionedResourceValue = {
 };
 
 export function parseDataInfoResource(
-  data: PlTreeNodeAccessor
+  data: PlTreeNodeAccessor,
 ): PFrameInternal.DataInfo<ResourceInfo> {
   if (!data.getIsReadyOrError()) throw new Error('Data not ready.');
 
@@ -102,7 +103,7 @@ export function parseDataInfoResource(
     return {
       type: 'Json',
       keyLength: dataContent.keyLength,
-      data: dataContent.data
+      data: dataContent.data,
     };
   } else if (resourceTypesEqual(data.resourceType, PColumnDataJsonPartitioned)) {
     const meta = resourceData as PColumnDataPartitionedResourceValue;
@@ -110,13 +111,13 @@ export function parseDataInfoResource(
     const parts = Object.fromEntries(
       data
         .listInputFields()
-        .map((field) => [field, data.traverse({ field, errorIfFieldNotSet: true }).resourceInfo])
+        .map((field) => [field, data.traverse({ field, errorIfFieldNotSet: true }).resourceInfo]),
     );
 
     return {
       type: 'JsonPartitioned',
       partitionKeyLength: meta.partitionKeyLength,
-      parts
+      parts,
     };
   } else if (resourceTypesEqual(data.resourceType, PColumnDataJsonSuperPartitioned)) {
     const meta = resourceData as PColumnDataSuperPartitionedResourceValue;
@@ -128,7 +129,9 @@ export function parseDataInfoResource(
       if (keys === undefined) throw new Error(`no partition keys for super key ${superKey}`);
 
       for (const key of keys) {
-        const partKey = JSON.stringify([...JSON.parse(superKey), ...JSON.parse(key)]);
+        const partKey = JSON.stringify([
+          ...JSON.parse(superKey) as PFrameInternal.JsonDataValue[],
+          ...JSON.parse(key) as PFrameInternal.JsonDataValue[]]);
         parts[partKey] = superPart.traverse({ field: key, errorIfFieldNotSet: true }).resourceInfo;
       }
     }
@@ -136,7 +139,7 @@ export function parseDataInfoResource(
     return {
       type: 'JsonPartitioned',
       partitionKeyLength: meta.superPartitionKeyLength + meta.partitionKeyLength,
-      parts
+      parts,
     };
   } else if (resourceTypesEqual(data.resourceType, PColumnDataBinaryPartitioned)) {
     const meta = resourceData as PColumnDataPartitionedResourceValue;
@@ -176,7 +179,7 @@ export function parseDataInfoResource(
     return {
       type: 'BinaryPartitioned',
       partitionKeyLength: meta.partitionKeyLength,
-      parts: parts as Record<string, PFrameInternal.BinaryChunkInfo<ResourceInfo>>
+      parts: parts as Record<string, PFrameInternal.BinaryChunkInfo<ResourceInfo>>,
     };
   } else if (resourceTypesEqual(data.resourceType, PColumnDataBinarySuperPartitioned)) {
     const meta = resourceData as PColumnDataSuperPartitionedResourceValue;
@@ -194,7 +197,9 @@ export function parseDataInfoResource(
         if (field.endsWith('.index')) {
           const key = field.slice(0, field.length - 6);
 
-          const partKey = JSON.stringify([...JSON.parse(superKey), ...JSON.parse(key)]);
+          const partKey = JSON.stringify([
+            ...JSON.parse(superKey) as PFrameInternal.JsonDataValue[],
+            ...JSON.parse(key) as PFrameInternal.JsonDataValue[]]);
           let part = parts[partKey];
           if (part === undefined) {
             part = {};
@@ -202,12 +207,14 @@ export function parseDataInfoResource(
           }
           parts[partKey].index = superData.traverse({
             field,
-            errorIfFieldNotSet: true
+            errorIfFieldNotSet: true,
           }).resourceInfo;
         } else if (field.endsWith('.values')) {
           const key = field.slice(0, field.length - 7);
 
-          const partKey = JSON.stringify([...JSON.parse(superKey), ...JSON.parse(key)]);
+          const partKey = JSON.stringify([
+            ...JSON.parse(superKey) as PFrameInternal.JsonDataValue[],
+            ...JSON.parse(key) as PFrameInternal.JsonDataValue[]]);
           let part = parts[partKey];
           if (part === undefined) {
             part = {};
@@ -215,7 +222,7 @@ export function parseDataInfoResource(
           }
           parts[partKey].values = superData.traverse({
             field,
-            errorIfFieldNotSet: true
+            errorIfFieldNotSet: true,
           }).resourceInfo;
         } else throw new Error(`unrecognized part field name: ${field}`);
       }
@@ -224,7 +231,7 @@ export function parseDataInfoResource(
     return {
       type: 'BinaryPartitioned',
       partitionKeyLength: meta.superPartitionKeyLength + meta.partitionKeyLength,
-      parts: parts as Record<string, PFrameInternal.BinaryChunkInfo<ResourceInfo>>
+      parts: parts as Record<string, PFrameInternal.BinaryChunkInfo<ResourceInfo>>,
     };
   }
 
@@ -233,7 +240,7 @@ export function parseDataInfoResource(
 
 export function makeDataInfoResource(
   spec: PColumnSpec,
-  data: PColumnValues
+  data: PColumnValues,
 ): PFrameInternal.DataInfo<ResourceInfo> {
   const keyLength = spec.axesSpec.length;
   const jsonData: Record<string, PFrameInternal.JsonDataValue> = {};
@@ -242,11 +249,11 @@ export function makeDataInfoResource(
       throw new Error(`inline column key length ${key.length} differs from axes count ${keyLength}`);
     jsonData[JSON.stringify(key)] = val;
   }
-  
+
   return {
     type: 'Json',
     keyLength,
-    data: jsonData
+    data: jsonData,
   };
 }
 
@@ -262,5 +269,5 @@ export function deriveGlobalPObjectId(blockId: string, exportName: string): PObj
 }
 
 export function deriveLocalPObjectId(resolvePath: string[], outputName: string): PObjectId {
-  return canonicalize({ resolvePath, name: outputName })! as PObjectId
+  return canonicalize({ resolvePath, name: outputName })! as PObjectId;
 }
