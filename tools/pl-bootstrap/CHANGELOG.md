@@ -1,5 +1,11 @@
 # @platforma-sdk/bootstrap
 
+## 3.1.1
+
+### Patch Changes
+
+- e70aca2: Do not limit possible architecture values for pl docker container
+
 ## 3.1.0
 
 ### Minor Changes
