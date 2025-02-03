@@ -88,11 +88,29 @@ describe('NumberInput.vue', () => {
       },
     });
     const input = wrapper.find('input');
+    await input.setValue('1.1.1');
+    await input.trigger('focusout');
+    expect(wrapper.vm.modelValue).toEqual(5);
+
     await input.setValue('15');
-    expect(wrapper.emitted('update:modelValue')).toEqual([[15]]);
+    await input.trigger('focusout');
+    expect(wrapper.vm.modelValue).toEqual(15);
+
+    await input.setValue('.');
+    await input.trigger('focusout');
+    expect(wrapper.vm.modelValue).toEqual(0);
+
+    await input.setValue(',');
+    await input.trigger('focusout');
+    expect(wrapper.vm.modelValue).toEqual(0);
+
+    await input.setValue('1,1');
+    await input.trigger('focusout');
+    expect(wrapper.vm.modelValue).toEqual(1.1);
+    expect(input.element.value).toEqual('1.1');
   });
 
-  it('emits update:modelValue with undefined when input is cleared', async () => {
+  it('update model with undefined when input is cleared', async () => {
     const wrapper = mount(PlNumberField, {
       props: {
         modelValue: 10,
@@ -100,6 +118,7 @@ describe('NumberInput.vue', () => {
     });
     const input = wrapper.find('input');
     await input.setValue('');
+    await input.trigger('focusout');
     expect(wrapper.vm.modelValue).toEqual(undefined);
   });
 });
