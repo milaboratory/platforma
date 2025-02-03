@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 1.27.2
+
+### Patch Changes
+
+- b7dfd25: PFrames driver - fix error messages, skip column duplicates
+
 ## 1.27.1
 
 ### Patch Changes
