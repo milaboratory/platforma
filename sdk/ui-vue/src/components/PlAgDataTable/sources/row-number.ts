@@ -1,5 +1,6 @@
 import { isColumnSelectionCol, type ColDef, type GridApi, type ValueGetterParams } from 'ag-grid-enterprise';
 import { nextTick } from 'vue';
+import { PlAgRowNumCheckbox } from '../../PlAgRowNumCheckbox';
 
 export const PlAgDataTableRowNumberColId = '"##RowNumberColumnId##"';
 
@@ -14,6 +15,7 @@ export function makeRowNumberColDef(): ColDef {
       if (params.node.rowIndex === null) return null;
       return params.node.rowIndex + 1;
     },
+    cellRenderer: PlAgRowNumCheckbox,
     headerClass: 'pl-ag-header-align-center',
     suppressNavigable: true,
     suppressMovable: true,

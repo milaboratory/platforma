@@ -1,0 +1,35 @@
+.container {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+}
+
+.text {
+    display: block;
+}
+
+.checkbox {
+    display: none;
+}
+
+.allowed-selection:hover .text {
+    display: none;
+}
+
+.allowed-selection:hover .checkbox {
+    display: block;
+}
+
+.checkbox.checked {
+    display: block;
+}
+
+:global(.ag-row-hover) {
+    .checkbox {
+        display: block !important;
+    }
+
+    .allowed-selection .text {
+        display: none;
+    }
+}
