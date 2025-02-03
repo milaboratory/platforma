@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/milaboratories.pool-explorer",
-  "version": "1.0.30",
+  "version": "1.0.31",
   "scripts": {
     "build": "rm -rf ./block-pack && block-tools pack",
     "prepublishOnly": "block-tools pack && block-tools publish -r 's3://milab-euce1-prod-pkgs-s3-block-registry/aux/dev/?region=eu-central-1'"

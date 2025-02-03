@@ -10,6 +10,7 @@ const models = reactive({
   model2: NaN,
   model3: '23a' as unknown as number, // to cause runtime error
   model4: '100' as unknown as number, // to cause runtime error
+  model5: 8768769869.878687687
 });
 </script>
 <template>
@@ -57,6 +58,19 @@ const models = reactive({
         <div class="container">
           <div class="text-h3 h3">String model is number</div>
           <PlNumberField v-model="models.model4" label="Your label" placeholder="Some placeholder" />
+        </div>
+
+        <div class="container" style="width: 150px;">
+          <div class="text-h3 h3">Long number in a short field</div>
+          <PlNumberField v-model="models.model5" label="Your label" placeholder="Some placeholder" />
+        </div>
+        <div class="container">
+          <div class="text-h3 h3">No arrow buttons</div>
+          <PlNumberField v-model="models.model5" :useIncrementButtons=false placeholder="Some placeholder" />
+        </div>
+        <div class="container">
+          <div class="text-h3 h3">Model updates only when on focus removing</div>
+          <PlNumberField v-model="models.model5" label="Your label" placeholder="Some placeholder" :updateOnEnterOrClickOutside="true"/>
         </div>
       </div>
     </Split>
