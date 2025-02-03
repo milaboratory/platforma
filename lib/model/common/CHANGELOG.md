@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.10.5
+
+### Patch Changes
+
+- 388c9d2: add getProgressLogWithInfo to log driver
+
 ## 1.10.4
 
 ### Patch Changes

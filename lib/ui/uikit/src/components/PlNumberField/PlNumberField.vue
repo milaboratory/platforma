@@ -2,18 +2,29 @@
 import './pl-number-field.scss';
 import DoubleContour from '@/utils/DoubleContour.vue';
 import { useLabelNotch } from '@/utils/useLabelNotch';
-import { computed, nextTick, ref, useSlots } from 'vue';
+import { computed, ref, useSlots, watch } from 'vue';
 import { PlTooltip } from '@/components/PlTooltip';
 
 type NumberInputProps = {
-  modelValue: number | undefined;
+  /** Input is disabled if true */
   disabled?: boolean;
+  /** Label on the top border of the field, empty by default */
   label?: string;
+  /** Input placeholder, empty by default */
   placeholder?: string;
+  /** Step for increment/decrement buttons, 1 by default */
   step?: number;
+  /** If defined - show an error if value is lower  */
   minValue?: number;
+  /** If defined - show an error if value is higher */
   maxValue?: number;
+  /** If false - remove buttons on the right */
+  useIncrementButtons?: boolean;
+  /** If true - changes do not apply immediately, they apply only by removing focus from the input (by click enter or by click outside)  */
+  updateOnEnterOrClickOutside?: boolean;
+  /** Error message that shows always when it's provided, without other checks */
   errorMessage?: string;
+  /** Additional validity check for input value that must return an error text if failed */
   validate?: (v: number) => string | undefined;
 };
 
@@ -23,68 +34,100 @@ const props = withDefaults(defineProps<NumberInputProps>(), {
   placeholder: undefined,
   minValue: undefined,
   maxValue: undefined,
+  useIncrementButtons: true,
+  updateOnEnter: false,
   errorMessage: undefined,
   validate: undefined,
 });
 
-const emit = defineEmits<{ (e: 'update:modelValue', number?: number): void }>();
+const modelValue = defineModel<number | undefined>({ required: true });
 
 const root = ref<HTMLElement>();
 const slots = useSlots();
 const input = ref<HTMLInputElement>();
-// const localErrors = ref<string[]>([]);
 
 useLabelNotch(root);
 
-const canRenderValue = ref(true);
+function modelToString(v: number | undefined) {
+  return v === undefined ? '' : String(+v); // (+v) to avoid staying in input non-number values if they are provided in model
+}
 
-const computedValue = computed({
+function isPartial(v: string) {
+  return v === '.' || v === ',' || v === '-';
+}
+function stringToModel(v: string) {
+  if (v === '') {
+    return undefined;
+  }
+  if (isPartial(v)) {
+    return 0;
+  }
+  let forParsing = v;
+  forParsing = forParsing.replace(',', '.');
+  forParsing = forParsing.replace('−', '-'); // minus, replacing for the case of input the whole copied value
+  forParsing = forParsing.replace('–', '-'); // dash, replacing for the case of input the whole copied value
+  forParsing = forParsing.replace('+', '');
+  return parseFloat(forParsing);
+}
+
+const innerTextValue = ref(modelToString(modelValue.value));
+const innerNumberValue = computed(() => stringToModel(innerTextValue.value));
+
+watch(() => modelValue.value, (outerValue) => { // update inner value if outer value is changed
+  if (parseFloat(innerTextValue.value) !== outerValue) {
+    innerTextValue.value = modelToString(outerValue);
+  }
+});
+
+const NUMBER_REGEX = /^[-−–+]?(\d+)?[\\.,]?(\d+)?$/; // parseFloat works without errors on strings with multiple dots, or letters in value
+const inputValue = computed({
   get() {
-    if (canRenderValue.value) {
-      if (props.modelValue !== undefined) {
-        const num = new Number(props.modelValue);
-        return num.toString();
-      }
-      return '';
-    }
-    return '';
+    return innerTextValue.value;
   },
-  set(val) {
-    val = val.replace(/,/g, '');
-    if (isNumeric(val)) {
-      emit('update:modelValue', +val);
-      // try press 123.12345678912345 and than 6
-      if (val.toString() !== props.modelValue?.toString() && +val === props.modelValue && val[val.length - 1] !== '.') {
-        canRenderValue.value = false;
-        nextTick(() => {
-          canRenderValue.value = true;
-        });
+  set(nextValue: string) {
+    const parsedValue = stringToModel(nextValue);
+    // we allow to set empty value or valid numeric value, otherwise reset input value to previous valid
+    if (parsedValue === undefined
+      || (nextValue.match(NUMBER_REGEX) && !isNaN(parsedValue))
+    ) {
+      innerTextValue.value = nextValue;
+      if (!props.updateOnEnterOrClickOutside && !isPartial(nextValue)) { // to avoid applying '-' or '.'
+        applyChanges();
       }
-    } else {
-      if (val.trim() === '') {
-        emit('update:modelValue', undefined);
-      }
-      canRenderValue.value = false;
-      nextTick(() => {
-        canRenderValue.value = true;
-      });
+    } else if (input.value) {
+      input.value.value = innerTextValue.value;
     }
   },
 });
+const focused = ref(false);
+
+function applyChanges() {
+  if (innerTextValue.value === '') {
+    modelValue.value = undefined;
+    return;
+  }
+  modelValue.value = innerNumberValue.value;
+}
 
 const errors = computed(() => {
   let ers: string[] = [];
   if (props.errorMessage) {
     ers.push(props.errorMessage);
   }
-  if (!isNumeric(props.modelValue)) {
-    ers.push('Model value is not a number.');
-  } else {
-    if (props.minValue !== undefined && props.modelValue !== undefined && props.modelValue < props.minValue) {
-      ers.push(`Model value must be higher than ${props.minValue}`);
+  const parsedValue = innerNumberValue.value;
+  if (parsedValue !== undefined && isNaN(parsedValue)) {
+    ers.push('Value is not a number');
+  } else if (props.validate && parsedValue !== undefined) {
+    const error = props.validate(parsedValue);
+    if (error) {
+      ers.push(error);
     }
-    if (props.maxValue !== undefined && props.modelValue !== undefined && props.modelValue > props.maxValue) {
-      ers.push(`Model value must be less than ${props.maxValue}`);
+  } else {
+    if (props.minValue !== undefined && parsedValue !== undefined && parsedValue < props.minValue) {
+      ers.push(`Value must be higher than ${props.minValue}`);
+    }
+    if (props.maxValue !== undefined && parsedValue !== undefined && parsedValue > props.maxValue) {
+      ers.push(`Value must be less than ${props.maxValue}`);
     }
   }
 
@@ -94,69 +137,76 @@ const errors = computed(() => {
 });
 
 const isIncrementDisabled = computed(() => {
-  if (props.maxValue && props.modelValue !== undefined) {
-    if ((props.modelValue || 0) + props.step > props.maxValue) {
-      return true;
-    }
+  const parsedValue = innerNumberValue.value;
+  if (props.maxValue !== undefined && parsedValue !== undefined) {
+    return parsedValue >= props.maxValue;
   }
-
   return false;
 });
 
 const isDecrementDisabled = computed(() => {
-  if (props.minValue && props.modelValue !== undefined) {
-    if ((props.modelValue || 0) - props.step < props.minValue) {
-      return true;
-    }
+  const parsedValue = innerNumberValue.value;
+  if (props.minValue !== undefined && parsedValue !== undefined) {
+    return parsedValue <= props.minValue;
   }
-
   return false;
 });
 
-function isNumeric(str: string | number | undefined) {
-  if (str !== undefined) {
-    str = str?.toString();
-    return !isNaN(+str) && !isNaN(parseFloat(str));
-  }
-  return false;
-}
-
 function increment() {
+  const parsedValue = innerNumberValue.value;
   if (!isIncrementDisabled.value) {
-    let nV = 0;
-    if (props.modelValue === undefined) {
+    let nV;
+    if (parsedValue === undefined) {
       nV = props.minValue ? props.minValue : 0;
     } else {
-      nV = +(props.modelValue || 0) + props.step;
+      nV = (parsedValue || 0) + props.step;
     }
-
-    computedValue.value = nV.toString();
+    modelValue.value = props.maxValue !== undefined ? Math.min(props.maxValue, nV) : nV;
   }
 }
 
 function decrement() {
+  const parsedValue = innerNumberValue.value;
   if (!isDecrementDisabled.value) {
-    let nV = 0;
-    if (props.modelValue === undefined) {
+    let nV;
+    if (parsedValue === undefined) {
       nV = 0;
     } else {
-      nV = +(props.modelValue || 0) - props.step;
+      nV = +(parsedValue || 0) - props.step;
     }
-
-    computedValue.value = props.minValue ? Math.max(props.minValue, nV).toString() : nV.toString();
+    modelValue.value = props.minValue !== undefined ? Math.max(props.minValue, nV) : nV;
   }
 }
 
 function handleKeyPress(e: { code: string; preventDefault(): void }) {
+  if (props.updateOnEnterOrClickOutside) {
+    if (e.code === 'Escape') {
+      innerTextValue.value = modelToString(modelValue.value);
+      input.value?.blur();
+    }
+    if (e.code === 'Enter') {
+      input.value?.blur();
+    }
+  }
+
+  if (e.code === 'Enter') {
+    innerTextValue.value = String(modelValue.value); // to make .1 => 0.1, 10.00 => 10, remove leading zeros etc
+  }
+
   if (['ArrowDown', 'ArrowUp'].includes(e.code)) {
     e.preventDefault();
   }
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-  e.code === 'ArrowUp' ? increment() : e.code === 'ArrowDown' ? decrement() : undefined;
+  if (props.useIncrementButtons && e.code === 'ArrowUp') {
+    increment();
+  }
+  if (props.useIncrementButtons && e.code === 'ArrowDown') {
+    decrement();
+  }
 }
 
 // https://stackoverflow.com/questions/880512/prevent-text-selection-after-double-click#:~:text=If%20you%20encounter%20a%20situation,none%3B%20to%20the%20summary%20element.
+// this prevents selecting of more than input content in some cases,
+// but also disable selecting input content by double-click (useful feature)
 const onMousedown = (ev: MouseEvent) => {
   if (ev.detail > 1) {
     ev.preventDefault();
@@ -169,23 +219,33 @@ const onMousedown = (ev: MouseEvent) => {
     ref="root"
     :class="{ error: !!errors.trim(), disabled: disabled }"
     class="mi-number-field d-flex-column"
-    @mousedown="onMousedown"
     @keydown="handleKeyPress($event)"
   >
     <div class="mi-number-field__main-wrapper d-flex">
-      <DoubleContour class="mi-number-field__contour" />
-      <div class="mi-number-field__wrapper flex-grow d-flex flex-align-center">
+      <DoubleContour class="mi-number-field__contour"/>
+      <div
+        class="mi-number-field__wrapper flex-grow d-flex flex-align-center"
+        :class="{withoutArrows: !useIncrementButtons}"
+      >
         <label v-if="label" class="text-description">
           {{ label }}
           <PlTooltip v-if="slots.tooltip" class="info" position="top">
             <template #tooltip>
-              <slot name="tooltip" />
+              <slot name="tooltip"/>
             </template>
           </PlTooltip>
         </label>
-        <input ref="input" v-model="computedValue" :disabled="disabled" :placeholder="placeholder" class="text-s flex-grow" />
+        <input
+          ref="input"
+          v-model="inputValue"
+          :disabled="disabled"
+          :placeholder="placeholder"
+          class="text-s flex-grow"
+          @focusin="focused = true"
+          @focusout="focused = false; applyChanges()"
+        />
       </div>
-      <div class="mi-number-field__icons d-flex-column">
+      <div v-if="useIncrementButtons" class="mi-number-field__icons d-flex-column" @mousedown="onMousedown">
         <div
           :class="{ disabled: isIncrementDisabled }"
           class="mi-number-field__icon d-flex flex-justify-center uc-pointer flex-grow flex-align-center"

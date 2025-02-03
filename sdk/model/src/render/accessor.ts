@@ -8,7 +8,8 @@ import {
   FolderURL,
   ArchiveFormat,
   isPColumn,
-  mapPObjectData
+  mapPObjectData,
+  ProgressLogWithInfo
 } from '@milaboratories/pl-model-common';
 import { getCfgRenderCtx } from '../internal';
 import { FutureRef } from './future';
@@ -314,6 +315,10 @@ export class TreeNodeAccessor {
 
   public getProgressLog(patternToSearch: string): FutureRef<string | undefined> {
     return new FutureRef(getCfgRenderCtx().getProgressLog(this.handle, patternToSearch));
+  }
+
+  public getProgressLogWithInfo(patternToSearch: string): FutureRef<ProgressLogWithInfo | undefined> {
+    return new FutureRef(getCfgRenderCtx().getProgressLogWithInfo(this.handle, patternToSearch));
   }
 
   public getLogHandle(): FutureRef<AnyLogHandle | undefined> {

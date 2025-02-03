@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-middle-layer",
-  "version": "1.26.5",
+  "version": "1.27.3",
   "description": "Pl Middle Layer",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
@@ -28,6 +28,7 @@
     "@milaboratories/pl-http": "workspace:^",
     "@milaboratories/computable": "workspace:^",
     "@milaboratories/pframes-node": "catalog:",
+    "@milaboratories/pframes-rs-node": "catalog:",
     "@milaboratories/resolve-helper": "workspace:^",
     "@platforma-sdk/block-tools": "workspace:^",
     "@milaboratories/pl-client": "workspace:^",
@@ -48,7 +49,7 @@
     "yaml": "catalog:",
     "zod": "catalog:",
     "@milaboratories/pl-config": "workspace:^",
-    "@milaboratories/pl-local": "workspace:^"
+    "@milaboratories/pl-deployments": "workspace:^"
   },
   "devDependencies": {
     "@milaboratories/platforma-build-configs": "workspace:*",

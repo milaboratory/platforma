@@ -1,0 +1,13 @@
+/.vscode/
+/node_modules/
+/binaries/
+/dist/
+/tsconfig.tsbuildinfo
+/state/
+/src/.test
+.test
+/test-assets/!simple-server.js
+
+/test-assets/log.txt
+/test-assets/private-key.private
+/test-assets/pub-key.pub

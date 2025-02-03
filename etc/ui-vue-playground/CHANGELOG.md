@@ -1,5 +1,60 @@
 # @milaboratories/ui-vue-playground
 
+## 0.0.201
+
+### Patch Changes
+
+- Updated dependencies [30f0eed]
+  - @milaboratories/uikit@2.2.54
+  - @platforma-sdk/ui-vue@1.22.19
+
+## 0.0.200
+
+### Patch Changes
+
+- Updated dependencies [388c9d2]
+  - @platforma-sdk/model@1.22.18
+  - @milaboratories/uikit@2.2.53
+  - @platforma-sdk/ui-vue@1.22.18
+
+## 0.0.199
+
+### Patch Changes
+
+- Updated dependencies [1a8b275]
+  - @platforma-sdk/ui-vue@1.22.16
+
+## 0.0.198
+
+### Patch Changes
+
+- Updated dependencies [9fc0f34]
+  - @milaboratories/uikit@2.2.53
+  - @platforma-sdk/ui-vue@1.22.14
+
+## 0.0.197
+
+### Patch Changes
+
+- Updated dependencies [6d3d92d]
+  - @platforma-sdk/ui-vue@1.22.11
+
+## 0.0.196
+
+### Patch Changes
+
+- Updated dependencies [821c240]
+  - @milaboratories/uikit@2.2.52
+  - @platforma-sdk/ui-vue@1.22.10
+
+## 0.0.195
+
+### Patch Changes
+
+- Updated dependencies [3df530d]
+  - @milaboratories/uikit@2.2.51
+  - @platforma-sdk/ui-vue@1.22.9
+
 ## 0.0.194
 
 ### Patch Changes

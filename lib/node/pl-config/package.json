@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-config",
-  "version": "1.3.3",
+  "version": "1.4.0",
   "description": "MiLaboratories Platforma Backend and Middle Layer config generator",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
@@ -31,6 +31,8 @@
   "keywords": [],
   "license": "UNLICENSED",
   "devDependencies": {
+    "eslint": "catalog:",
+    "@milaboratories/eslint-config": "workspace:^",
     "@milaboratories/platforma-build-configs": "workspace:*",
     "vite": "catalog:",
     "vitest": "catalog:",
@@ -46,6 +48,7 @@
     "undici": "catalog:",
     "@milaboratories/ts-helpers": "workspace:^",
     "yaml": "catalog:",
-    "zod": "catalog:"
+    "zod": "catalog:",
+    "upath": "catalog:"
   }
 }

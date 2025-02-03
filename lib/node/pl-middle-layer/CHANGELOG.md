@@ -1,5 +1,48 @@
 # @milaboratories/pl-middle-layer
 
+## 1.27.3
+
+### Patch Changes
+
+- 388c9d2: add getProgressLogWithInfo to log driver
+- Updated dependencies [388c9d2]
+  - @milaboratories/pl-deployments@1.1.1
+  - @milaboratories/pl-drivers@1.5.13
+  - @milaboratories/pl-model-common@1.10.5
+  - @platforma-sdk/model@1.22.18
+  - @milaboratories/pl-model-middle-layer@1.7.2
+  - @platforma-sdk/block-tools@2.5.8
+
+## 1.27.2
+
+### Patch Changes
+
+- b7dfd25: PFrames driver - fix error messages, skip column duplicates
+
+## 1.27.1
+
+### Patch Changes
+
+- 7955cb0: PFrameRs version bump, log full pframe creation request on error
+
+## 1.27.0
+
+### Minor Changes
+
+- dc94ca3: pl-deployments: add ssh support
+
+### Patch Changes
+
+- Updated dependencies [dc94ca3]
+  - @milaboratories/pl-deployments@1.1.0
+  - @milaboratories/pl-config@1.4.0
+
+## 1.26.6
+
+### Patch Changes
+
+- 42e8e09: Use PFrames Rust for spec requests (feature MI_USE_PFRAMES_RS)
+
 ## 1.26.5
 
 ### Patch Changes

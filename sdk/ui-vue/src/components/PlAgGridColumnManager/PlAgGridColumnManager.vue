@@ -3,7 +3,7 @@ import { type Column, type GridApi } from 'ag-grid-enterprise';
 import { PlBtnGhost, PlMaskIcon16, PlMaskIcon24, PlSlideModal, PlTooltip, useSortable2 } from '@milaboratories/uikit';
 import { ref, toRefs, watch } from 'vue';
 import './pl-ag-grid-column-manager.scss';
-import { PlAgDataTableToolsPanelId } from '../PlAgDataTableToolsPanel/PlAgDataTableToolsPanelId';
+import { useDataTableToolsPanelTarget } from '../PlAgDataTableToolsPanel';
 
 const props = defineProps<{
   /**
@@ -52,11 +52,13 @@ watch(
   },
   { immediate: true },
 );
+
+const teleportTarget = useDataTableToolsPanelTarget();
 </script>
 
 <template>
   <div>
-    <Teleport :to="`#${PlAgDataTableToolsPanelId}`">
+    <Teleport v-if="teleportTarget" :to="teleportTarget">
       <PlBtnGhost @click.stop="slideModal = !slideModal">
         Columns
         <template #append>

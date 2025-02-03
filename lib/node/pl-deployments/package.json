@@ -1,0 +1,64 @@
+{
+  "name": "@milaboratories/pl-deployments",
+  "version": "1.1.1",
+  "pl-version": "1.18.3",
+  "description": "MiLaboratories Platforma Backend code service run wrapper",
+  "types": "./dist/index.d.ts",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.js",
+      "import": "./dist/index.mjs"
+    }
+  },
+  "scripts": {
+    "type-check": "tsc --noEmit --composite false",
+    "build": "vite build",
+    "test": "vitest",
+    "do-pack": "rm -rf src/.test && rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
+    "cleanup-docker": "docker container stop pl-ssh-test-pl pl-ssh-test-ssh && docker container rm pl-ssh-test-pl pl-ssh-test-ssh && docker image rm pl-ssh-test-container-ssh:1.0.0 pl-ssh-test-container-pl:1.0.0",
+    "exec-docker": "docker exec -ti pl-ssh-test-pl bash"
+  },
+  "files": [
+    "./dist/**/*",
+    "./src/**/*",
+    "README.md",
+    "bin/run.cmd",
+    "bin/run.js",
+    "assets",
+    "postinstall.js"
+  ],
+  "keywords": [],
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "@milaboratories/eslint-config": "workspace:^",
+    "@milaboratories/platforma-build-configs": "workspace:*",
+    "@types/decompress": "catalog:",
+    "@types/jest": "catalog:",
+    "@types/node": "catalog:",
+    "@types/ssh2": "catalog:",
+    "eslint": "catalog:",
+    "jest": "catalog:",
+    "prettier": "catalog:",
+    "testcontainers": "catalog:",
+    "ts-jest": "catalog:",
+    "tsconfig-paths": "catalog:",
+    "typescript": "catalog:",
+    "utility-types": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:"
+  },
+  "dependencies": {
+    "@milaboratories/pl-config": "workspace:^",
+    "@milaboratories/ts-helpers": "workspace:^",
+    "decompress": "catalog:",
+    "upath": "catalog:",
+    "ssh2": "catalog:",
+    "tar": "catalog:",
+    "undici": "catalog:",
+    "yaml": "catalog:",
+    "zod": "catalog:"
+  }
+}

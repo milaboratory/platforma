@@ -1,5 +1,29 @@
 # @milaboratories/uikit
 
+## 2.2.54
+
+### Patch Changes
+
+- 30f0eed: update pl-number-field
+
+## 2.2.53
+
+### Patch Changes
+
+- 9fc0f34: Added new component PlSplash
+
+## 2.2.52
+
+### Patch Changes
+
+- 821c240: [sdk/ui-vue] PlFileDialog search doesn’t affect “select all”
+
+## 2.2.51
+
+### Patch Changes
+
+- 3df530d: text wrap
+
 ## 2.2.50
 
 ### Patch Changes

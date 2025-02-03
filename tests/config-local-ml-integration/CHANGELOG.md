@@ -1,5 +1,47 @@
 # @milaboratories/config-local-ml-integration
 
+## 1.2.3
+
+### Patch Changes
+
+- Updated dependencies [388c9d2]
+  - @milaboratories/pl-middle-layer@1.27.3
+  - @milaboratories/pl-deployments@1.1.1
+
+## 1.2.2
+
+### Patch Changes
+
+- Updated dependencies [b7dfd25]
+  - @milaboratories/pl-middle-layer@1.27.2
+
+## 1.2.1
+
+### Patch Changes
+
+- Updated dependencies [7955cb0]
+  - @milaboratories/pl-middle-layer@1.27.1
+
+## 1.2.0
+
+### Minor Changes
+
+- dc94ca3: pl-deployments: add ssh support
+
+### Patch Changes
+
+- Updated dependencies [dc94ca3]
+  - @milaboratories/pl-middle-layer@1.27.0
+  - @milaboratories/pl-deployments@1.1.0
+  - @milaboratories/pl-config@1.4.0
+
+## 1.1.155
+
+### Patch Changes
+
+- Updated dependencies [42e8e09]
+  - @milaboratories/pl-middle-layer@1.26.6
+
 ## 1.1.154
 
 ### Patch Changes

@@ -41,6 +41,7 @@ import type { MiLogger } from '@milaboratories/ts-helpers';
 import { assertNever } from '@milaboratories/ts-helpers';
 import canonicalize from 'canonicalize';
 import { PFrame } from '@milaboratories/pframes-node';
+import { PFrame as PFrameRs } from '@milaboratories/pframes-rs-node';
 import * as fsp from 'node:fs/promises';
 import { LRUCache } from 'lru-cache';
 import { ConcurrencyLimitingExecutor } from '@milaboratories/ts-helpers';
@@ -102,7 +103,7 @@ class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
     private readonly blobDriver: DownloadDriver,
     private readonly logger: MiLogger,
     private readonly blobContentCache: LRUCache<string, Uint8Array>,
-    private readonly columns: InternalPFrameData,
+    columns: InternalPFrameData,
   ) {
     const logFunc: PFrameInternal.Logger = (level: 'info' | 'warn' | 'error', message: string) => {
       switch (level) {
@@ -121,35 +122,63 @@ class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
         this.blobIdToResource.set(blobKey(blob), blob);
       }
     }
+    const distinct_columns = [
+      ...new Map(columns.map((column) => ({
+        ...column,
+        data: mapBlobs(column.data, blobKey),
+      })).map(
+        (item) => [canonicalize(item)!, item] as const,
+      )).values(),
+    ];
 
     const createSpecPFrame = (): PFrameInternal.PFrameV2 => {
-      const pFrame = getDebugFlags().logPFrameRequests ? new PFrame(logFunc) : new PFrame();
-      for (const column of columns) {
-        try {
-          pFrame.addColumnSpec(column.id, column.spec);
-        } catch (err: unknown) {
-          throw new Error(
-            `Adding column ${column.id} to PFrame failed: ${err as Error}; Spec: ${JSON.stringify(column.spec)}.`,
-          );
+      try {
+        if (getDebugFlags().usePFrameRs) {
+          const pFrame = new PFrameRs(getDebugFlags().logPFrameRequests ? logFunc : undefined);
+          for (const column of distinct_columns) {
+            pFrame.addColumnSpec(column.id, column.spec);
+          }
+          return pFrame;
+        } else {
+          const pFrame = getDebugFlags().logPFrameRequests ? new PFrame(logFunc) : new PFrame();
+          for (const column of distinct_columns) {
+            try {
+              pFrame.addColumnSpec(column.id, column.spec);
+            } catch (err: unknown) {
+              throw new Error(
+                `Adding column ${column.id} to PFrame failed: ${err as Error}; Spec: ${JSON.stringify(column.spec)}.`,
+              );
+            }
+          }
+          return pFrame;
         }
+      } catch (err: unknown) {
+        throw new Error(
+          `Spec PFrame creation failed, columns: ${JSON.stringify(distinct_columns)}, error: ${err as Error}`,
+        );
       }
-      return pFrame;
     };
 
     const createDataPFrame = (): PFrameInternal.PFrameV2 => {
-      const pFrame = createSpecPFrame();
-      pFrame.setDataSource(this);
-      for (const column of columns) {
-        const dataInfo = mapBlobs(column.data, blobKey);
-        try {
-          pFrame.setColumnData(column.id, dataInfo);
-        } catch (err: unknown) {
-          throw new Error(
-            `Setting column ${column.id} data to PFrame failed: ${err as Error}; Spec: ${JSON.stringify(column.spec)}, DataInfo: ${JSON.stringify(dataInfo)}.`,
-          );
+      try {
+        const pFrame = getDebugFlags().logPFrameRequests ? new PFrame(logFunc) : new PFrame();
+        pFrame.setDataSource(this);
+        for (const column of distinct_columns) {
+          try {
+            pFrame.addColumnSpec(column.id, column.spec);
+            pFrame.setColumnData(column.id, column.data);
+          } catch (err: unknown) {
+            throw new Error(
+              `Adding column ${column.id} to PFrame failed: ${err as Error}; Spec: ${JSON.stringify(column.spec)}, DataInfo: ${JSON.stringify(column.data)}.`,
+            );
+          }
         }
+        return pFrame;
+      } catch (err: unknown) {
+        throw new Error(
+          `Data PFrame creation failed, columns: ${JSON.stringify(distinct_columns)}, error: ${err as Error}`,
+        );
       }
-      return pFrame;
     };
 
     this.specPFrame = createSpecPFrame();
@@ -327,7 +356,14 @@ export class PFrameDriver implements SdkPFrameDriver {
       ...request,
       compatibleWith:
         request.compatibleWith.length !== 0
-          ? [{ axesSpec: request.compatibleWith, qualifications: [] }]
+          ? [{
+              axesSpec: [
+                ...new Map(request.compatibleWith.map(
+                  (item) => [canonicalize(item)!, item] as const,
+                )).values(),
+              ],
+              qualifications: [],
+            }]
           : [],
     };
     const responce = await this.concurrencyLimiter.run(
@@ -495,7 +531,7 @@ function stableKeyFromPFrameData(data: PColumn<PFrameInternal.DataInfo<ResourceI
             keyLength: r.partitionKeyLength,
             payload: Object.entries(r.parts).map(([part, info]) => ({
               key: part,
-              value: info.id.toString(),
+              value: blobKey(info),
             })),
           };
           break;
@@ -505,13 +541,12 @@ function stableKeyFromPFrameData(data: PColumn<PFrameInternal.DataInfo<ResourceI
             keyLength: r.partitionKeyLength,
             payload: Object.entries(r.parts).map(([part, info]) => ({
               key: part,
-              value: [info.index.id.toString(), info.values.id.toString()] as const,
+              value: [blobKey(info.index), blobKey(info.values)] as const,
             })),
           };
           break;
         default:
-          // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
-          throw Error(`unsupported resource type: ${type satisfies never}`);
+          throw Error(`unsupported resource type: ${JSON.stringify(type satisfies never)}`);
       }
       result.payload.sort((lhs, rhs) => lhs.key.localeCompare(rhs.key));
       return result;

@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/bootstrap",
-  "version": "2.9.1",
+  "version": "3.1.2",
   "description": "MiLaboratories Platforma Backend bootstrap code: configuration generators, service run wrappers and so on",
   "scripts": {
     "type-check": "tsc --noEmit --composite false",
@@ -9,7 +9,7 @@
     "test": "jest --passWithNoTests"
   },
   "bin": {
-    "pl-service": "./bin/run.js"
+    "pl-dev": "./bin/run.js"
   },
   "files": [
     "./dist/**/*",
@@ -35,10 +35,14 @@
     "ts-node": "catalog:",
     "tsconfig-paths": "catalog:",
     "typescript": "catalog:",
-    "vite": "catalog:"
+    "vite": "catalog:",
+    "tsup": "catalog:",
+    "rollup-plugin-node-externals": "catalog:",
+    "@rollup/plugin-node-resolve": "catalog:",
+    "vite-plugin-dts": "catalog:"
   },
   "dependencies": {
-    "@milaboratories/pl-local": "workspace:*",
+    "@milaboratories/pl-deployments": "workspace:*",
     "@oclif/core": "catalog:",
     "canonicalize": "catalog:",
     "decompress": "catalog:",
@@ -49,7 +53,7 @@
     "zod": "catalog:"
   },
   "oclif": {
-    "bin": "pl-service",
+    "bin": "pl-dev",
     "commands": {
       "strategy": "explicit",
       "target": "./dist/index.js",

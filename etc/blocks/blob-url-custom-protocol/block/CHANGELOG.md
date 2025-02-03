@@ -1,5 +1,50 @@
 # @milaboratories/milaboratories.test-blob-url-custom-protocol
 
+## 1.0.11
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-blob-url-custom-protocol.ui@1.0.11
+
+## 1.0.10
+
+### Patch Changes
+
+- Updated dependencies [388c9d2]
+  - @platforma-sdk/model@1.22.18
+  - @milaboratories/milaboratories.test-blob-url-custom-protocol.model@1.0.15
+  - @milaboratories/milaboratories.test-blob-url-custom-protocol.ui@1.0.10
+
+## 1.0.9
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-blob-url-custom-protocol.ui@1.0.9
+
+## 1.0.8
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-blob-url-custom-protocol.ui@1.0.8
+
+## 1.0.7
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-blob-url-custom-protocol.ui@1.0.7
+
+## 1.0.6
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-blob-url-custom-protocol.ui@1.0.6
+
+## 1.0.5
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-blob-url-custom-protocol.ui@1.0.5
+
 ## 1.0.4
 
 ### Patch Changes

@@ -1,5 +1,42 @@
 # @platforma-sdk/bootstrap
 
+## 3.1.2
+
+### Patch Changes
+
+- Updated dependencies [388c9d2]
+  - @milaboratories/pl-deployments@1.1.1
+
+## 3.1.1
+
+### Patch Changes
+
+- e70aca2: Do not limit possible architecture values for pl docker container
+
+## 3.1.0
+
+### Minor Changes
+
+- dc94ca3: pl-deployments: add ssh support
+
+### Patch Changes
+
+- Updated dependencies [dc94ca3]
+  - @milaboratories/pl-deployments@1.1.0
+
+## 3.0.1
+
+### Patch Changes
+
+- 35148cd: Add README, fix small issues in help messages
+
+## 3.0.0
+
+### Major Changes
+
+- 2e2d310: Introduce 'services' control in pl-bootsrap
+  Rename pl-service to pl-dev
+
 ## 2.9.1
 
 ### Patch Changes

@@ -1,59 +1,57 @@
 {
-  "name": "example-pl-package-integration-1",
-  "version": "1.0.0",
+  "name": "@milaboratories/example-pl-package-integration-1",
+  "version": "1.0.1",
   "description": "The software description example",
   "scripts": {
     "cleanup": "rm -rf ./dist/ && rm -f ./pkg-*.tgz",
     "reset": "npm run cleanup && rm -rf ./node_modules/",
-
     "build:descriptor": "pl-pkg build descriptors",
     "build": "rm -rf dist && pl-pkg build"
   },
-
   "block-software": {
     "registries": {
       "binary": {
-        "milaboratories": { "storageURL": "s3://registry-bucket-name/?region=eu-central-1" },
-        "custom": { "storageURL": "s3://other-registry-bucket-name/pub/?region=eu-central-1" }
+        "milaboratories": {
+          "storageURL": "s3://registry-bucket-name/?region=eu-central-1"
+        },
+        "custom": {
+          "storageURL": "s3://other-registry-bucket-name/pub/?region=eu-central-1"
+        }
       }
     },
-
     "artifacts": {
       "with-java-environment": {
         "registry": "custom",
-
         "type": "java",
         "root": "./src",
-        "environment": "pl-package-builder-runenv-1:java"
+        "environment": "@milaboratories/example-pl-package-runenv-1:java"
       },
       "with-py-environment": {
         "registry": "custom",
-
         "type": "python",
         "root": "./src",
-        "environment": "pl-package-builder-runenv-1:python",
+        "environment": "@milaboratories/example-pl-package-runenv-1:python",
         "dependencies": {
           "toolset": "pip",
           "requirements": "./requirements.txt"
         }
       },
-
       "with-r-environment": {
         "registry": "custom",
-
         "type": "R",
         "root": "./src",
-        "environment": "pl-package-builder-runenv-1:r",
+        "environment": "@milaboratories/example-pl-package-runenv-1:r",
         "dependencies": {
           "toolset": "renv",
           "lockFile": "./renv.lock"
         }
       },
-
       "multiarch": {
         "type": "binary",
-
-        "registry": { "name": "custom2", "storageURL": "s3e://minio.local/bucket" },
+        "registry": {
+          "name": "custom2",
+          "storageURL": "s3e://minio.local/bucket"
+        },
         "roots": {
           "linux-x64": "./x64/",
           "linux-aarch64": "./x64/",
@@ -63,62 +61,81 @@
         }
       }
     },
-
     "entrypoints": {
       "hello": {
         "binary": {
           "artifact": "with-py-environment",
-          "cmd": [ "python", "{pkg}/script1.py", "Hello from python!" ],
-          "envVars": [ "MYVAR=1" ]
+          "cmd": [
+            "python",
+            "{pkg}/script1.py",
+            "Hello from python!"
+          ],
+          "envVars": [
+            "MYVAR=1"
+          ]
         }
       },
       "goodbye": {
         "binary": {
           "artifact": "with-py-environment",
-          "cmd": [ "python", "{pkg}/script1.py", "Have a nice day!" ],
-          "envVars": [ "MYVAR=2" ]
+          "cmd": [
+            "python",
+            "{pkg}/script1.py",
+            "Have a nice day!"
+          ],
+          "envVars": [
+            "MYVAR=2"
+          ]
         }
       },
       "yes-java": {
         "binary": {
           "artifact": "with-java-environment",
-          "cmd": [ "java", "--version" ]
+          "cmd": [
+            "java",
+            "--version"
+          ]
         }
       },
       "yes-r": {
         "binary": {
           "artifact": "with-r-environment",
-          "cmd": [ "R", "--version" ]
+          "cmd": [
+            "R",
+            "--version"
+          ]
         }
       },
       "hello2": {
         "binary": {
           "artifact": {
             "type": "binary",
-
             "registry": "milaboratories",
             "root": "./src"
           },
-          "cmd": [ "printf", "Hello from binary!\n" ]
+          "cmd": [
+            "printf",
+            "Hello from binary!\n"
+          ]
         }
       },
       "starter": {
         "binary": {
           "artifact": "multiarch",
-          "cmd": [ "true" ]
+          "cmd": [
+            "true"
+          ]
         }
       }
     }
   },
-
   "files": [
     "dist/"
   ],
-
   "license": "UNLICENSED",
   "dependencies": {},
   "devDependencies": {
-    "@platforma-sdk/package-builder": "file:../../../tools/package-builder",
-    "pl-package-builder-runenv-1": "file:../20.runenv"
+    "@platforma-sdk/package-builder": "workspace:",
+    "@milaboratories/example-pl-package-runenv-1": "workspace:"
   }
 }
