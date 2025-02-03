@@ -30,11 +30,7 @@ export const VersionFlag = {
 
 export const ArchFlag = {
   arch: Flags.string({
-    description: 'override architecture. You can start amd64 linux image on arm-based host (say, Apple M family processor)',
-    options: [
-      'amd64',
-      'arm64',
-    ],
+    description: 'override architecture. You can start amd64 linux image on arm-based host (say, Apple M family processor). I.e. arm64, amd64, amd64/v2',
   }),
 };
 
