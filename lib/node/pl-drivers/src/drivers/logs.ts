@@ -75,6 +75,49 @@ export class LogsDriver implements sdk.LogsDriver {
     }
   }
 
+  /** Same as getProgressLog but also returns a liveliness of the log.
+   * The previous getProgressLog couldn't be extended.
+   * Returns a last line that has patternToSearch.
+   * Notifies when a new line appeared or EOF reached. */
+  getProgressLogWithInfo(res: PlTreeEntry, patternToSearch: string): Computable<sdk.ProgressLogWithInfo | undefined>;
+  getProgressLogWithInfo(res: PlTreeEntry, patternToSearch: string, ctx: ComputableCtx): sdk.ProgressLogWithInfo | undefined;
+  getProgressLogWithInfo(
+    res: PlTreeEntry,
+    patternToSearch: string,
+    ctx?: ComputableCtx,
+  ): Computable<sdk.ProgressLogWithInfo | undefined> | sdk.ProgressLogWithInfo | undefined {
+    if (ctx === undefined)
+      return Computable.make((ctx) => this.getProgressLogWithInfo(res, patternToSearch, ctx));
+
+    const stream = streamManagerGetStream(ctx, res);
+    if (stream === undefined) {
+      ctx.markUnstable('no stream in stream manager');
+      return undefined;
+    }
+
+    if (isBlob(stream)) {
+      const log = this.downloadDriver.getProgressLog(stream, patternToSearch, ctx);
+      return {
+        progressLine: log,
+        live: false,
+      }
+    }
+
+    try {
+      const log = this.logsStreamDriver.getProgressLog(stream, patternToSearch, ctx);
+      return {
+        progressLine: log,
+        live: true,
+      }
+    } catch (e: any) {
+      if (e.name == 'RpcError' && e.code == 'NOT_FOUND') {
+        ctx.markUnstable(`NOT_FOUND in logs stream driver while getting a progress log with info: ${e}`);
+        return undefined;
+      }
+      throw e;
+    }
+  }
+
   /** Returns an Id of a smart object, that can read logs directly from
    * the platform. */
   getLogHandle(res: ResourceInfo | PlTreeEntry): Computable<sdk.AnyLogHandle | undefined>;

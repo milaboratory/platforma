@@ -39,6 +39,7 @@ export function* traverseCfg(cfg: Cfg, guide?: (cfg: Cfg) => boolean): Generator
     case 'GetImportProgress':
     case 'GetLastLogs':
     case 'GetProgressLog':
+    case 'GetProgressLogWithInfo':
     case 'GetLogHandle':
       yield* traverseCfg(cfg.source);
       return;

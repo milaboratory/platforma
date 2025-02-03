@@ -12,6 +12,7 @@ import type {
   PFrameHandle,
   PObject,
   PObjectSpec,
+  ProgressLogWithInfo,
   PSpecPredicate,
   PTableDef,
   PTableHandle,
@@ -330,6 +331,14 @@ export class JsExecutionContext
     return this.registerComputable(
       'getProgressLog',
       this.env.driverKit.logDriver.getProgressLog(resource, patternToSearch)
+    );
+  }
+
+  getProgressLogWithInfo(handle: string, patternToSearch: string): string {
+    const resource = this.getAccessor(handle).persist();
+    return this.registerComputable(
+      'getProgressLogWithInfo',
+      this.env.driverKit.logDriver.getProgressLogWithInfo(resource, patternToSearch)
     );
   }
 
@@ -763,6 +772,13 @@ export class JsExecutionContext
       exportCtxFunction('getProgressLog', (handle, patternToSearch) => {
         return this.exportSingleValue(
           this.getProgressLog(this.vm.getString(handle), this.vm.getString(patternToSearch)),
+          undefined
+        );
+      });
+
+      exportCtxFunction('getProgressLogWithInfo', (handle, patternToSearch) => {
+        return this.exportSingleValue(
+          this.getProgressLogWithInfo(this.vm.getString(handle), this.vm.getString(patternToSearch)),
           undefined
         );
       });

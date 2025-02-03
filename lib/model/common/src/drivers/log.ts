@@ -80,3 +80,8 @@ export type StreamingApiResponseOk = {
 export type StreamingApiResponseHandleOutdated = {
   shouldUpdateHandle: true;
 };
+
+export type ProgressLogWithInfo = {
+  progressLine?: string;
+  live: boolean;
+}
