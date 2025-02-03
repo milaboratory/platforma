@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.test-read-logs.model
 
+## 1.0.16
+
+### Patch Changes
+
+- 388c9d2: add getProgressLogWithInfo to log driver
+- Updated dependencies [388c9d2]
+  - @platforma-sdk/model@1.22.18
+
 ## 1.0.15
 
 ### Patch Changes
