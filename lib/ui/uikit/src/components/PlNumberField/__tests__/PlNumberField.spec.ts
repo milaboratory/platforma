@@ -31,7 +31,6 @@ describe('NumberInput.vue', () => {
     });
     const incrementButton = wrapper.find('.mi-number-field__icons div:first-child');
     await incrementButton.trigger('click');
-    console.log(incrementButton, wrapper.vm.modelValue)
     expect(wrapper.vm.modelValue).toEqual(12);
   });
 

@@ -62,11 +62,11 @@ const models = reactive({
 
         <div class="container" style="width: 150px;">
           <div class="text-h3 h3">Long number in a short field</div>
-          <PlNumberField v-model="models.model4" label="Your label" placeholder="Some placeholder" />
+          <PlNumberField v-model="models.model5" label="Your label" placeholder="Some placeholder" />
         </div>
         <div class="container">
           <div class="text-h3 h3">No arrow buttons</div>
-          <PlNumberField v-model="models.model5" label="Your label" :useIncrementButtons=false placeholder="Some placeholder" />
+          <PlNumberField v-model="models.model5" :useIncrementButtons=false placeholder="Some placeholder" />
         </div>
       </div>
     </Split>
