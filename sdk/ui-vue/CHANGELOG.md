@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.22.16
+
+### Patch Changes
+
+- 1a8b275: add checkbox support for RowNumbers
+
 ## 1.22.14
 
 ### Patch Changes
