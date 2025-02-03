@@ -26,6 +26,7 @@ export type Cfg =
   | CfgImportProgress
   | CfgLastLogs
   | CfgProgressLog
+  | CfgProgressLogWithInfo
   | CfgLogHandle;
 
 //
@@ -200,6 +201,12 @@ export type CfgLastLogs = {
 
 export type CfgProgressLog = {
   type: 'GetProgressLog';
+  source: Cfg;
+  patternToSearch: string;
+};
+
+export type CfgProgressLogWithInfo = {
+  type: 'GetProgressLogWithInfo';
   source: Cfg;
   patternToSearch: string;
 };

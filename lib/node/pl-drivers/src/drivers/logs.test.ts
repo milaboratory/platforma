@@ -97,7 +97,7 @@ test('should get last line with a prefix', async () => {
         return;
       }
 
-      return logs.getProgressLog(streamManager, 'PREFIX', ctx);
+      return logs.getProgressLogWithInfo(streamManager, 'PREFIX', ctx);
     });
 
     expect(await c.getValue()).toBeUndefined();
@@ -113,7 +113,10 @@ test('should get last line with a prefix', async () => {
 
       logger.info(`got result: ${JSON.stringify(result)}`);
       if (result.stable) {
-        expect(result.value).toStrictEqual('PREFIX4\n');
+        expect(result.value).toMatchObject({
+          progressLine: 'PREFIX4\n',
+          live: false,
+        });
         return;
       }
     }

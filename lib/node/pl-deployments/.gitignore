@@ -6,4 +6,4 @@
 /state/
 /src/.test
 .test
-**/test-assets/
+**/test-assets/*

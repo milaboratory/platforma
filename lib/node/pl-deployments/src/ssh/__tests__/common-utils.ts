@@ -88,7 +88,7 @@ export function getContainerHostAndPort(container: StartedTestContainer) {
 
 function logToFile(message: string) {
   const logFileName = 'log.txt';
-  const logFilePath = path.join(__dirname, logFileName);
+  const logFilePath = path.join(__dirname, '..', 'test-assets', logFileName);
 
   const timestamp = new Date().toISOString();
   const logMessage = `[${timestamp}] ${message}\n`;

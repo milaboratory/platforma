@@ -245,6 +245,13 @@ export interface ActGetProgressLog<Source extends ConfAction> extends ConfAction
   isSync: IsA<Source, SyncConfAction>;
 }
 
+export interface ActGetProgressLogWithInfo<Source extends ConfAction> extends ConfAction {
+  new: (
+    x: this['ctx']
+  ) => ActionResult<Source, typeof x> extends PlResourceEntry ? string : unknown;
+  isSync: IsA<Source, SyncConfAction>;
+}
+
 export interface ActGetLogHandle<Source extends ConfAction> extends ConfAction {
   new: (
     x: this['ctx']

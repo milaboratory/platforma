@@ -23,6 +23,7 @@ import {
   ActImportProgress,
   ActGetLastLogs,
   ActGetProgressLog,
+  ActGetProgressLogWithInfo,
   ActGetLogHandle,
   ActExtractArchiveAndGetURL
 } from './actions_kinds';
@@ -430,6 +431,17 @@ export function getProgressLog<const Source extends TypedConfig>(
 ): TypedConfig<ActGetProgressLog<ExtractAction<Source>>> {
   return {
     type: 'GetProgressLog',
+    source: primitiveToConfig(source),
+    patternToSearch
+  } as Cfg as any;
+}
+
+export function getProgressLogWithInfo<const Source extends TypedConfig>(
+  source: Source,
+  patternToSearch: string
+): TypedConfig<ActGetProgressLogWithInfo<ExtractAction<Source>>> {
+  return {
+    type: 'GetProgressLogWithInfo',
     source: primitiveToConfig(source),
     patternToSearch
   } as Cfg as any;

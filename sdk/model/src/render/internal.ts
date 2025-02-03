@@ -107,6 +107,8 @@ export interface GlobalCfgRenderCtxMethods<AHandle = AccessorHandle, FHandle = F
 
   getProgressLog(handle: AHandle, patternToSearch: string): FHandle; // string | undefined;
 
+  getProgressLogWithInfo(handle: AHandle, patternToSearch: string): FHandle; // ProgressLogWithInfo | undefined;
+
   getLogHandle(handle: AHandle): FHandle; // AnyLogHandle | undefined;
 
   //
