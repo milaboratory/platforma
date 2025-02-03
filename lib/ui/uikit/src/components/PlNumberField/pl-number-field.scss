@@ -25,6 +25,9 @@
     // background-color: rgb(111, 94, 94);
     border-radius: 6px;
   }
+  &__wrapper.withoutArrows {
+    padding-right: 12px;
+  }
 
   &__icons {
     // background-color: green;
@@ -67,6 +70,7 @@
     border: none;
     width: 100%;
     background: unset;
+    text-overflow: ellipsis;
   }
 
   &__contour {
