@@ -1,5 +1,13 @@
 # @milaboratories/uikit-playground
 
+## 0.1.37
+
+### Patch Changes
+
+- 30f0eed: update pl-number-field
+- Updated dependencies [30f0eed]
+  - @milaboratories/uikit@2.2.54
+
 ## 0.1.36
 
 ### Patch Changes

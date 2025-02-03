@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.54
+
+### Patch Changes
+
+- 30f0eed: update pl-number-field
+
 ## 2.2.53
 
 ### Patch Changes
