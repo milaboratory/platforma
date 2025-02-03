@@ -1,5 +1,11 @@
 # @milaboratories/pl-local
 
+## 1.1.1
+
+### Patch Changes
+
+- 388c9d2: add getProgressLogWithInfo to log driver
+
 ## 1.1.0
 
 ### Minor Changes
