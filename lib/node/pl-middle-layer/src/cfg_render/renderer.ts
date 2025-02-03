@@ -317,6 +317,18 @@ const SRGetProgressLog: (patternToSearch: string) => Subroutine = (patternToSear
   };
 };
 
+const SRGetProgressLogWithInfo: (patternToSearch: string) => Subroutine = (patternToSearch) => (args) => {
+  const source = args.source as PlTreeEntry | undefined;
+  if (source === undefined) return resOp(undefined);
+
+  return ({ drivers }) => {
+    return {
+      type: 'ScheduleComputable',
+      computable: drivers.logDriver.getProgressLogWithInfo(source, patternToSearch)
+    };
+  };
+};
+
 const SRGetLogHandle: Subroutine = (args) => {
   const source = args.source as PlTreeEntry | undefined;
   if (source === undefined) return resOp(undefined);
@@ -539,6 +551,15 @@ export function renderCfg(ctx: Record<string, unknown>, cfg: Cfg): Operation {
       return () => ({
         type: 'ScheduleSubroutine',
         subroutine: SRGetProgressLog(cfg.patternToSearch),
+        args: {
+          source: renderCfg(ctx, cfg.source)
+        }
+      });
+
+    case 'GetProgressLogWithInfo':
+      return () => ({
+        type: 'ScheduleSubroutine',
+        subroutine: SRGetProgressLogWithInfo(cfg.patternToSearch),
         args: {
           source: renderCfg(ctx, cfg.source)
         }
