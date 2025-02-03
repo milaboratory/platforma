@@ -12,7 +12,7 @@ import * as plpath from '../pl_paths';
 let sshPl: SshPl;
 const testContainer = await initContainer('pl');
 
-const downloadDestination = upath.resolve(__dirname, '..', 'test-assets', 'downloads');
+const downloadDestination = upath.resolve(__dirname, '..', '..', '..', 'test-assets', 'downloads');
 
 async function cleanUp() {
   const version = getDefaultPlVersion();
