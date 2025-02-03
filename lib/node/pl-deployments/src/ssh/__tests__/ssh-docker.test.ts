@@ -1,3 +1,4 @@
+import type { StartedTestContainer } from 'testcontainers';
 import { describe, it, beforeAll, afterAll, expect } from 'vitest';
 import { writeFileSync, readFileSync } from 'fs';
 import { SshClient } from '../ssh';
@@ -6,9 +7,10 @@ import { downloadsFolder, cleanUp, getConnectionForSsh, getContainerHostAndPort,
 import { ConsoleLoggerAdapter } from '@milaboratories/ts-helpers';
 
 let client: SshClient;
-const testContainer = await initContainer('ssh');
+let testContainer: StartedTestContainer;
 
 beforeAll(async () => {
+  testContainer = await initContainer('ssh');
   client = await SshClient.init(new ConsoleLoggerAdapter(), getConnectionForSsh(testContainer));
 });
 

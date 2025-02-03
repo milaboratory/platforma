@@ -14,18 +14,18 @@ const privateKeyPath = getPathForFile('private-key.private');
 
 export const localFileUpload = getPathForFile('test-file.txt');
 export const localFileDownload = getPathForFile('test-file-download.txt');
-export const downloadsFolder = path.resolve(__dirname, '..', 'test-assets', 'downloads');
-export const recUpload = path.resolve(__dirname, '..', 'test-assets', 'downloads', 'rec-upload');
+export const downloadsFolder = path.resolve(__dirname, '..', '..', '..', 'test-assets', 'downloads');
+export const recUpload = path.resolve(__dirname, '..', '..', '..', 'test-assets', 'downloads', 'rec-upload');
 
 export async function createTestDirForRecursiveUpload() {
-  const pathBase = path.resolve(__dirname, '..', 'test-assets', 'downloads', 'rec-upload', 'sub-1');
-  const path2 = path.resolve(__dirname, '..', 'test-assets', 'downloads', 'rec-upload', 'sub-1', 'sub-1-1');
+  const pathBase = path.resolve(__dirname, '..', '..', '..', 'test-assets', 'downloads', 'rec-upload', 'sub-1');
+  const path2 = path.resolve(__dirname, '..', '..', '..', 'test-assets', 'downloads', 'rec-upload', 'sub-1', 'sub-1-1');
 
   await mkdir(pathBase, { recursive: true });
   await mkdir(path2, { recursive: true });
 
   for (let i = 0; i < 19; i++) {
-    const path2 = path.resolve(__dirname, '..', 'test-assets', 'downloads', 'rec-upload', 'sub-1', `sub-1-${i}`);
+    const path2 = path.resolve(__dirname, '..', '..', '..', 'test-assets', 'downloads', 'rec-upload', 'sub-1', `sub-1-${i}`);
     await mkdir(path2, { recursive: true });
 
     for (let i = 0; i < 3; i++) {
@@ -41,7 +41,7 @@ export async function createTestDirForRecursiveUpload() {
 }
 
 export function getPathForFile(fileName: string) {
-  return path.resolve(__dirname, '..', 'test-assets', fileName);
+  return path.resolve(__dirname, '..', '..', '..', 'test-assets', fileName);
 }
 
 export function generateKeys() {
@@ -69,7 +69,7 @@ export async function initContainer(name: string): Promise<StartedTestContainer>
 
   if (!fromCacheContainer) {
     generateKeys();
-    const container1 = await GenericContainer.fromDockerfile(path.resolve(__dirname, '..'))
+    const container1 = await GenericContainer.fromDockerfile(path.resolve(__dirname, '..', '..', '..'))
       .withCache(true)
       .build(`pl-ssh-test-container-${name}:1.0.0`, { deleteOnExit: false });
 
@@ -88,7 +88,7 @@ export function getContainerHostAndPort(container: StartedTestContainer) {
 
 function logToFile(message: string) {
   const logFileName = 'log.txt';
-  const logFilePath = path.join(__dirname, '..', 'test-assets', logFileName);
+  const logFilePath = path.join(__dirname, '..', '..', '..', 'test-assets', logFileName);
 
   const timestamp = new Date().toISOString();
   const logMessage = `[${timestamp}] ${message}\n`;
