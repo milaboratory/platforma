@@ -5,6 +5,7 @@ import {
   getLogHandle,
   getOnDemandBlobContent,
   getProgressLog,
+  getProgressLogWithInfo,
   getResourceField,
   getResourceValueAsJson,
   ImportFileHandle,
@@ -32,7 +33,7 @@ export const platforma = BlockModel.create('Heavy')
 
   .withArgs({
     inputHandle: undefined,
-    readFileWithSleepArgs: ''
+    readFileWithSleepArgs: 'PREFIX,5,1000'
   })
 
   .output('handle', getImportProgress(getResourceField(MainOutputs, 'handle')))
@@ -40,6 +41,10 @@ export const platforma = BlockModel.create('Heavy')
   .output('lastLogs', getLastLogs(getResourceField(MainOutputs, 'log'), 10))
 
   .output('progressLog', getProgressLog(getResourceField(MainOutputs, 'log'), 'PREFIX'))
+
+  .output('progressLogWithInfo', getProgressLogWithInfo(getResourceField(MainOutputs, 'log'), 'PREFIX'))
+
+  .output('progressLogWithInfoCtx', (ctx) => ctx.outputs?.resolve('log')?.getProgressLogWithInfo('PREFIX'))
 
   .output('logHandle', getLogHandle(getResourceField(MainOutputs, 'log')))
 
