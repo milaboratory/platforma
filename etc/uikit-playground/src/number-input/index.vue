@@ -68,6 +68,10 @@ const models = reactive({
           <div class="text-h3 h3">No arrow buttons</div>
           <PlNumberField v-model="models.model5" :useIncrementButtons=false placeholder="Some placeholder" />
         </div>
+        <div class="container">
+          <div class="text-h3 h3">Model updates only when on focus removing</div>
+          <PlNumberField v-model="models.model5" label="Your label" placeholder="Some placeholder" :updateOnEnterOrClickOutside="true"/>
+        </div>
       </div>
     </Split>
   </Layout>

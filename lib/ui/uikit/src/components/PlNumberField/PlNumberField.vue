@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import './pl-number-field.scss';
 import DoubleContour from '@/utils/DoubleContour.vue';
-import {useLabelNotch} from '@/utils/useLabelNotch';
-import {computed, ref, useSlots, watch} from 'vue';
-import {PlTooltip} from '@/components/PlTooltip';
+import { useLabelNotch } from '@/utils/useLabelNotch';
+import { computed, ref, useSlots, watch } from 'vue';
+import { PlTooltip } from '@/components/PlTooltip';
 
 type NumberInputProps = {
   /** Input is disabled if true */
@@ -20,6 +20,8 @@ type NumberInputProps = {
   maxValue?: number;
   /** If false - remove buttons on the right */
   useIncrementButtons?: boolean;
+  /** If true - changes do not apply immediately, they apply only by removing focus from the input (by click enter or by click outside)  */
+  updateOnEnterOrClickOutside?: boolean;
   /** Error message that shows always when it's provided, without other checks */
   errorMessage?: string;
   /** Additional validity check for input value that must return an error text if failed */
@@ -33,11 +35,12 @@ const props = withDefaults(defineProps<NumberInputProps>(), {
   minValue: undefined,
   maxValue: undefined,
   useIncrementButtons: true,
+  updateOnEnter: false,
   errorMessage: undefined,
   validate: undefined,
 });
 
-const modelValue = defineModel<number | undefined>({required: true})
+const modelValue = defineModel<number | undefined>({ required: true });
 
 const root = ref<HTMLElement>();
 const slots = useSlots();
@@ -49,25 +52,34 @@ function modelToString(v: number | undefined) {
   return v === undefined ? '' : String(+v); // (+v) to avoid staying in input non-number values if they are provided in model
 }
 
+function isPartial(v: string) {
+  return v === '.' || v === ',' || v === '-';
+}
 function stringToModel(v: string) {
   if (v === '') {
-    return undefined
+    return undefined;
   }
-  if (v === '.' || v === ',') {
+  if (isPartial(v)) {
     return 0;
   }
-  return parseFloat(v.replace(',', '.'));
+  let forParsing = v;
+  forParsing = forParsing.replace(',', '.');
+  forParsing = forParsing.replace('−', '-'); // minus, replacing for the case of input the whole copied value
+  forParsing = forParsing.replace('–', '-'); // dash, replacing for the case of input the whole copied value
+  forParsing = forParsing.replace('+', '');
+  return parseFloat(forParsing);
 }
 
 const innerTextValue = ref(modelToString(modelValue.value));
 const innerNumberValue = computed(() => stringToModel(innerTextValue.value));
+
 watch(() => modelValue.value, (outerValue) => { // update inner value if outer value is changed
   if (parseFloat(innerTextValue.value) !== outerValue) {
     innerTextValue.value = modelToString(outerValue);
   }
-})
+});
 
-const NUMBER_REGEX = /^(\d+)?[\\.,]?(\d+)?$/;
+const NUMBER_REGEX = /^[-−–+]?(\d+)?[\\.,]?(\d+)?$/; // parseFloat works without errors on strings with multiple dots, or letters in value
 const inputValue = computed({
   get() {
     return innerTextValue.value;
@@ -75,16 +87,18 @@ const inputValue = computed({
   set(nextValue: string) {
     const parsedValue = stringToModel(nextValue);
     // we allow to set empty value or valid numeric value, otherwise reset input value to previous valid
-    if (
-        parsedValue === undefined ||
-        nextValue.match(NUMBER_REGEX) && !isNaN(parsedValue)
+    if (parsedValue === undefined
+      || (nextValue.match(NUMBER_REGEX) && !isNaN(parsedValue))
     ) {
       innerTextValue.value = nextValue;
+      if (!props.updateOnEnterOrClickOutside && !isPartial(nextValue)) { // to avoid applying '-' or '.'
+        applyChanges();
+      }
     } else if (input.value) {
       input.value.value = innerTextValue.value;
     }
-  }
-})
+  },
+});
 const focused = ref(false);
 
 function applyChanges() {
@@ -93,7 +107,6 @@ function applyChanges() {
     return;
   }
   modelValue.value = innerNumberValue.value;
-  innerTextValue.value = String(modelValue.value); // to make .1 => 0.1, 10.00 => 10, etc
 }
 
 const errors = computed(() => {
@@ -166,12 +179,18 @@ function decrement() {
 }
 
 function handleKeyPress(e: { code: string; preventDefault(): void }) {
-  if (e.code === 'Escape') {
-    innerTextValue.value = modelToString(modelValue.value);
-    input.value?.blur();
+  if (props.updateOnEnterOrClickOutside) {
+    if (e.code === 'Escape') {
+      innerTextValue.value = modelToString(modelValue.value);
+      input.value?.blur();
+    }
+    if (e.code === 'Enter') {
+      input.value?.blur();
+    }
   }
+
   if (e.code === 'Enter') {
-    input.value?.blur();
+    innerTextValue.value = String(modelValue.value); // to make .1 => 0.1, 10.00 => 10, remove leading zeros etc
   }
 
   if (['ArrowDown', 'ArrowUp'].includes(e.code)) {
@@ -188,25 +207,26 @@ function handleKeyPress(e: { code: string; preventDefault(): void }) {
 // https://stackoverflow.com/questions/880512/prevent-text-selection-after-double-click#:~:text=If%20you%20encounter%20a%20situation,none%3B%20to%20the%20summary%20element.
 // this prevents selecting of more than input content in some cases,
 // but also disable selecting input content by double-click (useful feature)
-const onMousedown = (_ev: MouseEvent) => {
-  // if (ev.detail > 1) {
-  //   ev.preventDefault();
-  // }
+const onMousedown = (ev: MouseEvent) => {
+  if (ev.detail > 1) {
+    ev.preventDefault();
+  }
 };
 </script>
 
 <template>
   <div
-      ref="root"
-      :class="{ error: !!errors.trim(), disabled: disabled }"
-      class="mi-number-field d-flex-column"
-      @mousedown="onMousedown"
-      @keydown="handleKeyPress($event)"
+    ref="root"
+    :class="{ error: !!errors.trim(), disabled: disabled }"
+    class="mi-number-field d-flex-column"
+    @keydown="handleKeyPress($event)"
   >
     <div class="mi-number-field__main-wrapper d-flex">
       <DoubleContour class="mi-number-field__contour"/>
-      <div class="mi-number-field__wrapper flex-grow d-flex flex-align-center"
-           :class="{withoutArrows: !useIncrementButtons}">
+      <div
+        class="mi-number-field__wrapper flex-grow d-flex flex-align-center"
+        :class="{withoutArrows: !useIncrementButtons}"
+      >
         <label v-if="label" class="text-description">
           {{ label }}
           <PlTooltip v-if="slots.tooltip" class="info" position="top">
@@ -216,41 +236,41 @@ const onMousedown = (_ev: MouseEvent) => {
           </PlTooltip>
         </label>
         <input
-            ref="input"
-            v-model="inputValue"
-            :disabled="disabled"
-            :placeholder="placeholder"
-            class="text-s flex-grow"
-            @focusin="focused = true"
-            @focusout="focused = false; applyChanges()"
+          ref="input"
+          v-model="inputValue"
+          :disabled="disabled"
+          :placeholder="placeholder"
+          class="text-s flex-grow"
+          @focusin="focused = true"
+          @focusout="focused = false; applyChanges()"
         />
       </div>
-      <div class="mi-number-field__icons d-flex-column" v-if="useIncrementButtons">
+      <div v-if="useIncrementButtons" class="mi-number-field__icons d-flex-column" @mousedown="onMousedown">
         <div
-            :class="{ disabled: isIncrementDisabled }"
-            class="mi-number-field__icon d-flex flex-justify-center uc-pointer flex-grow flex-align-center"
-            @click="increment"
+          :class="{ disabled: isIncrementDisabled }"
+          class="mi-number-field__icon d-flex flex-justify-center uc-pointer flex-grow flex-align-center"
+          @click="increment"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
             <path
-                fill-rule="evenodd"
-                clip-rule="evenodd"
-                d="M8 4.93933L13.5303 10.4697L12.4697 11.5303L8 7.06065L3.53033 11.5303L2.46967 10.4697L8 4.93933Z"
-                fill="#110529"
+              fill-rule="evenodd"
+              clip-rule="evenodd"
+              d="M8 4.93933L13.5303 10.4697L12.4697 11.5303L8 7.06065L3.53033 11.5303L2.46967 10.4697L8 4.93933Z"
+              fill="#110529"
             />
           </svg>
         </div>
         <div
-            :class="{ disabled: isDecrementDisabled }"
-            class="mi-number-field__icon d-flex flex-justify-center uc-pointer flex-grow flex-align-center"
-            @click="decrement"
+          :class="{ disabled: isDecrementDisabled }"
+          class="mi-number-field__icon d-flex flex-justify-center uc-pointer flex-grow flex-align-center"
+          @click="decrement"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
             <path
-                fill-rule="evenodd"
-                clip-rule="evenodd"
-                d="M2.46967 6.53033L3.53033 5.46967L8 9.93934L12.4697 5.46967L13.5303 6.53033L8 12.0607L2.46967 6.53033Z"
-                fill="#110529"
+              fill-rule="evenodd"
+              clip-rule="evenodd"
+              d="M2.46967 6.53033L3.53033 5.46967L8 9.93934L12.4697 5.46967L13.5303 6.53033L8 12.0607L2.46967 6.53033Z"
+              fill="#110529"
             />
           </svg>
         </div>
