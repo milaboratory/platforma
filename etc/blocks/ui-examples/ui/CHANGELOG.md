@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.3.27
+
+### Patch Changes
+
+- 1a8b275: add checkbox support for RowNumbers
+
 ## 1.3.26
 
 ### Patch Changes
