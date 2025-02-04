@@ -6,18 +6,6 @@
   "[typescript]": {
     "editor.defaultFormatter": "dbaeumer.vscode-eslint"
   },
-  "[json]": {
-    "editor.defaultFormatter": "dbaeumer.vscode-eslint"
-  },
-  "[html]": {
-    "editor.defaultFormatter": "dbaeumer.vscode-eslint"
-  },
-  "[css]": {
-    "editor.defaultFormatter": "dbaeumer.vscode-eslint"
-  },
-  "[scss]": {
-    "editor.defaultFormatter": "dbaeumer.vscode-eslint"
-  },
   "[vue]": {
     "editor.defaultFormatter": "dbaeumer.vscode-eslint"
   },
