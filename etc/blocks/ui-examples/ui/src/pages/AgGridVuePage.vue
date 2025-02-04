@@ -231,9 +231,9 @@ function getData(option: string) {
     case 'Result is ready':
       return { result: readyResult, loading: false };
     case 'Result is not calculated':
-      return { notReady: true, loading: true };
+      return { result: [], notReady: true, loading: true };
     case 'Result is loading':
-      return { notReady: false, loading: true };
+      return { result: [], notReady: false, loading: true };
     case 'Result is empty':
       return { result: [], loading: false };
     default:

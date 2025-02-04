@@ -20,11 +20,9 @@ defineProps<{
 </script>
 
 <template>
-  <div :class="style.container">
-    <div v-if="params.notReady" :class="style.wrapper">
-      <div :class="style.iconCatInBag" />
-      <h3 :class="style.text">{{ params.message || 'No datasource' }}</h3>
-    </div>
-    <PlSplash v-else size="48" text="Loading" />
+  <div v-if="params.notReady" :class="style.container">
+    <div :class="style.iconCatInBag" />
+    <h3 :class="style.text">{{ params.message || 'No datasource' }}</h3>
   </div>
+  <PlSplash v-else size="48" text="Loading" />
 </template>
