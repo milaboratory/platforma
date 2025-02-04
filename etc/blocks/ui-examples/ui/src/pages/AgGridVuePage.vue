@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Component } from 'vue';
-import { computed, h, ref } from 'vue';
+import { computed, h, ref, shallowRef, watch } from 'vue';
 import {
   PlBlockPage,
   PlAgOverlayLoading,
@@ -20,6 +20,8 @@ import {
   PlAgChartStackedBarCell,
   PlAgChartHistogramCell,
   Gradient,
+  PlBtnGroup,
+  listToOptions,
 } from '@platforma-sdk/ui-vue';
 import { AgGridVue } from 'ag-grid-vue3';
 import type { ColDef, GridApi, GridOptions, GridReadyEvent } from 'ag-grid-enterprise';
@@ -35,28 +37,36 @@ const LinkComponent: Component = {
   },
 };
 
-const data = [{
-  label: 'The best',
-  value: 100,
-}, {
-  label: 'Good but not great',
-  value: 60,
-}, {
-  label: 'A little worse',
-  value: 40,
-}, {
-  label: 'Not good',
-  value: 33,
-}, {
-  label: 'Awful',
-  value: 330,
-}, {
-  label: 'Nightmare',
-  value: 30,
-}, {
-  label: 'Hell',
-  value: 30,
-}];
+const data = [
+  {
+    label: 'The best',
+    value: 100,
+  },
+  {
+    label: 'Good but not great',
+    value: 60,
+  },
+  {
+    label: 'A little worse',
+    value: 40,
+  },
+  {
+    label: 'Not good',
+    value: 33,
+  },
+  {
+    label: 'Awful',
+    value: 330,
+  },
+  {
+    label: 'Nightmare',
+    value: 30,
+  },
+  {
+    label: 'Hell',
+    value: 30,
+  },
+];
 
 const stackedSettings = computed(() => {
   const colors = Gradient('viridis').split(data.length);
@@ -128,9 +138,7 @@ const columnDefs: ColDef[] = [
     colId: 'stacked_bar',
     headerName: 'StackedBar',
     cellRendererSelector: (_cellData) => {
-      const value = Math.random() > 0.5
-        ? stackedSettings.value
-        : undefined;
+      const value = Math.random() > 0.5 ? stackedSettings.value : undefined;
       return {
         component: PlAgChartStackedBarCell,
         params: { value },
@@ -141,9 +149,7 @@ const columnDefs: ColDef[] = [
     colId: 'histogram',
     headerName: 'Histogram',
     cellRendererSelector: (_cellData) => {
-      const value = Math.random() > 0.5
-        ? histogramSettings.value
-        : undefined;
+      const value = Math.random() > 0.5 ? histogramSettings.value : undefined;
       return {
         component: PlAgChartHistogramCell,
         params: { value },
@@ -184,17 +190,56 @@ const columnDefs: ColDef[] = [
   },
 ];
 
-const result = times(100, (i) => {
-  return {
-    id: faker.number.int(),
-    label: faker.company.buzzNoun(),
-    progress: i % 2 === 0 ? undefined : faker.number.int({ min: 24, max: 100 }),
-    date: faker.date.birthdate(),
-    file: '',
-    link: faker.internet.url(),
-    time: `${faker.number.int()} h`,
-  };
+const options = listToOptions([
+  'Result is ready',
+  'Result is not calculated',
+  'Result is loading',
+  'Result is empty',
+]);
+
+const current = shallowRef<string>(options[0].value);
+
+const readyResult = times(100, (i) => ({
+  id: faker.number.int(),
+  label: faker.company.buzzNoun(),
+  progress: i % 2 === 0 ? undefined : faker.number.int({ min: 24, max: 100 }),
+  date: faker.date.birthdate(),
+  file: '',
+  link: faker.internet.url(),
+  time: `${faker.number.int()} h`,
+}));
+
+const result = shallowRef(getData(current.value).result);
+const notReady = shallowRef(getData(current.value).notReady);
+const loading = shallowRef(getData(current.value).loading);
+
+watch(current, (newValue) => {
+  const data = getData(newValue);
+  if (data.result !== undefined) {
+    result.value = data.result;
+  }
+  if (data.notReady !== undefined) {
+    notReady.value = data.notReady;
+  }
+  if (data.loading !== undefined) {
+    loading.value = data.loading;
+  }
 });
+
+function getData(option: string) {
+  switch (option) {
+    case 'Result is ready':
+      return { result: readyResult, loading: false };
+    case 'Result is not calculated':
+      return { notReady: true, loading: true };
+    case 'Result is loading':
+      return { notReady: false, loading: true };
+    case 'Result is empty':
+      return { result: [], loading: false };
+    default:
+      return { result: readyResult, notReady: true, loading: false };
+  }
+}
 
 function onClickHandler() {
   // will be invoked when invokeRowsOnDoubleClick: false
@@ -229,6 +274,8 @@ const onGridReady = (e: GridReadyEvent) => {
       </PlAgDataTableToolsPanel>
     </template>
 
+    <PlBtnGroup v-model="current" :options="options" />
+
     <AgGridVue
       :rowSelection="{
         mode: 'multiRow',
@@ -240,7 +287,8 @@ const onGridReady = (e: GridReadyEvent) => {
       :row-data="result"
       :column-defs="columnDefs"
       :grid-options="gridOptions"
-      :loading-overlay-component-params="{ notReady: true }"
+      :loading="loading"
+      :loading-overlay-component-params="{ notReady }"
       :loading-overlay-component="PlAgOverlayLoading"
       :no-rows-overlay-component="PlAgOverlayNoRows"
       @grid-ready="onGridReady"
