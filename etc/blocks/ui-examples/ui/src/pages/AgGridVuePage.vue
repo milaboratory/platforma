@@ -213,7 +213,9 @@ const result = shallowRef(getData(current.value).result);
 const notReady = shallowRef(getData(current.value).notReady);
 const loading = shallowRef(getData(current.value).loading);
 
+const reloadKey = ref(0);
 watch(current, (newValue) => {
+  ++reloadKey.value;
   const data = getData(newValue);
   if (data.result !== undefined) {
     result.value = data.result;
@@ -277,6 +279,7 @@ const onGridReady = (e: GridReadyEvent) => {
     <PlBtnGroup v-model="current" :options="options" />
 
     <AgGridVue
+      :key="reloadKey"
       :rowSelection="{
         mode: 'multiRow',
         checkboxes: false,
