@@ -4,15 +4,15 @@ import { Resolver } from 'node:dns/promises';
 
 export function defaultHttpDispatcher(httpProxy?: string): Dispatcher {
   const cacheableLookup = new CacheableLookup({
-    resolver: new Resolver({ timeout: 1500, tries: 4 })
+    resolver: new Resolver({ timeout: 3000, tries: 4 })
   });
 
   const httpOptions: Client.Options = {
     allowH2: true,
-    headersTimeout: 5e3,
-    keepAliveTimeout: 3e3,
+    headersTimeout: 15e3,
+    keepAliveTimeout: 15e3,
     keepAliveMaxTimeout: 60e3,
-    maxRedirections: 6,
+    maxRedirections: 10,
     connect: {
       lookup: cacheableLookup.lookup.bind(cacheableLookup) as any
     }

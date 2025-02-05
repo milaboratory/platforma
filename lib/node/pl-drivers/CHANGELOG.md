@@ -1,5 +1,18 @@
 # @milaboratories/pl-drivers
 
+## 1.5.15
+
+### Patch Changes
+
+- 6a50f96: keepalive, more logs
+
+## 1.5.14
+
+### Patch Changes
+
+- @milaboratories/pl-client@2.7.4
+- @milaboratories/pl-tree@1.4.23
+
 ## 1.5.13
 
 ### Patch Changes
