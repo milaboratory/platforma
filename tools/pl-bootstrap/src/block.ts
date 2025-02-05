@@ -16,8 +16,8 @@ export type CreateBlockPlatform = z.infer<typeof CreateBlockPlatforms>;
 
 const CreateBlockOptions = z.object({
   npmOrgName: z.string().min(1),
-  orgName: z.string().min(1),
-  blockName: z.string().min(1),
+  orgName: z.string().min(1, { message: `Organization name must be provided` }),
+  blockName: z.string().min(1, { message: `Block name must be provided` }),
   softwarePlatforms: z.array(CreateBlockPlatforms).refine((p) => new Set(p).size === p.length, {
     message: 'Must be an array of unique software platforms',
   }),
@@ -69,6 +69,7 @@ function askForOptions(): CreateBlockOptions {
     npmOrgName = 'platforma-open';
   }
   const orgName = readlineSync.question('Write an organization name, e.g. "my-org": ');
+
   const blockName = readlineSync.question('Write a name of the block, e.g. "hello-world": ');
 
   const needSoftware = readlineSync.keyInYN('Create package for block\'s software?');
@@ -82,7 +83,12 @@ function askForOptions(): CreateBlockOptions {
   }
   softwarePlatforms = Array.from(new Set(softwarePlatforms)).sort();
 
-  return CreateBlockOptions.parse({ npmOrgName, orgName, blockName, softwarePlatforms });
+  const result = CreateBlockOptions.safeParse({ npmOrgName, orgName, blockName, softwarePlatforms });
+  if (!result.success && result.error.issues.length) {
+    throw new Error(result.error.issues.map(i => i.message).join('; '));
+  }
+
+  return result.data!;
 }
 
 async function downloadAndUnzip(url: string, pathInArchive: string, outputPath: string) {
