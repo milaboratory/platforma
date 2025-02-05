@@ -1,5 +1,11 @@
 # @milaboratories/pl-local
 
+## 1.1.3
+
+### Patch Changes
+
+- 9cf0459: increase timeouts
+
 ## 1.1.2
 
 ### Patch Changes
