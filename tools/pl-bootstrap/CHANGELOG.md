@@ -1,5 +1,13 @@
 # @platforma-sdk/bootstrap
 
+## 3.1.6
+
+### Patch Changes
+
+- 0f33002: Cache working directories for faulty commands in docker
+- Updated dependencies [9cf0459]
+  - @milaboratories/pl-deployments@1.1.3
+
 ## 3.1.5
 
 ### Patch Changes
