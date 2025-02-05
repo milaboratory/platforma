@@ -413,6 +413,8 @@ export default class Core {
       PL_LOG_DIR: path.dirname(logFilePath),
       PL_LOG_ROTATION_ENABLED: 'true',
 
+      PL_RUNNER_WD_CACHE_ON_FAILURE: '1h',
+
       PL_DATA_DB_ROOT: dbFSPath,
       PL_DATA_PRIMARY_ROOT: storageDir('primary'),
       PL_DATA_LIBRARY_ROOT: storageDir('library'),
@@ -562,9 +564,6 @@ export default class Core {
     const library = plCfg.storageSettingsFromURL(options?.libraryStorageURL ?? `file:${libraryFSPath}`, '.');
 
     const envs: NodeJS.ProcessEnv = {
-      MINIO_IMAGE: 'quay.io/minio/minio',
-      MINIO_STORAGE: storageDir('minio'),
-
       PL_IMAGE: image,
       PL_AUTH_HTPASSWD_PATH: usersFSPath,
       PL_LICENSE: options?.license,
@@ -573,6 +572,8 @@ export default class Core {
       PL_LOG_LEVEL: 'info',
       PL_LOG_DIR: path.dirname(logFilePath),
       PL_LOG_ROTATION_ENABLED: 'true',
+
+      PL_RUNNER_WD_CACHE_ON_FAILURE: '1h',
 
       PL_DATA_DB_ROOT: dbFSPath,
       PL_DATA_PRIMARY_ROOT: primaryFSPath,
