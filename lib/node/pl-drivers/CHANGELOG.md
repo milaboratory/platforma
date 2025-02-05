@@ -1,5 +1,12 @@
 # @milaboratories/pl-drivers
 
+## 1.5.14
+
+### Patch Changes
+
+- @milaboratories/pl-client@2.7.4
+- @milaboratories/pl-tree@1.4.23
+
 ## 1.5.13
 
 ### Patch Changes
