@@ -118,7 +118,6 @@ export function emptyS3Settings(id: string): s3StorageSettings {
     indexCachePeriod: '0s',
     endpoint: '',
     region: '',
-    presignEndpoint: '',
     bucketName: '',
     createBucket: false,
     forcePathStyle: false,
@@ -132,9 +131,9 @@ export function emptyS3Settings(id: string): s3StorageSettings {
 
 type s3StorageType = { type: 'S3' };
 type s3StorageTypeSettings = {
-  endpoint: string;
-  presignEndpoint: string;
-  region: string;
+  endpoint?: string;
+  presignEndpoint?: string;
+  region?: string;
   bucketName: string;
   createBucket: boolean;
   forcePathStyle: boolean;
