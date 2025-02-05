@@ -1,5 +1,11 @@
 # @milaboratories/pl-tree
 
+## 1.4.23
+
+### Patch Changes
+
+- @milaboratories/pl-client@2.7.4
+
 ## 1.4.22
 
 ### Patch Changes

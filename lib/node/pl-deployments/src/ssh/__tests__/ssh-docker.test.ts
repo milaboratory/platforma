@@ -145,7 +145,58 @@ describe('sshConnect', () => {
   });
 
   it('should fail with invalid credentials', async () => {
-    await expect(SshClient.init(new ConsoleLoggerAdapter(), { ...getConnectionForSsh(testContainer), privateKey: '123' })).rejects.toThrow();
+    await expect(SshClient.init(new ConsoleLoggerAdapter(), { ...getConnectionForSsh(testContainer), username: 'dfasdfa' })).rejects.toThrow();
+  });
+
+  it('should fail with invalid passphrase', async () => {
+    let catched = false;
+    try {
+      await SshClient.init(new ConsoleLoggerAdapter(), { ...getConnectionForSsh(testContainer), passphrase: 'dfasdfa' });
+    } catch (e) {
+      console.log(e);
+      expect((e as Error).message.includes('Cannot parse privateKey: OpenSSH key integrity check failed')).toBe(true);
+      catched = true;
+    }
+    expect(catched).toBe(true);
+  });
+
+  it('should fail with invalid username', async () => {
+    let catched = false;
+    try {
+      await SshClient.init(new ConsoleLoggerAdapter(), { ...getConnectionForSsh(testContainer), username: 'dfasdfa' });
+    } catch (e) {
+      console.log(e);
+      expect((e as Error).message.includes('All configured authentication methods failed')).toBe(true);
+      catched = true;
+    }
+    expect(catched).toBe(true);
+  });
+
+  it('should fail with invalid host', async () => {
+    let catched = false;
+    try {
+      await SshClient.init(new ConsoleLoggerAdapter(), { ...getConnectionForSsh(testContainer), host: '192.100.100.100' });
+    } catch (e) {
+      console.log(e);
+      expect((e as Error).message.includes('Timed out while waiting for handshake')).toBe(true);
+      catched = true;
+    }
+    expect(catched).toBe(true);
+  });
+
+  it('should fail with invalid private key', async () => {
+    let catched = false;
+
+    const invalidPk = ssh.utils.generateKeyPairSync('ecdsa', { bits: 256, comment: 'node.js rules!', passphrase: 'password', cipher: 'aes256-cbc' });
+
+    try {
+      await SshClient.init(new ConsoleLoggerAdapter(), { ...getConnectionForSsh(testContainer), privateKey: invalidPk.private, passphrase: 'password' });
+    } catch (e) {
+      console.log(e);
+      expect((e as Error).message.includes('All configured authentication methods failed')).toBe(true);
+      catched = true;
+    }
+    expect(catched).toBe(true);
   });
 
   it('should timeout if the server is unreachable', async () => {
