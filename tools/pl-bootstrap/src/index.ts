@@ -15,6 +15,7 @@ import Cmd11 from './commands/start/local/s3';
 import Cmd12 from './commands/svc/create/docker';
 import Cmd13 from './commands/svc/create/local';
 import Cmd14 from './commands/svc/create/docker/s3';
+import Cmd15 from './commands/svc/create/local/s3';
 
 // prettier-ignore
 export const COMMANDS = {
@@ -33,4 +34,5 @@ export const COMMANDS = {
   'svc:create:docker': Cmd12,
   'svc:create:local': Cmd13,
   'svc:create:docker:s3': Cmd14,
+  'svc:create:local:s3': Cmd15,
 };
