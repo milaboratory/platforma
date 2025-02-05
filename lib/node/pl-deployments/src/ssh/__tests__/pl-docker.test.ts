@@ -26,7 +26,7 @@ async function cleanUp() {
 beforeAll(async () => {
   const logger = new ConsoleLoggerAdapter();
   sshPl = await SshPl.init(logger, getConnectionForSsh(testContainer));
-});
+}, 200000);
 
 describe('SshPl', async () => {
   it('User home direcory', async () => {
@@ -189,4 +189,4 @@ describe('SshPl download binaries', async () => {
 afterAll(async () => {
   await cleanUp();
   await cleanUpT(testContainer);
-});
+}, 200000);
