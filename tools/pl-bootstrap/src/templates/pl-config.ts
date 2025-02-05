@@ -14,9 +14,10 @@ export function storageSettingsFromURL(
   const url = new URL(storageURL, `file:${baseDir}`);
 
   switch (url.protocol) {
-    case 's3:':
-      var bucketName = url.hostname;
-      var region = url.searchParams.get('region');
+    case 's3:': {
+      const bucketName = url.hostname;
+      const region = url.searchParams.get('region');
+      const keyPrefix = url.pathname;
 
       return {
         ...defaults,
@@ -24,12 +25,13 @@ export function storageSettingsFromURL(
         type: 'S3',
         bucketName,
         region,
+        keyPrefix,
       } as types.storageOptions;
-
-    case 's3e:':
-      var p = url.pathname.split('/').slice(1); // '/bucket/keyPrefix' -> ['', 'bucket', 'keyPrefix'] -> ['bucket', 'keyPrefix']
-      var bucketName = p[0];
-      var keyPrefix = p.length > 1 ? p[1] : '';
+    }
+    case 's3e:': {
+      const p = url.pathname.split('/').slice(1); // '/bucket/keyPrefix' -> ['', 'bucket', 'keyPrefix'] -> ['bucket', 'keyPrefix']
+      const bucketName = p[0];
+      const keyPrefix = p.length > 1 ? '/' + p.slice(1).join('/') : '';
 
       return {
         ...defaults,
@@ -42,11 +44,11 @@ export function storageSettingsFromURL(
         key: url.username ? `static:${url.username}` : '',
         secret: url.password ? `static:${url.password}` : '',
       } as types.storageOptions;
-
-    case 's3es:':
-      var p = url.pathname.split('/').slice(1); // '/bucket/keyPrefix' -> ['', 'bucket', 'keyPrefix'] -> ['bucket', 'keyPrefix']
-      var bucketName = p[0];
-      var keyPrefix = p.length > 1 ? p[1] : '';
+    }
+    case 's3es:': {
+      const p = url.pathname.split('/').slice(1); // '/bucket/keyPrefix' -> ['', 'bucket', 'keyPrefix'] -> ['bucket', 'keyPrefix']
+      const bucketName = p[0];
+      const keyPrefix = p.length > 1 ? '/' + p.slice(1).join('/') : '';
 
       return {
         ...defaults,
@@ -59,7 +61,7 @@ export function storageSettingsFromURL(
         key: url.username ? `static:${url.username}` : '',
         secret: url.password ? `static:${url.password}` : '',
       } as types.storageOptions;
-
+    }
     case 'file:':
       return {
         type: 'FS',
@@ -176,8 +178,9 @@ function defaultStorageSettings(
     case 'S3':
       storage = types.emptyS3Settings(storageID);
 
-      storage.endpoint = options?.endpoint ?? 'http://localhost:9000';
-      storage.presignEndpoint = options?.presignEndpoint ?? 'http://localhost:9000';
+      storage.endpoint = options?.endpoint;
+      storage.region = options?.region;
+      storage.presignEndpoint = options?.presignEndpoint ?? options?.endpoint;
       storage.bucketName = options?.bucketName ?? defaultBucket;
       storage.createBucket = defaultBool(options?.createBucket, true);
       storage.forcePathStyle = defaultBool(options?.forcePathStyle, true);

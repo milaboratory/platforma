@@ -1,6 +1,6 @@
 import { Command, Args } from '@oclif/core';
 import path from 'node:path';
-import type { startLocalOptions } from '../../../core';
+import type { createLocalOptions } from '../../../core';
 import Core from '../../../core';
 import * as cmdOpts from '../../../cmd-opts';
 import * as util from '../../../util';
@@ -71,7 +71,7 @@ export default class Local extends Command {
     if (flags['debug-listen']) listenDbg = flags['debug-listen'];
     else if (flags['debug-port']) listenDbg = `127.0.0.1:${flags['debug-port']}`;
 
-    const startOptions: startLocalOptions = {
+    const startOptions: createLocalOptions = {
       binaryPath: binaryPath,
       version: flags.version,
       configPath: flags.config,

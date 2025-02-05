@@ -1,7 +1,7 @@
 import path from 'node:path';
 
 import { Command } from '@oclif/core';
-import type { startLocalS3Options } from '../../../core';
+import type { createLocalS3Options } from '../../../core';
 import Core from '../../../core';
 import * as cmdOpts from '../../../cmd-opts';
 import * as platforma from '../../../platforma';
@@ -69,7 +69,7 @@ export default class S3 extends Command {
     if (flags['debug-listen']) listenDbg = flags['debug-listen'];
     else if (flags['debug-port']) listenDbg = `127.0.0.1:${flags['debug-port']}`;
 
-    const startOptions: startLocalS3Options = {
+    const startOptions: createLocalS3Options = {
       binaryPath: binaryPath,
       version: flags.version,
       configPath: flags.config,
