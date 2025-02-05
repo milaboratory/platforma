@@ -69,20 +69,24 @@ export class ClientUpload {
     const chunk = await readFileChunk(path, info.chunkStart, info.chunkEnd);
     await checkExpectedMTime(path, expectedMTimeUnix);
 
-    const {
-      body: rawBody,
-      statusCode,
-      headers,
-    } = await request(info.uploadUrl, {
-      dispatcher: this.httpClient,
-      body: chunk,
-      headers: toHeadersMap(info.headers),
-      method: info.method.toUpperCase() as Dispatcher.HttpMethod,
-    });
+    try {
+      const {
+        body: rawBody,
+        statusCode,
+        headers,
+      } = await request(info.uploadUrl, {
+        dispatcher: this.httpClient,
+        body: chunk,
+        headers: toHeadersMap(info.headers),
+        method: info.method.toUpperCase() as Dispatcher.HttpMethod,
+      });
 
-    // always read the body for resources to be garbage collected.
-    const body = await rawBody.text();
-    checkStatusCodeOk(statusCode, body, headers, info);
+      // always read the body for resources to be garbage collected.
+      const body = await rawBody.text();
+      checkStatusCodeOk(statusCode, body, headers, info);
+    } catch (e: unknown) {
+      throw new Error(`partUpload: error ${JSON.stringify(e)} happened while trying to do part upload to the url ${info.uploadUrl}, headers: ${JSON.stringify(info.headers)}`);
+    }
 
     await this.grpcUpdateProgress({ id, type }, info.chunkEnd - info.chunkStart, options);
   }
