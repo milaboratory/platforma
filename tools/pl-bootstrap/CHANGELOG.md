@@ -1,5 +1,11 @@
 # @platforma-sdk/bootstrap
 
+## 3.1.7
+
+### Patch Changes
+
+- 5046641: create-block: human-readable errors
+
 ## 3.1.6
 
 ### Patch Changes
