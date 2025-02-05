@@ -53,6 +53,12 @@ llAggTpl := assets.importTemplate(":pframes.aggregate")
  *                        partitionKeyLength: number // - expected partition length of result from
  *                                                        each operation
  *                      } // - assume each record is a partitionded Json or Binary PColumn data itself
+ *                    | {
+ *                        type: "Xsv",            // i.e. CSV or TSV
+ *						  xsvType: "tsv" | "csv",
+ *                        settings: object        // xsv conversion specification (better provide refined
+ *                                                // settings via the decomposePfconvImportCfg() function)
+ *                      } // - assume the output is a text file to be converted with pfConvert
  *
  * @param isEph   if true, body template will be rendered as ephemeral
  * @param extra   optional map of parameters to pass to the template

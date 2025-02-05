@@ -5,7 +5,9 @@ self := import(":tpl")
 ll := import(":ll")
 render := import(":render")
 smart := import(":smart")
-constants := import(":pframes.constants")
+pConstants := import(":pframes.constants")
+pUtil := import(":pframes.util")
+xsv := import(":pframes.xsv")
 
 json := import("json")
 
@@ -61,7 +63,7 @@ self.body(func(inputs) {
 		}
 	}
 
-	if data.checkResourceType(constants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP) {
+	if data.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP) {
 		meta := data.getDataAsJson()
 
 		// calculating group indices
@@ -97,7 +99,7 @@ self.body(func(inputs) {
 			group := groups[sGroupKey]
 			if is_undefined(group) {
 				group = smart.structBuilder(
-					constants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP,
+					pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP,
 					json.encode({ keyLength: groupElementKeyLength })
 				)
 				groups[sGroupKey] = group
@@ -113,12 +115,12 @@ self.body(func(inputs) {
 			}
 			if output.type == "Resource" {
 				outputMaps[output.name] = smart.structBuilder(
-					constants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP,
+					pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP,
 					json.encode({ keyLength: groupKeyLength })
 				)
 			} else if output.type == "ResourceMap" {
 				outputMaps[output.name] = smart.structBuilder(
-					constants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP_PARTITIONED,
+					pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP_PARTITIONED,
 					json.encode({
 						partitionKeyLength: groupKeyLength,
 						keyLength: output.keyLength
@@ -126,7 +128,7 @@ self.body(func(inputs) {
 				)
 			} else if output.type == "JsonPartitioned" {
 				outputMaps[output.name] = smart.structBuilder(
-					constants.RTYPE_P_COLUMN_DATA_JSON_SUPER_PARTITIONED,
+					pConstants.RTYPE_P_COLUMN_DATA_JSON_SUPER_PARTITIONED,
 					json.encode({
 						superPartitionKeyLength: groupKeyLength,
 						partitionKeyLength: output.partitionKeyLength
@@ -134,12 +136,21 @@ self.body(func(inputs) {
 				)
 			} else if output.type == "BinaryPartitioned" {
 				outputMaps[output.name] = smart.structBuilder(
-					constants.RTYPE_P_COLUMN_DATA_BINARY_SUPER_PARTITIONED,
+					pConstants.RTYPE_P_COLUMN_DATA_BINARY_SUPER_PARTITIONED,
 					json.encode({
 						superPartitionKeyLength: groupKeyLength,
 						partitionKeyLength: output.partitionKeyLength
 					})
 				)
+			} else if output.type == "Xsv" {
+				// each field will contain super-partitioned data for the corresponding column
+				// (specs must be added on the higher level to make a pframe)
+				map := {}
+				for column in output.settings.columns {
+					id := pUtil.xsvColumnId(column)
+					map[id] = {} // partKey -> partitioned data resource ref (not-super-partitioned)
+				}
+				outputMaps[output.name] = map
 			} else {
 				ll.panic("unknonw output type: %v", output.type)
 			}
@@ -148,8 +159,8 @@ self.body(func(inputs) {
 		for sGroupKey, group in groups {
 			group = group.lockAndBuild()
 			renderInputs := {}
-			renderInputs[constants.KEY_FIELD_NAME] = json.decode(sGroupKey)
-			renderInputs[constants.VALUE_FIELD_NAME] = group
+			renderInputs[pConstants.KEY_FIELD_NAME] = json.decode(sGroupKey)
+			renderInputs[pConstants.VALUE_FIELD_NAME] = group
 			for name, field in extraInputs {
 				renderInputs[name] = field
 			}
@@ -159,14 +170,57 @@ self.body(func(inputs) {
 				if is_undefined(path) {
 					path = [output.name]
 				}
-				outputMaps[output.name].
-					createInputField(sGroupKey).
-					set(renderResult.output(path[0]).getFutureInputField(path[1:], eph))
+				ref := renderResult.output(path[0]).getFutureInputField(path[1:], eph)
+				if output.type == "Xsv" {
+					pf := xsv.importFile(ref, output.tsvType, output.settings, { dataOnly: true })
+					for col in output.settings.columns {
+						id := pUtil.xsvColumnId(col)
+						data := pf.getFutureInputField(id)
+						outputMaps[output.name][id][sGroupKey] = data
+					}
+				} else {
+					outputMaps[output.name].
+						createInputField(sGroupKey).
+						set(ref)
+				}
 			}
 		}
 
 		for output in outputs {
-			outputMaps[output.name] = outputMaps[output.name].lockAndBuild()
+			if output.type == "Xsv" {
+				mapBuilder := smart.mapBuilder()
+
+				dataResType := pConstants.RTYPE_P_COLUMN_DATA_JSON_SUPER_PARTITIONED
+				if output.settings.storageFormat == "Binary" {
+					dataResType := pConstants.RTYPE_P_COLUMN_DATA_BINARY_SUPER_PARTITIONED
+				} else if output.settings.storageFormat != "Json" {
+					ll.panic("Unknow storage format: %v", output.settings.storageFormat)
+				}
+				partitionKeyLength := 0
+				if !is_undefined(output.settings.partitionKeyLength) {
+					partitionKeyLength = output.settings.partitionKeyLength
+				}
+				dataResData := json.encode({
+					superPartitionKeyLength: groupKeyLength,
+					partitionKeyLength: partitionKeyLength
+				})
+
+				for col in output.settings.columns {
+					id := pUtil.xsvColumnId(col)
+					parts := outputMaps[output.name][id]
+					dataRes := smart.structBuilder(
+						dataResType, dataResData
+					)
+					for sGroupKey, partData in parts {
+						dataRes.createInputField(sGroupKey).set(partData)
+					}
+					mapBuilder.add(id, dataRes.lockAndBuild())
+				}
+
+				outputMaps[output.name] = mapBuilder.build()
+			} else {
+				outputMaps[output.name] = outputMaps[output.name].lockAndBuild()
+			}
 		}
 
 		return outputMaps
