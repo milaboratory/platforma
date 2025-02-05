@@ -8,6 +8,7 @@ import {
   PlCloseModalBtn,
   PlDropdownLine,
   PlTextField,
+  PlSplash,
   PlBtnGhost,
   Color,
 } from '@platforma-sdk/ui-vue';
@@ -79,7 +80,10 @@ const triggerError = () => {
       <PlBtnGhost icon="settings" :loading="loading" @click="onClickSettings">Settings</PlBtnGhost>
       <PlBtnPrimary> Just a button</PlBtnPrimary>
     </template>
-    <PlRow>
+    <div :class="$style.resizable">
+      <PlSplash />
+    </div>
+    <!-- <PlRow>
       <div :class="$style['drag-and-drop']" @drop="onDrop" @dragover.prevent>Drag & Drop</div>
     </PlRow>
     <PlRow>
@@ -96,11 +100,19 @@ const triggerError = () => {
     </PlRow>
     <PlRow>
       <PlBtnPrimary @click="triggerError">Trigger ui vue error</PlBtnPrimary>
-    </PlRow>
+    </PlRow> -->
   </PlBlockPage>
 </template>
 
 <style module>
+.resizable {
+  border: 1px dotted red;
+  height: 100px;
+  resize: both;
+  overflow: auto;
+  position: relative;
+}
+
 .drag-and-drop {
   border: 1px solid var(--txt-01);
   padding: 24px;
