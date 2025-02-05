@@ -16,7 +16,6 @@ export default class Local extends Command {
     ...cmdOpts.GlobalFlags,
     ...cmdOpts.VersionFlag,
 
-    ...cmdOpts.S3AddressesFlags,
     ...cmdOpts.AddressesFlags,
     ...cmdOpts.PlBinaryFlag,
     ...cmdOpts.PlSourcesFlag,
@@ -37,7 +36,6 @@ export default class Local extends Command {
 
   static args = {
     name: Args.string({ required: true }),
-    mode: Args.string({ options: ['s3'], required: false }),
   };
 
   public async run(): Promise<void> {
@@ -96,31 +94,7 @@ export default class Local extends Command {
       },
     };
 
-    const mode = args.mode;
-
-    switch (mode) {
-      case 's3': {
-        logger.info(`Creating instance configuration, data directory and other stuff...`);
-        core.createLocalS3(instanceName, {
-          ...startOptions,
-
-          minioPort: flags['s3-port'],
-          minioConsolePort: flags['s3-console-port'],
-        });
-        break;
-      }
-      case undefined: {
-        if (flags['s3-port']) {
-          logger.warn('flag \'s3-port\' is only for \'s3\' mode');
-        }
-        if (flags['s3-console-port']) {
-          logger.warn('flag \'s3-console-port\' is only for \'s3\' mode');
-        }
-
-        core.createLocal(instanceName, startOptions);
-        break;
-      }
-    }
+    core.createLocal(instanceName, startOptions);
 
     if (startOptions.binaryPath) {
       logger.info(`Instance '${instanceName}' was created. To start it run 'up' command`);
