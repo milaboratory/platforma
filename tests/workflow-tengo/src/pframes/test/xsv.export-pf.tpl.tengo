@@ -27,7 +27,11 @@ self.body(func(inputs){
 
 	pf := xsv.importFile(csvFile, "csv", spec)
 
-	csvExport := xsv.exportFrame(pf, "csv", {})
+	ops := {}
+	if !is_undefined(inputs.ops) {
+		ops = inputs.ops
+	}
+	csvExport := xsv.exportFrame(pf, "csv", {}, ops)
 
 	return {
 		csvFile: file.exportFile(csvExport)
