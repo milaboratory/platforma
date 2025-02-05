@@ -45,7 +45,7 @@ export function getPathForFile(fileName: string) {
 }
 
 export function generateKeys() {
-  const keys = ssh.utils.generateKeyPairSync('ecdsa', { bits: 256, comment: 'node.js rules!' });
+  const keys = ssh.utils.generateKeyPairSync('ecdsa', { bits: 256, comment: 'node.js rules!', passphrase: 'password', cipher: 'aes256-cbc' });
   if (!existsSync(publicKeyPath) || !existsSync(privateKeyPath)) {
     writeFileSync(publicKeyPath, keys.public);
     writeFileSync(privateKeyPath, keys.private);
@@ -108,6 +108,7 @@ export function getConnectionForSsh(container: StartedTestContainer, debug: bool
     port: hostData.port,
     username: 'pl-doctor',
     privateKey: privateKey,
+    passphrase: 'password',
     debug: debug ? logToFile : undefined,
   };
   logToFile(JSON.stringify(config, null, 4));
