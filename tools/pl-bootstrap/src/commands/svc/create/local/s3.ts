@@ -1,11 +1,11 @@
 import { Command, Args } from '@oclif/core';
 import path from 'node:path';
-import type { startLocalOptions } from '../../../core';
-import Core from '../../../core';
-import * as cmdOpts from '../../../cmd-opts';
-import * as util from '../../../util';
-import state from '../../../state';
-import * as platforma from '../../../platforma';
+import type { startLocalS3Options } from '../../../../core';
+import Core from '../../../../core';
+import * as cmdOpts from '../../../../cmd-opts';
+import * as util from '../../../../util';
+import state from '../../../../state';
+import * as platforma from '../../../../platforma';
 
 export default class Local extends Command {
   static override description = 'Run Platforma Backend service as local process on current host (no docker container)';
@@ -16,6 +16,7 @@ export default class Local extends Command {
     ...cmdOpts.GlobalFlags,
     ...cmdOpts.VersionFlag,
 
+    ...cmdOpts.S3AddressesFlags,
     ...cmdOpts.AddressesFlags,
     ...cmdOpts.PlBinaryFlag,
     ...cmdOpts.PlSourcesFlag,
@@ -71,7 +72,7 @@ export default class Local extends Command {
     if (flags['debug-listen']) listenDbg = flags['debug-listen'];
     else if (flags['debug-port']) listenDbg = `127.0.0.1:${flags['debug-port']}`;
 
-    const startOptions: startLocalOptions = {
+    const startOptions: startLocalS3Options = {
       binaryPath: binaryPath,
       version: flags.version,
       configPath: flags.config,
@@ -79,6 +80,9 @@ export default class Local extends Command {
 
       primaryURL: flags['storage-primary'],
       libraryURL: flags['storage-library'],
+
+      minioPort: flags['s3-port'],
+      minioConsolePort: flags['s3-console-port'],
 
       configOptions: {
         grpc: { listen: listenGrpc },
@@ -92,9 +96,11 @@ export default class Local extends Command {
           work: { type: 'FS', rootPath: flags['storage-work'] },
         },
       },
+
     };
 
-    core.createLocal(instanceName, startOptions);
+    logger.info(`Creating instance configuration, data directory and other stuff...`);
+    core.createLocalS3(instanceName, startOptions);
 
     if (startOptions.binaryPath) {
       logger.info(`Instance '${instanceName}' was created. To start it run 'up' command`);
