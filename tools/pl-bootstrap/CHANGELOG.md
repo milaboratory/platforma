@@ -1,5 +1,11 @@
 # @platforma-sdk/bootstrap
 
+## 3.1.4
+
+### Patch Changes
+
+- 37ea8d3: Make pl-bootstrap blocking back again for local services
+
 ## 3.1.3
 
 ### Patch Changes
