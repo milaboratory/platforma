@@ -55,6 +55,8 @@ services:
       - "PL_AUTH_ENABLED=${PL_AUTH_ENABLED:-false}"
       - "PL_AUTH_HTPASSWD_PATH=${PL_AUTH_HTPASSWD_PATH:+/etc/platforma/users.htpasswd}"
 
+      - "PL_RUNNER_WD_CACHE_ON_FAILURE=${PL_RUNNER_WD_CACHE_ON_FAILURE:-0s}"
+
       # Data Controller: general settings
       - "PL_DATA_CREATE_BUCKET=true" # try to automatically create buckets for storages if they not exist
       - "PL_DATA_HARDLINK_MODE=auto" # wether to use hardlinks when copying data between storages and within storage.
