@@ -1,5 +1,11 @@
 # @platforma-sdk/bootstrap
 
+## 3.1.5
+
+### Patch Changes
+
+- e6444cf: Fix custom S3 storage settings generation from URL
+
 ## 3.1.4
 
 ### Patch Changes
