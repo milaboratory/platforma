@@ -7,6 +7,11 @@ import { readFile } from 'fs/promises';
 import upath from 'upath';
 import type { MiLogger } from '@milaboratories/ts-helpers';
 
+const defaultConfig: ConnectConfig = {
+  keepaliveInterval: 60000,
+  keepaliveCountMax: 10,
+};
+
 export type SshAuthMethods = 'publickey' | 'password';
 export type SshAuthMethodsResult = SshAuthMethods[];
 export type SshDirContent = {
@@ -29,8 +34,13 @@ export class SshClient {
    * @returns A new instance of SshClient with an active connection.
    */
   public static async init(logger: MiLogger, config: ConnectConfig): Promise<SshClient> {
+    const withDefaults = {
+      ...defaultConfig,
+      ...config,
+    };
+
     const client = new SshClient(logger, new Client());
-    await client.connect(config);
+    await client.connect(withDefaults);
 
     return client;
   }
@@ -189,13 +199,13 @@ export class SshClient {
       });
 
       conn.on('error', (err) => {
-        console.error('[SSH] SSH connection error', 'ports', ports, err.message);
+        this.logger.error(`[SSH] SSH connection error, ports: ${JSON.stringify(ports)}, err: ${err.message}`);
         server?.close();
         reject(`ssh.forwardPort: conn.err: ${err}`);
       });
 
       conn.on('close', () => {
-        this.logger.info(`[SSH] Connection closed, ports: ${ports}`);
+        this.logger.info(`[SSH] Connection closed, ports: ${JSON.stringify(ports)}`);
       });
 
       conn.connect(config);
