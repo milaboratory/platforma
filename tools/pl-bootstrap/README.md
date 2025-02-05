@@ -53,6 +53,29 @@ pl-dev svc up MyLocalPl
 The tool will download Platforma Backend archive for your OS and architecture, generate configuration file and all necessary directories.
 `up` command will make the service instance start.
 
+### How-To's
+
+> NOTE: after creating instances with `svc create * <NAME>` command, start this instance with `svc up <NAME>`. Only one instance for user can be started at a time for now. When you call `up` for one instance, all other instances get stopped automatically.
+
+- Docker-based:
+  - Create docker container, starting fake S3 service (minio) locally to use it as a primary storage:
+    ```bash
+    pl-dev svc create docker s3 MyInstance
+    ```
+  - Create docker container, connecting it to AWS S3 bucket `myAwesomeBucket` as a primary storage, keeping all the data under `some-prefix` prefix inside the bucket:
+    ```bash
+    pl-dev svc create docker MyInstance --storage-primary "s3://myAwesomeBucket/some-prefix?region=eu-central-1"
+    ```
+  - Mount custom directory with dev blocks from the host into docker container:
+    ```bash
+    pl-dev svc create docker MyInstance --mount /home/myusername/platforma-dev/blocks/
+    ```
+- Local instances:
+  - Create service that starts locally on current host (no containers) and uses custom S3 service (not AWS) as library:
+    ```bash
+    pl-dev svc create local MyInstance --storage-library "s3es://my-corporate-s3.example.com/rawDataBucket/?region=company-internal-region"
+    ```
+
 ## Block skeleton generation
 
 To create new block skeleton, run
