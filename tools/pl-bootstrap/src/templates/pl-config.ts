@@ -17,7 +17,7 @@ export function storageSettingsFromURL(
     case 's3:': {
       const bucketName = url.hostname;
       const region = url.searchParams.get('region');
-      const keyPrefix = url.pathname;
+      const keyPrefix = url.pathname.slice(1); // 's3://bucket/' will have '/' as pathname. We don't want to always have '/' prefix
 
       return {
         ...defaults,
@@ -29,9 +29,9 @@ export function storageSettingsFromURL(
       } as types.storageOptions;
     }
     case 's3e:': {
-      const p = url.pathname.split('/').slice(1); // '/bucket/keyPrefix' -> ['', 'bucket', 'keyPrefix'] -> ['bucket', 'keyPrefix']
+      const p = url.pathname.split('/').slice(1); // '/bucket/key/prefix' -> ['', 'bucket', 'key' 'prefix'] -> ['bucket', 'key', 'prefix']
       const bucketName = p[0];
-      const keyPrefix = p.length > 1 ? '/' + p.slice(1).join('/') : '';
+      const keyPrefix = p.length > 1 ? p.slice(1).join('/') : '';
 
       return {
         ...defaults,
@@ -46,9 +46,9 @@ export function storageSettingsFromURL(
       } as types.storageOptions;
     }
     case 's3es:': {
-      const p = url.pathname.split('/').slice(1); // '/bucket/keyPrefix' -> ['', 'bucket', 'keyPrefix'] -> ['bucket', 'keyPrefix']
+      const p = url.pathname.split('/').slice(1); // '/bucket/key/prefix' -> ['', 'bucket', 'key' 'prefix'] -> ['bucket', 'key', 'prefix']
       const bucketName = p[0];
-      const keyPrefix = p.length > 1 ? '/' + p.slice(1).join('/') : '';
+      const keyPrefix = p.length > 1 ? p.slice(1).join('/') : '';
 
       return {
         ...defaults,
