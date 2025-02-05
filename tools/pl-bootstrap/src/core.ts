@@ -92,7 +92,7 @@ export default class Core {
     return this.startInstance(instance);
   }
 
-  public createLocal(instanceName: string, options?: startLocalOptions): instanceInfo {
+  public createLocal(instanceName: string, options?: createLocalOptions): instanceInfo {
     const cmd = options?.binaryPath ?? platforma.binaryPath(options?.version, 'binaries', 'platforma');
     let configPath = options?.configPath;
     const workdir: string = options?.workdir ?? (configPath ? process.cwd() : state.instanceDir(instanceName));
@@ -187,7 +187,7 @@ export default class Core {
     return state.getInstanceInfo(instanceName);
   }
 
-  public createLocalS3(instanceName: string, options?: startLocalS3Options): instanceInfo {
+  public createLocalS3(instanceName: string, options?: createLocalS3Options): instanceInfo {
     this.logger.debug('creating platforma instance in \'local s3\' mode...');
 
     const minioPort = options?.minioPort ?? 9000;
@@ -917,16 +917,6 @@ You can obtain the license from "https://licensing.milaboratories.com".`);
 
     return report.join('\n');
   }
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private readComposeFile(fPath: string): any {
-    const yamlData = fs.readFileSync(fPath);
-    return yaml.parse(yamlData.toString());
-  }
-
-  private writeComposeFile(fPath: string, data: unknown) {
-    fs.writeFileSync(fPath, yaml.stringify(data));
-  }
 }
 
 export function checkRunError(result: SpawnSyncReturns<Buffer>[], message?: string) {
@@ -943,7 +933,7 @@ export function checkRunError(result: SpawnSyncReturns<Buffer>[], message?: stri
   }
 }
 
-export type startLocalOptions = {
+export type createLocalOptions = {
   version?: string;
   binaryPath?: string;
   configPath?: string;
@@ -954,9 +944,9 @@ export type startLocalOptions = {
   libraryURL?: string;
 };
 
-export type startLocalFSOptions = startLocalOptions;
+export type createLocalFSOptions = createLocalOptions;
 
-export type startLocalS3Options = startLocalOptions & {
+export type createLocalS3Options = createLocalOptions & {
   minioPort?: number;
   minioConsolePort?: number;
 };
