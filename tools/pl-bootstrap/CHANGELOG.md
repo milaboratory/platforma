@@ -1,5 +1,11 @@
 # @platforma-sdk/bootstrap
 
+## 3.1.9
+
+### Patch Changes
+
+- 3a84d15: Fix notice message text after svc creation
+
 ## 3.1.8
 
 ### Patch Changes
