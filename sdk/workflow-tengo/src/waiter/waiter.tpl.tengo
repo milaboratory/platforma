@@ -1,0 +1,12 @@
+self := import(":tpl")
+
+self.defineOutputs("output")
+
+self.awaitState("AllInputsSet")
+self.awaitState("trigger", "ResourceReady")
+
+self.body(func(inputs) {
+    return {
+        "output": inputs.pass
+    }
+})

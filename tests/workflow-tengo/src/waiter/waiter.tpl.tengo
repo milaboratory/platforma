@@ -1,0 +1,16 @@
+// simple1
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+waiter := import("@platforma-sdk/workflow-tengo:waiter")
+
+self.defineOutputs(["output"])
+
+self.body(func(inputs) {
+
+	w := waiter.builder(inputs.pass)
+	w.wait(inputs.wait)
+
+	return {
+		output: w.build().output()
+	}
+})
