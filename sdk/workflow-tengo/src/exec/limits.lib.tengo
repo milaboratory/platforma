@@ -1,0 +1,149 @@
+/**
+ * A library that creates Quota resource.
+ * Shared with 'workdir' package.
+ *
+ * Was shaped as a separate lib to avoid recursive imports (exec -> workdir -> exec)
+ */
+
+ll := import(":ll")
+oop := import(":oop")
+validation := import(":validation")
+
+smart := import(":smart")
+json := import("json")
+
+_RTYPE_QUOTA := { Name: "Quota", Version: "1" }
+
+/**
+ * Builder for quota resource.
+ *
+ * Creates 'Quota' resource used to request specific amount of CPU and RAM in a given queue
+ */
+quotaBuilder := func() {
+	self := undefined
+
+	queue_name := undefined
+	cpu_request := undefined
+	ram_request := undefined
+
+
+	self = ll.toStrict({
+		/**
+		 * Create quota resource for specific execution queue.
+		 * This is the only method required for call before .build()
+		 *
+		 * @param name: string - name of the queue.
+		 * @return builder
+		 */
+		queue: func(name) {
+			validation.assertJsonSchema(name, "string", "exec.quota.builder.queue: name of the queue should be a string")
+			queue_name = name
+
+			return self
+		},
+
+		/**
+		 * Amount of cores to request in quota.
+		 *
+		 * @param amount: number - number of cores.
+		 * @return builder
+		 */
+		cpu: func(amount) {
+			validation.assertJsonSchema(amount, ["or", "number", "null"], "exec.quota.builder.cpu: CPU amount should be a number")
+			ll.assert(is_undefined(amount) || amount > 0, "exec.quota.builder.cpu: amount of cores should be greater than 0")
+			cpu_request = amount
+
+			return self
+		},
+
+		/**
+		 * Amount of RAM to request.
+		 *
+		 * @param amount: number | string - amount of RAM in bytes or string with size suffix (case-insensitive):
+		 *                                    K,  KB,  M,  MB,  G,  GB for base-10 sizes (x1000)
+		 *                                   Ki, KiB, Mi, MiB, Gi, GiB for base-2 sizes (x1024)
+		 *
+		 * @return builder
+		 */
+		ram: func(amount) {
+			validation.assertJsonSchema(amount, ["or", "number", "string", "null"], "exec.quota.builder.ram: RAM amount should be a number or string")
+			ll.assert(is_undefined(amount) || is_string(amount) || amount > 0, "exec.quota.builder.ram: amount in bytes should be greater than 0")
+			ram_request = amount
+
+			return self
+		},
+
+		/**
+		 * Create Quota resource.
+		 *
+		 * @return smart.resource - reference to the resulting value resource
+		 */
+		build: func() {
+			ll.assert(queue_name != "", "exec.quota.builder: queue name is mandatory and could not be empty string")
+
+			data := {
+				queue: queue_name
+			}
+			if !is_undefined(cpu_request) {
+				data.cpuCores = cpu_request
+			}
+			if !is_undefined(ram_request) {
+				data.memory = ram_request
+			}
+
+			return smart.createValueResource(_RTYPE_QUOTA, json.encode(data))
+		}
+	})
+
+	return self
+}
+
+_RTYPE_STORAGE_SPACE_REQUEST    := { Name: "StorageSpaceRequest", Version: "1" }
+_SSR_FIELD_REQUEST                  := "request"    // input
+_SSR_FIELD_ALLOCATION               := "allocation" // output
+
+storageSpaceRequestBuilder := func() {
+	self := undefined
+
+	quota := undefined
+
+	self = ll.toStrict({
+		/**
+		 * Request for given resources
+		 *
+		 * @param ref: smart.reference - reference to Quota resource to be fulfilled by storage allocator
+		 * @return spaceRequestBuilder
+		 */
+		quota: func(ref) {
+			validation.assertJsonSchema(ref, validation.reference, "workdir.limits.quota: quota must be a valid reference to Quota resource")
+			quota = ref
+
+			return self
+		},
+
+		/**
+		 * Build StorageSpaceRequest resource
+		 *
+		 * @return StorageSpaceRequest
+		 */
+		build: func() {
+			ll.assert(smart.isReference(quota), "workdir.limits.build: quota of StorageSpaceRequest must be a valid reference")
+
+			requestBuilder := smart.ephemeralBuilder(_RTYPE_STORAGE_SPACE_REQUEST)
+			requestBuilder.getField(_SSR_FIELD_REQUEST).set(quota)
+
+			return ll.toStrict(
+				oop.inherit(requestBuilder, {
+					allocation: requestBuilder.getField(_SSR_FIELD_ALLOCATION)
+				})
+			)
+		}
+	})
+
+	return self
+}
+
+export ll.toStrict({
+	quotaBuilder:                    quotaBuilder,
+	storageSpaceRequestBuilder:      storageSpaceRequestBuilder
+})
