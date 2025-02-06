@@ -6,6 +6,8 @@
  */
 
 ll := import(":ll")
+feats := import(":feats")
+
 json := import("json")
 times := import("times")
 text := import("text")
@@ -51,7 +53,7 @@ _newArg := func(isString, value) {
 	if isString {
 		return _newTypedArg(constants.ARG_TYPE_STRING, value)
 	}
-	if desc.canBackendUseExpressions() {
+	if feats.commandExpressions {
 		return _newTypedArg(constants.ARG_TYPE_EXPRESSION, value)
 	}
 	return _newTypedArg(constants.ARG_TYPE_VAR, value)
@@ -59,7 +61,7 @@ _newArg := func(isString, value) {
 
 _newRefVar := func(varName, refName, reference) {
 	// deprecated, remove on 15 Mar 2025
-	if !desc.canBackendUseExpressions() {
+	if !feats.commandExpressions {
 		return ll.toStrict({
 			varName: "{" + varName + "}",
 			refName: refName,

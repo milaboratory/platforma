@@ -3,6 +3,8 @@
  */
 
 ll := import(":ll")
+feats := import(":feats")
+
 assets := import(":assets")
 smart := import(":smart")
 times := import("times")
@@ -15,7 +17,6 @@ enum := import("enum")
 oop := import(":oop")
 validation := import(":validation")
 constants := import(":constants")
-desc := import(":exec.descriptor")
 monetization := import(":exec.monetization")
 execConstants := import(":exec.constants")
 
@@ -161,7 +162,7 @@ builder := func() {
 			ll.assert(is_string(arg), "exec.argWithVar(): argument with var must be a string, got: %v", arg)
 
 			// deprecated: remove ARG_TYPE_VAR and this check after 15 Mar 2025
-			t := desc.canBackendUseExpressions() ? execConstants.ARG_TYPE_EXPRESSION : execConstants.ARG_TYPE_VAR
+			t := feats.commandExpressions ? execConstants.ARG_TYPE_EXPRESSION : execConstants.ARG_TYPE_VAR
 			argsTyped = append(argsTyped, {
 				type: t,
 				value: arg
@@ -197,7 +198,7 @@ builder := func() {
 			validation.assertJsonSchema([name, value], ["string"])
 
 			// deprecated: remove ARG_TYPE_VAR and this check after 15 Mar 2025
-			t := desc.canBackendUseExpressions() ? execConstants.ARG_TYPE_EXPRESSION : execConstants.ARG_TYPE_VAR
+			t := feats.commandExpressions ? execConstants.ARG_TYPE_EXPRESSION : execConstants.ARG_TYPE_VAR
 			envsTyped[name] = {
 				type: t,
 				value: value
@@ -838,6 +839,5 @@ builder := func() {
 }
 
 export ll.toStrict({
-	builder: builder,
-	canBackendUseExpressions: desc.canBackendUseExpressions
+	builder: builder
 })

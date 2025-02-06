@@ -7,12 +7,13 @@ times := import("times")
 self := import(":tpl")
 
 ll := import(":ll")
+feats := import(":feats")
+
 workdir := import(":workdir")
 path := import(":path")
 validation := import(":validation")
 runenv := import(":exec.runenv")
 internal := import(":exec.R.internal")
-desc := import(":exec.descriptor")
 constants := import(":exec.constants")
 
 //
@@ -80,8 +81,8 @@ _toolsetRenvCreate = func(operationMode, swPackage, rPackage, rDescriptor, depen
 	//
 
 	// DEPRECATED: remove after 15 Mar 2025
-	t := desc.canBackendUseExpressions() ? constants.ARG_TYPE_EXPRESSION : constants.ARG_TYPE_VAR
-	rule := desc.canBackendUseExpressions() ? "pkg" : "{pkg}"
+	t := feats.commandExpressions ? constants.ARG_TYPE_EXPRESSION : constants.ARG_TYPE_VAR
+	rule := feats.commandExpressions ? "pkg" : "{pkg}"
 
 	depsInstaller := internal.runRBuilder(operationMode, activateRenvRun.workdir, rPackage, rDescriptor).
 		env("RENV_PATHS_RENV", "./renv").
@@ -113,8 +114,8 @@ _toolsetRenvCreate = func(operationMode, swPackage, rPackage, rDescriptor, depen
 
 _toolsetRenvRefreshSwPackage = func(wd, swPackage, rPackage, rDescriptor, dependencies) {
 	// DEPRECATED: remove after 15 Mar 2025
-	t := desc.canBackendUseExpressions() ? constants.ARG_TYPE_EXPRESSION : constants.ARG_TYPE_VAR
-	rule := desc.canBackendUseExpressions() ? "pkg" : "{pkg}"
+	t := feats.commandExpressions ? constants.ARG_TYPE_EXPRESSION : constants.ARG_TYPE_VAR
+	rule := feats.commandExpressions ? "pkg" : "{pkg}"
 
 	swRefreshener := internal.runRBuilder("dev-local", wd, rPackage, rDescriptor).
 		ref("r-software-pkg", swPackage).

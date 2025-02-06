@@ -39,16 +39,10 @@ scheme := {
 	"local,?": localScheme
 }
 
-/** True if Platforma Backend supports expression refs. */
-canBackendUseExpressions := func() {
-	return ll.apiVersion() >= 2
-}
-
 export {
 	runEnvScheme: runEnvScheme,
 	binaryScheme: binaryScheme,
 	assetScheme: assetScheme,
 	localScheme: localScheme,
 	scheme: scheme,
-	canBackendUseExpressions: canBackendUseExpressions
 }
