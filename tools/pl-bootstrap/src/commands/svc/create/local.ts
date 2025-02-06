@@ -103,7 +103,7 @@ export default class Local extends Command {
 
     platforma
       .getBinary(logger, { version: flags.version })
-      .then(() => logger.info(`Instance '${instanceName}' was created. To start it run 'pl up' command`))
+      .then(() => logger.info(`Instance '${instanceName}' was created. To start it run 'svc up' command`))
       .catch(function (err: Error) {
         logger.error(err.message);
       });
