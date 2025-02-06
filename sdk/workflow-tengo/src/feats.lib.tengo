@@ -1,0 +1,15 @@
+/**
+ * Catalogue of features available in current execution context.
+ */
+plapi := import("plapi")
+ll := import(":ll")
+
+_api := plapi.apiVersion
+if is_undefined(_api) {
+    _api = 0
+}
+
+export ll.toStrict({
+    pureFutureFields:           _api >= 1,
+    commandExpressions:         _api >= 2
+})

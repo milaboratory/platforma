@@ -1,6 +1,8 @@
 /** The library provides all things to work with a monetization. */
 
 ll := import(":ll")
+feats := import(":feats")
+
 validation := import(":validation")
 assets := import(":assets")
 internal := import(":exec.internal")
@@ -9,7 +11,6 @@ text := import("text")
 runcmd := import(":exec.runcmd")
 workdir := import(":workdir")
 render := import(":render")
-desc := import(":exec.descriptor")
 constants := import(":exec.constants")
 
 _JWT_TOKEN_RESULT_ENV := "PLATFORMA_MNZ_JWT"
@@ -117,7 +118,7 @@ run := func(mnz, wd, queue) {
 
 	builder := runcmd.builder(wd)
 
-	exprType := desc.canBackendUseExpressions() ? constants.ARG_TYPE_EXPRESSION : constants.ARG_TYPE_VAR
+	exprType := feats.commandExpressions ? constants.ARG_TYPE_EXPRESSION : constants.ARG_TYPE_VAR
 
 	builder.envTyped("MI_LICENSE", exprType, "{secrets.MI_LICENSE}")
 
