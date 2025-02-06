@@ -5,6 +5,8 @@
 json := import("json")
 
 ll := import(":ll")
+feats := import(":feats")
+
 assets := import(":assets")
 constants := import(":constants")
 smart := import(":smart")
@@ -16,9 +18,32 @@ enum := import("enum")
 validation := import(":validation")
 render := import(":render")
 
+_WD_CREATE_FIELD_ALLOCATION := "allocation"
+_WD_CREATE_FIELD_WORKDIR    := "workdir"
+
+_WD_FILL_FIELD_WORKDIR_IN   := "workdirIn"
+_WD_FILL_FIELD_WORKDIR_OUT  := "workdirOut"
+
+/**
+ * Create empty working directory
+ *
+ * @return smart.field - field where working directory will appear after creation
+ */
 create := func() {
+	// working directories without quotas (old-style)
 	wd := smart.ephemeralBuilder(constants.RTYPE_WORKDIR_CREATE).lockAndBuild()
-	return wd.getField("workdir")
+	return wd.getField(_WD_CREATE_FIELD_WORKDIR)
+}
+
+createV2 := func() {
+	wdCreate := smart.ephemeralBuilder(constants.RTYPE_WORKDIR_CREATE_2).lockAndBuild()
+
+	return ll.toStrict(
+		oop.inherit(wdCreate, {
+			allocation: wdCreate.getField(_WD_CREATE_FIELD_ALLOCATION),
+			workdir: wdCreate.getField(_WD_CREATE_FIELD_WORKDIR)
+		})
+	)
 }
 
 _getFileFillRule := func(filePath, extension) {
@@ -87,14 +112,12 @@ _getDirFillRule := func(dir) {
 /**
  * Fills a workdir with files, values, and directories.
  *
- * @param workdir: reference - a reference to the workdir to fill.
  * @return self: builder - a builder that adds files and directories to the workdir. */
-_fill := func(workdir) {
-	ll.assert(smart.isReference(workdir), "workdir must be a reference to a resource or field")
-
+_fill := func() {
 	wd := smart.ephemeralBuilder(constants.RTYPE_WORKDIR_FILL)
-	wd.getField("workdirIn").set(workdir)
 
+	/** @type reference - space allocation to be used for WD */
+	_allocation := undefined
 	blobs := {}
 	files := {}
 	zipExtractions := {}
@@ -111,6 +134,16 @@ _fill := func(workdir) {
 		_addDirs: func(fileName) {
 			newDirs := self._getAllDirs(fileName)
 			sets.add(dirs, newDirs...)
+		},
+
+		/**
+		 * Use given storage allocation for working directory.
+		 *
+		 * @param allocation: reference
+		 */
+		allocation: func(allocation) {
+			validation.assertJsonSchema(allocation, validation.reference, "workdir.builder: allocation should be a valid reference")
+			_allocation = allocation
 		},
 
 		/**
@@ -223,6 +256,17 @@ _fill := func(workdir) {
 		 * @return wd: reference - a reference to the filled workdir.
 		 */
 		build: func() {
+			emptyWorkdir := undefined
+			if feats.workdirLimits && smart.isReference(_allocation) {
+				wdCreate := createV2()
+				wdCreate.allocation.set(_allocation)
+				emptyWorkdir = wdCreate.workdir
+			} else {
+				emptyWorkdir = create()
+			}
+
+			wd.getField(_WD_FILL_FIELD_WORKDIR_IN).set(emptyWorkdir)
+
 			rules := []
 			for dir, _ in dirs {
 				rules = append(rules, _getDirFillRule(dir))
@@ -249,7 +293,7 @@ _fill := func(workdir) {
 			self.getField("dataIn").set(smart.createBinaryMapResource(values))
 			self.getField("blobsIn").set(smart.createBlobMapResource(blobs))
 
-			return self.lockAndBuild().outputs().workdirOut
+			return self.lockAndBuild().outputs()[_WD_FILL_FIELD_WORKDIR_OUT]
 		}
 	}))
 
@@ -262,7 +306,7 @@ _fill := func(workdir) {
  * @return self: builder - a builder that adds files and directories to the workdir.
  */
 builder := func() {
-	return _fill(create())
+	return _fill()
 }
 
 /**
@@ -368,5 +412,6 @@ save := func(workdir) {
 export ll.toStrict({
 	builder: builder,
 	create: create,
+	createV2: createV2,
 	save: save
 })
