@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.55
+
+### Patch Changes
+
+- 852dcbf: add subset icon
+
 ## 2.2.54
 
 ### Patch Changes

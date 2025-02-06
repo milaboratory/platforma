@@ -1,7 +1,7 @@
 {
   "name": "@milaboratories/ui-vue-docs",
   "private": true,
-  "version": "0.2.80",
+  "version": "0.2.81",
   "type": "module",
   "scripts": {
     "dev": "vitepress dev",
