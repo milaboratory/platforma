@@ -1,5 +1,11 @@
 # @platforma-sdk/bootstrap
 
+## 3.1.8
+
+### Patch Changes
+
+- e753752: create-block: more error handling of user input
+
 ## 3.1.7
 
 ### Patch Changes
