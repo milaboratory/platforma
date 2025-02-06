@@ -28,6 +28,7 @@ RTYPE_QUERY_RESULT        := { Name: "BQueryResult",      Version: "1" }
 RTYPE_OBJECT_SPEC         := { Name: "BObjectSpec",       Version: "1" }
 
 RTYPE_WORKDIR_CREATE      := { Name: "WorkdirCreate",     Version: "1" }
+RTYPE_WORKDIR_CREATE_2    := { Name: "WorkdirCreate",     Version: "2" }
 RTYPE_WORKDIR_FILL        := { Name: "WorkdirFill",       Version: "1" }
 RTYPE_WORKDIR_FILL_RULES  := { Name: "WorkdirFill/rules", Version: "1" }
 RTYPE_WORKDIR_SAVE        := { Name: "WorkdirSave",       Version: "1" }

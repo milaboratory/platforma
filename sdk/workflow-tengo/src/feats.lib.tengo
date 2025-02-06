@@ -11,5 +11,6 @@ if is_undefined(_api) {
 
 export ll.toStrict({
     pureFutureFields:           _api >= 1,
-    commandExpressions:         _api >= 2
+    commandExpressions:         _api >= 2,
+    workdirLimits:              _api >= 4
 })
