@@ -28,6 +28,7 @@ export const maskIcons24 = [
   'calendar',
   'canvas',
   'cell-type-num',
+  'cell-type-subset',
   'cell-type-txt',
   'checkbox-checked',
   'checkbox-intermediate',
