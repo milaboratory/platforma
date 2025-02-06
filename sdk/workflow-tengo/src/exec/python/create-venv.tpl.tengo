@@ -4,6 +4,7 @@
 
 self := import(":tpl")
 
+feats := import(":feats")
 render := import(":render")
 workdir := import(":workdir")
 runcmd := import(":exec.runcmd")
@@ -13,14 +14,13 @@ validation := import(":validation")
 runenv := import(":exec.runenv")
 internal := import(":exec.python.internal")
 constants := import(":exec.constants")
-desc := import(":exec.descriptor")
 
 _createVenv := func(pythonPackage, pythonDescriptor) {
 	wdBefore := workdir.builder().build()
 
 	// DEPRECATED: remove after 15 Mar 2025
-	t := desc.canBackendUseExpressions() ? constants.ARG_TYPE_EXPRESSION : constants.ARG_TYPE_VAR
-	pythonRule := desc.canBackendUseExpressions() ? "python" : "{python}"
+	t := feats.commandExpressions ? constants.ARG_TYPE_EXPRESSION : constants.ARG_TYPE_VAR
+	pythonRule := feats.commandExpressions ? "python" : "{python}"
 
 	venvBuilder := runcmd.builder(wdBefore)
 	venvBuilder.
