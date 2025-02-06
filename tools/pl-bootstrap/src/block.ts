@@ -68,9 +68,14 @@ function askForOptions(): CreateBlockOptions {
   if (npmOrgName === '') {
     npmOrgName = 'platforma-open';
   }
-  const orgName = readlineSync.question('Write an organization name, e.g. "my-org": ');
 
-  const blockName = readlineSync.question('Write a name of the block, e.g. "hello-world": ');
+  let orgName = '';
+  while (orgName.length < 1)
+    orgName = readlineSync.question('Write an organization name, e.g. "my-org": ');
+
+  let blockName = '';
+  while (blockName.length < 1)
+    blockName = readlineSync.question('Write a name of the block, e.g. "hello-world": ');
 
   const needSoftware = readlineSync.keyInYN('Create package for block\'s software?');
   let softwarePlatforms = ['Tengo'];
