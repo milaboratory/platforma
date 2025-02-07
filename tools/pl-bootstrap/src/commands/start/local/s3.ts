@@ -52,11 +52,6 @@ export default class S3 extends Command {
     const authDrivers = core.initAuthDriversList(flags, workdir);
     const authEnabled = flags['auth-enabled'] ?? authDrivers !== undefined;
 
-    let binaryPath = flags['pl-binary'];
-    if (flags['pl-sources']) {
-      binaryPath = core.buildPlatforma({ repoRoot: flags['pl-sources'] });
-    }
-
     let listenGrpc: string = '127.0.0.1:6345';
     if (flags['grpc-listen']) listenGrpc = flags['grpc-listen'];
     else if (flags['grpc-port']) listenGrpc = `127.0.0.1:${flags['grpc-port']}`;
@@ -70,7 +65,9 @@ export default class S3 extends Command {
     else if (flags['debug-port']) listenDbg = `127.0.0.1:${flags['debug-port']}`;
 
     const startOptions: createLocalS3Options = {
-      binaryPath: binaryPath,
+      sourcesPath: flags['pl-sources'],
+      binaryPath: flags['pl-binary'],
+
       version: flags.version,
       configPath: flags.config,
       workdir: flags['pl-workdir'],
@@ -99,7 +96,7 @@ export default class S3 extends Command {
 
     const instance = core.createLocalS3(instanceName, startOptions);
 
-    if (startOptions.binaryPath) {
+    if (startOptions.binaryPath || startOptions.sourcesPath) {
       core.switchInstance(instance);
     } else {
       platforma
