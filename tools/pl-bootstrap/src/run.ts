@@ -13,7 +13,7 @@ export function runCommands(logger: winston.Logger, cmds: instanceCommand[], opt
   const buffers: SpawnSyncReturns<Buffer>[] = [];
   const children: ChildProcess[] = [];
   for (const cmd of cmds) {
-    options = {
+    const opts = {
       cwd: cmd.workdir,
       env: {
         ...cmd.envs,
@@ -24,10 +24,10 @@ export function runCommands(logger: winston.Logger, cmds: instanceCommand[], opt
     };
 
     if (cmd.async) {
-      const child = run(logger, cmd.cmd, cmd.args, options);
+      const child = run(logger, cmd.cmd, cmd.args, opts);
       children.push(child);
     } else {
-      const result = runSync(logger, cmd.cmd, cmd.args, options);
+      const result = runSync(logger, cmd.cmd, cmd.args, opts);
       buffers.push(result);
       if (result.error || result.status !== 0) {
         break;
