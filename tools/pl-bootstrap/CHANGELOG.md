@@ -1,5 +1,11 @@
 # @platforma-sdk/bootstrap
 
+## 3.1.10
+
+### Patch Changes
+
+- bdaeac1: Re-compile platforma binary before each service start when instance is bound to sources
+
 ## 3.1.9
 
 ### Patch Changes
