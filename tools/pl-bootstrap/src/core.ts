@@ -52,11 +52,6 @@ export default class Core {
   }
 
   public stopInstance(instance: instanceInfo) {
-    if (!state.isInstanceActive(instance)) {
-      this.logger.info(`instance '${instance.name}' is not running`);
-      return;
-    }
-
     this.logger.info(`stopping platforma backend instance '${instance.name}'...`);
     const result = run.runCommands(this.logger, instance.downCommands);
     checkRunError(result.executed);
@@ -68,9 +63,10 @@ export default class Core {
       }
 
       case 'process': {
-        if (instance.pid && state.isValidPID(instance.pid)) {
+        if (instance.pid && state.isInstanceActive(instance)) {
           process.kill(instance.pid);
         }
+
         return;
       }
       default:
@@ -93,7 +89,14 @@ export default class Core {
   }
 
   public createLocal(instanceName: string, options?: createLocalOptions): instanceInfo {
-    const cmd = options?.binaryPath ?? platforma.binaryPath(options?.version, 'binaries', 'platforma');
+    let plBinaryPath = platforma.binaryPath(options?.version, 'binaries', 'platforma');
+    if (options?.sourcesPath) {
+      plBinaryPath = path.join(os.tmpdir(), 'platforma-custom-build');
+    }
+    if (options?.binaryPath) {
+      plBinaryPath = options.binaryPath;
+    }
+
     let configPath = options?.configPath;
     const workdir: string = options?.workdir ?? (configPath ? process.cwd() : state.instanceDir(instanceName));
 
@@ -160,17 +163,29 @@ export default class Core {
       fs.writeFileSync(configPath, plCfg.render(configOptions));
     }
 
+    const upCommands: instanceCommand[] = [];
+    if (options?.sourcesPath) {
+      upCommands.push({
+        cmd: 'go',
+        args: ['build', '-o', plBinaryPath, '.'],
+        workdir: path.resolve(options.sourcesPath, 'cmd', 'platforma'),
+        runOpts: {
+          stdio: 'inherit',
+        },
+      });
+    }
+
+    upCommands.push({
+      async: true,
+      cmd: plBinaryPath,
+      args: ['-config', configPath],
+      workdir: workdir,
+      runOpts: { stdio: 'inherit' },
+    });
+
     state.setInstanceInfo(instanceName, {
       type: 'process',
-      upCommands: [
-        {
-          async: true,
-          cmd: cmd,
-          args: ['-config', configPath],
-          workdir: workdir,
-          runOpts: { stdio: 'inherit' },
-        },
-      ],
+      upCommands: upCommands,
       downCommands: [],
       cleanupCommands: [],
       runInfo: {
@@ -289,23 +304,6 @@ export default class Core {
         runOpts: { stdio: 'inherit' },
       },
     };
-  }
-
-  public buildPlatforma(options: { repoRoot: string; binPath?: string }): string {
-    const cmdPath: string = path.resolve(options.repoRoot, 'cmd', 'platforma');
-    const binPath: string = options.binPath ?? path.join(os.tmpdir(), 'platforma-local-build');
-
-    this.logger.info('Building Platforma Backend binary from sources');
-    this.logger.info(`  sources path: ${options.repoRoot}`);
-    this.logger.info(`  binary path: ${binPath}`);
-
-    const result = spawnSync('go', ['build', '-o', binPath, '.'], {
-      cwd: cmdPath,
-      stdio: 'inherit',
-    });
-
-    checkRunError([result], 'failed to build platforma binary from sources using \'go build\' command');
-    return binPath;
   }
 
   public createDockerS3(
@@ -936,6 +934,7 @@ export function checkRunError(result: SpawnSyncReturns<Buffer>[], message?: stri
 
 export type createLocalOptions = {
   version?: string;
+  sourcesPath?: string;
   binaryPath?: string;
   configPath?: string;
   configOptions?: plCfg.plOptions;
