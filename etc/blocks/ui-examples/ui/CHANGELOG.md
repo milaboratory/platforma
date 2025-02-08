@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.3.30
+
+### Patch Changes
+
+- 19c273b: SDK Eslint config
+- Updated dependencies [19c273b]
+  - @milaboratories/milaboratories.ui-examples.model@1.1.17
+
 ## 1.3.29
 
 ### Patch Changes
