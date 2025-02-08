@@ -10,7 +10,7 @@ import AgGridVuePage from './pages/AgGridVuePage.vue';
 import SelectFilesPage from './pages/SelectFilesPage.vue';
 import ErrorsPage from './pages/ErrorsPage.vue';
 import PlAgDataTablePage from './pages/PlAgDataTablePage.vue';
-import PlAgOverlayLoadingPage from './pages/PlAgOverlayLoadingPage.vue';
+import PlSplashPage from './pages/PlSplashPage.vue';
 import IconsPage from './pages/IconsPage.vue';
 import PlTextFieldPage from './pages/PlTextFieldPage.vue';
 import PlTabsPage from './pages/PlTabsPage.vue';
@@ -86,7 +86,7 @@ export const sdkPlugin = defineApp(platforma, (app) => {
       '/typography': () => TypographyPage,
       '/ag-grid-vue': () => AgGridVuePage,
       '/pl-ag-data-table': () => PlAgDataTablePage,
-      '/pl-ag-overlay-loading': () => PlAgOverlayLoadingPage,
+      '/pl-splash': () => PlSplashPage,
       '/select-files': () => SelectFilesPage,
       '/errors': () => ErrorsPage,
       '/text-fields': () => PlTextFieldPage,
