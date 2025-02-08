@@ -19,6 +19,7 @@ import {
   PlNumberField,
   PlBtnDanger,
   PlBtnGroup,
+  PlAccordionSection,
 } from '@platforma-sdk/ui-vue';
 import { computed, reactive } from 'vue';
 
@@ -222,7 +223,7 @@ const sizeOptions = [{
       :shadow="slideData.shadow"
       :width="slideData.sliderWidth"
     >
-      <template v-if="slideData.title" #title>My title</template>
+      <template v-if="slideData.title" #title>Settings</template>
       <PlTextField v-model="slideData.text" label="Text field" />
       <PlDropdown
         v-model="dialogData.item"
@@ -260,6 +261,17 @@ const sizeOptions = [{
         label="Select item"
         :options="listToOptions(['Item 1', 'Item 2', 'Item 3', 'Item 4', 'Item 5', 'Item 6'])"
       />
+      <PlAccordionSection label="Section 1">
+        <div>Section 1</div>
+        <div>Section 1</div>
+        <div>Section 1</div>
+        <div>Section 1</div>
+      </PlAccordionSection>
+      <PlAccordionSection label="Section 2">
+        <div>Section 3</div>
+        <div>Section 2</div>
+        <div>Section 2</div>
+      </PlAccordionSection>
       <template v-if="slideData.actions" #actions>
         <PlBtnPrimary>Save</PlBtnPrimary>
         <PlBtnSecondary>Cancel</PlBtnSecondary>

@@ -55,7 +55,7 @@
     font-size: 28px;
     font-style: normal;
     font-weight: 500;
-    line-height: 32px;
+    line-height: 40px;
     /* 114.286% */
     letter-spacing: -0.56px;
     padding: 24px;
@@ -91,9 +91,10 @@
     display: flex;
     flex-direction: column;
     gap: 24px;
-    padding: 16px 24px;
+    padding: 16px calc(24px - var(--scrollbar-width)) 16px 24px;
     margin: 0 0;
     @include scrollbar(true);
+    scrollbar-gutter: stable;
   }
 
   &__shadow {

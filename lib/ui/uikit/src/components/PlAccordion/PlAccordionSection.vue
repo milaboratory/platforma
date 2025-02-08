@@ -50,28 +50,35 @@ defineProps<{
 </script>
 
 <template>
-  <PlSectionSeparator :class="$style.separator" :compact="compact" @click="open = !open">
-    <PlMaskIcon16 name="chevron-right" :class="[{ [$style.down]: open }, $style.chevron]" />
-    {{ label }}
-  </PlSectionSeparator>
-  <ExpandTransition>
-    <div v-if="open" :class="$style.content">
-      <slot />
-    </div>
-  </ExpandTransition>
+  <div class="pl-accordion-section">
+    <PlSectionSeparator :class="$style.separator" :compact="compact" @click="open = !open">
+      <PlMaskIcon16 name="chevron-right" :class="[{ [$style.down]: open }, $style.chevron]" />
+      {{ label }}
+    </PlSectionSeparator>
+    <ExpandTransition>
+      <div v-if="open" :class="$style.content">
+        <slot />
+      </div>
+    </ExpandTransition>
+  </div>
 </template>
 
 <style module>
 .content {
   display: flex;
   flex-direction: column;
-  gap: inherit;
+  gap: var(--gap-v);
   will-change: height, opacity;
-  transform: translateZ(0);
-  backface-visibility: hidden;
-  perspective: 1000px;
-  margin-top: -8px;
-  padding-top: 8px;
+  /* transform: translateZ(0);
+  backface-visibility: hidden; */
+}
+
+.content > *:first-child {
+  margin-top: 24px;
+}
+
+.content > *:last-child {
+  margin-bottom: 4px;
 }
 
 .separator:hover {
