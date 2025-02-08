@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.56
+
+### Patch Changes
+
+- 4f23447: [sdk/ui-vue] Fix PlAccordionSection "twitching"
+
 ## 2.2.55
 
 ### Patch Changes
