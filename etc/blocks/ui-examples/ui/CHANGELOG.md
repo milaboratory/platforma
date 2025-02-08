@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.3.29
+
+### Patch Changes
+
+- 4f23447: [sdk/ui-vue] Fix PlAccordionSection "twitching"
+
 ## 1.3.28
 
 ### Patch Changes
