@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { listToOptions } from '@milaboratories/helpers';
-import { PlBlockPage, PlBtnGroup, PlCheckbox } from '@platforma-sdk/ui-vue';
+import { PlBlockPage, PlBtnGroup, PlCheckbox, PlRow } from '@platforma-sdk/ui-vue';
 import { computed, reactive } from 'vue';
 
 const data = reactive({
@@ -20,9 +20,11 @@ const options = listToOptions(['Lorem ipsum', 'two words', 'cccc dddd zzzz']);
   <PlBlockPage :no-body-gutters="data.noBodyGutters">
     <template #title> {{ pageTitle }} </template>
     <template #append>
-      <PlBtnGroup v-model="data.group" :options="options"/>
-      <PlCheckbox v-model="data.longTitle">Long title</PlCheckbox>
-      <PlCheckbox v-model="data.noBodyGutters">No body gutters</PlCheckbox>
+      <PlRow>
+        <PlBtnGroup v-model="data.group" :options="options"/>
+        <PlCheckbox v-model="data.longTitle">Long title</PlCheckbox>
+        <PlCheckbox v-model="data.noBodyGutters">No body gutters</PlCheckbox>
+      </PlRow>
     </template>
     <div :class="$style.content">Content</div>
   </PlBlockPage>

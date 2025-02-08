@@ -73,6 +73,9 @@
   --z-dropdown-options: 110;
   --z-tooltip: 120;
   --z-context-menu: 1001;
+
+  // Base custom scrollbar width (see mixins)
+  --scrollbar-width: 6px;
 }
 
 [data-theme='dark'] {
