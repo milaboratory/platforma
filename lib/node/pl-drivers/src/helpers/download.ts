@@ -1,3 +1,5 @@
+// @TODO Gleb Zakharov
+/* eslint-disable n/no-unsupported-features/node-builtins */
 import type { Dispatcher } from 'undici';
 import { request } from 'undici';
 import { Readable } from 'node:stream';
@@ -36,7 +38,7 @@ export class RemoteFileDownloader {
   }
 }
 
-async function checkStatusCodeOk(statusCode: number, webBody: ReadableStream<any>, url: string) {
+async function checkStatusCodeOk(statusCode: number, webBody: ReadableStream, url: string) {
   if (statusCode != 200) {
     const beginning = (await text(webBody)).substring(0, 1000);
 

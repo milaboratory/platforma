@@ -155,11 +155,11 @@ async function readFileChunk(path: string, chunkStart: bigint, chunkEnd: bigint)
     const bytesRead = await readBytesFromPosition(f, b, len, pos);
 
     return b.subarray(0, bytesRead);
-  } catch (e: any) {
-    if (e.code == 'ENOENT') throw new NoFileForUploading(`there is no file ${path} for uploading`);
+  } catch (e: unknown) {
+    if (e && typeof e === 'object' && ('code' in e) && e.code == 'ENOENT') throw new NoFileForUploading(`there is no file ${path} for uploading`);
     throw e;
   } finally {
-    f?.close();
+    await f?.close();
   }
 }
 
@@ -199,7 +199,7 @@ function checkStatusCodeOk(
   if (statusCode != 200) {
     throw new NetworkError(
       `response is not ok, status code: ${statusCode},`
-      + ` body: ${body}, headers: ${headers}, url: ${info.uploadUrl}`,
+      + ` body: ${body}, headers: ${JSON.stringify(headers)}, url: ${info.uploadUrl}`,
     );
   }
 }
