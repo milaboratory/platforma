@@ -2,9 +2,8 @@
 
 .pl-btn-group {
   --pl-btn-group-height: 40px;
-  box-sizing: content-box;
+  box-sizing: border-box;
   position: relative;
-  min-height: var(--pl-btn-group-height);
   font-family: var(--control-font-family);
 
   label {
@@ -26,6 +25,7 @@
   }
 
   .inner-border {
+    height: var(--pl-btn-group-height);
     min-height: var(--pl-btn-group-height);
 
     &::after {

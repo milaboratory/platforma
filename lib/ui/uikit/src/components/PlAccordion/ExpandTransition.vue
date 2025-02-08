@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 const onStart = (el: Element) => {
-  (el as HTMLElement).style.setProperty('--component-height', el.scrollHeight + 'px');
   el.classList.add('expand-collapse-fix');
+  (el as HTMLElement).style.setProperty('--component-height', el.scrollHeight + 'px');
 };
 
 const onAfter = (el: Element) => {
