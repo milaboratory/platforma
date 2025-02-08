@@ -78,7 +78,7 @@ export class ClientProgress {
 
       yield * responses;
     } catch (e) {
-      this.logger.warn('Failed to get realtime status' + e);
+      this.logger.warn('Failed to get realtime status' + String(e));
       throw e;
     }
   }

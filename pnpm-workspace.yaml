@@ -34,6 +34,7 @@ packages:
   - sdk/workflow-tengo
   - sdk/test
   - sdk/ui-vue
+  - sdk/eslint-config
 
   # Test blocks
 

@@ -14,7 +14,7 @@ import {
 import { computed, reactive, ref } from 'vue';
 
 const data = reactive({
-  title: 'Title example',
+  title: "Title example",
   importHandles: [] as unknown[],
   value: 1,
   options: [{
