@@ -1,5 +1,13 @@
 # @milaboratories/pl-middle-layer
 
+## 1.27.8
+
+### Patch Changes
+
+- 2197537: PFrames version bump, PFConv docs update
+- Updated dependencies [2197537]
+  - @platforma-sdk/workflow-tengo@2.9.10
+
 ## 1.27.7
 
 ### Patch Changes
