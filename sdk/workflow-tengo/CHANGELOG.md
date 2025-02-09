@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 2.9.10
+
+### Patch Changes
+
+- 2197537: PFrames version bump, PFConv docs update
+
 ## 2.9.9
 
 ### Patch Changes
