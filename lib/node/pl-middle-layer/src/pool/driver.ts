@@ -81,6 +81,7 @@ function migrateFilters(filters: PTableRecordFilter[]): PTableRecordSingleValueF
 const bigintReplacer = (_: string, v: unknown) => (typeof v === 'bigint' ? v.toString() : v);
 
 class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
+  public readonly rustPFrame: PFrameInternal.PFrameV2;
   public readonly specPFrame: PFrameInternal.PFrameV2;
   private readonly blobIdToResource = new Map<string, ResourceInfo>();
   private readonly blobHandleComputables = new Map<
@@ -131,35 +132,43 @@ class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
       )).values(),
     ];
 
-    const createSpecPFrame = (): PFrameInternal.PFrameV2 => {
+    this.rustPFrame = ((): PFrameInternal.PFrameV2 => {
       try {
-        if (getDebugFlags().usePFrameRs) {
-          const pFrame = new PFrameRs(getDebugFlags().logPFrameRequests ? logFunc : undefined);
-          for (const column of distinct_columns) {
-            pFrame.addColumnSpec(column.id, column.spec);
-          }
-          return pFrame;
-        } else {
-          const pFrame = getDebugFlags().logPFrameRequests ? new PFrame(logFunc) : new PFrame();
-          for (const column of distinct_columns) {
-            try {
-              pFrame.addColumnSpec(column.id, column.spec);
-            } catch (err: unknown) {
-              throw new Error(
-                `Adding column ${column.id} to PFrame failed: ${err as Error}; Spec: ${JSON.stringify(column.spec)}.`,
-              );
-            }
-          }
-          return pFrame;
+        const pFrame = new PFrameRs(getDebugFlags().logPFrameRequests ? logFunc : undefined);
+        pFrame.setDataSource(this);
+        for (const column of distinct_columns) {
+          pFrame.addColumnSpec(column.id, column.spec);
+          pFrame.setColumnData(column.id, column.data);
         }
+        return pFrame;
+      } catch (err: unknown) {
+        throw new Error(
+          `Rust PFrame creation failed, columns: ${JSON.stringify(distinct_columns)}, error: ${err as Error}`,
+        );
+      }
+    })();
+
+    this.specPFrame = ((): PFrameInternal.PFrameV2 => {
+      try {
+        const pFrame = getDebugFlags().logPFrameRequests ? new PFrame(logFunc) : new PFrame();
+        for (const column of distinct_columns) {
+          try {
+            pFrame.addColumnSpec(column.id, column.spec);
+          } catch (err: unknown) {
+            throw new Error(
+              `Adding column ${column.id} to PFrame failed: ${err as Error}; Spec: ${JSON.stringify(column.spec)}.`,
+            );
+          }
+        }
+        return pFrame;
       } catch (err: unknown) {
         throw new Error(
           `Spec PFrame creation failed, columns: ${JSON.stringify(distinct_columns)}, error: ${err as Error}`,
         );
       }
-    };
+    })();
 
-    const createDataPFrame = (): PFrameInternal.PFrameV2 => {
+    this.createDataPFrame = (): PFrameInternal.PFrameV2 => {
       try {
         const pFrame = getDebugFlags().logPFrameRequests ? new PFrame(logFunc) : new PFrame();
         pFrame.setDataSource(this);
@@ -180,9 +189,6 @@ class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
         );
       }
     };
-
-    this.specPFrame = createSpecPFrame();
-    this.createDataPFrame = createDataPFrame;
   }
 
   private getOrCreateComputableForBlob(blobId: string) {
@@ -224,6 +230,7 @@ class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
 
   [Symbol.dispose](): void {
     for (const computable of this.blobHandleComputables.values()) computable.resetState();
+    this.rustPFrame.dispose();
     this.specPFrame.dispose();
   }
 }
@@ -249,8 +256,9 @@ export class PFrameDriver implements SdkPFrameDriver {
       fetchMethod: async (key) => await fsp.readFile(key),
       sizeCalculation: (v) => v.length,
     });
-    const concurrencyLimiter = new ConcurrencyLimitingExecutor(1);
     this.blobContentCache = blobContentCache;
+
+    const concurrencyLimiter = new ConcurrencyLimitingExecutor(1);
     this.concurrencyLimiter = concurrencyLimiter;
 
     this.pFrames = new (class extends RefCountResourcePool<InternalPFrameData, PFrameHolder> {
@@ -366,9 +374,11 @@ export class PFrameDriver implements SdkPFrameDriver {
             }]
           : [],
     };
-    const responce = await this.concurrencyLimiter.run(
-      async () => await this.pFrames.getByKey(handle).specPFrame.findColumns(iRequest),
-    );
+    const responce = getDebugFlags().usePFrameRs
+      ? await this.pFrames.getByKey(handle).rustPFrame.findColumns(iRequest)
+      : await this.concurrencyLimiter.run(
+        async () => await this.pFrames.getByKey(handle).specPFrame.findColumns(iRequest),
+      );
     return {
       hits: responce.hits
         .filter((h) => // only exactly matching columns
@@ -381,15 +391,19 @@ export class PFrameDriver implements SdkPFrameDriver {
   }
 
   public async getColumnSpec(handle: PFrameHandle, columnId: PObjectId): Promise<PColumnSpec> {
-    return await this.concurrencyLimiter.run(
-      async () => await this.pFrames.getByKey(handle).specPFrame.getColumnSpec(columnId),
-    );
+    return getDebugFlags().usePFrameRs
+      ? await this.pFrames.getByKey(handle).rustPFrame.getColumnSpec(columnId)
+      : await this.concurrencyLimiter.run(
+        async () => await this.pFrames.getByKey(handle).specPFrame.getColumnSpec(columnId),
+      );
   }
 
   public async listColumns(handle: PFrameHandle): Promise<PColumnIdAndSpec[]> {
-    return await this.concurrencyLimiter.run(
-      async () => await this.pFrames.getByKey(handle).specPFrame.listColumns(),
-    );
+    return getDebugFlags().usePFrameRs
+      ? await this.pFrames.getByKey(handle).rustPFrame.listColumns()
+      : await this.concurrencyLimiter.run(
+        async () => await this.pFrames.getByKey(handle).specPFrame.listColumns(),
+      );
   }
 
   public async calculateTableData(
