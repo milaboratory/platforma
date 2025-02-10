@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 1.27.9
+
+### Patch Changes
+
+- c0a3935: Run PFrames Rust spec requests without concurrency limiter
+
 ## 1.27.8
 
 ### Patch Changes
