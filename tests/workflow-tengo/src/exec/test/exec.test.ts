@@ -197,7 +197,7 @@ tplTest(
  * - the program prints the token into stdout. */
 // We skipped it for a month since mnz-client Go's binary
 // was broken due to incompatible changes.
-tplTest.skipIf((new Date()).toISOString() < '2025-02-10')(
+tplTest.skipIf((new Date()).toISOString() < '2025-02-20')(
   'should run monetization and return jwt token as env',
   async ({ helper, expect }) => {
     const result = await helper.renderTemplate(
