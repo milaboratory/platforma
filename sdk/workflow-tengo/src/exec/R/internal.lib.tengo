@@ -1,4 +1,6 @@
 ll := import(":ll")
+feats := import(":feats")
+
 validation := import(":validation")
 runcmd := import(":exec.runcmd")
 path := import(":path")
@@ -16,8 +18,8 @@ rVenvInputSchema := {
 }
 
 runRBuilder := func(operationMode, wd, rPackage, rDescriptor) {
-	t := desc.canBackendUseExpressions() ? constants.ARG_TYPE_EXPRESSION : constants.ARG_TYPE_VAR
-	rule := desc.canBackendUseExpressions() ? "R" : "{R}"
+	t := feats.commandExpressions ? constants.ARG_TYPE_EXPRESSION : constants.ARG_TYPE_VAR
+	rule := feats.commandExpressions ? "R" : "{R}"
 
 	builder := runcmd.builder(wd).
 		ref("r-run-environment", rPackage).

@@ -4,6 +4,8 @@
 
 tx := import("tx")
 ll := import(":ll")
+feats := import(":feats")
+
 oop := import(":oop")
 maps := import(":maps")
 json := import("json")
@@ -495,7 +497,7 @@ resource = func(r) {
 				isEph = eph[0]
 			}
 
-			if ll.apiVersion() < 1 && !isEph {
+			if !feats.pureFutureFields && !isEph {
 				// Dirty hack that saves from issues with buggy pure getField before v1.16.1
 				// We can safely drop it when we consider v1.16.0 old enough.
 				return self.getFutureField(name, "output", true).expectNonEphemeral()
@@ -890,7 +892,7 @@ field = func(f) {
 				isEph = eph[0]
 			}
 
-			if ll.apiVersion() < 1 && !isEph {
+			if !feats.pureFutureFields && !isEph {
 				// Dirty hack that saves from issues with buggy pure getField before v1.16.1
 				// We can safely drop it when we consider v1.16.0 old enough.
 				return self.getFutureField(name, "output", true).expectNonEphemeral()
