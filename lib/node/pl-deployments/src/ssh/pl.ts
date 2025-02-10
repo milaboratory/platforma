@@ -60,7 +60,7 @@ export class SshPl {
       // We are waiting for Platforma to run to ensure that it has started.
       return await this.checkIsAliveWithInterval();
     } catch (e: unknown) {
-      const msg = `ssh.start: error occurred ${e}`
+      const msg = `ssh.start: error occurred ${e}`;
       this.logger.error(msg);
       throw new Error(msg);
     }
@@ -74,10 +74,22 @@ export class SshPl {
       await supervisorCtlShutdown(this.sshClient, remoteHome, arch.arch);
       return await this.checkIsAliveWithInterval(undefined, undefined, false);
     } catch (e: unknown) {
-      const msg = `ssh.stop: error occurred ${e}`
+      const msg = `ssh.stop: error occurred ${e}`;
       this.logger.error(msg);
-      throw new Error(msg)
+      throw new Error(msg);
     }
+  }
+
+  public async reset(): Promise<boolean> {
+    const workDir = await this.getUserHomeDirectory();
+
+    this.logger.info(`pl.reset: Stop Platforma on the server`);
+    await this.stop();
+
+    this.logger.info(`pl.reset: Deleting Platforma workDir ${workDir} on the server`);
+    await this.sshClient.deleteFolder(plpath.workDir(workDir));
+
+    return true;
   }
 
   public async platformaInit(localWorkdir: string): Promise<SshInitReturnTypes> {
@@ -232,7 +244,6 @@ export class SshPl {
     softwareName: string,
     tgzName: string,
   ): Promise<DownloadAndUntarState> {
-
     const state: DownloadAndUntarState = {};
     state.binBasePath = plpath.binariesDir(remoteHome);
     await this.sshClient.createRemoteDirectory(state.binBasePath);
@@ -242,7 +253,7 @@ export class SshPl {
     const attempts = 5;
     for (let i = 1; i <= attempts; i++) {
       try {
-         downloadBinaryResult = await downloadBinaryNoExtract(
+        downloadBinaryResult = await downloadBinaryNoExtract(
           this.logger,
           localWorkdir,
           softwareName,
@@ -250,7 +261,7 @@ export class SshPl {
           arch.arch, arch.platform,
         );
         break;
-      } catch(e: unknown) {
+      } catch (e: unknown) {
         await sleep(300);
         if (i == attempts) {
           throw new Error(`downloadAndUntar: ${attempts} attempts, last error: ${e}`);
