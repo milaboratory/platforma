@@ -1,5 +1,11 @@
 # @milaboratories/pl-local
 
+## 1.1.4
+
+### Patch Changes
+
+- 0b92139: added delete folder function
+
 ## 1.1.3
 
 ### Patch Changes
