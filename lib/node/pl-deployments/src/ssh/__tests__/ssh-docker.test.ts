@@ -131,6 +131,25 @@ describe('SSH Tests', () => {
     server.close();
   });
 
+  it('Remove directory', async () => {
+    const rootFolder = '/home/pl-doctor/upload';
+    await client.createRemoteDirectory(`${rootFolder}/upload/nested`);
+    await client.createRemoteDirectory(`${rootFolder}/2-nested`);
+    await client.createRemoteDirectory(`${rootFolder}/2-nested/3-sub`);
+    await client.writeFileOnTheServer(`${rootFolder}/2-nested/3-sub/qwerty.txt`, 'HELLO FROM SSH');
+
+    const text = await client.readFile(`${rootFolder}/2-nested/3-sub/qwerty.txt`);
+    expect(text).toBe('HELLO FROM SSH');
+
+    let data = await client.checkPathExists(rootFolder);
+    expect(data.exists).toBe(true);
+
+    await client.deleteFolder(rootFolder);
+
+    data = await client.checkPathExists(rootFolder);
+    expect(data.exists).toBe(false);
+  });
+
   it('Auth types', async () => {
     const hostData = getContainerHostAndPort(testContainer);
     const types = await SshClient.getAuthTypes(hostData.host, hostData.port);
