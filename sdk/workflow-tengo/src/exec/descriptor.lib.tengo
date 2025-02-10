@@ -2,7 +2,6 @@
  * The scheme is here:
  * https://github.com/milaboratory/platforma/blob/main/tools/package-builder/src/core/renderer.ts#L161 */
 
-ll := import(":ll")
 
 runEnvScheme := {
 	registry: "string",
@@ -39,16 +38,10 @@ scheme := {
 	"local,?": localScheme
 }
 
-/** True if Platforma Backend supports expression refs. */
-canBackendUseExpressions := func() {
-	return ll.apiVersion() >= 2
-}
-
 export {
 	runEnvScheme: runEnvScheme,
 	binaryScheme: binaryScheme,
 	assetScheme: assetScheme,
 	localScheme: localScheme,
-	scheme: scheme,
-	canBackendUseExpressions: canBackendUseExpressions
+	scheme: scheme
 }
