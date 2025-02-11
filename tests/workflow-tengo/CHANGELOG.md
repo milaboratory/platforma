@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo-tests
 
+## 1.5.0
+
+### Minor Changes
+
+- 205c17e: Added ability to filter only specific partitions on xsv export with `{partitions: {idx: [keys]}}` option.
+
 ## 1.4.3
 
 ### Patch Changes
