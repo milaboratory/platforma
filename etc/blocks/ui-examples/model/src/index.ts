@@ -92,7 +92,7 @@ export const platforma = BlockModel.create('Heavy')
       { type: 'link', href: '/typography', label: 'Typography' },
       { type: 'link', href: '/ag-grid-vue', label: 'AgGridVue' },
       { type: 'link', href: '/pl-ag-data-table', label: 'PlAgDataTable' },
-      { type: 'link', href: '/pl-ag-overlay-loading', label: 'PlAgOverlayLoadingPage' },
+      { type: 'link', href: '/pl-splash-page', label: 'PlSplashPage' },
       { type: 'link', href: '/errors', label: 'Errors' },
       { type: 'link', href: '/text-fields', label: 'PlTextField' },
       { type: 'link', href: '/tabs', label: 'PlTabs' },
