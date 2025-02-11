@@ -77,6 +77,12 @@ export class ClientUpload {
       } = await request(info.uploadUrl, {
         dispatcher: this.httpClient,
         body: chunk,
+        // We got headers only after we send
+        // the whole body (in case of S3 PUT requests it's 5 MB).
+        // It might be slow with a slow connection,
+        // that's why we got big timeout here.
+        headersTimeout: 30000,
+        bodyTimeout: 30000,
         headers: toHeadersMap(info.headers),
         method: info.method.toUpperCase() as Dispatcher.HttpMethod,
       });
@@ -88,7 +94,7 @@ export class ClientUpload {
       throw new Error(`partUpload: error ${JSON.stringify(e)} happened while trying to do part upload to the url ${info.uploadUrl}, headers: ${JSON.stringify(info.headers)}`);
     }
 
-    await this.grpcUpdateProgress({ id, type }, info.chunkEnd - info.chunkStart, options);
+    await this.grpcUpdateProgress({ id, type }, BigInt(info.chunkEnd - info.chunkStart), options);
   }
 
   public async finalize(info: ResourceInfo, options?: RpcOptions) {
@@ -152,7 +158,7 @@ async function readFileChunk(path: string, chunkStart: bigint, chunkEnd: bigint)
     const len = Number(chunkEnd - chunkStart);
     const pos = Number(chunkStart);
     const b = Buffer.alloc(len);
-    const bytesRead = await readBytesFromPosition(f, b, len, pos);
+    const bytesRead = await readBytesFromPosition(f!, b, len, pos);
 
     return b.subarray(0, bytesRead);
   } catch (e: unknown) {
