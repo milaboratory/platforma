@@ -2,7 +2,7 @@ import type { Watcher } from '@milaboratories/computable';
 import { ChangeSource } from '@milaboratories/computable';
 import { stringifyWithResourceId } from '@milaboratories/pl-client';
 import type * as sdk from '@milaboratories/pl-model-common';
-import type { MiLogger, Signer } from '@milaboratories/ts-helpers';
+import type { AsyncPoolController, MiLogger, Signer } from '@milaboratories/ts-helpers';
 import { asyncPool, CallersCounter } from '@milaboratories/ts-helpers';
 import type { ClientProgress, ProgressStatus } from '../clients/progress';
 import type { ClientUpload } from '../clients/upload';
@@ -17,6 +17,7 @@ import assert from 'node:assert';
 export class UploadTask {
   private readonly change: ChangeSource = new ChangeSource();
   private readonly counter: CallersCounter = new CallersCounter();
+  private nMaxUploads: number;
 
   /** If this is upload progress this field will be defined */
   private uploadData?: ImportFileHandleUploadData;
@@ -33,10 +34,11 @@ export class UploadTask {
     private readonly logger: MiLogger,
     private readonly clientBlob: ClientUpload,
     private readonly clientProgress: ClientProgress,
-    private readonly nConcurrentPartsUpload: number,
+    private readonly maxNConcurrentPartsUpload: number,
     signer: Signer,
     public readonly res: ImportResourceSnapshot,
   ) {
+    this.nMaxUploads = this.maxNConcurrentPartsUpload;
     const { uploadData, progress } = newProgress(res, signer);
     this.uploadData = uploadData;
     this.progress = progress;
@@ -60,30 +62,37 @@ export class UploadTask {
   /** Uploads a blob if it's not BlobIndex. */
   public async uploadBlobTask() {
     assert(isUpload(this.res), 'the upload operation can be done only for BlobUploads');
+    const timeout = 10000; // 10 sec instead of standard 5 sec, things might be slow with a slow connection.
 
     try {
       if (this.isComputableDone()) return;
-      const parts = await this.clientBlob.initUpload(this.res);
+      const parts = await this.clientBlob.initUpload(this.res, { timeout });
       this.logger.info(
         `started to upload blob ${this.res.id},`
         + ` parts overall: ${parts.overall}, parts remained: ${parts.toUpload.length}`,
       );
 
-      const partUploadFn = (part: bigint) => async () => {
+      const partUploadFn = (part: bigint) => async (controller: AsyncPoolController) => {
         if (this.isComputableDone()) return;
         await this.clientBlob.partUpload(
           this.res,
           this.uploadData!.localPath,
           BigInt(this.uploadData!.modificationTime),
           part,
+          { timeout }
         );
         this.logger.info(`uploaded chunk ${part}/${parts.overall} of resource: ${this.res.id}`);
+
+        // so if we had a network freeze, it will be increased slowly.
+        this.nMaxUploads = increaseConcurrency(this.logger, this.nMaxUploads, this.maxNConcurrentPartsUpload);
+
+        controller.setConcurrency(this.nMaxUploads);
       };
 
-      await asyncPool(this.nConcurrentPartsUpload, parts.toUpload.map(partUploadFn));
+      await asyncPool(this.nMaxUploads, parts.toUpload.map(partUploadFn));
 
       if (this.isComputableDone()) return;
-      await this.clientBlob.finalize(this.res);
+      await this.clientBlob.finalize(this.res, { timeout });
 
       this.logger.info(`uploading of resource ${this.res.id} finished.`);
       this.change.markChanged();
@@ -106,13 +115,19 @@ export class UploadTask {
         return;
       }
 
+      if (isHeadersTimeoutError(e)) {
+        // we probably have a slow internet, we need to slow things a bit.
+        this.nMaxUploads = decreaseConcurrency(this.logger, this.nMaxUploads, 1);
+      }
+
       throw e;
     }
   }
 
   public async updateStatus() {
     try {
-      const status = await this.clientProgress.getStatus(this.res);
+      // we do it with timeout in case we have slow internet.
+      const status = await this.clientProgress.getStatus(this.res, { timeout: 10000 });
 
       const oldStatus = this.progress.status;
       const newStatus = doneProgressIfExisted(this.alreadyExisted, protoToStatus(status));
@@ -279,4 +294,24 @@ export function isResourceWasDeletedError(e: any) {
 
 export function nonRecoverableError(e: any) {
   return e instanceof MTimeError || e instanceof UnexpectedEOF || e instanceof NoFileForUploading;
+}
+
+function isHeadersTimeoutError(e: any) {
+  return (e as Error)?.message.includes(`UND_ERR_HEADERS_TIMEOUT`);
+}
+
+function increaseConcurrency(logger: MiLogger, current: number, max: number): number {
+  const newConcurrency = Math.min(current * 2, max);
+  if (newConcurrency != current)
+    logger.info(`uploadTask.increaseConcurrency: increased from ${current} to ${newConcurrency}`)
+
+  return newConcurrency;
+}
+
+function decreaseConcurrency(logger: MiLogger, current: number, min: number): number {
+  const newConcurrency = Math.max(Math.round(current / 2), min);
+  if (newConcurrency != current)
+    logger.info(`uploadTask.decreaseConcurrency: decreased from ${current} to ${newConcurrency}`)
+
+  return newConcurrency;
 }

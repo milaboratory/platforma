@@ -295,7 +295,7 @@ class URLAborted extends Error {}
 async function dirSize(dir: string): Promise<number> {
   const files = await fsp.readdir(dir, { withFileTypes: true });
   const sizes = await Promise.all(
-    files.map(async (file) => {
+    files.map(async (file: any) => {
       const fPath = path.join(dir, file.name);
 
       if (file.isDirectory()) return await dirSize(fPath);
@@ -305,7 +305,7 @@ async function dirSize(dir: string): Promise<number> {
     }),
   );
 
-  return sizes.reduce((sum, size) => sum + size, 0);
+  return sizes.reduce((sum: any, size: any) => sum + size, 0);
 }
 
 /** Do rm -rf on dir. */

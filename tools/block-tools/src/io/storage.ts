@@ -100,8 +100,8 @@ export class FSStorage implements RegistryStorage {
     try {
       const listRoot = this.toAbsolutePath(prefix);
       return (await fs.promises.readdir(listRoot, { recursive: true, withFileTypes: true }))
-        .filter((e) => e.isFile())
-        .map((e) =>
+        .filter((e: any) => e.isFile())
+        .map((e: any) =>
           path.relative(listRoot, path.resolve(e.path, e.name)).split(path.sep).join(pathPosix.sep)
         );
     } catch (err: any) {
