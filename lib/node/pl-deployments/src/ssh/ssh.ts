@@ -173,8 +173,8 @@ export class SshClient {
         });
 
         client.connect(config!);
-      })
-    })
+      });
+    });
 
     await persistentClient.ensure(); // warm up a connection
 
@@ -199,11 +199,11 @@ export class SshClient {
           return;
         }
 
-        this.logger.info(`${sockLog}.forwardOut: start connection`)
+        this.logger.info(`${sockLog}.forwardOut: start connection`);
         localSocket.pipe(stream);
         stream.pipe(localSocket);
         localSocket.resume();
-        this.logger.info(`${sockLog}.forwardOut: connected`)
+        this.logger.info(`${sockLog}.forwardOut: connected`);
 
         stream.on('error', (err: unknown) => {
           this.logger.error(`${sockLog}.stream.error: ${err}`);
@@ -211,15 +211,15 @@ export class SshClient {
           stream.end();
         });
         stream.on('close', () => {
-          this.logger.info(`${sockLog}.stream.close: closed`)
+          this.logger.info(`${sockLog}.stream.close: closed`);
           localSocket.end();
           stream.end();
-        })
+        });
         localSocket.on('close', () => {
-          this.logger.info(`${sockLog}.localSocket: closed`)
+          this.logger.info(`${sockLog}.localSocket: closed`);
           localSocket.end();
           stream.end();
-        })
+        });
       });
 
       server.listen(ports.localPort, '127.0.0.1', () => {
@@ -643,7 +643,7 @@ async function connect(
 
     client.on('close', () => {
       onClose();
-    })
+    });
 
     client.connect(config);
   });
@@ -651,13 +651,13 @@ async function connect(
 
 async function forwardOut(logger: MiLogger, conn: Client, localHost: string, localPort: number, remoteHost: string, remotePort: number): Promise<ClientChannel> {
   return new Promise((resolve, reject) => {
-    conn.forwardOut(localHost, localPort,remoteHost, remotePort, (err, stream) => {
+    conn.forwardOut(localHost, localPort, remoteHost, remotePort, (err, stream) => {
       if (err) {
         logger.error(`forwardOut.error: ${err}`);
         reject(err);
       }
 
       resolve(stream);
-    })
-  })
+    });
+  });
 }

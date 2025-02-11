@@ -158,7 +158,7 @@ async function readFileChunk(path: string, chunkStart: bigint, chunkEnd: bigint)
     const len = Number(chunkEnd - chunkStart);
     const pos = Number(chunkStart);
     const b = Buffer.alloc(len);
-    const bytesRead = await readBytesFromPosition(f!, b, len, pos);
+    const bytesRead = await readBytesFromPosition(f, b, len, pos);
 
     return b.subarray(0, bytesRead);
   } catch (e: unknown) {
