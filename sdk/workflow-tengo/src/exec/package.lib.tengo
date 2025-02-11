@@ -89,7 +89,7 @@ _useSettingsSchema := {
 use := func(settings) {
 	res := smart.structBuilder(_RTYPE_PACKAGE_USE)
 
-	validation.assertJsonSchema(settings, _useSettingsSchema, "package.use(<settings>): settings have invalid format")
+	validation.assertType(settings, _useSettingsSchema, "package.use(<settings>): settings have invalid format")
 	settingsRes := smart.createJsonResource(settings)
 
 	res.getField(_INPUT_PACKAGE_USE_SETTINGS).set(settingsRes)
@@ -132,14 +132,14 @@ pkgFileLoader := func(pkg) {
 
 	self = {
 		saveFile: func(path) {
-			validation.assertJsonSchema(path, "string", "package.pkgFileLoader.saveFile: <path> must be string")
+			validation.assertType(path, "string", "package.pkgFileLoader.saveFile: <path> must be string")
 			filePaths = append(filePaths, path)
 
 			return self
 		},
 
 		saveFiles: func(paths) {
-			validation.assertJsonSchema(paths, ["string"], "package.pkgFileLoader.saveFiles: <paths> must be array of strings")
+			validation.assertType(paths, ["string"], "package.pkgFileLoader.saveFiles: <paths> must be array of strings")
 			for p in paths {
 				self.saveFile(p)
 			}
@@ -148,13 +148,13 @@ pkgFileLoader := func(pkg) {
 		},
 
 		saveFileContent: func(path) {
-			validation.assertJsonSchema(path, "string", "package.pkgFileLoader.saveFileContent: <path> must be string")
+			validation.assertType(path, "string", "package.pkgFileLoader.saveFileContent: <path> must be string")
 			fileContentPaths = append(fileContentPaths, path)
 			return self
 		},
 
 		saveFilesContent: func(paths) {
-			validation.assertJsonSchema(paths, ["string"], "package.pkgFileLoader.saveFilesContent: <paths> must be array of strings")
+			validation.assertType(paths, ["string"], "package.pkgFileLoader.saveFilesContent: <paths> must be array of strings")
 			for p in paths {
 				self.saveFileContent(p)
 			}
