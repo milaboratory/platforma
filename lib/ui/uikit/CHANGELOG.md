@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.57
+
+### Patch Changes
+
+- 0c5753b: [sdk/ui-vue] create component plSplash for “Loading” splash screen
+
 ## 2.2.56
 
 ### Patch Changes
