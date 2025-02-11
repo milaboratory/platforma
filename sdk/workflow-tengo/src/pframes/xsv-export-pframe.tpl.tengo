@@ -340,7 +340,7 @@ self.body(func(inputs) {
     params := inputs.params
 	ops := inputs.ops
 
-	validation.assertJsonSchema(params, util.PFCONV_EXPORT_CFG_SCHEMA)
+	validation.assertType(params, util.PFCONV_EXPORT_CFG_SCHEMA)
 	
 	resultFileArg := "result." + xsvType
     resultFile := "result.1." + xsvType
