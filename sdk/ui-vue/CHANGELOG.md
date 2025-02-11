@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.22.30
+
+### Patch Changes
+
+- 7dac3ce: ui-vue: use better naming (AgGrid)
+
 ## 1.22.29
 
 ### Patch Changes
