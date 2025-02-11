@@ -287,6 +287,7 @@ purifySpec := func(spec) {
  *           columnsSpec   - map of full column specs by ids from the original cfg
  *         }
  */
+ // @TODO: rename to decomposeXsvImport to align with the naming in the rest xsv libs
 decomposePfconvImportCfg := func(cfg, ...ops) {
 	ll.assert(len(ops) <= 1, "too many options for decomposePfconvImportCfg: %v", len(ops))
 

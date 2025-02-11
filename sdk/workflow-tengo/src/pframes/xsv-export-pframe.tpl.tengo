@@ -8,6 +8,7 @@ smart := import(":smart")
 exec := import(":exec")
 json := import("json")
 text := import("text")
+sets := import(":sets")
 util := import(":pframes.util")
 ll := import(":ll")
 assets := import(":assets")
@@ -29,7 +30,7 @@ _assertValueTypeIsPrimitive := func(spec) {
  * @param spec: map - column specification
  * @param exec: string - exec instance
  */
-_addColumnToWd := func(name, data, spec, pfconv) {
+_addColumnToWd := func(name, data, spec, pfconv, ops) {
     ll.assert(!is_undefined(data), "data must be defined")
     ll.assert(!is_undefined(spec), "spec must be defined")
 
@@ -38,7 +39,33 @@ _addColumnToWd := func(name, data, spec, pfconv) {
 
 	rType := data.info().Type.Name
 
+	partitions := undefined
+	if !is_undefined(ops.partitions) {
+		partitions = {}
+		for idx, keys in ops.partitions {
+			partitions[idx] = sets.fromSlice(keys)
+		}
+	}
+
+	acceptPartition := func(part) {
+		if is_undefined(partitions) {
+			return true
+		}
+
+		for idx, keys in partitions {
+			if !sets.hasElement(keys, part[text.atoi(idx)]) {
+				return false
+			}
+		}
+
+		return true
+	}
+
 	if (rType == constants.RTYPE_P_COLUMN_DATA_JSON.Name) {
+
+		if !is_undefined(partitions) {
+			ll.panic("Partitions filter enabled while non-partitioned column exported")
+		}
 
 		// write data info
 		pfconv.writeFile(name + ".datainfo", json.encode(
@@ -60,6 +87,10 @@ _addColumnToWd := func(name, data, spec, pfconv) {
         i := 0
         parts := {}
         for k, v in data.inputs() {
+			if !acceptPartition(json.decode(k)) {
+				continue
+			}
+
             part := name + i + ".jdata"
             parts[k] = part
             
@@ -89,7 +120,11 @@ _addColumnToWd := func(name, data, spec, pfconv) {
 
             if text.has_suffix(k, ".index") {
                 part = k[0:(len(k) - 6)]
-                
+
+				if !acceptPartition(json.decode(part)) {
+					continue
+				}
+				                
                 if is_undefined(parts[part]) {
                     parts[part] = {}
                 }
@@ -101,6 +136,10 @@ _addColumnToWd := func(name, data, spec, pfconv) {
             } else if text.has_suffix(k, ".values") {
                 part = k[0:(len(k) - 7)]
                 
+				if !acceptPartition(json.decode(part)) {
+					continue
+				}
+				
                 if is_undefined(parts[part]) {
                     parts[part] = {}
                 }
@@ -147,7 +186,14 @@ _addColumnToWd := func(name, data, spec, pfconv) {
 				part := name + i + ".jdata"
 
 				innerKeyArray := json.decode(k)
-				key := json.encode(supKeyArray + innerKeyArray)
+				
+				keyArray := supKeyArray + innerKeyArray
+				
+				if !acceptPartition(keyArray) {
+					continue
+				}
+				
+				key := json.encode(keyArray)
             	
 				parts[key] = part
             
@@ -187,7 +233,13 @@ _addColumnToWd := func(name, data, spec, pfconv) {
 				
 				if text.has_suffix(k, ".index") {
 					innerKeyArray := json.decode(k[0:(len(k) - 6)])
-					key := json.encode(supKeyArray + innerKeyArray)
+					keyArray := supKeyArray + innerKeyArray
+					
+					if !acceptPartition(keyArray) {
+						continue
+					}
+					
+					key := json.encode(keyArray)
 
 					if is_undefined(parts[key]) {
 						parts[key] = {}
@@ -200,8 +252,15 @@ _addColumnToWd := func(name, data, spec, pfconv) {
 				} else if text.has_suffix(k, ".values") {
 
 					innerKeyArray := json.decode(k[0:(len(k) - 7)])
-					key := json.encode(supKeyArray + innerKeyArray)
+
+					keyArray := supKeyArray + innerKeyArray
 					
+					if !acceptPartition(keyArray) {
+						continue
+					}
+					
+					key := json.encode(keyArray)
+
 					if is_undefined(parts[key]) {
 						parts[key] = {}
 					}
@@ -279,6 +338,7 @@ self.body(func(inputs) {
     pf := inputs.pf
     xsvType := inputs.xsvType
     params := inputs.params
+	ops := inputs.ops
 
 	validation.assertJsonSchema(params, util.PFCONV_EXPORT_CFG_SCHEMA)
 	
@@ -299,7 +359,7 @@ self.body(func(inputs) {
 
 
 	for name, ds in _columnsMap(pf) {
-		_addColumnToWd(name, ds.data, ds.spec, pfconv)
+		_addColumnToWd(name, ds.data, ds.spec, pfconv, ops)
 	}
 
 	r := pfconv.run()

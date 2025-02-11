@@ -164,6 +164,7 @@ importFile := func(xsvFile, xsvType, spec, ...ops) {
 	// p-columns data
 	pf := pfconv.getProcessorResult("pf")
 	if ops.dataOnly {
+		// @TODO discuss, as it changes the type of the return from map to object
 		return pf
 	}
 
@@ -269,9 +270,15 @@ importFileMap := func(xsvMap, xsvType, spec, ...ops) {
  * @param pf: p-frame - a list of p-columns ({data, spec}) or a frame-like map of col.data col.spec entries
  * @param xsvType: string - "csv" or "tsv"
  * @param params: map - export params
+ * @param ops: object - additional options
+ *               {
+ *                 partitions: {axisIdx: [keys]} - map of partitions to export; if not specified, all data is exported
+ *				 }
  */
-exportFrame := func(pf, xsvType, params) {
+exportFrame := func(pf, xsvType, params, ...ops) {
 	exportPfTpl := assets.importTemplate(":pframes.xsv-export-pframe")
+
+	ops := renderOps({}, ops...)
 
 	if is_array(pf) {
 		// transform into .data .spec map
@@ -291,7 +298,8 @@ exportFrame := func(pf, xsvType, params) {
 	r := render.create(exportPfTpl, {
 		pf: pf,
 		xsvType: xsvType,
-		params: params
+		params: params,
+		ops: ops
 	})
 
 	return r.output("result")
