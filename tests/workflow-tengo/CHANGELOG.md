@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo-tests
 
+## 1.4.3
+
+### Patch Changes
+
+- fd653da: Run tests in parallel (max 3 files at a time)
+
 ## 1.4.2
 
 ### Patch Changes
