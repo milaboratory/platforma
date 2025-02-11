@@ -8,11 +8,23 @@ export default {
 <script lang="ts" setup>
 import { useSlots } from 'vue';
 import './pl-block-page.scss';
+import PlSplash from '@/components/PlSplash/PlSplash.vue';
 
 const slots = useSlots();
 
 defineProps<{
+  /**
+   * If `true` body gutters are removed
+   */
   noBodyGutters?: boolean;
+  /**
+   * If `true`, a loading overlay is displayed on the page body (over all default slot content)
+   */
+  bodyLoading?: boolean;
+  /**
+   * Optional body loading text
+   */
+  bodyLoadingText?: string;
 }>();
 
 const setTitleIfNeeded = (el: HTMLElement) => {
@@ -40,8 +52,8 @@ const vTextOverflownTitle = {
       </div>
     </div>
     <div v-else />
-    <div class="pl-block-page__body">
+    <PlSplash :loading="bodyLoading" :loading-text="bodyLoadingText" class="pl-block-page__body">
       <slot />
-    </div>
+    </PlSplash>
   </div>
 </template>

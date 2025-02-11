@@ -15,10 +15,7 @@ export * from './components/PlAgCellStatusTag';
 export * from './components/PlAgChartStackedBarCell';
 export * from './components/PlAgChartHistogramCell';
 
-export * from './components/PlAgDataTable/types';
-export * from './components/PlAgDataTable/sources/row-number';
-export * from './components/PlAgDataTable/sources/focus-row';
-export * from './components/PlAgDataTable/sources/menu-items';
+export * from './components/PlAgDataTable';
 
 export * from './components/PlAgCsvExporter';
 
