@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.3.32
+
+### Patch Changes
+
+- 7dac3ce: ui-vue: use better naming (AgGrid)
+
 ## 1.3.31
 
 ### Patch Changes
