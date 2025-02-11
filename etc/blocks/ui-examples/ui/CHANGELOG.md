@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.3.31
+
+### Patch Changes
+
+- 0c5753b: [sdk/ui-vue] create component plSplash for “Loading” splash screen
+- Updated dependencies [0c5753b]
+  - @milaboratories/milaboratories.ui-examples.model@1.1.18
+
 ## 1.3.30
 
 ### Patch Changes

@@ -1,5 +1,13 @@
 # @platforma-sdk/ui-vue
 
+## 1.22.29
+
+### Patch Changes
+
+- 0c5753b: [sdk/ui-vue] create component plSplash for “Loading” splash screen
+- Updated dependencies [0c5753b]
+  - @milaboratories/uikit@2.2.57
+
 ## 1.22.24
 
 ### Patch Changes
