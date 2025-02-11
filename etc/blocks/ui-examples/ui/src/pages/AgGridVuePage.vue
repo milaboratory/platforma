@@ -18,7 +18,7 @@ import {
   Gradient,
   PlCheckbox,
   PlRow,
-  useAgDataTableOptionsSimple,
+  useAgGridOptionsSimple,
 } from '@platforma-sdk/ui-vue';
 import { AgGridVue } from 'ag-grid-vue3';
 import type { ColDef } from 'ag-grid-enterprise';
@@ -208,7 +208,7 @@ const notReady = ref(false);
 
 const hasRows = ref(false);
 
-const { gridOptions, gridApi } = useAgDataTableOptionsSimple(() => {
+const { gridOptions, gridApi } = useAgGridOptionsSimple(() => {
   return {
     columnDefs,
     rowSelection: {

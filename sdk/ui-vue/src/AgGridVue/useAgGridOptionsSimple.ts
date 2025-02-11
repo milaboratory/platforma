@@ -1,9 +1,9 @@
 import type { GridApi, GridOptions, GridReadyEvent } from 'ag-grid-enterprise';
 import { computed, shallowRef, watch } from 'vue';
-import { AgGridTheme } from '../../aggrid';
-import PlAgOverlayLoading from './PlAgOverlayLoading.vue';
-import PlAgOverlayNoRows from './PlAgOverlayNoRows.vue';
-import { autoSizeRowNumberColumn } from './sources/row-number';
+import { AgGridTheme } from '../aggrid';
+import PlAgOverlayLoading from '../components/PlAgDataTable/PlAgOverlayLoading.vue';
+import PlAgOverlayNoRows from '../components/PlAgDataTable/PlAgOverlayNoRows.vue';
+import { autoSizeRowNumberColumn } from '../lib';
 
 /**
  * Returns a set of Ag Grid options along with a reference to the Ag Grid API.
@@ -21,7 +21,7 @@ import { autoSizeRowNumberColumn } from './sources/row-number';
  * </template>
  * ```
  */
-export function useAgDataTableOptionsSimple<TData>(
+export function useAgGridOptionsSimple<TData>(
   factory: () => GridOptions<TData>,
 ) {
   const gridApi = shallowRef<GridApi>();

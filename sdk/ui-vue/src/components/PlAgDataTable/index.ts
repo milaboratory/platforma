@@ -6,4 +6,3 @@ export * from './types';
 export * from './sources/row-number';
 export * from './sources/focus-row';
 export * from './sources/menu-items';
-export * from './useAgDataTableOptionsSimple';
