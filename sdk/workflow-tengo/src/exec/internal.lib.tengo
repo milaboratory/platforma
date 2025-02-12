@@ -289,7 +289,7 @@ swToRunCmdOptions := func(softwareName, softwareVersion, softwareDescriptor) {
 		"exec.internal.swToRunCmdOptions: software name must be a string, got %v", softwareName)
 	ll.assert(is_string(softwareVersion),
 		"exec.internal.swToRunCmdOptions: software version must be a string, got %v", softwareVersion)
-	validation.assertJsonSchema(softwareDescriptor, desc.scheme,
+	validation.assertType(softwareDescriptor, desc.scheme,
 		"exec.internal.swToRunCmdOptions: descriptor does not fit schema")
 
 	result := undefined
@@ -316,7 +316,7 @@ swToRunCmdOptions := func(softwareName, softwareVersion, softwareDescriptor) {
 }
 
 binaryRunOptions := func(runOptions, mnzEnvs) {
-	validation.assertJsonSchema(mnzEnvs, {"any": validation.reference})
+	validation.assertType(mnzEnvs, {"any": validation.reference})
 
 	runCmdOpts := undefined
 	if (is_undefined(ll.fromStrict(runOptions).software)) {

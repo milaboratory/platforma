@@ -58,7 +58,7 @@ self.defineOutputs("runEnv")
 
 self.body(func(inputs) {
 	// assert we have inputs we expect.
-	validation.assertJsonSchema(inputs, internal.pythonVenvInputSchema)
+	validation.assertType(inputs, internal.pythonVenvInputSchema)
 
 	pythonPackage := inputs.python
 	pythonDescriptor := inputs.pythonDescriptor

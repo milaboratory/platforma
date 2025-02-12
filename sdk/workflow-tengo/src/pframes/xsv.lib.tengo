@@ -85,7 +85,7 @@ getColumnSpec := func(axesSpec, col) {
 importFile := func(xsvFile, xsvType, spec, ...ops) {
 	ll.assert(xsvType == "csv" || xsvType == "tsv", "expected one of [tsv, csv] types")
 
-	validation.assertJsonSchema(spec, util.PFCONV_IMPORT_CFG_SCHEMA)
+	validation.assertType(spec, util.PFCONV_IMPORT_CFG_SCHEMA)
 
 	xsvFileName := "file." + xsvType
 

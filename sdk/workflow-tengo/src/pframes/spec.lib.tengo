@@ -90,7 +90,7 @@ _TRACE_SCHEMA := [_TRACE_STEP_SCHEMA]
  */
 makeTrace := func(input, ...steps) {
 	// validating input step structure
-	validation.assertJsonSchema(steps, _TRACE_SCHEMA)
+	validation.assertType(steps, _TRACE_SCHEMA)
 
 	currentTraceContent := undefined
 	if is_string(input) {
@@ -105,7 +105,7 @@ makeTrace := func(input, ...steps) {
 	if !is_undefined(currentTraceContent) {
 		currentTrace = json.decode(currentTraceContent)
 		// validating trace we just parsed
-		validation.assertJsonSchema(currentTrace, _TRACE_SCHEMA)
+		validation.assertType(currentTrace, _TRACE_SCHEMA)
 	}
 
 	currentTrace = append(currentTrace, steps...)
@@ -116,7 +116,7 @@ makeTrace := func(input, ...steps) {
 		valueStr: currentTraceStr,
 		/** Injects trace information into column spec */
 		inject: func(spec) {
-			validation.assertJsonSchema(spec, P_COLUMN_SPEC_SCHEMA)
+			validation.assertType(spec, P_COLUMN_SPEC_SCHEMA)
 			return maps.deepMerge(spec, {annotations: {"pl7.app/trace": currentTraceStr}})
 		}
 	})

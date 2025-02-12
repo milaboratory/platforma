@@ -72,7 +72,7 @@ self.body(func(inputs) {
 		dInfo := inputs[path.join("out", id + ".datainfo")].getDataAsJson()
 
 		// validate dataInfo type
-		validation.assertJsonSchema(dInfo, _DATA_INFO_SCHEMA)
+		validation.assertType(dInfo, _DATA_INFO_SCHEMA)
 
 		// p-column resource builder
 		rData := { partitionKeyLength: dInfo.partitionKeyLength }

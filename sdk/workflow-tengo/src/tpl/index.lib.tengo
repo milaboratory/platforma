@@ -361,7 +361,7 @@ tpl := func() {
 			if is_undefined(schema) {
 				return
 			}
-			validation.assertJsonSchema(self.inputs(), schema)
+			validation.assertType(self.inputs(), schema)
 		},
 
 		/**

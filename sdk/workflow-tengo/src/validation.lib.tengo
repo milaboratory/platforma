@@ -377,7 +377,7 @@ assertType := func(value, schema, ...failMsg) {
 }
 
 /**
- * Alias to 'assert' for backward compatibility
+ * Alias to 'assertType' for backward compatibility
  */
 assertJsonSchema := func(js, schema, ...failMsg) {
 	assertType(js, schema, failMsg...)
