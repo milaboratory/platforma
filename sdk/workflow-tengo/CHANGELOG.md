@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 2.10.1
+
+### Patch Changes
+
+- ccff13a: validation.assert (method rename)
+
 ## 2.10.0
 
 ### Minor Changes
