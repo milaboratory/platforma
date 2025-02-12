@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.test-upload-file
 
+## 1.0.80
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-upload-file.ui@1.0.80
+
 ## 1.0.79
 
 ### Patch Changes
