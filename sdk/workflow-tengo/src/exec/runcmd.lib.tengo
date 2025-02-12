@@ -18,6 +18,9 @@ _RTYPE_RUN_COMMAND_ARGS := { Name: "RunCommandArgs", Version: "1" }
 _RTYPE_RUN_COMMAND_OPTIONS := { Name: "run-command/options", Version: "1" }
 _RTYPE_RUN_COMMAND_REFS := { Name: "RunCommandRefs", Version: "1" }
 
+_FIELD_WORKDIR_IN := "workdirIn"
+_FIELD_WORKDIR_OUT := "workdirOut"
+
 /**
  * Creates a simple argument for the command.
  *
@@ -64,7 +67,7 @@ _createExpressionArg := func(argTpl) {
  */
 builder := func(workdir) {
 	res := smart.ephemeralBuilder(_RTYPE_RUN_COMMAND)
-	res.getField("workdirIn").set(workdir)
+	res.getField(_FIELD_WORKDIR_IN).set(workdir)
 
 	self := undefined
 
@@ -386,7 +389,7 @@ builder := func(workdir) {
 			self.getField("args").set(argsRes)
 
 			res := ll.toStrict(oop.inherit(self.lockAndBuild(), {
-				"workdir": self.outputs().workdirOut,
+				"workdir": self.outputs()[_FIELD_WORKDIR_OUT],
 				"options": options
 			}))
 

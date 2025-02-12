@@ -36,7 +36,7 @@ quotaBuilder := func() {
 		 * @return builder
 		 */
 		queue: func(name) {
-			validation.assertJsonSchema(name, "string", "exec.quota.builder.queue: name of the queue should be a string")
+			validation.assertType(name, "string", "exec.quota.builder.queue: name of the queue should be a string")
 			queue_name = name
 
 			return self
@@ -49,7 +49,7 @@ quotaBuilder := func() {
 		 * @return builder
 		 */
 		cpu: func(amount) {
-			validation.assertJsonSchema(amount, ["or", "number", "null"], "exec.quota.builder.cpu: CPU amount should be a number")
+			validation.assertType(amount, ["or", "number", "null"], "exec.quota.builder.cpu: CPU amount should be a number")
 			ll.assert(is_undefined(amount) || amount > 0, "exec.quota.builder.cpu: amount of cores should be greater than 0")
 			cpu_request = amount
 
@@ -66,7 +66,7 @@ quotaBuilder := func() {
 		 * @return builder
 		 */
 		ram: func(amount) {
-			validation.assertJsonSchema(amount, ["or", "number", "string", "null"], "exec.quota.builder.ram: RAM amount should be a number or string")
+			validation.assertType(amount, ["or", "number", "string", "null"], "exec.quota.builder.ram: RAM amount should be a number or string")
 			ll.assert(is_undefined(amount) || is_string(amount) || amount > 0, "exec.quota.builder.ram: amount in bytes should be greater than 0")
 			ram_request = amount
 
@@ -115,7 +115,7 @@ storageSpaceRequestBuilder := func() {
 		 * @return spaceRequestBuilder
 		 */
 		quota: func(ref) {
-			validation.assertJsonSchema(ref, validation.reference, "workdir.limits.quota: quota must be a valid reference to Quota resource")
+			validation.assertType(ref, validation.reference, "workdir.limits.quota: quota must be a valid reference to Quota resource")
 			quota = ref
 
 			return self

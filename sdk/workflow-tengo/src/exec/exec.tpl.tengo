@@ -15,6 +15,7 @@ render := import(":render")
 workdir := import(":workdir")
 stream := import(":exec.stream")
 execInternal := import(":exec.internal")
+limits := import(":exec.limits")
 pkg := import(":exec.package")
 validation := import(":validation")
 blobs := import(":file.internal")
@@ -32,6 +33,30 @@ _runBinaryCommand := func(inputs) {
 	//
 
 	wdBuilder := workdir.builder()
+
+	quota := undefined
+	if (feats.workdirLimits) {
+		quotaBuilder := limits.quotaBuilder().
+			queue(inputs.runOptions.queue)
+
+		if inputs.quota {
+			quotaBuilder.
+				cpu(inputs.quota.cpu).
+				ram(inputs.quota.ram)
+		}
+
+		quota = quotaBuilder.build()
+	}
+
+	storageSpace := undefined
+	if !is_undefined(quota) {
+		storageSpace = limits.storageSpaceRequestBuilder().
+			quota(quota).
+			build()
+
+		wdBuilder.allocation(storageSpace.allocation)
+	}
+
 	// add files
 	wdBuilder.addFiles(inputs.filesToAdd)
 	// create dirs
@@ -204,7 +229,11 @@ self.body(func(inputs) {
 		"assets,?": { any: validation.resource() },
 		"assetDescriptors,?": { any: {asset: desc.assetScheme } },
 		"assetRules,?": { any: { any: ["string"] } },
-		"assetCache,?": { any: "number" }
+		"assetCache,?": { any: "number" },
+		"quota,?": {
+			"cpu,?": ["number"],
+			"ram,?": ["or", "string", "number"]
+		}
 	})
 
 	ll.toStrict(inputs)

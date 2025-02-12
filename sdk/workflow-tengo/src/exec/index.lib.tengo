@@ -25,6 +25,8 @@ _MEDIUM_QUEUE   := "medium"
 _LIGHT_QUEUE    := "light"
 _UI_TASKS_QUEUE := "ui-tasks"
 
+
+
 /**
  * Creates a new builder for constructing and executing commands.
  *
@@ -50,7 +52,13 @@ builder := func() {
 			"either a command with arguments or a software were already set.")
 	}
 
+	//
+	// Limits
+	//
 	queue := _HEAVY_QUEUE
+	cpu_request := undefined
+	ram_request := undefined
+
 	cache := 0
 	nErrorLines := 200
 
@@ -259,6 +267,38 @@ builder := func() {
 		 */
 		inUiQueue: func() {
 			queue = _UI_TASKS_QUEUE
+			return self
+		},
+
+		/**
+		 * Preserve CPUs in environments that plan CPU resources (like PBS or Slurm).
+		 *
+		 * @param amount: number - number of cores requested for command.
+		 */
+		cpu: func(amount) {
+			validation.assertType(amount, "number", "exec.builder.cpu: amount of cores must be a number")
+			ll.assert(amount > 0, "exec.builder.cpu: amount of cores should be greater than 0")
+			cpu_request = amount
+
+			return self
+		},
+
+		/**
+		 * Amount of RAM to request.
+		 *
+		 * @param amount: number | string - amount of RAM in bytes or string with size suffix (case-insensitive):
+		 *                                     K,  KB,  M,  MB,  G,  GB for base-10 sizes (x1000)
+		 *                                    Ki, KiB, Mi, MiB, Gi, GiB for base-2 sizes (x1024)
+		 *                                  when operating with bytes, you may use 'units' package for convenience:
+		 *                                    120 * units.GiB
+		 *
+		 * @return builder
+		 */
+		ram: func(amount) {
+			validation.assertType(amount, ["or", "number", "string"], "exec.builder.ram: RAM amount should be a number or string")
+			ll.assert(is_string(amount) || amount > 0, "exec.builder.ram: amount in bytes should be greater than 0")
+			ram_request = amount
+
 			return self
 		},
 
@@ -698,7 +738,11 @@ builder := func() {
 				assets: smart.createMapResource(assetInfos),
 				assetDescriptors: assetDescriptors,
 				assetRules: assetRules,
-				assetCache: assetCache
+				assetCache: assetCache,
+				quota: smart.createJsonResource({
+					cpu: cpu_request,
+					ram: ram_request
+				})
 			}
 
 			// We add monetization only if it's enabled
