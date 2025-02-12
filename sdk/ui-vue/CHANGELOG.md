@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.22.32
+
+### Patch Changes
+
+- c39eeee: fixed row numbers display
+
 ## 1.22.30
 
 ### Patch Changes
