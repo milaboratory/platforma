@@ -258,7 +258,7 @@ purifySpec := func(spec) {
 	}
 	newSpec.columns = newCols
 
-	validation.assertJsonSchema(newSpec, PFCONV_IMPORT_CFG_SCHEMA)
+	validation.assertType(newSpec, PFCONV_IMPORT_CFG_SCHEMA)
 
 	return newSpec
 }

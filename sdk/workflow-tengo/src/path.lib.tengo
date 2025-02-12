@@ -9,7 +9,7 @@ validation := import(":validation")
  * @param elems: ...string - any number of elements.
  */
 join := func(...elems) {
-	validation.assertJsonSchema(elems, ["string"])
+	validation.assertType(elems, ["string"])
 	return ll.filepathJoin(elems...)
 }
 
@@ -20,7 +20,7 @@ join := func(...elems) {
  * @param elems: ...string - any number of elements.
  */
 regexpJoin := func(...elems) {
-	validation.assertJsonSchema(elems, ["string"])
+	validation.assertType(elems, ["string"])
 	return ll.filepathRegexpJoin(elems...)
 }
 
@@ -32,7 +32,7 @@ regexpJoin := func(...elems) {
  * @param elems: ...string - any number of elements.
  */
 canonize := func(...elems) {
-	validation.assertJsonSchema(elems, ["string"])
+	validation.assertType(elems, ["string"])
 	return ll.filepathCanonize(elems...)
 }
 
@@ -51,12 +51,12 @@ separator := ll.pathSeparator
  * @return trimmed path: string - a path without the beginning and a path separator.
  */
 trimPrefix := func(path, prefix) {
-	validation.assertJsonSchema([path, prefix], ["string"])
+	validation.assertType([path, prefix], ["string"])
 	return text.trim_prefix(path, prefix+separator)
 }
 
 _sepOrDefault := func(...sep) {
-	validation.assertJsonSchema(sep, [["or", "string", "char", "null"]])
+	validation.assertType(sep, [["or", "string", "char", "null"]])
 
 	if slices.length(sep) == 0 {
 		return separator
@@ -89,7 +89,7 @@ split := func(path, ...sep) {
  * @return components: []string - all directories and a file name at the end from their root.
  */
 getBasenameDirs := func(path, ...sep) {
-	validation.assertJsonSchema(path, "string")
+	validation.assertType(path, "string")
 	sep = _sepOrDefault(sep...)
 
 	dirs := split(path, sep)
@@ -111,7 +111,7 @@ getBasenameDirs := func(path, ...sep) {
  * @return extension: string - the extension without the leading "."
  */
 getExtension := func(path, ...sep) {
-	validation.assertJsonSchema(path, "string")
+	validation.assertType(path, "string")
 	ext := ""
 	sep = _sepOrDefault(sep...)
 
@@ -143,7 +143,7 @@ getExtension := func(path, ...sep) {
  * @param path: string - a path
  */
 assertIsValid := func(path) {
-	validation.assertJsonSchema(path, "string")
+	validation.assertType(path, "string")
 	if text.contains(path, "/") {
 		ll.assert(
 			text.contains(path, separator),
