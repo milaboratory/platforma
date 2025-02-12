@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/milaboratories.test-upload-file",
-  "version": "1.0.80",
+  "version": "1.0.81",
   "private": true,
   "scripts": {
     "build": "rm -rf ./block-pack && block-tools pack"

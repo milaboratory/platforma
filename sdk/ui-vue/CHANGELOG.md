@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.22.34
+
+### Patch Changes
+
+- b752000: fix: color for icon
+
 ## 1.22.32
 
 ### Patch Changes
