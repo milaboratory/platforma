@@ -18,6 +18,8 @@ export class UploadTask {
   private readonly change: ChangeSource = new ChangeSource();
   private readonly counter: CallersCounter = new CallersCounter();
   private nMaxUploads: number;
+  private nPartsWithThisUploadSpeed = 0;
+  private nPartsToIncreaseUpload = 10; // how many parts we have to wait to increase concurrency, 50 mb, 10 parts by 5 mb each.
 
   /** If this is upload progress this field will be defined */
   private uploadData?: ImportFileHandleUploadData;
@@ -69,7 +71,8 @@ export class UploadTask {
       const parts = await this.clientBlob.initUpload(this.res, { timeout });
       this.logger.info(
         `started to upload blob ${this.res.id},`
-        + ` parts overall: ${parts.overall}, parts remained: ${parts.toUpload.length}`,
+          + ` parts overall: ${parts.overall}, parts remained: ${parts.toUpload.length},`
+          + ` number of concurrent uploads: ${this.nMaxUploads}`,
       );
 
       const partUploadFn = (part: bigint) => async (controller: AsyncPoolController) => {
@@ -83,10 +86,13 @@ export class UploadTask {
         );
         this.logger.info(`uploaded chunk ${part}/${parts.overall} of resource: ${this.res.id}`);
 
-        // so if we had a network freeze, it will be increased slowly.
-        this.nMaxUploads = increaseConcurrency(this.logger, this.nMaxUploads, this.maxNConcurrentPartsUpload);
-
-        controller.setConcurrency(this.nMaxUploads);
+        // if we had a network freeze, it will be increased slowly.
+        this.nPartsWithThisUploadSpeed++;
+        if (this.nPartsWithThisUploadSpeed >= this.nPartsToIncreaseUpload) {
+          this.nPartsWithThisUploadSpeed = 0;
+          this.nMaxUploads = increaseConcurrency(this.logger, this.nMaxUploads, this.maxNConcurrentPartsUpload);
+          controller.setConcurrency(this.nMaxUploads);
+        }
       };
 
       await asyncPool(this.nMaxUploads, parts.toUpload.map(partUploadFn));
@@ -140,7 +146,7 @@ export class UploadTask {
     } catch (e: any) {
       this.setRetriableError(e);
 
-      if (e.name == 'RpcError' && e.code == 'DEADLINE_EXCEEDED') {
+      if ((e.name == 'RpcError' && e.code == 'DEADLINE_EXCEEDED') || e?.message?.includes('DEADLINE_EXCEEDED')) {
         this.logger.warn(`deadline exceeded while getting a status of BlobImport`);
         return;
       }
@@ -154,9 +160,12 @@ export class UploadTask {
         return;
       }
 
-      this.logger.error(`error while updating a status of BlobImport: ${e}`);
-      this.change.markChanged();
-      this.setTerminalError(e);
+      this.logger.error(`retryable error while updating a status of BlobImport: ${e}`);
+      // It was a terminal error, but when a connection drops,
+      // this will stop the whole task, so we make it retryable.
+      // It was like that:
+      // this.change.markChanged();
+      // this.setTerminalError(e);
     }
   }
 
@@ -300,14 +309,17 @@ function isHeadersTimeoutError(e: any) {
   return (e as Error)?.message.includes(`UND_ERR_HEADERS_TIMEOUT`);
 }
 
+/** It's called for every upload success so if everyone is succeeded, we'll double the concurrency. */
 function increaseConcurrency(logger: MiLogger, current: number, max: number): number {
-  const newConcurrency = Math.min(current * 2, max);
+  const newConcurrency = Math.min(current + 2, max);
   if (newConcurrency != current)
     logger.info(`uploadTask.increaseConcurrency: increased from ${current} to ${newConcurrency}`)
 
   return newConcurrency;
 }
 
+/** When a error happens, this will half the concurrency level, so the next time
+ * we'll try to upload blobs slower. */
 function decreaseConcurrency(logger: MiLogger, current: number, min: number): number {
   const newConcurrency = Math.max(Math.round(current / 2), min);
   if (newConcurrency != current)

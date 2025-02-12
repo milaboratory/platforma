@@ -6,7 +6,7 @@ export * from './concurrent';
 export * from './concurrent/async_queue';
 export * from './concurrent/concurrency_limiter';
 export * from './concurrent/task_processor';
-export * from './concurrent/promising_ensurer';
+export * from './concurrent/retryable_promise';
 export * from './retries';
 export * from './counter';
 export * from './crypto/signer';
