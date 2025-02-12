@@ -212,7 +212,9 @@ const gridOptions = shallowRef<GridOptions<PlAgDataTableRow>>({
   rowSelection: selectedRows.value !== undefined
     ? {
         mode: 'multiRow',
-        enableClickSelection: true,
+        checkboxes: false,
+        headerCheckbox: false,
+        enableClickSelection: false,
       }
     : undefined,
   selectionColumnDef: {
