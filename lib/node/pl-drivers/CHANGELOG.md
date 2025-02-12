@@ -1,5 +1,11 @@
 # @milaboratories/pl-drivers
 
+## 1.5.16
+
+### Patch Changes
+
+- 19c273b: SDK Eslint config
+
 ## 1.5.15
 
 ### Patch Changes

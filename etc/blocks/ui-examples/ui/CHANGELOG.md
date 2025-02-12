@@ -1,5 +1,33 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.3.32
+
+### Patch Changes
+
+- 7dac3ce: ui-vue: use better naming (AgGrid)
+
+## 1.3.31
+
+### Patch Changes
+
+- 0c5753b: [sdk/ui-vue] create component plSplash for “Loading” splash screen
+- Updated dependencies [0c5753b]
+  - @milaboratories/milaboratories.ui-examples.model@1.1.18
+
+## 1.3.30
+
+### Patch Changes
+
+- 19c273b: SDK Eslint config
+- Updated dependencies [19c273b]
+  - @milaboratories/milaboratories.ui-examples.model@1.1.17
+
+## 1.3.29
+
+### Patch Changes
+
+- 4f23447: [sdk/ui-vue] Fix PlAccordionSection "twitching"
+
 ## 1.3.28
 
 ### Patch Changes

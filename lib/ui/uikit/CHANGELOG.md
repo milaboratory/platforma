@@ -1,5 +1,23 @@
 # @milaboratories/uikit
 
+## 2.2.57
+
+### Patch Changes
+
+- 0c5753b: [sdk/ui-vue] create component plSplash for “Loading” splash screen
+
+## 2.2.56
+
+### Patch Changes
+
+- 4f23447: [sdk/ui-vue] Fix PlAccordionSection "twitching"
+
+## 2.2.55
+
+### Patch Changes
+
+- 852dcbf: add subset icon
+
 ## 2.2.54
 
 ### Patch Changes

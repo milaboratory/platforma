@@ -1,5 +1,17 @@
 # @milaboratories/milaboratories.ui-examples.model
 
+## 1.1.18
+
+### Patch Changes
+
+- 0c5753b: [sdk/ui-vue] create component plSplash for “Loading” splash screen
+
+## 1.1.17
+
+### Patch Changes
+
+- 19c273b: SDK Eslint config
+
 ## 1.1.16
 
 ### Patch Changes

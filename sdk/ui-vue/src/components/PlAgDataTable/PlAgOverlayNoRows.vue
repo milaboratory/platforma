@@ -14,6 +14,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  background-color: var(--bg-base-light);
 }
 .grid-icon-sad-cat {
   background-image: url(./assets/no-data-cat.png);

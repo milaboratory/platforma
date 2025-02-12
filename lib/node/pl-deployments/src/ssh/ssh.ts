@@ -10,10 +10,14 @@ import type { MiLogger } from '@milaboratories/ts-helpers';
 const defaultConfig: ConnectConfig = {
   keepaliveInterval: 60000,
   keepaliveCountMax: 10,
-}
+};
 
 export type SshAuthMethods = 'publickey' | 'password';
 export type SshAuthMethodsResult = SshAuthMethods[];
+export type SshDirContent = {
+  files: string[];
+  directories: string[];
+};
 
 export class SshClient {
   private config?: ConnectConfig;
@@ -32,13 +36,21 @@ export class SshClient {
   public static async init(logger: MiLogger, config: ConnectConfig): Promise<SshClient> {
     const withDefaults = {
       ...defaultConfig,
-      ...config
+      ...config,
     };
 
     const client = new SshClient(logger, new Client());
     await client.connect(withDefaults);
 
     return client;
+  }
+
+  public getFullHostName() {
+    return `${this.config?.host}:${this.config?.port}`;
+  }
+
+  public getUserName() {
+    return this.config?.username;
   }
 
   /**
@@ -283,6 +295,73 @@ export class SshClient {
   public async writeFileOnTheServer(remotePath: string, data: string | Buffer, mode: number = 0o660) {
     return this.withSftp(async (sftp) => {
       return this.writeFile(sftp, remotePath, data, mode);
+    });
+  }
+
+  public async getForderStructure(sftp: SFTPWrapper, remotePath: string, data: SshDirContent = { files: [], directories: [] }): Promise<SshDirContent> {
+    return new Promise((resolve, reject) => {
+      sftp.readdir(remotePath, async (err, items) => {
+        if (err) {
+          return reject(err);
+        }
+
+        for (const item of items) {
+          const itemPath = `${remotePath}/${item.filename}`;
+          if (item.attrs.isDirectory()) {
+            data.directories.push(itemPath);
+            try {
+              await this.getForderStructure(sftp, itemPath, data);
+            } catch (error) {
+              return reject(error);
+            }
+          } else {
+            data.files.push(itemPath);
+          }
+        }
+        resolve(data);
+      });
+    });
+  }
+
+  public rmdir(sftp: SFTPWrapper, path: string) {
+    return new Promise((resolve, reject) => {
+      sftp.rmdir(path, (err) => err ? reject(err) : resolve(true));
+    });
+  }
+
+  public unlink(sftp: SFTPWrapper, path: string) {
+    return new Promise((resolve, reject) => {
+      sftp.unlink(path, (err) => err ? reject(err) : resolve(true));
+    });
+  }
+
+  public async deleteFolder(path: string) {
+    return this.withSftp(async (sftp) => {
+      try {
+        const list = await this.getForderStructure(sftp, path);
+        this.logger.info(`ssh.deleteFolder list of files and directories`);
+        this.logger.info(`ssh.deleteFolder list of files: ${list.files}`);
+        this.logger.info(`ssh.deleteFolder list of directories: ${list.directories}`);
+
+        for (const filePath of list.files) {
+          this.logger.info(`ssh.deleteFolder unlink file ${filePath}`);
+          await this.unlink(sftp, filePath);
+        }
+
+        list.directories.sort((a, b) => b.length - a.length);
+
+        for (const directoryPath of list.directories) {
+          this.logger.info(`ssh.deleteFolder rmdir  ${directoryPath}`);
+          await this.rmdir(sftp, directoryPath);
+        }
+
+        await this.rmdir(sftp, path);
+        return true;
+      } catch (e: unknown) {
+        this.logger.error(e);
+        const message = e instanceof Error ? e.message : '';
+        throw new Error(`ssh.deleteFolder: path: ${path}, message: ${message}`);
+      }
     });
   }
 
