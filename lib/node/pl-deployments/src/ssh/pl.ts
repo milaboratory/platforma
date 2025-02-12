@@ -12,14 +12,23 @@ import net from 'net';
 import type { SshPlConfigGenerationResult } from '@milaboratories/pl-config';
 import { generateSshPlConfigs, getFreePort } from '@milaboratories/pl-config';
 import { supervisorStatus, supervisorStop as supervisorCtlShutdown, generateSupervisordConfig, supervisorCtlStart } from './supervisord';
+import EventEmitter from 'events';
 
-export class SshPl {
+export interface SshPlEvents {
+  ['clean-up']: () => void;
+  reset: () => void;
+}
+
+export class SshPl extends EventEmitter {
   private initState: PlatformaInitState = {};
   constructor(
     public readonly logger: MiLogger,
     public readonly sshClient: SshClient,
     private readonly username: string,
-  ) {}
+  ) {
+    super();
+    this.setupProcessHandlers();
+  }
 
   public info() {
     return {
@@ -36,6 +45,39 @@ export class SshPl {
       logger.error(`Connection error in SshClient.init: ${e}`);
       throw e;
     }
+  }
+
+  on<Event extends keyof SshPlEvents>(event: Event, listener: SshPlEvents[Event]): this {
+    return super.on(event, listener);
+  }
+
+  off<Event extends keyof SshPlEvents>(eventName: Event, listener: SshPlEvents[Event]): this {
+    return super.off(eventName, listener);
+  }
+
+  once<Event extends keyof SshPlEvents>(event: Event, listener: SshPlEvents[Event]): this {
+    return super.once(event, listener);
+  }
+
+  emit<Event extends keyof SshPlEvents>(event: Event, ...args: Parameters<SshPlEvents[Event]>): boolean {
+    return super.emit(event, ...args);
+  }
+
+  public setupProcessHandlers() {
+    // 'SIGINT' Ctrl+C
+    // 'SIGTERM'(kill <pid>)
+    // 'SIGHUP' Closing terminal
+    ['SIGINT', 'SIGTERM', 'SIGHUP', 'uncaughtException'].forEach((signal) => {
+      this.logger.info(`[SshPl] added cleanUp listener for ${signal}`);
+      process.on(signal, () => {
+        this.cleanUp();
+      });
+    });
+  }
+
+  public cleanUp() {
+    this.emit('clean-up');
+    this.sshClient.close();
   }
 
   public async isAlive(): Promise<boolean> {
@@ -88,6 +130,9 @@ export class SshPl {
 
     this.logger.info(`pl.reset: Deleting Platforma workDir ${workDir} on the server`);
     await this.sshClient.deleteFolder(plpath.workDir(workDir));
+
+    this.cleanUp();
+    this.emit('reset');
 
     return true;
   }
