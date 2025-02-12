@@ -31,19 +31,15 @@ _WD_FILL_FIELD_WORKDIR_OUT  := "workdirOut"
  */
 create := func() {
 	// working directories without quotas (old-style)
-	wd := smart.ephemeralBuilder(constants.RTYPE_WORKDIR_CREATE).lockAndBuild()
-	return wd.getField(_WD_CREATE_FIELD_WORKDIR)
+	wdCreate := smart.ephemeralBuilder(constants.RTYPE_WORKDIR_CREATE).lockAndBuild()
+	return wdCreate.getField(_WD_CREATE_FIELD_WORKDIR)
 }
 
-createV2 := func() {
+createV2 := func(allocation) {
 	wdCreate := smart.ephemeralBuilder(constants.RTYPE_WORKDIR_CREATE_2).lockAndBuild()
+	wdCreate.getField(_WD_CREATE_FIELD_ALLOCATION).set(allocation)
 
-	return ll.toStrict(
-		oop.inherit(wdCreate, {
-			allocation: wdCreate.getField(_WD_CREATE_FIELD_ALLOCATION),
-			workdir: wdCreate.getField(_WD_CREATE_FIELD_WORKDIR)
-		})
-	)
+	return wdCreate.getField(_WD_CREATE_FIELD_WORKDIR)
 }
 
 _getFileFillRule := func(filePath, extension) {
@@ -142,7 +138,7 @@ _fill := func() {
 		 * @param allocation: reference
 		 */
 		allocation: func(allocation) {
-			validation.assertJsonSchema(allocation, validation.reference, "workdir.builder: allocation should be a valid reference")
+			validation.assertType(allocation, validation.reference, "workdir.builder: allocation should be a valid reference")
 			_allocation = allocation
 		},
 
@@ -258,9 +254,7 @@ _fill := func() {
 		build: func() {
 			emptyWorkdir := undefined
 			if feats.workdirLimits && smart.isReference(_allocation) {
-				wdCreate := createV2()
-				wdCreate.allocation.set(_allocation)
-				emptyWorkdir = wdCreate.workdir
+				emptyWorkdir = createV2(_allocation)
 			} else {
 				emptyWorkdir = create()
 			}
