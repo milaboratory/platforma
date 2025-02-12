@@ -11,7 +11,14 @@ const isChecked = ref(!!props.params.node.isSelected());
 const forceShowCheckbox = computed(() => isChecked.value || api.getGridOption('rowSelection'));
 const allowedSelection = ref(api.getGridOption('rowSelection'));
 
-if ((api.getGridOption('rowSelection') as RowSelectionOptions).mode === 'singleRow') {
+const rowSelection = api.getGridOption('rowSelection');
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function isRowSelectionWithMode(obj: any): obj is RowSelectionOptions<any, any> {
+  return obj && typeof obj === 'object' && 'mode' in obj;
+}
+
+if (isRowSelectionWithMode(rowSelection) && rowSelection.mode === 'singleRow') {
   props.params.node.addEventListener('rowSelected', (val) => {
     isChecked.value = !!val.node.isSelected();
   });
