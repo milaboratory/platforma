@@ -1990,33 +1990,6 @@ importers:
         specifier: 'catalog:'
         version: 5.4.11(@types/node@22.5.5)(sass@1.83.4)
 
-  sdk/eslint-config:
-    dependencies:
-      '@eslint/js':
-        specifier: 'catalog:'
-        version: 9.16.0
-      '@stylistic/eslint-plugin':
-        specifier: 'catalog:'
-        version: 2.11.0(eslint@9.16.0)(typescript@5.5.4)
-      eslint:
-        specifier: 'catalog:'
-        version: 9.16.0
-      eslint-plugin-n:
-        specifier: 'catalog:'
-        version: 17.14.0(eslint@9.16.0)
-      eslint-plugin-vue:
-        specifier: 'catalog:'
-        version: 9.31.0(eslint@9.16.0)
-      globals:
-        specifier: 'catalog:'
-        version: 15.13.0
-      typescript:
-        specifier: 'catalog:'
-        version: 5.5.4
-      typescript-eslint:
-        specifier: 'catalog:'
-        version: 8.17.0(eslint@9.16.0)(typescript@5.5.4)
-
   sdk/model:
     dependencies:
       '@milaboratories/pl-model-common':
