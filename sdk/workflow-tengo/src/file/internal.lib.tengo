@@ -31,7 +31,7 @@ RTYPE_BLOB_DOWNLOAD := { Name: "BlobDownload", Version: "2" }
  *  'handle' - reference to resource with 'progress' API.
  */
 createBlobImportExternal := func(settings) {
-	validation.assertJsonSchema(settings, {
+	validation.assertType(settings, {
 		"dataURL": "string",
 		"dataHeaders,?": [["string"]],
 		"dataVersion,?": "string"
@@ -52,7 +52,7 @@ createBlobImportExternal := func(settings) {
  *  'handle' - reference to resource with 'progress' API.
  */
 createBlobImportInternal := func(settings) {
-	validation.assertJsonSchema(settings, {
+	validation.assertType(settings, {
 		"path": "string",
 		"storageId": "string",
 		"maxSpeedBytes,?": "number",
@@ -74,7 +74,7 @@ createBlobImportInternal := func(settings) {
  *  'handle' - reference to resource with 'progress' and 'upload' APIs.
  */
 createBlobUpload := func(settings) {
-	validation.assertJsonSchema(settings, {
+	validation.assertType(settings, {
 		"modificationTime": "string",
 		"localPath": "string",
 		"pathSignature": "string",

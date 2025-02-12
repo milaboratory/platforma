@@ -26,7 +26,7 @@ _toolsetRenvCreate := undefined
 
 tplBody := func(inputs) {
 	// assert we have inputs we expect.
-	validation.assertJsonSchema(inputs, internal.rVenvInputSchema)
+	validation.assertType(inputs, internal.rVenvInputSchema)
 
 	venv := _createRvenv(
 		inputs.operationMode,

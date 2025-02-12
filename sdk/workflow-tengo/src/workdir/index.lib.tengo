@@ -126,13 +126,13 @@ _fill := func(workdir) {
 		 *                                   be extracted into '<destinationDir>/a/b/file.txt', NOT '<destinationDir>/file.txt',
 		 */
 		addFromZip: func(zipResource, destinationDir, pathsInArchive) {
-			validation.assertJsonSchema(zipResource, validation.reference, "workdir.builder.addFromZip: <zipResource> is not smart.reference")
-			validation.assertJsonSchema(destinationDir, "string", "workdir.builder.addFromZip: <destinationDir> is not a string. It must be a path inside working directory")
+			validation.assertType(zipResource, validation.reference, "workdir.builder.addFromZip: <zipResource> is not smart.reference")
+			validation.assertType(destinationDir, "string", "workdir.builder.addFromZip: <destinationDir> is not a string. It must be a path inside working directory")
 
 			if (is_undefined(pathsInArchive)) {
 				pathsInArchive = []
 			}
-			validation.assertJsonSchema(pathsInArchive, ["string"], "workdir.builder.addFromZip: <pathsInArchive> must contain list of strings with paths inside archive")
+			validation.assertType(pathsInArchive, ["string"], "workdir.builder.addFromZip: <pathsInArchive> must contain list of strings with paths inside archive")
 
 			blobKey := ll.idToString(zipResource.id)
 
@@ -163,8 +163,8 @@ _fill := func(workdir) {
 		 * @param fileResource: reference - the file to add.
 		 */
 		addFile: func(fileName, fileResource) {
-			validation.assertJsonSchema(fileName, "string")
-			validation.assertJsonSchema(fileResource, validation.reference)
+			validation.assertType(fileName, "string")
+			validation.assertType(fileResource, validation.reference)
 
 			files[fileName] = fileResource
 			blobs[fileName] = fileResource
@@ -190,7 +190,7 @@ _fill := func(workdir) {
 		 * @param contentRef: reference|any - the content as a reference to add or the content itself.
 		 */
 		writeFile: func(fileName, contentRef) {
-			validation.assertJsonSchema(fileName, "string")
+			validation.assertType(fileName, "string")
 			values[fileName] = contentRef
 			self._addDirs(fileName)
 
@@ -291,7 +291,7 @@ save := func(workdir) {
 		 * @param fileName: string - the name of the file.
 		 */
 		saveFile: func(fileName) {
-			validation.assertJsonSchema(fileName, "string")
+			validation.assertType(fileName, "string")
 			sets.add(files, fileName)
 			return self
 		},
@@ -302,7 +302,7 @@ save := func(workdir) {
 		 * @param fileName: string - the name of the file.
 		 */
 		saveFileContent: func(fileName) {
-			validation.assertJsonSchema(fileName, "string")
+			validation.assertType(fileName, "string")
 			sets.add(filesContent, fileName)
 			return self
 		},
@@ -314,7 +314,7 @@ save := func(workdir) {
 		 * @param regex: string - regex
 		 */
 		saveFileSet: func(name, regex) {
-			validation.assertJsonSchema(regex, "string")
+			validation.assertType(regex, "string")
 			ll.assert(is_undefined(fileSets[name]), "file set with name '", name, "' is already in added")
 			fileSets[name] = regex
 			return self
@@ -327,7 +327,7 @@ save := func(workdir) {
 		 * @param regex: string - regex
 		 */
 		saveFileSetContent: func(name, regex) {
-			validation.assertJsonSchema(regex, "string")
+			validation.assertType(regex, "string")
 			ll.assert(is_undefined(fileSetsContent[name]), "file set content with name '", name, "' is already in added")
 			sets.add(fileSetsContent, regex)
 			return self
