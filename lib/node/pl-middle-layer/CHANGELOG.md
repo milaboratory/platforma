@@ -1,5 +1,40 @@
 # @milaboratories/pl-middle-layer
 
+## 1.27.11
+
+### Patch Changes
+
+- Updated dependencies [205c17e]
+  - @platforma-sdk/workflow-tengo@2.10.0
+
+## 1.27.10
+
+### Patch Changes
+
+- Updated dependencies [0b92139]
+  - @milaboratories/pl-deployments@1.1.4
+
+## 1.27.9
+
+### Patch Changes
+
+- c0a3935: Run PFrames Rust spec requests without concurrency limiter
+
+## 1.27.8
+
+### Patch Changes
+
+- 2197537: PFrames version bump, PFConv docs update
+- Updated dependencies [2197537]
+  - @platforma-sdk/workflow-tengo@2.9.10
+
+## 1.27.7
+
+### Patch Changes
+
+- Updated dependencies [19c273b]
+  - @milaboratories/pl-drivers@1.5.16
+
 ## 1.27.6
 
 ### Patch Changes

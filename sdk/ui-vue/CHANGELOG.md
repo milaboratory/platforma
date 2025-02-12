@@ -1,5 +1,33 @@
 # @platforma-sdk/ui-vue
 
+## 1.22.30
+
+### Patch Changes
+
+- 7dac3ce: ui-vue: use better naming (AgGrid)
+
+## 1.22.29
+
+### Patch Changes
+
+- 0c5753b: [sdk/ui-vue] create component plSplash for “Loading” splash screen
+- Updated dependencies [0c5753b]
+  - @milaboratories/uikit@2.2.57
+
+## 1.22.24
+
+### Patch Changes
+
+- Updated dependencies [4f23447]
+  - @milaboratories/uikit@2.2.56
+
+## 1.22.23
+
+### Patch Changes
+
+- Updated dependencies [852dcbf]
+  - @milaboratories/uikit@2.2.55
+
 ## 1.22.19
 
 ### Patch Changes

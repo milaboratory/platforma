@@ -3,13 +3,9 @@ import type { Component } from 'vue';
 import { computed, h, ref } from 'vue';
 import {
   PlBlockPage,
-  PlAgOverlayLoading,
-  PlAgOverlayNoRows,
-  AgGridTheme,
   PlAgDataTableToolsPanel,
   PlAgGridColumnManager,
   makeRowNumberColDef,
-  autoSizeRowNumberColumn,
   PlAgCellFile,
   PlAgTextAndButtonCell,
   PlAgColumnHeader,
@@ -20,9 +16,12 @@ import {
   PlAgChartStackedBarCell,
   PlAgChartHistogramCell,
   Gradient,
+  PlCheckbox,
+  PlRow,
+  useAgGridOptionsSimple,
 } from '@platforma-sdk/ui-vue';
 import { AgGridVue } from 'ag-grid-vue3';
-import type { ColDef, GridApi, GridOptions, GridReadyEvent } from 'ag-grid-enterprise';
+import type { ColDef } from 'ag-grid-enterprise';
 import { times } from '@milaboratories/helpers';
 import { faker } from '@faker-js/faker';
 import bins from './HistogramPage/assets/bins';
@@ -201,28 +200,51 @@ function onClickHandler() {
   console.log('onClickHandler');
 }
 
-const gridOptions: GridOptions = {
-  onRowDoubleClicked: (e) => {
-    console.log('Example "Open" button was clicked', e);
-  },
-  components: {
-    PlAgCellProgress,
-    LinkComponent,
-    PlAgCellFile,
-    PlAgTextAndButtonCell,
-  },
-};
-const gridApi = ref<GridApi | null>(null);
-const onGridReady = (e: GridReadyEvent) => {
-  gridApi.value = e.api;
-  autoSizeRowNumberColumn(e.api);
-};
+const isOverlayTransparent = ref(false);
+
+const loading = ref(false);
+
+const notReady = ref(false);
+
+const hasRows = ref(false);
+
+const { gridOptions, gridApi } = useAgGridOptionsSimple(() => {
+  return {
+    columnDefs,
+    rowSelection: {
+      mode: 'multiRow' as const,
+      checkboxes: false,
+      headerCheckbox: false,
+    },
+    loading: loading.value,
+    rowData: hasRows.value ? result : [],
+    onRowDoubleClicked: (e) => {
+      console.log('Example "Open" button was clicked', e);
+    },
+    loadingOverlayComponentParams: {
+      notReady: notReady.value,
+      overlayType: isOverlayTransparent.value ? 'transparent' : undefined,
+    },
+    components: {
+      PlAgCellProgress,
+      LinkComponent,
+      PlAgCellFile,
+      PlAgTextAndButtonCell,
+    },
+  };
+});
 </script>
 
 <template>
   <PlBlockPage style="max-width: 100%">
     <template #title>AgGridVue</template>
     <template #append>
+      <PlRow>
+        <PlCheckbox v-model="isOverlayTransparent">Use transparent overlay</PlCheckbox>
+        <PlCheckbox v-model="loading">Loading</PlCheckbox>
+        <PlCheckbox v-model="notReady">Not Ready</PlCheckbox>
+        <PlCheckbox v-model="hasRows">Has rows</PlCheckbox>
+      </PlRow>
       <PlAgDataTableToolsPanel>
         <PlAgGridColumnManager v-if="gridApi" :api="gridApi" />
         <PlAgCsvExporter v-if="gridApi" :api="gridApi" />
@@ -230,20 +252,8 @@ const onGridReady = (e: GridReadyEvent) => {
     </template>
 
     <AgGridVue
-      :rowSelection="{
-        mode: 'multiRow',
-        checkboxes: false,
-        headerCheckbox: false,
-      }"
-      :theme="AgGridTheme"
       :style="{ height: '100%' }"
-      :row-data="result"
-      :column-defs="columnDefs"
-      :grid-options="gridOptions"
-      :loading-overlay-component-params="{ notReady: true }"
-      :loading-overlay-component="PlAgOverlayLoading"
-      :no-rows-overlay-component="PlAgOverlayNoRows"
-      @grid-ready="onGridReady"
+      v-bind="gridOptions"
     />
   </PlBlockPage>
 </template>

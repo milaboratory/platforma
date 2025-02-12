@@ -1,5 +1,30 @@
 # @platforma-sdk/bootstrap
 
+## 3.1.11
+
+### Patch Changes
+
+- Updated dependencies [0b92139]
+  - @milaboratories/pl-deployments@1.1.4
+
+## 3.1.10
+
+### Patch Changes
+
+- bdaeac1: Re-compile platforma binary before each service start when instance is bound to sources
+
+## 3.1.9
+
+### Patch Changes
+
+- 3a84d15: Fix notice message text after svc creation
+
+## 3.1.8
+
+### Patch Changes
+
+- e753752: create-block: more error handling of user input
+
 ## 3.1.7
 
 ### Patch Changes

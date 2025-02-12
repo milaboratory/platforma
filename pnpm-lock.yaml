@@ -28,14 +28,14 @@ catalogs:
       specifier: ^29.7.0
       version: 29.7.0
     '@milaboratories/pframes-node':
-      specifier: 2.1.8
-      version: 2.1.8
+      specifier: 2.1.9
+      version: 2.1.9
     '@milaboratories/pframes-rs-node':
-      specifier: 1.0.9
-      version: 1.0.9
+      specifier: 1.0.10
+      version: 1.0.10
     '@milaboratories/software-pframes-conv':
-      specifier: 2.1.8
-      version: 2.1.8
+      specifier: 2.1.9
+      version: 2.1.9
     '@milaboratories/tengo-tester':
       specifier: ^1.5.1
       version: 1.5.1
@@ -1664,10 +1664,10 @@ importers:
         version: link:../computable
       '@milaboratories/pframes-node':
         specifier: 'catalog:'
-        version: 2.1.8(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)
+        version: 2.1.9(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)
       '@milaboratories/pframes-rs-node':
         specifier: 'catalog:'
-        version: 1.0.9(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)
+        version: 1.0.10(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)
       '@milaboratories/pl-client':
         specifier: workspace:^
         version: link:../pl-client
@@ -1990,6 +1990,33 @@ importers:
         specifier: 'catalog:'
         version: 5.4.11(@types/node@22.5.5)(sass@1.83.4)
 
+  sdk/eslint-config:
+    dependencies:
+      '@eslint/js':
+        specifier: 'catalog:'
+        version: 9.16.0
+      '@stylistic/eslint-plugin':
+        specifier: 'catalog:'
+        version: 2.11.0(eslint@9.16.0)(typescript@5.5.4)
+      eslint:
+        specifier: 'catalog:'
+        version: 9.16.0
+      eslint-plugin-n:
+        specifier: 'catalog:'
+        version: 17.14.0(eslint@9.16.0)
+      eslint-plugin-vue:
+        specifier: 'catalog:'
+        version: 9.31.0(eslint@9.16.0)
+      globals:
+        specifier: 'catalog:'
+        version: 15.13.0
+      typescript:
+        specifier: 'catalog:'
+        version: 5.5.4
+      typescript-eslint:
+        specifier: 'catalog:'
+        version: 8.17.0(eslint@9.16.0)(typescript@5.5.4)
+
   sdk/model:
     dependencies:
       '@milaboratories/pl-model-common':
@@ -2147,7 +2174,7 @@ importers:
     dependencies:
       '@milaboratories/software-pframes-conv':
         specifier: 'catalog:'
-        version: 2.1.8
+        version: 2.1.9
       '@platforma-open/milaboratories.software-small-binaries':
         specifier: 'catalog:'
         version: 1.15.6
@@ -2373,7 +2400,7 @@ importers:
         version: link:../../lib/util/build-configs
       '@milaboratories/software-pframes-conv':
         specifier: 'catalog:'
-        version: 2.1.8
+        version: 2.1.9
       '@platforma-open/milaboratories.software-small-binaries':
         specifier: 'catalog:'
         version: 1.15.6
@@ -3779,12 +3806,6 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@eslint-community/eslint-utils@4.4.0':
-    resolution: {integrity: sha512-1/sA4dwrzBAyeUoQ6oxahHKmrZvsnLCg4RfxW3ZFGGmQkSNQPFNLV9CUEFQP1x9EYXHTo5p6xdhZM1Ne9p/AfA==}
-    engines: {node: ^12.22.0 || ^14.17.0 || >=16.0.0}
-    peerDependencies:
-      eslint: ^6.0.0 || ^7.0.0 || >=8.0.0
-
   '@eslint-community/eslint-utils@4.4.1':
     resolution: {integrity: sha512-s3O3waFUrMV8P/XaF/+ZTp1X9XBZW1a4B97ZnjQF2KYWaFD2A8KyFBsrsfSjEmjn3RGWAIuvlneuZm3CUK3jbA==}
     engines: {node: ^12.22.0 || ^14.17.0 || >=16.0.0}
@@ -4111,24 +4132,24 @@ packages:
   '@microsoft/tsdoc@0.15.1':
     resolution: {integrity: sha512-4aErSrCR/On/e5G2hDP0wjooqDdauzEbIq8hIkIe5pXV0rtWJZvdCEKL0ykZxex+IxIwBp0eGeV48hQN07dXtw==}
 
-  '@milaboratories/pframes-node@2.1.8':
-    resolution: {integrity: sha512-QBq+hJ0r5GOLccimOjFrfL52y+tm1Ur/Mr2LRMj7EplxC0AqJdOMUJzMHgyYicXZRm24817h9TDR/LX6xeQQJw==}
+  '@milaboratories/pframes-node@2.1.9':
+    resolution: {integrity: sha512-OfZr9JyU0csotDouRZHPAE/LJZ9JNxTTX6i0OBYUSqGu/KqsUzzVAhFUbie8km5g2nAiK/d3lxK9lc7EMuwhUg==}
     peerDependencies:
       '@milaboratories/pl-model-common': '*'
 
-  '@milaboratories/pframes-rs-node@1.0.9':
-    resolution: {integrity: sha512-CBWUTwVBONkWuo80ArD+AwLfTy38hF/2zZa3/GLiWNxLgy2vC/5x7lmoso3clk/jEIalQWjwtfXR/iNNAN+APw==}
+  '@milaboratories/pframes-rs-node@1.0.10':
+    resolution: {integrity: sha512-HioJjssKNLiR2p2fD8+v1AZRQXfuZCnNwdXJJdGlIeujoeCJAnYP/WPnrBkuPC0zq4AmSMRdu1NtjjD2mYI7Fw==}
     peerDependencies:
       '@milaboratories/pl-model-common': '*'
 
-  '@milaboratories/pl-model-common@1.10.4':
-    resolution: {integrity: sha512-W75+vkF0XyYi/4FNe80EPear3KEsSv6aEp8EB925f938IxeLp5DMGCAwQ3eAWeDt/mAAyCKMJHW3J+6LkhvivA==}
+  '@milaboratories/pl-model-common@1.10.5':
+    resolution: {integrity: sha512-BO6G3Ukv2UFtuawZsq7v4LTWhFyAviTa77TOGANEHG+zGcIVCJq1AnfMqHuoSsqSEWXmhgEy6CPSekMQ2b/wZg==}
 
-  '@milaboratories/pl-model-middle-layer@1.7.1':
-    resolution: {integrity: sha512-urTp+MT3jFVicqPg5tzBoWp1OqofG+2oux5AHNjWbHrsnYPOObNE1+NWtOEi2TcJnlu7VO7gIXY+sbjO1WR+3w==}
+  '@milaboratories/pl-model-middle-layer@1.7.2':
+    resolution: {integrity: sha512-yr9ZKOpU6yP3pjtIO9TZqAb2K3nz5o21QYP548xn/mtlvzwUX7YNA+nyTabWVcWUXmordx3bJxl8gCEnmW12hw==}
 
-  '@milaboratories/software-pframes-conv@2.1.8':
-    resolution: {integrity: sha512-79cTaUWRFKkeyRTiC08z886O3A/AX+TG2vaPCsuSFxQYTh4uMwgBBbDbRStMgZLj138mkYrJWoS2A9zGVMu5Ng==}
+  '@milaboratories/software-pframes-conv@2.1.9':
+    resolution: {integrity: sha512-+jdN4J4bLluI7Rd4POzxtKODHQH4tqABnHeWNZbRCGrUAIbszMW4eaLCCV89bjosIxaekc5RpbyRcBhjcN5hTQ==}
 
   '@milaboratories/tengo-tester@1.5.1':
     resolution: {integrity: sha512-ugkHvvHHO/Ftr+YgZw69/1kFGztUv+Cnak15LGYxkYs5LJ3uvK2Q5EwotISH6t0ca6v7FZlIsKQplRQwDCYvUQ==}
@@ -10374,11 +10395,6 @@ snapshots:
   '@esbuild/win32-x64@0.24.0':
     optional: true
 
-  '@eslint-community/eslint-utils@4.4.0(eslint@9.16.0)':
-    dependencies:
-      eslint: 9.16.0
-      eslint-visitor-keys: 3.4.3
-
   '@eslint-community/eslint-utils@4.4.1(eslint@9.16.0)':
     dependencies:
       eslint: 9.16.0
@@ -10956,36 +10972,36 @@ snapshots:
 
   '@microsoft/tsdoc@0.15.1': {}
 
-  '@milaboratories/pframes-node@2.1.8(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)':
+  '@milaboratories/pframes-node@2.1.9(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)':
     dependencies:
       '@mapbox/node-pre-gyp': 2.0.0(encoding@0.1.13)
       '@milaboratories/pl-model-common': link:lib/model/common
-      '@milaboratories/pl-model-middle-layer': 1.7.1
+      '@milaboratories/pl-model-middle-layer': 1.7.2
     transitivePeerDependencies:
       - encoding
       - supports-color
 
-  '@milaboratories/pframes-rs-node@1.0.9(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)':
+  '@milaboratories/pframes-rs-node@1.0.10(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)':
     dependencies:
       '@mapbox/node-pre-gyp': 2.0.0(encoding@0.1.13)
       '@milaboratories/pl-model-common': link:lib/model/common
-      '@milaboratories/pl-model-middle-layer': 1.7.1
+      '@milaboratories/pl-model-middle-layer': 1.7.2
     transitivePeerDependencies:
       - encoding
       - supports-color
 
-  '@milaboratories/pl-model-common@1.10.4':
+  '@milaboratories/pl-model-common@1.10.5':
     dependencies:
       zod: 3.23.8
 
-  '@milaboratories/pl-model-middle-layer@1.7.1':
+  '@milaboratories/pl-model-middle-layer@1.7.2':
     dependencies:
-      '@milaboratories/pl-model-common': 1.10.4
+      '@milaboratories/pl-model-common': 1.10.5
       remeda: 2.19.2
       utility-types: 3.11.0
       zod: 3.23.8
 
-  '@milaboratories/software-pframes-conv@2.1.8': {}
+  '@milaboratories/software-pframes-conv@2.1.9': {}
 
   '@milaboratories/tengo-tester@1.5.1': {}
 
@@ -12319,7 +12335,7 @@ snapshots:
       '@typescript-eslint/types': 8.17.0
       '@typescript-eslint/typescript-estree': 8.17.0(typescript@5.5.4)
       '@typescript-eslint/visitor-keys': 8.17.0
-      debug: 4.3.7
+      debug: 4.4.0(supports-color@8.1.1)
       eslint: 9.16.0
     optionalDependencies:
       typescript: 5.5.4
@@ -12362,7 +12378,7 @@ snapshots:
 
   '@typescript-eslint/utils@8.17.0(eslint@9.16.0)(typescript@5.5.4)':
     dependencies:
-      '@eslint-community/eslint-utils': 4.4.0(eslint@9.16.0)
+      '@eslint-community/eslint-utils': 4.4.1(eslint@9.16.0)
       '@typescript-eslint/scope-manager': 8.17.0
       '@typescript-eslint/types': 8.17.0
       '@typescript-eslint/typescript-estree': 8.17.0(typescript@5.5.4)
@@ -13767,7 +13783,7 @@ snapshots:
 
   eslint-plugin-vue@9.31.0(eslint@9.16.0):
     dependencies:
-      '@eslint-community/eslint-utils': 4.4.0(eslint@9.16.0)
+      '@eslint-community/eslint-utils': 4.4.1(eslint@9.16.0)
       eslint: 9.16.0
       globals: 13.24.0
       natural-compare: 1.4.0
@@ -16541,7 +16557,7 @@ snapshots:
 
   vue-eslint-parser@9.4.3(eslint@9.16.0):
     dependencies:
-      debug: 4.3.7
+      debug: 4.4.0(supports-color@8.1.1)
       eslint: 9.16.0
       eslint-scope: 7.2.2
       eslint-visitor-keys: 3.4.3

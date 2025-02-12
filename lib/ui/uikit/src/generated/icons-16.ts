@@ -12,6 +12,7 @@ export const maskIcons16 = [
   'caret-right',
   'caret-up',
   'cell-type-num',
+  'cell-type-subset',
   'cell-type-txt',
   'checkmark',
   'chevron-down',

@@ -96,9 +96,8 @@
   }
 
   &::-webkit-scrollbar {
-    width: 6px;
+    width: var(--scrollbar-width, 6px);
     height: 5px;
-    padding-right: 5px;
     background-color: transparent;
     display: block;
   }

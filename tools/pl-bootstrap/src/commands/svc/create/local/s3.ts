@@ -55,11 +55,6 @@ export default class Local extends Command {
     const authDrivers = core.initAuthDriversList(flags, workdir);
     const authEnabled = flags['auth-enabled'] ?? authDrivers !== undefined;
 
-    let binaryPath = flags['pl-binary'];
-    if (flags['pl-sources']) {
-      binaryPath = core.buildPlatforma({ repoRoot: flags['pl-sources'] });
-    }
-
     let listenGrpc: string = '127.0.0.1:6345';
     if (flags['grpc-listen']) listenGrpc = flags['grpc-listen'];
     else if (flags['grpc-port']) listenGrpc = `127.0.0.1:${flags['grpc-port']}`;
@@ -72,8 +67,10 @@ export default class Local extends Command {
     if (flags['debug-listen']) listenDbg = flags['debug-listen'];
     else if (flags['debug-port']) listenDbg = `127.0.0.1:${flags['debug-port']}`;
 
-    const startOptions: createLocalS3Options = {
-      binaryPath: binaryPath,
+    const createOptions: createLocalS3Options = {
+      sourcesPath: flags['pl-sources'],
+      binaryPath: flags['pl-binary'],
+
       version: flags.version,
       configPath: flags.config,
       workdir: flags['pl-workdir'],
@@ -100,16 +97,16 @@ export default class Local extends Command {
     };
 
     logger.info(`Creating instance configuration, data directory and other stuff...`);
-    core.createLocalS3(instanceName, startOptions);
+    core.createLocalS3(instanceName, createOptions);
 
-    if (startOptions.binaryPath) {
+    if (createOptions.binaryPath || createOptions.sourcesPath) {
       logger.info(`Instance '${instanceName}' was created. To start it run 'up' command`);
       return;
     }
 
     platforma
       .getBinary(logger, { version: flags.version })
-      .then(() => logger.info(`Instance '${instanceName}' was created. To start it run 'pl up' command`))
+      .then(() => logger.info(`Instance '${instanceName}' was created. To start it run 'svc up' command`))
       .catch(function (err: Error) {
         logger.error(err.message);
       });

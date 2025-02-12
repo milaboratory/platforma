@@ -1,5 +1,17 @@
 # @platforma-sdk/workflow-tengo
 
+## 2.10.0
+
+### Minor Changes
+
+- 205c17e: Added ability to filter only specific partitions on xsv export with `{partitions: {idx: [keys]}}` option.
+
+## 2.9.10
+
+### Patch Changes
+
+- 2197537: PFrames version bump, PFConv docs update
+
 ## 2.9.9
 
 ### Patch Changes

@@ -1,9 +1,45 @@
-.container {
-  display: flex;
-  flex-direction: column;
-}
+.splash {
+  --pl-splash-overlay-background: rgba(255, 255, 255, 0.94);
 
-.text {
-    margin-top: 24px;
-    color: var(--txt-mask);
+  position: relative;
+
+  &.table {
+    --pl-splash-overlay-background: var(--bg-base-light);
   }
+
+  &.transparent {
+    --pl-splash-overlay-background: transparent;
+  }
+
+  .overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: var(--pl-splash-overlay-background);
+    z-index: var(--z-splash);
+
+    > div {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+
+      .text {
+        user-select: none;
+        color: var(--txt-mask);
+        font-family: var(--font-family-base);
+        font-size: 28px;
+        font-style: normal;
+        font-weight: 500;
+        line-height: 32px;
+        letter-spacing: -0.56px;
+        margin: 0;
+      }
+    }
+  }
+}
