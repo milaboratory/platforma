@@ -5,7 +5,7 @@ import dns from 'dns';
 import fs from 'fs';
 import { readFile } from 'fs/promises';
 import upath from 'upath';
-import { EnsurePromise, type MiLogger } from '@milaboratories/ts-helpers';
+import { RetryablePromise, type MiLogger } from '@milaboratories/ts-helpers';
 import { randomBytes } from 'crypto';
 
 const defaultConfig: ConnectConfig = {
@@ -152,12 +152,12 @@ export class SshClient {
     // we make this thing persistent so that if the connection
     // drops (it happened in the past because of lots of errors and forwardOut opened channels),
     // we'll recreate it here.
-    const persistentClient = new EnsurePromise((p: EnsurePromise<Client>) => {
+    const persistentClient = new RetryablePromise((p: RetryablePromise<Client>) => {
       return new Promise<Client>((resolve, reject) => {
         const client = new Client();
 
         client.on('ready', () => {
-          console.info(`${log}.client.ready`);
+          this.logger.info(`${log}.client.ready`);
           resolve(client);
         });
 
@@ -181,7 +181,8 @@ export class SshClient {
     return new Promise((resolve, reject) => {
       const server = net.createServer({ pauseOnConnect: true }, async (localSocket) => {
         const sockLog = `${log}.sock_${randomBytes(1).toString('hex')}`;
-        let conn: Client | undefined;
+        // this.logger.info(`${sockLog}.localSocket: start connection`);
+        let conn: Client;
         try {
           conn = await persistentClient.ensure();
         } catch (e: unknown) {
@@ -190,7 +191,7 @@ export class SshClient {
           return;
         }
 
-        let stream: ClientChannel | undefined;
+        let stream: ClientChannel;
         try {
           stream = await forwardOut(this.logger, conn, '127.0.0.1', 0, '127.0.0.1', ports.remotePort);
         } catch (e: unknown) {
@@ -199,11 +200,10 @@ export class SshClient {
           return;
         }
 
-        this.logger.info(`${sockLog}.forwardOut: start connection`);
         localSocket.pipe(stream);
         stream.pipe(localSocket);
         localSocket.resume();
-        this.logger.info(`${sockLog}.forwardOut: connected`);
+        // this.logger.info(`${sockLog}.forwardOut: connected`);
 
         stream.on('error', (err: unknown) => {
           this.logger.error(`${sockLog}.stream.error: ${err}`);
@@ -211,7 +211,7 @@ export class SshClient {
           stream.end();
         });
         stream.on('close', () => {
-          this.logger.info(`${sockLog}.stream.close: closed`);
+          // this.logger.info(`${sockLog}.stream.close: closed`);
           localSocket.end();
           stream.end();
         });
@@ -654,10 +654,10 @@ async function forwardOut(logger: MiLogger, conn: Client, localHost: string, loc
     conn.forwardOut(localHost, localPort, remoteHost, remotePort, (err, stream) => {
       if (err) {
         logger.error(`forwardOut.error: ${err}`);
-        reject(err);
+        return reject(err);
       }
 
-      resolve(stream);
+      return resolve(stream);
     });
   });
 }

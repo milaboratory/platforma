@@ -79,10 +79,10 @@ export class ClientUpload {
         body: chunk,
         // We got headers only after we send
         // the whole body (in case of S3 PUT requests it's 5 MB).
-        // It might be slow with a slow connection,
+        // It might be slow with a slow connection (or with SSH),
         // that's why we got big timeout here.
-        headersTimeout: 30000,
-        bodyTimeout: 30000,
+        headersTimeout: 60000,
+        bodyTimeout: 60000,
         headers: toHeadersMap(info.headers),
         method: info.method.toUpperCase() as Dispatcher.HttpMethod,
       });
@@ -91,6 +91,9 @@ export class ClientUpload {
       const body = await rawBody.text();
       checkStatusCodeOk(statusCode, body, headers, info);
     } catch (e: unknown) {
+      if (e instanceof NetworkError)
+        throw e;
+
       throw new Error(`partUpload: error ${JSON.stringify(e)} happened while trying to do part upload to the url ${info.uploadUrl}, headers: ${JSON.stringify(info.headers)}`);
     }
 
