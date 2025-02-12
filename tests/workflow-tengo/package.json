@@ -14,7 +14,7 @@
     }
   },
   "scripts": {
-    "build": "rm -rf dist && pl-tengo build --log-level=debug",
+    "build": "rm -rf dist && pl-tengo build",
     "test": "vitest",
     "format": "/usr/bin/env emacs --quick --script ./format.el",
     "format-stdin": "/usr/bin/env emacs --quick --script ./format-stdin.el",
