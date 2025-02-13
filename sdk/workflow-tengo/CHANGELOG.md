@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 2.11.0
+
+### Minor Changes
+
+- 144ed1e: Fix unnecessary prepare in staging wf run
+
 ## 2.10.2
 
 ### Patch Changes
