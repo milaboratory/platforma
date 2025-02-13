@@ -27,14 +27,14 @@ saveBuilder := func(wd) {
 
 	self = {
 		addPath: func(path) {
-			validation.assertJsonSchema(path, "string", "runenv.saveBuilder.addPath: <path> must be string")
+			validation.assertType(path, "string", "runenv.saveBuilder.addPath: <path> must be string")
 
 			pathsToSave = append(pathsToSave, path)
 			return self
 		},
 
 		envType: func(type) {
-			validation.assertJsonSchema(type, "string", "runenv.saveBuilder.envType: <type> must be string")
+			validation.assertType(type, "string", "runenv.saveBuilder.envType: <type> must be string")
 
 			envType = type
 			return self
@@ -45,7 +45,7 @@ saveBuilder := func(wd) {
 		 */
 		addPackage: func(key, pkgRef) {
 			ll.assert(!maps.containsKey(packagesMap, key), "runenv.saveBuilder.addPackage: package %q was already added to SaveRunEnv builder", key)
-			validation.assertJsonSchema(pkgRef, validation.reference, "runenv.saveBuilder.addPackage: <pkgRef> must be reference")
+			validation.assertType(pkgRef, validation.reference, "runenv.saveBuilder.addPackage: <pkgRef> must be reference")
 
 			packagesMap[key] = pkgRef
 			return self

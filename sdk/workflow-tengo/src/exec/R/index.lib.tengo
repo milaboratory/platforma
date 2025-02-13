@@ -26,7 +26,7 @@ rVenvBuilder := func() {
 
 	self = {
 		operationMode: func(mode) {
-			validation.assertJsonSchema(mode, "string",
+			validation.assertType(mode, "string",
 				"exec.R.operationMode: <mode> must be string")
 
 			ll.assert(mode == "remote" || mode == "dev-local",
@@ -37,7 +37,7 @@ rVenvBuilder := func() {
 		},
 
 		useToolset: func(name) {
-			validation.assertJsonSchema(name, "string",
+			validation.assertType(name, "string",
 				"exec.R.useToolset: <name> must be valid name of R packaging toolset (i.e. 'renv')")
 			ll.assert(name != "", "exec.R.useToolset: toolset name must not be empty")
 
@@ -46,7 +46,7 @@ rVenvBuilder := func() {
 		},
 
 		runEnvDescriptor: func(descriptor) {
-			validation.assertJsonSchema(descriptor, desc.runEnvScheme, "exec.R.runEnvDescriptor: <descriptor> must be run environment specification")
+			validation.assertType(descriptor, desc.runEnvScheme, "exec.R.runEnvDescriptor: <descriptor> must be run environment specification")
 			ll.assert(descriptor.type == "R", "exec.R.runEnvDescriptor: not a 'R' run environment: %q", descriptor.type)
 
 			rDescriptor = ll.fromStrict(descriptor)
@@ -54,14 +54,14 @@ rVenvBuilder := func() {
 		},
 
 		software: func(pkgRef) {
-			validation.assertJsonSchema(pkgRef, validation.reference, "exec.R.software: <pkgRef> must be a reference to software package")
+			validation.assertType(pkgRef, validation.reference, "exec.R.software: <pkgRef> must be a reference to software package")
 
 			softwareRef = pkgRef
 			return self
 		},
 
 		dependencies: func(deps) {
-			validation.assertJsonSchema(deps, { "any": "string" }, "exec.R.dependencies: <deps> must be map of reference file paths")
+			validation.assertType(deps, { "any": "string" }, "exec.R.dependencies: <deps> must be map of reference file paths")
 
 			dependencies = deps
 			return self
@@ -150,7 +150,7 @@ rVenvBuilder := func() {
 				R: rPkg
 			}
 
-			validation.assertJsonSchema(rVenvInputs, internal.rVenvInputSchema, "incomplete R runenv configuration")
+			validation.assertType(rVenvInputs, internal.rVenvInputSchema, "incomplete R runenv configuration")
 
 			tpl := render.create(createRenvTpl, rVenvInputs)
 

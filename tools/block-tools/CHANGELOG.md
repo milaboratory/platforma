@@ -1,5 +1,14 @@
 # @platforma-sdk/block-tools
 
+## 2.5.10
+
+### Patch Changes
+
+- a77b40a: add `any` everywhere, ssh: persistent connection; upload: dynamic part chooser
+- Updated dependencies [a77b40a]
+  - @milaboratories/ts-helpers@1.1.4
+  - @milaboratories/ts-helpers-oclif@1.1.13
+
 ## 2.5.9
 
 ### Patch Changes

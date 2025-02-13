@@ -106,7 +106,7 @@ export function GlobalOverviewEntry<const Description extends z.ZodTypeAny>(
           };
       })
       // make sure "any" channel set from main body
-      .transform((o) =>
+      .transform((o: any) =>
         o.latestByChannel[AnyChannel]
           ? o
           : {

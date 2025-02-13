@@ -1,5 +1,27 @@
 # @milaboratories/pl-middle-layer
 
+## 1.27.14
+
+### Patch Changes
+
+- a77b40a: add `any` everywhere, ssh: persistent connection; upload: dynamic part chooser
+- Updated dependencies [a77b40a]
+  - @milaboratories/pl-deployments@1.1.5
+  - @milaboratories/pl-drivers@1.5.17
+  - @milaboratories/ts-helpers@1.1.4
+  - @platforma-sdk/block-tools@2.5.10
+  - @milaboratories/computable@2.3.5
+  - @milaboratories/pl-client@2.7.5
+  - @milaboratories/pl-config@1.4.1
+  - @milaboratories/pl-tree@1.4.24
+
+## 1.27.13
+
+### Patch Changes
+
+- Updated dependencies [832f3ba]
+  - @platforma-sdk/workflow-tengo@2.10.2
+
 ## 1.27.12
 
 ### Patch Changes

@@ -179,7 +179,7 @@ builder := func() {
 		 * @param value: string - the value of the environment variable.
 		 */
 		env: func(name, value) {
-			validation.assertJsonSchema([name, value], ["string"])
+			validation.assertType([name, value], ["string"])
 			envs[name] = value
 			envsTyped[name] = {
 				type: execConstants.ARG_TYPE_STRING,
@@ -195,7 +195,7 @@ builder := func() {
 		 * @param value: string - the value of the environment variable.
 		 */
 		envWithVar: func(name, value) {
-			validation.assertJsonSchema([name, value], ["string"])
+			validation.assertType([name, value], ["string"])
 
 			// deprecated: remove ARG_TYPE_VAR and this check after 15 Mar 2025
 			t := feats.commandExpressions ? execConstants.ARG_TYPE_EXPRESSION : execConstants.ARG_TYPE_VAR
@@ -225,7 +225,7 @@ builder := func() {
 		 * @param envName: string - name of environment variable to set with value of secret.
 		 */
 		secret: func(secretName, envName) {
-			validation.assertJsonSchema([secretName, envName], ["string"])
+			validation.assertType([secretName, envName], ["string"])
 			secrets[envName] = "{secrets."+secretName+"}"
 			return self
 		},
@@ -366,8 +366,8 @@ builder := func() {
 
 			ll.assert(assets.isAssetInfo(asset),
 				"exec.builder.addAsset: <asset> parameter is not an asset info. Provide the value obtained from assets.importAsset() here")
-			validation.assertJsonSchema(destinationDir, "string", "exec.builder.addAsset: <destinationDir> is not a string. It must be a path inside working directory")
-			validation.assertJsonSchema(pathsInArchive, ["string"], "exec.builder.addAsset: <pathsInArchive> must contain list of strings with paths inside archive")
+			validation.assertType(destinationDir, "string", "exec.builder.addAsset: <destinationDir> is not a string. It must be a path inside working directory")
+			validation.assertType(pathsInArchive, ["string"], "exec.builder.addAsset: <pathsInArchive> must contain list of strings with paths inside archive")
 
 			assetIdKey := ll.idToString(asset._id)
 			if is_undefined(assetRules[assetIdKey]) {
@@ -509,7 +509,7 @@ builder := func() {
 		 *        a resource from which data we create a file.
 		 */
 		writeFile: func(fileName, data, ...opts) {
-			validation.assertJsonSchema(data, ["or",
+			validation.assertType(data, ["or",
 				"string",
 				"bytes",
 				validation.reference])
