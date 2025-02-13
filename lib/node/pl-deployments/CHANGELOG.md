@@ -1,5 +1,11 @@
 # @milaboratories/pl-local
 
+## 1.1.6
+
+### Patch Changes
+
+- 33ea5a0: review fix
+
 ## 1.1.5
 
 ### Patch Changes
