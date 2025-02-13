@@ -1,7 +1,7 @@
 import type * as ssh from 'ssh2';
 import { SshClient } from './ssh';
 import type { MiLogger } from '@milaboratories/ts-helpers';
-import { sleep, notEmpty, fileExists } from '@milaboratories/ts-helpers';
+import { sleep, notEmpty } from '@milaboratories/ts-helpers';
 import type { DownloadBinaryResult } from '../common/pl_binary_download';
 import { downloadBinaryNoExtract } from '../common/pl_binary_download';
 import upath from 'upath';
@@ -12,22 +12,14 @@ import net from 'net';
 import type { SshPlConfigGenerationResult } from '@milaboratories/pl-config';
 import { generateSshPlConfigs, getFreePort } from '@milaboratories/pl-config';
 import { supervisorStatus, supervisorStop as supervisorCtlShutdown, generateSupervisordConfig, supervisorCtlStart } from './supervisord';
-import EventEmitter from 'events';
 
-export interface SshPlEvents {
-  ['clean-up']: () => void;
-  reset: () => void;
-}
-
-export class SshPl extends EventEmitter {
+export class SshPl {
   private initState: PlatformaInitState = {};
   constructor(
     public readonly logger: MiLogger,
     public readonly sshClient: SshClient,
     private readonly username: string,
-  ) {
-    super();
-  }
+  ) { }
 
   public info() {
     return {
@@ -46,24 +38,7 @@ export class SshPl extends EventEmitter {
     }
   }
 
-  on<Event extends keyof SshPlEvents>(event: Event, listener: SshPlEvents[Event]): this {
-    return super.on(event, listener);
-  }
-
-  off<Event extends keyof SshPlEvents>(eventName: Event, listener: SshPlEvents[Event]): this {
-    return super.off(eventName, listener);
-  }
-
-  once<Event extends keyof SshPlEvents>(event: Event, listener: SshPlEvents[Event]): this {
-    return super.once(event, listener);
-  }
-
-  emit<Event extends keyof SshPlEvents>(event: Event, ...args: Parameters<SshPlEvents[Event]>): boolean {
-    return super.emit(event, ...args);
-  }
-
   public cleanUp() {
-    this.emit('clean-up');
     this.sshClient.close();
   }
 
@@ -119,7 +94,6 @@ export class SshPl extends EventEmitter {
     await this.sshClient.deleteFolder(plpath.workDir(workDir));
 
     this.cleanUp();
-    this.emit('reset');
 
     return true;
   }
