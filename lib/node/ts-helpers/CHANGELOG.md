@@ -1,5 +1,11 @@
 # @milaboratories/ts-helpers
 
+## 1.1.4
+
+### Patch Changes
+
+- a77b40a: add `any` everywhere, ssh: persistent connection; upload: dynamic part chooser
+
 ## 1.1.3
 
 ### Patch Changes

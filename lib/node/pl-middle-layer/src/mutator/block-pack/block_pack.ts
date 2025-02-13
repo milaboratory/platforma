@@ -63,7 +63,7 @@ export class BlockPackPreparer {
         const registry = this.v2RegistryProvider.getRegistry(spec.registryUrl);
         const components = await registry.getComponents(spec.id);
         return (await (
-          await request(components.model.url, httpOptions)
+          await request((components.model as any).url as string, httpOptions)
         ).body.json()) as BlockConfigContainer;
       }
 
@@ -177,9 +177,9 @@ export class BlockPackPreparer {
         const registry = this.v2RegistryProvider.getRegistry(spec.registryUrl);
         const components = await registry.getComponents(spec.id);
         const getModel = async () =>
-          (await (await request(components.model.url, httpOptions)).body.json()) as BlockConfigContainer;
+          (await (await request((components.model as any).url, httpOptions)).body.json()) as BlockConfigContainer;
         const getWorkflow = async () =>
-          await (await request(components.workflow.main.url, httpOptions)).body.arrayBuffer();
+          await (await request((components.workflow.main as any).url, httpOptions)).body.arrayBuffer();
 
         const [model, workflow] = await Promise.all([getModel(), getWorkflow()]);
 
@@ -192,7 +192,7 @@ export class BlockPackPreparer {
           config: model,
           frontend: {
             type: 'url',
-            url: components.ui.url
+            url: (components.ui as any).url
           },
           source: spec
         };

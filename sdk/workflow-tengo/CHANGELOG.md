@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 2.10.2
+
+### Patch Changes
+
+- 832f3ba: Use validation.assertType instead of assertJsonSchema
+
 ## 2.10.1
 
 ### Patch Changes
