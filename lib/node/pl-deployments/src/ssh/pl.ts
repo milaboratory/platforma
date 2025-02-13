@@ -27,7 +27,6 @@ export class SshPl extends EventEmitter {
     private readonly username: string,
   ) {
     super();
-    this.setupProcessHandlers();
   }
 
   public info() {
@@ -61,18 +60,6 @@ export class SshPl extends EventEmitter {
 
   emit<Event extends keyof SshPlEvents>(event: Event, ...args: Parameters<SshPlEvents[Event]>): boolean {
     return super.emit(event, ...args);
-  }
-
-  public setupProcessHandlers() {
-    // 'SIGINT' Ctrl+C
-    // 'SIGTERM'(kill <pid>)
-    // 'SIGHUP' Closing terminal
-    ['SIGINT', 'SIGTERM', 'SIGHUP', 'uncaughtException'].forEach((signal) => {
-      this.logger.info(`[SshPl] added cleanUp listener for ${signal}`);
-      process.on(signal, () => {
-        this.cleanUp();
-      });
-    });
   }
 
   public cleanUp() {
