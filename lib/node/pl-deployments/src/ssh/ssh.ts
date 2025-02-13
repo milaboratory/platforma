@@ -23,6 +23,7 @@ export type SshDirContent = {
 export class SshClient {
   private config?: ConnectConfig;
   public homeDir?: string;
+  private forwardedServers: net.Server[] = [];
 
   constructor(
     private readonly logger: MiLogger,
@@ -44,6 +45,10 @@ export class SshClient {
     await client.connect(withDefaults);
 
     return client;
+  }
+
+  public getForwardedServers() {
+    return this.forwardedServers;
   }
 
   public getFullHostName() {
@@ -224,6 +229,7 @@ export class SshClient {
 
       server.listen(ports.localPort, '127.0.0.1', () => {
         this.logger.info(`${log}.server: started listening`);
+        this.forwardedServers.push(server);
         resolve({ server });
       });
 
@@ -234,8 +240,23 @@ export class SshClient {
 
       server.on('close', () => {
         this.logger.info(`${log}.server: closed ${JSON.stringify(ports)}`);
+        this.forwardedServers = this.forwardedServers.filter((s) => s !== server);
       });
     });
+  }
+
+  public closeForwardedPorts(): void {
+    this.logger.info('[SSH] Closing all forwarded ports...');
+    this.forwardedServers.forEach((server) => {
+      const rawAddress = server.address();
+      if (rawAddress && typeof rawAddress !== 'string') {
+        const address: net.AddressInfo = rawAddress;
+        this.logger.info(`[SSH] Closing port forward for server ${address.address}:${address.port}`);
+      }
+
+      server.close();
+    });
+    this.forwardedServers = [];
   }
 
   /**
@@ -616,9 +637,10 @@ export class SshClient {
   }
 
   /**
-   * Closes the SSH client connection.
+   * Closes the SSH client connection and forwarded ports.
    */
   public close(): void {
+    this.closeForwardedPorts();
     this.client.end();
   }
 }

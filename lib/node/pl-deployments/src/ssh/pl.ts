@@ -1,7 +1,7 @@
 import type * as ssh from 'ssh2';
 import { SshClient } from './ssh';
 import type { MiLogger } from '@milaboratories/ts-helpers';
-import { sleep, notEmpty, fileExists } from '@milaboratories/ts-helpers';
+import { sleep, notEmpty } from '@milaboratories/ts-helpers';
 import type { DownloadBinaryResult } from '../common/pl_binary_download';
 import { downloadBinaryNoExtract } from '../common/pl_binary_download';
 import upath from 'upath';
@@ -19,7 +19,7 @@ export class SshPl {
     public readonly logger: MiLogger,
     public readonly sshClient: SshClient,
     private readonly username: string,
-  ) {}
+  ) { }
 
   public info() {
     return {
@@ -36,6 +36,10 @@ export class SshPl {
       logger.error(`Connection error in SshClient.init: ${e}`);
       throw e;
     }
+  }
+
+  public cleanUp() {
+    this.sshClient.close();
   }
 
   public async isAlive(): Promise<boolean> {
@@ -88,6 +92,8 @@ export class SshPl {
 
     this.logger.info(`pl.reset: Deleting Platforma workDir ${workDir} on the server`);
     await this.sshClient.deleteFolder(plpath.workDir(workDir));
+
+    this.cleanUp();
 
     return true;
   }
