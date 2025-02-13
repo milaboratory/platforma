@@ -1,5 +1,13 @@
 # @platforma-sdk/bootstrap
 
+## 3.1.12
+
+### Patch Changes
+
+- a77b40a: add `any` everywhere, ssh: persistent connection; upload: dynamic part chooser
+- Updated dependencies [a77b40a]
+  - @milaboratories/pl-deployments@1.1.5
+
 ## 3.1.11
 
 ### Patch Changes

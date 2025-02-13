@@ -1,5 +1,16 @@
 # @milaboratories/pl-drivers
 
+## 1.5.17
+
+### Patch Changes
+
+- a77b40a: add `any` everywhere, ssh: persistent connection; upload: dynamic part chooser
+- Updated dependencies [a77b40a]
+  - @milaboratories/ts-helpers@1.1.4
+  - @milaboratories/computable@2.3.5
+  - @milaboratories/pl-client@2.7.5
+  - @milaboratories/pl-tree@1.4.24
+
 ## 1.5.16
 
 ### Patch Changes
