@@ -5,7 +5,7 @@ import upath from 'upath';
 import { getDefaultPlVersion } from '../../common/pl_version';
 import { existsSync, unlinkSync, rmSync } from 'fs';
 import { newArch } from '../../common/os_and_arch';
-import { downloadBinary, downloadPlBinary } from '../../common/pl_binary_download';
+import { downloadBinary } from '../../common/pl_binary_download';
 import { ConsoleLoggerAdapter } from '@milaboratories/ts-helpers';
 import * as plpath from '../pl_paths';
 
@@ -84,10 +84,10 @@ describe('SshPl', async () => {
   it('Transfer Platforma to server', async () => {
     const arch = await sshPl.getArch();
 
-    const plPath = await downloadPlBinary(
+    const plPath = await downloadBinary(
       new ConsoleLoggerAdapter(),
       downloadDestination,
-      getDefaultPlVersion(),
+      'pl', `pl-${getDefaultPlVersion()}`,
       arch.arch,
       arch.platform,
     );
@@ -154,10 +154,10 @@ describe('SshPl download binaries', async () => {
   it('Download pl. We have archive and extracted data', async () => {
     const arch = await sshPl.getArch();
 
-    const result = await downloadPlBinary(
+    const result = await downloadBinary(
       new ConsoleLoggerAdapter(),
       downloadDestination,
-      getDefaultPlVersion(),
+      'pl', `pl-${getDefaultPlVersion()}`,
       arch.arch,
       arch.platform,
     );

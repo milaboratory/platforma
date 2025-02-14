@@ -1,8 +1,10 @@
 import type { MiLogger } from '@milaboratories/ts-helpers';
 import { assertNever } from '@milaboratories/ts-helpers';
-import { downloadPlBinary, DownloadBinaryResult } from './pl_binary_download';
+import { downloadBinary } from './pl_binary_download';
 import { getDefaultPlVersion } from './pl_version';
 import os from 'os';
+import upath from 'upath';
+import { newOs, OSType } from './os_and_arch';
 
 /** Shows how the binary should be got. */
 export type PlBinarySource = PlBinarySourceDownload | PlBinarySourceLocal;
@@ -28,7 +30,8 @@ export async function resolveLocalPlBinaryPath(
 ): Promise<string> {
   switch (src.type) {
     case 'Download':
-      return (await downloadPlBinary(logger, downloadDir, src.version, os.arch(), os.platform())).binaryPath!;
+      const ops = await downloadBinary(logger, downloadDir, 'pl', `pl-${src.version}`, os.arch(), os.platform());
+      return upath.join(ops.baseName, 'binaries', osToBinaryName[newOs(os.platform())]);
 
     case 'Local':
       return src.path;
@@ -37,3 +40,9 @@ export async function resolveLocalPlBinaryPath(
       assertNever(src);
   }
 }
+
+export const osToBinaryName: Record<OSType, string> = {
+  linux: 'platforma',
+  macos: 'platforma',
+  windows: 'platforma.exe',
+};

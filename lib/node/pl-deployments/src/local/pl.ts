@@ -162,7 +162,9 @@ export async function localPlatformaInit(logger: MiLogger, _ops: LocalPlOptions)
     logger.info(`writing configuration '${configPath}'...`);
     await fsp.writeFile(configPath, ops.config);
 
-    const baseBinaryPath = await resolveLocalPlBinaryPath(logger, upath.join(workDir, 'binaries'), ops.plBinary);
+    const plBinPath = upath.join(workDir, 'binaries');
+    const baseBinaryPath = await resolveLocalPlBinaryPath(logger, plBinPath, ops.plBinary);
+
     const binaryPath = trace('binaryPath', upath.join('binaries', baseBinaryPath));
 
     const processOpts: ProcessOptions = {
