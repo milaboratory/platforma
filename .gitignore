@@ -1,20 +1,23 @@
+# IDE and commons
+*.iml
+.idea/
+*.tgz
+.DS_Store
+
+# Testing
+test_config.json
+.test_auth.json
+.test/
+/test-registry/
+
+# Building
+/.tags
+vite.config.*.timestamp-*
+.turbo
+err.log
+log/platforma.log
+tmp/
 **/node_modules/
 **/dist/
 dev/
 work/
-.test_auth.json
-*.iml
-*.tgz
-.turbo
-log/platforma.log
-tmp/
-.DS_Store
-
-test_config.json
-.test_auth.json
-/.tags
-
-/test-registry/
-
-vite.config.*.timestamp-*
-.DS_Store
