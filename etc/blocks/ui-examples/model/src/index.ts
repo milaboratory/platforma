@@ -50,6 +50,7 @@ export const platforma = BlockModel.create('Heavy')
           name: 'example',
           annotations: {
             'pl7.app/label': 'String column',
+            'pl7.app/discreteValues': '["up","down"]',
           },
           axesSpec: [
             {
@@ -57,6 +58,7 @@ export const platforma = BlockModel.create('Heavy')
               name: 'index',
               annotations: {
                 'pl7.app/label': 'Int axis',
+                'pl7.app/discreteValues': '[1,2,3]',
               },
             },
           ],
