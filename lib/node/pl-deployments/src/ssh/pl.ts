@@ -9,7 +9,7 @@ import * as plpath from './pl_paths';
 import { getDefaultPlVersion } from '../common/pl_version';
 
 import net from 'net';
-import type { SshPlConfigGenerationResult } from '@milaboratories/pl-config';
+import type { PlLicenseMode, SshPlConfigGenerationResult } from '@milaboratories/pl-config';
 import { generateSshPlConfigs, getFreePort } from '@milaboratories/pl-config';
 import { supervisorStatus, supervisorStop as supervisorCtlShutdown, generateSupervisordConfig, supervisorCtlStart } from './supervisord';
 
@@ -98,8 +98,8 @@ export class SshPl {
     return true;
   }
 
-  public async platformaInit(localWorkdir: string): Promise<SshInitReturnTypes> {
-    const state: PlatformaInitState = { localWorkdir };
+  public async platformaInit(ops: SshPlConfig): Promise<SshInitReturnTypes> {
+    const state: PlatformaInitState = { localWorkdir: ops.localWorkdir };
 
     try {
       state.arch = await this.getArch();
@@ -115,7 +115,7 @@ export class SshPl {
       }
 
       const downloadRes = await this.downloadBinariesAndUploadToTheServer(
-        localWorkdir, state.remoteHome, state.arch,
+        ops.localWorkdir, state.remoteHome, state.arch,
       );
       state.binPaths = { ...downloadRes, history: undefined };
       state.downloadedBinaries = downloadRes.history;
@@ -427,6 +427,11 @@ export type SshPlatformaPorts = {
 };
 
 type Arch = { platform: string; arch: string };
+
+export type SshPlConfig = {
+  localWorkdir: string;
+  license: PlLicenseMode;
+}
 
 export type SshInitReturnTypes = {
   plUser: string;
