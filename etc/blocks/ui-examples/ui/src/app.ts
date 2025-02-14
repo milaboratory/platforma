@@ -6,7 +6,7 @@ import ModalsPage from './pages/ModalsPage.vue';
 import InjectEnvPage from './pages/InjectEnvPage.vue';
 import UseWatchFetchPage from './pages/UseWatchFetchPage.vue';
 import TypographyPage from './pages/TypographyPage.vue';
-import AgGridVuePage from './pages/AgGridVuePage.vue';
+import { AgGridVuePage } from './pages/AgGridVuePage';
 import SelectFilesPage from './pages/SelectFilesPage.vue';
 import ErrorsPage from './pages/ErrorsPage.vue';
 import PlAgDataTablePage from './pages/PlAgDataTablePage.vue';
