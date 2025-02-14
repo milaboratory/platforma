@@ -37,8 +37,8 @@ catalogs:
       specifier: 2.1.9
       version: 2.1.9
     '@milaboratories/tengo-tester':
-      specifier: ^1.5.0
-      version: 1.5.0
+      specifier: ^1.5.2
+      version: 1.5.2
     '@oclif/core':
       specifier: ^4.0.37
       version: 4.0.37
@@ -2737,7 +2737,7 @@ importers:
         version: link:../../lib/model/backend
       '@milaboratories/tengo-tester':
         specifier: 'catalog:'
-        version: 1.5.0
+        version: 1.5.2
       '@oclif/core':
         specifier: 'catalog:'
         version: 4.0.37
@@ -4151,8 +4151,8 @@ packages:
   '@milaboratories/software-pframes-conv@2.1.9':
     resolution: {integrity: sha512-+jdN4J4bLluI7Rd4POzxtKODHQH4tqABnHeWNZbRCGrUAIbszMW4eaLCCV89bjosIxaekc5RpbyRcBhjcN5hTQ==}
 
-  '@milaboratories/tengo-tester@1.5.0':
-    resolution: {integrity: sha512-WBG9/aVBGePBU+7+cKzrmydEJGGWPGy+SSJrJ5XRm613hAeCGIp5I3MJBkgJjiovTYoaiD9peTQD6uhr5o1fNw==}
+  '@milaboratories/tengo-tester@1.5.2':
+    resolution: {integrity: sha512-8YMMntd+oTALxdlQXcreHWs0dVp1dUJhlBb0DpKGfh+YfB5KF/uZuVBKvCmmzDhYUMpxViT2JayDPg9tO4o6FA==}
     os: [darwin, linux, win32]
     hasBin: true
 
@@ -11003,7 +11003,7 @@ snapshots:
 
   '@milaboratories/software-pframes-conv@2.1.9': {}
 
-  '@milaboratories/tengo-tester@1.5.0': {}
+  '@milaboratories/tengo-tester@1.5.2': {}
 
   '@nodelib/fs.scandir@2.1.5':
     dependencies:
