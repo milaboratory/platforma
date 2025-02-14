@@ -39,7 +39,7 @@ describe('SshPl', async () => {
     expect(platformInfo).toHaveProperty('platform');
     expect(platformInfo).toHaveProperty('arch');
 
-    // expect(platformInfo?.arch).toBe('x86_64');
+    expect(['x86_64', 'aarch64']).toContain(platformInfo.arch)
     expect(platformInfo?.platform).toBe('Linux');
   });
 
