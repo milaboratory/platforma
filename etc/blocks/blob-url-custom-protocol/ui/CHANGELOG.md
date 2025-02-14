@@ -1,5 +1,12 @@
 # @milaboratories/milaboratories.test-blob-url-custom-protocol.ui
 
+## 1.0.18
+
+### Patch Changes
+
+- Updated dependencies [2970f8d]
+  - @platforma-sdk/ui-vue@1.22.39
+
 ## 1.0.17
 
 ### Patch Changes
