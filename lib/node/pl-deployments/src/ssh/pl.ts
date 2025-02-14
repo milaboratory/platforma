@@ -281,11 +281,13 @@ export class SshPl {
     await this.sshClient.createRemoteDirectory(state.remoteDir);
     await this.sshClient.uploadFile(state.localArchivePath, state.remoteArchivePath);
 
+    // TODO: Create a proper archive to avoid xattr warnings
     const untarResult = await this.sshClient.exec(
-      `tar xvf ${state.remoteArchivePath} --directory=${state.remoteDir}`,
+      `tar --warning=no-all -xvf ${state.remoteArchivePath} --directory=${state.remoteDir}`,
     );
+
     if (untarResult.stderr)
-      throw new Error(`downloadAndUntar: untar: stderr occurred: ${untarResult.stderr}, stdout: ${untarResult.stdout}`);
+      throw Error(`downloadAndUntar: untar: stderr occurred: ${untarResult.stderr}, stdout: ${untarResult.stdout}`);
 
     state.plUntarDone = true;
 
@@ -429,7 +431,7 @@ type Arch = { platform: string; arch: string };
 export type SshPlConfig = {
   localWorkdir: string;
   license: PlLicenseMode;
-}
+};
 
 export type SshInitReturnTypes = {
   plUser: string;
