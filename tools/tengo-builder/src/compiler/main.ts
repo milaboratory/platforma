@@ -3,17 +3,19 @@
 import * as path from 'node:path';
 import * as fs from 'node:fs';
 import { findNodeModules, pathType } from './util';
-import { TemplatesAndLibs, TengoTemplateCompiler } from './compiler';
+import type { TemplatesAndLibs } from './compiler';
+import { TengoTemplateCompiler } from './compiler';
+import type {
+  CompileMode,
+  FullArtifactName } from './package';
 import {
   artifactNameToString,
-  CompileMode,
-  FullArtifactName,
   fullNameToString,
-  typedArtifactNameToString
+  typedArtifactNameToString,
 } from './package';
 import { ArtifactSource, parseSourceFile } from './source';
 import { Template } from './template';
-import winston from 'winston';
+import type winston from 'winston';
 
 interface PackageJson {
   name: string;
@@ -38,7 +40,7 @@ const srcAssetSuffix = '.as.json';
 const compilableSuffixes = [srcLibSuffix, srcTplSuffix, srcSoftwareSuffix, srcAssetSuffix];
 
 export function getPackageInfo(): PackageJson {
-  const packageInfo: PackageJson = JSON.parse(fs.readFileSync('package.json').toString());
+  const packageInfo: PackageJson = JSON.parse(fs.readFileSync('package.json').toString()) as PackageJson;
   return packageInfo;
 }
 
@@ -63,7 +65,7 @@ function loadDependencies(
   compiler: TengoTemplateCompiler,
   packageInfo: PackageJson,
   searchIn: string,
-  isLink: boolean = false
+  isLink: boolean = false,
 ): void {
   const packageJsonPath = path.resolve(searchIn, 'package.json');
 
@@ -98,14 +100,14 @@ function loadDependencies(
     return;
 
   // we are in tengo dependency folder
-  const packageJson: PackageJson = JSON.parse(fs.readFileSync(packageJsonPath).toString());
+  const packageJson: PackageJson = JSON.parse(fs.readFileSync(packageJsonPath).toString()) as PackageJson;
 
   // in a workspace we will find ourselves in node_modules, ignoring
   if (packageJson.name === packageInfo.name) return;
 
   if (pathType(path.resolve(searchIn, 'node_modules')) === 'dir' && isLink)
     throw new Error(
-      `nested node_modules is a sign of library dependencies version incompatibility in ${searchIn}`
+      `nested node_modules is a sign of library dependencies version incompatibility in ${searchIn}`,
     );
 
   if (libDistExists) {
@@ -130,7 +132,7 @@ function loadLibsFromDir(
   packageJson: PackageJson,
   mode: CompileMode,
   folder: string,
-  compiler: TengoTemplateCompiler
+  compiler: TengoTemplateCompiler,
 ) {
   for (const f of fs.readdirSync(folder)) {
     const file = path.resolve(folder, f);
@@ -139,7 +141,7 @@ function loadLibsFromDir(
       type: 'library',
       pkg: packageJson.name,
       id: f.slice(0, f.length - compiledLibSuffix.length),
-      version: packageJson.version
+      version: packageJson.version,
     };
     const src = parseSourceFile(logger, mode, file, fullName, true);
     compiler.addLib(src);
@@ -156,7 +158,7 @@ function loadTemplatesFromDir(
   packageJson: PackageJson,
   mode: CompileMode,
   folder: string,
-  compiler: TengoTemplateCompiler
+  compiler: TengoTemplateCompiler,
 ) {
   // adding templates
   for (const f of fs.readdirSync(folder)) {
@@ -166,7 +168,7 @@ function loadTemplatesFromDir(
       type: 'template',
       pkg: packageJson.name,
       id: f.slice(0, f.length - compiledTplSuffix.length),
-      version: packageJson.version
+      version: packageJson.version,
     };
     const tpl = new Template(mode, fullName, { content: fs.readFileSync(file) });
     compiler.addTemplate(tpl);
@@ -179,7 +181,7 @@ function loadSoftwareFromDir(
   packageJson: PackageJson,
   mode: CompileMode,
   folder: string,
-  compiler: TengoTemplateCompiler
+  compiler: TengoTemplateCompiler,
 ) {
   for (const f of fs.readdirSync(folder)) {
     const file = path.resolve(folder, f);
@@ -189,7 +191,7 @@ function loadSoftwareFromDir(
       type: 'software',
       pkg: packageJson.name,
       id: f.slice(0, f.length - compiledSoftwareSuffix.length),
-      version: packageJson.version
+      version: packageJson.version,
     };
 
     const software = new ArtifactSource(mode, fullName, fs.readFileSync(file).toString(), file, [], []);
@@ -204,7 +206,7 @@ function loadAssetsFromDir(
   packageJson: PackageJson,
   mode: CompileMode,
   folder: string,
-  compiler: TengoTemplateCompiler
+  compiler: TengoTemplateCompiler,
 ) {
   for (const f of fs.readdirSync(folder)) {
     const file = path.resolve(folder, f);
@@ -214,7 +216,7 @@ function loadAssetsFromDir(
       type: 'asset',
       pkg: packageJson.name,
       id: f.slice(0, f.length - compiledAssetSuffix.length),
-      version: packageJson.version
+      version: packageJson.version,
     };
 
     const asset = new ArtifactSource(mode, fullName, fs.readFileSync(file).toString(), file, [], []);
@@ -229,7 +231,7 @@ export function parseSources(
   packageInfo: PackageJson,
   mode: CompileMode,
   root: string,
-  subdir: string
+  subdir: string,
 ): ArtifactSource[] {
   const sources: ArtifactSource[] = [];
 
@@ -243,8 +245,8 @@ export function parseSources(
       continue;
     }
 
-    const artifactName =
-      f === 'index.lib.tengo' ? `${path.dirname(inRootPath)}.lib.tengo` : inRootPath;
+    const artifactName
+      = f === 'index.lib.tengo' ? `${path.dirname(inRootPath)}.lib.tengo` : inRootPath;
 
     const fullName = fullNameFromFileName(packageInfo, artifactName.replaceAll(path.sep, '.'));
     if (!fullName) {
@@ -275,7 +277,7 @@ export function parseSources(
 export function newCompiler(
   logger: winston.Logger,
   packageInfo: PackageJson,
-  mode: CompileMode
+  mode: CompileMode,
 ): TengoTemplateCompiler {
   const compiler = new TengoTemplateCompiler(mode);
 
@@ -287,14 +289,14 @@ export function newCompiler(
 
 function fullNameFromFileName(
   packageJson: PackageJson,
-  artifactName: string
+  artifactName: string,
 ): FullArtifactName | null {
   const pkgAndVersion = { pkg: packageJson.name, version: packageJson.version };
   if (artifactName.endsWith(srcLibSuffix)) {
     return {
       ...pkgAndVersion,
       id: artifactName.substring(0, artifactName.length - srcLibSuffix.length),
-      type: 'library'
+      type: 'library',
     };
   }
 
@@ -302,7 +304,7 @@ function fullNameFromFileName(
     return {
       ...pkgAndVersion,
       id: artifactName.substring(0, artifactName.length - srcTplSuffix.length),
-      type: 'template'
+      type: 'template',
     };
   }
 
@@ -310,7 +312,7 @@ function fullNameFromFileName(
     return {
       ...pkgAndVersion,
       id: artifactName.substring(0, artifactName.length - srcSoftwareSuffix.length),
-      type: 'software'
+      type: 'software',
     };
   }
 
@@ -318,7 +320,7 @@ function fullNameFromFileName(
     return {
       ...pkgAndVersion,
       id: artifactName.substring(0, artifactName.length - srcAssetSuffix.length),
-      type: 'asset'
+      type: 'asset',
     };
   }
 
@@ -326,7 +328,7 @@ function fullNameFromFileName(
     return {
       ...pkgAndVersion,
       id: artifactName.substring(0, artifactName.length - srcTestSuffix.length),
-      type: 'test'
+      type: 'test',
     };
   }
 

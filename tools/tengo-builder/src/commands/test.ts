@@ -26,7 +26,7 @@ export default class Test extends Command {
       'run', '--log-level', flags['log-level'],
       '--artifacts', '-',
       ...testerArgs,
-    )
+    );
 
     try {
       dumpAll(logger, tester.stdin);
