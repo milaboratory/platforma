@@ -35,6 +35,14 @@ create := func() {
 	return wdCreate.getField(_WD_CREATE_FIELD_WORKDIR)
 }
 
+/**
+ * Create empry working directory for given allocation. This means, the WD would actually be created only
+ * when allocation is ready for usage.
+ *
+ * @param allocation: smart.reference - a reference to storage space allocation.
+ *                                      It is usually obtained from StorageSpaceRequest
+ *                                      (see exec.limits.storageSpaceRequestBuilder)
+ */
 createV2 := func(allocation) {
 	wdCreate := smart.ephemeralBuilder(constants.RTYPE_WORKDIR_CREATE_2).lockAndBuild()
 	wdCreate.getField(_WD_CREATE_FIELD_ALLOCATION).set(allocation)

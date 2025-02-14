@@ -20,9 +20,14 @@ _SUBSCRIPTION_FIELD := "subscription"
  * @param tpl: template resource (see assets.importTemplate())
  * @param isEph: whether template is ephemeral
  * @param inputs: a map of inputs to be passed to the template
+ * @param serviceInputs: (optional) a map of service inputs to be passed to the template.
+ *                                  Service inputs are not accounted in dedupliation and recovering.
+ *                                  Two resources with the same <inputs> and different <serviceInputs>
+ *                                  would be considered as copies of each-other.
  * @return renderer: a smart resource with additional output("name") method
  */
-createUniversal := func(tpl, isEph, inputs) {
+createUniversal := func(tpl, isEph, inputs, ...opts) {
+	serviceInputs := opts[0]
 
 	// build renderer resource
 	rbuilder := undefined
@@ -44,6 +49,9 @@ createUniversal := func(tpl, isEph, inputs) {
 	inputsMap := isEph ? smart.ephemeralMapBuilder() : smart.mapBuilder()
 	for name, value in inputs {
 		inputsMap.add(name, value)
+	}
+	for name, value in serviceInputs {
+		inputsMap.addService(name, value)
 	}
 
 	rbuilder.createInputField(tplutil.INPUTS_MAP_FIELD).set(inputsMap.build())
@@ -76,10 +84,14 @@ createUniversal := func(tpl, isEph, inputs) {
  *
  * @param tpl: template resource (see assets.importTemplate())
  * @param inputs: a map of inputs to be passed to the template
+ * @param serviceInputs: (optional) a map of service inputs to be passed to the template.
+ *                                  Service inputs are not accounted in dedupliation and recovering.
+ *                                  Two resources with the same <inputs> and different <serviceInputs>
+ *                                  would be considered as copies of each-other.
  * @return renderer: a smart resource with additional output("name") method
  */
-create := func(tpl, inputs) {
-	return createUniversal(tpl, false, inputs)
+create := func(tpl, inputs, ...opts) {
+	return createUniversal(tpl, false, inputs, opts...)
 }
 
 /**
@@ -87,10 +99,14 @@ create := func(tpl, inputs) {
  *
  * @param tpl: template resource (see assets.importTemplate())
  * @param inputs: a map of inputs to be passed to the template
+ * @param serviceInputs: (optional) a map of service inputs to be passed to the template.
+ *                                  The split into <inputs> and <serviceInputs> has no
+ *                                  effect on ephemeral templates, as they do not
+ *                                  have deduplication.
  * @return renderer: a smart resource with additional output("name") method
  */
-createEphemeral := func(tpl, inputs) {
-	return createUniversal(tpl, true, inputs)
+createEphemeral := func(tpl, inputs, ...opts) {
+	return createUniversal(tpl, true, inputs, opts...)
 }
 
 export ll.toStrict({
