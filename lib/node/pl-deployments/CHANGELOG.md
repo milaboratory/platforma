@@ -1,5 +1,11 @@
 # @milaboratories/pl-local
 
+## 1.1.8
+
+### Patch Changes
+
+- e66f726: ssh: pass license explicitly
+
 ## 1.1.7
 
 ### Patch Changes
