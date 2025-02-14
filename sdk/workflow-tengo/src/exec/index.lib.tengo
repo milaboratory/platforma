@@ -17,6 +17,7 @@ enum := import("enum")
 oop := import(":oop")
 validation := import(":validation")
 constants := import(":constants")
+limits := import(":exec.limits")
 monetization := import(":exec.monetization")
 execConstants := import(":exec.constants")
 
@@ -24,8 +25,6 @@ _HEAVY_QUEUE    := "heavy"
 _MEDIUM_QUEUE   := "medium"
 _LIGHT_QUEUE    := "light"
 _UI_TASKS_QUEUE := "ui-tasks"
-
-
 
 /**
  * Creates a new builder for constructing and executing commands.
@@ -56,8 +55,9 @@ builder := func() {
 	// Limits
 	//
 	queue := _HEAVY_QUEUE
-	cpu_request := undefined
-	ram_request := undefined
+	hasLimits := false
+	cpuRequest := undefined
+	ramRequest := undefined
 
 	cache := 0
 	nErrorLines := 200
@@ -278,7 +278,8 @@ builder := func() {
 		cpu: func(amount) {
 			validation.assertType(amount, "number", "exec.builder.cpu: amount of cores must be a number")
 			ll.assert(amount > 0, "exec.builder.cpu: amount of cores should be greater than 0")
-			cpu_request = amount
+			hasLimits = true
+			cpuRequest = amount
 
 			return self
 		},
@@ -297,7 +298,8 @@ builder := func() {
 		ram: func(amount) {
 			validation.assertType(amount, ["or", "number", "string"], "exec.builder.ram: RAM amount should be a number or string")
 			ll.assert(is_string(amount) || amount > 0, "exec.builder.ram: amount in bytes should be greater than 0")
-			ram_request = amount
+			hasLimits = true
+			ramRequest = amount
 
 			return self
 		},
@@ -724,7 +726,7 @@ builder := func() {
 				nErrorLines: nErrorLines
 			}
 
-			execInputs := {
+			pureExecInputs := {
 				filesToAdd: smart.createMapResource(filesToAdd),
 				filesToWrite: smart.createMapResource(filesToWriteRefs),
 				dirsToCreate: slices.fromSet(dirsToCreate),
@@ -738,37 +740,42 @@ builder := func() {
 				assets: smart.createMapResource(assetInfos),
 				assetDescriptors: assetDescriptors,
 				assetRules: assetRules,
-				assetCache: assetCache,
-				quota: smart.createJsonResource({
-					cpu: cpu_request,
-					ram: ram_request
-				})
+				assetCache: assetCache
+			}
+
+			serviceExecInputs := {}
+			if hasLimits && feats.workdirLimits {
+				serviceExecInputs.quota = limits.quotaBuilder().
+					queue(queue).
+					cpu(cpuRequest).
+					ram(ramRequest).
+					build()
 			}
 
 			// We add monetization only if it's enabled
 			// to not break a deduplication of exec's
 			// that were created before this feature existed.
 			if monetization.shouldRun(mnz) {
-				execInputs.runOptions.monetization = monetization.toJson(mnz)
+				pureExecInputs.runOptions.monetization = monetization.toJson(mnz)
 			}
 
 			// We add new argsTyped and envsTyped only when they were added
 			// to not break a deduplication on old pl backend.
 			if typedArgSet || typedEnvSet {
-				execInputs.runOptions.argsTyped = argsTyped
-				execInputs.runOptions.envsTyped = envsTyped
+				pureExecInputs.runOptions.argsTyped = argsTyped
+				pureExecInputs.runOptions.envsTyped = envsTyped
 			}
 
 			if !is_undefined(soft) {
-				execInputs.softwareInfo = soft.resource
-				execInputs.runOptions.software = {
+				pureExecInputs.softwareInfo = soft.resource
+				pureExecInputs.runOptions.software = {
 					name: soft.name,
 					version: soft.version,
 					descriptor: ll.fromStrict(soft.descriptor)
 				}
 			}
 
-			tpl := render.create(assets.importTemplate(":exec.exec"), execInputs)
+			tpl := render.create(assets.importTemplate(":exec.exec"), pureExecInputs, serviceExecInputs)
 
 			self := undefined
 			self = ll.toStrict(oop.inherit(tpl, {

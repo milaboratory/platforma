@@ -91,7 +91,7 @@ quotaBuilder := func() {
 				data.memory = ram_request
 			}
 
-			return smart.createValueResource(_RTYPE_QUOTA, json.encode(data))
+			return smart.ephemeralBuilder(_RTYPE_QUOTA, json.encode(data)).lockAndBuild()
 		}
 	})
 
