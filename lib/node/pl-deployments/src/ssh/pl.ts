@@ -285,7 +285,7 @@ export class SshPl {
       `tar xvf ${state.remoteArchivePath} --directory=${state.remoteDir}`,
     );
     if (untarResult.stderr)
-      throw new Error(`downloadAndUntar: untar: stderr occurred: ${untarResult.stderr}, stdout: ${untarResult.stdout}`);
+      console.warn(`downloadAndUntar: untar: stderr occurred: ${untarResult.stderr}, stdout: ${untarResult.stdout}`);
 
     state.plUntarDone = true;
 
@@ -429,7 +429,7 @@ type Arch = { platform: string; arch: string };
 export type SshPlConfig = {
   localWorkdir: string;
   license: PlLicenseMode;
-}
+};
 
 export type SshInitReturnTypes = {
   plUser: string;
