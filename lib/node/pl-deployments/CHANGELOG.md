@@ -1,5 +1,11 @@
 # @milaboratories/pl-local
 
+## 1.1.9
+
+### Patch Changes
+
+- 12600dd: ssh: fix license passing
+
 ## 1.1.8
 
 ### Patch Changes
