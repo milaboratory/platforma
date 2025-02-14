@@ -1,5 +1,11 @@
 # @milaboratories/pl-local
 
+## 1.1.10
+
+### Patch Changes
+
+- 7b6b2bd: fix test
+
 ## 1.1.9
 
 ### Patch Changes
