@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 2.12.0
+
+### Minor Changes
+
+- ecd1522: Integrate with workdir limits in data controller
+
 ## 2.11.0
 
 ### Minor Changes
