@@ -1,22 +1,23 @@
 import { readFileSync } from 'node:fs';
-import winston from 'winston';
-import {
+import type winston from 'winston';
+import type {
   TypedArtifactName,
   FullArtifactName,
   ArtifactType,
   CompileMode,
-  CompilerOption
+  CompilerOption,
 } from './package';
-import { ArtifactMap, createArtifactNameSet } from './artifactset';
+import type { ArtifactMap } from './artifactset';
+import { createArtifactNameSet } from './artifactset';
 
 // matches any valid name in tengo. Don't forget to use '\b' when needed to limit the boundaries!
 const namePattern = '[_a-zA-Z][_a-zA-Z0-9]*';
 
 const functionCallRE = (moduleName: string, fnName: string) => {
   return new RegExp(
-    `\\b${moduleName}\\.(?<fnCall>(?<fnName>` +
-      fnName +
-      `)\\s*\\(\\s*"(?<templateName>[^"]+)"\\s*\\))`
+    `\\b${moduleName}\\.(?<fnCall>(?<fnName>`
+    + fnName
+    + `)\\s*\\(\\s*"(?<templateName>[^"]+)"\\s*\\))`,
   );
 };
 
@@ -45,7 +46,7 @@ const multilineCommentStartRE = /^\s*\/\*/;
 const multilineCommentEndRE = /\*\//;
 const importRE = /\s*:=\s*import\s*\(\s*"(?<moduleName>[^"]+)"\s*\)/;
 const importNameRE = new RegExp(
-  `\\b(?<importName>${namePattern}(\\.${namePattern})*)${importRE.source}`
+  `\\b(?<importName>${namePattern}(\\.${namePattern})*)${importRE.source}`,
 );
 const dependencyRE = /(?<pkgName>[^"]+)?:(?<depID>[^"]+)/; // use it to parse <moduleName> from importPattern or <templateName> акщь getTemplateID
 
@@ -62,14 +63,14 @@ const parseComplierOption = (opt: string): CompilerOption => {
   const namePart = parts[0].split(':');
   if (namePart.length != 2) {
     throw new Error(
-      "compiler option format is wrong: expect to have option name after 'tengo:' prefix, like 'tengo:MyOption'"
+      'compiler option format is wrong: expect to have option name after \'tengo:\' prefix, like \'tengo:MyOption\'',
     );
   }
   const optName = namePart[1];
 
   return {
     name: optName,
-    args: parts.slice(1)
+    args: parts.slice(1),
   };
 };
 
@@ -86,7 +87,7 @@ export class ArtifactSource {
     /** List of dependencies */
     public readonly dependencies: TypedArtifactName[],
     /** Additional compiler options detected in source code */
-    public readonly compilerOptions: CompilerOption[]
+    public readonly compilerOptions: CompilerOption[],
   ) {}
 }
 
@@ -95,7 +96,7 @@ export function parseSourceFile(
   mode: CompileMode,
   srcFile: string,
   fullSourceName: FullArtifactName,
-  normalize: boolean
+  normalize: boolean,
 ): ArtifactSource {
   const src = readFileSync(srcFile).toString();
   const { deps, normalized, opts } = parseSourceData(logger, src, fullSourceName, normalize);
@@ -108,7 +109,7 @@ export function parseSource(
   mode: CompileMode,
   src: string,
   fullSourceName: FullArtifactName,
-  normalize: boolean
+  normalize: boolean,
 ): ArtifactSource {
   const { deps, normalized, opts } = parseSourceData(logger, src, fullSourceName, normalize);
 
@@ -119,12 +120,12 @@ function parseSourceData(
   logger: winston.Logger,
   src: string,
   fullSourceName: FullArtifactName,
-  globalizeImports: boolean
+  globalizeImports: boolean,
 ): {
-  normalized: string;
-  deps: ArtifactMap<TypedArtifactName>;
-  opts: CompilerOption[];
-} {
+    normalized: string;
+    deps: ArtifactMap<TypedArtifactName>;
+    opts: CompilerOption[];
+  } {
   const dependencySet = createArtifactNameSet();
   const optionList: CompilerOption[] = [];
 
@@ -140,7 +141,7 @@ function parseSourceData(
     isInCommentBlock: false,
     canDetectOptions: true,
     tplDepREs: new Map<string, [ArtifactType, RegExp][]>(),
-    lineNo: 0
+    lineNo: 0,
   };
 
   for (const line of lines) {
@@ -152,7 +153,7 @@ function parseSourceData(
         line,
         parserContext,
         fullSourceName.pkg,
-        globalizeImports
+        globalizeImports,
       );
       processedLines.push(result.line);
       parserContext = result.context;
@@ -163,15 +164,16 @@ function parseSourceData(
       if (result.option) {
         optionList.push(result.option);
       }
-    } catch (error: any) {
-      throw new Error(`[line ${parserContext.lineNo}]: ${error.message}\n\t${line}`);
+    } catch (error: unknown) {
+      const err = error as Error;
+      throw new Error(`[line ${parserContext.lineNo}]: ${err.message}\n\t${line}`);
     }
   }
 
   return {
     normalized: processedLines.join('\n'),
     deps: dependencySet,
-    opts: optionList
+    opts: optionList,
   };
 }
 
@@ -187,13 +189,13 @@ function parseSingleSourceLine(
   line: string,
   context: sourceParserContext,
   localPackageName: string,
-  globalizeImports?: boolean
+  globalizeImports?: boolean,
 ): {
-  line: string;
-  context: sourceParserContext;
-  artifact: TypedArtifactName | undefined;
-  option: CompilerOption | undefined;
-} {
+    line: string;
+    context: sourceParserContext;
+    artifact: TypedArtifactName | undefined;
+    option: CompilerOption | undefined;
+  } {
   if (context.isInCommentBlock) {
     if (multilineCommentEndRE.exec(line)) {
       context.isInCommentBlock = false;
@@ -204,16 +206,16 @@ function parseSingleSourceLine(
   if (compilerOptionRE.exec(line)) {
     if (!context.canDetectOptions) {
       logger.error(
-        `[line ${context.lineNo}]: compiler option '//tengo:' was detected, but it cannot be applied as compiler options can be set only at the file header, before any code line'`
+        `[line ${context.lineNo}]: compiler option '//tengo:' was detected, but it cannot be applied as compiler options can be set only at the file header, before any code line'`,
       );
-      throw new Error("tengo compiler options ('//tengo:' comments) can be set only in file header");
+      throw new Error('tengo compiler options (\'//tengo:\' comments) can be set only in file header');
     }
     return { line, context, artifact: undefined, option: parseComplierOption(line) };
   }
 
   if (wrongCompilerOptionRE.exec(line) && context.canDetectOptions) {
     logger.warn(
-      `[line ${context.lineNo}]: text simillar to compiler option ('//tengo:...') was detected, but it has wrong format. Leave it as is, if you did not mean to use a line as compiler option. Or format it to '//tengo:<option>' otherwise (no spaces between '//' and 'tengo', no spaces between ':' and option name)`
+      `[line ${context.lineNo}]: text simillar to compiler option ('//tengo:...') was detected, but it has wrong format. Leave it as is, if you did not mean to use a line as compiler option. Or format it to '//tengo:<option>' otherwise (no spaces between '//' and 'tengo', no spaces between ':' and option name)`,
     );
     return { line, context, artifact: undefined, option: undefined };
   }
@@ -242,39 +244,39 @@ function parseSingleSourceLine(
       if (!context.tplDepREs.has(iInfo.module)) {
         context.tplDepREs.set(iInfo.module, [
           ['template', newGetTemplateIdRE(iInfo.alias)],
-          ['software', newGetSoftwareInfoRE(iInfo.alias)]
+          ['software', newGetSoftwareInfoRE(iInfo.alias)],
         ]);
       }
       return { line, context, artifact: undefined, option: undefined };
     }
 
     if (
-      iInfo.module === '@milaboratory/tengo-sdk:ll' ||
-      iInfo.module === '@platforma-sdk/workflow-tengo:ll' ||
-      ((localPackageName === '@milaboratory/tengo-sdk' ||
-        localPackageName === '@platforma-sdk/workflow-tengo') &&
-        iInfo.module === ':ll')
-    ) {
-      if (!context.tplDepREs.has(iInfo.module)) {
-        context.tplDepREs.set(iInfo.module, [
-          ['template', newImportTemplateRE(iInfo.alias)],
-          ['software', newImportSoftwareRE(iInfo.alias)]
-        ]);
-      }
-    }
-
-    if (
-      iInfo.module === '@milaboratory/tengo-sdk:assets' ||
-      iInfo.module === '@platforma-sdk/workflow-tengo:assets' ||
-      ((localPackageName === '@milaboratory/tengo-sdk' ||
-        localPackageName === '@platforma-sdk/workflow-tengo') &&
-        iInfo.module === ':assets')
+      iInfo.module === '@milaboratory/tengo-sdk:ll'
+      || iInfo.module === '@platforma-sdk/workflow-tengo:ll'
+      || ((localPackageName === '@milaboratory/tengo-sdk'
+        || localPackageName === '@platforma-sdk/workflow-tengo')
+      && iInfo.module === ':ll')
     ) {
       if (!context.tplDepREs.has(iInfo.module)) {
         context.tplDepREs.set(iInfo.module, [
           ['template', newImportTemplateRE(iInfo.alias)],
           ['software', newImportSoftwareRE(iInfo.alias)],
-          ['asset', newImportAssetRE(iInfo.alias)]
+        ]);
+      }
+    }
+
+    if (
+      iInfo.module === '@milaboratory/tengo-sdk:assets'
+      || iInfo.module === '@platforma-sdk/workflow-tengo:assets'
+      || ((localPackageName === '@milaboratory/tengo-sdk'
+        || localPackageName === '@platforma-sdk/workflow-tengo')
+      && iInfo.module === ':assets')
+    ) {
+      if (!context.tplDepREs.has(iInfo.module)) {
+        context.tplDepREs.set(iInfo.module, [
+          ['template', newImportTemplateRE(iInfo.alias)],
+          ['software', newImportSoftwareRE(iInfo.alias)],
+          ['asset', newImportAssetRE(iInfo.alias)],
         ]);
       }
     }
@@ -342,14 +344,14 @@ function parseImport(line: string): ImportInfo {
 
   return {
     module: moduleName,
-    alias: importName
+    alias: importName,
   };
 }
 
 function parseArtifactName(
   moduleName: string,
   aType: ArtifactType,
-  localPackageName: string
+  localPackageName: string,
 ): TypedArtifactName | undefined {
   const depInfo = dependencyRE.exec(moduleName);
   if (!depInfo) {
@@ -358,14 +360,14 @@ function parseArtifactName(
 
   if (!depInfo.groups) {
     throw Error(
-      `failed to parse dependency name inside 'import' statement. The dependency name should have format '<package>:<templateName>'`
+      `failed to parse dependency name inside 'import' statement. The dependency name should have format '<package>:<templateName>'`,
     );
   }
 
   const { pkgName, depID } = depInfo.groups;
   if (!depID) {
     throw Error(
-      `failed to parse dependency name inside 'import' statement. The dependency name should have format '<package>:<templateName>'`
+      `failed to parse dependency name inside 'import' statement. The dependency name should have format '<package>:<templateName>'`,
     );
   }
 
@@ -382,14 +384,14 @@ function parseTemplateUse(match: RegExpExecArray, localPackageName: string): Typ
   const depInfo = dependencyRE.exec(templateName);
   if (!depInfo || !depInfo.groups) {
     throw Error(
-      `failed to parse dependency name inside 'getTemplateId' statement. The dependency name should have format '<package>:<templateName>'`
+      `failed to parse dependency name inside 'getTemplateId' statement. The dependency name should have format '<package>:<templateName>'`,
     );
   }
 
   const { pkgName, depID } = depInfo.groups;
   if (!pkgName || !depID) {
     throw Error(
-      `failed to parse dependency name inside 'getTemplateId' statement. The dependency name should have format '<package>:<templateName>'`
+      `failed to parse dependency name inside 'getTemplateId' statement. The dependency name should have format '<package>:<templateName>'`,
     );
   }
 

@@ -1,17 +1,17 @@
-import { Command } from '@oclif/core'
-import { createLogger } from '../../compiler/util'
-import { dumpSoftware } from '../../shared/dump'
-import { stdout } from 'process'
+import { Command } from '@oclif/core';
+import { createLogger } from '../../compiler/util';
+import { dumpSoftware } from '../../shared/dump';
+import { stdout } from 'node:process';
 
 export default class DumpSoftware extends Command {
-  static override description = 'parse sources in current package and dump all found tests to stdout'
+  static override description = 'parse sources in current package and dump all found software to stdout';
 
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
-  ]
+  ];
 
   public async run(): Promise<void> {
-    const logger = createLogger()
-    dumpSoftware(logger, stdout)
+    const logger = createLogger();
+    dumpSoftware(logger, stdout);
   }
 }
