@@ -1,4 +1,5 @@
-import { SpawnSyncReturns, spawnSync } from 'child_process';
+import type { SpawnSyncReturns } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import { Command } from '@oclif/core';
 import { compile, savePacks, getPackageInfo } from '../compiler/main';
 import { createLogger } from '../compiler/util';
@@ -6,7 +7,7 @@ import { CtagsFlags, GlobalFlags } from '../shared/basecmd';
 import * as fs from 'node:fs';
 import * as fsp from 'node:fs/promises';
 import * as path from 'node:path';
-import * as winston from 'winston';
+import type * as winston from 'winston';
 
 export default class Build extends Command {
   static override description = 'build tengo sources into single distributable pack file';
@@ -15,7 +16,7 @@ export default class Build extends Command {
 
   static override flags = {
     ...GlobalFlags,
-    ...CtagsFlags
+    ...CtagsFlags,
   };
 
   public async run(): Promise<void> {
@@ -39,13 +40,13 @@ export default class Build extends Command {
     const recordsCjs = compiledDist.templates
       .map(
         (tpl) =>
-          `  '${tpl.fullName.id}': { type: 'from-file', path: require.resolve('./tengo/tpl/${tpl.fullName.id}.plj.gz') }`
+          `  '${tpl.fullName.id}': { type: 'from-file', path: require.resolve('./tengo/tpl/${tpl.fullName.id}.plj.gz') }`,
       )
       .join(',\n');
     const recordsMjs = compiledDist.templates
       .map(
         (tpl) =>
-          `  '${tpl.fullName.id}': { type: 'from-file', path: resolve(import.meta.dirname, './tengo/tpl/${tpl.fullName.id}.plj.gz') }`
+          `  '${tpl.fullName.id}': { type: 'from-file', path: resolve(import.meta.dirname, './tengo/tpl/${tpl.fullName.id}.plj.gz') }`,
       )
       .join(',\n');
     cjs += recordsCjs;
@@ -92,7 +93,7 @@ function checkAndGenerateCtags(
   flags: {
     'tags-file': string;
     'tags-additional-args': string[];
-  }
+  },
 ) {
   const fileName = path.resolve(flags['tags-file']);
   const rootDir = path.dirname(fileName);
@@ -103,8 +104,8 @@ function checkAndGenerateCtags(
 
   logger.info(
     `Generating tags for tengo autocompletion from "${rootDir}" \
-in "${fileName}", additional arguments: "${additionalArgs}".
-Found ${tengoFiles.length} tengo files...`
+in "${fileName}", additional arguments: "${additionalArgs.join('" "')}".
+Found ${tengoFiles.length} tengo files...`,
   );
 
   // see https://docs.ctags.io/en/lates// t/man/ctags-optlib.7.html#perl-pod
@@ -121,13 +122,13 @@ Found ${tengoFiles.length} tengo files...`
       '--kinddef-tengo=c,constant,constant',
       '--regex-tengo=/^\\s*(.*) := ("|\\{).*/\\1/c/',
       '-R',
-      ...tengoFiles
+      ...tengoFiles,
     ],
     {
       env: process.env,
       stdio: 'inherit',
-      cwd: rootDir
-    }
+      cwd: rootDir,
+    },
   );
 
   if (result.error?.message.includes('ENOENT')) {

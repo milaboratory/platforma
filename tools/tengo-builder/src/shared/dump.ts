@@ -1,10 +1,11 @@
-import winston from 'winston';
+import type winston from 'winston';
 import { getPackageInfo, newCompiler, parseSources } from '../compiler/main';
-import { ArtifactType, typedArtifactNameToString } from '../compiler/package';
+import type { ArtifactType } from '../compiler/package';
+import { typedArtifactNameToString } from '../compiler/package';
 
 export function dumpAll(
   logger: winston.Logger,
-  stream: NodeJS.WritableStream
+  stream: NodeJS.WritableStream,
 ): void {
   const packageInfo = getPackageInfo();
 
@@ -23,7 +24,7 @@ export function dumpAll(
 
   for (const lib of compiler.allLibs()) {
     logger.debug(
-      `Dumping to pl-tester: ${typedArtifactNameToString(lib.fullName)}`
+      `Dumping to pl-tester: ${typedArtifactNameToString(lib.fullName)}`,
     );
     stream.write(JSON.stringify(lib) + '\n');
   }
@@ -31,7 +32,7 @@ export function dumpAll(
   for (const src of sources) {
     if (src.fullName.type === 'library') {
       logger.debug(
-        `Dumping to pl-tester: ${typedArtifactNameToString(src.fullName)}`
+        `Dumping to pl-tester: ${typedArtifactNameToString(src.fullName)}`,
       );
       stream.write(JSON.stringify(src) + '\n');
     }
@@ -41,7 +42,7 @@ export function dumpAll(
 
   for (const tpl of compiler.allTemplates()) {
     logger.debug(
-      `Dumping to pl-tester: ${typedArtifactNameToString(tpl.fullName)}`
+      `Dumping to pl-tester: ${typedArtifactNameToString(tpl.fullName)}`,
     );
     stream.write(JSON.stringify(tpl) + '\n');
   }
@@ -51,7 +52,7 @@ export function dumpAll(
       logger.debug(
         `Dumping to pl-tester: ${typedArtifactNameToString(src.fullName)} ${
           src.srcName
-        }`
+        }`,
       );
       stream.write(JSON.stringify(src) + '\n');
     }
@@ -61,7 +62,7 @@ export function dumpAll(
 
   for (const sw of compiler.allSoftware()) {
     logger.debug(
-      `Dumping to pl-tester: ${typedArtifactNameToString(sw.fullName)}`
+      `Dumping to pl-tester: ${typedArtifactNameToString(sw.fullName)}`,
     );
     stream.write(JSON.stringify(sw) + '\n');
   }
@@ -69,7 +70,7 @@ export function dumpAll(
   for (const src of sources) {
     if (src.fullName.type === 'software') {
       logger.debug(
-        `Dumping to pl-tester: ${typedArtifactNameToString(src.fullName)}`
+        `Dumping to pl-tester: ${typedArtifactNameToString(src.fullName)}`,
       );
       stream.write(JSON.stringify(src) + '\n');
     }
@@ -79,7 +80,7 @@ export function dumpAll(
 
   for (const asset of compiler.allAssets()) {
     logger.debug(
-      `Dumping to pl-tester: ${typedArtifactNameToString(asset.fullName)}`
+      `Dumping to pl-tester: ${typedArtifactNameToString(asset.fullName)}`,
     );
     stream.write(JSON.stringify(asset) + '\n');
   }
@@ -87,7 +88,7 @@ export function dumpAll(
   for (const src of sources) {
     if (src.fullName.type === 'asset') {
       logger.debug(
-        `Dumping to pl-tester: ${typedArtifactNameToString(src.fullName)}`
+        `Dumping to pl-tester: ${typedArtifactNameToString(src.fullName)}`,
       );
       stream.write(JSON.stringify(src) + '\n');
     }
@@ -100,7 +101,7 @@ export function dumpAll(
       logger.debug(
         `Dumping to pl-tester: ${typedArtifactNameToString(src.fullName)} ${
           src.srcName
-        }`
+        }`,
       );
       stream.write(JSON.stringify(src) + '\n');
     }
@@ -110,7 +111,7 @@ export function dumpAll(
 export function dumpLibs(
   logger: winston.Logger,
   dumpDeps: boolean,
-  stream: NodeJS.WritableStream
+  stream: NodeJS.WritableStream,
 ): void {
   const packageInfo = getPackageInfo();
 
@@ -156,28 +157,28 @@ function dumpArtifacts(
 
 export function dumpTemplates(
   logger: winston.Logger,
-  stream: NodeJS.WritableStream
+  stream: NodeJS.WritableStream,
 ): void {
-  dumpArtifacts(logger, stream, 'template')
+  dumpArtifacts(logger, stream, 'template');
 }
 
 export function dumpSoftware(
   logger: winston.Logger,
-  stream: NodeJS.WritableStream
+  stream: NodeJS.WritableStream,
 ): void {
-  dumpArtifacts(logger, stream, 'software')
+  dumpArtifacts(logger, stream, 'software');
 }
 
 export function dumpAssets(
   logger: winston.Logger,
-  stream: NodeJS.WritableStream
+  stream: NodeJS.WritableStream,
 ): void {
-  dumpArtifacts(logger, stream, 'asset')
+  dumpArtifacts(logger, stream, 'asset');
 }
 
 export function dumpTests(
   logger: winston.Logger,
-  stream: NodeJS.WritableStream
+  stream: NodeJS.WritableStream,
 ): void {
-  dumpArtifacts(logger, stream, 'test')
+  dumpArtifacts(logger, stream, 'test');
 }
