@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.3.33
+
+### Patch Changes
+
+- 2970f8d: [blocks] Move to standard QC components (progress & qc bars) in all upstream blocks
+
 ## 1.3.32
 
 ### Patch Changes

@@ -1,5 +1,13 @@
 # @platforma-sdk/ui-vue
 
+## 1.22.39
+
+### Patch Changes
+
+- 2970f8d: [blocks] Move to standard QC components (progress & qc bars) in all upstream blocks
+- Updated dependencies [2970f8d]
+  - @milaboratories/uikit@2.2.58
+
 ## 1.22.34
 
 ### Patch Changes
