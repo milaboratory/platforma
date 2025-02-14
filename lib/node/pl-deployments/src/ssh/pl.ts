@@ -142,9 +142,7 @@ export class SshPl {
             minioLocal: state.ports.minioPort.local,
           },
         },
-        licenseMode: {
-          type: 'env',
-        },
+        licenseMode: ops.license,
       });
       state.generatedConfig = { ...config, filesToCreate: { skipped: 'it is too wordy' } };
 
