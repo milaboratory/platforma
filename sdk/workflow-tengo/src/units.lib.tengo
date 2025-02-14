@@ -1,0 +1,13 @@
+ll := import(":ll")
+
+export ll.toStrict({
+	// Base-2 size modifiers:
+	KiB: 1024,
+	MiB: 1024 * 1024,
+	GiB: 1024 * 1024 * 1024,
+
+	// Decimal modifiers:
+	KB: 1000,
+	MB: 1000000,
+	GB: 1000000000
+})
