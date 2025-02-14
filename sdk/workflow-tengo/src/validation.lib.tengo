@@ -399,7 +399,7 @@ resource := func(...args) {
 		ops = args[0]
 	}
 
-	assertJsonSchema(ops, {
+	assertType(ops, {
 		`type,?`: {
 			Name: `string`,
 			Version: `string`
