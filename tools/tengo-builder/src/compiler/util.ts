@@ -3,6 +3,7 @@ import * as path from 'node:path';
 import * as winston from 'winston';
 
 export function assertNever(x: never): never {
+  // eslint-disable-next-line @typescript-eslint/restrict-plus-operands
   throw new Error('Unexpected object: ' + x);
 }
 
@@ -10,14 +11,14 @@ export function createLogger(level: string = 'debug'): winston.Logger {
   return winston.createLogger({
     level: level,
     format: winston.format.printf(({ level, message }) => {
-      return `${level.padStart(6, ' ')}: ${message}`;
+      return `${level.padStart(6, ' ')}: ${message as string}`;
     }),
     transports: [
       new winston.transports.Console({
         stderrLevels: ['error', 'warn', 'info', 'debug'],
-        handleExceptions: true
-      })
-    ]
+        handleExceptions: true,
+      }),
+    ],
   });
 }
 
@@ -47,7 +48,8 @@ export function pathType(path: string): PathType {
     if (s.isFile()) return 'file';
     if (s.isSymbolicLink()) return 'link';
     return 'unknown';
-  } catch (err: any) {
+  } catch (error: unknown) {
+    const err = error as NodeJS.ErrnoException;
     if (err.code == 'ENOENT') return 'absent';
     else throw err;
   }
