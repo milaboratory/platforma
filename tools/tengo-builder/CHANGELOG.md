@@ -1,5 +1,11 @@
 # @platforma-sdk/tengo-builder
 
+## 1.17.6
+
+### Patch Changes
+
+- f5f8f00: Linter code changes and tiny fixes in command help messages
+
 ## 1.17.5
 
 ### Patch Changes
