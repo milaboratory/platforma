@@ -11,13 +11,19 @@ import decompress from 'decompress';
 import type { ArchType, OSType } from './os_and_arch';
 import { newOs, newArch } from './os_and_arch';
 
+const cdn = 'https://cdn.platforma.bio/software';
+// We'll download things from Global Access if downloading from CDN has failed
+// (it might be that it's blocked from the company's network.)
+const gaCdn = 'https://cdn-ga.pl-open.science/software';
+
 export type DownloadBinaryResult = {
   archiveUrl: string;
+  alternativeArchiveGAUrl: string;
+  wasDownloadedFrom?: string;
   archivePath: string;
   archiveType: ArchiveType;
   targetFolder: string;
   baseName: string;
-  binaryPath?: string;
 };
 
 export async function downloadBinaryNoExtract(
@@ -29,9 +35,15 @@ export async function downloadBinaryNoExtract(
   platform: string,
 ): Promise<DownloadBinaryResult> {
   const opts = getPathsForDownload(softwareName, tgzName, baseDir, newArch(arch), newOs(platform));
-  const { archiveUrl, archivePath } = opts;
+  const { archiveUrl, alternativeArchiveGAUrl, archivePath } = opts;
 
-  await downloadArchive(logger, archiveUrl, archivePath);
+  try {
+    await downloadArchive(logger, archiveUrl, archivePath);
+    opts.wasDownloadedFrom = archiveUrl;
+  } catch (e: unknown) {
+    await downloadArchive(logger, alternativeArchiveGAUrl, archivePath);
+    opts.wasDownloadedFrom = alternativeArchiveGAUrl;
+  }
 
   return opts;
 }
@@ -45,25 +57,16 @@ export async function downloadBinary(
   platform: string,
 ): Promise<DownloadBinaryResult> {
   const opts = getPathsForDownload(softwareName, archiveName, baseDir, newArch(arch), newOs(platform));
-  const { archiveUrl, archivePath, archiveType, targetFolder, baseName } = opts;
+  const { archiveUrl, alternativeArchiveGAUrl, archivePath, archiveType, targetFolder, baseName } = opts;
 
-  await downloadArchive(logger, archiveUrl, archivePath);
-  await extractArchive(logger, archivePath, archiveType, targetFolder);
+  try {
+    await downloadArchive(logger, archiveUrl, archivePath);
+    opts.wasDownloadedFrom = archiveUrl;
+  } catch (e: unknown) {
+    await downloadArchive(logger, alternativeArchiveGAUrl, archivePath);
+    opts.wasDownloadedFrom = alternativeArchiveGAUrl;
+  }
 
-  return opts;
-}
-
-export async function downloadPlBinary(
-  logger: MiLogger,
-  baseDir: string,
-  plVersion: string,
-  arch: string,
-  platform: string,
-): Promise<DownloadBinaryResult> {
-  const opts = localDownloadPlOptions(plVersion, baseDir, newArch(arch), newOs(platform));
-  const { archiveUrl, archivePath, archiveType, targetFolder, binaryPath } = opts;
-
-  await downloadArchive(logger, archiveUrl, archivePath);
   await extractArchive(logger, archivePath, archiveType, targetFolder);
 
   return opts;
@@ -80,44 +83,18 @@ function getPathsForDownload(
   const archiveType = osToArchiveType[os];
 
   const archiveFileName = `${baseName}.${archiveType}`;
-  const archiveUrl = `https://cdn.platforma.bio/software/${softwareName}/${os}/${archiveFileName}`;
+  const archiveUrl = `${cdn}/${softwareName}/${os}/${archiveFileName}`;
+  const alternativeArchiveGAUrl = `${gaCdn}/${softwareName}/${os}/${archiveFileName}`;
   const archivePath = upath.join(baseDir, archiveFileName);
   // folder where binary distribution of pl will be unpacked
   const targetFolder = upath.join(baseDir, baseName);
 
   return {
     archiveUrl,
+    alternativeArchiveGAUrl,
     archivePath,
     archiveType,
     targetFolder,
-    baseName,
-  };
-}
-
-export function localDownloadPlOptions(
-  plVersion: string,
-  baseDir: string,
-  arch: ArchType,
-  os: OSType,
-): DownloadBinaryResult {
-  const baseName = `pl-${plVersion}-${arch}`;
-  const archiveType = osToArchiveType[os];
-
-  const archiveFileName = `${baseName}.${archiveType}`;
-  const archiveUrl = `https://cdn.platforma.bio/software/pl/${os}/${archiveFileName}`;
-  const archivePath = upath.join(baseDir, archiveFileName);
-
-  // folder where binary distribution of pl will be unpacked
-  const targetFolder = upath.join(baseDir, baseName);
-
-  const binaryPath = upath.join(baseName, 'binaries', osToBinaryName[os]);
-
-  return {
-    archiveUrl,
-    archivePath,
-    archiveType,
-    targetFolder,
-    binaryPath,
     baseName,
   };
 }
@@ -249,10 +226,4 @@ const osToArchiveType: Record<OSType, ArchiveType> = {
   linux: 'tgz',
   macos: 'tgz',
   windows: 'zip',
-};
-
-const osToBinaryName: Record<OSType, string> = {
-  linux: 'platforma',
-  macos: 'platforma',
-  windows: 'platforma.exe',
 };
