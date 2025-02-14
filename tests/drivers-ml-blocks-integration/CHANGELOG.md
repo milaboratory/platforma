@@ -1,5 +1,12 @@
 # @milaboratories/drivers-ml-blocks-integration
 
+## 1.0.148
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.27.17
+- @platforma-sdk/test@1.22.40
+
 ## 1.0.147
 
 ### Patch Changes

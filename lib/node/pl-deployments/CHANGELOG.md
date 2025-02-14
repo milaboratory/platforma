@@ -1,5 +1,11 @@
 # @milaboratories/pl-local
 
+## 1.1.7
+
+### Patch Changes
+
+- b069ecd: pl-deployments: download binaries from GA if CDN has failed
+
 ## 1.1.6
 
 ### Patch Changes
