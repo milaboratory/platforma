@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.7.3
+
+### Patch Changes
+
+- aee59da: Add AbortSignal parameter to cancelable PFrames requests
+
 ## 1.7.2
 
 ### Patch Changes
