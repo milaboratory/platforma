@@ -34,19 +34,7 @@ _runBinaryCommand := func(inputs) {
 
 	wdBuilder := workdir.builder()
 
-	quota := undefined
-	if (feats.workdirLimits) {
-		quotaBuilder := limits.quotaBuilder().
-			queue(inputs.runOptions.queue)
-
-		if inputs.quota {
-			quotaBuilder.
-				cpu(inputs.quota.cpu).
-				ram(inputs.quota.ram)
-		}
-
-		quota = quotaBuilder.build()
-	}
+	quota := inputs.quota
 
 	storageSpace := undefined
 	if !is_undefined(quota) {
@@ -230,10 +218,9 @@ self.body(func(inputs) {
 		"assetDescriptors,?": { any: {asset: desc.assetScheme } },
 		"assetRules,?": { any: { any: ["string"] } },
 		"assetCache,?": { any: "number" },
-		"quota,?": {
-			"cpu,?": ["number"],
-			"ram,?": ["or", "string", "number"]
-		}
+
+		// Service inputs
+		"quota,?": validation.resource()
 	})
 
 	ll.toStrict(inputs)

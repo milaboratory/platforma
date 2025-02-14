@@ -929,7 +929,7 @@ resourceBuilder = func(r) {
 		 * Create new field with given name and field type.
 		 *
 		 * @param name field name
-		 * @param fieldType: field type - input, output, dynamic, service, OTW. Use FfTYPE_* constants.
+		 * @param fieldType: field type - input, output, dynamic, service, OTW. Use FTYPE_* constants.
 		 */
 		createField: func(name, fieldType) {
 			assertNotBuilt()
@@ -939,13 +939,24 @@ resourceBuilder = func(r) {
 		},
 
 		/**
+		 * Create service field with given name.
+		 * Service fields behave very like inputs, but with deduplication disabled.
+		 * This means, that if you create 2 resources, each having 1 input field with value "A" and the service
+		 * field with different values, they would be considered the same by backend.
+		 */
+		createServiceField: func(name) {
+			assertNotBuilt()
+			return self.createField(name, constants.FTYPE_SERVICE)
+		},
+
+		/**
 		 * Create new input field with given name.
 		 *
 		 * @param name field name
 		 */
 		createInputField: func(name) {
 			assertNotBuilt()
-			return self.createField(name, "input")
+			return self.createField(name, constants.FTYPE_INPUT)
 		},
 
 		/**
@@ -955,7 +966,7 @@ resourceBuilder = func(r) {
 		 */
 		createOutputField: func(name) {
 			assertNotBuilt()
-			return self.createField(name, "output")
+			return self.createField(name, constants.FTYPE_OUTPUT)
 		},
 
 		/**
@@ -1086,6 +1097,18 @@ _mapBuilder := func(isEph) {
 			return self
 		},
 
+		/**
+		 * Adds object automatically converting non-reference objects into Json values.
+		 * The object is added into service field, meaning the value would not affect deduplication of the map.
+		 *
+		 * @param key: string - how the field will be named in the map
+		 * @param value: any - a reference or a primitive value
+		 * @return self: mapBuilder
+		 */
+		addService: func(key, value) {
+			builder.createServiceField(key).setRefOrJson(value)
+			return self
+		},
 
 		/**
 		 * Creates a map in the platforma
