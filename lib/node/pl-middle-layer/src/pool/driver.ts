@@ -235,14 +235,25 @@ class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
   }
 }
 
+class PTableHolder implements Disposable {
+  constructor(
+    public readonly table: Promise<PFrameInternal.PTableV3>,
+  ) {}
+
+  [Symbol.dispose](): void {
+    const _ = this.table.then((table) => table.dispose());
+  }
+}
+
 type FullPTableDef = {
   pFrameHandle: PFrameHandle;
   def: PTableDef<PObjectId>;
+  signal?: AbortSignal;
 };
 
 export class PFrameDriver implements SdkPFrameDriver {
   private readonly pFrames: RefCountResourcePool<InternalPFrameData, PFrameHolder>;
-  private readonly pTables: RefCountResourcePool<FullPTableDef, Promise<PFrameInternal.PTableV3>>;
+  private readonly pTables: RefCountResourcePool<FullPTableDef, PTableHolder>;
   private readonly blobContentCache: LRUCache<string, Uint8Array>;
   /** Limits concurrent requests to PFrame API to prevent deadlock with Node's IO threads */
   private readonly concurrencyLimiter: ConcurrencyLimitingExecutor;
@@ -284,7 +295,7 @@ export class PFrameDriver implements SdkPFrameDriver {
 
     this.pTables = new (class extends RefCountResourcePool<
       FullPTableDef,
-      Promise<PFrameInternal.PTableV3>
+      PTableHolder
     > {
       constructor(
         private readonly pFrames: RefCountResourcePool<InternalPFrameData, PFrameHolder>,
@@ -292,9 +303,9 @@ export class PFrameDriver implements SdkPFrameDriver {
         super();
       }
 
-      protected async createNewResource(params: FullPTableDef): Promise<PFrameInternal.PTableV3> {
+      protected createNewResource(params: FullPTableDef): PTableHolder {
         const handle: PFrameHandle = params.pFrameHandle;
-        const rawPTable = await concurrencyLimiter.run(async () => {
+        const tablePromise = concurrencyLimiter.run(async () => {
           if (getDebugFlags().logPFrameRequests)
             logger.info(
               `PTable creation (pTableHandle = ${this.calculateParamsKey(params)}): ${JSON.stringify(params, bigintReplacer)}`,
@@ -303,9 +314,13 @@ export class PFrameDriver implements SdkPFrameDriver {
           return await disposableDataPFrame.dataPFrame.createTable({
             src: joinEntryToInternal(params.def.src),
             filters: migrateFilters(params.def.filters),
-          });
-        });
-        return params.def.sorting.length !== 0 ? rawPTable.sort(params.def.sorting) : rawPTable;
+          }, params.signal);
+        }).then(async (table) =>
+          params.def.sorting.length !== 0
+            ? await table.sort(params.def.sorting, params.signal)
+            : table,
+        );
+        return new PTableHolder(tablePromise);
       }
 
       protected calculateParamsKey(params: FullPTableDef): string {
@@ -337,10 +352,11 @@ export class PFrameDriver implements SdkPFrameDriver {
   public createPTable(
     def: PTableDef<PColumn<PlTreeNodeAccessor | PColumnValues>>,
     ctx: ComputableCtx,
+    signal?: AbortSignal,
   ): PTableHandle {
     const pFrameHandle = this.createPFrame(extractAllColumns(def.src), ctx);
     const defIds = mapPTableDef(def, (c) => c.id);
-    const res = this.pTables.acquire({ def: defIds, pFrameHandle });
+    const res = this.pTables.acquire({ def: defIds, pFrameHandle, signal });
     if (getDebugFlags().logPFrameRequests)
       this.logger.info(
         `Create PTable call (pFrameHandle = ${pFrameHandle}; pTableHandle = ${JSON.stringify(res)}): ${JSON.stringify(
@@ -409,6 +425,7 @@ export class PFrameDriver implements SdkPFrameDriver {
   public async calculateTableData(
     handle: PFrameHandle,
     request: CalculateTableDataRequest<PObjectId>,
+    signal?: AbortSignal,
   ): Promise<CalculateTableDataResponse> {
     let table = await this.concurrencyLimiter.run(async () => {
       if (getDebugFlags().logPFrameRequests)
@@ -419,12 +436,12 @@ export class PFrameDriver implements SdkPFrameDriver {
       return await disposableDataPFrame.dataPFrame.createTable({
         src: joinEntryToInternal(request.src),
         filters: migrateFilters(request.filters),
-      });
+      }, signal);
     });
 
     if (request.sorting.length > 0) {
       const sortedTable = await this.concurrencyLimiter.run(
-        async () => await table.sort(request.sorting),
+        async () => await table.sort(request.sorting, signal),
       );
       table.dispose();
       table = sortedTable;
@@ -445,6 +462,7 @@ export class PFrameDriver implements SdkPFrameDriver {
   public async getUniqueValues(
     handle: PFrameHandle,
     request: UniqueValuesRequest,
+    signal?: AbortSignal,
   ): Promise<UniqueValuesResponse> {
     return await this.concurrencyLimiter.run(async () => {
       if (getDebugFlags().logPFrameRequests)
@@ -455,7 +473,7 @@ export class PFrameDriver implements SdkPFrameDriver {
       return await disposableDataPFrame.dataPFrame.getUniqueValues({
         ...request,
         filters: migrateFilters(request.filters),
-      });
+      }, signal);
     });
   }
 
@@ -464,12 +482,12 @@ export class PFrameDriver implements SdkPFrameDriver {
   //
 
   public async getShape(handle: PTableHandle): Promise<PTableShape> {
-    const pTable = await this.pTables.getByKey(handle); // internally concurrency limited
+    const pTable = await this.pTables.getByKey(handle).table; // internally concurrency limited
     return pTable.getShape();
   }
 
   public async getSpec(handle: PTableHandle): Promise<PTableColumnSpec[]> {
-    const pTable = await this.pTables.getByKey(handle); // internally concurrency limited
+    const pTable = await this.pTables.getByKey(handle).table; // internally concurrency limited
     return pTable.getSpec(); // sync operation
   }
 
@@ -478,7 +496,7 @@ export class PFrameDriver implements SdkPFrameDriver {
     columnIndices: number[],
     range?: TableRange,
   ): Promise<PTableVector[]> {
-    const pTable = await this.pTables.getByKey(handle); // internally concurrency limited
+    const pTable = await this.pTables.getByKey(handle).table; // internally concurrency limited
     return await this.concurrencyLimiter.run(
       async () => await pTable.getData(columnIndices, range),
     );
