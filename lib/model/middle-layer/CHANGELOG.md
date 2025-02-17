@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.7.5
+
+### Patch Changes
+
+- 23dd55f: Adopt PFrameV3 interface
+
 ## 1.7.4
 
 ### Patch Changes

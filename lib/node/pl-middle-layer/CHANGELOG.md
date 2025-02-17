@@ -1,5 +1,14 @@
 # @milaboratories/pl-middle-layer
 
+## 1.27.24
+
+### Patch Changes
+
+- 23dd55f: Adopt PFrameV3 interface
+- Updated dependencies [23dd55f]
+  - @milaboratories/pl-model-middle-layer@1.7.5
+  - @platforma-sdk/block-tools@2.5.13
+
 ## 1.27.23
 
 ### Patch Changes
