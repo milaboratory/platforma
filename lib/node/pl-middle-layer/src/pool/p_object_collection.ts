@@ -34,10 +34,6 @@ export interface RawPObjectEntry {
   data?(): ValueOrError<PlTreeNodeAccessor, string> | undefined;
 }
 
-const _BContextValuePrefix = 'values/';
-const _BContextValueSpecSuffix = '.spec';
-const _BContextValueDataSuffix = '.data';
-
 export function parseRawPObjectCollection(
   node: PlTreeNodeAccessor,
   errorOnUnknownField: boolean = true,
