@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.7.4
+
+### Patch Changes
+
+- 1789f1e: PFrameV3 interface export
+
 ## 1.7.3
 
 ### Patch Changes
