@@ -1,41 +1,41 @@
-import { PlTreeEntry } from '@milaboratories/pl-tree';
-import { Computable, ComputableStableDefined } from '@milaboratories/computable';
+import type { PlTreeEntry } from '@milaboratories/pl-tree';
+import type { ComputableStableDefined } from '@milaboratories/computable';
+import { Computable } from '@milaboratories/computable';
+import type {
+  ProjectRenderingState,
+  ProjectStructure } from '../model/project_model';
 import {
   BlockRenderingStateKey,
   ProjectCreatedTimestamp,
   projectFieldName,
   ProjectLastModifiedTimestamp,
   ProjectMetaKey,
-  ProjectRenderingState,
-  ProjectStructure,
   ProjectStructureAuthorKey,
-  ProjectStructureKey
+  ProjectStructureKey,
 } from '../model/project_model';
 import { notEmpty } from '@milaboratories/ts-helpers';
 import { allBlocks, productionGraph } from '../model/project_model_util';
-import { MiddleLayerEnvironment } from './middle_layer';
-import {
+import type { MiddleLayerEnvironment } from './middle_layer';
+import type {
   AuthorMarker,
   BlockCalculationStatus,
   BlockSettings,
-  BlockStateOverview,
   ProjectMeta,
-  ProjectOverview
+  ProjectOverview,
 } from '@milaboratories/pl-model-middle-layer';
 import { constructBlockContextArgsOnly } from './block_ctx';
 import { ifNotUndef } from '../cfg_render/util';
-import { BlockPackInfo } from '../model/block_pack';
-import { BlockSection, extractConfig } from '@platforma-sdk/model';
+import type { BlockSection } from '@platforma-sdk/model';
 import { computableFromCfgOrRF } from './render';
-import { NavigationStates } from './navigation_states';
+import type { NavigationStates } from './navigation_states';
 import { getBlockPackInfo } from './util';
 
 type BlockInfo = {
-  currentArguments: any;
+  currentArguments: unknown;
   prod?: ProdState;
 };
 
-type CalculationStatus = 'Running' | 'Done';
+type _CalculationStatus = 'Running' | 'Done';
 
 type ProdState = {
   finished: boolean;
@@ -49,14 +49,14 @@ type ProdState = {
   stale: boolean;
 
   /** Arguments current production was rendered with. */
-  arguments: any;
+  arguments: unknown;
 };
 
 /** Returns derived general project state form the project resource */
 export function projectOverview(
   prjEntry: PlTreeEntry,
   navigationStates: NavigationStates,
-  env: MiddleLayerEnvironment
+  env: MiddleLayerEnvironment,
 ): ComputableStableDefined<ProjectOverview> {
   return Computable.make(
     (ctx) => {
@@ -68,7 +68,7 @@ export function projectOverview(
       const meta = notEmpty(prj.getKeyValueAsJson<ProjectMeta>(ProjectMetaKey));
       const structure = notEmpty(prj.getKeyValueAsJson<ProjectStructure>(ProjectStructureKey));
       const renderingState = notEmpty(
-        prj.getKeyValueAsJson<ProjectRenderingState>(BlockRenderingStateKey)
+        prj.getKeyValueAsJson<ProjectRenderingState>(BlockRenderingStateKey),
       );
 
       const infos = new Map<string, BlockInfo>();
@@ -76,7 +76,7 @@ export function projectOverview(
         const cInputs = prj.traverse({
           field: projectFieldName(id, 'currentArgs'),
           assertFieldType: 'Dynamic',
-          errorIfFieldNotSet: true
+          errorIfFieldNotSet: true,
         });
 
         let prod: ProdState | undefined = undefined;
@@ -84,35 +84,35 @@ export function projectOverview(
         const rInputs = prj.traverse({
           field: projectFieldName(id, 'prodArgs'),
           assertFieldType: 'Dynamic',
-          stableIfNotFound: true
+          stableIfNotFound: true,
         });
         if (rInputs !== undefined) {
           const result = prj.getField({
             field: projectFieldName(id, 'prodOutput'),
             assertFieldType: 'Dynamic',
-            errorIfFieldNotFound: true
+            errorIfFieldNotFound: true,
           });
           const ctx = prj.getField({
             field: projectFieldName(id, 'prodUiCtx'),
             assertFieldType: 'Dynamic',
-            errorIfFieldNotFound: true
+            errorIfFieldNotFound: true,
           });
           prod = {
             arguments: rInputs.getDataAsJson(),
             stale: cInputs.id !== rInputs.id,
             outputError:
-              result.error !== undefined ||
-              ctx.error !== undefined ||
-              result.value?.getError() !== undefined ||
-              ctx.value?.getError() !== undefined,
+              result.error !== undefined
+              || ctx.error !== undefined
+              || result.value?.getError() !== undefined
+              || ctx.value?.getError() !== undefined,
             outputsError:
               result.error?.getDataAsString() ?? result.value?.getError()?.getDataAsString(),
             exportsError: ctx.error?.getDataAsString() ?? ctx.value?.getError()?.getDataAsString(),
             finished:
-              ((result.value !== undefined && result.value.getIsReadyOrError()) ||
-                (result.error !== undefined && result.error.getIsReadyOrError())) &&
-              ((ctx.value !== undefined && ctx.value.getIsReadyOrError()) ||
-                (ctx.error !== undefined && ctx.error.getIsReadyOrError()))
+              ((result.value !== undefined && result.value.getIsReadyOrError())
+                || (result.error !== undefined && result.error.getIsReadyOrError()))
+              && ((ctx.value !== undefined && ctx.value.getIsReadyOrError())
+                || (ctx.error !== undefined && ctx.error.getIsReadyOrError())),
           };
         }
 
@@ -134,8 +134,8 @@ export function projectOverview(
 
         const bp = getBlockPackInfo(prj, id);
 
-        const { sections, title, inputsValid, sdkVersion } =
-          ifNotUndef(bp, ({ bpId, cfg, info }) => {
+        const { sections, title, inputsValid, sdkVersion }
+          = ifNotUndef(bp, ({ bpId, cfg }) => {
             const blockCtxArgsOnly = constructBlockContextArgsOnly(prjEntry, id);
             return {
               sections: computableFromCfgOrRF(
@@ -143,7 +143,7 @@ export function projectOverview(
                 blockCtxArgsOnly,
                 cfg.sections,
                 cfg.code,
-                bpId
+                bpId,
               ) as ComputableStableDefined<BlockSection[]>,
               title: ifNotUndef(
                 cfg.title,
@@ -153,17 +153,17 @@ export function projectOverview(
                     blockCtxArgsOnly,
                     title,
                     cfg.code,
-                    bpId
-                  ) as ComputableStableDefined<string>
+                    bpId,
+                  ) as ComputableStableDefined<string>,
               ),
               inputsValid: computableFromCfgOrRF(
                 env,
                 blockCtxArgsOnly,
                 cfg.inputsValid,
                 cfg.code,
-                bpId
+                bpId,
               ) as ComputableStableDefined<boolean>,
-              sdkVersion: cfg.sdkVersion
+              sdkVersion: cfg.sdkVersion,
             };
           }) || {};
 
@@ -171,12 +171,12 @@ export function projectOverview(
           .traverse({
             field: projectFieldName(id, 'blockSettings'),
             assertFieldType: 'Dynamic',
-            errorIfFieldNotSet: true
+            errorIfFieldNotSet: true,
           })
           .getDataAsJson() as BlockSettings;
 
         const updates = ifNotUndef(bp, ({ info }) =>
-          env.blockUpdateWatcher.get({ currentSpec: info.source, settings })
+          env.blockUpdateWatcher.get({ currentSpec: info.source, settings }),
         );
 
         return {
@@ -199,7 +199,7 @@ export function projectOverview(
           currentBlockPack: bp?.info?.source,
           updates,
           sdkVersion,
-          navigationState: navigationStates.getState(id)
+          navigationState: navigationStates.getState(id),
         };
       });
 
@@ -208,7 +208,7 @@ export function projectOverview(
         created: new Date(created),
         lastModified: new Date(lastModified),
         authorMarker: prj.getKeyValueAsJson<AuthorMarker>(ProjectStructureAuthorKey),
-        blocks
+        blocks,
       };
     },
     {
@@ -221,23 +221,23 @@ export function projectOverview(
             if (!b.inputsValid) cantRun.add(b.id);
             if (b.stale) staleBlocks.add(b.id);
             const stale = b.stale || b.upstreams.findIndex((u) => staleBlocks.has(u)) !== -1;
-            const canRun =
-              (stale || b.outputErrors) &&
-              Boolean(b.inputsValid) &&
-              !b.missingReference &&
-              b.upstreams.findIndex((u) => cantRun.has(u)) === -1;
+            const canRun
+              = (stale || b.outputErrors)
+              && Boolean(b.inputsValid)
+              && !b.missingReference
+              && b.upstreams.findIndex((u) => cantRun.has(u)) === -1;
             const bb = {
               ...b,
               canRun,
               stale,
               updateSuggestions: b.updates?.suggestions ?? [],
-              updatedBlockPack: b.updates?.mainSuggestion
+              updatedBlockPack: b.updates?.mainSuggestion,
             };
             delete bb['updates'];
             return bb;
-          })
+          }),
         };
-      }
-    }
+      },
+    },
   ).withStableType();
 }

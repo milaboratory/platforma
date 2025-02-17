@@ -1,33 +1,41 @@
+import type {
+  PlClient,
+  ResourceId } from '@milaboratories/pl-client';
 import {
   field,
   isNullResourceId,
-  PlClient,
-  ResourceId,
-  toGlobalResourceId
+  toGlobalResourceId,
 } from '@milaboratories/pl-client';
 import { createProjectList, ProjectsField, ProjectsResourceType } from './project_list';
-import { createProject, withProject, withProjectAuthored } from '../mutator/project';
-import { SynchronizedTreeState } from '@milaboratories/pl-tree';
+import { createProject, withProjectAuthored } from '../mutator/project';
+import type { SynchronizedTreeState } from '@milaboratories/pl-tree';
 import { BlockPackPreparer } from '../mutator/block-pack/block_pack';
-import { HmacSha256Signer, MiLogger, Signer } from '@milaboratories/ts-helpers';
-import { ComputableStableDefined, WatchableValue } from '@milaboratories/computable';
+import type { MiLogger, Signer } from '@milaboratories/ts-helpers';
+import { HmacSha256Signer } from '@milaboratories/ts-helpers';
+import type { ComputableStableDefined } from '@milaboratories/computable';
+import { WatchableValue } from '@milaboratories/computable';
 import { Project } from './project';
+import type {
+  MiddleLayerOps,
+  MiddleLayerOpsConstructor,
+} from './ops';
 import {
   DefaultMiddleLayerOpsPaths,
   DefaultMiddleLayerOpsSettings,
-  MiddleLayerOps,
-  MiddleLayerOpsConstructor
 } from './ops';
 import { randomUUID } from 'node:crypto';
-import { ProjectListEntry } from '../model';
-import { AuthorMarker, ProjectMeta } from '@milaboratories/pl-model-middle-layer';
+import type { ProjectListEntry } from '../model';
+import type { AuthorMarker, ProjectMeta } from '@milaboratories/pl-model-middle-layer';
 import { BlockUpdateWatcher } from '../block_registry/watcher';
-import { getQuickJS, QuickJSWASMModule } from 'quickjs-emscripten';
-import { initDriverKit, MiddleLayerDriverKit } from './driver_kit';
-import { DriverKit } from '@platforma-sdk/model';
-import { DefaultVirtualLocalStorages, DownloadUrlDriver } from '@milaboratories/pl-drivers';
+import type { QuickJSWASMModule } from 'quickjs-emscripten';
+import { getQuickJS } from 'quickjs-emscripten';
+import type { MiddleLayerDriverKit } from './driver_kit';
+import { initDriverKit } from './driver_kit';
+import type { DriverKit } from '@platforma-sdk/model';
+import { DownloadUrlDriver } from '@milaboratories/pl-drivers';
 import { V2RegistryProvider } from '../block_registry';
-import { Dispatcher, RetryAgent } from 'undici';
+import type { Dispatcher } from 'undici';
+import { RetryAgent } from 'undici';
 import { getDebugFlags } from '../debug';
 
 export interface MiddleLayerEnvironment {
@@ -70,7 +78,7 @@ export class MiddleLayer {
     private readonly openedProjectsList: WatchableValue<ResourceId[]>,
     private readonly projectListTree: SynchronizedTreeState,
     public readonly blockRegistryProvider: V2RegistryProvider,
-    projectList: ComputableStableDefined<ProjectListEntry[]>
+    projectList: ComputableStableDefined<ProjectListEntry[]>,
   ) {
     this.projectList = projectList;
     this.pl = this.env.pl;
@@ -101,9 +109,9 @@ export class MiddleLayer {
   public async setProjectMeta(
     rid: ResourceId,
     meta: ProjectMeta,
-    author?: AuthorMarker
+    author?: AuthorMarker,
   ): Promise<void> {
-    await withProjectAuthored(this.pl, rid, author, async (prj) => {
+    await withProjectAuthored(this.pl, rid, author, (prj) => {
       prj.setMeta(meta);
     });
     await this.projectListTree.refreshState();
@@ -189,12 +197,12 @@ export class MiddleLayer {
   public static async init(
     pl: PlClient,
     workdir: string,
-    _ops: MiddleLayerOpsConstructor
+    _ops: MiddleLayerOpsConstructor,
   ): Promise<MiddleLayer> {
     const ops: MiddleLayerOps = {
       ...DefaultMiddleLayerOpsSettings,
       ...DefaultMiddleLayerOpsPaths(workdir),
-      ..._ops
+      ..._ops,
     };
 
     ops.defaultTreeOptions.logStat = getDebugFlags().logTreeStats;
@@ -224,7 +232,7 @@ export class MiddleLayer {
     // passed to components having no own retry logic
     const retryHttpDispatcher = new RetryAgent(pl.httpDispatcher, {
       minTimeout: 250,
-      maxRetries: 4
+      maxRetries: 4,
     });
 
     const v2RegistryProvider = new V2RegistryProvider(retryHttpDispatcher);
@@ -232,13 +240,13 @@ export class MiddleLayer {
     const bpPreparer = new BlockPackPreparer(
       v2RegistryProvider,
       driverKit.signer,
-      retryHttpDispatcher
+      retryHttpDispatcher,
     );
 
     const frontendDownloadDriver = new DownloadUrlDriver(
       logger,
       pl.httpDispatcher,
-      ops.frontendDownloadPath
+      ops.frontendDownloadPath,
     );
 
     const env: MiddleLayerEnvironment = {
@@ -254,9 +262,9 @@ export class MiddleLayer {
       blockUpdateWatcher: new BlockUpdateWatcher(v2RegistryProvider, logger, {
         minDelay: ops.devBlockUpdateRecheckInterval,
         http: retryHttpDispatcher,
-        preferredUpdateChannel: ops.preferredUpdateChannel
+        preferredUpdateChannel: ops.preferredUpdateChannel,
       }),
-      quickJs: await getQuickJS()
+      quickJs: await getQuickJS(),
     };
 
     const openedProjects = new WatchableValue<ResourceId[]>([]);
@@ -270,7 +278,7 @@ export class MiddleLayer {
       openedProjects,
       projectListTC.tree,
       v2RegistryProvider,
-      projectListTC.computable
+      projectListTC.computable,
     );
   }
 }

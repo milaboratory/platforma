@@ -1,9 +1,9 @@
-import { ResourceId, ResourceType } from '@milaboratories/pl-client';
-import {
+import type { ResourceId, ResourceType } from '@milaboratories/pl-client';
+import type {
   ProjectListEntry as ProjectListEntryFromModel,
-  ProjectMeta
+  ProjectMeta,
 } from '@milaboratories/pl-model-middle-layer';
-import { BlockRenderingMode } from '@platforma-sdk/model';
+import type { BlockRenderingMode } from '@platforma-sdk/model';
 
 export interface ProjectListEntry extends ProjectListEntryFromModel {
   /** Project resource ID. */
@@ -44,7 +44,7 @@ export interface ProjectStructure {
 }
 
 export const InitialBlockStructure: ProjectStructure = {
-  groups: [{ id: 'default', label: 'Default', blocks: [] }]
+  groups: [{ id: 'default', label: 'Default', blocks: [] }],
 };
 
 /** Root of project rendering state */
@@ -59,11 +59,11 @@ export interface ProjectRenderingState {
 
 export const InitialProjectRenderingState: ProjectRenderingState = {
   stagingRefreshTimestamp: 0,
-  blocksInLimbo: []
+  blocksInLimbo: [],
 };
 
 export const InitialBlockMeta: ProjectMeta = {
-  label: 'New Project'
+  label: 'New Project',
 };
 
 //
@@ -135,8 +135,8 @@ export function projectFieldName(blockId: string, fieldName: ProjectField['field
   return `${blockId}-${fieldName}`;
 }
 
-const projectFieldPattern =
-  /^(?<blockId>.*)-(?<fieldName>blockPack|blockSettings|prodArgs|currentArgs|prodCtx|prodUiCtx|prodOutput|prodCtxPrevious|prodUiCtxPrevious|prodOutputPrevious|stagingCtx|stagingUiCtx|stagingOutput|stagingCtxPrevious|stagingUiCtxPrevious|stagingOutputPrevious)$/;
+const projectFieldPattern
+  = /^(?<blockId>.*)-(?<fieldName>blockPack|blockSettings|prodArgs|currentArgs|prodCtx|prodUiCtx|prodOutput|prodCtxPrevious|prodUiCtxPrevious|prodOutputPrevious|stagingCtx|stagingUiCtx|stagingOutput|stagingCtxPrevious|stagingUiCtxPrevious|stagingOutputPrevious)$/;
 
 export function parseProjectField(name: string): ProjectField | undefined {
   const match = name.match(projectFieldPattern);

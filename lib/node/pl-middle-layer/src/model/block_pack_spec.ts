@@ -1,7 +1,7 @@
-import { ExplicitTemplate } from './template_spec';
-import { ResourceType } from '@milaboratories/pl-client';
-import { BlockConfigContainer } from '@platforma-sdk/model';
-import { BlockPackSpec } from '@milaboratories/pl-model-middle-layer';
+import type { ExplicitTemplate } from './template_spec';
+import type { ResourceType } from '@milaboratories/pl-client';
+import type { BlockConfigContainer } from '@platforma-sdk/model';
+import type { BlockPackSpec } from '@milaboratories/pl-model-middle-layer';
 
 export type FrontendSpec = FrontendFromUrl | FrontendFromFolder;
 
@@ -25,7 +25,7 @@ export interface FrontendFromFolderData {
 
 export const FrontendFromFolderResourceType: ResourceType = {
   name: 'Frontend/FromFolder',
-  version: '1'
+  version: '1',
 };
 
 /** Directs user of the block pack to load frontend from specific local
