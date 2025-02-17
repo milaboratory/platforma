@@ -81,15 +81,15 @@ function migrateFilters(filters: PTableRecordFilter[]): PTableRecordSingleValueF
 const bigintReplacer = (_: string, v: unknown) => (typeof v === 'bigint' ? v.toString() : v);
 
 class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
-  public readonly rustPFrame: PFrameInternal.PFrameV2;
-  public readonly specPFrame: PFrameInternal.PFrameV2;
+  public readonly rustPFrame: PFrameInternal.PFrameV3;
+  public readonly specPFrame: PFrameInternal.PFrameV3;
   private readonly blobIdToResource = new Map<string, ResourceInfo>();
   private readonly blobHandleComputables = new Map<
     string,
     ComputableStableDefined<LocalBlobHandleAndSize>
   >();
 
-  private readonly createDataPFrame: () => PFrameInternal.PFrameV2;
+  private readonly createDataPFrame: () => PFrameInternal.PFrameV3;
   public get disposableDataPFrame() {
     const dataPFrame = this.createDataPFrame();
     return {
@@ -132,7 +132,7 @@ class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
       )).values(),
     ];
 
-    this.rustPFrame = ((): PFrameInternal.PFrameV2 => {
+    this.rustPFrame = ((): PFrameInternal.PFrameV3 => {
       try {
         const pFrame = new PFrameRs(getDebugFlags().logPFrameRequests ? logFunc : undefined);
         pFrame.setDataSource(this);
@@ -148,7 +148,7 @@ class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
       }
     })();
 
-    this.specPFrame = ((): PFrameInternal.PFrameV2 => {
+    this.specPFrame = ((): PFrameInternal.PFrameV3 => {
       try {
         const pFrame = getDebugFlags().logPFrameRequests ? new PFrame(logFunc) : new PFrame();
         for (const column of distinct_columns) {
@@ -168,7 +168,7 @@ class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
       }
     })();
 
-    this.createDataPFrame = (): PFrameInternal.PFrameV2 => {
+    this.createDataPFrame = (): PFrameInternal.PFrameV3 => {
       try {
         const pFrame = getDebugFlags().logPFrameRequests ? new PFrame(logFunc) : new PFrame();
         pFrame.setDataSource(this);
@@ -242,7 +242,7 @@ type FullPTableDef = {
 
 export class PFrameDriver implements SdkPFrameDriver {
   private readonly pFrames: RefCountResourcePool<InternalPFrameData, PFrameHolder>;
-  private readonly pTables: RefCountResourcePool<FullPTableDef, Promise<PFrameInternal.PTableV2>>;
+  private readonly pTables: RefCountResourcePool<FullPTableDef, Promise<PFrameInternal.PTableV3>>;
   private readonly blobContentCache: LRUCache<string, Uint8Array>;
   /** Limits concurrent requests to PFrame API to prevent deadlock with Node's IO threads */
   private readonly concurrencyLimiter: ConcurrencyLimitingExecutor;
@@ -284,7 +284,7 @@ export class PFrameDriver implements SdkPFrameDriver {
 
     this.pTables = new (class extends RefCountResourcePool<
       FullPTableDef,
-      Promise<PFrameInternal.PTableV2>
+      Promise<PFrameInternal.PTableV3>
     > {
       constructor(
         private readonly pFrames: RefCountResourcePool<InternalPFrameData, PFrameHolder>,
@@ -292,7 +292,7 @@ export class PFrameDriver implements SdkPFrameDriver {
         super();
       }
 
-      protected async createNewResource(params: FullPTableDef): Promise<PFrameInternal.PTableV2> {
+      protected async createNewResource(params: FullPTableDef): Promise<PFrameInternal.PTableV3> {
         const handle: PFrameHandle = params.pFrameHandle;
         const rawPTable = await concurrencyLimiter.run(async () => {
           if (getDebugFlags().logPFrameRequests)
