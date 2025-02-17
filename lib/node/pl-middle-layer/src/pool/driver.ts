@@ -251,7 +251,40 @@ type FullPTableDef = {
   signal?: AbortSignal;
 };
 
-export class PFrameDriver implements SdkPFrameDriver {
+/**
+ * Extends public and safe SDK's driver API with methods used internally in the middle
+ * layer and in tests.
+ */
+export interface InternalPFrameDriver extends SdkPFrameDriver {
+  /** Create a new PFrame */
+  createPFrame(
+    def: PFrameDef<PlTreeNodeAccessor | PColumnValues>,
+    ctx: ComputableCtx,
+  ): PFrameHandle;
+
+  /** Create a new PTable */
+  createPTable(
+    def: PTableDef<PColumn<PlTreeNodeAccessor | PColumnValues>>,
+    ctx: ComputableCtx,
+    signal?: AbortSignal,
+  ): PTableHandle;
+
+  /** Calculates data for the table and returns complete data representation of it */
+  calculateTableData(
+    handle: PFrameHandle,
+    request: CalculateTableDataRequest<PObjectId>,
+    signal?: AbortSignal
+  ): Promise<CalculateTableDataResponse>;
+
+  /** Calculate set of unique values for a specific axis for the filtered set of records */
+  getUniqueValues(
+    handle: PFrameHandle,
+    request: UniqueValuesRequest,
+    signal?: AbortSignal
+  ): Promise<UniqueValuesResponse>;
+}
+
+export class PFrameDriver implements InternalPFrameDriver {
   private readonly pFrames: RefCountResourcePool<InternalPFrameData, PFrameHolder>;
   private readonly pTables: RefCountResourcePool<FullPTableDef, PTableHolder>;
   private readonly blobContentCache: LRUCache<string, Uint8Array>;

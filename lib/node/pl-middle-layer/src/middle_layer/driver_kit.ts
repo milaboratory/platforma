@@ -16,6 +16,7 @@ import {
 import type * as Sdk from '@milaboratories/pl-model-common';
 import type { Signer } from '@milaboratories/ts-helpers';
 import { HmacSha256Signer } from '@milaboratories/ts-helpers';
+import type { InternalPFrameDriver } from '../pool';
 import { PFrameDriver } from '../pool';
 import type {
   DriverKitOps,
@@ -43,7 +44,7 @@ export interface MiddleLayerDriverKit extends Sdk.DriverKit {
   // override with wider interface
   readonly lsDriver: InternalLsDriver;
   // override with wider interface
-  readonly pFrameDriver: PFrameDriver;
+  readonly pFrameDriver: InternalPFrameDriver;
 
   /**
    * Signer is initialized from local secret in drivers initialization routine,

@@ -35,7 +35,7 @@ export abstract class RefCountResourcePool<P, R> {
 
       if (isDisposable(envelop.resource)) {
         // TODO: we can postpone disposal and run it in the background
-        using _ = envelop.resource;
+        envelop.resource[Symbol.dispose]();
       }
     }
   }
