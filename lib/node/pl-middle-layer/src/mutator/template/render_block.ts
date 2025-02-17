@@ -1,10 +1,11 @@
-import {
+import type {
   AnyRef,
-  field,
   PlTransaction,
   ResourceRef,
-  ResourceType,
-  Pl
+  ResourceType } from '@milaboratories/pl-client';
+import {
+  field,
+  Pl,
 } from '@milaboratories/pl-client';
 import { randomUUID } from 'node:crypto';
 import { createRenderTemplate } from './render_template';
@@ -39,7 +40,7 @@ export const HeavyBlockOutputNames: (keyof HeavyBlockOutputs)[] = ['context', 'r
 export function createRenderHeavyBlock(
   tx: PlTransaction,
   tpl: AnyRef,
-  inputs: HeavyBlockInputs
+  inputs: HeavyBlockInputs,
 ): HeavyBlockOutputs {
   return createRenderTemplate(tx, tpl, true, inputs, HeavyBlockOutputNames);
 }
@@ -60,7 +61,7 @@ export const LightBlockOutputNames: (keyof LightBlockOutput)[] = ['result'];
 export function createRenderLightBlock(
   tx: PlTransaction,
   tpl: ResourceRef,
-  inputs: LightBlockInputs
+  inputs: LightBlockInputs,
 ): LightBlockOutput {
   return createRenderTemplate(tx, tpl, true, inputs, LightBlockOutputNames);
 }

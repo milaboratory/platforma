@@ -1,21 +1,22 @@
 import { assertNever } from '@milaboratories/ts-helpers';
-import { PlRef } from '@platforma-sdk/model';
+import type { PlRef } from '@platforma-sdk/model';
 
 export function outputRef(blockId: string, name: string): PlRef {
   return { __isRef: true, blockId, name };
 }
 
-export function isBlockOutputReference(obj: any): obj is PlRef {
+export function isBlockOutputReference(obj: unknown): obj is PlRef {
   return (
-    typeof obj === 'object' &&
-    obj !== null &&
-    obj.__isRef === true &&
-    'blockId' in obj &&
-    'name' in obj
+    typeof obj === 'object'
+    && obj !== null
+    && '__isRef' in obj
+    && obj.__isRef === true
+    && 'blockId' in obj
+    && 'name' in obj
   );
 }
 
-function addAllReferencedBlocks(result: BlockUpstreams, node: any, allowed?: Set<string>) {
+function addAllReferencedBlocks(result: BlockUpstreams, node: unknown, allowed?: Set<string>) {
   const type = typeof node;
   switch (type) {
     case 'function':
@@ -55,7 +56,7 @@ export interface BlockUpstreams {
 }
 
 /** Extracts all resource ids referenced by args object. */
-export function inferAllReferencedBlocks(args: any, allowed?: Set<string>): BlockUpstreams {
+export function inferAllReferencedBlocks(args: unknown, allowed?: Set<string>): BlockUpstreams {
   const result = { upstreams: new Set<string>(), missingReferences: false };
   addAllReferencedBlocks(result, args, allowed);
   return result;

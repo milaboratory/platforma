@@ -1,21 +1,22 @@
-import {
+import type {
   ArchiveFormat,
   Cfg,
   CfgMapArrayValues,
   CfgMapRecordValues,
-  CfgMapResourceFields
+  CfgMapResourceFields,
 } from '@platforma-sdk/model';
-import { ArgumentRequests, Operation, OperationAction, Subroutine } from './operation';
-import { PlTreeEntry } from '@milaboratories/pl-tree';
+import type { ArgumentRequests, Operation, OperationAction, Subroutine } from './operation';
+import type { PlTreeEntry } from '@milaboratories/pl-tree';
 import { mapRecord } from './util';
 import { computableFromCfgUnsafe } from './executor';
 import { assertNever } from '@milaboratories/ts-helpers';
+import type { ComputableCtx } from '@milaboratories/computable';
 import { Computable } from '@milaboratories/computable';
 
 function res(result: unknown): OperationAction {
   return {
     type: 'ReturnResult',
-    result: result
+    result: result,
   };
 }
 
@@ -28,7 +29,7 @@ export function resOp(result: unknown): Operation {
 //
 
 const SRMakeObject: Subroutine = (args) => {
-  const result: Record<string | symbol, any> = {};
+  const result: Record<string | symbol, unknown> = {};
   for (const [k, v] of Object.entries(args)) result[k] = v;
   return resOp(result);
 };
@@ -38,7 +39,7 @@ const SRFlatten: Subroutine = (args) => {
   if (source === undefined) return resOp(undefined);
   const result: unknown[] = [];
   for (const nested of source) {
-    if (nested instanceof Array) result.push(...nested);
+    if (nested instanceof Array) result.push(...(nested as unknown[]));
     else result.push(nested);
   }
   return resOp(result);
@@ -62,7 +63,7 @@ function mapArrayToRecord<T, R>(elements: T[], cb: (e: T) => R): Record<string, 
 
 function SRMapArrayValues1(
   ctx: Record<string, unknown>,
-  ops: Pick<CfgMapArrayValues, 'itVar' | 'mapping'>
+  ops: Pick<CfgMapArrayValues, 'itVar' | 'mapping'>,
 ): Subroutine {
   return (args) => {
     const source = args.source as unknown[] | undefined;
@@ -70,7 +71,7 @@ function SRMapArrayValues1(
     return () => ({
       type: 'ScheduleSubroutine',
       subroutine: SRCollectArrayFromArgs(source.length),
-      args: mapArrayToRecord(source, (e) => renderCfg({ ...ctx, [ops.itVar]: e }, ops.mapping))
+      args: mapArrayToRecord(source, (e) => renderCfg({ ...ctx, [ops.itVar]: e }, ops.mapping)),
     });
   };
 }
@@ -85,7 +86,7 @@ function SRCollectArrayFromArgs(length: number): Subroutine {
 
 function SRMapRecordValues1(
   ctx: Record<string, unknown>,
-  ops: Pick<CfgMapRecordValues, 'itVar' | 'mapping'>
+  ops: Pick<CfgMapRecordValues, 'itVar' | 'mapping'>,
 ): Subroutine {
   return (args) => {
     const source = args.source as Record<string, unknown> | undefined;
@@ -98,7 +99,7 @@ function SRMapRecordValues1(
     return () => ({
       type: 'ScheduleSubroutine',
       subroutine: SRMapRecordValues2,
-      args: nextArgs
+      args: nextArgs,
     });
   };
 }
@@ -148,7 +149,7 @@ const SRGetJsonField: Subroutine = (args) => {
 
 function SRMapResourceFields1(
   ctx: Record<string, unknown>,
-  ops: Pick<CfgMapResourceFields, 'itVar' | 'mapping'>
+  ops: Pick<CfgMapResourceFields, 'itVar' | 'mapping'>,
 ): Subroutine {
   return (args) => {
     const source = args.source as PlTreeEntry | undefined;
@@ -170,7 +171,7 @@ function SRMapResourceFields1(
       return {
         type: 'ScheduleSubroutine',
         subroutine: SRMapResourceFields2,
-        args: nextArgs
+        args: nextArgs,
       };
     };
   };
@@ -195,9 +196,9 @@ const SRGetBlobContent: Subroutine = (args) => {
           postprocessValue: async (value) => {
             if (value === undefined) return undefined;
             return await drivers.blobDriver.getContent(value.handle);
-          }
-        }
-      )
+          },
+        },
+      ),
     };
   };
 };
@@ -217,8 +218,8 @@ const SRGetBlobContentAsString: Subroutine = (args) => {
           if (value === undefined) return undefined;
           const content = await drivers.blobDriver.getContent(value.handle);
           return content.toString();
-        }
-      })
+        },
+      }),
     };
   };
 };
@@ -237,10 +238,10 @@ const SRGetBlobContentAsJson: Subroutine = (args) => {
             if (value == undefined) return undefined;
             const content = await drivers.blobDriver.getContent(value.handle);
             if (content == undefined) return undefined;
-            return JSON.parse(Buffer.from(content).toString());
-          }
-        }
-      )
+            return JSON.parse(Buffer.from(content).toString()) as unknown;
+          },
+        },
+      ),
     };
   };
 };
@@ -252,7 +253,7 @@ const SRGetDownloadedBlobContent: Subroutine = (args) => {
   return ({ drivers }) => {
     return {
       type: 'ScheduleComputable',
-      computable: drivers.blobDriver.getDownloadedBlob(source)
+      computable: drivers.blobDriver.getDownloadedBlob(source),
     };
   };
 };
@@ -264,7 +265,7 @@ const SRGetOnDemandBlobContent: Subroutine = (args) => {
   return ({ drivers }) => {
     return {
       type: 'ScheduleComputable',
-      computable: drivers.blobDriver.getOnDemandBlob(source)
+      computable: drivers.blobDriver.getOnDemandBlob(source),
     };
   };
 };
@@ -276,7 +277,7 @@ const SRExtractArchiveAndGetURL: (format: ArchiveFormat) => Subroutine = (format
   return ({ drivers }) => {
     return {
       type: 'ScheduleComputable',
-      computable: drivers.blobToURLDriver.extractArchiveAndGetURL(source, format)
+      computable: drivers.blobToURLDriver.extractArchiveAndGetURL(source, format),
     };
   };
 };
@@ -288,7 +289,7 @@ const SRGetImportProgress: Subroutine = (args) => {
   return ({ drivers }) => {
     return {
       type: 'ScheduleComputable',
-      computable: drivers.uploadDriver.getProgressId(source)
+      computable: drivers.uploadDriver.getProgressId(source),
     };
   };
 };
@@ -300,7 +301,7 @@ const SRGetLastLogs: (lines: number) => Subroutine = (lines) => (args) => {
   return ({ drivers }) => {
     return {
       type: 'ScheduleComputable',
-      computable: drivers.logDriver.getLastLogs(source, lines)
+      computable: drivers.logDriver.getLastLogs(source, lines),
     };
   };
 };
@@ -312,7 +313,7 @@ const SRGetProgressLog: (patternToSearch: string) => Subroutine = (patternToSear
   return ({ drivers }) => {
     return {
       type: 'ScheduleComputable',
-      computable: drivers.logDriver.getProgressLog(source, patternToSearch)
+      computable: drivers.logDriver.getProgressLog(source, patternToSearch),
     };
   };
 };
@@ -324,7 +325,7 @@ const SRGetProgressLogWithInfo: (patternToSearch: string) => Subroutine = (patte
   return ({ drivers }) => {
     return {
       type: 'ScheduleComputable',
-      computable: drivers.logDriver.getProgressLogWithInfo(source, patternToSearch)
+      computable: drivers.logDriver.getProgressLogWithInfo(source, patternToSearch),
     };
   };
 };
@@ -336,7 +337,7 @@ const SRGetLogHandle: Subroutine = (args) => {
   return ({ drivers }) => {
     return {
       type: 'ScheduleComputable',
-      computable: drivers.logDriver.getLogHandle(source)
+      computable: drivers.logDriver.getLogHandle(source),
     };
   };
 };
@@ -345,14 +346,19 @@ const SRGetLogHandle: Subroutine = (args) => {
 export function renderCfg(ctx: Record<string, unknown>, cfg: Cfg): Operation {
   switch (cfg.type) {
     case 'GetFromCtx':
+    {
       const ctxValue = ctx[cfg.variable];
-      if (typeof ctxValue === 'function') return (e) => res(ctxValue(e.cCtx));
-      else return resOp(ctxValue);
+      if (typeof ctxValue === 'function') {
+        return (e) => res((ctxValue as (cCtx: ComputableCtx) => OperationAction)(e.cCtx));
+      } else {
+        return resOp(ctxValue);
+      }
+    }
 
     case 'Isolate':
       return ({ drivers }) => ({
         type: 'ScheduleComputable',
-        computable: computableFromCfgUnsafe(drivers, ctx, cfg.cfg)
+        computable: computableFromCfgUnsafe(drivers, ctx, cfg.cfg),
       });
 
     case 'Immediate':
@@ -364,8 +370,8 @@ export function renderCfg(ctx: Record<string, unknown>, cfg: Cfg): Operation {
         subroutine: SRGetJsonField,
         args: {
           source: renderCfg(ctx, cfg.source),
-          field: renderCfg(ctx, cfg.field)
-        }
+          field: renderCfg(ctx, cfg.field),
+        },
       });
 
     case 'MapArrayValues':
@@ -373,8 +379,8 @@ export function renderCfg(ctx: Record<string, unknown>, cfg: Cfg): Operation {
         type: 'ScheduleSubroutine',
         subroutine: SRMapArrayValues1(ctx, cfg),
         args: {
-          source: renderCfg(ctx, cfg.source)
-        }
+          source: renderCfg(ctx, cfg.source),
+        },
       });
 
     case 'MapRecordValues':
@@ -382,22 +388,22 @@ export function renderCfg(ctx: Record<string, unknown>, cfg: Cfg): Operation {
         type: 'ScheduleSubroutine',
         subroutine: SRMapRecordValues1(ctx, cfg),
         args: {
-          source: renderCfg(ctx, cfg.source)
-        }
+          source: renderCfg(ctx, cfg.source),
+        },
       });
 
     case 'MakeObject':
       return () => ({
         type: 'ScheduleSubroutine',
         subroutine: SRMakeObject,
-        args: mapRecord(cfg.template, (c) => renderCfg(ctx, c))
+        args: mapRecord(cfg.template, (c) => renderCfg(ctx, c)),
       });
 
     case 'MakeArray':
       return () => ({
         type: 'ScheduleSubroutine',
         subroutine: SRCollectArrayFromArgs(cfg.template.length),
-        args: mapArrayToRecord(cfg.template, (e) => renderCfg(ctx, e))
+        args: mapArrayToRecord(cfg.template, (e) => renderCfg(ctx, e)),
       });
 
     case 'Flatten':
@@ -405,8 +411,8 @@ export function renderCfg(ctx: Record<string, unknown>, cfg: Cfg): Operation {
         type: 'ScheduleSubroutine',
         subroutine: SRFlatten,
         args: {
-          source: renderCfg(ctx, cfg.source)
-        }
+          source: renderCfg(ctx, cfg.source),
+        },
       });
 
     case 'IsEmpty':
@@ -414,8 +420,8 @@ export function renderCfg(ctx: Record<string, unknown>, cfg: Cfg): Operation {
         type: 'ScheduleSubroutine',
         subroutine: SRIsEmpty,
         args: {
-          arg: renderCfg(ctx, cfg.arg)
-        }
+          arg: renderCfg(ctx, cfg.arg),
+        },
       });
 
     case 'Not':
@@ -423,8 +429,8 @@ export function renderCfg(ctx: Record<string, unknown>, cfg: Cfg): Operation {
         type: 'ScheduleSubroutine',
         subroutine: SRNot,
         args: {
-          operand: renderCfg(ctx, cfg.operand)
-        }
+          operand: renderCfg(ctx, cfg.operand),
+        },
       });
 
     case 'And':
@@ -433,8 +439,8 @@ export function renderCfg(ctx: Record<string, unknown>, cfg: Cfg): Operation {
         subroutine: SRAnd,
         args: {
           operand1: renderCfg(ctx, cfg.operand1),
-          operand2: renderCfg(ctx, cfg.operand2)
-        }
+          operand2: renderCfg(ctx, cfg.operand2),
+        },
       });
 
     case 'Or':
@@ -443,8 +449,8 @@ export function renderCfg(ctx: Record<string, unknown>, cfg: Cfg): Operation {
         subroutine: SROr,
         args: {
           operand1: renderCfg(ctx, cfg.operand1),
-          operand2: renderCfg(ctx, cfg.operand2)
-        }
+          operand2: renderCfg(ctx, cfg.operand2),
+        },
       });
 
     case 'MapResourceFields':
@@ -452,8 +458,8 @@ export function renderCfg(ctx: Record<string, unknown>, cfg: Cfg): Operation {
         type: 'ScheduleSubroutine',
         subroutine: SRMapResourceFields1(ctx, cfg),
         args: {
-          source: renderCfg(ctx, cfg.source)
-        }
+          source: renderCfg(ctx, cfg.source),
+        },
       });
 
     case 'GetResourceField':
@@ -462,8 +468,8 @@ export function renderCfg(ctx: Record<string, unknown>, cfg: Cfg): Operation {
         subroutine: SRGetResourceField,
         args: {
           source: renderCfg(ctx, cfg.source),
-          field: renderCfg(ctx, cfg.field)
-        }
+          field: renderCfg(ctx, cfg.field),
+        },
       });
 
     case 'GetResourceValueAsJson':
@@ -471,8 +477,8 @@ export function renderCfg(ctx: Record<string, unknown>, cfg: Cfg): Operation {
         type: 'ScheduleSubroutine',
         subroutine: SRResourceValueAsJson,
         args: {
-          source: renderCfg(ctx, cfg.source)
-        }
+          source: renderCfg(ctx, cfg.source),
+        },
       });
 
     case 'GetBlobContent':
@@ -480,8 +486,8 @@ export function renderCfg(ctx: Record<string, unknown>, cfg: Cfg): Operation {
         type: 'ScheduleSubroutine',
         subroutine: SRGetBlobContent,
         args: {
-          source: renderCfg(ctx, cfg.source)
-        }
+          source: renderCfg(ctx, cfg.source),
+        },
       });
 
     case 'GetBlobContentAsString':
@@ -489,8 +495,8 @@ export function renderCfg(ctx: Record<string, unknown>, cfg: Cfg): Operation {
         type: 'ScheduleSubroutine',
         subroutine: SRGetBlobContentAsString,
         args: {
-          source: renderCfg(ctx, cfg.source)
-        }
+          source: renderCfg(ctx, cfg.source),
+        },
       });
 
     case 'GetBlobContentAsJson':
@@ -498,8 +504,8 @@ export function renderCfg(ctx: Record<string, unknown>, cfg: Cfg): Operation {
         type: 'ScheduleSubroutine',
         subroutine: SRGetBlobContentAsJson,
         args: {
-          source: renderCfg(ctx, cfg.source)
-        }
+          source: renderCfg(ctx, cfg.source),
+        },
       });
 
     case 'GetDownloadedBlobContent':
@@ -507,8 +513,8 @@ export function renderCfg(ctx: Record<string, unknown>, cfg: Cfg): Operation {
         type: 'ScheduleSubroutine',
         subroutine: SRGetDownloadedBlobContent,
         args: {
-          source: renderCfg(ctx, cfg.source)
-        }
+          source: renderCfg(ctx, cfg.source),
+        },
       });
 
     case 'GetOnDemandBlobContent':
@@ -516,8 +522,8 @@ export function renderCfg(ctx: Record<string, unknown>, cfg: Cfg): Operation {
         type: 'ScheduleSubroutine',
         subroutine: SRGetOnDemandBlobContent,
         args: {
-          source: renderCfg(ctx, cfg.source)
-        }
+          source: renderCfg(ctx, cfg.source),
+        },
       });
 
     case 'ExtractArchiveAndGetURL':
@@ -525,8 +531,8 @@ export function renderCfg(ctx: Record<string, unknown>, cfg: Cfg): Operation {
         type: 'ScheduleSubroutine',
         subroutine: SRExtractArchiveAndGetURL(cfg.format),
         args: {
-          source: renderCfg(ctx, cfg.source)
-        }
+          source: renderCfg(ctx, cfg.source),
+        },
       });
 
     case 'GetImportProgress':
@@ -534,8 +540,8 @@ export function renderCfg(ctx: Record<string, unknown>, cfg: Cfg): Operation {
         type: 'ScheduleSubroutine',
         subroutine: SRGetImportProgress,
         args: {
-          source: renderCfg(ctx, cfg.source)
-        }
+          source: renderCfg(ctx, cfg.source),
+        },
       });
 
     case 'GetLastLogs':
@@ -543,8 +549,8 @@ export function renderCfg(ctx: Record<string, unknown>, cfg: Cfg): Operation {
         type: 'ScheduleSubroutine',
         subroutine: SRGetLastLogs(cfg.lines),
         args: {
-          source: renderCfg(ctx, cfg.source)
-        }
+          source: renderCfg(ctx, cfg.source),
+        },
       });
 
     case 'GetProgressLog':
@@ -552,8 +558,8 @@ export function renderCfg(ctx: Record<string, unknown>, cfg: Cfg): Operation {
         type: 'ScheduleSubroutine',
         subroutine: SRGetProgressLog(cfg.patternToSearch),
         args: {
-          source: renderCfg(ctx, cfg.source)
-        }
+          source: renderCfg(ctx, cfg.source),
+        },
       });
 
     case 'GetProgressLogWithInfo':
@@ -561,8 +567,8 @@ export function renderCfg(ctx: Record<string, unknown>, cfg: Cfg): Operation {
         type: 'ScheduleSubroutine',
         subroutine: SRGetProgressLogWithInfo(cfg.patternToSearch),
         args: {
-          source: renderCfg(ctx, cfg.source)
-        }
+          source: renderCfg(ctx, cfg.source),
+        },
       });
 
     case 'GetLogHandle':
@@ -570,8 +576,8 @@ export function renderCfg(ctx: Record<string, unknown>, cfg: Cfg): Operation {
         type: 'ScheduleSubroutine',
         subroutine: SRGetLogHandle,
         args: {
-          source: renderCfg(ctx, cfg.source)
-        }
+          source: renderCfg(ctx, cfg.source),
+        },
       });
 
     default:
