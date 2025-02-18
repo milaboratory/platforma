@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/milaboratories.test-read-logs",
-  "version": "1.0.82",
+  "version": "1.0.83",
   "private": true,
   "scripts": {
     "build": "rm -rf ./block-pack && block-tools pack"
