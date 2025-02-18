@@ -2,7 +2,7 @@
 
 import type { MiLogger } from '@milaboratories/ts-helpers';
 import * as plpath from './pl_paths';
-import type { SshClient } from './ssh';
+import type { SshClient, SshExecResult } from './ssh';
 import { randomBytes } from 'crypto';
 
 export async function supervisorCtlStart(
@@ -27,31 +27,45 @@ export async function supervisorStop(
   }
 }
 
-type SupervisorStatus = {
-  platforma: boolean;
-  minio: boolean;
+/** Provides a simple true/false response got from supervisord status
+ * along with a debug info that could be showed in error logs (raw response from the command, parsed response etc). */
+export type SupervisorStatus = {
+  platforma?: boolean;
+  minio?: boolean;
+  allAlive: boolean; // true when both pl and minio are alive.
+  rawResult?: SshExecResult;
+  execError?: string;
 };
 
 export async function supervisorStatus(
   logger: MiLogger,
   sshClient: SshClient,
   remoteHome: string, arch: string,
-): Promise<boolean> {
-  const result = await supervisorExec(sshClient, remoteHome, arch, 'ctl status');
+): Promise<SupervisorStatus> {
+  let result: SshExecResult;
+  try {
+    result = await supervisorExec(sshClient, remoteHome, arch, 'ctl status');
+  } catch (e: unknown) {
+    return { execError: String(e), allAlive: false };
+  }
 
   if (result.stderr) {
     logger.info(`supervisord ctl status: stderr occurred: ${result.stderr}, stdout: ${result.stdout}`);
 
-    return false;
+    return { rawResult: result, allAlive: false };
   }
 
+  const platforma = isProgramRunning(result.stdout, 'platforma');
+  const minio = isProgramRunning(result.stdout, 'minio');
   const status: SupervisorStatus = {
-    platforma: isProgramRunning(result.stdout, 'platforma'),
-    minio: isProgramRunning(result.stdout, 'minio'),
+    rawResult: result,
+    platforma,
+    minio,
+    allAlive: platforma && minio,
   };
 
-  if (status.platforma && status.minio) {
-    return true;
+  if (status.allAlive) {
+    return status;
   }
 
   if (!status.minio) {
@@ -62,7 +76,7 @@ export async function supervisorStatus(
     logger.warn('Platforma is not running on the server');
   }
 
-  return false;
+  return status;
 }
 
 export function generateSupervisordConfig(
