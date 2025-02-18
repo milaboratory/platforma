@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 2.12.1
+
+### Patch Changes
+
+- ddced5d: Make R local preparation steps be more informative on error
+
 ## 2.12.0
 
 ### Minor Changes
