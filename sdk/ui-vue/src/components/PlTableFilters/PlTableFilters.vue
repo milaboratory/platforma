@@ -15,7 +15,15 @@ import * as lodash from 'lodash';
 import type { PlTableFiltersDefault, PlTableFiltersRestriction } from '../PlAgDataTable/types';
 import PlTableFilterEntry from './PlTableFilterEntry.vue';
 import PlTableAddFilter from './PlTableAddFilter.vue';
-import { filterTypesNumber, filterTypesString, getColumnName, getFilterDefault, getFilterLabel, makeColumnId, makePredicate } from './filters_logic';
+import {
+  filterTypesNumber,
+  filterTypesString,
+  getColumnName,
+  getFilterDefault,
+  getFilterLabel,
+  makeColumnId,
+  makePredicate,
+} from './filters_logic';
 import './pl-table-filters.scss';
 import { useDataTableToolsPanelTarget } from '../PlAgDataTableToolsPanel';
 
@@ -49,7 +57,10 @@ const restrictionsMap = computed<Record<PlTableFilterColumnId, PlTableFilterType
   const restrictionsValue = restrictions.value ?? [];
   const map: Record<PlTableFilterColumnId, PlTableFilterType[]> = {};
   for (const [id, column] of Object.entries(columnsById.value)) {
-    const entry = lodash.find(restrictionsValue, (entry) => lodash.isEqual(entry.column.id, column.id));
+    const entry = lodash.find(
+      restrictionsValue,
+      (entry) => lodash.isEqual(entry.column.id, column.id),
+    );
     if (entry) map[id] = entry.allowedFilterTypes;
   }
   return map;
@@ -59,7 +70,13 @@ const defaultsMap = computed<Record<PlTableFilterColumnId, PlTableFiltersStateEn
   const map: Record<PlTableFilterColumnId, PlTableFiltersStateEntry> = {};
   for (const [id, column] of Object.entries(columnsById.value)) {
     const entry = lodash.find(defaultsValue, (entry) => lodash.isEqual(entry.column.id, column.id));
-    if (entry) map[id] = { columnId: id, filter: entry.default, disabled: false };
+    if (entry) {
+      map[id] = {
+        columnId: id,
+        filter: entry.default,
+        disabled: false,
+      };
+    }
   }
   return map;
 });
@@ -67,11 +84,13 @@ const defaultsMap = computed<Record<PlTableFilterColumnId, PlTableFiltersStateEn
 /* State upgrader */ (() => {
   const state = model.value.state;
   if (typeof state === 'object' && !Array.isArray(state)) {
-    model.value.state = Object.entries(state as unknown as Record<PlTableFilterColumnId, PlTableFilter>).map(([id, filter]) => ({
-      columnId: id,
-      filter,
-      disabled: false,
-    }));
+    model.value.state = Object
+      .entries(state as unknown as Record<PlTableFilterColumnId, PlTableFilter>)
+      .map(([id, filter]) => ({
+        columnId: id,
+        filter,
+        disabled: false,
+      }));
   }
 })();
 const makeState = (state?: PlTableFiltersState): PlTableFiltersState => {
@@ -228,12 +247,17 @@ const teleportTarget = useDataTableToolsPanelTarget();
         :class="{ open: openState[entry.columnId], disabled: entry.disabled }"
         class="pl-filter-manager__filter"
       >
-        <div class="pl-filter-manager__header d-flex align-center gap-8" @click="toggleExpandFilter(entry.columnId)">
+        <div
+          class="pl-filter-manager__header d-flex align-center gap-8"
+          @click="toggleExpandFilter(entry.columnId)"
+        >
           <div class="pl-filter-manager__expand-icon">
             <PlMaskIcon16 name="chevron-right" />
           </div>
 
-          <div class="pl-filter-manager__title flex-grow-1 text-s-btn">{{ getColumnName(columnsById[entry.columnId], index) }}</div>
+          <div class="pl-filter-manager__title flex-grow-1 text-s-btn">
+            {{ getColumnName(columnsById[entry.columnId], index) }}
+          </div>
 
           <div class="pl-filter-manager__actions d-flex gap-12">
             <div class="pl-filter-manager__toggle" @click.stop="entry.disabled = !entry.disabled">
@@ -268,7 +292,11 @@ const teleportTarget = useDataTableToolsPanelTarget();
       </div>
 
       <div :class="{ 'pt-24': scrollIsActive }" class="pl-filter-manager__add-action-wrapper">
-        <div v-if="columnOptions.length > 0" class="pl-filter-manager__add-btn" @click="showAddFilter = true">
+        <div
+          v-if="columnOptions.length > 0"
+          class="pl-filter-manager__add-btn"
+          @click="showAddFilter = true"
+        >
           <div class="pl-filter-manager__add-btn-icon">
             <PlMaskIcon16 name="add" />
           </div>
