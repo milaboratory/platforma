@@ -1,8 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { ColDef, ICellRendererParams } from 'ag-grid-enterprise';
 import { PlAgCellProgress } from '../components/PlAgCellProgress';
-import type { PlProgressCellProps } from '@milaboratories/uikit';
+import type { MaskIconName16, PlProgressCellProps } from '@milaboratories/uikit';
 import { tapIf } from '@milaboratories/helpers';
+import type { PlAgHeaderComponentParams } from '../lib';
+import { PlAgColumnHeader } from '../components/PlAgColumnHeader';
+import { PlAgTextAndButtonCell } from '../components/PlAgTextAndButtonCell';
 
 /**
  * Represents the available progress statuses for a cell.
@@ -77,6 +80,32 @@ export type ColDefProgressCallback<TData, TValue = any> = (cellData: ICellRender
 export interface ColDefExtended<TData, TValue = any> extends ColDef<TData> {
   progress?: ColDefProgressCallback<TData, TValue>;
   noGutters?: boolean;
+  headerComponentParams?: PlAgHeaderComponentParams;
+  textWithButton?: true | {
+    /**
+     * Button icon MaskIconName16
+     */
+    icon?: MaskIconName16;
+    /**
+     * Button label
+     */
+    btnLabel?: string;
+    /**
+     * If invokeRowsOnDoubleClick = true, clicking a button inside the row
+     * triggers the doubleClick event for the entire row. In this case,
+     * the handler passed to the component is not called, even if it is defined.
+     *
+     * If invokeRowsOnDoubleClick = false, the doubleClick event for the row
+     * is not triggered, but the provided handler will be called, receiving
+     * the ICellRendererParams as an argument.
+     */
+    invokeRowsOnDoubleClick?: boolean;
+    /**
+     * plHandler parameter is a click handler that is invoked when
+     * the invokeRowsOnDoubleClick property is set to false.
+     */
+    onClick?: (params: ICellRendererParams) => void;
+  };
 }
 
 /**
@@ -163,6 +192,23 @@ export function createAgGridColDef<TData, TValue = any>(def: ColDefExtended<TDat
   if (def.noGutters) {
     def.cellStyle = Object.assign({}, def.cellStyle ?? {}, noGuttersStyle());
   }
+
+  if (def.headerComponentParams) {
+    def.headerComponent = PlAgColumnHeader;
+  }
+
+  if (def.textWithButton) {
+    def.cellRenderer = PlAgTextAndButtonCell;
+    if (typeof def.textWithButton !== 'boolean') {
+      def.cellRendererParams = def.textWithButton;
+    } else {
+      def.cellRendererParams = {
+        invokeRowsOnDoubleClick: true,
+      };
+    }
+  }
+
+  delete def.textWithButton;
 
   delete def.progress;
 
