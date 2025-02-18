@@ -1,18 +1,19 @@
-import {
+import type {
   ArgumentKey,
   ArgumentValues,
   ExecutionEnvironment,
   Operation,
-  Subroutine
+  Subroutine,
 } from './operation';
 import Denque from 'denque';
 import { assertNever, notEmpty } from '@milaboratories/ts-helpers';
-import { Computable, ComputableCtx, ComputableRenderingOps } from '@milaboratories/computable';
-import { Cfg } from '@platforma-sdk/model';
+import type { ComputableCtx, ComputableRenderingOps } from '@milaboratories/computable';
+import { Computable } from '@milaboratories/computable';
+import type { Cfg } from '@platforma-sdk/model';
 import { renderCfg, resOp } from './renderer';
 import canonicalize from 'canonicalize';
-import { BlockContextAny } from '../middle_layer/block_ctx';
-import { MiddleLayerDriverKit } from '../middle_layer/driver_kit';
+import type { BlockContextAny } from '../middle_layer/block_ctx';
+import type { MiddleLayerDriverKit } from '../middle_layer/driver_kit';
 import { NonKeyCtxFields, toCfgContext } from '../middle_layer/block_ctx_unsafe';
 
 /** Addresses pending subroutines inside the stack */
@@ -36,7 +37,7 @@ const ReturnArgKey = 'return';
  * be exposed as a final result, and execution terminate at this point. */
 const ReturnDestination = { op: ReturnOpKey, arg: ReturnArgKey } as Destination;
 
-function isReturnDestination(destination: Destination): Boolean {
+function isReturnDestination(destination: Destination): boolean {
   return destination.op == ReturnOpKey && destination.arg == ReturnArgKey;
 }
 
@@ -94,7 +95,7 @@ function execute(
   env: ExecutionEnvironment,
   stack: ExecutionStack,
   operations: QueuedOperation[],
-  allowComputables: boolean
+  allowComputables: boolean,
 ): ScheduledComputable[] {
   const operationQueue = new Denque<QueuedOperation>(operations);
 
@@ -114,7 +115,7 @@ function execute(
       stack.pendingSubroutines.delete(destination.op);
       operationQueue.push({
         destination: pending.destination,
-        operation: pending.subroutine(pending.args)
+        operation: pending.subroutine(pending.args),
       });
     }
 
@@ -135,32 +136,33 @@ function execute(
         break; // switch
 
       case 'ScheduleSubroutine':
-        const newOpKey = Symbol();
+        {
+          const newOpKey = Symbol();
 
-        const argRequests = Object.entries(action.args);
-        const initialArgCounter = argRequests.length;
+          const argRequests = Object.entries(action.args);
+          const initialArgCounter = argRequests.length;
 
-        if (initialArgCounter === 0)
+          if (initialArgCounter === 0)
           // if no pending arguments
-          operationQueue.push({
-            destination: op.destination,
-            operation: action.subroutine({})
-          });
-        else {
-          for (const [arg, operation] of argRequests)
             operationQueue.push({
-              destination: { op: newOpKey, arg },
-              operation
+              destination: op.destination,
+              operation: action.subroutine({}),
             });
+          else {
+            for (const [arg, operation] of argRequests)
+              operationQueue.push({
+                destination: { op: newOpKey, arg },
+                operation,
+              });
 
-          stack.pendingSubroutines.set(newOpKey, {
-            argCounter: initialArgCounter,
-            args: {},
-            subroutine: action.subroutine,
-            destination: op.destination
-          });
+            stack.pendingSubroutines.set(newOpKey, {
+              argCounter: initialArgCounter,
+              args: {},
+              subroutine: action.subroutine,
+              destination: op.destination,
+            });
+          }
         }
-
         break;
 
       case 'ScheduleComputable':
@@ -168,7 +170,7 @@ function execute(
           throw new Error('asynchronous operations are forbidden in this context');
         computables.push({
           destination: op.destination,
-          computable: action.computable
+          computable: action.computable,
         });
         break;
 
@@ -189,7 +191,7 @@ export function computableFromCfg(
   drivers: MiddleLayerDriverKit,
   bCtx: BlockContextAny,
   cfg: Cfg,
-  ops: Partial<ComputableRenderingOps> = {}
+  ops: Partial<ComputableRenderingOps> = {},
 ): Computable<unknown> {
   return computableFromCfgUnsafe(drivers, toCfgContext(bCtx), cfg, ops);
 }
@@ -198,15 +200,15 @@ export function computableFromCfgUnsafe(
   drivers: MiddleLayerDriverKit,
   ctx: Record<string, unknown>,
   cfg: Cfg,
-  ops: Partial<ComputableRenderingOps> = {}
+  ops: Partial<ComputableRenderingOps> = {},
 ): Computable<unknown> {
-  const key =
-    `${ctx.blockId}#` +
-    canonicalize({
+  const key
+    = `${ctx.blockId}#`
+    + canonicalize({
       ctx: Object.fromEntries(
-        Object.entries(ctx).filter(([k]) => NonKeyCtxFields.indexOf(k) === -1)
+        Object.entries(ctx).filter(([k]) => NonKeyCtxFields.indexOf(k) === -1),
       ),
-      cfg: cfg
+      cfg: cfg,
     })!;
   return Computable.makeRaw(
     (c) => {
@@ -218,14 +220,14 @@ export function computableFromCfgUnsafe(
         [
           {
             destination: ReturnDestination,
-            operation: renderCfg(ctx, cfg)
-          }
+            operation: renderCfg(ctx, cfg),
+          },
         ],
-        true
+        true,
       );
       return {
         ir: computables,
-        async postprocessValue(value: MaterializedComputable[]): Promise<unknown> {
+        postprocessValue(value: MaterializedComputable[]): unknown {
           const resolvedOps: QueuedOperation[] = [];
           for (const mc of value)
             resolvedOps.push({ destination: mc.destination, operation: resOp(mc.computable) });
@@ -233,7 +235,7 @@ export function computableFromCfgUnsafe(
             drivers,
             get cCtx(): ComputableCtx {
               throw new Error('asynchronous operations are forbidden in this context');
-            }
+            },
           };
 
           // Post process can be called several times, that's why it must be a side-effect-free function.
@@ -243,15 +245,15 @@ export function computableFromCfgUnsafe(
             copyOfPendingSubrotines.set(key, { ...value, args: { ...value.args } });
           const copiedStack: ExecutionStack = {
             result: stack.result,
-            pendingSubroutines: copyOfPendingSubrotines
+            pendingSubroutines: copyOfPendingSubrotines,
           };
           execute(postEnv, copiedStack, resolvedOps, false);
           if (!('result' in copiedStack))
             throw new Error('illegal cfg rendering stack state, no result');
           return copiedStack.result;
-        }
+        },
       };
     },
-    { ...ops, key }
+    { ...ops, key },
   );
 }

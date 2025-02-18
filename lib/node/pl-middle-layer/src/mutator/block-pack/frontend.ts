@@ -1,10 +1,12 @@
-import { AnyResourceRef, PlTransaction } from '@milaboratories/pl-client';
-import {
+import type { AnyResourceRef, PlTransaction } from '@milaboratories/pl-client';
+import type {
   FrontendFromFolderData,
-  FrontendFromFolderResourceType,
   FrontendFromUrlData,
+  FrontendSpec,
+} from '../../model';
+import {
+  FrontendFromFolderResourceType,
   FrontendFromUrlResourceType,
-  FrontendSpec
 } from '../../model';
 import { assertNever } from '@milaboratories/ts-helpers';
 
@@ -13,15 +15,15 @@ export function createFrontend(tx: PlTransaction, spec: FrontendSpec): AnyResour
     case 'url':
       return tx.createValue(
         FrontendFromUrlResourceType,
-        JSON.stringify({ url: spec.url } as FrontendFromUrlData)
+        JSON.stringify({ url: spec.url } as FrontendFromUrlData),
       );
     case 'local':
       return tx.createValue(
         FrontendFromFolderResourceType,
         JSON.stringify({
           path: spec.path,
-          signature: spec.signature
-        } as FrontendFromFolderData)
+          signature: spec.signature,
+        } as FrontendFromFolderData),
       );
     default:
       return assertNever(spec);

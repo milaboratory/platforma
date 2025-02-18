@@ -1,9 +1,10 @@
-import { Code, isConfigLambda, TypedConfigOrConfigLambda } from '@platforma-sdk/model';
-import { Computable, ComputableRenderingOps } from '@milaboratories/computable';
+import type { Code, TypedConfigOrConfigLambda } from '@platforma-sdk/model';
+import { isConfigLambda } from '@platforma-sdk/model';
+import type { Computable, ComputableRenderingOps } from '@milaboratories/computable';
 import { computableFromCfg } from '../cfg_render/executor';
-import { MiddleLayerEnvironment } from './middle_layer';
+import type { MiddleLayerEnvironment } from './middle_layer';
 import { computableFromRF } from '../js_render';
-import { BlockContextAny } from './block_ctx';
+import type { BlockContextAny } from './block_ctx';
 import { hasActiveCfgComponents } from '../cfg_render/util';
 
 export function isActive(cfg: TypedConfigOrConfigLambda): boolean {
@@ -17,7 +18,7 @@ export function computableFromCfgOrRF(
   cfgOrFh: TypedConfigOrConfigLambda,
   code: Code | undefined,
   configKey: string,
-  ops: Partial<ComputableRenderingOps> = {}
+  ops: Partial<ComputableRenderingOps> = {},
 ): Computable<unknown> {
   if (isConfigLambda(cfgOrFh)) {
     if (code === undefined) throw new Error('No code bundle.');

@@ -1,9 +1,8 @@
-import { AnyRef, PlTransaction } from '@milaboratories/pl-client';
+import type { AnyRef, PlTransaction } from '@milaboratories/pl-client';
 import { createRenderTemplate } from './template/render_template';
 import { prepareTemplateSpec } from './template/template_loading';
-import { TemplateSpecPrepared } from '../model/template_spec';
-import { createHash } from 'crypto';
-import { createRequire } from 'node:module';
+import type { TemplateSpecPrepared } from '../model/template_spec';
+import { createHash } from 'node:crypto';
 
 // Workaround to prevent bundling of @platforma-sdk/workflow-tengo
 // if bundling happens import.meta.dirname will be transfered as is without transferring corresponding assets

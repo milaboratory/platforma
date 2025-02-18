@@ -1,32 +1,37 @@
-import { MiddleLayerEnvironment } from './middle_layer';
+import type { MiddleLayerEnvironment } from './middle_layer';
+import type {
+  FieldData,
+  ResourceId,
+} from '@milaboratories/pl-client';
 import {
   ensureResourceIdNotNull,
   field,
-  FieldData,
   isNotFoundError,
   isTimeoutOrCancelError,
   Pl,
-  ResourceId
 } from '@milaboratories/pl-client';
-import { Computable, ComputableStableDefined } from '@milaboratories/computable';
+import type { ComputableStableDefined } from '@milaboratories/computable';
+import { Computable } from '@milaboratories/computable';
 import { projectOverview } from './project_overview';
-import { BlockPackSpecAny } from '../model';
+import type { BlockPackSpecAny } from '../model';
 import { randomUUID } from 'node:crypto';
-import { ProjectMutator, withProject, withProjectAuthored } from '../mutator/project';
-import { ExtendedResourceData, SynchronizedTreeState } from '@milaboratories/pl-tree';
+import { withProject, withProjectAuthored } from '../mutator/project';
+import type { ExtendedResourceData } from '@milaboratories/pl-tree';
+import { SynchronizedTreeState } from '@milaboratories/pl-tree';
 import { setTimeout } from 'node:timers/promises';
 import { frontendData } from './frontend_path';
-import { NavigationState } from '@milaboratories/pl-model-common';
+import type { NavigationState } from '@milaboratories/pl-model-common';
 import { blockArgsAndUiState, blockOutputs } from './block';
-import { FrontendData } from '../model/frontend';
-import { projectFieldName, ProjectStructure } from '../model/project_model';
+import type { FrontendData } from '../model/frontend';
+import type { ProjectStructure } from '../model/project_model';
+import { projectFieldName } from '../model/project_model';
 import { notEmpty } from '@milaboratories/ts-helpers';
-import { BlockPackInfo } from '../model/block_pack';
-import {
+import type { BlockPackInfo } from '../model/block_pack';
+import type {
   ProjectOverview,
   AuthorMarker,
   BlockStateInternal,
-  BlockSettings
+  BlockSettings,
 } from '@milaboratories/pl-model-middle-layer';
 import { activeConfigs } from './active_cfg';
 import { NavigationStates } from './navigation_states';
@@ -57,12 +62,12 @@ export class Project {
   constructor(
     private readonly env: MiddleLayerEnvironment,
     rid: ResourceId,
-    private readonly projectTree: SynchronizedTreeState
+    private readonly projectTree: SynchronizedTreeState,
   ) {
     this.overview = projectOverview(
       projectTree.entry(),
       this.navigationStates,
-      env
+      env,
     ).withPreCalculatedValueTree();
     this.rid = rid;
     this.refreshLoopResult = this.refreshLoop();
@@ -77,10 +82,10 @@ export class Project {
         });
         await this.activeConfigs.getValue();
         await setTimeout(this.env.ops.projectRefreshInterval, this.abortController.signal);
-      } catch (e: any) {
+      } catch (e: unknown) {
         if (isNotFoundError(e)) {
           console.warn(
-            'project refresh routine terminated, because project was externally deleted'
+            'project refresh routine terminated, because project was externally deleted',
           );
           break;
         } else if (!isTimeoutOrCancelError(e))
@@ -105,7 +110,7 @@ export class Project {
     blockPackSpec: BlockPackSpecAny,
     before?: string,
     author: AuthorMarker | undefined = undefined,
-    blockId: string = randomUUID()
+    blockId: string = randomUUID(),
   ): Promise<string> {
     const preparedBp = await this.env.bpPreparer.prepare(blockPackSpec);
     const blockCfgContainer = await this.env.bpPreparer.getBlockConfigContainer(blockPackSpec);
@@ -115,15 +120,15 @@ export class Project {
         {
           id: blockId,
           label: blockLabel,
-          renderingMode: blockCfg.renderingMode
+          renderingMode: blockCfg.renderingMode,
         },
         {
           args: JSON.stringify(blockCfg.initialArgs),
           uiState: JSON.stringify(blockCfg.initialUiState),
-          blockPack: preparedBp
+          blockPack: preparedBp,
         },
-        before
-      )
+        before,
+      ),
     );
     await this.projectTree.refreshState();
 
@@ -138,7 +143,7 @@ export class Project {
     blockId: string,
     blockPackSpec: BlockPackSpecAny,
     resetArgs: boolean = false,
-    author?: AuthorMarker
+    author?: AuthorMarker,
   ): Promise<void> {
     const preparedBp = await this.env.bpPreparer.prepare(blockPackSpec);
     const blockCfg = await this.env.bpPreparer.getBlockConfigContainer(blockPackSpec);
@@ -146,8 +151,8 @@ export class Project {
       mut.migrateBlockPack(
         blockId,
         preparedBp,
-        resetArgs ? JSON.stringify(blockCfg.initialArgs) : undefined
-      )
+        resetArgs ? JSON.stringify(blockCfg.initialArgs) : undefined,
+      ),
     );
     await this.projectTree.refreshState();
   }
@@ -183,9 +188,9 @@ export class Project {
               const block = currentGroup.blocks.find((b) => b.id === blockId);
               if (block === undefined) throw new Error(`Can't find block: ${blockId}`);
               return block;
-            })
-          }
-        ]
+            }),
+          },
+        ],
       };
       mut.updateStructure(newStructure);
     });
@@ -226,9 +231,9 @@ export class Project {
    * transactionally associated with the block, to facilitate conflict resolution
    * in collaborative editing scenario.
    * */
-  public async setBlockArgs(blockId: string, args: any, author?: AuthorMarker) {
+  public async setBlockArgs(blockId: string, args: unknown, author?: AuthorMarker) {
     await withProjectAuthored(this.env.pl, this.rid, author, (mut) =>
-      mut.setArgs([{ blockId, args: JSON.stringify(args) }])
+      mut.setArgs([{ blockId, args: JSON.stringify(args) }]),
     );
     await this.projectTree.refreshState();
   }
@@ -241,7 +246,7 @@ export class Project {
    * */
   public async setUiState(blockId: string, uiState: unknown, author?: AuthorMarker) {
     await withProjectAuthored(this.env.pl, this.rid, author, (mut) =>
-      mut.setUiState(blockId, uiState === undefined ? undefined : JSON.stringify(uiState))
+      mut.setUiState(blockId, uiState === undefined ? undefined : JSON.stringify(uiState)),
     );
     await this.projectTree.refreshState();
   }
@@ -263,7 +268,7 @@ export class Project {
     blockId: string,
     args: unknown,
     uiState: unknown,
-    author?: AuthorMarker
+    author?: AuthorMarker,
   ) {
     await withProjectAuthored(this.env.pl, this.rid, author, (mut) => {
       mut.setArgs([{ blockId, args: JSON.stringify(args) }]);
@@ -285,14 +290,14 @@ export class Project {
     await this.env.pl.withWriteTx('BlockInputsReset', async (tx) => {
       // reading default arg values from block pack
       const bpHolderRid = ensureResourceIdNotNull(
-        (await tx.getField(field(this.rid, projectFieldName(blockId, 'blockPack')))).value
+        (await tx.getField(field(this.rid, projectFieldName(blockId, 'blockPack')))).value,
       );
       const bpRid = ensureResourceIdNotNull(
-        (await tx.getField(field(bpHolderRid, Pl.HolderRefField))).value
+        (await tx.getField(field(bpHolderRid, Pl.HolderRefField))).value,
       );
       const bpData = await tx.getResourceData(bpRid, false);
       const bpInfo = JSON.parse(
-        Buffer.from(notEmpty(bpData.data)).toString('utf-8')
+        Buffer.from(notEmpty(bpData.data)).toString('utf-8'),
       ) as BlockPackInfo;
       await withProjectAuthored(tx, this.rid, author, (prj) => {
         prj.setArgs([{ blockId, args: JSON.stringify(bpInfo.config.initialArgs) }]);
@@ -312,20 +317,20 @@ export class Project {
         (ctx) => ({
           argsAndUiState: blockArgsAndUiState(this.projectTree.entry(), blockId, ctx),
           outputs,
-          navigationState: this.navigationStates.getState(blockId)
+          navigationState: this.navigationStates.getState(blockId),
         }),
         {
           postprocessValue: (v) =>
             ({
               ...v.argsAndUiState,
               outputs: v.outputs,
-              navigationState: v.navigationState
-            }) as BlockStateInternal
-        }
+              navigationState: v.navigationState,
+            }) as BlockStateInternal,
+        },
       );
 
       const computables: BlockStateComputables = {
-        fullState: fullState.withPreCalculatedValueTree()
+        fullState: fullState.withPreCalculatedValueTree(),
       };
 
       this.blockComputables.set(blockId, computables);
@@ -353,7 +358,7 @@ export class Project {
       const fd = frontendData(
         this.projectTree.entry(),
         blockId,
-        this.env
+        this.env,
       ).withPreCalculatedValueTree();
       this.blockFrontends.set(blockId, fd);
       return fd;
@@ -396,11 +401,11 @@ export class Project {
       rid,
       {
         ...env.ops.defaultTreeOptions,
-        pruning: projectTreePruning
+        pruning: projectTreePruning,
       },
-      env.logger
+      env.logger,
     );
-    
+
     return new Project(env, rid, projectTree);
   }
 }

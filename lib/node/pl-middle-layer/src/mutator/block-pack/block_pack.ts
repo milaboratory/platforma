@@ -1,16 +1,19 @@
-import { AnyResourceRef, field, PlTransaction, ResourceType } from '@milaboratories/pl-client';
+import type { AnyResourceRef, PlTransaction, ResourceType } from '@milaboratories/pl-client';
+import { field } from '@milaboratories/pl-client';
 import { loadTemplate } from '../template/template_loading';
-import { BlockPackExplicit, BlockPackSpecAny, BlockPackSpecPrepared } from '../../model';
-import { assertNever, Signer } from '@milaboratories/ts-helpers';
+import type { BlockPackExplicit, BlockPackSpecAny, BlockPackSpecPrepared } from '../../model';
+import type { Signer } from '@milaboratories/ts-helpers';
+import { assertNever } from '@milaboratories/ts-helpers';
 import fs from 'node:fs';
-import { Dispatcher, request } from 'undici';
+import type { Dispatcher } from 'undici';
+import { request } from 'undici';
 import { createFrontend } from './frontend';
-import { BlockConfig, BlockConfigContainer } from '@platforma-sdk/model';
+import type { BlockConfigContainer } from '@platforma-sdk/model';
 import { loadPackDescription, RegistryV1 } from '@platforma-sdk/block-tools';
-import { BlockPackInfo } from '../../model/block_pack';
+import type { BlockPackInfo } from '../../model/block_pack';
 import { resolveDevPacket } from '../../dev_env';
 import { getDevV2PacketMtime } from '../../block_registry';
-import { V2RegistryProvider } from '../../block_registry/registry-v2-provider';
+import type { V2RegistryProvider } from '../../block_registry/registry-v2-provider';
 
 export const BlockPackCustomType: ResourceType = { name: 'BlockPackCustom', version: '1' };
 export const BlockPackTemplateField = 'template';
@@ -26,7 +29,7 @@ export class BlockPackPreparer {
   constructor(
     private readonly v2RegistryProvider: V2RegistryProvider,
     private readonly signer: Signer,
-    private readonly http?: Dispatcher
+    private readonly http?: Dispatcher,
   ) {}
 
   public async getBlockConfigContainer(spec: BlockPackSpecAny): Promise<BlockConfigContainer> {
@@ -43,7 +46,7 @@ export class BlockPackPreparer {
       case 'dev-v2': {
         const description = await loadPackDescription(spec.folder);
         const configContent = await fs.promises.readFile(description.components.model.file, {
-          encoding: 'utf-8'
+          encoding: 'utf-8',
         });
         return JSON.parse(configContent) as BlockConfigContainer;
       }
@@ -63,7 +66,7 @@ export class BlockPackPreparer {
         const registry = this.v2RegistryProvider.getRegistry(spec.registryUrl);
         const components = await registry.getComponents(spec.id);
         return (await (
-          await request((components.model as any).url as string, httpOptions)
+          await request(components.model.url, httpOptions)
         ).body.json()) as BlockConfigContainer;
       }
 
@@ -85,7 +88,7 @@ export class BlockPackPreparer {
 
         // config
         const config = JSON.parse(
-          await fs.promises.readFile(devPaths.config, 'utf-8')
+          await fs.promises.readFile(devPaths.config, 'utf-8'),
         ) as BlockConfigContainer;
 
         // frontend
@@ -95,15 +98,15 @@ export class BlockPackPreparer {
           type: 'explicit',
           template: {
             type: 'explicit',
-            content: templateContent
+            content: templateContent,
           },
           config,
           frontend: {
             type: 'local',
             path: frontendPath,
-            signature: this.signer.sign(frontendPath)
+            signature: this.signer.sign(frontendPath),
           },
-          source: spec
+          source: spec,
         };
       }
 
@@ -111,11 +114,11 @@ export class BlockPackPreparer {
         const description = await loadPackDescription(spec.folder);
         const config = JSON.parse(
           await fs.promises.readFile(description.components.model.file, {
-            encoding: 'utf-8'
-          })
+            encoding: 'utf-8',
+          }),
         ) as BlockConfigContainer;
         const workflowContent = await fs.promises.readFile(
-          description.components.workflow.main.file
+          description.components.workflow.main.file,
         );
         const frontendPath = description.components.ui.folder;
         const source = { ...spec };
@@ -126,15 +129,15 @@ export class BlockPackPreparer {
           type: 'explicit',
           template: {
             type: 'explicit',
-            content: workflowContent
+            content: workflowContent,
           },
           config,
           frontend: {
             type: 'local',
             path: frontendPath,
-            signature: this.signer.sign(frontendPath)
+            signature: this.signer.sign(frontendPath),
           },
-          source
+          source,
         };
       }
 
@@ -148,8 +151,8 @@ export class BlockPackPreparer {
         const templateResponse = await request(templateUrl, httpOptions);
         if (templateResponse.statusCode !== 200)
           throw new Error(
-            `Block not found in registry (url = ${templateUrl} ; code = ${templateResponse.statusCode}): ` +
-              JSON.stringify(spec)
+            `Block not found in registry (url = ${templateUrl} ; code = ${templateResponse.statusCode}): `
+            + JSON.stringify(spec),
           );
         const templateContent = new Uint8Array(await templateResponse.body.arrayBuffer());
 
@@ -161,14 +164,14 @@ export class BlockPackPreparer {
           type: 'explicit',
           template: {
             type: 'explicit',
-            content: templateContent
+            content: templateContent,
           },
           config,
           frontend: {
             type: 'url',
-            url: `${urlPrefix}/frontend.tgz`
+            url: `${urlPrefix}/frontend.tgz`,
           },
-          source: spec
+          source: spec,
         };
       }
 
@@ -177,9 +180,9 @@ export class BlockPackPreparer {
         const registry = this.v2RegistryProvider.getRegistry(spec.registryUrl);
         const components = await registry.getComponents(spec.id);
         const getModel = async () =>
-          (await (await request((components.model as any).url, httpOptions)).body.json()) as BlockConfigContainer;
+          (await (await request(components.model.url, httpOptions)).body.json()) as BlockConfigContainer;
         const getWorkflow = async () =>
-          await (await request((components.workflow.main as any).url, httpOptions)).body.arrayBuffer();
+          await (await request(components.workflow.main.url, httpOptions)).body.arrayBuffer();
 
         const [model, workflow] = await Promise.all([getModel(), getWorkflow()]);
 
@@ -187,14 +190,14 @@ export class BlockPackPreparer {
           type: 'explicit',
           template: {
             type: 'explicit',
-            content: Buffer.from(workflow)
+            content: Buffer.from(workflow),
           },
           config: model,
           frontend: {
             type: 'url',
-            url: (components.ui as any).url
+            url: components.ui.url,
           },
-          source: spec
+          source: spec,
         };
       }
 

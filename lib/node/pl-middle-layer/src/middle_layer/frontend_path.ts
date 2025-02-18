@@ -1,22 +1,24 @@
-import { PlTreeEntry, PlTreeEntryAccessor } from '@milaboratories/pl-tree';
-import { MiddleLayerEnvironment } from './middle_layer';
-import { Computable, ComputableStableDefined } from '@milaboratories/computable';
+import type { PlTreeEntry, PlTreeEntryAccessor } from '@milaboratories/pl-tree';
+import type { MiddleLayerEnvironment } from './middle_layer';
+import type { ComputableStableDefined } from '@milaboratories/computable';
+import { Computable } from '@milaboratories/computable';
 import { Pl, resourceTypesEqual } from '@milaboratories/pl-client';
-import {
+import type {
   FrontendFromFolderData,
+  FrontendFromUrlData } from '../model';
+import {
   FrontendFromFolderResourceType,
-  FrontendFromUrlData,
-  FrontendFromUrlResourceType
+  FrontendFromUrlResourceType,
 } from '../model';
-import { PathResult } from '@milaboratories/pl-drivers';
+import type { PathResult } from '@milaboratories/pl-drivers';
 import { projectFieldName } from '../model/project_model';
 import { BlockPackFrontendField } from '../mutator/block-pack/block_pack';
 import { getBlockPackInfo } from './util';
-import { FrontendData } from '../model/frontend';
+import type { FrontendData } from '../model/frontend';
 
 function kernel(
   frontendRes: PlTreeEntryAccessor,
-  env: MiddleLayerEnvironment
+  env: MiddleLayerEnvironment,
 ): undefined | string | ComputableStableDefined<PathResult> {
   const node = frontendRes.node();
   if (resourceTypesEqual(node.resourceType, FrontendFromUrlResourceType)) {
@@ -29,7 +31,7 @@ function kernel(
     env.signer.verify(
       data.path,
       data.signature,
-      `Frontend path signature mismatch for: ${data.path}`
+      `Frontend path signature mismatch for: ${data.path}`,
     );
     return data.path;
   } else {
@@ -39,7 +41,7 @@ function kernel(
 
 function frontendPathComputable(
   entry: PlTreeEntry | undefined,
-  env: MiddleLayerEnvironment
+  env: MiddleLayerEnvironment,
 ): ComputableStableDefined<string> | undefined {
   if (entry === undefined) return undefined;
   return Computable.make(
@@ -52,15 +54,15 @@ function frontendPathComputable(
         if (typeof v === 'string') return v;
         if (v.error !== undefined) throw new Error(v.error);
         return v.path;
-      }
-    }
+      },
+    },
   ).withStableType();
 }
 
 export function frontendData(
   projectEntry: PlTreeEntry,
   id: string,
-  env: MiddleLayerEnvironment
+  env: MiddleLayerEnvironment,
 ): ComputableStableDefined<FrontendData> {
   return Computable.make(
     (ctx) => {
@@ -70,17 +72,17 @@ export function frontendData(
         .traverse(
           {
             field: projectFieldName(id, 'blockPack'),
-            assertFieldType: 'Dynamic'
+            assertFieldType: 'Dynamic',
           },
           { field: Pl.HolderRefField, assertFieldType: 'Input', errorIfFieldNotFound: true },
-          { field: BlockPackFrontendField, assertFieldType: 'Input' }
+          { field: BlockPackFrontendField, assertFieldType: 'Input' },
         )
         ?.persist();
       return {
         path: frontendPathComputable(frontendEntry, env),
-        sdkVersion: bp?.cfg.sdkVersion
+        sdkVersion: bp?.cfg.sdkVersion,
       };
     },
-    { mode: 'StableOnlyLive' }
+    { mode: 'StableOnlyLive' },
   ) as ComputableStableDefined<FrontendData>;
 }
