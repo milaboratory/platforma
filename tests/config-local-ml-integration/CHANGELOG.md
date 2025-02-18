@@ -1,5 +1,13 @@
 # @milaboratories/config-local-ml-integration
 
+## 1.2.25
+
+### Patch Changes
+
+- Updated dependencies [1de72a0]
+- Updated dependencies [a25f1b8]
+  - @milaboratories/pl-middle-layer@1.27.25
+
 ## 1.2.24
 
 ### Patch Changes
