@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 1.28.0
+
+### Minor Changes
+
+- 0099c7f: Changes staging (pre-calculation) ctx propagation algorithm, by linking it with production ctx tree. This fixes absence of production exports in staging ctx.
+
 ## 1.27.27
 
 ### Patch Changes
