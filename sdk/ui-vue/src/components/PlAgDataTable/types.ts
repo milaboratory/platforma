@@ -9,21 +9,25 @@ import type {
   RemoteBlobHandleAndSize,
 } from '@platforma-sdk/model';
 
+export type PlDataTableSettingsPTable = {
+  /** The type of the source to feed the data into the table */
+  sourceType: 'ptable';
+  /** PTable handle output */
+  pTable?: PTableHandle;
+  /** Sheets that we want to show in our table */
+  sheets?: PlDataTableSheet[];
+};
+
+export type PlDataTableSettingsXsv = {
+  /** The type of the source to feed the data into the table */
+  sourceType: 'xsv';
+  xsvFile?: LocalBlobHandleAndSize | RemoteBlobHandleAndSize;
+};
+
 /** Data table settings */
 export type PlDataTableSettings =
-  | {
-    /** The type of the source to feed the data into the table */
-    sourceType: 'ptable';
-    /** PTable handle output */
-    pTable?: PTableHandle;
-    /** Sheets that we want to show in our table */
-    sheets?: PlDataTableSheet[];
-  }
-  | {
-    /** The type of the source to feed the data into the table */
-    sourceType: 'xsv';
-    xsvFile?: LocalBlobHandleAndSize | RemoteBlobHandleAndSize;
-  };
+  | PlDataTableSettingsPTable
+  | PlDataTableSettingsXsv;
 
 /** PlTableFilters restriction entry */
 export type PlTableFiltersRestriction = {
