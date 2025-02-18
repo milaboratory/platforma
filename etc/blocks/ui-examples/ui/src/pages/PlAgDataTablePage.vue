@@ -46,6 +46,10 @@ const columns = ref<PTableColumnSpec[]>([]);
       show-columns-panel
       show-export-button
       @columns-changed="(newColumns) => (columns = newColumns)"
-    />
+    >
+      <template #before-sheets>
+        Table controls could be placed here
+      </template>
+    </PlAgDataTable>
   </PlBlockPage>
 </template>
