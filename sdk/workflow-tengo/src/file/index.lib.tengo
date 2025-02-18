@@ -32,7 +32,7 @@ json := import("json")
  *         }
  */
 importFile := func(importFileHandle) {
-	validation.assertJsonSchema(
+	validation.assertType(
 		importFileHandle,
 		`string,regex=^(upload://upload/.*|index://index/.*)`
 	)

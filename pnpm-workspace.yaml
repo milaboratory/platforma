@@ -183,9 +183,9 @@ catalog:
 
   'winston': ^3.17.0
 
-  '@milaboratories/tengo-tester': ^1.5.1
-  '@milaboratories/pframes-node': &pframes-version 2.1.9
-  '@milaboratories/pframes-rs-node': &pframes-rs-version 1.0.10
+  '@milaboratories/tengo-tester': ^1.5.2
+  '@milaboratories/pframes-node': &pframes-version 2.1.12
+  '@milaboratories/pframes-rs-node': &pframes-rs-version 1.0.13
 
   'remeda': ^2.19.2
 

@@ -1,5 +1,35 @@
 # @platforma-sdk/workflow-tengo
 
+## 2.12.1
+
+### Patch Changes
+
+- ddced5d: Make R local preparation steps be more informative on error
+
+## 2.12.0
+
+### Minor Changes
+
+- ecd1522: Integrate with workdir limits in data controller
+
+## 2.11.0
+
+### Minor Changes
+
+- 144ed1e: Fix unnecessary prepare in staging wf run
+
+## 2.10.2
+
+### Patch Changes
+
+- 832f3ba: Use validation.assertType instead of assertJsonSchema
+
+## 2.10.1
+
+### Patch Changes
+
+- ccff13a: validation.assert (method rename)
+
 ## 2.10.0
 
 ### Minor Changes

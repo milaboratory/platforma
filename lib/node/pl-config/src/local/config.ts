@@ -1,4 +1,4 @@
-import type { MiLogger } from '@milaboratories/ts-helpers';
+import { notEmpty, type MiLogger } from '@milaboratories/ts-helpers';
 import upath from 'upath';
 import yaml from 'yaml';
 import type { Endpoints, PlConfigPorts } from '../common/ports';
@@ -27,6 +27,9 @@ export type LocalPlConfigGeneratorOptions = {
   portsMode: PlConfigPorts;
   /** How to get license. */
   licenseMode: PlLicenseMode;
+
+  /** Do we need to download things from global access? Default false. */
+  useGlobalAccess?: boolean;
   /**
    * A hook that allows to override any default configuration.
    * Check the docs of platforma configuration for the specific fields.
@@ -35,6 +38,10 @@ export type LocalPlConfigGeneratorOptions = {
    */
   plConfigPostprocessing?: (config: PlConfig) => PlConfig;
 };
+
+const DefaultLocalPlConfigGeneratorOptions: Pick<LocalPlConfigGeneratorOptions, 'useGlobalAccess'> = {
+  useGlobalAccess: false,
+}
 
 /** Defines which storages from pl are available via local paths */
 export type LocalStorageProjection = {
@@ -80,8 +87,13 @@ export type LocalPlConfigGenerationResult = {
 };
 
 export async function generateLocalPlConfigs(
-  opts: LocalPlConfigGeneratorOptions,
+  options: LocalPlConfigGeneratorOptions,
 ): Promise<LocalPlConfigGenerationResult> {
+  const opts: LocalPlConfigGeneratorOptions = {
+    ...DefaultLocalPlConfigGeneratorOptions,
+    ...options,
+  }
+
   const workdir = upath.resolve(opts.workingDir);
 
   // settings that must be persisted between independent generation invocations
@@ -124,9 +136,9 @@ async function createDefaultPlLocalConfig(
   const license = await getLicense(opts.licenseMode);
   const htpasswdAuth = await createLocalHtpasswdFile(opts.workingDir, [{ user, password }]);
 
-  const packageLoaderPath = await createDefaultLocalPackageSettings(opts.workingDir);
+  const packageLoaderConfig = await createDefaultLocalPackageSettings(opts.workingDir, notEmpty(opts.useGlobalAccess));
 
-  let config = newDefaultPlConfig(ports, license, htpasswdAuth, jwtKey, packageLoaderPath, storages);
+  let config = newDefaultPlConfig(ports, license, htpasswdAuth, jwtKey, packageLoaderConfig, storages);
 
   if (opts.plConfigPostprocessing) config = opts.plConfigPostprocessing(config);
 

@@ -1,5 +1,52 @@
 # @milaboratories/pl-local
 
+## 1.1.11
+
+### Patch Changes
+
+- 467a150: ssh: option for global access
+- Updated dependencies [467a150]
+  - @milaboratories/pl-config@1.4.2
+
+## 1.1.10
+
+### Patch Changes
+
+- 7b6b2bd: fix test
+
+## 1.1.9
+
+### Patch Changes
+
+- 12600dd: ssh: fix license passing
+
+## 1.1.8
+
+### Patch Changes
+
+- e66f726: ssh: pass license explicitly
+
+## 1.1.7
+
+### Patch Changes
+
+- b069ecd: pl-deployments: download binaries from GA if CDN has failed
+
+## 1.1.6
+
+### Patch Changes
+
+- 33ea5a0: review fix
+
+## 1.1.5
+
+### Patch Changes
+
+- a77b40a: add `any` everywhere, ssh: persistent connection; upload: dynamic part chooser
+- Updated dependencies [a77b40a]
+  - @milaboratories/ts-helpers@1.1.4
+  - @milaboratories/pl-config@1.4.1
+
 ## 1.1.4
 
 ### Patch Changes

@@ -1,5 +1,24 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.3.35
+
+### Patch Changes
+
+- 48f1820: PlAgDataTable slot for controls
+
+## 1.3.34
+
+### Patch Changes
+
+- Updated dependencies [7ac5190]
+  - @milaboratories/milaboratories.ui-examples.model@1.1.19
+
+## 1.3.33
+
+### Patch Changes
+
+- 2970f8d: [blocks] Move to standard QC components (progress & qc bars) in all upstream blocks
+
 ## 1.3.32
 
 ### Patch Changes

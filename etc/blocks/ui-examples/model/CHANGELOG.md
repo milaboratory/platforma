@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.model
 
+## 1.1.19
+
+### Patch Changes
+
+- 7ac5190: PlTableFilter support 'pl7.app/discreteValues' annotation
+
 ## 1.1.18
 
 ### Patch Changes

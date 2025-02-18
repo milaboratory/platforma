@@ -341,16 +341,32 @@ isValid := func(js, schema) {
 }
 
 /**
- * Asserts that a given JSON conforms to a given schema.
+ * Alias to ll.assert just for usage convenience
+ */
+assert := func(condition, msg, ...args) {
+	ll.assert(condition, msg, args...)
+}
+
+/**
+ * Asserts that a given variable conforms to a given schema.
  *
- * @param js: any - the JSON to assert.
- * @param schema: any - the schema to assert against.
+ * Schema field value examples:
+ *  - for scalar type checks:
+ *     "string", "number", "char", "bytes", "bool" to check presence of value of given type
+ *     "null" - value must be undefined
+ *     "any" - any value is accepted (even undefined)
+ *     ["or", "string", "number"] - value must be string or number
+ *  - for arrays: ["string"], ["number"], ... (any valid scalar type)
+ *  - for maps: {"name": "string", "age": "number"} - make sure <value> is map with "name" and "age" keys with given value types.
+ *
+ * @param value: any - the value to check.
+ * @param schema: any - the schema to assert against (see comments above)
  * @param failMsg: string - optional parameter with custom message to be printed on validation error
  */
-assertJsonSchema := func(js, schema, ...failMsg) {
-	r := _validateJson(js, schema, "")
+assertType := func(value, schema, ...failMsg) {
+	r := _validateJson(value, schema, "")
 
-	msg := "JSON validation error"
+	msg := "type schema validation error"
 	if len(failMsg) > 0 {
 		msg = failMsg[0]
 	}
@@ -358,6 +374,13 @@ assertJsonSchema := func(js, schema, ...failMsg) {
 	if isFail(r) {
 		ll.panic("%s: %s", msg, r.message)
 	}
+}
+
+/**
+ * Alias to 'assertType' for backward compatibility
+ */
+assertJsonSchema := func(js, schema, ...failMsg) {
+	assertType(js, schema, failMsg...)
 }
 
 //
@@ -376,7 +399,7 @@ resource := func(...args) {
 		ops = args[0]
 	}
 
-	assertJsonSchema(ops, {
+	assertType(ops, {
 		`type,?`: {
 			Name: `string`,
 			Version: `string`
@@ -435,15 +458,17 @@ refSchema := {
 }
 
 export ll.toStrict({
-	success: success,
-	fail: fail,
-	isSuccess: isSuccess,
-	isFail: isFail,
-	checkJson: checkJson,
-	isValid: isValid,
-	assertJsonSchema: assertJsonSchema,
-	resource: resource,
-	reference: reference,
-	resourceType: resourceType,
-	ref: refSchema
+	success:                       success,
+	fail:                          fail,
+	isSuccess:                     isSuccess,
+	isFail:                        isFail,
+	checkJson:                     checkJson,
+	isValid:                       isValid,
+	assert:                        assert,
+	assertType:                    assertType,
+	assertJsonSchema:              assertJsonSchema, // deprecated
+	resource:                      resource,
+	reference:                     reference,
+	resourceType:                  resourceType,
+	ref:                           refSchema
 })

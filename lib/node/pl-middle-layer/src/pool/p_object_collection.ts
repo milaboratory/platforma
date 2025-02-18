@@ -1,8 +1,9 @@
-import { PlError, PlTreeNodeAccessor } from '@milaboratories/pl-tree';
-import { PObject, PObjectId, PObjectSpec, ValueOrError } from '@platforma-sdk/model';
+import type { PlTreeNodeAccessor } from '@milaboratories/pl-tree';
+import { PlError } from '@milaboratories/pl-tree';
+import type { PObject, PObjectSpec, ValueOrError } from '@platforma-sdk/model';
 import { notEmpty } from '@milaboratories/ts-helpers';
-import assert from 'assert';
-import { Writable } from 'utility-types';
+import assert from 'node:assert';
+import type { Writable } from 'utility-types';
 import { deriveLegacyPObjectId, deriveLocalPObjectId } from './data';
 
 /** Represents specific staging or prod ctx data */
@@ -33,15 +34,11 @@ export interface RawPObjectEntry {
   data?(): ValueOrError<PlTreeNodeAccessor, string> | undefined;
 }
 
-const BContextValuePrefix = 'values/';
-const BContextValueSpecSuffix = '.spec';
-const BContextValueDataSuffix = '.data';
-
 export function parseRawPObjectCollection(
   node: PlTreeNodeAccessor,
   errorOnUnknownField: boolean = true,
   ignoreFieldErrors: boolean = false,
-  prefix: string = ''
+  prefix: string = '',
 ): RawPObjectCollection {
   const entryPattern = /^(?<name>.*)\.(?<type>spec|data)$/;
   const results = new Map<string, Writable<RawPObjectEntry>>();
@@ -72,7 +69,7 @@ export function parseRawPObjectCollection(
           .traverse({
             field: fieldName,
             ignoreError: ignoreFieldErrors,
-            pureFieldErrorToUndefined: ignoreFieldErrors
+            pureFieldErrorToUndefined: ignoreFieldErrors,
           })
           ?.getDataAsJson();
         break;
@@ -81,11 +78,12 @@ export function parseRawPObjectCollection(
         result.data = () =>
           node.traverseOrError({
             field: fieldName,
-            ignoreError: ignoreFieldErrors
+            ignoreError: ignoreFieldErrors,
           });
+        break;
       default:
         // other value types planned
-        continue;
+        break;
     }
   }
 
@@ -118,7 +116,7 @@ export function parseFinalPObjectCollection(
         ? deriveLegacyPObjectId(result.spec, data.value) // for old blocks opened in new desktop
         : deriveLocalPObjectId(resolvePath, outputName),
       spec: result.spec,
-      data: data.value
+      data: data.value,
     };
   }
   return collection;

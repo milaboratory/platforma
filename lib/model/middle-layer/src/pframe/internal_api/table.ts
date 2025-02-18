@@ -14,7 +14,7 @@ import {
  * PTable can be thought as having a composite primary key, consisting of axes,
  * and a set of data columns derived from PColumn values.
  * */
-export interface PTableV2 {
+export interface PTableV3 {
   /** Unified table shape */
   getShape(): PTableShape;
 
@@ -43,10 +43,10 @@ export interface PTableV2 {
   getData(columnIndices: number[], range?: TableRange): Promise<PTableVector[]>;
 
   /** Filters the table and returns new PTable instance */
-  filter(request: PTableRecordFilter[]): Promise<PTableV2>;
+  filter(request: PTableRecordFilter[], signal?: AbortSignal): Promise<PTableV3>;
 
   /** Sorts the table and returns new PTable instance. */
-  sort(request: PTableSorting[]): Promise<PTableV2>;
+  sort(request: PTableSorting[], signal?: AbortSignal): Promise<PTableV3>;
 
   /** Deallocates all underlying resources */
   dispose(): void;

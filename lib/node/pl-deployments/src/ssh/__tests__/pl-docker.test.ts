@@ -5,7 +5,7 @@ import upath from 'upath';
 import { getDefaultPlVersion } from '../../common/pl_version';
 import { existsSync, unlinkSync, rmSync } from 'fs';
 import { newArch } from '../../common/os_and_arch';
-import { downloadBinary, downloadPlBinary } from '../../common/pl_binary_download';
+import { downloadBinary } from '../../common/pl_binary_download';
 import { ConsoleLoggerAdapter } from '@milaboratories/ts-helpers';
 import * as plpath from '../pl_paths';
 
@@ -39,25 +39,29 @@ describe('SshPl', async () => {
     expect(platformInfo).toHaveProperty('platform');
     expect(platformInfo).toHaveProperty('arch');
 
-    expect(platformInfo?.arch).toBe('x86_64');
+    expect(['x86_64', 'aarch64']).toContain(platformInfo.arch);
     expect(platformInfo?.platform).toBe('Linux');
   });
 
-  it('Check start/stop cmd', async () => {
-    await sshPl.platformaInit(downloadDestination);
-    expect(await sshPl.isAlive()).toBe(true);
+  it('Check start/stop cmd, and stopAndClean', async () => {
+    await sshPl.platformaInit({
+      localWorkdir: downloadDestination,
+      license: { type: 'env' },
+    });
+    expect((await sshPl.isAlive()).allAlive).toBe(true);
 
     await sshPl.stop();
-    expect(await sshPl.isAlive()).toBe(false);
+    expect((await sshPl.isAlive()).allAlive).toBe(false);
 
-    // FIXME: it doesn't work in CI
+    // FIXME: it's not working in CI
     // await sshPl.start();
-    // expect(await sshPl.isAlive()).toBe(true);
+    // expect((await sshPl.isAlive()).allAlive).toBe(true);
+
+    await sshPl.stopAndClean();
+    expect((await sshPl.isAlive()).allAlive).toBe(false);
   });
 
   it('downloadBinariesAndUploadToServer', async () => {
-    await sshPl.stop();
-
     const arch = await sshPl.getArch();
     const remoteHome = await sshPl.getUserHomeDirectory();
     await sshPl.stop(); // ensure stopped
@@ -71,23 +75,27 @@ describe('SshPl', async () => {
   });
 
   it('platformaInit', async () => {
-    const result = await sshPl.platformaInit(downloadDestination);
+    const result = await sshPl.platformaInit({
+      localWorkdir: downloadDestination,
+      license: { type: 'env' },
+    });
 
     const remoteHome = await sshPl.getUserHomeDirectory();
 
-    expect(await sshPl?.sshClient.checkFileExists(`${plpath.workDir(remoteHome)}/config.yaml`)).toBe(true);
+    expect(await sshPl?.sshClient.checkFileExists(plpath.platformaConf(remoteHome))).toBe(true);
     expect(typeof result?.ports).toBe('object');
     expect(result?.plPassword).toBeTruthy();
     expect(result?.plUser).toBeTruthy();
+    expect(result?.useGlobalAccess).toBeFalsy();
   });
 
   it('Transfer Platforma to server', async () => {
     const arch = await sshPl.getArch();
 
-    const plPath = await downloadPlBinary(
+    const plPath = await downloadBinary(
       new ConsoleLoggerAdapter(),
       downloadDestination,
-      getDefaultPlVersion(),
+      'pl', `pl-${getDefaultPlVersion()}`,
       arch.arch,
       arch.platform,
     );
@@ -104,9 +112,12 @@ describe('SshPl', async () => {
   });
 
   it('Get free port', async () => {
-    await sshPl?.platformaInit(downloadDestination);
+    await sshPl.platformaInit({
+      localWorkdir: downloadDestination,
+      license: { type: 'env' },
+    });
     const isAlive = await sshPl?.isAlive();
-    expect(isAlive).toBe(true);
+    expect(isAlive.allAlive).toBe(true);
 
     const arch = await sshPl.getArch();
     const remoteHome = await sshPl.getUserHomeDirectory();
@@ -148,16 +159,33 @@ describe('SshPl', async () => {
       remote: expect.anything(),
     });
   });
-});
 
-describe('SshPl download binaries', async () => {
+  it('Start ssh without global access, restart it with global access', async () => {
+    const remoteHome = await sshPl.getUserHomeDirectory();
+
+    await sshPl.platformaInit({ localWorkdir: downloadDestination, license: { type: 'env' } });
+    let isAlive = await sshPl?.isAlive();
+    expect(isAlive.allAlive).toBe(true);
+
+    await sshPl.platformaInit({
+      localWorkdir: downloadDestination,
+      license: { type: 'env' },
+      useGlobalAccess: true,
+    });
+    isAlive = await sshPl?.isAlive();
+    expect(isAlive.allAlive).toBe(true);
+
+    const config = await sshPl.sshClient.readFile(plpath.platformaConf(remoteHome));
+    expect(config).contain('bin-ga');
+  });
+
   it('Download pl. We have archive and extracted data', async () => {
     const arch = await sshPl.getArch();
 
-    const result = await downloadPlBinary(
+    const result = await downloadBinary(
       new ConsoleLoggerAdapter(),
       downloadDestination,
-      getDefaultPlVersion(),
+      'pl', `pl-${getDefaultPlVersion()}`,
       arch.arch,
       arch.platform,
     );

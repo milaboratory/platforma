@@ -3,14 +3,14 @@ import type { License } from './license';
 import { licenseEnvsForMixcr, licenseForConfig } from './license';
 import type { Endpoints } from './ports';
 import type { StoragesSettings } from './storages';
-import type { PlConfig } from './types';
+import type { PlConfig, PlControllerPackageLoaderSettings } from './types';
 
 export function newDefaultPlConfig(
   ports: Endpoints,
   license: License,
   htpasswdAuth: string,
   jwtKey: string,
-  packageLoaderPath: string,
+  packageLoaderConfig: PlControllerPackageLoaderSettings,
   storages: StoragesSettings,
 ): PlConfig {
   const dbPath = 'db';
@@ -45,9 +45,7 @@ export function newDefaultPlConfig(
     },
     controllers: {
       workflows: {},
-      packageLoader: {
-        packagesRoot: packageLoaderPath,
-      },
+      packageLoader: packageLoaderConfig,
       runner: {
         type: 'local',
         storageRoot: storages.runner,

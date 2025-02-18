@@ -5,6 +5,8 @@
 json := import("json")
 
 ll := import(":ll")
+feats := import(":feats")
+
 assets := import(":assets")
 constants := import(":constants")
 smart := import(":smart")
@@ -16,9 +18,36 @@ enum := import("enum")
 validation := import(":validation")
 render := import(":render")
 
+_WD_CREATE_FIELD_ALLOCATION := "allocation"
+_WD_CREATE_FIELD_WORKDIR    := "workdir"
+
+_WD_FILL_FIELD_WORKDIR_IN   := "workdirIn"
+_WD_FILL_FIELD_WORKDIR_OUT  := "workdirOut"
+
+/**
+ * Create empty working directory
+ *
+ * @return smart.field - field where working directory will appear after creation
+ */
 create := func() {
-	wd := smart.ephemeralBuilder(constants.RTYPE_WORKDIR_CREATE).lockAndBuild()
-	return wd.getField("workdir")
+	// working directories without quotas (old-style)
+	wdCreate := smart.ephemeralBuilder(constants.RTYPE_WORKDIR_CREATE).lockAndBuild()
+	return wdCreate.getField(_WD_CREATE_FIELD_WORKDIR)
+}
+
+/**
+ * Create empry working directory for given allocation. This means, the WD would actually be created only
+ * when allocation is ready for usage.
+ *
+ * @param allocation: smart.reference - a reference to storage space allocation.
+ *                                      It is usually obtained from StorageSpaceRequest
+ *                                      (see exec.limits.storageSpaceRequestBuilder)
+ */
+createV2 := func(allocation) {
+	wdCreate := smart.ephemeralBuilder(constants.RTYPE_WORKDIR_CREATE_2).lockAndBuild()
+	wdCreate.getField(_WD_CREATE_FIELD_ALLOCATION).set(allocation)
+
+	return wdCreate.getField(_WD_CREATE_FIELD_WORKDIR)
 }
 
 _getFileFillRule := func(filePath, extension) {
@@ -87,14 +116,12 @@ _getDirFillRule := func(dir) {
 /**
  * Fills a workdir with files, values, and directories.
  *
- * @param workdir: reference - a reference to the workdir to fill.
  * @return self: builder - a builder that adds files and directories to the workdir. */
-_fill := func(workdir) {
-	ll.assert(smart.isReference(workdir), "workdir must be a reference to a resource or field")
-
+_fill := func() {
 	wd := smart.ephemeralBuilder(constants.RTYPE_WORKDIR_FILL)
-	wd.getField("workdirIn").set(workdir)
 
+	/** @type reference - space allocation to be used for WD */
+	_allocation := undefined
 	blobs := {}
 	files := {}
 	zipExtractions := {}
@@ -114,6 +141,16 @@ _fill := func(workdir) {
 		},
 
 		/**
+		 * Use given storage allocation for working directory.
+		 *
+		 * @param allocation: reference
+		 */
+		allocation: func(allocation) {
+			validation.assertType(allocation, validation.reference, "workdir.builder: allocation should be a valid reference")
+			_allocation = allocation
+		},
+
+		/**
 		 * Adds files from given zip archive into working directory.
 		 *
 		 * @param zipResource: smart.reference - reference to zip archive to be extracted.
@@ -126,13 +163,13 @@ _fill := func(workdir) {
 		 *                                   be extracted into '<destinationDir>/a/b/file.txt', NOT '<destinationDir>/file.txt',
 		 */
 		addFromZip: func(zipResource, destinationDir, pathsInArchive) {
-			validation.assertJsonSchema(zipResource, validation.reference, "workdir.builder.addFromZip: <zipResource> is not smart.reference")
-			validation.assertJsonSchema(destinationDir, "string", "workdir.builder.addFromZip: <destinationDir> is not a string. It must be a path inside working directory")
+			validation.assertType(zipResource, validation.reference, "workdir.builder.addFromZip: <zipResource> is not smart.reference")
+			validation.assertType(destinationDir, "string", "workdir.builder.addFromZip: <destinationDir> is not a string. It must be a path inside working directory")
 
 			if (is_undefined(pathsInArchive)) {
 				pathsInArchive = []
 			}
-			validation.assertJsonSchema(pathsInArchive, ["string"], "workdir.builder.addFromZip: <pathsInArchive> must contain list of strings with paths inside archive")
+			validation.assertType(pathsInArchive, ["string"], "workdir.builder.addFromZip: <pathsInArchive> must contain list of strings with paths inside archive")
 
 			blobKey := ll.idToString(zipResource.id)
 
@@ -163,8 +200,8 @@ _fill := func(workdir) {
 		 * @param fileResource: reference - the file to add.
 		 */
 		addFile: func(fileName, fileResource) {
-			validation.assertJsonSchema(fileName, "string")
-			validation.assertJsonSchema(fileResource, validation.reference)
+			validation.assertType(fileName, "string")
+			validation.assertType(fileResource, validation.reference)
 
 			files[fileName] = fileResource
 			blobs[fileName] = fileResource
@@ -190,7 +227,7 @@ _fill := func(workdir) {
 		 * @param contentRef: reference|any - the content as a reference to add or the content itself.
 		 */
 		writeFile: func(fileName, contentRef) {
-			validation.assertJsonSchema(fileName, "string")
+			validation.assertType(fileName, "string")
 			values[fileName] = contentRef
 			self._addDirs(fileName)
 
@@ -223,6 +260,15 @@ _fill := func(workdir) {
 		 * @return wd: reference - a reference to the filled workdir.
 		 */
 		build: func() {
+			emptyWorkdir := undefined
+			if feats.workdirLimits && smart.isReference(_allocation) {
+				emptyWorkdir = createV2(_allocation)
+			} else {
+				emptyWorkdir = create()
+			}
+
+			wd.getField(_WD_FILL_FIELD_WORKDIR_IN).set(emptyWorkdir)
+
 			rules := []
 			for dir, _ in dirs {
 				rules = append(rules, _getDirFillRule(dir))
@@ -249,7 +295,7 @@ _fill := func(workdir) {
 			self.getField("dataIn").set(smart.createBinaryMapResource(values))
 			self.getField("blobsIn").set(smart.createBlobMapResource(blobs))
 
-			return self.lockAndBuild().outputs().workdirOut
+			return self.lockAndBuild().outputs()[_WD_FILL_FIELD_WORKDIR_OUT]
 		}
 	}))
 
@@ -262,7 +308,7 @@ _fill := func(workdir) {
  * @return self: builder - a builder that adds files and directories to the workdir.
  */
 builder := func() {
-	return _fill(create())
+	return _fill()
 }
 
 /**
@@ -291,7 +337,7 @@ save := func(workdir) {
 		 * @param fileName: string - the name of the file.
 		 */
 		saveFile: func(fileName) {
-			validation.assertJsonSchema(fileName, "string")
+			validation.assertType(fileName, "string")
 			sets.add(files, fileName)
 			return self
 		},
@@ -302,7 +348,7 @@ save := func(workdir) {
 		 * @param fileName: string - the name of the file.
 		 */
 		saveFileContent: func(fileName) {
-			validation.assertJsonSchema(fileName, "string")
+			validation.assertType(fileName, "string")
 			sets.add(filesContent, fileName)
 			return self
 		},
@@ -314,7 +360,7 @@ save := func(workdir) {
 		 * @param regex: string - regex
 		 */
 		saveFileSet: func(name, regex) {
-			validation.assertJsonSchema(regex, "string")
+			validation.assertType(regex, "string")
 			ll.assert(is_undefined(fileSets[name]), "file set with name '", name, "' is already in added")
 			fileSets[name] = regex
 			return self
@@ -327,7 +373,7 @@ save := func(workdir) {
 		 * @param regex: string - regex
 		 */
 		saveFileSetContent: func(name, regex) {
-			validation.assertJsonSchema(regex, "string")
+			validation.assertType(regex, "string")
 			ll.assert(is_undefined(fileSetsContent[name]), "file set content with name '", name, "' is already in added")
 			sets.add(fileSetsContent, regex)
 			return self
@@ -368,5 +414,6 @@ save := func(workdir) {
 export ll.toStrict({
 	builder: builder,
 	create: create,
+	createV2: createV2,
 	save: save
 })

@@ -17,6 +17,7 @@ enum := import("enum")
 oop := import(":oop")
 validation := import(":validation")
 constants := import(":constants")
+limits := import(":exec.limits")
 monetization := import(":exec.monetization")
 execConstants := import(":exec.constants")
 
@@ -50,7 +51,14 @@ builder := func() {
 			"either a command with arguments or a software were already set.")
 	}
 
+	//
+	// Limits
+	//
 	queue := _HEAVY_QUEUE
+	hasLimits := false
+	cpuRequest := undefined
+	ramRequest := undefined
+
 	cache := 0
 	nErrorLines := 200
 
@@ -179,7 +187,7 @@ builder := func() {
 		 * @param value: string - the value of the environment variable.
 		 */
 		env: func(name, value) {
-			validation.assertJsonSchema([name, value], ["string"])
+			validation.assertType([name, value], ["string"])
 			envs[name] = value
 			envsTyped[name] = {
 				type: execConstants.ARG_TYPE_STRING,
@@ -195,7 +203,7 @@ builder := func() {
 		 * @param value: string - the value of the environment variable.
 		 */
 		envWithVar: func(name, value) {
-			validation.assertJsonSchema([name, value], ["string"])
+			validation.assertType([name, value], ["string"])
 
 			// deprecated: remove ARG_TYPE_VAR and this check after 15 Mar 2025
 			t := feats.commandExpressions ? execConstants.ARG_TYPE_EXPRESSION : execConstants.ARG_TYPE_VAR
@@ -225,7 +233,7 @@ builder := func() {
 		 * @param envName: string - name of environment variable to set with value of secret.
 		 */
 		secret: func(secretName, envName) {
-			validation.assertJsonSchema([secretName, envName], ["string"])
+			validation.assertType([secretName, envName], ["string"])
 			secrets[envName] = "{secrets."+secretName+"}"
 			return self
 		},
@@ -259,6 +267,40 @@ builder := func() {
 		 */
 		inUiQueue: func() {
 			queue = _UI_TASKS_QUEUE
+			return self
+		},
+
+		/**
+		 * Preserve CPUs in environments that plan CPU resources (like PBS or Slurm).
+		 *
+		 * @param amount: number - number of cores requested for command.
+		 */
+		cpu: func(amount) {
+			validation.assertType(amount, "number", "exec.builder.cpu: amount of cores must be a number")
+			ll.assert(amount > 0, "exec.builder.cpu: amount of cores should be greater than 0")
+			hasLimits = true
+			cpuRequest = amount
+
+			return self
+		},
+
+		/**
+		 * Amount of RAM to request.
+		 *
+		 * @param amount: number | string - amount of RAM in bytes or string with size suffix (case-insensitive):
+		 *                                     K,  KB,  M,  MB,  G,  GB for base-10 sizes (x1000)
+		 *                                    Ki, KiB, Mi, MiB, Gi, GiB for base-2 sizes (x1024)
+		 *                                  when operating with bytes, you may use 'units' package for convenience:
+		 *                                    120 * units.GiB
+		 *
+		 * @return builder
+		 */
+		ram: func(amount) {
+			validation.assertType(amount, ["or", "number", "string"], "exec.builder.ram: RAM amount should be a number or string")
+			ll.assert(is_string(amount) || amount > 0, "exec.builder.ram: amount in bytes should be greater than 0")
+			hasLimits = true
+			ramRequest = amount
+
 			return self
 		},
 
@@ -366,8 +408,8 @@ builder := func() {
 
 			ll.assert(assets.isAssetInfo(asset),
 				"exec.builder.addAsset: <asset> parameter is not an asset info. Provide the value obtained from assets.importAsset() here")
-			validation.assertJsonSchema(destinationDir, "string", "exec.builder.addAsset: <destinationDir> is not a string. It must be a path inside working directory")
-			validation.assertJsonSchema(pathsInArchive, ["string"], "exec.builder.addAsset: <pathsInArchive> must contain list of strings with paths inside archive")
+			validation.assertType(destinationDir, "string", "exec.builder.addAsset: <destinationDir> is not a string. It must be a path inside working directory")
+			validation.assertType(pathsInArchive, ["string"], "exec.builder.addAsset: <pathsInArchive> must contain list of strings with paths inside archive")
 
 			assetIdKey := ll.idToString(asset._id)
 			if is_undefined(assetRules[assetIdKey]) {
@@ -509,7 +551,7 @@ builder := func() {
 		 *        a resource from which data we create a file.
 		 */
 		writeFile: func(fileName, data, ...opts) {
-			validation.assertJsonSchema(data, ["or",
+			validation.assertType(data, ["or",
 				"string",
 				"bytes",
 				validation.reference])
@@ -684,7 +726,7 @@ builder := func() {
 				nErrorLines: nErrorLines
 			}
 
-			execInputs := {
+			pureExecInputs := {
 				filesToAdd: smart.createMapResource(filesToAdd),
 				filesToWrite: smart.createMapResource(filesToWriteRefs),
 				dirsToCreate: slices.fromSet(dirsToCreate),
@@ -701,30 +743,39 @@ builder := func() {
 				assetCache: assetCache
 			}
 
+			serviceExecInputs := {}
+			if hasLimits && feats.workdirLimits {
+				serviceExecInputs.quota = limits.quotaBuilder().
+					queue(queue).
+					cpu(cpuRequest).
+					ram(ramRequest).
+					build()
+			}
+
 			// We add monetization only if it's enabled
 			// to not break a deduplication of exec's
 			// that were created before this feature existed.
 			if monetization.shouldRun(mnz) {
-				execInputs.runOptions.monetization = monetization.toJson(mnz)
+				pureExecInputs.runOptions.monetization = monetization.toJson(mnz)
 			}
 
 			// We add new argsTyped and envsTyped only when they were added
 			// to not break a deduplication on old pl backend.
 			if typedArgSet || typedEnvSet {
-				execInputs.runOptions.argsTyped = argsTyped
-				execInputs.runOptions.envsTyped = envsTyped
+				pureExecInputs.runOptions.argsTyped = argsTyped
+				pureExecInputs.runOptions.envsTyped = envsTyped
 			}
 
 			if !is_undefined(soft) {
-				execInputs.softwareInfo = soft.resource
-				execInputs.runOptions.software = {
+				pureExecInputs.softwareInfo = soft.resource
+				pureExecInputs.runOptions.software = {
 					name: soft.name,
 					version: soft.version,
 					descriptor: ll.fromStrict(soft.descriptor)
 				}
 			}
 
-			tpl := render.create(assets.importTemplate(":exec.exec"), execInputs)
+			tpl := render.create(assets.importTemplate(":exec.exec"), pureExecInputs, serviceExecInputs)
 
 			self := undefined
 			self = ll.toStrict(oop.inherit(tpl, {

@@ -36,7 +36,7 @@ import PlOverlayLoading from './PlAgOverlayLoading.vue';
 import PlOverlayNoRows from './PlAgOverlayNoRows.vue';
 import { updateXsvGridOptions } from './sources/file-source';
 import { makeRowId, parseColId, updatePFrameGridOptions } from './sources/table-source';
-import type { PlAgDataTableController, PlDataTableSettings, PlAgDataTableRow, PTableRowKey } from './types';
+import type { PlAgDataTableController, PlDataTableSettings, PlAgDataTableRow, PTableRowKey, PlDataTableSettingsPTable } from './types';
 import { PlAgGridColumnManager } from '../PlAgGridColumnManager';
 import { autoSizeRowNumberColumn, PlAgDataTableRowNumberColId } from './sources/row-number';
 import { focusRow, makeOnceTracker, trackFirstDataRendered } from './sources/focus-row';
@@ -180,6 +180,14 @@ const sheetsState = computed({
   },
 });
 
+const hasSheets = (
+  settings?: Readonly<PlDataTableSettings>,
+): settings is PlDataTableSettingsPTable => {
+  return settings?.sourceType === 'ptable'
+    && !!settings.sheets
+    && settings.sheets.length > 0;
+};
+
 watch(
   () => settings.value,
   (settings, oldSettings) => {
@@ -212,7 +220,9 @@ const gridOptions = shallowRef<GridOptions<PlAgDataTableRow>>({
   rowSelection: selectedRows.value !== undefined
     ? {
         mode: 'multiRow',
-        enableClickSelection: true,
+        checkboxes: false,
+        headerCheckbox: false,
+        enableClickSelection: false,
       }
     : undefined,
   selectionColumnDef: {
@@ -458,15 +468,23 @@ watch(
     <PlAgGridColumnManager v-if="gridApi && showColumnsPanel" :api="gridApi" :width="columnsPanelWidth" />
     <PlAgCsvExporter v-if="gridApi && showExportButton" :api="gridApi" />
     <div
-      v-if="settings?.sourceType === 'ptable' && !!settings.sheets && settings.sheets.length > 0"
+      v-if="hasSheets(settings) || $slots['before-sheets'] || $slots['after-sheets']"
       class="ap-ag-data-table-sheets"
     >
-      <PlDropdownLine
-        v-for="(sheet, i) in settings.sheets" :key="i" :model-value="sheetsState[makeSheetId(sheet.axis)]"
-        :options="sheet.options"
-        :prefix="(sheet.axis.annotations?.['pl7.app/label']?.trim() ?? `Unlabeled axis ${i}`) + ':'"
-        @update:model-value="(newValue) => onSheetChanged(makeSheetId(sheet.axis), newValue)"
-      />
+      <slot name="before-sheets" />
+      <template
+        v-if="hasSheets(settings)"
+      >
+        <PlDropdownLine
+          v-for="(sheet, i) in settings.sheets"
+          :key="i"
+          :model-value="sheetsState[makeSheetId(sheet.axis)]"
+          :options="sheet.options"
+          :prefix="(sheet.axis.annotations?.['pl7.app/label']?.trim() ?? `Unlabeled axis ${i}`) + ':'"
+          @update:model-value="(newValue) => onSheetChanged(makeSheetId(sheet.axis), newValue)"
+        />
+      </template>
+      <slot name="after-sheets" />
     </div>
     <AgGridVue
       :key="reloadKey" :theme="AgGridTheme" class="ap-ag-data-table-grid" :grid-options="gridOptions"

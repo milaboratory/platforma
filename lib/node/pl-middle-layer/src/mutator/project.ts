@@ -1,7 +1,10 @@
-import {
+import type {
   AnyRef,
   AnyResourceRef,
   BasicResourceData,
+  PlTransaction,
+  ResourceId } from '@milaboratories/pl-client';
+import {
   ensureResourceIdNotNull,
   field,
   isNotNullResourceId,
@@ -10,20 +13,18 @@ import {
   isResourceRef,
   Pl,
   PlClient,
-  PlTransaction,
-  ResourceId,
-  ResourceRef
 } from '@milaboratories/pl-client';
 import { createRenderHeavyBlock, createBContextFromUpstreams } from './template/render_block';
-import {
+import type {
   Block,
-  BlockRenderingStateKey,
   ProjectStructure,
+  ProjectField,
+  ProjectRenderingState } from '../model/project_model';
+import {
+  BlockRenderingStateKey,
   ProjectStructureKey,
   parseProjectField,
-  ProjectField,
   projectFieldName,
-  ProjectRenderingState,
   SchemaVersionCurrent,
   SchemaVersionKey,
   ProjectResourceType,
@@ -37,23 +38,25 @@ import {
   ProjectLastModifiedTimestamp,
   ProjectCreatedTimestamp,
   ProjectStructureAuthorKey,
-  getServiceTemplateField
+  getServiceTemplateField,
 } from '../model/project_model';
 import { BlockPackTemplateField, createBlockPack } from './block-pack/block_pack';
+import type {
+  BlockGraph } from '../model/project_model_util';
 import {
   allBlocks,
-  BlockGraph,
   graphDiff,
   productionGraph,
-  stagingGraph
+  stagingGraph,
 } from '../model/project_model_util';
-import { BlockPackSpecPrepared } from '../model';
-import { notEmpty } from '@milaboratories/ts-helpers';
-import {
+import type { BlockPackSpecPrepared } from '../model';
+import type {
   AuthorMarker,
   BlockSettings,
+  ProjectMeta,
+} from '@milaboratories/pl-model-middle-layer';
+import {
   InitialBlockSettings,
-  ProjectMeta
 } from '@milaboratories/pl-model-middle-layer';
 import Denque from 'denque';
 import { exportContext, getPreparedExportTemplateEnvelope } from './context_export';
@@ -85,21 +88,21 @@ function cached<ModId, T>(modIdCb: () => ModId, valueCb: () => T): () => T {
       initialized = true;
       lastModId = modIdCb();
       value = valueCb();
-      return value as T;
+      return value;
     }
     const currentModId = modIdCb();
     if (lastModId !== currentModId) {
       lastModId = currentModId;
       value = valueCb();
     }
-    return valueCb() as T;
+    return valueCb();
   };
 }
 
 class BlockInfo {
   constructor(
     public readonly id: string,
-    public readonly fields: BlockFieldStates
+    public readonly fields: BlockFieldStates,
   ) {}
 
   public check() {
@@ -112,14 +115,14 @@ class BlockInfo {
       throw new Error('inconsistent stage fields');
 
     if (
-      (this.fields.prodOutputPrevious === undefined) !==
-      (this.fields.prodCtxPrevious === undefined)
+      (this.fields.prodOutputPrevious === undefined)
+      !== (this.fields.prodCtxPrevious === undefined)
     )
       throw new Error('inconsistent prod cache fields');
 
     if (
-      (this.fields.stagingOutputPrevious === undefined) !==
-      (this.fields.stagingCtxPrevious === undefined)
+      (this.fields.stagingOutputPrevious === undefined)
+      !== (this.fields.stagingCtxPrevious === undefined)
     )
       throw new Error('inconsistent stage cache fields');
 
@@ -130,18 +133,19 @@ class BlockInfo {
 
   private readonly currentInputsC = cached(
     () => this.fields.currentArgs!.modCount,
-    () => JSON.parse(Buffer.from(this.fields.currentArgs!.value!).toString())
+    () => JSON.parse(Buffer.from(this.fields.currentArgs!.value!).toString()) as unknown,
   );
+
   private readonly actualProductionInputsC = cached(
     () => this.fields.prodArgs?.modCount,
     () => {
       const bin = this.fields.prodArgs?.value;
       if (bin === undefined) return undefined;
-      return JSON.parse(Buffer.from(bin).toString());
-    }
+      return JSON.parse(Buffer.from(bin).toString()) as unknown;
+    },
   );
 
-  get currentInputs(): any {
+  get currentInputs(): unknown {
     return this.currentInputsC();
   }
 
@@ -160,8 +164,8 @@ class BlockInfo {
   private readonly productionStaleC: () => boolean = cached(
     () => `${this.fields.currentArgs!.modCount}_${this.fields.prodArgs?.modCount}`,
     () =>
-      this.fields.prodArgs === undefined ||
-      Buffer.compare(this.fields.currentArgs!.value!, this.fields.prodArgs.value!) !== 0
+      this.fields.prodArgs === undefined
+      || Buffer.compare(this.fields.currentArgs!.value!, this.fields.prodArgs.value!) !== 0,
   );
 
   // get productionStale(): boolean {
@@ -172,7 +176,7 @@ class BlockInfo {
     return !this.productionRendered || this.productionStaleC() || this.productionHasErrors;
   }
 
-  get actualProductionInputs(): any | undefined {
+  get actualProductionInputs(): unknown {
     return this.actualProductionInputsC();
   }
 
@@ -180,7 +184,7 @@ class BlockInfo {
     return tx.getFutureFieldValue(
       Pl.unwrapHolder(tx, this.fields.blockPack!.ref!),
       BlockPackTemplateField,
-      'Input'
+      'Input',
     );
   }
 }
@@ -200,7 +204,7 @@ export interface SetArgsRequest {
   args: string;
 }
 
-type GraphInfoFields =
+type _GraphInfoFields =
   | 'stagingUpstream'
   | 'stagingDownstream'
   | 'futureProductionUpstream'
@@ -237,16 +241,16 @@ export class ProjectMutator {
     private readonly blocksInLimbo: Set<string>,
     private readonly blockInfos: Map<string, BlockInfo>,
     private readonly blockFrontendStates: Map<string, string>,
-    private readonly ctxExportTplHolder: AnyResourceRef
+    private readonly ctxExportTplHolder: AnyResourceRef,
   ) {}
 
   private fixProblemsAndMigrate() {
     // Fixing problems introduced by old code
     this.blockInfos.forEach((blockInfo) => {
       if (
-        blockInfo.fields.prodArgs === undefined ||
-        blockInfo.fields.prodOutput === undefined ||
-        blockInfo.fields.prodCtx === undefined
+        blockInfo.fields.prodArgs === undefined
+        || blockInfo.fields.prodOutput === undefined
+        || blockInfo.fields.prodCtx === undefined
       )
         this.deleteBlockFields(blockInfo.id, 'prodArgs', 'prodOutput', 'prodCtx');
     });
@@ -264,18 +268,18 @@ export class ProjectMutator {
 
   get wasModified(): boolean {
     return (
-      this.lastModifiedChanged ||
-      this.structureChanged ||
-      this.fieldsChanged ||
-      this.metaChanged ||
-      this.renderingStateChanged ||
-      this.changedBlockFrontendStates.size > 0
+      this.lastModifiedChanged
+      || this.structureChanged
+      || this.fieldsChanged
+      || this.metaChanged
+      || this.renderingStateChanged
+      || this.changedBlockFrontendStates.size > 0
     );
   }
 
   get structure(): ProjectStructure {
     // clone
-    return JSON.parse(JSON.stringify(this.struct));
+    return JSON.parse(JSON.stringify(this.struct)) as ProjectStructure;
   }
 
   //
@@ -295,7 +299,7 @@ export class ProjectMutator {
     if (this.pendingProductionGraph === undefined)
       this.pendingProductionGraph = productionGraph(
         this.struct,
-        (blockId) => this.getBlockInfo(blockId).currentInputs
+        (blockId) => this.getBlockInfo(blockId).currentInputs,
       );
     return this.pendingProductionGraph;
   }
@@ -304,7 +308,7 @@ export class ProjectMutator {
     if (this.actualProductionGraph === undefined)
       this.actualProductionGraph = productionGraph(
         this.struct,
-        (blockId) => this.getBlockInfo(blockId).actualProductionInputs
+        (blockId) => this.getBlockInfo(blockId).actualProductionInputs,
       );
     return this.actualProductionGraph;
   }
@@ -337,11 +341,11 @@ export class ProjectMutator {
   private setBlockFieldObj(
     blockId: string,
     fieldName: keyof BlockFieldStates,
-    state: BlockFieldStateValue
+    state: BlockFieldStateValue,
   ) {
     const fid = field(this.rid, projectFieldName(blockId, fieldName));
 
-    if (state.ref === undefined) throw new Error("Can't set value with empty ref");
+    if (state.ref === undefined) throw new Error('Can\'t set value with empty ref');
 
     if (this.getBlockInfo(blockId).fields[fieldName] === undefined)
       this.tx.createField(fid, 'Dynamic', state.ref);
@@ -349,7 +353,7 @@ export class ProjectMutator {
 
     this.getBlockInfo(blockId).fields[fieldName] = {
       modCount: this.globalModCount++,
-      ...state
+      ...state,
     };
 
     this.fieldsChanged = true;
@@ -360,7 +364,7 @@ export class ProjectMutator {
     fieldName: keyof BlockFieldStates,
     ref: AnyRef,
     status: FieldStatus,
-    value?: Uint8Array
+    value?: Uint8Array,
   ) {
     this.setBlockFieldObj(blockId, fieldName, { ref, status, value });
   }
@@ -396,9 +400,9 @@ export class ProjectMutator {
   private resetStaging(blockId: string): void {
     const fields = this.getBlockInfo(blockId).fields;
     if (
-      fields.stagingOutput?.status === 'Ready' &&
-      fields.stagingCtx?.status === 'Ready' &&
-      fields.stagingUiCtx?.status === 'Ready'
+      fields.stagingOutput?.status === 'Ready'
+      && fields.stagingCtx?.status === 'Ready'
+      && fields.stagingUiCtx?.status === 'Ready'
     ) {
       this.setBlockFieldObj(blockId, 'stagingOutputPrevious', fields.stagingOutput);
       this.setBlockFieldObj(blockId, 'stagingCtxPrevious', fields.stagingCtx);
@@ -411,9 +415,9 @@ export class ProjectMutator {
   private resetProduction(blockId: string): void {
     const fields = this.getBlockInfo(blockId).fields;
     if (
-      fields.prodOutput?.status === 'Ready' &&
-      fields.prodCtx?.status === 'Ready' &&
-      fields.prodUiCtx?.status === 'Ready'
+      fields.prodOutput?.status === 'Ready'
+      && fields.prodCtx?.status === 'Ready'
+      && fields.prodUiCtx?.status === 'Ready'
     ) {
       this.setBlockFieldObj(blockId, 'prodOutputPrevious', fields.prodOutput);
       this.setBlockFieldObj(blockId, 'prodCtxPrevious', fields.prodCtx);
@@ -439,9 +443,10 @@ export class ProjectMutator {
       this.deleteBlockFields(blockId, 'prodOutputPrevious', 'prodCtxPrevious', 'prodUiCtxPrevious');
 
       return true;
+    } else {
+      // reset
+      return this.deleteBlockFields(blockId, 'prodOutput', 'prodCtx', 'prodUiCtx', 'prodArgs');
     }
-    // reset
-    else return this.deleteBlockFields(blockId, 'prodOutput', 'prodCtx', 'prodUiCtx', 'prodArgs');
   }
 
   /** Optimally sets inputs for multiple blocks in one go */
@@ -496,13 +501,26 @@ export class ProjectMutator {
   //   this.updateLastModified();
   // }
 
-  private createCtx(upstream: Set<string>, ctxField: 'stagingCtx' | 'prodCtx'): AnyRef {
+  private createProdCtx(upstream: Set<string>): AnyRef {
     const upstreamContexts: AnyRef[] = [];
     upstream.forEach((id) => {
       const info = this.getBlockInfo(id);
-      if (info.fields[ctxField] === undefined || info.fields[ctxField]!.ref === undefined)
+      if (info.fields['prodCtx']?.ref === undefined)
         throw new Error('One of the upstreams staging is not rendered.');
-      upstreamContexts.push(Pl.unwrapHolder(this.tx, info.fields[ctxField]!.ref!));
+      upstreamContexts.push(Pl.unwrapHolder(this.tx, info.fields['prodCtx'].ref));
+    });
+    return createBContextFromUpstreams(this.tx, upstreamContexts);
+  }
+
+  private createStagingCtx(upstream: Set<string>): AnyRef {
+    const upstreamContexts: AnyRef[] = [];
+    upstream.forEach((id) => {
+      const info = this.getBlockInfo(id);
+      if (info.fields['stagingCtx']?.ref === undefined)
+        throw new Error('One of the upstreams staging is not rendered.');
+      upstreamContexts.push(Pl.unwrapHolder(this.tx, info.fields['stagingCtx'].ref));
+      if (info.fields['prodCtx']?.ref !== undefined)
+        upstreamContexts.push(Pl.unwrapHolder(this.tx, info.fields['prodCtx'].ref));
     });
     return createBContextFromUpstreams(this.tx, upstreamContexts);
   }
@@ -516,7 +534,7 @@ export class ProjectMutator {
 
     const info = this.getBlockInfo(blockId);
 
-    const ctx = this.createCtx(this.getStagingGraph().nodes.get(blockId)!.upstream, 'stagingCtx');
+    const ctx = this.createStagingCtx(this.getStagingGraph().nodes.get(blockId)!.upstream);
 
     if (this.getBlock(blockId).renderingMode !== 'Heavy') throw new Error('not supported yet');
 
@@ -526,14 +544,14 @@ export class ProjectMutator {
       args: info.fields.currentArgs!.ref!,
       blockId: this.tx.createValue(Pl.JsonString, JSON.stringify(blockId)),
       isProduction: this.tx.createValue(Pl.JsonBool, JSON.stringify(false)),
-      context: ctx
+      context: ctx,
     });
 
     this.setBlockField(
       blockId,
       'stagingCtx',
       Pl.wrapInEphHolder(this.tx, results.context),
-      'NotReady'
+      'NotReady',
     );
 
     this.setBlockField(blockId, 'stagingUiCtx', this.exportCtx(results.context), 'NotReady');
@@ -546,13 +564,10 @@ export class ProjectMutator {
 
     const info = this.getBlockInfo(blockId);
 
-    const ctx = this.createCtx(
-      this.getPendingProductionGraph().nodes.get(blockId)!.upstream,
-      'prodCtx'
-    );
+    const ctx = this.createProdCtx(this.getPendingProductionGraph().nodes.get(blockId)!.upstream);
 
     if (this.getBlock(blockId).renderingMode === 'Light')
-      throw new Error("Can't render production for light block.");
+      throw new Error('Can\'t render production for light block.');
 
     const tpl = info.getTemplate(this.tx);
 
@@ -560,13 +575,13 @@ export class ProjectMutator {
       args: info.fields.currentArgs!.ref!,
       blockId: this.tx.createValue(Pl.JsonString, JSON.stringify(blockId)),
       isProduction: this.tx.createValue(Pl.JsonBool, JSON.stringify(true)),
-      context: ctx
+      context: ctx,
     });
     this.setBlockField(
       blockId,
       'prodCtx',
       Pl.wrapInEphHolder(this.tx, results.context),
-      'NotReady'
+      'NotReady',
     );
     this.setBlockField(blockId, 'prodUiCtx', this.exportCtx(results.context), 'NotReady');
     this.setBlockField(blockId, 'prodOutput', results.result, 'NotReady');
@@ -585,7 +600,7 @@ export class ProjectMutator {
   /** Very generic method, better check for more specialized case-specific methods first. */
   public updateStructure(
     newStructure: ProjectStructure,
-    newBlockSpecProvider: (blockId: string) => NewBlockSpec = NoNewBlocks
+    newBlockSpecProvider: (blockId: string) => NewBlockSpec = NoNewBlocks,
   ): void {
     const currentStagingGraph = this.getStagingGraph();
     const currentActualProductionGraph = this.getActualProductionGraph();
@@ -595,7 +610,7 @@ export class ProjectMutator {
     // new actual production graph without new blocks
     const newActualProductionGraph = productionGraph(
       newStructure,
-      (blockId) => this.blockInfos.get(blockId)?.actualProductionInputs
+      (blockId) => this.blockInfos.get(blockId)?.actualProductionInputs,
     );
 
     const stagingDiff = graphDiff(currentStagingGraph, newStagingGraph);
@@ -624,7 +639,7 @@ export class ProjectMutator {
       this.setBlockFieldObj(
         blockId,
         'blockSettings',
-        this.createJsonFieldValue(InitialBlockSettings)
+        this.createJsonFieldValue(InitialBlockSettings),
       );
 
       // args
@@ -650,9 +665,9 @@ export class ProjectMutator {
     });
 
     if (
-      stagingDiff.onlyInB.size > 0 ||
-      stagingDiff.onlyInA.size > 0 ||
-      stagingDiff.different.size > 0
+      stagingDiff.onlyInB.size > 0
+      || stagingDiff.onlyInA.size > 0
+      || stagingDiff.different.size > 0
     )
       this.resetStagingRefreshTimestamp();
 
@@ -716,7 +731,7 @@ export class ProjectMutator {
       blockId,
       'blockPack',
       Pl.wrapInHolder(this.tx, createBlockPack(this.tx, spec)),
-      'NotReady'
+      'NotReady',
     );
 
     if (newArgs !== undefined) {
@@ -724,15 +739,15 @@ export class ProjectMutator {
       this.setArgs([{ blockId, args: newArgs }]);
       // reset UI state along with args
       this.setUiState(blockId, undefined);
-    }
-    // resetting staging outputs for all downstream blocks
-    else
+    } else {
+      // resetting staging outputs for all downstream blocks
       this.getStagingGraph().traverse('downstream', [blockId], ({ id }) => this.resetStaging(id));
+    }
 
     // also reset or limbo all downstream productions
     if (info.productionRendered)
       this.getActualProductionGraph().traverse('downstream', [blockId], ({ id }) =>
-        this.resetOrLimboProduction(id)
+        this.resetOrLimboProduction(id),
       );
 
     this.updateLastModified();
@@ -758,7 +773,7 @@ export class ProjectMutator {
         if (node === undefined) throw new Error(`Can't find block with id: ${blockId}`);
         for (const upstream of node.upstream)
           if (!blockIdsSet.has(upstream))
-            throw new Error("Can't render blocks not including all upstreams.");
+            throw new Error('Can\'t render blocks not including all upstreams.');
       }
 
     // traversing in topological order and rendering target blocks
@@ -766,8 +781,8 @@ export class ProjectMutator {
     for (const block of allBlocks(this.structure)) {
       if (!blockIdsSet.has(block.id)) continue;
 
-      let render =
-        this.getBlockInfo(block.id).requireProductionRendering || this.blocksInLimbo.has(block.id);
+      let render
+        = this.getBlockInfo(block.id).requireProductionRendering || this.blocksInLimbo.has(block.id);
 
       if (!render)
         for (const upstream of prodGraph.nodes.get(block.id)!.upstream)
@@ -782,12 +797,20 @@ export class ProjectMutator {
       }
     }
 
+    const renderedArray = [...rendered];
+
     // sending to limbo all downstream blocks
-    prodGraph.traverse('downstream', [...rendered], (node) => {
+    prodGraph.traverse('downstream', renderedArray, (node) => {
       if (rendered.has(node.id))
         // don't send to limbo blocks that were just rendered
         return;
       this.resetOrLimboProduction(node.id);
+    });
+
+    // resetting staging outputs for all downstream blocks
+    this.getStagingGraph().traverse('downstream', renderedArray, ({ id }) => {
+      // don't reset staging of the first rendered block
+      if (renderedArray[0] !== id) this.resetStaging(id);
     });
 
     if (rendered.size > 0) this.updateLastModified();
@@ -850,8 +873,8 @@ export class ProjectMutator {
   /** @param stagingRenderingRate rate in blocks per second */
   private refreshStagings(stagingRenderingRate?: number) {
     const elapsed = Date.now() - this.renderingState.stagingRefreshTimestamp;
-    const lagThreshold =
-      stagingRenderingRate === undefined
+    const lagThreshold
+      = stagingRenderingRate === undefined
         ? undefined
         : 1 + Math.max(0, (elapsed * stagingRenderingRate) / 1000);
     let rendered = 0;
@@ -887,24 +910,24 @@ export class ProjectMutator {
     this.refreshStagings(stagingRenderingRate);
     this.blockInfos.forEach((blockInfo) => {
       if (
-        blockInfo.fields.prodCtx?.status === 'Ready' &&
-        blockInfo.fields.prodOutput?.status === 'Ready'
+        blockInfo.fields.prodCtx?.status === 'Ready'
+        && blockInfo.fields.prodOutput?.status === 'Ready'
       )
         this.deleteBlockFields(
           blockInfo.id,
           'prodOutputPrevious',
           'prodCtxPrevious',
-          'prodUiCtxPrevious'
+          'prodUiCtxPrevious',
         );
       if (
-        blockInfo.fields.stagingCtx?.status === 'Ready' &&
-        blockInfo.fields.stagingOutput?.status === 'Ready'
+        blockInfo.fields.stagingCtx?.status === 'Ready'
+        && blockInfo.fields.stagingOutput?.status === 'Ready'
       )
         this.deleteBlockFields(
           blockInfo.id,
           'stagingOutputPrevious',
           'stagingCtxPrevious',
-          'stagingUiCtxPrevious'
+          'stagingUiCtxPrevious',
         );
     });
   }
@@ -937,8 +960,8 @@ export class ProjectMutator {
         BlockRenderingStateKey,
         JSON.stringify({
           ...this.renderingState,
-          blocksInLimbo: [...this.blocksInLimbo]
-        } as ProjectRenderingState)
+          blocksInLimbo: [...this.blocksInLimbo],
+        } as ProjectRenderingState),
       );
 
     if (this.metaChanged) this.tx.setKValue(this.rid, ProjectMetaKey, JSON.stringify(this.meta));
@@ -955,7 +978,7 @@ export class ProjectMutator {
   public static async load(
     tx: PlTransaction,
     rid: ResourceId,
-    author?: AuthorMarker
+    author?: AuthorMarker,
   ): Promise<ProjectMutator> {
     const fullResourceStateP = tx.getResourceData(rid, true);
     const schemaP = tx.getKValueJson<string>(rid, SchemaVersionKey);
@@ -974,7 +997,7 @@ export class ProjectMutator {
       meta,
       structure,
       { stagingRefreshTimestamp, blocksInLimbo },
-      allKV
+      allKV,
     ] = await Promise.all([
       fullResourceStateP,
       schemaP,
@@ -982,11 +1005,11 @@ export class ProjectMutator {
       metaP,
       structureP,
       renderingStateP,
-      allKVP
+      allKVP,
     ]);
     if (schema !== SchemaVersionCurrent)
       throw new Error(
-        `Can't act on this project resource because it has a wrong schema version: ${schema}`
+        `Can't act on this project resource because it has a wrong schema version: ${schema}`,
       );
 
     // loading field information
@@ -1001,7 +1024,7 @@ export class ProjectMutator {
       if (info === undefined) {
         info = {
           id: projectField.blockId,
-          fields: {}
+          fields: {},
         };
         blockInfoStates.set(projectField.blockId, info);
       }
@@ -1017,7 +1040,7 @@ export class ProjectMutator {
     // expected field name
     const ctxExportTplCacheFieldName = getServiceTemplateField(ctxExportTplEnvelope.hash);
     const ctxExportTplField = fullResourceState.fields.find(
-      (f) => f.name === ctxExportTplCacheFieldName
+      (f) => f.name === ctxExportTplCacheFieldName,
     );
     let ctxExportTplHolder: AnyResourceRef;
     if (ctxExportTplField !== undefined)
@@ -1027,7 +1050,7 @@ export class ProjectMutator {
       tx.createField(
         field(rid, getServiceTemplateField(ctxExportTplEnvelope.hash)),
         'Dynamic',
-        ctxExportTplHolder
+        ctxExportTplHolder,
       );
     }
 
@@ -1042,7 +1065,7 @@ export class ProjectMutator {
     }
 
     const requests: [BlockFieldState, Promise<BasicResourceData>][] = [];
-    blockInfoStates!.forEach(({ id, fields }) => {
+    blockInfoStates.forEach(({ fields }) => {
       for (const [, state] of Object.entries(fields)) {
         if (state.ref === undefined) continue;
         if (!isResource(state.ref) || isResourceRef(state.ref))
@@ -1088,7 +1111,7 @@ export class ProjectMutator {
       blocksInLimboSet,
       blockInfos,
       blockFrontendStates,
-      ctxExportTplHolder
+      ctxExportTplHolder,
     );
 
     prj.fixProblemsAndMigrate();
@@ -1107,7 +1130,7 @@ export interface ProjectState {
 
 export async function createProject(
   tx: PlTransaction,
-  meta: ProjectMeta = InitialBlockMeta
+  meta: ProjectMeta = InitialBlockMeta,
 ): Promise<AnyResourceRef> {
   const prj = tx.createEphemeral(ProjectResourceType);
   tx.lock(prj);
@@ -1122,7 +1145,7 @@ export async function createProject(
   tx.createField(
     field(prj, getServiceTemplateField(ctxExportTplEnvelope.hash)),
     'Dynamic',
-    Pl.wrapInHolder(tx, loadTemplate(tx, ctxExportTplEnvelope.spec))
+    Pl.wrapInHolder(tx, loadTemplate(tx, ctxExportTplEnvelope.spec)),
   );
   return prj;
 }
@@ -1130,7 +1153,7 @@ export async function createProject(
 export async function withProject<T>(
   txOrPl: PlTransaction | PlClient,
   rid: ResourceId,
-  cb: (p: ProjectMutator) => T | Promise<T>
+  cb: (p: ProjectMutator) => T | Promise<T>,
 ): Promise<T> {
   return withProjectAuthored(txOrPl, rid, undefined, cb);
 }
@@ -1139,7 +1162,7 @@ export async function withProjectAuthored<T>(
   txOrPl: PlTransaction | PlClient,
   rid: ResourceId,
   author: AuthorMarker | undefined,
-  cb: (p: ProjectMutator) => T | Promise<T>
+  cb: (p: ProjectMutator) => T | Promise<T>,
 ): Promise<T> {
   if (txOrPl instanceof PlClient) {
     return await txOrPl.withWriteTx('ProjectAction', async (tx) => {

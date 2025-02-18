@@ -1,13 +1,14 @@
-import { ComputableCtx } from '@milaboratories/computable';
-import { PlTreeEntry, PlTreeNodeAccessor } from '@milaboratories/pl-tree';
+import type { ComputableCtx } from '@milaboratories/computable';
+import type { PlTreeEntry } from '@milaboratories/pl-tree';
 import { notEmpty } from '@milaboratories/ts-helpers';
-import { Optional } from 'utility-types';
-import {
+import type { Optional } from 'utility-types';
+import type {
   Block,
-  ProjectStructure,
+  ProjectStructure } from '../model/project_model';
+import {
   ProjectStructureKey,
   blockFrontendStateKey,
-  projectFieldName
+  projectFieldName,
 } from '../model/project_model';
 import { allBlocks } from '../model/project_model_util';
 import { ResultPool } from '../pool/result_pool';
@@ -30,7 +31,7 @@ export type BlockContextAny = Optional<BlockContextFull, 'prod' | 'staging' | 'g
 
 export function constructBlockContextArgsOnly(
   projectEntry: PlTreeEntry,
-  blockId: string
+  blockId: string,
 ): BlockContextArgsOnly {
   const args = (cCtx: ComputableCtx) =>
     notEmpty(
@@ -39,9 +40,9 @@ export function constructBlockContextArgsOnly(
         .node()
         .traverse({
           field: projectFieldName(blockId, 'currentArgs'),
-          errorIfFieldNotSet: true
+          errorIfFieldNotSet: true,
         })
-        .getDataAsString()
+        .getDataAsString(),
     );
   const activeArgs = (cCtx: ComputableCtx) =>
     cCtx
@@ -49,7 +50,7 @@ export function constructBlockContextArgsOnly(
       .node()
       .traverse({
         field: projectFieldName(blockId, 'prodArgs'),
-        stableIfNotFound: true
+        stableIfNotFound: true,
       })
       ?.getDataAsString();
   const uiState = (cCtx: ComputableCtx) =>
@@ -65,13 +66,13 @@ export function constructBlockContextArgsOnly(
       const result = new Map<string, Block>();
       for (const block of allBlocks(structure)) result.set(block.id, block);
       return result;
-    }
+    },
   };
 }
 
 export function constructBlockContext(
   projectEntry: PlTreeEntry,
-  blockId: string
+  blockId: string,
 ): BlockContextFull {
   return {
     ...constructBlockContextArgsOnly(projectEntry, blockId),
@@ -82,7 +83,7 @@ export function constructBlockContext(
         .traverse({
           field: projectFieldName(blockId, 'prodOutput'),
           stableIfNotFound: true,
-          ignoreError: true
+          ignoreError: true,
         })
         ?.persist();
     },
@@ -92,12 +93,12 @@ export function constructBlockContext(
         .node({ ignoreError: true })
         .traverse({
           field: projectFieldName(blockId, 'stagingOutput'),
-          ignoreError: true
+          ignoreError: true,
         })
         ?.persist();
       if (result === undefined) cCtx.markUnstable('staging_not_rendered');
       return result;
     },
-    getResultsPool: (cCtx: ComputableCtx) => ResultPool.create(cCtx, projectEntry, blockId)
+    getResultsPool: (cCtx: ComputableCtx) => ResultPool.create(cCtx, projectEntry, blockId),
   };
 }

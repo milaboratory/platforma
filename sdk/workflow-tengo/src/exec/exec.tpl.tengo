@@ -15,6 +15,7 @@ render := import(":render")
 workdir := import(":workdir")
 stream := import(":exec.stream")
 execInternal := import(":exec.internal")
+limits := import(":exec.limits")
 pkg := import(":exec.package")
 validation := import(":validation")
 blobs := import(":file.internal")
@@ -32,6 +33,18 @@ _runBinaryCommand := func(inputs) {
 	//
 
 	wdBuilder := workdir.builder()
+
+	quota := inputs.quota
+
+	storageSpace := undefined
+	if !is_undefined(quota) {
+		storageSpace = limits.storageSpaceRequestBuilder().
+			quota(quota).
+			build()
+
+		wdBuilder.allocation(storageSpace.allocation)
+	}
+
 	// add files
 	wdBuilder.addFiles(inputs.filesToAdd)
 	// create dirs
@@ -179,7 +192,7 @@ _runBinaryCommand := func(inputs) {
 
 self.body(func(inputs) {
 	// assert we have inputs we expect.
-	validation.assertJsonSchema(inputs, {
+	validation.assertType(inputs, {
 		"softwareInfo,?": validation.resource(),
 		filesToAdd: { any: validation.resource() },
 		filesToWrite: { any: validation.resource() },
@@ -204,7 +217,10 @@ self.body(func(inputs) {
 		"assets,?": { any: validation.resource() },
 		"assetDescriptors,?": { any: {asset: desc.assetScheme } },
 		"assetRules,?": { any: { any: ["string"] } },
-		"assetCache,?": { any: "number" }
+		"assetCache,?": { any: "number" },
+
+		// Service inputs
+		"quota,?": validation.resource()
 	})
 
 	ll.toStrict(inputs)

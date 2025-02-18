@@ -26,7 +26,7 @@ _toolsetRenvCreate := undefined
 
 tplBody := func(inputs) {
 	// assert we have inputs we expect.
-	validation.assertJsonSchema(inputs, internal.rVenvInputSchema)
+	validation.assertType(inputs, internal.rVenvInputSchema)
 
 	venv := _createRvenv(
 		inputs.operationMode,
@@ -128,8 +128,11 @@ _toolsetRenvRefreshSwPackage = func(wd, swPackage, rPackage, rDescriptor, depend
 		cmd("R").
 		arg("--no-echo").
 		arg("--no-restore").
-		arg("-e").
-		arg("setwd(Sys.getenv('R_PROJECT_DIR')); renv::init(); renv::install(); renv::snapshot()")
+		arg("-e").arg("cat( 'Refreshing dependencies file (renv.lock) for local R software build...\n' )").
+		arg("-e").arg("cat( paste('  R_PROJECT_DIR:', Sys.getenv('R_PROJECT_DIR'), '\n') )").
+		arg("-e").arg("cat( '(the error in this step usually means that Platforma Backend has no access to your block\\'s folder)\n\n' )").
+		arg("-e").arg("setwd(Sys.getenv('R_PROJECT_DIR')); renv::init(); renv::install(); renv::snapshot()").
+		arg("-e").arg("cat('R dependencies file (renv.lock) is refreshed.\n')")
 
 	swRefreshener.
 		inQueue("light").

@@ -1,5 +1,23 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.7.5
+
+### Patch Changes
+
+- 23dd55f: Adopt PFrameV3 interface
+
+## 1.7.4
+
+### Patch Changes
+
+- 1789f1e: PFrameV3 interface export
+
+## 1.7.3
+
+### Patch Changes
+
+- aee59da: Add AbortSignal parameter to cancelable PFrames requests
+
 ## 1.7.2
 
 ### Patch Changes

@@ -1,5 +1,136 @@
 # @milaboratories/pl-middle-layer
 
+## 1.28.0
+
+### Minor Changes
+
+- 0099c7f: Changes staging (pre-calculation) ctx propagation algorithm, by linking it with production ctx tree. This fixes absence of production exports in staging ctx.
+
+## 1.27.27
+
+### Patch Changes
+
+- Updated dependencies [467a150]
+  - @milaboratories/pl-deployments@1.1.11
+  - @milaboratories/pl-config@1.4.2
+
+## 1.27.26
+
+### Patch Changes
+
+- Updated dependencies [ddced5d]
+  - @platforma-sdk/workflow-tengo@2.12.1
+
+## 1.27.25
+
+### Patch Changes
+
+- 1de72a0: "InternalPFrameDriver interface"
+- a25f1b8: PFrameDriver AbortSignal support
+
+## 1.27.24
+
+### Patch Changes
+
+- 23dd55f: Adopt PFrameV3 interface
+- Updated dependencies [23dd55f]
+  - @milaboratories/pl-model-middle-layer@1.7.5
+  - @platforma-sdk/block-tools@2.5.13
+
+## 1.27.23
+
+### Patch Changes
+
+- Updated dependencies [1789f1e]
+  - @milaboratories/pl-model-middle-layer@1.7.4
+  - @platforma-sdk/block-tools@2.5.12
+
+## 1.27.22
+
+### Patch Changes
+
+- Updated dependencies [7b6b2bd]
+  - @milaboratories/pl-deployments@1.1.10
+
+## 1.27.21
+
+### Patch Changes
+
+- Updated dependencies [ecd1522]
+  - @platforma-sdk/workflow-tengo@2.12.0
+
+## 1.27.20
+
+### Patch Changes
+
+- Updated dependencies [aee59da]
+  - @milaboratories/pl-model-middle-layer@1.7.3
+  - @platforma-sdk/block-tools@2.5.11
+
+## 1.27.19
+
+### Patch Changes
+
+- Updated dependencies [12600dd]
+  - @milaboratories/pl-deployments@1.1.9
+
+## 1.27.18
+
+### Patch Changes
+
+- Updated dependencies [e66f726]
+  - @milaboratories/pl-deployments@1.1.8
+
+## 1.27.17
+
+### Patch Changes
+
+- Updated dependencies [b069ecd]
+  - @milaboratories/pl-deployments@1.1.7
+
+## 1.27.16
+
+### Patch Changes
+
+- Updated dependencies [144ed1e]
+  - @platforma-sdk/workflow-tengo@2.11.0
+
+## 1.27.15
+
+### Patch Changes
+
+- Updated dependencies [33ea5a0]
+  - @milaboratories/pl-deployments@1.1.6
+
+## 1.27.14
+
+### Patch Changes
+
+- a77b40a: add `any` everywhere, ssh: persistent connection; upload: dynamic part chooser
+- Updated dependencies [a77b40a]
+  - @milaboratories/pl-deployments@1.1.5
+  - @milaboratories/pl-drivers@1.5.17
+  - @milaboratories/ts-helpers@1.1.4
+  - @platforma-sdk/block-tools@2.5.10
+  - @milaboratories/computable@2.3.5
+  - @milaboratories/pl-client@2.7.5
+  - @milaboratories/pl-config@1.4.1
+  - @milaboratories/pl-tree@1.4.24
+
+## 1.27.13
+
+### Patch Changes
+
+- Updated dependencies [832f3ba]
+  - @platforma-sdk/workflow-tengo@2.10.2
+
+## 1.27.12
+
+### Patch Changes
+
+- Updated dependencies [ccff13a]
+  - @platforma-sdk/workflow-tengo@2.10.1
+
 ## 1.27.11
 
 ### Patch Changes

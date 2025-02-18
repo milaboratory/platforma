@@ -28,6 +28,7 @@ RTYPE_QUERY_RESULT        := { Name: "BQueryResult",      Version: "1" }
 RTYPE_OBJECT_SPEC         := { Name: "BObjectSpec",       Version: "1" }
 
 RTYPE_WORKDIR_CREATE      := { Name: "WorkdirCreate",     Version: "1" }
+RTYPE_WORKDIR_CREATE_2    := { Name: "WorkdirCreate",     Version: "2" }
 RTYPE_WORKDIR_FILL        := { Name: "WorkdirFill",       Version: "1" }
 RTYPE_WORKDIR_FILL_RULES  := { Name: "WorkdirFill/rules", Version: "1" }
 RTYPE_WORKDIR_SAVE        := { Name: "WorkdirSave",       Version: "1" }
@@ -67,6 +68,7 @@ export ll.toStrict({
 	RTYPE_RENDER_EPH_TEMPLATE   : RTYPE_RENDER_EPH_TEMPLATE,
 	RTYPE_RENDER_TEMPLATE       : RTYPE_RENDER_TEMPLATE,
 	RTYPE_WORKDIR_CREATE        : RTYPE_WORKDIR_CREATE,
+	RTYPE_WORKDIR_CREATE_2      : RTYPE_WORKDIR_CREATE_2,
 	RTYPE_WORKDIR_FILL          : RTYPE_WORKDIR_FILL,
 	RTYPE_WORKDIR_FILL_RULES    : RTYPE_WORKDIR_FILL_RULES,
 	RTYPE_WORKDIR_SAVE          : RTYPE_WORKDIR_SAVE,
