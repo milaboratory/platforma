@@ -1,8 +1,26 @@
 <script setup lang="ts">
-import { PlDropdown, PlTextField, PlToggleSwitch, Slider, type ListOption } from '@milaboratories/uikit';
-import type { PlTableFiltersStateEntry, PlTableFilterType, PTableColumnSpec } from '@platforma-sdk/model';
-import { computed, toRefs, watch } from 'vue';
-import { changeFilterType, parseNumber, parseString, parseRegex, makeWildcardOptions } from './filters_logic';
+import {
+  PlDropdown,
+  PlTextField,
+  PlToggleSwitch,
+  Slider,
+  type ListOption,
+} from '@milaboratories/uikit';
+import type {
+  PlTableFiltersStateEntry,
+  PlTableFilterType,
+  PTableColumnSpec,
+} from '@platforma-sdk/model';
+import { computed, toRefs } from 'vue';
+import {
+  changeFilterType,
+  parseNumber,
+  parseString,
+  parseRegex,
+  makeWildcardOptions,
+  isFilterDiscrete,
+  makeDiscreteOptions,
+} from './filters_logic';
 
 const entry = defineModel<PlTableFiltersStateEntry>({ required: true });
 const props = defineProps<{
@@ -12,35 +30,7 @@ const props = defineProps<{
 }>();
 const { column, options } = toRefs(props);
 
-const showDescretForTypes = [
-  'number_equals',
-  'string_equals',
-  'number_notEquals',
-  'string_notEquals',
-] as const;
-
-type ExtractedTypes = (typeof showDescretForTypes)[number];
-
-const isDescretCondition = (type: PlTableFilterType): type is ExtractedTypes => {
-  return (showDescretForTypes as readonly string[]).includes(type);
-};
-
-const canShowDescreteSelect = computed(() => column.value.spec.annotations?.['pl7.app/discreteValues'] && isDescretCondition(entry.value.filter.type) && descretOptions.value.length > 0);
-
-const descretOptions = computed<ListOption<string | number>[]>(() => {
-  if (column.value.spec.annotations!['pl7.app/discreteValues']) {
-    return (JSON.parse(column.value.spec.annotations!['pl7.app/discreteValues']) as string[]).map((v) => ({ text: v, value: v }));
-  }
-
-  return [];
-});
-
-watch(() => entry.value.filter.type, () => {
-  const type = entry.value.filter.type;
-  if (type === 'number_equals' || type === 'number_notEquals' || type === 'string_equals' || type === 'string_notEquals') {
-    entry.value.filter.reference = descretOptions.value[0].value;
-  }
-});
+const discreteOptions = computed(() => makeDiscreteOptions(column.value));
 </script>
 
 <template>
@@ -50,14 +40,13 @@ watch(() => entry.value.filter.type, () => {
       :options="options"
       :disabled="disabled"
       label="Predicate"
-      @update:model-value="(type) => (entry = changeFilterType(entry, type!))"
+      @update:model-value="(type) => (entry = changeFilterType(entry, type!, discreteOptions))"
     />
 
-    <template v-if="canShowDescreteSelect">
+    <template v-if="discreteOptions.length > 0 && isFilterDiscrete(entry.filter)">
       <PlDropdown
-        v-if="isDescretCondition(entry.filter.type)"
         v-model="entry.filter.reference"
-        :options="descretOptions"
+        :options="discreteOptions"
       />
     </template>
 

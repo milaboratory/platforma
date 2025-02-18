@@ -41,37 +41,51 @@ export const platforma = BlockModel.create('Heavy')
 
   .output('pt', (ctx) => {
     if (!ctx.uiState?.dataTableState?.tableState.pTableParams?.filters) return undefined;
-    return createPlDataTable(ctx, [
-      {
-        id: 'example' as PObjectId,
-        spec: {
-          kind: 'PColumn',
-          valueType: 'String',
-          name: 'example',
-          annotations: {
-            'pl7.app/label': 'String column',
-            'pl7.app/discreteValues': '["up","down"]',
-          },
-          axesSpec: [
-            {
-              type: 'Int',
-              name: 'index',
-              annotations: {
-                'pl7.app/label': 'Int axis',
-                'pl7.app/discreteValues': '[1,2,3]',
-              },
+    return createPlDataTable(
+      ctx,
+      [
+        {
+          id: 'example' as PObjectId,
+          spec: {
+            kind: 'PColumn',
+            valueType: 'String',
+            name: 'example',
+            annotations: {
+              'pl7.app/label': 'String column',
+              'pl7.app/discreteValues': '["up","down"]',
             },
+            axesSpec: [
+              {
+                type: 'Int',
+                name: 'index',
+                annotations: {
+                  'pl7.app/label': 'Int axis',
+                  'pl7.app/discreteValues': '[1,2]',
+                },
+              },
+              {
+                type: 'Float',
+                name: 'value',
+                annotations: {
+                  'pl7.app/label': 'Float axis',
+                },
+              },
+            ],
+          },
+          data: [
+            { key: [1, 1.1], val: '1' },
+            { key: [2, 2.2], val: '2' },
           ],
-        },
-        data: [
-          { key: [1], val: '1' },
-          { key: [2], val: '2' },
+        } satisfies PColumn<PColumnValues>,
+      ],
+      ctx.uiState.dataTableState.tableState,
+      {
+        filters: [
+          ...(ctx.uiState.dataTableState.tableState.pTableParams?.filters ?? []),
+          ...(ctx.uiState.dataTableState.filterModel?.filters ?? []),
         ],
-      } satisfies PColumn<PColumnValues>,
-    ], ctx.uiState.dataTableState.tableState, [
-      ...(ctx.uiState.dataTableState.tableState.pTableParams?.filters ?? []),
-      ...(ctx.uiState.dataTableState.filterModel?.filters ?? []),
-    ]);
+      },
+    );
   })
 
   .sections((ctx) => {
