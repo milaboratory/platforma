@@ -28,10 +28,15 @@ export abstract class RefCountResourcePool<P, R> {
     if (envelop.refCount === 0) {
       this.resources.delete(key);
 
-      // TODO: we can postpone this operation, and run it in the background
-      const res: any = envelop.resource;
-      if (res !== undefined && res !== null && typeof res[Symbol.dispose] === 'function')
-        res[Symbol.dispose]();
+      const isDisposable = (obj: unknown): obj is Disposable => {
+        return obj !== undefined && obj !== null
+          && typeof (obj as Disposable)[Symbol.dispose] === 'function';
+      };
+
+      if (isDisposable(envelop.resource)) {
+        // TODO: we can postpone disposal and run it in the background
+        envelop.resource[Symbol.dispose]();
+      }
     }
   }
 
@@ -56,7 +61,7 @@ export abstract class RefCountResourcePool<P, R> {
         envelop.refCount--;
         unrefereced = true;
         this.check(key);
-      }
+      },
     };
   }
 

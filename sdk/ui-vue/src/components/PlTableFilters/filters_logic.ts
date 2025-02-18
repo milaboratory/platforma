@@ -1,4 +1,10 @@
 import canonicalize from 'canonicalize';
+import type {
+  PlTableFilterNumberEquals,
+  PlTableFilterNumberNotEquals,
+  PlTableFilterStringEquals,
+  PlTableFilterStringNotEquals,
+} from '@platforma-sdk/model';
 import {
   type SingleValuePredicateV2,
   type PlTableFilterType,
@@ -13,6 +19,7 @@ import {
 } from '@platforma-sdk/model';
 import * as lodash from 'lodash';
 import semver from 'semver';
+import type { ListOption } from '@milaboratories/uikit';
 
 export function makeColumnId(column: PTableColumnId | PTableColumnSpec): PlTableFilterColumnId {
   return canonicalize(column.id)!;
@@ -78,6 +85,31 @@ export const filterTypesString: PlTableFilterStringType[] = [
   'string_doesNotMatch',
   'string_containsFuzzyMatch',
 ] as const;
+
+export type PlTableFilterDiscrete =
+  | PlTableFilterNumberEquals
+  | PlTableFilterNumberNotEquals
+  | PlTableFilterStringEquals
+  | PlTableFilterStringNotEquals;
+
+export type PlTableFilterDiscreteType = PlTableFilterDiscrete['type'];
+
+export const filterTypesDiscrete: PlTableFilterDiscreteType[] = [
+  'number_equals',
+  'number_notEquals',
+  'string_equals',
+  'string_notEquals',
+] as const;
+
+export const isFilterDiscreteType = (
+  filter: PlTableFilterType,
+): filter is PlTableFilterDiscreteType => {
+  return (filterTypesDiscrete as PlTableFilterType[]).includes(filter);
+};
+
+export const isFilterDiscrete = (filter: PlTableFilter): filter is PlTableFilterDiscrete => {
+  return isFilterDiscreteType(filter.type);
+};
 
 export function getColumnName(column: PTableColumnSpec, index: string | number) {
   return column.spec.annotations?.['pl7.app/label']?.trim() ?? 'Unlabeled ' + column.type + ' ' + index.toString();
@@ -151,10 +183,21 @@ export function getFilterDefault(type: PlTableFilterType, reference?: undefined 
   }
 }
 
-export function changeFilterType(filter: PlTableFiltersStateEntry, type: PlTableFilterType): PlTableFiltersStateEntry {
+export function changeFilterType(
+  filter: PlTableFiltersStateEntry,
+  type: PlTableFilterType,
+  discreteOptions: ListOption<number | string>[],
+): PlTableFiltersStateEntry {
+  let reference = getFilterReference(filter.filter);
+  if (isFilterDiscreteType(type)
+    && discreteOptions !== undefined
+    && discreteOptions.length > 0
+    && !lodash.find(discreteOptions, (option) => option.value === reference)) {
+    reference = discreteOptions[0].value;
+  }
   return {
     columnId: filter.columnId,
-    filter: getFilterDefault(type, getFilterReference(filter.filter)),
+    filter: getFilterDefault(type, reference),
     disabled: filter.disabled,
   };
 }
@@ -202,30 +245,41 @@ export function parseRegex(value: string): string {
   }
 }
 
-export function makeWildcardOptions(column: PTableColumnSpec, reference: string) {
-  const alphabet = column.spec.domain?.['pl7.app/alphabet'] ?? column.spec.annotations?.['pl7.app/alphabet'];
+export function makeWildcardOptions(
+  column: PTableColumnSpec,
+  reference: string,
+): ListOption<string>[] {
+  const alphabet = column.spec.domain?.['pl7.app/alphabet']
+    ?? column.spec.annotations?.['pl7.app/alphabet'];
   if (alphabet === 'nucleotide') {
-    return [
-      {
-        value: 'N',
-        text: 'N',
-      },
-    ];
+    return [{
+      label: 'N',
+      value: 'N',
+    }];
   }
   if (alphabet === 'aminoacid') {
-    return [
-      {
-        value: 'X',
-        text: 'X',
-      },
-    ];
+    return [{
+      label: 'X',
+      value: 'X',
+    }];
   }
 
   const chars = lodash.uniq(reference);
   chars.sort();
   return chars.map((char) => ({
+    label: char,
     value: char,
-    text: char,
+  }));
+}
+
+export function makeDiscreteOptions(column: PTableColumnSpec): ListOption<number | string>[] {
+  const discreteValuesAnnotation = column.spec.annotations?.['pl7.app/discreteValues'];
+  if (!discreteValuesAnnotation) return [];
+
+  const discreteValues: (string | number)[] = JSON.parse(discreteValuesAnnotation);
+  return discreteValues.map((v) => ({
+    label: v.toString(),
+    value: v,
   }));
 }
 

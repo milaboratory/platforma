@@ -200,7 +200,7 @@ async function getAllFiles(dir: string): Promise<string[]> {
     recursive: true,
   });
 
-  return allDirents.filter((f) => f.isFile()).map((f) => path.join(f.parentPath, f.name));
+  return allDirents.filter((f: any) => f.isFile()).map((f: any) => path.join(f.parentPath, f.name));
 }
 
 async function replaceInFile(fPath: string, replacer: (content: string) => any) {

@@ -67,7 +67,7 @@ export function typedArtifactNameToString(name: TypedArtifactName): string {
 
 export function typedArtifactNamesEquals(
   name1: TypedArtifactName,
-  name2: TypedArtifactName
+  name2: TypedArtifactName,
 ): boolean {
   return name1.type == name2.type && name1.pkg == name2.pkg && name1.id == name2.id;
 }

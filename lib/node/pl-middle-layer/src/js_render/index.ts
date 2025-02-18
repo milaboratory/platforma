@@ -1,9 +1,10 @@
-import { MiddleLayerEnvironment } from '../middle_layer/middle_layer';
-import { Code, ConfigRenderLambda } from '@platforma-sdk/model';
-import { Computable, ComputableRenderingOps } from '@milaboratories/computable';
+import type { MiddleLayerEnvironment } from '../middle_layer/middle_layer';
+import type { Code, ConfigRenderLambda } from '@platforma-sdk/model';
+import type { ComputableRenderingOps } from '@milaboratories/computable';
+import { Computable } from '@milaboratories/computable';
 import { Scope } from 'quickjs-emscripten';
 import { JsExecutionContext } from './context';
-import { BlockContextAny } from '../middle_layer/block_ctx';
+import type { BlockContextAny } from '../middle_layer/block_ctx';
 import { LogOutputStatus } from '../middle_layer/util';
 
 export function computableFromRF(
@@ -12,7 +13,7 @@ export function computableFromRF(
   fh: ConfigRenderLambda,
   code: Code,
   configKey: string,
-  ops: Partial<ComputableRenderingOps> = {}
+  ops: Partial<ComputableRenderingOps> = {},
 ): Computable<unknown> {
   // adding configKey to reload all outputs on block-pack update
   const key = `${ctx.blockId}#lambda#${configKey}#${fh.handle}`;
@@ -40,7 +41,7 @@ export function computableFromRF(
 
     return {
       ir: rCtx.computablesToResolve,
-      postprocessValue: async (resolved: Record<string, unknown>, { unstableMarker, stable }) => {
+      postprocessValue: (resolved: Record<string, unknown>, { unstableMarker, stable }) => {
         // resolving futures
         for (const [handle, value] of Object.entries(resolved)) rCtx.runCallback(handle, value);
 
@@ -52,16 +53,16 @@ export function computableFromRF(
         if (LogOutputStatus && (LogOutputStatus !== 'unstable-only' || !stable)) {
           if (stable)
             console.log(
-              `Stable output ${fh.handle} calculated ${renderedResult !== undefined ? 'defined' : 'undefined'}; (#${recalculationCounter})`
+              `Stable output ${fh.handle} calculated ${renderedResult !== undefined ? 'defined' : 'undefined'}; (#${recalculationCounter})`,
             );
           else
             console.log(
-              `Unstable output ${fh.handle}; marker = ${unstableMarker}; ${renderedResult !== undefined ? 'defined' : 'undefined'} (#${recalculationCounter})`
+              `Unstable output ${fh.handle}; marker = ${unstableMarker}; ${renderedResult !== undefined ? 'defined' : 'undefined'} (#${recalculationCounter})`,
             );
         }
 
         return renderedResult;
-      }
+      },
     };
   }, ops);
 }

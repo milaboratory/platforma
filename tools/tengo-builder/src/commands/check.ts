@@ -29,8 +29,8 @@ export default class Check extends Command {
       TengoTesterBinaryPath,
       'check', '--log-level', flags['log-level'],
       '--artifacts', '-',
-      ...testerArgs
-    )
+      ...testerArgs,
+    );
 
     try {
       dumpAll(logger, tester.stdin);

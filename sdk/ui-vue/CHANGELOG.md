@@ -1,5 +1,37 @@
 # @platforma-sdk/ui-vue
 
+## 1.22.52
+
+### Patch Changes
+
+- 48f1820: PlAgDataTable slot for controls
+
+## 1.22.51
+
+### Patch Changes
+
+- 7ac5190: PlTableFilter support 'pl7.app/discreteValues' annotation
+
+## 1.22.39
+
+### Patch Changes
+
+- 2970f8d: [blocks] Move to standard QC components (progress & qc bars) in all upstream blocks
+- Updated dependencies [2970f8d]
+  - @milaboratories/uikit@2.2.58
+
+## 1.22.34
+
+### Patch Changes
+
+- b752000: fix: color for icon
+
+## 1.22.32
+
+### Patch Changes
+
+- c39eeee: fixed row numbers display
+
 ## 1.22.30
 
 ### Patch Changes

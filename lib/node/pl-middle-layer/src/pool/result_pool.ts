@@ -1,6 +1,6 @@
-import { ComputableCtx } from '@milaboratories/computable';
-import { PlTreeEntry, PlTreeNodeAccessor } from '@milaboratories/pl-tree';
-import {
+import type { ComputableCtx } from '@milaboratories/computable';
+import type { PlTreeEntry, PlTreeNodeAccessor } from '@milaboratories/pl-tree';
+import type {
   Option,
   PObject,
   PObjectSpec,
@@ -8,25 +8,28 @@ import {
   PlRef,
   ResultCollection,
   ResultPoolEntry,
-  ValueOrError,
+  ValueOrError } from '@platforma-sdk/model';
+import {
   executePSpecPredicate,
-  mapValueInVOE
+  mapValueInVOE,
 } from '@platforma-sdk/model';
 import { notEmpty } from '@milaboratories/ts-helpers';
 import { outputRef } from '../model/args';
-import {
+import type {
   Block,
-  ProjectStructure,
+  ProjectStructure } from '../model/project_model';
+import {
   ProjectStructureKey,
-  projectFieldName
+  projectFieldName,
 } from '../model/project_model';
 import { allBlocks, stagingGraph } from '../model/project_model_util';
-import { Optional } from 'utility-types';
+import type { Optional } from 'utility-types';
 import { deriveGlobalPObjectId } from './data';
-import {
+import type {
   RawPObjectCollection,
-  RawPObjectEntry,
-  parseRawPObjectCollection
+  RawPObjectEntry } from './p_object_collection';
+import {
+  parseRawPObjectCollection,
 } from './p_object_collection';
 
 /** All exported results are addressed  */
@@ -54,7 +57,7 @@ export class ResultPool {
   private readonly allSpecsAvailable: boolean;
   private constructor(
     private readonly ctx: ComputableCtx,
-    private readonly blocks: Map<string, PoolBlock>
+    private readonly blocks: Map<string, PoolBlock>,
   ) {
     let allSpecsAvailable = true;
     outer: for (const block of blocks.values()) {
@@ -92,17 +95,17 @@ export class ResultPool {
 
   public getDataOrErrorByRef(
     blockId: string,
-    exportName: string
+    exportName: string,
   ): ValueOrError<PObject<PlTreeNodeAccessor>, string> | undefined {
     const block = this.blocks.get(blockId);
     if (block === undefined) return undefined;
-    let result = block.prod?.results?.get(exportName);
-    let data = result?.data?.();
+    const result = block.prod?.results?.get(exportName);
+    const data = result?.data?.();
     if (result !== undefined && result.spec !== undefined && data !== undefined)
       return mapValueInVOE(data, (value) => ({
         id: deriveGlobalPObjectId(blockId, exportName),
-        spec: result!.spec!,
-        data: value
+        spec: result.spec!,
+        data: value,
       }));
     if (result !== undefined) this.ctx.markUnstable(`no_data:${blockId}:${exportName}`);
     if (block.prod !== undefined && !block.prod.locked)
@@ -113,7 +116,7 @@ export class ResultPool {
 
   public getDataByRef(
     blockId: string,
-    exportName: string
+    exportName: string,
   ): PObject<PlTreeNodeAccessor> | undefined {
     const res = this.getDataOrErrorByRef(blockId, exportName);
     if (res === undefined || !res.ok) return undefined;
@@ -130,13 +133,13 @@ export class ResultPool {
           obj: {
             id: res.obj.id,
             spec: res.obj.spec,
-            data: res.obj.data.value
-          }
+            data: res.obj.data.value,
+          },
         });
     return {
       entries,
       isComplete: resultWithErrors.isComplete,
-      instabilityMarker: resultWithErrors.instabilityMarker
+      instabilityMarker: resultWithErrors.instabilityMarker,
     };
   }
 
@@ -163,8 +166,8 @@ export class ResultPool {
             obj: {
               id: data.ok ? deriveGlobalPObjectId(blockId, exportName) : undefined,
               spec: result.spec,
-              data
-            }
+              data,
+            },
           });
         } else markUnstable(`no_data:${blockId}:${exportName}`); // because data will eventually be resolved
       }
@@ -217,7 +220,7 @@ export class ResultPool {
           if (result.spec !== undefined) {
             entries.push({
               ref: outputRef(blockId, exportName),
-              obj: result.spec
+              obj: result.spec,
             });
             exportsProcessed.add(exportName);
           }
@@ -232,7 +235,7 @@ export class ResultPool {
           if (result.spec !== undefined) {
             entries.push({
               ref: outputRef(blockId, exportName),
-              obj: result.spec
+              obj: result.spec,
             });
           }
         }
@@ -247,7 +250,6 @@ export class ResultPool {
     for (const block of this.blocks.values()) {
       const exportsChecked = new Set<string>();
       const addToFound = (ctx: RawPObjectCollection) => {
-        const ret: ExtendedOption[] = [];
         for (const [exportName, result] of ctx.results) {
           if (exportsChecked.has(exportName) || result.spec === undefined) continue;
           exportsChecked.add(exportName);
@@ -255,7 +257,7 @@ export class ResultPool {
             found.push({
               label: block.info.label + ' / ' + exportName,
               ref: outputRef(block.info.id, exportName),
-              spec: result.spec
+              spec: result.spec,
             });
         }
       };
@@ -282,22 +284,22 @@ export class ResultPool {
           field: projectFieldName(blockInfo.id, 'prodCtx'),
           ignoreError: true,
           pureFieldErrorToUndefined: true,
-          stableIfNotFound: true
+          stableIfNotFound: true,
         }) !== undefined,
         prj.traverseOrError({
           field: projectFieldName(blockInfo.id, 'prodUiCtx'),
-          stableIfNotFound: true
-        })
+          stableIfNotFound: true,
+        }),
       );
       const staging = loadCtx(
         prj.traverse({
           field: projectFieldName(blockInfo.id, 'stagingCtx'),
           ignoreError: true,
-          pureFieldErrorToUndefined: true
+          pureFieldErrorToUndefined: true,
         }) !== undefined,
         prj.traverseOrError({
-          field: projectFieldName(blockInfo.id, 'stagingUiCtx')
-        })
+          field: projectFieldName(blockInfo.id, 'stagingUiCtx'),
+        }),
       );
 
       blocks.set(blockInfo.id, { info: blockInfo, prod, staging });
@@ -310,7 +312,7 @@ export class ResultPool {
 /** Loads single BContext data */
 function loadCtx(
   calculated: boolean,
-  ctxAccessor: ValueOrError<PlTreeNodeAccessor, string> | undefined
+  ctxAccessor: ValueOrError<PlTreeNodeAccessor, string> | undefined,
 ): RawPObjectCollection | undefined {
   if (ctxAccessor === undefined) {
     if (calculated)

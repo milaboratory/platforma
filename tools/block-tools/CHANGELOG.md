@@ -1,5 +1,35 @@
 # @platforma-sdk/block-tools
 
+## 2.5.13
+
+### Patch Changes
+
+- Updated dependencies [23dd55f]
+  - @milaboratories/pl-model-middle-layer@1.7.5
+
+## 2.5.12
+
+### Patch Changes
+
+- Updated dependencies [1789f1e]
+  - @milaboratories/pl-model-middle-layer@1.7.4
+
+## 2.5.11
+
+### Patch Changes
+
+- Updated dependencies [aee59da]
+  - @milaboratories/pl-model-middle-layer@1.7.3
+
+## 2.5.10
+
+### Patch Changes
+
+- a77b40a: add `any` everywhere, ssh: persistent connection; upload: dynamic part chooser
+- Updated dependencies [a77b40a]
+  - @milaboratories/ts-helpers@1.1.4
+  - @milaboratories/ts-helpers-oclif@1.1.13
+
 ## 2.5.9
 
 ### Patch Changes

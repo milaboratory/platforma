@@ -10,15 +10,15 @@
         background: var(--txt-error);
     }
 
-    &.error {
-        * {
-            color: var(--txt-error) !important;
-        }
-    }
-
     &.not-started {
         * {
             color: var(--txt-03) !important;
+        }
+    }
+
+    &.error {
+        * {
+            color: var(--txt-error) !important;
         }
     }
 

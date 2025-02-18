@@ -1,4 +1,6 @@
-import { PlClient } from '@milaboratories/pl-client';
+import type { PlClient } from '@milaboratories/pl-client';
+import type {
+  InternalLsDriver } from '@milaboratories/pl-drivers';
 import {
   createDownloadClient,
   createLogsClient,
@@ -6,21 +8,23 @@ import {
   createUploadProgressClient,
   DownloadDriver,
   DownloadBlobToURLDriver,
-  InternalLsDriver,
   LogsDriver,
   LogsStreamDriver,
   LsDriver,
-  UploadDriver
+  UploadDriver,
 } from '@milaboratories/pl-drivers';
-import * as Sdk from '@milaboratories/pl-model-common';
-import { HmacSha256Signer, MiLogger, Signer } from '@milaboratories/ts-helpers';
-import * as os from 'node:os';
+import type * as Sdk from '@milaboratories/pl-model-common';
+import type { Signer } from '@milaboratories/ts-helpers';
+import { HmacSha256Signer } from '@milaboratories/ts-helpers';
+import type { InternalPFrameDriver } from '../pool';
 import { PFrameDriver } from '../pool';
+import type {
+  DriverKitOps,
+  DriverKitOpsConstructor,
+} from './ops';
 import {
   DefaultDriverKitOpsPaths,
   DefaultDriverKitOpsSettings,
-  DriverKitOps,
-  DriverKitOpsConstructor
 } from './ops';
 
 /**
@@ -40,7 +44,7 @@ export interface MiddleLayerDriverKit extends Sdk.DriverKit {
   // override with wider interface
   readonly lsDriver: InternalLsDriver;
   // override with wider interface
-  readonly pFrameDriver: PFrameDriver;
+  readonly pFrameDriver: InternalPFrameDriver;
 
   /**
    * Signer is initialized from local secret in drivers initialization routine,
@@ -58,12 +62,12 @@ export interface MiddleLayerDriverKit extends Sdk.DriverKit {
 export async function initDriverKit(
   pl: PlClient,
   workdir: string,
-  _ops: DriverKitOpsConstructor
+  _ops: DriverKitOpsConstructor,
 ): Promise<MiddleLayerDriverKit> {
   const ops: DriverKitOps = {
     ...DefaultDriverKitOpsSettings,
     ...DefaultDriverKitOpsPaths(workdir),
-    ..._ops
+    ..._ops,
   };
 
   const signer = new HmacSha256Signer(ops.localSecret);
@@ -79,7 +83,7 @@ export async function initDriverKit(
     logsClient,
     ops.blobDownloadPath,
     signer,
-    ops.blobDriverOps
+    ops.blobDriverOps,
   );
 
   const blobToURLDriver = new DownloadBlobToURLDriver(
@@ -95,7 +99,7 @@ export async function initDriverKit(
     signer,
     uploadBlobClient,
     uploadProgressClient,
-    ops.uploadDriverOps
+    ops.uploadDriverOps,
   );
   const logsStreamDriver = new LogsStreamDriver(ops.logger, logsClient, ops.logStreamDriverOps);
   const logDriver = new LogsDriver(ops.logger, logsStreamDriver, blobDriver);
@@ -105,7 +109,7 @@ export async function initDriverKit(
     signer,
     ops.localProjections,
     ops.openFileDialogCallback,
-    ops.virtualLocalStoragesOverride
+    ops.virtualLocalStoragesOverride,
   );
 
   const pFrameDriver = new PFrameDriver(blobDriver, ops.logger);
@@ -117,6 +121,6 @@ export async function initDriverKit(
     lsDriver,
     signer,
     uploadDriver,
-    pFrameDriver
+    pFrameDriver,
   };
 }

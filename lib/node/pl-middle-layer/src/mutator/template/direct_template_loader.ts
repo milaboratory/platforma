@@ -6,14 +6,14 @@ import { createHash } from 'node:crypto';
 import type {
   TemplateData,
   TemplateLibData,
-  TemplateSoftwareData
+  TemplateSoftwareData,
 } from '@milaboratories/pl-model-backend';
 import {
   PlTemplateLibV1,
   PlTemplateSoftwareV1,
   PlTemplateV1,
   PlTemplateOverrideV1,
-  parseTemplate
+  parseTemplate,
 } from '@milaboratories/pl-model-backend';
 
 export function loadTemplateFromExplicitDirect(tx: PlTransaction, spec: ExplicitTemplate): AnyRef {
@@ -47,9 +47,9 @@ const LibRenderer: Renderer<TemplateLibData> = {
   render(resource, tx, _creator) {
     return tx.createValue(
       PlTemplateLibV1.type,
-      JSON.stringify(PlTemplateLibV1.fromV2Data(resource).data)
+      JSON.stringify(PlTemplateLibV1.fromV2Data(resource).data),
     );
-  }
+  },
 };
 
 const SoftwareInfoRenderer: Renderer<TemplateSoftwareData> = {
@@ -67,7 +67,7 @@ const SoftwareInfoRenderer: Renderer<TemplateSoftwareData> = {
     tx.setKValue(ref, PlTemplateSoftwareV1.metaNameKey, JSON.stringify(sw.name));
     tx.lock(ref);
     return ref;
-  }
+  },
 };
 
 const HashOverrideRenderer: Renderer<TemplateData> = {
@@ -80,9 +80,9 @@ const HashOverrideRenderer: Renderer<TemplateData> = {
   render(resource, tx, _creator) {
     return tx.createStruct(
       PlTemplateOverrideV1.type,
-      JSON.stringify(PlTemplateOverrideV1.fromV2Data(resource))
+      JSON.stringify(PlTemplateOverrideV1.fromV2Data(resource)),
     );
-  }
+  },
 };
 
 const TemplateRenderer: Renderer<TemplateData> = {
@@ -120,7 +120,7 @@ const TemplateRenderer: Renderer<TemplateData> = {
   render(resource, tx, _creator) {
     const tplRef = tx.createStruct(
       PlTemplateV1.type,
-      JSON.stringify(PlTemplateV1.fromV2Data(resource).data)
+      JSON.stringify(PlTemplateV1.fromV2Data(resource).data),
     );
     // Render libraries
     for (const [libId, lib] of Object.entries(resource.libs ?? {})) {
@@ -159,7 +159,7 @@ const TemplateRenderer: Renderer<TemplateData> = {
     tx.setField(fld, tplRef);
     tx.lock(tplRef);
     return overrideRef;
-  }
+  },
 };
 
 function createTemplateV2Tree(tx: PlTransaction, tplInfo: TemplateData): AnyRef {

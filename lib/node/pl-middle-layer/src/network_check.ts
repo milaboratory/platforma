@@ -4,10 +4,11 @@
  * but they can send us and their DevOps team this report. */
 
 import { UnauthenticatedPlClient, plAddressToConfig } from '@milaboratories/pl-client';
-import { ValueOrError } from '@milaboratories/ts-helpers';
-import { setTimeout } from 'timers/promises';
-import { Dispatcher, request } from 'undici';
-import { channel } from 'diagnostics_channel';
+import type { ValueOrError } from '@milaboratories/ts-helpers';
+import { setTimeout } from 'node:timers/promises';
+import type { Dispatcher } from 'undici';
+import { request } from 'undici';
+import { channel } from 'node:diagnostics_channel';
 
 /** All reports we need to collect. */
 interface networkReports {
@@ -69,19 +70,19 @@ const undiciEvents: string[] = [
   'undici:client:beforeConnect',
   'undici:client:connected',
   'undici:client:connectError',
-  
-  'undici:socket:close',            // When a socket is closed
-  'undici:socket:connect',          // When a socket connects
-  'undici:socket:error',            // When a socket encounters an error
 
-  'undici:pool:request',            // When a request is added to the pool
-  'undici:pool:connect',            // When a pool creates a new connection
-  'undici:pool:disconnect',         // When a pool connection is closed
-  'undici:pool:destroy',            // When a pool is destroyed
-  'undici:dispatcher:request',      // When a dispatcher processes a request
-  'undici:dispatcher:connect',      // When a dispatcher connects
-  'undici:dispatcher:disconnect',   // When a dispatcher disconnects
-  'undici:dispatcher:retry'        // When a dispatcher retries a request
+  'undici:socket:close', // When a socket is closed
+  'undici:socket:connect', // When a socket connects
+  'undici:socket:error', // When a socket encounters an error
+
+  'undici:pool:request', // When a request is added to the pool
+  'undici:pool:connect', // When a pool creates a new connection
+  'undici:pool:disconnect', // When a pool connection is closed
+  'undici:pool:destroy', // When a pool is destroyed
+  'undici:dispatcher:request', // When a dispatcher processes a request
+  'undici:dispatcher:connect', // When a dispatcher connects
+  'undici:dispatcher:disconnect', // When a dispatcher disconnects
+  'undici:dispatcher:retry', // When a dispatcher retries a request
 ];
 
 /** Checks connectivity to Platforma Backend, to block registry
@@ -89,7 +90,7 @@ const undiciEvents: string[] = [
  * and generates a string report. */
 export async function checkNetwork(
   plCredentials: string,
-  optsOverrides: Partial<CheckNetworkOpts> = {}
+  optsOverrides: Partial<CheckNetworkOpts> = {},
 ): Promise<string> {
   const ops: CheckNetworkOpts = {
     pingCheckDurationMs: 10000,
@@ -113,7 +114,7 @@ export async function checkNetwork(
 
     bodyLimit: 300,
 
-    ...optsOverrides
+    ...optsOverrides,
   };
 
   const undiciLogs: any[] = [];
@@ -129,8 +130,8 @@ export async function checkNetwork(
         JSON.stringify({
           timestamp,
           event,
-          data: message
-        })
+          data: message,
+        }),
       );
     });
   });
@@ -142,7 +143,7 @@ export async function checkNetwork(
     blockRegistryUiChecks: [],
     blockGARegistryUiChecks: [],
 
-    autoUpdateCdnChecks: []
+    autoUpdateCdnChecks: [],
   };
 
   const plConfig = plAddressToConfig(plCredentials, { defaultRequestTimeout: ops.pingTimeoutMs });
@@ -160,32 +161,32 @@ export async function checkNetwork(
     ops.blockRegistryDurationMs,
     ops.maxRegistryChecksPerSecond,
     async () =>
-      await requestUrl(new URL(ops.blockOverviewPath, ops.blockRegistryUrl), ops, httpClient)
+      await requestUrl(new URL(ops.blockOverviewPath, ops.blockRegistryUrl), ops, httpClient),
   );
 
   report.blockGARegistryOverviewChecks = await recordPings(
     ops.blockRegistryDurationMs,
     ops.maxRegistryChecksPerSecond,
     async () =>
-      await requestUrl(new URL(ops.blockOverviewPath, ops.blockGARegistryUrl), ops, httpClient)
+      await requestUrl(new URL(ops.blockOverviewPath, ops.blockGARegistryUrl), ops, httpClient),
   );
 
   report.blockRegistryUiChecks = await recordPings(
     ops.blockRegistryDurationMs,
     ops.maxRegistryChecksPerSecond,
-    async () => await requestUrl(new URL(ops.blockUiPath, ops.blockRegistryUrl), ops, httpClient)
+    async () => await requestUrl(new URL(ops.blockUiPath, ops.blockRegistryUrl), ops, httpClient),
   );
 
   report.blockGARegistryUiChecks = await recordPings(
     ops.blockRegistryDurationMs,
     ops.maxRegistryChecksPerSecond,
-    async () => await requestUrl(new URL(ops.blockUiPath, ops.blockGARegistryUrl), ops, httpClient)
+    async () => await requestUrl(new URL(ops.blockUiPath, ops.blockGARegistryUrl), ops, httpClient),
   );
 
   report.autoUpdateCdnChecks = await recordPings(
     ops.autoUpdateCdnDurationMs,
     ops.maxAutoUpdateCdnChecksPerSecond,
-    async () => await requestUrl(ops.autoUpdateCdnUrl, ops, httpClient)
+    async () => await requestUrl(ops.autoUpdateCdnUrl, ops, httpClient),
   );
 
   return reportsToString(report, plCredentials, ops, undiciLogs);
@@ -196,7 +197,7 @@ export async function checkNetwork(
 async function recordPings<T>(
   pingCheckDurationMs: number,
   maxPingsPerSecond: number,
-  body: () => Promise<T>
+  body: () => Promise<T>,
 ): Promise<networkReport<T>[]> {
   const startPings = nowMs();
   const reports: networkReport<T>[] = [];
@@ -213,7 +214,7 @@ async function recordPings<T>(
 
     reports.push({
       elapsedMs: elapsedPing,
-      response
+      response,
     });
 
     const sleepBetweenPings = 1000 / maxPingsPerSecond - elapsedPing;
@@ -228,13 +229,13 @@ async function requestUrl(url: string | URL, ops: CheckNetworkOpts, httpClient: 
   const { body: rawBody, statusCode } = await request(url, {
     dispatcher: httpClient,
     headersTimeout: ops.httpTimeoutMs,
-    bodyTimeout: ops.httpTimeoutMs
+    bodyTimeout: ops.httpTimeoutMs,
   });
   const body = await rawBody.text();
 
   return {
     statusCode: statusCode,
-    beginningOfBody: body.slice(0, ops.bodyLimit) + '...'
+    beginningOfBody: body.slice(0, ops.bodyLimit) + '...',
   };
 }
 
@@ -242,12 +243,12 @@ function reportsToString(
   report: networkReports,
   plEndpoint: string,
   opts: CheckNetworkOpts,
-  undiciLogs: any[]
+  undiciLogs: any[],
 ): string {
   const successPings = report.plPings.filter((p) => p.response.ok);
   const failedPings = report.plPings.filter((p) => !p.response.ok);
   const successPingsBodies = [
-    ...new Set(successPings.map((p) => JSON.stringify((p.response as any).value)))
+    ...new Set(successPings.map((p) => JSON.stringify((p.response as any).value))),
   ];
 
   return `

@@ -81,15 +81,15 @@ function migrateFilters(filters: PTableRecordFilter[]): PTableRecordSingleValueF
 const bigintReplacer = (_: string, v: unknown) => (typeof v === 'bigint' ? v.toString() : v);
 
 class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
-  public readonly rustPFrame: PFrameInternal.PFrameV2;
-  public readonly specPFrame: PFrameInternal.PFrameV2;
+  public readonly rustPFrame: PFrameInternal.PFrameV3;
+  public readonly specPFrame: PFrameInternal.PFrameV3;
   private readonly blobIdToResource = new Map<string, ResourceInfo>();
   private readonly blobHandleComputables = new Map<
     string,
     ComputableStableDefined<LocalBlobHandleAndSize>
   >();
 
-  private readonly createDataPFrame: () => PFrameInternal.PFrameV2;
+  private readonly createDataPFrame: () => PFrameInternal.PFrameV3;
   public get disposableDataPFrame() {
     const dataPFrame = this.createDataPFrame();
     return {
@@ -132,7 +132,7 @@ class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
       )).values(),
     ];
 
-    this.rustPFrame = ((): PFrameInternal.PFrameV2 => {
+    this.rustPFrame = ((): PFrameInternal.PFrameV3 => {
       try {
         const pFrame = new PFrameRs(getDebugFlags().logPFrameRequests ? logFunc : undefined);
         pFrame.setDataSource(this);
@@ -148,7 +148,7 @@ class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
       }
     })();
 
-    this.specPFrame = ((): PFrameInternal.PFrameV2 => {
+    this.specPFrame = ((): PFrameInternal.PFrameV3 => {
       try {
         const pFrame = getDebugFlags().logPFrameRequests ? new PFrame(logFunc) : new PFrame();
         for (const column of distinct_columns) {
@@ -168,7 +168,7 @@ class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
       }
     })();
 
-    this.createDataPFrame = (): PFrameInternal.PFrameV2 => {
+    this.createDataPFrame = (): PFrameInternal.PFrameV3 => {
       try {
         const pFrame = getDebugFlags().logPFrameRequests ? new PFrame(logFunc) : new PFrame();
         pFrame.setDataSource(this);
@@ -235,14 +235,58 @@ class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
   }
 }
 
+class PTableHolder implements Disposable {
+  constructor(
+    public readonly table: Promise<PFrameInternal.PTableV3>,
+  ) {}
+
+  [Symbol.dispose](): void {
+    const _ = this.table.then((table) => table.dispose());
+  }
+}
+
 type FullPTableDef = {
   pFrameHandle: PFrameHandle;
   def: PTableDef<PObjectId>;
+  signal?: AbortSignal;
 };
 
-export class PFrameDriver implements SdkPFrameDriver {
+/**
+ * Extends public and safe SDK's driver API with methods used internally in the middle
+ * layer and in tests.
+ */
+export interface InternalPFrameDriver extends SdkPFrameDriver {
+  /** Create a new PFrame */
+  createPFrame(
+    def: PFrameDef<PlTreeNodeAccessor | PColumnValues>,
+    ctx: ComputableCtx,
+  ): PFrameHandle;
+
+  /** Create a new PTable */
+  createPTable(
+    def: PTableDef<PColumn<PlTreeNodeAccessor | PColumnValues>>,
+    ctx: ComputableCtx,
+    signal?: AbortSignal,
+  ): PTableHandle;
+
+  /** Calculates data for the table and returns complete data representation of it */
+  calculateTableData(
+    handle: PFrameHandle,
+    request: CalculateTableDataRequest<PObjectId>,
+    signal?: AbortSignal
+  ): Promise<CalculateTableDataResponse>;
+
+  /** Calculate set of unique values for a specific axis for the filtered set of records */
+  getUniqueValues(
+    handle: PFrameHandle,
+    request: UniqueValuesRequest,
+    signal?: AbortSignal
+  ): Promise<UniqueValuesResponse>;
+}
+
+export class PFrameDriver implements InternalPFrameDriver {
   private readonly pFrames: RefCountResourcePool<InternalPFrameData, PFrameHolder>;
-  private readonly pTables: RefCountResourcePool<FullPTableDef, Promise<PFrameInternal.PTableV2>>;
+  private readonly pTables: RefCountResourcePool<FullPTableDef, PTableHolder>;
   private readonly blobContentCache: LRUCache<string, Uint8Array>;
   /** Limits concurrent requests to PFrame API to prevent deadlock with Node's IO threads */
   private readonly concurrencyLimiter: ConcurrencyLimitingExecutor;
@@ -284,7 +328,7 @@ export class PFrameDriver implements SdkPFrameDriver {
 
     this.pTables = new (class extends RefCountResourcePool<
       FullPTableDef,
-      Promise<PFrameInternal.PTableV2>
+      PTableHolder
     > {
       constructor(
         private readonly pFrames: RefCountResourcePool<InternalPFrameData, PFrameHolder>,
@@ -292,9 +336,9 @@ export class PFrameDriver implements SdkPFrameDriver {
         super();
       }
 
-      protected async createNewResource(params: FullPTableDef): Promise<PFrameInternal.PTableV2> {
+      protected createNewResource(params: FullPTableDef): PTableHolder {
         const handle: PFrameHandle = params.pFrameHandle;
-        const rawPTable = await concurrencyLimiter.run(async () => {
+        const tablePromise = concurrencyLimiter.run(async () => {
           if (getDebugFlags().logPFrameRequests)
             logger.info(
               `PTable creation (pTableHandle = ${this.calculateParamsKey(params)}): ${JSON.stringify(params, bigintReplacer)}`,
@@ -303,9 +347,13 @@ export class PFrameDriver implements SdkPFrameDriver {
           return await disposableDataPFrame.dataPFrame.createTable({
             src: joinEntryToInternal(params.def.src),
             filters: migrateFilters(params.def.filters),
-          });
-        });
-        return params.def.sorting.length !== 0 ? rawPTable.sort(params.def.sorting) : rawPTable;
+          }, params.signal);
+        }).then(async (table) =>
+          params.def.sorting.length !== 0
+            ? await table.sort(params.def.sorting, params.signal)
+            : table,
+        );
+        return new PTableHolder(tablePromise);
       }
 
       protected calculateParamsKey(params: FullPTableDef): string {
@@ -337,10 +385,11 @@ export class PFrameDriver implements SdkPFrameDriver {
   public createPTable(
     def: PTableDef<PColumn<PlTreeNodeAccessor | PColumnValues>>,
     ctx: ComputableCtx,
+    signal?: AbortSignal,
   ): PTableHandle {
     const pFrameHandle = this.createPFrame(extractAllColumns(def.src), ctx);
     const defIds = mapPTableDef(def, (c) => c.id);
-    const res = this.pTables.acquire({ def: defIds, pFrameHandle });
+    const res = this.pTables.acquire({ def: defIds, pFrameHandle, signal });
     if (getDebugFlags().logPFrameRequests)
       this.logger.info(
         `Create PTable call (pFrameHandle = ${pFrameHandle}; pTableHandle = ${JSON.stringify(res)}): ${JSON.stringify(
@@ -409,6 +458,7 @@ export class PFrameDriver implements SdkPFrameDriver {
   public async calculateTableData(
     handle: PFrameHandle,
     request: CalculateTableDataRequest<PObjectId>,
+    signal?: AbortSignal,
   ): Promise<CalculateTableDataResponse> {
     let table = await this.concurrencyLimiter.run(async () => {
       if (getDebugFlags().logPFrameRequests)
@@ -419,12 +469,12 @@ export class PFrameDriver implements SdkPFrameDriver {
       return await disposableDataPFrame.dataPFrame.createTable({
         src: joinEntryToInternal(request.src),
         filters: migrateFilters(request.filters),
-      });
+      }, signal);
     });
 
     if (request.sorting.length > 0) {
       const sortedTable = await this.concurrencyLimiter.run(
-        async () => await table.sort(request.sorting),
+        async () => await table.sort(request.sorting, signal),
       );
       table.dispose();
       table = sortedTable;
@@ -445,6 +495,7 @@ export class PFrameDriver implements SdkPFrameDriver {
   public async getUniqueValues(
     handle: PFrameHandle,
     request: UniqueValuesRequest,
+    signal?: AbortSignal,
   ): Promise<UniqueValuesResponse> {
     return await this.concurrencyLimiter.run(async () => {
       if (getDebugFlags().logPFrameRequests)
@@ -455,7 +506,7 @@ export class PFrameDriver implements SdkPFrameDriver {
       return await disposableDataPFrame.dataPFrame.getUniqueValues({
         ...request,
         filters: migrateFilters(request.filters),
-      });
+      }, signal);
     });
   }
 
@@ -464,12 +515,12 @@ export class PFrameDriver implements SdkPFrameDriver {
   //
 
   public async getShape(handle: PTableHandle): Promise<PTableShape> {
-    const pTable = await this.pTables.getByKey(handle); // internally concurrency limited
+    const pTable = await this.pTables.getByKey(handle).table; // internally concurrency limited
     return pTable.getShape();
   }
 
   public async getSpec(handle: PTableHandle): Promise<PTableColumnSpec[]> {
-    const pTable = await this.pTables.getByKey(handle); // internally concurrency limited
+    const pTable = await this.pTables.getByKey(handle).table; // internally concurrency limited
     return pTable.getSpec(); // sync operation
   }
 
@@ -478,7 +529,7 @@ export class PFrameDriver implements SdkPFrameDriver {
     columnIndices: number[],
     range?: TableRange,
   ): Promise<PTableVector[]> {
-    const pTable = await this.pTables.getByKey(handle); // internally concurrency limited
+    const pTable = await this.pTables.getByKey(handle).table; // internally concurrency limited
     return await this.concurrencyLimiter.run(
       async () => await pTable.getData(columnIndices, range),
     );

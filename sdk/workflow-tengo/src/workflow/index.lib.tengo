@@ -214,13 +214,7 @@ resolve := func(ref, ...options) {
 // template for prerun
 _preRunTpl := undefined
 
-/**
- * Prepare additional resources for the workflow body. The body function of the workflow will be executed only when the references will be
- * returned by the prepare method will ve resolved into a ready resources. The resulting resources will be passed as an input to the body function.
- *
- * @param cb: a callback function returning a map of references to be resolved
- */
-prepare := func(cb) {
+_prepare := func(cb) {
 	self.prepare(func(_){
 		raw := cb(args())
 		prefixed := {}
@@ -230,6 +224,32 @@ prepare := func(cb) {
 		}
 		return prefixed
 	})
+}
+
+/**
+ * Prepare additional resources for the workflow body. The body function of the workflow will be executed only when the references will be
+ * returned by the prepare method will ve resolved into a ready resources. The resulting resources will be passed as an input to the body function.
+ *
+ * @param cb: a callback function returning a map of references to be resolved
+ */
+prepare := func(cb) {
+	if !_isProduction() {
+		return 
+	}
+	_prepare(cb)
+}
+
+/**
+ * Prepare additional resources for the workflow body in pre-run. The body function of the workflow will be executed only when the references will be
+ * returned by the prepare method will ve resolved into a ready resources. The resulting resources will be passed as an input to the body function.
+ *
+ * @param cb: a callback function returning a map of references to be resolved
+ */
+preparePreRun := func(cb) {
+	if !_isStaging() {
+		return 
+	}
+	_prepare(cb)
 }
 
 /**

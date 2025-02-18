@@ -1,4 +1,4 @@
-import { FullArtifactName } from './package';
+import type { FullArtifactName } from './package';
 
 export interface TestArtifactSource {
   fullName: FullArtifactName;
@@ -35,7 +35,7 @@ export const testLocalLib1Name: FullArtifactName = {
   type: 'library',
   pkg: 'current-package',
   id: 'local-library-1',
-  version: '1.2.3'
+  version: '1.2.3',
 };
 export const testLocalLib1Src = `
 otherLib := import("package1:other-lib-2" )
@@ -72,7 +72,7 @@ export const testLocalLib2Name: FullArtifactName = {
   type: 'library',
   pkg: 'current-package',
   id: 'local-library-2',
-  version: '2.3.4'
+  version: '2.3.4',
 };
 export const testLocalLib2Src = `
 otherLib := import("package1:someid")
@@ -97,7 +97,7 @@ export const testLocalLib3Name: FullArtifactName = {
   type: 'library',
   pkg: 'current-package',
   id: 'local-library-3',
-  version: '6.6.6'
+  version: '6.6.6',
 };
 export const testLocalLib3Src = `
 export {
@@ -109,7 +109,7 @@ export const testLocalTpl1Name: FullArtifactName = {
   type: 'template',
   pkg: 'current-package',
   id: 'local-template-1',
-  version: '1.2.3'
+  version: '1.2.3',
 };
 export const testLocalTpl1Src = `
 lib1 := import( ":local-library-1")
@@ -123,7 +123,7 @@ export const testLocalTpl2Name: FullArtifactName = {
   type: 'template',
   pkg: 'current-package',
   id: 'local-template-2',
-  version: '1.2.3'
+  version: '1.2.3',
 };
 export const testLocalTpl2Src = `
 lib := import("package1:other-lib-1")
@@ -136,7 +136,7 @@ export const testLocalTpl3Name: FullArtifactName = {
   type: 'template',
   pkg: 'current-package',
   id: 'local-template-3',
-  version: '1.2.3'
+  version: '1.2.3',
 };
 
 export const testLocalTpl3Src = `
@@ -155,27 +155,27 @@ lib := import(":local-library-3")
 
 export const testLocalLib1: TestArtifactSource = {
   fullName: testLocalLib1Name,
-  src: testLocalLib1Src
+  src: testLocalLib1Src,
 };
 
 export const testLocalLib3: TestArtifactSource = {
   fullName: testLocalLib3Name,
-  src: testLocalLib3Src
+  src: testLocalLib3Src,
 };
 
 export const testLocalTpl1: TestArtifactSource = {
   fullName: testLocalTpl1Name,
-  src: testLocalTpl1Src
+  src: testLocalTpl1Src,
 };
 
 export const testLocalTpl2: TestArtifactSource = {
   fullName: testLocalTpl2Name,
-  src: testLocalTpl2Src
+  src: testLocalTpl2Src,
 };
 
 export const testLocalTpl3: TestArtifactSource = {
   fullName: testLocalTpl3Name,
-  src: testLocalTpl3Src
+  src: testLocalTpl3Src,
 };
 
 export const testLocalPackage = [testLocalTpl1, testLocalLib1, testLocalTpl2];
@@ -184,7 +184,7 @@ export const testPackage1Lib1Name: FullArtifactName = {
   type: 'library',
   pkg: 'package1',
   id: 'other-lib-1',
-  version: '1.2.3'
+  version: '1.2.3',
 };
 export const testPackage1Lib1Src = `
 export {
@@ -196,7 +196,7 @@ export const testPackage1Soft1Name: FullArtifactName = {
   type: 'software',
   pkg: 'current-package',
   id: 'software-1',
-  version: '1.2.3'
+  version: '1.2.3',
 };
 export const testPackage1Soft1Src = `
 some software contents. Template builder should pass it 'as-is'
@@ -206,7 +206,7 @@ export const testPackage1Lib2Name: FullArtifactName = {
   type: 'library',
   pkg: 'package1',
   id: 'other-lib-2',
-  version: '1.2.3'
+  version: '1.2.3',
 };
 export const testPackage1Lib2Src = `
 lib := import("package1:other-lib-1")
@@ -220,34 +220,34 @@ export const testPackage1Tpl3Name: FullArtifactName = {
   type: 'template',
   pkg: 'package1',
   id: 'template-3',
-  version: '1.2.3'
+  version: '1.2.3',
 };
 export const testPackage1Tpl3Src = `
 lib := import("package1:other-lib-1")
 `;
 
-export const testPackage1Tpl3CompiledBase64 =
-  'H4sIAAAAAAAAE22PQQqDMBREr/KZVQsxELsL9CZ/E+VjQ2MiJpUWyd2LglCo2xlm3syK4LsMu2Jy/dMNYmwqD5mb4LvGbHp0o8Ce2wp57mHBUd5TmgutHImIGDmNwrDEWFx4iWFwrByhsMicfYqwMLrVN9Sq/hhFxim4Is3tBxF8R3fy4wa68OkgxnVnHPntWFUon2mvD7pIHFJz2HppzwZ9AanB7OAUAQAA';
+export const testPackage1Tpl3CompiledBase64
+  = 'H4sIAAAAAAAAE22PQQqDMBREr/KZVQsxELsL9CZ/E+VjQ2MiJpUWyd2LglCo2xlm3syK4LsMu2Jy/dMNYmwqD5mb4LvGbHp0o8Ce2wp57mHBUd5TmgutHImIGDmNwrDEWFx4iWFwrByhsMicfYqwMLrVN9Sq/hhFxim4Is3tBxF8R3fy4wa68OkgxnVnHPntWFUon2mvD7pIHFJz2HppzwZ9AanB7OAUAQAA';
 
 export const testPackage1Lib1: TestArtifactSource = {
   fullName: testPackage1Lib1Name,
-  src: testPackage1Lib1Src
+  src: testPackage1Lib1Src,
 };
 
 export const testPackage1Lib2: TestArtifactSource = {
   fullName: testPackage1Lib2Name,
-  src: testPackage1Lib2Src
+  src: testPackage1Lib2Src,
 };
 
 export const testPackage1Tpl3: TestArtifactSource = {
   fullName: testPackage1Tpl3Name,
-  src: testPackage1Tpl3Src
+  src: testPackage1Tpl3Src,
 };
 
 export const testPackage1: TestArtifactSource[] = [
   testPackage1Lib1,
   testPackage1Lib2,
-  testPackage1Tpl3
+  testPackage1Tpl3,
 ];
 
 export const testPackage2: TestArtifactSource[] = [testLocalLib3, testLocalTpl3];
@@ -256,6 +256,6 @@ export const testPackage2BrokenHash: TestArtifactSource[] = [
   testLocalLib3,
   {
     fullName: testLocalTpl3Name,
-    src: testLocalTpl3SrcWrongOverride
-  }
+    src: testLocalTpl3SrcWrongOverride,
+  },
 ];

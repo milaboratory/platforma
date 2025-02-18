@@ -1,5 +1,55 @@
 # @platforma-sdk/bootstrap
 
+## 3.1.18
+
+### Patch Changes
+
+- Updated dependencies [467a150]
+  - @milaboratories/pl-deployments@1.1.11
+
+## 3.1.17
+
+### Patch Changes
+
+- Updated dependencies [7b6b2bd]
+  - @milaboratories/pl-deployments@1.1.10
+
+## 3.1.16
+
+### Patch Changes
+
+- Updated dependencies [12600dd]
+  - @milaboratories/pl-deployments@1.1.9
+
+## 3.1.15
+
+### Patch Changes
+
+- Updated dependencies [e66f726]
+  - @milaboratories/pl-deployments@1.1.8
+
+## 3.1.14
+
+### Patch Changes
+
+- Updated dependencies [b069ecd]
+  - @milaboratories/pl-deployments@1.1.7
+
+## 3.1.13
+
+### Patch Changes
+
+- Updated dependencies [33ea5a0]
+  - @milaboratories/pl-deployments@1.1.6
+
+## 3.1.12
+
+### Patch Changes
+
+- a77b40a: add `any` everywhere, ssh: persistent connection; upload: dynamic part chooser
+- Updated dependencies [a77b40a]
+  - @milaboratories/pl-deployments@1.1.5
+
 ## 3.1.11
 
 ### Patch Changes

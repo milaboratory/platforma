@@ -1,5 +1,129 @@
 # @milaboratories/config-local-ml-integration
 
+## 1.2.28
+
+### Patch Changes
+
+- Updated dependencies [0099c7f]
+  - @milaboratories/pl-middle-layer@1.28.0
+
+## 1.2.27
+
+### Patch Changes
+
+- Updated dependencies [467a150]
+  - @milaboratories/pl-deployments@1.1.11
+  - @milaboratories/pl-config@1.4.2
+  - @milaboratories/pl-middle-layer@1.27.27
+
+## 1.2.26
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.27.26
+
+## 1.2.25
+
+### Patch Changes
+
+- Updated dependencies [1de72a0]
+- Updated dependencies [a25f1b8]
+  - @milaboratories/pl-middle-layer@1.27.25
+
+## 1.2.24
+
+### Patch Changes
+
+- Updated dependencies [23dd55f]
+  - @milaboratories/pl-middle-layer@1.27.24
+
+## 1.2.23
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.27.23
+
+## 1.2.22
+
+### Patch Changes
+
+- Updated dependencies [7b6b2bd]
+  - @milaboratories/pl-deployments@1.1.10
+  - @milaboratories/pl-middle-layer@1.27.22
+
+## 1.2.21
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.27.21
+
+## 1.2.20
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.27.20
+
+## 1.2.19
+
+### Patch Changes
+
+- Updated dependencies [12600dd]
+  - @milaboratories/pl-deployments@1.1.9
+  - @milaboratories/pl-middle-layer@1.27.19
+
+## 1.2.18
+
+### Patch Changes
+
+- Updated dependencies [e66f726]
+  - @milaboratories/pl-deployments@1.1.8
+  - @milaboratories/pl-middle-layer@1.27.18
+
+## 1.2.17
+
+### Patch Changes
+
+- Updated dependencies [b069ecd]
+  - @milaboratories/pl-deployments@1.1.7
+  - @milaboratories/pl-middle-layer@1.27.17
+
+## 1.2.16
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.27.16
+
+## 1.2.15
+
+### Patch Changes
+
+- Updated dependencies [33ea5a0]
+  - @milaboratories/pl-deployments@1.1.6
+  - @milaboratories/pl-middle-layer@1.27.15
+
+## 1.2.14
+
+### Patch Changes
+
+- Updated dependencies [a77b40a]
+  - @milaboratories/pl-middle-layer@1.27.14
+  - @milaboratories/pl-deployments@1.1.5
+  - @milaboratories/ts-helpers@1.1.4
+  - @milaboratories/pl-client@2.7.5
+  - @milaboratories/pl-config@1.4.1
+
+## 1.2.13
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.27.13
+
+## 1.2.12
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.27.12
+
 ## 1.2.11
 
 ### Patch Changes

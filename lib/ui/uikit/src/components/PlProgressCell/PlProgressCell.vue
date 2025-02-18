@@ -6,8 +6,8 @@ import type { PlProgressCellProps } from './types';
 
 const props = withDefaults(defineProps<PlProgressCellProps>(), {
   stage: 'not_started',
-  step: '',
-  progressString: '',
+  step: '', // main text (left)
+  progressString: '', // appended text on the right side (right)
   progress: undefined,
   error: '',
 });

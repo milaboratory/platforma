@@ -1,7 +1,7 @@
 import type * as ssh from 'ssh2';
 import { SshClient } from './ssh';
 import type { MiLogger } from '@milaboratories/ts-helpers';
-import { sleep, notEmpty, fileExists } from '@milaboratories/ts-helpers';
+import { sleep, notEmpty } from '@milaboratories/ts-helpers';
 import type { DownloadBinaryResult } from '../common/pl_binary_download';
 import { downloadBinaryNoExtract } from '../common/pl_binary_download';
 import upath from 'upath';
@@ -9,9 +9,12 @@ import * as plpath from './pl_paths';
 import { getDefaultPlVersion } from '../common/pl_version';
 
 import net from 'net';
-import type { SshPlConfigGenerationResult } from '@milaboratories/pl-config';
+import type { PlLicenseMode, SshPlConfigGenerationResult } from '@milaboratories/pl-config';
 import { generateSshPlConfigs, getFreePort } from '@milaboratories/pl-config';
+import type { SupervisorStatus } from './supervisord';
 import { supervisorStatus, supervisorStop as supervisorCtlShutdown, generateSupervisordConfig, supervisorCtlStart } from './supervisord';
+import type { ConnectionInfo, SshPlPorts } from './connection_info';
+import { newConnectionInfo, parseConnectionInfo, stringifyConnectionInfo } from './connection_info';
 
 export class SshPl {
   private initState: PlatformaInitState = {};
@@ -19,7 +22,7 @@ export class SshPl {
     public readonly logger: MiLogger,
     public readonly sshClient: SshClient,
     private readonly username: string,
-  ) {}
+  ) { }
 
   public info() {
     return {
@@ -38,49 +41,64 @@ export class SshPl {
     }
   }
 
-  public async isAlive(): Promise<boolean> {
-    const arch = await this.getArch();
-    const remoteHome = await this.getUserHomeDirectory();
-
-    try {
-      return await supervisorStatus(this.logger, this.sshClient, remoteHome, arch.arch);
-    } catch (e: unknown) {
-      // probably there are no supervisor on the server.
-      return false;
-    }
+  public cleanUp() {
+    this.sshClient.close();
   }
 
+  /** Provides an info if the platforma and minio are running along with the debug info. */
+  public async isAlive(): Promise<SupervisorStatus> {
+    const arch = await this.getArch();
+    const remoteHome = await this.getUserHomeDirectory();
+    return await supervisorStatus(this.logger, this.sshClient, remoteHome, arch.arch);
+  }
+
+  /** Starts all the services on the server.
+    * Idempotent semantic: we could call it several times. */
   public async start() {
     const arch = await this.getArch();
     const remoteHome = await this.getUserHomeDirectory();
 
     try {
-      await supervisorCtlStart(this.sshClient, remoteHome, arch.arch);
+      if (!(await this.isAlive()).allAlive) {
+        await supervisorCtlStart(this.sshClient, remoteHome, arch.arch);
 
-      // We are waiting for Platforma to run to ensure that it has started.
-      return await this.checkIsAliveWithInterval();
+        // We are waiting for Platforma to run to ensure that it has started.
+        return await this.checkIsAliveWithInterval();
+      }
     } catch (e: unknown) {
-      const msg = `ssh.start: error occurred ${e}`;
+      const msg = `SshPl.start: error occurred ${e}`;
       this.logger.error(msg);
       throw new Error(msg);
     }
   }
 
+  /** Stops all the services on the server.
+    * Idempotent semantic: we could call it several times. */
   public async stop() {
     const arch = await this.getArch();
     const remoteHome = await this.getUserHomeDirectory();
 
     try {
-      await supervisorCtlShutdown(this.sshClient, remoteHome, arch.arch);
-      return await this.checkIsAliveWithInterval(undefined, undefined, false);
+      if ((await this.isAlive()).allAlive) {
+        await supervisorCtlShutdown(this.sshClient, remoteHome, arch.arch);
+        return await this.checkIsAliveWithInterval(undefined, undefined, false);
+      }
     } catch (e: unknown) {
-      const msg = `ssh.stop: error occurred ${e}`;
+      const msg = `PlSsh.stop: error occurred ${e}`;
       this.logger.error(msg);
       throw new Error(msg);
     }
   }
 
+  /** Stops the services, deletes a directory with the state and closes SSH connection. */
   public async reset(): Promise<boolean> {
+    await this.stopAndClean();
+    this.cleanUp();
+    return true;
+  }
+
+  /** Stops platforma and deletes its state. */
+  public async stopAndClean(): Promise<void> {
     const workDir = await this.getUserHomeDirectory();
 
     this.logger.info(`pl.reset: Stop Platforma on the server`);
@@ -88,28 +106,39 @@ export class SshPl {
 
     this.logger.info(`pl.reset: Deleting Platforma workDir ${workDir} on the server`);
     await this.sshClient.deleteFolder(plpath.workDir(workDir));
-
-    return true;
   }
 
-  public async platformaInit(localWorkdir: string): Promise<SshInitReturnTypes> {
-    const state: PlatformaInitState = { localWorkdir };
+  /** Downloads binaries and untar them on the server,
+   * generates all the configs, creates necessary dirs,
+   * and finally starts all the services. */
+  public async platformaInit(options: SshPlConfig): Promise<ConnectionInfo> {
+    const state: PlatformaInitState = { localWorkdir: options.localWorkdir };
 
     try {
+      // merge options with default ops.
+      const ops: SshPlConfig = {
+        ...defaultSshPlConfig,
+        ...options,
+      };
       state.arch = await this.getArch();
       state.remoteHome = await this.getUserHomeDirectory();
-      state.isAlive = await this.isAlive();
+      state.alive = await this.isAlive();
 
-      if (state.isAlive) {
+      if (state.alive.allAlive) {
         state.userCredentials = await this.getUserCredentials(state.remoteHome);
         if (!state.userCredentials) {
           throw new Error(`SshPl.platformaInit: platforma is alive but userCredentials are not found`);
         }
-        return state.userCredentials;
+        const needRestart = state.userCredentials.useGlobalAccess != ops.useGlobalAccess;
+        if (!needRestart)
+          return state.userCredentials;
+
+        // make sure that we won't be in a broken state.
+        await this.stopAndClean();
       }
 
       const downloadRes = await this.downloadBinariesAndUploadToTheServer(
-        localWorkdir, state.remoteHome, state.arch,
+        ops.localWorkdir, state.remoteHome, state.arch,
       );
       state.binPaths = { ...downloadRes, history: undefined };
       state.downloadedBinaries = downloadRes.history;
@@ -136,9 +165,8 @@ export class SshPl {
             minioLocal: state.ports.minioPort.local,
           },
         },
-        licenseMode: {
-          type: 'env',
-        },
+        licenseMode: ops.license,
+        useGlobalAccess: notEmpty(ops.useGlobalAccess),
       });
       state.generatedConfig = { ...config, filesToCreate: { skipped: 'it is too wordy' } };
 
@@ -167,25 +195,22 @@ export class SshPl {
         throw new Error(`Can not write supervisord config on the server ${plpath.workDir(state.remoteHome)}`);
       }
 
-      state.connectionInfo = {
-        plUser: config.plUser,
-        plPassword: config.plPassword,
-        ports: state.ports,
-      };
+      state.connectionInfo = newConnectionInfo(
+        config.plUser,
+        config.plPassword,
+        state.ports,
+        notEmpty(ops.useGlobalAccess),
+      );
       await this.sshClient.writeFileOnTheServer(
         plpath.connectionInfo(state.remoteHome),
-        JSON.stringify(state.connectionInfo, undefined, 2),
+        stringifyConnectionInfo(state.connectionInfo),
       );
 
       await this.start();
       state.started = true;
       this.initState = state;
 
-      return {
-        plUser: config.plUser,
-        plPassword: config.plPassword,
-        ports: state.ports,
-      };
+      return state.connectionInfo;
     } catch (e: unknown) {
       const msg = `SshPl.platformaInit: error occurred: ${e}, state: ${JSON.stringify(state)}`;
       this.logger.error(msg);
@@ -235,8 +260,10 @@ export class SshPl {
 
   /** We have to extract pl in the remote server,
   * because Windows doesn't support symlinks
-  * that are found in linux pl binaries tgz archive.
-  * For this reason, we extract all to the remote server. */
+  * that are found in Linux pl binaries tgz archive.
+  * For this reason, we extract all to the remote server.
+  * It requires `tar` to be installed on the server
+  * (it's not installed for Rocky Linux for example). */
   public async downloadAndUntar(
     localWorkdir: string,
     remoteHome: string,
@@ -277,11 +304,13 @@ export class SshPl {
     await this.sshClient.createRemoteDirectory(state.remoteDir);
     await this.sshClient.uploadFile(state.localArchivePath, state.remoteArchivePath);
 
+    // TODO: Create a proper archive to avoid xattr warnings
     const untarResult = await this.sshClient.exec(
-      `tar xvf ${state.remoteArchivePath} --directory=${state.remoteDir}`,
+      `tar --warning=no-all -xvf ${state.remoteArchivePath} --directory=${state.remoteDir}`,
     );
+
     if (untarResult.stderr)
-      throw new Error(`downloadAndUntar: untar: stderr occurred: ${untarResult.stderr}, stdout: ${untarResult.stdout}`);
+      throw Error(`downloadAndUntar: untar: stderr occurred: ${untarResult.stderr}, stdout: ${untarResult.stdout}`);
 
     state.plUntarDone = true;
 
@@ -302,28 +331,28 @@ export class SshPl {
     return false;
   }
 
-  public async checkIsAliveWithInterval(interval: number = 1000, count = 15, shouldStart = true) {
+  public async checkIsAliveWithInterval(interval: number = 1000, count = 15, shouldStart = true): Promise<void> {
     const maxMs = count * interval;
 
     let total = 0;
     let alive = await this.isAlive();
-    while (shouldStart ? !alive : alive) {
+    while (shouldStart ? !alive.allAlive : alive.allAlive) {
       await sleep(interval);
       total += interval;
       if (total > maxMs) {
-        throw new Error(`isAliveWithInterval: The process did not ${shouldStart ? 'started' : 'stopped'} after ${maxMs} ms.`);
+        throw new Error(`isAliveWithInterval: The process did not ${shouldStart ? 'started' : 'stopped'} after ${maxMs} ms. Live status: ${JSON.stringify(alive)}`);
       }
       alive = await this.isAlive();
     }
   }
 
-  public async getUserCredentials(remoteHome: string): Promise<SshInitReturnTypes> {
+  public async getUserCredentials(remoteHome: string): Promise<ConnectionInfo> {
     const connectionInfo = await this.sshClient.readFile(plpath.connectionInfo(remoteHome));
-    return JSON.parse(connectionInfo) as SshInitReturnTypes;
+    return parseConnectionInfo(connectionInfo);
   }
 
-  public async fetchPorts(remoteHome: string, arch: Arch): Promise<SshPlatformaPorts> {
-    const ports: SshPlatformaPorts = {
+  public async fetchPorts(remoteHome: string, arch: Arch): Promise<SshPlPorts> {
+    const ports: SshPlPorts = {
       grpc: {
         local: await getFreePort(),
         remote: await this.getFreePortForPlatformaOnServer(remoteHome, arch),
@@ -397,36 +426,20 @@ export class SshPl {
   }
 }
 
-export type SshPlatformaPorts = {
-  grpc: {
-    local: number;
-    remote: number;
-  };
-  monitoring: {
-    local: number;
-    remote: number;
-  };
-  debug: {
-    local: number;
-    remote: number;
-  };
-  minioPort: {
-    local: number;
-    remote: number;
-  };
-  minioConsolePort: {
-    local: number;
-    remote: number;
-  };
-};
-
 type Arch = { platform: string; arch: string };
 
-export type SshInitReturnTypes = {
-  plUser: string;
-  plPassword: string;
-  ports: SshPlatformaPorts;
-} | null;
+export type SshPlConfig = {
+  localWorkdir: string;
+  license: PlLicenseMode;
+  useGlobalAccess?: boolean;
+};
+
+const defaultSshPlConfig: Pick<
+  SshPlConfig,
+  'useGlobalAccess'
+> = {
+  useGlobalAccess: false,
+};
 
 type BinPaths = {
   history?: DownloadAndUntarState[];
@@ -451,12 +464,12 @@ type PlatformaInitState = {
   localWorkdir?: string;
   arch?: Arch;
   remoteHome?: string;
-  isAlive?: boolean;
-  userCredentials?: SshInitReturnTypes;
+  alive?: SupervisorStatus;
+  userCredentials?: ConnectionInfo;
   downloadedBinaries?: DownloadAndUntarState[];
   binPaths?: BinPaths;
-  ports?: SshPlatformaPorts;
+  ports?: SshPlPorts;
   generatedConfig?: SshPlConfigGenerationResult;
-  connectionInfo?: SshInitReturnTypes;
+  connectionInfo?: ConnectionInfo;
   started?: boolean;
 };

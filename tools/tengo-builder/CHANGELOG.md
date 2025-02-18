@@ -1,5 +1,17 @@
 # @platforma-sdk/tengo-builder
 
+## 1.17.7
+
+### Patch Changes
+
+- ee1eb99: Use fresher version of tengo-tester package to check tengo scripts (largeer buffer size + more informative error report)
+
+## 1.17.6
+
+### Patch Changes
+
+- f5f8f00: Linter code changes and tiny fixes in command help messages
+
 ## 1.17.5
 
 ### Patch Changes

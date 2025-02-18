@@ -1,5 +1,18 @@
 # @milaboratories/pl-config
 
+## 1.4.2
+
+### Patch Changes
+
+- 467a150: ssh: option for global access
+
+## 1.4.1
+
+### Patch Changes
+
+- Updated dependencies [a77b40a]
+  - @milaboratories/ts-helpers@1.1.4
+
 ## 1.4.0
 
 ### Minor Changes

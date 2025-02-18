@@ -5,7 +5,8 @@ import dns from 'dns';
 import fs from 'fs';
 import { readFile } from 'fs/promises';
 import upath from 'upath';
-import type { MiLogger } from '@milaboratories/ts-helpers';
+import { RetryablePromise, type MiLogger } from '@milaboratories/ts-helpers';
+import { randomBytes } from 'crypto';
 
 const defaultConfig: ConnectConfig = {
   keepaliveInterval: 60000,
@@ -22,6 +23,7 @@ export type SshDirContent = {
 export class SshClient {
   private config?: ConnectConfig;
   public homeDir?: string;
+  private forwardedServers: net.Server[] = [];
 
   constructor(
     private readonly logger: MiLogger,
@@ -45,6 +47,10 @@ export class SshClient {
     return client;
   }
 
+  public getForwardedServers() {
+    return this.forwardedServers;
+  }
+
   public getFullHostName() {
     return `${this.config?.host}:${this.config?.port}`;
   }
@@ -60,16 +66,7 @@ export class SshClient {
    */
   public async connect(config: ConnectConfig) {
     this.config = config;
-    return new Promise((resolve, reject) => {
-      this.client.on('ready', () => {
-        resolve(undefined);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      }).on('error', (err: any) => {
-        reject(new Error(`ssh.connect: error occurred: ${err}`));
-      }).on('timeout', () => {
-        reject(new Error(`timeout was occurred while waiting for SSH connection.`));
-      }).connect(config);
-    });
+    return await connect(this.client, config, () => {}, () => {});
   }
 
   /**
@@ -154,62 +151,112 @@ export class SshClient {
    * @returns { server: net.Server } A promise resolving with the created server instance.
    */
   public async forwardPort(ports: { remotePort: number; localPort: number; localHost?: string }, config?: ConnectConfig): Promise<{ server: net.Server }> {
+    const log = `ssh.forward:${ports.localPort}:${ports.remotePort}.id_${randomBytes(1).toString('hex')}`;
     config = config ?? this.config;
-    return new Promise((resolve, reject) => {
-      if (!config) {
-        reject('No config defined');
-        return;
-      }
-      const conn = new Client();
-      let server: net.Server;
-      conn.on('ready', () => {
-        this.logger.info(`[SSH] Connection to ${config.host}. Remote port ${ports.remotePort} will be available locally on the ${ports.localPort}`);
-        server = net.createServer({ pauseOnConnect: true }, (localSocket) => {
-          conn.forwardOut('127.0.0.1', 0, '127.0.0.1', ports.remotePort,
-            (err, stream) => {
-              if (err) {
-                console.error('Error opening SSH channel:', err.message);
-                localSocket.end();
-                return;
-              }
-              localSocket.pipe(stream);
-              stream.pipe(localSocket);
-              localSocket.resume();
-            },
-          );
-        });
-        server.listen(ports.localPort, '127.0.0.1', () => {
-          this.logger.info(`[+] Port local ${ports.localPort} available locally for remote port → :${ports.remotePort}`);
-          resolve({ server });
+
+    // we make this thing persistent so that if the connection
+    // drops (it happened in the past because of lots of errors and forwardOut opened channels),
+    // we'll recreate it here.
+    const persistentClient = new RetryablePromise((p: RetryablePromise<Client>) => {
+      return new Promise<Client>((resolve, reject) => {
+        const client = new Client();
+
+        client.on('ready', () => {
+          this.logger.info(`${log}.client.ready`);
+          resolve(client);
         });
 
-        server.on('error', (err) => {
-          conn.end();
-          server.close();
-          reject(new Error(`ssh.forwardPort: server error: ${err}`));
+        client.on('error', (err) => {
+          this.logger.info(`${log}.client.error: ${err}`);
+          p.reset();
+          reject(err);
         });
 
-        server.on('close', () => {
-          this.logger.info(`Server closed ${JSON.stringify(ports)}`);
-          if (conn) {
-            this.logger.info(`End SSH connection`);
-            conn.end();
-          }
+        client.on('close', () => {
+          this.logger.info(`${log}.client.closed`);
+          p.reset();
         });
+
+        client.connect(config!);
       });
-
-      conn.on('error', (err) => {
-        this.logger.error(`[SSH] SSH connection error, ports: ${JSON.stringify(ports)}, err: ${err.message}`);
-        server?.close();
-        reject(`ssh.forwardPort: conn.err: ${err}`);
-      });
-
-      conn.on('close', () => {
-        this.logger.info(`[SSH] Connection closed, ports: ${JSON.stringify(ports)}`);
-      });
-
-      conn.connect(config);
     });
+
+    await persistentClient.ensure(); // warm up a connection
+
+    return new Promise((resolve, reject) => {
+      const server = net.createServer({ pauseOnConnect: true }, async (localSocket) => {
+        const sockLog = `${log}.sock_${randomBytes(1).toString('hex')}`;
+        // this.logger.info(`${sockLog}.localSocket: start connection`);
+        let conn: Client;
+        try {
+          conn = await persistentClient.ensure();
+        } catch (e: unknown) {
+          this.logger.info(`${sockLog}.persistentClient.catch: ${e}`);
+          localSocket.end();
+          return;
+        }
+
+        let stream: ClientChannel;
+        try {
+          stream = await forwardOut(this.logger, conn, '127.0.0.1', 0, '127.0.0.1', ports.remotePort);
+        } catch (e: unknown) {
+          this.logger.error(`${sockLog}.forwardOut.err: ${e}`);
+          localSocket.end();
+          return;
+        }
+
+        localSocket.pipe(stream);
+        stream.pipe(localSocket);
+        localSocket.resume();
+        // this.logger.info(`${sockLog}.forwardOut: connected`);
+
+        stream.on('error', (err: unknown) => {
+          this.logger.error(`${sockLog}.stream.error: ${err}`);
+          localSocket.end();
+          stream.end();
+        });
+        stream.on('close', () => {
+          // this.logger.info(`${sockLog}.stream.close: closed`);
+          localSocket.end();
+          stream.end();
+        });
+        localSocket.on('close', () => {
+          this.logger.info(`${sockLog}.localSocket: closed`);
+          localSocket.end();
+          stream.end();
+        });
+      });
+
+      server.listen(ports.localPort, '127.0.0.1', () => {
+        this.logger.info(`${log}.server: started listening`);
+        this.forwardedServers.push(server);
+        resolve({ server });
+      });
+
+      server.on('error', (err) => {
+        server.close();
+        reject(new Error(`${log}.server: error: ${JSON.stringify(err)}`));
+      });
+
+      server.on('close', () => {
+        this.logger.info(`${log}.server: closed ${JSON.stringify(ports)}`);
+        this.forwardedServers = this.forwardedServers.filter((s) => s !== server);
+      });
+    });
+  }
+
+  public closeForwardedPorts(): void {
+    this.logger.info('[SSH] Closing all forwarded ports...');
+    this.forwardedServers.forEach((server) => {
+      const rawAddress = server.address();
+      if (rawAddress && typeof rawAddress !== 'string') {
+        const address: net.AddressInfo = rawAddress;
+        this.logger.info(`[SSH] Closing port forward for server ${address.address}:${address.port}`);
+      }
+
+      server.close();
+    });
+    this.forwardedServers = [];
   }
 
   /**
@@ -264,12 +311,6 @@ export class SshClient {
           resolve(true);
         });
       });
-    });
-  }
-
-  delay(delay: number): Promise<void> {
-    return new Promise((res, rej) => {
-      setTimeout(() => res(), delay);
     });
   }
 
@@ -394,9 +435,9 @@ export class SshClient {
   async checkFileExists(remotePath: string) {
     return this.withSftp(async (sftp) => {
       return new Promise((resolve, reject) => {
-        sftp.stat(remotePath, (err, stats) => {
+        sftp.stat(remotePath, (err: Error | undefined, stats) => {
           if (err) {
-            if ((err as Error & { code: number }).code === 2) {
+            if ((err as unknown as { code?: number })?.code === 2) {
               return resolve(false);
             }
             return reject(new Error(`ssh.checkFileExists: err ${err}`));
@@ -440,7 +481,7 @@ export class SshClient {
 
   public uploadFileUsingExistingSftp(sftp: SFTPWrapper, localPath: string, remotePath: string, mode: number = 0o660) {
     return new Promise((resolve, reject) => {
-      readFile(localPath).then(async (result) => {
+      readFile(localPath).then(async (result: Buffer) => {
         this.writeFile(sftp, remotePath, result, mode)
           .then(() => {
             resolve(undefined);
@@ -493,8 +534,12 @@ export class SshClient {
   public async uploadDirectory(localDir: string, remoteDir: string, mode: number = 0o660): Promise<void> {
     return new Promise((resolve, reject) => {
       this.withSftp(async (sftp: SFTPWrapper) => {
-        await this.__uploadDirectory(sftp, localDir, remoteDir, mode);
-        resolve();
+        try {
+          await this.__uploadDirectory(sftp, localDir, remoteDir, mode);
+          resolve();
+        } catch (e: unknown) {
+          reject(new Error(`ssh.uploadDirectory: ${e}`));
+        }
       });
     });
   }
@@ -590,11 +635,49 @@ export class SshClient {
   }
 
   /**
-   * Closes the SSH client connection.
+   * Closes the SSH client connection and forwarded ports.
    */
   public close(): void {
+    this.closeForwardedPorts();
     this.client.end();
   }
 }
 
 export type SshExecResult = { stdout: string; stderr: string };
+
+async function connect(
+  client: Client,
+  config: ConnectConfig,
+  onError: (e: unknown) => void,
+  onClose: () => void,
+): Promise<Client> {
+  return new Promise((resolve, reject) => {
+    client.on('ready', () => {
+      resolve(client);
+    });
+
+    client.on('error', (err: unknown) => {
+      onError(err);
+      reject(new Error(`ssh.connect: error occurred: ${err}`));
+    });
+
+    client.on('close', () => {
+      onClose();
+    });
+
+    client.connect(config);
+  });
+}
+
+async function forwardOut(logger: MiLogger, conn: Client, localHost: string, localPort: number, remoteHost: string, remotePort: number): Promise<ClientChannel> {
+  return new Promise((resolve, reject) => {
+    conn.forwardOut(localHost, localPort, remoteHost, remotePort, (err, stream) => {
+      if (err) {
+        logger.error(`forwardOut.error: ${err}`);
+        return reject(err);
+      }
+
+      return resolve(stream);
+    });
+  });
+}

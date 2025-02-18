@@ -60,18 +60,20 @@ export function initPrivateKey(): string {
 export async function initContainer(name: string): Promise<StartedTestContainer> {
   await createTestDirForRecursiveUpload();
 
-  const fromCacheContainer = await new GenericContainer(`pl-ssh-test-container-${name}:1.0.0`)
+  const image = `pl-ssh-test-container-${name}:1.0.0`;
+
+  const fromCacheContainer = await new GenericContainer(image)
     .withExposedPorts(...SSH_PORT)
     .withReuse()
     .withName(`pl-ssh-test-${name}`)
     .start()
-    .catch((err) => console.log('No worries, creating a new container'));
+    .catch(() => console.log('No worries, creating a new container'));
 
   if (!fromCacheContainer) {
     generateKeys();
     const container1 = await GenericContainer.fromDockerfile(path.resolve(__dirname, '..', '..', '..'))
       .withCache(true)
-      .build(`pl-ssh-test-container-${name}:1.0.0`, { deleteOnExit: false });
+      .build(image, { deleteOnExit: false });
 
     return container1.withExposedPorts(...SSH_PORT).withReuse().start();
   }

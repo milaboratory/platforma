@@ -39,7 +39,7 @@ schema := {
 	"fileParams": {"any": fileParamsSchema}
 }
 
-/** Same as validation.assertJsonSchema(params, fileParamsSchema, ...),
+/** Same as validation.assertType(params, fileParamsSchema, ...),
  * but with prettier errors for clients. */
 _validateParams := func(params) {
 	ll.assert(ll.isMap(params), "monetization.validateParams(): mnz params must be a map")
@@ -48,7 +48,7 @@ _validateParams := func(params) {
 }
 
 _validateIsReady := func(mnz) {
-	validation.assertJsonSchema(mnz, schema,
+	validation.assertType(mnz, schema,
 		"monetization.assertIsReady(): monetization does not fit schema")
 	ll.assert(len(mnz.productName) > 0,
 		"monetization.assertIsReady(): product name must be set")
@@ -61,7 +61,7 @@ enable := func(mnz, productName) {
 	ll.assert(is_string(productName),
 		"monetization.enable(): product name must be a string, got %v", productName)
 
-	validation.assertJsonSchema(mnz, schema,
+	validation.assertType(mnz, schema,
 		"monetization.enable(): mnz object does not fit schema")
 
 	mnz.enabled = true
@@ -79,7 +79,7 @@ shouldRun := func(mnz) {
 }
 
 toJson := func(mnz) {
-	validation.assertJsonSchema(mnz, schema,
+	validation.assertType(mnz, schema,
 		"monetization.toJson(): monetization object does not fit json schema")
 
 	return ll.fromStrict(mnz)
@@ -87,12 +87,12 @@ toJson := func(mnz) {
 
 /** Adds monetization parameters by a file. */
 addFileParams := func(mnz, fileName, params) {
-	validation.assertJsonSchema(mnz, schema,
+	validation.assertType(mnz, schema,
 		"monetization.addFileParams(): monetization object does not fit json schema")
 
 	_validateParams(params)
 
-	validation.assertJsonSchema(params, fileParamsSchema,
+	validation.assertType(params, fileParamsSchema,
 		"monetization.addFileParams(): file params does not fit json schema")
 
 	ll.assert(mnz.enabled,

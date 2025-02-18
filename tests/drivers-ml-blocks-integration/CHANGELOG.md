@@ -1,5 +1,234 @@
 # @milaboratories/drivers-ml-blocks-integration
 
+## 1.0.161
+
+### Patch Changes
+
+- Updated dependencies [0099c7f]
+  - @milaboratories/pl-middle-layer@1.28.0
+  - @platforma-sdk/test@1.22.53
+
+## 1.0.160
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-blob-url-custom-protocol@1.0.20
+- @milaboratories/milaboratories.test-download-file@1.0.84
+- @milaboratories/milaboratories.test-enter-numbers@1.0.206
+- @milaboratories/milaboratories.test-read-logs@1.0.84
+- @milaboratories/milaboratories.test-sum-numbers@1.0.84
+- @milaboratories/milaboratories.test-upload-file@1.0.84
+
+## 1.0.159
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-blob-url-custom-protocol@1.0.19
+- @milaboratories/milaboratories.test-download-file@1.0.83
+- @milaboratories/milaboratories.test-enter-numbers@1.0.205
+- @milaboratories/milaboratories.test-read-logs@1.0.83
+- @milaboratories/milaboratories.test-sum-numbers@1.0.83
+- @milaboratories/milaboratories.test-upload-file@1.0.83
+
+## 1.0.158
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.27.27
+- @platforma-sdk/test@1.22.50
+
+## 1.0.157
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.27.26
+- @platforma-sdk/test@1.22.49
+
+## 1.0.156
+
+### Patch Changes
+
+- Updated dependencies [1de72a0]
+- Updated dependencies [a25f1b8]
+  - @milaboratories/pl-middle-layer@1.27.25
+  - @platforma-sdk/test@1.22.48
+
+## 1.0.155
+
+### Patch Changes
+
+- Updated dependencies [23dd55f]
+  - @milaboratories/pl-middle-layer@1.27.24
+  - @platforma-sdk/test@1.22.47
+  - @milaboratories/milaboratories.test-blob-url-custom-protocol@1.0.18
+  - @milaboratories/milaboratories.test-blob-url-custom-protocol.model@1.0.15
+  - @milaboratories/milaboratories.test-download-file@1.0.82
+  - @milaboratories/milaboratories.test-download-file.model@1.0.16
+  - @milaboratories/milaboratories.test-enter-numbers@1.0.204
+  - @milaboratories/milaboratories.test-enter-numbers.model@1.0.46
+  - @milaboratories/milaboratories.test-read-logs@1.0.82
+  - @milaboratories/milaboratories.test-read-logs.model@1.0.16
+  - @milaboratories/milaboratories.test-sum-numbers@1.0.82
+  - @milaboratories/milaboratories.test-sum-numbers.model@1.0.16
+  - @milaboratories/milaboratories.test-upload-file@1.0.82
+  - @milaboratories/milaboratories.test-upload-file.model@1.0.16
+
+## 1.0.154
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.27.23
+- @platforma-sdk/test@1.22.46
+- @milaboratories/milaboratories.test-blob-url-custom-protocol@1.0.18
+- @milaboratories/milaboratories.test-blob-url-custom-protocol.model@1.0.15
+- @milaboratories/milaboratories.test-download-file@1.0.82
+- @milaboratories/milaboratories.test-download-file.model@1.0.16
+- @milaboratories/milaboratories.test-enter-numbers@1.0.204
+- @milaboratories/milaboratories.test-enter-numbers.model@1.0.46
+- @milaboratories/milaboratories.test-read-logs@1.0.82
+- @milaboratories/milaboratories.test-read-logs.model@1.0.16
+- @milaboratories/milaboratories.test-sum-numbers@1.0.82
+- @milaboratories/milaboratories.test-sum-numbers.model@1.0.16
+- @milaboratories/milaboratories.test-upload-file@1.0.82
+- @milaboratories/milaboratories.test-upload-file.model@1.0.16
+
+## 1.0.153
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.27.22
+- @platforma-sdk/test@1.22.45
+
+## 1.0.152
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.27.21
+- @platforma-sdk/test@1.22.44
+
+## 1.0.151
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.27.20
+- @platforma-sdk/test@1.22.43
+- @milaboratories/milaboratories.test-blob-url-custom-protocol@1.0.18
+- @milaboratories/milaboratories.test-blob-url-custom-protocol.model@1.0.15
+- @milaboratories/milaboratories.test-download-file@1.0.82
+- @milaboratories/milaboratories.test-download-file.model@1.0.16
+- @milaboratories/milaboratories.test-enter-numbers@1.0.204
+- @milaboratories/milaboratories.test-enter-numbers.model@1.0.46
+- @milaboratories/milaboratories.test-read-logs@1.0.82
+- @milaboratories/milaboratories.test-read-logs.model@1.0.16
+- @milaboratories/milaboratories.test-sum-numbers@1.0.82
+- @milaboratories/milaboratories.test-sum-numbers.model@1.0.16
+- @milaboratories/milaboratories.test-upload-file@1.0.82
+- @milaboratories/milaboratories.test-upload-file.model@1.0.16
+
+## 1.0.150
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.27.19
+- @platforma-sdk/test@1.22.42
+
+## 1.0.149
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.27.18
+- @platforma-sdk/test@1.22.41
+
+## 1.0.148
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.27.17
+- @platforma-sdk/test@1.22.40
+
+## 1.0.147
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-blob-url-custom-protocol@1.0.18
+- @milaboratories/milaboratories.test-download-file@1.0.82
+- @milaboratories/milaboratories.test-enter-numbers@1.0.204
+- @milaboratories/milaboratories.test-read-logs@1.0.82
+- @milaboratories/milaboratories.test-sum-numbers@1.0.82
+- @milaboratories/milaboratories.test-upload-file@1.0.82
+
+## 1.0.146
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.27.16
+- @platforma-sdk/test@1.22.38
+
+## 1.0.145
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.27.15
+- @platforma-sdk/test@1.22.37
+
+## 1.0.144
+
+### Patch Changes
+
+- Updated dependencies [a77b40a]
+  - @milaboratories/pl-middle-layer@1.27.14
+  - @milaboratories/ts-helpers@1.1.4
+  - @platforma-sdk/test@1.22.36
+  - @milaboratories/pl-client@2.7.5
+  - @milaboratories/milaboratories.test-blob-url-custom-protocol@1.0.17
+  - @milaboratories/milaboratories.test-blob-url-custom-protocol.model@1.0.15
+  - @milaboratories/milaboratories.test-download-file@1.0.81
+  - @milaboratories/milaboratories.test-download-file.model@1.0.16
+  - @milaboratories/milaboratories.test-enter-numbers@1.0.203
+  - @milaboratories/milaboratories.test-enter-numbers.model@1.0.46
+  - @milaboratories/milaboratories.test-read-logs@1.0.81
+  - @milaboratories/milaboratories.test-read-logs.model@1.0.16
+  - @milaboratories/milaboratories.test-sum-numbers@1.0.81
+  - @milaboratories/milaboratories.test-sum-numbers.model@1.0.16
+  - @milaboratories/milaboratories.test-upload-file@1.0.81
+  - @milaboratories/milaboratories.test-upload-file.model@1.0.16
+
+## 1.0.143
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.27.13
+- @platforma-sdk/test@1.22.35
+
+## 1.0.142
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-blob-url-custom-protocol@1.0.17
+- @milaboratories/milaboratories.test-download-file@1.0.81
+- @milaboratories/milaboratories.test-enter-numbers@1.0.203
+- @milaboratories/milaboratories.test-read-logs@1.0.81
+- @milaboratories/milaboratories.test-sum-numbers@1.0.81
+- @milaboratories/milaboratories.test-upload-file@1.0.81
+
+## 1.0.141
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.27.12
+- @platforma-sdk/test@1.22.33
+
+## 1.0.140
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-blob-url-custom-protocol@1.0.16
+- @milaboratories/milaboratories.test-download-file@1.0.80
+- @milaboratories/milaboratories.test-enter-numbers@1.0.202
+- @milaboratories/milaboratories.test-read-logs@1.0.80
+- @milaboratories/milaboratories.test-sum-numbers@1.0.80
+- @milaboratories/milaboratories.test-upload-file@1.0.80
+
 ## 1.0.139
 
 ### Patch Changes

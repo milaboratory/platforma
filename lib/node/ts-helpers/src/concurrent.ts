@@ -1,13 +1,25 @@
+/** The argument for iterableFn so it could control async pool from inside. */
+export type AsyncPoolController = {
+  setConcurrency: (n: number) => void,
+}
+
 /** This is a pool of workers, it executes given
  * promises in order with a maximum of concurrent
  * promises defined by @param concurrency.
+ * The concurrency can be changed from inside
+ * via [`AsyncPoolController.setConcurrency`].
  *
  * Slightly modified version of
  * https://github.com/rxaviers/async-pool/blob/1.x/lib/es7.js */
 export async function asyncPool(
-  concurrency: number,
-  iterableFns: (() => Promise<void>)[]
+  initConcurrency: number,
+  iterableFns: ((c: AsyncPoolController) => Promise<void>)[]
 ): Promise<void> {
+  let concurrency = initConcurrency;
+  const controller: AsyncPoolController = {
+    setConcurrency: (n) => concurrency = n,
+  }
+
   const results = [];
   const executing = new Set();
   const errs: Array<Error>[] = [];
@@ -15,7 +27,7 @@ export async function asyncPool(
   for (const fn of iterableFns) {
     if (errs.length > 0) throw new AsyncPoolError(`Errors while executing async pool: ${errs}`);
 
-    const p = fn();
+    const p = fn(controller);
     results.push(p);
     executing.add(p);
 

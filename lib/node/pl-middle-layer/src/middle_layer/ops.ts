@@ -1,15 +1,15 @@
-import { TemporalSynchronizedTreeOps } from './types';
-import {
-  DefaultVirtualLocalStorages,
+import type { TemporalSynchronizedTreeOps } from './types';
+import type {
   DownloadBlobToURLDriverOps,
   DownloadDriverOps,
   OpenFileDialogCallback,
-  VirtualLocalStorageSpec
+  VirtualLocalStorageSpec,
 } from '@milaboratories/pl-drivers';
-import { UploadDriverOps } from '@milaboratories/pl-drivers';
-import { LogsStreamDriverOps } from '@milaboratories/pl-drivers';
-import { ConsoleLoggerAdapter, MiLogger } from '@milaboratories/ts-helpers';
-import { LocalStorageProjection } from '@milaboratories/pl-drivers';
+import type { UploadDriverOps } from '@milaboratories/pl-drivers';
+import type { LogsStreamDriverOps } from '@milaboratories/pl-drivers';
+import type { MiLogger } from '@milaboratories/ts-helpers';
+import { ConsoleLoggerAdapter } from '@milaboratories/ts-helpers';
+import type { LocalStorageProjection } from '@milaboratories/pl-drivers';
 import path from 'node:path';
 
 /** Paths part of {@link DriverKitOps}. */
@@ -121,33 +121,33 @@ export const DefaultDriverKitOpsSettings: Pick<
   logger: new ConsoleLoggerAdapter(),
   blobDriverOps: {
     cacheSoftSizeBytes: 100 * 1024 * 1024, // 100MB
-    nConcurrentDownloads: 10
+    nConcurrentDownloads: 10,
   },
   downloadBlobToURLDriverOps: {
     cacheSoftSizeBytes: 100 * 1024 * 1024, // 100MB
-    nConcurrentDownloads: 10
+    nConcurrentDownloads: 10,
   },
   uploadDriverOps: {
     nConcurrentPartUploads: 10,
     nConcurrentGetProgresses: 10,
     pollingInterval: 1000,
-    stopPollingDelay: 1000
+    stopPollingDelay: 1000,
   },
   logStreamDriverOps: {
     nConcurrentGetLogs: 10,
     pollingInterval: 1000,
-    stopPollingDelay: 1000
-  }
+    stopPollingDelay: 1000,
+  },
 };
 
 export function DefaultDriverKitOpsPaths(
-  workDir: string
+  workDir: string,
 ): Pick<DriverKitOpsPaths,
-  | 'blobDownloadPath'
-  | 'downloadBlobToURLPath'> {
+| 'blobDownloadPath'
+| 'downloadBlobToURLPath'> {
   return {
     blobDownloadPath: path.join(workDir, 'download'),
-    downloadBlobToURLPath: path.join(workDir, 'downloadToURL')
+    downloadBlobToURLPath: path.join(workDir, 'downloadToURL'),
   };
 }
 
@@ -199,22 +199,22 @@ export const DefaultMiddleLayerOpsSettings: Pick<
   ...DefaultDriverKitOpsSettings,
   defaultTreeOptions: {
     pollingInterval: 350,
-    stopPollingDelay: 2500
+    stopPollingDelay: 2500,
   },
   devBlockUpdateRecheckInterval: 1000,
   projectRefreshInterval: 700,
-  stagingRenderingRate: 5
+  stagingRenderingRate: 5,
 };
 
 export function DefaultMiddleLayerOpsPaths(
-  workDir: string
+  workDir: string,
 ): Pick<
-  MiddleLayerOpsPaths,
+    MiddleLayerOpsPaths,
   keyof ReturnType<typeof DefaultDriverKitOpsPaths> | 'frontendDownloadPath'
-> {
+  > {
   return {
     ...DefaultDriverKitOpsPaths(workDir),
-    frontendDownloadPath: path.join(workDir, 'frontend')
+    frontendDownloadPath: path.join(workDir, 'frontend'),
   };
 }
 
@@ -222,6 +222,6 @@ export type MiddleLayerOpsConstructor = Omit<
   MiddleLayerOpsSettings,
   keyof typeof DefaultMiddleLayerOpsSettings
 > &
-  Partial<typeof DefaultMiddleLayerOpsSettings> &
-  Omit<MiddleLayerOpsPaths, keyof Awaited<ReturnType<typeof DefaultMiddleLayerOpsPaths>>> &
-  Partial<Awaited<ReturnType<typeof DefaultMiddleLayerOpsPaths>>>;
+Partial<typeof DefaultMiddleLayerOpsSettings> &
+Omit<MiddleLayerOpsPaths, keyof Awaited<ReturnType<typeof DefaultMiddleLayerOpsPaths>>> &
+Partial<Awaited<ReturnType<typeof DefaultMiddleLayerOpsPaths>>>;

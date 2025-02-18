@@ -1,13 +1,14 @@
-import { AnyRef, field, Pl, PlTransaction } from '@milaboratories/pl-client';
-import { ResourceType } from '@platforma-sdk/model';
+import type { AnyRef, PlTransaction } from '@milaboratories/pl-client';
+import { field, Pl } from '@milaboratories/pl-client';
+import type { ResourceType } from '@platforma-sdk/model';
 
 const EphRenderTemplate: ResourceType = {
   name: 'EphRenderTemplate',
-  version: '1'
+  version: '1',
 };
 const RenderTemplate: ResourceType = {
   name: 'RenderTemplate',
-  version: '1'
+  version: '1',
 };
 
 /**
@@ -24,7 +25,7 @@ export function createRenderTemplate<O extends string>(
   tpl: AnyRef,
   ephemeral: boolean,
   inputs: Pl.PlRecord,
-  outputNames: O[]
+  outputNames: O[],
 ): Record<O, AnyRef> {
   if (outputNames.length === 0) throw new Error('Zero output names provided');
   const rId = ephemeral ? tx.createEphemeral(EphRenderTemplate) : tx.createStruct(RenderTemplate);

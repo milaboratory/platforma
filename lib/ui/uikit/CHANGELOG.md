@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.58
+
+### Patch Changes
+
+- 2970f8d: [blocks] Move to standard QC components (progress & qc bars) in all upstream blocks
+
 ## 2.2.57
 
 ### Patch Changes
