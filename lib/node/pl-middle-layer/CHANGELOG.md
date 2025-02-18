@@ -1,5 +1,12 @@
 # @milaboratories/pl-middle-layer
 
+## 1.27.25
+
+### Patch Changes
+
+- 1de72a0: "InternalPFrameDriver interface"
+- a25f1b8: PFrameDriver AbortSignal support
+
 ## 1.27.24
 
 ### Patch Changes
