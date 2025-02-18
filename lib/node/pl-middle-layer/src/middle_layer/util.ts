@@ -1,9 +1,10 @@
-import { PlTreeNodeAccessor } from '@milaboratories/pl-tree';
+import type { PlTreeNodeAccessor } from '@milaboratories/pl-tree';
 import { projectFieldName } from '../model/project_model';
 import { Pl } from '@milaboratories/pl-client';
 import { ifNotUndef } from '../cfg_render/util';
-import { BlockPackInfo } from '../model/block_pack';
-import { BlockConfig, extractConfig } from '@platforma-sdk/model';
+import type { BlockPackInfo } from '../model/block_pack';
+import type { BlockConfig } from '@platforma-sdk/model';
+import { extractConfig } from '@platforma-sdk/model';
 
 export type BlockPackInfoAndId = {
   /** To be added to computable keys, to force reload on config change */
@@ -17,22 +18,22 @@ export type BlockPackInfoAndId = {
 /** Returns block pack info along with string representation of block-pack resource id */
 export function getBlockPackInfo(
   prj: PlTreeNodeAccessor,
-  blockId: string
+  blockId: string,
 ): BlockPackInfoAndId | undefined {
   return ifNotUndef(
     prj.traverse(
       {
         field: projectFieldName(blockId, 'blockPack'),
         assertFieldType: 'Dynamic',
-        errorIfFieldNotSet: true
+        errorIfFieldNotSet: true,
       },
-      { field: Pl.HolderRefField, assertFieldType: 'Input', errorIfFieldNotFound: true }
+      { field: Pl.HolderRefField, assertFieldType: 'Input', errorIfFieldNotFound: true },
     ),
     (bpAcc) => {
       const info = bpAcc.getDataAsJson<BlockPackInfo>()!;
       const cfg = extractConfig(info.config);
       return { bpId: bpAcc.resourceInfo.id.toString(), info, cfg };
-    }
+    },
   );
 }
 

@@ -1,5 +1,7 @@
-import { ChangeSource, Computable, ComputableCtx } from '@milaboratories/computable';
-import { NavigationState, DefaultNavigationState } from '@platforma-sdk/model';
+import type { ComputableCtx } from '@milaboratories/computable';
+import { ChangeSource, Computable } from '@milaboratories/computable';
+import type { NavigationState } from '@platforma-sdk/model';
+import { DefaultNavigationState } from '@platforma-sdk/model';
 
 type NavigationStateEntry = {
   state: NavigationState;
@@ -34,7 +36,7 @@ export class NavigationStates {
       (ctx) => {
         return this.readState(ctx, blockId);
       },
-      { key: `navigationState#${blockId}` }
+      { key: `navigationState#${blockId}` },
     );
   }
 

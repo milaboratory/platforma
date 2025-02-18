@@ -1,23 +1,25 @@
-import { PollComputablePool, PollPoolOps } from '@milaboratories/computable';
-import {
-  AnyChannel,
+import type { PollPoolOps } from '@milaboratories/computable';
+import { PollComputablePool } from '@milaboratories/computable';
+import type {
   BlockPackFromRegistryV2,
-  blockPackIdToString,
   BlockPackSpec,
   BlockSettings,
-  UpdateSuggestions,
-  StableChannel
+  UpdateSuggestions } from '@milaboratories/pl-model-middle-layer';
+import {
+  AnyChannel,
+  blockPackIdToString,
+  StableChannel,
 } from '@milaboratories/pl-model-middle-layer';
-import { Dispatcher } from 'undici';
+import type { Dispatcher } from 'undici';
 import { getDevV1PacketMtime, getDevV2PacketMtime } from './registry';
 import { tryLoadPackDescription } from '@platforma-sdk/block-tools';
-import { MiLogger } from '@milaboratories/ts-helpers';
-import { V2RegistryProvider } from './registry-v2-provider';
+import type { MiLogger } from '@milaboratories/ts-helpers';
+import type { V2RegistryProvider } from './registry-v2-provider';
 import semver from 'semver';
 import canonicalize from 'canonicalize';
 
 export const DefaultBlockUpdateWatcherOps: PollPoolOps = {
-  minDelay: 1500
+  minDelay: 1500,
 };
 
 export type BlockUpdateWatcherOps = Partial<PollPoolOps> & {
@@ -47,7 +49,7 @@ export class BlockUpdateWatcher extends PollComputablePool<
   constructor(
     private readonly registryProvider: V2RegistryProvider,
     logger: MiLogger,
-    ops: BlockUpdateWatcherOps = {}
+    ops: BlockUpdateWatcherOps = {},
   ) {
     super({ ...ops, ...DefaultBlockUpdateWatcherOps }, logger);
     this.http = ops.http;
@@ -100,7 +102,6 @@ export class BlockUpdateWatcher extends PollComputablePool<
             const { versionLock, skipVersion } = req.settings;
             if (versionLock === 'patch') return { suggestions: [] };
             const registry = this.registryProvider.getRegistry(cSpec.registryUrl);
-            let spec: BlockPackSpec | undefined;
             let channel: string | undefined = this.preferredUpdateChannel;
 
             if (channel === undefined) {
@@ -112,7 +113,7 @@ export class BlockUpdateWatcher extends PollComputablePool<
                   const a2 = await registry.getLatestOverview(cSpec.id, AnyChannel);
                   if (a2 === undefined) {
                     this.logger.error(
-                      `No "any" channel record for ${blockPackIdToString(cSpec.id)}`
+                      `No "any" channel record for ${blockPackIdToString(cSpec.id)}`,
                     );
                     return { suggestions: [] };
                   }
@@ -142,7 +143,7 @@ export class BlockUpdateWatcher extends PollComputablePool<
 
             const suggestions: UpdateSuggestions = vSuggestions.map(({ type, update }) => ({
               type,
-              update: { ...cSpec, id: { ...cSpec.id, version: update } }
+              update: { ...cSpec, id: { ...cSpec.id, version: update } },
             }));
 
             if (vMainSuggestion === undefined) return { suggestions };
@@ -151,7 +152,7 @@ export class BlockUpdateWatcher extends PollComputablePool<
 
             const mainSuggestion: BlockPackFromRegistryV2 = {
               ...cSpec,
-              id: { ...cSpec.id, version: vMainSuggestion }
+              id: { ...cSpec.id, version: vMainSuggestion },
             };
 
             // warming cache
