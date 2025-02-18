@@ -117,7 +117,7 @@ describe('SSH Tests', () => {
   it('Simple server should forward remote SSH port to a local port', async () => {
     const localPort = 3001;
 
-    const resFailed = await fetch(`http://127.0.0.1:${localPort}`).catch((err) => console.log('Must fail'));
+    const resFailed = await fetch(`http://127.0.0.1:${localPort}`).catch((err) => console.log(`Must fail: ${err}`));
     expect(resFailed).toBe(undefined);
 
     const { server } = await client.forwardPort({

@@ -9,11 +9,11 @@ export const supervisordDirName = 'supervisord-0.7.3';
 export const supervisordSubDirName = 'supervisord_0.7.3_Linux_64-bit';
 
 export function workDir(remoteHome: string) {
-  return upath.join(remoteHome, 'platforma_ssh');
+  return upath.join(remoteHome, '.platforma_ssh');
 }
 
 export function binariesDir(remoteHome: string) {
-  return upath.join(remoteHome, 'platforma_ssh', 'binaries');
+  return upath.join(workDir(remoteHome), 'binaries');
 }
 
 export function platformaBaseDir(remoteHome: string, arch: string) {
@@ -26,6 +26,10 @@ export function platformaDir(remoteHome: string, arch: string) {
 
 export function platformaBin(remoteHome: string, arch: string) {
   return upath.join(platformaDir(remoteHome, arch), 'platforma');
+}
+
+export function platformaConf(remoteHome: string): string {
+  return upath.join(workDir(remoteHome), 'config.yaml');
 }
 
 export function platformaFreePortBin(remoteHome: string, arch: string): string {
