@@ -4,7 +4,8 @@ import { downloadBinary } from './pl_binary_download';
 import { getDefaultPlVersion } from './pl_version';
 import os from 'os';
 import upath from 'upath';
-import { newOs, OSType } from './os_and_arch';
+import type { OSType } from './os_and_arch';
+import { newOs } from './os_and_arch';
 
 /** Shows how the binary should be got. */
 export type PlBinarySource = PlBinarySourceDownload | PlBinarySourceLocal;

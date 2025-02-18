@@ -314,12 +314,6 @@ export class SshClient {
     });
   }
 
-  delay(delay: number): Promise<void> {
-    return new Promise((res, rej) => {
-      setTimeout(() => res(), delay);
-    });
-  }
-
   public async withSftp<R>(callback: (sftp: SFTPWrapper) => Promise<R>): Promise<R> {
     return new Promise((resolve, reject) => {
       this.client.sftp((err, sftp) => {
@@ -441,9 +435,9 @@ export class SshClient {
   async checkFileExists(remotePath: string) {
     return this.withSftp(async (sftp) => {
       return new Promise((resolve, reject) => {
-        sftp.stat(remotePath, (err, stats) => {
+        sftp.stat(remotePath, (err: Error | undefined, stats) => {
           if (err) {
-            if ((err as Error & { code: number }).code === 2) {
+            if ((err as unknown as { code?: number })?.code === 2) {
               return resolve(false);
             }
             return reject(new Error(`ssh.checkFileExists: err ${err}`));
@@ -540,8 +534,12 @@ export class SshClient {
   public async uploadDirectory(localDir: string, remoteDir: string, mode: number = 0o660): Promise<void> {
     return new Promise((resolve, reject) => {
       this.withSftp(async (sftp: SFTPWrapper) => {
-        await this.__uploadDirectory(sftp, localDir, remoteDir, mode);
-        resolve();
+        try {
+          await this.__uploadDirectory(sftp, localDir, remoteDir, mode);
+          resolve();
+        } catch (e: unknown) {
+          reject(new Error(`ssh.uploadDirectory: ${e}`));
+        }
       });
     });
   }
