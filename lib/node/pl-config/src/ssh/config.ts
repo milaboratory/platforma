@@ -12,7 +12,7 @@ import {
 } from '../common/license';
 import { newHtpasswdFile } from '../common/auth';
 import { newRemoteConfigStorages } from '../common/storages';
-import { newDefaultPackageSettings } from '../common/packageloader';
+import { packageLoaderConfig } from '../common/packageloader';
 import * as crypto from 'node:crypto';
 import { newDefaultPlConfig } from '../common/config';
 
@@ -27,6 +27,9 @@ export type SshPlConfigGeneratorOptions = {
   portsMode: PlConfigPortsCustomWithMinio;
   /** How to get license. */
   licenseMode: PlLicenseMode;
+
+  /** Should binary registries be overridden. */
+  useGlobalAccess: boolean;
 
   /**
    * A hook that allows to override any default configuration.
@@ -110,10 +113,10 @@ export async function generateSshPlConfigs(
 
   const license = await getLicenseValue(opts.licenseMode);
   const htpasswd = newHtpasswdFile(opts.workingDir, [{ user: plUser, password: plPassword }]);
-  const packageLoaderPath = newDefaultPackageSettings(opts.workingDir);
+  const packageLoader = packageLoaderConfig(opts.workingDir, opts.useGlobalAccess);
 
   const configPath = upath.join(opts.workingDir, 'config.yaml');
-  let config = newDefaultPlConfig(endpoints, license, htpasswd.filePath, plJwt, packageLoaderPath, storages);
+  let config = newDefaultPlConfig(endpoints, license, htpasswd.filePath, plJwt, packageLoader, storages);
   if (opts.plConfigPostprocessing)
     config = opts.plConfigPostprocessing(config);
 
@@ -124,7 +127,7 @@ export async function generateSshPlConfigs(
   return {
     workingDir: opts.workingDir,
     filesToCreate,
-    dirsToCreate: storages.dirsToCreate.concat([packageLoaderPath]),
+    dirsToCreate: storages.dirsToCreate.concat([packageLoader.packagesRoot]),
     plConfig: { configPath },
     minioConfig: newMinioConfig(minioUser, minioPassword, storages.mainStoragePath, endpoints.minio!, endpoints.minioConsole!),
 
