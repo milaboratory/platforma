@@ -501,13 +501,26 @@ export class ProjectMutator {
   //   this.updateLastModified();
   // }
 
-  private createCtx(upstream: Set<string>, ctxField: 'stagingCtx' | 'prodCtx'): AnyRef {
+  private createProdCtx(upstream: Set<string>): AnyRef {
     const upstreamContexts: AnyRef[] = [];
     upstream.forEach((id) => {
       const info = this.getBlockInfo(id);
-      if (info.fields[ctxField] === undefined || info.fields[ctxField].ref === undefined)
+      if (info.fields['prodCtx']?.ref === undefined)
         throw new Error('One of the upstreams staging is not rendered.');
-      upstreamContexts.push(Pl.unwrapHolder(this.tx, info.fields[ctxField].ref));
+      upstreamContexts.push(Pl.unwrapHolder(this.tx, info.fields['prodCtx'].ref));
+    });
+    return createBContextFromUpstreams(this.tx, upstreamContexts);
+  }
+
+  private createStagingCtx(upstream: Set<string>): AnyRef {
+    const upstreamContexts: AnyRef[] = [];
+    upstream.forEach((id) => {
+      const info = this.getBlockInfo(id);
+      if (info.fields['stagingCtx']?.ref === undefined)
+        throw new Error('One of the upstreams staging is not rendered.');
+      upstreamContexts.push(Pl.unwrapHolder(this.tx, info.fields['stagingCtx'].ref));
+      if (info.fields['prodCtx']?.ref !== undefined)
+        upstreamContexts.push(Pl.unwrapHolder(this.tx, info.fields['prodCtx'].ref));
     });
     return createBContextFromUpstreams(this.tx, upstreamContexts);
   }
@@ -521,7 +534,7 @@ export class ProjectMutator {
 
     const info = this.getBlockInfo(blockId);
 
-    const ctx = this.createCtx(this.getStagingGraph().nodes.get(blockId)!.upstream, 'stagingCtx');
+    const ctx = this.createStagingCtx(this.getStagingGraph().nodes.get(blockId)!.upstream);
 
     if (this.getBlock(blockId).renderingMode !== 'Heavy') throw new Error('not supported yet');
 
@@ -551,10 +564,7 @@ export class ProjectMutator {
 
     const info = this.getBlockInfo(blockId);
 
-    const ctx = this.createCtx(
-      this.getPendingProductionGraph().nodes.get(blockId)!.upstream,
-      'prodCtx',
-    );
+    const ctx = this.createProdCtx(this.getPendingProductionGraph().nodes.get(blockId)!.upstream);
 
     if (this.getBlock(blockId).renderingMode === 'Light')
       throw new Error('Can\'t render production for light block.');
@@ -787,12 +797,20 @@ export class ProjectMutator {
       }
     }
 
+    const renderedArray = [...rendered];
+
     // sending to limbo all downstream blocks
-    prodGraph.traverse('downstream', [...rendered], (node) => {
+    prodGraph.traverse('downstream', renderedArray, (node) => {
       if (rendered.has(node.id))
         // don't send to limbo blocks that were just rendered
         return;
       this.resetOrLimboProduction(node.id);
+    });
+
+    // resetting staging outputs for all downstream blocks
+    this.getStagingGraph().traverse('downstream', renderedArray, ({ id }) => {
+      // don't reset staging of the first rendered block
+      if (renderedArray[0] !== id) this.resetStaging(id);
     });
 
     if (rendered.size > 0) this.updateLastModified();
