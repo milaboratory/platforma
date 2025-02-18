@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.22.51
+
+### Patch Changes
+
+- 7ac5190: PlTableFilter support 'pl7.app/discreteValues' annotation
+
 ## 1.22.39
 
 ### Patch Changes
