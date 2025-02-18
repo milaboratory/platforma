@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.22.52
+
+### Patch Changes
+
+- 48f1820: PlAgDataTable slot for controls
+
 ## 1.22.51
 
 ### Patch Changes

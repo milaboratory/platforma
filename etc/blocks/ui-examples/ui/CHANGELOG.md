@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.3.35
+
+### Patch Changes
+
+- 48f1820: PlAgDataTable slot for controls
+
 ## 1.3.34
 
 ### Patch Changes
