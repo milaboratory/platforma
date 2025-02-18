@@ -1,5 +1,13 @@
 # @milaboratories/pl-local
 
+## 1.1.11
+
+### Patch Changes
+
+- 467a150: ssh: option for global access
+- Updated dependencies [467a150]
+  - @milaboratories/pl-config@1.4.2
+
 ## 1.1.10
 
 ### Patch Changes
