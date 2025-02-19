@@ -29,7 +29,9 @@ llAggTpl := assets.importTemplate(":pframes.aggregate")
  *
  * @param data    data resource (currently only PColumnData/ResourceMap is supported)
  * @param indices indices to aggregate over (these indices will be stripped from the input map,
- *                meaning of this parameter is the opposite of GROUP BY from SQL)
+ *                meaning of this parameter is the opposite of GROUP BY from SQL);
+ *                if indices == undefined, "aggregate" will work as "map", and pass each
+ *                input value as raw resource
  * @param bodyTpl reference to the template implementing particular aggregation (see contract above)
  * @param outputs array of output settings to to collect from rendered templates
  *
@@ -56,6 +58,8 @@ llAggTpl := assets.importTemplate(":pframes.aggregate")
  *                    | {
  *                        type: "Xsv",            // i.e. CSV or TSV
  *						  xsvType: "tsv" | "csv",
+ *                        flatten: boolean,       // if true, all columns will be added one by one to the
+ *                                                // output map with "{outputName}/{columnId}" keys
  *                        settings: object        // xsv conversion specification (better provide refined
  *                                                // settings via the decomposePfconvImportCfg() function)
  *                      } // - assume the output is a text file to be converted with pfConvert
@@ -83,7 +87,7 @@ aggregate := func(data, indices, bodyTpl, outputs, isEph, ...extra) {
 	}
 
 	renderResult := render.createEphemeral(llAggTpl, renderInputs)
-	return renderResult;
+	return renderResult
 }
 
 export ll.toStrict({
