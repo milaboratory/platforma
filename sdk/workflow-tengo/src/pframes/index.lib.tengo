@@ -3,11 +3,9 @@
  */
 
 ll := import(":ll")
-oop := import(":oop")
-smart := import(":smart")
 assets := import(":assets")
 render := import(":render")
-constants := import(":pframes.constants")
+builder := import(":pframes.builder")
 
 /**
  * Given a reference to the p-frame, converts all inner resource files into resources that can be
@@ -22,32 +20,6 @@ exportFrame := func(pf) {
  */
 exportColumnData := func(data) {
 	return render.createEphemeral(assets.importTemplate(":pframes.export-single-pcolumn"), { data: data }).output("result")
-}
-
-/**
- * Creates a builder for p-frame resource.
- */
-pFrameBuilder := func() {
-	r := smart.structBuilder(constants.RTYPE_P_FRAME)
-
-	self := undefined
-	self = ll.toStrict(oop.inherit(r, {
-
-		add: func(column, spec, data) {
-			if (!is_undefined(spec)) {
-				r.createInputField(column + ".spec").setRefOrJson(spec)
-			}
-			if (!is_undefined(data)) {
-				r.createInputField(column + ".data").setRefOrJson(data)
-			}
-			return self
-		},
-
-		build: func() {
-			return r.lockAndBuild()
-		}
-	}))
-	return self
 }
 
 /**
@@ -144,7 +116,7 @@ pColumnResourceMapDataBuilder := func(keyLength) {
 export ll.toStrict({
 	// aggregationBuilder: aggregationBuilder,
 	exportFrame: exportFrame,
-	pFrameBuilder: pFrameBuilder,
+	pFrameBuilder: builder.pFrameBuilder,
 	exportColumnData: exportColumnData,
 	pColumnResourceMapDataBuilder: pColumnResourceMapDataBuilder
 })

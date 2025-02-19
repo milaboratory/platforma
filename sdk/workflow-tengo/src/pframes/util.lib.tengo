@@ -317,9 +317,12 @@ decomposePfconvImportCfg := func(cfg, ...ops) {
 	}
 }
 
+EMPTY_JSON_KEY := "[]" // string(json.encode([]))
+
 export ll.toStrict({
 	PFCONV_IMPORT_CFG_SCHEMA: PFCONV_IMPORT_CFG_SCHEMA,
 	PFCONV_EXPORT_CFG_SCHEMA: PFCONV_EXPORT_CFG_SCHEMA,
+	EMPTY_JSON_KEY: EMPTY_JSON_KEY,
 
 	xsvColumnId: xsvColumnId,
 	purifySpec: purifySpec,
