@@ -1,5 +1,11 @@
 # @milaboratories/pl-local
 
+## 1.1.12
+
+### Patch Changes
+
+- 1b37b62: pl-deployments: fix ssh exports
+
 ## 1.1.11
 
 ### Patch Changes

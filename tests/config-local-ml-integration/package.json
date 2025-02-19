@@ -2,7 +2,7 @@
   "name": "@milaboratories/config-local-ml-integration",
   "private": true,
   "description": "Tests for block registry reader",
-  "version": "1.2.28",
+  "version": "1.2.29",
   "scripts": {
     "type-check": "tsc --noEmit --composite false",
     "build": "vite build",
