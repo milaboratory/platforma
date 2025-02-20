@@ -53,7 +53,7 @@ export function rerunLast(logger: winston.Logger, options: SpawnOptions): runRes
 
 export function run(logger: winston.Logger, cmd: string, args: readonly string[], options: SpawnOptions): ChildProcess {
   logger.debug(
-    `Running:\n  env: ${JSON.stringify(options.env)}\n  cmd: ${JSON.stringify([cmd, ...args])}\n  wd: ${options.cwd?.toString()}`,
+    `Running:\n  cmd: ${JSON.stringify([cmd, ...args])}\n  wd: ${options.cwd?.toString()}`,
   );
 
   options.env = { ...process.env, ...options.env };
