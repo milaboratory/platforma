@@ -65,7 +65,10 @@ export type ColDefProgress = {
  * @returns A {@link ColDefProgress} object to configure the progress overlay,
  *          or `undefined` if no progress overlay should be rendered.
  */
-export type ColDefProgressCallback<TData, TValue = any> = (cellData: ICellRendererParams<TData, TValue>) => ColDefProgress;
+export type ColDefProgressCallback<TData = any, TValue = any> = (
+  value: TValue,
+  cellData: ICellRendererParams<TData, TValue>
+) => ColDefProgress;
 
 /**
  * Extended AG Grid column definition that supports additional properties for
@@ -77,7 +80,7 @@ export type ColDefProgressCallback<TData, TValue = any> = (cellData: ICellRender
  * @property progress - An optional callback to provide progress overlay configuration.
  * @property noGutters - If `true`, removes padding from the cell.
  */
-export interface ColDefExtended<TData, TValue = any> extends ColDef<TData> {
+export interface ColDefExtended<TData, TValue = any> extends ColDef<TData, TValue> {
   progress?: ColDefProgressCallback<TData, TValue>;
   noGutters?: boolean;
   headerComponentParams?: PlAgHeaderComponentParams;
@@ -156,7 +159,7 @@ function handleProgress<TData>(def: ColDefExtended<TData>) {
     def.cellStyle = Object.assign({}, def.cellStyle ?? {}, noGuttersStyle());
 
     def.cellRendererSelector = (cellData) => {
-      const pt = progress(cellData);
+      const pt = progress(cellData.value, cellData);
 
       if (!pt) {
         return cellRendererSelector?.(cellData);
