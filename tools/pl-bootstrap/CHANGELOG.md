@@ -1,5 +1,11 @@
 # @platforma-sdk/bootstrap
 
+## 3.1.20
+
+### Patch Changes
+
+- 3d742d7: Don't print env variables into log when starting service instance with pl-dev
+
 ## 3.1.19
 
 ### Patch Changes
