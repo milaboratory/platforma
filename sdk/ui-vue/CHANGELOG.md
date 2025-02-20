@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.22.55
+
+### Patch Changes
+
+- fab0a91: [sdk/ui-vue] Create a standard composable for use with AgGridVue
+
 ## 1.22.52
 
 ### Patch Changes
