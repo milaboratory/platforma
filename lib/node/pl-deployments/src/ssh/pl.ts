@@ -100,13 +100,13 @@ export class SshPl {
 
   /** Stops platforma and deletes its state. */
   public async stopAndClean(): Promise<void> {
-    const workDir = await this.getUserHomeDirectory();
+    const remoteHome = await this.getUserHomeDirectory();
 
     this.logger.info(`pl.reset: Stop Platforma on the server`);
     await this.stop();
 
-    this.logger.info(`pl.reset: Deleting Platforma workDir ${workDir} on the server`);
-    await this.sshClient.deleteFolder(plpath.workDir(workDir));
+    this.logger.info(`pl.reset: Deleting Platforma workDir ${plpath.workDir(remoteHome)} on the server`);
+    await this.sshClient.deleteFolder(plpath.workDir(remoteHome));
   }
 
   /** Downloads binaries and untar them on the server,
@@ -310,6 +310,7 @@ export class SshPl {
 
     await this.sshClient.ensureRemoteDirCreated(state.remoteDir);
     await this.sshClient.uploadFile(state.localArchivePath, state.remoteArchivePath);
+    state.uploadDone = true;
 
     // TODO: Create a proper archive to avoid xattr warnings
     const untarResult = await this.sshClient.exec(
@@ -319,7 +320,7 @@ export class SshPl {
     if (untarResult.stderr)
       throw Error(`downloadAndUntar: untar: stderr occurred: ${untarResult.stderr}, stdout: ${untarResult.stdout}`);
 
-    state.plUntarDone = true;
+    state.untarDone = true;
 
     return state;
   }
@@ -469,8 +470,8 @@ type DownloadAndUntarState = {
   localArchivePath?: string;
   remoteDir?: string;
   remoteArchivePath?: string;
-  plUploadDone?: boolean;
-  plUntarDone?: boolean;
+  uploadDone?: boolean;
+  untarDone?: boolean;
 };
 
 type PlatformaInitState = {
