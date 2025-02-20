@@ -5,8 +5,10 @@ import { AgGridTheme } from '../aggrid';
 import PlAgOverlayLoading from '../components/PlAgDataTable/PlAgOverlayLoading.vue';
 import PlAgOverlayNoRows from '../components/PlAgDataTable/PlAgOverlayNoRows.vue';
 import type { ColDefExtended } from './createAgGridColDef';
+import type { PlAgOverlayLoadingParams } from '../lib';
 import { autoSizeRowNumberColumn, createAgGridColDef, makeRowNumberColDef } from '../lib';
 import { whenever } from '@vueuse/core';
+import PlAgCellFile from '../components/PlAgCellFile/PlAgCellFile.vue';
 
 interface GridOptionsExtended<TData = any> extends Omit<GridOptions<TData>, 'columnDefs'> {
   /**
@@ -17,7 +19,49 @@ interface GridOptionsExtended<TData = any> extends Omit<GridOptions<TData>, 'col
    * Show row numbers column
    */
   rowNumbersColumn?: boolean;
+  /**
+   * Not ready overlay (No datasource). Takes priority over "loading"
+   */
+  notReady?: boolean;
+  /**
+   * "No datasource" by default
+   */
+  notReadyText?: string;
+  /**
+   * Use "transparent" to make table headers visible below the loading layer (experimental)
+   */
+  loadingOverlayType?: 'transparent';
+  /**
+   * Override standard 'Empty' text for the "no rows" overlay
+   */
+  noRowsText?: string;
 }
+
+// @TODO (super simple builder for now)
+class Builder<TData> {
+  #options: GridOptionsExtended<TData> = {};
+
+  public options(options: GridOptionsExtended<TData>) {
+    this.#options = Object.assign({}, this.#options, options);
+    return this;
+  }
+
+  get columnDefs() {
+    return this.#options.columnDefs ?? [];
+  }
+
+  public column<TValue = any>(def: ColDefExtended<TData, TValue>) {
+    this.#options.columnDefs = [...this.columnDefs, def];
+    return this;
+  }
+
+  public build() {
+    return this.#options;
+  }
+}
+
+// Simple helper to use like column<string> in grid options literal
+type ColumnFunc<TData> = <TValue>(def: ColDefExtended<TData, TValue>) => ColDefExtended<TData, TValue>;
 
 /**
  * Returns a set of Ag Grid options along with a reference to the Ag Grid API.
@@ -36,7 +80,7 @@ interface GridOptionsExtended<TData = any> extends Omit<GridOptions<TData>, 'col
  * ```
  */
 export function useAgGridOptions<TData>(
-  factory: () => GridOptionsExtended<TData>,
+  factory: (context: { builder: Builder<TData>; column: ColumnFunc<TData> }) => Builder<TData> | GridOptionsExtended<TData>,
 ) {
   const gridApi = shallowRef<GridApi>();
 
@@ -51,13 +95,41 @@ export function useAgGridOptions<TData>(
       },
     };
 
-    const options = Object.assign({}, def, factory());
+    const column = <TValue>(def: ColDefExtended<TData, TValue>) => {
+      return def;
+    };
+
+    const result = factory({ builder: new Builder(), column });
+
+    const options = Object.assign({}, def, result instanceof Builder ? result.build() : result);
 
     if (options.rowNumbersColumn) {
       options.columnDefs = [makeRowNumberColDef(), ...(options.columnDefs ?? [])];
     }
 
+    if (options.noRowsText) {
+      options.noRowsOverlayComponentParams = {
+        text: options.noRowsText,
+      };
+    }
+
+    options.loading = options.notReady || options.loading;
+
+    // @TODO
+    if (options.loading) {
+      options.loadingOverlayComponentParams = {
+        notReady: options.notReady,
+        notReadyText: options.notReadyText,
+        overlayType: options.loadingOverlayType,
+      } satisfies PlAgOverlayLoadingParams;
+    }
+
     options.columnDefs = options.columnDefs?.map((it) => createAgGridColDef(it));
+
+    // Register all special components
+    options.components = Object.assign({}, options.components ?? {}, {
+      PlAgCellFile,
+    });
 
     return options;
   });
@@ -68,17 +140,28 @@ export function useAgGridOptions<TData>(
     }
   });
 
-  watch(() => gridOptions.value.loadingOverlayComponentParams, (newParams) => {
+  watch([
+    () => gridOptions.value.notReady,
+    () => gridOptions.value.loading,
+  ], ([notReady, loading]) => {
+    const loadingOverlayComponentParams = {
+      notReady,
+      // we probably don't need to update the parameters below
+      notReadyText: gridOptions.value.notReadyText,
+      overlayType: gridOptions.value.loadingOverlayType,
+    } satisfies PlAgOverlayLoadingParams;
+
     // Hack to apply loadingOverlayComponentParams
     gridApi.value?.updateGridOptions({
-      loading: !gridOptions.value.loading,
+      loading: !loading,
+      loadingOverlayComponentParams,
     });
 
     gridApi.value?.updateGridOptions({
-      loading: gridOptions.value.loading,
-      loadingOverlayComponentParams: newParams,
+      loading,
+      loadingOverlayComponentParams,
     });
-  }, { deep: true });
+  }, { deep: true, immediate: true });
 
   return { gridOptions, gridApi };
 };

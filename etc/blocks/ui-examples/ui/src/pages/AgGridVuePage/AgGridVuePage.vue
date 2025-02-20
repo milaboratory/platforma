@@ -5,7 +5,6 @@ import {
   PlBlockPage,
   PlAgDataTableToolsPanel,
   PlAgGridColumnManager,
-  PlAgCellFile,
   PlAgCsvExporter,
   defaultMainMenuItems,
   PlAgChartStackedBarCell,
@@ -72,33 +71,26 @@ const BlankComponent: Component = {
   },
 };
 
-// function onClickHandler() {
-//   // will be invoked when invokeRowsOnDoubleClick: false
-//   alert('onClickHandler');
-// }
-
 const isOverlayTransparent = ref(false);
 
 const rowNumbers = ref(true);
 
 const loading = ref(false);
 
-const notReady = ref(false);
+const notReady = ref(true);
 
 const hasRows = ref(true);
 
-const { gridOptions, gridApi } = useAgGridOptions<Row>(() => {
+const { gridOptions, gridApi } = useAgGridOptions<Row>(({ column }) => {
   return {
     columnDefs: [
       {
-        colId: 'id',
         field: 'id',
         headerName: 'ID',
         mainMenuItems: defaultMainMenuItems,
         headerComponentParams: { type: 'Number' },
       },
       {
-        colId: 'label',
         field: 'label',
         pinned: 'left',
         lockPinned: true,
@@ -106,15 +98,12 @@ const { gridOptions, gridApi } = useAgGridOptions<Row>(() => {
         headerName: 'Sample label long text for overflow label long text for overflow',
         headerComponentParams: { type: 'Text' },
         textWithButton: true,
-        // cellRenderer: 'TextWithOpenButton' | (cellData) => {}
       },
-      // createColumnWithOpenButton
-      {
-        colId: 'progress',
+      column<number | undefined>({
         field: 'progress',
         headerName: 'Progress',
-        progress: (cellData) => {
-          const percent = cellData.data?.progress ?? 0;
+        progress(value, cellData) {
+          const percent = value as number ?? 0;
 
           if (cellData.data?.id === 2) {
             return {
@@ -160,14 +149,13 @@ const { gridOptions, gridApi } = useAgGridOptions<Row>(() => {
           };
         },
         headerComponentParams: { type: 'Text' },
-      },
+      }), // But you could use builder
       {
-        colId: 'stacked_bar',
         field: 'stacked_bar',
         headerName: 'StackedBar',
-        progress: (cellData) => {
-          if (cellData.value) {
-            return undefined;
+        progress: (value) => {
+          if (value) {
+            return undefined; // If no progress show main component
           }
 
           return {
@@ -196,22 +184,18 @@ const { gridOptions, gridApi } = useAgGridOptions<Row>(() => {
         },
       },
       {
-        colId: 'date',
         field: 'date',
         headerName: 'Date',
         headerComponentParams: { type: 'Date' },
       },
       {
-        colId: 'file',
         field: 'file',
         headerName: 'File input',
         cellRenderer: 'PlAgCellFile',
         headerComponentParams: { type: 'File' },
         cellStyle: { padding: 0 },
-        // variant 1
       },
       {
-        colId: 'link',
         field: 'link',
         headerName: 'Link',
         headerComponentParams: { type: 'Text' },
@@ -225,24 +209,23 @@ const { gridOptions, gridApi } = useAgGridOptions<Row>(() => {
       },
     ],
     rowNumbersColumn: rowNumbers.value,
-    // @TODO
+    // @TODO (Now rowNumbersColumn && rowSelection enables rows selection with checkboxes)
     rowSelection: {
       mode: 'multiRow',
       checkboxes: false,
       headerCheckbox: false,
     },
     loading: loading.value,
+    loadingOverlayType: isOverlayTransparent.value ? 'transparent' : undefined,
+    notReady: notReady.value,
+    notReadyText: 'I am not ready(',
+    // noRowsText: 'No rows(',
     rowData: hasRows.value ? result.value : [],
     onRowDoubleClicked: (_e) => {
       alert('Example "Open" button was clicked');
     },
-    loadingOverlayComponentParams: {
-      notReady: notReady.value,
-      overlayType: isOverlayTransparent.value ? 'transparent' : undefined,
-    },
     components: {
       LinkComponent,
-      PlAgCellFile,
     },
   };
 });

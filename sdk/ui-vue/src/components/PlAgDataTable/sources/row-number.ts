@@ -59,14 +59,11 @@ function destroyCellFake(cellFake: HTMLDivElement) {
 }
 
 function adjustRowNumberColumnWidth(gridApi: GridApi, cellFake: HTMLDivElement, force?: boolean) {
-  console.log('adjustRowNumberColumnWidth');
-  console.log('gridApi.getLastDisplayedRowIndex()', gridApi.getLastDisplayedRowIndex());
-  console.log('gridApi.getDisplayedRowAtIndex(gridApi.getLastDisplayedRowIndex())', gridApi.getDisplayedRowAtIndex(gridApi.getLastDisplayedRowIndex()));
   const lastDisplayedRowNumber = gridApi.getCellValue({
     rowNode: gridApi.getDisplayedRowAtIndex(gridApi.getLastDisplayedRowIndex())!,
     colKey: PlAgDataTableRowNumberColId,
   });
-  console.log('lastDisplayedRowNumber', lastDisplayedRowNumber);
+
   if (typeof lastDisplayedRowNumber !== 'number') return;
 
   const lastDisplayedRowNumberDigitCount = lastDisplayedRowNumber.toString().length;
@@ -76,7 +73,6 @@ function adjustRowNumberColumnWidth(gridApi: GridApi, cellFake: HTMLDivElement, 
   cellFake.innerHTML = WidestDigit.repeat(lastDisplayedRowNumberDigitCount);
 
   nextTick(() => {
-    console.log('HeaderSize, cellFake.offsetWidth', HeaderSize, cellFake.offsetWidth);
     gridApi.applyColumnState({
       state: [
         {
