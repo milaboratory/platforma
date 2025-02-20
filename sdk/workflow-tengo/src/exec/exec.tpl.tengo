@@ -24,7 +24,13 @@ constants := import(":exec.constants")
 monetization := import(":exec.monetization")
 
 self.defineOutputs(
-	"files", "filesContent", "fileSets", "fileSetsContent", "progress", "fileStreams", "wdProcessors"
+	"files",
+	"filesContent",
+	"fileSets",
+	"fileSetsContent",
+	"progress",
+	"fileStreams",
+	"wdProcessors"
 )
 
 _runBinaryCommand := func(inputs) {
@@ -80,6 +86,7 @@ _runBinaryCommand := func(inputs) {
 	// run monetization if it's defined and return a workdir after.
 	wdBefore := wdWithAllFiles
 	mnzEnvs := {}
+	mnzResult := {}
 	mnz := ll.fromStrict(inputs.runOptions).monetization
 	if !is_undefined(mnz) {
 		result := monetization.run(mnz, wdWithAllFiles, inputs.runOptions.queue)
@@ -182,8 +189,8 @@ _runBinaryCommand := func(inputs) {
 	return {
 		files: wdResult.files,
 		filesContent: wdResult.filesContent,
-		fileSets : wdResult.fileSets,
-		fileSetsContent : wdResult.fileSetsContent,
+		fileSets: wdResult.fileSets,
+		fileSetsContent: wdResult.fileSetsContent,
 		fileStreams: streams.build(),
 		wdProcessors: wdProcessorsResults,
 		progress: wdResult.progress

@@ -1,17 +1,28 @@
 /** A pure template that gets a resource's data of monetization as bytes,
- * trims new lines, converts it to a string
- * and creates a json/object value resource from it. */
+ * parses a jwtToken that it gets and returns each field
+ * as outputs, and storing a number of remaining files to the file. */
 
 self := import(":tpl")
+json := import("json")
 text := import("text")
+base64 := import("base64")
+validation := import(":validation")
 
-self.defineOutputs("jsonedData")
+monetization := import(":exec.monetization")
+
+self.defineOutputs("jwtToken", "nRemainingRuns")
 
 self.body(func(inputs) {
 	data := inputs.resource.getData()
 	trimmed := text.trim(string(data), "\n \r\t")
 
+	decoded := monetization.decodeJwtToken(trimmed)
+	validation.assertType(decoded, monetization.tokenSchema)
+
+	nRemainingRuns := decoded.mnz.details.remaining
+
 	return {
-		jsonedData: trimmed
+		jwtToken: trimmed,
+		nRemainingRuns: nRemainingRuns
 	}
 })

@@ -6,7 +6,7 @@ smart := import("@platforma-sdk/workflow-tengo:smart")
 exec := import("@platforma-sdk/workflow-tengo:exec")
 ll := import("@platforma-sdk/workflow-tengo:ll")
 
-self.defineOutputs(["out"])
+self.defineOutputs(["token", "nRemainingRuns"])
 
 self.body(func(inputs) {
 	run := exec.builder().
@@ -14,17 +14,19 @@ self.body(func(inputs) {
 		arg("bash").
 		arg("-c").
 		arg("echo -n $PLATFORMA_MNZ_JWT"). // -n means no newline. It's needed for test assertions.
-		enableMnz("test_product"). // it was manually added to the database. Other products returns 404.
+		enableMnz("MIFAKEMIFAKEMIFAKE"). // a fake product key so our mnz client response with a fake response without changing prod db.
 		writeFile("abc.txt", "1\n2\n3\n",
 			{"mnz": {
 				"arg": "abc.txt",
 				"collect": ["lines"]
 			}}
 		).
+		saveMnzRemainingRuns().
 		saveStdoutContent().
 		run()
 
 	return {
-		out: run.getStdoutFileContent()
+		token: run.getStdoutFileContent(),
+		nRemainingRuns: run.getMnzRemainingRuns()
 	}
 })

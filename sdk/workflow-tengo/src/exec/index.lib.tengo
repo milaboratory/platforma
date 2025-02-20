@@ -509,8 +509,18 @@ builder := func() {
 			return self
 		},
 
-		enableMnz: func(productName) {
-			monetization.enable(mnz, productName)
+		enableMnz: func(productKey) {
+			monetization.enable(mnz, productKey)
+			return self
+		},
+
+		setMnzDryRun: func() {
+			monetization.setDryRun(mnz, true)
+			return self
+		},
+
+		saveMnzRemainingRuns: func() {
+			monetization.setSaveRemainingRuns(mnz, true)
 			return self
 		},
 
@@ -703,6 +713,9 @@ builder := func() {
 			if stderrToValue {
 				sets.add(filesContentToSave, stderr)
 			}
+			if mnz.saveRemainingRuns {
+				sets.add(filesContentToSave, monetization.REMAINING_RUNS_FILE_NAME)
+			}
 
 			// We don't want these values to be encoded as JSON's since
 			// values are pure bytes.
@@ -879,6 +892,14 @@ builder := func() {
 						return self.getFileContent(stderr)
 					}
 					ll.panic("stderr was not saved as a content")
+				},
+
+				getMnzRemainingRuns: func() {
+					if !mnz.saveRemainingRuns {
+						ll.panic("getMnzRemainingRuns(): a number of remaining runs must be saved with exec.builder().saveRemainingRuns()")
+					}
+
+					return self.getFileContent(monetization.REMAINING_RUNS_FILE_NAME)
 				}
 			}))
 
