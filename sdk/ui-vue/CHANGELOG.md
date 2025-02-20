@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.22.56
+
+### Patch Changes
+
+- 26abb69: [sdk/ui-vue] PlAgDataGrid shows wrong loading status
+
 ## 1.22.55
 
 ### Patch Changes
