@@ -1,34 +1,15 @@
 <script setup lang="ts">
 import style from './pl-ag-overlay-loading.module.scss';
 import { PlSplash } from '@milaboratories/uikit';
+import type { PlAgOverlayLoadingParams } from './types';
+
+// @TODO move this component from this folder
 
 defineProps<{
   /**
    * Required object that contains props from loadingOverlayComponentParams.
    */
-  params: {
-    /**
-     * Required flag, that shows catInBag icon with message if `true`, shows PlSplash component if `false`.
-     */
-    notReady: boolean;
-    /**
-     * Prop to override default "Loading" text
-     */
-    loadingText?: string;
-    /**
-     * Prop to override default "No datasource" text (So why props name is notReady? Good question)
-     */
-    notReadyText?: string;
-    /**
-     * @deprecated
-     * Use notReadyText
-     */
-    message?: string;
-    /**
-     * Use "transparent" to make table headers visible below the loading layer
-     */
-    overlayType?: 'transparent';
-  };
+  params: PlAgOverlayLoadingParams;
 }>();
 </script>
 
@@ -41,7 +22,7 @@ defineProps<{
   >
     <div v-if="params.notReady" :class="style.notReadyWrapper">
       <div :class="style.iconCatInBag" />
-      <h3 :class="style.text">{{ params.notReadyText || params.message || 'No datasource' }}</h3>
+      <h3 :class="style.text">{{ params.notReadyText || 'No datasource' }}</h3>
     </div>
   </PlSplash>
 </template>

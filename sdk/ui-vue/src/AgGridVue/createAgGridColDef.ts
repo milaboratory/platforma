@@ -1,8 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { ColDef, ICellRendererParams } from 'ag-grid-enterprise';
 import { PlAgCellProgress } from '../components/PlAgCellProgress';
-import type { PlProgressCellProps } from '@milaboratories/uikit';
+import type { MaskIconName16, PlProgressCellProps } from '@milaboratories/uikit';
 import { tapIf } from '@milaboratories/helpers';
+import type { PlAgHeaderComponentParams } from '../lib';
+import { PlAgColumnHeader } from '../components/PlAgColumnHeader';
+import { PlAgTextAndButtonCell } from '../components/PlAgTextAndButtonCell';
 
 /**
  * Represents the available progress statuses for a cell.
@@ -62,7 +65,10 @@ export type ColDefProgress = {
  * @returns A {@link ColDefProgress} object to configure the progress overlay,
  *          or `undefined` if no progress overlay should be rendered.
  */
-export type ColDefProgressCallback<TData, TValue = any> = (cellData: ICellRendererParams<TData, TValue>) => ColDefProgress;
+export type ColDefProgressCallback<TData = any, TValue = any> = (
+  value: TValue,
+  cellData: ICellRendererParams<TData, TValue>
+) => ColDefProgress;
 
 /**
  * Extended AG Grid column definition that supports additional properties for
@@ -74,9 +80,35 @@ export type ColDefProgressCallback<TData, TValue = any> = (cellData: ICellRender
  * @property progress - An optional callback to provide progress overlay configuration.
  * @property noGutters - If `true`, removes padding from the cell.
  */
-export interface ColDefExtended<TData, TValue = any> extends ColDef<TData> {
+export interface ColDefExtended<TData, TValue = any> extends ColDef<TData, TValue> {
   progress?: ColDefProgressCallback<TData, TValue>;
   noGutters?: boolean;
+  headerComponentParams?: PlAgHeaderComponentParams;
+  textWithButton?: true | {
+    /**
+     * Button icon MaskIconName16
+     */
+    icon?: MaskIconName16;
+    /**
+     * Button label
+     */
+    btnLabel?: string;
+    /**
+     * If invokeRowsOnDoubleClick = true, clicking a button inside the row
+     * triggers the doubleClick event for the entire row. In this case,
+     * the handler passed to the component is not called, even if it is defined.
+     *
+     * If invokeRowsOnDoubleClick = false, the doubleClick event for the row
+     * is not triggered, but the provided handler will be called, receiving
+     * the ICellRendererParams as an argument.
+     */
+    invokeRowsOnDoubleClick?: boolean;
+    /**
+     * plHandler parameter is a click handler that is invoked when
+     * the invokeRowsOnDoubleClick property is set to false.
+     */
+    onClick?: (params: ICellRendererParams) => void;
+  };
 }
 
 /**
@@ -127,7 +159,7 @@ function handleProgress<TData>(def: ColDefExtended<TData>) {
     def.cellStyle = Object.assign({}, def.cellStyle ?? {}, noGuttersStyle());
 
     def.cellRendererSelector = (cellData) => {
-      const pt = progress(cellData);
+      const pt = progress(cellData.value, cellData);
 
       if (!pt) {
         return cellRendererSelector?.(cellData);
@@ -163,6 +195,23 @@ export function createAgGridColDef<TData, TValue = any>(def: ColDefExtended<TDat
   if (def.noGutters) {
     def.cellStyle = Object.assign({}, def.cellStyle ?? {}, noGuttersStyle());
   }
+
+  if (def.headerComponentParams) {
+    def.headerComponent = PlAgColumnHeader;
+  }
+
+  if (def.textWithButton) {
+    def.cellRenderer = PlAgTextAndButtonCell;
+    if (typeof def.textWithButton !== 'boolean') {
+      def.cellRendererParams = def.textWithButton;
+    } else {
+      def.cellRendererParams = {
+        invokeRowsOnDoubleClick: true,
+      };
+    }
+  }
+
+  delete def.textWithButton;
 
   delete def.progress;
 
