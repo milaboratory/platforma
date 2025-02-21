@@ -69,6 +69,99 @@ A_LABEL := "pl7.app/label"
 A_TRACE := "pl7.app/trace"
 
 //
+// Matchers
+//
+
+_P_MATCHER_SCHEMA := {
+	`__options__,closed`: ``,
+	`type,?`: `string,regex=Int|Long|Float|Double|String`,
+	`name`: `string`,
+	`domain,?`: { any: `string` }
+}
+
+_normalizeMatcher := func(matcher) {
+	if is_string(matcher) {
+		return { name: matcher }
+	} else {
+		validation.assertType(matcher, _P_MATCHER_SCHEMA)
+		return matcher
+	}
+}
+
+_checkAxisMatch := func(axisSpec, matcher) {
+	if axisSpec.name != matcher.name {
+		return false
+	}
+	if !is_undefined(matcher.type) && axisSpec.type != matcher.type {
+		return false
+	}
+	if !is_undefined(matcher.domain) {
+		for domain, domainValue in matcher.domain {
+			if is_undefined(axisSpec.domain) || axisSpec.domain[domain] != domainValue {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+/**
+ * For a given array of axes specs tries find the index of matching axis:
+ *   - if multiple matches are found - panics
+ *   - if axis not found returns -1
+ */
+tryMatchAxis := func(axesSpec, matcher) {
+	validation.assertType(axesSpec, [ P_AXIS_SPEC_SCHEMA ])
+	matcher = _normalizeMatcher(matcher)
+	found := -1
+	for idx, axisSpec in axesSpec {
+		if !_checkAxisMatch(axisSpec, matcher) {
+			continue
+		}
+		if found != -1 {
+			ll.panic("multiple matches found for %v in %v", matcher, axesSpec)
+		}
+		found = idx
+	}
+	return found
+}
+
+/**
+ * For a given array of axes specs returns the index of matching axis:
+ *   - if multiple matches are found - panics
+ *   - if axis not found - panics
+ */
+matchAxis := func(axesSpec, matcher) {
+	found := tryMatchAxis(axesSpec, matcher)
+	if found == -1 {
+		ll.panic("match not found for %v in %v", matcher, axesSpec)
+	}
+	return found
+}
+
+/**
+ * For a given array of axes specs and array of matchers returns array of indices of mathed axes
+ * in the same order as matchers:
+ *   - if multiple matches are found - panics
+ *   - if any axis not found - panics
+ *   - if multiple matchers matches the same axis - panics
+ */
+matchAxes := func(axesSpec, matchers) {
+	result := []
+	resultSet := {}
+	for matcher in matchers {
+		idx := matchAxis(axesSpec, matcher)
+		idxS := string(idx)
+		if resultSet[idxS] {
+			ll.panic("duplicate match detecterd for %v in %v (idx = %v)", matchers, axesSpec, idx)
+		}
+		resultSet[idxS] = true
+		result = append(result, idx)
+	}
+	return result
+}
+
+//
 // Utility methods
 //
 
@@ -131,6 +224,10 @@ export ll.toStrict({
 
 	A_LABEL: A_LABEL,
 	A_TRACE: A_TRACE,
+
+	tryMatchAxis: tryMatchAxis,
+	matchAxis: matchAxis,
+	matchAxes: matchAxes,
 
 	makeTrace: makeTrace
 })
