@@ -20,7 +20,8 @@ self.body(func(inputs) {
 
 	// parameters of aggregation
 	//   indices: int[]
-	//   eph: bool
+	//   eph: boolean
+	//   passKey: boolean
 	//   outputs: (string)[]
 	params := inputs.params
 
@@ -35,6 +36,7 @@ self.body(func(inputs) {
 	indices := params.indices
 	eph := params.eph
 	outputs := params.outputs
+	passKey := params.passKey
 
 	if !is_array(indices) && !is_undefined(indices) {
 		ll.panic("Wrong indices parameter type: %v", indices)
@@ -178,7 +180,10 @@ self.body(func(inputs) {
 
 		for sGroupKey, groupValue in groups {
 			renderInputs := {}
-			renderInputs[pConstants.KEY_FIELD_NAME] = json.decode(sGroupKey)
+
+			if passKey {
+				renderInputs[pConstants.KEY_FIELD_NAME] = json.decode(sGroupKey)
+			}
 
 			if mappingMode {
 				// groupValue here is just a field ref to input map element

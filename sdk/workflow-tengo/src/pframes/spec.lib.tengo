@@ -69,6 +69,18 @@ A_LABEL := "pl7.app/label"
 A_TRACE := "pl7.app/trace"
 
 //
+// Format methods
+//
+
+normalizeColumnSpec := func(spec) {
+	if is_undefined(spec.axesSpec) {
+		spec.axesSpec = []
+	}
+	validation.assertType(spec, P_COLUMN_SPEC_SCHEMA)
+	return spec
+}
+
+//
 // Matchers
 //
 
@@ -224,6 +236,8 @@ export ll.toStrict({
 
 	A_LABEL: A_LABEL,
 	A_TRACE: A_TRACE,
+
+	normalizeColumnSpec: normalizeColumnSpec,
 
 	tryMatchAxis: tryMatchAxis,
 	matchAxis: matchAxis,

@@ -30,28 +30,35 @@ pColumnResourceMapDataBuilder := func(keyLength) {
 }
 
 /**
- * Instantiate an aggregation pipeline for the given inputs, and returns rendered ephemeral template.
- * Use r.output("output_name") method to get corresponding result, where r is an object returned by
- * this method.
+ * Construct a mapping or aggregation pipeline for a given input PColumn, and returns a special
+ * output object that can be used to access processing results.
  *
- * Contract for the body template:
+ * === Contract for body template ===
  *
  *   Inputs:
- *     "__key__"   - will be set to the json representation of the group key (i.e. keys in all
- *                   positions not specified in the indices parameter)
- *     "__value__" - "PColumnData/ResourceMap" resource with all the records in the current group
- *     ...extra    - all values or references passed to optional last parameter of this method
+ *     "__key__"   - if passKey == true, will be set to the json representation of the group / element key
+ *                     - if aggregate option is not specified, key will be a key
+ *                     - if aggregate option is specified, will represent all the keys
+ *                       in all positions not specified in the indices parameter
+ *                   if passKey == false or not present in ops, body template will not receive this input
+ *     "__group_axes_spec__"
+ *                 - if passGroupAxesSpec == true, will have axes spec for the aggregation
+ *                     this input can be used to adjust body behaviour if some of the optional aggregation axes are not matched
+ *                   if passGroupAxesSpec == false or not present in ops, body template will not receive this input
+ *     "__value__" - depends on presence of the aggregate parameter
+ *                     - if aggregate option is not specified, value (applicable only for input ResourceMap PColumns)
+ *                     - if aggregate option is specified, a "PColumnData/*" resource with all the records in current group
+ *     ...extra    - all values or references passed to extra section of options
  *                   will be forwarded to the template as is
  *
- * @param inputs        array of input columns (currently only one input is supported)
+ * === Parameters ===
  *
- *                      Each element must have the following structure:
+ * @param input         main input column data and specs
+ *
+ *                      Parameter must have the following structure:
  * 							{
  * 							 	// specs of the input PColumn
  * 							 	spec: <explicit PColumnSpec, not resource reference>,
- *
- * 							 	// length of the top-most key (i.e. partitioning key, resource map key length, etc...)
- * 							 	keyLength: <explicit number>,
  *
  * 							 	// reference to the data resource
  * 							 	data: <resource ref>
@@ -59,6 +66,7 @@ pColumnResourceMapDataBuilder := func(keyLength) {
  *
  * @param bodyTpl       template to be executed for each iteration (see contract above)
  * @param isEphemeral   whether to run mapping in ephemeral or in non-ephemeral mode
+ *
  * @param outputs 		array of output settings to to collect from rendered templates
  *
  *                  Common fields for all subtypes:
@@ -70,33 +78,88 @@ pColumnResourceMapDataBuilder := func(keyLength) {
  *                     }
  *
  *                  Variants:
- *                    | { type: "Resource" } // - assume normal singular resource is produced by this output
  *                    | {
- *                        type: "ResourceMap",
- *                        keyLength: number // - expected key length of result from each operation
- *                      } // - assume the output is ResourceMap
+ *                        type: "Resource",     // - assume normal singular resource is produced by this output
+ *                        spec: PColumnSpec     // - spec for the resulting column, must have zero axes specs,
+ *                                              //   input axes specs will be added automatically
+ *                      }
+ *                    | {
+ *                        type: "ResourceMap",  // - assume the output is ResourceMap
+ *                        spec: PColumnSpec     // - spec for the resulting column, must list only those
+ *                                              //   axes specs that are produced by the body template,
+ *                                              //   input axes specs will be added automatically
+ *                      }
  *                    | {
  *                        type: "BinaryPartitioned" | "JsonPartitioned",
- *                        partitionKeyLength: number // - expected partition length of result from each operation
- *                      } // - assume the output is a partitionded Json or Binary PColumn data itself
+ *                                              // - assume the output is a partitionded Json or Binary PColumn data itself
+ *                        spec: PColumnSpec     // - spec for the resulting column, must list only those
+ *                                              //   axes specs that are produced by the body template,
+ *                                              //   input axes specs will be added automatically
+ *                        partitionKeyLength: number
+ *                                              // - expected partition length of result for each operation
+ *                      }
  *                    | {
- *                        type: "Xsv",        // i.e. CSV or TSV
- *                        settings: object    // xsv conversion specification (better provide refined
- *                                            // settings via the decomposePfconvImportCfg() function)
- *                      } // - assume the output is a text file to be converted with pfConvert
+ *                        type: "Xsv",          // - assume the output is a csv or tsv formatted text file
+ *                                              //   intended to be converted by the xsv conversion subsystem
+ *						  xsvType: "tsv"|"csv", // - expected file format
+ *                        settings: object      // - xsv conversion specification
+ *                      }
  *
+ * @param opts 			optional parameter with additional settings
+ *
+ *                    {
+ *                      aggregate?: AxisMatcher[],
+ *                                              // - if specified, selected axes will be combined and
+ *                                                   passed to each iteration as a group, those axes will
+ *                                                   not be automatically added to the output specs
+ *                                                   Examples:
+ *                                                     - "pl7.app/sequencing/readIndex"
+ *                                                     - { name: "pl7.app/sequencing/readIndex" }
+ *                                                     - { type: "String", name: "pl7.app/sequencing/lane" }
+ *                                                     - { type: "String", name: "pl7.app/sequencing/lane", optional: true }
+ *                                                     - { type: "String", name: "pl7.app/rna-seq/geneId", domain: { "pl7.app/species": "homo-sapiens" } }
+ *                                                   If "optional" is set to true, corresponding matcher
+ *                                                   will not invoke an error if not matched, use "passGroupAxesSpec"
+ *                                                   option to implement different behaviour in body template
+ *
+ *                      passKey?: boolean        // - if true, __key__ will be passed to the body template
+ *
+ *                      passGroupAxesSpec?: boolean
+ *                                              // - will pass resulting aggregation group specs to the
+ *                                                   body template via the __group_axes_spec__ input
+ *
+ *                      extra?: Map<string, Ref>,
+ *                                              // - map of any additional parameters to be passed to each
+ *                                                   body invocation. Keys will match template input names.
+ *                    }
+ *
+ * === Return ===
+ *
+ * @returns an object allowing to flexibly retrieve processing results, see sorce code for the list of
+ *          methods, their docs and signatures
  */
-// buildMapping = func(inputs, bodyTpl, isEphemeral, outputs, ...extra) {
-// 	// (!) Note: at the moment must be populated with exactly one PColumn
-// 	// Structure:
-// 	// {
-// 	//   // indices of axes to aggregate over
-// 	//   aggregationIndices: <array of numbers>
-// 	// }
-// 	inputsWithAxes := []
+// processColumn := func(input, bodyTpl, isEphemeral, outputs, ...opts) {
+// 	if len(ops) == 0 {
+// 		ops = {}
+// 	} else if len(ops) == 1 {
+// 		ops = ops[0]
+// 	} else {
+// 		ll.panic("too many arguments")
+// 	}
 
-// 	// Names of aggragation axes to match within the input columns
-// 	aggregationAxes := undefined
+// 	if is_undefined(ops.passKey) {
+// 		ops.passKey = false
+// 	}
+
+// 	if is_undefined(ops.passGroupAxesSpec) {
+// 		ops.passGroupAxesSpec = false
+// 	}
+
+// 	if ops.passGroupAxesSpec && !is_undefined(ops.aggregate) {
+// 		ll.panic("can't use passGroupAxesSpec without aggregate")
+// 	}
+
+
 
 // 	isEphemeral := undefined
 
