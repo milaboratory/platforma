@@ -15,6 +15,7 @@ import type { SupervisorStatus } from './supervisord';
 import { supervisorStatus, supervisorStop as supervisorCtlShutdown, generateSupervisordConfig, supervisorCtlStart } from './supervisord';
 import type { ConnectionInfo, SshPlPorts } from './connection_info';
 import { newConnectionInfo, parseConnectionInfo, stringifyConnectionInfo } from './connection_info';
+import type { PlBinarySourceDownload } from '../common/pl_binary';
 
 export class SshPl {
   private initState: PlatformaInitState = {};
@@ -120,6 +121,7 @@ export class SshPl {
         ...defaultSshPlConfig,
         ...options,
       };
+      state.plBinaryOps = ops.plBinary;
       state.arch = await this.getArch();
       state.remoteHome = await this.getUserHomeDirectory();
       state.alive = await this.isAlive();
@@ -129,16 +131,19 @@ export class SshPl {
         if (!state.userCredentials) {
           throw new Error(`SshPl.platformaInit: platforma is alive but userCredentials are not found`);
         }
-        const needRestart = state.userCredentials.useGlobalAccess != ops.useGlobalAccess;
-        if (!needRestart)
+        const sameGA = state.userCredentials.useGlobalAccess == ops.useGlobalAccess;
+        const samePlVersion = state.userCredentials.plVersion == ops.plBinary!.version;
+        state.needRestart = !(sameGA && samePlVersion);
+        this.logger.info(`SshPl.platformaInit: need restart? ${state.needRestart}`);
+
+        if (!state.needRestart)
           return state.userCredentials;
 
-        // make sure that we won't be in a broken state.
-        await this.stopAndClean();
+        await this.stop();
       }
 
       const downloadRes = await this.downloadBinariesAndUploadToTheServer(
-        ops.localWorkdir, state.remoteHome, state.arch,
+        ops.localWorkdir, ops.plBinary!, state.remoteHome, state.arch,
       );
       state.binPaths = { ...downloadRes, history: undefined };
       state.downloadedBinaries = downloadRes.history;
@@ -176,7 +181,7 @@ export class SshPl {
       }
 
       for (const dir of config.dirsToCreate) {
-        await this.sshClient.createRemoteDirectory(dir);
+        await this.sshClient.ensureRemoteDirCreated(dir);
         this.logger.info(`Created directory ${dir}`);
       }
 
@@ -200,6 +205,7 @@ export class SshPl {
         config.plPassword,
         state.ports,
         notEmpty(ops.useGlobalAccess),
+        ops.plBinary!.version,
       );
       await this.sshClient.writeFileOnTheServer(
         plpath.connectionInfo(state.remoteHome),
@@ -221,6 +227,7 @@ export class SshPl {
 
   public async downloadBinariesAndUploadToTheServer(
     localWorkdir: string,
+    plBinary: PlBinarySourceDownload,
     remoteHome: string,
     arch: Arch,
   ) {
@@ -228,7 +235,7 @@ export class SshPl {
     try {
       const pl = await this.downloadAndUntar(
         localWorkdir, remoteHome, arch,
-        'pl', `pl-${getDefaultPlVersion()}`,
+        'pl', `pl-${plBinary.version}`,
       );
       state.push(pl);
 
@@ -273,7 +280,7 @@ export class SshPl {
   ): Promise<DownloadAndUntarState> {
     const state: DownloadAndUntarState = {};
     state.binBasePath = plpath.binariesDir(remoteHome);
-    await this.sshClient.createRemoteDirectory(state.binBasePath);
+    await this.sshClient.ensureRemoteDirCreated(state.binBasePath);
     state.binBasePathCreated = true;
 
     let downloadBinaryResult: DownloadBinaryResult | null = null;
@@ -301,7 +308,7 @@ export class SshPl {
     state.remoteDir = upath.join(state.binBasePath, state.downloadResult.baseName);
     state.remoteArchivePath = state.remoteDir + '.tgz';
 
-    await this.sshClient.createRemoteDirectory(state.remoteDir);
+    await this.sshClient.ensureRemoteDirCreated(state.remoteDir);
     await this.sshClient.uploadFile(state.localArchivePath, state.remoteArchivePath);
 
     // TODO: Create a proper archive to avoid xattr warnings
@@ -432,19 +439,25 @@ export type SshPlConfig = {
   localWorkdir: string;
   license: PlLicenseMode;
   useGlobalAccess?: boolean;
+  plBinary?: PlBinarySourceDownload;
 };
 
 const defaultSshPlConfig: Pick<
   SshPlConfig,
-  'useGlobalAccess'
+  | 'useGlobalAccess'
+  | 'plBinary'
 > = {
   useGlobalAccess: false,
+  plBinary: {
+    type: 'Download',
+    version: getDefaultPlVersion(),
+  },
 };
 
 type BinPaths = {
   history?: DownloadAndUntarState[];
   minioRelPath: string;
-  downloadedPl: any;
+  downloadedPl: string;
 };
 
 type DownloadAndUntarState = {
@@ -462,10 +475,12 @@ type DownloadAndUntarState = {
 
 type PlatformaInitState = {
   localWorkdir?: string;
+  plBinaryOps?: PlBinarySourceDownload;
   arch?: Arch;
   remoteHome?: string;
   alive?: SupervisorStatus;
   userCredentials?: ConnectionInfo;
+  needRestart?: boolean;
   downloadedBinaries?: DownloadAndUntarState[];
   binPaths?: BinPaths;
   ports?: SshPlPorts;

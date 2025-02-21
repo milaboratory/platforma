@@ -65,7 +65,12 @@ describe('SshPl', async () => {
     const arch = await sshPl.getArch();
     const remoteHome = await sshPl.getUserHomeDirectory();
     await sshPl.stop(); // ensure stopped
-    await sshPl.downloadBinariesAndUploadToTheServer(downloadDestination, remoteHome, arch);
+    await sshPl.downloadBinariesAndUploadToTheServer(
+      downloadDestination,
+      { type: 'Download', version: getDefaultPlVersion() },
+      remoteHome,
+      arch,
+    );
 
     const pathSupervisor = `${plpath.supervisorBinDir(remoteHome, arch.arch)}/supervisord`;
     const pathMinio = `${plpath.minioDir(remoteHome, arch.arch)}/minio`;
@@ -177,6 +182,24 @@ describe('SshPl', async () => {
 
     const config = await sshPl.sshClient.readFile(plpath.platformaConf(remoteHome));
     expect(config).contain('bin-ga');
+  });
+
+  it('Start ssh with old platforma, restart it with newer one', async () => {
+    await sshPl.platformaInit({
+      localWorkdir: downloadDestination,
+      license: { type: 'env' },
+      plBinary: { type: 'Download', version: '1.18.3' },
+    });
+    let isAlive = await sshPl?.isAlive();
+    expect(isAlive.allAlive).toBe(true);
+
+    await sshPl.platformaInit({
+      localWorkdir: downloadDestination,
+      license: { type: 'env' },
+      // latest version of pl binary will be get by default
+    });
+    isAlive = await sshPl?.isAlive();
+    expect(isAlive.allAlive).toBe(true);
   });
 
   it('Download pl. We have archive and extracted data', async () => {
