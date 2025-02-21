@@ -31,6 +31,9 @@ export const ConnectionInfo = z.object({
   // It's false by default because it was added later,
   // and in some deployments there won't be useGlobalAccess flag in the file.
   useGlobalAccess: z.boolean().default(false),
+
+  // We added the field afterwards, the pl backend was this version.
+  plVersion: z.string().default('1.18.3'),
 });
 /** The content of the file that holds all the info about the connection on the remote server. */
 export type ConnectionInfo = z.infer<typeof ConnectionInfo>;
@@ -44,12 +47,14 @@ export function newConnectionInfo(
   plPassword: string,
   ports: SshPlPorts,
   useGlobalAccess: boolean,
+  plVersion: string,
 ): ConnectionInfo {
   return {
     plUser,
     plPassword,
     ports,
     useGlobalAccess,
+    plVersion,
   };
 }
 
