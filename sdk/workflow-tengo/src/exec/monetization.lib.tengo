@@ -20,8 +20,14 @@ init := func() {
 	return ll.toStrict({
 		enabled: false,
 
-		// product name of monetization, e.g. "mixcr_analyze"
-		productName: "",
+		// product key of monetization
+		productKey: "",
+
+		// just returns a number of runs without the actual calculation.
+		isDryRun: false,
+
+		// does we need to store a number of remaining runs.
+		saveRemainingRuns: false,
 
 		// file name to the param, e.g. {fileName: { arg: "dataset", collect: ["size", "lines", "sha256"] }}
 		fileParams: {}
@@ -35,7 +41,9 @@ fileParamsSchema := {
 
 schema := {
 	"enabled": "bool",
-	"productName": "string",
+	"productKey": "string",
+	"isDryRun": "bool",
+	"saveRemainingRuns": "bool",
 	"fileParams": {"any": fileParamsSchema}
 }
 
@@ -50,22 +58,45 @@ _validateParams := func(params) {
 _validateIsReady := func(mnz) {
 	validation.assertType(mnz, schema,
 		"monetization.assertIsReady(): monetization does not fit schema")
-	ll.assert(len(mnz.productName) > 0,
-		"monetization.assertIsReady(): product name must be set")
+	ll.assert(len(mnz.productKey) > 0,
+		"monetization.assertIsReady(): product key must be set")
 	ll.assert(len(mnz.fileParams) > 0,
 		"monetization.assertIsReady(): at least 1 file param must be set")
 }
 
 /** Enables the monetization for a product. */
-enable := func(mnz, productName) {
-	ll.assert(is_string(productName),
-		"monetization.enable(): product name must be a string, got %v", productName)
+enable := func(mnz, productKey) {
+	ll.assert(is_string(productKey),
+		"monetization.enable(): product key must be a string, got %v", productKey)
 
 	validation.assertType(mnz, schema,
 		"monetization.enable(): mnz object does not fit schema")
 
 	mnz.enabled = true
-	mnz.productName = productName
+	mnz.productKey = productKey
+}
+
+setDryRun := func(mnz, isDryRun) {
+	ll.assert(mnz.enabled,
+		"monetization.setDryRun(): monetization must be explicitly enabled by enableMnz(productKey) function")
+
+	ll.assert(is_bool(isDryRun),
+		"monetization.setDryRun(): isDryRun must be boolean, got %v", isDryRun)
+
+	validation.assertType(mnz, schema,
+		"monetization.setDryRun(): mnz object does not fit schema")
+
+	mnz.isDryRun = isDryRun
+}
+
+setSaveRemainingRuns := func(mnz) {
+	ll.assert(mnz.enabled,
+		"monetization.setSaveRemainingRuns(): monetization must be explicitly enabled by enableMnz(productKey) function")
+
+	validation.assertType(mnz, schema,
+		"monetization.saveRemainingRuns(): mnz object does not fit schema")
+
+	mnz.saveRemainingRuns = true
 }
 
 /** Is this monetization enabled and should run? */
@@ -96,7 +127,7 @@ addFileParams := func(mnz, fileName, params) {
 		"monetization.addFileParams(): file params does not fit json schema")
 
 	ll.assert(mnz.enabled,
-		"monetization.addFileParams(): monetization must be explicitly enabled by enableMnz(productName) function")
+		"monetization.addFileParams(): monetization must be explicitly enabled by enableMnz(productKey) function")
 
 	ll.assert(is_string(fileName),
 		"monetization.addFileParams(): file name must be a string.")
@@ -110,7 +141,8 @@ addFileParams := func(mnz, fileName, params) {
  * the deduplication should be above this level.
  *
  * @param: mnz: monetization -- see a beginning of this file.
- * @param: wd: workdir -- workdir where all files from mnz.fileParams already exist. */
+ * @param: wd: workdir -- workdir where all files from mnz.fileParams already exist.
+ * @param: queue: queue - in which queue we should run monetization. */
 run := func(mnz, wd, queue) {
 	_validateIsReady(mnz)
 
@@ -134,7 +166,10 @@ run := func(mnz, wd, queue) {
 		// now mnz-client doesn't have additional args; this line is just in case.
 		builder.argTyped(exprType, arg)
 	}
-	builder.arg("-productName").arg(mnz.productName)
+	if mnz.isDryRun {
+		builder.arg("-dry-run")
+	}
+	builder.arg("-productKey").arg(mnz.productKey)
 
 	// load file params
 	for fileName, param in mnz.fileParams {
@@ -154,15 +189,12 @@ run := func(mnz, wd, queue) {
 		saveFileContent(stdout).
 		build()
 
-	jwtResultAsBytes := savedWd.filesContent.getFutureInputField(stdout)
+	resultAsBytesJson := savedWd.filesContent.getFutureInputField(stdout)
 
-	// runcmd refs gets only json/objects as values,
-	// but workdir save returns binary:1 resource type.
-	// Hence here we have to convert it to the json's string.
-	jwtResultAsString := render.create(
+	resultAsStringJson := render.create(
 		assets.importTemplate(":exec.monetization_to_json"),
-		{ resource: jwtResultAsBytes }
-	).output("jsonedData")
+		{ resource: resultAsBytesJson }
+	)
 
 	return ll.toStrict({
 		// other commands should run on this wd,
@@ -172,9 +204,10 @@ run := func(mnz, wd, queue) {
 
 		// mnz-client returns jwt token
 		// that we will pass to the next command as env.
-		// If we need to change env to a file, that's the place.
 		jwtEnvName: _JWT_TOKEN_RESULT_ENV,
-		jwtEnvValue: jwtResultAsString
+		jwtEnvValue: resultAsStringJson.output("jwtToken"),
+
+		nRemainingRuns: resultAsStringJson.output("nRemainingRuns")
 	})
 }
 
@@ -182,6 +215,7 @@ export ll.toStrict({
 	init: init,
 	schema: schema,
 	enable: enable,
+	setDryRun: setDryRun,
 	shouldRun: shouldRun,
 	toJson: toJson,
 	addFileParams: addFileParams,

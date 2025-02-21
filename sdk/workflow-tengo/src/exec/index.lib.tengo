@@ -509,8 +509,18 @@ builder := func() {
 			return self
 		},
 
-		enableMnz: func(productName) {
-			monetization.enable(mnz, productName)
+		enableMnz: func(productKey) {
+			monetization.enable(mnz, productKey)
+			return self
+		},
+
+		setMnzDryRun: func() {
+			monetization.setDryRun(mnz, true)
+			return self
+		},
+
+		saveMnzRemainingRuns: func() {
+			monetization.setSaveRemainingRuns(mnz)
 			return self
 		},
 
