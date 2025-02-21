@@ -17,8 +17,9 @@ llAggTpl := assets.importTemplate(":pframes.aggregate")
  * Contract for the body template:
  *
  *   Inputs:
- *     "__key__"   - will be set to the json representation of the group key (i.e. keys in all
- *                   positions not specified in the indices parameter)
+ *     "__key__"   - if passKey == true, will be set to the json representation of the group key
+ *                   (i.e. keys in all positions not specified in the indices parameter)
+ *                   if passKey == false, body template will not receive this input
  *     "__value__" - "PColumnData/ResourceMap" resource with all the records in the current group
  *     ...extra    - all values or references passed to optional last parameter of this method
  *                   will be forwarded to the template as is
@@ -65,14 +66,16 @@ llAggTpl := assets.importTemplate(":pframes.aggregate")
  *                      } // - assume the output is a text file to be converted with pfConvert
  *
  * @param isEph   if true, body template will be rendered as ephemeral
+ * @param passKey if true, body template will receive __key__ input
  * @param extra   optional map of parameters to pass to the template
  */
-aggregate := func(data, indices, bodyTpl, outputs, isEph, ...extra) {
+aggregateV2 := func(data, indices, bodyTpl, outputs, isEph, passKey, ...extra) {
 	renderInputs := {
 		params: smart.createJsonResource({
 			indices: indices,
 			eph: isEph,
-			outputs: outputs
+			outputs: outputs,
+			passKey: passKey
 		}),
 		body: bodyTpl,
 		data: data
@@ -90,6 +93,14 @@ aggregate := func(data, indices, bodyTpl, outputs, isEph, ...extra) {
 	return renderResult
 }
 
+/*
+ * Read docs for aggregateV2
+ */
+aggregate := func(data, indices, bodyTpl, outputs, isEph, ...extra) {
+	return aggregateV2(data, indices, bodyTpl, outputs, isEph, true, extra...)
+}
+
 export ll.toStrict({
-	aggregate: aggregate
+	aggregate: aggregate,
+	aggregateV2: aggregateV2
 })
