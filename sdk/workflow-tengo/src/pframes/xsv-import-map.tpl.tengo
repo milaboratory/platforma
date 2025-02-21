@@ -22,8 +22,6 @@ self.validateInputs({
 	ops: `any`
 })
 
-_EMPTY_JSON_KEY := string(json.encode([]))
-
 _getPColumnRtype := func(supKeyLen, keyLen, storageFormat) {
 	if supKeyLen > 0 && keyLen > 0 {
 		if storageFormat == "Json" {
@@ -118,12 +116,12 @@ self.body(func(inputs) {
 					// p has two fields: [].index [].values
 
 					for suffix in [".index", ".values"] {
-						result[id].createInputField(key + suffix).set(pCol.getFutureInputField(_EMPTY_JSON_KEY + suffix))
+						result[id].createInputField(key + suffix).set(pCol.getFutureInputField(util.EMPTY_JSON_KEY + suffix))
 					}
 				} else if spec.storageFormat == "Json" {
 					// p has only one field: []
 
-					result[id].createInputField(key).set(pCol.getFutureInputField(_EMPTY_JSON_KEY))
+					result[id].createInputField(key).set(pCol.getFutureInputField(util.EMPTY_JSON_KEY))
 				} else {
 					ll.panic("unknown storage format: ", spec.storageFormat)
 				}

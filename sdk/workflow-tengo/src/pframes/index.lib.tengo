@@ -3,11 +3,9 @@
  */
 
 ll := import(":ll")
-oop := import(":oop")
-smart := import(":smart")
 assets := import(":assets")
 render := import(":render")
-constants := import(":pframes.constants")
+builder := import(":pframes.builder")
 
 /**
  * Given a reference to the p-frame, converts all inner resource files into resources that can be
@@ -25,41 +23,100 @@ exportColumnData := func(data) {
 }
 
 /**
- * Creates a builder for p-frame resource.
- */
-pFrameBuilder := func() {
-	r := smart.structBuilder(constants.RTYPE_P_FRAME)
-
-	self := undefined
-	self = ll.toStrict(oop.inherit(r, {
-
-		add: func(column, spec, data) {
-			if (!is_undefined(spec)) {
-				r.createInputField(column + ".spec").setRefOrJson(spec)
-			}
-			if (!is_undefined(data)) {
-				r.createInputField(column + ".data").setRefOrJson(data)
-			}
-			return self
-		},
-
-		build: func() {
-			return r.lockAndBuild()
-		}
-	}))
-	return self
-}
-
-/**
  * Creates a builder for a resource map p-column's data.
  */
 pColumnResourceMapDataBuilder := func(keyLength) {
 	ll.panic("pframes.pColumnResourceMapDataBuilder is not supported any more; use pcolumn.resourceMapBuilder")
 }
 
+/**
+ * Instantiate an aggregation pipeline for the given inputs, and returns rendered ephemeral template.
+ * Use r.output("output_name") method to get corresponding result, where r is an object returned by
+ * this method.
+ *
+ * Contract for the body template:
+ *
+ *   Inputs:
+ *     "__key__"   - will be set to the json representation of the group key (i.e. keys in all
+ *                   positions not specified in the indices parameter)
+ *     "__value__" - "PColumnData/ResourceMap" resource with all the records in the current group
+ *     ...extra    - all values or references passed to optional last parameter of this method
+ *                   will be forwarded to the template as is
+ *
+ * @param inputs        array of input columns (currently only one input is supported)
+ *
+ *                      Each element must have the following structure:
+ * 							{
+ * 							 	// specs of the input PColumn
+ * 							 	spec: <explicit PColumnSpec, not resource reference>,
+ *
+ * 							 	// length of the top-most key (i.e. partitioning key, resource map key length, etc...)
+ * 							 	keyLength: <explicit number>,
+ *
+ * 							 	// reference to the data resource
+ * 							 	data: <resource ref>
+ *							}
+ *
+ * @param bodyTpl       template to be executed for each iteration (see contract above)
+ * @param isEphemeral   whether to run mapping in ephemeral or in non-ephemeral mode
+ * @param outputs 		array of output settings to to collect from rendered templates
+ *
+ *                  Common fields for all subtypes:
+ *                     {
+ *                       name:  string     - name of the output
+ *                       path?: string[]   - [optional] overrides the path inside the body template
+ *                                           result, first name is interpreted as output name. If
+ *                                           not specified path equals to `[name]`.
+ *                     }
+ *
+ *                  Variants:
+ *                    | { type: "Resource" } // - assume normal singular resource is produced by this output
+ *                    | {
+ *                        type: "ResourceMap",
+ *                        keyLength: number // - expected key length of result from each operation
+ *                      } // - assume the output is ResourceMap
+ *                    | {
+ *                        type: "BinaryPartitioned" | "JsonPartitioned",
+ *                        partitionKeyLength: number // - expected partition length of result from each operation
+ *                      } // - assume the output is a partitionded Json or Binary PColumn data itself
+ *                    | {
+ *                        type: "Xsv",        // i.e. CSV or TSV
+ *                        settings: object    // xsv conversion specification (better provide refined
+ *                                            // settings via the decomposePfconvImportCfg() function)
+ *                      } // - assume the output is a text file to be converted with pfConvert
+ *
+ */
+// buildMapping = func(inputs, bodyTpl, isEphemeral, outputs, ...extra) {
+// 	// (!) Note: at the moment must be populated with exactly one PColumn
+// 	// Structure:
+// 	// {
+// 	//   // indices of axes to aggregate over
+// 	//   aggregationIndices: <array of numbers>
+// 	// }
+// 	inputsWithAxes := []
+
+// 	// Names of aggragation axes to match within the input columns
+// 	aggregationAxes := undefined
+
+// 	isEphemeral := undefined
+
+// 	self = ll.toStrict({
+// 		body: func(commandName) {
+// 			assertEntrypointNotSet()
+
+// 			cmd = commandName
+// 			entrypointSet = true
+// 			return self
+// 		},
+// 	})
+
+// 	return self
+// }
+
 export ll.toStrict({
+	// aggregationBuilder: aggregationBuilder,
 	exportFrame: exportFrame,
-	pFrameBuilder: pFrameBuilder,
+	pFrameBuilder: builder.pFrameBuilder,
 	exportColumnData: exportColumnData,
 	pColumnResourceMapDataBuilder: pColumnResourceMapDataBuilder
 })

@@ -22,9 +22,6 @@ import {
   ResourceTraversalOps
 } from './traversal_ops';
 import { ValueOrError } from './value_or_error';
-import { ZodType, z } from 'zod';
-import { Optional, Writable } from 'utility-types';
-import { notEmpty } from '@milaboratories/ts-helpers';
 
 /** Error encountered during traversal in field or resource. */
 export class PlError extends Error {
