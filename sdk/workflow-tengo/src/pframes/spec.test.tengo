@@ -18,3 +18,92 @@ TestMakeTrace := func() {
 		[{type: "type", label: "the label"}, {type: "type2", id: "theid1", importance: 3, label: "the label 3"}]
 	)
 }
+
+TestAxisMatcher := func() {
+	axesSpec := [
+		{
+			type: "String",
+			name: "axis1",
+			annotations: {
+				"pl7.app/label": "Source MiXCR stage"
+			},
+			domain: {
+				"d1": "1"
+			}
+		},
+		{
+			type: "String",
+			name: "axis2",
+			annotations: {
+				"pl7.app/label": "Source MiXCR stage"
+			}
+		},
+		{
+			type: "Int",
+			name: "axis3",
+			domain: {},
+			annotations: {
+				"pl7.app/label": "Report format"
+			}
+		}
+	]
+	test.isEqual(pSpec.tryMatchAxis(axesSpec, "axis5"), -1)
+
+	test.isEqual(pSpec.tryMatchAxis(axesSpec, {name: "axis1"}), 0)
+	test.isEqual(pSpec.tryMatchAxis(axesSpec, {name: "axis2"}), 1)
+	test.isEqual(pSpec.tryMatchAxis(axesSpec, {name: "axis3"}), 2)
+
+	test.isEqual(pSpec.tryMatchAxis(axesSpec, {name: "axis1", domain: {}}), 0)
+	test.isEqual(pSpec.tryMatchAxis(axesSpec, {name: "axis2", domain: {}}), 1)
+	test.isEqual(pSpec.tryMatchAxis(axesSpec, {name: "axis3", domain: {}}), 2)
+
+	test.isEqual(pSpec.tryMatchAxis(axesSpec, {name: "axis1", domain: {d1: "1"}}), 0)
+	test.isEqual(pSpec.tryMatchAxis(axesSpec, {name: "axis2", domain: {d1: "1"}}), -1)
+	test.isEqual(pSpec.tryMatchAxis(axesSpec, {name: "axis3", domain: {d1: "1"}}), -1)
+
+	test.isEqual(pSpec.matchAxis(axesSpec, "axis3"), 2)
+	test.isEqual(pSpec.matchAxis(axesSpec, {name: "axis2"}), 1)
+	test.isEqual(pSpec.matchAxis(axesSpec, "axis1"), 0)
+
+	test.isEqual(pSpec.matchAxes(axesSpec, ["axis3", {name: "axis1"}, "axis2"]), [2, 0, 1])
+
+	axesSpec1 := [
+		{
+			type: "String",
+			name: "axis1",
+			annotations: {
+				"pl7.app/label": "Source MiXCR stage"
+			},
+			domain: {
+				"d1": "1"
+			}
+		},
+		{
+			type: "String",
+			name: "axis1",
+			annotations: {
+				"pl7.app/label": "Source MiXCR stage"
+			},
+			domain: {
+				"d1": "2"
+			}
+		},
+		{
+			type: "String",
+			name: "axis2",
+			annotations: {
+				"pl7.app/label": "Source MiXCR stage"
+			}
+		},
+		{
+			type: "Int",
+			name: "axis3",
+			domain: {},
+			annotations: {
+				"pl7.app/label": "Report format"
+			}
+		}
+	]
+
+	test.isEqual(pSpec.matchAxis(axesSpec1, {name: "axis1", domain: {d1: "2"}}), 1)
+}

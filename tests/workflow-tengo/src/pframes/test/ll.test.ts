@@ -77,8 +77,8 @@ tplTest.for([
             keyLength: 2,
           }),
         );
-        tx.createField(field(data, '[1, 1]'), 'Input', v1);
-        tx.createField(field(data, '[1, 2]'), 'Input', v1);
+        tx.createField(field(data, '[1,1]'), 'Input', v1);
+        tx.createField(field(data, '[1,2]'), 'Input', v1);
         tx.lockInputs(data);
 
         const inputs: Record<string, AnyRef> = {
@@ -214,16 +214,6 @@ tplTest(
       },
     );
     const r = simpleTree(driverKit.blobDriver, result.resultEntry);
-    // const r = result.computeOutput('result', (a, ctx) => {
-    //   if (a === undefined) return undefined;
-    //   if (!a.getIsReadyOrError()) {
-    //     ctx.markUnstable('not_ready');
-    //     return undefined;
-    //   }
-    //   return Object.fromEntries(
-    //     a.listInputFields().map((f) => [f, a.traverse(f)!.resourceType]),
-    //   );
-    // });
     const finalResult = await awaitStableState(r, 10000);
     function assertResource(node?: SimpleNode): asserts node is SimpleNodeResource {
       expect(node?.type).toEqual('Resource');
