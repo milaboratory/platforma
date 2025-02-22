@@ -33,13 +33,14 @@ self.body(func(inputs) {
 		ll.panic("Params have wrong type, or nor ready yet: %v", params)
 	}
 
-	indices := params.indices
+	aggregationIndices := params.aggregationIndices
 	eph := params.eph
 	outputs := params.outputs
 	passKey := params.passKey
+	expectedKeyLength := params.expectedKeyLength
 
-	if !is_array(indices) && !is_undefined(indices) {
-		ll.panic("Wrong indices parameter type: %v", indices)
+	if !is_array(aggregationIndices) && !is_undefined(aggregationIndices) {
+		ll.panic("Wrong indices parameter type: %v", aggregationIndices)
 	}
 
 	if !is_array(outputs) || len(outputs) == 0 {
@@ -73,29 +74,29 @@ self.body(func(inputs) {
 	if data.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP) {
 		meta := data.getDataAsJson()
 
+		if !is_undefined(expectedKeyLength) {
+			if expectedKeyLength != meta.keyLength {
+				ll.panic("Unexpected key length: %v != %v", expectedKeyLength, meta.keyLength)
+			}
+		}
+
 		// group key -> group resource
 		groups := {}
 
 		// mapping or aggregation mode
-		mappingMode := is_undefined(indices)
+		mappingMode := is_undefined(aggregationIndices)
 
 		groupKeyLength := 0
 
-		if is_undefined(indices) {
+		if is_undefined(aggregationIndices) {
 			for sKey, field in data.inputs() {
 				groups[sKey] = field
 			}
 		} else { // <- aggregation mode
 			// calculating group indices
-			groupIndices := []
-			for i:=0; i<meta.keyLength; i++ {
-				groupIndices = append(groupIndices, i)
-			}
-			for j:=len(indices)-1; j>=0; j-- {
-				splice(groupIndices, indices[j], 1)
-			}
+			groupIndices := pUtil.calculateGroupAxesIndices(meta.keyLength, aggregationIndices)
 			groupKeyLength := len(groupIndices)
-			groupElementKeyLength := len(indices)
+			groupElementKeyLength := len(aggregationIndices)
 
 			for sKey, field in data.inputs() {
 				key := json.decode(sKey)
@@ -106,7 +107,7 @@ self.body(func(inputs) {
 				}
 
 				inGroupKey := []
-				for i in indices {
+				for i in aggregationIndices {
 					inGroupKey = append(inGroupKey, key[i])
 				}
 
