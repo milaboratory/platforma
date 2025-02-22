@@ -1,0 +1,28 @@
+// proc_1
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+
+ll := import("@platforma-sdk/workflow-tengo:ll")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+pframes := import("@platforma-sdk/workflow-tengo:pframes")
+
+bodyTpl := assets.importTemplate(":pframes.test.proc_1_body")
+
+self.awaitState("InputsLocked")
+self.awaitState("params", "ResourceReady")
+
+self.body(func(inputs) {
+	params := inputs.params
+	extraFields := {}
+
+	outputsToCollect := [{ type: "Xsv", name: "tsv", xsvType: "tsv", settings: params.xsvSettings }]
+
+	processResult := pframes.processColumn({
+		spec: inputs.spec,
+		data: inputs.data
+	}, bodyTpl, outputsToCollect, {})
+
+	return {
+		result: pframes.exportFrame(processResult.xsvOutputFrame("tsv"))
+	}
+})

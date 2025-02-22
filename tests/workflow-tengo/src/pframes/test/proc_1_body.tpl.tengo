@@ -1,0 +1,37 @@
+// agg_body_pure
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+
+exec := import("@platforma-sdk/workflow-tengo:exec")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+
+ll := import("@platforma-sdk/workflow-tengo:ll")
+pConstants := import("@platforma-sdk/workflow-tengo:pframes.constants")
+
+hwSoftware := assets.importSoftware("@platforma-open/milaboratories.software-small-binaries:hello-world")
+
+self.defineOutputs(
+	"tsv"
+)
+
+self.body(func(inputs) {
+	value := inputs[pConstants.VALUE_FIELD_NAME]
+
+	if !is_string(value) {
+		ll.panic("value is not string: %v", value)
+	}
+
+	run := exec.builder().
+        software(hwSoftware).
+		arg("a").
+		writeFile("file.tsv", value).
+		saveFile("file.tsv").
+		run()
+
+	tsvFile := run.getFile("file.tsv")
+
+	return {
+		tsv: tsvFile
+	}
+})

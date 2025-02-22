@@ -49,8 +49,10 @@ llProcessTpl := assets.importTemplate(":pframes.process-pcolumn-data")
  *                                        | {                     - CSV/TSV text file output
  *                                            type: "Xsv",
  *                                            xsvType: "tsv"|"csv",
- *                                            flatten: boolean,   - If true, adds columns one by one with
- *                                                                 "{outputName}/{columnId}" keys
+ *                                            flattenWithDelimiter?: string,
+ *                                                                - If present, flattens output by adding columns
+ *                                                                  one by one using the specified delimiter:
+ *                                                                  "{outputName}{flattenWithDelimiter}{columnId}"
  *                                            settings: object    - Xsv conversion specification
  *                                          }
  * @param isEph: boolean               - If true, body template will be rendered as ephemeral

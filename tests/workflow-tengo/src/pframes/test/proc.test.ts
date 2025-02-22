@@ -1,0 +1,109 @@
+import type { PColumnSpec } from '@milaboratories/pl-middle-layer';
+import { field, Pl, resourceType } from '@milaboratories/pl-middle-layer';
+import { awaitStableState, tplTest } from '@platforma-sdk/test';
+import { simpleTree, type SimpleNode, type SimpleNodeBlob, type SimpleNodeResource } from './util';
+
+tplTest(
+  'should correctly execute pframes.processColumn',
+  { timeout: 10000 },
+  async ({ helper, driverKit, expect }) => {
+    const xsvSettings = {
+      axes: [
+        {
+          column: 'a',
+          spec: {
+            name: 'a',
+            type: 'Long',
+            domain: {
+              domain1: 'value',
+            },
+            annotations: {
+              'pl7.app/label': 'A',
+            },
+          },
+        },
+      ],
+      columns: [
+        {
+          column: 'b',
+          id: 'b',
+          spec: {
+            valueType: 'Long',
+            name: 'b',
+            annotations: {
+              'pl7.app/label': 'B',
+            },
+          },
+        },
+      ],
+      storageFormat: 'Json',
+      partitionKeyLength: 0,
+    };
+    const inputSpec = {
+      kind: 'PColumn',
+      name: 'inputColumn',
+      valueType: 'File',
+      axesSpec: [
+        { name: 'inputAxis1', type: 'Long' },
+        { name: 'inputAxis2', type: 'Int', domain: { domain3: 'd3' } },
+      ],
+    } satisfies PColumnSpec;
+    const result = await helper.renderTemplate(
+      true,
+      'pframes.test.proc_1',
+      ['result'],
+      (tx) => {
+        const tsvContent1 = tx.createValue(Pl.JsonObject, JSON.stringify('a\tb\n1\t2\n2\t1\n'));
+        const tsvContent2 = tx.createValue(Pl.JsonObject, JSON.stringify('a\tb\n3\t2\n1\t3\n'));
+
+        const data = tx.createStruct(
+          resourceType('PColumnData/ResourceMap', '1'),
+          JSON.stringify({
+            keyLength: 2,
+          }),
+        );
+        tx.createField(field(data, '[1,1]'), 'Input', tsvContent1);
+        tx.createField(field(data, '[1,2]'), 'Input', tsvContent2);
+        tx.lockInputs(data);
+
+        return {
+          params: tx.createValue(
+            Pl.JsonObject,
+            JSON.stringify({
+              xsvSettings,
+              eph: false,
+            }),
+          ),
+          data: data,
+          spec: tx.createValue(
+            Pl.JsonObject,
+            JSON.stringify(inputSpec),
+          ),
+        };
+      },
+    );
+    const r = simpleTree(driverKit.blobDriver, result.resultEntry);
+    const finalResult = await awaitStableState(r, 10000);
+    console.dir(finalResult, { depth: null });
+    // function assertResource(node?: SimpleNode): asserts node is SimpleNodeResource {
+    //   expect(node?.type).toEqual('Resource');
+    // };
+    // function assertBlob(node?: SimpleNode): asserts node is SimpleNodeBlob {
+    //   expect(node?.type).toEqual('Blob');
+    // };
+    // assertResource(finalResult);
+    // const theResult = finalResult.inputs['result'];
+    // assertResource(theResult);
+    // const bData = theResult.inputs['b.data'];
+    // assertResource(bData);
+    // expect(bData.resourceType.name).toEqual('PColumnData/JsonPartitioned');
+    // const b11 = bData.inputs['[1,1]'];
+    // assertBlob(b11);
+    // const b11Content = JSON.parse(Buffer.from(b11.content).toString());
+    // const b12 = bData.inputs['[1,2]'];
+    // assertBlob(b12);
+    // const b12Content = JSON.parse(Buffer.from(b12.content).toString());
+    // expect(b11Content).toStrictEqual({ '[1]': 2, '[2]': 1 });
+    // expect(b12Content).toStrictEqual({ '[1]': 3, '[3]': 2 });
+  },
+);

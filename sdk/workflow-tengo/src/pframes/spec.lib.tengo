@@ -250,6 +250,9 @@ makeTrace := func(input, ...steps) {
 }
 
 export ll.toStrict({
+	P_AXIS_SPEC_SCHEMA: P_AXIS_SPEC_SCHEMA,
+	P_COLUMN_SPEC_SCHEMA: P_COLUMN_SPEC_SCHEMA,
+
 	KIND_P_COLUMN: KIND_P_COLUMN,
 
 	N_LABEL: N_LABEL,
