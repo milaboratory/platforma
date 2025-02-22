@@ -89,14 +89,14 @@ self.body(func(inputs) {
 
 		groupKeyLength := 0
 
-		if is_undefined(aggregationIndices) {
+		if mappingMode {
 			for sKey, field in data.inputs() {
 				groups[sKey] = field
 			}
 		} else { // <- aggregation mode
 			// calculating group indices
 			groupIndices := pUtil.calculateGroupAxesIndices(meta.keyLength, aggregationIndices)
-			groupKeyLength := len(groupIndices)
+			groupKeyLength = len(groupIndices)
 			groupElementKeyLength := len(aggregationIndices)
 
 			for sKey, field in data.inputs() {
