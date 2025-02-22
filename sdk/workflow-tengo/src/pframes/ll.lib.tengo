@@ -87,8 +87,8 @@ aggregateV2 := func(data, aggregationIndices, bodyTpl, outputs, isEph, passKey, 
 /*
  * Read docs for aggregateV2
  */
-aggregate := func(data, indices, bodyTpl, outputs, isEph, ...extra) {
-	return aggregateV2(data, indices, bodyTpl, outputs, isEph, true, extra...)
+aggregate := func(data, aggregationIndices, bodyTpl, outputs, isEph, ...extra) {
+	return aggregateV2(data, aggregationIndices, bodyTpl, outputs, isEph, true, extra...)
 }
 
 export ll.toStrict({
