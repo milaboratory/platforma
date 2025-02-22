@@ -47,25 +47,27 @@ TestAxisMatcher := func() {
 			}
 		}
 	]
-	test.isEqual(pSpec.tryMatchAxis(axesSpec, "axis5"), -1)
+	test.isEqual(pSpec.matchAxis(axesSpec, {name: "axis5", optional: true}), -1)
 
-	test.isEqual(pSpec.tryMatchAxis(axesSpec, {name: "axis1"}), 0)
-	test.isEqual(pSpec.tryMatchAxis(axesSpec, {name: "axis2"}), 1)
-	test.isEqual(pSpec.tryMatchAxis(axesSpec, {name: "axis3"}), 2)
+	test.isEqual(pSpec.matchAxis(axesSpec, {name: "axis1"}), 0)
+	test.isEqual(pSpec.matchAxis(axesSpec, {name: "axis2"}), 1)
+	test.isEqual(pSpec.matchAxis(axesSpec, {name: "axis3"}), 2)
 
-	test.isEqual(pSpec.tryMatchAxis(axesSpec, {name: "axis1", domain: {}}), 0)
-	test.isEqual(pSpec.tryMatchAxis(axesSpec, {name: "axis2", domain: {}}), 1)
-	test.isEqual(pSpec.tryMatchAxis(axesSpec, {name: "axis3", domain: {}}), 2)
+	test.isEqual(pSpec.matchAxis(axesSpec, {name: "axis1", domain: {}}), 0)
+	test.isEqual(pSpec.matchAxis(axesSpec, {name: "axis2", domain: {}}), 1)
+	test.isEqual(pSpec.matchAxis(axesSpec, {name: "axis3", domain: {}}), 2)
 
-	test.isEqual(pSpec.tryMatchAxis(axesSpec, {name: "axis1", domain: {d1: "1"}}), 0)
-	test.isEqual(pSpec.tryMatchAxis(axesSpec, {name: "axis2", domain: {d1: "1"}}), -1)
-	test.isEqual(pSpec.tryMatchAxis(axesSpec, {name: "axis3", domain: {d1: "1"}}), -1)
+	test.isEqual(pSpec.matchAxis(axesSpec, {name: "axis1", domain: {d1: "1"}}), 0)
+	test.isEqual(pSpec.matchAxis(axesSpec, {name: "axis2", domain: {d1: "1"}, optional: true}), -1)
+	test.isEqual(pSpec.matchAxis(axesSpec, {name: "axis3", domain: {d1: "1"}, optional: true}), -1)
 
 	test.isEqual(pSpec.matchAxis(axesSpec, "axis3"), 2)
 	test.isEqual(pSpec.matchAxis(axesSpec, {name: "axis2"}), 1)
 	test.isEqual(pSpec.matchAxis(axesSpec, "axis1"), 0)
 
 	test.isEqual(pSpec.matchAxes(axesSpec, ["axis3", {name: "axis1"}, "axis2"]), [2, 0, 1])
+	test.isEqual(pSpec.matchAxes(axesSpec, ["axis3", {name: "axis1"}, "axis2", {name:"axis4", optional: true}], {keepUnmatched: true}), [2, 0, 1, -1])
+	test.isEqual(pSpec.matchAxes(axesSpec, ["axis3", {name: "axis1"}, "axis2", {name:"axis4", optional: true}], {keepUnmatched: false}), [2, 0, 1])
 
 	axesSpec1 := [
 		{

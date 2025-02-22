@@ -88,7 +88,8 @@ _P_MATCHER_SCHEMA := {
 	`__options__,closed`: ``,
 	`type,?`: `string,regex=Int|Long|Float|Double|String`,
 	`name`: `string`,
-	`domain,?`: { any: `string` }
+	`domain,?`: { any: `string` },
+	`optional,?`: `boolean`
 }
 
 _normalizeMatcher := func(matcher) {
@@ -118,11 +119,11 @@ _checkAxisMatch := func(axisSpec, matcher) {
 }
 
 /**
- * For a given array of axes specs tries find the index of matching axis:
+ * For a given array of axes specs returns the index of matching axis:
  *   - if multiple matches are found - panics
- *   - if axis not found returns -1
+ *   - if axis not found and matcher is not optional - panics
  */
-tryMatchAxis := func(axesSpec, matcher) {
+matchAxis := func(axesSpec, matcher) {
 	validation.assertType(axesSpec, [ P_AXIS_SPEC_SCHEMA ])
 	matcher = _normalizeMatcher(matcher)
 	found := -1
@@ -135,40 +136,61 @@ tryMatchAxis := func(axesSpec, matcher) {
 		}
 		found = idx
 	}
-	return found
-}
-
-/**
- * For a given array of axes specs returns the index of matching axis:
- *   - if multiple matches are found - panics
- *   - if axis not found - panics
- */
-matchAxis := func(axesSpec, matcher) {
-	found := tryMatchAxis(axesSpec, matcher)
-	if found == -1 {
+	if found == -1 && !matcher.optional {
 		ll.panic("match not found for %v in %v", matcher, axesSpec)
 	}
 	return found
 }
 
 /**
- * For a given array of axes specs and array of matchers returns array of indices of mathed axes
- * in the same order as matchers:
- *   - if multiple matches are found - panics
- *   - if any axis not found - panics
- *   - if multiple matchers matches the same axis - panics
+ * Matches axes specs against matchers and returns array of matched indices.
+ *
+ * Example matchers:
+ *   - "pl7.app/sequencing/readIndex"
+ *   - { name: "pl7.app/sequencing/readIndex" }
+ *   - { type: "String", name: "pl7.app/sequencing/lane" }
+ *   - { type: "String", name: "pl7.app/sequencing/lane", optional: true }
+ *   - { type: "String", name: "pl7.app/rna-seq/geneId", domain: { "pl7.app/species": "homo-sapiens" } }
+ *
+ * @param axesSpec: AxisSpec[] Array of axis specifications to match against
+ * @param matchers: (string|AxisMatcher)[] Array of matchers, each can be either:
+ *   - string: Simple name matcher e.g. "pl7.app/sequencing/readIndex"
+ *   - AxisMatcher: Object with matching criteria:
+ *     - name: string - Axis name to match
+ *     - type?: string - Optional axis type to match
+ *     - domain?: Record<string,string> - Optional domain criteria
+ *     - optional?: boolean - If true, won't panic when no match found
+ * @param opts?: object Optional parameters:
+ *   - keepUnmatched?: boolean - Whether to include unmatched indices (-1) in result
+ * @returns number[] Array of matched indices in same order as matchers. Contains -1 for
+ *          unmatched optional matchers if keepUnmatched is true.
+ * @panics
+ *   - If multiple axes match a single matcher
+ *   - If no match found for non-optional matcher
+ *   - If multiple matchers match the same axis
  */
-matchAxes := func(axesSpec, matchers) {
+matchAxes := func(axesSpec, matchers, ...opts) {
+	keepUnmatched := false
+	if len(opts) == 1 {
+		keepUnmatched = opts[0].keepUnmatched
+	} else if len(opts) != 0 {
+		ll.panic("wrong number of parameters for matchAxes")
+	}
+
 	result := []
 	resultSet := {}
 	for matcher in matchers {
 		idx := matchAxis(axesSpec, matcher)
-		idxS := string(idx)
-		if resultSet[idxS] {
-			ll.panic("duplicate match detecterd for %v in %v (idx = %v)", matchers, axesSpec, idx)
+		if idx != -1 {
+			idxS := string(idx)
+			if resultSet[idxS] {
+				ll.panic("duplicate match detecterd for %v in %v (idx = %v)", matchers, axesSpec, idx)
+			}
+			resultSet[idxS] = true
 		}
-		resultSet[idxS] = true
-		result = append(result, idx)
+		if idx != -1 || keepUnmatched {
+			result = append(result, idx)
+		}
 	}
 	return result
 }
@@ -239,7 +261,6 @@ export ll.toStrict({
 
 	normalizeColumnSpec: normalizeColumnSpec,
 
-	tryMatchAxis: tryMatchAxis,
 	matchAxis: matchAxis,
 	matchAxes: matchAxes,
 
