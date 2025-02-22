@@ -286,6 +286,20 @@ fromSet := func(set) {
 	return sortByFn(slice, func(elem) { return elem })
 }
 
+/**
+ * Normalizes a slice by ensuring it is never undefined.
+ * Returns an empty slice if input is undefined, otherwise returns the input slice unchanged.
+ *
+ * @param s: any[]|undefined - Input slice that may be undefined
+ * @returns any[] - Normalized slice, never undefined
+ */
+normalize := func(s) {
+	if is_undefined(s) {
+		return []
+	}
+	return s
+}
+
 export ll.toStrict({
 	length: length,
 	safeAppend: safeAppend,
@@ -301,5 +315,6 @@ export ll.toStrict({
 	quickSortInPlaceFn: quickSortInPlaceFn,
 	sortByFn: sortByFn,
 	fromSet: fromSet,
-	slice: slice
+	slice: slice,
+	normalize: normalize
 })

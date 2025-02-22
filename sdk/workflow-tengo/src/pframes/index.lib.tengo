@@ -4,6 +4,8 @@
 
 ll := import(":ll")
 maps := import(":maps")
+smart := import(":smart")
+slices := import(":slices")
 assets := import(":assets")
 render := import(":render")
 builder := import(":pframes.builder")
@@ -139,101 +141,107 @@ pColumnResourceMapDataBuilder := func(keyLength) {
  * @returns Object with methods for retrieving processing results
  *          See source code for method documentation and signatures
  */
-// processColumn := func(input, bodyTpl, isEphemeral, outputs, ...opts) {
-// 	if len(opts) == 0 {
-// 		opts = {}
-// 	} else if len(opts) == 1 {
-// 		opts = opts[0]
-// 	} else {
-// 		ll.panic("too many arguments")
-// 	}
+processColumn := func(input, bodyTpl, isEphemeral, outputs, ...opts) {
+	if len(opts) == 0 {
+		opts = {}
+	} else if len(opts) == 1 {
+		opts = opts[0]
+	} else {
+		ll.panic("too many arguments")
+	}
 
-// 	validation.assertType(input.spec, pSpec.P_COLUMN_SPEC_SCHEMA)
+	validation.assertType(input.spec, pSpec.P_COLUMN_SPEC_SCHEMA)
 
-// 	if is_undefined(opts.passKey) {
-// 		opts.passKey = false
-// 	}
+	if is_undefined(opts.passKey) {
+		opts.passKey = false
+	}
 
-// 	if is_undefined(opts.passGroupAxesSpec) {
-// 		opts.passGroupAxesSpec = false
-// 	}
+	if is_undefined(opts.passGroupAxesSpec) {
+		opts.passGroupAxesSpec = false
+	}
 
-// 	if opts.passGroupAxesSpec && is_undefined(opts.aggregate) {
-// 		ll.panic("can't use passGroupAxesSpec without aggregate")
-// 	}
+	if opts.passGroupAxesSpec && is_undefined(opts.aggregate) {
+		ll.panic("can't use passGroupAxesSpec without aggregate")
+	}
 
-// 	processTemplateParams := {
-// 		eph: isEphemeral,
-// 		outputs: outputs,
-// 		passKey: opts.passKey
-// 	}
+	// JSON params passed as a single resource to the template
+	processTemplateParams := {
+		eph: isEphemeral,
+		outputs: outputs,
+		passKey: opts.passKey
+	}
 
-// 	notAggregatedAxesSpec := input.spec.axesSpec
-// 	if !is_undefined(opts.aggregate) {
-// 		aggregationIndices = pSpec.matchAxes(input.spec.axesSpec, opts.aggregate)
+	extra := opts.extra
+	if is_undefined(extra) {
+		extra = {}
+	}
 
-// 		notAggregatedAxesSpec = []
-// 		for i in input.spec.axesSpec {
-// 			if !is_in(i.name, aggregationIndices) {
-// 				notAggregatedAxesSpec.append(i)
-// 			}
-// 		}
+	iterationAxesSpec := input.spec.axesSpec
+	processTemplateParams.expectedKeyLength = len(input.spec.axesSpec)
+	if !is_undefined(opts.aggregate) {
+		aggregationIndices := pSpec.matchAxes(input.spec.axesSpec, opts.aggregate)
+		processTemplateParams.aggregationIndices = aggregationIndices
 
-// 		if opts.passGroupAxesSpec {
-// 			processTemplateParams["groupAxesSpec"] = aggregationIndices
-// 		}
-// 	}
+		// calculate iteration axes spec
+		groupAxesIndices := pUtil.calculateGroupAxesIndices(len(input.spec.axesSpec), aggregationIndices)
+		processTemplateParams.expectedKeyLength = len(groupAxesIndices)
+		iterationAxesSpec = []
+		for i in groupAxesIndices {
+			iterationAxesSpec = append(iterationAxesSpec, input.spec.axesSpec[i])
+		}
 
+		if opts.passGroupAxesSpec {
+			aggregationAxesSpec := []
+			for i in aggregationIndices {
+				aggregationAxesSpec = append(aggregationAxesSpec, input.spec.axesSpec[i])
+			}
 
-// 	processedOutputs := []
-// 	xsvSpecs := {}
-// 	for output in outputs {
-// 		if output.type == "Resource" || output.type == "ResourceMap" || output.type == "BinaryPartitioned" || output.type == "JsonPartitioned" {
-// 			processedOutputs.append(maps.deepMerge(output, spec: undefined))
-// 		} else if output.type == "Xsv" {
-// 			decomposition := pUtil.decomposePfconvImportCfg(pfconvParams, {
-// 				additionalAxesSpec: cColumnsAdditionalAxesSpec
-// 			})
-// 			purifiedPfconvCfg := decomposition.purifiedCfg
-// 			cloneColumnsSpec := decomposition.columnsSpec
-// 			processedOutputs.append(output)
-// 		} else {
-// 			ll.panic("unknown output type: " + output.type)
-// 		}
-// 	}
+			extra["__group_axes_spec__"] = smart.createJsonResource(aggregationAxesSpec)
+		}
+	}
 
-// 	extra := opts.extra
-// 	if is_undefined(extra) {
-// 		extra = {}
-// 	}
+	processedOutputs := []
+	outputSpecs := {}
+	for output in outputs {
+		if output.type == "Resource" || output.type == "BinaryPartitioned" || output.type == "JsonPartitioned" {
+			outputSpecs[output.name] = maps.merge(output.spec, { axesSpec: iterationAxesSpec + slices.normalize(output.spec.axesSpec) })
+			processedOutputs.append(maps.merge(output, {spec: undefined })) // removing spec field
+		} else if output.type == "ResourceMap" {
+			processedOutputs.append(maps.merge(output,
+				{ keyLength: len(output.spec.axesSpec), spec: undefined }))
+			outputSpecs[output.name] = maps.merge(output.spec, { axesSpec: iterationAxesSpec + slices.normalize(output.spec.axesSpec) })
+		} else if output.type == "Xsv" {
+			decomposition := pUtil.decomposePfconvImportCfg(output.settings, {
+				additionalAxesSpec: iterationAxesSpec
+			})
+			purifiedPfconvCfg := decomposition.purifiedCfg
+			outputSpecs[output.name] = decomposition.columnsSpec
+			processedOutputs.append(maps.merge(output,
+				{ settings: purifiedPfconvCfg }))
+		} else {
+			ll.panic("unknown output type: " + output.type)
+		}
+	}
 
-// 	renderInputs := {
-// 		params: smart.createJsonResource(aggregateTemplateParams),
-// 		body: bodyTpl,
-// 		data: data
-// 	}
+	renderInputs := {
+		params: smart.createJsonResource(processTemplateParams),
+		body: bodyTpl,
+		data: input.data
+	}
 
-// 	for k, v in extra {
-// 		renderInputs["__extra_" + k] = v
-// 	}
+	for k, v in extra {
+		renderInputs["__extra_" + k] = v
+	}
 
-// 	renderResult := render.createEphemeral(llProcessTpl, renderInputs)
-// 	return renderResult
+	renderResult := render.createEphemeral(llProcessTpl, renderInputs)
 
-// 	isEphemeral := undefined
+	self := undefined
+	self = ll.toStrict({
+		renderResult: renderResult
+	})
 
-// 	self = ll.toStrict({
-// 		body: func(commandName) {
-// 			assertEntrypointNotSet()
-
-// 			cmd = commandName
-// 			entrypointSet = true
-// 			return self
-// 		},
-// 	})
-
-// 	return self
-// }
+	return self
+}
 
 export ll.toStrict({
 	// aggregationBuilder: aggregationBuilder,
