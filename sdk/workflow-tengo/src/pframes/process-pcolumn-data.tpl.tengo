@@ -90,6 +90,7 @@ self.body(func(inputs) {
 		groupKeyLength := 0
 
 		if mappingMode {
+			groupKeyLength = meta.keyLength
 			for sKey, field in data.inputs() {
 				groups[sKey] = field
 			}
@@ -256,10 +257,17 @@ self.body(func(inputs) {
 					}
 				}
 
-				dataResData := json.encode({
-					superPartitionKeyLength: groupKeyLength,
-					partitionKeyLength: partitionKeyLength
-				})
+				dataResData := undefined
+				if unwrapZeroPartition {
+					dataResData = json.encode({
+						partitionKeyLength: groupKeyLength
+					})
+				} else {
+					dataResData = json.encode({
+						superPartitionKeyLength: groupKeyLength,
+						partitionKeyLength: partitionKeyLength
+					})
+				}
 
 				// aggragation column results from all iterations into super-partitioned structures
 				columnResults := {}
@@ -285,9 +293,9 @@ self.body(func(inputs) {
 					columnResults[id] = dataRes.lockAndBuild()
 				}
 
-				if output.settings.flatten {
+				if !is_undefined(output.flattenWithDelimiter) {
 					for id, data in columnResults {
-						outputMaps[output.name + "/" + id] = data
+						outputMaps[output.name + output.flattenWithDelimiter + id] = data
 					}
 				} else {
 					mapBuilder := builder.pFrameBuilder()

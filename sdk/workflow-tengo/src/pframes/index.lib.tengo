@@ -72,8 +72,6 @@ pColumnResourceMapDataBuilder := func(keyLength) {
  *							}
  *
  * @param bodyTpl       Template executed for each iteration (see contract above)
- * @param isEphemeral   Whether to run mapping in ephemeral mode
- *
  * @param outputs 		Array of output configurations to collect from rendered templates
  *
  *                  Common fields for all types:
@@ -134,6 +132,10 @@ pColumnResourceMapDataBuilder := func(keyLength) {
  *                      extra?: Map<string, Ref>,
  *                                              // Additional parameters passed to each body invocation
  *                                              // Keys match template input names
+ *
+ *                      isEphemeral?: boolean   // Whether to render mapping template in ephemeral mode
+ *                                              // Defaults to false if omitted, template will be rendered
+ *                                              // as pure resource
  *                    }
  *
  * === Return ===
@@ -141,13 +143,21 @@ pColumnResourceMapDataBuilder := func(keyLength) {
  * @returns Object with methods for retrieving processing results
  *          See source code for method documentation and signatures
  */
-processColumn := func(input, bodyTpl, isEphemeral, outputs, ...opts) {
+processColumn := func(input, bodyTpl, outputs, ...opts) {
 	if len(opts) == 0 {
 		opts = {}
 	} else if len(opts) == 1 {
 		opts = opts[0]
 	} else {
 		ll.panic("too many arguments")
+	}
+
+	if is_undefined(input.spec) {
+		ll.panic("no input spec provided")
+	}
+
+	if is_undefined(input.data) {
+		ll.panic("no input data provided")
 	}
 
 	validation.assertType(input.spec, pSpec.P_COLUMN_SPEC_SCHEMA)
@@ -160,14 +170,17 @@ processColumn := func(input, bodyTpl, isEphemeral, outputs, ...opts) {
 		opts.passGroupAxesSpec = false
 	}
 
+	if is_undefined(opts.isEphemeral) {
+		opts.isEphemeral = false
+	}
+
 	if opts.passGroupAxesSpec && is_undefined(opts.aggregate) {
 		ll.panic("can't use passGroupAxesSpec without aggregate")
 	}
 
 	// JSON params passed as a single resource to the template
 	processTemplateParams := {
-		eph: isEphemeral,
-		outputs: outputs,
+		eph: opts.isEphemeral,
 		passKey: opts.passKey
 	}
 
@@ -202,12 +215,15 @@ processColumn := func(input, bodyTpl, isEphemeral, outputs, ...opts) {
 
 	processedOutputs := []
 	outputSpecs := {}
+	outputsMap := {}
 	for output in outputs {
+		// map output name to output settings provided in input
+		outputsMap[output.name] = output
 		if output.type == "Resource" || output.type == "BinaryPartitioned" || output.type == "JsonPartitioned" {
 			outputSpecs[output.name] = maps.merge(output.spec, { axesSpec: iterationAxesSpec + slices.normalize(output.spec.axesSpec) })
-			processedOutputs.append(maps.merge(output, {spec: undefined })) // removing spec field
+			processedOutputs = append(processedOutputs, maps.merge(output, {spec: undefined })) // removing spec field
 		} else if output.type == "ResourceMap" {
-			processedOutputs.append(maps.merge(output,
+			processedOutputs = append(processedOutputs, maps.merge(output,
 				{ keyLength: len(output.spec.axesSpec), spec: undefined }))
 			outputSpecs[output.name] = maps.merge(output.spec, { axesSpec: iterationAxesSpec + slices.normalize(output.spec.axesSpec) })
 		} else if output.type == "Xsv" {
@@ -216,12 +232,17 @@ processColumn := func(input, bodyTpl, isEphemeral, outputs, ...opts) {
 			})
 			purifiedPfconvCfg := decomposition.purifiedCfg
 			outputSpecs[output.name] = decomposition.columnsSpec
-			processedOutputs.append(maps.merge(output,
-				{ settings: purifiedPfconvCfg }))
+			processedOutputs = append(processedOutputs, maps.merge(output,
+				{
+					settings: purifiedPfconvCfg,
+					flattenWithDelimiter: "/"
+				}))
 		} else {
 			ll.panic("unknown output type: " + output.type)
 		}
 	}
+	processTemplateParams.outputs = processedOutputs
+	ll.print("__THE_LOG__ " + processTemplateParams)
 
 	renderInputs := {
 		params: smart.createJsonResource(processTemplateParams),
@@ -237,14 +258,143 @@ processColumn := func(input, bodyTpl, isEphemeral, outputs, ...opts) {
 
 	self := undefined
 	self = ll.toStrict({
-		renderResult: renderResult
+		renderResult: renderResult,
+
+		/**
+		 * Returns output spec for the given output name and optional column name
+		 *
+		 * For normal outputs (Resource, ResourceMap, BinaryPartitioned, JsonPartitioned),
+		 * only the output name should be provided.
+		 * For Xsv outputs, both output name and column name should be provided.
+		 *
+		 * @param name - Name of the output
+		 * @param column - Optional. For Xsv outputs, name of the column
+		 * @returns Output spec
+		 */
+		outputSpec: func(name, ...column) {
+			output := outputsMap[name]
+			if is_undefined(output) {
+				ll.panic("unknown output: " + name)
+			}
+
+			spec := outputSpecs[name]
+			if output.type == "Xsv" {
+				if len(column) != 1 {
+					ll.panic("column name must be provided for Xsv output")
+				}
+				columnName := column[0]
+				spec = spec[columnName]
+				if is_undefined(spec) {
+					ll.panic("unknown column: " + columnName)
+				}
+			}
+
+			if len(column) > 0 {
+				ll.panic("column name should not be provided for non-Xsv output")
+			}
+			return spec
+		},
+
+		/**
+		 * Returns data resource for the given output name and optional column name
+		 *
+		 * For normal outputs (Resource, ResourceMap, BinaryPartitioned, JsonPartitioned),
+		 * only the output name should be provided.
+		 * For Xsv outputs, both output name and column name should be provided.
+		 *
+		 * @param name - Name of the output
+		 * @param column - Optional. For Xsv outputs, name of the column
+		 * @returns data resource
+		 */
+		outputData: func(name, ...column) {
+			output := outputsMap[name]
+			if is_undefined(output) {
+				ll.panic("unknown output: " + name)
+			}
+
+			if output.type == "Xsv" {
+				if len(column) != 1 {
+					ll.panic("column name must be provided for Xsv output")
+				}
+				return renderResult.output(name + "/" + column[0])
+			}
+
+			if len(column) > 0 {
+				ll.panic("column name should not be provided for non-Xsv output")
+			}
+			return renderResult.output(name)
+		},
+
+		/**
+		 * Returns both data resource and spec for the given output name and optional column name
+		 *
+		 * For normal outputs (Resource, ResourceMap, BinaryPartitioned, JsonPartitioned),
+		 * only the output name should be provided.
+		 * For Xsv outputs, both output name and column name should be provided.
+		 *
+		 * @param name - Name of the output
+		 * @param column - Optional. For Xsv outputs, name of the column
+		 * @returns {data: Resource, spec: PColumnSpec} Object containing both data resource and spec
+		 */
+		output: func(name, ...column) {
+			output := outputsMap[name]
+			if is_undefined(output) {
+				ll.panic("unknown output: " + name)
+			}
+
+			if output.type == "Xsv" {
+				if len(column) != 1 {
+					ll.panic("column name must be provided for Xsv output")
+				}
+				columnName := column[0]
+				spec := outputSpecs[name][columnName]
+				if is_undefined(spec) {
+					ll.panic("unknown column: " + columnName)
+				}
+				return {
+					data: renderResult.output(name + "/" + columnName),
+					spec: spec
+				}
+			}
+
+			if len(column) > 0 {
+				ll.panic("column name should not be provided for non-Xsv output")
+			}
+			return {
+				data: renderResult.output(name),
+				spec: outputSpecs[name]
+			}
+		},
+
+		/**
+		 * Returns a PFrame containing all columns from an Xsv output
+		 *
+		 * @param name - Name of the Xsv output
+		 * @returns PFrame containing all columns from the output
+		 */
+		xsvOutputFrame: func(name) {
+			output := outputsMap[name]
+			if is_undefined(output) {
+				ll.panic("unknown output: " + name)
+			}
+
+			if output.type != "Xsv" {
+				ll.panic("outputFrame can only be used with Xsv outputs")
+			}
+
+			builder := builder.pFrameBuilder()
+			for columnName, spec in outputSpecs[name] {
+				builder.add(columnName, spec, renderResult.output(name + "/" + columnName))
+			}
+			return builder.build()
+		}
 	})
 
 	return self
 }
 
 export ll.toStrict({
-	// aggregationBuilder: aggregationBuilder,
+	processColumn: processColumn,
 	exportFrame: exportFrame,
 	pFrameBuilder: builder.pFrameBuilder,
 	exportColumnData: exportColumnData,

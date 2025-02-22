@@ -1,11 +1,7 @@
-import type { AnyRef, ResourceType } from '@milaboratories/pl-middle-layer';
+import type { AnyRef } from '@milaboratories/pl-middle-layer';
 import { Pl, field, resourceType } from '@milaboratories/pl-middle-layer';
-import type { PlTreeEntry } from '@milaboratories/pl-tree';
 import { awaitStableState, tplTest } from '@platforma-sdk/test';
-import type { ComputableStableDefined } from '@milaboratories/computable';
-import { Computable } from '@milaboratories/computable';
-import { notEmpty } from '@milaboratories/ts-helpers';
-import type { DownloadDriver } from '@milaboratories/pl-drivers';
+import { simpleTree, type SimpleNode, type SimpleNodeBlob, type SimpleNodeResource } from './util';
 
 tplTest.for([
   {
@@ -114,41 +110,6 @@ tplTest.for([
     expect(finalResult).toStrictEqual(expectedResult);
   },
 );
-
-type SimpleNodeResource = {
-  type: 'Resource';
-  resourceType: ResourceType;
-  inputs: Record<string, SimpleNode>;
-};
-
-type SimpleNodeBlob = {
-  type: 'Blob';
-  content: Uint8Array;
-};
-
-type SimpleNode = SimpleNodeResource | SimpleNodeBlob;
-
-function simpleTree(downloadDriver: DownloadDriver, node: PlTreeEntry): ComputableStableDefined<SimpleNode> {
-  return Computable.make((ctx) => {
-    const acc = ctx.accessor(node).node();
-    if (!acc.getIsReadyOrError()) {
-      ctx.markUnstable('not_ready');
-      return undefined;
-    }
-    if (acc.resourceType.name.startsWith('Blob')) {
-      return {
-        type: 'Blob' as const,
-        content: downloadDriver.getComputableContent(acc.persist()),
-      };
-    } else {
-      return {
-        type: 'Resource' as const,
-        resourceType: acc.resourceType,
-        inputs: Object.fromEntries(acc.listInputFields().map((i) => [i, simpleTree(downloadDriver, notEmpty(acc.traverse(i)).persist())])),
-      };
-    }
-  }) as ComputableStableDefined<SimpleNode>;
-}
 
 tplTest(
   'should correctly execute low level aggregation routine with xsv parsing',

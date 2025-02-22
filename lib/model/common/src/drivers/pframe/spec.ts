@@ -67,7 +67,7 @@ export interface PColumnSpec extends PObjectSpec {
   readonly kind: 'PColumn';
 
   /** Type of column values */
-  readonly valueType: ValueType;
+  readonly valueType: ValueType | string;
 
   /** Column name */
   readonly name: string;
