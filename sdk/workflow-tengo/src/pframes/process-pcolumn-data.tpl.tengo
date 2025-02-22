@@ -23,6 +23,7 @@ self.body(func(inputs) {
 	//   eph: boolean
 	//   passKey: boolean
 	//   outputs: (string)[]
+	//   expectedKeyLength: boolean
 	params := inputs.params
 
 	if is_undefined(params) {
@@ -260,7 +261,7 @@ self.body(func(inputs) {
 					partitionKeyLength: partitionKeyLength
 				})
 
-				// aggragation column results from all iterations ito super-partitioned structures
+				// aggragation column results from all iterations into super-partitioned structures
 				columnResults := {}
 				for col in output.settings.columns {
 					id := pUtil.xsvColumnId(col)
