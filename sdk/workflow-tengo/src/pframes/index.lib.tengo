@@ -206,7 +206,6 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 
 		// calculate iteration axes spec
 		groupAxesIndices := pUtil.calculateGroupAxesIndices(len(input.spec.axesSpec), aggregationIndices)
-		processTemplateParams.expectedKeyLength = len(groupAxesIndices)
 		iterationAxesSpec = []
 		for i in groupAxesIndices {
 			iterationAxesSpec = append(iterationAxesSpec, input.spec.axesSpec[i])
@@ -265,7 +264,6 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 		}
 	}
 	processTemplateParams.outputs = processedOutputs
-	ll.print("__THE_LOG__ " + processTemplateParams)
 
 	renderInputs := {
 		params: smart.createJsonResource(processTemplateParams),
@@ -447,6 +445,55 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 			}
 
 			return builder.build()
+		},
+
+		/**
+		 * Returns sorted list of all available output names
+		 *
+		 * @returns Array of output names
+		 */
+		listOutputs: func() {
+			outputs := []
+			for name, _ in outputsMap {
+				outputs = append(outputs, name)
+			}
+			return slices.quickSort(outputs)
+		},
+
+		/**
+		 * Checks if given output is of Xsv type
+		 *
+		 * @param name - Output name to check
+		 * @returns true if output is Xsv, false otherwise
+		 */
+		isXsvOutput: func(name) {
+			output := outputsMap[name]
+			if is_undefined(output) {
+				ll.panic("unknown output: " + name)
+			}
+			return output.type == "Xsv"
+		},
+
+		/**
+		 * Returns sorted list of column names for given Xsv output
+		 *
+		 * @param name - Xsv output name
+		 * @returns Array of column names
+		 */
+		listXsvColumns: func(name) {
+			output := outputsMap[name]
+			if is_undefined(output) {
+				ll.panic("unknown output: " + name)
+			}
+			if output.type != "Xsv" {
+				ll.panic("output is not Xsv: " + name)
+			}
+
+			columns := []
+			for columnName, _ in outputSpecs[name] {
+				columns = append(columns, columnName)
+			}
+			return slices.quickSort(columns)
 		}
 	})
 
