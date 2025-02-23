@@ -7,62 +7,68 @@ assets := import(":assets")
 smart := import(":smart")
 render := import(":render")
 
-llAggTpl := assets.importTemplate(":pframes.aggregate")
+llProcessTpl := assets.importTemplate(":pframes.process-pcolumn-data")
 
 /**
- * Instantiate an aggregation pipeline for the given inputs, and returns rendered ephemeral template.
- * Use r.output("output_name") method to get corresponding result, where r is an object returned by
+ * Instantiates an aggregation pipeline for the given inputs and returns rendered ephemeral template.
+ * Use result.output("outputName") to get corresponding output, where result is the object returned by
  * this method.
  *
  * Contract for the body template:
- *
  *   Inputs:
- *     "__key__"   - will be set to the json representation of the group key (i.e. keys in all
- *                   positions not specified in the indices parameter)
- *     "__value__" - "PColumnData/ResourceMap" resource with all the records in the current group
- *     ...extra    - all values or references passed to optional last parameter of this method
- *                   will be forwarded to the template as is
+ *     "__key__": string     - JSON representation of the group key (i.e. keys in all positions not
+ *                             specified in the indices parameter). Only provided if passKey is true.
+ *     "__value__": Resource - PColumnData/ResourceMap resource containing all records in current group
+ *     ...extra              - Additional values/references passed via the extra parameter are forwarded
+ *                             to the template unchanged
  *
- *  Outputs:
- *    array of output names to collect from aggregation operations is specified as a parameter
- *    of this operation
+ * @param data: Resource                - Data resource (currently only PColumnData/ResourceMap supported)
+ * @param aggregationIndices: number[]|undefined
+ *                                      - Indices to aggregate over. These indices will be stripped from
+ *                                       the input map (opposite of SQL GROUP BY). If undefined, works as
+ *                                       "map" and passes each input value as raw resource.
+ * @param bodyTpl: Template            - Template implementing the aggregation logic
+ * @param outputs: OutputSpec[]        - Array of output specifications to collect from rendered templates
+ *                                      Common fields for all output types:
+ *                                        {
+ *                                          name: string      - Name of the output
+ *                                          path?: string[]   - Optional. Overrides path inside body template
+ *                                                             result. First element is output name. Defaults
+ *                                                             to [name] if not specified.
+ *                                        }
+ *                                      Output type variants:
+ *                                        | { type: "Resource" }  - Normal singular resource
+ *                                        | {                     - ResourceMap output
+ *                                            type: "ResourceMap",
+ *                                            keyLength: number   - Expected key length per operation
+ *                                          }
+ *                                        | {                     - Partitioned data output
+ *                                            type: "BinaryPartitioned"|"JsonPartitioned",
+ *                                            partitionKeyLength: number - Expected partition length per op
+ *                                          }
+ *                                        | {                     - CSV/TSV text file output
+ *                                            type: "Xsv",
+ *                                            xsvType: "tsv"|"csv",
+ *                                            flattenWithDelimiter?: string,
+ *                                                                - If present, flattens output by adding columns
+ *                                                                  one by one using the specified delimiter:
+ *                                                                  "{outputName}{flattenWithDelimiter}{columnId}"
+ *                                            settings: object    - Xsv conversion specification
+ *                                          }
+ * @param isEph: boolean               - If true, body template will be rendered as ephemeral
+ * @param passKey: boolean             - If true, body template will receive __key__ input
+ * @param extra: object                - Optional map of parameters to pass to the template
  *
- * @param data    data resource (currently only PColumnData/ResourceMap is supported)
- * @param indices indices to aggregate over (these indices will be stripped from the input map,
- *                meaning of this parameter is the opposite of GROUP BY from SQL)
- * @param bodyTpl reference to the template implementing particular aggregation (see contract above)
- * @param outputs array of output settings to to collect from rendered templates
- *
- *                  Common fields for all subtypes:
- *                     {
- *                       name:  string     - name of the output
- *                       path?: string[]   - [optional] overrides the path inside the body template
- *                                           result, first name is interpreted as output name. If
- *                                           not specified path equals to `[name]`.
- *                     }
- *
- *                  Variants:
- *                    | { type: "Resource" } // - assume normal singular resource is produced by
- *                                                this output
- *                    | {
- *                        type: "ResourceMap",
- *                        keyLength: number // - expected key length of result from each operation
- *                      } // - assume each record is ResourceMap
- *                    | {
- *                        type: "BinaryPartitioned" | "JsonPartitioned",
- *                        partitionKeyLength: number // - expected partition length of result from
- *                                                        each operation
- *                      } // - assume each record is a partitionded Json or Binary PColumn data itself
- *
- * @param isEph   if true, body template will be rendered as ephemeral
- * @param extra   optional map of parameters to pass to the template
+ * @returns RenderResult              - Rendered template result with output() method for accessing outputs
+ * @panics                           - If extra parameter count is invalid
  */
-aggregate := func(data, indices, bodyTpl, outputs, isEph, ...extra) {
+aggregateV2 := func(data, aggregationIndices, bodyTpl, outputs, isEph, passKey, ...extra) {
 	renderInputs := {
 		params: smart.createJsonResource({
-			indices: indices,
+			aggregationIndices: aggregationIndices,
 			eph: isEph,
-			outputs: outputs
+			outputs: outputs,
+			passKey: passKey
 		}),
 		body: bodyTpl,
 		data: data
@@ -76,10 +82,18 @@ aggregate := func(data, indices, bodyTpl, outputs, isEph, ...extra) {
 		ll.panic("Wrong number of parameters for aggregate method.")
 	}
 
-	renderResult := render.createEphemeral(llAggTpl, renderInputs)
-	return renderResult;
+	renderResult := render.createEphemeral(llProcessTpl, renderInputs)
+	return renderResult
+}
+
+/*
+ * Read docs for aggregateV2
+ */
+aggregate := func(data, aggregationIndices, bodyTpl, outputs, isEph, ...extra) {
+	return aggregateV2(data, aggregationIndices, bodyTpl, outputs, isEph, true, extra...)
 }
 
 export ll.toStrict({
-	aggregate: aggregate
+	aggregate: aggregate,
+	aggregateV2: aggregateV2
 })

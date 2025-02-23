@@ -123,7 +123,7 @@ catalog:
   'prettier': ^3.4.1
   '@protobuf-ts/plugin': ^2.9.4
 
-  '@changesets/cli': ^2.27.11
+  '@changesets/cli': ^2.28.0
 
   'eslint': ^9.16.0
   '@eslint/js': ^9.16.0
@@ -154,8 +154,8 @@ catalog:
   '@protobuf-ts/runtime': ^2.9.4
   '@protobuf-ts/runtime-rpc': ^2.9.4
   'https-proxy-agent': ^7.0.6
-  '@aws-sdk/client-s3': ^3.732.0
-  '@aws-sdk/lib-storage': ^3.732.0
+  '@aws-sdk/client-s3': &aws-sdk-version ^3.750.0
+  '@aws-sdk/lib-storage': *aws-sdk-version
   'cacheable-lookup': ^6.1.0
 
   # Util & other libs

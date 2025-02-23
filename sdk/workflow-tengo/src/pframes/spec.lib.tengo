@@ -69,6 +69,133 @@ A_LABEL := "pl7.app/label"
 A_TRACE := "pl7.app/trace"
 
 //
+// Format methods
+//
+
+normalizeColumnSpec := func(spec) {
+	if is_undefined(spec.axesSpec) {
+		spec.axesSpec = []
+	}
+	validation.assertType(spec, P_COLUMN_SPEC_SCHEMA)
+	return spec
+}
+
+//
+// Matchers
+//
+
+_P_MATCHER_SCHEMA := {
+	`__options__,closed`: ``,
+	`type,?`: `string,regex=Int|Long|Float|Double|String`,
+	`name`: `string`,
+	`domain,?`: { any: `string` },
+	`optional,?`: `boolean`
+}
+
+_normalizeMatcher := func(matcher) {
+	if is_string(matcher) {
+		return { name: matcher }
+	} else {
+		validation.assertType(matcher, _P_MATCHER_SCHEMA)
+		return matcher
+	}
+}
+
+_checkAxisMatch := func(axisSpec, matcher) {
+	if axisSpec.name != matcher.name {
+		return false
+	}
+	if !is_undefined(matcher.type) && axisSpec.type != matcher.type {
+		return false
+	}
+	if !is_undefined(matcher.domain) {
+		for domain, domainValue in matcher.domain {
+			if is_undefined(axisSpec.domain) || axisSpec.domain[domain] != domainValue {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+/**
+ * For a given array of axes specs returns the index of matching axis:
+ *   - if multiple matches are found - panics
+ *   - if axis not found and matcher is not optional - panics
+ */
+matchAxis := func(axesSpec, matcher) {
+	validation.assertType(axesSpec, [ P_AXIS_SPEC_SCHEMA ])
+	matcher = _normalizeMatcher(matcher)
+	found := -1
+	for idx, axisSpec in axesSpec {
+		if !_checkAxisMatch(axisSpec, matcher) {
+			continue
+		}
+		if found != -1 {
+			ll.panic("multiple matches found for %v in %v", matcher, axesSpec)
+		}
+		found = idx
+	}
+	if found == -1 && !matcher.optional {
+		ll.panic("match not found for %v in %v", matcher, axesSpec)
+	}
+	return found
+}
+
+/**
+ * Matches axes specs against matchers and returns array of matched indices.
+ *
+ * Example matchers:
+ *   - "pl7.app/sequencing/readIndex"
+ *   - { name: "pl7.app/sequencing/readIndex" }
+ *   - { type: "String", name: "pl7.app/sequencing/lane" }
+ *   - { type: "String", name: "pl7.app/sequencing/lane", optional: true }
+ *   - { type: "String", name: "pl7.app/rna-seq/geneId", domain: { "pl7.app/species": "homo-sapiens" } }
+ *
+ * @param axesSpec: AxisSpec[] Array of axis specifications to match against
+ * @param matchers: (string|AxisMatcher)[] Array of matchers, each can be either:
+ *   - string: Simple name matcher e.g. "pl7.app/sequencing/readIndex"
+ *   - AxisMatcher: Object with matching criteria:
+ *     - name: string - Axis name to match
+ *     - type?: string - Optional axis type to match
+ *     - domain?: Record<string,string> - Optional domain criteria
+ *     - optional?: boolean - If true, won't panic when no match found
+ * @param opts?: object Optional parameters:
+ *   - keepUnmatched?: boolean - Whether to include unmatched indices (-1) in result
+ * @returns number[] Array of matched indices in same order as matchers. Contains -1 for
+ *          unmatched optional matchers if keepUnmatched is true.
+ * @panics
+ *   - If multiple axes match a single matcher
+ *   - If no match found for non-optional matcher
+ *   - If multiple matchers match the same axis
+ */
+matchAxes := func(axesSpec, matchers, ...opts) {
+	keepUnmatched := false
+	if len(opts) == 1 {
+		keepUnmatched = opts[0].keepUnmatched
+	} else if len(opts) != 0 {
+		ll.panic("wrong number of parameters for matchAxes")
+	}
+
+	result := []
+	resultSet := {}
+	for matcher in matchers {
+		idx := matchAxis(axesSpec, matcher)
+		if idx != -1 {
+			idxS := string(idx)
+			if resultSet[idxS] {
+				ll.panic("duplicate match detecterd for %v in %v (idx = %v)", matchers, axesSpec, idx)
+			}
+			resultSet[idxS] = true
+		}
+		if idx != -1 || keepUnmatched {
+			result = append(result, idx)
+		}
+	}
+	return result
+}
+
+//
 // Utility methods
 //
 
@@ -123,6 +250,9 @@ makeTrace := func(input, ...steps) {
 }
 
 export ll.toStrict({
+	P_AXIS_SPEC_SCHEMA: P_AXIS_SPEC_SCHEMA,
+	P_COLUMN_SPEC_SCHEMA: P_COLUMN_SPEC_SCHEMA,
+
 	KIND_P_COLUMN: KIND_P_COLUMN,
 
 	N_LABEL: N_LABEL,
@@ -131,6 +261,11 @@ export ll.toStrict({
 
 	A_LABEL: A_LABEL,
 	A_TRACE: A_TRACE,
+
+	normalizeColumnSpec: normalizeColumnSpec,
+
+	matchAxis: matchAxis,
+	matchAxes: matchAxes,
 
 	makeTrace: makeTrace
 })

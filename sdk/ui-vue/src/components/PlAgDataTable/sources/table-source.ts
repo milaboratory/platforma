@@ -105,7 +105,7 @@ function makeColDef(iCol: number, spec: PTableColumnSpec, hiddenColIds?: string[
           case 'Bytes':
             return 'Text';
           default:
-            throw Error(`unsupported data type: ${valueType satisfies never}`);
+            throw Error(`unsupported data type: ${valueType}`);
         }
       })(),
     } satisfies PlAgHeaderComponentParams,
@@ -120,7 +120,7 @@ function makeColDef(iCol: number, spec: PTableColumnSpec, hiddenColIds?: string[
         case 'Bytes':
           return 'text';
         default:
-          throw Error(`unsupported data type: ${valueType satisfies never}`);
+          throw Error(`unsupported data type: ${valueType}`);
       }
     })(),
   };

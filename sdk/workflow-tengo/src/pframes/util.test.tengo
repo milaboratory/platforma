@@ -1,8 +1,8 @@
 test := import(":test")
-util := import(":pframes.util")
+pUtil := import(":pframes.util")
 
 TestDecomposePfconvCfg := func() {
-	result := util.decomposePfconvImportCfg({
+	result := pUtil.decomposePfconvImportCfg({
 		"axes": [{
 			"column": "cloneId",
 			"spec": {
@@ -56,4 +56,23 @@ TestDecomposePfconvCfg := func() {
 			}
 		}
 	}, "wrong result")
+}
+
+TestCalculateGroupAxesIndices := func() {
+	test.isEqual(
+		pUtil.calculateGroupAxesIndices(3, undefined),
+		[0, 1, 2]
+	)
+	test.isEqual(
+		pUtil.calculateGroupAxesIndices(3, [1]),
+		[0, 2]
+	)
+	test.isEqual(
+		pUtil.calculateGroupAxesIndices(3, [1, 2]),
+		[0]
+	)
+	test.isEqual(
+		pUtil.calculateGroupAxesIndices(3, [2, 1]),
+		[0]
+	)
 }

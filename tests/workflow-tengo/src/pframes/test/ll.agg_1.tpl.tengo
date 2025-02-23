@@ -6,7 +6,7 @@ ll := import("@platforma-sdk/workflow-tengo:ll")
 assets := import("@platforma-sdk/workflow-tengo:assets")
 pLl := import("@platforma-sdk/workflow-tengo:pframes.ll")
 
-bodyTpl := assets.importTemplate(":pframes.test.agg_body_pure")
+bodyTpl := assets.importTemplate(":pframes.test.agg_1_body_pure")
 
 self.awaitState("InputsLocked")
 self.awaitState("params", "ResourceReady")
