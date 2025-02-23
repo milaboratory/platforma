@@ -6,7 +6,8 @@ export const PlAgDataTableRowNumberColId = '"##RowNumberColumnId##"';
 
 const HeaderSize = 45;
 
-export function makeRowNumberColDef(): ColDef {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function makeRowNumberColDef<TData = any>(): ColDef<TData> {
   return {
     colId: PlAgDataTableRowNumberColId,
     headerName: '#',
@@ -62,6 +63,7 @@ function adjustRowNumberColumnWidth(gridApi: GridApi, cellFake: HTMLDivElement, 
     rowNode: gridApi.getDisplayedRowAtIndex(gridApi.getLastDisplayedRowIndex())!,
     colKey: PlAgDataTableRowNumberColId,
   });
+
   if (typeof lastDisplayedRowNumber !== 'number') return;
 
   const lastDisplayedRowNumberDigitCount = lastDisplayedRowNumber.toString().length;

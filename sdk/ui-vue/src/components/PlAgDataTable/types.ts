@@ -66,3 +66,22 @@ export type PlAgDataTableRow = {
   /** Row values by column; sheet axes and labeled axes are excluded */
   [field: `${number}` | `hC${number}`]: PTableValue;
 };
+
+export type PlAgOverlayLoadingParams = {
+  /**
+   * Required flag, that shows catInBag icon with message if `true`, shows PlSplash component if `false`.
+   */
+  notReady?: boolean;
+  /**
+   * Prop to override default "Loading" text
+   */
+  loadingText?: string;
+  /**
+   * Prop to override default "No datasource" text (So why props name is notReady? Good question)
+   */
+  notReadyText?: string;
+  /**
+   * Use "transparent" to make table headers visible below the loading layer
+   */
+  overlayType?: 'transparent';
+};

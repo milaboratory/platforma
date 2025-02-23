@@ -24,7 +24,7 @@ export function platformaDir(remoteHome: string, arch: string) {
   return upath.join(platformaBaseDir(remoteHome, arch), 'binaries');
 }
 
-export function platformaBin(remoteHome: string, arch: string) {
+export function platformaBin(remoteHome: string, arch: string): string {
   return upath.join(platformaDir(remoteHome, arch), 'platforma');
 }
 

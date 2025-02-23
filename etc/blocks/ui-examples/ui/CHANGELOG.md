@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.3.36
+
+### Patch Changes
+
+- fab0a91: [sdk/ui-vue] Create a standard composable for use with AgGridVue
+
 ## 1.3.35
 
 ### Patch Changes
