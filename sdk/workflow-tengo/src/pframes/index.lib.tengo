@@ -12,6 +12,7 @@ builder := import(":pframes.builder")
 pUtil := import(":pframes.util")
 pSpec := import(":pframes.spec")
 validation := import(":validation")
+constants := import(":pframes.constants")
 
 llProcessTpl := assets.importTemplate(":pframes.process-pcolumn-data")
 
@@ -48,10 +49,14 @@ pColumnResourceMapDataBuilder := func(keyLength) {
  *                     - Without aggregation: represents a single key
  *                     - With aggregation: represents all keys in positions not specified by indices
  *                   Not provided if passKey is false or omitted from ops
- *     "__group_axes_spec__"
- *                 - When passGroupAxesSpec is true, contains the axes specification for aggregation
+ *     "__aggregation_axes_spec__"
+ *                 - When passAggregationAxesSpec is true, contains the axes specification for aggregation
  *                     Can be used to adapt body behavior when optional aggregation axes are unmatched
- *                   Not provided if passGroupAxesSpec is false or omitted from ops
+ *                   Not provided if passAggregationAxesSpec is false or omitted from ops
+ *     "__aggregation_axes_names__"
+ *                 - When passAggregationAxesNames is true, contains just the names of aggregation axes
+ *                     as a simple array of strings, without domains, annotations, etc.
+ *                   Not provided if passAggregationAxesNames is false or omitted from ops
  *     "__value__" - Content depends on aggregation setting:
  *                     - Without aggregation: single value (only for ResourceMap PColumns)
  *                     - With aggregation: "PColumnData/*" resource containing all records in current group
@@ -124,13 +129,17 @@ pColumnResourceMapDataBuilder := func(keyLength) {
  *                                              //   - { type: "String", name: "pl7.app/sequencing/lane", optional: true }
  *                                              //   - { type: "String", name: "pl7.app/rna-seq/geneId", domain: { "pl7.app/species": "homo-sapiens" } }
  *                                              // With optional: true, matcher won't error if unmatched
- *                                              // Use passGroupAxesSpec for custom handling in body template
+ *                                              // Use passAggregationAxesSpec for custom handling in body template
  *
  *                      passKey?: boolean       // Pass __key__ to body template if true
  *
- *                      passGroupAxesSpec?: boolean
- *                                              // Pass aggregation group specs to body template
- *                                              // via __group_axes_spec__ input
+ *                      passAggregationAxesSpec?: boolean
+ *                                              // Pass full aggregation axes specs to body template
+ *                                              // via __aggregation_axes_spec__ input
+ *
+ *                      passAggregationAxesNames?: boolean
+ *                                              // Pass array of aggregation axes names to body template
+ *                                              // via __aggregation_axes_names__ input
  *
  *                      extra?: Map<string, Ref>,
  *                                              // Additional parameters passed to each body invocation
@@ -169,16 +178,20 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 		opts.passKey = false
 	}
 
-	if is_undefined(opts.passGroupAxesSpec) {
-		opts.passGroupAxesSpec = false
+	if is_undefined(opts.passAggregationAxesSpec) {
+		opts.passAggregationAxesSpec = false
+	}
+
+	if is_undefined(opts.passAggregationAxesNames) {
+		opts.passAggregationAxesNames = false
 	}
 
 	if is_undefined(opts.isEphemeral) {
 		opts.isEphemeral = false
 	}
 
-	if opts.passGroupAxesSpec && is_undefined(opts.aggregate) {
-		ll.panic("can't use passGroupAxesSpec without aggregate")
+	if (opts.passAggregationAxesSpec || opts.passAggregationAxesNames) && is_undefined(opts.aggregate) {
+		ll.panic("can't use passAggregationAxesSpec or passAggregationAxesNames without aggregate")
 	}
 
 	// Initialize trace if traceSteps provided
@@ -211,13 +224,22 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 			iterationAxesSpec = append(iterationAxesSpec, input.spec.axesSpec[i])
 		}
 
-		if opts.passGroupAxesSpec {
+		if opts.passAggregationAxesSpec {
 			aggregationAxesSpec := []
 			for i in aggregationIndices {
 				aggregationAxesSpec = append(aggregationAxesSpec, input.spec.axesSpec[i])
 			}
 
-			extra["__group_axes_spec__"] = smart.createJsonResource(aggregationAxesSpec)
+			extra[constants.AGGREGATION_AXES_SPEC_FIELD_NAME] = smart.createJsonResource(aggregationAxesSpec)
+		}
+
+		if opts.passAggregationAxesNames {
+			aggregationAxesNames := []
+			for i in aggregationIndices {
+				aggregationAxesNames = append(aggregationAxesNames, input.spec.axesSpec[i].name)
+			}
+
+			extra[constants.AGGREGATION_AXES_NAMES_FIELD_NAME] = smart.createJsonResource(aggregationAxesNames)
 		}
 	}
 
