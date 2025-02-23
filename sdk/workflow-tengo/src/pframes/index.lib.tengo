@@ -3,11 +3,18 @@
  */
 
 ll := import(":ll")
-oop := import(":oop")
+maps := import(":maps")
 smart := import(":smart")
+slices := import(":slices")
 assets := import(":assets")
 render := import(":render")
+builder := import(":pframes.builder")
+pUtil := import(":pframes.util")
+pSpec := import(":pframes.spec")
+validation := import(":validation")
 constants := import(":pframes.constants")
+
+llProcessTpl := assets.importTemplate(":pframes.process-pcolumn-data")
 
 /**
  * Given a reference to the p-frame, converts all inner resource files into resources that can be
@@ -25,41 +32,500 @@ exportColumnData := func(data) {
 }
 
 /**
- * Creates a builder for p-frame resource.
- */
-pFrameBuilder := func() {
-	r := smart.structBuilder(constants.RTYPE_P_FRAME)
-
-	self := undefined
-	self = ll.toStrict(oop.inherit(r, {
-
-		add: func(column, spec, data) {
-			if (!is_undefined(spec)) {
-				r.createInputField(column + ".spec").setRefOrJson(spec)
-			}
-			if (!is_undefined(data)) {
-				r.createInputField(column + ".data").setRefOrJson(data)
-			}
-			return self
-		},
-
-		build: func() {
-			return r.lockAndBuild()
-		}
-	}))
-	return self
-}
-
-/**
  * Creates a builder for a resource map p-column's data.
  */
 pColumnResourceMapDataBuilder := func(keyLength) {
 	ll.panic("pframes.pColumnResourceMapDataBuilder is not supported any more; use pcolumn.resourceMapBuilder")
 }
 
+/**
+ * Constructs a mapping or aggregation pipeline for a given input PColumn and returns a specialized
+ * output object for accessing the processing results.
+ *
+ * === Body Template Contract ===
+ *
+ *   Inputs:
+ *     "__key__"   - When passKey is true, contains the JSON representation of the group/element key:
+ *                     - Without aggregation: represents a single key
+ *                     - With aggregation: represents all keys in positions not specified by indices
+ *                   Not provided if passKey is false or omitted from ops
+ *     "__aggregation_axes_spec__"
+ *                 - When passAggregationAxesSpec is true, contains the axes specification for aggregation
+ *                     Can be used to adapt body behavior when optional aggregation axes are unmatched
+ *                   Not provided if passAggregationAxesSpec is false or omitted from ops
+ *     "__aggregation_axes_names__"
+ *                 - When passAggregationAxesNames is true, contains just the names of aggregation axes
+ *                     as a simple array of strings, without domains, annotations, etc.
+ *                   Not provided if passAggregationAxesNames is false or omitted from ops
+ *     "__value__" - Content depends on aggregation setting:
+ *                     - Without aggregation: single value (only for ResourceMap PColumns)
+ *                     - With aggregation: "PColumnData/*" resource containing all records in current group
+ *     ...extra    - Additional values/references passed via the options.extra parameter
+ *                   are forwarded to the template unchanged
+ *
+ * === Parameters ===
+ *
+ * @param input         Primary input column data and specifications
+ *
+ *                      Required structure:
+ * 							{
+ * 							 	// PColumn specifications (must be explicit, not a reference)
+ * 							 	spec: <PColumnSpec>,
+ *
+ * 							 	// Reference to the data resource
+ * 							 	data: <resource ref>
+ *							}
+ *
+ * @param bodyTpl       Template executed for each iteration (see contract above)
+ * @param outputs 		Array of output configurations to collect from rendered templates
+ *
+ *                  Common fields for all types:
+ *                     {
+ *                       name:  string     // Output name
+ *                       path?: string[]   // [Optional] Override path inside body template result
+ *                                            First element interpreted as output name
+ *                                            Defaults to [name] if omitted
+ *                     }
+ *
+ *                  Available types:
+ *                    | {
+ *                        type: "Resource",     // Single resource output
+ *                        spec: PColumnSpec     // Result column spec (must have zero axes specs,
+ *                                              // input axes specs added automatically)
+ *                      }
+ *                    | {
+ *                        type: "ResourceMap",  // ResourceMap output
+ *                        spec: PColumnSpec     // Result column spec (list only axes specs
+ *                                              // produced by body template, input axes added automatically)
+ *                      }
+ *                    | {
+ *                        type: "BinaryPartitioned" | "JsonPartitioned",
+ *                                              // Partitioned Json/Binary PColumn data
+ *                        spec: PColumnSpec     // Result column spec (list only axes specs
+ *                                              // produced by body template, input axes added automatically)
+ *                        partitionKeyLength: number
+ *                                              // Expected partition length per operation
+ *                      }
+ *                    | {
+ *                        type: "Xsv",          // CSV/TSV formatted text file for xsv conversion
+ *						  xsvType: "tsv"|"csv", // Expected file format
+ *                        settings: object      // Xsv conversion specification
+ *                      }
+ *
+ * @param opts 			Optional additional settings
+ *
+ *                    {
+ *                      traceSteps?: array      // Array of trace steps to add to output specs
+ *                                              // Each step should be an object with type, id, importance and label
+ *
+ *                      aggregate?: AxisMatcher[],
+ *                                              // If specified, selected axes are combined and
+ *                                              // passed to each iteration as a group. These axes
+ *                                              // won't be automatically added to output specs
+ *                                              // Examples:
+ *                                              //   - "pl7.app/sequencing/readIndex"
+ *                                              //   - { name: "pl7.app/sequencing/readIndex" }
+ *                                              //   - { type: "String", name: "pl7.app/sequencing/lane" }
+ *                                              //   - { type: "String", name: "pl7.app/sequencing/lane", optional: true }
+ *                                              //   - { type: "String", name: "pl7.app/rna-seq/geneId", domain: { "pl7.app/species": "homo-sapiens" } }
+ *                                              // With optional: true, matcher won't error if unmatched
+ *                                              // Use passAggregationAxesSpec for custom handling in body template
+ *
+ *                      passKey?: boolean       // Pass __key__ to body template if true
+ *
+ *                      passAggregationAxesSpec?: boolean
+ *                                              // Pass full aggregation axes specs to body template
+ *                                              // via __aggregation_axes_spec__ input
+ *
+ *                      passAggregationAxesNames?: boolean
+ *                                              // Pass array of aggregation axes names to body template
+ *                                              // via __aggregation_axes_names__ input
+ *
+ *                      extra?: Map<string, Ref>,
+ *                                              // Additional parameters passed to each body invocation
+ *                                              // Keys match template input names
+ *
+ *                      isEphemeral?: boolean   // Whether to render mapping template in ephemeral mode
+ *                                              // Defaults to false if omitted, template will be rendered
+ *                                              // as pure resource
+ *                    }
+ *
+ * === Return ===
+ *
+ * @returns Object with methods for retrieving processing results
+ *          See source code for method documentation and signatures
+ */
+processColumn := func(input, bodyTpl, outputs, ...opts) {
+	if len(opts) == 0 {
+		opts = {}
+	} else if len(opts) == 1 {
+		opts = opts[0]
+	} else {
+		ll.panic("too many arguments")
+	}
+
+	if is_undefined(input.spec) {
+		ll.panic("no input spec provided")
+	}
+
+	if !smart.isResource(input.data) {
+		ll.panic("input data should be a resource")
+	}
+
+	validation.assertType(input.spec, pSpec.P_COLUMN_SPEC_SCHEMA)
+
+	if is_undefined(opts.passKey) {
+		opts.passKey = false
+	}
+
+	if is_undefined(opts.passAggregationAxesSpec) {
+		opts.passAggregationAxesSpec = false
+	}
+
+	if is_undefined(opts.passAggregationAxesNames) {
+		opts.passAggregationAxesNames = false
+	}
+
+	if is_undefined(opts.isEphemeral) {
+		opts.isEphemeral = false
+	}
+
+	if (opts.passAggregationAxesSpec || opts.passAggregationAxesNames) && is_undefined(opts.aggregate) {
+		ll.panic("can't use passAggregationAxesSpec or passAggregationAxesNames without aggregate")
+	}
+
+	// Initialize trace if traceSteps provided
+	trace := undefined
+	if !is_undefined(opts.traceSteps) {
+		trace = pSpec.makeTrace(input.spec, opts.traceSteps...)
+	}
+
+	// JSON params passed as a single resource to the template
+	processTemplateParams := {
+		eph: opts.isEphemeral,
+		passKey: opts.passKey
+	}
+
+	extra := opts.extra
+	if is_undefined(extra) {
+		extra = {}
+	}
+
+	iterationAxesSpec := input.spec.axesSpec
+	processTemplateParams.expectedKeyLength = len(input.spec.axesSpec)
+	if !is_undefined(opts.aggregate) {
+		aggregationIndices := pSpec.matchAxes(input.spec.axesSpec, opts.aggregate)
+		processTemplateParams.aggregationIndices = aggregationIndices
+
+		// calculate iteration axes spec
+		groupAxesIndices := pUtil.calculateGroupAxesIndices(len(input.spec.axesSpec), aggregationIndices)
+		iterationAxesSpec = []
+		for i in groupAxesIndices {
+			iterationAxesSpec = append(iterationAxesSpec, input.spec.axesSpec[i])
+		}
+
+		if opts.passAggregationAxesSpec {
+			aggregationAxesSpec := []
+			for i in aggregationIndices {
+				aggregationAxesSpec = append(aggregationAxesSpec, input.spec.axesSpec[i])
+			}
+
+			extra[constants.AGGREGATION_AXES_SPEC_FIELD_NAME] = smart.createJsonResource(aggregationAxesSpec)
+		}
+
+		if opts.passAggregationAxesNames {
+			aggregationAxesNames := []
+			for i in aggregationIndices {
+				aggregationAxesNames = append(aggregationAxesNames, input.spec.axesSpec[i].name)
+			}
+
+			extra[constants.AGGREGATION_AXES_NAMES_FIELD_NAME] = smart.createJsonResource(aggregationAxesNames)
+		}
+	}
+
+	processedOutputs := []
+	outputSpecs := {}
+	outputsMap := {}
+	for output in outputs {
+		// map output name to output settings provided in input
+		outputsMap[output.name] = output
+		if output.type == "Resource" || output.type == "BinaryPartitioned" || output.type == "JsonPartitioned" {
+			spec := maps.merge(output.spec, { axesSpec: iterationAxesSpec + slices.normalize(output.spec.axesSpec) })
+			if !is_undefined(trace) {
+				spec = trace.inject(spec)
+			}
+			outputSpecs[output.name] = spec
+			processedOutputs = append(processedOutputs, maps.merge(output, {spec: undefined })) // removing spec field
+		} else if output.type == "ResourceMap" {
+			processedOutputs = append(processedOutputs, maps.merge(output,
+				{ keyLength: len(output.spec.axesSpec), spec: undefined }))
+			spec := maps.merge(output.spec, { axesSpec: iterationAxesSpec + slices.normalize(output.spec.axesSpec) })
+			if !is_undefined(trace) {
+				spec = trace.inject(spec)
+			}
+			outputSpecs[output.name] = spec
+		} else if output.type == "Xsv" {
+			decomposition := pUtil.decomposePfconvImportCfg(output.settings, {
+				additionalAxesSpec: iterationAxesSpec
+			})
+			purifiedPfconvCfg := decomposition.purifiedCfg
+			columnsSpec := decomposition.columnsSpec
+			if !is_undefined(trace) {
+				for columnName, spec in columnsSpec {
+					columnsSpec[columnName] = trace.inject(spec)
+				}
+			}
+			outputSpecs[output.name] = columnsSpec
+			processedOutputs = append(processedOutputs, maps.merge(output,
+				{
+					settings: purifiedPfconvCfg,
+					flattenWithDelimiter: "/"
+				}))
+		} else {
+			ll.panic("unknown output type: " + output.type)
+		}
+	}
+	processTemplateParams.outputs = processedOutputs
+
+	renderInputs := {
+		params: smart.createJsonResource(processTemplateParams),
+		body: bodyTpl,
+		data: input.data
+	}
+
+	for k, v in extra {
+		renderInputs["__extra_" + k] = v
+	}
+
+	renderResult := render.createEphemeral(llProcessTpl, renderInputs)
+
+	self := undefined
+	self = ll.toStrict({
+		renderResult: renderResult,
+
+		/**
+		 * Returns output spec for the given output name and optional column name
+		 *
+		 * For normal outputs (Resource, ResourceMap, BinaryPartitioned, JsonPartitioned),
+		 * only the output name should be provided.
+		 * For Xsv outputs, both output name and column name should be provided.
+		 *
+		 * @param name - Name of the output
+		 * @param column - Optional. For Xsv outputs, name of the column
+		 * @returns Output spec
+		 */
+		outputSpec: func(name, ...column) {
+			output := outputsMap[name]
+			if is_undefined(output) {
+				ll.panic("unknown output: " + name)
+			}
+
+			spec := outputSpecs[name]
+			if output.type == "Xsv" {
+				if len(column) != 1 {
+					ll.panic("column name must be provided for Xsv output")
+				}
+				columnName := column[0]
+				spec = spec[columnName]
+				if is_undefined(spec) {
+					ll.panic("unknown column: " + columnName)
+				}
+			}
+
+			if len(column) > 0 {
+				ll.panic("column name should not be provided for non-Xsv output")
+			}
+			return spec
+		},
+
+		/**
+		 * Returns data resource for the given output name and optional column name
+		 *
+		 * For normal outputs (Resource, ResourceMap, BinaryPartitioned, JsonPartitioned),
+		 * only the output name should be provided.
+		 * For Xsv outputs, both output name and column name should be provided.
+		 *
+		 * @param name - Name of the output
+		 * @param column - Optional. For Xsv outputs, name of the column
+		 * @returns data resource
+		 */
+		outputData: func(name, ...column) {
+			output := outputsMap[name]
+			if is_undefined(output) {
+				ll.panic("unknown output: " + name)
+			}
+
+			if output.type == "Xsv" {
+				if len(column) != 1 {
+					ll.panic("column name must be provided for Xsv output")
+				}
+				return renderResult.output(name + "/" + column[0])
+			}
+
+			if len(column) > 0 {
+				ll.panic("column name should not be provided for non-Xsv output")
+			}
+			return renderResult.output(name)
+		},
+
+		/**
+		 * Returns both data resource and spec for the given output name and optional column name
+		 *
+		 * For normal outputs (Resource, ResourceMap, BinaryPartitioned, JsonPartitioned),
+		 * only the output name should be provided.
+		 * For Xsv outputs, both output name and column name should be provided.
+		 *
+		 * @param name - Name of the output
+		 * @param column - Optional. For Xsv outputs, name of the column
+		 * @returns {data: Resource, spec: PColumnSpec} Object containing both data resource and spec
+		 */
+		output: func(name, ...column) {
+			output := outputsMap[name]
+			if is_undefined(output) {
+				ll.panic("unknown output: " + name)
+			}
+
+			if output.type == "Xsv" {
+				if len(column) != 1 {
+					ll.panic("column name must be provided for Xsv output")
+				}
+				columnName := column[0]
+				spec := outputSpecs[name][columnName]
+				if is_undefined(spec) {
+					ll.panic("unknown column: " + columnName)
+				}
+				return {
+					data: renderResult.output(name + "/" + columnName),
+					spec: spec
+				}
+			}
+
+			if len(column) > 0 {
+				ll.panic("column name should not be provided for non-Xsv output")
+			}
+			return {
+				data: renderResult.output(name),
+				spec: outputSpecs[name]
+			}
+		},
+
+		/**
+		 * Returns a PFrame containing all columns from an Xsv output
+		 *
+		 * @param name - Name of the Xsv output
+		 * @returns PFrame containing all columns from the output
+		 */
+		xsvOutputFrame: func(name) {
+			output := outputsMap[name]
+			if is_undefined(output) {
+				ll.panic("unknown output: " + name)
+			}
+
+			if output.type != "Xsv" {
+				ll.panic("outputFrame can only be used with Xsv outputs")
+			}
+
+			builder := builder.pFrameBuilder()
+			for columnName, spec in outputSpecs[name] {
+				builder.add(columnName, spec, renderResult.output(name + "/" + columnName))
+			}
+			return builder.build()
+		},
+
+		/**
+		 * Returns a PFrame containing all results, flattening Xsv outputs using the provided separator
+		 *
+		 * @param ...xsvNameSeparator - Optional separator for joining Xsv output and column names, defaults to "."
+		 * @returns PFrame containing all results
+		 */
+		allOutputsFrame: func(...xsvNameSeparator) {
+			sep := "."
+			if len(xsvNameSeparator) > 0 {
+				sep = xsvNameSeparator[0]
+			}
+
+			builder := builder.pFrameBuilder()
+
+			for name, output in outputsMap {
+				if output.type == "Xsv" {
+					// For Xsv outputs, add each column with name prefixed
+					for columnName, spec in outputSpecs[name] {
+						builder.add(
+							name + sep + columnName,
+							spec,
+							renderResult.output(name + "/" + columnName)
+						)
+					}
+				} else {
+					// For non-Xsv outputs, add directly
+					builder.add(
+						name,
+						outputSpecs[name],
+						renderResult.output(name)
+					)
+				}
+			}
+
+			return builder.build()
+		},
+
+		/**
+		 * Returns sorted list of all available output names
+		 *
+		 * @returns Array of output names
+		 */
+		listOutputs: func() {
+			outputs := []
+			for name, _ in outputsMap {
+				outputs = append(outputs, name)
+			}
+			return slices.quickSort(outputs)
+		},
+
+		/**
+		 * Checks if given output is of Xsv type
+		 *
+		 * @param name - Output name to check
+		 * @returns true if output is Xsv, false otherwise
+		 */
+		isXsvOutput: func(name) {
+			output := outputsMap[name]
+			if is_undefined(output) {
+				ll.panic("unknown output: " + name)
+			}
+			return output.type == "Xsv"
+		},
+
+		/**
+		 * Returns sorted list of column names for given Xsv output
+		 *
+		 * @param name - Xsv output name
+		 * @returns Array of column names
+		 */
+		listXsvColumns: func(name) {
+			output := outputsMap[name]
+			if is_undefined(output) {
+				ll.panic("unknown output: " + name)
+			}
+			if output.type != "Xsv" {
+				ll.panic("output is not Xsv: " + name)
+			}
+
+			columns := []
+			for columnName, _ in outputSpecs[name] {
+				columns = append(columns, columnName)
+			}
+			return slices.quickSort(columns)
+		}
+	})
+
+	return self
+}
+
 export ll.toStrict({
+	processColumn: processColumn,
 	exportFrame: exportFrame,
-	pFrameBuilder: pFrameBuilder,
+	pFrameBuilder: builder.pFrameBuilder,
 	exportColumnData: exportColumnData,
 	pColumnResourceMapDataBuilder: pColumnResourceMapDataBuilder
 })

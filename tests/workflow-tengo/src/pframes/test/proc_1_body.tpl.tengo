@@ -1,0 +1,57 @@
+// agg_body_pure
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+
+exec := import("@platforma-sdk/workflow-tengo:exec")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+
+ll := import("@platforma-sdk/workflow-tengo:ll")
+pConstants := import("@platforma-sdk/workflow-tengo:pframes.constants")
+
+hwSoftware := assets.importSoftware("@platforma-open/milaboratories.software-small-binaries:hello-world")
+
+self.defineOutputs(
+	"tsv"
+)
+
+self.body(func(inputs) {
+	value := inputs[pConstants.VALUE_FIELD_NAME]
+
+	if !is_string(value) && !smart.isResource(value) {
+		ll.panic("wrong value type: %v", value)
+	}
+
+	inputFileContent := undefined
+
+	if smart.isResource(value) {
+		if(!value.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP)) {
+			ll.panic("wrong resource type: %v", value.resourceType.name)
+		}
+		ll.assert(value.getDataAsJson().keyLength == 1, "wrong key length: %v", value.getDataAsJson().keyLength)
+		aggregationAxesNames := inputs[pConstants.AGGREGATION_AXES_NAMES_FIELD_NAME]
+		ll.assert(is_array(aggregationAxesNames), "wrong aggregation axes names type: %v", aggregationAxesNames)
+		ll.assert(len(aggregationAxesNames) == 1, "wrong aggregation axes names length: %v", len(aggregationAxesNames))
+		ll.assert(is_string(aggregationAxesNames[0]), "wrong aggregation axes names type: %v", aggregationAxesNames[0])
+		inputFileContent = value.get("[1]").getDataAsJson()
+	} else {
+		inputFileContent = value
+	}
+
+	if !is_string(inputFileContent) {
+		ll.panic("wrong input file content type: %v", inputFileContent)
+	}
+
+	run := exec.builder().
+        software(hwSoftware).
+		arg("a").
+		writeFile("file.tsv", inputFileContent).
+		saveFile("file.tsv").
+		run()
+
+	tsvFile := run.getFile("file.tsv")
+
+	return {
+		tsv: tsvFile
+	}
+})

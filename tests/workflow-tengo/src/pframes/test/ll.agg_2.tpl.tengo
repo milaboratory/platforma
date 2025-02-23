@@ -1,0 +1,24 @@
+// ll_agg_1
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+
+ll := import("@platforma-sdk/workflow-tengo:ll")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+pframes := import("@platforma-sdk/workflow-tengo:pframes")
+pLl := import("@platforma-sdk/workflow-tengo:pframes.ll")
+
+bodyTpl := assets.importTemplate(":pframes.test.agg_2_body_pure")
+
+self.awaitState("InputsLocked")
+self.awaitState("params", "ResourceReady")
+
+self.body(func(inputs) {
+	params := inputs.params
+	extraFields := {}
+
+	outputsToCollect := [{ type: "Xsv", name: "tsv", xsvType: "tsv", settings: params.xsvSettings }]
+
+	return {
+		result: pframes.exportFrame(pLl.aggregate(inputs.data, undefined, bodyTpl, outputsToCollect, params.eph, {}).output("tsv"))
+	}
+})

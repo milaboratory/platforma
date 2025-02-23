@@ -245,6 +245,20 @@ export class DownloadDriver implements BlobDriver {
     throw new Error('Malformed remote handle');
   }
 
+  /**
+   * Creates computable that will return blob content once it is downloaded.
+   * Uses downloaded blob handle under the hood, so stores corresponding blob in file system.
+   */
+  public getComputableContent(
+    res: ResourceInfo | PlTreeEntry
+  ): ComputableStableDefined<Uint8Array>{
+    return Computable.make((ctx) => 
+      this.getDownloadedBlob(res, ctx), {
+        postprocessValue: (v) => v ? this.getContent(v.handle) : undefined
+      }
+    ).withStableType()
+  }
+
   /** Returns all logs and schedules a job that reads remain logs.
    * Notifies when a new portion of the log appeared. */
   public getLastLogs(

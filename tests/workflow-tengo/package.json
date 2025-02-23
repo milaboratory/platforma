@@ -14,8 +14,10 @@
     }
   },
   "scripts": {
+    "type-check": "pl-tengo check",
     "build": "rm -rf dist && pl-tengo build",
     "test": "vitest",
+    "lint": "eslint .",
     "format": "/usr/bin/env emacs --quick --script ./format.el",
     "format-stdin": "/usr/bin/env emacs --quick --script ./format-stdin.el",
     "vscode-tags": "cd ../../ && bash ./sdk/workflow-tengo/create_tags.sh .tags false",
@@ -23,6 +25,10 @@
   },
   "devDependencies": {
     "@milaboratories/platforma-build-configs": "workspace:*",
+    "@milaboratories/computable": "workspace:*",
+    "@milaboratories/pl-drivers": "workspace:*",
+    "@milaboratories/pl-tree": "workspace:*",
+    "@milaboratories/ts-helpers": "workspace:*",
     "@platforma-sdk/workflow-tengo": "workspace:*",
     "@platforma-sdk/tengo-builder": "workspace:*",
     "@milaboratories/pl-middle-layer": "workspace:*",

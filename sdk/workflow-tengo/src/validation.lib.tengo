@@ -118,7 +118,7 @@ _validateTypes := func(js, tags, keyPath, ...stack) {
 		return success
 	}
 
-	if k == "bool" && is_bool(js) {
+	if (k == "bool" || k == "boolean") && is_bool(js) {
 		return success
 	}
 

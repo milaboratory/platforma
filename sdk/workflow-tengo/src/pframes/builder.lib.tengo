@@ -1,0 +1,35 @@
+ll := import(":ll")
+oop := import(":oop")
+smart := import(":smart")
+pConstants := import(":pframes.constants")
+
+
+/**
+ * Creates a builder for p-frame resource.
+ */
+pFrameBuilder := func() {
+	r := smart.structBuilder(pConstants.RTYPE_P_FRAME)
+
+	self := undefined
+	self = ll.toStrict(oop.inherit(r, {
+
+		add: func(column, spec, data) {
+			if (!is_undefined(spec)) {
+				r.createInputField(column + ".spec").setRefOrJson(spec)
+			}
+			if (!is_undefined(data)) {
+				r.createInputField(column + ".data").setRefOrJson(data)
+			}
+			return self
+		},
+
+		build: func() {
+			return r.lockAndBuild()
+		}
+	}))
+	return self
+}
+
+export ll.toStrict({
+	pFrameBuilder: pFrameBuilder
+})

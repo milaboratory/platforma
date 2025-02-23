@@ -1,6 +1,7 @@
 ll := import(":ll")
 validation := import(":validation")
 objects := import(":objects")
+slices := import(":slices")
 
 _PRE_PROCESS_STEP_SCHEMA := [`or`,
 	{
@@ -317,11 +318,46 @@ decomposePfconvImportCfg := func(cfg, ...ops) {
 	}
 }
 
+EMPTY_JSON_KEY := "[]" // string(json.encode([]))
+
+/**
+ * Calculates group indices from aggregation indices by removing aggregation indices from the full set of indices.
+ * If no aggregation indices are provided, returns all indices.
+ *
+ * @param numberOfAxes: number - Total number of axes in the input
+ * @param aggregationIndices: number[]|undefined - Indices to aggregate over. If undefined, returns all indices.
+ *
+ * @returns number[] - Array of remaining indices after removing aggregation indices, in ascending order.
+ *                     If aggregationIndices is undefined, returns array [0..numberOfAxes-1]
+ */
+calculateGroupAxesIndices := func(numberOfAxes, aggregationIndices) {
+	groupIndices := []
+	for i:=0; i<numberOfAxes; i++ {
+		groupIndices = append(groupIndices, i)
+	}
+
+	// groupIndices at this point is [0, 1, 2, ... numberOfAxes-1]
+
+	if is_undefined(aggregationIndices) {
+		return groupIndices
+	}
+
+	// copy and sort to prevent mutation of original array
+	aggregationIndices = slices.quickSort(aggregationIndices)
+
+	for j:=len(aggregationIndices)-1; j>=0; j-- {
+		splice(groupIndices, aggregationIndices[j], 1)
+	}
+	return groupIndices
+}
+
 export ll.toStrict({
 	PFCONV_IMPORT_CFG_SCHEMA: PFCONV_IMPORT_CFG_SCHEMA,
 	PFCONV_EXPORT_CFG_SCHEMA: PFCONV_EXPORT_CFG_SCHEMA,
+	EMPTY_JSON_KEY: EMPTY_JSON_KEY,
 
 	xsvColumnId: xsvColumnId,
 	purifySpec: purifySpec,
-	decomposePfconvImportCfg: decomposePfconvImportCfg
+	decomposePfconvImportCfg: decomposePfconvImportCfg,
+	calculateGroupAxesIndices: calculateGroupAxesIndices
 })

@@ -1,0 +1,316 @@
+// pframes ll aggregate
+
+self := import(":tpl")
+
+ll := import(":ll")
+render := import(":render")
+smart := import(":smart")
+pConstants := import(":pframes.constants")
+pUtil := import(":pframes.util")
+xsv := import(":pframes.xsv")
+builder := import(":pframes.builder")
+
+json := import("json")
+
+self.awaitState("InputsLocked")
+self.awaitState("data", "InputsLocked")
+self.awaitState("params", "ResourceReady")
+
+self.body(func(inputs) {
+
+	// parameters of aggregation
+	//   indices: int[]
+	//   eph: boolean
+	//   passKey: boolean
+	//   outputs: (string)[]
+	//   expectedKeyLength: boolean
+	params := inputs.params
+
+	if is_undefined(params) {
+		ll.panic("Params is not defined")
+	}
+
+	if !is_map(params) {
+		ll.panic("Params have wrong type, or nor ready yet: %v", params)
+	}
+
+	aggregationIndices := params.aggregationIndices
+	eph := params.eph
+	outputs := params.outputs
+	passKey := params.passKey
+	expectedKeyLength := params.expectedKeyLength
+
+	if !is_array(aggregationIndices) && !is_undefined(aggregationIndices) {
+		ll.panic("Wrong indices parameter type: %v", aggregationIndices)
+	}
+
+	if !is_array(outputs) || len(outputs) == 0 {
+		ll.panic("Absent, empty or malformed outputs list: %v", params)
+	}
+
+	// map of resources to aggregate over
+	data := inputs.data
+
+	// template implementing aggregation body
+	body := inputs.body
+
+	if is_undefined(data) {
+		ll.panic("Data is not defined")
+	}
+
+	if is_undefined(body) {
+		ll.panic("Body is not defined")
+	}
+
+	extraInputs := {}
+	for name, field in inputs {
+		if name != "params" && name != "data" && name != "body" {
+			if name[:8] != "__extra_" {
+				ll.panic("Unexpected input: %v", name)
+			}
+			extraInputs[name[8:]] = field
+		}
+	}
+
+	if data.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP) {
+		meta := data.getDataAsJson()
+
+		if !is_undefined(expectedKeyLength) {
+			if expectedKeyLength != meta.keyLength {
+				ll.panic("Unexpected key length: %v != %v", expectedKeyLength, meta.keyLength)
+			}
+		}
+
+		// group key -> group resource
+		groups := {}
+
+		// mapping or aggregation mode
+		mappingMode := is_undefined(aggregationIndices)
+
+		groupKeyLength := 0
+
+		if mappingMode {
+			groupKeyLength = meta.keyLength
+			for sKey, field in data.inputs() {
+				groups[sKey] = field
+			}
+		} else { // <- aggregation mode
+			// calculating group indices
+			groupIndices := pUtil.calculateGroupAxesIndices(meta.keyLength, aggregationIndices)
+			groupKeyLength = len(groupIndices)
+			groupElementKeyLength := len(aggregationIndices)
+
+			for sKey, field in data.inputs() {
+				key := json.decode(sKey)
+
+				groupKey := []
+				for i in groupIndices {
+					groupKey = append(groupKey, key[i])
+				}
+
+				inGroupKey := []
+				for i in aggregationIndices {
+					inGroupKey = append(inGroupKey, key[i])
+				}
+
+				sGroupKey := json.encode(groupKey)
+				sInGroupKey := json.encode(inGroupKey)
+
+				group := groups[sGroupKey]
+				if is_undefined(group) {
+					group = smart.structBuilder(
+						pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP,
+						json.encode({ keyLength: groupElementKeyLength })
+					)
+					groups[sGroupKey] = group
+				}
+				group.createInputField(sInGroupKey).set(field)
+			}
+		}
+
+		outputMaps := {}
+
+		for output in outputs {
+			if !is_map(output) {
+				ll.panic("malformed output: %v", output)
+			}
+			if output.type == "Resource" {
+				outputMaps[output.name] = smart.structBuilder(
+					pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP,
+					json.encode({ keyLength: groupKeyLength })
+				)
+			} else if output.type == "ResourceMap" {
+				outputMaps[output.name] = smart.structBuilder(
+					pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP_PARTITIONED,
+					json.encode({
+						partitionKeyLength: groupKeyLength,
+						keyLength: output.keyLength
+					})
+				)
+			} else if output.type == "JsonPartitioned" {
+				outputMaps[output.name] = smart.structBuilder(
+					pConstants.RTYPE_P_COLUMN_DATA_JSON_SUPER_PARTITIONED,
+					json.encode({
+						superPartitionKeyLength: groupKeyLength,
+						partitionKeyLength: output.partitionKeyLength
+					})
+				)
+			} else if output.type == "BinaryPartitioned" {
+				outputMaps[output.name] = smart.structBuilder(
+					pConstants.RTYPE_P_COLUMN_DATA_BINARY_SUPER_PARTITIONED,
+					json.encode({
+						superPartitionKeyLength: groupKeyLength,
+						partitionKeyLength: output.partitionKeyLength
+					})
+				)
+			} else if output.type == "Xsv" {
+				// each field will contain super-partitioned data for the corresponding column
+				// (specs must be added on the higher level to make a pframe)
+				map := {}
+				for column in output.settings.columns {
+					id := pUtil.xsvColumnId(column)
+					map[id] = {} // partKey -> partitioned data resource ref (not-super-partitioned)
+				}
+				// for regular outputs:
+				//   [outputName][groupKey]
+				// for xsv output:
+				//   [outputName][columnId][groupKey]
+				outputMaps[output.name] = map
+			} else {
+				ll.panic("unknonw output type: %v", output.type)
+			}
+		}
+
+		for sGroupKey, groupValue in groups {
+			renderInputs := {}
+
+			if passKey {
+				renderInputs[pConstants.KEY_FIELD_NAME] = json.decode(sGroupKey)
+			}
+
+			if mappingMode {
+				// groupValue here is just a field ref to input map element
+				renderInputs[pConstants.VALUE_FIELD_NAME] = groupValue
+			} else {
+				// in this case groupValue is a resource constructed above
+				renderInputs[pConstants.VALUE_FIELD_NAME] = groupValue.lockAndBuild()
+			}
+
+			for name, field in extraInputs {
+				renderInputs[name] = field
+			}
+
+			renderResult := render.createUniversal(body, eph, renderInputs)
+			for output in outputs {
+				path := output.path
+				if is_undefined(path) {
+					path = [output.name]
+				}
+				ref := renderResult.output(path[0]).getFutureInputField(path[1:], eph)
+				if output.type == "Xsv" {
+					pf := xsv.importFile(ref, output.xsvType, output.settings, { dataOnly: true })
+					for col in output.settings.columns {
+						id := pUtil.xsvColumnId(col)
+						data := pf.getFutureInputField(id)
+						outputMaps[output.name][id][sGroupKey] = data
+					}
+				} else {
+					outputMaps[output.name].
+						createInputField(sGroupKey).
+						set(ref)
+				}
+			}
+		}
+
+		for output in outputs {
+			if output.type == "Xsv" {
+
+				partitionKeyLength := 0
+				if !is_undefined(output.settings.partitionKeyLength) {
+					partitionKeyLength = output.settings.partitionKeyLength
+				}
+
+				binary := false // json or binary
+				if output.settings.storageFormat == "Binary" {
+					binary = true
+				} else if output.settings.storageFormat != "Json" {
+					ll.panic("Unknow storage format: %v", output.settings.storageFormat)
+				}
+
+				// if nested xsv import is known to produce unpartitioned output we don't create
+				// redundant super-partitioned structures
+				unwrapZeroPartition := partitionKeyLength == 0
+
+				dataResType := undefined
+
+				if binary {
+					if unwrapZeroPartition {
+						dataResType = pConstants.RTYPE_P_COLUMN_DATA_BINARY_PARTITIONED
+					} else {
+						dataResType = pConstants.RTYPE_P_COLUMN_DATA_BINARY_SUPER_PARTITIONED
+					}
+				} else {
+					if unwrapZeroPartition {
+						dataResType = pConstants.RTYPE_P_COLUMN_DATA_JSON_PARTITIONED
+					} else {
+						dataResType = pConstants.RTYPE_P_COLUMN_DATA_JSON_SUPER_PARTITIONED
+					}
+				}
+
+				dataResData := undefined
+				if unwrapZeroPartition {
+					dataResData = json.encode({
+						partitionKeyLength: groupKeyLength
+					})
+				} else {
+					dataResData = json.encode({
+						superPartitionKeyLength: groupKeyLength,
+						partitionKeyLength: partitionKeyLength
+					})
+				}
+
+				// aggragation column results from all iterations into super-partitioned structures
+				columnResults := {}
+				for col in output.settings.columns {
+					id := pUtil.xsvColumnId(col)
+					parts := outputMaps[output.name][id]
+					dataRes := smart.structBuilder(
+						dataResType, dataResData
+					)
+					for sGroupKey, partData in parts {
+						if unwrapZeroPartition {
+							if binary {
+								for suffix in [".index", ".values"] {
+									dataRes.createInputField(sGroupKey + suffix).set(partData.getFutureInputField(pUtil.EMPTY_JSON_KEY + suffix))
+								}
+							} else {
+								dataRes.createInputField(sGroupKey).set(partData.getFutureInputField(pUtil.EMPTY_JSON_KEY))
+							}
+						} else {
+							dataRes.createInputField(sGroupKey).set(partData)
+						}
+					}
+					columnResults[id] = dataRes.lockAndBuild()
+				}
+
+				if !is_undefined(output.flattenWithDelimiter) {
+					for id, data in columnResults {
+						outputMaps[output.name + output.flattenWithDelimiter + id] = data
+					}
+				} else {
+					mapBuilder := builder.pFrameBuilder()
+					for id, data in columnResults {
+						mapBuilder.add(id, undefined, data)
+					}
+					outputMaps[output.name] = mapBuilder.build()
+				}
+			} else {
+				outputMaps[output.name] = outputMaps[output.name].lockAndBuild()
+			}
+		}
+
+		return outputMaps
+	} else {
+		ll.panic("Unexpected input resource type: %v", data.info().Type)
+	}
+})
