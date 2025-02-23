@@ -1,5 +1,23 @@
 # @milaboratories/pl-local
 
+## 1.1.14
+
+### Patch Changes
+
+- 2a749e0: restart ssh if pl backend version changed
+
+## 1.1.13
+
+### Patch Changes
+
+- f67f1b2: bump ssh, local and bootstrap pl backend
+
+## 1.1.12
+
+### Patch Changes
+
+- 1b37b62: pl-deployments: fix ssh exports
+
 ## 1.1.11
 
 ### Patch Changes

@@ -41,7 +41,7 @@ import { PlAgGridColumnManager } from '../PlAgGridColumnManager';
 import { autoSizeRowNumberColumn, PlAgDataTableRowNumberColId } from './sources/row-number';
 import { focusRow, makeOnceTracker, trackFirstDataRendered } from './sources/focus-row';
 import PlAgCsvExporter from '../PlAgCsvExporter/PlAgCsvExporter.vue';
-import { isJsonEqual } from '@milaboratories/helpers';
+import { Deferred, isJsonEqual } from '@milaboratories/helpers';
 
 ModuleRegistry.registerModules([
   ClientSideRowModelModule,
@@ -210,6 +210,9 @@ watch(
 );
 
 const gridApi = shallowRef<GridApi>();
+
+const gridApiDef = shallowRef(new Deferred<GridApi>());
+
 const firstDataRenderedTracker = makeOnceTracker<GridApi<PlAgDataTableRow>>();
 const gridOptions = shallowRef<GridOptions<PlAgDataTableRow>>({
   animateRows: false,
@@ -279,6 +282,7 @@ const gridOptions = shallowRef<GridOptions<PlAgDataTableRow>>({
     fileName: 'table.csv',
   },
 });
+
 const onGridReady = (event: GridReadyEvent) => {
   const api = event.api;
   trackFirstDataRendered(api, firstDataRenderedTracker);
@@ -306,7 +310,10 @@ const onGridReady = (event: GridReadyEvent) => {
       }
     },
   });
+
+  gridApiDef.value.resolve(gridApi.value);
 };
+
 const makePartialState = (state: GridState) => {
   return {
     columnOrder: state.columnOrder,
@@ -314,13 +321,16 @@ const makePartialState = (state: GridState) => {
     columnVisibility: state.columnVisibility ?? (state.columnOrder ? { hiddenColIds: [] } : undefined),
   };
 };
+
 const onStateUpdated = (event: StateUpdatedEvent) => {
   gridOptions.value.initialState = gridState.value = makePartialState(event.state);
   event.api.autoSizeColumns(event.api.getAllDisplayedColumns().filter((column) => column.getColId() !== PlAgDataTableRowNumberColId));
 };
+
 const onGridPreDestroyed = () => {
   gridOptions.value.initialState = gridState.value = makePartialState(gridApi.value!.getState());
   gridApi.value = undefined;
+  gridApiDef.value = new Deferred<GridApi>();
 };
 
 defineExpose<PlAgDataTableController>({
@@ -380,17 +390,28 @@ const onSheetChanged = (sheetId: string, newValue: string | number) => {
 };
 
 let oldSettings: PlDataTableSettings | undefined = undefined;
+
 watch(
-  () => [gridApi.value, settings.value] as const,
+  () => [settings.value] as const,
   async (state) => {
     try {
-      const [gridApi, settings] = state;
-      if (!gridApi) return;
+      const [settings] = state;
 
-      if (lodash.isEqual(settings, oldSettings)) return;
+      const gridApi = await gridApiDef.value.promise;
+
+      if (gridApi.isDestroyed()) {
+        console.warn('gridApi is destroyed');
+        return;
+      }
+
+      if (lodash.isEqual(settings, oldSettings)) {
+        return;
+      };
+
       oldSettings = settings;
 
       const sourceType = settings?.sourceType;
+
       switch (sourceType) {
         case undefined:
           return gridApi.updateGridOptions({
@@ -412,6 +433,11 @@ watch(
             });
           }
 
+          gridApi.updateGridOptions({
+            loading: true,
+            loadingOverlayComponentParams: { notReady: false },
+          });
+
           const options = await updatePFrameGridOptions(
             getRawPlatformaInstance().pFrameDriver,
             settings.pTable,
@@ -423,7 +449,13 @@ watch(
               cellButtonInvokeRowsOnDoubleClick: props.cellButtonInvokeRowsOnDoubleClick,
               trigger: (key?: PTableRowKey) => emit('cellButtonClicked', key),
             },
-          );
+          ).catch((err) => {
+            gridApi.updateGridOptions({
+              loading: false,
+              loadingOverlayComponentParams: { notReady: false },
+            });
+            throw err;
+          });
 
           return gridApi.updateGridOptions({
             loading: false,
@@ -457,9 +489,11 @@ watch(
           throw Error(`unsupported source type: ${sourceType satisfies never}`);
       }
     } catch (error: unknown) {
+      // How should we handle possible errors?
       console.trace(error);
     }
   },
+  { immediate: true, deep: true },
 );
 </script>
 
@@ -487,8 +521,13 @@ watch(
       <slot name="after-sheets" />
     </div>
     <AgGridVue
-      :key="reloadKey" :theme="AgGridTheme" class="ap-ag-data-table-grid" :grid-options="gridOptions"
-      @grid-ready="onGridReady" @state-updated="onStateUpdated" @grid-pre-destroyed="onGridPreDestroyed"
+      :key="reloadKey"
+      :theme="AgGridTheme"
+      class="ap-ag-data-table-grid"
+      :grid-options="gridOptions"
+      @grid-ready="onGridReady"
+      @state-updated="onStateUpdated"
+      @grid-pre-destroyed="onGridPreDestroyed"
     />
   </div>
 </template>

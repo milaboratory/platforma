@@ -586,7 +586,7 @@ export class SshClient {
    * @param remotePath - The path to the remote directory.
    * @returns A promise that resolves when the directory is created.
    */
-  public createRemoteDirectory(remotePath: string, mode: number = 0o755): Promise<void> {
+  public ensureRemoteDirCreated(remotePath: string, mode: number = 0o755): Promise<void> {
     return this.withSftp(async (sftp) => {
       const directories = remotePath.split('/');
       let currentPath = '';

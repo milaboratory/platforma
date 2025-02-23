@@ -1,7 +1,15 @@
+<script lang="ts" setup>
+defineProps<{
+  params: {
+    text?: string;
+  };
+}>();
+</script>
+
 <template>
   <div class="grid-overlay-container">
     <div class="grid-icon-sad-cat" />
-    <span class="text-subtitle-m">Empty</span>
+    <span class="text-subtitle-m">{{ params.text || 'Empty' }}</span>
   </div>
 </template>
 

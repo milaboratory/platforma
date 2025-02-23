@@ -1,5 +1,32 @@
 # @platforma-sdk/bootstrap
 
+## 3.1.22
+
+### Patch Changes
+
+- Updated dependencies [2a749e0]
+  - @milaboratories/pl-deployments@1.1.14
+
+## 3.1.21
+
+### Patch Changes
+
+- Updated dependencies [f67f1b2]
+  - @milaboratories/pl-deployments@1.1.13
+
+## 3.1.20
+
+### Patch Changes
+
+- 3d742d7: Don't print env variables into log when starting service instance with pl-dev
+
+## 3.1.19
+
+### Patch Changes
+
+- Updated dependencies [1b37b62]
+  - @milaboratories/pl-deployments@1.1.12
+
 ## 3.1.18
 
 ### Patch Changes

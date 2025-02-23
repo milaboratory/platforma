@@ -1,2 +1,2 @@
-export * from './useAgGridOptionsSimple';
+export * from './useAgGridOptions';
 export * from './createAgGridColDef';

@@ -44,7 +44,7 @@ describe('SSH Tests', () => {
   });
   it('should create all directories if none exist', async () => {
     const remotePath = '/home/pl-doctor/upload/nested/directory';
-    await expect(client.createRemoteDirectory(remotePath)).resolves.not.toThrow();
+    await expect(client.ensureRemoteDirCreated(remotePath)).resolves.not.toThrow();
 
     // Additional check to ensure the directory exists
     await client.withSftp(async (sftp) => {
@@ -61,14 +61,14 @@ describe('SSH Tests', () => {
   it('should handle existing directories gracefully', async () => {
     const remotePath = '/home/pl-doctor/upload/nested';
 
-    await expect(client.createRemoteDirectory(remotePath)).resolves.not.toThrow();
-    await expect(client.createRemoteDirectory(remotePath)).resolves.not.toThrow();
+    await expect(client.ensureRemoteDirCreated(remotePath)).resolves.not.toThrow();
+    await expect(client.ensureRemoteDirCreated(remotePath)).resolves.not.toThrow();
   });
 
   it('should throw an error if an invalid path is provided', async () => {
     const remotePath = '/invalid_path/nested';
 
-    await expect(client.createRemoteDirectory(remotePath)).rejects.toThrow();
+    await expect(client.ensureRemoteDirCreated(remotePath)).rejects.toThrow();
   });
 
   it('Upload directory', async () => {
@@ -133,9 +133,9 @@ describe('SSH Tests', () => {
 
   it('Remove directory', async () => {
     const rootFolder = '/home/pl-doctor/upload';
-    await client.createRemoteDirectory(`${rootFolder}/upload/nested`);
-    await client.createRemoteDirectory(`${rootFolder}/2-nested`);
-    await client.createRemoteDirectory(`${rootFolder}/2-nested/3-sub`);
+    await client.ensureRemoteDirCreated(`${rootFolder}/upload/nested`);
+    await client.ensureRemoteDirCreated(`${rootFolder}/2-nested`);
+    await client.ensureRemoteDirCreated(`${rootFolder}/2-nested/3-sub`);
     await client.writeFileOnTheServer(`${rootFolder}/2-nested/3-sub/qwerty.txt`, 'HELLO FROM SSH');
 
     const text = await client.readFile(`${rootFolder}/2-nested/3-sub/qwerty.txt`);
