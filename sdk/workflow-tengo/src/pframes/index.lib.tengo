@@ -168,8 +168,8 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 		ll.panic("no input spec provided")
 	}
 
-	if is_undefined(input.data) {
-		ll.panic("no input data provided")
+	if !smart.isResource(input.data) {
+		ll.panic("input data should be a resource")
 	}
 
 	validation.assertType(input.spec, pSpec.P_COLUMN_SPEC_SCHEMA)
