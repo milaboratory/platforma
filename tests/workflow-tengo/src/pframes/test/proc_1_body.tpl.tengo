@@ -18,14 +18,29 @@ self.defineOutputs(
 self.body(func(inputs) {
 	value := inputs[pConstants.VALUE_FIELD_NAME]
 
-	if !is_string(value) {
-		ll.panic("value is not string: %v", value)
+	if !is_string(value) && !smart.isResource(value) {
+		ll.panic("wrong value type: %v", value)
+	}
+
+	inputFileContent := undefined
+
+	if smart.isResource(value) {
+		if(!value.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP)) {
+			ll.panic("wrong resource type: %v", value.resourceType.name)
+		}
+		inputFileContent = value.get("[1]").getDataAsJson()
+	} else {
+		inputFileContent = value
+	}
+
+	if !is_string(inputFileContent) {
+		ll.panic("wrong input file content type: %v", inputFileContent)
 	}
 
 	run := exec.builder().
         software(hwSoftware).
 		arg("a").
-		writeFile("file.tsv", value).
+		writeFile("file.tsv", inputFileContent).
 		saveFile("file.tsv").
 		run()
 
