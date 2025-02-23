@@ -1,4 +1,4 @@
-import type { PColumnSpec } from '@milaboratories/pl-middle-layer';
+import type { PColumnSpec, PUniversalColumnSpec } from '@milaboratories/pl-middle-layer';
 import { field, Pl, resourceType } from '@milaboratories/pl-middle-layer';
 import { awaitStableState } from '@platforma-sdk/test';
 import { assertBlob, assertJson, assertResource, eTplTest } from './extended_tpl_test';
@@ -47,7 +47,7 @@ eTplTest(
         { name: 'inputAxis1', type: 'Long' },
         { name: 'inputAxis2', type: 'Int', domain: { domain3: 'd3' } },
       ],
-    } satisfies PColumnSpec;
+    } satisfies PUniversalColumnSpec;
     const result = await helper.renderTemplate(
       true,
       'pframes.test.proc_1',
@@ -156,7 +156,7 @@ eTplTest(
         { name: 'inputAxis1', type: 'Long' },
         { name: 'inputAxis2', type: 'Int', domain: { domain3: 'd3' } },
       ],
-    } satisfies PColumnSpec;
+    } satisfies PUniversalColumnSpec;
     const result = await helper.renderTemplate(
       true,
       'pframes.test.proc_1',
@@ -266,7 +266,7 @@ eTplTest(
         { name: 'inputAxis1', type: 'Long' },
         { name: 'inputAxis2', type: 'Int', domain: { domain3: 'd3' } },
       ],
-    } satisfies PColumnSpec;
+    } satisfies PUniversalColumnSpec;
     const result = await helper.renderTemplate(
       true,
       'pframes.test.proc_1',
