@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.10.6
+
+### Patch Changes
+
+- 819c13c: PColumnSpec.valueType extended to "ValueType | string"
+
 ## 1.10.5
 
 ### Patch Changes

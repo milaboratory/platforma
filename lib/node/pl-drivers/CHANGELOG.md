@@ -1,5 +1,13 @@
 # @milaboratories/pl-drivers
 
+## 1.5.18
+
+### Patch Changes
+
+- 819c13c: getComputableContent method for DownloadDriver
+- Updated dependencies [819c13c]
+  - @milaboratories/pl-model-common@1.10.6
+
 ## 1.5.17
 
 ### Patch Changes

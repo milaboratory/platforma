@@ -1,5 +1,13 @@
 # @platforma-sdk/ui-vue
 
+## 1.22.59
+
+### Patch Changes
+
+- 819c13c: PColumnSpec.valueType extended to "ValueType | string"
+  - @platforma-sdk/model@1.22.59
+  - @milaboratories/uikit@2.2.58
+
 ## 1.22.56
 
 ### Patch Changes
