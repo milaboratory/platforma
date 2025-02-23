@@ -110,6 +110,9 @@ pColumnResourceMapDataBuilder := func(keyLength) {
  * @param opts 			Optional additional settings
  *
  *                    {
+ *                      traceSteps?: array      // Array of trace steps to add to output specs
+ *                                              // Each step should be an object with type, id, importance and label
+ *
  *                      aggregate?: AxisMatcher[],
  *                                              // If specified, selected axes are combined and
  *                                              // passed to each iteration as a group. These axes
@@ -178,6 +181,12 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 		ll.panic("can't use passGroupAxesSpec without aggregate")
 	}
 
+	// Initialize trace if traceSteps provided
+	trace := undefined
+	if !is_undefined(opts.traceSteps) {
+		trace = pSpec.makeTrace(input.spec, opts.traceSteps...)
+	}
+
 	// JSON params passed as a single resource to the template
 	processTemplateParams := {
 		eph: opts.isEphemeral,
@@ -220,18 +229,32 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 		// map output name to output settings provided in input
 		outputsMap[output.name] = output
 		if output.type == "Resource" || output.type == "BinaryPartitioned" || output.type == "JsonPartitioned" {
-			outputSpecs[output.name] = maps.merge(output.spec, { axesSpec: iterationAxesSpec + slices.normalize(output.spec.axesSpec) })
+			spec := maps.merge(output.spec, { axesSpec: iterationAxesSpec + slices.normalize(output.spec.axesSpec) })
+			if !is_undefined(trace) {
+				spec = trace.inject(spec)
+			}
+			outputSpecs[output.name] = spec
 			processedOutputs = append(processedOutputs, maps.merge(output, {spec: undefined })) // removing spec field
 		} else if output.type == "ResourceMap" {
 			processedOutputs = append(processedOutputs, maps.merge(output,
 				{ keyLength: len(output.spec.axesSpec), spec: undefined }))
-			outputSpecs[output.name] = maps.merge(output.spec, { axesSpec: iterationAxesSpec + slices.normalize(output.spec.axesSpec) })
+			spec := maps.merge(output.spec, { axesSpec: iterationAxesSpec + slices.normalize(output.spec.axesSpec) })
+			if !is_undefined(trace) {
+				spec = trace.inject(spec)
+			}
+			outputSpecs[output.name] = spec
 		} else if output.type == "Xsv" {
 			decomposition := pUtil.decomposePfconvImportCfg(output.settings, {
 				additionalAxesSpec: iterationAxesSpec
 			})
 			purifiedPfconvCfg := decomposition.purifiedCfg
-			outputSpecs[output.name] = decomposition.columnsSpec
+			columnsSpec := decomposition.columnsSpec
+			if !is_undefined(trace) {
+				for columnName, spec in columnsSpec {
+					columnsSpec[columnName] = trace.inject(spec)
+				}
+			}
+			outputSpecs[output.name] = columnsSpec
 			processedOutputs = append(processedOutputs, maps.merge(output,
 				{
 					settings: purifiedPfconvCfg,
@@ -386,6 +409,43 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 			for columnName, spec in outputSpecs[name] {
 				builder.add(columnName, spec, renderResult.output(name + "/" + columnName))
 			}
+			return builder.build()
+		},
+
+		/**
+		 * Returns a PFrame containing all results, flattening Xsv outputs using the provided separator
+		 *
+		 * @param ...xsvNameSeparator - Optional separator for joining Xsv output and column names, defaults to "."
+		 * @returns PFrame containing all results
+		 */
+		allOutputsFrame: func(...xsvNameSeparator) {
+			sep := "."
+			if len(xsvNameSeparator) > 0 {
+				sep = xsvNameSeparator[0]
+			}
+
+			builder := builder.pFrameBuilder()
+
+			for name, output in outputsMap {
+				if output.type == "Xsv" {
+					// For Xsv outputs, add each column with name prefixed
+					for columnName, spec in outputSpecs[name] {
+						builder.add(
+							name + sep + columnName,
+							spec,
+							renderResult.output(name + "/" + columnName)
+						)
+					}
+				} else {
+					// For non-Xsv outputs, add directly
+					builder.add(
+						name,
+						outputSpecs[name],
+						renderResult.output(name)
+					)
+				}
+			}
+
 			return builder.build()
 		}
 	})

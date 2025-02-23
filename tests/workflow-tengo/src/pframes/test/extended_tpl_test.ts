@@ -4,6 +4,8 @@ import type { DownloadDriver } from '@milaboratories/pl-drivers';
 import type { ResourceType } from '@milaboratories/pl-middle-layer';
 import type { PlTreeEntry } from '@milaboratories/pl-tree';
 import { notEmpty } from '@milaboratories/ts-helpers';
+import { tplTest } from '@platforma-sdk/test';
+import { expect } from 'vitest';
 
 export type SimpleNodeResource = {
   type: 'Resource';
@@ -22,7 +24,7 @@ export type SimpleNodeBlob = {
   content: Uint8Array;
 };
 
-export type SimpleNode = SimpleNodeResource | SimpleNodeBlob;
+export type SimpleNode = SimpleNodeResource | SimpleNodeBlob | SimpleNodeJson;
 
 export function simpleTree(downloadDriver: DownloadDriver, node: PlTreeEntry): ComputableStableDefined<SimpleNode> {
   return Computable.make((ctx) => {
@@ -51,3 +53,33 @@ export function simpleTree(downloadDriver: DownloadDriver, node: PlTreeEntry): C
     }
   }) as ComputableStableDefined<SimpleNode>;
 }
+
+export function assertResource(node?: SimpleNode): asserts node is SimpleNodeResource {
+  expect(node?.type).toEqual('Resource');
+};
+
+export function assertBlob(node?: SimpleNode): asserts node is SimpleNodeBlob {
+  expect(node?.type).toEqual('Blob');
+};
+
+export function assertJson(node?: SimpleNode): asserts node is SimpleNodeJson {
+  expect(node?.type).toEqual('Json');
+};
+
+export type SimpleTreeHelper = {
+  tree(node: PlTreeEntry): ComputableStableDefined<SimpleNode>;
+  // assertResource: (node?: SimpleNode) => asserts node is SimpleNodeResource;
+  // assertBlob: (node?: SimpleNode) => asserts node is SimpleNodeBlob;
+  // assertJson: (node?: SimpleNode) => asserts node is SimpleNodeJson;
+};
+
+export const eTplTest = tplTest.extend<{
+  stHelper: SimpleTreeHelper;
+}>({
+  stHelper: async ({ driverKit }, use) => {
+    const downloadDriver = driverKit.blobDriver;
+    await use({
+      tree: (node) => simpleTree(downloadDriver, node),
+    });
+  },
+});

@@ -1,12 +1,12 @@
 import type { PColumnSpec } from '@milaboratories/pl-middle-layer';
 import { field, Pl, resourceType } from '@milaboratories/pl-middle-layer';
-import { awaitStableState, tplTest } from '@platforma-sdk/test';
-import { simpleTree, type SimpleNode, type SimpleNodeBlob, type SimpleNodeResource } from './util';
+import { awaitStableState } from '@platforma-sdk/test';
+import { assertBlob, assertJson, assertResource, eTplTest } from './extended_tpl_test';
 
-tplTest(
+eTplTest(
   'should correctly execute pframes.processColumn',
   { timeout: 10000 },
-  async ({ helper, driverKit, expect }) => {
+  async ({ helper, driverKit, expect, stHelper }) => {
     const xsvSettings = {
       axes: [
         {
@@ -82,28 +82,32 @@ tplTest(
         };
       },
     );
-    const r = simpleTree(driverKit.blobDriver, result.resultEntry);
+    const r = stHelper.tree(result.resultEntry);
     const finalResult = await awaitStableState(r, 10000);
     console.dir(finalResult, { depth: null });
-    // function assertResource(node?: SimpleNode): asserts node is SimpleNodeResource {
-    //   expect(node?.type).toEqual('Resource');
-    // };
-    // function assertBlob(node?: SimpleNode): asserts node is SimpleNodeBlob {
-    //   expect(node?.type).toEqual('Blob');
-    // };
-    // assertResource(finalResult);
-    // const theResult = finalResult.inputs['result'];
-    // assertResource(theResult);
-    // const bData = theResult.inputs['b.data'];
-    // assertResource(bData);
-    // expect(bData.resourceType.name).toEqual('PColumnData/JsonPartitioned');
-    // const b11 = bData.inputs['[1,1]'];
-    // assertBlob(b11);
-    // const b11Content = JSON.parse(Buffer.from(b11.content).toString());
-    // const b12 = bData.inputs['[1,2]'];
-    // assertBlob(b12);
-    // const b12Content = JSON.parse(Buffer.from(b12.content).toString());
-    // expect(b11Content).toStrictEqual({ '[1]': 2, '[2]': 1 });
-    // expect(b12Content).toStrictEqual({ '[1]': 3, '[3]': 2 });
+    assertResource(finalResult);
+    const theResult = finalResult.inputs['result'];
+    assertResource(theResult);
+    expect(theResult.resourceType.name).toEqual('PFrame');
+    const bData = theResult.inputs['tsv.b.data'];
+    assertResource(bData);
+    expect(bData.resourceType.name).toEqual('PColumnData/JsonPartitioned');
+    const b11 = bData.inputs['[1,1]'];
+    assertBlob(b11);
+    const b11Content = JSON.parse(Buffer.from(b11.content).toString());
+    const b12 = bData.inputs['[1,2]'];
+    assertBlob(b12);
+    const b12Content = JSON.parse(Buffer.from(b12.content).toString());
+    expect(b11Content).toStrictEqual({ '[1]': 2, '[2]': 1 });
+    expect(b12Content).toStrictEqual({ '[1]': 3, '[3]': 2 });
+    const bSpecRes = theResult.inputs['tsv.b.spec'];
+    assertJson(bSpecRes);
+    const bSpec = bSpecRes.content as PColumnSpec;
+    expect(bSpec.axesSpec).toMatchObject([
+      ...inputSpec.axesSpec,
+      xsvSettings.axes[0].spec,
+    ]);
+    expect(bSpec).toMatchObject(xsvSettings.columns[0].spec);
+    expect(bSpec.annotations).toHaveProperty('pl7.app/trace');
   },
 );

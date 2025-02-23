@@ -1,7 +1,7 @@
 import type { AnyRef } from '@milaboratories/pl-middle-layer';
 import { Pl, field, resourceType } from '@milaboratories/pl-middle-layer';
 import { awaitStableState, tplTest } from '@platforma-sdk/test';
-import { simpleTree, type SimpleNode, type SimpleNodeBlob, type SimpleNodeResource } from './util';
+import { assertBlob, assertResource, eTplTest } from './extended_tpl_test';
 
 tplTest.for([
   {
@@ -111,10 +111,10 @@ tplTest.for([
   },
 );
 
-tplTest(
+eTplTest(
   'should correctly execute low level aggregation routine with xsv parsing',
   { timeout: 10000 },
-  async ({ helper, driverKit, expect }) => {
+  async ({ helper, expect, stHelper }) => {
     const xsvSettings = {
       axes: [
         {
@@ -174,14 +174,8 @@ tplTest(
         };
       },
     );
-    const r = simpleTree(driverKit.blobDriver, result.resultEntry);
+    const r = stHelper.tree(result.resultEntry);
     const finalResult = await awaitStableState(r, 10000);
-    function assertResource(node?: SimpleNode): asserts node is SimpleNodeResource {
-      expect(node?.type).toEqual('Resource');
-    };
-    function assertBlob(node?: SimpleNode): asserts node is SimpleNodeBlob {
-      expect(node?.type).toEqual('Blob');
-    };
     assertResource(finalResult);
     const theResult = finalResult.inputs['result'];
     assertResource(theResult);

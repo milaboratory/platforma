@@ -4,6 +4,7 @@ self := import("@platforma-sdk/workflow-tengo:tpl")
 
 ll := import("@platforma-sdk/workflow-tengo:ll")
 assets := import("@platforma-sdk/workflow-tengo:assets")
+maps := import("@platforma-sdk/workflow-tengo:maps")
 pframes := import("@platforma-sdk/workflow-tengo:pframes")
 
 bodyTpl := assets.importTemplate(":pframes.test.proc_1_body")
@@ -13,16 +14,23 @@ self.awaitState("params", "ResourceReady")
 
 self.body(func(inputs) {
 	params := inputs.params
-	extraFields := {}
 
 	outputsToCollect := [{ type: "Xsv", name: "tsv", xsvType: "tsv", settings: params.xsvSettings }]
 
 	processResult := pframes.processColumn({
 		spec: inputs.spec,
 		data: inputs.data
-	}, bodyTpl, outputsToCollect, {})
+	}, bodyTpl, outputsToCollect, maps.merge({
+		aggregate: params.aggregate,
+		traceSteps: [{
+			type: "Xsv",
+			id: "tsv",
+			importance: 10,
+			label: "TSV to PColumn"
+		}]
+	}))
 
 	return {
-		result: pframes.exportFrame(processResult.xsvOutputFrame("tsv"))
+		result: pframes.exportFrame(processResult.allOutputsFrame())
 	}
 })
