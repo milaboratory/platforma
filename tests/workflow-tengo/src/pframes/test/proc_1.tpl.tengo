@@ -22,6 +22,7 @@ self.body(func(inputs) {
 		data: inputs.data
 	}, bodyTpl, outputsToCollect, maps.merge({
 		aggregate: params.aggregate,
+		passAggregationAxesNames: true,
 		traceSteps: [{
 			type: "Xsv",
 			id: "tsv",

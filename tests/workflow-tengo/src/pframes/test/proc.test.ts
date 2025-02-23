@@ -84,7 +84,7 @@ eTplTest(
     );
     const r = stHelper.tree(result.resultEntry);
     const finalResult = await awaitStableState(r, 10000);
-    console.dir(finalResult, { depth: null });
+    // console.dir(finalResult, { depth: null });
     assertResource(finalResult);
     const theResult = finalResult.inputs['result'];
     assertResource(theResult);
@@ -194,7 +194,7 @@ eTplTest(
     );
     const r = stHelper.tree(result.resultEntry);
     const finalResult = await awaitStableState(r, 10000);
-    console.dir(finalResult, { depth: null });
+    // console.dir(finalResult, { depth: null });
     assertResource(finalResult);
     const theResult = finalResult.inputs['result'];
     assertResource(theResult);
@@ -304,7 +304,7 @@ eTplTest(
     );
     const r = stHelper.tree(result.resultEntry);
     const finalResult = await awaitStableState(r, 10000);
-    console.dir(finalResult, { depth: null });
+    // console.dir(finalResult, { depth: null });
     assertResource(finalResult);
     const theResult = finalResult.inputs['result'];
     assertResource(theResult);
