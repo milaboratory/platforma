@@ -30,12 +30,18 @@ TestSortLambda := func() {
 TestSortStructure := func() {
 	test.isEqual(
 		slices.quickSortInPlaceFn([{a: "cab", v: 44}, {a: "bab", v: 2}, {a: "aab", v: 7}, {a: "zab", v: 42}],
-		func(a, b) { return a.a < b.a }),
+			func(a, b) { return a.a < b.a }),
 		[{a: "aab", v: 7}, {a: "bab", v: 2}, {a: "cab", v: 44}, {a: "zab", v: 42}],
 		"incorrect sorting")
 	test.isEqual(
 		slices.quickSortFn([{a: "aab", v: 7}, {a: "bab", v: 2}, {a: "cab", v: 44}, {a: "zab", v: 42}],
-		func(a, b) { return a.a < b.a }),
+			func(a, b) { return a.a < b.a }),
 		[{a: "aab", v: 7}, {a: "bab", v: 2}, {a: "cab", v: 44}, {a: "zab", v: 42}],
-		 "incorrect resorting")
+		"incorrect resorting")
+}
+
+Test_slices_every := func() {
+	test.isTrue(slices.every([2, 2, 2], func(elem) { return elem == 2 }))
+	test.isTrue(slices.every([], func(elem) { return elem == 2 }))
+	test.isFalse(slices.every([2, 1, 2], func(elem) { return elem == 2 }))
 }
