@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 2.13.1
+
+### Patch Changes
+
+- cb18f69: Fix the render library implementation in workflow-tengo SDK to properly handle undefined inputs.
+
 ## 2.13.0
 
 ### Minor Changes
