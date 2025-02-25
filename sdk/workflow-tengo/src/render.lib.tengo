@@ -48,10 +48,14 @@ createUniversal := func(tpl, isEph, inputs, ...opts) {
 	// inputs input
 	inputsMap := isEph ? smart.ephemeralMapBuilder() : smart.mapBuilder()
 	for name, value in inputs {
-		inputsMap.add(name, value)
+		if !is_undefined(value) {
+			inputsMap.add(name, value)
+		}
 	}
 	for name, value in serviceInputs {
-		inputsMap.addService(name, value)
+		if !is_undefined(value) {
+			inputsMap.addService(name, value)
+		}
 	}
 
 	rbuilder.createInputField(tplutil.INPUTS_MAP_FIELD).set(inputsMap.build())
