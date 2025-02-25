@@ -1,6 +1,4 @@
-/** A pure template that gets a resource's data of monetization as bytes,
- * parses a jwtToken that it gets and returns each field
- * as outputs, and storing a number of remaining files to the file. */
+/** A pure template that parses a response from mnz-client (and milm) */
 
 self := import(":tpl")
 json := import("json")
@@ -10,19 +8,25 @@ validation := import(":validation")
 
 monetization := import(":exec.monetization_internal")
 
-self.defineOutputs("jwtToken", "nRemainingRuns")
+self.defineOutputs("jwtToken", "info")
 
 self.body(func(inputs) {
 	data := inputs.resource.getData()
 	trimmed := text.trim(string(data), "\n \r\t")
+	decoded := json.decode(bytes(trimmed))
 
-	decoded := monetization.decodeJwtToken(trimmed)
-	validation.assertType(decoded, monetization.tokenSchema)
+	validation.assertType(decoded, monetization.mnzClientStdoutSchema)
 
-	nRemainingRuns := decoded.mnz.details.remaining
+	token := {}
+	info := {}
+	if !is_undefined(decoded.jwtToken) {
+		token = decoded.jwtToken
+	} else {
+		info = decoded.mnz.details
+	}
 
 	return {
-		jwtToken: trimmed,
-		nRemainingRuns: nRemainingRuns
+		jwtToken: token,
+		info: info
 	}
 })

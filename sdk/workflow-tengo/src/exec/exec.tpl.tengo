@@ -21,7 +21,7 @@ validation := import(":validation")
 blobs := import(":file.internal")
 desc := import(":exec.descriptor")
 constants := import(":exec.constants")
-monetization := import(":exec.monetization")
+monetization := import(":exec.monetization_internal")
 
 self.defineOutputs(
 	"files",
