@@ -1,12 +1,12 @@
 test := import(":test")
-monetization := import(":exec.monetization")
+monetization := import(":exec.monetization_internal")
 
 Test_monetization_enable := func() {
 	mnz := monetization.init()
 	monetization.enable(mnz, "test_product")
 
 	test.isTrue(mnz.enabled)
-	test.isEqual(mnz.productName, "test_product")
+	test.isEqual(mnz.productKey, "test_product")
 }
 
 Test_monetization_addFileParams := func() {
@@ -32,23 +32,4 @@ Test_monetization_shouldRun := func() {
 	})
 
 	test.isTrue(monetization.shouldRun(mnz))
-}
-
-Test_monetization_decodeJwtToken := func() {
-	token := "TESTETSTETESTES.eyJtbnoiOnsiZGV0YWlscyI6eyJyZW1haW5pbmciOiA5OTk5OTJ9LCJ0eXBlIjoiYmFzZSJ9LCJwcm9kdWN0S2V5IjoiTUlGQUtFTUlGQUtFTUlGQUtFIiwicnVuU3BlYyI6eyJrZXkiOiJ2YWx1ZSJ9fQ==.TESTESTESTESTE"
-
-	want := {
-		mnz: {
-			details: {
-				remaining: 999992
-			},
-			type: "base"
-		},
-		productKey: "MIFAKEMIFAKEMIFAKE",
-		runSpec: {
-			key: "value"
-		}
-	}
-
-	test.isEqual(want, monetization.decodeJwtToken(token))
 }

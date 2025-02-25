@@ -18,13 +18,8 @@ oop := import(":oop")
 validation := import(":validation")
 constants := import(":constants")
 limits := import(":exec.limits")
-monetization := import(":exec.monetization")
+monetization := import(":exec.monetization_internal")
 execConstants := import(":exec.constants")
-
-_HEAVY_QUEUE    := "heavy"
-_MEDIUM_QUEUE   := "medium"
-_LIGHT_QUEUE    := "light"
-_UI_TASKS_QUEUE := "ui-tasks"
 
 /**
  * Creates a new builder for constructing and executing commands.
@@ -54,7 +49,7 @@ builder := func() {
 	//
 	// Limits
 	//
-	queue := _HEAVY_QUEUE
+	queue := execConstants.HEAVY_QUEUE
 	hasLimits := false
 	cpuRequest := undefined
 	ramRequest := undefined
@@ -89,25 +84,6 @@ builder := func() {
 	assetCache := {}
 
 	mnz := monetization.init()
-
-	/** Gets mnz key from opts or undefined. */
-	_getMnzOption := func(...opts) {
-		if slices.length(opts) < 1 {
-			return undefined
-		}
-		opt := opts[0]["mnz"]
-
-		// readability if: we can return undefined here
-		return is_undefined(opt) ? undefined : opt
-	}
-
-	/** Adds a monetization option if it's defined into mnzFileParams. */
-	_addMnzOption := func(fileName, ...opts) {
-		opt := _getMnzOption(opts...)
-		if !is_undefined(opt) {
-			monetization.addFileParams(mnz, fileName, opt)
-		}
-	}
 
 	stdout := "stdout.txt"
 	stderr := "stderr.txt"
@@ -242,7 +218,7 @@ builder := func() {
 		 * Execute command in the 'heavy' queue.
 		 */
 		inHeavyQueue: func() {
-			queue = _HEAVY_QUEUE
+			queue = execConstants.HEAVY_QUEUE
 			return self
 		},
 
@@ -250,7 +226,7 @@ builder := func() {
 		 * Execute command in the 'medium' queue.
 		 */
 		inMediumQueue: func() {
-			queue = _MEDIUM_QUEUE
+			queue = execConstants.MEDIUM_QUEUE
 			return self
 		},
 
@@ -258,7 +234,7 @@ builder := func() {
 		 * Execute command in the 'light' queue.
 		 */
 		inLightQueue: func() {
-			queue = _LIGHT_QUEUE
+			queue = execConstants.LIGHT_QUEUE
 			return self
 		},
 
@@ -266,7 +242,7 @@ builder := func() {
 		 * Execute command in the 'ui-tasks' queue.
 		 */
 		inUiQueue: func() {
-			queue = _UI_TASKS_QUEUE
+			queue = execConstants.UI_TASKS_QUEUE
 			return self
 		},
 
@@ -531,7 +507,7 @@ builder := func() {
 
 			fileName = path.canonize(fileName)
 			filesToAdd[fileName] = file
-			_addMnzOption(fileName, opts...)
+			monetization.addOption(mnz, fileName, opts...)
 			return self
 		},
 
@@ -564,7 +540,7 @@ builder := func() {
 			fileName = path.canonize(fileName)
 
 			filesToWrite[fileName] = data
-			_addMnzOption(fileName, opts...)
+			monetization.addOption(mnz, fileName, opts...)
 
 			return self
 		},

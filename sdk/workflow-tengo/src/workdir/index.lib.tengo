@@ -258,7 +258,7 @@ _fill := func() {
 		mkDirs: func(dirs) {
 			enum.each(dirs, self.mkDir)
 			return self
-		}
+		},
 
 		/**
 		 * Builds the filled workdir.
