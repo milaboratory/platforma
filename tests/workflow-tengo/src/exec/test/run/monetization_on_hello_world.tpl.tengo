@@ -6,7 +6,7 @@ smart := import("@platforma-sdk/workflow-tengo:smart")
 exec := import("@platforma-sdk/workflow-tengo:exec")
 ll := import("@platforma-sdk/workflow-tengo:ll")
 
-self.defineOutputs(["token", "nRemainingRuns"])
+self.defineOutputs(["token"])
 
 self.body(func(inputs) {
 	run := exec.builder().
@@ -21,12 +21,10 @@ self.body(func(inputs) {
 				"collect": ["lines"]
 			}}
 		).
-		saveMnzRemainingRuns().
 		saveStdoutContent().
 		run()
 
 	return {
-		token: run.getStdoutFileContent(),
-		nRemainingRuns: run.getMnzRemainingRuns()
+		token: run.getStdoutFileContent()
 	}
 })

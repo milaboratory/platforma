@@ -1,0 +1,62 @@
+/** Contains a builder for monetization when we need to run monetization without exec (e.g. in pre-run). */
+
+ll := import(":ll")
+monetization := import(":exec.monetization_internal")
+workdir := import(":workdir")
+path := import(":path")
+constants := import(":exec.constants")
+smart := import(":smart")
+validation := import(":validation")
+
+builder := func(productKey) {
+	mnz := monetization.init()
+	monetization.enable(mnz, productKey)
+	monetization.setDryRun(mnz, true)
+
+	filesToAdd := {}
+	filesToWrite := {}
+
+	self := undefined
+	self = ll.toStrict({
+		addFile: func(fileName, file, ...opts) {
+			ll.assert(is_string(fileName), "monetization.builder().addFile: fileName must be a string")
+			ll.assert(smart.isReference(file), "monetization.builder().addFile: file must be a reference")
+
+			fileName = path.canonize(fileName)
+			filesToAdd[fileName] = file
+			monetization.addOption(mnz, fileName, opts...)
+			return self
+		},
+
+		writeFile: func(fileName, data, ...opts) {
+			validation.assertType(data, ["or",
+				"string",
+				"bytes",
+				validation.reference])
+
+			fileName = path.canonize(fileName)
+
+			filesToWrite[fileName] = data
+			monetization.addOption(mnz, fileName, opts...)
+
+			return self
+		},
+
+		build: func() {
+			wd := workdir.builder().
+				addFiles(filesToAdd).
+				writeFiles(filesToWrite).
+				build()
+
+			result := monetization.run(mnz, wd, constants.UI_TASKS_QUEUE)
+
+			return result
+		}
+	})
+
+	return self
+}
+
+export {
+	builder: builder
+}

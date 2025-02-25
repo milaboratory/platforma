@@ -15,11 +15,10 @@ runcmd := import(":exec.runcmd")
 workdir := import(":workdir")
 render := import(":render")
 constants := import(":exec.constants")
+slices := import(":slices")
+sets := import(":sets")
 
 _JWT_TOKEN_RESULT_ENV := "PLATFORMA_MNZ_JWT"
-
-/** A number of remaining runs will be stored here. */
-REMAINING_RUNS_FILE_NAME := "mnz_remaining_runs.txt"
 
 /** mnz-client will print the response from milm to stdout as-is. */
 mnzClientStdoutSchema := ["or",
@@ -50,10 +49,8 @@ init := func() {
 		productKey: "",
 
 		// just returns a number of runs without the actual calculation.
+		// Also, returns a number of remaining runs, a number of total runs etc.
 		isDryRun: false,
-
-		// does we need to store a number of remaining runs, a number of total runs.
-		saveInfo: false,
 
 		// file name to the param, e.g. {fileName: { arg: "dataset", collect: ["size", "lines", "sha256"] }}
 		fileParams: {}
@@ -69,7 +66,6 @@ schema := {
 	"enabled": "bool",
 	"productKey": "string",
 	"isDryRun": "bool",
-	"saveRemainingRuns": "bool",
 	"fileParams": {"any": fileParamsSchema}
 }
 
@@ -83,7 +79,11 @@ _validateParams := func(params) {
 	ll.assert(is_array(params.collect) && len(params.collect) > 0, "monetization.validateParams(): 'collect' in {\"mnz\": {...}} param must be non-empty an array")
 
 	ll.assert(slices.every(params.collect, func(elem) {
-		return sets.hasElement(["size", "lines", "sha256"], elem)
+		return {
+			size: true,
+			lines: true,
+			sha256: true
+		}[elem]
 	}), "monetization.validateParams(): params in 'collect' must be either 'size', 'lines' or 'sha256'")
 }
 
@@ -119,20 +119,6 @@ setDryRun := func(mnz, isDryRun) {
 		"monetization.setDryRun(): mnz object does not fit schema")
 
 	mnz.isDryRun = isDryRun
-}
-
-/** Sets if we need to save a number of remaining runs or not. */
-setSaveRemainingRuns := func(mnz, saveRemainingRuns) {
-	ll.assert(mnz.enabled,
-		"monetization.setSaveRemainingRuns(): monetization must be explicitly enabled by enableMnz(productKey) function")
-
-	validation.assertType(mnz, schema,
-		"monetization.saveRemainingRuns(): mnz object does not fit schema")
-
-	ll.assert(is_bool(saveRemainingRuns),
-		"monetization.saveRemainingRuns(): saveRemainingRuns must be boolean, got %v", saveRemainingRuns)
-
-	mnz.saveRemainingRuns = saveRemainingRuns
 }
 
 /** Is this monetization enabled and should run? */
@@ -214,62 +200,65 @@ run := func(mnz, wd, queue) {
 	}
 
 	builder.inQueue(queue)
-	stdout := "mnz_stdout.txt"
-	builder.stdout(stdout)
+	stdoutName := "mnz_stdout.txt"
+	builder.stdout(stdoutName)
 	run := builder.build()
 
 	// save mnz_stdout.txt
 	savedWd := workdir.save(run.workdir).
-		saveFileContent(stdout).
+		saveFileContent(stdoutName).
 		build()
 
-	resultAsBytesJson := savedWd.filesContent.getFutureInputField(stdout)
+	stdout := savedWd.filesContent.getFutureInputField(stdoutName)
 
-	resultAsStringJson := render.createEphemeral(
+	result := render.createEphemeral(
 		assets.importTemplate(":exec.monetization_to_json"),
-		{ resource: resultAsBytesJson }
+		{ resource: stdout }
 	)
-
-	// // store nRemainingRuns in a file.
-	// // We don't want to return it as a value resource, because
-	// // in exec.tpl we can't declare new outputs or else there will be deduplication errors.
-	// newWd:= workdir.builder().
-	// 	writeFile(REMAINING_RUNS_FILE_NAME, resultAsStringJson.output("nRemainingRuns")).
-	// 	build()
 
 	return ll.toStrict({
 		// other commands should run on this wd,
 		// or else they will run concurrently
 		// with monetization.
-		wdAfter: newWd,
+		wdAfter: savedWd.workdir,
 
 		// mnz-client returns jwt token
 		// that we will pass to the next command as env.
 		jwtEnvName: _JWT_TOKEN_RESULT_ENV,
-		jwtEnvValue: resultAsStringJson.output("jwtToken")
+		jwtEnvValue: result.output("jwtToken"),
+
+		info: result.output("info")
 	})
 }
 
-// /** Decodes a data part of the jwt token into tengo json. */
-// decodeJwtToken := func(jwt) {
-// 	parts := text.split(jwt, ".")
-// 	ll.assert(len(parts) == 3, "jwt token must consist of 3 parts, got: %v", parts)
-// 	data := parts[1]
-// 	decoded := base64.decode(data)
-// 	obj := json.decode(decoded)
+/** Gets mnz key from opts or undefined. */
+_extractOption := func(...opts) {
+	if slices.length(opts) < 1 {
+		return undefined
+	}
+	opt := opts[0]["mnz"]
 
-// 	return obj
-// }
+	// readability if: we can return undefined here
+	return is_undefined(opt) ? undefined : opt
+}
+
+/** Adds a monetization option if it's defined into mnzFileParams. */
+addOption := func(mnz, fileName, ...opts) {
+	opt := _extractOption(opts...)
+	if !is_undefined(opt) {
+		addFileParams(mnz, fileName, opt)
+	}
+}
 
 export ll.toStrict({
 	init: init,
 	schema: schema,
 	enable: enable,
 	setDryRun: setDryRun,
-	setSaveRemainingRuns: setSaveRemainingRuns,
 	shouldRun: shouldRun,
 	toJson: toJson,
 	addFileParams: addFileParams,
+	addOption: addOption,
 	run: run,
 	mnzClientStdoutSchema: mnzClientStdoutSchema
 })
