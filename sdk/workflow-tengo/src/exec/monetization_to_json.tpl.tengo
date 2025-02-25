@@ -1,17 +1,32 @@
-/** A pure template that gets a resource's data of monetization as bytes,
- * trims new lines, converts it to a string
- * and creates a json/object value resource from it. */
+/** A pure template that parses a response from mnz-client (and milm) */
 
 self := import(":tpl")
+json := import("json")
 text := import("text")
+base64 := import("base64")
+validation := import(":validation")
 
-self.defineOutputs("jsonedData")
+monetization := import(":exec.monetization_internal")
+
+self.defineOutputs("jwtToken", "info")
 
 self.body(func(inputs) {
 	data := inputs.resource.getData()
 	trimmed := text.trim(string(data), "\n \r\t")
+	decoded := json.decode(bytes(trimmed))
+
+	validation.assertType(decoded, monetization.mnzClientStdoutSchema)
+
+	token := {}
+	info := {}
+	if !is_undefined(decoded.jwtToken) {
+		token = decoded.jwtToken
+	} else {
+		info = decoded.mnz.details
+	}
 
 	return {
-		jsonedData: trimmed
+		jwtToken: token,
+		info: info
 	}
 })

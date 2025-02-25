@@ -1,0 +1,14 @@
+self := import("@platforma-sdk/workflow-tengo:tpl")
+monetization := import("@platforma-sdk/workflow-tengo:exec.monetization")
+
+self.defineOutputs(["info"])
+
+self.body(func(inputs) {
+	mnz := monetization.builder("MIFAKEMIFAKEMIFAKE"). // a fake product key so our mnz client response with a fake response without changing prod db.
+		writeFile("dryrun.txt", "1\n2\n3\n", {mnz: {arg: "ABC", collect: ["lines"]}}).
+		build()
+
+	return {
+		info: mnz.info
+	}
+})

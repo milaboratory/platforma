@@ -254,6 +254,12 @@ _fill := func() {
 			return self
 		},
 
+		/** Creates nested dirs. */
+		mkDirs: func(dirs) {
+			enum.each(dirs, self.mkDir)
+			return self
+		},
+
 		/**
 		 * Builds the filled workdir.
 		 *
