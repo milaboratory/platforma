@@ -8,7 +8,7 @@ text := import("text")
 base64 := import("base64")
 validation := import(":validation")
 
-monetization := import(":exec.monetization")
+monetization := import(":exec.monetization_internal")
 
 self.defineOutputs("jwtToken", "nRemainingRuns")
 

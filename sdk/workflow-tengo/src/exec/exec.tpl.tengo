@@ -53,10 +53,8 @@ _runBinaryCommand := func(inputs) {
 
 	// add files
 	wdBuilder.addFiles(inputs.filesToAdd)
-	// create dirs
-	for dir in inputs.dirsToCreate {
-		wdBuilder.mkDir(dir)
-	}
+	wdBuilder.mkDirs(inputs.dirsToCreate)
+
 	// add assets
 	archives := ll.toStrict({})
 	for k, descriptor in inputs.assetDescriptors {

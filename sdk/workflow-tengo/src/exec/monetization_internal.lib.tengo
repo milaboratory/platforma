@@ -21,13 +21,25 @@ _JWT_TOKEN_RESULT_ENV := "PLATFORMA_MNZ_JWT"
 /** A number of remaining runs will be stored here. */
 REMAINING_RUNS_FILE_NAME := "mnz_remaining_runs.txt"
 
-tokenSchema := {
-	mnz: {
+/** mnz-client will print the response from milm to stdout as-is. */
+mnzClientStdoutSchema := ["or",
+	// run-spec response
+	{ jwtToken: "string" },
+
+	// dry-run response
+	{ mnz: {
 		details: {
-			remaining: "number"
+			spentRuns: "number",
+			runsToSpend: "number",
+			willRemainAfterRun: "number",
+			subscription: {
+				availableRuns: "number",
+				startsAt: "string",
+				expiresAt: "string"
+			}
 		}
-	}
-}
+	}}
+	]
 
 /** Just creates a new monetization as a map of params. */
 init := func() {
@@ -40,8 +52,8 @@ init := func() {
 		// just returns a number of runs without the actual calculation.
 		isDryRun: false,
 
-		// does we need to store a number of remaining runs.
-		saveRemainingRuns: false,
+		// does we need to store a number of remaining runs, a number of total runs.
+		saveInfo: false,
 
 		// file name to the param, e.g. {fileName: { arg: "dataset", collect: ["size", "lines", "sha256"] }}
 		fileParams: {}
@@ -65,8 +77,14 @@ schema := {
  * but with prettier errors for clients. */
 _validateParams := func(params) {
 	ll.assert(ll.isMap(params), "monetization.validateParams(): mnz params must be a map")
-	ll.assert(is_string(params.arg), "monetization.validateParams(): 'arg' in {\"mnz\": {...}} param must be a string")
+
+	ll.assert(is_string(params.arg), "monetization.validateParams(): 'arg' in addFileParams must be string")
+
 	ll.assert(is_array(params.collect) && len(params.collect) > 0, "monetization.validateParams(): 'collect' in {\"mnz\": {...}} param must be non-empty an array")
+
+	ll.assert(slices.every(params.collect, func(elem) {
+		return sets.hasElement(["size", "lines", "sha256"], elem)
+	}), "monetization.validateParams(): params in 'collect' must be either 'size', 'lines' or 'sha256'")
 }
 
 _validateIsReady := func(mnz) {
@@ -212,12 +230,12 @@ run := func(mnz, wd, queue) {
 		{ resource: resultAsBytesJson }
 	)
 
-	// store nRemainingRuns in a file.
-	// We don't want to return it as a value resource, because
-	// in exec.tpl we can't declare new outputs or else there will be deduplication errors.
-	newWd:= workdir.builder().
-		writeFile(REMAINING_RUNS_FILE_NAME, resultAsStringJson.output("nRemainingRuns")).
-		build()
+	// // store nRemainingRuns in a file.
+	// // We don't want to return it as a value resource, because
+	// // in exec.tpl we can't declare new outputs or else there will be deduplication errors.
+	// newWd:= workdir.builder().
+	// 	writeFile(REMAINING_RUNS_FILE_NAME, resultAsStringJson.output("nRemainingRuns")).
+	// 	build()
 
 	return ll.toStrict({
 		// other commands should run on this wd,
@@ -232,16 +250,16 @@ run := func(mnz, wd, queue) {
 	})
 }
 
-/** Decodes a data part of the jwt token into tengo json. */
-decodeJwtToken := func(jwt) {
-	parts := text.split(jwt, ".")
-	ll.assert(len(parts) == 3, "jwt token must consist of 3 parts, got: %v", parts)
-	data := parts[1]
-	decoded := base64.decode(data)
-	obj := json.decode(decoded)
+// /** Decodes a data part of the jwt token into tengo json. */
+// decodeJwtToken := func(jwt) {
+// 	parts := text.split(jwt, ".")
+// 	ll.assert(len(parts) == 3, "jwt token must consist of 3 parts, got: %v", parts)
+// 	data := parts[1]
+// 	decoded := base64.decode(data)
+// 	obj := json.decode(decoded)
 
-	return obj
-}
+// 	return obj
+// }
 
 export ll.toStrict({
 	init: init,
@@ -253,7 +271,5 @@ export ll.toStrict({
 	toJson: toJson,
 	addFileParams: addFileParams,
 	run: run,
-	REMAINING_RUNS_FILE_NAME: REMAINING_RUNS_FILE_NAME,
-	decodeJwtToken: decodeJwtToken,
-	tokenSchema: tokenSchema
+	mnzClientStdoutSchema: mnzClientStdoutSchema
 })
