@@ -1,0 +1,19 @@
+{
+  "name": "@milaboratories/milaboratories.monetization-test.workflow",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Block Workflow",
+  "scripts": {
+    "build": "rm -rf dist && pl-tengo check && pl-tengo build",
+    "format": "/usr/bin/env emacs --script ./format.el"
+  },
+  "dependencies": {
+    "@platforma-open/milaboratories.software-small-binaries": "catalog:"
+  },
+  "devDependencies": {
+    "@platforma-sdk/tengo-builder": "workspace:",
+    "@platforma-sdk/workflow-tengo": "workspace:",
+    "@platforma-sdk/test": "workspace:",
+    "vitest": "catalog:"
+  }
+}
