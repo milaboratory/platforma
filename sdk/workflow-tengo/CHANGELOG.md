@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 2.13.2
+
+### Patch Changes
+
+- e9a6ef1: tengo: exec: mnz: add dry-run and n remaining runs
+
 ## 2.13.1
 
 ### Patch Changes
