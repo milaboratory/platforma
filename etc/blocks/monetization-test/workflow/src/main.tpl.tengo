@@ -6,32 +6,37 @@ smart := import("@platforma-sdk/workflow-tengo:smart")
 exec := import("@platforma-sdk/workflow-tengo:exec")
 ll := import("@platforma-sdk/workflow-tengo:ll")
 text := import("text")
+file := import("@platforma-sdk/workflow-tengo:file")
 
 self.setPreRun(assets.importTemplate(":pre-run"))
 
 self.body(func(inputs) {
-	cmd := inputs.commandToMonetize[0]
-	args := inputs.commandToMonetize[1:]
+	// TODO: it should be changed to software that prints an env.
+	builder := exec.builder().
+		cmd("/usr/bin/env").
+		arg("bash").
+		arg("-c").
+		arg("echo -n $PLATFORMA_MNZ_JWT").
+		enableMnz(inputs.productKey).
+		saveStdoutContent()
 
-	builder := exec.builder().cmd(cmd)
-	for _, a in args {
-		builder.arg(a)
+	progresses := {}
+	for _, handle in inputs.inputHandles {
+		result := file.importFile(handle.handle)
+		progresses[handle.fileName] = result.handle
+
+		builder.addFile(handle.fileName, result.file, {mnz: {
+			arg: handle.argName,
+			collect: handle.options
+		}})
 	}
 
-	run := builder.
-		enableMnz(inputs.productKey).
-		writeFile("abc.txt", "1\n2\n3\n",
-			{"mnz": {
-				"arg": "abc.txt",
-				"collect": ["lines"]
-			}}
-		).
-		saveStdoutContent().
-		run()
+	run := builder.run()
 
 	return {
 		outputs: {
-			stdout: run.getStdoutFileContent()
+			token: run.getStdoutFileContent(),
+			progresses: progresses
 		},
 		exports: {}
 	}
