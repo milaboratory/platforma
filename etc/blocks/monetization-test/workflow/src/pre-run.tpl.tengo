@@ -1,0 +1,15 @@
+self := import("@platforma-sdk/workflow-tengo:workflow")
+monetization := import("@platforma-sdk/workflow-tengo:exec.monetization")
+
+self.body(func(inputs) {
+	mnz := monetization.builder(inputs.productKey).
+		writeFile("dryrun.txt", "1\n2\n3\n", {mnz: {arg: "ABC", collect: ["lines"]}}).
+		build()
+
+	return {
+		outputs: {
+			info: mnz.info
+		},
+		exports: {}
+	}
+})

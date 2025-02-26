@@ -630,6 +630,85 @@ importers:
         specifier: workspace:*
         version: link:../../../../sdk/workflow-tengo
 
+  etc/blocks/monetization-test/block:
+    dependencies:
+      '@milaboratories/milaboratories.monetization-test.model':
+        specifier: workspace:*
+        version: link:../model
+      '@milaboratories/milaboratories.monetization-test.ui':
+        specifier: workspace:*
+        version: link:../ui
+      '@milaboratories/milaboratories.monetization-test.workflow':
+        specifier: workspace:*
+        version: link:../workflow
+    devDependencies:
+      '@platforma-sdk/block-tools':
+        specifier: 'workspace:'
+        version: link:../../../../tools/block-tools
+
+  etc/blocks/monetization-test/model:
+    dependencies:
+      '@platforma-sdk/model':
+        specifier: 'workspace:'
+        version: link:../../../../sdk/model
+    devDependencies:
+      '@platforma-sdk/block-tools':
+        specifier: 'workspace:'
+        version: link:../../../../tools/block-tools
+      tsup:
+        specifier: 'catalog:'
+        version: 8.3.5(@microsoft/api-extractor@7.48.1(@types/node@22.5.5))(postcss@8.4.49)(tsx@4.19.1)(typescript@5.5.4)(yaml@2.6.1)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.5.4
+      vite:
+        specifier: 'catalog:'
+        version: 5.4.11(@types/node@22.5.5)(sass@1.83.4)
+
+  etc/blocks/monetization-test/ui:
+    dependencies:
+      '@milaboratories/milaboratories.monetization-test.model':
+        specifier: workspace:*
+        version: link:../model
+      '@platforma-sdk/ui-vue':
+        specifier: 'workspace:'
+        version: link:../../../../sdk/ui-vue
+      vue:
+        specifier: 'catalog:'
+        version: 3.5.13(typescript@5.5.4)
+    devDependencies:
+      '@vitejs/plugin-vue':
+        specifier: 'catalog:'
+        version: 5.2.1(vite@5.4.11(@types/node@22.5.5)(sass@1.83.4))(vue@3.5.13(typescript@5.5.4))
+      typescript:
+        specifier: 'catalog:'
+        version: 5.5.4
+      vite:
+        specifier: 'catalog:'
+        version: 5.4.11(@types/node@22.5.5)(sass@1.83.4)
+      vue-tsc:
+        specifier: 'catalog:'
+        version: 2.1.10(typescript@5.5.4)
+
+  etc/blocks/monetization-test/workflow:
+    dependencies:
+      '@platforma-open/milaboratories.software-small-binaries':
+        specifier: 'catalog:'
+        version: 1.15.12
+    devDependencies:
+      '@platforma-sdk/tengo-builder':
+        specifier: 'workspace:'
+        version: link:../../../../tools/tengo-builder
+      '@platforma-sdk/test':
+        specifier: 'workspace:'
+        version: link:../../../../sdk/test
+      '@platforma-sdk/workflow-tengo':
+        specifier: 'workspace:'
+        version: link:../../../../sdk/workflow-tengo
+      vitest:
+        specifier: 'catalog:'
+        version: 2.1.8(@types/node@22.5.5)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4)
+
   etc/blocks/pool-explorer/block:
     dependencies:
       '@milaboratories/milaboratories.pool-explorer.model':

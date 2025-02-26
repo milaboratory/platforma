@@ -58,6 +58,11 @@ packages:
   - etc/blocks/blob-url-custom-protocol/ui
   - etc/blocks/blob-url-custom-protocol/block
 
+  - etc/blocks/monetization-test/workflow
+  - etc/blocks/monetization-test/model
+  - etc/blocks/monetization-test/ui
+  - etc/blocks/monetization-test/block
+
   - etc/blocks/download-file/workflow
   - etc/blocks/download-file/model
   - etc/blocks/download-file/ui

@@ -1,0 +1,38 @@
+/** Runs a hello world with a turned on monetization, and returns a jwt token. */
+
+self := import("@platforma-sdk/workflow-tengo:workflow")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+ll := import("@platforma-sdk/workflow-tengo:ll")
+text := import("text")
+
+self.setPreRun(assets.importTemplate(":pre-run"))
+
+self.body(func(inputs) {
+	cmd := inputs.commandToMonetize[0]
+	args := inputs.commandToMonetize[1:]
+
+	builder := exec.builder().cmd(cmd)
+	for _, a in args {
+		builder.arg(a)
+	}
+
+	run := builder.
+		enableMnz(inputs.productKey).
+		writeFile("abc.txt", "1\n2\n3\n",
+			{"mnz": {
+				"arg": "abc.txt",
+				"collect": ["lines"]
+			}}
+		).
+		saveStdoutContent().
+		run()
+
+	return {
+		outputs: {
+			stdout: run.getStdoutFileContent()
+		},
+		exports: {}
+	}
+})
