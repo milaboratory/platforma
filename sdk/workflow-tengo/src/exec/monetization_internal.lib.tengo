@@ -1,0 +1,266 @@
+/** The library provides all things to work with a monetization. */
+
+base64 := import("base64")
+json := import("json")
+
+ll := import(":ll")
+feats := import(":feats")
+
+validation := import(":validation")
+assets := import(":assets")
+internal := import(":exec.internal")
+fmt := import("fmt")
+text := import("text")
+runcmd := import(":exec.runcmd")
+workdir := import(":workdir")
+render := import(":render")
+constants := import(":exec.constants")
+slices := import(":slices")
+sets := import(":sets")
+
+_JWT_TOKEN_RESULT_ENV := "PLATFORMA_MNZ_JWT"
+
+/** mnz-client will print the response from milm to stdout as-is. */
+mnzClientStdoutSchema := ["or",
+	// run-spec response
+	{ jwtToken: "string" },
+
+	// dry-run response
+	{ mnz: {
+		details: {
+			spentRuns: "number",
+			runsToSpend: "number",
+			willRemainAfterRun: "number",
+			subscription: {
+				availableRuns: "number",
+				startsAt: "string",
+				expiresAt: "string"
+			}
+		}
+	}}
+	]
+
+/** Just creates a new monetization as a map of params. */
+init := func() {
+	return ll.toStrict({
+		enabled: false,
+
+		// product key of monetization
+		productKey: "",
+
+		// just returns a number of runs without the actual calculation.
+		// Also, returns a number of remaining runs, a number of total runs etc.
+		isDryRun: false,
+
+		// file name to the param, e.g. {fileName: { arg: "dataset", collect: ["size", "lines", "sha256"] }}
+		fileParams: {}
+	})
+}
+
+fileParamsSchema := {
+	"arg": "string",
+	"collect": [`string,regex=size|lines|sha256`]
+}
+
+schema := {
+	"enabled": "bool",
+	"productKey": "string",
+	"isDryRun": "bool",
+	"fileParams": {"any": fileParamsSchema}
+}
+
+/** Same as validation.assertType(params, fileParamsSchema, ...),
+ * but with prettier errors for clients. */
+_validateParams := func(params) {
+	ll.assert(ll.isMap(params), "monetization.validateParams(): mnz params must be a map")
+
+	ll.assert(is_string(params.arg), "monetization.validateParams(): 'arg' in addFileParams must be string")
+
+	ll.assert(is_array(params.collect) && len(params.collect) > 0, "monetization.validateParams(): 'collect' in {\"mnz\": {...}} param must be non-empty an array")
+
+	ll.assert(slices.every(params.collect, func(elem) {
+		return {
+			size: true,
+			lines: true,
+			sha256: true
+		}[elem]
+	}), "monetization.validateParams(): params in 'collect' must be either 'size', 'lines' or 'sha256'")
+}
+
+_validateIsReady := func(mnz) {
+	validation.assertType(mnz, schema,
+		"monetization.assertIsReady(): monetization does not fit schema")
+	ll.assert(len(mnz.productKey) > 0,
+		"monetization.assertIsReady(): product key must be set")
+
+	// We don't need it, since we could run software without file params
+	// ll.assert(len(mnz.fileParams) > 0,
+	// 	"monetization.assertIsReady(): at least 1 file param must be set")
+}
+
+/** Enables the monetization for a product. */
+enable := func(mnz, productKey) {
+	ll.assert(is_string(productKey),
+		"monetization.enable(): product key must be a string, got %v", productKey)
+
+	validation.assertType(mnz, schema,
+		"monetization.enable(): mnz object does not fit schema")
+
+	mnz.enabled = true
+	mnz.productKey = productKey
+}
+
+setDryRun := func(mnz, isDryRun) {
+	ll.assert(mnz.enabled,
+		"monetization.setDryRun(): monetization must be explicitly enabled by enableMnz(productKey) function")
+
+	ll.assert(is_bool(isDryRun),
+		"monetization.setDryRun(): isDryRun must be boolean, got %v", isDryRun)
+
+	validation.assertType(mnz, schema,
+		"monetization.setDryRun(): mnz object does not fit schema")
+
+	mnz.isDryRun = isDryRun
+}
+
+/** Is this monetization enabled and should run? */
+shouldRun := func(mnz) {
+	if mnz.enabled {
+		_validateIsReady(mnz)
+		return true
+	}
+
+	return false
+}
+
+toJson := func(mnz) {
+	validation.assertType(mnz, schema,
+		"monetization.toJson(): monetization object does not fit json schema")
+
+	return ll.fromStrict(mnz)
+}
+
+/** Adds monetization parameters by a file. */
+addFileParams := func(mnz, fileName, params) {
+	validation.assertType(mnz, schema,
+		"monetization.addFileParams(): monetization object does not fit json schema")
+
+	_validateParams(params)
+
+	validation.assertType(params, fileParamsSchema,
+		"monetization.addFileParams(): file params does not fit json schema")
+
+	ll.assert(mnz.enabled,
+		"monetization.addFileParams(): monetization must be explicitly enabled by enableMnz(productKey) function")
+
+	ll.assert(is_string(fileName),
+		"monetization.addFileParams(): file name must be a string.")
+
+	mnz.fileParams[fileName] = params
+}
+
+/**
+ * Runs monetization binary on a workdir with all files, and returns a new workdir and a resulted jwt token.
+ * All resources are ephemeral,
+ * the deduplication should be above this level.
+ *
+ * @param: mnz: monetization -- see a beginning of this file.
+ * @param: wd: workdir -- workdir where all files from mnz.fileParams already exist.
+ * @param: queue: queue - in which queue we should run monetization. */
+run := func(mnz, wd, queue) {
+	_validateIsReady(mnz)
+
+	exprType := feats.commandExpressions ? constants.ARG_TYPE_EXPRESSION : constants.ARG_TYPE_VAR
+
+	mnzSw := assets.importSoftware("@platforma-open/milaboratories.software-small-binaries:mnz-client")
+	builder := runcmd.builder(wd)
+	builder.envTyped("MI_LICENSE", exprType, "{secrets.MI_LICENSE}")
+
+	opts := internal.swToRunCmdOptions(mnzSw.name, mnzSw.version, mnzSw.descriptor)
+	// load pkg var that points to mnz-client location.
+	for _, varInfo in opts.variables {
+		builder.ref(varInfo.refName, varInfo.reference)
+		builder.substitutionRule(varInfo.varName, varInfo.refName)
+	}
+
+	builder.cmdTyped(exprType, opts.cmd.value)
+	for _, arg in opts.args {
+		// now mnz-client doesn't have additional args; this line is just in case.
+		builder.argTyped(exprType, arg)
+	}
+	if mnz.isDryRun {
+		builder.arg("-dry-run")
+	}
+	builder.arg("-productKey").arg(mnz.productKey)
+
+	// load file params
+	for fileName, param in mnz.fileParams {
+		// param is of fileParamsSchema type
+		toCollect := text.join(param.collect, ",")
+		arg := fmt.sprintf("%s:file:%s:%s", param.arg, fileName, toCollect)
+		builder.arg(arg)
+	}
+
+	builder.inQueue(queue)
+	stdoutName := "mnz_stdout.txt"
+	builder.stdout(stdoutName)
+	run := builder.build()
+
+	// save mnz_stdout.txt
+	savedWd := workdir.save(run.workdir).
+		saveFileContent(stdoutName).
+		build()
+
+	stdout := savedWd.filesContent.getFutureInputField(stdoutName)
+
+	result := render.createEphemeral(
+		assets.importTemplate(":exec.monetization_to_json"),
+		{ resource: stdout }
+	)
+
+	return ll.toStrict({
+		// other commands should run on this wd,
+		// or else they will run concurrently
+		// with monetization.
+		wdAfter: savedWd.workdir,
+
+		// mnz-client returns jwt token
+		// that we will pass to the next command as env.
+		jwtEnvName: _JWT_TOKEN_RESULT_ENV,
+		jwtEnvValue: result.output("jwtToken"),
+
+		info: result.output("info")
+	})
+}
+
+/** Gets mnz key from opts or undefined. */
+_extractOption := func(...opts) {
+	if slices.length(opts) < 1 {
+		return undefined
+	}
+	opt := opts[0]["mnz"]
+
+	// readability if: we can return undefined here
+	return is_undefined(opt) ? undefined : opt
+}
+
+/** Adds a monetization option if it's defined into mnzFileParams. */
+addOption := func(mnz, fileName, ...opts) {
+	opt := _extractOption(opts...)
+	if !is_undefined(opt) {
+		addFileParams(mnz, fileName, opt)
+	}
+}
+
+export ll.toStrict({
+	init: init,
+	schema: schema,
+	enable: enable,
+	setDryRun: setDryRun,
+	shouldRun: shouldRun,
+	toJson: toJson,
+	addFileParams: addFileParams,
+	addOption: addOption,
+	run: run,
+	mnzClientStdoutSchema: mnzClientStdoutSchema
+})

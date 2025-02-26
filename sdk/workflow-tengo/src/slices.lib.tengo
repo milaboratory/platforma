@@ -139,17 +139,27 @@ map := func(slice, fn) {
  * a function that gets a result got so far and an element and returns a new result.
  * @return final result: any - the final result
  */
-reduce := func(slice, fn) {
+reduce := func(slice, fn, ...init) {
 	result := undefined
 	for i, elem in slice {
 		if i == 0 {
-			result = elem
+			result = len(init) > 0 ? init : elem
 		} else {
 			result = fn(result, elem)
 		}
 	}
 
 	return result
+}
+
+/** Returns true if the function applied to every element returns true. */
+every := func(slice, fn) {
+	for _, elem in slice {
+		if !fn(elem) {
+			return false
+		}
+	}
+	return true
 }
 
 //
@@ -159,45 +169,45 @@ reduce := func(slice, fn) {
 //
 
 _quickSortFn := func(arr, left, right, less) {
-    if is_undefined(arr) || len(arr) <= 1 || left < 0 || left >= len(arr) || right < 0 || right >= len(arr) || left >= right {
-        return arr
-    }
-    idx := left
-    for i := left; i < right; i++ {
-        if less(arr[i], arr[right]) {
+	if is_undefined(arr) || len(arr) <= 1 || left < 0 || left >= len(arr) || right < 0 || right >= len(arr) || left >= right {
+		return arr
+	}
+	idx := left
+	for i := left; i < right; i++ {
+		if less(arr[i], arr[right]) {
 			temp := arr[i]
 			arr[i] = arr[idx]
 			arr[idx] = temp
-            idx++
-        }
-    }
+			idx++
+		}
+	}
 	temp := arr[right]
 	arr[right] = arr[idx]
 	arr[idx] = temp
-    _quickSortFn(arr, left, idx-1, less)
-    _quickSortFn(arr, idx+1, right, less)
-    return arr
+	_quickSortFn(arr, left, idx-1, less)
+	_quickSortFn(arr, idx+1, right, less)
+	return arr
 }
 
 _quickSort := func(arr, left, right) {
-    if is_undefined(arr) || len(arr) <= 1 || left < 0 || left >= len(arr) || right < 0 || right >= len(arr) || left >= right {
-        return arr
-    }
-    idx := left
-    for i := left; i < right; i++ {
-        if arr[i] < arr[right] {
+	if is_undefined(arr) || len(arr) <= 1 || left < 0 || left >= len(arr) || right < 0 || right >= len(arr) || left >= right {
+		return arr
+	}
+	idx := left
+	for i := left; i < right; i++ {
+		if arr[i] < arr[right] {
 			temp := arr[i]
 			arr[i] = arr[idx]
 			arr[idx] = temp
-            idx++
-        }
-    }
+			idx++
+		}
+	}
 	temp := arr[right]
 	arr[right] = arr[idx]
 	arr[idx] = temp
-    _quickSort(arr, left, idx-1)
-    _quickSort(arr, idx+1, right)
-    return arr
+	_quickSort(arr, left, idx-1)
+	_quickSort(arr, idx+1, right)
+	return arr
 }
 
 /**
@@ -309,6 +319,7 @@ export ll.toStrict({
 	filter: filter,
 	map: map,
 	reduce: reduce,
+	every: every,
 	quickSortInPlace: quickSortInPlace,
 	quickSort: quickSort,
 	quickSortFn: quickSortFn,

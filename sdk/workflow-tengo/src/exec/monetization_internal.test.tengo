@@ -1,12 +1,12 @@
 test := import(":test")
-monetization := import(":exec.monetization")
+monetization := import(":exec.monetization_internal")
 
 Test_monetization_enable := func() {
 	mnz := monetization.init()
 	monetization.enable(mnz, "test_product")
 
 	test.isTrue(mnz.enabled)
-	test.isEqual(mnz.productName, "test_product")
+	test.isEqual(mnz.productKey, "test_product")
 }
 
 Test_monetization_addFileParams := func() {

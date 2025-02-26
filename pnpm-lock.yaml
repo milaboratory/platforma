@@ -43,8 +43,8 @@ catalogs:
       specifier: ^4.0.37
       version: 4.0.37
     '@platforma-open/milaboratories.software-small-binaries':
-      specifier: ^1.15.6
-      version: 1.15.6
+      specifier: ^1.15.12
+      version: 1.15.12
     '@protobuf-ts/grpc-transport':
       specifier: ^2.9.4
       version: 2.9.4
@@ -633,6 +633,88 @@ importers:
         specifier: workspace:*
         version: link:../../../../sdk/workflow-tengo
 
+  etc/blocks/monetization-test/block:
+    dependencies:
+      '@milaboratories/milaboratories.monetization-test.model':
+        specifier: workspace:*
+        version: link:../model
+      '@milaboratories/milaboratories.monetization-test.ui':
+        specifier: workspace:*
+        version: link:../ui
+      '@milaboratories/milaboratories.monetization-test.workflow':
+        specifier: workspace:*
+        version: link:../workflow
+    devDependencies:
+      '@platforma-sdk/block-tools':
+        specifier: 'workspace:'
+        version: link:../../../../tools/block-tools
+
+  etc/blocks/monetization-test/model:
+    dependencies:
+      '@platforma-sdk/model':
+        specifier: 'workspace:'
+        version: link:../../../../sdk/model
+    devDependencies:
+      '@platforma-sdk/block-tools':
+        specifier: 'workspace:'
+        version: link:../../../../tools/block-tools
+      tsup:
+        specifier: 'catalog:'
+        version: 8.3.5(@microsoft/api-extractor@7.48.1(@types/node@22.5.5))(postcss@8.4.49)(tsx@4.19.1)(typescript@5.5.4)(yaml@2.6.1)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.5.4
+      vite:
+        specifier: 'catalog:'
+        version: 5.4.11(@types/node@22.5.5)(sass@1.83.4)
+
+  etc/blocks/monetization-test/ui:
+    dependencies:
+      '@milaboratories/milaboratories.monetization-test.model':
+        specifier: workspace:*
+        version: link:../model
+      '@platforma-sdk/model':
+        specifier: workspace:*
+        version: link:../../../../sdk/model
+      '@platforma-sdk/ui-vue':
+        specifier: 'workspace:'
+        version: link:../../../../sdk/ui-vue
+      vue:
+        specifier: 'catalog:'
+        version: 3.5.13(typescript@5.5.4)
+    devDependencies:
+      '@vitejs/plugin-vue':
+        specifier: 'catalog:'
+        version: 5.2.1(vite@5.4.11(@types/node@22.5.5)(sass@1.83.4))(vue@3.5.13(typescript@5.5.4))
+      typescript:
+        specifier: 'catalog:'
+        version: 5.5.4
+      vite:
+        specifier: 'catalog:'
+        version: 5.4.11(@types/node@22.5.5)(sass@1.83.4)
+      vue-tsc:
+        specifier: 'catalog:'
+        version: 2.1.10(typescript@5.5.4)
+
+  etc/blocks/monetization-test/workflow:
+    dependencies:
+      '@platforma-open/milaboratories.software-small-binaries':
+        specifier: 'catalog:'
+        version: 1.15.12
+    devDependencies:
+      '@platforma-sdk/tengo-builder':
+        specifier: 'workspace:'
+        version: link:../../../../tools/tengo-builder
+      '@platforma-sdk/test':
+        specifier: 'workspace:'
+        version: link:../../../../sdk/test
+      '@platforma-sdk/workflow-tengo':
+        specifier: 'workspace:'
+        version: link:../../../../sdk/workflow-tengo
+      vitest:
+        specifier: 'catalog:'
+        version: 2.1.8(@types/node@22.5.5)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4)
+
   etc/blocks/pool-explorer/block:
     dependencies:
       '@milaboratories/milaboratories.pool-explorer.model':
@@ -796,7 +878,7 @@ importers:
     dependencies:
       '@platforma-open/milaboratories.software-small-binaries':
         specifier: 'catalog:'
-        version: 1.15.6
+        version: 1.15.12
     devDependencies:
       '@platforma-sdk/tengo-builder':
         specifier: workspace:*
@@ -2180,7 +2262,7 @@ importers:
         version: 2.1.12
       '@platforma-open/milaboratories.software-small-binaries':
         specifier: 'catalog:'
-        version: 1.15.6
+        version: 1.15.12
     devDependencies:
       '@platforma-sdk/tengo-builder':
         specifier: workspace:^
@@ -2418,7 +2500,7 @@ importers:
         version: link:../../lib/node/ts-helpers
       '@platforma-open/milaboratories.software-small-binaries':
         specifier: 'catalog:'
-        version: 1.15.6
+        version: 1.15.12
       '@platforma-sdk/tengo-builder':
         specifier: workspace:*
         version: link:../../tools/tengo-builder
@@ -4296,8 +4378,8 @@ packages:
   '@platforma-open/milaboratories.software-small-binaries.java-stub@1.0.3':
     resolution: {integrity: sha512-xTHTJ4Kqvz3egmGdGDlBZeNoUi3rQRvm7KY/ru+DnkH+5tEzudnv4be5jiQ1yk0aFboeFuQjlYXwBMTlCuVB1g==}
 
-  '@platforma-open/milaboratories.software-small-binaries.mnz-client@1.4.0':
-    resolution: {integrity: sha512-2pApcgqPu/I4QbBeswkJVB1dFAjgJ4Mqm1R+Pck47d1g6rQgg9Gn7RQmkkHhUC0amRKxn4ZaknE+WM6Nq+bPzg==}
+  '@platforma-open/milaboratories.software-small-binaries.mnz-client@1.5.5':
+    resolution: {integrity: sha512-MLl1OgwDQanfnrOsXbtSiJdI8MjR0o5chVasdQ7Hz8q/q+pkDrvmD01r4PxBD/DIR9ARZOHKPF6Sw2KHuOUpUg==}
 
   '@platforma-open/milaboratories.software-small-binaries.python-stub@1.0.3':
     resolution: {integrity: sha512-cDhQwgS/0GFp4qVzuFbFit6/GSWR6So7mPpk4b7cggktvjkKUBbn0qFcGU6fVSVhEYCKalwwnoTPBGtq1hAj2Q==}
@@ -4320,8 +4402,8 @@ packages:
   '@platforma-open/milaboratories.software-small-binaries.table-converter@1.2.3':
     resolution: {integrity: sha512-QYcfovRxtvbiciLLfHQzziaBr0v2jDu8RWFv3QuWFJW+FBJKQQiaFu2FC4DY2A0yE0+624WaeCuG3c4bzAxnfA==}
 
-  '@platforma-open/milaboratories.software-small-binaries@1.15.6':
-    resolution: {integrity: sha512-5DwOZseYx6/sas3wIS2WuE2FtOPlgcKpFIw1eoP2YCuzPWRcSiTVu68IKvVz9f3Nv+HKi4glDBK83xsS3e9gIA==}
+  '@platforma-open/milaboratories.software-small-binaries@1.15.12':
+    resolution: {integrity: sha512-PAMAGDazFcdDRC4j7bPDi6Kc8r/f9gp1oo5q3DQBPfUs8jvV69xFRktzeRFmYn3k88CFp7RI88UHEgzvS/1knA==}
 
   '@pnpm/config.env-replace@1.1.0':
     resolution: {integrity: sha512-htyl8TWnKL7K/ESFa1oW2UB5lVDxuF5DpM7tBi6Hu2LNL3mWkIzNLG6N4zoCUP1lCKNxWy/3iu8mS8MvToGd6w==}
@@ -11114,7 +11196,7 @@ snapshots:
 
   '@platforma-open/milaboratories.software-small-binaries.java-stub@1.0.3': {}
 
-  '@platforma-open/milaboratories.software-small-binaries.mnz-client@1.4.0': {}
+  '@platforma-open/milaboratories.software-small-binaries.mnz-client@1.5.5': {}
 
   '@platforma-open/milaboratories.software-small-binaries.python-stub@1.0.3': {}
 
@@ -11130,13 +11212,13 @@ snapshots:
 
   '@platforma-open/milaboratories.software-small-binaries.table-converter@1.2.3': {}
 
-  '@platforma-open/milaboratories.software-small-binaries@1.15.6':
+  '@platforma-open/milaboratories.software-small-binaries@1.15.12':
     dependencies:
       '@platforma-open/milaboratories.software-small-binaries.guided-command': 1.0.4
       '@platforma-open/milaboratories.software-small-binaries.hello-world': 1.0.4
       '@platforma-open/milaboratories.software-small-binaries.hello-world-py': 1.0.4
       '@platforma-open/milaboratories.software-small-binaries.java-stub': 1.0.3
-      '@platforma-open/milaboratories.software-small-binaries.mnz-client': 1.4.0
+      '@platforma-open/milaboratories.software-small-binaries.mnz-client': 1.5.5
       '@platforma-open/milaboratories.software-small-binaries.python-stub': 1.0.3
       '@platforma-open/milaboratories.software-small-binaries.read-with-sleep': 1.0.4
       '@platforma-open/milaboratories.software-small-binaries.runenv-java-stub': 1.0.5

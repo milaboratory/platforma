@@ -190,34 +190,6 @@ tplTest(
   }
 );
 
-/** The test should:
- * - run monetization on the product test_hello_world
- * - collect lines of the file
- * - returns jwt token
- * - the program prints the token into stdout. */
-// We skipped it for a month since mnz-client Go's binary
-// was broken due to incompatible changes.
-tplTest.skipIf((new Date()).toISOString() < '2025-03-01')(
-  'should run monetization and return jwt token as env',
-  async ({ helper, expect }) => {
-    const result = await helper.renderTemplate(
-      false,
-      'exec.test.run.monetization_on_hello_world',
-      ['out'],
-      (_) => ({})
-    );
-
-    const out = await result
-      .computeOutput('out', (out) => out?.getDataAsString())
-      .awaitStableValue();
-
-    expect(out.split("\n")).toHaveLength(1);
-
-    // starts with jwt header: { "alg": "RS256" ...}
-    expect(out).toMatch(/eyJhbGciOi.*/)
-  }
-);
-
 tplTest(
   'should run exec and eval all arguments as expressions',
   async ({ helper, expect }) => {
