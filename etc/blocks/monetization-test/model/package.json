@@ -1,0 +1,36 @@
+{
+  "name": "@milaboratories/milaboratories.monetization-test.model",
+  "version": "1.0.0",
+  "description": "Block model",
+  "type": "module",
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsup && vite build && block-tools build-model"
+  },
+  "dependencies": {
+    "@platforma-sdk/model": "workspace:"
+  },
+  "devDependencies": {
+    "@platforma-sdk/block-tools": "workspace:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "tsup": "catalog:"
+  },
+  "tsup": {
+    "entry": [
+      "src/index.ts"
+    ],
+    "splitting": false,
+    "treeshake": true,
+    "clean": true,
+    "format": [
+      "cjs",
+      "esm"
+    ],
+    "dts": true,
+    "minify": false,
+    "sourcemap": true
+  }
+}

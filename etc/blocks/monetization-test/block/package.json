@@ -1,0 +1,43 @@
+{
+  "name": "@milaboratories/milaboratories.monetization-test",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "rm -rf block-pack/* && block-tools pack"
+  },
+  "files": [
+    "index.d.ts",
+    "index.js"
+  ],
+  "dependencies": {
+    "@milaboratories/milaboratories.monetization-test.workflow": "workspace:*",
+    "@milaboratories/milaboratories.monetization-test.model": "workspace:*",
+    "@milaboratories/milaboratories.monetization-test.ui": "workspace:*"
+  },
+  "block": {
+    "components": {
+      "workflow": "@milaboratories/milaboratories.monetization-test.workflow/dist/tengo/tpl/main.plj.gz",
+      "model": "@milaboratories/milaboratories.monetization-test.model/dist/model.json",
+      "ui": "@milaboratories/milaboratories.monetization-test.ui/dist"
+    },
+    "meta": {
+      "title": "Monetization Test",
+      "logo": "file:logos/block-logo.png",
+      "url": "https://github.com/platforma-open/mnz-test",
+      "docs": "https://github.com/platforma-open/mnz-test/docs",
+      "support": "mailto:support@milaboratories.com",
+      "description": "Test block for monetization",
+      "longDescription": "Monetization",
+      "changelog": "",
+      "tags": ["tutorial"],
+      "organization": {
+        "name": "MiLaboratories Inc",
+        "url": "https://milaboratories.com/",
+        "logo": "file:logos/block-logo.png"
+      }
+    }
+  },
+  "devDependencies": {
+    "@platforma-sdk/block-tools": "workspace:"
+  },
+  "packageManager": "pnpm@9.12.0"
+}
