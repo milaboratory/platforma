@@ -1,5 +1,11 @@
 # @milaboratories/pl-local
 
+## 1.1.15
+
+### Patch Changes
+
+- e9a6ef1: tengo: exec: mnz: add dry-run and n remaining runs
+
 ## 1.1.14
 
 ### Patch Changes
