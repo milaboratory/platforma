@@ -18,17 +18,17 @@ builder := func(productKey) {
 
 	self := undefined
 	self = ll.toStrict({
-		addFile: func(fileName, file, ...opts) {
+		addFile: func(fileName, file, params) {
 			ll.assert(is_string(fileName), "monetization.builder().addFile: fileName must be a string")
 			ll.assert(smart.isReference(file), "monetization.builder().addFile: file must be a reference")
 
 			fileName = path.canonize(fileName)
 			filesToAdd[fileName] = file
-			monetization.addOption(mnz, fileName, opts...)
+			monetization.addFileParams(mnz, fileName, params)
 			return self
 		},
 
-		writeFile: func(fileName, data, ...opts) {
+		writeFile: func(fileName, data, params) {
 			validation.assertType(data, ["or",
 				"string",
 				"bytes",
@@ -37,7 +37,7 @@ builder := func(productKey) {
 			fileName = path.canonize(fileName)
 
 			filesToWrite[fileName] = data
-			monetization.addOption(mnz, fileName, opts...)
+			monetization.addFileParams(mnz, fileName, params)
 
 			return self
 		},
