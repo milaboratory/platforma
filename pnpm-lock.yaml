@@ -670,6 +670,9 @@ importers:
       '@milaboratories/milaboratories.monetization-test.model':
         specifier: workspace:*
         version: link:../model
+      '@platforma-sdk/model':
+        specifier: workspace:*
+        version: link:../../../../sdk/model
       '@platforma-sdk/ui-vue':
         specifier: 'workspace:'
         version: link:../../../../sdk/ui-vue

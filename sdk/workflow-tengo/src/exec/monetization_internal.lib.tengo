@@ -92,8 +92,10 @@ _validateIsReady := func(mnz) {
 		"monetization.assertIsReady(): monetization does not fit schema")
 	ll.assert(len(mnz.productKey) > 0,
 		"monetization.assertIsReady(): product key must be set")
-	ll.assert(len(mnz.fileParams) > 0,
-		"monetization.assertIsReady(): at least 1 file param must be set")
+
+	// We don't need it, since we could run software without file params
+	// ll.assert(len(mnz.fileParams) > 0,
+	// 	"monetization.assertIsReady(): at least 1 file param must be set")
 }
 
 /** Enables the monetization for a product. */
