@@ -1,5 +1,13 @@
 # @milaboratories/pl-client
 
+## 2.7.6
+
+### Patch Changes
+
+- d1f4acf: Network lib upgrade
+- Updated dependencies [d1f4acf]
+  - @milaboratories/pl-http@1.0.5
+
 ## 2.7.5
 
 ### Patch Changes
