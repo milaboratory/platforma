@@ -117,7 +117,7 @@ catalog:
   'vite': ^5.4.11
   'rollup-plugin-node-externals': ^7.1.3
   '@rollup/plugin-node-resolve': ^16.0.0
-  'rollup-plugin-sourcemaps2': ^0.4.3
+  'rollup-plugin-sourcemaps2': ^0.5.0
   'vite-plugin-dts': ^4.4.0
   'tsc-alias': ^1.8.10
   'yarpm': ^1.2.0
@@ -128,7 +128,7 @@ catalog:
   'prettier': ^3.4.1
   '@protobuf-ts/plugin': ^2.9.4
 
-  '@changesets/cli': ^2.28.0
+  '@changesets/cli': ^2.28.1
 
   'eslint': ^9.16.0
   '@eslint/js': ^9.16.0
@@ -143,7 +143,7 @@ catalog:
 
   'oclif': ^4.16.2
 
-  'turbo': ^2.3.3
+  'turbo': ^2.4.4
 
   '@vitejs/plugin-vue': ^5.2.1
 
@@ -154,7 +154,7 @@ catalog:
   # Net
 
   'undici': ^7.2.3
-  '@grpc/grpc-js': ^1.12.5
+  '@grpc/grpc-js': ^1.12.6
   '@protobuf-ts/grpc-transport': ^2.9.4
   '@protobuf-ts/runtime': ^2.9.4
   '@protobuf-ts/runtime-rpc': ^2.9.4
@@ -193,7 +193,7 @@ catalog:
   '@milaboratories/pframes-node': &pframes-version 2.1.12
   '@milaboratories/pframes-rs-node': &pframes-rs-version 1.0.13
 
-  'remeda': ^2.19.2
+  'remeda': ^2.21.0
 
   'quickjs-emscripten': ^0.31.0
 
@@ -235,7 +235,7 @@ catalog:
   '@types/decompress': ^4.2.7
   '@types/readline-sync': ^1.4.8
   '@types/jest': ^29.5.14
-  '@types/http-proxy': ^1.17.15
+  '@types/http-proxy': ^1.17.16
   '@types/node': ~20.16.15
   '@types/eslint__js': ^8.42.3
   '@types/semver': ^7.5.8
@@ -245,5 +245,5 @@ catalog:
 
   # To remove
 
-  'lodash': ^4.17.14
+  'lodash': ^4.17.15
   '@types/lodash': ^4.17.13
