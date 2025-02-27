@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 2.13.3
+
+### Patch Changes
+
+- bb03724: update mnz-client small-binary
+
 ## 2.13.2
 
 ### Patch Changes
