@@ -1,5 +1,11 @@
 # @platforma-sdk/package-builder
 
+## 2.15.1
+
+### Patch Changes
+
+- d1f4acf: Network lib upgrade
+
 ## 2.15.0
 
 ### Minor Changes

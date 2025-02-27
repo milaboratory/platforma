@@ -1,5 +1,13 @@
 # @platforma-sdk/block-tools
 
+## 2.5.15
+
+### Patch Changes
+
+- d1f4acf: Network lib upgrade
+- Updated dependencies [d1f4acf]
+  - @milaboratories/pl-http@1.0.5
+
 ## 2.5.14
 
 ### Patch Changes
