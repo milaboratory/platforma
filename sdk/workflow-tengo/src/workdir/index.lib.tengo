@@ -256,7 +256,10 @@ _fill := func() {
 
 		/** Creates nested dirs. */
 		mkDirs: func(dirs) {
-			enum.each(dirs, self.mkDir)
+			for _, dir in dirs {
+				self.mkDir(dir)
+			}
+
 			return self
 		},
 
