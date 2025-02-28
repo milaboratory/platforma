@@ -1,5 +1,11 @@
 # @milaboratories/pl-client
 
+## 2.7.8
+
+### Patch Changes
+
+- 1628eec: increase tx timeout: it'll fix `addBlock` via SSH
+
 ## 2.7.7
 
 ### Patch Changes
