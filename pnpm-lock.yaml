@@ -7,10 +7,10 @@ settings:
 catalogs:
   default:
     '@aws-sdk/client-s3':
-      specifier: ^3.750.0
+      specifier: 3.750.0
       version: 3.750.0
     '@aws-sdk/lib-storage':
-      specifier: ^3.750.0
+      specifier: 3.750.0
       version: 3.750.0
     '@changesets/cli':
       specifier: ^2.28.1
@@ -22,7 +22,7 @@ catalogs:
       specifier: ^9.2.0
       version: 9.2.0
     '@grpc/grpc-js':
-      specifier: ^1.12.6
+      specifier: ~1.12.6
       version: 1.12.6
     '@jest/globals':
       specifier: ^29.7.0
@@ -46,16 +46,16 @@ catalogs:
       specifier: ^1.15.13
       version: 1.15.13
     '@protobuf-ts/grpc-transport':
-      specifier: ^2.9.4
+      specifier: 2.9.4
       version: 2.9.4
     '@protobuf-ts/plugin':
       specifier: ^2.9.4
       version: 2.9.4
     '@protobuf-ts/runtime':
-      specifier: ^2.9.4
+      specifier: 2.9.4
       version: 2.9.4
     '@protobuf-ts/runtime-rpc':
-      specifier: ^2.9.4
+      specifier: 2.9.4
       version: 2.9.4
     '@rollup/plugin-node-resolve':
       specifier: ^16.0.0
@@ -112,10 +112,10 @@ catalogs:
       specifier: ^33.0.4
       version: 33.0.4
     cacheable-lookup:
-      specifier: ^6.1.0
+      specifier: ~6.1.0
       version: 6.1.0
     canonicalize:
-      specifier: ^2.0.0
+      specifier: ~2.0.0
       version: 2.0.0
     d3:
       specifier: ^7.9.0
@@ -241,7 +241,7 @@ catalogs:
       specifier: ^8.17.0
       version: 8.17.0
     undici:
-      specifier: ^7.2.3
+      specifier: ~7.2.3
       version: 7.2.3
     upath:
       specifier: ^2.0.1
