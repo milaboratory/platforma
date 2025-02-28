@@ -168,8 +168,8 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 		ll.panic("no input spec provided")
 	}
 
-	if !smart.isResource(input.data) {
-		ll.panic("input data should be a resource")
+	if !smart.isReference(input.data) {
+		ll.panic("input data should be a reference to a field or resource")
 	}
 
 	validation.assertType(input.spec, pSpec.P_COLUMN_SPEC_SCHEMA)
@@ -330,12 +330,13 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 				if is_undefined(spec) {
 					ll.panic("unknown column: " + columnName)
 				}
+				return spec
+			} else {
+				if len(column) > 0 {
+					ll.panic("column name should not be provided for non-Xsv output")
+				}
+				return spec
 			}
-
-			if len(column) > 0 {
-				ll.panic("column name should not be provided for non-Xsv output")
-			}
-			return spec
 		},
 
 		/**
@@ -360,12 +361,12 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 					ll.panic("column name must be provided for Xsv output")
 				}
 				return renderResult.output(name + "/" + column[0])
+			} else {
+				if len(column) > 0 {
+					ll.panic("column name should not be provided for non-Xsv output")
+				}
+				return renderResult.output(name)
 			}
-
-			if len(column) > 0 {
-				ll.panic("column name should not be provided for non-Xsv output")
-			}
-			return renderResult.output(name)
 		},
 
 		/**
@@ -398,14 +399,14 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 					data: renderResult.output(name + "/" + columnName),
 					spec: spec
 				}
-			}
-
-			if len(column) > 0 {
-				ll.panic("column name should not be provided for non-Xsv output")
-			}
-			return {
-				data: renderResult.output(name),
-				spec: outputSpecs[name]
+			} else {
+				if len(column) > 0 {
+					ll.panic("column name should not be provided for non-Xsv output")
+				}
+				return {
+					data: renderResult.output(name),
+					spec: outputSpecs[name]
+				}
 			}
 		},
 
