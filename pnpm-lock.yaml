@@ -175,7 +175,7 @@ catalogs:
       specifier: ^3.4.1
       version: 3.4.1
     quickjs-emscripten:
-      specifier: ^0.31.0
+      specifier: 0.31.0
       version: 0.31.0
     readline-sync:
       specifier: ^1.4.10
