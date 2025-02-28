@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 2.13.5
+
+### Patch Changes
+
+- 2b7923e: fix workdirs createDirs
+
 ## 2.13.4
 
 ### Patch Changes
