@@ -54,6 +54,13 @@ ephemeralMapBuilder := undefined
 ephemeralBuilder := undefined
 
 /**
+ * Creates a null resource.
+ *
+ * @params data, optional, bytes that will go in Data of the resource. Don't use this argument.
+ */
+createNullResource := undefined
+
+/**
  * Create value resource
  *
  * @param resourceType { Name: "", Version: "" }
@@ -134,6 +141,7 @@ _getFutureField := func(from, name, fieldType, isEph) {
 
 	return field(futureField.ResultFID)
 }
+
 /**
  * Returns true if given object is a StdMap resource
  */
@@ -1142,6 +1150,15 @@ ephemeralBuilder = func(resourceType, ...data) {
 	return resourceBuilder(id)
 }
 
+createNullResource = func(...data) {
+	ll.assert(len(data) > 1, "can't create null resource with more than one argument")
+	if len(data) > 0 && !is_undefined(data[0]) {
+		return resource(tx.createValue(constants.RTYPE_NULL.Name, constants.RTYPE_NULL.Version, data[0]))
+	} else {
+		return resource(tx.createValue(constants.RTYPE_NULL.Name, constants.RTYPE_NULL.Version))
+	}
+}
+
 createValueResource = func(resourceType, data) {
 	ll.assert(data != undefined, "can't create resource with undefined data")
 	return resource(tx.createValue(resourceType.Name, resourceType.Version, data))
@@ -1203,5 +1220,6 @@ export ll.toStrict({
 	createMapResourceWithType: createMapResourceWithType,
 	createMapResource: createMapResource,
 	createBinaryMapResource: createBinaryMapResource,
-	createBlobMapResource: createBlobMapResource
+	createBlobMapResource: createBlobMapResource,
+	createNullResource: createNullResource
 })

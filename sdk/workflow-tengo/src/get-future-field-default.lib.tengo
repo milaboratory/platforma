@@ -1,0 +1,42 @@
+render := import(":render")
+smart := import(":smart")
+ll := import(":ll")
+assets := import(":assets")
+
+getFieldTpl := assets.importTemplate(":ll.get-field")
+
+/**
+ * Gets a field from a resource, with a default value if field is not found after inputs/outputs are locked
+ *
+ * @param from: reference - whether a resource or a field we get a field from.
+ * @param name: string - field name
+ * @param fieldType: field type: input, output
+ * @param defaultValue: any - default value to return if field not found after inputs/outputs are locked (default: null resource)
+ *
+ * @return field: smart field
+ */
+getFutureFieldWithDefault := func(from, name, fieldType, ...options) {
+	ll.assert(smart.isReference(from), "'from' must be either a resource or a field, got: %#v", from)
+	ll.assert(len(options) <= 1, "expected at most 1 option, got: %d", len(options))
+
+	// Set default value
+	defaultValue := undefined
+	if len(options) == 1 {
+		defaultValue = options[0]
+	} else {
+		defaultValue = smart.createNullResource()
+	}
+
+	tpl := render.createEphemeral(getFieldTpl, {
+		resource: from,
+		fieldName: smart.createJsonResource(name),
+		fieldType: smart.createJsonResource(fieldType),
+		defaultValue: defaultValue
+	})
+
+	return tpl.output("result")
+}
+
+export ll.toStrict({
+	getFutureFieldWithDefault: getFutureFieldWithDefault
+})

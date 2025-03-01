@@ -1,0 +1,175 @@
+// get-field
+
+/*
+ * Template definition
+ * This template implements a function similar to getFutureField but with a default value
+ * It waits for a field to become available and returns the field value
+ * If the field does not become available after inputs/outputs are locked, it returns the default value
+ */
+
+tx := import("tx")
+json := import("json")
+plapi := import("plapi")
+fmt := import("fmt")
+
+// System constants
+
+// Field name of a resource map with the inputs in renderer resource
+INPUTS_MAP_FIELD := "inputs"
+// Prefix of output fields template results in renderer resource
+TEMPLATE_OUTPUT_PREFIX := "outputs/"
+
+// Define constants for subscription keys
+RESOURCE_WAIT_SUBSCRIPTION_KEY := "resource-wait"
+FIELD_SUBSCRIPTION_KEY := "field-subscription"
+
+// Defines the template inputs and outputs
+renderer := plapi.getTemplate()
+
+// Get inputs field map
+inputFieldId := plapi.newFieldID(renderer.ID, INPUTS_MAP_FIELD)
+inputField := tx.getField(inputFieldId)
+
+// Define the template's output fields
+outputFieldIdResult := plapi.newFieldID(renderer.ID, TEMPLATE_OUTPUT_PREFIX + "result")
+
+if !inputField.IsSet {
+    plapi.setTemplateError("Input field is not set")
+}
+
+inputs := tx.getResource(inputField.Value)
+
+// Get input parameters
+resource := inputs.Inputs["resource"]
+fieldName := inputs.Inputs["fieldName"]
+fieldType := inputs.Inputs["fieldType"]
+defaultValue := inputs.Inputs["defaultValue"]
+
+if !fieldName.IsSet || !fieldType.IsSet {
+    plapi.setTemplateError("Required fields 'fieldName' and 'fieldType' must be set")
+}
+
+// Extract field name and type from JSON
+fieldNameStr := json.decode(string(tx.getResource(fieldName.Value).Data))
+fieldTypeStr := json.decode(string(tx.getResource(fieldType.Value).Data))
+
+// Validate that fieldNameStr is a string
+if !is_string(fieldNameStr) {
+    plapi.setTemplateError(fmt.sprintf("Field name must be a string, got: %T", fieldNameStr))
+}
+
+// Validate field type
+if fieldTypeStr != "input" && fieldTypeStr != "output" {
+    plapi.setTemplateError("Field type must be 'input' or 'output'")
+}
+
+// Function to get a field from a resource or returns undefined if the field does not exist
+getField := func(resourceObj, fieldName, fieldType) {
+    if fieldType == "input" {
+        if plapi.mapHasKey(resourceObj.Inputs, fieldName) {
+            return resourceObj.Inputs[fieldName]
+        }
+        return undefined
+    } else { // output
+        if plapi.mapHasKey(resourceObj.Outputs, fieldName) {
+            return resourceObj.Outputs[fieldName]
+        }
+        return undefined
+    }
+}
+
+// Function to check if fields are locked
+fieldsLocked := func(resourceObj, fieldType) {
+    if fieldType == "input" {
+        return resourceObj.InputsLocked
+    } else { // output
+        return resourceObj.OutputsLocked
+    }
+}
+
+// Creating outputs
+if plapi.isInit {
+	tx.createField(outputFieldIdResult, "output")
+	tx.lockOutputs(renderer.ID)
+}
+
+// Extract context into a constant for easier access
+ctx := plapi.getCtx()
+
+plapi.print("__THE_LOG__ ctx: %v", ctx)
+
+cleanup := func() {
+	if ctx.subscribedResource {
+		tx.unsubscribeFrom(RESOURCE_WAIT_SUBSCRIPTION_KEY)
+		ctx.subscribedResource = false
+	}
+
+	if ctx.subscribed {
+		tx.unsubscribeFrom(FIELD_SUBSCRIPTION_KEY)
+		ctx.subscribed = false
+	}
+}
+
+// Main function to simplify logic with returns
+
+main := func() {
+	// Check if resource is set and process it
+	if resource.IsSet {
+		// Cleanup previous subscriptions
+		if ctx.subscribedResource {
+			tx.unsubscribeFrom(RESOURCE_WAIT_SUBSCRIPTION_KEY)
+			ctx.subscribedResource = false
+		}
+
+		resourceId := resource.Value
+		resourceObj := tx.getResource(resourceId)
+
+		targetField := getField(resourceObj, fieldNameStr, fieldTypeStr)
+
+		if !is_undefined(targetField) {
+			tx.setFieldToField(outputFieldIdResult, targetField.ID)
+			cleanup()
+			return
+		}
+
+		// Check if inputs/outputs are locked
+		if fieldsLocked(resourceObj, fieldTypeStr) {
+			// Fields are locked and our field doesn't exist or has no value
+			// Return the default value
+			tx.setFieldToField(outputFieldIdResult, defaultValue.ID)
+			cleanup()
+			return
+		}
+
+		// Field doesn't exist or doesn't have a value yet and fields are not locked.
+		// We need to subscribe to field events and locks.
+
+		// Set the flag to not subscribe again on re-runs
+		if !ctx.subscribed {
+			// Subscribe to all relevant events in one subscription
+			events := {}
+
+			// Add field creation/value set events and lock events
+			events["FieldCreated"] = true
+			if fieldTypeStr == "input" {
+				events["InputsLocked"] = true
+			} else {
+				events["OutputsLocked"] = true
+			}
+
+			tx.subscribeTo(resourceId, FIELD_SUBSCRIPTION_KEY, events)
+			ctx.subscribed = true
+		}
+
+		// Waiting for the next event
+	} else {
+		// Resource not set, we need to subscribe to resource creation
+		if !ctx.subscribedResource {
+			resourceEvents := { "InputSet": true }
+			tx.subscribeTo(inputs.ID, RESOURCE_WAIT_SUBSCRIPTION_KEY, resourceEvents)
+			ctx.subscribedResource = true
+		}
+	}
+}
+
+main()

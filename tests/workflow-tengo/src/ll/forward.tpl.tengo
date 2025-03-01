@@ -1,0 +1,10 @@
+self := import("@platforma-sdk/workflow-tengo:tpl")
+
+// Define outputs
+self.defineOutputs("result")
+
+self.body(func(inputs) {
+    return {
+        result: self.rawInputs()["input"]
+    }
+})
