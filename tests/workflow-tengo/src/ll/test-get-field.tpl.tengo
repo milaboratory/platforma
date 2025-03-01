@@ -1,0 +1,32 @@
+self := import("@platforma-sdk/workflow-tengo:tpl")
+ll := import("@platforma-sdk/workflow-tengo:ll")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+ff := import("@platforma-sdk/workflow-tengo:get-future-field-default")
+
+// Define outputs
+self.defineOutputs("result")
+
+// Wait for inputs to be ready
+self.awaitState("InputsLocked")
+self.awaitState("fieldName", "ResourceReady")
+self.awaitState("fieldType", "ResourceReady")
+
+self.body(func(inputs) {
+    // Extract parameters from inputs
+    from := self.rawInputs()["resource"]
+    name := inputs.fieldName
+    fieldType := inputs.fieldType
+    defaultValue := self.rawInputs()["defaultValue"]
+
+    // Call the getFutureFieldWithDefault function with proper parameters
+    result := undefined
+    if is_undefined(defaultValue) {
+        result = ff.getFutureFieldWithDefault(from, name, fieldType)
+    } else {
+        result = ff.getFutureFieldWithDefault(from, name, fieldType, defaultValue)
+    }
+
+    return {
+        result: result
+    }
+})

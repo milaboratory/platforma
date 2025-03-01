@@ -2,6 +2,8 @@
 
 ll := import(":ll")
 
+RTYPE_NULL                := { Name: "Null",              Version: "1" }
+
 RTYPE_JSON                := { Name: "json/object",       Version: "1" }
 
 RTYPE_MAP                 := { Name: "std/map",           Version: "1" }
@@ -50,6 +52,7 @@ export ll.toStrict({
 	FTYPE_OUTPUT                : FTYPE_OUTPUT,
 	FTYPE_DYNAMIC               : FTYPE_DYNAMIC,
 
+	RTYPE_NULL                  : RTYPE_NULL,
 	RTYPE_BINARY_MAP            : RTYPE_BINARY_MAP,
 	RTYPE_BINARY_VALUE          : RTYPE_BINARY_VALUE,
 	RTYPE_BLOB_MAP              : RTYPE_BLOB_MAP,
