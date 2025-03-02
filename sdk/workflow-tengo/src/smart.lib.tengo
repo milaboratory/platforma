@@ -11,6 +11,7 @@ maps := import(":maps")
 json := import("json")
 times := import("times")
 constants := import(":constants")
+ffDefault := import(":ll.get-future-field-default")
 
 //////////////// definitions ////////////////
 
@@ -140,6 +141,54 @@ _getFutureField := func(from, name, fieldType, isEph) {
 	f.set(from)
 
 	return field(futureField.ResultFID)
+}
+
+/**
+ * Gets future input field given field name or a path
+ *
+ * @param resourceOrField: reference - resource or field to get future input field from
+ * @param nameOrPath: string|string[]|object|object[]
+ *                           - field name, an array representing a path to be traversed,
+ *                             an object with {name: string, optional?: any, eph?: bool} structure,
+ *                             an array of such objects/strings
+ * @param eph: bool (optional) - when false, the operation becomes pure function, waiting for resource
+ *                               to pass deduplication before resolution.
+ *
+ * @return field: smart field
+ */
+_getFutureInputField := func(resourceOrField, nameOrPath, ...eph) {
+	isEph := resourceOrField.isEphemeral()
+	if len(eph) > 0 && is_bool(eph[0]) {
+		isEph = eph[0]
+	}
+
+	// Helper function to process a single element (string or object)
+	processSingleElement := func(resource, element) {
+		if is_map(element) {
+			if len(eph) > 0 && is_bool(eph[0]) {
+				ll.panic("global eph is not supported for structural path elements")
+			}
+
+			if element.optional {
+				return resource.getFutureFieldOptional(element.name, "input", element.eph)
+			} else {
+				return resource.getFutureField(element.name, "input", element.eph)
+			}
+		} else {
+			// Handle string field name
+			return resource.getFutureField(element, "input", isEph)
+		}
+	}
+
+	if is_array(nameOrPath) {
+		current := resourceOrField
+		for i, pathElement in nameOrPath {
+			current = processSingleElement(current, pathElement)
+		}
+		return current
+	} else {
+		return processSingleElement(resourceOrField, nameOrPath)
+	}
 }
 
 /**
@@ -458,36 +507,47 @@ resource = func(r) {
 		 */
 		getFutureField: func(name, fieldType, ...eph) {
 			isEph := strictSelf.isEphemeral()
-			if len(eph) > 0 {
+			if len(eph) > 0 && is_bool(eph[0]) {
 				isEph = eph[0]
 			}
 			return _getFutureField(strictSelf, name, fieldType, isEph)
 		},
 
 		/**
+		 * Gets a field with a default value (null) if field is not found
+		 * after inputs/outputs are locked.
+		 *
+		 * @param name: string - field name
+		 * @param fieldType: field type - input, output
+		 * @param eph: bool (optional) - when false, the operation becomes pure function, waiting for resource
+		 *                               to pass deduplication before resolution.
+		 *
+		 * @return field: smart.field - field referencing the result or null if field not found
+		 */
+		getFutureFieldOptional: func(name, fieldType, ...eph) {
+			isEph := strictSelf.isEphemeral()
+			if len(eph) > 0 && is_bool(eph[0]) {
+				isEph = eph[0]
+			}
+
+			fieldId := ffDefault.getFutureFieldWithDefault(self.id, name, fieldType, isEph)
+			return field(fieldId)
+		},
+
+		/**
 		 * Get future input field given field name or a path
 		 *
-		 * @param nameOrPath: string|string[] - field name or an array representing a path to be traversed
+		 * @param nameOrPath: string|string[]|object|object[]
+		 *                             - field name, an array representing a path to be traversed,
+		 *                               an object with {name: string, optional?: any, eph?: bool} structure,
+		 *                               an array of such objects/strings
 		 * @param eph: bool (optional) - when false, the operation becomes pure function, waiting for resource
 		 *                               to pass deduplication before resolution.
 		 *
 		 * @return field: smart.field
 		 */
 		getFutureInputField: func(nameOrPath, ...eph) {
-			isEph := strictSelf.isEphemeral()
-			if len(eph) > 0 {
-				isEph = eph[0]
-			}
-
-			if is_array(nameOrPath) {
-				current := strictSelf
-				for name in nameOrPath {
-					current = current.getFutureField(name, "input", isEph)
-				}
-				return current
-			} else {
-				return self.getFutureField(nameOrPath, "input", isEph)
-			}
+			return _getFutureInputField(strictSelf, nameOrPath, eph...)
 		},
 
 		/**
@@ -853,10 +913,31 @@ field = func(f) {
 		 */
 		getFutureField: func(name, fieldType, ...eph) {
 			isEph := strictSelf.isEphemeral()
-			if len(eph) > 0 {
+			if len(eph) > 0 && is_bool(eph[0]) {
 				isEph = eph[0]
 			}
 			return _getFutureField(strictSelf, name, fieldType, isEph)
+		},
+
+		/**
+		 * Gets a field with a default value (null) if field is not found
+		 * after inputs/outputs are locked.
+		 *
+		 * @param name: string - field name
+		 * @param fieldType: field type: input, output
+		 * @param eph: bool (optional) - when false, the operation becomes pure function, waiting for resource
+		 *                               to pass deduplication before resolution.
+		 *
+		 * @return field: smart.field - field referencing the result or null if field not found
+		 */
+		getFutureFieldOptional: func(name, fieldType, ...eph) {
+			isEph := strictSelf.isEphemeral()
+			if len(eph) > 0 && is_bool(eph[0]) {
+				isEph = eph[0]
+			}
+
+			fieldId := ffDefault.getFutureFieldWithDefault(self.id, name, fieldType, isEph)
+			return field(fieldId)
 		},
 
 		/**
@@ -869,20 +950,7 @@ field = func(f) {
 		 * @return field: smart field
 		 */
 		getFutureInputField: func(nameOrPath, ...eph) {
-			isEph := strictSelf.isEphemeral()
-			if len(eph) > 0 {
-				isEph = eph[0]
-			}
-
-			if is_array(nameOrPath) {
-				current := strictSelf
-				for name in nameOrPath {
-					current = current.getFutureField(name, "input", eph...)
-				}
-				return current
-			} else {
-				return self.getFutureField(nameOrPath, "input", eph...)
-			}
+			return _getFutureInputField(strictSelf, nameOrPath, eph...)
 		},
 
 		/**
