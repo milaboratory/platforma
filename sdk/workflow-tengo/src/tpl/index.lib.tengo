@@ -217,21 +217,52 @@ tpl := func() {
 			if !self.isEphemeral() {
 				ll.panic("awaitState allowed only in ephemeral templates")
 			}
+			self.awaitStateIfEphemeral(pathAndState...)
+		},
+
+		/**
+		 * In ephemeral template, body will only be executed when corresponding input staet is
+		 * reached. If template is not ephemeral, this function does nothing.
+		 *
+		 * Signature:
+		 *   awaitStateIfEphemeral(path..., requestedState)
+		 *
+		 * Usage examples:
+		 *   awaitStateIfEphemeral("AllInputsSet") - all inputs of the inputs map must be set
+		 *   awaitStateIfEphemeral("inputName1", "ResourceReady") - resource in the input inputName1 must be ready
+		 *   awaitStateIfEphemeral("inputName1", "nestedField", "Set") - nested input field in the input
+		 *                              inputName1 must exist and point to some resource
+		 *   awaitStateIfEphemeral("inputName1", { wildcard: "*" }, "InputsLocked") - nested resource by the
+		 *                              inputName1 field must exist and have locked inputs and all
+		 *                              resources referenced by those fields must have all inputs
+		 *                              locked
+		 *   awaitStateIfEphemeral("inputName1", { match: "^some_prefix\\." }, "InputsLocked") - nested resource
+		 *                              by the inputName1 field must exist and have locked inputs and
+		 *                              all resources referenced by inputs with "some_prefix." prefix
+		 *                              must have all inputs locked
+		 *
+		 * Example, the following two expressions are equivalent:
+		 *   awaitStateIfEphemeral("inputName1", { wildcard: "*" }, "Set")
+		 *   awaitStateIfEphemeral("inputName1", { match: "^some_prefix\\." }, "Set")
+		 *   awaitStateIfEphemeral("inputName1", "AllInputsSet")
+		 *
+		 * Allowed states:
+		 *   Exists - field exists
+		 *   Set - field points to existing resource
+		 *   InputsLocked - field points to resource with locked inputs
+		 *   AllInputsSet - field points to resource with all inputs set
+		 *   ResourceReady - field points to ready resource
+		 */
+		awaitStateIfEphemeral: func(...pathAndState) {
+			if !self.isEphemeral() {
+				return
+			}
 			path := pathAndState[:len(pathAndState) - 1]
 			state := pathAndState[len(pathAndState) - 1]
-			// if len(self.prepareQueue) == 0 {
 			_stateRequests = append(_stateRequests, {
 				path: path,
 				state: state
 			})
-			// } else if len(self.prepareQueue) == 1 {
-			// 	_stateRequestsAfterPrepare = append(_stateRequestsAfterPrepare, {
-			// 		path: path,
-			// 		state: state
-			// 	})
-			// } else {
-			// 	ll.panic("Multiple prepare are not supported")
-			// }
 		},
 
 		/**
@@ -532,6 +563,7 @@ export ll.toStrict({
 	defineOutputs           : instance.defineOutputs,
 	prepare                 : instance.prepare,
 	awaitState              : instance.awaitState,
+	awaitStateIfEphemeral   : instance.awaitStateIfEphemeral,
 	delegate                : instance.routeDelegate,
 	validateInputs          : instance.validateInputs,
 	body                    : instance.body,

@@ -149,7 +149,7 @@ _getFutureField := func(from, name, fieldType, isEph) {
  * @param resourceOrField: reference - resource or field to get future input field from
  * @param nameOrPath: string|string[]|object|object[]
  *                           - field name, an array representing a path to be traversed,
- *                             an object with {name: string, optional?: any, eph?: bool} structure,
+ *                             an object with {name: string, optional?: bool, eph?: bool} structure,
  *                             an array of such objects/strings
  * @param eph: bool (optional) - when false, the operation becomes pure function, waiting for resource
  *                               to pass deduplication before resolution.
@@ -227,6 +227,13 @@ isAnyMapResource := func(r) {
  */
 isJsonResource := func(r) {
 	return isResource(r) && r.info().Type.Name == constants.RTYPE_JSON.Name
+}
+
+/**
+ * Returns true if given object is a null resource
+ */
+isNullResource := func(r) {
+	return isResource(r) && r.info().Type.Name == constants.RTYPE_NULL.Name
 }
 
 // deep check whether map has resources somewhere inside
@@ -538,13 +545,13 @@ resource = func(r) {
 		 * Get future input field given field name or a path
 		 *
 		 * @param nameOrPath: string|string[]|object|object[]
-		 *                             - field name, an array representing a path to be traversed,
-		 *                               an object with {name: string, optional?: any, eph?: bool} structure,
-		 *                               an array of such objects/strings
+		 *                           - field name, an array representing a path to be traversed,
+		 *                             an object with {name: string, optional?: bool, eph?: bool} structure,
+		 *                             an array of such objects/strings
 		 * @param eph: bool (optional) - when false, the operation becomes pure function, waiting for resource
 		 *                               to pass deduplication before resolution.
 		 *
-		 * @return field: smart.field
+		 * @return field: smart field
 		 */
 		getFutureInputField: func(nameOrPath, ...eph) {
 			return _getFutureInputField(strictSelf, nameOrPath, eph...)
@@ -943,7 +950,10 @@ field = func(f) {
 		/**
 		 * Get future input field given field name or a path
 		 *
-		 * @param nameOrPath: string|string[] - field name or an array representing a path to be traversed
+		 * @param nameOrPath: string|string[]|object|object[]
+		 *                           - field name, an array representing a path to be traversed,
+		 *                             an object with {name: string, optional?: bool, eph?: bool} structure,
+		 *                             an array of such objects/strings
 		 * @param eph: bool (optional) - when false, the operation becomes pure function, waiting for resource
 		 *                               to pass deduplication before resolution.
 		 *
@@ -1276,6 +1286,7 @@ export ll.toStrict({
 	isAnyMapResource: isAnyMapResource,
 	isLockedEphMapResource: isLockedEphMapResource,
 	isJsonResource: isJsonResource,
+	isNullResource: isNullResource,
 	resource: resource,
 	field: field,
 	resourceBuilder: resourceBuilder,
