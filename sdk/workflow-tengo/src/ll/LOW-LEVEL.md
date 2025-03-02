@@ -91,7 +91,6 @@ The `tx` library provides transaction-related operations:
 - `tx.createStruct(typeName, typeVersion, [data])` - Creates a structural resource
 - `tx.createEphemeral(typeName, typeVersion, [data])` - Creates an ephemeral resource
 - `tx.createValue(typeName, typeVersion, [data])` - Creates a value resource
-- `tx.lock(resourceId)` - Locks both inputs and outputs of a resource
 - `tx.lockOutputs(resourceId)` - Locks resource outputs, informing the platform that the resource will not get any new output fields. This is required for a resource to pass deduplication. This function does not return any value but may trigger events for resources monitoring this resource's lock status. After locking outputs, the list of output fields becomes final.
 - `tx.lockInputs(resourceId)` - Locks resource inputs, informing the platform that the resource will not get any new input fields. This is required when a client creates a resource without a schema and wants controllers to start calculations. Most controllers will not start calculations even when all inputs have their values if the inputs list is not locked. This function does not return any value but may trigger events for resources monitoring this resource's lock status. After locking inputs, the list of input fields becomes final.
 

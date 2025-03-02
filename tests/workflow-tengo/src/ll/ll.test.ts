@@ -3,10 +3,13 @@ import { Pl, field, resourceType, toGlobalFieldId } from '@milaboratories/pl-mid
 import { sleep } from '@milaboratories/ts-helpers';
 import { tplTest } from '@platforma-sdk/test';
 
-tplTest(
-  'should resolve future field with default value: field exists',
+tplTest.for([
+  { isEph: true, name: 'ephemeral field' },
+  { isEph: false, name: 'non-ephemeral field' },
+])(
+  'should resolve future field with default value: field exists ($name)',
   { timeout: 10000 },
-  async ({ helper, expect }) => {
+  async ({ isEph }, { helper, expect }) => {
     // Create a sample resource with fields
     const result = await helper.renderTemplate(
       true,
@@ -22,8 +25,11 @@ tplTest(
         tx.lock(resourceWithField);
         return {
           resource: resourceWithField,
-          fieldName: tx.createValue(Pl.JsonObject, JSON.stringify('x')),
-          fieldType: tx.createValue(Pl.JsonObject, JSON.stringify('input')),
+          fieldInfo: tx.createValue(Pl.JsonObject, JSON.stringify({
+            name: 'x',
+            type: 'input',
+            isEph: isEph,
+          })),
           defaultValue: tx.createValue(Pl.JsonObject, JSON.stringify('default-value')),
         };
       },
@@ -35,10 +41,13 @@ tplTest(
   },
 );
 
-tplTest(
-  'should resolve future field with default value: field does not exist',
+tplTest.for([
+  { isEph: true, name: 'ephemeral field' },
+  { isEph: false, name: 'non-ephemeral field' },
+])(
+  'should resolve future field with default value: field does not exist ($name)',
   { timeout: 10000 },
-  async ({ helper, expect }) => {
+  async ({ isEph }, { helper, expect }) => {
     // Create a sample resource without the target field
     const result = await helper.renderTemplate(
       true,
@@ -54,8 +63,11 @@ tplTest(
         tx.lock(resourceWithoutField);
         return {
           resource: resourceWithoutField,
-          fieldName: tx.createValue(Pl.JsonObject, JSON.stringify('nonExistentField')),
-          fieldType: tx.createValue(Pl.JsonObject, JSON.stringify('input')),
+          fieldInfo: tx.createValue(Pl.JsonObject, JSON.stringify({
+            name: 'nonExistentField',
+            type: 'input',
+            isEph: isEph,
+          })),
           defaultValue: tx.createValue(Pl.JsonObject, JSON.stringify('default-value')),
         };
       },
@@ -67,10 +79,13 @@ tplTest(
   },
 );
 
-tplTest(
-  'should resolve future field with default value: field does not exist & default appears later',
+tplTest.for([
+  { isEph: true, name: 'ephemeral field' },
+  { isEph: false, name: 'non-ephemeral field' },
+])(
+  'should resolve future field with default value: field does not exist & default appears later ($name)',
   { timeout: 10000 },
-  async ({ helper, pl, expect }) => {
+  async ({ isEph }, { helper, pl, expect }) => {
     // Create a sample resource without the target field
     let defaultValueField: FieldId | undefined = undefined;
     const result = await helper.renderTemplate(
@@ -95,8 +110,11 @@ tplTest(
 
         return {
           resource: resourceWithoutField,
-          fieldName: tx.createValue(Pl.JsonObject, JSON.stringify('nonExistentField')),
-          fieldType: tx.createValue(Pl.JsonObject, JSON.stringify('input')),
+          fieldInfo: tx.createValue(Pl.JsonObject, JSON.stringify({
+            name: 'nonExistentField',
+            type: 'input',
+            isEph: isEph,
+          })),
           defaultValue: defaultValueField,
         };
       },
@@ -115,10 +133,13 @@ tplTest(
   },
 );
 
-tplTest(
-  'should resolve future field with default value: when target resource appears later',
+tplTest.for([
+  { isEph: true, name: 'ephemeral field' },
+  { isEph: false, name: 'non-ephemeral field' },
+])(
+  'should resolve future field with default value: when target resource appears later ($name)',
   { timeout: 10000 },
-  async ({ helper, pl, expect }) => {
+  async ({ isEph }, { helper, pl, expect }) => {
     // Create a holder for the resource that will appear later
     let resourceHolderField: FieldId | undefined = undefined;
     const result = await helper.renderTemplate(
@@ -136,8 +157,11 @@ tplTest(
 
         return {
           resource: resourceHolderFieldLocal,
-          fieldName: tx.createValue(Pl.JsonObject, JSON.stringify('x')),
-          fieldType: tx.createValue(Pl.JsonObject, JSON.stringify('input')),
+          fieldInfo: tx.createValue(Pl.JsonObject, JSON.stringify({
+            name: 'x',
+            type: 'input',
+            isEph: isEph,
+          })),
           defaultValue: tx.createValue(Pl.JsonObject, JSON.stringify('default-value')),
         };
       },
