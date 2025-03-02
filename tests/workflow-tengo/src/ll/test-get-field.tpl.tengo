@@ -1,7 +1,7 @@
 self := import("@platforma-sdk/workflow-tengo:tpl")
 ll := import("@platforma-sdk/workflow-tengo:ll")
 smart := import("@platforma-sdk/workflow-tengo:smart")
-ff := import("@platforma-sdk/workflow-tengo:get-future-field-default")
+ff := import("@platforma-sdk/workflow-tengo:ll.get-future-field-default")
 
 // Define outputs
 self.defineOutputs("result")
