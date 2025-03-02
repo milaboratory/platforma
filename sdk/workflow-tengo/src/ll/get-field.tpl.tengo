@@ -26,6 +26,10 @@ FIELD_SUBSCRIPTION_KEY := "field-subscription"
 // Defines the template inputs and outputs
 renderer := plapi.getTemplate()
 
+// Check if this is a non-ephemeral template render
+rendererObj := tx.getResource(renderer.ID)
+isEphemeral := rendererObj.Type.Name == "EphRenderTemplate"
+
 // Get inputs field map
 inputFieldId := plapi.newFieldID(renderer.ID, INPUTS_MAP_FIELD)
 inputField := tx.getField(inputFieldId)
@@ -87,16 +91,8 @@ fieldsLocked := func(resourceObj, fieldType) {
     }
 }
 
-// Creating outputs
-if plapi.isInit {
-	tx.createField(outputFieldIdResult, "output")
-	tx.lockOutputs(renderer.ID)
-}
-
 // Extract context into a constant for easier access
 ctx := plapi.getCtx()
-
-plapi.print("__THE_LOG__ ctx: %v", ctx)
 
 cleanup := func() {
 	if ctx.subscribedResource {
@@ -172,4 +168,17 @@ main := func() {
 	}
 }
 
-main()
+// Creating outputs
+if plapi.isInit {
+	tx.createField(outputFieldIdResult, "output")
+	tx.lockOutputs(renderer.ID)
+}
+
+if !isEphemeral {
+	// For non-ephemeral renders, only run main after initialization
+    if !plapi.isInit {
+        main()
+    }
+} else {
+    main()
+}

@@ -4,8 +4,8 @@ import { sleep } from '@milaboratories/ts-helpers';
 import { tplTest } from '@platforma-sdk/test';
 
 tplTest.for([
-  { isEph: true, name: 'ephemeral field' },
-  { isEph: false, name: 'non-ephemeral field' },
+  { isEph: true, name: 'ephemeral mode' },
+  { isEph: false, name: 'pure field' },
 ])(
   'should resolve future field with default value: field exists ($name)',
   { timeout: 10000 },
@@ -42,8 +42,8 @@ tplTest.for([
 );
 
 tplTest.for([
-  { isEph: true, name: 'ephemeral field' },
-  { isEph: false, name: 'non-ephemeral field' },
+  { isEph: true, name: 'ephemeral mode' },
+  { isEph: false, name: 'pure field' },
 ])(
   'should resolve future field with default value: field does not exist ($name)',
   { timeout: 10000 },
@@ -80,8 +80,8 @@ tplTest.for([
 );
 
 tplTest.for([
-  { isEph: true, name: 'ephemeral field' },
-  { isEph: false, name: 'non-ephemeral field' },
+  { isEph: true, name: 'ephemeral mode' },
+  { isEph: false, name: 'pure field' },
 ])(
   'should resolve future field with default value: field does not exist & default appears later ($name)',
   { timeout: 10000 },
@@ -134,8 +134,8 @@ tplTest.for([
 );
 
 tplTest.for([
-  { isEph: true, name: 'ephemeral field' },
-  { isEph: false, name: 'non-ephemeral field' },
+  { isEph: true, name: 'ephemeral mode' },
+  { isEph: false, name: 'pure field' },
 ])(
   'should resolve future field with default value: when target resource appears later ($name)',
   { timeout: 10000 },
@@ -190,8 +190,8 @@ tplTest.for([
 );
 
 tplTest.for([
-  { isEph: true, name: 'ephemeral field' },
-  { isEph: false, name: 'non-ephemeral field' },
+  { isEph: true, name: 'ephemeral mode' },
+  { isEph: false, name: 'pure field' },
 ])(
   'should resolve future field with default value: when target resource appears later with delayed locking and field creation ($name)',
   { timeout: 10000 },
@@ -262,8 +262,8 @@ tplTest.for([
 );
 
 tplTest.for([
-  { isEph: true, name: 'ephemeral field' },
-  { isEph: false, name: 'non-ephemeral field' },
+  { isEph: true, name: 'ephemeral mode' },
+  { isEph: false, name: 'pure field' },
 ])(
   'should resolve future field with default value: field does not exist & target resource appears later with delayed locking and field creation ($name)',
   { timeout: 10000 },
