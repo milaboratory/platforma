@@ -60,7 +60,7 @@ getFutureFieldWithDefault := func(from, name, fieldType, isEph, ...options) {
 	if len(options) == 1 {
 		defaultValue = options[0]
 	} else {
-		defaultValue = tx.createValue("Null", "1")
+		defaultValue = tx.createValue("Null", "1", "")
 	}
 
 	// Get template ID for "ll.get-field"

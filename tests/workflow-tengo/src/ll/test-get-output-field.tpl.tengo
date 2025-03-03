@@ -18,7 +18,6 @@ self.body(func(inputs) {
     isEph := fieldInfo.isEph
 
 	from := self.rawInputs()["resource"]
-    defaultValue := self.rawInputs()["defaultValue"]
 
 	f := renderer.createUniversal(forwarder, isEph, {
 		input: from

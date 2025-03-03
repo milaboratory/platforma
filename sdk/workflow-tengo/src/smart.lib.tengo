@@ -157,32 +157,41 @@ _getFutureField := func(from, name, fieldType, isEph) {
  * @return field: smart field
  */
 _buildFutureField := func(resourceOrField, nameOrPath, ...eph) {
-	isEph := resourceOrField.isEphemeral()
+	globalIsEph := undefined
 	if len(eph) > 0 && is_bool(eph[0]) {
-		isEph = eph[0]
+		globalIsEph = eph[0]
 	}
+
+	// set to true if optional is encountered, all further fields are resolved as optional
+	optional := false
 
 	// Helper function to process a single element (string or object)
 	processSingleElement := func(resource, element) {
+		// Default field type is "input" if not specified
+		fieldType := "input"
+		fieldName := undefined
+		isEph := globalIsEph
+
 		if is_map(element) {
-			if len(eph) > 0 && is_bool(eph[0]) {
+			if !is_undefined(globalIsEph) {
 				ll.panic("global eph is not supported for structural path elements")
 			}
 
-			// Default field type is "input" if not specified
-			fieldType := "input"
 			if !is_undefined(element.type) {
 				fieldType = element.type
 			}
 
-			if element.optional {
-				return resource.getFutureFieldOptional(element.name, fieldType, element.eph)
-			} else {
-				return resource.getFutureField(element.name, fieldType, element.eph)
-			}
+			fieldName = element.name
+			optional = optional || element.optional
+			isEph = element.eph
 		} else {
-			// Handle string field name, default to "input" type
-			return resource.getFutureField(element, "input", isEph)
+			fieldName = element
+		}
+
+		if optional {
+			return resource.getFutureFieldOptional(fieldName, fieldType, isEph)
+		} else {
+			return resource.getFutureField(fieldName, fieldType, isEph)
 		}
 	}
 
