@@ -1,0 +1,20 @@
+tpl := import(":tpl")
+smart := import(":smart")
+xsvIF := import(":pframes.xsv-import-file")
+
+tpl.body(func(inputs) {
+	params := inputs.params
+	xsvType := params.xsvType
+	spec := params.spec
+	ops := params.ops
+
+	if is_undefined(inputs.xsvFile) {
+		return {
+			result: smart.createNullResource()
+		}
+	} else {
+		return {
+			result: xsvIF.importFile(inputs.xsvFile, xsvType, spec, ops...)
+		}
+	}
+})

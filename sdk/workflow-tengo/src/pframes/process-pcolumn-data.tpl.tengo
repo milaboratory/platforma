@@ -129,11 +129,24 @@ self.body(func(inputs) {
 		}
 
 		outputMaps := {}
+		optionalOutputs := {}
 
 		for output in outputs {
 			if !is_map(output) {
 				ll.panic("malformed output: %v", output)
 			}
+
+			reultMightBeNull := false
+			for p in output.path {
+				if is_map(p) && p.optional {
+					reultMightBeNull = true
+					break
+				}
+			}
+			if reultMightBeNull {
+				optionalOutputs[output.name] = true
+			}
+
 			if output.type == "Resource" {
 				outputMaps[output.name] = smart.structBuilder(
 					pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP,
@@ -206,12 +219,33 @@ self.body(func(inputs) {
 				if is_undefined(path) {
 					path = [output.name]
 				}
-				ref := renderResult.output(path[0]).getFutureInputField(path[1:], eph)
+
+				outputElement := path[0]
+				outputName := undefined
+				outputIsOptional := false
+				if is_map(outputElement) {
+					outputName = outputElement.name
+					outputIsOptional = bool(outputElement.optional)
+				} else {
+					outputName = outputElement
+				}
+
+				ref := undefined
+				if outputIsOptional {
+					ref = renderResult.optionalOutput(outputName, eph)
+				} else {
+					ref = renderResult.output(outputName, eph)
+				}
+
+				ref = ref.getFutureInputField(path[1:], eph)
+
+				reultMightBeNull := optionalOutputs[output.name]
+
 				if output.type == "Xsv" {
-					pf := xsv.importFile(ref, output.xsvType, output.settings, { dataOnly: true })
+					pf := xsv.importFile(ref, output.xsvType, output.settings, { dataOnly: true, allowNullInput: reultMightBeNull })
 					for col in output.settings.columns {
 						id := pUtil.xsvColumnId(col)
-						data := pf.getFutureInputField(id)
+						data := pf.getFutureInputField({name: id, optional: reultMightBeNull})
 						outputMaps[output.name][id][sGroupKey] = data
 					}
 				} else {

@@ -1,0 +1,13 @@
+self := import("@platforma-sdk/workflow-tengo:tpl")
+
+// Define outputs
+self.defineOutputs("result")
+
+self.body(func(inputs) {
+    // Extract parameters from inputs
+    input := self.rawInputs()["input"]
+
+    return {
+        result: input
+    }
+})
