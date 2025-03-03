@@ -200,7 +200,7 @@ function parseSingleSourceLine(
     if (multilineCommentEndRE.exec(line)) {
       context.isInCommentBlock = false;
     }
-    return { line, context, artifact: undefined, option: undefined };
+    return { line: '', context, artifact: undefined, option: undefined };
   }
 
   if (compilerOptionRE.exec(line)) {
@@ -221,12 +221,12 @@ function parseSingleSourceLine(
   }
 
   if (singlelineCommentRE.exec(line)) {
-    return { line, context, artifact: undefined, option: undefined };
+    return { line: '', context, artifact: undefined, option: undefined };
   }
 
   if (multilineCommentStartRE.exec(line)) {
     context.isInCommentBlock = true;
-    return { line, context, artifact: undefined, option: undefined };
+    return { line: '', context, artifact: undefined, option: undefined };
   }
 
   if (emptyLineRE.exec(line)) {
