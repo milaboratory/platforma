@@ -91,6 +91,44 @@ fieldsLocked := func(resourceObj, fieldType) {
     }
 }
 
+/**
+ * Safe way to check if method exists in a builtin module or a library
+ *
+ * @param module: module - builtin module or tengo library
+ * @param methodName: string - name of a method to be checked
+ *
+ * @return bool - true when method exists, false otherwise
+ */
+methodExists := func(module, methodName) {
+	if plapi.isStrictMap(module) {
+		if !is_callable(plapi.mapHasKey) {
+			module = plapi.strictToMap(module)
+
+		} else {
+			if !plapi.mapHasKey(module, methodName) {
+				return false
+			}
+		}
+	}
+
+	if is_undefined(module[methodName]) {
+		return false
+	}
+
+	return true
+}
+
+/**
+ * Provides current API version available at runtime
+ */
+apiVersion := func() {
+	if !methodExists(plapi, "apiVersion") {
+		return 0 // before we introduced apiVersion
+	}
+
+	return plapi.apiVersion
+}
+
 // Extract context into a constant for easier access
 ctx := plapi.getCtx()
 
@@ -110,7 +148,7 @@ cleanup := func() {
 
 main := func() {
 	// Check if resource is set and process it
-	if resource.IsSet {
+	if resource.IsSet && resource.Value != 0 { // 0 means field is set to error
 		// Cleanup previous subscriptions
 		if ctx.subscribedResource {
 			tx.unsubscribeFrom(RESOURCE_WAIT_SUBSCRIPTION_KEY)
@@ -150,6 +188,9 @@ main := func() {
 			if fieldTypeStr == "input" {
 				events["InputsLocked"] = true
 			} else {
+				if apiVersion() <= 5 {
+					plapi.setTemplateError("Optional output field resolution is not supported in this platforma backend version, please upgrade to the latest version")
+				}
 				events["OutputsLocked"] = true
 			}
 
