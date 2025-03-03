@@ -1,5 +1,16 @@
 # @platforma-sdk/bootstrap
 
+## 3.2.0
+
+### Minor Changes
+
+- 39c113b: Release pl=1.23.0
+
+### Patch Changes
+
+- Updated dependencies [39c113b]
+  - @milaboratories/pl-deployments@1.2.0
+
 ## 3.1.24
 
 ### Patch Changes
