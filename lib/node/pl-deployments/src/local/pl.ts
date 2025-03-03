@@ -169,7 +169,7 @@ export async function localPlatformaInit(logger: MiLogger, _ops: LocalPlOptions)
 
     const processOpts: ProcessOptions = {
       cmd: binaryPath,
-      args: ['-config', configPath],
+      args: ['--config', configPath],
       opts: {
         env: { ...process.env },
         cwd: workDir,
