@@ -1,0 +1,32 @@
+self := import("@platforma-sdk/workflow-tengo:tpl")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+renderer := import("@platforma-sdk/workflow-tengo:render")
+
+// Define outputs
+self.defineOutputs("result")
+
+// Wait for inputs to be ready
+self.awaitState("InputsLocked")
+self.awaitState("fieldInfo", "ResourceReady")
+
+forwarder := assets.importTemplate(":ll.forwarder")
+
+self.body(func(inputs) {
+    // Get the field info from the combined JSON resource
+    fieldInfo := inputs.fieldInfo
+    path := fieldInfo.path
+    isEph := fieldInfo.isEph
+
+	from := self.rawInputs()["resource"]
+    defaultValue := self.rawInputs()["defaultValue"]
+
+	f := renderer.createUniversal(forwarder, isEph, {
+		input: from
+	})
+
+	result := f.resolveOutput(path)
+
+    return {
+        result: result
+    }
+})

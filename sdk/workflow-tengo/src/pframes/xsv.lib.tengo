@@ -6,15 +6,13 @@ validation := import(":validation")
 constants := import(":pframes.constants")
 objects := import(":objects")
 render := import(":render")
-exec := import(":exec")
-json := import("json")
-text := import("text")
+maps := import("json")
 util := import(":pframes.util")
 ll := import(":ll")
 assets := import(":assets")
+xsvIF := import(":pframes.xsv-import-file")
 
-transposeXsvSw := assets.importSoftware("@platforma-open/milaboratories.software-small-binaries:table-converter")
-pfconvSw := assets.importSoftware("@milaboratories/software-pframes-conv:main")
+importXsvIfNullTpl := assets.importTemplate(":pframes.xsv-import-if-not-null")
 
 /**
  * Calculate axes spec from pfconv spec
@@ -67,6 +65,7 @@ getColumnSpec := func(axesSpec, col) {
  *                 dataOnly: boolean  - set to true to completely skip creation of specs
  *                 splitDataAndSpec: boolean  - if true, resulting map will have nested structures,
  *                                              with "spec" + "data" fields in nested maps
+ *                 allowNullInput: boolean - if true, null input file is allowed and will return null resource
  *                 transpose: object - if specified, then the input table will be transposed
  *                            {
  *                              separator: string - (optional) use separator instead of inferring from the file extension
@@ -87,105 +86,18 @@ importFile := func(xsvFile, xsvType, spec, ...ops) {
 
 	validation.assertType(spec, util.PFCONV_IMPORT_CFG_SCHEMA)
 
-	xsvFileName := "file." + xsvType
-
-	ops := renderOps({ dataOnly: false, splitDataAndSpec: false }, ops...)
-
-	if ops.transpose != undefined {
-
-		tops := ops.transpose
-
-		transposedFileName := "fileTransposed." + xsvType
-
-		// convert csv to p-frame and read resulting data
-		transposeXsv := exec.builder().
-			software(transposeXsvSw).
-			printErrStreamToStdout().
-			inLightQueue()
-
-		if (tops.separator != undefined) {
-			transposeXsv = transposeXsv.arg("-input-separator").arg(tops.separator)
-		}
-		if (tops.pAxisIdx != undefined) {
-			transposeXsv = transposeXsv.arg("-sample-column-i").arg("" + tops.pAxisIdx) // always convert to string
-		}
-		if (tops.pAxisName != undefined) {
-			transposeXsv = transposeXsv.arg("-sample-column-name").arg(tops.pAxisName)
-		}
-		if (tops.pAxisSearch != undefined) {
-			transposeXsv = transposeXsv.arg("-sample-column-search").arg(tops.pAxisSearch)
-		}
-		if (tops.pAxisNameOverride != undefined) {
-			transposeXsv = transposeXsv.arg("-sample-label").arg(tops.pAxisNameOverride)
-		}
-		if (tops.sAxisSearch != undefined) {
-			transposeXsv = transposeXsv.arg("-metric-columns-search").arg(tops.sAxisSearch)
-		}
-		if (tops.sAxisName != undefined) {
-			transposeXsv = transposeXsv.arg("-metric-label").arg(tops.sAxisName)
-		}
-		if (tops.valueName != undefined) {
-			transposeXsv = transposeXsv.arg("-value-label").arg(tops.valueName)
-		}
-		if (tops.separatorOverride != undefined) {
-			transposeXsv = transposeXsv.arg("-separator").arg(tops.separatorOverride)
-		}
-
-		transposeXsv = transposeXsv.
-			arg(xsvFileName).
-			arg(transposedFileName).
-			addFile(xsvFileName, xsvFile).
-			saveFile(transposedFileName).
-			run()
-
-		xsvFile = transposeXsv.getFile(transposedFileName)
-	}
-
-	// import p-frame from directory tpl
-	importDirTpl := assets.importTemplate(":pframes.import-dir")
-
-	// spec without any metadata (for caching purposes)
-	pureSpec := util.purifySpec(spec)
-
-	// convert csv to p-frame and read resulting data
-	pfconv := exec.builder().
-		software(pfconvSw).
-		printErrStreamToStdout().
-		inLightQueue().
-		arg("importCsv").
-		arg(xsvFileName).
-		arg("-p").arg("spec.json").
-		arg("-o").arg("out").
-		addFile(xsvFileName, xsvFile).
-		writeFile("spec.json", json.encode(pureSpec)).
-		processWorkdir("pf", importDirTpl, pureSpec).
-		run()
-
-	// p-columns data
-	pf := pfconv.getProcessorResult("pf")
-	if ops.dataOnly {
-		// @TODO discuss, as it changes the type of the return from map to object
-		return pf
-	}
-
-	axesSpec := getAxesSpec(spec)
-
-	result := {}
-	for col in spec.columns {
-		id := util.xsvColumnId(col)
-
-		if ops.splitDataAndSpec {
-			result[id] = {
-				data: pf.getFutureInputField(id),
-				spec: getColumnSpec(axesSpec, col)
+	if ops.allowNullInput {
+		return render.create(importXsvIfNullTpl, {
+			xsvFile: xsvFile,
+			params: {
+				xsvType: xsvType,
+				spec: spec,
+				ops: maps.merge(ops, { allowNullInput: undefined })
 			}
-		} else {
-			result[id + ".data"] = pf.getFutureInputField(id)
-			result[id + ".spec"] = getColumnSpec(axesSpec, col)
-		}
+		}).output("result")
 	}
 
-	return result
+	return xsvIF.xsvImportFile(xsvFile, xsvType, spec, ops...)
 }
 
 /**

@@ -144,19 +144,19 @@ _getFutureField := func(from, name, fieldType, isEph) {
 }
 
 /**
- * Gets future input field given field name or a path
+ * Gets future field given field name or a path
  *
- * @param resourceOrField: reference - resource or field to get future input field from
+ * @param resourceOrField: reference - resource or field to get future field from
  * @param nameOrPath: string|string[]|object|object[]
  *                           - field name, an array representing a path to be traversed,
- *                             an object with {name: string, optional?: bool, eph?: bool} structure,
+ *                             an object with {name: string, type?: string, optional?: bool, eph?: bool} structure,
  *                             an array of such objects/strings
  * @param eph: bool (optional) - when false, the operation becomes pure function, waiting for resource
  *                               to pass deduplication before resolution.
  *
  * @return field: smart field
  */
-_getFutureInputField := func(resourceOrField, nameOrPath, ...eph) {
+_buildFutureField := func(resourceOrField, nameOrPath, ...eph) {
 	isEph := resourceOrField.isEphemeral()
 	if len(eph) > 0 && is_bool(eph[0]) {
 		isEph = eph[0]
@@ -169,13 +169,19 @@ _getFutureInputField := func(resourceOrField, nameOrPath, ...eph) {
 				ll.panic("global eph is not supported for structural path elements")
 			}
 
+			// Default field type is "input" if not specified
+			fieldType := "input"
+			if !is_undefined(element.type) {
+				fieldType = element.type
+			}
+
 			if element.optional {
-				return resource.getFutureFieldOptional(element.name, "input", element.eph)
+				return resource.getFutureFieldOptional(element.name, fieldType, element.eph)
 			} else {
-				return resource.getFutureField(element.name, "input", element.eph)
+				return resource.getFutureField(element.name, fieldType, element.eph)
 			}
 		} else {
-			// Handle string field name
+			// Handle string field name, default to "input" type
 			return resource.getFutureField(element, "input", isEph)
 		}
 	}
@@ -189,6 +195,13 @@ _getFutureInputField := func(resourceOrField, nameOrPath, ...eph) {
 	} else {
 		return processSingleElement(resourceOrField, nameOrPath)
 	}
+}
+
+/**
+ * @deprecated Use buildFutureField instead.
+ */
+_getFutureInputField := func(resourceOrField, nameOrPath, ...eph) {
+	return _buildFutureField(resourceOrField, nameOrPath, eph...)
 }
 
 /**
@@ -579,6 +592,20 @@ resource = func(r) {
 			}
 
 			return self.getFutureField(name, "output", isEph)
+		},
+
+		/**
+		 * Build a future field by traversing a specified path
+		 *
+		 * @param nameOrPath: string|string[]|object|object[]
+		 *                           - field name, an array representing a path to be traversed,
+		 *                             an object with {name: string, type?: string, optional?: bool, eph?: bool} structure,
+		 *                             an array of such objects/strings
+		 *
+		 * @return field: smart field
+		 */
+		buildFutureField: func(nameOrPath) {
+			return _buildFutureField(self, nameOrPath)
 		},
 
 		/**
@@ -985,6 +1012,20 @@ field = func(f) {
 			}
 
 			return self.getFutureField(name, "output", isEph)
+		},
+
+		/**
+		 * Build a future field by traversing a specified path
+		 *
+		 * @param nameOrPath: string|string[]|object|object[]
+		 *                           - field name, an array representing a path to be traversed,
+		 *                             an object with {name: string, type?: string, optional?: bool, eph?: bool} structure,
+		 *                             an array of such objects/strings
+		 *
+		 * @return field: smart field
+		 */
+		buildFutureField: func(nameOrPath) {
+			return _buildFutureField(strictSelf, nameOrPath)
 		}
 	}
 

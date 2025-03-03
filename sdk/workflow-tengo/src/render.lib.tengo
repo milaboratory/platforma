@@ -10,6 +10,7 @@ constants := import(":constants")
 oop := import(":oop")
 tx := import("tx")
 times := import("times")
+maps := import(":maps")
 
 
 _SUBSCRIPTION_FIELD := "subscription"
@@ -77,6 +78,60 @@ createUniversal := func(tpl, isEph, inputs, ...opts) {
 			}
 
 			return out
+		},
+
+		/**
+		 * Returns an output field with a given name, if not exists, returns null resource
+		 */
+		optionalOutput: func(name, ...cache) {
+			ll.assert(len(cache) == 0 || is_int(cache[0]), "cache should be a number (use 'times' tengo library), got: %v", cache)
+			out := renderer.getFutureFieldOptional(tplutil.TEMPLATE_OUTPUT_PREFIX + name, "output", isEph)
+			if len(cache) > 0 && cache[0] > 0 {
+				cache = cache[0]
+				tx.cacheSetToField(out.id, cache)
+			}
+
+			return out
+		},
+
+		/**
+		 * Resolves output field by path
+		 *
+		 * @param path: array of strings or maps - path elements to navigate to the field
+		 * @return field: smart field - resolved field from the path
+		 */
+		resolveOutput: func(path) {
+			ll.assert(is_array(path), "path must be an array, got: %v", path)
+
+			// Create a copy of the path
+			pathCopy := []
+
+			// Process the first element
+			if len(path) > 0 {
+				firstElem := path[0]
+
+				// If the first element is a string, convert it to a map structure
+				if is_string(firstElem) {
+					firstElem = { name: firstElem }
+				}
+
+				// Create a modified first element with output type and prefix
+				firstElemCopy := maps.clone(firstElem)
+				firstElemCopy.type = "output"
+
+				// Add prefix to the name
+				firstElemCopy.name = tplutil.TEMPLATE_OUTPUT_PREFIX + firstElemCopy.name
+
+				pathCopy = append(pathCopy, firstElemCopy)
+			}
+
+			// Add the rest of the path elements unmodified
+			for i := 1; i < len(path); i++ {
+				pathCopy = append(pathCopy, path[i])
+			}
+
+			// Use the buildFutureField method to resolve the path
+			return renderer.buildFutureField(pathCopy)
 		}
 	}))
 
