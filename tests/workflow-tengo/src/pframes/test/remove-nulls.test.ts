@@ -154,11 +154,14 @@ tplTest.for([
 
     const resultMapLength = await awaitStableState(result.computeOutput('result', (a) => {
       const fields = a?.listInputFields();
-      return Object.fromEntries(fields?.map((f) => [f, a?.traverse(f)?.getDataAsJson()]) ?? []);
+      return { type: a?.resourceType, data: Object.fromEntries(fields?.map((f) => [f, a?.traverse(f)?.getDataAsJson()]) ?? []) };
     }));
     expect(resultMapLength).toStrictEqual({
-      '[1]': { a: 1 },
-      '[3]': { a: 3 },
+      type: { name: 'PColumnData/ResourceMap', version: '1' },
+      data: {
+        '[1]': { a: 1 },
+        '[3]': { a: 3 },
+      },
     });
   },
 );
