@@ -1,5 +1,23 @@
 # @milaboratories/pl-local
 
+## 1.2.2
+
+### Patch Changes
+
+- 0839de6: bump pl version, OutputsLocked event in tengo
+
+## 1.2.1
+
+### Patch Changes
+
+- 5b3f215: ssh: remove tcp delay, greatly improved performance
+
+## 1.2.0
+
+### Minor Changes
+
+- 39c113b: Release pl=1.23.0
+
 ## 1.1.16
 
 ### Patch Changes

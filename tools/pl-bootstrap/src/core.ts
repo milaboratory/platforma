@@ -178,7 +178,7 @@ export default class Core {
     upCommands.push({
       async: true,
       cmd: plBinaryPath,
-      args: ['-config', configPath],
+      args: ['--config', configPath],
       workdir: workdir,
       runOpts: { stdio: 'inherit' },
     });
