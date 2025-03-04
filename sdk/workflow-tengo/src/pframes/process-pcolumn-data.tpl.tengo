@@ -220,25 +220,7 @@ self.body(func(inputs) {
 					path = [output.name]
 				}
 
-				outputElement := path[0]
-				outputName := undefined
-				outputIsOptional := false
-				if is_map(outputElement) {
-					outputName = outputElement.name
-					outputIsOptional = bool(outputElement.optional)
-				} else {
-					outputName = outputElement
-				}
-
-				ref := undefined
-				if outputIsOptional {
-					ref = renderResult.optionalOutput(outputName, eph)
-				} else {
-					ref = renderResult.output(outputName, eph)
-				}
-
-				ref = ref.getFutureInputField(path[1:], eph)
-
+				ref := renderResult.resolveOutput(path)
 				reultMightBeNull := optionalOutputs[output.name]
 
 				if output.type == "Xsv" {
@@ -257,6 +239,8 @@ self.body(func(inputs) {
 		}
 
 		for output in outputs {
+			resultMightBeNull := optionalOutputs[output.name]
+
 			if output.type == "Xsv" {
 
 				partitionKeyLength := 0
@@ -315,10 +299,10 @@ self.body(func(inputs) {
 						if unwrapZeroPartition {
 							if binary {
 								for suffix in [".index", ".values"] {
-									dataRes.createInputField(sGroupKey + suffix).set(partData.getFutureInputField(pUtil.EMPTY_JSON_KEY + suffix))
+									dataRes.createInputField(sGroupKey + suffix).set(partData.buildFutureField({name: pUtil.EMPTY_JSON_KEY + suffix, optional: resultMightBeNull}))
 								}
 							} else {
-								dataRes.createInputField(sGroupKey).set(partData.getFutureInputField(pUtil.EMPTY_JSON_KEY))
+								dataRes.createInputField(sGroupKey).set(partData.buildFutureField({name: pUtil.EMPTY_JSON_KEY, optional: resultMightBeNull}))
 							}
 						} else {
 							dataRes.createInputField(sGroupKey).set(partData)

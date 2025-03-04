@@ -2,22 +2,17 @@ self := import(":tpl")
 
 json := import("json")
 ll := import(":ll")
-pcolumn := import(":pframes.pcolumn")
 smart := import(":smart")
-constants := import(":pframes.constants")
 
 self.defineOutputs("result")
 self.awaitStateIfEphemeral("map", "AllInputsSet")
 
 self.body(func(inputs) {
 	map := inputs.map
-	ll.assert(pcolumn.isResourceMap(map), "expected p-column resource map resource, got %v", map.info().Type.Name)
-
-	dataInfo := map.getDataAsJson()
 
 	result := smart.structBuilder(
-		constants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP,
-		json.encode(dataInfo)
+		map.info().Type,
+		json.encode(map.getDataAsJson())
 	)
 
 	for key, field in map.inputs() {
