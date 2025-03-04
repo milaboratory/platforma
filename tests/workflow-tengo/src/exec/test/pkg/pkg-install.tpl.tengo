@@ -1,9 +1,7 @@
 assets := import("@platforma-sdk/workflow-tengo:assets")
 self := import("@platforma-sdk/workflow-tengo:tpl")
 pkg := import("@platforma-sdk/workflow-tengo:exec.package")
-render := import("@platforma-sdk/workflow-tengo:render")
 maps := import("@platforma-sdk/workflow-tengo:maps")
-json := import("json")
 
 sw := assets.importSoftware(":exec.test.pkg.sleep")
 

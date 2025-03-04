@@ -1,0 +1,63 @@
+/**
+ * Test file for our log10 implementation
+ */
+
+// Import our log10 function
+log10_module := import("./log10")
+fmt := import("fmt")
+
+// Test the log10 function with various inputs
+test_values := [
+    1,      // log10(1) = 0
+    10,     // log10(10) = 1
+    100,    // log10(100) = 2
+    2,      // log10(2) ≈ 0.301
+    5,      // log10(5) ≈ 0.699
+    0.1,    // log10(0.1) = -1
+    0.01,   // log10(0.01) = -2
+    123,    // log10(123) ≈ 2.09
+    0.5,    // log10(0.5) ≈ -0.301
+    1000,   // log10(1000) = 3
+    1.5     // log10(1.5) ≈ 0.176
+]
+
+fmt.println("Testing log10 implementation:")
+fmt.println("-----------------------------")
+
+for _, value in test_values {
+    result := log10_module.log10(value)
+    fmt.println("log10(", value, ") =", result)
+}
+
+fmt.println("\nVerifying known log10 values:")
+fmt.println("----------------------------")
+
+// Function to check if the result is close to the expected value
+is_close := func(a, b, tolerance) {
+    diff := a - b
+    if diff < 0 {
+        diff = -diff  // absolute value
+    }
+    return diff < tolerance
+}
+
+// Test with known values and check accuracy
+known_values := [
+    {input: 1, expected: 0},
+    {input: 10, expected: 1},
+    {input: 100, expected: 2},
+    {input: 1000, expected: 3},
+    {input: 0.1, expected: -1},
+    {input: 0.01, expected: -2},
+    {input: 2, expected: 0.301029995664},
+    {input: 5, expected: 0.698970004336}
+]
+
+for _, test in known_values {
+    result := log10_module.log10(test.input)
+    is_accurate := is_close(result, test.expected, 0.001)
+
+    fmt.println("log10(", test.input, ") =", result,
+                " (expected:", test.expected, ")",
+                " accurate:", is_accurate)
+}

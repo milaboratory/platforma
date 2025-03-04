@@ -26,6 +26,8 @@ export const JsonArray = rt('json/array', '1');
 export const JsonNumber = rt('json/number', '1');
 export const JsonNull = rt('json/null', '1');
 
+export const RNull = rt('Null', '1');
+
 export const EphStdMap: ResourceType = rt('EphStdMap', '1');
 export const StdMap: ResourceType = rt('StdMap', '1');
 

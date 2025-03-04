@@ -1,7 +1,5 @@
 assets := import("@platforma-sdk/workflow-tengo:assets")
 self := import("@platforma-sdk/workflow-tengo:tpl")
-pkg := import("@platforma-sdk/workflow-tengo:exec.package")
-file := import("@platforma-sdk/workflow-tengo:file")
 blobs := import("@platforma-sdk/workflow-tengo:file.internal")
 workdir := import("@platforma-sdk/workflow-tengo:workdir")
 
@@ -27,7 +25,7 @@ self.body(func(inputs) {
         build()
 
     fileName := "file1.txt"
-    
+
     result := workdir.save(wd).
         saveFileContent(fileName).
         build()
