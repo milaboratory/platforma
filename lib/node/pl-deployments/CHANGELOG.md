@@ -1,5 +1,11 @@
 # @milaboratories/pl-local
 
+## 1.2.1
+
+### Patch Changes
+
+- 5b3f215: ssh: remove tcp delay, greatly improved performance
+
 ## 1.2.0
 
 ### Minor Changes
