@@ -1,5 +1,11 @@
 # @milaboratories/pl-local
 
+## 1.2.2
+
+### Patch Changes
+
+- 0839de6: bump pl version, OutputsLocked event in tengo
+
 ## 1.2.1
 
 ### Patch Changes
