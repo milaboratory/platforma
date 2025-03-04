@@ -196,6 +196,14 @@ export class SshClient {
           return;
         }
 
+        // Remove TCP buffering.
+        // Although it means less throughput (bad), it also less latency (good).
+        // It could help when we have
+        // small messages like in our grpc transactions.
+        // And it also could help when we have tcp forwarding to not buffer messages in the middle.
+        (conn as any).setNoDelay(true);
+        localSocket.setNoDelay(true);
+
         let stream: ClientChannel;
         try {
           stream = await forwardOut(this.logger, conn, '127.0.0.1', 0, '127.0.0.1', ports.remotePort);
@@ -666,6 +674,13 @@ async function connect(
     });
 
     client.connect(config);
+
+    // Remove TCP buffering.
+    // Although it means less throughput (bad), it also means less latency (good).
+    // It could help when we have
+    // small messages like in our grpc transactions.
+    // And it also could help when we have tcp forwarding to not buffer messages in the middle.
+    (client as any).setNoDelay(true);
   });
 }
 
