@@ -232,7 +232,9 @@ export function createLogger(level = 'debug') {
 
     format: winston.format.combine(
       winston.format.printf(({ level, message }) => {
-        const indent = ' '.repeat(level.length + 2); // For ': ' after the level
+        const now = new Date();
+        const time = `[${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}]`;
+        const indent = ' '.repeat(time.length + 1 + level.length + 2); // For ': ' after the level
         const indentedMessage = message
           .split('\n')
           .map((line, index) => (index === 0 ? line : indent + line))
@@ -240,7 +242,7 @@ export function createLogger(level = 'debug') {
 
         const colorize = (l) => winston.format.colorize().colorize(l, l);
 
-        return `${colorize(level)}: ${indentedMessage}`;
+        return `${time} ${colorize(level)}: ${indentedMessage}`;
       })
     ),
 
