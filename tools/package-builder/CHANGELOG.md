@@ -1,5 +1,11 @@
 # @platforma-sdk/package-builder
 
+## 2.15.3
+
+### Patch Changes
+
+- 5f42d42: Require 'r-version' field in R environment artifact declaration
+
 ## 2.15.2
 
 ### Patch Changes
