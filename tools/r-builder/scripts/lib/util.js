@@ -137,15 +137,10 @@ export async function download(logger, url, destination) {
 }
 
 export async function extractTarXz(archivePath, destination) {
-  const archiveStream = fs.createReadStream(archivePath);
-
-  const decompress = new xz.Decompressor();
-
-  await pipelineAsync(
-    archiveStream,
-    decompress,
-    tar.extract({ cwd: destination })
-  );
+  if (!fs.existsSync(destination)) {
+    fs.mkdirSync(destination, { recursive: true });
+  }
+  runInherit(`tar -xJf '${archivePath}' -C '${destination}'`);
 }
 
 export async function extractTarGz(archivePath, destination) {
@@ -484,6 +479,8 @@ function patchREnviron(
   envs = {},
   comment = "",
 ) {
+  logger.info(`Patching Renviron file in ${rRoot} directory`)
+
   let rEnvironPath = path.join(rRoot, 'etc', 'Renviron')
   if (!fs.existsSync(rEnvironPath)) {
     rEnvironPath = path.join(rRoot, 'etc', 'Renviron.site')
@@ -497,7 +494,7 @@ function patchREnviron(
   }
 
   for (const [envName, envValue] of Object.entries(envs)) {
-    line = `${envName}=\${${envName}:-'${envValue}'}`
+    const line = `${envName}=\${${envName}:-'${envValue}'}`
     fs.appendFileSync(rEnvironPath, line + '\n', 'utf8');
   }
 }
