@@ -28,7 +28,8 @@ import type {
   ValueType,
   PTableRecordSingleValueFilterV2,
   PTableRecordFilter,
-  PColumnValues } from '@platforma-sdk/model';
+  PColumnValues,
+  SingleValuePredicateV2 } from '@platforma-sdk/model';
 import {
   mapPObjectData,
   mapPTableDef,
@@ -46,6 +47,7 @@ import * as fsp from 'node:fs/promises';
 import { LRUCache } from 'lru-cache';
 import { ConcurrencyLimitingExecutor } from '@milaboratories/ts-helpers';
 import { getDebugFlags } from '../debug';
+import { match } from 'node:assert';
 
 function blobKey(res: ResourceInfo): string {
   return String(res.id);
@@ -55,7 +57,7 @@ type InternalPFrameData = PFrameDef<PFrameInternal.DataInfo<ResourceInfo>>;
 
 const valueTypes: ValueType[] = ['Int', 'Long', 'Float', 'Double', 'String', 'Bytes'] as const;
 
-function migrateFilters(filters: PTableRecordFilter[]): PTableRecordSingleValueFilterV2[] {
+function migrateFilters(filters: PTableRecordFilter[]): PTableRecordFilter[] {
   const filtersV1 = [];
   const filtersV2: PTableRecordSingleValueFilterV2[] = [];
   for (const filter of filters) {
@@ -75,14 +77,32 @@ function migrateFilters(filters: PTableRecordFilter[]): PTableRecordSingleValueF
       `type overriten from 'bySingleColumn' to 'bySingleColumnV2' for filters: ${filtersV1Json}`,
     );
   }
-  return filters;
+  return filtersV2;
+}
+
+function allFiltersAreRustSupported(filters: PTableRecordFilter[]): boolean {
+  const predicateIsRustSupported = (predicate: SingleValuePredicateV2): boolean => {
+    switch (predicate.operator) {
+      case 'Matches':
+      case 'StringContainsFuzzy':
+      case 'StringIContainsFuzzy':
+        return false;
+      case 'Not':
+        return predicateIsRustSupported(predicate.operand);
+      case 'And':
+      case 'Or':
+        return predicate.operands.every((operand) => predicateIsRustSupported(operand));
+      default:
+        return true;
+    }
+  };
+  return filters.every((filter) => predicateIsRustSupported(filter.predicate));
 }
 
 const bigintReplacer = (_: string, v: unknown) => (typeof v === 'bigint' ? v.toString() : v);
 
 class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
   public readonly rustPFrame: PFrameInternal.PFrameV3;
-  public readonly specPFrame: PFrameInternal.PFrameV3;
   private readonly blobIdToResource = new Map<string, ResourceInfo>();
   private readonly blobHandleComputables = new Map<
     string,
@@ -144,26 +164,6 @@ class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
       } catch (err: unknown) {
         throw new Error(
           `Rust PFrame creation failed, columns: ${JSON.stringify(distinct_columns)}, error: ${err as Error}`,
-        );
-      }
-    })();
-
-    this.specPFrame = ((): PFrameInternal.PFrameV3 => {
-      try {
-        const pFrame = getDebugFlags().logPFrameRequests ? new PFrame(logFunc) : new PFrame();
-        for (const column of distinct_columns) {
-          try {
-            pFrame.addColumnSpec(column.id, column.spec);
-          } catch (err: unknown) {
-            throw new Error(
-              `Adding column ${column.id} to PFrame failed: ${err as Error}; Spec: ${JSON.stringify(column.spec)}.`,
-            );
-          }
-        }
-        return pFrame;
-      } catch (err: unknown) {
-        throw new Error(
-          `Spec PFrame creation failed, columns: ${JSON.stringify(distinct_columns)}, error: ${err as Error}`,
         );
       }
     })();
@@ -231,7 +231,6 @@ class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
   [Symbol.dispose](): void {
     for (const computable of this.blobHandleComputables.values()) computable.resetState();
     this.rustPFrame.dispose();
-    this.specPFrame.dispose();
   }
 }
 
@@ -343,11 +342,18 @@ export class PFrameDriver implements InternalPFrameDriver {
             logger.info(
               `PTable creation (pTableHandle = ${this.calculateParamsKey(params)}): ${JSON.stringify(params, bigintReplacer)}`,
             );
-          using disposableDataPFrame = this.pFrames.getByKey(handle).disposableDataPFrame;
-          return await disposableDataPFrame.dataPFrame.createTable({
-            src: joinEntryToInternal(params.def.src),
-            filters: migrateFilters(params.def.filters),
-          }, params.signal);
+          if (getDebugFlags().usePFrameRs && allFiltersAreRustSupported(params.def.filters)) {
+            return await this.pFrames.getByKey(handle).rustPFrame.createTable({
+              src: joinEntryToInternal(params.def.src),
+              filters: migrateFilters(params.def.filters),
+            }, params.signal);
+          } else {
+            using disposableDataPFrame = this.pFrames.getByKey(handle).disposableDataPFrame;
+            return await disposableDataPFrame.dataPFrame.createTable({
+              src: joinEntryToInternal(params.def.src),
+              filters: migrateFilters(params.def.filters),
+            }, params.signal);
+          }
         }).then(async (table) =>
           params.def.sorting.length !== 0
             ? await table.sort(params.def.sorting, params.signal)
@@ -423,11 +429,7 @@ export class PFrameDriver implements InternalPFrameDriver {
             }]
           : [],
     };
-    const responce = getDebugFlags().usePFrameRs
-      ? await this.pFrames.getByKey(handle).rustPFrame.findColumns(iRequest)
-      : await this.concurrencyLimiter.run(
-        async () => await this.pFrames.getByKey(handle).specPFrame.findColumns(iRequest),
-      );
+    const responce = await this.pFrames.getByKey(handle).rustPFrame.findColumns(iRequest);
     return {
       hits: responce.hits
         .filter((h) => // only exactly matching columns
@@ -440,19 +442,11 @@ export class PFrameDriver implements InternalPFrameDriver {
   }
 
   public async getColumnSpec(handle: PFrameHandle, columnId: PObjectId): Promise<PColumnSpec> {
-    return getDebugFlags().usePFrameRs
-      ? await this.pFrames.getByKey(handle).rustPFrame.getColumnSpec(columnId)
-      : await this.concurrencyLimiter.run(
-        async () => await this.pFrames.getByKey(handle).specPFrame.getColumnSpec(columnId),
-      );
+    return await this.pFrames.getByKey(handle).rustPFrame.getColumnSpec(columnId);
   }
 
   public async listColumns(handle: PFrameHandle): Promise<PColumnIdAndSpec[]> {
-    return getDebugFlags().usePFrameRs
-      ? await this.pFrames.getByKey(handle).rustPFrame.listColumns()
-      : await this.concurrencyLimiter.run(
-        async () => await this.pFrames.getByKey(handle).specPFrame.listColumns(),
-      );
+    return await this.pFrames.getByKey(handle).rustPFrame.listColumns();
   }
 
   public async calculateTableData(
@@ -465,11 +459,18 @@ export class PFrameDriver implements InternalPFrameDriver {
         this.logger.info(
           `Call calculateTableData, handle = ${handle}, request = ${JSON.stringify(request, bigintReplacer)}`,
         );
-      using disposableDataPFrame = this.pFrames.getByKey(handle).disposableDataPFrame;
-      return await disposableDataPFrame.dataPFrame.createTable({
-        src: joinEntryToInternal(request.src),
-        filters: migrateFilters(request.filters),
-      }, signal);
+      if (getDebugFlags().usePFrameRs && allFiltersAreRustSupported(request.filters)) {
+        return await this.pFrames.getByKey(handle).rustPFrame.createTable({
+          src: joinEntryToInternal(request.src),
+          filters: migrateFilters(request.filters),
+        }, signal);
+      } else {
+        using disposableDataPFrame = this.pFrames.getByKey(handle).disposableDataPFrame;
+        return await disposableDataPFrame.dataPFrame.createTable({
+          src: joinEntryToInternal(request.src),
+          filters: migrateFilters(request.filters),
+        }, signal);
+      }
     });
 
     if (request.sorting.length > 0) {
