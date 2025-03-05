@@ -20,7 +20,10 @@ export const downloadsDir = `${buildDir}/artifacts/dld`;
 export const artifactsDir = `${buildDir}/artifacts/pkg`;
 
 export const dependenciesDir = 'dependencies'; // where to search for dependencies specification (init.R or renv.lock)
-const renvDirName = 'renv-root' // directory with all renv cache stored inside final R run environment distribution
+
+// directory with all renv cache stored inside final R run environment distribution.
+// When changing this name, remember to update R preparation steps in workflow-tengo SDK.
+const renvDirName = 'renv-root'
 
 const pipelineAsync = promisify(pipeline);
 
@@ -270,7 +273,7 @@ export function runR(logger, rRoot, args, opts = {}) {
   const cmdToRun = `${path.resolve(rRoot, 'bin/R')} ${args.join(' ')}`;
   const renvRoot = path.join(path.resolve(rRoot), renvDirName)
 
-  env = {
+  const env = {
     RHOME: path.resolve(rRoot),
     R_HOME_DIR: path.resolve(rRoot),
     RENV_PATHS_ROOT: renvRoot,
@@ -403,22 +406,25 @@ export function buildRDependencies(
       '--no-echo',
       '-e', ...quote(`renv::restore( clean = TRUE )`),
     ], {
-      wd: tempRenvDir,
+      wd: depsDir,
       paths: additionalPaths,
     })
 
+  } else if (fs.existsSync(path.join(depsDir, initFile))) {
+    runInRenv(logger, rRoot, ['--no-echo', `--file=${initFile}`], {
+      wd: depsDir,
+      paths: additionalPaths,
+    })
+
+    if (!fs.existsSync(path.join(depsDir, lockFile))) {
+      runInRenv(logger, rRoot, ['--no-echo', '-e', ...quote(`renv::snapshot()`)])
+    }
+
   } else {
-    if (!fs.existsSync(path.join(depsDir, initFile))) {
       throw new Error(
         `directory ${depsDir} has no ${lockFile} or ${initFile}. No dependencies detected.\n`+
         `Create empty init.R file if you really need empty R run environment without any preinstalled dependencies`
       )
-    }
-
-    runInRenv(logger, rRoot, ['--no-echo', `--file=${initFile}`], {
-      wd: tempRenvDir,
-      paths: additionalPaths,
-    })
   }
 
   const lockData = fs.readFileSync(lockPath, { encoding: 'utf-8' });
@@ -433,8 +439,12 @@ export function buildRDependencies(
     }
   }
 
-  fs.rmSync(tempRenvDir, { recursive: true })
+  // Store resulting 'renv.lock' file in R installation root directory,
+  // so we can use it when preparing renv on Platforma Backend side (workflow-tengo SDK).
+  fs.copyFileSync(path.join(depsDir, lockFile), path.join(rRoot, renvDirName, lockFile))
+
   if (fs.existsSync(origProjectsFile)) {
+    // Restore original 'projects' file to not leave traces of environment preparation.
     fs.renameSync(origProjectsFile, projectsFile)
   }
 
@@ -490,17 +500,4 @@ function patchREnviron(
     line = `${envName}=\${${envName}:-'${envValue}'}`
     fs.appendFileSync(rEnvironPath, line + '\n', 'utf8');
   }
-}
-
-/**
- * Recreate directory by removing it and creating back.
- *
- * @param {string} dir - path to directory
- */
-function recreateDir(dir) {
-  if (fs.existsSync(dir)) {
-    fs.rmSync(dir, { recursive: true })
-  }
-  fs.mkdirSync(dir, { recursive: true })
-
 }
