@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 2.14.0
+
+### Minor Changes
+
+- 78ba96c: Add 'waiter' template with common 'Ready' event sync logic
+
 ## 2.13.6
 
 ### Patch Changes
