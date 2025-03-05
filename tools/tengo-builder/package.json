@@ -17,6 +17,9 @@
     "README.md"
   ],
   "license": "UNLICENSED",
+  "engines": {
+    "node": ">=20"
+  },
   "dependencies": {
     "@milaboratories/tengo-tester": "catalog:",
     "@milaboratories/pl-model-backend": "workspace:^",
