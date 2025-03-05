@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 1.28.19
+
+### Patch Changes
+
+- e5b5271: PFrames version bump
+
 ## 1.28.18
 
 ### Patch Changes
