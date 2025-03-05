@@ -19,8 +19,6 @@ constants := import(":exec.constants")
 //
 // Function declarations (see definitions below)
 //
-_toolsetRenvRefreshSwPackage := undefined
-
 _createRvenv := undefined
 _toolsetRenvCreate := undefined
 
@@ -51,10 +49,6 @@ _createRvenv = func(operationMode, swPackage, rPackage, rDescriptor, toolset, de
 
 _toolsetRenvCreate = func(operationMode, swPackage, rPackage, rDescriptor, dependencies) {
 	wdBefore := workdir.builder().build()
-
-	if operationMode == "dev-local" {
-		wdBefore = _toolsetRenvRefreshSwPackage(wdBefore, swPackage, rPackage, rDescriptor, dependencies).workdir
-	}
 
 	//
 	// Activate run environment in current working directory
@@ -88,7 +82,7 @@ _toolsetRenvCreate = func(operationMode, swPackage, rPackage, rDescriptor, depen
 		env("RENV_PATHS_RENV", "./renv").
 		ref("r-software-pkg", swPackage).
 		substitutionRule(rule, "r-software-pkg").
-		envTyped("RENV_PATHS_LOCKFILE", t, "{pkg}/"+dependencies.lockFile)
+		envTyped("RENV_PATHS_LOCKFILE", t, path.join("{R}", "renv-root", "renv.lock"))
 
 	depsInstaller.
 		cmd("R").
@@ -110,37 +104,6 @@ _toolsetRenvCreate = func(operationMode, swPackage, rPackage, rDescriptor, depen
 		addPackage("R", rPackage)
 
 	return runEnvSaver.build().runEnv()
-}
-
-_toolsetRenvRefreshSwPackage = func(wd, swPackage, rPackage, rDescriptor, dependencies) {
-	// DEPRECATED: remove after 15 Mar 2025
-	t := feats.commandExpressions ? constants.ARG_TYPE_EXPRESSION : constants.ARG_TYPE_VAR
-	rule := feats.commandExpressions ? "pkg" : "{pkg}"
-
-	swRefreshener := internal.runRBuilder("dev-local", wd, rPackage, rDescriptor).
-		ref("r-software-pkg", swPackage).
-		substitutionRule(rule, "r-software-pkg").
-		envTyped("R_PROJECT_DIR", t, "{pkg}").
-		envTyped("RENV_PATHS_LOCKFILE", t, path.join("{pkg}", dependencies.lockFile)).
-		env("TRICK_DEDUPLICATION", "" + times.time_unix(times.now()))
-
-	swRefreshener.
-		cmd("R").
-		arg("--no-echo").
-		arg("--no-restore").
-		arg("-e").arg("cat( 'Refreshing dependencies file (renv.lock) for local R software build...\n' )").
-		arg("-e").arg("cat( paste('  R_PROJECT_DIR:', Sys.getenv('R_PROJECT_DIR'), '\n') )").
-		arg("-e").arg("cat( '(the error in this step usually means that Platforma Backend has no access to your block\\'s folder)\n\n' )").
-		arg("-e").arg("setwd(Sys.getenv('R_PROJECT_DIR')); renv::init(); renv::install(); renv::snapshot()").
-		arg("-e").arg("cat('R dependencies file (renv.lock) is refreshed.\n')")
-
-	swRefreshener.
-		inQueue("light").
-		stdout("./output").
-		stderr("./output").
-		nErrorLines(20)
-
-	return swRefreshener.build()
 }
 
 self.defineOutputs("runEnv")
