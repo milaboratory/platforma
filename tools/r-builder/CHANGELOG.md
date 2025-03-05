@@ -1,5 +1,11 @@
 # @platforma-sdk/r-builder
 
+## 0.0.5
+
+### Patch Changes
+
+- ef027e2: Fix download logic for CI (when out is not TTY)
+
 ## 0.0.4
 
 ### Patch Changes

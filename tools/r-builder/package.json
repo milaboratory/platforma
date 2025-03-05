@@ -2,7 +2,7 @@
   "name": "@platforma-sdk/r-builder",
   "description": "Build R run environment for Platforma",
   "type": "module",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "files": [
     "assets/",
     "scripts/"
