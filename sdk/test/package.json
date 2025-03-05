@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/test",
-  "version": "1.22.72",
+  "version": "1.22.73",
   "description": "Typescript Block Test Helpers",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
