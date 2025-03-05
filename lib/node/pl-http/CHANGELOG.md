@@ -1,5 +1,11 @@
 # @milaboratories/pl-http
 
+## 1.0.7
+
+### Patch Changes
+
+- e6ad278: Publication with updated dependencies
+
 ## 1.0.6
 
 ### Patch Changes
