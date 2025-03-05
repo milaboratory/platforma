@@ -1,5 +1,11 @@
 # @platforma-sdk/r-builder
 
+## 0.0.4
+
+### Patch Changes
+
+- a8ec363: Drop unused xz import
+
 ## 0.0.3
 
 ### Patch Changes
