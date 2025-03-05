@@ -1,0 +1,24 @@
+{
+  "name": "@platforma-sdk/r-builder",
+  "description": "Build R run environment for Platforma",
+  "type": "module",
+  "version": "0.0.0",
+  "files": [
+    "scripts/"
+  ],
+  "bin": {
+    "pl-r-builder": "./scripts/builder.js"
+  },
+  "license": "UNLICENSED",
+  "dependencies": {
+    "axios": "catalog:",
+    "fs-extra": "catalog:",
+    "tar": "catalog:",
+    "unzipper": "catalog:",
+    "winston": "catalog:",
+    "xz": "catalog:"
+  },
+  "devDependencies": {
+    "@milaboratories/eslint-config": "workspace:^"
+  }
+}
