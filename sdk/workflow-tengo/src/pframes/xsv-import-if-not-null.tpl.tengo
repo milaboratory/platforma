@@ -2,6 +2,10 @@ tpl := import(":tpl")
 smart := import(":smart")
 xsvIF := import(":pframes.xsv-import-file")
 
+tpl.defineOutputs(
+	"result"
+)
+
 tpl.body(func(inputs) {
 	params := inputs.params
 	xsvType := params.xsvType
