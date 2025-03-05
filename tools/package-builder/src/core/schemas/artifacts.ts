@@ -128,6 +128,7 @@ export const rToolsetSchema = z.discriminatedUnion('toolset', [renvToolsetSchema
 
 export const rPackageSchema = archiveRulesSchema.extend({
   type: z.literal('R'),
+  ['r-version']: z.string(),
   environment: artifactIDSchema,
   dependencies: rToolsetSchema,
 });
