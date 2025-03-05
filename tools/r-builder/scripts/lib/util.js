@@ -8,7 +8,6 @@ import { fetch } from 'undici';
 import * as tar from 'tar';
 import winston from 'winston';
 import zlib from 'zlib';
-import xz from 'xz';
 
 import * as pkg from './pkg.js';
 
