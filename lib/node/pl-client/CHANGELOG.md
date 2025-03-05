@@ -1,5 +1,11 @@
 # @milaboratories/pl-client
 
+## 2.7.9
+
+### Patch Changes
+
+- 2c75b72: RNull type constant
+
 ## 2.7.8
 
 ### Patch Changes
