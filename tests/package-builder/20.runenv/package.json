@@ -37,6 +37,7 @@
             "registry": "example",
             "type": "environment",
             "runtime": "R",
+            "r-version": "4.3.1",
             "root": "./src",
             "binDir": "."
           }
