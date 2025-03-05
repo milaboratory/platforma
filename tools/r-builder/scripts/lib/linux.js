@@ -7,6 +7,39 @@ import * as util from './util.js';
 
 const platformName = os.arch() === 'arm64' ? 'linux-aarch64' : `linux-x64`;
 
+function useCaching(logger) {
+  if (util.isOK('which ccache')) {
+    useCCache(logger)
+  } else if (util.isOK('which sccache')) {
+    useSCCache(logger)
+  } else {
+    logger.warn('No caching tool found. Builds will be slow.')
+  }
+}
+
+/**
+ * Setup current process environment to integrate with sccache
+ *
+ * @param {winston.Logger} logger
+ */
+function useSCCache(logger) {
+  logger.info("Using sccache as build caching tool...")
+  process.env.SCCACHE_GHA_ENABLED = "true"
+  process.env.CC = `sccache gcc`
+  process.env.CXX = `sccache g++`
+}
+
+/**
+ * Setup current process environment to integrate with ccache
+ *
+ * @param {winston.Logger} logger
+ */
+function useCCache(logger) {
+  logger.info("Using ccache as build caching tool...")
+  process.env.CC = `ccache gcc`
+  process.env.CXX = `ccache g++`
+}
+
 async function installSystemPackages(logger) {
   const originalAptSources = '/etc/apt/sources.list';
   logger.info(`Analyzing '${originalAptSources}'`);
@@ -224,19 +257,6 @@ function patchBinElf(logger, binaryFile, rpath) {
   util.runInherit(`patchelf --remove-rpath '${binaryFile}'`);
   util.runInherit(`patchelf --set-rpath '${rpath}' '${binaryFile}'`);
 }
-/**
- * Setup current process environment to integrate with sccache
- *
- * @param {winston.Logger} logger
- */
-function useSCCache(logger) {
-  if (util.isOK('which sccache')) {
-    logger.info("Using sccache as build caching tool...")
-    process.env.SCCACHE_GHA_ENABLED = "true"
-    process.env.CC = `sccache gcc`
-    process.env.CXX = `sccache g++`
-  }
-}
 
 /**
  * Build portable R distribution and all required packages from sources
@@ -267,6 +287,7 @@ export async function buildR(logger, version) {
 
   fs.renameSync(path.join(distDir, 'bin/R'), path.join(distDir, 'bin/R.orig'))
   fs.copyFileSync(pkg.asset('R.linux.sh'), path.join(distDir, 'bin/R'));
+  fs.chmodSync(path.join(distDir, 'bin/R'), 0o755)
 
   const gccVersion = getGCCMajorVersion()
   const gccUtilsPath = path.join('/usr/lib/gcc/x86_64-linux-gnu', gccVersion.toString())
