@@ -15,9 +15,7 @@
     "undici": "catalog:",
     "fs-extra": "catalog:",
     "tar": "catalog:",
-    "unzipper": "catalog:",
-    "winston": "catalog:",
-    "xz": "catalog:"
+    "winston": "catalog:"
   },
   "devDependencies": {
     "@milaboratories/eslint-config": "workspace:^"
