@@ -79,7 +79,7 @@ export class SshClient {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       this.client.exec(command, (err: any, stream: ClientChannel) => {
         if (err) {
-          return reject(`ssh.exec: ${command}, error occurred: ${err}`);
+          return reject(`ssh.exec: ${command}: ${err}`);
         }
 
         let stdout = '';
@@ -89,7 +89,7 @@ export class SshClient {
           if (code === 0) {
             resolve({ stdout, stderr });
           } else {
-            reject(new Error(`Command ${command} exited with code ${code}`));
+            reject(new Error(`Command ${command} exited with code ${code}, stdout: ${stdout}, stderr: ${stderr}`));
           }
         }).on('data', (data: ArrayBuffer) => {
           stdout += data.toString();
@@ -419,7 +419,7 @@ export class SshClient {
       return new Promise((resolve, reject) => {
         sftp.readFile(remotePath, (err, buffer) => {
           if (err) {
-            return reject(new Error(`ssh.readFile: err occurred ${err}`));
+            return reject(new Error(`ssh.readFile: ${err}`));
           }
           resolve(buffer.toString());
         });
@@ -495,7 +495,7 @@ export class SshClient {
             resolve(undefined);
           })
           .catch((err) => {
-            const msg = `uploadFileUsingExistingSftp: error ${err} occurred`;
+            const msg = `uploadFileUsingExistingSftp: ${err}`;
             this.logger.error(msg);
             reject(new Error(msg));
           });
@@ -666,7 +666,7 @@ async function connect(
 
     client.on('error', (err: unknown) => {
       onError(err);
-      reject(new Error(`ssh.connect: error occurred: ${err}`));
+      reject(new Error(`ssh.connect: ${err}`));
     });
 
     client.on('close', () => {
