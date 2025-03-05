@@ -131,7 +131,7 @@ catalog:
 
   '@changesets/cli': ^2.28.1
 
-  'eslint': ^9.16.0
+  'eslint': ^9.21.0
   '@eslint/js': ^9.16.0
   'typescript-eslint': ^8.17.0
   'eslint-config-prettier': ^9.1.0
@@ -154,24 +154,24 @@ catalog:
 
   # Net
 
-  'undici': ~7.2.3
+  'undici': ~7.4.0
   '@grpc/grpc-js': ~1.12.6
   '@protobuf-ts/grpc-transport': &protobuf-ts 2.9.4
   '@protobuf-ts/runtime': *protobuf-ts
   '@protobuf-ts/runtime-rpc': *protobuf-ts
   'https-proxy-agent': ^7.0.6
-  '@aws-sdk/client-s3': &aws-sdk-version 3.750.0
+  '@aws-sdk/client-s3': &aws-sdk-version 3.758.0
   '@aws-sdk/lib-storage': *aws-sdk-version
   'cacheable-lookup': ~6.1.0
 
   # Util & other libs
 
-  'testcontainers': ^10.16.0
+  'testcontainers': ^10.18.0
   'utility-types': ^3.11.0
   'denque': ^2.1.0
   'lru-cache': ^11.0.2
   'canonicalize': ~2.0.0
-  'long': ^5.2.4
+  'long': ^5.3.1
   'mime-types': ^2.1.35
   'semver': ^7.6.3
 
@@ -206,7 +206,9 @@ catalog:
   # UI
 
   'vue': ^3.5.13
-  '@vueuse/core': ^12.4.0
+  # TODO upgrade (see https://github.com/vueuse/vueuse/pull/4543)
+  # '@vueuse/core': ^12.8.2
+  '@vueuse/core': ~12.4.0
   'vue-tsc': ^2.1.10
   'sass': ~1.83.4
   'vitepress': '1.5.0'
@@ -228,7 +230,7 @@ catalog:
 
   'jest': ^29.7.0
   '@jest/globals': ^29.7.0
-  'ts-jest': ^29.2.5
+  'ts-jest': ^29.2.6
   'vitest': ^2.1.8
   '@faker-js/faker': ^9.2.0
   'happy-dom': ^15.11.7
@@ -252,4 +254,4 @@ catalog:
   # To remove
 
   'lodash': ^4.17.15
-  '@types/lodash': ^4.17.13
+  '@types/lodash': ^4.17.16

@@ -81,10 +81,18 @@ pColumnResourceMapDataBuilder := func(keyLength) {
  *
  *                  Common fields for all types:
  *                     {
- *                       name:  string     // Output name
- *                       path?: string[]   // [Optional] Override path inside body template result
- *                                            First element interpreted as output name
- *                                            Defaults to [name] if omitted
+ *                       name:  string       // Output name
+ *                       path?: string[]     // [Optional] Path to access data in body template result
+ *                                           // First element is used as the output name in renderResult.output()
+ *                                           // First element can also be an object with {name: string, optional?: bool}
+ *                                           // Remaining elements are passed to getFutureInputField and can be:
+ *                                           //   - string: field name to access
+ *                                           //   - object: {name: string, optional?: bool, eph?: bool} to configure field access
+ *                                           //   - mixed array of strings and objects to traverse a nested path
+ *                                           // Defaults to [name] if omitted
+ *                       keepNulls?: boolean // Relevant if optional flag is used in path.
+ *                                           // If true, keys for which output was not found will be present in the output
+ *                                           // with null value. If false or not specified, such keys will not be present.
  *                     }
  *
  *                  Available types:
