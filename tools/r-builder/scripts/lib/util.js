@@ -131,7 +131,16 @@ export async function download(logger, url, destination) {
     
     await pump();
   } else {
-    await pipeline(response.body, writer);
+
+    return new Promise((resolve, reject) => {
+      pipeline(response.body, writer, (err) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve();
+        }
+      });
+    });
   }
 }
 
