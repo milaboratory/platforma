@@ -182,10 +182,7 @@ catalog:
   'readline-sync': ^1.4.10
   'ssh2': ^1.16.0
 
-  "axios": "^1.7.7"
   "fs-extra": "^11.2.0"
-  "unzipper": "^0.12.3"
-  "xz": "^2.0.2"
 
   'zod': ~3.23.8
 

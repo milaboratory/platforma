@@ -270,7 +270,7 @@ export async function buildR(logger, version) {
     process.exit(1);
   }
 
-  useSCCache(logger)
+  useCaching(logger)
 
   const distDir = path.join(util.rDistDir, platformName);
 
@@ -301,7 +301,7 @@ export async function buildDeps(logger, version) {
     process.exit(1);
   }
 
-  useSCCache(logger);
+  useCaching(logger);
 
   const distDir = path.join(util.rDistDir, platformName);
 
