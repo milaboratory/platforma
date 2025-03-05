@@ -47,7 +47,6 @@ import * as fsp from 'node:fs/promises';
 import { LRUCache } from 'lru-cache';
 import { ConcurrencyLimitingExecutor } from '@milaboratories/ts-helpers';
 import { getDebugFlags } from '../debug';
-import { match } from 'node:assert';
 
 function blobKey(res: ResourceInfo): string {
   return String(res.id);
