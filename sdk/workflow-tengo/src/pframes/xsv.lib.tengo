@@ -6,7 +6,7 @@ validation := import(":validation")
 constants := import(":pframes.constants")
 objects := import(":objects")
 render := import(":render")
-maps := import("json")
+maps := import(":maps")
 util := import(":pframes.util")
 ll := import(":ll")
 assets := import(":assets")
@@ -86,18 +86,23 @@ importFile := func(xsvFile, xsvType, spec, ...ops) {
 
 	validation.assertType(spec, util.PFCONV_IMPORT_CFG_SCHEMA)
 
-	if ops.allowNullInput {
+	allowNullInput := false
+	if len(ops) > 0 {
+		allowNullInput = ops[0].allowNullInput
+	}
+
+	if allowNullInput {
 		return render.create(importXsvIfNullTpl, {
 			xsvFile: xsvFile,
 			params: {
 				xsvType: xsvType,
 				spec: spec,
-				ops: maps.merge(ops, { allowNullInput: undefined })
+				ops: [maps.merge(ops[0], { allowNullInput: undefined })]
 			}
 		}).output("result")
 	}
 
-	return xsvIF.xsvImportFile(xsvFile, xsvType, spec, ops...)
+	return xsvIF.importFile(xsvFile, xsvType, spec, ops...)
 }
 
 /**

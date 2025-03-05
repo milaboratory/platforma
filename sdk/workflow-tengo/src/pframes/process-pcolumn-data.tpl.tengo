@@ -9,6 +9,7 @@ pConstants := import(":pframes.constants")
 pUtil := import(":pframes.util")
 xsv := import(":pframes.xsv")
 builder := import(":pframes.builder")
+removeNullsLib := import(":pframes.remove-nulls")
 
 json := import("json")
 
@@ -241,6 +242,13 @@ self.body(func(inputs) {
 		for output in outputs {
 			resultMightBeNull := optionalOutputs[output.name]
 
+			postProcessDataMap := func(dataMap) {
+				if resultMightBeNull {
+					return removeNullsLib.removeNulls(dataMap)
+				}
+				return dataMap
+			}
+
 			if output.type == "Xsv" {
 
 				partitionKeyLength := 0
@@ -308,7 +316,7 @@ self.body(func(inputs) {
 							dataRes.createInputField(sGroupKey).set(partData)
 						}
 					}
-					columnResults[id] = dataRes.lockAndBuild()
+					columnResults[id] = postProcessDataMap(dataRes.lockAndBuild())
 				}
 
 				if !is_undefined(output.flattenWithDelimiter) {
@@ -323,7 +331,7 @@ self.body(func(inputs) {
 					outputMaps[output.name] = mapBuilder.build()
 				}
 			} else {
-				outputMaps[output.name] = outputMaps[output.name].lockAndBuild()
+				outputMaps[output.name] = postProcessDataMap(outputMaps[output.name].lockAndBuild())
 			}
 		}
 

@@ -13,7 +13,7 @@ removeNullsTemplate := assets.importTemplate(":pframes.remove-nulls")
  * @return a new map with all null resources removed
  */
 removeNulls := func(dataMap, ...opts) {
-    ll.assert(smart.isResource(dataMap), "expected resource, got %v", dataMap)
+    ll.assert(smart.isReference(dataMap), "expected resource or field, got %v", dataMap)
 
     // Extract isEph from optional parameters, default to false if not provided
     isEph := false

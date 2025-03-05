@@ -1279,11 +1279,11 @@ ephemeralBuilder = func(resourceType, ...data) {
 }
 
 createNullResource = func(...data) {
-	ll.assert(len(data) > 1, "can't create null resource with more than one argument")
+	ll.assert(len(data) <= 1, "can't create null resource with more than one argument")
 	if len(data) > 0 && !is_undefined(data[0]) {
 		return resource(tx.createValue(constants.RTYPE_NULL.Name, constants.RTYPE_NULL.Version, data[0]))
 	} else {
-		return resource(tx.createValue(constants.RTYPE_NULL.Name, constants.RTYPE_NULL.Version))
+		return resource(tx.createValue(constants.RTYPE_NULL.Name, constants.RTYPE_NULL.Version, ""))
 	}
 }
 
