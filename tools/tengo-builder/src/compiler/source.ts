@@ -1,11 +1,12 @@
 import { readFileSync } from 'node:fs';
 import type winston from 'winston';
-import type {
-  TypedArtifactName,
-  FullArtifactName,
-  ArtifactType,
-  CompileMode,
-  CompilerOption,
+import {
+  type TypedArtifactName,
+  type FullArtifactName,
+  type ArtifactType,
+  type CompileMode,
+  type CompilerOption,
+  fullNameToString,
 } from './package';
 import type { ArtifactMap } from './artifactset';
 import { createArtifactNameSet } from './artifactset';
@@ -41,14 +42,15 @@ const newImportAssetRE = (moduleName: string) => {
 const emptyLineRE = /^\s*$/;
 const compilerOptionRE = /^\/\/tengo:[\w]/;
 const wrongCompilerOptionRE = /^\s*\/\/\s*tengo:\s*./;
-const singlelineCommentRE = /^\s*(\/\/)|(\/\*.*\*\/)/;
+const inlineCommentRE = /\/\*.*?\*\//g; // .*? = non-greedy search
+const singlelineCommentRE = /^\s*(\/\/)/;
 const multilineCommentStartRE = /^\s*\/\*/;
 const multilineCommentEndRE = /\*\//;
 const importRE = /\s*:=\s*import\s*\(\s*"(?<moduleName>[^"]+)"\s*\)/;
 const importNameRE = new RegExp(
   `\\b(?<importName>${namePattern}(\\.${namePattern})*)${importRE.source}`,
 );
-const dependencyRE = /(?<pkgName>[^"]+)?:(?<depID>[^"]+)/; // use it to parse <moduleName> from importPattern or <templateName> акщь getTemplateID
+const dependencyRE = /(?<pkgName>[^"]+)?:(?<depID>[^"]+)/; // use it to parse <moduleName> from importPattern or <templateName> from getTemplateID
 
 /**
  * Parse compiler option string representation
@@ -166,7 +168,7 @@ function parseSourceData(
       }
     } catch (error: unknown) {
       const err = error as Error;
-      throw new Error(`[line ${parserContext.lineNo}]: ${err.message}\n\t${line}`);
+      throw new Error(`[line ${parserContext.lineNo} in ${fullNameToString(fullSourceName)}]: ${err.message}\n\t${line}`, { cause: err });
     }
   }
 
@@ -196,6 +198,9 @@ function parseSingleSourceLine(
     artifact: TypedArtifactName | undefined;
     option: CompilerOption | undefined;
   } {
+  // preprocess line and remove inline comments
+  line = line.replaceAll(inlineCommentRE, '');
+
   if (context.isInCommentBlock) {
     if (multilineCommentEndRE.exec(line)) {
       context.isInCommentBlock = false;
@@ -220,13 +225,17 @@ function parseSingleSourceLine(
     return { line, context, artifact: undefined, option: undefined };
   }
 
-  if (singlelineCommentRE.exec(line)) {
+  if (singlelineCommentRE.test(line)) {
     return { line: '', context, artifact: undefined, option: undefined };
   }
 
   if (multilineCommentStartRE.exec(line)) {
     context.isInCommentBlock = true;
     return { line: '', context, artifact: undefined, option: undefined };
+  }
+
+  if (line.includes('/*')) {
+    throw new Error('malformed multiline comment');
   }
 
   if (emptyLineRE.exec(line)) {
