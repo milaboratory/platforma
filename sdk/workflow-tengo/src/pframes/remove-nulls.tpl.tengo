@@ -1,0 +1,29 @@
+self := import(":tpl")
+
+json := import("json")
+ll := import(":ll")
+smart := import(":smart")
+
+self.defineOutputs("result")
+self.awaitStateIfEphemeral("map", "AllInputsSet")
+
+self.body(func(inputs) {
+	map := inputs.map
+
+	result := smart.structBuilder(
+		map.info().Type,
+		json.encode(map.getDataAsJson())
+	)
+
+	for key, field in map.inputs() {
+		data := field.getValue()
+		ll.assert(smart.isResource(data), "expected resource, got %v", data)
+		if !smart.isNullResource(data) {
+			result.createInputField(key).set(data)
+		}
+	}
+
+	return {
+		result: result.lockAndBuild()
+	}
+})

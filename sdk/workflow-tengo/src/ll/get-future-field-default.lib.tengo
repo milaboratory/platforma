@@ -1,0 +1,137 @@
+tx := import("tx")
+plapi := import("plapi")
+fmt := import("fmt")
+json := import("json")
+
+/**
+ * Checks if the provided value is a resource ID
+ *
+ * @param value: any - value to check
+ * @return bool - true if value is a resource ID, false otherwise
+ */
+isResourceId := func(value) {
+	return is_int(value)
+}
+
+/**
+ * Checks if the provided value is a field ID
+ *
+ * @param value: any - value to check
+ * @return bool - true if value is a field ID, false otherwise
+ */
+isFieldId := func(value) {
+	return plapi.isStrictMap(value) &&
+		   plapi.mapHasKey(value, "ResourceID") &&
+		   plapi.mapHasKey(value, "Name")
+}
+
+/**
+ * Gets a field from a resource, with a default value if field is not found after inputs/outputs are locked
+ *
+ * @param from: int64/object - either a resource ID or a field ID we get a field from
+ * @param name: string - field name
+ * @param fieldType: string - field type: input, output
+ * @param isEph: bool - whether to create ephemeral resources (true) or structural resources (false)
+ * @param defaultValue: int64/object - default value resource ID/field ID to return if field not found (default: null resource)
+ *
+ * @return field: LowLevelAPI.Field - field ID referencing the result
+ */
+getFutureFieldWithDefault := func(from, name, fieldType, isEph, ...options) {
+	// Check that 'from' is a low-level resource ID or field ID
+	fromIsResourceId := isResourceId(from)
+	fromIsFieldId := isFieldId(from)
+
+	if !fromIsResourceId && !fromIsFieldId {
+		txt := fmt.sprintf("'from' must be either a resource ID or a field ID, got: %#v", from)
+		plapi.print(txt)
+		plapi.setTemplateError(txt)
+		return 0
+	}
+
+	if len(options) > 1 {
+		txt := fmt.sprintf("expected at most 1 option, got: %d", len(options))
+		plapi.print(txt)
+		plapi.setTemplateError(txt)
+		return 0
+	}
+
+	// Set default value resource ID
+	defaultValue := 0
+	if len(options) == 1 {
+		defaultValue = options[0]
+	} else {
+		defaultValue = tx.createValue("Null", "1", "")
+	}
+
+	// Get template ID for "ll.get-field"
+	tplId := plapi.getTemplateId(":ll.get-field")
+
+	// Create template resource (ephemeral or structural based on isEph flag)
+	tplResource := 0
+	if isEph {
+		tplResource = tx.createEphemeral("EphRenderTemplate", "1")
+	} else {
+		tplResource = tx.createStruct("RenderTemplate", "1")
+	}
+
+	templateFieldId := plapi.newFieldID(tplResource, "template")
+	tx.createField(templateFieldId, "input")
+	tx.setFieldToResource(templateFieldId, tplId)
+
+	// Create inputs map resource (ephemeral or structural based on isEph flag)
+	inputsMapResource := 0
+	if isEph {
+		inputsMapResource = tx.createEphemeral("std/map", "1")
+	} else {
+		inputsMapResource = tx.createStruct("std/map", "1")
+	}
+
+	resourceFieldId := plapi.newFieldID(inputsMapResource, "resource")
+	tx.createField(resourceFieldId, "input")
+
+	fieldNameFieldId := plapi.newFieldID(inputsMapResource, "fieldName")
+	tx.createField(fieldNameFieldId, "input")
+
+	fieldTypeFieldId := plapi.newFieldID(inputsMapResource, "fieldType")
+	tx.createField(fieldTypeFieldId, "input")
+
+	defaultValueFieldId := plapi.newFieldID(inputsMapResource, "defaultValue")
+	tx.createField(defaultValueFieldId, "input")
+
+	if fromIsResourceId {
+		tx.setFieldToResource(resourceFieldId, from)
+	} else {
+		tx.setFieldToField(resourceFieldId, from)
+	}
+
+	fieldNameResource := tx.createValue("json/object", "1", json.encode(name))
+	tx.setFieldToResource(fieldNameFieldId, fieldNameResource)
+
+	fieldTypeResource := tx.createValue("json/object", "1", json.encode(fieldType))
+	tx.setFieldToResource(fieldTypeFieldId, fieldTypeResource)
+
+	if isResourceId(defaultValue) {
+		tx.setFieldToResource(defaultValueFieldId, defaultValue)
+	} else {
+		tx.setFieldToField(defaultValueFieldId, defaultValue)
+	}
+
+	tx.lockInputs(inputsMapResource)
+
+	inputsMapFieldId := plapi.newFieldID(tplResource, "inputs")
+	tx.createField(inputsMapFieldId, "input")
+	tx.setFieldToResource(inputsMapFieldId, inputsMapResource)
+
+	tx.lockInputs(tplResource)
+
+	resultFieldId := plapi.newFieldID(tplResource, "outputs/result")
+	tx.createField(resultFieldId, "output")
+
+	tx.lockOutputs(tplResource)
+
+	return resultFieldId
+}
+
+export {
+	getFutureFieldWithDefault: getFutureFieldWithDefault
+}

@@ -11,6 +11,7 @@ maps := import(":maps")
 json := import("json")
 times := import("times")
 constants := import(":constants")
+ffDefault := import(":ll.get-future-field-default")
 
 //////////////// definitions ////////////////
 
@@ -52,6 +53,13 @@ ephemeralMapBuilder := undefined
  * @param resourceType { Name: "", Version: "" }
  */
 ephemeralBuilder := undefined
+
+/**
+ * Creates a null resource.
+ *
+ * @params data, optional, bytes that will go in Data of the resource. Don't use this argument.
+ */
+createNullResource := undefined
 
 /**
  * Create value resource
@@ -134,6 +142,77 @@ _getFutureField := func(from, name, fieldType, isEph) {
 
 	return field(futureField.ResultFID)
 }
+
+/**
+ * Gets future field given field name or a path
+ *
+ * @param resourceOrField: reference - resource or field to get future field from
+ * @param nameOrPath: string|string[]|object|object[]
+ *                           - field name, an array representing a path to be traversed,
+ *                             an object with {name: string, type?: string, optional?: bool, eph?: bool} structure,
+ *                             an array of such objects/strings
+ * @param eph: bool (optional) - when false, the operation becomes pure function, waiting for resource
+ *                               to pass deduplication before resolution.
+ *
+ * @return field: smart field
+ */
+_buildFutureField := func(resourceOrField, nameOrPath, ...eph) {
+	globalIsEph := undefined
+	if len(eph) > 0 && is_bool(eph[0]) {
+		globalIsEph = eph[0]
+	}
+
+	// set to true if optional is encountered, all further fields are resolved as optional
+	optional := false
+
+	// Helper function to process a single element (string or object)
+	processSingleElement := func(resource, element) {
+		// Default field type is "input" if not specified
+		fieldType := "input"
+		fieldName := undefined
+		isEph := globalIsEph
+
+		if is_map(element) {
+			if !is_undefined(globalIsEph) {
+				ll.panic("global eph is not supported for structural path elements")
+			}
+
+			if !is_undefined(element.type) {
+				fieldType = element.type
+			}
+
+			fieldName = element.name
+			optional = optional || element.optional
+			isEph = element.eph
+		} else {
+			fieldName = element
+		}
+
+		if optional {
+			return resource.getFutureFieldOptional(fieldName, fieldType, isEph)
+		} else {
+			return resource.getFutureField(fieldName, fieldType, isEph)
+		}
+	}
+
+	if is_array(nameOrPath) {
+		current := resourceOrField
+		for i, pathElement in nameOrPath {
+			current = processSingleElement(current, pathElement)
+		}
+		return current
+	} else {
+		return processSingleElement(resourceOrField, nameOrPath)
+	}
+}
+
+/**
+ * @deprecated Use buildFutureField instead.
+ */
+_getFutureInputField := func(resourceOrField, nameOrPath, ...eph) {
+	return _buildFutureField(resourceOrField, nameOrPath, eph...)
+}
+
 /**
  * Returns true if given object is a StdMap resource
  */
@@ -170,6 +249,13 @@ isAnyMapResource := func(r) {
  */
 isJsonResource := func(r) {
 	return isResource(r) && r.info().Type.Name == constants.RTYPE_JSON.Name
+}
+
+/**
+ * Returns true if given object is a null resource
+ */
+isNullResource := func(r) {
+	return isResource(r) && r.info().Type.Name == constants.RTYPE_NULL.Name
 }
 
 // deep check whether map has resources somewhere inside
@@ -450,36 +536,47 @@ resource = func(r) {
 		 */
 		getFutureField: func(name, fieldType, ...eph) {
 			isEph := strictSelf.isEphemeral()
-			if len(eph) > 0 {
+			if len(eph) > 0 && is_bool(eph[0]) {
 				isEph = eph[0]
 			}
 			return _getFutureField(strictSelf, name, fieldType, isEph)
 		},
 
 		/**
-		 * Get future input field given field name or a path
+		 * Gets a field with a default value (null) if field is not found
+		 * after inputs/outputs are locked.
 		 *
-		 * @param nameOrPath: string|string[] - field name or an array representing a path to be traversed
+		 * @param name: string - field name
+		 * @param fieldType: field type - input, output
 		 * @param eph: bool (optional) - when false, the operation becomes pure function, waiting for resource
 		 *                               to pass deduplication before resolution.
 		 *
-		 * @return field: smart.field
+		 * @return field: smart.field - field referencing the result or null if field not found
 		 */
-		getFutureInputField: func(nameOrPath, ...eph) {
+		getFutureFieldOptional: func(name, fieldType, ...eph) {
 			isEph := strictSelf.isEphemeral()
-			if len(eph) > 0 {
+			if len(eph) > 0 && is_bool(eph[0]) {
 				isEph = eph[0]
 			}
 
-			if is_array(nameOrPath) {
-				current := strictSelf
-				for name in nameOrPath {
-					current = current.getFutureField(name, "input", isEph)
-				}
-				return current
-			} else {
-				return self.getFutureField(nameOrPath, "input", isEph)
-			}
+			fieldId := ffDefault.getFutureFieldWithDefault(self.id, name, fieldType, isEph)
+			return field(fieldId)
+		},
+
+		/**
+		 * Get future input field given field name or a path
+		 *
+		 * @param nameOrPath: string|string[]|object|object[]
+		 *                           - field name, an array representing a path to be traversed,
+		 *                             an object with {name: string, optional?: bool, eph?: bool} structure,
+		 *                             an array of such objects/strings
+		 * @param eph: bool (optional) - when false, the operation becomes pure function, waiting for resource
+		 *                               to pass deduplication before resolution.
+		 *
+		 * @return field: smart field
+		 */
+		getFutureInputField: func(nameOrPath, ...eph) {
+			return _getFutureInputField(strictSelf, nameOrPath, eph...)
 		},
 
 		/**
@@ -504,6 +601,20 @@ resource = func(r) {
 			}
 
 			return self.getFutureField(name, "output", isEph)
+		},
+
+		/**
+		 * Build a future field by traversing a specified path
+		 *
+		 * @param nameOrPath: string|string[]|object|object[]
+		 *                           - field name, an array representing a path to be traversed,
+		 *                             an object with {name: string, type?: string, optional?: bool, eph?: bool} structure,
+		 *                             an array of such objects/strings
+		 *
+		 * @return field: smart field
+		 */
+		buildFutureField: func(nameOrPath) {
+			return _buildFutureField(self, nameOrPath)
 		},
 
 		/**
@@ -845,36 +956,47 @@ field = func(f) {
 		 */
 		getFutureField: func(name, fieldType, ...eph) {
 			isEph := strictSelf.isEphemeral()
-			if len(eph) > 0 {
+			if len(eph) > 0 && is_bool(eph[0]) {
 				isEph = eph[0]
 			}
 			return _getFutureField(strictSelf, name, fieldType, isEph)
 		},
 
 		/**
+		 * Gets a field with a default value (null) if field is not found
+		 * after inputs/outputs are locked.
+		 *
+		 * @param name: string - field name
+		 * @param fieldType: field type: input, output
+		 * @param eph: bool (optional) - when false, the operation becomes pure function, waiting for resource
+		 *                               to pass deduplication before resolution.
+		 *
+		 * @return field: smart.field - field referencing the result or null if field not found
+		 */
+		getFutureFieldOptional: func(name, fieldType, ...eph) {
+			isEph := strictSelf.isEphemeral()
+			if len(eph) > 0 && is_bool(eph[0]) {
+				isEph = eph[0]
+			}
+
+			fieldId := ffDefault.getFutureFieldWithDefault(self.id, name, fieldType, isEph)
+			return field(fieldId)
+		},
+
+		/**
 		 * Get future input field given field name or a path
 		 *
-		 * @param nameOrPath: string|string[] - field name or an array representing a path to be traversed
+		 * @param nameOrPath: string|string[]|object|object[]
+		 *                           - field name, an array representing a path to be traversed,
+		 *                             an object with {name: string, optional?: bool, eph?: bool} structure,
+		 *                             an array of such objects/strings
 		 * @param eph: bool (optional) - when false, the operation becomes pure function, waiting for resource
 		 *                               to pass deduplication before resolution.
 		 *
 		 * @return field: smart field
 		 */
 		getFutureInputField: func(nameOrPath, ...eph) {
-			isEph := strictSelf.isEphemeral()
-			if len(eph) > 0 {
-				isEph = eph[0]
-			}
-
-			if is_array(nameOrPath) {
-				current := strictSelf
-				for name in nameOrPath {
-					current = current.getFutureField(name, "input", eph...)
-				}
-				return current
-			} else {
-				return self.getFutureField(nameOrPath, "input", eph...)
-			}
+			return _getFutureInputField(strictSelf, nameOrPath, eph...)
 		},
 
 		/**
@@ -899,6 +1021,20 @@ field = func(f) {
 			}
 
 			return self.getFutureField(name, "output", isEph)
+		},
+
+		/**
+		 * Build a future field by traversing a specified path
+		 *
+		 * @param nameOrPath: string|string[]|object|object[]
+		 *                           - field name, an array representing a path to be traversed,
+		 *                             an object with {name: string, type?: string, optional?: bool, eph?: bool} structure,
+		 *                             an array of such objects/strings
+		 *
+		 * @return field: smart field
+		 */
+		buildFutureField: func(nameOrPath) {
+			return _buildFutureField(strictSelf, nameOrPath)
 		}
 	}
 
@@ -1142,6 +1278,15 @@ ephemeralBuilder = func(resourceType, ...data) {
 	return resourceBuilder(id)
 }
 
+createNullResource = func(...data) {
+	ll.assert(len(data) <= 1, "can't create null resource with more than one argument")
+	if len(data) > 0 && !is_undefined(data[0]) {
+		return resource(tx.createValue(constants.RTYPE_NULL.Name, constants.RTYPE_NULL.Version, data[0]))
+	} else {
+		return resource(tx.createValue(constants.RTYPE_NULL.Name, constants.RTYPE_NULL.Version, ""))
+	}
+}
+
 createValueResource = func(resourceType, data) {
 	ll.assert(data != undefined, "can't create resource with undefined data")
 	return resource(tx.createValue(resourceType.Name, resourceType.Version, data))
@@ -1191,6 +1336,7 @@ export ll.toStrict({
 	isAnyMapResource: isAnyMapResource,
 	isLockedEphMapResource: isLockedEphMapResource,
 	isJsonResource: isJsonResource,
+	isNullResource: isNullResource,
 	resource: resource,
 	field: field,
 	resourceBuilder: resourceBuilder,
@@ -1203,5 +1349,6 @@ export ll.toStrict({
 	createMapResourceWithType: createMapResourceWithType,
 	createMapResource: createMapResource,
 	createBinaryMapResource: createBinaryMapResource,
-	createBlobMapResource: createBlobMapResource
+	createBlobMapResource: createBlobMapResource,
+	createNullResource: createNullResource
 })
