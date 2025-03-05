@@ -181,7 +181,7 @@ tpl := func() {
 		},
 
 		/**
-		 * In ephemeral template, body will only be executed when corresponding input staet is
+		 * In ephemeral template, body will only be executed when corresponding inputs state is
 		 * reached.
 		 *
 		 * Signature:

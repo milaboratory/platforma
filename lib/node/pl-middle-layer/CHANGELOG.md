@@ -1,5 +1,14 @@
 # @milaboratories/pl-middle-layer
 
+## 1.28.16
+
+### Patch Changes
+
+- 121f031: Use PFrame rust for most of join requests
+- e0d8153: PFrames version bump
+- Updated dependencies [e0d8153]
+  - @platforma-sdk/workflow-tengo@2.13.6
+
 ## 1.28.15
 
 ### Patch Changes
