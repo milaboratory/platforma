@@ -22,12 +22,6 @@ import * as windows from './lib/windows.js';
 
 export async function buildRDist(logger, version) {
   const currentOS = os.platform();
-  
-  const doneFile = `${version}.build-done`
-  if (fs.existsSync(doneFile)) {
-    logger.info(`Build of R is already done in this environment.\nTo force rebuild remove '${path.resolve(doneFile)}' file and run again.`)
-    return
-  }
 
   switch (currentOS) {
     case 'darwin': {
@@ -50,8 +44,6 @@ export async function buildRDist(logger, version) {
       process.exit(1);
     }
   }
-
-  fs.writeFileSync(doneFile, '');
 }
 
 export async function buildRDeps(logger, version) {
