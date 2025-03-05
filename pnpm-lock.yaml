@@ -31,8 +31,8 @@ catalogs:
       specifier: 2.1.13
       version: 2.1.13
     '@milaboratories/pframes-rs-node':
-      specifier: 1.0.14
-      version: 1.0.14
+      specifier: 1.0.16
+      version: 1.0.16
     '@milaboratories/software-pframes-conv':
       specifier: 2.1.13
       version: 2.1.13
@@ -1761,7 +1761,7 @@ importers:
         version: 2.1.13(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)
       '@milaboratories/pframes-rs-node':
         specifier: 'catalog:'
-        version: 1.0.14(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)
+        version: 1.0.16(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)
       '@milaboratories/pl-client':
         specifier: workspace:^
         version: link:../pl-client
@@ -4268,8 +4268,8 @@ packages:
     peerDependencies:
       '@milaboratories/pl-model-common': '*'
 
-  '@milaboratories/pframes-rs-node@1.0.14':
-    resolution: {integrity: sha512-f0oU3JXlVmue0WImR0DuyZRaOU9BHs35xoIqnCaHnAmWUpHDDE6y7mKB8zGKMCBh67+s6ix51bqguN3UzlfFXA==}
+  '@milaboratories/pframes-rs-node@1.0.16':
+    resolution: {integrity: sha512-01B/yWVWyyN3xNq21AivoCggoDbBUkAmqnnqdy2UDgTZQd6wzyrjmTTzytLUpHAmiPYSOKJuy999nMWCrawrkA==}
     peerDependencies:
       '@milaboratories/pl-model-common': '*'
 
@@ -11041,7 +11041,7 @@ snapshots:
       https-proxy-agent: 7.0.6
       node-fetch: 2.7.0(encoding@0.1.13)
       nopt: 8.1.0
-      semver: 7.6.3
+      semver: 7.7.1
       tar: 7.4.3
     transitivePeerDependencies:
       - encoding
@@ -11119,7 +11119,7 @@ snapshots:
       - encoding
       - supports-color
 
-  '@milaboratories/pframes-rs-node@1.0.14(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)':
+  '@milaboratories/pframes-rs-node@1.0.16(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)':
     dependencies:
       '@mapbox/node-pre-gyp': 2.0.0(encoding@0.1.13)
       '@milaboratories/pl-model-common': link:lib/model/common
