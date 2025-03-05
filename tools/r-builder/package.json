@@ -11,7 +11,7 @@
   },
   "license": "UNLICENSED",
   "dependencies": {
-    "axios": "catalog:",
+    "undici": "catalog:",
     "fs-extra": "catalog:",
     "tar": "catalog:",
     "unzipper": "catalog:",

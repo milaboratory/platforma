@@ -3,11 +3,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { pipeline } from 'node:stream';
 import { promisify } from 'node:util';
+import { fetch } from 'undici';
 
 import * as tar from 'tar';
 import winston from 'winston';
 import zlib from 'zlib';
-import axios from 'axios';
 import xz from 'xz';
 
 import * as pkg from './pkg.js';
@@ -92,22 +92,28 @@ var showProgress = process.stdout.isTTY;
 export async function download(logger, url, destination) {
   if (fs.existsSync(destination)) {
     logger.info(`  download skipped: ${destination} already exists`);
-    return Promise.resolve()
+    return Promise.resolve();
   }
 
   const writer = fs.createWriteStream(destination);
+  const response = await fetch(url);
 
-  const response = await axios.get(url, {
-    responseType: 'stream'
-  });
+  if (!response.ok) {
+    writer.close();
+    throw new Error(`Failed to download: ${response.status} ${response.statusText}`);
+  }
 
   if (showProgress) {
-    const totalBytes = parseInt(response.headers['content-length'] || '0', 10);
+    const totalBytes = parseInt(response.headers.get('content-length') || '0', 10);
     const knownSize = totalBytes > 0;
-    var downloadedBytes = 0;
+    let downloadedBytes = 0;
 
-    response.data.on('data', (chunk) => {
-      downloadedBytes += chunk.length;
+    const reader = response.body.getReader();
+    const pump = async () => {
+      const { done, value } = await reader.read();
+      if (done) return;
+      
+      downloadedBytes += value.length;
       const progress = knownSize
         ? (downloadedBytes / totalBytes) * 100
         : downloadedBytes;
@@ -116,21 +122,15 @@ export async function download(logger, url, destination) {
         ? `(${downloadedBytes.toString()}/${totalBytes.toString()})`
         : downloadedBytes.toString();
       process.stdout.write(`  downloading: ${percents}${bytes}\r`);
-    });
+      
+      writer.write(value);
+      await pump();
+    };
+    
+    await pump();
+  } else {
+    await pipeline(response.body, writer);
   }
-
-  response.data.pipe(writer);
-
-  return new Promise((resolve, reject) => {
-    writer.on('finish', () => {
-      process.stdout.write('\n');
-      writer.close(resolve);
-    });
-    writer.on('error', (err) => {
-      process.stdout.write('\n');
-      fs.unlink(destination, () => reject(err));
-    });
-  });
 }
 
 export async function extractTarXz(archivePath, destination) {
