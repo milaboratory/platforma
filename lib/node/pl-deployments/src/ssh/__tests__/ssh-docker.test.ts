@@ -220,7 +220,7 @@ describe('sshConnect', () => {
   });
 
   it('should timeout if the server is unreachable', async () => {
-    await expect(SshClient.init(new ConsoleLoggerAdapter(), { ...getConnectionForSsh(testContainer), port: 3233 })).rejects.toThrow('ssh.connect: error occurred: AggregateError');
+    await expect(SshClient.init(new ConsoleLoggerAdapter(), { ...getConnectionForSsh(testContainer), port: 3233 })).rejects.toThrow('ssh.connect: AggregateError');
   });
 });
 
