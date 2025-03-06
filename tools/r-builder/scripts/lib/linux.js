@@ -38,6 +38,10 @@ function useCCache(logger) {
   logger.info("Using ccache as build caching tool...")
   process.env.CC = `ccache gcc`
   process.env.CXX = `ccache g++`
+  process.env.CXX11 = `ccache g++`
+  process.env.CXX14 = `ccache g++`
+  process.env.CXX17 = `ccache g++`
+  process.env.CXX20 = `ccache g++`
 }
 
 async function installRockyLinuxPackages(logger) {
