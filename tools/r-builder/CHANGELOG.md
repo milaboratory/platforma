@@ -1,5 +1,11 @@
 # @platforma-sdk/r-builder
 
+## 1.1.1
+
+### Patch Changes
+
+- 23c98e3: Fix postinstall steps
+
 ## 1.1.0
 
 ### Minor Changes
