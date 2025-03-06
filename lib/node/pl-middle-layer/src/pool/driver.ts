@@ -142,7 +142,7 @@ class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
         this.blobIdToResource.set(blobKey(blob), blob);
       }
     }
-    const distinct_columns = [
+    const distinctСolumns = [
       ...new Map(columns.map((column) => ({
         ...column,
         data: mapBlobs(column.data, blobKey),
@@ -155,14 +155,14 @@ class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
       try {
         const pFrame = new PFrameRs(getDebugFlags().logPFrameRequests ? logFunc : undefined);
         pFrame.setDataSource(this);
-        for (const column of distinct_columns) {
+        for (const column of distinctСolumns) {
           pFrame.addColumnSpec(column.id, column.spec);
           pFrame.setColumnData(column.id, column.data);
         }
         return pFrame;
       } catch (err: unknown) {
         throw new Error(
-          `Rust PFrame creation failed, columns: ${JSON.stringify(distinct_columns)}, error: ${err as Error}`,
+          `Rust PFrame creation failed, columns: ${JSON.stringify(distinctСolumns)}, error: ${err as Error}`,
         );
       }
     })();
@@ -171,7 +171,7 @@ class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
       try {
         const pFrame = getDebugFlags().logPFrameRequests ? new PFrame(logFunc) : new PFrame();
         pFrame.setDataSource(this);
-        for (const column of distinct_columns) {
+        for (const column of distinctСolumns) {
           try {
             pFrame.addColumnSpec(column.id, column.spec);
             pFrame.setColumnData(column.id, column.data);
@@ -184,7 +184,7 @@ class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
         return pFrame;
       } catch (err: unknown) {
         throw new Error(
-          `Data PFrame creation failed, columns: ${JSON.stringify(distinct_columns)}, error: ${err as Error}`,
+          `Data PFrame creation failed, columns: ${JSON.stringify(distinctСolumns)}, error: ${err as Error}`,
         );
       }
     };

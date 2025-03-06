@@ -486,21 +486,6 @@ export class ProjectMutator {
     this.updateLastModified();
   }
 
-  /** Update block label */
-  // public setBlockLabel(blockId: string, label: string): void {
-  //   const newStructure = this.structure;
-  //   let ok = false;
-  //   for (const block of allBlocks(newStructure))
-  //     if (block.id === blockId) {
-  //       block.label = label;
-  //       ok = true;
-  //       break;
-  //     }
-  //   if (!ok) throw new Error(`block ${blockId} not found`);
-  //   this.updateStructure(newStructure);
-  //   this.updateLastModified();
-  // }
-
   private createProdCtx(upstream: Set<string>): AnyRef {
     const upstreamContexts: AnyRef[] = [];
     upstream.forEach((id) => {

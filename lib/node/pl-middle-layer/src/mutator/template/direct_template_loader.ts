@@ -70,27 +70,12 @@ const SoftwareInfoRenderer: Renderer<TemplateSoftwareData> = {
   },
 };
 
-const HashOverrideRenderer: Renderer<TemplateData> = {
-  hash(resource, hash) {
-    hash
-      .update(PlTemplateOverrideV1.type.name)
-      .update(PlTemplateOverrideV1.type.version)
-      .update(resource.hashOverride ?? '');
-  },
-  render(resource, tx, _creator) {
-    return tx.createStruct(
-      PlTemplateOverrideV1.type,
-      JSON.stringify(PlTemplateOverrideV1.fromV2Data(resource)),
-    );
-  },
-};
-
 const TemplateRenderer: Renderer<TemplateData> = {
   hash(resource, hash) {
     hash
       .update(PlTemplateV1.type.name)
       .update(PlTemplateV1.type.version)
-      .update(resource.hashOverride ?? '')
+      .update(resource.hashOverride ?? 'no-override')
       .update(resource.name)
       .update(resource.version)
       .update(resource.src);
@@ -153,11 +138,14 @@ const TemplateRenderer: Renderer<TemplateData> = {
     if (!resource.hashOverride) return tplRef;
 
     // Override template hash with proxy resource, when hash override is configured for template
-    const overrideRef = _creator(resource, HashOverrideRenderer);
+    const overrideRef = tx.createStruct(
+      PlTemplateOverrideV1.type,
+      JSON.stringify(PlTemplateOverrideV1.fromV2Data(resource)),
+    );
     const fld = PlTemplateOverrideV1.tplField(overrideRef);
     tx.createField(fld, 'Service');
     tx.setField(fld, tplRef);
-    tx.lock(tplRef);
+    tx.lock(overrideRef);
     return overrideRef;
   },
 };
@@ -170,6 +158,7 @@ function createTemplateV2Tree(tx: PlTransaction, tplInfo: TemplateData): AnyRef 
     renderer.hash(resource, hasher);
 
     const rKey = hasher.digest('hex');
+
     if (!resourceCache.has(rKey)) {
       const rId = renderer.render(resource, tx, createResource);
       resourceCache.set(rKey, rId);
