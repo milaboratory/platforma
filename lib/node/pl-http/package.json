@@ -24,7 +24,6 @@
   ],
   "dependencies": {
     "https-proxy-agent": "catalog:",
-    "cacheable-lookup": "catalog:",
     "undici": "catalog:"
   },
   "devDependencies": {
