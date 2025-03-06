@@ -1,7 +1,7 @@
 import child_process from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import { pipeline } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 import { promisify } from 'node:util';
 import { fetch } from 'undici';
 
@@ -131,16 +131,7 @@ export async function download(logger, url, destination) {
     
     await pump();
   } else {
-
-    return new Promise((resolve, reject) => {
-      pipeline(response.body, writer, (err) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve();
-        }
-      });
-    });
+    await pipeline(response.body, writer);
   }
 }
 
@@ -152,7 +143,7 @@ export async function extractTarXz(archivePath, destination) {
 }
 
 export async function extractTarGz(archivePath, destination) {
-  await pipelineAsync(
+  await pipeline(
     fs.createReadStream(archivePath),
     zlib.createUnzip(),
     tar.extract({ cwd: destination })
