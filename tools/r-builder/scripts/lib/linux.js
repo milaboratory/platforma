@@ -64,7 +64,7 @@ async function installRockyLinuxPackages(logger) {
 
   util.runInherit(`sudo dnf -y install R`);
   util.runInherit(`sudo dnf -y builddep R`);
-  util.runInherit(`sudo dnf -y install patchelf openssl-devel libcurl-devel libpng-devel lapack-devel blas-devel fontconfig-devel libxml2-devel`);
+  util.runInherit(`sudo dnf -y install curl rsync unzip diffutils procps patchelf openssl-devel libcurl-devel libpng-devel lapack-devel blas-devel fontconfig-devel libxml2-devel`);
 }
 
 function getGCCMajorVersion() {
@@ -125,36 +125,19 @@ async function buildRDist(logger, buildDir, installRoot, rRoot) {
   util.runInherit(`make`, { cwd: buildDir });
   util.runInherit(`make install`, { cwd: buildDir });
 
-  const isArm64 = os.arch() === 'arm64';
-
-  // Determine library path based on architecture
-  let rLibPath = isArm64 ?
-    path.join(installRoot, 'lib', 'R') :
-    path.join(installRoot, 'lib64', 'R');
-
-  // Ensure the source path exists before attempting to rename
-  if (!fs.existsSync(rLibPath)) {
-    logger.warn(`R library not found at expected path: ${rLibPath}, trying alternative...`);
-
-    // Try the alternative paths as fallback
-    rLibPath = rLibPath.includes('lib64')
-      ? path.join(installRoot, 'lib', 'R')  // Try lib if lib64 failed
-      : path.join(installRoot, 'lib64', 'R'); // Try lib64 if lib failed
-
-    if (!fs.existsSync(rLibPath)) {
-      throw new Error(`R library not found in either lib or lib64 directories`);
-    }
+  let libsDir = path.join(installRoot, 'lib64', 'R');
+  if (!fs.existsSync(libsDir)) {
+    libsDir = path.join(installRoot, 'lib', 'R');
+  }
+  if (!fs.existsSync(libsDir)) {
+    throw new Error(`R libraries directory not found in ${installRoot} (neither 'lib64/R' nor 'lib/R')`);
   }
 
-  logger.info(`Moving R from ${rLibPath} to ${rRoot}`);
-  fs.renameSync(rLibPath, rRoot);
-
-  // Move core of R installation into desired R root, leaving behind all supporting
-  // (and unnecessary) files.
+  logger.info(`Moving R from ${libsDir} to ${rRoot}`);
   if (fs.existsSync(rRoot)) {
     fs.rmSync(rRoot, { recursive: true });
   }
-  fs.renameSync(path.join(installRoot, 'lib', 'R'), rRoot);
+  fs.renameSync(libsDir, rRoot);
 
   // 1st round of dependencies collection with binaries ELF patching to make R work from
   // its new location. We'll collect dependencies of installed packages later by one more round.
