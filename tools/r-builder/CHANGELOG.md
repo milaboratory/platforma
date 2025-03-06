@@ -1,5 +1,11 @@
 # @platforma-sdk/r-builder
 
+## 1.0.0
+
+### Major Changes
+
+- 70a8665: Initial release
+
 ## 0.0.5
 
 ### Patch Changes
