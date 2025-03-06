@@ -1,5 +1,12 @@
 # @milaboratories/pl-client
 
+## 2.7.11
+
+### Patch Changes
+
+- Updated dependencies [3bf8838]
+  - @milaboratories/pl-http@1.1.0
+
 ## 2.7.10
 
 ### Patch Changes

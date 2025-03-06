@@ -1,5 +1,12 @@
 # @platforma-sdk/block-tools
 
+## 2.5.18
+
+### Patch Changes
+
+- Updated dependencies [3bf8838]
+  - @milaboratories/pl-http@1.1.0
+
 ## 2.5.17
 
 ### Patch Changes

@@ -1,5 +1,22 @@
 # @milaboratories/pl-middle-layer
 
+## 1.29.0
+
+### Minor Changes
+
+- 3bf8838: Fix hash override template materialization code
+  Additional caching in block pack prepare
+
+### Patch Changes
+
+- 6614d61: increase blob cache size for pframes
+- Updated dependencies [3bf8838]
+  - @milaboratories/pl-http@1.1.0
+  - @milaboratories/pl-client@2.7.11
+  - @platforma-sdk/block-tools@2.5.18
+  - @milaboratories/pl-drivers@1.5.24
+  - @milaboratories/pl-tree@1.4.30
+
 ## 1.28.21
 
 ### Patch Changes
