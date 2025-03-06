@@ -33,7 +33,6 @@
     "denque": "catalog:",
     "lru-cache": "catalog:",
     "https-proxy-agent": "catalog:",
-    "cacheable-lookup": "catalog:",
     "long": "catalog:",
     "undici": "catalog:",
     "utility-types": "catalog:",
