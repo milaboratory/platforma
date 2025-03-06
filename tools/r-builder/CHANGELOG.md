@@ -1,5 +1,11 @@
 # @platforma-sdk/r-builder
 
+## 1.1.0
+
+### Minor Changes
+
+- f78c9a9: Support rocky linux
+
 ## 1.0.0
 
 ### Major Changes
