@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 1.29.2
+
+### Patch Changes
+
+- 0839ee6: PFrames driver - no concurrencyLimiter for rust calls
+
 ## 1.29.1
 
 ### Patch Changes
