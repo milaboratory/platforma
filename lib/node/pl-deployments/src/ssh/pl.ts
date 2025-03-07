@@ -124,18 +124,20 @@ export class SshPl {
         ...options,
       };
       state.plBinaryOps = ops.plBinary;
+
+      await onProgress?.('Detecting server architecture...');
       state.arch = await this.getArch();
+      await onProgress?.('Server architecture detected.');
 
-      await onProgress?.('Received the server architecture.');
-
+      await onProgress?.('Fetching user home directory...');
       state.remoteHome = await this.getUserHomeDirectory();
+      await onProgress?.('User home directory retrieved.');
 
-      await onProgress?.('Received the home directory.');
-
+      await onProgress?.('Checking platform status...');
       state.alive = await this.isAlive();
 
       if (state.alive.allAlive) {
-        await onProgress?.(`All services running.`);
+        await onProgress?.('All required services are running.');
       }
 
       if (state.alive.allAlive) {
@@ -149,19 +151,19 @@ export class SshPl {
         this.logger.info(`SshPl.platformaInit: need restart? ${state.needRestart}`);
 
         if (!state.needRestart) {
-          await onProgress?.(`Server setup finished.`);
+          await onProgress?.('Server setup completed.');
           return state.userCredentials;
         }
 
-        await onProgress?.(`Stop serveces.`);
+        await onProgress?.('Stopping services...');
         await this.stop();
       }
 
+      await onProgress?.('Downloading and uploading required binaries...');
       const downloadRes = await this.downloadBinariesAndUploadToTheServer(
         ops.localWorkdir, ops.plBinary!, state.remoteHome, state.arch,
       );
-
-      await onProgress?.(`All binaries downloaded.`);
+      await onProgress?.('All required binaries have been downloaded and uploaded.');
 
       state.binPaths = { ...downloadRes, history: undefined };
       state.downloadedBinaries = downloadRes.history;
@@ -172,6 +174,7 @@ export class SshPl {
         throw new Error(`SshPl.platformaInit: remote ports are not defined`);
       }
 
+      await onProgress?.('Generating server configuration...');
       const config = await generateSshPlConfigs({
         logger: this.logger,
         workingDir: plpath.workDir(state.remoteHome),
@@ -193,8 +196,9 @@ export class SshPl {
       });
       state.generatedConfig = { ...config, filesToCreate: { skipped: 'it is too wordy' } };
 
-      await onProgress?.(`Start generating folder structure...`);
+      await onProgress?.('Server configuration generated.');
 
+      await onProgress?.('Generating folder structure...');
       for (const [filePath, content] of Object.entries(config.filesToCreate)) {
         await this.sshClient.writeFileOnTheServer(filePath, content);
         this.logger.info(`Created file ${filePath}`);
@@ -204,7 +208,9 @@ export class SshPl {
         await this.sshClient.ensureRemoteDirCreated(dir);
         this.logger.info(`Created directory ${dir}`);
       }
+      await onProgress?.('Folder structure created.');
 
+      await onProgress?.('Writing supervisord configuration...');
       const supervisorConfig = generateSupervisordConfig(
         config.minioConfig.storageDir,
         config.minioConfig.envs,
@@ -219,7 +225,9 @@ export class SshPl {
       if (!writeResult) {
         throw new Error(`Can not write supervisord config on the server ${plpath.workDir(state.remoteHome)}`);
       }
+      await onProgress?.('Supervisord configuration written.');
 
+      await onProgress?.('Saving connection information...');
       state.connectionInfo = newConnectionInfo(
         config.plUser,
         config.plPassword,
@@ -231,14 +239,14 @@ export class SshPl {
         plpath.connectionInfo(state.remoteHome),
         stringifyConnectionInfo(state.connectionInfo),
       );
+      await onProgress?.('Connection information saved.');
 
-      await onProgress?.(`Starting Platforma on the server...`);
-
+      await onProgress?.('Starting Platforma on the server...');
       await this.start();
       state.started = true;
       this.initState = state;
 
-      await onProgress?.(`Services started...`);
+      await onProgress?.('Platforma has been started successfully.');
 
       return state.connectionInfo;
     } catch (e: unknown) {
