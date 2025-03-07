@@ -1,5 +1,11 @@
 # @platforma-sdk/r-builder
 
+## 1.1.2
+
+### Patch Changes
+
+- b791b1e: Don't copy libraries twice to avoid issues with permissions (no 'w' for current user)
+
 ## 1.1.1
 
 ### Patch Changes
