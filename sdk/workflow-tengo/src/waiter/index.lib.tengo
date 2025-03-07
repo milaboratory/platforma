@@ -1,0 +1,59 @@
+fmt := import("fmt")
+ll := import(":ll")
+render := import(":render")
+validation := import(":validation")
+assets := import(":assets")
+
+waiterTpl := assets.importTemplate(":waiter.waiter")
+
+/**
+ * Create new waiter, that will wait for all resources given to wait() and pass <pass> to <output> afterwards.
+ *
+ * @param pass: smart.field | smart.resource - reference to something that should be passed to the output
+ *                                             once all waits get ready.
+ */
+builder := func(pass) {
+	self := undefined
+
+	/** type: smart.reference[] */
+	whatToWait := []
+
+	self = ll.toStrict({
+		/**
+		 * Wait for given reference to become ready.
+		 *
+		 * @param ref: smart.field | smart.resource - reference to resource to wait for ResourceReady
+		 *                                            state before passing <pass> to the output of waiter
+		 */
+		wait: func(ref) {
+			validation.assertJsonSchema(ref, validation.reference, "waiter.builder.wait(ref): ref should be a reference to resource or field")
+			whatToWait = append(whatToWait, ref)
+
+			return self
+		},
+
+		build: func() {
+			waits := {}
+			for i, v in whatToWait {
+				waits[fmt.sprintf("input_%d", i)] = v
+			}
+
+			tpl := render.createEphemeral(waiterTpl, {
+				"pass": pass,
+				"trigger": waits
+			})
+
+			return ll.toStrict({
+				output: func() {
+					return tpl.output("output")
+				}
+			})
+		}
+	})
+
+	return self
+}
+
+export ll.toStrict({
+	builder:                 	builder
+})

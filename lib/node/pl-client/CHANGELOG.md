@@ -1,5 +1,25 @@
 # @milaboratories/pl-client
 
+## 2.7.11
+
+### Patch Changes
+
+- Updated dependencies [3bf8838]
+  - @milaboratories/pl-http@1.1.0
+
+## 2.7.10
+
+### Patch Changes
+
+- Updated dependencies [e6ad278]
+  - @milaboratories/pl-http@1.0.7
+
+## 2.7.9
+
+### Patch Changes
+
+- 2c75b72: RNull type constant
+
 ## 2.7.8
 
 ### Patch Changes

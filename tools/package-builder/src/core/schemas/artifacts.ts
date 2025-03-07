@@ -86,6 +86,7 @@ export const environmentPackageSchema = archiveRulesSchema.extend({
   runtime: z
     .enum(runEnvironmentTypes)
     .describe('type of runtime this run environment provides: \'java\', \'python\' and so on'),
+  ['r-version']: z.string().optional(),
 
   binDir: z
     .string()
@@ -119,18 +120,9 @@ export const pythonPackageSchema = archiveRulesSchema.extend({
 });
 export type pythonPackageConfig = z.infer<typeof pythonPackageSchema>;
 
-export const renvToolsetSchema = z.strictObject({
-  toolset: z.literal('renv'),
-  lockFile: z.string().describe('path to \'renv.lock\' file inside package archive'),
-});
-
-export const rToolsetSchema = z.discriminatedUnion('toolset', [renvToolsetSchema]);
-
 export const rPackageSchema = archiveRulesSchema.extend({
   type: z.literal('R'),
-  ['r-version']: z.string(),
   environment: artifactIDSchema,
-  dependencies: rToolsetSchema,
 });
 export type rPackageConfig = z.infer<typeof rPackageSchema>;
 

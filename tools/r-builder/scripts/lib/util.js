@@ -1,14 +1,13 @@
 import child_process from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import { pipeline } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 import { promisify } from 'node:util';
 import { fetch } from 'undici';
 
 import * as tar from 'tar';
 import winston from 'winston';
 import zlib from 'zlib';
-import xz from 'xz';
 
 import * as pkg from './pkg.js';
 
@@ -20,7 +19,10 @@ export const downloadsDir = `${buildDir}/artifacts/dld`;
 export const artifactsDir = `${buildDir}/artifacts/pkg`;
 
 export const dependenciesDir = 'dependencies'; // where to search for dependencies specification (init.R or renv.lock)
-const renvDirName = 'renv-root' // directory with all renv cache stored inside final R run environment distribution
+
+// directory with all renv cache stored inside final R run environment distribution.
+// When changing this name, remember to update R preparation steps in workflow-tengo SDK.
+const renvDirName = 'renv-root'
 
 const pipelineAsync = promisify(pipeline);
 
@@ -134,19 +136,14 @@ export async function download(logger, url, destination) {
 }
 
 export async function extractTarXz(archivePath, destination) {
-  const archiveStream = fs.createReadStream(archivePath);
-
-  const decompress = new xz.Decompressor();
-
-  await pipelineAsync(
-    archiveStream,
-    decompress,
-    tar.extract({ cwd: destination })
-  );
+  if (!fs.existsSync(destination)) {
+    fs.mkdirSync(destination, { recursive: true });
+  }
+  runInherit(`tar -xJf '${archivePath}' -C '${destination}'`);
 }
 
 export async function extractTarGz(archivePath, destination) {
-  await pipelineAsync(
+  await pipeline(
     fs.createReadStream(archivePath),
     zlib.createUnzip(),
     tar.extract({ cwd: destination })
@@ -234,7 +231,9 @@ export function createLogger(level = 'debug') {
 
     format: winston.format.combine(
       winston.format.printf(({ level, message }) => {
-        const indent = ' '.repeat(level.length + 2); // For ': ' after the level
+        const now = new Date();
+        const time = `[${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}]`;
+        const indent = ' '.repeat(time.length + 1 + level.length + 2); // For ': ' after the level
         const indentedMessage = message
           .split('\n')
           .map((line, index) => (index === 0 ? line : indent + line))
@@ -242,7 +241,7 @@ export function createLogger(level = 'debug') {
 
         const colorize = (l) => winston.format.colorize().colorize(l, l);
 
-        return `${colorize(level)}: ${indentedMessage}`;
+        return `${time} ${colorize(level)}: ${indentedMessage}`;
       })
     ),
 
@@ -270,7 +269,7 @@ export function runR(logger, rRoot, args, opts = {}) {
   const cmdToRun = `${path.resolve(rRoot, 'bin/R')} ${args.join(' ')}`;
   const renvRoot = path.join(path.resolve(rRoot), renvDirName)
 
-  env = {
+  const env = {
     RHOME: path.resolve(rRoot),
     R_HOME_DIR: path.resolve(rRoot),
     RENV_PATHS_ROOT: renvRoot,
@@ -403,22 +402,25 @@ export function buildRDependencies(
       '--no-echo',
       '-e', ...quote(`renv::restore( clean = TRUE )`),
     ], {
-      wd: tempRenvDir,
+      wd: depsDir,
       paths: additionalPaths,
     })
 
+  } else if (fs.existsSync(path.join(depsDir, initFile))) {
+    runInRenv(logger, rRoot, ['--no-echo', `--file=${initFile}`], {
+      wd: depsDir,
+      paths: additionalPaths,
+    })
+
+    if (!fs.existsSync(path.join(depsDir, lockFile))) {
+      runInRenv(logger, rRoot, ['--no-echo', '-e', ...quote(`renv::snapshot()`)])
+    }
+
   } else {
-    if (!fs.existsSync(path.join(depsDir, initFile))) {
       throw new Error(
         `directory ${depsDir} has no ${lockFile} or ${initFile}. No dependencies detected.\n`+
         `Create empty init.R file if you really need empty R run environment without any preinstalled dependencies`
       )
-    }
-
-    runInRenv(logger, rRoot, ['--no-echo', `--file=${initFile}`], {
-      wd: tempRenvDir,
-      paths: additionalPaths,
-    })
   }
 
   const lockData = fs.readFileSync(lockPath, { encoding: 'utf-8' });
@@ -433,8 +435,12 @@ export function buildRDependencies(
     }
   }
 
-  fs.rmSync(tempRenvDir, { recursive: true })
+  // Store resulting 'renv.lock' file in R installation root directory,
+  // so we can use it when preparing renv on Platforma Backend side (workflow-tengo SDK).
+  fs.copyFileSync(path.join(depsDir, lockFile), path.join(rRoot, renvDirName, lockFile))
+
   if (fs.existsSync(origProjectsFile)) {
+    // Restore original 'projects' file to not leave traces of environment preparation.
     fs.renameSync(origProjectsFile, projectsFile)
   }
 
@@ -474,6 +480,8 @@ function patchREnviron(
   envs = {},
   comment = "",
 ) {
+  logger.info(`Patching Renviron file in ${rRoot} directory`)
+
   let rEnvironPath = path.join(rRoot, 'etc', 'Renviron')
   if (!fs.existsSync(rEnvironPath)) {
     rEnvironPath = path.join(rRoot, 'etc', 'Renviron.site')
@@ -487,20 +495,7 @@ function patchREnviron(
   }
 
   for (const [envName, envValue] of Object.entries(envs)) {
-    line = `${envName}=\${${envName}:-'${envValue}'}`
+    const line = `${envName}=\${${envName}:-'${envValue}'}`
     fs.appendFileSync(rEnvironPath, line + '\n', 'utf8');
   }
-}
-
-/**
- * Recreate directory by removing it and creating back.
- *
- * @param {string} dir - path to directory
- */
-function recreateDir(dir) {
-  if (fs.existsSync(dir)) {
-    fs.rmSync(dir, { recursive: true })
-  }
-  fs.mkdirSync(dir, { recursive: true })
-
 }

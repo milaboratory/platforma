@@ -1,5 +1,11 @@
 # @milaboratories/pl-local
 
+## 1.2.3
+
+### Patch Changes
+
+- 4726310: check tar; check glibc
+
 ## 1.2.2
 
 ### Patch Changes

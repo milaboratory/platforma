@@ -1,5 +1,17 @@
 # @milaboratories/pl-http
 
+## 1.1.0
+
+### Minor Changes
+
+- 3bf8838: Remove dns cache
+
+## 1.0.7
+
+### Patch Changes
+
+- e6ad278: Publication with updated dependencies
+
 ## 1.0.6
 
 ### Patch Changes

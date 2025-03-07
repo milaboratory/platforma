@@ -1,5 +1,17 @@
 # @platforma-sdk/tengo-builder
 
+## 1.19.1
+
+### Patch Changes
+
+- 7ba7308: Important fix for inline comment matching
+
+## 1.19.0
+
+### Minor Changes
+
+- 2c75b72: Now comment lines are removed during compilation to save space
+
 ## 1.18.0
 
 ### Minor Changes

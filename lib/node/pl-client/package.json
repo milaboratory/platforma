@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-client",
-  "version": "2.7.8",
+  "version": "2.7.11",
   "description": "New TS/JS client for Platform API",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
@@ -33,7 +33,6 @@
     "denque": "catalog:",
     "lru-cache": "catalog:",
     "https-proxy-agent": "catalog:",
-    "cacheable-lookup": "catalog:",
     "long": "catalog:",
     "undici": "catalog:",
     "utility-types": "catalog:",

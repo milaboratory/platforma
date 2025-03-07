@@ -7,40 +7,64 @@ import * as util from './util.js';
 
 const platformName = os.arch() === 'arm64' ? 'linux-aarch64' : `linux-x64`;
 
-async function installSystemPackages(logger) {
-  const originalAptSources = '/etc/apt/sources.list';
-  logger.info(`Analyzing '${originalAptSources}'`);
-
-  const modifiedAptSources = path.join(os.tmpdir(), 'apt-sources-list');
-  let srcExists = false;
-
-  const lines = fs.readFileSync(originalAptSources).toString().split('\n');
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
-    if (/^\s*#\s*(deb-src)\s+.*\s+(universe)\s*$/.test(line)) {
-      srcExists = true;
-      lines[i] = line.replace(/^\s*#\s*/, '');
-    }
-    if (/^\s*deb-src\s+/.test(line)) {
-      srcExists = true;
-    }
-  }
-
-  if (srcExists) {
-    logger.info(`Patching '${originalAptSources}'`);
-    fs.writeFileSync(modifiedAptSources, lines.join('\n'));
-    util.runInherit(`sudo mv '${modifiedAptSources}' '${originalAptSources}'`);
+function useCaching(logger) {
+  if (util.isOK('which ccache')) {
+    useCCache(logger)
+  } else if (util.isOK('which sccache')) {
+    useSCCache(logger)
   } else {
-    logger.warn(
-      `WARNING! No 'deb-src' records found in '${originalAptSources}'. 'apt-get build-dep' would probably fail.`
-    );
+    logger.warn('No caching tool found. Builds will be slow.')
+  }
+}
+
+/**
+ * Setup current process environment to integrate with sccache
+ *
+ * @param {winston.Logger} logger
+ */
+function useSCCache(logger) {
+  logger.info("Using sccache as build caching tool...")
+  process.env.SCCACHE_GHA_ENABLED = "true"
+  process.env.CC = `sccache gcc`
+  process.env.CXX = `sccache g++`
+}
+
+/**
+ * Setup current process environment to integrate with ccache
+ *
+ * @param {winston.Logger} logger
+ */
+function useCCache(logger) {
+  logger.info("Using ccache as build caching tool...")
+  process.env.CC = `ccache gcc`
+  process.env.CXX = `ccache g++`
+  process.env.CXX11 = `ccache g++`
+  process.env.CXX14 = `ccache g++`
+  process.env.CXX17 = `ccache g++`
+  process.env.CXX20 = `ccache g++`
+}
+
+async function installRockyLinuxPackages(logger) {
+  logger.info('Installing packages for Rocky Linux');
+  util.runInherit(`sudo dnf -y install dnf-plugins-core`);
+  util.runInherit(`sudo dnf -y install epel-release`);
+
+  // Try to enable powertools or add fallback for different Rocky Linux versions
+  try {
+    util.runInherit(`sudo dnf config-manager --set-enabled powertools`);
+  } catch (error) {
+    logger.warn('Failed to enable powertools, trying alternative names');
+    try {
+      // In Rocky Linux 9, it's called "crb" instead of "powertools"
+      util.runInherit(`sudo dnf config-manager --set-enabled crb`);
+    } catch (innerError) {
+      logger.warn('Could not enable powertools or crb repositories. Some packages might not be available.');
+    }
   }
 
-  logger.info('Installing packages');
-  util.runInherit(`sudo apt-get update`);
-  util.runInherit(`sudo apt-get install --yes rsync build-essential unzip curl patchelf r-recommended`);
-  util.runInherit(`sudo apt-get install --yes libssl-dev libcurl4-openssl-dev libpng-dev liblapack-dev libblas-dev libfontconfig1-dev libxml2-dev`);
-  util.runInherit(`sudo apt-get build-dep --yes r-base`);
+  util.runInherit(`sudo dnf -y install R`);
+  util.runInherit(`sudo dnf -y builddep R`);
+  util.runInherit(`sudo dnf -y install curl rsync unzip diffutils procps patchelf openssl-devel libcurl-devel libpng-devel lapack-devel blas-devel fontconfig-devel libxml2-devel`);
 }
 
 function getGCCMajorVersion() {
@@ -97,16 +121,23 @@ function configureRBuild(logger, version, sourcesDir, installDir) {
   return buildDir;
 }
 
-function buildRDist(logger, buildDir, installRoot, rRoot) {
+async function buildRDist(logger, buildDir, installRoot, rRoot) {
   util.runInherit(`make`, { cwd: buildDir });
   util.runInherit(`make install`, { cwd: buildDir });
 
-  // Move core of R installation into desired R root, leaving behind all supporting
-  // (and unnecessary) files.
-  if (fs.existsSync(rRoot)) {
-    fs.rmSync(rRoot, { recursive: true })
+  let libsDir = path.join(installRoot, 'lib64', 'R');
+  if (!fs.existsSync(libsDir)) {
+    libsDir = path.join(installRoot, 'lib', 'R');
   }
-  fs.renameSync(path.join(installRoot, 'lib', 'R'), rRoot);
+  if (!fs.existsSync(libsDir)) {
+    throw new Error(`R libraries directory not found in ${installRoot} (neither 'lib64/R' nor 'lib/R')`);
+  }
+
+  logger.info(`Moving R from ${libsDir} to ${rRoot}`);
+  if (fs.existsSync(rRoot)) {
+    fs.rmSync(rRoot, { recursive: true });
+  }
+  fs.renameSync(libsDir, rRoot);
 
   // 1st round of dependencies collection with binaries ELF patching to make R work from
   // its new location. We'll collect dependencies of installed packages later by one more round.
@@ -178,7 +209,9 @@ function collectSoLibs(logger, binaryFiles, libsDir, libsToIgnore) {
   for (const libPath of collectedLibs) {
     logger.info(`  copying '${libPath}'`);
     const targetPath = path.join(libsDir, path.basename(libPath));
-    fs.copyFileSync(libPath, targetPath);
+    if (!fs.existsSync(targetPath)) {
+      fs.copyFileSync(libPath, targetPath);
+    }
   }
 
   return collectedLibs;
@@ -224,19 +257,6 @@ function patchBinElf(logger, binaryFile, rpath) {
   util.runInherit(`patchelf --remove-rpath '${binaryFile}'`);
   util.runInherit(`patchelf --set-rpath '${rpath}' '${binaryFile}'`);
 }
-/**
- * Setup current process environment to integrate with sccache
- *
- * @param {winston.Logger} logger
- */
-function useSCCache(logger) {
-  if (util.isOK('which sccache')) {
-    logger.info("Using sccache as build caching tool...")
-    process.env.SCCACHE_GHA_ENABLED = "true"
-    process.env.CC = `sccache gcc`
-    process.env.CXX = `sccache g++`
-  }
-}
 
 /**
  * Build portable R distribution and all required packages from sources
@@ -250,14 +270,14 @@ export async function buildR(logger, version) {
     process.exit(1);
   }
 
-  useSCCache(logger)
+  useCaching(logger)
 
   const distDir = path.join(util.rDistDir, platformName);
 
   fs.mkdirSync(path.dirname(distDir), { recursive: true });
   fs.mkdirSync(util.downloadsDir, { recursive: true });
 
-  await installSystemPackages(logger);
+  await installRockyLinuxPackages(logger);
 
   const rSourcesDir = await getRSources(logger, version);
   const installDir = path.join(util.rDistDir, 'tmp-install');
@@ -267,6 +287,7 @@ export async function buildR(logger, version) {
 
   fs.renameSync(path.join(distDir, 'bin/R'), path.join(distDir, 'bin/R.orig'))
   fs.copyFileSync(pkg.asset('R.linux.sh'), path.join(distDir, 'bin/R'));
+  fs.chmodSync(path.join(distDir, 'bin/R'), 0o755)
 
   const gccVersion = getGCCMajorVersion()
   const gccUtilsPath = path.join('/usr/lib/gcc/x86_64-linux-gnu', gccVersion.toString())
@@ -280,7 +301,7 @@ export async function buildDeps(logger, version) {
     process.exit(1);
   }
 
-  useSCCache(logger);
+  useCaching(logger);
 
   const distDir = path.join(util.rDistDir, platformName);
 

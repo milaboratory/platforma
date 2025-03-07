@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-http",
-  "version": "1.0.6",
+  "version": "1.1.0",
   "description": "Common HTTP client settings for Platforma.bio libraries",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
@@ -24,7 +24,6 @@
   ],
   "dependencies": {
     "https-proxy-agent": "catalog:",
-    "cacheable-lookup": "catalog:",
     "undici": "catalog:"
   },
   "devDependencies": {

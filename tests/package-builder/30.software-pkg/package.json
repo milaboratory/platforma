@@ -39,7 +39,6 @@
       "with-r-environment": {
         "registry": "custom",
         "type": "R",
-        "r-version": "4.3.1",
         "root": "./src",
         "environment": "@milaboratories/example-pl-package-runenv-1:r",
         "dependencies": {

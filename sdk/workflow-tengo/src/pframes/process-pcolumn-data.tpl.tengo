@@ -9,6 +9,7 @@ pConstants := import(":pframes.constants")
 pUtil := import(":pframes.util")
 xsv := import(":pframes.xsv")
 builder := import(":pframes.builder")
+removeNullsLib := import(":pframes.remove-nulls")
 
 json := import("json")
 
@@ -129,11 +130,24 @@ self.body(func(inputs) {
 		}
 
 		outputMaps := {}
+		optionalOutputs := {}
 
 		for output in outputs {
 			if !is_map(output) {
 				ll.panic("malformed output: %v", output)
 			}
+
+			reultMightBeNull := false
+			for p in output.path {
+				if is_map(p) && p.optional {
+					reultMightBeNull = true
+					break
+				}
+			}
+			if reultMightBeNull {
+				optionalOutputs[output.name] = true
+			}
+
 			if output.type == "Resource" {
 				outputMaps[output.name] = smart.structBuilder(
 					pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP,
@@ -206,12 +220,15 @@ self.body(func(inputs) {
 				if is_undefined(path) {
 					path = [output.name]
 				}
-				ref := renderResult.output(path[0]).getFutureInputField(path[1:], eph)
+
+				ref := renderResult.resolveOutput(path)
+				reultMightBeNull := optionalOutputs[output.name]
+
 				if output.type == "Xsv" {
-					pf := xsv.importFile(ref, output.xsvType, output.settings, { dataOnly: true })
+					pf := xsv.importFile(ref, output.xsvType, output.settings, { dataOnly: true, allowNullInput: reultMightBeNull })
 					for col in output.settings.columns {
 						id := pUtil.xsvColumnId(col)
-						data := pf.getFutureInputField(id)
+						data := pf.getFutureInputField({name: id, optional: reultMightBeNull})
 						outputMaps[output.name][id][sGroupKey] = data
 					}
 				} else {
@@ -223,6 +240,15 @@ self.body(func(inputs) {
 		}
 
 		for output in outputs {
+			resultMightBeNull := optionalOutputs[output.name]
+
+			postProcessDataMap := func(dataMap) {
+				if resultMightBeNull {
+					return removeNullsLib.removeNulls(dataMap)
+				}
+				return dataMap
+			}
+
 			if output.type == "Xsv" {
 
 				partitionKeyLength := 0
@@ -281,16 +307,16 @@ self.body(func(inputs) {
 						if unwrapZeroPartition {
 							if binary {
 								for suffix in [".index", ".values"] {
-									dataRes.createInputField(sGroupKey + suffix).set(partData.getFutureInputField(pUtil.EMPTY_JSON_KEY + suffix))
+									dataRes.createInputField(sGroupKey + suffix).set(partData.buildFutureField({name: pUtil.EMPTY_JSON_KEY + suffix, optional: resultMightBeNull}))
 								}
 							} else {
-								dataRes.createInputField(sGroupKey).set(partData.getFutureInputField(pUtil.EMPTY_JSON_KEY))
+								dataRes.createInputField(sGroupKey).set(partData.buildFutureField({name: pUtil.EMPTY_JSON_KEY, optional: resultMightBeNull}))
 							}
 						} else {
 							dataRes.createInputField(sGroupKey).set(partData)
 						}
 					}
-					columnResults[id] = dataRes.lockAndBuild()
+					columnResults[id] = postProcessDataMap(dataRes.lockAndBuild())
 				}
 
 				if !is_undefined(output.flattenWithDelimiter) {
@@ -305,7 +331,7 @@ self.body(func(inputs) {
 					outputMaps[output.name] = mapBuilder.build()
 				}
 			} else {
-				outputMaps[output.name] = outputMaps[output.name].lockAndBuild()
+				outputMaps[output.name] = postProcessDataMap(outputMaps[output.name].lockAndBuild())
 			}
 		}
 
