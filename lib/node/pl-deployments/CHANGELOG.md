@@ -1,5 +1,11 @@
 # @milaboratories/pl-local
 
+## 1.2.4
+
+### Patch Changes
+
+- ed96fa8: added messages for desktop
+
 ## 1.2.3
 
 ### Patch Changes
