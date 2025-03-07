@@ -473,16 +473,14 @@ export class Renderer {
             };
           }
           case 'R': {
-            const { toolset, ...deps } = pkg.dependencies;
-
             return {
               type: 'R',
               hash: hash.digest().toString('hex'),
               path: rootDir,
               cmd: ep.cmd,
               envVars: ep.env,
-              toolset: toolset,
-              dependencies: deps,
+              toolset: 'renv',
+              dependencies: {},
               runEnv: this.resolveRunEnvironment(pkg.environment, pkg.type),
             };
           }
@@ -596,8 +594,6 @@ export class Renderer {
             };
           }
           case 'R': {
-            const { toolset, ...deps } = pkg.dependencies;
-
             return {
               type: 'R',
               registry: pkg.registry.name,
@@ -606,8 +602,8 @@ export class Renderer {
               cmd: ep.cmd,
               envVars: ep.env,
               runEnv: this.resolveRunEnvironment(pkg.environment, pkg.type),
-              toolset: toolset,
-              dependencies: deps,
+              toolset: 'renv',
+              dependencies: {},
             };
           }
           // case "conda":

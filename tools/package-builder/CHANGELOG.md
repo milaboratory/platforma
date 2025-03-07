@@ -1,5 +1,11 @@
 # @platforma-sdk/package-builder
 
+## 2.15.4
+
+### Patch Changes
+
+- 76f3d78: Don't require r-version in software. Require it in environment
+
 ## 2.15.3
 
 ### Patch Changes

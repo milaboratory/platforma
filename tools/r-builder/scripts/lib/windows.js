@@ -1,6 +1,6 @@
 import path from 'node:path';
 import os from 'node:os';
-import fs from 'node:fs';
+import fsextra from 'fs-extra';
 
 import * as pkg from './pkg.js';
 import * as util from './util.js';
@@ -17,12 +17,7 @@ export async function buildR(logger, version) {
 
   // Copy Windows R stub files to dist directory
   const stubDir = pkg.asset('windows-x64-stub');
-  await fs.promises.cp(stubDir, distDir, {
-    recursive: true,
-    preserveTimestamps: true,
-    force: true,
-    errorOnExist: false
-  });
+  await fsextra.copy(stubDir, distDir);
 
   // TODO: R for windows
 }

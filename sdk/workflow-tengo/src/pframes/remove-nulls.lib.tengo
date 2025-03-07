@@ -1,0 +1,36 @@
+ll := import(":ll")
+assets := import(":assets")
+render := import(":render")
+smart := import(":smart")
+
+// Import the remove-nulls template
+removeNullsTemplate := assets.importTemplate(":pframes.remove-nulls")
+
+/**
+ * Remove null values from a map of resources
+ * @param dataMap: a map resource that may contain null resources
+ * @param isEph: (optional) if true, creates an ephemeral template rendering (default: false)
+ * @return a new map with all null resources removed
+ */
+removeNulls := func(dataMap, ...opts) {
+    ll.assert(smart.isReference(dataMap), "expected resource or field, got %v", dataMap)
+
+    // Extract isEph from optional parameters, default to false if not provided
+    isEph := false
+    if len(opts) > 0 {
+        isEph = opts[0]
+    }
+
+    // Create template rendering with the dataMap as input
+    result := render.createUniversal(removeNullsTemplate, isEph, {
+        map: dataMap
+    })
+
+    // Return the result output
+    return result.output("result")
+}
+
+// Export the function
+export ll.toStrict({
+    removeNulls: removeNulls
+})

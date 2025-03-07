@@ -1,0 +1,160 @@
+ll := import(":ll")
+assets := import(":assets")
+exec := import(":exec")
+validation := import(":validation")
+objects := import(":objects")
+util := import(":pframes.util")
+json := import("json")
+constants := import(":pframes.constants")
+
+transposeXsvSw := assets.importSoftware("@platforma-open/milaboratories.software-small-binaries:table-converter")
+pfconvSw := assets.importSoftware("@milaboratories/software-pframes-conv:main")
+
+renderOps := func(defaults, ...ops) {
+	o := { }
+
+	for k, v in defaults {
+		o[k] = v
+	}
+
+	if len(ops) > 0 {
+		for k, v in ops[0] {
+			o[k] = v
+		}
+	}
+	return o
+}
+
+getAxesSpec := func(spec) {
+	axes := []
+	for ax in spec.axes {
+		axes = append(axes, ax.spec)
+	}
+	return axes
+}
+
+getColumnSpec := func(axesSpec, col) {
+	spec := {
+		kind: constants.KIND_P_COLUMN,
+		axesSpec: axesSpec
+	}
+
+	for k, v in col.spec {
+		spec[k] = v
+	}
+
+	return objects.deleteUndefined(spec)
+}
+
+/**
+ * Actual implementation of xsv.importFile() (without allowNullInput)
+ */
+importFile := func(xsvFile, xsvType, spec, ...ops) {
+	ll.assert(xsvType == "csv" || xsvType == "tsv", "expected one of [tsv, csv] types, found: " + xsvType)
+
+	validation.assertType(spec, util.PFCONV_IMPORT_CFG_SCHEMA)
+
+	xsvFileName := "file." + xsvType
+
+	ops := renderOps({ dataOnly: false, splitDataAndSpec: false }, ops...)
+
+	if ops.transpose != undefined {
+
+		tops := ops.transpose
+
+		transposedFileName := "fileTransposed." + xsvType
+
+		// convert csv to p-frame and read resulting data
+		transposeXsv := exec.builder().
+			software(transposeXsvSw).
+			printErrStreamToStdout().
+			inLightQueue()
+
+		if (tops.separator != undefined) {
+			transposeXsv = transposeXsv.arg("-input-separator").arg(tops.separator)
+		}
+		if (tops.pAxisIdx != undefined) {
+			transposeXsv = transposeXsv.arg("-sample-column-i").arg("" + tops.pAxisIdx) // always convert to string
+		}
+		if (tops.pAxisName != undefined) {
+			transposeXsv = transposeXsv.arg("-sample-column-name").arg(tops.pAxisName)
+		}
+		if (tops.pAxisSearch != undefined) {
+			transposeXsv = transposeXsv.arg("-sample-column-search").arg(tops.pAxisSearch)
+		}
+		if (tops.pAxisNameOverride != undefined) {
+			transposeXsv = transposeXsv.arg("-sample-label").arg(tops.pAxisNameOverride)
+		}
+		if (tops.sAxisSearch != undefined) {
+			transposeXsv = transposeXsv.arg("-metric-columns-search").arg(tops.sAxisSearch)
+		}
+		if (tops.sAxisName != undefined) {
+			transposeXsv = transposeXsv.arg("-metric-label").arg(tops.sAxisName)
+		}
+		if (tops.valueName != undefined) {
+			transposeXsv = transposeXsv.arg("-value-label").arg(tops.valueName)
+		}
+		if (tops.separatorOverride != undefined) {
+			transposeXsv = transposeXsv.arg("-separator").arg(tops.separatorOverride)
+		}
+
+		transposeXsv = transposeXsv.
+			arg(xsvFileName).
+			arg(transposedFileName).
+			addFile(xsvFileName, xsvFile).
+			saveFile(transposedFileName).
+			run()
+
+		xsvFile = transposeXsv.getFile(transposedFileName)
+	}
+
+	// import p-frame from directory tpl
+	importDirTpl := assets.importTemplate(":pframes.import-dir")
+
+	// spec without any metadata (for caching purposes)
+	pureSpec := util.purifySpec(spec)
+
+	// convert csv to p-frame and read resulting data
+	pfconv := exec.builder().
+		software(pfconvSw).
+		printErrStreamToStdout().
+		inLightQueue().
+		arg("importCsv").
+		arg(xsvFileName).
+		arg("-p").arg("spec.json").
+		arg("-o").arg("out").
+		addFile(xsvFileName, xsvFile).
+		writeFile("spec.json", json.encode(pureSpec)).
+		processWorkdir("pf", importDirTpl, pureSpec).
+		run()
+
+	// p-columns data
+	pf := pfconv.getProcessorResult("pf")
+	if ops.dataOnly {
+		// @TODO discuss, as it changes the type of the return from map to object
+		return pf
+	}
+
+	axesSpec := getAxesSpec(spec)
+
+	result := {}
+	for col in spec.columns {
+		id := util.xsvColumnId(col)
+
+		if ops.splitDataAndSpec {
+			result[id] = {
+				data: pf.getFutureInputField(id),
+				spec: getColumnSpec(axesSpec, col)
+			}
+		} else {
+			result[id + ".data"] = pf.getFutureInputField(id)
+			result[id + ".spec"] = getColumnSpec(axesSpec, col)
+		}
+	}
+
+	return result
+}
+
+export ll.toStrict({
+	importFile: importFile
+})

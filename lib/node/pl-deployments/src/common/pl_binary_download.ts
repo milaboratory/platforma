@@ -153,7 +153,7 @@ export async function downloadArchive(
 
     return state;
   } catch (e: unknown) {
-    const msg = `downloadArchive: error ${JSON.stringify(e)} occurred, state: ${JSON.stringify(state)}`;
+    const msg = `downloadArchive: ${JSON.stringify(e)}, state: ${JSON.stringify(state)}`;
     logger.error(msg);
     throw new Error(msg);
   }

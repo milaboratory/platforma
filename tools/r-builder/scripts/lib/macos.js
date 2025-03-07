@@ -52,6 +52,7 @@ export async function buildR(logger, version) {
 
   fs.renameSync(path.join(distDir, 'bin/R'), path.join(distDir, 'bin/R.orig'))
   fs.copyFileSync(pkg.asset('R.macos.sh'), path.join(distDir, 'bin/R'))
+  fs.chmodSync(path.join(distDir, 'bin/R'), 0o755)
 
   util.installBasicRPackages(logger, distDir);
 }

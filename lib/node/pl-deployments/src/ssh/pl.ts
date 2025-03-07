@@ -9,13 +9,15 @@ import * as plpath from './pl_paths';
 import { getDefaultPlVersion } from '../common/pl_version';
 
 import net from 'net';
-import type { PlLicenseMode, SshPlConfigGenerationResult } from '@milaboratories/pl-config';
+import type { PlConfig, PlLicenseMode, SshPlConfigGenerationResult } from '@milaboratories/pl-config';
 import { generateSshPlConfigs, getFreePort } from '@milaboratories/pl-config';
 import type { SupervisorStatus } from './supervisord';
 import { supervisorStatus, supervisorStop as supervisorCtlShutdown, generateSupervisordConfig, supervisorCtlStart } from './supervisord';
 import type { ConnectionInfo, SshPlPorts } from './connection_info';
 import { newConnectionInfo, parseConnectionInfo, stringifyConnectionInfo } from './connection_info';
 import type { PlBinarySourceDownload } from '../common/pl_binary';
+
+const minRequiredGlibcVersion = 2.28;
 
 export class SshPl {
   private initState: PlatformaInitState = {};
@@ -67,7 +69,7 @@ export class SshPl {
         return await this.checkIsAliveWithInterval();
       }
     } catch (e: unknown) {
-      const msg = `SshPl.start: error occurred ${e}`;
+      const msg = `SshPl.start: ${e}`;
       this.logger.error(msg);
       throw new Error(msg);
     }
@@ -85,7 +87,7 @@ export class SshPl {
         return await this.checkIsAliveWithInterval(undefined, undefined, false);
       }
     } catch (e: unknown) {
-      const msg = `PlSsh.stop: error occurred ${e}`;
+      const msg = `PlSsh.stop: ${e}`;
       this.logger.error(msg);
       throw new Error(msg);
     }
@@ -160,6 +162,11 @@ export class SshPl {
       }
 
       await onProgress?.('Downloading and uploading required binaries...');
+
+      const glibcVersion = await getGlibcVersion(this.logger, this.sshClient);
+      if (glibcVersion < minRequiredGlibcVersion)
+        throw new Error(`glibc version ${glibcVersion} is too old. Version ${minRequiredGlibcVersion} or higher is required for Platforma.`);
+
       const downloadRes = await this.downloadBinariesAndUploadToTheServer(
         ops.localWorkdir, ops.plBinary!, state.remoteHome, state.arch,
       );
@@ -193,6 +200,7 @@ export class SshPl {
         },
         licenseMode: ops.license,
         useGlobalAccess: notEmpty(ops.useGlobalAccess),
+        plConfigPostprocessing: ops.plConfigPostprocessing,
       });
       state.generatedConfig = { ...config, filesToCreate: { skipped: 'it is too wordy' } };
 
@@ -250,7 +258,7 @@ export class SshPl {
 
       return state.connectionInfo;
     } catch (e: unknown) {
-      const msg = `SshPl.platformaInit: error occurred: ${e}, state: ${JSON.stringify(state)}`;
+      const msg = `SshPl.platformaInit: ${e}, state: ${JSON.stringify(state)}`;
       this.logger.error(msg);
 
       throw new Error(msg);
@@ -291,7 +299,7 @@ export class SshPl {
         downloadedPl: plpath.platformaBin(remoteHome, arch.arch),
       };
     } catch (e: unknown) {
-      const msg = `SshPl.downloadBinariesAndUploadToServer: error ${e} occurred, state: ${JSON.stringify(state)}`;
+      const msg = `SshPl.downloadBinariesAndUploadToServer: ${e}, state: ${JSON.stringify(state)}`;
       this.logger.error(msg);
       throw e;
     }
@@ -344,13 +352,19 @@ export class SshPl {
     await this.sshClient.uploadFile(state.localArchivePath, state.remoteArchivePath);
     state.uploadDone = true;
 
+    try {
+      await this.sshClient.exec('hash tar');
+    } catch (_) {
+      throw new Error(`tar is not installed on the server. Please install it before running Platforma.`);
+    }
+
     // TODO: Create a proper archive to avoid xattr warnings
     const untarResult = await this.sshClient.exec(
       `tar --warning=no-all -xvf ${state.remoteArchivePath} --directory=${state.remoteDir}`,
     );
 
     if (untarResult.stderr)
-      throw Error(`downloadAndUntar: untar: stderr occurred: ${untarResult.stderr}, stdout: ${untarResult.stdout}`);
+      throw new Error(`downloadAndUntar: untar: stderr occurred: ${untarResult.stderr}, stdout: ${untarResult.stdout}`);
 
     state.untarDone = true;
 
@@ -473,8 +487,10 @@ export type SshPlConfig = {
   license: PlLicenseMode;
   useGlobalAccess?: boolean;
   plBinary?: PlBinarySourceDownload;
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onProgress?: (...args: any) => Promise<any>;
+  plConfigPostprocessing?: (config: PlConfig) => PlConfig;
 };
 
 const defaultSshPlConfig: Pick<
@@ -523,3 +539,30 @@ type PlatformaInitState = {
   connectionInfo?: ConnectionInfo;
   started?: boolean;
 };
+
+/**
+ * Gets the glibc version on the remote system
+ * @returns The glibc version as a number
+ * @throws Error if version cannot be determined
+ */
+async function getGlibcVersion(logger: MiLogger, sshClient: SshClient): Promise <number> {
+  try {
+    const { stdout, stderr } = await sshClient.exec('ldd --version | head -n 1');
+    if (stderr) {
+      throw new Error(`Failed to check glibc version: ${stderr}`);
+    }
+    return parseGlibcVersion(stdout);
+  } catch (e: unknown) {
+    logger.error(`glibc version check failed: ${e}`);
+    throw e;
+  }
+}
+
+export function parseGlibcVersion(output: string): number {
+  const versionMatch = output.match(/\d+\.\d+/);
+  if (!versionMatch) {
+    throw new Error(`Could not parse glibc version from: ${output}`);
+  }
+
+  return parseFloat(versionMatch[0]);
+}

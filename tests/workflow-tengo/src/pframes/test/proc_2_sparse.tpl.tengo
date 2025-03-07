@@ -1,0 +1,37 @@
+// proc_1
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+
+ll := import("@platforma-sdk/workflow-tengo:ll")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+maps := import("@platforma-sdk/workflow-tengo:maps")
+pframes := import("@platforma-sdk/workflow-tengo:pframes")
+
+bodyTpl := assets.importTemplate(":pframes.test.proc_2_sparse_body")
+
+self.awaitState("InputsLocked")
+self.awaitState("params", "ResourceReady")
+
+self.body(func(inputs) {
+	params := inputs.params
+
+	outputsToCollect := [{ type: "Xsv", name: "tsv", path: ["result", {name: "tsv", optional: true}], xsvType: "tsv", settings: params.xsvSettings }]
+
+	processResult := pframes.processColumn({
+		spec: inputs.spec,
+		data: inputs.data
+	}, bodyTpl, outputsToCollect, maps.merge({
+		aggregate: params.aggregate,
+		passAggregationAxesNames: !is_undefined(params.aggregate),
+		traceSteps: [{
+			type: "Xsv",
+			id: "tsv",
+			importance: 10,
+			label: "TSV to PColumn"
+		}]
+	}))
+
+	return {
+		result: pframes.exportFrame(processResult.allOutputsFrame())
+	}
+})

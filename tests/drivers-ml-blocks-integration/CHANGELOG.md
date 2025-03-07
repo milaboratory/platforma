@@ -1,5 +1,78 @@
 # @milaboratories/drivers-ml-blocks-integration
 
+## 1.0.185
+
+### Patch Changes
+
+- Updated dependencies [3bf8838]
+- Updated dependencies [6614d61]
+  - @milaboratories/pl-middle-layer@1.29.0
+  - @milaboratories/pl-client@2.7.11
+  - @platforma-sdk/test@1.22.77
+  - @milaboratories/milaboratories.test-blob-url-custom-protocol@1.0.24
+  - @milaboratories/milaboratories.test-blob-url-custom-protocol.model@1.0.16
+  - @milaboratories/milaboratories.test-download-file@1.0.88
+  - @milaboratories/milaboratories.test-download-file.model@1.0.17
+  - @milaboratories/milaboratories.test-enter-numbers@1.0.210
+  - @milaboratories/milaboratories.test-enter-numbers.model@1.0.47
+  - @milaboratories/milaboratories.test-read-logs@1.0.88
+  - @milaboratories/milaboratories.test-read-logs.model@1.0.17
+  - @milaboratories/milaboratories.test-sum-numbers@1.0.88
+  - @milaboratories/milaboratories.test-sum-numbers.model@1.0.17
+  - @milaboratories/milaboratories.test-upload-file@1.0.88
+  - @milaboratories/milaboratories.test-upload-file.model@1.0.17
+
+## 1.0.184
+
+### Patch Changes
+
+- @milaboratories/pl-client@2.7.10
+- @milaboratories/pl-middle-layer@1.28.21
+- @platforma-sdk/test@1.22.76
+- @milaboratories/milaboratories.test-blob-url-custom-protocol@1.0.24
+- @milaboratories/milaboratories.test-blob-url-custom-protocol.model@1.0.16
+- @milaboratories/milaboratories.test-download-file@1.0.88
+- @milaboratories/milaboratories.test-download-file.model@1.0.17
+- @milaboratories/milaboratories.test-enter-numbers@1.0.210
+- @milaboratories/milaboratories.test-enter-numbers.model@1.0.47
+- @milaboratories/milaboratories.test-read-logs@1.0.88
+- @milaboratories/milaboratories.test-read-logs.model@1.0.17
+- @milaboratories/milaboratories.test-sum-numbers@1.0.88
+- @milaboratories/milaboratories.test-sum-numbers.model@1.0.17
+- @milaboratories/milaboratories.test-upload-file@1.0.88
+- @milaboratories/milaboratories.test-upload-file.model@1.0.17
+
+## 1.0.183
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.28.20
+- @platforma-sdk/test@1.22.75
+
+## 1.0.182
+
+### Patch Changes
+
+- Updated dependencies [e5b5271]
+  - @milaboratories/pl-middle-layer@1.28.19
+  - @platforma-sdk/test@1.22.74
+
+## 1.0.181
+
+### Patch Changes
+
+- Updated dependencies [2c75b72]
+  - @milaboratories/pl-client@2.7.9
+  - @milaboratories/pl-middle-layer@1.28.18
+  - @platforma-sdk/test@1.22.73
+
+## 1.0.180
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.28.17
+- @platforma-sdk/test@1.22.72
+
 ## 1.0.179
 
 ### Patch Changes

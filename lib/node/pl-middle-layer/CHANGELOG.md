@@ -1,5 +1,66 @@
 # @milaboratories/pl-middle-layer
 
+## 1.29.0
+
+### Minor Changes
+
+- 3bf8838: Fix hash override template materialization code
+  Additional caching in block pack prepare
+
+### Patch Changes
+
+- 6614d61: increase blob cache size for pframes
+- Updated dependencies [3bf8838]
+  - @milaboratories/pl-http@1.1.0
+  - @milaboratories/pl-client@2.7.11
+  - @platforma-sdk/block-tools@2.5.18
+  - @milaboratories/pl-drivers@1.5.24
+  - @milaboratories/pl-tree@1.4.30
+
+## 1.28.21
+
+### Patch Changes
+
+- Updated dependencies [e6ad278]
+- Updated dependencies [e6ad278]
+  - @milaboratories/pl-http@1.0.7
+  - @platforma-sdk/workflow-tengo@2.15.1
+  - @milaboratories/pl-client@2.7.10
+  - @platforma-sdk/block-tools@2.5.17
+  - @milaboratories/pl-drivers@1.5.23
+  - @milaboratories/pl-tree@1.4.29
+
+## 1.28.20
+
+### Patch Changes
+
+- Updated dependencies [4726310]
+  - @milaboratories/pl-deployments@1.2.3
+
+## 1.28.19
+
+### Patch Changes
+
+- e5b5271: PFrames version bump
+
+## 1.28.18
+
+### Patch Changes
+
+- Updated dependencies [2c75b72]
+- Updated dependencies [2c75b72]
+  - @platforma-sdk/workflow-tengo@2.15.0
+  - @milaboratories/pl-client@2.7.9
+  - @milaboratories/pl-drivers@1.5.22
+  - @milaboratories/pl-tree@1.4.28
+
+## 1.28.17
+
+### Patch Changes
+
+- Updated dependencies [78ba96c]
+  - @platforma-sdk/workflow-tengo@2.14.0
+
 ## 1.28.16
 
 ### Patch Changes

@@ -120,7 +120,7 @@ export const DefaultDriverKitOpsSettings: Pick<
 > = {
   logger: new ConsoleLoggerAdapter(),
   blobDriverOps: {
-    cacheSoftSizeBytes: 100 * 1024 * 1024, // 100MB
+    cacheSoftSizeBytes: 8 * 1024 * 1024 * 1024, // 8 GB
     nConcurrentDownloads: 10,
   },
   downloadBlobToURLDriverOps: {

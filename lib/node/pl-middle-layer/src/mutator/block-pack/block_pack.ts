@@ -14,6 +14,7 @@ import type { BlockPackInfo } from '../../model/block_pack';
 import { resolveDevPacket } from '../../dev_env';
 import { getDevV2PacketMtime } from '../../block_registry';
 import type { V2RegistryProvider } from '../../block_registry/registry-v2-provider';
+import { LRUCache } from 'lru-cache';
 
 export const BlockPackCustomType: ResourceType = { name: 'BlockPackCustom', version: '1' };
 export const BlockPackTemplateField = 'template';
@@ -25,12 +26,30 @@ function tSlash(str: string): string {
   else return `${str}/`;
 }
 
+function bufferToString(buffer: ArrayBuffer): string {
+  return Buffer.from(buffer).toString('utf8');
+}
+
+function bufferToJson(buffer: ArrayBuffer): unknown {
+  return JSON.parse(bufferToString(buffer));
+}
+
 export class BlockPackPreparer {
   constructor(
     private readonly v2RegistryProvider: V2RegistryProvider,
     private readonly signer: Signer,
     private readonly http?: Dispatcher,
   ) {}
+
+  private readonly remoteContentCache = new LRUCache<string, ArrayBuffer>({
+    max: 500,
+    maxSize: 128 * 1024 * 1024,
+    fetchMethod: async (key) => {
+      const httpOptions = this.http !== undefined ? { dispatcher: this.http } : {};
+      return await (await request(key, httpOptions)).body.arrayBuffer();
+    },
+    sizeCalculation: (value) => value.byteLength,
+  });
 
   public async getBlockConfigContainer(spec: BlockPackSpecAny): Promise<BlockConfigContainer> {
     switch (spec.type) {
@@ -52,22 +71,17 @@ export class BlockPackPreparer {
       }
 
       case 'from-registry-v1': {
-        const httpOptions = this.http !== undefined ? { dispatcher: this.http } : {};
-
         const urlPrefix = `${tSlash(spec.registryUrl)}${RegistryV1.packageContentPrefix({ organization: spec.id.organization, package: spec.id.name, version: spec.id.version })}`;
 
-        const configResponse = await request(`${urlPrefix}/config.json`, httpOptions);
-
-        return (await configResponse.body.json()) as BlockConfigContainer;
+        const configResponse = await this.remoteContentCache.forceFetch(`${urlPrefix}/config.json`);
+        return bufferToJson(configResponse) as BlockConfigContainer;
       }
 
       case 'from-registry-v2': {
-        const httpOptions = this.http !== undefined ? { dispatcher: this.http } : {};
         const registry = this.v2RegistryProvider.getRegistry(spec.registryUrl);
         const components = await registry.getComponents(spec.id);
-        return (await (
-          await request(components.model.url, httpOptions)
-        ).body.json()) as BlockConfigContainer;
+        const configResponse = await this.remoteContentCache.forceFetch(components.model.url);
+        return bufferToJson(configResponse) as BlockConfigContainer;
       }
 
       default:
@@ -142,23 +156,16 @@ export class BlockPackPreparer {
       }
 
       case 'from-registry-v1': {
-        const httpOptions = this.http !== undefined ? { dispatcher: this.http } : {};
-
         const urlPrefix = `${tSlash(spec.registryUrl)}${RegistryV1.packageContentPrefix({ organization: spec.id.organization, package: spec.id.name, version: spec.id.version })}`;
 
         const templateUrl = `${urlPrefix}/template.plj.gz`;
         // template
-        const templateResponse = await request(templateUrl, httpOptions);
-        if (templateResponse.statusCode !== 200)
-          throw new Error(
-            `Block not found in registry (url = ${templateUrl} ; code = ${templateResponse.statusCode}): `
-            + JSON.stringify(spec),
-          );
-        const templateContent = new Uint8Array(await templateResponse.body.arrayBuffer());
+        const templateResponse = await this.remoteContentCache.forceFetch(templateUrl);
+        const templateContent = new Uint8Array(templateResponse);
 
         // config
-        const configResponse = await request(`${urlPrefix}/config.json`, httpOptions);
-        const config = (await configResponse.body.json()) as BlockConfigContainer;
+        const configResponse = await this.remoteContentCache.forceFetch(`${urlPrefix}/config.json`);
+        const config = bufferToJson(configResponse) as BlockConfigContainer;
 
         return {
           type: 'explicit',
@@ -176,13 +183,12 @@ export class BlockPackPreparer {
       }
 
       case 'from-registry-v2': {
-        const httpOptions = this.http !== undefined ? { dispatcher: this.http } : {};
         const registry = this.v2RegistryProvider.getRegistry(spec.registryUrl);
         const components = await registry.getComponents(spec.id);
         const getModel = async () =>
-          (await (await request(components.model.url, httpOptions)).body.json()) as BlockConfigContainer;
+          bufferToJson(await this.remoteContentCache.forceFetch(components.model.url)) as BlockConfigContainer;
         const getWorkflow = async () =>
-          await (await request(components.workflow.main.url, httpOptions)).body.arrayBuffer();
+          await this.remoteContentCache.forceFetch(components.workflow.main.url);
 
         const [model, workflow] = await Promise.all([getModel(), getWorkflow()]);
 
