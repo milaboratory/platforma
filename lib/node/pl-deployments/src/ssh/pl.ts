@@ -115,6 +115,8 @@ export class SshPl {
   public async platformaInit(options: SshPlConfig): Promise<ConnectionInfo> {
     const state: PlatformaInitState = { localWorkdir: options.localWorkdir };
 
+    const { onProgress } = options;
+
     try {
       // merge options with default ops.
       const ops: SshPlConfig = {
@@ -123,8 +125,18 @@ export class SshPl {
       };
       state.plBinaryOps = ops.plBinary;
       state.arch = await this.getArch();
+
+      await onProgress?.('Received the server architecture.');
+
       state.remoteHome = await this.getUserHomeDirectory();
+
+      await onProgress?.('Received the home directory.');
+
       state.alive = await this.isAlive();
+
+      if (state.alive.allAlive) {
+        await onProgress?.(`All services running.`);
+      }
 
       if (state.alive.allAlive) {
         state.userCredentials = await this.getUserCredentials(state.remoteHome);
@@ -136,15 +148,21 @@ export class SshPl {
         state.needRestart = !(sameGA && samePlVersion);
         this.logger.info(`SshPl.platformaInit: need restart? ${state.needRestart}`);
 
-        if (!state.needRestart)
+        if (!state.needRestart) {
+          await onProgress?.(`Server setup finished.`);
           return state.userCredentials;
+        }
 
+        await onProgress?.(`Stop serveces.`);
         await this.stop();
       }
 
       const downloadRes = await this.downloadBinariesAndUploadToTheServer(
         ops.localWorkdir, ops.plBinary!, state.remoteHome, state.arch,
       );
+
+      await onProgress?.(`All binaries downloaded.`);
+
       state.binPaths = { ...downloadRes, history: undefined };
       state.downloadedBinaries = downloadRes.history;
 
@@ -174,6 +192,8 @@ export class SshPl {
         useGlobalAccess: notEmpty(ops.useGlobalAccess),
       });
       state.generatedConfig = { ...config, filesToCreate: { skipped: 'it is too wordy' } };
+
+      await onProgress?.(`Start generating folder structure...`);
 
       for (const [filePath, content] of Object.entries(config.filesToCreate)) {
         await this.sshClient.writeFileOnTheServer(filePath, content);
@@ -212,9 +232,13 @@ export class SshPl {
         stringifyConnectionInfo(state.connectionInfo),
       );
 
+      await onProgress?.(`Starting Platforma on the server...`);
+
       await this.start();
       state.started = true;
       this.initState = state;
+
+      await onProgress?.(`Services started...`);
 
       return state.connectionInfo;
     } catch (e: unknown) {
@@ -441,6 +465,8 @@ export type SshPlConfig = {
   license: PlLicenseMode;
   useGlobalAccess?: boolean;
   plBinary?: PlBinarySourceDownload;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onProgress?: (...args: any) => Promise<any>;
 };
 
 const defaultSshPlConfig: Pick<
