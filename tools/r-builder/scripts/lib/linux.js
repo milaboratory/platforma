@@ -209,7 +209,9 @@ function collectSoLibs(logger, binaryFiles, libsDir, libsToIgnore) {
   for (const libPath of collectedLibs) {
     logger.info(`  copying '${libPath}'`);
     const targetPath = path.join(libsDir, path.basename(libPath));
-    fs.copyFileSync(libPath, targetPath);
+    if (!fs.existsSync(targetPath)) {
+      fs.copyFileSync(libPath, targetPath);
+    }
   }
 
   return collectedLibs;
