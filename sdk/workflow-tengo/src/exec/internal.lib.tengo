@@ -174,7 +174,7 @@ _loadRRunEnvironment := func(operationMode, descriptor, softName, softPkg) {
 		"RENV_PATHS_SOURCE": _newArg(false, path.join(renvRootArg, "sources")),
 		"RENV_PATHS_CACHE": _newArg(false, path.join(renvRootArg, "cache")),
 		"RENV_PATHS_RENV": _newArg(false, path.join(_expr(_ARG_VAR_R_VENV), "renv")),
-		"RENV_PATHS_LOCKFILE": _newArg(false, path.join(_expr(_ARG_VAR_PKG), descriptor.dependencies.lockFile))
+		"RENV_PATHS_LOCKFILE": _newArg(false, path.join(renvRootArg, "renv.lock"))
 	}
 
 	if (operationMode != "dev-local") {
