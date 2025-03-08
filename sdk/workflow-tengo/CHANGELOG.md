@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 2.15.2
+
+### Patch Changes
+
+- b86270f: Changed the way how R environments are prepared (more static dependencies)
+
 ## 2.15.1
 
 ### Patch Changes
