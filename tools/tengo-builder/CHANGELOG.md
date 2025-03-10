@@ -1,5 +1,11 @@
 # @platforma-sdk/tengo-builder
 
+## 1.19.2
+
+### Patch Changes
+
+- 8e5de8b: Provide 'math' and 'hex' in pl-tengo check
+
 ## 1.19.1
 
 ### Patch Changes
