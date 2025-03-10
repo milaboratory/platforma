@@ -143,6 +143,7 @@ export const maskIcons24 = [
   'position-top-annotation',
   'position-top',
   'product',
+  'progress',
   'publications',
   'radio-button-checked',
   'radio-button',
