@@ -148,7 +148,7 @@ const { gridOptions, gridApi } = useAgGridOptions<Row>(({ column }) => {
             params: { value: cellData.value },
           };
         },
-        headerComponentParams: { type: 'Text' },
+        headerComponentParams: { type: 'Progress' },
       }), // But you could use builder
       {
         field: 'stacked_bar',
