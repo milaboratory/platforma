@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.59
+
+### Patch Changes
+
+- 13e3124: added new type for columns
+
 ## 2.2.58
 
 ### Patch Changes
