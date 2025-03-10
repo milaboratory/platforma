@@ -490,8 +490,8 @@ builder := func() {
 			return self
 		},
 
-		setMnzDryRun: func() {
-			monetization.setDryRun(mnz, true)
+		setMnzUrl: func(url) {
+			monetization.setUrl(mnz, url)
 			return self
 		},
 

@@ -1,0 +1,29 @@
+/**
+ * A template that creates a workdir with provided files, runs monetization in dry-run mode,
+ * and returns monetization info.
+ */
+
+self := import(":tpl")
+monetization := import(":exec.monetization_internal")
+constants := import(":exec.constants")
+workdir := import(":workdir")
+
+self.defineOutputs("info")
+
+self.body(func(args) {
+	// Ignore date input, it is needed for client to control deduplication.
+	mnz := args.monetization
+	filesToAdd := args.filesToAdd
+	filesToWrite := args.filesToWrite
+
+	wd := workdir.builder().
+		addFiles(filesToAdd).
+		writeFiles(filesToWrite).
+		build()
+
+	result := monetization.run(mnz, wd, constants.UI_TASKS_QUEUE)
+
+	return {
+		info: result.info
+	}
+})

@@ -3,12 +3,13 @@ monetization := import("@platforma-sdk/workflow-tengo:exec.monetization")
 
 self.body(func(inputs) {
 	mnz := monetization.builder(inputs.productKey).
+		setDate("Mon 2 Apr 15:28:10 CET 2025").
 		writeFile("dryrun.txt", "1\n2\n3\n", {arg: "ABC", collect: ["lines"]}).
 		build()
 
 	return {
 		outputs: {
-			info: mnz.info
+			info: mnz
 		},
 		exports: {}
 	}
