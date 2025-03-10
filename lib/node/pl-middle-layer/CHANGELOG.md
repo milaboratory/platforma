@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 1.30.0
+
+### Minor Changes
+
+- 0efcec2: Increase model QuickJS memory limit to 8 Mb
+
 ## 1.29.5
 
 ### Patch Changes
