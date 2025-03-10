@@ -442,18 +442,17 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 		},
 
 		/**
-		 * Returns a PFrame containing all results, flattening Xsv outputs using the provided separator
+		 * Adds all outputs to the provided pframe builder
 		 *
-		 * @param ...xsvNameSeparator - Optional separator for joining Xsv output and column names, defaults to "."
-		 * @returns PFrame containing all results
+		 * @param builder - The pframe builder to which outputs will be added
+		 * @param ...separator - Optional separator for joining Xsv output and column names, defaults to "."
+		 * @returns The provided builder for chaining
 		 */
-		allOutputsFrame: func(...xsvNameSeparator) {
+		addAllOutputsToBuilder: func(builder, ...separator) {
 			sep := "."
-			if len(xsvNameSeparator) > 0 {
-				sep = xsvNameSeparator[0]
+			if len(separator) > 0 {
+				sep = separator[0]
 			}
-
-			builder := builder.pFrameBuilder()
 
 			for name, output in outputsMap {
 				if output.type == "Xsv" {
@@ -475,6 +474,18 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 				}
 			}
 
+			return builder
+		},
+
+		/**
+		 * Returns a PFrame containing all results, flattening Xsv outputs using the provided separator
+		 *
+		 * @param ...xsvNameSeparator - Optional separator for joining Xsv output and column names, defaults to "."
+		 * @returns PFrame containing all results
+		 */
+		allOutputsFrame: func(...xsvNameSeparator) {
+			builder := builder.pFrameBuilder()
+			self.addAllOutputsToBuilder(builder, xsvNameSeparator...)
 			return builder.build()
 		},
 
@@ -525,7 +536,29 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 				columns = append(columns, columnName)
 			}
 			return slices.quickSort(columns)
+		},
+
+		/**
+		 * Adds all columns from an Xsv output to the provided pframe builder with a prefix
+		 *
+		 * @param builder - The pframe builder to which columns will be added
+		 * @param outputName - Name of the Xsv output to use
+		 * @param prefix - Prefix to add to each column name (can be empty string)
+		 * @returns The provided builder for chaining
+		 */
+		addXsvOutputToBuilder: func(builder, outputName, prefix) {
+			for columnName in self.listXsvColumns(outputName) {
+				builder.add(
+					prefix + columnName,
+					self.outputSpec(outputName, columnName),
+					self.outputData(outputName, columnName)
+				)
+			}
+
+			return builder
 		}
+
+
 	})
 
 	return self
