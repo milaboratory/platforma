@@ -22,6 +22,8 @@ const icon = computed<MaskIconName16>(() => {
       return 'calendar';
     case 'Duration':
       return 'time';
+    case 'Progress':
+      return 'progress';
     default:
       throw Error(`unsupported data type: ${type satisfies never} for PlAgColumnHeader component. Column ${props.params.column.getColId()}`);
   }

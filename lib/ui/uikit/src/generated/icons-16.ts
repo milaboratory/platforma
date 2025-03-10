@@ -53,6 +53,7 @@ export const maskIcons16 = [
   'paper-clip',
   'pause',
   'play',
+  'progress',
   'renew',
   'restart',
   'reverse',
