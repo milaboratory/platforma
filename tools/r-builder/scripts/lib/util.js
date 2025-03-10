@@ -412,9 +412,8 @@ export function buildRDependencies(
       paths: additionalPaths,
     })
 
-    if (!fs.existsSync(path.join(depsDir, lockFile))) {
-      runInRenv(logger, rRoot, ['--no-echo', '-e', ...quote(`renv::snapshot()`)])
-    }
+    // Force snapshot regeneration to put all installed packages into the lock file.
+    runInRenv(logger, rRoot, ['--no-echo', '-e', ...quote(`renv::settings$snapshot.type("all"); renv::snapshot()`)])
 
   } else {
       throw new Error(
