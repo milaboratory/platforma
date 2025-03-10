@@ -397,16 +397,16 @@ export function buildRDependencies(
 
   const lockPath = path.join(depsDir, lockFile)
 
-  if (fs.existsSync(lockPath)) {
-    runInRenv(logger, rRoot, [
-      '--no-echo',
-      '-e', ...quote(`renv::restore( clean = TRUE )`),
-    ], {
-      wd: depsDir,
-      paths: additionalPaths,
-    })
+  const lockExists = fs.existsSync(lockPath)
+  const initExists = fs.existsSync(path.join(depsDir, initFile))
 
-  } else if (fs.existsSync(path.join(depsDir, initFile))) {
+  if (initExists && lockExists) {
+    throw new Error(
+      `directory ${depsDir} cannot have '${lockFile}' and '${initFile}' simultaneously.\n`+
+      `Choose either frozen dependencies state (${lockFile}) either dynamic dependencies initialization (${initFile}).\n`+
+      `Create empty '${initFile}' file if you really need empty R run environment without any preinstalled dependencies.`
+    )
+  } else if (initExists) {
     runInRenv(logger, rRoot, ['--no-echo', `--file=${initFile}`], {
       wd: depsDir,
       paths: additionalPaths,
@@ -415,10 +415,19 @@ export function buildRDependencies(
     // Force snapshot regeneration to put all installed packages into the lock file.
     runInRenv(logger, rRoot, ['--no-echo', '-e', ...quote(`renv::settings$snapshot.type("all"); renv::snapshot()`)])
 
+  } else if (lockExists) {
+    runInRenv(logger, rRoot, [
+      '--no-echo',
+      '-e', ...quote(`renv::restore( clean = TRUE )`),
+    ], {
+      wd: depsDir,
+      paths: additionalPaths,
+    })
+
   } else {
       throw new Error(
-        `directory ${depsDir} has no ${lockFile} or ${initFile}. No dependencies detected.\n`+
-        `Create empty init.R file if you really need empty R run environment without any preinstalled dependencies`
+        `directory ${depsDir} has no '${lockFile}' or '${initFile}'. No dependencies detected.\n`+
+        `Create empty '${initFile}' file if you really need empty R run environment without any preinstalled dependencies`
       )
   }
 
