@@ -24,7 +24,7 @@ export function computableFromRF(
     cCtx.addOnDestroy(() => scope.dispose());
 
     const runtime = scope.manage(env.quickJs.newRuntime());
-    runtime.setMemoryLimit(1024 * 640);
+    runtime.setMemoryLimit(1024 * 1024 * 8);
     runtime.setMaxStackSize(1024 * 320);
     const vm = scope.manage(runtime.newContext());
     const rCtx = new JsExecutionContext(scope, vm, ctx, env, cCtx);
