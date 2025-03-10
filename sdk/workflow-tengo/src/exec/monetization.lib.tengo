@@ -2,22 +2,35 @@
 
 ll := import(":ll")
 monetization := import(":exec.monetization_internal")
-workdir := import(":workdir")
+assets := import(":assets")
+render := import(":render")
 path := import(":path")
-constants := import(":exec.constants")
 smart := import(":smart")
 validation := import(":validation")
 
+/**
+ * Creates a builder for monetization operations that can be used without execution context.
+ * This is useful for pre-run scenarios where we need to perform monetization checks.
+ *
+ * @param productKey - The product key to validate against
+ * @return A builder object
+ */
 builder := func(productKey) {
 	mnz := monetization.init()
 	monetization.enable(mnz, productKey)
 	monetization.setDryRun(mnz, true)
 
+	date := undefined
 	filesToAdd := {}
 	filesToWrite := {}
 
 	self := undefined
 	self = ll.toStrict({
+		setDate: func(newDate) {
+			date = newDate
+			return self
+		},
+
 		addFile: func(fileName, file, params) {
 			ll.assert(is_string(fileName), "monetization.builder().addFile: fileName must be a string")
 			ll.assert(smart.isReference(file), "monetization.builder().addFile: file must be a reference")
@@ -42,15 +55,29 @@ builder := func(productKey) {
 			return self
 		},
 
+		setUrl: func(url) {
+			monetization.setUrl(mnz, url)
+			return self
+		},
+
 		build: func() {
-			wd := workdir.builder().
-				addFiles(filesToAdd).
-				writeFiles(filesToWrite).
-				build()
+			ll.assert(!is_undefined(date), "monetization.builder().build: date must be set")
 
-			result := monetization.run(mnz, wd, constants.UI_TASKS_QUEUE)
+			// Don't DDoS milm service: here we deduplicate a monetization run,
+			// but the client could control deduplication by providing a different date.
+			// Thus, a deduplication is controlled from a client's side.
+			// The template just runs monetization and returns dry-run info.
+			result := render.create(
+				assets.importTemplate(":exec.monetization_info"),
+				{
+					date: date, // solely for deduplication
+					monetization: monetization.toJson(mnz),
+					filesToAdd: filesToAdd,
+					filesToWrite: filesToWrite
+				}
+			)
 
-			return result
+			return result.output("info")
 		}
 	})
 

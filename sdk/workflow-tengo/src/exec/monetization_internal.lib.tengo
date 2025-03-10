@@ -31,7 +31,7 @@ mnzClientStdoutSchema := ["or",
 			spentRuns: "number",
 			runsToSpend: "number",
 			willRemainAfterRun: "number",
-			subscription: {
+			"subscription,?": {
 				availableRuns: "number",
 				startsAt: "string",
 				expiresAt: "string"
@@ -53,7 +53,10 @@ init := func() {
 		isDryRun: false,
 
 		// file name to the param, e.g. {fileName: { arg: "dataset", collect: ["size", "lines", "sha256"] }}
-		fileParams: {}
+		fileParams: {},
+
+		// if the different url should be specified (usefult in testing)
+		url: undefined
 	})
 }
 
@@ -66,7 +69,8 @@ schema := {
 	"enabled": "bool",
 	"productKey": "string",
 	"isDryRun": "bool",
-	"fileParams": {"any": fileParamsSchema}
+	"fileParams": {"any": fileParamsSchema},
+	"url,?": "string"
 }
 
 /** Same as validation.assertType(params, fileParamsSchema, ...),
@@ -110,19 +114,6 @@ enable := func(mnz, productKey) {
 	mnz.productKey = productKey
 }
 
-setDryRun := func(mnz, isDryRun) {
-	ll.assert(mnz.enabled,
-		"monetization.setDryRun(): monetization must be explicitly enabled by enableMnz(productKey) function")
-
-	ll.assert(is_bool(isDryRun),
-		"monetization.setDryRun(): isDryRun must be boolean, got %v", isDryRun)
-
-	validation.assertType(mnz, schema,
-		"monetization.setDryRun(): mnz object does not fit schema")
-
-	mnz.isDryRun = isDryRun
-}
-
 /** Is this monetization enabled and should run? */
 shouldRun := func(mnz) {
 	if mnz.enabled {
@@ -159,6 +150,32 @@ addFileParams := func(mnz, fileName, params) {
 	mnz.fileParams[fileName] = params
 }
 
+setDryRun := func(mnz, isDryRun) {
+	ll.assert(mnz.enabled,
+		"monetization.setDryRun(): monetization must be explicitly enabled by enableMnz(productKey) function")
+
+	ll.assert(is_bool(isDryRun),
+		"monetization.setDryRun(): isDryRun must be boolean, got %v", isDryRun)
+
+	validation.assertType(mnz, schema,
+		"monetization.setDryRun(): mnz object does not fit schema")
+
+	mnz.isDryRun = isDryRun
+}
+
+setUrl := func(mnz, url) {
+	ll.assert(mnz.enabled,
+		"monetization.setUrl(): monetization must be explicitly enabled by enableMnz(productKey) function")
+
+	ll.assert(is_string(url),
+		"monetization.setUrl(): url must be string, got %v", url)
+
+	validation.assertType(mnz, schema,
+		"monetization.setUrl(): mnz object does not fit schema")
+
+	mnz.url = url
+}
+
 /**
  * Runs monetization binary on a workdir with all files, and returns a new workdir and a resulted jwt token.
  * All resources are ephemeral,
@@ -190,6 +207,9 @@ run := func(mnz, wd, queue) {
 	}
 	if mnz.isDryRun {
 		builder.arg("-dry-run")
+	}
+	if mnz.url {
+		builder.arg(mnz.isDryRun ? "-dry-run-url" : "-url").arg(mnz.url)
 	}
 	builder.arg("-productKey").arg(mnz.productKey)
 

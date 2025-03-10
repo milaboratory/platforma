@@ -1,3 +1,5 @@
+import { Pl } from '@milaboratories/pl-middle-layer';
+import { PlTransaction } from '@milaboratories/pl-middle-layer';
 import { tplTest } from '@platforma-sdk/test';
 
 /** The test should:
@@ -33,7 +35,9 @@ tplTest(
       false,
       'exec.test.run.monetization_dry_run',
       ['info'],
-      (_) => ({})
+      (tx: PlTransaction) => ({
+        date: tx.createValue(Pl.JsonObject, Date.now().toString())
+      })
     );
 
     const info = await result
