@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 2.15.4
+
+### Patch Changes
+
+- 4dead9e: addXsvOutputToBuilder and addAllOutputsToBuilder methods for processColumn output
+
 ## 2.15.3
 
 ### Patch Changes
