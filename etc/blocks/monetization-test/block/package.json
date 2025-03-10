@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/milaboratories.monetization-test",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "scripts": {
     "build": "rm -rf block-pack/* && block-tools pack"
   },
@@ -28,7 +28,9 @@
       "description": "Test block for monetization",
       "longDescription": "Monetization",
       "changelog": "",
-      "tags": ["tutorial"],
+      "tags": [
+        "tutorial"
+      ],
       "organization": {
         "name": "MiLaboratories Inc",
         "url": "https://milaboratories.com/",

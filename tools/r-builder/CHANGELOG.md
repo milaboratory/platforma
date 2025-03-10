@@ -1,5 +1,11 @@
 # @platforma-sdk/r-builder
 
+## 1.1.3
+
+### Patch Changes
+
+- f5b7967: Dump full list of packages installed into renv in snapshot
+
 ## 1.1.2
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 2.15.3
+
+### Patch Changes
+
+- 4dc7670: make pre-run monetization deduplicatable, but it depends on client's date
+
 ## 2.15.2
 
 ### Patch Changes

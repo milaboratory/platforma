@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/milaboratories.monetization-test.workflow",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "module",
   "description": "Block Workflow",
   "scripts": {
