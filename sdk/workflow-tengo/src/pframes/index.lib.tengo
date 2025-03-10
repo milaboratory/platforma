@@ -485,7 +485,7 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 		 */
 		allOutputsFrame: func(...xsvNameSeparator) {
 			builder := builder.pFrameBuilder()
-			self.addAllOutputsToBuilder(builder, ...xsvNameSeparator)
+			self.addAllOutputsToBuilder(builder, xsvNameSeparator...)
 			return builder.build()
 		},
 
@@ -547,15 +547,7 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 		 * @returns The provided builder for chaining
 		 */
 		addXsvOutputToBuilder: func(builder, outputName, prefix) {
-			output := outputsMap[outputName]
-			if is_undefined(output) {
-				ll.panic("unknown output: " + outputName)
-			}
-			if output.type != "Xsv" {
-				ll.panic("output is not Xsv: " + outputName)
-			}
-
-			for columnName, spec in outputSpecs[outputName] {
+			for columnName in self.listXsvColumns(outputName) {
 				builder.add(
 					prefix + columnName,
 					self.outputSpec(outputName, columnName),
