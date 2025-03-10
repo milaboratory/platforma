@@ -1,5 +1,13 @@
 # @platforma-sdk/ui-vue
 
+## 1.22.82
+
+### Patch Changes
+
+- 13e3124: added new type for columns
+- Updated dependencies [13e3124]
+  - @milaboratories/uikit@2.2.59
+
 ## 1.22.64
 
 ### Patch Changes

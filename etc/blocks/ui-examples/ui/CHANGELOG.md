@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.3.38
+
+### Patch Changes
+
+- 13e3124: added new type for columns
+
 ## 1.3.37
 
 ### Patch Changes
