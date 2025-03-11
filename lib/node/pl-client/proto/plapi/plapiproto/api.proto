@@ -205,6 +205,7 @@ message TxAPI {
       ResourceAPI.Name.Get.Request resource_name_get = 67; // get resource ID by name
       ResourceAPI.Name.Exists.Request resource_name_exists = 68; // check if resource name exists in platform
       ResourceAPI.Name.Delete.Request resource_name_delete = 69; // detach name from resource
+      ResourceAPI.Tree.Request resource_tree = 70; // load tree rooted at given resource
 
       FieldAPI.Create.Request field_create = 101; // add field to resource
       FieldAPI.Exists.Request field_exists = 107; // add field to resource
@@ -213,6 +214,7 @@ message TxAPI {
       FieldAPI.Get.Request field_get = 103; // get field info
       FieldAPI.Reset.Request field_reset = 104; // clear field value (MTW fields only)
       FieldAPI.Remove.Request field_remove = 106; // clear field value (MTW fields only)
+      FieldAPI.List.Request field_list = 108; // list fields of specific resource
 
       SubscriptionAPI.CreateSubscription.Request subscription_create = 111; // create subscription
       SubscriptionAPI.AttachFilter.Request subscription_attach_filter = 112; // add filter to existing subscription
@@ -295,6 +297,7 @@ message TxAPI {
       ResourceAPI.Name.Get.Response resource_name_get = 67;
       ResourceAPI.Name.Exists.Response resource_name_exists = 68;
       ResourceAPI.Name.Delete.Response resource_name_delete = 69;
+      ResourceAPI.Tree.Response resource_tree = 70;
 
       FieldAPI.Create.Response field_create = 101;
       FieldAPI.Exists.Response field_exists = 107;
@@ -303,6 +306,7 @@ message TxAPI {
       FieldAPI.Get.Response field_get = 103;
       FieldAPI.Reset.Response field_reset = 104;
       FieldAPI.Remove.Response field_remove = 106;
+      FieldAPI.List.Response field_list = 108;
 
       SubscriptionAPI.CreateSubscription.Response subscription_create = 111;
       SubscriptionAPI.CreateFilter.Response subscription_create_filter = 115;
@@ -584,6 +588,25 @@ message ResourceAPI {
       message Response {}
     }
   }
+
+  message Tree {
+    message Request {
+      uint64 resource_id = 1;
+
+      // Limit maximum depth the tree is traversed.
+      // The resource <resource_id> is considered on depth = 0, the values of its fiels
+      // are on depth = 1 and so on.
+      // The maximum uint32 value disables the limit at all.
+      // 0 value makes API to return only single resource <resource_id> and is actually
+      // equal to Get.Request
+      optional uint32 max_depth = 2;
+    }
+
+    // Multi-message
+    message Response {
+      Resource resource = 1;
+    }
+  }
 }
 
 message FieldAPI {
@@ -651,6 +674,35 @@ message FieldAPI {
     }
     message Response {}
   }
+
+  message List {
+    message Request {
+      uint64 resource_id = 1;
+
+      // Start the listing from given position, returning first field with
+      // name >= start_from.
+      string start_from = 2;
+
+      // Non-zero value makes API to limit number of returned fields to at
+      // most <limit>.
+      // Zero value makes API to return all available fields of the resource.
+      uint32 limit = 3;
+    }
+
+    // Multi-message
+    message Response {
+      Field field = 1;
+
+      // The name of field next to the current one.
+      //
+      // Is not empty only for the last message in the current listing, when <limit> was > 0 in List.Request AND
+      // there is more items to read (the listing was stopped because of that limit)
+      //
+      // Use <next> value as <start_from> in the List.Request to continue listing.
+      string next = 4;
+    }
+  }
+
 }
 
 message NotificationAPI {

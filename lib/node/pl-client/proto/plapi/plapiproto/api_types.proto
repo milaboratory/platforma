@@ -26,6 +26,12 @@ message Resource {
   Base.ResourceType type = 4;
   bytes data = 5;
 
+  message Features {
+    bool ephemeral = 1; // false = 'supports deduplication'
+  }
+
+  Features features = 16;
+
   repeated Field fields = 6;
 
   // Resource has at least one field with error
@@ -46,6 +52,7 @@ message Field {
   // field ID is always combination of parent resource ID and field name
   Base.FieldRef id = 1;
   Base.FieldType type = 2;
+  Resource.Features features = 3;
 
   // _resolved_ value of field or _assigned_ if the field was assigned to a resource.
   // If field refers to another field, it will get
