@@ -1,6 +1,6 @@
 Syncing 'main' proto version...
-  Cloning 'git@github.com:milaboratory/pl.git' into tmp directory /Volumes/Data/Projects/MiLaboratory/platforma/ts-pl-client-v2/proto/plapi/tmp-repo
-    Cloning into '/Volumes/Data/Projects/MiLaboratory/platforma/ts-pl-client-v2/proto/plapi/tmp-repo'...
+  Cloning 'git@github.com:milaboratory/pl.git' into tmp directory /Users/dbolotin/mi/core/platforma/lib/node/pl-client/proto/plapi/tmp-repo
+    Cloning into '/Users/dbolotin/mi/core/platforma/lib/node/pl-client/proto/plapi/tmp-repo'...
   Syncing proto files from 'plapi'
     - 'plapiproto/'
       building file list ... done
@@ -11,8 +11,8 @@ Syncing 'main' proto version...
       import.proto
       resource_types.proto
       
-      sent 38448 bytes  received 136 bytes  77168.00 bytes/sec
-      total size is 38031  speedup is 0.99
+      sent 40288 bytes  received 136 bytes  80848.00 bytes/sec
+      total size is 39867  speedup is 0.99
 
     - 'plapi/'
       building file list ... done
@@ -57,8 +57,8 @@ Syncing 'main' proto version...
       ./
       protocol.proto
       
-      sent 954 bytes  received 48 bytes  2004.00 bytes/sec
-      total size is 803  speedup is 0.80
+      sent 1269 bytes  received 48 bytes  2634.00 bytes/sec
+      total size is 1118  speedup is 0.85
 
     - 'lsapi/'
       building file list ... done
