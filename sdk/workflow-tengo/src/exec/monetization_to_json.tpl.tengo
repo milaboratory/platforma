@@ -22,7 +22,7 @@ self.body(func(inputs) {
 	if !is_undefined(decoded.jwtToken) {
 		token = decoded.jwtToken
 	} else {
-		info = decoded.mnz.details
+		info = decoded
 	}
 
 	return {

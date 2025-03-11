@@ -26,18 +26,22 @@ mnzClientStdoutSchema := ["or",
 	{ jwtToken: "string" },
 
 	// dry-run response
-	{ mnz: {
-		details: {
-			spentRuns: "number",
-			runsToSpend: "number",
-			willRemainAfterRun: "number",
-			"subscription,?": {
-				availableRuns: "number",
-				startsAt: "string",
-				expiresAt: "string"
+	{
+		productKey: "string",
+		canRun: "boolean",
+		mnz: {
+			type: "string",
+			details: {
+				spentRuns: "number",
+				runsToSpend: "number",
+				willRemainAfterRun: "number",
+				"subscription,?": {
+					availableRuns: "number",
+					startsAt: "string",
+					expiresAt: "string"
+				}
 			}
-		}
-	}}
+		}}
 	]
 
 /** Just creates a new monetization as a map of params. */
@@ -277,6 +281,7 @@ export ll.toStrict({
 	schema: schema,
 	enable: enable,
 	setDryRun: setDryRun,
+	setUrl: setUrl,
 	shouldRun: shouldRun,
 	toJson: toJson,
 	addFileParams: addFileParams,
