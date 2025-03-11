@@ -150,10 +150,24 @@ const systemLibs = [
   /libcom_err\.so(\.[0-9.]+)?$/,
   /libc\.so(\.[0-9.]+)?$/,
   /libstdc\+\+\.so(\.[0-9.]+)?$/,
-  /libresolv\.so(\.[0-9.]+)?$/,
+  /libBrokenLocale\.so(\.[0-9.]+)?$/,
+  /libanl\.so(\.[0-9.]+)?$/,
+  /libc_malloc_debug\.so(\.[0-9.]+)?$/,
   /libdl\.so(\.[0-9.]+)?$/,
+  /libm\.so(\.[0-9.]+)?$/,
+  /libmemusage\.so(\.[0-9.]+)?$/,
+  /libmvec\.so(\.[0-9.]+)?$/,
+  /libnsl\.so(\.[0-9.]+)?$/,
+  /libnss_compat\.so(\.[0-9.]+)?$/,
+  /libnss_dns\.so(\.[0-9.]+)?$/,
+  /libnss_files\.so(\.[0-9.]+)?$/,
+  /libnss_hesiod\.so(\.[0-9.]+)?$/,
+  /libpcprofile\.so(\.[0-9.]+)?$/,
+  /libpthread\.so(\.[0-9.]+)?$/,
+  /libresolv\.so(\.[0-9.]+)?$/,
   /librt\.so(\.[0-9.]+)?$/,
-  /libpthread\.so(\.[0-9.]+)?$/
+  /libthread_db\.so(\.[0-9.]+)?$/,
+  /libutil\.so(\.[0-9.]+)?$/,
 ];
 
 function collectDependencies(logger, installDir, patchElf = false) {
