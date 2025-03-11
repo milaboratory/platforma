@@ -1,5 +1,11 @@
 # @milaboratories/pl-local
 
+## 1.3.0
+
+### Minor Changes
+
+- f3438f1: Release pl=1.25.0 with default log rotation rules
+
 ## 1.2.4
 
 ### Patch Changes
