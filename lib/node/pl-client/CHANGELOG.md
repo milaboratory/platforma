@@ -1,5 +1,12 @@
 # @milaboratories/pl-client
 
+## 2.7.12
+
+### Patch Changes
+
+- 3944280: - gRPC transport library upgrade
+  - gRPC code updated and regenerated
+
 ## 2.7.11
 
 ### Patch Changes

@@ -1,5 +1,17 @@
 # @milaboratories/pl-middle-layer
 
+## 1.30.3
+
+### Patch Changes
+
+- 3944280: PFrames engine upgrade to increase compatibility with old glibc versions
+- Updated dependencies [3944280]
+- Updated dependencies [3944280]
+  - @platforma-sdk/workflow-tengo@2.15.6
+  - @milaboratories/pl-client@2.7.12
+  - @milaboratories/pl-drivers@1.5.25
+  - @milaboratories/pl-tree@1.4.31
+
 ## 1.30.2
 
 ### Patch Changes
