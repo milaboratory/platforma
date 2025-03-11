@@ -146,11 +146,14 @@ async function buildRDist(logger, buildDir, installRoot, rRoot) {
 
 const systemLibs = [
   /ld-linux-x86-64\.so(\.[0-9.]+)?$/,
-  /libc\.so(\.[0-9.]+)?$/,
   /libm\.so(\.[0-9.]+)?$/,
   /libcom_err\.so(\.[0-9.]+)?$/,
+  /libc\.so(\.[0-9.]+)?$/,
   /libstdc\+\+\.so(\.[0-9.]+)?$/,
-  /libresolv\.so(\.[0-9.]+)?$/
+  /libresolv\.so(\.[0-9.]+)?$/,
+  /libdl\.so(\.[0-9.]+)?$/,
+  /librt\.so(\.[0-9.]+)?$/,
+  /libpthread\.so(\.[0-9.]+)?$/
 ];
 
 function collectDependencies(logger, installDir, patchElf = false) {
