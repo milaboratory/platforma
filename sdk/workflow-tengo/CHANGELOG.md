@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 2.15.5
+
+### Patch Changes
+
+- 990841d: monetization fixes
+
 ## 2.15.4
 
 ### Patch Changes
