@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 2.15.6
+
+### Patch Changes
+
+- 3944280: Small-binaries dependency upgrade
+
 ## 2.15.5
 
 ### Patch Changes
