@@ -1,5 +1,11 @@
 # @platforma-sdk/r-builder
 
+## 1.1.5
+
+### Patch Changes
+
+- 1a8b661: Ignore all known glibc libraries when bundling R
+
 ## 1.1.4
 
 ### Patch Changes
