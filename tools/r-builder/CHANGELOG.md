@@ -1,5 +1,11 @@
 # @platforma-sdk/r-builder
 
+## 1.1.4
+
+### Patch Changes
+
+- 33239c5: Don't get parts of libc into R distribution. Use system one
+
 ## 1.1.3
 
 ### Patch Changes
