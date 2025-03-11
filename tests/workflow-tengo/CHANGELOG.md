@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo-tests
 
+## 1.6.2
+
+### Patch Changes
+
+- 990841d: monetization fixes
+
 ## 1.6.1
 
 ### Patch Changes
