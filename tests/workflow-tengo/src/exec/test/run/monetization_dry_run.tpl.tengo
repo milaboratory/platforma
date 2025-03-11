@@ -6,6 +6,7 @@ self.defineOutputs(["info"])
 self.body(func(inputs) {
 	mnz := monetization.builder("MIFAKEMIFAKEMIFAKE"). // a fake product key so our mnz client response with a fake response without changing prod db.
 		setDate(inputs.date).
+		setUrl("https://fake.com/client/does/not/need/it").
 		writeFile("dryrun.txt", "1\n2\n3\n", {arg: "ABC", collect: ["lines"]}).
 		build()
 
