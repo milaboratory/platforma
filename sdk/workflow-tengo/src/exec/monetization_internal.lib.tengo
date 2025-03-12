@@ -27,22 +27,19 @@ mnzClientStdoutSchema := ["or",
 
 	// dry-run response
 	{
-		productKey: "string",
-		canRun: "boolean",
-		mnz: {
-			type: "string",
-			details: {
-				spentRuns: "number",
-				runsToSpend: "number",
-				willRemainAfterRun: "number",
-				"subscription,?": {
-					availableRuns: "number",
-					startsAt: "string",
-					expiresAt: "string"
+		httpError: "string",
+		response: {
+			"error,?": "any",
+			"result,?": {
+				productKey: "string",
+				canRun: "boolean",
+				mnz: {
+					type: "string",
+					details: "any"
 				}
 			}
-		}}
-	]
+		}
+	}]
 
 /** Just creates a new monetization as a map of params. */
 init := func() {
