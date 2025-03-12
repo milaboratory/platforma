@@ -1,15 +1,26 @@
 self := import("@platforma-sdk/workflow-tengo:workflow")
 monetization := import("@platforma-sdk/workflow-tengo:exec.monetization")
+file := import("@platforma-sdk/workflow-tengo:file")
 
 self.body(func(inputs) {
 	mnz := monetization.builder(inputs.productKey).
-		setDate("Mon 2 Apr 15:28:10 CET 2025").
-		writeFile("dryrun.txt", "1\n2\n3\n", {arg: "ABC", collect: ["lines"]}).
-		build()
+		setDate("Mon 2 Apr 15:28:10 CET 2025")
+
+	progresses := {}
+	for _, handle in inputs.inputHandles {
+		result := file.importFile(handle.handle)
+		progresses[handle.fileName] = result.handle
+
+		mnz.addFile(handle.fileName, result.file, {
+			arg: handle.argName,
+			collect: handle.options
+		})
+	}
 
 	return {
 		outputs: {
-			info: mnz
+			info: mnz.build(),
+			progresses: progresses
 		},
 		exports: {}
 	}
