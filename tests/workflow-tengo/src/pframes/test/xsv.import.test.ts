@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { field, Pl } from '@milaboratories/pl-middle-layer';
 import { awaitStableState, tplTest } from '@platforma-sdk/test';
 import { Templates } from '../../../dist';
@@ -18,10 +19,10 @@ const csvDataMap = (() => {
     cols.set(h, []);
   }
 
-  for (var iRow = 0; iRow < lines.length - 1; ++iRow) {
+  for (let iRow = 0; iRow < lines.length - 1; ++iRow) {
     const line = lines[iRow + 1].split(',');
 
-    for (var iCol = 0; iCol < header.length; ++iCol) {
+    for (let iCol = 0; iCol < header.length; ++iCol) {
       cols.get(header[iCol])?.push(line[iCol]);
     }
   }
@@ -44,44 +45,44 @@ const baseSpec = {
       column: 'ax1',
       spec: {
         name: 'ax1',
-        type: 'String'
-      }
+        type: 'String',
+      },
     },
     {
       column: 'ax2',
       spec: {
         name: 'ax2',
-        type: 'String'
-      }
+        type: 'String',
+      },
     },
     {
       column: 'ax3',
       spec: {
         name: 'ax3',
-        type: 'String'
-      }
-    }
+        type: 'String',
+      },
+    },
   ],
   columns: [
     {
       column: 'col1',
       id: 'col1',
       spec: {
-        valueType: 'String'
-      }
+        valueType: 'String',
+      },
     },
     {
       column: 'col2',
       id: 'col2',
       spec: {
-        valueType: 'String'
-      }
-    }
+        valueType: 'String',
+      },
+    },
   ],
 
   storageFormat: 'Binary',
 
-  partitionKeyLength: 2
+  partitionKeyLength: 2,
 };
 
 // partition keys values as Json encoded strings
@@ -116,7 +117,7 @@ tplTest.for([
   { partitionKeyLength: 2, storageFormat: 'Binary' },
   { partitionKeyLength: 0, storageFormat: 'Json' },
   { partitionKeyLength: 1, storageFormat: 'Json' },
-  { partitionKeyLength: 2, storageFormat: 'Json' }
+  { partitionKeyLength: 2, storageFormat: 'Json' },
 ])(
   'should read p-frame from csv file for partitionKeyLength = $partitionKeyLength ( $storageFormat )',
   // This timeout has additional 10 seconds due to very slow performance of Platforma on large transactions,
@@ -127,7 +128,7 @@ tplTest.for([
   // execution takes 1-2 seconds at most.
   { timeout: 30000 },
   async ({ partitionKeyLength, storageFormat }, { helper, expect, driverKit }) => {
-    var spec = baseSpec;
+    const spec = baseSpec;
     spec.partitionKeyLength = partitionKeyLength;
     spec.storageFormat = storageFormat;
     const expectedPKeys = [...expectedPartitionKeys(spec)].sort();
@@ -138,14 +139,14 @@ tplTest.for([
       ['pf'],
       (tx) => ({
         csv: tx.createValue(Pl.JsonObject, JSON.stringify(csvData)),
-        spec: tx.createValue(Pl.JsonObject, JSON.stringify(spec))
-      })
+        spec: tx.createValue(Pl.JsonObject, JSON.stringify(spec)),
+      }),
     );
 
     const cols = (
       await awaitStableState(
         result.computeOutput('pf', (pf) => pf?.listInputFields()),
-        10000
+        10000,
       )
     )?.sort();
 
@@ -159,10 +160,10 @@ tplTest.for([
           return {
             type: r?.resourceType.name,
             data: r?.getDataAsJson(),
-            fields: r?.listInputFields()
+            fields: r?.listInputFields(),
           };
         }),
-        6000
+        6000,
       );
 
       expect(colOpt).toBeDefined();
@@ -187,11 +188,11 @@ tplTest.for([
               }
               return driverKit.blobDriver.getOnDemandBlob(r.persist(), ctx).handle;
             }),
-            60000
+            60000,
           );
 
           const data = JSON.parse(
-            Buffer.from(await driverKit.blobDriver.getContent(dataOpt!)).toString('utf-8')
+            Buffer.from(await driverKit.blobDriver.getContent(dataOpt!)).toString('utf-8'),
           );
 
           const values = Object.keys(data)
@@ -206,7 +207,7 @@ tplTest.for([
         // @TODO test
       }
     }
-  }
+  },
 );
 
 function superPartitionKeys(keyLen: number): string[] {
@@ -231,59 +232,59 @@ tplTest.for([
   {
     superPartitionKeyLength: 0,
     partitionKeyLength: 0,
-    storageFormat: 'Binary'
+    storageFormat: 'Binary',
   },
   {
     superPartitionKeyLength: 0,
     partitionKeyLength: 1,
-    storageFormat: 'Binary'
+    storageFormat: 'Binary',
   },
   {
     superPartitionKeyLength: 0,
     partitionKeyLength: 2,
-    storageFormat: 'Binary'
+    storageFormat: 'Binary',
   },
   {
     superPartitionKeyLength: 1,
     partitionKeyLength: 0,
-    storageFormat: 'Binary'
+    storageFormat: 'Binary',
   },
   {
     superPartitionKeyLength: 1,
     partitionKeyLength: 1,
-    storageFormat: 'Binary'
+    storageFormat: 'Binary',
   },
   {
     superPartitionKeyLength: 1,
     partitionKeyLength: 2,
-    storageFormat: 'Binary'
+    storageFormat: 'Binary',
   },
   {
     superPartitionKeyLength: 2,
     partitionKeyLength: 0,
-    storageFormat: 'Binary'
+    storageFormat: 'Binary',
   },
   {
     superPartitionKeyLength: 2,
     partitionKeyLength: 1,
-    storageFormat: 'Binary'
+    storageFormat: 'Binary',
   },
   {
     superPartitionKeyLength: 2,
     partitionKeyLength: 2,
-    storageFormat: 'Binary'
+    storageFormat: 'Binary',
   },
 
   { superPartitionKeyLength: 0, partitionKeyLength: 0, storageFormat: 'Json' },
   { superPartitionKeyLength: 0, partitionKeyLength: 1, storageFormat: 'Json' },
   { superPartitionKeyLength: 1, partitionKeyLength: 0, storageFormat: 'Json' },
-  { superPartitionKeyLength: 1, partitionKeyLength: 1, storageFormat: 'Json' }
+  { superPartitionKeyLength: 1, partitionKeyLength: 1, storageFormat: 'Json' },
 ])(
   'should read super-partitioned p-frame from csv files map- superPartitionKeyLength: $superPartitionKeyLength, partitionKeyLength: $partitionKeyLength',
   { timeout: 10000 },
   async ({ superPartitionKeyLength, partitionKeyLength, storageFormat }, { helper, expect }) => {
     const supKeys = superPartitionKeys(superPartitionKeyLength).sort();
-    var spec = baseSpec;
+    const spec = baseSpec;
     spec.partitionKeyLength = partitionKeyLength;
     spec.storageFormat = storageFormat;
     // inner keys
@@ -305,9 +306,9 @@ tplTest.for([
         return {
           csvMap: map,
           keyLength: tx.createValue(Pl.JsonObject, JSON.stringify(superPartitionKeyLength)),
-          spec: tx.createValue(Pl.JsonObject, JSON.stringify(spec))
+          spec: tx.createValue(Pl.JsonObject, JSON.stringify(spec)),
         };
-      }
+      },
     );
 
     for (const colName of ['col1', 'col2']) {
@@ -317,28 +318,28 @@ tplTest.for([
           return {
             type: r?.resourceType.name,
             data: r?.getDataAsJson(),
-            fields: r?.listInputFields()
+            fields: r?.listInputFields(),
           };
         }),
-        60000
+        60000,
       );
 
       expect(colOpt).toBeDefined();
 
       const col = colOpt!;
 
-      var expectedResourceType: string;
-      var expectedData: object;
+      let expectedResourceType: string;
+      let expectedData: object;
       if (superPartitionKeyLength > 0 && partitionKeyLength > 0) {
         expectedResourceType = 'PColumnData/Partitioned/' + spec.storageFormat + 'Partitioned';
         expectedData = {
           superPartitionKeyLength: superPartitionKeyLength,
-          partitionKeyLength: partitionKeyLength
+          partitionKeyLength: partitionKeyLength,
         };
       } else {
         expectedResourceType = 'PColumnData/' + spec.storageFormat + 'Partitioned';
         expectedData = {
-          partitionKeyLength: Math.max(superPartitionKeyLength, partitionKeyLength)
+          partitionKeyLength: Math.max(superPartitionKeyLength, partitionKeyLength),
         };
       }
 
@@ -355,10 +356,10 @@ tplTest.for([
               return {
                 type: r?.resourceType.name,
                 data: r?.getDataAsJson(),
-                fields: r?.listInputFields()
+                fields: r?.listInputFields(),
               };
             }),
-            60000
+            60000,
           );
 
           expect(colOpt).toBeDefined();
@@ -368,7 +369,7 @@ tplTest.for([
           expect(col.type).toEqual('PColumnData/' + spec.storageFormat + 'Partitioned');
 
           expect(col.data).toEqual({
-            partitionKeyLength: spec.partitionKeyLength
+            partitionKeyLength: spec.partitionKeyLength,
           });
 
           const keys = [...new Set(col?.fields?.map(partitionKeyJson))].sort();
@@ -389,66 +390,66 @@ tplTest.for([
         expect(keys).toEqual(supKeys);
       }
     }
-  }
+  },
 );
 
 tplTest.for([
   {
     superPartitionKeyLength: 0,
     partitionKeyLength: 0,
-    storageFormat: 'Binary'
+    storageFormat: 'Binary',
   },
   {
     superPartitionKeyLength: 0,
     partitionKeyLength: 1,
-    storageFormat: 'Binary'
+    storageFormat: 'Binary',
   },
   {
     superPartitionKeyLength: 0,
     partitionKeyLength: 2,
-    storageFormat: 'Binary'
+    storageFormat: 'Binary',
   },
   {
     superPartitionKeyLength: 1,
     partitionKeyLength: 0,
-    storageFormat: 'Binary'
+    storageFormat: 'Binary',
   },
   {
     superPartitionKeyLength: 1,
     partitionKeyLength: 1,
-    storageFormat: 'Binary'
+    storageFormat: 'Binary',
   },
   {
     superPartitionKeyLength: 1,
     partitionKeyLength: 2,
-    storageFormat: 'Binary'
+    storageFormat: 'Binary',
   },
   {
     superPartitionKeyLength: 2,
     partitionKeyLength: 0,
-    storageFormat: 'Binary'
+    storageFormat: 'Binary',
   },
   {
     superPartitionKeyLength: 2,
     partitionKeyLength: 1,
-    storageFormat: 'Binary'
+    storageFormat: 'Binary',
   },
   {
     superPartitionKeyLength: 2,
     partitionKeyLength: 2,
-    storageFormat: 'Binary'
+    storageFormat: 'Binary',
   },
 
   { superPartitionKeyLength: 0, partitionKeyLength: 0, storageFormat: 'Json' },
   { superPartitionKeyLength: 0, partitionKeyLength: 1, storageFormat: 'Json' },
   { superPartitionKeyLength: 1, partitionKeyLength: 0, storageFormat: 'Json' },
-  { superPartitionKeyLength: 1, partitionKeyLength: 1, storageFormat: 'Json' }
+  { superPartitionKeyLength: 1, partitionKeyLength: 1, storageFormat: 'Json' },
 ])(
   '[in workflow] should read super-partitioned p-frame from csv files map- superPartitionKeyLength: $superPartitionKeyLength, partitionKeyLength: $partitionKeyLength',
   { timeout: 10000 },
   async ({ superPartitionKeyLength, partitionKeyLength, storageFormat }, { helper, expect }) => {
     const supKeys = superPartitionKeys(superPartitionKeyLength).sort();
-    var spec = baseSpec;
+    const spec = baseSpec;
     spec.partitionKeyLength = partitionKeyLength;
     spec.storageFormat = storageFormat;
     // inner keys
@@ -462,9 +463,9 @@ tplTest.for([
       {
         csvMap: csvMap,
         keyLength: superPartitionKeyLength,
-        spec
+        spec,
       },
-      { exportProcessor: Templates['pframes.export-pframe'] }
+      { exportProcessor: Templates['pframes.export-pframe'] },
     );
 
     for (const colName of ['col1', 'col2']) {
@@ -473,28 +474,28 @@ tplTest.for([
           return {
             type: r?.resourceType.name,
             data: r?.getDataAsJson(),
-            fields: r?.listInputFields()
+            fields: r?.listInputFields(),
           };
         }),
-        60000
+        60000,
       );
 
       expect(colOpt).toBeDefined();
 
       const col = colOpt!;
 
-      var expectedResourceType: string;
-      var expectedData: object;
+      let expectedResourceType: string;
+      let expectedData: object;
       if (superPartitionKeyLength > 0 && partitionKeyLength > 0) {
         expectedResourceType = 'PColumnData/Partitioned/' + spec.storageFormat + 'Partitioned';
         expectedData = {
           superPartitionKeyLength: superPartitionKeyLength,
-          partitionKeyLength: partitionKeyLength
+          partitionKeyLength: partitionKeyLength,
         };
       } else {
         expectedResourceType = 'PColumnData/' + spec.storageFormat + 'Partitioned';
         expectedData = {
-          partitionKeyLength: Math.max(superPartitionKeyLength, partitionKeyLength)
+          partitionKeyLength: Math.max(superPartitionKeyLength, partitionKeyLength),
         };
       }
 
@@ -511,10 +512,10 @@ tplTest.for([
               return {
                 type: r?.resourceType.name,
                 data: r?.getDataAsJson(),
-                fields: r?.listInputFields()
+                fields: r?.listInputFields(),
               };
             }),
-            60000
+            60000,
           );
 
           expect(colOpt).toBeDefined();
@@ -524,7 +525,7 @@ tplTest.for([
           expect(col.type).toEqual('PColumnData/' + spec.storageFormat + 'Partitioned');
 
           expect(col.data).toEqual({
-            partitionKeyLength: spec.partitionKeyLength
+            partitionKeyLength: spec.partitionKeyLength,
           });
 
           const keys = [...new Set(col?.fields?.map(partitionKeyJson))].sort();
@@ -545,5 +546,5 @@ tplTest.for([
         expect(keys).toEqual(supKeys);
       }
     }
-  }
+  },
 );

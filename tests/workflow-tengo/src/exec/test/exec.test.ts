@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { Pl } from '@milaboratories/pl-middle-layer';
 import { tplTest } from '@platforma-sdk/test';
 import * as env from '../../test/env';
@@ -5,22 +6,22 @@ import * as env from '../../test/env';
 tplTest(
   'run-hello-world-go',
   async ({ helper, expect }) => {
-    const helloText = "Hello from go!"
+    const helloText = 'Hello from go!';
 
     const result = await helper.renderTemplate(
       false,
       'exec.test.run.hello_go',
       ['main'],
       (tx) => ({
-        text: tx.createValue(Pl.JsonObject, JSON.stringify(helloText))
-      })
+        text: tx.createValue(Pl.JsonObject, JSON.stringify(helloText)),
+      }),
     );
     const mainResult = result.computeOutput('main', (a) =>
-      a?.getDataAsString()
+      a?.getDataAsString(),
     );
 
     expect(await mainResult.awaitStableValue()).eq(helloText + '\n');
-  }
+  },
 );
 
 // tplTest(
@@ -47,22 +48,22 @@ tplTest(
 tplTest(
   'should run bash from the template, echo a string to stdout and returns a value resource',
   async ({ helper, expect }) => {
-    const helloText = "Hello from bash"
+    const helloText = 'Hello from bash';
 
     const result = await helper.renderTemplate(
       false,
       'exec.test.run.echo_to_value',
       ['main'],
       (tx) => ({
-        text: tx.createValue(Pl.JsonObject, JSON.stringify(helloText))
-      })
+        text: tx.createValue(Pl.JsonObject, JSON.stringify(helloText)),
+      }),
     );
     const mainResult = result.computeOutput('main', (a) =>
-      a?.getDataAsString()
+      a?.getDataAsString(),
     );
 
     expect(await mainResult.awaitStableValue()).eq(helloText);
-  }
+  },
 );
 
 tplTest(
@@ -72,7 +73,7 @@ tplTest(
       false,
       'exec.test.run.echo_to_stream',
       ['main'],
-      (tx) => ({})
+      (tx) => ({}),
     );
 
     const mainResult = result.computeOutput('main', (a) => {
@@ -82,7 +83,7 @@ tplTest(
     });
 
     expect(await mainResult.awaitStableValue()).eq('Hello from bash\n');
-  }
+  },
 );
 
 tplTest(
@@ -93,7 +94,7 @@ tplTest(
     expect(library).toBeDefined();
     const files = await driverKit.lsDriver.listFiles(library!.handle, '');
     const ourFile = files.entries.find(
-      (f) => f.name == 'answer_to_the_ultimate_question.txt'
+      (f) => f.name == 'answer_to_the_ultimate_question.txt',
     );
     expect(ourFile).toBeDefined();
     expect(ourFile?.type).toBe('file');
@@ -105,17 +106,18 @@ tplTest(
       (tx) => ({
         file: tx.createValue(
           Pl.JsonObject,
-          JSON.stringify((ourFile as any).handle)
-        )
-      })
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          JSON.stringify((ourFile as any).handle),
+        ),
+      }),
     );
 
     const mainResult = result.computeOutput('main', (a) =>
-      a?.getDataAsString()
+      a?.getDataAsString(),
     );
 
     expect(await mainResult.awaitStableValue()).eq('42');
-  }
+  },
 );
 
 tplTest(
@@ -125,17 +127,17 @@ tplTest(
       false,
       'exec.test.run.cat_on_value',
       ['main'],
-      (tx) => ({})
+      (tx) => ({}),
     );
 
     const mainResult = result.computeOutput('main', (a) =>
-      a?.getDataAsString()
+      a?.getDataAsString(),
     );
 
     expect(await mainResult.awaitStableValue()).eq(
-      '>asd\nATGCTA\n>asdasd\nASD\n>asdasd\nD\n>asdasd\nAD\n'
+      '>asd\nATGCTA\n>asdasd\nASD\n>asdasd\nD\n>asdasd\nAD\n',
     );
-  }
+  },
 );
 
 tplTest(
@@ -145,7 +147,7 @@ tplTest(
       false,
       'exec.test.run.save_file_set',
       ['p', 'x', 'all'],
-      (tx) => ({})
+      (tx) => ({}),
     );
 
     const p = await result
@@ -160,8 +162,8 @@ tplTest(
 
     expect(p?.sort()).toEqual(['p1', 'p2', 'p3', 'p4'].sort());
     expect(x?.sort()).toEqual(['x1', 'x2'].sort());
-    //expect(all?.sort()).toContainAll(['p1', 'p2', 'p3', 'p4', 'x1', 'x2'].sort());
-  }
+    // expect(all?.sort()).toContainAll(['p1', 'p2', 'p3', 'p4', 'x1', 'x2'].sort());
+  },
 );
 
 tplTest(
@@ -171,7 +173,7 @@ tplTest(
       false,
       'exec.test.run.with_wd_processor',
       ['p'],
-      (tx) => ({})
+      (tx) => ({}),
     );
 
     const p = await result
@@ -187,7 +189,7 @@ tplTest(
     //   .awaitStableValue();
 
     expect(data).eq('text1\n');
-  }
+  },
 );
 
 tplTest(
@@ -197,13 +199,13 @@ tplTest(
       false,
       'exec.test.run.arg_with_var',
       ['out'],
-      (_) => ({})
+      (_) => ({}),
     );
 
     const out = await result
       .computeOutput('out', (out) => out?.getDataAsString())
       .awaitStableValue();
 
-    expect(out).toBe('4{2}')
-  }
+    expect(out).toBe('4{2}');
+  },
 );

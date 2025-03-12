@@ -1,5 +1,5 @@
 import { Pl } from '@milaboratories/pl-middle-layer';
-import { PlTransaction } from '@milaboratories/pl-middle-layer';
+import type { PlTransaction } from '@milaboratories/pl-middle-layer';
 import { tplTest } from '@platforma-sdk/test';
 
 /** The test should:
@@ -13,20 +13,19 @@ tplTest(
       false,
       'exec.test.run.monetization_on_hello_world',
       ['token'],
-      (_) => ({})
+      (_) => ({}),
     );
 
     const token = await result
       .computeOutput('token', (out) => out?.getDataAsString())
       .awaitStableValue();
 
-    expect(token.split("\n")).toHaveLength(1);
+    expect(token.split('\n')).toHaveLength(1);
 
     // starts with jwt header: { "alg": "RS256" ...}
-    expect(token).toMatch(/eyJhbGciOi.*/)
-  }
+    expect(token).toMatch(/eyJhbGciOi.*/);
+  },
 );
-
 
 tplTest(
   'should run dry-run monetization and return info with remaining runs',
@@ -36,8 +35,8 @@ tplTest(
       'exec.test.run.monetization_dry_run',
       ['info'],
       (tx: PlTransaction) => ({
-        date: tx.createValue(Pl.JsonObject, Date.now().toString())
-      })
+        date: tx.createValue(Pl.JsonObject, Date.now().toString()),
+      }),
     );
 
     const info = await result
@@ -46,22 +45,21 @@ tplTest(
 
     // faked response from mnz-client
     expect(info).toMatchObject({
-      productKey: "MIFAKEMIFAKEMIFAKE",
+      productKey: 'MIFAKEMIFAKEMIFAKE',
       canRun: true,
       mnz: {
-        type: "base",
+        type: 'base',
         details: {
           spentRuns: 192,
           runsToSpend: 1,
           willRemainAfterRun: 7,
           subscription: {
             availableRuns: 200,
-            startsAt: "2025-02-25T11:50:59.000Z",
-            expiresAt: "2025-03-27T11:50:59.000Z"
-          }
-        }
-      }
+            startsAt: '2025-02-25T11:50:59.000Z',
+            expiresAt: '2025-03-27T11:50:59.000Z',
+          },
+        },
+      },
     });
-  }
+  },
 );
-
