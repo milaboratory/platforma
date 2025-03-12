@@ -1,5 +1,13 @@
 # @milaboratories/config-local-ml-integration
 
+## 1.2.65
+
+### Patch Changes
+
+- 2dee61b: Monetization Component Demo
+- Updated dependencies [2dee61b]
+  - @milaboratories/pl-middle-layer@1.30.9
+
 ## 1.2.64
 
 ### Patch Changes

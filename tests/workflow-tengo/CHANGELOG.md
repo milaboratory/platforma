@@ -1,5 +1,12 @@
 # @platforma-sdk/workflow-tengo-tests
 
+## 1.6.4
+
+### Patch Changes
+
+- 2dee61b: Monetization Component Demo
+- 36e4ae8: Monetization demo part 1
+
 ## 1.6.3
 
 ### Patch Changes

@@ -1,5 +1,12 @@
 # @milaboratories/milaboratories.monetization-test.workflow
 
+## 1.0.3
+
+### Patch Changes
+
+- 2dee61b: Monetization Component Demo
+- 36e4ae8: Monetization demo part 1
+
 ## 1.0.2
 
 ### Patch Changes
