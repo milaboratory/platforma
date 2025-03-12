@@ -124,15 +124,12 @@ export function getAdditionalColumns(columns: PColumn<TreeNodeAccessor | PColumn
     return additionalColumns;
 }
 
-export function enrichColumnsWithCompatibleMetadata(
+export function enrichColumnsWithCompatible(
     mainColumns: PColumn<TreeNodeAccessor | PColumnValues>[],
     secondaryColumns: PColumn<TreeNodeAccessor | PColumnValues>[]
 ): PColumn<TreeNodeAccessor | PColumnValues>[] {
     const result = [...mainColumns];
     for (const secondaryColumn of secondaryColumns) {
-        if (!secondaryColumn.spec.name.includes('metadata')) {
-            continue;
-        }
         for (const mainColumn of mainColumns) {
             if (mainColumn.id === secondaryColumn.id) {
                 break;
@@ -157,7 +154,7 @@ const VALUE_TYPES: ValueType[] = [
 
 export function createPFrameForGraphs<A, U>(
     ctx: RenderCtx<A, U>,
-    blockColumns?: PColumn<TreeNodeAccessor | PColumnValues>[] | null
+    blockColumns?: PColumn<TreeNodeAccessor | PColumnValues>[]
 ): PFrameHandle | undefined {
     if (blockColumns === undefined) return undefined;
 
@@ -167,13 +164,10 @@ export function createPFrameForGraphs<A, U>(
         .filter(isPColumn)
         .filter((column) => VALUE_TYPES.includes(column.spec.valueType));
 
-    // if block columns is null - get all upstream instead
-    const columnsWithCompatibleMetadata = blockColumns === null
-        ? upstreamColumns
-        : enrichColumnsWithCompatibleMetadata(blockColumns, upstreamColumns);
+    const columnsWithCompatibleFromUpstream = enrichColumnsWithCompatible(blockColumns, upstreamColumns);
 
     // additional columns are duplicates with extra fields in domains for compatibility in all possible pairs of columns set
-    const extendedColumns = [...columnsWithCompatibleMetadata, ...getAdditionalColumns(columnsWithCompatibleMetadata)];
+    const extendedColumns = [...columnsWithCompatibleFromUpstream, ...getAdditionalColumns(columnsWithCompatibleFromUpstream)];
 
     // if at least one column is not yet ready, we can't show the table
     if (
@@ -185,4 +179,3 @@ export function createPFrameForGraphs<A, U>(
 
     return ctx.createPFrame(extendedColumns);
 }
-

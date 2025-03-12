@@ -1,5 +1,5 @@
 import {test, expect, describe} from '@jest/globals';
-import {enrichColumnsWithCompatibleMetadata, getAdditionalColumns, IS_VIRTUAL_COLUMN} from './PFrameForGraphs';
+import {enrichColumnsWithCompatible, getAdditionalColumns, IS_VIRTUAL_COLUMN} from './PFrameForGraphs';
 import {PColumn, PColumnSpec, PColumnValues, PObjectId} from "@milaboratories/pl-model-common";
 import {TreeNodeAccessor} from "../render";
 
@@ -178,7 +178,7 @@ describe('PFrameForGraph', () => {
             {id: 'id4' as PObjectId, spec: metaColumnSpec3, data: []},
         ] as PColumn<PColumnValues>[];
 
-        const enrichedColumns = enrichColumnsWithCompatibleMetadata(columns, upstream);
+        const enrichedColumns = enrichColumnsWithCompatible(columns, upstream);
         expect(enrichedColumns.map((c) => c.id)).toEqual(['id1', 'id2', 'id3'])
     })
 })
