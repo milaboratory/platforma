@@ -1,5 +1,12 @@
 # @platforma-sdk/workflow-tengo
 
+## 2.15.10
+
+### Patch Changes
+
+- 2dee61b: Monetization Component Demo
+- 36e4ae8: Monetization demo part 1
+
 ## 2.15.9
 
 ### Patch Changes

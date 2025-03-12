@@ -1,5 +1,11 @@
 # @platforma-sdk/r-builder
 
+## 1.1.7
+
+### Patch Changes
+
+- 2dee61b: Monetization Component Demo
+
 ## 1.1.6
 
 ### Patch Changes

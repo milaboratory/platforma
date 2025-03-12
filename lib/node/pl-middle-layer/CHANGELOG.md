@@ -1,5 +1,14 @@
 # @milaboratories/pl-middle-layer
 
+## 1.30.9
+
+### Patch Changes
+
+- 2dee61b: Monetization Component Demo
+- Updated dependencies [2dee61b]
+- Updated dependencies [36e4ae8]
+  - @platforma-sdk/workflow-tengo@2.15.10
+
 ## 1.30.8
 
 ### Patch Changes

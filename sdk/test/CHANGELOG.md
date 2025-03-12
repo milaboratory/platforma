@@ -1,5 +1,13 @@
 # @platforma-sdk/test
 
+## 1.22.93
+
+### Patch Changes
+
+- 2dee61b: Monetization Component Demo
+- Updated dependencies [2dee61b]
+  - @milaboratories/pl-middle-layer@1.30.9
+
 ## 1.22.92
 
 ### Patch Changes

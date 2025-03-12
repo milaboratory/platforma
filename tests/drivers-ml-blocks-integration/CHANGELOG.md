@@ -1,5 +1,14 @@
 # @milaboratories/drivers-ml-blocks-integration
 
+## 1.0.201
+
+### Patch Changes
+
+- 2dee61b: Monetization Component Demo
+- Updated dependencies [2dee61b]
+  - @milaboratories/pl-middle-layer@1.30.9
+  - @platforma-sdk/test@1.22.93
+
 ## 1.0.200
 
 ### Patch Changes
