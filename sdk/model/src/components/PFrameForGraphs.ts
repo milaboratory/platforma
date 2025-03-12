@@ -1,12 +1,15 @@
 import {
     AxisId,
     getAxisId,
+    isPColumn,
     matchAxisId,
     PColumn,
-    PColumnValues, PFrameHandle,
+    PColumnValues,
+    PFrameHandle,
     PObjectId,
+    ValueType,
 } from '@milaboratories/pl-model-common';
-import { RenderCtx, TreeNodeAccessor } from '../render';
+import {RenderCtx, TreeNodeAccessor} from '../render';
 
 /** Create id for column copy with added keys in axes domains */
 const colId = (id: PObjectId, domains: (Record<string, string> | undefined)[]) => {
@@ -38,8 +41,30 @@ function getKeysCombinations(idsLists: AxisId[][]) {
     return result;
 }
 
+/** Check if axes of secondary column are exactly in axes of main column */
+function checkFullCompatibility(
+    mainColumn: PColumn<TreeNodeAccessor | PColumnValues>,
+    secondaryColumn: PColumn<TreeNodeAccessor | PColumnValues>
+): boolean {
+    const mainAxesIds = mainColumn.spec.axesSpec.map(getAxisId);
+    const secondaryAxesIds = secondaryColumn.spec.axesSpec.map(getAxisId);
+    return secondaryAxesIds.every(id => mainAxesIds.some(mainId => matchAxisId(mainId, id) && matchAxisId(id, mainId)));
+}
+
+/** Check if axes of secondary column are in axes of main column, but they can have compatible difference in domains */
+function checkCompatibility(
+    mainColumn: PColumn<TreeNodeAccessor | PColumnValues>,
+    secondaryColumn: PColumn<TreeNodeAccessor | PColumnValues>
+): boolean {
+    const mainAxesIds = mainColumn.spec.axesSpec.map(getAxisId);
+    const secondaryAxesIds = secondaryColumn.spec.axesSpec.map(getAxisId);
+    return secondaryAxesIds.every(id => mainAxesIds.some(mainId => matchAxisId(mainId, id)));
+}
+
+export const IS_VIRTUAL_COLUMN = 'pl7.app/graph/isVirtual'; // annotation for column duplicates with extended domains
+
 /** Main column can have additional domains, if secondary column (meta-column) has all axes match main column axes
-we can add its copy with missed domain fields for compatibility */
+ we can add its copy with missed domain fields for compatibility */
 function getAdditionalColumnsForPair(
     mainColumn: PColumn<TreeNodeAccessor | PColumnValues>,
     secondaryColumn: PColumn<TreeNodeAccessor | PColumnValues>
@@ -47,11 +72,11 @@ function getAdditionalColumnsForPair(
     const mainAxesIds = mainColumn.spec.axesSpec.map(getAxisId);
     const secondaryAxesIds = secondaryColumn.spec.axesSpec.map(getAxisId);
 
-    const isFullCompatible = secondaryAxesIds.every(id => mainAxesIds.some(mainId => matchAxisId(mainId, id) && matchAxisId(id, mainId)));
+    const isFullCompatible = checkFullCompatibility(mainColumn, secondaryColumn);
     if (isFullCompatible) { // in this case it isn't necessary to add more columns
         return [];
     }
-    const isCompatible = secondaryAxesIds.every(id => mainAxesIds.some(mainId => matchAxisId(mainId, id)));
+    const isCompatible = checkCompatibility(mainColumn, secondaryColumn);
     if (!isCompatible) { // in this case it is impossible to add some compatible column
         return [];
     }
@@ -71,14 +96,18 @@ function getAdditionalColumnsForPair(
                 axesSpec: idsList.map((axisId, idx) => ({
                     ...axisId,
                     annotations: secondaryColumn.spec.axesSpec[idx].annotations
-                }))
+                })),
+                annotations: {
+                    ...secondaryColumn.spec.annotations,
+                    [IS_VIRTUAL_COLUMN]: 'true'
+                }
             },
             data: secondaryColumn.data
         };
     });
 }
 
-export function getAdditionalColumns(columns: PColumn<TreeNodeAccessor | PColumnValues>[]):PColumn<TreeNodeAccessor | PColumnValues>[] {
+export function getAdditionalColumns(columns: PColumn<TreeNodeAccessor | PColumnValues>[]): PColumn<TreeNodeAccessor | PColumnValues>[] {
     const additionalColumns: PColumn<TreeNodeAccessor | PColumnValues>[] = [];
     for (let i = 0; i < columns.length; i++) {
         for (let j = i + 1; j < columns.length; j++) {
@@ -95,11 +124,57 @@ export function getAdditionalColumns(columns: PColumn<TreeNodeAccessor | PColumn
     return additionalColumns;
 }
 
+export function enrichColumnsWithCompatibleMetadata(
+    mainColumns: PColumn<TreeNodeAccessor | PColumnValues>[],
+    secondaryColumns: PColumn<TreeNodeAccessor | PColumnValues>[]
+): PColumn<TreeNodeAccessor | PColumnValues>[] {
+    const result = [...mainColumns];
+    for (const secondaryColumn of secondaryColumns) {
+        if (!secondaryColumn.spec.name.includes('metadata')) {
+            continue;
+        }
+        for (const mainColumn of mainColumns) {
+            if (mainColumn.id === secondaryColumn.id) {
+                break;
+            }
+            if (checkCompatibility(mainColumn, secondaryColumn)) {
+                result.push(secondaryColumn);
+                break;
+            }
+        }
+    }
+    return result;
+}
+
+const VALUE_TYPES: ValueType[] = [
+    'Int',
+    'Long',
+    'Float',
+    'Double',
+    'String',
+    'Bytes'
+];
+
 export function createPFrameForGraphs<A, U>(
     ctx: RenderCtx<A, U>,
-    columns: PColumn<TreeNodeAccessor | PColumnValues>[]
+    blockColumns?: PColumn<TreeNodeAccessor | PColumnValues>[] | null
 ): PFrameHandle | undefined {
-    const extendedColumns = [...columns, ...getAdditionalColumns(columns)];
+    if (blockColumns === undefined) return undefined;
+
+    const upstreamColumns = ctx.resultPool
+        .getData()
+        .entries.map((v) => v.obj)
+        .filter(isPColumn)
+        .filter((column) => VALUE_TYPES.includes(column.spec.valueType));
+
+    // if block columns is null - get all upstream instead
+    const columnsWithCompatibleMetadata = blockColumns === null
+        ? upstreamColumns
+        : enrichColumnsWithCompatibleMetadata(blockColumns, upstreamColumns);
+
+    // additional columns are duplicates with extra fields in domains for compatibility in all possible pairs of columns set
+    const extendedColumns = [...columnsWithCompatibleMetadata, ...getAdditionalColumns(columnsWithCompatibleMetadata)];
+
     // if at least one column is not yet ready, we can't show the table
     if (
         extendedColumns.some(
@@ -110,3 +185,4 @@ export function createPFrameForGraphs<A, U>(
 
     return ctx.createPFrame(extendedColumns);
 }
+
