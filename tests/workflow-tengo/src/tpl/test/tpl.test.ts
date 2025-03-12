@@ -9,9 +9,9 @@ tplTest('test simple template', async ({ helper, expect }) => {
     (tx) => ({
       input1: tx.createValue(
         Pl.JsonObject,
-        JSON.stringify({ testValue: 'Truman' })
-      )
-    })
+        JSON.stringify({ testValue: 'Truman' }),
+      ),
+    }),
   );
   const mainResult = result.computeOutput('main', (a) => a?.getDataAsJson());
   expect(await mainResult.awaitStableValue()).eq('Truman Show');
@@ -22,7 +22,7 @@ tplTest('test template with maps output', async ({ helper, expect }) => {
     false,
     'tpl.test.map-outputs',
     ['simpleMap'],
-    (tx) => ({})
+    (_tx) => ({}),
   );
 
   const simpleMap = (await result
@@ -39,7 +39,7 @@ tplTest(
       false,
       'tpl.test.json-keys',
       [key],
-      (tx) => ({})
+      (_tx) => ({}),
     );
 
     const r = await result
@@ -47,5 +47,5 @@ tplTest(
       .awaitStableValue();
     console.dir(r, { depth: 5 });
     expect(r).eq('a');
-  }
+  },
 );

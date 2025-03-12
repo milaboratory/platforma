@@ -1,9 +1,5 @@
-import { Pl, type PlTransaction } from '@milaboratories/pl-middle-layer';
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { awaitStableState, tplTest } from '@platforma-sdk/test';
-
-function createObject(tx: PlTransaction, value: any) {
-  return tx.createValue(Pl.JsonObject, JSON.stringify(value));
-}
 
 tplTest(
   'should return export',
@@ -15,7 +11,7 @@ tplTest(
   async ({ helper, expect }) => {
     const wf1 = await helper.renderWorkflow('workflow.test.exports.wf1', false, {
       a: 'a',
-      b: 'b'
+      b: 'b',
     });
 
     const out1 = wf1.output('concat', (a) => a?.getDataAsJson());
@@ -32,7 +28,7 @@ tplTest(
 
     const join = await awaitStableState(wf2.output('join', (a) => a?.getDataAsJson()));
     expect(join).eq('ab');
-  }
+  },
 );
 
 tplTest(
@@ -42,10 +38,10 @@ tplTest(
   // But because of tests execution nature in CI (when we several parallel test threads each creating large resource tree)
   // it may take long for test to complete.
   { timeout: 10000 },
-    async ({ helper, expect }) => {
+  async ({ helper, expect }) => {
     const wf2 = await helper.renderWorkflow('workflow.test.exports.wf3', false, {});
 
     const str = await awaitStableState(wf2.output('str', (a) => a?.getDataAsJson()));
     expect(str).toStrictEqual('<undefined>');
-  }
+  },
 );

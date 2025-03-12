@@ -1,9 +1,10 @@
 self := import("@platforma-sdk/workflow-tengo:workflow")
 monetization := import("@platforma-sdk/workflow-tengo:exec.monetization")
+ll := import("@platforma-sdk/workflow-tengo:ll")
 
 self.body(func(inputs) {
 	mnz := monetization.builder(inputs.productKey).
-		setDate("Mon 2 Apr 15:28:10 CET 2025").
+		setDate(inputs.monetizationDate).
 		writeFile("dryrun.txt", "1\n2\n3\n", {arg: "ABC", collect: ["lines"]}).
 		build()
 

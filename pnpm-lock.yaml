@@ -682,6 +682,9 @@ importers:
       vue:
         specifier: 'catalog:'
         version: 3.5.13(typescript@5.5.4)
+      zod:
+        specifier: 'catalog:'
+        version: 3.23.8
     devDependencies:
       '@vitejs/plugin-vue':
         specifier: 'catalog:'
