@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo-tests
 
+## 1.6.3
+
+### Patch Changes
+
+- 21465ea: mnz: fixes pre-run
+
 ## 1.6.2
 
 ### Patch Changes

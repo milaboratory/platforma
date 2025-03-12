@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 2.15.8
+
+### Patch Changes
+
+- 21465ea: mnz: fixes pre-run
+
 ## 2.15.7
 
 ### Patch Changes
