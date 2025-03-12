@@ -125,27 +125,27 @@ export class BlockPackRegistry {
       }
 
       case 'remote-v2':
-        return (await this.v2Provider.getRegistry(regSpec.url).listBlockPacks()).map((e) =>
-          e.latestByChannel[StableChannel]
-            ? {
-                ...e,
-                registryId: regEntry.id,
-              }
-            : {
-                ...e,
-                latestByChannel: {
-                  ...e.latestByChannel,
-                  [StableChannel]: ((s: SingleBlockPackOverview) => {
-                    if (s.spec.type === 'from-registry-v2') {
-                      return { ...s, spec: { ...s.spec, channel: StableChannel } };
-                    }
+        return (await this.v2Provider.getRegistry(regSpec.url).listBlockPacks())
+          .map((e) => ({ ...e, registryId: regEntry.id }));
+        // e.latestByChannel[StableChannel]
+        //   ? {
+        //       ...e,
+        //       registryId: regEntry.id,
+        //     }
+        //   : {
+        //       ...e,
+        //       latestByChannel: {
+        //         ...e.latestByChannel,
+        //         [StableChannel]: ((s: SingleBlockPackOverview) => {
+        //           if (s.spec.type === 'from-registry-v2') {
+        //             return { ...s, spec: { ...s.spec, channel: StableChannel } };
+        //           }
 
-                    return s;
-                  })(e.latestByChannel[AnyChannel]),
-                },
-                registryId: regEntry.id,
-              },
-        );
+        //           return s;
+        //         })(e.latestByChannel[AnyChannel]),
+        //       },
+        //       registryId: regEntry.id,
+        //     },
 
       case 'local-dev':
         for (const entry of await fs.promises.readdir(regSpec.path, { withFileTypes: true })) {
