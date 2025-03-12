@@ -31,8 +31,8 @@ catalogs:
       specifier: 2.1.16
       version: 2.1.16
     '@milaboratories/pframes-rs-node':
-      specifier: 1.0.19
-      version: 1.0.19
+      specifier: 1.0.20
+      version: 1.0.20
     '@milaboratories/software-pframes-conv':
       specifier: 2.1.16
       version: 2.1.16
@@ -1746,7 +1746,7 @@ importers:
         version: 2.1.16(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)
       '@milaboratories/pframes-rs-node':
         specifier: 'catalog:'
-        version: 1.0.19(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)
+        version: 1.0.20(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)
       '@milaboratories/pl-client':
         specifier: workspace:^
         version: link:../pl-client
@@ -4243,8 +4243,8 @@ packages:
     peerDependencies:
       '@milaboratories/pl-model-common': '*'
 
-  '@milaboratories/pframes-rs-node@1.0.19':
-    resolution: {integrity: sha512-0j+VjMYYVvCcCLB5nUI6geliktJquReuA7Q/YUEXLPSqJ/2Tu0aaFFYv6n6XOj5hyug/6NFhw0hUvED0oZXlgA==}
+  '@milaboratories/pframes-rs-node@1.0.20':
+    resolution: {integrity: sha512-9KitxpuK8GfFLUpx3r82FXXJt70UkbphdAIfE95eU1GGw+ZTDKkNwYv/ywIipoah3sIxV8cY3OIAbNmgotj7wA==}
     peerDependencies:
       '@milaboratories/pl-model-common': '*'
 
@@ -7898,9 +7898,6 @@ packages:
     resolution: {integrity: sha512-o/3ikDxtXaA59BmZuZrJZDJv8NMDGSj+6j6XaeBmHw8eY1i1qd9+6H+LjVvQXx3HN6aRCGa1cUdJ9RaJZUugnQ==}
     engines: {node: '>=14'}
 
-  remeda@2.21.0:
-    resolution: {integrity: sha512-ANFqOts3BsvW1MrKOv9SVHG3ly0MzzLa0HIu5qLkiRuEPGPuH9ny3sgd7VdHvC2VOUSN/7RkmabPlAda6JtGgg==}
-
   remeda@2.21.1:
     resolution: {integrity: sha512-7I3JaB+geXL0Vq8V3TEwX6mMlWUCv18OdweAovYKiwDCbjKYf1DIHB58B6z8K7juPuZ1whwj79fOvUaHHHjbew==}
 
@@ -8521,10 +8518,6 @@ packages:
   type-fest@0.21.3:
     resolution: {integrity: sha512-t0rzBq87m3fVcduHDUFhKmyyX+9eo6WQjZvf51Ea/M0Q7+T374Jp1aUiyUl0GKxp8M/OETVHSDvmkyPgvX+X2w==}
     engines: {node: '>=10'}
-
-  type-fest@4.35.0:
-    resolution: {integrity: sha512-2/AwEFQDFEy30iOLjrvHDIH7e4HEWH+f1Yl1bI5XMqzuoCUqwYCdxachgsgv0og/JdVZUhbfjcJAoHj5L1753A==}
-    engines: {node: '>=16'}
 
   type-fest@4.37.0:
     resolution: {integrity: sha512-S/5/0kFftkq27FPNye0XM1e2NsnoD/3FS+pBmbjmmtLT6I+i344KoOf7pvXreaFsDamWeaJX55nczA1m5PsBDg==}
@@ -11079,7 +11072,7 @@ snapshots:
       - encoding
       - supports-color
 
-  '@milaboratories/pframes-rs-node@1.0.19(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)':
+  '@milaboratories/pframes-rs-node@1.0.20(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)':
     dependencies:
       '@mapbox/node-pre-gyp': 2.0.0(encoding@0.1.13)
       '@milaboratories/pl-model-common': link:lib/model/common
@@ -11096,7 +11089,7 @@ snapshots:
   '@milaboratories/pl-model-middle-layer@1.7.6':
     dependencies:
       '@milaboratories/pl-model-common': 1.10.6
-      remeda: 2.21.0
+      remeda: 2.21.1
       utility-types: 3.11.0
       zod: 3.23.8
 
@@ -15598,10 +15591,6 @@ snapshots:
     dependencies:
       '@pnpm/npm-conf': 2.3.1
 
-  remeda@2.21.0:
-    dependencies:
-      type-fest: 4.35.0
-
   remeda@2.21.1:
     dependencies:
       type-fest: 4.37.0
@@ -16323,8 +16312,6 @@ snapshots:
   type-fest@0.20.2: {}
 
   type-fest@0.21.3: {}
-
-  type-fest@4.35.0: {}
 
   type-fest@4.37.0: {}
 

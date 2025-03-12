@@ -98,6 +98,28 @@ function allFiltersAreRustSupported(filters: PTableRecordFilter[]): boolean {
   return filters.every((filter) => predicateIsRustSupported(filter.predicate));
 }
 
+function pframesDispatch<T>(params: {
+  cppCallback: () => Promise<T>;
+  rustCallback: () => Promise<T>;
+  logger: MiLogger;
+  filters?: PTableRecordFilter[];
+  signal?: AbortSignal;
+}): Promise<T> {
+  if (!allFiltersAreRustSupported(params.filters ?? [])) return params.cppCallback();
+  if (getDebugFlags().usePFrameRs) return params.rustCallback();
+
+  return params.rustCallback().catch((error: unknown) => {
+    if (params.signal?.aborted === false) {
+      if (error instanceof Error) {
+        params.logger.warn(`PFrames Rust failed, error: ${error.message}`);
+      }
+      return params.cppCallback();
+    } else {
+      throw error;
+    }
+  });
+}
+
 const bigintReplacer = (_: string, v: unknown) => (typeof v === 'bigint' ? v.toString() : v);
 
 class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
@@ -341,20 +363,8 @@ export class PFrameDriver implements InternalPFrameDriver {
             `PTable creation (pTableHandle = ${this.calculateParamsKey(params)}): ${JSON.stringify(params, bigintReplacer)}`,
           );
         }
-        const tablePromise = (async () => {
-          if (getDebugFlags().usePFrameRs && allFiltersAreRustSupported(params.def.filters)) {
-            return this.pFrames.getByKey(handle).rustPFrame.createTable({
-              src: joinEntryToInternal(params.def.src),
-              filters: migrateFilters(params.def.filters),
-            }, params.signal).then(async (table) => {
-              if (params.def.sorting.length > 0) {
-                const sortedTable = await table.sort(params.def.sorting, params.signal);
-                table.dispose();
-                return sortedTable;
-              }
-              return table;
-            });
-          } else {
+        const tablePromise = pframesDispatch({
+          cppCallback: () => {
             return concurrencyLimiter.run(async () => {
               using disposableDataPFrame = this.pFrames.getByKey(handle).disposableDataPFrame;
               return await disposableDataPFrame.dataPFrame.createTable({
@@ -362,17 +372,33 @@ export class PFrameDriver implements InternalPFrameDriver {
                 filters: migrateFilters(params.def.filters),
               }, params.signal);
             }).then(async (table) => {
-              if (params.def.sorting.length > 0) {
-                const sortedTable = await concurrencyLimiter.run(async () => {
+              if (params.def.sorting.length === 0) return table;
+              try {
+                return await concurrencyLimiter.run(async () => {
                   return await table.sort(params.def.sorting, params.signal);
                 });
+              } finally {
                 table.dispose();
-                return sortedTable;
               }
-              return table;
             });
-          }
-        })();
+          },
+          rustCallback: () => {
+            return this.pFrames.getByKey(handle).rustPFrame.createTable({
+              src: joinEntryToInternal(params.def.src),
+              filters: migrateFilters(params.def.filters),
+            }, params.signal).then(async (table) => {
+              if (params.def.sorting.length === 0) return table;
+              try {
+                return await table.sort(params.def.sorting, params.signal);
+              } finally {
+                table.dispose();
+              }
+            });
+          },
+          logger,
+          filters: params.def.filters,
+          signal: params.signal,
+        });
         return new PTableHolder(tablePromise);
       }
 
@@ -473,54 +499,66 @@ export class PFrameDriver implements InternalPFrameDriver {
         `Call calculateTableData, handle = ${handle}, request = ${JSON.stringify(request, bigintReplacer)}`,
       );
     }
-    if (getDebugFlags().usePFrameRs && allFiltersAreRustSupported(request.filters)) {
-      return await this.pFrames.getByKey(handle).rustPFrame.createTable({
-        src: joinEntryToInternal(request.src),
-        filters: migrateFilters(request.filters),
-      }, signal).then(async (table) => {
-        if (request.sorting.length > 0) {
-          const sortedTable = await table.sort(request.sorting, signal);
-          table.dispose();
-          return sortedTable;
-        }
-        return table;
-      }).then(async (table) => {
-        const spec = table.getSpec();
-        const data = await table.getData([...spec.keys()]);
-        table.dispose();
-        return spec.map((spec, i) => ({
-          spec: spec,
-          data: data[i],
-        }));
-      });
-    } else {
-      return await this.concurrencyLimiter.run(async () => {
-        using disposableDataPFrame = this.pFrames.getByKey(handle).disposableDataPFrame;
-        return await disposableDataPFrame.dataPFrame.createTable({
+    return await pframesDispatch({
+      cppCallback: async () => {
+        return await this.concurrencyLimiter.run(async () => {
+          using disposableDataPFrame = this.pFrames.getByKey(handle).disposableDataPFrame;
+          return await disposableDataPFrame.dataPFrame.createTable({
+            src: joinEntryToInternal(request.src),
+            filters: migrateFilters(request.filters),
+          }, signal);
+        }).then(async (table) => {
+          if (request.sorting.length === 0) return table;
+          try {
+            return await this.concurrencyLimiter.run(async () => {
+              return await table.sort(request.sorting, signal);
+            });
+          } finally {
+            table.dispose();
+          }
+        }).then(async (table) => {
+          try {
+            const spec = table.getSpec();
+            const data = await this.concurrencyLimiter.run(
+              async () => await table.getData([...spec.keys()]),
+            );
+            return spec.map((spec, i) => ({
+              spec: spec,
+              data: data[i],
+            }));
+          } finally {
+            table.dispose();
+          }
+        });
+      },
+      rustCallback: async () => {
+        return await this.pFrames.getByKey(handle).rustPFrame.createTable({
           src: joinEntryToInternal(request.src),
           filters: migrateFilters(request.filters),
-        }, signal);
-      }).then(async (table) => {
-        if (request.sorting.length > 0) {
-          const sortedTable = await this.concurrencyLimiter.run(async () => {
+        }, signal).then(async (table) => {
+          if (request.sorting.length === 0) return table;
+          try {
             return await table.sort(request.sorting, signal);
-          });
-          table.dispose();
-          return sortedTable;
-        }
-        return table;
-      }).then(async (table) => {
-        const spec = table.getSpec();
-        const data = await this.concurrencyLimiter.run(
-          async () => await table.getData([...spec.keys()]),
-        );
-        table.dispose();
-        return spec.map((spec, i) => ({
-          spec: spec,
-          data: data[i],
-        }));
-      });
-    }
+          } finally {
+            table.dispose();
+          }
+        }).then(async (table) => {
+          try {
+            const spec = table.getSpec();
+            const data = await table.getData([...spec.keys()]);
+            return spec.map((spec, i) => ({
+              spec: spec,
+              data: data[i],
+            }));
+          } finally {
+            table.dispose();
+          }
+        });
+      },
+      logger: this.logger,
+      filters: request.filters,
+      signal,
+    });
   }
 
   public async getUniqueValues(
@@ -528,16 +566,30 @@ export class PFrameDriver implements InternalPFrameDriver {
     request: UniqueValuesRequest,
     signal?: AbortSignal,
   ): Promise<UniqueValuesResponse> {
-    return await this.concurrencyLimiter.run(async () => {
-      if (getDebugFlags().logPFrameRequests)
-        this.logger.info(
-          `Call getUniqueValues, handle = ${handle}, request = ${JSON.stringify(request, bigintReplacer)}`,
-        );
-      using disposableDataPFrame = this.pFrames.getByKey(handle).disposableDataPFrame;
-      return await disposableDataPFrame.dataPFrame.getUniqueValues({
-        ...request,
-        filters: migrateFilters(request.filters),
-      }, signal);
+    if (getDebugFlags().logPFrameRequests) {
+      this.logger.info(
+        `Call getUniqueValues, handle = ${handle}, request = ${JSON.stringify(request, bigintReplacer)}`,
+      );
+    }
+    return await pframesDispatch({
+      cppCallback: async () => {
+        return await this.concurrencyLimiter.run(async () => {
+          using disposableDataPFrame = this.pFrames.getByKey(handle).disposableDataPFrame;
+          return await disposableDataPFrame.dataPFrame.getUniqueValues({
+            ...request,
+            filters: migrateFilters(request.filters),
+          }, signal);
+        });
+      },
+      rustCallback: async () => {
+        return await this.pFrames.getByKey(handle).rustPFrame.getUniqueValues({
+          ...request,
+          filters: migrateFilters(request.filters),
+        }, signal);
+      },
+      logger: this.logger,
+      filters: request.filters,
+      signal,
     });
   }
 
