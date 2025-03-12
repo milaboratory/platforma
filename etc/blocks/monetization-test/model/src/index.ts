@@ -10,7 +10,8 @@ export type Handle = {
 export type BlockArgs = {
   productKey: string;
   inputHandles: Handle[];
-  monetizationDate: string;
+  __mnzDate: string;
+  __mnzCanRun: boolean;
 };
 
 export const model = BlockModel.create()
@@ -18,10 +19,11 @@ export const model = BlockModel.create()
     // a fake product key so our mnz client response with a fake response without changing prod db.
     productKey: "MIFAKEMIFAKEMIFAKE",
     inputHandles: [],
-    monetizationDate: "Mon 2 Apr 15:28:10 CET 2025",
+    __mnzDate: new Date().toISOString(), // It's OK
+    __mnzCanRun: false,
   })
 
-  .output('info', (ctx) => ctx.prerun?.resolve('info')?.getDataAsJson<unknown>())
+  .output('__mnzInfo', (ctx) => ctx.prerun?.resolve('info')?.getDataAsJson<unknown>())
 
   .output('token', (ctx) => ctx.outputs?.resolve('token')?.getDataAsString())
 

@@ -102,8 +102,6 @@ async function verify(token: string) {
 
     <PlTextField v-model="app.model.args.productKey"
       label="Enter product key (keep MIFAKEMIFAKEMIFAKE for fake product)" clearable />
-      
-    <PlTextField v-model="app.model.args.monetizationDate" label="Enter monetization date" />
 
     <PlContainer width="400px">
       <PlBtnPrimary @click="files.isMultiDialogFileOpen = true">
@@ -124,7 +122,7 @@ async function verify(token: string) {
 
     <PlContainer />
 
-    <PlMonetizationDraft :monetization-info="app.model.outputs.info" />
+    <PlMonetizationDraft />
 
     <PlAlert label="token" v-if="app.model.outputs.token"> {{ app.model.outputs.token }}
     </PlAlert>

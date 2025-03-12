@@ -6,7 +6,7 @@ file := import("@platforma-sdk/workflow-tengo:file")
 
 self.body(func(inputs) {
 	mnz := monetization.builder(inputs.productKey).
-		setDate(inputs.monetizationDate)
+		setDate(inputs.__mnzDate)
 
 	progresses := {}
 	for _, handle in inputs.inputHandles {
