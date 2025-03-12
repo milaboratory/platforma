@@ -15,8 +15,7 @@ self.body(func(inputs) {
 	trimmed := text.trim(string(data), "\n \r\t")
 	decoded := json.decode(bytes(trimmed))
 
-	// @TODO: remove this once we have a proper validation (Gleb Zakharov)
-	// validation.assertType(decoded, monetization.mnzClientStdoutSchema)
+	validation.assertType(decoded, monetization.mnzClientStdoutSchema)
 
 	token := {}
 	info := {}
