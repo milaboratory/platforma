@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 1.30.5
+
+### Patch Changes
+
+- 9bad43d: Removes fallback behaviour for blocks with no stable versions. No such are removed from the list completely, if showing stable blocks only.
+
 ## 1.30.4
 
 ### Patch Changes
