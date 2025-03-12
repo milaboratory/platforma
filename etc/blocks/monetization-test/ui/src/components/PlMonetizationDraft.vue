@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { z } from 'zod';
-import { computed, ref, useCssModule } from 'vue';
-import { PlIcon24 } from '@platforma-sdk/ui-vue';
+import { computed, ref, useCssModule, watch } from 'vue';
+import { PlIcon24, useInterval, PlAlert } from '@platforma-sdk/ui-vue';
+import { useApp} from '../app';
 
 const style = useCssModule();
 
@@ -17,6 +18,7 @@ const MonetizationType = z.union([
 
 const DryRunResult = z.object({
   productKey: z.string(),
+  productName: z.string(),
   canRun: z.boolean(),
   status: z.union([
     z.literal('select-tariff'),
@@ -28,7 +30,7 @@ const DryRunResult = z.object({
     details: z.object({
       spentRuns: z.number(),
       runsToSpend: z.number(),
-      willRemainAfterRun: z.number(),
+      willRemainAfterRun: z.number().nullable(),
       subscription: z.unknown(),
     }),
   }),
@@ -37,23 +39,38 @@ const DryRunResult = z.object({
 type DryRunResult = z.infer<typeof DryRunResult>;
 
 const Response = z.object({
-  httpError: z.string(),
+  httpError: z.string().optional(),
   response: z.object({
-    result: DryRunResult,
-  }),
-});
+    result: DryRunResult.optional(),
+    error: z.unknown().optional(),
+  }).optional(),
+}).optional();
 
 type Response = z.infer<typeof Response>;
 
-const props = defineProps<{
-  monetizationInfo: unknown;
-}>();
+const app = useApp();
 
-const info = computed<Response | undefined>(() => Response.safeParse(props.monetizationInfo).data);
+const mnzInfo = computed<unknown>(() => Response.safeParse(app.model.outputs['__mnzInfo']));
+
+const currentInfo = computed<Response | undefined>(() => Response.safeParse(app.model.outputs['__mnzInfo']).data);
+
+const info = ref<Response | undefined>(undefined);
+
+watch([currentInfo], ([i]) => {
+  if (i) {
+    info.value = i;
+  }
+}, { immediate: true });
 
 const result = computed(() => info.value?.response?.result);
 
-const canRun = computed(() => result.value?.canRun);
+const canRun = computed(() => !!result.value?.canRun);
+
+watch(canRun, (v) => {
+  if (v) {
+    app.model.args['__mnzCanRun'] = v;
+  }
+});
 
 const userCabinetUrl = computed(() => {
   if (!result.value) return undefined;
@@ -92,30 +109,43 @@ const getStatusColor = computed(() => {
     default: return '';
   }
 });
+
+useInterval(() => {
+  app.model.args.__mnzDate = new Date().toISOString();
+}, 10_000);
 </script>
 
 <template>
-  <div v-if="result" :class="$style.mnzContainer">
+  <div :class="$style.mnzContainer">
     <PlIcon24 :class="$style.info" name="info" :title="JSON.stringify(result, undefined, 2)" />
+    <em>{{ app.model.args.__mnzDate }}</em>
+
+    <PlAlert v-if="info?.response?.error" type="error" >
+      {{ info.response.error }}
+    </PlAlert>
     
     <div :class="$style.header">
       <div :class="[$style.statusIndicator, getStatusColor]"></div>
-      <h3 :class="$style.title">Monetization Status</h3>
+      <h3 :class="$style.title">{{ result?.productName }}</h3>
     </div>
     
-    <div :class="$style.statusMessage" v-if="result.status === 'select-tariff'">
+    <div :class="$style.statusMessage" v-if="result?.status === 'select-tariff'">
       <PlIcon24 name="warning" :class="$style.warningIcon" />
       <span>Please select a tariff to continue</span>
     </div>
     
-    <div :class="$style.statusMessage" v-if="result.status === 'payment_required'">
+    <div :class="$style.statusMessage" v-if="result?.status === 'payment_required'">
       <PlIcon24 name="warning" :class="$style.warningIcon" />
       <span>Payment required to continue</span>
     </div>
     
-    <div :class="$style.statusMessage" v-if="result.canRun">
+    <div :class="$style.statusMessage" v-if="result?.canRun">
       <PlIcon24 name="checkmark" :class="$style.successIcon" />
       <span>Run is allowed</span>
+    </div>
+    <div :class="$style.statusMessage" v-else-if="result?.canRun === false">
+      <PlIcon24 name="warning" :class="$style.warningIcon" />
+      <span>Run is not allowed</span>
     </div>
     
     <div v-if="userCabinetUrl" :class="$style.urlSection">
@@ -130,7 +160,7 @@ const getStatusColor = computed(() => {
       </div>
     </div>
     
-    <div v-if="canRun" :class="$style.details">
+    <div v-if="result" :class="$style.details">
       <h4 :class="$style.detailsTitle">Run Details</h4>
       <div :class="$style.detailsGrid">
         <div :class="$style.detailItem">
@@ -143,7 +173,7 @@ const getStatusColor = computed(() => {
         </div>
         <div :class="$style.detailItem">
           <div :class="$style.detailLabel">Will remain after run:</div>
-          <div :class="$style.detailValue">{{ result.mnz.details?.willRemainAfterRun }}</div>
+          <div :class="$style.detailValue">{{ result.mnz.details?.willRemainAfterRun  === null ? 'Unlimited' : result.mnz.details?.willRemainAfterRun }}</div>
         </div>
       </div>
     </div>
