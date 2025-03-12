@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 2.15.7
+
+### Patch Changes
+
+- 5bc719a: Force block developer to prepare dependencies on R distro side for early error discovery
+
 ## 2.15.6
 
 ### Patch Changes
