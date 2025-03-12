@@ -12,7 +12,8 @@
     "@milaboratories/milaboratories.monetization-test.model": "workspace:*",
     "@platforma-sdk/model": "workspace:*",
     "@platforma-sdk/ui-vue": "workspace:",
-    "vue": "catalog:"
+    "vue": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "catalog:",

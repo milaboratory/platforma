@@ -5,7 +5,7 @@ import type { ImportedFiles, ListOption } from '@platforma-sdk/ui-vue';
 import { PlAlert, PlBlockPage, PlContainer, PlRow, PlTextField, PlBtnPrimary, PlFileDialog, PlFileInput, PlDropdownMulti } from '@platforma-sdk/ui-vue';
 import { useApp } from '../app';
 import { computed, reactive, ref } from 'vue';
-
+import PlMonetizationDraft from '../components/PlMonetizationDraft.vue';
 const app = useApp();
 
 const dropdownOptions: ListOption<string>[] = [
@@ -121,9 +121,8 @@ async function verify(token: string) {
     <PlFileDialog v-model="files.isMultiDialogFileOpen" multi @import:files="onImport" />
 
     <PlContainer />
-    <PlAlert label="pre-run info" v-if="app.model.outputs.info">
-      <pre> {{ JSON.stringify(app.model.outputs.info, undefined, 2) }} </pre>
-    </PlAlert>
+
+    <PlMonetizationDraft />
 
     <PlAlert label="token" v-if="app.model.outputs.token"> {{ app.model.outputs.token }}
     </PlAlert>

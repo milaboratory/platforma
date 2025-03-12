@@ -1,5 +1,5 @@
 import { Pl } from '@milaboratories/pl-middle-layer';
-import { PlTransaction } from '@milaboratories/pl-middle-layer';
+import type { PlTransaction } from '@milaboratories/pl-middle-layer';
 import { tplTest } from '@platforma-sdk/test';
 
 /** The test should:
@@ -13,20 +13,19 @@ tplTest(
       false,
       'exec.test.run.monetization_on_hello_world',
       ['token'],
-      (_) => ({})
+      (_) => ({}),
     );
 
     const token = await result
       .computeOutput('token', (out) => out?.getDataAsString())
       .awaitStableValue();
 
-    expect(token.split("\n")).toHaveLength(1);
+    expect(token.split('\n')).toHaveLength(1);
 
     // starts with jwt header: { "alg": "RS256" ...}
-    expect(token).toMatch(/eyJhbGciOi.*/)
-  }
+    expect(token).toMatch(/eyJhbGciOi.*/);
+  },
 );
-
 
 tplTest(
   'should run dry-run monetization and return info with remaining runs',
@@ -36,8 +35,8 @@ tplTest(
       'exec.test.run.monetization_dry_run',
       ['info'],
       (tx: PlTransaction) => ({
-        date: tx.createValue(Pl.JsonObject, Date.now().toString())
-      })
+        date: tx.createValue(Pl.JsonObject, Date.now().toString()),
+      }),
     );
 
     const info = await result
@@ -66,6 +65,5 @@ tplTest(
         }
       }
     });
-  }
+  },
 );
-

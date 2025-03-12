@@ -5,7 +5,7 @@ tplTest('run-fake-java', async ({ helper, expect }) => {
   const customTestText = 'hello from fake java';
 
   const result = await helper.renderTemplate(false, 'exec.test.run.fake_java', ['main'], (tx) => ({
-    text: tx.createValue(Pl.JsonObject, JSON.stringify(customTestText))
+    text: tx.createValue(Pl.JsonObject, JSON.stringify(customTestText)),
   }));
   const mainResult = result.computeOutput('main', (a) => a?.getDataAsString());
 
@@ -32,8 +32,8 @@ tplTest('run-fake-python', async ({ helper, expect }) => {
     'exec.test.run.fake_python',
     ['main'],
     (tx) => ({
-      text: tx.createValue(Pl.JsonObject, JSON.stringify(customTestText))
-    })
+      text: tx.createValue(Pl.JsonObject, JSON.stringify(customTestText)),
+    }),
   );
   const mainResult = result.computeOutput('main', (a) => a?.getDataAsString());
 
