@@ -32,11 +32,10 @@ runRBuilder := func(operationMode, wd, rPackage, rDescriptor) {
 		envTyped("RENV_PATHS_SOURCE", t, path.join("{R}", "renv-root", "sources")).
 		envTyped("RENV_PATHS_CACHE", t, path.join("{R}", "renv-root", "cache"))
 
-	if (operationMode != "dev-local") {
-		// In production we can use only locally cached packages: most of commercials have
-		// Platforma Backend executed in a very restricted environment with limited access to the internet.
-		builder.envTyped("RENV_CONFIG_REPOS_OVERRIDE", t, path.join("{R}", "packages"))
-	}
+	// Force block developer to install R packages when building R run environment.
+	// Most of our commercial clients have very restricted network without access to pypi, CRAN and other external resources.
+	// The only firewall rule we're guaranteed to have is to our own registries.
+	builder.envTyped("RENV_CONFIG_REPOS_OVERRIDE", t, path.join("{R}", "packages"))
 
 	return builder
 }
