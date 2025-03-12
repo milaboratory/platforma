@@ -1,5 +1,11 @@
 # @platforma-sdk/r-builder
 
+## 1.1.6
+
+### Patch Changes
+
+- 5bc719a: Exclude more system libraries from R bundle
+
 ## 1.1.5
 
 ### Patch Changes
