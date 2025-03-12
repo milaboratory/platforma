@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 2.15.9
+
+### Patch Changes
+
+- eb4aa78: Always override repos list for RENV when running R
+
 ## 2.15.8
 
 ### Patch Changes
