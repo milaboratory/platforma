@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 1.30.8
+
+### Patch Changes
+
+- 85e05bc: PFrames - use Rust for GetUniqueValues request
+
 ## 1.30.7
 
 ### Patch Changes
