@@ -145,9 +145,9 @@ async function buildRDist(logger, buildDir, installRoot, rRoot) {
 }
 
 const systemLibs = [
-  /ld-linux-x86-64\.so(\.[0-9.]+)?$/,
-  /libm\.so(\.[0-9.]+)?$/,
-  /libcom_err\.so(\.[0-9.]+)?$/,
+  // Don't include glibc standard libraries and libstdc++ into the R distribution.
+  // We MUST use system glibc to avoid compatibility issues between system and R runtime and
+  // to keep integrity of glibc libraries set we can't include parts of it into the R distribution.
   /libc\.so(\.[0-9.]+)?$/,
   /libstdc\+\+\.so(\.[0-9.]+)?$/,
   /libBrokenLocale\.so(\.[0-9.]+)?$/,
@@ -168,6 +168,27 @@ const systemLibs = [
   /librt\.so(\.[0-9.]+)?$/,
   /libthread_db\.so(\.[0-9.]+)?$/,
   /libutil\.so(\.[0-9.]+)?$/,
+
+  // Don't include Core libraries that are not part of glibc, but known to be highly
+  // dependent on linux core and are known to exist on most of the systems.
+  /ld-linux-x86-64\.so(\.[0-9.]+)?$/,
+  /libcom_err\.so(\.[0-9.]+)?$/,
+  /libcrypt\.so(\.[0-9.]+)?$/,
+  /libselinux\.so(\.[0-9.]+)?$/,
+  /libacl\.so(\.[0-9.]+)?$/,
+  /libattr\.so(\.[0-9.]+)?$/,
+  /libblkid\.so(\.[0-9.]+)?$/,
+  /libmount\.so(\.[0-9.]+)?$/,
+
+  // Security and authentication libraries
+  /libpam\.so(\.[0-9.]+)?$/,
+  /libaudit\.so(\.[0-9.]+)?$/,
+  /libcap\.so(\.[0-9.]+)?$/,
+
+  // System management libraries
+  /libsystemd\.so(\.[0-9.]+)?$/,
+  /libudev\.so(\.[0-9.]+)?$/,
+  /libapparmor\.so(\.[0-9.]+)?$/,
 ];
 
 function collectDependencies(logger, installDir, patchElf = false) {
