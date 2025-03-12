@@ -27,63 +27,19 @@ mnzClientStdoutSchema := ["or",
 
 	// dry-run response
 	{
-		productKey: "string",
-		canRun: "boolean",
-		"status,?": "string",
-		mnz: {
-			type: "string",
-			details: {
-				spentRuns: "number",
-				runsToSpend: "number",
-				willRemainAfterRun: "number",
-				"subscription,?": ["or", 
-					{
-						availableRuns: "number",
-						startsAt: "string",
-						expiresAt: "string"
-					},
-					"null",
-					"undefined"
-				]
+		httpError: "string",
+		response: {
+			"error,?": "any",
+			"result,?": {
+				productKey: "string",
+				canRun: "boolean",
+				mnz: {
+					type: "string",
+					details: "any"
+				}
 			}
 		}
-	},
-
-		// Wrapped response format (Gleb Zacharov, is it correct?)
-	{
-		"httpError": "string",
-		response: {
-			result: ["or",
-				// run-spec response
-				{ jwtToken: "string" },
-				
-				// dry-run response
-				{
-					productKey: "string",
-					canRun: "boolean",
-					"status,?": "string",
-					mnz: {
-						type: "string",
-						details: {
-							spentRuns: "number",
-							runsToSpend: "number",
-							willRemainAfterRun: "number",
-							"subscription,?": ["or", 
-								{
-									availableRuns: "number",
-									startsAt: "string",
-									expiresAt: "string"
-								},
-								"null",
-								"undefined"
-							]
-						}
-					}
-				}
-			]
-		}
-	}
-	]
+	}]
 
 /** Just creates a new monetization as a map of params. */
 init := func() {
