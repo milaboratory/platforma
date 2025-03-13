@@ -58,6 +58,7 @@ export function blockOutputs(
       const ctx = constructBlockContext(projectEntry, blockId);
 
       return ifNotUndef(getBlockPackInfo(prj, blockId), ({ cfg, bpId }) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const outputs: Record<string, Computable<any>> = {};
         for (const [cellId, cellCfg] of Object.entries(cfg.outputs)) {
           const computableOutput = computableFromCfgOrRF(env, ctx, cellCfg, cfg.code, bpId);

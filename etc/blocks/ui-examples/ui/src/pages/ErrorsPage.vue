@@ -45,7 +45,7 @@ const $ = {
   <PlBlockPage style="max-width: 100%">
     <PlTextField
       v-model:model-value="numbers"
-      label="Enter numbers (as comma-separated string, non-numbers to trigger an error)"
+      label="Enter numbers (as comma-separated string, non-numbers to trigger an error, 5 numbers to trigger an error in block title and argsValid)"
     />
     <PlAlert v-if="app.error" type="error">
       {{ app.error }}

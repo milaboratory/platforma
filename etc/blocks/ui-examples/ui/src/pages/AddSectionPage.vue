@@ -23,7 +23,7 @@ const create = async () => {
 <template>
   <PlBlockPage>
     <template #title>
-      Add dynamic section
+      Add dynamic section (name it "Error" to trigger an error in block model sections)
     </template>
     <PlRow>
       <PlContainer width="400px">
