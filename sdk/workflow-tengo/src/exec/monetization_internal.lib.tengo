@@ -53,43 +53,30 @@ init := func() {
 		// Also, returns a number of remaining runs, a number of total runs etc.
 		isDryRun: false,
 
-		// file name to the param, e.g. {fileName: { arg: "dataset", collect: ["size", "lines", "sha256"] }}
-		fileParams: {},
+		// a slice of runs.
+		// Each run is a map of file name to params, e.g. { fileName: { arg: "lane1_R1", metrics: ["size", "lines", "sha256"]} }
+		runs: [],
 
-		// if the different url should be specified (usefult in testing)
+		// if the different url should be specified (useful in testing)
 		url: undefined
 	})
 }
 
-fileParamsSchema := {
-	"arg": "string",
-	"collect": [`string,regex=size|lines|sha256`]
+argSchema := {
+	arg: "string",
+	metrics: [`string,regex=size|lines|sha256`]
+}
+
+runSchema := {
+	"any": argSchema
 }
 
 schema := {
 	"enabled": "bool",
 	"productKey": "string",
 	"isDryRun": "bool",
-	"fileParams": {"any": fileParamsSchema},
+	"runs": [runSchema],
 	"url,?": "string"
-}
-
-/** Same as validation.assertType(params, fileParamsSchema, ...),
- * but with prettier errors for clients. */
-_validateParams := func(params) {
-	ll.assert(ll.isMap(params), "monetization.validateParams(): mnz params must be a map")
-
-	ll.assert(is_string(params.arg), "monetization.validateParams(): 'arg' in addFileParams must be string")
-
-	ll.assert(is_array(params.collect) && len(params.collect) > 0, "monetization.validateParams(): 'collect' in {\"mnz\": {...}} param must be non-empty an array")
-
-	ll.assert(slices.every(params.collect, func(elem) {
-		return {
-			size: true,
-			lines: true,
-			sha256: true
-		}[elem]
-	}), "monetization.validateParams(): params in 'collect' must be either 'size', 'lines' or 'sha256'")
 }
 
 _validateIsReady := func(mnz) {
@@ -132,23 +119,54 @@ toJson := func(mnz) {
 	return ll.fromStrict(mnz)
 }
 
-/** Adds monetization parameters by a file. */
-addFileParams := func(mnz, fileName, params) {
+appendRun := func(mnz) {
 	validation.assertType(mnz, schema,
-		"monetization.addFileParams(): monetization object does not fit json schema")
-
-	_validateParams(params)
-
-	validation.assertType(params, fileParamsSchema,
-		"monetization.addFileParams(): file params does not fit json schema")
+		"monetization.appendRun(): monetization object does not fit json schema")
 
 	ll.assert(mnz.enabled,
-		"monetization.addFileParams(): monetization must be explicitly enabled by enableMnz(productKey) function")
+		"monetization.appendRun(): monetization must be explicitly enabled by enableMnz(productKey) function")
+
+	mnz.runs = append(mnz.runs, {})
+}
+
+/** Same as validation.assertType(arg, argSchema, ...),
+ * but with prettier errors for clients. */
+_validateArgToLastRun := func(arg) {
+	ll.assert(ll.isMap(arg), "monetization.validateArgToLastRun(): mnz arg must be a map")
+
+	ll.assert(is_string(arg.arg), "monetization.validateArgToLastRun(): 'arg' in addArgToLastRun must be string")
+
+	ll.assert(is_array(arg.metrics) && len(arg.metrics) > 0, "monetization.validateArgToLastRun(): 'metrics' in {\"mnz\": {...}} param must be a non-empty array")
+
+	ll.assert(slices.every(arg.metrics, func(elem) {
+		return {
+			size: true,
+			lines: true,
+			sha256: true
+		}[elem]
+	}), "monetization.validateArgToLastRun(): params in 'metrics' must be either 'size', 'lines' or 'sha256'")
+}
+
+/** Adds monetization parameters to the last run. */
+addArgToLastRun := func(mnz, fileName, arg) {
+	validation.assertType(mnz, schema,
+		"monetization.addArgToLastRun(): monetization object does not fit json schema")
+
+	_validateArgToLastRun(arg)
+
+	validation.assertType(arg, argSchema,
+		"monetization.addArgToLastRun(): arg does not fit json schema")
+
+	ll.assert(mnz.enabled,
+		"monetization.addArgToLastRun(): monetization must be explicitly enabled by enableMnz(productKey) function")
 
 	ll.assert(is_string(fileName),
-		"monetization.addFileParams(): file name must be a string.")
+		"monetization.addArgToLastRun(): file name must be a string.")
 
-	mnz.fileParams[fileName] = params
+	ll.assert(len(mnz.runs) > 0,
+		"monetization.addArgToLastRun(): appendRun must be added first")
+
+	mnz.runs[len(mnz.runs) - 1][fileName] = arg
 }
 
 setDryRun := func(mnz, isDryRun) {
@@ -214,12 +232,14 @@ run := func(mnz, wd, queue) {
 	}
 	builder.arg("-productKey").arg(mnz.productKey)
 
-	// load file params
-	for fileName, param in mnz.fileParams {
-		// param is of fileParamsSchema type
-		toCollect := text.join(param.collect, ",")
-		arg := fmt.sprintf("%s:file:%s:%s", param.arg, fileName, toCollect)
-		builder.arg(arg)
+	// load args for each run
+	for i, run in mnz.runs {
+		for fileName, arg in run {
+			// fileName: string; arg: argSchema
+			toCollect := text.join(arg.metrics, ",")
+			runSpecPart := fmt.sprintf("%d:%s:file:%s:%s", i, arg.arg, fileName, toCollect)
+			builder.arg(runSpecPart)
+		}
 	}
 
 	builder.inQueue(queue)
@@ -265,24 +285,26 @@ _extractOption := func(...opts) {
 	return is_undefined(opt) ? undefined : opt
 }
 
-/** Adds a monetization option if it's defined into mnzFileParams. */
-addOption := func(mnz, fileName, ...opts) {
+/** Adds a monetization option if it's defined into the last run. */
+addOptionalArg := func(mnz, fileName, ...opts) {
 	opt := _extractOption(opts...)
 	if !is_undefined(opt) {
-		addFileParams(mnz, fileName, opt)
+		addArgToLastRun(mnz, fileName, opt)
 	}
 }
 
 export ll.toStrict({
 	init: init,
 	schema: schema,
+	argSchema: argSchema,
 	enable: enable,
 	setDryRun: setDryRun,
 	setUrl: setUrl,
 	shouldRun: shouldRun,
 	toJson: toJson,
-	addFileParams: addFileParams,
-	addOption: addOption,
+	appendRun: appendRun,
+	addArgToLastRun: addArgToLastRun,
+	addOptionalArg: addOptionalArg,
 	run: run,
 	mnzClientStdoutSchema: mnzClientStdoutSchema
 })
