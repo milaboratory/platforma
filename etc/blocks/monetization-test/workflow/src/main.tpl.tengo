@@ -27,7 +27,7 @@ self.body(func(inputs) {
 
 		builder.addFile(handle.fileName, result.file, {mnz: {
 			arg: handle.argName,
-			collect: handle.options
+			metrics: handle.options
 		}})
 	}
 

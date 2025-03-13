@@ -9,26 +9,28 @@ Test_monetization_enable := func() {
 	test.isEqual(mnz.productKey, "test_product")
 }
 
-Test_monetization_addFileParams := func() {
+Test_monetization_addArgToLastRun := func() {
 	mnz := monetization.init()
 	monetization.enable(mnz, "test_product")
-	monetization.addFileParams(mnz, "abc.txt", {
+	monetization.appendRun(mnz)
+	monetization.addArgToLastRun(mnz, "abc.txt", {
 		"arg": "abc",
-		"collect": ["lines", "sha256"]
+		"metrics": ["lines", "sha256"]
 	})
 
-	test.isEqual(mnz.fileParams, {"abc.txt": {
+	test.isEqual(mnz.runs, [{"abc.txt": {
 		"arg": "abc",
-		"collect": ["lines", "sha256"]
-	}})
+		"metrics": ["lines", "sha256"]
+	}}])
 }
 
 Test_monetization_shouldRun := func() {
 	mnz := monetization.init()
 	monetization.enable(mnz, "test_product")
-	monetization.addFileParams(mnz, "abc.txt", {
+	monetization.appendRun(mnz)
+	monetization.addArgToLastRun(mnz, "abc.txt", {
 		"arg": "abc",
-		"collect": ["lines", "sha256"]
+		"metrics": ["lines", "sha256"]
 	})
 
 	test.isTrue(monetization.shouldRun(mnz))
