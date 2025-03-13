@@ -14,19 +14,21 @@ const MonetizationType = z.union([
   MonetizationFree,
   MonetizationSinglePayment,
   MonetizationSubscription,
+  z.literal('base'), // outdated
 ]);
 
 const DryRunResult = z.object({
   productKey: z.string(),
-  productName: z.string(),
+  productName: z.string().default('Unknown product'),
   canRun: z.boolean(),
   status: z.union([
     z.literal('select-tariff'),
     z.literal('active'),
     z.literal('payment_required'),
+    z.unknown(),
   ]),
   mnz: z.object({
-    type: MonetizationType,
+    type: MonetizationType.optional(),
     details: z.object({
       spentRuns: z.number(),
       runsToSpend: z.number(),
@@ -50,11 +52,13 @@ type Response = z.infer<typeof Response>;
 
 const app = useApp();
 
-const mnzInfo = computed<unknown>(() => Response.safeParse(app.model.outputs['__mnzInfo']));
+const mnzInfo = computed(() => Response.safeParse(app.model.outputs['__mnzInfo']));
 
-const currentInfo = computed<Response | undefined>(() => Response.safeParse(app.model.outputs['__mnzInfo']).data);
+const currentInfo = computed<Response | undefined>(() => mnzInfo.value?.data);
 
 const info = ref<Response | undefined>(undefined);
+
+const error = computed(() => mnzInfo.value?.error ?? info.value?.response?.error);
 
 watch([currentInfo], ([i]) => {
   if (i) {
@@ -120,8 +124,8 @@ useInterval(() => {
     <PlIcon24 :class="$style.info" name="info" :title="JSON.stringify(result, undefined, 2)" />
     <em>{{ app.model.args.__mnzDate }}</em>
 
-    <PlAlert v-if="info?.response?.error" type="error" >
-      {{ info.response.error }}
+    <PlAlert v-if="error" type="error" >
+      {{ error }}
     </PlAlert>
     
     <div :class="$style.header">
