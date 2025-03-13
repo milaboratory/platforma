@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.3.39
+
+### Patch Changes
+
+- fb677ff: Add example of how to use "noRowsText" property in the useAgGridOptions
+
 ## 1.3.38
 
 ### Patch Changes
