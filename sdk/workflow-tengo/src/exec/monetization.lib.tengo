@@ -4,7 +4,6 @@ ll := import(":ll")
 monetization := import(":exec.monetization_internal")
 assets := import(":assets")
 render := import(":render")
-path := import(":path")
 smart := import(":smart")
 validation := import(":validation")
 
@@ -31,30 +30,80 @@ builder := func(productKey) {
 			return self
 		},
 
-		addFile: func(fileName, file, params) {
-			ll.assert(is_string(fileName), "monetization.builder().addFile: fileName must be a string")
-			ll.assert(smart.isReference(file), "monetization.builder().addFile: file must be a reference")
+		/**
+		 * Adds a run to the monetization builder.
+		 *
+		 * @param ...args:
+		 *   {
+		 *     file: reference | string | bytes,
+		 *     params: {
+		 *       arg: string,
+		 *       metrics: ["string"]
+		 *     }
+		 *   }
+		 *  - The arguments to add to the run
+		 */
+		addRun: func(...args) {
+			validation.assertType(args, [{
+				file: ["or", validation.reference, "string", "bytes"],
+				params: monetization.argSchema
+			}])
 
-			fileName = path.canonize(fileName)
-			filesToAdd[fileName] = file
-			monetization.addFileParams(mnz, fileName, params)
+			monetization.appendRun(mnz)
+
+			for _, arg in args {
+				if smart.isReference(arg.file) {
+					self.addFile(arg.file, arg.params)
+				} else {
+					self.writeFile(arg.file, arg.params)
+				}
+			}
+
 			return self
 		},
 
-		writeFile: func(fileName, data, params) {
+		/**
+		 * Adds a file to the monetization builder.
+		 *
+		 * @param file: reference - The file to add
+		 * @param params: {
+		 *   arg: string,
+		 *   metrics: ["string"]
+		 * } - The parameters for the file
+		 */
+		addFile: func(file, params) {
+			ll.assert(smart.isReference(file), "monetization.builder().addFile: file must be a reference")
+
+			filesToAdd[params.arg] = file
+			monetization.addArgToLastRun(mnz, params.arg, params)
+
+			return self
+		},
+
+		/**
+		 * Writes a file to the monetization builder.
+		 *
+		 * @param data: ["or", "string", "bytes", reference] - The data to write to the file
+		 * @param params: {
+		 *   arg: string,
+		 *   metrics: ["string"]
+		 * } - The parameters for the file
+		 */
+		writeFile: func(data, params) {
 			validation.assertType(data, ["or",
 				"string",
 				"bytes",
 				validation.reference])
 
-			fileName = path.canonize(fileName)
-
-			filesToWrite[fileName] = data
-			monetization.addFileParams(mnz, fileName, params)
+			filesToWrite[params.arg] = data
+			monetization.addArgToLastRun(mnz, params.arg, params)
 
 			return self
 		},
 
+		/**
+		 * Sets the dry-run URL for test purposes.
+		 */
 		setUrl: func(url) {
 			monetization.setUrl(mnz, url)
 			return self

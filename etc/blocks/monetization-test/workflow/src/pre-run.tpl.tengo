@@ -6,16 +6,17 @@ file := import("@platforma-sdk/workflow-tengo:file")
 
 self.body(func(inputs) {
 	mnz := monetization.builder(inputs.productKey).
-		setDate(inputs.__mnzDate)
+		setDate(inputs.__mnzDate).
+		addRun()
 
 	progresses := {}
 	for _, handle in inputs.inputHandles {
 		result := file.importFile(handle.handle)
 		progresses[handle.fileName] = result.handle
 
-		mnz.addFile(handle.fileName, result.file, {
+		mnz.addFile(result.file, {
 			arg: handle.argName,
-			collect: handle.options
+			metrics: handle.options
 		})
 	}
 
