@@ -219,7 +219,7 @@ const { gridOptions, gridApi } = useAgGridOptions<Row>(({ column }) => {
     loadingOverlayType: isOverlayTransparent.value ? 'transparent' : undefined,
     notReady: notReady.value,
     notReadyText: 'I am not ready(',
-    // noRowsText: 'No rows(',
+    noRowsText: 'No rows text (custom, default is "Empty")',
     rowData: hasRows.value ? result.value : [],
     onRowDoubleClicked: (_e) => {
       alert('Example "Open" button was clicked');
