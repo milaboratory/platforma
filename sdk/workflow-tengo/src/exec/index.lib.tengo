@@ -487,6 +487,9 @@ builder := func() {
 
 		enableMnz: func(productKey) {
 			monetization.enable(mnz, productKey)
+			// exec supports only 1 run.
+			monetization.appendRun(mnz)
+
 			return self
 		},
 
@@ -507,7 +510,7 @@ builder := func() {
 
 			fileName = path.canonize(fileName)
 			filesToAdd[fileName] = file
-			monetization.addOption(mnz, fileName, opts...)
+			monetization.addOptionalArg(mnz, fileName, opts...)
 			return self
 		},
 
@@ -540,7 +543,7 @@ builder := func() {
 			fileName = path.canonize(fileName)
 
 			filesToWrite[fileName] = data
-			monetization.addOption(mnz, fileName, opts...)
+			monetization.addOptionalArg(mnz, fileName, opts...)
 
 			return self
 		},

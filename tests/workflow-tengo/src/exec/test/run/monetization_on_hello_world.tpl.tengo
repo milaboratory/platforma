@@ -16,9 +16,9 @@ self.body(func(inputs) {
 		arg("echo -n $PLATFORMA_MNZ_JWT"). // -n means no newline. It's needed for test assertions.
 		enableMnz("MIFAKEMIFAKEMIFAKE"). // a fake product key so our mnz client response with a fake response without changing prod db.
 		writeFile("abc.txt", "1\n2\n3\n",
-			{"mnz": {
-				"arg": "abc.txt",
-				"collect": ["lines"]
+			{mnz: {
+				arg: "abc.txt",
+				metrics: ["lines"]
 			}}
 		).
 		saveStdoutContent().
