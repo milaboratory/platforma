@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.monetization-test.ui
 
+## 1.1.0
+
+### Minor Changes
+
+- 6dd54d2: Small improvements for the Monetization Component Draft
+
 ## 1.0.2
 
 ### Patch Changes
