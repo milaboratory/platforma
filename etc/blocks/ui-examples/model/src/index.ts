@@ -37,6 +37,14 @@ export const platforma = BlockModel.create('Heavy')
 
   .withUiState<UiState>({ dataTableState: undefined, dynamicSections: [] })
 
+  .argsValid((ctx) => {
+    if (ctx.args.numbers.length === 5) {
+      throw new Error('argsValid: test error');
+    }
+
+    return ctx.args.numbers.length > 0;
+  })
+
   .output('numbers', (ctx) => ctx.outputs?.resolve('numbers')?.getDataAsJson<number[]>())
 
   .output('pt', (ctx) => {
@@ -88,12 +96,24 @@ export const platforma = BlockModel.create('Heavy')
     );
   })
 
+  .title((ctx) => {
+    if (ctx.args.numbers.length === 5) {
+      throw new Error('block title: test error');
+    }
+
+    return 'Ui Examples';
+  })
+
   .sections((ctx) => {
     const dynamicSections = (ctx.uiState.dynamicSections ?? []).map((it) => ({
       type: 'link' as const,
       href: `/section?id=${it.id}` as const,
       label: it.label,
     }));
+
+    if (dynamicSections.some((it) => it.label === 'Error')) {
+      throw new Error('sections: test error');
+    }
 
     return [
       { type: 'link', href: '/loaders', label: 'Loaders' },
