@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 2.15.11
+
+### Patch Changes
+
+- 755f6f2: mnz: multiple run specs in dry-run
+
 ## 2.15.10
 
 ### Patch Changes

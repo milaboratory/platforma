@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.monetization-test.workflow
 
+## 1.0.4
+
+### Patch Changes
+
+- 755f6f2: mnz: multiple run specs in dry-run
+
 ## 1.0.3
 
 ### Patch Changes
