@@ -1,5 +1,11 @@
 # @milaboratories/pl-local
 
+## 1.4.0
+
+### Minor Changes
+
+- ca12fd4: Release pl=1.25.1
+
 ## 1.3.0
 
 ### Minor Changes
