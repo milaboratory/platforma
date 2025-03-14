@@ -258,3 +258,52 @@ test('nested computable test 4', async () => {
 
   expect(await c1.getValue()).toEqual(4);
 });
+
+test('nested computable with post-process and recover 2', async () => {
+  const watchable = new WatchableValue(1);
+
+  const wc = watchable.asComputable();
+
+  const c = Computable.make(
+    () => {
+      return wc;
+    },
+    {
+      postprocessValue: (value) => String(value),
+    }
+  )
+  .wrap({
+    postprocessValue: (value) => {
+      if (value === '3') {
+        throw new Error('Test error');
+      }
+
+      return Number(value);
+    },
+    recover: () => {
+      return 100;
+    }
+  })
+  .wrap({
+    postprocessValue: (value): number | boolean => {
+      if (value === 2) {
+        throw new Error('Test error');
+      }
+
+      return Number(value);
+    },
+    recover: (): boolean => {
+      return false;
+    }
+  });
+
+  expect(await c.getValue()).toEqual(1);
+
+  watchable.setValue(2);
+
+  expect(await c.getValue()).toEqual(false);
+
+  watchable.setValue(3);
+
+  expect(await c.getValue()).toEqual(100);
+});

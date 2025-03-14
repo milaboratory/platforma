@@ -144,7 +144,13 @@ export function projectOverview(
                 cfg.sections,
                 cfg.code,
                 bpId,
-              ) as ComputableStableDefined<BlockSection[]>,
+              ).wrap({
+                recover: (e) => {
+                  env.logger.error('Error in block model sections');
+                  env.logger.error(e);
+                  return [];
+                },
+              }) as ComputableStableDefined<BlockSection[]>,
               title: ifNotUndef(
                 cfg.title,
                 (title) =>
@@ -154,7 +160,13 @@ export function projectOverview(
                     title,
                     cfg.code,
                     bpId,
-                  ) as ComputableStableDefined<string>,
+                  ).wrap({
+                    recover: (e) => {
+                      env.logger.error('Error in block model title');
+                      env.logger.error(e);
+                      return 'Invalid title';
+                    },
+                  }) as ComputableStableDefined<string>,
               ),
               inputsValid: computableFromCfgOrRF(
                 env,
@@ -162,7 +174,14 @@ export function projectOverview(
                 cfg.inputsValid,
                 cfg.code,
                 bpId,
-              ) as ComputableStableDefined<boolean>,
+              ).wrap({
+                recover: (e) => {
+                  // I'm not sure that we should write an error here, because it just means "Invalid args"
+                  env.logger.error('Error in block model argsValid');
+                  env.logger.error(e);
+                  return false;
+                },
+              }) as ComputableStableDefined<boolean>,
               sdkVersion: cfg.sdkVersion,
             };
           }) || {};

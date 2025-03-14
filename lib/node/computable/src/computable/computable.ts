@@ -461,6 +461,21 @@ export class Computable<T, StableT extends T = T> {
     return `__ephkey_${Computable.ephKeyCounter++}`;
   }
 
+  /** Wraps a computable with additional post-processing and recovery actions. */
+
+  public wrap<R>(this: Computable<T>, ops: ComputablePostProcess<T, R> & ComputableRecoverAction<R>): Computable<R>;
+
+  /** Wraps a computable with additional recovery actions. */
+
+  public wrap<R>(this: Computable<T>, ops: ComputableRecoverAction<R>): Computable<T | R>;
+
+  public wrap<R>(this: Computable<T>, ops: Partial<ComputablePostProcess<T, R>> & ComputableRecoverAction<R>) {
+    return Computable.make(
+      (_ctx) => this,
+      { ...ops, key: this.___wrapped_kernel___.key }
+    );
+  }
+
   /**
    * Simplest way to create computable specifying only main callback. Nested
    * computables can be returned by the callback and will be automatically
@@ -482,7 +497,7 @@ export class Computable<T, StableT extends T = T> {
    */
   public static make<IR, T>(
     cb: (ctx: ComputableCtx) => IR,
-    ops: ComputablePostProcess<UnwrapComputables<IR>, T> &
+    ops: ComputablePostProcess<IR, T> &
       ComputableRecoverAction<T> &
       Partial<ComputableRenderingOps>
   ): Computable<T>;
