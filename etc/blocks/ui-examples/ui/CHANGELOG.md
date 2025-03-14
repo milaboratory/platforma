@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.3.40
+
+### Patch Changes
+
+- fdd58fd: Isolate possible errors in “sections”, “title” and “argsValid”
+- Updated dependencies [fdd58fd]
+  - @milaboratories/milaboratories.ui-examples.model@1.1.21
+
 ## 1.3.39
 
 ### Patch Changes

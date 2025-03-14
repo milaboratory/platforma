@@ -1,5 +1,15 @@
 # @milaboratories/pl-middle-layer
 
+## 1.30.11
+
+### Patch Changes
+
+- fdd58fd: Isolate possible errors in “sections”, “title” and “argsValid”
+- Updated dependencies [fdd58fd]
+  - @milaboratories/computable@2.4.0
+  - @milaboratories/pl-drivers@1.5.26
+  - @milaboratories/pl-tree@1.4.32
+
 ## 1.30.10
 
 ### Patch Changes

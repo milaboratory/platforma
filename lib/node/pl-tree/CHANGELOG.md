@@ -1,5 +1,12 @@
 # @milaboratories/pl-tree
 
+## 1.4.32
+
+### Patch Changes
+
+- Updated dependencies [fdd58fd]
+  - @milaboratories/computable@2.4.0
+
 ## 1.4.31
 
 ### Patch Changes
