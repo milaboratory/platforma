@@ -1,5 +1,11 @@
 # @milaboratories/computable
 
+## 2.4.0
+
+### Minor Changes
+
+- fdd58fd: Add a "wrap" method to Computable that creates a new Computable with post-processing(optional) and recovery actions
+
 ## 2.3.5
 
 ### Patch Changes
