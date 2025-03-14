@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.22.97
+
+### Patch Changes
+
+- 63c66c8: update createPFrameForGraphs
+
 ## 1.22.59
 
 ### Patch Changes

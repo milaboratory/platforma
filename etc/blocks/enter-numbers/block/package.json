@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/milaboratories.test-enter-numbers",
-  "version": "1.0.211",
+  "version": "1.0.212",
   "private": true,
   "scripts": {
     "build": "rm -rf ./block-pack && block-tools pack",
