@@ -1,5 +1,11 @@
 # @milaboratories/pl-local
 
+## 1.4.1
+
+### Patch Changes
+
+- 553693d: Update pl to 1.25.2 to make it work in docker
+
 ## 1.4.0
 
 ### Minor Changes
