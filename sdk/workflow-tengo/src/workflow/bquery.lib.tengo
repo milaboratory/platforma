@@ -36,6 +36,63 @@ _DEFAULT_OPTIONS := {
  * @param ctx: results pool (context) to query
  * @param options: an options map
  * @return result: a list of {ref: spec: data:} objects (data will be absent if not requested)
+ *
+ * The query spec supports the following operand types for matching PColumnSpecs:
+ *
+ * 1. Logical operators:
+ *    ```
+ *    {type: "Or", operands: [operand1, operand2, ...]}  // matches if any operand matches
+ *    {type: "And", operands: [operand1, operand2, ...]} // matches if all operands match
+ *    {type: "Not", operand: someOperand}                // matches if operand doesn't match
+ *    ```
+ *
+ * 2. Name matchers:
+ *    ```
+ *    {type: "Name", name: "pl7.app/rna-seq/countMatrix"} // matches by exact name
+ *    {type: "NamePattern", pattern: "pl7.app/vdj/.*"}    // matches using regex pattern
+ *    ```
+ *
+ * 3. Domain matcher:
+ *    ```
+ *    {
+ *      type: "Domain",
+ *      domain: {"pl7.app/block": "blockId"},
+ *      domainExactMatch: false  // true requires exact match, false checks subset
+ *    }
+ *    ```
+ *
+ * 4. Annotation matchers:
+ *    ```
+ *    {type: "Annotation", annotation: "pl7.app/isDiscreteFilter", value: "true"}         // exact match
+ *    {type: "AnnotationPattern", annotation: "pl7.app/abundance", pattern: ".*false.*"}  // regex match
+ *    ```
+ *
+ * 5. AxesKeys: matches by axis specifications
+ *    ```
+ *    {
+ *      type: "AxesKeys",
+ *      axesKeys: [
+ *        {
+ *          name: "pl7.app/rna-seq/geneId",
+ *          domain: {"pl7.app/block": "blockId"},
+ *          domainExactMatch: false
+ *        }
+ *      ],
+ *      partialMatch: false  // true allows subset of axes to match
+ *    }
+ *    ```
+ *
+ * Example:
+ * ```
+ * // Find RNA-seq count matrices from block "abc123"
+ * query({
+ *   type: "And",
+ *   operands: [
+ *     {type: "Name", name: "pl7.app/rna-seq/countMatrix"},
+ *     {type: "Domain", domain: {"pl7.app/block": "abc123"}}
+ *   ]
+ * })
+ * ```
  */
 create := func(spec, ctx, ...options) {
 
