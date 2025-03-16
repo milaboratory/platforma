@@ -30,6 +30,10 @@ export function BlockPackMeta<
      * `undefined` value or absent field is treated exactly the same as number `0`.
      */
     marketplaceRanking: z.number().optional(),
+    /**
+     * The URL to the Terms of Service for the block. If provided checkbox with link to this URL should be shown in order to add block.
+     */
+    termsOfServiceUrl: z.string().url().optional()
   });
 }
 
