@@ -1,5 +1,11 @@
 # @milaboratories/pl-local
 
+## 1.5.0
+
+### Minor Changes
+
+- 638ab88: Pl upgrade to 1.26.0
+
 ## 1.4.1
 
 ### Patch Changes
