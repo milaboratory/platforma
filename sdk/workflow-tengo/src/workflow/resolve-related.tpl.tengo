@@ -1,0 +1,161 @@
+self := import(":tpl")
+ll := import(":ll")
+slices := import(":slices")
+json := import("json")
+bquery := import(":workflow.bquery")
+
+self.awaitState("anchors", { wildcard: "*" }, "spec", "ResourceReady")
+self.awaitState("related", "ResourceReady")
+
+self.body(func(inputs) {
+	ctx := inputs.ctx
+	anchors := inputs.anchors
+	related := inputs.related
+
+    // Process inputs and resolve related resources
+    resolvedRelated := {}
+
+    for relatedId, relatedConfig in related {
+        // Extract matcher and fetchData flag
+        matcher := relatedConfig.matcher
+        fetchData := relatedConfig.fetchData
+
+        // Converting the matcher to a query spec
+        queryPredicates := [ {
+            type: "Name",
+            name: matcher.name
+        } ]
+
+        // Add domain predicate if present
+        if !is_undefined(matcher.domain) {
+            domainPredicate := {
+                type: "Domain",
+                domain: {}
+            }
+
+            // Process each domain key-value pair
+            for domainKey, domainValue in matcher.domain {
+                // Check if this is an anchored domain reference (has 'anc' property)
+                if is_map(domainValue) && !is_undefined(domainValue.anc) {
+                    // This is an anchored domain reference
+                    // Use the anchor ID to get the domain value from the anchors
+                    anchorId := domainValue.anc
+                    if is_undefined(anchors[anchorId]) {
+                        ll.panic("Cannot resolve anchored domain: anchor '%s' not found", anchorId)
+                    }
+
+                    // Get domain value from the anchor
+                    if is_undefined(anchors[anchorId].domain) || is_undefined(anchors[anchorId].domain[domainKey]) {
+                        ll.panic("Cannot resolve anchored domain: domain key '%s' not found in anchor '%s'", domainKey, anchorId)
+                    }
+
+                    // Use the resolved value
+                    domainPredicate.domain[domainKey] = anchors[anchorId].domain[domainKey]
+                } else {
+                    // This is a regular domain value
+                    domainPredicate.domain[domainKey] = domainValue
+                }
+            }
+
+            queryPredicates += [ domainPredicate ]
+        }
+
+        // Add axes if present
+        if !is_undefined(matcher.axes) {
+            axesMatcher := {
+                type: "AxesKeys",
+                axesKeys: slices.map(matcher.axes, func(axis) {
+                    // If axis is a direct AxisId (has name, type properties)
+                    if is_map(axis) && !is_undefined(axis.name) && !is_undefined(axis.type) {
+                        // This is a direct AxisId
+                        return {
+                            name: axis.name,
+                            type: axis.type,
+                            domain: !is_undefined(axis.domain) ? axis.domain : {}
+                        }
+                    }
+
+                    // If it's an AnchorAxisRef (array with anchor name and reference)
+                    if is_array(axis) {
+                        anchorId := axis[0]
+
+                        // Check if the anchor exists
+                        if is_undefined(anchors[anchorId]) {
+                            ll.panic("Cannot resolve anchored axis: anchor '%s' not found", anchorId)
+                        }
+
+						foundAxis := undefined
+
+                        // Handle different types of AnchorAxisRef
+                        if is_int(axis[1]) {
+                            // AnchorAxisRefByIdx - axis[1] is index
+                            axisIndex := axis[1]
+                            if is_undefined(anchors[anchorId].axesSpec) || len(anchors[anchorId].axesSpec) <= axisIndex {
+                                ll.panic("Cannot resolve anchored axis by index: axis index %v not found in anchor '%s'", axisIndex, anchorId)
+                            }
+
+                            foundAxis = anchors[anchorId].axesSpec[axisIndex]
+                        } else if is_string(axis[1]) {
+                            // AnchorAxisRefByName - axis[1] is name
+                            axisName := axis[1]
+
+                            // Find axis by name in the anchor
+                            for _, anchorAxis in anchors[anchorId].axesSpec {
+                                if anchorAxis.name == axisName {
+									if !is_undefined(foundAxis) {
+										ll.panic("Cannot resolve anchored axis by name: multiple axes with name '%s' found in anchor '%s'", axisName, anchorId)
+									}
+                                    foundAxis = anchorAxis
+                                }
+                            }
+
+                            if is_undefined(foundAxis) {
+                                ll.panic("Cannot resolve anchored axis by name: axis '%s' not found in anchor '%s'", axisName, anchorId)
+                            }
+                        } else {
+                            ll.panic("Unsupported axis reference format: %v", axis[1])
+                        }
+
+						return {
+							name: foundAxis.name,
+							type: foundAxis.type,
+							domain: !is_undefined(foundAxis.domain) ? foundAxis.domain : {}
+						}
+                    }
+
+                    ll.panic("Unsupported axis format: %v", axis)
+                })
+            }
+
+			if !is_undefined(matcher.partialAxesMatch) {
+				axesMatcher.partialMatch = matcher.partialAxesMatch
+			}
+
+            queryPredicates += [ axesMatcher ]
+        }
+
+        querySpec := len(queryPredicates) > 1 ? {
+            type: "And",
+            operands: queryPredicates
+        } : queryPredicates[0]
+
+        expectMultiple := matcher.matchStrategy == "expectMultiple"
+        queryResult := bquery.create(querySpec, ctx, {
+            spec: true,
+            data: fetchData,  // Use the fetchData flag to control whether to fetch data
+            first: !expectMultiple && matcher.matchStrategy == "takeFirst",
+            single: !expectMultiple && matcher.matchStrategy != "takeFirst"
+        })
+
+        resolvedRelated[relatedId] = queryResult
+    }
+
+    // Return results with both anchors and resolved related items
+    return {
+        result: {
+            anchors: anchors,
+            related: resolvedRelated
+        }
+    }
+})
+

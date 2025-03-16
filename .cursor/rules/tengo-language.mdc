@@ -25,25 +25,29 @@ alwaysApply: false
   fmt.println(sum("", [1, 2, 3]))  // "123"
   ```
 
+- A short and basic description of language patters can be found in [basics-for-ai.md](mdc:platforma/sdk/workflow-tengo/tengo-docs/basics-for-ai.md).
+
+- Append important findings that you spent long time deducing into [basics-for-ai.md](mdc:platforma/sdk/workflow-tengo/tengo-docs/basics-for-ai.md).
+
 - Can be found in one of the files:
-[tengo-language.md](mdc:sdk/workflow-tengo/tengo-docs/tengo-language.md)
-[builtins.md](mdc:sdk/workflow-tengo/tengo-docs/builtins.md)
-[formatting.md](mdc:sdk/workflow-tengo/tengo-docs/formatting.md)
-[interoperability.md](mdc:sdk/workflow-tengo/tengo-docs/interoperability.md)
-[objects.md](mdc:sdk/workflow-tengo/tengo-docs/objects.md)
-[operators.md](mdc:sdk/workflow-tengo/tengo-docs/operators.md)
-[runtime-types.md](mdc:sdk/workflow-tengo/tengo-docs/runtime-types.md)
-[stdlib-base64.md](mdc:sdk/workflow-tengo/tengo-docs/stdlib-base64.md)
-[stdlib-enum.md](mdc:sdk/workflow-tengo/tengo-docs/stdlib-enum.md)
-[stdlib-fmt.md](mdc:sdk/workflow-tengo/tengo-docs/stdlib-fmt.md)
-[stdlib-hex.md](mdc:sdk/workflow-tengo/tengo-docs/stdlib-hex.md)
-[stdlib-json.md](mdc:sdk/workflow-tengo/tengo-docs/stdlib-json.md)
-[stdlib-math.md](mdc:sdk/workflow-tengo/tengo-docs/stdlib-math.md)
-[stdlib-os.md](mdc:sdk/workflow-tengo/tengo-docs/stdlib-os.md)
-[stdlib-rand.md](mdc:sdk/workflow-tengo/tengo-docs/stdlib-rand.md)
-[stdlib-text.md](mdc:sdk/workflow-tengo/tengo-docs/stdlib-text.md)
-[stdlib-times.md](mdc:sdk/workflow-tengo/tengo-docs/stdlib-times.md)
-[stdlib.md](mdc:sdk/workflow-tengo/tengo-docs/stdlib.md)
-[tengo-cli.md](mdc:sdk/workflow-tengo/tengo-docs/tengo-cli.md)
-[tutorial.md](mdc:sdk/workflow-tengo/tengo-docs/tutorial.md)
+[tengo-language.md](mdc:platforma/platforma/sdk/workflow-tengo/tengo-docs/tengo-language.md)
+[builtins.md](mdc:platforma/platforma/sdk/workflow-tengo/tengo-docs/builtins.md)
+[formatting.md](mdc:platforma/platforma/sdk/workflow-tengo/tengo-docs/formatting.md)
+[interoperability.md](mdc:platforma/platforma/sdk/workflow-tengo/tengo-docs/interoperability.md)
+[objects.md](mdc:platforma/platforma/sdk/workflow-tengo/tengo-docs/objects.md)
+[operators.md](mdc:platforma/platforma/sdk/workflow-tengo/tengo-docs/operators.md)
+[runtime-types.md](mdc:platforma/platforma/sdk/workflow-tengo/tengo-docs/runtime-types.md)
+[stdlib-base64.md](mdc:platforma/platforma/sdk/workflow-tengo/tengo-docs/stdlib-base64.md)
+[stdlib-enum.md](mdc:platforma/platforma/sdk/workflow-tengo/tengo-docs/stdlib-enum.md)
+[stdlib-fmt.md](mdc:platforma/platforma/sdk/workflow-tengo/tengo-docs/stdlib-fmt.md)
+[stdlib-hex.md](mdc:platforma/platforma/sdk/workflow-tengo/tengo-docs/stdlib-hex.md)
+[stdlib-json.md](mdc:platforma/platforma/sdk/workflow-tengo/tengo-docs/stdlib-json.md)
+[stdlib-math.md](mdc:platforma/platforma/sdk/workflow-tengo/tengo-docs/stdlib-math.md)
+[stdlib-os.md](mdc:platforma/platforma/sdk/workflow-tengo/tengo-docs/stdlib-os.md)
+[stdlib-rand.md](mdc:platforma/platforma/sdk/workflow-tengo/tengo-docs/stdlib-rand.md)
+[stdlib-text.md](mdc:platforma/platforma/sdk/workflow-tengo/tengo-docs/stdlib-text.md)
+[stdlib-times.md](mdc:platforma/platforma/sdk/workflow-tengo/tengo-docs/stdlib-times.md)
+[stdlib.md](mdc:platforma/platforma/sdk/workflow-tengo/tengo-docs/stdlib.md)
+[tengo-cli.md](mdc:platforma/platforma/sdk/workflow-tengo/tengo-docs/tengo-cli.md)
+[tutorial.md](mdc:platforma/platforma/sdk/workflow-tengo/tengo-docs/tutorial.md)
 
