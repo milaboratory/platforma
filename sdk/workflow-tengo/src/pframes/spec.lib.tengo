@@ -235,7 +235,9 @@ makeTrace := func(input, ...steps) {
 		validation.assertType(currentTrace, _TRACE_SCHEMA)
 	}
 
-	currentTrace = append(currentTrace, steps...)
+	if len(steps) > 0 {
+		currentTrace = append(currentTrace, steps...)
+	}
 	currentTraceStr := string(json.encode(currentTrace))
 
 	return ll.toStrict({

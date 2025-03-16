@@ -204,8 +204,8 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 
 	// Initialize trace if traceSteps provided
 	trace := undefined
-	if !is_undefined(opts.traceSteps) {
-		trace = pSpec.makeTrace(input.spec, opts.traceSteps...)
+	if !is_undefined(opts.traceSteps) || !is_undefined(input.spec.annotations[pSpec.A_TRACE]) {
+		trace = pSpec.makeTrace(input.spec, (opts.traceSteps ? opts.traceSteps : [])...)
 	}
 
 	// JSON params passed as a single resource to the template
