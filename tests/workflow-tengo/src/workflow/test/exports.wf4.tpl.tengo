@@ -4,31 +4,6 @@ ll := import("@platforma-sdk/workflow-tengo:ll")
 wf := import("@platforma-sdk/workflow-tengo:workflow")
 text := import("text")
 
-
-// wf.prepare(func(args){
-// 	// query := {
-
-// 	// 	type: "Annotation",
-
-// 	// 	annotation: "pl7.app/isSpecies",
-
-// 	// 	value: "true"
-// 	// }
-
-// 	// // query only specs
-// 	// ops := {
-// 	// 	data: true,
-// 	// 	single: true,
-// 	// 	first: false
-// 	// }
-
-
-
-// 	return {
-// 		query:
-// 	}
-// })
-
 wf.body(func(args) {
 
 	qResult := wf.queryAnchorsAndMatchers({
