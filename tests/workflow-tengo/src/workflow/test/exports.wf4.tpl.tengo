@@ -1,0 +1,61 @@
+// workflow with query
+
+ll := import("@platforma-sdk/workflow-tengo:ll")
+wf := import("@platforma-sdk/workflow-tengo:workflow")
+text := import("text")
+
+
+// wf.prepare(func(args){
+// 	// query := {
+
+// 	// 	type: "Annotation",
+
+// 	// 	annotation: "pl7.app/isSpecies",
+
+// 	// 	value: "true"
+// 	// }
+
+// 	// // query only specs
+// 	// ops := {
+// 	// 	data: true,
+// 	// 	single: true,
+// 	// 	first: false
+// 	// }
+
+
+
+// 	return {
+// 		query:
+// 	}
+// })
+
+wf.body(func(args) {
+
+	qResult := wf.queryAnchorsAndMatchers({
+		main: {
+			ref: {
+				blockId: "b1",
+				name: "e2"
+			},
+			specOnly: true
+		}
+	}, {
+		r1: {
+			matcher: {
+				name: "pl7.app/test2",
+				domain: {
+					"pl7.app/testDomain1": { anc: "main" }
+				}
+			},
+			specOnly: true
+		}
+	})
+
+	return {
+		outputs: {
+			anchorSpec: qResult.getAnchor("main").inputs().spec,
+			r1: qResult.getRelated("r1").getFutureInputField("spec")
+		},
+		exports: {}
+	}
+})
