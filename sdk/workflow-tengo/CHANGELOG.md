@@ -1,5 +1,13 @@
 # @platforma-sdk/workflow-tengo
 
+## 2.15.12
+
+### Patch Changes
+
+- 809c8d7: Minor fixes for trace propagation logic:
+  - fixes makeTrace with empty array as input for steps
+  - enables trace propagation in processColumn even if trace steps are not specified, but input has tracing information
+
 ## 2.15.11
 
 ### Patch Changes
