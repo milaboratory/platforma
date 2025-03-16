@@ -44,23 +44,21 @@ tplTest(
       b: 'b',
     }, { blockId: 'b1' });
 
-    // const out1 = wf1.output('concat', (a) => a?.getDataAsJson());
-    // expect(await awaitStableState(out1)).eq('ab');
-
-    // const exp1 = await awaitStableState(wf1.export('e1.spec', (a) => a?.getDataAsJson()));
-
     const ctx = await awaitStableState(wf1.context());
 
     const wf4 = await helper.renderWorkflow('workflow.test.exports.wf4', false, {}, { parent: ctx, blockId: 'b2' });
 
     const anchorSpec = await awaitStableState(wf4.output('anchorSpec', (a) => a?.getDataAsJson()));
-    console.dir(anchorSpec, { depth: 5 });
+    expect(anchorSpec).toMatchObject({
+      kind: 'PColumn',
+      name: 'pl7.app/test1',
+    });
 
-    const r1 = await awaitStableState(wf4.output('r1', (a) => a?.getDataAsString()));
-    console.dir(r1, { depth: 5 });
-
-    // const join = await awaitStableState(wf2.output('join', (a) => a?.getDataAsJson()));
-    // expect(join).eq('ab');
+    const r1 = await awaitStableState(wf4.output('r1', (a) => a?.getDataAsJson()));
+    expect(r1).toMatchObject({
+      kind: 'PColumn',
+      name: 'pl7.app/test2',
+    });
   },
 );
 
