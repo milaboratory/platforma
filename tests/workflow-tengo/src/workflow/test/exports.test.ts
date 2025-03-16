@@ -2,7 +2,7 @@
 import { awaitStableState, tplTest } from '@platforma-sdk/test';
 
 tplTest(
-  'should return export',
+  'resolve: should return resolved export',
   // This timeout is set due to very slow performance of Platforma on large transactions, where thousands of fields and resources are created.
   // the test itself does almost nothing (concatenates 2 strings) and should pass immediately.
   // But because of tests execution nature in CI (when we several parallel test threads each creating large resource tree)
@@ -28,6 +28,39 @@ tplTest(
 
     const join = await awaitStableState(wf2.output('join', (a) => a?.getDataAsJson()));
     expect(join).eq('ab');
+  },
+);
+
+tplTest(
+  'resolve: should return resolved anchors and related',
+  // This timeout is set due to very slow performance of Platforma on large transactions, where thousands of fields and resources are created.
+  // the test itself does almost nothing (concatenates 2 strings) and should pass immediately.
+  // But because of tests execution nature in CI (when we several parallel test threads each creating large resource tree)
+  // it may take long for test to complete.
+  { timeout: 10000 },
+  async ({ helper, expect }) => {
+    const wf1 = await helper.renderWorkflow('workflow.test.exports.wf1', false, {
+      a: 'a',
+      b: 'b',
+    }, { blockId: 'b1' });
+
+    // const out1 = wf1.output('concat', (a) => a?.getDataAsJson());
+    // expect(await awaitStableState(out1)).eq('ab');
+
+    // const exp1 = await awaitStableState(wf1.export('e1.spec', (a) => a?.getDataAsJson()));
+
+    const ctx = await awaitStableState(wf1.context());
+
+    const wf4 = await helper.renderWorkflow('workflow.test.exports.wf4', false, {}, { parent: ctx, blockId: 'b2' });
+
+    const anchorSpec = await awaitStableState(wf4.output('anchorSpec', (a) => a?.getDataAsJson()));
+    console.dir(anchorSpec, { depth: 5 });
+
+    const r1 = await awaitStableState(wf4.output('r1', (a) => a?.getDataAsString()));
+    console.dir(r1, { depth: 5 });
+
+    // const join = await awaitStableState(wf2.output('join', (a) => a?.getDataAsJson()));
+    // expect(join).eq('ab');
   },
 );
 

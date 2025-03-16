@@ -1,12 +1,12 @@
 ll := import(":ll")
 smart := import(":smart")
+maps := import(":maps")
 constants := import(":constants")
 json := import("json")
 assets := import(":assets")
 render := import(":render")
 
-// Import the resolve-related template at the top
-resolveRelatedTpl := assets.importTemplate(":workflow.resolve-related")
+queryRelatedTpl := assets.importTemplate(":workflow.query-related")
 
 _CONTEXT_FIELD_NAME := "ctx"
 
@@ -278,7 +278,7 @@ resolve := func(ref, ctx, ...options) {
  * For related ids with expectMultiple strategy, the result will be an array.
  * Otherwise, it will be a single result object.
  */
-resolveAnchorsAndRelated := func(ctx, anchors, related) {
+queryAnchorsAndMatchers := func(ctx, anchors, related) {
 	// First, resolve all anchors
 	resolvedAnchors := {}
 	for anchorId, anchorValue in anchors {
@@ -317,9 +317,9 @@ resolveAnchorsAndRelated := func(ctx, anchors, related) {
 	}
 
 	// Render the template with the appropriate parameters
-	relatedResult := render.create(resolveRelatedTpl, {
+	relatedResult := render.createEphemeral(queryRelatedTpl, {
 		ctx: ctx,
-		anchors: smart.createMapResource(resolvedAnchors),
+		anchorSpecs: smart.createMapResource(maps.mapValues(resolvedAnchors, func(v) { return v.inputs().spec })),
 		related: processedRelated
 	})
 
@@ -356,5 +356,5 @@ export ll.toStrict({
 	create: create,
 	resolve: resolve,
 	resultUnmarshaller: resultUnmarshaller,
-	resolveAnchorsAndRelated: resolveAnchorsAndRelated
+	queryAnchorsAndMatchers: queryAnchorsAndMatchers
 })

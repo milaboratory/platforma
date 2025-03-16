@@ -220,7 +220,7 @@ query := func(spec, ...options) {
  * Example:
  * ```
  * // Get the RNA-seq count matrix from block "abc123"
- * countMatrix = resolve({blockId: "abc123", name: "pl7.app/rna-seq/countMatrix"}).data
+ * countMatrix = resolve({blockId: "abc123", name: "matrix"}).data
  * ```
  */
 resolve := func(ref, ...options) {
@@ -232,6 +232,21 @@ resolve := func(ref, ...options) {
 	}))
 }
 
+/**
+ * Resolves both anchor references and related items in one operation.
+ *
+ * @param anchors: a map of anchorId -> ref or {ref: {blockId: string, name: string}, specOnly: bool}
+ *                 When providing {ref, specOnly}, the specOnly flag controls whether to fetch data
+ * @param related: a map of relatedId -> APColumnMatcher specifications
+ *                 or {matcher: APColumnMatcher, specOnly: bool}
+ *                 When providing {matcher, specOnly}, the specOnly flag controls whether to fetch data
+ * @return result: an object with accessor methods:
+ *   - getAnchor(anchorId): Get a specific anchor resolution result
+ *   - getRelated(relatedId): Get a specific related item by ID
+ */
+queryAnchorsAndMatchers := func(anchors, related) {
+	return bquery.queryAnchorsAndMatchers(_parentContext(), anchors, related)
+}
 
 // template for prerun
 _preRunTpl := undefined
@@ -331,6 +346,7 @@ body := func(bodyFn) {
 export ll.toStrict({
 	query: query,
 	resolve: resolve,
+	queryAnchorsAndMatchers: queryAnchorsAndMatchers,
 	prepare: prepare,
 	body: body,
 	setPreRun: setPreRun,

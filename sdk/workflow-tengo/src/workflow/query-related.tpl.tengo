@@ -4,16 +4,15 @@ slices := import(":slices")
 json := import("json")
 bquery := import(":workflow.bquery")
 
-self.awaitState("anchors", { wildcard: "*" }, "spec", "ResourceReady")
+self.awaitState("anchorSpecs", { wildcard: "*" }, "ResourceReady")
 self.awaitState("related", "ResourceReady")
 
 self.body(func(inputs) {
 	ctx := inputs.ctx
-	anchors := inputs.anchors
+	anchors := inputs.anchorSpecs
 	related := inputs.related
 
-    // Process inputs and resolve related resources
-    resolvedRelated := {}
+    outputs := {}
 
     for relatedId, relatedConfig in related {
         // Extract matcher and fetchData flag
@@ -140,22 +139,21 @@ self.body(func(inputs) {
         } : queryPredicates[0]
 
         expectMultiple := matcher.matchStrategy == "expectMultiple"
-        queryResult := bquery.create(querySpec, ctx, {
+        queryOps := {
             spec: true,
             data: fetchData,  // Use the fetchData flag to control whether to fetch data
-            first: !expectMultiple && matcher.matchStrategy == "takeFirst",
-            single: !expectMultiple && matcher.matchStrategy != "takeFirst"
-        })
-
-        resolvedRelated[relatedId] = queryResult
-    }
-
-    // Return results with both anchors and resolved related items
-    return {
-        result: {
-            anchors: anchors,
-            related: resolvedRelated
+            first: !expectMultiple,
+            single: !expectMultiple
         }
+
+        ll.print("__THE_LOG__ " + string(json.encode(querySpec)))
+        ll.print("__THE_LOG__ " + string(json.encode(queryOps)))
+
+        queryResult := bquery.create(querySpec, ctx, queryOps)
+
+        outputs["related/" + relatedId] = queryResult
     }
+
+    return outputs
 })
 
