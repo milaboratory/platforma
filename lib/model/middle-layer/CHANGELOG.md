@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.7.7
+
+### Patch Changes
+
+- 624af88: Add "termsOfServiceUrl" to block pack meta
+
 ## 1.7.6
 
 ### Patch Changes
