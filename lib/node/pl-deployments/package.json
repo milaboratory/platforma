@@ -1,7 +1,7 @@
 {
   "name": "@milaboratories/pl-deployments",
   "version": "1.4.1",
-  "pl-version": "1.25.2",
+  "pl-version": "1.26.0",
   "description": "MiLaboratories Platforma Backend code service run wrapper",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
