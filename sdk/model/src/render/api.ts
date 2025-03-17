@@ -1,7 +1,9 @@
-import {
+import type {
+  APColumnSelector,
   AxisId,
   Option,
   PColumn,
+  PColumnSelector,
   PColumnSpec,
   PColumnValues,
   PFrameDef,
@@ -15,21 +17,29 @@ import {
   PTableSorting,
   PlRef,
   ResultCollection,
-  ValueOrError,
+  ValueOrError } from '@milaboratories/pl-model-common';
+import {
+  AnchorCtx,
+  resolveAnchors } from '@milaboratories/pl-model-common';
+import {
   ensurePColumn,
   extractAllColumns,
   isPColumn,
   isPColumnSpec,
+  isPlRef,
   mapPObjectData,
   mapPTableDef,
-  mapValueInVOE
+  mapValueInVOE,
+  selectorsToPredicate,
 } from '@milaboratories/pl-model-common';
-import { Optional } from 'utility-types';
+import type { Optional } from 'utility-types';
 import { getCfgRenderCtx } from '../internal';
 import { TreeNodeAccessor, ifDef } from './accessor';
-import { FutureRef } from './future';
-import { GlobalCfgRenderCtx, MainAccessorName, StagingAccessorName } from './internal';
-import { LabelDerivationOps, deriveLabels } from './util/label';
+import type { FutureRef } from './future';
+import type { GlobalCfgRenderCtx } from './internal';
+import { MainAccessorName, StagingAccessorName } from './internal';
+import type { LabelDerivationOps } from './util/label';
+import { deriveLabels } from './util/label';
 
 export class ResultPool {
   private readonly ctx: GlobalCfgRenderCtx = getCfgRenderCtx();
@@ -45,20 +55,114 @@ export class ResultPool {
     spec.annotations?.['pl7.app/label'] ?? `Unlabelled`;
 
   public getOptions(
-    predicate: (spec: PObjectSpec) => boolean,
-    label?: ((spec: PObjectSpec, ref: PlRef) => string) | LabelDerivationOps
+    predicateOrSelector: ((spec: PObjectSpec) => boolean) | PColumnSelector | PColumnSelector[],
+    label?: ((spec: PObjectSpec, ref: PlRef) => string) | LabelDerivationOps,
   ): Option[] {
+    const predicate = typeof predicateOrSelector === 'function'
+      ? predicateOrSelector
+      : selectorsToPredicate(predicateOrSelector);
     const filtered = this.getSpecs().entries.filter((s) => predicate(s.obj));
     if (typeof label === 'object' || typeof label === 'undefined') {
       return deriveLabels(filtered, (o) => o.obj, label ?? {}).map(({ value: { ref }, label }) => ({
         ref,
-        label
+        label,
       }));
     } else
       return filtered.map((s) => ({
         ref: s.ref,
-        label: label(s.obj, s.ref)
+        label: label(s.obj, s.ref),
       }));
+  }
+
+  /**
+   * Calculates anchored identifier options for columns matching a given predicate.
+   *
+   * This function filters column specifications from the result pool that match the provided predicate,
+   * creates a standardized AnchorCtx from the provided anchors, and generates a list of label-value
+   * pairs for UI components (like dropdowns).
+   *
+   * @param anchorsOrCtx - Either:
+   *                     - An existing AnchorCtx instance
+   *                     - A record mapping anchor IDs to PColumnSpec objects
+   *                     - A record mapping anchor IDs to PlRef objects (which will be resolved to PColumnSpec)
+   * @param predicateOrSelector - Either:
+   *                            - A predicate function that takes a PColumnSpec and returns a boolean.
+   *                              Only specs that return true will be included.
+   *                            - An APColumnSelector object for declarative filtering, which will be
+   *                              resolved against the provided anchors and matched using matchPColumn.
+   *                            - An array of APColumnSelector objects - columns matching ANY selector
+   *                              in the array will be included (OR operation).
+   * @param labelOps - Optional configuration for label generation:
+   *                 - includeNativeLabel: Whether to include native column labels
+   *                 - separator: String to use between label parts (defaults to " / ")
+   *                 - addLabelAsSuffix: Whether to add labels as suffix instead of prefix
+   * @returns An array of objects with `label` (display text) and `value` (anchored ID string) properties,
+   *          or undefined if any PlRef resolution fails.
+   */
+  // Overload for AnchorCtx - guaranteed to never return undefined
+  generateAnchoredColumnOptions(
+    anchorsOrCtx: AnchorCtx,
+    predicateOrSelectors: ((spec: PColumnSpec) => boolean) | APColumnSelector | APColumnSelector[],
+    labelOps?: LabelDerivationOps,
+  ): { label: string; value: string }[];
+
+  // Overload for Record<string, PColumnSpec> - guaranteed to never return undefined
+  generateAnchoredColumnOptions(
+    anchorsOrCtx: Record<string, PColumnSpec>,
+    predicateOrSelectors: ((spec: PColumnSpec) => boolean) | APColumnSelector | APColumnSelector[],
+    labelOps?: LabelDerivationOps,
+  ): { label: string; value: string }[];
+
+  // Overload for Record<string, PColumnSpec | PlRef> - may return undefined if PlRef resolution fails
+  generateAnchoredColumnOptions(
+    anchorsOrCtx: Record<string, PColumnSpec | PlRef>,
+    predicateOrSelectors: ((spec: PColumnSpec) => boolean) | APColumnSelector | APColumnSelector[],
+    labelOps?: LabelDerivationOps,
+  ): { label: string; value: string }[] | undefined;
+
+  // Implementation
+  generateAnchoredColumnOptions(
+    anchorsOrCtx: AnchorCtx | Record<string, PColumnSpec | PlRef>,
+    predicateOrSelectors: ((spec: PColumnSpec) => boolean) | APColumnSelector | APColumnSelector[],
+    labelOps?: LabelDerivationOps,
+  ): { label: string; value: string }[] | undefined {
+  // Handle PlRef objects by resolving them to PColumnSpec
+    const resolvedAnchors: Record<string, PColumnSpec> = {};
+
+    if (!(anchorsOrCtx instanceof AnchorCtx)) {
+      for (const [key, value] of Object.entries(anchorsOrCtx)) {
+        if (isPlRef(value)) {
+          const resolvedSpec = this.getPColumnSpecByRef(value);
+          if (!resolvedSpec)
+            return undefined;
+          resolvedAnchors[key] = resolvedSpec;
+        } else {
+          // It's already a PColumnSpec
+          resolvedAnchors[key] = value as PColumnSpec;
+        }
+      }
+    }
+
+    const predicate = typeof predicateOrSelectors === 'function'
+      ? predicateOrSelectors
+      : selectorsToPredicate(Array.isArray(predicateOrSelectors)
+        ? predicateOrSelectors.map((selector) => resolveAnchors(resolvedAnchors, selector))
+        : resolveAnchors(resolvedAnchors, predicateOrSelectors),
+      );
+
+    const filtered = this.getSpecs().entries.filter(({ obj: spec }) => {
+      if (!isPColumnSpec(spec)) return false;
+      return predicate(spec);
+    });
+
+    const anchorCtx = anchorsOrCtx instanceof AnchorCtx
+      ? anchorsOrCtx
+      : new AnchorCtx(resolvedAnchors);
+
+    return deriveLabels(filtered, (o) => o.obj, labelOps ?? {}).map(({ value: { obj: spec }, label }) => ({
+      value: anchorCtx.deriveAIdString(spec as PColumnSpec)!,
+      label,
+    }));
   }
 
   /**
@@ -76,9 +180,9 @@ export class ResultPool {
         ref: e.ref,
         obj: {
           ...e.obj,
-          data: new TreeNodeAccessor(e.obj.data, [e.ref.blockId, e.ref.name])
-        }
-      }))
+          data: new TreeNodeAccessor(e.obj.data, [e.ref.blockId, e.ref.name]),
+        },
+      })),
     };
   }
 
@@ -103,10 +207,10 @@ export class ResultPool {
           ...e.obj,
           data: mapValueInVOE(
             e.obj.data,
-            (handle) => new TreeNodeAccessor(handle, [e.ref.blockId, e.ref.name])
-          )
-        }
-      }))
+            (handle) => new TreeNodeAccessor(handle, [e.ref.blockId, e.ref.name]),
+          ),
+        },
+      })),
     };
   }
 
@@ -129,11 +233,11 @@ export class ResultPool {
     // @TODO remove after 1 Jan 2025; forward compatibility
     if (typeof this.ctx.getDataFromResultPoolByRef === 'undefined')
       return this.getData().entries.find(
-        (f) => f.ref.blockId === ref.blockId && f.ref.name === ref.name
+        (f) => f.ref.blockId === ref.blockId && f.ref.name === ref.name,
       )?.obj;
     return mapPObjectData(
       this.ctx.getDataFromResultPoolByRef(ref.blockId, ref.name),
-      (handle) => new TreeNodeAccessor(handle, [ref.blockId, ref.name])
+      (handle) => new TreeNodeAccessor(handle, [ref.blockId, ref.name]),
     );
   }
 
@@ -165,11 +269,6 @@ export class ResultPool {
    * @returns object spec associated with the ref
    */
   public getSpecByRef(ref: PlRef): PObjectSpec | undefined {
-    // @TODO remove after 1 Jan 2025; forward compatibility
-    if (typeof this.ctx.getSpecFromResultPoolByRef === 'undefined')
-      return this.getSpecs().entries.find(
-        (f) => f.ref.blockId === ref.blockId && f.ref.name === ref.name
-      )?.obj;
     return this.ctx.getSpecFromResultPoolByRef(ref.blockId, ref.name);
   }
 
@@ -256,7 +355,7 @@ export class RenderCtx<Args, UiState> {
   public get activeArgs(): Args | undefined {
     if (this._activeArgsCache === undefined)
       this._activeArgsCache = {
-        v: this.ctx.activeArgs ? JSON.parse(this.ctx.activeArgs) : undefined
+        v: this.ctx.activeArgs ? JSON.parse(this.ctx.activeArgs) : undefined,
       };
     return this._activeArgsCache.v;
   }
@@ -269,7 +368,7 @@ export class RenderCtx<Args, UiState> {
   private getNamedAccessor(name: string): TreeNodeAccessor | undefined {
     return ifDef(
       this.ctx.getAccessorHandleByName(name),
-      (accessor) => new TreeNodeAccessor(accessor, [name])
+      (accessor) => new TreeNodeAccessor(accessor, [name]),
     );
   }
 
@@ -294,11 +393,11 @@ export class RenderCtx<Args, UiState> {
 
       const spec = column.obj.spec;
       if (
-        spec.name === 'pl7.app/label' &&
-        spec.axesSpec.length === 1 &&
-        spec.axesSpec[0].name === axis.name &&
-        spec.axesSpec[0].type === axis.type &&
-        matchDomain(axis.domain, spec.axesSpec[0].domain)
+        spec.name === 'pl7.app/label'
+        && spec.axesSpec.length === 1
+        && spec.axesSpec[0].name === axis.name
+        && spec.axesSpec[0].type === axis.type
+        && matchDomain(axis.domain, spec.axesSpec[0].domain)
       ) {
         if (column.obj.data.resourceType.name !== 'PColumnData/Json') {
           throw Error(`Expected JSON column for labels, got: ${column.obj.data.resourceType.name}`);
@@ -307,8 +406,8 @@ export class RenderCtx<Args, UiState> {
           Object.entries(
             column.obj.data.getDataAsJson<{
               data: Record<string | number, string>;
-            }>().data
-          ).map((e) => [JSON.parse(e[0])[0], e[1]])
+            }>().data,
+          ).map((e) => [JSON.parse(e[0])[0], e[1]]),
         );
 
         return labels;
@@ -326,7 +425,7 @@ export class RenderCtx<Args, UiState> {
   public createPFrame(def: PFrameDef<TreeNodeAccessor | PColumnValues>): PFrameHandle {
     this.verifyInlineColumnsSupport(def);
     return this.ctx.createPFrame(
-      def.map((c) => mapPObjectData(c, (d) => (d instanceof TreeNodeAccessor ? d.handle : d)))
+      def.map((c) => mapPObjectData(c, (d) => (d instanceof TreeNodeAccessor ? d.handle : d))),
     );
   }
 
@@ -341,21 +440,21 @@ export class RenderCtx<Args, UiState> {
     def:
       | PTableDef<PColumn<TreeNodeAccessor | PColumnValues>>
       | {
-          columns: PColumn<TreeNodeAccessor | PColumnValues>[];
-          filters?: PTableRecordFilter[];
-          /** Table sorting */
-          sorting?: PTableSorting[];
-        }
+        columns: PColumn<TreeNodeAccessor | PColumnValues>[];
+        filters?: PTableRecordFilter[];
+        /** Table sorting */
+        sorting?: PTableSorting[];
+      },
   ): PTableHandle {
-    var rawDef: PTableDef<PColumn<TreeNodeAccessor | PColumnValues>>;
+    let rawDef: PTableDef<PColumn<TreeNodeAccessor | PColumnValues>>;
     if ('columns' in def) {
       rawDef = {
         src: {
           type: 'full',
-          entries: def.columns.map((c) => ({ type: 'column', column: c }))
+          entries: def.columns.map((c) => ({ type: 'column', column: c })),
         },
         filters: def.filters ?? [],
-        sorting: def.sorting ?? []
+        sorting: def.sorting ?? [],
       };
     } else {
       rawDef = def;
@@ -363,8 +462,8 @@ export class RenderCtx<Args, UiState> {
     this.verifyInlineColumnsSupport(extractAllColumns(rawDef.src));
     return this.ctx.createPTable(
       mapPTableDef(rawDef, (po) =>
-        mapPObjectData(po, (d) => (d instanceof TreeNodeAccessor ? d.handle : d))
-      )
+        mapPObjectData(po, (d) => (d instanceof TreeNodeAccessor ? d.handle : d)),
+      ),
     );
   }
 
