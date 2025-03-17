@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 1.30.18
+
+### Patch Changes
+
+- f07e632: Use PFrames Rust for complex filters
+
 ## 1.30.17
 
 ### Patch Changes
