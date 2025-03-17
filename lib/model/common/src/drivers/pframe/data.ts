@@ -1,5 +1,5 @@
 import { number } from 'zod';
-import { ValueType } from './spec';
+import { ValueType } from './spec/spec';
 
 export const PValueIntNA = -2147483648;
 export const PValueLongNA = -9007199254740991n;

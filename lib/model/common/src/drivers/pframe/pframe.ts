@@ -1,6 +1,6 @@
 import { PObjectId } from '../../pool';
 import { FindColumnsRequest, FindColumnsResponse } from './find_columns';
-import { PColumn, PColumnIdAndSpec, PColumnSpec } from './spec';
+import { PColumn, PColumnIdAndSpec, PColumnSpec } from './spec/spec';
 import {
   CalculateTableDataRequest,
   CalculateTableDataResponse
