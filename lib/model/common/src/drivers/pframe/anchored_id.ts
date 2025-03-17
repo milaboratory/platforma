@@ -62,8 +62,8 @@ export interface APColumnMatcher {
   name?: string;
   /** Optional regexp pattern for column name matching; can't be used together with name */
   namePattern?: string;
-  /** Optional value type to match */
-  type?: ValueType;
+  /** Optional value type to match. If an array is provided, matches if the column's type is any of the specified types */
+  type?: ValueType | ValueType[];
   /** If specified, the domain values must be anchored to this anchor */
   domainAnchor?: string;
   /** Optional domain values to match, can include anchored references, if domainAnchor is specified,
