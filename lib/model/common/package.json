@@ -16,6 +16,7 @@
     "type-check": "tsc --noEmit --composite false",
     "build": "vite build",
     "lint": "eslint .",
+    "test": "vitest",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "files": [
@@ -31,6 +32,7 @@
     "@platforma-sdk/eslint-config": "workspace:*",
     "eslint": "catalog:",
     "typescript": "catalog:",
-    "vite": "catalog:"
+    "vite": "catalog:",
+    "vitest": "catalog:"
   }
 }
