@@ -1,6 +1,6 @@
 import canonicalize from 'canonicalize';
 import type { AxisId, PColumnSpec, ValueType } from './spec';
-import { getAxisId } from './spec';
+import { getAxisId, matchAxisId } from './spec';
 
 /** Reference types for axes within an anchored context. */
 
@@ -25,12 +25,15 @@ export type AnchorAxisRefByMatcher = { anchor: string; id: AxisId };
 /**
  * Basic anchor axis reference that can be either by index or a direct AxisId
  */
-export type AnchorAxisRefBasic = AnchorAxisRefByIdx | AxisId;
+export type AnchorAxisIdOrRefBasic = AnchorAxisRefByIdx | AxisId;
 
 /**
  * Union of all possible ways to reference an axis in an anchored context
  */
-export type AnchorAxisRef = AnchorAxisRefBasic | AnchorAxisRefByName | AnchorAxisRefByMatcher;
+export type AnchorAxisIdOrRef = AnchorAxisIdOrRefBasic | AnchorAxisRefByName | AnchorAxisRefByMatcher;
+
+/** Union of all possible ways to reference an axis in an anchored context  */
+export type AnchorAxisRef = AnchorAxisRefByIdx | AnchorAxisRefByName | AnchorAxisRefByMatcher;
 
 /** Reference to a domain value through an anchor */
 export type AnchorDomainRef = { anchor: string };
@@ -44,7 +47,7 @@ export type ADomain = string | AnchorDomainRef;
  * Axis identifier that can be either a direct AxisId or a reference to an axis through an anchor
  * Allows referring to axes in a way that can be resolved in different contexts
  */
-export type AAxisId = AxisId | AnchorAxisRef;
+export type AAxisId = AxisId | AnchorAxisIdOrRef;
 
 /**
  * Match resolution strategy for PColumns
@@ -82,6 +85,15 @@ export interface APColumnMatcher {
 }
 
 /**
+ * Matcher for PColumns in a non-anchored context
+ */
+export interface PColumnMatcher extends APColumnMatcher {
+  domainAnchor?: never;
+  domain?: Record<string, string>;
+  axes?: AxisId[];
+}
+
+/**
  * Strict identifier for PColumns in an anchored context
  * Unlike APColumnMatcher, this requires exact matches on domain and axes
  */
@@ -93,7 +105,7 @@ export interface APColumnId extends APColumnMatcher {
   /** Type is not used in exact column identification */
   type?: never;
   /** Full axes specification using only basic references */
-  axes: AnchorAxisRefBasic[];
+  axes: AnchorAxisIdOrRefBasic[];
   /** Partial axes matching is not allowed for exact identification */
   partialAxesMatch?: never;
   /** Annotations are not used in exact column identification */
@@ -137,7 +149,7 @@ export class AnchorCtx {
    * Creates a new anchor context from a set of anchor column specifications
    * @param anchors Record of anchor column specifications indexed by anchor ID
    */
-  constructor(anchors: Record<string, PColumnSpec>) {
+  constructor(private readonly anchors: Record<string, PColumnSpec>) {
     const anchorEntries = Object.entries(anchors);
     anchorEntries.sort((a, b) => a[0].localeCompare(b[0]));
     for (const [anchorId, spec] of anchorEntries) {
@@ -221,4 +233,96 @@ export class AnchorCtx {
     const aId = this.deriveAId(spec);
     return canonicalize(aId)!;
   }
+}
+
+/**
+ * Resolves anchored references in a column matcher to create a non-anchored matcher
+ *
+ * @param anchors - Record of anchor column specifications indexed by anchor ID
+ * @param matcher - An anchored column matcher containing references that need to be resolved
+ * @returns A non-anchored column matcher with all references resolved to actual values
+ */
+function resolveAnchors(anchors: Record<string, PColumnSpec>, matcher: APColumnMatcher): PColumnMatcher {
+  const result = { ...matcher };
+
+  if (result.domainAnchor !== undefined) {
+    const anchorSpec = anchors[result.domainAnchor];
+    if (!anchorSpec)
+      throw new Error(`Anchor "${result.domainAnchor}" not found`);
+
+    const anchorDomains = anchorSpec.domain || {};
+    result.domain = { ...anchorDomains, ...result.domain };
+    delete result.domainAnchor;
+  }
+
+  if (result.domain) {
+    const resolvedDomain: Record<string, string> = {};
+    for (const [key, value] of Object.entries(result.domain)) {
+      if (typeof value === 'string') {
+        resolvedDomain[key] = value;
+      } else {
+        // It's an AnchorDomainRef
+        const anchorSpec = anchors[value.anchor];
+        if (!anchorSpec)
+          throw new Error(`Anchor "${value.anchor}" not found for domain key "${key}"`);
+
+        if (!anchorSpec.domain || anchorSpec.domain[key] === undefined)
+          throw new Error(`Domain key "${key}" not found in anchor "${value.anchor}"`);
+
+        resolvedDomain[key] = anchorSpec.domain[key];
+      }
+    }
+    result.domain = resolvedDomain;
+  }
+
+  if (result.axes)
+    result.axes = result.axes.map((axis) => resolveAxisReference(anchors, axis));
+
+  return result as PColumnMatcher;
+}
+
+/**
+ * Resolves an anchored axis reference to a concrete AxisId
+ */
+function resolveAxisReference(anchors: Record<string, PColumnSpec>, axisRef: AAxisId): AxisId {
+  if (!isAnchorAxisRef(axisRef))
+    return axisRef;
+
+  // It's an anchored reference
+  const anchorId = axisRef.anchor;
+  const anchorSpec = anchors[anchorId];
+  if (!anchorSpec)
+    throw new Error(`Anchor "${anchorId}" not found for axis reference`);
+
+  if ('idx' in axisRef) {
+    // AnchorAxisRefByIdx
+    if (axisRef.idx < 0 || axisRef.idx >= anchorSpec.axesSpec.length)
+      throw new Error(`Axis index ${axisRef.idx} out of bounds for anchor "${anchorId}"`);
+    return anchorSpec.axesSpec[axisRef.idx];
+  } else if ('name' in axisRef) {
+    // AnchorAxisRefByName
+    const matches = anchorSpec.axesSpec.filter((axis) => axis.name === axisRef.name);
+    if (matches.length > 1)
+      throw new Error(`Multiple axes with name "${axisRef.name}" found in anchor "${anchorId}"`);
+    if (matches.length === 0)
+      throw new Error(`Axis with name "${axisRef.name}" not found in anchor "${anchorId}"`);
+    return matches[0];
+  } else if ('id' in axisRef) {
+    // AnchorAxisRefByMatcher
+    const matches = anchorSpec.axesSpec.filter((axis) => matchAxisId(axisRef.id, getAxisId(axis)));
+    if (matches.length > 1)
+      throw new Error(`Multiple matching axes found for matcher in anchor "${anchorId}"`);
+    if (matches.length === 0)
+      throw new Error(`No matching axis found for matcher in anchor "${anchorId}"`);
+    return matches[0];
+  }
+
+  throw new Error(`Unsupported axis reference type`);
+}
+
+/**
+ * Type guard to check if a value is an anchored axis reference
+ */
+function isAnchorAxisRef(value: AAxisId): value is AnchorAxisRef {
+  return typeof value === 'object' && 'anchor' in value;
 }
