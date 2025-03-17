@@ -26,33 +26,50 @@ self.body(func(inputs) {
         } ]
 
         // Add domain predicate if present
-        if !is_undefined(matcher.domain) {
+        if !is_undefined(matcher.domain) || !is_undefined(matcher.domainAnchor) {
             domainPredicate := {
                 type: "Domain",
                 domain: {}
             }
 
+            // Process domainAnchor if present
+            if !is_undefined(matcher.domainAnchor) {
+                anchorId := matcher.domainAnchor
+                if is_undefined(anchors[anchorId]) {
+                    ll.panic("Cannot resolve domain anchor: anchor '%s' not found", anchorId)
+                }
+
+                // Copy all domain values from the anchor
+                if !is_undefined(anchors[anchorId].domain) {
+                    for domainKey, domainValue in anchors[anchorId].domain {
+                        domainPredicate.domain[domainKey] = domainValue
+                    }
+                }
+            }
+
             // Process each domain key-value pair
-            for domainKey, domainValue in matcher.domain {
-                // Check if this is an anchored domain reference (has 'anc' property)
-                if is_map(domainValue) && !is_undefined(domainValue.anc) {
-                    // This is an anchored domain reference
-                    // Use the anchor ID to get the domain value from the anchors
-                    anchorId := domainValue.anc
-                    if is_undefined(anchors[anchorId]) {
-                        ll.panic("Cannot resolve anchored domain: anchor '%s' not found", anchorId)
-                    }
+            if !is_undefined(matcher.domain) {
+                for domainKey, domainValue in matcher.domain {
+                    // Check if this is an anchored domain reference (has 'anchor' property)
+                    if is_map(domainValue) && !is_undefined(domainValue.anchor) {
+                        // This is an anchored domain reference
+                        // Use the anchor ID to get the domain value from the anchors
+                        anchorId := domainValue.anchor
+                        if is_undefined(anchors[anchorId]) {
+                            ll.panic("Cannot resolve anchored domain: anchor '%s' not found", anchorId)
+                        }
 
-                    // Get domain value from the anchor
-                    if is_undefined(anchors[anchorId].domain) || is_undefined(anchors[anchorId].domain[domainKey]) {
-                        ll.panic("Cannot resolve anchored domain: domain key '%s' not found in anchor '%s'", domainKey, anchorId)
-                    }
+                        // Get domain value from the anchor
+                        if is_undefined(anchors[anchorId].domain) || is_undefined(anchors[anchorId].domain[domainKey]) {
+                            ll.panic("Cannot resolve anchored domain: domain key '%s' not found in anchor '%s'", domainKey, anchorId)
+                        }
 
-                    // Use the resolved value
-                    domainPredicate.domain[domainKey] = anchors[anchorId].domain[domainKey]
-                } else {
-                    // This is a regular domain value
-                    domainPredicate.domain[domainKey] = domainValue
+                        // Use the resolved value
+                        domainPredicate.domain[domainKey] = anchors[anchorId].domain[domainKey]
+                    } else {
+                        // This is a regular domain value
+                        domainPredicate.domain[domainKey] = domainValue
+                    }
                 }
             }
 
@@ -74,9 +91,9 @@ self.body(func(inputs) {
                         }
                     }
 
-                    // If it's an AnchorAxisRef (array with anchor name and reference)
-                    if is_array(axis) {
-                        anchorId := axis[0]
+                    // If it's an AnchorAxisRef (map with anchor and reference properties)
+                    if is_map(axis) && !is_undefined(axis.anchor) {
+                        anchorId := axis.anchor
 
                         // Check if the anchor exists
                         if is_undefined(anchors[anchorId]) {
@@ -86,17 +103,17 @@ self.body(func(inputs) {
 						foundAxis := undefined
 
                         // Handle different types of AnchorAxisRef
-                        if is_int(axis[1]) {
-                            // AnchorAxisRefByIdx - axis[1] is index
-                            axisIndex := axis[1]
+                        if !is_undefined(axis.idx) {
+                            // AnchorAxisRefByIdx - has idx property
+                            axisIndex := axis.idx
                             if is_undefined(anchors[anchorId].axesSpec) || len(anchors[anchorId].axesSpec) <= axisIndex {
                                 ll.panic("Cannot resolve anchored axis by index: axis index %v not found in anchor '%s'", axisIndex, anchorId)
                             }
 
                             foundAxis = anchors[anchorId].axesSpec[axisIndex]
-                        } else if is_string(axis[1]) {
-                            // AnchorAxisRefByName - axis[1] is name
-                            axisName := axis[1]
+                        } else if !is_undefined(axis.name) {
+                            // AnchorAxisRefByName - has name property
+                            axisName := axis.name
 
                             // Find axis by name in the anchor
                             for _, anchorAxis in anchors[anchorId].axesSpec {
@@ -112,7 +129,7 @@ self.body(func(inputs) {
                                 ll.panic("Cannot resolve anchored axis by name: axis '%s' not found in anchor '%s'", axisName, anchorId)
                             }
                         } else {
-                            ll.panic("Unsupported axis reference format: %v", axis[1])
+                            ll.panic("Unsupported axis reference format: %v", axis)
                         }
 
 						return {

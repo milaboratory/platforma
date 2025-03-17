@@ -1338,6 +1338,12 @@ importers:
       '@milaboratories/platforma-build-configs':
         specifier: workspace:*
         version: link:../../util/build-configs
+      '@platforma-sdk/eslint-config':
+        specifier: workspace:*
+        version: link:../../../sdk/eslint-config
+      eslint:
+        specifier: 'catalog:'
+        version: 9.21.0
       typescript:
         specifier: 'catalog:'
         version: 5.5.4
@@ -2117,12 +2123,12 @@ importers:
       '@jest/globals':
         specifier: 'catalog:'
         version: 29.7.0
-      '@milaboratories/eslint-config':
-        specifier: workspace:*
-        version: link:../../tools/eslint-config
       '@milaboratories/platforma-build-configs':
         specifier: workspace:*
         version: link:../../lib/util/build-configs
+      '@platforma-sdk/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
       '@types/jest':
         specifier: 'catalog:'
         version: 29.5.14

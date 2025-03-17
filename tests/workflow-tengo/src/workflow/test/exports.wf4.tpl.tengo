@@ -19,7 +19,7 @@ wf.body(func(args) {
 			matcher: {
 				name: "pl7.app/test2",
 				domain: {
-					"pl7.app/testDomain1": { anc: "main" }
+					"pl7.app/testDomain1": { anchor: "main" }
 				}
 			},
 			specOnly: true
