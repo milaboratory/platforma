@@ -23,7 +23,7 @@ self.body(func(inputs) {
         // Converting the matcher to a query spec
         queryPredicates := []
 
-        if !is_undefined(matcher.name) || !is_undefined(matcher.namePattern) && ll.apiVersion() < 7 {
+        if (!is_undefined(matcher.name) || !is_undefined(matcher.namePattern)) && ll.apiVersion() < 7 {
             ll.panic("Name or namePattern filter is not supported by this version, please upgrade your platforma backend")
         }
 
