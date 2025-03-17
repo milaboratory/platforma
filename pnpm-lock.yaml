@@ -28,14 +28,14 @@ catalogs:
       specifier: ^29.7.0
       version: 29.7.0
     '@milaboratories/pframes-node':
-      specifier: 2.1.16
-      version: 2.1.16
+      specifier: 2.1.17
+      version: 2.1.17
     '@milaboratories/pframes-rs-node':
-      specifier: 1.0.20
-      version: 1.0.20
+      specifier: 1.0.21
+      version: 1.0.21
     '@milaboratories/software-pframes-conv':
-      specifier: 2.1.16
-      version: 2.1.16
+      specifier: 2.1.17
+      version: 2.1.17
     '@milaboratories/tengo-tester':
       specifier: ^1.6.1
       version: 1.6.1
@@ -1746,10 +1746,10 @@ importers:
         version: link:../computable
       '@milaboratories/pframes-node':
         specifier: 'catalog:'
-        version: 2.1.16(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)
+        version: 2.1.17(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)
       '@milaboratories/pframes-rs-node':
         specifier: 'catalog:'
-        version: 1.0.20(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)
+        version: 1.0.21(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)
       '@milaboratories/pl-client':
         specifier: workspace:^
         version: link:../pl-client
@@ -2256,7 +2256,7 @@ importers:
     dependencies:
       '@milaboratories/software-pframes-conv':
         specifier: 'catalog:'
-        version: 2.1.16
+        version: 2.1.17
       '@platforma-open/milaboratories.software-small-binaries':
         specifier: 'catalog:'
         version: 1.15.16
@@ -2491,7 +2491,7 @@ importers:
         version: link:../../lib/util/build-configs
       '@milaboratories/software-pframes-conv':
         specifier: 'catalog:'
-        version: 2.1.16
+        version: 2.1.17
       '@milaboratories/ts-helpers':
         specifier: workspace:*
         version: link:../../lib/node/ts-helpers
@@ -4241,24 +4241,24 @@ packages:
   '@microsoft/tsdoc@0.15.1':
     resolution: {integrity: sha512-4aErSrCR/On/e5G2hDP0wjooqDdauzEbIq8hIkIe5pXV0rtWJZvdCEKL0ykZxex+IxIwBp0eGeV48hQN07dXtw==}
 
-  '@milaboratories/pframes-node@2.1.16':
-    resolution: {integrity: sha512-T329MROsUe2kxAFIMW0nW4UOtgKg8aIW0xh88k0CxhWRWYRPiXyeFNXJQ4S/1M3ijLqtlYNARoxF/ACmfT1M+A==}
+  '@milaboratories/pframes-node@2.1.17':
+    resolution: {integrity: sha512-LMWx51yX3O4jKSqtrTkLlMrwLjLFS2kx1nbVwMmad1quifURP5z7h0mDWE1U23XclqBseDmyyFsz0sqgEC6ZbA==}
     peerDependencies:
       '@milaboratories/pl-model-common': '*'
 
-  '@milaboratories/pframes-rs-node@1.0.20':
-    resolution: {integrity: sha512-9KitxpuK8GfFLUpx3r82FXXJt70UkbphdAIfE95eU1GGw+ZTDKkNwYv/ywIipoah3sIxV8cY3OIAbNmgotj7wA==}
+  '@milaboratories/pframes-rs-node@1.0.21':
+    resolution: {integrity: sha512-Whs8Kg8W17Nng47kvjXE5k8LZMEtx3kXIjcFaGE/68AiRWbhCWSqjDslzx/fW/dWvUOpp6qdw2Ij8RO1u5Nt/Q==}
     peerDependencies:
       '@milaboratories/pl-model-common': '*'
 
   '@milaboratories/pl-model-common@1.10.6':
     resolution: {integrity: sha512-kw8141YIKmofw5sTrx/sGNjisNCxhkbz5k/rsTEm/Ajvjm38u384ye/rmIEFWsyVqxnW0oywXgFGFBgmiJQk8A==}
 
-  '@milaboratories/pl-model-middle-layer@1.7.6':
-    resolution: {integrity: sha512-LWPBXvZBYGEXlY7a6WL8jacTPPruUhSl5Tf0cj6mWz/LTR6FMy9XiWrs4Lcj20jzq5KV8uSN7BzaW//3qd7lDA==}
+  '@milaboratories/pl-model-middle-layer@1.7.7':
+    resolution: {integrity: sha512-we0cTZmMDFmypAcYpIiYYNgXNX0f+9sBgjzI+VaVu7rqLzc8gn9kOlzpcIALCXi3jJPTRZn/70LRV6CvFb5abw==}
 
-  '@milaboratories/software-pframes-conv@2.1.16':
-    resolution: {integrity: sha512-/Ck2N+3BkDFDegHFG+kuoSAMS4gqWrx9gzfc91A7LmDxgwxrwDKu87D3gFgi/6yUqrz+liVmP5sztfY3YijA+A==}
+  '@milaboratories/software-pframes-conv@2.1.17':
+    resolution: {integrity: sha512-lrdGvmG7CqnfC2RM2zfkxDZvQICn+adLQq7fW2aoCbqGw07Ra0aVUsuB8UfaKQqR8sZLCe6r9BZoEc2nicu81Q==}
 
   '@milaboratories/tengo-tester@1.6.1':
     resolution: {integrity: sha512-gLUeCj6TmvNzbLYj/vX2Zz6zUaITst0Dpfkz+ycctWBuAUM+lFFZbjRHvDQlt0W6Azy0PPc8wnWsoJtspfM74w==}
@@ -8554,8 +8554,8 @@ packages:
   ufo@1.5.4:
     resolution: {integrity: sha512-UsUk3byDzKd04EyoZ7U4DOlxQaD14JUKQl6/P7wiX4FNvUfm3XL246n9W5AmqwW5RSFJ27NAuM0iLscAOYUiGQ==}
 
-  ulid@2.3.0:
-    resolution: {integrity: sha512-keqHubrlpvT6G2wH0OEfSW4mquYRcbe/J8NMmveoQOjUqmo+hXtO+ORCpWhdbZ7k72UtY61BL7haGxW6enBnjw==}
+  ulid@2.4.0:
+    resolution: {integrity: sha512-fIRiVTJNcSRmXKPZtGzFQv9WRrZ3M9eoptl/teFJvjOzmpU+/K/JH6HZ8deBfb5vMEpicJcLn7JmvdknlMq7Zg==}
     hasBin: true
 
   unbzip2-stream@1.4.3:
@@ -11066,21 +11066,21 @@ snapshots:
 
   '@microsoft/tsdoc@0.15.1': {}
 
-  '@milaboratories/pframes-node@2.1.16(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)':
+  '@milaboratories/pframes-node@2.1.17(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)':
     dependencies:
       '@mapbox/node-pre-gyp': 2.0.0(encoding@0.1.13)
       '@milaboratories/pl-model-common': link:lib/model/common
-      '@milaboratories/pl-model-middle-layer': 1.7.6
+      '@milaboratories/pl-model-middle-layer': 1.7.7
     transitivePeerDependencies:
       - encoding
       - supports-color
 
-  '@milaboratories/pframes-rs-node@1.0.20(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)':
+  '@milaboratories/pframes-rs-node@1.0.21(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)':
     dependencies:
       '@mapbox/node-pre-gyp': 2.0.0(encoding@0.1.13)
       '@milaboratories/pl-model-common': link:lib/model/common
-      '@milaboratories/pl-model-middle-layer': 1.7.6
-      ulid: 2.3.0
+      '@milaboratories/pl-model-middle-layer': 1.7.7
+      ulid: 2.4.0
     transitivePeerDependencies:
       - encoding
       - supports-color
@@ -11089,14 +11089,14 @@ snapshots:
     dependencies:
       zod: 3.23.8
 
-  '@milaboratories/pl-model-middle-layer@1.7.6':
+  '@milaboratories/pl-model-middle-layer@1.7.7':
     dependencies:
       '@milaboratories/pl-model-common': 1.10.6
       remeda: 2.21.1
       utility-types: 3.11.0
       zod: 3.23.8
 
-  '@milaboratories/software-pframes-conv@2.1.16': {}
+  '@milaboratories/software-pframes-conv@2.1.17': {}
 
   '@milaboratories/tengo-tester@1.6.1': {}
 
@@ -16337,7 +16337,7 @@ snapshots:
 
   ufo@1.5.4: {}
 
-  ulid@2.3.0: {}
+  ulid@2.4.0: {}
 
   unbzip2-stream@1.4.3:
     dependencies:
