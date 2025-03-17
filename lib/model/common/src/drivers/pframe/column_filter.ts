@@ -1,4 +1,4 @@
-import { ValueType } from './spec';
+import { ValueType } from './spec/spec';
 
 /** Allows to search multiple columns in different contexts. */
 export interface ColumnFilter {

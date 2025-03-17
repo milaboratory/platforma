@@ -1,4 +1,4 @@
-import { AxisId } from './spec';
+import { AxisId } from './spec/spec';
 import { PTableRecordFilter } from './table_calculate';
 import { PTableVector } from './data';
 import { PObjectId } from '../../pool';
