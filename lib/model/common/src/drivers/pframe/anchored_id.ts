@@ -58,8 +58,10 @@ export type AnchoredColumnMatchStrategy = 'expectSingle' | 'expectMultiple' | 't
  * Supports partial matching on axes, allowing for flexible column discovery
  */
 export interface APColumnMatcher {
-  /** Name of the column to match */
-  name: string;
+  /** Optional name of the column to match; can't be used together with namePattern */
+  name?: string;
+  /** Optional regexp pattern for column name matching; can't be used together with name */
+  namePattern?: string;
   /** Optional value type to match */
   type?: ValueType;
   /** If specified, the domain values must be anchored to this anchor */
@@ -73,13 +75,17 @@ export interface APColumnMatcher {
   partialAxesMatch?: boolean;
   /** Match resolution strategy, default is "expectSingle" */
   matchStrategy?: AnchoredColumnMatchStrategy;
-};
+}
 
 /**
  * Strict identifier for PColumns in an anchored context
  * Unlike APColumnMatcher, this requires exact matches on domain and axes
  */
 export interface APColumnId extends APColumnMatcher {
+  /** Name is required for exact column identification */
+  name: string;
+  /** No namePattern in ID */
+  namePattern?: never;
   /** Type is not used in exact column identification */
   type?: never;
   /** Full axes specification using only basic references */

@@ -20,10 +20,24 @@ self.body(func(inputs) {
         fetchData := relatedConfig.fetchData
 
         // Converting the matcher to a query spec
-        queryPredicates := [ {
-            type: "Name",
-            name: matcher.name
-        } ]
+        queryPredicates := []
+
+        // Add name or namePattern predicate if present
+        if !is_undefined(matcher.name) {
+            if !is_undefined(matcher.namePattern) {
+                ll.panic("Cannot specify both name and namePattern for related item '%s'", relatedId)
+            }
+
+            queryPredicates += [ {
+                type: "Name",
+                name: matcher.name
+            } ]
+        } else if !is_undefined(matcher.namePattern) {
+            queryPredicates += [ {
+                type: "NamePattern",
+                pattern: matcher.namePattern
+            } ]
+        }
 
         // Add domain predicate if present
         if !is_undefined(matcher.domain) || !is_undefined(matcher.domainAnchor) {
@@ -148,6 +162,10 @@ self.body(func(inputs) {
 			}
 
             queryPredicates += [ axesMatcher ]
+        }
+
+        if len(queryPredicates) == 0 {
+            ll.panic("No predicates found for related item '%s'", relatedId)
         }
 
         querySpec := len(queryPredicates) > 1 ? {
