@@ -32,7 +32,7 @@ tplTest(
 );
 
 tplTest(
-  'resolve: should return resolved anchors and related',
+  'resolve: should return resolved anchors and anchored columns',
   // This timeout is set due to very slow performance of Platforma on large transactions, where thousands of fields and resources are created.
   // the test itself does almost nothing (concatenates 2 strings) and should pass immediately.
   // But because of tests execution nature in CI (when we several parallel test threads each creating large resource tree)
