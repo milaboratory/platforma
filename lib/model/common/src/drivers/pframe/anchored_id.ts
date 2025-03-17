@@ -73,6 +73,10 @@ export interface APColumnMatcher {
   axes?: AAxisId[];
   /** When true, allows matching if only a subset of axes match */
   partialAxesMatch?: boolean;
+  /** Optional annotations to match with exact values */
+  annotations?: Record<string, string>;
+  /** Optional annotation patterns to match with regex patterns */
+  annotationPatterns?: Record<string, string>;
   /** Match resolution strategy, default is "expectSingle" */
   matchStrategy?: AnchoredColumnMatchStrategy;
 }
@@ -92,6 +96,10 @@ export interface APColumnId extends APColumnMatcher {
   axes: AnchorAxisRefBasic[];
   /** Partial axes matching is not allowed for exact identification */
   partialAxesMatch?: never;
+  /** Annotations are not used in exact column identification */
+  annotations?: never;
+  /** Annotation patterns are not used in exact column identification */
+  annotationPatterns?: never;
   /** "Id" implies single match strategy */
   matchStrategy?: never;
 }

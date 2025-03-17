@@ -1,6 +1,7 @@
 self := import(":tpl")
 ll := import(":ll")
 slices := import(":slices")
+maps := import(":maps")
 json := import("json")
 bquery := import(":workflow.bquery")
 
@@ -21,6 +22,10 @@ self.body(func(inputs) {
 
         // Converting the matcher to a query spec
         queryPredicates := []
+
+        if !is_undefined(matcher.name) || !is_undefined(matcher.namePattern) && ll.apiVersion() < 7 {
+            ll.panic("Name or namePattern filter is not supported by this version, please upgrade your platforma backend")
+        }
 
         // Add name or namePattern predicate if present
         if !is_undefined(matcher.name) {
@@ -164,6 +169,28 @@ self.body(func(inputs) {
             queryPredicates += [ axesMatcher ]
         }
 
+        if !is_undefined(matcher.annotations) {
+            annotationKeys := maps.getKeys(matcher.annotations)
+            for annotationKey in annotationKeys {
+                queryPredicates += [ {
+                    type: "Annotation",
+                    annotation: annotationKey,
+                    value: matcher.annotations[annotationKey]
+                } ]
+            }
+        }
+
+        if !is_undefined(matcher.annotationPatterns) {
+            patternKeys := maps.getKeys(matcher.annotationPatterns)
+            for annotationKey in patternKeys {
+                queryPredicates += [ {
+                    type: "AnnotationPattern",
+                    annotation: annotationKey,
+                    pattern: matcher.annotationPatterns[annotationKey]
+                } ]
+            }
+        }
+
         if len(queryPredicates) == 0 {
             ll.panic("No predicates found for related item '%s'", relatedId)
         }
@@ -180,9 +207,6 @@ self.body(func(inputs) {
             first: !expectMultiple,
             single: !expectMultiple
         }
-
-        ll.print("__THE_LOG__ " + string(json.encode(querySpec)))
-        ll.print("__THE_LOG__ " + string(json.encode(queryOps)))
 
         queryResult := bquery.create(querySpec, ctx, queryOps)
 
