@@ -1,7 +1,7 @@
 import canonicalize from 'canonicalize';
 import type { AxisId, PColumnSpec } from './spec';
 import { getAxisId, matchAxisId } from './spec';
-import type { AAxisId, AnchorAxisRef, AnchorAxisRefByIdx, APColumnId, APColumnSelector, PColumnSelector } from './selectors';
+import type { AAxisSelector, AnchorAxisRef, AnchorAxisRefByIdx, APColumnId, APColumnSelector, AxisSelector, PColumnSelector } from './selectors';
 
 //
 // Helper functions
@@ -171,7 +171,7 @@ export function resolveAnchors(anchors: Record<string, PColumnSpec>, matcher: AP
 /**
  * Resolves an anchored axis reference to a concrete AxisId
  */
-function resolveAxisReference(anchors: Record<string, PColumnSpec>, axisRef: AAxisId): AxisId {
+function resolveAxisReference(anchors: Record<string, PColumnSpec>, axisRef: AAxisSelector): AxisSelector {
   if (!isAnchorAxisRef(axisRef))
     return axisRef;
 
@@ -210,6 +210,6 @@ function resolveAxisReference(anchors: Record<string, PColumnSpec>, axisRef: AAx
 /**
  * Type guard to check if a value is an anchored axis reference
  */
-function isAnchorAxisRef(value: AAxisId): value is AnchorAxisRef {
+function isAnchorAxisRef(value: AAxisSelector): value is AnchorAxisRef {
   return typeof value === 'object' && 'anchor' in value;
 }

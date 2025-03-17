@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'vitest';
-import { matchPColumn } from './selectors';
-import type { PColumnSpec, AxisSpec } from './spec';
+import { matchPColumn, matchAxis } from './selectors';
+import type { PColumnSpec, AxisSpec, AxisId } from './spec';
 
 describe('matchPColumn', () => {
   // Test data
@@ -81,7 +81,6 @@ describe('matchPColumn', () => {
     expect(matchPColumn(testColumn, {
       axes: [{
         name: 'x',
-        type: 'String',
         domain: {
           key: 'xDomain',
         },
@@ -139,5 +138,72 @@ describe('matchPColumn', () => {
       domain: { domain1: 'wrongValue' }, // This will fail
       annotations: { anno1: 'value1' },
     })).toBe(false);
+  });
+});
+
+describe('matchAxis', () => {
+  // Test data
+  const testAxis: AxisId = {
+    name: 'testAxis',
+    type: 'String',
+    domain: {
+      key1: 'value1',
+      key2: 'value2',
+    },
+  };
+
+  test('matches on axis name', () => {
+    expect(matchAxis({ name: 'testAxis' }, testAxis)).toBe(true);
+    expect(matchAxis({ name: 'wrongAxis' }, testAxis)).toBe(false);
+  });
+
+  test('matches on axis type', () => {
+    expect(matchAxis({ type: 'String' }, testAxis)).toBe(true);
+    expect(matchAxis({ type: 'Int' }, testAxis)).toBe(false);
+    expect(matchAxis({ type: ['String', 'Int'] }, testAxis)).toBe(true);
+    expect(matchAxis({ type: ['Int', 'Double'] }, testAxis)).toBe(false);
+  });
+
+  test('matches on axis domain', () => {
+    expect(matchAxis({ domain: { key1: 'value1' } }, testAxis)).toBe(true);
+    expect(matchAxis({ domain: { key1: 'wrongValue' } }, testAxis)).toBe(false);
+    expect(matchAxis({ domain: { nonExistentKey: 'value' } }, testAxis)).toBe(false);
+  });
+
+  test('matches on multiple axis criteria', () => {
+    expect(matchAxis(
+      {
+        name: 'testAxis',
+        type: 'String',
+        domain: { key1: 'value1' },
+      },
+      testAxis,
+    )).toBe(true);
+
+    expect(matchAxis(
+      {
+        name: 'testAxis',
+        type: 'String',
+        domain: { key1: 'wrongValue' }, // This will fail
+      },
+      testAxis,
+    )).toBe(false);
+
+    expect(matchAxis(
+      {
+        name: 'testAxis',
+        type: 'Int', // This will fail
+        domain: { key1: 'value1' },
+      },
+      testAxis,
+    )).toBe(false);
+  });
+
+  test('matches with empty domain criteria', () => {
+    expect(matchAxis({ domain: {} }, testAxis)).toBe(true);
+  });
+
+  test('matches with partial domain criteria', () => {
+    expect(matchAxis({ domain: { key1: 'value1' } }, testAxis)).toBe(true);
   });
 });
