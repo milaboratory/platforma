@@ -100,28 +100,28 @@ export class ResultPool {
    *          or undefined if any PlRef resolution fails.
    */
   // Overload for AnchorCtx - guaranteed to never return undefined
-  generateAnchoredColumnOptions(
+  getAnchoredOptions(
     anchorsOrCtx: AnchorCtx,
     predicateOrSelectors: ((spec: PColumnSpec) => boolean) | APColumnSelector | APColumnSelector[],
     labelOps?: LabelDerivationOps,
   ): { label: string; value: string }[];
 
   // Overload for Record<string, PColumnSpec> - guaranteed to never return undefined
-  generateAnchoredColumnOptions(
+  getAnchoredOptions(
     anchorsOrCtx: Record<string, PColumnSpec>,
     predicateOrSelectors: ((spec: PColumnSpec) => boolean) | APColumnSelector | APColumnSelector[],
     labelOps?: LabelDerivationOps,
   ): { label: string; value: string }[];
 
   // Overload for Record<string, PColumnSpec | PlRef> - may return undefined if PlRef resolution fails
-  generateAnchoredColumnOptions(
+  getAnchoredOptions(
     anchorsOrCtx: Record<string, PColumnSpec | PlRef>,
     predicateOrSelectors: ((spec: PColumnSpec) => boolean) | APColumnSelector | APColumnSelector[],
     labelOps?: LabelDerivationOps,
   ): { label: string; value: string }[] | undefined;
 
   // Implementation
-  generateAnchoredColumnOptions(
+  getAnchoredOptions(
     anchorsOrCtx: AnchorCtx | Record<string, PColumnSpec | PlRef>,
     predicateOrSelectors: ((spec: PColumnSpec) => boolean) | APColumnSelector | APColumnSelector[],
     labelOps?: LabelDerivationOps,
