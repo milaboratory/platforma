@@ -1,40 +1,41 @@
 import canonicalize from 'canonicalize';
-import { AxisId, getAxisId, PColumnSpec, ValueType } from './spec';
+import type { AxisId, PColumnSpec, ValueType } from './spec';
+import { getAxisId } from './spec';
 
 /** Reference types for axes within an anchored context. */
 
-/** 
+/**
  * Reference to an axis by its numerical index within the anchor column's axes array
  * Format: [anchorId, axisIndex]
  */
-export type AnchorAxisRefByIdx = [string, number];
+export type AnchorAxisRefByIdx = { anchor: string; idx: number };
 
 /**
  * Reference to an axis by its name within the anchor column
  * Format: [anchorId, axisName]
  */
-export type AnchorAxisRefByName = [string, string];
+export type AnchorAxisRefByName = { anchor: string; name: string };
 
 /**
  * Reference to an axis using an AxisId matcher within the anchor
  * Format: [anchorId, axisMatcher]
  */
-export type AnchorAxisRefByMatcher = [string, AxisId];
+export type AnchorAxisRefByMatcher = { anchor: string; id: AxisId };
 
-/** 
+/**
  * Basic anchor axis reference that can be either by index or a direct AxisId
  */
 export type AnchorAxisRefBasic = AnchorAxisRefByIdx | AxisId;
 
-/** 
+/**
  * Union of all possible ways to reference an axis in an anchored context
  */
 export type AnchorAxisRef = AnchorAxisRefBasic | AnchorAxisRefByName | AnchorAxisRefByMatcher;
 
 /** Reference to a domain value through an anchor */
-export type AnchorDomainRef = { anc: string };
+export type AnchorDomainRef = { anchor: string };
 
-/** 
+/**
  * Domain value that can be either a direct string value or a reference to a domain through an anchor
  * Used to establish domain context that can be resolved relative to other anchored columns
  */
@@ -61,7 +62,10 @@ export interface APColumnMatcher {
   name: string;
   /** Optional value type to match */
   type?: ValueType;
-  /** Optional domain values to match, can include anchored references */
+  /** If specified, the domain values must be anchored to this anchor */
+  domainAnchor?: string;
+  /** Optional domain values to match, can include anchored references, if domainAnchor is specified,
+   * interpreted as additional domains to domain from the anchor */
   domain?: Record<string, ADomain>;
   /** Optional axes to match, can include anchored references */
   axes?: AAxisId[];
@@ -78,8 +82,6 @@ export interface APColumnMatcher {
 export interface APColumnId extends APColumnMatcher {
   /** Type is not used in exact column identification */
   type?: never;
-  /** Full domain specification with no partial matching */
-  domain: Record<string, ADomain>;
   /** Full axes specification using only basic references */
   axes: AnchorAxisRefBasic[];
   /** Partial axes matching is not allowed for exact identification */
@@ -107,21 +109,40 @@ function domainKey(key: string, value: string): string {
 export class AnchorCtx {
   private readonly domains = new Map<string, string>();
   private readonly axes = new Map<string, AnchorAxisRefByIdx>();
+  /**
+   * Domain packs are used to group domain keys that can be anchored to the same anchor
+   * This is used to optimize the lookup of domain anchors
+   */
+  private readonly domainPacks: string[][] = [];
+  /**
+   * Maps domain packs to anchors
+   */
+  private readonly domainPackToAnchor = new Map<string, string>();
 
   /**
    * Creates a new anchor context from a set of anchor column specifications
    * @param anchors Record of anchor column specifications indexed by anchor ID
    */
   constructor(anchors: Record<string, PColumnSpec>) {
-    for (const [anchorId, spec] of Object.entries(anchors)) {
+    const anchorEntries = Object.entries(anchors);
+    anchorEntries.sort((a, b) => a[0].localeCompare(b[0]));
+    for (const [anchorId, spec] of anchorEntries) {
       for (let axisIdx = 0; axisIdx < spec.axesSpec.length; axisIdx++) {
         const axis = spec.axesSpec[axisIdx];
         const key = axisKey(axis);
-        this.axes.set(key, [anchorId, axisIdx]);
+        this.axes.set(key, { anchor: anchorId, idx: axisIdx });
       }
-      for (const [dKey, dValue] of Object.entries(spec.domain ?? {})) {
-        const key = domainKey(dKey, dValue);
-        this.domains.set(key, anchorId);
+      if (spec.domain !== undefined) {
+        const domainEntries = Object.entries(spec.domain);
+        domainEntries.sort((a, b) => a[0].localeCompare(b[0]));
+
+        this.domainPackToAnchor.set(JSON.stringify(domainEntries), anchorId);
+        this.domainPacks.push(domainEntries.map(([dKey]) => dKey));
+
+        for (const [dKey, dValue] of domainEntries) {
+          const key = domainKey(dKey, dValue);
+          this.domains.set(key, anchorId);
+        }
       }
     }
   }
@@ -133,24 +154,48 @@ export class AnchorCtx {
    * @returns An anchored column identifier that can be used to identify columns similar to the input specification
    */
   deriveAId(spec: PColumnSpec): APColumnId {
-    const domain: Record<string, ADomain> = {};
-    for (const [dKey, dValue] of Object.entries(spec.domain ?? {})) {
-      const key = domainKey(dKey, dValue);
-      const anchorId = this.domains.get(key);
-      domain[dKey] = anchorId ? { anc: anchorId } : dValue;
+    const result: APColumnId = {
+      name: spec.name,
+      axes: [],
+    };
+
+    let skipDomains: Set<string> | undefined = undefined;
+    if (spec.domain !== undefined) {
+      outer:
+      for (const domainPack of this.domainPacks) {
+        const dAnchor: string[][] = [];
+        for (const domainKey of domainPack) {
+          const dValue = spec.domain[domainKey];
+          if (dValue !== undefined)
+            dAnchor.push([domainKey, dValue]);
+          else
+            break outer;
+        }
+        const domainAnchor = this.domainPackToAnchor.get(JSON.stringify(dAnchor));
+        if (domainAnchor !== undefined) {
+          result.domainAnchor = domainAnchor;
+          skipDomains = new Set(domainPack);
+          break;
+        }
+      }
     }
 
-    const axes: AnchorAxisRefBasic[] = spec.axesSpec.map((axis) => {
+    for (const [dKey, dValue] of Object.entries(spec.domain ?? {})) {
+      if (skipDomains !== undefined && skipDomains.has(dKey))
+        continue;
+      const key = domainKey(dKey, dValue);
+      const anchorId = this.domains.get(key);
+      result.domain ??= {};
+      result.domain[dKey] = anchorId ? { anchor: anchorId } : dValue;
+    }
+
+    result.axes = spec.axesSpec.map((axis) => {
       const key = axisKey(axis);
       const anchorAxisRef = this.axes.get(key);
-      return anchorAxisRef || axis;
+      return anchorAxisRef ?? axis;
     });
 
-    return {
-      name: spec.name,
-      domain,
-      axes,
-    };
+    return result;
   }
 
   /**

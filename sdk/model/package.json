@@ -30,7 +30,7 @@
   },
   "devDependencies": {
     "@milaboratories/platforma-build-configs": "workspace:*",
-    "@milaboratories/eslint-config": "workspace:*",
+    "@platforma-sdk/eslint-config": "workspace:*",
     "typescript": "catalog:",
     "vite": "catalog:",
     "@types/jest": "catalog:",
