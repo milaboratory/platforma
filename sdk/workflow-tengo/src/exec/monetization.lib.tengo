@@ -74,8 +74,9 @@ builder := func(productKey) {
 		addFile: func(file, params) {
 			ll.assert(smart.isReference(file), "monetization.builder().addFile: file must be a reference")
 
-			filesToAdd[params.arg] = file
-			monetization.addArgToLastRun(mnz, params.arg, params)
+			fileName := monetization.argNameForLastRun(mnz, params.arg)
+			filesToAdd[fileName] = file
+			monetization.addArgToLastRun(mnz, fileName, params)
 
 			return self
 		},
@@ -95,8 +96,9 @@ builder := func(productKey) {
 				"bytes",
 				validation.reference])
 
-			filesToWrite[params.arg] = data
-			monetization.addArgToLastRun(mnz, params.arg, params)
+			fileName := monetization.argNameForLastRun(mnz, params.arg)
+			filesToWrite[fileName] = data
+			monetization.addArgToLastRun(mnz, fileName, params)
 
 			return self
 		},
