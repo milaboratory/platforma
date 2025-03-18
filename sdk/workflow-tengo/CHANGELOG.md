@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 2.15.14
+
+### Patch Changes
+
+- 14b832c: fix mnz-client in edge cases like empty arg list, empty runs
+
 ## 2.15.13
 
 ### Patch Changes
