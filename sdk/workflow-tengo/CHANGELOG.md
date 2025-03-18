@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 2.15.15
+
+### Patch Changes
+
+- a9d38f3: Add deepTransform function for advanced map transformations
+
 ## 2.15.14
 
 ### Patch Changes
