@@ -31,8 +31,8 @@ catalogs:
       specifier: 2.1.17
       version: 2.1.17
     '@milaboratories/pframes-rs-node':
-      specifier: 1.0.21
-      version: 1.0.21
+      specifier: 1.0.22
+      version: 1.0.22
     '@milaboratories/software-pframes-conv':
       specifier: 2.1.17
       version: 2.1.17
@@ -1749,7 +1749,7 @@ importers:
         version: 2.1.17(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)
       '@milaboratories/pframes-rs-node':
         specifier: 'catalog:'
-        version: 1.0.21(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)
+        version: 1.0.22(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)
       '@milaboratories/pl-client':
         specifier: workspace:^
         version: link:../pl-client
@@ -4246,8 +4246,8 @@ packages:
     peerDependencies:
       '@milaboratories/pl-model-common': '*'
 
-  '@milaboratories/pframes-rs-node@1.0.21':
-    resolution: {integrity: sha512-Whs8Kg8W17Nng47kvjXE5k8LZMEtx3kXIjcFaGE/68AiRWbhCWSqjDslzx/fW/dWvUOpp6qdw2Ij8RO1u5Nt/Q==}
+  '@milaboratories/pframes-rs-node@1.0.22':
+    resolution: {integrity: sha512-jQvBd2NT/EemMgYlfmDZwhBaCqUlXrme0AM9arQe303OBTEeDUAauQt0skb4OhFM0DJVezCBbbCaOGy7X2dbrw==}
     peerDependencies:
       '@milaboratories/pl-model-common': '*'
 
@@ -11075,7 +11075,7 @@ snapshots:
       - encoding
       - supports-color
 
-  '@milaboratories/pframes-rs-node@1.0.21(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)':
+  '@milaboratories/pframes-rs-node@1.0.22(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)':
     dependencies:
       '@mapbox/node-pre-gyp': 2.0.0(encoding@0.1.13)
       '@milaboratories/pl-model-common': link:lib/model/common
