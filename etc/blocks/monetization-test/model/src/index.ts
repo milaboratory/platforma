@@ -10,6 +10,7 @@ export type Handle = {
 export type BlockArgs = {
   productKey: string;
   inputHandles: Handle[];
+  shouldAddRunPerFile: boolean;
   __mnzDate: string;
   __mnzCanRun: boolean;
 };
@@ -19,6 +20,7 @@ export const model = BlockModel.create()
     // a fake product key so our mnz client response with a fake response without changing prod db.
     productKey: "MIFAKEMIFAKEMIFAKE",
     inputHandles: [],
+    shouldAddRunPerFile: false,
     __mnzDate: new Date().toISOString(), // It's OK
     __mnzCanRun: false,
   })
