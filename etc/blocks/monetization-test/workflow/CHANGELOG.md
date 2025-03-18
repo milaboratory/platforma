@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.monetization-test.workflow
 
+## 1.0.6
+
+### Patch Changes
+
+- 14b832c: fix mnz-client in edge cases like empty arg list, empty runs
+
 ## 1.0.5
 
 ### Patch Changes
