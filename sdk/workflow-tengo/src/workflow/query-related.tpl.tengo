@@ -11,14 +11,14 @@ self.awaitState("related", "ResourceReady")
 self.body(func(inputs) {
 	ctx := inputs.ctx
 	anchors := inputs.anchorSpecs
-	related := inputs.related
+	queryMap := inputs.queryMap
 
     outputs := {}
 
-    for relatedId, relatedConfig in related {
+    for queryId, queryConfig in queryMap {
         // Extract matcher and fetchData flag
-        matcher := relatedConfig.matcher
-        fetchData := relatedConfig.fetchData
+        matcher := queryConfig.matcher
+        fetchData := queryConfig.fetchData
 
         // Converting the matcher to a query spec
         queryPredicates := []
