@@ -237,15 +237,24 @@ resolve := func(ref, ...options) {
  *
  * @param anchors: a map of anchorId -> ref or {ref: {blockId: string, name: string}, specOnly: bool}
  *                 When providing {ref, specOnly}, the specOnly flag controls whether to fetch data
- * @param related: a map of relatedId -> APColumnMatcher specifications
- *                 or {matcher: APColumnMatcher, specOnly: bool}
+ * @param queryMap: a map of queryId -> APColumnSelector specifications
+ *                 or {matcher: APColumnSelector, specOnly: bool}
  *                 When providing {matcher, specOnly}, the specOnly flag controls whether to fetch data
- * @return result: an object with accessor methods:
- *   - getAnchor(anchorId): Get a specific anchor resolution result
- *   - getRelated(relatedId): Get a specific related item by ID
+ *
+ * === Return ===
+ *
+ * @returns Object with methods for retrieving anchor resolution and query results:
+ *
+ *          getAnchor(anchorId) - Returns the resolved anchor for the given ID
+ *              @param anchorId - The ID of the anchor to retrieve
+ *              @returns The resolved anchor object {ref: spec: data:}
+ *
+ *          getResult(queryId) - Returns the query result for the given ID
+ *              @param queryId - The ID of the query result to retrieve
+ *              @returns The query result for the related item
  */
-queryAnchorsAndMatchers := func(anchors, related) {
-	return bquery.queryAnchorsAndMatchers(_parentContext(), anchors, related)
+anchoredQuery := func(anchors, queryMap) {
+	return bquery.anchoredQuery(_parentContext(), anchors, queryMap)
 }
 
 // template for prerun
@@ -346,7 +355,7 @@ body := func(bodyFn) {
 export ll.toStrict({
 	query: query,
 	resolve: resolve,
-	queryAnchorsAndMatchers: queryAnchorsAndMatchers,
+	anchoredQuery: anchoredQuery,
 	prepare: prepare,
 	body: body,
 	setPreRun: setPreRun,
