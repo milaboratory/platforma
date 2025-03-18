@@ -29,7 +29,7 @@ import type {
   PTableRecordSingleValueFilterV2,
   PTableRecordFilter,
   PColumnValues,
-  SingleValuePredicateV2 } from '@platforma-sdk/model';
+} from '@platforma-sdk/model';
 import {
   mapPObjectData,
   mapPTableDef,
