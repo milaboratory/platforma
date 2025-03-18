@@ -300,21 +300,21 @@ anchoredQuery := func(ctx, anchors, queryMap) {
 	}
 
 	// Process the related items to handle specOnly flag
-	processedRelated := {}
-	for relatedId, relatedValue in related {
-		matcher := relatedValue
+	processedQueryMap := {}
+	for queryId, aQuery in queryMap {
+		matcher := aQuery
 		fetchData := true
 
 		// Check if this is an object with matcher and specOnly flag
-		if !is_undefined(relatedValue.matcher) {
-			matcher = relatedValue.matcher
-			if relatedValue.specOnly {
+		if !is_undefined(aQuery.matcher) {
+			matcher = aQuery.matcher
+			if aQuery.specOnly {
 				fetchData = false
 			}
 		}
 
 		// Add the processed matcher and fetchData flag
-		processedRelated[relatedId] = {
+		processedQueryMap[queryId] = {
 			matcher: matcher,
 			fetchData: fetchData
 		}
@@ -324,7 +324,7 @@ anchoredQuery := func(ctx, anchors, queryMap) {
 	relatedResult := render.createEphemeral(queryRelatedTpl, {
 		ctx: ctx,
 		anchorSpecs: smart.createMapResource(maps.mapValues(resolvedAnchors, func(v) { return v.inputs().spec })),
-		related: processedRelated
+		queryMap: processedQueryMap
 	})
 
 	// Create structured result object with accessor methods
@@ -344,8 +344,8 @@ anchoredQuery := func(ctx, anchors, queryMap) {
 		},
 
 		/**
-		 * Get a specific related item by ID
-		 * @param relatedId - The ID of the related item to retrieve
+		 * Get a specific query result by ID
+		 * @param queryId - The ID of the query result to retrieve
 		 * @returns The query result for the related item
 		 */
 		getResult: func(queryId) {
