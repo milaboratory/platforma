@@ -25,6 +25,14 @@ import {
 import { ValueOrError } from './value_or_error';
 import { parsePlError } from '@milaboratories/pl-errors';
 import { notEmpty } from '@milaboratories/ts-helpers';
+import { ErrorLike } from '@milaboratories/computable';
+
+/** Error encountered during traversal in field or resource. */
+export class PlError extends Error {
+  constructor(message: string) {
+    super(message);
+  }
+}
 
 export type TreeAccessorData = {
   readonly treeProvider: () => PlTreeState;
@@ -215,13 +223,13 @@ export class PlTreeNodeAccessor {
         errorIfFieldNotSet: true;
       }
     ]
-  ): ValueOrError<PlTreeNodeAccessor, string>;
+  ): ValueOrError<PlTreeNodeAccessor, ErrorLike>;
   public traverseOrError(
     ...steps: (FieldTraversalStep | string)[]
-  ): ValueOrError<PlTreeNodeAccessor, string> | undefined;
+  ): ValueOrError<PlTreeNodeAccessor, ErrorLike> | undefined;
   public traverseOrError(
     ...steps: (FieldTraversalStep | string)[]
-  ): ValueOrError<PlTreeNodeAccessor, string> | undefined {
+  ): ValueOrError<PlTreeNodeAccessor, ErrorLike> | undefined {
     return this.traverseOrErrorWithCommon({}, ...steps);
   }
 
@@ -238,7 +246,7 @@ export class PlTreeNodeAccessor {
   public traverseOrErrorWithCommon(
     commonOptions: CommonFieldTraverseOps,
     ...steps: (FieldTraversalStep | string)[]
-  ): ValueOrError<PlTreeNodeAccessor, string> | undefined {
+  ): ValueOrError<PlTreeNodeAccessor, PlErrorReport> | undefined {
     let current: PlTreeNodeAccessor = this;
 
     for (const _step of steps) {

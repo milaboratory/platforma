@@ -10,5 +10,7 @@ export * from './computable/computable_helpers';
 export * from './computable/kernel';
 export * from './computable/computable_hooks';
 export * from './computable/hooks_util';
+export * from './computable/error';
 
 export * from './util/poll_pool';
+
