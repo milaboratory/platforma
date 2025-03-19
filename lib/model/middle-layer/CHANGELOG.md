@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.7.8
+
+### Patch Changes
+
+- f4ec096: Added projectResourceId to block overview structure
+
 ## 1.7.7
 
 ### Patch Changes
