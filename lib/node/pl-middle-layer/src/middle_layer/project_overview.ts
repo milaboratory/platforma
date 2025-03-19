@@ -29,6 +29,7 @@ import type { BlockSection } from '@platforma-sdk/model';
 import { computableFromCfgOrRF } from './render';
 import type { NavigationStates } from './navigation_states';
 import { getBlockPackInfo } from './util';
+import { resourceIdToString } from '@milaboratories/pl-client';
 
 type BlockInfo = {
   currentArguments: unknown;
@@ -199,6 +200,7 @@ export function projectOverview(
         );
 
         return {
+          projectResourceId: resourceIdToString(prjEntry.rid),
           id,
           label: title ?? defaultLabel,
           title: title ?? defaultLabel,

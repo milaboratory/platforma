@@ -1,5 +1,61 @@
 # @milaboratories/pl-middle-layer
 
+## 1.30.24
+
+### Patch Changes
+
+- Updated dependencies [f4ec096]
+  - @milaboratories/pl-model-middle-layer@1.7.8
+  - @platforma-sdk/block-tools@2.5.20
+
+## 1.30.23
+
+### Patch Changes
+
+- Updated dependencies [1f60e0f]
+  - @platforma-sdk/workflow-tengo@2.15.16
+
+## 1.30.22
+
+### Patch Changes
+
+- Updated dependencies [a9d38f3]
+  - @platforma-sdk/workflow-tengo@2.15.15
+
+## 1.30.21
+
+### Patch Changes
+
+- 182e830: PFrames version update
+
+## 1.30.20
+
+### Patch Changes
+
+- Updated dependencies [14b832c]
+  - @platforma-sdk/workflow-tengo@2.15.14
+
+## 1.30.19
+
+### Patch Changes
+
+- Updated dependencies [5828a76]
+  - @platforma-sdk/workflow-tengo@2.15.13
+
+## 1.30.18
+
+### Patch Changes
+
+- f07e632: Use PFrames Rust for complex filters
+
+## 1.30.17
+
+### Patch Changes
+
+- Updated dependencies [624af88]
+  - @milaboratories/pl-model-middle-layer@1.7.7
+  - @platforma-sdk/block-tools@2.5.19
+
 ## 1.30.16
 
 ### Patch Changes

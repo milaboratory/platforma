@@ -47,23 +47,23 @@ tplTest(
     expect(info).toMatchObject({
       response: {
         result: {
-          productKey: "MIFAKEMIFAKEMIFAKE",
+          productKey: 'MIFAKEMIFAKEMIFAKE',
           canRun: true,
           mnz: {
-            type: "base",
+            type: 'base',
             details: {
               spentRuns: 192,
               runsToSpend: 1,
               willRemainAfterRun: 7,
               subscription: {
                 availableRuns: 200,
-                startsAt: "2025-02-25T11:50:59.000Z",
-                expiresAt: "2025-03-27T11:50:59.000Z"
-              }
-            }
-          }
-        }
-      }
+                startsAt: '2025-02-25T11:50:59.000Z',
+                expiresAt: '2025-03-27T11:50:59.000Z',
+              },
+            },
+          },
+        },
+      },
     });
   },
 );

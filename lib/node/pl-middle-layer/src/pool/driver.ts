@@ -29,7 +29,7 @@ import type {
   PTableRecordSingleValueFilterV2,
   PTableRecordFilter,
   PColumnValues,
-  SingleValuePredicateV2 } from '@platforma-sdk/model';
+} from '@platforma-sdk/model';
 import {
   mapPObjectData,
   mapPTableDef,
@@ -79,25 +79,6 @@ function migrateFilters(filters: PTableRecordFilter[]): PTableRecordFilter[] {
   return filtersV2;
 }
 
-function allFiltersAreRustSupported(filters: PTableRecordFilter[]): boolean {
-  const predicateIsRustSupported = (predicate: SingleValuePredicateV2): boolean => {
-    switch (predicate.operator) {
-      case 'Matches':
-      case 'StringContainsFuzzy':
-      case 'StringIContainsFuzzy':
-        return false;
-      case 'Not':
-        return predicateIsRustSupported(predicate.operand);
-      case 'And':
-      case 'Or':
-        return predicate.operands.every((operand) => predicateIsRustSupported(operand));
-      default:
-        return true;
-    }
-  };
-  return filters.every((filter) => predicateIsRustSupported(filter.predicate));
-}
-
 function pframesDispatch<T>(params: {
   cppCallback: () => Promise<T>;
   rustCallback: () => Promise<T>;
@@ -105,7 +86,6 @@ function pframesDispatch<T>(params: {
   filters?: PTableRecordFilter[];
   signal?: AbortSignal;
 }): Promise<T> {
-  if (!allFiltersAreRustSupported(params.filters ?? [])) return params.cppCallback();
   if (getDebugFlags().usePFrameRs) return params.rustCallback();
 
   return params.rustCallback().catch((error: unknown) => {

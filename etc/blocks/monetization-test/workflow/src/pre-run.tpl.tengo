@@ -6,13 +6,23 @@ file := import("@platforma-sdk/workflow-tengo:file")
 
 self.body(func(inputs) {
 	mnz := monetization.builder(inputs.productKey).
-		setDate(inputs.__mnzDate).
-		addRun()
+		setDate(inputs.__mnzDate)
+
+	// run means will we run a software several times for each file, or only once for all files.
+	// It is needed for test purposes only, in real blocks we know in advance how many runs we need.
+	// For example, we usually need 1 run per sample.
+	if !inputs.shouldAddRunPerFile {
+		mnz.addRun()
+	}
 
 	progresses := {}
 	for _, handle in inputs.inputHandles {
 		result := file.importFile(handle.handle)
 		progresses[handle.fileName] = result.handle
+
+		if inputs.shouldAddRunPerFile {
+			mnz.addRun()
+		}
 
 		mnz.addFile(result.file, {
 			arg: handle.argName,
