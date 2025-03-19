@@ -6,7 +6,7 @@ json := import("json")
 bquery := import(":workflow.bquery")
 
 self.awaitState("anchorSpecs", { wildcard: "*" }, "ResourceReady")
-self.awaitState("related", "ResourceReady")
+self.awaitState("queryMap", "ResourceReady")
 
 self.body(func(inputs) {
 	ctx := inputs.ctx
@@ -30,7 +30,7 @@ self.body(func(inputs) {
         // Add name or namePattern predicate if present
         if !is_undefined(matcher.name) {
             if !is_undefined(matcher.namePattern) {
-                ll.panic("Cannot specify both name and namePattern for related item '%s'", relatedId)
+                ll.panic("Cannot specify both name and namePattern for item '%s'", queryId)
             }
 
             queryPredicates += [ {
@@ -192,7 +192,7 @@ self.body(func(inputs) {
         }
 
         if len(queryPredicates) == 0 {
-            ll.panic("No predicates found for related item '%s'", relatedId)
+            ll.panic("No predicates found for the item '%s'", queryId)
         }
 
         querySpec := len(queryPredicates) > 1 ? {
@@ -210,7 +210,7 @@ self.body(func(inputs) {
 
         queryResult := bquery.create(querySpec, ctx, queryOps)
 
-        outputs["related/" + relatedId] = queryResult
+        outputs["result/" + queryId] = queryResult
     }
 
     return outputs
