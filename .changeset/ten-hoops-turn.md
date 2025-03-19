@@ -2,4 +2,4 @@
 '@platforma-sdk/model': minor
 ---
 
-Introduction of AnchoredIds & generateAnchoredColumnOptions utility method
+Introduced AnchoredIds and generateAnchoredColumnOptions utility method
