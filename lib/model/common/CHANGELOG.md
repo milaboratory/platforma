@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.11.0
+
+### Minor Changes
+
+- 1016b99: Added APColumnSelector, PColumnSelector and APColumnId interfaces for column selection and AnchorIdDeriver class
+
 ## 1.10.6
 
 ### Patch Changes

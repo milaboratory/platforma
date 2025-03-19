@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 2.16.0
+
+### Minor Changes
+
+- 1016b99: Added new mechanism for resolving results from pools using anchors and matchers (via anchoredQuery method)
+
 ## 2.15.16
 
 ### Patch Changes

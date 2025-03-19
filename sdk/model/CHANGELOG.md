@@ -1,5 +1,16 @@
 # @platforma-sdk/model
 
+## 1.23.0
+
+### Minor Changes
+
+- 1016b99: Introduced AnchoredIds and generateAnchoredColumnOptions utility method
+
+### Patch Changes
+
+- Updated dependencies [1016b99]
+  - @milaboratories/pl-model-common@1.11.0
+
 ## 1.22.97
 
 ### Patch Changes
