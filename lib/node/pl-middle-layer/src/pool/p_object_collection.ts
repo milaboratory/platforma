@@ -1,5 +1,5 @@
-import type { PlTreeNodeAccessor } from '@milaboratories/pl-tree';
-import { PlError } from '@milaboratories/pl-tree';
+import { type PlTreeNodeAccessor } from '@milaboratories/pl-tree';
+import { parsePlError } from '@milaboratories/pl-errors';
 import type { PObject, PObjectSpec, ValueOrError } from '@platforma-sdk/model';
 import { notEmpty } from '@milaboratories/ts-helpers';
 import assert from 'node:assert';
@@ -110,7 +110,7 @@ export function parseFinalPObjectCollection(
       throw new Error(`no data for key ${outputName}`);
     const data = result.data();
     if (data === undefined) throw new Error(`no data for key ${outputName}`);
-    if (!data.ok) throw new PlError(data.error);
+    if (!data.ok) throw parsePlError(data.error);
     collection[outputName] = {
       id: resolvePath.length === 0
         ? deriveLegacyPObjectId(result.spec, data.value) // for old blocks opened in new desktop

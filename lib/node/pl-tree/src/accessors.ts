@@ -12,7 +12,8 @@ import {
   resourceTypesEqual,
   resourceTypeToString,
   NullResourceId,
-  OptionalResourceId
+  OptionalResourceId,
+  stringifyWithResourceId
 } from '@milaboratories/pl-client';
 import { mapValueAndError, ValueAndError } from './value_and_error';
 import {
@@ -22,13 +23,8 @@ import {
   ResourceTraversalOps
 } from './traversal_ops';
 import { ValueOrError } from './value_or_error';
-
-/** Error encountered during traversal in field or resource. */
-export class PlError extends Error {
-  constructor(message: string) {
-    super(message);
-  }
-}
+import { parsePlError } from '@milaboratories/pl-errors';
+import { notEmpty } from '@milaboratories/ts-helpers';
 
 export type TreeAccessorData = {
   readonly treeProvider: () => PlTreeState;
@@ -106,9 +102,7 @@ function getResourceFromTree(
   if (!ops.ignoreError) {
     const err = acc.getError();
     if (err !== undefined)
-      throw new PlError(
-        `error encountered on resource ${resourceIdToString(acc.id)} (${resourceTypeToString(acc.resourceType)}): ${err.getDataAsString()}`
-      );
+      throw parsePlError(notEmpty(err.getDataAsString()), acc.id, acc.resourceType);
   }
 
   if (
@@ -237,7 +231,7 @@ export class PlTreeNodeAccessor {
   ): PlTreeNodeAccessor | undefined {
     const result = this.traverseOrErrorWithCommon(commonOptions, ...steps);
     if (result === undefined) return undefined;
-    if (!result.ok) throw new PlError(result.error);
+    if (!result.ok) throw result.error;
     return result.value;
   }
 
@@ -266,14 +260,19 @@ export class PlTreeNodeAccessor {
       if ((!step.ignoreError || next.value === undefined) && next.error !== undefined)
         return {
           ok: false,
-          error: `error in field ${step.field} of ${resourceIdToString(current.id)}: ${next.error.getDataAsString()}`
+
+          // FIXME: in next tickets we'll allow Errors to be thrown.
+          error: (parsePlError(
+            notEmpty(next.error.getDataAsString()),
+            current.id, current.resourceType, step.field,
+          ) as unknown as string),
         };
 
       if (next.value === undefined) {
         if (step.errorIfFieldNotSet)
           return {
             ok: false,
-            error: `field have no assigned value ${step.field} of ${resourceIdToString(current.id)}`
+            error: `field have no assigned value ${step.field} of ${resourceIdToString(current.id)}`,
           };
         // existing but unpopulated field is unstable because it must be resolved at some point
         this.onUnstableLambda('unpopulated_field:' + step.field);

@@ -28,13 +28,14 @@ import {
 import { notEmpty } from '@milaboratories/ts-helpers';
 import { randomUUID } from 'node:crypto';
 import type { QuickJSContext, QuickJSHandle, VmFunctionImplementation } from 'quickjs-emscripten';
-import { Scope } from 'quickjs-emscripten';
+import { Scope, errors } from 'quickjs-emscripten';
 import type { Optional } from 'utility-types';
 import type { BlockContextAny } from '../middle_layer/block_ctx';
 import type { MiddleLayerEnvironment } from '../middle_layer/middle_layer';
 import type { Block } from '../model/project_model';
 import { parseFinalPObjectCollection } from '../pool/p_object_collection';
 import type { ResultPool } from '../pool/result_pool';
+import { stringifyWithResourceId } from '@milaboratories/pl-client';
 
 function isArrayBufferOrView(obj: unknown): obj is ArrayBufferLike {
   return obj instanceof ArrayBuffer || ArrayBuffer.isView(obj);
@@ -56,6 +57,8 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
   private readonly accessors = new Map<string, PlTreeNodeAccessor | undefined>();
 
   private readonly meta: Map<string, Block>;
+
+  private readonly errorRepo = new ErrorRepository();
 
   constructor(
     private readonly scope: Scope,
@@ -121,7 +124,8 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
       });
     } catch (err: unknown) {
       JsExecutionContext.cleanErrorContext(err);
-      throw err;
+      const original = this.errorRepo.getOriginal(err);
+      throw original;
     }
   }
 
@@ -600,7 +604,20 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
         name: string,
         fn: VmFunctionImplementation<QuickJSHandle>,
       ): void => {
-        this.vm.newFunction(name, fn).consume((fnh) => this.vm.setProp(configCtx, name, fnh));
+        const withCachedError: VmFunctionImplementation<QuickJSHandle> = (...args) => {
+          // QuickJS strips all fields from errors apart from 'name' and 'message'.
+          // That's why here we need to store them, and rethrow them when we exit
+          // from QuickJS code.
+          try {
+            return (fn as any)(...args);
+          } catch (e: unknown) {
+            const newErr = this.errorRepo.setAndRecreateForQuickJS(e);
+            throw this.vm.newError(newErr);
+          }
+        }
+
+        this.vm.newFunction(name, withCachedError).consume((fnh) => this.vm.setProp(configCtx, name, fnh));
+        this.vm.newFunction(name, fn).consume((fnh) => this.vm.setProp(configCtx, name + '__internal__', fnh));
       };
 
       //
@@ -868,5 +885,87 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
 
       this.vm.setProp(this.vm.global, 'cfgRenderCtx', configCtx);
     });
+  }
+}
+
+/** Holds errors that happened in the host code (like in middle-layer's drivers)
+ * and then throws it where the error from quick JS is needed.
+ * QuickJS couldn't throw custom errors, so we store them here, and rethrow them when we exit QuickJS side. */
+export class ErrorRepository {
+  private readonly errorIdToError = new Map<string, unknown>();
+
+  /** Sets the error to the repository and returns a mimicrated error that also has uuid key of the original error. */
+  public setAndRecreateForQuickJS(error: unknown): {
+    name: string;
+    message: string;
+  } {
+    const errorId = randomUUID();
+    this.errorIdToError.set(errorId, error);
+
+    if (error instanceof Error) {
+      return {
+        name: `${error.name}/uuid:${errorId}`,
+        message: error.message,
+      };
+    }
+
+    return {
+      name: `UnknownErrorQuickJS/uuid:${errorId}`,
+      message: `${error as any}`,
+    };
+  }
+
+  /** Returns the original error that was stored by parsing uuid of mimicrated error. */
+  public getOriginal(quickJSError: unknown): unknown {
+    if (!(quickJSError instanceof errors.QuickJSUnwrapError)) {
+      console.warn('ErrorRepo: quickJSError is not a QuickJSUnwrapError', stringifyWithResourceId(quickJSError));
+      return quickJSError;
+    }
+
+    if (!('name' in (quickJSError.cause as any))) {
+      console.warn('ErrorRepo: quickJSError.cause is not an Error', stringifyWithResourceId(quickJSError));
+      return quickJSError;
+    }
+
+    const causeName = (quickJSError.cause as any).name;
+    const errorId = causeName.slice(causeName.indexOf('/uuid:') + '/uuid:'.length);
+    if (!errorId) {
+      throw new Error(`ErrorRepo: quickJSError.cause.name does not contain errorId: ${causeName}, ${stringifyWithResourceId(quickJSError)}`);
+    }
+
+    const error = this.errorIdToError.get(errorId);
+    if (error === undefined) {
+      throw new Error(`ErrorRepo: errorId not found: ${errorId}, ${stringifyWithResourceId(quickJSError)}`);
+    }
+
+    return new ModelError(quickJSError, error as Error);
+  }
+}
+
+/** The error that comes from model. */
+export class ModelError extends Error {
+  public stack: string;
+
+  constructor(
+    quickJSError: errors.QuickJSUnwrapError,
+    cause: Error,
+  ) {
+    super('', { cause });
+    this.name = 'ModelError';
+
+    // QuickJS wraps the error with the name and the message,
+    // but we need another format.
+    this.stack = quickJSError.stack?.replace(quickJSError.message, '') ?? '';
+    this.stack = this.stack.replace(cause.message, '');
+
+    this.message = this.toString();
+  }
+
+  toString() {
+    const msg = `ModelError: ${(this.cause as any)?.message}
+QuickJS stacktrace:
+${this.stack}
+`;
+    return msg;
   }
 }
