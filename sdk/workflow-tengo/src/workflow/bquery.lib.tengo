@@ -302,12 +302,12 @@ anchoredQuery := func(ctx, anchors, queryMap) {
 	// Process the query items to handle specOnly flag
 	processedQueryMap := {}
 	for queryId, aQuery in queryMap {
-		matcher := aQuery
+		query := aQuery
 		fetchData := true
 
 		// Check if this is an object with matcher and specOnly flag
-		if !is_undefined(aQuery.matcher) {
-			matcher = aQuery.matcher
+		if !is_undefined(aQuery.query) {
+			query = aQuery.query
 			if aQuery.specOnly {
 				fetchData = false
 			}
@@ -315,7 +315,7 @@ anchoredQuery := func(ctx, anchors, queryMap) {
 
 		// Add the processed matcher and fetchData flag
 		processedQueryMap[queryId] = {
-			matcher: matcher,
+			query: query,
 			fetchData: fetchData
 		}
 	}

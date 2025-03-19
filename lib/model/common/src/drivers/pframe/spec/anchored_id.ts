@@ -19,7 +19,7 @@ function domainKey(key: string, value: string): string {
  * Context for resolving and generating anchored references to columns and axes
  * Maintains maps of known domain values and axes that can be referenced by anchors
  */
-export class AnchorCtx {
+export class AnchorIdDeriver {
   private readonly domains = new Map<string, string>();
   private readonly axes = new Map<string, AnchorAxisRefByIdx>();
   /**
@@ -66,7 +66,7 @@ export class AnchorCtx {
    * @param spec Column specification to anchor
    * @returns An anchored column identifier that can be used to identify columns similar to the input specification
    */
-  deriveAId(spec: PColumnSpec): APColumnId {
+  derive(spec: PColumnSpec): APColumnId {
     const result: APColumnId = {
       name: spec.name,
       axes: [],
@@ -116,8 +116,8 @@ export class AnchorCtx {
    * @param spec Column specification to anchor
    * @returns A canonicalized string representation of the anchored column identifier
    */
-  deriveAIdString(spec: PColumnSpec): string {
-    const aId = this.deriveAId(spec);
+  deriveString(spec: PColumnSpec): string {
+    const aId = this.derive(spec);
     return canonicalize(aId)!;
   }
 }

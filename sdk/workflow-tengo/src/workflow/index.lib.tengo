@@ -238,8 +238,8 @@ resolve := func(ref, ...options) {
  * @param anchors: a map of anchorId -> ref or {ref: {blockId: string, name: string}, specOnly: bool}
  *                 When providing {ref, specOnly}, the specOnly flag controls whether to fetch data
  * @param queryMap: a map of queryId -> APColumnSelector specifications
- *                 or {matcher: APColumnSelector, specOnly: bool}
- *                 When providing {matcher, specOnly}, the specOnly flag controls whether to fetch data
+ *                 or {query: APColumnSelector, specOnly: bool}
+ *                 When providing {query, specOnly}, the specOnly flag controls whether to fetch data
  *
  * === Return ===
  *
@@ -251,7 +251,7 @@ resolve := func(ref, ...options) {
  *
  *          getResult(queryId) - Returns the query result for the given ID
  *              @param queryId - The ID of the query result to retrieve
- *              @returns The query result for the related item
+ *              @returns The query result for the given ID
  */
 anchoredQuery := func(anchors, queryMap) {
 	return bquery.anchoredQuery(_parentContext(), anchors, queryMap)
