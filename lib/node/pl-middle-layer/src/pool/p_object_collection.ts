@@ -1,4 +1,5 @@
-import { parsePlError, type PlTreeNodeAccessor } from '@milaboratories/pl-tree';
+import { type PlTreeNodeAccessor } from '@milaboratories/pl-tree';
+import { parsePlError } from '@milaboratories/pl-errors';
 import type { PObject, PObjectSpec, ValueOrError } from '@platforma-sdk/model';
 import { notEmpty } from '@milaboratories/ts-helpers';
 import assert from 'node:assert';

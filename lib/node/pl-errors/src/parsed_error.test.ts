@@ -41,12 +41,12 @@ describe('parsePlError', () => {
     expect(result.fieldName).toBe('fieldName');
     expect(stringifyWithResourceId(result.resource)).toBe('\"NG:0x2331a5\"');
 
-    expect(result.subErrors.length).toBe(1);
-    expect(result.subErrors[0]).toBeInstanceOf(PlRunnerError);
-    expect((result.subErrors[0] as PlRunnerError).commandName).toBe('java');
-    expect((result.subErrors[0] as PlRunnerError).exitCode).toBe(22);
-    expect((result.subErrors[0] as PlRunnerError).stdout).toBeDefined();
-    expect((result.subErrors[0] as PlRunnerError).workingDirectory).toBe('workdirs/0x2331E0');
+    expect(result.errors.length).toBe(1);
+    expect(result.errors[0]).toBeInstanceOf(PlRunnerError);
+    expect((result.errors[0] as PlRunnerError).commandName).toBe('java');
+    expect((result.errors[0] as PlRunnerError).exitCode).toBe(22);
+    expect((result.errors[0] as PlRunnerError).stdout).toBeDefined();
+    expect((result.errors[0] as PlRunnerError).workingDirectory).toBe('workdirs/0x2331E0');
   });
 
   it('should parse workflow error correctly', () => {
@@ -58,10 +58,10 @@ describe('parsePlError', () => {
     expect(result.fieldName).toBe('fieldName');
     expect(stringifyWithResourceId(result.resource)).toBe('\"NG:0x16a\"');
 
-    expect(result.subErrors.length).toBe(1);
-    expect(result.subErrors[0]).toBeInstanceOf(PlTengoError);
-    expect((result.subErrors[0] as PlTengoError).templateName).toBe('@platforma-open/milaboratories.samples-and-data.workflow:main@1.10.0');
-    expect((result.subErrors[0] as PlTengoError).tengoMessage).toBe('Runtime Error: File handle not set for "R1" in sample "S63UG7K2IRZSSMAI4UVB5CNJ"');
+    expect(result.errors.length).toBe(1);
+    expect(result.errors[0]).toBeInstanceOf(PlTengoError);
+    expect((result.errors[0] as PlTengoError).templateName).toBe('@platforma-open/milaboratories.samples-and-data.workflow:main@1.10.0');
+    expect((result.errors[0] as PlTengoError).tengoMessage).toBe('Runtime Error: File handle not set for "R1" in sample "S63UG7K2IRZSSMAI4UVB5CNJ"');
   });
 
   it('should parse monetization sub errors correctly', () => {
