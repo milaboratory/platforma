@@ -16,44 +16,44 @@ self.body(func(inputs) {
     outputs := {}
 
     for queryId, queryConfig in queryMap {
-        // Extract matcher and fetchData flag
-        matcher := queryConfig.matcher
+        // Extract query and fetchData flag
+        query := queryConfig.query
         fetchData := queryConfig.fetchData
 
-        // Converting the matcher to a query spec
+        // Converting the query to a query spec
         queryPredicates := []
 
-        if (!is_undefined(matcher.name) || !is_undefined(matcher.namePattern)) && ll.apiVersion() < 7 {
+        if (!is_undefined(query.name) || !is_undefined(query.namePattern)) && ll.apiVersion() < 7 {
             ll.panic("Name or namePattern filter is not supported by this version, please upgrade your platforma backend")
         }
 
         // Add name or namePattern predicate if present
-        if !is_undefined(matcher.name) {
-            if !is_undefined(matcher.namePattern) {
+        if !is_undefined(query.name) {
+            if !is_undefined(query.namePattern) {
                 ll.panic("Cannot specify both name and namePattern for item '%s'", queryId)
             }
 
             queryPredicates += [ {
                 type: "Name",
-                name: matcher.name
+                name: query.name
             } ]
-        } else if !is_undefined(matcher.namePattern) {
+        } else if !is_undefined(query.namePattern) {
             queryPredicates += [ {
                 type: "NamePattern",
-                pattern: matcher.namePattern
+                pattern: query.namePattern
             } ]
         }
 
         // Add domain predicate if present
-        if !is_undefined(matcher.domain) || !is_undefined(matcher.domainAnchor) {
+        if !is_undefined(query.domain) || !is_undefined(query.domainAnchor) {
             domainPredicate := {
                 type: "Domain",
                 domain: {}
             }
 
             // Process domainAnchor if present
-            if !is_undefined(matcher.domainAnchor) {
-                anchorId := matcher.domainAnchor
+            if !is_undefined(query.domainAnchor) {
+                anchorId := query.domainAnchor
                 if is_undefined(anchors[anchorId]) {
                     ll.panic("Cannot resolve domain anchor: anchor '%s' not found", anchorId)
                 }
@@ -67,8 +67,8 @@ self.body(func(inputs) {
             }
 
             // Process each domain key-value pair
-            if !is_undefined(matcher.domain) {
-                for domainKey, domainValue in matcher.domain {
+            if !is_undefined(query.domain) {
+                for domainKey, domainValue in query.domain {
                     // Check if this is an anchored domain reference (has 'anchor' property)
                     if is_map(domainValue) && !is_undefined(domainValue.anchor) {
                         // This is an anchored domain reference
@@ -96,10 +96,10 @@ self.body(func(inputs) {
         }
 
         // Add axes if present
-        if !is_undefined(matcher.axes) {
+        if !is_undefined(query.axes) {
             axesMatcher := {
                 type: "AxesKeys",
-                axesKeys: slices.map(matcher.axes, func(axis) {
+                axesKeys: slices.map(query.axes, func(axis) {
                     // If axis is a direct AxisId (has name, type properties)
                     if is_map(axis) && !is_undefined(axis.name) && !is_undefined(axis.type) {
                         // This is a direct AxisId
@@ -162,31 +162,31 @@ self.body(func(inputs) {
                 })
             }
 
-			if !is_undefined(matcher.partialAxesMatch) {
-				axesMatcher.partialMatch = matcher.partialAxesMatch
+			if !is_undefined(query.partialAxesMatch) {
+				axesMatcher.partialMatch = query.partialAxesMatch
 			}
 
             queryPredicates += [ axesMatcher ]
         }
 
-        if !is_undefined(matcher.annotations) {
-            annotationKeys := maps.getKeys(matcher.annotations)
+        if !is_undefined(query.annotations) {
+            annotationKeys := maps.getKeys(query.annotations)
             for annotationKey in annotationKeys {
                 queryPredicates += [ {
                     type: "Annotation",
                     annotation: annotationKey,
-                    value: matcher.annotations[annotationKey]
+                    value: query.annotations[annotationKey]
                 } ]
             }
         }
 
-        if !is_undefined(matcher.annotationPatterns) {
-            patternKeys := maps.getKeys(matcher.annotationPatterns)
+        if !is_undefined(query.annotationPatterns) {
+            patternKeys := maps.getKeys(query.annotationPatterns)
             for annotationKey in patternKeys {
                 queryPredicates += [ {
                     type: "AnnotationPattern",
                     annotation: annotationKey,
-                    pattern: matcher.annotationPatterns[annotationKey]
+                    pattern: query.annotationPatterns[annotationKey]
                 } ]
             }
         }
@@ -200,7 +200,7 @@ self.body(func(inputs) {
             operands: queryPredicates
         } : queryPredicates[0]
 
-        expectMultiple := matcher.matchStrategy == "expectMultiple"
+        expectMultiple := query.matchStrategy == "expectMultiple"
         queryOps := {
             spec: true,
             data: fetchData,  // Use the fetchData flag to control whether to fetch data

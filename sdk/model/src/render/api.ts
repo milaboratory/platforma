@@ -19,7 +19,7 @@ import type {
   ResultCollection,
   ValueOrError } from '@milaboratories/pl-model-common';
 import {
-  AnchorCtx,
+  AnchorIdDeriver,
   resolveAnchors } from '@milaboratories/pl-model-common';
 import {
   ensurePColumn,
@@ -101,7 +101,7 @@ export class ResultPool {
    */
   // Overload for AnchorCtx - guaranteed to never return undefined
   getAnchoredOptions(
-    anchorsOrCtx: AnchorCtx,
+    anchorsOrCtx: AnchorIdDeriver,
     predicateOrSelectors: ((spec: PColumnSpec) => boolean) | APColumnSelector | APColumnSelector[],
     labelOps?: LabelDerivationOps,
   ): { label: string; value: string }[];
@@ -122,14 +122,14 @@ export class ResultPool {
 
   // Implementation
   getAnchoredOptions(
-    anchorsOrCtx: AnchorCtx | Record<string, PColumnSpec | PlRef>,
+    anchorsOrCtx: AnchorIdDeriver | Record<string, PColumnSpec | PlRef>,
     predicateOrSelectors: ((spec: PColumnSpec) => boolean) | APColumnSelector | APColumnSelector[],
     labelOps?: LabelDerivationOps,
   ): { label: string; value: string }[] | undefined {
   // Handle PlRef objects by resolving them to PColumnSpec
     const resolvedAnchors: Record<string, PColumnSpec> = {};
 
-    if (!(anchorsOrCtx instanceof AnchorCtx)) {
+    if (!(anchorsOrCtx instanceof AnchorIdDeriver)) {
       for (const [key, value] of Object.entries(anchorsOrCtx)) {
         if (isPlRef(value)) {
           const resolvedSpec = this.getPColumnSpecByRef(value);
@@ -155,12 +155,12 @@ export class ResultPool {
       return predicate(spec);
     });
 
-    const anchorCtx = anchorsOrCtx instanceof AnchorCtx
+    const anchorIdDeriver = anchorsOrCtx instanceof AnchorIdDeriver
       ? anchorsOrCtx
-      : new AnchorCtx(resolvedAnchors);
+      : new AnchorIdDeriver(resolvedAnchors);
 
     return deriveLabels(filtered, (o) => o.obj, labelOps ?? {}).map(({ value: { obj: spec }, label }) => ({
-      value: anchorCtx.deriveAIdString(spec as PColumnSpec)!,
+      value: anchorIdDeriver.deriveString(spec as PColumnSpec)!,
       label,
     }));
   }

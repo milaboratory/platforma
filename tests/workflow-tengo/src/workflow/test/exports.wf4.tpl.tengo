@@ -6,7 +6,7 @@ text := import("text")
 
 wf.body(func(args) {
 
-	qResult := wf.queryAnchorsAndMatchers({
+	qResult := wf.anchoredQuery({
 		main: {
 			ref: {
 				blockId: "b1",
@@ -16,7 +16,7 @@ wf.body(func(args) {
 		}
 	}, {
 		r1: {
-			matcher: {
+			query: {
 				name: "pl7.app/test2",
 				domain: {
 					"pl7.app/testDomain1": { anchor: "main" }
@@ -29,7 +29,7 @@ wf.body(func(args) {
 	return {
 		outputs: {
 			anchorSpec: qResult.getAnchor("main").inputs().spec,
-			r1: qResult.getRelated("r1").getFutureInputField("spec")
+			r1: qResult.getResult("r1").getFutureInputField("spec")
 		},
 		exports: {}
 	}
