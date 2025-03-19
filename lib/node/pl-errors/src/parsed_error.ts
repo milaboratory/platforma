@@ -11,17 +11,25 @@ export class PlErrorReport extends Error {
   message: string;
 
   constructor(
+    /** Full message from the Pl backend. */
     public readonly fullMessage: string,
-    public readonly plErrorType: string,
-    public readonly plMessage: string,
-    public readonly subErrors: PlCoreError[],
 
+    /** Either CID conflict or a error from controller. */
+    public readonly plErrorType: string,
+
+    /** Parsed pl backend message that will be futher parsed into suberrors. */
+    public readonly plMessage: string,
+
+    /** Could be several different errors, the name is from AggregateError. */
+    public readonly errors: PlCoreError[],
+
+    /** Optional info about a resource where the error happened. */
     public readonly fieldName?: string,
     public readonly resource?: ResourceId,
     public readonly resourceType?: ResourceType,
   ) {
     super(fullMessage);
-    this.name = "PlErrorReport";
+    this.name = 'PlErrorReport';
     this.message = this.toString();
   }
 
@@ -30,7 +38,7 @@ export class PlErrorReport extends Error {
     const r = this.resource ? resourceIdToString(this.resource) : '';
     const f = this.fieldName ? `/${this.fieldName}` : '';
     const errType = this.plErrorType ? `error type: ${this.plErrorType}` : '';
-    const subErrors = this.subErrors.map(e => e.message).join('\n\n');
+    const subErrors = this.errors.map(e => e.message).join('\n\n');
 
     return `PlErrorReport: resource: ${rt} ${r}${f}
 ${errType}
@@ -55,7 +63,7 @@ export class PlInternalError extends Error {
     public readonly message: string,
   ) {
     super(message);
-    this.name = "PlInternalError";
+    this.name = 'PlInternalError';
   }
 }
 
@@ -72,7 +80,7 @@ export class PlTengoError extends Error {
     public readonly tengoStacktrace: string,
   ) {
     super(fullMessage);
-    this.name = "PlWorkflowError";
+    this.name = 'PlWorkflowError';
     this.message = this.toString();
   }
 
@@ -103,7 +111,7 @@ export class PlRunnerError extends Error {
     public readonly workingDirectory: string,
   ) {
     super(fullMessage);
-    this.name = "PlRunnerError";
+    this.name = 'PlRunnerError';
     this.message = this.toString();
   }
 
@@ -134,7 +142,7 @@ export class PlMonetizationError extends PlRunnerError {
     workingDirectory: string,
   ) {
     super(fullMessage, commandName, exitCode, stdout, workingDirectory);
-    this.name = "PlMonetizationError";
+    this.name = 'PlMonetizationError';
     this.message = this.toString();
   }
 
@@ -157,7 +165,7 @@ ${this.fullMessage}`;
 const backendErrorSchema = z.object({
   errorType: z.string(),
   message: z.string(),
-})
+});
 
 /**
  * Parses a Pl error and suberrors from the Pl backend.
@@ -181,7 +189,7 @@ export function parsePlError(
     field,
     resource,
     resourceType,
-  )
+  );
 }
 
 /**
@@ -202,12 +210,12 @@ export function parseSubErrors(message: string): PlCoreError[] {
       // of the error doesn't have [I], but is a path line.
       state.stage = 'path';
 
-    } else if (state.stage == 'path' && !line.startsWith('[I]')) {
+    } else if (state.stage == 'path' && !isPath(line)) {
       state.stage = 'message';
 
-    } else if (state.stage == 'message' && line.startsWith('[I]')) {
+    } else if (state.stage == 'message' && isPath(line)) {
       state.stage = 'path';
-      const text = state.value.join("\n");
+      const text = state.value.join('\n');
       state.result.push(parseCoreError(text));
       state.value = [];
     }
@@ -219,6 +227,15 @@ export function parseSubErrors(message: string): PlCoreError[] {
   state.result.push(parseCoreError(text));
 
   return state.result;
+}
+
+function isPath(line: string): boolean {
+  for (const fieldType of ['U', 'I', 'O', 'S', 'OTW', 'D', 'MTW']) {
+    if (line.startsWith(`[${fieldType}]`))
+      return true;
+  }
+
+  return false;
 }
 
 /**

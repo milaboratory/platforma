@@ -23,7 +23,7 @@ import {
   ResourceTraversalOps
 } from './traversal_ops';
 import { ValueOrError } from './value_or_error';
-import { parsePlError } from './parsed_error';
+import { parsePlError } from '@milaboratories/pl-errors';
 import { notEmpty } from '@milaboratories/ts-helpers';
 
 export type TreeAccessorData = {

@@ -49,6 +49,7 @@
     "yaml": "catalog:",
     "zod": "catalog:",
     "@milaboratories/pl-config": "workspace:^",
+    "@milaboratories/pl-errors": "workspace:^",
     "@milaboratories/pl-deployments": "workspace:^"
   },
   "devDependencies": {
