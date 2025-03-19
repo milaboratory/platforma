@@ -1,0 +1,228 @@
+test := import(":test")
+model := import(":workflow.model")
+validation := import(":validation")
+
+TestAPColumnSelectorValidation := func() {
+    // Test 1: Simple valid selector with name
+    simpleSelector := {
+        name: "testColumn"
+    }
+    test.isEqual(validation.isValid(simpleSelector, model.AP_COLUMN_SELECTOR_SCHEMA), true)
+
+    // Test 2: Valid selector with namePattern
+    patternSelector := {
+        namePattern: "^test.*$"
+    }
+    test.isEqual(validation.isValid(patternSelector, model.AP_COLUMN_SELECTOR_SCHEMA), true)
+
+    // Test 3: Valid selector with string type
+    stringTypeSelector := {
+        name: "testColumn",
+        type: "String"
+    }
+    test.isEqual(validation.isValid(stringTypeSelector, model.AP_COLUMN_SELECTOR_SCHEMA), true)
+
+    // Test 4: Valid selector with array of types
+    arrayTypeSelector := {
+        name: "testColumn",
+        type: ["String", "Int", "Float"]
+    }
+    test.isEqual(validation.isValid(arrayTypeSelector, model.AP_COLUMN_SELECTOR_SCHEMA), true)
+
+    // Test 5: Valid selector with domain
+    domainSelector := {
+        name: "testColumn",
+        domain: {
+            "domain1": "value1",
+            "domain2": "value2"
+        }
+    }
+    test.isEqual(validation.isValid(domainSelector, model.AP_COLUMN_SELECTOR_SCHEMA), true)
+
+    // Test 6: Valid selector with anchored domain
+    anchoredDomainSelector := {
+        name: "testColumn",
+        domainAnchor: "anchorColumn",
+        domain: {
+            "domain1": { anchor: "anchorColumn" },
+            "domain2": "value2"
+        }
+    }
+    test.isEqual(validation.isValid(anchoredDomainSelector, model.AP_COLUMN_SELECTOR_SCHEMA), true)
+
+    // Test 7: Valid selector with axes
+    axesSelector := {
+        name: "testColumn",
+        axes: [
+            { name: "axis1", type: "String" },
+            { anchor: "anchorColumn", name: "axis2" },
+            { anchor: "anchorColumn", idx: 1 }
+        ]
+    }
+    test.isEqual(validation.isValid(axesSelector, model.AP_COLUMN_SELECTOR_SCHEMA), true)
+
+    // Test 8: Valid selector with partialAxesMatch
+    partialMatchSelector := {
+        name: "testColumn",
+        axes: [{ name: "axis1" }],
+        partialAxesMatch: true
+    }
+    test.isEqual(validation.isValid(partialMatchSelector, model.AP_COLUMN_SELECTOR_SCHEMA), true)
+
+    // Test 9: Valid selector with annotations
+    annotationsSelector := {
+        name: "testColumn",
+        annotations: {
+            "annotation1": "value1",
+            "annotation2": "value2"
+        }
+    }
+    test.isEqual(validation.isValid(annotationsSelector, model.AP_COLUMN_SELECTOR_SCHEMA), true)
+
+    // Test 10: Valid selector with annotation patterns
+    annotationPatternsSelector := {
+        name: "testColumn",
+        annotationPatterns: {
+            "annotation1": "^value.*$",
+            "annotation2": ".*value$"
+        }
+    }
+    test.isEqual(validation.isValid(annotationPatternsSelector, model.AP_COLUMN_SELECTOR_SCHEMA), true)
+
+    // Test 11: Valid selector with matchStrategy
+    matchStrategySelector := {
+        name: "testColumn",
+        matchStrategy: "expectSingle"
+    }
+    test.isEqual(validation.isValid(matchStrategySelector, model.AP_COLUMN_SELECTOR_SCHEMA), true)
+
+    // Test 12: Invalid selector with unknown property
+    invalidSelector1 := {
+        name: "testColumn",
+        unknownProperty: "value"
+    }
+    test.isEqual(validation.isValid(invalidSelector1, model.AP_COLUMN_SELECTOR_SCHEMA), false)
+
+    // Test 13: Invalid selector with invalid matchStrategy
+    invalidSelector2 := {
+        name: "testColumn",
+        matchStrategy: "invalidStrategy"
+    }
+    test.isEqual(validation.isValid(invalidSelector2, model.AP_COLUMN_SELECTOR_SCHEMA), false)
+
+    // Test 14: Invalid axis selector with unknown property
+    invalidSelector3 := {
+        name: "testColumn",
+        axes: [{ name: "axis1", unknownProperty: "value" }]
+    }
+    test.isEqual(validation.isValid(invalidSelector3, model.AP_COLUMN_SELECTOR_SCHEMA), false)
+
+    // Test 15: Complex valid selector with multiple properties
+    complexSelector := {
+        name: "testColumn",
+        type: "String",
+        domainAnchor: "anchorColumn",
+        domain: {
+            "domain1": { anchor: "anchorColumn" }
+        },
+        axes: [
+            { name: "axis1", type: "String", domain: { "axisDomain": "value" } },
+            { anchor: "anchorColumn", name: "axis2" }
+        ],
+        partialAxesMatch: true,
+        annotations: { "annotation1": "value1" },
+        annotationPatterns: { "annotation2": "^pattern.*$" },
+        matchStrategy: "expectMultiple"
+    }
+    test.isEqual(validation.isValid(complexSelector, model.AP_COLUMN_SELECTOR_SCHEMA), true)
+}
+
+TestAxisSelectorValidation := func() {
+    // Test 1: Simple axis selector with name only
+    simpleAxisSelector := {
+        name: "axis1"
+    }
+    test.isEqual(validation.isValid(simpleAxisSelector, model.AXIS_SELECTOR_SCHEMA), true)
+
+    // Test 2: Axis selector with type as string
+    typeAxisSelector := {
+        name: "axis1",
+        type: "String"
+    }
+    test.isEqual(validation.isValid(typeAxisSelector, model.AXIS_SELECTOR_SCHEMA), true)
+
+    // Test 3: Axis selector with type as array
+    arrayTypeAxisSelector := {
+        name: "axis1",
+        type: ["String", "Int"]
+    }
+    test.isEqual(validation.isValid(arrayTypeAxisSelector, model.AXIS_SELECTOR_SCHEMA), true)
+
+    // Test 4: Axis selector with domain
+    domainAxisSelector := {
+        name: "axis1",
+        domain: {
+            "domain1": "value1",
+            "domain2": "value2"
+        }
+    }
+    test.isEqual(validation.isValid(domainAxisSelector, model.AXIS_SELECTOR_SCHEMA), true)
+
+    // Test 5: Invalid axis selector with unknown property
+    invalidAxisSelector := {
+        name: "axis1",
+        unknownProperty: "value"
+    }
+    test.isEqual(validation.isValid(invalidAxisSelector, model.AXIS_SELECTOR_SCHEMA), false)
+}
+
+TestAnchorAxisRefValidation := func() {
+    // Test anchor axis ref by idx
+    refByIdx := {
+        anchor: "anchorColumn",
+        idx: 1
+    }
+    test.isEqual(validation.isValid(refByIdx, model.ANCHOR_AXIS_REF_BY_IDX_SCHEMA), true)
+
+    // Test anchor axis ref by name
+    refByName := {
+        anchor: "anchorColumn",
+        name: "axisName"
+    }
+    test.isEqual(validation.isValid(refByName, model.ANCHOR_AXIS_REF_BY_NAME_SCHEMA), true)
+
+    // Test anchor axis ref by matcher
+    refByMatcher := {
+        anchor: "anchorColumn",
+        id: {
+            name: "axisName",
+            type: "String"
+        }
+    }
+    test.isEqual(validation.isValid(refByMatcher, model.ANCHOR_AXIS_REF_BY_MATCHER_SCHEMA), true)
+
+    // Test A_AXIS_SELECTOR with each type
+    test.isEqual(validation.isValid({ name: "axis1" }, model.A_AXIS_SELECTOR_SCHEMA), true)
+    test.isEqual(validation.isValid({ anchor: "anchorColumn", idx: 1 }, model.A_AXIS_SELECTOR_SCHEMA), true)
+    test.isEqual(validation.isValid({ anchor: "anchorColumn", name: "axisName" }, model.A_AXIS_SELECTOR_SCHEMA), true)
+    test.isEqual(validation.isValid({ anchor: "anchorColumn", id: { name: "axisName" } }, model.A_AXIS_SELECTOR_SCHEMA), true)
+}
+
+TestADomainValidation := func() {
+    // Test string domain
+    stringDomain := "domainValue"
+    test.isEqual(validation.isValid(stringDomain, model.A_DOMAIN_SCHEMA), true)
+
+    // Test anchor domain ref
+    anchorDomain := {
+        anchor: "anchorColumn"
+    }
+    test.isEqual(validation.isValid(anchorDomain, model.A_DOMAIN_SCHEMA), true)
+
+    // Test invalid anchor domain ref with extra property
+    invalidAnchorDomain := {
+        anchor: "anchorColumn",
+        extraProp: "value"
+    }
+    test.isEqual(validation.isValid(invalidAnchorDomain, model.A_DOMAIN_SCHEMA), false)
+}

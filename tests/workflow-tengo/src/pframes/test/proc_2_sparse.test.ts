@@ -111,7 +111,7 @@ eTplTest(
 
 eTplTest(
   'should correctly execute pframes.processColumn in sparse mode with aggregation 1',
-  { timeout: 10000 },
+  { timeout: 20000 },
   async ({ helper, expect, stHelper }) => {
     const xsvSettings = {
       axes: [

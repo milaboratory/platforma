@@ -31,6 +31,7 @@ import { plTest } from './test-pl';
 export type WorkflowRenderOps = {
   parent?: ResourceId;
   exportProcessor?: TemplateSpecAny;
+  blockId?: string;
 };
 
 export class TestRenderResults<O extends string> {
@@ -144,7 +145,7 @@ export class TplTestHelpers {
     args: Record<string, any> | Promise<Record<string, any>>,
     ops: WorkflowRenderOps = {}
   ): Promise<TestWorkflowResults> {
-    const blockId = randomUUID();
+    const blockId = ops.blockId ?? randomUUID();
     const mainResult: TestRenderResults<'result' | 'context'> = await this.renderTemplate(
       true,
       workflow,

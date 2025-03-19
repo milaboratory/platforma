@@ -1,4 +1,5 @@
 wf := import("@platforma-sdk/workflow-tengo:workflow")
+smart := import("@platforma-sdk/workflow-tengo:smart")
 
 wf.body(func(args) {
 
@@ -16,6 +17,55 @@ wf.body(func(args) {
 			}
 		},
 		data: ["a", "b"]
+	}
+	exports["e2"] = {
+		spec: {
+			kind: "PColumn",
+			name: "pl7.app/test1",
+			valueType: "String",
+			domain: {
+				"pl7.app/testDomain1": "1",
+				"pl7.app/testDomain2": "2"
+			},
+			axesSpec: [
+				{
+					name: "pl7.app/testAxis1",
+					type: "String",
+					domain: {
+						"pl7.app/test": "true"
+					}
+				},
+				{
+					name: "pl7.app/testAxis2",
+					type: "String",
+					domain: {
+						"pl7.app/test": "true"
+					}
+				}
+			]
+		},
+		data: smart.createNullResource()
+	}
+	exports["e3"] = {
+		spec: {
+			kind: "PColumn",
+			name: "pl7.app/test2",
+			valueType: "String",
+			domain: {
+				"pl7.app/testDomain1": "1",
+				"pl7.app/testDomain2": "3"
+			},
+			axesSpec: [
+				{
+					name: "pl7.app/testAxis2",
+					type: "String",
+					domain: {
+						"pl7.app/test": "true"
+					}
+				}
+			]
+		},
+		data: smart.createNullResource()
 	}
 
 	return {

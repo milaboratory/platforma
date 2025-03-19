@@ -19,6 +19,23 @@ export type PlRef = z.infer<typeof PlRef>;
 /** @deprecated use {@link PlRef} */
 export type Ref = PlRef;
 
+/**
+ * Type guard to check if a value is a PlRef.
+ * 
+ * @param value - The value to check.
+ * @returns True if the value is a PlRef, false otherwise.
+ */
+export function isPlRef(value: unknown): value is PlRef {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    '__isRef' in value &&
+    (value as { __isRef: unknown }).__isRef === true &&
+    'blockId' in value &&
+    'name' in value
+  );
+}
+
 /** Standard way how to communicate possible connections given specific
  * requirements for incoming data. */
 export type Option = {

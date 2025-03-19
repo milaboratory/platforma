@@ -1,8 +1,14 @@
 ll := import(":ll")
 smart := import(":smart")
+maps := import(":maps")
 constants := import(":constants")
 json := import("json")
+assets := import(":assets")
+render := import(":render")
+validation := import(":validation")
+model := import(":workflow.model")
 
+queryAnchoredTpl := assets.importTemplate(":workflow.query-anchored")
 
 _CONTEXT_FIELD_NAME := "ctx"
 
@@ -29,6 +35,19 @@ _DEFAULT_OPTIONS := {
 	errIfMissing: false
 }
 
+// Schema for query map validation
+_QUERY_MAP_SCHEMA := {
+	`__options__,closed`: true,
+	`any`: ["or",
+		model.AP_COLUMN_SELECTOR_SCHEMA,
+		{
+			`__options__,closed`: true,
+			`query`: model.AP_COLUMN_SELECTOR_SCHEMA,
+			`specOnly`: `bool`
+		}
+	]
+}
+
 /**
  * Query results pool.
  *
@@ -36,6 +55,63 @@ _DEFAULT_OPTIONS := {
  * @param ctx: results pool (context) to query
  * @param options: an options map
  * @return result: a list of {ref: spec: data:} objects (data will be absent if not requested)
+ *
+ * The query spec supports the following operand types for matching PColumnSpecs:
+ *
+ * 1. Logical operators:
+ *    ```
+ *    {type: "Or", operands: [operand1, operand2, ...]}  // matches if any operand matches
+ *    {type: "And", operands: [operand1, operand2, ...]} // matches if all operands match
+ *    {type: "Not", operand: someOperand}                // matches if operand doesn't match
+ *    ```
+ *
+ * 2. Name matchers:
+ *    ```
+ *    {type: "Name", name: "pl7.app/rna-seq/countMatrix"} // matches by exact name
+ *    {type: "NamePattern", pattern: "pl7.app/vdj/.*"}    // matches using regex pattern
+ *    ```
+ *
+ * 3. Domain matcher:
+ *    ```
+ *    {
+ *      type: "Domain",
+ *      domain: {"pl7.app/block": "blockId"},
+ *      domainExactMatch: false  // true requires exact match, false checks subset
+ *    }
+ *    ```
+ *
+ * 4. Annotation matchers:
+ *    ```
+ *    {type: "Annotation", annotation: "pl7.app/isDiscreteFilter", value: "true"}         // exact match
+ *    {type: "AnnotationPattern", annotation: "pl7.app/abundance", pattern: ".*false.*"}  // regex match
+ *    ```
+ *
+ * 5. AxesKeys: matches by axis specifications
+ *    ```
+ *    {
+ *      type: "AxesKeys",
+ *      axesKeys: [
+ *        {
+ *          name: "pl7.app/rna-seq/geneId",
+ *          domain: {"pl7.app/block": "blockId"},
+ *          domainExactMatch: false
+ *        }
+ *      ],
+ *      partialMatch: false  // true allows subset of axes to match
+ *    }
+ *    ```
+ *
+ * Example:
+ * ```
+ * // Find RNA-seq count matrices from block "abc123"
+ * query({
+ *   type: "And",
+ *   operands: [
+ *     {type: "Name", name: "pl7.app/rna-seq/countMatrix"},
+ *     {type: "Domain", domain: {"pl7.app/block": "abc123"}}
+ *   ]
+ * })
+ * ```
  */
 create := func(spec, ctx, ...options) {
 
@@ -199,8 +275,133 @@ resolve := func(ref, ctx, ...options) {
 	return create(spec, ctx, ops)
 }
 
+/**
+ * Resolves both anchor references and related items in one operation.
+ *
+ * @param ctx: results pool (context) to query
+ * @param anchors: a map of anchorId -> ref or {ref: {blockId: string, name: string}, specOnly: bool}
+ *                 When providing {ref, specOnly}, the specOnly flag controls whether to fetch data
+ * @param queryMap: a map of queryId -> APColumnSelector specifications
+ *                 or {query: APColumnSelector, specOnly: bool}
+ *                 When providing {query, specOnly}, the specOnly flag controls whether to fetch data
+ *
+ * === Return ===
+ *
+ * @returns Object with methods for retrieving anchor resolution and query results:
+ *
+ *          getAnchor(anchorId) - Returns the resolved anchor for the given ID
+ *              @param anchorId - The ID of the anchor to retrieve
+ *              @returns The resolved anchor object {ref: spec: data:}
+ *
+ *          getResult(queryId) - Returns the query result for the given ID
+ *              @param queryId - The ID of the query result to retrieve
+ *              @returns The query result for the given ID
+ */
+anchoredQuery := func(ctx, anchors, queryMap) {
+	// Validate query map schema
+	validation.assertType(queryMap, _QUERY_MAP_SCHEMA, "invalid query map schema")
+
+	// First, resolve all anchors
+	resolvedAnchors := {}
+	for anchorId, anchorValue in anchors {
+		opts := { spec: true, data: true }
+
+		ref := anchorValue
+		if !is_undefined(anchorValue.ref) {
+			ref = anchorValue.ref
+			if anchorValue.specOnly {
+				opts.data = false
+			}
+		}
+
+		resolvedAnchors[anchorId] = resolve(ref, ctx, opts)
+	}
+
+	// Process the query items to handle specOnly flag
+	processedQueryMap := {}
+	for queryId, aQuery in queryMap {
+		query := aQuery
+		fetchData := true
+
+		if !is_undefined(aQuery.query) {
+			query = aQuery.query
+			if aQuery.specOnly {
+				fetchData = false
+			}
+		}
+
+		processedQueryMap[queryId] = {
+			query: query,
+			fetchData: fetchData
+		}
+	}
+
+	// Render the template with the appropriate parameters
+	queryResult := render.createEphemeral(queryAnchoredTpl, {
+		ctx: ctx,
+		anchorSpecs: smart.createMapResource(maps.mapValues(resolvedAnchors, func(v) { return v.inputs().spec })),
+		queryMap: processedQueryMap
+	})
+
+	// Create structured result object with accessor methods
+	self := undefined
+	self = ll.toStrict({
+		/**
+		 * Get a specific anchor resolution result
+		 * @param anchorId - The ID of the anchor to retrieve
+		 * @returns The resolved anchor {ref: spec: data:}
+		 */
+		getAnchor: func(anchorId) {
+			anchor := resolvedAnchors[anchorId]
+			if is_undefined(anchor) {
+				ll.panic("unknown anchor ID: " + anchorId)
+			}
+			return anchor
+		},
+
+		/**
+		 * Get a specific query result by ID
+		 * @param queryId - The ID of the query result to retrieve
+		 * @returns The query result for the given ID
+		 */
+		getResult: func(queryId) {
+			return queryResult.output("result/" + queryId)
+		},
+
+		/**
+		 * Get the specification for a specific query result
+		 * @param queryId - The ID of the query result to retrieve
+		 * @returns The specification of the query result
+		 */
+		getResultSpec: func(queryId) {
+			return self.getResult(queryId).getFutureInputField("spec")
+		},
+
+		/**
+		 * Get the data for a specific query result
+		 * @param queryId - The ID of the query result to retrieve
+		 * @returns The data of the query result
+		 */
+		getResultData: func(queryId) {
+			return self.getResult(queryId).getFutureInputField("data")
+		},
+
+		/**
+		 * Get the reference for a specific query result
+		 * @param queryId - The ID of the query result to retrieve
+		 * @returns The reference of the query result
+		 */
+		getResultRef: func(queryId) {
+			return self.getResult(queryId).getFutureInputField("ref")
+		}
+	})
+
+	return self
+}
+
 export ll.toStrict({
 	create: create,
 	resolve: resolve,
-	resultUnmarshaller: resultUnmarshaller
+	resultUnmarshaller: resultUnmarshaller,
+	anchoredQuery: anchoredQuery
 })

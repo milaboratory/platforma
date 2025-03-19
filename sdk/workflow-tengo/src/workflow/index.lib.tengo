@@ -188,8 +188,20 @@ _buildOutputs := func(results) {
 /**
  * Query results pool.
  *
- * @param spec: query spec
+ * @param spec: query spec - see bquery.lib.tengo for full schema documentation
+ * @param options: optional query options
  * @return result: an array of {ref: spec: data:} objects (data will be absent if not requested)
+ *
+ * This function allows you to query for outputs from other blocks using various matching criteria.
+ * It internally calls bquery.create with the parent context.
+ *
+ * For full documentation of the query spec schema, see the create function in bquery.lib.tengo.
+ *
+ * Example:
+ * ```
+ * // Find all VDJ isotype columns from any block
+ * isotypes = query({type: "Name", name: "pl7.app/vdj/isotype"})
+ * ```
  */
 query := func(spec, ...options) {
 	return bquery.create(spec, _parentContext(), options...)
@@ -199,7 +211,17 @@ query := func(spec, ...options) {
  * Query results pool to find spec & data for a given ref.
  *
  * @param ref: a ref object ({blockId: name:})
+ * @param options: optional query options
  * @return result: a {ref: spec: data:} object
+ *
+ * This is a simplified way to access data from a specific block output by its ID.
+ * It internally calls bquery.resolve with the parent context.
+ *
+ * Example:
+ * ```
+ * // Get the RNA-seq count matrix from block "abc123"
+ * countMatrix = resolve({blockId: "abc123", name: "matrix"}).data
+ * ```
  */
 resolve := func(ref, ...options) {
 	r := bquery.resolve(ref, _parentContext(), options...)
@@ -210,6 +232,30 @@ resolve := func(ref, ...options) {
 	}))
 }
 
+/**
+ * Resolves both anchor references and related items in one operation.
+ *
+ * @param anchors: a map of anchorId -> ref or {ref: {blockId: string, name: string}, specOnly: bool}
+ *                 When providing {ref, specOnly}, the specOnly flag controls whether to fetch data
+ * @param queryMap: a map of queryId -> APColumnSelector specifications
+ *                 or {query: APColumnSelector, specOnly: bool}
+ *                 When providing {query, specOnly}, the specOnly flag controls whether to fetch data
+ *
+ * === Return ===
+ *
+ * @returns Object with methods for retrieving anchor resolution and query results:
+ *
+ *          getAnchor(anchorId) - Returns the resolved anchor for the given ID
+ *              @param anchorId - The ID of the anchor to retrieve
+ *              @returns The resolved anchor object {ref: spec: data:}
+ *
+ *          getResult(queryId) - Returns the query result for the given ID
+ *              @param queryId - The ID of the query result to retrieve
+ *              @returns The query result for the given ID
+ */
+anchoredQuery := func(anchors, queryMap) {
+	return bquery.anchoredQuery(_parentContext(), anchors, queryMap)
+}
 
 // template for prerun
 _preRunTpl := undefined
@@ -234,7 +280,7 @@ _prepare := func(cb) {
  */
 prepare := func(cb) {
 	if !_isProduction() {
-		return 
+		return
 	}
 	_prepare(cb)
 }
@@ -247,7 +293,7 @@ prepare := func(cb) {
  */
 preparePreRun := func(cb) {
 	if !_isStaging() {
-		return 
+		return
 	}
 	_prepare(cb)
 }
@@ -309,6 +355,7 @@ body := func(bodyFn) {
 export ll.toStrict({
 	query: query,
 	resolve: resolve,
+	anchoredQuery: anchoredQuery,
 	prepare: prepare,
 	body: body,
 	setPreRun: setPreRun,

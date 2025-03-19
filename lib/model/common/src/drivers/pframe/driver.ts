@@ -5,7 +5,7 @@ import { AddParameterToAllMethods } from './type_util';
 import { PTableShape, PTableVector, TableRange } from './data';
 import { FindColumnsRequest, FindColumnsResponse } from './find_columns';
 import { PObjectId } from '../../pool';
-import { PColumnIdAndSpec, PColumnSpec } from './spec';
+import { PColumnIdAndSpec, PColumnSpec } from './spec/spec';
 import {
   CalculateTableDataRequest,
   CalculateTableDataResponse
