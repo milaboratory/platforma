@@ -46,6 +46,35 @@ Test_map_Clone_3 := func() {
 	)
 }
 
+Test_map_DeepTransform := func() {
+	test.isEqual(
+		maps.deepTransform(
+			{a: {a: 1, b: 2}, c: 1, d: {a: {b: {c: 12}, d: 1}}},
+			{a: {b: func(val) { return val * 2 }}, d: {a: {b: {c: undefined}}}}
+		),
+		{a: {a: 1, b: 4}, c: 1, d: {a: {b: {}, d: 1}}},
+		"unexpected result from maps.deepTransform"
+	)
+
+	test.isEqual(
+		maps.deepTransform(
+			{user: {name: "John", age: 30}, settings: {theme: "dark"}},
+			{user: {age: func(val) { return val + 1 }}, settings: {theme: func(val) { return val + "-mode" }}}
+		),
+		{user: {name: "John", age: 31}, settings: {theme: "dark-mode"}},
+		"unexpected result from maps.deepTransform with simple transformations"
+	)
+
+	test.isEqual(
+		maps.deepTransform(
+			{data: {items: [1, 2, 3], meta: {count: 3}}},
+			{data: {meta: {count: func(val) { return undefined }}}}
+		),
+		{data: {items: [1, 2, 3], meta: {}}},
+		"unexpected result from maps.deepTransform with undefined return"
+	)
+}
+
 Test_map_ContainsKey := func() {
 	test.isTrue(maps.containsKey({a: undefined}, "a"), "map.containsKey() wrong result for regular map with existing key and undefined value")
 	test.isTrue(maps.containsKey({b: 1}, "b"), "map.containsKey() wrong result for regular map with existing key and truthful value")

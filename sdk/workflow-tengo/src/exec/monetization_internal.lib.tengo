@@ -169,6 +169,18 @@ addArgToLastRun := func(mnz, fileName, arg) {
 	mnz.runs[len(mnz.runs) - 1][fileName] = arg
 }
 
+/** Returns a file name for the argument in the last run.
+ *
+ * @param: mnz: monetization -- see a beginning of this file.
+ * @param: argName: string --  name of the argument. 
+ */
+argNameForLastRun := func(mnz, argName) {
+	idx := len(mnz.runs) - 1
+	fileName := fmt.sprintf("%s_%d", argName, idx)
+
+	return fileName
+}
+
 setDryRun := func(mnz, isDryRun) {
 	ll.assert(mnz.enabled,
 		"monetization.setDryRun(): monetization must be explicitly enabled by enableMnz(productKey) function")
@@ -305,6 +317,7 @@ export ll.toStrict({
 	appendRun: appendRun,
 	addArgToLastRun: addArgToLastRun,
 	addOptionalArg: addOptionalArg,
+	argNameForLastRun: argNameForLastRun,
 	run: run,
 	mnzClientStdoutSchema: mnzClientStdoutSchema
 })

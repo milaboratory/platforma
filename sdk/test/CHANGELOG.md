@@ -1,5 +1,55 @@
 # @platforma-sdk/test
 
+## 1.22.108
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.30.24
+
+## 1.22.107
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.30.23
+
+## 1.22.106
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.30.22
+
+## 1.22.105
+
+### Patch Changes
+
+- Updated dependencies [182e830]
+  - @milaboratories/pl-middle-layer@1.30.21
+
+## 1.22.104
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.30.20
+
+## 1.22.103
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.30.19
+
+## 1.22.102
+
+### Patch Changes
+
+- Updated dependencies [f07e632]
+  - @milaboratories/pl-middle-layer@1.30.18
+
+## 1.22.101
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.30.17
+
 ## 1.22.100
 
 ### Patch Changes

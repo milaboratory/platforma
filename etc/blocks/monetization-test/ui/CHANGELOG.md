@@ -1,5 +1,21 @@
 # @milaboratories/milaboratories.monetization-test.ui
 
+## 1.1.3
+
+### Patch Changes
+
+- 14b832c: fix mnz-client in edge cases like empty arg list, empty runs
+- Updated dependencies [14b832c]
+  - @milaboratories/milaboratories.monetization-test.model@1.0.4
+
+## 1.1.2
+
+### Patch Changes
+
+- 5828a76: fix mnz-client in edge cases like empty arg list, empty runs
+- Updated dependencies [5828a76]
+  - @milaboratories/milaboratories.monetization-test.model@1.0.3
+
 ## 1.1.1
 
 ### Patch Changes

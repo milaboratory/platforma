@@ -2,7 +2,7 @@
 import type { ImportFileHandle } from '@platforma-sdk/model';
 import type { ImportedFiles, ListOption } from '@platforma-sdk/ui-vue';
 
-import { PlAlert, PlBlockPage, PlContainer, PlRow, PlTextField, PlBtnPrimary, PlFileDialog, PlFileInput, PlDropdownMulti } from '@platforma-sdk/ui-vue';
+import { PlCheckbox, PlAlert, PlBlockPage, PlContainer, PlRow, PlTextField, PlBtnPrimary, PlFileDialog, PlFileInput, PlDropdownMulti } from '@platforma-sdk/ui-vue';
 import { useApp } from '../app';
 import { computed, reactive, ref } from 'vue';
 import PlMonetizationDraft from '../components/PlMonetizationDraft.vue';
@@ -102,6 +102,8 @@ async function verify(token: string) {
 
     <PlTextField v-model="app.model.args.productKey"
       label="Enter product key (keep MIFAKEMIFAKEMIFAKE for fake product)" clearable />
+
+    <PlCheckbox v-model="app.model.args.shouldAddRunPerFile" > Add run per file </PlCheckbox>
 
     <PlContainer width="400px">
       <PlBtnPrimary @click="files.isMultiDialogFileOpen = true">

@@ -1,5 +1,29 @@
 # @platforma-sdk/workflow-tengo
 
+## 2.15.16
+
+### Patch Changes
+
+- 1f60e0f: Fix for error message propagation logic in template
+
+## 2.15.15
+
+### Patch Changes
+
+- a9d38f3: Add deepTransform function for advanced map transformations
+
+## 2.15.14
+
+### Patch Changes
+
+- 14b832c: fix mnz-client in edge cases like empty arg list, empty runs
+
+## 2.15.13
+
+### Patch Changes
+
+- 5828a76: fix mnz-client in edge cases like empty arg list, empty runs
+
 ## 2.15.12
 
 ### Patch Changes

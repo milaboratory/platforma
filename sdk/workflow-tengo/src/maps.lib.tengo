@@ -180,10 +180,39 @@ deepMerge = func(...maps) {
 	return res
 }
 
+/**
+ * Do deep transform of a map, the same as deepMerge but with ability to use functions to transform the values.
+ * Add {... key: undefined ...} to remove the "key" from the map collected from maps before.
+ */
+deepTransform := undefined
+deepTransform = func(...maps) {
+	res := {}
+	for map in maps {
+		for k, v in map {
+			if is_undefined(v) {
+				delete(res, k)
+			} else if is_callable(v) {
+				result := v(res[k])
+				if is_undefined(result) {
+					delete(res, k)
+				} else {
+					res[k] = result
+				}
+			} else if is_map(res[k]) && is_map(v) {
+				res[k] = deepTransform(res[k], v)
+			} else {
+				res[k] = v
+			}
+		}
+	}
+	return res
+}
+
 export ll.toStrict({
 	map : map,
 	merge: merge,
 	deepMerge: deepMerge,
+	deepTransform: deepTransform,
 	clone: clone,
 	mapKeys : mapKeys,
 	mapValues : mapValues,
