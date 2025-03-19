@@ -34,6 +34,9 @@ export type ProjectOverview = {
 
 /** Overview of the block state, required for visualization in the left panel */
 export type BlockStateOverview = {
+  /** Project resource id (one of the goals it to be used for debugging purposes) */
+  projectResourceId: string;
+
   /** Block id */
   id: string;
 
