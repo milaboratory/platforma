@@ -1389,6 +1389,9 @@ importers:
       utility-types:
         specifier: 'catalog:'
         version: 3.11.0
+      zod:
+        specifier: 'catalog:'
+        version: 3.23.8
     devDependencies:
       '@jest/globals':
         specifier: 'catalog:'
