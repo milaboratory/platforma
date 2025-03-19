@@ -2,4 +2,4 @@
 '@milaboratories/pl-model-common': minor
 ---
 
-APColumnSelector / PColumnMatcher / APColumnId and AnchorCtx
+Added APColumnSelector, PColumnSelector and APColumnId interfaces for column selection and AnchorIdDeriver class
