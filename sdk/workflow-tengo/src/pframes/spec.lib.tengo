@@ -6,6 +6,7 @@
 
 ll := import(":ll")
 maps := import(":maps")
+sets := import(":sets")
 validation := import(":validation")
 json := import("json")
 
@@ -251,6 +252,121 @@ makeTrace := func(input, ...steps) {
 	})
 }
 
+/**
+ * Creates a spec distiller object that identifies domains with multiple values
+ * and provides a method to clean specs by removing annotations and unnecessary domains.
+ *
+ * @param specs array of column specs
+ * @return an object with a distill method
+ */
+createSpecDistiller := func(specs) {
+	// Map to collect all domain values by name
+	// Structure: { name: { domainName: Set<values> } }
+	domainsValues := {}
+
+	addDomainValue := func(name, domainName, domainValue) {
+		if is_undefined(domainsValues[name]) {
+			domainsValues[name] = {}
+		}
+
+		if is_undefined(domainsValues[name][domainName]) {
+			domainsValues[name][domainName] = {}
+		}
+
+		domainsValues[name][domainName][domainValue] = true
+	}
+
+	// Collect all domain values for each spec and axis
+	for _, spec in specs {
+		// Process column spec domains
+		specName := spec.name
+		if !is_undefined(spec.domain) {
+			for domainName, domainValue in spec.domain {
+				addDomainValue(specName, domainName, domainValue)
+			}
+		}
+
+		// Process axis spec domains
+		if !is_undefined(spec.axesSpec) {
+			for _, axis in spec.axesSpec {
+				axisName := axis.name
+				if !is_undefined(axis.domain) {
+					for domainName, domainValue in axis.domain {
+						addDomainValue(axisName, domainName, domainValue)
+					}
+				}
+			}
+		}
+	}
+
+	// Filter domains that have more than one value - these are the ones that help discriminate pcolumns
+	discriminativeDomains := {}
+	for name, domains in domainsValues {
+		discriminativeDomains[name] = {}
+		for domainName, valueSet in domains {
+			if len(valueSet) > 1 {
+				discriminativeDomains[name][domainName] = true
+			}
+		}
+	}
+
+	// Create the distiller object
+	return ll.toStrict({
+		distill: func(spec) {
+			result := maps.clone(spec)
+
+			delete(result, "annotations")
+
+			// Helper function to filter domains based on discriminative domains
+			filterDomain := func(domain, entityName) {
+				if is_undefined(domain) {
+					return undefined
+				}
+
+				filteredDomain := undefined
+
+				if !is_undefined(discriminativeDomains[entityName]) {
+					for domainName, domainValue in domain {
+						if sets.hasElement(discriminativeDomains[entityName], domainName) {
+							if is_undefined(filteredDomain) {
+								filteredDomain = {}
+							}
+							filteredDomain[domainName] = domainValue
+						}
+					}
+				}
+
+				return filteredDomain
+			}
+
+			// Filter main spec domains
+			filteredDomain := filterDomain(result.domain, result.name)
+			if !is_undefined(filteredDomain) {
+				result.domain = filteredDomain
+			} else if !is_undefined(result.domain) {
+				delete(result, "domain")
+			}
+
+			// Process axes
+			if !is_undefined(result.axesSpec) {
+				for i, axis in result.axesSpec {
+					delete(result.axesSpec[i], "annotations")
+
+					// Filter domains in axis
+					filteredAxisDomain := filterDomain(axis.domain, axis.name)
+					if !is_undefined(filteredAxisDomain) {
+						result.axesSpec[i].domain = filteredAxisDomain
+					} else if !is_undefined(axis.domain) {
+						delete(result.axesSpec[i], "domain")
+					}
+				}
+			}
+
+			return result
+		}
+	})
+}
+
 export ll.toStrict({
 	P_AXIS_SPEC_SCHEMA: P_AXIS_SPEC_SCHEMA,
 	P_COLUMN_SPEC_SCHEMA: P_COLUMN_SPEC_SCHEMA,
@@ -269,5 +385,8 @@ export ll.toStrict({
 	matchAxis: matchAxis,
 	matchAxes: matchAxes,
 
-	makeTrace: makeTrace
+	makeTrace: makeTrace,
+
+	createSpecDistiller: createSpecDistiller
 })
+
