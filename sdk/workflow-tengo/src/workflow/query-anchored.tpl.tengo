@@ -1,0 +1,228 @@
+self := import(":tpl")
+ll := import(":ll")
+slices := import(":slices")
+maps := import(":maps")
+json := import("json")
+bquery := import(":workflow.bquery")
+model := import(":workflow.model")
+validation := import(":validation")
+
+self.awaitState("anchorSpecs", { wildcard: "*" }, "ResourceReady")
+self.awaitState("queryMap", "ResourceReady")
+
+self.body(func(inputs) {
+	ctx := inputs.ctx
+	anchors := inputs.anchorSpecs
+	queryMap := inputs.queryMap
+
+    QUERY_CONFIG_SCHEMA := { any: {
+        `__options__,closed`: true,
+        `query`: model.AP_COLUMN_SELECTOR_SCHEMA,
+        `fetchData,?`: `boolean`
+    } }
+
+    validation.assertType(queryMap, QUERY_CONFIG_SCHEMA)
+
+    outputs := {}
+
+    for queryId, queryConfig in queryMap {
+        // Extract query and fetchData flag
+        query := queryConfig.query
+        fetchData := queryConfig.fetchData
+
+        // Converting the query to a query spec
+        queryPredicates := []
+
+        if (!is_undefined(query.name) || !is_undefined(query.namePattern)) && ll.apiVersion() < 7 {
+            ll.panic("Name or namePattern filter is not supported by this version, please upgrade your platforma backend")
+        }
+
+        // Add name or namePattern predicate if present
+        if !is_undefined(query.name) {
+            if !is_undefined(query.namePattern) {
+                ll.panic("Cannot specify both name and namePattern for item '%s'", queryId)
+            }
+
+            queryPredicates += [ {
+                type: "Name",
+                name: query.name
+            } ]
+        } else if !is_undefined(query.namePattern) {
+            queryPredicates += [ {
+                type: "NamePattern",
+                pattern: query.namePattern
+            } ]
+        }
+
+        // Add domain predicate if present
+        if !is_undefined(query.domain) || !is_undefined(query.domainAnchor) {
+            domainPredicate := {
+                type: "Domain",
+                domain: {}
+            }
+
+            // Process domainAnchor if present
+            if !is_undefined(query.domainAnchor) {
+                anchorId := query.domainAnchor
+                if is_undefined(anchors[anchorId]) {
+                    ll.panic("Cannot resolve domain anchor: anchor '%s' not found", anchorId)
+                }
+
+                // Copy all domain values from the anchor
+                if !is_undefined(anchors[anchorId].domain) {
+                    for domainKey, domainValue in anchors[anchorId].domain {
+                        domainPredicate.domain[domainKey] = domainValue
+                    }
+                }
+            }
+
+            // Process each domain key-value pair
+            if !is_undefined(query.domain) {
+                for domainKey, domainValue in query.domain {
+                    // Check if this is an anchored domain reference (has 'anchor' property)
+                    if is_map(domainValue) && !is_undefined(domainValue.anchor) {
+                        // This is an anchored domain reference
+                        // Use the anchor ID to get the domain value from the anchors
+                        anchorId := domainValue.anchor
+                        if is_undefined(anchors[anchorId]) {
+                            ll.panic("Cannot resolve anchored domain: anchor '%s' not found", anchorId)
+                        }
+
+                        // Get domain value from the anchor
+                        if is_undefined(anchors[anchorId].domain) || is_undefined(anchors[anchorId].domain[domainKey]) {
+                            ll.panic("Cannot resolve anchored domain: domain key '%s' not found in anchor '%s'", domainKey, anchorId)
+                        }
+
+                        // Use the resolved value
+                        domainPredicate.domain[domainKey] = anchors[anchorId].domain[domainKey]
+                    } else {
+                        // This is a regular domain value
+                        domainPredicate.domain[domainKey] = domainValue
+                    }
+                }
+            }
+
+            queryPredicates += [ domainPredicate ]
+        }
+
+        // Add axes if present
+        if !is_undefined(query.axes) {
+            axesMatcher := {
+                type: "AxesKeys",
+                axesKeys: slices.map(query.axes, func(axis) {
+                    // If axis is a direct AxisId (has name, type properties)
+                    if is_map(axis) && !is_undefined(axis.name) && !is_undefined(axis.type) {
+                        // This is a direct AxisId
+                        return {
+                            name: axis.name,
+                            type: axis.type,
+                            domain: !is_undefined(axis.domain) ? axis.domain : {}
+                        }
+                    }
+
+                    // If it's an AnchorAxisRef (map with anchor and reference properties)
+                    if is_map(axis) && !is_undefined(axis.anchor) {
+                        anchorId := axis.anchor
+
+                        // Check if the anchor exists
+                        if is_undefined(anchors[anchorId]) {
+                            ll.panic("Cannot resolve anchored axis: anchor '%s' not found", anchorId)
+                        }
+
+						foundAxis := undefined
+
+                        // Handle different types of AnchorAxisRef
+                        if !is_undefined(axis.idx) {
+                            // AnchorAxisRefByIdx - has idx property
+                            axisIndex := axis.idx
+                            if is_undefined(anchors[anchorId].axesSpec) || len(anchors[anchorId].axesSpec) <= axisIndex {
+                                ll.panic("Cannot resolve anchored axis by index: axis index %v not found in anchor '%s'", axisIndex, anchorId)
+                            }
+
+                            foundAxis = anchors[anchorId].axesSpec[axisIndex]
+                        } else if !is_undefined(axis.name) {
+                            // AnchorAxisRefByName - has name property
+                            axisName := axis.name
+
+                            // Find axis by name in the anchor
+                            for _, anchorAxis in anchors[anchorId].axesSpec {
+                                if anchorAxis.name == axisName {
+									if !is_undefined(foundAxis) {
+										ll.panic("Cannot resolve anchored axis by name: multiple axes with name '%s' found in anchor '%s'", axisName, anchorId)
+									}
+                                    foundAxis = anchorAxis
+                                }
+                            }
+
+                            if is_undefined(foundAxis) {
+                                ll.panic("Cannot resolve anchored axis by name: axis '%s' not found in anchor '%s'", axisName, anchorId)
+                            }
+                        } else {
+                            ll.panic("Unsupported axis reference format: %v", axis)
+                        }
+
+						return {
+							name: foundAxis.name,
+							type: foundAxis.type,
+							domain: !is_undefined(foundAxis.domain) ? foundAxis.domain : {}
+						}
+                    }
+
+                    ll.panic("Unsupported axis format: %v", axis)
+                })
+            }
+
+			if !is_undefined(query.partialAxesMatch) {
+				axesMatcher.partialMatch = query.partialAxesMatch
+			}
+
+            queryPredicates += [ axesMatcher ]
+        }
+
+        if !is_undefined(query.annotations) {
+            annotationKeys := maps.getKeys(query.annotations)
+            for annotationKey in annotationKeys {
+                queryPredicates += [ {
+                    type: "Annotation",
+                    annotation: annotationKey,
+                    value: query.annotations[annotationKey]
+                } ]
+            }
+        }
+
+        if !is_undefined(query.annotationPatterns) {
+            patternKeys := maps.getKeys(query.annotationPatterns)
+            for annotationKey in patternKeys {
+                queryPredicates += [ {
+                    type: "AnnotationPattern",
+                    annotation: annotationKey,
+                    pattern: query.annotationPatterns[annotationKey]
+                } ]
+            }
+        }
+
+        if len(queryPredicates) == 0 {
+            ll.panic("No predicates found for the item '%s'", queryId)
+        }
+
+        querySpec := len(queryPredicates) > 1 ? {
+            type: "And",
+            operands: queryPredicates
+        } : queryPredicates[0]
+
+        expectMultiple := query.matchStrategy == "expectMultiple"
+        queryOps := {
+            spec: true,
+            data: fetchData,  // Use the fetchData flag to control whether to fetch data
+            first: !expectMultiple,
+            single: !expectMultiple
+        }
+
+        queryResult := bquery.create(querySpec, ctx, queryOps)
+
+        outputs["result/" + queryId] = queryResult
+    }
+
+    return outputs
+})
+

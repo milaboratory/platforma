@@ -1,0 +1,36 @@
+// workflow with query
+
+ll := import("@platforma-sdk/workflow-tengo:ll")
+wf := import("@platforma-sdk/workflow-tengo:workflow")
+text := import("text")
+
+wf.body(func(args) {
+
+	qResult := wf.anchoredQuery({
+		main: {
+			ref: {
+				blockId: "b1",
+				name: "e2"
+			},
+			specOnly: true
+		}
+	}, {
+		r1: {
+			query: {
+				name: "pl7.app/test2",
+				domain: {
+					"pl7.app/testDomain1": { anchor: "main" }
+				}
+			},
+			specOnly: true
+		}
+	})
+
+	return {
+		outputs: {
+			anchorSpec: qResult.getAnchor("main").inputs().spec,
+			r1: qResult.getResult("r1").getFutureInputField("spec")
+		},
+		exports: {}
+	}
+})

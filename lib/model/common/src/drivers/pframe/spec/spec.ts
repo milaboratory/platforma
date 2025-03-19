@@ -1,4 +1,4 @@
-import { PObject, PObjectId, PObjectSpec } from '../../pool';
+import type { PObject, PObjectId, PObjectSpec } from '../../../pool';
 
 /** PFrame columns and axes within them may store one of these types. */
 export type ValueType = 'Int' | 'Long' | 'Float' | 'Double' | 'String' | 'Bytes';
@@ -89,8 +89,8 @@ export interface PUniversalColumnSpec extends PObjectSpec {
 
 /**
  * Specification of a data column.
- * 
- * Data column is a specialized type of PColumn that stores only simple values (strings and numbers) 
+ *
+ * Data column is a specialized type of PColumn that stores only simple values (strings and numbers)
  * addressed by multiple keys. This is in contrast to other PColumn variants that can store more complex
  * values like files or other abstract data types. Data columns are optimized for storing and processing
  * basic tabular data.
