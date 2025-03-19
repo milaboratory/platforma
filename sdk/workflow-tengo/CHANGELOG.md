@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 2.15.16
+
+### Patch Changes
+
+- 1f60e0f: Fix for error message propagation logic in template
+
 ## 2.15.15
 
 ### Patch Changes
