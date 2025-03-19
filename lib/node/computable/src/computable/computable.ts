@@ -20,7 +20,7 @@ import {
 import { Aborted, notEmpty } from '@milaboratories/ts-helpers';
 import { randomUUID } from 'node:crypto';
 import { setImmediate } from 'node:timers/promises';
-import { ensureErrorLike } from './error';
+import { ensureErrorLike, ErrorLike } from './error';
 
 /** Represents the most general result of the computable, successful or error */
 export type ComputableResult<T> = ComputableResultErrors | ComputableResultOk<T>;
@@ -99,7 +99,7 @@ export class AggregateComputableError extends AggregateError {
 /** Type returned by computables that wraps errors */
 export type ComputableValueOrErrors<T> =
   | { ok: true; value: T }
-  | { ok: false; errors: string[]; moreErrors: boolean };
+  | { ok: false; errors: ErrorLike[]; moreErrors: boolean };
 
 export interface ComputableRenderingOps extends CellRenderingOps {
   /**
@@ -618,13 +618,13 @@ export class Computable<T, StableT extends T = T> {
     return Computable.make(() => computable, {
       postprocessValue: (value) => ({ ok: true, value: value as T }) as ComputableValueOrErrors<T>,
       recover: (error: unknown[]) => {
-        const formattedErrors: string[] = [];
+        const errors: ErrorLike[] = [];
         for (let i = 0; i < Math.min(maxErrors, error.length); i++)
-          formattedErrors.push(ensureErrorLike(error[i]));
+          errors.push(ensureErrorLike(error[i]));
         return {
           ok: false,
-          errors: formattedErrors,
-          moreErrors: error.length > maxErrors,
+          errors,
+          moreErrors: error.length > maxErrors
         } as ComputableValueOrErrors<T>;
       },
       // inherit key from the computable being wrapped
