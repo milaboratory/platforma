@@ -362,10 +362,37 @@ anchoredQuery := func(ctx, anchors, queryMap) {
 		/**
 		 * Get a specific query result by ID
 		 * @param queryId - The ID of the query result to retrieve
-		 * @returns The query result for the related item
+		 * @returns The query result for the given ID
 		 */
 		getResult: func(queryId) {
 			return queryResult.output("result/" + queryId)
+		},
+
+		/**
+		 * Get the specification for a specific query result
+		 * @param queryId - The ID of the query result to retrieve
+		 * @returns The specification of the query result
+		 */
+		getResultSpec: func(queryId) {
+			return self.getResult(queryId).getFutureInputField("spec")
+		},
+
+		/**
+		 * Get the data for a specific query result
+		 * @param queryId - The ID of the query result to retrieve
+		 * @returns The data of the query result
+		 */
+		getResultData: func(queryId) {
+			return self.getResult(queryId).getFutureInputField("data")
+		},
+
+		/**
+		 * Get the reference for a specific query result
+		 * @param queryId - The ID of the query result to retrieve
+		 * @returns The reference of the query result
+		 */
+		getResultRef: func(queryId) {
+			return self.getResult(queryId).getFutureInputField("ref")
 		}
 	})
 
