@@ -1,5 +1,17 @@
 # @platforma-sdk/test
 
+## 1.23.0
+
+### Minor Changes
+
+- 1016b99: Add ability to set custom blockId when materializing workflows for blocks in tests
+
+### Patch Changes
+
+- Updated dependencies [1016b99]
+  - @platforma-sdk/model@1.23.0
+  - @milaboratories/pl-middle-layer@1.30.25
+
 ## 1.22.108
 
 ### Patch Changes
