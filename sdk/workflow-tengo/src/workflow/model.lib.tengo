@@ -1,0 +1,71 @@
+ll := import(":ll")
+
+// Axis selector schema, matches the TypeScript AxisSelector interface
+AXIS_SELECTOR_SCHEMA := {
+    `__options__,closed`: true,
+    `type,?`: ["or", "string", ["string"]],
+    `name,?`: `string`,
+    `domain,?`: { any: `string` }
+}
+
+// Anchor axis reference schemas for different reference types
+ANCHOR_AXIS_REF_BY_IDX_SCHEMA := {
+    `__options__,closed`: true,
+    `anchor`: `string`,
+    `idx`: `number`
+}
+
+ANCHOR_AXIS_REF_BY_NAME_SCHEMA := {
+    `__options__,closed`: true,
+    `anchor`: `string`,
+    `name`: `string`
+}
+
+ANCHOR_AXIS_REF_BY_MATCHER_SCHEMA := {
+    `__options__,closed`: true,
+    `anchor`: `string`,
+    `id`: AXIS_SELECTOR_SCHEMA
+}
+
+// A_AXIS_SELECTOR - can be either an AxisSelector or any of the AnchorAxisRef types
+A_AXIS_SELECTOR_SCHEMA := ["or",
+    AXIS_SELECTOR_SCHEMA,
+    ANCHOR_AXIS_REF_BY_IDX_SCHEMA,
+    ANCHOR_AXIS_REF_BY_NAME_SCHEMA,
+    ANCHOR_AXIS_REF_BY_MATCHER_SCHEMA
+]
+
+// Schema for the ADomain type (string or AnchorDomainRef)
+A_DOMAIN_SCHEMA := ["or",
+    "string",
+    {
+        `__options__,closed`: true,
+        `anchor`: `string`
+    }
+]
+
+// Schema for APColumnSelector, matching the TypeScript interface
+AP_COLUMN_SELECTOR_SCHEMA := {
+    `__options__,closed`: true,
+    `name,?`: `string`,
+    `namePattern,?`: `string`,
+    `type,?`: ["or", "string", ["string"]],
+    `domainAnchor,?`: `string`,
+    `domain,?`: { any: A_DOMAIN_SCHEMA },
+    `axes,?`: [A_AXIS_SELECTOR_SCHEMA],
+    `partialAxesMatch,?`: `boolean`,
+    `annotations,?`: { any: `string` },
+    `annotationPatterns,?`: { any: `string` },
+    `matchStrategy,?`: `string,regex=expectSingle|expectMultiple|takeFirst`
+}
+
+export ll.toStrict({
+	AP_COLUMN_SELECTOR_SCHEMA: AP_COLUMN_SELECTOR_SCHEMA,
+	AXIS_SELECTOR_SCHEMA: AXIS_SELECTOR_SCHEMA,
+	ANCHOR_AXIS_REF_BY_IDX_SCHEMA: ANCHOR_AXIS_REF_BY_IDX_SCHEMA,
+	ANCHOR_AXIS_REF_BY_NAME_SCHEMA: ANCHOR_AXIS_REF_BY_NAME_SCHEMA,
+	ANCHOR_AXIS_REF_BY_MATCHER_SCHEMA: ANCHOR_AXIS_REF_BY_MATCHER_SCHEMA,
+	A_AXIS_SELECTOR_SCHEMA: A_AXIS_SELECTOR_SCHEMA,
+	A_DOMAIN_SCHEMA: A_DOMAIN_SCHEMA
+})
+

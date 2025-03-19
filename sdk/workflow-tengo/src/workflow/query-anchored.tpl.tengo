@@ -4,6 +4,8 @@ slices := import(":slices")
 maps := import(":maps")
 json := import("json")
 bquery := import(":workflow.bquery")
+model := import(":workflow.model")
+validation := import(":validation")
 
 self.awaitState("anchorSpecs", { wildcard: "*" }, "ResourceReady")
 self.awaitState("queryMap", "ResourceReady")
@@ -12,6 +14,14 @@ self.body(func(inputs) {
 	ctx := inputs.ctx
 	anchors := inputs.anchorSpecs
 	queryMap := inputs.queryMap
+
+    QUERY_CONFIG_SCHEMA := { any: {
+        `__options__,closed`: true,
+        `query`: model.AP_COLUMN_SELECTOR_SCHEMA,
+        `fetchData,?`: `boolean`
+    } }
+
+    validation.assertType(queryMap, QUERY_CONFIG_SCHEMA)
 
     outputs := {}
 
