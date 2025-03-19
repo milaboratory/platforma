@@ -24,4 +24,7 @@ alwaysApply: false
   fmt.println(sum(0, [1, 2, 3]))   // "6"
   fmt.println(sum("", [1, 2, 3]))  // "123"
   ```
-
+- always find and read all the types and functions you are going to use before implementing what you were asked for
+- always try finding code examples for similar patterns
+- find and read additional types, functions and examples of code if you understand that you dont have enough information
+- think really hard

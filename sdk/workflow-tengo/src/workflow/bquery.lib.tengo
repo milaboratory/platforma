@@ -5,6 +5,8 @@ constants := import(":constants")
 json := import("json")
 assets := import(":assets")
 render := import(":render")
+validation := import(":validation")
+model := import(":workflow.model")
 
 queryAnchoredTpl := assets.importTemplate(":workflow.query-anchored")
 
@@ -31,6 +33,19 @@ _DEFAULT_OPTIONS := {
 	first: false,
 	/** Throw error if no results found */
 	errIfMissing: false
+}
+
+// Schema for query map validation
+_QUERY_MAP_SCHEMA := {
+	`__options__,closed`: true,
+	`any`: ["or",
+		model.AP_COLUMN_SELECTOR_SCHEMA,
+		{
+			`__options__,closed`: true,
+			`query`: model.AP_COLUMN_SELECTOR_SCHEMA,
+			`specOnly`: `bool`
+		}
+	]
 }
 
 /**
@@ -283,6 +298,9 @@ resolve := func(ref, ctx, ...options) {
  *              @returns The query result for the given ID
  */
 anchoredQuery := func(ctx, anchors, queryMap) {
+	// Validate query map schema
+	validation.assertType(queryMap, _QUERY_MAP_SCHEMA, "invalid query map schema")
+
 	// First, resolve all anchors
 	resolvedAnchors := {}
 	for anchorId, anchorValue in anchors {
@@ -305,7 +323,6 @@ anchoredQuery := func(ctx, anchors, queryMap) {
 		query := aQuery
 		fetchData := true
 
-		// Check if this is an object with matcher and specOnly flag
 		if !is_undefined(aQuery.query) {
 			query = aQuery.query
 			if aQuery.specOnly {
@@ -313,7 +330,6 @@ anchoredQuery := func(ctx, anchors, queryMap) {
 			}
 		}
 
-		// Add the processed matcher and fetchData flag
 		processedQueryMap[queryId] = {
 			query: query,
 			fetchData: fetchData
