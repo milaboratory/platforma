@@ -20,7 +20,7 @@ import {
 import { Aborted, notEmpty } from '@milaboratories/ts-helpers';
 import { randomUUID } from 'node:crypto';
 import { setImmediate } from 'node:timers/promises';
-import { formatError } from './error';
+import { ensureErrorLike } from './error';
 
 /** Represents the most general result of the computable, successful or error */
 export type ComputableResult<T> = ComputableResultErrors | ComputableResultOk<T>;
@@ -620,7 +620,7 @@ export class Computable<T, StableT extends T = T> {
       recover: (error: unknown[]) => {
         const formattedErrors: string[] = [];
         for (let i = 0; i < Math.min(maxErrors, error.length); i++)
-          formattedErrors.push(formatError(error[i]));
+          formattedErrors.push(ensureErrorLike(error[i]));
         return {
           ok: false,
           errors: formattedErrors,

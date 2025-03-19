@@ -29,7 +29,8 @@
   "dependencies": {
     "@milaboratories/ts-helpers": "workspace:^",
     "@types/node": "catalog:",
-    "utility-types": "catalog:"
+    "utility-types": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@milaboratories/platforma-build-configs": "workspace:*",
