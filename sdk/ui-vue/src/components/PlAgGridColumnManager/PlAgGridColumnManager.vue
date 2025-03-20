@@ -40,12 +40,16 @@ function toggleColumnVisibility(col: Column) {
 watch(
   () => gridApi.value,
   (gridApi) => {
+    if (gridApi.isDestroyed()) return;
+
     columns.value = gridApi.getAllGridColumns();
+
     if (columns.value.length > 0) {
       gridApi.moveColumns(columns.value, 0);
     }
 
     gridApi.addEventListener('displayedColumnsChanged', (event) => {
+      if (event.api.isDestroyed()) return;
       columns.value = event.api.getAllGridColumns();
       listKey.value++;
     });

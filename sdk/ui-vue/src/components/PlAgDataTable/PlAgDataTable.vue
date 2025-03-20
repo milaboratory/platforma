@@ -52,6 +52,13 @@ ModuleRegistry.registerModules([
 
 const tableState = defineModel<PlDataTableState>({ default: { gridState: {} } });
 const selectedRows = defineModel<PTableRowKey[]>('selectedRows');
+
+const resetLocalState = () => {
+  tableState.value = { gridState: {} };
+  selectedRows.value = undefined;
+  ++reloadKey.value;
+};
+
 const props = defineProps<{
   settings?: Readonly<PlDataTableSettings>;
   /**
@@ -93,7 +100,21 @@ const props = defineProps<{
      */
   cellButtonInvokeRowsOnDoubleClick?: boolean;
 }>();
+
 const { settings } = toRefs(props);
+
+const sourceValue = computed(() => {
+  if (settings.value?.sourceType === 'ptable') {
+    return canonicalize(settings.value?.pTable);
+  }
+  return canonicalize(settings.value?.xsvFile);
+});
+
+watch(sourceValue, (n) => {
+  console.log('>> sourceValue changed', n);
+  resetLocalState();
+});
+
 const emit = defineEmits<{
   rowDoubleClicked: [key?: PTableRowKey];
   columnsChanged: [columns: PTableColumnSpec[]];
@@ -214,6 +235,7 @@ const gridApi = shallowRef<GridApi>();
 const gridApiDef = shallowRef(new Deferred<GridApi>());
 
 const firstDataRenderedTracker = makeOnceTracker<GridApi<PlAgDataTableRow>>();
+
 const gridOptions = shallowRef<GridOptions<PlAgDataTableRow>>({
   animateRows: false,
   suppressColumnMoveAnimation: true,
@@ -318,7 +340,7 @@ const makePartialState = (state: GridState) => {
   return {
     columnOrder: state.columnOrder,
     sort: state.sort,
-    columnVisibility: state.columnVisibility ?? (state.columnOrder ? { hiddenColIds: [] } : undefined),
+    columnVisibility: state.columnVisibility ?? undefined,
   };
 };
 
@@ -338,6 +360,7 @@ defineExpose<PlAgDataTableController>({
 });
 
 const reloadKey = ref(0);
+
 watch(
   () => [gridApi.value, gridState.value] as const,
   (state, oldState) => {
@@ -351,8 +374,11 @@ watch(
 
     gridOptions.value.initialState = gridState;
     ++reloadKey.value;
+
+    console.log('>> watch [gridApi, gridState] changed, reloadKey', reloadKey.value);
   },
 );
+
 watch(
   () => gridOptions.value,
   (options, oldOptions) => {
@@ -407,6 +433,8 @@ watch(
       if (lodash.isEqual(settings, oldSettings)) {
         return;
       };
+
+      console.log('>> settings changed', JSON.stringify(settings));
 
       oldSettings = settings;
 
