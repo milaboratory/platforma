@@ -318,7 +318,7 @@ const makePartialState = (state: GridState) => {
   return {
     columnOrder: state.columnOrder,
     sort: state.sort,
-    columnVisibility: state.columnVisibility ?? (state.columnOrder ? { hiddenColIds: [] } : undefined),
+    columnVisibility: state.columnVisibility,
   };
 };
 
