@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.23.2
+
+### Patch Changes
+
+- 0a3ee03: Fix PlAgDataTable column control tooltips flickering
+
 ## 1.23.0
 
 ### Patch Changes
