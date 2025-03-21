@@ -1,5 +1,12 @@
 # @milaboratories/pl-middle-layer
 
+## 1.30.26
+
+### Patch Changes
+
+- Updated dependencies [ecf6caf]
+  - @milaboratories/pl-deployments@1.6.0
+
 ## 1.30.25
 
 ### Patch Changes
