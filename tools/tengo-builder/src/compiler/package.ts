@@ -72,6 +72,13 @@ export function typedArtifactNamesEquals(
   return name1.type == name2.type && name1.pkg == name2.pkg && name1.id == name2.id;
 }
 
+export function fullNameEquals(
+  name1: FullArtifactName,
+  name2: FullArtifactName,
+): boolean {
+  return name1.type == name2.type && name1.pkg == name2.pkg && name1.id == name2.id && name1.version == name2.version;
+}
+
 /** used to format artefact name while generating output files */
 export function artifactNameToString(name: ArtifactName): string {
   return `${name.pkg}:${name.id}`;

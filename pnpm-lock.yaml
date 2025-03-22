@@ -382,13 +382,14 @@ importers:
         version: 3.23.8
 
   etc/blocks/blob-url-custom-protocol/workflow:
+    dependencies:
+      '@platforma-sdk/workflow-tengo':
+        specifier: workspace:*
+        version: link:../../../../sdk/workflow-tengo
     devDependencies:
       '@platforma-sdk/tengo-builder':
         specifier: workspace:*
         version: link:../../../../tools/tengo-builder
-      '@platforma-sdk/workflow-tengo':
-        specifier: workspace:*
-        version: link:../../../../sdk/workflow-tengo
 
   etc/blocks/download-file/block:
     dependencies:
@@ -466,13 +467,14 @@ importers:
         version: 3.23.8
 
   etc/blocks/download-file/workflow:
+    dependencies:
+      '@platforma-sdk/workflow-tengo':
+        specifier: workspace:*
+        version: link:../../../../sdk/workflow-tengo
     devDependencies:
       '@platforma-sdk/tengo-builder':
         specifier: workspace:*
         version: link:../../../../tools/tengo-builder
-      '@platforma-sdk/workflow-tengo':
-        specifier: workspace:*
-        version: link:../../../../sdk/workflow-tengo
 
   etc/blocks/enter-numbers/block:
     dependencies:
@@ -550,13 +552,14 @@ importers:
         version: 3.23.8
 
   etc/blocks/enter-numbers/workflow:
+    dependencies:
+      '@platforma-sdk/workflow-tengo':
+        specifier: workspace:*
+        version: link:../../../../sdk/workflow-tengo
     devDependencies:
       '@platforma-sdk/tengo-builder':
         specifier: workspace:*
         version: link:../../../../tools/tengo-builder
-      '@platforma-sdk/workflow-tengo':
-        specifier: workspace:*
-        version: link:../../../../sdk/workflow-tengo
 
   etc/blocks/model-test/block:
     dependencies:
@@ -625,13 +628,14 @@ importers:
         version: 3.23.8
 
   etc/blocks/model-test/workflow:
+    dependencies:
+      '@platforma-sdk/workflow-tengo':
+        specifier: workspace:*
+        version: link:../../../../sdk/workflow-tengo
     devDependencies:
       '@platforma-sdk/tengo-builder':
         specifier: workspace:*
         version: link:../../../../tools/tengo-builder
-      '@platforma-sdk/workflow-tengo':
-        specifier: workspace:*
-        version: link:../../../../sdk/workflow-tengo
 
   etc/blocks/monetization-test/block:
     dependencies:
@@ -701,9 +705,9 @@ importers:
 
   etc/blocks/monetization-test/workflow:
     dependencies:
-      '@platforma-open/milaboratories.software-small-binaries':
-        specifier: 'catalog:'
-        version: 1.15.19
+      '@platforma-sdk/workflow-tengo':
+        specifier: 'workspace:'
+        version: link:../../../../sdk/workflow-tengo
     devDependencies:
       '@platforma-sdk/tengo-builder':
         specifier: 'workspace:'
@@ -711,9 +715,6 @@ importers:
       '@platforma-sdk/test':
         specifier: 'workspace:'
         version: link:../../../../sdk/test
-      '@platforma-sdk/workflow-tengo':
-        specifier: 'workspace:'
-        version: link:../../../../sdk/workflow-tengo
       vitest:
         specifier: 'catalog:'
         version: 2.1.8(@types/node@22.5.5)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4)
@@ -791,6 +792,10 @@ importers:
         version: 3.23.8
 
   etc/blocks/pool-explorer/workflow:
+    dependencies:
+      '@platforma-open/milaboratories.software-small-binaries':
+        specifier: 'catalog:'
+        version: 1.15.19
     devDependencies:
       '@platforma-sdk/tengo-builder':
         specifier: workspace:*
@@ -882,13 +887,13 @@ importers:
       '@platforma-open/milaboratories.software-small-binaries':
         specifier: 'catalog:'
         version: 1.15.19
+      '@platforma-sdk/workflow-tengo':
+        specifier: workspace:*
+        version: link:../../../../sdk/workflow-tengo
     devDependencies:
       '@platforma-sdk/tengo-builder':
         specifier: workspace:*
         version: link:../../../../tools/tengo-builder
-      '@platforma-sdk/workflow-tengo':
-        specifier: workspace:*
-        version: link:../../../../sdk/workflow-tengo
 
   etc/blocks/sum-numbers/block:
     dependencies:
@@ -966,13 +971,14 @@ importers:
         version: 3.23.8
 
   etc/blocks/sum-numbers/workflow:
+    dependencies:
+      '@platforma-sdk/workflow-tengo':
+        specifier: workspace:*
+        version: link:../../../../sdk/workflow-tengo
     devDependencies:
       '@platforma-sdk/tengo-builder':
         specifier: workspace:*
         version: link:../../../../tools/tengo-builder
-      '@platforma-sdk/workflow-tengo':
-        specifier: workspace:*
-        version: link:../../../../sdk/workflow-tengo
 
   etc/blocks/ui-examples/block:
     dependencies:
@@ -1062,13 +1068,14 @@ importers:
         version: 3.23.8
 
   etc/blocks/ui-examples/workflow:
+    dependencies:
+      '@platforma-sdk/workflow-tengo':
+        specifier: workspace:*
+        version: link:../../../../sdk/workflow-tengo
     devDependencies:
       '@platforma-sdk/tengo-builder':
         specifier: workspace:*
         version: link:../../../../tools/tengo-builder
-      '@platforma-sdk/workflow-tengo':
-        specifier: workspace:*
-        version: link:../../../../sdk/workflow-tengo
 
   etc/blocks/upload-file/block:
     dependencies:
@@ -1146,13 +1153,14 @@ importers:
         version: 3.23.8
 
   etc/blocks/upload-file/workflow:
+    dependencies:
+      '@platforma-sdk/workflow-tengo':
+        specifier: workspace:*
+        version: link:../../../../sdk/workflow-tengo
     devDependencies:
       '@platforma-sdk/tengo-builder':
         specifier: workspace:*
         version: link:../../../../tools/tengo-builder
-      '@platforma-sdk/workflow-tengo':
-        specifier: workspace:*
-        version: link:../../../../sdk/workflow-tengo
 
   etc/ui-vue-docs:
     dependencies:
@@ -2485,6 +2493,10 @@ importers:
         version: link:../../../tools/package-builder
 
   tests/workflow-tengo:
+    dependencies:
+      '@platforma-sdk/workflow-tengo':
+        specifier: workspace:*
+        version: link:../../sdk/workflow-tengo
     devDependencies:
       '@milaboratories/computable':
         specifier: workspace:*
@@ -2519,9 +2531,6 @@ importers:
       '@platforma-sdk/test':
         specifier: workspace:*
         version: link:../../sdk/test
-      '@platforma-sdk/workflow-tengo':
-        specifier: workspace:*
-        version: link:../../sdk/workflow-tengo
       '@types/node':
         specifier: 'catalog:'
         version: 20.16.15
@@ -2863,6 +2872,9 @@ importers:
       '@milaboratories/pl-model-backend':
         specifier: workspace:^
         version: link:../../lib/model/backend
+      '@milaboratories/resolve-helper':
+        specifier: workspace:*
+        version: link:../../lib/node/resolve-helper
       '@milaboratories/tengo-tester':
         specifier: 'catalog:'
         version: 1.6.1
