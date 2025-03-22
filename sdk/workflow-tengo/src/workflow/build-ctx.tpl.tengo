@@ -3,7 +3,7 @@
 //
 
 ll := import(":ll")
-tpl := import(":tpl")
+tpl := import(":tpl.light")
 smart := import(":smart")
 context := import(":workflow.context")
 validation := import(":validation")

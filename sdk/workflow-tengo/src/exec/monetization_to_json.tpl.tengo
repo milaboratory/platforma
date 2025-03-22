@@ -1,6 +1,6 @@
 /** A pure template that parses a response from mnz-client (and milm) */
 
-self := import(":tpl")
+self := import(":tpl.light")
 json := import("json")
 text := import("text")
 base64 := import("base64")

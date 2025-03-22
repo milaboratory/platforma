@@ -184,3 +184,68 @@ TestCreateSpecDistiller := func() {
 	test.isEqual("String", distilledEmptySpec.axesSpec[0].type)
 	test.isEqual("axis", distilledEmptySpec.axesSpec[0].name)
 }
+
+TestDiscriminativeDomainsAreSorted := func() {
+	// Create specs with domain names in unsorted order
+	specs := [
+		{
+			kind: "PColumn",
+			valueType: "Int",
+			name: "col1",
+			domain: {
+				"z-domain": "value1",
+				"a-domain": "value1",
+				"m-domain": "value1"
+			}
+		},
+		{
+			kind: "PColumn",
+			valueType: "Int",
+			name: "col1",
+			domain: {
+				"z-domain": "value2",
+				"a-domain": "value2",
+				"m-domain": "value2"
+			}
+		}
+	]
+
+	// Create the distiller
+	distiller := pSpec.createSpecDistiller(specs)
+
+	// Get discriminative domains for col1
+	domains := distiller.getDiscriminativeDomains("col1")
+
+	// Verify the domains are sorted alphabetically
+	test.isEqual(["a-domain", "m-domain", "z-domain"], domains)
+
+	// Test with different domain order
+	specs2 := [
+		{
+			kind: "PColumn",
+			valueType: "Int",
+			name: "col2",
+			domain: {
+				"xyz": "value1",
+				"abc": "value1",
+				"def": "value1"
+			}
+		},
+		{
+			kind: "PColumn",
+			valueType: "Int",
+			name: "col2",
+			domain: {
+				"xyz": "value2",
+				"abc": "value2",
+				"def": "value2"
+			}
+		}
+	]
+
+	distiller2 := pSpec.createSpecDistiller(specs2)
+	domains2 := distiller2.getDiscriminativeDomains("col2")
+
+	// Verify the domains are sorted alphabetically
+	test.isEqual(["abc", "def", "xyz"], domains2)
+}

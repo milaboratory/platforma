@@ -2,7 +2,7 @@
  * Install dependencies into python virtual environment using standard python toolchain
  */
 
-self := import(":tpl")
+self := import(":tpl.light")
 feats := import(":feats")
 
 ll := import(":ll")

@@ -4,7 +4,7 @@
 
 
 ll := import(":ll")
-tpl := import(":tpl")
+tpl := import(":tpl.light")
 file := import(":file")
 text := import("text")
 smart := import(":smart")

@@ -1,6 +1,6 @@
 // export-multiple-pcolumns
 
-tpl := import(":tpl")
+tpl := import(":tpl.light")
 ep := import(":pframes.export-pcolumn")
 
 // await each input PColumnData have all it's keys defined

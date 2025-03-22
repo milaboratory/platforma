@@ -8,23 +8,55 @@ alwaysApply: false
 
 - Tengo is a small, dynamic script language for Go.
 - Code example:
-  ```
-  /* The Tengo Language */
-  fmt := import("fmt")
-  
-  each := func(seq, fn) {
-      for x in seq { fn(x) }
+<tengo>
+/* The Tengo Language */
+fmt := import("fmt")
+
+each := func(seq, fn) {
+  for x in seq { fn(x) }
+}
+
+sum := func(init, seq) {
+  each(seq, func(x) { init += x })
+  return init
+}
+
+fmt.println(sum(0, [1, 2, 3]))   // "6"
+fmt.println(sum("", [1, 2, 3]))  // "123"
+</tengo>
+- Optional parameters are moduled as varargs, like this
+<tengo>
+formatGreeting := func(name, ...greeting) {
+  ll.assert(len(greeting) <= 1, "too many arguments") // optional assertion
+  message := "Hello"
+  if len(greeting) == 1 {
+    message = greeting[0]
   }
   
-  sum := func(init, seq) {
-      each(seq, func(x) { init += x })
-      return init
+  return message + ", " + name
+}
+</tengo>
+- Always find and read all the types and functions you are going to use before implementing what you were asked for
+- Errors are thrown like this: ll.panic("The error message %s, %s.", param1, param2)
+- Common way how to create objects is the following:
+<tengo>
+privateField := []
+res := undefined
+helper1 := func() {
+  // can use res to call methods
+}
+helper2 := func() {
+  // can use res to call methods
+  // can call helper1
+}
+res = {
+  method: func() {
+    // can use res to call other methods
+    // can call helper1, helper2
   }
-  
-  fmt.println(sum(0, [1, 2, 3]))   // "6"
-  fmt.println(sum("", [1, 2, 3]))  // "123"
-  ```
-- always find and read all the types and functions you are going to use before implementing what you were asked for
-- always try finding code examples for similar patterns
-- find and read additional types, functions and examples of code if you understand that you dont have enough information
-- think really hard
+}
+return res
+</tengo>
+- Always try finding code examples for similar patterns
+- Find and read additional types, functions and examples of code if you understand that you dont have enough information
+- Think really hard
