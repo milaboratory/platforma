@@ -37,11 +37,11 @@ export function createArtifactNameSet(): ArtifactMap<TypedArtifactName> {
 }
 
 export class ArtifactStore<T> {
-  private readonly dev: ArtifactMap<T>;
+  // private readonly dev: ArtifactMap<T>;
   private readonly dist: ArtifactMap<T>;
 
-  constructor(private readonly nameExtractor: (obj: T) => TypedArtifactName) {
-    this.dev = new ArtifactMap<T>(nameExtractor);
+  constructor(nameExtractor: (obj: T) => TypedArtifactName) {
+    // this.dev = new ArtifactMap<T>(nameExtractor);
     this.dist = new ArtifactMap<T>(nameExtractor);
   }
 

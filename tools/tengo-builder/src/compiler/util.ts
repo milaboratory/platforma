@@ -10,9 +10,13 @@ export function assertNever(x: never): never {
 export function createLogger(level: string = 'debug'): winston.Logger {
   return winston.createLogger({
     level: level,
-    format: winston.format.printf(({ level, message }) => {
-      return `${level.padStart(6, ' ')}: ${message as string}`;
-    }),
+    format: winston.format.combine(
+      winston.format.errors({ stack: true }),
+      winston.format.printf(({ level, message, stack }) => {
+        const baseMessage = `${level.padStart(6, ' ')}: ${message as string}`;
+        return stack ? `${baseMessage}\n${stack as string}` : baseMessage;
+      }),
+    ),
     transports: [
       new winston.transports.Console({
         stderrLevels: ['error', 'warn', 'info', 'debug'],
@@ -51,6 +55,7 @@ export function pathType(path: string): PathType {
   } catch (error: unknown) {
     const err = error as NodeJS.ErrnoException;
     if (err.code == 'ENOENT') return 'absent';
+    if (err.code == 'ENOTDIR') return 'absent';
     else throw err;
   }
 }

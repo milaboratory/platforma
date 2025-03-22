@@ -21,6 +21,7 @@
     "node": ">=20"
   },
   "dependencies": {
+    "@milaboratories/resolve-helper": "workspace:*",
     "@milaboratories/tengo-tester": "catalog:",
     "@milaboratories/pl-model-backend": "workspace:^",
     "@oclif/core": "catalog:",

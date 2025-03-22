@@ -2,25 +2,43 @@
 
 import * as path from 'node:path';
 import * as fs from 'node:fs';
-import { findNodeModules, pathType } from './util';
+import { pathType } from './util';
 import type { TemplatesAndLibs } from './compiler';
 import { TengoTemplateCompiler } from './compiler';
 import type {
   CompileMode,
   FullArtifactName } from './package';
 import {
-  artifactNameToString,
   fullNameToString,
   typedArtifactNameToString,
 } from './package';
 import { ArtifactSource, parseSourceFile } from './source';
 import { Template } from './template';
 import type winston from 'winston';
+import { tryResolve, tryResolveOrError } from '@milaboratories/resolve-helper';
+
+interface PackageId {
+  /** Package name from package.json */
+  readonly name: string;
+  /** Package version from package.json */
+  readonly version: string;
+}
+
+interface PackageInfo extends PackageId {
+  /** Package type from package.json */
+  readonly type: string | undefined;
+  /** Path to package root */
+  readonly root: string;
+  /** Dependencies */
+  readonly dependencies: PackageInfo[];
+}
 
 interface PackageJson {
   name: string;
   version: string;
-  type: string;
+  type: string | undefined;
+  dependencies: Record<string, string>;
+  devDependencies: Record<string, string>;
 }
 
 const compiledTplSuffix = '.plj.gz';
@@ -39,8 +57,77 @@ const srcSoftwareSuffix = '.sw.json';
 const srcAssetSuffix = '.as.json';
 const compilableSuffixes = [srcLibSuffix, srcTplSuffix, srcSoftwareSuffix, srcAssetSuffix];
 
-export function getPackageInfo(): PackageJson {
-  const packageInfo: PackageJson = JSON.parse(fs.readFileSync('package.json').toString()) as PackageJson;
+function resolvePackageJsonPath(root: string, packageName?: string): string | undefined {
+  if (!path.isAbsolute(root))
+    throw new Error(`Root path must be absolute: ${root}`);
+  if (!packageName) {
+    const p = path.join(root, 'package.json');
+    if (pathType(p) === 'file')
+      return p;
+    throw new Error(`Can't resolve package.json in ${root}`);
+  }
+  let resolved = tryResolve(root, packageName);
+  if (resolved) {
+    let depth = 0;
+    do {
+      const p = path.join(resolved, 'package.json');
+      if (pathType(p) === 'file')
+        return p;
+      depth++;
+      resolved = path.dirname(resolved);
+    } while (depth < 7 && path.basename(resolved) !== 'node_modules');
+  }
+  const resolved2 = tryResolveOrError(root, `${packageName}/package.json`);
+  if (resolved2.result === undefined) {
+    if (resolved2.err === 'ERR_PACKAGE_PATH_NOT_EXPORTED')
+      // tolerating not-exported package.json for dev dependencies
+      return undefined;
+    throw new Error(`Can't resolve package.json for package ${packageName ?? '.'} relative to ${root}`);
+  }
+  return resolved2.result;
+}
+
+type PackageInfoContext = 'root' | 'dependency' | 'devDependency';
+
+/**
+ * Get package info from package.json and all dependencies.
+ * @param root - Root directory of the package.
+ * @param cion
+ * @returns Package info.
+ */
+export function getPackageInfo(root: string, context: PackageInfoContext = 'root'): PackageInfo {
+  console.log(root);
+  const packageJsonPath = resolvePackageJsonPath(root);
+  if (!packageJsonPath)
+    throw new Error(`Can't resolve package.json for root package ${root}`);
+  const { name, version, type, dependencies, devDependencies }: PackageJson = JSON.parse(fs.readFileSync(packageJsonPath).toString()) as PackageJson;
+
+  // resolving dependencies
+  const depInfos: PackageInfo[] = [];
+
+  if (dependencies && context !== 'devDependency') {
+    for (const dep of Object.keys(dependencies)) {
+      const depPackageJson = resolvePackageJsonPath(root, dep);
+      if (depPackageJson === undefined)
+        throw new Error(`Can't resolve package.json for dependency ${dep} of ${root}`);
+      const depRoot = path.dirname(depPackageJson);
+      depInfos.push(getPackageInfo(depRoot, 'dependency'));
+    }
+  }
+
+  if (devDependencies && context === 'root') {
+    for (const dep of Object.keys(devDependencies)) {
+      const depPackageJson = resolvePackageJsonPath(root, dep);
+      if (depPackageJson === undefined)
+        // tolerating not-exported package.json for dev dependencies
+        continue;
+      const depRoot = path.dirname(depPackageJson);
+      depInfos.push(getPackageInfo(depRoot, 'devDependency'));
+    }
+  }
+
+  const packageInfo: PackageInfo = { name, version, type, dependencies: depInfos, root };
+
   return packageInfo;
 }
 
@@ -63,32 +150,17 @@ function resolveAssetsDst(mode: CompileMode, root: string) {
 function loadDependencies(
   logger: winston.Logger,
   compiler: TengoTemplateCompiler,
-  packageInfo: PackageJson,
-  searchIn: string,
-  isLink: boolean = false,
+  packageInfo: PackageInfo,
 ): void {
-  const packageJsonPath = path.resolve(searchIn, 'package.json');
-
-  if (pathType(packageJsonPath) !== 'file') {
-    // We're not in package root. Recursively iterate over all folders looking for packages.
-
-    for (const f of fs.readdirSync(searchIn)) {
-      const isLink = pathType(path.join(searchIn, f)) === 'link';
-      const file = path.resolve(searchIn, f);
-      const type = pathType(file);
-      if (type === 'dir') {
-        loadDependencies(logger, compiler, packageInfo, file, isLink);
-      }
-    }
-
-    return;
+  for (const dep of packageInfo.dependencies) {
+    loadDependencies(logger, compiler, dep);
   }
 
   // we are in package folder
-  const libDistFolder = resolveLibsDst('dist', searchIn);
-  const tplDistFolder = resolveTemplatesDst('dist', searchIn);
-  const softwareDistFolder = resolveSoftwareDst('dist', searchIn);
-  const assetDistFolder = resolveAssetsDst('dist', searchIn);
+  const libDistFolder = resolveLibsDst('dist', packageInfo.root);
+  const tplDistFolder = resolveTemplatesDst('dist', packageInfo.root);
+  const softwareDistFolder = resolveSoftwareDst('dist', packageInfo.root);
+  const assetDistFolder = resolveAssetsDst('dist', packageInfo.root);
 
   const libDistExists = pathType(libDistFolder) === 'dir';
   const tplDistExists = pathType(tplDistFolder) === 'dir';
@@ -99,37 +171,28 @@ function loadDependencies(
     // if neither of tengo-specific folders detected, skipping package
     return;
 
-  // we are in tengo dependency folder
-  const packageJson: PackageJson = JSON.parse(fs.readFileSync(packageJsonPath).toString()) as PackageJson;
-
-  // in a workspace we will find ourselves in node_modules, ignoring
-  if (packageJson.name === packageInfo.name) return;
-
-  if (pathType(path.resolve(searchIn, 'node_modules')) === 'dir' && isLink)
-    throw new Error(
-      `nested node_modules is a sign of library dependencies version incompatibility in ${searchIn}`,
-    );
+  const packageId = { name: packageInfo.name, version: packageInfo.version };
 
   if (libDistExists) {
-    loadLibsFromDir(logger, packageJson, 'dist', libDistFolder, compiler);
+    loadLibsFromDir(logger, packageId, 'dist', libDistFolder, compiler);
   }
 
   if (tplDistExists) {
-    loadTemplatesFromDir(logger, packageJson, 'dist', tplDistFolder, compiler);
+    loadTemplatesFromDir(logger, packageId, 'dist', tplDistFolder, compiler);
   }
 
   if (softwareDistExists) {
-    loadSoftwareFromDir(logger, packageJson, 'dist', softwareDistFolder, compiler);
+    loadSoftwareFromDir(logger, packageId, 'dist', softwareDistFolder, compiler);
   }
 
   if (assetDistExists) {
-    loadAssetsFromDir(logger, packageJson, 'dist', assetDistFolder, compiler);
+    loadAssetsFromDir(logger, packageId, 'dist', assetDistFolder, compiler);
   }
 }
 
 function loadLibsFromDir(
   logger: winston.Logger,
-  packageJson: PackageJson,
+  packageId: PackageId,
   mode: CompileMode,
   folder: string,
   compiler: TengoTemplateCompiler,
@@ -139,9 +202,9 @@ function loadLibsFromDir(
     if (!f.endsWith(compiledLibSuffix)) throw new Error(`unexpected file in 'lib' folder: ${file}`);
     const fullName: FullArtifactName = {
       type: 'library',
-      pkg: packageJson.name,
+      pkg: packageId.name,
       id: f.slice(0, f.length - compiledLibSuffix.length),
-      version: packageJson.version,
+      version: packageId.version,
     };
     const src = parseSourceFile(logger, mode, file, fullName, true);
     compiler.addLib(src);
@@ -155,7 +218,7 @@ function loadLibsFromDir(
 
 function loadTemplatesFromDir(
   logger: winston.Logger,
-  packageJson: PackageJson,
+  packageId: PackageId,
   mode: CompileMode,
   folder: string,
   compiler: TengoTemplateCompiler,
@@ -166,9 +229,9 @@ function loadTemplatesFromDir(
     if (!f.endsWith(compiledTplSuffix)) throw new Error(`unexpected file in 'tpl' folder: ${file}`);
     const fullName: FullArtifactName = {
       type: 'template',
-      pkg: packageJson.name,
+      pkg: packageId.name,
       id: f.slice(0, f.length - compiledTplSuffix.length),
-      version: packageJson.version,
+      version: packageId.version,
     };
     const tpl = new Template(mode, fullName, { content: fs.readFileSync(file) });
     compiler.addTemplate(tpl);
@@ -178,7 +241,7 @@ function loadTemplatesFromDir(
 
 function loadSoftwareFromDir(
   logger: winston.Logger,
-  packageJson: PackageJson,
+  packageId: PackageId,
   mode: CompileMode,
   folder: string,
   compiler: TengoTemplateCompiler,
@@ -189,9 +252,9 @@ function loadSoftwareFromDir(
       throw new Error(`unexpected file in 'software' folder: ${file}`);
     const fullName: FullArtifactName = {
       type: 'software',
-      pkg: packageJson.name,
+      pkg: packageId.name,
       id: f.slice(0, f.length - compiledSoftwareSuffix.length),
-      version: packageJson.version,
+      version: packageId.version,
     };
 
     const software = new ArtifactSource(mode, fullName, fs.readFileSync(file).toString(), file, [], []);
@@ -203,7 +266,7 @@ function loadSoftwareFromDir(
 
 function loadAssetsFromDir(
   logger: winston.Logger,
-  packageJson: PackageJson,
+  packageId: PackageId,
   mode: CompileMode,
   folder: string,
   compiler: TengoTemplateCompiler,
@@ -214,9 +277,9 @@ function loadAssetsFromDir(
       throw new Error(`unexpected file in 'asset' folder: ${file}`);
     const fullName: FullArtifactName = {
       type: 'asset',
-      pkg: packageJson.name,
+      pkg: packageId.name,
       id: f.slice(0, f.length - compiledAssetSuffix.length),
-      version: packageJson.version,
+      version: packageId.version,
     };
 
     const asset = new ArtifactSource(mode, fullName, fs.readFileSync(file).toString(), file, [], []);
@@ -228,7 +291,7 @@ function loadAssetsFromDir(
 
 export function parseSources(
   logger: winston.Logger,
-  packageInfo: PackageJson,
+  packageId: PackageId,
   mode: CompileMode,
   root: string,
   subdir: string,
@@ -240,15 +303,14 @@ export function parseSources(
     const fullPath = path.join(root, inRootPath); // full path to item from CWD (or abs path, if <root> is abs path)
 
     if (pathType(fullPath) === 'dir') {
-      const nested = parseSources(logger, packageInfo, mode, root, inRootPath);
+      const nested = parseSources(logger, packageId, mode, root, inRootPath);
       sources.push(...nested);
       continue;
     }
 
-    const artifactName
-      = f === 'index.lib.tengo' ? `${path.dirname(inRootPath)}.lib.tengo` : inRootPath;
+    const artifactName = f === 'index.lib.tengo' ? `${path.dirname(inRootPath)}.lib.tengo` : inRootPath;
 
-    const fullName = fullNameFromFileName(packageInfo, artifactName.replaceAll(path.sep, '.'));
+    const fullName = fullNameFromFileName(packageId, artifactName.replaceAll(path.sep, '.'));
     if (!fullName) {
       continue; // skip unknown file types
     }
@@ -276,22 +338,22 @@ export function parseSources(
 
 export function newCompiler(
   logger: winston.Logger,
-  packageInfo: PackageJson,
+  packageInfo: PackageInfo,
   mode: CompileMode,
 ): TengoTemplateCompiler {
   const compiler = new TengoTemplateCompiler(mode);
 
   // collect all data (templates, libs and software) from dependency tree
-  loadDependencies(logger, compiler, packageInfo, findNodeModules());
+  loadDependencies(logger, compiler, packageInfo);
 
   return compiler;
 }
 
 function fullNameFromFileName(
-  packageJson: PackageJson,
+  packageId: PackageId,
   artifactName: string,
 ): FullArtifactName | null {
-  const pkgAndVersion = { pkg: packageJson.name, version: packageJson.version };
+  const pkgAndVersion = { pkg: packageId.name, version: packageId.version };
   if (artifactName.endsWith(srcLibSuffix)) {
     return {
       ...pkgAndVersion,
@@ -336,7 +398,7 @@ function fullNameFromFileName(
 }
 
 export function compile(logger: winston.Logger, mode: CompileMode): TemplatesAndLibs {
-  const packageInfo = getPackageInfo();
+  const packageInfo = getPackageInfo(process.cwd());
   const compiler = newCompiler(logger, packageInfo, mode);
   const sources = parseSources(logger, packageInfo, mode, 'src', '');
 
