@@ -1,5 +1,16 @@
 # @platforma-sdk/tengo-builder
 
+## 2.0.0
+
+### Major Changes
+
+- af43efe: Fixes dependency resolution logic (now it is closer to what it supposed to be, better utilizing node's resolve mechanism)
+
+### Patch Changes
+
+- Updated dependencies [af43efe]
+  - @milaboratories/resolve-helper@1.1.0
+
 ## 1.19.2
 
 ### Patch Changes

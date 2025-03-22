@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 2.16.1
+
+### Patch Changes
+
+- af43efe: Rebuilt with new tengo-builder
+
 ## 2.16.0
 
 ### Minor Changes
