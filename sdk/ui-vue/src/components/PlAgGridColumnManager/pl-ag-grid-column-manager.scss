@@ -28,7 +28,7 @@
     }
 
     &__item:hover &__visibility {
-        display: block;
+        visibility: visible;
     }
 
     &__pin {
@@ -39,7 +39,7 @@
 
     &__visibility {
         cursor: pointer;
-        display: none;
+        visibility: hidden;
 
         .mask-24 {
             background-color: var(--ic-02);

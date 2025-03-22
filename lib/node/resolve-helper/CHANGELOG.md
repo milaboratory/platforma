@@ -1,5 +1,11 @@
 # @milaboratories/resolve-helper
 
+## 1.1.0
+
+### Minor Changes
+
+- af43efe: tryResolveOrError
+
 ## 1.0.2
 
 ### Patch Changes

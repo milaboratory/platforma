@@ -1,5 +1,12 @@
 # @platforma-sdk/package-builder
 
+## 2.15.5
+
+### Patch Changes
+
+- Updated dependencies [af43efe]
+  - @milaboratories/resolve-helper@1.1.0
+
 ## 2.15.4
 
 ### Patch Changes

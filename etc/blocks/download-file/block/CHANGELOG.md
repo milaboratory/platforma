@@ -1,5 +1,18 @@
 # @milaboratories/milaboratories.test-download-file
 
+## 1.0.93
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-download-file.workflow@1.0.2
+- @milaboratories/milaboratories.test-download-file.model@1.0.19
+
+## 1.0.92
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-download-file.ui@1.0.92
+
 ## 1.0.91
 
 ### Patch Changes

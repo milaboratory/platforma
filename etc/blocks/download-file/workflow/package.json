@@ -1,14 +1,16 @@
 {
   "name": "@milaboratories/milaboratories.test-download-file.workflow",
   "private": true,
-  "version": "1.0.1",
+  "version": "1.0.2",
   "type": "module",
   "description": "Tengo-based template",
   "scripts": {
     "build": "rm -rf dist && pl-tengo check && pl-tengo build"
   },
+  "dependencies": {
+    "@platforma-sdk/workflow-tengo": "workspace:*"
+  },
   "devDependencies": {
-    "@platforma-sdk/workflow-tengo": "workspace:*",
     "@platforma-sdk/tengo-builder": "workspace:*"
   }
 }

@@ -1,7 +1,7 @@
 {
   "name": "@platforma-sdk/workflow-tengo-tests",
   "private": true,
-  "version": "1.6.5",
+  "version": "1.6.6",
   "description": "Tengo SDK library tests",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
@@ -23,13 +23,15 @@
     "vscode-tags": "cd ../../ && bash ./sdk/workflow-tengo/create_tags.sh .tags false",
     "emacs-tags": "./create_tags.sh ../TAGS false -e"
   },
+  "dependencies": {
+    "@platforma-sdk/workflow-tengo": "workspace:*"
+  },
   "devDependencies": {
     "@milaboratories/platforma-build-configs": "workspace:*",
     "@milaboratories/computable": "workspace:*",
     "@milaboratories/pl-drivers": "workspace:*",
     "@milaboratories/pl-tree": "workspace:*",
     "@milaboratories/ts-helpers": "workspace:*",
-    "@platforma-sdk/workflow-tengo": "workspace:*",
     "@platforma-sdk/tengo-builder": "workspace:*",
     "@milaboratories/pl-middle-layer": "workspace:*",
     "@platforma-sdk/test": "workspace:*",

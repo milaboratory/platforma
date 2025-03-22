@@ -8,11 +8,10 @@
     "format": "/usr/bin/env emacs --script ./format.el"
   },
   "dependencies": {
-    "@platforma-open/milaboratories.software-small-binaries": "catalog:"
+    "@platforma-sdk/workflow-tengo": "workspace:"
   },
   "devDependencies": {
     "@platforma-sdk/tengo-builder": "workspace:",
-    "@platforma-sdk/workflow-tengo": "workspace:",
     "@platforma-sdk/test": "workspace:",
     "vitest": "catalog:"
   }
