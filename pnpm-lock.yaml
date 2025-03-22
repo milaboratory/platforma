@@ -2516,6 +2516,9 @@ importers:
       '@milaboratories/platforma-build-configs':
         specifier: workspace:*
         version: link:../../lib/util/build-configs
+      '@milaboratories/software-pframes-conv':
+        specifier: 'catalog:'
+        version: 2.1.17
       '@milaboratories/ts-helpers':
         specifier: workspace:*
         version: link:../../lib/node/ts-helpers
