@@ -1,0 +1,9 @@
+/* A library exposing template functional components without complex unmarshallers */
+base := import(":tpl.base")
+
+/**
+ * Singleton instance of this resource
+ */
+instance := base.tpl({})
+
+export instance.api()

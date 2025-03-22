@@ -10,6 +10,9 @@ constants := import(":pframes.constants")
 transposeXsvSw := assets.importSoftware("@platforma-open/milaboratories.software-small-binaries:table-converter")
 pfconvSw := assets.importSoftware("@milaboratories/software-pframes-conv:main")
 
+// import p-frame from directory tpl
+importDirTpl := assets.importTemplate(":pframes.import-dir")
+
 renderOps := func(defaults, ...ops) {
 	o := { }
 
@@ -107,9 +110,6 @@ importFile := func(xsvFile, xsvType, spec, ...ops) {
 
 		xsvFile = transposeXsv.getFile(transposedFileName)
 	}
-
-	// import p-frame from directory tpl
-	importDirTpl := assets.importTemplate(":pframes.import-dir")
 
 	// spec without any metadata (for caching purposes)
 	pureSpec := util.purifySpec(spec)

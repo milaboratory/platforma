@@ -7,6 +7,7 @@
 ll := import(":ll")
 maps := import(":maps")
 sets := import(":sets")
+slices := import(":slices")
 validation := import(":validation")
 json := import("json")
 
@@ -310,61 +311,88 @@ createSpecDistiller := func(specs) {
 		}
 	}
 
-	// Create the distiller object
-	return ll.toStrict({
-		distill: func(spec) {
-			result := maps.clone(spec)
+	// Helper function to filter domains based on discriminative domains
+	filterDomain := func(domain, entityName) {
+		if is_undefined(domain) {
+			return undefined
+		}
 
-			delete(result, "annotations")
+		filteredDomain := undefined
 
-			// Helper function to filter domains based on discriminative domains
-			filterDomain := func(domain, entityName) {
-				if is_undefined(domain) {
-					return undefined
-				}
-
-				filteredDomain := undefined
-
-				if !is_undefined(discriminativeDomains[entityName]) {
-					for domainName, domainValue in domain {
-						if sets.hasElement(discriminativeDomains[entityName], domainName) {
-							if is_undefined(filteredDomain) {
-								filteredDomain = {}
-							}
-							filteredDomain[domainName] = domainValue
-						}
+		if !is_undefined(discriminativeDomains[entityName]) {
+			for domainName, domainValue in domain {
+				if sets.hasElement(discriminativeDomains[entityName], domainName) {
+					if is_undefined(filteredDomain) {
+						filteredDomain = {}
 					}
+					filteredDomain[domainName] = domainValue
 				}
-
-				return filteredDomain
 			}
+		}
 
-			// Filter main spec domains
-			filteredDomain := filterDomain(result.domain, result.name)
-			if !is_undefined(filteredDomain) {
-				result.domain = filteredDomain
-			} else if !is_undefined(result.domain) {
-				delete(result, "domain")
-			}
+		return filteredDomain
+	}
 
-			// Process axes
+	// Helper function to distill entity (column or axis)
+	distillEntity := func(entity, entityName) {
+		result := maps.clone(entity)
+
+		delete(result, "annotations")
+
+		// Filter domains
+		filteredDomain := filterDomain(result.domain, entityName)
+		if !is_undefined(filteredDomain) {
+			result.domain = filteredDomain
+		} else if !is_undefined(result.domain) {
+			delete(result, "domain")
+		}
+
+		return result
+	}
+
+	result := undefined
+	result = ll.toStrict({
+		/**
+		 * Returns the discriminative domains for a given column spec.
+		 *
+		 * @param name: string - The name of the column spec to get discriminative domains for
+		 * @return string[] - The discriminative domains, sorted alphabetically
+		 */
+		getDiscriminativeDomains: func(name) {
+			return slices.fromSet(discriminativeDomains[name])
+		},
+
+		/**
+		 * Returns the discriminative domains for a given column spec as a set.
+		 *
+		 * @param name: string - The name of the column spec to get discriminative domains for
+		 * @return Record<string, boolean> - The discriminative domains
+		 */
+		getDiscriminativeDomainsSet: func(name) {
+			return discriminativeDomains[name]
+		},
+
+		/**
+		 * Distills a column spec by removing annotations and unnecessary domains.
+		 *
+		 * @param spec: ColumnSpec - The column spec to distill
+		 * @return ColumnSpec - The distilled column spec
+		 */
+		distill: func(spec) {
+			result := distillEntity(spec, spec.name)
+
+			// Process axes if they exist
 			if !is_undefined(result.axesSpec) {
 				for i, axis in result.axesSpec {
-					delete(result.axesSpec[i], "annotations")
-
-					// Filter domains in axis
-					filteredAxisDomain := filterDomain(axis.domain, axis.name)
-					if !is_undefined(filteredAxisDomain) {
-						result.axesSpec[i].domain = filteredAxisDomain
-					} else if !is_undefined(axis.domain) {
-						delete(result.axesSpec[i], "domain")
-					}
+					result.axesSpec[i] = distillEntity(axis, axis.name)
 				}
 			}
 
 			return result
 		}
 	})
+
+	return result
 }
 
 export ll.toStrict({

@@ -293,7 +293,7 @@ sortByFn := func(notSortedSlice, fn) {
  */
 fromSet := func(set) {
 	slice := enum.map(set, func(k, _) { return k })
-	return sortByFn(slice, func(elem) { return elem })
+	return quickSortInPlace(slice)
 }
 
 /**

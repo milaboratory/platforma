@@ -1,4 +1,4 @@
-self := import(":tpl")
+self := import(":tpl.light")
 ll := import(":ll")
 slices := import(":slices")
 maps := import(":maps")

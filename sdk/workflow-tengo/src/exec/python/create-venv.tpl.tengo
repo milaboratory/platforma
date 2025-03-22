@@ -2,7 +2,7 @@
  * Creates new python virtual environment.
  */
 
-self := import(":tpl")
+self := import(":tpl.light")
 
 feats := import(":feats")
 render := import(":render")

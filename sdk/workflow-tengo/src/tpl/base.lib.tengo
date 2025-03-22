@@ -1,0 +1,583 @@
+tx := import("tx")
+ll := import(":ll")
+render := import(":render")
+smart := import(":smart")
+sets := import(":sets")
+maps := import(":maps")
+slices := import(":slices")
+tplutil := import(":tpl.util")
+constants := import(":constants")
+stateAwait := import(":tpl.state-await")
+validation := import(":validation")
+
+/**
+ * Unmarshal resource according by:
+ *  - converting all json resources (potentially nested) into a tengo objects (maps)
+ *  - converting all pl.maps (resource maps) into tengo maps
+ *
+ * @param resource: smart resource to unmarshal
+ * @param preprocessors: input preprocessors
+ * @return object: unmarshaled resource
+ */
+_unmarshal := func(resource, preprocessors) {
+	ll.assert(smart.isResource(resource), "expected resource, found ", resource)
+
+	// instance of this
+	self := func(resource) { return _unmarshal(resource, preprocessors) }
+	// try preprocessors first
+	for preproc in preprocessors {
+		if preproc.canParse(resource) {
+			return preproc.parse(resource, self)
+		}
+	}
+
+	if smart.isReference(resource) && resource.hasError() {
+		err := resource.getError().getDataAsJson()
+		if !is_undefined(err.message) {
+			err = err.message
+		}
+		ll.panic("input resource has errors: %v", err)
+	}
+
+	if smart.isResource(resource) && resource.checkResourceType(constants.RTYPE_NULL) {
+		return undefined
+	}
+
+	if smart.isJsonResource(resource) || resource.checkResourceType(constants.RTYPE_BOBJECT_SPEC) {
+
+		// parse json data of the resource
+		return resource.getDataAsJson()
+	} else if smart.isMapResource(resource) || smart.isLockedEphMapResource(resource) {
+
+		// unmarshal map
+		result := {}
+		for field, value in resource.inputs() {
+			if value.isErrorSet() {
+				ll.panic("input %v field has error: %v", field, field.getError().getDataAsJson().message)
+			} else if value.isSet() {
+				result[field] = _unmarshal(value.getValue(), preprocessors)
+			} else {
+				result[field] = value
+			}
+
+		}
+		return result
+	} else {
+		// nothing todo
+		return resource
+	}
+}
+
+/**
+ * A wrapper object around template functionality
+ *
+ * @param ops:
+ *   - unmarshallers: array - array of default unmarshallers
+ *
+ * @return object: template wrapper
+ */
+tpl := func(ops) {
+	self := undefined
+
+	_renderer := smart.resourceBuilder(ll.getCurrentTemplateRenderer())
+
+	_rendererType :=  _renderer.info().Type
+
+	_isEphemeral := _rendererType.Name == constants.RTYPE_RENDER_EPH_TEMPLATE.Name
+
+	_hasPrepared := _renderer.get(tplutil.INPUTS_MAP_FIELD).hasField(tplutil.PREPARE_MAP_FIELD_NAME)
+
+	_preparedMap := _hasPrepared ? _renderer.get(tplutil.INPUTS_MAP_FIELD).get(tplutil.PREPARE_MAP_FIELD_NAME) : undefined
+
+	_templateId := _renderer.get(tplutil.TEMPLATE_FIELD).id
+
+	_stateRequests := []
+	_delegatedOutputs := []
+
+	self = {
+
+		/**
+		 * Current renderer smart resource
+		 */
+		renderer: func() {
+			return _renderer
+		},
+
+		/**
+		 * Whether this template is ephemeral (rendered by ephemeral template router)
+		 */
+		isEphemeral: func() {
+			return _isEphemeral
+		},
+
+		/**
+		 * Current template resource
+		 */
+		template: func() {
+			return smart.resource(_templateId)
+		},
+
+		_unmarshallers: slices.copy(ops.unmarshallers),
+
+		/**
+		 * Register a preprocessor of input resource. The preprocessor must have two
+		 * methods: `canParse(resource)` (bool) and `parse(resource)` (object). Registered
+		 * preprocessors will be used when unmarshaling resources.
+		 */
+		registerUnmarshaller: func(preproc) {
+			ll.assert(is_undefined(self._inputs), "input preprocessors must be registered before getting inputs")
+			self._unmarshallers = append(self._unmarshallers, preproc)
+		},
+
+		/**
+		 * @return map[string]field: - a map of inputs to the fields of the input map.
+		 */
+		rawInputs: func() {
+			return self.renderer().get(tplutil.INPUTS_MAP_FIELD).inputs()
+		},
+
+		_inputs: undefined,
+
+		/**
+		 * @return map: a map of the template inputs
+		 */
+		inputs: func() {
+			if self._inputs == undefined {
+				inputs := _unmarshal(self.renderer().get(tplutil.INPUTS_MAP_FIELD), self._unmarshallers)
+
+				// if we have prepared inputs, flatten them
+				pp := inputs[tplutil.PREPARE_MAP_FIELD_NAME]
+				if !is_undefined(pp) {
+					delete(inputs, tplutil.PREPARE_MAP_FIELD_NAME)
+					for k, v in pp {
+						ll.assert(is_undefined(inputs[k]), k, " key already exists in inputs map")
+						inputs[k] = v
+					}
+				}
+
+				self._inputs = inputs
+			}
+			return self._inputs
+		},
+
+		/**
+		 * @return bool: whether there is input with a given name
+		 */
+		hasInput: func(name) {
+			return self.renderer().get(tplutil.INPUTS_MAP_FIELD).hasField(name)
+		},
+
+		// accumulated output definitions
+		definedOutputs : [],
+
+		/**
+		 * Defines current template output(s) names.
+		 *
+		 * For pure templates, all outputs must be defined before the template body, and only registered outputs can be used
+		 * inside. Optional for ephemeral templates.
+		 */
+		defineOutputs : func(...name) {
+			if len(name) == 1 && is_array(name[0]) {
+				for v in name[0] {
+					self.definedOutputs = append(self.definedOutputs, v)
+				}
+			} else {
+				self.definedOutputs = append(self.definedOutputs, name...)
+			}
+		},
+
+		/**
+		 * In ephemeral template, body will only be executed when corresponding inputs state is
+		 * reached.
+		 *
+		 * Signature:
+		 *   awaitState(path..., requestedState)
+		 *
+		 * Usage examples:
+		 *   awaitState("AllInputsSet") - all inputs of the inputs map must be set
+		 *   awaitState("inputName1", "ResourceReady") - resource in the input inputName1 must be ready
+		 *   awaitState("inputName1", "nestedField", "Set") - nested input field in the input
+		 *                              inputName1 must exist and point to some resource
+		 *   awaitState("inputName1", { wildcard: "*" }, "InputsLocked") - nested resource by the
+		 *                              inputName1 field must exist and have locked inputs and all
+		 *                              resources referenced by those fields must have all inputs
+		 *                              locked
+		 *   awaitState("inputName1", { match: "^some_prefix\\." }, "InputsLocked") - nested resource
+		 *                              by the inputName1 field must exist and have locked inputs and
+		 *                              all resources referenced by inputs with "some_prefix." prefix
+		 *                              must have all inputs locked
+		 *
+		 * Example, the following two expressions are equivalent:
+		 *   awaitState("inputName1", { wildcard: "*" }, "Set")
+		 *   awaitState("inputName1", { match: "^some_prefix\\." }, "Set")
+		 *   awaitState("inputName1", "AllInputsSet")
+		 *
+		 * Allowed states:
+		 *   Exists - field exists
+		 *   Set - field points to existing resource
+		 *   InputsLocked - field points to resource with locked inputs
+		 *   AllInputsSet - field points to resource with all inputs set
+		 *   ResourceReady - field points to ready resource
+		 */
+		awaitState: func(...pathAndState) {
+			if !self.isEphemeral() {
+				ll.panic("awaitState allowed only in ephemeral templates")
+			}
+			self.awaitStateIfEphemeral(pathAndState...)
+		},
+
+		/**
+		 * In ephemeral template, body will only be executed when corresponding input staet is
+		 * reached. If template is not ephemeral, this function does nothing.
+		 *
+		 * Signature:
+		 *   awaitStateIfEphemeral(path..., requestedState)
+		 *
+		 * Usage examples:
+		 *   awaitStateIfEphemeral("AllInputsSet") - all inputs of the inputs map must be set
+		 *   awaitStateIfEphemeral("inputName1", "ResourceReady") - resource in the input inputName1 must be ready
+		 *   awaitStateIfEphemeral("inputName1", "nestedField", "Set") - nested input field in the input
+		 *                              inputName1 must exist and point to some resource
+		 *   awaitStateIfEphemeral("inputName1", { wildcard: "*" }, "InputsLocked") - nested resource by the
+		 *                              inputName1 field must exist and have locked inputs and all
+		 *                              resources referenced by those fields must have all inputs
+		 *                              locked
+		 *   awaitStateIfEphemeral("inputName1", { match: "^some_prefix\\." }, "InputsLocked") - nested resource
+		 *                              by the inputName1 field must exist and have locked inputs and
+		 *                              all resources referenced by inputs with "some_prefix." prefix
+		 *                              must have all inputs locked
+		 *
+		 * Example, the following two expressions are equivalent:
+		 *   awaitStateIfEphemeral("inputName1", { wildcard: "*" }, "Set")
+		 *   awaitStateIfEphemeral("inputName1", { match: "^some_prefix\\." }, "Set")
+		 *   awaitStateIfEphemeral("inputName1", "AllInputsSet")
+		 *
+		 * Allowed states:
+		 *   Exists - field exists
+		 *   Set - field points to existing resource
+		 *   InputsLocked - field points to resource with locked inputs
+		 *   AllInputsSet - field points to resource with all inputs set
+		 *   ResourceReady - field points to ready resource
+		 */
+		awaitStateIfEphemeral: func(...pathAndState) {
+			if !self.isEphemeral() {
+				return
+			}
+			path := pathAndState[:len(pathAndState) - 1]
+			state := pathAndState[len(pathAndState) - 1]
+			_stateRequests = append(_stateRequests, {
+				path: path,
+				state: state
+			})
+		},
+
+		/**
+		 * True means we are in the inner render cycle, when all "to be prepared" fields are passed
+		 * already to inputs and no need to call prepare callbacks again.
+		 */
+		ignorePrepare: _hasPrepared,
+
+		/**
+		 * Resource map with the resources passed
+		 */
+		preparedMapResource: func() {
+			return _preparedMap
+		},
+
+		/**
+		 * A queue of 'prepare' callbacks
+		 */
+		prepareQueue : [],
+
+		/**
+		 * Prepare additional resources for the template body. The body function of the workflow will be executed only when the references
+		 * returned from prepare method will be resolved into a ready resources. The resulting resources will be passed as an input to the body function.
+		 *
+		 * @param cb: a callback function returning a map of references to be resolved
+		 */
+		prepare : func(codeFn) {
+			if self.ignorePrepare {
+				return
+			}
+
+			ll.assert(len(self.prepareQueue) == 0, "multiple prepare statements are not supported yet")
+
+			self.prepareQueue = append(self.prepareQueue, codeFn)
+		},
+
+		/**
+		 * Creates renderer which is re-rendering the current template additionally passing
+		 * resolve references as extra inputs.
+		 */
+		renderPrepare: func() {
+			ll.assert(!self.ignorePrepare, "expected !ignorePrepare")
+
+			inputs := self.inputs()
+
+			// create new inputs map
+			newInputs := copy(inputs)
+
+			// build a prepare map
+			builder := undefined
+			if self.isEphemeral() {
+				builder = smart.ephemeralMapBuilder()
+			} else {
+				builder = smart.mapBuilder()
+			}
+
+			// validate inputs first if needed
+			self._validateInputs()
+			for cb in self.prepareQueue {
+				// run callback
+				r := cb(inputs)
+
+				ll.assert(is_map(r), "expected map, got ", r)
+
+				for name, ref in r {
+					ll.assert(is_undefined(newInputs[name]), "prepare name is already in use: %s", name)
+
+					builder.add(name, ref)
+				}
+			}
+			newInputs[tplutil.PREPARE_MAP_FIELD_NAME] = builder.build()
+
+			// re-render self
+			renderer := undefined
+			if self.isEphemeral() {
+				renderer = render.createEphemeral(self.template(), newInputs)
+			} else {
+				renderer = render.create(self.template(), newInputs)
+			}
+			// set outputs
+			for output in self.definedOutputs {
+				self.getOutputField(output).set(renderer.output(output))
+			}
+		},
+
+		/**
+		 * Sets results map to resource output fields. Non-resource objects in the result values
+		 * will be automatically converted into Json resources.
+		 */
+		setOutputs : func(resultMap) {
+			ll.assert(ll.isMap(resultMap), "expected map, got ", resultMap)
+
+			// set outputs
+			for name, value in resultMap {
+				f := self.getOutputField(name)
+				if !f.isSet() {
+					f.setRefOrJson(value)
+				}
+			}
+		},
+
+		/**
+		 * Returns renderer's output field with a given name
+		 */
+		getOutputField: func(name) {
+			return self.renderer().getField(tplutil.TEMPLATE_OUTPUT_PREFIX + name)
+		},
+
+		/**
+		 * Creates relevant output fields and locks renderer's outputs
+		 */
+		createOutputsAndLock: func(outputs) {
+			for name in outputs {
+				self.renderer().createOutputField(tplutil.TEMPLATE_OUTPUT_PREFIX + name)
+			}
+			self.renderer().lockOutputs()
+		},
+
+		_inputsSchema: undefined,
+
+		/**
+		 * Validate inputs schema before passing inputs to body.
+		 */
+		validateInputs: func(schema) {
+			ll.assert(is_undefined(self._inputsSchema), "validateInputs was already invoked")
+			self._inputsSchema  = schema
+		},
+
+		_validateInputs: func() {
+			schema := self._inputsSchema
+			if is_undefined(schema) {
+				return
+			}
+			validation.assertType(self.inputs(), schema)
+		},
+
+		/**
+		 * Routes template.
+		 */
+		body: func(bodyFn){
+			if self.isEphemeral() {
+
+				self.routeEph(bodyFn)
+			} else {
+
+				self.routePure(bodyFn)
+			}
+		},
+
+		/**
+		 * Routes pure template.
+		 */
+		routePure: func(bodyFn){
+			// Checks
+			if len(self.definedOutputs) == 0 {
+				ll.panic("please define outputs before template body")
+			}
+
+			//
+			// Rules of pl guarantees that pure template code will be executed twice:
+			//
+			//   (1) once for initialization, at this point it must initialize all outputs, for the
+			//       deduplication and recovery mechanisms to pick them up and, if possible, populate them
+			//       with results from equivalent previous invocations
+			//
+			//   (2) after initialization is done and all deduplication and recovery algorithms did their
+			//       magic, if some (or all) of the outputs, our consumers demand are still absent, main
+			//       body of the template is executed, to calculate them
+			//
+
+			if ll.isInitializing() {
+
+				// Initialization
+				self.createOutputsAndLock(self.definedOutputs)
+			} else {
+
+				// processing resolves
+				if len(self.prepareQueue) != 0 {
+
+					// re-render self to
+					self.renderPrepare()
+				} else {
+					// run body func
+					self._validateInputs()
+					result := bodyFn(self.inputs())
+
+					ll.assert(ll.isMap(result),
+						"expected map from tpl.body() callback. Did you forget 'return' statement?")
+
+					outputsWithValues := sets.fromMapKeys(result)
+					outputsWithValues = sets.add(outputsWithValues, _delegatedOutputs...)
+
+					ll.assert(sets.fromSlice(self.definedOutputs) == outputsWithValues,
+						"tpl.body() callback must return the same list of outputs as were given to 'defineOutputs()'. Want %s, got %s",
+						self.definedOutputs, sets.toSlice(outputsWithValues))
+
+					// set result to self outputs
+					self.setOutputs(result)
+				}
+			}
+		},
+
+		/**
+		 * Routes ephemeral template.
+		 */
+		routeEph: func(bodyFn) {
+
+			if len(_stateRequests) == 0 {
+				_stateRequests = [{
+					path: [],
+					state: "AllInputsSet"
+				}]
+			}
+
+			if _hasPrepared {
+				_stateRequests = append(_stateRequests, {
+					path: [tplutil.PREPARE_MAP_FIELD_NAME],
+					state: "ResourceReady"
+				})
+			}
+
+			stateReached := stateAwait.await(
+				_renderer.getField(tplutil.INPUTS_MAP_FIELD),
+				_renderer,
+				_stateRequests
+			)
+
+			if stateReached {
+
+				if len(self.prepareQueue) > 0 {
+					ll.assert(len(self.definedOutputs) > 0, "outputs should be defined prior to prepare")
+
+					self.createOutputsAndLock(self.definedOutputs)
+
+					self.renderPrepare()
+				} else {
+
+					// run body func
+					self._validateInputs()
+					result := bodyFn(self.inputs())
+					ll.assert(ll.isMap(result),
+						"expected map from tpl-eph.body() callback. Did you forget 'return' statement?")
+
+					self.createOutputsAndLock(maps.getKeys(result))
+
+					// set result to self outputs
+					self.setOutputs(result)
+				}
+			}
+		},
+
+		/**
+		 * Delegates itself to the specified template, i.e. runs specified template and
+		 * saves its outputs to this.
+		 *
+		 * @param tpl: template - specified template
+		 * @param extraInputs: map - additional inputs to pass to the template
+		 * @param outputs: array - array of expected outputs to save
+		 */
+		routeDelegate: func(tpl, extraInputs, outputs) {
+			_delegatedOutputs = outputs
+
+			inputs := self.rawInputs()
+			for k, v in extraInputs {
+				inputs[k] = v
+			}
+
+			renderer := undefined
+			if self.isEphemeral() {
+				renderer = render.createEphemeral(tpl, inputs)
+			} else {
+				renderer = render.create(tpl, inputs)
+			}
+
+			tplOutputs := {}
+			for o in outputs {
+				tplOutputs[o] = renderer.output(o)
+			}
+
+			self.createOutputsAndLock(outputs)
+			self.setOutputs(tplOutputs)
+		},
+
+		/**
+		 * Returns a strict object with public methods and properties of the template instance
+		 *
+		 * @return object: a strict object with public methods and properties of the template instance
+		 */
+		api: func() {
+			return ll.toStrict({
+				renderer                : self.renderer,
+				registerUnmarshaller    : self.registerUnmarshaller,
+				rawInputs               : self.rawInputs,
+				hasInput                : self.hasInput,
+				inputs                  : self.inputs,
+				defineOutputs           : self.defineOutputs,
+				prepare                 : self.prepare,
+				awaitState              : self.awaitState,
+				awaitStateIfEphemeral   : self.awaitStateIfEphemeral,
+				delegate                : self.routeDelegate,
+				validateInputs          : self.validateInputs,
+				body                    : self.body,
+				template                : self.template
+			})
+		}
+	}
+	return self
+}
+
+export ll.toStrict({
+	tpl: tpl
+})
