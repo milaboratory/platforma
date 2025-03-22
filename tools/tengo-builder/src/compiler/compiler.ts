@@ -9,6 +9,7 @@ import {
   typedArtifactNameToString,
   artifactNameToString,
   formatArtefactNameAndVersion, typedArtifactNamesEquals,
+  fullNameEquals,
 } from './package';
 import { ArtifactStore } from './artifactset';
 import { assertNever } from './util';
@@ -127,7 +128,7 @@ export class TengoTemplateCompiler {
 
   addLib(lib: ArtifactSource) {
     const libFromMap = this.libs.add(lib.compileMode, lib, false);
-    if (libFromMap)
+    if (libFromMap && !fullNameEquals(lib.fullName, libFromMap.fullName))
       throw new Error(
         `compiler already contain such library: adding = ${fullNameToString(lib.fullName)}, contains = ${fullNameToString(libFromMap.fullName)}`,
       );
@@ -152,7 +153,7 @@ export class TengoTemplateCompiler {
 
   addSoftware(software: ArtifactSource) {
     const swFromMap = this.software.add(software.compileMode, software, false);
-    if (swFromMap)
+    if (swFromMap && !fullNameEquals(software.fullName, swFromMap.fullName))
       throw new Error(
         `compiler already contain info for software: adding = ${fullNameToString(software.fullName)}, contains = ${fullNameToString(swFromMap.fullName)}`,
       );
@@ -178,7 +179,7 @@ export class TengoTemplateCompiler {
 
   addAsset(asset: ArtifactSource) {
     const assetFromMap = this.assets.add(asset.compileMode, asset, false);
-    if (assetFromMap)
+    if (assetFromMap && !fullNameEquals(asset.fullName, assetFromMap.fullName))
       throw new Error(
         `compiler already contain info for asset: adding = ${fullNameToString(asset.fullName)}, contains = ${fullNameToString(assetFromMap.fullName)}`,
       );
@@ -204,7 +205,7 @@ export class TengoTemplateCompiler {
 
   addTemplate(tpl: Template) {
     const tplFromMap = this.templates.add(tpl.compileMode, tpl, false);
-    if (tplFromMap)
+    if (tplFromMap && !fullNameEquals(tpl.fullName, tplFromMap.fullName))
       throw new Error(
         `compiler already contain such template: adding = ${fullNameToString(tpl.fullName)}, contains = ${fullNameToString(tplFromMap.fullName)}`,
       );
@@ -301,7 +302,7 @@ export class TengoTemplateCompiler {
           for (const dep of unsatisfied) {
             errorMessage += `  - ${typedArtifactNameToString(dep)}\n`;
           }
-          unprocessed.push({ src, err: Error(errorMessage) });
+          unprocessed.push({ src, err: new Error(errorMessage) });
 
           continue;
         }
