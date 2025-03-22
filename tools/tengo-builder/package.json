@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/tengo-builder",
-  "version": "1.19.2",
+  "version": "2.0.0",
   "description": "Pl Tengo Template Builder",
   "scripts": {
     "type-check": "tsc --noEmit --composite false",
@@ -21,6 +21,7 @@
     "node": ">=20"
   },
   "dependencies": {
+    "@milaboratories/resolve-helper": "workspace:*",
     "@milaboratories/tengo-tester": "catalog:",
     "@milaboratories/pl-model-backend": "workspace:^",
     "@oclif/core": "catalog:",

@@ -1,5 +1,11 @@
 # @milaboratories/pl-local
 
+## 1.6.0
+
+### Minor Changes
+
+- ecf6caf: Release pl=1.26.2
+
 ## 1.5.0
 
 ### Minor Changes

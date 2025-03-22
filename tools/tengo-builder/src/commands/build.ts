@@ -23,7 +23,7 @@ export default class Build extends Command {
     const { flags } = await this.parse(Build);
     const logger = createLogger(flags['log-level']);
 
-    const packageInfo = getPackageInfo();
+    const packageInfo = getPackageInfo(process.cwd(), logger);
     const compiledDist = compile(logger, 'dist');
     savePacks(logger, compiledDist, 'dist');
     logger.info('');

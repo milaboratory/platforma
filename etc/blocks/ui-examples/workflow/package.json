@@ -1,13 +1,15 @@
 {
   "name": "@milaboratories/milaboratories.ui-examples.workflow",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "type": "module",
   "description": "Tengo-based template",
   "scripts": {
     "build": "rm -rf dist && pl-tengo check && pl-tengo build"
   },
+  "dependencies": {
+    "@platforma-sdk/workflow-tengo": "workspace:*"
+  },
   "devDependencies": {
-    "@platforma-sdk/workflow-tengo": "workspace:*",
     "@platforma-sdk/tengo-builder": "workspace:*"
   }
 }
