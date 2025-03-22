@@ -7,7 +7,7 @@ export function dumpAll(
   logger: winston.Logger,
   stream: NodeJS.WritableStream,
 ): void {
-  const packageInfo = getPackageInfo(process.cwd());
+  const packageInfo = getPackageInfo(process.cwd(), logger);
 
   const sources = parseSources(logger, packageInfo, 'dist', 'src', '');
 
@@ -113,7 +113,7 @@ export function dumpLibs(
   dumpDeps: boolean,
   stream: NodeJS.WritableStream,
 ): void {
-  const packageInfo = getPackageInfo(process.cwd());
+  const packageInfo = getPackageInfo(process.cwd(), logger);
 
   const sources = parseSources(logger, packageInfo, 'dist', 'src', '');
 
@@ -144,7 +144,7 @@ function dumpArtifacts(
   stream: NodeJS.WritableStream,
   aType: ArtifactType,
 ): void {
-  const packageInfo = getPackageInfo(process.cwd());
+  const packageInfo = getPackageInfo(process.cwd(), logger);
 
   const sources = parseSources(logger, packageInfo, 'dist', 'src', '');
 

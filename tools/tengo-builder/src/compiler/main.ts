@@ -29,6 +29,8 @@ interface PackageInfo extends PackageId {
   readonly type: string | undefined;
   /** Path to package root */
   readonly root: string;
+  /** Context of package info */
+  readonly context: PackageInfoContext;
   /** Dependencies */
   readonly dependencies: PackageInfo[];
 }
@@ -95,8 +97,7 @@ type PackageInfoContext = 'root' | 'dependency' | 'devDependency';
  * @param cion
  * @returns Package info.
  */
-export function getPackageInfo(root: string, context: PackageInfoContext = 'root'): PackageInfo {
-  console.log(root);
+export function getPackageInfo(root: string, logger: winston.Logger, context: PackageInfoContext = 'root'): PackageInfo {
   const packageJsonPath = resolvePackageJsonPath(root);
   if (!packageJsonPath)
     throw new Error(`Can't resolve package.json for root package ${root}`);
@@ -111,22 +112,24 @@ export function getPackageInfo(root: string, context: PackageInfoContext = 'root
       if (depPackageJson === undefined)
         throw new Error(`Can't resolve package.json for dependency ${dep} of ${root}`);
       const depRoot = path.dirname(depPackageJson);
-      depInfos.push(getPackageInfo(depRoot, 'dependency'));
+      depInfos.push(getPackageInfo(depRoot, logger, 'dependency'));
     }
   }
 
   if (devDependencies && context === 'root') {
     for (const dep of Object.keys(devDependencies)) {
       const depPackageJson = resolvePackageJsonPath(root, dep);
-      if (depPackageJson === undefined)
+      if (depPackageJson === undefined) {
+        logger.warn(`Can't resolve package.json for dev dependency ${dep} of ${root}`);
         // tolerating not-exported package.json for dev dependencies
         continue;
+      }
       const depRoot = path.dirname(depPackageJson);
-      depInfos.push(getPackageInfo(depRoot, 'devDependency'));
+      depInfos.push(getPackageInfo(depRoot, logger, 'devDependency'));
     }
   }
 
-  const packageInfo: PackageInfo = { name, version, type, dependencies: depInfos, root };
+  const packageInfo: PackageInfo = { name, version, type, dependencies: depInfos, root, context };
 
   return packageInfo;
 }
@@ -152,9 +155,12 @@ function loadDependencies(
   compiler: TengoTemplateCompiler,
   packageInfo: PackageInfo,
 ): void {
-  for (const dep of packageInfo.dependencies) {
+  for (const dep of packageInfo.dependencies)
     loadDependencies(logger, compiler, dep);
-  }
+
+  if (packageInfo.context === 'root')
+    // we are not reading compiled files for root package
+    return;
 
   // we are in package folder
   const libDistFolder = resolveLibsDst('dist', packageInfo.root);
@@ -312,6 +318,7 @@ export function parseSources(
 
     const fullName = fullNameFromFileName(packageId, artifactName.replaceAll(path.sep, '.'));
     if (!fullName) {
+      logger.info(`Skipping unknown file type: ${artifactName}`);
       continue; // skip unknown file types
     }
 
@@ -398,7 +405,7 @@ function fullNameFromFileName(
 }
 
 export function compile(logger: winston.Logger, mode: CompileMode): TemplatesAndLibs {
-  const packageInfo = getPackageInfo(process.cwd());
+  const packageInfo = getPackageInfo(process.cwd(), logger);
   const compiler = newCompiler(logger, packageInfo, mode);
   const sources = parseSources(logger, packageInfo, mode, 'src', '');
 
