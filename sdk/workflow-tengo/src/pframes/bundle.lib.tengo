@@ -6,7 +6,6 @@ canonical := import(":canonical")
 pSpec := import(":pframes.spec")
 maps := import(":maps")
 ll := import(":ll")
-slices := import(":slices")
 xsv := import(":pframes.xsv")
 
 /**
@@ -47,7 +46,7 @@ xsv := import(":pframes.xsv")
  *
  * @returns {Object} PColumnBundleCollector object with methods to add and resolve references
  */
-pColumnBundleCollector := func(ctx) {
+createBuilder := func(ctx) {
 	// reference key -> anchor id or ref
 	//   - if points to string resolution result can be taken from the anchor query
 	//   - if points to object resolution should be done separately
@@ -137,6 +136,8 @@ pColumnBundleCollector := func(ctx) {
 			return bundle.build()
 		}
 	}
+
+	return self
 }
 
 /**
@@ -222,10 +223,10 @@ pColumnBundleUnmarshaller := func() {
 				/**
 				 * Creates a builder object to help create XSV tables from the bundle data
 				 */
-				buildTable: func() {
+				xsvTableBuilder: func() {
 					columns := []
 					// Create a local copy of the header overrides
-					localHeaderOverrides := slices.copy(headerOverrides)
+					localHeaderOverrides := copy(headerOverrides)
 
 					findHeaderOverride := func(name) {
 						for _, override in localHeaderOverrides {
@@ -246,16 +247,20 @@ pColumnBundleUnmarshaller := func() {
 							label = findHeaderOverride(name)
 
 							if is_undefined(label) {
-								hasDiscriminativeDomains := len(distiller.getDiscriminativeDomainsSet(name)) > 0
+								discriminativeDomains := distiller.getDiscriminativeDomains(name)
 
-								if !hasDiscriminativeDomains {
+								if len(discriminativeDomains) == 0 {
 									label = name
+								} else {
+									ll.panic("Cannot deduce header for %s in column / axis: %s. Discriminative domains: %s. Please provide a header override.",
+										name, columnKey, discriminativeDomains)
 								}
 							}
 						}
 
 						if is_undefined(label) {
-							ll.panic("Cannot deduce header for " + name + " in column: " + columnKey + ". Please provide a header override.")
+							ll.panic("Cannot deduce header for %s in column / axis: %s. Please provide a header override.",
+								name, columnKey)
 						}
 
 						return maps.deepMerge(spec, { annotations: { "pl7.app/label": label } })
@@ -303,34 +308,34 @@ pColumnBundleUnmarshaller := func() {
 						 * @param format - Format for export, either 'csv' or 'tsv'
 						 */
 						build: func(format) {
-							pframe := {}
+
 							columnsToDistill := []
 
 							for _, entry in columns {
 								col := columnPool[entry.key]
-
-								pframe[entry.key] = {
-									spec: col.spec,
-									data: col.data
-								}
-
 								columnsToDistill = append(columnsToDistill, col.spec)
 							}
 
 							columnDistiller := pSpec.createSpecDistiller(columnsToDistill)
 
+							pframe := {}
+
 							for _, entry in columns {
+
 								col := columnPool[entry.key]
 								colSpec := col.spec
-								distilledSpec := columnDistiller.distill(colSpec)
 
-								distilledSpec = addLabel(distilledSpec, entry.headerOverride, entry.key, columnDistiller)
+								preparedSpec := columnDistiller.distill(colSpec)
+								preparedSpec = addLabel(preparedSpec, entry.headerOverride, entry.key, columnDistiller)
 
-								for i, axis in distilledSpec.axesSpec {
-									distilledSpec.axesSpec[i] = addLabel(axis, undefined, entry.key, columnDistiller)
+								for i, axis in preparedSpec.axesSpec {
+									preparedSpec.axesSpec[i] = addLabel(axis, undefined, entry.key, columnDistiller)
 								}
 
-								pframe[entry.key].spec = distilledSpec
+								pframe[entry.key] = {
+									spec: preparedSpec,
+									data: col.data
+								}
 							}
 
 							return xsv.exportFrame(pframe, format, {})
@@ -347,6 +352,6 @@ pColumnBundleUnmarshaller := func() {
 }
 
 export ll.toStrict({
-	pColumnBundleCollector: pColumnBundleCollector,
+	createBuilder: createBuilder,
 	pColumnBundleUnmarshaller: pColumnBundleUnmarshaller
 })

@@ -18,8 +18,6 @@ constants := import(":exec.constants")
 slices := import(":slices")
 sets := import(":sets")
 
-mnzSw := assets.importSoftware("@platforma-open/milaboratories.software-small-binaries:mnz-client")
-
 _JWT_TOKEN_RESULT_ENV := "PLATFORMA_MNZ_JWT"
 
 /** mnz-client will print the response from milm to stdout as-is. */
@@ -219,6 +217,8 @@ setUrl := func(mnz, url) {
  * @param: queue: queue - in which queue we should run monetization. */
 run := func(mnz, wd, queue) {
 	_validateIsReady(mnz)
+
+	mnzSw := assets.importSoftware("@platforma-open/milaboratories.software-small-binaries:mnz-client")
 
 	exprType := feats.commandExpressions ? constants.ARG_TYPE_EXPRESSION : constants.ARG_TYPE_VAR
 

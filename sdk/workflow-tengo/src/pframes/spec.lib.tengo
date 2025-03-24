@@ -280,10 +280,10 @@ createSpecDistiller := func(specs) {
 	// Collect all domain values for each spec and axis
 	for _, spec in specs {
 		// Process column spec domains
-		specName := spec.name
+		columnName := spec.name
 		if !is_undefined(spec.domain) {
 			for domainName, domainValue in spec.domain {
-				addDomainValue(specName, domainName, domainValue)
+				addDomainValue(columnName, domainName, domainValue)
 			}
 		}
 
@@ -303,9 +303,11 @@ createSpecDistiller := func(specs) {
 	// Filter domains that have more than one value - these are the ones that help discriminate pcolumns
 	discriminativeDomains := {}
 	for name, domains in domainsValues {
-		discriminativeDomains[name] = {}
 		for domainName, valueSet in domains {
 			if len(valueSet) > 1 {
+				if is_undefined(discriminativeDomains[name]) {
+					discriminativeDomains[name] = {}
+				}
 				discriminativeDomains[name][domainName] = true
 			}
 		}

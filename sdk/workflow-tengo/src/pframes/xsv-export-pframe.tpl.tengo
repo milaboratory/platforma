@@ -300,7 +300,15 @@ _columnsMap := func(pf) {
 
 	r := {}
 
-	addToMap :=  func(key, v) {
+	addToMap := func(key, v) {
+		if is_map(v) && !is_undefined(v.spec) && !is_undefined(v.data) {
+			r[key] = {
+				spec: v.spec,
+				data: v.data
+			}
+			return
+		}
+
 		name := key[0:(len(key) - 5)]
 
 		if is_undefined(r[name]) {
@@ -308,14 +316,11 @@ _columnsMap := func(pf) {
 		}
 
 		if text.has_suffix(key, ".data") {
-
 			r[name].data = v
 		} else if text.has_suffix(key, ".spec") {
-
 			r[name].spec = v
 		} else {
-
-			ll.panic("unknown suffix: ", key)
+			ll.panic("unknown suffix: %s", key)
 		}
 	}
 
@@ -328,7 +333,7 @@ _columnsMap := func(pf) {
 			addToMap(key, field)
 		}
 	} else {
-		ll.panic("unknown pf format: ", pf)
+		ll.panic("unknown pf format: %s", pf)
 	}
 
 	return r
