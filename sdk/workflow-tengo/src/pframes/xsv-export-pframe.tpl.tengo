@@ -9,6 +9,7 @@ exec := import(":exec")
 json := import("json")
 text := import("text")
 sets := import(":sets")
+maps := import(":maps")
 util := import(":pframes.util")
 ll := import(":ll")
 assets := import(":assets")
@@ -86,7 +87,12 @@ _addColumnToWd := func(name, data, spec, pfconv, ops) {
         // write jdata
         i := 0
         parts := {}
-        for k, v in data.inputs() {
+
+		// using maps.getKeys to iterate over keys in the alphabetical order
+		inputs := data.inputs()
+        for k in maps.getKeys(inputs) {
+			v := inputs[k]
+
 			if !acceptPartition(json.decode(k)) {
 				continue
 			}
@@ -115,7 +121,11 @@ _addColumnToWd := func(name, data, spec, pfconv, ops) {
         // write jdata
         i := 0
         parts := {}
-        for k, v in data.inputs() {
+        // using maps.getKeys to iterate over keys in the alphabetical order
+		inputs := data.inputs()
+        for k in maps.getKeys(inputs) {
+			v := inputs[k]
+
             part := undefined
 
             if text.has_suffix(k, ".index") {
@@ -181,7 +191,9 @@ _addColumnToWd := func(name, data, spec, pfconv, ops) {
 			supKeyArray := json.decode(supKey)
 
 			// iterate over inner index
-			for k, v in supData.getValue().inputs() {
+			inputs := supData.getValue().inputs()
+			for k in maps.getKeys(inputs) {
+				v := inputs[k]
 
 				part := name + i + ".jdata"
 
@@ -229,7 +241,9 @@ _addColumnToWd := func(name, data, spec, pfconv, ops) {
 			supKeyArray := json.decode(supKey)
 
 			// iterate over inner index
-			for k, v in supData.getValue().inputs() {
+			inputs := supData.getValue().inputs()
+			for k in maps.getKeys(inputs) {
+				v := inputs[k]
 
 				if text.has_suffix(k, ".index") {
 					innerKeyArray := json.decode(k[0:(len(k) - 6)])
@@ -301,14 +315,6 @@ _columnsMap := func(pf) {
 	r := {}
 
 	addToMap := func(key, v) {
-		if is_map(v) && !is_undefined(v.spec) && !is_undefined(v.data) {
-			r[key] = {
-				spec: v.spec,
-				data: v.data
-			}
-			return
-		}
-
 		name := key[0:(len(key) - 5)]
 
 		if is_undefined(r[name]) {
@@ -318,17 +324,24 @@ _columnsMap := func(pf) {
 		if text.has_suffix(key, ".data") {
 			r[name].data = v
 		} else if text.has_suffix(key, ".spec") {
+			if smart.isResource(v) {
+				v = v.getDataAsJson()
+			}
 			r[name].spec = v
 		} else {
 			ll.panic("unknown suffix: %s", key)
 		}
 	}
 
-	if smart.isResource(pf) && pf.info().Type.Name == constants.RTYPE_P_FRAME {
+	if smart.isResource(pf) {
+		if !pf.checkResourceType(constants.RTYPE_P_FRAME) {
+			ll.panic("Unexpected resource type: %s", pf.info().Type.Name)
+		}
+
 		for key, field in pf.inputs() {
 			addToMap(key, field.getValue())
 		}
-	} else if (ll.isMap(pf)) {
+	} else if ll.isMap(pf) {
 		for key, field in pf {
 			addToMap(key, field)
 		}
@@ -364,6 +377,7 @@ self.body(func(inputs) {
 
 
 	for name, ds in _columnsMap(pf) {
+
 		_addColumnToWd(name, ds.data, ds.spec, pfconv, ops)
 	}
 
