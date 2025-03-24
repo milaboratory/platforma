@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.23.4
+
+### Patch Changes
+
+- 133e962: add difference to labels with different domains
+
 ## 1.23.0
 
 ### Minor Changes
