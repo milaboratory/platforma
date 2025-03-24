@@ -5,12 +5,15 @@
 validation := import(":validation")
 constants := import(":pframes.constants")
 objects := import(":objects")
+smart := import(":smart")
 render := import(":render")
 maps := import(":maps")
 util := import(":pframes.util")
+pBuilder := import(":pframes.builder")
 ll := import(":ll")
 assets := import(":assets")
 xsvIF := import(":pframes.xsv-import-file")
+text := import("text")
 
 importXsvIfNullTpl := assets.importTemplate(":pframes.xsv-import-if-not-null")
 
@@ -181,6 +184,44 @@ importFileMap := func(xsvMap, xsvType, spec, ...ops) {
 	return result
 }
 
+isFlatPfMap := func(pf) {
+	if !is_map(pf) {
+		return false
+	}
+
+	for key, _ in pf {
+		if !text.has_suffix(key, ".spec") && !text.has_suffix(key, ".data") {
+			return false
+		}
+	}
+
+	return true
+}
+
+isStructuredPfMap := func(pf) {
+	if !is_map(pf) {
+		return false
+	}
+
+	for _, value in pf {
+		if !is_map(value) {
+			return false
+		}
+
+		for k, _ in value {
+			if k != "spec" && k != "data" {
+				return false
+			}
+		}
+
+		if is_undefined(value.spec) || is_undefined(value.data) {
+			return false
+		}
+	}
+
+	return true
+}
+
 /**
  * Export p-frame into xsv file
  *
@@ -200,16 +241,27 @@ exportFrame := func(pf, xsvType, params, ...ops) {
 	if is_array(pf) {
 		// transform into .data .spec map
 
-		pfm := {}
+		pfBuilder := pBuilder.pFrameBuilder()
 		i := 0
 		for col in pf {
 			ll.assert(!is_undefined(col.spec), "expected array of {spec, data} maps as a list of columns, but spec is undefined for: ", col)
 			ll.assert(!is_undefined(col.data), "expected array of {spec, data} maps as a list of columns, but data is undefined for: ", col)
-			pfm["" + i + ".spec"] = col.spec
-			pfm["" + i + ".data"] = col.data
+			pfBuilder.add(string(i), col.spec, col.data)
 			i = i + 1
 		}
-		pf = pfm
+		pf = pfBuilder.build()
+	} else if isStructuredPfMap(pf) {
+		pfBuilder := pBuilder.pFrameBuilder()
+		for key, value in pf {
+			pfBuilder.add(key, value.spec, value.data)
+		}
+		pf = pfBuilder.build()
+	} else if smart.isResource(pf) {
+		if !pf.checkResourceType(constants.RTYPE_P_FRAME) {
+			ll.panic("Unexpected resource type: %s", pf.info().Type.Name)
+		}
+	} else if !isFlatPfMap(pf) && !smart.isReference(pf) {
+		ll.panic("Unexpected p-frame format: %s", pf)
 	}
 
 	r := render.create(exportPfTpl, {

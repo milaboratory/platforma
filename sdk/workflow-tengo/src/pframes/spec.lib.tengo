@@ -35,6 +35,12 @@ P_COLUMN_SPEC_SCHEMA := {
 	`axesSpec,?`: [ P_AXIS_SPEC_SCHEMA ]
 }
 
+P_OBJECT_SPEC_SCHEMA := ["or", P_COLUMN_SPEC_SCHEMA, {
+	`kind`: `string`,
+	`annotations,?`: { any: `string` }
+}]
+
+
 KIND_P_COLUMN := "PColumn"
 
 //
@@ -400,6 +406,7 @@ createSpecDistiller := func(specs) {
 export ll.toStrict({
 	P_AXIS_SPEC_SCHEMA: P_AXIS_SPEC_SCHEMA,
 	P_COLUMN_SPEC_SCHEMA: P_COLUMN_SPEC_SCHEMA,
+	P_OBJECT_SPEC_SCHEMA: P_OBJECT_SPEC_SCHEMA,
 
 	KIND_P_COLUMN: KIND_P_COLUMN,
 
