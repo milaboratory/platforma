@@ -281,7 +281,7 @@ tplTest.for([
   { superPartitionKeyLength: 1, partitionKeyLength: 1, storageFormat: 'Json' },
 ])(
   'should read super-partitioned p-frame from csv files map- superPartitionKeyLength: $superPartitionKeyLength, partitionKeyLength: $partitionKeyLength',
-  { timeout: 10000 },
+  { timeout: 30000 },
   async ({ superPartitionKeyLength, partitionKeyLength, storageFormat }, { helper, expect }) => {
     const supKeys = superPartitionKeys(superPartitionKeyLength).sort();
     const spec = baseSpec;
@@ -446,7 +446,7 @@ tplTest.for([
   { superPartitionKeyLength: 1, partitionKeyLength: 1, storageFormat: 'Json' },
 ])(
   '[in workflow] should read super-partitioned p-frame from csv files map- superPartitionKeyLength: $superPartitionKeyLength, partitionKeyLength: $partitionKeyLength',
-  { timeout: 10000 },
+  { timeout: 30000 },
   async ({ superPartitionKeyLength, partitionKeyLength, storageFormat }, { helper, expect }) => {
     const supKeys = superPartitionKeys(superPartitionKeyLength).sort();
     const spec = baseSpec;

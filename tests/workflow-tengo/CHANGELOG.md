@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo-tests
 
+## 1.6.7
+
+### Patch Changes
+
+- c1c0b8a: Migration to new tengo-builder, dependency fixes.
+
 ## 1.6.6
 
 ### Patch Changes
