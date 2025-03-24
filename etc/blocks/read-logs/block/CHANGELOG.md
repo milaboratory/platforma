@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.test-read-logs
 
+## 1.0.95
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-read-logs.workflow@1.0.3
+
 ## 1.0.94
 
 ### Patch Changes

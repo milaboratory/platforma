@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples
 
+## 1.0.194
+
+### Patch Changes
+
+- @milaboratories/milaboratories.ui-examples.workflow@1.0.8
+
 ## 1.0.193
 
 ### Patch Changes
