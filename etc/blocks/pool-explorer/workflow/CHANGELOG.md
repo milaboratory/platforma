@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.pool-explorer.workflow
 
+## 1.0.2
+
+### Patch Changes
+
+- c1c0b8a: Migration to new tengo-builder, dependency fixes.
+
 ## 1.0.1
 
 ### Patch Changes
