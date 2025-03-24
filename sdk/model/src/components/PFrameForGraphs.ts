@@ -126,6 +126,14 @@ function getAdditionalColumnsForPair(
             .map((v) => JSON.parse(v)?.[1]) // use in labels only domain values, but sort them by key to save the same order in all column variants
             .join(' / ');
 
+        const annotations:Record<string, string> = {
+            ...secondaryColumn.spec.annotations,
+            [IS_VIRTUAL_COLUMN]: 'true'
+        }
+        if (label || labelDomainPart) {
+            annotations[LABEL_ANNOTATION] = label && labelDomainPart ? label + ' / ' + labelDomainPart : label + labelDomainPart;
+        }
+
         return {
             id: id as PObjectId,
             spec: {
@@ -134,11 +142,7 @@ function getAdditionalColumnsForPair(
                     ...axisId,
                     annotations: secondaryColumn.spec.axesSpec[idx].annotations
                 })),
-                annotations: {
-                    ...secondaryColumn.spec.annotations,
-                    [LABEL_ANNOTATION]: label && labelDomainPart ? label + ' / ' + labelDomainPart : label + labelDomainPart,
-                    [IS_VIRTUAL_COLUMN]: 'true'
-                }
+                annotations
             },
             data: secondaryColumn.data
         };
