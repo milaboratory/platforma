@@ -1,6 +1,7 @@
 import type {
   APColumnSelector,
   AxisId,
+  CanonicalPColumnId,
   Option,
   PColumn,
   PColumnSelector,
@@ -75,7 +76,8 @@ export class ResultPool {
   }
 
   /**
-   * Calculates anchored identifier options for columns matching a given predicate.
+   * Calculates anchored identifier options for columns matching a given predicate and returns their
+   * canonicalized representations.
    *
    * This function filters column specifications from the result pool that match the provided predicate,
    * creates a standardized AnchorCtx from the provided anchors, and generates a list of label-value
@@ -100,32 +102,32 @@ export class ResultPool {
    *          or undefined if any PlRef resolution fails.
    */
   // Overload for AnchorCtx - guaranteed to never return undefined
-  getAnchoredOptions(
+  getCanonicalOptions(
     anchorsOrCtx: AnchorIdDeriver,
     predicateOrSelectors: ((spec: PColumnSpec) => boolean) | APColumnSelector | APColumnSelector[],
     labelOps?: LabelDerivationOps,
-  ): { label: string; value: string }[];
+  ): { label: string; value: CanonicalPColumnId }[];
 
   // Overload for Record<string, PColumnSpec> - guaranteed to never return undefined
-  getAnchoredOptions(
+  getCanonicalOptions(
     anchorsOrCtx: Record<string, PColumnSpec>,
     predicateOrSelectors: ((spec: PColumnSpec) => boolean) | APColumnSelector | APColumnSelector[],
     labelOps?: LabelDerivationOps,
-  ): { label: string; value: string }[];
+  ): { label: string; value: CanonicalPColumnId }[];
 
   // Overload for Record<string, PColumnSpec | PlRef> - may return undefined if PlRef resolution fails
-  getAnchoredOptions(
+  getCanonicalOptions(
     anchorsOrCtx: Record<string, PColumnSpec | PlRef>,
     predicateOrSelectors: ((spec: PColumnSpec) => boolean) | APColumnSelector | APColumnSelector[],
     labelOps?: LabelDerivationOps,
-  ): { label: string; value: string }[] | undefined;
+  ): { label: string; value: CanonicalPColumnId }[] | undefined;
 
   // Implementation
-  getAnchoredOptions(
+  getCanonicalOptions(
     anchorsOrCtx: AnchorIdDeriver | Record<string, PColumnSpec | PlRef>,
     predicateOrSelectors: ((spec: PColumnSpec) => boolean) | APColumnSelector | APColumnSelector[],
     labelOps?: LabelDerivationOps,
-  ): { label: string; value: string }[] | undefined {
+  ): { label: string; value: CanonicalPColumnId }[] | undefined {
   // Handle PlRef objects by resolving them to PColumnSpec
     const resolvedAnchors: Record<string, PColumnSpec> = {};
 
@@ -160,7 +162,7 @@ export class ResultPool {
       : new AnchorIdDeriver(resolvedAnchors);
 
     return deriveLabels(filtered, (o) => o.obj, labelOps ?? {}).map(({ value: { obj: spec }, label }) => ({
-      value: anchorIdDeriver.deriveString(spec as PColumnSpec)!,
+      value: anchorIdDeriver.deriveCanonical(spec as PColumnSpec),
       label,
     }));
   }
