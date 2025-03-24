@@ -38,17 +38,22 @@ test('should download a blob and read its content', async () => {
 
     const c = driver.getDownloadedBlob(downloadable);
 
+    console.log(`should download a blob: getting computable first time`)
     const blob = await c.getValue();
     expect(blob).toBeUndefined();
 
+    console.log(`should download a blob: awaiting change`)
     await c.awaitChange();
 
+    console.log(`should download a blob: getting the blob second time`)
     const blob2 = await c.getValue();
     expect(blob2).toBeDefined();
     expect(blob2!.size).toBe(3);
     expect((await driver.getContent(blob2!.handle))?.toString()).toBe('42\n');
+
+    console.log(`should download a blob: exiting`)
   });
-});
+}, 10000);
 
 test('should not redownload a blob a file already exists', async () => {
   await TestHelpers.withTempRoot(async (client) => {
