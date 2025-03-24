@@ -1,5 +1,10 @@
 import {test, expect, describe} from '@jest/globals';
-import {enrichColumnsWithCompatible, getAdditionalColumns, IS_VIRTUAL_COLUMN} from './PFrameForGraphs';
+import {
+    enrichColumnsWithCompatible,
+    getAdditionalColumns,
+    IS_VIRTUAL_COLUMN,
+    LABEL_ANNOTATION
+} from './PFrameForGraphs';
 import {PColumn, PColumnSpec, PColumnValues, PObjectId} from "@milaboratories/pl-model-common";
 import {TreeNodeAccessor} from "../render";
 
@@ -180,5 +185,32 @@ describe('PFrameForGraph', () => {
 
         const enrichedColumns = enrichColumnsWithCompatible(columns, upstream);
         expect(enrichedColumns.map((c) => c.id)).toEqual(['id1', 'id2', 'id3'])
+    })
+
+    test('Labels of added columns include added domains, but not include common domains', () => {
+        const columnSpec1: PColumnSpec = {
+            kind: 'PColumn',
+            name: 'column1',
+            valueType: 'Int',
+            axesSpec: [
+                {type: 'String', name: 'axis1', domain: {key0: 'commonDomain', key1: 'a', key2: 'c'}},
+                {type: 'String', name: 'axis1', domain: {key0: 'commonDomain', key1: 'b', key2: 'c'}},
+            ]
+        }
+        const columnSpec2: PColumnSpec = {
+            kind: 'PColumn',
+            name: 'column2',
+            valueType: 'Int',
+            annotations: {[LABEL_ANNOTATION]: 'Label of column2'},
+            axesSpec: [{type: 'String', name: 'axis1', domain: {key0: 'commonDomain'}}]
+        }
+        const columns: PColumn<TreeNodeAccessor | PColumnValues>[] = [
+            {id: 'id1' as PObjectId, spec: columnSpec1, data: []},
+            {id: 'id2' as PObjectId, spec: columnSpec2, data: []}
+        ] as PColumn<PColumnValues>[]
+
+        const additionalColumns = getAdditionalColumns(columns);
+        expect(additionalColumns[0].spec.annotations?.[LABEL_ANNOTATION]).toEqual('Label of column2 / a');
+        expect(additionalColumns[1].spec.annotations?.[LABEL_ANNOTATION]).toEqual('Label of column2 / b');
     })
 })

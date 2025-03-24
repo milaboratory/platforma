@@ -62,6 +62,7 @@ function checkCompatibility(
 }
 
 export const IS_VIRTUAL_COLUMN = 'pl7.app/graph/isVirtual'; // annotation for column duplicates with extended domains
+export const LABEL_ANNOTATION = 'pl7.app/label';
 
 /** Main column can have additional domains, if secondary column (meta-column) has all axes match main column axes
  we can add its copy with missed domain fields for compatibility */
@@ -87,8 +88,52 @@ function getAdditionalColumnsForPair(
     // all possible combinations of axes with added domains
     const secondaryIdsVariants = getKeysCombinations(secondaryIdsOptions);
 
-    return secondaryIdsVariants.map(idsList => {
+    // sets of added to column domain fields
+    const allAddedDomainValues = new Set<string>();
+    const addedNotToAllVariantsDomainValues = new Set<string>();
+    const addedByVariantsDomainValues = secondaryIdsVariants.map(idsList => {
+        const addedSet = new Set<string>();
+        idsList.map((axisId, idx) => {
+            const d1 = secondaryColumn.spec.axesSpec[idx].domain;
+            const d2 = axisId.domain;
+            Object.entries(d2 ?? {}).forEach(([key, value]) => {
+                if (d1?.[key] === undefined) {
+                    const item = JSON.stringify([key, value]);
+                    addedSet.add(item);
+                    allAddedDomainValues.add(item);
+                }
+            });
+            return ({
+                ...axisId,
+                annotations: secondaryColumn.spec.axesSpec[idx].annotations
+            })
+        });
+        return addedSet;
+    });
+    [...allAddedDomainValues].forEach(addedPart => {
+        if (addedByVariantsDomainValues.some(s => !s.has(addedPart))) {
+            addedNotToAllVariantsDomainValues.add(addedPart);
+        }
+    })
+
+    return secondaryIdsVariants.map((idsList, idx) => {
         const id = colId(secondaryColumn.id, idsList.map(id => id.domain));
+
+        const label = secondaryColumn.spec.annotations?.[LABEL_ANNOTATION] ?? '';
+        const labelDomainPart = ([...addedByVariantsDomainValues[idx]])
+            .filter(str => addedNotToAllVariantsDomainValues.has(str))
+            .sort()
+            .map((v) => JSON.parse(v)?.[1]) // use in labels only domain values, but sort them by key to save the same order in all column variants
+            .join(' / ');
+
+        const annotations:Record<string, string> = {
+            ...secondaryColumn.spec.annotations,
+            [IS_VIRTUAL_COLUMN]: 'true'
+        }
+        if (label || labelDomainPart) {
+            annotations[LABEL_ANNOTATION] = label && labelDomainPart ? label + ' / ' + labelDomainPart : label + labelDomainPart;
+        }
+
         return {
             id: id as PObjectId,
             spec: {
@@ -97,10 +142,7 @@ function getAdditionalColumnsForPair(
                     ...axisId,
                     annotations: secondaryColumn.spec.axesSpec[idx].annotations
                 })),
-                annotations: {
-                    ...secondaryColumn.spec.annotations,
-                    [IS_VIRTUAL_COLUMN]: 'true'
-                }
+                annotations
             },
             data: secondaryColumn.data
         };
