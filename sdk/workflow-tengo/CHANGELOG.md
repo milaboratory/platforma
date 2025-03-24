@@ -1,5 +1,12 @@
 # @platforma-sdk/workflow-tengo
 
+## 3.0.0
+
+### Major Changes
+
+- 7034617: Breaking Changes:
+  - `pframes.exportFrame`: for some inputs order of columns in exported CSV files could change
+
 ## 2.16.1
 
 ### Patch Changes
