@@ -1,5 +1,18 @@
 # @milaboratories/pl-middle-layer
 
+## 1.30.29
+
+### Patch Changes
+
+- 2a0fb91: parse errors so they could be distinguished
+- d6a49b2: extract parsed_errors from pl-tree for future using it in computable
+- Updated dependencies [2a0fb91]
+- Updated dependencies [d6a49b2]
+  - @milaboratories/pl-tree@1.4.33
+  - @milaboratories/computable@2.4.1
+  - @milaboratories/pl-errors@1.0.1
+  - @milaboratories/pl-drivers@1.5.28
+
 ## 1.30.28
 
 ### Patch Changes
