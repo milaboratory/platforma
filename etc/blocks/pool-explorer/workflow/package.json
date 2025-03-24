@@ -8,10 +8,9 @@
     "build": "rm -rf dist && pl-tengo check && pl-tengo build"
   },
   "dependencies": {
-    "@platforma-open/milaboratories.software-small-binaries": "catalog:"
+    "@platforma-sdk/workflow-tengo": "workspace:*"
   },
   "devDependencies": {
-    "@platforma-sdk/workflow-tengo": "workspace:*",
     "@platforma-sdk/tengo-builder": "workspace:*"
   }
 }
