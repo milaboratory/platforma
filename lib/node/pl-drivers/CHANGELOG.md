@@ -1,5 +1,12 @@
 # @milaboratories/pl-drivers
 
+## 1.5.29
+
+### Patch Changes
+
+- Updated dependencies [b084260]
+  - @milaboratories/pl-model-common@1.11.1
+
 ## 1.5.28
 
 ### Patch Changes

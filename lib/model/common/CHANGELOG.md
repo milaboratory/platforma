@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.11.1
+
+### Patch Changes
+
+- b084260: Branded CanonicalPColumnId type
+
 ## 1.11.0
 
 ### Minor Changes

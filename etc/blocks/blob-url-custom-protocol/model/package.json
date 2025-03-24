@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/milaboratories.test-blob-url-custom-protocol.model",
-  "version": "1.0.19",
+  "version": "1.0.20",
   "private": true,
   "description": "Block model",
   "type": "module",
