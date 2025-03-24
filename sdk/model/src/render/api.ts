@@ -128,7 +128,7 @@ export class ResultPool {
     predicateOrSelectors: ((spec: PColumnSpec) => boolean) | APColumnSelector | APColumnSelector[],
     labelOps?: LabelDerivationOps,
   ): { label: string; value: CanonicalPColumnId }[] | undefined {
-  // Handle PlRef objects by resolving them to PColumnSpec
+    // Handle PlRef objects by resolving them to PColumnSpec
     const resolvedAnchors: Record<string, PColumnSpec> = {};
 
     if (!(anchorsOrCtx instanceof AnchorIdDeriver)) {
