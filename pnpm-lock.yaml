@@ -793,16 +793,13 @@ importers:
 
   etc/blocks/pool-explorer/workflow:
     dependencies:
-      '@platforma-open/milaboratories.software-small-binaries':
-        specifier: 'catalog:'
-        version: 1.15.19
+      '@platforma-sdk/workflow-tengo':
+        specifier: workspace:*
+        version: link:../../../../sdk/workflow-tengo
     devDependencies:
       '@platforma-sdk/tengo-builder':
         specifier: workspace:*
         version: link:../../../../tools/tengo-builder
-      '@platforma-sdk/workflow-tengo':
-        specifier: workspace:*
-        version: link:../../../../sdk/workflow-tengo
 
   etc/blocks/read-logs/block:
     dependencies:
@@ -2516,15 +2513,9 @@ importers:
       '@milaboratories/platforma-build-configs':
         specifier: workspace:*
         version: link:../../lib/util/build-configs
-      '@milaboratories/software-pframes-conv':
-        specifier: 'catalog:'
-        version: 2.1.17
       '@milaboratories/ts-helpers':
         specifier: workspace:*
         version: link:../../lib/node/ts-helpers
-      '@platforma-open/milaboratories.software-small-binaries':
-        specifier: 'catalog:'
-        version: 1.15.19
       '@platforma-sdk/tengo-builder':
         specifier: workspace:*
         version: link:../../tools/tengo-builder
