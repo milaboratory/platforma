@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/milaboratories.test-read-logs.ui",
-  "version": "1.0.92",
+  "version": "1.0.93",
   "private": true,
   "type": "module",
   "scripts": {
