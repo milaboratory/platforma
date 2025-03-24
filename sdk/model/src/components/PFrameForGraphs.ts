@@ -98,8 +98,9 @@ function getAdditionalColumnsForPair(
             const d2 = axisId.domain;
             Object.entries(d2 ?? {}).forEach(([key, value]) => {
                 if (d1?.[key] === undefined) {
-                    addedSet.add(value);
-                    allAddedDomainValues.add(value);
+                    const item = JSON.stringify([key, value]);
+                    addedSet.add(item);
+                    allAddedDomainValues.add(item);
                 }
             });
             return ({
@@ -122,6 +123,7 @@ function getAdditionalColumnsForPair(
         const labelDomainPart = ([...addedByVariantsDomainValues[idx]])
             .filter(str => addedNotToAllVariantsDomainValues.has(str))
             .sort()
+            .map((v) => JSON.parse(v)?.[1]) // use in labels only domain values, but sort them by key to save the same order in all column variants
             .join(' / ');
 
         return {
