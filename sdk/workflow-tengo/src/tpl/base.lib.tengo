@@ -4,7 +4,6 @@ render := import(":render")
 smart := import(":smart")
 sets := import(":sets")
 maps := import(":maps")
-slices := import(":slices")
 tplutil := import(":tpl.util")
 constants := import(":constants")
 stateAwait := import(":tpl.state-await")
@@ -117,7 +116,7 @@ tpl := func(ops) {
 			return smart.resource(_templateId)
 		},
 
-		_unmarshallers: slices.copy(ops.unmarshallers),
+		_unmarshallers: copy(ops.unmarshallers),
 
 		/**
 		 * Register a preprocessor of input resource. The preprocessor must have two
