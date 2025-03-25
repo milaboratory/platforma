@@ -1,5 +1,12 @@
 # @milaboratories/pl-drivers
 
+## 1.5.31
+
+### Patch Changes
+
+- Updated dependencies [dc4f10a]
+  - @milaboratories/pl-tree@1.5.0
+
 ## 1.5.30
 
 ### Patch Changes

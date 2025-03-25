@@ -1,5 +1,11 @@
 # @milaboratories/pl-tree
 
+## 1.5.0
+
+### Minor Changes
+
+- dc4f10a: Tools to create and analyze tree data dump
+
 ## 1.4.34
 
 ### Patch Changes

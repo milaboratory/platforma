@@ -1,5 +1,14 @@
 # @platforma-sdk/test
 
+## 1.24.4
+
+### Patch Changes
+
+- Updated dependencies [dc4f10a]
+- Updated dependencies [dc4f10a]
+  - @milaboratories/pl-tree@1.5.0
+  - @milaboratories/pl-middle-layer@1.31.0
+
 ## 1.24.2
 
 ### Patch Changes
