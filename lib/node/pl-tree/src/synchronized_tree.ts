@@ -35,6 +35,9 @@ export type SynchronizedTreeOps = {
 
   /** If one of the values, tree will log stats of each polling request */
   logStat?: StatLoggingMode;
+
+  /** Timeout for initial tree loading. If not specified, will use default for RO tx from pl-client. */
+  initialTreeLoadingTimeout?: number;
 };
 
 type ScheduledRefresh = {
@@ -220,8 +223,7 @@ export class SynchronizedTreeState {
     pl: PlClient,
     root: ResourceId,
     ops: SynchronizedTreeOps,
-    logger?: MiLogger,
-    txOps?: TxOps,
+    logger?: MiLogger
   ) {
     const tree = new SynchronizedTreeState(pl, root, ops, logger);
 
@@ -230,7 +232,9 @@ export class SynchronizedTreeState {
     let ok = false;
 
     try {
-      await tree.refresh(stat, txOps);
+      await tree.refresh(stat, {
+        timeout: ops.initialTreeLoadingTimeout
+      });
       ok = true;
     } finally {
       // logging stats if we were asked to (even if error occured)
