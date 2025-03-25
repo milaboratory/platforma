@@ -45,6 +45,17 @@ class PlTreeField implements FieldData {
     /** Last version of resource this field was observed, used to garbage collect fields in tree patching procedure */
     public resourceVersion: number
   ) {}
+
+  get state(): FieldData {
+    return {
+      name: this.name,
+      type: this.type,
+      status: this.status,
+      value: this.value,
+      error: this.error,
+      valueIsFinal: this.valueIsFinal
+    };
+  }
 }
 
 const InitialResourceVersion = 0;
@@ -306,10 +317,10 @@ export class PlTreeResource implements ResourceDataWithFinalState {
 
   verifyReadyState() {
     if (this.resourceReady && !this.inputsLocked)
-      throw new Error(`ready without input or output lock: ${stringifyWithResourceId(this.state)}`);
+      throw new Error(`ready without input or output lock: ${stringifyWithResourceId(this.basicState)}`);
   }
 
-  get state(): BasicResourceData {
+  get basicState(): BasicResourceData {
     return {
       id: this.id,
       kind: this.kind,
@@ -321,6 +332,14 @@ export class PlTreeResource implements ResourceDataWithFinalState {
       error: this.error,
       originalResourceId: this.originalResourceId,
       final: this.finalFlag
+    };
+  }
+
+  get extendedState(): ExtendedResourceData {
+    return {
+      ...this.basicState,
+      fields: this.fields,
+      kv: Array.from(this.kv.entries()).map(([key, value]) => ({ key, value }))
     };
   }
 
@@ -399,7 +418,7 @@ export class PlTreeState {
     for (const rd of resourceData) {
       let resource = this.resources.get(rd.id);
 
-      const statBeforeMutation = resource?.state;
+      const statBeforeMutation = resource?.basicState;
       const unexpectedTransitionError = (reason: string): never => {
         const { fields, ...rdWithoutFields } = rd;
         this.invalidateTree();
@@ -717,5 +736,9 @@ export class PlTreeState {
     this.resources.forEach((res) => {
       res.markAllChanged();
     });
+  }
+
+  public dumpState(): ExtendedResourceData[] {
+    return Array.from(this.resources.values()).map((res) => res.extendedState);
   }
 }
