@@ -1,5 +1,11 @@
 # @milaboratories/pl-tree
 
+## 1.4.34
+
+### Patch Changes
+
+- 7d2be5d: Set huge timeout for inital project loading
+
 ## 1.4.33
 
 ### Patch Changes
