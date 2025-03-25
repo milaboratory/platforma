@@ -164,8 +164,17 @@ export type MiddleLayerOpsPaths = DriverKitOpsPaths & {
   readonly frontendDownloadPath: string;
 };
 
+/** Debug options for middle layer. */
+export type MiddleLayerDebugOptions = {
+  /** If true, will dump initial tree state to the file with root resource id as name. */
+  dumpInitialTreeState: boolean;
+};
+
 /** Configuration controlling different aspects of middle layer behaviour. */
 export type MiddleLayerOpsSettings = DriverKitOpsSettings & {
+  /** Debug options. */
+  readonly debugOps: MiddleLayerDebugOptions;
+
   /** Contain temporal options controlling how often should pl trees be
    * synchronized with the pl server. */
   readonly defaultTreeOptions: TemporalSynchronizedTreeOps;
@@ -195,13 +204,16 @@ export const DefaultMiddleLayerOpsSettings: Pick<
   | 'projectRefreshInterval'
   | 'stagingRenderingRate'
   | 'devBlockUpdateRecheckInterval'
+  | 'debugOps'
 > = {
   ...DefaultDriverKitOpsSettings,
   defaultTreeOptions: {
     pollingInterval: 350,
     stopPollingDelay: 2500,
     initialTreeLoadingTimeout: 100 * 60 * 60 * 1000, // disable timeout for loading project tree (100 hours)
-
+  },
+  debugOps: {
+    dumpInitialTreeState: false,
   },
   devBlockUpdateRecheckInterval: 1000,
   projectRefreshInterval: 700,

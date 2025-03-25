@@ -7,7 +7,7 @@ import {
   ResourceId,
   TxOps
 } from '@milaboratories/pl-client';
-import { PlTreeState, TreeStateUpdateError } from './state';
+import { ExtendedResourceData, PlTreeState, TreeStateUpdateError } from './state';
 import {
   constructTreeLoadingRequest,
   initialTreeLoadingStat,
@@ -196,6 +196,14 @@ export class SynchronizedTreeState {
 
     // reset only as a very last line
     this.currentLoop = undefined;
+  }
+
+  /**
+   * Dumps the current state of the tree.
+   * @returns An array of ExtendedResourceData objects representing the current state of the tree.
+   */
+  public dumpState(): ExtendedResourceData[] {
+    return this.state.dumpState();
   }
 
   /**
