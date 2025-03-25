@@ -4,6 +4,7 @@ self := import(":tpl")
 text := import("text")
 smart := import(":smart")
 wdSave := import(":workdir.save")
+regexp := import(":regexp")
 
 self.body(func(inputs) {
 
@@ -42,17 +43,31 @@ self.body(func(inputs) {
 			fileSetsContentMatch[k] = []
 		}
 
+		// Pre-compile all regex patterns for better performance
+		compiledFileSets := {}
+		compiledFileSetsContent := {}
+
+		for fSetName, regex in fileSets {
+			compiledFileSets[fSetName] = regexp.compile(regex)
+		}
+
+		for fSetName, regex in fileSetsContent {
+			compiledFileSetsContent[fSetName] = regexp.compile(regex)
+		}
+
+		// Get files list once
 		files := wdBefore.getDataAsJson()["files"]
 
 		for name in files {
-			for fSetName, regex in fileSets {
-				if text.re_match(regex, name) {
+			// Use pre-compiled regexes for matching
+			for fSetName, compiledRegex in compiledFileSets {
+				if compiledRegex.match(name) {
 					fileSetsMatch[fSetName] = append(fileSetsMatch[fSetName], name)
 				}
 			}
 
-			for fSetName, regex in fileSetsContent {
-				if text.re_match(regex, name) {
+			for fSetName, compiledRegex in compiledFileSetsContent {
+				if compiledRegex.match(name) {
 					fileSetsContentMatch[fSetName] = append(fileSetsContentMatch[fSetName], name)
 				}
 			}

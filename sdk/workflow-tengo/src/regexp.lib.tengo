@@ -1,0 +1,36 @@
+// Regexp library that provides cached regexp compilation
+
+ll := import(":ll")
+text := import("text")
+
+// Cache for compiled regular expressions
+compiledCache := {}
+
+/**
+ * Compiles a regular expression and caches the result.
+ * If the same regexp pattern was already compiled, returns it from cache.
+ *
+ * @param pattern: string - the regular expression pattern to compile
+ * @return compiled regexp - the compiled regular expression object
+ */
+compile := func(pattern) {
+    // Check if pattern already exists in cache
+    if !is_undefined(compiledCache[pattern]) {
+        return compiledCache[pattern]
+    }
+
+    // Compile the pattern
+    compiled := text.re_compile(pattern)
+    if is_error(compiled) {
+        ll.panic("Error compiling regexp: %v", compiled)
+    }
+
+    // Store in cache for future use
+    compiledCache[pattern] = compiled
+
+    return compiled
+}
+
+export ll.toStrict({
+    compile: compile
+})
