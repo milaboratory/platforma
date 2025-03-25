@@ -4,6 +4,7 @@ text := import("text")
 maps := import(":maps")
 enum := import("enum")
 smart := import(":smart")
+regexp := import(":regexp")
 
 json := import("json")
 
@@ -89,13 +90,13 @@ _validateTypes := func(js, tags, keyPath, ...stack) {
 		return success
 	}
 
-	if k == "alphanumeric" && ((is_string(js) && text.re_match("^[[:alnum:]]*$", js)) || is_int(js)) {
+	if k == "alphanumeric" && ((is_string(js) && regexp.compile("^[[:alnum:]]*$").match(js)) || is_int(js)) {
 		return success
 	}
 
 	if k == "string" && is_string(js) {
 		regex := tags.tags["regex"]
-		if !is_undefined(regex) && !text.re_match(regex, js) {
+		if !is_undefined(regex) && !regexp.compile(regex).match(js) {
 			return fail(keyPath, "value %q does not conform regex %q", js, regex)
 		}
 
