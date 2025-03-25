@@ -393,7 +393,7 @@ export class Project {
 
   public static async init(env: MiddleLayerEnvironment, rid: ResourceId): Promise<Project> {
     // Doing a no-op mutation to apply all migration and schema fixes
-    await withProject(env.pl, rid, (_) => {}); // give at most 15 minutes to load project for the first time.
+    await withProject(env.pl, rid, (_) => {});
 
     // Loading project tree
     const projectTree = await SynchronizedTreeState.init(
