@@ -1,0 +1,36 @@
+{
+  "name": "@milaboratories/pl-errors",
+  "version": "1.0.1",
+  "description": "Parsing errors from Pl backend",
+  "types": "./dist/index.d.ts",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.js",
+      "import": "./dist/index.mjs"
+    }
+  },
+  "scripts": {
+    "type-check": "tsc --noEmit --composite false",
+    "build": "vite build",
+    "test": "vitest",
+    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
+  },
+  "files": [
+    "./dist/**/*",
+    "./src/**/*"
+  ],
+  "dependencies": {
+    "zod": "catalog:",
+    "@milaboratories/pl-client": "workspace:*"
+  },
+  "devDependencies": {
+    "@milaboratories/platforma-build-configs": "workspace:*",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:",
+    "@milaboratories/eslint-config": "workspace:^"
+  }
+}

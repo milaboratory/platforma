@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/milaboratories.test-block-model",
-  "version": "1.0.133",
+  "version": "1.0.136",
   "scripts": {
     "build": "rm -rf ./block-pack && block-tools pack"
   },

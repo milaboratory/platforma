@@ -1,5 +1,14 @@
 # @milaboratories/pl-tree
 
+## 1.4.33
+
+### Patch Changes
+
+- 2a0fb91: parse errors so they could be distinguished
+- Updated dependencies [d6a49b2]
+  - @milaboratories/computable@2.4.1
+  - @milaboratories/pl-errors@1.0.1
+
 ## 1.4.32
 
 ### Patch Changes

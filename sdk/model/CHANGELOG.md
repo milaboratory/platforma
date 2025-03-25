@@ -1,5 +1,22 @@
 # @platforma-sdk/model
 
+## 1.24.0
+
+### Minor Changes
+
+- b084260: Rename getAnchoredOptions to getCanonicalOptions that now returns branded options.
+
+### Patch Changes
+
+- Updated dependencies [b084260]
+  - @milaboratories/pl-model-common@1.11.1
+
+## 1.23.4
+
+### Patch Changes
+
+- 133e962: add difference to labels with different domains
+
 ## 1.23.0
 
 ### Minor Changes

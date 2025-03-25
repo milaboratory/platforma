@@ -11,6 +11,8 @@ packages:
   - lib/node/ts-helpers-oclif
   - lib/node/ts-helpers-winston
   - lib/node/pl-http
+  - lib/node/pl-errors
+
   - lib/node/resolve-helper
   - lib/node/node-streams
   - lib/node/computable
@@ -192,7 +194,7 @@ catalog:
   'winston': ^3.17.0
 
   '@milaboratories/tengo-tester': ^1.6.1
-  '@milaboratories/pframes-node': &pframes-version 2.1.17
+  '@milaboratories/pframes-node': &pframes-version 2.1.19
   '@milaboratories/pframes-rs-node': &pframes-rs-version 1.0.22
 
   'remeda': ^2.21.1

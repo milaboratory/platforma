@@ -1,5 +1,44 @@
 # @milaboratories/pl-middle-layer
 
+## 1.30.31
+
+### Patch Changes
+
+- Updated dependencies [b084260]
+- Updated dependencies [b084260]
+  - @milaboratories/pl-model-common@1.11.1
+  - @platforma-sdk/model@1.24.0
+  - @milaboratories/pl-model-middle-layer@1.7.10
+  - @milaboratories/pl-drivers@1.5.29
+  - @platforma-sdk/block-tools@2.5.23
+
+## 1.30.30
+
+### Patch Changes
+
+- Updated dependencies [7034617]
+  - @platforma-sdk/workflow-tengo@3.0.0
+
+## 1.30.29
+
+### Patch Changes
+
+- 2a0fb91: parse errors so they could be distinguished
+- d6a49b2: extract parsed_errors from pl-tree for future using it in computable
+- Updated dependencies [2a0fb91]
+- Updated dependencies [d6a49b2]
+  - @milaboratories/pl-tree@1.4.33
+  - @milaboratories/computable@2.4.1
+  - @milaboratories/pl-errors@1.0.1
+  - @milaboratories/pl-drivers@1.5.28
+
+## 1.30.28
+
+### Patch Changes
+
+- Updated dependencies [133e962]
+  - @platforma-sdk/model@1.23.4
+
 ## 1.30.27
 
 ### Patch Changes

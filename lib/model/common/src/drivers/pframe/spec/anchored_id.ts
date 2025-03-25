@@ -2,6 +2,7 @@ import canonicalize from 'canonicalize';
 import type { AxisId, PColumnSpec } from './spec';
 import { getAxisId, matchAxisId } from './spec';
 import type { AAxisSelector, AnchorAxisRef, AnchorAxisRefByIdx, APColumnId, APColumnSelector, AxisSelector, PColumnSelector } from './selectors';
+import type { Branded } from '../../../branding';
 
 //
 // Helper functions
@@ -14,6 +15,13 @@ function axisKey(axis: AxisId): string {
 function domainKey(key: string, value: string): string {
   return JSON.stringify([key, value]);
 }
+
+//
+// Branded types
+//
+
+/** Canonicalized string representation of an anchored column identifier, either anchored or absolute. */
+export type CanonicalPColumnId = Branded<string, 'CanonicalPColumnId'>;
 
 /**
  * Context for resolving and generating anchored references to columns and axes
@@ -116,9 +124,9 @@ export class AnchorIdDeriver {
    * @param spec Column specification to anchor
    * @returns A canonicalized string representation of the anchored column identifier
    */
-  deriveString(spec: PColumnSpec): string {
+  deriveCanonical(spec: PColumnSpec): CanonicalPColumnId {
     const aId = this.derive(spec);
-    return canonicalize(aId)!;
+    return canonicalize(aId)! as CanonicalPColumnId;
   }
 }
 

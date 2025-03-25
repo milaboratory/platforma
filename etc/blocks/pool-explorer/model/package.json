@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/milaboratories.pool-explorer.model",
-  "version": "1.0.10",
+  "version": "1.0.12",
   "private": true,
   "description": "Block model",
   "type": "module",
