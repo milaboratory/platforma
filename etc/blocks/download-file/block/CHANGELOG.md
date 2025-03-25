@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.test-download-file
 
+## 1.0.98
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-download-file.ui@1.0.95
+
 ## 1.0.97
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.60
+
+### Patch Changes
+
+- be32396: Fix vue warning, when useTemplateRef uses the same name as variable (https://github.com/vuejs/core/issues/11795)
+
 ## 2.2.59
 
 ### Patch Changes
