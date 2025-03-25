@@ -19,7 +19,7 @@ let preparedTemplateEnvelop: TemplateEnvelop | undefined;
 export async function getPreparedExportTemplateEnvelope(): Promise<TemplateEnvelop> {
   if (preparedTemplateEnvelop === undefined) {
     // (await import('@platforma-sdk/workflow-tengo')).Templates['pframes.export-pframe']
-    const preparedTemplate = await prepareTemplateSpec(SdkTemplates['pframes.export-pframe']);
+    const preparedTemplate = await prepareTemplateSpec(SdkTemplates['pframes.export-pframe-for-ui']);
     if (preparedTemplate.type !== 'explicit') throw new Error('Unexpected prepared template type.');
     const hash = createHash('sha256').update(preparedTemplate.content).digest('hex');
     preparedTemplateEnvelop = { spec: preparedTemplate, hash };
