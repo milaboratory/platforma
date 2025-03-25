@@ -4,7 +4,8 @@ import {
   FinalResourceDataPredicate,
   isTimeoutOrCancelError,
   PlClient,
-  ResourceId
+  ResourceId,
+  TxOps
 } from '@milaboratories/pl-client';
 import { PlTreeState, TreeStateUpdateError } from './state';
 import {
@@ -34,6 +35,9 @@ export type SynchronizedTreeOps = {
 
   /** If one of the values, tree will log stats of each polling request */
   logStat?: StatLoggingMode;
+
+  /** Timeout for initial tree loading. If not specified, will use default for RO tx from pl-client. */
+  initialTreeLoadingTimeout?: number;
 };
 
 type ScheduledRefresh = {
@@ -113,12 +117,12 @@ export class SynchronizedTreeState {
   private currentLoop: Promise<void> | undefined = undefined;
 
   /** Executed from the main loop, and initialization procedure. */
-  private async refresh(stats?: TreeLoadingStat): Promise<void> {
+  private async refresh(stats?: TreeLoadingStat, txOps?: TxOps): Promise<void> {
     if (this.terminated) throw new Error('tree synchronization is terminated');
     const request = constructTreeLoadingRequest(this.state, this.pruning);
     const data = await this.pl.withReadTx('ReadingTree', async (tx) => {
       return await loadTreeState(tx, request, stats);
-    });
+    }, txOps);
     this.state.updateFromResourceData(data, true);
   }
 
@@ -228,7 +232,9 @@ export class SynchronizedTreeState {
     let ok = false;
 
     try {
-      await tree.refresh(stat);
+      await tree.refresh(stat, {
+        timeout: ops.initialTreeLoadingTimeout
+      });
       ok = true;
     } finally {
       // logging stats if we were asked to (even if error occured)
