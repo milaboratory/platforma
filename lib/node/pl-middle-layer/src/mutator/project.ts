@@ -3,8 +3,7 @@ import type {
   AnyResourceRef,
   BasicResourceData,
   PlTransaction,
-  ResourceId, 
-  TxOps} from '@milaboratories/pl-client';
+  ResourceId } from '@milaboratories/pl-client';
 import {
   ensureResourceIdNotNull,
   field,
@@ -1140,9 +1139,8 @@ export async function withProject<T>(
   txOrPl: PlTransaction | PlClient,
   rid: ResourceId,
   cb: (p: ProjectMutator) => T | Promise<T>,
-  ops: Partial<TxOps> = {},
 ): Promise<T> {
-  return withProjectAuthored(txOrPl, rid, undefined, cb, ops);
+  return withProjectAuthored(txOrPl, rid, undefined, cb);
 }
 
 export async function withProjectAuthored<T>(
@@ -1150,7 +1148,6 @@ export async function withProjectAuthored<T>(
   rid: ResourceId,
   author: AuthorMarker | undefined,
   cb: (p: ProjectMutator) => T | Promise<T>,
-  ops: Partial<TxOps> = {},
 ): Promise<T> {
   if (txOrPl instanceof PlClient) {
     return await txOrPl.withWriteTx('ProjectAction', async (tx) => {
@@ -1163,7 +1160,7 @@ export async function withProjectAuthored<T>(
       mut.save();
       await tx.commit();
       return result;
-    }, ops);
+    });
   } else {
     const mut = await ProjectMutator.load(txOrPl, rid, author);
     const result = await cb(mut);
