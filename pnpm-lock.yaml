@@ -1380,6 +1380,9 @@ importers:
 
   lib/node/computable:
     dependencies:
+      '@milaboratories/pl-errors':
+        specifier: workspace:^
+        version: link:../pl-errors
       '@milaboratories/ts-helpers':
         specifier: workspace:^
         version: link:../ts-helpers
@@ -1730,6 +1733,9 @@ importers:
       '@milaboratories/pl-client':
         specifier: workspace:*
         version: link:../pl-client
+      '@milaboratories/ts-helpers':
+        specifier: workspace:*
+        version: link:../ts-helpers
       zod:
         specifier: 'catalog:'
         version: 3.23.8

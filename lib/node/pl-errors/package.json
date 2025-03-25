@@ -25,7 +25,8 @@
   ],
   "dependencies": {
     "zod": "catalog:",
-    "@milaboratories/pl-client": "workspace:*"
+    "@milaboratories/pl-client": "workspace:*",
+    "@milaboratories/ts-helpers": "workspace:*"
   },
   "devDependencies": {
     "@milaboratories/platforma-build-configs": "workspace:*",
