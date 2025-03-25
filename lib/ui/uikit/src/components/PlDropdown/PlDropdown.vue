@@ -106,7 +106,7 @@ const slots = useSlots();
 const rootRef = ref<HTMLElement | undefined>();
 const input = ref<HTMLInputElement | undefined>();
 
-const overlay = useTemplateRef('overlay');
+const overlayRef = useTemplateRef('overlay');
 
 const data = reactive({
   search: '',
@@ -230,7 +230,7 @@ const onInputFocus = () => (data.open = true);
 const onFocusOut = (event: FocusEvent) => {
   const relatedTarget = event.relatedTarget as Node | null;
 
-  if (!rootRef.value?.contains(relatedTarget) && !overlay.value?.listRef?.contains(relatedTarget)) {
+  if (!rootRef.value?.contains(relatedTarget) && !overlayRef.value?.listRef?.contains(relatedTarget)) {
     data.search = '';
     data.open = false;
   }
@@ -292,7 +292,7 @@ watchPostEffect(() => {
   data.search; // to watch
 
   if (data.activeIndex >= 0 && data.open) {
-    overlay.value?.scrollIntoActive();
+    overlayRef.value?.scrollIntoActive();
   }
 });
 </script>
