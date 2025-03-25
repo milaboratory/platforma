@@ -1,5 +1,12 @@
 # @milaboratories/milaboratories.test-read-logs.workflow
 
+## 1.0.3
+
+### Patch Changes
+
+- Updated dependencies [7034617]
+  - @platforma-sdk/workflow-tengo@3.0.0
+
 ## 1.0.2
 
 ### Patch Changes

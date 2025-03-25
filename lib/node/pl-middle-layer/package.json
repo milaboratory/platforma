@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-middle-layer",
-  "version": "1.30.27",
+  "version": "1.30.31",
   "description": "Pl Middle Layer",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
@@ -49,6 +49,7 @@
     "yaml": "catalog:",
     "zod": "catalog:",
     "@milaboratories/pl-config": "workspace:^",
+    "@milaboratories/pl-errors": "workspace:^",
     "@milaboratories/pl-deployments": "workspace:^"
   },
   "devDependencies": {

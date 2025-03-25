@@ -1,5 +1,29 @@
 # @milaboratories/milaboratories.test-upload-file
 
+## 1.0.96
+
+### Patch Changes
+
+- Updated dependencies [b084260]
+  - @platforma-sdk/model@1.24.0
+  - @milaboratories/milaboratories.test-upload-file.model@1.0.21
+  - @milaboratories/milaboratories.test-upload-file.ui@1.0.94
+
+## 1.0.95
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-upload-file.workflow@1.0.3
+
+## 1.0.94
+
+### Patch Changes
+
+- Updated dependencies [133e962]
+  - @platforma-sdk/model@1.23.4
+  - @milaboratories/milaboratories.test-upload-file.model@1.0.20
+  - @milaboratories/milaboratories.test-upload-file.ui@1.0.93
+
 ## 1.0.93
 
 ### Patch Changes
