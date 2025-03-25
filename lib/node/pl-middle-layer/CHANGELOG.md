@@ -1,5 +1,17 @@
 # @milaboratories/pl-middle-layer
 
+## 1.31.0
+
+### Minor Changes
+
+- dc4f10a: MI_DUMP_INITIAL_TREE_STATE=true flag to produce a dump file on initial project load
+
+### Patch Changes
+
+- Updated dependencies [dc4f10a]
+  - @milaboratories/pl-tree@1.5.0
+  - @milaboratories/pl-drivers@1.5.31
+
 ## 1.30.33
 
 ### Patch Changes
