@@ -1,6 +1,6 @@
 import { ExtendedResourceData } from "./state"
 
-export type ResourceTypeStats = {
+export type ResourceStats = {
     /** Number of resources of this type */
     count: number,
     /** Total number of bytes in the field names of all resources of this type */
@@ -18,9 +18,12 @@ export type ResourceTypeStats = {
 /**
  * A map of resource type statistics, keyed by the resource type name and version.
  * 
- * @type {Record<string, ResourceTypeStats>}
+ * @type {Record<string, ResourceStats>}
  */
-export type TreeDumpStats = Record<`${string}/${string}`, ResourceTypeStats>
+export type TreeDumpStats = {
+    total: ResourceStats,
+    byResourceType: Record<`${string}/${string}`, ResourceStats>
+}
 
 /**
  * Analyzes a collection of resources and generates statistics grouped by resource type.
@@ -56,12 +59,22 @@ export type TreeDumpStats = Record<`${string}/${string}`, ResourceTypeStats>
  * ```
  */
 export function treeDumpStats(dumpStats: ExtendedResourceData[]): TreeDumpStats {
-    const stats: TreeDumpStats = {};
+    const stats: TreeDumpStats = {
+        total: {
+            count: 0,
+            fieldNameBytes: 0,
+            fieldsCount: 0,
+            dataBytes: 0,
+            kvCount: 0,
+            kvBytes: 0
+        },
+        byResourceType: {}
+    };
 
     for (const resource of dumpStats) {
         const typeKey = `${resource.type.name}/${resource.type.version}` as const;
-        if (!stats[typeKey]) {
-            stats[typeKey] = {
+        if (!stats.byResourceType[typeKey]) {
+            stats.byResourceType[typeKey] = {
                 count: 0,
                 fieldNameBytes: 0,
                 fieldsCount: 0,
@@ -71,21 +84,30 @@ export function treeDumpStats(dumpStats: ExtendedResourceData[]): TreeDumpStats 
             };
         }
 
-        const typeStats = stats[typeKey];
+        const typeStats = stats.byResourceType[typeKey];
         typeStats.count++;
+        stats.total.count++;
 
         for (const field of resource.fields) {
             typeStats.fieldNameBytes += field.name.length;
             typeStats.fieldsCount++;
+            stats.total.fieldNameBytes += field.name.length;
+            stats.total.fieldsCount++;
         }
 
         if (resource.data) {
-            typeStats.dataBytes += resource.data?.length ?? 0;
+            const dataLength = resource.data?.length ?? 0;
+            typeStats.dataBytes += dataLength;
+            stats.total.dataBytes += dataLength;
         }
 
         typeStats.kvCount += resource.kv.length;
+        stats.total.kvCount += resource.kv.length;
+        
         for (const kv of resource.kv) {
-            typeStats.kvBytes += kv.key.length + kv.value.length;
+            const kvLength = kv.key.length + kv.value.length;
+            typeStats.kvBytes += kvLength;
+            stats.total.kvBytes += kvLength;
         }
     }
 
