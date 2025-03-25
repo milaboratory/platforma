@@ -1,0 +1,132 @@
+ll := import(":ll")
+file := import(":file")
+text := import("text")
+smart := import(":smart")
+render := import(":render")
+assets := import(":assets")
+pframes := import(":pframes")
+constants := import(":constants")
+validation := import(":validation")
+
+eMulTpl := assets.importTemplate(":pframes.export-multiple-pcolumns")
+
+/**
+ * Exports a pframe resource: exports every pcolumn and makes files downloadable
+ *
+ * @param pfResource: resource - pframe resource to export
+ * @param skipHideDataFromUI: bool - if true, optimize network and storage usage of backend and does not make files downloadable, don't show them in UI.
+ * @return pframe: reference - a reference to pframe with exported pcolumns
+ */
+exportPFrame := func(pfResource, skipHideDataFromUI) {
+	//
+	// fill fields: get fields of pframe or values fields if it's a context resource
+	//
+	fields := pfResource.inputs()
+
+	// if context is passed as an input we differently treat the field names.
+	if pfResource.checkResourceType(constants.RTYPE_CONTEXT) {
+		newFields := {}
+		for rawFieldName, fieldValue in fields {
+			if text.has_prefix(rawFieldName, "values/") {
+				fieldName := rawFieldName[7:]
+				newFields[fieldName] = fieldValue
+			} else if rawFieldName == "id" || rawFieldName == "parent" {
+				// there are other fields in context resource, we are only interested in "values/..."
+				continue
+			} else {
+				ll.panic("Unexpected context field: %v", rawFieldName)
+			}
+		}
+
+		fields = newFields
+	}
+
+	//
+	// fill columns: group spec values and data references by name
+	//
+	columns := {}
+
+	getOrCreateColumn := func(name) {
+		c := columns[name]
+		if is_undefined(c) {
+			c = {}
+			columns[name] = c
+		}
+		return c
+	}
+
+	for fieldName, fieldValue in fields {
+		if text.has_suffix(fieldName, ".spec") {
+			if !(fieldValue.getValue().checkResourceType(constants.RTYPE_JSON) || fieldValue.getValue().checkResourceType(constants.RTYPE_OBJECT_SPEC)) {
+				ll.panic("Unexpected spec value type: %v", fieldValue.getValue().info().Type)
+			}
+			col := getOrCreateColumn(fieldName[:len(fieldName) - 5])
+			col.spec = fieldValue.getValue().getDataAsJson()
+			col.specRaw = fieldValue
+		} else if text.has_suffix(fieldName, ".data") {
+			col := getOrCreateColumn(fieldName[:len(fieldName) - 5])
+			col.data = fieldValue
+		} else {
+			ll.panic("Unexpected field name: %v", fieldName)
+		}
+	}
+
+	validation.assertType(columns, {any: {
+		"spec,?": "any",
+		"specRaw,?": validation.reference,
+		"data,?": validation.reference
+	}})
+
+	//
+	// create pframe from that columns, exporting files and exporting pcolumns by using a template.
+	//
+	result := pframes.pFrameBuilder()
+
+	// serves as an input to the export-pcolumn template
+	eMulTplInput := smart.mapBuilder()
+	// export-pcolumn export instance
+	eMulTplRender := render.createEphemeral(eMulTpl, { data: eMulTplInput })
+
+	for colName, col in columns {
+		if is_undefined(col.data) {
+			result.add(colName, col.specRaw, undefined)
+			continue
+		}
+
+		shouldHideDataFromUI := skipHideDataFromUI && !is_undefined(col.spec) && col.spec.annotations["pl7.app/hideDataFromUi"] == "true"
+		if shouldHideDataFromUI {
+			// it was called from UI and we shouldn't export this column's data to UI, so we set undefined.
+			result.add(colName, col.specRaw, undefined)
+			continue
+		}
+
+		if is_undefined(col.spec) || (
+			col.spec.kind == "PColumn" && (
+				is_undefined(col.spec.valueType) ||
+					col.spec.valueType == "file" || col.spec.valueType == "blob" ||
+					col.spec.valueType == "File" || col.spec.valueType == "Blob" ||
+					col.spec.valueType == "Int" || col.spec.valueType == "Long" ||
+					col.spec.valueType == "Float" || col.spec.valueType == "Double" ||
+					col.spec.valueType == "String" || col.spec.valueType == "Bytes")) {
+
+			result.add(colName, col.specRaw, eMulTplRender.output(colName))
+			eMulTplInput.add(colName, col.data)
+			continue
+		}
+
+		if col.spec.kind == "File" {
+			result.add(colName, col.specRaw, file.exportFile(col.data))
+			continue
+		}
+
+		result.add(colName, col.specRaw, col.data)
+	}
+
+	eMulTplInput.build()
+
+	return result.build()
+}
+
+export {
+	exportPFrame: exportPFrame
+}
