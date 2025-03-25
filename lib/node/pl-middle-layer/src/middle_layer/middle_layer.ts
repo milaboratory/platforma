@@ -205,7 +205,9 @@ export class MiddleLayer {
       ..._ops,
     };
 
+    // overriding debug options from environment variables
     ops.defaultTreeOptions.logStat = getDebugFlags().logTreeStats;
+    ops.debugOps.dumpInitialTreeState = getDebugFlags().dumpInitialTreeState;
 
     const projects = await pl.withWriteTx('MLInitialization', async (tx) => {
       const projectsField = field(tx.clientRoot, ProjectsField);
