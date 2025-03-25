@@ -404,7 +404,6 @@ export class Project {
         pruning: projectTreePruning,
       },
       env.logger,
-      { timeout: 360000000 }, // Disable timeout for loading project tree (100 hours)
     );
 
     return new Project(env, rid, projectTree);

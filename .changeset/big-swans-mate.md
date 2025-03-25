@@ -3,4 +3,4 @@
 '@milaboratories/pl-tree': patch
 ---
 
-Set huge timeout on project inital load
+Set huge timeout for inital project loading
