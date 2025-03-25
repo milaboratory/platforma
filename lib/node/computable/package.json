@@ -28,6 +28,7 @@
   ],
   "dependencies": {
     "@milaboratories/ts-helpers": "workspace:^",
+    "@milaboratories/pl-errors": "workspace:^",
     "@types/node": "catalog:",
     "utility-types": "catalog:",
     "zod": "catalog:"

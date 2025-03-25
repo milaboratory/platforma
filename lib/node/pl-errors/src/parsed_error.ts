@@ -1,8 +1,39 @@
 /** Pl Backend throws arbitrary errors, and we're trying to parse them here. */
 
-import { z } from 'zod';
-import type { ResourceId, ResourceType } from '@milaboratories/pl-client';
-import { resourceIdToString, resourceTypeToString } from '@milaboratories/pl-client';
+import { z } from "zod";
+import { ResourceId, resourceIdToString, ResourceType, resourceTypeToString } from "@milaboratories/pl-client";
+import { notEmpty } from "@milaboratories/ts-helpers";
+
+/** The error that comes from QuickJS. */
+export class PlQuickJSError extends Error {
+  public stack: string;
+
+  constructor(
+    quickJSError: Error,
+    cause: Error,
+  ) {
+    super('', { cause });
+    this.name = 'PlQuickJSError';
+
+    // QuickJS wraps the error with the name and the message,
+    // but we need another format.
+    let stack = notEmpty(quickJSError.stack);
+    stack = stack.replace(quickJSError.message, '');
+    stack = stack.replace(notEmpty(cause.message), '');
+
+    this.stack = stack;
+
+    this.message = this.toString();
+  }
+
+  toString() {
+    const msg = `PlQuickJSError: ${(this.cause as any)?.message}
+QuickJS stacktrace:
+${this.stack}
+`;
+    return msg;
+  }
+}
 
 /**
  * A parsed error from the Pl backend.
@@ -39,11 +70,11 @@ export class PlErrorReport extends Error {
     const r = this.resource ? resourceIdToString(this.resource) : '';
     const f = this.fieldName ? `/${this.fieldName}` : '';
     const errType = this.plErrorType ? `error type: ${this.plErrorType}` : '';
-    const subErrors = this.errors.map((e) => e.message).join('\n\n');
+    const errors = this.errors.map(e => e.message).join('\n\n');
 
     return `PlErrorReport: resource: ${rt} ${r}${f}
 ${errType}
-${subErrors}`;
+${errors}`;
   }
 }
 
@@ -179,13 +210,13 @@ export function parsePlError(
   field?: string,
 ): PlErrorReport {
   const parsed = backendErrorSchema.parse(JSON.parse(error));
-  const subErrors = parseSubErrors(parsed.message);
+  const errors = parseSubErrors(parsed.message);
 
   return new PlErrorReport(
     error,
     parsed.errorType,
     parsed.message,
-    subErrors,
+    errors,
 
     field,
     resource,

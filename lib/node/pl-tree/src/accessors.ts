@@ -226,13 +226,13 @@ export class PlTreeNodeAccessor {
         errorIfFieldNotSet: true;
       },
     ]
-  ): ValueOrError<PlTreeNodeAccessor, ErrorLike>;
+  ): ValueOrError<PlTreeNodeAccessor, Error>;
   public traverseOrError(
     ...steps: (FieldTraversalStep | string)[]
-  ): ValueOrError<PlTreeNodeAccessor, ErrorLike> | undefined;
+  ): ValueOrError<PlTreeNodeAccessor, Error> | undefined;
   public traverseOrError(
     ...steps: (FieldTraversalStep | string)[]
-  ): ValueOrError<PlTreeNodeAccessor, ErrorLike> | undefined {
+  ): ValueOrError<PlTreeNodeAccessor, Error> | undefined {
     return this.traverseOrErrorWithCommon({}, ...steps);
   }
 
@@ -285,7 +285,7 @@ export class PlTreeNodeAccessor {
         if (step.errorIfFieldNotSet)
           return {
             ok: false,
-            error: `field have no assigned value ${step.field} of ${resourceIdToString(current.id)}`,
+            error: new Error(`field have no assigned value ${step.field} of ${resourceIdToString(current.id)}`),
           };
         // existing but unpopulated field is unstable because it must be resolved at some point
         this.onUnstableLambda('unpopulated_field:' + step.field);

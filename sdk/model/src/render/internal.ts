@@ -126,7 +126,7 @@ export interface GlobalCfgRenderCtxMethods<AHandle = AccessorHandle, FHandle = F
   getDataFromResultPool(): ResultCollection<PObject<AHandle>>;
 
   getDataWithErrorsFromResultPool(): ResultCollection<
-    Optional<PObject<ValueOrError<AHandle, string>>, 'id'>
+    Optional<PObject<ValueOrError<AHandle, Error>>, 'id'>
   >;
 
   getSpecsFromResultPool(): ResultCollection<PObjectSpec>;
