@@ -200,6 +200,8 @@ export const DefaultMiddleLayerOpsSettings: Pick<
   defaultTreeOptions: {
     pollingInterval: 350,
     stopPollingDelay: 2500,
+    initialTreeLoadingTimeout: 100 * 60 * 60 * 1000, // disable timeout for loading project tree (100 hours)
+
   },
   devBlockUpdateRecheckInterval: 1000,
   projectRefreshInterval: 700,
