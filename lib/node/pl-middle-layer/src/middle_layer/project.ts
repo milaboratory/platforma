@@ -393,7 +393,7 @@ export class Project {
 
   public static async init(env: MiddleLayerEnvironment, rid: ResourceId): Promise<Project> {
     // Doing a no-op mutation to apply all migration and schema fixes
-    await withProject(env.pl, rid, (_) => {});
+    await withProject(env.pl, rid, (_) => {}); // give at most 15 minutes to load project for the first time.
 
     // Loading project tree
     const projectTree = await SynchronizedTreeState.init(
@@ -404,6 +404,7 @@ export class Project {
         pruning: projectTreePruning,
       },
       env.logger,
+      { timeout: 360000000 }, // Disable timeout for loading project tree (100 hours)
     );
 
     return new Project(env, rid, projectTree);
