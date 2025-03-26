@@ -1,5 +1,12 @@
 # @milaboratories/milaboratories.test-download-file.model
 
+## 1.0.22
+
+### Patch Changes
+
+- Updated dependencies [a505bdb]
+  - @platforma-sdk/model@1.24.5
+
 ## 1.0.21
 
 ### Patch Changes
