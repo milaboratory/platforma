@@ -57,6 +57,26 @@ res = {
 }
 return res
 </tengo>
+- Minimal boilerplate for the tengo template
+<tengo>
+self := import(":tpl")
+
+// Either define outputs (for pure templates)
+self.defineOutputs("result")
+// or define required input state conditions (for ephemeral templates)
+self.awaitState("AllInputsSet")
+
+// Define the main template body
+self.body(func(inputs) {
+    message := "Hello, " + inputs.name
+    
+    return {
+        "result": message
+    }
+})
+</tengo>
 - Always try finding code examples for similar patterns
+- Always place imports at the top of the file
+- Prefer denser solutions if certain part of the code can be abstracted out into a function
 - Find and read additional types, functions and examples of code if you understand that you dont have enough information
 - Think really hard
