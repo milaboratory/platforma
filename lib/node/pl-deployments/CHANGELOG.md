@@ -1,5 +1,11 @@
 # @milaboratories/pl-local
 
+## 1.7.0
+
+### Minor Changes
+
+- 71b2935: Release pl=1.26.4
+
 ## 1.6.1
 
 ### Patch Changes
