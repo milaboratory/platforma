@@ -1,5 +1,17 @@
 # @platforma-sdk/test
 
+## 1.24.5
+
+### Patch Changes
+
+- Updated dependencies [a505bdb]
+  - @platforma-sdk/model@1.24.5
+  - @milaboratories/pl-client@2.7.13
+  - @milaboratories/pl-middle-layer@1.31.1
+  - @milaboratories/pl-tree@1.5.1
+  - @milaboratories/computable@2.4.1
+  - @milaboratories/ts-helpers@1.1.4
+
 ## 1.24.4
 
 ### Patch Changes

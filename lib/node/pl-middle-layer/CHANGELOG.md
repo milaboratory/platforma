@@ -1,5 +1,37 @@
 # @milaboratories/pl-middle-layer
 
+## 1.31.1
+
+### Patch Changes
+
+- a505bdb: Upgrade network and tool dependencies:
+  - undici: ~7.4.0 → ~7.5.0
+  - @grpc/grpc-js: ~1.12.6 → ~1.13.1
+  - @protobuf-ts/plugin: 2.9.5 → 2.9.6
+  - @aws-sdk/client-s3: 3.758.0 → 3.775.0
+  - lru-cache: ^11.0.2 → ^11.1.0
+  - yaml: ^2.6.1 → ^2.7.0
+  - remeda: ^2.21.1 → ^2.21.2
+  - vite-plugin-dts: ^4.4.0 → ^4.5.3
+  - eslint: ^9.22.0 → ^9.23.0
+  - @vitejs/plugin-vue: ^5.2.1 → ^5.2.3
+- Updated dependencies [a505bdb]
+  - @platforma-sdk/model@1.24.5
+  - @platforma-sdk/block-tools@2.5.24
+  - @milaboratories/pl-client@2.7.13
+  - @milaboratories/pl-http@1.1.1
+  - @milaboratories/pl-drivers@1.5.32
+  - @milaboratories/pl-deployments@1.6.1
+  - @milaboratories/pl-config@1.4.4
+  - @milaboratories/pl-model-middle-layer@1.7.11
+  - @milaboratories/pl-model-common@1.11.1
+  - @milaboratories/pl-model-backend@1.0.2
+  - @milaboratories/pl-errors@1.0.2
+  - @platforma-sdk/workflow-tengo@3.0.1
+  - @milaboratories/pl-tree@1.5.1
+  - @milaboratories/computable@2.4.1
+  - @milaboratories/ts-helpers@1.1.4
+
 ## 1.31.0
 
 ### Minor Changes
