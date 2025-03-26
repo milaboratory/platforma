@@ -1,5 +1,13 @@
 # @milaboratories/pl-middle-layer
 
+## 1.31.2
+
+### Patch Changes
+
+- 4b04041: skip exporting files when we have a certain annotation from UI for pframes.
+- Updated dependencies [4b04041]
+  - @platforma-sdk/workflow-tengo@3.0.2
+
 ## 1.31.1
 
 ### Patch Changes

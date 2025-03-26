@@ -1,5 +1,13 @@
 # @platforma-sdk/workflow-tengo-tests
 
+## 1.6.10
+
+### Patch Changes
+
+- 4b04041: skip exporting files when we have a certain annotation from UI for pframes.
+- Updated dependencies [4b04041]
+  - @platforma-sdk/workflow-tengo@3.0.2
+
 ## 1.6.9
 
 ### Patch Changes

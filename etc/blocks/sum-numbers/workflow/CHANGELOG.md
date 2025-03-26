@@ -1,5 +1,12 @@
 # @milaboratories/milaboratories.test-sum-numbers.workflow
 
+## 1.0.8
+
+### Patch Changes
+
+- Updated dependencies [4b04041]
+  - @platforma-sdk/workflow-tengo@3.0.2
+
 ## 1.0.7
 
 ### Patch Changes
