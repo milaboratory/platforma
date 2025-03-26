@@ -1,5 +1,5 @@
 //
-// wrap all p-frame files with file.exportFile
+// wrap all p-frame files with file.exportFile (when pcolumns does not have skip for UI annotation)
 //
 
 
@@ -13,6 +13,6 @@ tpl.body(func(inputs) {
 	pfResource := tpl.rawInputs().pf.getValue()
 
 	return {
-		result: exportpframe.exportPFrame(pfResource, false)
+		result: exportpframe.exportPFrame(pfResource, true)
 	}
 })
