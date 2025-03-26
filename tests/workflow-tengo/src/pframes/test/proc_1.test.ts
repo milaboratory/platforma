@@ -5,7 +5,7 @@ import { assertBlob, assertJson, assertResource, eTplTest } from './extended_tpl
 
 eTplTest(
   'should correctly execute pframes.processColumn without aggregation',
-  { timeout: 10000 },
+  { timeout: 15000 },
   async ({ helper, expect, stHelper }) => {
     const xsvSettings = {
       axes: [

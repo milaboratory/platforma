@@ -1,0 +1,6 @@
+---
+description: Running git commands
+globs: 
+alwaysApply: false
+---
+Run git commands in non-interactive form, adding --no-pager, like git --no-pager diff .
