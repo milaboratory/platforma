@@ -3,19 +3,19 @@
 "@platforma-sdk/model": patch
 "@platforma-sdk/ui-vue": patch
 "@milaboratories/eslint-config": patch
-"@milaboratories/tengo-builder": patch
-"@milaboratories/block-tools": patch
-"@milaboratories/package-builder": patch
-"@milaboratories/pl-bootstrap": patch
-"@milaboratories/r-builder": patch
+"@platforma-sdk/tengo-builder": patch
+"@platforma-sdk/block-tools": patch
+"@platforma-sdk/package-builder": patch
+"@platforma-sdk/bootstrap": patch
+"@platforma-sdk/r-builder": patch
 "@milaboratories/pl-client": patch
 "@milaboratories/pl-http": patch
 "@milaboratories/pl-drivers": patch
 "@milaboratories/pl-deployments": patch
 "@milaboratories/pl-middle-layer": patch
 "@milaboratories/pl-config": patch
-"@milaboratories/build-configs": patch
-"@milaboratories/model-middle-layer": patch
+"@milaboratories/platforma-build-configs": patch
+"@milaboratories/pl-model-middle-layer": patch
 ---
 
 Upgrade network and tool dependencies:
