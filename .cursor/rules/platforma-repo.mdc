@@ -1,0 +1,44 @@
+---
+description: Core Platforma Repository information
+globs: 
+alwaysApply: false
+---
+
+# Platforma Repository
+
+## Overview
+This repository is a Teng-/TypeScript-based monorepo for the SDK for Platforma bio-informatics platform that provides infrastructure for building data processing workflows with UI components for scientific analysis pipelines.
+
+## Repository Organization
+- Uses pnpm as the package manager with workspace support
+- Implements changesets for versioning control and managing package updates
+- Structured as a monorepo with multiple packages in lib/, sdk/, tools/, etc/ directories
+- Uses Turbo for build orchestration and task running
+
+## Block Architecture
+- This repository implements SDK to build blocks
+- The codebase follows a "Workflow + Model + UI" architecture paradigm for scientific data processing
+- Each block typically contains:
+  - Workflow: Processes data (often using Tengo scripting language)
+  - Model: Defines data structures and interfaces
+  - UI: Provides visualization and interaction components (Vue.js based)
+
+## Key Technologies
+- pnpm for dependency management
+- Turbo for build process orchestration
+- Changesets for version management
+- TypeScript for type safety
+- Vue.js for UI components
+- Tengo scripting language for workflow definitions
+
+## Development Process
+- Use `pnpm install` to set up dependencies
+- Use `pnpm build` to build all packages
+- Don't `pnpm changeset` to create version change, manually create files with human-id-style names like angry-insects-doubt.md, and write changes in the changeset format
+<changesets-example>
+---
+'@platforma-sdk/workflow-tengo': patch
+---
+
+Fixes incorrect behaviour in xsv library
+</changesets-example>
