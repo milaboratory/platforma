@@ -178,16 +178,15 @@ pColumnBundleUnmarshaller := func() {
 				result := bResultUnmarshaller.parse(value.getValue(), parser)
 
 				pool[resultKey] = {
-					safeName: cleanColumnName(resultKey),
 					spec: result.spec,
 					data: result.data
 				}
 			}
 
-			// Holds overrides to default headers for axes and columns in xsv exported outputs
+			// Holds overrides to default headers for axes in xsv exported outputs
 			// Array of:
 			//   [{ name: string, domain: {[domainKey: string]: string} }, header: string]
-			headerOverrides := []
+			axisHeaderOverrides := []
 
 			bundle := undefined
 			bundle = ll.toStrict({
@@ -213,12 +212,12 @@ pColumnBundleUnmarshaller := func() {
 				 * @param header - The header text to use instead of the default
 				 * @returns The bundle object for chaining
 				 */
-				setHeader: func(matcher, header) {
+				setAxisHeader: func(matcher, header) {
 					if is_string(matcher) {
 						matcher = { name: matcher, domain: {} }
 					}
 
-					headerOverrides = [[matcher, header]] + headerOverrides
+					axisHeaderOverrides = [[matcher, header]] + axisHeaderOverrides
 					return bundle
 				},
 
@@ -226,71 +225,85 @@ pColumnBundleUnmarshaller := func() {
 				 * Creates a builder object to help create XSV tables from the bundle data
 				 */
 				xsvTableBuilder: func() {
-					// Create a local copy of the header overrides
-					localHeaderOverrides := copy(headerOverrides)
+					localAxisHeaderOverrides := copy(axisHeaderOverrides)
 
-					findHeaderOverride := func(name) {
-						for _, override in localHeaderOverrides {
-							if override[0].name == name {
-								return override[1]
+					requests := []
+					addedColumns := {}
+
+					findAxisHeaderOverride := func(spec) {
+						for _, override in localAxisHeaderOverrides {
+							matcher := override[0]
+
+							if matcher.name == spec.name {
+								domainsMatch := true
+
+								for domainKey, domainValue in matcher.domain {
+									if is_undefined(spec.domain) ||
+									   is_undefined(spec.domain[domainKey]) ||
+									   spec.domain[domainKey] != domainValue {
+										domainsMatch = false
+										break
+									}
+								}
+
+								if domainsMatch {
+									return override[1]
+								}
 							}
 						}
 						return undefined
 					}
 
-					// Generate a label for a spec based on various inputs
-					generateLabel := func(spec, headerOverride, axisFilters, columnKey, distiller) {
+					distiller := undefined
+
+					getSpecDistiller := func() {
+						if is_undefined(distiller) {
+							columnsToDistill := []
+							for request in requests {
+								col := pool[request.key]
+								columnsToDistill = append(columnsToDistill, col.spec)
+							}
+							distiller = pSpec.createSpecDistiller(columnsToDistill)
+						}
+						return distiller
+					}
+
+					generateLabelForAxis := func(spec) {
 						name := spec.name
 						label := undefined
 
-						// If explicit header override is provided, use it
-						if !is_undefined(headerOverride) {
-							return headerOverride
-						}
+						label = findAxisHeaderOverride(spec)
 
-						// Try to find a matching header override
-						label = findHeaderOverride(name)
-
-						// If no override, use the spec name if there are no discriminative domains
 						if is_undefined(label) {
-							discriminativeDomains := distiller.getDiscriminativeDomains(name)
+							specDistiller := getSpecDistiller()
+							discriminativeDomains := specDistiller.getDiscriminativeDomains(name)
 
 							if len(discriminativeDomains) == 0 {
-								label = name
+								label = cleanColumnName(name)
 							} else {
-								ll.panic("Cannot deduce header for %s in column / axis: %s. Discriminative domains: %s. Please provide a header override.",
-									name, columnKey, discriminativeDomains)
+								ll.panic("Cannot deduce header for %s in axis. Discriminative domains: %s. Please provide a header override.",
+									name, discriminativeDomains)
 							}
 						}
 
 						if is_undefined(label) {
-							ll.panic("Cannot deduce header for %s in column / axis: %s. Please provide a header override.",
-								name, columnKey)
-						}
-
-						// Append filter values to label if provided
-						if !is_undefined(axisFilters) && len(axisFilters) > 0 {
-							// Create a canonical string representation of axis filters
-							filtersStr := ""
-							for _, filter in axisFilters {
-								if filtersStr != "" {
-									filtersStr += "_"
-								}
-								filtersStr += string(filter[1])
-							}
-
-							label = label + "_" + filtersStr
+							ll.panic("Cannot deduce header for %s in axis. Please provide a header override.",
+								name)
 						}
 
 						return label
 					}
 
-					addLabel := func(spec, headerOverride, columnKey, distiller, axisFilters) {
-						label := generateLabel(spec, headerOverride, axisFilters, columnKey, distiller)
-						return maps.deepMerge(spec, { annotations: { "pl7.app/label": label } })
-					}
+					generateCanonicalIdentifier := func(columnKey, axisFilters) {
+						identifier := cleanColumnName(columnKey)
 
-					requests := []
+						if !is_undefined(axisFilters) && len(axisFilters) > 0 {
+							canonicalAxisFilters := canonical.encode(axisFilters)
+							identifier = identifier + "_" + cleanColumnName(canonicalAxisFilters)
+						}
+
+						return identifier
+					}
 
 					tableBuilder := undefined
 					tableBuilder = {
@@ -302,20 +315,20 @@ pColumnBundleUnmarshaller := func() {
 						 *   - axisFilters: [number|string, any][] - Filters to apply to axes
 						 */
 						add: func(key, ...ops) {
+							// Reset distiller as adding a column changes what needs to be distilled
+							distiller = undefined
+
 							columnKey := key
 							columnAxisFilters := undefined
 
-							// Handle GeneralizedPColumnId (SlicedPColumnId or CanonicalPColumnId)
 							if is_map(key) {
 								if !is_undefined(key.source) {
-									// This is a SlicedPColumnId
 									columnKey = key.source
 									columnAxisFilters = key.axisFilters
 								} else {
 									columnKey = key
 								}
 
-								// Convert to string for lookup
 								if !is_string(columnKey) {
 									columnKey = canonical.encode(columnKey)
 								}
@@ -340,11 +353,37 @@ pColumnBundleUnmarshaller := func() {
 
 								if !is_undefined(ops[0].axisFilters) {
 									if !is_undefined(request.axisFilters) {
-										request.axisFilters = request.axisFilters + ops[0].axisFilters
+										ll.panic("Cannot provide axis filters in both SlicedPColumnId and options. Use either one, not both.")
 									} else {
 										request.axisFilters = ops[0].axisFilters
 									}
 								}
+							}
+
+							if !is_undefined(request.axisFilters) && len(request.axisFilters) > 0 {
+								colSpec := pool[columnKey].spec
+								prepared := pSpec.prepareAxisFilters(request.axisFilters, colSpec)
+
+								request.axisFilters = prepared.axisFilters
+								request.columnSpec = prepared.columnSpec
+							} else {
+								request.columnSpec = pool[columnKey].spec
+							}
+
+							request.canonicalIdentifier = generateCanonicalIdentifier(columnKey, request.axisFilters)
+
+							if !is_undefined(addedColumns[request.canonicalIdentifier]) {
+								ll.panic("Duplicate column detected: %s. This column has already been added to the table.",
+									request.canonicalIdentifier)
+							}
+
+							addedColumns[request.canonicalIdentifier] = true
+
+							if !is_undefined(request.headerOverride) {
+								request.header = request.headerOverride
+							} else {
+								// Use the canonical identifier as the default header
+								request.header = request.canonicalIdentifier
 							}
 
 							requests = append(requests, request)
@@ -357,12 +396,12 @@ pColumnBundleUnmarshaller := func() {
 						 * @param header - The header text to use instead of the default
 						 * @returns The table builder object for chaining
 						 */
-						setHeader: func(matcher, header) {
+						setAxisHeader: func(matcher, header) {
 							if is_string(matcher) {
 								matcher = { name: matcher, domain: {} }
 							}
 
-							localHeaderOverrides = [[matcher, header]] + localHeaderOverrides
+							localAxisHeaderOverrides = [[matcher, header]] + localAxisHeaderOverrides
 							return tableBuilder
 						},
 
@@ -371,51 +410,82 @@ pColumnBundleUnmarshaller := func() {
 						 * @param format - Format for export, either 'csv' or 'tsv'
 						 */
 						build: func(format) {
-							columnsToDistill := []
-							sliceDataTemplate := assets.importTemplate(":pframes.slice-data")
-
-							for request in requests {
-								col := pool[request.key]
-								columnsToDistill = append(columnsToDistill, col.spec)
+							if format != "csv" && format != "tsv" {
+								ll.panic("Invalid format: '%s'. Expected 'csv' or 'tsv'.", format)
 							}
 
-							columnDistiller := pSpec.createSpecDistiller(columnsToDistill)
+							sliceDataTemplate := assets.importTemplate(":pframes.slice-data")
+
+							columnDistiller := getSpecDistiller()
 
 							pFrame := pBuilder.pFrameBuilder()
 
 							for request in requests {
 								col := pool[request.key]
-								colSpec := col.spec
 								colData := col.data
-								preparedAxisFilters := undefined
 
-								// Process axis filters if present
 								if !is_undefined(request.axisFilters) {
-									prepared := pSpec.prepareAxisFilters(request.axisFilters, colSpec)
-
-									// Update the column spec to the filtered one
-									colSpec = prepared.columnSpec
-									preparedAxisFilters = prepared.axisFilters
-
-									// Slice the data using the slice-data template
-									slicingParamsResource := smart.createJsonResource(prepared.axisFilters)
 									colData = render.createEphemeral(sliceDataTemplate, {
 										data: colData,
-										slicingParams: slicingParamsResource
+										slicingParams: smart.createJsonResource(request.axisFilters)
 									}).output("result")
 								}
 
-								preparedSpec := columnDistiller.distill(colSpec)
-								preparedSpec = addLabel(preparedSpec, request.headerOverride, request.key, columnDistiller, preparedAxisFilters)
+								preparedSpec := columnDistiller.distill(request.columnSpec)
+
+								preparedSpec = maps.deepMerge(preparedSpec, {
+									annotations: { "pl7.app/label": request.header }
+								})
 
 								for i, axis in preparedSpec.axesSpec {
-									preparedSpec.axesSpec[i] = addLabel(axis, undefined, request.key, columnDistiller, undefined)
+									preparedSpec.axesSpec[i] = maps.deepMerge(axis, {
+										annotations: { "pl7.app/label": generateLabelForAxis(axis) }
+									})
 								}
 
-								pFrame.add(col.safeName, preparedSpec, colData)
+								pFrame.add(request.canonicalIdentifier, preparedSpec, colData)
 							}
 
 							return xsv.exportFrame(pFrame.build(), format, {})
+						},
+
+						/**
+						 * Gets the header for a column or axis
+						 * @param item - Either a column key (string), sliced column ID, or an axis spec
+						 * @returns The header string
+						 * @throws If the column hasn't been added to the table yet
+						 * @note This method only works for columns that have been added to the table via add()
+						 */
+						getHeader: func(item) {
+							// Check if item is an axis spec (has type field)
+							if is_map(item) && !is_undefined(item.type) {
+								return generateLabelForAxis(item)
+							}
+
+							columnKey := item
+							axisFilters := undefined
+
+							// Handle sliced column ID
+							if is_map(item) && !is_undefined(item.source) {
+								columnKey = item.source
+								axisFilters = item.axisFilters
+							}
+
+							if !is_string(columnKey) {
+								columnKey = canonical.encode(columnKey)
+							}
+
+							canonicalIdentifier := generateCanonicalIdentifier(columnKey, axisFilters)
+
+							for _, request in requests {
+								if request.canonicalIdentifier == canonicalIdentifier {
+									return request.header
+								}
+							}
+
+							// If we get here, no matching request was found
+							ll.panic("Column not found in the table: %s. Make sure to call add() before getHeader().",
+								canonicalIdentifier)
 						}
 					}
 
