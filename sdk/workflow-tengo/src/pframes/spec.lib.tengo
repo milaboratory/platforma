@@ -403,6 +403,71 @@ createSpecDistiller := func(specs) {
 	return result
 }
 
+/**
+ * Normalizes slicing rules and returns both the normalized filters and a transformed column spec.
+ *
+ * To be used in conjunction with `slice-data.tpl.tengo` template.
+ *
+ * @param rules: [number|string, any][] - Array of axis filters where each element is a tuple of:
+ *    - First element: either axis index (number) or axis name (string)
+ *    - Second element: value to filter by (any type)
+ * @param spec: ColumnSpec - Column spec to resolve axis names to indices
+ * @return {
+ *    axisFilters: [number, string][] - Normalized array of tuples [axisIdx, valueToFilter],
+ *    columnSpec: ColumnSpec - Transformed column spec with filtered axes removed
+ * }
+ */
+prepareAxisFilters := func(rules, spec) {
+	axisFilters := []
+	filteredIndices := {}
+
+	for _, rule in rules {
+		if len(rule) != 2 {
+			ll.panic("Invalid slicing rule format: %v", rule)
+		}
+
+		axisIdentifier := rule[0]
+		value := rule[1]
+
+		axisIdx := axisIdentifier
+		if is_string(axisIdentifier) {
+			axisIdx = -1
+			for idx, axis in spec.axesSpec {
+				if axis.name == axisIdentifier {
+					axisIdx = idx
+					break
+				}
+			}
+
+			if axisIdx == -1 {
+				ll.panic("Cannot find axis with name '%v' in column spec %v", axisIdentifier, spec)
+			}
+		}
+
+		if !is_int(axisIdx) {
+			ll.panic("Axis identifier must be a number or a string that can be resolved to an index: %v", axisIdentifier)
+		}
+
+		valueStr := string(value)
+		axisFilters = append(axisFilters, [axisIdx, valueStr])
+		filteredIndices[axisIdx] = true
+	}
+
+	transformedSpec := maps.clone(spec)
+	newAxesSpec := []
+	for idx, axis in spec.axesSpec {
+		if !filteredIndices[idx] {
+			newAxesSpec = append(newAxesSpec, maps.clone(axis))
+		}
+	}
+	transformedSpec.axesSpec = newAxesSpec
+
+	return {
+		axisFilters: axisFilters,
+		columnSpec: transformedSpec
+	}
+}
+
 export ll.toStrict({
 	P_AXIS_SPEC_SCHEMA: P_AXIS_SPEC_SCHEMA,
 	P_COLUMN_SPEC_SCHEMA: P_COLUMN_SPEC_SCHEMA,
@@ -424,6 +489,8 @@ export ll.toStrict({
 
 	makeTrace: makeTrace,
 
-	createSpecDistiller: createSpecDistiller
+	createSpecDistiller: createSpecDistiller,
+
+	prepareAxisFilters: prepareAxisFilters
 })
 
