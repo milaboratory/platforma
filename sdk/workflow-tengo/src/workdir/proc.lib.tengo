@@ -1,6 +1,6 @@
 /** Library for workdir processor templates */
 
-tpl := import(":tpl")
+tpl := import(":tpl.light")
 ll := import(":ll")
 wdSave := import(":workdir.save")
 

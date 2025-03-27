@@ -1,0 +1,101 @@
+test := import(":test")
+canonical := import(":canonical")
+json := import("json")
+
+TestBasicEncoding := func() {
+    // Test simple primitives - comparing string output
+    test.isEqual(canonical.encode(42), json.encode(42))
+    test.isEqual(canonical.encode("hello"), json.encode("hello"))
+    test.isEqual(canonical.encode(true), json.encode(true))
+    test.isEqual(canonical.encode(false), json.encode(false))
+
+    // Verify encoded value is deserializable
+    encoded := canonical.encode("test value")
+    decoded := json.decode(encoded)
+    test.isEqual(decoded, "test value")
+}
+
+TestArrayEncoding := func() {
+    // Test array encoding
+    arr := [1, 2, 3, "test"]
+    encoded := canonical.encode(arr)
+    test.isEqual(encoded, "[1,2,3,\"test\"]")
+
+    // Verify encoded array is deserializable
+    decoded := json.decode(encoded)
+    test.isEqual(decoded, arr)
+}
+
+TestMapKeySorting := func() {
+    // Test with unordered keys
+    obj := {
+        "z": 1,
+        "a": 2,
+        "m": 3
+    }
+
+    encoded := canonical.encode(obj)
+    test.isEqual(encoded, "{\"a\":2,\"m\":3,\"z\":1}")
+
+    // Verify encoded map is deserializable
+    decoded := json.decode(encoded)
+    test.isEqual(decoded, obj)
+}
+
+TestNestedStructures := func() {
+    // Test with nested objects and arrays
+    obj := {
+        "z": [3, 2, 1],
+        "a": {
+            "c": 3,
+            "a": 1,
+            "b": 2
+        },
+        "m": true
+    }
+
+    encoded := canonical.encode(obj)
+
+    // The expected result should have sorted keys at both top level and nested levels
+    expected := "{\"a\":{\"a\":1,\"b\":2,\"c\":3},\"m\":true,\"z\":[3,2,1]}"
+    test.isEqual(encoded, expected)
+
+    // Verify encoded complex structure is deserializable
+    decoded := json.decode(encoded)
+    test.isEqual(decoded, obj)
+}
+
+TestEmptyValues := func() {
+    // Test empty map and array
+    test.isEqual(canonical.encode({}), "{}")
+    test.isEqual(canonical.encode([]), "[]")
+
+    // Verify encoded empty values are deserializable
+    test.isEqual(json.decode(canonical.encode({})), {})
+    test.isEqual(json.decode(canonical.encode([])), [])
+}
+
+TestSpecialCharacters := func() {
+    // Test with special characters in strings
+    obj := {
+        "key1": "value with spaces",
+        "key2": "value with new\nline"
+    }
+
+    encoded := canonical.encode(obj)
+    decoded := json.decode(encoded)
+    test.isEqual(decoded, obj)
+}
+
+TestRFC8785Example := func() {
+    // Test with an example similar to RFC8785
+    obj := {
+        "numbers": [333333333.33333329, 1E30, 4.50, 2e-3, 0.000000000000000000000000001],
+        "string": "Simple string value",
+        "bool": true
+    }
+
+    encoded := canonical.encode(obj)
+    decoded := json.decode(encoded)
+    test.isEqual(decoded, obj)
+}

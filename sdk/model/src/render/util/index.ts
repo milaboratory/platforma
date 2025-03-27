@@ -1,2 +1,2 @@
-export * from './resource_map';
+export * from './pcolumn_data';
 export * from './label';

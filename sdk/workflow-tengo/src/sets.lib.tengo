@@ -5,6 +5,7 @@
  */
 
 ll := import(":ll")
+slices := import(":slices")
 maps := import(":maps")
 
 /**
@@ -22,7 +23,7 @@ fromSlice := func(slice) {
 }
 
 /**
- * Convert given set to slice
+ * Convert given set to slice. Returns sorted slice.
  *
  * @param set: set - a set of values to be converted to slice
  * @return slice: []<string|number>
@@ -32,6 +33,7 @@ toSlice := func(set) {
 	for v, _ in set {
 		sl = append(sl, v)
 	}
+	slices.quickSortInPlace(sl)
 	return sl
 }
 

@@ -1,4 +1,5 @@
 import type { PObject, PObjectId, PObjectSpec } from '../../../pool';
+import canonicalize from 'canonicalize';
 
 /** PFrame columns and axes within them may store one of these types. */
 export type ValueType = 'Int' | 'Long' | 'Float' | 'Double' | 'String' | 'Bytes';
@@ -149,6 +150,11 @@ export function getAxisId(spec: AxisSpec): AxisId {
 /** Extracts axes ids from axes spec array from column spec */
 export function getAxesId(spec: AxesSpec): AxesId {
   return spec.map(getAxisId);
+}
+
+/** Canonicalizes axis id */
+export function canonicalizeAxisId(id: AxisId): string {
+  return canonicalize(getAxisId(id))!;
 }
 
 /** Returns true if all domains from query are found in target */

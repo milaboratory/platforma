@@ -1,4 +1,5 @@
 import { isPColumnSpec, type PObjectSpec } from '../../../pool';
+import type { AxisFilterByIdx, SlicedPColumnId } from './sliced_column_id';
 import type { AxisId, PColumnSpec, ValueType } from './spec';
 import { getAxisId } from './spec';
 
@@ -143,6 +144,12 @@ export interface APColumnId extends APColumnSelector {
   /** "Id" implies single match strategy */
   matchStrategy?: never;
 }
+
+/**
+ * Generalized anchored column identifier that can be either a basic anchored column ID
+ * or a sliced anchored column ID with axis filters applied.
+ */
+export type GeneralizedAPColumnId = APColumnId | SlicedPColumnId<APColumnId, AxisFilterByIdx>;
 
 /**
  * Determines if an axis ID matches an axis selector.

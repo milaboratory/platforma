@@ -1,4 +1,4 @@
-self := import(":tpl")
+self := import(":tpl.light")
 
 self.defineOutputs("output")
 

@@ -292,8 +292,11 @@ sortByFn := func(notSortedSlice, fn) {
  * @return slice: []element - a slice of elements from the set, sorted by an element.
  */
 fromSet := func(set) {
+	if is_undefined(set) {
+		return []
+	}
 	slice := enum.map(set, func(k, _) { return k })
-	return sortByFn(slice, func(elem) { return elem })
+	return quickSortInPlace(slice)
 }
 
 /**

@@ -2,7 +2,8 @@ ll := import(":ll")
 oop := import(":oop")
 smart := import(":smart")
 pConstants := import(":pframes.constants")
-
+pSpec := import(":pframes.spec")
+validation := import(":validation")
 
 /**
  * Creates a builder for p-frame resource.
@@ -15,6 +16,9 @@ pFrameBuilder := func() {
 
 		add: func(column, spec, data) {
 			if (!is_undefined(spec)) {
+				if !smart.isReference(spec) {
+					validation.assertType(spec, pSpec.P_OBJECT_SPEC_SCHEMA)
+				}
 				r.createInputField(column + ".spec").setRefOrJson(spec)
 			}
 			if (!is_undefined(data)) {
