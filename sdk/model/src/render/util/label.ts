@@ -1,4 +1,4 @@
-import { PObjectSpec } from '@milaboratories/pl-model-common';
+import type { PObjectSpec } from '@milaboratories/pl-model-common';
 import { z } from 'zod';
 
 export const PAnnotationLabel = 'pl7.app/label';
@@ -22,7 +22,7 @@ export const TraceEntry = z.object({
   type: z.string(),
   importance: z.number().optional(),
   id: z.string().optional(),
-  label: z.string()
+  label: z.string(),
 });
 export type TraceEntry = z.infer<typeof TraceEntry>;
 type FullTraceEntry = TraceEntry & { fullType: string; occurenceIndex: number };
@@ -31,6 +31,13 @@ export const Trace = z.array(TraceEntry);
 export type Trace = z.infer<typeof Trace>;
 type FullTrace = FullTraceEntry[];
 
+// Define the possible return types for the specExtractor function
+type SpecExtractorResult = PObjectSpec | {
+  spec: PObjectSpec;
+  prefixTrace?: TraceEntry[];
+  suffixTrace?: TraceEntry[];
+};
+
 const DistancePenalty = 0.001;
 
 const LabelType = '__LABEL__';
@@ -38,8 +45,8 @@ const LabelTypeFull = '__LABEL__@1';
 
 export function deriveLabels<T>(
   values: T[],
-  specExtractor: (obj: T) => PObjectSpec,
-  ops: LabelDerivationOps = {}
+  specExtractor: (obj: T) => SpecExtractorResult,
+  ops: LabelDerivationOps = {},
 ): RecordsWithLabel<T>[] {
   const importances = new Map<string, number>();
 
@@ -47,10 +54,31 @@ export function deriveLabels<T>(
   const numberOfRecordsWithType = new Map<string, number>();
 
   const enrichedRecords = values.map((value) => {
-    const spec = specExtractor(value);
+    const extractorResult = specExtractor(value);
+    let spec: PObjectSpec;
+    let prefixTrace: TraceEntry[] | undefined;
+    let suffixTrace: TraceEntry[] | undefined;
+
+    // Check if the result is the new structure or just PObjectSpec
+    if ('spec' in extractorResult && typeof extractorResult.spec === 'object') {
+      // It's the new structure { spec, prefixTrace?, suffixTrace? }
+      spec = extractorResult.spec;
+      prefixTrace = extractorResult.prefixTrace;
+      suffixTrace = extractorResult.suffixTrace;
+    } else {
+      // It's just PObjectSpec
+      spec = extractorResult as PObjectSpec;
+    }
+
     const label = spec.annotations?.[PAnnotationLabel];
     const traceStr = spec.annotations?.[PAnnotationTrace];
-    const trace = (traceStr ? Trace.safeParse(JSON.parse(traceStr)).data : undefined) ?? [];
+    const baseTrace = (traceStr ? Trace.safeParse(JSON.parse(traceStr)).data : undefined) ?? [];
+
+    const trace = [
+      ...(prefixTrace ?? []),
+      ...baseTrace,
+      ...(suffixTrace ?? []),
+    ];
 
     if (label) {
       const labelEntry = { label, type: LabelType, importance: -2 };
@@ -72,8 +100,8 @@ export function deriveLabels<T>(
         fullType,
         Math.max(
           importances.get(fullType) ?? Number.NEGATIVE_INFINITY,
-          importance - (trace.length - i) * DistancePenalty
-        )
+          importance - (trace.length - i) * DistancePenalty,
+        ),
       );
       fullTrace.push({ ...trace[i], fullType, occurenceIndex });
     }
@@ -82,7 +110,7 @@ export function deriveLabels<T>(
       value,
       spec,
       label,
-      fullTrace
+      fullTrace,
     };
   });
 
@@ -109,7 +137,7 @@ export function deriveLabels<T>(
       const sep = ops.separator ?? ' / ';
       return {
         label: labelSet.join(sep),
-        value: r.value
+        value: r.value,
       } satisfies RecordsWithLabel<T>;
     });
 
