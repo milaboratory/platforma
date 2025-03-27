@@ -19,7 +19,7 @@ export type BlockSectionLink = {
 };
 
 /** Different variants for link section appearance */
-export type BlockSectionLinkAppearance = 
+export type BlockSectionLinkAppearance =
   /** Shows a section of type `link` with a `+` icon and a certain specific style */
   'add-section';
 

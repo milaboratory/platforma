@@ -12,7 +12,27 @@ import {
 } from '@platforma-sdk/model';
 import { z } from 'zod';
 
+export function* range(from: number, to: number, step = 1) {
+  for (let i = from; i < to; i += step) {
+    yield i;
+  }
+}
+
+export function toList<T>(iterable: Iterable<T>): T[] {
+  const lst: T[] = [];
+  for (const it of iterable) {
+    lst.push(it);
+  }
+
+  return lst;
+}
+
+export function times<R>(n: number, cb: (i: number) => R): R[] {
+  return toList(range(0, n)).map(cb);
+}
+
 export const $BlockArgs = z.object({
+  tableNumRows: z.number().default(100),
   numbers: z.array(z.coerce.number()),
 });
 
@@ -33,7 +53,7 @@ export type UiState = {
 
 export const platforma = BlockModel.create('Heavy')
 
-  .withArgs<BlockArgs>({ numbers: [1, 2, 3, 4] })
+  .withArgs<BlockArgs>({ numbers: [1, 2, 3, 4], tableNumRows: 100 })
 
   .withUiState<UiState>({ dataTableState: undefined, dynamicSections: [] })
 
@@ -49,6 +69,15 @@ export const platforma = BlockModel.create('Heavy')
 
   .output('pt', (ctx) => {
     if (!ctx.uiState?.dataTableState?.tableState.pTableParams?.filters) return undefined;
+
+    const data = times(ctx.args.tableNumRows ?? 0, (i) => {
+      const v = i + 1;
+      return {
+        key: [v, v + 0.1],
+        val: v.toString(),
+      };
+    });
+
     return createPlDataTable(
       ctx,
       [
@@ -76,14 +105,12 @@ export const platforma = BlockModel.create('Heavy')
                 name: 'value',
                 annotations: {
                   'pl7.app/label': 'Float axis',
+                  'pl7.app/table/visibility': 'optional',
                 },
               },
             ],
           },
-          data: [
-            { key: [1, 1.1], val: '1' },
-            { key: [2, 2.2], val: '2' },
-          ],
+          data,
         } satisfies PColumn<PColumnValues>,
       ],
       ctx.uiState.dataTableState.tableState,

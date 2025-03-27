@@ -1,6 +1,6 @@
 import { isPColumnSpec, type PObjectSpec } from '../../../pool';
 import type { AxisId, PColumnSpec, ValueType } from './spec';
-import { getAxisId, matchAxisId } from './spec';
+import { getAxisId } from './spec';
 
 /**
  * Defines a pattern for matching axes within the PFrame data model.

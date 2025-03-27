@@ -6,12 +6,12 @@ export const PlRef = z
       .literal(true)
       .describe('Crucial marker for the block dependency tree reconstruction'),
     blockId: z.string().describe('Upstream block id'),
-    name: z.string().describe("Name of the output provided to the upstream block's output context")
+    name: z.string().describe('Name of the output provided to the upstream block\'s output context'),
   })
   .describe(
-    'Universal reference type, allowing to set block connections. It is crucial that ' +
-      '{@link __isRef} is present and equal to true, internal logic relies on this marker ' +
-      'to build block dependency trees.'
+    'Universal reference type, allowing to set block connections. It is crucial that '
+    + '{@link __isRef} is present and equal to true, internal logic relies on this marker '
+    + 'to build block dependency trees.',
   )
   .strict()
   .readonly();
@@ -21,18 +21,18 @@ export type Ref = PlRef;
 
 /**
  * Type guard to check if a value is a PlRef.
- * 
+ *
  * @param value - The value to check.
  * @returns True if the value is a PlRef, false otherwise.
  */
 export function isPlRef(value: unknown): value is PlRef {
   return (
-    typeof value === 'object' &&
-    value !== null &&
-    '__isRef' in value &&
-    (value as { __isRef: unknown }).__isRef === true &&
-    'blockId' in value &&
-    'name' in value
+    typeof value === 'object'
+    && value !== null
+    && '__isRef' in value
+    && (value as { __isRef: unknown }).__isRef === true
+    && 'blockId' in value
+    && 'name' in value
   );
 }
 
