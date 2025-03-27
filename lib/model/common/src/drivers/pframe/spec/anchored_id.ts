@@ -1,8 +1,10 @@
 import canonicalize from 'canonicalize';
 import type { AxisId, PColumnSpec } from './spec';
 import { getAxisId, matchAxisId } from './spec';
-import type { AAxisSelector, AnchorAxisRef, AnchorAxisRefByIdx, APColumnId, APColumnSelector, AxisSelector, PColumnSelector } from './selectors';
+import type { AAxisSelector, AnchorAxisRef, AnchorAxisRefByIdx, APColumnId, APColumnSelector, AxisSelector, GeneralizedAPColumnId, PColumnSelector } from './selectors';
 import type { Branded } from '../../../branding';
+import type { AxisFilter } from './sliced_column_id';
+import type { PValue } from '../data';
 
 //
 // Helper functions
@@ -20,7 +22,10 @@ function domainKey(key: string, value: string): string {
 // Branded types
 //
 
-/** Canonicalized string representation of an anchored column identifier, either anchored or absolute. */
+/**
+ * Canonicalized string (canincally serialized {@link GeneralizedAPColumnId}) representation of an
+ * anchored column identifier, either anchored or absolute.
+ */
 export type CanonicalPColumnId = Branded<string, 'CanonicalPColumnId'>;
 
 /**
@@ -70,11 +75,23 @@ export class AnchorIdDeriver {
 
   /**
    * Derives an anchored column identifier from a column specification
-   * Replaces domain values and axes with anchored references when possible
    * @param spec Column specification to anchor
    * @returns An anchored column identifier that can be used to identify columns similar to the input specification
    */
-  derive(spec: PColumnSpec): APColumnId {
+  derive(spec: PColumnSpec): APColumnId;
+
+  /**
+   * Derives an anchored column identifier from a column specification
+   * @param spec Column specification to anchor
+   * @param axisFilters Axis filters to apply to the column
+   * @returns An anchored and sliced column identifier that can be used to identify columns similar to the input specification
+   */
+  derive(spec: PColumnSpec, axisFilters?: AxisFilter[]): GeneralizedAPColumnId;
+
+  /**
+   * Implementation of derive method
+   */
+  derive(spec: PColumnSpec, axisFilters?: AxisFilter[]): GeneralizedAPColumnId {
     const result: APColumnId = {
       name: spec.name,
       axes: [],
@@ -116,16 +133,50 @@ export class AnchorIdDeriver {
       return anchorAxisRef ?? axis;
     });
 
-    return result;
+    // If no axis filters are provided, return the anchored ID as is
+    if (!axisFilters || axisFilters.length === 0) {
+      return result;
+    }
+
+    // Process axis filters and create a sliced column ID
+    const resolvedFilters: [number, PValue][] = [];
+
+    for (const filter of axisFilters) {
+      const [axisIdOrIndex, value] = filter;
+
+      // If it's already a numeric index, validate it
+      if (typeof axisIdOrIndex === 'number') {
+        if (axisIdOrIndex < 0 || axisIdOrIndex >= spec.axesSpec.length) {
+          throw new Error(`Axis index ${axisIdOrIndex} is out of bounds (0-${spec.axesSpec.length - 1})`);
+        }
+        resolvedFilters.push([axisIdOrIndex, value]);
+      } else {
+        // If it's a string (axis name), resolve it to an index
+        const axisIndex = spec.axesSpec.findIndex((axis) => axis.name === axisIdOrIndex);
+        if (axisIndex === -1) {
+          throw new Error(`Axis with name "${axisIdOrIndex}" not found in the column specification`);
+        }
+        resolvedFilters.push([axisIndex, value]);
+      }
+    }
+
+    // Sort filters by axis index to ensure consistency
+    resolvedFilters.sort((a, b) => a[0] - b[0]);
+
+    return {
+      target: result,
+      axisFilters: resolvedFilters,
+    };
   }
 
   /**
    * Derives a canonicalized string representation of an anchored column identifier, can be used as a unique identifier for the column
    * @param spec Column specification to anchor
+   * @param axisFilters Optional axis filters to apply to the column
    * @returns A canonicalized string representation of the anchored column identifier
    */
-  deriveCanonical(spec: PColumnSpec): CanonicalPColumnId {
-    const aId = this.derive(spec);
+  deriveCanonical(spec: PColumnSpec, axisFilters?: AxisFilter[]): CanonicalPColumnId {
+    const aId = this.derive(spec, axisFilters);
     return canonicalize(aId)! as CanonicalPColumnId;
   }
 }
