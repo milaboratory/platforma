@@ -1,5 +1,13 @@
 # @milaboratories/pl-middle-layer
 
+## 1.31.4
+
+### Patch Changes
+
+- 4a604e7: bump pframes for keeping with a change in pl-model-middle-layer
+- Updated dependencies [4a604e7]
+  - @platforma-sdk/workflow-tengo@3.0.3
+
 ## 1.31.3
 
 ### Patch Changes
