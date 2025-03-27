@@ -1,7 +1,7 @@
-import { Branded } from '../branding';
-import { JoinEntry, PColumn, PColumnSpec } from '../drivers';
+import type { Branded } from '../branding';
+import type { JoinEntry, PColumn, PColumnSpec } from '../drivers';
 import { assertNever } from '../util';
-import { ResultPoolEntry } from './entry';
+import type { ResultPoolEntry } from './entry';
 
 /** Any object exported into the result pool by the block always have spec attached to it */
 export interface PObjectSpec {
@@ -40,13 +40,13 @@ export function isPColumn<T>(obj: PObject<T>): obj is PColumn<T> {
 }
 
 export function isPColumnSpecResult(
-  r: ResultPoolEntry<PObjectSpec>
+  r: ResultPoolEntry<PObjectSpec>,
 ): r is ResultPoolEntry<PColumnSpec> {
   return isPColumnSpec(r.obj);
 }
 
 export function isPColumnResult<T>(
-  r: ResultPoolEntry<PObject<T>>
+  r: ResultPoolEntry<PObject<T>>,
 ): r is ResultPoolEntry<PColumn<T>> {
   return isPColumnSpec(r.obj.spec);
 }
@@ -68,13 +68,13 @@ export function mapPObjectData<D1, D2>(
 ): PObject<D2> | undefined;
 export function mapPObjectData<D1, D2>(
   pObj: PObject<D1> | undefined,
-  cb: (d: D1) => D2
+  cb: (d: D1) => D2,
 ): PObject<D2> | undefined {
   return pObj === undefined
     ? undefined
     : {
         ...pObj,
-        data: cb(pObj.data)
+        data: cb(pObj.data),
       };
 }
 

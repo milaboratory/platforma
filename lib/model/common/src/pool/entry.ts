@@ -1,4 +1,4 @@
-import { PlRef } from '../ref';
+import type { PlRef } from '../ref';
 
 /** Result pool entry */
 export type ResultPoolEntry<O> = {

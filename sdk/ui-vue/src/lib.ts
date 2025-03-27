@@ -39,6 +39,8 @@ export * from './aggrid';
 
 export * from './utils';
 
+export * from './objectHash';
+
 export * from './computedResult';
 
 export * from './composition/useWatchFetch';

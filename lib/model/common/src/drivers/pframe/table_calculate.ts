@@ -1,5 +1,5 @@
-import { PTableColumnId, PTableColumnSpec } from './table_common';
-import { PTableVector } from './data';
+import type { PTableColumnId, PTableColumnSpec } from './table_common';
+import type { PTableVector } from './data';
 import { assertNever } from '../../util';
 
 /** Defines a terminal column node in the join request tree */
@@ -310,32 +310,32 @@ export type CalculateTableDataResponse = FullPTableColumnData[];
 
 export function mapPTableDef<C1, C2>(
   def: PTableDef<C1>,
-  cb: (c: C1) => C2
+  cb: (c: C1) => C2,
 ): PTableDef<C2> {
   return { ...def, src: mapJoinEntry(def.src, cb) };
 }
 
 export function mapJoinEntry<C1, C2>(
   entry: JoinEntry<C1>,
-  cb: (c: C1) => C2
+  cb: (c: C1) => C2,
 ): JoinEntry<C2> {
   switch (entry.type) {
     case 'column':
       return {
         type: 'column',
-        column: cb(entry.column)
+        column: cb(entry.column),
       };
     case 'inner':
     case 'full':
       return {
         type: entry.type,
-        entries: entry.entries.map((col) => mapJoinEntry(col, cb))
+        entries: entry.entries.map((col) => mapJoinEntry(col, cb)),
       };
     case 'outer':
       return {
         type: 'outer',
         primary: mapJoinEntry(entry.primary, cb),
-        secondary: entry.secondary.map((col) => mapJoinEntry(col, cb))
+        secondary: entry.secondary.map((col) => mapJoinEntry(col, cb)),
       };
     default:
       assertNever(entry);
