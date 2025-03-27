@@ -6,6 +6,7 @@ import {
   PlTableFilters,
   PlBlockPage,
   PlAgDataTable,
+  PlNumberField,
 } from '@platforma-sdk/ui-vue';
 import { useApp } from '../app';
 import type { PTableColumnSpec } from '@platforma-sdk/model';
@@ -49,6 +50,7 @@ const columns = ref<PTableColumnSpec[]>([]);
     >
       <template #before-sheets>
         Table controls could be placed here
+        <PlNumberField v-model="app.model.args.tableNumRows" />
       </template>
     </PlAgDataTable>
   </PlBlockPage>

@@ -1,4 +1,4 @@
-import { ValueType } from './spec/spec';
+import type { ValueType } from './spec/spec';
 
 /** Allows to search multiple columns in different contexts. */
 export interface ColumnFilter {
@@ -10,7 +10,7 @@ export interface ColumnFilter {
    * matching. */
   readonly name?: string[];
 
-    /** Match requires all the domains listed here to have corresponding values. */
+  /** Match requires all the domains listed here to have corresponding values. */
   readonly domainValue?: Record<string, string>;
 
   /** Match requires all the annotations listed here to have corresponding values. */
