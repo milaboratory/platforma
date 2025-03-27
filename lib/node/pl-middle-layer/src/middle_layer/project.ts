@@ -1,6 +1,7 @@
 import type { MiddleLayerEnvironment } from './middle_layer';
 import type {
   FieldData,
+  OptionalAnyResourceId,
   ResourceId,
 } from '@milaboratories/pl-client';
 import {
@@ -9,6 +10,7 @@ import {
   isNotFoundError,
   isTimeoutOrCancelError,
   Pl,
+  resourceIdToString,
 } from '@milaboratories/pl-client';
 import type { ComputableStableDefined } from '@milaboratories/computable';
 import { Computable } from '@milaboratories/computable';
@@ -17,7 +19,7 @@ import type { BlockPackSpecAny } from '../model';
 import { randomUUID } from 'node:crypto';
 import { withProject, withProjectAuthored } from '../mutator/project';
 import type { ExtendedResourceData } from '@milaboratories/pl-tree';
-import { SynchronizedTreeState } from '@milaboratories/pl-tree';
+import { SynchronizedTreeState, treeDumpStats } from '@milaboratories/pl-tree';
 import { setTimeout } from 'node:timers/promises';
 import { frontendData } from './frontend_path';
 import type { NavigationState } from '@milaboratories/pl-model-common';
@@ -36,10 +38,37 @@ import type {
 import { activeConfigs } from './active_cfg';
 import { NavigationStates } from './navigation_states';
 import { extractConfig } from '@platforma-sdk/model';
+import fs from 'node:fs/promises';
 
 type BlockStateComputables = {
   readonly fullState: Computable<BlockStateInternal>;
 };
+
+function stringifyForDump(object: unknown): string {
+  return JSON.stringify(object, (key, value) => {
+    if (typeof value === 'bigint')
+      return resourceIdToString(value as OptionalAnyResourceId);
+    else if (
+      ArrayBuffer.isView(value)
+      || value instanceof Int8Array
+      || value instanceof Uint8Array
+      || value instanceof Uint8ClampedArray
+      || value instanceof Int16Array
+      || value instanceof Uint16Array
+      || value instanceof Int32Array
+      || value instanceof Uint32Array
+      || value instanceof Float32Array
+      || value instanceof Float64Array
+      || value instanceof BigInt64Array
+      || value instanceof BigUint64Array
+    )
+      return Buffer.from(value.buffer, value.byteOffset, value.byteLength).toString('base64');
+    else if (Buffer.isBuffer(value))
+      return value.toString('base64');
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    return value;
+  });
+}
 
 /** Data access object, to manipulate and read single opened (!) project data. */
 export class Project {
@@ -405,6 +434,14 @@ export class Project {
       },
       env.logger,
     );
+
+    if (env.ops.debugOps.dumpInitialTreeState) {
+      const state = projectTree.dumpState();
+      state.sort((a, b) => (b.data?.byteLength ?? 0) - (a.data?.byteLength ?? 0));
+      const stats = treeDumpStats(state);
+      await fs.writeFile(`${resourceIdToString(rid)}.json`, stringifyForDump(state));
+      await fs.writeFile(`${resourceIdToString(rid)}.stats.json`, stringifyForDump(stats));
+    }
 
     return new Project(env, rid, projectTree);
   }

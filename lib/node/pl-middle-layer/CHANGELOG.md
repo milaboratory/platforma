@@ -1,5 +1,88 @@
 # @milaboratories/pl-middle-layer
 
+## 1.31.4
+
+### Patch Changes
+
+- 4a604e7: bump pframes for keeping with a change in pl-model-middle-layer
+- Updated dependencies [4a604e7]
+  - @platforma-sdk/workflow-tengo@3.0.3
+
+## 1.31.3
+
+### Patch Changes
+
+- Updated dependencies [71b2935]
+  - @milaboratories/pl-deployments@1.7.0
+
+## 1.31.2
+
+### Patch Changes
+
+- 4b04041: skip exporting files when we have a certain annotation from UI for pframes.
+- Updated dependencies [4b04041]
+  - @platforma-sdk/workflow-tengo@3.0.2
+
+## 1.31.1
+
+### Patch Changes
+
+- a505bdb: Upgrade network and tool dependencies:
+  - undici: ~7.4.0 → ~7.5.0
+  - @grpc/grpc-js: ~1.12.6 → ~1.13.1
+  - @protobuf-ts/plugin: 2.9.5 → 2.9.6
+  - @aws-sdk/client-s3: 3.758.0 → 3.775.0
+  - lru-cache: ^11.0.2 → ^11.1.0
+  - yaml: ^2.6.1 → ^2.7.0
+  - remeda: ^2.21.1 → ^2.21.2
+  - vite-plugin-dts: ^4.4.0 → ^4.5.3
+  - eslint: ^9.22.0 → ^9.23.0
+  - @vitejs/plugin-vue: ^5.2.1 → ^5.2.3
+- Updated dependencies [a505bdb]
+  - @platforma-sdk/model@1.24.5
+  - @platforma-sdk/block-tools@2.5.24
+  - @milaboratories/pl-client@2.7.13
+  - @milaboratories/pl-http@1.1.1
+  - @milaboratories/pl-drivers@1.5.32
+  - @milaboratories/pl-deployments@1.6.1
+  - @milaboratories/pl-config@1.4.4
+  - @milaboratories/pl-model-middle-layer@1.7.11
+  - @milaboratories/pl-model-common@1.11.1
+  - @milaboratories/pl-model-backend@1.0.2
+  - @milaboratories/pl-errors@1.0.2
+  - @platforma-sdk/workflow-tengo@3.0.1
+  - @milaboratories/pl-tree@1.5.1
+  - @milaboratories/computable@2.4.1
+  - @milaboratories/ts-helpers@1.1.4
+
+## 1.31.0
+
+### Minor Changes
+
+- dc4f10a: MI_DUMP_INITIAL_TREE_STATE=true flag to produce a dump file on initial project load
+
+### Patch Changes
+
+- Updated dependencies [dc4f10a]
+  - @milaboratories/pl-tree@1.5.0
+  - @milaboratories/pl-drivers@1.5.31
+
+## 1.30.33
+
+### Patch Changes
+
+- 7d2be5d: Set huge timeout for inital project loading
+- Updated dependencies [7d2be5d]
+  - @milaboratories/pl-tree@1.4.34
+  - @milaboratories/pl-drivers@1.5.30
+
+## 1.30.32
+
+### Patch Changes
+
+- Updated dependencies [fb5a9ff]
+  - @platforma-sdk/workflow-tengo@3.0.1
+
 ## 1.30.31
 
 ### Patch Changes

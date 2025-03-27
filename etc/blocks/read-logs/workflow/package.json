@@ -1,7 +1,7 @@
 {
   "name": "@milaboratories/milaboratories.test-read-logs.workflow",
   "private": true,
-  "version": "1.0.3",
+  "version": "1.0.6",
   "type": "module",
   "description": "Tengo-based template",
   "scripts": {

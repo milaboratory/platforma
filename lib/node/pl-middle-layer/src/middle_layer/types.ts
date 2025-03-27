@@ -3,7 +3,7 @@ import type { Computable } from '@milaboratories/computable';
 
 export type TemporalSynchronizedTreeOps = Pick<
   SynchronizedTreeOps,
-  'pollingInterval' | 'stopPollingDelay' | 'logStat'
+  'pollingInterval' | 'stopPollingDelay' | 'logStat' | 'initialTreeLoadingTimeout'
 >;
 
 export interface TreeAndComputable<T, ST extends T = T> {

@@ -1,5 +1,39 @@
 # @milaboratories/milaboratories.test-sum-numbers
 
+## 1.0.101
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-sum-numbers.workflow@1.0.9
+
+## 1.0.100
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-sum-numbers.workflow@1.0.8
+
+## 1.0.99
+
+### Patch Changes
+
+- Updated dependencies [a505bdb]
+  - @platforma-sdk/model@1.24.5
+  - @milaboratories/milaboratories.test-sum-numbers.model@1.0.22
+  - @milaboratories/milaboratories.test-sum-numbers.ui@1.0.96
+  - @milaboratories/milaboratories.test-sum-numbers.workflow@1.0.7
+
+## 1.0.98
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-sum-numbers.ui@1.0.95
+
+## 1.0.97
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-sum-numbers.workflow@1.0.7
+
 ## 1.0.96
 
 ### Patch Changes

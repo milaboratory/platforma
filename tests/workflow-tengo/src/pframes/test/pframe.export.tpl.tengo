@@ -1,0 +1,27 @@
+/** An ephemeral template that actually tests pframe-for-ui export.
+ * It just creates spec and data as file as pframe and calls a template on it. */
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+file := import("@platforma-sdk/workflow-tengo:file")
+render := import("@platforma-sdk/workflow-tengo:render")
+ll := import("@platforma-sdk/workflow-tengo:ll")
+
+self.body(func(inputs) {
+	spec := inputs.spec
+	fileHandle := inputs.fileHandle
+
+	mapBuilder := smart.mapBuilder()
+	mapBuilder.add("val1.spec", spec)
+	f := file.importFile(fileHandle)
+	mapBuilder.add("val1.data", f.file)
+
+	tpl := render.createEphemeral(assets.importTemplate("@platforma-sdk/workflow-tengo:pframes.export-pframe-for-ui"), {
+		pf: mapBuilder.build()
+	})
+
+	return {
+		exported: tpl.output("result")
+	}
+})
