@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.ui-examples.model
 
+## 1.1.27
+
+### Patch Changes
+
+- 5f0fb1d: [sdk/ui-vue] PlAgDataTable hidden columns are shown as visible after selecting empty dataset
+- Updated dependencies [5f0fb1d]
+  - @platforma-sdk/model@1.24.9
+
 ## 1.1.26
 
 ### Patch Changes
