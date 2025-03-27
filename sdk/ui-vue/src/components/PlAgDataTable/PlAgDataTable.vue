@@ -22,6 +22,7 @@ import { PlDropdownLine } from '@milaboratories/uikit';
 import {
   getAxisId,
   getRawPlatformaInstance,
+  type PlDataTableGridStateWithoutSheets,
   type AxisId,
   type PlDataTableState,
   type PTableColumnSpec,
@@ -118,10 +119,11 @@ function makeSorting(state?: SortState): PTableSorting[] {
   );
 }
 
-const gridState = computed({
+const gridState = computed<PlDataTableGridStateWithoutSheets>({
   get: () => {
     const state = tableState.value;
     return {
+      sourceId: state.gridState.sourceId,
       columnOrder: state.gridState.columnOrder,
       sort: state.gridState.sort,
       columnVisibility: state.gridState.columnVisibility,
@@ -202,7 +204,7 @@ watch(
     const newSheetsState: Record<string, string | number> = {};
     for (const sheet of settings.sheets) {
       const sheetId = makeSheetId(sheet.axis);
-      newSheetsState[sheetId] = oldSheetsState[sheetId] ?? sheet.defaultValue ?? sheet.options[0].value;
+      newSheetsState[sheetId] = oldSheetsState[sheetId] ?? sheet.defaultValue ?? sheet.options[0]?.value;
     }
     sheetsState.value = newSheetsState;
   },
@@ -316,9 +318,10 @@ const onGridReady = (event: GridReadyEvent) => {
 
 const makePartialState = (state: GridState) => {
   return {
+    sourceId: gridState.value.sourceId,
     columnOrder: state.columnOrder,
     sort: state.sort,
-    columnVisibility: state.columnVisibility ?? (state.columnOrder ? { hiddenColIds: [] } : undefined),
+    columnVisibility: state.columnVisibility,
   };
 };
 
@@ -443,7 +446,7 @@ watch(
             settings.pTable,
             settings.sheets ?? [],
             !!props.clientSideModel || !!selectedRows.value,
-            gridState.value?.columnVisibility?.hiddenColIds,
+            gridState,
             {
               showCellButtonForAxisId: props.showCellButtonForAxisId,
               cellButtonInvokeRowsOnDoubleClick: props.cellButtonInvokeRowsOnDoubleClick,

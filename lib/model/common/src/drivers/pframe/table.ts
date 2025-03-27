@@ -1,5 +1,5 @@
-import { PTableColumnSpec } from './table_common';
-import { PTableShape, PTableVector, TableRange } from './data';
+import type { PTableColumnSpec } from './table_common';
+import type { PTableShape, PTableVector, TableRange } from './data';
 
 /**
  * Table view.
