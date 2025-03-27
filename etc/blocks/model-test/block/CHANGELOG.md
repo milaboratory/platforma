@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.test-block-model
 
+## 1.0.141
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-block-model.workflow@1.0.5
+
 ## 1.0.140
 
 ### Patch Changes
