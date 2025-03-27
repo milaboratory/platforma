@@ -294,22 +294,47 @@ pColumnBundleUnmarshaller := func() {
 						return label
 					}
 
-					generateCanonicalIdentifier := func(columnKey, axisFilters) {
-						identifier := cleanColumnName(columnKey)
+					// Process GeneralizedAPColumnId inputs and return their components and canonical representation
+					processColumnId := func(id) {
+						columnKey := undefined
+						columnAxisFilters := undefined
+						canonicalId := undefined
 
-						if !is_undefined(axisFilters) && len(axisFilters) > 0 {
-							canonicalAxisFilters := canonical.encode(axisFilters)
-							identifier = identifier + "_" + cleanColumnName(canonicalAxisFilters)
+						if is_string(id) {
+							canonicalId = id
+							decodedId := json.decode(id)
+
+							if is_map(decodedId) && !is_undefined(decodedId.target) && !is_undefined(decodedId.axisFilters) {
+								columnKey = canonical.encode(decodedId.target)
+								columnAxisFilters = decodedId.axisFilters
+							} else {
+								columnKey = id
+							}
+						} else if is_map(id) {
+							if !is_undefined(id.target) && !is_undefined(id.axisFilters) {
+								columnKey = canonical.encode(id.target)
+								columnAxisFilters = id.axisFilters
+								canonicalId = canonical.encode(id)
+							} else {
+								columnKey = canonical.encode(id)
+								canonicalId = columnKey
+							}
+						} else {
+							ll.panic("Invalid column ID type. Expected string or object.")
 						}
 
-						return identifier
+						return {
+							columnKey: columnKey,
+							axisFilters: columnAxisFilters,
+							canonicalId: canonicalId
+						}
 					}
 
 					tableBuilder := undefined
 					tableBuilder = {
 						/**
 						 * Adds a column to the table
-						 * @param key - The ID of the column to add (string or GeneralizedPColumnId object)
+						 * @param key - The ID of the column to add (string CanonicalPColumnId or GeneralizedAPColumnId object)
 						 * @param ops - Optional operations, can include:
 						 *   - header: string - Override for the column header
 						 *   - axisFilters: [number|string, any][] - Filters to apply to axes
@@ -318,28 +343,18 @@ pColumnBundleUnmarshaller := func() {
 							// Reset distiller as adding a column changes what needs to be distilled
 							distiller = undefined
 
-							columnKey := key
-							columnAxisFilters := undefined
-
-							if is_map(key) {
-								if !is_undefined(key.source) {
-									columnKey = key.source
-									columnAxisFilters = key.axisFilters
-								} else {
-									columnKey = key
-								}
-
-								if !is_string(columnKey) {
-									columnKey = canonical.encode(columnKey)
-								}
-							}
+							processedId := processColumnId(key)
+							columnKey := processedId.columnKey
+							columnAxisFilters := processedId.axisFilters
+							canonicalId := processedId.canonicalId
 
 							if is_undefined(pool[columnKey]) {
 								ll.panic("Column not found: " + columnKey)
 							}
 
 							request := {
-								key: columnKey
+								key: columnKey,
+								canonicalId: canonicalId
 							}
 
 							if !is_undefined(columnAxisFilters) {
@@ -356,6 +371,11 @@ pColumnBundleUnmarshaller := func() {
 										ll.panic("Cannot provide axis filters in both SlicedPColumnId and options. Use either one, not both.")
 									} else {
 										request.axisFilters = ops[0].axisFilters
+
+										request.canonicalId = canonical.encode({
+											target: json.decode(columnKey),
+											axisFilters: ops[0].axisFilters
+										})
 									}
 								}
 							}
@@ -370,20 +390,18 @@ pColumnBundleUnmarshaller := func() {
 								request.columnSpec = pool[columnKey].spec
 							}
 
-							request.canonicalIdentifier = generateCanonicalIdentifier(columnKey, request.axisFilters)
-
-							if !is_undefined(addedColumns[request.canonicalIdentifier]) {
+							if !is_undefined(addedColumns[request.canonicalId]) {
 								ll.panic("Duplicate column detected: %s. This column has already been added to the table.",
-									request.canonicalIdentifier)
+									request.canonicalId)
 							}
 
-							addedColumns[request.canonicalIdentifier] = true
+							addedColumns[request.canonicalId] = true
 
 							if !is_undefined(request.headerOverride) {
 								request.header = request.headerOverride
 							} else {
-								// Use the canonical identifier as the default header
-								request.header = request.canonicalIdentifier
+								// Use a cleaned version of the canonical ID as the default header
+								request.header = cleanColumnName(request.canonicalId)
 							}
 
 							requests = append(requests, request)
@@ -443,7 +461,8 @@ pColumnBundleUnmarshaller := func() {
 									})
 								}
 
-								pFrame.add(request.canonicalIdentifier, preparedSpec, colData)
+								// Use canonicalId directly as the column identifier in the frame
+								pFrame.add(request.canonicalId, preparedSpec, colData)
 							}
 
 							return xsv.exportFrame(pFrame.build(), format, {})
@@ -451,7 +470,7 @@ pColumnBundleUnmarshaller := func() {
 
 						/**
 						 * Gets the header for a column or axis
-						 * @param item - Either a column key (string), sliced column ID, or an axis spec
+						 * @param item - Either a column key (string), GeneralizedAPColumnId, or an axis spec
 						 * @returns The header string
 						 * @throws If the column hasn't been added to the table yet
 						 * @note This method only works for columns that have been added to the table via add()
@@ -462,30 +481,16 @@ pColumnBundleUnmarshaller := func() {
 								return generateLabelForAxis(item)
 							}
 
-							columnKey := item
-							axisFilters := undefined
-
-							// Handle sliced column ID
-							if is_map(item) && !is_undefined(item.source) {
-								columnKey = item.source
-								axisFilters = item.axisFilters
-							}
-
-							if !is_string(columnKey) {
-								columnKey = canonical.encode(columnKey)
-							}
-
-							canonicalIdentifier := generateCanonicalIdentifier(columnKey, axisFilters)
+							canonicalId := processColumnId(item).canonicalId
 
 							for _, request in requests {
-								if request.canonicalIdentifier == canonicalIdentifier {
+								if request.canonicalId == canonicalId {
 									return request.header
 								}
 							}
 
-							// If we get here, no matching request was found
 							ll.panic("Column not found in the table: %s. Make sure to call add() before getHeader().",
-								canonicalIdentifier)
+								canonicalId)
 						}
 					}
 

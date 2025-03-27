@@ -243,7 +243,7 @@ export class ResultPool {
             return {
               type: `split:${canonicalAxisId}`,
               label,
-              importance: 1,
+              importance: 1_000_000,
             };
           });
 
