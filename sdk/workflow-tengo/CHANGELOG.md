@@ -1,5 +1,23 @@
 # @platforma-sdk/workflow-tengo
 
+## 3.0.3
+
+### Patch Changes
+
+- 4a604e7: bump pframes
+
+## 3.0.2
+
+### Patch Changes
+
+- 4b04041: skip exporting files when we have a certain annotation from UI for pframes.
+
+## 3.0.1
+
+### Patch Changes
+
+- fb5a9ff: Refactor regex handling across multiple files to use the new regexp module for improved performance and consistency. This includes pre-compiling regex patterns where applicable.
+
 ## 3.0.0
 
 ### Major Changes

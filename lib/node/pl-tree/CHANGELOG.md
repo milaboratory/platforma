@@ -1,5 +1,27 @@
 # @milaboratories/pl-tree
 
+## 1.5.1
+
+### Patch Changes
+
+- Updated dependencies [a505bdb]
+  - @milaboratories/pl-client@2.7.13
+  - @milaboratories/pl-errors@1.0.2
+  - @milaboratories/computable@2.4.1
+  - @milaboratories/ts-helpers@1.1.4
+
+## 1.5.0
+
+### Minor Changes
+
+- dc4f10a: Tools to create and analyze tree data dump
+
+## 1.4.34
+
+### Patch Changes
+
+- 7d2be5d: Set huge timeout for inital project loading
+
 ## 1.4.33
 
 ### Patch Changes

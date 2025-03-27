@@ -2,6 +2,7 @@ ll := import(":ll")
 text := import("text")
 slices := import(":slices")
 validation := import(":validation")
+regexp := import(":regexp")
 
 /**
  * Joins path elements into a single path.
@@ -116,7 +117,9 @@ getExtension := func(path, ...sep) {
 	sep = _sepOrDefault(sep...)
 
 	nPoints := 1
-	if text.re_match(`\.(gz|xz|bzip|zstd)$`, path) {
+	// Use the regexp compile method for caching
+	archiveRegexp := regexp.compile(`\.(gz|xz|bzip|zstd)$`)
+	if archiveRegexp.match(path) {
 		nPoints = 2
 	}
 

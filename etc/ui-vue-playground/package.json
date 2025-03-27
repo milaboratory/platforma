@@ -1,7 +1,7 @@
 {
   "name": "@milaboratories/ui-vue-playground",
   "private": true,
-  "version": "0.0.220",
+  "version": "0.0.222",
   "type": "module",
   "scripts": {
     "dev": "vite",

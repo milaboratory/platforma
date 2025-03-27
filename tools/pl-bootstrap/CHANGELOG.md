@@ -1,5 +1,30 @@
 # @platforma-sdk/bootstrap
 
+## 3.2.11
+
+### Patch Changes
+
+- Updated dependencies [71b2935]
+  - @milaboratories/pl-deployments@1.7.0
+
+## 3.2.10
+
+### Patch Changes
+
+- a505bdb: Upgrade network and tool dependencies:
+  - undici: ~7.4.0 → ~7.5.0
+  - @grpc/grpc-js: ~1.12.6 → ~1.13.1
+  - @protobuf-ts/plugin: 2.9.5 → 2.9.6
+  - @aws-sdk/client-s3: 3.758.0 → 3.775.0
+  - lru-cache: ^11.0.2 → ^11.1.0
+  - yaml: ^2.6.1 → ^2.7.0
+  - remeda: ^2.21.1 → ^2.21.2
+  - vite-plugin-dts: ^4.4.0 → ^4.5.3
+  - eslint: ^9.22.0 → ^9.23.0
+  - @vitejs/plugin-vue: ^5.2.1 → ^5.2.3
+- Updated dependencies [a505bdb]
+  - @milaboratories/pl-deployments@1.6.1
+
 ## 3.2.9
 
 ### Patch Changes

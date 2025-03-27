@@ -6,6 +6,7 @@
 tx := import("tx")
 ll := import(":ll")
 text := import("text")
+regexp := import(":regexp")
 
 createContext := func() {
 	return {
@@ -72,7 +73,7 @@ awaitOneState := func(field, path, state) {
 					return true
 				}
 			} else {
-				regex := text.re_compile(step.match)
+				regex := regexp.compile(step.match)
 				if is_error(regex) {
 					ll.panic("Error parsing regex %v: %v", step.match, regex)
 				}
