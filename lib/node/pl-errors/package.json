@@ -24,9 +24,11 @@
   ],
   "dependencies": {
     "zod": "catalog:",
-    "@milaboratories/pl-client": "workspace:*"
+    "@milaboratories/pl-client": "workspace:*",
+    "@milaboratories/ts-helpers": "workspace:*"
   },
   "devDependencies": {
+    "@milaboratories/pl-error-like": "workspace:*",
     "@milaboratories/platforma-build-configs": "workspace:*",
     "typescript": "catalog:",
     "vite": "catalog:",

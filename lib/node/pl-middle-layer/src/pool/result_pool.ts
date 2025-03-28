@@ -96,7 +96,7 @@ export class ResultPool {
   public getDataOrErrorByRef(
     blockId: string,
     exportName: string,
-  ): ValueOrError<PObject<PlTreeNodeAccessor>, string> | undefined {
+  ): ValueOrError<PObject<PlTreeNodeAccessor>, Error> | undefined {
     const block = this.blocks.get(blockId);
     if (block === undefined) return undefined;
     const result = block.prod?.results?.get(exportName);
@@ -144,10 +144,10 @@ export class ResultPool {
   }
 
   public getDataWithErrors(): ExtendedResultCollection<
-    Optional<PObject<ValueOrError<PlTreeNodeAccessor, string>>, 'id'>
+    Optional<PObject<ValueOrError<PlTreeNodeAccessor, Error>>, 'id'>
   > {
     const entries: ResultPoolEntry<
-      Optional<PObject<ValueOrError<PlTreeNodeAccessor, string>>, 'id'>
+      Optional<PObject<ValueOrError<PlTreeNodeAccessor, Error>>, 'id'>
     >[] = [];
     let isComplete = true;
 
@@ -312,7 +312,7 @@ export class ResultPool {
 /** Loads single BContext data */
 function loadCtx(
   calculated: boolean,
-  ctxAccessor: ValueOrError<PlTreeNodeAccessor, string> | undefined,
+  ctxAccessor: ValueOrError<PlTreeNodeAccessor, Error> | undefined,
 ): RawPObjectCollection | undefined {
   if (ctxAccessor === undefined) {
     if (calculated)
