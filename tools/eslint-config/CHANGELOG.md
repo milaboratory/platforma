@@ -1,5 +1,11 @@
 # @milaboratories/eslint-config
 
+## 1.0.4
+
+### Patch Changes
+
+- 9e9a70f: Configure eslint to all "node" packages
+
 ## 1.0.3
 
 ### Patch Changes
