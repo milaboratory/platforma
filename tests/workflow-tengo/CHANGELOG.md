@@ -1,5 +1,12 @@
 # @platforma-sdk/workflow-tengo-tests
 
+## 1.6.12
+
+### Patch Changes
+
+- 4812a12: apply eslint rules to the all "model" packages
+  - @platforma-sdk/workflow-tengo@3.0.3
+
 ## 1.6.11
 
 ### Patch Changes
