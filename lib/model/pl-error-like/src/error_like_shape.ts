@@ -1,8 +1,4 @@
-import * as util from 'node:util';
-import { z } from 'zod';
-import { PlErrorReport } from './parsed_error';
-
-// TODO: add static assertType to parsed_error
+import stringify from 'json-stringify-safe';
 
 export type StandardErrorLike = {
   type: 'StandardError';
@@ -27,7 +23,7 @@ export type ErrorLike = StandardErrorLike | PlErrorLike;
 export function ensureErrorLike(error: unknown): ErrorLike {
   const err = error as any;
 
-  // if true, it's most likely an error.
+  // if true, 99% it's a error.
   if (typeof err === 'object' && err !== null && 'name' in err && 'message' in err) {
     if (err.name === 'ModelError') {
       return {
@@ -53,6 +49,10 @@ export function ensureErrorLike(error: unknown): ErrorLike {
   return {
     type: 'StandardError',
     name: 'Error',
-    message: util.format(error),
+    // Stringify without circular dependencies.
+    // Maps (and sets?) will be converted to empty json objects,
+    // if this is a problem, we should change the library,
+    // but it must work in all QuickJS, UI and Node.js.
+    message: stringify(error),
   };
 }

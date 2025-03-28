@@ -632,6 +632,8 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
             return (fn as any)(...args);
           } catch (e: unknown) {
             const newErr = this.errorRepo.setAndRecreateForQuickJS(e);
+            console.log("HERE context.ts:616:");
+            console.dir(newErr, {depth: 150});
             // eslint-disable-next-line @typescript-eslint/only-throw-error
             throw this.vm.newError(newErr);
           }

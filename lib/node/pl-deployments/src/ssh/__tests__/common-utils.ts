@@ -62,23 +62,27 @@ export async function initContainer(name: string): Promise<StartedTestContainer>
 
   const image = `pl-ssh-test-container-${name}:1.0.0`;
 
-  const fromCacheContainer = await new GenericContainer(image)
-    .withExposedPorts(...SSH_PORT)
-    .withReuse()
-    .withName(`pl-ssh-test-${name}`)
-    .start()
-    .catch(() => console.log('No worries, creating a new container'));
+  try {
+    const container = new GenericContainer(image)
+      .withExposedPorts(...SSH_PORT)
+      .withReuse()
+      .withName(`pl-ssh-test-${name}`);
 
-  if (!fromCacheContainer) {
+    return await container.start();
+  } catch {
+    console.log('No worries, creating a new container');
+
     generateKeys();
-    const container1 = await GenericContainer.fromDockerfile(path.resolve(__dirname, '..', '..', '..'))
+    const container = await GenericContainer
+      .fromDockerfile(path.resolve(__dirname, '..', '..', '..'))
       .withCache(true)
       .build(image, { deleteOnExit: false });
 
-    return container1.withExposedPorts(...SSH_PORT).withReuse().start();
+    return await container
+      .withExposedPorts(...SSH_PORT)
+      .withReuse()
+      .start();
   }
-
-  return fromCacheContainer;
 }
 
 export function getContainerHostAndPort(container: StartedTestContainer) {

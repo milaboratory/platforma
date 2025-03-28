@@ -20,7 +20,7 @@ import {
 import { Aborted, notEmpty } from '@milaboratories/ts-helpers';
 import { randomUUID } from 'node:crypto';
 import { setImmediate } from 'node:timers/promises';
-import { ensureErrorLike, ErrorLike } from '@milaboratories/pl-errors';
+import { ensureErrorLike, ErrorLike } from '@milaboratories/pl-error-like';
 
 /** Represents the most general result of the computable, successful or error */
 export type ComputableResult<T> = ComputableResultErrors | ComputableResultOk<T>;

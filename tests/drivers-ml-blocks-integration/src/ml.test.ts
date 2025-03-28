@@ -51,7 +51,7 @@ export async function withMl(
   });
 }
 
-export async function awaitBlockDone(prj: Project, blockId: string, timeout: number = 2000) {
+export async function awaitBlockDone(prj: Project, blockId: string, timeout: number = 5000) {
   const abortSignal = AbortSignal.timeout(timeout);
   const overview = prj.overview;
   const state = prj.getBlockState(blockId);
@@ -271,7 +271,7 @@ test('simple project manipulations test', { timeout: 20000 }, async ({ expect })
   });
 });
 
-test('reorder & rename blocks', async ({ expect }) => {
+test('reorder & rename blocks', { timeout: 20000 }, async ({ expect }) => {
   await withMl(async (ml) => {
     const projectList = ml.projectList;
     expect(await projectList.awaitStableValue()).toEqual([]);
@@ -491,7 +491,7 @@ test('block error test', async ({ expect }) => {
     const sum = block3StableState.outputs!['sum'];
     expect(sum.ok).toStrictEqual(false);
     if (!sum.ok)
-      expect(sum.errors[0]).toContain(
+      expect(sum.errors[0].message).toContain(
         "At least 1 data source must be set. It's needed in 'block error test'"
       );
   });

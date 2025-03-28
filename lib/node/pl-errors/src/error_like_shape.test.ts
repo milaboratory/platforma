@@ -1,8 +1,8 @@
 import { expect, test } from "vitest";
 import { PlErrorReport } from "./parsed_error";
-import { ensureErrorLike } from "./error_like_shape";
+import { ensureErrorLike } from "@milaboratories/pl-error-like";
 
-test('pl error report is error like shape', () => {
+test('pl error report has error like shape', () => {
   const plErrorReport = new PlErrorReport('test error report', '', '', []);
 
   const got = ensureErrorLike(plErrorReport);

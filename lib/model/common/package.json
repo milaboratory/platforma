@@ -25,7 +25,8 @@
   ],
   "dependencies": {
     "zod": "catalog:",
-    "canonicalize": "catalog:"
+    "canonicalize": "catalog:",
+    "@milaboratories/pl-error-like": "workspace:*"
   },
   "devDependencies": {
     "@milaboratories/platforma-build-configs": "workspace:*",
