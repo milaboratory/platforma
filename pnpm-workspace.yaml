@@ -12,6 +12,7 @@ packages:
   - lib/node/ts-helpers-winston
   - lib/node/pl-http
   - lib/node/pl-errors
+  - lib/model/pl-error-like
 
   - lib/node/resolve-helper
   - lib/node/node-streams
@@ -182,6 +183,7 @@ catalog:
   'decompress': ^4.2.1
   'readline-sync': ^1.4.10
   'ssh2': ^1.16.0
+  'pretty-format': ^29.7.0
 
   "fs-extra": "^11.2.0"
 

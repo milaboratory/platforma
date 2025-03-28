@@ -1,5 +1,5 @@
 import type { Equal, Expect } from '@milaboratories/helpers';
-import type { BlockOutputsBase, ValueOrErrors } from '@platforma-sdk/model';
+import type { BlockOutputsBase, ErrorLike, ValueOrErrors } from '@platforma-sdk/model';
 import type { Component, ComputedGetter } from 'vue';
 
 export type UnwrapValueOrErrors<R extends ValueOrErrors<unknown>> = Extract<R, { ok: true }>['value'];
@@ -140,7 +140,7 @@ export type OptionalResult<T> =
   }
   | {
     value?: undefined;
-    errors: string[];
+    errors: ErrorLike[];
   };
 
 // Static tests

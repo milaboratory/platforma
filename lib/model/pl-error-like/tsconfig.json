@@ -1,0 +1,9 @@
+{
+  "extends": "@milaboratories/platforma-build-configs/tsconfig_lib_bundled.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src"
+  },
+  "include": ["src"],
+  "exclude": ["src/**/*.test.ts"]
+}

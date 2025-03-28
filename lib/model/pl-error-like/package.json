@@ -1,21 +1,22 @@
 {
-  "name": "@milaboratories/computable",
-  "version": "2.4.1",
-  "description": "Watcher / Computable Abstraction",
+  "name": "@milaboratories/pl-error-like",
+  "version": "1.11.1",
+  "description": "Platforma SDK Model",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "require": "./dist/index.js",
-      "import": "./dist/index.mjs"
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
     }
   },
   "scripts": {
     "type-check": "tsc --noEmit --composite false",
     "build": "vite build",
-    "test": "jest --runInBand",
+    "lint": "eslint .",
+    "test": "vitest",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "files": [
@@ -23,19 +24,16 @@
     "./src/**/*"
   ],
   "dependencies": {
-    "@milaboratories/ts-helpers": "workspace:^",
-    "@milaboratories/pl-error-like": "workspace:^",
-    "@types/node": "catalog:",
-    "utility-types": "catalog:",
-    "zod": "catalog:"
+    "zod": "catalog:",
+    "canonicalize": "catalog:",
+    "pretty-format": "catalog:"
   },
   "devDependencies": {
     "@milaboratories/platforma-build-configs": "workspace:*",
+    "@platforma-sdk/eslint-config": "workspace:*",
+    "eslint": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
-    "@types/jest": "catalog:",
-    "jest": "catalog:",
-    "@jest/globals": "catalog:",
-    "ts-jest": "catalog:"
+    "vitest": "catalog:"
   }
 }

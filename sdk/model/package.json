@@ -25,6 +25,7 @@
   ],
   "dependencies": {
     "@milaboratories/pl-model-common": "workspace:^",
+    "@milaboratories/pl-error-like": "workspace:^",
     "utility-types": "catalog:",
     "zod": "catalog:"
   },

@@ -1,8 +1,9 @@
 import { BlockOutputsBase, ValueOrErrors } from '@milaboratories/pl-model-common';
+import { ErrorLike } from '@milaboratories/pl-error-like';
 
 export class OutputError extends Error {
   constructor(
-    public readonly errors: string[],
+    public readonly errors: ErrorLike[],
     public readonly moreErrors: boolean
   ) {
     super(`${errors.length}${moreErrors ? '+' : ''} errors, first error: ` + errors[0]);
