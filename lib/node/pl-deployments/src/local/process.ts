@@ -1,5 +1,5 @@
-import type { SpawnOptions, ChildProcess } from 'child_process';
-import { spawn } from 'child_process';
+import type { SpawnOptions, ChildProcess } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import type { MiLogger } from '@milaboratories/ts-helpers';
 import { sleep } from '@milaboratories/ts-helpers';
 
@@ -18,11 +18,12 @@ wd: ${opts.opts.cwd}`);
   return spawn(opts.cmd, opts.args, opts.opts);
 }
 
+// eslint-disable-next-line @typescript-eslint/require-await
 export async function isProcessAlive(pid: number) {
   try {
     process.kill(pid, 0);
     return true;
-  } catch (e) {
+  } catch (_e) {
     return false;
   }
 }

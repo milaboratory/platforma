@@ -7,8 +7,9 @@
  *
  */
 
-import { FutureFieldType, ResourceType } from '../core/types';
-import { AnyRef, field, FieldRef, PlTransaction, ResourceRef } from '../core/transaction';
+import type { FutureFieldType, ResourceType } from '../core/types';
+import type { AnyRef, FieldRef, PlTransaction, ResourceRef } from '../core/transaction';
+import { field } from '../core/transaction';
 
 function rt(name: string, version: string): ResourceType {
   return { name, version };
@@ -69,14 +70,14 @@ export type PlRecord<Key extends string = string, Ref extends AnyRef = AnyRef> =
 
 export function plEntry<Key extends string = string, Ref extends AnyRef = AnyRef>(
   key: Key,
-  ref: Ref
+  ref: Ref,
 ): PlRecordEntry<Key, Ref> {
   return [key, ref];
 }
 
 export function plEntries<Key extends string = string, Ref extends AnyRef = AnyRef>(
   record: PlRecord<Key, Ref>,
-  fields?: Key[]
+  fields?: Key[],
 ): PlRecordEntry<Key, Ref>[] {
   return fields === undefined
     ? (Object.entries(record) as PlRecordEntry<Key, Ref>[])
@@ -88,7 +89,7 @@ export function createPlMap(
   tx: PlTransaction,
   entries: PlRecordEntry[] | PlRecord,
   ephemeral: boolean,
-  type?: ResourceType
+  type?: ResourceType,
 ): ResourceRef {
   const actualType = type ?? (ephemeral ? EphStdMap : StdMap);
   const rId = ephemeral ? tx.createEphemeral(actualType) : tx.createStruct(actualType);
@@ -106,10 +107,10 @@ export function futureRecord<Key extends string>(
   rId: AnyRef,
   keys: Key[],
   fieldType: FutureFieldType,
-  prefix: string = ''
+  prefix: string = '',
 ): PlRecord<Key, FieldRef> {
   return Object.fromEntries(
-    keys.map((k) => plEntry(k, tx.getFutureFieldValue(rId, `${prefix}${k}`, fieldType)))
+    keys.map((k) => plEntry(k, tx.getFutureFieldValue(rId, `${prefix}${k}`, fieldType))),
   ) as PlRecord<Key, FieldRef>;
 }
 

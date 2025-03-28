@@ -41,7 +41,7 @@ export type LocalPlConfigGeneratorOptions = {
 
 const DefaultLocalPlConfigGeneratorOptions: Pick<LocalPlConfigGeneratorOptions, 'useGlobalAccess'> = {
   useGlobalAccess: false,
-}
+};
 
 /** Defines which storages from pl are available via local paths */
 export type LocalStorageProjection = {
@@ -92,7 +92,7 @@ export async function generateLocalPlConfigs(
   const opts: LocalPlConfigGeneratorOptions = {
     ...DefaultLocalPlConfigGeneratorOptions,
     ...options,
-  }
+  };
 
   const workdir = upath.resolve(opts.workingDir);
 

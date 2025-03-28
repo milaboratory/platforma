@@ -1,4 +1,4 @@
-import fs from 'fs/promises';
+import fs from 'node:fs/promises';
 import upath from 'upath';
 import type { PlAuthDriver } from './types';
 

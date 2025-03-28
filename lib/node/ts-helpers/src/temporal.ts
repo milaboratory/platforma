@@ -1,5 +1,5 @@
 import * as tp from 'node:timers/promises';
-import { MiLogger } from './log';
+import type { MiLogger } from './log';
 
 export class Aborted extends Error {
   constructor(ops?: { cause?: unknown; msg?: string }) {
@@ -11,7 +11,7 @@ export class Aborted extends Error {
 export async function sleep(timeout: number, abortSignal?: AbortSignal): Promise<void> {
   try {
     await tp.setTimeout(timeout, undefined, { signal: abortSignal });
-  } catch (e: any) {
+  } catch (_e) {
     throw new Aborted({ cause: abortSignal?.reason });
   }
 }
@@ -19,7 +19,7 @@ export async function sleep(timeout: number, abortSignal?: AbortSignal): Promise
 export async function withTimeout<T>(
   targetPromise: Promise<T>,
   timeout: number,
-  ops?: { msg?: string; logger?: MiLogger }
+  ops?: { msg?: string; logger?: MiLogger },
 ): Promise<T> {
   let timeoutId: NodeJS.Timeout | undefined = undefined;
 
@@ -29,7 +29,7 @@ export async function withTimeout<T>(
         // resetting timeoutId, signaling the fact that we are in the timeout branch
         timeoutId = undefined;
         reject(new Aborted({ msg: ops?.msg ?? `Timeout after: ${timeout}ms` }));
-      }, timeout))
+      }, timeout)),
   );
 
   try {
@@ -37,7 +37,7 @@ export async function withTimeout<T>(
   } catch (e: unknown) {
     if (e instanceof Aborted && timeoutId === undefined && ops?.logger)
       // if user provided logger, we prevent abundand promise to throw unhandled rejection
-      targetPromise.catch((err) => ops!.logger!.warn(err));
+      targetPromise.catch((err) => ops.logger!.warn(err));
     throw e;
   } finally {
     if (timeoutId) clearTimeout(timeoutId);
@@ -97,15 +97,15 @@ export function createRetryState(options: RetryOptions): RetryState {
     nextDelay: options.initialDelay,
     totalDelay: options.initialDelay,
     startTimestamp: Date.now(),
-    attemptsLeft: options.maxAttempts - 1
+    attemptsLeft: options.maxAttempts - 1,
   };
 }
 
 export function tryNextRetryState(previous: RetryState): RetryState | undefined {
   if (previous.attemptsLeft <= 0) return undefined;
 
-  let delayDelta =
-    previous.options.type == 'linearBackoff'
+  let delayDelta
+    = previous.options.type == 'linearBackoff'
       ? previous.options.backoffStep
       : previous.nextDelay * (previous.options.backoffMultiplier - 1);
   delayDelta += delayDelta * previous.options.jitter * 2 * (Math.random() - 0.5);
@@ -115,7 +115,7 @@ export function tryNextRetryState(previous: RetryState): RetryState | undefined 
     nextDelay: previous.nextDelay + delayDelta,
     startTimestamp: previous.startTimestamp,
     totalDelay: previous.totalDelay + previous.nextDelay + delayDelta,
-    attemptsLeft: previous.attemptsLeft - 1
+    attemptsLeft: previous.attemptsLeft - 1,
   };
 }
 
@@ -123,9 +123,9 @@ export function nextRetryStateOrError(previous: RetryState): RetryState {
   const next = tryNextRetryState(previous);
   if (next === undefined)
     throw new Error(
-      `max number of attempts reached (${previous.options.maxAttempts}): ` +
-        `total time = ${msToHumanReadable(Date.now() - previous.startTimestamp)}, ` +
-        `total delay = ${msToHumanReadable(previous.totalDelay)}`
+      `max number of attempts reached (${previous.options.maxAttempts}): `
+      + `total time = ${msToHumanReadable(Date.now() - previous.startTimestamp)}, `
+      + `total delay = ${msToHumanReadable(previous.totalDelay)}`,
     );
   return next;
 }
@@ -150,7 +150,7 @@ export const Retry2Times: RetryOptions = {
   maxAttempts: 2,
   initialDelay: 1,
   backoffMultiplier: 2,
-  jitter: 0.2
+  jitter: 0.2,
 };
 
 export const Retry2TimesWithDelay: RetryOptions = {
@@ -158,7 +158,7 @@ export const Retry2TimesWithDelay: RetryOptions = {
   maxAttempts: 2,
   initialDelay: 300,
   backoffMultiplier: 2,
-  jitter: 0.2
+  jitter: 0.2,
 };
 
 export const Retry3Times: RetryOptions = {
@@ -166,7 +166,7 @@ export const Retry3Times: RetryOptions = {
   maxAttempts: 3,
   initialDelay: 1,
   backoffMultiplier: 2,
-  jitter: 0.2
+  jitter: 0.2,
 };
 
 export const Retry3TimesWithDelay: RetryOptions = {
@@ -174,13 +174,13 @@ export const Retry3TimesWithDelay: RetryOptions = {
   maxAttempts: 3,
   initialDelay: 200,
   backoffMultiplier: 2,
-  jitter: 0.2
+  jitter: 0.2,
 };
 
 export async function retry<T>(
   cb: () => Promise<T>,
   ops: RetryOptions,
-  recoverablePredicate: (e: any) => boolean = () => true
+  recoverablePredicate: (e: any) => boolean = () => true,
 ): Promise<T> {
   let retryState = createRetryState(ops);
   while (true) {
@@ -210,7 +210,7 @@ export function createInfiniteRetryState(options: InfiniteRetryOptions): Infinit
     options,
     nextDelay: options.initialDelay,
     totalDelay: options.initialDelay,
-    startTimestamp: Date.now()
+    startTimestamp: Date.now(),
   };
 }
 
@@ -225,15 +225,15 @@ export function nextInfiniteRetryState(previous: InfiniteRetryState): InfiniteRe
     options: previous.options,
     nextDelay,
     startTimestamp: previous.startTimestamp,
-    totalDelay: previous.totalDelay + previous.nextDelay + delayDelta
+    totalDelay: previous.totalDelay + previous.nextDelay + delayDelta,
   };
 }
 
 export function msToHumanReadable(ms: number): string {
-  let seconds = ms / 1000;
-  let minutes = ms / (1000 * 60);
-  let hours = ms / (1000 * 60 * 60);
-  let days = ms / (1000 * 60 * 60 * 24);
+  const seconds = ms / 1000;
+  const minutes = ms / (1000 * 60);
+  const hours = ms / (1000 * 60 * 60);
+  const days = ms / (1000 * 60 * 60 * 24);
   if (ms < 1000) return `${ms}ms`;
   if (seconds < 120) return `${seconds.toPrecision(3)}s`;
   else if (minutes < 120) return `${minutes.toPrecision(3)}m`;

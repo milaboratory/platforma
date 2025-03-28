@@ -1,8 +1,8 @@
 import upath from 'upath';
-import os from 'os';
+import os from 'node:os';
 import { assertNever, fileExists } from '@milaboratories/ts-helpers';
 import type { PlLicenseSettings } from './types';
-import * as fs from 'fs/promises';
+import * as fs from 'node:fs/promises';
 
 /** How to get a license. */
 export type PlLicenseMode = PlLicenseEnv | PlLicensePlain;

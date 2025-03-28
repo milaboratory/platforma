@@ -612,9 +612,10 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
             return (fn as any)(...args);
           } catch (e: unknown) {
             const newErr = this.errorRepo.setAndRecreateForQuickJS(e);
+            // eslint-disable-next-line @typescript-eslint/only-throw-error
             throw this.vm.newError(newErr);
           }
-        }
+        };
 
         this.vm.newFunction(name, withCachedError).consume((fnh) => this.vm.setProp(configCtx, name, fnh));
         this.vm.newFunction(name, fn).consume((fnh) => this.vm.setProp(configCtx, name + '__internal__', fnh));
