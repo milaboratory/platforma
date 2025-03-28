@@ -1,5 +1,4 @@
 import { notEmpty } from '@milaboratories/ts-helpers';
-import { version } from 'ts-jest/dist/transformers/hoist-jest';
 
 // more details here: https://egghead.io/blog/using-branded-types-in-typescript
 declare const __resource_id_type__: unique symbol;
@@ -101,7 +100,7 @@ export function extractBasicResourceData(rd: ResourceData): BasicResourceData {
     inputsLocked,
     outputsLocked,
     resourceReady,
-    final
+    final,
   } = rd;
   return {
     id,
@@ -113,7 +112,7 @@ export function extractBasicResourceData(rd: ResourceData): BasicResourceData {
     inputsLocked,
     outputsLocked,
     resourceReady,
-    final
+    final,
   };
 }
 
@@ -172,19 +171,19 @@ export function isLocalResourceId(id: bigint): id is LocalResourceId {
 export function createLocalResourceId(
   isRoot: boolean,
   localCounterValue: number,
-  localTxId: number
+  localTxId: number,
 ): LocalResourceId {
   if (
-    localCounterValue > MaxLocalId ||
-    localTxId > MaxTxId ||
-    localCounterValue < 0 ||
-    localTxId <= 0
+    localCounterValue > MaxLocalId
+    || localTxId > MaxTxId
+    || localCounterValue < 0
+    || localTxId <= 0
   )
     throw Error('wrong local id or tx id');
-  return ((isRoot ? ResourceIdRootMask : 0n) |
-    ResourceIdLocalMask |
-    BigInt(localCounterValue) |
-    (BigInt(localTxId) << LocalResourceIdTxIdOffset)) as LocalResourceId;
+  return ((isRoot ? ResourceIdRootMask : 0n)
+    | ResourceIdLocalMask
+    | BigInt(localCounterValue)
+    | (BigInt(localTxId) << LocalResourceIdTxIdOffset)) as LocalResourceId;
 }
 
 export function createGlobalResourceId(isRoot: boolean, unmaskedId: bigint): ResourceId {
@@ -199,7 +198,7 @@ export function checkLocalityOfResourceId(resourceId: AnyResourceId, expectedTxI
   if (!isLocalResourceId(resourceId)) return;
   if (extractTxId(resourceId) !== expectedTxId)
     throw Error(
-      'local id from another transaction, globalize id before leaking it from the transaction'
+      'local id from another transaction, globalize id before leaking it from the transaction',
     );
 }
 
@@ -207,23 +206,23 @@ export function resourceIdToString(resourceId: OptionalAnyResourceId): string {
   if (isNullResourceId(resourceId)) return 'XX:0x0';
   if (isLocalResourceId(resourceId))
     return (
-      (isRootResourceId(resourceId) ? 'R' : 'N') +
-      'L:0x' +
-      (LocalIdMask & resourceId).toString(16) +
-      '[0x' +
-      extractTxId(resourceId).toString(16) +
-      ']'
+      (isRootResourceId(resourceId) ? 'R' : 'N')
+      + 'L:0x'
+      + (LocalIdMask & resourceId).toString(16)
+      + '[0x'
+      + extractTxId(resourceId).toString(16)
+      + ']'
     );
   else
     return (
-      (isRootResourceId(resourceId) ? 'R' : 'N') +
-      'G:0x' +
-      (NoFlagsIdMask & resourceId).toString(16)
+      (isRootResourceId(resourceId) ? 'R' : 'N')
+      + 'G:0x'
+      + (NoFlagsIdMask & resourceId).toString(16)
     );
 }
 
-const resourceIdRegexp =
-  /^(?:(?<xx>XX)|(?<rn>[XRN])(?<lg>[XLG])):0x(?<rid>[0-9a-fA-F]+)(?:\[0x(?<txid>[0-9a-fA-F]+)])?$/;
+const resourceIdRegexp
+  = /^(?:(?<xx>XX)|(?<rn>[XRN])(?<lg>[XLG])):0x(?<rid>[0-9a-fA-F]+)(?:\[0x(?<txid>[0-9a-fA-F]+)])?$/;
 
 export function resourceIdFromString(str: string): OptionalAnyResourceId | undefined {
   const match = str.match(resourceIdRegexp);
@@ -243,8 +242,8 @@ export function bigintToResourceId(resourceId: bigint): ResourceId {
   return resourceId as ResourceId;
 }
 
-export function stringifyWithResourceId(object: unknown | undefined): string {
+export function stringifyWithResourceId(object: unknown): string {
   return JSON.stringify(object, (key, value) =>
-    typeof value === 'bigint' ? resourceIdToString(value as OptionalAnyResourceId) : value
+    typeof value === 'bigint' ? resourceIdToString(value as OptionalAnyResourceId) : value,
   );
 }

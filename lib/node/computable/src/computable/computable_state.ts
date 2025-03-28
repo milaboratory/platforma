@@ -1,17 +1,21 @@
-import {
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+import type {
   ComputableKernel,
   IntermediateRenderingResult,
   ComputableCtx,
+  CellRenderingOps,
+} from './kernel';
+import {
   tryExtractComputableKernel,
   containComputables,
-  CellRenderingOps
 } from './kernel';
 import { HierarchicalWatcher } from '../hierarchical_watcher';
-import { Writable } from 'utility-types';
-import { ComputableHooks } from './computable_hooks';
-import { Watcher } from '../watcher';
+import type { Writable } from 'utility-types';
+import type { ComputableHooks } from './computable_hooks';
+import type { Watcher } from '../watcher';
 import { setImmediate } from 'node:timers';
-import { AccessorLeakException, AccessorProvider, UsageGuard } from './accessor_provider';
+import type { AccessorProvider, UsageGuard } from './accessor_provider';
+import { AccessorLeakException } from './accessor_provider';
 import * as console from 'node:console';
 import { withTimeout } from '@milaboratories/ts-helpers';
 
@@ -20,14 +24,14 @@ interface ExecutionError {
 }
 
 function isExecutionError(
-  r: IntermediateRenderingResult<unknown, unknown> | ExecutionError
+  r: IntermediateRenderingResult<unknown, unknown> | ExecutionError,
 ): r is ExecutionError {
   return 'error' in r;
 }
 
 /** To prevent leaking of other fields */
 export function cleanIntermediateRenderingResult<IR, T>(
-  r: IntermediateRenderingResult<IR, T>
+  r: IntermediateRenderingResult<IR, T>,
 ): IntermediateRenderingResult<IR, T> {
   const { ir, postprocessValue, recover } = r;
   return { ir, postprocessValue, ...(recover !== undefined && { recover }) };
@@ -42,7 +46,7 @@ class CellComputableContext implements ComputableCtx {
   public unstableMarker?: string;
   private kv?: Map<string, unknown>;
   /** Must be reset to "undefined", to only accumulate those observers injected
-   * during a specific call*/
+   * during a specific call */
   public hooks: Set<ComputableHooks> | undefined = undefined;
 
   private checkForLeak() {
@@ -79,7 +83,7 @@ class CellComputableContext implements ComputableCtx {
     else this.currentOnDestroy.push(cb);
   }
 
-  get(key: string): unknown | undefined {
+  get(key: string): unknown {
     this.checkForLeak();
     if (this.kv === undefined) return undefined;
     this.kv.get(key);
@@ -288,7 +292,7 @@ function addChildren(node: unknown, children: Children) {
 }
 
 function getChildren(
-  iResult: IntermediateRenderingResult<unknown, unknown> | ExecutionError
+  iResult: IntermediateRenderingResult<unknown, unknown> | ExecutionError,
 ): Children {
   if (isExecutionError(iResult)) return new Map();
   const children: Children = new Map();
@@ -322,14 +326,14 @@ async function runPostprocessing<IR, T>(
   childrenStates: ChildrenStates,
   unstableMarker: string | undefined,
   stable: boolean,
-  ops: CellRenderingOps
+  ops: CellRenderingOps,
 ): Promise<T> {
   const iv = calculateNodeValue(iResult.ir, childrenStates);
   if (iResult.postprocessValue === undefined) return iv;
   else if (ops.postprocessTimeout > 0)
     return await withTimeout(
       Promise.resolve(iResult.postprocessValue(iv, { stable, unstableMarker })),
-      ops.postprocessTimeout
+      ops.postprocessTimeout,
     );
   else return await iResult.postprocessValue(iv, { stable, unstableMarker });
 }
@@ -349,7 +353,7 @@ async function fillCellValue<T>(state: Writable<CellState<T>>, previousValue?: T
             state.childrenStates,
             state.unstableMarker,
             state.stable,
-            ops
+            ops,
           );
         } catch (e: unknown) {
           // Adding postprocess error
@@ -379,7 +383,7 @@ async function fillCellValue<T>(state: Writable<CellState<T>>, previousValue?: T
 
 function renderSelfState<T>(
   kernel: ComputableKernel<T>,
-  ctx: CellComputableContext = new CellComputableContext()
+  ctx: CellComputableContext = new CellComputableContext(),
 ): SelfCellState<T> {
   // Creating self watcher, to inject it into rendering process
   const selfWatcher = new HierarchicalWatcher();
@@ -417,7 +421,7 @@ export function destroyState(_state: CellState<unknown>) {
 function calculateChildren(
   children: Children,
   fromStableSelfState: boolean,
-  cachedChildrenStates?: ChildrenStates
+  cachedChildrenStates?: ChildrenStates,
 ): ChildrenStates {
   // Tracking which children we transferred to a new state
   const transferred = new Set<string | symbol>();
@@ -432,14 +436,14 @@ function calculateChildren(
       result.set(key, {
         state: updateCellStateWithoutValue(existingState.state),
         fromStableSelfState: existingState.fromStableSelfState || fromStableSelfState,
-        orphan: false
+        orphan: false,
       });
       transferred.add(key);
     } else
       result.set(key, {
         state: createCellStateWithoutValue(child),
         fromStableSelfState: fromStableSelfState,
-        orphan: false
+        orphan: false,
       });
   }
 
@@ -474,7 +478,7 @@ function calculateChildren(
 
 function finalizeCellState<T>(
   incompleteState: IncompleteCellState<T>,
-  previousValue?: unknown
+  previousValue?: unknown,
 ): CellState<T> {
   const nestedWatchers: HierarchicalWatcher[] = [];
   // const allErrors: unknown[] = [];
@@ -515,7 +519,7 @@ function finalizeCellState<T>(
 
     // next two fields will be rewritten on the second rendering stage
     valueNotCalculated: true,
-    value: previousValue
+    value: previousValue,
   };
 }
 
@@ -525,7 +529,7 @@ async function calculateValue<T>(state_: CellState<T>): Promise<void> {
   await Promise.all(
     [...state_.childrenStates.values()]
       .filter(({ orphan }) => !orphan)
-      .map(({ state }) => calculateValue(state))
+      .map(({ state }) => calculateValue(state)),
   );
 
   // collecting errors after all postProcessing steps are executed for out children
@@ -569,7 +573,7 @@ export async function createCellState<T>(core: ComputableKernel<T>): Promise<Cel
 /** First (sync) stage of rendering pipeline */
 export function updateCellStateWithoutValue<T>(cell: CellState<T>): CellState<T> {
   // checking the chaining rule
-  if (!cell.isLatest) throw new Error("Can't update state, that was already updated.");
+  if (!cell.isLatest) throw new Error('Can\'t update state, that was already updated.');
 
   // checking any changes were registered for the
   if (!cell.watcher.isChanged) return cell;

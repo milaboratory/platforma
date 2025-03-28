@@ -1,14 +1,10 @@
-import { MiLogger } from '../log';
-import {
+import type { MiLogger } from '../log';
+import type {
   ExponentialWithMaxBackoffDelayRetryOptions,
-  InfiniteRetryOptions,
-  LinearBackoffRetryOptions,
-  RetryOptions,
+  InfiniteRetryOptions } from '../temporal';
+import {
   createInfiniteRetryState,
-  createRetryState,
   nextInfiniteRetryState,
-  nextRetryStateOrError,
-  tryNextRetryState
 } from '../temporal';
 import { AsyncQueue } from './async_queue';
 import { scheduler } from 'node:timers/promises';
@@ -37,8 +33,8 @@ export class TaskProcessor {
       initialDelay: 1,
       maxDelay: 15000, // 15 seconds
       backoffMultiplier: 1.5,
-      jitter: 0.5
-    }
+      jitter: 0.5,
+    },
   ) {
     this.backoffOptionsPerWorker = backoffOptions;
     this.backoffOptionsPerWorker.maxDelay *= numberOfWorkers;
@@ -74,17 +70,19 @@ export class TaskProcessor {
       } catch (e: any) {
         if (task.recoverableErrorPredicate(e)) {
           this.logger.warn(
-            `recoverable error in a task processor: ${String(e)},` +
-              ` worker ${id} will wait for ${retry.nextDelay} ms.`
+            `recoverable error in a task processor: ${String(e)},`
+            + ` worker ${id} will wait for ${retry.nextDelay} ms.`,
           );
           this.queue.push(task);
           retry = nextInfiniteRetryState(retry);
+          // TODO: still experimental in node 20
+          // eslint-disable-next-line n/no-unsupported-features/node-builtins
           await scheduler.wait(retry.nextDelay);
 
           continue;
         }
         this.logger.warn(
-          `non-recoverable error in a task processor, the task will be dropped: ${String(e)}`
+          `non-recoverable error in a task processor, the task will be dropped: ${String(e)}`,
         );
       }
     }

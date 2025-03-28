@@ -1,8 +1,9 @@
 import * as tp from 'node:timers/promises';
-import { ConsoleLoggerAdapter, MiLogger } from '@milaboratories/ts-helpers';
-import { ComputableHooks } from '../computable/computable_hooks';
+import type { MiLogger } from '@milaboratories/ts-helpers';
+import { ConsoleLoggerAdapter } from '@milaboratories/ts-helpers';
+import type { ComputableHooks } from '../computable/computable_hooks';
 import { Computable } from '../computable/computable';
-import { ComputableCtx, UnwrapComputables } from '../computable/kernel';
+import type { UnwrapComputables } from '../computable/kernel';
 import { HierarchicalWatcher } from '../hierarchical_watcher';
 import { ChangeSource } from '../change_source';
 
@@ -30,7 +31,7 @@ export class PollPool<A extends PollActor = PollActor> {
 
   constructor(
     private readonly ops: PollPoolOps,
-    private readonly logger: MiLogger = new ConsoleLoggerAdapter()
+    private readonly logger: MiLogger = new ConsoleLoggerAdapter(),
   ) {
     this.mainLoopHandle = this.mainLoop();
   }
@@ -52,8 +53,8 @@ export class PollPool<A extends PollActor = PollActor> {
           }
 
           if (
-            actor.pollPauseRequest !== undefined &&
-            wrapper.lastPauseRequest === actor.pollPauseRequest
+            actor.pollPauseRequest !== undefined
+            && wrapper.lastPauseRequest === actor.pollPauseRequest
           )
             continue;
 
@@ -75,7 +76,7 @@ export class PollPool<A extends PollActor = PollActor> {
           // awaiting at least one of the actors to change pause request
           try {
             await watcher.awaitChange(this.terminateController.signal);
-          } catch (e) {
+          } catch (_e) {
             // will terminate on next iteration
           }
 
@@ -102,7 +103,9 @@ export class PollPool<A extends PollActor = PollActor> {
         try {
           const delay = Math.max(0, this.ops.minDelay - (Date.now() - begin));
           await tp.setTimeout(delay, undefined, { signal: this.terminateController.signal });
-        } catch {}
+        } catch (_e) {
+          // will terminate on next iteration
+        }
       }
     } catch (err: unknown) {
       this.logger.error(err);
@@ -206,11 +209,11 @@ class PollPoolPauseComputableAdapter implements ComputableHooks {
     this.pollPauseRequestChange.markChanged();
   }
 
-  public onChangedRequest(instance: Computable<unknown>): void {
+  public onChangedRequest(_instance: Computable<unknown>): void {
     this.refreshPauseRequestIfNeeded();
   }
 
-  public onGetValue(instance: Computable<unknown>): void {
+  public onGetValue(_instance: Computable<unknown>): void {
     this.refreshPauseRequestIfNeeded();
   }
 
@@ -227,7 +230,7 @@ class PollPoolPauseComputableAdapter implements ComputableHooks {
     this.refreshPauseRequestIfNeeded();
   }
 
-  public refreshState(instance: Computable<unknown>): Promise<void> {
+  public refreshState(_instance: Computable<unknown>): Promise<void> {
     if (this.refreshListeners === undefined) this.refreshListeners = [];
     const result = new Promise<void>((resolve, reject) => {
       this.refreshListeners!.push({ resolve, reject });
@@ -250,7 +253,7 @@ export abstract class PollComputablePool<Req, Res> {
 
   protected constructor(
     ops: PollPoolOps,
-    protected readonly logger: MiLogger = new ConsoleLoggerAdapter()
+    protected readonly logger: MiLogger = new ConsoleLoggerAdapter(),
   ) {
     this.pool = new PollPool(ops, logger);
   }
@@ -267,6 +270,7 @@ export abstract class PollComputablePool<Req, Res> {
 
   private createEntry(req: Req): PollComputablePoolEntry<Res> {
     // const watcher = new HierarchicalWatcher();
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
     const parent = this;
     return new (class implements PollComputablePoolEntry<Res> {
       value: Res | undefined = undefined;
@@ -288,11 +292,11 @@ export abstract class PollComputablePool<Req, Res> {
         try {
           const newValue = await parent.readValue(req);
           if (
-            this.error !== undefined ||
-            ((newValue !== undefined || this.value !== undefined) &&
-              (newValue === undefined ||
-                this.value === undefined ||
-                !parent.resultsEqual(this.value, newValue)))
+            this.error !== undefined
+            || ((newValue !== undefined || this.value !== undefined)
+              && (newValue === undefined
+                || this.value === undefined
+                || !parent.resultsEqual(this.value, newValue)))
           ) {
             this.value = newValue;
             this.error = undefined;
@@ -326,10 +330,11 @@ export abstract class PollComputablePool<Req, Res> {
         ctx.attacheHooks(actor.hooks);
         actor.change.attachWatcher(ctx.watcher);
 
+        // eslint-disable-next-line @typescript-eslint/only-throw-error
         if (actor.error) throw actor.error;
         else return actor.value;
       },
-      { key }
+      { key },
     );
   }
 

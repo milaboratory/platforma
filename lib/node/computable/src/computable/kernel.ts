@@ -1,7 +1,7 @@
-import { Watcher } from '../watcher';
-import { ComputableHooks } from './computable_hooks';
-import { AccessorProvider } from './accessor_provider';
-import { Computable } from './computable';
+import type { Watcher } from '../watcher';
+import type { ComputableHooks } from './computable_hooks';
+import type { AccessorProvider } from './accessor_provider';
+import type { Computable } from './computable';
 import { assertNever } from '@milaboratories/ts-helpers';
 
 export interface ComputableCtx {
@@ -42,7 +42,7 @@ export interface ComputableCtx {
   addOnDestroy(cb: () => void): void;
 
   /** Get associated value by key */
-  get(key: string): unknown | undefined;
+  get(key: string): unknown;
 
   /** Associate value */
   set(key: string, value: unknown): void;
@@ -103,7 +103,7 @@ export interface ComputablePostProcess<IR, T> {
 /** Returned by a successful execution of rendering function */
 export interface IntermediateRenderingResult<IR, T>
   extends Partial<ComputableRecoverAction<T>>,
-    Partial<ComputablePostProcess<IR, T>> {
+  Partial<ComputablePostProcess<IR, T>> {
   /** Rendering result, may be absent if rendering result is marked with error. */
   readonly ir: IR;
 }
@@ -171,19 +171,19 @@ export function containComputables(v: unknown): boolean {
       } else if (Array.isArray(v)) {
         for (const nested of v) if (containComputables(nested)) return true;
       } else if (
-        v instanceof DataView ||
-        v instanceof Date ||
-        v instanceof Int8Array ||
-        v instanceof Uint8Array ||
-        v instanceof Uint8ClampedArray ||
-        v instanceof Int16Array ||
-        v instanceof Uint16Array ||
-        v instanceof Int32Array ||
-        v instanceof Uint32Array ||
-        v instanceof Float32Array ||
-        v instanceof Float64Array ||
-        v instanceof BigInt64Array ||
-        v instanceof BigUint64Array
+        v instanceof DataView
+        || v instanceof Date
+        || v instanceof Int8Array
+        || v instanceof Uint8Array
+        || v instanceof Uint8ClampedArray
+        || v instanceof Int16Array
+        || v instanceof Uint16Array
+        || v instanceof Int32Array
+        || v instanceof Uint32Array
+        || v instanceof Float32Array
+        || v instanceof Float64Array
+        || v instanceof BigInt64Array
+        || v instanceof BigUint64Array
       ) {
         return false;
       } else {
@@ -205,13 +205,13 @@ export type UnwrapComputables<K> =
     : K extends Computable<infer T>
       ? UnwrapComputables<T>
       : K extends
-            | bigint
-            | boolean
-            | null
-            | number
-            | string
-            | symbol
-            | undefined
-            | NoComputableInside
+      | bigint
+      | boolean
+      | null
+      | number
+      | string
+      | symbol
+      | undefined
+      | NoComputableInside
         ? K
         : { [key in keyof K]: UnwrapComputables<K[key]> };

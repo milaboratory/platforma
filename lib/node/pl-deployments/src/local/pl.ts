@@ -10,12 +10,12 @@ import type { PlBinarySource } from '../common/pl_binary';
 import { newDefaultPlBinarySource, resolveLocalPlBinaryPath } from '../common/pl_binary';
 import type { MiLogger } from '@milaboratories/ts-helpers';
 import { notEmpty } from '@milaboratories/ts-helpers';
-import type { ChildProcess, SpawnOptions } from 'child_process';
+import type { ChildProcess, SpawnOptions } from 'node:child_process';
 import { filePid, readPid, writePid } from './pid';
 import type { Trace } from './trace';
 import { withTrace } from './trace';
 import upath from 'upath';
-import fsp from 'fs/promises';
+import fsp from 'node:fs/promises';
 import type { Required } from 'utility-types';
 
 export const LocalConfigYaml = 'config-local.yaml';
@@ -53,19 +53,19 @@ export class LocalPl {
         );
 
         // keep in mind there are no awaits here, it will be asynchronous
-        if (this.onError !== undefined) this.onError(this);
-        if (this.onCloseAndError !== undefined) this.onCloseAndError(this);
+        if (this.onError !== undefined) void this.onError(this);
+        if (this.onCloseAndError !== undefined) void this.onCloseAndError(this);
         if (this.onCloseAndErrorNoStop !== undefined && !this.wasStopped)
-          this.onCloseAndErrorNoStop(this);
+          void this.onCloseAndErrorNoStop(this);
       });
       instance.on('close', () => {
         this.logger.warn(`platforma was closed, started opts: ${JSON.stringify(this.debugInfo())}`);
 
         // keep in mind there are no awaits here, it will be asynchronous
-        if (this.onClose !== undefined) this.onClose(this);
-        if (this.onCloseAndError !== undefined) this.onCloseAndError(this);
+        if (this.onClose !== undefined) void this.onClose(this);
+        if (this.onCloseAndError !== undefined) void this.onCloseAndError(this);
         if (this.onCloseAndErrorNoStop !== undefined && !this.wasStopped)
-          this.onCloseAndErrorNoStop(this);
+          void this.onCloseAndErrorNoStop(this);
       });
 
       trace('started', true);

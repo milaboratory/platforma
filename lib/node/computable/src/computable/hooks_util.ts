@@ -1,5 +1,5 @@
-import { Computable } from './computable';
-import { ComputableHooks } from './computable_hooks';
+import type { Computable } from './computable';
+import type { ComputableHooks } from './computable_hooks';
 
 export type StartStopComputableHooksOps = {
   /** How long to wait after last computable request to send stopUpdating
@@ -24,7 +24,7 @@ export class PollingComputableHooks implements ComputableHooks {
     private readonly scheduleOnNextFreshState?: (
       resolve: () => void,
       reject: (error: unknown) => void
-    ) => void
+    ) => void,
   ) {
     this.stopDebounce = ops.stopDebounce;
   }
@@ -33,10 +33,10 @@ export class PollingComputableHooks implements ComputableHooks {
 
   private scheduleStopIfNeeded(): void {
     if (
-      this.sourceActivated &&
-      this.listening.size === 0 &&
-      this.awaitingRefresh.size === 0 &&
-      this.stopCountdown === undefined
+      this.sourceActivated
+      && this.listening.size === 0
+      && this.awaitingRefresh.size === 0
+      && this.stopCountdown === undefined
     )
       this.stopCountdown = setTimeout(() => {
         this.stopUpdating();
@@ -64,7 +64,7 @@ export class PollingComputableHooks implements ComputableHooks {
     this.scheduleStopIfNeeded();
   }
 
-  onGetValue(instance: Computable<unknown>): void {
+  onGetValue(_instance: Computable<unknown>): void {
     // the same a onChangeRequest
     this.onChangedRequest();
   }
@@ -85,9 +85,11 @@ export class PollingComputableHooks implements ComputableHooks {
         (err) => {
           this.awaitingRefresh.delete(uniqueSymbol);
           this.scheduleStopIfNeeded();
+          // TODO: maybe ensure error?
+          // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors
           reject(err);
-        }
-      )
+        },
+      ),
     );
     this.awaitingRefresh.add(uniqueSymbol);
     this.startIfNeeded();

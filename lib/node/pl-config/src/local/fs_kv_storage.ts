@@ -11,8 +11,8 @@ export class FSKVStorage {
     const fullPath = upath.join(this.root, key);
     try {
       return await fsp.readFile(fullPath, { encoding: 'utf8' });
-    } catch (err: any) {
-      if (err.code == 'ENOENT') {
+    } catch (err) {
+      if (err instanceof Error && 'code' in err && err.code === 'ENOENT') {
         const value = await generator();
         const tmp = fullPath + '.tmp';
         await fsp.writeFile(tmp, value);

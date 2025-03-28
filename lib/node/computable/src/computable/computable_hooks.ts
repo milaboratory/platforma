@@ -1,4 +1,4 @@
-import { Computable } from './computable';
+import type { Computable } from './computable';
 
 /** Allows to listen for user interaction events after computable is created.
  * Can be injected by accessors, if they need to track interactions with

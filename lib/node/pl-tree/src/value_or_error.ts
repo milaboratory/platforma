@@ -1,9 +1,9 @@
 export type ValueOrError<V, E> =
   | {
-      ok: true;
-      value: V;
-    }
+    ok: true;
+    value: V;
+  }
   | {
-      ok: false;
-      error: E;
-    };
+    ok: false;
+    error: E;
+  };

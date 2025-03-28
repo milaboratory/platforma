@@ -1,11 +1,11 @@
 import type { StartedTestContainer } from 'testcontainers';
 import { GenericContainer } from 'testcontainers';
-import { writeFileSync, readFileSync, unlinkSync, existsSync } from 'fs';
-import { mkdir, rm } from 'fs/promises';
-import path from 'path';
+import { writeFileSync, readFileSync, unlinkSync, existsSync } from 'node:fs';
+import { mkdir, rm } from 'node:fs/promises';
+import path from 'node:path';
 import type { ConnectConfig } from 'ssh2';
 import ssh from 'ssh2';
-import fs from 'fs';
+import fs from 'node:fs';
 
 const SSH_PORT = [22, 3001];
 

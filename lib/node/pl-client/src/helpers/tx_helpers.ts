@@ -1,5 +1,6 @@
-import { PlTransaction } from '../core/transaction';
-import { FieldData, OptionalResourceId, isNotNullResourceId } from '../core/types';
+import type { PlTransaction } from '../core/transaction';
+import type { FieldData, OptionalResourceId } from '../core/types';
+import { isNotNullResourceId } from '../core/types';
 import { notEmpty } from '@milaboratories/ts-helpers';
 
 export interface ValErr {
@@ -12,7 +13,7 @@ export async function valErr(tx: PlTransaction, f: FieldData): Promise<ValErr> {
   const result = {
     valueId: f.value,
     errorId: f.error,
-    error: ''
+    error: '',
   };
 
   if (isNotNullResourceId(f.error)) {

@@ -5,7 +5,7 @@ export interface ValueAndError<T> {
 
 export function mapValueAndErrorIfDefined<T1, T2>(
   input: ValueAndError<T1> | undefined,
-  mapping: (v: T1) => T2
+  mapping: (v: T1) => T2,
 ): ValueAndError<T2> | undefined {
   if (input === undefined) return undefined;
   else return mapValueAndError(input, mapping);

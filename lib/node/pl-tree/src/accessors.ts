@@ -1,28 +1,30 @@
-import { PlTreeResource, PlTreeState } from './state';
-import {
+import type { PlTreeResource, PlTreeState } from './state';
+import type {
   AccessorProvider,
   ComputableCtx,
   ComputableHooks,
-  UsageGuard
+  UsageGuard,
 } from '@milaboratories/computable';
-import {
+import type {
   ResourceId,
-  resourceIdToString,
   ResourceType,
+  OptionalResourceId } from '@milaboratories/pl-client';
+import {
+  resourceIdToString,
   resourceTypesEqual,
   resourceTypeToString,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   NullResourceId,
-  OptionalResourceId,
-  stringifyWithResourceId
 } from '@milaboratories/pl-client';
-import { mapValueAndError, ValueAndError } from './value_and_error';
-import {
+import type { ValueAndError } from './value_and_error';
+import { mapValueAndError } from './value_and_error';
+import type {
   CommonFieldTraverseOps,
   FieldTraversalStep,
   GetFieldStep,
-  ResourceTraversalOps
+  ResourceTraversalOps,
 } from './traversal_ops';
-import { ValueOrError } from './value_or_error';
+import type { ValueOrError } from './value_or_error';
 import { parsePlError } from '@milaboratories/pl-errors';
 import { notEmpty } from '@milaboratories/ts-helpers';
 
@@ -38,25 +40,25 @@ export type TreeAccessorInstanceData = {
 
 export function isPlTreeEntry(obj: unknown): obj is PlTreeEntry {
   return (
-    typeof obj === 'object' &&
-    obj !== null &&
-    (obj as any)['__pl_tree_type_marker__'] === 'PlTreeEntry'
+    typeof obj === 'object'
+    && obj !== null
+    && (obj as any)['__pl_tree_type_marker__'] === 'PlTreeEntry'
   );
 }
 
 export function isPlTreeEntryAccessor(obj: unknown): obj is PlTreeEntryAccessor {
   return (
-    typeof obj === 'object' &&
-    obj !== null &&
-    (obj as any)['__pl_tree_type_marker__'] === 'PlTreeEntryAccessor'
+    typeof obj === 'object'
+    && obj !== null
+    && (obj as any)['__pl_tree_type_marker__'] === 'PlTreeEntryAccessor'
   );
 }
 
 export function isPlTreeNodeAccessor(obj: unknown): obj is PlTreeNodeAccessor {
   return (
-    typeof obj === 'object' &&
-    obj !== null &&
-    (obj as any)['__pl_tree_type_marker__'] === 'PlTreeNodeAccessor'
+    typeof obj === 'object'
+    && obj !== null
+    && (obj as any)['__pl_tree_type_marker__'] === 'PlTreeNodeAccessor'
   );
 }
 
@@ -66,13 +68,13 @@ export class PlTreeEntry implements AccessorProvider<PlTreeEntryAccessor> {
 
   constructor(
     private readonly accessorData: TreeAccessorData,
-    public readonly rid: ResourceId
+    public readonly rid: ResourceId,
   ) {}
 
   public createAccessor(ctx: ComputableCtx, guard: UsageGuard): PlTreeEntryAccessor {
     return new PlTreeEntryAccessor(this.accessorData, this.accessorData.treeProvider(), this.rid, {
       ctx,
-      guard
+      guard,
     });
   }
 
@@ -90,13 +92,13 @@ function getResourceFromTree(
   tree: PlTreeState,
   instanceData: TreeAccessorInstanceData,
   rid: ResourceId,
-  ops: ResourceTraversalOps
+  ops: ResourceTraversalOps,
 ): PlTreeNodeAccessor {
   const acc = new PlTreeNodeAccessor(
     accessorData,
     tree,
     tree.get(instanceData.ctx.watcher, rid),
-    instanceData
+    instanceData,
   );
 
   if (!ops.ignoreError) {
@@ -106,13 +108,14 @@ function getResourceFromTree(
   }
 
   if (
-    ops.assertResourceType !== undefined &&
-    (Array.isArray(ops.assertResourceType)
+    ops.assertResourceType !== undefined
+    && (Array.isArray(ops.assertResourceType)
       ? ops.assertResourceType.findIndex((rt) => resourceTypesEqual(rt, acc.resourceType)) === -1
       : !resourceTypesEqual(ops.assertResourceType, acc.resourceType))
   )
     throw new Error(
-      `wrong resource type ${resourceTypeToString(acc.resourceType)} but expected ${ops.assertResourceType}`
+      // eslint-disable-next-line @typescript-eslint/no-base-to-string
+      `wrong resource type ${resourceTypeToString(acc.resourceType)} but expected ${ops.assertResourceType}`,
     );
 
   return acc;
@@ -125,7 +128,7 @@ export class PlTreeEntryAccessor {
     private readonly accessorData: TreeAccessorData,
     private readonly tree: PlTreeState,
     private readonly rid: ResourceId,
-    private readonly instanceData: TreeAccessorInstanceData
+    private readonly instanceData: TreeAccessorInstanceData,
   ) {}
 
   node(ops: ResourceTraversalOps = {}): PlTreeNodeAccessor {
@@ -171,7 +174,7 @@ export class PlTreeNodeAccessor {
     private readonly accessorData: TreeAccessorData,
     private readonly tree: PlTreeState,
     private readonly resource: PlTreeResource,
-    private readonly instanceData: TreeAccessorInstanceData
+    private readonly instanceData: TreeAccessorInstanceData,
   ) {}
 
   public get id(): ResourceId {
@@ -201,7 +204,7 @@ export class PlTreeNodeAccessor {
     ...steps: [
       Omit<FieldTraversalStep, 'errorIfFieldNotSet'> & {
         errorIfFieldNotSet: true;
-      }
+      },
     ]
   ): PlTreeNodeAccessor;
   public traverse(...steps: (FieldTraversalStep | string)[]): PlTreeNodeAccessor | undefined;
@@ -213,7 +216,7 @@ export class PlTreeNodeAccessor {
     ...steps: [
       Omit<FieldTraversalStep, 'errorIfFieldNotSet'> & {
         errorIfFieldNotSet: true;
-      }
+      },
     ]
   ): ValueOrError<PlTreeNodeAccessor, string>;
   public traverseOrError(
@@ -231,6 +234,7 @@ export class PlTreeNodeAccessor {
   ): PlTreeNodeAccessor | undefined {
     const result = this.traverseOrErrorWithCommon(commonOptions, ...steps);
     if (result === undefined) return undefined;
+    // eslint-disable-next-line @typescript-eslint/only-throw-error
     if (!result.ok) throw result.error;
     return result.value;
   }
@@ -239,14 +243,15 @@ export class PlTreeNodeAccessor {
     commonOptions: CommonFieldTraverseOps,
     ...steps: (FieldTraversalStep | string)[]
   ): ValueOrError<PlTreeNodeAccessor, string> | undefined {
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
     let current: PlTreeNodeAccessor = this;
 
     for (const _step of steps) {
-      const step: FieldTraversalStep =
-        typeof _step === 'string'
+      const step: FieldTraversalStep
+        = typeof _step === 'string'
           ? {
               ...commonOptions,
-              field: _step
+              field: _step,
             }
           : { ...commonOptions, ..._step };
 
@@ -392,7 +397,7 @@ export class PlTreeNodeAccessor {
 
   public getKeyValueAsJson<T = unknown>(
     key: string,
-    unstableIfNotFound: boolean = false
+    unstableIfNotFound: boolean = false,
   ): T | undefined {
     const result = this.resource.getKeyValueString(this.instanceData.ctx.watcher, key);
     if (result === undefined) {

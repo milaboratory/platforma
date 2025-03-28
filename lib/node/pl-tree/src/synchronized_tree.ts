@@ -1,22 +1,27 @@
 import { PollingComputableHooks } from '@milaboratories/computable';
 import { PlTreeEntry } from './accessors';
-import {
+import type {
   FinalResourceDataPredicate,
-  isTimeoutOrCancelError,
   PlClient,
   ResourceId,
-  TxOps
+  TxOps,
 } from '@milaboratories/pl-client';
-import { ExtendedResourceData, PlTreeState, TreeStateUpdateError } from './state';
+import {
+  isTimeoutOrCancelError,
+} from '@milaboratories/pl-client';
+import type { ExtendedResourceData } from './state';
+import { PlTreeState, TreeStateUpdateError } from './state';
+import type {
+  PruningFunction,
+  TreeLoadingStat,
+} from './sync';
 import {
   constructTreeLoadingRequest,
   initialTreeLoadingStat,
   loadTreeState,
-  PruningFunction,
-  TreeLoadingStat
 } from './sync';
 import * as tp from 'node:timers/promises';
-import { MiLogger } from '@milaboratories/ts-helpers';
+import type { MiLogger } from '@milaboratories/ts-helpers';
 
 type StatLoggingMode = 'cumulative' | 'per-request';
 
@@ -58,7 +63,7 @@ export class SynchronizedTreeState {
     private readonly pl: PlClient,
     private readonly root: ResourceId,
     ops: SynchronizedTreeOps,
-    private readonly logger?: MiLogger
+    private readonly logger?: MiLogger,
   ) {
     const { finalPredicateOverride, pruning, pollingInterval, stopPollingDelay, logStat } = ops;
     this.pruning = pruning;
@@ -70,7 +75,7 @@ export class SynchronizedTreeState {
       () => this.startUpdating(),
       () => this.stopUpdating(),
       { stopDebounce: stopPollingDelay },
-      (resolve, reject) => this.scheduleOnNextState(resolve, reject)
+      (resolve, reject) => this.scheduleOnNextState(resolve, reject),
     );
   }
 
@@ -231,24 +236,24 @@ export class SynchronizedTreeState {
     pl: PlClient,
     root: ResourceId,
     ops: SynchronizedTreeOps,
-    logger?: MiLogger
+    logger?: MiLogger,
   ) {
     const tree = new SynchronizedTreeState(pl, root, ops, logger);
 
-    let stat = ops.logStat ? initialTreeLoadingStat() : undefined;
+    const stat = ops.logStat ? initialTreeLoadingStat() : undefined;
 
     let ok = false;
 
     try {
       await tree.refresh(stat, {
-        timeout: ops.initialTreeLoadingTimeout
+        timeout: ops.initialTreeLoadingTimeout,
       });
       ok = true;
     } finally {
       // logging stats if we were asked to (even if error occured)
       if (stat && logger)
         logger.info(
-          `Tree stat (initial load, ${ok ? 'success' : 'failure'}): ${JSON.stringify(stat)}`
+          `Tree stat (initial load, ${ok ? 'success' : 'failure'}): ${JSON.stringify(stat)}`,
         );
     }
 
