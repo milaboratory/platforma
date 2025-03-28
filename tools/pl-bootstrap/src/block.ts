@@ -121,7 +121,7 @@ async function removePlatform(dir: string, platform: CreateBlockPlatform) {
   // https://regex101.com/r/oCTyHk/1
   await deleteRegexInFile(
     path.join(dir, 'ui', 'src', 'pages', 'MainPage.vue'),
-    new RegExp(`.*${p}Message.*\\n\\n`, 'g'),
+    new RegExp(`.*${p}Message.*\\n`, 'g'),
   );
 
   // Remove an output from the model.
