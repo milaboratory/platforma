@@ -1,4 +1,4 @@
-import { randomBytes, createHmac } from 'crypto';
+import { randomBytes, createHmac } from 'node:crypto';
 
 /** Creates and validates signatures. */
 export interface Signer {
@@ -28,6 +28,7 @@ export class HmacSha256Signer implements Signer {
   verify(data: string | Uint8Array, signature: string, validationErrorMessage?: string): void {
     if (signature !== createHmac('sha256', this.secret).update(data).digest('hex')) {
       if (validationErrorMessage === undefined)
+        // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
         throw new SignatureVerificationError(`Signature verification failed for ${data}`);
       else throw new SignatureVerificationError(validationErrorMessage);
     }

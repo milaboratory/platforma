@@ -21,7 +21,7 @@ export class ConcurrencyLimitingExecutor {
     while (this.runningTasks === this.concurrencyLimit) await this.awaitSlot();
     if (this.runningTasks >= this.concurrencyLimit)
       throw new Error(
-        `runningTasks >= limit; ${this.runningTasks} >= ${this.concurrencyLimit} (queue: ${this.lockReleases.length})`
+        `runningTasks >= limit; ${this.runningTasks} >= ${this.concurrencyLimit} (queue: ${this.lockReleases.length})`,
       );
     this.runningTasks++;
     try {

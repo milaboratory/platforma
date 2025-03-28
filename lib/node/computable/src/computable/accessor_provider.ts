@@ -1,5 +1,5 @@
-import { Watcher } from '../watcher';
-import { ComputableCtx } from './kernel';
+import type { Watcher } from '../watcher';
+import type { ComputableCtx } from './kernel';
 
 /** Signals that accessor was used outside the scope of computable
  * kernel lambda. */
@@ -42,31 +42,31 @@ type ExtractTrackedAccessorTypes<T> = {
  * @deprecated
  * */
 export function combineProviders<PP>(
-  providers: PP
+  providers: PP,
 ): TrackedAccessorProvider<ExtractTrackedAccessorTypes<PP>> {
   return {
     createInstance(
       watcher: Watcher,
       guard: UsageGuard,
-      ctx: ComputableCtx
+      ctx: ComputableCtx,
     ): ExtractTrackedAccessorTypes<PP> {
       const result: Record<string, unknown> = {};
       for (const key in providers) {
         const drv = providers[key];
         if (
-          !!drv &&
-          typeof drv === 'object' &&
-          'createInstance' in drv &&
-          typeof drv['createInstance'] === 'function'
+          !!drv
+          && typeof drv === 'object'
+          && 'createInstance' in drv
+          && typeof drv['createInstance'] === 'function'
         )
           result[key] = (drv as TrackedAccessorProvider<unknown>).createInstance(
             watcher,
             guard,
-            ctx
+            ctx,
           );
       }
       return result as unknown as ExtractTrackedAccessorTypes<PP>;
-    }
+    },
   };
 }
 
@@ -77,12 +77,12 @@ export class LazyAccessorFactory {
   constructor(
     private readonly watcher: Watcher,
     private readonly guard: UsageGuard,
-    private readonly ctx: ComputableCtx
+    private readonly ctx: ComputableCtx,
   ) {}
 
   public get<A>(provider: TrackedAccessorProvider<A>): A {
     this.guard();
-    const cached = this.accessors.get(provider);
+    const cached = this.accessors.get(provider) as unknown;
     if (cached !== undefined) return cached as A;
     const acc = provider.createInstance(this.watcher, this.guard, this.ctx);
     this.accessors.set(provider, acc);
@@ -95,6 +95,6 @@ export function lazyFactory(): TrackedAccessorProvider<LazyAccessorFactory> {
   return {
     createInstance(watcher: Watcher, guard: UsageGuard, ctx: ComputableCtx): LazyAccessorFactory {
       return new LazyAccessorFactory(watcher, guard, ctx);
-    }
+    },
   };
 }

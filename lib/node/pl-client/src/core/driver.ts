@@ -1,8 +1,8 @@
-import { PlClient } from './client';
-import { GrpcTransport } from '@protobuf-ts/grpc-transport';
+import type { PlClient } from './client';
+import type { GrpcTransport } from '@protobuf-ts/grpc-transport';
 import type { RpcOptions } from '@protobuf-ts/runtime-rpc';
-import { Dispatcher } from 'undici';
-import { ResourceType } from './types';
+import type { Dispatcher } from 'undici';
+import type { ResourceType } from './types';
 
 /** Drivers must implement this interface */
 export interface PlDriver {

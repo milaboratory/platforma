@@ -1,4 +1,4 @@
-import { Status } from '../proto/github.com/googleapis/googleapis/google/rpc/status';
+import type { Status } from '../proto/github.com/googleapis/googleapis/google/rpc/status';
 import { Aborted } from '@milaboratories/ts-helpers';
 
 export function isConnectionProblem(err: unknown, nested: boolean = false): boolean {
@@ -23,8 +23,8 @@ export function isTimeoutOrCancelError(err: unknown, nested: boolean = false): b
   if (err instanceof Aborted || (err as any).name == 'AbortError') return true;
   if ((err as any).code == 'ABORT_ERR') return true;
   if (
-    (err as any).name == 'RpcError' &&
-    ((err as any).code == 'CANCELLED' || (err as any).code == 'DEADLINE_EXCEEDED')
+    (err as any).name == 'RpcError'
+    && ((err as any).code == 'CANCELLED' || (err as any).code == 'DEADLINE_EXCEEDED')
   )
     return true;
   if ((err as any).cause !== undefined && !nested)

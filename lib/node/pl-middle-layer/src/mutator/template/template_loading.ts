@@ -56,7 +56,8 @@ function loadTemplateFromRegistry(tx: PlTransaction, spec: TemplateFromRegistry)
   return templateFromRegistry;
 }
 
-function loadTemplateFromExplicit(tx: PlTransaction, spec: ExplicitTemplate): AnyRef {
+// TODO: unused code
+function _loadTemplateFromExplicit(tx: PlTransaction, spec: ExplicitTemplate): AnyRef {
   const templatePack = tx.createValue(TengoTemplatePack, spec.content);
   const templatePackConvert = tx.createStruct(TengoTemplatePackConvert);
   const templatePackField = field(templatePackConvert, TengoTemplatePackConvertTemplatePack);

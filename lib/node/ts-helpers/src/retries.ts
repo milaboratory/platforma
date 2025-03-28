@@ -1,10 +1,11 @@
-import { JitterOpts, jitter, sleep } from './temporal';
+import type { JitterOpts } from './temporal';
+import { jitter, sleep } from './temporal';
 
 export async function withRetries(
   nAttempts: number,
   jitterOpts: JitterOpts,
   cb: () => Promise<void>,
-  retryOn: (e: unknown) => boolean
+  retryOn: (e: unknown) => boolean,
 ) {
   let lastError: unknown;
 
@@ -23,6 +24,6 @@ export async function withRetries(
   }
 
   throw new Error(
-    'withRetries failed after ' + nAttempts + ' attempts. Last error: ' + JSON.stringify(lastError)
+    'withRetries failed after ' + nAttempts + ' attempts. Last error: ' + JSON.stringify(lastError),
   );
 }

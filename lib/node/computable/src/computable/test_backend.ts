@@ -1,8 +1,8 @@
-import { Watcher } from '../watcher';
+import type { Watcher } from '../watcher';
 import { ChangeSource } from '../change_source';
-import { AccessorProvider, UsageGuard } from './accessor_provider';
+import type { AccessorProvider, UsageGuard } from './accessor_provider';
 import { randomUUID } from 'node:crypto';
-import { ComputableCtx } from './kernel';
+import type { ComputableCtx } from './kernel';
 
 export interface PersistentFakeTreeNode extends AccessorProvider<FakeTreeAccessor> {
   readonly uuid: string;
@@ -13,7 +13,7 @@ export class FakeTreeAccessor {
     private readonly node: FakeTreeNodeReader,
     private readonly watcher: Watcher,
     private readonly guard: UsageGuard,
-    private readonly ctx: ComputableCtx
+    private readonly ctx: ComputableCtx,
   ) {}
 
   get uuid(): string {
@@ -52,7 +52,7 @@ export class FakeTreeAccessor {
       uuid: this.uuid,
       createAccessor: (ctx: ComputableCtx, guard: UsageGuard) => {
         return new FakeTreeAccessor(this.node, ctx.watcher, guard, ctx);
-      }
+      },
     };
   }
 }
@@ -98,7 +98,7 @@ class FakeTreeBranch implements FakeTreeNodeWriter, FakeTreeNodeReader {
 
   deleteChild(key: string): void {
     if (!(key in this.children)) return;
-    if (this.locked) throw new Error("Can't change field list after locked.");
+    if (this.locked) throw new Error('Can\'t change field list after locked.');
     const child = this.children[key];
     delete this.children[key];
     child.nodeDeleteChange.markChanged();
@@ -108,7 +108,7 @@ class FakeTreeBranch implements FakeTreeNodeWriter, FakeTreeNodeReader {
   getOrCreateChild(key: string): FakeTreeNodeWriter {
     let child = this.children[key];
     if (child) return child;
-    if (this.locked) throw new Error("Can't change field list after locked.");
+    if (this.locked) throw new Error('Can\'t change field list after locked.');
     child = new FakeTreeBranch();
     this.children[key] = child;
     this.childrenListChange.markChanged();
@@ -116,7 +116,7 @@ class FakeTreeBranch implements FakeTreeNodeWriter, FakeTreeNodeReader {
   }
 
   setValue(value: string): void {
-    if (this.locked) throw new Error("Can't set value after locked.");
+    if (this.locked) throw new Error('Can\'t set value after locked.');
     this.value = value;
     this.valueChange.markChanged();
   }
@@ -174,11 +174,12 @@ export class FakeTreeDriver {
       uuid: this.root.uuid,
       createAccessor: (ctx: ComputableCtx, guard: UsageGuard) => {
         return new FakeTreeAccessor(this.root, ctx.watcher, guard, ctx);
-      }
+      },
     };
   }
 }
 
-interface FakeBackendSystem {
+// TODO: remove this
+interface _FakeBackendSystem {
   tree: FakeTreeDriver;
 }

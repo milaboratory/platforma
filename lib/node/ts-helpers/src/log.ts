@@ -1,10 +1,10 @@
 /** Minimalistic logger facade */
 export interface MiLogger {
-  info(msg: string): void;
+  info(msg: unknown): void;
 
-  warn(msg: string | any): void;
+  warn(msg: unknown): void;
 
-  error(msg: string | any): void;
+  error(msg: unknown): void;
 }
 
 const globalConsole = console;
@@ -12,15 +12,15 @@ const globalConsole = console;
 export class ConsoleLoggerAdapter implements MiLogger {
   constructor(private readonly console: Console = globalConsole) {}
 
-  info(msg: string): void {
+  info(msg: unknown): void {
     this.console.log(msg);
   }
 
-  warn(msg: string | any): void {
+  warn(msg: unknown): void {
     this.console.warn(msg);
   }
 
-  error(msg: string | any): void {
+  error(msg: unknown): void {
     this.console.error(msg);
   }
 }

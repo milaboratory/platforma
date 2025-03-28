@@ -1,26 +1,29 @@
-import {
+import type {
   BasicResourceData,
   FieldData,
   FieldStatus,
   FieldType,
-  isNotNullResourceId,
-  isNullResourceId,
   KeyValue,
-  NullResourceId,
   OptionalResourceId,
   ResourceData,
   ResourceId,
-  resourceIdToString,
   ResourceKind,
-  ResourceType,
-  stringifyWithResourceId
+  ResourceType } from '@milaboratories/pl-client';
+import {
+  isNotNullResourceId,
+  isNullResourceId,
+  NullResourceId,
+  resourceIdToString,
+  stringifyWithResourceId,
 } from '@milaboratories/pl-client';
-import { ChangeSource, Watcher } from '@milaboratories/computable';
+import type { Watcher } from '@milaboratories/computable';
+import { ChangeSource } from '@milaboratories/computable';
 import { PlTreeEntry } from './accessors';
-import { ValueAndError } from './value_and_error';
-import { MiLogger, notEmpty } from '@milaboratories/ts-helpers';
-import { FieldTraversalStep, GetFieldStep } from './traversal_ops';
-import { FinalResourceDataPredicate } from '@milaboratories/pl-client';
+import type { ValueAndError } from './value_and_error';
+import type { MiLogger } from '@milaboratories/ts-helpers';
+import { notEmpty } from '@milaboratories/ts-helpers';
+import type { FieldTraversalStep, GetFieldStep } from './traversal_ops';
+import type { FinalResourceDataPredicate } from '@milaboratories/pl-client';
 
 export type ExtendedResourceData = ResourceData & {
   kv: KeyValue[];
@@ -43,7 +46,7 @@ class PlTreeField implements FieldData {
     public status: FieldStatus,
     public valueIsFinal: boolean,
     /** Last version of resource this field was observed, used to garbage collect fields in tree patching procedure */
-    public resourceVersion: number
+    public resourceVersion: number,
   ) {}
 
   get state(): FieldData {
@@ -53,7 +56,7 @@ class PlTreeField implements FieldData {
       status: this.status,
       value: this.value,
       error: this.error,
-      valueIsFinal: this.valueIsFinal
+      valueIsFinal: this.valueIsFinal,
     };
   }
 }
@@ -168,7 +171,7 @@ export class PlTreeResource implements ResourceDataWithFinalState {
   public getField(
     watcher: Watcher,
     _step: string | GetFieldStep,
-    onUnstable: (marker: string) => void = () => {}
+    onUnstable: (marker: string) => void = () => {},
   ): ValueAndError<ResourceId> | undefined {
     const step: FieldTraversalStep = typeof _step === 'string' ? { field: _step } : _step;
 
@@ -176,7 +179,7 @@ export class PlTreeResource implements ResourceDataWithFinalState {
     if (field === undefined) {
       if (step.errorIfFieldNotFound || step.errorIfFieldNotSet)
         throw new Error(
-          `Field "${step.field}" not found in resource ${resourceIdToString(this.id)}`
+          `Field "${step.field}" not found in resource ${resourceIdToString(this.id)}`,
         );
 
       if (!this.inputsLocked) this.inputAndServiceFieldListChanged?.attachWatcher(watcher);
@@ -202,7 +205,7 @@ export class PlTreeResource implements ResourceDataWithFinalState {
     } else {
       if (step.assertFieldType !== undefined && field.type !== step.assertFieldType)
         throw new Error(
-          `Unexpected field type: expected ${step.assertFieldType} but got ${field.type} for the field name ${step.field}`
+          `Unexpected field type: expected ${step.assertFieldType} but got ${field.type} for the field name ${step.field}`,
         );
 
       const ret = {} as ValueAndError<ResourceId>;
@@ -234,9 +237,9 @@ export class PlTreeResource implements ResourceDataWithFinalState {
 
   public get isReadyOrError(): boolean {
     return (
-      this.error !== NullResourceId ||
-      this.resourceReady ||
-      this.originalResourceId !== NullResourceId
+      this.error !== NullResourceId
+      || this.resourceReady
+      || this.originalResourceId !== NullResourceId
     );
   }
 
@@ -331,7 +334,7 @@ export class PlTreeResource implements ResourceDataWithFinalState {
       outputsLocked: this.outputsLocked,
       error: this.error,
       originalResourceId: this.originalResourceId,
-      final: this.finalFlag
+      final: this.finalFlag,
     };
   }
 
@@ -339,7 +342,7 @@ export class PlTreeResource implements ResourceDataWithFinalState {
     return {
       ...this.basicState,
       fields: this.fields,
-      kv: Array.from(this.kv.entries()).map(([key, value]) => ({ key, value }))
+      kv: Array.from(this.kv.entries()).map(([key, value]) => ({ key, value })),
     };
   }
 
@@ -383,7 +386,7 @@ export class PlTreeState {
   constructor(
     /** This will be the only resource not deleted during GC round */
     public readonly root: ResourceId,
-    public readonly isFinalPredicate: FinalResourceDataPredicate
+    public readonly isFinalPredicate: FinalResourceDataPredicate,
   ) {}
 
   public forEachResource(cb: (res: ResourceDataWithFinalState) => void): void {
@@ -420,12 +423,13 @@ export class PlTreeState {
 
       const statBeforeMutation = resource?.basicState;
       const unexpectedTransitionError = (reason: string): never => {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { fields, ...rdWithoutFields } = rd;
         this.invalidateTree();
         throw new TreeStateUpdateError(
           `Unexpected resource state transition (${reason}): ${stringifyWithResourceId(
-            rdWithoutFields
-          )} -> ${stringifyWithResourceId(statBeforeMutation)}`
+            rdWithoutFields,
+          )} -> ${stringifyWithResourceId(statBeforeMutation)}`,
         );
       };
 
@@ -442,7 +446,7 @@ export class PlTreeState {
         // duplicate / original
         if (resource.originalResourceId !== rd.originalResourceId) {
           if (resource.originalResourceId !== NullResourceId)
-            unexpectedTransitionError("originalResourceId can't change after it is set");
+            unexpectedTransitionError('originalResourceId can\'t change after it is set');
           resource.originalResourceId = rd.originalResourceId;
           // duplicate status of the resource counts as ready for the external observer
           notEmpty(resource.resourceStateChange).markChanged();
@@ -452,7 +456,7 @@ export class PlTreeState {
         // error
         if (resource.error !== rd.error) {
           if (isNotNullResourceId(resource.error))
-            unexpectedTransitionError("resource can't change attached error after it is set");
+            unexpectedTransitionError('resource can\'t change attached error after it is set');
           resource.error = rd.error;
           incrementRefs.push(resource.error as ResourceId);
           notEmpty(resource.resourceStateChange).markChanged();
@@ -473,7 +477,7 @@ export class PlTreeState {
               fd.error,
               fd.status,
               fd.valueIsFinal,
-              resource.version
+              resource.version,
             );
             if (isNotNullResourceId(fd.value)) incrementRefs.push(fd.value);
             if (isNotNullResourceId(fd.error)) incrementRefs.push(fd.error);
@@ -481,13 +485,13 @@ export class PlTreeState {
             if (fd.type === 'Input' || fd.type === 'Service') {
               if (resource.inputsLocked)
                 unexpectedTransitionError(
-                  `adding ${fd.type} (${fd.name}) field while inputs locked`
+                  `adding ${fd.type} (${fd.name}) field while inputs locked`,
                 );
               notEmpty(resource.inputAndServiceFieldListChanged).markChanged();
             } else if (fd.type === 'Output') {
               if (resource.outputsLocked)
                 unexpectedTransitionError(
-                  `adding ${fd.type} (${fd.name}) field while outputs locked`
+                  `adding ${fd.type} (${fd.name}) field while outputs locked`,
                 );
               notEmpty(resource.outputFieldListChanged).markChanged();
             } else {
@@ -508,14 +512,14 @@ export class PlTreeState {
               if (field.type === 'Input' || field.type === 'Service') {
                 if (resource.inputsLocked)
                   unexpectedTransitionError(
-                    `adding input field "${fd.name}", while corresponding list is locked`
+                    `adding input field "${fd.name}", while corresponding list is locked`,
                   );
                 notEmpty(resource.inputAndServiceFieldListChanged).markChanged();
               }
               if (field.type === 'Output') {
                 if (resource.outputsLocked)
                   unexpectedTransitionError(
-                    `adding output field "${fd.name}", while corresponding list is locked`
+                    `adding output field "${fd.name}", while corresponding list is locked`,
                   );
                 notEmpty(resource.outputFieldListChanged).markChanged();
               }
@@ -599,7 +603,7 @@ export class PlTreeState {
           resource.verifyReadyState();
           if (!resource.isReadyOrError)
             unexpectedTransitionError(
-              `resource can't lose it's ready or error state (ready state before ${readyStateBefore})`
+              `resource can't lose it's ready or error state (ready state before ${readyStateBefore})`,
             );
           notEmpty(resource.resourceStateChange).markChanged();
           changed = true;
@@ -623,7 +627,7 @@ export class PlTreeState {
           const newStateKeys = new Set(rd.kv.map((kv) => kv.key));
 
           // deleting keys not present in resource anymore
-          resource.kv.forEach((value, key, map) => {
+          resource.kv.forEach((_value, key, map) => {
             if (!newStateKeys.has(key)) map.delete(key);
           });
 
@@ -651,7 +655,7 @@ export class PlTreeState {
             fd.error,
             fd.status,
             fd.valueIsFinal,
-            InitialResourceVersion
+            InitialResourceVersion,
           );
           if (isNotNullResourceId(fd.value)) incrementRefs.push(fd.value);
           if (isNotNullResourceId(fd.error)) incrementRefs.push(fd.error);

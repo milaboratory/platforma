@@ -1,7 +1,7 @@
-import { AuthInformation, PlClientConfig } from './config';
-import {
+import type { AuthInformation, PlClientConfig } from './config';
+import type {
   AuthAPI_ListMethods_Response,
-  MaintenanceAPI_Ping_Response
+  MaintenanceAPI_Ping_Response,
 } from '../proto/github.com/milaboratory/pl/plapi/plapiproto/api';
 import { LLPlClient } from './ll_client';
 import { notEmpty } from '@milaboratories/ts-helpers';
@@ -33,9 +33,9 @@ export class UnauthenticatedPlClient {
         { expiration: { seconds: BigInt(this.ll.conf.authTTLSeconds), nanos: 0 } },
         {
           meta: {
-            authorization: 'Basic ' + Buffer.from(user + ':' + password).toString('base64')
-          }
-        }
+            authorization: 'Basic ' + Buffer.from(user + ':' + password).toString('base64'),
+          },
+        },
       ).response;
       const jwtToken = notEmpty(response.token);
       if (jwtToken === '') throw new Error('empty token');

@@ -1,6 +1,9 @@
 {
   "name": "@milaboratories/computable",
   "version": "2.4.1",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "description": "Watcher / Computable Abstraction",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
@@ -16,6 +19,7 @@
     "type-check": "tsc --noEmit --composite false",
     "build": "vite build",
     "test": "jest --runInBand",
+    "lint": "eslint .",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "files": [

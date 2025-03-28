@@ -1,4 +1,4 @@
-import { Watcher } from './watcher';
+import type { Watcher } from './watcher';
 import { Aborted } from '@milaboratories/ts-helpers';
 
 /**
@@ -37,8 +37,8 @@ export class HierarchicalWatcher implements Watcher {
   }
 
   private setParent(parent: HierarchicalWatcher) {
-    if (this.changed) throw new Error("parent can't be set to changed watcher");
-    if (this.parent !== undefined) throw new Error("parent can be set only if it wasn't reset");
+    if (this.changed) throw new Error('parent can\'t be set to changed watcher');
+    if (this.parent !== undefined) throw new Error('parent can be set only if it wasn\'t reset');
     this.parent = parent;
   }
 
@@ -113,7 +113,7 @@ export class HierarchicalWatcher implements Watcher {
     else
       return new Promise((resolve) =>
         // adding the resolve callback forever until the watcher is marked as changed
-        callbacks.set(callId, resolve)
+        callbacks.set(callId, resolve),
       );
   }
 }
