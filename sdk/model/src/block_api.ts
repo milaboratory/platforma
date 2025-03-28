@@ -1,5 +1,5 @@
-import { BlockOutputsBase, BlockState, NavigationState } from '@milaboratories/pl-model-common';
-import { BlockStatePatch } from './block_state_patch';
+import type { BlockOutputsBase, BlockState, NavigationState } from '@milaboratories/pl-model-common';
+import type { BlockStatePatch } from './block_state_patch';
 
 /** Returned by state subscription methods to be able to cancel the subscription. */
 export type CancelSubscription = () => void;
@@ -9,7 +9,7 @@ export interface BlockApi<
   Args = unknown,
   Outputs extends BlockOutputsBase = BlockOutputsBase,
   UiState = unknown,
-  Href extends `/${string}` = `/${string}`
+  Href extends `/${string}` = `/${string}`,
 > {
   /**
    * Use this method to retrieve block state during UI initialization. Then use

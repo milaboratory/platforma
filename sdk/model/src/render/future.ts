@@ -1,4 +1,4 @@
-import { FutureAwait, FutureHandle } from './internal';
+import type { FutureAwait, FutureHandle } from './internal';
 import { registerFutureAwait } from '../internal';
 
 export class FutureRef<T = unknown> {
@@ -7,7 +7,7 @@ export class FutureRef<T = unknown> {
 
   constructor(
     private readonly handle: FutureHandle,
-    private readonly postProcess: (value: unknown) => T = (v) => v as T
+    private readonly postProcess: (value: unknown) => T = (v) => v as T,
   ) {
     registerFutureAwait(handle, (value) => {
       this.resolvedValue = postProcess(value);
@@ -26,7 +26,7 @@ export class FutureRef<T = unknown> {
     });
   }
 
-  toJSON(): any {
+  toJSON() {
     return this.isResolved
       ? this.resolvedValue
       : ({ __awaited_futures__: [this.handle] } as FutureAwait);

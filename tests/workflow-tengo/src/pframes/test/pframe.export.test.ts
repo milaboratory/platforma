@@ -28,7 +28,7 @@ tplTest('should export files for p-frame without skipExportForUI annotation', { 
       },
     );
 
-    const exported = result.computeOutput('exported', (a, ctx) => {
+    const exported = result.computeOutput('exported', (a, _ctx) => {
       const data = a?.traverseOrError('val1.data');
       if (!data?.ok) return undefined;
 
@@ -60,7 +60,7 @@ tplTest('should not export files for p-frame with hideDataFromUi annotation', { 
       },
     );
 
-    const exported = result.computeOutput('exported', (a, ctx) => {
+    const exported = result.computeOutput('exported', (a, _ctx) => {
       const data = a?.traverseOrError('val1.data');
       if (!data?.ok) return undefined;
 

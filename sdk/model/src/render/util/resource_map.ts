@@ -1,4 +1,4 @@
-import { TreeNodeAccessor } from '../accessor';
+import type { TreeNodeAccessor } from '../accessor';
 
 const PCD_PREFIX = 'PColumnData/';
 
@@ -29,7 +29,7 @@ function populateResourceMapData<T>(
   resourceParser: (acc: TreeNodeAccessor) => T | undefined,
   data: PColumnResourceMapEntry<T | undefined>[],
   keyPrefix: PColumnKey = [],
-  addEntriesWithNoData: boolean
+  addEntriesWithNoData: boolean,
 ): boolean {
   if (acc === undefined) return false;
   switch (acc.resourceType.name) {
@@ -56,7 +56,7 @@ function populateResourceMapData<T>(
             resourceParser,
             data,
             key,
-            addEntriesWithNoData
+            addEntriesWithNoData,
           );
           isComplete = isComplete && populateResult;
         }
@@ -81,13 +81,12 @@ export function parseResourceMap<T>(
 export function parseResourceMap<T>(
   acc: TreeNodeAccessor | undefined,
   resourceParser: (acc: TreeNodeAccessor) => T | undefined,
-  addEntriesWithNoData: boolean = false
+  addEntriesWithNoData: boolean = false,
 ): PColumnResourceMapData<T | undefined> {
   const data: PColumnResourceMapEntry<T | undefined>[] = [];
   const isComplete = populateResourceMapData(acc, resourceParser, data, [], addEntriesWithNoData);
   return { isComplete, data };
 }
-
 
 export type PColumnKeyList = {
   /** array of keys */
@@ -109,7 +108,7 @@ const removeIndexSuffix = (keyStr: string): string | undefined => {
 // @TODO define a class with various resource map operations
 /** Returns a list of all partition keys appeared in the p-column */
 export function getPartitionKeysList(
-  acc: TreeNodeAccessor | undefined
+  acc: TreeNodeAccessor | undefined,
 ): PColumnKeyList | undefined {
   if (!acc) return undefined;
 
@@ -183,7 +182,7 @@ export function getPartitionKeysList(
 /** Returns an array of unique partition keys for each column: the i-th element in the resulting 2d array contains all unique values of i-th partition axis. */
 // @TODO define a class with various resource map operations
 export function getUniquePartitionKeys(
-  acc: TreeNodeAccessor | undefined
+  acc: TreeNodeAccessor | undefined,
 ): (string | number)[][] | undefined {
   const list = getPartitionKeysList(acc);
   if (!list) return undefined;

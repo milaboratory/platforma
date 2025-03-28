@@ -1,9 +1,9 @@
-import { BlockOutputsBase, ValueOrErrors } from '@milaboratories/pl-model-common';
+import type { BlockOutputsBase, ValueOrErrors } from '@milaboratories/pl-model-common';
 
 export class OutputError extends Error {
   constructor(
     public readonly errors: string[],
-    public readonly moreErrors: boolean
+    public readonly moreErrors: boolean,
   ) {
     super(`${errors.length}${moreErrors ? '+' : ''} errors, first error: ` + errors[0]);
   }
@@ -20,11 +20,11 @@ type SimpleOutputs<Outputs extends BlockOutputsBase> = {
 };
 
 export function wrapOutputs<Outputs extends BlockOutputsBase>(
-  outputs: Outputs
+  outputs: Outputs,
 ): SimpleOutputs<Outputs> {
   return new Proxy(outputs, {
     get(target, key: string) {
       return readOutput(target[key]);
-    }
+    },
   }) as SimpleOutputs<Outputs>;
 }

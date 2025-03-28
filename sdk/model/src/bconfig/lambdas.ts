@@ -1,4 +1,4 @@
-import { ConfigResult, PlResourceEntry, TypedConfig } from '../config';
+import type { ConfigResult, PlResourceEntry, TypedConfig } from '../config';
 
 export type StdCtxArgsOnly<Args, UiState = undefined> = {
   readonly $blockId: string;
@@ -32,7 +32,7 @@ export type ConfigRenderLambdaFlags = {
 };
 
 /** Creates branded Cfg type */
-export interface ConfigRenderLambda<Return = unknown> extends ConfigRenderLambdaFlags {
+export interface ConfigRenderLambda<_Return = unknown> extends ConfigRenderLambdaFlags {
   /** Type marker */
   __renderLambda: true;
 

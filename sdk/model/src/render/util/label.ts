@@ -1,4 +1,4 @@
-import { PObjectSpec } from '@milaboratories/pl-model-common';
+import type { PObjectSpec } from '@milaboratories/pl-model-common';
 import { z } from 'zod';
 
 export const PAnnotationLabel = 'pl7.app/label';
@@ -22,7 +22,7 @@ export const TraceEntry = z.object({
   type: z.string(),
   importance: z.number().optional(),
   id: z.string().optional(),
-  label: z.string()
+  label: z.string(),
 });
 export type TraceEntry = z.infer<typeof TraceEntry>;
 type FullTraceEntry = TraceEntry & { fullType: string; occurenceIndex: number };
@@ -39,7 +39,7 @@ const LabelTypeFull = '__LABEL__@1';
 export function deriveLabels<T>(
   values: T[],
   specExtractor: (obj: T) => PObjectSpec,
-  ops: LabelDerivationOps = {}
+  ops: LabelDerivationOps = {},
 ): RecordsWithLabel<T>[] {
   const importances = new Map<string, number>();
 
@@ -72,8 +72,8 @@ export function deriveLabels<T>(
         fullType,
         Math.max(
           importances.get(fullType) ?? Number.NEGATIVE_INFINITY,
-          importance - (trace.length - i) * DistancePenalty
-        )
+          importance - (trace.length - i) * DistancePenalty,
+        ),
       );
       fullTrace.push({ ...trace[i], fullType, occurenceIndex });
     }
@@ -82,7 +82,7 @@ export function deriveLabels<T>(
       value,
       spec,
       label,
-      fullTrace
+      fullTrace,
     };
   });
 
@@ -109,7 +109,7 @@ export function deriveLabels<T>(
       const sep = ops.separator ?? ' / ';
       return {
         label: labelSet.join(sep),
-        value: r.value
+        value: r.value,
       } satisfies RecordsWithLabel<T>;
     });
 

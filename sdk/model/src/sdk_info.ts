@@ -5,5 +5,5 @@ export type SdkInfo = {
 };
 
 export const CurrentSdkInfo: SdkInfo = {
-  sdkVersion: PlatformaSDKVersion
+  sdkVersion: PlatformaSDKVersion,
 };

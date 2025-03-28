@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-// TODO change to use unknown
 export type AddParameters<
   TParameters extends [...args: any],
   TFunction extends (...args: any) => any,
