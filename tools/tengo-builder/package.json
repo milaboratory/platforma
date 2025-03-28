@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/tengo-builder",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "Pl Tengo Template Builder",
   "scripts": {
     "type-check": "tsc --noEmit --composite false",

@@ -1,5 +1,13 @@
 # @platforma-sdk/model
 
+## 1.24.10
+
+### Patch Changes
+
+- 4812a12: apply eslint rules to the all "model" packages
+- Updated dependencies [4812a12]
+  - @milaboratories/pl-model-common@1.11.3
+
 ## 1.24.9
 
 ### Patch Changes

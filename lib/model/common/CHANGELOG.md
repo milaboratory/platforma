@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.11.3
+
+### Patch Changes
+
+- 4812a12: apply eslint rules to the all "model" packages
+
 ## 1.11.2
 
 ### Patch Changes
