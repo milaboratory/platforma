@@ -1,8 +1,9 @@
-import { Optional } from 'utility-types';
-import { Branded } from '../branding';
-import { CommonFieldTraverseOps, FieldTraversalStep, ResourceType } from './traversal_ops';
-import {
+import type { Optional } from 'utility-types';
+import type { Branded } from '../branding';
+import type { CommonFieldTraverseOps, FieldTraversalStep, ResourceType } from './traversal_ops';
+import type {
   ArchiveFormat,
+  AnyFunction,
   Option,
   PColumn,
   PColumnValues,
@@ -13,9 +14,8 @@ import {
   PSpecPredicate,
   PTableDef,
   PTableHandle,
-  Ref,
   ResultCollection,
-  ValueOrError
+  ValueOrError,
 } from '@milaboratories/pl-model-common';
 
 export const StagingAccessorName = 'staging';
@@ -153,7 +153,7 @@ export interface GlobalCfgRenderCtxMethods<AHandle = AccessorHandle, FHandle = F
 
 export const GlobalCfgRenderCtxFeatureFlags = {
   inlineColumnsSupport: true as const,
-  activeArgs: true as const
+  activeArgs: true as const,
 };
 
 export interface GlobalCfgRenderCtx extends GlobalCfgRenderCtxMethods {
@@ -163,7 +163,7 @@ export interface GlobalCfgRenderCtx extends GlobalCfgRenderCtxMethods {
   readonly args: string;
   readonly uiState: string;
   readonly activeArgs?: string;
-  readonly callbackRegistry: Record<string, Function>;
+  readonly callbackRegistry: Record<string, AnyFunction>;
   readonly featureFlags?: typeof GlobalCfgRenderCtxFeatureFlags;
 }
 

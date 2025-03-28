@@ -43,7 +43,7 @@ export function base32Encode(
       defaultPadding = false;
       break;
     default:
-      throw new Error('Unknown base32 variant: ' + variant);
+      throw new Error('Unknown base32 variant: ' + String(variant));
   }
 
   const padding = options.padding !== undefined ? options.padding : defaultPadding;

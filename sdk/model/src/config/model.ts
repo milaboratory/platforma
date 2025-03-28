@@ -1,4 +1,4 @@
-import { ArchiveFormat } from "@milaboratories/pl-model-common";
+import type { ArchiveFormat } from '@milaboratories/pl-model-common';
 
 export type Cfg =
   | CfgGetFromCtx
@@ -55,6 +55,8 @@ export type CfgGetFromCtx = {
 
 export type CfgImmediate = {
   type: 'Immediate';
+  // TODO: could we use `unknown` here?
+
   value: any;
 };
 

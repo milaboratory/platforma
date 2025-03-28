@@ -5,6 +5,12 @@ import globals from 'globals';
 import stylistic from '@stylistic/eslint-plugin';
 import eslintN from 'eslint-plugin-n';
 
+// Common ignore patterns
+const commonIgnores = [
+  '**/coverage',
+  '**/dist',
+];
+
 export const base = tseslint.config(
   eslint.configs.recommended,
   tseslint.configs.recommended,
@@ -16,6 +22,7 @@ export const base = tseslint.config(
   {
     rules: {
       '@typescript-eslint/consistent-type-imports': 'error',
+      // Hint: use _ as a prefix for ignored variables
       '@typescript-eslint/no-unused-vars': [
         'warn',
         {
@@ -27,25 +34,96 @@ export const base = tseslint.config(
       '@typescript-eslint/consistent-type-definitions': 'off',
       '@typescript-eslint/consistent-indexed-object-style': 'off'
     },
+  },
+  {
+    files: ['**/*.d.ts'],
+    rules: {
+      'no-var': 'off',
+    },
+  }
+);
+
+// Common configuration for packages used in both browser and Node.js
+export const common = tseslint.config(
+  {
+    ignores: [
+      ...commonIgnores,
+      'eslint.config.mjs',
+      'eslint.config.js',
+      'jest.config.cjs',
+      'vite.config.mts',
+      'vite.config.mts.*' 
+    ],
+  },
+  {
+    files: ['**/*.ts'],
+    extends: [
+      ...base,
+      tseslint.configs.recommendedTypeChecked,
+    ],
+    languageOptions: {
+      // Don't include any globals by default
+      globals: {
+        // Add only truly universal globals or those with consistent polyfills
+        console: 'readonly',
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
+        setInterval: 'readonly',
+        clearInterval: 'readonly',
+        // Other universal APIs
+      },
+      parserOptions: {
+        ecmaVersion: 'latest',
+        sourceType: 'module',
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+    rules: {
+      // Rules for universal JavaScript
+      '@typescript-eslint/no-namespace': 'off',
+      // Enforce environment checking for ALL environment-specific globals
+      'no-restricted-globals': [
+        'error', 
+        // Browser-specific globals
+        { name: 'window', message: 'Use `typeof window !== "undefined"` check before using window' },
+        { name: 'document', message: 'Use `typeof document !== "undefined"` check before using document' },
+        { name: 'navigator', message: 'Use environment checks before using navigator' },
+        // Node.js-specific globals
+        { name: 'global', message: 'Use `typeof global !== "undefined"` check before using global' },
+        { name: 'process', message: 'Use `typeof process !== "undefined"` check before using process' },
+        { name: '__dirname', message: 'Use environment checks before using __dirname' },
+        { name: '__filename', message: 'Use environment checks before using __filename' }
+      ],
+      // Enforce environment-agnostic code
+      'no-process-env': 'warn',
+    }
+  },
+  {
+    files: ['**/*.d.ts'],
+    rules: {
+      'no-var': 'off',
+    },
   }
 );
 
 export const node = tseslint.config(
-  { ignores: [
-    '*.d.ts',
-    '**/coverage',
-    '**/dist',
-    '**/bin',
-    'eslint.config.mjs',
-    'eslint.config.js',
-    'jest.config.cjs',
-    'vite.config.mts',
-    'vite.config.mts.*' ] },
-  eslint.configs.recommended,
-  tseslint.configs.recommendedTypeChecked,
+  { 
+    ignores: [
+      '**/coverage',
+      '**/dist',
+      '**/bin',
+      'eslint.config.mjs',
+      'eslint.config.js',
+      'jest.config.cjs',
+      'vite.config.mts',
+      'vite.config.mts.*'
+    ] 
+  },
   {
     extends: [
-      ...base
+      ...base,
+      tseslint.configs.recommendedTypeChecked
     ],
     languageOptions: {
       globals: globals.node,
@@ -79,7 +157,7 @@ export const node = tseslint.config(
       ],
       'n/prefer-node-protocol': 'error',
     }
-  },
+  }
 );
 
 export const vue = tseslint.config(

@@ -1,12 +1,12 @@
-import { ConfAction, ActionResult, InferVarTypeSafe, PlResourceEntry } from './type_engine';
-import { And, IsA, SyncConfAction } from './type_util';
-import {
+import type { ConfAction, ActionResult, InferVarTypeSafe, PlResourceEntry } from './type_engine';
+import type { And, IsA, SyncConfAction } from './type_util';
+import type {
   LocalBlobHandleAndSize,
   RemoteBlobHandleAndSize,
   ImportProgress,
-  FolderURL
+  FolderURL,
 } from '@milaboratories/pl-model-common';
-import { AnyLogHandle } from '@milaboratories/pl-model-common';
+import type { AnyLogHandle } from '@milaboratories/pl-model-common';
 
 //
 // Context
@@ -64,7 +64,7 @@ export interface ActGetField<Source extends ConfAction, Field extends ConfAction
 export interface ActMapRecordValues<
   Source extends ConfAction,
   Mapping extends ConfAction,
-  ItVar extends string
+  ItVar extends string,
 > extends ConfAction {
   new: (
     x: this['ctx']
@@ -77,7 +77,7 @@ export interface ActMapRecordValues<
 export interface ActMapArrayValues<
   Source extends ConfAction,
   Mapping extends ConfAction,
-  ItVar extends string
+  ItVar extends string,
 > extends ConfAction {
   new: (
     x: this['ctx']
@@ -149,7 +149,7 @@ export interface ActGetResourceField<Source extends ConfAction, Field extends Co
 export interface ActMapResourceFields<
   Source extends ConfAction,
   Mapping extends ConfAction,
-  ItVar extends string
+  ItVar extends string,
 > extends ConfAction {
   new: (
     x: this['ctx']
@@ -212,7 +212,7 @@ export interface ActGetOnDemandBlobContent<Source extends ConfAction> extends Co
 export interface ActExtractArchiveAndGetURL<Source extends ConfAction> extends ConfAction {
   new: (
     x: this['ctx']
-  ) => ActionResult<Source, typeof x> extends PlResourceEntry? FolderURL : unknown;
+  ) => ActionResult<Source, typeof x> extends PlResourceEntry ? FolderURL : unknown;
   isSync: IsA<Source, SyncConfAction>;
 }
 

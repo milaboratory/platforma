@@ -1,6 +1,6 @@
 import {} from './global';
-import { Platforma, PlatformaFactory } from './platforma';
-import { FutureHandle, GlobalCfgRenderCtx } from './render/internal';
+import type { Platforma } from './platforma';
+import type { FutureHandle, GlobalCfgRenderCtx } from './render/internal';
 
 /** Utility code helping to identify whether the code is running in actual UI environment */
 export function isInUI() {
@@ -10,11 +10,11 @@ export function isInUI() {
 }
 
 /** Utility code helping to retrieve a platforma instance form the environment */
-export function getPlatformaInstance(config?: {sdkVersion: string}): Platforma {
+export function getPlatformaInstance(config?: { sdkVersion: string }): Platforma {
   if (config && typeof globalThis.getPlatforma === 'function')
     return globalThis.getPlatforma(config);
   else if (typeof globalThis.platforma !== 'undefined') return globalThis.platforma;
-  else throw new Error("Can't get platforma instance.");
+  else throw new Error('Can\'t get platforma instance.');
 }
 
 export function tryGetCfgRenderCtx(): GlobalCfgRenderCtx | undefined {
