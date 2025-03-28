@@ -1,10 +1,12 @@
 import * as fs from 'node:fs';
 import { LLPlClient } from '../core/ll_client';
-import { AuthInformation, AuthOps, plAddressToConfig, PlClientConfig } from '../core/config';
+import type { AuthInformation, AuthOps, PlClientConfig } from '../core/config';
+import { plAddressToConfig } from '../core/config';
 import { UnauthenticatedPlClient } from '../core/unauth_client';
 import { PlClient } from '../core/client';
-import { randomUUID } from 'crypto';
-import { NullResourceId, OptionalResourceId, ResourceId, resourceIdToString } from '../core/types';
+import { randomUUID } from 'node:crypto';
+import type { OptionalResourceId } from '../core/types';
+import { NullResourceId, resourceIdToString } from '../core/types';
 import { inferAuthRefreshTime } from '../core/auth';
 import * as path from 'node:path';
 
@@ -28,7 +30,7 @@ function getFullAuthDataFilePath() {
 export function getTestConfig(): TestConfig {
   let conf: Partial<TestConfig> = {};
   if (fs.existsSync(CONFIG_FILE))
-    conf = JSON.parse(fs.readFileSync(CONFIG_FILE, { encoding: 'utf-8' }));
+    conf = JSON.parse(fs.readFileSync(CONFIG_FILE, { encoding: 'utf-8' })) as TestConfig;
 
   if (process.env.PL_ADDRESS !== undefined) conf.address = process.env.PL_ADDRESS;
 
@@ -40,7 +42,7 @@ export function getTestConfig(): TestConfig {
 
   if (conf.address === undefined)
     throw new Error(
-      `can't resolve platform address (checked ${CONFIG_FILE} file and PL_ADDRESS environment var)`
+      `can't resolve platform address (checked ${CONFIG_FILE} file and PL_ADDRESS environment var)`,
     );
 
   return conf as TestConfig;
@@ -63,10 +65,10 @@ function saveAuthInfoCallback(tConf: TestConfig): (authInformation: AuthInformat
         JSON.stringify({
           conf: tConf,
           authInformation,
-          expiration: inferAuthRefreshTime(authInformation, 24 * 60 * 60)
-        } as AuthCache)
+          expiration: inferAuthRefreshTime(authInformation, 24 * 60 * 60),
+        } as AuthCache),
       ),
-      'utf8'
+      'utf8',
     );
     fs.renameSync(tmpDst, dst);
   };
@@ -86,16 +88,16 @@ export async function getTestClientConf(): Promise<{ conf: PlClientConfig; auth:
   if (fs.existsSync(getFullAuthDataFilePath())) {
     try {
       const cache: AuthCache = JSON.parse(
-        fs.readFileSync(getFullAuthDataFilePath(), { encoding: 'utf-8' })
-      );
+        fs.readFileSync(getFullAuthDataFilePath(), { encoding: 'utf-8' }),
+      ) as AuthCache; // TODO runtime validation
       if (
-        cache.conf.address === tConf.address &&
-        cache.conf.test_user === tConf.test_user &&
-        cache.conf.test_password === tConf.test_password &&
-        cache.expiration > Date.now()
+        cache.conf.address === tConf.address
+        && cache.conf.test_user === tConf.test_user
+        && cache.conf.test_password === tConf.test_password
+        && cache.expiration > Date.now()
       )
         authInformation = cache.authInformation;
-    } catch (e: any) {
+    } catch (_e) {
       // removing cache file on any error
       fs.rmSync(getFullAuthDataFilePath());
     }
@@ -109,12 +111,12 @@ export async function getTestClientConf(): Promise<{ conf: PlClientConfig; auth:
 
   if (!requireAuth && (tConf.test_user !== undefined || tConf.test_password !== undefined))
     throw new Error(
-      `Server require no auth, but test user name or test password are provided via (${CONFIG_FILE}) or env variables: PL_TEST_USER and PL_TEST_PASSWORD`
+      `Server require no auth, but test user name or test password are provided via (${CONFIG_FILE}) or env variables: PL_TEST_USER and PL_TEST_PASSWORD`,
     );
 
   if (requireAuth && (tConf.test_user === undefined || tConf.test_password === undefined))
     throw new Error(
-      `No auth information found in config (${CONFIG_FILE}) or env variables: PL_TEST_USER and PL_TEST_PASSWORD`
+      `No auth information found in config (${CONFIG_FILE}) or env variables: PL_TEST_USER and PL_TEST_PASSWORD`,
     );
 
   if (authInformation === undefined) {
@@ -132,8 +134,8 @@ export async function getTestClientConf(): Promise<{ conf: PlClientConfig; auth:
       authInformation,
       onUpdate: saveAuthInfoCallback(tConf),
       onAuthError: cleanAuthInfoCallback,
-      onUpdateError: cleanAuthInfoCallback
-    }
+      onUpdateError: cleanAuthInfoCallback,
+    },
   };
 }
 

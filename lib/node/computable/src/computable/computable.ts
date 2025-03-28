@@ -1,4 +1,4 @@
-import {
+import type {
   CellRenderingOps,
   ComputableCtx,
   ComputableKernel,
@@ -6,15 +6,16 @@ import {
   ComputableRecoverAction,
   IntermediateRenderingResult,
   PostprocessInfo,
-  UnwrapComputables
+  UnwrapComputables,
 } from './kernel';
+import type {
+  CellState } from './computable_state';
 import {
-  CellState,
   createCellState,
   createCellStateWithoutValue,
   destroyState,
   updateCellState,
-  updateCellStateWithoutValue
+  updateCellStateWithoutValue,
 } from './computable_state';
 import { Aborted, notEmpty } from '@milaboratories/ts-helpers';
 import { randomUUID } from 'node:crypto';
@@ -91,7 +92,7 @@ export class ComputableError extends Error {
 /** Error class for multiple errors encountered simultaneously during computable calculation */
 export class AggregateComputableError extends AggregateError {
   constructor(public readonly errors: any[]) {
-    super(errors, `Computable error: ${errors.map((e) => e.message).join(' ; ')}`);
+    super(errors, `Computable error: ${errors.map((e) => String(e.message)).join(' ; ')}`);
   }
 }
 
@@ -121,13 +122,13 @@ export interface ComputableRenderingOps extends CellRenderingOps {
 const DefaultRenderingOps: CellRenderingOps = {
   mode: 'Live',
   resetValueOnError: true,
-  postprocessTimeout: 5000
+  postprocessTimeout: 5000,
 };
 
 /** This runs state cleanup logic */
 // TODO TBD
-const computableFinalizationRegistry = new FinalizationRegistry<Computable<unknown>>((c) =>
-  c.resetState()
+const _computableFinalizationRegistry = new FinalizationRegistry<Computable<unknown>>((c) =>
+  c.resetState(),
 );
 
 export type ComputableStableDefined<T> = Computable<T | undefined, T>;
@@ -170,10 +171,10 @@ export class Computable<T, StableT extends T = T> {
 
   private _changed(uTag?: string): boolean {
     return (
-      this.state === undefined ||
-      this.state.watcher.isChanged ||
-      this.state.valueNotCalculated ||
-      (uTag !== undefined && this.uTag !== uTag)
+      this.state === undefined
+      || this.state.watcher.isChanged
+      || this.state.valueNotCalculated
+      || (uTag !== undefined && this.uTag !== uTag)
     );
   }
 
@@ -278,11 +279,11 @@ export class Computable<T, StableT extends T = T> {
    * @param abortSignalOrTimeout Optional signal to abort the pending operation or timeout in milliseconds
    */
   public async awaitStableFullValue(
-    abortSignalOrTimeout?: AbortSignal | number
+    abortSignalOrTimeout?: AbortSignal | number,
   ): Promise<ComputableResultOk<StableT>> {
     try {
-      const abortSignal =
-        typeof abortSignalOrTimeout === 'number'
+      const abortSignal
+        = typeof abortSignalOrTimeout === 'number'
           ? AbortSignal.timeout(abortSignalOrTimeout)
           : abortSignalOrTimeout;
       while (true) {
@@ -294,7 +295,7 @@ export class Computable<T, StableT extends T = T> {
       if (e.name === 'AbortError')
         throw new Aborted({
           cause: e,
-          msg: `Computable is still unstable; marker = ${this.state?.unstableMarker}`
+          msg: `Computable is still unstable; marker = ${this.state?.unstableMarker}`,
         });
       throw e;
     }
@@ -341,8 +342,8 @@ export class Computable<T, StableT extends T = T> {
    * */
   private _preCalculateValueTree(): this {
     if (this.stateCalculation !== undefined) throw new Error('Illegal state for pre-calculation.');
-    this.state =
-      this.state === undefined
+    this.state
+      = this.state === undefined
         ? createCellStateWithoutValue(this.___wrapped_kernel___)
         : updateCellStateWithoutValue(this.state);
 
@@ -379,16 +380,16 @@ export class Computable<T, StableT extends T = T> {
       // waiting for stat to update in case update was triggered elsewhere
       await this.stateCalculation;
     } else if (
-      this.state === undefined ||
-      this.state.watcher.isChanged ||
-      this.state.valueNotCalculated
+      this.state === undefined
+      || this.state.watcher.isChanged
+      || this.state.valueNotCalculated
     ) {
       // starting async state update
       this.stateCalculation = (async () => {
         try {
           // awaiting new state
-          const newState =
-            this.state === undefined
+          const newState
+            = this.state === undefined
               ? await createCellState(this.___wrapped_kernel___)
               : await updateCellState(this.state);
 
@@ -432,7 +433,7 @@ export class Computable<T, StableT extends T = T> {
         value: state.value as T,
         stable: state.stable,
         uTag: this.uTag,
-        unstableMarker: state.unstableMarker
+        unstableMarker: state.unstableMarker,
       };
     else return { type: 'error', errors: state.allErrors, uTag: this.uTag };
   }
@@ -472,7 +473,7 @@ export class Computable<T, StableT extends T = T> {
   public wrap<R>(this: Computable<T>, ops: Partial<ComputablePostProcess<T, R>> & ComputableRecoverAction<R>) {
     return Computable.make(
       (_ctx) => this,
-      { ...ops, key: this.___wrapped_kernel___.key }
+      { ...ops, key: this.___wrapped_kernel___.key },
     );
   }
 
@@ -560,7 +561,7 @@ export class Computable<T, StableT extends T = T> {
     cb: (ctx: ComputableCtx) => IR,
     ops?: Partial<ComputablePostProcess<IR, T>> &
       Partial<ComputableRecoverAction<T>> &
-      Partial<ComputableRenderingOps>
+      Partial<ComputableRenderingOps>,
   ): Computable<T> {
     return Computable.makeRaw((ctx) => {
       let ir: IR;
@@ -574,7 +575,7 @@ export class Computable<T, StableT extends T = T> {
           return {
             // this might in tern throw an error, which will be caught by the
             // computable state machine
-            ir: ops.recover([err]) as any
+            ir: ops.recover([err]) as any,
           };
         }
       } else ir = cb(ctx);
@@ -584,35 +585,35 @@ export class Computable<T, StableT extends T = T> {
           value: unknown,
           info: PostprocessInfo
         ) => Promise<T> | T,
-        recover: ops?.recover
+        recover: ops?.recover,
       };
     }, ops);
   }
 
   public static makeRaw<IR, T>(
     cb: (ctx: ComputableCtx) => IntermediateRenderingResult<IR, T>,
-    ops?: Partial<ComputableRenderingOps>
+    ops?: Partial<ComputableRenderingOps>,
   ): Computable<T> {
     // adding in defaults and creating final ops for the kernel
     const { mode, resetValueOnError } = ops ?? {};
     const renderingOps: CellRenderingOps = {
       ...DefaultRenderingOps,
       ...(mode !== undefined && { mode }),
-      ...(resetValueOnError !== undefined && { resetValueOnError })
+      ...(resetValueOnError !== undefined && { resetValueOnError }),
     };
 
     // creating computable instance
     return new Computable<T>({
       ops: renderingOps,
       key: ops?.key ?? Computable.nextEphemeralKey(),
-      ___kernel___: cb
+      ___kernel___: cb,
     });
   }
 
   /** Wraps a computable catching all errors, formatting them as string and returning as error-or-value structure. */
   public static wrapError<T>(
     computable: Computable<T>,
-    maxErrors: number = 1
+    maxErrors: number = 1,
   ): Computable<ComputableValueOrErrors<T>> {
     return Computable.make(() => computable, {
       postprocessValue: (value) => ({ ok: true, value: value as T }) as ComputableValueOrErrors<T>,
@@ -623,11 +624,11 @@ export class Computable<T, StableT extends T = T> {
         return {
           ok: false,
           errors: formattedErrors,
-          moreErrors: error.length > maxErrors
+          moreErrors: error.length > maxErrors,
         } as ComputableValueOrErrors<T>;
       },
       // inherit key from the computable being wrapped
-      key: computable.___wrapped_kernel___.key
+      key: computable.___wrapped_kernel___.key,
     });
   }
 }

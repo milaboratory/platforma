@@ -1,5 +1,3 @@
-import os from 'os';
-
 export const OSes = ['linux', 'macos', 'windows'] as const;
 export type OSType = (typeof OSes)[number];
 

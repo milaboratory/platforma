@@ -1,5 +1,5 @@
 import { RegistryV1 } from '@platforma-sdk/block-tools';
-import path from 'path';
+import path from 'node:path';
 import { tryStat } from './util';
 import { tryResolve } from '@milaboratories/resolve-helper';
 
@@ -18,7 +18,7 @@ export const LegacyDevBlockPackFiles = [
   LegacyDevBlockPackConfig,
   LegacyDevBlockPackMetaYaml,
   LegacyDevBlockPackMetaJson,
-  LegacyDevBlockPackFrontendFolder
+  LegacyDevBlockPackFrontendFolder,
 ];
 
 export type DevPacketPaths = {
@@ -32,8 +32,8 @@ export type DevPacketPaths = {
 
 export async function isLegacyDevPackage(packageRoot: string): Promise<boolean> {
   return (
-    (await tryStat(path.join(packageRoot, ...LegacyDevBlockPackConfig))) !== undefined ||
-    (await tryStat(path.join(packageRoot, ...LegacyDevBlockPackTemplate))) !== undefined
+    (await tryStat(path.join(packageRoot, ...LegacyDevBlockPackConfig))) !== undefined
+    || (await tryStat(path.join(packageRoot, ...LegacyDevBlockPackTemplate))) !== undefined
   );
 }
 
@@ -53,14 +53,14 @@ export async function resolveDevPacket(
 ): Promise<DevPacketPaths>;
 export async function resolveDevPacket(
   packageRoot: string,
-  ignoreErrors: boolean
+  ignoreErrors: boolean,
 ): Promise<DevPacketPaths | undefined> {
   if (!path.isAbsolute(packageRoot)) packageRoot = path.resolve(packageRoot);
   if (await isLegacyDevPackage(packageRoot))
     return {
       workflow: path.join(packageRoot, ...LegacyDevBlockPackTemplate),
       config: path.join(packageRoot, ...LegacyDevBlockPackConfig),
-      ui: path.join(packageRoot, ...LegacyDevBlockPackFrontendFolder)
+      ui: path.join(packageRoot, ...LegacyDevBlockPackFrontendFolder),
     };
   if (ignoreErrors) {
     const workflow = tryResolve(packageRoot, CanonicalBlockConfigRequest);

@@ -2,8 +2,8 @@
  * Optionally returns minio ports as well. */
 
 import { assertNever } from '@milaboratories/ts-helpers';
-import type { AddressInfo } from 'net';
-import net from 'net';
+import type { AddressInfo } from 'node:net';
+import net from 'node:net';
 
 /** Gets ports according to options, and concatenated them with the host. */
 export async function getLocalhostEndpoints(opts: PlConfigPorts): Promise<Endpoints> {

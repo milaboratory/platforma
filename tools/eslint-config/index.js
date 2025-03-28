@@ -117,6 +117,7 @@ export const node = tseslint.config(
       'eslint.config.js',
       'jest.config.cjs',
       'vite.config.mts',
+      'vitest.config.mts',
       'vite.config.mts.*'
     ] 
   },

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/restrict-template-expressions */
 import type { ValueType } from './spec/spec';
 
 export const PValueIntNA = -2147483648;

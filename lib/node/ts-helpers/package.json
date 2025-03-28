@@ -2,6 +2,9 @@
   "name": "@milaboratories/ts-helpers",
   "version": "1.1.4",
   "description": "Useful helpers for our TS projects",
+  "engines": {
+    "node": ">=20.16.0"
+  },
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -15,6 +18,7 @@
   "scripts": {
     "type-check": "tsc --noEmit --composite false",
     "build": "vite build",
+    "lint": "eslint .",
     "test": "jest --runInBand",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },

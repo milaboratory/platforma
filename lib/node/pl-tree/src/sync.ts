@@ -1,13 +1,14 @@
-import {
+import type {
   FieldData,
-  isNotNullResourceId,
-  isNullResourceId,
   OptionalResourceId,
   PlTransaction,
-  ResourceId
+  ResourceId,
+} from '@milaboratories/pl-client';
+import {
+  isNullResourceId,
 } from '@milaboratories/pl-client';
 import Denque from 'denque';
-import { ExtendedResourceData, PlTreeState } from './state';
+import type { ExtendedResourceData, PlTreeState } from './state';
 import { msToHumanReadable } from '@milaboratories/ts-helpers';
 
 /** Applied to list of fields in resource data. */
@@ -36,7 +37,7 @@ export interface TreeLoadingRequest {
  * {@link loadTreeState} to load updated state. */
 export function constructTreeLoadingRequest(
   tree: PlTreeState,
-  pruningFunction?: PruningFunction
+  pruningFunction?: PruningFunction,
 ): TreeLoadingRequest {
   const seedResources: ResourceId[] = [];
   const finalResources = new Set<ResourceId>();
@@ -75,7 +76,7 @@ export function initialTreeLoadingStat(): TreeLoadingStat {
     retrievedKeyValueBytes: 0,
     prunedFields: 0,
     finalResourcesSkipped: 0,
-    millisSpent: 0
+    millisSpent: 0,
   };
 }
 
@@ -99,7 +100,7 @@ export function formatTreeLoadingStat(stat: TreeLoadingStat): string {
 export async function loadTreeState(
   tx: PlTransaction,
   loadingRequest: TreeLoadingRequest,
-  stats?: TreeLoadingStat
+  stats?: TreeLoadingStat,
 ): Promise<ExtendedResourceData[]> {
   // saving start timestamp to add time spent in this function to the stats at the end of the method
   const startTimestamp = Date.now();
@@ -159,7 +160,7 @@ export async function loadTreeState(
         if (kv === undefined) throw new Error('Inconsistent replies');
 
         return { ...resource, kv };
-      })()
+      })(),
     );
   };
 

@@ -1,4 +1,4 @@
-import { Watcher } from './watcher';
+import type { Watcher } from './watcher';
 
 const DEFAULT_CHANGE_SOURCE_RECHECK_PERIOD = 7;
 
@@ -21,7 +21,7 @@ export class ChangeSource {
   private modCount: number = 0;
 
   public constructor(
-    private readonly recheckPeriod: number = DEFAULT_CHANGE_SOURCE_RECHECK_PERIOD
+    private readonly recheckPeriod: number = DEFAULT_CHANGE_SOURCE_RECHECK_PERIOD,
   ) {}
 
   /** Attach a watcher to the change source. Periodically this method performs
