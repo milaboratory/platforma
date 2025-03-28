@@ -22,7 +22,7 @@ export type BlockState<
    * template */
   ui: UiState;
 
-  /** Outputs rendered with block config */
+  /** Outputs rendered with block confing */
   outputs: Outputs;
 
   /** Current navigation state */

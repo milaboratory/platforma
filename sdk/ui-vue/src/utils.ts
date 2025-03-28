@@ -1,4 +1,4 @@
-import type { ValueOrErrors } from '@platforma-sdk/model';
+import type { ErrorLike, ValueOrErrors } from '@platforma-sdk/model';
 import type { OptionalResult } from './types';
 import type { ZodError } from 'zod';
 
@@ -6,8 +6,8 @@ export class UnresolvedError extends Error {}
 
 // @TODO use AggregateError
 export class MultiError extends Error {
-  constructor(public readonly errors: string[]) {
-    super(errors.join('\n'));
+  constructor(public readonly errors: ErrorLike[]) {
+    super(errors.map(e => e.message).join('\n'));
   }
 
   toString() {

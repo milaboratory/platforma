@@ -1,6 +1,6 @@
 {
-  "name": "@milaboratories/pl-model-common",
-  "version": "1.13.0",
+  "name": "@milaboratories/pl-error-like",
+  "version": "1.11.1",
   "description": "Platforma SDK Model",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
@@ -26,10 +26,11 @@
   "dependencies": {
     "zod": "catalog:",
     "canonicalize": "catalog:",
-    "@milaboratories/pl-error-like": "workspace:*"
+    "json-stringify-safe": "catalog:"
   },
   "devDependencies": {
     "@milaboratories/platforma-build-configs": "workspace:*",
+    "@types/json-stringify-safe": "catalog:",
     "@platforma-sdk/eslint-config": "workspace:*",
     "eslint": "catalog:",
     "typescript": "catalog:",

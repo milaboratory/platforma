@@ -29,6 +29,7 @@
     "@milaboratories/ts-helpers": "workspace:*"
   },
   "devDependencies": {
+    "@milaboratories/pl-error-like": "workspace:*",
     "@milaboratories/platforma-build-configs": "workspace:*",
     "typescript": "catalog:",
     "vite": "catalog:",
