@@ -1,5 +1,13 @@
 # @milaboratories/pl-errors
 
+## 1.0.3
+
+### Patch Changes
+
+- 9e9a70f: Configure eslint to all "node" packages
+- Updated dependencies [9e9a70f]
+  - @milaboratories/pl-client@2.7.14
+
 ## 1.0.2
 
 ### Patch Changes

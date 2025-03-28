@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.11.4
+
+### Patch Changes
+
+- 9e9a70f: Configure eslint to all "node" packages
+
 ## 1.11.3
 
 ### Patch Changes

@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/milaboratories.test-block-model.model",
-  "version": "1.0.34",
+  "version": "1.0.35",
   "private": true,
   "description": "Block model",
   "type": "module",

@@ -1,5 +1,14 @@
 # @milaboratories/pl-local
 
+## 1.7.1
+
+### Patch Changes
+
+- 9e9a70f: Configure eslint to all "node" packages
+- Updated dependencies [9e9a70f]
+  - @milaboratories/ts-helpers@1.1.5
+  - @milaboratories/pl-config@1.4.5
+
 ## 1.7.0
 
 ### Minor Changes
