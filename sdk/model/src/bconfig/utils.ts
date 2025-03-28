@@ -1,4 +1,4 @@
-import { BlockSection } from "@milaboratories/pl-model-common";
+import type { BlockSection } from '@milaboratories/pl-model-common';
 
 type OnlyString<S> = S extends string ? S : '';
 

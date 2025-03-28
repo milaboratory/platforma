@@ -1,6 +1,6 @@
-import { BlockRenderingMode } from '@milaboratories/pl-model-common';
-import { Code, TypedConfigOrConfigLambda } from './types';
-import { ConfigRenderLambda } from './lambdas';
+import type { BlockRenderingMode } from '@milaboratories/pl-model-common';
+import type { Code, TypedConfigOrConfigLambda } from './types';
+import type { ConfigRenderLambda } from './lambdas';
 
 export type BlockConfigV3<
   Args = unknown,
@@ -8,7 +8,7 @@ export type BlockConfigV3<
   Outputs extends Record<string, TypedConfigOrConfigLambda> = Record<
     string,
     TypedConfigOrConfigLambda
-  >
+  >,
 > = {
   /** SDK version used by the block */
   readonly sdkVersion: string;

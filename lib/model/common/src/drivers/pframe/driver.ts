@@ -84,7 +84,7 @@ export interface PFrameDriver {
   getData(
     handle: PTableHandle,
     columnIndices: number[],
-    range?: TableRange | undefined
+    range?: TableRange
   ): Promise<PTableVector[]>;
 }
 

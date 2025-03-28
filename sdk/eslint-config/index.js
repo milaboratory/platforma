@@ -4,6 +4,13 @@ import PluginVue from 'eslint-plugin-vue';
 import globals from 'globals';
 import stylistic from '@stylistic/eslint-plugin';
 
+// Common ignore patterns
+const commonIgnores = [
+  '**/coverage',
+  '**/dist',
+  '**/*.d.ts',
+];
+
 const base = tseslint.config(
   eslint.configs.recommended,
   tseslint.configs.recommended,
@@ -32,8 +39,7 @@ const base = tseslint.config(
 export const model = tseslint.config(
   {
     ignores: [
-      '**/coverage',
-      '**/dist',
+      ...commonIgnores,
       '**/bin',
       'eslint.config.mjs',
       'eslint.config.js',
@@ -43,10 +49,9 @@ export const model = tseslint.config(
     ],
   },
   {
-    files: ['**/*.{ts,vue}'],
+    files: ['**/*.ts'],
     extends: [
       ...base,
-      eslint.configs.recommended,
       tseslint.configs.recommendedTypeChecked,
     ],
     languageOptions: {
@@ -64,7 +69,7 @@ export const model = tseslint.config(
 
 export const ui = tseslint.config(
   {
-    ignores: ['*.d.ts', '**/coverage', '**/dist'],
+    ignores: [...commonIgnores],
     files: ['**/*.{ts,vue}'],
     extends: [
       ...base,

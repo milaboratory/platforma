@@ -1,4 +1,4 @@
-import { ExtractAction, TypedConfig } from './type_engine';
+import type { ExtractAction, TypedConfig } from './type_engine';
 
 export type SyncConfAction = { isSync: true };
 

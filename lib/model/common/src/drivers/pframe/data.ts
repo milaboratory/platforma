@@ -25,8 +25,9 @@ export type NotNAPValue = number | bigint | string;
 export type PValue =
   | PValueInt
   | PValueLong
-  | PValueFloat
-  | PValueDouble
+  // Doesn't differ from PValueInt, TODO: branded types for these PValue* types?
+  // | PValueFloat
+  // | PValueDouble
   | PValueString
   | PValueBytes;
 
