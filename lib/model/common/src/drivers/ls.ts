@@ -127,11 +127,11 @@ export interface LsDriver {
 export function getFilePathFromHandle(handle: ImportFileHandle): string {
   if (isImportFileHandleIndex(handle)) {
     const trimmed = handle.slice(indexPrefix.length);
-    const data = JSON.parse(decodeURIComponent(trimmed));
+    const data = JSON.parse(decodeURIComponent(trimmed)) as { path: string };
     return data.path;
   } else if (isImportFileHandleUpload(handle)) {
     const trimmed = handle.slice(uploadPrefix.length);
-    const data = JSON.parse(decodeURIComponent(trimmed));
+    const data = JSON.parse(decodeURIComponent(trimmed)) as { localPath: string };
     return data.localPath;
   }
 

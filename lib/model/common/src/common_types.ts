@@ -1,3 +1,6 @@
+/** Use this as constraint instead of `Function` */
+export type AnyFunction = (...args: any[]) => any;
+
 /** Value or errors */
 export type ValueOrErrors<T> =
   | { ok: true; value: T }
