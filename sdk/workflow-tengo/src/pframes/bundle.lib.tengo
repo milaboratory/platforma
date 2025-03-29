@@ -34,7 +34,11 @@ render := import(":render")
  *     - Adds an anchor with the given ID and reference to be resolved
  *
  *   addById(id)
- *     - Adds a PColumn by its anchored or absolute ID
+ *     - Adds a PColumn to the bundle collector by GeneralizedAPColumnId.
+ *       Automatically unwraps SlicedPColumnId.
+ *       @param id: string or object - The ID of the PColumn
+ *         - string: A CanonicalPColumnId (canonically serialized GeneralizedAPColumnId)
+ *         - object: Either a standard APColumnId or a SlicedPColumnId with target and axisFilters
  *
  *   addQuery(queryId, query)
  *     - Adds a custom query with the given ID to be resolved
@@ -93,15 +97,31 @@ createBuilder := func(ctx) {
 		},
 
 		/**
-		 * Adds a PColumn to the bundle collector by PColumnId or APColumnId.
+		 * Adds a PColumn to the bundle collector by GeneralizedAPColumnId.
 		 *
-		 * @param id: string or object - The ID of the PColumn (can be anchored or absolute)
+		 * @param id: string or object - The ID of the PColumn
+		 *   - string: A CanonicalPColumnId (canonically serialized GeneralizedAPColumnId)
+		 *   - object: Either a standard APColumnId or a SlicedPColumnId with target and axisFilters
 		 */
 		addById: func(id) {
+			encodedId := undefined
+			decodedId := undefined
+
 			if is_string(id) {
-				queries[id] = json.decode(id)
+				decodedId = json.decode(id)
+				encodedId = id
+			} else if is_map(id) {
+				decodedId = id
 			} else {
-				queries[canonical.encode(id)] = id
+				ll.panic("Invalid column ID type. Expected string or object.")
+			}
+
+			if is_map(decodedId) && !is_undefined(decodedId.target) && !is_undefined(decodedId.axisFilters) {
+				// Unwrapping SlicedPColumnId
+				columnKey := canonical.encode(decodedId.target)
+				queries[columnKey] = decodedId.target
+			} else {
+				queries[encodedId] = decodedId
 			}
 		},
 
