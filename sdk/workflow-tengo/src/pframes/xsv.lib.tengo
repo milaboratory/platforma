@@ -227,11 +227,34 @@ isStructuredPfMap := func(pf) {
  *
  * @param pf: p-frame - a list of p-columns ({data, spec}) or a frame-like map of col.data col.spec entries
  * @param xsvType: string - "csv" or "tsv"
- * @param params: map - export params
+ * @param params: object - export params
+ *                      {
+ *                        naStr?: string     - String to represent NA and missing values of numeric types (Int, Long, Float, Double)
+ *                                           - Default: "NaN"
+ *                        nullStr?: string   - String to represent NA and missing values of text types (String, Bytes)
+ *                                           - Default: "null"
+ *                        exportBytes?: bool - Toggle to export or skip axes and columns of type Bytes
+ *                                           - Default: false
+ *                        separator?: string - Single ASCII character to be used as separator
+ *                                           - Default: ',' for .csv, '\t' for .tsv
+ *                        columnSelector?: object
+ *                                           - Only columns matching the selector are exported
+ *                                           - Default: all columns are exported
+ *                                           {
+ *                                             type?: []string          - Match any of the types listed (Int, Long, Float, Double, String, Bytes)
+ *                                             name?: []string          - Match any of the names listed
+ *                                             annotationValue?: object - Match requires all the listed annotations to have provided values
+ *                                             annotationPattern?: object - Match requires all the listed annotations to match provided regex patterns
+ *                                           }
+ *                        joinType?: string  - Join type for columns with equal axes specifications
+ *                                           - Options: "Full" | "Inner"
+ *                                           - Default: "Full"
+ *                      }
  * @param ops: object - additional options
  *               {
  *                 partitions: {axisIdx: [keys]} - map of partitions to export; if not specified, all data is exported
  *				 }
+ * @return object: reference - a reference to exported xsv file.
  */
 exportFrame := func(pf, xsvType, params, ...ops) {
 	exportPfTpl := assets.importTemplate(":pframes.xsv-export-pframe")

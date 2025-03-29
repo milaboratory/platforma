@@ -97,7 +97,7 @@ filterPColumnData := func(data, slicingParams) {
             }
         }
 
-        return json.encode(newKeyArray)
+        return string(json.encode(newKeyArray))
     }
 
     // Handle different types of PColumn data
@@ -275,7 +275,7 @@ filterPColumnData := func(data, slicingParams) {
 
 self.body(func(inputs) {
     // Validate filtering parameters format
-    for _, param in inputs.slicingParams.getDataAsJson() {
+    for _, param in inputs.slicingParams {
         if len(param) != 2 {
             ll.panic("Invalid filtering parameter: %v, expected [axisIdx, valueToFilter]", param)
         }
@@ -285,6 +285,6 @@ self.body(func(inputs) {
     }
 
     return {
-        "result": filterPColumnData(inputs.data, inputs.slicingParams.getDataAsJson())
+        "result": filterPColumnData(inputs.data, inputs.slicingParams)
     }
 })
