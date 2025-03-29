@@ -1,5 +1,15 @@
 # @platforma-sdk/workflow-tengo
 
+## 3.1.0
+
+### Minor Changes
+
+- 88cebeb: Column Batches (builder and unmarshaller); Full support of SUniversalPColumnId (both filtered and vanilla variants)
+
+### Patch Changes
+
+- f0f6a8b: Spec distiller
+
 ## 3.0.3
 
 ### Patch Changes

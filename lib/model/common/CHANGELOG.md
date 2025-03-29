@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.12.0
+
+### Minor Changes
+
+- 88cebeb: Anchored Column Id / Selector API; (S)UniversalColumnId
+
 ## 1.11.4
 
 ### Patch Changes

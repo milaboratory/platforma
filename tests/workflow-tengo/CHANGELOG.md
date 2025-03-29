@@ -1,5 +1,13 @@
 # @platforma-sdk/workflow-tengo-tests
 
+## 1.6.13
+
+### Patch Changes
+
+- Updated dependencies [f0f6a8b]
+- Updated dependencies [88cebeb]
+  - @platforma-sdk/workflow-tengo@3.1.0
+
 ## 1.6.12
 
 ### Patch Changes
