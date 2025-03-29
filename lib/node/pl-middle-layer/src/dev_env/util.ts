@@ -1,4 +1,4 @@
-import { BigIntStats } from 'node:fs';
+import type { BigIntStats } from 'node:fs';
 import * as fsp from 'node:fs/promises';
 
 export async function tryStat(path: string): Promise<BigIntStats | undefined> {

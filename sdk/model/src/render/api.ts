@@ -24,7 +24,9 @@ import type {
 import {
   AnchoredIdDeriver,
   getAxisId,
-  resolveAnchors } from '@milaboratories/pl-model-common';
+  AnyFunction,
+  resolveAnchors,
+} from '@milaboratories/pl-model-common';
 import {
   ensurePColumn,
   extractAllColumns,
@@ -75,7 +77,8 @@ export class ResultPool {
     return this.ctx.calculateOptions(predicate);
   }
 
-  private defaultLabelFn = (spec: PObjectSpec, ref: PlRef) =>
+  // @TODO: unused, what is this for?
+  private defaultLabelFn = (spec: PObjectSpec, _ref: PlRef) =>
     spec.annotations?.['pl7.app/label'] ?? `Unlabelled`;
 
   public getOptions(
@@ -163,7 +166,7 @@ export class ResultPool {
           resolvedAnchors[key] = resolvedSpec;
         } else {
           // It's already a PColumnSpec
-          resolvedAnchors[key] = value as PColumnSpec;
+          resolvedAnchors[key] = value;
         }
       }
     }
@@ -374,7 +377,7 @@ export class ResultPool {
     const spec = this.getSpecByRef(ref);
     if (!spec) return undefined;
     if (!isPColumnSpec(spec)) throw new Error(`not a PColumn spec (kind = ${spec.kind})`);
-    return spec as PColumnSpec;
+    return spec;
   }
 
   /**
@@ -603,7 +606,6 @@ export type UnwrapFutureRef<K> =
       ? K
       : { [key in keyof K]: UnwrapFutureRef<K[key]> };
 
-// eslint-disable-next-line @typescript-eslint/no-unsafe-function-type, @typescript-eslint/no-explicit-any
-export type InferRenderFunctionReturn<RF extends Function> = RF extends (...args: any) => infer R
+export type InferRenderFunctionReturn<RF extends AnyFunction> = RF extends (...args: any) => infer R
   ? UnwrapFutureRef<R>
   : never;

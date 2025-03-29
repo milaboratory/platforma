@@ -1,22 +1,26 @@
 import { PlatformClient } from '../proto/github.com/milaboratory/pl/plapi/plapiproto/api.client';
+import type {
+  Interceptor } from '@grpc/grpc-js';
 import {
   ChannelCredentials,
   InterceptingCall,
-  Interceptor,
-  status as GrpcStatus
+  status as GrpcStatus,
 } from '@grpc/grpc-js';
-import {
+import type {
   AuthInformation,
   AuthOps,
-  plAddressToConfig,
   PlClientConfig,
   PlConnectionStatus,
-  PlConnectionStatusListener
+  PlConnectionStatusListener,
 } from './config';
-import { GrpcOptions, GrpcTransport } from '@protobuf-ts/grpc-transport';
+import {
+  plAddressToConfig,
+} from './config';
+import type { GrpcOptions } from '@protobuf-ts/grpc-transport';
+import { GrpcTransport } from '@protobuf-ts/grpc-transport';
 import { LLPlTransaction } from './ll_transaction';
 import { parsePlJwt } from '../util/pl';
-import { Dispatcher } from 'undici';
+import type { Dispatcher } from 'undici';
 import { inferAuthRefreshTime } from './auth';
 import { defaultHttpDispatcher } from '@milaboratories/pl-http';
 
@@ -53,10 +57,10 @@ export class LLPlClient {
     ops: {
       auth?: AuthOps;
       statusListener?: PlConnectionStatusListener;
-    } = {}
+    } = {},
   ) {
-    this.conf =
-      typeof configOrAddress === 'string' ? plAddressToConfig(configOrAddress) : configOrAddress;
+    this.conf
+      = typeof configOrAddress === 'string' ? plAddressToConfig(configOrAddress) : configOrAddress;
 
     const grpcInterceptors: Interceptor[] = [];
 
@@ -65,7 +69,7 @@ export class LLPlClient {
     if (auth !== undefined) {
       this.refreshTimestamp = inferAuthRefreshTime(
         auth.authInformation,
-        this.conf.authMaxRefreshSeconds
+        this.conf.authMaxRefreshSeconds,
       );
       grpcInterceptors.push(this.createAuthInterceptor());
       this.authInformation = auth.authInformation;
@@ -91,8 +95,8 @@ export class LLPlClient {
         : ChannelCredentials.createInsecure(),
       clientOptions: {
         'grpc.keepalive_time_ms': 30_000, // 30 seconds
-        interceptors: grpcInterceptors
-      }
+        'interceptors': grpcInterceptors,
+      },
     };
 
     if (this.conf.grpcProxy) process.env.grpc_proxy = this.conf.grpcProxy;
@@ -142,27 +146,27 @@ export class LLPlClient {
 
   private refreshAuthInformationIfNeeded(): void {
     if (
-      this.refreshTimestamp === undefined ||
-      Date.now() < this.refreshTimestamp ||
-      this.authRefreshInProgress ||
-      this._status === 'Unauthenticated'
+      this.refreshTimestamp === undefined
+      || Date.now() < this.refreshTimestamp
+      || this.authRefreshInProgress
+      || this._status === 'Unauthenticated'
     )
       return;
 
-    // Running refresh in background
+    // Running refresh in background`
     this.authRefreshInProgress = true;
-    (async () => {
+    void (async () => {
       try {
         const response = await this.grpcPl.getJWTToken({
           expiration: {
             seconds: BigInt(this.conf.authTTLSeconds),
-            nanos: 0
-          }
+            nanos: 0,
+          },
         }).response;
         this.authInformation = { jwtToken: response.token };
         this.refreshTimestamp = inferAuthRefreshTime(
           this.authInformation,
-          this.conf.authMaxRefreshSeconds
+          this.conf.authMaxRefreshSeconds,
         );
         if (this.onAuthUpdate) this.onAuthUpdate(this.authInformation);
       } catch (e: unknown) {
@@ -187,9 +191,9 @@ export class LLPlClient {
                 // (!!!) don't change to "==="
                 this.updateStatus('Disconnected');
               next(status);
-            }
+            },
           });
-        }
+        },
       });
     };
   }
@@ -206,7 +210,7 @@ export class LLPlClient {
           } else {
             next(metadata, listener);
           }
-        }
+        },
       });
     };
   }
@@ -218,8 +222,8 @@ export class LLPlClient {
       return this.grpcPl.tx({
         abort: totalAbortSignal,
         timeout:
-          ops.timeout ??
-          (rw ? this.conf.defaultRWTransactionTimeout : this.conf.defaultROTransactionTimeout)
+          ops.timeout
+          ?? (rw ? this.conf.defaultRWTransactionTimeout : this.conf.defaultROTransactionTimeout),
       });
     });
   }

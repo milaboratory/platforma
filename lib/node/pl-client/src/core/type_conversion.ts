@@ -1,19 +1,22 @@
-import {
+import type {
   Field,
+  Resource } from '../proto/github.com/milaboratory/pl/plapi/plapiproto/api_types';
+import {
   Field_ValueStatus,
-  Resource,
-  Resource_Kind
+  Resource_Kind,
 } from '../proto/github.com/milaboratory/pl/plapi/plapiproto/api_types';
 import { FieldType as GrpcFieldType } from '../proto/github.com/milaboratory/pl/plapi/plapiproto/base_types';
-import {
+import type {
   FieldData,
   FieldStatus,
-  NullResourceId,
   OptionalResourceId,
   FieldType,
   ResourceData,
   ResourceId,
-  ResourceKind
+  ResourceKind,
+} from './types';
+import {
+  NullResourceId,
 } from './types';
 import { assertNever, notEmpty } from '@milaboratories/ts-helpers';
 import { throwPlNotFoundError } from './errors';
@@ -38,7 +41,7 @@ export function protoToResource(proto: Resource): ResourceData {
     kind: protoToResourceKind(proto.kind),
     error: protoToError(proto),
     final: proto.isFinal,
-    fields: proto.fields?.filter((f) => f.id!.fieldName !== ResourceErrorField).map(protoToField)
+    fields: proto.fields?.filter((f) => f.id!.fieldName !== ResourceErrorField).map(protoToField),
   };
 }
 
@@ -65,7 +68,7 @@ export function protoToField(proto: Field): FieldData {
     status: protoToFieldStatus(proto.valueStatus),
     value: proto.value as OptionalResourceId,
     error: proto.error as OptionalResourceId,
-    valueIsFinal: proto.valueIsFinal
+    valueIsFinal: proto.valueIsFinal,
   };
 }
 

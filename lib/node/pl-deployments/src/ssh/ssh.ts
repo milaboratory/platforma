@@ -1,12 +1,14 @@
+/* eslint-disable @typescript-eslint/no-misused-promises */
+/* eslint-disable @typescript-eslint/no-base-to-string */
 import type { ConnectConfig, ClientChannel, SFTPWrapper } from 'ssh2';
 import ssh, { Client } from 'ssh2';
-import net from 'net';
-import dns from 'dns';
-import fs from 'fs';
-import { readFile } from 'fs/promises';
+import net from 'node:net';
+import dns from 'node:dns';
+import fs from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import upath from 'upath';
 import { RetryablePromise, type MiLogger } from '@milaboratories/ts-helpers';
-import { randomBytes } from 'crypto';
+import { randomBytes } from 'node:crypto';
 
 const defaultConfig: ConnectConfig = {
   keepaliveInterval: 60000,
@@ -76,10 +78,9 @@ export class SshClient {
    */
   public async exec(command: string): Promise<SshExecResult> {
     return new Promise((resolve, reject) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       this.client.exec(command, (err: any, stream: ClientChannel) => {
         if (err) {
-          return reject(`ssh.exec: ${command}: ${err}`);
+          return reject(new Error(`ssh.exec: ${command}: ${err}`));
         }
 
         let stdout = '';
@@ -361,7 +362,7 @@ export class SshClient {
             try {
               await this.getForderStructure(sftp, itemPath, data);
             } catch (error) {
-              return reject(error);
+              return reject(error instanceof Error ? error : new Error(String(error)));
             }
           } else {
             data.files.push(itemPath);
@@ -489,8 +490,8 @@ export class SshClient {
 
   public uploadFileUsingExistingSftp(sftp: SFTPWrapper, localPath: string, remotePath: string, mode: number = 0o660) {
     return new Promise((resolve, reject) => {
-      readFile(localPath).then(async (result: Buffer) => {
-        this.writeFile(sftp, remotePath, result, mode)
+      void readFile(localPath).then(async (result: Buffer) => {
+        return this.writeFile(sftp, remotePath, result, mode)
           .then(() => {
             resolve(undefined);
           })
@@ -541,7 +542,7 @@ export class SshClient {
    */
   public async uploadDirectory(localDir: string, remoteDir: string, mode: number = 0o660): Promise<void> {
     return new Promise((resolve, reject) => {
-      this.withSftp(async (sftp: SFTPWrapper) => {
+      void this.withSftp(async (sftp: SFTPWrapper) => {
         try {
           await this.__uploadDirectory(sftp, localDir, remoteDir, mode);
           resolve();

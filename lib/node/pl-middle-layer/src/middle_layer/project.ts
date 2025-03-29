@@ -65,7 +65,7 @@ function stringifyForDump(object: unknown): string {
       return Buffer.from(value.buffer, value.byteOffset, value.byteLength).toString('base64');
     else if (Buffer.isBuffer(value))
       return value.toString('base64');
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+
     return value;
   });
 }
@@ -283,6 +283,7 @@ export class Project {
   /**
    * Sets navigation state.
    * */
+  // eslint-disable-next-line @typescript-eslint/require-await
   public async setNavigationState(blockId: string, state: NavigationState): Promise<void> {
     this.navigationStates.setState(blockId, state);
   }

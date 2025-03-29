@@ -1,7 +1,8 @@
 /** Pl Backend throws arbitrary errors, and we're trying to parse them here. */
 
-import { z } from "zod";
-import { ResourceId, resourceIdToString, ResourceType, resourceTypeToString } from "@milaboratories/pl-client";
+import { z } from 'zod';
+import type { ResourceId, ResourceType } from '@milaboratories/pl-client';
+import { resourceIdToString, resourceTypeToString } from '@milaboratories/pl-client';
 
 /**
  * A parsed error from the Pl backend.
@@ -38,7 +39,7 @@ export class PlErrorReport extends Error {
     const r = this.resource ? resourceIdToString(this.resource) : '';
     const f = this.fieldName ? `/${this.fieldName}` : '';
     const errType = this.plErrorType ? `error type: ${this.plErrorType}` : '';
-    const subErrors = this.errors.map(e => e.message).join('\n\n');
+    const subErrors = this.errors.map((e) => e.message).join('\n\n');
 
     return `PlErrorReport: resource: ${rt} ${r}${f}
 ${errType}
@@ -209,10 +210,8 @@ export function parseSubErrors(message: string): PlCoreError[] {
       // we need initial stage because apparently the first line
       // of the error doesn't have [I], but is a path line.
       state.stage = 'path';
-
     } else if (state.stage == 'path' && !isPath(line)) {
       state.stage = 'message';
-
     } else if (state.stage == 'message' && isPath(line)) {
       state.stage = 'path';
       const text = state.value.join('\n');

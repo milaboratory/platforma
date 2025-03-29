@@ -1,4 +1,4 @@
-import {
+import type {
   ActGetField,
   ActGetFromCtx,
   ActGetImmediate,
@@ -25,12 +25,12 @@ import {
   ActGetProgressLog,
   ActGetProgressLogWithInfo,
   ActGetLogHandle,
-  ActExtractArchiveAndGetURL
+  ActExtractArchiveAndGetURL,
 } from './actions_kinds';
-import { ExtractAction, POCExtractAction, PrimitiveOrConfig, TypedConfig } from './type_engine';
-import { Cfg } from './model';
-import { CheckedSyncConf } from './type_util';
-import { ArchiveFormat } from '@milaboratories/pl-model-common';
+import type { ExtractAction, POCExtractAction, PrimitiveOrConfig, TypedConfig } from './type_engine';
+import type { Cfg } from './model';
+import type { CheckedSyncConf } from './type_util';
+import type { ArchiveFormat } from '@milaboratories/pl-model-common';
 
 //
 // Helpers
@@ -38,10 +38,10 @@ import { ArchiveFormat } from '@milaboratories/pl-model-common';
 
 function primitiveToConfig(value: PrimitiveOrConfig): TypedConfig {
   if (
-    typeof value === 'string' ||
-    typeof value === 'number' ||
-    typeof value === 'boolean' ||
-    value === null
+    typeof value === 'string'
+    || typeof value === 'number'
+    || typeof value === 'boolean'
+    || value === null
   )
     return getImmediate(value);
   else return value as TypedConfig;
@@ -60,11 +60,11 @@ export function getFromCfg<const V extends string>(variable: V): TypedConfig<Act
 //
 
 export function isolate<const Config extends TypedConfig>(
-  cfg: Config
+  cfg: Config,
 ): TypedConfig<ActIsolate<ExtractAction<Config>>> {
   return {
     type: 'Isolate',
-    cfg
+    cfg,
   } as Cfg as any;
 }
 
@@ -87,13 +87,13 @@ export function getImmediate<const T>(value: T): TypedConfig<ActGetImmediate<T>>
 }
 
 export function makeObject<const T extends Record<string, PrimitiveOrConfig>>(
-  template: T
+  template: T,
 ): TypedConfig<ActMakeObject<{ [Key in keyof T]: POCExtractAction<T[Key]> }>> {
   const normalizedTemplate: Record<string, TypedConfig> = {};
   for (const [k, cfg] of Object.entries(template)) normalizedTemplate[k] = primitiveToConfig(cfg);
   return {
     type: 'MakeObject',
-    template: normalizedTemplate
+    template: normalizedTemplate,
   } as Cfg as any;
 }
 
@@ -104,34 +104,34 @@ export function makeArray<const T extends PrimitiveOrConfig[]>(
   for (const cfg of template) normalizedTemplate.push(primitiveToConfig(cfg));
   return {
     type: 'MakeArray',
-    template: normalizedTemplate
+    template: normalizedTemplate,
   } as Cfg as any;
 }
 
 export function getJsonField<
   const Source extends PrimitiveOrConfig,
-  const Field extends PrimitiveOrConfig
+  const Field extends PrimitiveOrConfig,
 >(
   source: Source,
-  field: Field
+  field: Field,
 ): TypedConfig<ActGetField<POCExtractAction<Source>, POCExtractAction<Field>>> {
   return {
     type: 'GetJsonField',
     source: primitiveToConfig(source),
-    field: primitiveToConfig(field)
+    field: primitiveToConfig(field),
   } as Cfg as any;
 }
 
 export function mapRecordValues<
   const Source extends TypedConfig,
-  const Mapping extends TypedConfig
+  const Mapping extends TypedConfig,
 >(
   source: Source & CheckedSyncConf<Source>,
   mapping: Mapping
 ): TypedConfig<ActMapRecordValues<ExtractAction<Source>, ExtractAction<Mapping>, '$it'>>;
 export function mapRecordValues<
   const Source extends TypedConfig,
-  const Mapping extends TypedConfig
+  const Mapping extends TypedConfig,
 >(
   source: Source,
   mapping: Mapping & CheckedSyncConf<Mapping>
@@ -139,7 +139,7 @@ export function mapRecordValues<
 export function mapRecordValues<
   const Source extends TypedConfig,
   const Mapping extends TypedConfig,
-  const ItVar extends string
+  const ItVar extends string,
 >(
   source: Source & CheckedSyncConf<Source>,
   mapping: Mapping,
@@ -148,7 +148,7 @@ export function mapRecordValues<
 export function mapRecordValues<
   const Source extends TypedConfig,
   const Mapping extends TypedConfig,
-  const ItVar extends string
+  const ItVar extends string,
 >(
   source: Source,
   mapping: Mapping & CheckedSyncConf<Mapping>,
@@ -157,17 +157,17 @@ export function mapRecordValues<
 export function mapRecordValues<
   const Source extends TypedConfig,
   const Mapping extends TypedConfig,
-  const ItVar extends string
+  const ItVar extends string,
 >(
   source: Source,
   mapping: Mapping,
-  itVar: ItVar = '$it' as ItVar
+  itVar: ItVar = '$it' as ItVar,
 ): TypedConfig<ActMapRecordValues<ExtractAction<Source>, ExtractAction<Mapping>, ItVar>> {
   return {
     type: 'MapRecordValues',
     source,
     mapping,
-    itVar
+    itVar,
   } as Cfg as any;
 }
 
@@ -182,7 +182,7 @@ export function mapArrayValues<const Source extends TypedConfig, const Mapping e
 export function mapArrayValues<
   const Source extends TypedConfig,
   const Mapping extends TypedConfig,
-  const ItVar extends string
+  const ItVar extends string,
 >(
   source: Source & CheckedSyncConf<Source>,
   mapping: Mapping,
@@ -191,7 +191,7 @@ export function mapArrayValues<
 export function mapArrayValues<
   const Source extends TypedConfig,
   const Mapping extends TypedConfig,
-  const ItVar extends string
+  const ItVar extends string,
 >(
   source: Source,
   mapping: Mapping & CheckedSyncConf<Mapping>,
@@ -200,26 +200,26 @@ export function mapArrayValues<
 export function mapArrayValues<
   const Source extends TypedConfig,
   const Mapping extends TypedConfig,
-  const ItVar extends string
+  const ItVar extends string,
 >(
   source: Source,
   mapping: Mapping,
-  itVar: ItVar = '$it' as ItVar
+  itVar: ItVar = '$it' as ItVar,
 ): TypedConfig<ActMapArrayValues<ExtractAction<Source>, ExtractAction<Mapping>, ItVar>> {
   return {
     type: 'MapArrayValues',
     source,
     mapping,
-    itVar
+    itVar,
   } as Cfg as any;
 }
 
 export function flatten<const Source extends TypedConfig>(
-  source: Source
+  source: Source,
 ): TypedConfig<ActFlatten<ExtractAction<Source>>> {
   return {
     type: 'Flatten',
-    source
+    source,
   } as Cfg as any;
 }
 
@@ -228,42 +228,42 @@ export function flatten<const Source extends TypedConfig>(
 //
 
 export function isEmpty<const Arg extends TypedConfig>(
-  arg: Arg
+  arg: Arg,
 ): TypedConfig<ActIsEmpty<ExtractAction<Arg>>> {
   return {
     type: 'IsEmpty',
-    arg
+    arg,
   } as Cfg as any;
 }
 
 export function not<const Operand extends TypedConfig>(
-  operand: Operand
+  operand: Operand,
 ): TypedConfig<ActNot<ExtractAction<Operand>>> {
   return {
     type: 'Not',
-    operand
+    operand,
   } as Cfg as any;
 }
 
 export function and<const Operand1 extends TypedConfig, const Operand2 extends TypedConfig>(
   operand1: Operand1,
-  operand2: Operand2
+  operand2: Operand2,
 ): TypedConfig<ActAnd<ExtractAction<Operand1>, ExtractAction<Operand2>>> {
   return {
     type: 'And',
     operand1,
-    operand2
+    operand2,
   } as Cfg as any;
 }
 
 export function or<const Operand1 extends TypedConfig, const Operand2 extends TypedConfig>(
   operand1: Operand1,
-  operand2: Operand2
+  operand2: Operand2,
 ): TypedConfig<ActOr<ExtractAction<Operand1>, ExtractAction<Operand2>>> {
   return {
     type: 'Or',
     operand1,
-    operand2
+    operand2,
   } as Cfg as any;
 }
 
@@ -273,32 +273,32 @@ export function or<const Operand1 extends TypedConfig, const Operand2 extends Ty
 
 export function getResourceField<
   const Source extends PrimitiveOrConfig,
-  const Field extends PrimitiveOrConfig
+  const Field extends PrimitiveOrConfig,
 >(
   source: Source,
-  field: Field
+  field: Field,
 ): TypedConfig<ActGetResourceField<POCExtractAction<Source>, POCExtractAction<Field>>> {
   return {
     type: 'GetResourceField',
     source: primitiveToConfig(source),
-    field: primitiveToConfig(field)
+    field: primitiveToConfig(field),
   } as Cfg as any;
 }
 
 export function getResourceValueAsJson<T>() {
   return function <const Source extends PrimitiveOrConfig>(
-    source: Source
+    source: Source,
   ): TypedConfig<ActGetResourceValueAsJson<POCExtractAction<Source>, T>> {
     return {
       type: 'GetResourceValueAsJson',
-      source: primitiveToConfig(source)
+      source: primitiveToConfig(source),
     } as Cfg as any;
   };
 }
 
 export function mapResourceFields<
   const Source extends TypedConfig,
-  const Mapping extends TypedConfig
+  const Mapping extends TypedConfig,
 >(
   source: Source,
   mapping: Mapping
@@ -306,7 +306,7 @@ export function mapResourceFields<
 export function mapResourceFields<
   const Source extends TypedConfig,
   const Mapping extends TypedConfig,
-  const ItVar extends string
+  const ItVar extends string,
 >(
   source: Source,
   mapping: Mapping,
@@ -315,17 +315,17 @@ export function mapResourceFields<
 export function mapResourceFields<
   const Source extends TypedConfig,
   const Mapping extends TypedConfig,
-  const ItVar extends string
+  const ItVar extends string,
 >(
   source: Source,
   mapping: Mapping,
-  itVar: ItVar = '$it' as ItVar
+  itVar: ItVar = '$it' as ItVar,
 ): TypedConfig<ActMapResourceFields<ExtractAction<Source>, ExtractAction<Mapping>, ItVar>> {
   return {
     type: 'MapResourceFields',
     source,
     mapping,
-    itVar
+    itVar,
   } as Cfg as TypedConfig<
     ActMapResourceFields<ExtractAction<Source>, ExtractAction<Mapping>, ItVar>
   >;
@@ -336,49 +336,49 @@ export function mapResourceFields<
 //
 
 export function getBlobContent<const Source extends TypedConfig>(
-  source: Source
+  source: Source,
 ): TypedConfig<ActGetBlobContent<ExtractAction<Source>>> {
   return {
     type: 'GetBlobContent',
-    source: primitiveToConfig(source)
+    source: primitiveToConfig(source),
   } as Cfg as any;
 }
 
 export function getBlobContentAsString<const Source extends TypedConfig>(
-  source: Source
+  source: Source,
 ): TypedConfig<ActGetBlobContentAsString<ExtractAction<Source>>> {
   return {
     type: 'GetBlobContentAsString',
-    source: primitiveToConfig(source)
+    source: primitiveToConfig(source),
   } as Cfg as any;
 }
 
 export function getBlobContentAsJson<T>() {
   return function <const Source extends TypedConfig>(
-    source: Source
+    source: Source,
   ): TypedConfig<ActGetBlobContentAsJson<ExtractAction<Source>, T>> {
     return {
       type: 'GetBlobContentAsJson',
-      source: primitiveToConfig(source)
+      source: primitiveToConfig(source),
     } as Cfg as any;
   };
 }
 
 export function getDownloadedBlobContent<const Source extends TypedConfig>(
-  source: Source
+  source: Source,
 ): TypedConfig<ActGetDownloadedBlobContent<ExtractAction<Source>>> {
   return {
     type: 'GetDownloadedBlobContent',
-    source: primitiveToConfig(source)
+    source: primitiveToConfig(source),
   } as Cfg as any;
 }
 
 export function getOnDemandBlobContent<const Source extends TypedConfig>(
-  source: Source
+  source: Source,
 ): TypedConfig<ActGetOnDemandBlobContent<ExtractAction<Source>>> {
   return {
     type: 'GetOnDemandBlobContent',
-    source: primitiveToConfig(source)
+    source: primitiveToConfig(source),
   } as Cfg as any;
 }
 
@@ -393,7 +393,7 @@ export function extractArchiveAndGetURL<const Source extends TypedConfig>(
   return {
     type: 'ExtractArchiveAndGetURL',
     format,
-    source: primitiveToConfig(source)
+    source: primitiveToConfig(source),
   } as Cfg as any;
 }
 
@@ -402,11 +402,11 @@ export function extractArchiveAndGetURL<const Source extends TypedConfig>(
 //
 
 export function getImportProgress<const Source extends TypedConfig>(
-  source: Source
+  source: Source,
 ): TypedConfig<ActImportProgress<ExtractAction<Source>>> {
   return {
     type: 'GetImportProgress',
-    source: primitiveToConfig(source)
+    source: primitiveToConfig(source),
   } as Cfg as any;
 }
 
@@ -416,42 +416,42 @@ export function getImportProgress<const Source extends TypedConfig>(
 
 export function getLastLogs<const Source extends TypedConfig>(
   source: Source,
-  lines: number
+  lines: number,
 ): TypedConfig<ActGetLastLogs<ExtractAction<Source>>> {
   return {
     type: 'GetLastLogs',
     source: primitiveToConfig(source),
-    lines
+    lines,
   } as Cfg as any;
 }
 
 export function getProgressLog<const Source extends TypedConfig>(
   source: Source,
-  patternToSearch: string
+  patternToSearch: string,
 ): TypedConfig<ActGetProgressLog<ExtractAction<Source>>> {
   return {
     type: 'GetProgressLog',
     source: primitiveToConfig(source),
-    patternToSearch
+    patternToSearch,
   } as Cfg as any;
 }
 
 export function getProgressLogWithInfo<const Source extends TypedConfig>(
   source: Source,
-  patternToSearch: string
+  patternToSearch: string,
 ): TypedConfig<ActGetProgressLogWithInfo<ExtractAction<Source>>> {
   return {
     type: 'GetProgressLogWithInfo',
     source: primitiveToConfig(source),
-    patternToSearch
+    patternToSearch,
   } as Cfg as any;
 }
 
 export function getLogHandle<const Source extends TypedConfig>(
-  source: Source
+  source: Source,
 ): TypedConfig<ActGetLogHandle<ExtractAction<Source>>> {
   return {
     type: 'GetLogHandle',
-    source: primitiveToConfig(source)
+    source: primitiveToConfig(source),
   } as Cfg as any;
 }

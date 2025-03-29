@@ -1,8 +1,9 @@
-import { ResourceId, ResourceType } from '@milaboratories/pl-client';
-import { Optional, Writable } from 'utility-types';
-import { ZodType, z } from 'zod';
-import { PlTreeEntry, PlTreeEntryAccessor, PlTreeNodeAccessor } from './accessors';
-import { ComputableCtx } from '@milaboratories/computable';
+import type { ResourceId, ResourceType } from '@milaboratories/pl-client';
+import type { Optional, Writable } from 'utility-types';
+import type { ZodType, z } from 'zod';
+import type { PlTreeNodeAccessor } from './accessors';
+import { PlTreeEntry, PlTreeEntryAccessor } from './accessors';
+import type { ComputableCtx } from '@milaboratories/computable';
 import { notEmpty } from '@milaboratories/ts-helpers';
 
 /**
@@ -13,7 +14,7 @@ import { notEmpty } from '@milaboratories/ts-helpers';
 export type ResourceSnapshot<
   Data = undefined,
   Fields extends Record<string, ResourceId | undefined> | undefined = undefined,
-  KV extends Record<string, unknown> | undefined = undefined
+  KV extends Record<string, unknown> | undefined = undefined,
 > = {
   readonly id: ResourceId;
   readonly type: ResourceType;
@@ -33,7 +34,7 @@ type ResourceSnapshotGeneric = ResourceSnapshot<
 export type ResourceSnapshotSchema<
   Data extends ZodType | 'raw' | undefined = undefined,
   Fields extends Record<string, boolean> | undefined = undefined,
-  KV extends Record<string, ZodType | 'raw'> | undefined = undefined
+  KV extends Record<string, ZodType | 'raw'> | undefined = undefined,
 > = {
   readonly data: Data;
   readonly fields: Fields;
@@ -44,9 +45,9 @@ export type ResourceSnapshotSchema<
 export function rsSchema<
   const Data extends ZodType | 'raw' | undefined = undefined,
   const Fields extends Record<string, boolean> | undefined = undefined,
-  const KV extends Record<string, ZodType | 'raw'> | undefined = undefined
+  const KV extends Record<string, ZodType | 'raw'> | undefined = undefined,
 >(
-  schema: Optional<ResourceSnapshotSchema<Data, Fields, KV>>
+  schema: Optional<ResourceSnapshotSchema<Data, Fields, KV>>,
 ): ResourceSnapshotSchema<Data, Fields, KV> {
   return schema as any;
 }
@@ -114,10 +115,10 @@ export function makeResourceSnapshot<Schema extends ResourceSnapshotSchemaGeneri
 export function makeResourceSnapshot<Schema extends ResourceSnapshotSchemaGeneric>(
   res: PlTreeEntry | PlTreeEntryAccessor | PlTreeNodeAccessor,
   schema: Schema,
-  ctx?: ComputableCtx
+  ctx?: ComputableCtx,
 ): InferSnapshot<Schema> {
-  const node =
-    res instanceof PlTreeEntry
+  const node
+    = res instanceof PlTreeEntry
       ? notEmpty(ctx).accessor(res).node()
       : res instanceof PlTreeEntryAccessor
         ? res.node()
@@ -138,7 +139,7 @@ export function makeResourceSnapshot<Schema extends ResourceSnapshotSchemaGeneri
       fields[fieldName] = node.traverse({
         field: fieldName,
         errorIfFieldNotSet: required,
-        stableIfNotFound: !required
+        stableIfNotFound: !required,
       })?.id;
     result.fields = fields;
   }
@@ -174,21 +175,21 @@ export type ResourceWithData = {
 export function treeEntryToResourceWithData(
   res: PlTreeEntry | ResourceWithData,
   fields: string[],
-  ctx: ComputableCtx
+  ctx: ComputableCtx,
 ): ResourceWithData {
   if (res instanceof PlTreeEntry) {
-    const node = ctx.accessor(res as PlTreeEntry).node();
+    const node = ctx.accessor(res).node();
     const info = node.resourceInfo;
 
     const fValues: [string, ResourceId | undefined][] = fields.map((name) => [
       name,
-      node.getField(name)?.value?.id
+      node.getField(name)?.value?.id,
     ]);
 
     return {
       ...info,
       fields: new Map(fValues),
-      data: node.getData() ?? new Uint8Array()
+      data: node.getData() ?? new Uint8Array(),
     };
   }
 
@@ -206,16 +207,16 @@ export type ResourceWithMetadata = {
 export function treeEntryToResourceWithMetadata(
   res: PlTreeEntry | ResourceWithMetadata,
   mdKeys: string[],
-  ctx: ComputableCtx
+  ctx: ComputableCtx,
 ): ResourceWithMetadata {
   if (!(res instanceof PlTreeEntry)) return res;
 
-  const node = ctx.accessor(res as PlTreeEntry).node();
+  const node = ctx.accessor(res).node();
   const info = node.resourceInfo;
   const mdEntries: [string, any][] = mdKeys.map((k) => [k, node.getKeyValue(k)]);
 
   return {
     ...info,
-    metadata: Object.fromEntries(mdEntries)
+    metadata: Object.fromEntries(mdEntries),
   };
 }

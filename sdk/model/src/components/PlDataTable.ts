@@ -1,9 +1,6 @@
-import {
+import type {
   AxisSpec,
-  getAxisId,
-  isPColumn,
   JoinEntry,
-  matchAxisId,
   PColumn,
   PColumnIdAndSpec,
   PColumnSpec,
@@ -11,12 +8,23 @@ import {
   PObjectId,
   PTableHandle,
   PTableRecordFilter,
-  PTableSorting
+  PTableSorting,
 } from '@milaboratories/pl-model-common';
-import { RenderCtx, TreeNodeAccessor } from '../render';
+import {
+  getAxisId,
+  isPColumn,
+  matchAxisId,
+} from '@milaboratories/pl-model-common';
+import type { RenderCtx } from '../render';
+import { TreeNodeAccessor } from '../render';
 
 /** Data table state */
 export type PlDataTableGridState = {
+  // TODO request stable key from the driver
+  /**
+   * Hash of the specs for now, but in the future it will be a stable id of the source
+   */
+  sourceId?: string;
   /** Includes column ordering */
   columnOrder?: {
     /** All colIds in order */
@@ -37,10 +45,12 @@ export type PlDataTableGridState = {
     /** All colIds which were hidden */
     hiddenColIds: string[];
   };
-
   /** current sheet selections */
   sheets?: Record<string, string | number>;
 };
+
+/** TODO: refactor to use sheets in the grid state */
+export type PlDataTableGridStateWithoutSheets = Omit<PlDataTableGridState, 'sheets'>;
 
 export type PlDataTableSheet = {
   /** spec of the axis to use */
@@ -338,7 +348,7 @@ export function createPlDataTable<A, U>(
   ctx: RenderCtx<A, U>,
   columns: PColumn<TreeNodeAccessor | PColumnValues>[],
   tableState: PlDataTableState | undefined,
-  ops?: PTableRecordFilter[] | CreatePlDataTableOps
+  ops?: PTableRecordFilter[] | CreatePlDataTableOps,
 ): PTableHandle | undefined {
   // ops migration for backward compatibility with previous deprecated API
   if (Array.isArray(ops)) {
@@ -380,9 +390,9 @@ export function createPlDataTable<A, U>(
               id: id as PObjectId,
               spec: {
                 ...labelColumn.spec,
-                axesSpec: [{ ...axisId, annotations: labelAxis.annotations }]
+                axesSpec: [{ ...axisId, annotations: labelAxis.annotations }],
               },
-              data: labelColumn.data
+              data: labelColumn.data,
             });
           } else {
             labelColumns.set(colId(labelColumn.id), labelColumn);
@@ -395,7 +405,7 @@ export function createPlDataTable<A, U>(
   // if at least one column is not yet ready, we can't show the table
   if (
     [...columns, ...labelColumns.values()].some(
-      (a) => a.data instanceof TreeNodeAccessor && !a.data.getIsReadyOrError()
+      (a) => a.data instanceof TreeNodeAccessor && !a.data.getIsReadyOrError(),
     )
   )
     return undefined;
@@ -417,12 +427,12 @@ export function createPlDataTable<A, U>(
       type: 'outer',
       primary: {
         type: ops?.coreJoinType ?? 'full',
-        entries: coreColumns.map((c) => ({ type: 'column', column: c }))
+        entries: coreColumns.map((c) => ({ type: 'column', column: c })),
       },
-      secondary: secondaryColumns.map((c) => ({ type: 'column', column: c }))
+      secondary: secondaryColumns.map((c) => ({ type: 'column', column: c })),
     },
     filters: [...(ops?.filters ?? []), ...(tableState?.pTableParams?.filters ?? [])],
-    sorting: tableState?.pTableParams?.sorting ?? []
+    sorting: tableState?.pTableParams?.sorting ?? [],
   });
 }
 
@@ -430,15 +440,15 @@ export function createPlDataTable<A, U>(
 export function createPlDataTableSheet<A, U>(
   ctx: RenderCtx<A, U>,
   axis: AxisSpec,
-  values: (string | number)[]
+  values: (string | number)[],
 ): PlDataTableSheet {
   const labels = ctx.findLabels(axis);
   return {
     axis,
     options: values.map((v) => ({
       value: v,
-      label: labels?.[v] ?? v.toString()
+      label: labels?.[v] ?? v.toString(),
     })),
-    defaultValue: values[0]
+    defaultValue: values[0],
   };
 }

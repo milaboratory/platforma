@@ -1,4 +1,4 @@
-import {
+import type {
   CalculateTableDataRequest,
   CalculateTableDataResponse,
   FindColumnsRequest,
@@ -9,7 +9,7 @@ import {
   PFrameHandle,
   PObjectId,
   UniqueValuesRequest,
-  UniqueValuesResponse
+  UniqueValuesResponse,
 } from '@milaboratories/pl-model-common';
 
 export class PFrameImpl implements PFrame {
@@ -28,7 +28,7 @@ export class PFrameImpl implements PFrame {
   }
 
   public async calculateTableData(
-    request: CalculateTableDataRequest<PObjectId>
+    request: CalculateTableDataRequest<PObjectId>,
   ): Promise<CalculateTableDataResponse> {
     return await platforma.pFrameDriver.calculateTableData(this.handle, request);
   }

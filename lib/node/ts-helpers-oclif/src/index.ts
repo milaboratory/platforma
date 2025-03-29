@@ -1,5 +1,5 @@
-import { MiLogger } from '@milaboratories/ts-helpers';
-import { Command } from '@oclif/core';
+import type { MiLogger } from '@milaboratories/ts-helpers';
+import type { Command } from '@oclif/core';
 
 export class OclifLoggerAdapter implements MiLogger {
   constructor(private readonly cmd: Command) {}

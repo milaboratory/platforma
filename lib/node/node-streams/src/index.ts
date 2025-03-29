@@ -1,8 +1,8 @@
-import * as util from 'util';
-import * as stream from 'stream';
-import {once} from 'events';
-import readline from 'readline';
-import type {Readable} from 'node:stream';
+import * as util from 'node:util';
+import * as stream from 'node:stream';
+import { once } from 'node:events';
+import readline from 'node:readline';
+import type { Readable } from 'node:stream';
 
 export const finished = util.promisify(stream.finished);
 
@@ -11,7 +11,7 @@ export const pipeline = util.promisify(stream.pipeline);
 export const readableToString = (stream: Readable): Promise<string> =>
   new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
-    stream.on('data', (chunk) => chunks.push(chunk));
+    stream.on('data', (chunk: Buffer) => chunks.push(chunk));
     stream.on('error', reject);
     stream.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
   });
@@ -19,12 +19,12 @@ export const readableToString = (stream: Readable): Promise<string> =>
 export const readableToBuffer = (stream: Readable): Promise<Buffer> =>
   new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
-    stream.on('data', (chunk) => chunks.push(chunk));
+    stream.on('data', (chunk: Buffer) => chunks.push(chunk));
     stream.on('error', reject);
     stream.on('end', () => resolve(Buffer.concat(chunks)));
   });
 
-export async function writeIterableToStream<T>(iterable: Iterable<T>, writable: stream.Writable) {
+export async function writeIterableToStream<T>(iterable: AsyncIterable<T>, writable: stream.Writable) {
   for await (const chunk of iterable) {
     if (!writable.write(chunk)) {
       await once(writable, 'drain');
@@ -40,7 +40,7 @@ export function readableFromIterable<T>(iterable: Iterable<T>) {
 
 export async function* concatStreams<T>(...iterables: AsyncIterable<T>[]) {
   for (const it of iterables) {
-    yield* it;
+    yield * it;
   }
 }
 
@@ -51,7 +51,7 @@ export async function* readByLine(rs: Readable, transform: (line: string) => str
 
   const rl = readline.createInterface({
     input: rs,
-    terminal: false
+    terminal: false,
   });
 
   for await (const line of rl) {
@@ -71,7 +71,7 @@ export async function* readByLineNumbered(rs: Readable, transform: (line: string
   let chunks: Buffer[] = [];
 
   for await (const chunk of rs) {
-    chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
+    chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk as Buffer);
 
     while (true) {
       const buffer = Buffer.concat(chunks);

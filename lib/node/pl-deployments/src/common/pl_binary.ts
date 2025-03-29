@@ -2,7 +2,7 @@ import type { MiLogger } from '@milaboratories/ts-helpers';
 import { assertNever } from '@milaboratories/ts-helpers';
 import { downloadBinary } from './pl_binary_download';
 import { getDefaultPlVersion } from './pl_version';
-import os from 'os';
+import os from 'node:os';
 import upath from 'upath';
 import type { OSType } from './os_and_arch';
 import { newOs } from './os_and_arch';
@@ -31,6 +31,7 @@ export async function resolveLocalPlBinaryPath(
 ): Promise<string> {
   switch (src.type) {
     case 'Download':
+      // eslint-disable-next-line no-case-declarations
       const ops = await downloadBinary(logger, downloadDir, 'pl', `pl-${src.version}`, os.arch(), os.platform());
       return upath.join(ops.baseName, 'binaries', osToBinaryName[newOs(os.platform())]);
 

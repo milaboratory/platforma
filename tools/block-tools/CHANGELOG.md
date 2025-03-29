@@ -1,5 +1,27 @@
 # @platforma-sdk/block-tools
 
+## 2.5.27
+
+### Patch Changes
+
+- Updated dependencies [9e9a70f]
+  - @milaboratories/ts-helpers-oclif@1.1.14
+  - @milaboratories/ts-helpers@1.1.5
+  - @milaboratories/pl-http@1.1.2
+  - @milaboratories/pl-model-middle-layer@1.7.14
+
+## 2.5.26
+
+### Patch Changes
+
+- @milaboratories/pl-model-middle-layer@1.7.13
+
+## 2.5.25
+
+### Patch Changes
+
+- @milaboratories/pl-model-middle-layer@1.7.12
+
 ## 2.5.24
 
 ### Patch Changes

@@ -84,4 +84,4 @@ export type StreamingApiResponseHandleOutdated = {
 export type ProgressLogWithInfo = {
   progressLine?: string;
   live: boolean;
-}
+};

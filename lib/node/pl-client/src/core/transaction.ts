@@ -1,9 +1,8 @@
-import {
+// TODO: fix this
+/* eslint-disable no-prototype-builtins */
+import type {
   AnyResourceId,
-  createLocalResourceId,
-  ensureResourceIdNotNull,
   LocalResourceId,
-  MaxTxId,
   OptionalResourceId,
   BasicResourceData,
   FieldData,
@@ -11,26 +10,31 @@ import {
   ResourceData,
   ResourceId,
   ResourceType,
-  FutureFieldType,
-  isLocalResourceId,
-  extractBasicResourceData
-} from './types';
+  FutureFieldType } from './types';
 import {
+  createLocalResourceId,
+  ensureResourceIdNotNull,
+  MaxTxId,
+  isLocalResourceId,
+  extractBasicResourceData,
+} from './types';
+import type {
   ClientMessageRequest,
   LLPlTransaction,
   OneOfKind,
-  ServerMessageResponse
+  ServerMessageResponse,
 } from './ll_transaction';
 import { TxAPI_Open_Request_WritableTx } from '../proto/github.com/milaboratory/pl/plapi/plapiproto/api';
-import { NonUndefined } from 'utility-types';
+import type { NonUndefined } from 'utility-types';
 import { toBytes } from '../util/util';
 import { fieldTypeToProto, protoToField, protoToResource } from './type_conversion';
 import { notEmpty } from '@milaboratories/ts-helpers';
 import { isNotFoundError } from './errors';
-import { FinalResourceDataPredicate } from './final';
-import { LRUCache } from 'lru-cache';
-import { ResourceDataCacheRecord } from './cache';
-import { initialTxStat, TxStat } from './stat';
+import type { FinalResourceDataPredicate } from './final';
+import type { LRUCache } from 'lru-cache';
+import type { ResourceDataCacheRecord } from './cache';
+import type { TxStat } from './stat';
+import { initialTxStat } from './stat';
 
 /** Reference to resource, used only within transaction */
 export interface ResourceRef {
@@ -120,7 +124,7 @@ export class TxCommitConflict extends Error {}
 async function notFoundToUndefined<T>(cb: () => Promise<T>): Promise<T | undefined> {
   try {
     return await cb();
-  } catch (e: any) {
+  } catch (e) {
     if (isNotFoundError(e)) return undefined;
     throw e;
   }
@@ -145,7 +149,7 @@ export class PlTransaction {
 
   /** Store logical tx open / closed state to prevent invalid sequence of requests.
    * True means output stream was completed.
-   * Contract: there must be no async operations between setting this field to true and sending complete signal to stream.*/
+   * Contract: there must be no async operations between setting this field to true and sending complete signal to stream. */
   private _completed = false;
 
   /** Void operation futures are placed into this pool, and corresponding method return immediately.
@@ -163,7 +167,7 @@ export class PlTransaction {
     public readonly writable: boolean,
     private readonly _clientRoot: OptionalResourceId,
     private readonly finalPredicate: FinalResourceDataPredicate,
-    private readonly sharedResourceDataCache: LRUCache<ResourceId, ResourceDataCacheRecord>
+    private readonly sharedResourceDataCache: LRUCache<ResourceId, ResourceDataCacheRecord>,
   ) {
     // initiating transaction
     this.globalTxId = this.sendSingleAndParse(
@@ -173,10 +177,10 @@ export class PlTransaction {
           name,
           writable: writable
             ? TxAPI_Open_Request_WritableTx.WRITABLE
-            : TxAPI_Open_Request_WritableTx.NOT_WRITABLE
-        }
+            : TxAPI_Open_Request_WritableTx.NOT_WRITABLE,
+        },
       },
-      (r) => notEmpty(r.txOpen.tx?.id)
+      (r) => notEmpty(r.txOpen.tx?.id),
     );
 
     // To avoid floating promise
@@ -202,43 +206,37 @@ export class PlTransaction {
 
   private async sendSingleAndParse<Kind extends NonUndefined<ClientMessageRequest['oneofKind']>, T>(
     r: OneOfKind<ClientMessageRequest, Kind>,
-    parser: (resp: OneOfKind<ServerMessageResponse, Kind>) => T
+    parser: (resp: OneOfKind<ServerMessageResponse, Kind>) => T,
   ): Promise<T> {
     // pushing operation packet to server
     const rawResponsePromise = this.ll.send(r, false);
 
-    try {
-      await this.drainAndAwaitPendingOps();
-    } finally {
-      // awaiting our result, and parsing the response
-      return parser(await rawResponsePromise);
-    }
+    await this.drainAndAwaitPendingOps();
+    // awaiting our result, and parsing the response
+    return parser(await rawResponsePromise);
   }
 
   private async sendMultiAndParse<Kind extends NonUndefined<ClientMessageRequest['oneofKind']>, T>(
     r: OneOfKind<ClientMessageRequest, Kind>,
-    parser: (resp: OneOfKind<ServerMessageResponse, Kind>[]) => T
+    parser: (resp: OneOfKind<ServerMessageResponse, Kind>[]) => T,
   ): Promise<T> {
     // pushing operation packet to server
     const rawResponsePromise = this.ll.send(r, true);
 
-    try {
-      await this.drainAndAwaitPendingOps();
-    } finally {
-      // awaiting our result, and parsing the response
-      return parser(await rawResponsePromise);
-    }
+    await this.drainAndAwaitPendingOps();
+    // awaiting our result, and parsing the response
+    return parser(await rawResponsePromise);
   }
 
-  private async sendVoidSync<Kind extends NonUndefined<ClientMessageRequest['oneofKind']>, T>(
-    r: OneOfKind<ClientMessageRequest, Kind>
+  private async sendVoidSync<Kind extends NonUndefined<ClientMessageRequest['oneofKind']>>(
+    r: OneOfKind<ClientMessageRequest, Kind>,
   ): Promise<void> {
     await this.ll.send(r, false);
   }
 
   /** Requests sent with this method should never produce recoverable errors */
-  private sendVoidAsync<Kind extends NonUndefined<ClientMessageRequest['oneofKind']>, T>(
-    r: OneOfKind<ClientMessageRequest, Kind>
+  private sendVoidAsync<Kind extends NonUndefined<ClientMessageRequest['oneofKind']>>(
+    r: OneOfKind<ClientMessageRequest, Kind>,
   ): void {
     this.pendingVoidOps.push(this.sendVoidSync(r));
   }
@@ -269,7 +267,7 @@ export class PlTransaction {
       // @TODO, also floating promises
       const commitResponse = this.sendSingleAndParse(
         { oneofKind: 'txCommit', txCommit: {} },
-        (r) => r.txCommit.success
+        (r) => r.txCommit.success,
       );
 
       // send closing frame right after commit to save some time on round-trips
@@ -322,7 +320,7 @@ export class PlTransaction {
   public createSingleton(
     name: string,
     type: ResourceType,
-    errorIfExists: boolean = false
+    errorIfExists: boolean = false,
   ): ResourceRef {
     const localId = this.nextLocalResourceId(false);
 
@@ -333,10 +331,10 @@ export class PlTransaction {
           type,
           id: localId,
           data: Buffer.from(name),
-          errorIfExists
-        }
+          errorIfExists,
+        },
       },
-      (r) => r.resourceCreateSingleton.resourceId as ResourceId
+      (r) => r.resourceCreateSingleton.resourceId as ResourceId,
     );
 
     return { globalId, localId };
@@ -346,24 +344,24 @@ export class PlTransaction {
   public async getSingleton(name: string, loadFields: false): Promise<BasicResourceData>;
   public async getSingleton(
     name: string,
-    loadFields: boolean = true
+    loadFields: boolean = true,
   ): Promise<BasicResourceData | ResourceData> {
     return await this.sendSingleAndParse(
       {
         oneofKind: 'resourceGetSingleton',
         resourceGetSingleton: {
           data: Buffer.from(name),
-          loadFields
-        }
+          loadFields,
+        },
       },
-      (r) => protoToResource(notEmpty(r.resourceGetSingleton.resource))
+      (r) => protoToResource(notEmpty(r.resourceGetSingleton.resource)),
     );
   }
 
   private createResource<Kind extends NonUndefined<ClientMessageRequest['oneofKind']>>(
     root: boolean,
     req: (localId: LocalResourceId) => OneOfKind<ClientMessageRequest, Kind>,
-    parser: (resp: OneOfKind<ServerMessageResponse, Kind>) => bigint
+    parser: (resp: OneOfKind<ServerMessageResponse, Kind>) => bigint,
   ): ResourceRef {
     const localId = this.nextLocalResourceId(root);
 
@@ -377,7 +375,7 @@ export class PlTransaction {
     return this.createResource(
       true,
       (localId) => ({ oneofKind: 'resourceCreateRoot', resourceCreateRoot: { type, id: localId } }),
-      (r) => r.resourceCreateRoot.resourceId
+      (r) => r.resourceCreateRoot.resourceId,
     );
   }
 
@@ -391,10 +389,10 @@ export class PlTransaction {
         resourceCreateStruct: {
           type,
           id: localId,
-          data: data === undefined ? undefined : typeof data === 'string' ? Buffer.from(data) : data
-        }
+          data: data === undefined ? undefined : typeof data === 'string' ? Buffer.from(data) : data,
+        },
       }),
-      (r) => r.resourceCreateStruct.resourceId
+      (r) => r.resourceCreateStruct.resourceId,
     );
   }
 
@@ -408,17 +406,17 @@ export class PlTransaction {
         resourceCreateEphemeral: {
           type,
           id: localId,
-          data: data === undefined ? undefined : typeof data === 'string' ? Buffer.from(data) : data
-        }
+          data: data === undefined ? undefined : typeof data === 'string' ? Buffer.from(data) : data,
+        },
       }),
-      (r) => r.resourceCreateEphemeral.resourceId
+      (r) => r.resourceCreateEphemeral.resourceId,
     );
   }
 
   public createValue(
     type: ResourceType,
     data: Uint8Array | string,
-    errorIfExists: boolean = false
+    errorIfExists: boolean = false,
   ): ResourceRef {
     this.stat.valuesCreated++;
     this.stat.valuesCreatedDataBytes += data?.length ?? 0;
@@ -430,17 +428,17 @@ export class PlTransaction {
           type,
           id: localId,
           data: typeof data === 'string' ? Buffer.from(data) : data,
-          errorIfExists
-        }
+          errorIfExists,
+        },
       }),
-      (r) => r.resourceCreateValue.resourceId
+      (r) => r.resourceCreateValue.resourceId,
     );
   }
 
   public setResourceName(name: string, rId: AnyResourceRef): void {
     this.sendVoidAsync({
       oneofKind: 'resourceNameSet',
-      resourceNameSet: { resourceId: toResourceId(rId), name }
+      resourceNameSet: { resourceId: toResourceId(rId), name },
     });
   }
 
@@ -451,14 +449,14 @@ export class PlTransaction {
   public async getResourceByName(name: string): Promise<ResourceId> {
     return await this.sendSingleAndParse(
       { oneofKind: 'resourceNameGet', resourceNameGet: { name } },
-      (r) => ensureResourceIdNotNull(r.resourceNameGet.resourceId as OptionalResourceId)
+      (r) => ensureResourceIdNotNull(r.resourceNameGet.resourceId as OptionalResourceId),
     );
   }
 
   public async checkResourceNameExists(name: string): Promise<boolean> {
     return await this.sendSingleAndParse(
       { oneofKind: 'resourceNameExists', resourceNameExists: { name } },
-      (r) => r.resourceNameExists.exists
+      (r) => r.resourceNameExists.exists,
     );
   }
 
@@ -469,7 +467,7 @@ export class PlTransaction {
   public async resourceExists(rId: ResourceId): Promise<boolean> {
     return await this.sendSingleAndParse(
       { oneofKind: 'resourceExists', resourceExists: { resourceId: rId } },
-      (r) => r.resourceExists.exists
+      (r) => r.resourceExists.exists,
     );
   }
 
@@ -503,7 +501,7 @@ export class PlTransaction {
   public async getResourceData(
     rId: AnyResourceRef,
     loadFields: boolean = true,
-    ignoreCache: boolean = false
+    ignoreCache: boolean = false,
   ): Promise<BasicResourceData | ResourceData> {
     if (!ignoreCache && !isResourceRef(rId) && !isLocalResourceId(rId)) {
       // checking if we can return result from cache
@@ -525,9 +523,9 @@ export class PlTransaction {
     const result = await this.sendSingleAndParse(
       {
         oneofKind: 'resourceGet',
-        resourceGet: { resourceId: toResourceId(rId), loadFields: loadFields }
+        resourceGet: { resourceId: toResourceId(rId), loadFields: loadFields },
       },
-      (r) => protoToResource(notEmpty(r.resourceGet.resource))
+      (r) => protoToResource(notEmpty(r.resourceGet.resource)),
     );
 
     this.stat.rGetDataNetRequests++;
@@ -549,13 +547,13 @@ export class PlTransaction {
           this.sharedResourceDataCache.set(rId, {
             basicData: extractBasicResourceData(result),
             data: result,
-            cacheTxOpenTimestamp: this.txOpenTimestamp
+            cacheTxOpenTimestamp: this.txOpenTimestamp,
           });
         else
           this.sharedResourceDataCache.set(rId, {
             basicData: extractBasicResourceData(result),
             data: undefined,
-            cacheTxOpenTimestamp: this.txOpenTimestamp
+            cacheTxOpenTimestamp: this.txOpenTimestamp,
           });
       }
     }
@@ -577,12 +575,12 @@ export class PlTransaction {
   ): Promise<BasicResourceData | ResourceData | undefined>;
   public async getResourceDataIfExists(
     rId: AnyResourceRef,
-    loadFields: boolean = true
+    loadFields: boolean = true,
   ): Promise<BasicResourceData | ResourceData | undefined> {
     // calling this mehtod will ignore cache, because user intention is to detect resource absence
     // which cache will prevent
     const result = await notFoundToUndefined(
-      async () => await this.getResourceData(rId, loadFields, true)
+      async () => await this.getResourceData(rId, loadFields, true),
     );
 
     // cleaning cache record if resorce was removed from the db
@@ -603,7 +601,7 @@ export class PlTransaction {
     this.stat.inputsLocked++;
     this.sendVoidAsync({
       oneofKind: 'resourceLockInputs',
-      resourceLockInputs: { resourceId: toResourceId(rId) }
+      resourceLockInputs: { resourceId: toResourceId(rId) },
     });
   }
 
@@ -615,7 +613,7 @@ export class PlTransaction {
     this.stat.outputsLocked++;
     this.sendVoidAsync({
       oneofKind: 'resourceLockOutputs',
-      resourceLockOutputs: { resourceId: toResourceId(rId) }
+      resourceLockOutputs: { resourceId: toResourceId(rId) },
     });
   }
 
@@ -632,7 +630,7 @@ export class PlTransaction {
     this.stat.fieldsCreated++;
     this.sendVoidAsync({
       oneofKind: 'fieldCreate',
-      fieldCreate: { type: fieldTypeToProto(fieldType), id: toFieldId(fId) }
+      fieldCreate: { type: fieldTypeToProto(fieldType), id: toFieldId(fId) },
     });
     if (value !== undefined) this.setField(fId, value);
   }
@@ -641,9 +639,9 @@ export class PlTransaction {
     return await this.sendSingleAndParse(
       {
         oneofKind: 'fieldExists',
-        fieldExists: { field: toFieldId(fId) }
+        fieldExists: { field: toFieldId(fId) },
       },
-      (r) => r.fieldExists.exists
+      (r) => r.fieldExists.exists,
     );
   }
 
@@ -656,17 +654,17 @@ export class PlTransaction {
           field: toFieldId(fId),
           value: {
             resourceId: toResourceId(ref),
-            fieldName: '' // default value, read as undefined
-          }
-        }
+            fieldName: '', // default value, read as undefined
+          },
+        },
       });
     else
       this.sendVoidAsync({
         oneofKind: 'fieldSet',
         fieldSet: {
           field: toFieldId(fId),
-          value: toFieldId(ref)
-        }
+          value: toFieldId(ref),
+        },
       });
   }
 
@@ -674,7 +672,7 @@ export class PlTransaction {
     this.stat.fieldsSet++;
     this.sendVoidAsync({
       oneofKind: 'fieldSetError',
-      fieldSetError: { field: toFieldId(fId), errResourceId: toResourceId(ref) }
+      fieldSetError: { field: toFieldId(fId), errResourceId: toResourceId(ref) },
     });
   }
 
@@ -682,7 +680,7 @@ export class PlTransaction {
     this.stat.fieldsGet++;
     return await this.sendSingleAndParse(
       { oneofKind: 'fieldGet', fieldGet: { field: toFieldId(fId) } },
-      (r) => protoToField(notEmpty(r.fieldGet.field))
+      (r) => protoToField(notEmpty(r.fieldGet.field)),
     );
   }
 
@@ -706,9 +704,9 @@ export class PlTransaction {
     const result = await this.sendMultiAndParse(
       {
         oneofKind: 'resourceKeyValueList',
-        resourceKeyValueList: { resourceId: toResourceId(rId), startFrom: '', limit: 0 }
+        resourceKeyValueList: { resourceId: toResourceId(rId), startFrom: '', limit: 0 },
       },
-      (r) => r.map((e) => e.resourceKeyValueList.record!)
+      (r) => r.map((e) => e.resourceKeyValueList.record!),
     );
 
     this.stat.kvListRequests++;
@@ -721,7 +719,7 @@ export class PlTransaction {
   public async listKeyValuesString(rId: AnyResourceRef): Promise<KeyValueString[]> {
     return (await this.listKeyValues(rId)).map(({ key, value }) => ({
       key,
-      value: Buffer.from(value).toString()
+      value: Buffer.from(value).toString(),
     }));
   }
 
@@ -730,7 +728,7 @@ export class PlTransaction {
   }
 
   public async listKeyValuesStringIfResourceExists(
-    rId: AnyResourceRef
+    rId: AnyResourceRef,
   ): Promise<KeyValueString[] | undefined> {
     return notFoundToUndefined(async () => await this.listKeyValuesString(rId));
   }
@@ -743,8 +741,8 @@ export class PlTransaction {
       resourceKeyValueSet: {
         resourceId: toResourceId(rId),
         key,
-        value: toBytes(value)
-      }
+        value: toBytes(value),
+      },
     });
   }
 
@@ -753,8 +751,8 @@ export class PlTransaction {
       oneofKind: 'resourceKeyValueDelete',
       resourceKeyValueDelete: {
         resourceId: toResourceId(rId),
-        key
-      }
+        key,
+      },
     });
   }
 
@@ -762,9 +760,9 @@ export class PlTransaction {
     const result = await this.sendSingleAndParse(
       {
         oneofKind: 'resourceKeyValueGet',
-        resourceKeyValueGet: { resourceId: toResourceId(rId), key }
+        resourceKeyValueGet: { resourceId: toResourceId(rId), key },
       },
-      (r) => r.resourceKeyValueGet.value
+      (r) => r.resourceKeyValueGet.value,
     );
 
     this.stat.kvGetRequests++;
@@ -783,15 +781,15 @@ export class PlTransaction {
 
   public async getKValueIfExists(
     rId: AnyResourceRef,
-    key: string
+    key: string,
   ): Promise<Uint8Array | undefined> {
     const result = await this.sendSingleAndParse(
       {
         oneofKind: 'resourceKeyValueGetIfExists',
-        resourceKeyValueGetIfExists: { resourceId: toResourceId(rId), key }
+        resourceKeyValueGetIfExists: { resourceId: toResourceId(rId), key },
       },
       (r) =>
-        r.resourceKeyValueGetIfExists.exists ? r.resourceKeyValueGetIfExists.value : undefined
+        r.resourceKeyValueGetIfExists.exists ? r.resourceKeyValueGetIfExists.value : undefined,
     );
 
     this.stat.kvGetRequests++;
@@ -802,7 +800,7 @@ export class PlTransaction {
 
   public async getKValueStringIfExists(
     rId: AnyResourceRef,
-    key: string
+    key: string,
   ): Promise<string | undefined> {
     const data = await this.getKValueIfExists(rId, key);
     return data === undefined ? undefined : Buffer.from(data).toString();

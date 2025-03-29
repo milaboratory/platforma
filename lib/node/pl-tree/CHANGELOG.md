@@ -1,5 +1,16 @@
 # @milaboratories/pl-tree
 
+## 1.5.2
+
+### Patch Changes
+
+- 9e9a70f: Configure eslint to all "node" packages
+- Updated dependencies [9e9a70f]
+  - @milaboratories/computable@2.4.2
+  - @milaboratories/ts-helpers@1.1.5
+  - @milaboratories/pl-client@2.7.14
+  - @milaboratories/pl-errors@1.0.3
+
 ## 1.5.1
 
 ### Patch Changes

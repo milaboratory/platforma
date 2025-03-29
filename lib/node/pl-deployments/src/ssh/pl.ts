@@ -8,7 +8,7 @@ import upath from 'upath';
 import * as plpath from './pl_paths';
 import { getDefaultPlVersion } from '../common/pl_version';
 
-import net from 'net';
+import net from 'node:net';
 import type { PlConfig, PlLicenseMode, SshPlConfigGenerationResult } from '@milaboratories/pl-config';
 import { generateSshPlConfigs, getFreePort } from '@milaboratories/pl-config';
 import type { SupervisorStatus } from './supervisord';
@@ -488,7 +488,6 @@ export type SshPlConfig = {
   useGlobalAccess?: boolean;
   plBinary?: PlBinarySourceDownload;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onProgress?: (...args: any) => Promise<any>;
   plConfigPostprocessing?: (config: PlConfig) => PlConfig;
 };

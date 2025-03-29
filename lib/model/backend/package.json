@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-model-backend",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Backend model for Platforma.bio",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
@@ -15,6 +15,7 @@
   "scripts": {
     "type-check": "tsc --noEmit --composite false",
     "build": "vite build",
+    "lint": "eslint .",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "files": [

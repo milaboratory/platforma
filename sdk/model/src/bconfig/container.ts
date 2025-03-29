@@ -1,6 +1,6 @@
-import { BlockRenderingMode } from '@milaboratories/pl-model-common';
-import { Code, TypedConfigOrString } from './types';
-import { BlockConfigV3 } from './v3';
+import type { BlockRenderingMode } from '@milaboratories/pl-model-common';
+import type { Code, TypedConfigOrString } from './types';
+import type { BlockConfigV3 } from './v3';
 
 /** Container simplifying maintenance of forward and backward compatibility */
 export type BlockConfigContainer = {

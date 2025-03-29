@@ -1,5 +1,6 @@
 import fs from 'node:fs';
-import { AuthInformation, plAddressToConfig, PlClientConfig } from './config';
+import type { AuthInformation, PlClientConfig } from './config';
+import { plAddressToConfig } from './config';
 import canonicalize from 'canonicalize';
 import YAML from 'yaml';
 import * as os from 'node:os';
@@ -7,7 +8,7 @@ import * as path from 'node:path';
 import { notEmpty } from '@milaboratories/ts-helpers';
 import { UnauthenticatedPlClient } from './unauth_client';
 import { PlClient } from './client';
-import { createHash } from 'crypto';
+import { createHash } from 'node:crypto';
 import { inferAuthRefreshTime } from './auth';
 
 const CONFIG_FILE_LOCAL_JSON = 'pl.json';
@@ -18,7 +19,7 @@ const CONF_FILE_SEQUENCE = [
   CONFIG_FILE_LOCAL_JSON,
   CONFIG_FILE_LOCAL_YAML,
   CONFIG_FILE_USER_JSON,
-  CONFIG_FILE_USER_YAML
+  CONFIG_FILE_USER_YAML,
 ];
 
 const AUTH_DATA_FILE = '.pl_auth.json';
@@ -44,7 +45,7 @@ const FILE_CONFIG_OVERRIDE_FIELDS: FileConfigOverrideFields[] = [
   'defaultRWTransactionTimeout',
   'defaultRequestTimeout',
   'authTTLSeconds',
-  'authMaxRefreshSeconds'
+  'authMaxRefreshSeconds',
 ];
 
 type PlConfigFile = {
@@ -70,7 +71,7 @@ export function tryGetFileConfig(): [PlConfigFile, string] | undefined {
 
 function saveAuthInfoCallback(
   confHash: string,
-  authMaxRefreshSeconds: number
+  authMaxRefreshSeconds: number,
 ): (newAuthInfo: AuthInformation) => void {
   return (newAuthInfo) => {
     fs.writeFileSync(
@@ -79,10 +80,10 @@ function saveAuthInfoCallback(
         JSON.stringify({
           confHash,
           authInformation: newAuthInfo,
-          expiration: inferAuthRefreshTime(newAuthInfo, authMaxRefreshSeconds)
-        } as AuthCache)
+          expiration: inferAuthRefreshTime(newAuthInfo, authMaxRefreshSeconds),
+        } as AuthCache),
       ),
-      'utf8'
+      'utf8',
     );
   };
 }
@@ -109,7 +110,7 @@ export async function defaultPlClient(): Promise<PlClient> {
   }
 
   if (config === undefined)
-    throw new Error("Can't find configuration to create default platform client.");
+    throw new Error('Can\'t find configuration to create default platform client.');
 
   if (process.env.PL_USER !== undefined) config.user = process.env.PL_USER;
 
@@ -147,17 +148,17 @@ export async function defaultPlClient(): Promise<PlClient> {
         JSON.stringify({
           confHash,
           authInformation,
-          expiration: inferAuthRefreshTime(authInformation, config.authMaxRefreshSeconds)
-        } as AuthCache)
+          expiration: inferAuthRefreshTime(authInformation, config.authMaxRefreshSeconds),
+        } as AuthCache),
       ),
-      'utf8'
+      'utf8',
     );
   }
 
   return await PlClient.init(config, {
     authInformation,
-    onUpdate: (newAuthInfo) => saveAuthInfoCallback(confHash, config!.authMaxRefreshSeconds),
+    onUpdate: (_newAuthInfo) => saveAuthInfoCallback(confHash, config.authMaxRefreshSeconds),
     onUpdateError: cleanAuthInfoCallback,
-    onAuthError: cleanAuthInfoCallback
+    onAuthError: cleanAuthInfoCallback,
   });
 }

@@ -1,5 +1,14 @@
 # @milaboratories/pl-client
 
+## 2.7.14
+
+### Patch Changes
+
+- 9e9a70f: Configure eslint to all "node" packages
+- Updated dependencies [9e9a70f]
+  - @milaboratories/ts-helpers@1.1.5
+  - @milaboratories/pl-http@1.1.2
+
 ## 2.7.13
 
 ### Patch Changes

@@ -187,4 +187,6 @@ export type PlControllerPackageLoaderEndpoint =
     url: string;
   };
 
+//  TODO: The `{}` ("empty object") type allows any non-nullish value, including literals like `0` and `""`, use better type
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export type PlControllerWorkflowsSettings = {};
