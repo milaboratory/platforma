@@ -1,15 +1,15 @@
-import {
+import type {
   TxAPI_ClientMessage,
-  TxAPI_ServerMessage
+  TxAPI_ServerMessage,
 } from '../proto/github.com/milaboratory/pl/plapi/plapiproto/api';
-import { DuplexStreamingCall } from '@protobuf-ts/runtime-rpc';
+import type { DuplexStreamingCall } from '@protobuf-ts/runtime-rpc';
 import Denque from 'denque';
-import { Status } from '../proto/github.com/googleapis/googleapis/google/rpc/status';
+import type { Status } from '../proto/github.com/googleapis/googleapis/google/rpc/status';
 import {
   PlErrorCodeNotFound,
   RecoverablePlError,
   rethrowMeaningfulError,
-  UnrecoverablePlError
+  UnrecoverablePlError,
 } from './errors';
 
 export type ClientMessageRequest = TxAPI_ClientMessage['request'];
@@ -51,7 +51,7 @@ function createResponseHandler<Kind extends ServerMessageResponse['oneofKind']>(
   resolve:
     | ((v: OneOfKind<ServerMessageResponse, Kind>) => void)
     | ((v: OneOfKind<ServerMessageResponse, Kind>[]) => void),
-  reject: (e: Error) => void
+  reject: (e: Error) => void,
 ): AnyResponseHandler {
   return { kind, expectMultiResponse, resolve, reject } as AnyResponseHandler;
 }
@@ -108,7 +108,7 @@ export class LLPlTransaction {
 
   private assignErrorFactoryIfNotSet(
     errorFactory: () => never,
-    reject?: (e: Error) => void
+    reject?: (e: Error) => void,
   ): () => never {
     if (reject !== undefined) reject(new RethrowError(errorFactory));
     if (this.errorFactory) return errorFactory;
@@ -158,7 +158,7 @@ export class LLPlTransaction {
             currentHandler.reject(
               new RethrowError(() => {
                 throw new RecoverablePlError(status);
-              })
+              }),
             );
             currentHandler = undefined;
 
@@ -183,10 +183,10 @@ export class LLPlTransaction {
         }
 
         if (
-          currentHandler!.kind !== message.response.oneofKind &&
-          message?.multiMessage?.isEmpty !== true
+          currentHandler.kind !== message.response.oneofKind
+          && message?.multiMessage?.isEmpty !== true
         ) {
-          const errorMessage = `inconsistent request response types: ${currentHandler!.kind} !== ${message.response.oneofKind}`;
+          const errorMessage = `inconsistent request response types: ${currentHandler.kind} !== ${message.response.oneofKind}`;
 
           this.assignErrorFactoryIfNotSet(() => {
             throw new Error(errorMessage);
@@ -196,8 +196,8 @@ export class LLPlTransaction {
           break;
         }
 
-        if (currentHandler!.expectMultiResponse !== (message.multiMessage !== undefined)) {
-          const errorMessage = `inconsistent multi state: ${currentHandler!.expectMultiResponse} !== ${message.multiMessage !== undefined}`;
+        if (currentHandler.expectMultiResponse !== (message.multiMessage !== undefined)) {
+          const errorMessage = `inconsistent multi state: ${currentHandler.expectMultiResponse} !== ${message.multiMessage !== undefined}`;
 
           this.assignErrorFactoryIfNotSet(() => {
             throw new Error(errorMessage);
@@ -252,7 +252,7 @@ export class LLPlTransaction {
     this.closed = true;
 
     // Rejecting all messages
-    let handler: AnyResponseHandler | undefined = undefined;
+
     while (true) {
       const handler = this.responseHandlerQueue.shift();
       if (!handler) break;
@@ -294,7 +294,7 @@ export class LLPlTransaction {
   /** Generate proper client message and send it to the server, and returns a promise of future response. */
   public async send<Kind extends ClientMessageRequest['oneofKind']>(
     r: OneOfKind<ClientMessageRequest, Kind>,
-    expectMultiResponse: boolean
+    expectMultiResponse: boolean,
   ): Promise<OneOfKind<ServerMessageResponse, Kind> | OneOfKind<ServerMessageResponse, Kind>[]> {
     if (this.errorFactory) return Promise.reject(new RethrowError(this.errorFactory));
 
@@ -303,7 +303,7 @@ export class LLPlTransaction {
     // Note: Promise synchronously executes a callback passed to a constructor
     const result = new Promise<OneOfKind<ServerMessageResponse, Kind>>((resolve, reject) => {
       this.responseHandlerQueue.push(
-        createResponseHandler(r.oneofKind, expectMultiResponse, resolve, reject)
+        createResponseHandler(r.oneofKind, expectMultiResponse, resolve, reject),
       );
     });
 
@@ -311,7 +311,7 @@ export class LLPlTransaction {
     // There is no hurry, we are not going to receive a response until message is sent.
     await this.stream.requests.send({
       requestId: this.requestIdxCounter++,
-      request: r
+      request: r,
     });
 
     try {

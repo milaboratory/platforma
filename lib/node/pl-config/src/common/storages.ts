@@ -1,5 +1,5 @@
 import upath from 'upath';
-import fs from 'fs/promises';
+import fs from 'node:fs/promises';
 import type { PlControllerDataMainStoragesSettings, PlControllerDataStoragesSettings } from './types';
 
 /** Settings that are needed for config generation:

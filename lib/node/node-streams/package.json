@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/node-streams",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
@@ -15,6 +15,7 @@
   "scripts": {
     "type-check": "tsc --noEmit --composite false",
     "build": "vite build",
+    "lint": "eslint .",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "files": [

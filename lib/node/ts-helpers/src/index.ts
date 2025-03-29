@@ -13,6 +13,7 @@ export * from './crypto/signer';
 export * from './files';
 
 export function assertNever(x: never): never {
+  // eslint-disable-next-line @typescript-eslint/restrict-plus-operands
   throw new Error('Unexpected object: ' + x);
 }
 

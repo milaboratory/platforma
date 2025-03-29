@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/milaboratories.test-download-file.model",
-  "version": "1.0.22",
+  "version": "1.0.25",
   "private": true,
   "description": "Block model",
   "type": "module",

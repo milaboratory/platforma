@@ -1,10 +1,12 @@
-import { BlockRenderingMode, BlockSection, ValueOrErrors } from '@milaboratories/pl-model-common';
-import { Checked, ConfigResult, getImmediate, PlResourceEntry, TypedConfig } from './config';
+import type { BlockRenderingMode, BlockSection, ValueOrErrors, AnyFunction } from '@milaboratories/pl-model-common';
+import type { Checked, ConfigResult, TypedConfig } from './config';
+import { getImmediate } from './config';
 import { getPlatformaInstance, isInUI, tryRegisterCallback } from './internal';
-import { Platforma } from './platforma';
-import { InferRenderFunctionReturn, RenderCtx, RenderFunction } from './render';
+import type { Platforma } from './platforma';
+import type { InferRenderFunctionReturn, RenderFunction } from './render';
+import { RenderCtx } from './render';
 import { PlatformaSDKVersion } from './version';
-import {
+import type {
   TypedConfigOrConfigLambda,
   ConfigRenderLambda,
   StdCtxArgsOnly,
@@ -12,8 +14,10 @@ import {
   ResolveCfgType,
   ExtractFunctionHandleReturn,
   BlockConfigContainer,
+  ConfigRenderLambdaFlags,
+} from './bconfig';
+import {
   downgradeCfgOrLambda,
-  ConfigRenderLambdaFlags
 } from './bconfig';
 
 type SectionsExpectedType = readonly BlockSection[];
@@ -23,10 +27,11 @@ type SectionsCfgChecked<Cfg extends TypedConfig, Args, UiState> = Checked<
   ConfigResult<Cfg, StdCtxArgsOnly<Args, UiState>> extends SectionsExpectedType ? true : false
 >;
 
-type SectionsRFChecked<RF extends Function> = Checked<
-  RF,
-  InferRenderFunctionReturn<RF> extends SectionsExpectedType ? true : false
->;
+// TODO (Unused type in code)
+// type SectionsRFChecked<RF extends Function> = Checked<
+//   RF,
+//   InferRenderFunctionReturn<RF> extends SectionsExpectedType ? true : false
+// >;
 
 type InputsValidExpectedType = boolean;
 
@@ -35,10 +40,11 @@ type InputsValidCfgChecked<Cfg extends TypedConfig, Args, UiState> = Checked<
   ConfigResult<Cfg, StdCtxArgsOnly<Args, UiState>> extends InputsValidExpectedType ? true : false
 >;
 
-type InputsValidRFChecked<RF extends Function> = Checked<
-  RF,
-  InferRenderFunctionReturn<RF> extends InputsValidExpectedType ? true : false
->;
+// TODO (Unused type in code)
+// type InputsValidRFChecked<RF extends Function> = Checked<
+//   RF,
+//   InferRenderFunctionReturn<RF> extends InputsValidExpectedType ? true : false
+// >;
 
 type NoOb = Record<string, never>;
 
@@ -49,7 +55,7 @@ export class BlockModel<
   Args,
   OutputsCfg extends Record<string, TypedConfigOrConfigLambda>,
   UiState,
-  Href extends `/${string}` = '/'
+  Href extends `/${string}` = '/',
 > {
   private constructor(
     private readonly _renderingMode: BlockRenderingMode,
@@ -58,7 +64,7 @@ export class BlockModel<
     private readonly _outputs: OutputsCfg,
     private readonly _inputsValid: TypedConfigOrConfigLambda,
     private readonly _sections: TypedConfigOrConfigLambda,
-    private readonly _title: ConfigRenderLambda | undefined
+    private readonly _title: ConfigRenderLambda | undefined,
   ) {}
 
   /** Initiates configuration builder */
@@ -83,7 +89,7 @@ export class BlockModel<
       {},
       getImmediate(true),
       getImmediate([]),
-      undefined
+      undefined,
     );
   }
 
@@ -119,8 +125,8 @@ export class BlockModel<
   >;
   public output(
     key: string,
-    cfgOrRf: TypedConfig | Function,
-    flags: ConfigRenderLambdaFlags = {}
+    cfgOrRf: TypedConfig | AnyFunction,
+    flags: ConfigRenderLambdaFlags = {},
   ): BlockModel<Args, OutputsCfg, UiState, Href> {
     if (typeof cfgOrRf === 'function') {
       const handle = `output#${key}`;
@@ -134,12 +140,12 @@ export class BlockModel<
           [key]: {
             __renderLambda: true,
             handle,
-            ...flags
-          } satisfies ConfigRenderLambda
+            ...flags,
+          } satisfies ConfigRenderLambda,
         },
         this._inputsValid,
         this._sections,
-        this._title
+        this._title,
       );
     } else
       return new BlockModel(
@@ -148,24 +154,24 @@ export class BlockModel<
         this._initialUiState,
         {
           ...this._outputs,
-          [key]: cfgOrRf
+          [key]: cfgOrRf,
         },
         this._inputsValid,
         this._sections,
-        this._title
+        this._title,
       );
   }
 
   /** Shortcut for {@link output} with retentive flag set to true. */
   public retentiveOutput<const Key extends string, const RF extends RenderFunction<Args, UiState>>(
     key: Key,
-    rf: RF
+    rf: RF,
   ): BlockModel<
-    Args,
+      Args,
     OutputsCfg & { [K in Key]: ConfigRenderLambda<InferRenderFunctionReturn<RF>> },
     UiState,
     Href
-  > {
+    > {
     return this.output(key, rf, { retentive: true });
   }
 
@@ -179,7 +185,7 @@ export class BlockModel<
     rf: RF
   ): BlockModel<Args, OutputsCfg, UiState, Href>;
   public argsValid(
-    cfgOrRf: TypedConfig | Function
+    cfgOrRf: TypedConfig | AnyFunction,
   ): BlockModel<Args, OutputsCfg, UiState, `/${string}`> {
     if (typeof cfgOrRf === 'function') {
       tryRegisterCallback('inputsValid', () => cfgOrRf(new RenderCtx()));
@@ -190,10 +196,10 @@ export class BlockModel<
         this._outputs,
         {
           __renderLambda: true,
-          handle: 'inputsValid'
+          handle: 'inputsValid',
         } satisfies ConfigRenderLambda,
         this._sections,
-        this._title
+        this._title,
       );
     } else
       return new BlockModel<Args, OutputsCfg, UiState>(
@@ -203,7 +209,7 @@ export class BlockModel<
         this._outputs,
         cfgOrRf,
         this._sections,
-        this._title
+        this._title,
       );
   }
 
@@ -215,7 +221,7 @@ export class BlockModel<
   /** Sets the config to generate list of section in the left block overviews panel */
   public sections<
     const Ret extends SectionsExpectedType,
-    const RF extends RenderFunction<Args, UiState, Ret>
+    const RF extends RenderFunction<Args, UiState, Ret>,
   >(rf: RF): BlockModel<Args, OutputsCfg, UiState, DeriveHref<ReturnType<RF>>>;
   public sections<const Cfg extends TypedConfig>(
     cfg: Cfg & SectionsCfgChecked<Cfg, Args, UiState>
@@ -226,7 +232,7 @@ export class BlockModel<
     DeriveHref<ConfigResult<Cfg, StdCtxArgsOnly<Args, UiState>>>
   >;
   public sections(
-    arrOrCfgOrRf: SectionsExpectedType | TypedConfig | Function
+    arrOrCfgOrRf: SectionsExpectedType | TypedConfig | AnyFunction,
   ): BlockModel<Args, OutputsCfg, UiState, `/${string}`> {
     if (Array.isArray(arrOrCfgOrRf)) {
       return this.sections(getImmediate(arrOrCfgOrRf));
@@ -239,7 +245,7 @@ export class BlockModel<
         this._outputs,
         this._inputsValid,
         { __renderLambda: true, handle: 'sections' } as ConfigRenderLambda,
-        this._title
+        this._title,
       );
     } else
       return new BlockModel<Args, OutputsCfg, UiState>(
@@ -249,13 +255,13 @@ export class BlockModel<
         this._outputs,
         this._inputsValid,
         arrOrCfgOrRf as TypedConfig,
-        this._title
+        this._title,
       );
   }
 
   /** Sets a rendering function to derive block title, shown for the block in the left blocks-overview panel. */
   public title(
-    rf: RenderFunction<Args, UiState, string>
+    rf: RenderFunction<Args, UiState, string>,
   ): BlockModel<Args, OutputsCfg, UiState, Href> {
     tryRegisterCallback('title', () => rf(new RenderCtx()));
     return new BlockModel<Args, OutputsCfg, UiState, Href>(
@@ -265,7 +271,7 @@ export class BlockModel<
       this._outputs,
       this._inputsValid,
       this._sections,
-      { __renderLambda: true, handle: 'title' } as ConfigRenderLambda
+      { __renderLambda: true, handle: 'title' } as ConfigRenderLambda,
     );
   }
 
@@ -281,7 +287,7 @@ export class BlockModel<
       this._outputs,
       this._inputsValid,
       this._sections,
-      this._title
+      this._title,
     );
   }
 
@@ -294,7 +300,7 @@ export class BlockModel<
       this._outputs,
       this._inputsValid,
       this._sections,
-      this._title
+      this._title,
     );
   }
 
@@ -307,7 +313,7 @@ export class BlockModel<
       this._outputs,
       this._inputsValid,
       this._sections,
-      this._title
+      this._title,
     );
   }
 
@@ -331,7 +337,7 @@ export class BlockModel<
         inputsValid: this._inputsValid,
         sections: this._sections,
         title: this._title,
-        outputs: this._outputs
+        outputs: this._outputs,
       },
 
       // fields below are added to allow previous desktop versions read generated configs
@@ -341,8 +347,8 @@ export class BlockModel<
       inputsValid: downgradeCfgOrLambda(this._inputsValid),
       sections: downgradeCfgOrLambda(this._sections),
       outputs: Object.fromEntries(
-        Object.entries(this._outputs).map(([key, value]) => [key, downgradeCfgOrLambda(value)])
-      )
+        Object.entries(this._outputs).map(([key, value]) => [key, downgradeCfgOrLambda(value)]),
+      ),
     };
 
     if (!isInUI())
@@ -362,7 +368,7 @@ export type InferOutputType<CfgOrFH, Args, UiState> = CfgOrFH extends TypedConfi
 type InferOutputsFromConfigs<
   Args,
   OutputsCfg extends Record<string, TypedConfigOrConfigLambda>,
-  UiState
+  UiState,
 > = {
   [Key in keyof OutputsCfg]: ValueOrErrors<InferOutputType<OutputsCfg[Key], Args, UiState>>;
 };

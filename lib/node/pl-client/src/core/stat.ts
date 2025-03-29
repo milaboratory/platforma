@@ -60,7 +60,7 @@ export function initialTxStat(): TxStat {
     kvListEntries: 0,
     kvListBytes: 0,
     kvGetRequests: 0,
-    kvGetBytes: 0
+    kvGetBytes: 0,
   };
 }
 
@@ -91,7 +91,7 @@ export function addStat(a: TxStat, b: TxStat): TxStat {
     kvListEntries: a.kvListEntries + b.kvListEntries,
     kvListBytes: a.kvListBytes + b.kvListBytes,
     kvGetRequests: a.kvGetRequests + b.kvGetRequests,
-    kvGetBytes: a.kvGetBytes + b.kvGetBytes
+    kvGetBytes: a.kvGetBytes + b.kvGetBytes,
   };
 }
 

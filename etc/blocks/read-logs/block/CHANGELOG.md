@@ -1,5 +1,32 @@
 # @milaboratories/milaboratories.test-read-logs
 
+## 1.0.104
+
+### Patch Changes
+
+- @platforma-sdk/model@1.24.11
+- @milaboratories/milaboratories.test-read-logs.model@1.0.25
+- @milaboratories/milaboratories.test-read-logs.ui@1.0.99
+
+## 1.0.103
+
+### Patch Changes
+
+- Updated dependencies [4812a12]
+  - @platforma-sdk/model@1.24.10
+  - @milaboratories/milaboratories.test-read-logs.model@1.0.24
+  - @milaboratories/milaboratories.test-read-logs.ui@1.0.98
+  - @milaboratories/milaboratories.test-read-logs.workflow@1.0.6
+
+## 1.0.102
+
+### Patch Changes
+
+- Updated dependencies [5f0fb1d]
+  - @platforma-sdk/model@1.24.9
+  - @milaboratories/milaboratories.test-read-logs.ui@1.0.97
+  - @milaboratories/milaboratories.test-read-logs.model@1.0.23
+
 ## 1.0.101
 
 ### Patch Changes

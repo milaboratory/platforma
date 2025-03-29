@@ -1,5 +1,5 @@
 import { fileExists } from '@milaboratories/ts-helpers';
-import fs from 'fs/promises';
+import fs from 'node:fs/promises';
 import upath from 'upath';
 
 export function filePid(dir: string) {

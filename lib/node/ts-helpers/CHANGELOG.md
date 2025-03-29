@@ -1,5 +1,11 @@
 # @milaboratories/ts-helpers
 
+## 1.1.5
+
+### Patch Changes
+
+- 9e9a70f: Configure eslint to all "node" packages
+
 ## 1.1.4
 
 ### Patch Changes

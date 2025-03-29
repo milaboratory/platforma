@@ -108,7 +108,7 @@ type PlConfigOverrides = Partial<
 function parseInt(s: string | null | undefined): number | undefined {
   if (!s) return undefined;
   const num = Number(s);
-  if (num === Number.NaN) throw new Error(`Can't parse number: ${s}`);
+  if (Number.isNaN(num)) throw new Error(`Can't parse number: ${s}`);
   return num;
 }
 
@@ -116,7 +116,7 @@ function parseInt(s: string | null | undefined): number | undefined {
  * {@link PlClient} of {@link UnauthenticatedPlClient}. */
 export function plAddressToConfig(
   address: string,
-  overrides: PlConfigOverrides = {}
+  overrides: PlConfigOverrides = {},
 ): PlClientConfig {
   if (address.indexOf('://') === -1)
     // non-url address
@@ -140,16 +140,16 @@ export function plAddressToConfig(
       retryLinearBackoffStep: DEFAULT_RETRY_LINEAR_BACKOFF_STEP,
       retryJitter: DEFAULT_RETRY_JITTER,
 
-      ...overrides
+      ...overrides,
     };
 
   const url = new URL(address);
 
   if (
-    url.protocol !== 'https:' &&
-    url.protocol !== 'http:' &&
-    url.protocol !== 'grpc:' &&
-    url.protocol !== 'tls:'
+    url.protocol !== 'https:'
+    && url.protocol !== 'http:'
+    && url.protocol !== 'grpc:'
+    && url.protocol !== 'tls:'
   )
     throw new Error(`Unexpected URL schema: ${url.protocol}`);
 
@@ -163,13 +163,13 @@ export function plAddressToConfig(
     defaultRequestTimeout:
       parseInt(url.searchParams.get('request-timeout')) ?? DEFAULT_REQUEST_TIMEOUT,
     defaultROTransactionTimeout:
-      parseInt(url.searchParams.get('ro-tx-timeout')) ??
-      parseInt(url.searchParams.get('tx-timeout')) ??
-      DEFAULT_RO_TX_TIMEOUT,
+      parseInt(url.searchParams.get('ro-tx-timeout'))
+      ?? parseInt(url.searchParams.get('tx-timeout'))
+      ?? DEFAULT_RO_TX_TIMEOUT,
     defaultRWTransactionTimeout:
-      parseInt(url.searchParams.get('rw-tx-timeout')) ??
-      parseInt(url.searchParams.get('tx-timeout')) ??
-      DEFAULT_RW_TX_TIMEOUT,
+      parseInt(url.searchParams.get('rw-tx-timeout'))
+      ?? parseInt(url.searchParams.get('tx-timeout'))
+      ?? DEFAULT_RW_TX_TIMEOUT,
     authTTLSeconds: DEFAULT_TOKEN_TTL_SECONDS,
     authMaxRefreshSeconds: DEFAULT_AUTH_MAX_REFRESH,
     grpcProxy: url.searchParams.get('grpc-proxy') ?? undefined,
@@ -177,25 +177,25 @@ export function plAddressToConfig(
     user: url.username === '' ? undefined : url.username,
     password: url.password === '' ? undefined : url.password,
     txDelay: parseInt(url.searchParams.get('tx-delay')) ?? 0,
-    forceSync: Boolean(url.searchParams.get('force-sync')) ?? false,
+    forceSync: Boolean(url.searchParams.get('force-sync')),
 
     maxCacheBytes: parseInt(url.searchParams.get('max-cache-bytes')) ?? DEFAULT_MAX_CACHE_BYTES,
 
-    retryBackoffAlgorithm: (url.searchParams.get('retry-backoff-algorithm') ??
-      DEFAULT_RETRY_BACKOFF_ALGORITHM) as any,
+    retryBackoffAlgorithm: (url.searchParams.get('retry-backoff-algorithm')
+      ?? DEFAULT_RETRY_BACKOFF_ALGORITHM) as any,
     retryMaxAttempts:
       parseInt(url.searchParams.get('retry-max-attempts')) ?? DEFAULT_RETRY_MAX_ATTEMPTS,
     retryInitialDelay:
       parseInt(url.searchParams.get('retry-initial-delay')) ?? DEFAULT_RETRY_INITIAL_DELAY,
     retryExponentialBackoffMultiplier:
-      parseInt(url.searchParams.get('retry-exp-backoff-multiplier')) ??
-      DEFAULT_RETRY_EXPONENTIAL_BACKOFF_MULTIPLIER,
+      parseInt(url.searchParams.get('retry-exp-backoff-multiplier'))
+      ?? DEFAULT_RETRY_EXPONENTIAL_BACKOFF_MULTIPLIER,
     retryLinearBackoffStep:
-      parseInt(url.searchParams.get('retry-linear-backoff-step')) ??
-      DEFAULT_RETRY_LINEAR_BACKOFF_STEP,
+      parseInt(url.searchParams.get('retry-linear-backoff-step'))
+      ?? DEFAULT_RETRY_LINEAR_BACKOFF_STEP,
     retryJitter: parseInt(url.searchParams.get('retry-backoff-jitter')) ?? DEFAULT_RETRY_JITTER,
 
-    ...overrides
+    ...overrides,
   };
 }
 

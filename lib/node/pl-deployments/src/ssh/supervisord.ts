@@ -3,7 +3,7 @@
 import type { MiLogger } from '@milaboratories/ts-helpers';
 import * as plpath from './pl_paths';
 import type { SshClient, SshExecResult } from './ssh';
-import { randomBytes } from 'crypto';
+import { randomBytes } from 'node:crypto';
 
 export async function supervisorCtlStart(
   sshClient: SshClient,

@@ -59,8 +59,11 @@ function destroyCellFake(cellFake: HTMLDivElement) {
 }
 
 function adjustRowNumberColumnWidth(gridApi: GridApi, cellFake: HTMLDivElement, force?: boolean) {
+  const rowNode = gridApi.getDisplayedRowAtIndex(gridApi.getLastDisplayedRowIndex());
+  if (!rowNode) return;
+
   const lastDisplayedRowNumber = gridApi.getCellValue({
-    rowNode: gridApi.getDisplayedRowAtIndex(gridApi.getLastDisplayedRowIndex())!,
+    rowNode,
     colKey: PlAgDataTableRowNumberColId,
   });
 
@@ -86,6 +89,7 @@ function adjustRowNumberColumnWidth(gridApi: GridApi, cellFake: HTMLDivElement, 
 }
 
 function fixColumnOrder(gridApi: GridApi) {
+  if (gridApi.isDestroyed()) return;
   const columns = gridApi.getAllGridColumns() ?? [];
   const selectionIndex = columns.findIndex(isColumnSelectionCol);
   const numRowsIndex = columns.findIndex((column) => column.getId() === PlAgDataTableRowNumberColId);

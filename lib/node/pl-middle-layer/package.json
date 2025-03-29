@@ -1,7 +1,10 @@
 {
   "name": "@milaboratories/pl-middle-layer",
-  "version": "1.31.4",
+  "version": "1.31.7",
   "description": "Pl Middle Layer",
+  "engines": {
+    "node": ">=20.16.0"
+  },
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -15,6 +18,7 @@
   "scripts": {
     "type-check": "tsc --noEmit --composite false",
     "build": "vite build",
+    "lint": "eslint .",
     "test": "NODE_OPTIONS=\"$NODE_OPTIONS --experimental-vm-modules\" jest",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },

@@ -1,5 +1,5 @@
-import { number } from 'zod';
-import { ValueType } from './spec/spec';
+/* eslint-disable @typescript-eslint/restrict-template-expressions */
+import type { ValueType } from './spec/spec';
 
 export const PValueIntNA = -2147483648;
 export const PValueLongNA = -9007199254740991n;
@@ -26,8 +26,9 @@ export type NotNAPValue = number | bigint | string;
 export type PValue =
   | PValueInt
   | PValueLong
-  | PValueFloat
-  | PValueDouble
+  // Doesn't differ from PValueInt, TODO: branded types for these PValue* types?
+  // | PValueFloat
+  // | PValueDouble
   | PValueString
   | PValueBytes;
 
@@ -69,9 +70,9 @@ export function isNotNAPValue(value: unknown): value is NotNAPValue;
 export function isNotNAPValue(value: unknown, valueType?: ValueType): boolean {
   if (!valueType)
     return (
-      typeof value === 'string' ||
-      (typeof value === 'number' && isFinite(value)) ||
-      typeof value === 'bigint'
+      typeof value === 'string'
+      || (typeof value === 'number' && isFinite(value))
+      || typeof value === 'bigint'
     );
   if (isValueNA(value, valueType)) return false;
   switch (valueType) {
@@ -102,10 +103,10 @@ export function isPValue(value: unknown): value is PValue;
 export function isPValue(value: unknown, valueType?: ValueType): boolean {
   if (!valueType)
     return (
-      value === null ||
-      typeof value === 'string' ||
-      typeof value === 'number' ||
-      typeof value === 'bigint'
+      value === null
+      || typeof value === 'string'
+      || typeof value === 'number'
+      || typeof value === 'bigint'
     );
   if (isValueNA(value, valueType)) return true;
   switch (valueType) {
@@ -146,10 +147,10 @@ export function toJsonSafePValue(value: PValue): PValueJsonSafe {
  */
 export function safeConvertToPValue(value: unknown, checkType?: ValueType): PValue {
   if (
-    value === null ||
-    typeof value === 'string' ||
-    typeof value === 'number' ||
-    typeof value === 'bigint'
+    value === null
+    || typeof value === 'string'
+    || typeof value === 'number'
+    || typeof value === 'bigint'
   ) {
     if (checkType && !isValueNA(value, checkType) && !isPValue(value, checkType))
       throw new Error(`Unexpected value type, got ${typeof value}, expected ${checkType}`);
@@ -157,10 +158,10 @@ export function safeConvertToPValue(value: unknown, checkType?: ValueType): PVal
   }
 
   if (
-    typeof value === 'object' &&
-    value !== null &&
-    'bigint' in value &&
-    typeof value.bigint === 'string'
+    typeof value === 'object'
+    && value !== null
+    && 'bigint' in value
+    && typeof value.bigint === 'string'
   ) {
     if (checkType && checkType !== 'Long')
       throw new Error(`Unexpected value type, got serialized bigint, expected ${checkType}`);
@@ -186,7 +187,7 @@ export function pValueToStringOrNumberOrNull(
   value: PValue | PValueJsonSafe
 ): string | number | null;
 export function pValueToStringOrNumberOrNull(
-  value: PValue | PValueJsonSafe
+  value: PValue | PValueJsonSafe,
 ): string | number | null {
   value = safeConvertToPValue(value);
   if (value === null) return null;
@@ -270,7 +271,7 @@ export type AbsentAndNAFill = {
 export function pTableValue(
   column: PTableVector,
   row: number,
-  fill: AbsentAndNAFill = {}
+  fill: AbsentAndNAFill = {},
 ): PTableValue {
   if (isValueAbsent(column.absent, row))
     return fill.absent === undefined ? PTableAbsent : fill.absent;

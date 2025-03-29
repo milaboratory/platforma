@@ -1,5 +1,28 @@
 # @platforma-sdk/model
 
+## 1.24.11
+
+### Patch Changes
+
+- Updated dependencies [9e9a70f]
+  - @milaboratories/pl-model-common@1.11.4
+
+## 1.24.10
+
+### Patch Changes
+
+- 4812a12: apply eslint rules to the all "model" packages
+- Updated dependencies [4812a12]
+  - @milaboratories/pl-model-common@1.11.3
+
+## 1.24.9
+
+### Patch Changes
+
+- 5f0fb1d: [sdk/ui-vue] PlAgDataTable hidden columns are shown as visible after selecting empty dataset
+- Updated dependencies [5f0fb1d]
+  - @milaboratories/pl-model-common@1.11.2
+
 ## 1.24.5
 
 ### Patch Changes

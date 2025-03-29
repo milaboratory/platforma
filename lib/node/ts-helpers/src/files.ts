@@ -1,6 +1,5 @@
-import fs from 'fs';
-import { MiLogger } from './log';
-import path from 'path';
+import fs from 'node:fs';
+import type { MiLogger } from './log';
 
 export async function fileExists(path: string): Promise<boolean> {
   try {
@@ -23,7 +22,7 @@ export async function ensureDirExists(fileOrDir: string) {
 export async function createPathAtomically(
   logger: MiLogger,
   fPath: string,
-  fillFileFn: (fPath: string) => Promise<void>
+  fillFileFn: (fPath: string) => Promise<void>,
 ) {
   const tempPath = `${fPath}.tmp`;
 
@@ -39,7 +38,7 @@ export async function createPathAtomically(
     // Rename atomically
     await fs.promises.rename(tempPath, fPath);
   } catch (e) {
-    logger.error(`error while creating a file atomically: ${e}`);
+    logger.error(`error while creating a file atomically: ${e instanceof Error ? e.message : String(e)}`);
     throw e;
   }
 }

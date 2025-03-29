@@ -7,7 +7,7 @@ function toDataView(data: Data) {
   if (data instanceof ArrayBuffer) return new DataView(data);
 
   throw new TypeError(
-    'Expected `data` to be an ArrayBuffer, Buffer, Int8Array, Uint8Array or Uint8ClampedArray'
+    'Expected `data` to be an ArrayBuffer, Buffer, Int8Array, Uint8Array or Uint8ClampedArray',
   );
 }
 
@@ -23,7 +23,7 @@ const CROCKFORD = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
 export function base32Encode(
   data: Data,
   variant: 'RFC3548' | 'RFC4648' | 'RFC4648-HEX' | 'Crockford',
-  options?: Options
+  options?: Options,
 ) {
   options = options || {};
   let alphabet, defaultPadding;
@@ -43,7 +43,7 @@ export function base32Encode(
       defaultPadding = false;
       break;
     default:
-      throw new Error('Unknown base32 variant: ' + variant);
+      throw new Error('Unknown base32 variant: ' + String(variant));
   }
 
   const padding = options.padding !== undefined ? options.padding : defaultPadding;

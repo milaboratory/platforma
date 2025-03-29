@@ -1,5 +1,23 @@
 # @milaboratories/pl-model-common
 
+## 1.11.4
+
+### Patch Changes
+
+- 9e9a70f: Configure eslint to all "node" packages
+
+## 1.11.3
+
+### Patch Changes
+
+- 4812a12: apply eslint rules to the all "model" packages
+
+## 1.11.2
+
+### Patch Changes
+
+- 5f0fb1d: [sdk/ui-vue] PlAgDataTable hidden columns are shown as visible after selecting empty dataset
+
 ## 1.11.1
 
 ### Patch Changes

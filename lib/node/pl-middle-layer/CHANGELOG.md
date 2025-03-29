@@ -1,5 +1,53 @@
 # @milaboratories/pl-middle-layer
 
+## 1.31.7
+
+### Patch Changes
+
+- 9e9a70f: Configure eslint to all "node" packages
+- Updated dependencies [9e9a70f]
+  - @milaboratories/pl-deployments@1.7.1
+  - @milaboratories/computable@2.4.2
+  - @milaboratories/ts-helpers@1.1.5
+  - @milaboratories/pl-client@2.7.14
+  - @milaboratories/pl-config@1.4.5
+  - @milaboratories/pl-errors@1.0.3
+  - @milaboratories/pl-model-common@1.11.4
+  - @milaboratories/pl-http@1.1.2
+  - @milaboratories/pl-tree@1.5.2
+  - @platforma-sdk/block-tools@2.5.27
+  - @milaboratories/pl-drivers@1.5.35
+  - @milaboratories/pl-model-backend@1.0.3
+  - @milaboratories/pl-model-middle-layer@1.7.14
+  - @platforma-sdk/model@1.24.11
+
+## 1.31.6
+
+### Patch Changes
+
+- Updated dependencies [4812a12]
+  - @milaboratories/pl-model-backend@1.0.3
+  - @milaboratories/pl-model-common@1.11.3
+  - @platforma-sdk/model@1.24.10
+  - @milaboratories/pl-config@1.4.4
+  - @milaboratories/pl-deployments@1.7.0
+  - @milaboratories/pl-drivers@1.5.34
+  - @milaboratories/pl-errors@1.0.2
+  - @milaboratories/pl-model-middle-layer@1.7.13
+  - @platforma-sdk/workflow-tengo@3.0.3
+  - @platforma-sdk/block-tools@2.5.26
+
+## 1.31.5
+
+### Patch Changes
+
+- Updated dependencies [5f0fb1d]
+  - @milaboratories/pl-model-common@1.11.2
+  - @platforma-sdk/model@1.24.9
+  - @milaboratories/pl-model-middle-layer@1.7.12
+  - @milaboratories/pl-drivers@1.5.33
+  - @platforma-sdk/block-tools@2.5.25
+
 ## 1.31.4
 
 ### Patch Changes

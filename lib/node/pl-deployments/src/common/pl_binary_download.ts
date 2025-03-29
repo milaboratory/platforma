@@ -1,9 +1,9 @@
-import fs from 'fs';
-import fsp from 'fs/promises';
+import fs from 'node:fs';
+import fsp from 'node:fs/promises';
 import upath from 'upath';
 import { request } from 'undici';
-import { Writable, Readable } from 'stream';
-import { text } from 'stream/consumers';
+import { Writable, Readable } from 'node:stream';
+import { text } from 'node:stream/consumers';
 import * as tar from 'tar';
 import type { MiLogger } from '@milaboratories/ts-helpers';
 import { assertNever, fileExists } from '@milaboratories/ts-helpers';
@@ -40,7 +40,7 @@ export async function downloadBinaryNoExtract(
   try {
     await downloadArchive(logger, archiveUrl, archivePath);
     opts.wasDownloadedFrom = archiveUrl;
-  } catch (e: unknown) {
+  } catch (_e) {
     await downloadArchive(logger, alternativeArchiveGAUrl, archivePath);
     opts.wasDownloadedFrom = alternativeArchiveGAUrl;
   }
@@ -57,12 +57,12 @@ export async function downloadBinary(
   platform: string,
 ): Promise<DownloadBinaryResult> {
   const opts = getPathsForDownload(softwareName, archiveName, baseDir, newArch(arch), newOs(platform));
-  const { archiveUrl, alternativeArchiveGAUrl, archivePath, archiveType, targetFolder, baseName } = opts;
+  const { archiveUrl, alternativeArchiveGAUrl, archivePath, archiveType, targetFolder } = opts;
 
   try {
     await downloadArchive(logger, archiveUrl, archivePath);
     opts.wasDownloadedFrom = archiveUrl;
-  } catch (e: unknown) {
+  } catch (_e) {
     await downloadArchive(logger, alternativeArchiveGAUrl, archivePath);
     opts.wasDownloadedFrom = alternativeArchiveGAUrl;
   }
@@ -142,6 +142,7 @@ export async function downloadArchive(
 
     // to prevent incomplete downloads we first write in a temp file
     state.tmpPath = dstArchiveFile + '.tmp';
+    // eslint-disable-next-line n/no-unsupported-features/node-builtins
     await Readable.toWeb(body).pipeTo(Writable.toWeb(fs.createWriteStream(state.tmpPath)));
     state.wroteTmp = true;
     state.tmpExisted = await fileExists(state.tmpPath);

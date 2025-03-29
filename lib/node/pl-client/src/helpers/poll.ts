@@ -1,20 +1,23 @@
-import { PlClient } from '../core/client';
+import type { PlClient } from '../core/client';
+import type {
+  RetryOptions,
+} from '@milaboratories/ts-helpers';
 import {
   createRetryState,
   nextRetryStateOrError,
   notEmpty,
-  RetryOptions
 } from '@milaboratories/ts-helpers';
-import {
+import type {
   FieldData,
   FieldType,
+  ResourceData,
+  ResourceId } from '../core/types';
+import {
   isNotNullResourceId,
   isNullResourceId,
-  ResourceData,
-  ResourceId,
-  resourceIdToString
+  resourceIdToString,
 } from '../core/types';
-import { PlTransaction } from '../core/transaction';
+import type { PlTransaction } from '../core/transaction';
 import * as tp from 'node:timers/promises';
 
 /** This error tells state assertion mechanism that required state is not yet ready */
@@ -31,14 +34,14 @@ export type PollFieldTraverseOps = {
 
 const DefaultPollFieldTraverseOps: PollFieldTraverseOps = {
   failOnError: true,
-  onlyFinal: false
+  onlyFinal: false,
 };
 
 export class PollResourceAccessor {
   constructor(
     public readonly tx: PollTxAccessor,
     public readonly data: ResourceData,
-    public readonly path: string[]
+    public readonly path: string[],
   ) {}
 
   public final(): PollResourceAccessor {
@@ -63,11 +66,12 @@ export class PollResourceAccessor {
     }
 
     if (
-      ((expectedType === 'Input' || expectedType === 'Service') && this.data.inputsLocked) ||
-      (expectedType === 'Output' && this.data.outputsLocked)
+      ((expectedType === 'Input' || expectedType === 'Service') && this.data.inputsLocked)
+      || (expectedType === 'Output' && this.data.outputsLocked)
     )
       throw new Error(
-        `Field "${name}" not found. Expected type: ${expectedType}, state: ${this.data}`
+        // eslint-disable-next-line @typescript-eslint/no-base-to-string, @typescript-eslint/restrict-template-expressions
+        `Field "${name}" not found. Expected type: ${expectedType}, state: ${this.data}`,
       );
 
     throw new ContinuePolling();
@@ -75,9 +79,9 @@ export class PollResourceAccessor {
 
   public async get(
     name: string,
-    ops: Partial<PollFieldTraverseOps> = {}
+    ops: Partial<PollFieldTraverseOps> = {},
   ): Promise<PollResourceAccessor> {
-    const { expectedType, failOnError, onlyFinal } = { ...DefaultPollFieldTraverseOps, ...ops };
+    const { expectedType, failOnError } = { ...DefaultPollFieldTraverseOps, ...ops };
     const path = [...this.path, name];
 
     const fieldData = this.getFieldData(name, expectedType);
@@ -101,18 +105,18 @@ export class PollResourceAccessor {
     ...names: Key[]
   ): Promise<Record<Key, PollResourceAccessor>> {
     return Object.fromEntries(
-      await Promise.all(names.map(async (name) => [name, await this.get(name, ops)]))
+      await Promise.all(names.map(async (name) => [name, await this.get(name, ops)])),
     );
   }
 
   public async getAllFinal(
-    ops: Partial<PollFieldTraverseOps> = {}
+    ops: Partial<PollFieldTraverseOps> = {},
   ): Promise<Record<string, PollResourceAccessor>> {
     return await this.getMultiObj(
       ops,
       ...this.data.fields
         .filter((f) => f.valueIsFinal || isNotNullResourceId(f.error))
-        .map((f) => f.name)
+        .map((f) => f.name),
     );
   }
 
@@ -133,7 +137,7 @@ export class PollTxAccessor {
   public async get(
     rid: ResourceId,
     failOnError: boolean = true,
-    path: string[] = []
+    path: string[] = [],
   ): Promise<PollResourceAccessor> {
     const data = await this.tx.getResourceData(rid, true);
     const accessor = new PollResourceAccessor(this, data, [...path, resourceIdToString(rid)]);
@@ -143,7 +147,7 @@ export class PollTxAccessor {
 
   async throwError(error: ResourceId, path: string[] = []): Promise<never> {
     const errorRes = await this.get(error);
-    let errorText = Buffer.from(notEmpty(errorRes.data.data)).toString();
+    const errorText = Buffer.from(notEmpty(errorRes.data.data)).toString();
     throw new Error(`${path.join(' -> ')} = ${errorText}`);
   }
 }
@@ -153,14 +157,14 @@ export const DefaultPollingRetryOptions: RetryOptions = {
   jitter: 0,
   maxAttempts: 100,
   backoffStep: 10,
-  initialDelay: 10
+  initialDelay: 10,
 };
 
 export async function poll<T>(
   cl: PlClient,
   cb: (tx: PollTxAccessor) => Promise<T>,
   retryOptions: RetryOptions = DefaultPollingRetryOptions,
-  txName: string = 'polling'
+  txName: string = 'polling',
 ): Promise<T> {
   let retryState = createRetryState(retryOptions);
   while (true) {

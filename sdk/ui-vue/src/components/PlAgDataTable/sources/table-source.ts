@@ -6,6 +6,9 @@ import type {
   RowModelType,
   ValueFormatterParams,
 } from 'ag-grid-enterprise';
+import type {
+  PlDataTableGridStateWithoutSheets,
+} from '@platforma-sdk/model';
 import {
   getAxisId,
   pTableValue,
@@ -28,6 +31,8 @@ import type { PlAgDataTableRow, PTableRowKey } from '../types';
 import { makeRowNumberColDef, PlAgDataTableRowNumberColId } from './row-number';
 import { getHeterogeneousColumns, updatePFrameGridOptionsHeterogeneousAxes } from './table-source-heterogeneous';
 import { defaultMainMenuItems } from './menu-items';
+import { objectHash } from '../../../objectHash';
+import type { Ref } from 'vue';
 
 type PlAgCellButtonAxisParams = {
   showCellButtonForAxisId?: AxisId;
@@ -154,7 +159,7 @@ export async function updatePFrameGridOptions(
   pt: PTableHandle,
   sheets: PlDataTableSheet[],
   clientSide: boolean,
-  hiddenColIds?: string[],
+  gridState: Ref<PlDataTableGridStateWithoutSheets>,
   cellButtonAxisParams?: PlAgCellButtonAxisParams,
 ): Promise<{
     columnDefs: ColDef[];
@@ -163,6 +168,21 @@ export async function updatePFrameGridOptions(
     rowData?: PlAgDataTableRow[];
   }> {
   const specs = await pfDriver.getSpec(pt);
+
+  const oldSourceId = gridState.value.sourceId;
+
+  const newSourceId = await objectHash(specs);
+
+  const isSourceIdChanged = oldSourceId !== newSourceId;
+
+  const columnVisibility = isSourceIdChanged ? undefined : gridState.value.columnVisibility;
+
+  if (isSourceIdChanged) {
+    gridState.value = {
+      ...gridState.value,
+      sourceId: newSourceId,
+    };
+  }
 
   let numberOfAxes = specs.findIndex((s) => s.type === 'column');
   if (numberOfAxes === -1) numberOfAxes = specs.length;
@@ -228,7 +248,7 @@ export async function updatePFrameGridOptions(
   const rowCount = ptShape.rows;
   const columnDefs: ColDef<PlAgDataTableRow>[] = [
     makeRowNumberColDef(),
-    ...fields.map((i) => makeColDef(i, specs[i], hiddenColIds, cellButtonAxisParams)),
+    ...fields.map((i) => makeColDef(i, specs[i], columnVisibility?.hiddenColIds, cellButtonAxisParams)),
   ];
 
   if (hColumns.length > 0) {

@@ -1,5 +1,5 @@
-import { TypedConfig } from '../config';
-import { ConfigRenderLambda } from './lambdas';
+import type { TypedConfig } from '../config';
+import type { ConfigRenderLambda } from './lambdas';
 
 export type Code = {
   type: 'plain';
@@ -7,7 +7,7 @@ export type Code = {
 };
 
 export function isConfigLambda(
-  cfgOrFh: TypedConfigOrConfigLambda
+  cfgOrFh: TypedConfigOrConfigLambda,
 ): cfgOrFh is ConfigRenderLambda {
   return (cfgOrFh as any).__renderLambda === true;
 }

@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-backend
 
+## 1.0.3
+
+### Patch Changes
+
+- 4812a12: apply eslint rules to the all "model" packages
+
 ## 1.0.2
 
 ### Patch Changes
