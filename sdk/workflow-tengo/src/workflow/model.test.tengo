@@ -2,32 +2,32 @@ test := import(":test")
 model := import(":workflow.model")
 validation := import(":validation")
 
-TestAPColumnSelectorValidation := func() {
+TestAnchoredPColumnSelectorValidation := func() {
     // Test 1: Simple valid selector with name
     simpleSelector := {
         name: "testColumn"
     }
-    test.isEqual(validation.isValid(simpleSelector, model.AP_COLUMN_SELECTOR_SCHEMA), true)
+    test.isEqual(validation.isValid(simpleSelector, model.ANCHORED_P_COLUMN_SELECTOR_SCHEMA), true)
 
     // Test 2: Valid selector with namePattern
     patternSelector := {
         namePattern: "^test.*$"
     }
-    test.isEqual(validation.isValid(patternSelector, model.AP_COLUMN_SELECTOR_SCHEMA), true)
+    test.isEqual(validation.isValid(patternSelector, model.ANCHORED_P_COLUMN_SELECTOR_SCHEMA), true)
 
     // Test 3: Valid selector with string type
     stringTypeSelector := {
         name: "testColumn",
         type: "String"
     }
-    test.isEqual(validation.isValid(stringTypeSelector, model.AP_COLUMN_SELECTOR_SCHEMA), true)
+    test.isEqual(validation.isValid(stringTypeSelector, model.ANCHORED_P_COLUMN_SELECTOR_SCHEMA), true)
 
     // Test 4: Valid selector with array of types
     arrayTypeSelector := {
         name: "testColumn",
         type: ["String", "Int", "Float"]
     }
-    test.isEqual(validation.isValid(arrayTypeSelector, model.AP_COLUMN_SELECTOR_SCHEMA), true)
+    test.isEqual(validation.isValid(arrayTypeSelector, model.ANCHORED_P_COLUMN_SELECTOR_SCHEMA), true)
 
     // Test 5: Valid selector with domain
     domainSelector := {
@@ -37,7 +37,7 @@ TestAPColumnSelectorValidation := func() {
             "domain2": "value2"
         }
     }
-    test.isEqual(validation.isValid(domainSelector, model.AP_COLUMN_SELECTOR_SCHEMA), true)
+    test.isEqual(validation.isValid(domainSelector, model.ANCHORED_P_COLUMN_SELECTOR_SCHEMA), true)
 
     // Test 6: Valid selector with anchored domain
     anchoredDomainSelector := {
@@ -48,7 +48,7 @@ TestAPColumnSelectorValidation := func() {
             "domain2": "value2"
         }
     }
-    test.isEqual(validation.isValid(anchoredDomainSelector, model.AP_COLUMN_SELECTOR_SCHEMA), true)
+    test.isEqual(validation.isValid(anchoredDomainSelector, model.ANCHORED_P_COLUMN_SELECTOR_SCHEMA), true)
 
     // Test 7: Valid selector with axes
     axesSelector := {
@@ -59,7 +59,7 @@ TestAPColumnSelectorValidation := func() {
             { anchor: "anchorColumn", idx: 1 }
         ]
     }
-    test.isEqual(validation.isValid(axesSelector, model.AP_COLUMN_SELECTOR_SCHEMA), true)
+    test.isEqual(validation.isValid(axesSelector, model.ANCHORED_P_COLUMN_SELECTOR_SCHEMA), true)
 
     // Test 8: Valid selector with partialAxesMatch
     partialMatchSelector := {
@@ -67,7 +67,7 @@ TestAPColumnSelectorValidation := func() {
         axes: [{ name: "axis1" }],
         partialAxesMatch: true
     }
-    test.isEqual(validation.isValid(partialMatchSelector, model.AP_COLUMN_SELECTOR_SCHEMA), true)
+    test.isEqual(validation.isValid(partialMatchSelector, model.ANCHORED_P_COLUMN_SELECTOR_SCHEMA), true)
 
     // Test 9: Valid selector with annotations
     annotationsSelector := {
@@ -77,7 +77,7 @@ TestAPColumnSelectorValidation := func() {
             "annotation2": "value2"
         }
     }
-    test.isEqual(validation.isValid(annotationsSelector, model.AP_COLUMN_SELECTOR_SCHEMA), true)
+    test.isEqual(validation.isValid(annotationsSelector, model.ANCHORED_P_COLUMN_SELECTOR_SCHEMA), true)
 
     // Test 10: Valid selector with annotation patterns
     annotationPatternsSelector := {
@@ -87,35 +87,35 @@ TestAPColumnSelectorValidation := func() {
             "annotation2": ".*value$"
         }
     }
-    test.isEqual(validation.isValid(annotationPatternsSelector, model.AP_COLUMN_SELECTOR_SCHEMA), true)
+    test.isEqual(validation.isValid(annotationPatternsSelector, model.ANCHORED_P_COLUMN_SELECTOR_SCHEMA), true)
 
     // Test 11: Valid selector with matchStrategy
     matchStrategySelector := {
         name: "testColumn",
         matchStrategy: "expectSingle"
     }
-    test.isEqual(validation.isValid(matchStrategySelector, model.AP_COLUMN_SELECTOR_SCHEMA), true)
+    test.isEqual(validation.isValid(matchStrategySelector, model.ANCHORED_P_COLUMN_SELECTOR_SCHEMA), true)
 
     // Test 12: Invalid selector with unknown property
     invalidSelector1 := {
         name: "testColumn",
         unknownProperty: "value"
     }
-    test.isEqual(validation.isValid(invalidSelector1, model.AP_COLUMN_SELECTOR_SCHEMA), false)
+    test.isEqual(validation.isValid(invalidSelector1, model.ANCHORED_P_COLUMN_SELECTOR_SCHEMA), false)
 
     // Test 13: Invalid selector with invalid matchStrategy
     invalidSelector2 := {
         name: "testColumn",
         matchStrategy: "invalidStrategy"
     }
-    test.isEqual(validation.isValid(invalidSelector2, model.AP_COLUMN_SELECTOR_SCHEMA), false)
+    test.isEqual(validation.isValid(invalidSelector2, model.ANCHORED_P_COLUMN_SELECTOR_SCHEMA), false)
 
     // Test 14: Invalid axis selector with unknown property
     invalidSelector3 := {
         name: "testColumn",
         axes: [{ name: "axis1", unknownProperty: "value" }]
     }
-    test.isEqual(validation.isValid(invalidSelector3, model.AP_COLUMN_SELECTOR_SCHEMA), false)
+    test.isEqual(validation.isValid(invalidSelector3, model.ANCHORED_P_COLUMN_SELECTOR_SCHEMA), false)
 
     // Test 15: Complex valid selector with multiple properties
     complexSelector := {
@@ -134,7 +134,7 @@ TestAPColumnSelectorValidation := func() {
         annotationPatterns: { "annotation2": "^pattern.*$" },
         matchStrategy: "expectMultiple"
     }
-    test.isEqual(validation.isValid(complexSelector, model.AP_COLUMN_SELECTOR_SCHEMA), true)
+    test.isEqual(validation.isValid(complexSelector, model.ANCHORED_P_COLUMN_SELECTOR_SCHEMA), true)
 }
 
 TestAxisSelectorValidation := func() {

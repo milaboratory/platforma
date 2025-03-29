@@ -1,0 +1,73 @@
+ll := import(":ll")
+maps := import(":maps")
+json := import("json")
+
+/**
+ * Encodes a JSON object with sorted map keys according to RFC8785.
+ * This is a partial implementation focusing only on the key sorting aspect.
+ *
+ * @param obj any - the object to encode
+ * @return string - the canonicalized JSON string
+ */
+encode := func(obj) {
+    if is_map(obj) || ll.isStrict(obj) {
+        // Handle strict map conversion if needed
+        _obj := obj
+        if ll.isStrict(obj) {
+            _obj = ll.fromStrict(obj)
+        }
+
+        // Get sorted keys
+        sortedKeys := maps.getKeys(_obj)
+
+        // Build canonical JSON manually for maps
+        result := "{"
+
+        for i, key in sortedKeys {
+            value := _obj[key]
+
+            // Add comma if not the first key
+            if i > 0 {
+                result = result + ","
+            }
+
+            // Key must be a string in JSON
+            result = result + json.encode(key) + ":"
+
+            // Recursively encode the value
+            if is_map(value) || is_array(value) || ll.isStrict(value) {
+                result = result + encode(value)
+            } else {
+                result = result + json.encode(value)
+            }
+        }
+
+        return result + "}"
+    } else if is_array(obj) {
+        // For arrays, preserve order but canonicalize each element
+        result := "["
+
+        for i, value in obj {
+            // Add comma if not the first element
+            if i > 0 {
+                result = result + ","
+            }
+
+            // Recursively encode the array element
+            if is_map(value) || is_array(value) || ll.isStrict(value) {
+                result = result + encode(value)
+            } else {
+                result = result + json.encode(value)
+            }
+        }
+
+        return result + "]"
+    }
+
+    // For primitives, use the built-in JSON encoder
+    return json.encode(obj)
+}
+
+export ll.toStrict({
+    encode: encode
+})

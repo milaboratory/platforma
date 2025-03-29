@@ -5,7 +5,7 @@
  * and saves a chosen resulted files from this dir.
  */
 
-self := import(":tpl")
+self := import(":tpl.light")
 
 ll := import(":ll")
 feats := import(":feats")

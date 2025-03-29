@@ -31,6 +31,13 @@ export const Trace = z.array(TraceEntry);
 export type Trace = z.infer<typeof Trace>;
 type FullTrace = FullTraceEntry[];
 
+// Define the possible return types for the specExtractor function
+type SpecExtractorResult = PObjectSpec | {
+  spec: PObjectSpec;
+  prefixTrace?: TraceEntry[];
+  suffixTrace?: TraceEntry[];
+};
+
 const DistancePenalty = 0.001;
 
 const LabelType = '__LABEL__';
@@ -38,7 +45,7 @@ const LabelTypeFull = '__LABEL__@1';
 
 export function deriveLabels<T>(
   values: T[],
-  specExtractor: (obj: T) => PObjectSpec,
+  specExtractor: (obj: T) => SpecExtractorResult,
   ops: LabelDerivationOps = {},
 ): RecordsWithLabel<T>[] {
   const importances = new Map<string, number>();
@@ -47,10 +54,31 @@ export function deriveLabels<T>(
   const numberOfRecordsWithType = new Map<string, number>();
 
   const enrichedRecords = values.map((value) => {
-    const spec = specExtractor(value);
+    const extractorResult = specExtractor(value);
+    let spec: PObjectSpec;
+    let prefixTrace: TraceEntry[] | undefined;
+    let suffixTrace: TraceEntry[] | undefined;
+
+    // Check if the result is the new structure or just PObjectSpec
+    if ('spec' in extractorResult && typeof extractorResult.spec === 'object') {
+      // It's the new structure { spec, prefixTrace?, suffixTrace? }
+      spec = extractorResult.spec;
+      prefixTrace = extractorResult.prefixTrace;
+      suffixTrace = extractorResult.suffixTrace;
+    } else {
+      // It's just PObjectSpec
+      spec = extractorResult as PObjectSpec;
+    }
+
     const label = spec.annotations?.[PAnnotationLabel];
     const traceStr = spec.annotations?.[PAnnotationTrace];
-    const trace = (traceStr ? Trace.safeParse(JSON.parse(traceStr)).data : undefined) ?? [];
+    const baseTrace = (traceStr ? Trace.safeParse(JSON.parse(traceStr)).data : undefined) ?? [];
+
+    const trace = [
+      ...(prefixTrace ?? []),
+      ...baseTrace,
+      ...(suffixTrace ?? []),
+    ];
 
     if (label) {
       const labelEntry = { label, type: LabelType, importance: -2 };

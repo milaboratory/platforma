@@ -4,7 +4,7 @@
 
 
 exportpframe := import(":pframes.export-pframe")
-tpl := import(":tpl")
+tpl := import(":tpl.light")
 
 tpl.awaitState("pf", { wildcard: "*" }, "InputsLocked")
 tpl.awaitState("pf", { match: "\\.spec$" }, "ResourceReady")

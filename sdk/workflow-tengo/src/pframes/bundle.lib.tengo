@@ -1,0 +1,544 @@
+smart := import(":smart")
+json := import("json")
+text := import("text")
+pConstants := import(":pframes.constants")
+bquery := import(":workflow.bquery")
+canonical := import(":canonical")
+pSpec := import(":pframes.spec")
+pBuilder := import(":pframes.builder")
+maps := import(":maps")
+ll := import(":ll")
+xsv := import(":pframes.xsv")
+assets := import(":assets")
+render := import(":render")
+
+/**
+ * Creates a collector to asynchronously aggregate PColumns into a resolved PColumnBundle.
+ *
+ * The PColumnBundleCollector maintains references, anchors, and queries which are used to fetch
+ * and resolve PColumns asynchronously from a given result pool. The final PColumnBundle provides
+ * easy and direct access to resolved PColumns.
+ *
+ * === Usage Flow ===
+ *
+ * 1. Add anchors, anchored queries and standalone references and queries to the collector
+ * 2. Call `build` and pass the result to a different template or use in preload
+ * 3. Use the PColumnBundle from the arguments of the nested template to interact with the data
+ *
+ * === Available Methods ===
+ *
+ *   addRef(ref)
+ *     - Adds a standalone reference to be resolved separately from anchors
+ *
+ *   addAnchor(anchorId, ref)
+ *     - Adds an anchor with the given ID and reference to be resolved
+ *
+ *   addById(id)
+ *     - Adds a PColumn to the bundle collector by UniversalPColumnId.
+ *       Automatically unwraps FilteredPColumnId.
+ *       @param id: string or object - The ID of the PColumn
+ *         - string: A SUniversalPColumnId (canonically serialized UniversalPColumnId)
+ *         - object: Either a standard AnchoredPColumnId or a FilteredPColumnId with source and axisFilters
+ *
+ *   addQuery(queryId, query)
+ *     - Adds a custom query with the given ID to be resolved
+ *
+ *   build()
+ *     - Resolves all references and queries and returns a PColumnBundle
+ *
+ * === Parameters ===
+ *
+ * @param ctx {Context} - The context to use for resolution
+ *
+ * === Returns ===
+ *
+ * @returns {Object} PColumnBundleCollector object with methods to add and resolve references
+ */
+createBuilder := func(ctx) {
+	// reference key -> anchor id or ref
+	//   - if points to string resolution result can be taken from the anchor query
+	//   - if points to object resolution should be done separately
+	refs := {}
+	// anchor id -> ref
+	anchors := {}
+	// query id -> query
+	queries := {}
+
+	self := undefined
+	self = {
+		/**
+		 * Adds a reference to the bundle collector.
+		 *
+		 * @param ref: PlRef - The reference to the anchor
+		 */
+		addRef: func(ref) {
+			refKey := canonical.encode(ref)
+
+			// if ref points to string resolution result can be taken from the anchor
+			if !is_string(refs[refKey]) {
+				refs[refKey] = ref
+			}
+		},
+
+		/**
+		 * Adds an anchor to the bundle collector.
+		 *
+		 * @param anchorId: string - The ID of the anchor to add
+		 * @param ref: string - The reference to the anchor
+		 */
+		addAnchor: func(anchorId, ref) {
+			anchors[anchorId] = ref
+			refKey := canonical.encode(ref)
+			if is_undefined(refs[refKey]) || is_map(refs[refKey]) {
+				refs[refKey] = anchorId
+			} else {
+				refs[refKey] = ref
+			}
+		},
+
+		/**
+		 * Adds a PColumn to the bundle collector by UniversalPColumnId.
+		 *
+		 * @param id: string or object - The ID of the PColumn
+		 *   - string: A SUniversalPColumnId (canonically serialized UniversalPColumnId)
+		 *   - object: Either a standard AnchoredPColumnId or a FilteredPColumnId with source and axisFilters
+		 */
+		addById: func(id) {
+			encodedId := undefined
+			decodedId := undefined
+
+			if is_string(id) {
+				decodedId = json.decode(id)
+				encodedId = id
+			} else if is_map(id) {
+				decodedId = id
+			} else {
+				ll.panic("Invalid column ID type. Expected string or object.")
+			}
+
+			if is_map(decodedId) && !is_undefined(decodedId.source) && !is_undefined(decodedId.axisFilters) {
+				// Unwrapping FilteredPColumnId
+				columnKey := canonical.encode(decodedId.source)
+				queries[columnKey] = decodedId.source
+			} else {
+				queries[encodedId] = decodedId
+			}
+		},
+
+		/**
+		 * Adds a query to the bundle collector.
+		 *
+		 * @param queryId: string - The ID of the query
+		 * @param query: AnchoredPColumnSelector - The query
+		 */
+		addQuery: func(queryId, query) {
+			queries[queryId] = query
+		},
+
+		/**
+		 * Builds the bundle.
+		 *
+		 * @return PColumnBundle - The resolved bundle with all references and queries
+		 */
+		build: func() {
+			resolveResult := bquery.anchoredQuery(ctx, anchors, queries)
+
+			bundle := smart.mapBuilder(pConstants.RTYPE_P_COLUMN_BUNDLE)
+
+			for refKey, ref in refs {
+				if is_string(ref) {
+					bundle.addRef(refKey, resolveResult.getAnchor(ref))
+				} else {
+					bundle.addRef(refKey, bquery.resolve(ref, ctx))
+				}
+			}
+
+			for queryId, query in queries {
+				bundle.addRef(queryId, resolveResult.getResult(queryId))
+			}
+
+			return bundle.build()
+		}
+	}
+
+	return self
+}
+
+nameCleanPattern := text.re_compile("[-_,.:; \\[\\]}{\"\\\\/:]+")
+
+cleanColumnName := func(name) {
+	return nameCleanPattern.replace(name, "_")
+}
+
+/**
+ * Creates an unmarshaller for PColumnBundle resources.
+ *
+ * The PColumnBundleUnmarshaller processes PColumnBundle resources into a structured
+ * object that provides easy way to interact with the data in the pool.
+ *
+ * @returns Object that implements the unmarshaller interface {canParse, parse}
+ */
+pColumnBundleUnmarshaller := func() {
+	return {
+		canParse: func(resource) {
+			return smart.isResource(resource) &&
+				resource.info().Type.Name == pConstants.RTYPE_P_COLUMN_BUNDLE.Name
+		},
+
+		parse: func(resource, parser) {
+			bResultUnmarshaller := bquery.resultUnmarshaller()
+
+			pool := {}
+
+			for resultKey, value in resource.inputs() {
+				if !bResultUnmarshaller.canParse(value.getValue()) {
+					ll.panic("Failed to unmarshal value for key: " + resultKey)
+				}
+
+				result := bResultUnmarshaller.parse(value.getValue(), parser)
+
+				pool[resultKey] = {
+					spec: result.spec,
+					data: result.data
+				}
+			}
+
+			// Holds overrides to default headers for axes in xsv exported outputs
+			// Array of:
+			//   [{ name: string, domain: {[domainKey: string]: string} }, header: string]
+			axisHeaderOverrides := []
+
+			bundle := undefined
+			bundle = ll.toStrict({
+				/**
+				 * Gets a specific column by its ID
+				 * @param resultKey - The ID of the column to retrieve
+				 * @returns The column object with its spec, data
+				 */
+				getColumn: func(resultKey) {
+					if !is_string(resultKey) {
+						resultKey = canonical.encode(resultKey)
+					}
+
+					if is_undefined(pool[resultKey]) {
+						ll.panic("Column not found: " + resultKey)
+					}
+					return pool[resultKey]
+				},
+
+				/**
+				 * Sets a header override for a specific axis or column
+				 * @param matcher - Either a matcher object {name, domain} or a string (which will be used as the name)
+				 * @param header - The header text to use instead of the default
+				 * @returns The bundle object for chaining
+				 */
+				setAxisHeader: func(matcher, header) {
+					if is_string(matcher) {
+						matcher = { name: matcher, domain: {} }
+					}
+
+					axisHeaderOverrides = [[matcher, header]] + axisHeaderOverrides
+					return bundle
+				},
+
+				/**
+				 * Creates a builder object to help create XSV tables from the bundle data
+				 */
+				xsvTableBuilder: func() {
+					localAxisHeaderOverrides := copy(axisHeaderOverrides)
+
+					requests := []
+					addedColumns := {}
+
+					findAxisHeaderOverride := func(spec) {
+						for _, override in localAxisHeaderOverrides {
+							matcher := override[0]
+
+							if matcher.name == spec.name {
+								domainsMatch := true
+
+								for domainKey, domainValue in matcher.domain {
+									if is_undefined(spec.domain) ||
+									   is_undefined(spec.domain[domainKey]) ||
+									   spec.domain[domainKey] != domainValue {
+										domainsMatch = false
+										break
+									}
+								}
+
+								if domainsMatch {
+									return override[1]
+								}
+							}
+						}
+						return undefined
+					}
+
+					distiller := undefined
+
+					getSpecDistiller := func() {
+						if is_undefined(distiller) {
+							columnsToDistill := []
+							for request in requests {
+								col := pool[request.key]
+								columnsToDistill = append(columnsToDistill, col.spec)
+							}
+							distiller = pSpec.createSpecDistiller(columnsToDistill)
+						}
+						return distiller
+					}
+
+					generateLabelForAxis := func(spec) {
+						name := spec.name
+						label := undefined
+
+						label = findAxisHeaderOverride(spec)
+
+						if is_undefined(label) {
+							specDistiller := getSpecDistiller()
+							discriminativeDomains := specDistiller.getDiscriminativeDomains(name)
+
+							if len(discriminativeDomains) == 0 {
+								label = cleanColumnName(name)
+							} else {
+								ll.panic("Cannot deduce header for %s in axis. Discriminative domains: %s. Please provide a header override.",
+									name, discriminativeDomains)
+							}
+						}
+
+						if is_undefined(label) {
+							ll.panic("Cannot deduce header for %s in axis. Please provide a header override.",
+								name)
+						}
+
+						return label
+					}
+
+					// Process UniversalPColumnId inputs and return their components and canonical representation
+					processColumnId := func(id) {
+						columnKey := undefined
+						columnAxisFilters := undefined
+						serializedId := undefined
+
+						if is_string(id) {
+							serializedId = id
+							decodedId := json.decode(id)
+
+							if is_map(decodedId) && !is_undefined(decodedId.source) && !is_undefined(decodedId.axisFilters) {
+								columnKey = canonical.encode(decodedId.source)
+								columnAxisFilters = decodedId.axisFilters
+							} else {
+								columnKey = id
+							}
+						} else if is_map(id) {
+							if !is_undefined(id.source) && !is_undefined(id.axisFilters) {
+								columnKey = canonical.encode(id.source)
+								columnAxisFilters = id.axisFilters
+								serializedId = canonical.encode(id)
+							} else {
+								columnKey = canonical.encode(id)
+								serializedId = columnKey
+							}
+						} else {
+							ll.panic("Invalid column ID type. Expected string or object.")
+						}
+
+						return {
+							columnKey: columnKey,
+							axisFilters: columnAxisFilters,
+							canonicalId: serializedId
+						}
+					}
+
+					tableBuilder := undefined
+					tableBuilder = {
+						/**
+						 * Adds a column to the table
+						 * @param key - The ID of the column to add (string SUniversalPColumnId or UniversalPColumnId object)
+						 * @param ops - Optional operations, can include:
+						 *   - header: string - Override for the column header
+						 *   - axisFilters: [number|string, any][] - Filters to apply to axes
+						 */
+						add: func(key, ...ops) {
+							// Reset distiller as adding a column changes what needs to be distilled
+							distiller = undefined
+
+							processedId := processColumnId(key)
+							columnKey := processedId.columnKey
+							columnAxisFilters := processedId.axisFilters
+							serializedId := processedId.canonicalId
+
+							if is_undefined(pool[columnKey]) {
+								ll.panic("Column not found: " + columnKey)
+							}
+
+							request := {
+								key: columnKey,
+								canonicalId: serializedId
+							}
+
+							if !is_undefined(columnAxisFilters) {
+								request.axisFilters = columnAxisFilters
+							}
+
+							if len(ops) > 0 {
+								if !is_undefined(ops[0].header) {
+									request.headerOverride = ops[0].header
+								}
+
+								if !is_undefined(ops[0].axisFilters) {
+									if !is_undefined(request.axisFilters) {
+										ll.panic("Cannot provide axis filters in both FilteredPColumnId and options. Use either one, not both.")
+									} else {
+										request.axisFilters = ops[0].axisFilters
+
+										request.canonicalId = canonical.encode({
+											source: json.decode(columnKey),
+											axisFilters: ops[0].axisFilters
+										})
+									}
+								}
+							}
+
+							if !is_undefined(request.axisFilters) && len(request.axisFilters) > 0 {
+								colSpec := pool[columnKey].spec
+								prepared := pSpec.prepareAxisFilters(request.axisFilters, colSpec)
+
+								request.axisFilters = prepared.axisFilters
+								request.columnSpec = prepared.columnSpec
+							} else {
+								request.columnSpec = pool[columnKey].spec
+							}
+
+							if !is_undefined(addedColumns[request.canonicalId]) {
+								ll.panic("Duplicate column detected: %s. This column has already been added to the table.",
+									request.canonicalId)
+							}
+
+							addedColumns[request.canonicalId] = true
+
+							request.safeId = cleanColumnName(request.canonicalId)
+
+							if !is_undefined(request.headerOverride) {
+								request.header = request.headerOverride
+							} else {
+								// Use a cleaned version of the canonical ID as the default header
+								request.header = request.safeId
+							}
+
+							requests = append(requests, request)
+							return tableBuilder
+						},
+
+						/**
+						 * Sets a header override for a specific axis or column in this table
+						 * @param matcher - Either a matcher object {name, domain} or a string (which will be used as the name)
+						 * @param header - The header text to use instead of the default
+						 * @returns The table builder object for chaining
+						 */
+						setAxisHeader: func(matcher, header) {
+							if is_string(matcher) {
+								matcher = { name: matcher, domain: {} }
+							}
+
+							localAxisHeaderOverrides = [[matcher, header]] + localAxisHeaderOverrides
+							return tableBuilder
+						},
+
+						/**
+						 * Builds the table for XSV export
+						 * @param format - Format for export, either 'csv' or 'tsv'
+						 * @param params - Additional parameters for export
+						 *   - naStr: string - String to represent NA and missing values of numeric types (Int, Long, Float, Double)
+						 *   - nullStr: string - String to represent NA and missing values of text types (String, Bytes)
+						 *   - exportBytes: bool - Toggle to export or skip axes and columns of type Bytes
+						 *   - separator: string - Single ASCII character to be used as separator
+						 */
+						build: func(format, ...params) {
+							if format != "csv" && format != "tsv" {
+								ll.panic("Invalid format: '%s'. Expected 'csv' or 'tsv'.", format)
+							}
+
+							exportParams := {
+								naStr: "",
+								nullStr: ""
+							}
+							if len(params) > 0 {
+								exportParams = maps.deepMerge(exportParams, params[0])
+							}
+
+							sliceDataTemplate := assets.importTemplate(":pframes.slice-data")
+
+							columnDistiller := getSpecDistiller()
+
+							pFrame := pBuilder.pFrameBuilder()
+
+							for request in requests {
+								col := pool[request.key]
+								colData := col.data
+
+								if !is_undefined(request.axisFilters) {
+									colData = render.createEphemeral(sliceDataTemplate, {
+										data: colData,
+										slicingParams: smart.createJsonResource(request.axisFilters)
+									}).output("result")
+								}
+
+								preparedSpec := columnDistiller.distill(request.columnSpec)
+
+								preparedSpec = maps.deepMerge(preparedSpec, {
+									annotations: { "pl7.app/label": request.header }
+								})
+
+								for i, axis in preparedSpec.axesSpec {
+									preparedSpec.axesSpec[i] = maps.deepMerge(axis, {
+										annotations: { "pl7.app/label": generateLabelForAxis(axis) }
+									})
+								}
+
+								// Use serializedId directly as the column identifier in the frame
+								pFrame.add(request.safeId, preparedSpec, colData)
+							}
+
+							return xsv.exportFrame(pFrame.build(), format, exportParams)
+						},
+
+						/**
+						 * Gets the header for a column or axis
+						 * @param item - Either a column key (string), UniversalPColumnId, or an axis spec
+						 * @returns The header string
+						 * @throws If the column hasn't been added to the table yet
+						 * @note This method only works for columns that have been added to the table via add()
+						 */
+						getHeader: func(item) {
+							// Check if item is an axis spec (has type field)
+							if is_map(item) && !is_undefined(item.type) {
+								return generateLabelForAxis(item)
+							}
+
+							serializedId := processColumnId(item).canonicalId
+
+							for _, request in requests {
+								if request.canonicalId == serializedId {
+									return request.header
+								}
+							}
+
+							ll.panic("Column not found in the table: %s. Make sure to call add() before getHeader().",
+								serializedId)
+						}
+					}
+
+					return tableBuilder
+				}
+			})
+
+			return bundle
+		}
+	}
+}
+
+export ll.toStrict({
+	createBuilder: createBuilder,
+	pColumnBundleUnmarshaller: pColumnBundleUnmarshaller
+})

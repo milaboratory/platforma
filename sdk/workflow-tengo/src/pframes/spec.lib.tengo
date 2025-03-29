@@ -6,6 +6,8 @@
 
 ll := import(":ll")
 maps := import(":maps")
+sets := import(":sets")
+slices := import(":slices")
 validation := import(":validation")
 json := import("json")
 
@@ -32,6 +34,12 @@ P_COLUMN_SPEC_SCHEMA := {
 	`parentAxes,?`: `any`, // [ `number` ]
 	`axesSpec,?`: [ P_AXIS_SPEC_SCHEMA ]
 }
+
+P_OBJECT_SPEC_SCHEMA := ["or", P_COLUMN_SPEC_SCHEMA, {
+	`kind`: `string`,
+	`annotations,?`: { any: `string` }
+}]
+
 
 KIND_P_COLUMN := "PColumn"
 
@@ -251,9 +259,219 @@ makeTrace := func(input, ...steps) {
 	})
 }
 
+/**
+ * Creates a spec distiller object that identifies domains with multiple values
+ * and provides a method to clean specs by removing annotations and unnecessary domains.
+ *
+ * @param specs array of column specs
+ * @return an object with a distill method
+ */
+createSpecDistiller := func(specs) {
+	// Map to collect all domain values by name
+	// Structure: { name: { domainName: Set<values> } }
+	domainsValues := {}
+
+	addDomainValue := func(name, domainName, domainValue) {
+		if is_undefined(domainsValues[name]) {
+			domainsValues[name] = {}
+		}
+
+		if is_undefined(domainsValues[name][domainName]) {
+			domainsValues[name][domainName] = {}
+		}
+
+		domainsValues[name][domainName][domainValue] = true
+	}
+
+	// Collect all domain values for each spec and axis
+	for _, spec in specs {
+		// Process column spec domains
+		columnName := spec.name
+		if !is_undefined(spec.domain) {
+			for domainName, domainValue in spec.domain {
+				addDomainValue(columnName, domainName, domainValue)
+			}
+		}
+
+		// Process axis spec domains
+		if !is_undefined(spec.axesSpec) {
+			for _, axis in spec.axesSpec {
+				axisName := axis.name
+				if !is_undefined(axis.domain) {
+					for domainName, domainValue in axis.domain {
+						addDomainValue(axisName, domainName, domainValue)
+					}
+				}
+			}
+		}
+	}
+
+	// Filter domains that have more than one value - these are the ones that help discriminate pcolumns
+	discriminativeDomains := {}
+	for name, domains in domainsValues {
+		for domainName, valueSet in domains {
+			if len(valueSet) > 1 {
+				if is_undefined(discriminativeDomains[name]) {
+					discriminativeDomains[name] = {}
+				}
+				discriminativeDomains[name][domainName] = true
+			}
+		}
+	}
+
+	// Helper function to filter domains based on discriminative domains
+	filterDomain := func(domain, entityName) {
+		if is_undefined(domain) {
+			return undefined
+		}
+
+		filteredDomain := undefined
+
+		if !is_undefined(discriminativeDomains[entityName]) {
+			for domainName, domainValue in domain {
+				if sets.hasElement(discriminativeDomains[entityName], domainName) {
+					if is_undefined(filteredDomain) {
+						filteredDomain = {}
+					}
+					filteredDomain[domainName] = domainValue
+				}
+			}
+		}
+
+		return filteredDomain
+	}
+
+	// Helper function to distill entity (column or axis)
+	distillEntity := func(entity, entityName) {
+		result := maps.clone(entity)
+
+		delete(result, "annotations")
+
+		// Filter domains
+		filteredDomain := filterDomain(result.domain, entityName)
+		if !is_undefined(filteredDomain) {
+			result.domain = filteredDomain
+		} else if !is_undefined(result.domain) {
+			delete(result, "domain")
+		}
+
+		return result
+	}
+
+	result := undefined
+	result = ll.toStrict({
+		/**
+		 * Returns the discriminative domains for a given column spec.
+		 *
+		 * @param name: string - The name of the column spec to get discriminative domains for
+		 * @return string[] - The discriminative domains, sorted alphabetically
+		 */
+		getDiscriminativeDomains: func(name) {
+			return slices.fromSet(discriminativeDomains[name])
+		},
+
+		/**
+		 * Returns the discriminative domains for a given column spec as a set.
+		 *
+		 * @param name: string - The name of the column spec to get discriminative domains for
+		 * @return Record<string, boolean> - The discriminative domains
+		 */
+		getDiscriminativeDomainsSet: func(name) {
+			return discriminativeDomains[name]
+		},
+
+		/**
+		 * Distills a column spec by removing annotations and unnecessary domains.
+		 *
+		 * @param spec: ColumnSpec - The column spec to distill
+		 * @return ColumnSpec - The distilled column spec
+		 */
+		distill: func(spec) {
+			result := distillEntity(spec, spec.name)
+
+			// Process axes if they exist
+			if !is_undefined(result.axesSpec) {
+				for i, axis in result.axesSpec {
+					result.axesSpec[i] = distillEntity(axis, axis.name)
+				}
+			}
+
+			return result
+		}
+	})
+
+	return result
+}
+
+/**
+ * Normalizes filtering rules and returns both the normalized filters and a transformed column spec.
+ *
+ * To be used in conjunction with `slice-data.tpl.tengo` template.
+ *
+ * @param rules: [number|string, any][] - Array of axis filters where each element is a tuple of:
+ *    - First element: either axis index (number) or axis name (string)
+ *    - Second element: value to filter by (any type)
+ * @param spec: ColumnSpec - Column spec to resolve axis names to indices
+ * @return {
+ *    axisFilters: [number, string][] - Normalized array of tuples [axisIdx, valueToFilter],
+ *    columnSpec: ColumnSpec - Transformed column spec with filtered axes removed
+ * }
+ */
+prepareAxisFilters := func(rules, spec) {
+	axisFilters := []
+	filteredIndices := {}
+
+	for _, rule in rules {
+		if len(rule) != 2 {
+			ll.panic("Invalid filtering rule format: %v", rule)
+		}
+
+		axisIdentifier := rule[0]
+		value := rule[1]
+
+		axisIdx := axisIdentifier
+		if is_string(axisIdentifier) {
+			axisIdx = -1
+			for idx, axis in spec.axesSpec {
+				if axis.name == axisIdentifier {
+					axisIdx = idx
+					break
+				}
+			}
+
+			if axisIdx == -1 {
+				ll.panic("Cannot find axis with name '%v' in column spec %v", axisIdentifier, spec)
+			}
+		}
+
+		if !is_int(axisIdx) {
+			ll.panic("Axis identifier must be a number or a string that can be resolved to an index: %v", axisIdentifier)
+		}
+
+		valueStr := string(value)
+		axisFilters = append(axisFilters, [axisIdx, valueStr])
+		filteredIndices[axisIdx] = true
+	}
+
+	transformedSpec := maps.clone(spec)
+	newAxesSpec := []
+	for idx, axis in spec.axesSpec {
+		if !filteredIndices[idx] {
+			newAxesSpec = append(newAxesSpec, maps.clone(axis))
+		}
+	}
+	transformedSpec.axesSpec = newAxesSpec
+
+	return {
+		axisFilters: axisFilters,
+		columnSpec: transformedSpec
+	}
+}
+
 export ll.toStrict({
 	P_AXIS_SPEC_SCHEMA: P_AXIS_SPEC_SCHEMA,
 	P_COLUMN_SPEC_SCHEMA: P_COLUMN_SPEC_SCHEMA,
+	P_OBJECT_SPEC_SCHEMA: P_OBJECT_SPEC_SCHEMA,
 
 	KIND_P_COLUMN: KIND_P_COLUMN,
 
@@ -269,5 +487,10 @@ export ll.toStrict({
 	matchAxis: matchAxis,
 	matchAxes: matchAxes,
 
-	makeTrace: makeTrace
+	makeTrace: makeTrace,
+
+	createSpecDistiller: createSpecDistiller,
+
+	prepareAxisFilters: prepareAxisFilters
 })
+

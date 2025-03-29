@@ -1,0 +1,290 @@
+self := import(":tpl")
+ll := import(":ll")
+smart := import(":smart")
+render := import(":render")
+slices := import(":slices")
+maps := import(":maps")
+pConstants := import(":pframes.constants")
+assets := import(":assets")
+
+text := import("text")
+json := import("json")
+
+// Array of tuples [axisIdx, valueToFilter]
+self.awaitState("slicingParams", "ResourceReady")
+// For data, we only need inputs locked to be able to list fields
+self.awaitState("data", "InputsLocked")
+
+// Reference to this template for recursive rendering
+thisTpl := assets.importTemplate(":pframes.slice-data")
+
+// Core filtering function
+filterPColumnData := func(data, slicingParams) {
+    // Sort filtering params by axis index
+    slicingParams = slices.quickSortFn(copy(slicingParams), func(a, b) {
+        return a[0] < b[0]
+    })
+
+    // Check if all axis indices are valid for the data structure
+    validateFilteringParams := func(dataType, partitionKeyLength, superPartitionKeyLength) {
+        maxAxisIdx := -1
+
+        if !is_undefined(partitionKeyLength) {
+            maxAxisIdx = partitionKeyLength - 1
+        }
+
+        if !is_undefined(superPartitionKeyLength) {
+            maxAxisIdx = superPartitionKeyLength + partitionKeyLength - 1
+        }
+
+        if maxAxisIdx < 0 {
+            // Non-partitioned data
+            if len(slicingParams) > 0 {
+                ll.panic("Cannot apply filtering parameters to non-partitioned data type %v", dataType)
+            }
+            return
+        }
+
+        for _, param in slicingParams {
+            axisIdx := param[0]
+            if axisIdx > maxAxisIdx {
+                ll.panic("Invalid axisIdx %v for data type %v. Maximum axis index is %v",
+                        axisIdx, dataType, maxAxisIdx)
+            }
+        }
+    }
+
+    // Build a set of fixed axis indices
+    fixedAxes := {}
+    for _, param in slicingParams {
+        axisIdx := param[0]
+        if fixedAxes[axisIdx] {
+            ll.panic("Duplicate axis index %v found in filtering parameters", axisIdx)
+        }
+        fixedAxes[axisIdx] = true
+    }
+
+    // Check if a partition key matches our filtering criteria
+    matchesFilter := func(partitionKey) {
+        keyArray := json.decode(partitionKey)
+
+        for _, param in slicingParams {
+            axisIdx := param[0]
+            valueToFilter := param[1]
+
+            if axisIdx >= len(keyArray) {
+                // For super-partitioned data, if the axis index is beyond the current
+                // partition key length, it's assumed to be intended for inner partitions
+                return true
+            }
+
+            if keyArray[axisIdx] != valueToFilter {
+                return false
+            }
+        }
+        return true
+    }
+
+    // Create a new partition key by removing fixed axes
+    transformKey := func(partitionKey) {
+        keyArray := json.decode(partitionKey)
+        newKeyArray := []
+
+        // Copy only non-fixed axes to the new key
+        for i, value in keyArray {
+            if !fixedAxes[i] {
+                newKeyArray = append(newKeyArray, value)
+            }
+        }
+
+        return string(json.encode(newKeyArray))
+    }
+
+    // Handle different types of PColumn data
+    if data.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_JSON_SUPER_PARTITIONED) ||
+       data.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_BINARY_SUPER_PARTITIONED) {
+        // Super-partitioned data - we need to process each partition
+        dataJson := data.getDataAsJson()
+        superPartitionKeyLength := dataJson.superPartitionKeyLength
+        partitionKeyLength := dataJson.partitionKeyLength
+
+        // Validate parameters
+        validateFilteringParams(data.info().Type.Name, partitionKeyLength, superPartitionKeyLength)
+
+        // Count fixed axes in super partition and nested partition
+        fixedSuperAxes := 0
+        fixedNestedAxes := 0
+        for axisIdx, _ in fixedAxes {
+            if axisIdx < superPartitionKeyLength {
+                fixedSuperAxes++
+            } else if axisIdx < superPartitionKeyLength + partitionKeyLength {
+                fixedNestedAxes++
+            }
+        }
+
+        // Calculate new key lengths after removing fixed axes
+        newSuperPartitionKeyLength := superPartitionKeyLength - fixedSuperAxes
+        newPartitionKeyLength := partitionKeyLength - fixedNestedAxes
+
+        // Update data info with new lengths
+        newDataInfo := maps.clone(dataJson)
+        newDataInfo.superPartitionKeyLength = newSuperPartitionKeyLength
+        newDataInfo.partitionKeyLength = newPartitionKeyLength
+
+        // Create new data with adjusted key lengths
+        newData := smart.structBuilder(data.info().Type, json.encode(newDataInfo))
+
+        // Calculate nested parameters once (parameters that apply to nested resources)
+        nestedParams := []
+        for _, param in slicingParams {
+            axisIdx := param[0]
+            if axisIdx >= superPartitionKeyLength {
+                // Calculate new index for nested resource - need to adjust for the axes removed at super level
+                // Original index - superPartitionKeyLength = position in nested structure
+                nestedAxesIdx := axisIdx - superPartitionKeyLength
+                nestedParams = append(nestedParams, [nestedAxesIdx, param[1]])
+            }
+        }
+
+        // Create JSON resource of nested parameters for reuse
+        nestedParamsResource := smart.createJsonResource(nestedParams)
+
+        for key, partData in data.inputs() {
+            // If the super partition key matches our filter, include it
+            if matchesFilter(key) {
+                // Transform key by removing fixed axes
+                newKey := transformKey(key)
+
+                if len(nestedParams) > 0 {
+                    // Only recursively render if there are applicable filters
+                    slicedPartData := render.createEphemeral(thisTpl, {
+                        data: partData,
+                        slicingParams: nestedParamsResource
+                    }).output("result")
+
+                    newData.createInputField(newKey).set(slicedPartData)
+                } else {
+                    // No filters for nested resources, just copy as-is
+                    newData.createInputField(newKey).set(partData)
+                }
+            }
+        }
+        return newData.lockAndBuild()
+
+    } else if data.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_JSON_PARTITIONED) {
+        // JSON partitioned data
+        dataJson := data.getDataAsJson()
+        partitionKeyLength := dataJson.partitionKeyLength
+
+        // Calculate new partition key length after removing fixed axes
+        newPartitionKeyLength := partitionKeyLength - len(fixedAxes)
+
+        // Update data info with new length
+        newDataInfo := maps.clone(dataJson)
+        newDataInfo.partitionKeyLength = newPartitionKeyLength
+
+        // Create new data with adjusted key length
+        newData := smart.structBuilder(data.info().Type, json.encode(newDataInfo))
+
+        // Validate parameters
+        validateFilteringParams(data.info().Type.Name, partitionKeyLength, undefined)
+
+        for key, partData in data.inputs() {
+            if matchesFilter(key) {
+                // Transform key by removing fixed axes
+                newKey := transformKey(key)
+                newData.createInputField(newKey).set(partData)
+            }
+        }
+        return newData.lockAndBuild()
+
+    } else if data.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_BINARY_PARTITIONED) {
+        // Binary partitioned data
+        dataJson := data.getDataAsJson()
+        partitionKeyLength := dataJson.partitionKeyLength
+
+        // Calculate new partition key length after removing fixed axes
+        newPartitionKeyLength := partitionKeyLength - len(fixedAxes)
+
+        // Update data info with new length
+        newDataInfo := maps.clone(dataJson)
+        newDataInfo.partitionKeyLength = newPartitionKeyLength
+
+        // Create new data with adjusted key length
+        newData := smart.structBuilder(data.info().Type, json.encode(newDataInfo))
+
+        // Validate parameters
+        validateFilteringParams(data.info().Type.Name, partitionKeyLength, undefined)
+
+        for key, partData in data.inputs() {
+            if text.has_suffix(key, ".index") {
+                partKey := key[0:len(key)-6]
+                if matchesFilter(partKey) {
+                    // Transform key by removing fixed axes
+                    newPartKey := transformKey(partKey)
+                    newData.createInputField(newPartKey + ".index").set(partData)
+                }
+            } else if text.has_suffix(key, ".values") {
+                partKey := key[0:len(key)-7]
+                if matchesFilter(partKey) {
+                    // Transform key by removing fixed axes
+                    newPartKey := transformKey(partKey)
+                    newData.createInputField(newPartKey + ".values").set(partData)
+                }
+            }
+        }
+        return newData.lockAndBuild()
+
+    } else if data.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP_PARTITIONED) {
+        // Resource map partitioned data
+        dataJson := data.getDataAsJson()
+        partitionKeyLength := dataJson.partitionKeyLength
+
+        // Calculate new partition key length after removing fixed axes
+        newPartitionKeyLength := partitionKeyLength - len(fixedAxes)
+
+        // Update data info with new length
+        newDataInfo := maps.clone(dataJson)
+        newDataInfo.partitionKeyLength = newPartitionKeyLength
+
+        // Create new data with adjusted key length
+        newData := smart.structBuilder(data.info().Type, json.encode(newDataInfo))
+
+        // Validate parameters
+        validateFilteringParams(data.info().Type.Name, partitionKeyLength, undefined)
+
+        for key, partData in data.inputs() {
+            if matchesFilter(key) {
+                // Transform key by removing fixed axes
+                newData.createInputField(transformKey(key)).set(partData)
+            }
+        }
+        return newData.lockAndBuild()
+
+    } else if data.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_JSON) ||
+              data.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_BINARY) ||
+              data.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP) {
+        // Non-partitioned data - can't apply partitioning filters
+        validateFilteringParams(data.info().Type.Name, undefined, undefined)
+        return data
+
+    } else {
+        ll.panic("Unsupported PColumn data type: %v", data.info().Type)
+    }
+}
+
+self.body(func(inputs) {
+    // Validate filtering parameters format
+    for _, param in inputs.slicingParams {
+        if len(param) != 2 {
+            ll.panic("Invalid filtering parameter: %v, expected [axisIdx, valueToFilter]", param)
+        }
+        if !is_string(param[1]) {
+            ll.panic("Invalid valueToFilter: %v, expected string", param[1])
+        }
+    }
+
+    return {
+        "result": filterPColumnData(inputs.data, inputs.slicingParams)
+    }
+})

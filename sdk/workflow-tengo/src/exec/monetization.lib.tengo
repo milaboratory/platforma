@@ -7,6 +7,8 @@ render := import(":render")
 smart := import(":smart")
 validation := import(":validation")
 
+mznInfoTpl := assets.importTemplate(":exec.monetization_info")
+
 /**
  * Creates a builder for monetization operations that can be used without execution context.
  * This is useful for pre-run scenarios where we need to perform monetization checks.
@@ -119,7 +121,7 @@ builder := func(productKey) {
 			// Thus, a deduplication is controlled from a client's side.
 			// The template just runs monetization and returns dry-run info.
 			result := render.create(
-				assets.importTemplate(":exec.monetization_info"),
+				mznInfoTpl,
 				{
 					date: date, // solely for deduplication
 					monetization: monetization.toJson(mnz),

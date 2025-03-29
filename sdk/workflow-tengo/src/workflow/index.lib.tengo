@@ -15,7 +15,7 @@ sets := import(":sets")
 oop := import(":oop")
 bobject := import(":workflow.bobject")
 bquery := import(":workflow.bquery")
-
+pBundle := import(":pframes.bundle")
 
 // instance of this
 self := import(":tpl")
@@ -318,6 +318,44 @@ validateArgs := func(argsSchema) {
 }
 
 /**
+ * Creates a collector to asynchronously aggregate PColumns into a resolved PColumnBundle.
+ *
+ * The PColumnBundleCollector maintains references, anchors, and queries which are used to fetch
+ * and resolve PColumns asynchronously from a given result pool. The final PColumnBundle provides
+ * easy and direct access to resolved PColumns.
+ *
+ * === Usage Flow ===
+ *
+ * 1. Add anchors, anchored queries and standalone references and queries to the collector
+ * 2. Call `build` and pass the result to a different template or use in preload
+ * 3. Use the PColumnBundle from the arguments of the nested template to interact with the data
+ *
+ * === Available Methods ===
+ *
+ *   addRef(ref)
+ *     - Adds a standalone reference to be resolved separately from anchors
+ *
+ *   addAnchor(anchorId, ref)
+ *     - Adds an anchor with the given ID and reference to be resolved
+ *
+ *   addById(id)
+ *     - Adds a PColumn by its anchored or absolute ID
+ *
+ *   addQuery(queryId, query)
+ *     - Adds a custom query with the given ID to be resolved
+ *
+ *   build()
+ *     - Resolves all references and queries and returns a PColumnBundle
+ *
+ * === Returns ===
+ *
+ * @returns {Object} PColumnBundleCollector object with methods to add and resolve references
+ */
+createPBundleBuilder := func() {
+	return pBundle.createBuilder(_parentContext())
+}
+
+/**
  * Defines main entry point for current workflow
  */
 body := func(bodyFn) {
@@ -360,5 +398,6 @@ export ll.toStrict({
 	body: body,
 	setPreRun: setPreRun,
 	blockId: blockId,
-	validateArgs: validateArgs
+	validateArgs: validateArgs,
+	createPBundleBuilder: createPBundleBuilder
 })
