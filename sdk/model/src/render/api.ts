@@ -1,7 +1,5 @@
 import type {
-  APColumnSelector,
   AxisId,
-  CanonicalPColumnId,
   Option,
   PColumn,
   PColumnSelector,
@@ -20,9 +18,11 @@ import type {
   ResultCollection,
   ValueOrError,
   AxisFilter,
-  PValue } from '@milaboratories/pl-model-common';
+  PValue,
+  SUniversalPColumnId,
+  AnchoredPColumnSelector } from '@milaboratories/pl-model-common';
 import {
-  AnchorIdDeriver,
+  AnchoredIdDeriver,
   getAxisId,
   resolveAnchors } from '@milaboratories/pl-model-common';
 import {
@@ -63,7 +63,7 @@ function matchDomain(query?: Record<string, string>, target?: Record<string, str
   return true;
 }
 
-export type CanonicalOption = { label: string; value: CanonicalPColumnId };
+export type UniversalOption = { label: string; value: SUniversalPColumnId };
 
 export class ResultPool {
   private readonly ctx: GlobalCfgRenderCtx = getCfgRenderCtx();
@@ -126,35 +126,35 @@ export class ResultPool {
    */
   // Overload for AnchorCtx - guaranteed to never return undefined
   getCanonicalOptions(
-    anchorsOrCtx: AnchorIdDeriver,
-    predicateOrSelectors: ((spec: PColumnSpec) => boolean) | APColumnSelectorWithSplit | APColumnSelector[],
+    anchorsOrCtx: AnchoredIdDeriver,
+    predicateOrSelectors: ((spec: PColumnSpec) => boolean) | APColumnSelectorWithSplit | AnchoredPColumnSelector[],
     labelOps?: LabelDerivationOps,
-  ): { label: string; value: CanonicalPColumnId }[];
+  ): { label: string; value: SUniversalPColumnId }[];
 
   // Overload for Record<string, PColumnSpec> - guaranteed to never return undefined
   getCanonicalOptions(
     anchorsOrCtx: Record<string, PColumnSpec>,
-    predicateOrSelectors: ((spec: PColumnSpec) => boolean) | APColumnSelectorWithSplit | APColumnSelector[],
+    predicateOrSelectors: ((spec: PColumnSpec) => boolean) | APColumnSelectorWithSplit | AnchoredPColumnSelector[],
     labelOps?: LabelDerivationOps,
-  ): { label: string; value: CanonicalPColumnId }[];
+  ): { label: string; value: SUniversalPColumnId }[];
 
   // Overload for Record<string, PColumnSpec | PlRef> - may return undefined if PlRef resolution fails
   getCanonicalOptions(
     anchorsOrCtx: Record<string, PColumnSpec | PlRef>,
-    predicateOrSelectors: ((spec: PColumnSpec) => boolean) | APColumnSelectorWithSplit | APColumnSelector[],
+    predicateOrSelectors: ((spec: PColumnSpec) => boolean) | APColumnSelectorWithSplit | AnchoredPColumnSelector[],
     labelOps?: LabelDerivationOps,
-  ): { label: string; value: CanonicalPColumnId }[] | undefined;
+  ): { label: string; value: SUniversalPColumnId }[] | undefined;
 
   // Implementation
   getCanonicalOptions(
-    anchorsOrCtx: AnchorIdDeriver | Record<string, PColumnSpec | PlRef>,
-    predicateOrSelectors: ((spec: PColumnSpec) => boolean) | APColumnSelectorWithSplit | APColumnSelector[],
+    anchorsOrCtx: AnchoredIdDeriver | Record<string, PColumnSpec | PlRef>,
+    predicateOrSelectors: ((spec: PColumnSpec) => boolean) | APColumnSelectorWithSplit | AnchoredPColumnSelector[],
     labelOps?: LabelDerivationOps,
-  ): { label: string; value: CanonicalPColumnId }[] | undefined {
+  ): { label: string; value: SUniversalPColumnId }[] | undefined {
     // Handle PlRef objects by resolving them to PColumnSpec
     const resolvedAnchors: Record<string, PColumnSpec> = {};
 
-    if (!(anchorsOrCtx instanceof AnchorIdDeriver)) {
+    if (!(anchorsOrCtx instanceof AnchoredIdDeriver)) {
       for (const [key, value] of Object.entries(anchorsOrCtx)) {
         if (isPlRef(value)) {
           const resolvedSpec = this.getPColumnSpecByRef(value);
@@ -183,9 +183,9 @@ export class ResultPool {
     if (filtered.length === 0)
       return [];
 
-    const anchorIdDeriver = anchorsOrCtx instanceof AnchorIdDeriver
+    const anchorIdDeriver = anchorsOrCtx instanceof AnchoredIdDeriver
       ? anchorsOrCtx
-      : new AnchorIdDeriver(resolvedAnchors);
+      : new AnchoredIdDeriver(resolvedAnchors);
 
     const splitAxisIdxs = typeof predicateOrSelectors === 'object'
       && !Array.isArray(predicateOrSelectors)
@@ -267,13 +267,13 @@ export class ResultPool {
       );
 
       return labelResults.map((item) => ({
-        value: anchorIdDeriver.deriveCanonical(item.value.obj as PColumnSpec, item.value.filters),
+        value: anchorIdDeriver.deriveS(item.value.obj as PColumnSpec, item.value.filters),
         label: item.label,
       }));
     }
 
     return deriveLabels(filtered, (o) => o.obj, labelOps ?? {}).map(({ value: { obj: spec }, label }) => ({
-      value: anchorIdDeriver.deriveCanonical(spec as PColumnSpec),
+      value: anchorIdDeriver.deriveS(spec as PColumnSpec),
       label,
     }));
   }
@@ -603,6 +603,7 @@ export type UnwrapFutureRef<K> =
       ? K
       : { [key in keyof K]: UnwrapFutureRef<K[key]> };
 
+// eslint-disable-next-line @typescript-eslint/no-unsafe-function-type, @typescript-eslint/no-explicit-any
 export type InferRenderFunctionReturn<RF extends Function> = RF extends (...args: any) => infer R
   ? UnwrapFutureRef<R>
   : never;

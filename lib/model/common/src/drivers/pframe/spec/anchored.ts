@@ -1,10 +1,11 @@
 import canonicalize from 'canonicalize';
 import type { AxisId, PColumnSpec } from './spec';
 import { getAxisId, matchAxisId } from './spec';
-import type { AAxisSelector, AnchorAxisRef, AnchorAxisRefByIdx, APColumnId, APColumnSelector, AxisSelector, GeneralizedAPColumnId, PColumnSelector } from './selectors';
-import type { Branded } from '../../../branding';
-import type { AxisFilter } from './sliced_column_id';
+import type { AAxisSelector, AnchorAxisRef, AnchorAxisRefByIdx, AnchoredPColumnId, AnchoredPColumnSelector, AxisSelector, PColumnSelector } from './selectors';
+import type { AxisFilter } from './filtered_column';
 import type { PValue } from '../data';
+import type { SUniversalPColumnId, UniversalPColumnId } from './ids';
+import { stringifyColumnId } from './ids';
 
 //
 // Helper functions
@@ -18,21 +19,11 @@ function domainKey(key: string, value: string): string {
   return JSON.stringify([key, value]);
 }
 
-//
-// Branded types
-//
-
-/**
- * Canonicalized string (canincally serialized {@link GeneralizedAPColumnId}) representation of an
- * anchored column identifier, either anchored or absolute.
- */
-export type CanonicalPColumnId = Branded<string, 'CanonicalPColumnId'>;
-
 /**
  * Context for resolving and generating anchored references to columns and axes
  * Maintains maps of known domain values and axes that can be referenced by anchors
  */
-export class AnchorIdDeriver {
+export class AnchoredIdDeriver {
   private readonly domains = new Map<string, string>();
   private readonly axes = new Map<string, AnchorAxisRefByIdx>();
   /**
@@ -78,7 +69,7 @@ export class AnchorIdDeriver {
    * @param spec Column specification to anchor
    * @returns An anchored column identifier that can be used to identify columns similar to the input specification
    */
-  derive(spec: PColumnSpec): APColumnId;
+  derive(spec: PColumnSpec): AnchoredPColumnId;
 
   /**
    * Derives an anchored column identifier from a column specification
@@ -86,13 +77,13 @@ export class AnchorIdDeriver {
    * @param axisFilters Axis filters to apply to the column
    * @returns An anchored and sliced column identifier that can be used to identify columns similar to the input specification
    */
-  derive(spec: PColumnSpec, axisFilters?: AxisFilter[]): GeneralizedAPColumnId;
+  derive(spec: PColumnSpec, axisFilters?: AxisFilter[]): UniversalPColumnId;
 
   /**
    * Implementation of derive method
    */
-  derive(spec: PColumnSpec, axisFilters?: AxisFilter[]): GeneralizedAPColumnId {
-    const result: APColumnId = {
+  derive(spec: PColumnSpec, axisFilters?: AxisFilter[]): UniversalPColumnId {
+    const result: AnchoredPColumnId = {
       name: spec.name,
       axes: [],
     };
@@ -164,7 +155,7 @@ export class AnchorIdDeriver {
     resolvedFilters.sort((a, b) => a[0] - b[0]);
 
     return {
-      target: result,
+      source: result,
       axisFilters: resolvedFilters,
     };
   }
@@ -175,20 +166,20 @@ export class AnchorIdDeriver {
    * @param axisFilters Optional axis filters to apply to the column
    * @returns A canonicalized string representation of the anchored column identifier
    */
-  deriveCanonical(spec: PColumnSpec, axisFilters?: AxisFilter[]): CanonicalPColumnId {
-    const aId = this.derive(spec, axisFilters);
-    return canonicalize(aId)! as CanonicalPColumnId;
+  deriveS(spec: PColumnSpec, axisFilters?: AxisFilter[]): SUniversalPColumnId {
+    return stringifyColumnId(this.derive(spec, axisFilters));
   }
 }
 
 /**
- * Resolves anchored references in a column matcher to create a non-anchored matcher
+ * Resolves anchored references in a column matcher to create a non-anchored matcher.
+ * Doing an opposite operation to {@link AnchorIdDeriver.derive()}.
  *
- * @param anchors - Record of anchor column specifications indexed by anchor ID
- * @param matcher - An anchored column matcher containing references that need to be resolved
+ * @param anchors - Record of anchor column specifications indexed by anchor id
+ * @param matcher - An anchored column matcher (or id, which is subtype of it) containing references that need to be resolved
  * @returns A non-anchored column matcher with all references resolved to actual values
  */
-export function resolveAnchors(anchors: Record<string, PColumnSpec>, matcher: APColumnSelector): PColumnSelector {
+export function resolveAnchors(anchors: Record<string, PColumnSpec>, matcher: AnchoredPColumnSelector): PColumnSelector {
   const result = { ...matcher };
 
   if (result.domainAnchor !== undefined) {

@@ -34,11 +34,11 @@ render := import(":render")
  *     - Adds an anchor with the given ID and reference to be resolved
  *
  *   addById(id)
- *     - Adds a PColumn to the bundle collector by GeneralizedAPColumnId.
- *       Automatically unwraps SlicedPColumnId.
+ *     - Adds a PColumn to the bundle collector by UniversalPColumnId.
+ *       Automatically unwraps FilteredPColumnId.
  *       @param id: string or object - The ID of the PColumn
- *         - string: A CanonicalPColumnId (canonically serialized GeneralizedAPColumnId)
- *         - object: Either a standard APColumnId or a SlicedPColumnId with target and axisFilters
+ *         - string: A SUniversalPColumnId (canonically serialized UniversalPColumnId)
+ *         - object: Either a standard AnchoredPColumnId or a FilteredPColumnId with source and axisFilters
  *
  *   addQuery(queryId, query)
  *     - Adds a custom query with the given ID to be resolved
@@ -97,11 +97,11 @@ createBuilder := func(ctx) {
 		},
 
 		/**
-		 * Adds a PColumn to the bundle collector by GeneralizedAPColumnId.
+		 * Adds a PColumn to the bundle collector by UniversalPColumnId.
 		 *
 		 * @param id: string or object - The ID of the PColumn
-		 *   - string: A CanonicalPColumnId (canonically serialized GeneralizedAPColumnId)
-		 *   - object: Either a standard APColumnId or a SlicedPColumnId with target and axisFilters
+		 *   - string: A SUniversalPColumnId (canonically serialized UniversalPColumnId)
+		 *   - object: Either a standard AnchoredPColumnId or a FilteredPColumnId with source and axisFilters
 		 */
 		addById: func(id) {
 			encodedId := undefined
@@ -116,10 +116,10 @@ createBuilder := func(ctx) {
 				ll.panic("Invalid column ID type. Expected string or object.")
 			}
 
-			if is_map(decodedId) && !is_undefined(decodedId.target) && !is_undefined(decodedId.axisFilters) {
-				// Unwrapping SlicedPColumnId
-				columnKey := canonical.encode(decodedId.target)
-				queries[columnKey] = decodedId.target
+			if is_map(decodedId) && !is_undefined(decodedId.source) && !is_undefined(decodedId.axisFilters) {
+				// Unwrapping FilteredPColumnId
+				columnKey := canonical.encode(decodedId.source)
+				queries[columnKey] = decodedId.source
 			} else {
 				queries[encodedId] = decodedId
 			}
@@ -129,7 +129,7 @@ createBuilder := func(ctx) {
 		 * Adds a query to the bundle collector.
 		 *
 		 * @param queryId: string - The ID of the query
-		 * @param query: APColumnSelector - The query
+		 * @param query: AnchoredPColumnSelector - The query
 		 */
 		addQuery: func(queryId, query) {
 			queries[queryId] = query
@@ -314,30 +314,30 @@ pColumnBundleUnmarshaller := func() {
 						return label
 					}
 
-					// Process GeneralizedAPColumnId inputs and return their components and canonical representation
+					// Process UniversalPColumnId inputs and return their components and canonical representation
 					processColumnId := func(id) {
 						columnKey := undefined
 						columnAxisFilters := undefined
-						canonicalId := undefined
+						serializedId := undefined
 
 						if is_string(id) {
-							canonicalId = id
+							serializedId = id
 							decodedId := json.decode(id)
 
-							if is_map(decodedId) && !is_undefined(decodedId.target) && !is_undefined(decodedId.axisFilters) {
-								columnKey = canonical.encode(decodedId.target)
+							if is_map(decodedId) && !is_undefined(decodedId.source) && !is_undefined(decodedId.axisFilters) {
+								columnKey = canonical.encode(decodedId.source)
 								columnAxisFilters = decodedId.axisFilters
 							} else {
 								columnKey = id
 							}
 						} else if is_map(id) {
-							if !is_undefined(id.target) && !is_undefined(id.axisFilters) {
-								columnKey = canonical.encode(id.target)
+							if !is_undefined(id.source) && !is_undefined(id.axisFilters) {
+								columnKey = canonical.encode(id.source)
 								columnAxisFilters = id.axisFilters
-								canonicalId = canonical.encode(id)
+								serializedId = canonical.encode(id)
 							} else {
 								columnKey = canonical.encode(id)
-								canonicalId = columnKey
+								serializedId = columnKey
 							}
 						} else {
 							ll.panic("Invalid column ID type. Expected string or object.")
@@ -346,7 +346,7 @@ pColumnBundleUnmarshaller := func() {
 						return {
 							columnKey: columnKey,
 							axisFilters: columnAxisFilters,
-							canonicalId: canonicalId
+							canonicalId: serializedId
 						}
 					}
 
@@ -354,7 +354,7 @@ pColumnBundleUnmarshaller := func() {
 					tableBuilder = {
 						/**
 						 * Adds a column to the table
-						 * @param key - The ID of the column to add (string CanonicalPColumnId or GeneralizedAPColumnId object)
+						 * @param key - The ID of the column to add (string SUniversalPColumnId or UniversalPColumnId object)
 						 * @param ops - Optional operations, can include:
 						 *   - header: string - Override for the column header
 						 *   - axisFilters: [number|string, any][] - Filters to apply to axes
@@ -366,7 +366,7 @@ pColumnBundleUnmarshaller := func() {
 							processedId := processColumnId(key)
 							columnKey := processedId.columnKey
 							columnAxisFilters := processedId.axisFilters
-							canonicalId := processedId.canonicalId
+							serializedId := processedId.canonicalId
 
 							if is_undefined(pool[columnKey]) {
 								ll.panic("Column not found: " + columnKey)
@@ -374,7 +374,7 @@ pColumnBundleUnmarshaller := func() {
 
 							request := {
 								key: columnKey,
-								canonicalId: canonicalId
+								canonicalId: serializedId
 							}
 
 							if !is_undefined(columnAxisFilters) {
@@ -388,12 +388,12 @@ pColumnBundleUnmarshaller := func() {
 
 								if !is_undefined(ops[0].axisFilters) {
 									if !is_undefined(request.axisFilters) {
-										ll.panic("Cannot provide axis filters in both SlicedPColumnId and options. Use either one, not both.")
+										ll.panic("Cannot provide axis filters in both FilteredPColumnId and options. Use either one, not both.")
 									} else {
 										request.axisFilters = ops[0].axisFilters
 
 										request.canonicalId = canonical.encode({
-											target: json.decode(columnKey),
+											source: json.decode(columnKey),
 											axisFilters: ops[0].axisFilters
 										})
 									}
@@ -481,7 +481,7 @@ pColumnBundleUnmarshaller := func() {
 									})
 								}
 
-								// Use canonicalId directly as the column identifier in the frame
+								// Use serializedId directly as the column identifier in the frame
 								pFrame.add(request.canonicalId, preparedSpec, colData)
 							}
 
@@ -490,7 +490,7 @@ pColumnBundleUnmarshaller := func() {
 
 						/**
 						 * Gets the header for a column or axis
-						 * @param item - Either a column key (string), GeneralizedAPColumnId, or an axis spec
+						 * @param item - Either a column key (string), UniversalPColumnId, or an axis spec
 						 * @returns The header string
 						 * @throws If the column hasn't been added to the table yet
 						 * @note This method only works for columns that have been added to the table via add()
@@ -501,16 +501,16 @@ pColumnBundleUnmarshaller := func() {
 								return generateLabelForAxis(item)
 							}
 
-							canonicalId := processColumnId(item).canonicalId
+							serializedId := processColumnId(item).canonicalId
 
 							for _, request in requests {
-								if request.canonicalId == canonicalId {
+								if request.canonicalId == serializedId {
 									return request.header
 								}
 							}
 
 							ll.panic("Column not found in the table: %s. Make sure to call add() before getHeader().",
-								canonicalId)
+								serializedId)
 						}
 					}
 

@@ -404,7 +404,7 @@ createSpecDistiller := func(specs) {
 }
 
 /**
- * Normalizes slicing rules and returns both the normalized filters and a transformed column spec.
+ * Normalizes filtering rules and returns both the normalized filters and a transformed column spec.
  *
  * To be used in conjunction with `slice-data.tpl.tengo` template.
  *
@@ -423,7 +423,7 @@ prepareAxisFilters := func(rules, spec) {
 
 	for _, rule in rules {
 		if len(rule) != 2 {
-			ll.panic("Invalid slicing rule format: %v", rule)
+			ll.panic("Invalid filtering rule format: %v", rule)
 		}
 
 		axisIdentifier := rule[0]

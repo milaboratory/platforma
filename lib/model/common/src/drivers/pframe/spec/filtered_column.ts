@@ -1,5 +1,5 @@
 import type { PValue } from '../data';
-import type { APColumnId } from './selectors';
+import type { AnchoredPColumnId } from './selectors';
 
 /** Axis filter by index */
 export type AxisFilterByIdx = [number, PValue];
@@ -14,9 +14,9 @@ export type AxisFilter = AxisFilterByIdx | AxisFilterByName;
  * Identifies a column derived from a CanonicalPColumnId by fixing values on certain axes,
  * thus effectively reducing the dimensionality of the original column.
  */
-export type SlicedPColumnId<CID = APColumnId, AFI = AxisFilter> = {
-  /** The original canonical column identifier */
-  target: CID;
+export type FilteredPColumn<CID = AnchoredPColumnId, AFI = AxisFilter> = {
+  /** The original column identifier */
+  source: CID;
 
   /**
    * List of fixed axes and their corresponding values.
@@ -27,11 +27,13 @@ export type SlicedPColumnId<CID = APColumnId, AFI = AxisFilter> = {
   axisFilters: AFI[];
 };
 
+export type FilteredPColumnId = FilteredPColumn<AnchoredPColumnId, AxisFilterByIdx>;
+
 /**
- * Checks if a given value is a SlicedPColumnId
+ * Checks if a given value is a FilteredPColumn
  * @param id - The value to check
- * @returns True if the value is a SlicedPColumnId, false otherwise
+ * @returns True if the value is a FilteredPColumn, false otherwise
  */
-export function isSlicedPColumnId(id: unknown): id is SlicedPColumnId {
-  return typeof id === 'object' && id !== null && 'target' in id && 'axisFilters' in id;
+export function isFilteredPColumn(id: unknown): id is FilteredPColumn {
+  return typeof id === 'object' && id !== null && 'source' in id && 'axisFilters' in id;
 }
