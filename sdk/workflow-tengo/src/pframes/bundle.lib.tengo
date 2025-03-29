@@ -213,7 +213,7 @@ pColumnBundleUnmarshaller := func() {
 				/**
 				 * Gets a specific column by its ID
 				 * @param resultKey - The ID of the column to retrieve
-				 * @returns The column object with its spec, data and distilled spec
+				 * @returns The column object with its spec, data
 				 */
 				getColumn: func(resultKey) {
 					if !is_string(resultKey) {
@@ -417,11 +417,13 @@ pColumnBundleUnmarshaller := func() {
 
 							addedColumns[request.canonicalId] = true
 
+							request.safeId = cleanColumnName(request.canonicalId)
+
 							if !is_undefined(request.headerOverride) {
 								request.header = request.headerOverride
 							} else {
 								// Use a cleaned version of the canonical ID as the default header
-								request.header = cleanColumnName(request.canonicalId)
+								request.header = request.safeId
 							}
 
 							requests = append(requests, request)
@@ -446,10 +448,23 @@ pColumnBundleUnmarshaller := func() {
 						/**
 						 * Builds the table for XSV export
 						 * @param format - Format for export, either 'csv' or 'tsv'
+						 * @param params - Additional parameters for export
+						 *   - naStr: string - String to represent NA and missing values of numeric types (Int, Long, Float, Double)
+						 *   - nullStr: string - String to represent NA and missing values of text types (String, Bytes)
+						 *   - exportBytes: bool - Toggle to export or skip axes and columns of type Bytes
+						 *   - separator: string - Single ASCII character to be used as separator
 						 */
-						build: func(format) {
+						build: func(format, ...params) {
 							if format != "csv" && format != "tsv" {
 								ll.panic("Invalid format: '%s'. Expected 'csv' or 'tsv'.", format)
+							}
+
+							exportParams := {
+								naStr: "",
+								nullStr: ""
+							}
+							if len(params) > 0 {
+								exportParams = maps.deepMerge(exportParams, params[0])
 							}
 
 							sliceDataTemplate := assets.importTemplate(":pframes.slice-data")
@@ -482,10 +497,10 @@ pColumnBundleUnmarshaller := func() {
 								}
 
 								// Use serializedId directly as the column identifier in the frame
-								pFrame.add(request.canonicalId, preparedSpec, colData)
+								pFrame.add(request.safeId, preparedSpec, colData)
 							}
 
-							return xsv.exportFrame(pFrame.build(), format, {})
+							return xsv.exportFrame(pFrame.build(), format, exportParams)
 						},
 
 						/**
