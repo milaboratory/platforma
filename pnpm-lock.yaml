@@ -712,12 +712,6 @@ importers:
       '@platforma-sdk/tengo-builder':
         specifier: 'workspace:'
         version: link:../../../../tools/tengo-builder
-      '@platforma-sdk/test':
-        specifier: 'workspace:'
-        version: link:../../../../sdk/test
-      vitest:
-        specifier: 'catalog:'
-        version: 2.1.8(@types/node@22.5.5)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4)
 
   etc/blocks/pool-explorer/block:
     dependencies:

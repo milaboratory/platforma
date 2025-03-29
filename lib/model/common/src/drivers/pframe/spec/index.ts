@@ -1,3 +1,5 @@
-export * from './anchored_id';
+export * from './anchored';
+export * from './ids';
+export * from './filtered_column';
 export * from './spec';
 export * from './selectors';

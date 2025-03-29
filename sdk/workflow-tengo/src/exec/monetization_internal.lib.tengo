@@ -172,7 +172,7 @@ addArgToLastRun := func(mnz, fileName, arg) {
 /** Returns a file name for the argument in the last run.
  *
  * @param: mnz: monetization -- see a beginning of this file.
- * @param: argName: string --  name of the argument. 
+ * @param: argName: string --  name of the argument.
  */
 argNameForLastRun := func(mnz, argName) {
 	idx := len(mnz.runs) - 1
@@ -218,9 +218,10 @@ setUrl := func(mnz, url) {
 run := func(mnz, wd, queue) {
 	_validateIsReady(mnz)
 
+	mnzSw := assets.importSoftware("@platforma-open/milaboratories.software-small-binaries:mnz-client")
+
 	exprType := feats.commandExpressions ? constants.ARG_TYPE_EXPRESSION : constants.ARG_TYPE_VAR
 
-	mnzSw := assets.importSoftware("@platforma-open/milaboratories.software-small-binaries:mnz-client")
 	builder := runcmd.builder(wd)
 	builder.envTyped("MI_LICENSE", exprType, "{secrets.MI_LICENSE}")
 

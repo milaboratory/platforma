@@ -1,4 +1,5 @@
 import { isPColumnSpec, type PObjectSpec } from '../../../pool';
+import type { AxisFilterByIdx, FilteredPColumn } from './filtered_column';
 import type { AxisId, PColumnSpec, ValueType } from './spec';
 import { getAxisId } from './spec';
 
@@ -88,7 +89,7 @@ export type AnchoredColumnMatchStrategy = 'expectSingle' | 'expectMultiple' | 't
  * Matcher for PColumns in an anchored context
  * Supports partial matching on axes, allowing for flexible column discovery
  */
-export interface APColumnSelector {
+export interface AnchoredPColumnSelector {
   /** Optional name of the column to match; can't be used together with namePattern */
   name?: string;
   /** Optional regexp pattern for column name matching; can't be used together with name */
@@ -115,7 +116,7 @@ export interface APColumnSelector {
 /**
  * Matcher for PColumns in a non-anchored context
  */
-export interface PColumnSelector extends APColumnSelector {
+export interface PColumnSelector extends AnchoredPColumnSelector {
   domainAnchor?: never;
   domain?: Record<string, string>;
   axes?: AxisSelector[];
@@ -125,7 +126,7 @@ export interface PColumnSelector extends APColumnSelector {
  * Strict identifier for PColumns in an anchored context
  * Unlike APColumnMatcher, this requires exact matches on domain and axes
  */
-export interface APColumnId extends APColumnSelector {
+export interface AnchoredPColumnId extends AnchoredPColumnSelector {
   /** Name is required for exact column identification */
   name: string;
   /** No namePattern in ID */

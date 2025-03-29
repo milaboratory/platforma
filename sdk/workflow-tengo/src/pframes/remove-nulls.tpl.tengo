@@ -1,4 +1,4 @@
-self := import(":tpl")
+self := import(":tpl.light")
 
 json := import("json")
 ll := import(":ll")

@@ -1,8 +1,11 @@
 import canonicalize from 'canonicalize';
 import type { AxisId, PColumnSpec } from './spec';
 import { getAxisId, matchAxisId } from './spec';
-import type { AAxisSelector, AnchorAxisRef, AnchorAxisRefByIdx, APColumnId, APColumnSelector, AxisSelector, PColumnSelector } from './selectors';
-import type { Branded } from '../../../branding';
+import type { AAxisSelector, AnchorAxisRef, AnchorAxisRefByIdx, AnchoredPColumnId, AnchoredPColumnSelector, AxisSelector, PColumnSelector } from './selectors';
+import type { AxisFilter } from './filtered_column';
+import type { PValue } from '../data';
+import type { SUniversalPColumnId, UniversalPColumnId } from './ids';
+import { stringifyColumnId } from './ids';
 
 //
 // Helper functions
@@ -16,18 +19,11 @@ function domainKey(key: string, value: string): string {
   return JSON.stringify([key, value]);
 }
 
-//
-// Branded types
-//
-
-/** Canonicalized string representation of an anchored column identifier, either anchored or absolute. */
-export type CanonicalPColumnId = Branded<string, 'CanonicalPColumnId'>;
-
 /**
  * Context for resolving and generating anchored references to columns and axes
  * Maintains maps of known domain values and axes that can be referenced by anchors
  */
-export class AnchorIdDeriver {
+export class AnchoredIdDeriver {
   private readonly domains = new Map<string, string>();
   private readonly axes = new Map<string, AnchorAxisRefByIdx>();
   /**
@@ -70,12 +66,24 @@ export class AnchorIdDeriver {
 
   /**
    * Derives an anchored column identifier from a column specification
-   * Replaces domain values and axes with anchored references when possible
    * @param spec Column specification to anchor
    * @returns An anchored column identifier that can be used to identify columns similar to the input specification
    */
-  derive(spec: PColumnSpec): APColumnId {
-    const result: APColumnId = {
+  derive(spec: PColumnSpec): AnchoredPColumnId;
+
+  /**
+   * Derives an anchored column identifier from a column specification
+   * @param spec Column specification to anchor
+   * @param axisFilters Axis filters to apply to the column
+   * @returns An anchored and sliced column identifier that can be used to identify columns similar to the input specification
+   */
+  derive(spec: PColumnSpec, axisFilters?: AxisFilter[]): UniversalPColumnId;
+
+  /**
+   * Implementation of derive method
+   */
+  derive(spec: PColumnSpec, axisFilters?: AxisFilter[]): UniversalPColumnId {
+    const result: AnchoredPColumnId = {
       name: spec.name,
       axes: [],
     };
@@ -116,28 +124,62 @@ export class AnchorIdDeriver {
       return anchorAxisRef ?? axis;
     });
 
-    return result;
+    // If no axis filters are provided, return the anchored ID as is
+    if (!axisFilters || axisFilters.length === 0) {
+      return result;
+    }
+
+    // Process axis filters and create a sliced column ID
+    const resolvedFilters: [number, PValue][] = [];
+
+    for (const filter of axisFilters) {
+      const [axisIdOrIndex, value] = filter;
+
+      // If it's already a numeric index, validate it
+      if (typeof axisIdOrIndex === 'number') {
+        if (axisIdOrIndex < 0 || axisIdOrIndex >= spec.axesSpec.length) {
+          throw new Error(`Axis index ${axisIdOrIndex} is out of bounds (0-${spec.axesSpec.length - 1})`);
+        }
+        resolvedFilters.push([axisIdOrIndex, value]);
+      } else {
+        // If it's a string (axis name), resolve it to an index
+        const axisIndex = spec.axesSpec.findIndex((axis) => axis.name === axisIdOrIndex);
+        if (axisIndex === -1) {
+          throw new Error(`Axis with name "${axisIdOrIndex}" not found in the column specification`);
+        }
+        resolvedFilters.push([axisIndex, value]);
+      }
+    }
+
+    // Sort filters by axis index to ensure consistency
+    resolvedFilters.sort((a, b) => a[0] - b[0]);
+
+    return {
+      source: result,
+      axisFilters: resolvedFilters,
+    };
   }
 
   /**
    * Derives a canonicalized string representation of an anchored column identifier, can be used as a unique identifier for the column
    * @param spec Column specification to anchor
+   * @param axisFilters Optional axis filters to apply to the column
    * @returns A canonicalized string representation of the anchored column identifier
    */
-  deriveCanonical(spec: PColumnSpec): CanonicalPColumnId {
-    const aId = this.derive(spec);
-    return canonicalize(aId)! as CanonicalPColumnId;
+  deriveS(spec: PColumnSpec, axisFilters?: AxisFilter[]): SUniversalPColumnId {
+    return stringifyColumnId(this.derive(spec, axisFilters));
   }
 }
 
 /**
- * Resolves anchored references in a column matcher to create a non-anchored matcher
+ * Resolves anchored references in a column matcher to create a non-anchored matcher.
+ * Doing an opposite operation to {@link AnchorIdDeriver.derive()}.
  *
- * @param anchors - Record of anchor column specifications indexed by anchor ID
- * @param matcher - An anchored column matcher containing references that need to be resolved
+ * @param anchors - Record of anchor column specifications indexed by anchor id
+ * @param matcher - An anchored column matcher (or id, which is subtype of it) containing references that need to be resolved
  * @returns A non-anchored column matcher with all references resolved to actual values
  */
-export function resolveAnchors(anchors: Record<string, PColumnSpec>, matcher: APColumnSelector): PColumnSelector {
+export function resolveAnchors(anchors: Record<string, PColumnSpec>, matcher: AnchoredPColumnSelector): PColumnSelector {
   const result = { ...matcher };
 
   if (result.domainAnchor !== undefined) {

@@ -4,7 +4,7 @@
 
 ll := import(":ll")
 xsv := import(":pframes.xsv")
-self := import(":tpl")
+self := import(":tpl.light")
 json := import("json")
 util := import(":pframes.util")
 smart := import(":smart")

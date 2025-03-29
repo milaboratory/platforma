@@ -1,7 +1,5 @@
 import type {
-  APColumnSelector,
   AxisId,
-  CanonicalPColumnId,
   Option,
   PColumn,
   PColumnSelector,
@@ -19,10 +17,14 @@ import type {
   PlRef,
   ResultCollection,
   ValueOrError,
-  AnyFunction,
-} from '@milaboratories/pl-model-common';
+  AxisFilter,
+  PValue,
+  SUniversalPColumnId,
+  AnchoredPColumnSelector } from '@milaboratories/pl-model-common';
 import {
-  AnchorIdDeriver,
+  AnchoredIdDeriver,
+  getAxisId,
+  AnyFunction,
   resolveAnchors,
 } from '@milaboratories/pl-model-common';
 import {
@@ -44,6 +46,26 @@ import type { GlobalCfgRenderCtx } from './internal';
 import { MainAccessorName, StagingAccessorName } from './internal';
 import type { LabelDerivationOps } from './util/label';
 import { deriveLabels } from './util/label';
+import type { APColumnSelectorWithSplit } from './split_selectors';
+import { getUniquePartitionKeys } from './util/pcolumn_data';
+import type { TraceEntry } from './util/label';
+import { canonicalizeAxisId } from '@milaboratories/pl-model-common';
+/**
+ * Helper function to match domain objects
+ * @param query Optional domain to match against
+ * @param target Optional domain to match
+ * @returns true if domains match, false otherwise
+ */
+function matchDomain(query?: Record<string, string>, target?: Record<string, string>) {
+  if (query === undefined) return target === undefined;
+  if (target === undefined) return true;
+  for (const k in target) {
+    if (query[k] !== target[k]) return false;
+  }
+  return true;
+}
+
+export type UniversalOption = { label: string; value: SUniversalPColumnId };
 
 export class ResultPool {
   private readonly ctx: GlobalCfgRenderCtx = getCfgRenderCtx();
@@ -107,35 +129,35 @@ export class ResultPool {
    */
   // Overload for AnchorCtx - guaranteed to never return undefined
   getCanonicalOptions(
-    anchorsOrCtx: AnchorIdDeriver,
-    predicateOrSelectors: ((spec: PColumnSpec) => boolean) | APColumnSelector | APColumnSelector[],
+    anchorsOrCtx: AnchoredIdDeriver,
+    predicateOrSelectors: ((spec: PColumnSpec) => boolean) | APColumnSelectorWithSplit | AnchoredPColumnSelector[],
     labelOps?: LabelDerivationOps,
-  ): { label: string; value: CanonicalPColumnId }[];
+  ): { label: string; value: SUniversalPColumnId }[];
 
   // Overload for Record<string, PColumnSpec> - guaranteed to never return undefined
   getCanonicalOptions(
     anchorsOrCtx: Record<string, PColumnSpec>,
-    predicateOrSelectors: ((spec: PColumnSpec) => boolean) | APColumnSelector | APColumnSelector[],
+    predicateOrSelectors: ((spec: PColumnSpec) => boolean) | APColumnSelectorWithSplit | AnchoredPColumnSelector[],
     labelOps?: LabelDerivationOps,
-  ): { label: string; value: CanonicalPColumnId }[];
+  ): { label: string; value: SUniversalPColumnId }[];
 
   // Overload for Record<string, PColumnSpec | PlRef> - may return undefined if PlRef resolution fails
   getCanonicalOptions(
     anchorsOrCtx: Record<string, PColumnSpec | PlRef>,
-    predicateOrSelectors: ((spec: PColumnSpec) => boolean) | APColumnSelector | APColumnSelector[],
+    predicateOrSelectors: ((spec: PColumnSpec) => boolean) | APColumnSelectorWithSplit | AnchoredPColumnSelector[],
     labelOps?: LabelDerivationOps,
-  ): { label: string; value: CanonicalPColumnId }[] | undefined;
+  ): { label: string; value: SUniversalPColumnId }[] | undefined;
 
   // Implementation
   getCanonicalOptions(
-    anchorsOrCtx: AnchorIdDeriver | Record<string, PColumnSpec | PlRef>,
-    predicateOrSelectors: ((spec: PColumnSpec) => boolean) | APColumnSelector | APColumnSelector[],
+    anchorsOrCtx: AnchoredIdDeriver | Record<string, PColumnSpec | PlRef>,
+    predicateOrSelectors: ((spec: PColumnSpec) => boolean) | APColumnSelectorWithSplit | AnchoredPColumnSelector[],
     labelOps?: LabelDerivationOps,
-  ): { label: string; value: CanonicalPColumnId }[] | undefined {
+  ): { label: string; value: SUniversalPColumnId }[] | undefined {
     // Handle PlRef objects by resolving them to PColumnSpec
     const resolvedAnchors: Record<string, PColumnSpec> = {};
 
-    if (!(anchorsOrCtx instanceof AnchorIdDeriver)) {
+    if (!(anchorsOrCtx instanceof AnchoredIdDeriver)) {
       for (const [key, value] of Object.entries(anchorsOrCtx)) {
         if (isPlRef(value)) {
           const resolvedSpec = this.getPColumnSpecByRef(value);
@@ -161,12 +183,100 @@ export class ResultPool {
       return predicate(spec);
     });
 
-    const anchorIdDeriver = anchorsOrCtx instanceof AnchorIdDeriver
+    if (filtered.length === 0)
+      return [];
+
+    const anchorIdDeriver = anchorsOrCtx instanceof AnchoredIdDeriver
       ? anchorsOrCtx
-      : new AnchorIdDeriver(resolvedAnchors);
+      : new AnchoredIdDeriver(resolvedAnchors);
+
+    const splitAxisIdxs = typeof predicateOrSelectors === 'object'
+      && !Array.isArray(predicateOrSelectors)
+      && 'axes' in predicateOrSelectors
+      && predicateOrSelectors.axes !== undefined
+      && predicateOrSelectors.partialAxesMatch === undefined
+      ? predicateOrSelectors.axes
+        .map((axis, index) => ('split' in axis && axis.split === true) ? index : -1)
+        .filter((index) => index !== -1)
+      : [];
+    splitAxisIdxs.sort((a, b) => a - b);
+
+    if (splitAxisIdxs.length > 0) {
+      const result: { obj: PColumnSpec; ref: PlRef; filteringTrace: TraceEntry[]; filters: AxisFilter[] }[] = [];
+
+      const maxSplitIdx = splitAxisIdxs[splitAxisIdxs.length - 1]; // Last one is max since they're sorted
+
+      for (const { ref, obj: spec } of filtered) {
+        if (!isPColumnSpec(spec)) continue;
+
+        const columnData = this.getDataByRef(ref);
+        if (!columnData || !isPColumn(columnData)) continue;
+
+        const uniqueKeys = getUniquePartitionKeys(columnData.data);
+        if (!uniqueKeys) continue; // data not fully initialized yet
+
+        if (maxSplitIdx >= uniqueKeys.length)
+          throw new Error(`Not enough partition keys for the requested split axes in column ${spec.name}`);
+
+        const axesLabels: (Record<string | number, string> | undefined)[] = splitAxisIdxs
+          .map((idx) => this.findLabels(getAxisId(spec.axesSpec[idx])));
+
+        const keyCombinations: (string | number)[][] = [];
+        const generateCombinations = (currentCombo: (string | number)[], sAxisIdx: number) => {
+          if (sAxisIdx >= splitAxisIdxs.length) {
+            keyCombinations.push([...currentCombo]);
+            return;
+          }
+          const axisIdx = splitAxisIdxs[sAxisIdx];
+          const axisValues = uniqueKeys[axisIdx];
+          for (const val of axisValues) {
+            currentCombo.push(val);
+            generateCombinations(currentCombo, sAxisIdx + 1);
+            currentCombo.pop();
+          }
+        };
+        generateCombinations([], 0);
+
+        for (const keyCombo of keyCombinations) {
+          const filteringTrace: TraceEntry[] = keyCombo.map((value, sAxisIdx) => {
+            const axisIdx = splitAxisIdxs[sAxisIdx];
+            const canonicalAxisId = canonicalizeAxisId(getAxisId(spec.axesSpec[axisIdx]));
+            const axisLabels = axesLabels[sAxisIdx];
+            const label = axisLabels?.[value] ?? String(value);
+            return {
+              type: `split:${canonicalAxisId}`,
+              label,
+              importance: 1_000_000,
+            };
+          });
+
+          const filters: AxisFilter[] = splitAxisIdxs.map((idx, i) => [idx, keyCombo[i] as PValue]);
+          result.push({
+            obj: spec,
+            ref,
+            filteringTrace: filteringTrace,
+            filters,
+          });
+        }
+      }
+
+      const labelResults = deriveLabels(
+        result,
+        (o) => ({
+          spec: o.obj,
+          suffixTrace: o.filteringTrace,
+        }),
+        labelOps ?? {},
+      );
+
+      return labelResults.map((item) => ({
+        value: anchorIdDeriver.deriveS(item.value.obj as PColumnSpec, item.value.filters),
+        label: item.label,
+      }));
+    }
 
     return deriveLabels(filtered, (o) => o.obj, labelOps ?? {}).map(({ value: { obj: spec }, label }) => ({
-      value: anchorIdDeriver.deriveCanonical(spec as PColumnSpec),
+      value: anchorIdDeriver.deriveS(spec as PColumnSpec),
       label,
     }));
   }
@@ -327,15 +437,40 @@ export class ResultPool {
     }
     return result;
   }
-}
 
-function matchDomain(query?: Record<string, string>, target?: Record<string, string>) {
-  if (query === undefined) return target === undefined;
-  if (target === undefined) return true;
-  for (const k in target) {
-    if (query[k] !== target[k]) return false;
+  /**
+   * Find labels data for a given axis id. It will search for a label column and return its data as a map.
+   * @returns a map of axis value => label
+   */
+  public findLabels(axis: AxisId): Record<string | number, string> | undefined {
+    const dataPool = this.getData();
+    for (const column of dataPool.entries) {
+      if (!isPColumn(column.obj)) continue;
+
+      const spec = column.obj.spec;
+      if (
+        spec.name === 'pl7.app/label'
+        && spec.axesSpec.length === 1
+        && spec.axesSpec[0].name === axis.name
+        && spec.axesSpec[0].type === axis.type
+        && matchDomain(axis.domain, spec.axesSpec[0].domain)
+      ) {
+        if (column.obj.data.resourceType.name !== 'PColumnData/Json') {
+          throw Error(`Expected JSON column for labels, got: ${column.obj.data.resourceType.name}`);
+        }
+        const labels: Record<string | number, string> = Object.fromEntries(
+          Object.entries(
+            column.obj.data.getDataAsJson<{
+              data: Record<string | number, string>;
+            }>().data,
+          ).map((e) => [JSON.parse(e[0])[0], e[1]]),
+        );
+
+        return labels;
+      }
+    }
+    return undefined;
   }
-  return true;
 }
 
 /** Main entry point to the API available within model lambdas (like outputs, sections, etc..) */
@@ -391,35 +526,10 @@ export class RenderCtx<Args, UiState> {
   /**
    * Find labels data for a given axis id. It will search for a label column and return its data as a map.
    * @returns a map of axis value => label
+   * @deprecated Use resultPool.findLabels instead
    */
   public findLabels(axis: AxisId): Record<string | number, string> | undefined {
-    const dataPool = this.resultPool.getData();
-    for (const column of dataPool.entries) {
-      if (!isPColumn(column.obj)) continue;
-
-      const spec = column.obj.spec;
-      if (
-        spec.name === 'pl7.app/label'
-        && spec.axesSpec.length === 1
-        && spec.axesSpec[0].name === axis.name
-        && spec.axesSpec[0].type === axis.type
-        && matchDomain(axis.domain, spec.axesSpec[0].domain)
-      ) {
-        if (column.obj.data.resourceType.name !== 'PColumnData/Json') {
-          throw Error(`Expected JSON column for labels, got: ${column.obj.data.resourceType.name}`);
-        }
-        const labels: Record<string | number, string> = Object.fromEntries(
-          Object.entries(
-            column.obj.data.getDataAsJson<{
-              data: Record<string | number, string>;
-            }>().data,
-          ).map((e) => [JSON.parse(e[0])[0], e[1]]),
-        );
-
-        return labels;
-      }
-    }
-    return undefined;
+    return this.resultPool.findLabels(axis);
   }
 
   private verifyInlineColumnsSupport(columns: PColumn<TreeNodeAccessor | PColumnValues>[]) {

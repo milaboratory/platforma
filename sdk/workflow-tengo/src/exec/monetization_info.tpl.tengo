@@ -3,7 +3,7 @@
  * and returns monetization info.
  */
 
-self := import(":tpl")
+self := import(":tpl.light")
 monetization := import(":exec.monetization_internal")
 constants := import(":exec.constants")
 workdir := import(":workdir")
