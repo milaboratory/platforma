@@ -1,4 +1,4 @@
-import type { AAxisSelector, APColumnSelector } from '@milaboratories/pl-model-common';
+import type { AAxisSelector, AnchoredPColumnSelector } from '@milaboratories/pl-model-common';
 
 /**
  * AAxisSelector with an optional split flag
@@ -10,6 +10,6 @@ export type AAxisSelectorWithSplit = AAxisSelector & {
 /**
  * APColumnSelector with an optional split flag for each axis
  */
-export type APColumnSelectorWithSplit = APColumnSelector & {
+export type APColumnSelectorWithSplit = AnchoredPColumnSelector & {
   axes?: AAxisSelectorWithSplit[];
 };

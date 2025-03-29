@@ -18,15 +18,15 @@ self.awaitState("data", "InputsLocked")
 // Reference to this template for recursive rendering
 thisTpl := assets.importTemplate(":pframes.slice-data")
 
-// Core slicing function
-slicePColumnData := func(data, slicingParams) {
-    // Sort slicing params by axis index
+// Core filtering function
+filterPColumnData := func(data, slicingParams) {
+    // Sort filtering params by axis index
     slicingParams = slices.quickSortFn(copy(slicingParams), func(a, b) {
         return a[0] < b[0]
     })
 
     // Check if all axis indices are valid for the data structure
-    validateSlicingParams := func(dataType, partitionKeyLength, superPartitionKeyLength) {
+    validateFilteringParams := func(dataType, partitionKeyLength, superPartitionKeyLength) {
         maxAxisIdx := -1
 
         if !is_undefined(partitionKeyLength) {
@@ -40,7 +40,7 @@ slicePColumnData := func(data, slicingParams) {
         if maxAxisIdx < 0 {
             // Non-partitioned data
             if len(slicingParams) > 0 {
-                ll.panic("Cannot apply slicing parameters to non-partitioned data type %v", dataType)
+                ll.panic("Cannot apply filtering parameters to non-partitioned data type %v", dataType)
             }
             return
         }
@@ -59,7 +59,7 @@ slicePColumnData := func(data, slicingParams) {
     for _, param in slicingParams {
         axisIdx := param[0]
         if fixedAxes[axisIdx] {
-            ll.panic("Duplicate axis index %v found in slicing parameters", axisIdx)
+            ll.panic("Duplicate axis index %v found in filtering parameters", axisIdx)
         }
         fixedAxes[axisIdx] = true
     }
@@ -109,7 +109,7 @@ slicePColumnData := func(data, slicingParams) {
         partitionKeyLength := dataJson.partitionKeyLength
 
         // Validate parameters
-        validateSlicingParams(data.info().Type.Name, partitionKeyLength, superPartitionKeyLength)
+        validateFilteringParams(data.info().Type.Name, partitionKeyLength, superPartitionKeyLength)
 
         // Count fixed axes in super partition and nested partition
         fixedSuperAxes := 0
@@ -187,7 +187,7 @@ slicePColumnData := func(data, slicingParams) {
         newData := smart.structBuilder(data.info().Type, json.encode(newDataInfo))
 
         // Validate parameters
-        validateSlicingParams(data.info().Type.Name, partitionKeyLength, undefined)
+        validateFilteringParams(data.info().Type.Name, partitionKeyLength, undefined)
 
         for key, partData in data.inputs() {
             if matchesFilter(key) {
@@ -214,7 +214,7 @@ slicePColumnData := func(data, slicingParams) {
         newData := smart.structBuilder(data.info().Type, json.encode(newDataInfo))
 
         // Validate parameters
-        validateSlicingParams(data.info().Type.Name, partitionKeyLength, undefined)
+        validateFilteringParams(data.info().Type.Name, partitionKeyLength, undefined)
 
         for key, partData in data.inputs() {
             if text.has_suffix(key, ".index") {
@@ -251,7 +251,7 @@ slicePColumnData := func(data, slicingParams) {
         newData := smart.structBuilder(data.info().Type, json.encode(newDataInfo))
 
         // Validate parameters
-        validateSlicingParams(data.info().Type.Name, partitionKeyLength, undefined)
+        validateFilteringParams(data.info().Type.Name, partitionKeyLength, undefined)
 
         for key, partData in data.inputs() {
             if matchesFilter(key) {
@@ -265,7 +265,7 @@ slicePColumnData := func(data, slicingParams) {
               data.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_BINARY) ||
               data.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP) {
         // Non-partitioned data - can't apply partitioning filters
-        validateSlicingParams(data.info().Type.Name, undefined, undefined)
+        validateFilteringParams(data.info().Type.Name, undefined, undefined)
         return data
 
     } else {
@@ -274,10 +274,10 @@ slicePColumnData := func(data, slicingParams) {
 }
 
 self.body(func(inputs) {
-    // Validate slicing parameters format
+    // Validate filtering parameters format
     for _, param in inputs.slicingParams.getDataAsJson() {
         if len(param) != 2 {
-            ll.panic("Invalid slicing parameter: %v, expected [axisIdx, valueToFilter]", param)
+            ll.panic("Invalid filtering parameter: %v, expected [axisIdx, valueToFilter]", param)
         }
         if !is_string(param[1]) {
             ll.panic("Invalid valueToFilter: %v, expected string", param[1])
@@ -285,6 +285,6 @@ self.body(func(inputs) {
     }
 
     return {
-        "result": slicePColumnData(inputs.data, inputs.slicingParams.getDataAsJson())
+        "result": filterPColumnData(inputs.data, inputs.slicingParams.getDataAsJson())
     }
 })
