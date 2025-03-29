@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.test-block-model.workflow
 
+## 1.0.6
+
+### Patch Changes
+
+- Updated dependencies [f0f6a8b]
+- Updated dependencies [88cebeb]
+  - @platforma-sdk/workflow-tengo@3.1.0
+
 ## 1.0.5
 
 ### Patch Changes

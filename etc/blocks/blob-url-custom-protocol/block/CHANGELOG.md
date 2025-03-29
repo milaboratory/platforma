@@ -1,5 +1,15 @@
 # @milaboratories/milaboratories.test-blob-url-custom-protocol
 
+## 1.0.41
+
+### Patch Changes
+
+- Updated dependencies [88cebeb]
+  - @platforma-sdk/model@1.25.0
+  - @milaboratories/milaboratories.test-blob-url-custom-protocol.workflow@1.0.7
+  - @milaboratories/milaboratories.test-blob-url-custom-protocol.model@1.0.25
+  - @milaboratories/milaboratories.test-blob-url-custom-protocol.ui@1.0.36
+
 ## 1.0.40
 
 ### Patch Changes

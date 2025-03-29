@@ -1,5 +1,16 @@
 # @platforma-sdk/model
 
+## 1.25.0
+
+### Minor Changes
+
+- 88cebeb: getCanonicalOptions API returning options with SUniversalPColumnId references (full support of Anchored Columns API)
+
+### Patch Changes
+
+- Updated dependencies [88cebeb]
+  - @milaboratories/pl-model-common@1.12.0
+
 ## 1.24.11
 
 ### Patch Changes
