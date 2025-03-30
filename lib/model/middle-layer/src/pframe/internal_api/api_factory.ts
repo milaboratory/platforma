@@ -1,37 +1,8 @@
-import { PColumnSpec, PObjectId } from '@milaboratories/pl-model-common';
+import { DataInfo, PColumnSpec, PObjectId } from '@milaboratories/pl-model-common';
 
 /** Abstract identifier of a data blob that can be requested from the storage backend */
 export type PFrameBlobId = string;
 
-export type JsonDataValue = string | number | null;
-
-export type JsonDataInfo = {
-  type: 'Json';
-  keyLength: number;
-  data: Record<string, JsonDataValue>;
-};
-
-export type JsonPartitionedDataInfo<Blob = PFrameBlobId> = {
-  type: 'JsonPartitioned';
-  partitionKeyLength: number;
-  parts: Record<string, Blob>;
-};
-
-export type BinaryChunkInfo<Blob = PFrameBlobId> = {
-  index: Blob;
-  values: Blob;
-};
-
-export type BinaryPartitionedDataInfo<Blob = PFrameBlobId> = {
-  type: 'BinaryPartitioned';
-  partitionKeyLength: number;
-  parts: Record<string, BinaryChunkInfo<Blob>>;
-};
-
-export type DataInfo<Blob = PFrameBlobId> =
-  | JsonDataInfo
-  | JsonPartitionedDataInfo<Blob>
-  | BinaryPartitionedDataInfo<Blob>;
 
 /** Path of the file containing requested data (blob). This path is returned by
  * {@link BlobPathResolver} as soon as blob materialized in the file system. */
@@ -60,7 +31,7 @@ export interface PFrameFactoryAPI {
   addColumnSpec(columnId: PObjectId, columnSpec: PColumnSpec): void;
 
   /** Associates data info with cpecific column */
-  setColumnData(columnId: PObjectId, dataInfo: DataInfo): void;
+  setColumnData(columnId: PObjectId, dataInfo: DataInfo<PFrameBlobId>): void;
 
   /** Releases all the data previously added to PFrame using methods above,
    * any interactions with disposed PFrame will result in exception */

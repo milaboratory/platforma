@@ -242,13 +242,6 @@ export function isValueAbsent(absent: Uint8Array, index: number): boolean {
   return (absent[chunkIndex] & mask) > 0;
 }
 
-export type PColumnValue = null | number | string;
-export type PColumnValuesEntry = {
-  key: PColumnValue[];
-  val: PColumnValue;
-};
-export type PColumnValues = PColumnValuesEntry[];
-
 export const PTableAbsent = { type: 'absent' };
 export type PTableAbsent = typeof PTableAbsent;
 export const PTableNA = null;
