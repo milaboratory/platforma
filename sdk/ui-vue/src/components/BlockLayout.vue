@@ -7,6 +7,7 @@ import NotFound from './NotFound.vue';
 import LoaderPage from './LoaderPage.vue';
 import { PlAppErrorNotificationAlert } from './PlAppErrorNotificationAlert';
 import BlockLoader from './BlockLoader.vue';
+import { MonetizationSidebar } from '../plugins/Monetization';
 
 const sdk = useSdkPlugin();
 
@@ -49,4 +50,6 @@ const progress = computed(() => app.value?.progress?.());
     <NotFound v-else />
     <PlAppErrorNotificationAlert v-if="sdk.loaded && showErrorsNotification" :errors="errors" />
   </div>
+  <!-- Plugins -->
+  <MonetizationSidebar v-if="CurrentView" />
 </template>
