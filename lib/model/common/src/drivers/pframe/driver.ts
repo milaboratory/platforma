@@ -2,7 +2,7 @@ import type { Branded } from '../../branding';
 import type { PTable } from './table';
 import type { PFrame } from './pframe';
 import type { AddParameterToAllMethods } from './type_util';
-import type { PTableShape, PTableVector, TableRange } from './data';
+import type { PTableShape, PTableVector, TableRange } from './data_types';
 import type { FindColumnsRequest, FindColumnsResponse } from './find_columns';
 import type { PObjectId } from '../../pool';
 import type { PColumnIdAndSpec, PColumnSpec } from './spec/spec';

@@ -29,6 +29,7 @@ import type {
   PTableRecordSingleValueFilterV2,
   PTableRecordFilter,
   PColumnValues,
+  DataInfo,
 } from '@platforma-sdk/model';
 import {
   mapPObjectData,
@@ -52,7 +53,7 @@ function blobKey(res: ResourceInfo): string {
   return String(res.id);
 }
 
-type InternalPFrameData = PFrameDef<PFrameInternal.DataInfo<ResourceInfo>>;
+type InternalPFrameData = PFrameDef<DataInfo<ResourceInfo>>;
 
 const valueTypes: ValueType[] = ['Int', 'Long', 'Float', 'Double', 'String', 'Bytes'] as const;
 
@@ -630,7 +631,7 @@ function stableKeyFromFullPTableDef(data: FullPTableDef): string {
   return hash.digest().toString('hex');
 }
 
-function stableKeyFromPFrameData(data: PColumn<PFrameInternal.DataInfo<ResourceInfo>>[]): string {
+function stableKeyFromPFrameData(data: PColumn<DataInfo<ResourceInfo>>[]): string {
   const orderedData = [...data].map((column) =>
     mapPObjectData(column, (r) => {
       let result: {

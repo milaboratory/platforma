@@ -1,4 +1,4 @@
-import type { PValue } from '../data';
+import type { PValue } from '../data_types';
 import type { AnchoredPColumnId } from './selectors';
 
 /** Axis filter by index */

@@ -50,6 +50,7 @@ import type { APColumnSelectorWithSplit } from './split_selectors';
 import { getUniquePartitionKeys } from './util/pcolumn_data';
 import type { TraceEntry } from './util/label';
 import { canonicalizeAxisId } from '@milaboratories/pl-model-common';
+
 /**
  * Helper function to match domain objects
  * @param query Optional domain to match against
@@ -65,7 +66,7 @@ function matchDomain(query?: Record<string, string>, target?: Record<string, str
   return true;
 }
 
-export type UniversalOption = { label: string; value: SUniversalPColumnId };
+export type UniversalColumnOption = { label: string; value: SUniversalPColumnId };
 
 export class ResultPool {
   private readonly ctx: GlobalCfgRenderCtx = getCfgRenderCtx();
@@ -76,10 +77,6 @@ export class ResultPool {
   public calculateOptions(predicate: PSpecPredicate): Option[] {
     return this.ctx.calculateOptions(predicate);
   }
-
-  // @TODO: unused, what is this for?
-  private defaultLabelFn = (spec: PObjectSpec, _ref: PlRef) =>
-    spec.annotations?.['pl7.app/label'] ?? `Unlabelled`;
 
   public getOptions(
     predicateOrSelector: ((spec: PObjectSpec) => boolean) | PColumnSelector | PColumnSelector[],
