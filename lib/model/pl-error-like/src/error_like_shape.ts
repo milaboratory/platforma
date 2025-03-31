@@ -25,7 +25,12 @@ export function ensureErrorLike(error: unknown): ErrorLike {
 
   // if true, 99% it's a error.
   if (typeof err === 'object' && err !== null && 'name' in err && 'message' in err) {
-    if (err.name === 'ModelError') {
+    if (err.name === 'PlQuickJSError'
+      || err.name === 'PlErrorReport'
+      || err.name === 'PlInternalError'
+      || err.name === 'PlTengoError'
+      || err.name === 'PlRunnerError'
+      || err.name === 'PlMonetizationError') {
       return {
         type: 'PlError',
         name: err.name,

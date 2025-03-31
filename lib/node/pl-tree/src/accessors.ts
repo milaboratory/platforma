@@ -27,8 +27,6 @@ import type {
 import type { ValueOrError } from './value_or_error';
 import { parsePlError, PlErrorReport } from '@milaboratories/pl-errors';
 import { notEmpty } from '@milaboratories/ts-helpers';
-import { ensureErrorLike, ErrorLike } from '@milaboratories/pl-error-like';
-
 /** Error encountered during traversal in field or resource. */
 export class PlError extends Error {
   constructor(message: string) {
@@ -250,7 +248,7 @@ export class PlTreeNodeAccessor {
   public traverseOrErrorWithCommon(
     commonOptions: CommonFieldTraverseOps,
     ...steps: (FieldTraversalStep | string)[]
-  ): ValueOrError<PlTreeNodeAccessor, ErrorLike> | undefined {
+  ): ValueOrError<PlTreeNodeAccessor, Error> | undefined {
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     let current: PlTreeNodeAccessor = this;
 
@@ -275,17 +273,17 @@ export class PlTreeNodeAccessor {
           ok: false,
 
           // FIXME: in next tickets we'll allow Errors to be thrown.
-          error: ensureErrorLike(parsePlError(
+          error: parsePlError(
             notEmpty(next.error.getDataAsString()),
             current.id, current.resourceType, step.field,
-          )),
+          ),
         };
 
       if (next.value === undefined) {
         if (step.errorIfFieldNotSet)
           return {
             ok: false,
-            error: ensureErrorLike(`field have no assigned value ${step.field} of ${resourceIdToString(current.id)}`),
+            error: new Error(`field have no assigned value ${step.field} of ${resourceIdToString(current.id)}`),
           };
         // existing but unpopulated field is unstable because it must be resolved at some point
         this.onUnstableLambda('unpopulated_field:' + step.field);

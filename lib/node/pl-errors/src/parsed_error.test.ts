@@ -1,6 +1,7 @@
 import { ResourceId, resourceIdFromString, stringifyWithResourceId } from "@milaboratories/pl-client";
 import { parsePlError, parseSubErrors, PlMonetizationError, PlErrorReport, PlRunnerError, PlTengoError } from './parsed_error';
-import { describe, it, expect } from 'vitest';
+import { describe, test, it, expect } from 'vitest';
+import { ensureErrorLike } from "@milaboratories/pl-error-like";
 
 const runnerError = '{"errorType":"","message":"\\"NG:0x2331A5\\" has 1 input errors:\\n[I] \\"NG:0x2331A5/blob\\": \\"NG:0x2331A4\\" has 1 input errors:\\n[I] \\"NG:0x2331A4/resource\\": \\"NG:0x2331CD\\" has 1 input errors:\\n[I] \\"NG:0x2331CD/resource\\": \\"NG:0x2331CA\\" has 1 input errors:\\n[I] \\"NG:0x2331CA/inputs\\": \\"NG:0x2331CB\\" has 1 input errors:\\n[I] \\"NG:0x2331CB/workdir\\": working directory: \\"workdirs/0x2331E0\\"\\nfailed to run command: \\"java\\" exited with code 22.\\nHere is the latest command output:\\n\\tLicense manager thread died.\\n\\t=== No License ===\\n\\t\\n\\tTo use MiXCR, please, provide a valid license.\\n\\t\\n\\tIf you already have a license, activate it by calling:\\n\\t  mixcr activate-license\\n\\t\\n\\t\\n"}'
 
@@ -81,4 +82,12 @@ describe('parsePlError', () => {
     expect((result[1] as PlMonetizationError).stdout).toBeDefined();
     expect((result[1] as PlMonetizationError).workingDirectory).toBe('workdirs/0x1F9514');
   });
+});
+
+test('pl error report has error like shape', () => {
+  const plErrorReport = new PlErrorReport('test error report', '', '', []);
+
+  const got = ensureErrorLike(plErrorReport);
+
+  expect(got).toBeDefined();
 });
