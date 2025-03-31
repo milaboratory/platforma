@@ -1,5 +1,4 @@
 import type { BinaryChunk, DataInfo, JsonDataInfo, PColumnSpec, PColumnValue, PColumnValues, PlRef, PObjectId, PObjectSpec } from '@platforma-sdk/model';
-import type { PFrameInternal } from '@milaboratories/pl-model-middle-layer';
 import type { PlTreeNodeAccessor, ResourceInfo } from '@milaboratories/pl-tree';
 import { assertNever } from '@milaboratories/ts-helpers';
 import canonicalize from 'canonicalize';

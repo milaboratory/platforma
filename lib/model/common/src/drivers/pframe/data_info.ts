@@ -8,6 +8,24 @@
 export type PColumnValue = null | number | string;
 
 /**
+ * Represents a key for a PColumn value.
+ * Can be an array of strings or numbers.
+ */
+export type PColumnKey = (number | string)[];
+
+/**
+ * Represents a single entry in a PColumn's data structure.
+ * Contains a key and a value.
+ */
+export type PColumnDataEntry<T> = {
+  /** Key for the value */
+  key: PColumnKey;
+
+  /** Value / blob at the given key */
+  value: T;
+};
+
+/**
  * Represents column data stored as a simple JSON structure.
  * Used for small datasets that can be efficiently stored directly in memory.
  */
@@ -134,10 +152,6 @@ export function mapDataInfo<B1, B2>(
 export function mapDataInfo<B1, B2>(
   dataInfo: DataInfo<B1> | undefined,
   mapFn: (blob: B1) => B2,
-): DataInfo<B2> | undefined;
-export function mapDataInfo<B1, B2>(
-  dataInfo: DataInfo<B1> | undefined,
-  mapFn: (blob: B1) => B2,
 ): DataInfo<B2> | undefined {
   if (dataInfo === undefined) {
     return undefined;
@@ -184,10 +198,7 @@ export function mapDataInfo<B1, B2>(
  * Used when directly instantiating PColumns with explicit data.
  */
 export type PColumnValuesEntry = {
-  /** Array of axis values that form the coordinates for this data point */
-  key: PColumnValue[];
-
-  /** The column value at these coordinates */
+  key: PColumnKey;
   val: PColumnValue;
 };
 
@@ -196,3 +207,224 @@ export type PColumnValuesEntry = {
  * Used for lightweight explicit instantiation of PColumns.
  */
 export type PColumnValues = PColumnValuesEntry[];
+
+/**
+ * Entry-based representation of JsonDataInfo
+ */
+export interface JsonDataInfoEntries {
+  type: 'Json';
+  keyLength: number;
+  data: PColumnDataEntry<PColumnValue>[];
+}
+
+/**
+ * Entry-based representation of JsonPartitionedDataInfo
+ */
+export interface JsonPartitionedDataInfoEntries<Blob> {
+  type: 'JsonPartitioned';
+  partitionKeyLength: number;
+  parts: PColumnDataEntry<Blob>[];
+}
+
+/**
+ * Entry-based representation of BinaryPartitionedDataInfo
+ */
+export interface BinaryPartitionedDataInfoEntries<Blob> {
+  type: 'BinaryPartitioned';
+  partitionKeyLength: number;
+  parts: PColumnDataEntry<BinaryChunk<Blob>>[];
+}
+
+/**
+ * Union type representing all possible entry-based data storage formats
+ */
+export type DataInfoEntries<Blob> =
+  | JsonDataInfoEntries
+  | JsonPartitionedDataInfoEntries<Blob>
+  | BinaryPartitionedDataInfoEntries<Blob>;
+
+/**
+ * Type guard function that checks if the given value is a valid DataInfoEntries.
+ *
+ * @param value - The value to check
+ * @returns True if the value is a valid DataInfoEntries, false otherwise
+ */
+export function isDataInfoEntries<Blob>(value: unknown): value is DataInfoEntries<Blob> {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const data = value as Record<string, unknown>;
+  if (!('type' in data)) {
+    return false;
+  }
+
+  switch (data.type) {
+    case 'Json':
+      return (
+        typeof data.keyLength === 'number'
+        && Array.isArray(data.data)
+      );
+    case 'JsonPartitioned':
+      return (
+        typeof data.partitionKeyLength === 'number'
+        && Array.isArray(data.parts)
+      );
+    case 'BinaryPartitioned':
+      return (
+        typeof data.partitionKeyLength === 'number'
+        && Array.isArray(data.parts)
+      );
+    default:
+      return false;
+  }
+}
+
+/**
+ * Converts DataInfo to DataInfoEntries
+ *
+ * @param dataInfo - The record-based DataInfo object
+ * @returns The equivalent entry-based DataInfoEntries object
+ */
+export function dataInfoToEntries<Blob>(dataInfo: DataInfo<Blob>): DataInfoEntries<Blob> {
+  switch (dataInfo.type) {
+    case 'Json': {
+      const entries: PColumnDataEntry<PColumnValue>[] = Object.entries(dataInfo.data).map(([keyStr, value]) => {
+        const key = JSON.parse(keyStr) as PColumnKey;
+        return { key, value };
+      });
+
+      return {
+        type: 'Json',
+        keyLength: dataInfo.keyLength,
+        data: entries,
+      };
+    }
+    case 'JsonPartitioned': {
+      const parts: PColumnDataEntry<Blob>[] = Object.entries(dataInfo.parts).map(([keyStr, blob]) => {
+        const key = JSON.parse(keyStr) as PColumnKey;
+        return { key, value: blob };
+      });
+
+      return {
+        type: 'JsonPartitioned',
+        partitionKeyLength: dataInfo.partitionKeyLength,
+        parts,
+      };
+    }
+    case 'BinaryPartitioned': {
+      const parts: PColumnDataEntry<BinaryChunk<Blob>>[] = Object.entries(dataInfo.parts).map(([keyStr, chunk]) => {
+        const key = JSON.parse(keyStr) as PColumnKey;
+        return { key, value: chunk };
+      });
+
+      return {
+        type: 'BinaryPartitioned',
+        partitionKeyLength: dataInfo.partitionKeyLength,
+        parts,
+      };
+    }
+  }
+}
+
+/**
+ * Converts DataInfoEntries to DataInfo
+ *
+ * @param dataInfoEntries - The entry-based DataInfoEntries object
+ * @returns The equivalent record-based DataInfo object
+ */
+export function entriesToDataInfo<Blob>(dataInfoEntries: DataInfoEntries<Blob>): DataInfo<Blob> {
+  switch (dataInfoEntries.type) {
+    case 'Json': {
+      const data: Record<string, PColumnValue> = {};
+      for (const entry of dataInfoEntries.data) {
+        data[JSON.stringify(entry.key)] = entry.value;
+      }
+
+      return {
+        type: 'Json',
+        keyLength: dataInfoEntries.keyLength,
+        data,
+      };
+    }
+    case 'JsonPartitioned': {
+      const parts: Record<string, Blob> = {};
+      for (const entry of dataInfoEntries.parts) {
+        parts[JSON.stringify(entry.key)] = entry.value;
+      }
+
+      return {
+        type: 'JsonPartitioned',
+        partitionKeyLength: dataInfoEntries.partitionKeyLength,
+        parts,
+      };
+    }
+    case 'BinaryPartitioned': {
+      const parts: Record<string, BinaryChunk<Blob>> = {};
+      for (const entry of dataInfoEntries.parts) {
+        parts[JSON.stringify(entry.key)] = entry.value;
+      }
+
+      return {
+        type: 'BinaryPartitioned',
+        partitionKeyLength: dataInfoEntries.partitionKeyLength,
+        parts,
+      };
+    }
+  }
+}
+
+/**
+ * Maps blob references in a DataInfoEntries object from one type to another using a mapping function.
+ *
+ * @template B1 - Source blob type
+ * @template B2 - Target blob type
+ * @param dataInfoEntries - The source DataInfoEntries object
+ * @param mapFn - Function to transform blobs from type B1 to type B2
+ * @returns A new DataInfoEntries object with transformed blob references
+ */
+export function mapDataInfoEntries<B1, B2>(
+  dataInfoEntries: DataInfoEntries<B1>,
+  mapFn: (blob: B1) => B2,
+): DataInfoEntries<B2>;
+export function mapDataInfoEntries<B1, B2>(
+  dataInfoEntries: DataInfoEntries<B1> | undefined,
+  mapFn: (blob: B1) => B2,
+): DataInfoEntries<B2> | undefined {
+  if (dataInfoEntries === undefined) {
+    return undefined;
+  }
+
+  switch (dataInfoEntries.type) {
+    case 'Json':
+      // Json type doesn't contain blobs, so return as is
+      return dataInfoEntries;
+    case 'JsonPartitioned': {
+      // Map each blob in parts
+      const newParts = dataInfoEntries.parts.map((entry) => ({
+        key: entry.key,
+        value: mapFn(entry.value),
+      }));
+
+      return {
+        ...dataInfoEntries,
+        parts: newParts,
+      };
+    }
+    case 'BinaryPartitioned': {
+      // Map each index and values blob in parts
+      const newParts = dataInfoEntries.parts.map((entry) => ({
+        key: entry.key,
+        value: {
+          index: mapFn(entry.value.index),
+          values: mapFn(entry.value.values),
+        },
+      }));
+
+      return {
+        ...dataInfoEntries,
+        parts: newParts,
+      };
+    }
+  }
+}
