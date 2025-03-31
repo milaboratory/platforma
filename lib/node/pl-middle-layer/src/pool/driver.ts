@@ -35,9 +35,11 @@ import {
   mapPObjectData,
   mapPTableDef,
   extractAllColumns,
+  mapDataInfo,
+  isDataInfo,
 } from '@platforma-sdk/model';
 import { RefCountResourcePool } from './ref_count_pool';
-import { allBlobs, makeDataInfoResource, mapBlobs, parseDataInfoResource } from './data';
+import { allBlobs, makeDataInfoFromPColumnValues, mapBlobs, parseDataInfoResource } from './data';
 import { createHash } from 'node:crypto';
 import type { MiLogger } from '@milaboratories/ts-helpers';
 import { assertNever } from '@milaboratories/ts-helpers';
@@ -259,13 +261,13 @@ type FullPTableDef = {
 export interface InternalPFrameDriver extends SdkPFrameDriver {
   /** Create a new PFrame */
   createPFrame(
-    def: PFrameDef<PlTreeNodeAccessor | PColumnValues>,
+    def: PFrameDef<PlTreeNodeAccessor | PColumnValues | DataInfo<PlTreeNodeAccessor>>,
     ctx: ComputableCtx,
   ): PFrameHandle;
 
   /** Create a new PTable */
   createPTable(
-    def: PTableDef<PColumn<PlTreeNodeAccessor | PColumnValues>>,
+    def: PTableDef<PColumn<PlTreeNodeAccessor | PColumnValues | DataInfo<PlTreeNodeAccessor>>>,
     ctx: ComputableCtx,
     signal?: AbortSignal,
   ): PTableHandle;
@@ -394,14 +396,18 @@ export class PFrameDriver implements InternalPFrameDriver {
   //
 
   public createPFrame(
-    def: PFrameDef<PlTreeNodeAccessor | PColumnValues>,
+    def: PFrameDef<PlTreeNodeAccessor | PColumnValues | DataInfo<PlTreeNodeAccessor>>,
     ctx: ComputableCtx,
   ): PFrameHandle {
     const internalData = def
       .filter((c) => valueTypes.find((t) => t === c.spec.valueType))
       .map((c) =>
         mapPObjectData(c, (d) =>
-          isPlTreeNodeAccessor(d) ? parseDataInfoResource(d) : makeDataInfoResource(c.spec, d),
+          isPlTreeNodeAccessor(d)
+            ? parseDataInfoResource(d)
+            : isDataInfo(d)
+              ? mapDataInfo(d, (a) => a.resourceInfo)
+              : makeDataInfoFromPColumnValues(c.spec, d),
         ),
       );
     const res = this.pFrames.acquire(internalData);
@@ -410,7 +416,7 @@ export class PFrameDriver implements InternalPFrameDriver {
   }
 
   public createPTable(
-    def: PTableDef<PColumn<PlTreeNodeAccessor | PColumnValues>>,
+    def: PTableDef<PColumn<PlTreeNodeAccessor | PColumnValues | DataInfo<PlTreeNodeAccessor>>>,
     ctx: ComputableCtx,
     signal?: AbortSignal,
   ): PTableHandle {

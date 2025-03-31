@@ -238,7 +238,7 @@ export function parseDataInfoResource(
   throw new Error(`unsupported resource type: ${resourceTypeToString(data.resourceType)}`);
 }
 
-export function makeDataInfoResource(
+export function makeDataInfoFromPColumnValues(
   spec: PColumnSpec,
   data: PColumnValues,
 ): JsonDataInfo {

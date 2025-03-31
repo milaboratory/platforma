@@ -78,6 +78,103 @@ export type DataInfo<Blob> =
   | JsonPartitionedDataInfo<Blob>
   | BinaryPartitionedDataInfo<Blob>;
 
+/**
+ * Type guard function that checks if the given value is a valid DataInfo.
+ *
+ * @param value - The value to check
+ * @returns True if the value is a valid DataInfo, false otherwise
+ */
+export function isDataInfo<Blob>(value: unknown): value is DataInfo<Blob> {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const data = value as Record<string, unknown>;
+  if (!('type' in data)) {
+    return false;
+  }
+
+  switch (data.type) {
+    case 'Json':
+      return (
+        typeof data.keyLength === 'number'
+        && data.data !== undefined
+        && typeof data.data === 'object'
+      );
+    case 'JsonPartitioned':
+      return (
+        typeof data.partitionKeyLength === 'number'
+        && data.parts !== undefined
+        && typeof data.parts === 'object'
+      );
+    case 'BinaryPartitioned':
+      return (
+        typeof data.partitionKeyLength === 'number'
+        && data.parts !== undefined
+        && typeof data.parts === 'object'
+      );
+    default:
+      return false;
+  }
+}
+
+/**
+ * Maps blob references in a DataInfo object from one type to another using a mapping function.
+ *
+ * @template B1 - Source blob type
+ * @template B2 - Target blob type
+ * @param dataInfo - The source DataInfo object
+ * @param mapFn - Function to transform blobs from type B1 to type B2
+ * @returns A new DataInfo object with transformed blob references
+ */
+export function mapDataInfo<B1, B2>(
+  dataInfo: DataInfo<B1>,
+  mapFn: (blob: B1) => B2,
+): DataInfo<B2>;
+export function mapDataInfo<B1, B2>(
+  dataInfo: DataInfo<B1> | undefined,
+  mapFn: (blob: B1) => B2,
+): DataInfo<B2> | undefined;
+export function mapDataInfo<B1, B2>(
+  dataInfo: DataInfo<B1> | undefined,
+  mapFn: (blob: B1) => B2,
+): DataInfo<B2> | undefined {
+  if (dataInfo === undefined) {
+    return undefined;
+  }
+
+  switch (dataInfo.type) {
+    case 'Json':
+      // Json type doesn't contain blobs, so return as is
+      return dataInfo;
+    case 'JsonPartitioned': {
+      // Map each blob in parts
+      const newParts: Record<string, B2> = {};
+      for (const [key, blob] of Object.entries(dataInfo.parts)) {
+        newParts[key] = mapFn(blob);
+      }
+      return {
+        ...dataInfo,
+        parts: newParts,
+      };
+    }
+    case 'BinaryPartitioned': {
+      // Map each index and values blob in parts
+      const newParts: Record<string, BinaryChunk<B2>> = {};
+      for (const [key, chunk] of Object.entries(dataInfo.parts)) {
+        newParts[key] = {
+          index: mapFn(chunk.index),
+          values: mapFn(chunk.values),
+        };
+      }
+      return {
+        ...dataInfo,
+        parts: newParts,
+      };
+    }
+  }
+}
+
 //
 // Lightway representation for ExplicitJsonData
 //
