@@ -24,6 +24,27 @@ tplTest(
   },
 );
 
+tplTest(
+  'run-hello-world-limits',
+  async ({ helper, expect }) => {
+    const helloText = 'Hello from go!';
+
+    const result = await helper.renderTemplate(
+      false,
+      'exec.test.run.hello_go_limits',
+      ['main'],
+      (tx) => ({
+        text: tx.createValue(Pl.JsonObject, JSON.stringify(helloText)),
+      }),
+    );
+    const mainResult = result.computeOutput('main', (a) =>
+      a?.getDataAsString(),
+    );
+
+    expect(await mainResult.awaitStableValue()).eq(helloText + '\n');
+  },
+);
+
 // tplTest(
 //   'use-asset-in-exec',
 //   async ({ helper, expect }) => {
