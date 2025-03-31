@@ -21,7 +21,10 @@ import type {
   PValue,
   SUniversalPColumnId,
   AnyFunction,
-  DataInfo } from '@milaboratories/pl-model-common';
+  DataInfo,
+  BinaryPartitionedDataInfoEntries,
+  JsonPartitionedDataInfoEntries,
+  PObjectId } from '@milaboratories/pl-model-common';
 import {
   AnchoredIdDeriver,
   getAxisId,
@@ -29,6 +32,7 @@ import {
   mapDataInfo,
   resolveAnchors,
   canonicalizeAxisId,
+  entriesToDataInfo,
 } from '@milaboratories/pl-model-common';
 import {
   ensurePColumn,
@@ -50,8 +54,9 @@ import { MainAccessorName, StagingAccessorName } from './internal';
 import type { LabelDerivationOps } from './util/label';
 import { deriveLabels } from './util/label';
 import type { APColumnSelectorWithSplit } from './split_selectors';
-import { getUniquePartitionKeys } from './util/pcolumn_data';
+import { getUniquePartitionKeys, parsePColumnData } from './util/pcolumn_data';
 import type { TraceEntry } from './util/label';
+import { filterDataInfoEntries } from './util/axis_filtering';
 
 /**
  * Helper function to match domain objects
@@ -340,7 +345,7 @@ export class ResultPool {
    *                     - An existing AnchorCtx instance
    *                     - A record mapping anchor IDs to PColumnSpec objects
    *                     - A record mapping anchor IDs to PlRef objects (which will be resolved to PColumnSpec)
-   * @param predicateOrSelector - Either:
+   * @param predicateOrSelectors - Either:
    *                            - A predicate function that takes a PColumnSpec and returns a boolean.
    *                              Only specs that return true will be included.
    *                            - An APColumnSelector object for declarative filtering, which will be
@@ -631,6 +636,90 @@ export class RenderCtx<Args, UiState> {
     if (hasInlineColumns && !inlineColumnsSupport) throw Error(`Inline or explicit columns not supported`); // Combined check
 
     // Removed redundant explicitColumns check
+  }
+
+  /**
+   * Creates a PFrame from columns that match the provided anchors and selectors.
+   * This is a convenience method that combines getCanonicalOptions with column filtering and creation.
+   *
+   * @param anchorsOrCtx - Anchor context for column selection (same as in getCanonicalOptions)
+   * @param predicateOrSelectors - Predicate or selectors for filtering columns (same as in getCanonicalOptions)
+   * @param opts - Optional configuration for label generation and data waiting
+   * @returns A PFrameHandle for the created PFrame, or undefined if any required data is missing
+   */
+  public createPFrameAnchored(
+    anchorsOrCtx: AnchoredIdDeriver | Record<string, PColumnSpec | PlRef>,
+    predicateOrSelectors: ((spec: PColumnSpec) => boolean) | APColumnSelectorWithSplit | APColumnSelectorWithSplit[],
+    opts?: UniversalPColumnOpts,
+  ): PFrameHandle | undefined {
+    // Get the column entries
+    const entries = this.resultPool['getUniversalPColumnEntries'](
+      anchorsOrCtx,
+      predicateOrSelectors,
+      opts,
+    );
+
+    if (!entries || entries.length === 0) return undefined;
+
+    const frameDef: PColumn<DataInfo<TreeNodeAccessor>>[] = [];
+
+    for (const entry of entries) {
+      const columnData = this.resultPool.getPColumnByRef(entry.ref);
+      if (!columnData) return undefined;
+
+      const parsedData = parsePColumnData(columnData.data);
+      if (!parsedData) return undefined;
+
+      let filteredEntries: JsonPartitionedDataInfoEntries<TreeNodeAccessor> | BinaryPartitionedDataInfoEntries<TreeNodeAccessor> = parsedData;
+      let spec = { ...columnData.spec };
+
+      if (entry.axisFilters && entry.axisFilters.length > 0) {
+        const axisFiltersByIdx = entry.axisFilters.map((filter) => [
+          filter.axisIdx,
+          filter.value,
+        ] as [number, PValue]);
+
+        filteredEntries = filterDataInfoEntries(parsedData, axisFiltersByIdx);
+
+        const axisIndicesToRemove = [...entry.axisFilters]
+          .map((filter) => filter.axisIdx)
+          .sort((a, b) => b - a);
+
+        const newAxesSpec = [...spec.axesSpec];
+        for (const idx of axisIndicesToRemove) {
+          newAxesSpec.splice(idx, 1);
+        }
+
+        spec = { ...spec, axesSpec: newAxesSpec };
+      }
+
+      const dataInfo = entriesToDataInfo(filteredEntries);
+
+      if (spec.annotations) {
+        spec = {
+          ...spec,
+          annotations: {
+            ...spec.annotations,
+            'pl7.app/label': entry.label,
+          },
+        };
+      } else {
+        spec = {
+          ...spec,
+          annotations: {
+            'pl7.app/label': entry.label,
+          },
+        };
+      }
+
+      frameDef.push({
+        id: entry.id as unknown as PObjectId,
+        spec,
+        data: dataInfo,
+      });
+    }
+
+    return this.createPFrame(frameDef);
   }
 
   public createPFrame(def: PFrameDef<TreeNodeAccessor | PColumnValues | DataInfo<TreeNodeAccessor>>): PFrameHandle {

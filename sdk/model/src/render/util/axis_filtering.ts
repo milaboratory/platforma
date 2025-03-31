@@ -4,6 +4,9 @@ import type {
   PColumnDataEntry,
   PColumnKey,
   PColumnValue,
+  JsonDataInfoEntries,
+  JsonPartitionedDataInfoEntries,
+  BinaryPartitionedDataInfoEntries,
 } from '@milaboratories/pl-model-common';
 import type { AxisFilterByIdx } from '@milaboratories/pl-model-common';
 
@@ -15,6 +18,22 @@ import type { AxisFilterByIdx } from '@milaboratories/pl-model-common';
  * @param axisFilters - Array of axis filters (index, value pairs)
  * @throws Error if any filter axis is outside the partitioning axes or data axes for Json data
  */
+export function filterDataInfoEntries<Blob>(
+  dataInfoEntries: BinaryPartitionedDataInfoEntries<Blob>,
+  axisFilters: AxisFilterByIdx[],
+): BinaryPartitionedDataInfoEntries<Blob>;
+export function filterDataInfoEntries<Blob>(
+  dataInfoEntries: JsonPartitionedDataInfoEntries<Blob>,
+  axisFilters: AxisFilterByIdx[],
+): JsonPartitionedDataInfoEntries<Blob>;
+export function filterDataInfoEntries<Blob>(
+  dataInfoEntries: BinaryPartitionedDataInfoEntries<Blob> | JsonPartitionedDataInfoEntries<Blob>,
+  axisFilters: AxisFilterByIdx[],
+): BinaryPartitionedDataInfoEntries<Blob> | JsonPartitionedDataInfoEntries<Blob>;
+export function filterDataInfoEntries(
+  dataInfoEntries: JsonDataInfoEntries,
+  axisFilters: AxisFilterByIdx[],
+): JsonDataInfoEntries;
 export function filterDataInfoEntries<Blob>(
   dataInfoEntries: DataInfoEntries<Blob>,
   axisFilters: AxisFilterByIdx[],
