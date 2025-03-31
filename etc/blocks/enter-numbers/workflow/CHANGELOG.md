@@ -1,5 +1,12 @@
 # @milaboratories/milaboratories.test-enter-numbers.workflow
 
+## 1.0.11
+
+### Patch Changes
+
+- Updated dependencies [cd57569]
+  - @platforma-sdk/workflow-tengo@3.2.0
+
 ## 1.0.10
 
 ### Patch Changes
