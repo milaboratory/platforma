@@ -6,11 +6,12 @@ ll := import(":ll")
 
 _api := plapi.apiVersion
 if is_undefined(_api) {
-    _api = 0
+	_api = 0
 }
 
 export ll.toStrict({
-    pureFutureFields:           _api >= 1,
-    commandExpressions:         _api >= 2,
-    workdirLimits:              _api >= 4
+	pureFutureFields:           _api >= 1, // 'pure' future fields magic that provides deduplication
+	commandExpressions:         _api >= 2, // rich expressions in command arguments ( {{ system.ram_bytes / 20 }} )
+	workdirLimits:              _api >= 4, // workdir storage controller can limit concurrency
+	computeLimits:              _api >= 8  // runner can plan CPU and RAM
 })
