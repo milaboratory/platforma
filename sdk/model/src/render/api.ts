@@ -176,7 +176,7 @@ export class ResultPool {
    * Internal implementation that generates UniversalPColumnEntry objects from the provided
    * anchors and selectors.
    */
-  private getUniversalPColumnEntries(
+  public getUniversalPColumnEntries(
     anchorsOrCtx: AnchoredIdDeriver | Record<string, PColumnSpec | PlRef>,
     predicateOrSelectors: ((spec: PColumnSpec) => boolean) | APColumnSelectorWithSplit | APColumnSelectorWithSplit[],
     opts?: UniversalPColumnOpts,
@@ -639,29 +639,36 @@ export class RenderCtx<Args, UiState> {
   }
 
   /**
-   * Creates a PFrame from columns that match the provided anchors and selectors.
-   * This is a convenience method that combines getCanonicalOptions with column filtering and creation.
+   * Returns columns that match the provided anchors and selectors. It applies axis filters and label derivation.
    *
    * @param anchorsOrCtx - Anchor context for column selection (same as in getCanonicalOptions)
    * @param predicateOrSelectors - Predicate or selectors for filtering columns (same as in getCanonicalOptions)
    * @param opts - Optional configuration for label generation and data waiting
    * @returns A PFrameHandle for the created PFrame, or undefined if any required data is missing
    */
-  public createPFrameAnchored(
+  public getAnchoredPColumns(
     anchorsOrCtx: AnchoredIdDeriver | Record<string, PColumnSpec | PlRef>,
     predicateOrSelectors: ((spec: PColumnSpec) => boolean) | APColumnSelectorWithSplit | APColumnSelectorWithSplit[],
     opts?: UniversalPColumnOpts,
-  ): PFrameHandle | undefined {
-    // Get the column entries
-    const entries = this.resultPool['getUniversalPColumnEntries'](
+  ): PColumn<DataInfo<TreeNodeAccessor>>[] | undefined {
+    // Ensure includeNativeLabel is true in the labelOps
+    const enhancedOpts: UniversalPColumnOpts = {
+      ...opts,
+      labelOps: {
+        includeNativeLabel: true,
+        ...(opts?.labelOps || {}),
+      },
+    };
+
+    const entries = this.resultPool.getUniversalPColumnEntries(
       anchorsOrCtx,
       predicateOrSelectors,
-      opts,
+      enhancedOpts,
     );
 
     if (!entries || entries.length === 0) return undefined;
 
-    const frameDef: PColumn<DataInfo<TreeNodeAccessor>>[] = [];
+    const result: PColumn<DataInfo<TreeNodeAccessor>>[] = [];
 
     for (const entry of entries) {
       const columnData = this.resultPool.getPColumnByRef(entry.ref);
@@ -712,14 +719,14 @@ export class RenderCtx<Args, UiState> {
         };
       }
 
-      frameDef.push({
+      result.push({
         id: entry.id as unknown as PObjectId,
         spec,
         data: dataInfo,
       });
     }
 
-    return this.createPFrame(frameDef);
+    return result;
   }
 
   public createPFrame(def: PFrameDef<TreeNodeAccessor | PColumnValues | DataInfo<TreeNodeAccessor>>): PFrameHandle {
