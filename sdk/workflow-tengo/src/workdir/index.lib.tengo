@@ -6,6 +6,7 @@ json := import("json")
 
 ll := import(":ll")
 feats := import(":feats")
+validation := import(":validation")
 
 assets := import(":assets")
 constants := import(":constants")
@@ -15,7 +16,6 @@ sets := import(":sets")
 slices := import(":slices")
 path := import(":path")
 enum := import("enum")
-validation := import(":validation")
 render := import(":render")
 
 _WD_CREATE_FIELD_ALLOCATION := "allocation"
