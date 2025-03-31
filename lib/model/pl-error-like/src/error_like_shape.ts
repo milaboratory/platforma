@@ -52,7 +52,7 @@ export function ensureErrorLike(error: unknown): ErrorLike {
     // Stringify without circular dependencies.
     // Maps (and sets?) will be converted to empty json objects,
     // if this is a problem, we should change the library,
-    // but it must work in all QuickJS, UI and Node.js.
+    // but the new library must work in all QuickJS, UI and Node.js like this one.
     message: stringify(error),
   };
 }
