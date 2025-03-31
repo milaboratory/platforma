@@ -34,7 +34,7 @@ watch(
       <div class="pl-app-notification-alert__content">
         <template v-for="item in existingErrors" :key="item[0]">
           <div class="pl-app-notification-alert__item">
-            <div class="pl-app-notification-alert__title">{{ item[0] }}</div>
+            <div class="pl-app-notification-alert__title">Block output: {{ item[0] }}</div>
             <PlLogView :value="item[1]?.message" />
           </div>
         </template>
