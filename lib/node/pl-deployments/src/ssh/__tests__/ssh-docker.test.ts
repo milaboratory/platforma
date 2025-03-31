@@ -11,9 +11,6 @@ let testContainer: StartedTestContainer;
 
 beforeAll(async () => {
   testContainer = await initContainer('ssh');
-  console.log("HERE ssh-docker.test.ts:14:");
-  console.dir(testContainer, {depth: 150});
-
   client = await SshClient.init(new ConsoleLoggerAdapter(), getConnectionForSsh(testContainer));
 }, 200000);
 
