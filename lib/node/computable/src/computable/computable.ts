@@ -96,10 +96,13 @@ export class AggregateComputableError extends AggregateError {
   }
 }
 
-/** Type returned by computables that wraps errors */
+/** Type returned by computables that wraps errors
+ * In case of errors, string could come from old ML versions,
+ * and ErrorLike is from new ML versions.
+ * We might consider removing string after 1st of July 2025 (3 months after implementing ErrorLike). */
 export type ComputableValueOrErrors<T> =
   | { ok: true; value: T }
-  | { ok: false; errors: ErrorLike[]; moreErrors: boolean };
+  | { ok: false; errors: (ErrorLike | string)[]; moreErrors: boolean };
 
 export interface ComputableRenderingOps extends CellRenderingOps {
   /**
