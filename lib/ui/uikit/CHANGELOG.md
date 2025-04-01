@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.61
+
+### Patch Changes
+
+- b00fefd: PlFileDialog: handle absolute paths in breadcrumbs (we got them in ssh deployment)
+
 ## 2.2.60
 
 ### Patch Changes
