@@ -5,6 +5,7 @@
     "type-check": {
       "dependsOn": ["^build"]
     },
+    "lint": {},
     "build": {
       "inputs": ["$TURBO_DEFAULT$"],
       "outputs": ["./dist/**", "./block-pack/**"],

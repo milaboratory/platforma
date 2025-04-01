@@ -12,4 +12,3 @@ export * from './computable/computable_hooks';
 export * from './computable/hooks_util';
 
 export * from './util/poll_pool';
-

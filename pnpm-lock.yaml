@@ -1399,12 +1399,12 @@ importers:
         specifier: 'catalog:'
         version: 3.23.8
     devDependencies:
+      '@milaboratories/eslint-config':
+        specifier: workspace:*
+        version: link:../../../tools/eslint-config
       '@milaboratories/platforma-build-configs':
         specifier: workspace:*
         version: link:../../util/build-configs
-      '@platforma-sdk/eslint-config':
-        specifier: workspace:*
-        version: link:../../../sdk/eslint-config
       '@types/json-stringify-safe':
         specifier: 'catalog:'
         version: 5.0.3

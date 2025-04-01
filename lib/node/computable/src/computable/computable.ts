@@ -20,7 +20,7 @@ import {
 import { Aborted, notEmpty } from '@milaboratories/ts-helpers';
 import { randomUUID } from 'node:crypto';
 import { setImmediate } from 'node:timers/promises';
-import { ensureErrorLike, ErrorLike } from '@milaboratories/pl-error-like';
+import { ensureErrorLike, type ErrorLike } from '@milaboratories/pl-error-like';
 
 /** Represents the most general result of the computable, successful or error */
 export type ComputableResult<T> = ComputableResultErrors | ComputableResultOk<T>;
@@ -627,7 +627,7 @@ export class Computable<T, StableT extends T = T> {
         return {
           ok: false,
           errors,
-          moreErrors: error.length > maxErrors
+          moreErrors: error.length > maxErrors,
         } as ComputableValueOrErrors<T>;
       },
       // inherit key from the computable being wrapped

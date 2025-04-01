@@ -1,4 +1,5 @@
 import stringify from 'json-stringify-safe';
+import { z } from 'zod';
 
 export type StandardErrorLike = {
   type: 'StandardError';
@@ -21,10 +22,11 @@ export type PlErrorLike = {
 export type ErrorLike = StandardErrorLike | PlErrorLike;
 
 export function ensureErrorLike(error: unknown): ErrorLike {
-  const err = error as any;
+  const result = ErrorShape.safeParse(error);
 
-  // if true, 99% it's a error.
-  if (typeof err === 'object' && err !== null && 'name' in err && 'message' in err) {
+  if (result.success) {
+    const err = result.data;
+
     if (err.name === 'PlQuickJSError'
       || err.name === 'PlErrorReport'
       || err.name === 'PlInternalError'
@@ -61,3 +63,22 @@ export function ensureErrorLike(error: unknown): ErrorLike {
     message: stringify(error),
   };
 }
+
+// We want to define ErrorShape schema just to parse it above, it's a way to define recursive types in zod.
+// https://zod.dev/?id=recursive-types
+
+const baseErrorShape = z.object({
+  name: z.string(),
+  message: z.string(),
+  stack: z.string().optional(),
+});
+
+type ErrorShape = z.infer<typeof baseErrorShape> & {
+  cause?: ErrorShape;
+  errors?: ErrorShape[];
+};
+
+const ErrorShape: z.ZodType<ErrorShape> = baseErrorShape.extend({
+  cause: z.lazy(() => ErrorShape).optional(),
+  errors: z.lazy(() => ErrorShape.array()).optional(),
+});

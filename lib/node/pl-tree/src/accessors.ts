@@ -25,7 +25,7 @@ import type {
   ResourceTraversalOps,
 } from './traversal_ops';
 import type { ValueOrError } from './value_or_error';
-import { parsePlError, PlErrorReport } from '@milaboratories/pl-errors';
+import { parsePlError } from '@milaboratories/pl-errors';
 import { notEmpty } from '@milaboratories/ts-helpers';
 /** Error encountered during traversal in field or resource. */
 export class PlError extends Error {
@@ -240,7 +240,7 @@ export class PlTreeNodeAccessor {
   ): PlTreeNodeAccessor | undefined {
     const result = this.traverseOrErrorWithCommon(commonOptions, ...steps);
     if (result === undefined) return undefined;
-    // eslint-disable-next-line @typescript-eslint/only-throw-error
+
     if (!result.ok) throw result.error;
     return result.value;
   }
