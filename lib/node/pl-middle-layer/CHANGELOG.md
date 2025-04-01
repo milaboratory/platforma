@@ -1,5 +1,21 @@
 # @milaboratories/pl-middle-layer
 
+## 1.32.0
+
+### Minor Changes
+
+- d559029: Implementation of explicit column definition in createPFrame and createPTable exposed to model runtime
+
+### Patch Changes
+
+- Updated dependencies [c57f609]
+- Updated dependencies [7c52bb5]
+  - @platforma-sdk/model@1.26.0
+  - @milaboratories/pl-model-common@1.13.0
+  - @milaboratories/pl-model-middle-layer@1.7.16
+  - @milaboratories/pl-drivers@1.5.37
+  - @platforma-sdk/block-tools@2.5.29
+
 ## 1.31.9
 
 ### Patch Changes
