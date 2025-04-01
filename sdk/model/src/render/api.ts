@@ -26,15 +26,13 @@ import type {
   JsonPartitionedDataInfoEntries,
   PObjectId } from '@milaboratories/pl-model-common';
 import {
+  mapDataInfo,
+  entriesToDataInfo,
+  isDataInfo,
   AnchoredIdDeriver,
   getAxisId,
-  isDataInfo,
-  mapDataInfo,
   resolveAnchors,
   canonicalizeAxisId,
-  entriesToDataInfo,
-} from '@milaboratories/pl-model-common';
-import {
   ensurePColumn,
   extractAllColumns,
   isPColumn,

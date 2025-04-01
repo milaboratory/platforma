@@ -1,8 +1,9 @@
 /** Pl Backend throws arbitrary errors, and we're trying to parse them here. */
 
-import { z } from "zod";
-import { ResourceId, resourceIdToString, ResourceType, resourceTypeToString } from "@milaboratories/pl-client";
-import { notEmpty } from "@milaboratories/ts-helpers";
+import { z } from 'zod';
+import type { ResourceId, ResourceType } from '@milaboratories/pl-client';
+import { resourceIdToString, resourceTypeToString } from '@milaboratories/pl-client';
+import { notEmpty } from '@milaboratories/ts-helpers';
 
 /** The error that comes from QuickJS. */
 export class PlQuickJSError extends Error {
@@ -27,6 +28,7 @@ export class PlQuickJSError extends Error {
   }
 
   toString() {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     const msg = `PlQuickJSError: ${(this.cause as any)?.message}
 QuickJS stacktrace:
 ${this.stack}
@@ -70,7 +72,7 @@ export class PlErrorReport extends Error {
     const r = this.resource ? resourceIdToString(this.resource) : '';
     const f = this.fieldName ? `/${this.fieldName}` : '';
     const errType = this.plErrorType ? `error type: ${this.plErrorType}` : '';
-    const errors = this.errors.map(e => e.message).join('\n\n');
+    const errors = this.errors.map((e) => e.message).join('\n\n');
 
     return `PlErrorReport: resource: ${rt} ${r}${f}
 ${errType}

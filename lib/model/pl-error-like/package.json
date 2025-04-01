@@ -31,7 +31,7 @@
   "devDependencies": {
     "@milaboratories/platforma-build-configs": "workspace:*",
     "@types/json-stringify-safe": "catalog:",
-    "@platforma-sdk/eslint-config": "workspace:*",
+    "@milaboratories/eslint-config": "workspace:*",
     "eslint": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",

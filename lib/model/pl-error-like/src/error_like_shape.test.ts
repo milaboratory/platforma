@@ -1,5 +1,5 @@
 import { test, expect } from 'vitest';
-import { ensureErrorLike, ErrorLike } from './error_like_shape';
+import { ensureErrorLike } from './error_like_shape';
 
 test('should create error like from string', () => {
   const errorLike = ensureErrorLike('test error');

@@ -7,7 +7,7 @@ export class UnresolvedError extends Error {}
 // @TODO use AggregateError
 export class MultiError extends Error {
   constructor(public readonly errors: (ErrorLike | string)[]) {
-    super(errors.map(e => typeof e === 'string' ? e : e.message).join('\n'));
+    super(errors.map((e) => typeof e === 'string' ? e : e.message).join('\n'));
   }
 
   toString() {
