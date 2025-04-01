@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/milaboratories.test-blob-url-custom-protocol",
-  "version": "1.0.43",
+  "version": "1.0.44",
   "private": true,
   "scripts": {
     "build": "rm -rf ./block-pack && block-tools pack"

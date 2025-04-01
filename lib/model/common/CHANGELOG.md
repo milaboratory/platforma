@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.13.0
+
+### Minor Changes
+
+- 7c52bb5: DataInfo types moved to common type from Internal API to allow explicit construction of PColumn data from within the block's model
+
 ## 1.12.0
 
 ### Minor Changes

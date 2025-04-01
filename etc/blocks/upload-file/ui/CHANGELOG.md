@@ -1,5 +1,12 @@
 # @milaboratories/milaboratories.test-upload-file.ui
 
+## 1.0.102
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-upload-file.model@1.0.27
+- @platforma-sdk/ui-vue@1.26.0
+
 ## 1.0.101
 
 ### Patch Changes
