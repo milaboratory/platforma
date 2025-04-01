@@ -1,5 +1,4 @@
-import type { PColumnSpec, PColumnValues, PlRef, PObjectId, PObjectSpec } from '@platforma-sdk/model';
-import type { PFrameInternal } from '@milaboratories/pl-model-middle-layer';
+import type { BinaryChunk, DataInfo, JsonDataInfo, PColumnSpec, PColumnValue, PColumnValues, PlRef, PObjectId, PObjectSpec } from '@platforma-sdk/model';
 import type { PlTreeNodeAccessor, ResourceInfo } from '@milaboratories/pl-tree';
 import { assertNever } from '@milaboratories/ts-helpers';
 import canonicalize from 'canonicalize';
@@ -12,7 +11,7 @@ import {
 import type { Writable } from 'utility-types';
 import { createHash } from 'node:crypto';
 
-export function* allBlobs<B>(data: PFrameInternal.DataInfo<B>): Generator<B> {
+export function* allBlobs<B>(data: DataInfo<B>): Generator<B> {
   switch (data.type) {
     case 'Json':
       return;
@@ -41,9 +40,9 @@ function mapValues<T extends object, TResult>(
 }
 
 export function mapBlobs<B1, B2>(
-  data: PFrameInternal.DataInfo<B1>,
+  data: DataInfo<B1>,
   mapping: (blob: B1) => B2,
-): PFrameInternal.DataInfo<B2> {
+): DataInfo<B2> {
   switch (data.type) {
     case 'Json':
       return { ...data };
@@ -76,7 +75,7 @@ export const PColumnDataJson = resourceType('PColumnData/Json', '1');
 
 export type PColumnDataJsonResourceValue = {
   keyLength: number;
-  data: Record<string, PFrameInternal.JsonDataValue>;
+  data: Record<string, PColumnValue>;
 };
 
 export type PColumnDataPartitionedResourceValue = {
@@ -90,7 +89,7 @@ export type PColumnDataSuperPartitionedResourceValue = {
 
 export function parseDataInfoResource(
   data: PlTreeNodeAccessor,
-): PFrameInternal.DataInfo<ResourceInfo> {
+): DataInfo<ResourceInfo> {
   if (!data.getIsReadyOrError()) throw new Error('Data not ready.');
 
   const resourceData = data.getDataAsJson();
@@ -130,8 +129,8 @@ export function parseDataInfoResource(
 
       for (const key of keys) {
         const partKey = JSON.stringify([
-          ...JSON.parse(superKey) as PFrameInternal.JsonDataValue[],
-          ...JSON.parse(key) as PFrameInternal.JsonDataValue[]]);
+          ...JSON.parse(superKey) as PColumnValue[],
+          ...JSON.parse(key) as PColumnValue[]]);
         parts[partKey] = superPart.traverse({ field: key, errorIfFieldNotSet: true }).resourceInfo;
       }
     }
@@ -146,7 +145,7 @@ export function parseDataInfoResource(
 
     const parts: Record<
       string,
-      Partial<Writable<PFrameInternal.BinaryChunkInfo<ResourceInfo>>>
+      Partial<Writable<BinaryChunk<ResourceInfo>>>
     > = {};
 
     // parsing the structure
@@ -179,14 +178,14 @@ export function parseDataInfoResource(
     return {
       type: 'BinaryPartitioned',
       partitionKeyLength: meta.partitionKeyLength,
-      parts: parts as Record<string, PFrameInternal.BinaryChunkInfo<ResourceInfo>>,
+      parts: parts as Record<string, BinaryChunk<ResourceInfo>>,
     };
   } else if (resourceTypesEqual(data.resourceType, PColumnDataBinarySuperPartitioned)) {
     const meta = resourceData as PColumnDataSuperPartitionedResourceValue;
 
     const parts: Record<
       string,
-      Partial<Writable<PFrameInternal.BinaryChunkInfo<ResourceInfo>>>
+      Partial<Writable<BinaryChunk<ResourceInfo>>>
     > = {};
     for (const superKey of data.listInputFields()) {
       const superData = data.traverse({ field: superKey, errorIfFieldNotSet: true });
@@ -198,8 +197,8 @@ export function parseDataInfoResource(
           const key = field.slice(0, field.length - 6);
 
           const partKey = JSON.stringify([
-            ...JSON.parse(superKey) as PFrameInternal.JsonDataValue[],
-            ...JSON.parse(key) as PFrameInternal.JsonDataValue[]]);
+            ...JSON.parse(superKey) as PColumnValue[],
+            ...JSON.parse(key) as PColumnValue[]]);
           let part = parts[partKey];
           if (part === undefined) {
             part = {};
@@ -213,8 +212,8 @@ export function parseDataInfoResource(
           const key = field.slice(0, field.length - 7);
 
           const partKey = JSON.stringify([
-            ...JSON.parse(superKey) as PFrameInternal.JsonDataValue[],
-            ...JSON.parse(key) as PFrameInternal.JsonDataValue[]]);
+            ...JSON.parse(superKey) as PColumnValue[],
+            ...JSON.parse(key) as PColumnValue[]]);
           let part = parts[partKey];
           if (part === undefined) {
             part = {};
@@ -231,19 +230,19 @@ export function parseDataInfoResource(
     return {
       type: 'BinaryPartitioned',
       partitionKeyLength: meta.superPartitionKeyLength + meta.partitionKeyLength,
-      parts: parts as Record<string, PFrameInternal.BinaryChunkInfo<ResourceInfo>>,
+      parts: parts as Record<string, BinaryChunk<ResourceInfo>>,
     };
   }
 
   throw new Error(`unsupported resource type: ${resourceTypeToString(data.resourceType)}`);
 }
 
-export function makeDataInfoResource(
+export function makeDataInfoFromPColumnValues(
   spec: PColumnSpec,
   data: PColumnValues,
-): PFrameInternal.DataInfo<ResourceInfo> {
+): JsonDataInfo {
   const keyLength = spec.axesSpec.length;
-  const jsonData: Record<string, PFrameInternal.JsonDataValue> = {};
+  const jsonData: Record<string, PColumnValue> = {};
   for (const { key, val } of data) {
     if (key.length !== keyLength)
       throw new Error(`inline column key length ${key.length} differs from axes count ${keyLength}`);
