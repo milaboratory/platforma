@@ -102,15 +102,13 @@ export type PColumnKeyList = {
   keyLength: number;
 };
 
-const removeIndexSuffix = (keyStr: string): { baseKey: string; type: 'index' | 'values' } | undefined => {
+const removeIndexSuffix = (keyStr: string): { baseKey: string; type: 'index' | 'values' } => {
   if (keyStr.endsWith('.index')) {
     return { baseKey: keyStr.substring(0, keyStr.length - 6), type: 'index' };
   } else if (keyStr.endsWith('.values')) {
     return { baseKey: keyStr.substring(0, keyStr.length - 7), type: 'values' };
   } else {
-    // Allow other fields if necessary, but don't treat them as part of binary chunk
-    return undefined;
-    // Or throw: throw Error(`key must ends on .index/.values for binary p-column, got: ${keyStr}`);
+    throw new Error(`key must ends on .index/.values for binary p-column, got: ${keyStr}`);
   }
 };
 
@@ -153,9 +151,7 @@ export function getPartitionKeysList(
     case RT_BINARY_PARTITIONED:
       for (let keyStr of acc.listInputFields()) {
         if (rt === RT_BINARY_PARTITIONED) {
-          const k = removeIndexSuffix(keyStr);
-          if (!k) continue;
-          else keyStr = k.baseKey;
+          keyStr = removeIndexSuffix(keyStr).baseKey;
         }
         const key = [...JSON.parse(keyStr)] as PColumnKey;
         data.push(key);
@@ -173,9 +169,7 @@ export function getPartitionKeysList(
         if (value !== undefined) {
           for (let keyStr of value.listInputFields()) {
             if (rt === RT_BINARY_SUPER_PARTITIONED) {
-              const k = removeIndexSuffix(keyStr);
-              if (!k) continue;
-              else keyStr = k.baseKey;
+              keyStr = removeIndexSuffix(keyStr).baseKey;
             }
             const key = [...keyPrefix, ...JSON.parse(keyStr)] as PColumnKey;
             data.push(key);
@@ -277,7 +271,6 @@ export function parsePColumnData(
       // Group fields by base key (without .index/.values suffix)
       for (const keyStr of acc.listInputFields()) {
         const suffix = removeIndexSuffix(keyStr);
-        if (!suffix) continue;
 
         const value = acc.resolve({ field: keyStr, assertFieldType: 'Input' });
         if (value === undefined) return undefined;
