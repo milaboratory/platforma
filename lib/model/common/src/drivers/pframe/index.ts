@@ -1,5 +1,6 @@
 export * from './column_filter';
-export * from './data';
+export * from './data_info';
+export * from './data_types';
 export * from './find_columns';
 export * from './pframe';
 export * from './spec/spec';

@@ -1,5 +1,5 @@
 import type { PTableColumnId, PTableColumnSpec } from './table_common';
-import type { PTableVector } from './data';
+import type { PTableVector } from './data_types';
 import { assertNever } from '../../util';
 
 /** Defines a terminal column node in the join request tree */

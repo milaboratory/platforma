@@ -3,7 +3,7 @@ import type { AxisId, PColumnSpec } from './spec';
 import { getAxisId, matchAxisId } from './spec';
 import type { AAxisSelector, AnchorAxisRef, AnchorAxisRefByIdx, AnchoredPColumnId, AnchoredPColumnSelector, AxisSelector, PColumnSelector } from './selectors';
 import type { AxisFilter } from './filtered_column';
-import type { PValue } from '../data';
+import type { PValue } from '../data_types';
 import type { SUniversalPColumnId, UniversalPColumnId } from './ids';
 import { stringifyColumnId } from './ids';
 
