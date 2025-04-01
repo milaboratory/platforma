@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.25.2
+
+### Patch Changes
+
+- 2c4b360: [MILAB-1966] Prevent args/ui state from being updated when the output changes
+
 ## 1.25.0
 
 ### Patch Changes

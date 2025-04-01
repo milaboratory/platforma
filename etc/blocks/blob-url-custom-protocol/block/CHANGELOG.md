@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.test-blob-url-custom-protocol
 
+## 1.0.43
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-blob-url-custom-protocol.ui@1.0.37
+
 ## 1.0.42
 
 ### Patch Changes
