@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.27.0
+
+### Minor Changes
+
+- da875e0: [sdl/ui-vue] AgGridVue Builder
+
 ## 1.26.1
 
 ### Patch Changes

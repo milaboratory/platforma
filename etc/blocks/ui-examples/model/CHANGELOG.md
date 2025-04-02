@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.model
 
+## 1.1.32
+
+### Patch Changes
+
+- da875e0: [sdl/ui-vue] AgGridVue Builder
+
 ## 1.1.31
 
 ### Patch Changes
