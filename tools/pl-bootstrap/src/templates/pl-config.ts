@@ -274,6 +274,7 @@ controllers:
   runner:
     type: local
     storageRoot: '${(options.storages.work).rootPath}'
+    workdirCacheOnSuccess: 20m
     workdirCacheOnFailure: 1h
     secrets:
       - map:
