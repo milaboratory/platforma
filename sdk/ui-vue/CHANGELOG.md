@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.27.2
+
+### Patch Changes
+
+- 9633567: AgGrid builder small fix (make setRowData arg optional)
+
 ## 1.27.0
 
 ### Minor Changes
