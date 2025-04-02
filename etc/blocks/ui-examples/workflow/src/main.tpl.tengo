@@ -2,6 +2,7 @@ wf := import("@platforma-sdk/workflow-tengo:workflow")
 smart := import("@platforma-sdk/workflow-tengo:smart")
 ll := import("@platforma-sdk/workflow-tengo:ll")
 pConstants := import("@platforma-sdk/workflow-tengo:pframes.constants")
+file := import("@platforma-sdk/workflow-tengo:file")
 
 json := import("json")
 
@@ -47,9 +48,18 @@ wf.body(func(args) {
 		numbers = append(numbers, v)
 	}
 
+	progresses := {}
+	for index, handle in args.handles {
+		if !is_undefined(handle) {
+			result := file.importFile(handle)
+			progresses[handle] = result.handle
+		}
+	}
+
 	return {
 		outputs: {
-			numbers: smart.createJsonResource(numbers)
+			numbers: smart.createJsonResource(numbers),
+			progresses: progresses
 		},
 		exports: {
 			numbers: {
