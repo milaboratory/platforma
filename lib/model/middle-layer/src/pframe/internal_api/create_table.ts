@@ -1,10 +1,22 @@
-import { AxisQualificationWithAxisId } from './common';
+import { AxisQualificationWithAxisId, ConstantAxisFilter } from './common';
 import { PObjectId, PTableRecordFilter } from '@milaboratories/pl-model-common';
 
 export interface ColumnJoinEntry {
   type: 'column';
   columnId: PObjectId;
   qualifications: AxisQualificationWithAxisId[];
+}
+
+export interface ColumnJoinEntryV2 {
+  type: 'column';
+  columnId: PObjectId;
+}
+
+export interface SlicedColumnJoinEntry {
+  readonly type: 'slicedColumn';
+  readonly columnId: PObjectId;
+  readonly newId: PObjectId;
+  readonly axisFilters: ConstantAxisFilter[];
 }
 
 export interface InnerJoin {
@@ -25,7 +37,19 @@ export interface OuterJoin {
 
 export type JoinEntry = ColumnJoinEntry | InnerJoin | FullJoin | OuterJoin;
 
+export type JoinEntryV2 = 
+  | ColumnJoinEntryV2
+  | SlicedColumnJoinEntry
+  | InnerJoin
+  | FullJoin
+  | OuterJoin;
+
 export interface CreateTableRequest {
   src: JoinEntry;
+  filters: PTableRecordFilter[];
+}
+
+export interface CreateTableRequestV2 {
+  src: JoinEntryV2;
   filters: PTableRecordFilter[];
 }
