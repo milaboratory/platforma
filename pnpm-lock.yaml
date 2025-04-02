@@ -31,8 +31,8 @@ catalogs:
       specifier: 2.1.20
       version: 2.1.20
     '@milaboratories/pframes-rs-node':
-      specifier: 1.0.23
-      version: 1.0.23
+      specifier: 1.0.24
+      version: 1.0.24
     '@milaboratories/software-pframes-conv':
       specifier: 2.1.20
       version: 2.1.20
@@ -1785,7 +1785,7 @@ importers:
         version: 2.1.20(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)
       '@milaboratories/pframes-rs-node':
         specifier: 'catalog:'
-        version: 1.0.23(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)
+        version: 1.0.24(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)
       '@milaboratories/pl-client':
         specifier: workspace:^
         version: link:../pl-client
@@ -4297,8 +4297,8 @@ packages:
     peerDependencies:
       '@milaboratories/pl-model-common': '*'
 
-  '@milaboratories/pframes-rs-node@1.0.23':
-    resolution: {integrity: sha512-RioNzcWyGz4LOhcuRzTv3yGfbwCtOD5rhGtqc9NXHyc9UK6gLbk6zVfWNv+xJ1WYi6IZLNUAwQPivzzz1QC3sw==}
+  '@milaboratories/pframes-rs-node@1.0.24':
+    resolution: {integrity: sha512-NE+wgqynOYSdGVkPkKtGaRAFcixpJ7hf/4FMk0jk75db7Wfs4i7AK2hVZVFe5rxlL0r8fZKPRQSJF8gMXMgisA==}
     peerDependencies:
       '@milaboratories/pl-model-common': '*'
 
@@ -7990,9 +7990,6 @@ packages:
     resolution: {integrity: sha512-o/3ikDxtXaA59BmZuZrJZDJv8NMDGSj+6j6XaeBmHw8eY1i1qd9+6H+LjVvQXx3HN6aRCGa1cUdJ9RaJZUugnQ==}
     engines: {node: '>=14'}
 
-  remeda@2.21.1:
-    resolution: {integrity: sha512-7I3JaB+geXL0Vq8V3TEwX6mMlWUCv18OdweAovYKiwDCbjKYf1DIHB58B6z8K7juPuZ1whwj79fOvUaHHHjbew==}
-
   remeda@2.21.2:
     resolution: {integrity: sha512-wdhkMDou8HRpD7RnxKJ/FHJWEGXRH7jV/pb0NsdLLSoBo+G9RjtxcY41hVhogLfEMkThk6aySKjs+Yd6PnpzBA==}
 
@@ -11170,7 +11167,7 @@ snapshots:
       - encoding
       - supports-color
 
-  '@milaboratories/pframes-rs-node@1.0.23(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)':
+  '@milaboratories/pframes-rs-node@1.0.24(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)':
     dependencies:
       '@mapbox/node-pre-gyp': 2.0.0(encoding@0.1.13)
       '@milaboratories/pl-model-common': link:lib/model/common
@@ -15727,10 +15724,6 @@ snapshots:
   registry-auth-token@5.0.2:
     dependencies:
       '@pnpm/npm-conf': 2.3.1
-
-  remeda@2.21.1:
-    dependencies:
-      type-fest: 4.37.0
 
   remeda@2.21.2:
     dependencies:
