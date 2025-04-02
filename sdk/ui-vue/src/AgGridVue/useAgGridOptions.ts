@@ -130,7 +130,7 @@ class Builder<TData> {
    * @param rowData
    * @returns this
    */
-  public setRowData(rowData: TData[]) {
+  public setRowData(rowData?: TData[]) {
     this.#options.rowData = rowData;
     return this;
   }
