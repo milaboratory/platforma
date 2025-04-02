@@ -1,18 +1,25 @@
-import type { ErrorLike, ValueOrErrors } from '@platforma-sdk/model';
+import { type ErrorLike, parseErrorLikeSafe, type ValueOrErrors } from '@platforma-sdk/model';
 import type { OptionalResult } from './types';
 import type { ZodError } from 'zod';
-
 export class UnresolvedError extends Error {}
 
 // @TODO use AggregateError
 export class MultiError extends Error {
   constructor(public readonly errors: (ErrorLike | string)[]) {
-    super(errors.map((e) => typeof e === 'string' ? e : e.message).join('\n'));
+    super(errors.map(getErrorMessage).join('\n'));
   }
 
   toString() {
-    return this.errors.join('\n');
+    return this.errors.map(getErrorMessage).join('\n');
   }
+}
+
+function getErrorMessage(e: ErrorLike | string) {
+  if (typeof e === 'string') {
+    const errorLike = parseErrorLikeSafe(e);
+    return errorLike.success ? errorLike.data.message : e;
+  }
+  return e.message;
 }
 
 export function wrapValueOrErrors<V>(value: V): ValueOrErrors<V> {
