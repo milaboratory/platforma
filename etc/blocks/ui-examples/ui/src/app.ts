@@ -6,7 +6,7 @@ import ModalsPage from './pages/ModalsPage.vue';
 import InjectEnvPage from './pages/InjectEnvPage.vue';
 import UseWatchFetchPage from './pages/UseWatchFetchPage.vue';
 import TypographyPage from './pages/TypographyPage.vue';
-import { AgGridVuePage } from './pages/AgGridVuePage';
+import { AgGridVuePage, AgGridVuePageWithBuilder } from './pages/AgGridVuePage';
 import SelectFilesPage from './pages/SelectFilesPage.vue';
 import ErrorsPage from './pages/ErrorsPage.vue';
 import PlAgDataTablePage from './pages/PlAgDataTablePage.vue';
@@ -85,6 +85,7 @@ export const sdkPlugin = defineApp(platforma, (app) => {
       '/form-components': () => FormComponentsPage,
       '/typography': () => TypographyPage,
       '/ag-grid-vue': () => AgGridVuePage,
+      '/ag-grid-vue-with-builder': () => AgGridVuePageWithBuilder,
       '/pl-ag-data-table': () => PlAgDataTablePage,
       '/pl-splash-page': () => PlSplashPage,
       '/select-files': () => SelectFilesPage,

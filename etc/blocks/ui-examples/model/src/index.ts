@@ -5,12 +5,21 @@ import type {
   PlTableFiltersModel,
   PColumn,
   PColumnValues,
-  PObjectId } from '@platforma-sdk/model';
+  PObjectId,
+  ImportFileHandle 
+} from '@platforma-sdk/model';
 import {
   BlockModel,
   createPlDataTable,
 } from '@platforma-sdk/model';
 import { z } from 'zod';
+
+export const ImportFileHandleSchema = z
+  .string()
+  .optional()
+  .refine<ImportFileHandle | undefined>(
+    ((_a) => true) as (arg: string | undefined) => arg is ImportFileHandle | undefined,
+  );
 
 export function* range(from: number, to: number, step = 1) {
   for (let i = from; i < to; i += step) {
@@ -34,6 +43,7 @@ export function times<R>(n: number, cb: (i: number) => R): R[] {
 export const $BlockArgs = z.object({
   tableNumRows: z.number().default(100),
   numbers: z.array(z.coerce.number()),
+  handles: z.array(ImportFileHandleSchema),
 });
 
 export type BlockArgs = z.infer<typeof $BlockArgs>;
@@ -53,7 +63,7 @@ export type UiState = {
 
 export const platforma = BlockModel.create('Heavy')
 
-  .withArgs<BlockArgs>({ numbers: [1, 2, 3, 4], tableNumRows: 100 })
+  .withArgs<BlockArgs>({ numbers: [1, 2, 3, 4], tableNumRows: 100, handles: [] })
 
   .withUiState<UiState>({ dataTableState: undefined, dynamicSections: [] })
 
@@ -66,6 +76,12 @@ export const platforma = BlockModel.create('Heavy')
   })
 
   .output('numbers', (ctx) => ctx.outputs?.resolve('numbers')?.getDataAsJson<number[]>())
+
+  .output('progresses', (ctx) => {
+    const m = ctx.outputs?.resolve('progresses');
+    const progresses = m?.mapFields((name, val) => [name, val?.getImportProgress()] as const);
+    return Object.fromEntries(progresses ?? []);
+  })
 
   .output('pt', (ctx) => {
     if (!ctx.uiState?.dataTableState?.tableState.pTableParams?.filters) return undefined;
@@ -154,6 +170,7 @@ export const platforma = BlockModel.create('Heavy')
       { type: 'link', href: '/use-watch-fetch', label: 'useWatchFetch' },
       { type: 'link', href: '/typography', label: 'Typography' },
       { type: 'link', href: '/ag-grid-vue', label: 'AgGridVue' },
+      { type: 'link', href: '/ag-grid-vue-with-builder', label: 'AgGridVue with builder' },
       { type: 'link', href: '/pl-ag-data-table', label: 'PlAgDataTable' },
       { type: 'link', href: '/pl-splash-page', label: 'PlSplashPage' },
       { type: 'link', href: '/errors', label: 'Errors' },
