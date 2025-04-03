@@ -6,7 +6,7 @@ import type {
   PColumn,
   PColumnValues,
   PObjectId,
-  ImportFileHandle 
+  ImportFileHandle,
 } from '@platforma-sdk/model';
 import {
   BlockModel,
