@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.27.5
+
+### Patch Changes
+
+- 518ec02: Aminoacid validation pattern relaxed
+
 ## 1.27.2
 
 ### Patch Changes

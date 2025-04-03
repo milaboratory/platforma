@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.model
 
+## 1.1.33
+
+### Patch Changes
+
+- 518ec02: Aminoacid validation pattern relaxed
+
 ## 1.1.32
 
 ### Patch Changes
