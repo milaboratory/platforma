@@ -121,6 +121,9 @@ createBuilder := func(ctx) {
 				columnKey := canonical.encode(decodedId.source)
 				queries[columnKey] = decodedId.source
 			} else {
+				if is_undefined(encodedId) {
+					encodedId = canonical.encode(decodedId)
+				}
 				queries[encodedId] = decodedId
 			}
 		},
