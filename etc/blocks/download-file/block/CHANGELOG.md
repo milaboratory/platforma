@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.test-download-file
 
+## 1.0.112
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-download-file.workflow@1.0.9
+
 ## 1.0.111
 
 ### Patch Changes
