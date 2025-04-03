@@ -231,7 +231,7 @@ export function parseNumber(column: PTableColumnSpec, value: string): number {
 export function parseString(column: PTableColumnSpec, value: string): string {
   const alphabet = column.spec.domain?.['pl7.app/alphabet'] ?? column.spec.annotations?.['pl7.app/alphabet'];
   if (alphabet === 'nucleotide' && !/^[AaTtGgCcNn]+$/.test(value)) throw Error('Model value is not a nucleotide.');
-  if (alphabet === 'aminoacid' && !/^[AaCcDdEeFfGgHhIiKkLlMmNnPpQqRrSsTtVvWwYyXx]+$/.test(value)) throw Error('Model value is not an aminoacid.');
+  if (alphabet === 'aminoacid' && !/^[AaCcDdEeFfGgHhIiKkLlMmNnPpQqRrSsTtVvWwYyXx*_]+$/.test(value)) throw Error('Model value is not an aminoacid.');
   return value;
 }
 
