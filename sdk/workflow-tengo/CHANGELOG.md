@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 3.2.1
+
+### Patch Changes
+
+- d8a33ab: Fix to addById in column bundle
+
 ## 3.2.0
 
 ### Minor Changes
