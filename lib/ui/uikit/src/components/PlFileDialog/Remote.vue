@@ -2,7 +2,7 @@
 import { useEventListener } from '@/composition/useEventListener';
 import type { ImportedFiles } from '@/types';
 import { between, notEmpty, tapIf } from '@milaboratories/helpers';
-import type { StorageHandle } from '@platforma-sdk/model';
+import { getRawPlatformaInstance, type StorageHandle } from '@platforma-sdk/model';
 import { computed, onMounted, reactive, toRef, watch } from 'vue';
 import { PlDropdown } from '../PlDropdown';
 import { PlIcon16 } from '../PlIcon16';
@@ -58,7 +58,7 @@ const lookup = computed(() => {
 });
 
 const query = (storageHandle: StorageHandle, dirPath: string) => {
-  if (!window.platforma) {
+  if (!getRawPlatformaInstance()) {
     return;
   }
 
@@ -68,7 +68,7 @@ const query = (storageHandle: StorageHandle, dirPath: string) => {
 
   data.currentLoadingPath = dirPath;
 
-  window.platforma.lsDriver
+  getRawPlatformaInstance().lsDriver
     .listFiles(storageHandle, dirPath)
     .then((res) => {
       if (dirPath !== data.dirPath) {
@@ -186,11 +186,11 @@ const deselectAll = () => changeAll(false);
 const loadAvailableStorages = () => {
   resetData();
   deselectAll();
-  if (!window.platforma) {
+  if (!getRawPlatformaInstance()) {
     console.warn('platforma API is not found');
     return;
   }
-  window.platforma.lsDriver
+  getRawPlatformaInstance().lsDriver
     .getStorageList()
     .then((storageEntries) => {
       // local storage is always returned by the ML, so we need to remove it from remote dialog manually

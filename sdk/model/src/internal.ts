@@ -1,3 +1,4 @@
+import type { ValueOrErrors } from '@milaboratories/pl-model-common';
 import {} from './global';
 import type { Platforma } from './platforma';
 import type { FutureHandle, GlobalCfgRenderCtx } from './render/internal';
@@ -10,7 +11,12 @@ export function isInUI() {
 }
 
 /** Utility code helping to retrieve a platforma instance form the environment */
-export function getPlatformaInstance(config?: { sdkVersion: string }): Platforma {
+export function getPlatformaInstance<
+  Args = unknown,
+  Outputs extends Record<string, ValueOrErrors<unknown>> = Record<string, ValueOrErrors<unknown>>,
+  UiState = unknown,
+  Href extends `/${string}` = `/${string}`,
+>(config?: { sdkVersion: string }): Platforma<Args, Outputs, UiState, Href> {
   if (config && typeof globalThis.getPlatforma === 'function')
     return globalThis.getPlatforma(config);
   else if (typeof globalThis.platforma !== 'undefined') return globalThis.platforma;

@@ -9,6 +9,8 @@ export const BasePlErrorLike = z.object({
   type: z.literal('PlError'),
   name: z.string(),
   message: z.string(),
+  /** The message with all details needed for SDK developers. */
+  fullMessage: z.string().optional(),
   stack: z.string().optional(),
 });
 
@@ -61,6 +63,7 @@ export function ensureErrorLike(error: unknown): ErrorLike {
         type: 'PlError',
         name: err.name,
         message: err.message,
+        fullMessage: err.fullMessage ?? undefined,
         stack: err.stack ?? undefined,
         cause: err.cause ? ensureErrorLike(err.cause) : undefined,
         errors: err.errors ? err.errors.map(ensureErrorLike) : undefined,
@@ -109,6 +112,7 @@ export function parseErrorLikeSafe(err: string): {
 const baseErrorShape = z.object({
   name: z.string(),
   message: z.string(),
+  fullMessage: z.string().optional(),
   stack: z.string().optional(),
 });
 

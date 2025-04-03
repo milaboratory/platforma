@@ -617,7 +617,6 @@ export class Computable<T, StableT extends T = T> {
   public static wrapError<T>(
     computable: Computable<T>,
     maxErrors: number = 1,
-    stringifyError: boolean = false,
   ): Computable<ComputableValueOrErrors<T>> {
     return Computable.make(() => computable, {
       postprocessValue: (value) => ({ ok: true, value: value as T }) as ComputableValueOrErrors<T>,
@@ -625,9 +624,7 @@ export class Computable<T, StableT extends T = T> {
         const errors: (ErrorLike | string)[] = [];
         for (let i = 0; i < Math.min(maxErrors, error.length); i++) {
           const errLike = ensureErrorLike(error[i]);
-          // TODO: after 1 July of 2025 we could remove stringifyError.
-          // It is a temporarly workaround for keeping old blocks work with new UI.
-          errors.push(stringifyError ? JSON.stringify(errLike, null, 2) : errLike);
+          errors.push(errLike);
         }
         return {
           ok: false,

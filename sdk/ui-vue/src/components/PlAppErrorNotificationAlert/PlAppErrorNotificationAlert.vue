@@ -6,6 +6,8 @@ import './pl-app-error-notification-alert.scss';
 import { PlBtnPrimary, PlDialogModal, PlNotificationAlert, PlSpacer, PlLogView } from '@milaboratories/uikit';
 import { computed, ref, watch } from 'vue';
 
+export type FullMessage = { fullMessage: string; }
+
 const props = defineProps<{ errors: OutputErrors<BlockOutputsBase> }>();
 
 const isModalOpen = ref(false);
@@ -35,7 +37,8 @@ watch(
         <template v-for="item in existingErrors" :key="item[0]">
           <div class="pl-app-notification-alert__item">
             <div class="pl-app-notification-alert__title">Block output: {{ item[0] }}</div>
-            <PlLogView :value="item[1]?.message" />
+            <PlLogView :value="item[1]?.message"
+              :valueToCopy="'fullMessage' in (item[1] ?? {}) ? (item[1] as unknown as FullMessage).fullMessage : item[1]?.message" />
           </div>
         </template>
       </div>

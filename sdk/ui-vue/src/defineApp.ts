@@ -1,5 +1,5 @@
 import { notEmpty } from '@milaboratories/helpers';
-import { type BlockOutputsBase, type Platforma } from '@platforma-sdk/model';
+import { getRawPlatformaInstance, type BlockOutputsBase, type Platforma } from '@platforma-sdk/model';
 import type { Component, Reactive } from 'vue';
 import { inject, markRaw, reactive } from 'vue';
 import { createApp, type BaseApp } from './internal/createApp';
@@ -28,7 +28,7 @@ export function defineApp<
   activateAgGrid();
 
   const loadApp = () => {
-    platforma
+    getRawPlatformaInstance<Args, Outputs, UiState, Href>()
       .loadBlockState()
       .then((state) => {
         plugin.loaded = true;
