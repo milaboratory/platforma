@@ -1,6 +1,6 @@
 import type { AnyRef, AnyResourceRef, PlTransaction } from '@milaboratories/pl-client';
 import { assertNever } from '@milaboratories/ts-helpers';
-import type { ExplicitTemplate } from '../../model/template_spec';
+import type { ExplicitTemplate, UnpackedTemplate } from '../../model/template_spec';
 import type { Hash } from 'node:crypto';
 import { createHash } from 'node:crypto';
 import type {
@@ -16,8 +16,26 @@ import {
   parseTemplate,
 } from '@milaboratories/pl-model-backend';
 
-export function loadTemplateFromExplicitDirect(tx: PlTransaction, spec: ExplicitTemplate): AnyRef {
+export function loadTemplateFromExplicitDirect(
+  tx: PlTransaction,
+  spec: ExplicitTemplate,
+): AnyRef {
   const templateInfo: TemplateData = parseTemplate(spec.content);
+
+  const templateFormat = templateInfo.type;
+  switch (templateFormat) {
+    case 'pl.tengo-template.v2':
+      return createTemplateV2Tree(tx, templateInfo);
+    default:
+      assertNever(templateFormat);
+  }
+}
+
+export function loadTemplateFromUnpacked(
+  tx: PlTransaction,
+  spec: UnpackedTemplate,
+): AnyRef {
+  const templateInfo: TemplateData = spec.data;
 
   const templateFormat = templateInfo.type;
   switch (templateFormat) {

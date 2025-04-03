@@ -2,13 +2,12 @@ import type { AnyRef, PlTransaction, ResourceType } from '@milaboratories/pl-cli
 import { field, Pl } from '@milaboratories/pl-client';
 import fs from 'node:fs';
 import type {
-  ExplicitTemplate,
   TemplateFromRegistry,
   TemplateSpecAny,
   TemplateSpecPrepared,
 } from '../../model/template_spec';
 import { assertNever } from '@milaboratories/ts-helpers';
-import { loadTemplateFromExplicitDirect } from './direct_template_loader';
+import { loadTemplateFromExplicitDirect, loadTemplateFromUnpacked } from './direct_template_loader';
 
 //
 // Resource schema
@@ -37,6 +36,8 @@ export async function prepareTemplateSpec(tpl: TemplateSpecAny): Promise<Templat
     case 'from-registry':
     case 'explicit':
       return tpl;
+    case 'unpacked':
+      return tpl;
     default:
       return assertNever(tpl);
   }
@@ -56,25 +57,14 @@ function loadTemplateFromRegistry(tx: PlTransaction, spec: TemplateFromRegistry)
   return templateFromRegistry;
 }
 
-// TODO: unused code
-function _loadTemplateFromExplicit(tx: PlTransaction, spec: ExplicitTemplate): AnyRef {
-  const templatePack = tx.createValue(TengoTemplatePack, spec.content);
-  const templatePackConvert = tx.createStruct(TengoTemplatePackConvert);
-  const templatePackField = field(templatePackConvert, TengoTemplatePackConvertTemplatePack);
-  const template = field(templatePackConvert, TengoTemplatePackConvertTemplate);
-
-  tx.setField(templatePackField, templatePack);
-
-  return template;
-}
-
 export function loadTemplate(tx: PlTransaction, spec: TemplateSpecPrepared): AnyRef {
   switch (spec.type) {
     case 'from-registry':
       return loadTemplateFromRegistry(tx, spec);
     case 'explicit':
       return loadTemplateFromExplicitDirect(tx, spec);
-      // return loadTemplateFromExplicit(tx, spec);
+    case 'unpacked':
+      return loadTemplateFromUnpacked(tx, spec);
     default:
       return assertNever(spec);
   }

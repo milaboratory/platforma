@@ -1,7 +1,7 @@
 import type { AnyResourceRef, PlTransaction, ResourceType } from '@milaboratories/pl-client';
 import { field } from '@milaboratories/pl-client';
 import { loadTemplate } from '../template/template_loading';
-import type { BlockPackExplicit, BlockPackSpecAny, BlockPackSpecPrepared } from '../../model';
+import type { BlockPackExplicit, BlockPackSpecAny, BlockPackSpecPrepared, BlockPackUnpacked } from '../../model';
 import type { Signer } from '@milaboratories/ts-helpers';
 import { assertNever } from '@milaboratories/ts-helpers';
 import fs from 'node:fs';
@@ -15,6 +15,7 @@ import { resolveDevPacket } from '../../dev_env';
 import { getDevV2PacketMtime } from '../../block_registry';
 import type { V2RegistryProvider } from '../../block_registry/registry-v2-provider';
 import { LRUCache } from 'lru-cache';
+import { parseTemplateAsync } from '@milaboratories/pl-model-backend';
 
 export const BlockPackCustomType: ResourceType = { name: 'BlockPackCustom', version: '1' };
 export const BlockPackTemplateField = 'template';
@@ -56,6 +57,9 @@ export class BlockPackPreparer {
       case 'explicit':
         return spec.config;
 
+      case 'unpacked':
+        return spec.config;
+
       case 'dev-v1': {
         const devPaths = await resolveDevPacket(spec.folder, false);
         const configContent = await fs.promises.readFile(devPaths.config, { encoding: 'utf-8' });
@@ -90,6 +94,23 @@ export class BlockPackPreparer {
   }
 
   public async prepare(spec: BlockPackSpecAny): Promise<BlockPackSpecPrepared> {
+    const prepared = await this.prepareWithoutUnpacking(spec);
+
+    if (prepared.type === 'unpacked') {
+      return prepared;
+    }
+
+    return {
+      ...prepared,
+      type: 'unpacked',
+      template: {
+        type: 'unpacked',
+        data: await parseTemplateAsync(prepared.template.content),
+      },
+    };
+  }
+
+  private async prepareWithoutUnpacking(spec: BlockPackSpecAny): Promise<BlockPackExplicit | BlockPackUnpacked> {
     switch (spec.type) {
       case 'explicit':
         return spec;
@@ -207,13 +228,16 @@ export class BlockPackPreparer {
         };
       }
 
+      case 'unpacked':
+        return spec;
+
       default:
         return assertNever(spec);
     }
   }
 }
 
-function createCustomBlockPack(tx: PlTransaction, spec: BlockPackExplicit): AnyResourceRef {
+function createCustomBlockPack(tx: PlTransaction, spec: BlockPackSpecPrepared): AnyResourceRef {
   const blockPackInfo: BlockPackInfo = { config: spec.config, source: spec.source };
   const bp = tx.createStruct(BlockPackCustomType, JSON.stringify(blockPackInfo));
   tx.createField(field(bp, BlockPackTemplateField), 'Input', loadTemplate(tx, spec.template));
@@ -225,7 +249,7 @@ function createCustomBlockPack(tx: PlTransaction, spec: BlockPackExplicit): AnyR
 
 export function createBlockPack(tx: PlTransaction, spec: BlockPackSpecPrepared): AnyResourceRef {
   switch (spec.type) {
-    case 'explicit':
+    case 'unpacked':
       return createCustomBlockPack(tx, spec);
     default:
       return assertNever(spec.type);
