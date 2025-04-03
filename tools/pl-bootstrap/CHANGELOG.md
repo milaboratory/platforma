@@ -1,5 +1,11 @@
 # @platforma-sdk/bootstrap
 
+## 3.3.0
+
+### Minor Changes
+
+- 4d9f520: Preserve all working directories for an hour. No only failures
+
 ## 3.2.13
 
 ### Patch Changes
