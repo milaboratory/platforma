@@ -12,7 +12,7 @@ import {
   Pl,
   resourceIdToString,
 } from '@milaboratories/pl-client';
-import type { ComputableStableDefined } from '@milaboratories/computable';
+import type { ComputableStableDefined, ComputableValueOrErrors } from '@milaboratories/computable';
 import { Computable } from '@milaboratories/computable';
 import { projectOverview } from './project_overview';
 import type { BlockPackSpecAny } from '../model';
@@ -344,18 +344,28 @@ export class Project {
       // state consists of inputs (args + ui state) and outputs
       const outputs = blockOutputs(this.projectTree.entry(), blockId, this.env);
       const fullState = Computable.make(
-        (ctx) => ({
-          argsAndUiState: blockArgsAndUiState(this.projectTree.entry(), blockId, ctx),
-          outputs,
-          navigationState: this.navigationStates.getState(blockId),
-        }),
+        (ctx) => {
+          return {
+            argsAndUiState: blockArgsAndUiState(this.projectTree.entry(), blockId, ctx),
+            outputs,
+            navigationState: this.navigationStates.getState(blockId),
+            overview: this.overview,
+          };
+        },
         {
-          postprocessValue: (v) =>
-            ({
+          postprocessValue: (v) => {
+            const sdkVersion = v.overview?.blocks?.find((b) => b.id == blockId)?.sdkVersion;
+            const toString = sdkVersion && shouldStillUseStringErrors(sdkVersion);
+            const newOutputs = toString && v.outputs !== undefined
+              ? convertErrorsToStrings(v.outputs)
+              : v.outputs;
+
+            return {
               ...v.argsAndUiState,
-              outputs: v.outputs,
+              outputs: newOutputs,
               navigationState: v.navigationState,
-            }) as BlockStateInternal,
+            } as BlockStateInternal;
+          },
         },
       );
 
@@ -468,4 +478,44 @@ function projectTreePruning(r: ExtendedResourceData): FieldData[] {
     default:
       return r.fields;
   }
+}
+
+/** Returns true if sdk version of the block is old and we need to convert
+ * ErrorLike errors to strings like it was.
+ * We need it for keeping old blocks and new UI compatibility. */
+function shouldStillUseStringErrors(sdkVersion: string): boolean {
+  return !isVersionGreater(sdkVersion, '1.26.0');
+}
+
+/** Checks if sdk version is greater that a target version. */
+function isVersionGreater(sdkVersion: string, targetVersion: string): boolean {
+  const version = sdkVersion.split('.').map(Number);
+  const target = targetVersion.split('.').map(Number);
+
+  return (
+    version[0] > target[0]
+    || (version[0] === target[0] && version[1] > target[1])
+    || (version[0] === target[0] && version[1] === target[1] && version[2] > target[2])
+  );
+};
+
+/** Converts ErrorLike errors to strings in the outputs like it was in old ML versions. */
+function convertErrorsToStrings(
+  outputs: Record<string, ComputableValueOrErrors<unknown>>,
+): Record<string, ComputableValueOrErrors<unknown>> {
+  const result: Record<string, ComputableValueOrErrors<unknown>> = {};
+  for (const [key, val] of Object.entries(outputs)) {
+    if (val.ok) {
+      result[key] = val;
+      continue;
+    }
+
+    result[key] = {
+      ok: false,
+      errors: val.errors.map((e) => typeof e === 'string' ? e : e.message),
+      moreErrors: val.moreErrors,
+    };
+  }
+
+  return result;
 }
