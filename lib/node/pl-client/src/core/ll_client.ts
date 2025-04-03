@@ -5,6 +5,7 @@ import {
   ChannelCredentials,
   InterceptingCall,
   status as GrpcStatus,
+  compressionAlgorithms,
 } from '@grpc/grpc-js';
 import type {
   AuthInformation,
@@ -94,6 +95,7 @@ export class LLPlClient {
         ? ChannelCredentials.createSsl()
         : ChannelCredentials.createInsecure(),
       clientOptions: {
+        'grpc.default_compression_algorithm': compressionAlgorithms.gzip,
         'grpc.keepalive_time_ms': 30_000, // 30 seconds
         'interceptors': grpcInterceptors,
       },
