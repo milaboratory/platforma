@@ -1,5 +1,12 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.7.18
+
+### Patch Changes
+
+- Updated dependencies [2fc07ba]
+  - @milaboratories/pl-model-common@1.13.1
+
 ## 1.7.17
 
 ### Patch Changes
