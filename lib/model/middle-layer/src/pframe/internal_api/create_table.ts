@@ -19,6 +19,22 @@ export interface SlicedColumnJoinEntry {
   readonly axisFilters: ConstantAxisFilter[];
 }
 
+export interface InnerJoinV2 {
+  type: 'inner';
+  entries: JoinEntryV2[];
+}
+
+export interface FullJoinV2 {
+  type: 'full';
+  entries: JoinEntryV2[];
+}
+
+export interface OuterJoinV2 {
+  type: 'outer';
+  primary: JoinEntryV2;
+  secondary: JoinEntryV2[];
+}
+
 export interface InnerJoin {
   type: 'inner';
   entries: JoinEntry[];
@@ -40,9 +56,9 @@ export type JoinEntry = ColumnJoinEntry | InnerJoin | FullJoin | OuterJoin;
 export type JoinEntryV2 = 
   | ColumnJoinEntryV2
   | SlicedColumnJoinEntry
-  | InnerJoin
-  | FullJoin
-  | OuterJoin;
+  | InnerJoinV2
+  | FullJoinV2
+  | OuterJoinV2;
 
 export interface CreateTableRequest {
   src: JoinEntry;
