@@ -32,6 +32,7 @@ import type { FinalResourceDataPredicate } from './final';
 import { DefaultFinalResourceDataPredicate } from './final';
 import type { AllTxStat, TxStat } from './stat';
 import { addStat, initialTxStat } from './stat';
+import type { GrpcTransport } from '@protobuf-ts/grpc-transport';
 
 export type TxOps = PlCallOps & {
   sync?: boolean;
@@ -159,6 +160,10 @@ export class PlClient {
     return this.ll.httpDispatcher;
   }
 
+  public get grpcTransport(): GrpcTransport {
+    return this.ll.grpcTransport;
+  }
+
   private get initialized() {
     return !isNullResourceId(this._clientRoot);
   }
@@ -216,12 +221,6 @@ export class PlClient {
         return await altRoot.globalId;
       }
     });
-
-    // try {
-    //
-    // } catch (error: unknown) {
-    //   if(isUnauthenticated(error) && this.)
-    // }
   }
 
   /** Returns true if field existed */

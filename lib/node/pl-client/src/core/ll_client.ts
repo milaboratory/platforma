@@ -1,5 +1,6 @@
 import { PlatformClient } from '../proto/github.com/milaboratory/pl/plapi/plapiproto/api.client';
 import type {
+  ClientOptions,
   Interceptor } from '@grpc/grpc-js';
 import {
   ChannelCredentials,
@@ -48,14 +49,15 @@ export class LLPlClient {
   private _status: PlConnectionStatus = 'OK';
   private readonly statusListener?: PlConnectionStatusListener;
 
-  public readonly grpcTransport: GrpcTransport;
-  public readonly grpcPl: PlatformClient;
+  private readonly grpcInterceptors: Interceptor[];
+  private _grpcTransport!: GrpcTransport;
+  private _grpcPl!: PlatformClient;
 
   public readonly httpDispatcher: Dispatcher;
 
   constructor(
     configOrAddress: PlClientConfig | string,
-    ops: {
+    private readonly ops: {
       auth?: AuthOps;
       statusListener?: PlConnectionStatusListener;
     } = {},
@@ -63,7 +65,7 @@ export class LLPlClient {
     this.conf
       = typeof configOrAddress === 'string' ? plAddressToConfig(configOrAddress) : configOrAddress;
 
-    const grpcInterceptors: Interceptor[] = [];
+    this.grpcInterceptors = [];
 
     const { auth, statusListener } = ops;
 
@@ -72,14 +74,37 @@ export class LLPlClient {
         auth.authInformation,
         this.conf.authMaxRefreshSeconds,
       );
-      grpcInterceptors.push(this.createAuthInterceptor());
+      this.grpcInterceptors.push(this.createAuthInterceptor());
       this.authInformation = auth.authInformation;
       this.onAuthUpdate = auth.onUpdate;
       this.onAuthRefreshProblem = auth.onUpdateError;
       this.onAuthError = auth.onAuthError;
     }
 
-    grpcInterceptors.push(this.createErrorInterceptor());
+    this.grpcInterceptors.push(this.createErrorInterceptor());
+
+    // initialize _grpcTransport and _grpcPl
+    this.initGrpc(true);
+
+    this.httpDispatcher = defaultHttpDispatcher(this.conf.httpProxy);
+
+    if (statusListener !== undefined) {
+      this.statusListener = statusListener;
+      statusListener(this._status);
+    }
+  }
+
+  /**
+   * Initializes (or reinitializes) _grpcTransport and _grpcPl
+   * @param gzip - whether to enable gzip compression
+   */
+  private initGrpc(gzip: boolean) {
+    const clientOptions: ClientOptions = {
+      'grpc.keepalive_time_ms': 30_000, // 30 seconds
+      'interceptors': this.grpcInterceptors,
+    };
+
+    if (gzip) clientOptions['grpc.default_compression_algorithm'] = compressionAlgorithms.gzip;
 
     //
     // Leaving it here for now
@@ -94,25 +119,26 @@ export class LLPlClient {
       channelCredentials: this.conf.ssl
         ? ChannelCredentials.createSsl()
         : ChannelCredentials.createInsecure(),
-      clientOptions: {
-        'grpc.default_compression_algorithm': compressionAlgorithms.gzip,
-        'grpc.keepalive_time_ms': 30_000, // 30 seconds
-        'interceptors': grpcInterceptors,
-      },
+      clientOptions,
     };
 
     if (this.conf.grpcProxy) process.env.grpc_proxy = this.conf.grpcProxy;
     else delete process.env.grpc_proxy;
 
-    this.grpcTransport = new GrpcTransport(grpcOptions);
-    this.grpcPl = new PlatformClient(this.grpcTransport);
+    const oldTransport = this._grpcTransport;
 
-    this.httpDispatcher = defaultHttpDispatcher(this.conf.httpProxy);
+    this._grpcTransport = new GrpcTransport(grpcOptions);
+    this._grpcPl = new PlatformClient(this._grpcTransport);
 
-    if (statusListener !== undefined) {
-      this.statusListener = statusListener;
-      statusListener(this._status);
-    }
+    if (oldTransport !== undefined) oldTransport.close();
+  }
+
+  public get grpcTransport(): GrpcTransport {
+    return this._grpcTransport;
+  }
+
+  public get grpcPl(): PlatformClient {
+    return this._grpcPl;
   }
 
   /** Returns true if client is authenticated. Even with anonymous auth information
