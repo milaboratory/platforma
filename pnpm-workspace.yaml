@@ -196,7 +196,7 @@ catalog:
 
   '@milaboratories/tengo-tester': ^1.6.1
   '@milaboratories/pframes-node': &pframes-version 2.1.20
-  '@milaboratories/pframes-rs-node': &pframes-rs-version 1.0.24
+  '@milaboratories/pframes-rs-node': &pframes-rs-version 1.0.26
 
   'remeda': ^2.21.2
 

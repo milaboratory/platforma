@@ -1,6 +1,5 @@
 export type MlDebugFlags = {
   logPFrameRequests: boolean;
-  usePFrameRs: boolean;
   logTreeStats?: 'cumulative' | 'per-request';
   dumpInitialTreeState: boolean;
 };
@@ -10,7 +9,6 @@ export function getDebugFlags() {
   if (flags) return flags;
   flags = {
     logPFrameRequests: process.env.MI_LOG_PFRAMES !== undefined,
-    usePFrameRs: process.env.MI_USE_PFRAMES_RS !== undefined,
     dumpInitialTreeState: process.env.MI_DUMP_INITIAL_TREE_STATE !== undefined,
   };
   if (process.env.MI_LOG_TREE_STAT)
