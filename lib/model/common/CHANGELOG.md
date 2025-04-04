@@ -1,5 +1,23 @@
 # @milaboratories/pl-model-common
 
+## 1.13.1
+
+### Patch Changes
+
+- 2fc07ba: Fix NaN check for PValue float types
+
+## 1.13.0
+
+### Minor Changes
+
+- 7c52bb5: DataInfo types moved to common type from Internal API to allow explicit construction of PColumn data from within the block's model
+
+## 1.12.0
+
+### Minor Changes
+
+- 88cebeb: Anchored Column Id / Selector API; (S)UniversalColumnId
+
 ## 1.11.4
 
 ### Patch Changes

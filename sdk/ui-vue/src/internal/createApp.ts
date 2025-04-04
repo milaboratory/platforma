@@ -78,26 +78,24 @@ export function createApp<
 
   platforma.onStateUpdates(async (updates) => {
     updates.forEach((patch) => {
-      if (patch.key === 'args') {
+      if (patch.key === 'args' && !isJsonEqual(snapshot.args, patch.value)) {
         snapshot.args = Object.freeze(patch.value);
         log('args patch', snapshot.args);
       }
 
-      if (patch.key === 'ui') {
+      if (patch.key === 'ui' && !isJsonEqual(snapshot.ui, patch.value)) {
         snapshot.ui = Object.freeze(patch.value);
         log('ui patch', snapshot.ui);
       }
 
-      if (patch.key === 'outputs') {
+      if (patch.key === 'outputs' && !isJsonEqual(snapshot.outputs, patch.value)) {
         snapshot.outputs = Object.freeze(patch.value);
         log('outputs patch', snapshot.outputs);
       }
 
-      if (patch.key === 'navigationState') {
-        if (!isJsonEqual(snapshot.navigationState, patch.value)) {
-          snapshot.navigationState = Object.freeze(patch.value);
-          log('navigationState patch', snapshot.navigationState);
-        }
+      if (patch.key === 'navigationState' && !isJsonEqual(snapshot.navigationState, patch.value)) {
+        snapshot.navigationState = Object.freeze(patch.value);
+        log('navigationState patch', snapshot.navigationState);
       }
     });
 

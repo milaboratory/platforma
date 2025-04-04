@@ -44,8 +44,8 @@ A_DOMAIN_SCHEMA := ["or",
     }
 ]
 
-// Schema for APColumnSelector, matching the TypeScript interface
-AP_COLUMN_SELECTOR_SCHEMA := {
+// Schema for AnchoredPColumnSelector, matching the TypeScript interface
+ANCHORED_P_COLUMN_SELECTOR_SCHEMA := {
     `__options__,closed`: true,
     `name,?`: `string`,
     `namePattern,?`: `string`,
@@ -60,7 +60,8 @@ AP_COLUMN_SELECTOR_SCHEMA := {
 }
 
 export ll.toStrict({
-	AP_COLUMN_SELECTOR_SCHEMA: AP_COLUMN_SELECTOR_SCHEMA,
+	ANCHORED_P_COLUMN_SELECTOR_SCHEMA: ANCHORED_P_COLUMN_SELECTOR_SCHEMA,
+	AP_COLUMN_SELECTOR_SCHEMA: ANCHORED_P_COLUMN_SELECTOR_SCHEMA, // Keep for backward compatibility
 	AXIS_SELECTOR_SCHEMA: AXIS_SELECTOR_SCHEMA,
 	ANCHOR_AXIS_REF_BY_IDX_SCHEMA: ANCHOR_AXIS_REF_BY_IDX_SCHEMA,
 	ANCHOR_AXIS_REF_BY_NAME_SCHEMA: ANCHOR_AXIS_REF_BY_NAME_SCHEMA,

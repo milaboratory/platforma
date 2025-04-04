@@ -3,22 +3,33 @@
  */
 
 ll := import(":ll")
+validation := import(":validation")
 feats := import(":feats")
+oop := import(":oop")
 
 maps := import(":maps")
-oop := import(":oop")
 smart := import(":smart")
 json := import("json")
 constants := import(":exec.constants")
 slices := import(":slices")
+limits := import(":exec.limits")
 
-_RTYPE_RUN_COMMAND := { Name: "RunCommand/executor", Version: "1" }
+_RTYPE_RUN_COMMAND_V1 := { Name: "RunCommand/executor", Version: "1" }
+_RTYPE_RUN_COMMAND_V2 := { Name: "RunCommand/executor", Version: "2" }
 _RTYPE_RUN_COMMAND_CMD := { Name: "RunCommandCmd", Version: "1" }
 _RTYPE_RUN_COMMAND_ARGS := { Name: "RunCommandArgs", Version: "1" }
 _RTYPE_RUN_COMMAND_OPTIONS := { Name: "run-command/options", Version: "1" }
 _RTYPE_RUN_COMMAND_REFS := { Name: "RunCommandRefs", Version: "1" }
 
+// Inputs
+_FIELD_ALLOCATION := "allocation" // not in v1
+_FIELD_REFS := "refs"
+_FIELD_CMD := "cmd"
+_FIELD_ARGS := "args"
+_FIELD_OPTIONS := "options"
 _FIELD_WORKDIR_IN := "workdirIn"
+
+// Outputs
 _FIELD_WORKDIR_OUT := "workdirOut"
 
 /**
@@ -66,7 +77,14 @@ _createExpressionArg := func(argTpl) {
  * @return builder - the builder object with methods for configuring and building the RunCommand resource.
  */
 builder := func(workdir) {
-	res := smart.ephemeralBuilder(_RTYPE_RUN_COMMAND)
+	res := undefined
+
+	if feats.computeLimits {
+		res = smart.ephemeralBuilder(_RTYPE_RUN_COMMAND_V2)
+	} else {
+		res = smart.ephemeralBuilder(_RTYPE_RUN_COMMAND_V1)
+	}
+
 	res.getField(_FIELD_WORKDIR_IN).set(workdir)
 
 	self := undefined
@@ -76,6 +94,7 @@ builder := func(workdir) {
 	envs := {}
 	queue := ""
 	refs := {}
+	_allocation := undefined
 
 	substRules := {}
 	hasPatternArgs := false // TODO: deprecated, remove after a month of expressionRefs in prod.
@@ -87,6 +106,17 @@ builder := func(workdir) {
 	nErrorLines := 200
 
 	self = ll.toStrict(oop.inherit(res, {
+		/**
+		 * Use given compute allocation for command execution.
+		 *
+		 * @param allocation: reference
+		 */
+		allocation: func(allocation) {
+			validation.assertType(allocation, validation.reference, "runcmd.builder: allocation should be a valid reference")
+			_allocation = allocation
+			return self
+		},
+
 		/**
 		 * Sets the command, e.g. /usr/bin/env or sh.
 		 *
@@ -366,11 +396,21 @@ builder := func(workdir) {
 				"runcmd.builder().build: expression arguments must be enabled only if platforma backend supports expressions, found: %v",
 				hasExpressionArgs)
 
+			if feats.computeLimits {
+				if !smart.isReference(_allocation) {
+					// Use default compute request limits when no was configured out of the box,
+					// or runcmd won't work at all.
+					_quota := limits.quotaBuilder().queue(queue).build()
+					_allocation = limits.computeRequestBuilder().quota(_quota).build().allocation
+				}
+				self.getField(_FIELD_ALLOCATION).set(_allocation)
+			}
+
 			refsRes := smart.createMapResourceWithType(_RTYPE_RUN_COMMAND_REFS, refs)
-			self.getField("refs").set(refsRes)
+			self.getField(_FIELD_REFS).set(refsRes)
 
 			cmdRes := smart.createValueResource(_RTYPE_RUN_COMMAND_CMD, json.encode(cmd))
-			self.getField("cmd").set(cmdRes)
+			self.getField(_FIELD_CMD).set(cmdRes)
 
 			options := {
 				queueName: queue,
@@ -383,10 +423,10 @@ builder := func(workdir) {
 			}
 
 			optionsRes := smart.createValueResource(_RTYPE_RUN_COMMAND_OPTIONS, json.encode(options))
-			self.getField("options").set(optionsRes)
+			self.getField(_FIELD_OPTIONS).set(optionsRes)
 
 			argsRes := smart.createValueResource(_RTYPE_RUN_COMMAND_ARGS, json.encode(args))
-			self.getField("args").set(argsRes)
+			self.getField(_FIELD_ARGS).set(argsRes)
 
 			res := ll.toStrict(oop.inherit(self.lockAndBuild(), {
 				"workdir": self.outputs()[_FIELD_WORKDIR_OUT],

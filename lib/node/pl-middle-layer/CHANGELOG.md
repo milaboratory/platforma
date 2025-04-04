@@ -1,5 +1,75 @@
 # @milaboratories/pl-middle-layer
 
+## 1.32.4
+
+### Patch Changes
+
+- Updated dependencies [2fc07ba]
+  - @milaboratories/pl-model-common@1.13.1
+  - @milaboratories/pl-model-middle-layer@1.7.18
+  - @milaboratories/pl-drivers@1.5.38
+  - @platforma-sdk/model@1.27.6
+  - @platforma-sdk/block-tools@2.5.31
+
+## 1.32.3
+
+### Patch Changes
+
+- Updated dependencies [d8a33ab]
+  - @platforma-sdk/workflow-tengo@3.2.1
+
+## 1.32.2
+
+### Patch Changes
+
+- Updated dependencies [e82d0b8]
+  - @milaboratories/pl-model-middle-layer@1.7.17
+  - @platforma-sdk/block-tools@2.5.30
+
+## 1.32.1
+
+### Patch Changes
+
+- cd7d43a: PFrames version bump
+
+## 1.32.0
+
+### Minor Changes
+
+- d559029: Implementation of explicit column definition in createPFrame and createPTable exposed to model runtime
+
+### Patch Changes
+
+- Updated dependencies [c57f609]
+- Updated dependencies [7c52bb5]
+  - @platforma-sdk/model@1.26.0
+  - @milaboratories/pl-model-common@1.13.0
+  - @milaboratories/pl-model-middle-layer@1.7.16
+  - @milaboratories/pl-drivers@1.5.37
+  - @platforma-sdk/block-tools@2.5.29
+
+## 1.31.9
+
+### Patch Changes
+
+- Updated dependencies [cd57569]
+  - @platforma-sdk/workflow-tengo@3.2.0
+
+## 1.31.8
+
+### Patch Changes
+
+- Updated dependencies [f0f6a8b]
+- Updated dependencies [88cebeb]
+- Updated dependencies [88cebeb]
+- Updated dependencies [88cebeb]
+  - @platforma-sdk/workflow-tengo@3.1.0
+  - @milaboratories/pl-model-common@1.12.0
+  - @platforma-sdk/model@1.25.0
+  - @milaboratories/pl-model-middle-layer@1.7.15
+  - @milaboratories/pl-drivers@1.5.36
+  - @platforma-sdk/block-tools@2.5.28
+
 ## 1.31.7
 
 ### Patch Changes

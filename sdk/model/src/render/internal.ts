@@ -16,6 +16,7 @@ import type {
   PTableHandle,
   ResultCollection,
   ValueOrError,
+  DataInfo,
 } from '@milaboratories/pl-model-common';
 
 export const StagingAccessorName = 'staging';
@@ -140,9 +141,9 @@ export interface GlobalCfgRenderCtxMethods<AHandle = AccessorHandle, FHandle = F
   // PFrame / PTable
   //
 
-  createPFrame(def: PFrameDef<AHandle | PColumnValues>): PFrameHandle;
+  createPFrame(def: PFrameDef<AHandle | PColumnValues | DataInfo<AHandle>>): PFrameHandle;
 
-  createPTable(def: PTableDef<PColumn<AHandle | PColumnValues>>): PTableHandle;
+  createPTable(def: PTableDef<PColumn<AHandle | PColumnValues | DataInfo<AHandle>>>): PTableHandle;
 
   //
   // Computable
@@ -152,6 +153,7 @@ export interface GlobalCfgRenderCtxMethods<AHandle = AccessorHandle, FHandle = F
 }
 
 export const GlobalCfgRenderCtxFeatureFlags = {
+  explicitColumnsSupport: true as const,
   inlineColumnsSupport: true as const,
   activeArgs: true as const,
 };

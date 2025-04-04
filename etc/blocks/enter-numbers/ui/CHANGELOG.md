@@ -1,5 +1,60 @@
 # @milaboratories/milaboratories.test-enter-numbers.ui
 
+## 1.0.229
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-enter-numbers.model@1.0.58
+- @platforma-sdk/ui-vue@1.27.6
+
+## 1.0.228
+
+### Patch Changes
+
+- Updated dependencies [518ec02]
+  - @platforma-sdk/ui-vue@1.27.5
+
+## 1.0.227
+
+### Patch Changes
+
+- Updated dependencies [9633567]
+  - @platforma-sdk/ui-vue@1.27.2
+
+## 1.0.226
+
+### Patch Changes
+
+- Updated dependencies [da875e0]
+  - @platforma-sdk/ui-vue@1.27.0
+
+## 1.0.225
+
+### Patch Changes
+
+- @platforma-sdk/ui-vue@1.26.1
+
+## 1.0.224
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-enter-numbers.model@1.0.57
+- @platforma-sdk/ui-vue@1.26.0
+
+## 1.0.223
+
+### Patch Changes
+
+- Updated dependencies [2c4b360]
+  - @platforma-sdk/ui-vue@1.25.2
+
+## 1.0.222
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-enter-numbers.model@1.0.56
+- @platforma-sdk/ui-vue@1.25.0
+
 ## 1.0.221
 
 ### Patch Changes

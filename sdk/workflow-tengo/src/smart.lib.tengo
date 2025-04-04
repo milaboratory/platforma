@@ -1188,9 +1188,17 @@ structBuilder = func(resourceType, ...data) {
 
 /**
  * @param isEph: is ephemeral map
+ * @param resourceType: optional resource type for the map
  */
-_mapBuilder := func(isEph) {
-	builder := isEph ? ephemeralBuilder(constants.RTYPE_MAP_EPH) : structBuilder(constants.RTYPE_MAP)
+_mapBuilder := func(isEph, ...resourceType) {
+	mapType := undefined
+	if len(resourceType) > 0 {
+		mapType = resourceType[0]
+	} else {
+		mapType = isEph ? constants.RTYPE_MAP_EPH : constants.RTYPE_MAP
+	}
+
+	builder := isEph ? ephemeralBuilder(mapType) : structBuilder(mapType)
 	// ensure no outputs will be created
 	builder.lockOutputs()
 
@@ -1259,12 +1267,22 @@ _mapBuilder := func(isEph) {
 	return self
 }
 
-mapBuilder = func() {
-	return _mapBuilder(false)
+/**
+ * Builder for map resource
+ *
+ * @param resourceType: optional { Name: "", Version: "" } - custom resource type for the map
+ */
+mapBuilder = func(...resourceType) {
+	return _mapBuilder(false, resourceType...)
 }
 
-ephemeralMapBuilder = func() {
-	return _mapBuilder(true)
+/**
+ * Builder for ephemeral map resource
+ *
+ * @param resourceType: optional { Name: "", Version: "" } - custom resource type for the map
+ */
+ephemeralMapBuilder = func(...resourceType) {
+	return _mapBuilder(true, resourceType...)
 }
 
 ephemeralBuilder = func(resourceType, ...data) {

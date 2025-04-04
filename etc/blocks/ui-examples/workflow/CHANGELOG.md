@@ -1,5 +1,33 @@
 # @milaboratories/milaboratories.ui-examples.workflow
 
+## 1.0.15
+
+### Patch Changes
+
+- Updated dependencies [d8a33ab]
+  - @platforma-sdk/workflow-tengo@3.2.1
+
+## 1.0.14
+
+### Patch Changes
+
+- da875e0: [sdl/ui-vue] AgGridVue Builder
+
+## 1.0.13
+
+### Patch Changes
+
+- Updated dependencies [cd57569]
+  - @platforma-sdk/workflow-tengo@3.2.0
+
+## 1.0.12
+
+### Patch Changes
+
+- Updated dependencies [f0f6a8b]
+- Updated dependencies [88cebeb]
+  - @platforma-sdk/workflow-tengo@3.1.0
+
 ## 1.0.11
 
 ### Patch Changes

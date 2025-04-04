@@ -1,6 +1,6 @@
 // pframes ll aggregate
 
-self := import(":tpl")
+self := import(":tpl.light")
 
 ll := import(":ll")
 render := import(":render")

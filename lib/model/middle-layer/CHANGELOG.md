@@ -1,5 +1,32 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.7.18
+
+### Patch Changes
+
+- Updated dependencies [2fc07ba]
+  - @milaboratories/pl-model-common@1.13.1
+
+## 1.7.17
+
+### Patch Changes
+
+- e82d0b8: SlicedColumnJoinEntry definition
+
+## 1.7.16
+
+### Patch Changes
+
+- Updated dependencies [7c52bb5]
+  - @milaboratories/pl-model-common@1.13.0
+
+## 1.7.15
+
+### Patch Changes
+
+- Updated dependencies [88cebeb]
+  - @milaboratories/pl-model-common@1.12.0
+
 ## 1.7.14
 
 ### Patch Changes

@@ -1,5 +1,74 @@
 # @milaboratories/milaboratories.test-blob-url-custom-protocol
 
+## 1.0.50
+
+### Patch Changes
+
+- @platforma-sdk/model@1.27.6
+- @milaboratories/milaboratories.test-blob-url-custom-protocol.model@1.0.27
+- @milaboratories/milaboratories.test-blob-url-custom-protocol.ui@1.0.43
+
+## 1.0.49
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-blob-url-custom-protocol.ui@1.0.42
+
+## 1.0.48
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-blob-url-custom-protocol.workflow@1.0.9
+
+## 1.0.47
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-blob-url-custom-protocol.ui@1.0.41
+
+## 1.0.46
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-blob-url-custom-protocol.ui@1.0.40
+
+## 1.0.45
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-blob-url-custom-protocol.ui@1.0.39
+
+## 1.0.44
+
+### Patch Changes
+
+- Updated dependencies [c57f609]
+  - @platforma-sdk/model@1.26.0
+  - @milaboratories/milaboratories.test-blob-url-custom-protocol.model@1.0.26
+  - @milaboratories/milaboratories.test-blob-url-custom-protocol.ui@1.0.38
+
+## 1.0.43
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-blob-url-custom-protocol.ui@1.0.37
+
+## 1.0.42
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-blob-url-custom-protocol.workflow@1.0.8
+
+## 1.0.41
+
+### Patch Changes
+
+- Updated dependencies [88cebeb]
+  - @platforma-sdk/model@1.25.0
+  - @milaboratories/milaboratories.test-blob-url-custom-protocol.workflow@1.0.7
+  - @milaboratories/milaboratories.test-blob-url-custom-protocol.model@1.0.25
+  - @milaboratories/milaboratories.test-blob-url-custom-protocol.ui@1.0.36
+
 ## 1.0.40
 
 ### Patch Changes
