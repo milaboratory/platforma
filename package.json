@@ -9,7 +9,7 @@
     "type-check": "turbo run type-check",
     "build": "turbo run build",
     "watch-build": "turbo watch build",
-    "test": "turbo run test --force --concurrency 1 --env-mode=loose",
+    "test": "turbo run test --concurrency 1 --env-mode=loose",
     "publish-to-local-registry": "turbo run publish-to-local-registry",
     "do-pack": "turbo run do-pack",
     "lint": "pnpm -r lint",
