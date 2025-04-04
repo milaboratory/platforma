@@ -12,3 +12,17 @@ export function getRawPlatformaInstance<
 >(): Platforma<Args, Outputs, UiState, Href> {
   return getPlatformaInstance<Args, Outputs, UiState, Href>({ sdkVersion: PlatformaSDKVersion });
 }
+
+/** Returns a global platforma instance or a provided fallback if it's not available. */
+export function getPlatformaOrDefault<
+  Args = unknown,
+  Outputs extends Record<string, ValueOrErrors<unknown>> = Record<string, ValueOrErrors<unknown>>,
+  UiState = unknown,
+  Href extends `/${string}` = `/${string}`,
+>(platforma: Platforma<Args, Outputs, UiState, Href>): Platforma<Args, Outputs, UiState, Href> {
+  try {
+    return getRawPlatformaInstance<Args, Outputs, UiState, Href>();
+  } catch {
+    return platforma;
+  }
+}

@@ -490,10 +490,13 @@ test('block error test', async ({ expect }) => {
 
     const sum = block3StableState.outputs!['sum'];
     expect(sum.ok).toStrictEqual(false);
-    if (!sum.ok)
-      expect(sum.errors[0].message).toContain(
+    if (!sum.ok) {
+      console.log("ml, block error test, the error:");
+      console.dir(sum.errors[0], { depth: 150 });
+      expect(typeof sum.errors[0] == 'string' ? sum.errors[0] : sum.errors[0].message).toContain(
         "At least 1 data source must be set. It's needed in 'block error test'"
       );
+    }
   });
 });
 
