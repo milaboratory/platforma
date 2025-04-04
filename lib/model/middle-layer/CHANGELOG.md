@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.7.19
+
+### Patch Changes
+
+- 2490c21: Fix PFrames internal API definition
+
 ## 1.7.18
 
 ### Patch Changes
