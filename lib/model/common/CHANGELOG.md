@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.13.1
+
+### Patch Changes
+
+- 2fc07ba: Fix NaN check for PValue float types
+
 ## 1.13.0
 
 ### Minor Changes
