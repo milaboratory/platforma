@@ -39,6 +39,7 @@ import type { Block } from '../model/project_model';
 import { parseFinalPObjectCollection } from '../pool/p_object_collection';
 import type { ResultPool } from '../pool/result_pool';
 import { stringifyWithResourceId } from '@milaboratories/pl-client';
+import { PlQuickJSError } from '@milaboratories/pl-errors';
 
 function isArrayBufferOrView(obj: unknown): obj is ArrayBufferLike {
   return obj instanceof ArrayBuffer || ArrayBuffer.isView(obj);
@@ -402,7 +403,7 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
   }
 
   public getDataWithErrorsFromResultPool(): ResultCollection<
-    Optional<PObject<ValueOrError<string, string>>, 'id'>
+    Optional<PObject<ValueOrError<string, Error>>, 'id'>
   > {
     const collection = this.resultPool.getDataWithErrors();
     if (collection.instabilityMarker !== undefined)
@@ -958,34 +959,6 @@ export class ErrorRepository {
       throw new Error(`ErrorRepo: errorId not found: ${errorId}, ${stringifyWithResourceId(quickJSError)}`);
     }
 
-    return new ModelError(quickJSError, error as Error);
-  }
-}
-
-/** The error that comes from model. */
-export class ModelError extends Error {
-  public stack: string;
-
-  constructor(
-    quickJSError: errors.QuickJSUnwrapError,
-    cause: Error,
-  ) {
-    super('', { cause });
-    this.name = 'ModelError';
-
-    // QuickJS wraps the error with the name and the message,
-    // but we need another format.
-    this.stack = quickJSError.stack?.replace(quickJSError.message, '') ?? '';
-    this.stack = this.stack.replace(cause.message, '');
-
-    this.message = this.toString();
-  }
-
-  toString() {
-    const msg = `ModelError: ${(this.cause as any)?.message}
-QuickJS stacktrace:
-${this.stack}
-`;
-    return msg;
+    return new PlQuickJSError(quickJSError, error as Error);
   }
 }

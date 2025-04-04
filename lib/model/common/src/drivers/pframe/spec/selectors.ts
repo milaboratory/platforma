@@ -1,5 +1,4 @@
 import { isPColumnSpec, type PObjectSpec } from '../../../pool';
-import type { AxisFilterByIdx, FilteredPColumn } from './filtered_column';
 import type { AxisId, PColumnSpec, ValueType } from './spec';
 import { getAxisId } from './spec';
 

@@ -1,6 +1,6 @@
 import { reactive, type Reactive, ref, watch } from 'vue';
 import { useTimeoutPoll, whenever } from '@vueuse/core';
-import type { AnyLogHandle, Platforma } from '@platforma-sdk/model';
+import { getRawPlatformaInstance, type AnyLogHandle, type Platforma } from '@platforma-sdk/model';
 
 type LogState = {
   logHandle: AnyLogHandle;
@@ -32,7 +32,7 @@ export function useLogHandle(
 
     if (currentLogState === undefined) return;
 
-    const platforma = props.mockPlatforma ?? window.platforma;
+    const platforma = props.mockPlatforma ?? getRawPlatformaInstance();
 
     if (!platforma) {
       console.warn('Platforma API is not available');

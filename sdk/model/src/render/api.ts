@@ -26,15 +26,13 @@ import type {
   JsonPartitionedDataInfoEntries,
   PObjectId } from '@milaboratories/pl-model-common';
 import {
+  mapDataInfo,
+  entriesToDataInfo,
+  isDataInfo,
   AnchoredIdDeriver,
   getAxisId,
-  isDataInfo,
-  mapDataInfo,
   resolveAnchors,
   canonicalizeAxisId,
-  entriesToDataInfo,
-} from '@milaboratories/pl-model-common';
-import {
   ensurePColumn,
   extractAllColumns,
   isPColumn,
@@ -492,13 +490,13 @@ export class ResultPool {
    * @deprecated use getDataWithErrors()
    */
   public getDataWithErrorsFromResultPool(): ResultCollection<
-    Optional<PObject<ValueOrError<TreeNodeAccessor, string>>, 'id'>
+    Optional<PObject<ValueOrError<TreeNodeAccessor, Error>>, 'id'>
   > {
     return this.getDataWithErrors();
   }
 
   public getDataWithErrors(): ResultCollection<
-    Optional<PObject<ValueOrError<TreeNodeAccessor, string>>, 'id'>
+    Optional<PObject<ValueOrError<TreeNodeAccessor, Error>>, 'id'>
   > {
     const result = this.ctx.getDataWithErrorsFromResultPool();
     return {

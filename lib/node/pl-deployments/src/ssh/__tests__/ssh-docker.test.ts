@@ -10,6 +10,9 @@ let client: SshClient;
 let testContainer: StartedTestContainer;
 
 beforeAll(async () => {
+  // FIXME: sometimes it fails with the error here.
+  // Then we will have a container available in docker ps.
+  // If it happened, try to retry to build the container the second time here and ask me (Gleb).
   testContainer = await initContainer('ssh');
   client = await SshClient.init(new ConsoleLoggerAdapter(), getConnectionForSsh(testContainer));
 }, 200000);

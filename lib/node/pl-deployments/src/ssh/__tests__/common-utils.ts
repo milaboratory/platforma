@@ -60,25 +60,31 @@ export function initPrivateKey(): string {
 export async function initContainer(name: string): Promise<StartedTestContainer> {
   await createTestDirForRecursiveUpload();
 
-  const image = `pl-ssh-test-container-${name}:1.0.0`;
+  const imageName = `pl-ssh-test-container-${name}:1.0.0`;
+  const containerName = `pl-ssh-test-${name}`;
 
-  const fromCacheContainer = await new GenericContainer(image)
-    .withExposedPorts(...SSH_PORT)
-    .withReuse()
-    .withName(`pl-ssh-test-${name}`)
-    .start()
-    .catch(() => console.log('No worries, creating a new container'));
+  try {
+    const container = new GenericContainer(imageName)
+      .withExposedPorts(...SSH_PORT)
+      .withReuse()
+      .withName(containerName);
 
-  if (!fromCacheContainer) {
+    return await container.start();
+  } catch {
+    console.log('No worries, creating a new container');
+
     generateKeys();
-    const container1 = await GenericContainer.fromDockerfile(path.resolve(__dirname, '..', '..', '..'))
+    const container = await GenericContainer
+      .fromDockerfile(path.resolve(__dirname, '..', '..', '..'))
       .withCache(true)
-      .build(image, { deleteOnExit: false });
+      .build(imageName, { deleteOnExit: false });
 
-    return container1.withExposedPorts(...SSH_PORT).withReuse().start();
+    return await container
+      .withExposedPorts(...SSH_PORT)
+      .withReuse()
+      .withName(containerName)
+      .start();
   }
-
-  return fromCacheContainer;
 }
 
 export function getContainerHostAndPort(container: StartedTestContainer) {

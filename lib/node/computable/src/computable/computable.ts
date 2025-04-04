@@ -20,7 +20,7 @@ import {
 import { Aborted, notEmpty } from '@milaboratories/ts-helpers';
 import { randomUUID } from 'node:crypto';
 import { setImmediate } from 'node:timers/promises';
-import { formatError } from './error';
+import { ensureErrorLike, type ErrorLike } from '@milaboratories/pl-error-like';
 
 /** Represents the most general result of the computable, successful or error */
 export type ComputableResult<T> = ComputableResultErrors | ComputableResultOk<T>;
@@ -96,10 +96,13 @@ export class AggregateComputableError extends AggregateError {
   }
 }
 
-/** Type returned by computables that wraps errors */
+/** Type returned by computables that wraps errors
+ * In case of errors, string could come from old ML versions,
+ * and ErrorLike is from new ML versions.
+ * We might consider removing string after 1st of July 2025 (3 months after implementing ErrorLike). */
 export type ComputableValueOrErrors<T> =
   | { ok: true; value: T }
-  | { ok: false; errors: string[]; moreErrors: boolean };
+  | { ok: false; errors: (ErrorLike | string)[]; moreErrors: boolean };
 
 export interface ComputableRenderingOps extends CellRenderingOps {
   /**
@@ -618,12 +621,14 @@ export class Computable<T, StableT extends T = T> {
     return Computable.make(() => computable, {
       postprocessValue: (value) => ({ ok: true, value: value as T }) as ComputableValueOrErrors<T>,
       recover: (error: unknown[]) => {
-        const formattedErrors: string[] = [];
-        for (let i = 0; i < Math.min(maxErrors, error.length); i++)
-          formattedErrors.push(formatError(error[i]));
+        const errors: (ErrorLike | string)[] = [];
+        for (let i = 0; i < Math.min(maxErrors, error.length); i++) {
+          const errLike = ensureErrorLike(error[i]);
+          errors.push(errLike);
+        }
         return {
           ok: false,
-          errors: formattedErrors,
+          errors,
           moreErrors: error.length > maxErrors,
         } as ComputableValueOrErrors<T>;
       },

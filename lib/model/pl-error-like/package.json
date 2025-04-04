@@ -1,15 +1,15 @@
 {
-  "name": "@milaboratories/pl-errors",
-  "version": "1.0.3",
-  "description": "Parsing errors from Pl backend",
+  "name": "@milaboratories/pl-error-like",
+  "version": "1.11.1",
+  "description": "Platforma SDK Model",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "require": "./dist/index.js",
-      "import": "./dist/index.mjs"
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
     }
   },
   "scripts": {
@@ -25,15 +25,16 @@
   ],
   "dependencies": {
     "zod": "catalog:",
-    "@milaboratories/pl-client": "workspace:*",
-    "@milaboratories/ts-helpers": "workspace:*"
+    "canonicalize": "catalog:",
+    "json-stringify-safe": "catalog:"
   },
   "devDependencies": {
-    "@milaboratories/pl-error-like": "workspace:*",
     "@milaboratories/platforma-build-configs": "workspace:*",
+    "@types/json-stringify-safe": "catalog:",
+    "@milaboratories/eslint-config": "workspace:*",
+    "eslint": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
-    "vitest": "catalog:",
-    "@milaboratories/eslint-config": "workspace:^"
+    "vitest": "catalog:"
   }
 }
