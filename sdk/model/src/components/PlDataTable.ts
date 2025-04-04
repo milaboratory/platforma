@@ -1,5 +1,6 @@
 import type {
   AxisSpec,
+  DataInfo,
   JoinEntry,
   PColumn,
   PColumnIdAndSpec,
@@ -328,25 +329,25 @@ export type CreatePlDataTableOps = {
  */
 export function createPlDataTable<A, U>(
   ctx: RenderCtx<A, U>,
-  columns: PColumn<TreeNodeAccessor | PColumnValues>[],
+  columns: PColumn<TreeNodeAccessor | PColumnValues | DataInfo<TreeNodeAccessor>>[],
   tableState: PlDataTableState | undefined
 ): PTableHandle | undefined;
 export function createPlDataTable<A, U>(
   ctx: RenderCtx<A, U>,
-  columns: PColumn<TreeNodeAccessor | PColumnValues>[],
+  columns: PColumn<TreeNodeAccessor | PColumnValues | DataInfo<TreeNodeAccessor>>[],
   tableState: PlDataTableState | undefined,
   ops: CreatePlDataTableOps
 ): PTableHandle | undefined;
 /** @deprecated use method with extended ops as the last argument */
 export function createPlDataTable<A, U>(
   ctx: RenderCtx<A, U>,
-  columns: PColumn<TreeNodeAccessor | PColumnValues>[],
+  columns: PColumn<TreeNodeAccessor | PColumnValues | DataInfo<TreeNodeAccessor>>[],
   tableState: PlDataTableState | undefined,
   filters: PTableRecordFilter[]
 ): PTableHandle | undefined;
 export function createPlDataTable<A, U>(
   ctx: RenderCtx<A, U>,
-  columns: PColumn<TreeNodeAccessor | PColumnValues>[],
+  columns: PColumn<TreeNodeAccessor | PColumnValues | DataInfo<TreeNodeAccessor>>[],
   tableState: PlDataTableState | undefined,
   ops?: PTableRecordFilter[] | CreatePlDataTableOps,
 ): PTableHandle | undefined {
@@ -442,7 +443,7 @@ export function createPlDataTableSheet<A, U>(
   axis: AxisSpec,
   values: (string | number)[],
 ): PlDataTableSheet {
-  const labels = ctx.findLabels(axis);
+  const labels = ctx.resultPool.findLabels(axis);
   return {
     axis,
     options: values.map((v) => ({

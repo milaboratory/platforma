@@ -1,5 +1,74 @@
 # @milaboratories/milaboratories.test-block-model
 
+## 1.0.154
+
+### Patch Changes
+
+- @platforma-sdk/model@1.27.6
+- @milaboratories/milaboratories.test-block-model.model@1.0.38
+- @milaboratories/milaboratories.test-block-model.ui@1.0.147
+
+## 1.0.153
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-block-model.ui@1.0.146
+
+## 1.0.152
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-block-model.workflow@1.0.8
+
+## 1.0.151
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-block-model.ui@1.0.145
+
+## 1.0.150
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-block-model.ui@1.0.144
+
+## 1.0.149
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-block-model.ui@1.0.143
+
+## 1.0.148
+
+### Patch Changes
+
+- Updated dependencies [c57f609]
+  - @platforma-sdk/model@1.26.0
+  - @milaboratories/milaboratories.test-block-model.model@1.0.37
+  - @milaboratories/milaboratories.test-block-model.ui@1.0.142
+
+## 1.0.147
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-block-model.ui@1.0.141
+
+## 1.0.146
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-block-model.workflow@1.0.7
+
+## 1.0.145
+
+### Patch Changes
+
+- Updated dependencies [88cebeb]
+  - @platforma-sdk/model@1.25.0
+  - @milaboratories/milaboratories.test-block-model.workflow@1.0.6
+  - @milaboratories/milaboratories.test-block-model.model@1.0.36
+  - @milaboratories/milaboratories.test-block-model.ui@1.0.140
+
 ## 1.0.144
 
 ### Patch Changes

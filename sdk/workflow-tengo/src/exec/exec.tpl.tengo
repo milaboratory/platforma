@@ -5,10 +5,11 @@
  * and saves a chosen resulted files from this dir.
  */
 
-self := import(":tpl")
+self := import(":tpl.light")
 
 ll := import(":ll")
 feats := import(":feats")
+validation := import(":validation")
 
 smart := import(":smart")
 render := import(":render")
@@ -17,7 +18,6 @@ stream := import(":exec.stream")
 execInternal := import(":exec.internal")
 limits := import(":exec.limits")
 pkg := import(":exec.package")
-validation := import(":validation")
 blobs := import(":file.internal")
 desc := import(":exec.descriptor")
 constants := import(":exec.constants")

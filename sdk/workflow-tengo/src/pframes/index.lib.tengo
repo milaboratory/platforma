@@ -273,6 +273,9 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 			}
 			outputSpecs[output.name] = spec
 		} else if output.type == "Xsv" {
+			if is_undefined(output.settings) {
+				ll.panic("settings are required for Xsv output")
+			}
 			decomposition := pUtil.decomposePfconvImportCfg(output.settings, {
 				additionalAxesSpec: iterationAxesSpec
 			})

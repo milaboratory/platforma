@@ -1,10 +1,9 @@
-/* eslint-disable @typescript-eslint/restrict-template-expressions */
 import type { ValueType } from './spec/spec';
 
 export const PValueIntNA = -2147483648;
 export const PValueLongNA = -9007199254740991n;
-export const PValueFloatNA = NaN;
-export const PValueDoubleNA = NaN;
+export const PValueFloatNA = NaN; // do not change, isNaN is used in other cases
+export const PValueDoubleNA = NaN; // do not change, isNaN is used in other cases
 export const PValueStringNA = null;
 export const PValueBytesNA = null;
 
@@ -39,9 +38,9 @@ export function isValueNA(value: unknown, valueType: ValueType): boolean {
     case 'Long':
       return value === Number(PValueLongNA) || value === PValueLongNA;
     case 'Float':
-      return value === PValueFloatNA;
+      return Number.isNaN(value);
     case 'Double':
-      return value === PValueDoubleNA;
+      return Number.isNaN(value);
     case 'String':
       return value === PValueStringNA;
     case 'Bytes':
@@ -241,13 +240,6 @@ export function isValueAbsent(absent: Uint8Array, index: number): boolean {
   const mask = 1 << (7 - (index % 8));
   return (absent[chunkIndex] & mask) > 0;
 }
-
-export type PColumnValue = null | number | string;
-export type PColumnValuesEntry = {
-  key: PColumnValue[];
-  val: PColumnValue;
-};
-export type PColumnValues = PColumnValuesEntry[];
 
 export const PTableAbsent = { type: 'absent' };
 export type PTableAbsent = typeof PTableAbsent;

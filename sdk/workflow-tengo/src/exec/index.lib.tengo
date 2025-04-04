@@ -4,6 +4,7 @@
 
 ll := import(":ll")
 feats := import(":feats")
+validation := import(":validation")
 
 assets := import(":assets")
 smart := import(":smart")
@@ -15,7 +16,6 @@ path := import(":path")
 render := import(":render")
 enum := import("enum")
 oop := import(":oop")
-validation := import(":validation")
 constants := import(":constants")
 limits := import(":exec.limits")
 monetization := import(":exec.monetization_internal")
@@ -50,7 +50,6 @@ builder := func() {
 	// Limits
 	//
 	queue := execConstants.HEAVY_QUEUE
-	hasLimits := false
 	cpuRequest := undefined
 	ramRequest := undefined
 
@@ -254,7 +253,6 @@ builder := func() {
 		cpu: func(amount) {
 			validation.assertType(amount, "number", "exec.builder.cpu: amount of cores must be a number")
 			ll.assert(amount > 0, "exec.builder.cpu: amount of cores should be greater than 0")
-			hasLimits = true
 			cpuRequest = amount
 
 			return self
@@ -274,7 +272,6 @@ builder := func() {
 		ram: func(amount) {
 			validation.assertType(amount, ["or", "number", "string"], "exec.builder.ram: RAM amount should be a number or string")
 			ll.assert(is_string(amount) || amount > 0, "exec.builder.ram: amount in bytes should be greater than 0")
-			hasLimits = true
 			ramRequest = amount
 
 			return self
@@ -728,11 +725,11 @@ builder := func() {
 			}
 
 			serviceExecInputs := {}
-			if hasLimits && feats.workdirLimits {
+			if feats.workdirLimits || feats.computeLimits {
 				serviceExecInputs.quota = limits.quotaBuilder().
 					queue(queue).
-					cpu(cpuRequest).
-					ram(ramRequest).
+					cpu(cpuRequest). // 'undefined' value is OK and makes runner to apply default queue limits
+					ram(ramRequest). // 'undefined' value is OK and makes runner to apply default queue limits
 					build()
 			}
 

@@ -1,5 +1,37 @@
 # @milaboratories/milaboratories.ui-examples.model
 
+## 1.1.34
+
+### Patch Changes
+
+- @platforma-sdk/model@1.27.6
+
+## 1.1.33
+
+### Patch Changes
+
+- 518ec02: Aminoacid validation pattern relaxed
+
+## 1.1.32
+
+### Patch Changes
+
+- da875e0: [sdl/ui-vue] AgGridVue Builder
+
+## 1.1.31
+
+### Patch Changes
+
+- Updated dependencies [c57f609]
+  - @platforma-sdk/model@1.26.0
+
+## 1.1.30
+
+### Patch Changes
+
+- Updated dependencies [88cebeb]
+  - @platforma-sdk/model@1.25.0
+
 ## 1.1.29
 
 ### Patch Changes

@@ -1,5 +1,34 @@
 # @platforma-sdk/model
 
+## 1.27.6
+
+### Patch Changes
+
+- Updated dependencies [2fc07ba]
+  - @milaboratories/pl-model-common@1.13.1
+
+## 1.26.0
+
+### Minor Changes
+
+- c57f609: ResultPool.getAnchoredPColumns with full suppport of column axis splitting & API for explicit PColumn Data.
+
+### Patch Changes
+
+- Updated dependencies [7c52bb5]
+  - @milaboratories/pl-model-common@1.13.0
+
+## 1.25.0
+
+### Minor Changes
+
+- 88cebeb: getCanonicalOptions API returning options with SUniversalPColumnId references (full support of Anchored Columns API)
+
+### Patch Changes
+
+- Updated dependencies [88cebeb]
+  - @milaboratories/pl-model-common@1.12.0
+
 ## 1.24.11
 
 ### Patch Changes

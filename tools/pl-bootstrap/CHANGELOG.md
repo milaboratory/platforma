@@ -1,5 +1,23 @@
 # @platforma-sdk/bootstrap
 
+## 3.3.1
+
+### Patch Changes
+
+- 3f128a7: Block stdin when starting backend with 'start local' command. Do not duplicate startup report
+
+## 3.3.0
+
+### Minor Changes
+
+- 4d9f520: Preserve all working directories for an hour. No only failures
+
+## 3.2.13
+
+### Patch Changes
+
+- aff6744: Fixes boilerplate failure to run block with no python software due to missing model output used in UI
+
 ## 3.2.12
 
 ### Patch Changes

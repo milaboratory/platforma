@@ -1,5 +1,60 @@
 # @milaboratories/milaboratories.test-blob-url-custom-protocol.ui
 
+## 1.0.43
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-blob-url-custom-protocol.model@1.0.27
+- @platforma-sdk/ui-vue@1.27.6
+
+## 1.0.42
+
+### Patch Changes
+
+- Updated dependencies [518ec02]
+  - @platforma-sdk/ui-vue@1.27.5
+
+## 1.0.41
+
+### Patch Changes
+
+- Updated dependencies [9633567]
+  - @platforma-sdk/ui-vue@1.27.2
+
+## 1.0.40
+
+### Patch Changes
+
+- Updated dependencies [da875e0]
+  - @platforma-sdk/ui-vue@1.27.0
+
+## 1.0.39
+
+### Patch Changes
+
+- @platforma-sdk/ui-vue@1.26.1
+
+## 1.0.38
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-blob-url-custom-protocol.model@1.0.26
+- @platforma-sdk/ui-vue@1.26.0
+
+## 1.0.37
+
+### Patch Changes
+
+- Updated dependencies [2c4b360]
+  - @platforma-sdk/ui-vue@1.25.2
+
+## 1.0.36
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-blob-url-custom-protocol.model@1.0.25
+- @platforma-sdk/ui-vue@1.25.0
+
 ## 1.0.35
 
 ### Patch Changes

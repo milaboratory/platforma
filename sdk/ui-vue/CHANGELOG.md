@@ -1,5 +1,59 @@
 # @platforma-sdk/ui-vue
 
+## 1.27.6
+
+### Patch Changes
+
+- @platforma-sdk/model@1.27.6
+- @milaboratories/uikit@2.2.61
+
+## 1.27.5
+
+### Patch Changes
+
+- 518ec02: Aminoacid validation pattern relaxed
+
+## 1.27.2
+
+### Patch Changes
+
+- 9633567: AgGrid builder small fix (make setRowData arg optional)
+
+## 1.27.0
+
+### Minor Changes
+
+- da875e0: [sdl/ui-vue] AgGridVue Builder
+
+## 1.26.1
+
+### Patch Changes
+
+- Updated dependencies [b00fefd]
+  - @milaboratories/uikit@2.2.61
+
+## 1.26.0
+
+### Patch Changes
+
+- Updated dependencies [c57f609]
+  - @platforma-sdk/model@1.26.0
+  - @milaboratories/uikit@2.2.60
+
+## 1.25.2
+
+### Patch Changes
+
+- 2c4b360: [MILAB-1966] Prevent args/ui state from being updated when the output changes
+
+## 1.25.0
+
+### Patch Changes
+
+- Updated dependencies [88cebeb]
+  - @platforma-sdk/model@1.25.0
+  - @milaboratories/uikit@2.2.60
+
 ## 1.24.11
 
 ### Patch Changes

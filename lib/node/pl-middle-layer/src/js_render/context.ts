@@ -4,6 +4,7 @@ import type { PlTreeNodeAccessor } from '@milaboratories/pl-tree';
 import type {
   ArchiveFormat,
   CommonFieldTraverseOps as CommonFieldTraverseOpsFromSDK,
+  DataInfo,
   FieldTraversalStep as FieldTraversalStepFromSDK,
   Option,
   PColumn,
@@ -20,7 +21,9 @@ import type {
   ValueOrError,
 } from '@platforma-sdk/model';
 import {
+  isDataInfo,
   JsRenderInternal,
+  mapDataInfo,
   mapPObjectData,
   mapPTableDef,
   mapValueInVOE,
@@ -438,28 +441,44 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
   // PFrames / PTables
   //
 
-  public createPFrame(def: PFrameDef<string | PColumnValues>): PFrameHandle {
+  public createPFrame(def: PFrameDef<string | PColumnValues | DataInfo<string>>): PFrameHandle {
     if (this.computableCtx === undefined)
       throw new Error(
         'can\'t instantiate PFrames from this context (most porbably called from the future mapper)',
       );
     return this.env.driverKit.pFrameDriver.createPFrame(
-      def.map((c) => mapPObjectData(c, (d) => (typeof d === 'string' ? this.getAccessor(d) : d))),
+      def.map((c) => mapPObjectData(c, (d) => this.transformInputPData(d))),
       this.computableCtx,
     );
   }
 
-  public createPTable(def: PTableDef<PColumn<string | PColumnValues>>): PTableHandle {
+  public createPTable(def: PTableDef<PColumn<string | PColumnValues | DataInfo<string>>>): PTableHandle {
     if (this.computableCtx === undefined)
       throw new Error(
         'can\'t instantiate PTable from this context (most porbably called from the future mapper)',
       );
     return this.env.driverKit.pFrameDriver.createPTable(
       mapPTableDef(def, (c) =>
-        mapPObjectData(c, (d) => (typeof d === 'string' ? this.getAccessor(d) : d)),
+        mapPObjectData(c, (d) => this.transformInputPData(d)),
       ),
       this.computableCtx,
     );
+  }
+
+  /**
+   * Transforms input data for PFrame/PTable creation
+   * - Converts string handles to accessors
+   * - Maps accessors in DataInfo objects
+   * - Passes through other values
+   */
+  private transformInputPData(d: string | PColumnValues | DataInfo<string>): PlTreeNodeAccessor | PColumnValues | DataInfo<PlTreeNodeAccessor> {
+    if (typeof d === 'string') {
+      return this.getAccessor(d);
+    } else if (isDataInfo(d)) {
+      return mapDataInfo(d, (a) => this.getAccessor(a));
+    } else {
+      return d;
+    }
   }
 
   //

@@ -1,4 +1,4 @@
-tpl := import(":tpl")
+tpl := import(":tpl.light")
 smart := import(":smart")
 xsvIF := import(":pframes.xsv-import-file")
 

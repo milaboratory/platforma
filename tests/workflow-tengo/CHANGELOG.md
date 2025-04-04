@@ -1,5 +1,28 @@
 # @platforma-sdk/workflow-tengo-tests
 
+## 1.6.15
+
+### Patch Changes
+
+- Updated dependencies [d8a33ab]
+  - @platforma-sdk/workflow-tengo@3.2.1
+
+## 1.6.14
+
+### Patch Changes
+
+- cd57569: Support new CPU/RAM limitation feature for commands
+- Updated dependencies [cd57569]
+  - @platforma-sdk/workflow-tengo@3.2.0
+
+## 1.6.13
+
+### Patch Changes
+
+- Updated dependencies [f0f6a8b]
+- Updated dependencies [88cebeb]
+  - @platforma-sdk/workflow-tengo@3.1.0
+
 ## 1.6.12
 
 ### Patch Changes

@@ -1,5 +1,65 @@
 # @milaboratories/milaboratories.test-read-logs.ui
 
+## 1.0.107
+
+### Patch Changes
+
+- @platforma-sdk/model@1.27.6
+- @milaboratories/milaboratories.test-read-logs.model@1.0.28
+- @platforma-sdk/ui-vue@1.27.6
+
+## 1.0.106
+
+### Patch Changes
+
+- Updated dependencies [518ec02]
+  - @platforma-sdk/ui-vue@1.27.5
+
+## 1.0.105
+
+### Patch Changes
+
+- Updated dependencies [9633567]
+  - @platforma-sdk/ui-vue@1.27.2
+
+## 1.0.104
+
+### Patch Changes
+
+- Updated dependencies [da875e0]
+  - @platforma-sdk/ui-vue@1.27.0
+
+## 1.0.103
+
+### Patch Changes
+
+- @platforma-sdk/ui-vue@1.26.1
+
+## 1.0.102
+
+### Patch Changes
+
+- Updated dependencies [c57f609]
+  - @platforma-sdk/model@1.26.0
+  - @milaboratories/milaboratories.test-read-logs.model@1.0.27
+  - @platforma-sdk/ui-vue@1.26.0
+
+## 1.0.101
+
+### Patch Changes
+
+- Updated dependencies [2c4b360]
+  - @platforma-sdk/ui-vue@1.25.2
+
+## 1.0.100
+
+### Patch Changes
+
+- Updated dependencies [88cebeb]
+  - @platforma-sdk/model@1.25.0
+  - @milaboratories/milaboratories.test-read-logs.model@1.0.26
+  - @platforma-sdk/ui-vue@1.25.0
+
 ## 1.0.99
 
 ### Patch Changes

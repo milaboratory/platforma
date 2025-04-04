@@ -1,5 +1,43 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.3.53
+
+### Patch Changes
+
+- @platforma-sdk/model@1.27.6
+- @milaboratories/milaboratories.ui-examples.model@1.1.34
+
+## 1.3.52
+
+### Patch Changes
+
+- Updated dependencies [518ec02]
+  - @milaboratories/milaboratories.ui-examples.model@1.1.33
+
+## 1.3.51
+
+### Patch Changes
+
+- da875e0: [sdl/ui-vue] AgGridVue Builder
+- Updated dependencies [da875e0]
+  - @milaboratories/milaboratories.ui-examples.model@1.1.32
+
+## 1.3.50
+
+### Patch Changes
+
+- Updated dependencies [c57f609]
+  - @platforma-sdk/model@1.26.0
+  - @milaboratories/milaboratories.ui-examples.model@1.1.31
+
+## 1.3.49
+
+### Patch Changes
+
+- Updated dependencies [88cebeb]
+  - @platforma-sdk/model@1.25.0
+  - @milaboratories/milaboratories.ui-examples.model@1.1.30
+
 ## 1.3.48
 
 ### Patch Changes

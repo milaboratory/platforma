@@ -1,5 +1,27 @@
 # @platforma-sdk/workflow-tengo
 
+## 3.2.1
+
+### Patch Changes
+
+- d8a33ab: Fix to addById in column bundle
+
+## 3.2.0
+
+### Minor Changes
+
+- cd57569: Support new CPU/RAM limitation feature for commands
+
+## 3.1.0
+
+### Minor Changes
+
+- 88cebeb: Column Batches (builder and unmarshaller); Full support of SUniversalPColumnId (both filtered and vanilla variants)
+
+### Patch Changes
+
+- f0f6a8b: Spec distiller
+
 ## 3.0.3
 
 ### Patch Changes

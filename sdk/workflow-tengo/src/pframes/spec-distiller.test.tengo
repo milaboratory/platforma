@@ -1,0 +1,251 @@
+test := import(":test")
+pSpec := import(":pframes.spec")
+
+TestCreateSpecDistiller := func() {
+	// Create sample specs with various domains and annotations
+	specs := [
+		{
+			kind: "PColumn",
+			valueType: "Int",
+			name: "count",
+			domain: {
+				"pl7.app/species": "homo-sapiens",
+				"pl7.app/block": "block1"
+			},
+			annotations: {
+				"pl7.app/label": "Count label"
+			},
+			axesSpec: [
+				{
+					type: "String",
+					name: "gene",
+					domain: {
+						"pl7.app/species": "homo-sapiens",
+						"pl7.app/domain-type": "gene"
+					},
+					annotations: {
+						"pl7.app/label": "Gene axis"
+					}
+				}
+			]
+		},
+		{
+			kind: "PColumn",
+			valueType: "Int",
+			name: "count",
+			domain: {
+				"pl7.app/species": "homo-sapiens",
+				"pl7.app/block": "block2"
+			},
+			annotations: {
+				"pl7.app/label": "Count label"
+			},
+			axesSpec: [
+				{
+					type: "String",
+					name: "gene",
+					domain: {
+						"pl7.app/species": "homo-sapiens",
+						"pl7.app/domain-type": "gene"
+					},
+					annotations: {
+						"pl7.app/label": "Gene axis"
+					}
+				}
+			]
+		},
+		{
+			kind: "PColumn",
+			valueType: "Float",
+			name: "expression",
+			domain: {
+				"pl7.app/species": "mus-musculus",
+				"pl7.app/block": "block3"
+			},
+			annotations: {
+				"pl7.app/label": "Expression level"
+			},
+			axesSpec: [
+				{
+					type: "String",
+					name: "gene",
+					domain: {
+						"pl7.app/species": "mus-musculus",
+						"pl7.app/domain-type": "gene"
+					},
+					annotations: {
+						"pl7.app/label": "Gene axis"
+					}
+				}
+			]
+		}
+	]
+
+	// Create the distiller
+	distiller := pSpec.createSpecDistiller(specs)
+
+	// Test: Distill should remove annotations
+	distilledSpec1 := distiller.distill(specs[0])
+
+	// Verify no annotations present
+	test.isEqual(undefined, distilledSpec1.annotations)
+
+	// Verify basic properties are preserved
+	test.isEqual("PColumn", distilledSpec1.kind)
+	test.isEqual("Int", distilledSpec1.valueType)
+	test.isEqual("count", distilledSpec1.name)
+
+	// Verify axis has no annotations but basic properties are preserved
+	test.isEqual(undefined, distilledSpec1.axesSpec[0].annotations)
+	test.isEqual("String", distilledSpec1.axesSpec[0].type)
+	test.isEqual("gene", distilledSpec1.axesSpec[0].name)
+
+	// Test with spec that has different species
+	distilledSpec3 := distiller.distill(specs[2])
+
+	// Verify no annotations present
+	test.isEqual(undefined, distilledSpec3.annotations)
+
+	// Verify basic properties are preserved
+	test.isEqual("PColumn", distilledSpec3.kind)
+	test.isEqual("Float", distilledSpec3.valueType)
+	test.isEqual("expression", distilledSpec3.name)
+
+	// Verify axis has no annotations but basic properties are preserved
+	test.isEqual(undefined, distilledSpec3.axesSpec[0].annotations)
+	test.isEqual("String", distilledSpec3.axesSpec[0].type)
+	test.isEqual("gene", distilledSpec3.axesSpec[0].name)
+
+	// Test with specs that have different domain values
+	differentSpecs := [
+		{
+			kind: "PColumn",
+			valueType: "Int",
+			name: "col1",
+			domain: {
+				"discriminative": "value1"
+			}
+		},
+		{
+			kind: "PColumn",
+			valueType: "Int",
+			name: "col1",
+			domain: {
+				"discriminative": "value2"
+			}
+		}
+	]
+
+	diffDistiller := pSpec.createSpecDistiller(differentSpecs)
+	distilledDiffSpec := diffDistiller.distill(differentSpecs[0])
+
+	// Verify basic properties
+	test.isEqual("PColumn", distilledDiffSpec.kind)
+	test.isEqual("Int", distilledDiffSpec.valueType)
+	test.isEqual("col1", distilledDiffSpec.name)
+
+	// The discriminative domain might be kept
+	if (!is_undefined(distilledDiffSpec.domain)) {
+		test.isEqual("value1", distilledDiffSpec.domain["discriminative"])
+	}
+
+	// Test with empty domains
+	emptyDomainSpec := {
+		kind: "PColumn",
+		valueType: "Int",
+		name: "simple",
+		annotations: {
+			"pl7.app/label": "Simple label"
+		},
+		axesSpec: [
+			{
+				type: "String",
+				name: "axis",
+				annotations: {
+					"pl7.app/label": "Simple axis"
+				}
+			}
+		]
+	}
+
+	emptyDistiller := pSpec.createSpecDistiller([emptyDomainSpec])
+	distilledEmptySpec := emptyDistiller.distill(emptyDomainSpec)
+
+	// Verify no annotations
+	test.isEqual(undefined, distilledEmptySpec.annotations)
+
+	// Verify basic properties are preserved
+	test.isEqual("PColumn", distilledEmptySpec.kind)
+	test.isEqual("Int", distilledEmptySpec.valueType)
+	test.isEqual("simple", distilledEmptySpec.name)
+
+	// Verify axis has no annotations but basic properties are preserved
+	test.isEqual(undefined, distilledEmptySpec.axesSpec[0].annotations)
+	test.isEqual("String", distilledEmptySpec.axesSpec[0].type)
+	test.isEqual("axis", distilledEmptySpec.axesSpec[0].name)
+}
+
+TestDiscriminativeDomainsAreSorted := func() {
+	// Create specs with domain names in unsorted order
+	specs := [
+		{
+			kind: "PColumn",
+			valueType: "Int",
+			name: "col1",
+			domain: {
+				"z-domain": "value1",
+				"a-domain": "value1",
+				"m-domain": "value1"
+			}
+		},
+		{
+			kind: "PColumn",
+			valueType: "Int",
+			name: "col1",
+			domain: {
+				"z-domain": "value2",
+				"a-domain": "value2",
+				"m-domain": "value2"
+			}
+		}
+	]
+
+	// Create the distiller
+	distiller := pSpec.createSpecDistiller(specs)
+
+	// Get discriminative domains for col1
+	domains := distiller.getDiscriminativeDomains("col1")
+
+	// Verify the domains are sorted alphabetically
+	test.isEqual(["a-domain", "m-domain", "z-domain"], domains)
+
+	// Test with different domain order
+	specs2 := [
+		{
+			kind: "PColumn",
+			valueType: "Int",
+			name: "col2",
+			domain: {
+				"xyz": "value1",
+				"abc": "value1",
+				"def": "value1"
+			}
+		},
+		{
+			kind: "PColumn",
+			valueType: "Int",
+			name: "col2",
+			domain: {
+				"xyz": "value2",
+				"abc": "value2",
+				"def": "value2"
+			}
+		}
+	]
+
+	distiller2 := pSpec.createSpecDistiller(specs2)
+	domains2 := distiller2.getDiscriminativeDomains("col2")
+
+	// Verify the domains are sorted alphabetically
+	test.isEqual(["abc", "def", "xyz"], domains2)
+}

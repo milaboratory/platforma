@@ -1,6 +1,6 @@
 // helper template to save files in a working dir
 
-self := import(":tpl")
+self := import(":tpl.light")
 text := import("text")
 smart := import(":smart")
 wdSave := import(":workdir.save")
