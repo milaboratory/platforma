@@ -32,9 +32,7 @@ mnzClientStdoutSchema := ["or",
 			"error,?": "any",
 			"result,?": {
 				productKey: "string",
-				productName: "string",
 				canRun: "boolean",
-				status: "string",
 				mnz: {
 					type: "string",
 					details: "any"
