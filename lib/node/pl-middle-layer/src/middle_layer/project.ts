@@ -512,7 +512,14 @@ function convertErrorsToStrings(
 
     result[key] = {
       ok: false,
-      errors: val.errors.map((e) => typeof e === 'string' ? e : e.message),
+      errors: val.errors.map((e) => {
+        if (typeof e === 'string') {
+          return e;
+        } else if (e.type == 'PlError' && e.fullMessage !== undefined) {
+          return e.fullMessage;
+        }
+        return e.message;
+      }),
       moreErrors: val.moreErrors,
     };
   }

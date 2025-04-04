@@ -12,7 +12,7 @@
     "test": "turbo run test --concurrency 1 --env-mode=loose",
     "publish-to-local-registry": "turbo run publish-to-local-registry",
     "do-pack": "turbo run do-pack",
-    "lint": "turbo lint",
+    "lint": "pnpm -r lint",
     "changeset": "changeset",
     "version-packages": "changeset version",
     "pretty": "prettier --write \"./**/*.{js,jsx,mjs,cjs,ts,tsx,json,yaml}\"",
