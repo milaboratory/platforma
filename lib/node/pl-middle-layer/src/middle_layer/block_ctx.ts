@@ -91,13 +91,12 @@ export function constructBlockContext(
       const result = cCtx
         .accessor(projectEntry)
         .node({ ignoreError: true })
-        .traverse({
+        .traverseOrError({
           field: projectFieldName(blockId, 'stagingOutput'),
-          ignoreError: true,
-        })
-        ?.persist();
+        });
+
       if (result === undefined) cCtx.markUnstable('staging_not_rendered');
-      return result;
+      else if (result.ok) return result.value.persist();
     },
     getResultsPool: (cCtx: ComputableCtx) => ResultPool.create(cCtx, projectEntry, blockId),
   };
