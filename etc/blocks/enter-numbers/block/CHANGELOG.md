@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.test-enter-numbers
 
+## 1.0.237
+
+### Patch Changes
+
+- @platforma-sdk/model@1.27.8
+- @milaboratories/milaboratories.test-enter-numbers.model@1.0.59
+- @milaboratories/milaboratories.test-enter-numbers.ui@1.0.230
+
 ## 1.0.236
 
 ### Patch Changes

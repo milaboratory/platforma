@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.13.2
+
+### Patch Changes
+
+- 962c620: Full migration to PFrames Rust
+
 ## 1.13.1
 
 ### Patch Changes
