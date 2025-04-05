@@ -1,4 +1,4 @@
-import type { ExplicitTemplate } from './template_spec';
+import type { ExplicitTemplate, UnpackedTemplate } from './template_spec';
 import type { ResourceType } from '@milaboratories/pl-client';
 import type { BlockConfigContainer } from '@platforma-sdk/model';
 import type { BlockPackSpec } from '@milaboratories/pl-model-middle-layer';
@@ -46,7 +46,15 @@ export interface BlockPackExplicit {
 }
 
 /** Block-pack spec that can be materialized in pl. */
-export type BlockPackSpecPrepared = BlockPackExplicit;
+export type BlockPackUnpacked = {
+  type: 'unpacked';
+  template: UnpackedTemplate;
+  config: BlockConfigContainer;
+  frontend: FrontendSpec;
+  source: BlockPackSpec;
+};
+
+export type BlockPackSpecPrepared = BlockPackUnpacked;
 
 /** All block-pack specs. */
-export type BlockPackSpecAny = BlockPackSpecPrepared | BlockPackSpec;
+export type BlockPackSpecAny = BlockPackSpecPrepared | BlockPackExplicit | BlockPackSpec;
