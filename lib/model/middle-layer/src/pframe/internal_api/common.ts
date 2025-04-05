@@ -11,11 +11,6 @@ export interface AxisQualification {
   additionalDomains: Record<string, string>;
 }
 
-export interface AxisQualificationWithAxisId {
-  axis: AxisId;
-  additionalDomains: Record<string, string>;
-}
-
 export interface ColumnAxesWithQualifications {
   axesSpec: AxisSpec[];
   qualifications: AxisQualification[];
