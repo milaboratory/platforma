@@ -27,12 +27,9 @@ catalogs:
     '@jest/globals':
       specifier: ^29.7.0
       version: 29.7.0
-    '@milaboratories/pframes-node':
-      specifier: 2.1.20
-      version: 2.1.20
     '@milaboratories/pframes-rs-node':
-      specifier: 1.0.24
-      version: 1.0.24
+      specifier: 1.0.26
+      version: 1.0.26
     '@milaboratories/software-pframes-conv':
       specifier: 2.1.20
       version: 2.1.20
@@ -1780,12 +1777,9 @@ importers:
       '@milaboratories/computable':
         specifier: workspace:^
         version: link:../computable
-      '@milaboratories/pframes-node':
-        specifier: 'catalog:'
-        version: 2.1.20(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)
       '@milaboratories/pframes-rs-node':
         specifier: 'catalog:'
-        version: 1.0.24(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)
+        version: 1.0.26(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)
       '@milaboratories/pl-client':
         specifier: workspace:^
         version: link:../pl-client
@@ -4292,21 +4286,16 @@ packages:
   '@microsoft/tsdoc@0.15.1':
     resolution: {integrity: sha512-4aErSrCR/On/e5G2hDP0wjooqDdauzEbIq8hIkIe5pXV0rtWJZvdCEKL0ykZxex+IxIwBp0eGeV48hQN07dXtw==}
 
-  '@milaboratories/pframes-node@2.1.20':
-    resolution: {integrity: sha512-3S/XhvHAtdgrVjxERLA4+ACDX025bNNg13SvkfWruRnwyr6c/Bi4xnCD5orjtvihX1GJOjuSR3gs1mImHNzp4w==}
+  '@milaboratories/pframes-rs-node@1.0.26':
+    resolution: {integrity: sha512-RLwJK529su9GdDoBW1Nu6U6trEz+wq73HdPVI1qkxCZoingduIP+zR1jFa+zDzABBE3AR5XU8FYpM/x4Wb/C0A==}
     peerDependencies:
       '@milaboratories/pl-model-common': '*'
 
-  '@milaboratories/pframes-rs-node@1.0.24':
-    resolution: {integrity: sha512-NE+wgqynOYSdGVkPkKtGaRAFcixpJ7hf/4FMk0jk75db7Wfs4i7AK2hVZVFe5rxlL0r8fZKPRQSJF8gMXMgisA==}
-    peerDependencies:
-      '@milaboratories/pl-model-common': '*'
+  '@milaboratories/pl-model-common@1.13.1':
+    resolution: {integrity: sha512-eLNfnVOO1zQNpGJ36QHu+qGle8iIxmsaDDLwDnIZPm5XF6QFDDD5dTEQOuLJC8oYMjeq6vcKWL/QCWzFm+uqGA==}
 
-  '@milaboratories/pl-model-common@1.11.1':
-    resolution: {integrity: sha512-bCuItv8bIjrRmMk4vItBf6cJtHwl4j5vt5XbT/Fa7KjcEKl3RskED+H/KQqEdd026Esr+y9qKA5PmvP31qEfDg==}
-
-  '@milaboratories/pl-model-middle-layer@1.7.11':
-    resolution: {integrity: sha512-nfaBRS+4XjjgmMvNfJry9uGkYEycxc+xlGBurg0vPG9qUKlEJMqx/y+Rkrm7SwpOeXzl6SCZ4Xqb2p/ySsiE6A==}
+  '@milaboratories/pl-model-middle-layer@1.7.19':
+    resolution: {integrity: sha512-3lqbOvbSEN6DbSdfG9iFmqi5kjTtIlGnp8TTzct6NiIAFfCyrbf14B4HvOtfRhCZ75SRA+G3LRzio7D+HtFOHQ==}
 
   '@milaboratories/software-pframes-conv@2.1.20':
     resolution: {integrity: sha512-gUrSn0mOJchOveE839dp+sBtTY6fpruk1HSSohJe18yTlJksYKwn6b90Nyt8oKkLs6iKa4qNVLwpBwmGpICf0g==}
@@ -11158,33 +11147,24 @@ snapshots:
 
   '@microsoft/tsdoc@0.15.1': {}
 
-  '@milaboratories/pframes-node@2.1.20(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)':
+  '@milaboratories/pframes-rs-node@1.0.26(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)':
     dependencies:
       '@mapbox/node-pre-gyp': 2.0.0(encoding@0.1.13)
       '@milaboratories/pl-model-common': link:lib/model/common
-      '@milaboratories/pl-model-middle-layer': 1.7.11
-    transitivePeerDependencies:
-      - encoding
-      - supports-color
-
-  '@milaboratories/pframes-rs-node@1.0.24(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)':
-    dependencies:
-      '@mapbox/node-pre-gyp': 2.0.0(encoding@0.1.13)
-      '@milaboratories/pl-model-common': link:lib/model/common
-      '@milaboratories/pl-model-middle-layer': 1.7.11
+      '@milaboratories/pl-model-middle-layer': 1.7.19
       ulid: 3.0.0
     transitivePeerDependencies:
       - encoding
       - supports-color
 
-  '@milaboratories/pl-model-common@1.11.1':
+  '@milaboratories/pl-model-common@1.13.1':
     dependencies:
       canonicalize: 2.1.0
       zod: 3.23.8
 
-  '@milaboratories/pl-model-middle-layer@1.7.11':
+  '@milaboratories/pl-model-middle-layer@1.7.19':
     dependencies:
-      '@milaboratories/pl-model-common': 1.11.1
+      '@milaboratories/pl-model-common': 1.13.1
       remeda: 2.21.2
       utility-types: 3.11.0
       zod: 3.23.8

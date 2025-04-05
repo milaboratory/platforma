@@ -44,11 +44,9 @@ import { createHash } from 'node:crypto';
 import type { MiLogger } from '@milaboratories/ts-helpers';
 import { assertNever } from '@milaboratories/ts-helpers';
 import canonicalize from 'canonicalize';
-import { PFrame } from '@milaboratories/pframes-node';
 import { PFrame as PFrameRs } from '@milaboratories/pframes-rs-node';
 import * as fsp from 'node:fs/promises';
 import { LRUCache } from 'lru-cache';
-import { ConcurrencyLimitingExecutor } from '@milaboratories/ts-helpers';
 import { getDebugFlags } from '../debug';
 
 function blobKey(res: ResourceInfo): string {
@@ -82,47 +80,15 @@ function migrateFilters(filters: PTableRecordFilter[]): PTableRecordFilter[] {
   return filtersV2;
 }
 
-function pframesDispatch<T>(params: {
-  cppCallback: () => Promise<T>;
-  rustCallback: () => Promise<T>;
-  logger: MiLogger;
-  filters?: PTableRecordFilter[];
-  signal?: AbortSignal;
-}): Promise<T> {
-  if (getDebugFlags().usePFrameRs) return params.rustCallback();
-
-  return params.rustCallback().catch((error: unknown) => {
-    if (params.signal?.aborted === false) {
-      if (error instanceof Error) {
-        params.logger.warn(`PFrames Rust failed, error: ${error.message}`);
-      }
-      return params.cppCallback();
-    } else {
-      throw error;
-    }
-  });
-}
-
 const bigintReplacer = (_: string, v: unknown) => (typeof v === 'bigint' ? v.toString() : v);
 
 class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
-  public readonly rustPFrame: PFrameInternal.PFrameV3;
+  public readonly rustPFrame: PFrameInternal.PFrameV4;
   private readonly blobIdToResource = new Map<string, ResourceInfo>();
   private readonly blobHandleComputables = new Map<
     string,
     ComputableStableDefined<LocalBlobHandleAndSize>
   >();
-
-  private readonly createDataPFrame: () => PFrameInternal.PFrameV3;
-  public get disposableDataPFrame() {
-    const dataPFrame = this.createDataPFrame();
-    return {
-      dataPFrame,
-      [Symbol.dispose]: () => {
-        dataPFrame.dispose();
-      },
-    };
-  }
 
   constructor(
     private readonly blobDriver: DownloadDriver,
@@ -156,43 +122,19 @@ class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
       )).values(),
     ];
 
-    this.rustPFrame = ((): PFrameInternal.PFrameV3 => {
-      try {
-        const pFrame = new PFrameRs(getDebugFlags().logPFrameRequests ? logFunc : undefined);
-        pFrame.setDataSource(this);
-        for (const column of distinctСolumns) {
-          pFrame.addColumnSpec(column.id, column.spec);
-          pFrame.setColumnData(column.id, column.data);
-        }
-        return pFrame;
-      } catch (err: unknown) {
-        throw new Error(
-          `Rust PFrame creation failed, columns: ${JSON.stringify(distinctСolumns)}, error: ${err as Error}`,
-        );
+    try {
+      const pFrame = new PFrameRs(getDebugFlags().logPFrameRequests ? logFunc : undefined);
+      pFrame.setDataSource(this);
+      for (const column of distinctСolumns) {
+        pFrame.addColumnSpec(column.id, column.spec);
+        pFrame.setColumnData(column.id, column.data);
       }
-    })();
-
-    this.createDataPFrame = (): PFrameInternal.PFrameV3 => {
-      try {
-        const pFrame = getDebugFlags().logPFrameRequests ? new PFrame(logFunc) : new PFrame();
-        pFrame.setDataSource(this);
-        for (const column of distinctСolumns) {
-          try {
-            pFrame.addColumnSpec(column.id, column.spec);
-            pFrame.setColumnData(column.id, column.data);
-          } catch (err: unknown) {
-            throw new Error(
-              `Adding column ${column.id} to PFrame failed: ${err as Error}; Spec: ${JSON.stringify(column.spec)}, DataInfo: ${JSON.stringify(column.data)}.`,
-            );
-          }
-        }
-        return pFrame;
-      } catch (err: unknown) {
-        throw new Error(
-          `Data PFrame creation failed, columns: ${JSON.stringify(distinctСolumns)}, error: ${err as Error}`,
-        );
-      }
-    };
+      this.rustPFrame = pFrame;
+    } catch (err: unknown) {
+      throw new Error(
+        `Rust PFrame creation failed, columns: ${JSON.stringify(distinctСolumns)}, error: ${err as Error}`,
+      );
+    }
   }
 
   private getOrCreateComputableForBlob(blobId: string) {
@@ -291,8 +233,6 @@ export class PFrameDriver implements InternalPFrameDriver {
   private readonly pFrames: RefCountResourcePool<InternalPFrameData, PFrameHolder>;
   private readonly pTables: RefCountResourcePool<FullPTableDef, PTableHolder>;
   private readonly blobContentCache: LRUCache<string, Uint8Array>;
-  /** Limits concurrent requests to PFrame API to prevent deadlock with Node's IO threads */
-  private readonly concurrencyLimiter: ConcurrencyLimitingExecutor;
 
   constructor(
     private readonly blobDriver: DownloadDriver,
@@ -304,9 +244,6 @@ export class PFrameDriver implements InternalPFrameDriver {
       sizeCalculation: (v) => v.length,
     });
     this.blobContentCache = blobContentCache;
-
-    const concurrencyLimiter = new ConcurrencyLimitingExecutor(1);
-    this.concurrencyLimiter = concurrencyLimiter;
 
     this.pFrames = new (class extends RefCountResourcePool<InternalPFrameData, PFrameHolder> {
       constructor(
@@ -346,41 +283,16 @@ export class PFrameDriver implements InternalPFrameDriver {
             `PTable creation (pTableHandle = ${this.calculateParamsKey(params)}): ${JSON.stringify(params, bigintReplacer)}`,
           );
         }
-        const tablePromise = pframesDispatch({
-          cppCallback: () => {
-            return concurrencyLimiter.run(async () => {
-              using disposableDataPFrame = this.pFrames.getByKey(handle).disposableDataPFrame;
-              return await disposableDataPFrame.dataPFrame.createTable({
-                src: joinEntryToInternal(params.def.src),
-                filters: migrateFilters(params.def.filters),
-              }, params.signal);
-            }).then(async (table) => {
-              if (params.def.sorting.length === 0) return table;
-              try {
-                return await concurrencyLimiter.run(async () => {
-                  return await table.sort(params.def.sorting, params.signal);
-                });
-              } finally {
-                table.dispose();
-              }
-            });
-          },
-          rustCallback: () => {
-            return this.pFrames.getByKey(handle).rustPFrame.createTable({
-              src: joinEntryToInternal(params.def.src),
-              filters: migrateFilters(params.def.filters),
-            }, params.signal).then(async (table) => {
-              if (params.def.sorting.length === 0) return table;
-              try {
-                return await table.sort(params.def.sorting, params.signal);
-              } finally {
-                table.dispose();
-              }
-            });
-          },
-          logger,
-          filters: params.def.filters,
-          signal: params.signal,
+        const tablePromise = this.pFrames.getByKey(handle).rustPFrame.createTable({
+          src: joinEntryToInternal(params.def.src),
+          filters: migrateFilters(params.def.filters),
+        }, params.signal).then(async (table) => {
+          if (params.def.sorting.length === 0) return table;
+          try {
+            return await table.sort(params.def.sorting, params.signal);
+          } finally {
+            table.dispose();
+          }
         });
         return new PTableHolder(tablePromise);
       }
@@ -486,65 +398,27 @@ export class PFrameDriver implements InternalPFrameDriver {
         `Call calculateTableData, handle = ${handle}, request = ${JSON.stringify(request, bigintReplacer)}`,
       );
     }
-    return await pframesDispatch({
-      cppCallback: async () => {
-        return await this.concurrencyLimiter.run(async () => {
-          using disposableDataPFrame = this.pFrames.getByKey(handle).disposableDataPFrame;
-          return await disposableDataPFrame.dataPFrame.createTable({
-            src: joinEntryToInternal(request.src),
-            filters: migrateFilters(request.filters),
-          }, signal);
-        }).then(async (table) => {
-          if (request.sorting.length === 0) return table;
-          try {
-            return await this.concurrencyLimiter.run(async () => {
-              return await table.sort(request.sorting, signal);
-            });
-          } finally {
-            table.dispose();
-          }
-        }).then(async (table) => {
-          try {
-            const spec = table.getSpec();
-            const data = await this.concurrencyLimiter.run(
-              async () => await table.getData([...spec.keys()]),
-            );
-            return spec.map((spec, i) => ({
-              spec: spec,
-              data: data[i],
-            }));
-          } finally {
-            table.dispose();
-          }
-        });
-      },
-      rustCallback: async () => {
-        return await this.pFrames.getByKey(handle).rustPFrame.createTable({
-          src: joinEntryToInternal(request.src),
-          filters: migrateFilters(request.filters),
-        }, signal).then(async (table) => {
-          if (request.sorting.length === 0) return table;
-          try {
-            return await table.sort(request.sorting, signal);
-          } finally {
-            table.dispose();
-          }
-        }).then(async (table) => {
-          try {
-            const spec = table.getSpec();
-            const data = await table.getData([...spec.keys()]);
-            return spec.map((spec, i) => ({
-              spec: spec,
-              data: data[i],
-            }));
-          } finally {
-            table.dispose();
-          }
-        });
-      },
-      logger: this.logger,
-      filters: request.filters,
-      signal,
+    return await this.pFrames.getByKey(handle).rustPFrame.createTable({
+      src: joinEntryToInternal(request.src),
+      filters: migrateFilters(request.filters),
+    }, signal).then(async (table) => {
+      if (request.sorting.length === 0) return table;
+      try {
+        return await table.sort(request.sorting, signal);
+      } finally {
+        table.dispose();
+      }
+    }).then(async (table) => {
+      try {
+        const spec = table.getSpec();
+        const data = await table.getData([...spec.keys()]);
+        return spec.map((spec, i) => ({
+          spec: spec,
+          data: data[i],
+        }));
+      } finally {
+        table.dispose();
+      }
     });
   }
 
@@ -558,26 +432,10 @@ export class PFrameDriver implements InternalPFrameDriver {
         `Call getUniqueValues, handle = ${handle}, request = ${JSON.stringify(request, bigintReplacer)}`,
       );
     }
-    return await pframesDispatch({
-      cppCallback: async () => {
-        return await this.concurrencyLimiter.run(async () => {
-          using disposableDataPFrame = this.pFrames.getByKey(handle).disposableDataPFrame;
-          return await disposableDataPFrame.dataPFrame.getUniqueValues({
-            ...request,
-            filters: migrateFilters(request.filters),
-          }, signal);
-        });
-      },
-      rustCallback: async () => {
-        return await this.pFrames.getByKey(handle).rustPFrame.getUniqueValues({
-          ...request,
-          filters: migrateFilters(request.filters),
-        }, signal);
-      },
-      logger: this.logger,
-      filters: request.filters,
-      signal,
-    });
+    return await this.pFrames.getByKey(handle).rustPFrame.getUniqueValues({
+      ...request,
+      filters: migrateFilters(request.filters),
+    }, signal);
   }
 
   //
@@ -600,19 +458,23 @@ export class PFrameDriver implements InternalPFrameDriver {
     range?: TableRange,
   ): Promise<PTableVector[]> {
     const pTable = await this.pTables.getByKey(handle).table;
-    return await this.concurrencyLimiter.run(
-      async () => await pTable.getData(columnIndices, range),
-    );
+    return await pTable.getData(columnIndices, range);
   }
 }
 
-function joinEntryToInternal(entry: JoinEntry<PObjectId>): PFrameInternal.JoinEntry {
+function joinEntryToInternal(entry: JoinEntry<PObjectId>): PFrameInternal.JoinEntryV2 {
   switch (entry.type) {
     case 'column':
       return {
         type: 'column',
         columnId: entry.column,
-        qualifications: [],
+      };
+    case 'slicedColumn':
+      return {
+        type: 'slicedColumn',
+        columnId: entry.column,
+        newId: entry.newId,
+        axisFilters: entry.axisFilters,
       };
     case 'inner':
     case 'full':
