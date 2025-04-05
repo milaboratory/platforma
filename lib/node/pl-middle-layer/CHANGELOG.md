@@ -1,5 +1,17 @@
 # @milaboratories/pl-middle-layer
 
+## 1.32.6
+
+### Patch Changes
+
+- 962c620: Full migration to PFrames Rust
+- Updated dependencies [962c620]
+  - @milaboratories/pl-model-middle-layer@1.7.20
+  - @milaboratories/pl-model-common@1.13.2
+  - @platforma-sdk/block-tools@2.5.33
+  - @milaboratories/pl-drivers@1.5.39
+  - @platforma-sdk/model@1.27.8
+
 ## 1.32.5
 
 ### Patch Changes
