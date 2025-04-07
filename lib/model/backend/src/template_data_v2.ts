@@ -1,21 +1,8 @@
-import { gunzip, gunzipSync, gzipSync } from 'node:zlib';
+import { gunzipSync, gzipSync } from 'node:zlib';
 import canonicalize from 'canonicalize';
-import { promisify } from 'node:util';
-
-const gunzipAsync = promisify(gunzip);
 
 const templateArchiveEncoder = new TextEncoder();
 const templateArchiveDecoder = new TextDecoder();
-
-// @TODO: JSON.parse is slow, it is about 40% of the total time, decode is fast, and gunzip is 60% of the total time
-export async function parseTemplateAsync(content: Uint8Array): Promise<TemplateData> {
-  const unzipped = await gunzipAsync(content);
-  const data = JSON.parse(templateArchiveDecoder.decode(unzipped)) as TemplateData;
-  if (data.type !== 'pl.tengo-template.v2') {
-    throw new Error('malformed template');
-  }
-  return data;
-}
 
 export function parseTemplate(content: Uint8Array): TemplateData {
   const data = JSON.parse(templateArchiveDecoder.decode(gunzipSync(content))) as TemplateData;

@@ -1,9 +1,9 @@
-import { test, expect } from '@jest/globals';
+import { test, expect } from 'vitest';
 import { BlockPackRegistry } from './registry';
 import { CentralBlockRegistry } from './well_known_registries';
 import { V2RegistryProvider } from './registry-v2-provider';
 import { BlockPackFromRegistryV2 } from '@milaboratories/pl-model-middle-layer';
-import { defaultHttpDispatcher } from '../../../pl-http/src';
+import { defaultHttpDispatcher } from '@milaboratories/pl-http';
 
 test('testing remote registry', async () => {
   const registry = new BlockPackRegistry(new V2RegistryProvider(defaultHttpDispatcher()), [

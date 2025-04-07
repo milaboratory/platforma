@@ -1,7 +1,7 @@
 import type { AnyResourceRef, PlTransaction, ResourceType } from '@milaboratories/pl-client';
 import { field } from '@milaboratories/pl-client';
 import { loadTemplate } from '../template/template_loading';
-import type { BlockPackExplicit, BlockPackSpecAny, BlockPackSpecPrepared, BlockPackUnpacked } from '../../model';
+import type { BlockPackExplicit, BlockPackSpecAny, BlockPackSpecPrepared } from '../../model';
 import type { Signer } from '@milaboratories/ts-helpers';
 import { assertNever } from '@milaboratories/ts-helpers';
 import fs from 'node:fs';
@@ -15,7 +15,8 @@ import { resolveDevPacket } from '../../dev_env';
 import { getDevV2PacketMtime } from '../../block_registry';
 import type { V2RegistryProvider } from '../../block_registry/registry-v2-provider';
 import { LRUCache } from 'lru-cache';
-import { parseTemplateAsync } from '@milaboratories/pl-model-backend';
+import type { BlockPackSpec } from '@milaboratories/pl-model-middle-layer';
+import { WorkerManager } from '../../worker/WorkerManager';
 
 export const BlockPackCustomType: ResourceType = { name: 'BlockPackCustom', version: '1' };
 export const BlockPackTemplateField = 'template';
@@ -57,7 +58,7 @@ export class BlockPackPreparer {
       case 'explicit':
         return spec.config;
 
-      case 'unpacked':
+      case 'prepared':
         return spec.config;
 
       case 'dev-v1': {
@@ -94,23 +95,25 @@ export class BlockPackPreparer {
   }
 
   public async prepare(spec: BlockPackSpecAny): Promise<BlockPackSpecPrepared> {
-    const prepared = await this.prepareWithoutUnpacking(spec);
-
-    if (prepared.type === 'unpacked') {
-      return prepared;
+    if (spec.type === 'prepared') {
+      return spec;
     }
 
+    const explicit = await this.prepareWithoutUnpacking(spec);
+
+    await using workerManager = new WorkerManager();
+
     return {
-      ...prepared,
-      type: 'unpacked',
+      ...explicit,
+      type: 'prepared',
       template: {
-        type: 'unpacked',
-        data: await parseTemplateAsync(prepared.template.content),
+        type: 'prepared',
+        data: await workerManager.process('parseTemplate', explicit.template.content),
       },
     };
   }
 
-  private async prepareWithoutUnpacking(spec: BlockPackSpecAny): Promise<BlockPackExplicit | BlockPackUnpacked> {
+  private async prepareWithoutUnpacking(spec: BlockPackExplicit | BlockPackSpec): Promise<BlockPackExplicit> {
     switch (spec.type) {
       case 'explicit':
         return spec;
@@ -228,9 +231,6 @@ export class BlockPackPreparer {
         };
       }
 
-      case 'unpacked':
-        return spec;
-
       default:
         return assertNever(spec);
     }
@@ -249,7 +249,7 @@ function createCustomBlockPack(tx: PlTransaction, spec: BlockPackSpecPrepared): 
 
 export function createBlockPack(tx: PlTransaction, spec: BlockPackSpecPrepared): AnyResourceRef {
   switch (spec.type) {
-    case 'unpacked':
+    case 'prepared':
       return createCustomBlockPack(tx, spec);
     default:
       return assertNever(spec.type);

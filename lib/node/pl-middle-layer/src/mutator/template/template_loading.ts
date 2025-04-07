@@ -7,7 +7,7 @@ import type {
   TemplateSpecPrepared,
 } from '../../model/template_spec';
 import { assertNever } from '@milaboratories/ts-helpers';
-import { loadTemplateFromExplicitDirect, loadTemplateFromUnpacked } from './direct_template_loader';
+import { loadTemplateFromExplicitDirect, loadTemplateFromPrepared } from './direct_template_loader';
 
 //
 // Resource schema
@@ -36,7 +36,7 @@ export async function prepareTemplateSpec(tpl: TemplateSpecAny): Promise<Templat
     case 'from-registry':
     case 'explicit':
       return tpl;
-    case 'unpacked':
+    case 'prepared':
       return tpl;
     default:
       return assertNever(tpl);
@@ -63,8 +63,8 @@ export function loadTemplate(tx: PlTransaction, spec: TemplateSpecPrepared): Any
       return loadTemplateFromRegistry(tx, spec);
     case 'explicit':
       return loadTemplateFromExplicitDirect(tx, spec);
-    case 'unpacked':
-      return loadTemplateFromUnpacked(tx, spec);
+    case 'prepared':
+      return loadTemplateFromPrepared(tx, spec);
     default:
       return assertNever(spec);
   }

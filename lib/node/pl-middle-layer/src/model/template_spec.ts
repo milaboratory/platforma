@@ -11,8 +11,8 @@ export interface ExplicitTemplate {
   content: Uint8Array;
 }
 
-export interface UnpackedTemplate {
-  readonly type: 'unpacked';
+export interface PreparedTemplate {
+  readonly type: 'prepared';
   data: TemplateData;
 }
 
@@ -21,5 +21,5 @@ export interface TemplateFromFile {
   path: string;
 }
 
-export type TemplateSpecPrepared = TemplateFromRegistry | ExplicitTemplate | UnpackedTemplate;
+export type TemplateSpecPrepared = TemplateFromRegistry | ExplicitTemplate | PreparedTemplate;
 export type TemplateSpecAny = TemplateSpecPrepared | TemplateFromFile;
