@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-backend
 
+## 1.0.4
+
+### Patch Changes
+
+- 2e8b782: Use non-blocking gunzip to extract template content
+
 ## 1.0.3
 
 ### Patch Changes

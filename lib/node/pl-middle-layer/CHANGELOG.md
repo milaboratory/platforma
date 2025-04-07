@@ -1,5 +1,15 @@
 # @milaboratories/pl-middle-layer
 
+## 1.32.7
+
+### Patch Changes
+
+- 2e8b782: Use non-blocking gunzip to extract template content
+- da38aad: Move parse template operations to worker thread, use vitest instead of jest
+- Updated dependencies [2e8b782]
+  - @milaboratories/pl-model-backend@1.0.4
+  - @platforma-sdk/workflow-tengo@3.2.1
+
 ## 1.32.6
 
 ### Patch Changes
