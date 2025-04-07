@@ -353,6 +353,19 @@ pColumnBundleUnmarshaller := func() {
 						}
 					}
 
+					// Helper function to find a request by item
+					findRequestByItem := func(item) {
+						serializedId := processColumnId(item).canonicalId
+						for _, request in requests {
+							if request.canonicalId == serializedId {
+								return request
+							}
+						}
+						// Throw error if not found
+						ll.panic("Column not found in the table: %s. Make sure to call add() first.",
+							serializedId)
+					}
+
 					tableBuilder := undefined
 					tableBuilder = {
 						/**
@@ -519,16 +532,22 @@ pColumnBundleUnmarshaller := func() {
 								return generateLabelForAxis(item)
 							}
 
-							serializedId := processColumnId(item).canonicalId
+							// Find the request, error handled inside the helper
+							request := findRequestByItem(item)
+							return request.header
+						},
 
-							for _, request in requests {
-								if request.canonicalId == serializedId {
-									return request.header
-								}
-							}
-
-							ll.panic("Column not found in the table: %s. Make sure to call add() before getHeader().",
-								serializedId)
+						/**
+						 * Gets the spec for a column
+						 * @param item - A column key (string), UniversalPColumnId
+						 * @returns The column spec object
+						 * @throws If the column hasn't been added to the table yet
+						 * @note This method only works for columns that have been added to the table via add()
+						 */
+						getSpec: func(item) {
+							// Find the request, error handled inside the helper
+							request := findRequestByItem(item)
+							return request.columnSpec
 						}
 					}
 
