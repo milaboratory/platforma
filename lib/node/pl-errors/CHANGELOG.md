@@ -1,5 +1,11 @@
 # @milaboratories/pl-errors
 
+## 1.0.4
+
+### Patch Changes
+
+- 6e3329e: extract parsed_errors from pl-tree for future using it in computable
+
 ## 1.0.3
 
 ### Patch Changes

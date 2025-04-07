@@ -1,5 +1,20 @@
 # @milaboratories/pl-middle-layer
 
+## 1.32.8
+
+### Patch Changes
+
+- 6e3329e: extract parsed_errors from pl-tree for future using it in computable
+- Updated dependencies [6e3329e]
+  - @milaboratories/computable@2.4.3
+  - @milaboratories/pl-errors@1.0.4
+  - @milaboratories/pl-model-common@1.13.3
+  - @milaboratories/pl-tree@1.5.3
+  - @platforma-sdk/model@1.27.10
+  - @milaboratories/pl-drivers@1.5.40
+  - @milaboratories/pl-model-middle-layer@1.7.21
+  - @platforma-sdk/block-tools@2.5.34
+
 ## 1.32.7
 
 ### Patch Changes

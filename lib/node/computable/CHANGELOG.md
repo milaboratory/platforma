@@ -1,5 +1,13 @@
 # @milaboratories/computable
 
+## 2.4.3
+
+### Patch Changes
+
+- 6e3329e: extract parsed_errors from pl-tree for future using it in computable
+- Updated dependencies [ff0f92c]
+  - @milaboratories/pl-error-like@1.12.0
+
 ## 2.4.2
 
 ### Patch Changes

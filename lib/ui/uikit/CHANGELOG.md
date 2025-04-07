@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.62
+
+### Patch Changes
+
+- 22871ac: uikit and ui-vue: get global platforma from preload via hook. Now we could defined a hook and return new platforma that overrides some behaviours. It's needed for keeping old compat
+
 ## 2.2.61
 
 ### Patch Changes

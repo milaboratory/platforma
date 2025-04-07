@@ -1,5 +1,12 @@
 # @milaboratories/pl-model-common
 
+## 1.13.3
+
+### Patch Changes
+
+- Updated dependencies [ff0f92c]
+  - @milaboratories/pl-error-like@1.12.0
+
 ## 1.13.2
 
 ### Patch Changes
