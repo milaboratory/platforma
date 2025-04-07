@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 4.0.0
+
+### Major Changes
+
+- 8b4a614: Braking change in pframes.exportFrame: column order in result XSV may change
+
 ## 3.3.0
 
 ### Minor Changes
