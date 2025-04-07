@@ -316,14 +316,35 @@ pColumnBundleUnmarshaller := func() {
 					requests := []
 					addedColumns := {}
 
+					distiller := undefined
+
+					getSpecDistiller := func() {
+						if is_undefined(distiller) {
+							columnsToDistill := []
+							for request in requests {
+								col := pool[request.key]
+								columnsToDistill = append(columnsToDistill, col.spec)
+							}
+							distiller = pSpec.createSpecDistiller(columnsToDistill)
+						}
+						return distiller
+					}
+
 					findAxisHeaderOverride := func(spec) {
 						for _, override in localAxisHeaderOverrides {
 							matcher := override[0]
 
 							if matcher.name == spec.name {
+								specDistiller := getSpecDistiller()
+								discriminativeDomains := specDistiller.getDiscriminativeDomainsSet(spec.name)
+
 								domainsMatch := true
 
 								for domainKey, domainValue in matcher.domain {
+									if is_undefined(discriminativeDomains[domainKey]) {
+										continue
+									}
+
 									if is_undefined(spec.domain) ||
 									   is_undefined(spec.domain[domainKey]) ||
 									   spec.domain[domainKey] != domainValue {
@@ -338,20 +359,6 @@ pColumnBundleUnmarshaller := func() {
 							}
 						}
 						return undefined
-					}
-
-					distiller := undefined
-
-					getSpecDistiller := func() {
-						if is_undefined(distiller) {
-							columnsToDistill := []
-							for request in requests {
-								col := pool[request.key]
-								columnsToDistill = append(columnsToDistill, col.spec)
-							}
-							distiller = pSpec.createSpecDistiller(columnsToDistill)
-						}
-						return distiller
 					}
 
 					generateLabelForAxis := func(spec) {
