@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.63
+
+### Patch Changes
+
+- 0d465bf: Fixed: PlDropdownMulti does not keep selection order in ui
+
 ## 2.2.62
 
 ### Patch Changes
