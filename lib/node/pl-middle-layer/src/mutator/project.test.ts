@@ -1,4 +1,3 @@
-import { test, expect } from '@jest/globals';
 import { field, poll, TestHelpers, toGlobalResourceId } from '@milaboratories/pl-client';
 import { createProject, ProjectMutator, withProject } from './project';
 import { outputRef } from '../model/args';

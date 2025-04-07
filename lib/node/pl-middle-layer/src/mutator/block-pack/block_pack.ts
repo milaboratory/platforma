@@ -15,6 +15,8 @@ import { resolveDevPacket } from '../../dev_env';
 import { getDevV2PacketMtime } from '../../block_registry';
 import type { V2RegistryProvider } from '../../block_registry/registry-v2-provider';
 import { LRUCache } from 'lru-cache';
+import type { BlockPackSpec } from '@milaboratories/pl-model-middle-layer';
+import { WorkerManager } from '../../worker/WorkerManager';
 
 export const BlockPackCustomType: ResourceType = { name: 'BlockPackCustom', version: '1' };
 export const BlockPackTemplateField = 'template';
@@ -56,6 +58,9 @@ export class BlockPackPreparer {
       case 'explicit':
         return spec.config;
 
+      case 'prepared':
+        return spec.config;
+
       case 'dev-v1': {
         const devPaths = await resolveDevPacket(spec.folder, false);
         const configContent = await fs.promises.readFile(devPaths.config, { encoding: 'utf-8' });
@@ -90,6 +95,25 @@ export class BlockPackPreparer {
   }
 
   public async prepare(spec: BlockPackSpecAny): Promise<BlockPackSpecPrepared> {
+    if (spec.type === 'prepared') {
+      return spec;
+    }
+
+    const explicit = await this.prepareWithoutUnpacking(spec);
+
+    await using workerManager = new WorkerManager();
+
+    return {
+      ...explicit,
+      type: 'prepared',
+      template: {
+        type: 'prepared',
+        data: await workerManager.process('parseTemplate', explicit.template.content),
+      },
+    };
+  }
+
+  private async prepareWithoutUnpacking(spec: BlockPackExplicit | BlockPackSpec): Promise<BlockPackExplicit> {
     switch (spec.type) {
       case 'explicit':
         return spec;
@@ -213,7 +237,7 @@ export class BlockPackPreparer {
   }
 }
 
-function createCustomBlockPack(tx: PlTransaction, spec: BlockPackExplicit): AnyResourceRef {
+function createCustomBlockPack(tx: PlTransaction, spec: BlockPackSpecPrepared): AnyResourceRef {
   const blockPackInfo: BlockPackInfo = { config: spec.config, source: spec.source };
   const bp = tx.createStruct(BlockPackCustomType, JSON.stringify(blockPackInfo));
   tx.createField(field(bp, BlockPackTemplateField), 'Input', loadTemplate(tx, spec.template));
@@ -225,7 +249,7 @@ function createCustomBlockPack(tx: PlTransaction, spec: BlockPackExplicit): AnyR
 
 export function createBlockPack(tx: PlTransaction, spec: BlockPackSpecPrepared): AnyResourceRef {
   switch (spec.type) {
-    case 'explicit':
+    case 'prepared':
       return createCustomBlockPack(tx, spec);
     default:
       return assertNever(spec.type);

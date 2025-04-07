@@ -1,4 +1,4 @@
-import { expect, test } from '@jest/globals';
+import { expect, test } from 'vitest';
 import * as tp from 'node:timers/promises';
 import path from 'path';
 import { getQuickJS, Scope, shouldInterruptAfterDeadline } from 'quickjs-emscripten';
