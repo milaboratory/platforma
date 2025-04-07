@@ -1889,6 +1889,9 @@ importers:
       vite:
         specifier: 'catalog:'
         version: 5.4.11(@types/node@20.16.15)(sass@1.83.4)
+      vitest:
+        specifier: 'catalog:'
+        version: 2.1.8(@types/node@20.16.15)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4)
 
   lib/node/pl-tree:
     dependencies:

@@ -1,4 +1,3 @@
-import { test, expect } from '@jest/globals';
 import { checkNetwork } from './network_check';
 
 // it's too long, enable only when you need to see the report.

@@ -1,6 +1,6 @@
 import type { AnyRef, AnyResourceRef, PlTransaction } from '@milaboratories/pl-client';
 import { assertNever } from '@milaboratories/ts-helpers';
-import type { ExplicitTemplate, UnpackedTemplate } from '../../model/template_spec';
+import type { ExplicitTemplate, PreparedTemplate } from '../../model/template_spec';
 import type { Hash } from 'node:crypto';
 import { createHash } from 'node:crypto';
 import type {
@@ -31,16 +31,16 @@ export function loadTemplateFromExplicitDirect(
   }
 }
 
-export function loadTemplateFromUnpacked(
+export function loadTemplateFromPrepared(
   tx: PlTransaction,
-  spec: UnpackedTemplate,
+  spec: PreparedTemplate,
 ): AnyRef {
-  const templateInfo: TemplateData = spec.data;
+  const templateData: TemplateData = spec.data;
 
-  const templateFormat = templateInfo.type;
+  const templateFormat = templateData.type;
   switch (templateFormat) {
     case 'pl.tengo-template.v2':
-      return createTemplateV2Tree(tx, templateInfo);
+      return createTemplateV2Tree(tx, templateData);
     default:
       assertNever(templateFormat);
   }
@@ -168,7 +168,7 @@ const TemplateRenderer: Renderer<TemplateData> = {
   },
 };
 
-function createTemplateV2Tree(tx: PlTransaction, tplInfo: TemplateData): AnyRef {
+function createTemplateV2Tree(tx: PlTransaction, tplData: TemplateData): AnyRef {
   const resourceCache = new Map<string, AnyResourceRef>();
 
   const createResource = <T>(resource: T, renderer: Renderer<T>): AnyResourceRef => {
@@ -185,5 +185,5 @@ function createTemplateV2Tree(tx: PlTransaction, tplInfo: TemplateData): AnyRef 
     return resourceCache.get(rKey)!;
   };
 
-  return createResource(tplInfo, TemplateRenderer);
+  return createResource(tplData, TemplateRenderer);
 }
