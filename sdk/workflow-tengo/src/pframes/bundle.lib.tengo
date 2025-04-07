@@ -182,6 +182,42 @@ cleanColumnName := func(name) {
  * @returns Object that implements the unmarshaller interface {canParse, parse}
  */
 pColumnBundleUnmarshaller := func() {
+	// Process UniversalPColumnId inputs and return their components and canonical representation
+	processColumnId := func(id) {
+		columnKey := undefined
+		columnAxisFilters := undefined
+		serializedId := undefined
+
+		if is_string(id) {
+			serializedId = id
+			decodedId := json.decode(id)
+
+			if is_map(decodedId) && !is_undefined(decodedId.source) && !is_undefined(decodedId.axisFilters) {
+				columnKey = canonical.encode(decodedId.source)
+				columnAxisFilters = decodedId.axisFilters
+			} else {
+				columnKey = id
+			}
+		} else if is_map(id) {
+			if !is_undefined(id.source) && !is_undefined(id.axisFilters) {
+				columnKey = canonical.encode(id.source)
+				columnAxisFilters = id.axisFilters
+				serializedId = canonical.encode(id)
+			} else {
+				columnKey = canonical.encode(id)
+				serializedId = columnKey
+			}
+		} else {
+			ll.panic("Invalid column ID type. Expected string or object.")
+		}
+
+		return {
+			columnKey: columnKey,
+			axisFilters: columnAxisFilters,
+			canonicalId: serializedId
+		}
+	}
+
 	return {
 		canParse: func(resource) {
 			return smart.isResource(resource) &&
@@ -227,6 +263,33 @@ pColumnBundleUnmarshaller := func() {
 						ll.panic("Column not found: " + resultKey)
 					}
 					return pool[resultKey]
+				},
+
+				/**
+				 * Gets the spec for a column, applying axis filters if the ID is a FilteredPColumnId.
+				 * @param id - The ID of the column (string SUniversalPColumnId or UniversalPColumnId object)
+				 *             If the ID is a FilteredPColumnId, its axisFilters will be applied.
+				 * @returns The column spec object after applying filters.
+				 */
+				getSpec: func(id) {
+					processedId := processColumnId(id)
+					columnKey := processedId.columnKey
+					columnAxisFilters := processedId.axisFilters // Filters from FilteredPColumnId
+
+					if is_undefined(pool[columnKey]) {
+						ll.panic("Column not found in bundle: " + columnKey)
+					}
+
+					baseSpec := pool[columnKey].spec
+
+					// If filters are present, prepare them and get the resulting spec
+					if !is_undefined(columnAxisFilters) && len(columnAxisFilters) > 0 {
+						prepared := pSpec.prepareAxisFilters(columnAxisFilters, baseSpec)
+						return prepared.columnSpec
+					} else {
+						// Otherwise, return the base spec
+						return baseSpec
+					}
 				},
 
 				/**
@@ -315,42 +378,6 @@ pColumnBundleUnmarshaller := func() {
 						}
 
 						return label
-					}
-
-					// Process UniversalPColumnId inputs and return their components and canonical representation
-					processColumnId := func(id) {
-						columnKey := undefined
-						columnAxisFilters := undefined
-						serializedId := undefined
-
-						if is_string(id) {
-							serializedId = id
-							decodedId := json.decode(id)
-
-							if is_map(decodedId) && !is_undefined(decodedId.source) && !is_undefined(decodedId.axisFilters) {
-								columnKey = canonical.encode(decodedId.source)
-								columnAxisFilters = decodedId.axisFilters
-							} else {
-								columnKey = id
-							}
-						} else if is_map(id) {
-							if !is_undefined(id.source) && !is_undefined(id.axisFilters) {
-								columnKey = canonical.encode(id.source)
-								columnAxisFilters = id.axisFilters
-								serializedId = canonical.encode(id)
-							} else {
-								columnKey = canonical.encode(id)
-								serializedId = columnKey
-							}
-						} else {
-							ll.panic("Invalid column ID type. Expected string or object.")
-						}
-
-						return {
-							columnKey: columnKey,
-							axisFilters: columnAxisFilters,
-							canonicalId: serializedId
-						}
 					}
 
 					// Helper function to find a request by item
