@@ -20,6 +20,7 @@ const data = reactive({
   text: 'some text',
   single: 'A',
   multiple: ['A', 'B'],
+  multiple2: ['B', 'A', 'D'],
   importHandles: [] as unknown[],
   currentTab: 'one',
   compactBtnGroup: false,
@@ -45,6 +46,7 @@ const options = listToOptions(['A', 'B', 'C', 'D', 'Lorem ipsum', 'Lorem ipsum d
       <PlTextField v-model="data.text" label="PlTextField (password)" type="password" clearable />
       <PlDropdown v-model="data.single" label="PlDropdown" :options="options" />
       <PlDropdownMulti v-model="data.multiple" label="PlDropdownMulti" :options="options" />
+      <PlDropdownMulti v-model="data.multiple2" label="PlDropdownMulti (multiple2)" :options="options" />
       <PlSectionSeparator>Group name</PlSectionSeparator>
       <PlTextField v-model="data.text" label="PlTextField" />
       <PlDropdown v-model="data.single" label="PlDropdown" :options="options" />
