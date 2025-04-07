@@ -31,8 +31,8 @@ catalogs:
       specifier: 1.0.26
       version: 1.0.26
     '@milaboratories/software-pframes-conv':
-      specifier: 2.1.20
-      version: 2.1.20
+      specifier: 2.2.0
+      version: 2.2.0
     '@milaboratories/tengo-tester':
       specifier: ^1.6.1
       version: 1.6.1
@@ -2359,7 +2359,7 @@ importers:
     dependencies:
       '@milaboratories/software-pframes-conv':
         specifier: 'catalog:'
-        version: 2.1.20
+        version: 2.2.0
       '@platforma-open/milaboratories.software-small-binaries':
         specifier: 'catalog:'
         version: 1.15.19
@@ -4361,8 +4361,8 @@ packages:
   '@milaboratories/pl-model-middle-layer@1.7.19':
     resolution: {integrity: sha512-3lqbOvbSEN6DbSdfG9iFmqi5kjTtIlGnp8TTzct6NiIAFfCyrbf14B4HvOtfRhCZ75SRA+G3LRzio7D+HtFOHQ==}
 
-  '@milaboratories/software-pframes-conv@2.1.20':
-    resolution: {integrity: sha512-gUrSn0mOJchOveE839dp+sBtTY6fpruk1HSSohJe18yTlJksYKwn6b90Nyt8oKkLs6iKa4qNVLwpBwmGpICf0g==}
+  '@milaboratories/software-pframes-conv@2.2.0':
+    resolution: {integrity: sha512-gWpoDeN3BuIfmIc1IcXK8zytRtza6cY9067+5Uqc24e2AuUCgNUrUWUDsILrayMfslmgrIrfxuM9fTfJ4pN5eA==}
 
   '@milaboratories/tengo-tester@1.6.1':
     resolution: {integrity: sha512-gLUeCj6TmvNzbLYj/vX2Zz6zUaITst0Dpfkz+ycctWBuAUM+lFFZbjRHvDQlt0W6Azy0PPc8wnWsoJtspfM74w==}
@@ -11239,7 +11239,7 @@ snapshots:
       utility-types: 3.11.0
       zod: 3.23.8
 
-  '@milaboratories/software-pframes-conv@2.1.20': {}
+  '@milaboratories/software-pframes-conv@2.2.0': {}
 
   '@milaboratories/tengo-tester@1.6.1': {}
 
