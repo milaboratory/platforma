@@ -72,6 +72,9 @@ catalogs:
     '@types/jest':
       specifier: ^29.5.14
       version: 29.5.14
+    '@types/json-stringify-safe':
+      specifier: ^5.0.3
+      version: 5.0.3
     '@types/lodash':
       specifier: ^4.17.16
       version: 4.17.16
@@ -150,6 +153,9 @@ catalogs:
     jsdom:
       specifier: ^25.0.1
       version: 25.0.1
+    json-stringify-safe:
+      specifier: ^5.0.1
+      version: 5.0.1
     lodash:
       specifier: ^4.17.15
       version: 4.17.21
@@ -1324,6 +1330,9 @@ importers:
 
   lib/model/common:
     dependencies:
+      '@milaboratories/pl-error-like':
+        specifier: workspace:*
+        version: link:../pl-error-like
       canonicalize:
         specifier: 'catalog:'
         version: 2.1.0
@@ -1375,8 +1384,45 @@ importers:
         specifier: 'catalog:'
         version: 5.4.11(@types/node@22.5.5)(sass@1.83.4)
 
+  lib/model/pl-error-like:
+    dependencies:
+      canonicalize:
+        specifier: 'catalog:'
+        version: 2.1.0
+      json-stringify-safe:
+        specifier: 'catalog:'
+        version: 5.0.1
+      zod:
+        specifier: 'catalog:'
+        version: 3.23.8
+    devDependencies:
+      '@milaboratories/eslint-config':
+        specifier: workspace:*
+        version: link:../../../tools/eslint-config
+      '@milaboratories/platforma-build-configs':
+        specifier: workspace:*
+        version: link:../../util/build-configs
+      '@types/json-stringify-safe':
+        specifier: 'catalog:'
+        version: 5.0.3
+      eslint:
+        specifier: 'catalog:'
+        version: 9.23.0
+      typescript:
+        specifier: 'catalog:'
+        version: 5.5.4
+      vite:
+        specifier: 'catalog:'
+        version: 5.4.11(@types/node@22.5.5)(sass@1.83.4)
+      vitest:
+        specifier: 'catalog:'
+        version: 2.1.8(@types/node@22.5.5)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4)
+
   lib/node/computable:
     dependencies:
+      '@milaboratories/pl-error-like':
+        specifier: workspace:^
+        version: link:../../model/pl-error-like
       '@milaboratories/ts-helpers':
         specifier: workspace:^
         version: link:../ts-helpers
@@ -1386,6 +1432,9 @@ importers:
       utility-types:
         specifier: 'catalog:'
         version: 3.11.0
+      zod:
+        specifier: 'catalog:'
+        version: 3.23.8
     devDependencies:
       '@jest/globals':
         specifier: 'catalog:'
@@ -1724,6 +1773,9 @@ importers:
       '@milaboratories/pl-client':
         specifier: workspace:*
         version: link:../pl-client
+      '@milaboratories/ts-helpers':
+        specifier: workspace:*
+        version: link:../ts-helpers
       zod:
         specifier: 'catalog:'
         version: 3.23.8
@@ -1731,6 +1783,9 @@ importers:
       '@milaboratories/eslint-config':
         specifier: workspace:^
         version: link:../../../tools/eslint-config
+      '@milaboratories/pl-error-like':
+        specifier: workspace:*
+        version: link:../../model/pl-error-like
       '@milaboratories/platforma-build-configs':
         specifier: workspace:*
         version: link:../../util/build-configs
@@ -1895,6 +1950,9 @@ importers:
       '@milaboratories/pl-client':
         specifier: workspace:^
         version: link:../pl-client
+      '@milaboratories/pl-error-like':
+        specifier: workspace:^
+        version: link:../../model/pl-error-like
       '@milaboratories/pl-errors':
         specifier: workspace:^
         version: link:../pl-errors
@@ -2140,6 +2198,9 @@ importers:
 
   sdk/model:
     dependencies:
+      '@milaboratories/pl-error-like':
+        specifier: workspace:^
+        version: link:../../lib/model/pl-error-like
       '@milaboratories/pl-model-common':
         specifier: workspace:^
         version: link:../../lib/model/common
@@ -5236,6 +5297,9 @@ packages:
   '@types/json-schema@7.0.15':
     resolution: {integrity: sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA==}
 
+  '@types/json-stringify-safe@5.0.3':
+    resolution: {integrity: sha512-oNOjRxLfPeYbBSQ60maucaFNqbslVOPU4WWs5t/sHvAh6tyo/CThXSG+E24tEzkgh/fzvxyDrYdOJufgeNy1sQ==}
+
   '@types/linkify-it@5.0.0':
     resolution: {integrity: sha512-sVDA58zAw4eWAffKOaQH5/5j3XeayukzDk+ewSsnv3p4yJEZHCCzMDiZM8e0OUrRvmpGZ85jf4yDHkHsgBNr9Q==}
 
@@ -7296,6 +7360,9 @@ packages:
 
   json-stable-stringify-without-jsonify@1.0.1:
     resolution: {integrity: sha512-Bdboy+l7tA3OGW6FjyFHWkP5LuByj1Tk33Ljyq0axyzdk9//JSi2u3fP1QSmd1KNwq6VOKYGlAu87CisVir6Pw==}
+
+  json-stringify-safe@5.0.1:
+    resolution: {integrity: sha512-ZClg6AaYvamvYEE82d3Iyd3vSSIjQ+odgjaTzRuO3s7toCdFKczob2i0zCh7JE8kWn17yvAWhUVxvqGwUalsRA==}
 
   json5@2.2.3:
     resolution: {integrity: sha512-XmOWe7eyHYH14cLdVPoyg+GOH3rYX++KpzrylJwSW98t3Nk+U8XOl8FWKOgwtzdb8lXGf6zYwDUzeHMWfxasyg==}
@@ -12391,6 +12458,8 @@ snapshots:
 
   '@types/json-schema@7.0.15': {}
 
+  '@types/json-stringify-safe@5.0.3': {}
+
   '@types/linkify-it@5.0.0': {}
 
   '@types/lodash@4.17.16': {}
@@ -15045,6 +15114,8 @@ snapshots:
   json-schema-traverse@1.0.0: {}
 
   json-stable-stringify-without-jsonify@1.0.1: {}
+
+  json-stringify-safe@5.0.1: {}
 
   json5@2.2.3: {}
 

@@ -11,7 +11,7 @@ import {
 } from '@platforma-sdk/ui-vue';
 import { faker } from '@faker-js/faker';
 import { computed, reactive } from 'vue';
-import type { AnyLogHandle, ValueOrErrors } from '@platforma-sdk/model';
+import { ensureErrorLike, type AnyLogHandle, type ValueOrErrors } from '@platforma-sdk/model';
 import { listToOptions } from '@milaboratories/helpers';
 
 const data = reactive({
@@ -30,7 +30,7 @@ const output = computed<ValueOrErrors<string> | undefined>(() => {
   if (data.showError) {
     return {
       ok: false as const,
-      errors: ['Error1', 'Error2'],
+      errors: [ensureErrorLike('Error1'), ensureErrorLike('Error2')],
       moreErrors: false,
     };
   }
