@@ -30,6 +30,7 @@
     "@milaboratories/computable": "workspace:^",
     "@milaboratories/pl-client": "workspace:^",
     "@milaboratories/pl-errors": "workspace:^",
+    "@milaboratories/pl-error-like": "workspace:^",
     "@milaboratories/ts-helpers": "workspace:^",
     "denque": "catalog:",
     "utility-types": "catalog:",

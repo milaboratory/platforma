@@ -1,6 +1,7 @@
 import { ResourceId, resourceIdFromString, stringifyWithResourceId } from "@milaboratories/pl-client";
 import { parsePlError, parseSubErrors, PlMonetizationError, PlErrorReport, PlRunnerError, PlTengoError } from './parsed_error';
-import { describe, it, expect } from 'vitest';
+import { describe, test, it, expect } from 'vitest';
+import { ensureErrorLike } from "@milaboratories/pl-error-like";
 
 const runnerError = '{"errorType":"","message":"\\"NG:0x2331A5\\" has 1 input errors:\\n[I] \\"NG:0x2331A5/blob\\": \\"NG:0x2331A4\\" has 1 input errors:\\n[I] \\"NG:0x2331A4/resource\\": \\"NG:0x2331CD\\" has 1 input errors:\\n[I] \\"NG:0x2331CD/resource\\": \\"NG:0x2331CA\\" has 1 input errors:\\n[I] \\"NG:0x2331CA/inputs\\": \\"NG:0x2331CB\\" has 1 input errors:\\n[I] \\"NG:0x2331CB/workdir\\": working directory: \\"workdirs/0x2331E0\\"\\nfailed to run command: \\"java\\" exited with code 22.\\nHere is the latest command output:\\n\\tLicense manager thread died.\\n\\t=== No License ===\\n\\t\\n\\tTo use MiXCR, please, provide a valid license.\\n\\t\\n\\tIf you already have a license, activate it by calling:\\n\\t  mixcr activate-license\\n\\t\\n\\t\\n"}'
 
@@ -47,6 +48,19 @@ describe('parsePlError', () => {
     expect((result.errors[0] as PlRunnerError).exitCode).toBe(22);
     expect((result.errors[0] as PlRunnerError).stdout).toBeDefined();
     expect((result.errors[0] as PlRunnerError).workingDirectory).toBe('workdirs/0x2331E0');
+
+    expect((result.errors[0]).message).toBe(`PlRunnerError:
+command: java
+exit code: 22
+working directory: workdirs/0x2331E0
+stdout:
+License manager thread died.
+	=== No License ===
+	
+	To use MiXCR, please, provide a valid license.
+	
+	If you already have a license, activate it by calling:
+	  mixcr activate-license`);
   });
 
   it('should parse workflow error correctly', () => {
@@ -62,6 +76,20 @@ describe('parsePlError', () => {
     expect(result.errors[0]).toBeInstanceOf(PlTengoError);
     expect((result.errors[0] as PlTengoError).templateName).toBe('@platforma-open/milaboratories.samples-and-data.workflow:main@1.10.0');
     expect((result.errors[0] as PlTengoError).tengoMessage).toBe('Runtime Error: File handle not set for "R1" in sample "S63UG7K2IRZSSMAI4UVB5CNJ"');
+
+    expect((result.errors[0]).message).toBe(`PlTengoError:
+message:
+Runtime Error: File handle not set for "R1" in sample "S63UG7K2IRZSSMAI4UVB5CNJ"
+template: @platforma-open/milaboratories.samples-and-data.workflow:main@1.10.0
+tengo stacktrace:
+at @platforma-sdk/workflow-tengo:ll:25:1
+	at @platforma-open/milaboratories.samples-and-data.workflow:main:205:7
+	at @platforma-sdk/workflow-tengo:workflow:264:11
+	at @platforma-sdk/workflow-tengo:tpl:470:11
+	at @platforma-sdk/workflow-tengo:tpl:373:1
+	at @platforma-sdk/workflow-tengo:workflow:261:1
+	at @platforma-open/milaboratories.samples-and-data.workflow:main:35:1
+`);
   });
 
   it('should parse monetization sub errors correctly', () => {
@@ -80,5 +108,17 @@ describe('parsePlError', () => {
     expect((result[1] as PlMonetizationError).exitCode).toBe(1);
     expect((result[1] as PlMonetizationError).stdout).toBeDefined();
     expect((result[1] as PlMonetizationError).workingDirectory).toBe('workdirs/0x1F9514');
+
+    expect((result[1]).message).toBe(`Monetizaiton error:
+2025/03/13 17:25:18 get API error: VALIDATION_ERR Invalid /mnz/run-spec body: field productKey -> Invalid product key
+`);
   });
+});
+
+test('pl error report has error like shape', () => {
+  const plErrorReport = new PlErrorReport('test error report', '', '', []);
+
+  const got = ensureErrorLike(plErrorReport);
+
+  expect(got).toBeDefined();
 });

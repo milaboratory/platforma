@@ -3,7 +3,7 @@ import style from './pl-file-dialog.module.scss';
 import type { ImportedFiles } from '@/types';
 import { PlIcon24 } from '../PlIcon24';
 import { computed, reactive } from 'vue';
-import type { OpenDialogFilter } from '@platforma-sdk/model';
+import { getRawPlatformaInstance, type OpenDialogFilter } from '@platforma-sdk/model';
 import { normalizeExtensions } from './utils';
 
 const props = defineProps<{
@@ -19,10 +19,10 @@ const data = reactive({
 const label = computed(() => (props.multi ? 'Drag & Drop files here or click to add' : 'Drag & Drop file here or click to add'));
 
 const onDrop = async (ev: DragEvent) => {
-  const fileToImportHandle = window.platforma?.lsDriver?.fileToImportHandle;
+  const fileToImportHandle = getRawPlatformaInstance()?.lsDriver?.fileToImportHandle;
 
   if (!fileToImportHandle) {
-    return console.error('API platforma.lsDriver.fileToImportHandle is not available');
+    return console.error('API getPlatformaRawInstance().lsDriver.fileToImportHandle is not available');
   }
 
   const extensions = normalizeExtensions(props.extensions);
@@ -54,7 +54,7 @@ const openNativeDialog = async () => {
     : [];
 
   if (props.multi) {
-    window.platforma?.lsDriver
+    getRawPlatformaInstance()?.lsDriver
       .showOpenMultipleFilesDialog({
         title: 'Select files to import',
         filters,
@@ -68,7 +68,7 @@ const openNativeDialog = async () => {
       })
       .catch((err) => (data.error = err));
   } else {
-    window.platforma?.lsDriver
+    getRawPlatformaInstance()?.lsDriver
       .showOpenSingleFileDialog({
         title: 'Select file to import',
         filters,
