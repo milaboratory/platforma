@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 3.3.0
+
+### Minor Changes
+
+- 68809d4: Use new 'feature flags' tengo API method to check available backend features
+
 ## 3.2.1
 
 ### Patch Changes
