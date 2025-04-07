@@ -17,6 +17,21 @@ getKeys := func(map) {
 }
 
 /**
+ * Returns a slice of values of the map, sorted by key.
+ *
+ * @param map map[string]any - map to extract values from
+ * @return result: any[] - a slice of values, sorted by key.
+ */
+getValues := func(map) {
+	keys := getKeys(map)
+	res := []
+	for _, k in keys {
+		res = append(res, map[k])
+	}
+	return res
+}
+
+/**
  * Returns true if map contains specified key.
  * Note: fallback implementation is O(N). You can remove it after 05.2025
  */
@@ -221,5 +236,6 @@ export ll.toStrict({
 	filterKeys : filterKeys,
 	filterKeysValues : filterKeysValues,
 	getKeys: getKeys,
+	getValues: getValues,
 	containsKey: containsKey
 })
