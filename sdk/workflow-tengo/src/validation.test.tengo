@@ -1,5 +1,6 @@
 test := import(":test")
 validation := import(":validation")
+ll := import(":ll")
 
 TestValidateJSONGeneral := func() {
 	schema := {
@@ -68,16 +69,10 @@ TestValidateJSONTree := func() {
 		{
 			`type`: `string,regex=tree`,
 			`leaves`: func(js, _, _) {
-				for i, elem in js {
-					r := validation.checkJson(elem, schema)
-					if validation.isFail(r) {
-						return validation.fail
-					}
-				}
-				return validation.success
+				return validation.checkJson(js, [schema])
 			}
 		}
-	]
+		]
 
 	js := {
 		type: "tree",
@@ -91,9 +86,9 @@ TestValidateJSONTree := func() {
 					{
 						type: "leaf"
 					}
-				]
+					]
 			}
-		]
+			]
 	}
 	test.isEqual(validation.checkJson(js, schema), validation.success)
 
@@ -101,5 +96,6 @@ TestValidateJSONTree := func() {
 		type: "tree",
 		leaves: [ "unknown" ]
 	}
-	test.isEqual(validation.checkJson(js, schema), validation.fail)
+	ll.print(validation.isValid(js, schema))
+	test.isFalse(validation.isValid(js, schema))
 }
