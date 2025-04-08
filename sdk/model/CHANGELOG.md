@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.27.17
+
+### Patch Changes
+
+- 11f6e3e: Added find labels for p-column axis method to result pool
+
 ## 1.27.10
 
 ### Patch Changes
