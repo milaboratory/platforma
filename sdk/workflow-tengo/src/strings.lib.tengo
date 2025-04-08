@@ -1,0 +1,26 @@
+ll := import(":ll")
+text := import("text")
+
+specialCharactersPattern := text.re_compile("[-_,.:; +()!<>\\[\\]}{\"\\\\/:$%^#@*&]+")
+
+/**
+ * Replaces special characters in a string with a specified character or '_'.
+ * Special characters are defined by the `specialCharactersPattern` regex: `[-_,.:; +()!<>\\[\\]}{\"\\\\/:$%^#@*&]+`
+ *
+ * @param name {string} The input string.
+ * @param [replacement="_"] {string} The optional character to use for replacement. Defaults to '_'.
+ * @returns {string} The string with special characters replaced.
+ * @throws {error} If more than one replacement character is provided.
+ */
+substituteSpecialCharacters := func(name, ...replacementVarargs) {
+	ll.assert(len(replacementVarargs) <= 1, "substituteSpecialCharacters: expects at most one optional replacement argument")
+	replacement := "_"
+	if len(replacementVarargs) == 1 {
+		replacement = replacementVarargs[0]
+	}
+	return specialCharactersPattern.replace(name, replacement)
+}
+
+export ll.toStrict({
+	substituteSpecialCharacters: substituteSpecialCharacters
+})

@@ -1,0 +1,27 @@
+test := import(":test")
+strings := import(":strings")
+
+TestSubstituteSpecialCharacters := func() {
+	// Test case 1: Empty string
+	test.isEqual(strings.substituteSpecialCharacters(""), "")
+
+	// Test case 2: String with no special characters
+	test.isEqual(strings.substituteSpecialCharacters("HelloWorld123"), "HelloWorld123")
+
+	// Test case 3: String with only special characters (default replacement '_')
+	test.isEqual(strings.substituteSpecialCharacters("-_. :;()<>[]{}\"\\/:+$%^#@*&"), "_") // Should collapse to single replacement
+
+	// Test case 4: String with mixed characters (default replacement '_')
+	test.isEqual(strings.substituteSpecialCharacters("Hello World!"), "Hello_World_")
+	test.isEqual(strings.substituteSpecialCharacters("File:Name.txt"), "File_Name_txt")
+	test.isEqual(strings.substituteSpecialCharacters("complex<tag>{value}/path"), "complex_tag_value_path")
+
+	// Test case 5: String with mixed characters (custom replacement '-')
+	test.isEqual(strings.substituteSpecialCharacters("Hello World!", "-"), "Hello-World-")
+	test.isEqual(strings.substituteSpecialCharacters("File:Name.txt", "-"), "File-Name-txt")
+	test.isEqual(strings.substituteSpecialCharacters("complex<tag>{value}/path", "-"), "complex-tag-value-path")
+
+	// Test case 6: Multiple consecutive special characters
+	test.isEqual(strings.substituteSpecialCharacters("test--__..::name"), "test_name")
+	test.isEqual(strings.substituteSpecialCharacters("test--__..::name", "-"), "test-name")
+}
