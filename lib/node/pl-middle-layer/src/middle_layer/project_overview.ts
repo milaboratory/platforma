@@ -94,6 +94,11 @@ export function projectOverview(
             errorIfFieldNotFound: true,
           });
           const ctx = prj.getField({
+            field: projectFieldName(id, 'prodCtx'),
+            assertFieldType: 'Dynamic',
+            errorIfFieldNotFound: true,
+          });
+          const uiCtx = prj.getField({
             field: projectFieldName(id, 'prodUiCtx'),
             assertFieldType: 'Dynamic',
             errorIfFieldNotFound: true,
@@ -103,12 +108,12 @@ export function projectOverview(
             stale: cInputs.id !== rInputs.id,
             outputError:
               result.error !== undefined
-              || ctx.error !== undefined
+              || uiCtx.error !== undefined
               || result.value?.getError() !== undefined
-              || ctx.value?.getError() !== undefined,
+              || uiCtx.value?.getError() !== undefined,
             outputsError:
               result.error?.getDataAsString() ?? result.value?.getError()?.getDataAsString(),
-            exportsError: ctx.error?.getDataAsString() ?? ctx.value?.getError()?.getDataAsString(),
+            exportsError: uiCtx.error?.getDataAsString() ?? uiCtx.value?.getError()?.getDataAsString(),
             finished:
               ((result.value !== undefined && result.value.getIsReadyOrError())
                 || (result.error !== undefined && result.error.getIsReadyOrError()))
