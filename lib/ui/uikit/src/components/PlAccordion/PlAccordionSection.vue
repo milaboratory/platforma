@@ -81,9 +81,12 @@ defineProps<{
   margin-bottom: 4px;
 }
 
-.separator:hover {
-  --pl-separator-txt-color: var(--txt-01);
-  --mask-icon-bg-color: var(--ic-01);
+.separator {
+  cursor: pointer;
+  &:hover {
+    --pl-separator-txt-color: var(--txt-01);
+    --mask-icon-bg-color: var(--ic-01);
+  }
 }
 
 .chevron {
