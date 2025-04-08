@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.pool-explorer
 
+## 1.0.77
+
+### Patch Changes
+
+- @milaboratories/milaboratories.pool-explorer.workflow@1.0.12
+
 ## 1.0.76
 
 ### Patch Changes

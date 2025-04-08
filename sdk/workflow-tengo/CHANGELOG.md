@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 4.0.1
+
+### Patch Changes
+
+- 1564354: pframes.exportFrame schema validation
+
 ## 4.0.0
 
 ### Major Changes
