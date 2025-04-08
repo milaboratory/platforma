@@ -11,6 +11,7 @@ ll := import(":ll")
 xsv := import(":pframes.xsv")
 assets := import(":assets")
 render := import(":render")
+strings := import(":strings")
 
 /**
  * Creates a collector to asynchronously aggregate PColumns into a resolved PColumnBundle.
@@ -165,12 +166,6 @@ createBuilder := func(ctx) {
 	}
 
 	return self
-}
-
-nameCleanPattern := text.re_compile("[-_,.:; \\[\\]}{\"\\\\/:]+")
-
-cleanColumnName := func(name) {
-	return nameCleanPattern.replace(name, "_")
 }
 
 /**
@@ -372,7 +367,7 @@ pColumnBundleUnmarshaller := func() {
 							discriminativeDomains := specDistiller.getDiscriminativeDomains(name)
 
 							if len(discriminativeDomains) == 0 {
-								label = cleanColumnName(name)
+								label = strings.substituteSpecialCharacters(name)
 							} else {
 								ll.panic("Cannot deduce header for %s in axis. Discriminative domains: %s. Please provide a header override.",
 									name, discriminativeDomains)
@@ -467,7 +462,7 @@ pColumnBundleUnmarshaller := func() {
 
 							addedColumns[request.canonicalId] = true
 
-							request.safeId = cleanColumnName(request.canonicalId)
+							request.safeId = strings.substituteSpecialCharacters(request.canonicalId)
 
 							if !is_undefined(request.headerOverride) {
 								request.header = request.headerOverride
