@@ -176,12 +176,12 @@ export class Project {
     author?: AuthorMarker,
   ): Promise<void> {
     const preparedBp = await this.env.bpPreparer.prepare(blockPackSpec);
-    const blockCfg = await this.env.bpPreparer.getBlockConfigContainer(blockPackSpec);
+    const blockCfg = extractConfig(await this.env.bpPreparer.getBlockConfigContainer(blockPackSpec));
     await withProjectAuthored(this.env.pl, this.rid, author, (mut) =>
       mut.migrateBlockPack(
         blockId,
         preparedBp,
-        resetArgs ? canonicalize(blockCfg.initialArgs)! : undefined,
+        resetArgs ? { args: canonicalize(blockCfg.initialArgs)!, uiState: canonicalize(blockCfg.initialUiState)! } : undefined,
       ),
     );
     await this.projectTree.refreshState();
