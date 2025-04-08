@@ -58,3 +58,43 @@ TestValidateJSONOrArrays := func() {
 	test.isEqual(validation.checkJson(bytes("bytes"), schema), validation.success)
 	test.isEqual(validation.isValid(42, schema), false)
 }
+
+TestValidateJSONTree := func() {
+	schema := undefined
+	leavesSchema := func(js, _, _) {
+		return validation.checkJson(js, [schema])
+	}
+	schema = ["or",
+		{
+			`type`: `string,regex=leaf`
+		},
+		{
+			`type`: `string,regex=tree`,
+			`leaves`: leavesSchema
+		}
+	]
+
+	js := {
+		type: "tree",
+		leaves: [
+			{
+				type: "leaf"
+			},
+			{
+				type: "tree",
+				leaves: [
+					{
+						type: "leaf"
+					}
+				]
+			}
+		]
+	}
+	test.isEqual(validation.isValid(js, schema), true)
+
+	js = {
+		type: "tree",
+		leaves: [ "unknown" ]
+	}
+	test.isEqual(validation.isValid(js, schema), false)
+}
