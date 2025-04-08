@@ -51,10 +51,12 @@ import type { AccessorHandle, GlobalCfgRenderCtx } from './internal';
 import { MainAccessorName, StagingAccessorName } from './internal';
 import type { LabelDerivationOps } from './util/label';
 import { deriveLabels } from './util/label';
-import type { APColumnSelectorWithSplit } from './split_selectors';
+import type { APColumnSelectorWithSplit } from './util/split_selectors';
 import { getUniquePartitionKeys, parsePColumnData } from './util/pcolumn_data';
 import type { TraceEntry } from './util/label';
 import { filterDataInfoEntries } from './util/axis_filtering';
+import type { AxisLabelProvider, ColumnProvider } from './util/column_collection';
+import canonicalize from 'canonicalize';
 
 /**
  * Helper function to match domain objects
@@ -140,7 +142,7 @@ type UniversalPColumnOpts = {
   dontWaitAllData?: boolean;
 };
 
-export class ResultPool {
+export class ResultPool implements ColumnProvider, AxisLabelProvider {
   private readonly ctx: GlobalCfgRenderCtx = getCfgRenderCtx();
 
   /**
@@ -395,22 +397,13 @@ export class ResultPool {
 
       const dataInfo = entriesToDataInfo(filteredEntries);
 
-      if (spec.annotations) {
-        spec = {
-          ...spec,
-          annotations: {
-            ...spec.annotations,
-            'pl7.app/label': entry.label,
-          },
-        };
-      } else {
-        spec = {
-          ...spec,
-          annotations: {
-            'pl7.app/label': entry.label,
-          },
-        };
-      }
+      spec = {
+        ...spec,
+        annotations: {
+          ...(spec.annotations ?? {}),
+          'pl7.app/label': entry.label,
+        },
+      };
 
       result.push({
         id: entry.id as unknown as PObjectId,
@@ -658,6 +651,46 @@ export class ResultPool {
     }
     return undefined;
   }
+
+  /**
+   * Selects columns based on the provided selectors, returning PColumn objects
+   * with lazily loaded data.
+   *
+   * @param selectors - A predicate function, a single selector, or an array of selectors.
+   * @returns An array of PColumn objects matching the selectors. Data is loaded on first access.
+   */
+  public selectColumns(
+    selectors: ((spec: PColumnSpec) => boolean) | PColumnSelector | PColumnSelector[],
+  ): PColumn<TreeNodeAccessor | undefined>[] {
+    const predicate = typeof selectors === 'function' ? selectors : selectorsToPredicate(selectors);
+
+    const matchedSpecs = this.getSpecs().entries.filter(({ obj: spec }) => {
+      if (!isPColumnSpec(spec)) return false;
+      return predicate(spec);
+    });
+
+    // Map specs to PColumn objects with lazy data loading
+    return matchedSpecs.map(({ ref, obj: spec }) => {
+      // Type assertion needed because filter ensures it's PColumnSpec
+      const pcolumnSpec = spec as PColumnSpec;
+      let _cachedData: TreeNodeAccessor | undefined | null = null; // Use null to distinguish initial state from undefined result
+      // eslint-disable-next-line @typescript-eslint/no-this-alias
+      const self = this; // Capture 'this' for use inside the getter
+
+      return {
+        id: canonicalize(ref) as PObjectId,
+        spec: pcolumnSpec,
+        get data(): TreeNodeAccessor | undefined {
+          if (_cachedData !== null) {
+            return _cachedData; // Return cached data (could be undefined if fetch failed)
+          }
+
+          _cachedData = self.getPColumnByRef(ref)?.data;
+          return _cachedData;
+        },
+      } satisfies PColumn<TreeNodeAccessor | undefined>; // Cast needed because 'data' is a getter
+    });
+  }
 }
 
 /** Main entry point to the API available within model lambdas (like outputs, sections, etc..) */
@@ -727,6 +760,7 @@ export class RenderCtx<Args, UiState> {
     // Removed redundant explicitColumns check
   }
 
+  // TODO remove all non-PColumn fields
   public createPFrame(def: PFrameDef<TreeNodeAccessor | PColumnValues | DataInfo<TreeNodeAccessor>>): PFrameHandle {
     this.verifyInlineAndExplicitColumnsSupport(def);
     return this.ctx.createPFrame(
@@ -734,6 +768,7 @@ export class RenderCtx<Args, UiState> {
     );
   }
 
+  // TODO remove all non-PColumn fields
   public createPTable(def: PTableDef<PColumn<TreeNodeAccessor | PColumnValues | DataInfo<TreeNodeAccessor>>>): PTableHandle;
   public createPTable(def: {
     columns: PColumn<TreeNodeAccessor | PColumnValues | DataInfo<TreeNodeAccessor>>[];

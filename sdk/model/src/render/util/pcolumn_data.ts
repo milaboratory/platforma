@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import {
+  DataInfo,
+  isDataInfoEntries,
   type BinaryChunk,
   type BinaryPartitionedDataInfoEntries,
   type DataInfoEntries,
@@ -182,11 +184,46 @@ export function getPartitionKeysList(
   return { data, keyLength };
 }
 
+function getUniquePartitionKeysForDataEntries(list: DataInfoEntries<unknown>): (string | number)[][] {
+  if (list.type !== 'JsonPartitioned' && list.type !== 'BinaryPartitioned')
+    throw new Error(`Splitting requires Partitioned DataInfoEntries, got ${list.type}`);
+
+  const { parts, partitionKeyLength } = list;
+
+  const result: Set<string | number>[] = [];
+  for (let i = 0; i < partitionKeyLength; ++i) {
+    result.push(new Set());
+  }
+
+  for (const part of parts) {
+    const key = part.key;
+    if (key.length !== partitionKeyLength) {
+      throw new Error(
+        `Key length (${key.length}) does not match partition length (${partitionKeyLength}) for key: ${JSON.stringify(
+          key,
+        )}`,
+      );
+    }
+    for (let i = 0; i < partitionKeyLength; ++i) {
+      result[i].add(key[i]);
+    }
+  }
+
+  return result.map((s) => Array.from(s.values()));
+}
+
 /** Returns an array of unique partition keys for each column: the i-th element in the resulting 2d array contains all unique values of i-th partition axis. */
-// @TODO define a class with various resource map operations
+export function getUniquePartitionKeys(acc: undefined): undefined;
+export function getUniquePartitionKeys(acc: DataInfoEntries<unknown>): (string | number)[][];
+export function getUniquePartitionKeys(acc: TreeNodeAccessor): (string | number)[][] | undefined;
 export function getUniquePartitionKeys(
-  acc: TreeNodeAccessor | undefined,
+  acc: TreeNodeAccessor | DataInfoEntries<unknown> | undefined,
 ): (string | number)[][] | undefined {
+  if (acc === undefined) return undefined;
+
+  if (isDataInfoEntries(acc))
+    return getUniquePartitionKeysForDataEntries(acc);
+
   const list = getPartitionKeysList(acc);
   if (!list) return undefined;
 
