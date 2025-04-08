@@ -39,6 +39,7 @@ import { activeConfigs } from './active_cfg';
 import { NavigationStates } from './navigation_states';
 import { extractConfig } from '@platforma-sdk/model';
 import fs from 'node:fs/promises';
+import canonicalize from 'canonicalize';
 
 type BlockStateComputables = {
   readonly fullState: Computable<BlockStateInternal>;
@@ -152,8 +153,8 @@ export class Project {
           renderingMode: blockCfg.renderingMode,
         },
         {
-          args: JSON.stringify(blockCfg.initialArgs),
-          uiState: JSON.stringify(blockCfg.initialUiState),
+          args: canonicalize(blockCfg.initialArgs)!,
+          uiState: canonicalize(blockCfg.initialUiState)!,
           blockPack: preparedBp,
         },
         before,
@@ -180,7 +181,7 @@ export class Project {
       mut.migrateBlockPack(
         blockId,
         preparedBp,
-        resetArgs ? JSON.stringify(blockCfg.initialArgs) : undefined,
+        resetArgs ? canonicalize(blockCfg.initialArgs)! : undefined,
       ),
     );
     await this.projectTree.refreshState();
@@ -262,7 +263,7 @@ export class Project {
    * */
   public async setBlockArgs(blockId: string, args: unknown, author?: AuthorMarker) {
     await withProjectAuthored(this.env.pl, this.rid, author, (mut) =>
-      mut.setArgs([{ blockId, args: JSON.stringify(args) }]),
+      mut.setArgs([{ blockId, args: canonicalize(args)! }]),
     );
     await this.projectTree.refreshState();
   }
@@ -275,7 +276,7 @@ export class Project {
    * */
   public async setUiState(blockId: string, uiState: unknown, author?: AuthorMarker) {
     await withProjectAuthored(this.env.pl, this.rid, author, (mut) =>
-      mut.setUiState(blockId, uiState === undefined ? undefined : JSON.stringify(uiState)),
+      mut.setUiState(blockId, uiState === undefined ? undefined : canonicalize(uiState)!),
     );
     await this.projectTree.refreshState();
   }
@@ -301,8 +302,8 @@ export class Project {
     author?: AuthorMarker,
   ) {
     await withProjectAuthored(this.env.pl, this.rid, author, (mut) => {
-      mut.setArgs([{ blockId, args: JSON.stringify(args) }]);
-      mut.setUiState(blockId, JSON.stringify(uiState));
+      mut.setArgs([{ blockId, args: canonicalize(args)! }]);
+      mut.setUiState(blockId, canonicalize(uiState));
     });
     await this.projectTree.refreshState();
   }
@@ -326,12 +327,12 @@ export class Project {
         (await tx.getField(field(bpHolderRid, Pl.HolderRefField))).value,
       );
       const bpData = await tx.getResourceData(bpRid, false);
-      const bpInfo = JSON.parse(
+      const config = extractConfig((JSON.parse(
         Buffer.from(notEmpty(bpData.data)).toString('utf-8'),
-      ) as BlockPackInfo;
+      ) as BlockPackInfo).config);
       await withProjectAuthored(tx, this.rid, author, (prj) => {
-        prj.setArgs([{ blockId, args: JSON.stringify(bpInfo.config.initialArgs) }]);
-        prj.setUiState(blockId, undefined);
+        prj.setArgs([{ blockId, args: canonicalize(config.initialArgs)! }]);
+        prj.setUiState(blockId, canonicalize(config.initialUiState));
       });
       await tx.commit();
     });
