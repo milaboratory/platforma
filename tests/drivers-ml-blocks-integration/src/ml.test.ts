@@ -217,6 +217,8 @@ test('simple project manipulations test', { timeout: 20000 }, async ({ expect })
     overviewSnapshot1.blocks.forEach((block) => {
       expect(block.settings).toMatchObject(InitialBlockSettings);
       expect(block.sections).toBeDefined();
+      expect(block.outputsError).toBeUndefined();
+      expect(block.exportsError).toBeUndefined();
       expect(block.canRun).toEqual(false);
       expect(block.stale).toEqual(false);
       expect(block.currentBlockPack).toBeDefined();
