@@ -2204,6 +2204,9 @@ importers:
       '@milaboratories/pl-model-common':
         specifier: workspace:^
         version: link:../../lib/model/common
+      canonicalize:
+        specifier: 'catalog:'
+        version: 2.1.0
       utility-types:
         specifier: 'catalog:'
         version: 3.11.0

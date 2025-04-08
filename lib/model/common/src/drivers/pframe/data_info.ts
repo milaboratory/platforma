@@ -236,12 +236,18 @@ export interface BinaryPartitionedDataInfoEntries<Blob> {
 }
 
 /**
+ * Union type representing all possible entry-based partitioned data storage formats
+ */
+export type PartitionedDataInfoEntries<Blob> =
+  | JsonPartitionedDataInfoEntries<Blob>
+  | BinaryPartitionedDataInfoEntries<Blob>;
+
+/**
  * Union type representing all possible entry-based data storage formats
  */
 export type DataInfoEntries<Blob> =
   | JsonDataInfoEntries
-  | JsonPartitionedDataInfoEntries<Blob>
-  | BinaryPartitionedDataInfoEntries<Blob>;
+  | PartitionedDataInfoEntries<Blob>;
 
 /**
  * Type guard function that checks if the given value is a valid DataInfoEntries.
