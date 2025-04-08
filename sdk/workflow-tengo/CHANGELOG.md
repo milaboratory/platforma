@@ -1,5 +1,23 @@
 # @platforma-sdk/workflow-tengo
 
+## 4.0.1
+
+### Patch Changes
+
+- 1564354: pframes.exportFrame schema validation
+
+## 4.0.0
+
+### Major Changes
+
+- 8b4a614: Braking change in pframes.exportFrame: column order in result XSV may change
+
+## 3.3.0
+
+### Minor Changes
+
+- 68809d4: Use new 'feature flags' tengo API method to check available backend features
+
 ## 3.2.1
 
 ### Patch Changes

@@ -197,7 +197,6 @@ catalog:
   'winston': ^3.17.0
 
   '@milaboratories/tengo-tester': ^1.6.1
-  '@milaboratories/pframes-node': &pframes-version 2.1.20
   '@milaboratories/pframes-rs-node': &pframes-rs-version 1.0.26
 
   'remeda': ^2.21.2
@@ -224,7 +223,7 @@ catalog:
 
   # SW
 
-  '@milaboratories/software-pframes-conv': *pframes-version
+  '@milaboratories/software-pframes-conv': &pframes-version 2.2.0
   '@platforma-open/milaboratories.software-small-binaries': ^1.15.19
 
   # Test

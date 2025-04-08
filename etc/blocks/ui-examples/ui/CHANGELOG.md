@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.3.56
+
+### Patch Changes
+
+- 0d465bf: Fixed: PlDropdownMulti does not keep selection order in ui
+
 ## 1.3.55
 
 ### Patch Changes

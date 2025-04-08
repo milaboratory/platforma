@@ -1,5 +1,35 @@
 # @milaboratories/milaboratories.test-blob-url-custom-protocol
 
+## 1.0.57
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-blob-url-custom-protocol.workflow@1.0.12
+
+## 1.0.56
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-blob-url-custom-protocol.ui@1.0.47
+
+## 1.0.55
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-blob-url-custom-protocol.workflow@1.0.11
+
+## 1.0.54
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-blob-url-custom-protocol.workflow@1.0.10
+
+## 1.0.53
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-blob-url-custom-protocol.ui@1.0.46
+
 ## 1.0.52
 
 ### Patch Changes

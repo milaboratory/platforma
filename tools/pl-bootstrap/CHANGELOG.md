@@ -1,5 +1,11 @@
 # @platforma-sdk/bootstrap
 
+## 3.4.0
+
+### Minor Changes
+
+- 4248345: Keep success WDs for 20 minutes after execution in docker
+
 ## 3.3.1
 
 ### Patch Changes
