@@ -193,7 +193,17 @@ _COLUMN_FILTER_SCHEMA := {
 	`annotationPattern,?`: { any: `string` }
 }
 
-_JOIN_ENTRY_SCHEMA := [`or`,
+// Validation of recursive schema requires forward declaration
+_JOIN_ENTRY_SCHEMA := undefined
+// Validation of recursive schema requires lazy evaluation
+_JOIN_LEAF_SCHEMA := func(js, _, _) {
+	return validation.checkJson(js, _JOIN_ENTRY_SCHEMA)
+}
+_JOIN_SUBTREE_SCHEMA := func(js, _, _) {
+	return validation.checkJson(js, [_JOIN_ENTRY_SCHEMA])
+}
+// Validation of recursive schema instantiation
+_JOIN_ENTRY_SCHEMA = [`or`,
     {
 		// Node type discriminator
 		`type`: `string,regex=column`,
@@ -205,22 +215,22 @@ _JOIN_ENTRY_SCHEMA := [`or`,
 		// Node type discriminator
 		`type`: `string,regex=inner`,
 		// Child nodes to be inner joined
-		`entries`: [_JOIN_ENTRY_SCHEMA]
+		`entries`: _JOIN_SUBTREE_SCHEMA
 	},
 	{
 		// Node type discriminator
 		`type`: `string,regex=full`,
 		// Child nodes to be full joined
-		`entries`: [_JOIN_ENTRY_SCHEMA]
+		`entries`: _JOIN_SUBTREE_SCHEMA
 	},
 	{
 		// Node type discriminator
 		`type`: `string,regex=outer`,
 		// Primes the join operation (left part of LEFT OUTER JOIN chain)
-		`primary`: _JOIN_ENTRY_SCHEMA,
+		`primary`: _JOIN_LEAF_SCHEMA,
 		// Driven nodes, giving their values only if primary node have corresponding
 		// nodes (right parts of LEFT OUTER JOIN chain)
-		`secondary`: [_JOIN_ENTRY_SCHEMA]
+		`secondary`: _JOIN_SUBTREE_SCHEMA
 	}]
 
 PFCONV_EXPORT_CFG_SCHEMA := {
