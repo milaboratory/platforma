@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.64
+
+### Patch Changes
+
+- edaadd1: Changed cursor to pointer for PlAccordionSection
+
 ## 2.2.63
 
 ### Patch Changes
