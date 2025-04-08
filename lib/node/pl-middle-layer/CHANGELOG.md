@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 1.33.0
+
+### Minor Changes
+
+- e8ade9c: Force arg and uiState canonicalization on set. Fixes incorrect value for uiState in resetBlockArgsAndUiState.
+
 ## 1.32.11
 
 ### Patch Changes
