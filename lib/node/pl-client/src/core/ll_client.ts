@@ -4,14 +4,14 @@ import {
   ChannelCredentials,
   InterceptingCall,
   status as GrpcStatus,
-  compressionAlgorithms
+  compressionAlgorithms,
 } from '@grpc/grpc-js';
 import type {
   AuthInformation,
   AuthOps,
   PlClientConfig,
   PlConnectionStatus,
-  PlConnectionStatusListener
+  PlConnectionStatusListener,
 } from './config';
 import { plAddressToConfig } from './config';
 import type { GrpcOptions } from '@protobuf-ts/grpc-transport';
@@ -57,10 +57,10 @@ export class LLPlClient {
       auth?: AuthOps;
       statusListener?: PlConnectionStatusListener;
       shouldUseGzip?: boolean;
-    } = {}
+    } = {},
   ) {
-    this.conf =
-      typeof configOrAddress === 'string' ? plAddressToConfig(configOrAddress) : configOrAddress;
+    this.conf
+      = typeof configOrAddress === 'string' ? plAddressToConfig(configOrAddress) : configOrAddress;
 
     this.grpcInterceptors = [];
 
@@ -69,7 +69,7 @@ export class LLPlClient {
     if (auth !== undefined) {
       this.refreshTimestamp = inferAuthRefreshTime(
         auth.authInformation,
-        this.conf.authMaxRefreshSeconds
+        this.conf.authMaxRefreshSeconds,
       );
       this.grpcInterceptors.push(this.createAuthInterceptor());
       this.authInformation = auth.authInformation;
@@ -98,7 +98,7 @@ export class LLPlClient {
   private initGrpc(gzip: boolean) {
     const clientOptions: ClientOptions = {
       'grpc.keepalive_time_ms': 30_000, // 30 seconds
-      interceptors: this.grpcInterceptors
+      'interceptors': this.grpcInterceptors,
     };
 
     if (gzip) clientOptions['grpc.default_compression_algorithm'] = compressionAlgorithms.gzip;
@@ -116,7 +116,7 @@ export class LLPlClient {
       channelCredentials: this.conf.ssl
         ? ChannelCredentials.createSsl()
         : ChannelCredentials.createInsecure(),
-      clientOptions
+      clientOptions,
     };
 
     if (this.conf.grpcProxy) process.env.grpc_proxy = this.conf.grpcProxy;
@@ -171,10 +171,10 @@ export class LLPlClient {
 
   private refreshAuthInformationIfNeeded(): void {
     if (
-      this.refreshTimestamp === undefined ||
-      Date.now() < this.refreshTimestamp ||
-      this.authRefreshInProgress ||
-      this._status === 'Unauthenticated'
+      this.refreshTimestamp === undefined
+      || Date.now() < this.refreshTimestamp
+      || this.authRefreshInProgress
+      || this._status === 'Unauthenticated'
     )
       return;
 
@@ -185,13 +185,13 @@ export class LLPlClient {
         const response = await this.grpcPl.getJWTToken({
           expiration: {
             seconds: BigInt(this.conf.authTTLSeconds),
-            nanos: 0
-          }
+            nanos: 0,
+          },
         }).response;
         this.authInformation = { jwtToken: response.token };
         this.refreshTimestamp = inferAuthRefreshTime(
           this.authInformation,
-          this.conf.authMaxRefreshSeconds
+          this.conf.authMaxRefreshSeconds,
         );
         if (this.onAuthUpdate) this.onAuthUpdate(this.authInformation);
       } catch (e: unknown) {
@@ -216,9 +216,9 @@ export class LLPlClient {
                 // (!!!) don't change to "==="
                 this.updateStatus('Disconnected');
               next(status);
-            }
+            },
           });
-        }
+        },
       });
     };
   }
@@ -235,7 +235,7 @@ export class LLPlClient {
           } else {
             next(metadata, listener);
           }
-        }
+        },
       });
     };
   }
@@ -247,8 +247,8 @@ export class LLPlClient {
       return this.grpcPl.tx({
         abort: totalAbortSignal,
         timeout:
-          ops.timeout ??
-          (rw ? this.conf.defaultRWTransactionTimeout : this.conf.defaultROTransactionTimeout)
+          ops.timeout
+          ?? (rw ? this.conf.defaultRWTransactionTimeout : this.conf.defaultROTransactionTimeout),
       });
     });
   }

@@ -28,7 +28,7 @@ export type TxOps = PlCallOps & {
 };
 
 const defaultTxOps = {
-  sync: false
+  sync: false,
 };
 
 const AnonymousClientRoot = 'AnonymousRoot';
@@ -78,7 +78,7 @@ export class PlClient {
     ops: {
       statusListener?: PlConnectionStatusListener;
       finalPredicate?: FinalResourceDataPredicate;
-    } = {}
+    } = {},
   ) {
     // Will reinitialize client after getting available feature from server.
     this.buildLLPlClient = (shouldUseGzip: boolean) => {
@@ -91,7 +91,7 @@ export class PlClient {
     this.finalPredicate = ops.finalPredicate ?? DefaultFinalResourceDataPredicate;
     this.resourceDataCache = new LRUCache({
       maxSize: conf.maxCacheBytes,
-      sizeCalculation: (v) => (v.basicData.data?.length ?? 0) + 64
+      sizeCalculation: (v) => (v.basicData.data?.length ?? 0) + 64,
     });
     switch (conf.retryBackoffAlgorithm) {
       case 'exponential':
@@ -100,7 +100,7 @@ export class PlClient {
           initialDelay: conf.retryInitialDelay,
           maxAttempts: conf.retryMaxAttempts,
           backoffMultiplier: conf.retryExponentialBackoffMultiplier,
-          jitter: conf.retryJitter
+          jitter: conf.retryJitter,
         };
         break;
       case 'linear':
@@ -109,7 +109,7 @@ export class PlClient {
           initialDelay: conf.retryInitialDelay,
           maxAttempts: conf.retryMaxAttempts,
           backoffStep: conf.retryLinearBackoffStep,
-          jitter: conf.retryJitter
+          jitter: conf.retryJitter,
         };
         break;
       default:
@@ -137,7 +137,7 @@ export class PlClient {
     return {
       committed: this.txCommittedStat,
       conflict: this.txConflictStat,
-      error: this.txErrorStat
+      error: this.txErrorStat,
     };
   }
 
@@ -181,8 +181,8 @@ export class PlClient {
 
     // calculating reproducible root name from the username
     const user = this._ll.authUser;
-    const mainRootName =
-      user === null ? AnonymousClientRoot : createHash('sha256').update(user).digest('hex');
+    const mainRootName
+      = user === null ? AnonymousClientRoot : createHash('sha256').update(user).digest('hex');
 
     this._serverInfo = await this.ping();
     if (this._serverInfo.compression === MaintenanceAPI_Ping_Response_Compression.GZIP) {
@@ -206,7 +206,7 @@ export class PlClient {
       } else {
         const aFId = {
           resourceId: mainRoot,
-          fieldName: alternativeRootFieldName(this.conf.alternativeRoot)
+          fieldName: alternativeRootFieldName(this.conf.alternativeRoot),
         };
 
         const altRoot = tx.createEphemeral(ClientRoot);
@@ -228,7 +228,7 @@ export class PlClient {
     return await this.withWriteTx('delete-alternative-root', async (tx) => {
       const fId = {
         resourceId: tx.clientRoot,
-        fieldName: alternativeRootFieldName(alternativeRootName)
+        fieldName: alternativeRootFieldName(alternativeRootName),
       };
       const exists = tx.fieldExists(fId);
       tx.removeField(fId);
@@ -242,7 +242,7 @@ export class PlClient {
     writable: boolean,
     clientRoot: OptionalResourceId,
     body: (tx: PlTransaction) => Promise<T>,
-    ops?: TxOps
+    ops?: TxOps,
   ): Promise<T> {
     // for exponential / linear backoff
     let retryState = createRetryState(ops?.retryOptions ?? this.defaultRetryOptions);
@@ -257,7 +257,7 @@ export class PlClient {
         writable,
         clientRoot,
         this.finalPredicate,
-        this.resourceDataCache
+        this.resourceDataCache,
       );
 
       let ok = false;
@@ -317,7 +317,7 @@ export class PlClient {
     name: string,
     writable: boolean,
     body: (tx: PlTransaction) => Promise<T>,
-    ops: Partial<TxOps> = {}
+    ops: Partial<TxOps> = {},
   ): Promise<T> {
     this.checkInitialized();
     return await this._withTx(name, writable, this.clientRoot, body, { ...ops, ...defaultTxOps });
@@ -326,7 +326,7 @@ export class PlClient {
   public async withWriteTx<T>(
     name: string,
     body: (tx: PlTransaction) => Promise<T>,
-    ops: Partial<TxOps> = {}
+    ops: Partial<TxOps> = {},
   ): Promise<T> {
     return await this.withTx(name, true, body, { ...ops, ...defaultTxOps });
   }
@@ -334,7 +334,7 @@ export class PlClient {
   public async withReadTx<T>(
     name: string,
     body: (tx: PlTransaction) => Promise<T>,
-    ops: Partial<TxOps> = {}
+    ops: Partial<TxOps> = {},
   ): Promise<T> {
     return await this.withTx(name, false, body, { ...ops, ...defaultTxOps });
   }
@@ -357,7 +357,7 @@ export class PlClient {
     auth: AuthOps,
     ops: {
       statusListener?: PlConnectionStatusListener;
-    } = {}
+    } = {},
   ) {
     const pl = new PlClient(configOrAddress, auth, ops);
     await pl.init();
