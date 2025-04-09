@@ -877,7 +877,7 @@ field = func(f) {
 				ll.panic("failed to get the value of field %v, error is not empty: %v", self.name(), err)
 			}
 
-			ll.assert(self.isSet(), "field value is not set; ", self.name())
+			ll.assert(self.isSet(), "field value is not set; field = %v", self.name())
 
 			return resource(self.info().Value)
 		},
