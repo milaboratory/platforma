@@ -2,6 +2,7 @@
 import type { ListOption } from '@platforma-sdk/ui-vue';
 import { PlBlockPage, PlAutocomplete } from '@platforma-sdk/ui-vue';
 import { reactive } from 'vue';
+import { delay } from '@milaboratories/helpers';
 
 const data = reactive({
   selected1: 'lorem ipsum',
@@ -11,11 +12,8 @@ const data = reactive({
 
 const VERY_LONG_OPTIONS_ARRAY = new Array(100000).fill(null).map((_v, idx) => ({ value: `item${idx}`, label: `Label for item ${idx}` }));
 
-async function wait(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
 async function requestOptions(str: string): Promise<ListOption[]> {
-  await wait(1000);
+  await delay(1000);
   return Promise.resolve(VERY_LONG_OPTIONS_ARRAY.filter((el) => el.value.includes(str) || el.label.includes(str)).slice(0, 100));
 }
 
