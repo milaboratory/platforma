@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.13.4
+
+### Patch Changes
+
+- 43e1c65: AnchorColumns API refactoring
+
 ## 1.13.3
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @platforma-sdk/block-tools
 
+## 2.5.35
+
+### Patch Changes
+
+- @milaboratories/pl-model-middle-layer@1.7.22
+
 ## 2.5.34
 
 ### Patch Changes
