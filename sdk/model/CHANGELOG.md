@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.28.1
+
+### Patch Changes
+
+- 69bd963: Fixes cases where empty label can be derived by deriveLabels
+
 ## 1.28.0
 
 ### Minor Changes

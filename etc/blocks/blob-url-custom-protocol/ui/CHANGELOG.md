@@ -1,5 +1,12 @@
 # @milaboratories/milaboratories.test-blob-url-custom-protocol.ui
 
+## 1.0.50
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-blob-url-custom-protocol.model@1.0.32
+- @platforma-sdk/ui-vue@1.28.1
+
 ## 1.0.49
 
 ### Patch Changes
