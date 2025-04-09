@@ -193,6 +193,46 @@ _COLUMN_FILTER_SCHEMA := {
 	`annotationPattern,?`: { any: `string` }
 }
 
+// Validation of recursive schema requires forward declaration
+_JOIN_ENTRY_SCHEMA := undefined
+// Validation of recursive schema requires lazy evaluation
+_JOIN_LEAF_SCHEMA := func(js, _, _) {
+	return validation.checkJson(js, _JOIN_ENTRY_SCHEMA)
+}
+_JOIN_SUBTREE_SCHEMA := func(js, _, _) {
+	return validation.checkJson(js, [_JOIN_ENTRY_SCHEMA])
+}
+// Validation of recursive schema instantiation
+_JOIN_ENTRY_SCHEMA = [`or`,
+    {
+		// Node type discriminator
+		`type`: `string,regex=column`,
+		// Column id is a column specification filename without extension;
+		// Example: column_id.spec, column_id.datainfo -> column_id
+		`columnId`: `string`
+	},
+	{
+		// Node type discriminator
+		`type`: `string,regex=inner`,
+		// Child nodes to be inner joined
+		`entries`: _JOIN_SUBTREE_SCHEMA
+	},
+	{
+		// Node type discriminator
+		`type`: `string,regex=full`,
+		// Child nodes to be full joined
+		`entries`: _JOIN_SUBTREE_SCHEMA
+	},
+	{
+		// Node type discriminator
+		`type`: `string,regex=outer`,
+		// Primes the join operation (left part of LEFT OUTER JOIN chain)
+		`primary`: _JOIN_LEAF_SCHEMA,
+		// Driven nodes, giving their values only if primary node have corresponding
+		// nodes (right parts of LEFT OUTER JOIN chain)
+		`secondary`: _JOIN_SUBTREE_SCHEMA
+	}]
+
 PFCONV_EXPORT_CFG_SCHEMA := {
 	// String representing NA values of types Int, Long, Float, Double;
 	// default: NaN
@@ -209,6 +249,12 @@ PFCONV_EXPORT_CFG_SCHEMA := {
 	// Only columns matching the selector are exported;
 	// default: all columns are exported
 	`columnSelector,?`: [_COLUMN_FILTER_SCHEMA],
+	// Explicitly specify core part of a join. The join would take there steps:
+	// 1. From the PFrame specified columns are filtered using `columnSelector`;
+	// 2. Core join is performed following the provided specification;
+	// 3. Remaining selected columns are joined using the `joinType`;
+	// default: all selected columns are joined using `joinType`
+	`coreJoin,?`: _JOIN_ENTRY_SCHEMA,
 	// During export, columns with equal axes specifications would be joined into single table
 	// using the join type specified;
 	// default: Full

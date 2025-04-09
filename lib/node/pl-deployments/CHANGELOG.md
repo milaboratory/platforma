@@ -1,5 +1,11 @@
 # @milaboratories/pl-local
 
+## 1.7.2
+
+### Patch Changes
+
+- 611bb3d: bump pl backend
+
 ## 1.7.1
 
 ### Patch Changes

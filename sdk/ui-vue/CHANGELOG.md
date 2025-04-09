@@ -1,5 +1,67 @@
 # @platforma-sdk/ui-vue
 
+## 1.28.1
+
+### Patch Changes
+
+- Updated dependencies [69bd963]
+  - @platforma-sdk/model@1.28.1
+  - @milaboratories/uikit@2.2.64
+
+## 1.28.0
+
+### Patch Changes
+
+- Updated dependencies [43e1c65]
+  - @platforma-sdk/model@1.28.0
+  - @milaboratories/uikit@2.2.64
+
+## 1.27.17
+
+### Patch Changes
+
+- Updated dependencies [11f6e3e]
+  - @platforma-sdk/model@1.27.17
+  - @milaboratories/uikit@2.2.64
+
+## 1.27.14
+
+### Patch Changes
+
+- Updated dependencies [edaadd1]
+  - @milaboratories/uikit@2.2.64
+
+## 1.27.11
+
+### Patch Changes
+
+- Updated dependencies [0d465bf]
+  - @milaboratories/uikit@2.2.63
+
+## 1.27.10
+
+### Patch Changes
+
+- 22871ac: uikit and ui-vue: get global platforma from preload via hook. Now we could defined a hook and return new platforma that overrides some behaviours. It's needed for keeping old compat
+- 4f5f7ec: MILAB-2114: prepend a label to field outputs
+- Updated dependencies [22871ac]
+  - @milaboratories/uikit@2.2.62
+  - @platforma-sdk/model@1.27.10
+
+## 1.27.8
+
+### Patch Changes
+
+- @platforma-sdk/model@1.27.8
+- @milaboratories/uikit@2.2.61
+
+## 1.27.6
+
+### Patch Changes
+
+- @platforma-sdk/model@1.27.6
+- @milaboratories/uikit@2.2.61
+
 ## 1.27.5
 
 ### Patch Changes

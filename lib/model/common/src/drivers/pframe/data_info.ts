@@ -236,12 +236,18 @@ export interface BinaryPartitionedDataInfoEntries<Blob> {
 }
 
 /**
+ * Union type representing all possible entry-based partitioned data storage formats
+ */
+export type PartitionedDataInfoEntries<Blob> =
+  | JsonPartitionedDataInfoEntries<Blob>
+  | BinaryPartitionedDataInfoEntries<Blob>;
+
+/**
  * Union type representing all possible entry-based data storage formats
  */
 export type DataInfoEntries<Blob> =
   | JsonDataInfoEntries
-  | JsonPartitionedDataInfoEntries<Blob>
-  | BinaryPartitionedDataInfoEntries<Blob>;
+  | PartitionedDataInfoEntries<Blob>;
 
 /**
  * Type guard function that checks if the given value is a valid DataInfoEntries.
@@ -278,6 +284,18 @@ export function isDataInfoEntries<Blob>(value: unknown): value is DataInfoEntrie
     default:
       return false;
   }
+}
+
+/**
+ * Type guard function that checks if the given value is a valid PartitionedDataInfoEntries.
+ *
+ * @template Blob - Type parameter representing the storage reference type
+ * @param value - The value to check
+ * @returns True if the value is a valid PartitionedDataInfoEntries, false otherwise
+ */
+export function isPartitionedDataInfoEntries<Blob>(value: unknown): value is PartitionedDataInfoEntries<Blob> {
+  if (!isDataInfoEntries(value)) return false;
+  return value.type === 'JsonPartitioned' || value.type === 'BinaryPartitioned';
 }
 
 /**

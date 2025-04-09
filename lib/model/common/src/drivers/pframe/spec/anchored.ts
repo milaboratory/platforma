@@ -40,7 +40,7 @@ export class AnchoredIdDeriver {
    * Creates a new anchor context from a set of anchor column specifications
    * @param anchors Record of anchor column specifications indexed by anchor ID
    */
-  constructor(private readonly anchors: Record<string, PColumnSpec>) {
+  constructor(public readonly anchors: Record<string, PColumnSpec>) {
     const anchorEntries = Object.entries(anchors);
     anchorEntries.sort((a, b) => a[0].localeCompare(b[0]));
     for (const [anchorId, spec] of anchorEntries) {

@@ -13,6 +13,7 @@ export * from './raw_globals';
 
 // reexporting everything from SDK model
 export * from '@milaboratories/pl-model-common';
+export * from '@milaboratories/pl-error-like';
 
 export * as JsRenderInternal from './render/internal';
 export { getEnvironmentValue } from './env_value';

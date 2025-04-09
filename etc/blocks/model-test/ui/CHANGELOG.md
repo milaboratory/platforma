@@ -1,5 +1,61 @@
 # @milaboratories/milaboratories.test-block-model.ui
 
+## 1.0.154
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-block-model.model@1.0.43
+- @platforma-sdk/ui-vue@1.28.1
+
+## 1.0.153
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-block-model.model@1.0.42
+- @platforma-sdk/ui-vue@1.28.0
+
+## 1.0.152
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-block-model.model@1.0.41
+- @platforma-sdk/ui-vue@1.27.17
+
+## 1.0.151
+
+### Patch Changes
+
+- @platforma-sdk/ui-vue@1.27.14
+
+## 1.0.150
+
+### Patch Changes
+
+- @platforma-sdk/ui-vue@1.27.11
+
+## 1.0.149
+
+### Patch Changes
+
+- Updated dependencies [22871ac]
+- Updated dependencies [4f5f7ec]
+  - @platforma-sdk/ui-vue@1.27.10
+  - @milaboratories/milaboratories.test-block-model.model@1.0.40
+
+## 1.0.148
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-block-model.model@1.0.39
+- @platforma-sdk/ui-vue@1.27.8
+
+## 1.0.147
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-block-model.model@1.0.38
+- @platforma-sdk/ui-vue@1.27.6
+
 ## 1.0.146
 
 ### Patch Changes

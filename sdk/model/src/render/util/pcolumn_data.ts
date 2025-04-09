@@ -1,5 +1,9 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+import type {
+  DataInfo } from '@milaboratories/pl-model-common';
 import {
+  dataInfoToEntries,
+  isDataInfo,
+  isDataInfoEntries,
   type BinaryChunk,
   type BinaryPartitionedDataInfoEntries,
   type DataInfoEntries,
@@ -7,7 +11,7 @@ import {
   type PColumnDataEntry,
   type PColumnKey,
 } from '@milaboratories/pl-model-common';
-import type { TreeNodeAccessor } from '../accessor';
+import { TreeNodeAccessor } from '../accessor';
 
 const PCD_PREFIX = 'PColumnData/';
 
@@ -182,11 +186,46 @@ export function getPartitionKeysList(
   return { data, keyLength };
 }
 
+function getUniquePartitionKeysForDataEntries(list: DataInfoEntries<unknown>): (string | number)[][] {
+  if (list.type !== 'JsonPartitioned' && list.type !== 'BinaryPartitioned')
+    throw new Error(`Splitting requires Partitioned DataInfoEntries, got ${list.type}`);
+
+  const { parts, partitionKeyLength } = list;
+
+  const result: Set<string | number>[] = [];
+  for (let i = 0; i < partitionKeyLength; ++i) {
+    result.push(new Set());
+  }
+
+  for (const part of parts) {
+    const key = part.key;
+    if (key.length !== partitionKeyLength) {
+      throw new Error(
+        `Key length (${key.length}) does not match partition length (${partitionKeyLength}) for key: ${JSON.stringify(
+          key,
+        )}`,
+      );
+    }
+    for (let i = 0; i < partitionKeyLength; ++i) {
+      result[i].add(key[i]);
+    }
+  }
+
+  return result.map((s) => Array.from(s.values()));
+}
+
 /** Returns an array of unique partition keys for each column: the i-th element in the resulting 2d array contains all unique values of i-th partition axis. */
-// @TODO define a class with various resource map operations
+export function getUniquePartitionKeys(acc: undefined): undefined;
+export function getUniquePartitionKeys(acc: DataInfoEntries<unknown>): (string | number)[][];
+export function getUniquePartitionKeys(acc: TreeNodeAccessor): (string | number)[][] | undefined;
 export function getUniquePartitionKeys(
-  acc: TreeNodeAccessor | undefined,
+  acc: TreeNodeAccessor | DataInfoEntries<unknown> | undefined,
 ): (string | number)[][] | undefined {
+  if (acc === undefined) return undefined;
+
+  if (isDataInfoEntries(acc))
+    return getUniquePartitionKeysForDataEntries(acc);
+
   const list = getPartitionKeysList(acc);
   if (!list) return undefined;
 
@@ -224,6 +263,8 @@ export function parsePColumnData(
   keyPrefix: PColumnKey = [],
 ): JsonPartitionedDataInfoEntries<TreeNodeAccessor> | BinaryPartitionedDataInfoEntries<TreeNodeAccessor> | undefined {
   if (acc === undefined) return undefined;
+
+  if (!acc.getIsReadyOrError()) return undefined;
 
   const resourceType = acc.resourceType.name;
   const meta = acc.getDataAsJson<Record<string, number>>();
@@ -384,4 +425,21 @@ export function parsePColumnData(
     default:
       throw new Error(`Unknown resource type: ${resourceType}`);
   }
+}
+
+/**
+ * Converts or parses the input into DataInfoEntries format.
+
+ * @param acc - The input data, which can be TreeNodeAccessor, DataInfoEntries, DataInfo, or undefined.
+ * @returns The data in DataInfoEntries format, or undefined if the input was undefined or data is not ready.
+ */
+export function convertOrParsePColumnData(acc: TreeNodeAccessor | DataInfoEntries<TreeNodeAccessor> | DataInfo<TreeNodeAccessor> | undefined):
+DataInfoEntries<TreeNodeAccessor> | undefined {
+  if (acc === undefined) return undefined;
+
+  if (isDataInfoEntries(acc)) return acc;
+  if (isDataInfo(acc)) return dataInfoToEntries(acc);
+  if (acc instanceof TreeNodeAccessor) return parsePColumnData(acc);
+
+  throw new Error(`Unexpected input type: ${typeof acc}`);
 }

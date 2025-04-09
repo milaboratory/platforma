@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-errors",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Parsing errors from Pl backend",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
@@ -25,9 +25,11 @@
   ],
   "dependencies": {
     "zod": "catalog:",
-    "@milaboratories/pl-client": "workspace:*"
+    "@milaboratories/pl-client": "workspace:*",
+    "@milaboratories/ts-helpers": "workspace:*"
   },
   "devDependencies": {
+    "@milaboratories/pl-error-like": "workspace:*",
     "@milaboratories/platforma-build-configs": "workspace:*",
     "typescript": "catalog:",
     "vite": "catalog:",

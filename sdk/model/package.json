@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/model",
-  "version": "1.26.0",
+  "version": "1.28.1",
   "description": "Platforma.bio SDK / Block Model",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
@@ -26,7 +26,9 @@
   ],
   "dependencies": {
     "@milaboratories/pl-model-common": "workspace:^",
+    "@milaboratories/pl-error-like": "workspace:^",
     "utility-types": "catalog:",
+    "canonicalize": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {

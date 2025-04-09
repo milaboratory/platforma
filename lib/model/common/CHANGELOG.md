@@ -1,5 +1,30 @@
 # @milaboratories/pl-model-common
 
+## 1.13.4
+
+### Patch Changes
+
+- 43e1c65: AnchorColumns API refactoring
+
+## 1.13.3
+
+### Patch Changes
+
+- Updated dependencies [ff0f92c]
+  - @milaboratories/pl-error-like@1.12.0
+
+## 1.13.2
+
+### Patch Changes
+
+- 962c620: Full migration to PFrames Rust
+
+## 1.13.1
+
+### Patch Changes
+
+- 2fc07ba: Fix NaN check for PValue float types
+
 ## 1.13.0
 
 ### Minor Changes

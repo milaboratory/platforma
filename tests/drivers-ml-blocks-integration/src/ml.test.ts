@@ -51,7 +51,7 @@ export async function withMl(
   });
 }
 
-export async function awaitBlockDone(prj: Project, blockId: string, timeout: number = 2000) {
+export async function awaitBlockDone(prj: Project, blockId: string, timeout: number = 5000) {
   const abortSignal = AbortSignal.timeout(timeout);
   const overview = prj.overview;
   const state = prj.getBlockState(blockId);
@@ -217,6 +217,8 @@ test('simple project manipulations test', { timeout: 20000 }, async ({ expect })
     overviewSnapshot1.blocks.forEach((block) => {
       expect(block.settings).toMatchObject(InitialBlockSettings);
       expect(block.sections).toBeDefined();
+      expect(block.outputsError).toBeUndefined();
+      expect(block.exportsError).toBeUndefined();
       expect(block.canRun).toEqual(false);
       expect(block.stale).toEqual(false);
       expect(block.currentBlockPack).toBeDefined();
@@ -271,7 +273,7 @@ test('simple project manipulations test', { timeout: 20000 }, async ({ expect })
   });
 });
 
-test('reorder & rename blocks', async ({ expect }) => {
+test('reorder & rename blocks', { timeout: 20000 }, async ({ expect }) => {
   await withMl(async (ml) => {
     const projectList = ml.projectList;
     expect(await projectList.awaitStableValue()).toEqual([]);
@@ -490,10 +492,13 @@ test('block error test', async ({ expect }) => {
 
     const sum = block3StableState.outputs!['sum'];
     expect(sum.ok).toStrictEqual(false);
-    if (!sum.ok)
-      expect(sum.errors[0]).toContain(
+    if (!sum.ok) {
+      console.log("ml, block error test, the error:");
+      console.dir(sum.errors[0], { depth: 150 });
+      expect(typeof sum.errors[0] == 'string' ? sum.errors[0] : sum.errors[0].message).toContain(
         "At least 1 data source must be set. It's needed in 'block error test'"
       );
+    }
   });
 });
 

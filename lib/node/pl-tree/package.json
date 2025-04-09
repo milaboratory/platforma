@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-tree",
-  "version": "1.5.2",
+  "version": "1.5.3",
   "description": "Reactive pl tree state",
   "engines": {
     "node": ">=20.16.0"
@@ -30,6 +30,7 @@
     "@milaboratories/computable": "workspace:^",
     "@milaboratories/pl-client": "workspace:^",
     "@milaboratories/pl-errors": "workspace:^",
+    "@milaboratories/pl-error-like": "workspace:^",
     "@milaboratories/ts-helpers": "workspace:^",
     "denque": "catalog:",
     "utility-types": "catalog:",

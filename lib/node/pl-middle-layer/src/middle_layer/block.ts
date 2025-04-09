@@ -61,7 +61,7 @@ export function blockOutputs(
         const outputs: Record<string, Computable<any>> = {};
         for (const [cellId, cellCfg] of Object.entries(cfg.outputs)) {
           const computableOutput = computableFromCfgOrRF(env, ctx, cellCfg, cfg.code, bpId);
-          outputs[cellId] = Computable.wrapError(computableOutput);
+          outputs[cellId] = Computable.wrapError(computableOutput, 1);
         }
         return outputs;
       });

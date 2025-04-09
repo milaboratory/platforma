@@ -1,5 +1,61 @@
 # @milaboratories/milaboratories.test-sum-numbers.ui
 
+## 1.0.114
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-sum-numbers.model@1.0.33
+- @platforma-sdk/ui-vue@1.28.1
+
+## 1.0.113
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-sum-numbers.model@1.0.32
+- @platforma-sdk/ui-vue@1.28.0
+
+## 1.0.112
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-sum-numbers.model@1.0.31
+- @platforma-sdk/ui-vue@1.27.17
+
+## 1.0.111
+
+### Patch Changes
+
+- @platforma-sdk/ui-vue@1.27.14
+
+## 1.0.110
+
+### Patch Changes
+
+- @platforma-sdk/ui-vue@1.27.11
+
+## 1.0.109
+
+### Patch Changes
+
+- Updated dependencies [22871ac]
+- Updated dependencies [4f5f7ec]
+  - @platforma-sdk/ui-vue@1.27.10
+  - @milaboratories/milaboratories.test-sum-numbers.model@1.0.30
+
+## 1.0.108
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-sum-numbers.model@1.0.29
+- @platforma-sdk/ui-vue@1.27.8
+
+## 1.0.107
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-sum-numbers.model@1.0.28
+- @platforma-sdk/ui-vue@1.27.6
+
 ## 1.0.106
 
 ### Patch Changes
