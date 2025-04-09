@@ -1,5 +1,12 @@
 # @milaboratories/milaboratories.test-read-logs.ui
 
+## 1.0.115
+
+### Patch Changes
+
+- Updated dependencies [c021ce8]
+  - @platforma-sdk/ui-vue@1.28.2
+
 ## 1.0.114
 
 ### Patch Changes

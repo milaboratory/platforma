@@ -1,5 +1,13 @@
 # @platforma-sdk/ui-vue
 
+## 1.28.2
+
+### Patch Changes
+
+- c021ce8: [mnz] Block Product Status Component
+- Updated dependencies [c021ce8]
+  - @milaboratories/uikit@2.2.65
+
 ## 1.28.1
 
 ### Patch Changes

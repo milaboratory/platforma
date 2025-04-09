@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.monetization-test.ui
 
+## 1.1.19
+
+### Patch Changes
+
+- c021ce8: [mnz] Block Product Status Component
+- Updated dependencies [c021ce8]
+  - @platforma-sdk/ui-vue@1.28.2
+
 ## 1.1.18
 
 ### Patch Changes
