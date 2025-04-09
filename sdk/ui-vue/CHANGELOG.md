@@ -1,5 +1,13 @@
 # @platforma-sdk/ui-vue
 
+## 1.28.3
+
+### Patch Changes
+
+- 168d2eb: Move useWatchFetch to uikit
+- Updated dependencies [168d2eb]
+  - @milaboratories/uikit@2.2.66
+
 ## 1.28.2
 
 ### Patch Changes
