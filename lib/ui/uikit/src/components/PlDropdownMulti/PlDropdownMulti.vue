@@ -162,7 +162,12 @@ const unselectOption = (d: M) => emitModel(unref(selectedValuesRef).filter((v) =
 
 const setFocusOnInput = () => input.value?.focus();
 
-const toggleModel = () => (data.open = !data.open);
+const toggleModel = () => {
+  data.open = !data.open;
+  if (!data.open) {
+    data.search = '';
+  }
+};
 
 const onFocusOut = (event: FocusEvent) => {
   const relatedTarget = event.relatedTarget as Node | null;
@@ -230,7 +235,7 @@ watchPostEffect(() => {
 </script>
 
 <template>
-  <div class="pl-dropdown-multi__envelope">
+  <div class="pl-dropdown-multi__envelope" @click="setFocusOnInput">
     <div
       ref="rootRef"
       :tabindex="tabindex"
@@ -252,7 +257,7 @@ watchPostEffect(() => {
             autocomplete="chrome-off"
             @focus="data.open = true"
           />
-          <div v-if="!data.open" class="chips-container" @click="setFocusOnInput">
+          <div v-if="!data.open" class="chips-container">
             <PlChip v-for="(opt, i) in selectedOptionsRef" :key="i" closeable small @click.stop="data.open = true" @close="unselectOption(opt.value)">
               {{ opt.label || opt.value }}
             </PlChip>

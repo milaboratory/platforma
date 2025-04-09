@@ -53,6 +53,7 @@ export * from './components/PlStatusTag';
 export * from './components/PlLoaderCircular';
 export * from './components/PlSplash';
 export * from './components/PlProgressCell';
+export * from './components/PlAutocomplete';
 
 export * from './components/PlFileDialog';
 export * from './components/PlFileInput';
