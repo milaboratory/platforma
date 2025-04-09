@@ -10,7 +10,7 @@
     "build": "turbo run build",
     "watch-build": "turbo watch build",
     "test": "turbo run test --concurrency 1 --env-mode=loose",
-    "test:no-cache": "turbo run test --concurrency 1 --env-mode=loose --force --no-cache",
+    "test:no-cache": "turbo run test --concurrency 1 --env-mode=loose --force",
     "publish-to-local-registry": "turbo run publish-to-local-registry",
     "do-pack": "turbo run do-pack",
     "lint": "pnpm -r lint",

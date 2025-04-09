@@ -1,18 +1,20 @@
 name: Build and Run all tests without cache 
 on:
+  schedule:
+    - cron: '0 3 * * 1-5'
   workflow_dispatch: {}
 jobs:
   init:
     runs-on: ubuntu-latest
     steps:
-      - uses: milaboratory/github-ci/actions/context/init@v4-beta
+      - uses: milaboratory/github-ci/actions/context/init@v4
         with:
           version-canonize: false
           branch-versioning: main
   run:
     needs:
       - init
-    uses: milaboratory/github-ci/.github/workflows/node-simple-pnpm.yaml@v4-beta
+    uses: milaboratory/github-ci/.github/workflows/node-simple-pnpm.yaml@v4
     with:
       app-name: Platforma SDK
       app-name-slug: 'platforma-sdk'
