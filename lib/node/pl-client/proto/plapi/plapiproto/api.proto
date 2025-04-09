@@ -2,14 +2,13 @@ syntax = "proto3";
 
 package MiLaboratories.PL.API;
 
-option go_package = "github.com/milaboratory/pl/plapi/plapiproto;plapiproto";
-
-import "google/protobuf/duration.proto";
 import "github.com/googleapis/googleapis/google/rpc/status.proto";
-
-import "github.com/milaboratory/pl/plapi/plapiproto/base_types.proto";
 import "github.com/milaboratory/pl/plapi/plapiproto/api_types.proto";
+import "github.com/milaboratory/pl/plapi/plapiproto/base_types.proto";
 import "github.com/milaboratory/pl/plapi/plapiproto/resource_types.proto";
+import "google/protobuf/duration.proto";
+
+option go_package = "github.com/milaboratory/pl/plapi/plapiproto;plapiproto";
 
 service Platform {
   //
@@ -702,7 +701,6 @@ message FieldAPI {
       string next = 4;
     }
   }
-
 }
 
 message NotificationAPI {
@@ -713,7 +711,7 @@ message NotificationAPI {
     }
 
     message Response {
-       repeated Notification notifications = 1;
+      repeated Notification notifications = 1;
     }
   }
 
@@ -879,7 +877,7 @@ message ControllerAPI {
     }
 
     message Response {
-       repeated Notification notifications = 1;
+      repeated Notification notifications = 1;
     }
   }
 
@@ -1153,10 +1151,16 @@ message MaintenanceAPI {
     message Request {}
 
     message Response {
+      enum Compression {
+        NONE = 0;
+        GZIP = 1;
+      }
+
       string core_version = 1;
       string core_full_version = 2;
 
       string server_info = 3;
+      Compression compression = 4;
     }
   }
 }
