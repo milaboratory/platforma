@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.65
+
+### Patch Changes
+
+- c021ce8: [mnz] Block Product Status Component
+
 ## 2.2.64
 
 ### Patch Changes
