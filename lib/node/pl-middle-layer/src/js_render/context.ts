@@ -41,6 +41,17 @@ import type { ResultPool } from '../pool/result_pool';
 import { stringifyWithResourceId } from '@milaboratories/pl-client';
 import { PlQuickJSError } from '@milaboratories/pl-errors';
 
+export type DeadlineSettings = {
+  currentExecutionTarget: string;
+  deadline: number;
+};
+
+/**
+ * Communicates a deadline to the quickjs runtime, that if passed, will interrupt the execution.
+ * Undefined can be used to reset the deadline.
+ * */
+export type DeadlineSetter = (settings: DeadlineSettings | undefined) => void;
+
 function isArrayBufferOrView(obj: unknown): obj is ArrayBufferLike {
   return obj instanceof ArrayBuffer || ArrayBuffer.isView(obj);
 }
@@ -69,6 +80,7 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
     private readonly vm: QuickJSContext,
     private readonly blockCtx: BlockContextAny,
     private readonly env: MiddleLayerEnvironment,
+    private readonly deadlineSetter: DeadlineSetter,
     computableCtx: ComputableCtx,
   ) {
     this.computableCtx = computableCtx;
@@ -101,15 +113,19 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
 
   public evaluateBundle(code: string) {
     try {
+      this.deadlineSetter({ currentExecutionTarget: 'evaluateBundle', deadline: Date.now() + 10000 });
       this.vm.unwrapResult(this.vm.evalCode(code, 'bundle.js', { type: 'global' })).dispose();
     } catch (err: unknown) {
       JsExecutionContext.cleanErrorContext(err);
       throw err;
+    } finally {
+      this.deadlineSetter(undefined);
     }
   }
 
   public runCallback(cbName: string, ...args: unknown[]): QuickJSHandle {
     try {
+      this.deadlineSetter({ currentExecutionTarget: cbName, deadline: Date.now() + 10000 });
       return Scope.withScope((localScope) => {
         const targetCallback = localScope.manage(this.vm.getProp(this.callbackRegistry, cbName));
 
@@ -130,6 +146,8 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
       JsExecutionContext.cleanErrorContext(err);
       const original = this.errorRepo.getOriginal(err);
       throw original;
+    } finally {
+      this.deadlineSetter(undefined);
     }
   }
 
