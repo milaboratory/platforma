@@ -28,6 +28,7 @@
     "@milaboratories/pl-model-common": "workspace:^",
     "@milaboratories/pl-error-like": "workspace:^",
     "utility-types": "catalog:",
+    "canonicalize": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
