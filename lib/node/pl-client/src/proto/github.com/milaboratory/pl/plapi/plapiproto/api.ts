@@ -2845,14 +2845,14 @@ export interface MaintenanceAPI_Ping_Response {
      */
     serverInfo: string;
     /**
-     * @generated from protobuf field: MiLaboratories.PL.API.MaintenanceAPI.Ping.Response.Encoding encoding = 4;
+     * @generated from protobuf field: MiLaboratories.PL.API.MaintenanceAPI.Ping.Response.Compression compression = 4;
      */
-    encoding: MaintenanceAPI_Ping_Response_Encoding;
+    compression: MaintenanceAPI_Ping_Response_Compression;
 }
 /**
- * @generated from protobuf enum MiLaboratories.PL.API.MaintenanceAPI.Ping.Response.Encoding
+ * @generated from protobuf enum MiLaboratories.PL.API.MaintenanceAPI.Ping.Response.Compression
  */
-export enum MaintenanceAPI_Ping_Response_Encoding {
+export enum MaintenanceAPI_Ping_Response_Compression {
     /**
      * @generated from protobuf enum value: NONE = 0;
      */
@@ -14621,7 +14621,7 @@ class MaintenanceAPI_Ping_Response$Type extends MessageType<MaintenanceAPI_Ping_
             { no: 1, name: "core_version", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
             { no: 2, name: "core_full_version", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
             { no: 3, name: "server_info", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
-            { no: 4, name: "encoding", kind: "enum", T: () => ["MiLaboratories.PL.API.MaintenanceAPI.Ping.Response.Encoding", MaintenanceAPI_Ping_Response_Encoding] }
+            { no: 4, name: "compression", kind: "enum", T: () => ["MiLaboratories.PL.API.MaintenanceAPI.Ping.Response.Compression", MaintenanceAPI_Ping_Response_Compression] }
         ]);
     }
     create(value?: PartialMessage<MaintenanceAPI_Ping_Response>): MaintenanceAPI_Ping_Response {
@@ -14629,7 +14629,7 @@ class MaintenanceAPI_Ping_Response$Type extends MessageType<MaintenanceAPI_Ping_
         message.coreVersion = "";
         message.coreFullVersion = "";
         message.serverInfo = "";
-        message.encoding = 0;
+        message.compression = 0;
         if (value !== undefined)
             reflectionMergePartial<MaintenanceAPI_Ping_Response>(this, message, value);
         return message;
@@ -14648,8 +14648,8 @@ class MaintenanceAPI_Ping_Response$Type extends MessageType<MaintenanceAPI_Ping_
                 case /* string server_info */ 3:
                     message.serverInfo = reader.string();
                     break;
-                case /* MiLaboratories.PL.API.MaintenanceAPI.Ping.Response.Encoding encoding */ 4:
-                    message.encoding = reader.int32();
+                case /* MiLaboratories.PL.API.MaintenanceAPI.Ping.Response.Compression compression */ 4:
+                    message.compression = reader.int32();
                     break;
                 default:
                     let u = options.readUnknownField;
@@ -14672,9 +14672,9 @@ class MaintenanceAPI_Ping_Response$Type extends MessageType<MaintenanceAPI_Ping_
         /* string server_info = 3; */
         if (message.serverInfo !== "")
             writer.tag(3, WireType.LengthDelimited).string(message.serverInfo);
-        /* MiLaboratories.PL.API.MaintenanceAPI.Ping.Response.Encoding encoding = 4; */
-        if (message.encoding !== 0)
-            writer.tag(4, WireType.Varint).int32(message.encoding);
+        /* MiLaboratories.PL.API.MaintenanceAPI.Ping.Response.Compression compression = 4; */
+        if (message.compression !== 0)
+            writer.tag(4, WireType.Varint).int32(message.compression);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
