@@ -129,6 +129,7 @@ export const maskIcons24 = [
   'menu',
   'minimize',
   'minus',
+  'monetization',
   'more',
   'paper-clip',
   'pause',
