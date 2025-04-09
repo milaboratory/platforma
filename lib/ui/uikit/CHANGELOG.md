@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.66
+
+### Patch Changes
+
+- 168d2eb: Move useWatchFetch to uikit
+
 ## 2.2.65
 
 ### Patch Changes
