@@ -1,5 +1,17 @@
 # @platforma-sdk/workflow-tengo
 
+## 4.0.2
+
+### Patch Changes
+
+- 43e1c65: Minor additions to standard library:
+  - new strings library
+  - getValues for maps lib
+    New methods for unmarshalled column bundle:
+  - getSpec
+    Additional check for xsv-import:
+  - Explicit error for incorrect partitioning length
+
 ## 4.0.1
 
 ### Patch Changes

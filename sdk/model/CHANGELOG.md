@@ -1,5 +1,16 @@
 # @platforma-sdk/model
 
+## 1.28.0
+
+### Minor Changes
+
+- 43e1c65: Significant refactoring for anchored column APIs & PColumnCollection class isolation
+
+### Patch Changes
+
+- Updated dependencies [43e1c65]
+  - @milaboratories/pl-model-common@1.13.4
+
 ## 1.27.17
 
 ### Patch Changes
