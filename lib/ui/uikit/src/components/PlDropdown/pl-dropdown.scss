@@ -113,7 +113,7 @@
     border-radius: 6px;
     overflow: hidden;
     background: transparent;
-    padding: 0 11px;
+    padding-left: 11px;
 
     min-height: var(--control-height);
     line-height: var(--control-height);
@@ -199,11 +199,19 @@
     }
   }
 
+  &__arrow-wrapper {
+    display: flex;
+    align-items: center;
+    min-height: var(--control-height);
+    padding-right: 11px;
+  }
+
   .arrow-icon {
     cursor: pointer;
 
     // Default "arrow" icon (16x16) 
     &.arrow-icon-default {
+      transition: transform .2s;
       background-color: var(--control-mask-fill);
       @include mask(url('@/assets/images/16_chevron-down.svg'), 16px);
     }
@@ -227,6 +235,11 @@
     .arrow-icon {
       background-color: var(--control-mask-fill);
       @include mask(url(@/assets/images/16_chevron-up.svg), 16px);
+
+      &.arrow-icon-default {
+        @include mask(url('@/assets/images/16_chevron-down.svg'), 16px);
+        transform: rotate(-180deg);
+      }
     }
   }
 
