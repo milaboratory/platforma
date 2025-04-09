@@ -8,6 +8,7 @@ const data = reactive({
   selected1: 'lorem ipsum',
   selected2: 'lorem ipsum',
   selected3: 'lorem ipsum',
+  selected4: 'lorem ipsum',
 });
 
 const VERY_LONG_OPTIONS_ARRAY = new Array(100000).fill(null).map((_v, idx) => ({ value: `item${idx}`, label: `Label for item ${idx}` }));
@@ -32,7 +33,7 @@ async function requestOptionsError(_str: string): Promise<ListOption[]> {
         :optionsSearch="requestOptions"
       />
       <PlAutocomplete
-        v-model="data.selected2"
+        v-model="data.selected1"
         label="Autocomplete clearable"
         :optionsSearch="requestOptions"
         :clearable="true"
@@ -45,7 +46,7 @@ async function requestOptionsError(_str: string): Promise<ListOption[]> {
         :formatValue="(v: string) => v + ' formatted'"
       />
       <PlAutocomplete
-        v-model="data.selected1"
+        v-model="data.selected4"
         label="Autocomplete with broken request"
         :optionsSearch="requestOptionsError"
       />
