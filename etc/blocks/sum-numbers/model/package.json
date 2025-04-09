@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/milaboratories.test-sum-numbers.model",
-  "version": "1.0.30",
+  "version": "1.0.33",
   "private": true,
   "description": "Block model",
   "type": "module",

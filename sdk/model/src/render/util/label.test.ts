@@ -82,6 +82,28 @@ test.each<{ name: string; traces: Trace[]; labels: string[] }>([
       ]
     ],
     labels: ['T1L1 / T2L1', 'T1L1 / T2L2', 'T1L2 / T2L2']
+  },
+  {
+    name: 'different importance and id',
+    traces: [
+      [{ type: 'sameType', importance: 10, id: 'id1', label: 'High importance' }],
+      [{ type: 'sameType', importance: 5, id: 'id2', label: 'Low importance' }]
+    ],
+    labels: ['High importance', 'Low importance']
+  },
+  {
+    name: 'mixed common and different entries',
+    traces: [
+      [
+        { type: 'commonType', importance: 1, id: 'common', label: 'Common entry' },
+        { type: 'uniqueType', importance: 10, id: 'id1', label: 'Unique entry 1' }
+      ],
+      [
+        { type: 'commonType', importance: 1, id: 'common', label: 'Common entry' },
+        { type: 'uniqueType', importance: 5, id: 'id2', label: 'Unique entry 2' }
+      ]
+    ],
+    labels: ['Unique entry 1', 'Unique entry 2']
   }
 ])('test label derivation: $name', ({ name, traces, labels }) => {
   expect(deriveLabels(tracesToSpecs(traces), (s) => s).map((r) => r.label)).toEqual(labels);

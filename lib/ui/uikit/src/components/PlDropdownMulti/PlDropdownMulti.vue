@@ -99,14 +99,16 @@ const placeholderRef = computed(() => {
   return props.modelValue.length > 0 ? '' : props.placeholder;
 });
 
+const normalizedOptionsRef = computed(() => normalizeListOptions(props.options ?? []));
+
 const selectedOptionsRef = computed(() => {
-  return normalizeListOptions(props.options ?? []).filter((opt) => deepIncludes(selectedValuesRef.value, opt.value));
+  return selectedValuesRef.value.map((v) => normalizedOptionsRef.value.find((opt) => deepEqual(opt.value, v))).filter((v) => v !== undefined);
 });
 
 const filteredOptionsRef = computed(() => {
   const selectedValues = unref(selectedValuesRef);
 
-  const options = normalizeListOptions(props.options ?? []);
+  const options = unref(normalizedOptionsRef);
 
   return (
     data.search

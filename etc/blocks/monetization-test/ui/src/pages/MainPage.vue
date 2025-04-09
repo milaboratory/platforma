@@ -5,7 +5,7 @@ import type { ImportedFiles, ListOption } from '@platforma-sdk/ui-vue';
 import { PlCheckbox, PlAlert, PlBlockPage, PlContainer, PlRow, PlTextField, PlBtnPrimary, PlFileDialog, PlFileInput, PlDropdownMulti } from '@platforma-sdk/ui-vue';
 import { useApp } from '../app';
 import { computed, reactive, ref } from 'vue';
-import PlMonetizationDraft from '../components/PlMonetizationDraft.vue';
+
 const app = useApp();
 
 const dropdownOptions: ListOption<string>[] = [
@@ -100,6 +100,10 @@ async function verify(token: string) {
 <template>
   <PlBlockPage>
 
+    <template #title>
+      Monetization example
+    </template>
+
     <PlTextField v-model="app.model.args.productKey"
       label="Enter product key (keep MIFAKEMIFAKEMIFAKE for fake product)" clearable />
 
@@ -124,7 +128,7 @@ async function verify(token: string) {
 
     <PlContainer />
 
-    <PlMonetizationDraft />
+    <pre> {{ app.model.outputs['__mnzInfo'] }} </pre>
 
     <PlAlert label="token" v-if="app.model.outputs.token"> {{ app.model.outputs.token }}
     </PlAlert>

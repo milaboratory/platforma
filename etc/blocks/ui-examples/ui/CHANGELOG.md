@@ -1,5 +1,35 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.3.59
+
+### Patch Changes
+
+- Updated dependencies [69bd963]
+  - @platforma-sdk/model@1.28.1
+  - @milaboratories/milaboratories.ui-examples.model@1.1.39
+
+## 1.3.58
+
+### Patch Changes
+
+- Updated dependencies [43e1c65]
+  - @platforma-sdk/model@1.28.0
+  - @milaboratories/milaboratories.ui-examples.model@1.1.38
+
+## 1.3.57
+
+### Patch Changes
+
+- Updated dependencies [11f6e3e]
+  - @platforma-sdk/model@1.27.17
+  - @milaboratories/milaboratories.ui-examples.model@1.1.37
+
+## 1.3.56
+
+### Patch Changes
+
+- 0d465bf: Fixed: PlDropdownMulti does not keep selection order in ui
+
 ## 1.3.55
 
 ### Patch Changes

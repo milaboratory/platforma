@@ -1,5 +1,23 @@
 # @milaboratories/uikit
 
+## 2.2.65
+
+### Patch Changes
+
+- c021ce8: [mnz] Block Product Status Component
+
+## 2.2.64
+
+### Patch Changes
+
+- edaadd1: Changed cursor to pointer for PlAccordionSection
+
+## 2.2.63
+
+### Patch Changes
+
+- 0d465bf: Fixed: PlDropdownMulti does not keep selection order in ui
+
 ## 2.2.62
 
 ### Patch Changes

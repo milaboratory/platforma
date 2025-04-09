@@ -1,5 +1,69 @@
 # @milaboratories/pl-middle-layer
 
+## 1.33.4
+
+### Patch Changes
+
+- Updated dependencies [c021ce8]
+  - @platforma-sdk/workflow-tengo@4.0.3
+
+## 1.33.3
+
+### Patch Changes
+
+- Updated dependencies [69bd963]
+  - @platforma-sdk/model@1.28.1
+
+## 1.33.2
+
+### Patch Changes
+
+- Updated dependencies [43e1c65]
+- Updated dependencies [611bb3d]
+- Updated dependencies [43e1c65]
+- Updated dependencies [43e1c65]
+  - @platforma-sdk/workflow-tengo@4.0.2
+  - @milaboratories/pl-deployments@1.7.2
+  - @milaboratories/pl-model-common@1.13.4
+  - @platforma-sdk/model@1.28.0
+  - @milaboratories/pl-model-middle-layer@1.7.22
+  - @milaboratories/pl-drivers@1.5.41
+  - @platforma-sdk/block-tools@2.5.35
+
+## 1.33.1
+
+### Patch Changes
+
+- Updated dependencies [11f6e3e]
+  - @platforma-sdk/model@1.27.17
+
+## 1.33.0
+
+### Minor Changes
+
+- e8ade9c: Force arg and uiState canonicalization on set. Fixes incorrect value for uiState in resetBlockArgsAndUiState.
+
+## 1.32.11
+
+### Patch Changes
+
+- Updated dependencies [1564354]
+  - @platforma-sdk/workflow-tengo@4.0.1
+
+## 1.32.10
+
+### Patch Changes
+
+- Updated dependencies [8b4a614]
+  - @platforma-sdk/workflow-tengo@4.0.0
+
+## 1.32.9
+
+### Patch Changes
+
+- Updated dependencies [68809d4]
+  - @platforma-sdk/workflow-tengo@3.3.0
+
 ## 1.32.8
 
 ### Patch Changes
