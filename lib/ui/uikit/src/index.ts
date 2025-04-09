@@ -97,6 +97,7 @@ export { useFormState } from './composition/useFormState';
 export { useQuery } from './composition/useQuery.ts';
 export { useDraggable } from './composition/useDraggable';
 export { useComponentProp } from './composition/useComponentProp';
+export * from './composition/useWatchFetch';
 
 /**
  * Utils/Partials

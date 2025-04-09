@@ -361,7 +361,7 @@ self.body(func(inputs) {
 	validation.assertType(params, util.PFCONV_EXPORT_CFG_SCHEMA)
 
 	resultFileArg := "result." + xsvType
-    resultFile := "result.1." + xsvType
+    resultFile := "result." + xsvType
 
 	// convert p-frame to csv
 	pfconv := exec.builder().

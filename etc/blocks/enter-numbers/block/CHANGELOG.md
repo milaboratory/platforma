@@ -1,5 +1,70 @@
 # @milaboratories/milaboratories.test-enter-numbers
 
+## 1.0.247
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-enter-numbers.workflow@1.0.17
+- @milaboratories/milaboratories.test-enter-numbers.ui@1.0.237
+
+## 1.0.246
+
+### Patch Changes
+
+- Updated dependencies [69bd963]
+  - @platforma-sdk/model@1.28.1
+  - @milaboratories/milaboratories.test-enter-numbers.model@1.0.63
+  - @milaboratories/milaboratories.test-enter-numbers.ui@1.0.236
+
+## 1.0.245
+
+### Patch Changes
+
+- Updated dependencies [43e1c65]
+  - @platforma-sdk/model@1.28.0
+  - @milaboratories/milaboratories.test-enter-numbers.workflow@1.0.16
+  - @milaboratories/milaboratories.test-enter-numbers.model@1.0.62
+  - @milaboratories/milaboratories.test-enter-numbers.ui@1.0.235
+
+## 1.0.244
+
+### Patch Changes
+
+- Updated dependencies [11f6e3e]
+  - @platforma-sdk/model@1.27.17
+  - @milaboratories/milaboratories.test-enter-numbers.model@1.0.61
+  - @milaboratories/milaboratories.test-enter-numbers.ui@1.0.234
+
+## 1.0.243
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-enter-numbers.workflow@1.0.15
+
+## 1.0.242
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-enter-numbers.ui@1.0.233
+
+## 1.0.241
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-enter-numbers.workflow@1.0.14
+
+## 1.0.240
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-enter-numbers.workflow@1.0.13
+
+## 1.0.239
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-enter-numbers.ui@1.0.232
+
 ## 1.0.238
 
 ### Patch Changes

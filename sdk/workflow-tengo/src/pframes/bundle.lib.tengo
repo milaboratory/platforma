@@ -11,6 +11,7 @@ ll := import(":ll")
 xsv := import(":pframes.xsv")
 assets := import(":assets")
 render := import(":render")
+strings := import(":strings")
 
 /**
  * Creates a collector to asynchronously aggregate PColumns into a resolved PColumnBundle.
@@ -167,12 +168,6 @@ createBuilder := func(ctx) {
 	return self
 }
 
-nameCleanPattern := text.re_compile("[-_,.:; \\[\\]}{\"\\\\/:]+")
-
-cleanColumnName := func(name) {
-	return nameCleanPattern.replace(name, "_")
-}
-
 /**
  * Creates an unmarshaller for PColumnBundle resources.
  *
@@ -182,6 +177,42 @@ cleanColumnName := func(name) {
  * @returns Object that implements the unmarshaller interface {canParse, parse}
  */
 pColumnBundleUnmarshaller := func() {
+	// Process UniversalPColumnId inputs and return their components and canonical representation
+	processColumnId := func(id) {
+		columnKey := undefined
+		columnAxisFilters := undefined
+		serializedId := undefined
+
+		if is_string(id) {
+			serializedId = id
+			decodedId := json.decode(id)
+
+			if is_map(decodedId) && !is_undefined(decodedId.source) && !is_undefined(decodedId.axisFilters) {
+				columnKey = canonical.encode(decodedId.source)
+				columnAxisFilters = decodedId.axisFilters
+			} else {
+				columnKey = id
+			}
+		} else if is_map(id) {
+			if !is_undefined(id.source) && !is_undefined(id.axisFilters) {
+				columnKey = canonical.encode(id.source)
+				columnAxisFilters = id.axisFilters
+				serializedId = canonical.encode(id)
+			} else {
+				columnKey = canonical.encode(id)
+				serializedId = columnKey
+			}
+		} else {
+			ll.panic("Invalid column ID type. Expected string or object.")
+		}
+
+		return {
+			columnKey: columnKey,
+			axisFilters: columnAxisFilters,
+			canonicalId: serializedId
+		}
+	}
+
 	return {
 		canParse: func(resource) {
 			return smart.isResource(resource) &&
@@ -230,6 +261,33 @@ pColumnBundleUnmarshaller := func() {
 				},
 
 				/**
+				 * Gets the spec for a column, applying axis filters if the ID is a FilteredPColumnId.
+				 * @param id - The ID of the column (string SUniversalPColumnId or UniversalPColumnId object)
+				 *             If the ID is a FilteredPColumnId, its axisFilters will be applied.
+				 * @returns The column spec object after applying filters.
+				 */
+				getSpec: func(id) {
+					processedId := processColumnId(id)
+					columnKey := processedId.columnKey
+					columnAxisFilters := processedId.axisFilters // Filters from FilteredPColumnId
+
+					if is_undefined(pool[columnKey]) {
+						ll.panic("Column not found in bundle: " + columnKey)
+					}
+
+					baseSpec := pool[columnKey].spec
+
+					// If filters are present, prepare them and get the resulting spec
+					if !is_undefined(columnAxisFilters) && len(columnAxisFilters) > 0 {
+						prepared := pSpec.prepareAxisFilters(columnAxisFilters, baseSpec)
+						return prepared.columnSpec
+					} else {
+						// Otherwise, return the base spec
+						return baseSpec
+					}
+				},
+
+				/**
 				 * Sets a header override for a specific axis or column
 				 * @param matcher - Either a matcher object {name, domain} or a string (which will be used as the name)
 				 * @param header - The header text to use instead of the default
@@ -253,14 +311,35 @@ pColumnBundleUnmarshaller := func() {
 					requests := []
 					addedColumns := {}
 
+					distiller := undefined
+
+					getSpecDistiller := func() {
+						if is_undefined(distiller) {
+							columnsToDistill := []
+							for request in requests {
+								col := pool[request.key]
+								columnsToDistill = append(columnsToDistill, col.spec)
+							}
+							distiller = pSpec.createSpecDistiller(columnsToDistill)
+						}
+						return distiller
+					}
+
 					findAxisHeaderOverride := func(spec) {
 						for _, override in localAxisHeaderOverrides {
 							matcher := override[0]
 
 							if matcher.name == spec.name {
+								specDistiller := getSpecDistiller()
+								discriminativeDomains := specDistiller.getDiscriminativeDomainsSet(spec.name)
+
 								domainsMatch := true
 
 								for domainKey, domainValue in matcher.domain {
+									if is_undefined(discriminativeDomains[domainKey]) {
+										continue
+									}
+
 									if is_undefined(spec.domain) ||
 									   is_undefined(spec.domain[domainKey]) ||
 									   spec.domain[domainKey] != domainValue {
@@ -277,20 +356,6 @@ pColumnBundleUnmarshaller := func() {
 						return undefined
 					}
 
-					distiller := undefined
-
-					getSpecDistiller := func() {
-						if is_undefined(distiller) {
-							columnsToDistill := []
-							for request in requests {
-								col := pool[request.key]
-								columnsToDistill = append(columnsToDistill, col.spec)
-							}
-							distiller = pSpec.createSpecDistiller(columnsToDistill)
-						}
-						return distiller
-					}
-
 					generateLabelForAxis := func(spec) {
 						name := spec.name
 						label := undefined
@@ -302,7 +367,7 @@ pColumnBundleUnmarshaller := func() {
 							discriminativeDomains := specDistiller.getDiscriminativeDomains(name)
 
 							if len(discriminativeDomains) == 0 {
-								label = cleanColumnName(name)
+								label = strings.substituteSpecialCharacters(name)
 							} else {
 								ll.panic("Cannot deduce header for %s in axis. Discriminative domains: %s. Please provide a header override.",
 									name, discriminativeDomains)
@@ -317,40 +382,17 @@ pColumnBundleUnmarshaller := func() {
 						return label
 					}
 
-					// Process UniversalPColumnId inputs and return their components and canonical representation
-					processColumnId := func(id) {
-						columnKey := undefined
-						columnAxisFilters := undefined
-						serializedId := undefined
-
-						if is_string(id) {
-							serializedId = id
-							decodedId := json.decode(id)
-
-							if is_map(decodedId) && !is_undefined(decodedId.source) && !is_undefined(decodedId.axisFilters) {
-								columnKey = canonical.encode(decodedId.source)
-								columnAxisFilters = decodedId.axisFilters
-							} else {
-								columnKey = id
+					// Helper function to find a request by item
+					findRequestByItem := func(item) {
+						serializedId := processColumnId(item).canonicalId
+						for _, request in requests {
+							if request.canonicalId == serializedId {
+								return request
 							}
-						} else if is_map(id) {
-							if !is_undefined(id.source) && !is_undefined(id.axisFilters) {
-								columnKey = canonical.encode(id.source)
-								columnAxisFilters = id.axisFilters
-								serializedId = canonical.encode(id)
-							} else {
-								columnKey = canonical.encode(id)
-								serializedId = columnKey
-							}
-						} else {
-							ll.panic("Invalid column ID type. Expected string or object.")
 						}
-
-						return {
-							columnKey: columnKey,
-							axisFilters: columnAxisFilters,
-							canonicalId: serializedId
-						}
+						// Throw error if not found
+						ll.panic("Column not found in the table: %s. Make sure to call add() first.",
+							serializedId)
 					}
 
 					tableBuilder := undefined
@@ -420,7 +462,7 @@ pColumnBundleUnmarshaller := func() {
 
 							addedColumns[request.canonicalId] = true
 
-							request.safeId = cleanColumnName(request.canonicalId)
+							request.safeId = strings.substituteSpecialCharacters(request.canonicalId)
 
 							if !is_undefined(request.headerOverride) {
 								request.header = request.headerOverride
@@ -519,16 +561,22 @@ pColumnBundleUnmarshaller := func() {
 								return generateLabelForAxis(item)
 							}
 
-							serializedId := processColumnId(item).canonicalId
+							// Find the request, error handled inside the helper
+							request := findRequestByItem(item)
+							return request.header
+						},
 
-							for _, request in requests {
-								if request.canonicalId == serializedId {
-									return request.header
-								}
-							}
-
-							ll.panic("Column not found in the table: %s. Make sure to call add() before getHeader().",
-								serializedId)
+						/**
+						 * Gets the spec for a column
+						 * @param item - A column key (string), UniversalPColumnId
+						 * @returns The column spec object
+						 * @throws If the column hasn't been added to the table yet
+						 * @note This method only works for columns that have been added to the table via add()
+						 */
+						getSpec: func(item) {
+							// Find the request, error handled inside the helper
+							request := findRequestByItem(item)
+							return request.columnSpec
 						}
 					}
 
