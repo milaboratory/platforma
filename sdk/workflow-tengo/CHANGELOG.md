@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 4.0.4
+
+### Patch Changes
+
+- 8142f77: Minor error message correction.
+
 ## 4.0.3
 
 ### Patch Changes

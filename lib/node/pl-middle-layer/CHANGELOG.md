@@ -1,5 +1,18 @@
 # @milaboratories/pl-middle-layer
 
+## 1.34.0
+
+### Minor Changes
+
+- 29113ba: QuickJS execution deadline
+
+### Patch Changes
+
+- Updated dependencies [8142f77]
+- Updated dependencies [8142f77]
+  - @platforma-sdk/model@1.28.4
+  - @platforma-sdk/workflow-tengo@4.0.4
+
 ## 1.33.4
 
 ### Patch Changes

@@ -1,5 +1,12 @@
 # @milaboratories/milaboratories.test-blob-url-custom-protocol.model
 
+## 1.0.33
+
+### Patch Changes
+
+- Updated dependencies [8142f77]
+  - @platforma-sdk/model@1.28.4
+
 ## 1.0.32
 
 ### Patch Changes
