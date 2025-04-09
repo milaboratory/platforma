@@ -3,6 +3,7 @@ import type { Code, ConfigRenderLambda } from '@platforma-sdk/model';
 import type { ComputableRenderingOps } from '@milaboratories/computable';
 import { Computable } from '@milaboratories/computable';
 import { Scope } from 'quickjs-emscripten';
+import type { DeadlineSettings } from './context';
 import { JsExecutionContext } from './context';
 import type { BlockContextAny } from '../middle_layer/block_ctx';
 import { LogOutputStatus } from '../middle_layer/util';
@@ -26,8 +27,16 @@ export function computableFromRF(
     const runtime = scope.manage(env.quickJs.newRuntime());
     runtime.setMemoryLimit(1024 * 1024 * 8);
     runtime.setMaxStackSize(1024 * 320);
+
+    let deadlineSettings: DeadlineSettings | undefined;
+    runtime.setInterruptHandler(() => {
+      if (deadlineSettings === undefined) return false;
+      if (Date.now() > deadlineSettings.deadline) return true;
+      return false;
+    });
     const vm = scope.manage(runtime.newContext());
-    const rCtx = new JsExecutionContext(scope, vm, ctx, env, cCtx);
+    const rCtx = new JsExecutionContext(scope, vm, ctx, env,
+      (s) => { deadlineSettings = s; }, cCtx);
 
     rCtx.evaluateBundle(code.content);
     const result = rCtx.runCallback(fh.handle);
