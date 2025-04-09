@@ -1,6 +1,8 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+import type {
+  DataInfo } from '@milaboratories/pl-model-common';
 import {
-  DataInfo,
+  dataInfoToEntries,
+  isDataInfo,
   isDataInfoEntries,
   type BinaryChunk,
   type BinaryPartitionedDataInfoEntries,
@@ -9,7 +11,7 @@ import {
   type PColumnDataEntry,
   type PColumnKey,
 } from '@milaboratories/pl-model-common';
-import type { TreeNodeAccessor } from '../accessor';
+import { TreeNodeAccessor } from '../accessor';
 
 const PCD_PREFIX = 'PColumnData/';
 
@@ -262,6 +264,8 @@ export function parsePColumnData(
 ): JsonPartitionedDataInfoEntries<TreeNodeAccessor> | BinaryPartitionedDataInfoEntries<TreeNodeAccessor> | undefined {
   if (acc === undefined) return undefined;
 
+  if (!acc.getIsReadyOrError()) return undefined;
+
   const resourceType = acc.resourceType.name;
   const meta = acc.getDataAsJson<Record<string, number>>();
 
@@ -421,4 +425,21 @@ export function parsePColumnData(
     default:
       throw new Error(`Unknown resource type: ${resourceType}`);
   }
+}
+
+/**
+ * Converts or parses the input into DataInfoEntries format.
+
+ * @param acc - The input data, which can be TreeNodeAccessor, DataInfoEntries, DataInfo, or undefined.
+ * @returns The data in DataInfoEntries format, or undefined if the input was undefined or data is not ready.
+ */
+export function convertOrParsePColumnData(acc: TreeNodeAccessor | DataInfoEntries<TreeNodeAccessor> | DataInfo<TreeNodeAccessor> | undefined):
+DataInfoEntries<TreeNodeAccessor> | undefined {
+  if (acc === undefined) return undefined;
+
+  if (isDataInfoEntries(acc)) return acc;
+  if (isDataInfo(acc)) return dataInfoToEntries(acc);
+  if (acc instanceof TreeNodeAccessor) return parsePColumnData(acc);
+
+  throw new Error(`Unexpected input type: ${typeof acc}`);
 }
