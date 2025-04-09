@@ -43,8 +43,6 @@ export * from './objectHash';
 
 export * from './computedResult';
 
-export * from './composition/useWatchFetch';
-
 export * from './composition/fileContent';
 
 export * from '@milaboratories/uikit';

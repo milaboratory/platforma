@@ -92,12 +92,6 @@ export type ExtendSettings<Href extends `/${string}` = `/${string}`> = {
   routes: Routes<Href>;
 };
 
-export type FetchResult<V, E = unknown> = {
-  loading: boolean;
-  value: V | undefined;
-  error: E;
-};
-
 // Results (ValueOrErrors)
 
 export type UnwrapValueOrError<W> = W extends {
