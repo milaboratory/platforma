@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.28.4
+
+### Patch Changes
+
+- 8142f77: Fixes a bug potentially leading to infinite loop in deriveLabels
+
 ## 1.28.1
 
 ### Patch Changes
