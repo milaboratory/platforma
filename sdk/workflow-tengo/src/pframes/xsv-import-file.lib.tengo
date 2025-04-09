@@ -57,6 +57,14 @@ importFile := func(xsvFile, xsvType, spec, ...ops) {
 
 	validation.assertType(spec, util.PFCONV_IMPORT_CFG_SCHEMA)
 
+	// Check that partitionKeyLength is strictly less than the number of axes
+	ll.assert(
+		spec.partitionKeyLength == undefined || spec.partitionKeyLength < len(spec.axes),
+		"partitionKeyLength (%d) must be strictly less than the number of axes (%d)",
+		spec.partitionKeyLength,
+		len(spec.axes)
+	)
+
 	xsvFileName := "file." + xsvType
 
 	ops := renderOps({ dataOnly: false, splitDataAndSpec: false }, ops...)
