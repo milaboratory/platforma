@@ -15,7 +15,7 @@ export interface PlDriverDefinition<Drv extends PlDriver> {
   readonly name: string;
 
   /** Initialization routine, will be executed only once for each driver in a specific client */
-  init(pl: PlClient): Drv;
+  init(pl: PlClient, grpcTransport: GrpcTransport, httpDispatcher: Dispatcher): Drv;
 }
 
 // addRTypeToMetadata adds a metadata with resource type
