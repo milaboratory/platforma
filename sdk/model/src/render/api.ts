@@ -1,10 +1,7 @@
 import type {
   AnyFunction,
-  AxisFilter,
   AxisId,
-  BinaryPartitionedDataInfoEntries,
   DataInfo,
-  JsonPartitionedDataInfoEntries,
   Option,
   PColumn,
   PColumnSelector,
@@ -20,7 +17,6 @@ import type {
   PTableHandle,
   PTableRecordFilter,
   PTableSorting,
-  PValue,
   PlRef,
   ResultCollection,
   SUniversalPColumnId,
@@ -28,11 +24,8 @@ import type {
 } from '@milaboratories/pl-model-common';
 import {
   AnchoredIdDeriver,
-  canonicalizeAxisId,
   ensurePColumn,
-  entriesToDataInfo,
   extractAllColumns,
-  getAxisId,
   isDataInfo,
   isPColumn,
   isPColumnSpec,
@@ -41,7 +34,6 @@ import {
   mapPObjectData,
   mapPTableDef,
   mapValueInVOE,
-  resolveAnchors,
   selectorsToPredicate,
 } from '@milaboratories/pl-model-common';
 import type { Optional } from 'utility-types';
@@ -51,12 +43,9 @@ import type { FutureRef } from './future';
 import type { AccessorHandle, GlobalCfgRenderCtx } from './internal';
 import { MainAccessorName, StagingAccessorName } from './internal';
 import type { LabelDerivationOps } from './util/label';
-import type { AxisLabelProvider, ColumnProvider } from './util/column_collection';
+import { PColumnCollection, type AxisLabelProvider, type ColumnProvider } from './util/column_collection';
 import { deriveLabels } from './util/label';
 import type { APColumnSelectorWithSplit } from './util/split_selectors';
-import { getUniquePartitionKeys, parsePColumnData } from './util/pcolumn_data';
-import type { TraceEntry } from './util/label';
-import { filterDataInfoEntries } from './util/axis_filtering';
 import canonicalize from 'canonicalize';
 
 /**
@@ -94,50 +83,6 @@ PColumn<PColumnValues | AccessorHandle | DataInfo<AccessorHandle>> {
   });
 }
 
-/**
- * Describes a single filter applied due to a split axis.
- */
-export type AxisFilterInfo = {
-  axisIdx: number;
-  axisId: AxisId;
-  value: PValue;
-  label: string;
-};
-
-/**
- * Represents a column specification with potential split axis filtering information
- * used in canonical options generation.
- */
-export type UniversalPColumnEntry = {
-  id: SUniversalPColumnId;
-  obj: PColumnSpec;
-  ref: PlRef;
-  axisFilters?: AxisFilterInfo[];
-  label: string;
-};
-
-/**
- * Converts an array of SplitAxisFilter objects into an array of TraceEntry objects
- * suitable for label generation.
- */
-function splitFiltersToTrace(splitFilters?: AxisFilterInfo[]): TraceEntry[] | undefined {
-  if (!splitFilters) return undefined;
-  return splitFilters.map((filter) => ({
-    type: `split:${canonicalizeAxisId(filter.axisId)}`,
-    label: filter.label,
-    importance: 1_000_000, // High importance for split filters in labels
-  }));
-}
-
-/**
- * Converts an array of SplitAxisFilter objects into an array of AxisFilter tuples
- * suitable for deriving anchored IDs.
- */
-function splitFiltersToAxisFilter(splitFilters?: AxisFilterInfo[]): AxisFilter[] | undefined {
-  if (!splitFilters) return undefined;
-  return splitFilters.map((filter) => [filter.axisIdx, filter.value]);
-}
-
 type UniversalPColumnOpts = {
   labelOps?: LabelDerivationOps;
   dontWaitAllData?: boolean;
@@ -173,165 +118,20 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
       }));
   }
 
-  /**
-   * Internal implementation that generates UniversalPColumnEntry objects from the provided
-   * anchors and selectors.
-   */
-  public getUniversalPColumnEntries(
-    anchorsOrCtx: AnchoredIdDeriver | Record<string, PColumnSpec | PlRef>,
-    predicateOrSelectors: ((spec: PColumnSpec) => boolean) | APColumnSelectorWithSplit | APColumnSelectorWithSplit[],
-    opts?: UniversalPColumnOpts,
-  ): UniversalPColumnEntry[] | undefined {
-    // Handle PlRef objects by resolving them to PColumnSpec
+  private resolveAnchorCtx(anchorsOrCtx: AnchoredIdDeriver | Record<string, PColumnSpec | PlRef>): AnchoredIdDeriver | undefined {
+    if (anchorsOrCtx instanceof AnchoredIdDeriver) return anchorsOrCtx;
     const resolvedAnchors: Record<string, PColumnSpec> = {};
-
-    if (!(anchorsOrCtx instanceof AnchoredIdDeriver)) {
-      for (const [key, value] of Object.entries(anchorsOrCtx)) {
-        if (isPlRef(value)) {
-          const resolvedSpec = this.getPColumnSpecByRef(value);
-          if (!resolvedSpec)
-            return undefined;
-          resolvedAnchors[key] = resolvedSpec;
-        } else {
-          // It's already a PColumnSpec
-          resolvedAnchors[key] = value;
-        }
-      }
-    }
-
-    const selectorsArray = typeof predicateOrSelectors === 'function'
-      ? [predicateOrSelectors]
-      : Array.isArray(predicateOrSelectors)
-        ? predicateOrSelectors
-        : [predicateOrSelectors];
-
-    const anchorIdDeriver = anchorsOrCtx instanceof AnchoredIdDeriver
-      ? anchorsOrCtx
-      : new AnchoredIdDeriver(resolvedAnchors);
-
-    const result: Omit<UniversalPColumnEntry, 'id' | 'label'>[] = [];
-
-    // Process each selector individually
-    for (const selector of selectorsArray) {
-      // Create predicate for this specific selector
-      const predicate = typeof selector === 'function'
-        ? selector
-        : selectorsToPredicate(resolveAnchors(resolvedAnchors, selector));
-
-      // Filter specs based on this specific predicate
-      const filtered = this.getSpecs().entries.filter(({ obj: spec }) => {
-        if (!isPColumnSpec(spec)) return false;
-        return predicate(spec);
-      });
-
-      if (filtered.length === 0)
-        continue;
-
-      // Check if this selector has any split axes
-      const splitAxisIdxs = typeof selector === 'object'
-        && 'axes' in selector
-        && selector.axes !== undefined
-        && selector.partialAxesMatch === undefined
-        ? selector.axes
-          .map((axis, index) => ('split' in axis && axis.split === true) ? index : -1)
-          .filter((index) => index !== -1)
-        : [];
-      splitAxisIdxs.sort((a, b) => a - b);
-
-      if (splitAxisIdxs.length > 0) { // Handle split axes
-        const maxSplitIdx = splitAxisIdxs[splitAxisIdxs.length - 1]; // Last one is max since they're sorted
-
-        for (const { ref, obj: spec } of filtered) {
-          if (!isPColumnSpec(spec)) throw new Error(`Assertion failed: expected PColumnSpec, got ${spec.kind}`);
-
-          const columnData = this.getDataByRef(ref);
-          if (!columnData) {
-            if (opts?.dontWaitAllData) continue;
-            return undefined;
-          }
-          if (!isPColumn(columnData)) throw new Error(`Assertion failed: expected PColumn, got ${columnData.spec.kind}`);
-
-          const uniqueKeys = getUniquePartitionKeys(columnData.data);
-          if (!uniqueKeys) {
-            if (opts?.dontWaitAllData) continue;
-            return undefined;
-          }
-
-          if (maxSplitIdx >= uniqueKeys.length)
-            throw new Error(`Not enough partition keys for the requested split axes in column ${spec.name}`);
-
-          // Pre-fetch labels for all involved split axes
-          const axesLabels: (Record<string | number, string> | undefined)[] = splitAxisIdxs
-            .map((idx) => this.findLabels(getAxisId(spec.axesSpec[idx])));
-
-          const keyCombinations: (string | number)[][] = [];
-          const generateCombinations = (currentCombo: (string | number)[], sAxisIdx: number) => {
-            if (sAxisIdx >= splitAxisIdxs.length) {
-              keyCombinations.push([...currentCombo]);
-              return;
-            }
-            const axisIdx = splitAxisIdxs[sAxisIdx];
-            const axisValues = uniqueKeys[axisIdx];
-            for (const val of axisValues) {
-              currentCombo.push(val);
-              generateCombinations(currentCombo, sAxisIdx + 1);
-              currentCombo.pop();
-            }
-          };
-          generateCombinations([], 0);
-
-          // Generate entries for each key combination
-          for (const keyCombo of keyCombinations) {
-            const splitFilters: AxisFilterInfo[] = keyCombo.map((value, sAxisIdx) => {
-              const axisIdx = splitAxisIdxs[sAxisIdx];
-              const axisId = getAxisId(spec.axesSpec[axisIdx]);
-              const axisLabelMap = axesLabels[sAxisIdx];
-              const label = axisLabelMap?.[value] ?? String(value);
-              return { axisIdx, axisId, value: value as PValue, label };
-            });
-
-            result.push({
-              obj: spec,
-              ref,
-              axisFilters: splitFilters,
-            });
-          }
-        }
+    for (const [key, value] of Object.entries(anchorsOrCtx)) {
+      if (isPlRef(value)) {
+        const resolvedSpec = this.getPColumnSpecByRef(value);
+        if (!resolvedSpec)
+          return undefined;
+        resolvedAnchors[key] = resolvedSpec;
       } else {
-        // No split axes, simply add each filtered item without filters
-        for (const { ref, obj: spec } of filtered) {
-          if (!isPColumnSpec(spec)) continue;
-          result.push({
-            obj: spec,
-            ref,
-            // No splitFilters needed here
-          });
-        }
+        resolvedAnchors[key] = value;
       }
     }
-
-    if (result.length === 0)
-      return [];
-
-    const labelResults = deriveLabels(
-      result,
-      (o) => ({
-        spec: o.obj,
-        suffixTrace: splitFiltersToTrace(o.axisFilters), // Use helper function
-      }),
-      opts?.labelOps ?? {},
-    );
-
-    return labelResults.map((item) => ({
-      id: anchorIdDeriver.deriveS(
-        item.value.obj,
-        splitFiltersToAxisFilter(item.value.axisFilters), // Use helper function
-      ),
-      obj: item.value.obj,
-      ref: item.value.ref,
-      axisFilters: item.value.axisFilters,
-      label: item.label,
-    }));
+    return new AnchoredIdDeriver(resolvedAnchors);
   }
 
   /**
@@ -346,74 +146,16 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
     anchorsOrCtx: AnchoredIdDeriver | Record<string, PColumnSpec | PlRef>,
     predicateOrSelectors: ((spec: PColumnSpec) => boolean) | APColumnSelectorWithSplit | APColumnSelectorWithSplit[],
     opts?: UniversalPColumnOpts,
-  ): PColumn<DataInfo<TreeNodeAccessor>>[] | undefined {
-    // Ensure includeNativeLabel is true in the labelOps
-    const enhancedOpts: UniversalPColumnOpts = {
-      ...opts,
-      labelOps: {
-        includeNativeLabel: true,
-        ...(opts?.labelOps || {}),
-      },
-    };
-
-    const entries = this.getUniversalPColumnEntries(
-      anchorsOrCtx,
-      predicateOrSelectors,
-      enhancedOpts,
-    );
-
-    if (!entries || entries.length === 0) return undefined;
-
-    const result: PColumn<DataInfo<TreeNodeAccessor>>[] = [];
-
-    for (const entry of entries) {
-      const columnData = this.getPColumnByRef(entry.ref);
-      if (!columnData) return undefined;
-
-      const parsedData = parsePColumnData(columnData.data);
-      if (!parsedData) return undefined;
-
-      let filteredEntries: JsonPartitionedDataInfoEntries<TreeNodeAccessor> | BinaryPartitionedDataInfoEntries<TreeNodeAccessor> = parsedData;
-      let spec = { ...columnData.spec };
-
-      if (entry.axisFilters && entry.axisFilters.length > 0) {
-        const axisFiltersByIdx = entry.axisFilters.map((filter) => [
-          filter.axisIdx,
-          filter.value,
-        ] as [number, PValue]);
-
-        filteredEntries = filterDataInfoEntries(parsedData, axisFiltersByIdx);
-
-        const axisIndicesToRemove = [...entry.axisFilters]
-          .map((filter) => filter.axisIdx)
-          .sort((a, b) => b - a);
-
-        const newAxesSpec = [...spec.axesSpec];
-        for (const idx of axisIndicesToRemove) {
-          newAxesSpec.splice(idx, 1);
-        }
-
-        spec = { ...spec, axesSpec: newAxesSpec };
-      }
-
-      const dataInfo = entriesToDataInfo(filteredEntries);
-
-      spec = {
-        ...spec,
-        annotations: {
-          ...(spec.annotations ?? {}),
-          'pl7.app/label': entry.label,
-        },
-      };
-
-      result.push({
-        id: entry.id as unknown as PObjectId,
-        spec,
-        data: dataInfo,
+  ): PColumn<DataInfo<TreeNodeAccessor> | TreeNodeAccessor>[] | undefined {
+    const anchorCtx = this.resolveAnchorCtx(anchorsOrCtx);
+    if (!anchorCtx) return undefined;
+    return new PColumnCollection()
+      .addColumnProvider(this)
+      .addAxisLabelProvider(this)
+      .getColumns(predicateOrSelectors, {
+        ...opts,
+        anchorCtx,
       });
-    }
-
-    return result;
   }
 
   /**
@@ -450,9 +192,16 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
     predicateOrSelectors: ((spec: PColumnSpec) => boolean) | APColumnSelectorWithSplit | APColumnSelectorWithSplit[],
     opts?: UniversalPColumnOpts,
   ): { label: string; value: SUniversalPColumnId }[] | undefined {
-    const entries = this.getUniversalPColumnEntries(anchorsOrCtx, predicateOrSelectors, opts);
+    const anchorCtx = this.resolveAnchorCtx(anchorsOrCtx);
+    if (!anchorCtx) return undefined;
+    const entries = new PColumnCollection()
+      .addColumnProvider(this)
+      .addAxisLabelProvider(this)
+      .getUniversalEntries(predicateOrSelectors, {
+        ...opts,
+        anchorCtx,
+      });
     if (!entries) return undefined;
-    // Generate final options using the entries from the helper method
     return entries.map((item) => ({
       value: item.id,
       label: item.label,
