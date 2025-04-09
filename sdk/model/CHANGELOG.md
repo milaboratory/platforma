@@ -1,5 +1,50 @@
 # @platforma-sdk/model
 
+## 1.28.1
+
+### Patch Changes
+
+- 69bd963: Fixes cases where empty label can be derived by deriveLabels
+
+## 1.28.0
+
+### Minor Changes
+
+- 43e1c65: Significant refactoring for anchored column APIs & PColumnCollection class isolation
+
+### Patch Changes
+
+- Updated dependencies [43e1c65]
+  - @milaboratories/pl-model-common@1.13.4
+
+## 1.27.17
+
+### Patch Changes
+
+- 11f6e3e: Added find labels for p-column axis method to result pool
+
+## 1.27.10
+
+### Patch Changes
+
+- Updated dependencies [ff0f92c]
+  - @milaboratories/pl-error-like@1.12.0
+  - @milaboratories/pl-model-common@1.13.3
+
+## 1.27.8
+
+### Patch Changes
+
+- Updated dependencies [962c620]
+  - @milaboratories/pl-model-common@1.13.2
+
+## 1.27.6
+
+### Patch Changes
+
+- Updated dependencies [2fc07ba]
+  - @milaboratories/pl-model-common@1.13.1
+
 ## 1.26.0
 
 ### Minor Changes

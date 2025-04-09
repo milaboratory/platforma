@@ -99,15 +99,26 @@ export default class S3 extends Command {
     if (startOptions.binaryPath || startOptions.sourcesPath) {
       core.switchInstance(instance);
     } else {
-      platforma
+      await platforma
         .getBinary(logger, { version: flags.version })
         .then(() => {
           const children = core.switchInstance(instance);
-          setTimeout(() => {
-            for (const child of children) {
-              child.unref();
-            }
-          }, 1000);
+
+          // setTimeout(() => {
+          //   for (const child of children) {
+          //     child.unref();
+          //   }
+          // }, 1000);
+
+          const results: Promise<void>[] = [];
+          for (const child of children) {
+            results.push(new Promise((resolve, reject) => {
+              child.on('close', resolve);
+              child.on('error', reject);
+            }));
+          }
+
+          return Promise.all(results);
         })
         .catch(function (err: Error) {
           logger.error(err.message);

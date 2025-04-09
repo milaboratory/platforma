@@ -3,17 +3,49 @@
 import { z } from 'zod';
 import type { ResourceId, ResourceType } from '@milaboratories/pl-client';
 import { resourceIdToString, resourceTypeToString } from '@milaboratories/pl-client';
+import { notEmpty } from '@milaboratories/ts-helpers';
+
+/** The error that comes from QuickJS. */
+export class PlQuickJSError extends Error {
+  public stack: string;
+  public fullMessage: string;
+
+  constructor(
+    quickJSError: Error,
+    cause: Error,
+  ) {
+    super(`PlQuickJSError: ${cause.message}`, { cause });
+    this.name = 'PlQuickJSError';
+
+    // QuickJS wraps the error with the name and the message,
+    // but we need another format.
+    let stack = notEmpty(quickJSError.stack);
+    stack = stack.replace(quickJSError.message, '');
+    stack = stack.replace(notEmpty(cause.message), '');
+
+    this.stack = stack;
+
+    const causeMsg = 'fullMessage' in cause && typeof cause.fullMessage === 'string'
+      ? cause.fullMessage
+      : cause.message;
+
+    this.fullMessage = `PlQuickJSError: ${causeMsg}
+QuickJS stacktrace:
+${this.stack}
+`;
+  }
+}
 
 /**
  * A parsed error from the Pl backend.
  * It contains several suberrors, which could be one or different causes of the error.
  */
 export class PlErrorReport extends Error {
-  message: string;
+  public readonly fullMessage: string;
 
   constructor(
     /** Full message from the Pl backend. */
-    public readonly fullMessage: string,
+    public readonly rawBackendMessage: string,
 
     /** Either CID conflict or a error from controller. */
     public readonly plErrorType: string,
@@ -29,21 +61,21 @@ export class PlErrorReport extends Error {
     public readonly resource?: ResourceId,
     public readonly resourceType?: ResourceType,
   ) {
-    super(fullMessage);
-    this.name = 'PlErrorReport';
-    this.message = this.toString();
-  }
+    const errorMessages = errors.map((e) => e.message).join('\n\n');
+    const errorFullMessages = errors.map((e) => e.fullMessage).join('\n\n');
 
-  toString() {
+    super(`PlErrorReport: ${errorMessages}`);
+    this.name = 'PlErrorReport';
+
     const rt = this.resourceType ? `${resourceTypeToString(this.resourceType)},` : '';
     const r = this.resource ? resourceIdToString(this.resource) : '';
     const f = this.fieldName ? `/${this.fieldName}` : '';
     const errType = this.plErrorType ? `error type: ${this.plErrorType}` : '';
-    const subErrors = this.errors.map((e) => e.message).join('\n\n');
 
-    return `PlErrorReport: resource: ${rt} ${r}${f}
+    this.fullMessage = `PlErrorReport: resource: ${rt} ${r}${f}
 ${errType}
-${subErrors}`;
+${errorFullMessages}
+`;
   }
 }
 
@@ -60,11 +92,13 @@ export type PlCoreError =
  * An general error when we couldn't parse the cause.
  */
 export class PlInternalError extends Error {
+  public readonly fullMessage: string;
   constructor(
     public readonly message: string,
   ) {
     super(message);
     this.name = 'PlInternalError';
+    this.fullMessage = `PlInternalError: ${message}`;
   }
 }
 
@@ -72,29 +106,29 @@ export class PlInternalError extends Error {
  * Happens when workflow template panics.
  */
 export class PlTengoError extends Error {
-  message: string;
+  public readonly fullMessage: string;
 
   constructor(
-    public readonly fullMessage: string,
+    public readonly rawBackendMessage: string,
     public readonly templateName: string,
     public readonly tengoMessage: string,
     public readonly tengoStacktrace: string,
   ) {
-    super(fullMessage);
-    this.name = 'PlWorkflowError';
-    this.message = this.toString();
-  }
-
-  toString() {
-    return `PlWorkflowError:
-template: ${this.templateName}
+    const msg = `PlTengoError:
 message:
-${this.tengoMessage}
+${tengoMessage}
+template: ${templateName}
 tengo stacktrace:
-${this.tengoStacktrace}
+${tengoStacktrace}
+`;
 
-full message:
-${this.fullMessage}`;
+    super(msg);
+    this.name = 'PlTengoError';
+
+    this.fullMessage = `${msg}
+raw message:
+${this.rawBackendMessage}
+`;
   }
 }
 
@@ -102,30 +136,29 @@ ${this.fullMessage}`;
  * Happens when a command fails to run.
  */
 export class PlRunnerError extends Error {
-  message: string;
+  public readonly fullMessage: string;
 
   constructor(
-    public readonly fullMessage: string,
+    public readonly rawBackendMessage: string,
     public readonly commandName: string,
     public readonly exitCode: number,
     public readonly stdout: string,
     public readonly workingDirectory: string,
   ) {
-    super(fullMessage);
-    this.name = 'PlRunnerError';
-    this.message = this.toString();
-  }
-
-  toString() {
-    return `PlRunnerError:
-command: ${this.commandName}
-exit code: ${this.exitCode}
-working directory: ${this.workingDirectory}
+    const msg = `PlRunnerError:
+command: ${commandName}
+exit code: ${exitCode}
+working directory: ${workingDirectory}
 stdout:
-${this.stdout}
+${stdout}`;
 
-full message:
-${this.fullMessage}`;
+    super(msg);
+    this.name = 'PlRunnerError';
+    this.fullMessage = `
+${msg}
+raw message:
+${this.rawBackendMessage}
+`;
   }
 }
 
@@ -133,30 +166,31 @@ ${this.fullMessage}`;
  * Happens when a monetization command fails to run.
  */
 export class PlMonetizationError extends PlRunnerError {
-  message: string;
-
+  public readonly fullMessage: string;
   constructor(
-    fullMessage: string,
+    rawBackendMessage: string,
     commandName: string,
     exitCode: number,
     stdout: string,
     workingDirectory: string,
   ) {
-    super(fullMessage, commandName, exitCode, stdout, workingDirectory);
-    this.name = 'PlMonetizationError';
-    this.message = this.toString();
-  }
+    super(rawBackendMessage, commandName, exitCode, stdout, workingDirectory);
+    const msg = `Monetizaiton error:
+${this.stdout}
+`;
 
-  toString() {
-    return `PlMonetizationError:
+    this.message = msg;
+    this.name = 'PlMonetizationError';
+
+    this.fullMessage = `
+${msg}
 command: ${this.commandName}
 exit code: ${this.exitCode}
 working directory: ${this.workingDirectory}
-stdout:
-${this.stdout}
 
-full message:
-${this.fullMessage}`;
+raw message:
+${this.rawBackendMessage}
+`;
   }
 }
 
@@ -173,19 +207,18 @@ const backendErrorSchema = z.object({
  */
 export function parsePlError(
   error: string,
-
   resource?: ResourceId,
   resourceType?: ResourceType,
   field?: string,
 ): PlErrorReport {
   const parsed = backendErrorSchema.parse(JSON.parse(error));
-  const subErrors = parseSubErrors(parsed.message);
+  const errors = parseSubErrors(parsed.message);
 
   return new PlErrorReport(
     error,
     parsed.errorType,
     parsed.message,
-    subErrors,
+    errors,
 
     field,
     resource,

@@ -1,5 +1,118 @@
 # @milaboratories/pl-middle-layer
 
+## 1.33.3
+
+### Patch Changes
+
+- Updated dependencies [69bd963]
+  - @platforma-sdk/model@1.28.1
+
+## 1.33.2
+
+### Patch Changes
+
+- Updated dependencies [43e1c65]
+- Updated dependencies [611bb3d]
+- Updated dependencies [43e1c65]
+- Updated dependencies [43e1c65]
+  - @platforma-sdk/workflow-tengo@4.0.2
+  - @milaboratories/pl-deployments@1.7.2
+  - @milaboratories/pl-model-common@1.13.4
+  - @platforma-sdk/model@1.28.0
+  - @milaboratories/pl-model-middle-layer@1.7.22
+  - @milaboratories/pl-drivers@1.5.41
+  - @platforma-sdk/block-tools@2.5.35
+
+## 1.33.1
+
+### Patch Changes
+
+- Updated dependencies [11f6e3e]
+  - @platforma-sdk/model@1.27.17
+
+## 1.33.0
+
+### Minor Changes
+
+- e8ade9c: Force arg and uiState canonicalization on set. Fixes incorrect value for uiState in resetBlockArgsAndUiState.
+
+## 1.32.11
+
+### Patch Changes
+
+- Updated dependencies [1564354]
+  - @platforma-sdk/workflow-tengo@4.0.1
+
+## 1.32.10
+
+### Patch Changes
+
+- Updated dependencies [8b4a614]
+  - @platforma-sdk/workflow-tengo@4.0.0
+
+## 1.32.9
+
+### Patch Changes
+
+- Updated dependencies [68809d4]
+  - @platforma-sdk/workflow-tengo@3.3.0
+
+## 1.32.8
+
+### Patch Changes
+
+- 6e3329e: extract parsed_errors from pl-tree for future using it in computable
+- Updated dependencies [6e3329e]
+  - @milaboratories/computable@2.4.3
+  - @milaboratories/pl-errors@1.0.4
+  - @milaboratories/pl-model-common@1.13.3
+  - @milaboratories/pl-tree@1.5.3
+  - @platforma-sdk/model@1.27.10
+  - @milaboratories/pl-drivers@1.5.40
+  - @milaboratories/pl-model-middle-layer@1.7.21
+  - @platforma-sdk/block-tools@2.5.34
+
+## 1.32.7
+
+### Patch Changes
+
+- 2e8b782: Use non-blocking gunzip to extract template content
+- da38aad: Move parse template operations to worker thread, use vitest instead of jest
+- Updated dependencies [2e8b782]
+  - @milaboratories/pl-model-backend@1.0.4
+  - @platforma-sdk/workflow-tengo@3.2.1
+
+## 1.32.6
+
+### Patch Changes
+
+- 962c620: Full migration to PFrames Rust
+- Updated dependencies [962c620]
+  - @milaboratories/pl-model-middle-layer@1.7.20
+  - @milaboratories/pl-model-common@1.13.2
+  - @platforma-sdk/block-tools@2.5.33
+  - @milaboratories/pl-drivers@1.5.39
+  - @platforma-sdk/model@1.27.8
+
+## 1.32.5
+
+### Patch Changes
+
+- Updated dependencies [2490c21]
+  - @milaboratories/pl-model-middle-layer@1.7.19
+  - @platforma-sdk/block-tools@2.5.32
+
+## 1.32.4
+
+### Patch Changes
+
+- Updated dependencies [2fc07ba]
+  - @milaboratories/pl-model-common@1.13.1
+  - @milaboratories/pl-model-middle-layer@1.7.18
+  - @milaboratories/pl-drivers@1.5.38
+  - @platforma-sdk/model@1.27.6
+  - @platforma-sdk/block-tools@2.5.31
+
 ## 1.32.3
 
 ### Patch Changes

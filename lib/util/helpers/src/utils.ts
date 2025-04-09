@@ -129,6 +129,12 @@ export function tapIf<T, R>(v: T | null | undefined, cb: (v: T) => R) {
   return;
 }
 
+/**
+ * Generates a random integer between min (inclusive) and max (exclusive).
+ * @param min The minimum integer value (inclusive).
+ * @param max The maximum integer value (exclusive).
+ * @returns A random integer within the specified range.
+ */
 export function randomInt(min: number, max: number) {
   min = Math.ceil(min);
   max = Math.floor(max);

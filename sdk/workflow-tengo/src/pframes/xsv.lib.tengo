@@ -246,6 +246,11 @@ isStructuredPfMap := func(pf) {
  *                                             annotationValue?: object - Match requires all the listed annotations to have provided values
  *                                             annotationPattern?: object - Match requires all the listed annotations to match provided regex patterns
  *                                           }
+ *                        coreJoin?: object - Explicitly specify core part of a join. The join would take there steps:
+ *                                           1. From the PFrame specified columns are filtered using `columnSelector`;
+ *                                           2. Core join is performed following the provided specification;
+ *                                           3. Remaining selected columns are joined using the `joinType`.
+ *                                           - Default: all selected columns are joined using `joinType`
  *                        joinType?: string  - Join type for columns with equal axes specifications
  *                                           - Options: "Full" | "Inner"
  *                                           - Default: "Full"

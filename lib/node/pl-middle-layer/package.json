@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-middle-layer",
-  "version": "1.32.3",
+  "version": "1.33.3",
   "description": "Pl Middle Layer",
   "engines": {
     "node": ">=20.16.0"
@@ -19,7 +19,7 @@
     "type-check": "tsc --noEmit --composite false",
     "build": "vite build",
     "lint": "eslint .",
-    "test": "NODE_OPTIONS=\"$NODE_OPTIONS --experimental-vm-modules\" jest",
+    "test": "npm run build && vitest",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "files": [
@@ -31,7 +31,6 @@
   "dependencies": {
     "@milaboratories/pl-http": "workspace:^",
     "@milaboratories/computable": "workspace:^",
-    "@milaboratories/pframes-node": "catalog:",
     "@milaboratories/pframes-rs-node": "catalog:",
     "@milaboratories/resolve-helper": "workspace:^",
     "@platforma-sdk/block-tools": "workspace:^",
@@ -63,6 +62,7 @@
     "@types/semver": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
+    "vitest": "catalog:",
     "@types/jest": "catalog:",
     "@types/node": "catalog:",
     "jest": "catalog:",

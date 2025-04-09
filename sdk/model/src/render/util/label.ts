@@ -129,21 +129,30 @@ export function deriveLabels<T>(
     else secondaryTypes.push(typeName);
   }
 
-  const calculate = (includedTypes: Set<string>) =>
-    enrichedRecords.map((r) => {
-      const labelSet = r.fullTrace
-        .filter((fm) => includedTypes.has(fm.fullType))
+  const calculate = (includedTypes: Set<string>) => {
+    const result: RecordsWithLabel<T>[] = [];
+    for (let i = 0; i < enrichedRecords.length; i++) {
+      const r = enrichedRecords[i];
+      const includedTrace = r.fullTrace
+        .filter((fm) => includedTypes.has(fm.fullType));
+      if (includedTrace.length === 0)
+        return undefined;
+      const labelSet = includedTrace
         .map((fm) => fm.label);
       const sep = ops.separator ?? ' / ';
-      return {
+      result.push({
         label: labelSet.join(sep),
         value: r.value,
-      } satisfies RecordsWithLabel<T>;
-    });
+      } satisfies RecordsWithLabel<T>);
+    }
+    return result;
+  };
 
   if (mainTypes.length === 0) {
     if (secondaryTypes.length !== 0) throw new Error('Assertion error.');
-    return calculate(new Set(LabelTypeFull));
+    const result = calculate(new Set(LabelTypeFull));
+    if (result === undefined) throw new Error('Assertion error.');
+    return result;
   }
 
   //
@@ -164,6 +173,7 @@ export function deriveLabels<T>(
     currentSet.add(mainTypes[additinalType]);
 
     const candidateResult = calculate(currentSet);
+    if (candidateResult === undefined) continue; // one of the records has empty matching trace
 
     // checking if labels uniquely separate our records
     if (new Set(candidateResult.map((c) => c.label)).size === values.length) return candidateResult;
@@ -175,5 +185,7 @@ export function deriveLabels<T>(
     }
   }
 
-  return calculate(new Set([...mainTypes, ...secondaryTypes]));
+  const result = calculate(new Set([...mainTypes, ...secondaryTypes]));
+  if (result === undefined) throw new Error('Assertion error.');
+  return result;
 }

@@ -1,5 +1,6 @@
 import type { PTableColumnId, PTableColumnSpec } from './table_common';
 import type { PTableVector } from './data_types';
+import type { PObjectId } from '../../pool';
 import { assertNever } from '../../util';
 
 /** Defines a terminal column node in the join request tree */
@@ -9,6 +10,36 @@ export interface ColumnJoinEntry<Col> {
 
   /** Local column */
   readonly column: Col;
+}
+
+/**
+ * Axis filter slicing target axis from column axes.
+ * If the axis has parents or is a parent, slicing cannot be applied (an error will be thrown).
+ * */
+export interface ConstantAxisFilter {
+  /** Filter type discriminator */
+  readonly type: 'constant';
+
+  /** Index of axis to slice (zero-based) */
+  readonly axisIndex: number;
+
+  /** Equality filter reference value, see {@link SingleValueEqualPredicate} */
+  readonly constant: string | number;
+}
+
+/** Defines a terminal column node in the join request tree */
+export interface SlicedColumnJoinEntry<Col> {
+  /** Node type discriminator */
+  readonly type: 'slicedColumn';
+
+  /** Local column */
+  readonly column: Col;
+
+  /** New column id */
+  readonly newId: PObjectId;
+
+  /** Non-empty list of axis filters */
+  readonly axisFilters: ConstantAxisFilter[];
 }
 
 /**
@@ -68,6 +99,7 @@ export interface OuterJoin<Col> {
  * */
 export type JoinEntry<Col> =
   | ColumnJoinEntry<Col>
+  | SlicedColumnJoinEntry<Col>
   | InnerJoin<Col>
   | FullJoin<Col>
   | OuterJoin<Col>;
@@ -324,6 +356,13 @@ export function mapJoinEntry<C1, C2>(
       return {
         type: 'column',
         column: cb(entry.column),
+      };
+    case 'slicedColumn':
+      return {
+        type: 'slicedColumn',
+        column: cb(entry.column),
+        newId: entry.newId,
+        axisFilters: entry.axisFilters,
       };
     case 'inner':
     case 'full':

@@ -203,7 +203,6 @@ export function render(options: types.plSettings): string {
   const disableMon = options.monitoring.enabled ? '' : ' disabled';
   const disableDbg = options.debug.enabled ? '' : ' disabled';
   const libraryDownloadable = options.hacks.libraryDownloadable ? 'true' : 'false';
-
   let miLicenseSecret = options.license.value;
   if (options.license.file != '') {
     miLicenseSecret = fs.readFileSync(options.license.file).toString().trimEnd();
@@ -274,6 +273,7 @@ controllers:
   runner:
     type: local
     storageRoot: '${(options.storages.work).rootPath}'
+    workdirCacheOnSuccess: 20m
     workdirCacheOnFailure: 1h
     secrets:
       - map:
@@ -282,7 +282,12 @@ controllers:
   packageLoader:
     packagesRoot: '${options.localRoot}/packages'
 
-  workflows: {}
+  workflows:
+    features:
+      pureFutureFields: true
+      commandExpressions: true
+      workdirLimits: true
+      computeLimits: true
 `;
 }
 

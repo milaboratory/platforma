@@ -12,7 +12,7 @@ import {
   Pl,
   resourceIdToString,
 } from '@milaboratories/pl-client';
-import type { ComputableStableDefined } from '@milaboratories/computable';
+import type { ComputableStableDefined, ComputableValueOrErrors } from '@milaboratories/computable';
 import { Computable } from '@milaboratories/computable';
 import { projectOverview } from './project_overview';
 import type { BlockPackSpecAny } from '../model';
@@ -39,6 +39,7 @@ import { activeConfigs } from './active_cfg';
 import { NavigationStates } from './navigation_states';
 import { extractConfig } from '@platforma-sdk/model';
 import fs from 'node:fs/promises';
+import canonicalize from 'canonicalize';
 
 type BlockStateComputables = {
   readonly fullState: Computable<BlockStateInternal>;
@@ -152,8 +153,8 @@ export class Project {
           renderingMode: blockCfg.renderingMode,
         },
         {
-          args: JSON.stringify(blockCfg.initialArgs),
-          uiState: JSON.stringify(blockCfg.initialUiState),
+          args: canonicalize(blockCfg.initialArgs)!,
+          uiState: canonicalize(blockCfg.initialUiState)!,
           blockPack: preparedBp,
         },
         before,
@@ -175,12 +176,12 @@ export class Project {
     author?: AuthorMarker,
   ): Promise<void> {
     const preparedBp = await this.env.bpPreparer.prepare(blockPackSpec);
-    const blockCfg = await this.env.bpPreparer.getBlockConfigContainer(blockPackSpec);
+    const blockCfg = extractConfig(await this.env.bpPreparer.getBlockConfigContainer(blockPackSpec));
     await withProjectAuthored(this.env.pl, this.rid, author, (mut) =>
       mut.migrateBlockPack(
         blockId,
         preparedBp,
-        resetArgs ? JSON.stringify(blockCfg.initialArgs) : undefined,
+        resetArgs ? { args: canonicalize(blockCfg.initialArgs)!, uiState: canonicalize(blockCfg.initialUiState)! } : undefined,
       ),
     );
     await this.projectTree.refreshState();
@@ -262,7 +263,7 @@ export class Project {
    * */
   public async setBlockArgs(blockId: string, args: unknown, author?: AuthorMarker) {
     await withProjectAuthored(this.env.pl, this.rid, author, (mut) =>
-      mut.setArgs([{ blockId, args: JSON.stringify(args) }]),
+      mut.setArgs([{ blockId, args: canonicalize(args)! }]),
     );
     await this.projectTree.refreshState();
   }
@@ -275,7 +276,7 @@ export class Project {
    * */
   public async setUiState(blockId: string, uiState: unknown, author?: AuthorMarker) {
     await withProjectAuthored(this.env.pl, this.rid, author, (mut) =>
-      mut.setUiState(blockId, uiState === undefined ? undefined : JSON.stringify(uiState)),
+      mut.setUiState(blockId, uiState === undefined ? undefined : canonicalize(uiState)!),
     );
     await this.projectTree.refreshState();
   }
@@ -301,8 +302,8 @@ export class Project {
     author?: AuthorMarker,
   ) {
     await withProjectAuthored(this.env.pl, this.rid, author, (mut) => {
-      mut.setArgs([{ blockId, args: JSON.stringify(args) }]);
-      mut.setUiState(blockId, JSON.stringify(uiState));
+      mut.setArgs([{ blockId, args: canonicalize(args)! }]);
+      mut.setUiState(blockId, canonicalize(uiState));
     });
     await this.projectTree.refreshState();
   }
@@ -326,12 +327,12 @@ export class Project {
         (await tx.getField(field(bpHolderRid, Pl.HolderRefField))).value,
       );
       const bpData = await tx.getResourceData(bpRid, false);
-      const bpInfo = JSON.parse(
+      const config = extractConfig((JSON.parse(
         Buffer.from(notEmpty(bpData.data)).toString('utf-8'),
-      ) as BlockPackInfo;
+      ) as BlockPackInfo).config);
       await withProjectAuthored(tx, this.rid, author, (prj) => {
-        prj.setArgs([{ blockId, args: JSON.stringify(bpInfo.config.initialArgs) }]);
-        prj.setUiState(blockId, undefined);
+        prj.setArgs([{ blockId, args: canonicalize(config.initialArgs)! }]);
+        prj.setUiState(blockId, canonicalize(config.initialUiState));
       });
       await tx.commit();
     });
@@ -344,18 +345,28 @@ export class Project {
       // state consists of inputs (args + ui state) and outputs
       const outputs = blockOutputs(this.projectTree.entry(), blockId, this.env);
       const fullState = Computable.make(
-        (ctx) => ({
-          argsAndUiState: blockArgsAndUiState(this.projectTree.entry(), blockId, ctx),
-          outputs,
-          navigationState: this.navigationStates.getState(blockId),
-        }),
+        (ctx) => {
+          return {
+            argsAndUiState: blockArgsAndUiState(this.projectTree.entry(), blockId, ctx),
+            outputs,
+            navigationState: this.navigationStates.getState(blockId),
+            overview: this.overview,
+          };
+        },
         {
-          postprocessValue: (v) =>
-            ({
+          postprocessValue: (v) => {
+            const sdkVersion = v.overview?.blocks?.find((b) => b.id == blockId)?.sdkVersion;
+            const toString = sdkVersion && shouldStillUseStringErrors(sdkVersion);
+            const newOutputs = toString && v.outputs !== undefined
+              ? convertErrorsToStrings(v.outputs)
+              : v.outputs;
+
+            return {
               ...v.argsAndUiState,
-              outputs: v.outputs,
+              outputs: newOutputs,
               navigationState: v.navigationState,
-            }) as BlockStateInternal,
+            } as BlockStateInternal;
+          },
         },
       );
 
@@ -468,4 +479,51 @@ function projectTreePruning(r: ExtendedResourceData): FieldData[] {
     default:
       return r.fields;
   }
+}
+
+/** Returns true if sdk version of the block is old and we need to convert
+ * ErrorLike errors to strings like it was.
+ * We need it for keeping old blocks and new UI compatibility. */
+function shouldStillUseStringErrors(sdkVersion: string): boolean {
+  return !isVersionGreater(sdkVersion, '1.26.0');
+}
+
+/** Checks if sdk version is greater that a target version. */
+function isVersionGreater(sdkVersion: string, targetVersion: string): boolean {
+  const version = sdkVersion.split('.').map(Number);
+  const target = targetVersion.split('.').map(Number);
+
+  return (
+    version[0] > target[0]
+    || (version[0] === target[0] && version[1] > target[1])
+    || (version[0] === target[0] && version[1] === target[1] && version[2] > target[2])
+  );
+};
+
+/** Converts ErrorLike errors to strings in the outputs like it was in old ML versions. */
+function convertErrorsToStrings(
+  outputs: Record<string, ComputableValueOrErrors<unknown>>,
+): Record<string, ComputableValueOrErrors<unknown>> {
+  const result: Record<string, ComputableValueOrErrors<unknown>> = {};
+  for (const [key, val] of Object.entries(outputs)) {
+    if (val.ok) {
+      result[key] = val;
+      continue;
+    }
+
+    result[key] = {
+      ok: false,
+      errors: val.errors.map((e) => {
+        if (typeof e === 'string') {
+          return e;
+        } else if (e.type == 'PlError' && e.fullMessage !== undefined) {
+          return e.fullMessage;
+        }
+        return e.message;
+      }),
+      moreErrors: val.moreErrors,
+    };
+  }
+
+  return result;
 }

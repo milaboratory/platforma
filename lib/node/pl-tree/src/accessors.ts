@@ -27,6 +27,12 @@ import type {
 import type { ValueOrError } from './value_or_error';
 import { parsePlError } from '@milaboratories/pl-errors';
 import { notEmpty } from '@milaboratories/ts-helpers';
+/** Error encountered during traversal in field or resource. */
+export class PlError extends Error {
+  constructor(message: string) {
+    super(message);
+  }
+}
 
 export type TreeAccessorData = {
   readonly treeProvider: () => PlTreeState;
@@ -218,13 +224,13 @@ export class PlTreeNodeAccessor {
         errorIfFieldNotSet: true;
       },
     ]
-  ): ValueOrError<PlTreeNodeAccessor, string>;
+  ): ValueOrError<PlTreeNodeAccessor, Error>;
   public traverseOrError(
     ...steps: (FieldTraversalStep | string)[]
-  ): ValueOrError<PlTreeNodeAccessor, string> | undefined;
+  ): ValueOrError<PlTreeNodeAccessor, Error> | undefined;
   public traverseOrError(
     ...steps: (FieldTraversalStep | string)[]
-  ): ValueOrError<PlTreeNodeAccessor, string> | undefined {
+  ): ValueOrError<PlTreeNodeAccessor, Error> | undefined {
     return this.traverseOrErrorWithCommon({}, ...steps);
   }
 
@@ -234,7 +240,7 @@ export class PlTreeNodeAccessor {
   ): PlTreeNodeAccessor | undefined {
     const result = this.traverseOrErrorWithCommon(commonOptions, ...steps);
     if (result === undefined) return undefined;
-    // eslint-disable-next-line @typescript-eslint/only-throw-error
+
     if (!result.ok) throw result.error;
     return result.value;
   }
@@ -242,7 +248,7 @@ export class PlTreeNodeAccessor {
   public traverseOrErrorWithCommon(
     commonOptions: CommonFieldTraverseOps,
     ...steps: (FieldTraversalStep | string)[]
-  ): ValueOrError<PlTreeNodeAccessor, string> | undefined {
+  ): ValueOrError<PlTreeNodeAccessor, Error> | undefined {
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     let current: PlTreeNodeAccessor = this;
 
@@ -267,17 +273,17 @@ export class PlTreeNodeAccessor {
           ok: false,
 
           // FIXME: in next tickets we'll allow Errors to be thrown.
-          error: (parsePlError(
+          error: parsePlError(
             notEmpty(next.error.getDataAsString()),
             current.id, current.resourceType, step.field,
-          ) as unknown as string),
+          ),
         };
 
       if (next.value === undefined) {
         if (step.errorIfFieldNotSet)
           return {
             ok: false,
-            error: `field have no assigned value ${step.field} of ${resourceIdToString(current.id)}`,
+            error: new Error(`field have no assigned value ${step.field} of ${resourceIdToString(current.id)}`),
           };
         // existing but unpopulated field is unstable because it must be resolved at some point
         this.onUnstableLambda('unpopulated_field:' + step.field);

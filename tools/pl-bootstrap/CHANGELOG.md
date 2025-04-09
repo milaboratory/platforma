@@ -1,5 +1,30 @@
 # @platforma-sdk/bootstrap
 
+## 3.4.1
+
+### Patch Changes
+
+- Updated dependencies [611bb3d]
+  - @milaboratories/pl-deployments@1.7.2
+
+## 3.4.0
+
+### Minor Changes
+
+- 4248345: Keep success WDs for 20 minutes after execution in docker
+
+## 3.3.1
+
+### Patch Changes
+
+- 3f128a7: Block stdin when starting backend with 'start local' command. Do not duplicate startup report
+
+## 3.3.0
+
+### Minor Changes
+
+- 4d9f520: Preserve all working directories for an hour. No only failures
+
 ## 3.2.13
 
 ### Patch Changes

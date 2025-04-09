@@ -32,6 +32,10 @@ const props = defineProps<{
    */
   value?: string;
   /**
+   * The content to copy (Note: it takes precedence over value property)
+   */
+  valueToCopy?: string;
+  /**
    * AnyLogHandle
    */
   logHandle?: AnyLogHandle;
@@ -85,8 +89,15 @@ const onClickCopy = () => {
     copyActive.value = false;
   }, 1200);
 
-  if (computedValue.value && typeof computedValue.value === 'string') {
-    navigator.clipboard.writeText(computedValue.value);
+  let toCopy: string | undefined = undefined;
+  if (props.valueToCopy) {
+    toCopy = props.valueToCopy;
+  } else if (computedValue.value && typeof computedValue.value === 'string') {
+    toCopy = computedValue.value;
+  }
+
+  if (toCopy !== undefined) {
+    navigator.clipboard.writeText(toCopy);
   }
 };
 
