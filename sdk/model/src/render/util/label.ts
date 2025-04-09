@@ -173,13 +173,12 @@ export function deriveLabels<T>(
     currentSet.add(mainTypes[additinalType]);
 
     const candidateResult = calculate(currentSet);
-    if (candidateResult === undefined) continue; // one of the records has empty matching trace
 
     // checking if labels uniquely separate our records
-    if (new Set(candidateResult.map((c) => c.label)).size === values.length) return candidateResult;
+    if (candidateResult !== undefined && new Set(candidateResult.map((c) => c.label)).size === values.length) return candidateResult;
 
     additinalType++;
-    if (additinalType == mainTypes.length) {
+    if (additinalType >= mainTypes.length) {
       includedTypes++;
       additinalType = includedTypes;
     }
