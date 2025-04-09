@@ -118,7 +118,7 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
       }));
   }
 
-  private resolveAnchorCtx(anchorsOrCtx: AnchoredIdDeriver | Record<string, PColumnSpec | PlRef>): AnchoredIdDeriver | undefined {
+  public resolveAnchorCtx(anchorsOrCtx: AnchoredIdDeriver | Record<string, PColumnSpec | PlRef>): AnchoredIdDeriver | undefined {
     if (anchorsOrCtx instanceof AnchoredIdDeriver) return anchorsOrCtx;
     const resolvedAnchors: Record<string, PColumnSpec> = {};
     for (const [key, value] of Object.entries(anchorsOrCtx)) {

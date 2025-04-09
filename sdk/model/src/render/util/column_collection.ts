@@ -52,25 +52,16 @@ class ArrayColumnProvider implements ColumnProvider {
   }
 }
 
-export type PColumnWithLabel<Data> = PColumn<Data> & {
-  label: string;
-};
-
-/** Universal column is a column that uses a universal column id, and always have label. */
-export type UniversalPColumn<Blob> = PColumnWithLabel<Blob> & {
-  id: SUniversalPColumnId;
-};
-
-export type PColumnEntryWithLabel<Blob> = {
+export type PColumnEntryWithLabel = {
   id: PObjectId;
   spec: PColumnSpec;
   /** Lazy calculates the data, returns undefined if data is not ready. */
-  data(): DataInfo<Blob> | Blob | undefined;
+  data(): DataInfo<TreeNodeAccessor> | TreeNodeAccessor | undefined;
   label: string;
 };
 
 /** Universal column is a column that uses a universal column id, and always have label. */
-export type PColumnEntryUniversal<Data> = PColumnEntryWithLabel<Data> & {
+export type PColumnEntryUniversal = PColumnEntryWithLabel & {
   id: SUniversalPColumnId;
 };
 
@@ -163,6 +154,7 @@ type UniversalPColumnOptsNoDeriver = {
    * If true, the derived label will override the 'pl7.app/label' annotation
    * in the resulting PColumnSpec. It also forces `includeNativeLabel` in `labelOps` to true,
    * unless `labelOps.includeNativeLabel` is explicitly set to false.
+   * Default value in getUniversalEntries is false, in getColumns it is true.
    */
   overrideLabelAnnotation?: boolean;
 };
@@ -210,13 +202,13 @@ export class PColumnCollection {
   // Overload signatures updated to return PColumnEntry types
   public getUniversalEntries(
     predicateOrSelectors: ((spec: PColumnSpec) => boolean) | APColumnSelectorWithSplit | APColumnSelectorWithSplit[],
-    opts: UniversalPColumnOpts): PColumnEntryUniversal<TreeNodeAccessor>[] | undefined;
+    opts: UniversalPColumnOpts): PColumnEntryUniversal[] | undefined;
   public getUniversalEntries(
     predicateOrSelectors: ((spec: PColumnSpec) => boolean) | PColumnSelectorWithSplit | PColumnSelectorWithSplit[],
-    opts?: UniversalPColumnOptsNoDeriver): PColumnEntryWithLabel<TreeNodeAccessor>[] | undefined;
+    opts?: UniversalPColumnOptsNoDeriver): PColumnEntryWithLabel[] | undefined;
   public getUniversalEntries(
     predicateOrSelectors: ((spec: PColumnSpec) => boolean) | APColumnSelectorWithSplit | APColumnSelectorWithSplit[],
-    opts?: Optional<UniversalPColumnOpts, 'anchorCtx'>): (PColumnEntryWithLabel<TreeNodeAccessor> | PColumnEntryUniversal<TreeNodeAccessor>)[] | undefined {
+    opts?: Optional<UniversalPColumnOpts, 'anchorCtx'>): (PColumnEntryWithLabel | PColumnEntryUniversal)[] | undefined {
     const { anchorCtx, labelOps: rawLabelOps, dontWaitAllData = false, overrideLabelAnnotation = false } = opts ?? {};
 
     const labelOps: LabelDerivationOps = {
@@ -311,14 +303,16 @@ export class PColumnCollection {
             continue;
 
           const newAxesSpec = [...originalSpec.axesSpec];
-          for (const idx of splitAxisIdxs) {
-            newAxesSpec.splice(idx, 1);
+          const splitAxisOriginalIdxs = splitAxisIdxs.map((idx) => idx); // Keep original indices for axisId lookup
+          // Remove axes in reverse order to maintain correct indices during removal
+          for (let i = splitAxisIdxs.length - 1; i >= 0; i--) {
+            newAxesSpec.splice(splitAxisIdxs[i], 1);
           }
           const adjustedSpec = { ...originalSpec, axesSpec: newAxesSpec };
 
           for (const keyCombo of keyCombinations) {
             const splitFilters: AxisFilterInfo[] = keyCombo.map((value, sAxisIdx) => {
-              const axisIdx = splitAxisIdxs[sAxisIdx];
+              const axisIdx = splitAxisOriginalIdxs[sAxisIdx]; // Use original index for lookup
               const axisId = getAxisId(originalSpec.axesSpec[axisIdx]);
               const axisLabelMap = axesLabels[sAxisIdx];
               const label = axisLabelMap?.[value] ?? String(value);
@@ -356,7 +350,7 @@ export class PColumnCollection {
       labelOps,
     );
 
-    const result: (PColumnEntryWithLabel<TreeNodeAccessor> | PColumnEntryUniversal<TreeNodeAccessor>)[] = [];
+    const result: (PColumnEntryWithLabel | PColumnEntryUniversal)[] = [];
 
     for (const { value: entry, label } of labeledResults) {
       const { originalColumn, spec: originalSpec } = entry;
@@ -395,15 +389,24 @@ export class PColumnCollection {
 
   public getColumns(
     predicateOrSelectors: ((spec: PColumnSpec) => boolean) | APColumnSelectorWithSplit | APColumnSelectorWithSplit[],
-    opts: UniversalPColumnOpts): PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor>>[] | undefined {
-    const entries = this.getUniversalEntries(predicateOrSelectors, opts);
+    opts: UniversalPColumnOpts): PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor>>[] | undefined;
+  public getColumns(
+    predicateOrSelectors: ((spec: PColumnSpec) => boolean) | PColumnSelectorWithSplit | PColumnSelectorWithSplit[],
+    opts?: UniversalPColumnOptsNoDeriver): PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor>>[] | undefined;
+  public getColumns(
+    predicateOrSelectors: ((spec: PColumnSpec) => boolean) | APColumnSelectorWithSplit | APColumnSelectorWithSplit[],
+    opts?: Optional<UniversalPColumnOpts, 'anchorCtx'>): PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor>>[] | undefined {
+    const entries = this.getUniversalEntries(predicateOrSelectors, {
+      overrideLabelAnnotation: true, // default for getColumns
+      ...(opts ?? {}),
+    } as UniversalPColumnOpts);
     if (!entries) return undefined;
 
     const columns: PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor>>[] = [];
     for (const entry of entries) {
       const data = entry.data();
       if (!data) {
-        if (opts.dontWaitAllData) continue;
+        if (opts?.dontWaitAllData) continue;
         return undefined;
       }
       columns.push({
