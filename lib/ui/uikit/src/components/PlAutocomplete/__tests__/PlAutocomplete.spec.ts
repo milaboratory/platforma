@@ -20,10 +20,11 @@ describe('PlAutocomplete', () => {
       },
     });
 
+    await delay(10);
     await wrapper.find('.pl-autocomplete__envelope').trigger('click');
     await wrapper.find('input').trigger('focus');
     await wrapper.find('input').setValue('option');
-    await delay(2000);
+    await delay(600);
 
     const optionsRendered = [...document.body.querySelectorAll('.dropdown-list-item')] as HTMLElement[];
 
