@@ -17,6 +17,10 @@ async function requestOptions(str: string): Promise<ListOption[]> {
   return Promise.resolve(VERY_LONG_OPTIONS_ARRAY.filter((el) => el.value.includes(str) || el.label.includes(str)).slice(0, 100));
 }
 
+async function requestOptionsError(_str: string): Promise<ListOption[]> {
+  throw new Error('test error');
+}
+
 </script>
 
 <template>
@@ -39,6 +43,11 @@ async function requestOptions(str: string): Promise<ListOption[]> {
         :optionsSearch="requestOptions"
         :clearable="true"
         :formatValue="(v: string) => v + ' formatted'"
+      />
+      <PlAutocomplete
+        v-model="data.selected1"
+        label="Autocomplete with broken request"
+        :optionsSearch="requestOptionsError"
       />
     </div>
   </PlBlockPage>
