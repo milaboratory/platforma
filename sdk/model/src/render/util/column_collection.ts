@@ -280,6 +280,8 @@ export class PColumnCollection {
           const generateCombinations = (currentCombo: (string | number)[], sAxisIdx: number) => {
             if (sAxisIdx >= splitAxisIdxs.length) {
               keyCombinations.push([...currentCombo]);
+              if (keyCombinations.length > 10000)
+                throw new Error('Too many key combinations, aborting.');
               return;
             }
             const axisIdx = splitAxisIdxs[sAxisIdx];
