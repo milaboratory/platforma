@@ -125,17 +125,32 @@ const loadedOptionsRef = ref<ListOption[]>([]);
 const selectedOptionsRef = ref<ListOptionNormalized[]>([]); // list of 1 option that is selected or empty, to keep selected label
 
 const isLoadingOptions = ref<boolean>(true);
+const isLoadingOptionsInitial = ref<boolean>(true);
+const isLoadingError = ref<boolean>(false);
+
 onMounted(async () => {
   if (model.value) {
     isLoadingOptions.value = true;
-    selectedOptionsRef.value = normalizeListOptions(await props.optionsSearch(String(model.value)));
-    loadedOptionsRef.value = selectedOptionsRef.value;
-    isLoadingOptions.value = false;
+    isLoadingOptionsInitial.value = true;
+
+    props.optionsSearch(String(model.value))
+      .then((result) => {
+        selectedOptionsRef.value = normalizeListOptions(result);
+        loadedOptionsRef.value = selectedOptionsRef.value;
+        isLoadingError.value = false;
+      })
+      .catch(() => {
+        isLoadingError.value = true;
+      })
+      .finally(() => {
+        isLoadingOptions.value = false;
+        isLoadingOptionsInitial.value = false;
+      });
   }
 });
 
 const isDisabled = computed(() => {
-  if (isLoadingOptions.value) {
+  if (isLoadingOptionsInitial.value) {
     return true;
   }
 
@@ -153,6 +168,10 @@ const computedError = computed(() => {
 
   if (props.error) {
     return props.error;
+  }
+
+  if (isLoadingError.value) {
+    return 'Data loading error';
   }
 
   return undefined;
@@ -289,7 +308,18 @@ watchDebounced(
   [() => data.search],
   async ([v]) => {
     if (v) {
-      loadedOptionsRef.value = await props.optionsSearch(v);
+      isLoadingOptions.value = true;
+      props.optionsSearch(v)
+        .then((result) => {
+          loadedOptionsRef.value = result;
+          isLoadingError.value = false;
+        })
+        .catch(() => {
+          isLoadingError.value = true;
+        })
+        .finally(() => {
+          isLoadingOptions.value = false;
+        });
     } else if (model.value) {
       loadedOptionsRef.value = selectedOptionsRef.value;
     }
@@ -305,7 +335,7 @@ watchDebounced(
       ref="rootRef"
       :tabindex="tabindex"
       class="pl-autocomplete"
-      :class="{ open: data.open, error, disabled: isDisabled }"
+      :class="{ open: data.open, error: Boolean(computedError), disabled: isDisabled }"
       @keydown="handleKeydown"
       @focusout="onFocusOut"
     >
