@@ -185,7 +185,7 @@ export class PlClient {
       user === null ? AnonymousClientRoot : createHash('sha256').update(user).digest('hex');
 
     this._serverInfo = await this.ping();
-    if (this._serverInfo.encoding === MaintenanceAPI_Ping_Response_Compression.GZIP) {
+    if (this._serverInfo.compression === MaintenanceAPI_Ping_Response_Compression.GZIP) {
       await this._ll.close();
       this._ll = this.buildLLPlClient(true);
     }
