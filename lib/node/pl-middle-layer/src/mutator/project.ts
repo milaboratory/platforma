@@ -212,6 +212,11 @@ type _GraphInfoFields =
   | 'actualProductionUpstream'
   | 'actualProductionDownstream';
 
+export type ArgsAndUiState = {
+  args: string;
+  uiState: string;
+};
+
 export class ProjectMutator {
   private globalModCount = 0;
   private fieldsChanged: boolean = false;
@@ -709,7 +714,7 @@ export class ProjectMutator {
   // Block-pack migration
   //
 
-  public migrateBlockPack(blockId: string, spec: BlockPackSpecPrepared, newArgs?: string): void {
+  public migrateBlockPack(blockId: string, spec: BlockPackSpecPrepared, newArgsAndUiState?: ArgsAndUiState): void {
     const info = this.getBlockInfo(blockId);
 
     this.setBlockField(
@@ -719,11 +724,11 @@ export class ProjectMutator {
       'NotReady',
     );
 
-    if (newArgs !== undefined) {
+    if (newArgsAndUiState !== undefined) {
       // this will also reset all downstream stagings
-      this.setArgs([{ blockId, args: newArgs }]);
+      this.setArgs([{ blockId, args: newArgsAndUiState.args }]);
       // reset UI state along with args
-      this.setUiState(blockId, undefined);
+      this.setUiState(blockId, newArgsAndUiState.uiState);
     } else {
       // resetting staging outputs for all downstream blocks
       this.getStagingGraph().traverse('downstream', [blockId], ({ id }) => this.resetStaging(id));

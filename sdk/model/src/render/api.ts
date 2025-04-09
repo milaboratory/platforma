@@ -1,5 +1,10 @@
 import type {
+  AnyFunction,
+  AxisFilter,
   AxisId,
+  BinaryPartitionedDataInfoEntries,
+  DataInfo,
+  JsonPartitionedDataInfoEntries,
   Option,
   PColumn,
   PColumnSelector,
@@ -8,39 +13,35 @@ import type {
   PFrameDef,
   PFrameHandle,
   PObject,
+  PObjectId,
   PObjectSpec,
   PSpecPredicate,
   PTableDef,
   PTableHandle,
   PTableRecordFilter,
   PTableSorting,
+  PValue,
   PlRef,
   ResultCollection,
-  ValueOrError,
-  AxisFilter,
-  PValue,
   SUniversalPColumnId,
-  AnyFunction,
-  DataInfo,
-  BinaryPartitionedDataInfoEntries,
-  JsonPartitionedDataInfoEntries,
-  PObjectId } from '@milaboratories/pl-model-common';
+  ValueOrError,
+} from '@milaboratories/pl-model-common';
 import {
-  mapDataInfo,
-  entriesToDataInfo,
-  isDataInfo,
   AnchoredIdDeriver,
-  getAxisId,
-  resolveAnchors,
   canonicalizeAxisId,
   ensurePColumn,
+  entriesToDataInfo,
   extractAllColumns,
+  getAxisId,
+  isDataInfo,
   isPColumn,
   isPColumnSpec,
   isPlRef,
+  mapDataInfo,
   mapPObjectData,
   mapPTableDef,
   mapValueInVOE,
+  resolveAnchors,
   selectorsToPredicate,
 } from '@milaboratories/pl-model-common';
 import type { Optional } from 'utility-types';
@@ -50,12 +51,12 @@ import type { FutureRef } from './future';
 import type { AccessorHandle, GlobalCfgRenderCtx } from './internal';
 import { MainAccessorName, StagingAccessorName } from './internal';
 import type { LabelDerivationOps } from './util/label';
+import type { AxisLabelProvider, ColumnProvider } from './util/column_collection';
 import { deriveLabels } from './util/label';
 import type { APColumnSelectorWithSplit } from './util/split_selectors';
 import { getUniquePartitionKeys, parsePColumnData } from './util/pcolumn_data';
 import type { TraceEntry } from './util/label';
 import { filterDataInfoEntries } from './util/axis_filtering';
-import type { AxisLabelProvider, ColumnProvider } from './util/column_collection';
 import canonicalize from 'canonicalize';
 
 /**
@@ -690,6 +691,19 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
         },
       } satisfies PColumn<TreeNodeAccessor | undefined>; // Cast needed because 'data' is a getter
     });
+  }
+
+  /**
+   * Find labels data for a given axis id of a p-column.
+   * @returns a map of axis value => label
+   */
+  public findLabelsForColumnAxis(column: PColumn<TreeNodeAccessor>, axisIdx: number): Record<string | number, string> | undefined {
+    const labels = this.findLabels(column.spec.axesSpec[axisIdx]);
+    if (!labels) return undefined;
+    return Object.fromEntries(column.data.listInputFields().map((field) => {
+      const r = JSON.parse(field) as [string];
+      return [r[axisIdx], labels[r[axisIdx]] ?? 'Unlabelled'];
+    }));
   }
 }
 
