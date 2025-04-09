@@ -1,7 +1,12 @@
 import type { WatchSource, WatchOptions } from 'vue';
 import { reactive, watch, ref, computed } from 'vue';
 import { exclusiveRequest } from '@milaboratories/helpers';
-import type { FetchResult } from '../types';
+
+export type FetchResult<V, E = unknown> = {
+  loading: boolean;
+  value: V | undefined;
+  error: E;
+};
 
 // TODO Should we keep the old value while fetching the new value?
 
