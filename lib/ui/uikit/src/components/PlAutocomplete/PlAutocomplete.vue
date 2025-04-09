@@ -22,7 +22,8 @@ import { normalizeListOptions } from '@/helpers/utils';
 import { PlIcon16 } from '../PlIcon16';
 import { PlMaskIcon24 } from '../PlMaskIcon24';
 import { DropdownOverlay } from '@/utils/DropdownOverlay';
-import { watchDebounced } from '@vueuse/core';
+import { refDebounced } from '@vueuse/core';
+import { useWatchFetch } from '@/composition/useWatchFetch.ts';
 
 /**
  * The current selected value.
@@ -107,8 +108,8 @@ const input = ref<HTMLInputElement | undefined>();
 
 const overlayRef = useTemplateRef('overlay');
 
+const search = ref('');
 const data = reactive({
-  search: '',
   activeIndex: -1,
   open: false,
 });
@@ -130,7 +131,6 @@ const isLoadingError = ref<boolean>(false);
 
 onMounted(async () => {
   if (model.value) {
-    isLoadingOptions.value = true;
     isLoadingOptionsInitial.value = true;
 
     props.optionsSearch(String(model.value))
@@ -143,7 +143,6 @@ onMounted(async () => {
         isLoadingError.value = true;
       })
       .finally(() => {
-        isLoadingOptions.value = false;
         isLoadingOptionsInitial.value = false;
       });
   }
@@ -212,7 +211,7 @@ const tabindex = computed(() => (isDisabled.value ? undefined : '0'));
 const selectOption = (v: ListOptionNormalized | undefined) => {
   model.value = v?.value as M;
   selectedOptionsRef.value = v ? [v] : [];
-  data.search = '';
+  search.value = '';
   data.open = false;
   rootRef?.value?.focus();
 };
@@ -227,7 +226,7 @@ const setFocusOnInput = () => input.value?.focus();
 const toggleOpen = () => {
   data.open = !data.open;
   if (!data.open) {
-    data.search = '';
+    search.value = '';
   }
 };
 
@@ -239,7 +238,7 @@ const onFocusOut = (event: FocusEvent) => {
   const relatedTarget = event.relatedTarget as Node | null;
 
   if (!rootRef.value?.contains(relatedTarget) && !overlayRef.value?.listRef?.contains(relatedTarget)) {
-    data.search = '';
+    search.value = '';
     data.open = false;
   }
 };
@@ -297,35 +296,49 @@ watch(
 
 watchPostEffect(() => {
   // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-  data.search; // to watch
+  search.value; // to watch
 
   if (data.activeIndex >= 0 && data.open) {
     overlayRef.value?.scrollIntoActive();
   }
 });
 
-watchDebounced(
-  [() => data.search],
-  async ([v]) => {
-    if (v) {
-      isLoadingOptions.value = true;
-      props.optionsSearch(v)
-        .then((result) => {
-          loadedOptionsRef.value = result;
-          isLoadingError.value = false;
-        })
-        .catch(() => {
-          isLoadingError.value = true;
-        })
-        .finally(() => {
-          isLoadingOptions.value = false;
-        });
-    } else if (model.value) {
-      loadedOptionsRef.value = selectedOptionsRef.value;
+const searchDebounced = refDebounced(search, 500, { maxWait: 1000 });
+
+const optionsLoaded = useWatchFetch(() => searchDebounced.value, (v) => {
+  if (v) {
+    return props.optionsSearch(v);
+  }
+  return Promise.resolve(selectedOptionsRef.value);
+});
+const optionsSelected = useWatchFetch(() => model.value, (v) => {
+  if (v && selectedOptionsRef.value[0]?.value !== v) { // load label for selected value if it was updated from outside the component
+    return props.optionsSearch(String(v));
+  }
+  return Promise.resolve(selectedOptionsRef.value);
+});
+watch(() => optionsLoaded.value, (result) => {
+  if (result) {
+    loadedOptionsRef.value = result;
+    if (search.value.length) {
+      isLoadingError.value = false;
     }
-  },
-  { debounce: 500, maxWait: 1000 },
-);
+  }
+});
+
+watch(() => optionsSelected.value, (result) => {
+  if (result) {
+    selectedOptionsRef.value = normalizeListOptions(result);
+  }
+});
+watch(() => optionsLoaded.error, (err) => {
+  if (err) {
+    isLoadingError.value = Boolean(err);
+  }
+});
+watch(() => optionsLoaded.loading || optionsSelected.loading, (loading) => {
+  isLoadingOptions.value = loading;
+});
 
 </script>
 
@@ -343,7 +356,7 @@ watchDebounced(
         <div class="pl-autocomplete__field">
           <input
             ref="input"
-            v-model="data.search"
+            v-model="search"
             type="text"
             tabindex="-1"
             :disabled="isDisabled"
@@ -358,7 +371,7 @@ watchDebounced(
           </div>
 
           <div class="pl-autocomplete__controls">
-            <PlMaskIcon24 v-if="isLoadingOptions" name="loading" />
+            <PlMaskIcon24 v-if="isLoadingOptions || isLoadingOptionsInitial" name="loading" />
             <PlIcon16 v-if="clearable && hasValue" name="delete-clear" @click.stop="clear" />
             <slot name="append" />
             <div class="pl-autocomplete__arrow-wrapper" @click.stop="toggleOpen">
