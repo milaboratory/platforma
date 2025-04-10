@@ -9,7 +9,7 @@ export default {
 
 <script lang="ts" setup generic="M = unknown">
 import './pl-autocomplete.scss';
-import { computed, onMounted, reactive, ref, unref, useSlots, useTemplateRef, watch, watchPostEffect } from 'vue';
+import { computed, reactive, ref, unref, useSlots, useTemplateRef, watch, watchPostEffect } from 'vue';
 import { tap } from '@/helpers/functions';
 import { PlTooltip } from '@/components/PlTooltip';
 import DoubleContour from '@/utils/DoubleContour.vue';
@@ -33,9 +33,13 @@ const model = defineModel<M>({ required: true });
 const props = withDefaults(
   defineProps<{
     /**
-     * Lambda for requesting of available options for the dropdown by search string
+     * Lambda for requesting of available options for the dropdown by search string.
      */
-    optionsSearch: (s: string) => Promise<ListOption[]>;
+    optionsSearch: (s: string) => Promise<ListOption<M>[]>;
+    /**
+     * Lambda for requesting of corresponding option for current model value. If empty, optionsSearch is used for this.
+     */
+    modelSearch?: (v: M) => Promise<ListOption<M>>;
     /**
      * The label text for the dropdown field (optional)
      */
@@ -83,9 +87,10 @@ const props = withDefaults(
     /**
      * Formatter for the selected value if its label is absent
      */
-    formatValue?: (value: string) => string;
+    formatValue?: (value: M) => string;
   }>(),
   {
+    modelSearch: undefined,
     label: '',
     helper: undefined,
     loadingOptionsHelper: undefined,
@@ -97,7 +102,7 @@ const props = withDefaults(
     arrowIcon: undefined,
     arrowIconLarge: undefined,
     optionSize: 'small',
-    formatValue: (v: string) => v,
+    formatValue: (v: M) => String(v),
   },
 );
 
@@ -108,7 +113,7 @@ const input = ref<HTMLInputElement | undefined>();
 
 const overlayRef = useTemplateRef('overlay');
 
-const search = ref('');
+const search = ref<string | null>(null);
 const data = reactive({
   activeIndex: -1,
   open: false,
@@ -116,43 +121,38 @@ const data = reactive({
 
 const findActiveIndex = () =>
   tap(
-    optionsRef.value.findIndex((o) => deepEqual(o.value, model.value)),
+    renderedOptionsRef.value.findIndex((o) => deepEqual(o.value, model.value)),
     (v) => (v < 0 ? 0 : v),
   );
 
 const updateActive = () => (data.activeIndex = findActiveIndex());
 
-const loadedOptionsRef = ref<ListOption[]>([]);
-const selectedOptionsRef = ref<ListOptionNormalized[]>([]); // list of 1 option that is selected or empty, to keep selected label
+const loadedOptionsRef = ref<ListOption<M>[]>([]);
+const modelOptionRef = ref<ListOptionNormalized<M> | undefined>(); // list of 1 option that is selected or empty, to keep selected label
 
+console.log('test test')
+const renderedOptionsRef = computed(() => {
+  if (model.value && !search.value) {
+    return modelOptionRef.value
+      ? [{
+          ...modelOptionRef.value,
+          index: 0,
+          isSelected: true,
+          isActive: true,
+        }]
+      : [];
+  }
+  return normalizeListOptions(loadedOptionsRef.value).map((opt, index) => ({
+    ...opt,
+    index,
+    isSelected: index === selectedIndex.value,
+    isActive: index === data.activeIndex,
+  }));
+});
 const isLoadingOptions = ref<boolean>(true);
-const isLoadingOptionsInitial = ref<boolean>(true);
 const isLoadingError = ref<boolean>(false);
 
-onMounted(async () => {
-  if (model.value) {
-    isLoadingOptionsInitial.value = true;
-
-    props.optionsSearch(String(model.value))
-      .then((result) => {
-        selectedOptionsRef.value = normalizeListOptions(result);
-        loadedOptionsRef.value = selectedOptionsRef.value;
-        isLoadingError.value = false;
-      })
-      .catch(() => {
-        isLoadingError.value = true;
-      })
-      .finally(() => {
-        isLoadingOptionsInitial.value = false;
-      });
-  }
-});
-
 const isDisabled = computed(() => {
-  if (isLoadingOptionsInitial.value) {
-    return true;
-  }
-
   return props.disabled;
 });
 
@@ -176,22 +176,13 @@ const computedError = computed(() => {
   return undefined;
 });
 
-const optionsRef = computed(() =>
-  normalizeListOptions(loadedOptionsRef.value).map((opt, index) => ({
-    ...opt,
-    index,
-    isSelected: index === selectedIndex.value,
-    isActive: index === data.activeIndex,
-  })),
-);
-
 const textValue = computed(() => {
-  const selectedOptions = unref(selectedOptionsRef);
-  const options = unref(optionsRef);
+  const modelOption = unref(modelOptionRef);
+  const options = unref(renderedOptionsRef);
 
-  const item: ListOption | undefined = selectedOptions.find((o) => deepEqual(o.value, model.value)) ?? options.find((o) => deepEqual(o.value, model.value));
+  const item: ListOptionNormalized | undefined = modelOption ?? options.find((o) => deepEqual(o.value, model.value)) ?? options.find((o) => deepEqual(o.value, model.value));
 
-  return item?.label || (model.value ? props.formatValue(String(model.value)) : '');
+  return item?.label || (model.value ? props.formatValue(model.value) : '');
 });
 
 const computedPlaceholder = computed(() => {
@@ -208,17 +199,17 @@ const hasValue = computed(() => {
 
 const tabindex = computed(() => (isDisabled.value ? undefined : '0'));
 
-const selectOption = (v: ListOptionNormalized | undefined) => {
+const selectOption = (v: ListOptionNormalized<M> | undefined) => {
   model.value = v?.value as M;
-  selectedOptionsRef.value = v ? [v] : [];
-  search.value = '';
+  modelOptionRef.value = v;
+  search.value = null;
   data.open = false;
   rootRef?.value?.focus();
 };
 
 const clear = () => {
   model.value = undefined as M;
-  selectedOptionsRef.value = [];
+  modelOptionRef.value = undefined;
 };
 
 const setFocusOnInput = () => input.value?.focus();
@@ -226,6 +217,9 @@ const setFocusOnInput = () => input.value?.focus();
 const toggleOpen = () => {
   data.open = !data.open;
   if (!data.open) {
+    search.value = null;
+  }
+  if (data.open) {
     search.value = '';
   }
 };
@@ -238,7 +232,7 @@ const onFocusOut = (event: FocusEvent) => {
   const relatedTarget = event.relatedTarget as Node | null;
 
   if (!rootRef.value?.contains(relatedTarget) && !overlayRef.value?.listRef?.contains(relatedTarget)) {
-    search.value = '';
+    search.value = null;
     data.open = false;
   }
 };
@@ -255,16 +249,18 @@ const handleKeydown = (e: { code: string; preventDefault(): void }) => {
   if (!open) {
     if (e.code === 'Enter') {
       data.open = true;
+      search.value = '';
     }
     return;
   }
 
   if (e.code === 'Escape') {
     data.open = false;
+    search.value = null;
     rootRef.value?.focus();
   }
 
-  const options = unref(optionsRef);
+  const options = unref(renderedOptionsRef);
 
   const { length } = options;
 
@@ -282,7 +278,7 @@ const handleKeydown = (e: { code: string; preventDefault(): void }) => {
 
   const newIndex = Math.abs(localIndex + delta + length) % length;
 
-  data.activeIndex = optionsRef.value[newIndex].index ?? -1;
+  data.activeIndex = renderedOptionsRef.value[newIndex].index ?? -1;
 };
 
 useLabelNotch(rootRef);
@@ -305,38 +301,41 @@ watchPostEffect(() => {
 
 const searchDebounced = refDebounced(search, 500, { maxWait: 1000 });
 
-const optionsLoaded = useWatchFetch(() => searchDebounced.value, (v) => {
-  if (v) {
+const optionsRequest = useWatchFetch(() => searchDebounced.value, async (v) => {
+  if (v !== null && !(v === '' && model.value)) { // search is null when dropdown is closed; when search is '' and model is not empty show single selected option in the list;
     return props.optionsSearch(v);
   }
-  return Promise.resolve(selectedOptionsRef.value);
+  return [];
 });
-const optionsSelected = useWatchFetch(() => model.value, (v) => {
-  if (v && selectedOptionsRef.value[0]?.value !== v) { // load label for selected value if it was updated from outside the component
-    return props.optionsSearch(String(v));
+const modelOptionRequest = useWatchFetch(() => model.value, async (v) => {
+  if (v && !deepEqual(modelOptionRef.value?.value, v)) { // load label for selected value if it was updated from outside the component
+    if (props.modelSearch) {
+      return props.modelSearch(v);
+    }
+    return (await props.optionsSearch(String(v)))?.[0];
   }
-  return Promise.resolve(selectedOptionsRef.value);
+  return modelOptionRef.value;
 });
-watch(() => optionsLoaded.value, (result) => {
+watch(() => optionsRequest.value, (result) => {
   if (result) {
     loadedOptionsRef.value = result;
-    if (search.value.length) {
+    if (search.value !== null) {
       isLoadingError.value = false;
     }
   }
 });
 
-watch(() => optionsSelected.value, (result) => {
+watch(() => modelOptionRequest.value, (result) => {
   if (result) {
-    selectedOptionsRef.value = normalizeListOptions(result);
+    modelOptionRef.value = normalizeListOptions([result])[0];
   }
 });
-watch(() => optionsLoaded.error, (err) => {
+watch(() => optionsRequest.error, (err) => {
   if (err) {
     isLoadingError.value = Boolean(err);
   }
 });
-watch(() => optionsLoaded.loading || optionsSelected.loading, (loading) => {
+watch(() => optionsRequest.loading || modelOptionRequest.loading, (loading) => {
   isLoadingOptions.value = loading;
 });
 
@@ -371,7 +370,7 @@ watch(() => optionsLoaded.loading || optionsSelected.loading, (loading) => {
           </div>
 
           <div class="pl-autocomplete__controls">
-            <PlMaskIcon24 v-if="isLoadingOptions || isLoadingOptionsInitial" name="loading" />
+            <PlMaskIcon24 v-if="isLoadingOptions" name="loading" />
             <PlIcon16 v-if="clearable && hasValue" name="delete-clear" @click.stop="clear" />
             <slot name="append" />
             <div class="pl-autocomplete__arrow-wrapper" @click.stop="toggleOpen">
@@ -392,7 +391,7 @@ watch(() => optionsLoaded.loading || optionsSelected.loading, (loading) => {
         </label>
         <DropdownOverlay v-if="data.open" ref="overlay" :root="rootRef" class="pl-autocomplete__options" tabindex="-1" :gap="3">
           <DropdownListItem
-            v-for="(item, index) in optionsRef"
+            v-for="(item, index) in renderedOptionsRef"
             :key="index"
             :option="item"
             :is-selected="item.isSelected"
@@ -400,7 +399,7 @@ watch(() => optionsLoaded.loading || optionsSelected.loading, (loading) => {
             :size="optionSize"
             @click.stop="selectOption(item)"
           />
-          <div v-if="!optionsRef.length" class="nothing-found">Nothing found</div>
+          <div v-if="!renderedOptionsRef.length" class="nothing-found">Nothing found</div>
         </DropdownOverlay>
         <DoubleContour class="pl-autocomplete__contour" />
       </div>

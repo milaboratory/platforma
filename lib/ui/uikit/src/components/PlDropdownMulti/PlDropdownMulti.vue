@@ -264,10 +264,13 @@ watchPostEffect(() => {
               {{ opt.label || opt.value }}
             </PlChip>
           </div>
-          <PlMaskIcon24 v-if="isLoadingOptions" name="loading" />
-          <div v-if="!isLoadingOptions" class="arrow" @click.stop="toggleModel" />
-          <div class="pl-dropdown-multi__append">
+
+          <div class="pl-dropdown-multi__controls">
+            <PlMaskIcon24 v-if="isLoadingOptions" name="loading" />
             <slot name="append" />
+            <div class="dropdown-multi__arrow-wrapper" @click.stop="toggleModel">
+              <div class="arrow-icon arrow-icon-default" />
+            </div>
           </div>
         </div>
         <label v-if="label">

@@ -186,6 +186,47 @@
     }
   }
 
+  &__controls {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
+
+    .icon-delete-clear {
+      cursor: pointer;
+    }
+
+    .mask-16,
+    .mask-24 {
+      background-color: var(--control-mask-fill);
+      cursor: pointer;
+    }
+
+    .mask-loading {
+      animation: spin 2.5s linear infinite;
+      background-color: #07AD3E;
+    }
+  }
+
+  &__arrow-wrapper {
+    display: flex;
+    align-items: center;
+    min-height: var(--control-height);
+    padding-right: 11px;
+  }
+
+  .arrow-icon {
+    cursor: pointer;
+
+    // Default "arrow" icon (16x16) 
+    &.arrow-icon-default {
+      transition: transform .2s;
+      background-color: var(--control-mask-fill);
+      @include mask(url('@/assets/images/16_chevron-down.svg'), 16px);
+    }
+  }
+
   &__helper {
     @include field-helper();
   }
@@ -194,35 +235,12 @@
     @include field-error();
   }
 
-  &__append {
-    padding-right: 24px;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 4px;
-
-    .icon {
-      cursor: pointer;
-    }
-
-    .mask {
-      background-color: var(--control-mask-fill);
-      cursor: pointer;
-    }
-  }
-
-  .arrow {
-    position: absolute;
-    @include abs-center-y;
-    right: 12px;
-    background-color: var(--control-mask-fill);
-    @include mask(url("@/assets/images/16_chevron-down.svg"), 16px);
-  }
-
   &.open {
-    .arrow {
-      background-color: var(--control-mask-fill);
-      @include mask(url(@/assets/images/16_up.svg), 16px);
+    .arrow-icon {
+      &.arrow-icon-default {
+        background-color: var(--control-mask-fill);
+        transform: rotate(-180deg);
+      }
     }
   }
 
