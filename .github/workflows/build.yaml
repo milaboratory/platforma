@@ -46,7 +46,7 @@ jobs:
             }
           }
         }
-      env:
+      env: |
         { "BODY_LIMIT": "1048576000" }
     secrets:
       env: |
