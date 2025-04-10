@@ -36,6 +36,10 @@ export function createArtifactNameSet(): ArtifactMap<TypedArtifactName> {
   return new ArtifactMap<TypedArtifactName>((obj) => obj);
 }
 
+/**
+ * ArtifactStore is a store for artifacts that are compiled for different modes.
+ * It is used to collect all artifacts from the dependency tree and compile them for different modes.
+ */
 export class ArtifactStore<T> {
   // private readonly dev: ArtifactMap<T>;
   private readonly dist: ArtifactMap<T>;
