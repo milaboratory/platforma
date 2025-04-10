@@ -1,5 +1,11 @@
 # @platforma-sdk/bootstrap
 
+## 3.4.2
+
+### Patch Changes
+
+- dc1a3ea: Disable compute limits feature in backend
+
 ## 3.4.1
 
 ### Patch Changes
