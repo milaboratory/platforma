@@ -287,7 +287,7 @@ controllers:
       pureFutureFields: true
       commandExpressions: true
       workdirLimits: true
-      computeLimits: true
+      computeLimits: false
 `;
 }
 
