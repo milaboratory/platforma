@@ -1,6 +1,7 @@
 {
   "name": "@milaboratories/milaboratories.test-block-model",
   "version": "1.0.167",
+  "private": true,
   "scripts": {
     "build": "rm -rf ./block-pack && block-tools pack"
   },
