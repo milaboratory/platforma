@@ -268,7 +268,7 @@ watchPostEffect(() => {
           <div class="pl-dropdown-multi__controls">
             <PlMaskIcon24 v-if="isLoadingOptions" name="loading" />
             <slot name="append" />
-            <div class="dropdown-multi__arrow-wrapper" @click.stop="toggleModel">
+            <div class="pl-dropdown-multi__arrow-wrapper" @click.stop="toggleModel">
               <div class="arrow-icon arrow-icon-default" />
             </div>
           </div>

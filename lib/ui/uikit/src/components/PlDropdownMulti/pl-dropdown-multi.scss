@@ -129,7 +129,7 @@
     border-radius: 6px;
     overflow: hidden;
     background: transparent;
-    padding: 0 11px;
+    padding-left: 11px;
 
     min-height: var(--control-height);
     line-height: 20px;
@@ -146,7 +146,7 @@
       bottom: 0;
       right: 30px;
       overflow: hidden;
-      padding: 0 11px;
+      padding: 0 60px 0 11px;
       line-height: 20px;
       color: var(--contour-color);
       display: flex;
@@ -192,10 +192,6 @@
     align-items: center;
     gap: 6px;
     margin-left: auto;
-
-    .icon-delete-clear {
-      cursor: pointer;
-    }
 
     .mask-16,
     .mask-24 {
