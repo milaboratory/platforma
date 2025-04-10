@@ -1,5 +1,11 @@
 # @milaboratories/pl-client
 
+## 2.8.0
+
+### Minor Changes
+
+- e65a1a6: Enable gRPC compression
+
 ## 2.7.14
 
 ### Patch Changes

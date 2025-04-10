@@ -1,5 +1,12 @@
 # @milaboratories/pl-errors
 
+## 1.0.5
+
+### Patch Changes
+
+- Updated dependencies [e65a1a6]
+  - @milaboratories/pl-client@2.8.0
+
 ## 1.0.4
 
 ### Patch Changes
