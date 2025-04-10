@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 4.0.5
+
+### Patch Changes
+
+- 9c1dc19: fix anchor query scema for axis (allow annotations)
+
 ## 4.0.4
 
 ### Patch Changes
