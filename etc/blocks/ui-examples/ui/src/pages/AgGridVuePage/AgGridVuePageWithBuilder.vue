@@ -33,6 +33,7 @@ type FileCell = {
 type Row = {
   id: number;
   label: string;
+  status: string;
   progress: number | undefined;
   stacked_bar: unknown;
   date: Date;
@@ -50,6 +51,7 @@ function generateData(): Row[] {
     return {
       id: i,
       label: faker.company.buzzNoun(),
+      status: faker.number.int({ min: 0, max: 100 }) > 50 ? 'error' : 'success',
       progress: faker.number.int({ min: 24, max: 100 }),
       stacked_bar: (i % 2 === 0) ? stackedSettings.value : undefined,
       date: faker.date.birthdate(),
@@ -193,6 +195,13 @@ const { gridOptions, gridApi } = useAgGridOptions<Row>(({ builder }) => {
       },
       resolveImportFileHandle: (cellData) => {
         return cellData.value?.importFileHandle;
+      },
+    })
+    .columnStatusTag({
+      field: 'status',
+      headerName: 'Status',
+      resolveStatusTag: (cellData) => {
+        return cellData.data?.status === 'error' ? 'ALERT' : 'OK';
       },
     })
     .column({

@@ -6,7 +6,7 @@ import { AgGridTheme } from '../aggrid';
 import { PlAgOverlayLoading } from '../components/PlAgDataTable';
 import { PlAgOverlayNoRows } from '../components/PlAgDataTable';
 import type { ColDefExtended } from './createAgGridColDef';
-import type { PlAgOverlayLoadingParams } from '../lib';
+import type { PlAgOverlayLoadingParams, PlStatusTagType } from '../lib';
 import { autoSizeRowNumberColumn, createAgGridColDef, makeRowNumberColDef } from '../lib';
 import { whenever } from '@vueuse/core';
 import { PlAgCellFile } from '../components/PlAgCellFile';
@@ -15,6 +15,7 @@ import { PlAgChartHistogramCell } from '../components/PlAgChartHistogramCell';
 import type { ImportFileHandle } from '@platforma-sdk/model';
 import type { ImportProgress } from '@platforma-sdk/model';
 import { PlAgCellStatusTag } from '../components/PlAgCellStatusTag';
+import { omit } from '@milaboratories/helpers';
 interface GridOptionsExtended<TData = any> extends Omit<GridOptions<TData>, 'columnDefs'> {
   /**
    * Array of Column / Column Group definitions.
@@ -240,7 +241,28 @@ class Builder<TData> {
           },
         };
       },
-    }, def));
+    }, omit(def, 'resolveImportFileHandle', 'resolveImportProgress', 'setImportFileHandle', 'extensions')));
+  }
+
+  /**
+   * Add a status tag column
+   * @param def - column definition
+   * @returns this
+   */
+  public columnStatusTag<TValue = any>(def: ColDefExtended<TData, TValue> & {
+    resolveStatusTag: (cellData: ICellRendererParams<TData, TValue>) => PlStatusTagType;
+  }) {
+    return this.column(Object.assign({
+      cellRenderer: 'PlAgCellStatusTag',
+      cellRendererSelector: (cellData: ICellRendererParams<TData, TValue>) => {
+        return {
+          component: 'PlAgCellStatusTag',
+          params: {
+            type: def.resolveStatusTag(cellData),
+          },
+        };
+      },
+    }, omit(def, 'resolveStatusTag')));
   }
 
   public build() {

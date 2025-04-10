@@ -7,13 +7,15 @@ defineProps<{ params?: ICellRendererParams & { type: PlStatusTagType } }>();
 </script>
 
 <template>
-  <div class="pl-ag-cell-status-tag d-flex align-center">
+  <div class="pl-ag-cell-status-tag">
     <PlStatusTag :type="params?.type"/>
   </div>
 </template>
 
 <style lang="scss">
-.pl-ag-cell-status-tag{
+.pl-ag-cell-status-tag {
+  display: flex;
+  align-items: center;
   height: 100%;
   padding: 0 12px;
 }
