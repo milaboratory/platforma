@@ -130,7 +130,6 @@ const updateActive = () => (data.activeIndex = findActiveIndex());
 const loadedOptionsRef = ref<ListOption<M>[]>([]);
 const modelOptionRef = ref<ListOptionNormalized<M> | undefined>(); // list of 1 option that is selected or empty, to keep selected label
 
-console.log('test test')
 const renderedOptionsRef = computed(() => {
   if (model.value && !search.value) {
     return modelOptionRef.value

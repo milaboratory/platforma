@@ -148,9 +148,6 @@ function toggleList(): void {
   } else {
     nextTick(() => {
       data.isOpen = !data.isOpen;
-      if (!data.isOpen) {
-        resetSearchPhrase();
-      }
     });
   }
 }
