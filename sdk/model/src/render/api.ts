@@ -452,9 +452,8 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
     const axisKeys = column.annotations?.['pl7.app/axisKeys/' + axisIdx];
     if (axisKeys !== undefined) {
       const keys = JSON.parse(axisKeys) as string[];
-      return Object.fromEntries(keys.map((field) => {
-        const r = JSON.parse(field) as [string];
-        return [r[axisIdx], labels[r[axisIdx]] ?? 'Unlabelled'];
+      return Object.fromEntries(keys.map((key) => {
+        return [key, labels[key] ?? 'Unlabelled'];
       }));
     } else {
       return labels;
