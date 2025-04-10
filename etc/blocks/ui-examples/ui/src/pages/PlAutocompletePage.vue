@@ -13,12 +13,12 @@ const data = reactive({
 
 const VERY_LONG_OPTIONS_ARRAY = new Array(100000).fill(null).map((_v, idx) => ({ value: `item${idx}`, label: `Label for item ${idx}` }));
 
-async function requestOptions(str: string): Promise<ListOption[]> {
+async function requestOptions(str: string): Promise<ListOption<string>[]> {
   await delay(1000);
   return Promise.resolve(VERY_LONG_OPTIONS_ARRAY.filter((el) => el.value.includes(str) || el.label.includes(str)).slice(0, 100));
 }
 
-async function requestOptionsError(_str: string): Promise<ListOption[]> {
+async function requestOptionsError(_str: string): Promise<ListOption<string>[]> {
   throw new Error('test error');
 }
 
