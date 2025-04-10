@@ -46,6 +46,8 @@ jobs:
             }
           }
         }
+      env: |
+        { "BODY_LIMIT": "1048576000" }
     secrets:
       env: |
         { "PL_LICENSE": ${{ toJSON(secrets.MI_LICENSE) }},
