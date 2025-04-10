@@ -202,6 +202,16 @@ export const testPackage1Soft1Src = `
 some software contents. Template builder should pass it 'as-is'
 `;
 
+export const testPackage1Asset1Name: FullArtifactName = {
+  type: 'asset',
+  pkg: 'current-package',
+  id: 'asset-1',
+  version: '1.2.3',
+};
+export const testPackage1Asset1Src = `
+some asset contents. Template builder should pass it 'as-is'
+`;
+
 export const testPackage1Lib2Name: FullArtifactName = {
   type: 'library',
   pkg: 'package1',

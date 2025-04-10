@@ -7,49 +7,92 @@ import {
   fullNameWithoutTypeToString,
   parseArtefactNameAndVersion,
 } from './package';
-import type { TemplateData } from '@milaboratories/pl-model-backend';
+import type { CompiledTemplateV3 } from '@milaboratories/pl-model-backend';
 import {
-  parseTemplate,
-  serializeTemplate,
+  parseCompiledTemplateV3,
+  serializeCompiledTemplateV3,
 } from '@milaboratories/pl-model-backend';
 
-export class Template {
-  public readonly data: TemplateData;
-  public readonly content: Uint8Array;
+/** Just a holder for template data, compilation options, full name and source code.
+ * It mimics ArtifactSource interface.
+ */
+export type TemplateWithSource = {
+  readonly compileMode: CompileMode;
+  readonly fullName: FullArtifactName;
+  readonly source: string;
+  readonly data: CompiledTemplateV3;
+};
 
-  constructor(
-    public readonly compileMode: CompileMode,
-    public readonly fullName: FullArtifactName,
-    body: {
-      data?: TemplateData;
-      content?: Uint8Array;
-    },
-  ) {
-    let { data, content } = body;
-    if (data === undefined && content === undefined)
-      throw new Error('Neither data nor content is provided for template constructor');
-    if (data !== undefined && content !== undefined)
-      throw new Error('Both data and content are provided for template constructor');
+export function newTemplateWithSource(
+  compileMode: CompileMode,
+  fullName: FullArtifactName,
+  data: CompiledTemplateV3,
+  source: string,
+): TemplateWithSource {
+  validateTemplateName(fullName, data);
 
-    if (data === undefined) data = parseTemplate(content!);
-    if (content === undefined) content = serializeTemplate(data);
+  return {
+    compileMode,
+    fullName,
+    data,
+    source,
+  };
+}
 
-    const nameFromData: FullArtifactNameWithoutType = parseArtefactNameAndVersion(data);
+export type Template = {
+  readonly compileMode: CompileMode;
+  readonly fullName: FullArtifactName;
+  readonly data: CompiledTemplateV3;
+  readonly content: Uint8Array;
+};
 
-    if (
-      nameFromData.pkg !== fullName.pkg
-      || nameFromData.id !== fullName.id
-      || nameFromData.version !== fullName.version
-    )
-      throw new Error(
-        `Compiled template name don't match it's package and file names: ${fullNameWithoutTypeToString(nameFromData)} != ${fullNameWithoutTypeToString(fullName)}`,
-      );
+export function newTemplateFromData(
+  compileMode: CompileMode,
+  fullName: FullArtifactName,
+  data: CompiledTemplateV3,
+): Template {
+  validateTemplateName(fullName, data);
+  return {
+    compileMode,
+    fullName,
+    data,
+    content: serializeCompiledTemplateV3(data),
+  };
+}
 
-    this.data = data;
-    this.content = content;
-  }
+export function newTemplateFromContent(
+  compileMode: CompileMode,
+  fullName: FullArtifactName,
+  content: Uint8Array,
+): Template {
+  const data = parseCompiledTemplateV3(content);
+  validateTemplateName(fullName, data);
+  return {
+    compileMode,
+    fullName,
+    data,
+    content,
+  };
+}
 
-  toJSON() {
-    return { compileMode: this.compileMode, fullName: this.fullName, data: this.data };
-  }
+export function templateToSource(tpl: Template): TemplateWithSource {
+  return {
+    compileMode: tpl.compileMode,
+    fullName: tpl.fullName,
+    data: tpl.data,
+    source: tpl.data.hashToSource[tpl.data.template.sourceHash],
+  };
+}
+function validateTemplateName(fullName: FullArtifactName, data: CompiledTemplateV3) {
+  const nameFromData: FullArtifactNameWithoutType = parseArtefactNameAndVersion(data.template);
+
+  if (
+    nameFromData.pkg !== fullName.pkg
+    || nameFromData.id !== fullName.id
+    || nameFromData.version !== fullName.version
+  )
+    throw new Error(
+      `Compiled template name don't match it's package and file names: `
+      + `${fullNameWithoutTypeToString(nameFromData)} != ${fullNameWithoutTypeToString(fullName)}`,
+    );
 }
