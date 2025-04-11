@@ -8,7 +8,6 @@ tplTest.for([
   { isEph: false, name: 'pure mode' },
 ])(
   'should correctly execute pframes.remove-nulls ($name)',
-  { timeout: 10000 },
   async ({ isEph }, { helper, expect }) => {
     const result = await helper.renderTemplate(
       isEph,
@@ -45,7 +44,6 @@ tplTest.for([
   { isEph: false, name: 'pure mode' },
 ])(
   'should correctly execute pframes.remove-nulls with all nulls($name)',
-  { timeout: 10000 },
   async ({ isEph }, { helper, expect }) => {
     const result = await helper.renderTemplate(
       isEph,
@@ -79,7 +77,6 @@ tplTest.for([
   { isEph: false, name: 'pure mode' },
 ])(
   'should correctly execute pframes.remove-nulls delayed 1 ($name)',
-  { timeout: 10000 },
   async ({ isEph }, { helper, pl, expect }) => {
     let theMap: ResourceId | undefined = undefined;
     const result = await helper.renderTemplate(
@@ -123,7 +120,6 @@ tplTest.for([
   { isEph: false, name: 'pure mode' },
 ])(
   'should correctly execute pframes.remove-nulls delayed 2 ($name)',
-  { timeout: 10000 },
   async ({ isEph }, { helper, pl, expect }) => {
     let theMap: ResourceId | undefined = undefined;
     const result = await helper.renderTemplate(

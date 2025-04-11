@@ -5,7 +5,6 @@ import { assertBlob, assertJson, assertResource, eTplTest } from './extended_tpl
 
 eTplTest(
   'should correctly execute pframes.processColumn in sparse mode without aggregation',
-  { timeout: 10000 },
   async ({ helper, expect, stHelper }) => {
     const xsvSettings = {
       axes: [
