@@ -2,8 +2,7 @@ import { Pl } from '@milaboratories/pl-middle-layer';
 import { tplTest } from '@platforma-sdk/test';
 
 tplTest(
-  'test resolve in pure template',
-  { timeout: 10000 }, async ({ helper, expect }) => {
+  'test resolve in pure template', async ({ helper, expect }) => {
     const result = await helper.renderTemplate(
       false,
       'test.resolve.pure-template',

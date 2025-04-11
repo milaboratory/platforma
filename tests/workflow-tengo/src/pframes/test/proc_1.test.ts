@@ -114,7 +114,6 @@ eTplTest(
 
 eTplTest(
   'should correctly execute pframes.processColumn with aggregation 1',
-  { timeout: 10000 },
   async ({ helper, expect, stHelper }) => {
     const xsvSettings = {
       axes: [
@@ -224,7 +223,6 @@ eTplTest(
 
 eTplTest(
   'should correctly execute pframes.processColumn with aggregation 2',
-  { timeout: 10000 },
   async ({ helper, expect, stHelper }) => {
     const xsvSettings = {
       axes: [
