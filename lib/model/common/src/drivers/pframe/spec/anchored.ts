@@ -1,11 +1,11 @@
 import canonicalize from 'canonicalize';
-import type { AxisId, PColumnSpec } from './spec';
-import { getAxisId, matchAxisId } from './spec';
-import type { AAxisSelector, AnchorAxisRef, AnchorAxisRefByIdx, AnchoredPColumnId, AnchoredPColumnSelector, AxisSelector, PColumnSelector } from './selectors';
-import type { AxisFilter } from './filtered_column';
 import type { PValue } from '../data_types';
+import type { AxisFilter } from './filtered_column';
 import type { SUniversalPColumnId, UniversalPColumnId } from './ids';
 import { stringifyColumnId } from './ids';
+import type { AAxisSelector, AnchorAxisRef, AnchorAxisRefByIdx, AnchoredPColumnId, AnchoredPColumnSelector, AxisSelector, PColumnSelector } from './selectors';
+import type { AxisId, PColumnSpec } from './spec';
+import { getAxisId, matchAxisId } from './spec';
 
 //
 // Helper functions
@@ -121,7 +121,8 @@ export class AnchoredIdDeriver {
     result.axes = spec.axesSpec.map((axis) => {
       const key = axisKey(axis);
       const anchorAxisRef = this.axes.get(key);
-      return anchorAxisRef ?? axis;
+      if (anchorAxisRef === undefined) return getAxisId(axis);
+      else return anchorAxisRef;
     });
 
     // If no axis filters are provided, return the anchored ID as is
@@ -204,7 +205,8 @@ export function resolveAnchors(anchors: Record<string, PColumnSpec>, matcher: An
           throw new Error(`Anchor "${value.anchor}" not found for domain key "${key}"`);
 
         if (!anchorSpec.domain || anchorSpec.domain[key] === undefined)
-          throw new Error(`Domain key "${key}" not found in anchor "${value.anchor}"`);
+          continue;
+          // throw new Error(`Domain key "${key}" not found in anchor "${value.anchor}"`);
 
         resolvedDomain[key] = anchorSpec.domain[key];
       }

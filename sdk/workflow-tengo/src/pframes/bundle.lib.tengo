@@ -518,6 +518,7 @@ pColumnBundleUnmarshaller := func() {
 
 							pFrame := pBuilder.pFrameBuilder()
 
+							idx := 0
 							for request in requests {
 								col := pool[request.key]
 								colData := col.data
@@ -542,7 +543,13 @@ pColumnBundleUnmarshaller := func() {
 								}
 
 								// Use serializedId directly as the column identifier in the frame
-								pFrame.add(request.safeId, preparedSpec, colData)
+								//
+								// @TODO: once we have hash, use hash(request.safeId) to ensure stable column
+								// identifiers for deduplication as idx assignment may depend on the iteration order
+								// of the requests
+								//
+								pFrame.add(string(idx), preparedSpec, colData)
+								idx += 1
 							}
 
 							return xsv.exportFrame(pFrame.build(), format, exportParams)
