@@ -8,7 +8,6 @@ tplTest.for([
   { isEph: false, name: 'pure field' },
 ])(
   'should resolve future output field with default value: field exists ($name)',
-  { timeout: 10000 },
   async ({ isEph }, { helper, expect }) => {
     // Create a sample resource with fields
     const result = await helper.renderTemplate(
@@ -44,7 +43,6 @@ tplTest.for([
   { isEph: false, name: 'pure field' },
 ])(
   'should resolve future output field with default value: output field does not exist ($name)',
-  { timeout: 10000 },
   async ({ isEph }, { helper, expect }) => {
     // Create a sample resource with fields
     const result = await helper.renderTemplate(
@@ -80,7 +78,6 @@ tplTest.for([
   { isEph: false, name: 'pure field' },
 ])(
   'should resolve future output field with default value: output field does not exist, delayed ($name)',
-  { timeout: 10000 },
   async ({ isEph }, { helper, pl, expect }) => {
     let targetInput: FieldId | undefined = undefined;
     const result = await helper.renderTemplate(
@@ -131,7 +128,6 @@ tplTest.for([
   { isEph: false, name: 'pure field' },
 ])(
   'should resolve future output field with default value: nested field does not exist ($name)',
-  { timeout: 10000 },
   async ({ isEph }, { helper, expect }) => {
     // Create a sample resource with fields
     const result = await helper.renderTemplate(

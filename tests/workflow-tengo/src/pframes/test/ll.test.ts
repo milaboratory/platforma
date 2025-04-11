@@ -58,7 +58,6 @@ tplTest.for([
   },
 ])(
   'should correctly execute low level aggregation routine $name',
-  { timeout: 10000 },
   async ({ indices, expectedResult, nested, base }, { helper, expect }) => {
     const result = await helper.renderTemplate(
       true,
@@ -113,7 +112,6 @@ tplTest.for([
 
 eTplTest(
   'should correctly execute low level aggregation routine with xsv parsing',
-  { timeout: 10000 },
   async ({ helper, expect, stHelper }) => {
     const xsvSettings = {
       axes: [
