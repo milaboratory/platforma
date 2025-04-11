@@ -22,7 +22,7 @@ export function dumpAll(
 
   // Libs
 
-  for (const lib of compiler.allLibs()) {
+  for (const lib of compiler.store.allLibs()) {
     logger.debug(
       `Dumping to pl-tester: ${typedArtifactNameToString(lib.fullName)}`,
     );
@@ -40,7 +40,7 @@ export function dumpAll(
 
   // Templates
 
-  for (const tpl of compiler.allTemplates()) {
+  for (const tpl of compiler.store.allTemplates()) {
     logger.debug(
       `Dumping to pl-tester: ${typedArtifactNameToString(tpl.fullName)}`,
     );
@@ -60,7 +60,7 @@ export function dumpAll(
 
   // Software
 
-  for (const sw of compiler.allSoftware()) {
+  for (const sw of compiler.store.allSoftware()) {
     logger.debug(
       `Dumping to pl-tester: ${typedArtifactNameToString(sw.fullName)}`,
     );
@@ -78,7 +78,7 @@ export function dumpAll(
 
   // Assets
 
-  for (const asset of compiler.allAssets()) {
+  for (const asset of compiler.store.allAssets()) {
     logger.debug(
       `Dumping to pl-tester: ${typedArtifactNameToString(asset.fullName)}`,
     );
@@ -130,11 +130,11 @@ export function dumpLibs(
   const compiler = newCompiler(logger, packageInfo, 'dist');
   for (const src of sources) {
     if (src.fullName.type === 'library') {
-      compiler.addLib(src);
+      compiler.store.addLib(src);
     }
   }
 
-  for (const lib of compiler.allLibs()) {
+  for (const lib of compiler.store.allLibs()) {
     stream.write(JSON.stringify(lib) + '\n');
   }
 }
