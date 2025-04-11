@@ -25,6 +25,7 @@ import { FormComponentsPage } from './pages/FormComponentsPage';
 import { HistogramPage } from './pages/HistogramPage';
 import { StackedBarPage } from './pages/StackedBarPage';
 import PlSplashPage from './pages/PlSplashPage.vue';
+import PlAutocompletePage from './pages/PlAutocompletePage.vue';
 
 export const sdkPlugin = defineApp(platforma, (app) => {
   // Additional data
@@ -93,6 +94,7 @@ export const sdkPlugin = defineApp(platforma, (app) => {
       '/text-fields': () => PlTextFieldPage,
       '/tabs': () => PlTabsPage,
       '/drafts': () => DraftsPage,
+      '/pl-autocomplete': () => PlAutocompletePage,
       '/buttons': () => ButtonsPage,
       '/notifications': () => NotificationsPage,
       '/stacked-bar': () => StackedBarPage,

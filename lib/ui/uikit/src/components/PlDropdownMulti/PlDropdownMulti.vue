@@ -164,7 +164,12 @@ const unselectOption = (d: M) => emitModel(unref(selectedValuesRef).filter((v) =
 
 const setFocusOnInput = () => input.value?.focus();
 
-const toggleModel = () => (data.open = !data.open);
+const toggleModel = () => {
+  data.open = !data.open;
+  if (!data.open) {
+    data.search = '';
+  }
+};
 
 const onFocusOut = (event: FocusEvent) => {
   const relatedTarget = event.relatedTarget as Node | null;
@@ -232,7 +237,7 @@ watchPostEffect(() => {
 </script>
 
 <template>
-  <div class="pl-dropdown-multi__envelope">
+  <div class="pl-dropdown-multi__envelope" @click="setFocusOnInput">
     <div
       ref="rootRef"
       :tabindex="tabindex"
@@ -254,15 +259,18 @@ watchPostEffect(() => {
             autocomplete="chrome-off"
             @focus="data.open = true"
           />
-          <div v-if="!data.open" class="chips-container" @click="setFocusOnInput">
+          <div v-if="!data.open" class="chips-container">
             <PlChip v-for="(opt, i) in selectedOptionsRef" :key="i" closeable small @click.stop="data.open = true" @close="unselectOption(opt.value)">
               {{ opt.label || opt.value }}
             </PlChip>
           </div>
-          <PlMaskIcon24 v-if="isLoadingOptions" name="loading" />
-          <div v-if="!isLoadingOptions" class="arrow" @click.stop="toggleModel" />
-          <div class="pl-dropdown-multi__append">
+
+          <div class="pl-dropdown-multi__controls">
+            <PlMaskIcon24 v-if="isLoadingOptions" name="loading" />
             <slot name="append" />
+            <div class="pl-dropdown-multi__arrow-wrapper" @click.stop="toggleModel">
+              <div class="arrow-icon arrow-icon-default" />
+            </div>
           </div>
         </div>
         <label v-if="label">

@@ -1,6 +1,6 @@
 @use "@/assets/mixins" as *;
 
-.pl-dropdown__options {
+.pl-autocomplete__options {
   --option-hover-bg: var(--btn-sec-hover-grey);
 
   z-index: var(--z-dropdown-options);
@@ -63,7 +63,7 @@
   }
 }
 
-.pl-dropdown {
+.pl-autocomplete {
   $root: &;
 
   --contour-color: var(--txt-01);
@@ -180,7 +180,9 @@
     display: flex;
     flex-direction: row;
     align-items: center;
+    min-height: var(--control-height);
     gap: 6px;
+
     margin-left: auto;
 
     .icon-delete-clear {
@@ -205,7 +207,6 @@
     min-height: var(--control-height);
     padding-right: 11px;
   }
-
   .arrow-icon {
     cursor: pointer;
 
