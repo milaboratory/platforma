@@ -7,7 +7,6 @@ tplTest(
   // the test itself does almost nothing (concatenates 2 strings) and should pass immediately.
   // But because of tests execution nature in CI (when we several parallel test threads each creating large resource tree)
   // it may take long for test to complete.
-  { timeout: 10000 },
   async ({ helper, expect }) => {
     const wf1 = await helper.renderWorkflow('workflow.test.exports.wf1', false, {
       a: 'a',
@@ -37,7 +36,6 @@ tplTest(
   // the test itself does almost nothing (concatenates 2 strings) and should pass immediately.
   // But because of tests execution nature in CI (when we several parallel test threads each creating large resource tree)
   // it may take long for test to complete.
-  { timeout: 10000 },
   async ({ helper, expect }) => {
     const wf1 = await helper.renderWorkflow('workflow.test.exports.wf1', false, {
       a: 'a',
@@ -68,7 +66,6 @@ tplTest(
   // the test itself does almost nothing and should pass immediately.
   // But because of tests execution nature in CI (when we several parallel test threads each creating large resource tree)
   // it may take long for test to complete.
-  { timeout: 10000 },
   async ({ helper, expect }) => {
     const wf2 = await helper.renderWorkflow('workflow.test.exports.wf3', false, {});
 

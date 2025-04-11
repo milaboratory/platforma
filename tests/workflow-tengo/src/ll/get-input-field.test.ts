@@ -8,7 +8,6 @@ tplTest.for([
   { isEph: false, name: 'pure field' },
 ])(
   'should resolve future field with default value: field exists ($name)',
-  { timeout: 10000 },
   async ({ isEph }, { helper, expect }) => {
     // Create a sample resource with fields
     const result = await helper.renderTemplate(
@@ -46,7 +45,6 @@ tplTest.for([
   { isEph: false, name: 'pure field' },
 ])(
   'should resolve future field with default value: field does not exist ($name)',
-  { timeout: 10000 },
   async ({ isEph }, { helper, expect }) => {
     // Create a sample resource without the target field
     const result = await helper.renderTemplate(
@@ -84,7 +82,6 @@ tplTest.for([
   { isEph: false, name: 'pure field' },
 ])(
   'should resolve future field with default value: field does not exist & default appears later ($name)',
-  { timeout: 10000 },
   async ({ isEph }, { helper, pl, expect }) => {
     // Create a sample resource without the target field
     let defaultValueField: FieldId | undefined = undefined;
@@ -138,7 +135,6 @@ tplTest.for([
   { isEph: false, name: 'pure field' },
 ])(
   'should resolve future field with default value: when target resource appears later ($name)',
-  { timeout: 10000 },
   async ({ isEph }, { helper, pl, expect }) => {
     // Create a holder for the resource that will appear later
     let resourceHolderField: FieldId | undefined = undefined;
@@ -194,7 +190,6 @@ tplTest.for([
   { isEph: false, name: 'pure field' },
 ])(
   'should resolve future field with default value: when target resource appears later with delayed locking and field creation ($name)',
-  { timeout: 10000 },
   async ({ isEph }, { helper, pl, expect }) => {
     // Create a holder for the resource that will appear later
     let resourceHolderField: FieldId | undefined = undefined;
@@ -266,7 +261,6 @@ tplTest.for([
   { isEph: false, name: 'pure field' },
 ])(
   'should resolve future field with default value: field does not exist & target resource appears later with delayed locking and field creation ($name)',
-  { timeout: 10000 },
   async ({ isEph }, { helper, pl, expect }) => {
     // Create a holder for the resource that will appear later
     let resourceHolderField: FieldId | undefined = undefined;

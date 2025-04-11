@@ -36,17 +36,17 @@ import {
   mapValueInVOE,
   selectorsToPredicate,
 } from '@milaboratories/pl-model-common';
+import canonicalize from 'canonicalize';
 import type { Optional } from 'utility-types';
 import { getCfgRenderCtx } from '../internal';
 import { TreeNodeAccessor, ifDef } from './accessor';
 import type { FutureRef } from './future';
 import type { AccessorHandle, GlobalCfgRenderCtx } from './internal';
 import { MainAccessorName, StagingAccessorName } from './internal';
-import type { LabelDerivationOps } from './util/label';
 import { PColumnCollection, type AxisLabelProvider, type ColumnProvider } from './util/column_collection';
+import type { LabelDerivationOps } from './util/label';
 import { deriveLabels } from './util/label';
 import type { APColumnSelectorWithSplit } from './util/split_selectors';
-import canonicalize from 'canonicalize';
 
 /**
  * Helper function to match domain objects
@@ -446,13 +446,18 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
    * Find labels data for a given axis id of a p-column.
    * @returns a map of axis value => label
    */
-  public findLabelsForColumnAxis(column: PColumn<TreeNodeAccessor>, axisIdx: number): Record<string | number, string> | undefined {
-    const labels = this.findLabels(column.spec.axesSpec[axisIdx]);
+  public findLabelsForColumnAxis(column: PColumnSpec, axisIdx: number): Record<string | number, string> | undefined {
+    const labels = this.findLabels(column.axesSpec[axisIdx]);
     if (!labels) return undefined;
-    return Object.fromEntries(column.data.listInputFields().map((field) => {
-      const r = JSON.parse(field) as [string];
-      return [r[axisIdx], labels[r[axisIdx]] ?? 'Unlabelled'];
-    }));
+    const axisKeys = column.annotations?.['pl7.app/axisKeys/' + axisIdx];
+    if (axisKeys !== undefined) {
+      const keys = JSON.parse(axisKeys) as string[];
+      return Object.fromEntries(keys.map((key) => {
+        return [key, labels[key] ?? 'Unlabelled'];
+      }));
+    } else {
+      return labels;
+    }
   }
 }
 
