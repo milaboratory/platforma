@@ -67,6 +67,8 @@ export * from './components/PlIcon24';
 export * from './components/PlChartStackedBar';
 export * from './components/PlChartHistogram';
 
+export * from './components/PlRadio';
+
 export * from './colors';
 
 // @TODO review (may be private)
