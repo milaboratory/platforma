@@ -173,15 +173,28 @@ export class AnchoredIdDeriver {
 }
 
 /**
+ * Options for the resolveAnchors function
+ */
+export type ResolveAnchorsOptions = {
+  /**
+   * If true, missing domain keys in anchors will be ignored.
+   * If false (default), an error will be thrown.
+   */
+  ignoreMissingDomains?: boolean;
+};
+
+/**
  * Resolves anchored references in a column matcher to create a non-anchored matcher.
  * Doing an opposite operation to {@link AnchorIdDeriver.derive()}.
  *
  * @param anchors - Record of anchor column specifications indexed by anchor id
  * @param matcher - An anchored column matcher (or id, which is subtype of it) containing references that need to be resolved
+ * @param options - Options for resolving anchors
  * @returns A non-anchored column matcher with all references resolved to actual values
  */
-export function resolveAnchors(anchors: Record<string, PColumnSpec>, matcher: AnchoredPColumnSelector): PColumnSelector {
+export function resolveAnchors(anchors: Record<string, PColumnSpec>, matcher: AnchoredPColumnSelector, options?: ResolveAnchorsOptions): PColumnSelector {
   const result = { ...matcher };
+  const ignoreMissingDomains = options?.ignoreMissingDomains ?? false;
 
   if (result.domainAnchor !== undefined) {
     const anchorSpec = anchors[result.domainAnchor];
@@ -204,9 +217,11 @@ export function resolveAnchors(anchors: Record<string, PColumnSpec>, matcher: An
         if (!anchorSpec)
           throw new Error(`Anchor "${value.anchor}" not found for domain key "${key}"`);
 
-        if (!anchorSpec.domain || anchorSpec.domain[key] === undefined)
+        if (!anchorSpec.domain || anchorSpec.domain[key] === undefined) {
+          if (!ignoreMissingDomains)
+            throw new Error(`Domain key "${key}" not found in anchor "${value.anchor}"`);
           continue;
-          // throw new Error(`Domain key "${key}" not found in anchor "${value.anchor}"`);
+        }
 
         resolvedDomain[key] = anchorSpec.domain[key];
       }
