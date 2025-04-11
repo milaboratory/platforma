@@ -1,6 +1,6 @@
 :root {
   --txt-00: #ffffff;
-  --txt-01: #110529;
+  --txt-01: light-dark(#110529, #ffffff);
   --txt-02: #231842;
   --txt-03: #9d9eae;
   --txt-mask: #cfd1db;
@@ -27,13 +27,13 @@
   --btn-primary-hover: #231842;
   --btn-primary-press: #080214;
   --btn-sec-hover-white: rgba(255, 255, 255, 0.5);
-  --btn-sec-hover-grey: rgba(155, 171, 204, 0.16);
+  --btn-sec-hover-grey: light-dark(rgba(155, 171, 204, 0.16), rgba(131, 131, 163, 0.16));
   --btn-sec-press-grey: rgba(155, 171, 204, 0.24);
   --btn-active-select: rgba(99, 224, 36, 0.24);
   --btn-switcher: linear-gradient(180deg, #a1e59c 0%, #d0f5b0 100%);
   //disable
   --dis-00: #ffffff;
-  --dis-01: #cfd1db;
+  --dis-01: light-dark(#cfd1db, #3d3d42);
   //background
   --bg-base-dark: #110529;
   --bg-base-light: #f7f8fa;
