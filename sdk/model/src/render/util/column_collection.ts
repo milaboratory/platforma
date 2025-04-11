@@ -11,6 +11,7 @@ import type {
   AxisFilterByIdx,
   AnchoredPColumnSelector,
   PartitionedDataInfoEntries,
+  ResolveAnchorsOptions,
 } from '@milaboratories/pl-model-common';
 import {
   selectorsToPredicate,
@@ -161,7 +162,7 @@ type UniversalPColumnOptsNoDeriver = {
 
 type UniversalPColumnOpts = UniversalPColumnOptsNoDeriver & {
   anchorCtx: AnchoredIdDeriver;
-};
+} & ResolveAnchorsOptions;
 
 export class PColumnCollection {
   private readonly defaultProviderStore: PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor> | undefined>[] = [];
@@ -231,7 +232,7 @@ export class PColumnCollection {
       if (usesAnchors) {
         if (!anchorCtx)
           throw new Error('Anchored selectors require an AnchoredIdDeriver to be provided in options.');
-        currentSelector = resolveAnchors(anchorCtx.anchors, rawSelector as AnchoredPColumnSelector);
+        currentSelector = resolveAnchors(anchorCtx.anchors, rawSelector as AnchoredPColumnSelector, opts);
       } else
         currentSelector = rawSelector as PColumnSelectorWithSplit | ((spec: PColumnSpec) => boolean);
 

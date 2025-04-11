@@ -18,6 +18,7 @@ import type {
   PTableRecordFilter,
   PTableSorting,
   PlRef,
+  ResolveAnchorsOptions,
   ResultCollection,
   SUniversalPColumnId,
   ValueOrError,
@@ -86,7 +87,7 @@ PColumn<PColumnValues | AccessorHandle | DataInfo<AccessorHandle>> {
 type UniversalPColumnOpts = {
   labelOps?: LabelDerivationOps;
   dontWaitAllData?: boolean;
-};
+} & ResolveAnchorsOptions;
 
 export class ResultPool implements ColumnProvider, AxisLabelProvider {
   private readonly ctx: GlobalCfgRenderCtx = getCfgRenderCtx();
