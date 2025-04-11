@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.29.0
+
+### Minor Changes
+
+- fed27f0: Use axisKeys to retrive axis labels
+
 ## 1.28.4
 
 ### Patch Changes
