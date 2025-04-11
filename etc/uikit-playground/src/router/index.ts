@@ -117,6 +117,11 @@ export const routes = [
     component: () => import('@/Tooltips/index.vue'),
   },
   {
+    name: 'Radio',
+    path: '/radio',
+    component: () => import('@/radio/index.vue'),
+  },
+  {
     name: 'Use Sortable',
     path: '/use-sortable',
     component: () => import('@/useSortable/index.vue'),
