@@ -1,5 +1,17 @@
 # @platforma-sdk/test
 
+## 1.29.2
+
+### Patch Changes
+
+- 21233c2: - Reverted wrong annotations field in anchored bquery schema (#722)
+  - Fixed pColumn bundle.xsvTableBuilder for work with long file names
+  - Fixed anchored axis spec in canonicalOptions
+  - Allow optional domains in canonicalOptions
+  - Removed do-pack from tests
+  - @milaboratories/pl-middle-layer@1.34.6
+  - @platforma-sdk/model@1.29.2
+
 ## 1.29.1
 
 ### Patch Changes
