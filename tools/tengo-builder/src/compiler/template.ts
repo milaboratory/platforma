@@ -9,8 +9,8 @@ import {
 } from './package';
 import type { CompiledTemplateV3 } from '@milaboratories/pl-model-backend';
 import {
-  parseCompiledTemplateV3,
-  serializeCompiledTemplateV3,
+  parseTemplate,
+  serializeTemplate,
 } from '@milaboratories/pl-model-backend';
 
 /** Just a holder for template data, compilation options, full name and source code.
@@ -56,7 +56,7 @@ export function newTemplateFromData(
     compileMode,
     fullName,
     data,
-    content: serializeCompiledTemplateV3(data),
+    content: serializeTemplate(data),
   };
 }
 
@@ -65,7 +65,11 @@ export function newTemplateFromContent(
   fullName: FullArtifactName,
   content: Uint8Array,
 ): Template {
-  const data = parseCompiledTemplateV3(content);
+  const data = parseTemplate(content);
+  if (data.type !== 'pl.tengo-template.v3') {
+    throw new Error('malformed v3 template');
+  }
+
   validateTemplateName(fullName, data);
   return {
     compileMode,

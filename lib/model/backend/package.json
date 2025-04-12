@@ -23,6 +23,7 @@
     "./src/**/*"
   ],
   "dependencies": {
+    "zod": "catalog:",
     "canonicalize": "catalog:",
     "@milaboratories/pl-client": "workspace:"
   },

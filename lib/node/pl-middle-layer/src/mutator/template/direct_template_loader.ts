@@ -15,17 +15,20 @@ import {
   PlTemplateOverrideV1,
   parseTemplate,
 } from '@milaboratories/pl-model-backend';
+import { createTemplateV3Tree } from './direct_template_loader_v3';
 
 export function loadTemplateFromExplicitDirect(
   tx: PlTransaction,
   spec: ExplicitTemplate,
 ): AnyRef {
-  const templateInfo: TemplateData = parseTemplate(spec.content);
+  const templateInfo = parseTemplate(spec.content);
 
   const templateFormat = templateInfo.type;
   switch (templateFormat) {
     case 'pl.tengo-template.v2':
       return createTemplateV2Tree(tx, templateInfo);
+    case 'pl.tengo-template.v3':
+      return createTemplateV3Tree(tx, templateInfo);
     default:
       assertNever(templateFormat);
   }
@@ -35,12 +38,14 @@ export function loadTemplateFromPrepared(
   tx: PlTransaction,
   spec: PreparedTemplate,
 ): AnyRef {
-  const templateData: TemplateData = spec.data;
+  const templateData = spec.data;
 
   const templateFormat = templateData.type;
   switch (templateFormat) {
     case 'pl.tengo-template.v2':
       return createTemplateV2Tree(tx, templateData);
+    case 'pl.tengo-template.v3':
+      return createTemplateV3Tree(tx, templateData);
     default:
       assertNever(templateFormat);
   }
