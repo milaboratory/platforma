@@ -223,7 +223,7 @@ catalog:
 
   # SW
 
-  '@milaboratories/software-pframes-conv': &pframes-version 2.2.1
+  '@milaboratories/software-pframes-conv': &pframes-version 2.2.2
   '@platforma-open/milaboratories.software-small-binaries': ^1.15.19
 
   # Test
