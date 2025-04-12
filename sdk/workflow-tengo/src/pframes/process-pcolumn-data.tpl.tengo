@@ -242,13 +242,6 @@ self.body(func(inputs) {
 		for output in outputs {
 			resultMightBeNull := optionalOutputs[output.name]
 
-			postProcessDataMap := func(dataMap) {
-				if resultMightBeNull {
-					return removeNullsLib.removeNulls(dataMap)
-				}
-				return dataMap
-			}
-
 			if output.type == "Xsv" {
 
 				partitionKeyLength := 0
@@ -307,16 +300,16 @@ self.body(func(inputs) {
 						if unwrapZeroPartition {
 							if binary {
 								for suffix in [".index", ".values"] {
-									dataRes.createInputField(sGroupKey + suffix).set(partData.buildFutureField({name: pUtil.EMPTY_JSON_KEY + suffix, optional: resultMightBeNull}))
+									dataRes.createInputField(sGroupKey + suffix).set(partData.buildFutureField({name: pUtil.EMPTY_JSON_KEY + suffix, optional: true}))
 								}
 							} else {
-								dataRes.createInputField(sGroupKey).set(partData.buildFutureField({name: pUtil.EMPTY_JSON_KEY, optional: resultMightBeNull}))
+								dataRes.createInputField(sGroupKey).set(partData.buildFutureField({name: pUtil.EMPTY_JSON_KEY, optional: true}))
 							}
 						} else {
 							dataRes.createInputField(sGroupKey).set(partData)
 						}
 					}
-					columnResults[id] = postProcessDataMap(dataRes.lockAndBuild())
+					columnResults[id] = removeNullsLib.removeNulls(dataRes.lockAndBuild())
 				}
 
 				if !is_undefined(output.flattenWithDelimiter) {
@@ -331,7 +324,11 @@ self.body(func(inputs) {
 					outputMaps[output.name] = mapBuilder.build()
 				}
 			} else {
-				outputMaps[output.name] = postProcessDataMap(outputMaps[output.name].lockAndBuild())
+				if resultMightBeNull {
+					outputMaps[output.name] = removeNullsLib.removeNulls(outputMaps[output.name].lockAndBuild())
+				} else {
+					outputMaps[output.name] = outputMaps[output.name].lockAndBuild()
+				}
 			}
 		}
 
