@@ -16,8 +16,7 @@
     "type-check": "tsc --noEmit --composite false",
     "build": "vite build",
     "test": "vitest",
-    "prettier-format": "prettier --config .prettierrc 'src/**/*.ts' --write",
-    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
+    "prettier-format": "prettier --config .prettierrc 'src/**/*.ts' --write"
   },
   "files": [
     "dist/**/*"

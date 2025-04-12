@@ -5,8 +5,7 @@ AXIS_SELECTOR_SCHEMA := {
     `__options__,closed`: true,
     `type,?`: ["or", "string", ["string"]],
     `name,?`: `string`,
-    `domain,?`: { any: `string` },
-    `annotations,?`: { any: `string` }
+    `domain,?`: { any: `string` }
 }
 
 // Anchor axis reference schemas for different reference types
