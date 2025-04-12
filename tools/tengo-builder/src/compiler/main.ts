@@ -17,7 +17,7 @@ import { ArtifactSource, parseSourceFile } from './source';
 import { newTemplateFromContent, templateToSource } from './template';
 import type winston from 'winston';
 import { tryResolve, tryResolveOrError } from '@milaboratories/resolve-helper';
-import { serializeCompiledTemplateV3 } from '@milaboratories/pl-model-backend';
+import { serializeTemplate } from '@milaboratories/pl-model-backend';
 
 interface PackageId {
   /** Package name from package.json */
@@ -487,7 +487,7 @@ export function savePacks(logger: winston.Logger, compiled: TemplatesAndLibs, mo
     for (const tpl of compiled.templates) {
       const file = path.resolve(tplOutput, tpl.fullName.id + compiledTplSuffix);
       logger.info(`  - writing ${file}`);
-      fs.writeFileSync(file, serializeCompiledTemplateV3(tpl.data));
+      fs.writeFileSync(file, serializeTemplate(tpl.data));
     }
   }
 

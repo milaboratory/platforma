@@ -1311,6 +1311,9 @@ importers:
       canonicalize:
         specifier: 'catalog:'
         version: 2.1.0
+      zod:
+        specifier: 'catalog:'
+        version: 3.23.8
     devDependencies:
       '@milaboratories/eslint-config':
         specifier: workspace:^

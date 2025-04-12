@@ -1,22 +1,3 @@
-import { gunzipSync, gzipSync } from 'node:zlib';
-import canonicalize from 'canonicalize';
-
-const templateArchiveEncoder = new TextEncoder();
-const templateArchiveDecoder = new TextDecoder();
-
-export function parseCompiledTemplateV3(content: Uint8Array): CompiledTemplateV3 {
-  const data = JSON.parse(templateArchiveDecoder.decode(gunzipSync(content))) as CompiledTemplateV3;
-  if (data.type !== 'pl.tengo-template.v3') {
-    throw new Error('malformed template');
-  }
-
-  return data;
-}
-
-export function serializeCompiledTemplateV3(data: CompiledTemplateV3): Uint8Array {
-  return gzipSync(templateArchiveEncoder.encode(canonicalize(data)), { chunkSize: 256 * 1024, level: 9 });
-}
-
 export interface TemplateLibDataV3 {
   /** i.e. @milaboratory/some-package:lib1 */
   name: string;
