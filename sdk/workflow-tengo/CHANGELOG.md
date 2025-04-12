@@ -1,5 +1,15 @@
 # @platforma-sdk/workflow-tengo
 
+## 4.0.7
+
+### Patch Changes
+
+- 21233c2: - Reverted wrong annotations field in anchored bquery schema (#722)
+  - Fixed pColumn bundle.xsvTableBuilder for work with long file names
+  - Fixed anchored axis spec in canonicalOptions
+  - Allow optional domains in canonicalOptions
+  - Removed do-pack from tests
+
 ## 4.0.6
 
 ### Patch Changes
