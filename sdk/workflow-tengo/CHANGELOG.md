@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 4.0.9
+
+### Patch Changes
+
+- dfa3dcd: forEach function in maps library
+
 ## 4.0.8
 
 ### Patch Changes
