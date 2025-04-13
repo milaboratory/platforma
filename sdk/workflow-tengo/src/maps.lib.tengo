@@ -223,6 +223,16 @@ deepTransform = func(...maps) {
 	return res
 }
 
+// forEach iterates over the key-value pairs of a map in key-sorted order.
+// It calls the provided callback function for each pair.
+// callback := func(key, value)
+forEach := func(map, callback) {
+	keys := getKeys(map) // getKeys already returns sorted keys
+	for key in keys {
+		callback(key, map[key])
+	}
+}
+
 export ll.toStrict({
 	map : map,
 	merge: merge,
@@ -237,5 +247,6 @@ export ll.toStrict({
 	filterKeysValues : filterKeysValues,
 	getKeys: getKeys,
 	getValues: getValues,
-	containsKey: containsKey
+	containsKey: containsKey,
+	forEach: forEach
 })
