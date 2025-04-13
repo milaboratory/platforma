@@ -11,6 +11,7 @@ smart := import(":smart")
 pcolumn := import(":pframes.pcolumn")
 constants := import(":pframes.constants")
 validation := import(":validation")
+maps := import(":maps")
 
 self.awaitState("spec", "ResourceReady")
 self.awaitState("xsvMap", "InputsLocked")
@@ -100,7 +101,7 @@ self.body(func(inputs) {
 			result[id] = smart.structBuilder(rType, rData)
 		}
 
-		for key, xsvFile in xsvMap.inputs() {
+		maps.forEach(xsvMap.inputs(), func(key, xsvFile) {
 			p := xsv.importFile(xsvFile, xsvType, spec, ops)
 
 			for c in spec.columns {
@@ -127,8 +128,8 @@ self.body(func(inputs) {
 				} else {
 					result[id].createInputField(key).set(pCol)
 				}
-			}
-		}
+			})
+		})
 
 		for c in spec.columns {
 			id := util.xsvColumnId(c)

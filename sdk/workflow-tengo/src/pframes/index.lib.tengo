@@ -457,7 +457,7 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 				sep = separator[0]
 			}
 
-			for name, output in outputsMap {
+			maps.forEach(outputsMap, func(name, output) {
 				if output.type == "Xsv" {
 					// For Xsv outputs, add each column with name prefixed
 					for columnName, spec in outputSpecs[name] {
@@ -475,7 +475,7 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 						renderResult.output(name)
 					)
 				}
-			}
+			})
 
 			return builder
 		},
@@ -498,11 +498,7 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 		 * @returns Array of output names
 		 */
 		listOutputs: func() {
-			outputs := []
-			for name, _ in outputsMap {
-				outputs = append(outputs, name)
-			}
-			return slices.quickSort(outputs)
+			return maps.getKeys(outputsMap)
 		},
 
 		/**
@@ -534,11 +530,7 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 				ll.panic("output is not Xsv: " + name)
 			}
 
-			columns := []
-			for columnName, _ in outputSpecs[name] {
-				columns = append(columns, columnName)
-			}
-			return slices.quickSort(columns)
+			return maps.getKeys(outputSpecs[name])
 		},
 
 		/**
