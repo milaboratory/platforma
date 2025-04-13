@@ -15,8 +15,8 @@ oop := import(":oop")
 sets := import(":sets")
 slices := import(":slices")
 path := import(":path")
-enum := import("enum")
 render := import(":render")
+maps := import(":maps")
 
 _WD_CREATE_FIELD_ALLOCATION := "allocation"
 _WD_CREATE_FIELD_WORKDIR    := "workdir"
@@ -216,7 +216,7 @@ _fill := func() {
 		 * @param fileMap: map[string]reference - a map of files.
 		 */
 		addFiles: func(fileMap) {
-			enum.each(fileMap, self.addFile)
+			maps.forEach(fileMap, self.addFile)
 			return self
 		},
 
@@ -240,7 +240,7 @@ _fill := func() {
 		 * @param contentMap: map[string]any|reference - a map of references to a content or to a content itself.
 		 */
 		writeFiles: func(contentRefMap) {
-			enum.each(contentRefMap, self.writeFile)
+			maps.forEach(contentRefMap, self.writeFile)
 			return self
 		},
 

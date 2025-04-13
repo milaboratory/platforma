@@ -518,9 +518,9 @@ builder := func() {
 		 */
 		addFiles: func(filesMap, ...opts) {
 			ll.assert(ll.isMap(filesMap), "exec.builder().addFiles: filesMap must be map of file names to file resources")
-			for fileName, file in filesMap {
+			maps.forEach(filesMap, func(fileName, file) {
 				self.addFile(fileName, file, opts...)
-			}
+			})
 			return self
 		},
 
