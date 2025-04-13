@@ -128,7 +128,7 @@ self.body(func(inputs) {
 				} else {
 					result[id].createInputField(key).set(pCol)
 				}
-			})
+			}
 		})
 
 		for c in spec.columns {

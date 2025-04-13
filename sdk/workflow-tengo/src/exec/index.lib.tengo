@@ -91,6 +91,9 @@ builder := func() {
 	stderrToValue := false
 	stderrToStdout := false
 
+	saveStdout := true
+	saveStderr := true
+
 	self = ll.toStrict({
 		/**
 		 * Sets the command to be executed, e.g. /usr/bin/env or sh.
@@ -666,6 +669,31 @@ builder := func() {
 		},
 
 		/**
+		 * Don't save stdout as file or stream (saved by default).
+		 */
+		dontSaveStdout: func() {
+			saveStdout = false
+			return self
+		},
+
+		/**
+		 * Don't save stderr as file or stream (saved by default).
+		 */
+		dontSaveStderr: func() {
+			saveStderr = false
+			return self
+		},
+
+		/**
+		 * Don't save stdout or stderr as file or stream (both are saved by default).
+		 */
+		dontSaveStdoutOrStderr: func() {
+			saveStdout = false
+			saveStderr = false
+			return self
+		},
+
+		/**
 		 * Executes the command.
 		 *
 		 * @return A map containing the execution results.
@@ -674,10 +702,14 @@ builder := func() {
 			if stderrToStdout {
 				stderr = stdout
 			}
-			sets.add(filesToStream, stdout)
-			sets.add(filesToStream, stderr)
-			sets.add(filesToSave, stdout)
-			sets.add(filesToSave, stderr)
+			if saveStdout {
+				sets.add(filesToStream, stdout)
+				sets.add(filesToSave, stdout)
+			}
+			if saveStderr {
+				sets.add(filesToStream, stderr)
+				sets.add(filesToSave, stderr)
+			}
 			if stdoutToValue {
 				sets.add(filesContentToSave, stdout)
 			}
@@ -702,6 +734,8 @@ builder := func() {
 				envs: envs,
 				secrets: secrets,
 				queue: queue,
+				// both stdout and stderr will always be channeled to a file
+				// even if saveStdout or saveStderr are false
 				stdout: stdout,
 				stderr: stderr,
 				nErrorLines: nErrorLines

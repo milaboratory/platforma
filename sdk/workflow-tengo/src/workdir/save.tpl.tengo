@@ -108,7 +108,7 @@ self.body(func(inputs) {
 			r.addRef(f, filesContentResult.getFutureInputField(f))
 		}
 		fileSetsContentResult.addRef(fSetName, r.build())
-	}
+	})
 
 	return {
 		files           : filesResult,
