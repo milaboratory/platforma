@@ -38,6 +38,8 @@ pColumnResourceMapDataBuilder := func(keyLength) {
 	ll.panic("pframes.pColumnResourceMapDataBuilder is not supported any more; use pcolumn.resourceMapBuilder")
 }
 
+__primitiveValueTypes := { "Int": true, "Long": true, "Float": true, "Double": true, "String": true, "Bytes": true }
+
 /**
  * Constructs a mapping or aggregation pipeline for a given input PColumn and returns a specialized
  * output object for accessing the processing results.
@@ -57,9 +59,15 @@ pColumnResourceMapDataBuilder := func(keyLength) {
  *                 - When passAggregationAxesNames is true, contains just the names of aggregation axes
  *                     as a simple array of strings, without domains, annotations, etc.
  *                   Not provided if passAggregationAxesNames is false or omitted from ops
+ *     "__distilled_aggregation_spec__"
+ *                 - When passDistilledAggregationAxesSpec is true, contains the *distilled* column specification containing only the aggregation axes.
+ *                   Distilled specs remove non-discriminative domains and all annotations.
+ *                   Useful for stable identification of aggregation axes regardless of minor spec variations.
+ *                   Not provided if passDistilledAggregationAxesSpec is false or omitted from opts.
  *     "__value__" - Content depends on aggregation setting:
- *                     - Without aggregation: single value (only for ResourceMap PColumns)
- *                     - With aggregation: "PColumnData/*" resource containing all records in current group
+ *                     - Without aggregation (mapping mode): single value/resource reference (only for ResourceMap PColumns, i.e., non-primitive valueTypes).
+ *                     - With aggregation: "PColumnData/*" resource containing all records in current group. The exact type
+ *                       (ResourceMap, JsonPartitioned, BinaryPartitioned) matches the inferred type of the input data.
  *     ...extra    - Additional values/references passed via the options.extra parameter
  *                   are forwarded to the template unchanged
  *
@@ -72,7 +80,11 @@ pColumnResourceMapDataBuilder := func(keyLength) {
  * 							 	// PColumn specifications (must be explicit, not a reference)
  * 							 	spec: <PColumnSpec>,
  *
- * 							 	// Reference to the data resource
+ * 							 	// Reference to the data resource. Supported underlying types:
+ *                              // - PColumnData/ResourceMap (inferred for non-primitive valueTypes like File, Resource, etc.)
+ *                              // - PColumnData/JsonPartitioned (inferred for primitive valueTypes: Int, Long, Float, Double, String, Bytes)
+ *                              // - PColumnData/BinaryPartitioned (inferred for primitive valueTypes)
+ *                              // Partitioned types (Json/Binary) require aggregate option to be set.
  * 							 	data: <resource ref>
  *							}
  *
@@ -137,7 +149,7 @@ pColumnResourceMapDataBuilder := func(keyLength) {
  *                                              //   - { type: "String", name: "pl7.app/sequencing/lane", optional: true }
  *                                              //   - { type: "String", name: "pl7.app/rna-seq/geneId", domain: { "pl7.app/species": "homo-sapiens" } }
  *                                              // With optional: true, matcher won't error if unmatched
- *                                              // Use passAggregationAxesSpec for custom handling in body template
+ *                                              // Use passAggregationAxesSpec or passDistilledAggregationAxesSpec for custom handling in body template
  *
  *                      passKey?: boolean       // Pass __key__ to body template if true
  *
@@ -148,6 +160,10 @@ pColumnResourceMapDataBuilder := func(keyLength) {
  *                      passAggregationAxesNames?: boolean
  *                                              // Pass array of aggregation axes names to body template
  *                                              // via __aggregation_axes_names__ input
+ *
+ *                      passDistilledAggregationAxesSpec?: boolean
+ *                                              // Pass *distilled* aggregation axes specs (no annotations, only
+ *                                              // discriminative domains) in a distilled PColumnSpec via __distilled_aggregation_spec__ input
  *
  *                      extra?: Map<string, Ref>,
  *                                              // Additional parameters passed to each body invocation
@@ -194,12 +210,16 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 		opts.passAggregationAxesNames = false
 	}
 
+	if is_undefined(opts.passDistilledAggregationAxesSpec) {
+		opts.passDistilledAggregationAxesSpec = false
+	}
+
 	if is_undefined(opts.isEphemeral) {
 		opts.isEphemeral = false
 	}
 
-	if (opts.passAggregationAxesSpec || opts.passAggregationAxesNames) && is_undefined(opts.aggregate) {
-		ll.panic("can't use passAggregationAxesSpec or passAggregationAxesNames without aggregate")
+	if (opts.passAggregationAxesSpec || opts.passAggregationAxesNames || opts.passDistilledAggregationAxesSpec) && is_undefined(opts.aggregate) {
+		ll.panic("can't use passAggregationAxesSpec, passAggregationAxesNames or passDistilledAggregationAxesSpec without aggregate")
 	}
 
 	// Initialize trace if traceSteps provided
@@ -214,13 +234,22 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 		passKey: opts.passKey
 	}
 
+	// Infer if data is likely partitioned based on valueType
+	// Primitive types are assumed to use partitioned storage (Json/Binary)
+	isPotentiallyPartitioned := __primitiveValueTypes[input.spec.valueType]
+
 	extra := opts.extra
 	if is_undefined(extra) {
 		extra = {}
 	}
 
 	iterationAxesSpec := input.spec.axesSpec
-	processTemplateParams.expectedKeyLength = len(input.spec.axesSpec)
+	// For partitioned data, the underlying template determines key length internally.
+	// For ResourceMap, we pass the expected length based on the spec.
+	if !isPotentiallyPartitioned {
+		processTemplateParams.expectedKeyLength = len(input.spec.axesSpec)
+	}
+
 	if !is_undefined(opts.aggregate) {
 		aggregationIndices := pSpec.matchAxes(input.spec.axesSpec, opts.aggregate)
 		processTemplateParams.aggregationIndices = aggregationIndices
@@ -248,6 +277,23 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 			}
 
 			extra[constants.AGGREGATION_AXES_NAMES_FIELD_NAME] = smart.createJsonResource(aggregationAxesNames)
+		}
+
+		if opts.passDistilledAggregationAxesSpec {
+			distiller := pSpec.createSpecDistiller([input.spec])
+			distilledSpec := distiller.distill(input.spec)
+
+			passSpec := maps.deepTransform(distilledSpec, {
+				axesSpec: func(axesSpec) {
+					aggregationAxesSpec := []
+					for i in aggregationIndices {
+						aggregationAxesSpec = append(aggregationAxesSpec, axesSpec[i])
+					}
+					return aggregationAxesSpec
+				}
+			})
+
+			extra[constants.DISTILLED_AGGREGATION_SPEC_FIELD_NAME] = smart.createJsonResource(passSpec)
 		}
 	}
 

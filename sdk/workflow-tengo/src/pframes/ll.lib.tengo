@@ -18,11 +18,17 @@ llProcessTpl := assets.importTemplate(":pframes.process-pcolumn-data")
  *   Inputs:
  *     "__key__": string     - JSON representation of the group key (i.e. keys in all positions not
  *                             specified in the indices parameter). Only provided if passKey is true.
- *     "__value__": Resource - PColumnData/ResourceMap resource containing all records in current group
+ *     "__value__": Resource - PColumnData/ResourceMap resource containing all records in current group (if input is ResourceMap or aggregation mode),
+ *                             or PColumnData/JsonPartitioned or PColumnData/BinaryPartitioned resource containing all records in the current group
+ *                             (if input is correspondingly partitioned and in aggregation mode). In mapping mode (aggregationIndices=undefined),
+ *                             this is the individual resource reference from the input ResourceMap.
  *     ...extra              - Additional values/references passed via the extra parameter are forwarded
  *                             to the template unchanged
  *
- * @param data: Resource                - Data resource (currently only PColumnData/ResourceMap supported)
+ * @param data: Resource                - Data resource. Supported types:
+ *                                        - PColumnData/ResourceMap
+ *                                        - PColumnData/JsonPartitioned (requires aggregationIndices to be set)
+ *                                        - PColumnData/BinaryPartitioned (requires aggregationIndices to be set)
  * @param aggregationIndices: number[]|undefined
  *                                      - Indices to aggregate over. These indices will be stripped from
  *                                       the input map (opposite of SQL GROUP BY). If undefined, works as
