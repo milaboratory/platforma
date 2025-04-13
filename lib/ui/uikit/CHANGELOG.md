@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.67
+
+### Patch Changes
+
+- 468e3d6: add autocomplete component
+
 ## 2.2.66
 
 ### Patch Changes
