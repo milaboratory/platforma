@@ -306,6 +306,7 @@ const optionsRequest = useWatchFetch(() => searchDebounced.value, async (v) => {
   }
   return [];
 });
+
 const modelOptionRequest = useWatchFetch(() => model.value, async (v) => {
   if (v && !deepEqual(modelOptionRef.value?.value, v)) { // load label for selected value if it was updated from outside the component
     if (props.modelSearch) {
@@ -315,6 +316,7 @@ const modelOptionRequest = useWatchFetch(() => model.value, async (v) => {
   }
   return modelOptionRef.value;
 });
+
 watch(() => optionsRequest.value, (result) => {
   if (result) {
     loadedOptionsRef.value = result;
@@ -329,15 +331,16 @@ watch(() => modelOptionRequest.value, (result) => {
     modelOptionRef.value = normalizeListOptions([result])[0];
   }
 });
+
 watch(() => optionsRequest.error, (err) => {
   if (err) {
     isLoadingError.value = Boolean(err);
   }
 });
+
 watch(() => optionsRequest.loading || modelOptionRequest.loading, (loading) => {
   isLoadingOptions.value = loading;
 });
-
 </script>
 
 <template>
