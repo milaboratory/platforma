@@ -223,7 +223,12 @@ const clear = () => emit('update:modelValue', undefined);
 
 const setFocusOnInput = () => input.value?.focus();
 
-const toggleOpen = () => (data.open = !data.open);
+const toggleOpen = () => {
+  data.open = !data.open;
+  if (!data.open) {
+    data.search = '';
+  }
+};
 
 const onInputFocus = () => (data.open = true);
 
@@ -298,7 +303,7 @@ watchPostEffect(() => {
 </script>
 
 <template>
-  <div class="pl-dropdown__envelope">
+  <div class="pl-dropdown__envelope" @click="setFocusOnInput">
     <div
       ref="rootRef"
       :tabindex="tabindex"
@@ -321,7 +326,7 @@ watchPostEffect(() => {
             @focus="onInputFocus"
           />
 
-          <div v-if="!data.open" class="input-value" @click="setFocusOnInput">
+          <div v-if="!data.open" class="input-value">
             <LongText> {{ textValue }} </LongText>
           </div>
 
@@ -329,9 +334,11 @@ watchPostEffect(() => {
             <PlMaskIcon24 v-if="isLoadingOptions" name="loading" />
             <PlIcon16 v-if="clearable && hasValue" name="delete-clear" @click.stop="clear" />
             <slot name="append" />
-            <div v-if="arrowIconLarge" class="arrow-icon" :class="[`icon-24 ${arrowIconLarge}`]" @click.stop="toggleOpen" />
-            <div v-else-if="arrowIcon" class="arrow-icon" :class="[`icon-16 ${arrowIcon}`]" @click.stop="toggleOpen" />
-            <div v-else class="arrow-icon arrow-icon-default" @click.stop="toggleOpen" />
+            <div class="pl-dropdown__arrow-wrapper" @click.stop="toggleOpen">
+              <div v-if="arrowIconLarge" class="arrow-icon" :class="[`icon-24 ${arrowIconLarge}`]" />
+              <div v-else-if="arrowIcon" class="arrow-icon" :class="[`icon-16 ${arrowIcon}`]" />
+              <div v-else class="arrow-icon arrow-icon-default" />
+            </div>
           </div>
         </div>
         <label v-if="label">
