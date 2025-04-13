@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.3.63
+
+### Patch Changes
+
+- 468e3d6: add autocomplete component
+- Updated dependencies [468e3d6]
+  - @milaboratories/milaboratories.ui-examples.model@1.1.43
+
 ## 1.3.62
 
 ### Patch Changes
