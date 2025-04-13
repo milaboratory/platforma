@@ -5,6 +5,7 @@ text := import("text")
 smart := import(":smart")
 wdSave := import(":workdir.save")
 regexp := import(":regexp")
+maps := import(":maps")
 
 self.body(func(inputs) {
 
@@ -20,10 +21,10 @@ self.body(func(inputs) {
 
 	wdBuilder := wdSave.builder(wdBefore)
 
-	for file, _ in files {
+	for file in maps.getKeys(files) {
 		wdBuilder.saveFile(file)
 	}
-	for content, _ in filesContent {
+	for content in maps.getKeys(filesContent) {
 		wdBuilder.saveFileContent(content)
 	}
 
@@ -60,30 +61,30 @@ self.body(func(inputs) {
 
 		for name in files {
 			// Use pre-compiled regexes for matching
-			for fSetName, compiledRegex in compiledFileSets {
+			maps.forEach(compiledFileSets, func(fSetName, compiledRegex) {
 				if compiledRegex.match(name) {
 					fileSetsMatch[fSetName] = append(fileSetsMatch[fSetName], name)
 				}
-			}
+			})
 
-			for fSetName, compiledRegex in compiledFileSetsContent {
+			maps.forEach(compiledFileSetsContent, func(fSetName, compiledRegex) {
 				if compiledRegex.match(name) {
 					fileSetsContentMatch[fSetName] = append(fileSetsContentMatch[fSetName], name)
 				}
-			}
+			})
 		}
 
-		for _, list in fileSetsMatch {
+		maps.forEach(fileSetsMatch, func(_, list) {
 			for file in list {
 				wdBuilder.saveFile(file)
 			}
-		}
+		})
 
-		for _, list in fileSetsContentMatch {
+		maps.forEach(fileSetsContentMatch, func(_, list) {
 			for file in list {
 				wdBuilder.saveFileContent(file)
 			}
-		}
+		})
 	}
 
 	wd := wdBuilder.build()
@@ -92,16 +93,16 @@ self.body(func(inputs) {
 	filesContentResult := wd.getSavedFilesContent()
 
 	fileSetsResult := smart.mapBuilder()
-	for fSetName, list in fileSetsMatch {
+	maps.forEach(fileSetsMatch, func(fSetName, list) {
 		r := smart.mapBuilder()
 		for f in list {
 			r.addRef(f, filesResult.getFutureInputField(f))
 		}
 		fileSetsResult.addRef(fSetName, r.build())
-	}
+	})
 
 	fileSetsContentResult := smart.mapBuilder()
-	for fSetName, list in fileSetsContentMatch {
+	maps.forEach(fileSetsContentMatch, func(fSetName, list) {
 		r := smart.mapBuilder()
 		for f in list {
 			r.addRef(f, filesContentResult.getFutureInputField(f))
