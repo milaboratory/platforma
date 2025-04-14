@@ -161,7 +161,7 @@ __primitiveValueTypes := { "Int": true, "Long": true, "Float": true, "Double": t
  *                                              // Pass array of aggregation axes names to body template
  *                                              // via __aggregation_axes_names__ input
  *
- *                      passDistilledAggregationAxesSpec?: boolean
+ *                      passDistilledAggregationSpec?: boolean
  *                                              // Pass *distilled* aggregation axes specs (no annotations, only
  *                                              // discriminative domains) in a distilled PColumnSpec via __distilled_aggregation_spec__ input
  *
@@ -210,16 +210,16 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 		opts.passAggregationAxesNames = false
 	}
 
-	if is_undefined(opts.passDistilledAggregationAxesSpec) {
-		opts.passDistilledAggregationAxesSpec = false
+	if is_undefined(opts.passDistilledAggregationSpec) {
+		opts.passDistilledAggregationSpec = false
 	}
 
 	if is_undefined(opts.isEphemeral) {
 		opts.isEphemeral = false
 	}
 
-	if (opts.passAggregationAxesSpec || opts.passAggregationAxesNames || opts.passDistilledAggregationAxesSpec) && is_undefined(opts.aggregate) {
-		ll.panic("can't use passAggregationAxesSpec, passAggregationAxesNames or passDistilledAggregationAxesSpec without aggregate")
+	if (opts.passAggregationAxesSpec || opts.passAggregationAxesNames || opts.passDistilledAggregationSpec) && is_undefined(opts.aggregate) {
+		ll.panic("can't use passAggregationAxesSpec, passAggregationAxesNames or passDistilledAggregationSpec without aggregate")
 	}
 
 	// Initialize trace if traceSteps provided
@@ -279,7 +279,7 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 			extra[constants.AGGREGATION_AXES_NAMES_FIELD_NAME] = smart.createJsonResource(aggregationAxesNames)
 		}
 
-		if opts.passDistilledAggregationAxesSpec {
+		if opts.passDistilledAggregationSpec {
 			distiller := pSpec.createSpecDistiller([input.spec])
 			distilledSpec := distiller.distill(input.spec)
 
