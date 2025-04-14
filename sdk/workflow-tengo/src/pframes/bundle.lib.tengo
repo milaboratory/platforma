@@ -180,7 +180,7 @@ createBuilder := func(ctx) {
 		 *                                     Defaults to the canonical representation of the ID or its source for FilteredPColumnId.
 		 */
 		addSingle: func(id, ...queryKey) {
-			addSingleInner(id, ...queryKey)
+			addSingleInner(id, queryKey...)
 			return self
 		},
 
@@ -203,7 +203,7 @@ createBuilder := func(ctx) {
 		 *                                     Defaults to canonical.encode(query).
 		 */
 		addMulti: func(query, ...queryKey) {
-			addMultiInner(query, ...queryKey)
+			addMultiInner(query, queryKey...)
 			return self
 		},
 
