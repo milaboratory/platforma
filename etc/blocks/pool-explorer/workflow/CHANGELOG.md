@@ -1,5 +1,16 @@
 # @milaboratories/milaboratories.pool-explorer.workflow
 
+## 1.1.0
+
+### Minor Changes
+
+- a34b2ef: update tengo-builder
+
+### Patch Changes
+
+- Updated dependencies [a34b2ef]
+  - @platforma-sdk/workflow-tengo@4.1.0
+
 ## 1.0.20
 
 ### Patch Changes
