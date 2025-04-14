@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 4.1.1
+
+### Patch Changes
+
+- 7cd6249: Rename “Monetization” to “Subscription” and small fixes
+
 ## 4.1.0
 
 ### Minor Changes

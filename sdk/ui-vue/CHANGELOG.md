@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.29.9
+
+### Patch Changes
+
+- 7cd6249: Rename “Monetization” to “Subscription” and small fixes
+
 ## 1.29.5
 
 ### Patch Changes

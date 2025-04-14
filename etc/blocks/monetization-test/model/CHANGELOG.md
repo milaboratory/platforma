@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.monetization-test.model
 
+## 1.0.5
+
+### Patch Changes
+
+- 7cd6249: Rename “Monetization” to “Subscription” and small fixes
+
 ## 1.0.4
 
 ### Patch Changes
