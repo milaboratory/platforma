@@ -1,24 +1,32 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import { PlIcon24, PlTooltip } from '@milaboratories/uikit';
 
-defineProps<{
+const props = defineProps<{
   canRun: boolean | undefined;
 }>();
+
+const tooltipText = computed(() => {
+  if (props.canRun) {
+    return 'Can run';
+  }
+  return 'Cannot run: check your monetization settings';
+});
 </script>
 
 <template>
-  <div :class="[{ 'can-run': canRun }, $style.container]">
+  <div :class="[{ [$style['can-run']]: canRun }, $style.container]">
     <div :class="$style.badge">
       <i :class="$style.blob">
         <span>
           <span :class="$style.dot" />
         </span>
       </i>
-      <span>Can run</span>
+      <span>Can run </span>
     </div>
     <PlTooltip>
       <template #tooltip>
-        Lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quos.
+        {{ tooltipText }}
       </template>
       <PlIcon24 name="info" />
     </PlTooltip>

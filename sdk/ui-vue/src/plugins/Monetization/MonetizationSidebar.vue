@@ -49,7 +49,7 @@ const available = computed(() => {
 <template>
   <PlSlideModal v-if="hasMonetization" v-model="isOpen">
     <template #title>
-      Monetization
+      Subscription
     </template>
     <PlDropdown label="Product" readonly :model-value="productName" :options="options" />
     <RunStatus :can-run="canRun" />
@@ -62,7 +62,7 @@ const available = computed(() => {
   <!-- Teleport to the title slot -->
   <Teleport v-if="hasMonetization && teleportTarget" :to="teleportTarget">
     <PlBtnGhost icon="monetization" @click.stop="isOpen = true">
-      Monetization
+      Subscription
     </PlBtnGhost>
   </Teleport>
 </template>
