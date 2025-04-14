@@ -13,7 +13,8 @@ self.awaitState("queryMap", "ResourceReady")
 self.body(func(inputs) {
 	ctx := inputs.ctx
 	anchors := inputs.anchorSpecs
-	queryMap := inputs.queryMap
+	queryMap := inputs.request.queryMap
+    opts := inputs.request.opts
 
     QUERY_CONFIG_SCHEMA := { any: {
         `__options__,closed`: true,
@@ -21,7 +22,13 @@ self.body(func(inputs) {
         `fetchData,?`: `boolean`
     } }
 
+    QUERY_OPTS_SCHEMA := { any: {
+        `__options__,closed`: true,
+        `ignoreMissingDomains`: `boolean`
+    } }
+
     validation.assertType(queryMap, QUERY_CONFIG_SCHEMA)
+    validation.assertType(opts, QUERY_OPTS_SCHEMA)
 
     outputs := {}
 
@@ -90,6 +97,9 @@ self.body(func(inputs) {
 
                         // Get domain value from the anchor
                         if is_undefined(anchors[anchorId].domain) || is_undefined(anchors[anchorId].domain[domainKey]) {
+                            if opts.ignoreMissingDomains {
+                                continue
+                            }
                             ll.panic("Cannot resolve anchored domain: domain key '%s' not found in anchor '%s'", domainKey, anchorId)
                         }
 

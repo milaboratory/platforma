@@ -34,6 +34,9 @@ strings := import(":strings")
  *   addAnchor(anchorId, ref)
  *     - Adds an anchor with the given ID and reference to be resolved
  *
+ *   addSingle(id, ...queryKey)
+ *     - Adds a single PColumn to the bundle collector by its UniversalPColumnId.
+ *
  *   addById(id)
  *     - Adds a PColumn to the bundle collector by UniversalPColumnId.
  *       Automatically unwraps FilteredPColumnId.
@@ -41,8 +44,11 @@ strings := import(":strings")
  *         - string: A SUniversalPColumnId (canonically serialized UniversalPColumnId)
  *         - object: Either a standard AnchoredPColumnId or a FilteredPColumnId with source and axisFilters
  *
- *   addQuery(queryId, query)
- *     - Adds a custom query with the given ID to be resolved
+ *   addMulti(query, ...queryKey)
+ *     - Adds a query to the bundle collector.
+ *
+ *   addQuery(query, ...queryKey)
+ *     - Adds a query to the bundle collector.
  *
  *   build()
  *     - Resolves all references and queries and returns a PColumnBundle
@@ -65,8 +71,71 @@ createBuilder := func(ctx) {
 	// query id -> query
 	queries := {}
 
+	anchoredQueryOpts := {
+		ignoreMissingDomains: true
+	}
+
+	addSingleInner := func(id, ...queryKey) {
+		ll.assert(len(queryKey) <= 1, "addSingle accepts at most one optional queryKey argument")
+
+		decodedId := undefined
+		if is_string(id) {
+			decodedId = json.decode(id)
+		} else if is_map(id) {
+			decodedId = id
+		} else {
+			ll.panic("Invalid column ID type. Expected string or object.")
+		}
+
+		isFiltered := is_map(decodedId) && !is_undefined(decodedId.source) && !is_undefined(decodedId.axisFilters)
+		if isFiltered && len(queryKey) > 0 {
+			ll.panic("FilteredPColumnId cannot be used with a queryKey.")
+		}
+
+		defaultKey := undefined
+		valueToStore := undefined
+		if isFiltered {
+			defaultKey = canonical.encode(decodedId.source)
+			valueToStore = decodedId.source
+		} else {
+			// Use the original string ID if provided for the key, otherwise encode the map
+			defaultKey = is_string(id) ? id : canonical.encode(decodedId)
+			valueToStore = decodedId // Store the decoded map itself
+		}
+
+		keyToUse := defaultKey
+		if len(queryKey) == 1 {
+			keyToUse = queryKey[0]
+		}
+
+		queries[keyToUse] = valueToStore
+	}
+
+	addMultiInner := func(query, ...queryKey) {
+		ll.assert(len(queryKey) <= 1, "addMulti accepts at most one optional queryKey argument")
+
+		keyToUse := undefined
+		if len(queryKey) == 1 {
+			keyToUse = queryKey[0]
+		} else {
+			keyToUse = canonical.encode(query)
+		}
+
+		queries[keyToUse] = query
+	}
+
 	self := undefined
 	self = {
+		/**
+		 * Sets the option to ignore errors if referenced anchor domains are missing during resolution.
+		 *
+		 * @returns The PColumnBundleCollector object for chaining.
+		 */
+		ignoreMissingDomains: func() {
+			anchoredQueryOpts.ignoreMissingDomains = true
+			return self
+		},
+
 		/**
 		 * Adds a reference to the bundle collector.
 		 *
@@ -79,6 +148,8 @@ createBuilder := func(ctx) {
 			if !is_string(refs[refKey]) {
 				refs[refKey] = ref
 			}
+
+			return self
 		},
 
 		/**
@@ -95,48 +166,57 @@ createBuilder := func(ctx) {
 			} else {
 				refs[refKey] = ref
 			}
+
+			return self
 		},
 
 		/**
-		 * Adds a PColumn to the bundle collector by UniversalPColumnId.
+		 * Adds a single PColumn to the bundle collector by its UniversalPColumnId or anchored or simple query expected to return exactly single PColumn.
 		 *
 		 * @param id: string or object - The ID of the PColumn
 		 *   - string: A SUniversalPColumnId (canonically serialized UniversalPColumnId)
 		 *   - object: Either a standard AnchoredPColumnId or a FilteredPColumnId with source and axisFilters
+		 * @param queryKey: string (optional) - Override the key used to store and retrieve this query result.
+		 *                                     Defaults to the canonical representation of the ID or its source for FilteredPColumnId.
+		 */
+		addSingle: func(id, ...queryKey) {
+			addSingleInner(id, ...queryKey)
+			return self
+		},
+
+		/**
+		 * (Deprecated: use addSingle) Adds a PColumn to the bundle collector by UniversalPColumnId.
+		 * Kept for backward compatibility.
+		 *
+		 * @param id: string or object - The ID of the PColumn
 		 */
 		addById: func(id) {
-			encodedId := undefined
-			decodedId := undefined
-
-			if is_string(id) {
-				decodedId = json.decode(id)
-				encodedId = id
-			} else if is_map(id) {
-				decodedId = id
-			} else {
-				ll.panic("Invalid column ID type. Expected string or object.")
-			}
-
-			if is_map(decodedId) && !is_undefined(decodedId.source) && !is_undefined(decodedId.axisFilters) {
-				// Unwrapping FilteredPColumnId
-				columnKey := canonical.encode(decodedId.source)
-				queries[columnKey] = decodedId.source
-			} else {
-				if is_undefined(encodedId) {
-					encodedId = canonical.encode(decodedId)
-				}
-				queries[encodedId] = decodedId
-			}
+			addSingleInner(id)
+			return self
 		},
 
 		/**
 		 * Adds a query to the bundle collector.
 		 *
+		 * @param query: AnchoredPColumnSelector - The query
+		 * @param queryKey: string (optional) - The key to store and retrieve the query result.
+		 *                                     Defaults to canonical.encode(query).
+		 */
+		addMulti: func(query, ...queryKey) {
+			addMultiInner(query, ...queryKey)
+			return self
+		},
+
+		/**
+		 * (Deprecated: use addMulti) Adds a query to the bundle collector.
+		 * Kept for backward compatibility.
+		 *
 		 * @param queryId: string - The ID of the query
 		 * @param query: AnchoredPColumnSelector - The query
 		 */
 		addQuery: func(queryId, query) {
-			queries[queryId] = query
+			addMultiInner(query, queryId)
+			return self
 		},
 
 		/**
@@ -145,6 +225,8 @@ createBuilder := func(ctx) {
 		 * @return PColumnBundle - The resolved bundle with all references and queries
 		 */
 		build: func() {
+			// 'queries' now directly contains the correct items (IDs, query sources, or full queries)
+			// ready to be passed to bquery.anchoredQuery.
 			resolveResult := bquery.anchoredQuery(ctx, anchors, queries)
 
 			bundle := smart.mapBuilder(pConstants.RTYPE_P_COLUMN_BUNDLE)

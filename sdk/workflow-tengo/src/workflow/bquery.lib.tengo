@@ -48,6 +48,12 @@ _QUERY_MAP_SCHEMA := {
 	]
 }
 
+/** Default options for anchoredQuery */
+_ANCHORED_QUERY_DEFAULT_OPTIONS := {
+	/** If true, ignores errors when referenced anchors or their domains are missing during resolution */
+	ignoreMissingDomains: false
+}
+
 /**
  * Query results pool.
  *
@@ -284,11 +290,12 @@ resolve := func(ref, ctx, ...options) {
  * @param queryMap: a map of queryId -> APColumnSelector specifications
  *                 or {query: APColumnSelector, specOnly: bool}
  *                 When providing {query, specOnly}, the specOnly flag controls whether to fetch data
+ * @param opts: an optional map containing additional options:
+ *                 - ignoreMissingDomains: bool (default: false) - If true, ignores errors when referenced anchor domains are missing during resolution.
  *
  * === Return ===
  *
  * @returns Object with methods for retrieving anchor resolution and query results:
- *
  *          getAnchor(anchorId) - Returns the resolved anchor for the given ID
  *              @param anchorId - The ID of the anchor to retrieve
  *              @returns The resolved anchor object {ref: spec: data:}
@@ -297,9 +304,16 @@ resolve := func(ref, ctx, ...options) {
  *              @param queryId - The ID of the query result to retrieve
  *              @returns The query result for the given ID
  */
-anchoredQuery := func(ctx, anchors, queryMap) {
+anchoredQuery := func(ctx, anchors, queryMap, ...opts) {
 	// Validate query map schema
 	validation.assertType(queryMap, _QUERY_MAP_SCHEMA, "invalid query map schema")
+
+	// Process options
+	normalizedOpts := _ANCHORED_QUERY_DEFAULT_OPTIONS
+	if len(opts) > 0 {
+		ll.assert(len(opts) == 1 && is_map(opts[0]), "expected single map for opts, got: ", opts)
+		normalizedOpts = maps.deepMerge(normalizedOpts, opts[0])
+	}
 
 	// First, resolve all anchors
 	resolvedAnchors := {}
@@ -340,7 +354,10 @@ anchoredQuery := func(ctx, anchors, queryMap) {
 	queryResult := render.createEphemeral(queryAnchoredTpl, {
 		ctx: ctx,
 		anchorSpecs: smart.createMapResource(maps.mapValues(resolvedAnchors, func(v) { return v.inputs().spec })),
-		queryMap: processedQueryMap
+		request: {
+			queryMap: processedQueryMap,
+			opts: normalizedOpts
+		}
 	})
 
 	// Create structured result object with accessor methods
