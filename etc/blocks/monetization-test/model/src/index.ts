@@ -25,6 +25,10 @@ export const model = BlockModel.create()
     __mnzCanRun: false,
   })
 
+  .argsValid((ctx) => {
+    return ctx.args.__mnzCanRun;
+  })
+
   .output('__mnzInfo', (ctx) => ctx.prerun?.resolve('info')?.getDataAsJson<unknown>())
 
   .output('token', (ctx) => ctx.outputs?.resolve('token')?.getDataAsString())
