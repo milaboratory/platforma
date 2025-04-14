@@ -5,6 +5,7 @@ import * as fs from 'node:fs';
 import { pathType } from './util';
 import type { TemplatesAndLibs } from './compiler';
 import { TengoTemplateCompiler } from './compiler';
+import { getSha256 } from './source';
 import type {
   CompileMode,
   FullArtifactName } from './package';
@@ -13,9 +14,10 @@ import {
   typedArtifactNameToString,
 } from './package';
 import { ArtifactSource, parseSourceFile } from './source';
-import { Template } from './template';
+import { newTemplateFromContent, templateToSource } from './template';
 import type winston from 'winston';
 import { tryResolve, tryResolveOrError } from '@milaboratories/resolve-helper';
+import { serializeTemplate } from '@milaboratories/pl-model-backend';
 
 interface PackageId {
   /** Package name from package.json */
@@ -59,16 +61,17 @@ const srcSoftwareSuffix = '.sw.json';
 const srcAssetSuffix = '.as.json';
 const compilableSuffixes = [srcLibSuffix, srcTplSuffix, srcSoftwareSuffix, srcAssetSuffix];
 
-function resolvePackageJsonPath(root: string, packageName?: string): string | undefined {
-  if (!path.isAbsolute(root))
+/**
+ * Resolves path to package.json file of the given dependency package.
+ */
+function resolvePackageJsonPackage(root: string, depPackageName: string): string | undefined {
+  if (!path.isAbsolute(root)) {
     throw new Error(`Root path must be absolute: ${root}`);
-  if (!packageName) {
-    const p = path.join(root, 'package.json');
-    if (pathType(p) === 'file')
-      return p;
-    throw new Error(`Can't resolve package.json in ${root}`);
   }
-  let resolved = tryResolve(root, packageName);
+
+  // First approach: resolving package's main entry point and try to find package.json
+  // in dir tree upwards.
+  let resolved = tryResolve(root, depPackageName);
   if (resolved) {
     let depth = 0;
     do {
@@ -79,36 +82,48 @@ function resolvePackageJsonPath(root: string, packageName?: string): string | un
       resolved = path.dirname(resolved);
     } while (depth < 7 && path.basename(resolved) !== 'node_modules');
   }
-  const resolved2 = tryResolveOrError(root, `${packageName}/package.json`);
+
+  // Second approach: trying to find package.json in the package dir.
+  const resolved2 = tryResolveOrError(root, `${depPackageName}/package.json`);
   if (resolved2.result === undefined) {
     if (resolved2.err === 'ERR_PACKAGE_PATH_NOT_EXPORTED')
       // tolerating not-exported package.json for dev dependencies
       return undefined;
-    throw new Error(`Can't resolve package.json for package ${packageName ?? '.'} relative to ${root}`);
+    throw new Error(`Can't resolve package.json for package ${depPackageName ?? '.'} relative to ${root}`);
   }
   return resolved2.result;
+}
+
+export function resolvePackageJsonRoot(root: string): string {
+  if (!path.isAbsolute(root)) {
+    throw new Error(`Root path must be absolute: ${root}`);
+  }
+
+  const p = path.join(root, 'package.json');
+  if (pathType(p) === 'file')
+    return p;
+  throw new Error(`Can't resolve package.json in ${root}`);
 }
 
 type PackageInfoContext = 'root' | 'dependency' | 'devDependency';
 
 /**
  * Get package info from package.json and all dependencies.
- * @param root - Root directory of the package.
- * @param cion
- * @returns Package info.
  */
-export function getPackageInfo(root: string, logger: winston.Logger, context: PackageInfoContext = 'root'): PackageInfo {
-  const packageJsonPath = resolvePackageJsonPath(root);
-  if (!packageJsonPath)
-    throw new Error(`Can't resolve package.json for root package ${root}`);
-  const { name, version, type, dependencies, devDependencies }: PackageJson = JSON.parse(fs.readFileSync(packageJsonPath).toString()) as PackageJson;
+export function getPackageInfo(
+  root: string,
+  logger: winston.Logger,
+  context: PackageInfoContext = 'root',
+): PackageInfo {
+  const packageJsonPath = resolvePackageJsonRoot(root);
+  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath).toString()) as PackageJson;
 
   // resolving dependencies
   const depInfos: PackageInfo[] = [];
 
-  if (dependencies && context !== 'devDependency') {
-    for (const dep of Object.keys(dependencies)) {
-      const depPackageJson = resolvePackageJsonPath(root, dep);
+  if (packageJson.dependencies && context !== 'devDependency') {
+    for (const dep of Object.keys(packageJson.dependencies)) {
+      const depPackageJson = resolvePackageJsonPackage(root, dep);
       if (depPackageJson === undefined)
         throw new Error(`Can't resolve package.json for dependency ${dep} of ${root}`);
       const depRoot = path.dirname(depPackageJson);
@@ -116,9 +131,9 @@ export function getPackageInfo(root: string, logger: winston.Logger, context: Pa
     }
   }
 
-  if (devDependencies && context === 'root') {
-    for (const dep of Object.keys(devDependencies)) {
-      const depPackageJson = resolvePackageJsonPath(root, dep);
+  if (packageJson.devDependencies && context === 'root') {
+    for (const dep of Object.keys(packageJson.devDependencies)) {
+      const depPackageJson = resolvePackageJsonPackage(root, dep);
       if (depPackageJson === undefined) {
         logger.warn(`Can't resolve package.json for dev dependency ${dep} of ${root}`);
         // tolerating not-exported package.json for dev dependencies
@@ -129,9 +144,14 @@ export function getPackageInfo(root: string, logger: winston.Logger, context: Pa
     }
   }
 
-  const packageInfo: PackageInfo = { name, version, type, dependencies: depInfos, root, context };
-
-  return packageInfo;
+  return {
+    name: packageJson.name,
+    version: packageJson.version,
+    type: packageJson.type,
+    dependencies: depInfos,
+    root,
+    context,
+  };
 }
 
 function resolveLibsDst(mode: CompileMode, root: string) {
@@ -239,8 +259,8 @@ function loadTemplatesFromDir(
       id: f.slice(0, f.length - compiledTplSuffix.length),
       version: packageId.version,
     };
-    const tpl = new Template(mode, fullName, { content: fs.readFileSync(file) });
-    compiler.addTemplate(tpl);
+    const tpl = newTemplateFromContent(mode, fullName, fs.readFileSync(file));
+    compiler.addTemplate(templateToSource(tpl));
     logger.debug(`Adding dependency ${fullNameToString(fullName)} from ${file}`);
   }
 }
@@ -263,7 +283,17 @@ function loadSoftwareFromDir(
       version: packageId.version,
     };
 
-    const software = new ArtifactSource(mode, fullName, fs.readFileSync(file).toString(), file, [], []);
+    const source = fs.readFileSync(file).toString();
+
+    const software = new ArtifactSource(
+      mode,
+      fullName,
+      getSha256(source),
+      source,
+      file,
+      [],
+      [],
+    );
 
     logger.debug(`Adding dependency ${fullNameToString(fullName)} from ${file}`);
     compiler.addSoftware(software);
@@ -288,7 +318,17 @@ function loadAssetsFromDir(
       version: packageId.version,
     };
 
-    const asset = new ArtifactSource(mode, fullName, fs.readFileSync(file).toString(), file, [], []);
+    const source = fs.readFileSync(file).toString();
+
+    const asset = new ArtifactSource(
+      mode,
+      fullName,
+      getSha256(source),
+      source,
+      file,
+      [],
+      [],
+    );
 
     logger.debug(`Adding dependency ${fullNameToString(fullName)} from ${file}`);
     compiler.addAsset(asset);
@@ -314,6 +354,7 @@ export function parseSources(
       continue;
     }
 
+    // Handling index.lib.tengo files: rename them to <package-name>.lib.tengo
     const artifactName = f === 'index.lib.tengo' ? `${path.dirname(inRootPath)}.lib.tengo` : inRootPath;
 
     const fullName = fullNameFromFileName(packageId, artifactName.replaceAll(path.sep, '.'));
@@ -356,7 +397,7 @@ export function newCompiler(
   return compiler;
 }
 
-function fullNameFromFileName(
+export function fullNameFromFileName(
   packageId: PackageId,
   artifactName: string,
 ): FullArtifactName | null {
@@ -404,8 +445,7 @@ function fullNameFromFileName(
   return null;
 }
 
-export function compile(logger: winston.Logger, mode: CompileMode): TemplatesAndLibs {
-  const packageInfo = getPackageInfo(process.cwd(), logger);
+export function compile(logger: winston.Logger, packageInfo: PackageInfo, mode: CompileMode): TemplatesAndLibs {
   const compiler = newCompiler(logger, packageInfo, mode);
   const sources = parseSources(logger, packageInfo, mode, 'src', '');
 
@@ -447,7 +487,7 @@ export function savePacks(logger: winston.Logger, compiled: TemplatesAndLibs, mo
     for (const tpl of compiled.templates) {
       const file = path.resolve(tplOutput, tpl.fullName.id + compiledTplSuffix);
       logger.info(`  - writing ${file}`);
-      fs.writeFileSync(file, tpl.content);
+      fs.writeFileSync(file, serializeTemplate(tpl.data));
     }
   }
 

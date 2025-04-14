@@ -1,5 +1,6 @@
-import { Template } from './template';
+import { newTemplateFromContent, newTemplateFromData, Template } from './template';
 import { formatArtefactNameAndVersion, FullArtifactName } from './package';
+import { test, expect } from 'vitest';
 
 test('template serialization / deserialization', () => {
   const name: FullArtifactName = {
@@ -8,46 +9,53 @@ test('template serialization / deserialization', () => {
     id: 'the-template',
     version: '1.2.3'
   };
-  const template1 = new Template('dist', name,
+  const template1 = newTemplateFromData(
+    'dist',
+    name,
     {
-      data: {
-        type: 'pl.tengo-template.v2',
+      type: 'pl.tengo-template.v3',
+      hashToSource: {
+        "asdasd": "src1...",
+        "asdasd2": "src2...",
+        "asdasd3": "src3...",
+      },
+      template: {
+        sourceHash: "asdasd3",
         ...formatArtefactNameAndVersion(name),
         libs: {
-          '@milaboratory/some-package:the-library': {
+          'asdasd': {
             name: '@milaboratory/some-package:the-library',
             version: '1.2.3',
-            src: 'asdasd'
+            sourceHash: 'asdasd'
           }
         },
         templates: {
-          '@milaboratory/some-package:the-template-1': {
-            type: 'pl.tengo-template.v2',
+          'asdasd2': {
             name: '@milaboratory/some-package:the-template-1',
             version: '1.2.3',
             libs: {
               '@milaboratory/some-package:the-library:1.2.4': {
                 name: '@milaboratory/some-package:the-library',
                 version: '1.2.4',
-                src: 'asdasd'
+                sourceHash: 'asdasd2'
               }
             },
             templates: {},
             software: {},
             assets: {},
-            src: 'src 1...'
+            sourceHash: 'src 1...'
           }
         },
         software: {},
         assets: {},
-        src: 'src 2 ...'
-      }
+      },
     }
   );
 
-  const template2 = new Template('dist',
+  const template2 = newTemplateFromContent(
+    'dist',
     { type: 'template', pkg: '@milaboratory/some-package', id: 'the-template', version: '1.2.3' },
-    { content: template1.content }
+    template1.content,
   );
 
   console.log('Size: raw', JSON.stringify(template1.data).length, 'compressed', template1.content.byteLength);

@@ -1,4 +1,4 @@
-import type { TemplateData } from '@milaboratories/pl-model-backend';
+import type { CompiledTemplateV3, TemplateData } from '@milaboratories/pl-model-backend';
 
 export interface TemplateFromRegistry {
   readonly type: 'from-registry';
@@ -13,7 +13,7 @@ export interface ExplicitTemplate {
 
 export interface PreparedTemplate {
   readonly type: 'prepared';
-  data: TemplateData;
+  data: TemplateData | CompiledTemplateV3;
 }
 
 export interface TemplateFromFile {
