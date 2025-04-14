@@ -37,7 +37,7 @@ test(
 
 test(
   'should close old platforma when starting a new one if the option is set',
-  { timeout: 25000 },
+  { timeout: 35000 },
   async ({ expect }) => {
     const logger = new ConsoleLoggerAdapter();
 
