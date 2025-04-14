@@ -26,6 +26,7 @@ import { HistogramPage } from './pages/HistogramPage';
 import { StackedBarPage } from './pages/StackedBarPage';
 import PlSplashPage from './pages/PlSplashPage.vue';
 import PlAutocompletePage from './pages/PlAutocompletePage.vue';
+import RadioPage from './pages/RadioPage.vue';
 
 export const sdkPlugin = defineApp(platforma, (app) => {
   // Additional data
@@ -102,6 +103,7 @@ export const sdkPlugin = defineApp(platforma, (app) => {
       '/loaders': () => LoadersPage,
       '/add-section': () => AddSectionPage,
       '/section': () => SectionPage,
+      '/radio': () => RadioPage,
     },
   };
 }, {
