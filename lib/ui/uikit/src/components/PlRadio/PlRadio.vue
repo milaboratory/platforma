@@ -1,11 +1,13 @@
 <script setup lang="ts" generic="M extends string">
 import { inject } from 'vue';
 import { radioGroupModelKey, radioGroupNameKey } from './keys';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- used by the props documentation
+import type PlRadioGroup from './PlRadioGroup.vue';
 
 const { name: standaloneName, ...props } = defineProps<{
-  /** Used to group multiple radio controls. Will be if this component is a descendant of a PlRadioGroup. */
+  /** Used to group multiple radio controls. Will be ignored if this component is a descendant of a {@link PlRadioGroup}. */
   name?: string;
-  /** Value that goes into v-model. */
+  /** Value that goes into `v-model`. */
   value?: M;
   /** Whether the radio control is disabled. */
   disabled?: boolean;
