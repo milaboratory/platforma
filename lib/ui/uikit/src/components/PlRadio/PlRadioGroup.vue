@@ -1,25 +1,27 @@
-<script setup lang="ts" generic="M extends string">
+<script setup lang="ts" generic="M">
 import { provide } from 'vue';
 import { radioGroupModelKey, radioGroupNameKey } from './keys';
 import PlRadio from './PlRadio.vue';
 
-type RadioItem = {
+type RadioGroupOption = {
   label: string;
   value: M;
+  disabled?: boolean;
 };
 
 const model = defineModel<M>();
+
 const props = defineProps<{
   /** Name of the radio group. */
-  name: string;
+  name?: string;
   /**
    * List of available options.
    * Renders a list of {@link PlRadio} components before the {@link slots.default | default} slot.
    */
-  options?: Readonly<RadioItem[]>;
+  options?: Readonly<RadioGroupOption[]>;
+  /** Function to get option's unique key. Use if default mechanism (key = index) is unstable. */
+  keyExtractor?: (value: M, index: number) => PropertyKey;
 }>();
-provide(radioGroupNameKey, props.name);
-provide(radioGroupModelKey, model);
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- used by the props documentation
 const slots = defineSlots<{
@@ -31,6 +33,11 @@ const slots = defineSlots<{
   /** Label of the radio group. */
   label?(): unknown;
 }>();
+
+const keyExtractor = props.keyExtractor ?? ((_, i) => i);
+
+provide(radioGroupNameKey, props.name);
+provide(radioGroupModelKey, model);
 </script>
 
 <template>
@@ -38,7 +45,12 @@ const slots = defineSlots<{
     <legend :class="$style.label">
       <slot name="label" />
     </legend>
-    <PlRadio v-for="option in options" :key="option.value" :value="option.value">
+    <PlRadio
+      v-for="(option, i) in options"
+      :key="keyExtractor(option.value, i)"
+      :value="option.value"
+      :disabled="option.disabled"
+    >
       {{ option.label }}
     </PlRadio>
     <slot />
