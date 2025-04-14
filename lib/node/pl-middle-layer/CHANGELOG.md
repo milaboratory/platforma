@@ -1,5 +1,14 @@
 # @milaboratories/pl-middle-layer
 
+## 1.34.10
+
+### Patch Changes
+
+- 6506dec: templates: support v3 version where we store source code in a hash map rather than in every leaf of the template tree. It will help a lot with build times and loading times of "Add Block" button
+- Updated dependencies [6506dec]
+  - @milaboratories/pl-model-backend@1.1.0
+  - @platforma-sdk/workflow-tengo@4.0.9
+
 ## 1.34.9
 
 ### Patch Changes

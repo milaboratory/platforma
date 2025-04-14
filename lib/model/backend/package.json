@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-model-backend",
-  "version": "1.0.4",
+  "version": "1.1.0",
   "description": "Backend model for Platforma.bio",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
