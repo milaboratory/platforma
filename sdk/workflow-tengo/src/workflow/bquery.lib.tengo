@@ -48,12 +48,6 @@ _QUERY_MAP_SCHEMA := {
 	]
 }
 
-/** Default options for anchoredQuery */
-_ANCHORED_QUERY_DEFAULT_OPTIONS := {
-	/** If true, ignores errors when referenced anchors or their domains are missing during resolution */
-	ignoreMissingDomains: false
-}
-
 /**
  * Query results pool.
  *
@@ -279,6 +273,12 @@ resolve := func(ref, ctx, ...options) {
 	ops.first = true
 
 	return create(spec, ctx, ops)
+}
+
+/** Default options for anchoredQuery */
+_ANCHORED_QUERY_DEFAULT_OPTIONS := {
+	/** If true, ignores errors when referenced anchors or their domains are missing during resolution */
+	ignoreMissingDomains: false
 }
 
 /**

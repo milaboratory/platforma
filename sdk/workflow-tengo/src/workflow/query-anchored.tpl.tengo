@@ -22,10 +22,10 @@ self.body(func(inputs) {
         `fetchData,?`: `boolean`
     } }
 
-    QUERY_OPTS_SCHEMA := { any: {
+    QUERY_OPTS_SCHEMA := {
         `__options__,closed`: true,
         `ignoreMissingDomains`: `boolean`
-    } }
+    }
 
     validation.assertType(queryMap, QUERY_CONFIG_SCHEMA)
     validation.assertType(opts, QUERY_OPTS_SCHEMA)
