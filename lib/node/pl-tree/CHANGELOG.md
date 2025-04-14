@@ -1,5 +1,12 @@
 # @milaboratories/pl-tree
 
+## 1.5.5
+
+### Patch Changes
+
+- Updated dependencies [ba0f7d4]
+  - @milaboratories/pl-errors@1.0.6
+
 ## 1.5.4
 
 ### Patch Changes
