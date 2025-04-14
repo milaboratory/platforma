@@ -198,7 +198,7 @@ ${this.rawBackendMessage}
  * How the Pl backend represents an error.
  */
 const backendErrorSchema = z.object({
-  errorType: z.string(),
+  errorType: z.string().default(''),
   message: z.string(),
 });
 
@@ -211,13 +211,17 @@ export function parsePlError(
   resourceType?: ResourceType,
   field?: string,
 ): PlErrorReport {
-  const parsed = backendErrorSchema.parse(JSON.parse(error));
-  const errors = parseSubErrors(parsed.message);
+  const parsed = backendErrorSchema.safeParse(JSON.parse(error));
+  if (!parsed.success) {
+    throw new Error(`parsePlError: failed to parse the message, got ${error}`);
+  }
+
+  const errors = parseSubErrors(parsed.data.message);
 
   return new PlErrorReport(
     error,
-    parsed.errorType,
-    parsed.message,
+    parsed.data.errorType,
+    parsed.data.message,
     errors,
 
     field,
