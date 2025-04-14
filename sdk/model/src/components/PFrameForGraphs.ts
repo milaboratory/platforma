@@ -12,6 +12,7 @@ import {
 } from '@milaboratories/pl-model-common';
 import type { RenderCtx } from '../render';
 import { TreeNodeAccessor } from '../render';
+import canonicalize from 'canonicalize';
 
 /** Create id for column copy with added keys in axes domains */
 const colId = (id: PObjectId, domains: (Record<string, string> | undefined)[]) => {
@@ -174,8 +175,12 @@ export function enrichColumnsWithCompatible(
 ): PColumn<TreeNodeAccessor | PColumnValues>[] {
   const result = [...mainColumns];
   for (const secondaryColumn of secondaryColumns) {
+    const secondaryColumnSpecSerialized = canonicalize(secondaryColumn.spec);
     for (const mainColumn of mainColumns) {
-      if (mainColumn.id === secondaryColumn.id) {
+      if (
+        mainColumn.id === secondaryColumn.id
+        || canonicalize(mainColumn.spec) === secondaryColumnSpecSerialized // to avoid adding from result pool doubling columns with identical spec but different id
+      ) {
         break;
       }
       if (checkCompatibility(mainColumn, secondaryColumn)) {
