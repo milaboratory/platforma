@@ -8,7 +8,7 @@ model := import(":workflow.model")
 validation := import(":validation")
 
 self.awaitState("anchorSpecs", { wildcard: "*" }, "ResourceReady")
-self.awaitState("queryMap", "ResourceReady")
+self.awaitState("request", "ResourceReady")
 
 self.body(func(inputs) {
 	ctx := inputs.ctx

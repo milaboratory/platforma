@@ -211,11 +211,11 @@ createBuilder := func(ctx) {
 		 * (Deprecated: use addMulti) Adds a query to the bundle collector.
 		 * Kept for backward compatibility.
 		 *
-		 * @param queryId: string - The ID of the query
+		 * @param queryKey: string - The ID of the query
 		 * @param query: AnchoredPColumnSelector - The query
 		 */
-		addQuery: func(queryId, query) {
-			addMultiInner(query, queryId)
+		addQuery: func(queryKey, query) {
+			addMultiInner(query, queryKey)
 			return self
 		},
 
@@ -239,8 +239,8 @@ createBuilder := func(ctx) {
 				}
 			}
 
-			for queryId, query in queries {
-				bundle.addRef(queryId, resolveResult.getResult(queryId))
+			for queryKey, query in queries {
+				bundle.addRef(queryKey, resolveResult.getResult(queryKey))
 			}
 
 			return bundle.build()
