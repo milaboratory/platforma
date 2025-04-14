@@ -129,7 +129,17 @@ self.body(func(inputs) {
 			groupElementKeyLength := len(aggregationIndices)
 
 			for sKey, field in data.inputs() {
-				key := json.decode(sKey) // Key is the resource key (ResourceMap) or partition key (Partitioned)
+				sKeyP := sKey
+				suffix := ""
+				if isBinaryPartitioned {
+					dotIdx := text.last_index(sKey, ".")
+					if dotIdx == -1 {
+						ll.panic("BinaryPartitioned key must contain a dot: %v", sKey)
+					}
+					suffix = sKey[(dotIdx + 1):]
+					sKeyP = sKey[:(dotIdx)]
+				}
+				key := json.decode(sKeyP) // Key is the resource key (ResourceMap) or partition key (Partitioned)
 
 				groupKey := []
 				for i in groupIndices {
@@ -169,7 +179,7 @@ self.body(func(inputs) {
 					)
 					groups[sGroupKey] = group
 				}
-				group.createInputField(sInGroupKey).set(field)
+				group.createInputField(sInGroupKey + suffix).set(field)
 			}
 		}
 
