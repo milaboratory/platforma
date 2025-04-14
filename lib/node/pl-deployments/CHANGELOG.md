@@ -1,5 +1,11 @@
 # @milaboratories/pl-local
 
+## 1.8.0
+
+### Minor Changes
+
+- e432092: Release pl=1.30.0 (gzip support)
+
 ## 1.7.2
 
 ### Patch Changes
