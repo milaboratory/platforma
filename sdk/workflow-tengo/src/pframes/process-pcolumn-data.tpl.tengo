@@ -10,6 +10,7 @@ pUtil := import(":pframes.util")
 xsv := import(":pframes.xsv")
 builder := import(":pframes.builder")
 removeNullsLib := import(":pframes.remove-nulls")
+text := import("text")
 
 json := import("json")
 
@@ -179,7 +180,7 @@ self.body(func(inputs) {
 					)
 					groups[sGroupKey] = group
 				}
-				group.createInputField(sInGroupKey + suffix).set(field)
+				group.createInputField(string(sInGroupKey) + suffix).set(field)
 			}
 		}
 
