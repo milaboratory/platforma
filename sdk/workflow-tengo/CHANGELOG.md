@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 4.1.0
+
+### Minor Changes
+
+- a34b2ef: update tengo-builder
+
 ## 4.0.9
 
 ### Patch Changes

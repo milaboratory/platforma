@@ -1,11 +1,12 @@
 {
   "name": "@platforma-sdk/tengo-builder",
-  "version": "2.0.3",
+  "version": "2.1.0",
   "description": "Pl Tengo Template Builder",
   "scripts": {
+    "lint": "eslint .",
     "type-check": "tsc --noEmit --composite false",
     "build": "oclif-index && vite build",
-    "test": "jest",
+    "test": "vitest",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "bin": {
@@ -21,6 +22,7 @@
     "node": ">=20"
   },
   "dependencies": {
+    "@milaboratories/ts-helpers": "workspace:*",
     "@milaboratories/resolve-helper": "workspace:*",
     "@milaboratories/tengo-tester": "catalog:",
     "@milaboratories/pl-model-backend": "workspace:^",
@@ -34,11 +36,8 @@
     "@milaboratories/oclif-index": "workspace:*",
     "typescript": "catalog:",
     "vite": "catalog:",
-    "@types/jest": "catalog:",
-    "@types/node": "catalog:",
-    "jest": "catalog:",
-    "@jest/globals": "catalog:",
-    "ts-jest": "catalog:"
+    "vitest": "catalog:",
+    "@types/node": "catalog:"
   },
   "oclif": {
     "bin": "pl-tengo",

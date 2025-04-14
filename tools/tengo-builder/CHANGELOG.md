@@ -1,5 +1,16 @@
 # @platforma-sdk/tengo-builder
 
+## 2.1.0
+
+### Minor Changes
+
+- 6506dec: templates: support v3 version where we store source code in a hash map rather than in every leaf of the template tree. It will help a lot with build times and loading times of "Add Block" button
+
+### Patch Changes
+
+- Updated dependencies [6506dec]
+  - @milaboratories/pl-model-backend@1.1.0
+
 ## 2.0.3
 
 ### Patch Changes
