@@ -1,5 +1,4 @@
 import { readFileSync } from 'node:fs';
-import type winston from 'winston';
 import {
   type TypedArtifactName,
   type FullArtifactName,
@@ -10,6 +9,8 @@ import {
 } from './package';
 import type { ArtifactMap } from './artifactset';
 import { createArtifactNameSet } from './artifactset';
+import { createHash } from 'node:crypto';
+import type { MiLogger } from '@milaboratories/ts-helpers';
 
 // matches any valid name in tengo. Don't forget to use '\b' when needed to limit the boundaries!
 const namePattern = '[_a-zA-Z][_a-zA-Z0-9]*';
@@ -22,10 +23,10 @@ const functionCallRE = (moduleName: string, fnName: string) => {
   );
 };
 
-const newGetTemplateIdRE = (moduleName: string) => {
+export const newGetTemplateIdRE = (moduleName: string) => {
   return functionCallRE(moduleName, 'getTemplateId');
 };
-const newGetSoftwareInfoRE = (moduleName: string) => {
+export const newGetSoftwareInfoRE = (moduleName: string) => {
   return functionCallRE(moduleName, 'getSoftwareInfo');
 };
 
@@ -46,6 +47,9 @@ const inlineCommentRE = /\/\*.*?\*\//g; // .*? = non-greedy search
 const singlelineCommentRE = /^\s*(\/\/)/;
 const multilineCommentStartRE = /^\s*\/\*/;
 const multilineCommentEndRE = /\*\//;
+
+// import could only be an assignment in a statement,
+// other ways could break a compilation.
 const importRE = /\s*:=\s*import\s*\(\s*"(?<moduleName>[^"]+)"\s*\)/;
 const importNameRE = new RegExp(
   `\\b(?<importName>${namePattern}(\\.${namePattern})*)${importRE.source}`,
@@ -82,6 +86,8 @@ export class ArtifactSource {
     public readonly compileMode: CompileMode,
     /** Full artifact id, including package version */
     public readonly fullName: FullArtifactName,
+    /** Hash of the source code */
+    public readonly sourceHash: string,
     /** Normalized source code */
     public readonly src: string,
     /** Path to source file where artifact came from */
@@ -94,7 +100,7 @@ export class ArtifactSource {
 }
 
 export function parseSourceFile(
-  logger: winston.Logger,
+  logger: MiLogger,
   mode: CompileMode,
   srcFile: string,
   fullSourceName: FullArtifactName,
@@ -103,11 +109,19 @@ export function parseSourceFile(
   const src = readFileSync(srcFile).toString();
   const { deps, normalized, opts } = parseSourceData(logger, src, fullSourceName, normalize);
 
-  return new ArtifactSource(mode, fullSourceName, normalized, srcFile, deps.array, opts);
+  return new ArtifactSource(
+    mode,
+    fullSourceName,
+    getSha256(normalized),
+    normalized,
+    srcFile,
+    deps.array,
+    opts,
+  );
 }
 
 export function parseSource(
-  logger: winston.Logger,
+  logger: MiLogger,
   mode: CompileMode,
   src: string,
   fullSourceName: FullArtifactName,
@@ -115,11 +129,18 @@ export function parseSource(
 ): ArtifactSource {
   const { deps, normalized, opts } = parseSourceData(logger, src, fullSourceName, normalize);
 
-  return new ArtifactSource(mode, fullSourceName, normalized, '', deps.array, opts);
+  return new ArtifactSource(mode, fullSourceName, getSha256(normalized), normalized, '', deps.array, opts);
 }
 
+/**
+ * Reads src
+ * returns normalized source code,
+ * gets dependencies from imports,
+ * maps imports to global names if globalizeImports is true,
+ * and collects compiler options like hashOverride.
+ */
 function parseSourceData(
-  logger: winston.Logger,
+  logger: MiLogger,
   src: string,
   fullSourceName: FullArtifactName,
   globalizeImports: boolean,
@@ -150,21 +171,21 @@ function parseSourceData(
     parserContext.lineNo++;
 
     try {
-      const result = parseSingleSourceLine(
+      const { line: processedLine, context: newContext, artifact, option } = parseSingleSourceLine(
         logger,
         line,
         parserContext,
         fullSourceName.pkg,
         globalizeImports,
       );
-      processedLines.push(result.line);
-      parserContext = result.context;
+      processedLines.push(processedLine);
+      parserContext = newContext;
 
-      if (result.artifact) {
-        dependencySet.add(result.artifact);
+      if (artifact) {
+        dependencySet.add(artifact);
       }
-      if (result.option) {
-        optionList.push(result.option);
+      if (option) {
+        optionList.push(option);
       }
     } catch (error: unknown) {
       const err = error as Error;
@@ -186,8 +207,8 @@ interface sourceParserContext {
   lineNo: number;
 }
 
-function parseSingleSourceLine(
-  logger: winston.Logger,
+export function parseSingleSourceLine(
+  logger: MiLogger,
   line: string,
   context: sourceParserContext,
   localPackageName: string,
@@ -242,12 +263,16 @@ function parseSingleSourceLine(
     return { line, context, artifact: undefined, option: undefined };
   }
 
+  // options could be only at the top of the file.
   context.canDetectOptions = false;
 
   const importInstruction = importRE.exec(line);
 
   if (importInstruction) {
     const iInfo = parseImport(line);
+
+    // If we have plapi, ll or assets, then try to parse
+    // getTemplateId, getSoftwareInfo, getSoftware and getAsset calls.
 
     if (iInfo.module === 'plapi') {
       if (!context.tplDepREs.has(iInfo.module)) {
@@ -304,7 +329,7 @@ function parseSingleSourceLine(
   }
 
   if (context.tplDepREs.size > 0) {
-    for (const [key, artifactRE] of context.tplDepREs) {
+    for (const [_, artifactRE] of context.tplDepREs) {
       for (const [artifactType, re] of artifactRE) {
         const match = re.exec(line);
         if (!match || !match.groups) {
@@ -352,8 +377,8 @@ function parseImport(line: string): ImportInfo {
   }
 
   return {
-    module: moduleName,
-    alias: importName,
+    module: moduleName, // the module name without wrapping quotes: import("<module>")
+    alias: importName, // the name of variable that keeps imported module: <alias> := import("<module>")
   };
 }
 
@@ -383,26 +408,6 @@ function parseArtifactName(
   return { type: aType, pkg: pkgName ?? localPackageName, id: depID };
 }
 
-function parseTemplateUse(match: RegExpExecArray, localPackageName: string): TypedArtifactName {
-  const { templateName } = match.groups!;
-
-  if (!templateName) {
-    throw Error(`failed to parse 'getTemplateId' statement`);
-  }
-
-  const depInfo = dependencyRE.exec(templateName);
-  if (!depInfo || !depInfo.groups) {
-    throw Error(
-      `failed to parse dependency name inside 'getTemplateId' statement. The dependency name should have format '<package>:<templateName>'`,
-    );
-  }
-
-  const { pkgName, depID } = depInfo.groups;
-  if (!pkgName || !depID) {
-    throw Error(
-      `failed to parse dependency name inside 'getTemplateId' statement. The dependency name should have format '<package>:<templateName>'`,
-    );
-  }
-
-  return { type: 'template', pkg: pkgName ?? localPackageName, id: depID };
+export function getSha256(source: string): string {
+  return createHash('sha256').update(source).digest('hex');
 }

@@ -8,6 +8,7 @@ import * as fs from 'node:fs';
 import * as fsp from 'node:fs/promises';
 import * as path from 'node:path';
 import type * as winston from 'winston';
+import type { TemplatesAndLibs } from '../compiler/compiler';
 
 export default class Build extends Command {
   static override description = 'build tengo sources into single distributable pack file';
@@ -24,36 +25,12 @@ export default class Build extends Command {
     const logger = createLogger(flags['log-level']);
 
     const packageInfo = getPackageInfo(process.cwd(), logger);
-    const compiledDist = compile(logger, 'dist');
+    const compiledDist = compile(logger, packageInfo, 'dist');
     savePacks(logger, compiledDist, 'dist');
-    logger.info('');
+    logger.info('Template Pack build done.');
 
     // Building TS bindings for templates
-    let dts = `declare type TemplateFromFile = { readonly type: "from-file"; readonly path: string; };\n`;
-    dts += `declare type TplName = ${compiledDist.templates
-      .map((tpl) => '"' + tpl.fullName.id + '"')
-      .join(' | ')};\n`;
-    dts += `declare const Templates: Record<TplName, TemplateFromFile>;\n`;
-    dts += `export { Templates };\n`;
-    let cjs = `module.exports = { Templates: {\n`;
-    let mjs = `import { resolve } from 'node:path';\nexport const Templates = {\n`;
-    const recordsCjs = compiledDist.templates
-      .map(
-        (tpl) =>
-          `  '${tpl.fullName.id}': { type: 'from-file', path: require.resolve('./tengo/tpl/${tpl.fullName.id}.plj.gz') }`,
-      )
-      .join(',\n');
-    const recordsMjs = compiledDist.templates
-      .map(
-        (tpl) =>
-          `  '${tpl.fullName.id}': { type: 'from-file', path: resolve(import.meta.dirname, './tengo/tpl/${tpl.fullName.id}.plj.gz') }`,
-      )
-      .join(',\n');
-    cjs += recordsCjs;
-    mjs += recordsMjs;
-    cjs += `\n}};\n`;
-    mjs += `\n};\n`;
-
+    const { dts, cjs, mjs } = generateTsBinding(compiledDist);
     await fsp.writeFile('dist/index.d.ts', dts);
     if (packageInfo.type === 'module') {
       await fsp.writeFile('dist/index.cjs', cjs);
@@ -68,6 +45,33 @@ export default class Build extends Command {
 
     logger.info('Template Pack build done.');
   }
+}
+
+function generateTsBinding(compiledDist: TemplatesAndLibs) {
+  let dts = `declare type TemplateFromFile = { readonly type: "from-file"; readonly path: string; };\n`;
+  dts += `declare type TplName = ${compiledDist.templates
+    .map((tpl) => '"' + tpl.fullName.id + '"')
+    .join(' | ')};\n`;
+  dts += `declare const Templates: Record<TplName, TemplateFromFile>;\n`;
+  dts += `export { Templates };\n`;
+  let cjs = `module.exports = { Templates: {\n`;
+  let mjs = `import { resolve } from 'node:path';\nexport const Templates = {\n`;
+  const recordsCjs = compiledDist.templates
+    .map(
+      (tpl) => `  '${tpl.fullName.id}': { type: 'from-file', path: require.resolve('./tengo/tpl/${tpl.fullName.id}.plj.gz') }`,
+    )
+    .join(',\n');
+  const recordsMjs = compiledDist.templates
+    .map(
+      (tpl) => `  '${tpl.fullName.id}': { type: 'from-file', path: resolve(import.meta.dirname, './tengo/tpl/${tpl.fullName.id}.plj.gz') }`,
+    )
+    .join(',\n');
+  cjs += recordsCjs;
+  mjs += recordsMjs;
+  cjs += `\n}};\n`;
+  mjs += `\n};\n`;
+
+  return { dts, cjs, mjs };
 }
 
 function mergeTagsEnvs(flags: {
