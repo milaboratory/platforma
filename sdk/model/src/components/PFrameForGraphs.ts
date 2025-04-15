@@ -1,18 +1,21 @@
 import type {
   AxisId,
+  CanonicalizedJson,
   PColumn,
+  PColumnSpecId,
   PColumnValues,
   PFrameHandle,
   PObjectId,
   ValueType } from '@milaboratories/pl-model-common';
 import {
+  canonicalizeJson,
   getAxisId,
+  getPColumnSpecId,
   isPColumn,
   matchAxisId,
 } from '@milaboratories/pl-model-common';
 import type { RenderCtx } from '../render';
 import { TreeNodeAccessor } from '../render';
-import canonicalize from 'canonicalize';
 
 /** Create id for column copy with added keys in axes domains */
 const colId = (id: PObjectId, domains: (Record<string, string> | undefined)[]) => {
@@ -173,23 +176,29 @@ export function enrichColumnsWithCompatible(
   mainColumns: PColumn<TreeNodeAccessor | PColumnValues>[],
   secondaryColumns: PColumn<TreeNodeAccessor | PColumnValues>[],
 ): PColumn<TreeNodeAccessor | PColumnValues>[] {
-  const result = [...mainColumns];
+  const mainColumnsIds = new Set<PObjectId>();
+  const mainColumnsBySpec = new Map<CanonicalizedJson<PColumnSpecId>, typeof mainColumns[number]>();
+  mainColumns.forEach((column) => {
+    mainColumnsIds.add(column.id);
+    mainColumnsBySpec.set(canonicalizeJson(getPColumnSpecId(column.spec)), column);
+  });
+
+  const secondaryColumnsBySpec = new Map<CanonicalizedJson<PColumnSpecId>, typeof secondaryColumns[number]>();
   for (const secondaryColumn of secondaryColumns) {
-    const secondaryColumnSpecSerialized = canonicalize(secondaryColumn.spec);
+    if (mainColumnsIds.has(secondaryColumn.id)) continue;
+
+    const spec = canonicalizeJson(getPColumnSpecId(secondaryColumn.spec));
+    if (mainColumnsBySpec.has(spec)) continue;
+
     for (const mainColumn of mainColumns) {
-      if (
-        mainColumn.id === secondaryColumn.id
-        || canonicalize(mainColumn.spec) === secondaryColumnSpecSerialized // to avoid adding from result pool doubling columns with identical spec but different id
-      ) {
-        break;
-      }
       if (checkCompatibility(mainColumn, secondaryColumn)) {
-        result.push(secondaryColumn);
+        secondaryColumnsBySpec.set(spec, secondaryColumn);
         break;
       }
     }
   }
-  return result;
+
+  return [...mainColumnsBySpec.values(), ...secondaryColumnsBySpec.values()];
 }
 
 const VALUE_TYPES: ValueType[] = [
