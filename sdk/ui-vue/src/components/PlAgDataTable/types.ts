@@ -1,5 +1,6 @@
 import type {
   LocalBlobHandleAndSize,
+  PlDataTableModel,
   PlDataTableSheet,
   PlTableFilter,
   PlTableFilterType,
@@ -29,6 +30,19 @@ export type PlDataTableSettings =
   | PlDataTableSettingsPTable
   | PlDataTableSettingsXsv;
 
+export type PlAgDataTableSettingsPTable = {
+  /** The type of the source to feed the data into the table */
+  sourceType: 'ptable';
+  /** PTable handle output */
+  model?: PlDataTableModel;
+  /** Sheets that we want to show in our table */
+  sheets?: PlDataTableSheet[];
+};
+
+/** Data table settings */
+export type PlAgDataTableSettings =
+  | PlAgDataTableSettingsPTable;
+
 /** PlTableFilters restriction entry */
 export type PlTableFiltersRestriction = {
   /** Spec of the column for which filter types should be restricted */
@@ -57,12 +71,17 @@ export type PlAgDataTableController = {
   focusRow: (rowKey: PTableRowKey) => Promise<void>;
 };
 
+/** Canonicalized PTableValue array JSON string */
+export type PTableRowKeyJson = string & {
+  __json_canonicalized: PTableValue[];
+};
+
 /** PlAgDataTable row */
 export type PlAgDataTableRow = {
   /** Axis key is not present for heterogeneous axes */
   key?: PTableRowKey;
   /** Unique row identifier, created as canonicalize(key)! when key is present */
-  id: string;
+  id: PTableRowKeyJson | `${number}`;
   /** Row values by column; sheet axes and labeled axes are excluded */
   [field: `${number}` | `hC${number}`]: PTableValue;
 };

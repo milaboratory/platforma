@@ -28,7 +28,7 @@ export function useInfo() {
   const canRun = computed(() => !!result.value?.canRun);
 
   watch(canRun, (v) => {
-    if (v && hasMonetization.value) {
+    if (hasMonetization.value) {
       (app.value?.model.args as Record<string, unknown>)['__mnzCanRun'] = v;
     }
   });

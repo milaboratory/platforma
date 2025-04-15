@@ -7,6 +7,8 @@ const runnerError = '{"errorType":"","message":"\\"NG:0x2331A5\\" has 1 input er
 
 const tengoError = "{\"errorType\":\"\",\"message\":\"\\\"NG:0x16A\\\" has 1 input errors:\\n[I] \\\"NG:0x16A/resource\\\": cannot eval code: cannot eval template: template: @platforma-open/milaboratories.samples-and-data.workflow:main@1.10.0\\n\\tRuntime Error: File handle not set for \\\"R1\\\" in sample \\\"S63UG7K2IRZSSMAI4UVB5CNJ\\\"\\n\\tat @platforma-sdk/workflow-tengo:ll:25:1\\n\\tat @platforma-open/milaboratories.samples-and-data.workflow:main:205:7\\n\\tat @platforma-sdk/workflow-tengo:workflow:264:11\\n\\tat @platforma-sdk/workflow-tengo:tpl:470:11\\n\\tat @platforma-sdk/workflow-tengo:tpl:373:1\\n\\tat @platforma-sdk/workflow-tengo:workflow:261:1\\n\\tat @platforma-open/milaboratories.samples-and-data.workflow:main:35:1\"}"
 
+const tengoErrorNoErrorType = "{\"message\":\"\\\"NG:0x16A\\\" has 1 input errors:\\n[I] \\\"NG:0x16A/resource\\\": cannot eval code: cannot eval template: template: @platforma-open/milaboratories.samples-and-data.workflow:main@1.10.0\\n\\tRuntime Error: File handle not set for \\\"R1\\\" in sample \\\"S63UG7K2IRZSSMAI4UVB5CNJ\\\"\\n\\tat @platforma-sdk/workflow-tengo:ll:25:1\\n\\tat @platforma-open/milaboratories.samples-and-data.workflow:main:205:7\\n\\tat @platforma-sdk/workflow-tengo:workflow:264:11\\n\\tat @platforma-sdk/workflow-tengo:tpl:470:11\\n\\tat @platforma-sdk/workflow-tengo:tpl:373:1\\n\\tat @platforma-sdk/workflow-tengo:workflow:261:1\\n\\tat @platforma-open/milaboratories.samples-and-data.workflow:main:35:1\"}"
+
 const monetizationSubErrors = `"NG:0x1F94C0" has 1 input errors:
 [I] "NG:0x1F94C0/resource": "NG:0x1F94FA" has 1 input errors:
 [I] "NG:0x1F94FA/resource": "NG:0x1F94F5" has 1 input errors:
@@ -90,6 +92,17 @@ at @platforma-sdk/workflow-tengo:ll:25:1
 	at @platforma-sdk/workflow-tengo:workflow:261:1
 	at @platforma-open/milaboratories.samples-and-data.workflow:main:35:1
 `);
+  });
+
+  it('should parse workflow error correctly even without the error type', () => {
+    const result = parsePlError(tengoErrorNoErrorType, resourceIdFromString('NG:0x16A')! as ResourceId, { name: 'RunCommand', version: "1" }, 'fieldName');
+
+    expect(result).toBeInstanceOf(PlErrorReport);
+    expect(result.name).toBe('PlErrorReport');
+    expect(result.plErrorType).toBe('');
+
+    expect(result.errors.length).toBe(1);
+    expect(result.errors[0]).toBeInstanceOf(PlTengoError);
   });
 
   it('should parse monetization sub errors correctly', () => {

@@ -6,6 +6,8 @@ import type {
 } from 'ag-grid-enterprise';
 import type {
   PlDataTableGridStateWithoutSheets,
+  PlDataTableModel,
+  PTableColumnSpec,
 } from '@platforma-sdk/model';
 import {
   getAxisId,
@@ -13,25 +15,37 @@ import {
   type PColumnSpec,
   type PFrameDriver,
   type PlDataTableSheet,
-  type PTableHandle,
   type PTableVector,
 } from '@platforma-sdk/model';
 import * as lodash from 'lodash';
 import type { PlAgDataTableRow } from '../types';
 import { makeRowNumberColDef, PlAgDataTableRowNumberColId } from './row-number';
-import { getHeterogeneousColumns, updatePFrameGridOptionsHeterogeneousAxes } from './table-source-heterogeneous';
 import { objectHash } from '../../../objectHash';
 import type { Ref } from 'vue';
-import { isLabelColumn, makeColDef, makeRowId, type PlAgCellButtonAxisParams } from './common';
+import {
+  isLabelColumn,
+  makeColDef,
+  makeRowId,
+  PTableHidden,
+  type PlAgCellButtonAxisParams,
+} from './common';
+import canonicalize from 'canonicalize';
 
 /** Convert columnar data from the driver to rows, used by ag-grid */
-function columns2rows(fields: number[], columns: PTableVector[], axes: number[]): PlAgDataTableRow[] {
+function columns2rows(
+  fields: number[],
+  columns: PTableVector[],
+  axes: number[],
+  resultMapping: number[],
+): PlAgDataTableRow[] {
   const rowData: PlAgDataTableRow[] = [];
   for (let iRow = 0; iRow < columns[0].data.length; ++iRow) {
-    const key = axes.map((iAxis) => pTableValue(columns[iAxis], iRow));
+    const key = axes.map((iAxis) => pTableValue(columns[resultMapping[iAxis]], iRow));
     const row: PlAgDataTableRow = { id: makeRowId(key), key };
     fields.forEach((field, iCol) => {
-      row[field.toString() as `${number}`] = pTableValue(columns[iCol], iRow);
+      row[field.toString() as `${number}`] = resultMapping[iCol] === -1
+        ? PTableHidden
+        : pTableValue(columns[resultMapping[iCol]], iRow);
     });
     rowData.push(row);
   }
@@ -43,7 +57,7 @@ function columns2rows(fields: number[], columns: PTableVector[], axes: number[])
  */
 export async function updatePFrameGridOptions(
   pfDriver: PFrameDriver,
-  pt: PTableHandle,
+  model: PlDataTableModel,
   sheets: PlDataTableSheet[],
   clientSide: boolean,
   gridState: Ref<PlDataTableGridStateWithoutSheets>,
@@ -54,7 +68,23 @@ export async function updatePFrameGridOptions(
     rowModelType: RowModelType;
     rowData?: PlAgDataTableRow[];
   }> {
-  const specs = await pfDriver.getSpec(pt);
+  const pt = model.tableHandle;
+  const specs = model.tableSpec;
+  type SpecId = string;
+  const specId = (spec: PTableColumnSpec): SpecId =>
+    spec.type === 'axis' ? canonicalize(spec.spec)! : spec.id;
+  const dataSpecs = await pfDriver.getSpec(pt);
+  const dataSpecsMap = new Map<SpecId, number>();
+  dataSpecs.forEach((spec, i) => {
+    dataSpecsMap.set(specId(spec), i);
+  });
+  const specsToDataSpecsMapping = new Map<number, number>();
+  const dataSpecsToSpecsMapping = new Map<number, number>();
+  specs.forEach((spec, i) => {
+    const dataSpecIdx = dataSpecsMap.get(specId(spec));
+    specsToDataSpecsMapping.set(i, dataSpecIdx ?? -1);
+    if (dataSpecIdx !== undefined) dataSpecsToSpecsMapping.set(dataSpecIdx, i);
+  });
 
   const oldSourceId = gridState.value.sourceId;
 
@@ -99,10 +129,7 @@ export async function updatePFrameGridOptions(
       return Number(bPriority) - Number(aPriority);
     });
 
-  const fields = lodash.cloneDeep(indices);
-
-  // get columns with heterogeneous axes
-  const hColumns = getHeterogeneousColumns(specs, indices);
+  const fields = [...indices];
 
   // process label columns
   for (let i = indices.length - 1; i >= 0; --i) {
@@ -117,14 +144,7 @@ export async function updatePFrameGridOptions(
       continue;
     }
 
-    // replace in h-columns
-    const oldIdx = indices[axisIdx];
     indices[axisIdx] = idx;
-    for (const hCol of hColumns) {
-      if (hCol.axisIdx === oldIdx) {
-        hCol.axisIdx = idx;
-      }
-    }
 
     // remove original axis
     indices.splice(i, 1);
@@ -138,24 +158,6 @@ export async function updatePFrameGridOptions(
     ...fields.map((i) => makeColDef(i, specs[i], columnVisibility?.hiddenColIds, cellButtonAxisParams)),
   ];
 
-  if (hColumns.length > 0) {
-    let valueColumn = undefined;
-    if (hColumns.length == 1) {
-      valueColumn = hColumns[0];
-    } else {
-      const vc = hColumns.filter((i) => specs[i.columnIdx].spec.annotations?.['pl7.app/table/hValue'] === 'true');
-      if (vc.length === 1) valueColumn = vc[0];
-    }
-
-    if (!valueColumn) {
-      console.warn(
-        `Currently, only one heterogeneous axis / column is supported in the table, got ${hColumns.length} transposition will not be applied.`,
-      );
-    } else {
-      return updatePFrameGridOptionsHeterogeneousAxes(valueColumn, ptShape, columnDefs, await pfDriver.getData(pt, indices), fields, indices);
-    }
-  }
-
   // mixing in axis indices
 
   const allIndices = [...indices];
@@ -164,19 +166,18 @@ export async function updatePFrameGridOptions(
   const axisToFieldIdx = new Map<number, number>();
   for (let i = 0; i < numberOfAxes; ++i) axisToFieldIdx.set(i, -1);
 
-  for (let i = 0; i < allIndices.length; ++i) {
-    const idx = allIndices[i];
+  allIndices.forEach((idx, i) => {
     if (axisToFieldIdx.has(idx)) axisToFieldIdx.set(idx, i);
-  }
-
+  });
   // at this point we have axis indices that are not listed in indices set to -1 in axisToFieldIdx
 
   // adding those indices at the end of allIndices array, to make sure we have all the axes in our response
-  for (const [key, value] of axisToFieldIdx)
+  for (const [key, value] of axisToFieldIdx) {
     if (value === -1) {
       axisToFieldIdx.set(key, allIndices.length /* at this index value will be inserted in the next line */);
       allIndices.push(key);
     }
+  }
 
   // indices of axes in allIndices array
   const axes: number[] = [];
@@ -186,11 +187,24 @@ export async function updatePFrameGridOptions(
     axes.push(fieldIdx);
   }
 
+  const requestIndices: number[] = [];
+  const resultMapping: number[] = [];
+  allIndices.forEach((idx) => {
+    const dataSpecIdx = specsToDataSpecsMapping.get(idx)!;
+    if (dataSpecIdx !== -1) {
+      resultMapping.push(requestIndices.length);
+      requestIndices.push(dataSpecIdx);
+    } else {
+      resultMapping.push(-1);
+    }
+  });
+
   if (clientSide) {
+    const data = await pfDriver.getData(pt, requestIndices);
     return {
       rowModelType: 'clientSide',
       columnDefs,
-      rowData: columns2rows(fields, await pfDriver.getData(pt, allIndices), axes),
+      rowData: columns2rows(fields, data, axes, resultMapping),
     };
   }
 
@@ -219,11 +233,11 @@ export async function updatePFrameGridOptions(
         if (rowCount > 0 && params.request.startRow !== undefined && params.request.endRow !== undefined) {
           length = Math.min(rowCount, params.request.endRow) - params.request.startRow;
           if (length > 0) {
-            const data = await pfDriver.getData(pt, allIndices, {
+            const data = await pfDriver.getData(pt, requestIndices, {
               offset: params.request.startRow,
               length,
             });
-            rowData = columns2rows(fields, data, axes);
+            rowData = columns2rows(fields, data, axes, resultMapping);
           }
         }
 

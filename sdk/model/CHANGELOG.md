@@ -1,5 +1,13 @@
 # @platforma-sdk/model
 
+## 1.29.12
+
+### Patch Changes
+
+- 621e15a: PlAgDataTableV2 component (does not include hidden columns in join)
+- Updated dependencies [621e15a]
+  - @milaboratories/pl-model-common@1.13.6
+
 ## 1.29.2
 
 ### Patch Changes

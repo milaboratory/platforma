@@ -1,5 +1,11 @@
 # @milaboratories/pl-errors
 
+## 1.0.6
+
+### Patch Changes
+
+- ba0f7d4: pass errors if we couldn't parse them
+
 ## 1.0.5
 
 ### Patch Changes

@@ -7,17 +7,33 @@ import type {
   PColumnSpec,
   PColumnValues,
   PObjectId,
+  PTableColumnIdColumn,
+  PTableColumnSpec,
+  PTableDef,
   PTableHandle,
   PTableRecordFilter,
+  PTableRecordSingleValueFilterV2,
   PTableSorting,
 } from '@milaboratories/pl-model-common';
-import {
-  getAxisId,
-  isPColumn,
-  matchAxisId,
-} from '@milaboratories/pl-model-common';
-import type { RenderCtx } from '../render';
-import { TreeNodeAccessor } from '../render';
+import { getAxisId, getColumnIdAndSpec, matchAxisId } from '@milaboratories/pl-model-common';
+import type { AxisLabelProvider, ColumnProvider, RenderCtx } from '../render';
+import { PColumnCollection, TreeNodeAccessor } from '../render';
+import canonicalize from 'canonicalize';
+
+/** Canonicalized PTableColumnSpec JSON string */
+export type PTableColumnSpecJson = string & {
+  __json_canonicalized: PTableColumnSpec;
+};
+
+/** Encode `PTableColumnId` as canonicalized JSON string */
+export function strinfigyPTableColumnId(spec: PTableColumnSpec): PTableColumnSpecJson {
+  return canonicalize(spec)! as PTableColumnSpecJson;
+}
+
+/** Parse `PTableColumnId` from JSON string */
+export function parsePTableColumnId(str: PTableColumnSpecJson): PTableColumnSpec {
+  return JSON.parse(str) as PTableColumnSpec;
+}
 
 /** Data table state */
 export type PlDataTableGridState = {
@@ -44,7 +60,7 @@ export type PlDataTableGridState = {
   /** Includes column visibility */
   columnVisibility?: {
     /** All colIds which were hidden */
-    hiddenColIds: string[];
+    hiddenColIds: PTableColumnSpecJson[];
   };
   /** current sheet selections */
   sheets?: Record<string, string | number>;
@@ -319,13 +335,148 @@ export type CreatePlDataTableOps = {
   coreJoinType?: 'inner' | 'full';
 };
 
+/** Check if column is a label column */
+export function isLabelColumn(column: PColumnSpec) {
+  return column.axesSpec.length === 1 && column.name === 'pl7.app/label';
+}
+
+/** Get all label columns from the result pool */
+export function getAllLabelColumns(
+  resultPool: AxisLabelProvider & ColumnProvider,
+): PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor>>[] | undefined {
+  return new PColumnCollection()
+    .addAxisLabelProvider(resultPool)
+    .addColumnProvider(resultPool)
+    .getColumns({
+      name: 'pl7.app/label',
+      axes: [{}], // exactly one axis
+    }, { dontWaitAllData: true });
+}
+
+/** Get label columns matching the provided columns from the result pool */
+export function getMatchingLabelColumns(
+  columns: PColumnIdAndSpec[],
+  allLabelColumns: PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor>>[],
+): PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor>>[] {
+  const colId = (id: PObjectId, domain?: Record<string, string>) => {
+    let wid = id.toString();
+    if (domain) {
+      for (const k in domain) {
+        wid += k;
+        wid += domain[k];
+      }
+    }
+    return wid;
+  };
+
+  const labelColumns = new Map<string, typeof allLabelColumns[number]>();
+  for (const col of columns) {
+    for (const axis of col.spec.axesSpec) {
+      const axisId = getAxisId(axis);
+      for (const labelColumn of allLabelColumns) {
+        const labelAxis = labelColumn.spec.axesSpec[0];
+        const labelAxisId = getAxisId(labelColumn.spec.axesSpec[0]);
+        if (matchAxisId(axisId, labelAxisId)) {
+          const dataDomainLen = Object.keys(axisId.domain ?? {}).length;
+          const labelDomainLen = Object.keys(labelAxisId.domain ?? {}).length;
+          if (dataDomainLen > labelDomainLen) {
+            const id = colId(labelColumn.id, axisId.domain);
+
+            labelColumns.set(id, {
+              id: id as PObjectId,
+              spec: {
+                ...labelColumn.spec,
+                axesSpec: [{ ...axisId, annotations: labelAxis.annotations }],
+              },
+              data: labelColumn.data,
+            });
+          } else {
+            labelColumns.set(colId(labelColumn.id), labelColumn);
+          }
+        }
+      }
+    }
+  }
+
+  return [...labelColumns.values()];
+}
+
+/** Check if all columns are computed */
+export function allColumnsComputed(
+  columns: PColumn<PColumnValues | TreeNodeAccessor | DataInfo<TreeNodeAccessor>>[],
+): boolean {
+  type Data = typeof columns[number]['data'];
+  const isValues = (d: Data): d is PColumnValues => Array.isArray(d);
+  const isAccessor = (d: Data): d is TreeNodeAccessor => d instanceof TreeNodeAccessor;
+  const isDataInfo = (d: Data): d is DataInfo<TreeNodeAccessor> =>
+    typeof d === 'object' && 'type' in d;
+
+  return columns
+    .map((c) => c.data)
+    .every((d): boolean => {
+      if (isValues(d)) {
+        return true;
+      } else if (isAccessor(d)) {
+        return d.getIsReadyOrError();
+      } else if (isDataInfo(d)) {
+        const type = d.type;
+        switch (type) {
+          case 'Json':
+            return true;
+          case 'JsonPartitioned':
+            return Object.values(d.parts).every((p) => p.getIsReadyOrError());
+          case 'BinaryPartitioned':
+            return Object.values(d.parts)
+              .every((p) => p.index.getIsReadyOrError() && p.values.getIsReadyOrError());
+        }
+      } else {
+        // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+        throw Error(`unsupported column data type: ${d satisfies never}`);
+      }
+    });
+}
+
+function createPTableDef(
+  columns: PColumn<TreeNodeAccessor | PColumnValues | DataInfo<TreeNodeAccessor>>[],
+  labelColumns: PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor>>[],
+  coreJoinType: 'inner' | 'full',
+  filters: PTableRecordSingleValueFilterV2[],
+  sorting: PTableSorting[],
+  coreColumnPredicate?: ((spec: PColumnSpec) => boolean),
+): PTableDef<PColumn<TreeNodeAccessor | PColumnValues | DataInfo<TreeNodeAccessor>>> {
+  let coreColumns = columns;
+  const secondaryColumns: typeof columns = [];
+
+  if (coreColumnPredicate) {
+    coreColumns = [];
+    for (const c of columns)
+      if (coreColumnPredicate(c.spec)) coreColumns.push(c);
+      else secondaryColumns.push(c);
+  }
+
+  secondaryColumns.push(...labelColumns);
+
+  return {
+    src: {
+      type: 'outer',
+      primary: {
+        type: coreJoinType,
+        entries: coreColumns.map((c) => ({ type: 'column', column: c })),
+      },
+      secondary: secondaryColumns.map((c) => ({ type: 'column', column: c })),
+    },
+    filters,
+    sorting,
+  };
+}
+
 /**
  * Create p-table handle given ui table state
  *
  * @param ctx context
  * @param columns column list
  * @param tableState table ui state
- * @returns
+ * @returns PlAgDataTable table source
  */
 export function createPlDataTable<A, U>(
   ctx: RenderCtx<A, U>,
@@ -356,85 +507,110 @@ export function createPlDataTable<A, U>(
     ops = { filters: ops };
   }
 
-  const allLabelCols = ctx.resultPool
-    .getData()
-    .entries.map((d) => d.obj)
-    .filter(isPColumn)
-    .filter((p) => p.spec.name === 'pl7.app/label' && p.spec.axesSpec.length === 1);
+  const coreJoinType = ops?.coreJoinType ?? 'full';
+  const filters: PTableRecordSingleValueFilterV2[]
+    = [...(ops?.filters ?? []), ...(tableState?.pTableParams?.filters ?? [])];
+  const sorting: PTableSorting[] = tableState?.pTableParams?.sorting ?? [];
 
-  const colId = (id: PObjectId, domain?: Record<string, string>) => {
-    let wid = id.toString();
-    if (domain) {
-      for (const k in domain) {
-        wid += k;
-        wid += domain[k];
-      }
-    }
-    return wid;
-  };
+  const allLabelColumns = getAllLabelColumns(ctx.resultPool);
+  if (!allLabelColumns) return undefined;
 
-  const labelColumns = new Map<string, PColumn<TreeNodeAccessor>>();
+  const labelColumns = getMatchingLabelColumns(columns.map(getColumnIdAndSpec), allLabelColumns);
 
-  for (const col of columns) {
-    for (const axis of col.spec.axesSpec) {
-      const axisId = getAxisId(axis);
-      for (const labelColumn of allLabelCols) {
-        const labelAxis = labelColumn.spec.axesSpec[0];
-        const labelAxisId = getAxisId(labelColumn.spec.axesSpec[0]);
-        if (matchAxisId(axisId, labelAxisId)) {
-          const dataDomainLen = Object.keys(axisId.domain ?? {}).length;
-          const labelDomainLen = Object.keys(labelAxisId.domain ?? {}).length;
-          if (dataDomainLen > labelDomainLen) {
-            const id = colId(labelColumn.id, axisId.domain);
+  // if at least one column is not yet computed, we can't show the table
+  if (!allColumnsComputed([...columns, ...labelColumns])) return undefined;
 
-            labelColumns.set(id, {
-              id: id as PObjectId,
-              spec: {
-                ...labelColumn.spec,
-                axesSpec: [{ ...axisId, annotations: labelAxis.annotations }],
-              },
-              data: labelColumn.data,
-            });
-          } else {
-            labelColumns.set(colId(labelColumn.id), labelColumn);
-          }
-        }
-      }
-    }
-  }
+  return ctx.createPTable(
+    createPTableDef(columns, labelColumns, coreJoinType, filters, sorting, ops?.coreColumnPredicate));
+}
 
-  // if at least one column is not yet ready, we can't show the table
-  if (
-    [...columns, ...labelColumns.values()].some(
-      (a) => a.data instanceof TreeNodeAccessor && !a.data.getIsReadyOrError(),
-    )
-  )
-    return undefined;
+/** PlAgDataTable model */
+export type PlDataTableModel = {
+  /** p-table specification (full, including hidden columns) */
+  tableSpec: PTableColumnSpec[];
+  /** p-table handle (integration of visible columns data) */
+  tableHandle: PTableHandle;
+};
 
-  let coreColumns = columns;
-  const secondaryColumns: typeof columns = [];
+/** Check if column is hidden by default */
+export function isColumnOptional(spec: { annotations?: Record<string, string> }): boolean {
+  return spec.annotations?.['pl7.app/table/visibility'] === 'optional';
+}
 
-  if (ops?.coreColumnPredicate) {
-    coreColumns = [];
-    for (const c of columns)
-      if (ops.coreColumnPredicate(c.spec)) coreColumns.push(c);
-      else secondaryColumns.push(c);
-  }
+/**
+ * Create p-table spec and handle given ui table state
+ *
+ * @param ctx context
+ * @param columns column list
+ * @param tableState table ui state
+ * @returns PlAgDataTableV2 table source
+ */
+export function createPlDataTableV2<A, U>(
+  ctx: RenderCtx<A, U>,
+  columns: PColumn<TreeNodeAccessor | PColumnValues | DataInfo<TreeNodeAccessor>>[],
+  mainColumnPredicate: (spec: PColumnSpec) => boolean,
+  tableState: PlDataTableState | undefined,
+  ops?: CreatePlDataTableOps,
+): PlDataTableModel | undefined {
+  const coreJoinType = ops?.coreJoinType ?? 'full';
+  const filters: PTableRecordSingleValueFilterV2[]
+    = [...(ops?.filters ?? []), ...(tableState?.pTableParams?.filters ?? [])];
+  const sorting: PTableSorting[] = tableState?.pTableParams?.sorting ?? [];
 
-  secondaryColumns.push(...labelColumns.values());
+  const mainColumn = columns.find((c) => mainColumnPredicate(c.spec));
+  if (!mainColumn) return undefined;
 
-  return ctx.createPTable({
-    src: {
-      type: 'outer',
-      primary: {
-        type: ops?.coreJoinType ?? 'full',
-        entries: coreColumns.map((c) => ({ type: 'column', column: c })),
-      },
-      secondary: secondaryColumns.map((c) => ({ type: 'column', column: c })),
-    },
-    filters: [...(ops?.filters ?? []), ...(tableState?.pTableParams?.filters ?? [])],
-    sorting: tableState?.pTableParams?.sorting ?? [],
-  });
+  const allLabelColumns = getAllLabelColumns(ctx.resultPool);
+  if (!allLabelColumns) return undefined;
+
+  const spec: PTableColumnSpec[] = [
+    ...mainColumn.spec.axesSpec.map((axis) => ({
+      type: 'axis',
+      id: getAxisId(axis),
+      spec: axis,
+    } satisfies PTableColumnSpec)),
+    ...[...columns, ...allLabelColumns].map((c) => ({
+      type: 'column',
+      id: c.id,
+      spec: c.spec,
+    } satisfies PTableColumnSpec)),
+  ];
+
+  const hiddenColumns = new Set<PObjectId>(((): PObjectId[] => {
+    // Inner join works as a filter - all columns must be present
+    if (coreJoinType === 'inner') return [];
+
+    const hiddenColIds = tableState?.gridState.columnVisibility?.hiddenColIds
+      ?.map(parsePTableColumnId)
+      .filter((c) => c.type === 'column')
+      .map((c) => c.id);
+    if (hiddenColIds) return hiddenColIds;
+
+    return columns
+      .filter((c) => isColumnOptional(c.spec))
+      .map((c) => c.id);
+  })());
+
+  // Main column must always be included in join to integrate all other columns
+  hiddenColumns.delete(mainColumn.id);
+  // Filters decrease the number of result rows, sorting changes the order of result rows
+  [...filters.map((f) => f.column), ...sorting.map((s) => s.column)]
+    .filter((c): c is PTableColumnIdColumn => c.type === 'column')
+    .map((c) => hiddenColumns.delete(c.id));
+
+  const visibleColumns = columns.filter((c) => !hiddenColumns.has(c.id));
+  const labelColumns = getMatchingLabelColumns(visibleColumns.map(getColumnIdAndSpec), allLabelColumns);
+
+  // if at least one column is not yet computed, we can't show the table
+  if (!allColumnsComputed([...visibleColumns, ...labelColumns])) return undefined;
+
+  const handle = ctx.createPTable(
+    createPTableDef(columns, labelColumns, coreJoinType, filters, sorting, ops?.coreColumnPredicate));
+
+  return {
+    tableSpec: spec,
+    tableHandle: handle,
+  } satisfies PlDataTableModel;
 }
 
 /** Create sheet entries for PlDataTable */
