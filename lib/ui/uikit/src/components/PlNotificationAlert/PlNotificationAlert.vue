@@ -27,7 +27,7 @@ function closeAlert() {
         <slot />
       </div>
       <div v-if="closable" class="pl-notification-alert__close">
-        <PlBtnGhost icon="close" @click="closeAlert" />
+        <PlBtnGhost icon="close" @click.stop="closeAlert" />
       </div>
     </div>
 

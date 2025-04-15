@@ -1,4 +1,4 @@
-import { type ErrorLike, parseErrorLikeSafe, type ValueOrErrors } from '@platforma-sdk/model';
+import { type ErrorLike, type ValueOrErrors } from '@platforma-sdk/model';
 import type { OptionalResult } from './types';
 import type { ZodError } from 'zod';
 export class UnresolvedError extends Error {}
