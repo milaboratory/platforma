@@ -137,18 +137,28 @@ self.body(func(inputs) {
 					if dotIdx == -1 {
 						ll.panic("BinaryPartitioned key must contain a dot: %v", sKey)
 					}
-					suffix = sKey[(dotIdx + 1):]
+					suffix = sKey[dotIdx:]
 					sKeyP = sKey[:(dotIdx)]
 				}
 				key := json.decode(sKeyP) // Key is the resource key (ResourceMap) or partition key (Partitioned)
 
 				groupKey := []
 				for i in groupIndices {
+					if len(key) <= i {
+						ll.panic("Key length is less than aggregation index: %v, key: %v", i, key)
+					}
 					groupKey = append(groupKey, key[i])
 				}
 
 				inGroupKey := []
 				for i in aggregationIndices {
+					if len(key) <= i {
+						if isJsonPartitioned || isBinaryPartitioned {
+							continue
+						} else {
+							ll.panic("Key length is less than aggregation index: %v, key: %v", i, key)
+						}
+					}
 					inGroupKey = append(inGroupKey, key[i])
 				}
 
