@@ -9,12 +9,11 @@ import {
   type PTableColumnSpec,
   type PTableValue,
   PTableNA,
-  strinfigyPTableColumnId,
+  stringifyPTableColumnId,
   isColumnOptional,
   isLabelColumn as isLabelColumnSpec,
   canonicalizeJson,
 } from '@platforma-sdk/model';
-import canonicalize from 'canonicalize';
 import * as lodash from 'lodash';
 import { PlAgColumnHeader, type PlAgHeaderComponentParams, type PlAgHeaderComponentType } from '../../PlAgColumnHeader';
 import PlAgTextAndButtonCell from '../../PlAgTextAndButtonCell/PlAgTextAndButtonCell.vue';
@@ -55,7 +54,7 @@ export function makeColDef(
   hiddenColIds?: string[],
   cellButtonAxisParams?: PlAgCellButtonAxisParams,
 ): ColDef {
-  const colId = strinfigyPTableColumnId(spec);
+  const colId = stringifyPTableColumnId(spec);
   const valueType = spec.type === 'axis' ? spec.spec.type : spec.spec.valueType;
   return {
     colId,
