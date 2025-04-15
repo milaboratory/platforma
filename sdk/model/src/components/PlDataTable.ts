@@ -24,7 +24,7 @@ import { PColumnCollection, TreeNodeAccessor } from '../render';
 export type PTableColumnSpecJson = CanonicalizedJson<PTableColumnSpec>;
 
 /** Encode `PTableColumnId` as canonicalized JSON string */
-export function strinfigyPTableColumnId(spec: PTableColumnSpec): PTableColumnSpecJson {
+export function stringifyPTableColumnId(spec: PTableColumnSpec): PTableColumnSpecJson {
   const type = spec.type;
   switch (type) {
     case 'axis':
