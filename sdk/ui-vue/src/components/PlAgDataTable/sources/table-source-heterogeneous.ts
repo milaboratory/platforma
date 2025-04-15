@@ -11,7 +11,7 @@ import type {
 import { getAxisId, pTableValue } from '@platforma-sdk/model';
 import canonicalize from 'canonicalize';
 import * as lodash from 'lodash';
-import { defaultValueFormatter } from './table-source';
+import { defaultValueFormatter } from './common';
 import type { PlAgDataTableRow } from '../types';
 
 type HeterogeneousColumnInfo = {
@@ -172,7 +172,7 @@ function calculateRowData(
     let row: PlAgDataTableRow;
     const id = canonicalize(Object.values(rowPart)) ?? '';
     if (!uniqueRowsMap.has(id)) {
-      row = { id: uniqueRowsMap.size.toString(), ...rowPart };
+      row = { id: `${uniqueRowsMap.size}`, ...rowPart };
       uniqueRowsMap.set(id, row);
     } else {
       row = uniqueRowsMap.get(id)!;

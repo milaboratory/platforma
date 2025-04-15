@@ -1,10 +1,8 @@
 import type {
   ColDef,
-  ICellRendererParams,
   IServerSideDatasource,
   IServerSideGetRowsParams,
   RowModelType,
-  ValueFormatterParams,
 } from 'ag-grid-enterprise';
 import type {
   PlDataTableGridStateWithoutSheets,
@@ -12,128 +10,19 @@ import type {
 import {
   getAxisId,
   pTableValue,
-  isPTableAbsent,
-  type AxisId,
   type PColumnSpec,
   type PFrameDriver,
   type PlDataTableSheet,
-  type PTableColumnSpec,
   type PTableHandle,
-  type PTableValue,
   type PTableVector,
-  PTableNA,
 } from '@platforma-sdk/model';
-import canonicalize from 'canonicalize';
 import * as lodash from 'lodash';
-import { PlAgColumnHeader, type PlAgHeaderComponentParams, type PlAgHeaderComponentType } from '../../PlAgColumnHeader';
-import PlAgTextAndButtonCell from '../../PlAgTextAndButtonCell/PlAgTextAndButtonCell.vue';
-import type { PlAgDataTableRow, PTableRowKey } from '../types';
+import type { PlAgDataTableRow } from '../types';
 import { makeRowNumberColDef, PlAgDataTableRowNumberColId } from './row-number';
 import { getHeterogeneousColumns, updatePFrameGridOptionsHeterogeneousAxes } from './table-source-heterogeneous';
-import { defaultMainMenuItems } from './menu-items';
 import { objectHash } from '../../../objectHash';
 import type { Ref } from 'vue';
-
-type PlAgCellButtonAxisParams = {
-  showCellButtonForAxisId?: AxisId;
-  cellButtonInvokeRowsOnDoubleClick?: boolean;
-  trigger: (key?: PTableRowKey) => void;
-};
-
-/**
- * Generate unique colId based on the column spec.
- */
-function makeColId(spec: PTableColumnSpec) {
-  return canonicalize(spec)!;
-}
-
-/**
- * Extract `PTableColumnId` from colId string
- */
-export function parseColId(str: string) {
-  return JSON.parse(str) as PTableColumnSpec;
-}
-
-export const defaultValueFormatter = (value: ValueFormatterParams<PlAgDataTableRow, PTableValue>) => {
-  if (value.value === undefined) {
-    return 'undefined';
-  } else if (isPTableAbsent(value.value) || value.value === PTableNA) {
-    return '';
-  } else {
-    return value.value.toString();
-  }
-};
-
-/**
- * Calculates column definition for a given p-table column
- */
-function makeColDef(iCol: number, spec: PTableColumnSpec, hiddenColIds?: string[], cellButtonAxisParams?: PlAgCellButtonAxisParams): ColDef {
-  const colId = makeColId(spec);
-  const valueType = spec.type === 'axis' ? spec.spec.type : spec.spec.valueType;
-  return {
-    colId,
-    mainMenuItems: defaultMainMenuItems,
-    context: spec,
-    field: iCol.toString(),
-    headerName: spec.spec.annotations?.['pl7.app/label']?.trim() ?? 'Unlabeled ' + spec.type + ' ' + iCol.toString(),
-    lockPosition: spec.type === 'axis',
-    hide: hiddenColIds?.includes(colId) ?? spec.spec.annotations?.['pl7.app/table/visibility'] === 'optional',
-    valueFormatter: defaultValueFormatter,
-    headerComponent: PlAgColumnHeader,
-    cellRendererSelector: cellButtonAxisParams?.showCellButtonForAxisId
-      ? (params: ICellRendererParams) => {
-          if (spec.type !== 'axis') return;
-
-          const axisId = (params.colDef?.context as PTableColumnSpec)?.id as AxisId;
-          if (lodash.isEqual(axisId, cellButtonAxisParams.showCellButtonForAxisId)) {
-            return {
-              component: PlAgTextAndButtonCell,
-              params: {
-                invokeRowsOnDoubleClick: cellButtonAxisParams.cellButtonInvokeRowsOnDoubleClick,
-                onClick: (prms: ICellRendererParams<PlAgDataTableRow>) => {
-                  cellButtonAxisParams.trigger(prms.data?.key);
-                },
-              },
-            };
-          }
-        }
-      : undefined,
-    headerComponentParams: {
-      type: ((): PlAgHeaderComponentType => {
-        switch (valueType) {
-          case 'Int':
-          case 'Long':
-          case 'Float':
-          case 'Double':
-            return 'Number';
-          case 'String':
-          case 'Bytes':
-            return 'Text';
-          default:
-            throw Error(`unsupported data type: ${valueType}`);
-        }
-      })(),
-    } satisfies PlAgHeaderComponentParams,
-    cellDataType: (() => {
-      switch (valueType) {
-        case 'Int':
-        case 'Long':
-        case 'Float':
-        case 'Double':
-          return 'number';
-        case 'String':
-        case 'Bytes':
-          return 'text';
-        default:
-          throw Error(`unsupported data type: ${valueType}`);
-      }
-    })(),
-  };
-}
-
-export function makeRowId(rowKey: PTableValue[]) {
-  return canonicalize(rowKey)!;
-}
+import { isLabelColumn, makeColDef, makeRowId, type PlAgCellButtonAxisParams } from './common';
 
 /** Convert columnar data from the driver to rows, used by ag-grid */
 function columns2rows(fields: number[], columns: PTableVector[], axes: number[]): PlAgDataTableRow[] {
@@ -148,8 +37,6 @@ function columns2rows(fields: number[], columns: PTableVector[], axes: number[])
   }
   return rowData;
 }
-
-const isLabelColumn = (col: PTableColumnSpec) => col.type === 'column' && col.spec.axesSpec.length === 1 && col.spec.name === 'pl7.app/label';
 
 /**
  * Calculate GridOptions for p-table data source type
