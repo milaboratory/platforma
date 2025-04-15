@@ -101,7 +101,9 @@ _P_MATCHER_SCHEMA := {
 }
 
 _normalizeMatcher := func(matcher) {
-	if is_string(matcher) {
+	if is_int(matcher) {
+		return matcher
+	} else if is_string(matcher) {
 		return { name: matcher }
 	} else {
 		validation.assertType(matcher, _P_MATCHER_SCHEMA)
@@ -136,7 +138,11 @@ matchAxis := func(axesSpec, matcher) {
 	matcher = _normalizeMatcher(matcher)
 	found := -1
 	for idx, axisSpec in axesSpec {
-		if !_checkAxisMatch(axisSpec, matcher) {
+		if is_int(matcher) {
+			if idx != matcher {
+				continue
+			}
+		} else if !_checkAxisMatch(axisSpec, matcher) {
 			continue
 		}
 		if found != -1 {
@@ -154,6 +160,7 @@ matchAxis := func(axesSpec, matcher) {
  * Matches axes specs against matchers and returns array of matched indices.
  *
  * Example matchers:
+ *   - 0 (to match by index)
  *   - "pl7.app/sequencing/readIndex"
  *   - { name: "pl7.app/sequencing/readIndex" }
  *   - { type: "String", name: "pl7.app/sequencing/lane" }
