@@ -10,6 +10,7 @@ pUtil := import(":pframes.util")
 xsv := import(":pframes.xsv")
 builder := import(":pframes.builder")
 removeNullsLib := import(":pframes.remove-nulls")
+text := import("text")
 
 json := import("json")
 
@@ -73,12 +74,33 @@ self.body(func(inputs) {
 		}
 	}
 
-	if data.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP) {
+	// Check supported types
+	isResourceMap := data.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP)
+	isJsonPartitioned := data.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_JSON_PARTITIONED)
+	isBinaryPartitioned := data.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_BINARY_PARTITIONED)
+	isPartitioned := isJsonPartitioned || isBinaryPartitioned
+
+	if isResourceMap || isPartitioned {
 		meta := data.getDataAsJson()
 
+		inputKeyLength := 0
+		if isResourceMap {
+			if !is_map(meta) || is_undefined(meta.keyLength) {
+				 ll.panic("Invalid metadata for ResourceMap: %v", meta)
+			}
+			inputKeyLength = meta.keyLength
+		} else { // isPartitioned
+			if !is_map(meta) || is_undefined(meta.partitionKeyLength) {
+				 ll.panic("Invalid metadata for Partitioned resource: %v", meta)
+			}
+			inputKeyLength = meta.partitionKeyLength
+		}
+
+
 		if !is_undefined(expectedKeyLength) {
-			if expectedKeyLength != meta.keyLength {
-				ll.panic("Unexpected key length: %v != %v", expectedKeyLength, meta.keyLength)
+			// Check against the relevant key length (full key for ResourceMap, partition key for Partitioned)
+			if expectedKeyLength != inputKeyLength {
+				ll.panic("Unexpected key length: %v != %v", expectedKeyLength, inputKeyLength)
 			}
 		}
 
@@ -88,44 +110,94 @@ self.body(func(inputs) {
 		// mapping or aggregation mode
 		mappingMode := is_undefined(aggregationIndices)
 
+		// Partitioned inputs cannot be used in mapping mode as the body expects individual elements, not partitions.
+		if mappingMode && isPartitioned {
+			ll.panic("Partitioned PColumn data types (JsonPartitioned, BinaryPartitioned) cannot be used in mapping mode (aggregationIndices not set). Use aggregation mode instead.")
+		}
+
 		groupKeyLength := 0
 
 		if mappingMode {
-			groupKeyLength = meta.keyLength
+			groupKeyLength = inputKeyLength
 			for sKey, field in data.inputs() {
 				groups[sKey] = field
 			}
 		} else { // <- aggregation mode
-			// calculating group indices
-			groupIndices := pUtil.calculateGroupAxesIndices(meta.keyLength, aggregationIndices)
+			// Calculate group indices based on inputKeyLength (full key for ResourceMap, partition key for Partitioned)
+			groupIndices := pUtil.calculateGroupAxesIndices(inputKeyLength, aggregationIndices)
 			groupKeyLength = len(groupIndices)
-			groupElementKeyLength := len(aggregationIndices)
+			groupElementKeyLength := inputKeyLength - len(groupIndices)
+			if groupElementKeyLength < 0 {
+				ll.panic("Group element key length is negative: %v", groupElementKeyLength)
+			}
+			if !isPartitioned {
+				ll.assert(groupElementKeyLength == len(aggregationIndices),
+				  "Group element key length is not equal to aggregation indices length: %v != %v",
+				  groupElementKeyLength, len(aggregationIndices))
+			}
 
 			for sKey, field in data.inputs() {
-				key := json.decode(sKey)
+				sKeyP := sKey
+				suffix := ""
+				if isBinaryPartitioned {
+					dotIdx := text.last_index(sKey, ".")
+					if dotIdx == -1 {
+						ll.panic("BinaryPartitioned key must contain a dot: %v", sKey)
+					}
+					suffix = sKey[dotIdx:]
+					sKeyP = sKey[:(dotIdx)]
+				}
+				key := json.decode(sKeyP) // Key is the resource key (ResourceMap) or partition key (Partitioned)
 
 				groupKey := []
 				for i in groupIndices {
+					if len(key) <= i {
+						ll.panic("Key length is less than aggregation index: %v, key: %v", i, key)
+					}
 					groupKey = append(groupKey, key[i])
 				}
 
 				inGroupKey := []
 				for i in aggregationIndices {
+					if len(key) <= i {
+						if isJsonPartitioned || isBinaryPartitioned {
+							continue
+						} else {
+							ll.panic("Key length is less than aggregation index: %v, key: %v", i, key)
+						}
+					}
 					inGroupKey = append(inGroupKey, key[i])
 				}
 
 				sGroupKey := json.encode(groupKey)
+				// This is the key for the element within the intermediate group ResourceMap
 				sInGroupKey := json.encode(inGroupKey)
 
 				group := groups[sGroupKey]
 				if is_undefined(group) {
+					// Create an intermediate resource to hold aggregated elements.
+					// Its type must match the input data type as expected by the body template.
+					intermediateGroupType := undefined
+					intermediateGroupMetadata := undefined
+
+					if isBinaryPartitioned {
+						intermediateGroupType = pConstants.RTYPE_P_COLUMN_DATA_BINARY_PARTITIONED
+						intermediateGroupMetadata = { partitionKeyLength: groupElementKeyLength }
+					} else if isJsonPartitioned {
+						intermediateGroupType = pConstants.RTYPE_P_COLUMN_DATA_JSON_PARTITIONED
+						intermediateGroupMetadata = { partitionKeyLength: groupElementKeyLength }
+					} else { // isResourceMap (this is the only remaining option)
+						intermediateGroupType = pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP
+						intermediateGroupMetadata = { keyLength: groupElementKeyLength }
+					}
+
 					group = smart.structBuilder(
-						pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP,
-						json.encode({ keyLength: groupElementKeyLength })
+						intermediateGroupType,
+						json.encode(intermediateGroupMetadata)
 					)
 					groups[sGroupKey] = group
 				}
-				group.createInputField(sInGroupKey).set(field)
+				group.createInputField(string(sInGroupKey) + suffix).set(field)
 			}
 		}
 
