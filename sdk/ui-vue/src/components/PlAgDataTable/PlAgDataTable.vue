@@ -19,6 +19,8 @@ import {
 } from 'ag-grid-enterprise';
 import { AgGridVue } from 'ag-grid-vue3';
 import { PlDropdownLine } from '@milaboratories/uikit';
+import type {
+  PTableColumnSpecJson } from '@platforma-sdk/model';
 import {
   getAxisId,
   getRawPlatformaInstance,
@@ -28,6 +30,7 @@ import {
   type PTableColumnSpec,
   type PTableRecordFilter,
   type PTableSorting,
+  parsePTableColumnId,
 } from '@platforma-sdk/model';
 import canonicalize from 'canonicalize';
 import * as lodash from 'lodash';
@@ -36,7 +39,8 @@ import { AgGridTheme } from '../../lib';
 import PlOverlayLoading from './PlAgOverlayLoading.vue';
 import PlOverlayNoRows from './PlAgOverlayNoRows.vue';
 import { updateXsvGridOptions } from './sources/file-source';
-import { makeRowId, parseColId, updatePFrameGridOptions } from './sources/table-source';
+import { type PlAgCellButtonAxisParams, makeRowId } from './sources/common';
+import { updatePFrameGridOptions } from './sources/table-source';
 import type { PlAgDataTableController, PlDataTableSettings, PlAgDataTableRow, PTableRowKey, PlDataTableSettingsPTable } from './types';
 import { PlAgGridColumnManager } from '../PlAgGridColumnManager';
 import { autoSizeRowNumberColumn, PlAgDataTableRowNumberColId } from './sources/row-number';
@@ -108,12 +112,12 @@ const emit = defineEmits<{
 function makeSorting(state?: SortState): PTableSorting[] {
   return (
     state?.sortModel.map((item) => {
-      const { spec, ...column } = parseColId(item.colId);
+      const { spec, ...column } = parsePTableColumnId(item.colId as PTableColumnSpecJson);
       const _ = spec;
       return {
         column,
         ascending: item.sort === 'asc',
-        naAndAbsentAreLeastValues: true,
+        naAndAbsentAreLeastValues: item.sort === 'asc',
       };
     }) ?? []
   );
@@ -321,7 +325,7 @@ const makePartialState = (state: GridState) => {
     sourceId: gridState.value.sourceId,
     columnOrder: state.columnOrder,
     sort: state.sort,
-    columnVisibility: state.columnVisibility,
+    columnVisibility: state.columnVisibility as { hiddenColIds: PTableColumnSpecJson[] } | undefined,
   };
 };
 
@@ -370,7 +374,7 @@ watch(
           .filter((colId) => colId !== undefined)
           .filter((colId) => colId !== PlAgDataTableRowNumberColId)
           .filter((colId) => !isColumnSelectionCol(colId))
-          .map((colId) => parseColId(colId)) ?? [];
+          .map((colId) => parsePTableColumnId(colId as PTableColumnSpecJson)) ?? [];
       emit('columnsChanged', columns);
     }
     if (!lodash.isEqual(options.loadingOverlayComponentParams, oldOptions.loadingOverlayComponentParams) && options.loading) {
@@ -451,7 +455,7 @@ watch(
               showCellButtonForAxisId: props.showCellButtonForAxisId,
               cellButtonInvokeRowsOnDoubleClick: props.cellButtonInvokeRowsOnDoubleClick,
               trigger: (key?: PTableRowKey) => emit('cellButtonClicked', key),
-            },
+            } satisfies PlAgCellButtonAxisParams,
           ).catch((err) => {
             gridApi.updateGridOptions({
               loading: false,
