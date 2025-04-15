@@ -1,5 +1,13 @@
 # @platforma-sdk/ui-vue
 
+## 1.29.15
+
+### Patch Changes
+
+- 74b2c3b: Fix: update \_\_mnzDate each minute in blocks with monetization
+- Updated dependencies [fc63533]
+  - @milaboratories/uikit@2.2.68
+
 ## 1.29.14
 
 ### Patch Changes

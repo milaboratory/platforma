@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.model
 
+## 1.1.47
+
+### Patch Changes
+
+- fc63533: Add PlRadio and PlRadioGroup components
+
 ## 1.1.46
 
 ### Patch Changes
