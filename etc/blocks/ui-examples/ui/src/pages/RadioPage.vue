@@ -13,7 +13,7 @@ function generateOption() {
 
 type Option = ReturnType<typeof generateOption>;
 
-const options = Array.from({ length: 4 }, () => {
+const options = Array.from({ length: 6 }, () => {
   const person = generateOption();
   return {
     label: faker.person.fullName(person),
@@ -24,7 +24,7 @@ const options = Array.from({ length: 4 }, () => {
 
 const standaloneValue = ref<Option>();
 const groupValue = ref<Option>();
-const groupWithOptionsValue = ref<Option>();
+const groupWithOptionsValue = ref<Option>(options[1].value);
 
 function prettifyValue<T>(value: T) {
   return value ? JSON.stringify(value, null, 2) : '<unset>';
@@ -77,7 +77,6 @@ function prettifyValue<T>(value: T) {
         <PlRadioGroup
           v-model="groupWithOptionsValue"
           :options="options"
-          :key-extractor="option => option.id"
         >
           <template #label>Group Label</template>
         </PlRadioGroup>
