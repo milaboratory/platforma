@@ -12,6 +12,7 @@ import {
   strinfigyPTableColumnId,
   isColumnOptional,
   isLabelColumn as isLabelColumnSpec,
+  canonicalizeJson,
 } from '@platforma-sdk/model';
 import canonicalize from 'canonicalize';
 import * as lodash from 'lodash';
@@ -118,7 +119,7 @@ export function makeColDef(
 }
 
 export function makeRowId(rowKey: PTableValue[]): PTableRowKeyJson {
-  return canonicalize(rowKey)! as PTableRowKeyJson;
+  return canonicalizeJson(rowKey);
 }
 
 export function isLabelColumn(column: PTableColumnSpec) {

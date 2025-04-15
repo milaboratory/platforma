@@ -104,6 +104,40 @@ export interface PDataColumnSpec extends PUniversalColumnSpec {
 // @todo: change this to PUniversalColumnSpec
 export type PColumnSpec = PDataColumnSpec;
 
+/** Unique PColumnSpec identifier */
+export type PColumnSpecId = {
+  /** Defines specific type of BObject, the most generic type of unit of
+   * information in Platforma Project. */
+  readonly kind: 'PColumn';
+
+  /** Type of column values */
+  readonly valueType: ValueType;
+
+  /** Column name */
+  readonly name: string;
+
+  /** Adds auxiliary information to the axis name, type and parents to form a
+   * unique identifier */
+  readonly domain?: Record<string, string>;
+
+  /** A list of zero-based indices of parent axes from the {@link axesSpec} array. */
+  readonly parentAxes?: number[];
+
+  /** Axes id */
+  readonly axesId: AxesId;
+};
+
+export function getPColumnSpecId(spec: PColumnSpec): PColumnSpecId {
+  return {
+    kind: spec.kind,
+    valueType: spec.valueType,
+    name: spec.name,
+    domain: spec.domain,
+    parentAxes: spec.parentAxes,
+    axesId: getAxesId(spec.axesSpec),
+  };
+}
+
 export interface PColumn<Data> extends PObject<Data> {
   /** PColumn spec, allowing it to be found among other PObjects */
   readonly spec: PColumnSpec;
