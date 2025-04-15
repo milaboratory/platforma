@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.69
+
+### Patch Changes
+
+- e51c9bb: sdk/ui-vue: stop click propagation when clicking close button in pl-notification-alert component
+
 ## 2.2.68
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.29.16
+
+### Patch Changes
+
+- e51c9bb: sdk/ui-vue: stop click propagation when clicking close button in pl-notification-alert component
+
 ## 1.29.14
 
 ### Patch Changes
