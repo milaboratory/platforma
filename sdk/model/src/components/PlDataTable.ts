@@ -1,5 +1,6 @@
 import type {
   AxisSpec,
+  CanonicalizedJson,
   DataInfo,
   JoinEntry,
   PColumn,
@@ -15,19 +16,25 @@ import type {
   PTableRecordSingleValueFilterV2,
   PTableSorting,
 } from '@milaboratories/pl-model-common';
-import { getAxisId, getColumnIdAndSpec, matchAxisId } from '@milaboratories/pl-model-common';
+import { canonicalizeJson, getAxisId, getColumnIdAndSpec, matchAxisId } from '@milaboratories/pl-model-common';
 import type { AxisLabelProvider, ColumnProvider, RenderCtx } from '../render';
 import { PColumnCollection, TreeNodeAccessor } from '../render';
-import canonicalize from 'canonicalize';
 
 /** Canonicalized PTableColumnSpec JSON string */
-export type PTableColumnSpecJson = string & {
-  __json_canonicalized: PTableColumnSpec;
-};
+export type PTableColumnSpecJson = CanonicalizedJson<PTableColumnSpec>;
 
 /** Encode `PTableColumnId` as canonicalized JSON string */
 export function strinfigyPTableColumnId(spec: PTableColumnSpec): PTableColumnSpecJson {
-  return canonicalize(spec)! as PTableColumnSpecJson;
+  const type = spec.type;
+  switch (type) {
+    case 'axis':
+      return canonicalizeJson(spec);
+    case 'column':
+      return canonicalizeJson(spec);
+    default:
+      // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+      throw Error(`unsupported column type: ${type satisfies never}`);
+  }
 }
 
 /** Parse `PTableColumnId` from JSON string */

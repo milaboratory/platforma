@@ -187,6 +187,43 @@ describe('PFrameForGraph', () => {
         expect(enrichedColumns.map((c) => c.id)).toEqual(['id1', 'id2', 'id3'])
     })
 
+    test('enrichColumnsWithCompatibleMetadata doesn\'t add column with identical spec', () => {
+        const columnSpec1: PColumnSpec = {
+            kind: 'PColumn',
+            name: 'column1',
+            valueType: 'Int',
+            axesSpec: [
+                {type: 'String', name: 'axis1', domain: {key1: 'a'}},
+                {type: 'String', name: 'axis2', domain: {key1: 'b'}},
+            ]
+        };
+        const metaColumnSpec1: PColumnSpec = {
+            kind: 'PColumn',
+            name: 'metadata1',
+            valueType: 'Int',
+            axesSpec: [{type: 'String', name: 'axis1'}]
+        };
+        const metaColumnSpec2: PColumnSpec = {
+            kind: 'PColumn',
+            name: 'metadata2',
+            valueType: 'String',
+            axesSpec: [{type: 'String', name: 'axis1', domain: {key1: 'a'}}]
+        };
+
+        const columns: PColumn<TreeNodeAccessor | PColumnValues>[] = [
+            {id: 'id1' as PObjectId, spec: columnSpec1, data: []},
+        ] as PColumn<PColumnValues>[];
+        const upstream: PColumn<TreeNodeAccessor | PColumnValues>[] = [
+            {id: 'id2' as PObjectId, spec: columnSpec1, data: []},
+            {id: 'id3' as PObjectId, spec: metaColumnSpec1, data: []},
+            {id: 'id4' as PObjectId, spec: metaColumnSpec2, data: []},
+        ] as PColumn<PColumnValues>[];
+
+        const enrichedColumns = enrichColumnsWithCompatible(columns, upstream);
+        expect(enrichedColumns.map((c) => c.id)).toEqual(['id1', 'id3', 'id4'])
+    })
+
+
     test('Labels of added columns include added domains, but not include common domains', () => {
         const columnSpec1: PColumnSpec = {
             kind: 'PColumn',

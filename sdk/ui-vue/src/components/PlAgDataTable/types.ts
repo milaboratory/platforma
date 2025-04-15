@@ -1,4 +1,5 @@
 import type {
+  CanonicalizedJson,
   LocalBlobHandleAndSize,
   PlDataTableModel,
   PlDataTableSheet,
@@ -72,9 +73,7 @@ export type PlAgDataTableController = {
 };
 
 /** Canonicalized PTableValue array JSON string */
-export type PTableRowKeyJson = string & {
-  __json_canonicalized: PTableValue[];
-};
+export type PTableRowKeyJson = CanonicalizedJson<PTableValue[]>;
 
 /** PlAgDataTable row */
 export type PlAgDataTableRow = {
