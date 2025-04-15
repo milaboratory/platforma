@@ -215,9 +215,8 @@ function getUniquePartitionKeysForDataEntries(list: DataInfoEntries<unknown>): (
 }
 
 /** Returns an array of unique partition keys for each column: the i-th element in the resulting 2d array contains all unique values of i-th partition axis. */
-export function getUniquePartitionKeys(acc: undefined): undefined;
 export function getUniquePartitionKeys(acc: DataInfoEntries<unknown>): (string | number)[][];
-export function getUniquePartitionKeys(acc: TreeNodeAccessor): (string | number)[][] | undefined;
+export function getUniquePartitionKeys(acc: DataInfoEntries<unknown> | TreeNodeAccessor | undefined): (string | number)[][] | undefined;
 export function getUniquePartitionKeys(
   acc: TreeNodeAccessor | DataInfoEntries<unknown> | undefined,
 ): (string | number)[][] | undefined {
