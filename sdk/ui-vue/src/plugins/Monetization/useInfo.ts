@@ -1,6 +1,7 @@
 import { computed, watch, ref } from 'vue';
 import { useSdkPlugin } from '../../defineApp';
 import { Response } from './validation';
+import { useIntervalFn } from '@vueuse/core';
 
 export function useInfo() {
   const sdk = useSdkPlugin();
@@ -32,6 +33,12 @@ export function useInfo() {
       (app.value?.model.args as Record<string, unknown>)['__mnzCanRun'] = v;
     }
   });
+
+  if (hasMonetization.value) {
+    useIntervalFn(() => {
+      (app.value?.model.args as Record<string, unknown>)['__mnzDate'] = new Date().toISOString();
+    }, 60_000); // 1 minute
+  }
 
   return {
     hasMonetization,
