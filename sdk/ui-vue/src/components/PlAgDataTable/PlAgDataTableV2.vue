@@ -38,10 +38,9 @@ import { computed, nextTick, ref, shallowRef, toRefs, watch } from 'vue';
 import { AgGridTheme } from '../../lib';
 import PlOverlayLoading from './PlAgOverlayLoading.vue';
 import PlOverlayNoRows from './PlAgOverlayNoRows.vue';
-import { updateXsvGridOptions } from './sources/file-source';
 import { type PlAgCellButtonAxisParams, makeRowId } from './sources/common';
-import { updatePFrameGridOptions } from './sources/table-source';
-import type { PlAgDataTableController, PlDataTableSettings, PlAgDataTableRow, PTableRowKey, PlDataTableSettingsPTable } from './types';
+import { updatePFrameGridOptions } from './sources/table-source-v2';
+import type { PlAgDataTableController, PlAgDataTableSettings, PlAgDataTableRow, PTableRowKey, PlAgDataTableSettingsPTable } from './types';
 import { PlAgGridColumnManager } from '../PlAgGridColumnManager';
 import { autoSizeRowNumberColumn, PlAgDataTableRowNumberColId } from './sources/row-number';
 import { focusRow, makeOnceTracker, trackFirstDataRendered } from './sources/focus-row';
@@ -58,7 +57,7 @@ ModuleRegistry.registerModules([
 const tableState = defineModel<PlDataTableState>({ default: { gridState: {} } });
 const selectedRows = defineModel<PTableRowKey[]>('selectedRows');
 const props = defineProps<{
-  settings?: Readonly<PlDataTableSettings>;
+  settings?: Readonly<PlAgDataTableSettings>;
   /**
    * The showColumnsPanel prop controls the display of a button that activates
    * the columns management panel in the table. To make the button functional
@@ -187,8 +186,8 @@ const sheetsState = computed({
 });
 
 const hasSheets = (
-  settings?: Readonly<PlDataTableSettings>,
-): settings is PlDataTableSettingsPTable => {
+  settings?: Readonly<PlAgDataTableSettings>,
+): settings is PlAgDataTableSettingsPTable => {
   return settings?.sourceType === 'ptable'
     && !!settings.sheets
     && settings.sheets.length > 0;
@@ -396,7 +395,7 @@ const onSheetChanged = (sheetId: string, newValue: string | number) => {
   });
 };
 
-let oldSettings: PlDataTableSettings | undefined = undefined;
+let oldSettings: PlAgDataTableSettings | undefined = undefined;
 
 watch(
   () => [settings.value] as const,
@@ -430,7 +429,7 @@ watch(
           });
 
         case 'ptable': {
-          if (!settings?.pTable) {
+          if (!settings?.model) {
             return gridApi.updateGridOptions({
               loading: true,
               loadingOverlayComponentParams: { notReady: false },
@@ -447,7 +446,7 @@ watch(
 
           const options = await updatePFrameGridOptions(
             getRawPlatformaInstance().pFrameDriver,
-            settings.pTable,
+            settings.model,
             settings.sheets ?? [],
             !!props.clientSideModel || !!selectedRows.value,
             gridState,
@@ -466,27 +465,6 @@ watch(
 
           return gridApi.updateGridOptions({
             loading: false,
-            loadingOverlayComponentParams: { notReady: false },
-            ...options,
-          });
-        }
-
-        case 'xsv': {
-          const xsvFile = settings?.xsvFile;
-          if (!xsvFile) {
-            return gridApi.updateGridOptions({
-              loading: true,
-              loadingOverlayComponentParams: { notReady: false },
-              columnDefs: [],
-              rowData: undefined,
-              datasource: undefined,
-            });
-          }
-
-          const driver = getRawPlatformaInstance().blobDriver;
-          const options = await updateXsvGridOptions(driver, xsvFile);
-          return gridApi.updateGridOptions({
-            loading: true,
             loadingOverlayComponentParams: { notReady: false },
             ...options,
           });
