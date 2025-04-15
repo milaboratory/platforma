@@ -1,5 +1,14 @@
 # @platforma-sdk/ui-vue
 
+## 1.29.13
+
+### Patch Changes
+
+- 04176b1: Use CanonicalizedJson type
+- Updated dependencies [37e6f75]
+  - @platforma-sdk/model@1.29.13
+  - @milaboratories/uikit@2.2.67
+
 ## 1.29.12
 
 ### Patch Changes
