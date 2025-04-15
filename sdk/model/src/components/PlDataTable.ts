@@ -570,19 +570,6 @@ export function createPlDataTableV2<A, U>(
   const allLabelColumns = getAllLabelColumns(ctx.resultPool);
   if (!allLabelColumns) return undefined;
 
-  const spec: PTableColumnSpec[] = [
-    ...mainColumn.spec.axesSpec.map((axis) => ({
-      type: 'axis',
-      id: getAxisId(axis),
-      spec: axis,
-    } satisfies PTableColumnSpec)),
-    ...[...columns, ...allLabelColumns].map((c) => ({
-      type: 'column',
-      id: c.id,
-      spec: c.spec,
-    } satisfies PTableColumnSpec)),
-  ];
-
   const hiddenColumns = new Set<PObjectId>(((): PObjectId[] => {
     // Inner join works as a filter - all columns must be present
     if (coreJoinType === 'inner') return [];
@@ -607,6 +594,19 @@ export function createPlDataTableV2<A, U>(
 
   const visibleColumns = columns.filter((c) => !hiddenColumns.has(c.id));
   const labelColumns = getMatchingLabelColumns(visibleColumns.map(getColumnIdAndSpec), allLabelColumns);
+
+  const spec: PTableColumnSpec[] = [
+    ...mainColumn.spec.axesSpec.map((axis) => ({
+      type: 'axis',
+      id: getAxisId(axis),
+      spec: axis,
+    } satisfies PTableColumnSpec)),
+    ...[...columns, ...labelColumns].map((c) => ({
+      type: 'column',
+      id: c.id,
+      spec: c.spec,
+    } satisfies PTableColumnSpec)),
+  ];
 
   // if at least one column is not yet computed, we can't show the table
   if (!allColumnsComputed([...visibleColumns, ...labelColumns])) return undefined;
