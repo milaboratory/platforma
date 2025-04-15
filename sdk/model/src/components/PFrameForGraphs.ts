@@ -190,7 +190,7 @@ export function enrichColumnsWithCompatible(
     const spec = canonicalizeJson(getPColumnSpecId(secondaryColumn.spec));
     if (mainColumnsBySpec.has(spec)) continue;
 
-    for (const mainColumn of mainColumns) {
+    for (const mainColumn of mainColumnsBySpec.values()) {
       if (checkCompatibility(mainColumn, secondaryColumn)) {
         secondaryColumnsBySpec.set(spec, secondaryColumn);
         break;
