@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.13.7
+
+### Patch Changes
+
+- f9bc9a8: Add Json branded by stringified type
+
 ## 1.13.6
 
 ### Patch Changes

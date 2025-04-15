@@ -1,5 +1,13 @@
 # @platforma-sdk/model
 
+## 1.29.13
+
+### Patch Changes
+
+- 37e6f75: fix doubling columns in result
+- Updated dependencies [f9bc9a8]
+  - @milaboratories/pl-model-common@1.13.7
+
 ## 1.29.12
 
 ### Patch Changes
