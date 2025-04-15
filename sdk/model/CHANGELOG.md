@@ -1,5 +1,12 @@
 # @platforma-sdk/model
 
+## 1.29.14
+
+### Patch Changes
+
+- 6314f67: Minor adjustment of getUniquePartitionKeys signature
+- 564e8d6: Better overloads for getUniquePartitionKeys
+
 ## 1.29.13
 
 ### Patch Changes
