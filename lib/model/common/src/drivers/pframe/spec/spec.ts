@@ -119,6 +119,14 @@ export interface PColumnIdAndSpec {
   readonly spec: PColumnSpec;
 }
 
+/** Get column id and spec from a column */
+export function getColumnIdAndSpec<Data>(column: PColumn<Data>): PColumnIdAndSpec {
+  return {
+    columnId: column.id,
+    spec: column.spec,
+  };
+}
+
 /** Information returned by {@link PFrame.listColumns} method */
 export interface PColumnInfo extends PColumnIdAndSpec {
   /** True if data was associated with this PColumn */

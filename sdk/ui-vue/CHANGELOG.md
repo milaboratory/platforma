@@ -1,5 +1,20 @@
 # @platforma-sdk/ui-vue
 
+## 1.29.12
+
+### Patch Changes
+
+- 621e15a: PlAgDataTableV2 component (does not include hidden columns in join)
+- Updated dependencies [621e15a]
+  - @platforma-sdk/model@1.29.12
+  - @milaboratories/uikit@2.2.67
+
+## 1.29.9
+
+### Patch Changes
+
+- 7cd6249: Rename “Monetization” to “Subscription” and small fixes
+
 ## 1.29.5
 
 ### Patch Changes

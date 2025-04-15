@@ -1,5 +1,11 @@
 # @milaboratories/pl-local
 
+## 1.9.0
+
+### Minor Changes
+
+- 30b6803: Release pl=1.30.1
+
 ## 1.8.0
 
 ### Minor Changes

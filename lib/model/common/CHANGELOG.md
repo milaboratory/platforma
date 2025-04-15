@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.13.6
+
+### Patch Changes
+
+- 621e15a: PlAgDataTableV2 component (does not include hidden columns in join)
+
 ## 1.13.5
 
 ### Patch Changes

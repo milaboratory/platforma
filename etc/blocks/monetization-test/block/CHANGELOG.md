@@ -1,5 +1,19 @@
 # @milaboratories/milaboratories.monetization-test
 
+## 1.0.30
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.ui@1.1.24
+
+## 1.0.29
+
+### Patch Changes
+
+- Updated dependencies [7cd6249]
+  - @milaboratories/milaboratories.monetization-test.model@1.0.5
+  - @milaboratories/milaboratories.monetization-test.ui@1.1.23
+
 ## 1.0.28
 
 ### Patch Changes
