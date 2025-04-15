@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.29.17
+
+### Patch Changes
+
+- 37b84a5: Fixes label column derivation logic in createPlDataTableV2
+
 ## 1.29.16
 
 ### Patch Changes
