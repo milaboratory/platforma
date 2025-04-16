@@ -147,7 +147,12 @@ function getSplitAxisIndices(selector: APColumnSelectorWithSplit | ((spec: PColu
   return splitIndices;
 }
 
-type UniversalPColumnOptsNoDeriver = {
+type SimpleSelectorWithSplit = ((spec: PColumnSpec) => boolean) | PColumnSelectorWithSplit | PColumnSelectorWithSplit[];
+type SimpleSelector = ((spec: PColumnSpec) => boolean) | PColumnSelector | PColumnSelector[];
+type AnchoredSelectorWithSplit = ((spec: PColumnSpec) => boolean) | APColumnSelectorWithSplit | APColumnSelectorWithSplit[];
+type AnchoredSelector = ((spec: PColumnSpec) => boolean) | AnchoredPColumnSelector | AnchoredPColumnSelector[];
+
+type UniversalPColumnOptsNoDeriver<S = SimpleSelector> = {
   labelOps?: LabelDerivationOps;
   /** If true, incomplete data will cause the column to be skipped instead of returning undefined for the whole request. */
   dontWaitAllData?: boolean;
@@ -158,9 +163,14 @@ type UniversalPColumnOptsNoDeriver = {
    * Default value in getUniversalEntries is false, in getColumns it is true.
    */
   overrideLabelAnnotation?: boolean;
+
+  /**
+   * Exclude columns that match the provided selector.
+   */
+  exclude?: S;
 };
 
-type UniversalPColumnOpts = UniversalPColumnOptsNoDeriver & {
+type UniversalPColumnOpts = UniversalPColumnOptsNoDeriver<AnchoredSelector> & {
   anchorCtx: AnchoredIdDeriver;
 } & ResolveAnchorsOptions;
 
@@ -202,15 +212,15 @@ export class PColumnCollection {
 
   // Overload signatures updated to return PColumnEntry types
   public getUniversalEntries(
-    predicateOrSelectors: ((spec: PColumnSpec) => boolean) | APColumnSelectorWithSplit | APColumnSelectorWithSplit[],
+    predicateOrSelectors: AnchoredSelectorWithSplit,
     opts: UniversalPColumnOpts): PColumnEntryUniversal[] | undefined;
   public getUniversalEntries(
-    predicateOrSelectors: ((spec: PColumnSpec) => boolean) | PColumnSelectorWithSplit | PColumnSelectorWithSplit[],
+    predicateOrSelectors: SimpleSelectorWithSplit,
     opts?: UniversalPColumnOptsNoDeriver): PColumnEntryWithLabel[] | undefined;
   public getUniversalEntries(
-    predicateOrSelectors: ((spec: PColumnSpec) => boolean) | APColumnSelectorWithSplit | APColumnSelectorWithSplit[],
+    predicateOrSelectors: AnchoredSelector,
     opts?: Optional<UniversalPColumnOpts, 'anchorCtx'>): (PColumnEntryWithLabel | PColumnEntryUniversal)[] | undefined {
-    const { anchorCtx, labelOps: rawLabelOps, dontWaitAllData = false, overrideLabelAnnotation = false } = opts ?? {};
+    const { anchorCtx, labelOps: rawLabelOps, dontWaitAllData = false, overrideLabelAnnotation = false, exclude } = opts ?? {};
 
     const labelOps: LabelDerivationOps = {
       ...(overrideLabelAnnotation && rawLabelOps?.includeNativeLabel !== false ? { includeNativeLabel: true } : {}),
@@ -223,6 +233,14 @@ export class PColumnCollection {
         ? predicateOrSelectors
         : [predicateOrSelectors];
 
+    const excludePredicate = exclude == undefined
+      ? (_: PColumnSpec) => false
+      : typeof exclude === 'function'
+        ? exclude
+        : selectorsToPredicate(anchorCtx
+          ? Array.isArray(exclude) ? exclude.map((e) => resolveAnchors(anchorCtx.anchors, e, opts)) : resolveAnchors(anchorCtx.anchors, exclude, opts)
+          : exclude as PColumnSelectorWithSplit | PColumnSelectorWithSplit[]);
+
     const intermediateResults: IntermediateColumnEntry[] = [];
 
     for (const rawSelector of selectorsArray) {
@@ -232,7 +250,7 @@ export class PColumnCollection {
       if (usesAnchors) {
         if (!anchorCtx)
           throw new Error('Anchored selectors require an AnchoredIdDeriver to be provided in options.');
-        currentSelector = resolveAnchors(anchorCtx.anchors, rawSelector as AnchoredPColumnSelector, opts);
+        currentSelector = resolveAnchors(anchorCtx.anchors, rawSelector, opts);
       } else
         currentSelector = rawSelector as PColumnSelectorWithSplit | ((spec: PColumnSpec) => boolean);
 
@@ -241,6 +259,7 @@ export class PColumnCollection {
       for (const provider of this.providers) {
         const providerColumns = provider.selectColumns(currentSelector);
         for (const col of providerColumns) {
+          if (excludePredicate(col.spec)) continue;
           if (selectedIds.has(col.id)) throw new Error(`Duplicate column id ${col.id} in provider ${provider.constructor.name}`);
           selectedIds.add(col.id);
           selectedColumns.push(col);
@@ -391,13 +410,13 @@ export class PColumnCollection {
   }
 
   public getColumns(
-    predicateOrSelectors: ((spec: PColumnSpec) => boolean) | APColumnSelectorWithSplit | APColumnSelectorWithSplit[],
+    predicateOrSelectors: AnchoredSelectorWithSplit,
     opts: UniversalPColumnOpts): PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor>>[] | undefined;
   public getColumns(
-    predicateOrSelectors: ((spec: PColumnSpec) => boolean) | PColumnSelectorWithSplit | PColumnSelectorWithSplit[],
+    predicateOrSelectors: SimpleSelectorWithSplit,
     opts?: UniversalPColumnOptsNoDeriver): PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor>>[] | undefined;
   public getColumns(
-    predicateOrSelectors: ((spec: PColumnSpec) => boolean) | APColumnSelectorWithSplit | APColumnSelectorWithSplit[],
+    predicateOrSelectors: AnchoredSelector,
     opts?: Optional<UniversalPColumnOpts, 'anchorCtx'>): PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor>>[] | undefined {
     const entries = this.getUniversalEntries(predicateOrSelectors, {
       overrideLabelAnnotation: true, // default for getColumns
