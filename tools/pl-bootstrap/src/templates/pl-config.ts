@@ -155,6 +155,7 @@ export function loadDefaults(jwtKey: string, options?: types.plOptions): types.p
     core,
     monitoring,
     debug,
+    numCpu: options?.numCpu,
     storages: { primary, work, library },
     hacks: { libraryDownloadable: true },
   };
@@ -206,6 +207,14 @@ export function render(options: types.plSettings): string {
   let miLicenseSecret = options.license.value;
   if (options.license.file != '') {
     miLicenseSecret = fs.readFileSync(options.license.file).toString().trimEnd();
+  }
+
+  let cpuLimit = ''
+  if (options.numCpu) {
+    cpuLimit = `
+    resources:
+      cpu: ${options.numCpu}
+`;
   }
 
   return `
@@ -275,6 +284,7 @@ controllers:
     storageRoot: '${(options.storages.work).rootPath}'
     workdirCacheOnSuccess: 20m
     workdirCacheOnFailure: 1h
+${cpuLimit}
     secrets:
       - map:
           MI_LICENSE: ${JSON.stringify(miLicenseSecret)}

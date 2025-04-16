@@ -17,6 +17,7 @@ import { withTrace } from './trace';
 import upath from 'upath';
 import fsp from 'node:fs/promises';
 import type { Required } from 'utility-types';
+import * as os from 'node:os';
 
 export const LocalConfigYaml = 'config-local.yaml';
 
@@ -134,19 +135,18 @@ export type LocalPlOptions = {
   readonly onCloseAndErrorNoStop?: (pl: LocalPl) => Promise<void>;
 };
 
-type LocalPlOptionsFull = Required<LocalPlOptions, 'plBinary' | 'spawnOptions' | 'closeOld'>;
+export type LocalPlOptionsFull = Required<LocalPlOptions, 'plBinary' | 'spawnOptions' | 'closeOld'>;
 
 /**
  * Starts pl-core, if the option was provided downloads a binary, reads license environments etc.
  */
 export async function localPlatformaInit(logger: MiLogger, _ops: LocalPlOptions): Promise<LocalPl> {
   // filling-in default values
-  const ops = {
-    plBinary: newDefaultPlBinarySource(),
-    spawnOptions: {},
-    closeOld: true,
-    ..._ops,
-  } satisfies LocalPlOptionsFull;
+
+  // Backend could consume a lot of CPU power,
+  // we want to keep at least a couple for UI and other apps to work.
+  const numCpu = Math.max(os.cpus().length - 2, 1);
+  const ops = mergeDefaultOps(_ops, numCpu);
 
   return await withTrace(logger, async (trace, t) => {
     trace('startOptions', { ...ops, config: 'too wordy' });
@@ -164,20 +164,9 @@ export async function localPlatformaInit(logger: MiLogger, _ops: LocalPlOptions)
 
     const plBinPath = upath.join(workDir, 'binaries');
     const baseBinaryPath = await resolveLocalPlBinaryPath(logger, plBinPath, ops.plBinary);
-
     const binaryPath = trace('binaryPath', upath.join('binaries', baseBinaryPath));
 
-    const processOpts: ProcessOptions = {
-      cmd: binaryPath,
-      args: ['--config', configPath],
-      opts: {
-        env: { ...process.env },
-        cwd: workDir,
-        stdio: ['pipe', 'ignore', 'inherit'],
-        windowsHide: true, // hide a terminal on Windows
-        ...ops.spawnOptions,
-      },
-    };
+    const processOpts = plProcessOps(binaryPath, configPath, ops, workDir, process.env);
     trace('processOpts', {
       cmd: processOpts.cmd,
       args: processOpts.args,
@@ -219,4 +208,68 @@ async function localPlatformaReadPidAndStop(
 
     return t;
   });
+}
+
+/** Gets default options for the whole init process
+ * and overrides them with the provided options. */
+export function mergeDefaultOps(ops: LocalPlOptions, numCpu: number): LocalPlOptionsFull {
+  const result: {
+    plBinary: PlBinarySource;
+    spawnOptions: SpawnOptions;
+    closeOld: boolean;
+  } = {
+    plBinary: newDefaultPlBinarySource(),
+    spawnOptions: {
+      env: {
+        GOMAXPROCS: String(numCpu),
+      },
+    },
+    closeOld: true,
+  };
+
+  if (ops.spawnOptions?.env) {
+    result.spawnOptions.env = { ...result.spawnOptions.env, ...ops.spawnOptions.env };
+  }
+
+  if (ops.spawnOptions) {
+    const withoutEnv = { ...ops.spawnOptions };
+    delete withoutEnv['env'];
+    result.spawnOptions = { ...result.spawnOptions, ...withoutEnv };
+  }
+
+  const withoutSpawnOps = { ...ops };
+  delete withoutSpawnOps['spawnOptions'];
+
+  return { ...result, ...withoutSpawnOps };
+}
+
+/** Gets default options for a platforma local binary
+ * and overrides them with the provided options. */
+export function plProcessOps(
+  binaryPath: any,
+  configPath: string,
+  ops: LocalPlOptionsFull,
+  workDir: string,
+  defaultEnv: Record<string, string | undefined>,
+): ProcessOptions {
+  const result: ProcessOptions = {
+    cmd: binaryPath,
+    args: ['--config', configPath],
+    opts: {
+      env: { ...defaultEnv },
+      cwd: workDir,
+      stdio: ['pipe', 'ignore', 'inherit'],
+      windowsHide: true, // hide a terminal on Windows
+    },
+  };
+
+  if (ops.spawnOptions?.env) {
+    result.opts.env = { ...result.opts.env, ...ops.spawnOptions.env };
+  }
+
+  const withoutEnv = { ...ops.spawnOptions };
+  delete withoutEnv['env'];
+  result.opts = { ...result.opts, ...withoutEnv };
+
+  return result;
 }
