@@ -1,5 +1,13 @@
 # @milaboratories/pl-local
 
+## 1.8.1
+
+### Patch Changes
+
+- 0840772: limit GOMAXPROCS everywhere
+- Updated dependencies [0840772]
+  - @milaboratories/pl-config@1.4.6
+
 ## 1.9.0
 
 ### Minor Changes

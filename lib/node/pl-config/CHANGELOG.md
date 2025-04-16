@@ -1,5 +1,11 @@
 # @milaboratories/pl-config
 
+## 1.4.6
+
+### Patch Changes
+
+- 0840772: limit GOMAXPROCS everywhere
+
 ## 1.4.5
 
 ### Patch Changes
