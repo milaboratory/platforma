@@ -213,7 +213,7 @@ export function render(options: types.plSettings): string {
   if (options.numCpu) {
     cpuLimit = `
     resources:
-      cpu ${options.numCpu}
+      cpu: ${options.numCpu}
 `;
   }
 
