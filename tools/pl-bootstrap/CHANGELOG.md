@@ -1,5 +1,13 @@
 # @platforma-sdk/bootstrap
 
+## 3.4.5
+
+### Patch Changes
+
+- 0840772: limit GOMAXPROCS everywhere
+- Updated dependencies [0840772]
+  - @milaboratories/pl-deployments@1.8.1
+
 ## 3.4.4
 
 ### Patch Changes
