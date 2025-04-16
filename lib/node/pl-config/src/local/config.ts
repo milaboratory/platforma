@@ -17,6 +17,7 @@ import { createDefaultLocalPackageSettings } from '../common/packageloader';
 import { FSKVStorage } from './fs_kv_storage';
 import * as crypto from 'node:crypto';
 import { newDefaultPlConfig } from '../common/config';
+import * as os from 'node:os';
 
 export type LocalPlConfigGeneratorOptions = {
   /** Logger for Middle-Layer */
@@ -30,6 +31,13 @@ export type LocalPlConfigGeneratorOptions = {
 
   /** Do we need to download things from global access? Default false. */
   useGlobalAccess?: boolean;
+
+  /** Number of cores local platforma could consume. Default os.cpus().length - 2.
+   * Backend could consume a lot of CPU power,
+   * we want to keep at least a couple for UI and other apps to work.
+   */
+  numCpu?: number;
+
   /**
    * A hook that allows to override any default configuration.
    * Check the docs of platforma configuration for the specific fields.
@@ -39,8 +47,12 @@ export type LocalPlConfigGeneratorOptions = {
   plConfigPostprocessing?: (config: PlConfig) => PlConfig;
 };
 
-const DefaultLocalPlConfigGeneratorOptions: Pick<LocalPlConfigGeneratorOptions, 'useGlobalAccess'> = {
+const DefaultLocalPlConfigGeneratorOptions: Pick<LocalPlConfigGeneratorOptions, 'useGlobalAccess' | 'numCpu'> = {
   useGlobalAccess: false,
+
+  // Backend could consume a lot of CPU power,
+  // we want to keep at least a couple for UI and other apps to work.
+  numCpu: Math.max(os.cpus().length - 2, 1),
 };
 
 /** Defines which storages from pl are available via local paths */
@@ -110,7 +122,14 @@ export async function generateLocalPlConfigs(
   return {
     workingDir: opts.workingDir,
 
-    plConfigContent: await createDefaultPlLocalConfig(opts, ports, user, password, jwt, storages),
+    plConfigContent: await createDefaultPlLocalConfig(
+      opts,
+      ports,
+      user,
+      password,
+      jwt,
+      storages,
+    ),
 
     plAddress: ports.grpc,
     plUser: user,
@@ -139,6 +158,15 @@ async function createDefaultPlLocalConfig(
   const packageLoaderConfig = await createDefaultLocalPackageSettings(opts.workingDir, notEmpty(opts.useGlobalAccess));
 
   let config = newDefaultPlConfig(ports, license, htpasswdAuth, jwtKey, packageLoaderConfig, storages);
+
+  // In local deployment we need to define a number of
+  // cpus that are less then the maximum one.
+
+  // FIXME: it seems to be overwritten on the backend side.
+  // Let's fix defaults loading in the backend and remove hardcoded constants from here.
+  config.controllers.runner.resources = {
+    cpu: notEmpty(opts.numCpu),
+  }
 
   if (opts.plConfigPostprocessing) config = opts.plConfigPostprocessing(config);
 

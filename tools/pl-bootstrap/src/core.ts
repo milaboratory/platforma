@@ -1,4 +1,4 @@
-import type { ChildProcess, SpawnSyncReturns } from 'node:child_process';
+import type { ChildProcess, SpawnOptions, SpawnSyncReturns } from 'node:child_process';
 import { spawn, spawnSync } from 'node:child_process';
 import yaml from 'yaml';
 import fs from 'node:fs';
@@ -175,13 +175,23 @@ export default class Core {
       });
     }
 
-    upCommands.push({
+    const runBinary: instanceCommand = {
       async: true,
       cmd: plBinaryPath,
       args: ['--quiet', '--config', configPath],
       workdir: workdir,
-      runOpts: { stdio: 'inherit' },
-    });
+      runOpts: {
+        stdio: 'inherit',
+      },
+    };
+
+    if (options?.configOptions?.numCpu) {
+      runBinary.runOpts.env = {
+        GOMAXPROCS: String(options?.configOptions?.numCpu),
+      }
+    }
+
+    upCommands.push(runBinary);
 
     state.setInstanceInfo(instanceName, {
       type: 'process',

@@ -156,16 +156,40 @@ type PlFsStorageTypeSettings = {
   rootPath: string;
 };
 
-export type PlControllerRunnerSettings = {
-  type: string;
-  storageRoot: string;
-  workdirCacheOnFailure: string;
+export type PlControllerRunnerSettings = PlControllerRunnerSettingsLocal;
+
+export type PlControllerRunnerSettingsLocal = {
+  type: 'local';
   secrets: PlControllerRunnerSecretsSettings[];
+
+  storageRoot: string;
+
+  packagesRoot?: string;
+  commandEnv?: string[];
+  workdirCache?: string;
+  workdirCacheOnSuccess?: string;
+  workdirCacheOnFailure?: string;
+  logDir?: string;
+  queues?: PlControllerRunnerQueueConfig[];
+  resources?: PlControllerRunnerResourcesConfig;
 };
 
 export type PlControllerRunnerSecretsSettings = {
   map: Record<string, string>;
 };
+
+export type PlControllerRunnerQueueConfig = {
+  name: string;
+  cores?: number;
+  maxConcurrency?: number;
+  memorySoftLimit?: string;
+  memoryHardLimit?: string;
+}
+
+export type PlControllerRunnerResourcesConfig = {
+  cpu?: number;
+  memory?: string;
+}
 
 export type PlControllerPackageLoaderSettings = {
   packagesRoot: string;

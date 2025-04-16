@@ -7,6 +7,7 @@ import * as cmdOpts from '../../../cmd-opts';
 import * as platforma from '../../../platforma';
 import * as util from '../../../util';
 import state from '../../../state';
+import * as os from 'node:os';
 
 export default class S3 extends Command {
   static override description = 'Run Platforma Backend service as local process on current host (no docker container)';
@@ -88,6 +89,11 @@ export default class S3 extends Command {
         core: {
           auth: { enabled: authEnabled, drivers: authDrivers },
         },
+
+        // Backend could consume a lot of CPU power,
+        // we want to keep at least a couple for UI and other apps to work.
+        numCpu: Math.max(os.cpus().length - 2, 1),
+
         storages: {
           work: { type: 'FS', rootPath: flags['storage-work'] },
         },
