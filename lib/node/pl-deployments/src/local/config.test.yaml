@@ -52,6 +52,8 @@ controllers:
 
   runner:
     type: local
+    resources:
+      cpu: 5
     storageRoot: './storages/work'
 
   packageLoader:

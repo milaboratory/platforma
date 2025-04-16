@@ -10,6 +10,8 @@ export type plSettings = {
   monitoring: monitoringSettings;
   debug: debugSettings;
 
+  numCpu?: number;
+
   hacks: {
     libraryDownloadable: boolean;
   };
@@ -22,6 +24,8 @@ export type plOptions = {
   grpc?: grpcOptions;
   core?: coreOptions;
   storages?: storagesOptions;
+
+  numCpu?: number;
 
   monitoring?: monitoringOptions;
   debug?: debugOptions;
