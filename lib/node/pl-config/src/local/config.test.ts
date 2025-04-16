@@ -22,6 +22,7 @@ test('should return right configs', async ({ expect }) => {
         debug: 11236,
       },
     },
+    numCpu: 5,
     plConfigPostprocessing: (config: PlConfig) => {
       (config.core.auth[0] as PlAuthDriverJwt).key = 'jwtkey';
       return config;

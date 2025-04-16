@@ -6,6 +6,7 @@ import * as cmdOpts from '../../../cmd-opts';
 import * as util from '../../../util';
 import state from '../../../state';
 import * as platforma from '../../../platforma';
+import * as os from 'node:os';
 
 export default class Local extends Command {
   static override description = 'Run Platforma Backend service as local process on current host (no docker container)';
@@ -88,6 +89,10 @@ export default class Local extends Command {
         storages: {
           work: { type: 'FS', rootPath: flags['storage-work'] },
         },
+
+        // Backend could consume a lot of CPU power,
+        // we want to keep at least a couple for UI and other apps to work.
+        numCpu: Math.max(os.cpus().length - 2, 1),
       },
     };
 
