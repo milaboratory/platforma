@@ -1,5 +1,15 @@
 # @milaboratories/pl-local
 
+## 2.0.0
+
+### Major Changes
+
+- 9ca5b8d: changeset bump; something is strang with version
+
+### Minor Changes
+
+- 9848afc: bump pl backend 2
+
 ## 1.8.2
 
 ### Patch Changes
