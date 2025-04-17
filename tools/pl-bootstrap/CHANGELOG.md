@@ -1,5 +1,13 @@
 # @platforma-sdk/bootstrap
 
+## 3.4.6
+
+### Patch Changes
+
+- 3a4637b: bump pl backend: fix panic with cached templates in bootstrap
+- Updated dependencies [3a4637b]
+  - @milaboratories/pl-deployments@1.8.2
+
 ## 3.4.5
 
 ### Patch Changes

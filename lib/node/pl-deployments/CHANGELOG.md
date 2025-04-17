@@ -1,5 +1,11 @@
 # @milaboratories/pl-local
 
+## 1.8.2
+
+### Patch Changes
+
+- 3a4637b: bump pl backend: fix panic with cached templates in bootstrap
+
 ## 1.8.1
 
 ### Patch Changes
