@@ -257,6 +257,16 @@ test('simple project manipulations test', { timeout: 20000 }, async ({ expect })
       value: 18
     });
 
+    const overviewSnapshot3 = await prj.overview.awaitStableValue();
+    expect(overviewSnapshot3.blocks.find((b) => b.id === block3Id)?.stale).toEqual(false);
+    expect(overviewSnapshot3.blocks.find((b) => b.id === block2Id)?.stale).toEqual(false);
+
+    await prj.setBlockArgs(block2Id, { numbers: [3, 4, 5], __ignored_field: 'test' });
+
+    const overviewSnapshot4 = await prj.overview.awaitStableValue();
+    expect(overviewSnapshot4.blocks.find((b) => b.id === block3Id)?.stale).toEqual(false);
+    expect(overviewSnapshot4.blocks.find((b) => b.id === block2Id)?.stale).toEqual(false);
+
     await prj.resetBlockArgsAndUiState(block2Id);
     await prj.setBlockSettings(block2Id, { versionLock: 'patch' });
 
@@ -323,16 +333,6 @@ test('reorder & rename blocks', { timeout: 20000 }, async ({ expect }) => {
         { id: block1Id, calculationStatus: 'Done' }
       ]
     });
-
-    // await prj.setBlockLabel(block3Id, 'New Block Label');
-    // const overviewSnapshot3 = await prj.overview.awaitStableValue();
-    // expect(overviewSnapshot3).toMatchObject({
-    //   blocks: [
-    //     { id: block2Id, calculationStatus: 'Done' },
-    //     { id: block3Id, calculationStatus: 'Limbo', label: 'New Block Label' },
-    //     { id: block1Id, calculationStatus: 'Done' }
-    //   ]
-    // });
   });
 });
 

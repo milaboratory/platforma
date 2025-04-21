@@ -1895,6 +1895,9 @@ importers:
       quickjs-emscripten:
         specifier: 'catalog:'
         version: 0.31.0
+      remeda:
+        specifier: 'catalog:'
+        version: 2.21.2
       undici:
         specifier: 'catalog:'
         version: 7.5.0
