@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-error-like",
-  "version": "1.12.0",
+  "version": "1.12.1",
   "description": "Platforma SDK Model",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",

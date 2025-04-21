@@ -1,5 +1,11 @@
 # @milaboratories/pl-error-like
 
+## 1.12.1
+
+### Patch Changes
+
+- 141aebc: Minor monetization sidebar appearance fixes
+
 ## 1.12.0
 
 ### Minor Changes

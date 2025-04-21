@@ -1,5 +1,14 @@
 # @platforma-sdk/test
 
+## 1.29.22
+
+### Patch Changes
+
+- @milaboratories/computable@2.4.5
+- @milaboratories/pl-tree@1.5.7
+- @platforma-sdk/model@1.29.22
+- @milaboratories/pl-middle-layer@1.35.1
+
 ## 1.29.21
 
 ### Patch Changes

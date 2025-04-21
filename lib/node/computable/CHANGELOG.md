@@ -1,5 +1,12 @@
 # @milaboratories/computable
 
+## 2.4.5
+
+### Patch Changes
+
+- Updated dependencies [141aebc]
+  - @milaboratories/pl-error-like@1.12.1
+
 ## 2.4.4
 
 ### Patch Changes

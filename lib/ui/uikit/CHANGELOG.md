@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.70
+
+### Patch Changes
+
+- 141aebc: Minor monetization sidebar appearance fixes
+
 ## 2.2.69
 
 ### Patch Changes
