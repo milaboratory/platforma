@@ -1,5 +1,18 @@
 # @milaboratories/pl-middle-layer
 
+## 1.35.1
+
+### Patch Changes
+
+- @milaboratories/pl-model-common@1.13.8
+- @milaboratories/computable@2.4.5
+- @milaboratories/pl-errors@1.0.7
+- @milaboratories/pl-tree@1.5.7
+- @platforma-sdk/model@1.29.22
+- @milaboratories/pl-model-middle-layer@1.7.26
+- @milaboratories/pl-drivers@1.5.48
+- @platforma-sdk/block-tools@2.5.40
+
 ## 1.35.0
 
 ### Minor Changes

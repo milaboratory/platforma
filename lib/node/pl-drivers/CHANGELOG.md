@@ -1,5 +1,13 @@
 # @milaboratories/pl-drivers
 
+## 1.5.48
+
+### Patch Changes
+
+- @milaboratories/pl-model-common@1.13.8
+- @milaboratories/computable@2.4.5
+- @milaboratories/pl-tree@1.5.7
+
 ## 1.5.47
 
 ### Patch Changes

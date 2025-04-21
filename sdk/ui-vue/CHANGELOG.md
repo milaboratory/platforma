@@ -1,5 +1,14 @@
 # @platforma-sdk/ui-vue
 
+## 1.29.22
+
+### Patch Changes
+
+- 141aebc: Minor monetization sidebar appearance fixes
+- Updated dependencies [141aebc]
+  - @milaboratories/uikit@2.2.70
+  - @platforma-sdk/model@1.29.22
+
 ## 1.29.17
 
 ### Patch Changes
