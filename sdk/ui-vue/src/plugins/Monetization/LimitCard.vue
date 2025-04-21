@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 
 const props = defineProps<{
+  type: 'unique_launches' | 'volume_limit';
   label: string;
   used: number;
   toSpend: number;
@@ -23,16 +24,31 @@ const availablePercentage = computed(() => {
   if (props.available === null) return 100;
   return 100 - usedPercentage.value - toSpendPercentage.value;
 });
+
+const computedLabel = computed(() => {
+  if (props.type === 'unique_launches') return 'Runs Limits';
+  if (props.type === 'volume_limit') return 'Volume Limits';
+  return props.label;
+});
+
+const toGB = (v: number) => {
+  return (v / 1024 / 1024 / 1024).toFixed(2) + ' GB';
+};
+
+const formatUnit = (v: number) => {
+  if (props.type === 'volume_limit') return toGB(v);
+  return v;
+};
 </script>
 
 <template>
   <div :class="$style.container">
-    <span :class="$style.label">{{ label }}</span>
+    <span :class="$style.label">{{ computedLabel }}</span>
     <div :class="$style.content">
       <div :class="$style.contentAvailable">
         Available:
         <div style="flex: 1" />
-        <span v-if="available !== null"><strong>{{ available }}</strong> / {{ available + toSpend + used }}</span>
+        <span v-if="available !== null"><strong>{{ formatUnit(available) }}</strong> / {{ formatUnit(available + toSpend + used) }}</span>
         <span v-else>Unlimited</span>
       </div>
       <div :class="$style.progressBar">
@@ -40,14 +56,14 @@ const availablePercentage = computed(() => {
         <span :class="$style.progressBarToSpend" :style="{ width: `${toSpendPercentage}%` }" />
         <span :class="$style.progressBarUsed" :style="{ width: `${usedPercentage}%` }" />
       </div>
-      <div v-if="available !== null" :class="$style.legends">
+      <div :class="$style.legends">
         <div :class="$style.usedLegend">
-          <i/>
-          Used: {{ used }}
+          <span/>
+          Used: {{ formatUnit(used) }}
         </div>
         <div :class="$style.toSpendLegend">
-          <i/>
-          To spend: {{ toSpend }}
+          <span/>
+          To spend: {{ formatUnit(toSpend) }}
         </div>
       </div>
     </div>
@@ -59,7 +75,7 @@ const availablePercentage = computed(() => {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  background-color: #F7F8FA;
+  background-color: var(--bg-base-light);
   border-radius: 6px;
   padding: 10px 12px 16px 12px;
   color: var(--txt-01);
@@ -133,7 +149,7 @@ const availablePercentage = computed(() => {
     flex: 1;
   }
 
-  i {
+  span {
     display: block;
     border-radius: 1px;
     border: 1px solid var(--border-color-default);
@@ -146,7 +162,7 @@ const availablePercentage = computed(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-  i {
+  span {
     background: #FFCECC;
   }
 }
@@ -155,7 +171,7 @@ const availablePercentage = computed(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-  i {
+  span {
     background: #FAF5AA;
   }
 }

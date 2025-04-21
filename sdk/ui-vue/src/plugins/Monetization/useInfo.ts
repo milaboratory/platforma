@@ -30,6 +30,12 @@ export function useInfo() {
 
   const status = computed(() => result.value?.status);
 
+  const customerEmail = computed(() => result.value?.customerEmail);
+
+  const endOfBillingPeriod = computed(() => result.value?.mnz.endOfBillingPeriod);
+
+  const limits = computed(() => result.value?.mnz.limits);
+
   watch(canRun, (v) => {
     if (hasMonetization.value) {
       (app.value?.model.args as Record<string, unknown>)['__mnzCanRun'] = v;
@@ -48,5 +54,8 @@ export function useInfo() {
     error,
     canRun,
     status,
+    customerEmail,
+    endOfBillingPeriod,
+    limits,
   };
 }
