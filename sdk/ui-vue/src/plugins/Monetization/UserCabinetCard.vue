@@ -30,7 +30,7 @@ const copyToClipboard = () => {
 
 <template>
   <div v-if="userCabinetUrl" :class="$style.urlSection">
-    <div :class="$style.urlLabel">User cabinet URL:</div>
+    <div :class="$style.urlLabel">Scientist cabinet URL:</div>
     <div :class="$style.urlActions">
       <div :class="$style.urlDisplay" :title="userCabinetUrl">{{ userCabinetUrl }}</div>
       <button :class="$style.copyButton" @click="copyToClipboard">

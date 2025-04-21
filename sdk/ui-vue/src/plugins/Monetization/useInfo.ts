@@ -28,6 +28,8 @@ export function useInfo() {
 
   const canRun = computed(() => !!result.value?.canRun);
 
+  const status = computed(() => result.value?.status);
+
   watch(canRun, (v) => {
     if (hasMonetization.value) {
       (app.value?.model.args as Record<string, unknown>)['__mnzCanRun'] = v;
@@ -45,5 +47,6 @@ export function useInfo() {
     result,
     error,
     canRun,
+    status,
   };
 }
