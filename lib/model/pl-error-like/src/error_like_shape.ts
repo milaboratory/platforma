@@ -102,7 +102,7 @@ export function parseErrorLikeSafe(err: string): {
   try {
     return ErrorLike.safeParse(JSON.parse(err));
   } catch (e) {
-    return {success: false, error: new Error(`parseErrorLikeSafe: could not parse JSON: ${err}, ${e}`)}
+    return { success: false, error: new Error(`parseErrorLikeSafe: could not parse JSON: ${err}, ${String(e)}`) };
   }
 }
 
