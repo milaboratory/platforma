@@ -1,5 +1,11 @@
 # @milaboratories/ts-helpers
 
+## 1.1.6
+
+### Patch Changes
+
+- 56d021e: added deepFreeze
+
 ## 1.1.5
 
 ### Patch Changes
