@@ -21,7 +21,7 @@ const DryRunResult = z.object({
     z.literal('select-tariff'),
     z.literal('active'),
     z.literal('payment_required'),
-    z.unknown(),
+    z.literal('limits_exceeded'),
   ]),
   mnz: z.object({
     type: MonetizationType.optional(),

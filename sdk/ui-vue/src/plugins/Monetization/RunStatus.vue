@@ -10,7 +10,16 @@ const tooltipText = computed(() => {
   if (props.canRun) {
     return 'Can run';
   }
+
   return 'Cannot run: check your monetization settings';
+});
+
+const badgeText = computed(() => {
+  if (props.canRun) {
+    return 'Ready to run';
+  }
+
+  return 'Can\'t run';
 });
 </script>
 
@@ -22,7 +31,7 @@ const tooltipText = computed(() => {
           <span :class="$style.dot" />
         </span>
       </i>
-      <span>Can run </span>
+      <span>{{ badgeText }}</span>
     </div>
     <PlTooltip>
       <template #tooltip>
