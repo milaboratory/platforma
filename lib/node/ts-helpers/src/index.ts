@@ -11,6 +11,7 @@ export * from './retries';
 export * from './counter';
 export * from './crypto/signer';
 export * from './files';
+export * from './obj';
 
 export function assertNever(x: never): never {
   // eslint-disable-next-line @typescript-eslint/restrict-plus-operands

@@ -61,7 +61,7 @@ import {
 import Denque from 'denque';
 import { exportContext, getPreparedExportTemplateEnvelope } from './context_export';
 import { loadTemplate } from './template/template_loading';
-
+import { deepFreeze } from '@milaboratories/ts-helpers';
 type FieldStatus = 'NotReady' | 'Ready' | 'Error';
 
 interface BlockFieldState {
@@ -133,7 +133,7 @@ class BlockInfo {
 
   private readonly currentInputsC = cached(
     () => this.fields.currentArgs!.modCount,
-    () => JSON.parse(Buffer.from(this.fields.currentArgs!.value!).toString()) as unknown,
+    () => deepFreeze(JSON.parse(Buffer.from(this.fields.currentArgs!.value!).toString())) as unknown,
   );
 
   private readonly actualProductionInputsC = cached(
@@ -141,7 +141,7 @@ class BlockInfo {
     () => {
       const bin = this.fields.prodArgs?.value;
       if (bin === undefined) return undefined;
-      return JSON.parse(Buffer.from(bin).toString()) as unknown;
+      return deepFreeze(JSON.parse(Buffer.from(bin).toString())) as unknown;
     },
   );
 

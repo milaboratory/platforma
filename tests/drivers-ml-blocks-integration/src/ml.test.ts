@@ -333,16 +333,6 @@ test('reorder & rename blocks', { timeout: 20000 }, async ({ expect }) => {
         { id: block1Id, calculationStatus: 'Done' }
       ]
     });
-
-    // await prj.setBlockLabel(block3Id, 'New Block Label');
-    // const overviewSnapshot3 = await prj.overview.awaitStableValue();
-    // expect(overviewSnapshot3).toMatchObject({
-    //   blocks: [
-    //     { id: block2Id, calculationStatus: 'Done' },
-    //     { id: block3Id, calculationStatus: 'Limbo', label: 'New Block Label' },
-    //     { id: block1Id, calculationStatus: 'Done' }
-    //   ]
-    // });
   });
 });
 
