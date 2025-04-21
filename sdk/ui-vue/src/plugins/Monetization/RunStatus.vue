@@ -4,6 +4,7 @@ import { PlIcon24, PlTooltip } from '@milaboratories/uikit';
 
 const props = defineProps<{
   canRun: boolean | undefined;
+  statusText: string | undefined;
 }>();
 
 const tooltipText = computed(() => {
@@ -19,26 +20,29 @@ const badgeText = computed(() => {
     return 'Ready to run';
   }
 
-  return 'Can\'t run';
+  return 'Cannot run';
 });
 </script>
 
 <template>
-  <div :class="[{ [$style['can-run']]: canRun }, $style.container]">
-    <div :class="$style.badge">
-      <i :class="$style.blob">
-        <span>
-          <span :class="$style.dot" />
-        </span>
-      </i>
-      <span>{{ badgeText }}</span>
+  <div>
+    <div :class="[{ [$style['can-run']]: canRun }, $style.container]">
+      <div :class="$style.badge">
+        <i :class="$style.blob">
+          <span>
+            <span :class="$style.dot" />
+          </span>
+        </i>
+        <span>{{ badgeText }}</span>
+      </div>
+      <PlTooltip>
+        <template #tooltip>
+          {{ tooltipText }}
+        </template>
+        <PlIcon24 name="info" />
+      </PlTooltip>
     </div>
-    <PlTooltip>
-      <template #tooltip>
-        {{ tooltipText }}
-      </template>
-      <PlIcon24 name="info" />
-    </PlTooltip>
+    <div v-if="statusText" :class="$style.statusText">{{ statusText }}</div>
   </div>
 </template>
 
@@ -55,8 +59,17 @@ const badgeText = computed(() => {
   }
 }
 
+.statusText {
+  margin-top: 6px;
+  color: var(--txt-error);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+}
+
 .badge {
   display: flex;
+  gap: 6px;
   height: 40px;
   padding: 6px 16px 6px 8px;
   align-items: center;

@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-import { PlIcon24 } from '@milaboratories/uikit';
+import { ref, computed } from 'vue';
+import { PlTooltip, PlMaskIcon24 } from '@milaboratories/uikit';
 
 const props = defineProps<{
   userCabinetUrl: string;
 }>();
 
 const copiedMessage = ref('');
+
+const iconName = computed(() => (copiedMessage.value ? 'clipboard-copied' : 'clipboard'));
 
 const copyToClipboard = () => {
   if (props.userCabinetUrl) {
@@ -29,69 +31,34 @@ const copyToClipboard = () => {
 </script>
 
 <template>
-  <div v-if="userCabinetUrl" :class="$style.urlSection">
-    <div :class="$style.urlLabel">Scientist cabinet URL:</div>
-    <div :class="$style.urlActions">
-      <div :class="$style.urlDisplay" :title="userCabinetUrl">{{ userCabinetUrl }}</div>
-      <button :class="$style.copyButton" @click="copyToClipboard">
-        <PlIcon24 name="copy" />
-        <span>Copy</span>
-      </button>
-      <span v-if="copiedMessage" :class="$style.copiedMessage">{{ copiedMessage }}</span>
+  <div>
+    <div v-if="userCabinetUrl" :class="$style.urlSection">
+      <div :class="$style.urlLabel">Scientist cabinet URL:</div>
+      <div :class="$style.urlActions">
+        <div :class="$style.urlDisplay" :title="userCabinetUrl">{{ userCabinetUrl }}</div>
+        <PlTooltip :close-delay="800" position="top">
+          <PlMaskIcon24 :class="$style.copyIcon" title="Copy content" :name="iconName" @click="copyToClipboard" />
+          <template #tooltip>{{ copiedMessage ? copiedMessage : 'Copy' }}</template>
+        </PlTooltip>
+      </div>
+    </div>
+    <div :class="$style.hint">
+      * Copy and paste the link into your browser
     </div>
   </div>
 </template>
 
 <style module>
-.header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 4px;
+.hint {
+  margin-top: 6px;
+  color: var(--txt-03);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 16px;
 }
 
-.statusIndicator {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background-color: #ccc;
-}
-
-.statusActive {
-  background-color: #4caf50;
-}
-
-.statusSelectTariff {
-  background-color: #ff9800;
-}
-
-.statusPaymentRequired {
-  background-color: #f44336;
-}
-
-.title {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-  color: #333;
-}
-
-.statusMessage {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 14px;
-  border-radius: 6px;
-  background-color: #f5f5f5;
-  border-left: 4px solid #ccc;
-}
-
-.warningIcon {
-  color: #ff9800;
-}
-
-.successIcon {
-  color: #4caf50;
+.copyIcon {
+  cursor: pointer;
 }
 
 .urlSection {
@@ -112,84 +79,18 @@ const copyToClipboard = () => {
   display: flex;
   align-items: center;
   gap: 10px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 
 .urlDisplay {
   font-family: monospace;
   font-size: 14px;
   color: #0066cc;
-  background-color: #e6e6e6;
-  padding: 6px 10px;
+  padding: 6px 10px 6px 0;
   border-radius: 4px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 300px;
-}
-
-.copyButton {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background-color: #2196f3;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  padding: 6px 12px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: background-color 0.2s;
-}
-
-.copyButton:hover {
-  background-color: #0b7dda;
-}
-
-.copyButton:active {
-  background-color: #0a6bbd;
-}
-
-.copiedMessage {
-  color: #4caf50;
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.details {
-  margin-top: 10px;
-  padding: 16px;
-  background-color: #f5f5f5;
-  border-radius: 6px;
-}
-
-.detailsTitle {
-  margin: 0 0 12px 0;
-  font-size: 16px;
-  font-weight: 500;
-  color: #444;
-}
-
-.detailsGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 16px;
-}
-
-.detailItem {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.detailLabel {
-  font-size: 14px;
-  color: #666;
-}
-
-.detailValue {
-  font-size: 16px;
-  font-weight: 500;
-  color: #333;
 }
 </style>
