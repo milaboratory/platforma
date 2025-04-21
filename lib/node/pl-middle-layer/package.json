@@ -51,6 +51,7 @@
     "utility-types": "catalog:",
     "yaml": "catalog:",
     "zod": "catalog:",
+    "remeda": "catalog:",
     "@milaboratories/pl-config": "workspace:^",
     "@milaboratories/pl-errors": "workspace:^",
     "@milaboratories/pl-deployments": "workspace:^"

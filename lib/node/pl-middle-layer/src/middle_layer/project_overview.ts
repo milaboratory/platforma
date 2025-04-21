@@ -30,9 +30,10 @@ import { computableFromCfgOrRF } from './render';
 import type { NavigationStates } from './navigation_states';
 import { getBlockPackInfo } from './util';
 import { resourceIdToString } from '@milaboratories/pl-client';
+import * as R from 'remeda';
 
 type BlockInfo = {
-  currentArguments: unknown;
+  currentArguments: Record<string, unknown>;
   prod?: ProdState;
 };
 
@@ -50,8 +51,15 @@ type ProdState = {
   stale: boolean;
 
   /** Arguments current production was rendered with. */
-  arguments: unknown;
+  arguments: Record<string, unknown>;
 };
+
+function argsEquals(a: Record<string, unknown> | undefined, b: Record<string, unknown> | undefined): boolean {
+  if (a === b) return true;
+  if (a === undefined || b === undefined) return false;
+  const clean = R.omitBy<Record<string, unknown>>((_, key) => key.startsWith('__'));
+  return R.isDeepEqual(clean(a), clean(b));
+}
 
 /** Returns derived general project state form the project resource */
 export function projectOverview(
@@ -79,6 +87,7 @@ export function projectOverview(
           assertFieldType: 'Dynamic',
           errorIfFieldNotSet: true,
         });
+        const currentArguments = cInputs.getDataAsJson() as Record<string, unknown>;
 
         let prod: ProdState | undefined = undefined;
 
@@ -88,6 +97,7 @@ export function projectOverview(
           stableIfNotFound: true,
         });
         if (rInputs !== undefined) {
+          const prodArgs = rInputs.getDataAsJson() as Record<string, unknown>;
           const result = prj.getField({
             field: projectFieldName(id, 'prodOutput'),
             assertFieldType: 'Dynamic',
@@ -99,8 +109,8 @@ export function projectOverview(
             errorIfFieldNotFound: true,
           });
           prod = {
-            arguments: rInputs.getDataAsJson(),
-            stale: cInputs.id !== rInputs.id,
+            arguments: prodArgs,
+            stale: !argsEquals(currentArguments, prodArgs),
             outputError:
               result.error !== undefined
               || ctx.error !== undefined
@@ -117,7 +127,7 @@ export function projectOverview(
           };
         }
 
-        infos.set(id, { currentArguments: cInputs.getDataAsJson(), prod });
+        infos.set(id, { currentArguments, prod });
       }
 
       const currentGraph = productionGraph(structure, (id) => infos.get(id)!.currentArguments);

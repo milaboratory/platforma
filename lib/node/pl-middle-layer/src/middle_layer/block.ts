@@ -15,6 +15,7 @@ import { getBlockPackInfo } from './util';
 import type { AuthorMarker, BlockStateInternal } from '@milaboratories/pl-model-middle-layer';
 import { computableFromCfgOrRF } from './render';
 import { resourceIdToString } from '@milaboratories/pl-client';
+import { deepFreeze } from '@milaboratories/ts-helpers';
 
 export type BlockArgsAndUiState = Omit<BlockStateInternal, 'outputs' | 'navigationState'>;
 
@@ -42,8 +43,8 @@ export function blockArgsAndUiState(
   const uiState = ctx.uiState(cCtx);
   return {
     author: prj.getKeyValueAsJson<AuthorMarker>(blockArgsAuthorKey(blockId)),
-    args: JSON.parse(ctx.args(cCtx)),
-    ui: uiState !== undefined ? JSON.parse(uiState) : undefined,
+    args: deepFreeze(JSON.parse(ctx.args(cCtx))),
+    ui: uiState !== undefined ? deepFreeze(JSON.parse(uiState)) : undefined,
   };
 }
 
