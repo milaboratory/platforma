@@ -1,5 +1,25 @@
 # @milaboratories/pl-middle-layer
 
+## 1.35.0
+
+### Minor Changes
+
+- 1223f93: Stale state now ignored top level arg fields that starts with two underscores "\_\_".
+
+### Patch Changes
+
+- Updated dependencies [56d021e]
+  - @milaboratories/ts-helpers@1.1.6
+  - @milaboratories/computable@2.4.4
+  - @milaboratories/pl-client@2.8.1
+  - @milaboratories/pl-config@1.4.7
+  - @milaboratories/pl-deployments@2.0.1
+  - @milaboratories/pl-drivers@1.5.47
+  - @milaboratories/pl-errors@1.0.7
+  - @milaboratories/pl-tree@1.5.6
+  - @platforma-sdk/block-tools@2.5.39
+  - @platforma-sdk/workflow-tengo@4.1.2
+
 ## 1.34.22
 
 ### Patch Changes
