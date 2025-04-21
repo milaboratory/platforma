@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { PlSlideModal, PlBtnGhost, PlDropdown, PlAlert } from '@milaboratories/uikit';
+import { PlSlideModal, PlBtnGhost, PlDropdown, PlAlert, PlIcon24 } from '@milaboratories/uikit';
 import { useButtonTarget } from './useButtonTarget';
 import { useInfo } from './useInfo';
 import UserCabinetCard from './UserCabinetCard.vue';
@@ -10,7 +10,7 @@ const isOpen = ref(false);
 
 const teleportTarget = useButtonTarget();
 
-const { result, error, hasMonetization, canRun } = useInfo();
+const { result, error, hasMonetization, canRun, status } = useInfo();
 
 const productName = computed(() => result.value?.productName);
 
@@ -44,6 +44,18 @@ const toSpend = computed(() => {
 const available = computed(() => {
   return result.value?.mnz.details.willRemainAfterRun ?? null;
 });
+
+const statusText = computed(() => {
+  if (status.value === 'limits_exceeded') return 'Limits exceeded for current billing period';
+  if (status.value === 'payment_required') return 'Awaiting payment';
+  if (status.value === 'select-tariff') return 'Select tariff in the scientist cabinet';
+  return '';
+});
+
+const btnIcon = computed(() => {
+  if (canRun.value) return 'monetization-on';
+  return 'monetization-off';
+});
 </script>
 
 <template>
@@ -56,13 +68,22 @@ const available = computed(() => {
     <PlAlert v-if="error" type="error">
       {{ error }}
     </PlAlert>
+    <PlAlert v-if="statusText" type="warn" :class="$style.statusText">{{ statusText }}</PlAlert>
     <UserCabinetCard v-if="userCabinetUrl" :user-cabinet-url="userCabinetUrl" />
-    <LimitCard label="Runs Limit" :used="used" :to-spend="toSpend" :available="available" />
+    <LimitCard
+      v-if="status === 'active' || status === 'limits_exceeded'"
+      label="Runs Limit" :used="used"
+      :to-spend="toSpend"
+      :available="available"
+    />
   </PlSlideModal>
   <!-- Teleport to the title slot -->
   <Teleport v-if="hasMonetization && teleportTarget" :to="teleportTarget">
-    <PlBtnGhost icon="monetization" @click.stop="isOpen = true">
+    <PlBtnGhost @click.stop="isOpen = true">
       Subscription
+      <template #append>
+        <PlIcon24 :name="btnIcon" />
+      </template>
     </PlBtnGhost>
   </Teleport>
 </template>
