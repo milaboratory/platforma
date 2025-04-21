@@ -21,7 +21,7 @@ import { ChangeSource } from '@milaboratories/computable';
 import { PlTreeEntry } from './accessors';
 import type { ValueAndError } from './value_and_error';
 import type { MiLogger } from '@milaboratories/ts-helpers';
-import { notEmpty } from '@milaboratories/ts-helpers';
+import { deepFreeze, notEmpty } from '@milaboratories/ts-helpers';
 import type { FieldTraversalStep, GetFieldStep } from './traversal_ops';
 import type { FinalResourceDataPredicate } from '@milaboratories/pl-client';
 
@@ -314,7 +314,7 @@ export class PlTreeResource implements ResourceDataWithFinalState {
 
   public getDataAsJson<T = unknown>(): T | undefined {
     if (this.data === undefined) return undefined;
-    if (this.dataAsJson === undefined) this.dataAsJson = JSON.parse(this.getDataAsString()!);
+    if (this.dataAsJson === undefined) this.dataAsJson = deepFreeze(JSON.parse(this.getDataAsString()!));
     return this.dataAsJson as T;
   }
 
