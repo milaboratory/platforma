@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.29.23
+
+### Patch Changes
+
+- e65f903: Improve Monetization component appearance
+
 ## 1.29.22
 
 ### Patch Changes
