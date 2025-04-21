@@ -13,9 +13,20 @@ const MonetizationType = z.union([
   z.literal('base'), // outdated
 ]);
 
+export const Limit = z.object({
+  type: z.union([
+    z.literal('unique_launches'),
+    z.literal('volume_limit'),
+  ]),
+  used: z.number(),
+  toSpend: z.number(),
+  available: z.number().nullable(), // null if unlimited
+});
+
 const DryRunResult = z.object({
   productKey: z.string(),
   productName: z.string().default('Unknown product'),
+  customerEmail: z.string().optional(),
   canRun: z.boolean(),
   status: z.union([
     z.literal('select-tariff'),
@@ -26,11 +37,10 @@ const DryRunResult = z.object({
   mnz: z.object({
     type: MonetizationType.optional(),
     details: z.object({
-      spentRuns: z.number(),
-      runsToSpend: z.number(),
-      willRemainAfterRun: z.number().nullable(),
       subscription: z.unknown(),
     }),
+    endOfBillingPeriod: z.string().nullable().optional(),
+    limits: z.array(Limit).optional(),
   }),
 }, { message: 'Invalid CreateProductStatResult' });
 
