@@ -13,10 +13,14 @@ export function allBlocks(structure: ProjectStructure): Iterable<Block> {
 export interface BlockGraphNode {
   readonly id: string;
   readonly missingReferences: boolean;
-  /** Direct upstreams */
+  /** Upstreams, calculated accounting for potential indirect block dependencies  */
   readonly upstream: Set<string>;
-  /** Direct downstreams */
+  /** Direct upstream, listed in block args */
+  readonly directUpstream: Set<string>;
+  /** Downstreams, calculated accounting for potential indirect block dependencies  */
   readonly downstream: Set<string>;
+  /** Direct downstreams listing our block in it's args */
+  readonly directDownstream: Set<string>;
 }
 
 export class BlockGraph {
@@ -27,14 +31,17 @@ export class BlockGraph {
     this.nodes = nodes;
   }
 
-  public traverseIds(direction: 'upstream' | 'downstream', ...rootBlockIds: string[]): Set<string> {
+  public traverseIds(
+    direction: 'upstream' | 'downstream' | 'directUpstream' | 'directDownstream',
+    ...rootBlockIds: string[]
+  ): Set<string> {
     const all = new Set<string>();
     this.traverse(direction, rootBlockIds, (node) => all.add(node.id));
     return all;
   }
 
   public traverseIdsExcludingRoots(
-    direction: 'upstream' | 'downstream',
+    direction: 'upstream' | 'downstream' | 'directUpstream' | 'directDownstream',
     ...rootBlockIds: string[]
   ): Set<string> {
     const result = this.traverseIds(direction, ...rootBlockIds);
@@ -43,7 +50,7 @@ export class BlockGraph {
   }
 
   public traverse(
-    direction: 'upstream' | 'downstream',
+    direction: 'upstream' | 'downstream' | 'directUpstream' | 'directDownstream',
     rootBlockIds: string[],
     cb: (node: BlockGraphNode) => void,
   ): void {
@@ -68,7 +75,7 @@ export class BlockGraph {
 }
 
 export function stagingGraph(structure: ProjectStructure) {
-  type WNode = Optional<Writable<BlockGraphNode>, 'upstream' | 'downstream'>;
+  type WNode = Optional<Writable<BlockGraphNode>, 'upstream' | 'downstream' | 'directUpstream' | 'directDownstream'>;
   const result = new Map<string, WNode>();
 
   // Simple dependency graph from previous to next
@@ -84,15 +91,15 @@ export function stagingGraph(structure: ProjectStructure) {
     };
     result.set(id, current);
     if (previous === undefined) {
-      current.upstream = new Set<string>();
+      current.directUpstream = current.upstream = new Set<string>();
     } else {
-      current.upstream = new Set<string>([previous.id]);
-      previous.downstream = new Set<string>([current.id]);
+      current.directUpstream = current.upstream = new Set<string>([previous.id]);
+      previous.directDownstream = previous.downstream = new Set<string>([current.id]);
     }
 
     previous = current;
   }
-  if (previous !== undefined) previous.downstream = new Set<string>();
+  if (previous !== undefined) previous.directDownstream = previous.downstream = new Set<string>();
 
   return new BlockGraph(result as Map<string, BlockGraphNode>);
 }
@@ -101,31 +108,54 @@ export function productionGraph(
   structure: ProjectStructure,
   argsProvider: (blockId: string) => unknown,
 ): BlockGraph {
-  const result = new Map<string, BlockGraphNode>();
+  const resultMap = new Map<string, BlockGraphNode>();
+  // result graph is constructed to be able to perform traversal on incomplete graph
+  // to calculate potentialUpstreams
+  const resultGraph = new BlockGraph(resultMap);
 
   // traversing blocks in topological order defined by the project structure
   // and keeping possibleUpstreams set on each step, to consider only
   // those dependencies that are possible under current topology
-  const possibleUpstreams = new Set<string>();
+  const allAbove = new Set<string>();
   for (const { id } of allBlocks(structure)) {
     const args = argsProvider(id);
 
     // skipping those blocks for which we don't have args
     if (args === undefined) continue;
 
-    const upstreams = inferAllReferencedBlocks(args, possibleUpstreams);
+    const directUpstreams = inferAllReferencedBlocks(args, allAbove);
+
+    // The algorithm here adds all downstream blocks of direct upstreams as potential upstreams.
+    // They may produce additional columns, anchored in our direct upstream, those columns might be needed by the workflow.
+    const potentialUpstreams = resultGraph.traverseIds('directDownstream', ...directUpstreams.upstreams);
+
+    // To minimize complexity of the graph, we leave only the closest upstreams, removing all their transitive dependencies,
+    // relying on the traversal mechanisms in BContexts and on UI level to connect our block with all upstreams
+    const upstreams = new Set<string>();
+    for (const { id: pId } of allBlocks(structure)) {
+      if (pId === id) break; // stopping on current block
+      if (potentialUpstreams.has(pId)) {
+        upstreams.add(pId);
+        for (const transitiveUpstream of resultGraph.traverseIdsExcludingRoots('upstream', pId))
+          upstreams.delete(transitiveUpstream);
+      }
+    }
+
     const node: BlockGraphNode = {
       id,
-      missingReferences: upstreams.missingReferences,
-      upstream: upstreams.upstreams,
+      missingReferences: directUpstreams.missingReferences,
+      upstream: upstreams,
+      directUpstream: directUpstreams.upstreams,
       downstream: new Set<string>(), // will be populated from downstream blocks
+      directDownstream: new Set<string>(), // will be populated from downstream blocks
     };
-    result.set(id, node);
-    upstreams.upstreams.forEach((dep) => result.get(dep)!.downstream.add(id));
-    possibleUpstreams.add(id);
+    resultMap.set(id, node);
+    directUpstreams.upstreams.forEach((dep) => resultMap.get(dep)!.directDownstream.add(id));
+    upstreams.forEach((dep) => resultMap.get(dep)!.downstream.add(id));
+    allAbove.add(id);
   }
 
-  return new BlockGraph(result);
+  return resultGraph;
 }
 
 function setsEqual<T>(a: Set<T>, b: Set<T>): boolean {
