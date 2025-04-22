@@ -1,5 +1,11 @@
 # @milaboratories/pl-local
 
+## 2.1.0
+
+### Minor Changes
+
+- 56c7b92: Release 1.31.4 with bugfix for transaction trees tracking logic
+
 ## 2.0.1
 
 ### Patch Changes
