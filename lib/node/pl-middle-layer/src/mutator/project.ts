@@ -756,8 +756,7 @@ export class ProjectMutator {
       prodGraph.traverse('upstream', blockIds, (node) => {
         blockIdsSet.add(node.id);
       });
-    // checking that targets contain all upstreams
-    else
+    else // checking that targets contain all upstreams
       for (const blockId of blockIdsSet) {
         const node = prodGraph.nodes.get(blockId);
         if (node === undefined) throw new Error(`Can't find block with id: ${blockId}`);
