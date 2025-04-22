@@ -40,7 +40,15 @@ import PlOverlayLoading from './PlAgOverlayLoading.vue';
 import PlOverlayNoRows from './PlAgOverlayNoRows.vue';
 import { type PlAgCellButtonAxisParams, makeRowId } from './sources/common';
 import { updatePFrameGridOptions } from './sources/table-source-v2';
-import type { PlAgDataTableController, PlAgDataTableSettings, PlAgDataTableRow, PTableRowKey, PlAgDataTableSettingsPTable } from './types';
+import type {
+  PlAgDataTableController,
+  PlAgDataTableSettings,
+  PlAgDataTableRow,
+  PTableRowKey,
+  PlAgDataTableSettingsPTable,
+  PlAgOverlayLoadingParams,
+  PlAgOverlayNoRowsParams,
+} from './types';
 import { PlAgGridColumnManager } from '../PlAgGridColumnManager';
 import { autoSizeRowNumberColumn, PlAgDataTableRowNumberColId } from './sources/row-number';
 import { focusRow, makeOnceTracker, trackFirstDataRendered } from './sources/focus-row';
@@ -89,13 +97,25 @@ const props = defineProps<{
   showCellButtonForAxisId?: AxisId;
 
   /**
-     * If cellButtonInvokeRowsOnDoubleClick = true, clicking a button inside the row
-     * triggers the doubleClick event for the entire row.
-     *
-     * If cellButtonInvokeRowsOnDoubleClick = false, the doubleClick event for the row
-     * is not triggered, but will triggered cellButtonClicked event with (key: PTableRowKey) argument.
-     */
+   * If cellButtonInvokeRowsOnDoubleClick = true, clicking a button inside the row
+   * triggers the doubleClick event for the entire row.
+   *
+   * If cellButtonInvokeRowsOnDoubleClick = false, the doubleClick event for the row
+   * is not triggered, but will triggered cellButtonClicked event with (key: PTableRowKey) argument.
+   */
   cellButtonInvokeRowsOnDoubleClick?: boolean;
+
+  /**
+   * Override various default labels
+   */
+  labels?: {
+    /** @see {@link PlAgOverlayLoadingParams.loadingText} */
+    loading?: string;
+    /** @see {@link PlAgOverlayLoadingParams.notReadyText} */
+    notReady?: string;
+    /** @see {@link PlAgOverlayNoRowsParams.text} */
+    noRows?: string;
+  };
 }>();
 const { settings } = toRefs(props);
 const emit = defineEmits<{
@@ -278,9 +298,16 @@ const gridOptions = shallowRef<GridOptions<PlAgDataTableRow>>({
   suppressServerSideFullWidthLoadingRow: true,
   getRowId: (params) => params.data.id,
   loading: true,
-  loadingOverlayComponentParams: { notReady: true },
+  loadingOverlayComponentParams: {
+    notReady: true,
+    loadingText: props.labels?.loading,
+    notReadyText: props.labels?.notReady,
+  } satisfies PlAgOverlayLoadingParams,
   loadingOverlayComponent: PlOverlayLoading,
   noRowsOverlayComponent: PlOverlayNoRows,
+  noRowsOverlayComponentParams: {
+    text: props.labels?.noRows,
+  } satisfies PlAgOverlayNoRowsParams,
   defaultCsvExportParams: {
     allColumns: true,
     suppressQuotes: true,
@@ -391,7 +418,10 @@ const onSheetChanged = (sheetId: string, newValue: string | number) => {
   sheetsState.value = state;
   return gridApi.value?.updateGridOptions({
     loading: true,
-    loadingOverlayComponentParams: { notReady: false },
+    loadingOverlayComponentParams: {
+      ...gridOptions.value.loadingOverlayComponentParams,
+      notReady: false,
+    } satisfies PlAgOverlayLoadingParams,
   });
 };
 
@@ -422,7 +452,10 @@ watch(
         case undefined:
           return gridApi.updateGridOptions({
             loading: true,
-            loadingOverlayComponentParams: { notReady: true },
+            loadingOverlayComponentParams: {
+              ...gridOptions.value.loadingOverlayComponentParams,
+              notReady: true,
+            } satisfies PlAgOverlayLoadingParams,
             columnDefs: [],
             rowData: undefined,
             datasource: undefined,
@@ -432,7 +465,10 @@ watch(
           if (!settings?.model) {
             return gridApi.updateGridOptions({
               loading: true,
-              loadingOverlayComponentParams: { notReady: false },
+              loadingOverlayComponentParams: {
+                ...gridOptions.value.loadingOverlayComponentParams,
+                notReady: false,
+              } satisfies PlAgOverlayLoadingParams,
               columnDefs: [],
               rowData: undefined,
               datasource: undefined,
@@ -441,7 +477,10 @@ watch(
 
           gridApi.updateGridOptions({
             loading: true,
-            loadingOverlayComponentParams: { notReady: false },
+            loadingOverlayComponentParams: {
+              ...gridOptions.value.loadingOverlayComponentParams,
+              notReady: false,
+            } satisfies PlAgOverlayLoadingParams,
           });
 
           const options = await updatePFrameGridOptions(
@@ -458,14 +497,20 @@ watch(
           ).catch((err) => {
             gridApi.updateGridOptions({
               loading: false,
-              loadingOverlayComponentParams: { notReady: false },
+              loadingOverlayComponentParams: {
+                ...gridOptions.value.loadingOverlayComponentParams,
+                notReady: false,
+              } satisfies PlAgOverlayLoadingParams,
             });
             throw err;
           });
 
           return gridApi.updateGridOptions({
             loading: false,
-            loadingOverlayComponentParams: { notReady: false },
+            loadingOverlayComponentParams: {
+              ...gridOptions.value.loadingOverlayComponentParams,
+              notReady: false,
+            } satisfies PlAgOverlayLoadingParams,
             ...options,
           });
         }

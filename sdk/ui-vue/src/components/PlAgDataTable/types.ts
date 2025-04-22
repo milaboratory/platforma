@@ -103,3 +103,10 @@ export type PlAgOverlayLoadingParams = {
    */
   overlayType?: 'transparent';
 };
+
+export type PlAgOverlayNoRowsParams = {
+  /**
+   * Prop to override default "Empty" text
+   */
+  text?: string;
+};
