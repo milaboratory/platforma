@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 1.36.0
+
+### Minor Changes
+
+- aaf40e8: Fix to dependency graph construction logic to include potential anchored dependencies as upstreams
+
 ## 1.35.2
 
 ### Patch Changes
