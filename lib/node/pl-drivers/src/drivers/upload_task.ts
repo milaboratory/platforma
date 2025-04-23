@@ -10,6 +10,7 @@ import { MTimeError, NoFileForUploading, UnexpectedEOF } from '../clients/upload
 import type { ImportResourceSnapshot } from './types';
 import { ImportFileHandleUploadData } from './types';
 import assert from 'node:assert';
+import { ResourceInfo } from '@milaboratories/pl-tree';
 
 /** Holds all info needed to upload a file and a status of uploading
  * and indexing. Also, has a method to update a status of the progress.
@@ -58,49 +59,25 @@ export class UploadTask {
   }
 
   public shouldScheduleUpload(): boolean {
-    return this.progress.isUpload && this.progress.isUploadSignMatch!;
+    return isMyUpload(this.progress);
   }
 
   /** Uploads a blob if it's not BlobIndex. */
   public async uploadBlobTask() {
-    assert(isUpload(this.res), 'the upload operation can be done only for BlobUploads');
-    const timeout = 10000; // 10 sec instead of standard 5 sec, things might be slow with a slow connection.
-
     try {
-      if (this.isComputableDone()) return;
-      const parts = await this.clientBlob.initUpload(this.res, { timeout });
-      this.logger.info(
-        `started to upload blob ${this.res.id},`
-          + ` parts overall: ${parts.overall}, parts remained: ${parts.toUpload.length},`
-          + ` number of concurrent uploads: ${this.nMaxUploads}`,
+      await uploadBlob(
+        this.logger,
+        this.res,
+        this.uploadData!,
+        this.clientBlob,
+        this.isComputableDone.bind(this),
+        {
+          nPartsWithThisUploadSpeed: this.nPartsWithThisUploadSpeed,
+          nPartsToIncreaseUpload: this.nPartsToIncreaseUpload,
+          currentSpeed: this.nMaxUploads,
+          maxSpeed: this.maxNConcurrentPartsUpload,
+        },
       );
-
-      const partUploadFn = (part: bigint) => async (controller: AsyncPoolController) => {
-        if (this.isComputableDone()) return;
-        await this.clientBlob.partUpload(
-          this.res,
-          this.uploadData!.localPath,
-          BigInt(this.uploadData!.modificationTime),
-          part,
-          { timeout }
-        );
-        this.logger.info(`uploaded chunk ${part}/${parts.overall} of resource: ${this.res.id}`);
-
-        // if we had a network freeze, it will be increased slowly.
-        this.nPartsWithThisUploadSpeed++;
-        if (this.nPartsWithThisUploadSpeed >= this.nPartsToIncreaseUpload) {
-          this.nPartsWithThisUploadSpeed = 0;
-          this.nMaxUploads = increaseConcurrency(this.logger, this.nMaxUploads, this.maxNConcurrentPartsUpload);
-          controller.setConcurrency(this.nMaxUploads);
-        }
-      };
-
-      await asyncPool(this.nMaxUploads, parts.toUpload.map(partUploadFn));
-
-      if (this.isComputableDone()) return;
-      await this.clientBlob.finalize(this.res, { timeout });
-
-      this.logger.info(`uploading of resource ${this.res.id} finished.`);
       this.change.markChanged();
     } catch (e: any) {
       this.setRetriableError(e);
@@ -207,6 +184,59 @@ export class UploadTask {
   }
 }
 
+/** Uploads a blob if it's not BlobIndex. */
+async function uploadBlob(
+  logger: MiLogger,
+  res: ResourceInfo,
+  uploadData: ImportFileHandleUploadData,
+  clientBlob: ClientUpload,
+  isDoneFn: () => boolean,
+  speed: {
+    nPartsWithThisUploadSpeed: number,
+    nPartsToIncreaseUpload: number,
+    currentSpeed: number,
+    maxSpeed: number,
+  },
+) {
+  assert(isUpload(res), 'the upload operation can be done only for BlobUploads');
+  const timeout = 10000; // 10 sec instead of standard 5 sec, things might be slow with a slow connection.
+
+    if (isDoneFn()) return;
+    const parts = await clientBlob.initUpload(res, { timeout });
+    logger.info(
+      `started to upload blob ${res.id},`
+        + ` parts overall: ${parts.overall}, parts remained: ${parts.toUpload.length},`
+        + ` number of concurrent uploads: ${speed.currentSpeed}`,
+    );
+
+    const partUploadFn = (part: bigint) => async (controller: AsyncPoolController) => {
+      if (isDoneFn()) return;
+      await clientBlob.partUpload(
+        res,
+        uploadData.localPath,
+        BigInt(uploadData.modificationTime),
+        part,
+        { timeout }
+      );
+      logger.info(`uploaded chunk ${part}/${parts.overall} of resource: ${res.id}`);
+
+      // if we had a network freeze, it will be increased slowly.
+      speed.nPartsWithThisUploadSpeed++;
+      if (speed.nPartsWithThisUploadSpeed >= speed.nPartsToIncreaseUpload) {
+        speed.nPartsWithThisUploadSpeed = 0;
+        speed.currentSpeed = increaseConcurrency(logger, speed.currentSpeed, speed.maxSpeed);
+        controller.setConcurrency(speed.currentSpeed);
+      }
+    };
+
+    await asyncPool(speed.currentSpeed, parts.toUpload.map(partUploadFn));
+
+    if (isDoneFn()) return;
+    await clientBlob.finalize(res, { timeout });
+
+    logger.info(`uploading of resource ${res.id} finished.`);
+}
+
 function newProgress(res: ImportResourceSnapshot, signer: Signer) {
   let isUploadSignMatch: boolean | undefined;
   let uploadData: ImportFileHandleUploadData | undefined;
@@ -223,8 +253,13 @@ function newProgress(res: ImportResourceSnapshot, signer: Signer) {
       isUpload: isUpload(res),
       isUploadSignMatch: isUploadSignMatch,
       lastError: undefined,
-    },
+    } satisfies sdk.ImportProgress,
   };
+}
+
+/** Returns true if we need to upload the blob that got from this progress. */
+export function isMyUpload(p: sdk.ImportProgress): boolean {
+  return p.isUpload && (p.isUploadSignMatch ?? false);
 }
 
 /** Creates a deep copy of progress,
@@ -256,7 +291,7 @@ function isImportResourceOutputSet(res: ImportResourceSnapshot) {
     : res.fields.incarnation !== undefined;
 }
 
-function isUpload(res: ImportResourceSnapshot) {
+function isUpload(res: ResourceInfo) {
   return res.type.name.startsWith('BlobUpload');
 }
 
