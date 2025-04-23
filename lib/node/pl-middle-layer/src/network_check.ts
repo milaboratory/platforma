@@ -1,7 +1,19 @@
 /** A utility to check network problems and gather statistics.
  * It's useful when we cannot connect to the server of a company
  * because of security reasons,
- * but they can send us and their DevOps team this report. */
+ * but they can send us and their DevOps team this report.
+ *
+ * What we check:
+ * - pings to backend
+ * - block registry for block overview and ui.
+ * - autoupdate CDN.
+ * - the desktop could do multipart upload.
+ * - the desktop could download files from S3.
+ * - backend could download software and run it.
+ * - backend could run python software.
+ *
+ * We don't check backend access to S3 storage, it is checked on the start of backend.
+ */
 
 import { UnauthenticatedPlClient, plAddressToConfig } from '@milaboratories/pl-client';
 import type { ValueOrError } from '@milaboratories/ts-helpers';
