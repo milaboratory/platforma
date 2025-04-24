@@ -2,11 +2,10 @@
 // wrap all p-frame files with file.exportFile (when pcolumns does not have skip for UI annotation)
 //
 
-
 exportpframe := import(":pframes.export-pframe")
 tpl := import(":tpl")
 
-tpl.awaitState("pf", { wildcard: "*" }, "InputsLocked")
+tpl.awaitState("pf", "InputsLocked")
 tpl.awaitState("pf", { match: "\\.spec$" }, "ResourceReady")
 
 tpl.body(func(inputs) {
