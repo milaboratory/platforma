@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { PlSlideModal, PlBtnGhost, PlDropdown, PlAlert, PlIcon24 } from '@milaboratories/uikit';
+import { PlSlideModal, PlBtnGhost, PlDropdown, PlAlert, PlIcon24, PlBtnSecondary } from '@milaboratories/uikit';
 import { useButtonTarget } from './useButtonTarget';
 import { useInfo } from './useInfo';
 import UserCabinetCard from './UserCabinetCard.vue';
@@ -12,7 +12,18 @@ const isOpen = ref(false);
 
 const teleportTarget = useButtonTarget();
 
-const { result, error, hasMonetization, canRun, status, customerEmail, endOfBillingPeriod, limits } = useInfo();
+const {
+  result,
+  error,
+  hasMonetization,
+  canRun,
+  status,
+  customerEmail,
+  endOfBillingPeriod,
+  limits,
+  refresh,
+  isLoading,
+} = useInfo();
 
 const productName = computed(() => result.value?.productName);
 
@@ -61,10 +72,22 @@ const btnIcon = computed(() => {
 <template>
   <PlSlideModal v-if="hasMonetization" v-model="isOpen">
     <template #title>
-      Subscription
+      <div class="flex items-center gap-2">
+        <span>Subscription</span>
+      </div>
     </template>
     <PlDropdown label="Product" readonly :model-value="productName" :options="options" />
-    <RunStatus :can-run="canRun" :status-text="statusText" />
+    <RunStatus :can-run="canRun" :status-text="statusText">
+      <PlBtnSecondary
+        title="Refresh status"
+        round
+        size="small"
+        style="margin-left: auto;"
+        icon="loading"
+        :loading="isLoading"
+        @click="refresh"
+      />
+    </RunStatus>
     <PlAlert v-if="error" type="error">
       {{ error }}
     </PlAlert>
