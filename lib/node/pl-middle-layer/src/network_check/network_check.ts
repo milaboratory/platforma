@@ -7,10 +7,28 @@
  * - pings to backend
  * - block registry for block overview and ui.
  * - autoupdate CDN.
+ * - upload block to backend (workflow part via our API).
+ *   - // upload the block part.
+ *
  * - the desktop could do multipart upload.
+ *   - // get the file handle via ls driver
+ *   - // upload, run a template that will make BlobUpload out of it.
+ *   - // upload the file
+ *
  * - the desktop could download files from S3.
+ *   - // get the file handle to the file we just uploaded.
+ *   - // make it downloadable via a render template.
+ *   - // download the file via download driver.
+ *
+ * - try to get something from backend's library storage.
+ *   - // get the file handle via ls driver
+ *   - // download the file via download driver.
+ *
  * - backend could download software and run it.
+ *   - // run template that will have hello world binary, and get the result.
+ *
  * - backend could run python software.
+ *   - // run template that will have python software, and get the result.
  *
  * We don't check backend access to S3 storage, it is checked on the start of backend.
  */
