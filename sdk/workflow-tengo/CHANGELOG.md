@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 4.1.3
+
+### Patch Changes
+
+- 5281304: Fixes export-pframe-for-ui template so it does not wait for data to be materialized in any form, fixes option calculation while upstream blocks are still calculating
+
 ## 4.1.2
 
 ### Patch Changes
