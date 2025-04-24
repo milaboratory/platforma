@@ -1,5 +1,13 @@
 # @platforma-sdk/ui-vue
 
+## 1.29.27
+
+### Patch Changes
+
+- 02f781b: Add "refresh status" button to Monetization component
+- Updated dependencies [02f781b]
+  - @milaboratories/uikit@2.2.71
+
 ## 1.29.23
 
 ### Patch Changes
