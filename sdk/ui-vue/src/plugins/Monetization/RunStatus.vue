@@ -35,12 +35,13 @@ const badgeText = computed(() => {
         </i>
         <span>{{ badgeText }}</span>
       </div>
-      <PlTooltip>
+      <PlTooltip v-if="false">
         <template #tooltip>
           {{ tooltipText }}
         </template>
         <PlIcon24 name="info" />
       </PlTooltip>
+      <slot />
     </div>
     <div v-if="statusText" :class="$style.statusText">{{ statusText }}</div>
   </div>

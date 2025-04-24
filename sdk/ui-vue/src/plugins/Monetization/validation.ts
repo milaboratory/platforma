@@ -42,7 +42,7 @@ const DryRunResult = z.object({
     endOfBillingPeriod: z.string().nullable().optional(),
     limits: z.array(Limit).optional(),
   }),
-}, { message: 'Invalid CreateProductStatResult' });
+}, { message: 'Invalid DryRunResult' });
 
 type DryRunResult = z.infer<typeof DryRunResult>;
 
