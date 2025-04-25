@@ -28,8 +28,8 @@ catalogs:
       specifier: ^29.7.0
       version: 29.7.0
     '@milaboratories/pframes-rs-node':
-      specifier: 1.0.28
-      version: 1.0.28
+      specifier: 1.0.29
+      version: 1.0.29
     '@milaboratories/software-pframes-conv':
       specifier: 2.2.2
       version: 2.2.2
@@ -1840,7 +1840,7 @@ importers:
         version: link:../computable
       '@milaboratories/pframes-rs-node':
         specifier: 'catalog:'
-        version: 1.0.28(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)
+        version: 1.0.29(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)
       '@milaboratories/pl-client':
         specifier: workspace:^
         version: link:../pl-client
@@ -4357,8 +4357,8 @@ packages:
   '@microsoft/tsdoc@0.15.1':
     resolution: {integrity: sha512-4aErSrCR/On/e5G2hDP0wjooqDdauzEbIq8hIkIe5pXV0rtWJZvdCEKL0ykZxex+IxIwBp0eGeV48hQN07dXtw==}
 
-  '@milaboratories/pframes-rs-node@1.0.28':
-    resolution: {integrity: sha512-nvGWzNpcqKzzRJtThL1o577+4m8lvLbEPlNnhhpjaowrJ6xJ2gyqdT4Jg0nwUHbxMx7zaReXDo4nl2+ImpynlQ==}
+  '@milaboratories/pframes-rs-node@1.0.29':
+    resolution: {integrity: sha512-v2Wq1gkXNqtcUm9EkBrLh9IGvpAgPJFjQewoU/pRmwveq8fp4uZbBOCH14YgP6zJ6wXhBdEyX7P/1xFUw9FyAg==}
     peerDependencies:
       '@milaboratories/pl-model-common': '*'
 
@@ -11227,7 +11227,7 @@ snapshots:
 
   '@microsoft/tsdoc@0.15.1': {}
 
-  '@milaboratories/pframes-rs-node@1.0.28(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)':
+  '@milaboratories/pframes-rs-node@1.0.29(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)':
     dependencies:
       '@mapbox/node-pre-gyp': 2.0.0(encoding@0.1.13)
       '@milaboratories/pl-model-common': link:lib/model/common
