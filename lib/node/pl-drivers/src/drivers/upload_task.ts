@@ -67,9 +67,9 @@ export class UploadTask {
     try {
       await uploadBlob(
         this.logger,
+        this.clientBlob,
         this.res,
         this.uploadData!,
-        this.clientBlob,
         this.isComputableDone.bind(this),
         {
           nPartsWithThisUploadSpeed: this.nPartsWithThisUploadSpeed,
@@ -185,11 +185,11 @@ export class UploadTask {
 }
 
 /** Uploads a blob if it's not BlobIndex. */
-async function uploadBlob(
+export async function uploadBlob(
   logger: MiLogger,
+  clientBlob: ClientUpload,
   res: ResourceInfo,
   uploadData: ImportFileHandleUploadData,
-  clientBlob: ClientUpload,
   isDoneFn: () => boolean,
   speed: {
     nPartsWithThisUploadSpeed: number,

@@ -1,0 +1,19 @@
+/** Run Python hello-world binary. */
+
+self := import(":tpl")
+exec := import(":exec")
+assets := import(":assets")
+
+helloWorldPySW := assets.importSoftware("@platforma-open/milaboratories.software-small-binaries:hello-world-py")
+
+self.body(func(inputs) {
+	run := exec.builder().
+		software(helloWorldPySW).
+		arg(inputs.name).
+		saveStdoutContent().
+		run()
+
+	return {
+		greeting: run.getStdoutFileContent()
+	}
+})
