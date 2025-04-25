@@ -1,5 +1,22 @@
 # @milaboratories/pl-middle-layer
 
+## 1.36.3
+
+### Patch Changes
+
+- 5240867: Clear pframes cache directory on session start
+- Updated dependencies [5240867]
+  - @milaboratories/ts-helpers@1.1.7
+  - @milaboratories/computable@2.4.6
+  - @milaboratories/pl-client@2.8.2
+  - @milaboratories/pl-config@1.4.8
+  - @milaboratories/pl-deployments@2.1.1
+  - @milaboratories/pl-drivers@1.5.49
+  - @milaboratories/pl-errors@1.0.8
+  - @milaboratories/pl-tree@1.5.8
+  - @platforma-sdk/block-tools@2.5.41
+  - @platforma-sdk/workflow-tengo@4.1.3
+
 ## 1.36.2
 
 ### Patch Changes
