@@ -46,6 +46,7 @@ self.body(func(inputs) {
 
         // Add name or namePattern predicate if present
         if !is_undefined(query.name) {
+            ll.print("DEBUG MESSAGE", query)
             if !is_undefined(query.namePattern) {
                 ll.panic("Cannot specify both name and namePattern for item '%s'", queryId)
             }
@@ -92,6 +93,9 @@ self.body(func(inputs) {
                         // Use the anchor ID to get the domain value from the anchors
                         anchorId := domainValue.anchor
                         if is_undefined(anchors[anchorId]) {
+                            if opts.ignoreMissingDomains {
+                                continue
+                            }
                             ll.panic("Cannot resolve anchored domain: anchor '%s' not found", anchorId)
                         }
 
@@ -146,6 +150,9 @@ self.body(func(inputs) {
                             // AnchorAxisRefByIdx - has idx property
                             axisIndex := axis.idx
                             if is_undefined(anchors[anchorId].axesSpec) || len(anchors[anchorId].axesSpec) <= axisIndex {
+                                if opts.ignoreMissingAxes {
+                                    continue
+                                }
                                 ll.panic("Cannot resolve anchored axis by index: axis index %v not found in anchor '%s'", axisIndex, anchorId)
                             }
 

@@ -227,7 +227,7 @@ createBuilder := func(ctx) {
 		build: func() {
 			// 'queries' now directly contains the correct items (IDs, query sources, or full queries)
 			// ready to be passed to bquery.anchoredQuery.
-			resolveResult := bquery.anchoredQuery(ctx, anchors, queries)
+			resolveResult := bquery.anchoredQuery(ctx, anchors, queries, anchoredQueryOpts)
 
 			bundle := smart.mapBuilder(pConstants.RTYPE_P_COLUMN_BUNDLE)
 
