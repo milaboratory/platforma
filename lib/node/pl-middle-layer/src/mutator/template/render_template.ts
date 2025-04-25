@@ -1,4 +1,4 @@
-import type { AnyRef, PlTransaction } from '@milaboratories/pl-client';
+import type { AnyRef, FieldRef, PlTransaction } from '@milaboratories/pl-client';
 import { field, Pl } from '@milaboratories/pl-client';
 import type { ResourceType } from '@platforma-sdk/model';
 
@@ -26,7 +26,7 @@ export function createRenderTemplate<O extends string>(
   ephemeral: boolean,
   inputs: Pl.PlRecord,
   outputNames: O[],
-): Record<O, AnyRef> {
+): Record<O, FieldRef> {
   if (outputNames.length === 0) throw new Error('Zero output names provided');
   const rId = ephemeral ? tx.createEphemeral(EphRenderTemplate) : tx.createStruct(RenderTemplate);
 
