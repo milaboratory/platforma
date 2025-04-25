@@ -42,7 +42,7 @@ import { RefCountResourcePool } from './ref_count_pool';
 import { allBlobs, makeDataInfoFromPColumnValues, mapBlobs, parseDataInfoResource } from './data';
 import { createHash } from 'node:crypto';
 import type { MiLogger } from '@milaboratories/ts-helpers';
-import { assertNever, emptyDir } from '@milaboratories/ts-helpers';
+import { assertNever, emptyDir, ConcurrencyLimitingExecutor } from '@milaboratories/ts-helpers';
 import canonicalize from 'canonicalize';
 import { PFrame } from '@milaboratories/pframes-rs-node';
 import * as fsp from 'node:fs/promises';
@@ -224,6 +224,7 @@ export interface InternalPFrameDriver extends SdkPFrameDriver {
 export class PFrameDriver implements InternalPFrameDriver {
   private readonly pFrames: RefCountResourcePool<InternalPFrameData, PFrameHolder>;
   private readonly pTables: RefCountResourcePool<FullPTableDef, PTableHolder>;
+  private readonly concurrencyLimiter: ConcurrencyLimitingExecutor;
 
   public static async init(
     blobDriver: DownloadDriver,
@@ -245,6 +246,9 @@ export class PFrameDriver implements InternalPFrameDriver {
       fetchMethod: async (key) => await fsp.readFile(key),
       sizeCalculation: (v) => v.length,
     });
+
+    const concurrencyLimiter = new ConcurrencyLimitingExecutor(4);
+    this.concurrencyLimiter = concurrencyLimiter;
 
     this.pFrames = new (class extends RefCountResourcePool<InternalPFrameData, PFrameHolder> {
       constructor(
@@ -285,13 +289,15 @@ export class PFrameDriver implements InternalPFrameDriver {
             `PTable creation (pTableHandle = ${this.calculateParamsKey(params)}): ${JSON.stringify(params, bigintReplacer)}`,
           );
         }
-        const tablePromise = this.pFrames.getByKey(handle).pFrame.createTable({
-          src: joinEntryToInternal(params.def.src),
-          filters: migrateFilters(params.def.filters),
-        }, params.signal).then(async (table) => {
+        const tablePromise = concurrencyLimiter.run(async () => {
+          return await this.pFrames.getByKey(handle).pFrame.createTable({
+            src: joinEntryToInternal(params.def.src),
+            filters: migrateFilters(params.def.filters),
+          }, params.signal);
+        }).then(async (table) => {
           if (params.def.sorting.length === 0) return table;
           try {
-            return await table.sort(params.def.sorting, params.signal);
+            return concurrencyLimiter.run(async () => await table.sort(params.def.sorting, params.signal));
           } finally {
             table.dispose();
           }
@@ -400,20 +406,22 @@ export class PFrameDriver implements InternalPFrameDriver {
         `Call calculateTableData, handle = ${handle}, request = ${JSON.stringify(request, bigintReplacer)}`,
       );
     }
-    return await this.pFrames.getByKey(handle).pFrame.createTable({
-      src: joinEntryToInternal(request.src),
-      filters: migrateFilters(request.filters),
-    }, signal).then(async (table) => {
+    return await this.concurrencyLimiter.run(async () => {
+      return await this.pFrames.getByKey(handle).pFrame.createTable({
+        src: joinEntryToInternal(request.src),
+        filters: migrateFilters(request.filters),
+      }, signal);
+    }).then(async (table) => {
       if (request.sorting.length === 0) return table;
       try {
-        return await table.sort(request.sorting, signal);
+        return await this.concurrencyLimiter.run(async () => await table.sort(request.sorting, signal));
       } finally {
         table.dispose();
       }
     }).then(async (table) => {
       try {
         const spec = table.getSpec();
-        const data = await table.getData([...spec.keys()]);
+        const data = await this.concurrencyLimiter.run(async () => await table.getData([...spec.keys()]));
         return spec.map((spec, i) => ({
           spec: spec,
           data: data[i],
@@ -434,10 +442,12 @@ export class PFrameDriver implements InternalPFrameDriver {
         `Call getUniqueValues, handle = ${handle}, request = ${JSON.stringify(request, bigintReplacer)}`,
       );
     }
-    return await this.pFrames.getByKey(handle).pFrame.getUniqueValues({
-      ...request,
-      filters: migrateFilters(request.filters),
-    }, signal);
+    return await this.concurrencyLimiter.run(async () => {
+      return await this.pFrames.getByKey(handle).pFrame.getUniqueValues({
+        ...request,
+        filters: migrateFilters(request.filters),
+      }, signal);
+    });
   }
 
   //
@@ -460,7 +470,7 @@ export class PFrameDriver implements InternalPFrameDriver {
     range?: TableRange,
   ): Promise<PTableVector[]> {
     const pTable = await this.pTables.getByKey(handle).table;
-    return await pTable.getData(columnIndices, range);
+    return await this.concurrencyLimiter.run(async () => await pTable.getData(columnIndices, range));
   }
 }
 
