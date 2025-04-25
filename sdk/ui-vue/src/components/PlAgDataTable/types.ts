@@ -28,6 +28,7 @@ export type PlDataTableSettingsXsv = {
 
 /** Data table settings */
 export type PlDataTableSettings =
+  | undefined
   | PlDataTableSettingsPTable
   | PlDataTableSettingsXsv;
 
@@ -42,6 +43,7 @@ export type PlAgDataTableSettingsPTable = {
 
 /** Data table settings */
 export type PlAgDataTableSettings =
+  | undefined
   | PlAgDataTableSettingsPTable;
 
 /** PlTableFilters restriction entry */

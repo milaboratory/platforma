@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import {
-  type PlAgDataTableSettingsPTable,
+  type PlAgDataTableSettings,
   PlAgDataTableToolsPanel,
   PlTableFilters,
   PlBlockPage,
@@ -22,10 +22,10 @@ if (!app.model.ui?.dataTableState) {
   };
 }
 
-const tableSettings = computed<PlAgDataTableSettingsPTable>(() => (
+const tableSettings = computed<PlAgDataTableSettings>(() => (
   {
     sourceType: 'ptable',
-    pTable: app.model.outputs.pt,
+    pTable: app.model.outputs.ptV2,
     sheets: [],
   }
 ));

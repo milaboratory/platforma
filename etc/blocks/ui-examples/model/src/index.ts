@@ -11,6 +11,8 @@ import type {
 import {
   BlockModel,
   createPlDataTable,
+  createPlDataTableV2,
+  selectorsToPredicate,
 } from '@platforma-sdk/model';
 import { z } from 'zod';
 
@@ -129,6 +131,65 @@ export const platforma = BlockModel.create('Heavy')
           data,
         } satisfies PColumn<PColumnValues>,
       ],
+      ctx.uiState.dataTableState.tableState,
+      {
+        filters: [
+          ...(ctx.uiState.dataTableState.tableState.pTableParams?.filters ?? []),
+          ...(ctx.uiState.dataTableState.filterModel?.filters ?? []),
+        ],
+      },
+    );
+  })
+
+  .output('ptV2', (ctx) => {
+    if (!ctx.uiState?.dataTableState?.tableState.pTableParams?.filters) return undefined;
+
+    const data = times(ctx.args.tableNumRows ?? 0, (i) => {
+      const v = i + 1;
+      return {
+        key: [v, v + 0.1],
+        val: v.toString(),
+      };
+    });
+
+    return createPlDataTableV2(
+      ctx,
+      [
+        {
+          id: 'example' as PObjectId,
+          spec: {
+            kind: 'PColumn',
+            valueType: 'String',
+            name: 'example',
+            annotations: {
+              'pl7.app/label': 'String column',
+              'pl7.app/discreteValues': '["up","down"]',
+            },
+            axesSpec: [
+              {
+                type: 'Int',
+                name: 'index',
+                annotations: {
+                  'pl7.app/label': 'Int axis',
+                  'pl7.app/discreteValues': '[1,2]',
+                },
+              },
+              {
+                type: 'Float',
+                name: 'value',
+                annotations: {
+                  'pl7.app/label': 'Float axis',
+                  'pl7.app/table/visibility': 'optional',
+                },
+              },
+            ],
+          },
+          data,
+        } satisfies PColumn<PColumnValues>,
+      ],
+      selectorsToPredicate({
+        name: 'example',
+      }),
       ctx.uiState.dataTableState.tableState,
       {
         filters: [
