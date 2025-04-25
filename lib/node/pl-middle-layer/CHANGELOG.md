@@ -1,5 +1,13 @@
 # @milaboratories/pl-middle-layer
 
+## 1.36.4
+
+### Patch Changes
+
+- aca0f21: PFramesDriver limit concurrency to 4
+- Updated dependencies [4ea9a4e]
+  - @platforma-sdk/workflow-tengo@4.1.4
+
 ## 1.36.3
 
 ### Patch Changes
