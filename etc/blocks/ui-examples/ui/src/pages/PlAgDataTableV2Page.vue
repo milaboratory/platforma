@@ -25,7 +25,7 @@ if (!app.model.ui?.dataTableState) {
 const tableSettings = computed<PlAgDataTableSettings>(() => (
   {
     sourceType: 'ptable',
-    pTable: app.model.outputs.ptV2,
+    model: app.model.outputs.ptV2,
     sheets: [],
   }
 ));
@@ -34,7 +34,7 @@ const columns = ref<PTableColumnSpec[]>([]);
 
 <template>
   <PlBlockPage style="max-width: 100%">
-    <template #title>PlAgDataTable</template>
+    <template #title>PlAgDataTable V2</template>
     <template #append>
       <PlAgDataTableToolsPanel>
         <PlTableFilters v-model="app.model.ui.dataTableState!.filterModel" :columns="columns" />

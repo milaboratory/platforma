@@ -36,7 +36,7 @@ export type PlAgDataTableSettingsPTable = {
   /** The type of the source to feed the data into the table */
   sourceType: 'ptable';
   /** PTable handle output */
-  model?: PlDataTableModel;
+  model: PlDataTableModel | undefined;
   /** Sheets that we want to show in our table */
   sheets?: PlDataTableSheet[];
 };
