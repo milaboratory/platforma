@@ -1,5 +1,12 @@
 # @milaboratories/computable
 
+## 2.4.6
+
+### Patch Changes
+
+- Updated dependencies [5240867]
+  - @milaboratories/ts-helpers@1.1.7
+
 ## 2.4.5
 
 ### Patch Changes

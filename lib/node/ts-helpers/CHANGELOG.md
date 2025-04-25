@@ -1,5 +1,11 @@
 # @milaboratories/ts-helpers
 
+## 1.1.7
+
+### Patch Changes
+
+- 5240867: Method to create an empty directory or empty the existing one
+
 ## 1.1.6
 
 ### Patch Changes
