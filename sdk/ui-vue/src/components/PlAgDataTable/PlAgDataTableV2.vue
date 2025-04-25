@@ -239,6 +239,7 @@ const gridApi = shallowRef<GridApi>();
 const gridApiDef = shallowRef(new Deferred<GridApi>());
 
 const firstDataRenderedTracker = makeOnceTracker<GridApi<PlAgDataTableRow>>();
+
 const gridOptions = shallowRef<GridOptions<PlAgDataTableRow>>({
   animateRows: false,
   suppressColumnMoveAnimation: true,
