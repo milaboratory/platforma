@@ -42,7 +42,7 @@ import { RefCountResourcePool } from './ref_count_pool';
 import { allBlobs, makeDataInfoFromPColumnValues, mapBlobs, parseDataInfoResource } from './data';
 import { createHash } from 'node:crypto';
 import type { MiLogger } from '@milaboratories/ts-helpers';
-import { assertNever, ensureDirExists } from '@milaboratories/ts-helpers';
+import { assertNever, emptyDir } from '@milaboratories/ts-helpers';
 import canonicalize from 'canonicalize';
 import { PFrame } from '@milaboratories/pframes-rs-node';
 import * as fsp from 'node:fs/promises';
@@ -98,17 +98,7 @@ class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
     private readonly blobContentCache: LRUCache<string, Uint8Array>,
     columns: InternalPFrameData,
   ) {
-    const logFunc: PFrameInternal.Logger = (level: 'info' | 'warn' | 'error', message: string) => {
-      switch (level) {
-        default:
-        case 'info':
-          return this.logger.info(message);
-        case 'warn':
-          return this.logger.warn(message);
-        case 'error':
-          return this.logger.error(message);
-      }
-    };
+    const logFunc: PFrameInternal.Logger = (level, message) => this.logger[level](message);
 
     for (const column of columns) {
       for (const blob of allBlobs(column.data)) {
@@ -241,7 +231,7 @@ export class PFrameDriver implements InternalPFrameDriver {
     spillPath: string,
   ): Promise<PFrameDriver> {
     const resolvedSpillPath = path.resolve(spillPath);
-    await ensureDirExists(resolvedSpillPath);
+    await emptyDir(resolvedSpillPath);
     return new PFrameDriver(blobDriver, logger, resolvedSpillPath);
   }
 

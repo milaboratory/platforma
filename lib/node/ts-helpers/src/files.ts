@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import path from 'node:path';
 import type { MiLogger } from './log';
 
 export async function fileExists(path: string): Promise<boolean> {
@@ -14,6 +15,17 @@ export async function ensureDirExists(fileOrDir: string) {
   if (!(await fileExists(fileOrDir))) {
     await fs.promises.mkdir(fileOrDir, { recursive: true });
   }
+}
+
+/** Create an new directory, or empty an existing one */
+export async function emptyDir(dirPath: string) {
+  await ensureDirExists(dirPath);
+
+  const files = await fs.promises.readdir(dirPath);
+  return Promise.all(files.map((file) => {
+    const filePath = path.join(dirPath, file);
+    return fs.promises.rm(filePath, { recursive: true, force: true });
+  }));
 }
 
 /** Atomically creates a file or a directory, see:
