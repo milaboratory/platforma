@@ -42,10 +42,11 @@ import { RefCountResourcePool } from './ref_count_pool';
 import { allBlobs, makeDataInfoFromPColumnValues, mapBlobs, parseDataInfoResource } from './data';
 import { createHash } from 'node:crypto';
 import type { MiLogger } from '@milaboratories/ts-helpers';
-import { assertNever } from '@milaboratories/ts-helpers';
+import { assertNever, ensureDirExists } from '@milaboratories/ts-helpers';
 import canonicalize from 'canonicalize';
-import { PFrame as PFrameRs } from '@milaboratories/pframes-rs-node';
+import { PFrame } from '@milaboratories/pframes-rs-node';
 import * as fsp from 'node:fs/promises';
+import * as path from 'node:path';
 import { LRUCache } from 'lru-cache';
 import { getDebugFlags } from '../debug';
 
@@ -83,7 +84,7 @@ function migrateFilters(filters: PTableRecordFilter[]): PTableRecordFilter[] {
 const bigintReplacer = (_: string, v: unknown) => (typeof v === 'bigint' ? v.toString() : v);
 
 class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
-  public readonly rustPFrame: PFrameInternal.PFrameV4;
+  public readonly pFrame: PFrameInternal.PFrameV4;
   private readonly blobIdToResource = new Map<string, ResourceInfo>();
   private readonly blobHandleComputables = new Map<
     string,
@@ -93,6 +94,7 @@ class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
   constructor(
     private readonly blobDriver: DownloadDriver,
     private readonly logger: MiLogger,
+    private readonly spillPath: string,
     private readonly blobContentCache: LRUCache<string, Uint8Array>,
     columns: InternalPFrameData,
   ) {
@@ -123,13 +125,13 @@ class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
     ];
 
     try {
-      const pFrame = new PFrameRs(getDebugFlags().logPFrameRequests ? logFunc : undefined);
+      const pFrame = new PFrame(this.spillPath, getDebugFlags().logPFrameRequests ? logFunc : undefined);
       pFrame.setDataSource(this);
       for (const column of distinctСolumns) {
         pFrame.addColumnSpec(column.id, column.spec);
         pFrame.setColumnData(column.id, column.data);
       }
-      this.rustPFrame = pFrame;
+      this.pFrame = pFrame;
     } catch (err: unknown) {
       throw new Error(
         `Rust PFrame creation failed, columns: ${JSON.stringify(distinctСolumns)}, error: ${err as Error}`,
@@ -176,7 +178,7 @@ class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
 
   [Symbol.dispose](): void {
     for (const computable of this.blobHandleComputables.values()) computable.resetState();
-    this.rustPFrame.dispose();
+    this.pFrame.dispose();
   }
 }
 
@@ -232,23 +234,33 @@ export interface InternalPFrameDriver extends SdkPFrameDriver {
 export class PFrameDriver implements InternalPFrameDriver {
   private readonly pFrames: RefCountResourcePool<InternalPFrameData, PFrameHolder>;
   private readonly pTables: RefCountResourcePool<FullPTableDef, PTableHolder>;
-  private readonly blobContentCache: LRUCache<string, Uint8Array>;
 
-  constructor(
+  public static async init(
+    blobDriver: DownloadDriver,
+    logger: MiLogger,
+    spillPath: string,
+  ): Promise<PFrameDriver> {
+    const resolvedSpillPath = path.resolve(spillPath);
+    await ensureDirExists(resolvedSpillPath);
+    return new PFrameDriver(blobDriver, logger, resolvedSpillPath);
+  }
+
+  private constructor(
     private readonly blobDriver: DownloadDriver,
     private readonly logger: MiLogger,
+    private readonly spillPath: string,
   ) {
     const blobContentCache = new LRUCache<string, Uint8Array>({
       maxSize: 1_000_000_000, // 1Gb
       fetchMethod: async (key) => await fsp.readFile(key),
       sizeCalculation: (v) => v.length,
     });
-    this.blobContentCache = blobContentCache;
 
     this.pFrames = new (class extends RefCountResourcePool<InternalPFrameData, PFrameHolder> {
       constructor(
         private readonly blobDriver: DownloadDriver,
         private readonly logger: MiLogger,
+        private readonly spillPath: string,
       ) {
         super();
       }
@@ -258,13 +270,13 @@ export class PFrameDriver implements InternalPFrameDriver {
           logger.info(
             `PFrame creation (pFrameHandle = ${this.calculateParamsKey(params)}): ${JSON.stringify(params, bigintReplacer)}`,
           );
-        return new PFrameHolder(this.blobDriver, this.logger, blobContentCache, params);
+        return new PFrameHolder(this.blobDriver, this.logger, this.spillPath, blobContentCache, params);
       }
 
       protected calculateParamsKey(params: InternalPFrameData): string {
         return stableKeyFromPFrameData(params);
       }
-    })(this.blobDriver, this.logger);
+    })(this.blobDriver, this.logger, this.spillPath);
 
     this.pTables = new (class extends RefCountResourcePool<
       FullPTableDef,
@@ -283,7 +295,7 @@ export class PFrameDriver implements InternalPFrameDriver {
             `PTable creation (pTableHandle = ${this.calculateParamsKey(params)}): ${JSON.stringify(params, bigintReplacer)}`,
           );
         }
-        const tablePromise = this.pFrames.getByKey(handle).rustPFrame.createTable({
+        const tablePromise = this.pFrames.getByKey(handle).pFrame.createTable({
           src: joinEntryToInternal(params.def.src),
           filters: migrateFilters(params.def.filters),
         }, params.signal).then(async (table) => {
@@ -368,7 +380,7 @@ export class PFrameDriver implements InternalPFrameDriver {
             }]
           : [],
     };
-    const responce = await this.pFrames.getByKey(handle).rustPFrame.findColumns(iRequest);
+    const responce = await this.pFrames.getByKey(handle).pFrame.findColumns(iRequest);
     return {
       hits: responce.hits
         .filter((h) => // only exactly matching columns
@@ -381,11 +393,11 @@ export class PFrameDriver implements InternalPFrameDriver {
   }
 
   public async getColumnSpec(handle: PFrameHandle, columnId: PObjectId): Promise<PColumnSpec> {
-    return await this.pFrames.getByKey(handle).rustPFrame.getColumnSpec(columnId);
+    return await this.pFrames.getByKey(handle).pFrame.getColumnSpec(columnId);
   }
 
   public async listColumns(handle: PFrameHandle): Promise<PColumnIdAndSpec[]> {
-    return await this.pFrames.getByKey(handle).rustPFrame.listColumns();
+    return await this.pFrames.getByKey(handle).pFrame.listColumns();
   }
 
   public async calculateTableData(
@@ -398,7 +410,7 @@ export class PFrameDriver implements InternalPFrameDriver {
         `Call calculateTableData, handle = ${handle}, request = ${JSON.stringify(request, bigintReplacer)}`,
       );
     }
-    return await this.pFrames.getByKey(handle).rustPFrame.createTable({
+    return await this.pFrames.getByKey(handle).pFrame.createTable({
       src: joinEntryToInternal(request.src),
       filters: migrateFilters(request.filters),
     }, signal).then(async (table) => {
@@ -432,7 +444,7 @@ export class PFrameDriver implements InternalPFrameDriver {
         `Call getUniqueValues, handle = ${handle}, request = ${JSON.stringify(request, bigintReplacer)}`,
       );
     }
-    return await this.pFrames.getByKey(handle).rustPFrame.getUniqueValues({
+    return await this.pFrames.getByKey(handle).pFrame.getUniqueValues({
       ...request,
       filters: migrateFilters(request.filters),
     }, signal);
