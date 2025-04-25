@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 1.36.2
+
+### Patch Changes
+
+- 1558f36: PFrames version bump
+
 ## 1.36.1
 
 ### Patch Changes
