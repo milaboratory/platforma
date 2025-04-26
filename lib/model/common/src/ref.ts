@@ -5,8 +5,13 @@ export const PlRef = z
     __isRef: z
       .literal(true)
       .describe('Crucial marker for the block dependency tree reconstruction'),
-    blockId: z.string().describe('Upstream block id'),
-    name: z.string().describe('Name of the output provided to the upstream block\'s output context'),
+    blockId: z.string()
+      .describe('Upstream block id'),
+    name: z.string()
+      .describe('Name of the output provided to the upstream block\'s output context'),
+    requireEnrichments: z.literal(true).optional()
+      .describe('True if current block that stores this reference in its args, may need enrichments '
+        + 'for the references value originating from the blocks in between current and referenced block'),
   })
   .describe(
     'Universal reference type, allowing to set block connections. It is crucial that '
