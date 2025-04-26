@@ -37,6 +37,7 @@ import { V2RegistryProvider } from '../block_registry';
 import type { Dispatcher } from 'undici';
 import { RetryAgent } from 'undici';
 import { getDebugFlags } from '../debug';
+import { ProjectHelper } from '../model/project_helper';
 
 export interface MiddleLayerEnvironment {
   readonly pl: PlClient;
@@ -50,6 +51,7 @@ export interface MiddleLayerEnvironment {
   readonly blockUpdateWatcher: BlockUpdateWatcher;
   readonly quickJs: QuickJSWASMModule;
   readonly driverKit: MiddleLayerDriverKit;
+  readonly cachedProjectCalculator: ProjectHelper;
 }
 
 /**
@@ -251,6 +253,8 @@ export class MiddleLayer {
       ops.frontendDownloadPath,
     );
 
+    const quickJs = await getQuickJS();
+
     const env: MiddleLayerEnvironment = {
       pl,
       signer: driverKit.signer,
@@ -266,7 +270,8 @@ export class MiddleLayer {
         http: retryHttpDispatcher,
         preferredUpdateChannel: ops.preferredUpdateChannel,
       }),
-      quickJs: await getQuickJS(),
+      quickJs,
+      cachedProjectCalculator: new ProjectHelper(quickJs),
     };
 
     const openedProjects = new WatchableValue<ResourceId[]>([]);

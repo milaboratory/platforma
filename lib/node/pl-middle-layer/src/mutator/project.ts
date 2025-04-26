@@ -62,6 +62,7 @@ import Denque from 'denque';
 import { exportContext, getPreparedExportTemplateEnvelope } from './context_export';
 import { loadTemplate } from './template/template_loading';
 import { deepFreeze } from '@milaboratories/ts-helpers';
+import type { ProjectHelper } from '../model/project_helper';
 type FieldStatus = 'NotReady' | 'Ready' | 'Error';
 
 interface BlockFieldState {
@@ -103,6 +104,7 @@ class BlockInfo {
   constructor(
     public readonly id: string,
     public readonly fields: BlockFieldStates,
+    public blockConfig: BlockConfig,
   ) {}
 
   public check() {
@@ -247,6 +249,7 @@ export class ProjectMutator {
     private readonly blockInfos: Map<string, BlockInfo>,
     private readonly blockFrontendStates: Map<string, string>,
     private readonly ctxExportTplHolder: AnyResourceRef,
+    private readonly projectHelper: ProjectHelper,
   ) {}
 
   private fixProblemsAndMigrate() {
@@ -304,7 +307,19 @@ export class ProjectMutator {
     if (this.pendingProductionGraph === undefined)
       this.pendingProductionGraph = productionGraph(
         this.struct,
-        (blockId) => this.getBlockInfo(blockId).currentInputs,
+        (blockId) => {
+          const blockPackField = this.getBlockInfo(blockId).fields.blockPack;
+          const argsField = this.getBlockInfo(blockId).fields.currentArgs;
+          if (blockPackField === undefined || argsField === undefined) return undefined;
+          return {
+            args: argsField.value,
+            enrichmentTargets: this.projectHelper.getEnrichmentTargets(
+              () => this.getBlock(blockId),
+              () => argsField.value,
+            ),
+          };
+        },
+      );
       );
     return this.pendingProductionGraph;
   }
@@ -965,6 +980,7 @@ export class ProjectMutator {
   }
 
   public static async load(
+    projectHelper: ProjectHelper,
     tx: PlTransaction,
     rid: ResourceId,
     author?: AuthorMarker,
@@ -978,9 +994,10 @@ export class ProjectMutator {
 
     const allKVP = tx.listKeyValuesString(rid);
 
+    const fullResourceState = await fullResourc/** **/eStateP;
+
     // loading jsons
     const [
-      fullResourceState,
       schema,
       lastModified,
       meta,
@@ -988,7 +1005,6 @@ export class ProjectMutator {
       { stagingRefreshTimestamp, blocksInLimbo },
       allKV,
     ] = await Promise.all([
-      fullResourceStateP,
       schemaP,
       lastModifiedP,
       metaP,
@@ -1101,6 +1117,7 @@ export class ProjectMutator {
       blockInfos,
       blockFrontendStates,
       ctxExportTplHolder,
+      projectHelper,
     );
 
     prj.fixProblemsAndMigrate();
@@ -1140,14 +1157,16 @@ export async function createProject(
 }
 
 export async function withProject<T>(
+  projectHelper: ProjectHelper,
   txOrPl: PlTransaction | PlClient,
   rid: ResourceId,
   cb: (p: ProjectMutator) => T | Promise<T>,
 ): Promise<T> {
-  return withProjectAuthored(txOrPl, rid, undefined, cb);
+  return withProjectAuthored(projectHelper, txOrPl, rid, undefined, cb);
 }
 
 export async function withProjectAuthored<T>(
+  projectHelper: ProjectHelper,
   txOrPl: PlTransaction | PlClient,
   rid: ResourceId,
   author: AuthorMarker | undefined,
@@ -1155,7 +1174,7 @@ export async function withProjectAuthored<T>(
 ): Promise<T> {
   if (txOrPl instanceof PlClient) {
     return await txOrPl.withWriteTx('ProjectAction', async (tx) => {
-      const mut = await ProjectMutator.load(tx, rid, author);
+      const mut = await ProjectMutator.load(projectHelper, tx, rid, author);
       const result = await cb(mut);
       if (!mut.wasModified)
         // skipping save and commit altogether if no modifications were
@@ -1166,7 +1185,7 @@ export async function withProjectAuthored<T>(
       return result;
     });
   } else {
-    const mut = await ProjectMutator.load(txOrPl, rid, author);
+    const mut = await ProjectMutator.load(projectHelper, txOrPl, rid, author);
     const result = await cb(mut);
     mut.save();
     return result;

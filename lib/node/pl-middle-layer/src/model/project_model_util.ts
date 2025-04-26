@@ -1,6 +1,7 @@
 import type { Block, ProjectStructure } from './project_model';
 import type { Optional, Writable } from 'utility-types';
 import { inferAllReferencedBlocks } from './args';
+import type { PlRef } from '@milaboratories/pl-model-common';
 
 export function allBlocks(structure: ProjectStructure): Iterable<Block> {
   return {
@@ -19,9 +20,15 @@ export interface BlockGraphNode {
   readonly directUpstream: Set<string>;
   /** Downstreams, calculated accounting for potential indirect block dependencies  */
   readonly downstream: Set<string>;
+  /** Downstream blocks enriching current block's outputs */
+  readonly enrichments: Set<string>;
   /** Direct downstreams listing our block in it's args */
   readonly directDownstream: Set<string>;
+  /** Upstream blocks that current block may enrich with its exports */
+  readonly enrichmentTargets: Set<string>;
 }
+
+export type BlockGraphDirection = 'upstream' | 'downstream' | 'directUpstream' | 'directDownstream' | 'enrichments' | 'enrichmentTargets';
 
 export class BlockGraph {
   /** Nodes are stored in the map in topological order */
@@ -32,7 +39,7 @@ export class BlockGraph {
   }
 
   public traverseIds(
-    direction: 'upstream' | 'downstream' | 'directUpstream' | 'directDownstream',
+    direction: BlockGraphDirection,
     ...rootBlockIds: string[]
   ): Set<string> {
     const all = new Set<string>();
@@ -41,7 +48,7 @@ export class BlockGraph {
   }
 
   public traverseIdsExcludingRoots(
-    direction: 'upstream' | 'downstream' | 'directUpstream' | 'directDownstream',
+    direction: BlockGraphDirection,
     ...rootBlockIds: string[]
   ): Set<string> {
     const result = this.traverseIds(direction, ...rootBlockIds);
@@ -50,7 +57,7 @@ export class BlockGraph {
   }
 
   public traverse(
-    direction: 'upstream' | 'downstream' | 'directUpstream' | 'directDownstream',
+    direction: BlockGraphDirection,
     rootBlockIds: string[],
     cb: (node: BlockGraphNode) => void,
   ): void {
@@ -75,7 +82,7 @@ export class BlockGraph {
 }
 
 export function stagingGraph(structure: ProjectStructure) {
-  type WNode = Optional<Writable<BlockGraphNode>, 'upstream' | 'downstream' | 'directUpstream' | 'directDownstream'>;
+  type WNode = Optional<Writable<BlockGraphNode>, BlockGraphDirection>;
   const result = new Map<string, WNode>();
 
   // Simple dependency graph from previous to next
@@ -92,9 +99,11 @@ export function stagingGraph(structure: ProjectStructure) {
     result.set(id, current);
     if (previous === undefined) {
       current.directUpstream = current.upstream = new Set<string>();
+      current.enrichments = current.enrichmentTargets = new Set<string>();
     } else {
       current.directUpstream = current.upstream = new Set<string>([previous.id]);
       previous.directDownstream = previous.downstream = new Set<string>([current.id]);
+      previous.enrichments = previous.enrichmentTargets = new Set<string>();
     }
 
     previous = current;
@@ -104,9 +113,14 @@ export function stagingGraph(structure: ProjectStructure) {
   return new BlockGraph(result as Map<string, BlockGraphNode>);
 }
 
+export type ProductionGraphBlockInfo = {
+  args: unknown;
+  enrichmentTargets: PlRef[] | undefined;
+};
+
 export function productionGraph(
   structure: ProjectStructure,
-  argsProvider: (blockId: string) => unknown,
+  infoProvider: (blockId: string) => ProductionGraphBlockInfo | undefined,
 ): BlockGraph {
   const resultMap = new Map<string, BlockGraphNode>();
   // result graph is constructed to be able to perform traversal on incomplete graph
@@ -118,16 +132,18 @@ export function productionGraph(
   // those dependencies that are possible under current topology
   const allAbove = new Set<string>();
   for (const { id } of allBlocks(structure)) {
-    const args = argsProvider(id);
+    const info = infoProvider(id);
 
     // skipping those blocks for which we don't have args
-    if (args === undefined) continue;
+    if (info === undefined) continue;
 
-    const directUpstreams = inferAllReferencedBlocks(args, allAbove);
+    const references = inferAllReferencedBlocks(info.args, allAbove);
 
     // The algorithm here adds all downstream blocks of direct upstreams as potential upstreams.
     // They may produce additional columns, anchored in our direct upstream, those columns might be needed by the workflow.
-    const potentialUpstreams = resultGraph.traverseIds('directDownstream', ...directUpstreams.upstreams);
+    const potentialUpstreams = new Set(
+      ...references.upstreams,
+      ...resultGraph.traverseIds('enrichments', ...references.upstreamsRequiringEnrichments));
 
     // To minimize complexity of the graph, we leave only the closest upstreams, removing all their transitive dependencies,
     // relying on the traversal mechanisms in BContexts and on UI level to connect our block with all upstreams
@@ -141,17 +157,25 @@ export function productionGraph(
       }
     }
 
+    // default assumption is that all direct upstreams are enrichment targets
+    const enrichmentTargets = new Set(
+      ...(info.enrichmentTargets?.map((t) => t.blockId) ?? references.upstreams),
+    );
+
     const node: BlockGraphNode = {
       id,
-      missingReferences: directUpstreams.missingReferences,
+      missingReferences: references.missingReferences,
       upstream: upstreams,
-      directUpstream: directUpstreams.upstreams,
+      directUpstream: references.upstreams,
+      enrichmentTargets,
       downstream: new Set<string>(), // will be populated from downstream blocks
       directDownstream: new Set<string>(), // will be populated from downstream blocks
+      enrichments: new Set<string>(), // will be populated from downstream blocks
     };
     resultMap.set(id, node);
-    directUpstreams.upstreams.forEach((dep) => resultMap.get(dep)!.directDownstream.add(id));
+    references.upstreams.forEach((dep) => resultMap.get(dep)!.directDownstream.add(id));
     upstreams.forEach((dep) => resultMap.get(dep)!.downstream.add(id));
+    enrichmentTargets.forEach((dep) => resultMap.get(dep)!.enrichments.add(id));
     allAbove.add(id);
   }
 

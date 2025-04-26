@@ -17,6 +17,7 @@ import {
   MaxTxId,
   isLocalResourceId,
   extractBasicResourceData,
+  isNullResourceId,
 } from './types';
 import type {
   ClientMessageRequest,
@@ -83,6 +84,10 @@ export function isResource(ref: AnyRef): ref is AnyResourceRef {
   return (
     typeof ref === 'bigint' || (ref.hasOwnProperty('globalId') && ref.hasOwnProperty('localId'))
   );
+}
+
+export function isResourceId(ref: AnyRef): ref is ResourceId {
+  return typeof ref === 'bigint' && !isLocalResourceId(ref) && !isNullResourceId(ref);
 }
 
 export function isFieldRef(ref: AnyFieldRef): ref is FieldRef {

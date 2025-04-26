@@ -2,6 +2,7 @@ import type { MiddleLayerEnvironment } from '../middle_layer/middle_layer';
 import type { Code, ConfigRenderLambda } from '@platforma-sdk/model';
 import type { ComputableRenderingOps } from '@milaboratories/computable';
 import { Computable } from '@milaboratories/computable';
+import type { QuickJSWASMModule } from 'quickjs-emscripten';
 import { Scope } from 'quickjs-emscripten';
 import type { DeadlineSettings } from './context';
 import { JsExecutionContext } from './context';
@@ -35,8 +36,9 @@ export function computableFromRF(
       return false;
     });
     const vm = scope.manage(runtime.newContext());
-    const rCtx = new JsExecutionContext(scope, vm, ctx, env,
-      (s) => { deadlineSettings = s; }, cCtx);
+    const rCtx = new JsExecutionContext(scope, vm,
+      (s) => { deadlineSettings = s; },
+      { computableCtx: cCtx, blockCtx: ctx, mlEnv: env });
 
     rCtx.evaluateBundle(code.content);
     const result = rCtx.runCallback(fh.handle);
@@ -49,7 +51,7 @@ export function computableFromRF(
       console.log(`Output ${fh.handle} scaffold calculated.`);
 
     return {
-      ir: rCtx.computablesToResolve,
+      ir: rCtx.computableHelper!.computablesToResolve,
       postprocessValue: (resolved: Record<string, unknown>, { unstableMarker, stable }) => {
         // resolving futures
         for (const [handle, value] of Object.entries(resolved)) rCtx.runCallback(handle, value);
@@ -74,4 +76,36 @@ export function computableFromRF(
       },
     };
   }, ops);
+}
+
+export function executeSingleLambda(
+  quickJs: QuickJSWASMModule,
+  fh: ConfigRenderLambda,
+  code: Code,
+  ...args: unknown[]
+): unknown {
+  const scope = new Scope();
+  try {
+    const runtime = scope.manage(quickJs.newRuntime());
+    runtime.setMemoryLimit(1024 * 1024 * 8);
+    runtime.setMaxStackSize(1024 * 320);
+
+    let deadlineSettings: DeadlineSettings | undefined;
+    runtime.setInterruptHandler(() => {
+      if (deadlineSettings === undefined) return false;
+      if (Date.now() > deadlineSettings.deadline) return true;
+      return false;
+    });
+    const vm = scope.manage(runtime.newContext());
+    const rCtx = new JsExecutionContext(scope, vm,
+      (s) => { deadlineSettings = s; });
+
+    // Initializing the model
+    rCtx.evaluateBundle(code.content);
+
+    // Running the lambda
+    return rCtx.runCallback(fh.handle, ...args);
+  } finally {
+    scope.dispose();
+  }
 }
