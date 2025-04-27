@@ -25,9 +25,12 @@ export class ProjectHelper {
 
   private calculateEnrichmentTargets(req: EnrichmentTargetsRequest): PlRef[] | undefined {
     const blockConfig = req.blockConfig();
+    console.log('AAAAAA', blockConfig.enrichmentTargets);
     if (blockConfig.enrichmentTargets === undefined) return undefined;
     const args = req.args();
-    return executeSingleLambda(this.quickJs, blockConfig.enrichmentTargets, blockConfig.code!, args) as PlRef[] | undefined;
+    const result = executeSingleLambda(this.quickJs, blockConfig.enrichmentTargets, blockConfig.code!, args) as PlRef[];
+    console.log('calculateEnrichmentTargets', result);
+    return result;
   }
 
   public getEnrichmentTargets(blockConfig: () => BlockConfig, args: () => unknown, key?: { argsRid: ResourceId; blockPackRid: ResourceId }): PlRef[] | undefined {

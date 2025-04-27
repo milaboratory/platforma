@@ -923,6 +923,12 @@ importers:
       '@platforma-sdk/block-tools':
         specifier: workspace:*
         version: link:../../../../tools/block-tools
+      '@platforma-sdk/eslint-config':
+        specifier: workspace:*
+        version: link:../../../../sdk/eslint-config
+      eslint:
+        specifier: 'catalog:'
+        version: 9.23.0
       tsup:
         specifier: 'catalog:'
         version: 8.3.5(@microsoft/api-extractor@7.52.2(@types/node@22.5.5))(postcss@8.4.49)(tsx@4.19.1)(typescript@5.5.4)(yaml@2.7.0)

@@ -104,7 +104,7 @@ export function executeSingleLambda(
     rCtx.evaluateBundle(code.content);
 
     // Running the lambda
-    return rCtx.runCallback(fh.handle, ...args);
+    return rCtx.importObjectUniversal(rCtx.runCallback(fh.handle, ...args));
   } finally {
     scope.dispose();
   }
