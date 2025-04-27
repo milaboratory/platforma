@@ -21,7 +21,7 @@ import { ChangeSource } from '@milaboratories/computable';
 import { PlTreeEntry } from './accessors';
 import type { ValueAndError } from './value_and_error';
 import type { MiLogger } from '@milaboratories/ts-helpers';
-import { deepFreeze, notEmpty } from '@milaboratories/ts-helpers';
+import { cachedDeserialize, deepFreeze, notEmpty } from '@milaboratories/ts-helpers';
 import type { FieldTraversalStep, GetFieldStep } from './traversal_ops';
 import type { FinalResourceDataPredicate } from '@milaboratories/pl-client';
 
@@ -306,6 +306,12 @@ export class PlTreeResource implements ResourceDataWithFinalState {
     return decoder.decode(bytes);
   }
 
+  public getKeyValueAsJson<T = unknown>(watcher: Watcher, key: string): T | undefined {
+    const bytes = this.getKeyValue(watcher, key);
+    if (bytes === undefined) return undefined;
+    return cachedDeserialize(bytes) as T;
+  }
+
   public getDataAsString(): string | undefined {
     if (this.data === undefined) return undefined;
     if (this.dataAsString === undefined) this.dataAsString = decoder.decode(this.data);
@@ -314,7 +320,7 @@ export class PlTreeResource implements ResourceDataWithFinalState {
 
   public getDataAsJson<T = unknown>(): T | undefined {
     if (this.data === undefined) return undefined;
-    if (this.dataAsJson === undefined) this.dataAsJson = deepFreeze(JSON.parse(this.getDataAsString()!));
+    if (this.dataAsJson === undefined) this.dataAsJson = cachedDeserialize(this.data);
     return this.dataAsJson as T;
   }
 
