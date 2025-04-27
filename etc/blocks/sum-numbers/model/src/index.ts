@@ -1,17 +1,18 @@
+import type {
+  InferHrefType,
+  InferOutputsType } from '@platforma-sdk/model';
 import {
   Args,
   BlockModel,
   getJsonField,
-  InferHrefType,
-  InferOutputsType,
   isEmpty,
   not,
-  PlRef
+  PlRef,
 } from '@platforma-sdk/model';
 import { z } from 'zod';
 
 export const BlockArgs = z.object({
-  sources: z.array(PlRef).optional()
+  sources: z.array(PlRef).optional(),
 });
 
 export type BlockArgs = z.infer<typeof BlockArgs>;
@@ -19,7 +20,7 @@ export type BlockArgs = z.infer<typeof BlockArgs>;
 export const platforma = BlockModel.create('Heavy')
 
   .withArgs<BlockArgs>({
-    sources: undefined
+    sources: undefined,
   })
 
   .output('opts', (ctx) =>
@@ -31,15 +32,34 @@ export const platforma = BlockModel.create('Heavy')
       })
       .map((opt, i) => ({
         label: `numbers_${i}`,
-        value: opt.ref
-      }))
+        value: opt.ref,
+      })),
+  )
+
+  .output('optsWithEnrichments', (ctx) =>
+    ctx.resultPool
+      .getSpecs()
+      .entries.filter((spec) => {
+        if (spec.obj.annotations === undefined) return false;
+        return spec.obj.annotations['pl7.app/label'] == 'Numbers';
+      })
+      .map((opt, i) => ({
+        label: `numbers_${i}`,
+        value: { ...opt.ref, requireEnrichment: true },
+      })),
   )
 
   .output('sum', (ctx) => ctx.outputs?.resolve('sum')?.getDataAsJson<number>())
 
-  .argsValid(not(isEmpty(getJsonField(Args, 'sources'))))
+  .argsValid((ctx) => ctx.args.sources !== undefined && ctx.args.sources.length > 0)
 
-  .sections((ctx) => {
+  .enriches((args) =>
+    (args.sources !== undefined && args.sources.length > 0)
+      ? [args.sources[0]]
+      : [],
+  )
+
+  .sections((_ctx) => {
     return [{ type: 'link', href: '/', label: 'Main' }];
   })
 
