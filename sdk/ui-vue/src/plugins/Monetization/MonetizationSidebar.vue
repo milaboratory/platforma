@@ -10,8 +10,6 @@ import EndOfPeriod from './EndOfPeriod.vue';
 
 const isOpen = ref(false);
 
-const teleportTarget = useButtonTarget();
-
 const {
   result,
   error,
@@ -24,6 +22,8 @@ const {
   refresh,
   isLoading,
 } = useInfo();
+
+const teleportTarget = useButtonTarget(hasMonetization);
 
 const productName = computed(() => result.value?.productName);
 
