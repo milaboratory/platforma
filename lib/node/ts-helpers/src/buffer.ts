@@ -57,6 +57,7 @@ export function cachedDeserialize(data: Uint8Array): unknown {
     return fromCache;
   }
   const text = textDecoder.decode(data);
+
   const result = JSON.parse(text);
   deepFreeze(result);
   if (data.byteLength >= CachedDeserializeMinCachingSize)

@@ -4,7 +4,7 @@ import { outputRef } from './args';
 import { PlRef } from '@platforma-sdk/model';
 
 function toRefs(...ids: string[]): PlRef[] {
-  return ids.map((id) => outputRef(id, ''));
+  return ids.map((id) => outputRef(id, '', true));
 }
 
 function simpleStructure(...ids: string[]): ProjectStructure {

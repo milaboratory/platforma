@@ -3,6 +3,7 @@ import type {
   AnyResourceRef,
   BasicResourceData,
   PlTransaction,
+  ResourceData,
   ResourceId } from '@milaboratories/pl-client';
 import {
   ensureResourceIdNotNull,
@@ -68,7 +69,6 @@ import { cachedDeserialize, notEmpty } from '@milaboratories/ts-helpers';
 import type { ProjectHelper } from '../model/project_helper';
 import { extractConfig, type BlockConfig } from '@platforma-sdk/model';
 import type { BlockPackInfo } from '../model/block_pack';
-import { info } from 'node:console';
 type FieldStatus = 'NotReady' | 'Ready' | 'Error';
 
 interface BlockFieldState {
@@ -144,7 +144,7 @@ class BlockInfo {
 
   private readonly currentArgsC = cached(
     () => this.fields.currentArgs!.modCount,
-    () => cachedDeserialize(this.fields.currentArgs!.value!) as unknown,
+    () => cachedDeserialize(this.fields.currentArgs!.value!),
   );
 
   private readonly prodArgsC = cached(
@@ -152,7 +152,7 @@ class BlockInfo {
     () => {
       const bin = this.fields.prodArgs?.value;
       if (bin === undefined) return undefined;
-      return cachedDeserialize(bin) as unknown;
+      return cachedDeserialize(bin);
     },
   );
 
@@ -639,14 +639,7 @@ export class ProjectMutator {
 
     const newStagingGraph = stagingGraph(newStructure);
 
-    // new actual production graph without new blocks
-    const newActualProductionGraph = productionGraph(
-      newStructure,
-      (blockId) => this.getProductionGraphBlockInfo(blockId, true),
-    );
-
     const stagingDiff = graphDiff(currentStagingGraph, newStagingGraph);
-    const prodDiff = graphDiff(currentActualProductionGraph, newActualProductionGraph);
 
     // removing blocks
     for (const blockId of stagingDiff.onlyInA) {
@@ -691,6 +684,14 @@ export class ProjectMutator {
 
     // resetting stagings affected by topology change
     for (const blockId of stagingDiff.different) this.resetStaging(blockId);
+
+    // new actual production graph without new blocks
+    const newActualProductionGraph = productionGraph(
+      newStructure,
+      (blockId) => this.getProductionGraphBlockInfo(blockId, true),
+    );
+
+    const prodDiff = graphDiff(currentActualProductionGraph, newActualProductionGraph);
 
     // applying changes due to topology change in production to affected nodes and
     // all their downstreams
@@ -1057,14 +1058,17 @@ export class ProjectMutator {
     // (start of round-trip #2)
     //
 
-    const blockFieldRequests: [BlockFieldState, Promise<BasicResourceData>][] = [];
+    const blockFieldRequests: [BlockInfoState, ProjectField['fieldName'], BlockFieldState, Promise<BasicResourceData | ResourceData>][] = [];
     blockInfoStates.forEach((info) => {
       const fields = info.fields;
-      for (const [, state] of Object.entries(fields)) {
+      for (const [fName, state] of Object.entries(fields)) {
         if (state.ref === undefined) continue;
         if (!isResource(state.ref) || isResourceRef(state.ref))
           throw new Error('unexpected behaviour');
-        blockFieldRequests.push([state, tx.getResourceData(state.ref, false)]);
+        const fieldName = fName as ProjectField['fieldName'];
+        blockFieldRequests.push([
+          info, fieldName,
+          state, tx.getResourceData(state.ref, fieldName == 'blockPack')]);
       }
     });
 
@@ -1093,30 +1097,32 @@ export class ProjectMutator {
     // <- at this point we have all the responses from round-trip #1
     //
 
-    for (const [state, response] of blockFieldRequests) {
+    //
+    // Receiving responses from round-trip #2 and sending requests to read block pack descriptions
+    // (start of round-trip #3)
+    //
+
+    const blockPackRequests: [BlockInfoState, Promise<BasicResourceData>][] = [];
+    for (const [info, fieldName, state, response] of blockFieldRequests) {
       const result = await response;
       state.value = result.data;
       if (isNotNullResourceId(result.error)) state.status = 'Error';
       else if (result.resourceReady || isNotNullResourceId(result.originalResourceId))
         state.status = 'Ready';
       else state.status = 'NotReady';
+
+      // For block pack we need to traverse the ref field from the resource data
+      if (fieldName === 'blockPack') {
+        const refField = (result as ResourceData).fields.find((f) => f.name === Pl.HolderRefField);
+        if (refField === undefined)
+          throw new Error('Block pack ref field is missing');
+        blockPackRequests.push([info, tx.getResourceData(ensureResourceIdNotNull(refField.value), false)]);
+      }
     }
 
     //
     // <- at this point we have all the responses from round-trip #2
     //
-
-    //
-    // Sending requests to read block pack descriptions (start of round-trip #3)
-    //
-
-    const blockPackRequests: [BlockInfoState, Promise<BasicResourceData>][] = [];
-    blockInfoStates.forEach((info) => {
-      const blockPackRef = notEmpty(info.fields['blockPack']?.ref, 'Block pack ref is missing');
-      if (!isResourceId(blockPackRef))
-        throw new Error('Block pack ref is not a resource id');
-      blockPackRequests.push([info, tx.getResourceData(blockPackRef, false)]);
-    });
 
     for (const [info, response] of blockPackRequests) {
       const result = await response;
