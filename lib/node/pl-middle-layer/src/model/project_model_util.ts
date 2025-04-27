@@ -2,6 +2,7 @@ import type { Block, ProjectStructure } from './project_model';
 import type { Optional, Writable } from 'utility-types';
 import { inferAllReferencedBlocks } from './args';
 import type { PlRef } from '@milaboratories/pl-model-common';
+import { notEmpty } from '@milaboratories/ts-helpers';
 
 export function allBlocks(structure: ProjectStructure): Iterable<Block> {
   return {
@@ -141,9 +142,10 @@ export function productionGraph(
 
     // The algorithm here adds all downstream blocks of direct upstreams as potential upstreams.
     // They may produce additional columns, anchored in our direct upstream, those columns might be needed by the workflow.
-    const potentialUpstreams = new Set(
+    const potentialUpstreams = new Set([
       ...references.upstreams,
-      ...resultGraph.traverseIds('enrichments', ...references.upstreamsRequiringEnrichments));
+      ...resultGraph.traverseIds('enrichments', ...references.upstreamsRequiringEnrichments),
+    ]);
 
     // To minimize complexity of the graph, we leave only the closest upstreams, removing all their transitive dependencies,
     // relying on the traversal mechanisms in BContexts and on UI level to connect our block with all upstreams
@@ -158,9 +160,9 @@ export function productionGraph(
     }
 
     // default assumption is that all direct upstreams are enrichment targets
-    const enrichmentTargets = new Set(
-      ...(info.enrichmentTargets?.map((t) => t.blockId) ?? references.upstreams),
-    );
+    const enrichmentTargets = info.enrichmentTargets === undefined
+      ? new Set(references.upstreams)
+      : new Set(info.enrichmentTargets.map((t) => t.blockId));
 
     const node: BlockGraphNode = {
       id,
@@ -175,7 +177,7 @@ export function productionGraph(
     resultMap.set(id, node);
     references.upstreams.forEach((dep) => resultMap.get(dep)!.directDownstream.add(id));
     upstreams.forEach((dep) => resultMap.get(dep)!.downstream.add(id));
-    enrichmentTargets.forEach((dep) => resultMap.get(dep)!.enrichments.add(id));
+    enrichmentTargets.forEach((dep) => notEmpty(resultMap.get(dep), dep).enrichments.add(id));
     allAbove.add(id);
   }
 
