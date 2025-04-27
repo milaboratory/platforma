@@ -1,7 +1,7 @@
 import { gunzipSync, gzipSync } from 'node:zlib';
 import canonicalize from 'canonicalize';
-import { TemplateData } from './template_data_v2';
-import { CompiledTemplateV3 } from './template_data_v3';
+import type { TemplateData } from './template_data_v2';
+import type { CompiledTemplateV3 } from './template_data_v3';
 import { z } from 'zod';
 
 const TypeSchema = z.object({
@@ -13,8 +13,8 @@ const templateArchiveDecoder = new TextDecoder();
 
 export function parseTemplate(content: Uint8Array): TemplateData | CompiledTemplateV3 {
   const data = TypeSchema.parse(JSON.parse(templateArchiveDecoder.decode(gunzipSync(content))));
-  if (data.type !== 'pl.tengo-template.v2' &&
-    data.type !== 'pl.tengo-template.v3') {
+  if (data.type !== 'pl.tengo-template.v2'
+    && data.type !== 'pl.tengo-template.v3') {
     throw new Error('malformed template');
   }
 

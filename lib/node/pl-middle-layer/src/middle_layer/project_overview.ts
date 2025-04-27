@@ -29,11 +29,12 @@ import type { BlockSection } from '@platforma-sdk/model';
 import { computableFromCfgOrRF } from './render';
 import type { NavigationStates } from './navigation_states';
 import { getBlockPackInfo } from './util';
-import { resourceIdToString } from '@milaboratories/pl-client';
+import { resourceIdToString, type ResourceId } from '@milaboratories/pl-client';
 import * as R from 'remeda';
 
 type BlockInfo = {
-  currentArguments: Record<string, unknown>;
+  argsRid: ResourceId;
+  currentArguments: unknown;
   prod?: ProdState;
 };
 
@@ -127,10 +128,18 @@ export function projectOverview(
           };
         }
 
-        infos.set(id, { currentArguments, prod });
+        infos.set(id, { currentArguments, prod, argsRid: cInputs.resourceInfo.id });
       }
 
-      const currentGraph = productionGraph(structure, (id) => infos.get(id)!.currentArguments);
+      const currentGraph = productionGraph(structure, (id) => {
+        const bpInfo = getBlockPackInfo(prj, id)!;
+        const bInfo = infos.get(id)!;
+        const args = bInfo.currentArguments;
+        return {
+          args,
+          enrichmentTargets: env.projectHelper.getEnrichmentTargets(() => bpInfo.cfg, () => args, { argsRid: bInfo.argsRid, blockPackRid: bpInfo.bpResourceId }),
+        };
+      });
 
       const limbo = new Set(renderingState.blocksInLimbo);
 

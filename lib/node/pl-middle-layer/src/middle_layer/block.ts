@@ -43,7 +43,9 @@ export function blockArgsAndUiState(
   const uiState = ctx.uiState(cCtx);
   return {
     author: prj.getKeyValueAsJson<AuthorMarker>(blockArgsAuthorKey(blockId)),
+    // @TODO add deserialization caching
     args: deepFreeze(JSON.parse(ctx.args(cCtx))),
+    // @TODO add deserialization caching
     ui: uiState !== undefined ? deepFreeze(JSON.parse(uiState)) : undefined,
   };
 }

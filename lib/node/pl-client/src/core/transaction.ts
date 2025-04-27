@@ -29,7 +29,7 @@ import { TxAPI_Open_Request_WritableTx } from '../proto/github.com/milaboratory/
 import type { NonUndefined } from 'utility-types';
 import { toBytes } from '../util/util';
 import { fieldTypeToProto, protoToField, protoToResource } from './type_conversion';
-import { notEmpty } from '@milaboratories/ts-helpers';
+import { deepFreeze, notEmpty } from '@milaboratories/ts-helpers';
 import { isNotFoundError } from './errors';
 import type { FinalResourceDataPredicate } from './final';
 import type { LRUCache } from 'lru-cache';
@@ -540,6 +540,7 @@ export class PlTransaction {
     // we will cache only final resource data states
     // caching result even if we were ignore the cache
     if (!isResourceRef(rId) && !isLocalResourceId(rId) && this.finalPredicate(result)) {
+      deepFreeze(result);
       const fromCache = this.sharedResourceDataCache.get(rId);
       if (fromCache) {
         if (loadFields && !fromCache.data) {
@@ -548,15 +549,17 @@ export class PlTransaction {
           fromCache.cacheTxOpenTimestamp = this.txOpenTimestamp;
         }
       } else {
+        const basicData = extractBasicResourceData(result);
+        deepFreeze(basicData);
         if (loadFields)
           this.sharedResourceDataCache.set(rId, {
-            basicData: extractBasicResourceData(result),
+            basicData,
             data: result,
             cacheTxOpenTimestamp: this.txOpenTimestamp,
           });
         else
           this.sharedResourceDataCache.set(rId, {
-            basicData: extractBasicResourceData(result),
+            basicData,
             data: undefined,
             cacheTxOpenTimestamp: this.txOpenTimestamp,
           });

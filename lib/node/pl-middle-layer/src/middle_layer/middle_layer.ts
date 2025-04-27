@@ -51,7 +51,7 @@ export interface MiddleLayerEnvironment {
   readonly blockUpdateWatcher: BlockUpdateWatcher;
   readonly quickJs: QuickJSWASMModule;
   readonly driverKit: MiddleLayerDriverKit;
-  readonly cachedProjectCalculator: ProjectHelper;
+  readonly projectHelper: ProjectHelper;
 }
 
 /**
@@ -113,7 +113,7 @@ export class MiddleLayer {
     meta: ProjectMeta,
     author?: AuthorMarker,
   ): Promise<void> {
-    await withProjectAuthored(this.pl, rid, author, (prj) => {
+    await withProjectAuthored(this.env.projectHelper, this.pl, rid, author, (prj) => {
       prj.setMeta(meta);
     });
     await this.projectListTree.refreshState();
@@ -271,7 +271,7 @@ export class MiddleLayer {
         preferredUpdateChannel: ops.preferredUpdateChannel,
       }),
       quickJs,
-      cachedProjectCalculator: new ProjectHelper(quickJs),
+      projectHelper: new ProjectHelper(quickJs),
     };
 
     const openedProjects = new WatchableValue<ResourceId[]>([]);
