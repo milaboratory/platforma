@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.29.31
+
+### Patch Changes
+
+- 5ec58a8: Do not show monetization warning in non-monetized blocks
+
 ## 1.29.27
 
 ### Patch Changes
