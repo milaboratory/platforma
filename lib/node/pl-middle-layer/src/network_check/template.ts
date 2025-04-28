@@ -1,13 +1,12 @@
-import type { FieldId, FieldRef, PlClient, ResourceId } from '@milaboratories/pl-client';
-import { type PlTransaction, ContinuePolling, field, isNotNullResourceId, isNullResourceId, Pl, poll, resDataToJson, toGlobalFieldId } from '@milaboratories/pl-client';
+import type { FieldId, FieldRef, PlClient, ResourceData } from '@milaboratories/pl-client';
+import { type PlTransaction, ContinuePolling, field, isNotNullResourceId, isNullResourceId, Pl, poll, toGlobalFieldId } from '@milaboratories/pl-client';
 import { createRenderTemplate } from '../mutator/template/render_template';
 import { Templates as SdkTemplates } from '@platforma-sdk/workflow-tengo';
 import type { TemplateSpecAny } from '../model/template_spec';
 import { loadTemplate, prepareTemplateSpec } from '../mutator/template/template_loading';
 import type { ClientDownload, LsDriver } from '@milaboratories/pl-drivers';
 import { ImportFileHandleUploadData, uploadBlob, type ClientUpload } from '@milaboratories/pl-drivers';
-import type { MiddleLayer } from '../middle_layer';
-import type { MiLogger } from '@milaboratories/ts-helpers';
+import { notEmpty, type MiLogger } from '@milaboratories/ts-helpers';
 import type { ResourceInfo } from '@milaboratories/pl-tree';
 import { text } from 'node:stream/consumers';
 import path from 'node:path';
@@ -19,21 +18,25 @@ export interface TemplateReport {
   message: string;
 }
 
-export async function createTempFile(): Promise<{ filePath: string; fileContent: string }> {
-  const filePath = path.join(os.tmpdir(), `check-network-temp-${Date.now()}.txt`);
+/** Uploads `hello-world` template and checks the output is correct. */
+export async function uploadTemplate(logger: MiLogger, pl: PlClient, name: string): Promise<TemplateReport> {
+  try {
+    const gotGreeting = await runUploadTemplate(logger, pl, name);
+    if (gotGreeting !== `Hello, ${name}`) {
+      return { ok: false, message: `Template uploading failed: expected: ${name}, got: ${gotGreeting}` };
+    }
 
-  const fileContent = 'Hello, world! ' + new Date().toISOString();
-  await fs.writeFile(filePath, fileContent);
-
-  return { filePath, fileContent };
+    return { ok: true, message: `Template uploading succeeded: ${gotGreeting}` };
+  } catch (e: unknown) {
+    return { ok: false, message: `Template uploading failed: error occurred: ${e}` };
+  }
 }
 
-export async function uploadTemplate(pl: PlClient, name: string): Promise<TemplateReport> {
-  const outputs = await runUploadTemplate(pl, name);
-  return checkUploadTemplate(pl, outputs, name);
-}
-
-export async function runUploadTemplate(pl: PlClient, name: string): Promise<string> {
+export async function runUploadTemplate(
+  logger: MiLogger,
+  pl: PlClient,
+  name: string,
+): Promise<string> {
   const greeting = await runTemplate(
     pl,
     SdkTemplates['check_network.upload_template'],
@@ -44,38 +47,32 @@ export async function runUploadTemplate(pl: PlClient, name: string): Promise<str
     ['greeting'],
   );
 
-  const result = (await getFieldValue(pl, greeting.greeting)).data;
-
-  await deleteFields(pl, Object.values(greeting));
-
-  return result;
-}
-
-export function checkUploadTemplate(pl: PlClient, gotName: string, expectedName: string): TemplateReport {
-  if (gotName !== expectedName) {
-    return {
-      ok: false,
-      message: `Template uploading failed: expected: ${expectedName}, got: ${gotName}`,
-    };
+  try {
+    return JSON.parse(notEmpty((await getFieldValue(pl, greeting.greeting)).data?.toString()));
+  } finally {
+    await deleteFields(pl, Object.values(greeting));
   }
-  return {
-    ok: true,
-    message: `Template uploading succeeded: ${gotName}`,
-  };
 }
 
+/** Uploads a file to the backend and checks the output is a Blob resource. */
 export async function uploadFile(
   logger: MiLogger,
   lsDriver: LsDriver,
   uploadClient: ClientUpload,
   pl: PlClient,
   filePath: string,
-): Promise<{ report: TemplateReport; blobId: ResourceId }> {
-  const result = await runUploadFile(logger, lsDriver, uploadClient, pl, filePath);
-  return {
-    report: checkUploadFile(pl, result),
-    blobId: result.id,
-  };
+): Promise<TemplateReport> {
+  try {
+    const gotBlob = await runUploadFile(logger, lsDriver, uploadClient, pl, filePath);
+
+    if (gotBlob.type.name !== 'Blob') {
+      return { ok: false, message: `File uploading failed: ${gotBlob.type.name}` };
+    }
+
+    return { ok: true, message: `File uploading succeeded: ${gotBlob.type.name}` };
+  } catch (e: unknown) {
+    return { ok: false, message: `File uploading failed: error occurred: ${e}` };
+  }
 }
 
 export async function runUploadFile(
@@ -96,78 +93,163 @@ export async function runUploadFile(
     ['progress', 'file'],
   );
 
-  const progress = await getFieldValue(pl, result.progress);
+  try {
+    const progress = await getFieldValue(pl, result.progress);
 
-  await uploadBlob(
-    logger,
-    uploadClient,
-    progress,
-    ImportFileHandleUploadData.parse(progress.data),
-    () => false,
-    {
-      nPartsWithThisUploadSpeed: 1,
-      nPartsToIncreaseUpload: 1,
-      currentSpeed: 1,
-      maxSpeed: 1,
-    },
-  );
+    await uploadBlob(
+      logger,
+      uploadClient,
+      progress,
+      ImportFileHandleUploadData.parse(JSON.parse(notEmpty(progress.data?.toString()))),
+      () => false,
+      {
+        nPartsWithThisUploadSpeed: 1,
+        nPartsToIncreaseUpload: 1,
+        currentSpeed: 1,
+        maxSpeed: 1,
+      },
+    );
 
-  return await getFieldValue(pl, result.file);
-}
-
-export function checkUploadFile(pl: PlClient, gotBlob: ResourceInfo): TemplateReport {
-  if (gotBlob.type.name !== 'Blob') {
-    return {
-      ok: false,
-      message: `File uploading failed: ${gotBlob.type.name}`,
-    };
+    return await getFieldValue(pl, result.file);
+  } finally {
+    await deleteFields(pl, Object.values(result));
   }
-  return {
-    ok: true,
-    message: `File uploading succeeded: ${gotBlob.type.name}`,
-  };
 }
 
+/** Uploads a file to the backend and then tries to download it back. */
 export async function downloadFile(
+  logger: MiLogger,
   pl: PlClient,
+  lsDriver: LsDriver,
+  uploadClient: ClientUpload,
   downloadClient: ClientDownload,
-  fileId: ResourceId,
+  filePath: string,
   fileContent: string,
 ): Promise<TemplateReport> {
-  const result = await runDownloadFile(pl, downloadClient, fileId);
-  return checkDownloadFile(pl, result, fileContent);
+  try {
+    const gotFileContent = await runDownloadFile(logger, pl, lsDriver, uploadClient, downloadClient, filePath);
+
+    if (gotFileContent !== fileContent) {
+      return { ok: false, message: `File downloading failed: expected: ${fileContent}, got: ${gotFileContent}` };
+    }
+    return { ok: true, message: `File downloading succeeded: ${gotFileContent}` };
+  } catch (e: unknown) {
+    return { ok: false, message: `File downloading failed: error occurred: ${e}` };
+  }
 }
 
 export async function runDownloadFile(
+  logger: MiLogger,
   pl: PlClient,
+  lsDriver: LsDriver,
+  uploadClient: ClientUpload,
   downloadClient: ClientDownload,
-  file: ResourceId,
+  filePath: string,
 ) {
+  const handle = await lsDriver.getLocalFileHandle(filePath);
+
   const outputs = await runTemplate(
     pl,
     SdkTemplates['check_network.download_blob'],
     true,
-    (_: PlTransaction) => ({ file }),
-    ['file'],
+    (tx) => ({ file: tx.createValue(Pl.JsonObject, JSON.stringify(handle)) }),
+    ['progress', 'file'],
   );
 
-  const fileInfo = await getFieldValue(pl, outputs.file);
-  const { content } = await downloadClient.downloadBlob(fileInfo);
+  try {
+    const progress = await getFieldValue(pl, outputs.progress);
 
-  return await text(content);
+    await uploadBlob(
+      logger,
+      uploadClient,
+      progress,
+      ImportFileHandleUploadData.parse(JSON.parse(notEmpty(progress.data?.toString()))),
+      () => false,
+      {
+        nPartsWithThisUploadSpeed: 1,
+        nPartsToIncreaseUpload: 1,
+        currentSpeed: 1,
+        maxSpeed: 1,
+      },
+    );
+
+    const fileInfo = await getFieldValue(pl, outputs.file);
+    const { content } = await downloadClient.downloadBlob(fileInfo);
+
+    return await text(content);
+  } finally {
+    await deleteFields(pl, Object.values(outputs));
+  }
 }
 
-export function checkDownloadFile(pl: PlClient, gotFile: string, expectedFile: string): TemplateReport {
-  if (gotFile !== expectedFile) {
-    return {
-      ok: false,
-      message: `File downloading failed: expected: ${expectedFile}, got: ${gotFile}`,
-    };
+/** Runs Go's hello-world binary. */
+export async function softwareCheck(pl: PlClient): Promise<TemplateReport> {
+  try {
+    const gotGreeting = await runSoftware(pl);
+
+    if (gotGreeting !== 'Hello from go binary\n') {
+      return { ok: false, message: `Software check failed: got: ${gotGreeting}` };
+    }
+    return { ok: true, message: `Software check succeeded: ${gotGreeting}` };
+  } catch (e: unknown) {
+    return { ok: false, message: `Software check failed: error occurred: ${e}` };
   }
-  return {
-    ok: true,
-    message: `File downloading succeeded: ${gotFile}`,
-  };
+}
+
+export async function runSoftware(pl: PlClient): Promise<string> {
+  const result = await runTemplate(
+    pl,
+    SdkTemplates['check_network.run_hello_world'],
+    true,
+    (_: PlTransaction) => ({}),
+    ['greeting'],
+  );
+
+  try {
+    return notEmpty((await getFieldValue(pl, result.greeting)).data?.toString());
+  } finally {
+    await deleteFields(pl, Object.values(result));
+  }
+}
+
+/** Runs Python hello-world. */
+export async function pythonSoftware(pl: PlClient, name: string): Promise<TemplateReport> {
+  try {
+    const gotGreeting = await runPythonSoftware(pl, name);
+
+    if (gotGreeting !== `Hello, ${name}!\n`) {
+      return { ok: false, message: `Python software check failed: got: ${gotGreeting}` };
+    }
+    return { ok: true, message: `Python software check succeeded: ${gotGreeting}` };
+  } catch (e: unknown) {
+    return { ok: false, message: `Python software check failed: error occurred: ${e}` };
+  }
+}
+
+export async function runPythonSoftware(pl: PlClient, name: string): Promise<string> {
+  const result = await runTemplate(
+    pl,
+    SdkTemplates['check_network.run_hello_world_py'],
+    true,
+    (tx) => ({ name: tx.createValue(Pl.JsonObject, JSON.stringify(name)) }),
+    ['greeting'],
+  );
+
+  try {
+    return notEmpty((await getFieldValue(pl, result.greeting)).data?.toString());
+  } finally {
+    await deleteFields(pl, Object.values(result));
+  }
+}
+
+/** Creates a temporarly file we could use for uploading and downloading. */
+export async function createTempFile(): Promise<{ filePath: string; fileContent: string }> {
+  const filePath = path.join(os.tmpdir(), `check-network-temp-${Date.now()}.txt`);
+
+  const fileContent = 'Hello, world! ' + new Date().toISOString();
+  await fs.writeFile(filePath, fileContent);
+
+  return { filePath, fileContent };
 }
 
 /** Creates a template and RenderTemplate resources, gets all resources from outputs.
@@ -206,7 +288,7 @@ async function runTemplate(
 async function getFieldValue(
   client: PlClient,
   fieldId: FieldId,
-) {
+): Promise<ResourceData> {
   // We could also do polling with pl-tree, but it seemed like an overkill,
   // that's why we have a simple polling here.
 
@@ -214,20 +296,14 @@ async function getFieldValue(
     const field = await tx.tx.getField(fieldId);
     if (isNotNullResourceId(field.error)) {
       const err = await tx.tx.getResourceData(field.error, true);
-      throw new Error(`${fieldId.fieldName} failed: ${err.data}`);
+      throw new Error(`getFieldValue of "${fieldId.fieldName}" field failed: ${err.data}`);
     }
 
     if (isNullResourceId(field.value)) {
       throw new ContinuePolling();
     }
 
-    const res = await tx.tx.getResourceData(field.value, true);
-
-    return {
-      id: res.id,
-      type: res.type,
-      data: resDataToJson(res),
-    };
+    return await tx.tx.getResourceData(field.value, true);
   });
 }
 
@@ -236,6 +312,6 @@ async function deleteFields(client: PlClient, fieldIds: FieldId[]) {
     for (const fieldId of fieldIds) {
       tx.resetField(fieldId);
     }
-    return Promise.resolve(true);
+    await tx.commit();
   });
 }

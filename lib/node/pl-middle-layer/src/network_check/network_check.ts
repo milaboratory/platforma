@@ -7,35 +7,19 @@
  * - pings to backend
  * - block registry for block overview and ui.
  * - autoupdate CDN.
- * - upload block to backend (workflow part via our API).
- *   - // upload the block part.
- *   - // We could write in workflow-tengo these templates.
- *
+ * - upload workflow to backend (workflow part via our API).
  * - the desktop could do multipart upload.
- *   - // get the file handle via ls driver
- *   - // upload, run a template that will make BlobUpload out of it.
- *   - // upload the file
- *
  * - the desktop could download files from S3.
- *   - // get the file handle to the file we just uploaded.
- *   - // make it downloadable via a render template.
- *   - // download the file via download driver.
- *
- * - try to get something from backend's library storage.
- *   - // get the file handle via ls driver
- *   - // download the file via download driver.
- *
  * - backend could download software and run it.
- *   - // run template that will have hello world binary, and get the result.
- *
  * - backend could run python software.
- *   - // run template that will have python software, and get the result.
+ * TODO:
+ * - try to get something from backend's library storage.
  *
  * We don't check backend access to S3 storage, it is checked on the start of backend.
  */
 
 import type { PlClientConfig } from '@milaboratories/pl-client';
-import { PlClient, UnauthenticatedPlClient, defaultPlClient, plAddressToConfig } from '@milaboratories/pl-client';
+import { PlClient, UnauthenticatedPlClient, plAddressToConfig } from '@milaboratories/pl-client';
 import type { MiLogger } from '@milaboratories/ts-helpers';
 import { ConsoleLoggerAdapter, HmacSha256Signer } from '@milaboratories/ts-helpers';
 import { channel } from 'node:diagnostics_channel';
@@ -45,7 +29,7 @@ import type { HttpNetworkReport, NetworkReport } from './pings';
 import { autoUpdateCdnPings, backendPings, blockGARegistryOverviewPings, blockGARegistryUiPings, blockRegistryOverviewPings, blockRegistryUiPings, reportToString } from './pings';
 import type { Dispatcher } from 'undici';
 import type { TemplateReport } from './template';
-import { uploadTemplate, uploadFile, downloadFile, runDownloadFile, createTempFile } from './template';
+import { uploadTemplate, uploadFile, downloadFile, createTempFile, pythonSoftware, softwareCheck } from './template';
 
 /** All reports we need to collect. */
 interface NetworkReports {
@@ -61,6 +45,8 @@ interface NetworkReports {
   uploadTemplateCheck: TemplateReport;
   uploadFileCheck: TemplateReport;
   downloadFileCheck: TemplateReport;
+  softwareCheck: TemplateReport;
+  pythonSoftwareCheck: TemplateReport;
 }
 
 export interface CheckNetworkOpts {
@@ -138,15 +124,12 @@ export async function checkNetwork(
 
     autoUpdateCdnChecks: await autoUpdateCdnPings(ops, httpClient),
 
-    uploadTemplateCheck: { ok: false, message: 'not started' },
-    uploadFileCheck: { ok: false, message: 'not started' },
-    downloadFileCheck: { ok: false, message: 'not started' },
+    uploadTemplateCheck: await uploadTemplate(logger, client, 'Jack'),
+    uploadFileCheck: await uploadFile(logger, lsDriver, uploadBlobClient, client, filePath),
+    downloadFileCheck: await downloadFile(logger, client, lsDriver, uploadBlobClient, downloadClient, filePath, fileContent),
+    softwareCheck: await softwareCheck(client),
+    pythonSoftwareCheck: await pythonSoftware(client, 'Jack'),
   };
-
-  report.uploadTemplateCheck = await uploadTemplate(client, 'Jack');
-  const uploadFileResult = await uploadFile(logger, lsDriver, uploadBlobClient, client, filePath);
-  report.uploadFileCheck = uploadFileResult.report;
-  report.downloadFileCheck = await downloadFile(client, downloadClient, uploadFileResult.blobId, fileContent);
 
   return reportsToString(report, plCredentials, ops, undiciLogs);
 }
@@ -192,7 +175,14 @@ export async function initNetworkCheck(
     ...optsOverrides,
   };
 
-  const plConfig = plAddressToConfig(plCredentials, { defaultRequestTimeout: ops.pingTimeoutMs });
+  const plConfig = plAddressToConfig(plCredentials, {
+    defaultRequestTimeout: ops.pingTimeoutMs,
+  });
+
+  // exposing alternative root for fields not to interfere with
+  // projects of the user.
+  plConfig.alternativeRoot = `check_network_${Date.now()}`;
+
   const uaClient = new UnauthenticatedPlClient(plConfig);
   const auth = await uaClient.login(plUser, plPassword);
   const client = await PlClient.init(plCredentials, { authInformation: auth });
@@ -258,23 +248,56 @@ function reportsToString(
     ...new Set(successPings.map((p) => JSON.stringify((p.response as any).value))),
   ];
 
+  const pings = reportToString(report.plPings);
+  const blockRegistryOverview = reportToString(report.blockRegistryOverviewChecks);
+  const blockGARegistryOverview = reportToString(report.blockGARegistryOverviewChecks);
+  const blockRegistryUi = reportToString(report.blockRegistryUiChecks);
+  const blockGARegistryUi = reportToString(report.blockGARegistryUiChecks);
+  const autoUpdateCdn = reportToString(report.autoUpdateCdnChecks);
+
+  const summary = (ok: boolean) => ok ? 'OK' : 'FAILED';
+
   return `
 Network report:
 pl endpoint: ${plEndpoint};
+
+summary:
+${summary(pings.ok)} pings to Platforma Backend
+${summary(blockRegistryOverview.ok)} block registry overview
+${summary(blockGARegistryOverview.ok)} block ga registry overview
+${summary(blockRegistryUi.ok)} block registry ui
+${summary(blockGARegistryUi.ok)} block ga registry ui
+${summary(autoUpdateCdn.ok)} auto-update CDN
+${summary(report.uploadTemplateCheck.ok)} upload template
+${summary(report.uploadFileCheck.ok)} upload file
+${summary(report.downloadFileCheck.ok)} download file
+${summary(report.softwareCheck.ok)} software check
+${summary(report.pythonSoftwareCheck.ok)} python software check
+
+details:
 options: ${JSON.stringify(opts, null, 2)}.
 
-Platforma pings: ${reportToString(report.plPings)}
+Upload template response: ${report.uploadTemplateCheck.message}
 
-Block registry overview responses: ${reportToString(report.blockRegistryOverviewChecks)}
+Upload file response: ${report.uploadFileCheck.message}
 
-Block ga registry overview responses: ${reportToString(report.blockGARegistryOverviewChecks)}
+Download file response: ${report.downloadFileCheck.message}
 
-Block registry ui responses: ${reportToString(report.blockRegistryUiChecks)}
+Software check response: ${report.softwareCheck.message}
+Python software check response: ${report.pythonSoftwareCheck.message}
+Platforma pings: ${pings.details}
 
-Block ga registry ui responses: ${reportToString(report.blockGARegistryUiChecks)}
+Block registry overview responses: ${blockRegistryOverview.details}
 
-Auto-update CDN responses: ${reportToString(report.autoUpdateCdnChecks)}
+Block ga registry overview responses: ${blockGARegistryOverview.details}
 
+Block registry ui responses: ${blockRegistryUi.details}
+
+Block ga registry ui responses: ${blockGARegistryUi.details}
+
+Auto-update CDN responses: ${autoUpdateCdn.details}
+
+dumps:
 Block registry overview dumps:
 ${JSON.stringify(report.blockRegistryOverviewChecks, null, 2)}
 

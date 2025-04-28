@@ -1,12 +1,13 @@
-/** Just a simple template that downloads a blob from the server. */
+/** Just a simple template that uploads a blob and makes it downloadable back. */
 
 self := import(":tpl")
 file := import(":file")
 
 self.body(func(inputs) {
-	result := file.exportFile(inputs.file)
+	result := file.importFile(inputs.file)
 
 	return {
-		file: result
+		progress: result.handle,
+		file: file.exportFile(result.file)
 	}
 })

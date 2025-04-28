@@ -118,17 +118,26 @@ export function elapsed(startMs: number): number {
   return Date.now() - startMs;
 }
 
-export function reportToString<T>(report: NetworkReport<T>[]): string {
+export function reportToString<T>(report: NetworkReport<T>[]): {
+  ok: boolean;
+  details: string;
+} {
   const successes = report.filter((r) => r.response.ok);
+  const errorsLen = report.length - successes.length;
   const { mean: mean, median: median } = elapsedStat(report);
 
-  return `
+  const details = `
   total: ${report.length};
   successes: ${successes.length};
-  errors: ${report.length - successes.length};
+  errors: ${errorsLen};
   mean in ms: ${mean};
   median in ms: ${median};
   `;
+
+  return {
+    ok: errorsLen === 0,
+    details,
+  };
 }
 
 function elapsedStat(reports: { elapsedMs: number }[]) {

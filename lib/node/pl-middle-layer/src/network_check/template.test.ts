@@ -1,21 +1,14 @@
-import { PlClient } from '@milaboratories/pl-client';
-import { checkUploadTemplate, runDownloadFile, runUploadFile, runUploadTemplate } from './template';
+import { runDownloadFile, runPythonSoftware, runSoftware, runUploadFile, runUploadTemplate } from './template';
 import { initNetworkCheck } from './network_check';
-import { testCredentials } from './tets_utils';
+import { testCredentials } from './test_utils';
 import { test, expect } from 'vitest';
 import path from 'path';
 
 test('check runUploadTemplate', async () => {
   const { plEndpoint, plUser, plPassword } = testCredentials();
+  const { logger, client, terminate } = await initNetworkCheck(plEndpoint, plUser, plPassword);
 
-  const { client, terminate } = await initNetworkCheck(plEndpoint, plUser, plPassword, {
-    pingCheckDurationMs: 1000,
-    pingTimeoutMs: 1000,
-    maxPingsPerSecond: 10,
-    httpTimeoutMs: 1000,
-    blockRegistryDurationMs: 1000,
-  });
-  const greeting = await runUploadTemplate(client, 'Jason');
+  const greeting = await runUploadTemplate(logger, client, 'Jason');
 
   expect(greeting).toBe('Hello, Jason');
 
@@ -24,21 +17,14 @@ test('check runUploadTemplate', async () => {
 
 test('check runUploadFile', async () => {
   const { plEndpoint, plUser, plPassword } = testCredentials();
-
-  const { 
+  const {
     logger,
     lsDriver,
     uploadBlobClient,
     client,
     terminate,
-  } = await initNetworkCheck(plEndpoint, plUser, plPassword, {
-    pingCheckDurationMs: 1000,
-    pingTimeoutMs: 1000,
-    maxPingsPerSecond: 10,
-    httpTimeoutMs: 1000,
-    blockRegistryDurationMs: 1000,
-  });
-  
+  } = await initNetworkCheck(plEndpoint, plUser, plPassword);
+
   const filePath = path.join(__dirname, '..', '..', 'test_assets', 'answer.txt');
 
   const blob = await runUploadFile(
@@ -55,34 +41,43 @@ test('check runUploadFile', async () => {
 });
 
 test('check runDownloadFile', async () => {
-    const { plEndpoint, plUser, plPassword } = testCredentials();
-  
-    const { 
-      logger,
-      lsDriver,
-      uploadBlobClient,
-      downloadClient,
-      client,
-      terminate,
-    } = await initNetworkCheck(plEndpoint, plUser, plPassword, {
-      pingCheckDurationMs: 1000,
-      pingTimeoutMs: 1000,
-      maxPingsPerSecond: 10,
-      httpTimeoutMs: 1000,
-      blockRegistryDurationMs: 1000,
-    });
-    
-    const filePath = path.join(__dirname, '..', '..', 'test_assets', 'answer.txt');
-  
-    const blob = await runUploadFile(
-      logger, lsDriver, uploadBlobClient, client, filePath,
-    );
+  const { plEndpoint, plUser, plPassword } = testCredentials();
+  const {
+    logger,
+    lsDriver,
+    uploadBlobClient,
+    downloadClient,
+    client,
+    terminate,
+  } = await initNetworkCheck(plEndpoint, plUser, plPassword);
 
-    const content = await runDownloadFile(
-      client, downloadClient, blob.id,
-    );
+  const filePath = path.join(__dirname, '..', '..', 'test_assets', 'answer.txt');
 
-    expect(content).toBe('42');
+  const content = await runDownloadFile(logger, client, lsDriver, uploadBlobClient, downloadClient, filePath);
 
-    await terminate();
-  });  
+  expect(content).toBe('42');
+
+  await terminate();
+});
+
+test('check runSoftware', async () => {
+  const { plEndpoint, plUser, plPassword } = testCredentials();
+  const { client, terminate } = await initNetworkCheck(plEndpoint, plUser, plPassword);
+
+  const greeting = await runSoftware(client);
+
+  expect(greeting).toBe('Hello from go binary\n');
+
+  await terminate();
+});
+
+test('check runPythonSoftware', async () => {
+  const { plEndpoint, plUser, plPassword } = testCredentials();
+  const { client, terminate } = await initNetworkCheck(plEndpoint, plUser, plPassword);
+
+  const greeting = await runPythonSoftware(client, 'John');
+
+  expect(greeting).toBe('Hello, John!\n');
+
+  await terminate();
+});
