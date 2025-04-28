@@ -96,7 +96,7 @@ type GetOptionsOpts = {
    * If this reference is added to the block's args, it will communicate to the platform that the block
    * expects enrichments of the referenced block to be available in the context of the current block.
    */
-  requireEnrichments?: boolean;
+  refsWithEnrichments?: boolean;
   /**
    * Label derivation options.
    * If provided, it will be used to derive labels for the options.
@@ -134,7 +134,7 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
     const filtered = this.getSpecs().entries.filter((s) => predicate(s.obj));
 
     let labelOps: LabelDerivationOps | ((spec: PObjectSpec, ref: PlRef) => string) = {};
-    let requireEnrichments: boolean = false;
+    let refsWithEnrichments: boolean = false;
     if (typeof opts !== 'undefined') {
       if (typeof opts === 'function') {
         labelOps = opts;
@@ -144,19 +144,19 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
         } else {
           opts = opts as GetOptionsOpts;
           labelOps = opts.label ?? {};
-          requireEnrichments = opts.requireEnrichments ?? false;
+          refsWithEnrichments = opts.refsWithEnrichments ?? false;
         }
       }
     }
 
     if (typeof labelOps === 'object')
       return deriveLabels(filtered, (o) => o.obj, labelOps ?? {}).map(({ value: { ref }, label }) => ({
-        ref: withEnrichments(ref, requireEnrichments),
+        ref: withEnrichments(ref, refsWithEnrichments),
         label,
       }));
     else
       return filtered.map(({ ref, obj }) => ({
-        ref: withEnrichments(ref, requireEnrichments),
+        ref: withEnrichments(ref, refsWithEnrichments),
         label: labelOps(obj, ref),
       }));
   }
