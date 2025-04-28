@@ -63,6 +63,10 @@ const props = defineProps<{
    * The label to display above the texarea.
    */
   label?: string;
+  /**
+   * Scroll to bottom on content change or not. Default is true.
+   */
+  scrollOnChange?: boolean;
 }>();
 
 const logState = useLogHandle(props);
@@ -101,19 +105,21 @@ const onClickCopy = () => {
   }
 };
 
-const scrollDown = () => {
-  tapIf(contentRef.value, (el) => {
-    if (isAnchored.value) {
-      el.scrollTo(el.scrollLeft, el.scrollHeight);
-    }
-  });
+const optionallyScrollDown = () => {
+  if (props.scrollOnChange || props.scrollOnChange === undefined) {
+    tapIf(contentRef.value, (el) => {
+      if (isAnchored.value) {
+        el.scrollTo(el.scrollLeft, el.scrollHeight);
+      }
+    });
+  }
 };
 
 watch(
   computedValue,
   () => {
     requestAnimationFrame(() => {
-      scrollDown();
+      optionallyScrollDown();
     });
   },
   { immediate: true },
