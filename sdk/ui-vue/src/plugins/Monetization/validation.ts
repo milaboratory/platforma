@@ -36,13 +36,10 @@ const DryRunResult = z.object({
   ]),
   mnz: z.object({
     type: MonetizationType.optional(),
-    details: z.object({
-      subscription: z.unknown(),
-    }),
     endOfBillingPeriod: z.string().nullable().optional(),
     limits: z.array(Limit).optional(),
   }),
-}, { message: 'Invalid CreateProductStatResult' });
+}, { message: 'Invalid DryRunResult' });
 
 type DryRunResult = z.infer<typeof DryRunResult>;
 

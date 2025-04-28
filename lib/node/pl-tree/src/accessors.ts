@@ -405,12 +405,12 @@ export class PlTreeNodeAccessor {
     key: string,
     unstableIfNotFound: boolean = false,
   ): T | undefined {
-    const result = this.resource.getKeyValueString(this.instanceData.ctx.watcher, key);
+    const result = this.resource.getKeyValueAsJson<T>(this.instanceData.ctx.watcher, key);
     if (result === undefined) {
       if (unstableIfNotFound) this.instanceData.ctx.markUnstable('key_not_found_j:' + key);
       return undefined;
     }
-    return JSON.parse(result) as T;
+    return result;
   }
 
   /**
