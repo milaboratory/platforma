@@ -177,7 +177,7 @@ export function productionGraph(
     resultMap.set(id, node);
     references.upstreams.forEach((dep) => resultMap.get(dep)!.directDownstream.add(id));
     upstreams.forEach((dep) => resultMap.get(dep)!.downstream.add(id));
-    enrichmentTargets.forEach((dep) => notEmpty(resultMap.get(dep), dep).enrichments.add(id));
+    enrichmentTargets.forEach((dep) => resultMap.get(dep)?.enrichments.add(id));
     allAbove.add(id);
   }
 
