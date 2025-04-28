@@ -79,11 +79,9 @@ export async function updatePFrameGridOptions(
     dataSpecsMap.set(specId(spec), i);
   });
   const specsToDataSpecsMapping = new Map<number, number>();
-  const dataSpecsToSpecsMapping = new Map<number, number>();
   specs.forEach((spec, i) => {
     const dataSpecIdx = dataSpecsMap.get(specId(spec));
     specsToDataSpecsMapping.set(i, dataSpecIdx ?? -1);
-    if (dataSpecIdx !== undefined) dataSpecsToSpecsMapping.set(dataSpecIdx, i);
   });
 
   const oldSourceId = gridState.value.sourceId;
@@ -131,20 +129,20 @@ export async function updatePFrameGridOptions(
 
   const fields = [...indices];
 
+  const firstColumnIdx = indices.findIndex((i) => specs[i].type === 'column');
   // process label columns
-  for (let i = indices.length - 1; i >= 0; --i) {
+  for (let i = indices.length - 1; i >= firstColumnIdx; --i) {
     const idx = indices[i];
     if (!isLabelColumn(specs[idx])) continue;
 
     // axis of labels
     const axisId = getAxisId((specs[idx].spec as PColumnSpec).axesSpec[0]);
     const axisIdx = indices.findIndex((idx) => lodash.isEqual(specs[idx].id, axisId));
-    if (axisIdx === -1) {
-      // no axis, it was already processed
-      continue;
+    if (axisIdx !== -1) {
+      indices[axisIdx] = idx;
+    } else {
+      console.warn(`multiple label columns match axisId: ${JSON.stringify(axisId)}`);
     }
-
-    indices[axisIdx] = idx;
 
     // remove original axis
     indices.splice(i, 1);
