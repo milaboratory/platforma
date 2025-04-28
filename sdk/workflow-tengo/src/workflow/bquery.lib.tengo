@@ -184,6 +184,19 @@ resultUnmarshaller := func() {
 
 			ops := resource.get("ops").getDataAsJson()
 
+			/**
+			 * Get's data resource from a resource or a field and parses it,
+			 * or returns field ref if resource is not set yet.
+			 */
+			getData := func(res, fieldName) {
+				field := res.getField(fieldName)
+				if field.isSet() {
+					return parser(field.getValue())
+				} else {
+					return field
+				}
+			}
+
 			if ops.first {
 				// special case, single element
 
@@ -201,41 +214,34 @@ resultUnmarshaller := func() {
 					spec: resource.get("spec").getDataAsJson()
 				}
 
-				// only if the data is there
 				if resource.hasInputField("data") {
-
-					// even if spec is present, the data may be still not available
-					if isNR(resource.get("data")) {
-						result.data = undefined
-					} else {
-						result.data = parser(resource.get("data"))
-					}
+					result.data = getData(resource, "data")
 				}
 
 				return ll.toStrict(result)
 			} else {
 				// format list of results
 
-				spec := resource.get("spec").inputs()
-				data := undefined
+				specs := resource.get("spec").inputs() // map of specs
+				datas := undefined
 				if resource.hasInputField("data") {
-					data = resource.get("data").inputs()
+					datas = resource.get("data") // map of datas
 				}
 
 				result := []
-				for ref, s in spec {
-					r  := {
+				maps.forEach(specs, func(ref, s) {
+					r := {
 						ref: json.decode(ref),
 						spec: s.getValueAsJson()
 					}
 
 					// only if the data is there
-					if !is_undefined(data) {
-						r.data = parser(data[ref].getValue())
+					if !is_undefined(datas) {
+						r.data = getData(datas, ref)
 					}
 
 					result = append(result, ll.toStrict(r))
-				}
+				})
 
 				if ops.single {
 					ll.assert(len(result) == 1, "expected single element, got ", len(result))
