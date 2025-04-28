@@ -2,7 +2,6 @@ import type { Block, ProjectStructure } from './project_model';
 import type { Optional, Writable } from 'utility-types';
 import { inferAllReferencedBlocks } from './args';
 import type { PlRef } from '@milaboratories/pl-model-common';
-import { notEmpty } from '@milaboratories/ts-helpers';
 
 export function allBlocks(structure: ProjectStructure): Iterable<Block> {
   return {
