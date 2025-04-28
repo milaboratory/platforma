@@ -13,6 +13,7 @@ self.body(func(inputs) {
 		run()
 
 	return {
+		// returns "Hello from go binary"
 		greeting: run.getStdoutFileContent()
 	}
 })

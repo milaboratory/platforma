@@ -201,40 +201,40 @@ export async function uploadBlob(
   assert(isUpload(res), 'the upload operation can be done only for BlobUploads');
   const timeout = 10000; // 10 sec instead of standard 5 sec, things might be slow with a slow connection.
 
+  if (isDoneFn()) return;
+  const parts = await clientBlob.initUpload(res, { timeout });
+  logger.info(
+    `started to upload blob ${res.id},`
+    + ` parts overall: ${parts.overall}, parts remained: ${parts.toUpload.length},`
+    + ` number of concurrent uploads: ${speed.currentSpeed}`,
+  );
+
+  const partUploadFn = (part: bigint) => async (controller: AsyncPoolController) => {
     if (isDoneFn()) return;
-    const parts = await clientBlob.initUpload(res, { timeout });
-    logger.info(
-      `started to upload blob ${res.id},`
-        + ` parts overall: ${parts.overall}, parts remained: ${parts.toUpload.length},`
-        + ` number of concurrent uploads: ${speed.currentSpeed}`,
+    await clientBlob.partUpload(
+      res,
+      uploadData.localPath,
+      BigInt(uploadData.modificationTime),
+      part,
+      { timeout }
     );
+    logger.info(`uploaded chunk ${part}/${parts.overall} of resource: ${res.id}`);
 
-    const partUploadFn = (part: bigint) => async (controller: AsyncPoolController) => {
-      if (isDoneFn()) return;
-      await clientBlob.partUpload(
-        res,
-        uploadData.localPath,
-        BigInt(uploadData.modificationTime),
-        part,
-        { timeout }
-      );
-      logger.info(`uploaded chunk ${part}/${parts.overall} of resource: ${res.id}`);
+    // if we had a network freeze, it will be increased slowly.
+    speed.nPartsWithThisUploadSpeed++;
+    if (speed.nPartsWithThisUploadSpeed >= speed.nPartsToIncreaseUpload) {
+      speed.nPartsWithThisUploadSpeed = 0;
+      speed.currentSpeed = increaseConcurrency(logger, speed.currentSpeed, speed.maxSpeed);
+      controller.setConcurrency(speed.currentSpeed);
+    }
+  };
 
-      // if we had a network freeze, it will be increased slowly.
-      speed.nPartsWithThisUploadSpeed++;
-      if (speed.nPartsWithThisUploadSpeed >= speed.nPartsToIncreaseUpload) {
-        speed.nPartsWithThisUploadSpeed = 0;
-        speed.currentSpeed = increaseConcurrency(logger, speed.currentSpeed, speed.maxSpeed);
-        controller.setConcurrency(speed.currentSpeed);
-      }
-    };
+  await asyncPool(speed.currentSpeed, parts.toUpload.map(partUploadFn));
 
-    await asyncPool(speed.currentSpeed, parts.toUpload.map(partUploadFn));
+  if (isDoneFn()) return;
+  await clientBlob.finalize(res, { timeout });
 
-    if (isDoneFn()) return;
-    await clientBlob.finalize(res, { timeout });
-
-    logger.info(`uploading of resource ${res.id} finished.`);
+  logger.info(`uploading of resource ${res.id} finished.`);
 }
 
 function newProgress(res: ImportResourceSnapshot, signer: Signer) {
