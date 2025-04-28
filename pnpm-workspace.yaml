@@ -132,9 +132,9 @@ catalog:
   'prettier': ^3.4.1
   '@protobuf-ts/plugin': &protobuf-ts 2.9.6
 
-  '@changesets/cli': ^2.28.1
+  '@changesets/cli': ^2.29.2
 
-  'eslint': ^9.23.0
+  'eslint': ^9.25.1
   '@eslint/js': ^9.16.0
   'typescript-eslint': ^8.17.0
   'eslint-config-prettier': ^9.1.0
@@ -147,7 +147,7 @@ catalog:
 
   'oclif': ^4.16.2
 
-  'turbo': ^2.4.4
+  'turbo': ^2.5.2
 
   '@vitejs/plugin-vue': ^5.2.3
 
