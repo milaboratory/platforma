@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.7.28
+
+### Patch Changes
+
+- fc7d156: PFrames support AbortSignal in getData method
+
 ## 1.7.27
 
 ### Patch Changes
