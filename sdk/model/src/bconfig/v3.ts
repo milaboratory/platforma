@@ -36,6 +36,12 @@ export type BlockConfigV3<
   /** Lambda to derive block title */
   readonly title?: ConfigRenderLambda;
 
+  /**
+   * Lambda returning list of upstream blocks this block enriches with its exports,
+   * influences dependency graph construction
+   * */
+  readonly enrichmentTargets?: ConfigRenderLambda;
+
   /** Configuration for the output cells */
   readonly outputs: Outputs;
 

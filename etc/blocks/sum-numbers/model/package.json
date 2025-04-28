@@ -8,7 +8,8 @@
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "tsup && vite build && block-tools build-model"
+    "build": "tsup && vite build && block-tools build-model",
+    "lint": "eslint ."
   },
   "dependencies": {
     "@platforma-sdk/model": "workspace:*",
@@ -16,6 +17,8 @@
   },
   "devDependencies": {
     "@platforma-sdk/block-tools": "workspace:*",
+    "@platforma-sdk/eslint-config": "workspace:*",
+    "eslint": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
     "tsup": "catalog:"
