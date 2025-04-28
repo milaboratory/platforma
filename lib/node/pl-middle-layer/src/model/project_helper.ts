@@ -25,11 +25,9 @@ export class ProjectHelper {
 
   private calculateEnrichmentTargets(req: EnrichmentTargetsRequest): PlRef[] | undefined {
     const blockConfig = req.blockConfig();
-    console.log('AAAAAA', blockConfig.enrichmentTargets);
     if (blockConfig.enrichmentTargets === undefined) return undefined;
     const args = req.args();
     const result = executeSingleLambda(this.quickJs, blockConfig.enrichmentTargets, blockConfig.code!, args) as PlRef[];
-    console.log('calculateEnrichmentTargets', result);
     return result;
   }
 

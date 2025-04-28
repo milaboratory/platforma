@@ -394,12 +394,12 @@ test('dependency test', { timeout: 20000 }, async ({ expect }) => {
     });
     const overviewSnapshot2 = await prj.overview.awaitStableValue();
 
-    expect(overviewSnapshot2.blocks).toMatchObject([
-      { upstreams: [], downstreams: [block3Id, block4Id, block5Id] },
-      { upstreams: [], downstreams: [block3Id, block4Id, block5Id] },
-      { upstreams: [block1Id, block2Id], downstreams: [block4Id] },
-      { upstreams: [block2Id], downstreams: [] },
-      { upstreams: [block1Id, block3Id], downstreams: [] }
+    expect(overviewSnapshot2.blocks.map((b) => ({ upstreams: new Set(b.upstreams), downstreams: new Set(b.downstreams) }))).toMatchObject([
+      { upstreams: new Set(), downstreams: new Set([block3Id, block5Id]) },
+      { upstreams: new Set(), downstreams: new Set([block3Id, block4Id, block5Id]) },
+      { upstreams: new Set([block1Id, block2Id]), downstreams: new Set([block5Id]) },
+      { upstreams: new Set([block2Id]), downstreams: new Set() },
+      { upstreams: new Set([block1Id, block2Id, block3Id]), downstreams: new Set() }
     ]);
   });
 });
