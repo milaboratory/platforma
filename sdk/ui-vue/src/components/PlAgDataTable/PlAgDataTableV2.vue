@@ -105,17 +105,14 @@ const props = defineProps<{
    */
   cellButtonInvokeRowsOnDoubleClick?: boolean;
 
-  /**
-   * Override various default labels
-   */
-  labels?: {
-    /** @see {@link PlAgOverlayLoadingParams.loadingText} */
-    loading?: string;
-    /** @see {@link PlAgOverlayLoadingParams.notReadyText} */
-    notReady?: string;
-    /** @see {@link PlAgOverlayNoRowsParams.text} */
-    noRows?: string;
-  };
+  /** @see {@link PlAgOverlayLoadingParams.loadingText} */
+  loadingText?: string;
+
+  /** @see {@link PlAgOverlayLoadingParams.notReadyText} */
+  notReadyText?: string;
+
+  /** @see {@link PlAgOverlayNoRowsParams.text} */
+  noRowsText?: string;
 }>();
 const { settings } = toRefs(props);
 const emit = defineEmits<{
@@ -301,13 +298,13 @@ const gridOptions = shallowRef<GridOptions<PlAgDataTableRow>>({
   loading: true,
   loadingOverlayComponentParams: {
     notReady: true,
-    loadingText: props.labels?.loading,
-    notReadyText: props.labels?.notReady,
+    loadingText: props.loadingText,
+    notReadyText: props.notReadyText,
   } satisfies PlAgOverlayLoadingParams,
   loadingOverlayComponent: PlOverlayLoading,
   noRowsOverlayComponent: PlOverlayNoRows,
   noRowsOverlayComponentParams: {
-    text: props.labels?.noRows,
+    text: props.noRowsText,
   } satisfies PlAgOverlayNoRowsParams,
   defaultCsvExportParams: {
     allColumns: true,
