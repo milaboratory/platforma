@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.29.32
+
+### Patch Changes
+
+- 21f48b7: Clean mnz component (remove an obsolete validation)
+
 ## 1.29.31
 
 ### Patch Changes
