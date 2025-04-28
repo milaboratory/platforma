@@ -112,7 +112,11 @@ export async function initDriverKit(
     ops.virtualLocalStoragesOverride,
   );
 
-  const pFrameDriver = new PFrameDriver(blobDriver, ops.logger);
+  const pFrameDriver = await PFrameDriver.init(
+    blobDriver,
+    ops.logger,
+    ops.pframesSpillPath,
+  );
 
   return {
     blobDriver,

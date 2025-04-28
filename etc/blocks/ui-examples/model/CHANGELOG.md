@@ -1,5 +1,25 @@
 # @milaboratories/milaboratories.ui-examples.model
 
+## 1.1.53
+
+### Patch Changes
+
+- Updated dependencies [d42b276]
+  - @platforma-sdk/model@1.30.3
+
+## 1.1.52
+
+### Patch Changes
+
+- 59e2bd3: Fix PlAgDataTableSettingsPTable type
+
+## 1.1.51
+
+### Patch Changes
+
+- Updated dependencies [01a558e]
+  - @platforma-sdk/model@1.30.0
+
 ## 1.1.50
 
 ### Patch Changes

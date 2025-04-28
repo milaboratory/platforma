@@ -1,5 +1,18 @@
 # @milaboratories/ts-helpers
 
+## 1.2.0
+
+### Minor Changes
+
+- 01a558e: - cachedDeserialize
+  - fixes for deepFreeze to avoid non-plain structures
+
+## 1.1.7
+
+### Patch Changes
+
+- 5240867: Method to create an empty directory or empty the existing one
+
 ## 1.1.6
 
 ### Patch Changes

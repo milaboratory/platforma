@@ -1,5 +1,30 @@
 # @milaboratories/pl-tree
 
+## 1.6.0
+
+### Minor Changes
+
+- 01a558e: getDataAsJson and getKeyValueAsJson now uses cachedDeserialize for json deserialization, effectively creating caching for deserialized values
+
+### Patch Changes
+
+- Updated dependencies [01a558e]
+- Updated dependencies [01a558e]
+  - @milaboratories/pl-client@2.9.0
+  - @milaboratories/ts-helpers@1.2.0
+  - @milaboratories/pl-errors@1.0.9
+  - @milaboratories/computable@2.4.7
+
+## 1.5.8
+
+### Patch Changes
+
+- Updated dependencies [5240867]
+  - @milaboratories/ts-helpers@1.1.7
+  - @milaboratories/computable@2.4.6
+  - @milaboratories/pl-client@2.8.2
+  - @milaboratories/pl-errors@1.0.8
+
 ## 1.5.7
 
 ### Patch Changes

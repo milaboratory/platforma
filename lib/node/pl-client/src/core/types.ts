@@ -1,4 +1,4 @@
-import { notEmpty } from '@milaboratories/ts-helpers';
+import { cachedDeserialize, notEmpty } from '@milaboratories/ts-helpers';
 
 // more details here: https://egghead.io/blog/using-branded-types-in-typescript
 declare const __resource_id_type__: unique symbol;
@@ -118,7 +118,7 @@ export function extractBasicResourceData(rd: ResourceData): BasicResourceData {
 
 export const jsonToData = (data: unknown) => Buffer.from(JSON.stringify(data));
 
-export const resDataToJson = (res: ResourceData) => JSON.parse(notEmpty(res.data).toString());
+export const resDataToJson = (res: ResourceData) => cachedDeserialize(notEmpty(res.data));
 
 export type ResourceData = BasicResourceData & {
   readonly fields: FieldData[];
