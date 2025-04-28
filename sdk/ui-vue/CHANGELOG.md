@@ -1,5 +1,12 @@
 # @platforma-sdk/ui-vue
 
+## 1.30.1
+
+### Patch Changes
+
+- 59e2bd3: Fix PlAgDataTableSettingsPTable type
+- 6bd25dc: PlAgDataTable: Expose overlay text props
+
 ## 1.30.0
 
 ### Patch Changes
