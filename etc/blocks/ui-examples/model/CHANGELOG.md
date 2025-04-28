@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.model
 
+## 1.1.52
+
+### Patch Changes
+
+- 59e2bd3: Fix PlAgDataTableSettingsPTable type
+
 ## 1.1.51
 
 ### Patch Changes
