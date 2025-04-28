@@ -3,6 +3,7 @@ import type {
   AnyResourceRef,
   BasicResourceData,
   PlTransaction,
+  ResourceData,
   ResourceId } from '@milaboratories/pl-client';
 import {
   ensureResourceIdNotNull,
@@ -10,6 +11,7 @@ import {
   isNotNullResourceId,
   isNullResourceId,
   isResource,
+  isResourceId,
   isResourceRef,
   Pl,
   PlClient,
@@ -42,7 +44,8 @@ import {
 } from '../model/project_model';
 import { BlockPackTemplateField, createBlockPack } from './block-pack/block_pack';
 import type {
-  BlockGraph } from '../model/project_model_util';
+  BlockGraph,
+  ProductionGraphBlockInfo } from '../model/project_model_util';
 import {
   allBlocks,
   graphDiff,
@@ -52,6 +55,7 @@ import {
 import type { BlockPackSpecPrepared } from '../model';
 import type {
   AuthorMarker,
+  BlockPackSpec,
   BlockSettings,
   ProjectMeta,
 } from '@milaboratories/pl-model-middle-layer';
@@ -61,7 +65,10 @@ import {
 import Denque from 'denque';
 import { exportContext, getPreparedExportTemplateEnvelope } from './context_export';
 import { loadTemplate } from './template/template_loading';
-import { deepFreeze } from '@milaboratories/ts-helpers';
+import { cachedDeserialize, notEmpty } from '@milaboratories/ts-helpers';
+import type { ProjectHelper } from '../model/project_helper';
+import { extractConfig, type BlockConfig } from '@platforma-sdk/model';
+import type { BlockPackInfo } from '../model/block_pack';
 type FieldStatus = 'NotReady' | 'Ready' | 'Error';
 
 interface BlockFieldState {
@@ -77,6 +84,8 @@ type BlockFieldStateValue = Omit<BlockFieldState, 'modCount'>;
 interface BlockInfoState {
   readonly id: string;
   readonly fields: BlockFieldStates;
+  blockConfig?: BlockConfig;
+  blockPack?: BlockPackSpec;
 }
 
 function cached<ModId, T>(modIdCb: () => ModId, valueCb: () => T): () => T {
@@ -103,6 +112,8 @@ class BlockInfo {
   constructor(
     public readonly id: string,
     public readonly fields: BlockFieldStates,
+    public readonly config: BlockConfig,
+    public readonly source: BlockPackSpec,
   ) {}
 
   public check() {
@@ -131,22 +142,22 @@ class BlockInfo {
     if (this.fields.currentArgs === undefined) throw new Error('no current args field');
   }
 
-  private readonly currentInputsC = cached(
+  private readonly currentArgsC = cached(
     () => this.fields.currentArgs!.modCount,
-    () => deepFreeze(JSON.parse(Buffer.from(this.fields.currentArgs!.value!).toString())) as unknown,
+    () => cachedDeserialize(this.fields.currentArgs!.value!),
   );
 
-  private readonly actualProductionInputsC = cached(
+  private readonly prodArgsC = cached(
     () => this.fields.prodArgs?.modCount,
     () => {
       const bin = this.fields.prodArgs?.value;
       if (bin === undefined) return undefined;
-      return deepFreeze(JSON.parse(Buffer.from(bin).toString())) as unknown;
+      return cachedDeserialize(bin);
     },
   );
 
-  get currentInputs(): unknown {
-    return this.currentInputsC();
+  get currentArgs(): unknown {
+    return this.currentArgsC();
   }
 
   get stagingRendered(): boolean {
@@ -176,8 +187,8 @@ class BlockInfo {
     return !this.productionRendered || this.productionStaleC() || this.productionHasErrors;
   }
 
-  get actualProductionInputs(): unknown {
-    return this.actualProductionInputsC();
+  get prodArgs(): unknown {
+    return this.prodArgsC();
   }
 
   public getTemplate(tx: PlTransaction): AnyRef {
@@ -247,6 +258,7 @@ export class ProjectMutator {
     private readonly blockInfos: Map<string, BlockInfo>,
     private readonly blockFrontendStates: Map<string, string>,
     private readonly ctxExportTplHolder: AnyResourceRef,
+    private readonly projectHelper: ProjectHelper,
   ) {}
 
   private fixProblemsAndMigrate() {
@@ -300,11 +312,41 @@ export class ProjectMutator {
     return this.stagingGraph;
   }
 
+  private getProductionGraphBlockInfo(blockId: string, prod: boolean): ProductionGraphBlockInfo | undefined {
+    const bInfo = this.getBlockInfo(blockId);
+
+    let argsField: BlockFieldState;
+    let args: unknown;
+
+    if (prod) {
+      if (bInfo.fields.prodArgs === undefined) return undefined;
+      argsField = bInfo.fields.prodArgs;
+      args = bInfo.prodArgs;
+    } else {
+      argsField = notEmpty(bInfo.fields.currentArgs);
+      args = bInfo.currentArgs;
+    }
+
+    const blockPackField = notEmpty(bInfo.fields.blockPack);
+
+    if (isResourceId(argsField.ref!) && isResourceId(blockPackField.ref!))
+      return {
+        args,
+        enrichmentTargets: this.projectHelper.getEnrichmentTargets(() => bInfo.config, () => args,
+          { argsRid: argsField.ref, blockPackRid: blockPackField.ref }),
+      };
+    else
+      return {
+        args,
+        enrichmentTargets: this.projectHelper.getEnrichmentTargets(() => bInfo.config, () => args),
+      };
+  }
+
   private getPendingProductionGraph(): BlockGraph {
     if (this.pendingProductionGraph === undefined)
       this.pendingProductionGraph = productionGraph(
         this.struct,
-        (blockId) => this.getBlockInfo(blockId).currentInputs,
+        (blockId) => this.getProductionGraphBlockInfo(blockId, false),
       );
     return this.pendingProductionGraph;
   }
@@ -313,7 +355,7 @@ export class ProjectMutator {
     if (this.actualProductionGraph === undefined)
       this.actualProductionGraph = productionGraph(
         this.struct,
-        (blockId) => this.getBlockInfo(blockId).actualProductionInputs,
+        (blockId) => this.getProductionGraphBlockInfo(blockId, true),
       );
     return this.actualProductionGraph;
   }
@@ -597,14 +639,7 @@ export class ProjectMutator {
 
     const newStagingGraph = stagingGraph(newStructure);
 
-    // new actual production graph without new blocks
-    const newActualProductionGraph = productionGraph(
-      newStructure,
-      (blockId) => this.blockInfos.get(blockId)?.actualProductionInputs,
-    );
-
     const stagingDiff = graphDiff(currentStagingGraph, newStagingGraph);
-    const prodDiff = graphDiff(currentActualProductionGraph, newActualProductionGraph);
 
     // removing blocks
     for (const blockId of stagingDiff.onlyInA) {
@@ -617,9 +652,11 @@ export class ProjectMutator {
 
     // creating new blocks
     for (const blockId of stagingDiff.onlyInB) {
-      const info = new BlockInfo(blockId, {});
-      this.blockInfos.set(blockId, info);
       const spec = newBlockSpecProvider(blockId);
+
+      // adding new block info
+      const info = new BlockInfo(blockId, {}, extractConfig(spec.blockPack.config), spec.blockPack.source);
+      this.blockInfos.set(blockId, info);
 
       // block pack
       const bp = createBlockPack(this.tx, spec.blockPack);
@@ -647,6 +684,14 @@ export class ProjectMutator {
 
     // resetting stagings affected by topology change
     for (const blockId of stagingDiff.different) this.resetStaging(blockId);
+
+    // new actual production graph without new blocks
+    const newActualProductionGraph = productionGraph(
+      newStructure,
+      (blockId) => this.getProductionGraphBlockInfo(blockId, true),
+    );
+
+    const prodDiff = graphDiff(currentActualProductionGraph, newActualProductionGraph);
 
     // applying changes due to topology change in production to affected nodes and
     // all their downstreams
@@ -965,10 +1010,15 @@ export class ProjectMutator {
   }
 
   public static async load(
+    projectHelper: ProjectHelper,
     tx: PlTransaction,
     rid: ResourceId,
     author?: AuthorMarker,
   ): Promise<ProjectMutator> {
+    //
+    // Sending initial requests to read project state (start of round-trip #1)
+    //
+
     const fullResourceStateP = tx.getResourceData(rid, true);
     const schemaP = tx.getKValueJson<string>(rid, SchemaVersionKey);
     const lastModifiedP = tx.getKValueJson<number>(rid, ProjectLastModifiedTimestamp);
@@ -978,28 +1028,7 @@ export class ProjectMutator {
 
     const allKVP = tx.listKeyValuesString(rid);
 
-    // loading jsons
-    const [
-      fullResourceState,
-      schema,
-      lastModified,
-      meta,
-      structure,
-      { stagingRefreshTimestamp, blocksInLimbo },
-      allKV,
-    ] = await Promise.all([
-      fullResourceStateP,
-      schemaP,
-      lastModifiedP,
-      metaP,
-      structureP,
-      renderingStateP,
-      allKVP,
-    ]);
-    if (schema !== SchemaVersionCurrent)
-      throw new Error(
-        `Can't act on this project resource because it has a wrong schema version: ${schema}`,
-      );
+    const fullResourceState = await fullResourceStateP;
 
     // loading field information
     const blockInfoStates = new Map<string, BlockInfoState>();
@@ -1022,6 +1051,89 @@ export class ProjectMutator {
         ? { modCount: 0 }
         : { modCount: 0, ref: f.value };
     }
+
+    //
+    // Roundtrip #1 not yet finished, but as soon as field list is received,
+    // we can start sending requests to read states of referenced resources
+    // (start of round-trip #2)
+    //
+
+    const blockFieldRequests: [BlockInfoState, ProjectField['fieldName'], BlockFieldState, Promise<BasicResourceData | ResourceData>][] = [];
+    blockInfoStates.forEach((info) => {
+      const fields = info.fields;
+      for (const [fName, state] of Object.entries(fields)) {
+        if (state.ref === undefined) continue;
+        if (!isResource(state.ref) || isResourceRef(state.ref))
+          throw new Error('unexpected behaviour');
+        const fieldName = fName as ProjectField['fieldName'];
+        blockFieldRequests.push([
+          info, fieldName,
+          state, tx.getResourceData(state.ref, fieldName == 'blockPack')]);
+      }
+    });
+
+    // loading jsons
+    const [
+      schema,
+      lastModified,
+      meta,
+      structure,
+      { stagingRefreshTimestamp, blocksInLimbo },
+      allKV,
+    ] = await Promise.all([
+      schemaP,
+      lastModifiedP,
+      metaP,
+      structureP,
+      renderingStateP,
+      allKVP,
+    ]);
+    if (schema !== SchemaVersionCurrent)
+      throw new Error(
+        `Can't act on this project resource because it has a wrong schema version: ${schema}`,
+      );
+
+    //
+    // <- at this point we have all the responses from round-trip #1
+    //
+
+    //
+    // Receiving responses from round-trip #2 and sending requests to read block pack descriptions
+    // (start of round-trip #3)
+    //
+
+    const blockPackRequests: [BlockInfoState, Promise<BasicResourceData>][] = [];
+    for (const [info, fieldName, state, response] of blockFieldRequests) {
+      const result = await response;
+      state.value = result.data;
+      if (isNotNullResourceId(result.error)) state.status = 'Error';
+      else if (result.resourceReady || isNotNullResourceId(result.originalResourceId))
+        state.status = 'Ready';
+      else state.status = 'NotReady';
+
+      // For block pack we need to traverse the ref field from the resource data
+      if (fieldName === 'blockPack') {
+        const refField = (result as ResourceData).fields.find((f) => f.name === Pl.HolderRefField);
+        if (refField === undefined)
+          throw new Error('Block pack ref field is missing');
+        blockPackRequests.push([info, tx.getResourceData(ensureResourceIdNotNull(refField.value), false)]);
+      }
+    }
+
+    //
+    // <- at this point we have all the responses from round-trip #2
+    //
+
+    for (const [info, response] of blockPackRequests) {
+      const result = await response;
+      const bpInfo = cachedDeserialize(notEmpty(result.data)) as BlockPackInfo;
+      info.blockConfig = extractConfig(bpInfo.config);
+      info.blockPack = bpInfo.source;
+    }
+
+    //
+    // <- at this point we have all the responses from round-trip #3
+    //
 
     // loading ctx export template to check if we already have cached materialized template in our project
     const ctxExportTplEnvelope = await getPreparedExportTemplateEnvelope();
@@ -1053,26 +1165,9 @@ export class ProjectMutator {
       blockFrontendStates.set(blockId, kv.value);
     }
 
-    const requests: [BlockFieldState, Promise<BasicResourceData>][] = [];
-    blockInfoStates.forEach(({ fields }) => {
-      for (const [, state] of Object.entries(fields)) {
-        if (state.ref === undefined) continue;
-        if (!isResource(state.ref) || isResourceRef(state.ref))
-          throw new Error('unexpected behaviour');
-        requests.push([state, tx.getResourceData(state.ref, false)]);
-      }
-    });
-    for (const [state, response] of requests) {
-      const result = await response;
-      state.value = result.data;
-      if (isNotNullResourceId(result.error)) state.status = 'Error';
-      else if (result.resourceReady || isNotNullResourceId(result.originalResourceId))
-        state.status = 'Ready';
-      else state.status = 'NotReady';
-    }
-
     const blockInfos = new Map<string, BlockInfo>();
-    blockInfoStates.forEach(({ id, fields }) => blockInfos.set(id, new BlockInfo(id, fields)));
+    blockInfoStates.forEach(({ id, fields, blockConfig, blockPack }) => blockInfos.set(id,
+      new BlockInfo(id, fields, notEmpty(blockConfig), notEmpty(blockPack))));
 
     // check consistency of project state
     const blockInStruct = new Set<string>();
@@ -1101,6 +1196,7 @@ export class ProjectMutator {
       blockInfos,
       blockFrontendStates,
       ctxExportTplHolder,
+      projectHelper,
     );
 
     prj.fixProblemsAndMigrate();
@@ -1140,14 +1236,16 @@ export async function createProject(
 }
 
 export async function withProject<T>(
+  projectHelper: ProjectHelper,
   txOrPl: PlTransaction | PlClient,
   rid: ResourceId,
   cb: (p: ProjectMutator) => T | Promise<T>,
 ): Promise<T> {
-  return withProjectAuthored(txOrPl, rid, undefined, cb);
+  return withProjectAuthored(projectHelper, txOrPl, rid, undefined, cb);
 }
 
 export async function withProjectAuthored<T>(
+  projectHelper: ProjectHelper,
   txOrPl: PlTransaction | PlClient,
   rid: ResourceId,
   author: AuthorMarker | undefined,
@@ -1155,7 +1253,7 @@ export async function withProjectAuthored<T>(
 ): Promise<T> {
   if (txOrPl instanceof PlClient) {
     return await txOrPl.withWriteTx('ProjectAction', async (tx) => {
-      const mut = await ProjectMutator.load(tx, rid, author);
+      const mut = await ProjectMutator.load(projectHelper, tx, rid, author);
       const result = await cb(mut);
       if (!mut.wasModified)
         // skipping save and commit altogether if no modifications were
@@ -1166,7 +1264,7 @@ export async function withProjectAuthored<T>(
       return result;
     });
   } else {
-    const mut = await ProjectMutator.load(txOrPl, rid, author);
+    const mut = await ProjectMutator.load(projectHelper, txOrPl, rid, author);
     const result = await cb(mut);
     mut.save();
     return result;

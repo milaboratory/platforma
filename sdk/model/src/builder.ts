@@ -1,4 +1,4 @@
-import type { BlockRenderingMode, BlockSection, ValueOrErrors, AnyFunction } from '@milaboratories/pl-model-common';
+import type { BlockRenderingMode, BlockSection, ValueOrErrors, AnyFunction, PlRef } from '@milaboratories/pl-model-common';
 import type { Checked, ConfigResult, TypedConfig } from './config';
 import { getImmediate } from './config';
 import { getPlatformaInstance, isInUI, tryRegisterCallback } from './internal';
@@ -65,6 +65,7 @@ export class BlockModel<
     private readonly _inputsValid: TypedConfigOrConfigLambda,
     private readonly _sections: TypedConfigOrConfigLambda,
     private readonly _title: ConfigRenderLambda | undefined,
+    private readonly _enrichmentTargets: ConfigRenderLambda | undefined,
   ) {}
 
   /** Initiates configuration builder */
@@ -89,6 +90,7 @@ export class BlockModel<
       {},
       getImmediate(true),
       getImmediate([]),
+      undefined,
       undefined,
     );
   }
@@ -146,6 +148,7 @@ export class BlockModel<
         this._inputsValid,
         this._sections,
         this._title,
+        this._enrichmentTargets,
       );
     } else
       return new BlockModel(
@@ -159,6 +162,7 @@ export class BlockModel<
         this._inputsValid,
         this._sections,
         this._title,
+        this._enrichmentTargets,
       );
   }
 
@@ -200,6 +204,7 @@ export class BlockModel<
         } satisfies ConfigRenderLambda,
         this._sections,
         this._title,
+        this._enrichmentTargets,
       );
     } else
       return new BlockModel<Args, OutputsCfg, UiState>(
@@ -210,6 +215,7 @@ export class BlockModel<
         cfgOrRf,
         this._sections,
         this._title,
+        this._enrichmentTargets,
       );
   }
 
@@ -246,6 +252,7 @@ export class BlockModel<
         this._inputsValid,
         { __renderLambda: true, handle: 'sections' } as ConfigRenderLambda,
         this._title,
+        this._enrichmentTargets,
       );
     } else
       return new BlockModel<Args, OutputsCfg, UiState>(
@@ -256,6 +263,7 @@ export class BlockModel<
         this._inputsValid,
         arrOrCfgOrRf as TypedConfig,
         this._title,
+        this._enrichmentTargets,
       );
   }
 
@@ -272,6 +280,7 @@ export class BlockModel<
       this._inputsValid,
       this._sections,
       { __renderLambda: true, handle: 'title' } as ConfigRenderLambda,
+      this._enrichmentTargets,
     );
   }
 
@@ -288,6 +297,7 @@ export class BlockModel<
       this._inputsValid,
       this._sections,
       this._title,
+      this._enrichmentTargets,
     );
   }
 
@@ -301,6 +311,7 @@ export class BlockModel<
       this._inputsValid,
       this._sections,
       this._title,
+      this._enrichmentTargets,
     );
   }
 
@@ -314,6 +325,27 @@ export class BlockModel<
       this._inputsValid,
       this._sections,
       this._title,
+      this._enrichmentTargets,
+    );
+  }
+
+  /**
+   * Defines how to derive list of upstream references this block is meant to enrich with its exports from block args.
+   * Influences dependency graph construction.
+   */
+  public enriches(
+    lambda: (args: Args) => PlRef[],
+  ): BlockModel<Args, OutputsCfg, UiState, Href> {
+    tryRegisterCallback('enrichmentTargets', lambda);
+    return new BlockModel<Args, OutputsCfg, UiState, Href>(
+      this._renderingMode,
+      this._initialArgs,
+      this._initialUiState,
+      this._outputs,
+      this._inputsValid,
+      this._sections,
+      this._title,
+      { __renderLambda: true, handle: 'enrichmentTargets' } as ConfigRenderLambda,
     );
   }
 
@@ -338,6 +370,7 @@ export class BlockModel<
         sections: this._sections,
         title: this._title,
         outputs: this._outputs,
+        enrichmentTargets: this._enrichmentTargets,
       },
 
       // fields below are added to allow previous desktop versions read generated configs

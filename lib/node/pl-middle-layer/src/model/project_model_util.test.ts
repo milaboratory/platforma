@@ -4,7 +4,7 @@ import { outputRef } from './args';
 import { PlRef } from '@platforma-sdk/model';
 
 function toRefs(...ids: string[]): PlRef[] {
-  return ids.map((id) => outputRef(id, ''));
+  return ids.map((id) => outputRef(id, '', true));
 }
 
 function simpleStructure(...ids: string[]): ProjectStructure {
@@ -26,7 +26,10 @@ describe('simple traverse', () => {
   inputs.set('b4', toRefs('b3'));
   inputs.set('b5', toRefs('b4'));
   inputs.set('b6', toRefs('b2', 'b4'));
-  const pGraph1 = productionGraph(struct1, (id) => inputs.get(id) ?? null);
+  const pGraph1 = productionGraph(struct1, (id) => ({
+    args: inputs.get(id) ?? null,
+    enrichmentTargets: undefined,
+  }));
 
   test.each([
     { roots: ['b2'], expectedDirectUpstreams: ['b1'], expectedDirectDownstreams: ['b6'], expectedUpstreams: ['b1'], expectedDownstreams: ['b6'] },
@@ -51,7 +54,10 @@ describe('simple diff', () => {
   inputs.set('b2', toRefs('b1'));
   inputs.set('b4', toRefs('b3'));
   const sGraph1 = stagingGraph(struct1);
-  const pGraph1 = productionGraph(struct1, (id) => inputs.get(id) ?? null);
+  const pGraph1 = productionGraph(struct1, (id) => ({
+    args: inputs.get(id) ?? null,
+    enrichmentTargets: undefined,
+  }));
 
   test.each([
     { struct2a: ['b1', 'b2', 'b3', 'b4'], expectedS: [], expectedP: [] },
@@ -79,7 +85,10 @@ describe('simple diff', () => {
   ])('$struct2a', ({ struct2a, expectedS, expectedP, onlyA, onlyB }) => {
     const struct2: ProjectStructure = simpleStructure(...struct2a);
     const sGraph2 = stagingGraph(struct2);
-    const pGraph2 = productionGraph(struct2, (id) => inputs.get(id) ?? null);
+    const pGraph2 = productionGraph(struct2, (id) => ({
+      args: inputs.get(id) ?? null,
+      enrichmentTargets: undefined,
+    }));
     const sDiff = graphDiff(sGraph1, sGraph2);
     const pDiff = graphDiff(pGraph1, pGraph2);
     expect(sDiff.onlyInA).toEqual(new Set(onlyA ?? []));

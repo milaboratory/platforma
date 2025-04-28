@@ -13,6 +13,12 @@ import {
 import { allBlocks } from '../model/project_model_util';
 import { ResultPool } from '../pool/result_pool';
 
+export type BlockContextMaterialized = {
+  readonly blockId: string;
+  readonly args: string;
+  readonly uiState?: string;
+};
+
 export type BlockContextArgsOnly = {
   readonly blockId: string;
   readonly args: (cCtx: ComputableCtx) => string;

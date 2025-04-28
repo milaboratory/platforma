@@ -1,8 +1,9 @@
 import { assertNever } from '@milaboratories/ts-helpers';
 import type { PlRef } from '@platforma-sdk/model';
 
-export function outputRef(blockId: string, name: string): PlRef {
-  return { __isRef: true, blockId, name };
+export function outputRef(blockId: string, name: string, requireEnrichments?: boolean): PlRef {
+  if (requireEnrichments) return { __isRef: true, blockId, name, requireEnrichments };
+  else return { __isRef: true, blockId, name };
 }
 
 export function isBlockOutputReference(obj: unknown): obj is PlRef {
@@ -32,8 +33,11 @@ function addAllReferencedBlocks(result: BlockUpstreams, node: unknown, allowed?:
       if (node === null) return;
 
       if (isBlockOutputReference(node)) {
-        if (allowed === undefined || allowed.has(node.blockId)) result.upstreams.add(node.blockId);
-        else result.missingReferences = true;
+        if (allowed === undefined || allowed.has(node.blockId)) {
+          result.upstreams.add(node.blockId);
+          if (node.requireEnrichments)
+            result.upstreamsRequiringEnrichments.add(node.blockId);
+        } else result.missingReferences = true;
       } else if (Array.isArray(node)) {
         for (const child of node) addAllReferencedBlocks(result, child, allowed);
       } else {
@@ -49,15 +53,17 @@ function addAllReferencedBlocks(result: BlockUpstreams, node: unknown, allowed?:
 }
 
 export interface BlockUpstreams {
-  /** Direct block dependencies */
+  /** All direct block dependencies */
   upstreams: Set<string>;
+  /** Direct block dependencies which enrichments are also required by current block */
+  upstreamsRequiringEnrichments: Set<string>;
   /** True if not-allowed references was encountered */
   missingReferences: boolean;
 }
 
 /** Extracts all resource ids referenced by args object. */
 export function inferAllReferencedBlocks(args: unknown, allowed?: Set<string>): BlockUpstreams {
-  const result = { upstreams: new Set<string>(), missingReferences: false };
+  const result = { upstreams: new Set<string>(), upstreamsRequiringEnrichments: new Set<string>(), missingReferences: false };
   addAllReferencedBlocks(result, args, allowed);
   return result;
 }
