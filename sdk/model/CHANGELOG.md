@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.30.3
+
+### Patch Changes
+
+- d42b276: GetOptionsOpts refactoring: requireEnrichments -> refsWithEnrichments
+
 ## 1.30.0
 
 ### Minor Changes
