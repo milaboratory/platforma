@@ -15,7 +15,7 @@ import {
 } from '@milaboratories/pl-client';
 import { loadTemplate } from './template_loading';
 import { createBContextEnd, createRenderHeavyBlock, HeavyBlockOutputs } from './render_block';
-import { notEmpty, sleep } from '@milaboratories/ts-helpers';
+import { cachedDeserialize, notEmpty, sleep } from '@milaboratories/ts-helpers';
 import { TemplateSpecPrepared } from '../../model/template_spec';
 import {
   TplSpecEnterExplicit,
@@ -269,4 +269,4 @@ function expectFields(res: ResourceData, fields: string[]) {
 
 const jsonToData = (data: unknown) => Buffer.from(JSON.stringify(data));
 
-const resDataToJson = (res: ResourceData) => JSON.parse(notEmpty(res.data).toString());
+const resDataToJson = (res: ResourceData) => cachedDeserialize(notEmpty(res.data));

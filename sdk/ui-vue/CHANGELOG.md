@@ -1,5 +1,40 @@
 # @platforma-sdk/ui-vue
 
+## 1.30.1
+
+### Patch Changes
+
+- 59e2bd3: Fix PlAgDataTableSettingsPTable type
+- 6bd25dc: PlAgDataTable: Expose overlay text props
+
+## 1.30.0
+
+### Patch Changes
+
+- Updated dependencies [01a558e]
+  - @platforma-sdk/model@1.30.0
+  - @milaboratories/uikit@2.2.71
+
+## 1.29.32
+
+### Patch Changes
+
+- 21f48b7: Clean mnz component (remove an obsolete validation)
+
+## 1.29.31
+
+### Patch Changes
+
+- 5ec58a8: Do not show monetization warning in non-monetized blocks
+
+## 1.29.27
+
+### Patch Changes
+
+- 02f781b: Add "refresh status" button to Monetization component
+- Updated dependencies [02f781b]
+  - @milaboratories/uikit@2.2.71
+
 ## 1.29.23
 
 ### Patch Changes

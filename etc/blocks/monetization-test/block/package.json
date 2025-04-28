@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/milaboratories.monetization-test",
-  "version": "1.0.35",
+  "version": "1.0.36",
   "scripts": {
     "build": "rm -rf block-pack/* && block-tools pack"
   },

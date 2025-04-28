@@ -1,5 +1,74 @@
 # @milaboratories/pl-middle-layer
 
+## 1.37.1
+
+### Patch Changes
+
+- Updated dependencies [fc7d156]
+  - @milaboratories/pl-model-middle-layer@1.7.28
+  - @platforma-sdk/block-tools@2.5.43
+
+## 1.37.0
+
+### Minor Changes
+
+- 01a558e: Significant refactoring of project mutation and project reading logic to support explicit enrichment modelling.
+  - separation of computable environment context for quickjs sandbox
+  - support of light non-computable functions executin with quickjs sandbox
+  - ProjectHelper as a common caching and logic place for block state computations
+  - dependency graph construction logic supporting explicit enrichment targeting and enrichment attaching references
+
+### Patch Changes
+
+- Updated dependencies [01a558e]
+- Updated dependencies [01a558e]
+- Updated dependencies [01a558e]
+- Updated dependencies [01a558e]
+  - @milaboratories/pl-client@2.9.0
+  - @milaboratories/pl-model-common@1.14.0
+  - @platforma-sdk/model@1.30.0
+  - @milaboratories/ts-helpers@1.2.0
+  - @milaboratories/pl-tree@1.6.0
+  - @milaboratories/pl-drivers@1.5.50
+  - @milaboratories/pl-errors@1.0.9
+  - @milaboratories/pl-model-middle-layer@1.7.27
+  - @milaboratories/computable@2.4.7
+  - @milaboratories/pl-config@1.4.9
+  - @milaboratories/pl-deployments@2.1.2
+  - @platforma-sdk/block-tools@2.5.42
+  - @platforma-sdk/workflow-tengo@4.1.4
+
+## 1.36.4
+
+### Patch Changes
+
+- aca0f21: PFramesDriver limit concurrency to 4
+- Updated dependencies [4ea9a4e]
+  - @platforma-sdk/workflow-tengo@4.1.4
+
+## 1.36.3
+
+### Patch Changes
+
+- 5240867: Clear pframes cache directory on session start
+- Updated dependencies [5240867]
+  - @milaboratories/ts-helpers@1.1.7
+  - @milaboratories/computable@2.4.6
+  - @milaboratories/pl-client@2.8.2
+  - @milaboratories/pl-config@1.4.8
+  - @milaboratories/pl-deployments@2.1.1
+  - @milaboratories/pl-drivers@1.5.49
+  - @milaboratories/pl-errors@1.0.8
+  - @milaboratories/pl-tree@1.5.8
+  - @platforma-sdk/block-tools@2.5.41
+  - @platforma-sdk/workflow-tengo@4.1.3
+
+## 1.36.2
+
+### Patch Changes
+
+- 1558f36: PFrames version bump
+
 ## 1.36.1
 
 ### Patch Changes

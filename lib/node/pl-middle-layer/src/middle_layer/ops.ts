@@ -39,6 +39,9 @@ export type DriverKitOpsPaths = {
    * If undefined, default list will be created.
    * */
   readonly virtualLocalStoragesOverride?: VirtualLocalStorageSpec[];
+
+  /** Path to the directory where pframes will spill temporary files and store materialized views */
+  readonly pframesSpillPath: string;
 };
 
 /** Options required to initialize full set of middle layer driver kit */
@@ -144,10 +147,12 @@ export function DefaultDriverKitOpsPaths(
   workDir: string,
 ): Pick<DriverKitOpsPaths,
 | 'blobDownloadPath'
-| 'downloadBlobToURLPath'> {
+| 'downloadBlobToURLPath'
+| 'pframesSpillPath'> {
   return {
     blobDownloadPath: path.join(workDir, 'download'),
     downloadBlobToURLPath: path.join(workDir, 'downloadToURL'),
+    pframesSpillPath: path.join(workDir, 'pframes'),
   };
 }
 

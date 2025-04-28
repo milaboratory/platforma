@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.71
+
+### Patch Changes
+
+- 02f781b: Add "refresh status" button to Monetization component
+
 ## 2.2.70
 
 ### Patch Changes

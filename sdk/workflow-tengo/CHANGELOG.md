@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 4.1.4
+
+### Patch Changes
+
+- 4ea9a4e: Fix propagation of anchoredQueryOpts
+
 ## 4.1.3
 
 ### Patch Changes
