@@ -45,6 +45,7 @@ export function extractConfig(cfg: BlockConfigContainer): BlockConfig {
       sdkVersion,
       sections,
       title,
+      enrichmentTargets,
     } = cfg.v3;
     const { code } = cfg;
     return {
@@ -57,6 +58,7 @@ export function extractConfig(cfg: BlockConfigContainer): BlockConfig {
       sections,
       title,
       code,
+      enrichmentTargets,
     };
   } else if (cfg.inputsValid !== undefined) {
     // version 2

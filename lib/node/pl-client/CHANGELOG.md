@@ -1,5 +1,24 @@
 # @milaboratories/pl-client
 
+## 2.9.0
+
+### Minor Changes
+
+- 01a558e: - deepFreeze of cached resource states
+  - isResourceId helper function
+
+### Patch Changes
+
+- Updated dependencies [01a558e]
+  - @milaboratories/ts-helpers@1.2.0
+
+## 2.8.2
+
+### Patch Changes
+
+- Updated dependencies [5240867]
+  - @milaboratories/ts-helpers@1.1.7
+
 ## 2.8.1
 
 ### Patch Changes

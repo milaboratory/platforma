@@ -16,11 +16,21 @@ export function useInfo() {
 
   const info = ref<Response | undefined>(undefined);
 
+  const isLoading = ref(false);
+
+  const version = ref(0);
+
   const error = computed(() => mnzInfo.value?.error ?? info.value?.response?.error);
 
   watch([currentInfo], ([i]) => {
     if (i) {
       info.value = i;
+      const v = ++version.value;
+      setTimeout(() => {
+        if (version.value === v) {
+          isLoading.value = false;
+        }
+      }, 1000);
     }
   }, { immediate: true });
 
@@ -36,6 +46,11 @@ export function useInfo() {
 
   const limits = computed(() => result.value?.mnz.limits);
 
+  const refresh = () => {
+    isLoading.value = true;
+    (app.value?.model.args as Record<string, unknown>)['__mnzDate'] = new Date().toISOString();
+  };
+
   watch(canRun, (v) => {
     if (hasMonetization.value) {
       (app.value?.model.args as Record<string, unknown>)['__mnzCanRun'] = v;
@@ -43,9 +58,7 @@ export function useInfo() {
   });
 
   if (hasMonetization.value) {
-    useIntervalFn(() => {
-      (app.value?.model.args as Record<string, unknown>)['__mnzDate'] = new Date().toISOString();
-    }, 60_000); // 1 minute
+    useIntervalFn(refresh, 60_000); // 1 minute
   }
 
   return {
@@ -57,5 +70,8 @@ export function useInfo() {
     customerEmail,
     endOfBillingPeriod,
     limits,
+    refresh,
+    version,
+    isLoading,
   };
 }

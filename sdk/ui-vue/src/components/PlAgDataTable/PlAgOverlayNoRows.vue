@@ -1,8 +1,8 @@
 <script lang="ts" setup>
+import type { PlAgOverlayNoRowsParams } from './types';
+
 defineProps<{
-  params: {
-    text?: string;
-  };
+  params: PlAgOverlayNoRowsParams;
 }>();
 </script>
 

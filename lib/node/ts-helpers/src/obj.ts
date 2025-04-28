@@ -3,7 +3,7 @@ export function deepFreeze<T extends object>(object: T): T {
   const propNames = Reflect.ownKeys(object);
   for (const name of propNames) {
     const value = object[name as keyof T];
-    if ((value && typeof value === 'object') || typeof value === 'function') {
+    if (value && ((typeof value === 'object' && (Object.getPrototypeOf(value) === Object.prototype || Object.getPrototypeOf(value) === null)) || typeof value === 'function')) {
       deepFreeze(value);
     }
   }

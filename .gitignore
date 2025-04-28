@@ -6,6 +6,7 @@
 
 # Testing
 test_config.json
+test-dry-run.json
 .test_auth.json
 .test/
 /test-registry/

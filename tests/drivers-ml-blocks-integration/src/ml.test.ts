@@ -336,6 +336,75 @@ test('reorder & rename blocks', { timeout: 20000 }, async ({ expect }) => {
   });
 });
 
+
+test('dependency test', { timeout: 20000 }, async ({ expect }) => {
+  await withMl(async (ml) => {
+    const projectList = ml.projectList;
+    expect(await projectList.awaitStableValue()).toEqual([]);
+    const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
+
+    await ml.openProject(pRid1);
+    const prj = ml.getOpenedProject(pRid1);
+
+    const block1Id = await prj.addBlock('Block 1', enterNumberSpec);
+    const block2Id = await prj.addBlock('Block 2', enterNumberSpec);
+    const block3Id = await prj.addBlock('Block 3', sumNumbersSpec);
+    const block4Id = await prj.addBlock('Block 4', sumNumbersSpec);
+    const block5Id = await prj.addBlock('Block 5', sumNumbersSpec);
+
+    const overviewSnapshot0 = await prj.overview.awaitStableValue();
+
+    overviewSnapshot0.blocks.forEach((block) => {
+      expect(block.sections).toBeDefined();
+      expect(block.canRun).toEqual(false);
+      expect(block.currentBlockPack).toBeDefined();
+      expect(block.navigationState).toStrictEqual({ href: '/' });
+    });
+
+    await prj.setNavigationState(block1Id, { href: '/section1' });
+    await prj.setBlockArgs(block1Id, { numbers: [1, 2, 3] });
+    await prj.setBlockArgs(block2Id, { numbers: [3, 4, 5] });
+    await prj.setBlockArgs(block3Id, {
+      sources: [outputRef(block1Id, 'numbers'), outputRef(block2Id, 'numbers')]
+    });
+    await prj.setBlockArgs(block4Id, {
+      sources: [outputRef(block1Id, 'numbers'), outputRef(block2Id, 'numbers')]
+    });
+    await prj.setBlockArgs(block5Id, {
+      sources: [outputRef(block1Id, 'numbers'), outputRef(block2Id, 'numbers')]
+    });
+    const overviewSnapshot1 = await prj.overview.awaitStableValue();
+
+    expect(overviewSnapshot1.blocks).toMatchObject([
+      { upstreams: [], downstreams: [block3Id, block4Id, block5Id] },
+      { upstreams: [], downstreams: [block3Id, block4Id, block5Id] },
+      { upstreams: [block1Id, block2Id], downstreams: [] },
+      { upstreams: [block1Id, block2Id], downstreams: [] },
+      { upstreams: [block1Id, block2Id], downstreams: [] }
+    ]);
+
+    await prj.setBlockArgs(block3Id, {
+      sources: [outputRef(block1Id, 'numbers', true), outputRef(block2Id, 'numbers', true)]
+    });
+    await prj.setBlockArgs(block4Id, {
+      sources: [outputRef(block2Id, 'numbers', true)]
+    });
+    await prj.setBlockArgs(block5Id, {
+      sources: [outputRef(block1Id, 'numbers', true)]
+    });
+    const overviewSnapshot2 = await prj.overview.awaitStableValue();
+
+    expect(overviewSnapshot2.blocks.map((b) => ({ upstreams: new Set(b.upstreams), downstreams: new Set(b.downstreams) }))).toMatchObject([
+      { upstreams: new Set(), downstreams: new Set([block3Id, block5Id]) },
+      { upstreams: new Set(), downstreams: new Set([block3Id, block4Id, block5Id]) },
+      { upstreams: new Set([block1Id, block2Id]), downstreams: new Set([block5Id]) },
+      { upstreams: new Set([block2Id]), downstreams: new Set() },
+      { upstreams: new Set([block1Id, block2Id, block3Id]), downstreams: new Set() }
+    ]);
+  });
+});
+
+
 test('limbo test', async ({ expect }) => {
   await withMl(async (ml) => {
     const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
@@ -688,6 +757,6 @@ async function lsDriverGetFileHandleFromAssets(
   return (ourFile as any).handle;
 }
 
-function outputRef(blockId: string, name: string): PlRef {
-  return { __isRef: true, blockId, name };
+function outputRef(blockId: string, name: string, requireEnrichments?: true): PlRef {
+  return { __isRef: true, blockId, name, requireEnrichments };
 }

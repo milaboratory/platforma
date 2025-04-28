@@ -11,6 +11,8 @@ import type {
 import {
   BlockModel,
   createPlDataTable,
+  createPlDataTableV2,
+  selectorsToPredicate,
 } from '@platforma-sdk/model';
 import { z } from 'zod';
 
@@ -139,6 +141,65 @@ export const platforma = BlockModel.create('Heavy')
     );
   })
 
+  .output('ptV2', (ctx) => {
+    if (!ctx.uiState?.dataTableState?.tableState.pTableParams?.filters) return undefined;
+
+    const data = times(ctx.args.tableNumRows ?? 0, (i) => {
+      const v = i + 1;
+      return {
+        key: [v, v + 0.1],
+        val: v.toString(),
+      };
+    });
+
+    return createPlDataTableV2(
+      ctx,
+      [
+        {
+          id: 'example' as PObjectId,
+          spec: {
+            kind: 'PColumn',
+            valueType: 'String',
+            name: 'example',
+            annotations: {
+              'pl7.app/label': 'String column',
+              'pl7.app/discreteValues': '["up","down"]',
+            },
+            axesSpec: [
+              {
+                type: 'Int',
+                name: 'index',
+                annotations: {
+                  'pl7.app/label': 'Int axis',
+                  'pl7.app/discreteValues': '[1,2]',
+                },
+              },
+              {
+                type: 'Float',
+                name: 'value',
+                annotations: {
+                  'pl7.app/label': 'Float axis',
+                  'pl7.app/table/visibility': 'optional',
+                },
+              },
+            ],
+          },
+          data,
+        } satisfies PColumn<PColumnValues>,
+      ],
+      selectorsToPredicate({
+        name: 'example',
+      }),
+      ctx.uiState.dataTableState.tableState,
+      {
+        filters: [
+          ...(ctx.uiState.dataTableState.tableState.pTableParams?.filters ?? []),
+          ...(ctx.uiState.dataTableState.filterModel?.filters ?? []),
+        ],
+      },
+    );
+  })
+
   .title((ctx) => {
     if (ctx.args.numbers.length === 5) {
       throw new Error('block title: test error');
@@ -172,6 +233,7 @@ export const platforma = BlockModel.create('Heavy')
       { type: 'link', href: '/ag-grid-vue', label: 'AgGridVue' },
       { type: 'link', href: '/ag-grid-vue-with-builder', label: 'AgGridVue with builder' },
       { type: 'link', href: '/pl-ag-data-table', label: 'PlAgDataTable' },
+      { type: 'link', href: '/pl-ag-data-table-v2', label: 'PlAgDataTableV2' },
       { type: 'link', href: '/pl-splash-page', label: 'PlSplashPage' },
       { type: 'link', href: '/errors', label: 'Errors' },
       { type: 'link', href: '/text-fields', label: 'PlTextField' },

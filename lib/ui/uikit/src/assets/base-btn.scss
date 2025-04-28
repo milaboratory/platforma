@@ -48,6 +48,7 @@
   &.round {
     border-radius: 50%;
     width: var(--button-height);
+    min-width: var(--button-height);
     padding: 0;
     justify-content: center;
   }

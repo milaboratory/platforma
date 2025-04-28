@@ -36,6 +36,7 @@ import {
   mapPTableDef,
   mapValueInVOE,
   selectorsToPredicate,
+  withEnrichments,
 } from '@milaboratories/pl-model-common';
 import canonicalize from 'canonicalize';
 import type { Optional } from 'utility-types';
@@ -89,6 +90,21 @@ type UniversalPColumnOpts = {
   dontWaitAllData?: boolean;
 } & ResolveAnchorsOptions;
 
+type GetOptionsOpts = {
+  /**
+   * If true, references returned by the method will contain `requireEnrichments` flag set to true.
+   * If this reference is added to the block's args, it will communicate to the platform that the block
+   * expects enrichments of the referenced block to be available in the context of the current block.
+   */
+  refsWithEnrichments?: boolean;
+  /**
+   * Label derivation options.
+   * If provided, it will be used to derive labels for the options.
+   * If not provided, labels will be derived using the default logic.
+   */
+  label?: ((spec: PObjectSpec, ref: PlRef) => string) | LabelDerivationOps;
+};
+
 export class ResultPool implements ColumnProvider, AxisLabelProvider {
   private readonly ctx: GlobalCfgRenderCtx = getCfgRenderCtx();
 
@@ -101,21 +117,47 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
 
   public getOptions(
     predicateOrSelector: ((spec: PObjectSpec) => boolean) | PColumnSelector | PColumnSelector[],
+    opts?: GetOptionsOpts,
+  ): Option[];
+  /** @deprecated wrap label ops with { label: <...> } */
+  public getOptions(
+    predicateOrSelector: ((spec: PObjectSpec) => boolean) | PColumnSelector | PColumnSelector[],
     label?: ((spec: PObjectSpec, ref: PlRef) => string) | LabelDerivationOps,
+  ): Option[];
+  public getOptions(
+    predicateOrSelector: ((spec: PObjectSpec) => boolean) | PColumnSelector | PColumnSelector[],
+    opts?: GetOptionsOpts | ((spec: PObjectSpec, ref: PlRef) => string) | LabelDerivationOps,
   ): Option[] {
     const predicate = typeof predicateOrSelector === 'function'
       ? predicateOrSelector
       : selectorsToPredicate(predicateOrSelector);
     const filtered = this.getSpecs().entries.filter((s) => predicate(s.obj));
-    if (typeof label === 'object' || typeof label === 'undefined') {
-      return deriveLabels(filtered, (o) => o.obj, label ?? {}).map(({ value: { ref }, label }) => ({
-        ref,
+
+    let labelOps: LabelDerivationOps | ((spec: PObjectSpec, ref: PlRef) => string) = {};
+    let refsWithEnrichments: boolean = false;
+    if (typeof opts !== 'undefined') {
+      if (typeof opts === 'function') {
+        labelOps = opts;
+      } else if (typeof opts === 'object') {
+        if ('includeNativeLabel' in opts || 'separator' in opts || 'addLabelAsSuffix' in opts) {
+          labelOps = opts;
+        } else {
+          opts = opts as GetOptionsOpts;
+          labelOps = opts.label ?? {};
+          refsWithEnrichments = opts.refsWithEnrichments ?? false;
+        }
+      }
+    }
+
+    if (typeof labelOps === 'object')
+      return deriveLabels(filtered, (o) => o.obj, labelOps ?? {}).map(({ value: { ref }, label }) => ({
+        ref: withEnrichments(ref, refsWithEnrichments),
         label,
       }));
-    } else
-      return filtered.map((s) => ({
-        ref: s.ref,
-        label: label(s.obj, s.ref),
+    else
+      return filtered.map(({ ref, obj }) => ({
+        ref: withEnrichments(ref, refsWithEnrichments),
+        label: labelOps(obj, ref),
       }));
   }
 
@@ -580,8 +622,6 @@ export class RenderCtx<Args, UiState> {
   }
 
   public getCurrentUnstableMarker(): string | undefined {
-    // @TODO remove after 1 Jan 2025; forward compatibility
-    if (typeof this.ctx.getCurrentUnstableMarker === 'undefined') return undefined;
     return this.ctx.getCurrentUnstableMarker();
   }
 }

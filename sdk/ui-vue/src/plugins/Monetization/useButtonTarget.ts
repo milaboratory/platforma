@@ -1,12 +1,18 @@
+import type { Ref } from 'vue';
 import { ref, nextTick, onMounted, onUpdated } from 'vue';
 
-export function useButtonTarget() {
+export function useButtonTarget(hasMonetization: Ref<boolean>) {
   const target = ref<string>();
 
   const selector = '.pl-block-page__title__append';
 
   const check = () => {
     nextTick(() => {
+      if (!hasMonetization.value) {
+        target.value = undefined;
+        return;
+      }
+
       target.value = document.querySelector(selector) ? selector : undefined;
       if (!target.value) {
         console.error(
