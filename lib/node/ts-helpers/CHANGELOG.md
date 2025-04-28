@@ -1,5 +1,12 @@
 # @milaboratories/ts-helpers
 
+## 1.2.0
+
+### Minor Changes
+
+- 01a558e: - cachedDeserialize
+  - fixes for deepFreeze to avoid non-plain structures
+
 ## 1.1.7
 
 ### Patch Changes
