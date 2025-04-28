@@ -1,5 +1,35 @@
 # @milaboratories/pl-middle-layer
 
+## 1.37.0
+
+### Minor Changes
+
+- 01a558e: Significant refactoring of project mutation and project reading logic to support explicit enrichment modelling.
+  - separation of computable environment context for quickjs sandbox
+  - support of light non-computable functions executin with quickjs sandbox
+  - ProjectHelper as a common caching and logic place for block state computations
+  - dependency graph construction logic supporting explicit enrichment targeting and enrichment attaching references
+
+### Patch Changes
+
+- Updated dependencies [01a558e]
+- Updated dependencies [01a558e]
+- Updated dependencies [01a558e]
+- Updated dependencies [01a558e]
+  - @milaboratories/pl-client@2.9.0
+  - @milaboratories/pl-model-common@1.14.0
+  - @platforma-sdk/model@1.30.0
+  - @milaboratories/ts-helpers@1.2.0
+  - @milaboratories/pl-tree@1.6.0
+  - @milaboratories/pl-drivers@1.5.50
+  - @milaboratories/pl-errors@1.0.9
+  - @milaboratories/pl-model-middle-layer@1.7.27
+  - @milaboratories/computable@2.4.7
+  - @milaboratories/pl-config@1.4.9
+  - @milaboratories/pl-deployments@2.1.2
+  - @platforma-sdk/block-tools@2.5.42
+  - @platforma-sdk/workflow-tengo@4.1.4
+
 ## 1.36.4
 
 ### Patch Changes
