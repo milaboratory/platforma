@@ -28,6 +28,7 @@ export type PlDataTableSettingsXsv = {
 
 /** Data table settings */
 export type PlDataTableSettings =
+  | undefined
   | PlDataTableSettingsPTable
   | PlDataTableSettingsXsv;
 
@@ -35,13 +36,14 @@ export type PlAgDataTableSettingsPTable = {
   /** The type of the source to feed the data into the table */
   sourceType: 'ptable';
   /** PTable handle output */
-  model?: PlDataTableModel;
+  model: PlDataTableModel | undefined;
   /** Sheets that we want to show in our table */
   sheets?: PlDataTableSheet[];
 };
 
 /** Data table settings */
 export type PlAgDataTableSettings =
+  | undefined
   | PlAgDataTableSettingsPTable;
 
 /** PlTableFilters restriction entry */
@@ -102,4 +104,11 @@ export type PlAgOverlayLoadingParams = {
    * Use "transparent" to make table headers visible below the loading layer
    */
   overlayType?: 'transparent';
+};
+
+export type PlAgOverlayNoRowsParams = {
+  /**
+   * Prop to override default "Empty" text
+   */
+  text?: string;
 };
