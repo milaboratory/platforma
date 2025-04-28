@@ -1,5 +1,13 @@
 # @platforma-sdk/workflow-tengo
 
+## 4.2.0
+
+### Minor Changes
+
+- 60b6702: New methods for workflow template API:
+  - explicit availability of parent context via self.getParentBCtx()
+  - self.getBlockId() to get block id as string
+
 ## 4.1.4
 
 ### Patch Changes
