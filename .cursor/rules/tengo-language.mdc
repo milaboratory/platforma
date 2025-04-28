@@ -57,7 +57,7 @@ res = {
 }
 return res
 </tengo>
-- Minimal boilerplate for the tengo template
+- Minimal boilerplate for the tengo template:
 <tengo>
 self := import(":tpl")
 
@@ -74,6 +74,12 @@ self.body(func(inputs) {
         "result": message
     }
 })
+</tengo>
+- Example of importing SDK libraries from blocks:
+<tengo>
+smart := import("@platforma-sdk/workflow-tengo:smart")
+ll := import("@platforma-sdk/workflow-tengo:ll")
+...
 </tengo>
 - Always try finding code examples for similar patterns
 - Always place imports at the top of the file
