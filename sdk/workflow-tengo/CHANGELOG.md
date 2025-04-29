@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 4.2.1
+
+### Patch Changes
+
+- 5277219: Deeper network check with templates for downloading and uploading files and running binaries and Python.
+
 ## 4.2.0
 
 ### Minor Changes
