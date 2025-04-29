@@ -9,6 +9,7 @@ export * from './drivers/download_blob';
 export * from './drivers/download_blob_url/driver';
 export * from './drivers/download_blob_url/snapshot';
 export * from './drivers/upload';
+export * from './drivers/upload_task';
 export * from './drivers/logs_stream';
 export * from './drivers/logs';
 export * from './drivers/download_url';

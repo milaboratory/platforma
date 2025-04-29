@@ -1,0 +1,13 @@
+/** Just a simple template that uploads a blob and makes it downloadable back. */
+
+self := import(":tpl")
+file := import(":file")
+
+self.body(func(inputs) {
+	result := file.importFile(inputs.file)
+
+	return {
+		progress: result.handle,
+		file: file.exportFile(result.file)
+	}
+})

@@ -63,6 +63,10 @@ const props = defineProps<{
    * The label to display above the texarea.
    */
   label?: string;
+  /**
+   * Do not scroll to bottom on content change. Default is false (scroll to bottom).
+   */
+  disableAutoScroll?: boolean;
 }>();
 
 const logState = useLogHandle(props);
@@ -101,7 +105,11 @@ const onClickCopy = () => {
   }
 };
 
-const scrollDown = () => {
+const optionallyScrollDown = () => {
+  if (props.disableAutoScroll) {
+    return;
+  }
+
   tapIf(contentRef.value, (el) => {
     if (isAnchored.value) {
       el.scrollTo(el.scrollLeft, el.scrollHeight);
@@ -113,7 +121,7 @@ watch(
   computedValue,
   () => {
     requestAnimationFrame(() => {
-      scrollDown();
+      optionallyScrollDown();
     });
   },
   { immediate: true },

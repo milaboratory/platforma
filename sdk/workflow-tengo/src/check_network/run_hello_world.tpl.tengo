@@ -1,0 +1,19 @@
+/** Run a simple hello-world binary. */
+
+self := import(":tpl")
+exec := import(":exec")
+assets := import(":assets")
+
+hwSoftware := assets.importSoftware("@platforma-open/milaboratories.software-small-binaries:hello-world")
+
+self.body(func(inputs) {
+	run := exec.builder().
+		software(hwSoftware).
+		saveStdoutContent().
+		run()
+
+	return {
+		// returns "Hello from go binary"
+		greeting: run.getStdoutFileContent()
+	}
+})

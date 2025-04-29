@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.72
+
+### Patch Changes
+
+- c831288: PlLogView: do not scroll down in network check
+
 ## 2.2.71
 
 ### Patch Changes

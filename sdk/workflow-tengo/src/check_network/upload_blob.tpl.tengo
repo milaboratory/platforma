@@ -1,0 +1,13 @@
+/** Just a simple template that uploads a blob to the server. */
+
+self := import(":tpl")
+file := import(":file")
+
+self.body(func(inputs) {
+	result := file.importFile(inputs.file)
+
+	return {
+		progress: result.handle,
+		file: result.file
+	}
+})

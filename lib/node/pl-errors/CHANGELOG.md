@@ -1,5 +1,11 @@
 # @milaboratories/pl-errors
 
+## 1.1.0
+
+### Minor Changes
+
+- 3cfc320: support error trace separator
+
 ## 1.0.9
 
 ### Patch Changes
