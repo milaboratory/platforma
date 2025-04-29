@@ -1,5 +1,12 @@
 # @milaboratories/pl-tree
 
+## 1.6.1
+
+### Patch Changes
+
+- Updated dependencies [3cfc320]
+  - @milaboratories/pl-errors@1.1.0
+
 ## 1.6.0
 
 ### Minor Changes
