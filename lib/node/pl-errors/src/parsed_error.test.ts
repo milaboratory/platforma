@@ -18,6 +18,7 @@ const monetizationSubErrors = `"NG:0x1F94C0" has 1 input errors:
 [I] "NG:0x1F94F1/monetization": "NG:0x1F94EE" has 1 input errors:
 [I] "NG:0x1F94EE/resource": "NG:0x1F94EC" has 1 input errors:
 [I] "NG:0x1F94EC/inputs": "NG:0x1F94ED" has 1 input errors:
+---
 [I] "NG:0x1F94ED/resource": "NG:0x1F94EB" has 1 input errors:
 [I] "NG:0x1F94EB/resource": "NG:0x1F94E6" has 1 input errors:
 [I] "NG:0x1F94E6/resource": "NG:0x1F94E2" has 1 input errors:

@@ -247,6 +247,9 @@ export function parseSubErrors(message: string): PlCoreError[] {
       // we need initial stage because apparently the first line
       // of the error doesn't have [I], but is a path line.
       state.stage = 'path';
+    } else if ( state.stage == 'path' && line.startsWith('---') ) {
+        // we should add stack separator to path stage
+        // without break stage processing
     } else if (state.stage == 'path' && !isPath(line)) {
       state.stage = 'message';
     } else if (state.stage == 'message' && isPath(line)) {
