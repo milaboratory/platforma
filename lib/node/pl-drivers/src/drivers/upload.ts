@@ -26,7 +26,7 @@ import { scheduler } from 'node:timers/promises';
 import type { PollingOps } from './helpers/polling_ops';
 import type { ImportResourceSnapshot } from './types';
 import { IndexResourceSnapshot, UploadResourceSnapshot } from './types';
-import { nonRecoverableError, UploadTask } from './upload_task';
+import { isMyUpload, nonRecoverableError, UploadTask } from './upload_task';
 import { WrongResourceTypeError } from './helpers/helpers';
 
 export function makeBlobImportSnapshot(
@@ -145,11 +145,12 @@ export class UploadDriver {
 
     this.idToProgress.set(res.id, newTask);
 
-    if (newTask.shouldScheduleUpload())
+    if (newTask.shouldScheduleUpload()) {
       this.uploadQueue.push({
         fn: () => newTask.uploadBlobTask(),
         recoverableErrorPredicate: (e) => !nonRecoverableError(e),
       });
+    }
 
     newTask.setDoneIfOutputSet(res);
     return newTask.getProgress(w, callerId);
