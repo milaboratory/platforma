@@ -408,6 +408,7 @@ export ll.toStrict({
 	body: body,
 	setPreRun: setPreRun,
 	blockId: blockId,
+	getBlockId: getBlockId,
 	validateArgs: validateArgs,
 	createPBundleBuilder: createPBundleBuilder
 })
