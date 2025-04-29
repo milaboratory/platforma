@@ -18,7 +18,7 @@
  * We don't check backend access to S3 storage, it is checked on the start of backend.
  */
 
-import type { PlClientConfig } from '@milaboratories/pl-client';
+import type { AuthInformation, PlClientConfig } from '@milaboratories/pl-client';
 import { PlClient, UnauthenticatedPlClient, plAddressToConfig } from '@milaboratories/pl-client';
 import type { MiLogger } from '@milaboratories/ts-helpers';
 import { ConsoleLoggerAdapter, HmacSha256Signer } from '@milaboratories/ts-helpers';
@@ -29,7 +29,7 @@ import type { HttpNetworkReport, NetworkReport } from './pings';
 import { autoUpdateCdnPings, backendPings, blockGARegistryOverviewPings, blockGARegistryUiPings, blockRegistryOverviewPings, blockRegistryUiPings, reportToString } from './pings';
 import type { Dispatcher } from 'undici';
 import type { TemplateReport } from './template';
-import { uploadTemplate, uploadFile, downloadFile, createTempFile, pythonSoftware, softwareCheck } from './template';
+import { uploadTemplate, uploadFile, downloadFile, createTempFile, pythonSoftware, softwareCheck, createBigTempFile } from './template';
 
 /** All reports we need to collect. */
 interface NetworkReports {
@@ -79,8 +79,8 @@ export interface CheckNetworkOpts {
  * and generates a string report. */
 export async function checkNetwork(
   plCredentials: string,
-  plUser: string,
-  plPassword: string,
+  plUser: string | undefined,
+  plPassword: string | undefined,
   optsOverrides: Partial<CheckNetworkOpts> = {},
 ): Promise<string> {
   const undiciLogs: any[] = [];
@@ -89,14 +89,24 @@ export async function checkNetwork(
     const diagnosticChannel = channel(event);
     diagnosticChannel.subscribe((message: any) => {
       const timestamp = new Date().toISOString();
-      if (message?.response?.headers)
-        message.response.headers = message.response.headers.map((h: any) => h.toString());
+      const data = { ...message };
+      if (data?.response?.headers) {
+        data.response = { ...data.response };
+        data.response.headers = data.response.headers.slice();
+        data.response.headers = data.response.headers.map((h: any) => h.toString());
+      }
+
+      // we try to upload big files, don't include the buffer in the report.
+      if (data?.request?.body) {
+        data.request = { ...data.request };
+        data.request.body = `too big`;
+      }
 
       undiciLogs.push(
         JSON.stringify({
           timestamp,
           event,
-          data: message,
+          data,
         }),
       );
     });
@@ -113,7 +123,8 @@ export async function checkNetwork(
     ops,
   } = await initNetworkCheck(plCredentials, plUser, plPassword, optsOverrides);
 
-  const { filePath, fileContent } = await createTempFile();
+  const { filePath: filePathToDownload, fileContent: fileContentToDownload } = await createTempFile();
+  const { filePath: filePathToUpload } = await createBigTempFile();
 
   const report: NetworkReports = {
     plPings: await backendPings(ops, plConfig),
@@ -125,8 +136,8 @@ export async function checkNetwork(
     autoUpdateCdnChecks: await autoUpdateCdnPings(ops, httpClient),
 
     uploadTemplateCheck: await uploadTemplate(logger, client, 'Jack'),
-    uploadFileCheck: await uploadFile(logger, lsDriver, uploadBlobClient, client, filePath),
-    downloadFileCheck: await downloadFile(logger, client, lsDriver, uploadBlobClient, downloadClient, filePath, fileContent),
+    uploadFileCheck: await uploadFile(logger, lsDriver, uploadBlobClient, client, filePathToUpload),
+    downloadFileCheck: await downloadFile(logger, client, lsDriver, uploadBlobClient, downloadClient, filePathToDownload, fileContentToDownload),
     softwareCheck: await softwareCheck(client),
     pythonSoftwareCheck: await pythonSoftware(client, 'Jack'),
   };
@@ -136,8 +147,8 @@ export async function checkNetwork(
 
 export async function initNetworkCheck(
   plCredentials: string,
-  plUser: string,
-  plPassword: string,
+  plUser: string | undefined,
+  plPassword: string | undefined,
   optsOverrides: Partial<CheckNetworkOpts> = {},
 ): Promise<{
     logger: MiLogger;
@@ -184,8 +195,14 @@ export async function initNetworkCheck(
   plConfig.alternativeRoot = `check_network_${Date.now()}`;
 
   const uaClient = new UnauthenticatedPlClient(plConfig);
-  const auth = await uaClient.login(plUser, plPassword);
+
+  let auth: AuthInformation = {};
+  if (plUser && plPassword) {
+    auth = await uaClient.login(plUser, plPassword);
+  }
+
   const client = await PlClient.init(plCredentials, { authInformation: auth });
+
   const httpClient = uaClient.ll.httpDispatcher;
   const logger = new ConsoleLoggerAdapter();
 

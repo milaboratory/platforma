@@ -141,7 +141,7 @@ export function reportToString<T>(report: NetworkReport<T>[]): {
 }
 
 function elapsedStat(reports: { elapsedMs: number }[]) {
-  const checks = reports.map((p) => p.elapsedMs);
+  const checks = reports.map((p) => p.elapsedMs).sort();
   const mean = checks.reduce((sum, p) => sum + p) / checks.length;
 
   let median = undefined;

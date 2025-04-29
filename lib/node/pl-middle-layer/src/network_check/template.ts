@@ -12,6 +12,7 @@ import { text } from 'node:stream/consumers';
 import path from 'node:path';
 import fs from 'node:fs/promises';
 import os from 'node:os';
+import { randomBytes } from 'node:crypto';
 
 export interface TemplateReport {
   ok: boolean;
@@ -103,10 +104,10 @@ export async function runUploadFile(
       ImportFileHandleUploadData.parse(JSON.parse(notEmpty(progress.data?.toString()))),
       () => false,
       {
-        nPartsWithThisUploadSpeed: 1,
-        nPartsToIncreaseUpload: 1,
-        currentSpeed: 1,
-        maxSpeed: 1,
+        nPartsWithThisUploadSpeed: 10,
+        nPartsToIncreaseUpload: 10,
+        currentSpeed: 10,
+        maxSpeed: 10,
       },
     );
 
@@ -240,6 +241,18 @@ export async function runPythonSoftware(pl: PlClient, name: string): Promise<str
   } finally {
     await deleteFields(pl, Object.values(result));
   }
+}
+
+/** Creates a big temporary file with random content. */
+export async function createBigTempFile(): Promise<{ filePath: string }> {
+  const filePath = path.join(os.tmpdir(), `check-network-big-temp-${Date.now()}.bin`);
+  const fileSize = 20 * 1024 * 1024; // 20 MiB
+
+  const fileContent = randomBytes(fileSize);
+
+  await fs.appendFile(filePath, fileContent);
+
+  return { filePath };
 }
 
 /** Creates a temporarly file we could use for uploading and downloading. */
