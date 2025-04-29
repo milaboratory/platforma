@@ -129,8 +129,8 @@ export async function updatePFrameGridOptions(
 
   const fields = [...indices];
 
-  const firstColumnIdx = indices.findIndex((i) => specs[i].type === 'column');
   // process label columns
+  const firstColumnIdx = indices.findIndex((i) => specs[i].type === 'column');
   for (let i = indices.length - 1; i >= firstColumnIdx; --i) {
     const idx = indices[i];
     if (!isLabelColumn(specs[idx])) continue;
