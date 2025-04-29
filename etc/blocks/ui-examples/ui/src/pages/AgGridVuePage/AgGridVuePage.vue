@@ -228,7 +228,6 @@ const { gridOptions, gridApi } = useAgGridOptions<Row>(({ column }) => {
     onRowDoubleClicked: (_e) => {
       alert('Example "Open" button was clicked');
     },
-    loadingOverlayComponentParams: 'test',
     components: {
       LinkComponent,
     },
