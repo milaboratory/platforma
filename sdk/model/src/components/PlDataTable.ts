@@ -367,8 +367,8 @@ export function getMatchingLabelColumns(
   allLabelColumns: PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor>>[],
 ): PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor>>[] {
   // split input columns into label and value columns
-  const inputLabelColumns: typeof columns[number][] = [];
-  const inputValueColumns: typeof columns[number][] = [];
+  const inputLabelColumns: typeof columns = [];
+  const inputValueColumns: typeof columns = [];
   for (const column of columns) {
     if (isLabelColumn(column.spec)) {
       inputLabelColumns.push(column);
@@ -410,7 +410,7 @@ export function getMatchingLabelColumns(
   };
 
   // search label columns for unmatched axes
-  const labelColumns: typeof allLabelColumns[number][] = [];
+  const labelColumns: typeof allLabelColumns = [];
   for (const labelColumn of allLabelColumns) {
     const labelAxis = labelColumn.spec.axesSpec[0];
     const labelAxisId = getAxisId(labelAxis);
