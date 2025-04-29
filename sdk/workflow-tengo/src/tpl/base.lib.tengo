@@ -67,6 +67,29 @@ _unmarshal := func(resource, preprocessors) {
 	}
 }
 
+AWAIT_TEMPLATES := {
+	"BQueryResultSingle": [
+		["ref", "ResourceReady"],
+		["spec", "ResourceReady"]
+	],
+	"BQueryResultMulti": [
+		["spec", "ResourceReady"],
+		["data", "InputsLocked"]
+	],
+	"BQueryResultMultiNoData": [
+		["spec", "ResourceReady"]
+	],
+	"PColumnBundle": [
+		[{ wildcard: "*" }, "ref", "ResourceReady"],
+		[{ wildcard: "*" }, "spec", "ResourceReady"]
+	],
+	"PColumnBundleWithPartitions": [
+		[{ wildcard: "*" }, "ref", "ResourceReady"],
+		[{ wildcard: "*" }, "spec", "ResourceReady"],
+		[{ wildcard: "*" }, "data", "InputsLocked"]
+	]
+}
+
 /**
  * A wrapper object around template functionality
  *
@@ -211,12 +234,21 @@ tpl := func(ops) {
 		 *   awaitState("inputName1", { match: "^some_prefix\\." }, "Set")
 		 *   awaitState("inputName1", "AllInputsSet")
 		 *
-		 * Allowed states:
+		 * === Allowed States ===
+		 *
+		 * Basic States:
 		 *   Exists - field exists
 		 *   Set - field points to existing resource
 		 *   InputsLocked - field points to resource with locked inputs
 		 *   AllInputsSet - field points to resource with all inputs set
 		 *   ResourceReady - field points to ready resource
+		 *
+		 * Predefined State Configurations:
+		 *   BQueryResultSingle - Waits for 'ref' and 'spec' of a single BQuery result.
+		 *   BQueryResultMulti - Waits for 'spec' and 'data' of a multi-result BQuery.
+		 *   BQueryResultMultiNoData - Waits for 'spec' of a multi-result BQuery (no data).
+		 *   PColumnBundle - Waits for all 'ref's and 'spec's in a PColumnBundle.
+		 *   PColumnBundleWithPartitions - Waits for all 'ref's, 'spec's, and 'data' in a PColumnBundle.
 		 */
 		awaitState: func(...pathAndState) {
 			if !self.isEphemeral() {
@@ -251,12 +283,21 @@ tpl := func(ops) {
 		 *   awaitStateIfEphemeral("inputName1", { match: "^some_prefix\\." }, "Set")
 		 *   awaitStateIfEphemeral("inputName1", "AllInputsSet")
 		 *
-		 * Allowed states:
+		 * === Allowed States ===
+		 *
+		 * Basic States:
 		 *   Exists - field exists
 		 *   Set - field points to existing resource
 		 *   InputsLocked - field points to resource with locked inputs
 		 *   AllInputsSet - field points to resource with all inputs set
 		 *   ResourceReady - field points to ready resource
+		 *
+		 * Predefined State Configurations:
+		 *   BQueryResultSingle - Waits for 'ref' and 'spec' of a single BQuery result.
+		 *   BQueryResultMulti - Waits for 'spec' and 'data' of a multi-result BQuery.
+		 *   BQueryResultMultiNoData - Waits for 'spec' of a multi-result BQuery (no data).
+		 *   PColumnBundle - Waits for all 'ref's and 'spec's in a PColumnBundle.
+		 *   PColumnBundleWithPartitions - Waits for all 'ref's, 'spec's, and 'data' in a PColumnBundle.
 		 */
 		awaitStateIfEphemeral: func(...pathAndState) {
 			if !self.isEphemeral() {
@@ -264,10 +305,22 @@ tpl := func(ops) {
 			}
 			path := pathAndState[:len(pathAndState) - 1]
 			state := pathAndState[len(pathAndState) - 1]
-			_stateRequests = append(_stateRequests, {
-				path: path,
-				state: state
-			})
+			template := AWAIT_TEMPLATES[state]
+			if is_undefined(template) {
+				_stateRequests = append(_stateRequests, {
+					path: path,
+					state: state
+				})
+			} else {
+				for tPathAndState in template {
+					tPath := tPathAndState[:len(tPathAndState) - 1]
+					tState := tPathAndState[len(tPathAndState) - 1]
+					_stateRequests = append(_stateRequests, {
+						path: append(copy(path), tPath...),
+						state: tState
+					})
+				}
+			}
 		},
 
 		/**

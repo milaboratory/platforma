@@ -232,8 +232,9 @@ createBuilder := func(ctx) {
 			bundle := smart.mapBuilder(pConstants.RTYPE_P_COLUMN_BUNDLE)
 
 			for refKey, ref in refs {
-				if is_string(ref) {
+				if is_string(ref) { // ref is anchor id
 					bundle.addRef(refKey, resolveResult.getAnchor(ref))
+					bundle.addRef(ref, resolveResult.getAnchor(ref))
 				} else {
 					bundle.addRef(refKey, bquery.resolve(ref, ctx))
 				}
