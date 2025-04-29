@@ -1,5 +1,11 @@
 # @milaboratories/pl-drivers
 
+## 1.5.51
+
+### Patch Changes
+
+- 5277219: Deeper network check with templates for downloading and uploading files and running binaries and Python.
+
 ## 1.5.50
 
 ### Patch Changes
