@@ -1,0 +1,10 @@
+/** Just a simple template that downloads a specified blob. */
+
+self := import(":tpl")
+file := import(":file")
+
+self.body(func(inputs) {
+	return {
+		file: file.exportFile(inputs.file)
+	}
+})

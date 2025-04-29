@@ -1,0 +1,9 @@
+/** Just a simple template to check that we indeed could upload templates and get results from them. */
+
+self := import(":tpl")
+
+self.body(func(inputs) {
+	return {
+		greeting: "Hello, " + inputs.name
+	}
+})
