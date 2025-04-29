@@ -105,16 +105,18 @@ export async function updatePFrameGridOptions(
   const hColumns = getHeterogeneousColumns(specs, indices);
 
   // process label columns
-  for (let i = indices.length - 1; i >= 0; --i) {
+  const firstColumnIdx = indices.findIndex((i) => specs[i].type === 'column');
+  for (let i = indices.length - 1; i >= firstColumnIdx; --i) {
     const idx = indices[i];
     if (!isLabelColumn(specs[idx])) continue;
 
     // axis of labels
     const axisId = getAxisId((specs[idx].spec as PColumnSpec).axesSpec[0]);
     const axisIdx = indices.findIndex((idx) => lodash.isEqual(specs[idx].id, axisId));
-    if (axisIdx === -1) {
-      // no axis, it was already processed
-      continue;
+    if (axisIdx !== -1) {
+      indices[axisIdx] = idx;
+    } else {
+      console.warn(`multiple label columns match axisId: ${JSON.stringify(axisId)}`);
     }
 
     // replace in h-columns
