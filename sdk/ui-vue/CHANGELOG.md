@@ -1,5 +1,14 @@
 # @platforma-sdk/ui-vue
 
+## 1.30.11
+
+### Patch Changes
+
+- 8c3b22b: PlAgDataTable - Skip duplicating label columns
+- Updated dependencies [8c3b22b]
+  - @platforma-sdk/model@1.30.11
+  - @milaboratories/uikit@2.2.72
+
 ## 1.30.10
 
 ### Patch Changes

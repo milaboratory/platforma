@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/milaboratories.ui-examples.ui",
-  "version": "1.3.74",
+  "version": "1.3.75",
   "type": "module",
   "scripts": {
     "dev": "vite",
