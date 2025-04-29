@@ -1,5 +1,30 @@
 # @milaboratories/pl-middle-layer
 
+## 1.37.7
+
+### Patch Changes
+
+- Updated dependencies [afe3583]
+  - @platforma-sdk/workflow-tengo@4.2.2
+
+## 1.37.6
+
+### Patch Changes
+
+- Updated dependencies [3cfc320]
+  - @milaboratories/pl-errors@1.1.0
+  - @milaboratories/pl-tree@1.6.1
+  - @milaboratories/pl-drivers@1.5.52
+
+## 1.37.5
+
+### Patch Changes
+
+- 5277219: Deeper network check with templates for downloading and uploading files and running binaries and Python.
+- Updated dependencies [5277219]
+  - @milaboratories/pl-drivers@1.5.51
+  - @platforma-sdk/workflow-tengo@4.2.1
+
 ## 1.37.4
 
 ### Patch Changes
