@@ -44,6 +44,10 @@ interface GridOptionsExtended<TData = any> extends Omit<GridOptions<TData>, 'col
    * Override standard 'Empty' text for the "no rows" overlay
    */
   noRowsText?: string;
+  /**
+   * @deprecated Use loading, notReady, loadingText, loadingOverlayType instead
+   */
+  loadingOverlayComponentParams?: never;
 }
 
 // @TODO (super simple builder for now)
