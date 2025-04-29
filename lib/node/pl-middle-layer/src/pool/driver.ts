@@ -84,7 +84,7 @@ function migrateFilters(filters: PTableRecordFilter[]): PTableRecordFilter[] {
 const bigintReplacer = (_: string, v: unknown) => (typeof v === 'bigint' ? v.toString() : v);
 
 class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
-  public readonly pFrame: PFrameInternal.PFrameV4;
+  public readonly pFrame: PFrameInternal.PFrameV5;
   private readonly blobIdToResource = new Map<string, ResourceInfo>();
   private readonly blobHandleComputables = new Map<
     string,
@@ -174,7 +174,7 @@ class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
 
 class PTableHolder implements Disposable {
   constructor(
-    public readonly table: Promise<PFrameInternal.PTableV3>,
+    public readonly table: Promise<PFrameInternal.PTableV4>,
   ) {}
 
   [Symbol.dispose](): void {
@@ -219,6 +219,21 @@ export interface InternalPFrameDriver extends SdkPFrameDriver {
     request: UniqueValuesRequest,
     signal?: AbortSignal
   ): Promise<UniqueValuesResponse>;
+
+  /**
+   * Retrieve the data from the table. To retrieve only data required, it can be
+   * sliced both horizontally ({@link columnIndices}) and vertically
+   * ({@link range}).
+   *
+   * @param columnIndices unified indices of columns to be retrieved
+   * @param range optionally limit the range of records to retrieve
+   * */
+  getData(
+    handle: PTableHandle,
+    columnIndices: number[],
+    range: TableRange | undefined,
+    signal?: AbortSignal,
+  ): Promise<PTableVector[]>;
 }
 
 export class PFrameDriver implements InternalPFrameDriver {
@@ -421,7 +436,7 @@ export class PFrameDriver implements InternalPFrameDriver {
     }).then(async (table) => {
       try {
         const spec = table.getSpec();
-        const data = await this.concurrencyLimiter.run(async () => await table.getData([...spec.keys()]));
+        const data = await this.concurrencyLimiter.run(async () => await table.getData([...spec.keys()], undefined, signal));
         return spec.map((spec, i) => ({
           spec: spec,
           data: data[i],
@@ -467,10 +482,11 @@ export class PFrameDriver implements InternalPFrameDriver {
   public async getData(
     handle: PTableHandle,
     columnIndices: number[],
-    range?: TableRange,
+    range: TableRange | undefined,
+    signal?: AbortSignal,
   ): Promise<PTableVector[]> {
     const pTable = await this.pTables.getByKey(handle).table;
-    return await this.concurrencyLimiter.run(async () => await pTable.getData(columnIndices, range));
+    return await this.concurrencyLimiter.run(async () => await pTable.getData(columnIndices, range, signal));
   }
 }
 

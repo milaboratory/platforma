@@ -28,8 +28,8 @@ catalogs:
       specifier: ^29.7.0
       version: 29.7.0
     '@milaboratories/pframes-rs-node':
-      specifier: 1.0.29
-      version: 1.0.29
+      specifier: 1.0.31
+      version: 1.0.31
     '@milaboratories/software-pframes-conv':
       specifier: 2.2.2
       version: 2.2.2
@@ -1846,7 +1846,7 @@ importers:
         version: link:../computable
       '@milaboratories/pframes-rs-node':
         specifier: 'catalog:'
-        version: 1.0.29(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)
+        version: 1.0.31(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)
       '@milaboratories/pl-client':
         specifier: workspace:^
         version: link:../pl-client
@@ -4363,19 +4363,19 @@ packages:
   '@microsoft/tsdoc@0.15.1':
     resolution: {integrity: sha512-4aErSrCR/On/e5G2hDP0wjooqDdauzEbIq8hIkIe5pXV0rtWJZvdCEKL0ykZxex+IxIwBp0eGeV48hQN07dXtw==}
 
-  '@milaboratories/pframes-rs-node@1.0.29':
-    resolution: {integrity: sha512-v2Wq1gkXNqtcUm9EkBrLh9IGvpAgPJFjQewoU/pRmwveq8fp4uZbBOCH14YgP6zJ6wXhBdEyX7P/1xFUw9FyAg==}
+  '@milaboratories/pframes-rs-node@1.0.31':
+    resolution: {integrity: sha512-nJ/b8R8DYyTZqI3spve3qLbpQ/H6u2aj9fXGANrwGJisV6aVF+d8uBVW3JfmkySIaSAXG8vAnLmCS9XxY1+2VA==}
     peerDependencies:
       '@milaboratories/pl-model-common': '*'
 
   '@milaboratories/pl-error-like@1.12.1':
     resolution: {integrity: sha512-cFK6RJyTzX8JmEjyqTsnAJK48HZnKEmP/wVYAIV1iNFruanwdw377Gc8w8Ized2gDeMQT67yDDl9Qq/U4AO4gw==}
 
-  '@milaboratories/pl-model-common@1.13.8':
-    resolution: {integrity: sha512-iYNt5F+VKpUz39AtAEFKISieSAnQz9HJm6Elihg5zEavOU/woSiraZ/rRDKCM1jPTj9DGIWUUlwrpb8aGSGoMQ==}
+  '@milaboratories/pl-model-common@1.14.0':
+    resolution: {integrity: sha512-AHgBzPvGo3/Zqw7hy/FrDmhbmxZYxqv8n/qHsMlvSiSDL+mmePBWZG+VaJwIiXKbZwR9TsL00+0kFU+CE4YsXA==}
 
-  '@milaboratories/pl-model-middle-layer@1.7.26':
-    resolution: {integrity: sha512-FpFjIyYm0uymwokDQh/2ycGrs/F+NrbVR2jPLdjVbTC4be0WpRKMQiAtw0vKGP5ygUQgrEhPdp0eEzuTAgIRgA==}
+  '@milaboratories/pl-model-middle-layer@1.7.28':
+    resolution: {integrity: sha512-9PmbK0bK7VVuqSh8P5XGUy15bgyQPvKzpTG+gC/9e0MykD0ZWlXCEpgY1bXwyg7kU2r+TNKYSnCOSAyHPar2xg==}
 
   '@milaboratories/software-pframes-conv@2.2.2':
     resolution: {integrity: sha512-eJIp1YGi6g83peviw8SYlr5N4KV2SmDi3Mhz2FjrS4d/WaKOhoTD9+YvRpOTCQ0KyT44FNRF+nCoN/idKT3SzA==}
@@ -11233,11 +11233,11 @@ snapshots:
 
   '@microsoft/tsdoc@0.15.1': {}
 
-  '@milaboratories/pframes-rs-node@1.0.29(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)':
+  '@milaboratories/pframes-rs-node@1.0.31(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)':
     dependencies:
       '@mapbox/node-pre-gyp': 2.0.0(encoding@0.1.13)
       '@milaboratories/pl-model-common': link:lib/model/common
-      '@milaboratories/pl-model-middle-layer': 1.7.26
+      '@milaboratories/pl-model-middle-layer': 1.7.28
       ulid: 3.0.0
     transitivePeerDependencies:
       - encoding
@@ -11249,15 +11249,15 @@ snapshots:
       json-stringify-safe: 5.0.1
       zod: 3.23.8
 
-  '@milaboratories/pl-model-common@1.13.8':
+  '@milaboratories/pl-model-common@1.14.0':
     dependencies:
       '@milaboratories/pl-error-like': 1.12.1
       canonicalize: 2.1.0
       zod: 3.23.8
 
-  '@milaboratories/pl-model-middle-layer@1.7.26':
+  '@milaboratories/pl-model-middle-layer@1.7.28':
     dependencies:
-      '@milaboratories/pl-model-common': 1.13.8
+      '@milaboratories/pl-model-common': 1.14.0
       remeda: 2.21.2
       utility-types: 3.11.0
       zod: 3.23.8

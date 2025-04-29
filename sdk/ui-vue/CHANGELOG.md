@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.30.5
+
+### Patch Changes
+
+- d13fd4a: PlAgDataTableV2 - fix case with multiple label columns mapping to the same axis
+
 ## 1.30.3
 
 ### Patch Changes
