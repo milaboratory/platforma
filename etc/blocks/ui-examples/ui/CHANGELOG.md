@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.3.74
+
+### Patch Changes
+
+- 764ea86: useAgGridOptions: add "loadingText" option, fully ignore "loadingOverlayComponentParams" completely (show warning if used)
+
 ## 1.3.73
 
 ### Patch Changes

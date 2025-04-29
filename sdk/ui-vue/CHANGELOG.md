@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.30.10
+
+### Patch Changes
+
+- 764ea86: useAgGridOptions: add "loadingText" option, fully ignore "loadingOverlayComponentParams" completely (show warning if used)
+
 ## 1.30.7
 
 ### Patch Changes
