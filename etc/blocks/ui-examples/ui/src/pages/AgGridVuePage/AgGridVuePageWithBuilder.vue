@@ -15,6 +15,7 @@ import {
   makeEaseOut,
   animate,
   PlBtnPrimary,
+  PlTextField,
 } from '@platforma-sdk/ui-vue';
 import { AgGridVue } from 'ag-grid-vue3';
 import { times } from '@milaboratories/helpers';
@@ -91,6 +92,8 @@ const rowNumbers = ref(true);
 
 const loading = ref(false);
 
+const loadingText = ref('Loading...');
+
 const notReady = ref(false);
 
 const hasRows = ref(true);
@@ -109,6 +112,7 @@ const { gridOptions, gridApi } = useAgGridOptions<Row>(({ builder }) => {
       headerCheckbox: false,
     })
     .setLoading(loading.value)
+    .setLoadingText(loadingText.value)
     .setNotReady(notReady.value)
     .setNotReadyText('Not ready text (custom, default is "Not ready"')
     .setRowData(hasRows.value ? result.value : [])
@@ -250,7 +254,7 @@ const { gridOptions, gridApi } = useAgGridOptions<Row>(({ builder }) => {
 
 <template>
   <PlBlockPage style="max-width: 100%">
-    <template #title>AgGridVue</template>
+    <template #title>AgGridVue (Builder)</template>
     <template #append>
       <PlBtnPrimary @click="showProgress">Show progress</PlBtnPrimary>
       <PlAgDataTableToolsPanel>
@@ -265,6 +269,7 @@ const { gridOptions, gridApi } = useAgGridOptions<Row>(({ builder }) => {
       <PlCheckbox v-model="loading">Loading</PlCheckbox>
       <PlCheckbox v-model="notReady">Not Ready</PlCheckbox>
       <PlCheckbox v-model="hasRows">Has rows</PlCheckbox>
+      <PlTextField v-model="loadingText" label="Loading text" />
     </PlRow>
 
     <AgGridVue
