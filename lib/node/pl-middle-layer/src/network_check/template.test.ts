@@ -1,4 +1,4 @@
-import { runDownloadFile, runPythonSoftware, runSoftware, runUploadFile, runUploadTemplate } from './template';
+import { createBigTempFile, runDownloadFile, runPythonSoftware, runSoftware, runUploadFile, runUploadTemplate } from './template';
 import { initNetworkCheck } from './network_check';
 import { testCredentials } from './test_utils';
 import { test, expect } from 'vitest';
@@ -25,7 +25,7 @@ test('check runUploadFile', async () => {
     terminate,
   } = await initNetworkCheck(plEndpoint, plUser, plPassword);
 
-  const filePath = path.join(__dirname, '..', '..', 'test_assets', 'answer.txt');
+  const { filePath } = await createBigTempFile();
 
   const blob = await runUploadFile(
     logger,

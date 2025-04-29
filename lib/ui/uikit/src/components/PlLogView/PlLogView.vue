@@ -64,9 +64,9 @@ const props = defineProps<{
    */
   label?: string;
   /**
-   * Scroll to bottom on content change or not. Default is true.
+   * Do not scroll to bottom on content change. Default is false (scroll to bottom).
    */
-  scrollOnChange?: boolean;
+  disableAutoScroll?: boolean;
 }>();
 
 const logState = useLogHandle(props);
@@ -106,13 +106,15 @@ const onClickCopy = () => {
 };
 
 const optionallyScrollDown = () => {
-  if (props.scrollOnChange || props.scrollOnChange === undefined) {
-    tapIf(contentRef.value, (el) => {
-      if (isAnchored.value) {
-        el.scrollTo(el.scrollLeft, el.scrollHeight);
-      }
-    });
+  if (props.disableAutoScroll) {
+    return;
   }
+
+  tapIf(contentRef.value, (el) => {
+    if (isAnchored.value) {
+      el.scrollTo(el.scrollLeft, el.scrollHeight);
+    }
+  });
 };
 
 watch(
