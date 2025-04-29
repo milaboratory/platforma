@@ -627,6 +627,21 @@ resource = func(r) {
 		},
 
 		/**
+		 * Get a resource set in field of a given field name,
+		 * or a reference to the field itself if resource is not set yet.
+		 *
+		 * @param name field name
+		 */
+		getFieldOrResource: func(name) {
+			field := self.getField(name)
+			if field.isSet() {
+				return field.getValue()
+			} else {
+				return field
+			}
+		},
+
+		/**
 		 * Gets value from key value storage associated with resource if corresponding
 		 * record exists.
 		 *
