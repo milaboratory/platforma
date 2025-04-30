@@ -13,7 +13,7 @@ jobs:
   init:
     runs-on: ubuntu-latest
     steps:
-      - uses: milaboratory/github-ci/actions/context/init@v4
+      - uses: milaboratory/github-ci/actions/context/init@v4-beta
         with:
           version-canonize: false
           branch-versioning: main
