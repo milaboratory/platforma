@@ -28,12 +28,7 @@ const DryRunResult = z.object({
   productName: z.string().default('Unknown product'),
   customerEmail: z.string().optional(),
   canRun: z.boolean(),
-  status: z.union([
-    z.literal('select-tariff'),
-    z.literal('active'),
-    z.literal('payment_required'),
-    z.literal('limits_exceeded'),
-  ]),
+  status: z.string(), // 'select-tariff', 'active', 'payment_required', 'limits_exceeded', 'inactive', 'unknown',
   mnz: z.object({
     type: MonetizationType.optional(),
     endOfBillingPeriod: z.string().nullable().optional(),
