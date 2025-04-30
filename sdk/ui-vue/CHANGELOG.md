@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.30.13
+
+### Patch Changes
+
+- 48ed1cc: show texts for "inactive" status and when mnzInfo output is not yet resolved (show "Waiting for monetization information")
+
 ## 1.30.11
 
 ### Patch Changes
