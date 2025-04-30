@@ -10,17 +10,17 @@ export function useInfo() {
 
   const hasMonetization = computed(() => '__mnzDate' in (app.value?.model?.args as Record<string, unknown>));
 
-  const mnzInfo = computed(() => Response.safeParse(app.value?.model.outputs['__mnzInfo']));
+  const parsed = computed(() => Response.safeParse(app.value?.model.outputs['__mnzInfo']));
 
-  const currentInfo = computed<Response | undefined>(() => mnzInfo.value?.data);
+  const currentInfo = computed<Response | undefined>(() => parsed.value?.data);
+
+  const error = computed(() => parsed.value?.error ?? info.value?.response?.error);
 
   const info = ref<Response | undefined>(undefined);
 
   const isLoading = ref(false);
 
   const version = ref(0);
-
-  const error = computed(() => mnzInfo.value?.error ?? info.value?.response?.error);
 
   watch([currentInfo], ([i]) => {
     if (i) {
@@ -38,7 +38,7 @@ export function useInfo() {
 
   const canRun = computed(() => !!result.value?.canRun);
 
-  const status = computed(() => result.value?.status);
+  const status = computed(() => currentInfo.value ? result.value?.status : 'awaiting');
 
   const customerEmail = computed(() => result.value?.customerEmail);
 
