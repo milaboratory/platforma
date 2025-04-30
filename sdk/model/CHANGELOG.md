@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.30.11
+
+### Patch Changes
+
+- 8c3b22b: PlAgDataTable - Skip duplicating label columns
+
 ## 1.30.3
 
 ### Patch Changes

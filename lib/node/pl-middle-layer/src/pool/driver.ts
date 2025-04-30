@@ -305,17 +305,21 @@ export class PFrameDriver implements InternalPFrameDriver {
           );
         }
         const tablePromise = concurrencyLimiter.run(async () => {
-          return await this.pFrames.getByKey(handle).pFrame.createTable({
+          const table = await this.pFrames.getByKey(handle).pFrame.createTable({
             src: joinEntryToInternal(params.def.src),
             filters: migrateFilters(params.def.filters),
           }, params.signal);
-        }).then(async (table) => {
-          if (params.def.sorting.length === 0) return table;
-          try {
-            return concurrencyLimiter.run(async () => await table.sort(params.def.sorting, params.signal));
-          } finally {
-            table.dispose();
+
+          let sortedTable = table;
+          if (params.def.sorting.length > 0) {
+            try {
+              sortedTable = await table.sort(params.def.sorting, params.signal);
+            } finally {
+              table.dispose();
+            }
           }
+
+          return sortedTable;
         });
         return new PTableHolder(tablePromise);
       }
@@ -422,27 +426,29 @@ export class PFrameDriver implements InternalPFrameDriver {
       );
     }
     return await this.concurrencyLimiter.run(async () => {
-      return await this.pFrames.getByKey(handle).pFrame.createTable({
+      const table = await this.pFrames.getByKey(handle).pFrame.createTable({
         src: joinEntryToInternal(request.src),
         filters: migrateFilters(request.filters),
       }, signal);
-    }).then(async (table) => {
-      if (request.sorting.length === 0) return table;
-      try {
-        return await this.concurrencyLimiter.run(async () => await table.sort(request.sorting, signal));
-      } finally {
-        table.dispose();
+
+      let sortedTable = table;
+      if (request.sorting.length > 0) {
+        try {
+          sortedTable = await table.sort(request.sorting, signal);
+        } finally {
+          table.dispose();
+        }
       }
-    }).then(async (table) => {
+
       try {
-        const spec = table.getSpec();
-        const data = await this.concurrencyLimiter.run(async () => await table.getData([...spec.keys()], undefined, signal));
+        const spec = sortedTable.getSpec();
+        const data = await sortedTable.getData([...spec.keys()], undefined, signal);
         return spec.map((spec, i) => ({
           spec: spec,
           data: data[i],
         }));
       } finally {
-        table.dispose();
+        sortedTable.dispose();
       }
     });
   }

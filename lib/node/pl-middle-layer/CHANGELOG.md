@@ -1,5 +1,13 @@
 # @milaboratories/pl-middle-layer
 
+## 1.37.8
+
+### Patch Changes
+
+- 48c061b: PFrames version bump
+- Updated dependencies [8c3b22b]
+  - @platforma-sdk/model@1.30.11
+
 ## 1.37.7
 
 ### Patch Changes

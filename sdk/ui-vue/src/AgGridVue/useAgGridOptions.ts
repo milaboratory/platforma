@@ -15,7 +15,7 @@ import { PlAgChartHistogramCell } from '../components/PlAgChartHistogramCell';
 import type { ImportFileHandle } from '@platforma-sdk/model';
 import type { ImportProgress } from '@platforma-sdk/model';
 import { PlAgCellStatusTag } from '../components/PlAgCellStatusTag';
-interface GridOptionsExtended<TData = any> extends Omit<GridOptions<TData>, 'columnDefs'> {
+interface GridOptionsExtended<TData = any> extends Omit<GridOptions<TData>, 'columnDefs' | 'loadingOverlayComponentParams'> {
   /**
    * Array of Column / Column Group definitions.
    */
@@ -24,6 +24,10 @@ interface GridOptionsExtended<TData = any> extends Omit<GridOptions<TData>, 'col
    * Show row numbers column
    */
   rowNumbersColumn?: boolean;
+  /**
+   * Loading overlay text
+   */
+  loadingText?: string;
   /**
    * Not ready overlay (No datasource). Takes priority over "loading"
    */
@@ -40,6 +44,10 @@ interface GridOptionsExtended<TData = any> extends Omit<GridOptions<TData>, 'col
    * Override standard 'Empty' text for the "no rows" overlay
    */
   noRowsText?: string;
+  /**
+   * @deprecated Use loading, notReady, loadingText, loadingOverlayType instead
+   */
+  loadingOverlayComponentParams?: never;
 }
 
 // @TODO (super simple builder for now)
@@ -72,6 +80,16 @@ class Builder<TData> {
    */
   public setLoading(loading?: boolean) {
     this.#options.loading = loading;
+    return this;
+  }
+
+  /**
+   * Set loading overlay custom text (default is "Loading")
+   * @param loadingText
+   * @returns this
+   */
+  public setLoadingText(loadingText?: string) {
+    this.#options.loadingText = loadingText;
     return this;
   }
 
@@ -272,7 +290,7 @@ export function useAgGridOptions<TData>(
 ) {
   const gridApi = shallowRef<GridApi>();
 
-  const gridOptions = computed<GridOptionsExtended>(() => {
+  const extOptions = computed<GridOptionsExtended>(() => {
     const def: GridOptionsExtended<TData> = {
       theme: AgGridTheme,
       loadingOverlayComponent: PlAgOverlayLoading,
@@ -301,16 +319,11 @@ export function useAgGridOptions<TData>(
       };
     }
 
-    options.loading = options.notReady || options.loading;
-
-    // @TODO
-    if (options.loading) {
-      options.loadingOverlayComponentParams = {
-        notReady: options.notReady,
-        notReadyText: options.notReadyText,
-        overlayType: options.loadingOverlayType,
-      } satisfies PlAgOverlayLoadingParams;
+    if ('loadingOverlayComponentParams' in options) {
+      console.warn('useAgGridOptions: remove loadingOverlayComponentParams from options, use loading, notReady, loadingText, loadingOverlayType instead');
     }
+
+    options.loading = options.notReady || options.loading;
 
     options.columnDefs = options.columnDefs?.map((it) => createAgGridColDef(it));
 
@@ -325,21 +338,35 @@ export function useAgGridOptions<TData>(
     return options;
   });
 
-  whenever(() => gridOptions.value.rowNumbersColumn, () => {
+  const gridOptions = computed<GridOptions>(() => {
+    const options = extOptions.value;
+
+    return {
+      ...options,
+      loadingOverlayComponentParams: {
+        notReady: options.notReady,
+        notReadyText: options.notReadyText,
+        overlayType: options.loadingOverlayType,
+      } satisfies PlAgOverlayLoadingParams,
+    };
+  });
+
+  whenever(() => extOptions.value.rowNumbersColumn, () => {
     if (gridApi.value) {
       autoSizeRowNumberColumn(gridApi.value);
     }
   });
 
   watch([
-    () => gridOptions.value.notReady,
-    () => gridOptions.value.loading,
+    () => extOptions.value.notReady,
+    () => extOptions.value.loading,
   ], ([notReady, loading]) => {
     const loadingOverlayComponentParams = {
       notReady,
       // we probably don't need to update the parameters below
-      notReadyText: gridOptions.value.notReadyText,
-      overlayType: gridOptions.value.loadingOverlayType,
+      notReadyText: extOptions.value.notReadyText,
+      overlayType: extOptions.value.loadingOverlayType,
+      loadingText: extOptions.value.loadingText,
     } satisfies PlAgOverlayLoadingParams;
 
     // Hack to apply loadingOverlayComponentParams

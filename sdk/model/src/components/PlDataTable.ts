@@ -1,4 +1,5 @@
 import type {
+  AxisId,
   AxisSpec,
   CanonicalizedJson,
   DataInfo,
@@ -365,7 +366,39 @@ export function getMatchingLabelColumns(
   columns: PColumnIdAndSpec[],
   allLabelColumns: PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor>>[],
 ): PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor>>[] {
-  const colId = (id: PObjectId, domain?: Record<string, string>) => {
+  // split input columns into label and value columns
+  const inputLabelColumns: typeof columns = [];
+  const inputValueColumns: typeof columns = [];
+  for (const column of columns) {
+    if (isLabelColumn(column.spec)) {
+      inputLabelColumns.push(column);
+    } else {
+      inputValueColumns.push(column);
+    }
+  }
+
+  // collect distinct axes of value columns
+  const unlabeledAxes: AxisId[] = [];
+  for (const column of inputValueColumns) {
+    for (const axis of column.spec.axesSpec) {
+      const axisId = getAxisId(axis);
+      if (!unlabeledAxes.some((id) => matchAxisId(id, axisId))) {
+        unlabeledAxes.push(axisId);
+      }
+    }
+  }
+
+  // remove axes matched by input label columns
+  for (const labelColumn of inputLabelColumns) {
+    const labelAxisId = getAxisId(labelColumn.spec.axesSpec[0]);
+    const labelMatch = unlabeledAxes.findIndex((axisId) => matchAxisId(axisId, labelAxisId));
+    if (labelMatch !== -1) {
+      unlabeledAxes.splice(labelMatch, 1);
+    }
+  }
+
+  // warning: changing this id will break backward compatibility
+  const colId = (id: PObjectId, domain?: Record<string, string>): PObjectId => {
     let wid = id.toString();
     if (domain) {
       for (const k in domain) {
@@ -373,39 +406,35 @@ export function getMatchingLabelColumns(
         wid += domain[k];
       }
     }
-    return wid;
+    return wid as PObjectId;
   };
 
-  const labelColumns = new Map<string, typeof allLabelColumns[number]>();
-  for (const col of columns) {
-    for (const axis of col.spec.axesSpec) {
-      const axisId = getAxisId(axis);
-      for (const labelColumn of allLabelColumns) {
-        const labelAxis = labelColumn.spec.axesSpec[0];
-        const labelAxisId = getAxisId(labelColumn.spec.axesSpec[0]);
-        if (matchAxisId(axisId, labelAxisId)) {
-          const dataDomainLen = Object.keys(axisId.domain ?? {}).length;
-          const labelDomainLen = Object.keys(labelAxisId.domain ?? {}).length;
-          if (dataDomainLen > labelDomainLen) {
-            const id = colId(labelColumn.id, axisId.domain);
-
-            labelColumns.set(id, {
-              id: id as PObjectId,
-              spec: {
-                ...labelColumn.spec,
-                axesSpec: [{ ...axisId, annotations: labelAxis.annotations }],
-              },
-              data: labelColumn.data,
-            });
-          } else {
-            labelColumns.set(colId(labelColumn.id), labelColumn);
-          }
-        }
+  // search label columns for unmatched axes
+  const labelColumns: typeof allLabelColumns = [];
+  for (const labelColumn of allLabelColumns) {
+    const labelAxis = labelColumn.spec.axesSpec[0];
+    const labelAxisId = getAxisId(labelAxis);
+    const labelMatch = unlabeledAxes.findIndex((axisId) => matchAxisId(axisId, labelAxisId));
+    if (labelMatch !== -1) {
+      const axisId = unlabeledAxes[labelMatch];
+      const dataDomainLen = Object.keys(axisId.domain ?? {}).length;
+      const labelDomainLen = Object.keys(labelAxis.domain ?? {}).length;
+      if (dataDomainLen > labelDomainLen) {
+        labelColumns.push({
+          id: colId(labelColumn.id, axisId.domain),
+          spec: {
+            ...labelColumn.spec,
+            axesSpec: [{ ...axisId, annotations: labelAxis.annotations }],
+          },
+          data: labelColumn.data,
+        });
+      } else {
+        labelColumns.push(labelColumn);
       }
+      unlabeledAxes.splice(labelMatch, 1);
     }
   }
-
-  return [...labelColumns.values()];
+  return labelColumns;
 }
 
 /** Check if all columns are computed */
