@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 4.2.3
+
+### Patch Changes
+
+- 8f9a534: Fix for undefined annotations in anchored query
+
 ## 4.2.2
 
 ### Patch Changes
