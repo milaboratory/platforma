@@ -24,6 +24,7 @@ jobs:
       build-script-name: 'build'
       test: true
       test-script-name: 'test:no-cache'
+      test-skip-dry-run: 'true'
       publish-to-public: 'true'
       pnpm-recursive-build: false
       pnpm-recursive-tests: false
