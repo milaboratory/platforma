@@ -33,6 +33,7 @@ jobs:
       publish-to-public: 'true'
       pnpm-recursive-build: false
       pnpm-recursive-tests: false
+      aws-region: 'us-east-1'
       npmrc-config: |
         {
           "registries": {
