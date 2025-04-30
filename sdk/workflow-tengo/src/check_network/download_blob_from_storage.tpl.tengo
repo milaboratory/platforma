@@ -4,7 +4,8 @@ self := import(":tpl")
 file := import(":file")
 
 self.body(func(inputs) {
+	result := file.importFile(inputs.file)
 	return {
-		file: file.exportFile(inputs.file)
+		file: file.exportFile(result.file)
 	}
 })

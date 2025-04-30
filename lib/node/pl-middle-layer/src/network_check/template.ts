@@ -5,7 +5,7 @@ import { Templates as SdkTemplates } from '@platforma-sdk/workflow-tengo';
 import type { TemplateSpecAny } from '../model/template_spec';
 import { loadTemplate, prepareTemplateSpec } from '../mutator/template/template_loading';
 import type { ClientDownload, LsDriver } from '@milaboratories/pl-drivers';
-import { ImportFileHandleUploadData, uploadBlob, type ClientUpload } from '@milaboratories/pl-drivers';
+import { ImportFileHandleUploadData, uploadBlob, type ClientUpload, type LsEntryWithAdditionalInfo } from '@milaboratories/pl-drivers';
 import { notEmpty, type MiLogger } from '@milaboratories/ts-helpers';
 import type { ResourceInfo } from '@milaboratories/pl-tree';
 import { text } from 'node:stream/consumers';
@@ -13,6 +13,7 @@ import path from 'node:path';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import { randomBytes } from 'node:crypto';
+import type { StorageEntry } from '@milaboratories/pl-model-common';
 
 export interface TemplateReport {
   ok: boolean;
@@ -240,6 +241,104 @@ export async function runPythonSoftware(pl: PlClient, name: string): Promise<str
     return notEmpty((await getFieldValue(pl, result.greeting)).data?.toString());
   } finally {
     await deleteFields(pl, Object.values(result));
+  }
+}
+
+/** Tries to download a file from every storage. */
+export async function downloadFromEveryStorage(
+  logger: MiLogger,
+  pl: PlClient,
+  lsDriver: LsDriver,
+  downloadClient: ClientDownload,
+  ops: {
+    bytesLimit: number;
+    minFileSize: number;
+    maxFileSize: number;
+    nFilesToCheck: number;
+  },
+): Promise<Record<string, TemplateReport>> {
+  const storages = await lsDriver.getStorageList();
+  const results: Record<string, TemplateReport> = {};
+
+  for (const storage of storages) {
+    const result = await chooseFile(lsDriver, storage, ops.nFilesToCheck, { minSize: ops.minFileSize, maxSize: ops.maxFileSize });
+    if (!result) {
+      results[storage.name] = { ok: false, message: `No file found in storage ${storage.name}` };
+      continue;
+    }
+
+    logger.info(`Downloading file ${result.fullPath} from storage ${storage.name}`);
+    const outputs = await runTemplate(
+      pl,
+      SdkTemplates['check_network.download_blob_from_storage'],
+      true,
+      (tx) => ({ file: tx.createValue(Pl.JsonObject, JSON.stringify((result as { handle: string }).handle)) }),
+      ['file'],
+    );
+
+    try {
+      const fileInfo = await getFieldValue(pl, outputs.file);
+      const { size } = await downloadClient.downloadBlob(fileInfo, undefined, undefined, `bytes=0-${ops.bytesLimit}`);
+
+      results[storage.name] = { ok: true, message: `File downloading succeeded: size: ${size}` };
+    } finally {
+      await deleteFields(pl, Object.values(outputs));
+    }
+  }
+
+  return results;
+}
+
+/** Chooses a random file from the storage in a size range.
+ * If we couldn't find a normal-sized file, we'll return a small file to check at least something.
+ */
+export async function chooseFile(
+  lsDriver: LsDriver,
+  storage: StorageEntry,
+  limit: number,
+  ops: {
+    minSize: number;
+    maxSize: number;
+  },
+): Promise<LsEntryWithAdditionalInfo | undefined> {
+  const files = listFilesSequence(lsDriver, storage, '');
+
+  let i = 0;
+
+  // return small file in case we don't have many normal-sized files.
+  // While we'll download only a small range of bytes from the file,
+  // we don't want to return a big file in case the underlying S3 doesn't support range requests.
+  let smallFile: LsEntryWithAdditionalInfo | undefined;
+  for await (const file of files) {
+    if (i >= limit) {
+      return smallFile;
+    }
+    i++;
+    if (file.size < ops.minSize) {
+      smallFile = file;
+    }
+    if (ops.minSize <= file.size && file.size <= ops.maxSize) {
+      return file;
+    }
+  }
+
+  return smallFile;
+}
+
+/** Deep-first search for files in the storage. */
+export async function* listFilesSequence(
+  lsDriver: LsDriver,
+  storage: StorageEntry,
+  parent: string,
+): AsyncGenerator<LsEntryWithAdditionalInfo, void, unknown> {
+  const files = await lsDriver.listRemoteFilesWithSizes(storage.handle, parent);
+
+  for (const file of files.entries) {
+    if (file.type === 'file' && file.fullPath.startsWith(parent)) {
+      yield file;
+    } else if (file.type === 'dir') {
+      yield * listFilesSequence(lsDriver, storage, file.fullPath);
+    }
   }
 }
 

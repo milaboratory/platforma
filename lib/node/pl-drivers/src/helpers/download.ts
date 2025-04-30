@@ -39,7 +39,7 @@ export class RemoteFileDownloader {
 }
 
 async function checkStatusCodeOk(statusCode: number, webBody: ReadableStream, url: string) {
-  if (statusCode != 200) {
+  if (statusCode != 200 && statusCode != 206 /* partial content from range request */) {
     const beginning = (await text(webBody)).substring(0, 1000);
 
     if (400 <= statusCode && statusCode < 500) {
