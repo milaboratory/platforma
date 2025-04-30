@@ -352,7 +352,9 @@ createSpecDistiller := func(specs) {
 	distillEntity := func(entity, entityName) {
 		result := maps.clone(entity)
 
-		delete(result, "annotations")
+		if !is_undefined(result.annotations) {
+			delete(result, "annotations")
+		}
 
 		// Filter domains
 		filteredDomain := filterDomain(result.domain, entityName)
