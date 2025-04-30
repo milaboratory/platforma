@@ -228,6 +228,5 @@ tplTest(
       .awaitStableValue();
 
     expect(out).toBe('4{2}');
-    expect(true).eq(true);  
   },
 );
