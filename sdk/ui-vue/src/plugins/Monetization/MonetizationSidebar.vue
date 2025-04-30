@@ -52,14 +52,20 @@ const options = computed(() => {
 
 const statusText = computed(() => {
   switch (status.value) {
+    case 'active':
+      return '';
     case 'limits_exceeded':
       return 'Usage limits exceeded for the current billing period.';
     case 'payment_required':
       return 'Payment required to continue using the service.';
     case 'select-tariff':
       return 'Select a subscription plan in the Scientist Cabinet.';
+    case 'inactive':
+      return 'Not found billing period.';
+    case 'awaiting':
+      return 'Waiting for monetization information';
     default:
-      return '';
+      return 'Unknown status: ' + status.value;
   }
 });
 
