@@ -40,18 +40,23 @@ export class ClientDownload {
 
   close() {}
 
+  /** Gets a presign URL and downloads the file.
+   * An optional range in a format of 'HTTP Range' header can be provided if it's a remote downloading.
+   * If it's local file reading, range is ignored, but it could be changed if needed.
+   * Range format examples: https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Range#examples */
   async downloadBlob(
     info: ResourceInfo,
     options?: RpcOptions,
     signal?: AbortSignal,
+    range?: string,
   ): Promise<DownloadResponse> {
     const { downloadUrl, headers } = await this.grpcGetDownloadUrl(info, options, signal);
 
-    this.logger.info(`download blob from url ${downloadUrl}`);
+    this.logger.info(`download blob from url ${downloadUrl}, headers: ${JSON.stringify(headers)}`);
 
     return isLocal(downloadUrl)
       ? await this.readLocalFile(downloadUrl)
-      : await this.remoteFileDownloader.download(downloadUrl, toHeadersMap(headers), signal);
+      : await this.remoteFileDownloader.download(downloadUrl, toHeadersMap(headers, range), signal);
   }
 
   async readLocalFile(url: string): Promise<DownloadResponse> {

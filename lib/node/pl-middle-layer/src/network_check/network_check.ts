@@ -29,7 +29,7 @@ import type { HttpNetworkReport, NetworkReport } from './pings';
 import { autoUpdateCdnPings, backendPings, blockGARegistryOverviewPings, blockGARegistryUiPings, blockRegistryOverviewPings, blockRegistryUiPings, reportToString } from './pings';
 import type { Dispatcher } from 'undici';
 import type { TemplateReport } from './template';
-import { uploadTemplate, uploadFile, downloadFile, createTempFile, pythonSoftware, softwareCheck, createBigTempFile } from './template';
+import { uploadTemplate, uploadFile, downloadFile, createTempFile, pythonSoftware, softwareCheck, createBigTempFile, downloadFromEveryStorage } from './template';
 
 /** All reports we need to collect. */
 interface NetworkReports {
@@ -47,6 +47,7 @@ interface NetworkReports {
   downloadFileCheck: TemplateReport;
   softwareCheck: TemplateReport;
   pythonSoftwareCheck: TemplateReport;
+  storageToDownloadReport: Record<string, TemplateReport>;
 }
 
 export interface CheckNetworkOpts {
@@ -71,7 +72,17 @@ export interface CheckNetworkOpts {
   maxAutoUpdateCdnChecksPerSecond: number;
   autoUpdateCdnUrl: string;
 
+  /** Body limit for requests. */
   bodyLimit: number;
+
+  /** Limit for the size of files to download from every storage. */
+  everyStorageBytesLimit: number;
+  /** Minimal size of files to download from every storage. */
+  everyStorageMinFileSize: number;
+  /** Maximal size of files to download from every storage. */
+  everyStorageMaxFileSize: number;
+  /** How many files to download from every storage. */
+  everyStorageNFilesToCheck: number;
 }
 
 /** Checks connectivity to Platforma Backend, to block registry
@@ -140,6 +151,18 @@ export async function checkNetwork(
     downloadFileCheck: await downloadFile(logger, client, lsDriver, uploadBlobClient, downloadClient, filePathToDownload, fileContentToDownload),
     softwareCheck: await softwareCheck(client),
     pythonSoftwareCheck: await pythonSoftware(client, 'Jack'),
+    storageToDownloadReport: await downloadFromEveryStorage(
+      logger,
+      client,
+      lsDriver,
+      downloadClient,
+      {
+        bytesLimit: ops.everyStorageBytesLimit,
+        minFileSize: ops.everyStorageMinFileSize,
+        maxFileSize: ops.everyStorageMaxFileSize,
+        nFilesToCheck: ops.everyStorageNFilesToCheck,
+      },
+    ),
   };
 
   return reportsToString(report, plCredentials, ops, undiciLogs);
@@ -183,6 +206,10 @@ export async function initNetworkCheck(
 
     bodyLimit: 300,
 
+    everyStorageBytesLimit: 1024,
+    everyStorageMinFileSize: 1024,
+    everyStorageMaxFileSize: 10 * 1024 * 1024,
+    everyStorageNFilesToCheck: 100,
     ...optsOverrides,
   };
 
@@ -265,6 +292,8 @@ function reportsToString(
     ...new Set(successPings.map((p) => JSON.stringify((p.response as any).value))),
   ];
 
+  const summary = (ok: boolean) => ok ? 'OK' : 'FAILED';
+
   const pings = reportToString(report.plPings);
   const blockRegistryOverview = reportToString(report.blockRegistryOverviewChecks);
   const blockGARegistryOverview = reportToString(report.blockGARegistryOverviewChecks);
@@ -272,7 +301,8 @@ function reportsToString(
   const blockGARegistryUi = reportToString(report.blockGARegistryUiChecks);
   const autoUpdateCdn = reportToString(report.autoUpdateCdnChecks);
 
-  const summary = (ok: boolean) => ok ? 'OK' : 'FAILED';
+  const storagesSummary = Object.entries(report.storageToDownloadReport)
+    .map(([storage, report]) => `${summary(report.ok)} ${storage} storage check`).join('\n');
 
   return `
 Network report:
@@ -290,6 +320,7 @@ ${summary(report.uploadFileCheck.ok)} upload file
 ${summary(report.downloadFileCheck.ok)} download file
 ${summary(report.softwareCheck.ok)} software check
 ${summary(report.pythonSoftwareCheck.ok)} python software check
+${storagesSummary}
 
 details:
 options: ${JSON.stringify(opts, null, 2)}.
@@ -313,6 +344,8 @@ Block registry ui responses: ${blockRegistryUi.details}
 Block ga registry ui responses: ${blockGARegistryUi.details}
 
 Auto-update CDN responses: ${autoUpdateCdn.details}
+
+Storage to download responses: ${JSON.stringify(report.storageToDownloadReport, null, 2)}
 
 dumps:
 Block registry overview dumps:

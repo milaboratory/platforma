@@ -42,7 +42,18 @@ export interface InternalLsDriver extends sdk.LsDriver {
    * To be used in tests and in implementation of the native file selection UI API.
    * */
   getLocalFileHandle(localPath: string): Promise<sdk.LocalImportFileHandle>;
+
+  listRemoteFilesWithSizes(storage: sdk.StorageHandle, fullPath: string): Promise<ListRemoteFilesResultWithAdditionalInfo>;
 }
+
+export type ListRemoteFilesResultWithAdditionalInfo = {
+  parent?: string;
+  entries: LsEntryWithAdditionalInfo[];
+};
+
+export type LsEntryWithAdditionalInfo = LsEntry & {
+  size: number;
+};
 
 export type OpenFileDialogCallback = (
   multipleFiles: boolean,
@@ -229,6 +240,28 @@ export class LsDriver implements InternalLsDriver {
     }
 
     return { entries };
+  }
+
+  public async listRemoteFilesWithSizes(
+    storageHandle: sdk.StorageHandle,
+    fullPath: string,
+  ): Promise<ListRemoteFilesResultWithAdditionalInfo> {
+    const storageData = parseStorageHandle(storageHandle);
+    if (!storageData.isRemote) {
+      throw new Error(`Storage ${storageData.name} is not remote`);
+    }
+
+    const response = await this.lsClient.list(storageData, fullPath);
+
+    return {
+      entries: response.items.map((e) => ({
+        type: e.isDir ? 'dir' : 'file',
+        name: e.name,
+        fullPath: e.fullName,
+        handle: createIndexImportHandle(storageData.name, e.fullName),
+        size: Number(e.size),
+      })),
+    };
   }
 
   public async fileToImportHandle(file: sdk.FileLike): Promise<sdk.ImportFileHandle> {

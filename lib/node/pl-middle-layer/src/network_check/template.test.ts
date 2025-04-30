@@ -1,4 +1,4 @@
-import { createBigTempFile, runDownloadFile, runPythonSoftware, runSoftware, runUploadFile, runUploadTemplate } from './template';
+import { createBigTempFile, downloadFromEveryStorage, runDownloadFile, runPythonSoftware, runSoftware, runUploadFile, runUploadTemplate } from './template';
 import { initNetworkCheck } from './network_check';
 import { testCredentials } from './test_utils';
 import { test, expect } from 'vitest';
@@ -78,6 +78,26 @@ test('check runPythonSoftware', async () => {
   const greeting = await runPythonSoftware(client, 'John');
 
   expect(greeting).toBe('Hello, John!\n');
+
+  await terminate();
+});
+
+test('check downloadFromEveryStorage', async () => {
+  const { plEndpoint, plUser, plPassword } = testCredentials();
+  const { logger, client, lsDriver, downloadClient, terminate } = await initNetworkCheck(plEndpoint, plUser, plPassword);
+
+  const storages = await downloadFromEveryStorage(logger, client, lsDriver, downloadClient, {
+    bytesLimit: 1024,
+    minFileSize: 1024,
+    maxFileSize: 10 * 1024 * 1024,
+    nFilesToCheck: 100,
+  });
+
+  expect(storages).toBeDefined();
+  expect(Object.keys(storages).length).toBeGreaterThan(0);
+  expect(Object.entries(storages).every(([_, report]) => report.ok)).toBe(true);
+
+  console.log(JSON.stringify(storages, null, 2));
 
   await terminate();
 });
