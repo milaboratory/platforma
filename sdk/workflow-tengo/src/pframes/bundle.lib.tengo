@@ -34,8 +34,12 @@ strings := import(":strings")
  *   addAnchor(anchorId, ref)
  *     - Adds an anchor with the given ID and reference to be resolved
  *
- *   addSingle(id, ...queryKey)
+ *   addSingle(id, ...queryKey, ...ops)
  *     - Adds a single PColumn to the bundle collector by its UniversalPColumnId.
+ *       @param query: The query
+ *       @param queryKey: string (optional) - The key to store and retrieve the query result.
+ *       @param ops: object (optional) - Options, can include:
+ *         - overrides: object - Override the query
  *
  *   addById(id)
  *     - Adds a PColumn to the bundle collector by UniversalPColumnId.
@@ -44,10 +48,14 @@ strings := import(":strings")
  *         - string: A SUniversalPColumnId (canonically serialized UniversalPColumnId)
  *         - object: Either a standard AnchoredPColumnId or a FilteredPColumnId with source and axisFilters
  *
- *   addMulti(query, ...queryKey)
+ *   addMulti(query, ...queryKey, ...ops)
  *     - Adds a query to the bundle collector.
+ *       @param query: AnchoredPColumnSelector - The query
+ *       @param queryKey: string (optional) - The key to store and retrieve the query result.
+ *       @param ops: object (optional) - Options, can include:
+ *         - overrides: object - Override the query
  *
- *   addQuery(query, ...queryKey)
+ *   addQuery(query, ...queryKey, ...ops)
  *     - Adds a query to the bundle collector.
  *
  *   build()
@@ -75,8 +83,8 @@ createBuilder := func(ctx) {
 		ignoreMissingDomains: false
 	}
 
-	addSingleInner := func(id, ...queryKey) {
-		ll.assert(len(queryKey) <= 1, "addSingle accepts at most one optional queryKey argument")
+	addSingleInner := func(id, ...ops) {
+		ll.assert(len(ops) <= 2, "addSingle accepts at most two optional arguments")
 
 		decodedId := undefined
 		if is_string(id) {
@@ -87,8 +95,31 @@ createBuilder := func(ctx) {
 			ll.panic("Invalid column ID type. Expected string or object.")
 		}
 
+		queryKey := undefined
+		if len(ops) > 0 {
+			if !is_string(ops[0]) {
+				ll.panic("Invalid queryKey type. Expected single string option, got ", ops[0])
+			}
+			queryKey = ops[0]
+		}
+
+		if len(ops) == 2 {
+			if !is_map(ops[1]) {
+				ll.panic("Invalid options type. Expected map got ", ops[1])
+			}
+			if !is_undefined(ops[1].overrides) {
+				// override id
+				decodedId = maps.deepMerge(decodedId, ops[1].overrides)
+			}
+		}
+
+		queryOpts := undefined
+		if len(ops) > 1 {
+			queryOpts = ops[1]
+		}
+
 		isFiltered := is_map(decodedId) && !is_undefined(decodedId.source) && !is_undefined(decodedId.axisFilters)
-		if isFiltered && len(queryKey) > 0 {
+		if isFiltered && !is_undefined(queryKey) {
 			ll.panic("FilteredPColumnId cannot be used with a queryKey.")
 		}
 
@@ -104,24 +135,55 @@ createBuilder := func(ctx) {
 		}
 
 		keyToUse := defaultKey
-		if len(queryKey) == 1 {
-			keyToUse = queryKey[0]
+		if !is_undefined(queryKey) {
+			keyToUse = queryKey
 		}
 
 		queries[keyToUse] = valueToStore
 	}
 
-	addMultiInner := func(query, ...queryKey) {
-		ll.assert(len(queryKey) <= 1, "addMulti accepts at most one optional queryKey argument")
+	addMultiInner := func(query, ...ops) {
+		ll.assert(len(ops) <= 2, "addMulti accepts at most two optional arguments")
 
+		decodedQuery := undefined
+		if is_string(query) {
+			decodedQuery = json.decode(query)
+		} else if is_map(query) {
+			decodedQuery = query
+		} else {
+			ll.panic("Invalid query type. Expected string or object.")
+		}
+
+		queryKey := undefined
+		if len(ops) > 0 {
+			if !is_string(ops[0]) {
+				ll.panic("Invalid queryKey type. Expected single string option, got ", ops[0])
+			}
+			queryKey = ops[0]
+		}
+
+		if len(ops) == 2 {
+			if !is_map(ops[1]) {
+				ll.panic("Invalid options type. Expected map got ", ops[1])
+			}
+			if !is_undefined(ops[1].overrides) {
+				
+				// apply overrides
+				decodedQuery = maps.deepMerge(decodedQuery, ops[1].overrides)
+			}
+		}
+
+		// Default to expectMultiple match strategy for multi-column queries
+		decodedQuery.matchStrategy = "expectMultiple"
+		
 		keyToUse := undefined
-		if len(queryKey) == 1 {
-			keyToUse = queryKey[0]
+		if !is_undefined(queryKey) {
+			keyToUse = queryKey
 		} else {
 			keyToUse = canonical.encode(query)
 		}
 
-		queries[keyToUse] = query
+		queries[keyToUse] = decodedQuery
 	}
 
 	self := undefined
@@ -314,9 +376,24 @@ pColumnBundleUnmarshaller := func() {
 
 				result := bResultUnmarshaller.parse(value.getValue(), parser)
 
-				pool[resultKey] = {
-					spec: result.spec,
-					data: result.data
+				if is_array(result) {
+					arr := []
+					for i, r in result {
+						k := resultKey + string(i)
+						el := {
+							key: k,
+							spec: r.spec,
+							data: r.data
+						}
+						pool[k] = el 
+						arr = append(arr, el)
+					}
+					pool[resultKey] = arr
+				} else {
+					pool[resultKey] = {
+						spec: result.spec,
+						data: result.data
+					}
 				}
 			}
 
@@ -325,22 +402,46 @@ pColumnBundleUnmarshaller := func() {
 			//   [{ name: string, domain: {[domainKey: string]: string} }, header: string]
 			axisHeaderOverrides := []
 
+			get := func(resultKey) {
+				if !is_string(resultKey) {
+					resultKey = canonical.encode(resultKey)
+				}
+
+				result := pool[resultKey]
+				if is_undefined(result) {
+					ll.panic("Column not found: %v. Pool: %v", resultKey, maps.getKeys(pool))
+				}
+
+				return result
+			}
+
 			bundle := undefined
 			bundle = ll.toStrict({
+
+				/**
+				 * Gets a specific column or a list of columns (from addMulti) by its ID
+				 * @param resultKey - The ID of the column(s) to retrieve
+				 * @returns The column object with its spec, data or an array of column objects with their spec, data and key used to retrieve them from the bundle
+				 */
+				getColumns: func(resultKey) {
+					result := get(resultKey)
+					if !is_array(result) {
+						ll.panic("Expected a multi-column result, got a single column: %v. User getColumn() instead.", resultKey)
+					}
+					return result
+				},
+
 				/**
 				 * Gets a specific column by its ID
 				 * @param resultKey - The ID of the column to retrieve
 				 * @returns The column object with its spec, data
 				 */
 				getColumn: func(resultKey) {
-					if !is_string(resultKey) {
-						resultKey = canonical.encode(resultKey)
+					result := get(resultKey)
+					if is_array(result) {
+						ll.panic("Cannot get a single column from a multi-column result: %v. Use getColumns() instead.", resultKey)
 					}
-
-					if is_undefined(pool[resultKey]) {
-						ll.panic("Column not found: " + resultKey)
-					}
-					return pool[resultKey]
+					return result
 				},
 
 				/**
@@ -358,7 +459,12 @@ pColumnBundleUnmarshaller := func() {
 						ll.panic("Column not found in bundle: " + columnKey)
 					}
 
-					baseSpec := pool[columnKey].spec
+					result := pool[columnKey]
+					if is_array(result) {
+						ll.panic("Cannot get a single column from a multi-column result: " + columnKey + ". Use get() instead.")
+					}
+					
+					baseSpec := result.spec
 
 					// If filters are present, prepare them and get the resulting spec
 					if !is_undefined(columnAxisFilters) && len(columnAxisFilters) > 0 {
