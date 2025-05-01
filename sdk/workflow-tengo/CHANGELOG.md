@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 4.3.0
+
+### Minor Changes
+
+- 56df55f: Added API to work with bundle.addMulti()
+
 ## 4.2.3
 
 ### Patch Changes
