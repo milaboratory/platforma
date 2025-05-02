@@ -25,7 +25,7 @@ export const TraceEntry = z.object({
   label: z.string(),
 });
 export type TraceEntry = z.infer<typeof TraceEntry>;
-type FullTraceEntry = TraceEntry & { fullType: string; occurenceIndex: number };
+type FullTraceEntry = TraceEntry & { fullType: string; occurrenceIndex: number };
 
 export const Trace = z.array(TraceEntry);
 export type Trace = z.infer<typeof Trace>;
@@ -50,7 +50,7 @@ export function deriveLabels<T>(
 ): RecordsWithLabel<T>[] {
   const importances = new Map<string, number>();
 
-  // number of times certain type occured among all of the
+  // number of times certain type occurred among all of the
   const numberOfRecordsWithType = new Map<string, number>();
 
   const enrichedRecords = values.map((value) => {
@@ -88,13 +88,13 @@ export function deriveLabels<T>(
 
     const fullTrace: FullTrace = [];
 
-    const occurences = new Map<string, number>();
+    const occurrences = new Map<string, number>();
     for (let i = trace.length - 1; i >= 0; --i) {
       const { type: typeName } = trace[i];
       const importance = trace[i].importance ?? 0;
-      const occurenceIndex = (occurences.get(typeName) ?? 0) + 1;
-      occurences.set(typeName, occurenceIndex);
-      const fullType = `${typeName}@${occurenceIndex}`;
+      const occurrenceIndex = (occurrences.get(typeName) ?? 0) + 1;
+      occurrences.set(typeName, occurrenceIndex);
+      const fullType = `${typeName}@${occurrenceIndex}`;
       numberOfRecordsWithType.set(fullType, (numberOfRecordsWithType.get(fullType) ?? 0) + 1);
       importances.set(
         fullType,
@@ -103,7 +103,7 @@ export function deriveLabels<T>(
           importance - (trace.length - i) * DistancePenalty,
         ),
       );
-      fullTrace.push({ ...trace[i], fullType, occurenceIndex });
+      fullTrace.push({ ...trace[i], fullType, occurrenceIndex: occurrenceIndex });
     }
     fullTrace.reverse();
     return {
@@ -160,27 +160,27 @@ export function deriveLabels<T>(
   // *  *
   // T0 T1 T2 T3 T4 T5
   //          *
-  // additinalType = 3
+  // additionalType = 3
   //
   // Resulting set: T0, T1, T3
   //
   let includedTypes = 0;
-  let additinalType = 0;
+  let additionalType = 0;
   while (includedTypes < mainTypes.length) {
     const currentSet = new Set<string>();
     if (ops.includeNativeLabel) currentSet.add(LabelTypeFull);
     for (let i = 0; i < includedTypes; ++i) currentSet.add(mainTypes[i]);
-    currentSet.add(mainTypes[additinalType]);
+    currentSet.add(mainTypes[additionalType]);
 
     const candidateResult = calculate(currentSet);
 
     // checking if labels uniquely separate our records
     if (candidateResult !== undefined && new Set(candidateResult.map((c) => c.label)).size === values.length) return candidateResult;
 
-    additinalType++;
-    if (additinalType >= mainTypes.length) {
+    additionalType++;
+    if (additionalType >= mainTypes.length) {
       includedTypes++;
-      additinalType = includedTypes;
+      additionalType = includedTypes;
     }
   }
 
