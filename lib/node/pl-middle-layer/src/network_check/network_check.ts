@@ -79,8 +79,6 @@ export interface CheckNetworkOpts {
   everyStorageBytesLimit: number;
   /** Minimal size of files to download from every storage. */
   everyStorageMinFileSize: number;
-  /** Maximal size of files to download from every storage. */
-  everyStorageMaxFileSize: number;
   /** How many files to download from every storage. */
   everyStorageNFilesToCheck: number;
 }
@@ -159,7 +157,6 @@ export async function checkNetwork(
       {
         bytesLimit: ops.everyStorageBytesLimit,
         minFileSize: ops.everyStorageMinFileSize,
-        maxFileSize: ops.everyStorageMaxFileSize,
         nFilesToCheck: ops.everyStorageNFilesToCheck,
       },
     ),
@@ -208,7 +205,6 @@ export async function initNetworkCheck(
 
     everyStorageBytesLimit: 1024,
     everyStorageMinFileSize: 1024,
-    everyStorageMaxFileSize: 10 * 1024 * 1024,
     everyStorageNFilesToCheck: 100,
     ...optsOverrides,
   };

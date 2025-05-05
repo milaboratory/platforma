@@ -1,7 +1,11 @@
-export function toHeadersMap(headers: { name: string; value: string }[], range?: string): Record<string, string> {
+export function toHeadersMap(
+  headers: { name: string; value: string }[],
+  fromBytes?: number,
+  toBytes?: number,
+): Record<string, string> {
   const result = Object.fromEntries(headers.map(({ name, value }) => [name, value]));
-  if (range) {
-    result['Range'] = range;
+  if (fromBytes !== undefined && toBytes !== undefined) {
+    result['Range'] = `bytes=${fromBytes}-${toBytes}`;
   }
 
   return result;

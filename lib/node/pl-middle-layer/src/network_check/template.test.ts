@@ -89,7 +89,6 @@ test('check downloadFromEveryStorage', async () => {
   const storages = await downloadFromEveryStorage(logger, client, lsDriver, downloadClient, {
     bytesLimit: 1024,
     minFileSize: 1024,
-    maxFileSize: 10 * 1024 * 1024,
     nFilesToCheck: 100,
   });
 

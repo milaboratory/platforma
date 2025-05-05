@@ -43,7 +43,7 @@ export interface InternalLsDriver extends sdk.LsDriver {
    * */
   getLocalFileHandle(localPath: string): Promise<sdk.LocalImportFileHandle>;
 
-  listRemoteFilesWithSizes(storage: sdk.StorageHandle, fullPath: string): Promise<ListRemoteFilesResultWithAdditionalInfo>;
+  listRemoteFilesWithAdditionalInfo(storage: sdk.StorageHandle, fullPath: string): Promise<ListRemoteFilesResultWithAdditionalInfo>;
 }
 
 export type ListRemoteFilesResultWithAdditionalInfo = {
@@ -242,7 +242,7 @@ export class LsDriver implements InternalLsDriver {
     return { entries };
   }
 
-  public async listRemoteFilesWithSizes(
+  public async listRemoteFilesWithAdditionalInfo(
     storageHandle: sdk.StorageHandle,
     fullPath: string,
   ): Promise<ListRemoteFilesResultWithAdditionalInfo> {

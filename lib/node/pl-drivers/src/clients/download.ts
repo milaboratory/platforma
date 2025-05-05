@@ -41,30 +41,34 @@ export class ClientDownload {
   close() {}
 
   /** Gets a presign URL and downloads the file.
-   * An optional range in a format of 'HTTP Range' header can be provided if it's a remote downloading.
-   * If it's local file reading, range is ignored, but it could be changed if needed.
-   * Range format examples: https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Range#examples */
+   * An optional range with 2 numbers from what byte and to what byte to download can be provided. */
   async downloadBlob(
     info: ResourceInfo,
     options?: RpcOptions,
     signal?: AbortSignal,
-    range?: string,
+    fromBytes?: number,
+    toBytes?: number,
   ): Promise<DownloadResponse> {
     const { downloadUrl, headers } = await this.grpcGetDownloadUrl(info, options, signal);
 
-    this.logger.info(`download blob from url ${downloadUrl}, headers: ${JSON.stringify(headers)}`);
+    const remoteHeaders = toHeadersMap(headers, fromBytes, toBytes);
+    this.logger.info(`download blob from url ${downloadUrl}, headers: ${JSON.stringify(remoteHeaders)}`);
 
     return isLocal(downloadUrl)
-      ? await this.readLocalFile(downloadUrl)
-      : await this.remoteFileDownloader.download(downloadUrl, toHeadersMap(headers, range), signal);
+      ? await this.readLocalFile(downloadUrl, fromBytes, toBytes)
+      : await this.remoteFileDownloader.download(downloadUrl, remoteHeaders, signal);
   }
 
-  async readLocalFile(url: string): Promise<DownloadResponse> {
+  async readLocalFile(
+    url: string,
+    fromBytes?: number,
+    toBytes?: number,
+  ): Promise<DownloadResponse> {
     const { storageId, relativePath } = parseLocalUrl(url);
     const fullPath = getFullPath(storageId, this.localStorageIdsToRoot, relativePath);
 
     return {
-      content: Readable.toWeb(fs.createReadStream(fullPath)),
+      content: Readable.toWeb(fs.createReadStream(fullPath, { start: fromBytes, end: toBytes })),
       size: (await fsp.stat(fullPath)).size,
     };
   }
