@@ -1,5 +1,13 @@
 # @platforma-sdk/ui-vue
 
+## 1.30.15
+
+### Patch Changes
+
+- 959fe5c: update autocomplete behavior
+- Updated dependencies [959fe5c]
+  - @milaboratories/uikit@2.2.73
+
 ## 1.30.13
 
 ### Patch Changes
