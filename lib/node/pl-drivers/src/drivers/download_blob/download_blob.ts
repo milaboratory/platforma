@@ -39,23 +39,23 @@ import * as path from 'node:path';
 import * as readline from 'node:readline/promises';
 import { Readable, Writable } from 'node:stream';
 import { buffer } from 'node:stream/consumers';
-import type { ClientDownload } from '../clients/download';
-import type { ClientLogs } from '../clients/logs';
+import type { ClientDownload } from '../../clients/download';
+import type { ClientLogs } from '../../clients/logs';
 import { DownloadBlobTask, nonRecoverableError } from './download_blob_task';
-import { FilesCache } from './helpers/files_cache';
+import { FilesCache } from '../helpers/files_cache';
 import {
   isLocalBlobHandle,
   newLocalHandle,
   parseLocalHandle,
-} from './helpers/download_local_handle';
-import { getSize, OnDemandBlobResourceSnapshot } from './types';
+} from '../helpers/download_local_handle';
+import { getSize, OnDemandBlobResourceSnapshot } from '../types';
 import {
   isRemoteBlobHandle,
   newRemoteHandle,
   parseRemoteHandle,
-} from './helpers/download_remote_handle';
-import { getResourceInfoFromLogHandle, newLogHandle } from './helpers/logs_handle';
-import { Updater, WrongResourceTypeError } from './helpers/helpers';
+} from '../helpers/download_remote_handle';
+import { getResourceInfoFromLogHandle, newLogHandle } from '../helpers/logs_handle';
+import { Updater, WrongResourceTypeError } from '../helpers/helpers';
 
 export type DownloadDriverOps = {
   /**
@@ -74,8 +74,8 @@ export type DownloadDriverOps = {
 /** DownloadDriver holds a queue of downloading tasks,
  * and notifies every watcher when a file were downloaded. */
 export class DownloadDriver implements BlobDriver {
-  /** Represents a Resource Id to the path of a blob as a map. */
-  private idToDownload: Map<ResourceId, DownloadBlobTask> = new Map();
+  /** Represents a unique key to the path of a blob as a map. */
+  private idToDownload: Map<string, DownloadBlobTask> = new Map();
 
   /** Writes and removes files to a hard drive and holds a counter for every
    * file that should be kept. */
@@ -84,10 +84,10 @@ export class DownloadDriver implements BlobDriver {
   /** Downloads files and writes them to the local dir. */
   private downloadQueue: TaskProcessor;
 
-  private idToOnDemand: Map<ResourceId, OnDemandBlobHolder> = new Map();
+  private idToOnDemand: Map<string, OnDemandBlobHolder> = new Map();
 
-  private idToLastLines: Map<ResourceId, LastLinesGetter> = new Map();
-  private idToProgressLog: Map<ResourceId, LastLinesGetter> = new Map();
+  private idToLastLines: Map<string, LastLinesGetter> = new Map();
+  private idToProgressLog: Map<string, LastLinesGetter> = new Map();
 
   private readonly saveDir: string;
 
@@ -105,26 +105,36 @@ export class DownloadDriver implements BlobDriver {
     this.saveDir = path.resolve(saveDir);
   }
 
-  /** Gets a blob by its resource id or downloads a blob and sets it in a cache. */
+  /** Gets a blob or part of the blob by its resource id or downloads a blob and sets it in a cache. */
   public getDownloadedBlob(
     res: ResourceInfo | PlTreeEntry,
-    ctx: ComputableCtx
+    ctx: ComputableCtx,
+    fromBytes?: number,
+    toBytes?: number,
   ): LocalBlobHandleAndSize | undefined;
   public getDownloadedBlob(
-    res: ResourceInfo | PlTreeEntry
+    res: ResourceInfo | PlTreeEntry,
+    ctx?: undefined,
+    fromBytes?: number,
+    toBytes?: number,
   ): ComputableStableDefined<LocalBlobHandleAndSize>;
   public getDownloadedBlob(
     res: ResourceInfo | PlTreeEntry,
     ctx?: ComputableCtx,
+    fromBytes?: number,
+    toBytes?: number,
   ): Computable<LocalBlobHandleAndSize | undefined> | LocalBlobHandleAndSize | undefined {
-    if (ctx === undefined) return Computable.make((ctx) => this.getDownloadedBlob(res, ctx));
+    if (ctx === undefined) {
+      return Computable.make((ctx) => this.getDownloadedBlob(res, ctx, fromBytes, toBytes));
+    }
 
     const rInfo = treeEntryToResourceInfo(res, ctx);
+    const key = blobKey(rInfo.id, fromBytes, toBytes);
 
     const callerId = randomUUID();
-    ctx.addOnDestroy(() => this.releaseBlob(rInfo.id, callerId));
+    ctx.addOnDestroy(() => this.releaseBlob(key, callerId));
 
-    const result = this.getDownloadedBlobNoCtx(ctx.watcher, rInfo as ResourceSnapshot, callerId);
+    const result = this.getDownloadedBlobNoCtx(ctx.watcher, rInfo as ResourceSnapshot, callerId, fromBytes, toBytes);
     if (result == undefined) ctx.markUnstable('download blob is still undefined');
 
     return result;
@@ -134,10 +144,12 @@ export class DownloadDriver implements BlobDriver {
     w: Watcher,
     rInfo: ResourceSnapshot,
     callerId: string,
+    fromBytes?: number,
+    toBytes?: number,
   ): LocalBlobHandleAndSize | undefined {
     validateDownloadableResourceType('getDownloadedBlob', rInfo.type);
 
-    let task = this.idToDownload.get(rInfo.id);
+    let task = this.idToDownload.get(blobKey(rInfo.id, fromBytes, toBytes));
 
     if (task === undefined) {
       // schedule the blob downloading
@@ -156,8 +168,8 @@ export class DownloadDriver implements BlobDriver {
     throw result.result.error;
   }
 
-  private setNewDownloadTask(rInfo: ResourceSnapshot) {
-    const fPath = this.getFilePath(rInfo.id);
+  private setNewDownloadTask(rInfo: ResourceSnapshot, fromBytes?: number, toBytes?: number) {
+    const fPath = path.resolve(this.saveDir, blobKey(rInfo.id, fromBytes, toBytes));
     const result = new DownloadBlobTask(
       this.logger,
       this.clientDownload,
@@ -165,7 +177,7 @@ export class DownloadDriver implements BlobDriver {
       fPath,
       newLocalHandle(fPath, this.signer),
     );
-    this.idToDownload.set(rInfo.id, result);
+    this.idToDownload.set(blobKey(rInfo.id, fromBytes, toBytes), result);
 
     return result;
   }
@@ -212,11 +224,11 @@ export class DownloadDriver implements BlobDriver {
   ): RemoteBlobHandleAndSize {
     validateDownloadableResourceType('getOnDemandBlob', info.type);
 
-    let blob = this.idToOnDemand.get(info.id);
+    let blob = this.idToOnDemand.get(blobKey(info.id));
 
     if (blob === undefined) {
       blob = new OnDemandBlobHolder(getSize(info), newRemoteHandle(info, this.signer));
-      this.idToOnDemand.set(info.id, blob);
+      this.idToOnDemand.set(blobKey(info.id), blob);
     }
 
     blob.attach(callerId);
@@ -279,7 +291,7 @@ export class DownloadDriver implements BlobDriver {
 
     const r = treeEntryToResourceInfo(res, ctx);
     const callerId = randomUUID();
-    ctx.addOnDestroy(() => this.releaseBlob(r.id, callerId));
+    ctx.addOnDestroy(() => this.releaseBlob(blobKey(r.id), callerId));
 
     const result = this.getLastLogsNoCtx(ctx.watcher, r as ResourceSnapshot, lines, callerId);
     if (result == undefined)
@@ -300,11 +312,11 @@ export class DownloadDriver implements BlobDriver {
 
     const { path } = parseLocalHandle(blob.handle, this.signer);
 
-    let logGetter = this.idToLastLines.get(rInfo.id);
+    let logGetter = this.idToLastLines.get(blobKey(rInfo.id));
 
     if (logGetter == undefined) {
       const newLogGetter = new LastLinesGetter(path, lines);
-      this.idToLastLines.set(rInfo.id, newLogGetter);
+      this.idToLastLines.set(blobKey(rInfo.id), newLogGetter);
       logGetter = newLogGetter;
     }
 
@@ -335,7 +347,7 @@ export class DownloadDriver implements BlobDriver {
 
     const r = treeEntryToResourceInfo(res, ctx);
     const callerId = randomUUID();
-    ctx.addOnDestroy(() => this.releaseBlob(r.id, callerId));
+    ctx.addOnDestroy(() => this.releaseBlob(blobKey(r.id), callerId));
 
     const result = this.getProgressLogNoCtx(
       ctx.watcher,
@@ -361,11 +373,11 @@ export class DownloadDriver implements BlobDriver {
     if (blob == undefined) return undefined;
     const { path } = parseLocalHandle(blob.handle, this.signer);
 
-    let logGetter = this.idToProgressLog.get(rInfo.id);
+    let logGetter = this.idToProgressLog.get(blobKey(rInfo.id));
 
     if (logGetter == undefined) {
       const newLogGetter = new LastLinesGetter(path, 1, patternToSearch);
-      this.idToProgressLog.set(rInfo.id, newLogGetter);
+      this.idToProgressLog.set(blobKey(rInfo.id), newLogGetter);
 
       logGetter = newLogGetter;
     }
@@ -440,8 +452,8 @@ export class DownloadDriver implements BlobDriver {
     };
   }
 
-  private async releaseBlob(blobId: ResourceId, callerId: string) {
-    const task = this.idToDownload.get(blobId);
+  private async releaseBlob(blobKey: string, callerId: string) {
+    const task = this.idToDownload.get(blobKey);
     if (task == undefined) return;
 
     if (this.cache.existsFile(task.path)) {
@@ -474,14 +486,14 @@ export class DownloadDriver implements BlobDriver {
   private removeTask(task: DownloadBlobTask, reason: string) {
     task.abort(reason);
     task.change.markChanged();
-    this.idToDownload.delete(task.rInfo.id);
-    this.idToLastLines.delete(task.rInfo.id);
-    this.idToProgressLog.delete(task.rInfo.id);
+    this.idToDownload.delete(blobKey(task.rInfo.id));
+    this.idToLastLines.delete(blobKey(task.rInfo.id));
+    this.idToProgressLog.delete(blobKey(task.rInfo.id));
   }
 
   private async releaseOnDemandBlob(blobId: ResourceId, callerId: string) {
-    const deleted = this.idToOnDemand.get(blobId)?.release(callerId) ?? false;
-    if (deleted) this.idToOnDemand.delete(blobId);
+    const deleted = this.idToOnDemand.get(blobKey(blobId))?.release(callerId) ?? false;
+    if (deleted) this.idToOnDemand.delete(blobKey(blobId));
   }
 
   /** Removes all files from a hard drive. */
@@ -492,10 +504,6 @@ export class DownloadDriver implements BlobDriver {
       this.idToDownload.delete(blobId);
       task.change.markChanged();
     });
-  }
-
-  private getFilePath(rId: ResourceId): string {
-    return path.resolve(this.saveDir, String(BigInt(rId)));
   }
 }
 
@@ -609,4 +617,13 @@ function validateDownloadableResourceType(methodName: string, rType: ResourceTyp
 
     throw new WrongResourceTypeError(message);
   }
+}
+
+/** Returns a file name and the unique key of the file.*/
+function blobKey(rId: ResourceId, fromBytes?: number, toBytes?: number): string {
+  if (fromBytes !== undefined && toBytes !== undefined) {
+    return `${BigInt(rId)}_${fromBytes}-${toBytes}`;
+  }
+
+  return `${BigInt(rId)}`;
 }

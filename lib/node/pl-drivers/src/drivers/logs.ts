@@ -4,7 +4,7 @@ import type { PlTreeEntry, ResourceInfo } from '@milaboratories/pl-tree';
 import type { LogsStreamDriver } from './logs_stream';
 import type * as sdk from '@milaboratories/pl-model-common';
 import type { MiLogger } from '@milaboratories/ts-helpers';
-import type { DownloadDriver } from './download_blob';
+import type { DownloadDriver } from './download_blob/download_blob';
 import { isLiveLogHandle } from './helpers/logs_handle';
 
 export class LogsDriver implements sdk.LogsDriver {

@@ -4,7 +4,7 @@ import { createLsFilesClient } from '../clients/constructors';
 import { TestHelpers } from '@milaboratories/pl-client';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { test, expect } from '@jest/globals';
+import { test, expect } from 'vitest';
 import { isImportFileHandleIndex, isImportFileHandleUpload } from '@milaboratories/pl-model-common';
 
 const assetsPath = path.resolve('../../../assets');
