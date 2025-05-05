@@ -253,7 +253,6 @@ export async function downloadFromEveryStorage(
   ops: {
     bytesLimit: number;
     minFileSize: number;
-    maxFileSize: number;
     nFilesToCheck: number;
   },
 ): Promise<Record<string, TemplateReport>> {
@@ -261,7 +260,7 @@ export async function downloadFromEveryStorage(
   const results: Record<string, TemplateReport> = {};
 
   for (const storage of storages) {
-    const result = await chooseFile(lsDriver, storage, ops.nFilesToCheck, { minSize: ops.minFileSize, maxSize: ops.maxFileSize });
+    const result = await chooseFile(lsDriver, storage, ops.nFilesToCheck, ops.minFileSize);
     if (!result) {
       results[storage.name] = { ok: false, message: `No file found in storage ${storage.name}` };
       continue;
@@ -278,7 +277,7 @@ export async function downloadFromEveryStorage(
 
     try {
       const fileInfo = await getFieldValue(pl, outputs.file);
-      const { size } = await downloadClient.downloadBlob(fileInfo, undefined, undefined, `bytes=0-${ops.bytesLimit}`);
+      const { size } = await downloadClient.downloadBlob(fileInfo, undefined, undefined, 0, ops.bytesLimit);
 
       results[storage.name] = { ok: true, message: `File downloading succeeded: size: ${size}` };
     } finally {
@@ -296,10 +295,7 @@ export async function chooseFile(
   lsDriver: LsDriver,
   storage: StorageEntry,
   limit: number,
-  ops: {
-    minSize: number;
-    maxSize: number;
-  },
+  minSize: number,
 ): Promise<LsEntryWithAdditionalInfo | undefined> {
   const files = listFilesSequence(lsDriver, storage, '');
 
@@ -314,11 +310,10 @@ export async function chooseFile(
       return smallFile;
     }
     i++;
-    if (file.size < ops.minSize) {
-      smallFile = file;
-    }
-    if (ops.minSize <= file.size && file.size <= ops.maxSize) {
+    if (minSize <= file.size) {
       return file;
+    } else {
+      smallFile = file;
     }
   }
 
@@ -331,7 +326,7 @@ export async function* listFilesSequence(
   storage: StorageEntry,
   parent: string,
 ): AsyncGenerator<LsEntryWithAdditionalInfo, void, unknown> {
-  const files = await lsDriver.listRemoteFilesWithSizes(storage.handle, parent);
+  const files = await lsDriver.listRemoteFilesWithAdditionalInfo(storage.handle, parent);
 
   for (const file of files.entries) {
     if (file.type === 'file' && file.fullPath.startsWith(parent)) {
