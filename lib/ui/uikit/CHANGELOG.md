@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.73
+
+### Patch Changes
+
+- 959fe5c: update autocomplete behavior
+
 ## 2.2.72
 
 ### Patch Changes
