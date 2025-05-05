@@ -1,5 +1,11 @@
 # @milaboratories/pl-drivers
 
+## 1.5.53
+
+### Patch Changes
+
+- b82d4de: check network: storages check; drivers: download: range query initial
+
 ## 1.5.52
 
 ### Patch Changes

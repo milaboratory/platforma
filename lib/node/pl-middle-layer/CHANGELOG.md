@@ -1,5 +1,14 @@
 # @milaboratories/pl-middle-layer
 
+## 1.37.11
+
+### Patch Changes
+
+- b82d4de: check network: storages check; drivers: download: range query initial
+- Updated dependencies [b82d4de]
+  - @milaboratories/pl-drivers@1.5.53
+  - @platforma-sdk/workflow-tengo@4.3.1
+
 ## 1.37.10
 
 ### Patch Changes

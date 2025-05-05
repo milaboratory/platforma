@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 4.3.1
+
+### Patch Changes
+
+- b82d4de: check network: storages check; drivers: download: range query initial
+
 ## 4.3.0
 
 ### Minor Changes
