@@ -131,16 +131,6 @@ const loadedOptionsRef = ref<ListOption<M>[]>([]);
 const modelOptionRef = ref<ListOptionNormalized<M> | undefined>(); // list of 1 option that is selected or empty, to keep selected label
 
 const renderedOptionsRef = computed(() => {
-  if (model.value && !search.value) {
-    return modelOptionRef.value
-      ? [{
-          ...modelOptionRef.value,
-          index: 0,
-          isSelected: true,
-          isActive: true,
-        }]
-      : [];
-  }
   return normalizeListOptions(loadedOptionsRef.value).map((opt, index) => ({
     ...opt,
     index,
@@ -215,13 +205,11 @@ const setFocusOnInput = () => input.value?.focus();
 
 const toggleOpen = () => {
   data.open = !data.open;
-  if (!data.open) {
-    search.value = null;
-  }
-  if (data.open) {
-    search.value = '';
-  }
 };
+
+watch(() => data.open, (v) => {
+  search.value = v ? '' : null;
+})
 
 const onInputFocus = () => {
   data.open = true;
@@ -298,10 +286,10 @@ watchPostEffect(() => {
   }
 });
 
-const searchDebounced = refDebounced(search, 500, { maxWait: 1000 });
+const searchDebounced = refDebounced(search, 300, { maxWait: 1000 });
 
 const optionsRequest = useWatchFetch(() => searchDebounced.value, async (v) => {
-  if (v !== null && !(v === '' && model.value)) { // search is null when dropdown is closed; when search is '' and model is not empty show single selected option in the list;
+  if (v !== null) { // search is null when dropdown is closed;
     return props.optionsSearch(v);
   }
   return [];
