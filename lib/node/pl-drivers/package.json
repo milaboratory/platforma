@@ -18,7 +18,7 @@
   "scripts": {
     "type-check": "tsc --noEmit --composite false",
     "build": "vite build",
-    "test": "jest --runInBand",
+    "test": "vitest",
     "lint": "eslint .",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
@@ -51,10 +51,7 @@
     "typescript": "catalog:",
     "vite": "catalog:",
     "@types/node": "catalog:",
-    "@types/jest": "catalog:",
-    "@types/tar-fs": "catalog:",
-    "jest": "catalog:",
-    "@jest/globals": "catalog:",
-    "ts-jest": "catalog:"
+    "vitest": "catalog:",
+    "@types/tar-fs": "catalog:"
   }
 }

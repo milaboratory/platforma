@@ -1,5 +1,5 @@
 import path from 'path';
-import { describe, test, expect } from '@jest/globals';
+import { describe, test, expect } from 'vitest';
 import { isFolderURL, getPathForFolderURL } from './url';
 import type { Signer } from '@milaboratories/ts-helpers';
 import { HmacSha256Signer } from '@milaboratories/ts-helpers';

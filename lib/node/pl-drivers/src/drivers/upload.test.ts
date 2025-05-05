@@ -7,7 +7,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { makeBlobImportSnapshot, UploadDriver } from './upload';
 import { createUploadBlobClient, createUploadProgressClient } from '../clients/constructors';
-import { expect, test } from '@jest/globals';
+import { expect, test } from 'vitest';
 import { Computable } from '@milaboratories/computable';
 import { SynchronizedTreeState } from '@milaboratories/pl-tree';
 import type { ImportResourceSnapshot } from './types';

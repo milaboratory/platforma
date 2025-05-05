@@ -8,7 +8,7 @@ import type { GrpcTransport } from '@protobuf-ts/grpc-transport';
 import type { Dispatcher } from 'undici';
 import { text } from 'node:stream/consumers';
 import { ClientDownload, getFullPath, parseLocalUrl } from '../clients/download';
-import { test, expect } from '@jest/globals';
+import { test, expect } from 'vitest';
 
 test('should parse local file url even on Windows', () => {
   const url
