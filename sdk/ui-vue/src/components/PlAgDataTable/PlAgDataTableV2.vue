@@ -54,6 +54,7 @@ import { autoSizeRowNumberColumn, PlAgDataTableRowNumberColId } from './sources/
 import { focusRow, makeOnceTracker, trackFirstDataRendered } from './sources/focus-row';
 import PlAgCsvExporter from '../PlAgCsvExporter/PlAgCsvExporter.vue';
 import { Deferred, isJsonEqual } from '@milaboratories/helpers';
+import PlAgRowCount from './PlAgRowCount.vue';
 
 ModuleRegistry.registerModules([
   ClientSideRowModelModule,
@@ -310,6 +311,11 @@ const gridOptions = shallowRef<GridOptions<PlAgDataTableRow>>({
     allColumns: true,
     suppressQuotes: true,
     fileName: 'table.csv',
+  },
+  statusBar: {
+    statusPanels: [
+      { statusPanel: PlAgRowCount, align: 'left' },
+    ],
   },
 });
 
