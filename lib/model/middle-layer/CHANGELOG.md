@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.7.30
+
+### Patch Changes
+
+- 8e23a2e: PFrames support inline columns in joins
+
 ## 1.7.29
 
 ### Patch Changes
