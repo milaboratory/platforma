@@ -21,7 +21,7 @@ import type { ClientDownload } from '../../clients/download';
 import { getPathForFolderURL, isFolderURL } from './url';
 import type { Id } from './driver_id';
 import { newId } from './driver_id';
-import { nonRecoverableError } from '../download_blob_task';
+import { nonRecoverableError } from '../download_blob/download_blob_task';
 
 export type DownloadBlobToURLDriverOps = {
   cacheSoftSizeBytes: number;

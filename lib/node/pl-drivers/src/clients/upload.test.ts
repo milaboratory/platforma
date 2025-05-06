@@ -4,6 +4,7 @@ import { ClientUpload } from '../clients/upload';
 import type { Dispatcher } from 'undici';
 import type { GrpcTransport } from '@protobuf-ts/grpc-transport';
 import { ConsoleLoggerAdapter } from '@milaboratories/ts-helpers';
+import { test, expect } from 'vitest';
 
 test.skip('integration test, grpc upload blob should throw error on NOT_FOUND', async () => {
   await TestHelpers.withTempRoot(async (client) => {
@@ -19,7 +20,7 @@ test.skip('integration test, grpc upload blob should throw error on NOT_FOUND', 
         id: 1n as ResourceId,
         type: { name: 'BlobUpload/main', version: '1' },
       });
-      fail('should throw NOT_FOUND');
+      expect(true).toBe(false);
     } catch (e) {
       const err = e as any;
       expect(err.code).toBe('NOT_FOUND');

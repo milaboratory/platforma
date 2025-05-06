@@ -1,4 +1,4 @@
-import { expect, test } from '@jest/globals';
+import { expect, test } from 'vitest';
 import { CallersCounter } from '@milaboratories/ts-helpers';
 import type { CachedFile } from './files_cache';
 import { FilesCache } from './files_cache';

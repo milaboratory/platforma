@@ -5,7 +5,7 @@ export * from './clients/ls_api';
 export * from './clients/logs';
 export * from './clients/constructors';
 
-export * from './drivers/download_blob';
+export * from './drivers/download_blob/download_blob';
 export * from './drivers/download_blob_url/driver';
 export * from './drivers/download_blob_url/snapshot';
 export * from './drivers/upload';
