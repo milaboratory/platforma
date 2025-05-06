@@ -26,6 +26,10 @@ const props = defineProps<{
    * If `true`, the checkbox is disabled and cannot be interacted with.
    */
   disabled?: boolean;
+  /**
+   * If `true`, the checkbox is indeterminate (doesn't affect the model value).
+   */
+  indeterminate?: boolean;
 }>();
 
 const slots = useSlots();
