@@ -84,6 +84,8 @@ const notReady = ref(true);
 
 const hasRows = ref(false);
 
+const rowSelection = ref(true);
+
 const { gridOptions, gridApi } = useAgGridOptions<Row>(({ column }) => {
   return {
     columnDefs: [
@@ -213,11 +215,13 @@ const { gridOptions, gridApi } = useAgGridOptions<Row>(({ column }) => {
     ],
     rowNumbersColumn: rowNumbers.value,
     // @TODO (Now rowNumbersColumn && rowSelection enables rows selection with checkboxes)
-    rowSelection: {
-      mode: 'multiRow',
-      checkboxes: false,
-      headerCheckbox: false,
-    },
+    rowSelection: rowSelection.value
+      ? {
+          mode: 'multiRow',
+          checkboxes: false,
+          headerCheckbox: false,
+        }
+      : undefined,
     loading: loading.value,
     loadingText: loadingText.value,
     loadingOverlayType: isOverlayTransparent.value ? 'transparent' : undefined,
@@ -252,6 +256,7 @@ const { gridOptions, gridApi } = useAgGridOptions<Row>(({ column }) => {
       <PlCheckbox v-model="loading">Loading</PlCheckbox>
       <PlCheckbox v-model="notReady">Not Ready</PlCheckbox>
       <PlCheckbox v-model="hasRows">Has rows</PlCheckbox>
+      <PlCheckbox v-model="rowSelection">Row selection</PlCheckbox>
       <PlTextField v-model="loadingText" label="Loading text" />
     </PlRow>
 

@@ -1,5 +1,3 @@
-@use "@/assets/mixins" as *;
-
 .pl-checkbox-base {
   --enabled-unchecked-icon: url('@/assets/images/24_checkbox-light-enabled-unchecked.svg');
   --enabled-checked-icon: url('@/assets/images/24_checkbox-light-enabled-checked.svg');
@@ -11,23 +9,25 @@
   cursor: pointer;
   outline: none;
   border-radius: 4px;
-  @include icon(var(--enabled-unchecked-icon), 24px);
+  min-block-size: 24px;
+  min-inline-size: 24px;
+  background: var(--enabled-unchecked-icon) no-repeat center;
 
   &.checked {
-    @include icon(var(--enabled-checked-icon), 24px);
+    background-image: var(--enabled-checked-icon);
   }
 
   &.indeterminate {
-    @include icon(var(--enabled-indeterminate-icon), 24px);
+    background-image: var(--enabled-indeterminate-icon);
   }
 
   &.disabled {
-    @include icon(var(--disabled-unchecked-icon), 24px);
+    background-image: var(--disabled-unchecked-icon);
     pointer-events: none;
   }
 
   &.disabled:is(.checked) {
-    @include icon(var(--disabled-checked-icon), 24px);
+    background-image: var(--disabled-checked-icon);
     pointer-events: none;
   }
 

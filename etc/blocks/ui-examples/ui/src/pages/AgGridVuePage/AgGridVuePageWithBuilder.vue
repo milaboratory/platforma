@@ -98,6 +98,8 @@ const notReady = ref(false);
 
 const hasRows = ref(true);
 
+const rowSelection = ref(true);
+
 const { gridOptions, gridApi } = useAgGridOptions<Row>(({ builder }) => {
   return builder
     .setComponents({
@@ -106,11 +108,15 @@ const { gridOptions, gridApi } = useAgGridOptions<Row>(({ builder }) => {
     .setOption('onRowDoubleClicked', (_e) => {
       alert('Example "Open" button was clicked');
     })
-    .setRowSelection({
-      mode: 'multiRow',
-      checkboxes: false,
-      headerCheckbox: false,
-    })
+    .setRowSelection(
+      rowSelection.value
+        ? {
+            mode: 'multiRow',
+            checkboxes: false,
+            headerCheckbox: false,
+          }
+        : undefined,
+    )
     .setLoading(loading.value)
     .setLoadingText(loadingText.value)
     .setNotReady(notReady.value)
@@ -269,6 +275,7 @@ const { gridOptions, gridApi } = useAgGridOptions<Row>(({ builder }) => {
       <PlCheckbox v-model="loading">Loading</PlCheckbox>
       <PlCheckbox v-model="notReady">Not Ready</PlCheckbox>
       <PlCheckbox v-model="hasRows">Has rows</PlCheckbox>
+      <PlCheckbox v-model="rowSelection">Row selection</PlCheckbox>
       <PlTextField v-model="loadingText" label="Loading text" />
     </PlRow>
 
