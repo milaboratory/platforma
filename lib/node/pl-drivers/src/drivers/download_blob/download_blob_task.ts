@@ -19,6 +19,7 @@ import { Writable } from 'node:stream';
 import type { ClientDownload } from '../../clients/download';
 import { UnknownStorageError, WrongLocalFileUrl } from '../../clients/download';
 import { NetworkError400 } from '../../helpers/download';
+import { CachedFile, RangeBytes } from '../helpers/range_blobs_cache';
 
 /** Downloads a blob. */
 export class DownloadBlobTask {
@@ -35,7 +36,10 @@ export class DownloadBlobTask {
     private readonly clientDownload: ClientDownload,
     readonly rInfo: ResourceSnapshot,
     readonly path: string,
+    readonly basePath: string,
+    readonly key: string,
     private readonly handle: LocalBlobHandle,
+    private readonly range?: RangeBytes,
   ) {}
 
   /** Returns a simple object that describes this task. */
@@ -46,6 +50,29 @@ export class DownloadBlobTask {
       done: this.done,
       size: this.size,
       error: this.error,
+    };
+  }
+
+  public cachedFile(): CachedFile {
+    if (this.range) {
+      return {
+        path: this.path,
+        basePath: this.basePath,
+        key: this.key,
+        size: this.size,
+        type: 'range',
+        range: this.range,
+        counter: this.counter,
+      };
+    }
+
+    return {
+      type: 'whole',
+      path: this.path,
+      basePath: this.basePath,
+      key: this.key,
+      size: this.size,
+      counter: this.counter,
     };
   }
 
