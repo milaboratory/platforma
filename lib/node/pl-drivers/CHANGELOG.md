@@ -1,5 +1,11 @@
 # @milaboratories/pl-drivers
 
+## 1.5.54
+
+### Patch Changes
+
+- b8c7847: extract download_blob to a separate folder; jest -> vitest
+
 ## 1.5.53
 
 ### Patch Changes
