@@ -22,7 +22,7 @@
     "lint": "eslint .",
     "test": "vitest",
     "do-pack": "rm -rf src/.test && rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
-    "cleanup-docker": "docker container stop pl-ssh-test-pl pl-ssh-test-ssh && docker container rm pl-ssh-test-pl pl-ssh-test-ssh && docker image rm pl-ssh-test-container-ssh:1.0.0 pl-ssh-test-container-pl:1.0.0",
+    "cleanup-docker": "docker container stop pl-ssh-test-pl || true && docker container stop pl-ssh-test-ssh || true && docker container rm -f pl-ssh-test-pl || true && docker container rm -f pl-ssh-test-ssh || true && docker image rm -f pl-ssh-test-container-ssh:1.0.0 || true && docker image rm -f pl-ssh-test-container-pl:1.0.0 || true",
     "exec-docker": "docker exec -ti pl-ssh-test-pl bash"
   },
   "files": [
