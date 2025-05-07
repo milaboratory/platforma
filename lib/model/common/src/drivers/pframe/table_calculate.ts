@@ -2,6 +2,8 @@ import type { PTableColumnId, PTableColumnSpec } from './table_common';
 import type { PTableVector } from './data_types';
 import type { PObjectId } from '../../pool';
 import { assertNever } from '../../util';
+import type { PColumn } from './spec/spec';
+import type { PColumnValues } from './data_info';
 
 /** Defines a terminal column node in the join request tree */
 export interface ColumnJoinEntry<Col> {
@@ -40,6 +42,15 @@ export interface SlicedColumnJoinEntry<Col> {
 
   /** Non-empty list of axis filters */
   readonly axisFilters: ConstantAxisFilter[];
+}
+
+/** Defines a terminal column node in the join request tree */
+export interface InlineColumnJoinEntry {
+  /** Node type discriminator */
+  readonly type: 'inlineColumn';
+
+  /** Column definition */
+  readonly column: PColumn<PColumnValues>;
 }
 
 /**
@@ -100,6 +111,7 @@ export interface OuterJoin<Col> {
 export type JoinEntry<Col> =
   | ColumnJoinEntry<Col>
   | SlicedColumnJoinEntry<Col>
+  | InlineColumnJoinEntry
   | InnerJoin<Col>
   | FullJoin<Col>
   | OuterJoin<Col>;
@@ -364,6 +376,8 @@ export function mapJoinEntry<C1, C2>(
         newId: entry.newId,
         axisFilters: entry.axisFilters,
       };
+    case 'inlineColumn':
+      return entry;
     case 'inner':
     case 'full':
       return {
