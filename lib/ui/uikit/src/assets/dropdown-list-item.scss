@@ -52,13 +52,13 @@
     &__checkbox {
         margin-right: 8px;
         background-color: var(--control-mask-fill);
-        @include mask(url(./images/24_checkbox-base-dark.svg), 24px);
+        @include mask(url(./images/24_checkbox-dark-enabled-unchecked.svg), 24px);
     }
 
     &__checkbox.checked {
         margin-right: 8px;
         background-color: red;
-        @include mask(url(./images/24_checkbox-checked-dark.svg), 24px);
+        @include mask(url(./images/24_checkbox-dark-enabled-checked.svg), 24px);
     }
 
     &__description {
