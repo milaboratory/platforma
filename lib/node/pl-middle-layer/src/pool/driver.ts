@@ -30,6 +30,7 @@ import type {
   PTableRecordFilter,
   PColumnValues,
   DataInfo,
+  PColumnValue,
 } from '@platforma-sdk/model';
 import {
   mapPObjectData,
@@ -84,7 +85,7 @@ function migrateFilters(filters: PTableRecordFilter[]): PTableRecordFilter[] {
 const bigintReplacer = (_: string, v: unknown) => (typeof v === 'bigint' ? v.toString() : v);
 
 class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
-  public readonly pFrame: PFrameInternal.PFrameV5;
+  public readonly pFrame: PFrameInternal.PFrameV6;
   private readonly blobIdToResource = new Map<string, ResourceInfo>();
   private readonly blobHandleComputables = new Map<
     string,
@@ -496,7 +497,7 @@ export class PFrameDriver implements InternalPFrameDriver {
   }
 }
 
-function joinEntryToInternal(entry: JoinEntry<PObjectId>): PFrameInternal.JoinEntryV2 {
+function joinEntryToInternal(entry: JoinEntry<PObjectId>): PFrameInternal.JoinEntryV3 {
   switch (entry.type) {
     case 'column':
       return {
@@ -509,6 +510,20 @@ function joinEntryToInternal(entry: JoinEntry<PObjectId>): PFrameInternal.JoinEn
         columnId: entry.column,
         newId: entry.newId,
         axisFilters: entry.axisFilters,
+      };
+    case 'inlineColumn':
+      return {
+        type: 'inlineColumn',
+        newId: entry.column.id,
+        spec: entry.column.spec,
+        dataInfo: {
+          type: 'Json',
+          keyLength: entry.column.spec.axesSpec.length,
+          data: entry.column.data.reduce((acc, row) => {
+            acc[JSON.stringify(row.key)] = row.val;
+            return acc;
+          }, {} as Record<string, PColumnValue>),
+        },
       };
     case 'inner':
     case 'full':

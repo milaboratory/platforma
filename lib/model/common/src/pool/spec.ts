@@ -88,6 +88,8 @@ export function extractAllColumns<D>(entry: JoinEntry<PColumn<D>>): PColumn<D>[]
       case 'slicedColumn':
         columns.set(entry.column.id, entry.column);
         return;
+      case 'inlineColumn':
+        return;
       case 'full':
       case 'inner':
         for (const e of entry.entries) addAllColumns(e);
