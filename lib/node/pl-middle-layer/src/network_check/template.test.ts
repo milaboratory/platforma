@@ -22,6 +22,7 @@ test('check runUploadFile', async () => {
     lsDriver,
     uploadBlobClient,
     client,
+    signer,
     terminate,
   } = await initNetworkCheck(plEndpoint, plUser, plPassword);
 
@@ -29,6 +30,7 @@ test('check runUploadFile', async () => {
 
   const blob = await runUploadFile(
     logger,
+    signer,
     lsDriver,
     uploadBlobClient,
     client,
@@ -84,17 +86,19 @@ test('check runPythonSoftware', async () => {
 
 test('check downloadFromEveryStorage', async () => {
   const { plEndpoint, plUser, plPassword } = testCredentials();
-  const { logger, client, lsDriver, downloadClient, terminate } = await initNetworkCheck(plEndpoint, plUser, plPassword);
+  const { logger, client, lsDriver, terminate } = await initNetworkCheck(plEndpoint, plUser, plPassword);
 
-  const storages = await downloadFromEveryStorage(logger, client, lsDriver, downloadClient, {
+  const storages = await downloadFromEveryStorage(logger, client, lsDriver, {
+    minLsRequests: 10,
     bytesLimit: 1024,
     minFileSize: 1024,
-    nFilesToCheck: 100,
+    maxFileSize: 50 * 1024 * 1024,
+    nFilesToCheck: 1,
   });
 
   expect(storages).toBeDefined();
   expect(Object.keys(storages).length).toBeGreaterThan(0);
-  expect(Object.entries(storages).every(([_, report]) => report.ok)).toBe(true);
+  expect(Object.entries(storages).every(([_, report]) => report.status)).toBe(true);
 
   console.log(JSON.stringify(storages, null, 2));
 

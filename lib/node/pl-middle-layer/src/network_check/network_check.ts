@@ -20,7 +20,7 @@
 
 import type { AuthInformation, PlClientConfig } from '@milaboratories/pl-client';
 import { PlClient, UnauthenticatedPlClient, plAddressToConfig } from '@milaboratories/pl-client';
-import type { MiLogger } from '@milaboratories/ts-helpers';
+import type { MiLogger, Signer } from '@milaboratories/ts-helpers';
 import { ConsoleLoggerAdapter, HmacSha256Signer } from '@milaboratories/ts-helpers';
 import { channel } from 'node:diagnostics_channel';
 import type { ClientDownload, ClientUpload } from '@milaboratories/pl-drivers';
@@ -77,10 +77,14 @@ export interface CheckNetworkOpts {
 
   /** Limit for the size of files to download from every storage. */
   everyStorageBytesLimit: number;
-  /** Minimal size of files to download from every storage. */
+  /** Minimal size of files to create a directory from for every storage. */
   everyStorageMinFileSize: number;
-  /** How many files to download from every storage. */
+  /** Maximal size of files to create a directory from for every storage. */
+  everyStorageMaxFileSize: number;
+  /** How many files to check from every storage. */
   everyStorageNFilesToCheck: number;
+  /** Minimal number of ls requests for every storage. */
+  everyStorageMinLsRequests: number;
 }
 
 /** Checks connectivity to Platforma Backend, to block registry
@@ -121,48 +125,54 @@ export async function checkNetwork(
     });
   });
 
-  const {
-    logger,
-    plConfig,
-    client,
-    downloadClient,
-    uploadBlobClient,
-    lsDriver,
-    httpClient,
-    ops,
-  } = await initNetworkCheck(plCredentials, plUser, plPassword, optsOverrides);
-
-  const { filePath: filePathToDownload, fileContent: fileContentToDownload } = await createTempFile();
-  const { filePath: filePathToUpload } = await createBigTempFile();
-
-  const report: NetworkReports = {
-    plPings: await backendPings(ops, plConfig),
-    blockRegistryOverviewChecks: await blockRegistryOverviewPings(ops, httpClient),
-    blockGARegistryOverviewChecks: await blockGARegistryOverviewPings(ops, httpClient),
-    blockRegistryUiChecks: await blockRegistryUiPings(ops, httpClient),
-    blockGARegistryUiChecks: await blockGARegistryUiPings(ops, httpClient),
-
-    autoUpdateCdnChecks: await autoUpdateCdnPings(ops, httpClient),
-
-    uploadTemplateCheck: await uploadTemplate(logger, client, 'Jack'),
-    uploadFileCheck: await uploadFile(logger, lsDriver, uploadBlobClient, client, filePathToUpload),
-    downloadFileCheck: await downloadFile(logger, client, lsDriver, uploadBlobClient, downloadClient, filePathToDownload, fileContentToDownload),
-    softwareCheck: await softwareCheck(client),
-    pythonSoftwareCheck: await pythonSoftware(client, 'Jack'),
-    storageToDownloadReport: await downloadFromEveryStorage(
+  try {
+    const {
       logger,
+      plConfig,
       client,
-      lsDriver,
+      signer,
       downloadClient,
-      {
-        bytesLimit: ops.everyStorageBytesLimit,
-        minFileSize: ops.everyStorageMinFileSize,
-        nFilesToCheck: ops.everyStorageNFilesToCheck,
-      },
-    ),
-  };
+      uploadBlobClient,
+      lsDriver,
+      httpClient,
+      ops,
+    } = await initNetworkCheck(plCredentials, plUser, plPassword, optsOverrides);
 
-  return reportsToString(report, plCredentials, ops, undiciLogs);
+    const { filePath: filePathToDownload, fileContent: fileContentToDownload } = await createTempFile();
+    const { filePath: filePathToUpload } = await createBigTempFile();
+
+    const report: NetworkReports = {
+      plPings: await backendPings(ops, plConfig),
+      blockRegistryOverviewChecks: await blockRegistryOverviewPings(ops, httpClient),
+      blockGARegistryOverviewChecks: await blockGARegistryOverviewPings(ops, httpClient),
+      blockRegistryUiChecks: await blockRegistryUiPings(ops, httpClient),
+      blockGARegistryUiChecks: await blockGARegistryUiPings(ops, httpClient),
+
+      autoUpdateCdnChecks: await autoUpdateCdnPings(ops, httpClient),
+
+      uploadTemplateCheck: await uploadTemplate(logger, client, 'Jack'),
+      uploadFileCheck: await uploadFile(logger, signer, lsDriver, uploadBlobClient, client, filePathToUpload),
+      downloadFileCheck: await downloadFile(logger, client, lsDriver, uploadBlobClient, downloadClient, filePathToDownload, fileContentToDownload),
+      softwareCheck: await softwareCheck(client),
+      pythonSoftwareCheck: await pythonSoftware(client, 'Jack'),
+      storageToDownloadReport: await downloadFromEveryStorage(
+        logger,
+        client,
+        lsDriver,
+        {
+          minLsRequests: ops.everyStorageMinLsRequests,
+          bytesLimit: ops.everyStorageBytesLimit,
+          minFileSize: ops.everyStorageMinFileSize,
+          maxFileSize: ops.everyStorageMaxFileSize,
+          nFilesToCheck: ops.everyStorageNFilesToCheck,
+        },
+      ),
+    };
+
+    return reportsToString(report, plCredentials, ops, undiciLogs);
+  } catch (e) {
+    return `Unhandled error while checking the network: ${e}`;
+  }
 }
 
 export async function initNetworkCheck(
@@ -173,6 +183,7 @@ export async function initNetworkCheck(
 ): Promise<{
     logger: MiLogger;
     plConfig: PlClientConfig;
+    signer: Signer;
     client: PlClient;
     downloadClient: ClientDownload;
     uploadBlobClient: ClientUpload;
@@ -205,7 +216,9 @@ export async function initNetworkCheck(
 
     everyStorageBytesLimit: 1024,
     everyStorageMinFileSize: 1024,
-    everyStorageNFilesToCheck: 100,
+    everyStorageMaxFileSize: 200 * 1024 * 1024, // 200 MB
+    everyStorageNFilesToCheck: 300,
+    everyStorageMinLsRequests: 50,
     ...optsOverrides,
   };
 
@@ -267,6 +280,7 @@ export async function initNetworkCheck(
     logger,
     plConfig,
     client,
+    signer,
     downloadClient,
     uploadBlobClient,
     lsDriver,
@@ -289,6 +303,7 @@ function reportsToString(
   ];
 
   const summary = (ok: boolean) => ok ? 'OK' : 'FAILED';
+  const templateSummary = (report: TemplateReport) => report.status === 'ok' ? 'OK' : report.status === 'warn' ? 'WARN' : 'FAILED';
 
   const pings = reportToString(report.plPings);
   const blockRegistryOverview = reportToString(report.blockRegistryOverviewChecks);
@@ -298,27 +313,24 @@ function reportsToString(
   const autoUpdateCdn = reportToString(report.autoUpdateCdnChecks);
 
   const storagesSummary = Object.entries(report.storageToDownloadReport)
-    .map(([storage, report]) => `${summary(report.ok)} ${storage} storage check`).join('\n');
+    .map(([storage, report]) => `${templateSummary(report)} ${storage} storage check`).join('\n');
 
   return `
-Network report:
-pl endpoint: ${plEndpoint};
-
-summary:
 ${summary(pings.ok)} pings to Platforma Backend
 ${summary(blockRegistryOverview.ok)} block registry overview
 ${summary(blockGARegistryOverview.ok)} block ga registry overview
 ${summary(blockRegistryUi.ok)} block registry ui
 ${summary(blockGARegistryUi.ok)} block ga registry ui
 ${summary(autoUpdateCdn.ok)} auto-update CDN
-${summary(report.uploadTemplateCheck.ok)} upload template
-${summary(report.uploadFileCheck.ok)} upload file
-${summary(report.downloadFileCheck.ok)} download file
-${summary(report.softwareCheck.ok)} software check
-${summary(report.pythonSoftwareCheck.ok)} python software check
+${templateSummary(report.uploadTemplateCheck)} upload template
+${templateSummary(report.uploadFileCheck)} upload file
+${templateSummary(report.downloadFileCheck)} download file
+${templateSummary(report.softwareCheck)} software check
+${templateSummary(report.pythonSoftwareCheck)} python software check
 ${storagesSummary}
 
 details:
+pl endpoint: ${plEndpoint};
 options: ${JSON.stringify(opts, null, 2)}.
 
 Upload template response: ${report.uploadTemplateCheck.message}
@@ -329,6 +341,8 @@ Download file response: ${report.downloadFileCheck.message}
 
 Software check response: ${report.softwareCheck.message}
 Python software check response: ${report.pythonSoftwareCheck.message}
+Storage to download responses: ${JSON.stringify(report.storageToDownloadReport, null, 2)}
+
 Platforma pings: ${pings.details}
 
 Block registry overview responses: ${blockRegistryOverview.details}
@@ -340,8 +354,6 @@ Block registry ui responses: ${blockRegistryUi.details}
 Block ga registry ui responses: ${blockGARegistryUi.details}
 
 Auto-update CDN responses: ${autoUpdateCdn.details}
-
-Storage to download responses: ${JSON.stringify(report.storageToDownloadReport, null, 2)}
 
 dumps:
 Block registry overview dumps:
