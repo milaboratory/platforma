@@ -1,5 +1,13 @@
 # @milaboratories/pl-model-common
 
+## 1.15.0
+
+### Minor Changes
+
+- b0b80af: - fix for label derivation with enough diversity solaly in labels
+  - fallback behaviour for derive labels function
+  - deduplication of columns in column collection
+
 ## 1.14.1
 
 ### Patch Changes

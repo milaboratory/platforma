@@ -1,5 +1,15 @@
 # @platforma-sdk/model
 
+## 1.30.24
+
+### Patch Changes
+
+- b0b80af: - fix for label derivation with enough diversity solaly in labels
+  - fallback behaviour for derive labels function
+  - deduplication of columns in column collection
+- Updated dependencies [b0b80af]
+  - @milaboratories/pl-model-common@1.15.0
+
 ## 1.30.21
 
 ### Patch Changes
