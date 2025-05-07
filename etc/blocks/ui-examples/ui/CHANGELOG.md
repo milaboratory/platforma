@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.3.76
+
+### Patch Changes
+
+- d82a569: Add `indeterminate` prop support for PlCheckbox\[Base\]
+
 ## 1.3.75
 
 ### Patch Changes
