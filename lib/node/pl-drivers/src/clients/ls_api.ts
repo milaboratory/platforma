@@ -28,7 +28,7 @@ export class ClientLs {
         resourceId: rInfo.id,
         location: path,
       },
-      addRTypeToMetadata(rInfo.type, options),
+      addRTypeToMetadata(rInfo.type, { ...options, timeout: 60_000 }),
     ).response;
   }
 }
