@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.75
+
+### Patch Changes
+
+- 2aa0f3c: PlAgDataTable row selection improvements
+
 ## 2.2.74
 
 ### Patch Changes
