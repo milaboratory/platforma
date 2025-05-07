@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.3.78
+
+### Patch Changes
+
+- 93d4a72: Add cellRendererSelector prop for PlAgDataTableV2
+
 ## 1.3.77
 
 ### Patch Changes

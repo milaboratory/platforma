@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.30.22
+
+### Patch Changes
+
+- 93d4a72: Add cellRendererSelector prop for PlAgDataTableV2
+
 ## 1.30.21
 
 ### Patch Changes
