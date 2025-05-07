@@ -10,6 +10,7 @@ import {
   type ManagedGridOptions,
   type SortState,
   type StateUpdatedEvent,
+  type CellRendererSelectorFunc,
   ModuleRegistry,
   ClientSideRowModelModule,
   ClipboardModule,
@@ -113,6 +114,12 @@ const props = defineProps<{
 
   /** @see {@link PlAgOverlayNoRowsParams.text} */
   noRowsText?: string;
+
+  /**
+   * Callback to override the default renderer for a given cell.
+   * @see https://www.ag-grid.com/vue-data-grid/component-cell-renderer/#dynamic-component-selection
+   */
+  cellRendererSelector?: CellRendererSelectorFunc<PlAgDataTableRow>;
 }>();
 const { settings } = toRefs(props);
 const emit = defineEmits<{
@@ -283,6 +290,7 @@ const gridOptions = shallowRef<GridOptions<PlAgDataTableRow>>({
   defaultColDef: {
     suppressHeaderMenuButton: true,
     sortingOrder: ['desc', 'asc', null],
+    cellRendererSelector: props.cellRendererSelector,
   },
   maintainColumnOrder: true,
   localeText: {
@@ -522,6 +530,19 @@ watch(
     }
   },
   { immediate: true, deep: true },
+);
+
+watch(
+  () => props.cellRendererSelector,
+  (cellRendererSelector) => {
+    if (!gridApi.value) {
+      return;
+    }
+    gridApi.value.setGridOption('defaultColDef', {
+      ...gridOptions.value.defaultColDef,
+      cellRendererSelector,
+    });
+  },
 );
 </script>
 
