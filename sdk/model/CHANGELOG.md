@@ -1,5 +1,13 @@
 # @platforma-sdk/model
 
+## 1.30.21
+
+### Patch Changes
+
+- ec15bb1: createPFrameForGraphs support for DataInfo<TreeNodeAccessor>
+- Updated dependencies [94468e0]
+  - @milaboratories/pl-model-common@1.14.1
+
 ## 1.30.11
 
 ### Patch Changes

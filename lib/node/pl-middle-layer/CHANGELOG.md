@@ -1,5 +1,18 @@
 # @milaboratories/pl-middle-layer
 
+## 1.37.15
+
+### Patch Changes
+
+- 94468e0: PFrames version bump
+- Updated dependencies [ec15bb1]
+- Updated dependencies [94468e0]
+  - @platforma-sdk/model@1.30.21
+  - @milaboratories/pl-model-middle-layer@1.7.31
+  - @milaboratories/pl-model-common@1.14.1
+  - @platforma-sdk/block-tools@2.5.46
+  - @milaboratories/pl-drivers@1.5.56
+
 ## 1.37.14
 
 ### Patch Changes
