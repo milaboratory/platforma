@@ -129,14 +129,20 @@ export function deriveLabels<T>(
     else secondaryTypes.push(typeName);
   }
 
-  const calculate = (includedTypes: Set<string>) => {
+  const calculate = (includedTypes: Set<string>, force: boolean = false) => {
     const result: RecordsWithLabel<T>[] = [];
     for (let i = 0; i < enrichedRecords.length; i++) {
       const r = enrichedRecords[i];
       const includedTrace = r.fullTrace
         .filter((fm) => includedTypes.has(fm.fullType));
-      if (includedTrace.length === 0)
-        return undefined;
+      if (includedTrace.length === 0) {
+        if (force)
+          result.push({
+            label: 'Unlabeled',
+            value: r.value,
+          } satisfies RecordsWithLabel<T>);
+        else return undefined;
+      }
       const labelSet = includedTrace
         .map((fm) => fm.label);
       const sep = ops.separator ?? ' / ';
@@ -149,10 +155,8 @@ export function deriveLabels<T>(
   };
 
   if (mainTypes.length === 0) {
-    if (secondaryTypes.length !== 0) throw new Error('Assertion error.');
-    const result = calculate(new Set(LabelTypeFull));
-    if (result === undefined) throw new Error('Assertion error.');
-    return result;
+    if (secondaryTypes.length !== 0) throw new Error('Non-empty secondary types list while main types list is empty.');
+    return calculate(new Set(LabelTypeFull), true)!;
   }
 
   //
@@ -165,12 +169,13 @@ export function deriveLabels<T>(
   // Resulting set: T0, T1, T3
   //
   let includedTypes = 0;
-  let additionalType = 0;
+  let additionalType = -1;
   while (includedTypes < mainTypes.length) {
     const currentSet = new Set<string>();
     if (ops.includeNativeLabel) currentSet.add(LabelTypeFull);
     for (let i = 0; i < includedTypes; ++i) currentSet.add(mainTypes[i]);
-    currentSet.add(mainTypes[additionalType]);
+    if (additionalType >= 0)
+      currentSet.add(mainTypes[additionalType]);
 
     const candidateResult = calculate(currentSet);
 
@@ -184,7 +189,5 @@ export function deriveLabels<T>(
     }
   }
 
-  const result = calculate(new Set([...mainTypes, ...secondaryTypes]));
-  if (result === undefined) throw new Error('Assertion error.');
-  return result;
+  return calculate(new Set([...mainTypes, ...secondaryTypes]), true)!;
 }

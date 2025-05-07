@@ -8,6 +8,12 @@ export interface PObjectSpec {
   /** PObject kind discriminator */
   readonly kind: string;
 
+  /** Name is common part of PObject identity */
+  readonly name: string;
+
+  /** Domain is a set of key-value pairs that can be used to identify the object */
+  readonly domain?: Record<string, string>;
+
   /** Additional information attached to the object */
   readonly annotations?: Record<string, string>;
 }
