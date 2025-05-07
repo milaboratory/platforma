@@ -1,5 +1,13 @@
 # @platforma-sdk/ui-vue
 
+## 1.30.23
+
+### Patch Changes
+
+- 2aa0f3c: PlAgDataTable row selection improvements
+- Updated dependencies [2aa0f3c]
+  - @milaboratories/uikit@2.2.75
+
 ## 1.30.22
 
 ### Patch Changes

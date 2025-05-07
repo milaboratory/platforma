@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.3.79
+
+### Patch Changes
+
+- 2aa0f3c: PlAgDataTable row selection improvements
+
 ## 1.3.78
 
 ### Patch Changes
