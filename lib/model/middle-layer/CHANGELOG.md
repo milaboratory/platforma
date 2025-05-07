@@ -1,5 +1,13 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.7.31
+
+### Patch Changes
+
+- 94468e0: PFrames version bump
+- Updated dependencies [94468e0]
+  - @milaboratories/pl-model-common@1.14.1
+
 ## 1.7.30
 
 ### Patch Changes

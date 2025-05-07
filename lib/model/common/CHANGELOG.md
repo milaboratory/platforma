@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.14.1
+
+### Patch Changes
+
+- 94468e0: PFrames version bump
+
 ## 1.14.0
 
 ### Minor Changes
