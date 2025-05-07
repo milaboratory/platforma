@@ -1,6 +1,7 @@
 import { isColumnSelectionCol, type ColDef, type GridApi, type ValueGetterParams } from 'ag-grid-enterprise';
 import { nextTick } from 'vue';
 import { PlAgRowNumCheckbox } from '../../PlAgRowNumCheckbox';
+import PlAgRowNumHeader from '../../PlAgRowNumHeader.vue';
 
 export const PlAgDataTableRowNumberColId = '"##RowNumberColumnId##"';
 
@@ -11,6 +12,7 @@ export function makeRowNumberColDef<TData = any>(): ColDef<TData> {
   return {
     colId: PlAgDataTableRowNumberColId,
     headerName: '#',
+    headerComponent: PlAgRowNumHeader,
     valueGetter: (params: ValueGetterParams) => {
       if (params.node === null) return null;
       if (params.node.rowIndex === null) return null;

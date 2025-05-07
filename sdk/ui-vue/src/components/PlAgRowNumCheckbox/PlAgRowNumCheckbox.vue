@@ -1,7 +1,7 @@
 <script lang="ts" setup>
-import type { ICellRendererParams, RowSelectionOptions } from 'ag-grid-enterprise';
+import type { ICellRendererParams } from 'ag-grid-enterprise';
 import { PlCheckbox } from '@milaboratories/uikit';
-import { ref, computed } from 'vue';
+import { ref, computed, onBeforeMount, onBeforeUnmount } from 'vue';
 import $styles from './pl-ag-row-num-checkbox.module.scss';
 
 const props = defineProps<{ params: ICellRendererParams }>();
@@ -10,19 +10,6 @@ const api = props.params.api;
 const isChecked = ref(!!props.params.node.isSelected());
 const forceShowCheckbox = computed(() => isChecked.value || api.getGridOption('rowSelection'));
 const allowedSelection = ref(api.getGridOption('rowSelection'));
-
-const rowSelection = api.getGridOption('rowSelection');
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function isRowSelectionWithMode(obj: any): obj is RowSelectionOptions<any, any> {
-  return obj && typeof obj === 'object' && 'mode' in obj;
-}
-
-if (isRowSelectionWithMode(rowSelection) && rowSelection.mode === 'singleRow') {
-  props.params.node.addEventListener('rowSelected', (val) => {
-    isChecked.value = !!val.node.isSelected();
-  });
-}
 
 const updateSelection = () => {
   isChecked.value = !!props.params.node.isSelected();
@@ -34,6 +21,14 @@ const setSelection = (val: boolean) => {
     updateSelection();
   }
 };
+
+onBeforeMount(() => {
+  props.params.node.addEventListener('rowSelected', updateSelection);
+});
+
+onBeforeUnmount(() => {
+  props.params.node.removeEventListener('rowSelected', updateSelection);
+});
 </script>
 
 <template>
