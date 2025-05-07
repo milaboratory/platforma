@@ -25,6 +25,8 @@ const data = reactive({
   currentTab: 'one',
   compactBtnGroup: false,
   multipleAccordion: false,
+  indeterminateCheckboxValue: false,
+  indeterminateCheckboxIsIndeterminate: true,
 });
 
 const shortOptions = listToOptions(['A', 'B', 'C', 'D']);
@@ -50,6 +52,17 @@ const options = listToOptions(['A', 'B', 'C', 'D', 'Lorem ipsum', 'Lorem ipsum d
       <PlSectionSeparator>Group name</PlSectionSeparator>
       <PlTextField v-model="data.text" label="PlTextField" />
       <PlDropdown v-model="data.single" label="PlDropdown" :options="options" />
+      <PlCheckbox v-model="data.indeterminateCheckboxIsIndeterminate">Make checkbox below indeterminate</PlCheckbox>
+      <PlCheckbox
+        :model-value="data.indeterminateCheckboxValue"
+        :indeterminate="data.indeterminateCheckboxIsIndeterminate"
+        @update:model-value="() => {
+          data.indeterminateCheckboxValue = !data.indeterminateCheckboxValue;
+          data.indeterminateCheckboxIsIndeterminate = false;
+        }"
+      >
+        Indeterminate checkbox demo (checked: {{ data.indeterminateCheckboxValue }})
+      </PlCheckbox>
       <PlCheckboxGroup v-model="data.multiple" label="PlCheckboxGroup" :options="options" />
       <PlSectionSeparator>
         <PlMaskIcon16 name="chevron-right" />Slot usage<PlMaskIcon16 name="chevron-left" />
