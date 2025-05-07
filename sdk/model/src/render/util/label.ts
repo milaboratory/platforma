@@ -80,7 +80,7 @@ export function deriveLabels<T>(
       ...(suffixTrace ?? []),
     ];
 
-    if (label) {
+    if (label !== undefined) {
       const labelEntry = { label, type: LabelType, importance: -2 };
       if (ops.addLabelAsSuffix) trace.push(labelEntry);
       else trace.splice(0, 0, labelEntry);
