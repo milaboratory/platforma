@@ -36,11 +36,13 @@ const verbose = ref(false);
 
 const cellRendererSelector = computed(() => {
   if (!verbose.value) return;
+
   return (params: ICellRendererParams) => {
-    if (!params.colDef?.context) return;
-    return ({
-      component: () => 'Value is ' + params.value + '',
-    });
+    if (params.colDef?.cellDataType === 'number') {
+      return ({
+        component: () => 'Number is ' + params.value + '',
+      });
+    }
   };
 });
 </script>
@@ -65,7 +67,7 @@ const cellRendererSelector = computed(() => {
       <template #before-sheets>
         Table controls could be placed here
         <PlNumberField v-model="app.model.args.tableNumRows" />
-        <PlCheckbox v-model="verbose">Make it needlessly verbose</PlCheckbox>
+        <PlCheckbox v-model="verbose">Use custom cell renderer for numbers</PlCheckbox>
       </template>
     </PlAgDataTableV2>
   </PlBlockPage>
