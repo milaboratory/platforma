@@ -12,6 +12,7 @@ import type {
   AnchoredPColumnSelector,
   PartitionedDataInfoEntries,
   ResolveAnchorsOptions,
+  NativePObjectId,
 } from '@milaboratories/pl-model-common';
 import {
   selectorsToPredicate,
@@ -21,6 +22,7 @@ import {
   canonicalizeAxisId,
   isPartitionedDataInfoEntries,
   entriesToDataInfo,
+  deriveNativeId,
 } from '@milaboratories/pl-model-common';
 import type { TreeNodeAccessor } from '../accessor';
 import type { LabelDerivationOps, TraceEntry } from './label';
@@ -224,6 +226,7 @@ export class PColumnCollection {
         : [predicateOrSelectors];
 
     const intermediateResults: IntermediateColumnEntry[] = [];
+    const selectedNativeIds = new Set<NativePObjectId>();
 
     for (const rawSelector of selectorsArray) {
       const usesAnchors = hasAnchors(rawSelector);
@@ -241,8 +244,13 @@ export class PColumnCollection {
       for (const provider of this.providers) {
         const providerColumns = provider.selectColumns(currentSelector);
         for (const col of providerColumns) {
-          if (selectedIds.has(col.id)) throw new Error(`Duplicate column id ${col.id} in provider ${provider.constructor.name}`);
+          if (selectedIds.has(col.id))
+            throw new Error(`Duplicate column id ${col.id} in provider ${provider.constructor.name}`);
+          const nativeId = deriveNativeId(col.spec);
+          if (selectedNativeIds.has(nativeId))
+            continue;
           selectedIds.add(col.id);
+          selectedNativeIds.add(nativeId);
           selectedColumns.push(col);
         }
       }
