@@ -16,6 +16,8 @@ export type LabelDerivationOps = {
   separator?: string;
   /** If true, label will be added as suffix (at the end of the generated label). By default label added as a prefix. */
   addLabelAsSuffix?: boolean;
+  /** Trace elements list that will be forced to be included in the label. */
+  forceTraceElements?: string[];
 };
 
 export const TraceEntry = z.object({
@@ -49,6 +51,10 @@ export function deriveLabels<T>(
   ops: LabelDerivationOps = {},
 ): RecordsWithLabel<T>[] {
   const importances = new Map<string, number>();
+
+  const forceTraceElements = (ops.forceTraceElements !== undefined && ops.forceTraceElements.length > 0)
+    ? new Set(ops.forceTraceElements)
+    : undefined;
 
   // number of times certain type occurred among all of the
   const numberOfRecordsWithType = new Map<string, number>();
@@ -134,7 +140,8 @@ export function deriveLabels<T>(
     for (let i = 0; i < enrichedRecords.length; i++) {
       const r = enrichedRecords[i];
       const includedTrace = r.fullTrace
-        .filter((fm) => includedTypes.has(fm.fullType));
+        .filter((fm) => includedTypes.has(fm.fullType)
+          || (forceTraceElements && forceTraceElements.has(fm.type)));
       if (includedTrace.length === 0) {
         if (force)
           result.push({
