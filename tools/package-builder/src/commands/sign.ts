@@ -23,7 +23,7 @@ export default class Sign extends Command {
     const { flags } = await this.parse(Sign);
     const logger = util.createLogger(flags['log-level']);
 
-    const core = new Core(logger);
+    const core = new Core(logger, { packageRoot: flags['package-root'] });
 
     core.pkg.version = flags.version;
     core.targetPlatform = flags.platform as util.PlatformType;
