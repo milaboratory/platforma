@@ -72,7 +72,7 @@ export async function updatePFrameGridOptions(
   const specs = model.tableSpec;
   type SpecId = string;
   const specId = (spec: PTableColumnSpec): SpecId =>
-    spec.type === 'axis' ? canonicalize(spec.spec)! : spec.id;
+    spec.type === 'axis' ? canonicalize(getAxisId(spec.spec))! : spec.id;
   const dataSpecs = await pfDriver.getSpec(pt);
   const dataSpecsMap = new Map<SpecId, number>();
   dataSpecs.forEach((spec, i) => {
@@ -81,6 +81,8 @@ export async function updatePFrameGridOptions(
   const specsToDataSpecsMapping = new Map<number, number>();
   specs.forEach((spec, i) => {
     const dataSpecIdx = dataSpecsMap.get(specId(spec));
+    if (dataSpecIdx === undefined && spec.type === 'axis')
+      throw new Error(`axis ${JSON.stringify(spec.spec)} not present in join result`);
     specsToDataSpecsMapping.set(i, dataSpecIdx ?? -1);
   });
 
