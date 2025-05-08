@@ -14,7 +14,7 @@ constants := import(":exec.constants")
 
 self.defineOutputs("runEnv")
 
-_runInVenv := func(python, venv, wd) {
+_runInVenv := func(python, venv, wd, pythonBinDir) {
 	// DEPRECATED: remove after 15 Mar 2025
 	t := feats.commandExpressions ? constants.ARG_TYPE_EXPRESSION : constants.ARG_TYPE_VAR
 	pythonRule := feats.commandExpressions ? "python" : "{python}"
@@ -25,18 +25,19 @@ _runInVenv := func(python, venv, wd) {
 		ref("python-run-environment", python).
 		substitutionRule(pythonRule, "python-venv").
 		substitutionRule(pythonRunenvRule, "python-run-environment").
-		addToPath(t, path.join("{python}", "venv", "bin")).
+		// addToPath(t, path.join("{python}", "venv")).
+		addToPath(t, path.join("{python}", "venv", pythonBinDir)).
 		envTyped("VIRTUAL_ENV", t, path.join("{python}", "venv"))
 }
 
-_installPipDependencies := func(python, venv, dependencies) {
+_installPipDependencies := func(python, venv, dependencies, pythonBinDir) {
 	requirementsRef := dependencies.requirements
 
 	wdForDeps := workdir.builder().
 		addFile("requirements.txt", requirementsRef).
 		build()
 
-	depsBuilder := _runInVenv(python, venv, wdForDeps)
+	depsBuilder := _runInVenv(python, venv, wdForDeps, pythonBinDir)
 
 	// DEPRECATED: remove after 15 Mar 2025
 	t := feats.commandExpressions ? constants.ARG_TYPE_EXPRESSION : constants.ARG_TYPE_VAR
@@ -68,7 +69,9 @@ self.prepare(func(inputs) {
 
 	toolset := inputs.toolset
 	if toolset == "pip" {
-		depsInstall := _installPipDependencies(inputs.python, inputs.venv, inputs.dependencies)
+		depsInstall := _installPipDependencies(
+           inputs.python, inputs.venv, inputs.dependencies, inputs.pythonBinDir
+        )
 		return {
 			runEnv: inputs.venv,
 			sync: depsInstall.workdir // we need it to make 'body' wait for dependencies installation into venv

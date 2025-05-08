@@ -129,12 +129,6 @@ export type LocalPlOptions = {
    */
   readonly closeOld?: boolean;
 
-  /**
-  * If true, don't create new or rewrite existed config.
-  * It's useful in cases when changing default built-in backend settings is needed.
-  */
-  readonly useCustomConfig: boolean;
-
   readonly onClose?: (pl: LocalPl) => Promise<void>;
   readonly onError?: (pl: LocalPl) => Promise<void>;
   readonly onCloseAndError?: (pl: LocalPl) => Promise<void>;
@@ -165,10 +159,8 @@ export async function localPlatformaInit(logger: MiLogger, _ops: LocalPlOptions)
 
     const configPath = upath.join(workDir, LocalConfigYaml);
 
-    if (!ops.useCustomConfig) {
-        logger.info(`writing configuration '${configPath}'...`);
-        await fsp.writeFile(configPath, ops.config);
-    }
+    logger.info(`writing configuration '${configPath}'...`);
+    await fsp.writeFile(configPath, ops.config);
 
     const plBinPath = upath.join(workDir, 'binaries');
     const baseBinaryPath = await resolveLocalPlBinaryPath(logger, plBinPath, ops.plBinary);
