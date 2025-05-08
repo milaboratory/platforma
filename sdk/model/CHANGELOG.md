@@ -1,5 +1,12 @@
 # @platforma-sdk/model
 
+## 1.30.26
+
+### Patch Changes
+
+- 4b685d6: - forceTraceElements for deriveLabels
+  - exclude option for multiple methods in anchoredId API
+
 ## 1.30.24
 
 ### Patch Changes
