@@ -2,4 +2,5 @@
 '@platforma-sdk/model': patch
 ---
 
-forceTraceElements for deriveLabels
+- forceTraceElements for deriveLabels
+- exclude option for multiple methods in anchoredId API
