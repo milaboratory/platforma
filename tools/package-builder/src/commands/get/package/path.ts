@@ -22,7 +22,7 @@ export default class Path extends Command {
     const { flags } = await this.parse(Path);
     const logger = util.createLogger(flags['log-level']);
 
-    const core = new Core(logger);
+    const core = new Core(logger, { packageRoot: flags['package-root'] });
     const platform = (flags.platform as util.PlatformType) ?? util.currentPlatform();
 
     const pkgID = flags['package-id'];

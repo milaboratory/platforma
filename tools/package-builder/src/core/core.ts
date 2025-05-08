@@ -24,9 +24,12 @@ export class Core {
   public allPlatforms: boolean = false;
   public fullDirHash: boolean;
 
-  constructor(logger: winston.Logger, pkgInfo?: PackageInfo) {
+  constructor(logger: winston.Logger, opts?: {
+    pkgInfo?: PackageInfo;
+    packageRoot?: string;
+  }) {
     this.logger = logger;
-    this.pkg = pkgInfo ?? new PackageInfo(logger);
+    this.pkg = opts?.pkgInfo ?? new PackageInfo(logger, { packageRoot: opts?.packageRoot });
 
     this.buildMode = 'release';
 
