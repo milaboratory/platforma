@@ -9,6 +9,10 @@ export const GlobalFlags = {
     options: ['error', 'warn', 'info', 'debug'],
     required: false,
   }),
+  'package-root': Flags.directory({
+    description: 'path to directory with package.json file',
+    required: false,
+  }),
 };
 
 export const ForceFlag = {

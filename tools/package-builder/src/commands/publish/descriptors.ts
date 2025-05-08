@@ -18,7 +18,7 @@ export default class Descriptor extends Command {
     const { argv, flags } = await this.parse(Descriptor);
     const logger = util.createLogger(flags['log-level']);
 
-    const c = new Core(logger);
+    const c = new Core(logger, { packageRoot: flags['package-root'] });
 
     c.publishDescriptors({
       npmPublishArgs: argv as string[],

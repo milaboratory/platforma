@@ -20,7 +20,7 @@ export default class Version extends Command {
     const { flags } = await this.parse(Version);
     const logger = util.createLogger(flags['log-level']);
 
-    const core = new Core(logger);
+    const core = new Core(logger, { packageRoot: flags['package-root'] });
     const pkgID = flags['package-id'];
 
     const pkg = core.getPackage(pkgID);

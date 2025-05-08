@@ -25,7 +25,7 @@ export default class PublishAll extends Command {
     const { flags } = await this.parse(PublishAll);
     const logger = util.createLogger(flags['log-level']);
 
-    const core = new Core(logger);
+    const core = new Core(logger, { packageRoot: flags['package-root'] });
     core.pkg.version = flags.version;
     core.targetPlatform = flags.platform as util.PlatformType;
     core.allPlatforms = flags['all-platforms'];
