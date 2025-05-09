@@ -1,5 +1,56 @@
 # @platforma-sdk/ui-vue
 
+## 1.30.26
+
+### Patch Changes
+
+- Updated dependencies [4b685d6]
+  - @platforma-sdk/model@1.30.26
+  - @milaboratories/uikit@2.2.75
+
+## 1.30.25
+
+### Patch Changes
+
+- 06c4706: PlAgDataTable fix
+
+## 1.30.24
+
+### Patch Changes
+
+- Updated dependencies [b0b80af]
+  - @platforma-sdk/model@1.30.24
+  - @milaboratories/uikit@2.2.75
+
+## 1.30.23
+
+### Patch Changes
+
+- 2aa0f3c: PlAgDataTable row selection improvements
+- Updated dependencies [2aa0f3c]
+  - @milaboratories/uikit@2.2.75
+
+## 1.30.22
+
+### Patch Changes
+
+- 93d4a72: Add cellRendererSelector prop for PlAgDataTableV2
+
+## 1.30.21
+
+### Patch Changes
+
+- Updated dependencies [ec15bb1]
+  - @platforma-sdk/model@1.30.21
+  - @milaboratories/uikit@2.2.74
+
+## 1.30.20
+
+### Patch Changes
+
+- Updated dependencies [d82a569]
+  - @milaboratories/uikit@2.2.74
+
 ## 1.30.15
 
 ### Patch Changes

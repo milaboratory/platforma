@@ -1,5 +1,17 @@
 # @milaboratories/uikit
 
+## 2.2.75
+
+### Patch Changes
+
+- 2aa0f3c: PlAgDataTable row selection improvements
+
+## 2.2.74
+
+### Patch Changes
+
+- d82a569: Add `indeterminate` prop support for PlCheckbox\[Base\]
+
 ## 2.2.73
 
 ### Patch Changes

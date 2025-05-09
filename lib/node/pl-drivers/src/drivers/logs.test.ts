@@ -1,4 +1,4 @@
-import { expect, test } from '@jest/globals';
+import { expect, test } from 'vitest';
 import { Computable } from '@milaboratories/computable';
 import type {
   AnyFieldRef,
@@ -21,7 +21,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { scheduler } from 'node:timers/promises';
 import { createDownloadClient, createLogsClient } from '../clients/constructors';
-import { DownloadDriver } from './download_blob';
+import { DownloadDriver } from './download_blob/download_blob';
 import { LogsDriver } from './logs';
 import { LogsStreamDriver } from './logs_stream';
 

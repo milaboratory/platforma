@@ -1,5 +1,47 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.3.81
+
+### Patch Changes
+
+- Updated dependencies [4b685d6]
+  - @platforma-sdk/model@1.30.26
+  - @milaboratories/milaboratories.ui-examples.model@1.1.57
+
+## 1.3.80
+
+### Patch Changes
+
+- Updated dependencies [b0b80af]
+  - @platforma-sdk/model@1.30.24
+  - @milaboratories/milaboratories.ui-examples.model@1.1.56
+
+## 1.3.79
+
+### Patch Changes
+
+- 2aa0f3c: PlAgDataTable row selection improvements
+
+## 1.3.78
+
+### Patch Changes
+
+- 93d4a72: Add cellRendererSelector prop for PlAgDataTableV2
+
+## 1.3.77
+
+### Patch Changes
+
+- Updated dependencies [ec15bb1]
+  - @platforma-sdk/model@1.30.21
+  - @milaboratories/milaboratories.ui-examples.model@1.1.55
+
+## 1.3.76
+
+### Patch Changes
+
+- d82a569: Add `indeterminate` prop support for PlCheckbox\[Base\]
+
 ## 1.3.75
 
 ### Patch Changes

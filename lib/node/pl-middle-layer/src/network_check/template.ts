@@ -5,7 +5,8 @@ import { Templates as SdkTemplates } from '@platforma-sdk/workflow-tengo';
 import type { TemplateSpecAny } from '../model/template_spec';
 import { loadTemplate, prepareTemplateSpec } from '../mutator/template/template_loading';
 import type { ClientDownload, LsDriver } from '@milaboratories/pl-drivers';
-import { ImportFileHandleUploadData, uploadBlob, type ClientUpload, type LsEntryWithAdditionalInfo } from '@milaboratories/pl-drivers';
+import { ImportFileHandleUploadData, isSignMatch, isUpload, uploadBlob, type ClientUpload, type LsEntryWithAdditionalInfo } from '@milaboratories/pl-drivers';
+import type { Signer } from '@milaboratories/ts-helpers';
 import { notEmpty, type MiLogger } from '@milaboratories/ts-helpers';
 import type { ResourceInfo } from '@milaboratories/pl-tree';
 import { text } from 'node:stream/consumers';
@@ -16,7 +17,7 @@ import { randomBytes } from 'node:crypto';
 import type { StorageEntry } from '@milaboratories/pl-model-common';
 
 export interface TemplateReport {
-  ok: boolean;
+  status: 'ok' | 'warn' | 'failed';
   message: string;
 }
 
@@ -25,12 +26,12 @@ export async function uploadTemplate(logger: MiLogger, pl: PlClient, name: strin
   try {
     const gotGreeting = await runUploadTemplate(logger, pl, name);
     if (gotGreeting !== `Hello, ${name}`) {
-      return { ok: false, message: `Template uploading failed: expected: ${name}, got: ${gotGreeting}` };
+      return { status: 'failed', message: `Template uploading failed: expected: ${name}, got: ${gotGreeting}` };
     }
 
-    return { ok: true, message: `Template uploading succeeded: ${gotGreeting}` };
+    return { status: 'ok', message: `Template uploading succeeded: ${gotGreeting}` };
   } catch (e: unknown) {
-    return { ok: false, message: `Template uploading failed: error occurred: ${e}` };
+    return { status: 'failed', message: `Template uploading failed: error occurred: ${e}` };
   }
 }
 
@@ -39,7 +40,7 @@ export async function runUploadTemplate(
   pl: PlClient,
   name: string,
 ): Promise<string> {
-  const greeting = await runTemplate(
+  const outputs = await runTemplate(
     pl,
     SdkTemplates['check_network.upload_template'],
     true,
@@ -50,35 +51,39 @@ export async function runUploadTemplate(
   );
 
   try {
-    return JSON.parse(notEmpty((await getFieldValue(pl, greeting.greeting)).data?.toString()));
+    return JSON.parse(notEmpty((await getFieldValue(pl, outputs.greeting)).data?.toString()));
   } finally {
-    await deleteFields(pl, Object.values(greeting));
+    if (outputs != undefined) {
+      await deleteFields(pl, Object.values(outputs));
+    }
   }
 }
 
 /** Uploads a file to the backend and checks the output is a Blob resource. */
 export async function uploadFile(
   logger: MiLogger,
+  signer: Signer,
   lsDriver: LsDriver,
   uploadClient: ClientUpload,
   pl: PlClient,
   filePath: string,
 ): Promise<TemplateReport> {
   try {
-    const gotBlob = await runUploadFile(logger, lsDriver, uploadClient, pl, filePath);
+    const gotBlob = await runUploadFile(logger, signer, lsDriver, uploadClient, pl, filePath);
 
     if (gotBlob.type.name !== 'Blob') {
-      return { ok: false, message: `File uploading failed: ${gotBlob.type.name}` };
+      return { status: 'failed', message: `File uploading failed: ${gotBlob.type.name}` };
     }
 
-    return { ok: true, message: `File uploading succeeded: ${gotBlob.type.name}` };
+    return { status: 'ok', message: `File uploading succeeded: ${gotBlob.type.name}` };
   } catch (e: unknown) {
-    return { ok: false, message: `File uploading failed: error occurred: ${e}` };
+    return { status: 'failed', message: `File uploading failed: error occurred: ${e}` };
   }
 }
 
 export async function runUploadFile(
   logger: MiLogger,
+  signer: Signer,
   lsDriver: LsDriver,
   uploadClient: ClientUpload,
   pl: PlClient,
@@ -98,19 +103,26 @@ export async function runUploadFile(
   try {
     const progress = await getFieldValue(pl, result.progress);
 
-    await uploadBlob(
-      logger,
-      uploadClient,
-      progress,
-      ImportFileHandleUploadData.parse(JSON.parse(notEmpty(progress.data?.toString()))),
-      () => false,
-      {
-        nPartsWithThisUploadSpeed: 10,
-        nPartsToIncreaseUpload: 10,
-        currentSpeed: 10,
-        maxSpeed: 10,
-      },
-    );
+    if (isUpload(progress)) {
+      const uploadData = ImportFileHandleUploadData.parse(JSON.parse(notEmpty(progress.data?.toString())));
+      const isUploadSignMatch = isSignMatch(signer, uploadData.localPath, uploadData.pathSignature);
+
+      if (isUploadSignMatch) {
+        await uploadBlob(
+          logger,
+          uploadClient,
+          progress,
+          uploadData,
+          () => false,
+          {
+            nPartsWithThisUploadSpeed: 10,
+            nPartsToIncreaseUpload: 10,
+            currentSpeed: 10,
+            maxSpeed: 10,
+          },
+        );
+      }
+    }
 
     return await getFieldValue(pl, result.file);
   } finally {
@@ -132,11 +144,11 @@ export async function downloadFile(
     const gotFileContent = await runDownloadFile(logger, pl, lsDriver, uploadClient, downloadClient, filePath);
 
     if (gotFileContent !== fileContent) {
-      return { ok: false, message: `File downloading failed: expected: ${fileContent}, got: ${gotFileContent}` };
+      return { status: 'failed', message: `File downloading failed: expected: ${fileContent}, got: ${gotFileContent}` };
     }
-    return { ok: true, message: `File downloading succeeded: ${gotFileContent}` };
+    return { status: 'ok', message: `File downloading succeeded: ${gotFileContent}` };
   } catch (e: unknown) {
-    return { ok: false, message: `File downloading failed: error occurred: ${e}` };
+    return { status: 'failed', message: `File downloading failed: error occurred: ${e}` };
   }
 }
 
@@ -190,11 +202,11 @@ export async function softwareCheck(pl: PlClient): Promise<TemplateReport> {
     const gotGreeting = await runSoftware(pl);
 
     if (gotGreeting !== 'Hello from go binary\n') {
-      return { ok: false, message: `Software check failed: got: ${gotGreeting}` };
+      return { status: 'failed', message: `Software check failed: got: ${gotGreeting}` };
     }
-    return { ok: true, message: `Software check succeeded: ${gotGreeting}` };
+    return { status: 'ok', message: `Software check succeeded: ${gotGreeting}` };
   } catch (e: unknown) {
-    return { ok: false, message: `Software check failed: error occurred: ${e}` };
+    return { status: 'failed', message: `Software check failed: error occurred: ${e}` };
   }
 }
 
@@ -220,11 +232,11 @@ export async function pythonSoftware(pl: PlClient, name: string): Promise<Templa
     const gotGreeting = await runPythonSoftware(pl, name);
 
     if (gotGreeting !== `Hello, ${name}!\n`) {
-      return { ok: false, message: `Python software check failed: got: ${gotGreeting}` };
+      return { status: 'failed', message: `Python software check failed: got: ${gotGreeting}` };
     }
-    return { ok: true, message: `Python software check succeeded: ${gotGreeting}` };
+    return { status: 'ok', message: `Python software check succeeded: ${gotGreeting}` };
   } catch (e: unknown) {
-    return { ok: false, message: `Python software check failed: error occurred: ${e}` };
+    return { status: 'failed', message: `Python software check failed: error occurred: ${e}` };
   }
 }
 
@@ -249,43 +261,64 @@ export async function downloadFromEveryStorage(
   logger: MiLogger,
   pl: PlClient,
   lsDriver: LsDriver,
-  downloadClient: ClientDownload,
   ops: {
+    minLsRequests: number;
     bytesLimit: number;
     minFileSize: number;
+    maxFileSize: number;
     nFilesToCheck: number;
   },
 ): Promise<Record<string, TemplateReport>> {
-  const storages = await lsDriver.getStorageList();
-  const results: Record<string, TemplateReport> = {};
+  try {
+    const storages = await lsDriver.getStorageList();
+    const results: Record<string, TemplateReport> = {};
 
-  for (const storage of storages) {
-    const result = await chooseFile(lsDriver, storage, ops.nFilesToCheck, ops.minFileSize);
-    if (!result) {
-      results[storage.name] = { ok: false, message: `No file found in storage ${storage.name}` };
-      continue;
+    for (const storage of storages) {
+      const result = await chooseFile(lsDriver, storage, ops.nFilesToCheck, ops.minFileSize, ops.maxFileSize, ops.minLsRequests);
+      if (result.file === undefined) {
+        results[storage.name] = {
+          status: 'warn',
+          message: `No file between ${ops.minFileSize} and ${ops.maxFileSize} bytes `
+            + `found in storage ${storage.name}, checked ${result.nCheckedFiles} files, `
+            + `did ${result.nLsRequests} ls requests`,
+        };
+        continue;
+      }
+
+      logger.info(`Downloading file ${JSON.stringify(result)} from storage ${storage.name}`);
+      const outputs = await runTemplate(
+        pl,
+        SdkTemplates['check_network.create_workdir_from_storage'],
+        true,
+        (tx) => ({ file: tx.createValue(Pl.JsonObject, JSON.stringify((result.file as { handle: string }).handle)) }),
+        ['workdir'],
+      );
+
+      try {
+        const workdir = await getFieldValue(pl, outputs.workdir);
+
+        if (workdir.type.name.startsWith('WorkingDirectory')) {
+          results[storage.name] = {
+            status: 'ok',
+            message: `Workdir creation succeeded, size of file: ${result.file?.size}, `
+              + `checked ${result.nCheckedFiles} files, did ${result.nLsRequests} ls requests`,
+          };
+        } else {
+          results[storage.name] = {
+            status: 'failed',
+            message: `Workdir creation failed: ${workdir.type.name}, size of file: ${result.file?.size}, `
+              + `checked ${result.nCheckedFiles} files, did ${result.nLsRequests} ls requests`,
+          };
+        }
+      } finally {
+        await deleteFields(pl, Object.values(outputs));
+      }
     }
 
-    logger.info(`Downloading file ${result.fullPath} from storage ${storage.name}`);
-    const outputs = await runTemplate(
-      pl,
-      SdkTemplates['check_network.download_blob_from_storage'],
-      true,
-      (tx) => ({ file: tx.createValue(Pl.JsonObject, JSON.stringify((result as { handle: string }).handle)) }),
-      ['file'],
-    );
-
-    try {
-      const fileInfo = await getFieldValue(pl, outputs.file);
-      const { size } = await downloadClient.downloadBlob(fileInfo, undefined, undefined, 0, ops.bytesLimit);
-
-      results[storage.name] = { ok: true, message: `File downloading succeeded: size: ${size}` };
-    } finally {
-      await deleteFields(pl, Object.values(outputs));
-    }
+    return results;
+  } catch (e: unknown) {
+    return { unknown: { status: 'failed', message: `Download from every storage failed: error occurred: ${e}` } };
   }
-
-  return results;
 }
 
 /** Chooses a random file from the storage in a size range.
@@ -296,28 +329,38 @@ export async function chooseFile(
   storage: StorageEntry,
   limit: number,
   minSize: number,
-): Promise<LsEntryWithAdditionalInfo | undefined> {
-  const files = listFilesSequence(lsDriver, storage, '');
-
-  let i = 0;
+  maxSize: number,
+  minLsRequests: number,
+): Promise<{
+    file: LsEntryWithAdditionalInfo | undefined;
+    nLsRequests: number;
+    nCheckedFiles: number;
+  }> {
+  const files = listFilesSequence(lsDriver, storage, '', 0);
 
   // return small file in case we don't have many normal-sized files.
   // While we'll download only a small range of bytes from the file,
   // we don't want to return a big file in case the underlying S3 doesn't support range requests.
   let smallFile: LsEntryWithAdditionalInfo | undefined;
-  for await (const file of files) {
-    if (i >= limit) {
-      return smallFile;
+  let nCheckedFiles = 0;
+  let maxNLsRequests = 0;
+
+  for await (const { file, nLsRequests } of files) {
+    maxNLsRequests = Math.max(maxNLsRequests, nLsRequests);
+
+    if (nCheckedFiles >= limit && maxNLsRequests > minLsRequests) {
+      // we reached a limit on both the number of files and the number of ls requests.
+      return { file: smallFile, nLsRequests: maxNLsRequests, nCheckedFiles };
     }
-    i++;
-    if (minSize <= file.size) {
-      return file;
-    } else {
+    nCheckedFiles++;
+    if (minSize <= file.size && file.size <= maxSize) {
+      return { file, nLsRequests: maxNLsRequests, nCheckedFiles };
+    } else if (file.size < minSize) {
       smallFile = file;
     }
   }
 
-  return smallFile;
+  return { file: smallFile, nLsRequests: maxNLsRequests, nCheckedFiles };
 }
 
 /** Deep-first search for files in the storage. */
@@ -325,14 +368,22 @@ export async function* listFilesSequence(
   lsDriver: LsDriver,
   storage: StorageEntry,
   parent: string,
-): AsyncGenerator<LsEntryWithAdditionalInfo, void, unknown> {
+  nLsRequests: number,
+): AsyncGenerator<{ file: LsEntryWithAdditionalInfo; nLsRequests: number }, void, unknown> {
+  nLsRequests++;
   const files = await lsDriver.listRemoteFilesWithAdditionalInfo(storage.handle, parent);
 
   for (const file of files.entries) {
     if (file.type === 'file' && file.fullPath.startsWith(parent)) {
-      yield file;
+      yield {
+        file,
+        nLsRequests,
+      };
     } else if (file.type === 'dir') {
-      yield * listFilesSequence(lsDriver, storage, file.fullPath);
+      for await (const nestedFile of listFilesSequence(lsDriver, storage, file.fullPath, nLsRequests)) {
+        nLsRequests = Math.max(nestedFile.nLsRequests, nLsRequests);
+        yield nestedFile;
+      }
     }
   }
 }

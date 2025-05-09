@@ -225,14 +225,20 @@ export class PackageInfo {
       this.pkgJson = parsePackageJson(options.pkgJsonData);
     } else {
       const pkgJsonPath = path.resolve(this.packageRoot, util.packageJsonName);
-      this.logger.debug(`  - loading '${pkgJsonPath}'`);
-      if (!fs.existsSync(pkgJsonPath)) {
-        this.logger.error(`no '${util.packageJsonName}' file found at '${this.packageRoot}'`);
-        throw new Error('not a platform software package directory');
-      }
 
-      this.pkgJson = readPackageJson(pkgJsonPath);
-      this.logger.debug('    ' + JSON.stringify(this.pkgJson));
+      try {
+        this.logger.debug(`  - loading '${pkgJsonPath}'`);
+        if (!fs.existsSync(pkgJsonPath)) {
+          this.logger.error(`no '${util.packageJsonName}' file found at '${this.packageRoot}'`);
+          throw new Error('not a platform software package directory');
+        }
+
+        this.pkgJson = readPackageJson(pkgJsonPath);
+        this.logger.debug('    ' + JSON.stringify(this.pkgJson));
+      } catch (e) {
+        this.logger.error(`Failed to read and parse '${pkgJsonPath}': `, e);
+        throw e;
+      }
     }
 
     this.validateConfig();
@@ -634,7 +640,7 @@ export class PackageInfo {
 const readPackageJson = (filePath: string) => parsePackageJson(fs.readFileSync(filePath, 'utf8'));
 function parsePackageJson(data: string) {
   const parsedData: unknown = JSON.parse(data);
-  // TODO: try/catch and transform errors on human-readable format
+  // TODO: try/catch and transform errors to human-readable format
   return packageJsonSchema.parse(parsedData);
 }
 

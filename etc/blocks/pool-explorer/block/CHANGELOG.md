@@ -1,5 +1,62 @@
 # @milaboratories/milaboratories.pool-explorer
 
+## 1.0.127
+
+### Patch Changes
+
+- Updated dependencies [4b685d6]
+  - @platforma-sdk/model@1.30.26
+  - @milaboratories/milaboratories.pool-explorer.model@1.0.39
+  - @milaboratories/milaboratories.pool-explorer.ui@1.1.86
+
+## 1.0.126
+
+### Patch Changes
+
+- @milaboratories/milaboratories.pool-explorer.ui@1.1.85
+
+## 1.0.125
+
+### Patch Changes
+
+- Updated dependencies [b0b80af]
+  - @platforma-sdk/model@1.30.24
+  - @milaboratories/milaboratories.pool-explorer.model@1.0.38
+  - @milaboratories/milaboratories.pool-explorer.ui@1.1.84
+
+## 1.0.124
+
+### Patch Changes
+
+- @milaboratories/milaboratories.pool-explorer.ui@1.1.83
+
+## 1.0.123
+
+### Patch Changes
+
+- @milaboratories/milaboratories.pool-explorer.ui@1.1.82
+
+## 1.0.122
+
+### Patch Changes
+
+- Updated dependencies [ec15bb1]
+  - @platforma-sdk/model@1.30.21
+  - @milaboratories/milaboratories.pool-explorer.model@1.0.37
+  - @milaboratories/milaboratories.pool-explorer.ui@1.1.81
+
+## 1.0.121
+
+### Patch Changes
+
+- @milaboratories/milaboratories.pool-explorer.ui@1.1.80
+
+## 1.0.120
+
+### Patch Changes
+
+- @milaboratories/milaboratories.pool-explorer.workflow@1.1.11
+
 ## 1.0.119
 
 ### Patch Changes

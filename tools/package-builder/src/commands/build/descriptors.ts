@@ -23,7 +23,7 @@ export default class Descriptors extends Command {
     const { flags } = await this.parse(Descriptors);
     const logger = util.createLogger(flags['log-level']);
 
-    const core = new Core(logger);
+    const core = new Core(logger, { packageRoot: flags['package-root'] });
     core.buildMode = cmdOpts.modeFromFlag(flags.dev as cmdOpts.devModeName);
     core.pkg.version = flags.version;
     core.fullDirHash = flags['full-dir-hash'];

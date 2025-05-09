@@ -1,5 +1,62 @@
 # @milaboratories/pl-middle-layer
 
+## 1.37.17
+
+### Patch Changes
+
+- Updated dependencies [4b685d6]
+  - @platforma-sdk/model@1.30.26
+
+## 1.37.16
+
+### Patch Changes
+
+- Updated dependencies [b0b80af]
+  - @milaboratories/pl-model-common@1.15.0
+  - @platforma-sdk/model@1.30.24
+  - @milaboratories/pl-model-middle-layer@1.7.32
+  - @milaboratories/pl-drivers@1.5.57
+  - @platforma-sdk/block-tools@2.5.47
+
+## 1.37.15
+
+### Patch Changes
+
+- 94468e0: PFrames version bump
+- Updated dependencies [ec15bb1]
+- Updated dependencies [94468e0]
+  - @platforma-sdk/model@1.30.21
+  - @milaboratories/pl-model-middle-layer@1.7.31
+  - @milaboratories/pl-model-common@1.14.1
+  - @platforma-sdk/block-tools@2.5.46
+  - @milaboratories/pl-drivers@1.5.56
+
+## 1.37.14
+
+### Patch Changes
+
+- 6ab1be8: more check_network checks
+- 6ab1be8: updated check network
+- Updated dependencies [6ab1be8]
+- Updated dependencies [6ab1be8]
+  - @platforma-sdk/workflow-tengo@4.3.2
+  - @milaboratories/pl-drivers@1.5.55
+
+## 1.37.13
+
+### Patch Changes
+
+- Updated dependencies [8e23a2e]
+  - @milaboratories/pl-model-middle-layer@1.7.30
+  - @platforma-sdk/block-tools@2.5.45
+
+## 1.37.12
+
+### Patch Changes
+
+- Updated dependencies [b8c7847]
+  - @milaboratories/pl-drivers@1.5.54
+
 ## 1.37.11
 
 ### Patch Changes

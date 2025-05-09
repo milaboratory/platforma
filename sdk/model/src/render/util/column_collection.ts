@@ -12,6 +12,7 @@ import type {
   AnchoredPColumnSelector,
   PartitionedDataInfoEntries,
   ResolveAnchorsOptions,
+  NativePObjectId,
 } from '@milaboratories/pl-model-common';
 import {
   selectorsToPredicate,
@@ -21,6 +22,7 @@ import {
   canonicalizeAxisId,
   isPartitionedDataInfoEntries,
   entriesToDataInfo,
+  deriveNativeId,
 } from '@milaboratories/pl-model-common';
 import type { TreeNodeAccessor } from '../accessor';
 import type { LabelDerivationOps, TraceEntry } from './label';
@@ -148,6 +150,8 @@ function getSplitAxisIndices(selector: APColumnSelectorWithSplit | ((spec: PColu
 }
 
 type UniversalPColumnOptsNoDeriver = {
+  /** If provided, columns matching the provided selectors will be excluded from the result. */
+  exclude?: AnchoredPColumnSelector | AnchoredPColumnSelector[];
   labelOps?: LabelDerivationOps;
   /** If true, incomplete data will cause the column to be skipped instead of returning undefined for the whole request. */
   dontWaitAllData?: boolean;
@@ -210,12 +214,26 @@ export class PColumnCollection {
   public getUniversalEntries(
     predicateOrSelectors: ((spec: PColumnSpec) => boolean) | APColumnSelectorWithSplit | APColumnSelectorWithSplit[],
     opts?: Optional<UniversalPColumnOpts, 'anchorCtx'>): (PColumnEntryWithLabel | PColumnEntryUniversal)[] | undefined {
-    const { anchorCtx, labelOps: rawLabelOps, dontWaitAllData = false, overrideLabelAnnotation = false } = opts ?? {};
+    const { anchorCtx, labelOps: rawLabelOps, dontWaitAllData = false, overrideLabelAnnotation = false, exclude } = opts ?? {};
 
     const labelOps: LabelDerivationOps = {
       ...(overrideLabelAnnotation && rawLabelOps?.includeNativeLabel !== false ? { includeNativeLabel: true } : {}),
       ...(rawLabelOps ?? {}),
     };
+
+    let excludePredicate: ((spec: PColumnSpec) => boolean) = () => false;
+    if (exclude) {
+      const excludePredicartes = (Array.isArray(exclude) ? exclude : [exclude])
+        .map((selector) => {
+          if (hasAnchors(selector)) {
+            if (!anchorCtx)
+              throw new Error('Anchored selectors in exclude require an AnchoredIdDeriver to be provided in options.');
+            return selectorsToPredicate(resolveAnchors(anchorCtx.anchors, selector, opts));
+          } else
+            return selectorsToPredicate(selector);
+        });
+      excludePredicate = (spec) => excludePredicartes.some((predicate) => predicate(spec));
+    }
 
     const selectorsArray = typeof predicateOrSelectors === 'function'
       ? [predicateOrSelectors]
@@ -224,6 +242,7 @@ export class PColumnCollection {
         : [predicateOrSelectors];
 
     const intermediateResults: IntermediateColumnEntry[] = [];
+    const selectedNativeIds = new Set<NativePObjectId>();
 
     for (const rawSelector of selectorsArray) {
       const usesAnchors = hasAnchors(rawSelector);
@@ -241,8 +260,14 @@ export class PColumnCollection {
       for (const provider of this.providers) {
         const providerColumns = provider.selectColumns(currentSelector);
         for (const col of providerColumns) {
-          if (selectedIds.has(col.id)) throw new Error(`Duplicate column id ${col.id} in provider ${provider.constructor.name}`);
+          if (excludePredicate(col.spec)) continue;
+          if (selectedIds.has(col.id))
+            throw new Error(`Duplicate column id ${col.id} in provider ${provider.constructor.name}`);
+          const nativeId = deriveNativeId(col.spec);
+          if (selectedNativeIds.has(nativeId))
+            continue;
           selectedIds.add(col.id);
+          selectedNativeIds.add(nativeId);
           selectedColumns.push(col);
         }
       }

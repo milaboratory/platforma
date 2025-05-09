@@ -1,5 +1,26 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.7.32
+
+### Patch Changes
+
+- Updated dependencies [b0b80af]
+  - @milaboratories/pl-model-common@1.15.0
+
+## 1.7.31
+
+### Patch Changes
+
+- 94468e0: PFrames version bump
+- Updated dependencies [94468e0]
+  - @milaboratories/pl-model-common@1.14.1
+
+## 1.7.30
+
+### Patch Changes
+
+- 8e23a2e: PFrames support inline columns in joins
+
 ## 1.7.29
 
 ### Patch Changes

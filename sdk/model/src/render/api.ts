@@ -1,4 +1,5 @@
 import type {
+  AnchoredPColumnSelector,
   AnyFunction,
   AxisId,
   DataInfo,
@@ -88,6 +89,7 @@ PColumn<PColumnValues | AccessorHandle | DataInfo<AccessorHandle>> {
 type UniversalPColumnOpts = {
   labelOps?: LabelDerivationOps;
   dontWaitAllData?: boolean;
+  exclude?: AnchoredPColumnSelector | AnchoredPColumnSelector[];
 } & ResolveAnchorsOptions;
 
 type GetOptionsOpts = {

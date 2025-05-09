@@ -16,9 +16,9 @@ import fs from 'node:fs';
 import * as fsp from 'node:fs/promises';
 import * as path from 'node:path';
 import { Writable } from 'node:stream';
-import type { ClientDownload } from '../clients/download';
-import { UnknownStorageError, WrongLocalFileUrl } from '../clients/download';
-import { NetworkError400 } from '../helpers/download';
+import type { ClientDownload } from '../../clients/download';
+import { UnknownStorageError, WrongLocalFileUrl } from '../../clients/download';
+import { NetworkError400 } from '../../helpers/download';
 
 /** Downloads a blob. */
 export class DownloadBlobTask {

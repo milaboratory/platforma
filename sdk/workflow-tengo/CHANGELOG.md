@@ -1,5 +1,12 @@
 # @platforma-sdk/workflow-tengo
 
+## 4.3.2
+
+### Patch Changes
+
+- 6ab1be8: more check_network checks
+- 6ab1be8: updated check network
+
 ## 4.3.1
 
 ### Patch Changes

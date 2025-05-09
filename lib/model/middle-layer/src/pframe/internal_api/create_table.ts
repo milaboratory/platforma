@@ -1,7 +1,7 @@
 import { ConstantAxisFilter } from './common';
-import { PObjectId, PTableRecordFilter } from '@milaboratories/pl-model-common';
+import { JsonDataInfo, PColumnSpec, PObjectId, PTableRecordFilter } from '@milaboratories/pl-model-common';
 
-export interface ColumnJoinEntryV2 {
+export interface ColumnJoinEntry {
   type: 'column';
   columnId: PObjectId;
 }
@@ -13,30 +13,38 @@ export interface SlicedColumnJoinEntry {
   readonly axisFilters: ConstantAxisFilter[];
 }
 
-export interface InnerJoinV2 {
+export interface InlineColumnJoinEntry {
+  readonly type: 'inlineColumn';
+  readonly newId: PObjectId;
+  readonly spec: PColumnSpec;
+  readonly dataInfo: JsonDataInfo;
+}
+
+export interface InnerJoinV3 {
   type: 'inner';
-  entries: JoinEntryV2[];
+  entries: JoinEntryV3[];
 }
 
-export interface FullJoinV2 {
+export interface FullJoinV3 {
   type: 'full';
-  entries: JoinEntryV2[];
+  entries: JoinEntryV3[];
 }
 
-export interface OuterJoinV2 {
+export interface OuterJoinV3 {
   type: 'outer';
-  primary: JoinEntryV2;
-  secondary: JoinEntryV2[];
+  primary: JoinEntryV3;
+  secondary: JoinEntryV3[];
 }
 
-export type JoinEntryV2 = 
-  | ColumnJoinEntryV2
+export type JoinEntryV3 = 
+  | ColumnJoinEntry
   | SlicedColumnJoinEntry
-  | InnerJoinV2
-  | FullJoinV2
-  | OuterJoinV2;
+  | InlineColumnJoinEntry
+  | InnerJoinV3
+  | FullJoinV3
+  | OuterJoinV3;
 
-export interface CreateTableRequestV2 {
-  src: JoinEntryV2;
+export interface CreateTableRequestV3 {
+  src: JoinEntryV3;
   filters: PTableRecordFilter[];
 }
