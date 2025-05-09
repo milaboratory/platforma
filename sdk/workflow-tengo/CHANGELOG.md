@@ -1,5 +1,12 @@
 # @platforma-sdk/workflow-tengo
 
+## 4.4.0
+
+### Minor Changes
+
+- bump small-binaries
+- 3f9187f: getting pyton bin bath related to os
+
 ## 4.3.2
 
 ### Patch Changes
