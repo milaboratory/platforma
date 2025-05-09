@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 4.4.1
+
+### Patch Changes
+
+- 3e5845b: Also use dynamic bin dir name when starting python scripts inside venv
+
 ## 4.4.0
 
 ### Minor Changes
