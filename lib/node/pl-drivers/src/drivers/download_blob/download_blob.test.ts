@@ -1,4 +1,4 @@
-import { expect, test } from '@jest/globals';
+import { expect, test } from 'vitest';
 import type {
   FieldId,
   FieldRef,
@@ -15,9 +15,9 @@ import * as fsp from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { scheduler } from 'node:timers/promises';
-import { createDownloadClient, createLogsClient } from '../clients/constructors';
+import { createDownloadClient, createLogsClient } from '../../clients/constructors';
 import { DownloadDriver } from './download_blob';
-import type { OnDemandBlobResourceSnapshot } from './types';
+import type { OnDemandBlobResourceSnapshot } from '../types';
 
 const fileName = 'answer_to_the_ultimate_question.txt';
 

@@ -10,6 +10,7 @@ import {
   type ManagedGridOptions,
   type SortState,
   type StateUpdatedEvent,
+  type CellRendererSelectorFunc,
   ModuleRegistry,
   ClientSideRowModelModule,
   ClipboardModule,
@@ -54,6 +55,7 @@ import { autoSizeRowNumberColumn, PlAgDataTableRowNumberColId } from './sources/
 import { focusRow, makeOnceTracker, trackFirstDataRendered } from './sources/focus-row';
 import PlAgCsvExporter from '../PlAgCsvExporter/PlAgCsvExporter.vue';
 import { Deferred, isJsonEqual } from '@milaboratories/helpers';
+import PlAgRowCount from './PlAgRowCount.vue';
 
 ModuleRegistry.registerModules([
   ClientSideRowModelModule,
@@ -113,6 +115,12 @@ const props = defineProps<{
 
   /** @see {@link PlAgOverlayNoRowsParams.text} */
   noRowsText?: string;
+
+  /**
+   * Callback to override the default renderer for a given cell.
+   * @see https://www.ag-grid.com/vue-data-grid/component-cell-renderer/#dynamic-component-selection
+   */
+  cellRendererSelector?: CellRendererSelectorFunc<PlAgDataTableRow>;
 }>();
 const { settings } = toRefs(props);
 const emit = defineEmits<{
@@ -283,6 +291,7 @@ const gridOptions = shallowRef<GridOptions<PlAgDataTableRow>>({
   defaultColDef: {
     suppressHeaderMenuButton: true,
     sortingOrder: ['desc', 'asc', null],
+    cellRendererSelector: props.cellRendererSelector,
   },
   maintainColumnOrder: true,
   localeText: {
@@ -310,6 +319,11 @@ const gridOptions = shallowRef<GridOptions<PlAgDataTableRow>>({
     allColumns: true,
     suppressQuotes: true,
     fileName: 'table.csv',
+  },
+  statusBar: {
+    statusPanels: [
+      { statusPanel: PlAgRowCount, align: 'left' },
+    ],
   },
 });
 
@@ -522,6 +536,19 @@ watch(
     }
   },
   { immediate: true, deep: true },
+);
+
+watch(
+  () => props.cellRendererSelector,
+  (cellRendererSelector) => {
+    if (!gridApi.value) {
+      return;
+    }
+    gridApi.value.setGridOption('defaultColDef', {
+      ...gridOptions.value.defaultColDef,
+      cellRendererSelector,
+    });
+  },
 );
 </script>
 

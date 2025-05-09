@@ -1,5 +1,11 @@
 # @platforma-sdk/package-builder
 
+## 2.16.0
+
+### Minor Changes
+
+- acc83d2: Allow to choose custom package.json path from CLI options
+
 ## 2.15.6
 
 ### Patch Changes

@@ -291,11 +291,11 @@ function isImportResourceOutputSet(res: ImportResourceSnapshot) {
     : res.fields.incarnation !== undefined;
 }
 
-function isUpload(res: ResourceInfo) {
+export function isUpload(res: ResourceInfo) {
   return res.type.name.startsWith('BlobUpload');
 }
 
-function isSignMatch(signer: Signer, path: string, signature: string): boolean {
+export function isSignMatch(signer: Signer, path: string, signature: string): boolean {
   try {
     signer.verify(path, signature);
     return true;

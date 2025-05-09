@@ -1,0 +1,15 @@
+/** Just a simple template that creates a workdir . */
+
+self := import(":tpl")
+file := import(":file")
+workdir := import(":workdir")
+
+self.body(func(inputs) {
+	wd := workdir.builder()
+	result := file.importFile(inputs.file)
+	wd.addFile("test_file", result.file)
+
+	return {
+		"workdir": wd.build()
+	}
+})

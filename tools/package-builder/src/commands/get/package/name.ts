@@ -21,7 +21,7 @@ export default class Name extends Command {
     const { flags } = await this.parse(Name);
     const logger = util.createLogger(flags['log-level']);
 
-    const core = new Core(logger);
+    const core = new Core(logger, { packageRoot: flags['package-root'] });
 
     const pkgID = flags['package-id'];
     const platform = (flags.platform as util.PlatformType) ?? util.currentPlatform();

@@ -20,8 +20,6 @@ _runInVenv := func(python, venv, wd, pythonBinDir) {
 	pythonRule := feats.commandExpressions ? "python" : "{python}"
 	pythonRunenvRule := feats.commandExpressions ? "python_runenv" : "{python_runenv}"
 
-
-    ll.panic("TEST:"+pythonBinDir)
 	return runcmd.builder(wd).
 		ref("python-venv", venv).
 		ref("python-run-environment", python).

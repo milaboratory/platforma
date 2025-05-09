@@ -7,10 +7,11 @@ import {
   PlBlockPage,
   PlAgDataTableV2,
   PlNumberField,
+  PlCheckbox,
 } from '@platforma-sdk/ui-vue';
 import { useApp } from '../app';
 import type { PTableColumnSpec } from '@platforma-sdk/model';
-
+import type { ICellRendererParams } from 'ag-grid-enterprise';
 const app = useApp();
 
 if (!app.model.ui?.dataTableState) {
@@ -30,6 +31,20 @@ const tableSettings = computed<PlAgDataTableSettings>(() => (
   }
 ));
 const columns = ref<PTableColumnSpec[]>([]);
+
+const verbose = ref(false);
+
+const cellRendererSelector = computed(() => {
+  if (!verbose.value) return;
+
+  return (params: ICellRendererParams) => {
+    if (params.colDef?.cellDataType === 'number') {
+      return ({
+        component: () => 'Number is ' + params.value + '',
+      });
+    }
+  };
+});
 </script>
 
 <template>
@@ -44,6 +59,7 @@ const columns = ref<PTableColumnSpec[]>([]);
       ref="tableInstance"
       v-model="app.model.ui.dataTableState!.tableState"
       :settings="tableSettings"
+      :cell-renderer-selector="cellRendererSelector"
       show-columns-panel
       show-export-button
       @columns-changed="(newColumns) => (columns = newColumns)"
@@ -51,6 +67,7 @@ const columns = ref<PTableColumnSpec[]>([]);
       <template #before-sheets>
         Table controls could be placed here
         <PlNumberField v-model="app.model.args.tableNumRows" />
+        <PlCheckbox v-model="verbose">Use custom cell renderer for numbers</PlCheckbox>
       </template>
     </PlAgDataTableV2>
   </PlBlockPage>

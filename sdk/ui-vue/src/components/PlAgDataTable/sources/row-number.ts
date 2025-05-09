@@ -1,6 +1,8 @@
+import type { AgGridEvent, AgPublicEventType } from 'ag-grid-enterprise';
 import { isColumnSelectionCol, type ColDef, type GridApi, type ValueGetterParams } from 'ag-grid-enterprise';
 import { nextTick } from 'vue';
 import { PlAgRowNumCheckbox } from '../../PlAgRowNumCheckbox';
+import PlAgRowNumHeader from '../../PlAgRowNumHeader.vue';
 
 export const PlAgDataTableRowNumberColId = '"##RowNumberColumnId##"';
 
@@ -11,6 +13,7 @@ export function makeRowNumberColDef<TData = any>(): ColDef<TData> {
   return {
     colId: PlAgDataTableRowNumberColId,
     headerName: '#',
+    headerComponent: PlAgRowNumHeader,
     valueGetter: (params: ValueGetterParams) => {
       if (params.node === null) return null;
       if (params.node.rowIndex === null) return null;
@@ -108,6 +111,7 @@ function fixColumnOrder(gridApi: GridApi) {
 
 export function autoSizeRowNumberColumn(gridApi: GridApi) {
   const cellFake = createCellFake();
+
   gridApi.addEventListener('firstDataRendered', (event) => {
     adjustRowNumberColumnWidth(event.api, cellFake);
   });
@@ -128,12 +132,11 @@ export function autoSizeRowNumberColumn(gridApi: GridApi) {
       adjustRowNumberColumnWidth(event.api, cellFake, true);
     }
   });
-  gridApi.addEventListener('sortChanged', (event) => {
-    event.api.refreshCells();
-  });
-  gridApi.addEventListener('filterChanged', (event) => {
-    event.api.refreshCells();
-  });
+
+  const refreshCells = (event: AgGridEvent) => event.api.refreshCells();
+  const refreshCellsOn: AgPublicEventType[] = ['sortChanged', 'filterChanged', 'modelUpdated'];
+  refreshCellsOn.forEach((eventType) => gridApi.addEventListener(eventType, refreshCells));
+
   gridApi.addEventListener('displayedColumnsChanged', (event) => {
     fixColumnOrder(event.api);
   });

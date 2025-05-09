@@ -16,6 +16,8 @@ export type LabelDerivationOps = {
   separator?: string;
   /** If true, label will be added as suffix (at the end of the generated label). By default label added as a prefix. */
   addLabelAsSuffix?: boolean;
+  /** Trace elements list that will be forced to be included in the label. */
+  forceTraceElements?: string[];
 };
 
 export const TraceEntry = z.object({
@@ -50,6 +52,10 @@ export function deriveLabels<T>(
 ): RecordsWithLabel<T>[] {
   const importances = new Map<string, number>();
 
+  const forceTraceElements = (ops.forceTraceElements !== undefined && ops.forceTraceElements.length > 0)
+    ? new Set(ops.forceTraceElements)
+    : undefined;
+
   // number of times certain type occurred among all of the
   const numberOfRecordsWithType = new Map<string, number>();
 
@@ -80,7 +86,7 @@ export function deriveLabels<T>(
       ...(suffixTrace ?? []),
     ];
 
-    if (label) {
+    if (label !== undefined) {
       const labelEntry = { label, type: LabelType, importance: -2 };
       if (ops.addLabelAsSuffix) trace.push(labelEntry);
       else trace.splice(0, 0, labelEntry);
@@ -129,14 +135,21 @@ export function deriveLabels<T>(
     else secondaryTypes.push(typeName);
   }
 
-  const calculate = (includedTypes: Set<string>) => {
+  const calculate = (includedTypes: Set<string>, force: boolean = false) => {
     const result: RecordsWithLabel<T>[] = [];
     for (let i = 0; i < enrichedRecords.length; i++) {
       const r = enrichedRecords[i];
       const includedTrace = r.fullTrace
-        .filter((fm) => includedTypes.has(fm.fullType));
-      if (includedTrace.length === 0)
-        return undefined;
+        .filter((fm) => includedTypes.has(fm.fullType)
+          || (forceTraceElements && forceTraceElements.has(fm.type)));
+      if (includedTrace.length === 0) {
+        if (force)
+          result.push({
+            label: 'Unlabeled',
+            value: r.value,
+          } satisfies RecordsWithLabel<T>);
+        else return undefined;
+      }
       const labelSet = includedTrace
         .map((fm) => fm.label);
       const sep = ops.separator ?? ' / ';
@@ -149,10 +162,8 @@ export function deriveLabels<T>(
   };
 
   if (mainTypes.length === 0) {
-    if (secondaryTypes.length !== 0) throw new Error('Assertion error.');
-    const result = calculate(new Set(LabelTypeFull));
-    if (result === undefined) throw new Error('Assertion error.');
-    return result;
+    if (secondaryTypes.length !== 0) throw new Error('Non-empty secondary types list while main types list is empty.');
+    return calculate(new Set(LabelTypeFull), true)!;
   }
 
   //
@@ -165,12 +176,13 @@ export function deriveLabels<T>(
   // Resulting set: T0, T1, T3
   //
   let includedTypes = 0;
-  let additionalType = 0;
+  let additionalType = -1;
   while (includedTypes < mainTypes.length) {
     const currentSet = new Set<string>();
     if (ops.includeNativeLabel) currentSet.add(LabelTypeFull);
     for (let i = 0; i < includedTypes; ++i) currentSet.add(mainTypes[i]);
-    currentSet.add(mainTypes[additionalType]);
+    if (additionalType >= 0)
+      currentSet.add(mainTypes[additionalType]);
 
     const candidateResult = calculate(currentSet);
 
@@ -184,7 +196,5 @@ export function deriveLabels<T>(
     }
   }
 
-  const result = calculate(new Set([...mainTypes, ...secondaryTypes]));
-  if (result === undefined) throw new Error('Assertion error.');
-  return result;
+  return calculate(new Set([...mainTypes, ...secondaryTypes]), true)!;
 }
