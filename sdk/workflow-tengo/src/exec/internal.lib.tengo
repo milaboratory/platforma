@@ -22,13 +22,21 @@ constants := import(":exec.constants")
 desc := import(":exec.descriptor")
 validation := import(":validation")
 
+//
 // Variables, substituted in command arguments and environment variable values.
+//
 _ARG_VAR_PKG            := "pkg"  // abs path to software package
 _ARG_VAR_JAVA           := "java" // abs path to 'java' run environment
 _ARG_VAR_PYTHON         := "python" // abs path to 'python' run environment
+_ARG_VAR_VENV_BIN_DIR   := "venv_bin_dir" // name of bin dir in python venv depending on OS type (Scripts on Windows, bin on Unix)
 _ARG_VAR_R              := "R" // abs path to 'R' run environment runtime
 _ARG_VAR_R_VENV         := "rVenv" // abs path to 'R' portable virtual environment
 _ARG_VAR_MNZ            := "monetization" // monetization env value
+
+//
+// Headers for functions that are declared in this file below.
+//
+pythonBinDir := undefined
 
 /** Converts the args above to the expressions. */
 _expr := func(varName) {
@@ -119,19 +127,19 @@ _loadPythonRunEnvironment := func(operationMode, descriptor, softName, softPkg) 
 
 	venv := venvBuilder.
 		cacheDays(7).
-		build().
-		venv()
+		build()
 
 	venvRoot := path.join(_expr(_ARG_VAR_PYTHON), "venv")
 	venvRefKey := softName + "/venv"
 
-	pythonRefVar := _newRefVar(_ARG_VAR_PYTHON, venvRefKey, venv)
+	pythonRefVar := _newRefVar(_ARG_VAR_PYTHON, venvRefKey, venv.venv())
+	venvBinDirRefVar := _newRefVar(_ARG_VAR_VENV_BIN_DIR, softName + "/binDir", venv.binDir() )
 
 	return ll.toStrict({
 		runEnvType: "python",
 
-		variables: [ pythonRefVar ],
-		customPaths: [ _newArg(false, path.join(venvRoot, "bin")) ],
+		variables: [ pythonRefVar, venvBinDirRefVar ],
+		customPaths: [ _newArg(false, path.join(venvRoot, _expr(_ARG_VAR_VENV_BIN_DIR))) ],
 		envs: {
 			"VIRTUAL_ENV": _newArg(false, venvRoot)
 		}

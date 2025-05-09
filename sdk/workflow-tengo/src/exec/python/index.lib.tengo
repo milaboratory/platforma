@@ -12,6 +12,7 @@ runenv := import(":exec.runenv")
 desc := import(":exec.descriptor")
 
 _OUTPUT_RUN_ENV       := "runEnv"
+_OUTPUT_BIN_DIR       := "binDir"
 
 createVenvTpl := assets.importTemplate(":exec.python.create-venv")
 
@@ -146,6 +147,14 @@ pythonVenvBuilder := func() {
 
 			self := undefined
 			self = ll.toStrict(oop.inherit(tpl, {
+				/**
+				 * Name of bin directory in python venv depending on OS type (Scripts on Windows, bin on Unix).
+				 * @return binDir: smart.field - name of bin directory in python venv.
+				 */
+				binDir: func() {
+					return tpl.output(_OUTPUT_BIN_DIR, cache)
+				},
+
 				/**
 				 * Python virtual environment with all dependencies installed.
 				 *
