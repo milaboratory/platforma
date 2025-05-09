@@ -52,6 +52,18 @@ _createVenv := func(pythonPackage, pythonDescriptor) {
 	return runEnvSaver.build().runEnv()
 }
 
+_pythonBinDir := func(pythonPackage, pythonDescriptor) {
+	result := render.createEphemeral(
+		assets.importTemplate(":exec.python.venv-bin-path"),
+		{
+            pythonPackage: pythonPackage, 
+            pythonDescriptor: pythonDescriptor
+        }
+	)
+
+    return result.output("binPath")
+}
+
 installPyDeps := assets.importTemplate(":exec.python.install-deps")
 
 self.defineOutputs("runEnv")
@@ -65,11 +77,14 @@ self.body(func(inputs) {
 
 	venv := _createVenv(pythonPackage, pythonDescriptor)
 
+    pythonBinDir := _pythonBinDir(pythonPackage, pythonDescriptor)
+
 	installDeps := render.createEphemeral(installPyDeps, {
 		python: pythonPackage,
 		venv: venv,
 		toolset: inputs.toolset,
-		dependencies: inputs.dependencies
+		dependencies: inputs.dependencies,
+        pythonBinDir: pythonBinDir
 	})
 
 	return {

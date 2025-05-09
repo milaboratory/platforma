@@ -231,7 +231,7 @@ builder := func(workdir) {
 		 */
 		ref: func(refKey, ref) {
 			ll.assert(smart.isReference(ref),
-				"runcmd.builder().ref() must be a reference (valid field or resource)")
+				"runcmd.builder().ref() must be a reference (valid field or resource) %s", refKey)
 
 			ll.assert(!maps.containsKey(refs, refKey),
 				"attempt to override existing reference %q", refKey)
