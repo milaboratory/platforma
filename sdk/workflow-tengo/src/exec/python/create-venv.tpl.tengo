@@ -52,6 +52,12 @@ _createVenv := func(pythonPackage, pythonDescriptor) {
 	return runEnvSaver.build().runEnv()
 }
 
+
+/**
+ * Detects what OS is used on runner side and returns 'Scripts' for windows or 'bin' for unix.
+ * This is because python under windows forcefully puts all its binaries into 'Scripts' dir when creating venv
+ * and we can't control it.
+ */
 _pythonBinDir := func(pythonPackage, pythonDescriptor) {
 	result := render.createEphemeral(
 		assets.importTemplate(":exec.python.venv-bin-path"),
@@ -66,7 +72,7 @@ _pythonBinDir := func(pythonPackage, pythonDescriptor) {
 
 installPyDeps := assets.importTemplate(":exec.python.install-deps")
 
-self.defineOutputs("runEnv")
+self.defineOutputs("binDir", "runEnv")
 
 self.body(func(inputs) {
 	// assert we have inputs we expect.
@@ -88,6 +94,7 @@ self.body(func(inputs) {
 	})
 
 	return {
+		binDir: pythonBinDir,
 		runEnv: installDeps.output("runEnv")
 	}
 })
