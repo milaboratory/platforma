@@ -1,0 +1,68 @@
+/**
+* Return the path to the virtualenv's binaries directory.
+*/
+
+self := import(":tpl.light")
+
+desc := import(":exec.descriptor")
+feats := import(":feats")
+constants := import(":exec.constants")
+runcmd := import(":exec.runcmd")
+path := import(":path")
+workdir := import(":workdir")
+validation := import(":validation")
+text := import("text")
+
+self.defineOutputs("binPath")
+
+self.prepare(func(inputs){
+	validation.assertType(inputs, {
+		pythonPackage: validation.reference,
+	    pythonDescriptor: desc.runEnvScheme
+	})
+   	wdBefore := workdir.builder().build()
+
+
+    pythonPackage := inputs.pythonPackage
+    pythonDescriptor := inputs.pythonDescriptor
+
+    t := feats.commandExpressions ? constants.ARG_TYPE_EXPRESSION : constants.ARG_TYPE_VAR
+	pythonRule := feats.commandExpressions ? "python" : "{python}"
+
+	builder := runcmd.builder(wdBefore)
+	builder.
+		ref("python-run-environment", pythonPackage).
+		substitutionRule(pythonRule, "python-run-environment").
+		addToPath(t, path.join("{python}", pythonDescriptor.binDir))
+
+    getVenvBinPath := "import platform; print('Scripts' if platform.system().lower() == 'windows' else 'bin')"
+	builder.
+		cmd("python").
+		arg("-c").
+		arg(getVenvBinPath)
+
+	builder.inQueue(constants.LIGHT_QUEUE)
+	stdoutName := "output.txt"
+	builder.stdout(stdoutName)
+	run := builder.build()
+
+	savedWd := workdir.save(run.workdir).
+		saveFileContent(stdoutName).
+		build()
+
+	stdout := savedWd.filesContent.getFutureInputField(stdoutName)
+
+    return {
+        rawBinPath: stdout
+    }
+})
+
+self.body(func(inputs){
+	validation.assertType(inputs, {
+		rawBinPath: validation.reference
+	})
+
+   return {
+     binPath: text.trim(string(inputs.rawBinPath.getData()),"\n \r\t")
+   }
+})
