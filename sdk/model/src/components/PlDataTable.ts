@@ -1,4 +1,5 @@
 import type {
+  AxesSpec,
   AxisId,
   AxisSpec,
   CanonicalizedJson,
@@ -16,10 +17,23 @@ import type {
   PTableRecordFilter,
   PTableRecordSingleValueFilterV2,
   PTableSorting,
+  PTableValue,
 } from '@milaboratories/pl-model-common';
-import { canonicalizeJson, getAxisId, getColumnIdAndSpec, matchAxisId } from '@milaboratories/pl-model-common';
-import type { AxisLabelProvider, ColumnProvider, RenderCtx } from '../render';
-import { PColumnCollection, TreeNodeAccessor } from '../render';
+import {
+  canonicalizeJson,
+  getAxisId,
+  getColumnIdAndSpec,
+  matchAxisId,
+} from '@milaboratories/pl-model-common';
+import type {
+  AxisLabelProvider,
+  ColumnProvider,
+  RenderCtx,
+} from '../render';
+import {
+  PColumnCollection,
+  TreeNodeAccessor,
+} from '../render';
 
 /** Canonicalized PTableColumnSpec JSON string */
 export type PTableColumnSpecJson = CanonicalizedJson<PTableColumnSpec>;
@@ -568,6 +582,22 @@ export type PlDataTableModel = {
   tableHandle: PTableHandle;
 };
 
+/** Key is a set of all axes values, which means it is unique across rows */
+export type PTableRowKey = PTableValue[];
+
+/** Information on selected rows */
+export type RowSelectionModel = {
+  /** Axes spec */
+  axesSpec: AxesSpec;
+  /** Row keys (arrays of axes values) of selected rows */
+  selectedRowsKeys: PTableRowKey[];
+};
+
+/** Check if column should be omitted from the table */
+export function isColumnHidden(spec: { annotations?: Record<string, string> }): boolean {
+  return spec.annotations?.['pl7.app/table/visibility'] === 'hidden';
+}
+
 /** Check if column is hidden by default */
 export function isColumnOptional(spec: { annotations?: Record<string, string> }): boolean {
   return spec.annotations?.['pl7.app/table/visibility'] === 'optional';
@@ -583,7 +613,7 @@ export function isColumnOptional(spec: { annotations?: Record<string, string> })
  */
 export function createPlDataTableV2<A, U>(
   ctx: RenderCtx<A, U>,
-  columns: PColumn<TreeNodeAccessor | PColumnValues | DataInfo<TreeNodeAccessor>>[],
+  inputColumns: PColumn<TreeNodeAccessor | PColumnValues | DataInfo<TreeNodeAccessor>>[],
   mainColumnPredicate: (spec: PColumnSpec) => boolean,
   tableState: PlDataTableState | undefined,
   ops?: CreatePlDataTableOps,
@@ -592,6 +622,7 @@ export function createPlDataTableV2<A, U>(
   const filters: PTableRecordSingleValueFilterV2[]
     = [...(ops?.filters ?? []), ...(tableState?.pTableParams?.filters ?? [])];
   const sorting: PTableSorting[] = tableState?.pTableParams?.sorting ?? [];
+  const columns = inputColumns.filter((c) => !isColumnHidden(c.spec));
 
   const mainColumn = columns.find((c) => mainColumnPredicate(c.spec));
   if (!mainColumn) return undefined;
