@@ -7,6 +7,7 @@ import type {
   PlTableFilterType,
   PTableColumnId,
   PTableHandle,
+  PTableRowKey,
   PTableValue,
   RemoteBlobHandleAndSize,
 } from '@platforma-sdk/model';
@@ -61,9 +62,6 @@ export type PlTableFiltersDefault = {
   /** Filter entry */
   default: PlTableFilter;
 };
-
-/** Key is a set of all axes values, which means it is unique across rows */
-export type PTableRowKey = PTableValue[];
 
 /** PlAgDataTable controller contains all exported methods */
 export type PlAgDataTableController = {
