@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 4.4.2
+
+### Patch Changes
+
+- d531d7d: Make python work on windows 10 without system python installed
+
 ## 4.4.1
 
 ### Patch Changes
