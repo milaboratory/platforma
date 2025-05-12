@@ -14,7 +14,7 @@ constants := import(":exec.constants")
 
 self.defineOutputs("runEnv")
 
-_runInVenv := func(python, venv, wd, pythonBinDir) {
+_runInVenv := func(python, venv, wd, pythonBinDir, pythonVenvBinDir) {
 	// DEPRECATED: remove after 15 Mar 2025
 	t := feats.commandExpressions ? constants.ARG_TYPE_EXPRESSION : constants.ARG_TYPE_VAR
 	pythonVenvVar := feats.commandExpressions ? "python_venv" : "{python_venv}"
@@ -25,19 +25,19 @@ _runInVenv := func(python, venv, wd, pythonBinDir) {
 		ref("python-run-environment", python).
 		substitutionRule(pythonVenvVar, "python-venv").
 		substitutionRule(pythonRunenvVar, "python-run-environment").
-		addToPath(t, path.join("{python_venv}", "venv", pythonBinDir)).
+		addToPath(t, path.join("{python_venv}", "venv", pythonVenvBinDir)).
 		envTyped("VIRTUAL_ENV", t, path.join("{python_venv}", "venv")).
-		envTyped("PYTHONPATH", t, path.join("{python_runenv}", descriptor.runEnv.binDir, "python_stdlib"))
+		envTyped("PYTHONPATH", t, path.join("{python_runenv}", pythonBinDir, "python_stdlib"))
 }
 
-_installPipDependencies := func(python, venv, dependencies, pythonBinDir) {
+_installPipDependencies := func(python, venv, dependencies, pythonBinDir, pythonVenvBinDir) {
 	requirementsRef := dependencies.requirements
 
 	wdForDeps := workdir.builder().
 		addFile("requirements.txt", requirementsRef).
 		build()
 
-	depsBuilder := _runInVenv(python, venv, wdForDeps, pythonBinDir)
+	depsBuilder := _runInVenv(python, venv, wdForDeps, pythonBinDir, pythonVenvBinDir)
 
 	// DEPRECATED: remove after 15 Mar 2025
 	t := feats.commandExpressions ? constants.ARG_TYPE_EXPRESSION : constants.ARG_TYPE_VAR
@@ -64,14 +64,16 @@ self.prepare(func(inputs) {
 		python: validation.reference,
 		venv: validation.reference,
 		toolset: "string",
-		dependencies: {"any": validation.reference}
+		dependencies: {"any": validation.reference},
+		pythonBinDir: "string",
+		pythonVenvBinDir: "string"
 	})
 
 	toolset := inputs.toolset
 	if toolset == "pip" {
 		depsInstall := _installPipDependencies(
-           inputs.python, inputs.venv, inputs.dependencies, inputs.pythonBinDir
-        )
+			inputs.python, inputs.venv, inputs.dependencies, inputs.pythonBinDir, inputs.pythonVenvBinDir
+		)
 		return {
 			runEnv: inputs.venv,
 			sync: depsInstall.workdir // we need it to make 'body' wait for dependencies installation into venv
