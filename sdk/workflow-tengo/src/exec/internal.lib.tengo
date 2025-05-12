@@ -27,7 +27,7 @@ validation := import(":validation")
 //
 _ARG_VAR_PKG            := "pkg"  // abs path to software package
 _ARG_VAR_JAVA           := "java" // abs path to 'java' run environment
-_ARG_VAR_PYTHON_VENV    := "python_venv" // abs path to python virtual environment
+_ARG_VAR_PYTHON_VENV    := "python" // abs path to python virtual environment. WARNING: not change the name, it's used in other part of code
 _ARG_VAR_PYTHON_RUN_ENV := "python_run_env" // abs path to python run environment used to create venv
 _ARG_VAR_VENV_BIN_DIR   := "venv_bin_dir" // name of bin dir in python venv depending on OS type (Scripts on Windows, bin on Unix)
 _ARG_VAR_R              := "R" // abs path to 'R' run environment runtime
