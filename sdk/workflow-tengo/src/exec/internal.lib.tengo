@@ -27,7 +27,8 @@ validation := import(":validation")
 //
 _ARG_VAR_PKG            := "pkg"  // abs path to software package
 _ARG_VAR_JAVA           := "java" // abs path to 'java' run environment
-_ARG_VAR_PYTHON         := "python" // abs path to 'python' run environment
+_ARG_VAR_PYTHON_VENV    := "python_venv" // abs path to python virtual environment
+_ARG_VAR_PYTHON_RUN_ENV := "python_run_env" // abs path to python run environment used to create venv
 _ARG_VAR_VENV_BIN_DIR   := "venv_bin_dir" // name of bin dir in python venv depending on OS type (Scripts on Windows, bin on Unix)
 _ARG_VAR_R              := "R" // abs path to 'R' run environment runtime
 _ARG_VAR_R_VENV         := "rVenv" // abs path to 'R' portable virtual environment
@@ -55,7 +56,7 @@ _newTypedArg := func(type, value) {
  * Decides whether we need a simple argument or an expression one.
  * Until 15 Mar 2025, we keep deprecated variable arguments.
  *
- * @param isString: boolean - whether it is a string or a difficult (expression) argument.
+ * @param isString: boolean - whether it is a plain string or an expression argument requiring interpolation.
  */
 _newArg := func(isString, value) {
 	if isString {
@@ -129,19 +130,18 @@ _loadPythonRunEnvironment := func(operationMode, descriptor, softName, softPkg) 
 		cacheDays(7).
 		build()
 
-	venvRoot := path.join(_expr(_ARG_VAR_PYTHON), "venv")
-	venvRefKey := softName + "/venv"
-
-	pythonRefVar := _newRefVar(_ARG_VAR_PYTHON, venvRefKey, venv.venv())
+	pythonRefVar := _newRefVar(_ARG_VAR_PYTHON_RUN_ENV, softName+"/python", venv.python())
+	pythonVenvRefVar := _newRefVar(_ARG_VAR_PYTHON_VENV, softName + "/venv", venv.venv())
 	venvBinDirRefVar := _newRefVar(_ARG_VAR_VENV_BIN_DIR, softName + "/binDir", venv.binDir() )
 
 	return ll.toStrict({
 		runEnvType: "python",
 
-		variables: [ pythonRefVar, venvBinDirRefVar ],
-		customPaths: [ _newArg(false, path.join(venvRoot, _expr(_ARG_VAR_VENV_BIN_DIR))) ],
+		variables: [ pythonRefVar, pythonVenvRefVar, venvBinDirRefVar ],
+		customPaths: [ _newArg(false, path.join(_expr(_ARG_VAR_PYTHON_VENV), "venv", _expr(_ARG_VAR_VENV_BIN_DIR))) ],
 		envs: {
-			"VIRTUAL_ENV": _newArg(false, venvRoot)
+			"VIRTUAL_ENV": _newArg(false, path.join(_expr(_ARG_VAR_PYTHON_VENV), "venv")),
+			"PYTHONPATH": _newArg(false, path.join(_expr(_ARG_VAR_PYTHON_RUN_ENV), descriptor.runEnv.binDir, "python_stdlib"))
 		}
 	})
 }
