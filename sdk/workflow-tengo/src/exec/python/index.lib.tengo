@@ -148,6 +148,14 @@ pythonVenvBuilder := func() {
 			self := undefined
 			self = ll.toStrict(oop.inherit(tpl, {
 				/**
+				 * Python run environment package reference.
+				 * @return python: smart.field - a reference to the python run environment package.
+				 */
+				python: func() {
+					return pythonPkg
+				},
+
+				/**
 				 * Name of bin directory in python venv depending on OS type (Scripts on Windows, bin on Unix).
 				 * @return binDir: smart.field - name of bin directory in python venv.
 				 */
