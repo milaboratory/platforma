@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 4.4.5
+
+### Patch Changes
+
+- 4c9384b: python dependencies don't installed with slow connection
+
 ## 4.4.4
 
 ### Patch Changes
