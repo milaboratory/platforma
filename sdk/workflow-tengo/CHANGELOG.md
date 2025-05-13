@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 4.4.4
+
+### Patch Changes
+
+- 8c4b1ea: revert update pythonpath
+
 ## 4.4.3
 
 ### Patch Changes
