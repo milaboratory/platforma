@@ -8,7 +8,6 @@ import type {
   CalculateTableDataRequest,
   AxisId,
   CanonicalizedJson,
-  PTableColumnId,
   PTableColumnIdAxis,
   PTableColumnIdColumn,
   PTableColumnIdJson,
@@ -105,12 +104,32 @@ export async function getLabelColumnsOptions(
   return [...labelOptions.values()];
 }
 
+export async function getDefaultLabelColumnsIds(
+  pframe: PFrameHandle,
+  labelColumnOptions: ListOption<PTableColumnIdJson>[],
+): Promise<PTableColumnIdJson[]> {
+  if (labelColumnOptions.length === 0) return [];
+
+  const columns = await pFrameDriver.listColumns(pframe);
+  return labelColumnOptions
+    .filter((o) => {
+      const value = parseJson(o.value);
+      if (value.type === 'axis') return true;
+
+      const column = columns.find((c) => c.columnId === value.id);
+      return column && isLabelColumn(column.spec);
+    })
+    .map((o) => o.value);
+}
+
 export async function getSequenceRows(
   pframe: PFrameHandle,
   sequenceColumnsIds: PObjectId[],
   labelColumnsIds: PTableColumnIdJson[],
   rowSelectionModel?: RowSelectionModel,
 ): Promise<SequenceRow[]> {
+  if (sequenceColumnsIds.length === 0) return [];
+
   const FilterColumnId = '__FILTER_COLUMN__' as PObjectId;
   const filterColumn = createRowSelectionColumn(FilterColumnId, rowSelectionModel);
 
