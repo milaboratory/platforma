@@ -14,6 +14,7 @@ validation := import(":validation")
 text := import("text")
 
 self.defineOutputs("binPath")
+self.defineOutputs("osPathDelimeter")
 
 self.prepare(func(inputs){
 	validation.assertType(inputs, {
@@ -35,7 +36,7 @@ self.prepare(func(inputs){
 		substitutionRule(pythonRule, "python-run-environment").
 		addToPath(t, path.join("{python}", pythonDescriptor.binDir))
 
-    getVenvBinPath := "import platform; print('Scripts' if platform.system().lower() == 'windows' else 'bin')"
+    getVenvBinPath := "import platform; print(platform.system().lower())"
 	builder.
 		cmd("python").
 		arg("-c").
@@ -53,16 +54,25 @@ self.prepare(func(inputs){
 	stdout := savedWd.filesContent.getFutureInputField(stdoutName)
 
     return {
-        rawBinPath: stdout
+        os: stdout
     }
 })
 
 self.body(func(inputs){
 	validation.assertType(inputs, {
-		rawBinPath: validation.reference
+		os: validation.reference
 	})
 
+   os := text.trim(string(inputs.os.getData()),"\n \r\t")
+    binPath := "bin"
+    osPathDelimeter := ":"
+    if os == "windows" {
+       binPath = "Scripts"
+       osPathDelimeter = ";"
+    }
+
    return {
-     binPath: text.trim(string(inputs.rawBinPath.getData()),"\n \r\t")
+     binPath: binPath,
+     osPathDelimeter: osPathDelimeter
    }
 })
