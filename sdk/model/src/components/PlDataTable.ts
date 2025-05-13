@@ -39,7 +39,7 @@ import {
 export type PTableColumnSpecJson = CanonicalizedJson<PTableColumnSpec>;
 
 /** Encode `PTableColumnId` as canonicalized JSON string */
-export function stringifyPTableColumnId(spec: PTableColumnSpec): PTableColumnSpecJson {
+export function stringifyPTableColumnSpec(spec: PTableColumnSpec): PTableColumnSpecJson {
   const type = spec.type;
   switch (type) {
     case 'axis':

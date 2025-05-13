@@ -6,20 +6,109 @@ import type {
   ColumnJoinEntry,
   PTableSorting,
   CalculateTableDataRequest,
+  AxisId,
+  CanonicalizedJson,
+  PTableColumnId,
+  PTableColumnIdAxis,
+  PTableColumnIdColumn,
+  PTableColumnIdJson,
+  PColumnSpec,
 } from '@platforma-sdk/model';
 import {
+  canonicalizeJson,
   createRowSelectionColumn,
+  getAxisId,
   getRawPlatformaInstance,
+  isLabelColumn,
+  matchAxisId,
+  parseJson,
   pTableValue,
+  stringifyPTableColumnId,
 } from '@platforma-sdk/model';
 import type {
   SequenceRow,
 } from './types';
+import type { ListOption } from '@milaboratories/uikit';
+
+const platforma = getRawPlatformaInstance();
+const pFrameDriver = platforma.pFrameDriver;
+
+export async function getSequenceColumnsOptions(
+  pframe: PFrameHandle,
+  sequenceColumnPredicate: (column: PColumnSpec) => boolean,
+): Promise<ListOption<PObjectId>[]> {
+  const columns = await pFrameDriver.listColumns(pframe);
+  return columns
+    .filter((c) => sequenceColumnPredicate(c.spec))
+    .map((c) => ({
+      label: c.spec.annotations?.['pl7.app/label'] ?? '',
+      value: c.columnId,
+    }));
+}
+
+export async function getLabelColumnsOptions(
+  pframe: PFrameHandle,
+  sequenceColumnsIds: PObjectId[],
+  labelColumnOptionPredicate?: (column: PColumnSpec) => boolean,
+): Promise<ListOption<PTableColumnIdJson>[]> {
+  if (sequenceColumnsIds.length === 0) return [];
+
+  const axesIds = new Map<CanonicalizedJson<AxisId>, AxisId>();
+  const labelOptions = new Map<PTableColumnIdJson, ListOption<PTableColumnIdJson>>();
+
+  const columns = await pFrameDriver.listColumns(pframe);
+  for (const column of columns.filter((c) => sequenceColumnsIds.includes(c.columnId))) {
+    for (const axisSpec of column.spec.axesSpec) {
+      const axisId = getAxisId(axisSpec);
+
+      const canonicalizedAxisId = canonicalizeJson(axisId);
+      if (axesIds.has(canonicalizedAxisId)) continue;
+      axesIds.set(canonicalizedAxisId, axisId);
+
+      const labelColumn = columns.find((c) => isLabelColumn(c.spec) && matchAxisId(axisId, getAxisId(c.spec.axesSpec[0])));
+      const option = {
+        label: axisSpec.annotations?.['pl7.app/label'] ?? '',
+        value: stringifyPTableColumnId(labelColumn
+          ? {
+            type: 'column',
+            id: labelColumn.columnId,
+          } satisfies PTableColumnIdColumn
+          : {
+            type: 'axis',
+            id: axisId,
+          } satisfies PTableColumnIdAxis),
+      };
+
+      if (labelOptions.has(option.value)) continue;
+      labelOptions.set(option.value, option);
+    }
+  }
+  if (labelColumnOptionPredicate) {
+    const compatibleColumns = await pFrameDriver.findColumns(pframe, {
+      columnFilter: {},
+      compatibleWith: [...axesIds.values()],
+      strictlyCompatible: false,
+    });
+    for (const column of compatibleColumns.hits.filter((c) => labelColumnOptionPredicate(c.spec))) {
+      const option = {
+        label: column.spec.annotations?.['pl7.app/label'] ?? '',
+        value: stringifyPTableColumnId({
+          type: 'column',
+          id: column.columnId,
+        } satisfies PTableColumnIdColumn),
+      };
+
+      if (labelOptions.has(option.value)) continue;
+      labelOptions.set(option.value, option);
+    }
+  }
+  return [...labelOptions.values()];
+}
 
 export async function getSequenceRows(
   pframe: PFrameHandle,
-  labelColumnsIds: PObjectId[],
   sequenceColumnsIds: PObjectId[],
+  labelColumnsIds: PTableColumnIdJson[],
   rowSelectionModel?: RowSelectionModel,
 ): Promise<SequenceRow[]> {
   const FilterColumnId = '__FILTER_COLUMN__' as PObjectId;
@@ -43,10 +132,13 @@ export async function getSequenceRows(
           } satisfies ColumnJoinEntry<PObjectId>)),
         ].filter((e): e is ColumnJoinEntry<PObjectId> => e !== undefined),
       },
-      secondary: labelColumnsIds.map((c) => ({
-        type: 'column',
-        column: c,
-      } satisfies ColumnJoinEntry<PObjectId>)),
+      secondary: labelColumnsIds
+        .map((c) => parseJson(c))
+        .filter((c) => c.type === 'column')
+        .map((c) => ({
+          type: 'column',
+          column: c.id,
+        } satisfies ColumnJoinEntry<PObjectId>)),
     },
     filters: [],
     sorting: sequenceColumnsIds.map((c) => ({
@@ -58,24 +150,50 @@ export async function getSequenceRows(
       naAndAbsentAreLeastValues: true,
     } satisfies PTableSorting)),
   } satisfies CalculateTableDataRequest<PObjectId>));
-  const table = await getRawPlatformaInstance().pFrameDriver.calculateTableData(pframe, def);
+  const table = await pFrameDriver.calculateTableData(pframe, def);
 
   const result: SequenceRow[] = [];
-  const labelColumnsIndices = [];
-  const sequenceColumnsIndices = [];
+  /// map index in spec to index in input
+  const labelColumnsMap = new Map<number, number>();
+  const sequenceColumnsMap = new Map<number, number>();
   for (let i = 0; i < table.length; i++) {
     const spec = table[i].spec;
-    if (spec.id === FilterColumnId) continue;
-    if (sequenceColumnsIds.some((id) => id === spec.id)) {
-      // TODO: properly order for single cell case
-      sequenceColumnsIndices.push(i);
-    } else if (labelColumnsIds.some((id) => id === spec.id)) {
-      labelColumnsIndices.push(i);
+
+    if (spec.type === 'column') {
+      if (spec.id === FilterColumnId) continue;
+
+      const sequenceIndex = sequenceColumnsIds.findIndex((id) => id === spec.id);
+      if (sequenceIndex !== -1) {
+        sequenceColumnsMap.set(i, sequenceIndex);
+        continue;
+      }
+    }
+
+    const stringifiedId = stringifyPTableColumnId(
+      spec.type === 'axis'
+        ? {
+          type: 'axis',
+          id: getAxisId(spec.spec),
+        } satisfies PTableColumnIdAxis
+        : {
+          type: 'column',
+          id: spec.id,
+        } satisfies PTableColumnIdColumn,
+    );
+    const labelIndex = labelColumnsIds.findIndex((id) => id === stringifiedId);
+    if (labelIndex !== -1) {
+      labelColumnsMap.set(i, labelIndex);
     }
   }
-  if (labelColumnsIndices.length !== labelColumnsIds.length || sequenceColumnsIndices.length !== sequenceColumnsIds.length) {
+  if (labelColumnsMap.size !== labelColumnsIds.length || sequenceColumnsMap.size !== sequenceColumnsIds.length) {
     throw new Error('Some label or sequence columns are missing');
   }
+
+  /// sort by index in input
+  const labelColumnsIndices = [...labelColumnsMap.values()];
+  labelColumnsIndices.sort((a, b) => labelColumnsMap.get(a)! - labelColumnsMap.get(b)!);
+  const sequenceColumnsIndices = [...sequenceColumnsMap.values()];
+  sequenceColumnsIndices.sort((a, b) => sequenceColumnsMap.get(a)! - sequenceColumnsMap.get(b)!);
 
   const rowCount = table[0].data.data.length;
   let key = 0;
