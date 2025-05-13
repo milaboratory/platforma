@@ -12,7 +12,7 @@ import type {
 import {
   isPTableAbsent,
   PTableNA,
-  stringifyPTableColumnId,
+  stringifyPTableColumnSpec,
   isColumnOptional,
   isLabelColumn as isLabelColumnSpec,
   canonicalizeJson,
@@ -68,7 +68,7 @@ export function makeColDef(
   hiddenColIds?: string[],
   cellButtonAxisParams?: PlAgCellButtonAxisParams,
 ): ColDef {
-  const colId = stringifyPTableColumnId(spec);
+  const colId = stringifyPTableColumnSpec(spec);
   const valueType = spec.type === 'axis' ? spec.spec.type : spec.spec.valueType;
   return {
     colId,

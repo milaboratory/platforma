@@ -16,6 +16,14 @@ import {
   PlSlideModal,
   PlDropdownMulti,
 } from '@milaboratories/uikit';
+import type {
+  AxisId,
+  PTableColumnId,
+
+  CanonicalizedJson,
+  PTableColumnIdAxis,
+  PTableColumnIdColumn,
+  PTableColumnIdJson } from '@platforma-sdk/model';
 import {
   type PlMultiSequenceAlignmentModel,
   type PColumnSpec,
@@ -23,6 +31,12 @@ import {
   type RowSelectionModel,
   type PObjectId,
   getRawPlatformaInstance,
+  getAxisId,
+  canonicalizeJson,
+  isLabelColumn,
+  matchAxisId,
+  stringifyPTableColumnId,
+  parseJson,
 } from '@platforma-sdk/model';
 import {
   useDataTableToolsPanelTarget,
@@ -32,6 +46,8 @@ import type {
   SequenceRow,
 } from './types';
 import {
+  getLabelColumnsOptions,
+  getSequenceColumnsOptions,
   getSequenceRows,
 } from './data_provider_logic';
 import SequenceAlignment from './SequenceAlignment.vue';
@@ -42,9 +58,18 @@ import {
 const model = defineModel<PlMultiSequenceAlignmentModel>({ default: {} });
 
 const props = defineProps<{
-  labelColumnOptionPredicate: (column: PColumnSpec) => boolean;
-  sequenceColumnPredicate: (column: PColumnSpec) => boolean;
+  /// Handle to PFrame created using `createPFrameForGraphs`
+  /// Should contain all desired sequence and label columns
   pframe: PFrameHandle | undefined;
+  /// Return true if column should be shown in sequence columns dropdown
+  /// By default, all sequence columns are selected
+  sequenceColumnPredicate: (column: PColumnSpec) => boolean;
+  /// Return true if column should be shown in label columns dropdown
+  /// By default, common axes of selected sequence columns are selected
+  labelColumnOptionPredicate?: (column: PColumnSpec) => boolean;
+  /// Row selection model (from `PlAgDataTableV2` or `GraphMaker`)
+  /// If not provided or empty, all rows will be considered selected
+  /// Warning: should be forwarded as a field of `reactive` object
   rowSelectionModel?: RowSelectionModel | undefined;
 }>();
 
@@ -55,59 +80,133 @@ onMounted(() => {
 });
 const teleportTarget = useDataTableToolsPanelTarget();
 
-const labelColumnsOptions = ref<ListOption<PObjectId>[]>([]);
-const labelColumnsIds = computed<PObjectId[]>({
-  get: () => model.value.labelColumnsIds ?? [],
+const epochRef = ref(0);
+const loadingRef = ref(true);
+const sequenceColumnsOptionsRef = ref<ListOption<PObjectId>[]>([]);
+const sequenceColumnsIdsRef = computed<PObjectId[]>({
+  get: () => model.value.sequenceColumnsIds ?? [],
   set: (value: PObjectId[]) => {
+    model.value.sequenceColumnsIds = value;
+  },
+});
+const labelColumnsOptionsRef = ref<ListOption<PTableColumnIdJson>[]>([]);
+const labelColumnsIdsRef = computed<PTableColumnIdJson[]>({
+  get: () => model.value.labelColumnsIds ?? [],
+  set: (value: PTableColumnIdJson[]) => {
     model.value.labelColumnsIds = value;
   },
 });
+const sequenceRowsRef = ref<SequenceRow[]>([]);
 
-const loading = ref(false);
-const abortedRef = ref({ aborted: false });
-const sequenceRows = ref<SequenceRow[]>([]);
-watch(
-  () => [props.pframe, props.rowSelectionModel, labelColumnsIds.value] as const,
-  async ([pframe, rowSelectionModel, labelColumnsIds]) => {
-    if (!pframe) {
-      labelColumnsOptions.value = [];
-      sequenceRows.value = [];
-      return;
+/// Full state reset
+watch (
+  () => [props.pframe, props.sequenceColumnPredicate, props.labelColumnOptionPredicate] as const,
+  async ([pframe, sequenceColumnPredicate, labelColumnOptionPredicate]) => {
+    if (!pframe) return;
+
+    const epoch = epochRef.value = epochRef.value + 1;
+    loadingRef.value = true;
+    try {
+      const sequenceColumnsOptions = await getSequenceColumnsOptions(pframe, sequenceColumnPredicate);
+      if (epochRef.value !== epoch) return;
+      const sequenceColumnsIds = sequenceColumnsOptions.map((o) => o.value);
+
+      const labelColumnsOptions = await getLabelColumnsOptions(pframe, sequenceColumnsIds, labelColumnOptionPredicate);
+      if (epochRef.value !== epoch) return;
+      const labelColumnsIds = labelColumnsOptions.filter((o) => parseJson(o.value).type === 'axis').map((o) => o.value);
+
+      const sequenceRows = await getSequenceRows(
+        pframe,
+        sequenceColumnsIds,
+        labelColumnsIds,
+        props.rowSelectionModel,
+      );
+      if (epochRef.value !== epoch) return;
+
+      sequenceColumnsOptionsRef.value = sequenceColumnsOptions;
+      sequenceColumnsIdsRef.value = sequenceColumnsIds;
+      labelColumnsOptionsRef.value = labelColumnsOptions;
+      labelColumnsIdsRef.value = labelColumnsIds;
+      sequenceRowsRef.value = sequenceRows;
+    } catch (err: unknown) {
+      if (epochRef.value !== epoch) return;
+      console.error(err);
+    } finally {
+      if (epochRef.value === epoch) {
+        loadingRef.value = false;
+      }
     }
-    loading.value = true;
-    const aborted = abortedRef.value;
-
-    const columns = await getRawPlatformaInstance().pFrameDriver.listColumns(pframe);
-    if (aborted.aborted) return;
-    labelColumnsOptions.value = columns
-      .filter((c) => props.labelColumnOptionPredicate(c.spec))
-      .map((c) => ({
-        label: c.spec.annotations?.['pl7.app/label'] ?? '',
-        value: c.columnId,
-      }));
-    const sequenceColumnsIds = columns
-      .filter((c) => props.sequenceColumnPredicate(c.spec))
-      .map((c) => c.columnId);
-    if (labelColumnsIds.length === 0
-      || !labelColumnsIds.every((id) => columns.find((c) => c.columnId === id))
-      || sequenceColumnsIds.length === 0) {
-      sequenceRows.value = [];
-      loading.value = false;
-      return;
-    }
-
-    const rows = await getSequenceRows(
-      pframe,
-      labelColumnsIds,
-      sequenceColumnsIds,
-      rowSelectionModel,
-    );
-    if (aborted.aborted) return;
-    sequenceRows.value = rows;
-    loading.value = false;
   },
   {
     immediate: true,
+  },
+);
+
+/// Respond to sequence selection change
+watch(
+  () => sequenceColumnsIdsRef.value,
+  async (sequenceColumnsIds) => {
+    const pframe = props.pframe;
+    const labelColumnOptionPredicate = props.labelColumnOptionPredicate;
+    if (!pframe || loadingRef.value || sequenceColumnsIds.length === 0) return;
+
+    const epoch = epochRef.value = epochRef.value + 1;
+    loadingRef.value = true;
+    try {
+      const labelColumnsOptions = await getLabelColumnsOptions(pframe, sequenceColumnsIds, labelColumnOptionPredicate);
+      if (epochRef.value !== epoch) return;
+      const labelColumnsIds = labelColumnsOptions.filter((o) => parseJson(o.value).type === 'axis').map((o) => o.value);
+
+      const sequenceRows = await getSequenceRows(
+        pframe,
+        sequenceColumnsIds,
+        labelColumnsIds,
+        props.rowSelectionModel,
+      );
+      if (epochRef.value !== epoch) return;
+
+      labelColumnsOptionsRef.value = labelColumnsOptions;
+      labelColumnsIdsRef.value = labelColumnsIds;
+      sequenceRowsRef.value = sequenceRows;
+    } catch (err: unknown) {
+      if (epochRef.value !== epoch) return;
+      console.error(err);
+    } finally {
+      if (epochRef.value === epoch) {
+        loadingRef.value = false;
+      }
+    }
+  },
+);
+
+/// Respond to label selection change
+watch(
+  () => labelColumnsIdsRef.value,
+  async (labelColumnsIds) => {
+    const pframe = props.pframe;
+    const sequenceColumnsIds = sequenceColumnsIdsRef.value;
+    if (!pframe || loadingRef.value || sequenceColumnsIds.length === 0) return;
+
+    const epoch = epochRef.value = epochRef.value + 1;
+    loadingRef.value = true;
+    try {
+      const sequenceRows = await getSequenceRows(
+        pframe,
+        sequenceColumnsIds,
+        labelColumnsIds,
+        props.rowSelectionModel,
+      );
+      if (epochRef.value !== epoch) return;
+
+      sequenceRowsRef.value = sequenceRows;
+    } catch (err: unknown) {
+      if (epochRef.value !== epoch) return;
+      console.error(err);
+    } finally {
+      if (epochRef.value === epoch) {
+        loadingRef.value = false;
+      }
+    }
   },
 );
 
@@ -117,13 +216,13 @@ const isResolved = ref(false);
 const output = ref<AlignmentRow[]>([]);
 
 watch(
-  () => sequenceRows.value,
+  () => sequenceRowsRef.value,
   () => isResolved.value = false,
 );
 
 const wm = new WorkerManager();
 const runAlignment = async () => {
-  const rows = toRaw(sequenceRows.value);
+  const rows = toRaw(sequenceRowsRef.value);
   if (!rows) return;
 
   isRunning.value = true;
@@ -139,7 +238,7 @@ const runAlignment = async () => {
   }
 };
 
-const hasRowsToAlign = computed(() => sequenceRows.value.length > 0);
+const hasRowsToAlign = computed(() => sequenceRowsRef.value.length > 0);
 // TODO: enable loading check, for big datasets loading can take significant time
 const isReady = computed(() => /* !loading.value && */ hasRowsToAlign.value && !isResolved.value);
 </script>
@@ -154,9 +253,14 @@ const isReady = computed(() => /* !loading.value && */ hasRowsToAlign.value && !
 
     <div :style="{ maxInlineSize: 'fit-content' }">
       <PlDropdownMulti
-        v-model="labelColumnsIds"
+        v-model="sequenceColumnsIdsRef"
+        label="Sequence Columns"
+        :options="sequenceColumnsOptionsRef"
+      />
+      <PlDropdownMulti
+        v-model="labelColumnsIdsRef"
         label="Label Columns"
-        :options="labelColumnsOptions"
+        :options="labelColumnsOptionsRef"
       />
     </div>
 
@@ -175,7 +279,7 @@ const isReady = computed(() => /* !loading.value && */ hasRowsToAlign.value && !
         :loading="isRunning"
         @click="runAlignment"
       >
-        Run Alignment ({{ sequenceRows?.length }} sequences)
+        Run Alignment ({{ sequenceRowsRef.length }} sequences)
       </PlBtnPrimary>
       <PlBtnGhost @click="show = false">Close</PlBtnGhost>
     </template>

@@ -4,8 +4,11 @@ import type {
   PColumnValues,
   PColumnValuesEntry,
   PColumnKey,
+  PTableColumnId,
+  CanonicalizedJson,
 } from '@milaboratories/pl-model-common';
 import {
+  canonicalizeJson,
   isPTableAbsent,
   PTableNA,
 } from '@milaboratories/pl-model-common';
@@ -13,8 +16,26 @@ import type {
   RowSelectionModel,
 } from './PlDataTable';
 
+/** Canonicalized PTableColumnId JSON string */
+export type PTableColumnIdJson = CanonicalizedJson<PTableColumnId>;
+
+/** Encode `PTableColumnId` as canonicalized JSON string */
+export function stringifyPTableColumnId(id: PTableColumnId): PTableColumnIdJson {
+  const type = id.type;
+  switch (type) {
+    case 'axis':
+      return canonicalizeJson(id);
+    case 'column':
+      return canonicalizeJson(id);
+    default:
+      // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+      throw Error(`unsupported column type: ${type satisfies never}`);
+  }
+}
+
 export type PlMultiSequenceAlignmentModel = {
-  labelColumnsIds?: PObjectId[];
+  sequenceColumnsIds?: PObjectId[];
+  labelColumnsIds?: PTableColumnIdJson[];
 };
 
 export function createRowSelectionColumn(
