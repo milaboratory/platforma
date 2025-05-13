@@ -13,6 +13,7 @@ desc := import(":exec.descriptor")
 
 _OUTPUT_RUN_ENV       := "runEnv"
 _OUTPUT_BIN_DIR       := "binDir"
+_OUTPUT_OS_DELIMETER  := "osPathDelimeter"
 
 createVenvTpl := assets.importTemplate(":exec.python.create-venv")
 
@@ -162,6 +163,14 @@ pythonVenvBuilder := func() {
 				binDir: func() {
 					return tpl.output(_OUTPUT_BIN_DIR, cache)
 				},
+
+                /**
+                 * OS path delimeter depending on OS type (\\ on Windows, / on Unix).
+                 * @return osPathDelimter: smart.field - OS path delimeter.
+                 */
+                pathDelimeter: func(){
+            		return tpl.output(_OUTPUT_OS_DELIMETER, cache)
+                },
 
 				/**
 				 * Python virtual environment with all dependencies installed.
