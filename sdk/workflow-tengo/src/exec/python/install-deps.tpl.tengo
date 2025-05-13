@@ -45,6 +45,7 @@ _installPipDependencies := func(python, venv, dependencies, pythonBinDir, python
 	depsBuilder.
 		cmd("python").arg("-m").
 		arg("pip").arg("install").
+		arg("--timeout").arg("600"). // timeout in seconds
 		arg("--requirement").arg("requirements.txt").
 		arg("--find-links").argTyped(t, "{python_runenv}/packages/")
 
