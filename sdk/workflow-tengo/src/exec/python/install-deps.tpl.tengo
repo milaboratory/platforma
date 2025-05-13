@@ -27,7 +27,7 @@ _runInVenv := func(python, venv, wd, pythonBinDir, pythonVenvBinDir) {
 		substitutionRule(pythonRunenvVar, "python-run-environment").
 		addToPath(t, path.join("{python_venv}", "venv", pythonVenvBinDir)).
 		envTyped("VIRTUAL_ENV", t, path.join("{python_venv}", "venv")).
-		envTyped("PYTHONPATH", t, path.join("{python_runenv}", pythonBinDir, "python_stdlib"))
+		envTyped("PYTHONPATH", t, path.join("{python_runenv}", pythonBinDir, "python312"))
 }
 
 _installPipDependencies := func(python, venv, dependencies, pythonBinDir, pythonVenvBinDir) {
