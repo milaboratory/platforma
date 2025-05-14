@@ -6,6 +6,7 @@ import type {
   PColumnKey,
   PTableColumnId,
   CanonicalizedJson,
+  PColumnIdAndSpec,
 } from '@milaboratories/pl-model-common';
 import {
   canonicalizeJson,
@@ -32,6 +33,8 @@ export function stringifyPTableColumnId(id: PTableColumnId): PTableColumnIdJson 
       throw Error(`unsupported column type: ${type satisfies never}`);
   }
 }
+
+export type PColumnPredicate = (column: PColumnIdAndSpec) => boolean;
 
 export type PlMultiSequenceAlignmentModel = {
   sequenceColumnsIds?: PObjectId[];

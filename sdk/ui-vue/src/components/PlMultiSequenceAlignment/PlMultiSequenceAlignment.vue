@@ -17,11 +17,11 @@ import {
   PlDropdownMulti,
 } from '@milaboratories/uikit';
 import type {
+  PColumnPredicate,
   PTableColumnIdJson,
 } from '@platforma-sdk/model';
 import {
   type PlMultiSequenceAlignmentModel,
-  type PColumnSpec,
   type PFrameHandle,
   type RowSelectionModel,
   type PObjectId,
@@ -34,7 +34,6 @@ import type {
   SequenceRows,
 } from './types';
 import {
-  getDefaultLabelColumnsIds,
   getLabelColumnsOptions,
   getSequenceColumnsOptions,
   getSequenceRows,
@@ -48,18 +47,32 @@ import * as lodash from 'lodash';
 const model = defineModel<PlMultiSequenceAlignmentModel>({ default: {} });
 
 const props = defineProps<{
-  /// Handle to PFrame created using `createPFrameForGraphs`
-  /// Should contain all desired sequence and label columns
+  /**
+   * Handle to PFrame created using `createPFrameForGraphs`
+   * Should contain all desired sequence and label columns
+   */
   pframe: PFrameHandle | undefined;
-  /// Return true if column should be shown in sequence columns dropdown
-  /// By default, all sequence columns are selected
-  sequenceColumnPredicate: (column: PColumnSpec) => boolean;
-  /// Return true if column should be shown in label columns dropdown
-  /// By default, common axes of selected sequence columns are selected
-  labelColumnOptionPredicate?: (column: PColumnSpec) => boolean;
-  /// Row selection model (from `PlAgDataTableV2` or `GraphMaker`)
-  /// If not provided or empty, all rows will be considered selected
-  /// Warning: should be forwarded as a field of `reactive` object
+  /**
+   * Return true if column should be shown in sequence columns dropdown
+   * By default, all sequence columns are selected
+   */
+  sequenceColumnPredicate: PColumnPredicate;
+  /**
+   * Return true if column should be shown in label columns dropdown
+   * By default, common axes of selected sequence columns are selected
+   */
+  labelColumnOptionPredicate?: PColumnPredicate;
+  /**
+   * Sometimes sequence column and label column have disjoint axes
+   * In this case you have to define `linkerColumnPredicate` to select
+   * columns connecting axes of sequence and label columns.
+   */
+  linkerColumnPredicate?: PColumnPredicate;
+  /**
+   * Row selection model (from `PlAgDataTableV2` or `GraphMaker`)
+   * If not provided or empty, all rows will be considered selected
+   * Warning: should be forwarded as a field of `reactive` object
+   */
   rowSelectionModel?: RowSelectionModel | undefined;
 }>();
 
@@ -95,28 +108,26 @@ watch (
   async (pframe, oldPframe) => {
     const sequenceColumnPredicate = props.sequenceColumnPredicate;
     const labelColumnOptionPredicate = props.labelColumnOptionPredicate;
+    const linkerColumnPredicate = props.linkerColumnPredicate;
+    const rowSelectionModel = props.rowSelectionModel;
     if (!pframe || pframe === oldPframe) return;
 
     const epoch = epochRef.value = epochRef.value + 1;
     loadingRef.value = true;
     // console.log(`watch 1 triggered, epoch: ${epoch}, pframe: ${pframe}`);
     try {
-      const sequenceColumnsOptions = await getSequenceColumnsOptions(pframe, sequenceColumnPredicate);
+      const { options: sequenceColumnsOptions, defaults: sequenceColumnsIds }
+        = await getSequenceColumnsOptions(pframe, sequenceColumnPredicate);
       if (epochRef.value !== epoch) return;
-      const sequenceColumnsIds = sequenceColumnsOptions.map((o) => o.value);
 
-      const labelColumnsOptions = await getLabelColumnsOptions(pframe, sequenceColumnsIds, labelColumnOptionPredicate);
-      if (epochRef.value !== epoch) return;
-      const labelColumnsIds = await getDefaultLabelColumnsIds(pframe, labelColumnsOptions);
+      const { options: labelColumnsOptions, defaults: labelColumnsIds }
+        = await getLabelColumnsOptions(pframe, sequenceColumnsIds, labelColumnOptionPredicate);
       if (epochRef.value !== epoch) return;
 
       const sequenceRows = {
         epoch,
         rows: await getSequenceRows(
-          pframe,
-          sequenceColumnsIds,
-          labelColumnsIds,
-          props.rowSelectionModel,
+          { pframe, sequenceColumnsIds, labelColumnsIds, linkerColumnPredicate, rowSelectionModel },
         ),
       };
       if (epochRef.value !== epoch) return;
@@ -141,37 +152,28 @@ watch (
   },
 );
 
-/// Respond to sequence selection change
+/// Respond to label selection change or row selection change
 watch(
-  () => sequenceColumnsIdsRef.value,
-  async (sequenceColumnsIds, oldSequenceColumnsIds) => {
+  () => [sequenceColumnsIdsRef.value, labelColumnsIdsRef.value, props.rowSelectionModel] as const,
+  async (state, oldState) => {
     const pframe = props.pframe;
-    const labelColumnOptionPredicate = props.labelColumnOptionPredicate;
+    const [sequenceColumnsIds, labelColumnsIds, rowSelectionModel] = state;
+    const linkerColumnPredicate = props.linkerColumnPredicate;
     if (!pframe || loadingRef.value || sequenceColumnsIds.length === 0
-      || lodash.isEqual(sequenceColumnsIds, oldSequenceColumnsIds)) return;
+      || lodash.isEqual(state, oldState)) return;
 
     const epoch = epochRef.value = epochRef.value + 1;
     loadingRef.value = true;
-    // console.log(`watch 2 triggered, epoch: ${epoch}, sequenceColumnsIds: ${sequenceColumnsIds}`);
+    // console.log(`watch 2 triggered, epoch: ${epoch}, labelColumnsIds: ${labelColumnsIds}`);
     try {
-      const labelColumnsOptions = await getLabelColumnsOptions(pframe, sequenceColumnsIds, labelColumnOptionPredicate);
-      if (epochRef.value !== epoch) return;
-      const labelColumnsIds = await getDefaultLabelColumnsIds(pframe, labelColumnsOptions);
-      if (epochRef.value !== epoch) return;
-
       const sequenceRows = {
         epoch,
         rows: await getSequenceRows(
-          pframe,
-          sequenceColumnsIds,
-          labelColumnsIds,
-          props.rowSelectionModel,
+          { pframe, sequenceColumnsIds, labelColumnsIds, linkerColumnPredicate, rowSelectionModel },
         ),
       };
       if (epochRef.value !== epoch) return;
 
-      labelColumnsOptionsRef.value = labelColumnsOptions;
-      labelColumnsIdsRef.value = labelColumnsIds;
       sequenceRowsRef.value = sequenceRows;
     } catch (err: unknown) {
       if (epochRef.value !== epoch) return;
@@ -183,50 +185,9 @@ watch(
       // console.log(`watch 2 finished, epoch: ${epoch}`);
     }
   },
-  {
-    deep: true,
-  },
-);
-
-/// Respond to label selection change or row selection change
-watch(
-  () => [labelColumnsIdsRef.value, props.rowSelectionModel] as const,
-  async ([labelColumnsIds, rowSelectionModel], [oldLabelColumnsIds, oldRowSelectionModel]) => {
-    const pframe = props.pframe;
-    const sequenceColumnsIds = sequenceColumnsIdsRef.value;
-    if (!pframe || loadingRef.value || sequenceColumnsIds.length === 0
-      || (lodash.isEqual(labelColumnsIds, oldLabelColumnsIds)
-        && lodash.isEqual(rowSelectionModel, oldRowSelectionModel))) return;
-
-    const epoch = epochRef.value = epochRef.value + 1;
-    loadingRef.value = true;
-    // console.log(`watch 3 triggered, epoch: ${epoch}, labelColumnsIds: ${labelColumnsIds}`);
-    try {
-      const sequenceRows = {
-        epoch,
-        rows: await getSequenceRows(
-          pframe,
-          sequenceColumnsIds,
-          labelColumnsIds,
-          rowSelectionModel,
-        ),
-      };
-      if (epochRef.value !== epoch) return;
-
-      sequenceRowsRef.value = sequenceRows;
-    } catch (err: unknown) {
-      if (epochRef.value !== epoch) return;
-      console.error(err);
-    } finally {
-      if (epochRef.value === epoch) {
-        loadingRef.value = false;
-      }
-      // console.log(`watch 3 finished, epoch: ${epoch}`);
-    }
-  },
-  {
-    deep: true,
-  },
+  // {
+  //   deep: true,
+  // },
 );
 
 const aligningRef = ref(false);
