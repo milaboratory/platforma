@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 4.5.0
+
+### Minor Changes
+
+- efd2b56: add local python script to PYTHONPATH
+
 ## 4.4.5
 
 ### Patch Changes
