@@ -1,27 +1,27 @@
 import type {
-  PObjectId,
+  CanonicalizedJson,
   PColumn,
+  PColumnIdAndSpec,
+  PColumnKey,
   PColumnValues,
   PColumnValuesEntry,
-  PColumnKey,
+  PObjectId,
   PTableColumnId,
-  CanonicalizedJson,
-  PColumnIdAndSpec,
 } from '@milaboratories/pl-model-common';
 import {
   canonicalizeJson,
   isPTableAbsent,
   PTableNA,
 } from '@milaboratories/pl-model-common';
-import type {
-  RowSelectionModel,
-} from './PlDataTable';
+import type { RowSelectionModel } from './PlDataTable';
 
 /** Canonicalized PTableColumnId JSON string */
 export type PTableColumnIdJson = CanonicalizedJson<PTableColumnId>;
 
 /** Encode `PTableColumnId` as canonicalized JSON string */
-export function stringifyPTableColumnId(id: PTableColumnId): PTableColumnIdJson {
+export function stringifyPTableColumnId(
+  id: PTableColumnId,
+): PTableColumnIdJson {
   const type = id.type;
   switch (type) {
     case 'axis':
@@ -37,8 +37,8 @@ export function stringifyPTableColumnId(id: PTableColumnId): PTableColumnIdJson 
 export type PColumnPredicate = (column: PColumnIdAndSpec) => boolean;
 
 export type PlMultiSequenceAlignmentModel = {
-  sequenceColumnsIds?: PObjectId[];
-  labelColumnsIds?: PTableColumnIdJson[];
+  sequenceColumnIds?: PObjectId[];
+  labelColumnIds?: PTableColumnIdJson[];
 };
 
 export function createRowSelectionColumn(
@@ -47,7 +47,9 @@ export function createRowSelectionColumn(
   label?: string,
   domain?: Record<string, string>,
 ): PColumn<PColumnValues> | undefined {
-  if (!rowSelectionModel || rowSelectionModel.axesSpec.length === 0) return undefined;
+  if (!rowSelectionModel || rowSelectionModel.axesSpec.length === 0) {
+    return undefined;
+  }
 
   return {
     id: columnId,
@@ -64,7 +66,10 @@ export function createRowSelectionColumn(
     },
     data: rowSelectionModel
       .selectedRowsKeys
-      .filter((r): r is PColumnKey => !r.some((v) => isPTableAbsent(v) || v === PTableNA))
+      .filter(
+        (r): r is PColumnKey =>
+          !r.some((v) => isPTableAbsent(v) || v === PTableNA),
+      )
       .map((r) => ({
         key: r,
         val: 1,
