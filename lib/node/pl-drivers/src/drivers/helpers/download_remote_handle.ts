@@ -3,10 +3,8 @@
 
 import type { Signer } from '@milaboratories/ts-helpers';
 import type { OnDemandBlobResourceSnapshot } from '../types';
-import type { RemoteBlobHandle } from '@milaboratories/pl-model-common';
-import type { ResourceInfo } from '@milaboratories/pl-tree';
+import type { RemoteBlobHandle, RangeBytes } from '@milaboratories/pl-model-common';
 import { bigintToResourceId, ResourceId, ResourceType } from '@milaboratories/pl-client';
-import { RangeBytes } from './range_blobs_cache';
 
 // https://regex101.com/r/Q4YdTa/3
 const remoteHandleRegex

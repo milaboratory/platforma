@@ -601,6 +601,10 @@ blockTest(
 
       if (outputs.contentAsString.ok) {
         expect(outputs.contentAsString.value).toStrictEqual('42\n');
+        expect((outputs.contentAsString1 as any).value).toStrictEqual('42\n42\n');
+        expect((outputs.contentAsStringRange as any).value).toStrictEqual('2');
+        expect((outputs.contentAsStringRange1 as any).value).toStrictEqual('22');
+
         expect((outputs.contentAsJson as any).value).toStrictEqual(42);
         const localBlob = (outputs.downloadedBlobContent as any).value as LocalBlobHandleAndSize;
         const remoteBlob = (outputs.onDemandBlobContent as any).value as RemoteBlobHandleAndSize;

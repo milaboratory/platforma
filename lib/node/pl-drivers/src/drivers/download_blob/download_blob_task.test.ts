@@ -6,7 +6,8 @@ import type {
 } from '@milaboratories/pl-model-common';
 import type { ValueOrError, Signer } from '@milaboratories/ts-helpers';
 import { CallersCounter } from '@milaboratories/ts-helpers';
-import type { CachedFileRange, RangeBytes } from '../helpers/range_blobs_cache';
+import type { CachedFileRange } from '../helpers/range_blobs_cache';
+import type { RangeBytes } from '@milaboratories/pl-model-common';
 import { newLocalHandle } from '../helpers/download_local_handle';
 import { genRangeFile, genWholeFile } from '../helpers/test_helpers';
 

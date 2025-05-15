@@ -1,6 +1,7 @@
 import * as upath from 'upath';
-import { CachedFileRange, RangeBytes } from './range_blobs_cache';
+import { CachedFileRange } from './range_blobs_cache';
 import { CallersCounter } from '@milaboratories/ts-helpers';
+import { type RangeBytes } from '@milaboratories/pl-model-common';
 
 export const PL_STORAGE_TO_PATH = process.env.PL_STORAGE_TO_PATH
   ? Object.fromEntries(process.env.PL_STORAGE_TO_PATH.split(';').map((kv) => kv.split(':')))

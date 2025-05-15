@@ -244,17 +244,17 @@ export class TreeNodeAccessor {
     return result;
   }
 
-  public getFileContentAsBase64(): FutureRef<string | undefined> {
-    return new FutureRef(getCfgRenderCtx().getBlobContentAsBase64(this.handle));
+  public getFileContentAsBase64(fromBytes?: number, toBytes?: number): FutureRef<string | undefined> {
+    return new FutureRef(getCfgRenderCtx().getBlobContentAsBase64(this.handle, fromBytes, toBytes));
   }
 
-  public getFileContentAsString(): FutureRef<string | undefined> {
-    return new FutureRef(getCfgRenderCtx().getBlobContentAsString(this.handle));
+  public getFileContentAsString(fromBytes?: number, toBytes?: number): FutureRef<string | undefined> {
+    return new FutureRef(getCfgRenderCtx().getBlobContentAsString(this.handle, fromBytes, toBytes));
   }
 
-  public getFileContentAsJson<T>(): FutureRef<T | undefined> {
+  public getFileContentAsJson<T>(fromBytes?: number, toBytes?: number): FutureRef<T | undefined> {
     return new FutureRef<string | undefined>(
-      getCfgRenderCtx().getBlobContentAsString(this.handle),
+      getCfgRenderCtx().getBlobContentAsString(this.handle, fromBytes, toBytes),
     ).mapDefined((v) => JSON.parse(v) as T);
   }
 
@@ -275,8 +275,8 @@ export class TreeNodeAccessor {
   /**
    * @returns downloaded file handle
    */
-  public getFileHandle(): FutureRef<LocalBlobHandleAndSize | undefined> {
-    return new FutureRef(getCfgRenderCtx().getDownloadedBlobContentHandle(this.handle));
+  public getFileHandle(fromBytes?: number, toBytes?: number): FutureRef<LocalBlobHandleAndSize | undefined> {
+    return new FutureRef(getCfgRenderCtx().getDownloadedBlobContentHandle(this.handle, fromBytes, toBytes));
   }
 
   /**
@@ -289,8 +289,8 @@ export class TreeNodeAccessor {
   /**
    * @returns downloaded file handle
    */
-  public getRemoteFileHandle(): FutureRef<RemoteBlobHandleAndSize | undefined> {
-    return new FutureRef(getCfgRenderCtx().getOnDemandBlobContentHandle(this.handle));
+  public getRemoteFileHandle(fromBytes?: number, toBytes?: number): FutureRef<RemoteBlobHandleAndSize | undefined> {
+    return new FutureRef(getCfgRenderCtx().getOnDemandBlobContentHandle(this.handle, fromBytes, toBytes));
   }
 
   /**

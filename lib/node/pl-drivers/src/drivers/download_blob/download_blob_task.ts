@@ -18,7 +18,8 @@ import { Writable } from 'node:stream';
 import type { ClientDownload } from '../../clients/download';
 import { UnknownStorageError, WrongLocalFileUrl } from '../../clients/download';
 import { NetworkError400 } from '../../helpers/download';
-import { CachedFileRange, fileRangeSize, RangeBytes } from '../helpers/range_blobs_cache';
+import { CachedFileRange, fileRangeSize } from '../helpers/range_blobs_cache';
+import { RangeBytes } from '@milaboratories/pl-model-common';
 import { randomBytes } from 'node:crypto';
 
 /** Sometimes we don't know the size of the file until we download it. */
