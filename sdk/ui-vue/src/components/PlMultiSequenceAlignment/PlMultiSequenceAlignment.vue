@@ -1,14 +1,16 @@
 <script lang="ts" setup>
+import type {
+  Ref,
+} from 'vue';
 import {
   ref,
   onMounted,
   computed,
   watch,
+  readonly,
   toRaw,
+  toValue,
 } from 'vue';
-import type {
-  ListOption,
-} from '@milaboratories/uikit';
 import {
   PlAlert,
   PlBtnGhost,
@@ -18,31 +20,27 @@ import {
 } from '@milaboratories/uikit';
 import type {
   PColumnPredicate,
-  PTableColumnIdJson,
 } from '@platforma-sdk/model';
 import {
   type PlMultiSequenceAlignmentModel,
   type PFrameHandle,
   type RowSelectionModel,
-  type PObjectId,
 } from '@platforma-sdk/model';
 import {
   useDataTableToolsPanelTarget,
 } from '../PlAgDataTableToolsPanel';
 import type {
   AlignmentRow,
-  SequenceRows,
+  SequenceRow,
 } from './types';
 import {
-  getLabelColumnsOptions,
-  getSequenceColumnsOptions,
-  getSequenceRows,
+  useColumns,
+  useSequenceRows,
 } from './data_provider_logic';
 import SequenceAlignment from './SequenceAlignment.vue';
 import {
   WorkerManager,
 } from './wm';
-import * as lodash from 'lodash';
 
 const model = defineModel<PlMultiSequenceAlignmentModel>({ default: {} });
 
@@ -51,175 +49,130 @@ const props = defineProps<{
    * Handle to PFrame created using `createPFrameForGraphs`
    * Should contain all desired sequence and label columns
    */
-  pframe: PFrameHandle | undefined;
+  readonly pframe: PFrameHandle | undefined;
   /**
    * Return true if column should be shown in sequence columns dropdown
    * By default, all sequence columns are selected
    */
-  sequenceColumnPredicate: PColumnPredicate;
+  readonly sequenceColumnPredicate: PColumnPredicate;
   /**
    * Return true if column should be shown in label columns dropdown
    * By default, common axes of selected sequence columns are selected
    */
-  labelColumnOptionPredicate?: PColumnPredicate;
+  readonly labelColumnOptionPredicate?: PColumnPredicate;
   /**
    * Sometimes sequence column and label column have disjoint axes
    * In this case you have to define `linkerColumnPredicate` to select
    * columns connecting axes of sequence and label columns.
    */
-  linkerColumnPredicate?: PColumnPredicate;
+  readonly linkerColumnPredicate?: PColumnPredicate;
   /**
    * Row selection model (from `PlAgDataTableV2` or `GraphMaker`)
    * If not provided or empty, all rows will be considered selected
    * Warning: should be forwarded as a field of `reactive` object
    */
-  rowSelectionModel?: RowSelectionModel | undefined;
+  readonly rowSelectionModel?: RowSelectionModel | undefined;
 }>();
 
+// SlidePanel visibility flag
 const show = ref(false);
+
+// Teleport open button to DataTableToolsPanel after mount
 const mounted = ref(false);
 onMounted(() => {
   mounted.value = true;
 });
 const teleportTarget = useDataTableToolsPanelTarget();
 
-const epochRef = ref(0);
+// Loading data from PFrame
 const loadingRef = ref(true);
-const sequenceColumnsOptionsRef = ref<ListOption<PObjectId>[]>([]);
-const sequenceColumnsIdsRef = computed<PObjectId[]>({
-  get: () => model.value.sequenceColumnsIds ?? [],
-  set: (value: PObjectId[]) => {
+// Make sure pframe is reactive
+const pframeRef = computed(() => props.pframe);
+// Update dropdown options on pframe update
+const { sequenceColumnsRef, labelColumnsRef } = useColumns({
+  pframe: pframeRef,
+  sequenceColumnPredicate: props.sequenceColumnPredicate,
+  labelColumnOptionPredicate: props.labelColumnOptionPredicate,
+  loading: loadingRef,
+});
+// Make sure sequenceColumnsIds and labelColumnsIds are reactive
+const sequenceColumnsIdsRef = computed({
+  get: () => model.value.sequenceColumnsIds ?? sequenceColumnsRef.value.defaults,
+  set: (value) => {
     model.value.sequenceColumnsIds = value;
   },
 });
-const labelColumnsOptionsRef = ref<ListOption<PTableColumnIdJson>[]>([]);
-const labelColumnsIdsRef = computed<PTableColumnIdJson[]>({
-  get: () => model.value.labelColumnsIds ?? [],
-  set: (value: PTableColumnIdJson[]) => {
+const labelColumnsIdsRef = computed({
+  get: () => model.value.labelColumnsIds ?? labelColumnsRef.value.defaults,
+  set: (value) => {
     model.value.labelColumnsIds = value;
   },
 });
-const sequenceRowsRef = ref<SequenceRows>({ epoch: epochRef.value, rows: [] });
-const sequenceRowsCountRef = computed(() => sequenceRowsRef.value.rows.length);
+// Make sure rowSelectionModel is reactive
+const rowSelectionModelRef = computed(() => props.rowSelectionModel);
+// Update sequence rows on dropdown selection change
+const { sequenceRowsRef } = useSequenceRows({
+  pframe: pframeRef,
+  sequenceColumnsIds: sequenceColumnsIdsRef,
+  labelColumnsIds: labelColumnsIdsRef,
+  linkerColumnPredicate: props.linkerColumnPredicate,
+  rowSelectionModel: rowSelectionModelRef,
+  loading: loadingRef,
+});
 
-/// Full state reset
-watch (
-  () => props.pframe,
-  async (pframe, oldPframe) => {
-    const sequenceColumnPredicate = props.sequenceColumnPredicate;
-    const labelColumnOptionPredicate = props.labelColumnOptionPredicate;
-    const linkerColumnPredicate = props.linkerColumnPredicate;
-    const rowSelectionModel = props.rowSelectionModel;
-    if (!pframe || pframe === oldPframe) return;
+// TODO: move to a separate file
+function useAlignment(sequenceRowsRef: Ref<SequenceRow[]>) {
+// Reset alignment state on sequence rows update
+  const isAlignedRef = ref(false);
+  // TODO: compare only sequence rows, ignore changes in label columns
+  watch(() => sequenceRowsRef.value, () => isAlignedRef.value = false);
 
-    const epoch = epochRef.value = epochRef.value + 1;
-    loadingRef.value = true;
-    // console.log(`watch 1 triggered, epoch: ${epoch}, pframe: ${pframe}`);
+  // Alignment in progress
+  const aligningRef = ref(false);
+  // Alignment error
+  const errorRef = ref<Error | null>(null);
+  // Alignment result
+  const alignmentRef = ref<AlignmentRow[]>([]);
+
+  // Worker manager
+  const wm = new WorkerManager();
+  // Alignment generation counter
+  let alignmentGeneration = 0;
+  const runAlignment = async () => {
+    const sequenceRows = toRaw(sequenceRowsRef.value);
+    if (sequenceRows.length === 0) return;
+
+    const generation = alignmentGeneration = alignmentGeneration + 1;
+    aligningRef.value = true;
+    errorRef.value = null;
     try {
-      const { options: sequenceColumnsOptions, defaults: sequenceColumnsIds }
-        = await getSequenceColumnsOptions(pframe, sequenceColumnPredicate);
-      if (epochRef.value !== epoch) return;
+      const result = await wm.align({ sequenceRows });
+      if (generation !== alignmentGeneration) return;
 
-      const { options: labelColumnsOptions, defaults: labelColumnsIds }
-        = await getLabelColumnsOptions(pframe, sequenceColumnsIds, labelColumnOptionPredicate);
-      if (epochRef.value !== epoch) return;
-
-      const sequenceRows = {
-        epoch,
-        rows: await getSequenceRows(
-          { pframe, sequenceColumnsIds, labelColumnsIds, linkerColumnPredicate, rowSelectionModel },
-        ),
-      };
-      if (epochRef.value !== epoch) return;
-
-      sequenceColumnsOptionsRef.value = sequenceColumnsOptions;
-      sequenceColumnsIdsRef.value = sequenceColumnsIds;
-      labelColumnsOptionsRef.value = labelColumnsOptions;
-      labelColumnsIdsRef.value = labelColumnsIds;
-      sequenceRowsRef.value = sequenceRows;
-    } catch (err: unknown) {
-      if (epochRef.value !== epoch) return;
-      console.error(err);
+      alignmentRef.value = result.result;
+      isAlignedRef.value = true;
+    } catch (err) {
+      if (generation !== alignmentGeneration) return;
+      errorRef.value = err instanceof Error ? err : new Error(String(err));
     } finally {
-      if (epochRef.value === epoch) {
-        loadingRef.value = false;
+      if (generation === alignmentGeneration) {
+        aligningRef.value = false;
       }
-      // console.log(`watch 1 finished, epoch: ${epoch}`);
     }
-  },
-  {
-    immediate: true,
-  },
-);
+  };
 
-/// Respond to label selection change or row selection change
-watch(
-  () => [sequenceColumnsIdsRef.value, labelColumnsIdsRef.value, props.rowSelectionModel] as const,
-  async (state, oldState) => {
-    const pframe = props.pframe;
-    const [sequenceColumnsIds, labelColumnsIds, rowSelectionModel] = state;
-    const linkerColumnPredicate = props.linkerColumnPredicate;
-    if (!pframe || loadingRef.value || sequenceColumnsIds.length === 0
-      || lodash.isEqual(state, oldState)) return;
-
-    const epoch = epochRef.value = epochRef.value + 1;
-    loadingRef.value = true;
-    // console.log(`watch 2 triggered, epoch: ${epoch}, labelColumnsIds: ${labelColumnsIds}`);
-    try {
-      const sequenceRows = {
-        epoch,
-        rows: await getSequenceRows(
-          { pframe, sequenceColumnsIds, labelColumnsIds, linkerColumnPredicate, rowSelectionModel },
-        ),
-      };
-      if (epochRef.value !== epoch) return;
-
-      sequenceRowsRef.value = sequenceRows;
-    } catch (err: unknown) {
-      if (epochRef.value !== epoch) return;
-      console.error(err);
-    } finally {
-      if (epochRef.value === epoch) {
-        loadingRef.value = false;
-      }
-      // console.log(`watch 2 finished, epoch: ${epoch}`);
-    }
-  },
-  // {
-  //   deep: true,
-  // },
-);
-
-const aligningRef = ref(false);
-const errorRef = ref<Error | null>(null);
-const alignmentEpochRef = ref(epochRef.value - 1);
-const alignmentRef = ref<AlignmentRow[]>([]);
-
-const wm = new WorkerManager();
-const runAlignment = async () => {
-  const { epoch, rows: sequenceRows } = toRaw(sequenceRowsRef.value);
-  if (sequenceRows.length === 0) return;
-
-  const alignmentRefEpoch = alignmentEpochRef.value = epoch;
-  aligningRef.value = true;
-  errorRef.value = null;
-  try {
-    const result = await wm.align({ sequenceRows });
-    if (alignmentEpochRef.value !== alignmentRefEpoch) return;
-
-    alignmentRef.value = result.result;
-  } catch (err) {
-    if (alignmentEpochRef.value !== alignmentRefEpoch) return;
-    errorRef.value = err instanceof Error ? err : new Error(String(err));
-  } finally {
-    if (alignmentEpochRef.value === alignmentRefEpoch) {
-      aligningRef.value = false;
-    }
-  }
-};
+  return {
+    isAlignedRef: isAlignedRef,
+    aligningRef: aligningRef,
+    errorRef: errorRef,
+    alignmentRef: alignmentRef,
+    runAlignment,
+  };
+}
+const { isAlignedRef, aligningRef, errorRef, alignmentRef, runAlignment } = useAlignment(sequenceRowsRef);
 
 const isReady = computed(() => !loadingRef.value && !aligningRef.value
-  && sequenceRowsCountRef.value >= 2 && alignmentEpochRef.value !== epochRef.value);
+  && sequenceRowsRef.value.length >= 2 && !isAlignedRef.value);
 </script>
 
 <template>
@@ -233,14 +186,14 @@ const isReady = computed(() => !loadingRef.value && !aligningRef.value
     <PlDropdownMulti
       v-model="sequenceColumnsIdsRef"
       label="Sequence Columns"
-      :options="sequenceColumnsOptionsRef"
+      :options="sequenceColumnsRef.options"
       :disabled="loadingRef"
       clearable
     />
     <PlDropdownMulti
       v-model="labelColumnsIdsRef"
       label="Label Columns"
-      :options="labelColumnsOptionsRef"
+      :options="labelColumnsRef.options"
       :disabled="loadingRef"
       clearable
     />
@@ -248,11 +201,11 @@ const isReady = computed(() => !loadingRef.value && !aligningRef.value
     <PlAlert v-if="errorRef" type="error" >
       {{ errorRef.message }}
     </PlAlert>
-    <PlAlert v-if="sequenceRowsCountRef < 2" type="warn">
+    <PlAlert v-if="sequenceRowsRef.length < 2" type="warn">
       Please select at least one sequence column and two or more rows to run alignment
     </PlAlert>
 
-    <SequenceAlignment :output="alignmentRef" />
+    <SequenceAlignment :output="alignmentRef as AlignmentRow[]" />
 
     <template #actions>
       <PlBtnPrimary
@@ -260,7 +213,7 @@ const isReady = computed(() => !loadingRef.value && !aligningRef.value
         :loading="aligningRef"
         @click="runAlignment"
       >
-        Run Alignment ({{ sequenceRowsCountRef }} sequences)
+        Run Alignment ({{ sequenceRowsRef.length }} sequences)
       </PlBtnPrimary>
       <PlBtnGhost @click="show = false">Close</PlBtnGhost>
     </template>
