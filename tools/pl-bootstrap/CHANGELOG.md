@@ -1,5 +1,16 @@
 # @platforma-sdk/bootstrap
 
+## 3.5.0
+
+### Minor Changes
+
+- 541b174: Allow to control port numbers for S3 in 'docker s3'
+
+### Patch Changes
+
+- Updated dependencies [541b174]
+  - @milaboratories/pl-deployments@2.2.0
+
 ## 3.4.12
 
 ### Patch Changes
