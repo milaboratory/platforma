@@ -67,12 +67,15 @@ _pythonVenvBinDir := func(pythonPackage, pythonDescriptor) {
 		}
 	)
 
-	return result.output("binPath")
+	return {
+       binDir: result.output("binPath"),
+       osPathDelimeter: result.output("osPathDelimeter")
+    }
 }
 
 installPyDeps := assets.importTemplate(":exec.python.install-deps")
 
-self.defineOutputs("binDir", "runEnv")
+self.defineOutputs("binDir", "runEnv", "osPathDelimeter")
 
 self.body(func(inputs) {
 	// assert we have inputs we expect.
@@ -83,7 +86,7 @@ self.body(func(inputs) {
 
 	venv := _createVenv(pythonPackage, pythonDescriptor)
 
-	pythonVenvBinDir := _pythonVenvBinDir(pythonPackage, pythonDescriptor)
+    venvParams := _pythonVenvBinDir(pythonPackage, pythonDescriptor)
 
 	installDeps := render.createEphemeral(installPyDeps, {
 		python: pythonPackage,
@@ -91,11 +94,12 @@ self.body(func(inputs) {
 		toolset: inputs.toolset,
 		dependencies: inputs.dependencies,
 		pythonBinDir: pythonDescriptor.binDir,
-		pythonVenvBinDir: pythonVenvBinDir
+		pythonVenvBinDir: venvParams.binDir
 	})
 
 	return {
-		binDir: pythonVenvBinDir,
+		binDir: venvParams.binDir,
+        osPathDelimeter: venvParams.osPathDelimeter,
 		runEnv: installDeps.output("runEnv")
 	}
 })

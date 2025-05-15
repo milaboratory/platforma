@@ -30,7 +30,7 @@ _runInVenv := func(python, venv, wd, pythonBinDir, pythonVenvBinDir) {
 		envTyped("PYTHONPATH", t, path.join("{python_runenv}", pythonBinDir, "python_stdlib"))
 }
 
-_installPipDependencies := func(python, venv, dependencies, pythonBinDir, pythonVenvBinDir) {
+_installPipDependencies := func(python, venv, dependencies, pythonBinDir, pythonVenvBinDir ) {
 	requirementsRef := dependencies.requirements
 
 	wdForDeps := workdir.builder().
@@ -73,7 +73,11 @@ self.prepare(func(inputs) {
 	toolset := inputs.toolset
 	if toolset == "pip" {
 		depsInstall := _installPipDependencies(
-			inputs.python, inputs.venv, inputs.dependencies, inputs.pythonBinDir, inputs.pythonVenvBinDir
+			inputs.python,
+            inputs.venv,
+            inputs.dependencies,
+            inputs.pythonBinDir,
+            inputs.pythonVenvBinDir
 		)
 		return {
 			runEnv: inputs.venv,
