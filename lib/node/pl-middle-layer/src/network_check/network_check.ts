@@ -12,8 +12,7 @@
  * - the desktop could download files from S3.
  * - backend could download software and run it.
  * - backend could run python software.
- * TODO:
- * - try to get something from backend's library storage.
+ * - try to get something from every storage to work storage.
  *
  * We don't check backend access to S3 storage, it is checked on the start of backend.
  */

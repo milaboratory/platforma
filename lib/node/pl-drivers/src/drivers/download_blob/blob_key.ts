@@ -1,5 +1,5 @@
 import { bigintToResourceId, ResourceId } from "@milaboratories/pl-client";
-import { RangeBytes } from "../helpers/range_blobs_cache";
+import { RangeBytes } from "@milaboratories/pl-model-common";
 import * as path from 'node:path';
 
 /** Returns a file name and the unique key of the file.

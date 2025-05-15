@@ -139,120 +139,137 @@ const mergeDefaultOpsCases: {
   };
   expected: LocalPlOptionsFull;
 }[] = [
-  {
-    name: 'should set default values when minimal input is provided',
-    input: {
-      ops: { 
-        workingDir: '/test', 
-        config: 'config',
-        plBinary: { type: 'Download', version: '1.29.2' },
-      },
-      numCpu: 4,
-    },
-    expected: {
-      workingDir: '/test',
-      config: 'config',
-      plBinary: { type: 'Download', version: '1.29.2' },
-      spawnOptions: {
-        env: {
-          GOMAXPROCS: '4',
+    {
+      name: 'should set default values when minimal input is provided',
+      input: {
+        ops: {
+          workingDir: '/test',
+          config: 'config',
+          plBinary: { type: 'Download', version: '1.29.2' },
         },
+        numCpu: 4,
       },
-      closeOld: true,
-    },
-  },
-  {
-    name: 'should override outermost options when provided',
-    input: {
-      ops: { 
-        workingDir: '/test', 
-        config: 'config',
-        // we provided plBinary and closeOld, they should appear in the result
-        plBinary: { type: 'Local', path: '/custom/binary' },
-        closeOld: false,
-      },
-      numCpu: 2,      
-    },
-    expected: {
-      workingDir: '/test',
-      config: 'config',
-      spawnOptions: {
-        env: {
-          GOMAXPROCS: '2',
-        },
-      },
-      plBinary: { type: 'Local', path: '/custom/binary' },
-      closeOld: false,
-    },
-  },
-  {
-    name: 'should merge env variables when provided',
-    input: {
-      ops: { 
-        workingDir: '/test', 
-        config: 'config',
-        plBinary: { type: 'Download', version: '1.29.2' },
-        spawnOptions: {
-          env: {
-            NODE_ENV: 'test',
-            DEBUG: 'true',
-          },
-        },
-      },
-      numCpu: 3,
-    },
-    expected: {
-      workingDir: '/test',
-      config: 'config',
-      plBinary: { type: 'Download', version: '1.29.2' },
-      spawnOptions: {
-        env: {
-          GOMAXPROCS: '3',
-          NODE_ENV: 'test',
-          DEBUG: 'true',
-        },
-      },
-      closeOld: true,
-    },
-  },
-  {
-    name: 'should override other spawnOptions properties',
-    input: {
-      ops: {
+      expected: {
         workingDir: '/test',
         config: 'config',
         plBinary: { type: 'Download', version: '1.29.2' },
         spawnOptions: {
+          env: {
+            GOMAXPROCS: '4',
+          },
+        },
+        closeOld: true,
+      },
+    },
+    {
+      name: 'should override outermost options when provided',
+      input: {
+        ops: {
+          workingDir: '/test',
+          config: 'config',
+          // we provided plBinary and closeOld, they should appear in the result
+          plBinary: { type: 'Local', path: '/custom/binary' },
+          closeOld: false,
+        },
+        numCpu: 2,
+      },
+      expected: {
+        workingDir: '/test',
+        config: 'config',
+        spawnOptions: {
+          env: {
+            GOMAXPROCS: '2',
+          },
+        },
+        plBinary: { type: 'Local', path: '/custom/binary' },
+        closeOld: false,
+      },
+    },
+    {
+      name: 'should merge env variables when provided',
+      input: {
+        ops: {
+          workingDir: '/test',
+          config: 'config',
+          plBinary: { type: 'Download', version: '1.29.2' },
+          spawnOptions: {
+            env: {
+              NODE_ENV: 'test',
+              DEBUG: 'true',
+            },
+          },
+        },
+        numCpu: 3,
+      },
+      expected: {
+        workingDir: '/test',
+        config: 'config',
+        plBinary: { type: 'Download', version: '1.29.2' },
+        spawnOptions: {
+          env: {
+            GOMAXPROCS: '3',
+            NODE_ENV: 'test',
+            DEBUG: 'true',
+          },
+        },
+        closeOld: true,
+      },
+    },
+    {
+      name: 'should override other spawnOptions properties',
+      input: {
+        ops: {
+          workingDir: '/test',
+          config: 'config',
+          plBinary: { type: 'Download', version: '1.29.2' },
+          spawnOptions: {
+            stdio: 'inherit',
+            detached: true,
+          },
+        },
+        numCpu: 2,
+      },
+      expected: {
+        workingDir: '/test',
+        config: 'config',
+        plBinary: { type: 'Download', version: '1.29.2' },
+        spawnOptions: {
+          env: {
+            GOMAXPROCS: '2',
+          },
           stdio: 'inherit',
           detached: true,
         },
+        closeOld: true,
       },
-      numCpu: 2,
     },
-    expected: {
-      workingDir: '/test',
-      config: 'config',
-      plBinary: { type: 'Download', version: '1.29.2' },
-      spawnOptions: {
-        env: {
-          GOMAXPROCS: '2',
+    {
+      name: 'should handle complex case with multiple overrides',
+      input: {
+        ops: {
+          workingDir: '/test',
+          config: 'config',
+          plBinary: { type: 'Local', path: '/custom/binary' },
+          closeOld: false,
+          spawnOptions: {
+            env: {
+              NODE_ENV: 'production',
+              LOG_LEVEL: 'debug',
+            },
+            cwd: '/custom/dir',
+            windowsHide: false,
+          },
         },
-        stdio: 'inherit',
-        detached: true,
+        numCpu: 6,
       },
-      closeOld: true,
-    },
-  },
-  {
-    name: 'should handle complex case with multiple overrides',
-    input: {
-      ops: { 
-        workingDir: '/test', 
+      expected: {
+        workingDir: '/test',
         config: 'config',
         plBinary: { type: 'Local', path: '/custom/binary' },
         closeOld: false,
         spawnOptions: {
           env: {
+            GOMAXPROCS: '6',
             NODE_ENV: 'production',
             LOG_LEVEL: 'debug',
           },
@@ -260,25 +277,8 @@ const mergeDefaultOpsCases: {
           windowsHide: false,
         },
       },
-      numCpu: 6,
     },
-    expected: {
-      workingDir: '/test',
-      config: 'config',
-      plBinary: { type: 'Local', path: '/custom/binary' },
-      closeOld: false,
-      spawnOptions: {
-        env: {
-          GOMAXPROCS: '6',
-          NODE_ENV: 'production',
-          LOG_LEVEL: 'debug',
-        },
-        cwd: '/custom/dir',
-        windowsHide: false,
-      },
-    },
-  },
-];
+  ];
 
 test.each(mergeDefaultOpsCases)('mergeDefaultOps: $name', ({ name, input, expected }) => {
   const result = mergeDefaultOps(input.ops, input.numCpu);
@@ -296,139 +296,139 @@ const plProcessOpsCases: {
   };
   expected: ProcessOptions;
 }[] = [
-  {
-    name: 'should set basic options with minimal input',
-    input: {
-      binaryPath: '/path/to/binary',
-      configPath: '/path/to/config.yaml',
-      ops: {
-        workingDir: '/work/dir',
-        config: 'config-content',
-        plBinary: { type: 'Download', version: '1.29.2' },
-        spawnOptions: {},
-        closeOld: true,
+    {
+      name: 'should set basic options with minimal input',
+      input: {
+        binaryPath: '/path/to/binary',
+        configPath: '/path/to/config.yaml',
+        ops: {
+          workingDir: '/work/dir',
+          config: 'config-content',
+          plBinary: { type: 'Download', version: '1.29.2' },
+          spawnOptions: {},
+          closeOld: true,
+        },
+        workDir: '/work/dir',
       },
-      workDir: '/work/dir',
-    },
-    expected: {
-      cmd: '/path/to/binary',
-      args: ['--config', '/path/to/config.yaml'],
-      opts: {
-        env: {},
-        cwd: '/work/dir',
-        stdio: ['pipe', 'ignore', 'inherit'],
-        windowsHide: true,
+      expected: {
+        cmd: '/path/to/binary',
+        args: ['--config', '/path/to/config.yaml'],
+        opts: {
+          env: {},
+          cwd: '/work/dir',
+          stdio: ['pipe', 'ignore', 'inherit'],
+          windowsHide: true,
+        },
       },
     },
-  },
-  {
-    name: 'should merge environment variables when provided',
-    input: {
-      binaryPath: '/path/to/binary',
-      configPath: '/config.yaml',
-      ops: {
-        workingDir: '/work',
-        config: 'content',
-        plBinary: { type: 'Download', version: '1.29.2' },
-        spawnOptions: {
+    {
+      name: 'should merge environment variables when provided',
+      input: {
+        binaryPath: '/path/to/binary',
+        configPath: '/config.yaml',
+        ops: {
+          workingDir: '/work',
+          config: 'content',
+          plBinary: { type: 'Download', version: '1.29.2' },
+          spawnOptions: {
+            env: {
+              DEBUG: 'true',
+              LOG_LEVEL: 'info',
+            },
+          },
+          closeOld: true,
+        },
+        workDir: '/work',
+      },
+      expected: {
+        cmd: '/path/to/binary',
+        args: ['--config', '/config.yaml'],
+        opts: {
           env: {
             DEBUG: 'true',
             LOG_LEVEL: 'info',
           },
+          cwd: '/work',
+          stdio: ['pipe', 'ignore', 'inherit'],
+          windowsHide: true,
         },
-        closeOld: true,
-      },
-      workDir: '/work',
-    },
-    expected: {
-      cmd: '/path/to/binary',
-      args: ['--config', '/config.yaml'],
-      opts: {
-        env: { 
-          DEBUG: 'true',
-          LOG_LEVEL: 'info',
-        },
-        cwd: '/work',
-        stdio: ['pipe', 'ignore', 'inherit'],
-        windowsHide: true,
       },
     },
-  },
-  {
-    name: 'should override spawn options when provided',
-    input: {
-      binaryPath: '/binary',
-      configPath: '/config.yaml',
-      ops: {
-        workingDir: '/work',
-        config: 'content',
-        plBinary: { type: 'Download', version: '1.29.2' },
-        spawnOptions: {
+    {
+      name: 'should override spawn options when provided',
+      input: {
+        binaryPath: '/binary',
+        configPath: '/config.yaml',
+        ops: {
+          workingDir: '/work',
+          config: 'content',
+          plBinary: { type: 'Download', version: '1.29.2' },
+          spawnOptions: {
+            stdio: 'inherit',
+            detached: true,
+            shell: true,
+          },
+          closeOld: true,
+        },
+        workDir: '/work',
+      },
+      expected: {
+        cmd: '/binary',
+        args: ['--config', '/config.yaml'],
+        opts: {
+          env: {},
+          cwd: '/work',
           stdio: 'inherit',
           detached: true,
           shell: true,
+          windowsHide: true,
         },
-        closeOld: true,
-      },
-      workDir: '/work',
-    },
-    expected: {
-      cmd: '/binary',
-      args: ['--config', '/config.yaml'],
-      opts: {
-        env: {},
-        cwd: '/work',
-        stdio: 'inherit',
-        detached: true,
-        shell: true,
-        windowsHide: true,
       },
     },
-  },
-  {
-    name: 'should handle complex case with multiple options',
-    input: {
-      binaryPath: '/bin/platforma',
-      configPath: '/etc/platforma/config.yaml',
-      ops: {
-        workingDir: '/var/platforma',
-        config: 'yaml content',
-        plBinary: { type: 'Download', version: '1.29.2' },
-        spawnOptions: {
+    {
+      name: 'should handle complex case with multiple options',
+      input: {
+        binaryPath: '/bin/platforma',
+        configPath: '/etc/platforma/config.yaml',
+        ops: {
+          workingDir: '/var/platforma',
+          config: 'yaml content',
+          plBinary: { type: 'Download', version: '1.29.2' },
+          spawnOptions: {
+            env: {
+              PL_DEBUG: 'true',
+              PL_MODE: 'development',
+              GOMAXPROCS: '4',
+            },
+            stdio: ['ignore', 'pipe', 'pipe'],
+            detached: false,
+            windowsHide: false,
+            uid: 1000,
+            gid: 1000,
+          },
+          closeOld: true,
+        },
+        workDir: '/var/platforma/runtime',
+      },
+      expected: {
+        cmd: '/bin/platforma',
+        args: ['--config', '/etc/platforma/config.yaml'],
+        opts: {
           env: {
             PL_DEBUG: 'true',
             PL_MODE: 'development',
             GOMAXPROCS: '4',
           },
+          cwd: '/var/platforma/runtime',
           stdio: ['ignore', 'pipe', 'pipe'],
           detached: false,
           windowsHide: false,
           uid: 1000,
           gid: 1000,
         },
-        closeOld: true,
-      },
-      workDir: '/var/platforma/runtime',
-    },
-    expected: {
-      cmd: '/bin/platforma',
-      args: ['--config', '/etc/platforma/config.yaml'],
-      opts: {
-        env: {
-          PL_DEBUG: 'true',
-          PL_MODE: 'development',
-          GOMAXPROCS: '4',
-        },
-        cwd: '/var/platforma/runtime',
-        stdio: ['ignore', 'pipe', 'pipe'],
-        detached: false,
-        windowsHide: false,
-        uid: 1000,
-        gid: 1000,
       },
     },
-  },
-];
+  ];
 
 test.each(plProcessOpsCases)('plProcessOps: $name', ({ name, input, expected }) => {
   const result = plProcessOps(

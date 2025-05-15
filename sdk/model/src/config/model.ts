@@ -149,26 +149,36 @@ export type CfgResourceValueAsJson = {
 
 export type CfgBlobContent = {
   type: 'GetBlobContent';
+  fromBytes: number | undefined;
+  toBytes: number | undefined;
   source: Cfg;
 };
 
 export type CfgBlobContentAsString = {
   type: 'GetBlobContentAsString';
+  fromBytes: number | undefined;
+  toBytes: number | undefined;
   source: Cfg;
 };
 
 export type CfgBlobContentAsJson = {
   type: 'GetBlobContentAsJson';
+  fromBytes: number | undefined;
+  toBytes: number | undefined;
   source: Cfg;
 };
 
 export type CfgDownloadedBlobContent = {
   type: 'GetDownloadedBlobContent';
+  fromBytes: number | undefined;
+  toBytes: number | undefined;
   source: Cfg;
 };
 
 export type CfgOnDemandBlobContent = {
   type: 'GetOnDemandBlobContent';
+  fromBytes: number | undefined;
+  toBytes: number | undefined;
   source: Cfg;
 };
 
