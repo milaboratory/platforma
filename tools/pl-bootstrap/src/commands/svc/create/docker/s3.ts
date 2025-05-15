@@ -15,6 +15,7 @@ export default class S3 extends Command {
     ...cmdOpts.GlobalFlags,
 
     ...cmdOpts.AddressesFlags,
+    ...cmdOpts.S3AddressesFlags,
     ...cmdOpts.ImageFlag,
     ...cmdOpts.VersionFlag,
     ...cmdOpts.ArchFlag,
@@ -78,6 +79,9 @@ export default class S3 extends Command {
 
       debugAddr: flags['debug-listen'],
       debugPort: flags['debug-port'],
+
+      s3Port: flags['s3-port'],
+      s3ConsolePort: flags['s3-console-port'],
 
       presignHost: presignHost,
     });
