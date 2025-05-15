@@ -1,5 +1,11 @@
 # @platforma-sdk/bootstrap
 
+## 3.5.1
+
+### Patch Changes
+
+- f927104: Add lost options to `svc create docker s3`
+
 ## 3.5.0
 
 ### Minor Changes
