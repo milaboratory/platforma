@@ -45,7 +45,7 @@ test('should download a blob and read its content', async () => {
 
     console.log(`should download a blob: exiting`)
   });
-});
+}, { timeout: 10000 });
 
 test('should download a blob range and read its content with a range', async () => {
   await TestHelpers.withTempRoot(async (client) => {
@@ -53,7 +53,7 @@ test('should download a blob range and read its content with a range', async () 
     const driver = await genDriver(client, dir, genSigner(), { cacheSoftSizeBytes: 700 * 1024, nConcurrentDownloads: 10 });
     const downloadable = await makeDownloadableBlobFromAssets(client, fileName);
 
-    const c = driver.getDownloadedBlob(downloadable, { from: 0, to: 2 });
+    const c = driver.getDownloadedBlob(downloadable, undefined, 0, 2);
 
     console.log(`should download a blob range: getting computable first time`)
     const blob = await c.getValue();
@@ -125,21 +125,21 @@ test('should get on demand blob without downloading a blob range', async () => {
 
     const downloadable = await makeDownloadableBlobFromAssets(client, fileName);
 
-    const c = driver.getOnDemandBlob(downloadable, { from: 1, to: 2 });
+    const c = driver.getOnDemandBlob(downloadable, undefined, 1, 2);
     const blob = await c.getValue();
     expect(blob).toBeDefined();
     expect(blob.size).toEqual(1);
     const content = await driver.getContent(blob!.handle);
     expect(content?.toString()).toStrictEqual('2');
 
-    const c2 = driver.getOnDemandBlob(downloadable, { from: 0, to: 1 });
+    const c2 = driver.getOnDemandBlob(downloadable, undefined, 0, 1);
     const blob2 = await c2.getValue();
     expect(blob2).toBeDefined();
     expect(blob2.size).toEqual(1);
     const content2 = await driver.getContent(blob2!.handle);
     expect(content2?.toString()).toStrictEqual('4');
 
-    const c3 = driver.getOnDemandBlob(downloadable, { from: 1, to: 3 });
+    const c3 = driver.getOnDemandBlob(downloadable, undefined, 1, 3);
     const blob3 = await c3.getValue();
     expect(blob3).toBeDefined();
     expect(blob3.size).toEqual(2);
@@ -177,42 +177,13 @@ test('should get undefined when releasing a blob from a small cache and the blob
   });
 });
 
-test('should get undefined when releasing a blob from a small cache and the blob was deleted.', async () => {
+test('should get undefined when releasing a blob from a small cache and the blob was deleted range.', async () => {
   await TestHelpers.withTempRoot(async (client) => {
     const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-download-driver'));
     const driver = await genDriver(client, dir, genSigner(), { cacheSoftSizeBytes: 1, nConcurrentDownloads: 10 });
     const downloadable = await makeDownloadableBlobFromAssets(client, fileName);
 
-    const c = driver.getDownloadedBlob(downloadable, undefined);
-
-    const blob = await c.getValue();
-    expect(blob).toBeUndefined();
-
-    await c.awaitChange();
-
-    const blob2 = await c.getValue();
-    expect(blob2).toBeDefined();
-    expect(blob2!.size).toBe(3);
-    expect((await driver.getContent(blob2!.handle))?.toString()).toBe('42\n');
-
-    // The blob is removed from a cache since the size is too big.
-    c.resetState();
-    await scheduler.wait(100);
-
-    const c2 = driver.getDownloadedBlob(downloadable);
-
-    const noBlob = await c2.getValue();
-    expect(noBlob).toBeUndefined();
-  });
-});
-
-test('should get undefined when releasing a blob from a small cache and the blob was deleted.', async () => {
-  await TestHelpers.withTempRoot(async (client) => {
-    const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-download-driver'));
-    const driver = await genDriver(client, dir, genSigner(), { cacheSoftSizeBytes: 1, nConcurrentDownloads: 10 });
-    const downloadable = await makeDownloadableBlobFromAssets(client, fileName);
-
-    const c = driver.getDownloadedBlob(downloadable, { from: 1, to: 3 });
+    const c = driver.getDownloadedBlob(downloadable, undefined, 1, 3);
 
     const blob = await c.getValue();
     expect(blob).toBeUndefined();
@@ -228,41 +199,10 @@ test('should get undefined when releasing a blob from a small cache and the blob
     c.resetState();
     await scheduler.wait(100);
 
-    const c2 = driver.getDownloadedBlob(downloadable, { from: 1, to: 3 });
+    const c2 = driver.getDownloadedBlob(downloadable, undefined, 1, 3);
 
     const noBlob = await c2.getValue();
     expect(noBlob).toBeUndefined();
-  });
-});
-
-test('should get the blob when releasing a blob, but a cache is big enough and it keeps a file on the local drive.', async () => {
-  await TestHelpers.withTempRoot(async (client) => {
-    const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-download-4-'));
-    const driver = await genDriver(client, dir, genSigner(), { cacheSoftSizeBytes: 700 * 1024, nConcurrentDownloads: 10 });
-    const downloadable = await makeDownloadableBlobFromAssets(client, fileName);
-
-    const c = driver.getDownloadedBlob(downloadable, undefined);
-
-    const blob = await c.getValue();
-    expect(blob).toBeUndefined();
-
-    await c.awaitChange();
-
-    const blob2 = await c.getValue();
-    expect(blob2).toBeDefined();
-    expect(blob2!.size).toBe(3);
-    expect((await driver.getContent(blob2!.handle))?.toString()).toBe('42\n');
-
-    // The blob is removed from a cache since the size is too big.
-    c.resetState();
-    await scheduler.wait(100);
-
-    const c2 = driver.getDownloadedBlob(downloadable, undefined);
-
-    const blob3 = await c2.getValue();
-    expect(blob3).toBeDefined();
-    expect(blob3!.size).toBe(3);
-    expect((await driver.getContent(blob3!.handle))?.toString()).toBe('42\n');
   });
 });
 

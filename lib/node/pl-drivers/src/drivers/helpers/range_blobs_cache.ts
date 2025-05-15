@@ -1,4 +1,4 @@
-import { ResourceId } from '@milaboratories/pl-client';
+import { RangeBytes, validateRangeBytes } from '@milaboratories/pl-model-common';
 import type { CallersCounter } from '@milaboratories/ts-helpers';
 import { mapEntries, mapGet } from '@milaboratories/ts-helpers';
 
@@ -21,17 +21,6 @@ export function validateCachedFileRange(file: CachedFileRange, errMsg: string) {
 
 export function fileRangeSize(file: CachedFileRange): number {
   return file.range.to - file.range.from;
-}
-
-export type RangeBytes = {
-  from: number;
-  to: number;
-}
-
-export function validateRangeBytes(range: RangeBytes, errMsg: string) {
-  if (range.from < 0 || range.to < 0 || range.from >= range.to) {
-    throw new Error(`${errMsg}: invalid bytes range: ${range}`);
-  }
 }
 
 /** A cache for ranged files.

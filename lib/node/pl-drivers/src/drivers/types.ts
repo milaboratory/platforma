@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { InferSnapshot } from '@milaboratories/pl-tree';
 import { rsSchema } from '@milaboratories/pl-tree';
-import { RangeBytes } from './helpers/range_blobs_cache';
+import { RangeBytes } from '@milaboratories/pl-model-common';
 
 //
 // download

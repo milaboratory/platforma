@@ -27,6 +27,29 @@ export interface BlobHandleAndSize<
   readonly endByte: number;
 }
 
+/** Range in bytes, from should be less or equal than to. */
+export type RangeBytes = {
+  /** Included left border. */
+  from: number;
+
+  /** Excluded right border. */
+  to: number;
+};
+
+export function newRangeBytesOpt(from?: number, to?: number): RangeBytes | undefined {
+  if (from == undefined || to == undefined) {
+    return undefined;
+  }
+
+  return { from, to };
+}
+
+export function validateRangeBytes(range: RangeBytes, errMsg: string) {
+  if (range.from < 0 || range.to < 0 || range.from >= range.to) {
+    throw new Error(`${errMsg}: invalid bytes range: ${range}`);
+  }
+}
+
 /** Being configured inside the output structure provides information about
  * locally downloaded blob and means to retrieve it's content when needed. This
  * structure is created only after the blob's content is downloaded locally, and

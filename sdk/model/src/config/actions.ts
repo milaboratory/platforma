@@ -337,18 +337,26 @@ export function mapResourceFields<
 
 export function getBlobContent<const Source extends TypedConfig>(
   source: Source,
+  fromBytes?: number,
+  toBytes?: number,
 ): TypedConfig<ActGetBlobContent<ExtractAction<Source>>> {
   return {
     type: 'GetBlobContent',
+    fromBytes,
+    toBytes,
     source: primitiveToConfig(source),
   } as Cfg as any;
 }
 
 export function getBlobContentAsString<const Source extends TypedConfig>(
   source: Source,
+  fromBytes?: number,
+  toBytes?: number,
 ): TypedConfig<ActGetBlobContentAsString<ExtractAction<Source>>> {
   return {
     type: 'GetBlobContentAsString',
+    fromBytes,
+    toBytes,
     source: primitiveToConfig(source),
   } as Cfg as any;
 }
@@ -356,9 +364,13 @@ export function getBlobContentAsString<const Source extends TypedConfig>(
 export function getBlobContentAsJson<T>() {
   return function <const Source extends TypedConfig>(
     source: Source,
+    fromBytes?: number,
+    toBytes?: number,
   ): TypedConfig<ActGetBlobContentAsJson<ExtractAction<Source>, T>> {
     return {
       type: 'GetBlobContentAsJson',
+      fromBytes,
+      toBytes,
       source: primitiveToConfig(source),
     } as Cfg as any;
   };
@@ -366,18 +378,26 @@ export function getBlobContentAsJson<T>() {
 
 export function getDownloadedBlobContent<const Source extends TypedConfig>(
   source: Source,
+  fromBytes?: number,
+  toBytes?: number,
 ): TypedConfig<ActGetDownloadedBlobContent<ExtractAction<Source>>> {
   return {
     type: 'GetDownloadedBlobContent',
+    fromBytes,
+    toBytes,
     source: primitiveToConfig(source),
   } as Cfg as any;
 }
 
 export function getOnDemandBlobContent<const Source extends TypedConfig>(
   source: Source,
+  fromBytes?: number,
+  toBytes?: number,
 ): TypedConfig<ActGetOnDemandBlobContent<ExtractAction<Source>>> {
   return {
     type: 'GetOnDemandBlobContent',
+    fromBytes,
+    toBytes,
     source: primitiveToConfig(source),
   } as Cfg as any;
 }
