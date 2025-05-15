@@ -1,20 +1,24 @@
 {
-    "cSpell.words": [
-        "canonicalize",
-        "datasource",
-        "Heterogenize",
-        "pcolumn",
-        "ptable"
-    ],
-    "[typescript]": {
-        "editor.defaultFormatter": "dbaeumer.vscode-eslint"
-    },
-    "[vue]": {
-        "editor.defaultFormatter": "dbaeumer.vscode-eslint"
-    },
-    "[javascript]": {
-        "editor.defaultFormatter": "dbaeumer.vscode-eslint"
-    },
-    "typescript.tsdk": "./node_modules/typescript/lib",
-    "eslint.format.enable": true,
+  "cSpell.words": [
+    "biowasm",
+    "canonicalize",
+    "datasource",
+    "fasta",
+    "Heterogenize",
+    "kalign",
+    "pcolumn",
+    "pframe",
+    "ptable"
+  ],
+  "[typescript]": {
+    "editor.defaultFormatter": "dbaeumer.vscode-eslint"
+  },
+  "[vue]": {
+    "editor.defaultFormatter": "dbaeumer.vscode-eslint"
+  },
+  "[javascript]": {
+    "editor.defaultFormatter": "dbaeumer.vscode-eslint"
+  },
+  "typescript.tsdk": "./node_modules/typescript/lib",
+  "eslint.format.enable": true
 }
