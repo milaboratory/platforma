@@ -1,5 +1,11 @@
 # @platforma-sdk/bootstrap
 
+## 3.5.2
+
+### Patch Changes
+
+- b603768: One more attempt to do right port override logic
+
 ## 3.5.1
 
 ### Patch Changes
