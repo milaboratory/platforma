@@ -1,0 +1,1 @@
+node .husky/prepare-commit-msg.js "$@"
