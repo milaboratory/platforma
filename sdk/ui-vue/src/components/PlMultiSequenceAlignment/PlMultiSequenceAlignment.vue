@@ -3,7 +3,9 @@ import {
   PlAlert,
   PlBtnGhost,
   PlDropdownMulti,
+  PlIcon24,
   PlSlideModal,
+  PlTooltip,
 } from '@milaboratories/uikit';
 import type { PColumnPredicate } from '@platforma-sdk/model';
 import {
@@ -13,12 +15,13 @@ import {
 } from '@platforma-sdk/model';
 import { computed, onMounted, ref } from 'vue';
 import { useDataTableToolsPanelTarget } from '../PlAgDataTableToolsPanel';
+import { useLabelColumns, useSequenceColumns, useSequenceRows } from './data';
 import {
-  useLabelColumns,
-  useSequenceColumns,
-  useSequenceRows,
-} from './data_provider_logic';
-import SequenceAlignment from './SequenceAlignment.vue';
+  chemicalCategories,
+  chemicalPropertiesColors,
+  chemicalPropertiesLabels,
+} from './highlight/chemical-properties';
+import MultiSequenceAlignmentView from './MultiSequenceAlignmentView.vue';
 
 const model = defineModel<PlMultiSequenceAlignmentModel>({ default: {} });
 
@@ -27,7 +30,7 @@ const props = defineProps<{
    * Handle to PFrame created using `createPFrameForGraphs`.
    * Should contain all desired sequence and label columns.
    */
-  readonly pframe: PFrameHandle | undefined;
+  readonly pFrame: PFrameHandle | undefined;
   /**
    * Return true if column should be shown in sequence columns dropdown.
    * By default, all sequence columns are selected.
@@ -63,12 +66,12 @@ onMounted(() => {
 const teleportTarget = useDataTableToolsPanelTarget();
 
 const sequenceColumns = useSequenceColumns(() => ({
-  pframe: props.pframe,
+  pframe: props.pFrame,
   sequenceColumnPredicate: props.sequenceColumnPredicate,
 }));
 
 const labelColumns = useLabelColumns(() => ({
-  pframe: props.pframe,
+  pframe: props.pFrame,
   sequenceColumnIds: sequenceColumns.defaults,
   labelColumnOptionPredicate: props.labelColumnOptionPredicate,
 }));
@@ -87,7 +90,7 @@ const selectedLabelColumnIds = computed({
 });
 
 const sequenceRows = useSequenceRows(() => ({
-  pframe: props.pframe,
+  pframe: props.pFrame,
   sequenceColumnIds: selectedSequenceColumnIds.value,
   labelColumnIds: selectedLabelColumnIds.value,
   linkerColumnPredicate: props.linkerColumnPredicate,
@@ -102,8 +105,30 @@ const sequenceRows = useSequenceRows(() => ({
     </PlBtnGhost>
   </Teleport>
 
-  <PlSlideModal v-model="show" width="80%" :close-on-outside-click="false">
-    <template #title>Multi Alignment</template>
+  <PlSlideModal v-model="show" width="100%" :close-on-outside-click="false">
+    <template #title>
+      Multi Alignment
+      <PlTooltip :class="$style.tooltip" position="southwest">
+        <PlIcon24 name="info" />
+        <template #tooltip>
+          <div
+            v-for="category in chemicalCategories"
+            :key="category"
+          >
+            <span
+              :class="$style['color-sample']"
+              :style="
+                {
+                  backgroundColor:
+                    chemicalPropertiesColors[category],
+                }
+              "
+            />
+            {{ chemicalPropertiesLabels[category] }}
+          </div>
+        </template>
+      </PlTooltip>
+    </template>
 
     <PlDropdownMulti
       v-model="selectedSequenceColumnIds"
@@ -120,14 +145,29 @@ const sequenceRows = useSequenceRows(() => ({
       clearable
     />
 
-    <!-- <PlAlert v-if="errorRef" type="error">
-      {{ errorRef.message }}
-    </PlAlert> -->
     <PlAlert v-if="sequenceRows.value.length < 2" type="warn">
       Please select at least one sequence column and two or more rows to run
       alignment
     </PlAlert>
 
-    <SequenceAlignment v-else :rows="sequenceRows.value" />
+    <MultiSequenceAlignmentView
+      v-else
+      :sequenceRows="sequenceRows.value"
+      highlight="chemical-properties"
+    />
   </PlSlideModal>
 </template>
+
+<style module>
+.tooltip {
+  display: inline-flex;
+}
+.color-sample {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 1px solid #ccc;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+</style>

@@ -183,9 +183,9 @@ async function getSequenceColumnsOptions({
   pframe: PFrameHandle;
   sequenceColumnPredicate: (column: PColumnIdAndSpec) => boolean;
 }): Promise<{
-    options: ListOption<PObjectId>[];
-    defaults: PObjectId[];
-  }> {
+  options: ListOption<PObjectId>[];
+  defaults: PObjectId[];
+}> {
   const columns = await pFrameDriver.listColumns(pframe);
   const options = columns
     .filter((column) => sequenceColumnPredicate(column))
@@ -208,9 +208,9 @@ async function getLabelColumnsOptions(
     labelColumnOptionPredicate?: (column: PColumnIdAndSpec) => boolean;
   },
 ): Promise<{
-    options: ListOption<PTableColumnIdJson>[];
-    defaults: PTableColumnIdJson[];
-  }> {
+  options: ListOption<PTableColumnIdJson>[];
+  defaults: PTableColumnIdJson[];
+}> {
   const processedAxes = new Set<CanonicalizedJson<AxisId>>();
   const optionLabels = new Map<PTableColumnIdJson, string>();
   const columns = await pFrameDriver.listColumns(pframe);
@@ -296,7 +296,7 @@ async function getSequenceRows(
                 type: 'inlineColumn',
                 column: filterColumn,
               } satisfies InlineColumnJoinEntry,
-              ]
+            ]
             : []),
           ...linkerColumns.map((c) => ({
             type: 'column',
@@ -373,11 +373,11 @@ async function getSequenceRows(
   /// sort by index in input dropdowns
   const labelColumnsIndices = [...labelColumnsMap.keys()];
   labelColumnsIndices.sort((a, b) =>
-    labelColumnsMap.get(a)! - labelColumnsMap.get(b)!,
+    labelColumnsMap.get(a)! - labelColumnsMap.get(b)!
   );
   const sequenceColumnsIndices = [...sequenceColumnsMap.keys()];
   sequenceColumnsIndices.sort((a, b) =>
-    sequenceColumnsMap.get(a)! - sequenceColumnsMap.get(b)!,
+    sequenceColumnsMap.get(a)! - sequenceColumnsMap.get(b)!
   );
 
   const rowCount = table[0].data.data.length;
