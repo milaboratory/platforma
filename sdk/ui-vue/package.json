@@ -35,7 +35,8 @@
     "vue": "catalog:",
     "canonicalize": "catalog:",
     "ag-grid-enterprise": "catalog:",
-    "ag-grid-vue3": "catalog:"
+    "ag-grid-vue3": "catalog:",
+    "@biowasm/aioli": "catalog:"
   },
   "devDependencies": {
     "@milaboratories/helpers": "workspace:^",

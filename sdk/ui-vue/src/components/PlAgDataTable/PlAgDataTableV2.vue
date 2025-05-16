@@ -1,16 +1,18 @@
 <script lang="ts" setup>
+import type {
+  ColDef,
+  ColGroupDef,
+  GridApi,
+  GridOptions,
+  GridReadyEvent,
+  GridState,
+  ManagedGridOptionKey,
+  ManagedGridOptions,
+  SortState,
+  StateUpdatedEvent,
+  CellRendererSelectorFunc,
+} from 'ag-grid-enterprise';
 import {
-  type ColDef,
-  type ColGroupDef,
-  type GridApi,
-  type GridOptions,
-  type GridReadyEvent,
-  type GridState,
-  type ManagedGridOptionKey,
-  type ManagedGridOptions,
-  type SortState,
-  type StateUpdatedEvent,
-  type CellRendererSelectorFunc,
   ModuleRegistry,
   ClientSideRowModelModule,
   ClipboardModule,
@@ -18,43 +20,78 @@ import {
   ServerSideRowModelModule,
   isColumnSelectionCol,
 } from 'ag-grid-enterprise';
-import { AgGridVue } from 'ag-grid-vue3';
-import { PlDropdownLine } from '@milaboratories/uikit';
+import {
+  AgGridVue,
+} from 'ag-grid-vue3';
+import {
+  PlDropdownLine,
+} from '@milaboratories/uikit';
 import type {
-  PTableColumnSpecJson } from '@platforma-sdk/model';
+  PTableColumnSpecJson,
+  PTableRowKey,
+  RowSelectionModel,
+  PlDataTableGridStateWithoutSheets,
+  AxisId,
+  PlDataTableState,
+  PTableColumnSpec,
+  PTableRecordFilter,
+  PTableSorting,
+  AxesSpec,
+} from '@platforma-sdk/model';
 import {
   getAxisId,
   getRawPlatformaInstance,
-  type PlDataTableGridStateWithoutSheets,
-  type AxisId,
-  type PlDataTableState,
-  type PTableColumnSpec,
-  type PTableRecordFilter,
-  type PTableSorting,
   parsePTableColumnId,
 } from '@platforma-sdk/model';
 import canonicalize from 'canonicalize';
 import * as lodash from 'lodash';
-import { computed, nextTick, ref, shallowRef, toRefs, watch } from 'vue';
-import { AgGridTheme } from '../../lib';
+import {
+  computed,
+  nextTick,
+  ref,
+  shallowRef,
+  toRefs,
+  watch,
+} from 'vue';
+import {
+  AgGridTheme,
+} from '../../lib';
 import PlOverlayLoading from './PlAgOverlayLoading.vue';
 import PlOverlayNoRows from './PlAgOverlayNoRows.vue';
-import { type PlAgCellButtonAxisParams, makeRowId } from './sources/common';
-import { updatePFrameGridOptions } from './sources/table-source-v2';
+import type {
+  PlAgCellButtonAxisParams,
+} from './sources/common';
+import {
+  makeRowId,
+} from './sources/common';
+import {
+  updatePFrameGridOptions,
+} from './sources/table-source-v2';
 import type {
   PlAgDataTableController,
   PlAgDataTableSettings,
   PlAgDataTableRow,
-  PTableRowKey,
   PlAgDataTableSettingsPTable,
   PlAgOverlayLoadingParams,
   PlAgOverlayNoRowsParams,
 } from './types';
-import { PlAgGridColumnManager } from '../PlAgGridColumnManager';
-import { autoSizeRowNumberColumn, PlAgDataTableRowNumberColId } from './sources/row-number';
-import { focusRow, makeOnceTracker, trackFirstDataRendered } from './sources/focus-row';
+import {
+  PlAgGridColumnManager,
+} from '../PlAgGridColumnManager';
+import {
+  autoSizeRowNumberColumn,
+  PlAgDataTableRowNumberColId,
+} from './sources/row-number';
+import {
+  focusRow,
+  makeOnceTracker,
+  trackFirstDataRendered,
+} from './sources/focus-row';
 import PlAgCsvExporter from '../PlAgCsvExporter/PlAgCsvExporter.vue';
-import { Deferred, isJsonEqual } from '@milaboratories/helpers';
+import {
+  Deferred,
+  isJsonEqual,
+} from '@milaboratories/helpers';
 import PlAgRowCount from './PlAgRowCount.vue';
 
 ModuleRegistry.registerModules([
@@ -65,7 +102,7 @@ ModuleRegistry.registerModules([
 ]);
 
 const tableState = defineModel<PlDataTableState>({ default: { gridState: {} } });
-const selectedRows = defineModel<PTableRowKey[]>('selectedRows');
+const selectedRows = defineModel<RowSelectionModel>('selectedRows');
 const props = defineProps<{
   settings?: Readonly<PlAgDataTableSettings>;
   /**
@@ -128,6 +165,8 @@ const emit = defineEmits<{
   columnsChanged: [columns: PTableColumnSpec[]];
   cellButtonClicked: [key?: PTableRowKey];
 }>();
+
+const axesSpec = ref<AxesSpec>([]);
 
 /** State upgrader */ (() => {
   if (!tableState.value.pTableParams) tableState.value.pTableParams = {};
@@ -273,6 +312,7 @@ const gridOptions = shallowRef<GridOptions<PlAgDataTableRow>>({
     const selectedRowsValue = selectedRows.value;
     if (selectedRowsValue) {
       const nodes = selectedRowsValue
+        .selectedRowsKeys
         .map((rowKey) => event.api.getRowNode(makeRowId(rowKey)))
         .filter((node) => !!node);
       event.api.setNodesSelected({ nodes, newValue: true });
@@ -280,9 +320,13 @@ const gridOptions = shallowRef<GridOptions<PlAgDataTableRow>>({
   },
   onSelectionChanged: (event) => {
     if (selectedRows.value) {
-      selectedRows.value = event.api.getSelectedNodes()
+      const selectedRowsKeys = event.api.getSelectedNodes()
         .map((rowNode) => rowNode.data?.key)
         .filter((rowKey) => !!rowKey);
+      selectedRows.value = {
+        axesSpec: axesSpec.value,
+        selectedRowsKeys,
+      };
     }
   },
   onRowDoubleClicked: (event) => {
@@ -413,6 +457,10 @@ watch(
           .filter((colId) => colId !== PlAgDataTableRowNumberColId)
           .filter((colId) => !isColumnSelectionCol(colId))
           .map((colId) => parsePTableColumnId(colId as PTableColumnSpecJson)) ?? [];
+      const axes = columns
+        .filter((column) => column.type === 'axis')
+        .map((axis) => axis.spec);
+      axesSpec.value = axes;
       emit('columnsChanged', columns);
     }
     if (!lodash.isEqual(options.loadingOverlayComponentParams, oldOptions.loadingOverlayComponentParams) && options.loading) {

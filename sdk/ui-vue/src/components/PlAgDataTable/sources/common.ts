@@ -3,22 +3,36 @@ import type {
   ICellRendererParams,
   ValueFormatterParams,
 } from 'ag-grid-enterprise';
+import type {
+  AxisId,
+  PTableColumnSpec,
+  PTableValue,
+  PTableRowKey,
+} from '@platforma-sdk/model';
 import {
   isPTableAbsent,
-  type AxisId,
-  type PTableColumnSpec,
-  type PTableValue,
   PTableNA,
-  stringifyPTableColumnId,
+  stringifyPTableColumnSpec,
   isColumnOptional,
   isLabelColumn as isLabelColumnSpec,
   canonicalizeJson,
 } from '@platforma-sdk/model';
 import * as lodash from 'lodash';
-import { PlAgColumnHeader, type PlAgHeaderComponentParams, type PlAgHeaderComponentType } from '../../PlAgColumnHeader';
+import type {
+  PlAgHeaderComponentParams,
+  PlAgHeaderComponentType,
+} from '../../PlAgColumnHeader';
+import {
+  PlAgColumnHeader,
+} from '../../PlAgColumnHeader';
 import PlAgTextAndButtonCell from '../../PlAgTextAndButtonCell/PlAgTextAndButtonCell.vue';
-import type { PlAgDataTableRow, PTableRowKey, PTableRowKeyJson } from '../types';
-import { defaultMainMenuItems } from './menu-items';
+import type {
+  PlAgDataTableRow,
+  PTableRowKeyJson,
+} from '../types';
+import {
+  defaultMainMenuItems,
+} from './menu-items';
 
 export type PlAgCellButtonAxisParams = {
   showCellButtonForAxisId?: AxisId;
@@ -54,7 +68,7 @@ export function makeColDef(
   hiddenColIds?: string[],
   cellButtonAxisParams?: PlAgCellButtonAxisParams,
 ): ColDef {
-  const colId = stringifyPTableColumnId(spec);
+  const colId = stringifyPTableColumnSpec(spec);
   const valueType = spec.type === 'axis' ? spec.spec.type : spec.spec.valueType;
   return {
     colId,

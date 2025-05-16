@@ -20,7 +20,9 @@ import {
 import { AgGridVue } from 'ag-grid-vue3';
 import { PlDropdownLine } from '@milaboratories/uikit';
 import type {
-  PTableColumnSpecJson } from '@platforma-sdk/model';
+  PTableColumnSpecJson,
+  PTableRowKey,
+} from '@platforma-sdk/model';
 import {
   getAxisId,
   getRawPlatformaInstance,
@@ -41,7 +43,7 @@ import PlOverlayNoRows from './PlAgOverlayNoRows.vue';
 import { updateXsvGridOptions } from './sources/file-source';
 import { type PlAgCellButtonAxisParams, makeRowId } from './sources/common';
 import { updatePFrameGridOptions } from './sources/table-source';
-import type { PlAgDataTableController, PlDataTableSettings, PlAgDataTableRow, PTableRowKey, PlDataTableSettingsPTable } from './types';
+import type { PlAgDataTableController, PlDataTableSettings, PlAgDataTableRow, PlDataTableSettingsPTable } from './types';
 import { PlAgGridColumnManager } from '../PlAgGridColumnManager';
 import { autoSizeRowNumberColumn, PlAgDataTableRowNumberColId } from './sources/row-number';
 import { focusRow, makeOnceTracker, trackFirstDataRendered } from './sources/focus-row';
