@@ -1,21 +1,14 @@
-import { describe, it, expect } from 'vitest';
-import { getDownloadedBlobResponse } from './download_blob_task';
-import type {
-  LocalBlobHandle,
-  LocalBlobHandleAndSize,
-} from '@milaboratories/pl-model-common';
-import type { ValueOrError, Signer } from '@milaboratories/ts-helpers';
-import { CallersCounter } from '@milaboratories/ts-helpers';
-import type { CachedFileRange } from '../helpers/range_blobs_cache';
-import type { RangeBytes } from '@milaboratories/pl-model-common';
+import type { Signer } from '@milaboratories/ts-helpers';
+import { describe, expect, it } from 'vitest';
 import { newLocalHandle } from '../helpers/download_local_handle';
 import { genRangeFile, genWholeFile } from '../helpers/test_helpers';
+import { getDownloadedBlobResponse } from './download_blob_task';
 
-// Dummy signer for creating test handles
 const genLocalHandle = (path: string) => {
+  // Dummy signer for creating test handles
   const dummySigner: Signer = {
-    sign: (data: string) => 'dummySignature',
-    verify: (data: string, signature: string, errorMessage?: string) => {
+    sign: (_: string) => 'dummySignature',
+    verify: (_: string, __: string, ___?: string) => {
     },
   };
 

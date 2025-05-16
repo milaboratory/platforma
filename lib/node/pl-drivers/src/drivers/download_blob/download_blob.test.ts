@@ -22,7 +22,7 @@ import * as env from '../../test_env';
 
 const fileName = 'answer_to_the_ultimate_question.txt';
 
-test('should download a blob and read its content', async () => {
+test('should download a blob and read its content', { timeout: 10000 },  async () => {
   await TestHelpers.withTempRoot(async (client) => {
     const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-download-driver'));
     const driver = await genDriver(client, dir, genSigner(), { cacheSoftSizeBytes: 700 * 1024, nConcurrentDownloads: 10 });
@@ -45,7 +45,7 @@ test('should download a blob and read its content', async () => {
 
     console.log(`should download a blob: exiting`)
   });
-}, { timeout: 10000 });
+});
 
 test('should download a blob range and read its content with a range', async () => {
   await TestHelpers.withTempRoot(async (client) => {
@@ -203,6 +203,34 @@ test('should get undefined when releasing a blob from a small cache and the blob
 
     const noBlob = await c2.getValue();
     expect(noBlob).toBeUndefined();
+  });
+});
+
+test('should get the blob range after init if it already existed.', async () => {
+  await TestHelpers.withTempRoot(async (client) => {
+    const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-download-driver'));
+    const signer = genSigner();
+    const driver = await genDriver(client, dir, signer, { cacheSoftSizeBytes: 720, nConcurrentDownloads: 10 });
+    const downloadable = await makeDownloadableBlobFromAssets(client, fileName);
+
+    const c = driver.getDownloadedBlob(downloadable, undefined, 1, 3);
+    const blob = await c.getValue();
+    expect(blob).toBeUndefined();
+    await c.awaitChange();
+
+    const blob2 = await c.getValue();
+    expect(blob2).toBeDefined();
+    expect(blob2!.size).toBe(2);
+    expect((await driver.getContent(blob2!.handle))?.toString()).toBe('2\n');
+
+    // Make the second driver, the cache was already initialized.
+    // We should get the blob instantly.
+    const driver2 = await genDriver(client, dir, signer, { cacheSoftSizeBytes: 720, nConcurrentDownloads: 10 });
+    const c2 = driver2.getDownloadedBlob(downloadable, undefined, 1, 3);
+    const blob3 = await c2.getValue();
+    expect(blob3).toBeDefined();
+    expect(blob3!.size).toBe(2);
+    expect((await driver.getContent(blob3!.handle))?.toString()).toBe('2\n');
   });
 });
 
