@@ -77,7 +77,7 @@ export async function initDriverKit(
   const uploadBlobClient = createUploadBlobClient(pl, ops.logger);
   const uploadProgressClient = createUploadProgressClient(pl, ops.logger);
 
-  const blobDriver = new DownloadDriver(
+  const blobDriver = await DownloadDriver.init(
     ops.logger,
     downloadClient,
     logsClient,

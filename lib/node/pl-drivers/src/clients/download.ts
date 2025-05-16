@@ -41,7 +41,10 @@ export class ClientDownload {
   close() {}
 
   /** Gets a presign URL and downloads the file.
-   * An optional range with 2 numbers from what byte and to what byte to download can be provided. */
+   * An optional range with 2 numbers from what byte and to what byte to download can be provided.
+   * @param fromBytes - from byte including this byte
+   * @param toBytes - to byte excluding this byte
+   */
   async downloadBlob(
     info: ResourceInfo,
     options?: RpcOptions,
@@ -61,14 +64,14 @@ export class ClientDownload {
 
   async readLocalFile(
     url: string,
-    fromBytes?: number,
-    toBytes?: number,
+    fromBytes?: number, // including this byte
+    toBytes?: number, // excluding this byte
   ): Promise<DownloadResponse> {
     const { storageId, relativePath } = parseLocalUrl(url);
     const fullPath = getFullPath(storageId, this.localStorageIdsToRoot, relativePath);
 
     return {
-      content: Readable.toWeb(fs.createReadStream(fullPath, { start: fromBytes, end: toBytes })),
+      content: Readable.toWeb(fs.createReadStream(fullPath, { start: fromBytes, end: toBytes !== undefined ? toBytes - 1 : undefined })),
       size: (await fsp.stat(fullPath)).size,
     };
   }

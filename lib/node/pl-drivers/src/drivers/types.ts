@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { InferSnapshot } from '@milaboratories/pl-tree';
 import { rsSchema } from '@milaboratories/pl-tree';
+import { RangeBytes } from '@milaboratories/pl-model-common';
 
 //
 // download
@@ -16,8 +17,18 @@ export const OnDemandBlobResourceSnapshot = rsSchema({
 
 export type OnDemandBlobResourceSnapshot = InferSnapshot<typeof OnDemandBlobResourceSnapshot>;
 
-export function getSize(bs: OnDemandBlobResourceSnapshot): number {
-  return bs.kv['ctl/file/blobInfo'].sizeBytes;
+export function getSize(bs: OnDemandBlobResourceSnapshot, range?: RangeBytes): number {
+  const size = bs.kv['ctl/file/blobInfo'].sizeBytes;
+  if (range) {
+    const newSize = range.to - range.from;
+    if (newSize > size) {
+      throw new Error(`getSize: range (${JSON.stringify(range)}, newSize: ${newSize}) is greater than size (${size})`);
+    }
+
+    return newSize;
+  }
+
+  return size;
 }
 
 //
