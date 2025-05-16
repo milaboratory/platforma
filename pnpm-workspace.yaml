@@ -226,6 +226,7 @@ catalog:
   '@milaboratories/software-pframes-conv': &pframes-version 2.2.2
   '@platforma-open/milaboratories.software-small-binaries': ^1.15.21
   '@biowasm/aioli': ~3.2.1
+  comlink: ~4.4.2
 
   # Test
 
