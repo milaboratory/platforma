@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed } from 'vue';
+import { computed, reactive } from 'vue';
 import { getCssBackgroundImage } from './highlight';
 import {
   chemicalPropertiesColors,
@@ -15,18 +15,20 @@ const { sequenceRows, highlight } = defineProps<{
 
 const alignedRows = useAlignedRows(() => sequenceRows);
 
-const chemicalPropertiesHighlight = useChemicalPropertiesHighlight(() => {
-  if (highlight !== 'chemical-properties' || alignedRows.loading) {
-    return;
-  }
-  return sequenceRows.map(({ header }) => {
-    const row = alignedRows.value.get(header);
-    if (!row) {
-      console.error(`Missing aligned row for header ${header}`);
+const chemicalPropertiesHighlight = reactive(
+  useChemicalPropertiesHighlight(() => {
+    if (highlight !== 'chemical-properties' || alignedRows.loading) {
+      return;
     }
-    return alignedRows.value.get(header) ?? '';
-  });
-});
+    return sequenceRows.map(({ header }) => {
+      const row = alignedRows.value.get(header);
+      if (!row) {
+        console.error(`Missing aligned row for header ${header}`);
+      }
+      return alignedRows.value.get(header) ?? '';
+    });
+  }),
+);
 
 const columnCount = computed(
   () => (sequenceRows.at(0)?.labels.length ?? 0) + 1,
@@ -44,6 +46,8 @@ const selectedHighlight = computed(() => {
       throw new Error(`Unknown highlight ${highlight}`);
   }
 });
+
+const sequenceLetterSpacing = '12px';
 </script>
 
 <template>
@@ -54,7 +58,7 @@ const selectedHighlight = computed(() => {
       :style="
         {
           backgroundImage: getCssBackgroundImage({
-            columns: selectedHighlight.value,
+            columns: selectedHighlight.data,
             rowCount: sequenceRows.length,
             colors: chemicalPropertiesColors,
           }),
@@ -95,8 +99,7 @@ const selectedHighlight = computed(() => {
   grid-template-rows: repeat(v-bind(rowCount), min-content);
   justify-content: start;
   column-gap: 16px;
-  font-size: calc(16rem / 14);
-  line-height: 1.5;
+  line-height: calc(24 / 14);
 
   * {
     content-visibility: auto;
@@ -105,10 +108,11 @@ const selectedHighlight = computed(() => {
 
 .highlight {
   position: absolute;
-  inset: 0;
   grid-area: 1 / -2 / -1 / -1; /* all rows and last column */
+  inset: 0 calc(v-bind(sequenceLetterSpacing) / -2);
+  background-size: calc(100% - v-bind(sequenceLetterSpacing));
   background-repeat: no-repeat;
-  content-visibility: visible;
+  z-index: -1;
 }
 
 .label {
@@ -122,5 +126,10 @@ const selectedHighlight = computed(() => {
     padding-inline-end: 16px;
     border-inline-end: 1px solid black;
   }
+}
+
+.sequence {
+  font-weight: 600;
+  letter-spacing: v-bind(sequenceLetterSpacing);
 }
 </style>

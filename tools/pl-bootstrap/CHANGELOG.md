@@ -1,5 +1,28 @@
 # @platforma-sdk/bootstrap
 
+## 3.5.2
+
+### Patch Changes
+
+- b603768: One more attempt to do right port override logic
+
+## 3.5.1
+
+### Patch Changes
+
+- f927104: Add lost options to `svc create docker s3`
+
+## 3.5.0
+
+### Minor Changes
+
+- 541b174: Allow to control port numbers for S3 in 'docker s3'
+
+### Patch Changes
+
+- Updated dependencies [541b174]
+  - @milaboratories/pl-deployments@2.2.0
+
 ## 3.4.12
 
 ### Patch Changes

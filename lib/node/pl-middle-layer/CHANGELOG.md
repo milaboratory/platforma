@@ -1,5 +1,46 @@
 # @milaboratories/pl-middle-layer
 
+## 1.37.27
+
+### Patch Changes
+
+- d9dfd5f: PFrames version bump
+
+## 1.37.26
+
+### Patch Changes
+
+- Updated dependencies [541b174]
+  - @milaboratories/pl-deployments@2.2.0
+
+## 1.37.25
+
+### Patch Changes
+
+- Updated dependencies [efd2b56]
+  - @platforma-sdk/workflow-tengo@4.5.0
+
+## 1.37.24
+
+### Patch Changes
+
+- Updated dependencies [4c9384b]
+  - @platforma-sdk/workflow-tengo@4.4.5
+
+## 1.37.23
+
+### Patch Changes
+
+- Updated dependencies [8c4b1ea]
+  - @platforma-sdk/workflow-tengo@4.4.4
+
+## 1.37.22
+
+### Patch Changes
+
+- Updated dependencies [3c851df]
+  - @platforma-sdk/workflow-tengo@4.4.3
+
 ## 1.37.21
 
 ### Patch Changes

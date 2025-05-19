@@ -13,7 +13,7 @@ import {
   type PlMultiSequenceAlignmentModel,
   type RowSelectionModel,
 } from '@platforma-sdk/model';
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import { useDataTableToolsPanelTarget } from '../PlAgDataTableToolsPanel';
 import { useLabelColumns, useSequenceColumns, useSequenceRows } from './data';
 import {
@@ -65,16 +65,16 @@ onMounted(() => {
 });
 const teleportTarget = useDataTableToolsPanelTarget();
 
-const sequenceColumns = useSequenceColumns(() => ({
+const sequenceColumns = reactive(useSequenceColumns(() => ({
   pframe: props.pFrame,
   sequenceColumnPredicate: props.sequenceColumnPredicate,
-}));
+})));
 
-const labelColumns = useLabelColumns(() => ({
+const labelColumns = reactive(useLabelColumns(() => ({
   pframe: props.pFrame,
   sequenceColumnIds: sequenceColumns.defaults,
   labelColumnOptionPredicate: props.labelColumnOptionPredicate,
-}));
+})));
 
 const selectedSequenceColumnIds = computed({
   get: () => model.value.sequenceColumnIds ?? sequenceColumns.defaults,
@@ -89,13 +89,13 @@ const selectedLabelColumnIds = computed({
   },
 });
 
-const sequenceRows = useSequenceRows(() => ({
+const sequenceRows = reactive(useSequenceRows(() => ({
   pframe: props.pFrame,
   sequenceColumnIds: selectedSequenceColumnIds.value,
   labelColumnIds: selectedLabelColumnIds.value,
   linkerColumnPredicate: props.linkerColumnPredicate,
   rowSelectionModel: props.rowSelectionModel,
-}));
+})));
 </script>
 
 <template>
@@ -145,14 +145,14 @@ const sequenceRows = useSequenceRows(() => ({
       clearable
     />
 
-    <PlAlert v-if="sequenceRows.value.length < 2" type="warn">
+    <PlAlert v-if="sequenceRows.data.length < 2" type="warn">
       Please select at least one sequence column and two or more rows to run
       alignment
     </PlAlert>
 
     <MultiSequenceAlignmentView
       v-else
-      :sequenceRows="sequenceRows.value"
+      :sequenceRows="sequenceRows.data"
       highlight="chemical-properties"
     />
   </PlSlideModal>

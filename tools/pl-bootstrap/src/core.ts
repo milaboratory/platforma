@@ -1,6 +1,4 @@
-import type { ChildProcess, SpawnOptions, SpawnSyncReturns } from 'node:child_process';
-import { spawn, spawnSync } from 'node:child_process';
-import yaml from 'yaml';
+import type { ChildProcess, SpawnSyncReturns } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -188,7 +186,7 @@ export default class Core {
     if (options?.configOptions?.numCpu) {
       runBinary.runOpts.env = {
         GOMAXPROCS: String(options?.configOptions?.numCpu),
-      }
+      };
     }
 
     upCommands.push(runBinary);
@@ -341,6 +339,9 @@ export default class Core {
       debugPort?: number;
       debugAddr?: string;
 
+      s3Port?: number;
+      s3ConsolePort?: number;
+
       customMounts?: { hostPath: string; containerPath?: string }[];
     },
   ): instanceInfo {
@@ -365,19 +366,20 @@ export default class Core {
     }
 
     const presignHost = options?.presignHost ?? 'localhost';
+    const presignPort = options?.s3Port ?? 9000;
 
-    const primary = plCfg.storageSettingsFromURL(`s3e://testuser:testpassword@minio:9000/main-bucket`);
+    const primary = plCfg.storageSettingsFromURL(`s3e://testuser:testpassword@minio:${presignPort}/main-bucket`);
     if (primary.type !== 'S3') {
       throw new Error('primary storage must have \'S3\' type in \'docker s3\' configuration');
     } else {
-      primary.presignEndpoint = `http://${presignHost}:9000`;
+      primary.presignEndpoint = `http://${presignHost}:${presignPort}`;
     }
 
-    const library = plCfg.storageSettingsFromURL(`s3e://testuser:testpassword@minio:9000/library-bucket`);
+    const library = plCfg.storageSettingsFromURL(`s3e://testuser:testpassword@minio:${presignPort}/library-bucket`);
     if (library.type !== 'S3') {
       throw new Error(`${library.type} storage type is not supported for library storage`);
     } else {
-      library.presignEndpoint = `http://${presignHost}:9000`;
+      library.presignEndpoint = `http://${presignHost}:${presignPort}`;
     }
 
     const dbFSPath = storageDir('db');
@@ -441,6 +443,10 @@ export default class Core {
     if (options?.monitoringPort) envs.PL_MONITORING_PORT = options.monitoringPort.toString();
     if (options?.debugAddr) envs.PL_DEBUG_ADDR = options.debugAddr;
     if (options?.debugPort) envs.PL_DEBUG_PORT = options.debugPort.toString();
+
+    if (options?.s3Port) envs.MINIO_PORT = options.s3Port.toString();
+    if (options?.s3ConsolePort) envs.MINIO_CONSOLE_PORT = options.s3ConsolePort.toString();
+
     if (options?.auth) {
       if (options.auth.enabled) {
         envs['PL_AUTH_ENABLED'] = 'true';
