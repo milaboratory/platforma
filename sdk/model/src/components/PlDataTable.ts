@@ -10,6 +10,7 @@ import type {
   PColumnSpec,
   PColumnValues,
   PObjectId,
+  PTableAbsent,
   PTableColumnIdColumn,
   PTableColumnSpec,
   PTableDef,
@@ -24,6 +25,8 @@ import {
   getAxisId,
   getColumnIdAndSpec,
   matchAxisId,
+  parseJson,
+  PTableNA,
 } from '@milaboratories/pl-model-common';
 import type {
   AxisLabelProvider,
@@ -50,11 +53,6 @@ export function stringifyPTableColumnSpec(spec: PTableColumnSpec): PTableColumnS
       // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
       throw Error(`unsupported column type: ${type satisfies never}`);
   }
-}
-
-/** Parse `PTableColumnId` from JSON string */
-export function parsePTableColumnId(str: PTableColumnSpecJson): PTableColumnSpec {
-  return JSON.parse(str) as PTableColumnSpec;
 }
 
 /** Data table state */
@@ -582,15 +580,35 @@ export type PlDataTableModel = {
   tableHandle: PTableHandle;
 };
 
-/** Key is a set of all axes values, which means it is unique across rows */
+/**
+ * @deprecated Used only in PlAgDataTable v1 that is no longer maintained.
+ * Please migrate to v2.
+ */
 export type PTableRowKey = PTableValue[];
 
-/** Information on selected rows */
-export type RowSelectionModel = {
-  /** Axes spec */
+/** Key is a set of all axes values, which means it is unique across rows */
+export type PTableKey = AxisValue[];
+
+/** Readable axis value */
+export type AxisValue = string | number | PTableAbsent;
+
+export function mapPTableValueToAxisKey(value: PTableValue): AxisValue {
+  if (value === PTableNA) {
+    throw new Error('Axis value can never be N/A');
+  }
+  return value;
+}
+
+/**
+ * Information on selected rows.
+ * for selectedKeys = [[axis1Value, axis2Value, axis3Value], ...]
+ * axesSpec would be [axis1Spec, axis2Spec, axis3Spec]
+ */
+export type SelectionModel = {
+  /** Specs for {@link AxisValue}'s in {@link PTableKey} */
   axesSpec: AxesSpec;
   /** Row keys (arrays of axes values) of selected rows */
-  selectedRowsKeys: PTableRowKey[];
+  selectedKeys: PTableKey[];
 };
 
 /** Check if column should be omitted from the table */
@@ -635,7 +653,7 @@ export function createPlDataTableV2<A, U>(
     if (coreJoinType === 'inner') return [];
 
     const hiddenColIds = tableState?.gridState.columnVisibility?.hiddenColIds
-      ?.map(parsePTableColumnId)
+      ?.map(parseJson)
       .filter((c) => c.type === 'column')
       .map((c) => c.id);
     if (hiddenColIds) return hiddenColIds;

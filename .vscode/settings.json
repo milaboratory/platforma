@@ -6,8 +6,10 @@
     "fasta",
     "Heterogenize",
     "kalign",
+    "millis",
     "pcolumn",
     "pframe",
+    "platforma",
     "ptable"
   ],
   "[typescript]": {

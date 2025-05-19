@@ -7,15 +7,15 @@ import type {
   PlDataTableState,
   PTableColumnSpec,
   PTableColumnSpecJson,
+  PTableKey,
   PTableRecordFilter,
-  PTableRowKey,
   PTableSorting,
-  RowSelectionModel,
+  SelectionModel,
 } from '@platforma-sdk/model';
 import {
   getAxisId,
   getRawPlatformaInstance,
-  parsePTableColumnId,
+  parseJson,
 } from '@platforma-sdk/model';
 import type {
   CellRendererSelectorFunc,
@@ -48,8 +48,6 @@ import { PlAgGridColumnManager } from '../PlAgGridColumnManager';
 import PlOverlayLoading from './PlAgOverlayLoading.vue';
 import PlOverlayNoRows from './PlAgOverlayNoRows.vue';
 import PlAgRowCount from './PlAgRowCount.vue';
-import type { PlAgCellButtonAxisParams } from './sources/common';
-import { makeRowId } from './sources/common';
 import {
   focusRow,
   makeOnceTracker,
@@ -59,10 +57,14 @@ import {
   autoSizeRowNumberColumn,
   PlAgDataTableRowNumberColId,
 } from './sources/row-number';
-import { updatePFrameGridOptions } from './sources/table-source-v2';
+import {
+  makeRowId,
+  type PlAgCellButtonAxisParams,
+  updatePFrameGridOptions,
+} from './sources/table-source-v2';
 import type {
-  PlAgDataTableController,
-  PlAgDataTableRow,
+  PlAgDataTableV2Controller,
+  PlAgDataTableV2Row,
   PlAgDataTableSettings,
   PlAgDataTableSettingsPTable,
   PlAgOverlayLoadingParams,
@@ -79,7 +81,7 @@ ModuleRegistry.registerModules([
 const tableState = defineModel<PlDataTableState>({
   default: { gridState: {} },
 });
-const selectedRows = defineModel<RowSelectionModel>('selectedRows');
+const selection = defineModel<SelectionModel>('selection');
 const props = defineProps<{
   settings?: Readonly<PlAgDataTableSettings>;
   /**
@@ -134,13 +136,13 @@ const props = defineProps<{
    * Callback to override the default renderer for a given cell.
    * @see https://www.ag-grid.com/vue-data-grid/component-cell-renderer/#dynamic-component-selection
    */
-  cellRendererSelector?: CellRendererSelectorFunc<PlAgDataTableRow>;
+  cellRendererSelector?: CellRendererSelectorFunc<PlAgDataTableV2Row>;
 }>();
 const { settings } = toRefs(props);
 const emit = defineEmits<{
-  rowDoubleClicked: [key?: PTableRowKey];
+  rowDoubleClicked: [key?: PTableKey];
   columnsChanged: [columns: PTableColumnSpec[]];
-  cellButtonClicked: [key?: PTableRowKey];
+  cellButtonClicked: [key?: PTableKey];
 }>();
 
 /** State upgrader */ (() => {
@@ -150,7 +152,7 @@ const emit = defineEmits<{
 function makeSorting(state?: SortState): PTableSorting[] {
   return (
     state?.sortModel.map((item) => {
-      const { spec, ...column } = parsePTableColumnId(
+      const { spec, ...column } = parseJson(
         item.colId as PTableColumnSpecJson,
       );
       const _ = spec;
@@ -268,15 +270,15 @@ const gridApi = shallowRef<GridApi>();
 
 const gridApiDef = shallowRef(new Deferred<GridApi>());
 
-const firstDataRenderedTracker = makeOnceTracker<GridApi<PlAgDataTableRow>>();
+const firstDataRenderedTracker = makeOnceTracker<GridApi<PlAgDataTableV2Row>>();
 
-const gridOptions = shallowRef<GridOptions<PlAgDataTableRow>>({
+const gridOptions = shallowRef<GridOptions<PlAgDataTableV2Row>>({
   animateRows: false,
   suppressColumnMoveAnimation: true,
-  cellSelection: selectedRows.value === undefined,
+  cellSelection: selection.value === undefined,
   initialState: gridState.value,
   autoSizeStrategy: { type: 'fitCellContents' },
-  rowSelection: selectedRows.value !== undefined
+  rowSelection: selection.value !== undefined
     ? {
         mode: 'multiRow',
         checkboxes: false,
@@ -295,21 +297,21 @@ const gridOptions = shallowRef<GridOptions<PlAgDataTableRow>>({
     resizable: false,
   },
   onRowDataUpdated: (event) => {
-    const selectedRowsValue = selectedRows.value;
-    if (selectedRowsValue) {
-      const nodes = selectedRowsValue
-        .selectedRowsKeys
+    const selectionValue = selection.value;
+    if (selectionValue) {
+      const nodes = selectionValue
+        .selectedKeys
         .map((rowKey) => event.api.getRowNode(makeRowId(rowKey)))
         .filter((node) => !!node);
       event.api.setNodesSelected({ nodes, newValue: true });
     }
   },
   onSelectionChanged: (event) => {
-    if (selectedRows.value) {
-      const selectedRowsKeys = event.api.getSelectedNodes()
+    if (selection.value) {
+      const selectedKeys = event.api.getSelectedNodes()
         .map((rowNode) => rowNode.data?.key)
         .filter((rowKey) => !!rowKey);
-      selectedRows.value = { ...selectedRows.value, selectedRowsKeys };
+      selection.value = { ...selection.value, selectedKeys };
     }
   },
   onRowDoubleClicked: (event) => {
@@ -418,7 +420,7 @@ const onGridPreDestroyed = () => {
   gridApiDef.value = new Deferred<GridApi>();
 };
 
-defineExpose<PlAgDataTableController>({
+defineExpose<PlAgDataTableV2Controller>({
   focusRow: (rowKey) => focusRow(makeRowId(rowKey), firstDataRenderedTracker),
 });
 
@@ -455,13 +457,13 @@ watch(
         .filter((colId) => colId !== undefined)
         .filter((colId) => colId !== PlAgDataTableRowNumberColId)
         .filter((colId) => !isColumnSelectionCol(colId))
-        .map((colId) => parsePTableColumnId(colId as PTableColumnSpecJson))
+        .map((colId) => parseJson(colId as PTableColumnSpecJson))
         ?? [];
       const axesSpec = columns
         .filter((column) => column.type === 'axis')
         .map((axis) => axis.spec);
-      if (selectedRows.value) {
-        selectedRows.value = { ...selectedRows.value, axesSpec };
+      if (selection.value) {
+        selection.value = { ...selection.value, axesSpec };
       }
       // axesSpec.value = axes;
       emit('columnsChanged', columns);
@@ -555,13 +557,13 @@ watch(
             getRawPlatformaInstance().pFrameDriver,
             settings.model,
             settings.sheets ?? [],
-            !!props.clientSideModel || !!selectedRows.value,
+            !!props.clientSideModel || !!selection.value,
             gridState,
             {
               showCellButtonForAxisId: props.showCellButtonForAxisId,
               cellButtonInvokeRowsOnDoubleClick:
                 props.cellButtonInvokeRowsOnDoubleClick,
-              trigger: (key?: PTableRowKey) => emit('cellButtonClicked', key),
+              trigger: (key?: PTableKey) => emit('cellButtonClicked', key),
             } satisfies PlAgCellButtonAxisParams,
           ).catch((err) => {
             gridApi.updateGridOptions({
