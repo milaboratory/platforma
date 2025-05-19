@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.30.38
+
+### Patch Changes
+
+- 1f2b5c8: MSA: lazy worker load
+
 ## 1.30.37
 
 ### Patch Changes
