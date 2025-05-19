@@ -194,6 +194,14 @@ type FullPTableDef = {
  * layer and in tests.
  */
 export interface InternalPFrameDriver extends SdkPFrameDriver {
+  /**
+   * Dump active PFrames allocations in pprof format.
+   * The result of this function should be saved as `profile.pb.gz`.
+   * Use @link https://pprof.me/ to view the allocation flamechart.
+   * @warning This method will always reject on Windows!
+   */
+  pprofDump(): Promise<Uint8Array>;
+
   /** Create a new PFrame */
   createPFrame(
     def: PFrameDef<PlTreeNodeAccessor | PColumnValues | DataInfo<PlTreeNodeAccessor>>,
@@ -241,6 +249,10 @@ export class PFrameDriver implements InternalPFrameDriver {
   private readonly pFrames: RefCountResourcePool<InternalPFrameData, PFrameHolder>;
   private readonly pTables: RefCountResourcePool<FullPTableDef, PTableHolder>;
   private readonly concurrencyLimiter: ConcurrencyLimitingExecutor;
+
+  public async pprofDump(): Promise<Uint8Array> {
+    return await PFrame.pprofDump();
+  }
 
   public static async init(
     blobDriver: DownloadDriver,

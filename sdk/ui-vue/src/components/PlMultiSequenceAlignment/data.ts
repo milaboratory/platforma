@@ -27,7 +27,7 @@ import {
   stringifyPTableColumnId,
 } from '@platforma-sdk/model';
 import type { MaybeRefOrGetter } from 'vue';
-import { onWatcherCleanup, reactive, toValue, watchEffect } from 'vue';
+import { onWatcherCleanup, ref, toValue, watchEffect } from 'vue';
 import type { SequenceRow } from './types';
 
 const platforma = getRawPlatformaInstance();
@@ -39,18 +39,16 @@ export function useSequenceColumns(
     sequenceColumnPredicate: (column: PColumnIdAndSpec) => boolean;
   }>,
 ) {
-  const result = reactive({
-    options: [] as ListOption<PObjectId>[],
-    defaults: [] as PObjectId[],
-    loading: false,
-  });
+  const options = ref<ListOption<PObjectId>[]>([]);
+  const defaults = ref<PObjectId[]>([]);
+  const loading = ref(false);
 
   watchEffect(async () => {
     const { pframe, sequenceColumnPredicate } = toValue(params);
 
     if (!pframe) {
-      result.options = [];
-      result.defaults = [];
+      options.value = [];
+      defaults.value = [];
       return;
     }
 
@@ -60,22 +58,22 @@ export function useSequenceColumns(
     });
 
     try {
-      result.loading = true;
-      const { options, defaults } = await getSequenceColumnsOptions({
+      loading.value = true;
+      const res = await getSequenceColumnsOptions({
         pframe,
         sequenceColumnPredicate,
       });
       if (aborted) return;
-      result.options = options;
-      result.defaults = defaults;
+      options.value = res.options;
+      defaults.value = res.defaults;
     } catch (error) {
       console.error(error);
     } finally {
-      result.loading = false;
+      loading.value = false;
     }
   });
 
-  return result;
+  return { options, defaults, loading };
 }
 
 export function useLabelColumns(
@@ -85,11 +83,9 @@ export function useLabelColumns(
     labelColumnOptionPredicate?: (column: PColumnIdAndSpec) => boolean;
   }>,
 ) {
-  const result = reactive({
-    options: [] as ListOption<PTableColumnIdJson>[],
-    defaults: [] as PTableColumnIdJson[],
-    loading: false,
-  });
+  const options = ref<ListOption<PTableColumnIdJson>[]>([]);
+  const defaults = ref<PTableColumnIdJson[]>([]);
+  const loading = ref(false);
 
   watchEffect(async () => {
     const {
@@ -99,8 +95,8 @@ export function useLabelColumns(
     } = toValue(params);
 
     if (!pframe) {
-      result.options = [];
-      result.defaults = [];
+      options.value = [];
+      defaults.value = [];
       return;
     }
 
@@ -110,21 +106,21 @@ export function useLabelColumns(
     });
 
     try {
-      result.loading = true;
-      const { options, defaults } = await getLabelColumnsOptions(
+      loading.value = true;
+      const res = await getLabelColumnsOptions(
         { pframe, sequenceColumnIds, labelColumnOptionPredicate },
       );
       if (aborted) return;
-      result.options = options;
-      result.defaults = defaults;
+      options.value = res.options;
+      defaults.value = res.defaults;
     } catch (error) {
       console.error(error);
     } finally {
-      result.loading = false;
+      loading.value = false;
     }
   });
 
-  return result;
+  return { options, defaults, loading };
 }
 
 export function useSequenceRows(
@@ -136,10 +132,8 @@ export function useSequenceRows(
     rowSelectionModel: RowSelectionModel | undefined;
   }>,
 ) {
-  const result = reactive({
-    value: [] as SequenceRow[],
-    loading: false,
-  });
+  const data = ref<SequenceRow[]>([]);
+  const loading = ref(false);
 
   watchEffect(async () => {
     const {
@@ -156,7 +150,7 @@ export function useSequenceRows(
     });
 
     try {
-      result.loading = false;
+      loading.value = false;
       const sequenceRows = await getSequenceRows({
         pframe,
         sequenceColumnIds,
@@ -165,15 +159,15 @@ export function useSequenceRows(
         rowSelectionModel,
       });
       if (aborted) return;
-      result.value = sequenceRows;
+      data.value = sequenceRows;
     } catch (error) {
       console.error(error);
     } finally {
-      result.loading = false;
+      loading.value = false;
     }
   });
 
-  return result;
+  return { data, loading };
 }
 
 async function getSequenceColumnsOptions({
@@ -183,14 +177,14 @@ async function getSequenceColumnsOptions({
   pframe: PFrameHandle;
   sequenceColumnPredicate: (column: PColumnIdAndSpec) => boolean;
 }): Promise<{
-  options: ListOption<PObjectId>[];
-  defaults: PObjectId[];
-}> {
+    options: ListOption<PObjectId>[];
+    defaults: PObjectId[];
+  }> {
   const columns = await pFrameDriver.listColumns(pframe);
   const options = columns
     .filter((column) => sequenceColumnPredicate(column))
     .map((column) => ({
-      label: column.spec.annotations?.['pl7.app/label'] ?? '',
+      label: column.spec.annotations?.['pl7.app/label'] ?? 'Unlabelled column',
       value: column.columnId,
     }));
   const defaults = options.map((o) => o.value);
@@ -208,9 +202,9 @@ async function getLabelColumnsOptions(
     labelColumnOptionPredicate?: (column: PColumnIdAndSpec) => boolean;
   },
 ): Promise<{
-  options: ListOption<PTableColumnIdJson>[];
-  defaults: PTableColumnIdJson[];
-}> {
+    options: ListOption<PTableColumnIdJson>[];
+    defaults: PTableColumnIdJson[];
+  }> {
   const processedAxes = new Set<CanonicalizedJson<AxisId>>();
   const optionLabels = new Map<PTableColumnIdJson, string>();
   const columns = await pFrameDriver.listColumns(pframe);
@@ -230,14 +224,14 @@ async function getLabelColumnsOptions(
           labelColumn
             ? canonicalizeJson({ type: 'column', id: labelColumn.columnId })
             : canonicalizeJson({ type: 'axis', id: axisId }),
-          axisSpec.annotations?.['pl7.app/label'] ?? '',
+          axisSpec.annotations?.['pl7.app/label'] ?? 'Unlabelled axis',
         );
       }
     }
     if (labelColumnOptionPredicate?.(column)) {
       optionLabels.set(
         canonicalizeJson({ type: 'column', id: column.columnId }),
-        column.spec.annotations?.['pl7.app/label'] ?? '',
+        column.spec.annotations?.['pl7.app/label'] ?? 'Unlabelled column',
       );
     }
   }
@@ -296,7 +290,7 @@ async function getSequenceRows(
                 type: 'inlineColumn',
                 column: filterColumn,
               } satisfies InlineColumnJoinEntry,
-            ]
+              ]
             : []),
           ...linkerColumns.map((c) => ({
             type: 'column',
@@ -373,23 +367,21 @@ async function getSequenceRows(
   /// sort by index in input dropdowns
   const labelColumnsIndices = [...labelColumnsMap.keys()];
   labelColumnsIndices.sort((a, b) =>
-    labelColumnsMap.get(a)! - labelColumnsMap.get(b)!
+    labelColumnsMap.get(a)! - labelColumnsMap.get(b)!,
   );
   const sequenceColumnsIndices = [...sequenceColumnsMap.keys()];
   sequenceColumnsIndices.sort((a, b) =>
-    sequenceColumnsMap.get(a)! - sequenceColumnsMap.get(b)!
+    sequenceColumnsMap.get(a)! - sequenceColumnsMap.get(b)!,
   );
 
   const rowCount = table[0].data.data.length;
   for (let iRow = 0; iRow < rowCount; iRow++) {
-    const labels = labelColumnsIndices
-      .map(
-        (iCol) => pTableValue(table[iCol].data, iRow, { na: '', absent: '' }),
-      );
-    const sequences = sequenceColumnsIndices
-      .map(
-        (iCol) => pTableValue(table[iCol].data, iRow, { na: '', absent: '' }),
-      );
+    const labels = labelColumnsIndices.map((iCol) =>
+      pTableValue(table[iCol].data, iRow, { na: '', absent: '' })?.toString(),
+    );
+    const sequences = sequenceColumnsIndices.map((iCol) =>
+      pTableValue(table[iCol].data, iRow, { na: '', absent: '' })?.toString(),
+    );
 
     const isValid = (s: unknown): s is string => typeof s === 'string';
     if (labels.every(isValid) && sequences.every(isValid)) {
