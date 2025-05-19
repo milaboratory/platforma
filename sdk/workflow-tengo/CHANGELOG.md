@@ -1,5 +1,29 @@
 # @platforma-sdk/workflow-tengo
 
+## 4.5.0
+
+### Minor Changes
+
+- efd2b56: add local python script to PYTHONPATH
+
+## 4.4.5
+
+### Patch Changes
+
+- 4c9384b: python dependencies don't installed with slow connection
+
+## 4.4.4
+
+### Patch Changes
+
+- 8c4b1ea: revert update pythonpath
+
+## 4.4.3
+
+### Patch Changes
+
+- 3c851df: change pythonpath
+
 ## 4.4.2
 
 ### Patch Changes

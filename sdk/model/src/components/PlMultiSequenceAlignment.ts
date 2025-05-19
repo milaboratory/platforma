@@ -11,9 +11,8 @@ import type {
 import {
   canonicalizeJson,
   isPTableAbsent,
-  PTableNA,
 } from '@milaboratories/pl-model-common';
-import type { RowSelectionModel } from './PlDataTable';
+import type { PlSelectionModel } from './PlSelectionModel';
 
 /** Canonicalized PTableColumnId JSON string */
 export type PTableColumnIdJson = CanonicalizedJson<PTableColumnId>;
@@ -43,7 +42,7 @@ export type PlMultiSequenceAlignmentModel = {
 
 export function createRowSelectionColumn(
   columnId: PObjectId,
-  rowSelectionModel: RowSelectionModel | undefined,
+  rowSelectionModel: PlSelectionModel | undefined,
   label?: string,
   domain?: Record<string, string>,
 ): PColumn<PColumnValues> | undefined {
@@ -65,14 +64,8 @@ export function createRowSelectionColumn(
       },
     },
     data: rowSelectionModel
-      .selectedRowsKeys
-      .filter(
-        (r): r is PColumnKey =>
-          !r.some((v) => isPTableAbsent(v) || v === PTableNA),
-      )
-      .map((r) => ({
-        key: r,
-        val: 1,
-      } satisfies PColumnValuesEntry)),
+      .selectedKeys
+      .filter((r): r is PColumnKey => !r.some((v) => isPTableAbsent(v)))
+      .map((r) => ({ key: r, val: 1 } satisfies PColumnValuesEntry)),
   } satisfies PColumn<PColumnValues>;
 }
