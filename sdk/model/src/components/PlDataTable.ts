@@ -1,5 +1,4 @@
 import type {
-  AxesSpec,
   AxisId,
   AxisSpec,
   CanonicalizedJson,
@@ -24,6 +23,7 @@ import {
   getAxisId,
   getColumnIdAndSpec,
   matchAxisId,
+  parseJson,
 } from '@milaboratories/pl-model-common';
 import type {
   AxisLabelProvider,
@@ -50,11 +50,6 @@ export function stringifyPTableColumnSpec(spec: PTableColumnSpec): PTableColumnS
       // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
       throw Error(`unsupported column type: ${type satisfies never}`);
   }
-}
-
-/** Parse `PTableColumnId` from JSON string */
-export function parsePTableColumnId(str: PTableColumnSpecJson): PTableColumnSpec {
-  return JSON.parse(str) as PTableColumnSpec;
 }
 
 /** Data table state */
@@ -582,16 +577,11 @@ export type PlDataTableModel = {
   tableHandle: PTableHandle;
 };
 
-/** Key is a set of all axes values, which means it is unique across rows */
+/**
+ * @deprecated Used only in PlAgDataTable v1 that is no longer maintained.
+ * Please migrate to v2.
+ */
 export type PTableRowKey = PTableValue[];
-
-/** Information on selected rows */
-export type RowSelectionModel = {
-  /** Axes spec */
-  axesSpec: AxesSpec;
-  /** Row keys (arrays of axes values) of selected rows */
-  selectedRowsKeys: PTableRowKey[];
-};
 
 /** Check if column should be omitted from the table */
 export function isColumnHidden(spec: { annotations?: Record<string, string> }): boolean {
@@ -635,7 +625,7 @@ export function createPlDataTableV2<A, U>(
     if (coreJoinType === 'inner') return [];
 
     const hiddenColIds = tableState?.gridState.columnVisibility?.hiddenColIds
-      ?.map(parsePTableColumnId)
+      ?.map(parseJson)
       .filter((c) => c.type === 'column')
       .map((c) => c.id);
     if (hiddenColIds) return hiddenColIds;

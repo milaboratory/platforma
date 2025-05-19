@@ -241,7 +241,7 @@ export function isValueAbsent(absent: Uint8Array, index: number): boolean {
   return (absent[chunkIndex] & mask) > 0;
 }
 
-export const PTableAbsent = { type: 'absent' };
+export const PTableAbsent = { type: 'absent' } as const;
 export type PTableAbsent = typeof PTableAbsent;
 export const PTableNA = null;
 export type PTableNA = typeof PTableNA;

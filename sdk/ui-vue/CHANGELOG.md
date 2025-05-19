@@ -1,5 +1,14 @@
 # @platforma-sdk/ui-vue
 
+## 1.30.37
+
+### Patch Changes
+
+- 5d50fb1: PlMultiSequenceAlignment component
+- Updated dependencies [5d50fb1]
+  - @platforma-sdk/model@1.30.37
+  - @milaboratories/uikit@2.2.75
+
 ## 1.30.26
 
 ### Patch Changes
