@@ -1,3 +1,4 @@
+import type { Remote } from 'comlink';
 import { wrap } from 'comlink';
 import type { MaybeRefOrGetter } from 'vue';
 import { onWatcherCleanup, ref, toValue, watchEffect } from 'vue';
@@ -5,9 +6,14 @@ import type { ChemicalPropertiesWorkerApi } from './chemical-properties.worker';
 import ChemicalPropertiesWorker from './chemical-properties.worker?worker&inline';
 import type { HighlightedColumn } from './types';
 
-const worker = wrap<ChemicalPropertiesWorkerApi>(
-  new ChemicalPropertiesWorker(),
-);
+let worker: Remote<ChemicalPropertiesWorkerApi> | undefined;
+
+function getWorker(): Remote<ChemicalPropertiesWorkerApi> {
+  if (!worker) {
+    worker = wrap<ChemicalPropertiesWorkerApi>(new ChemicalPropertiesWorker());
+  }
+  return worker;
+}
 
 export const chemicalCategories = [
   'hydrophobic',
@@ -58,7 +64,7 @@ export function useChemicalPropertiesHighlight(
     });
     try {
       loading.value = true;
-      const value = await worker.getChemicalPropertiesHighlight(rows);
+      const value = await getWorker().getChemicalPropertiesHighlight(rows);
       if (aborted) return;
       data.value = value;
     } catch (error) {
