@@ -13,7 +13,7 @@ import type {
   PTableColumnIdColumn,
   PTableColumnIdJson,
   PTableSorting,
-  RowSelectionModel,
+  SelectionModel,
 } from '@platforma-sdk/model';
 import {
   canonicalizeJson,
@@ -129,7 +129,7 @@ export function useSequenceRows(
     sequenceColumnIds: PObjectId[];
     labelColumnIds: PTableColumnIdJson[];
     linkerColumnPredicate?: PColumnPredicate;
-    rowSelectionModel: RowSelectionModel | undefined;
+    selection: SelectionModel | undefined;
   }>,
 ) {
   const data = ref<SequenceRow[]>([]);
@@ -141,7 +141,7 @@ export function useSequenceRows(
       sequenceColumnIds,
       labelColumnIds,
       linkerColumnPredicate,
-      rowSelectionModel,
+      selection,
     } = toValue(params);
 
     let aborted = false;
@@ -156,7 +156,7 @@ export function useSequenceRows(
         sequenceColumnIds,
         labelColumnIds,
         linkerColumnPredicate,
-        rowSelectionModel,
+        selection,
       });
       if (aborted) return;
       data.value = sequenceRows;
@@ -256,13 +256,13 @@ async function getSequenceRows(
     sequenceColumnIds,
     labelColumnIds,
     linkerColumnPredicate,
-    rowSelectionModel,
+    selection: rowSelectionModel,
   }: {
     pframe: PFrameHandle | undefined;
     sequenceColumnIds: PObjectId[];
     labelColumnIds: PTableColumnIdJson[];
     linkerColumnPredicate?: PColumnPredicate;
-    rowSelectionModel?: RowSelectionModel;
+    selection?: SelectionModel;
   },
 ): Promise<SequenceRow[]> {
   if (!pframe || sequenceColumnIds.length === 0) return [];

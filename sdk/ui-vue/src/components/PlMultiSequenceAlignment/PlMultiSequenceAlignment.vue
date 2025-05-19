@@ -7,11 +7,11 @@ import {
   PlSlideModal,
   PlTooltip,
 } from '@milaboratories/uikit';
-import type { PColumnPredicate } from '@platforma-sdk/model';
-import {
-  type PFrameHandle,
-  type PlMultiSequenceAlignmentModel,
-  type RowSelectionModel,
+import type {
+  PColumnPredicate,
+  PFrameHandle,
+  PlMultiSequenceAlignmentModel,
+  SelectionModel,
 } from '@platforma-sdk/model';
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useDataTableToolsPanelTarget } from '../PlAgDataTableToolsPanel';
@@ -52,7 +52,7 @@ const props = defineProps<{
    * If not provided or empty, all rows will be considered selected.
    * Warning: should be forwarded as a field of `reactive` object
    */
-  readonly rowSelectionModel?: RowSelectionModel | undefined;
+  readonly selection?: SelectionModel | undefined;
 }>();
 
 // SlidePanel visibility flag
@@ -94,7 +94,7 @@ const sequenceRows = reactive(useSequenceRows(() => ({
   sequenceColumnIds: selectedSequenceColumnIds.value,
   labelColumnIds: selectedLabelColumnIds.value,
   linkerColumnPredicate: props.linkerColumnPredicate,
-  rowSelectionModel: props.rowSelectionModel,
+  selection: props.selection,
 })));
 </script>
 

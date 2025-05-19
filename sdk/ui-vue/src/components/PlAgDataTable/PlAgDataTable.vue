@@ -32,7 +32,7 @@ import {
   type PTableColumnSpec,
   type PTableRecordFilter,
   type PTableSorting,
-  parsePTableColumnId,
+  parseJson,
 } from '@platforma-sdk/model';
 import canonicalize from 'canonicalize';
 import * as lodash from 'lodash';
@@ -41,8 +41,7 @@ import { AgGridTheme } from '../../lib';
 import PlOverlayLoading from './PlAgOverlayLoading.vue';
 import PlOverlayNoRows from './PlAgOverlayNoRows.vue';
 import { updateXsvGridOptions } from './sources/file-source';
-import { type PlAgCellButtonAxisParams, makeRowId } from './sources/common';
-import { updatePFrameGridOptions } from './sources/table-source';
+import { type PlAgCellButtonAxisParams, makeRowId, updatePFrameGridOptions } from './sources/table-source';
 import type { PlAgDataTableController, PlDataTableSettings, PlAgDataTableRow, PlDataTableSettingsPTable } from './types';
 import { PlAgGridColumnManager } from '../PlAgGridColumnManager';
 import { autoSizeRowNumberColumn, PlAgDataTableRowNumberColId } from './sources/row-number';
@@ -114,7 +113,7 @@ const emit = defineEmits<{
 function makeSorting(state?: SortState): PTableSorting[] {
   return (
     state?.sortModel.map((item) => {
-      const { spec, ...column } = parsePTableColumnId(item.colId as PTableColumnSpecJson);
+      const { spec, ...column } = parseJson(item.colId as PTableColumnSpecJson);
       const _ = spec;
       return {
         column,
@@ -376,7 +375,7 @@ watch(
           .filter((colId) => colId !== undefined)
           .filter((colId) => colId !== PlAgDataTableRowNumberColId)
           .filter((colId) => !isColumnSelectionCol(colId))
-          .map((colId) => parsePTableColumnId(colId as PTableColumnSpecJson)) ?? [];
+          .map((colId) => parseJson(colId as PTableColumnSpecJson)) ?? [];
       emit('columnsChanged', columns);
     }
     if (!lodash.isEqual(options.loadingOverlayComponentParams, oldOptions.loadingOverlayComponentParams) && options.loading) {
