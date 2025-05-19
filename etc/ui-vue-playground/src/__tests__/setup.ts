@@ -6,15 +6,15 @@ global.ResizeObserver = ResizeObserver;
 // Mock the Worker global for tests
 class MockedComlinkWorker {
   private listeners = new Map<string, EventListenerOrEventListenerObject[]>();
-  public onmessage: ((this: any, ev: MessageEvent) => any) | null = null;
-  public onerror: ((this: any, ev: ErrorEvent) => any) | null = null;
+  public onmessage: ((this: never, ev: MessageEvent) => never) | null = null;
+  public onerror: ((this: never, ev: ErrorEvent) => never) | null = null;
 
-  constructor(stringUrl: string | URL, options?: WorkerOptions) {
+  constructor(_stringUrl: string | URL, _options?: WorkerOptions) {
     // The stringUrl for inline workers is a data URL (e.g., "data:text/javascript;base64,...")
     // We don't need to do anything with it for this mock.
   }
 
-  postMessage(message: any, transfer?: Transferable[]): void {
+  postMessage(_message: never, _transfer?: Transferable[]): void {
     // Comlink sends an initial message with a port. For this mock,
     // we don't need to simulate a full handshake. The key is that the call doesn't fail
     // and that the `wrap` function in `chemical-properties.ts` can attach its listeners.
@@ -26,14 +26,14 @@ class MockedComlinkWorker {
     // No-op for the mock
   }
 
-  addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void {
+  addEventListener(type: string, listener: EventListenerOrEventListenerObject, _options?: boolean | AddEventListenerOptions): void {
     if (!this.listeners.has(type)) {
       this.listeners.set(type, []);
     }
     this.listeners.get(type)!.push(listener);
   }
 
-  removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void {
+  removeEventListener(type: string, listener: EventListenerOrEventListenerObject, _options?: boolean | EventListenerOptions): void {
     const typeListeners = this.listeners.get(type);
     if (typeListeners) {
       const index = typeListeners.indexOf(listener);
@@ -46,7 +46,7 @@ class MockedComlinkWorker {
   dispatchEvent(event: Event): boolean {
     const typeListeners = this.listeners.get(event.type);
     if (typeListeners) {
-      typeListeners.forEach(listener => {
+      typeListeners.forEach((listener) => {
         if (typeof listener === 'function') {
           listener(event);
         } else {
@@ -58,4 +58,4 @@ class MockedComlinkWorker {
   }
 }
 
-global.Worker = vi.fn((scriptURL, options) => new MockedComlinkWorker(scriptURL, options)) as any;
+global.Worker = vi.fn((scriptURL, options) => new MockedComlinkWorker(scriptURL, options)) as never;
