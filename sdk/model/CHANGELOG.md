@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.30.37
+
+### Patch Changes
+
+- 5d50fb1: PlMultiSequenceAlignment component
+
 ## 1.30.26
 
 ### Patch Changes
