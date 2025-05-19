@@ -5,12 +5,12 @@ import type {
   AxisId,
   PlDataTableGridStateWithoutSheets,
   PlDataTableState,
+  PlSelectionModel,
   PTableColumnSpec,
   PTableColumnSpecJson,
   PTableKey,
   PTableRecordFilter,
   PTableSorting,
-  SelectionModel,
 } from '@platforma-sdk/model';
 import {
   getAxisId,
@@ -63,10 +63,10 @@ import {
   updatePFrameGridOptions,
 } from './sources/table-source-v2';
 import type {
-  PlAgDataTableV2Controller,
-  PlAgDataTableV2Row,
   PlAgDataTableSettings,
   PlAgDataTableSettingsPTable,
+  PlAgDataTableV2Controller,
+  PlAgDataTableV2Row,
   PlAgOverlayLoadingParams,
   PlAgOverlayNoRowsParams,
 } from './types';
@@ -81,7 +81,7 @@ ModuleRegistry.registerModules([
 const tableState = defineModel<PlDataTableState>({
   default: { gridState: {} },
 });
-const selection = defineModel<SelectionModel>('selection');
+const selection = defineModel<PlSelectionModel>('selection');
 const props = defineProps<{
   settings?: Readonly<PlAgDataTableSettings>;
   /**
