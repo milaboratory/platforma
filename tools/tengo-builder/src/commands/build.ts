@@ -104,7 +104,10 @@ function checkAndGenerateCtags(
   const additionalArgs = flags['tags-additional-args'];
 
   // all tengo files in dirs and subdirs
-  const tengoFiles = getTengoFiles(rootDir);
+  // If we don't limit the depth, it could become unbearably slow
+  // and even OOM killed node js.
+  // Increase the depth if you need to.
+  const tengoFiles = toRelativePath(rootDir, getTengoFiles(rootDir, 9));
 
   logger.info(
     `Generating tags for tengo autocompletion from "${rootDir}" \
@@ -112,7 +115,7 @@ in "${fileName}", additional arguments: "${additionalArgs.join('" "')}".
 Found ${tengoFiles.length} tengo files...`,
   );
 
-  // see https://docs.ctags.io/en/lates// t/man/ctags-optlib.7.html#perl-pod
+  // see https://docs.ctags.io/en/latest/man/ctags-optlib.7.html#perl-pod
   const result = spawnSync(
     'ctags',
     [
@@ -153,19 +156,32 @@ https://marketplace.visualstudio.com/items?itemName=jaydenlin.ctags-support`);
   logger.info('Generation of tags is done.');
 }
 
-function getTengoFiles(dir: string): string[] {
-  const files = fs.readdirSync(dir, { withFileTypes: true, recursive: true });
-  const tengoFiles: string[] = [];
+function getTengoFiles(dir: string, depth: number): string[] {
+  if (depth === 0) {
+    return [];
+  }
 
+  const files = fs.readdirSync(dir, { withFileTypes: true });
+
+  let tengoFiles: string[] = [];
   files.forEach((file) => {
+    const absPath = path.join(dir, file.name);
+
+    if (file.isDirectory()) {
+      tengoFiles = tengoFiles.concat(getTengoFiles(absPath, depth - 1));
+    }
+
     if (!file.isDirectory() && file.name.endsWith('.tengo')) {
-      // Note that VS Code extension likes only relatives paths to the root of the opened dir.
-      const relativePath = path.join(file.parentPath, file.name).replace(dir, '.');
-      tengoFiles.push(relativePath);
+      tengoFiles.push(absPath);
     }
   });
 
   return tengoFiles;
+}
+
+function toRelativePath(dir: string, files: string[]): string[] {
+  // Note that VS Code extension likes only relatives paths to the root of the opened dir.
+  return files.map((file) => file.replace(dir, '.'));
 }
 
 function checkRunError(result: SpawnSyncReturns<Buffer>, message?: string) {
