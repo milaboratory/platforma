@@ -1,20 +1,21 @@
 <script lang="ts" setup>
 import type { ListOption } from '@milaboratories/uikit';
-import { PlBtnGhost, PlIcon24, PlSlideModal, PlMaskIcon16, PlMaskIcon24 } from '@milaboratories/uikit';
-import { computed, onBeforeUnmount, onMounted, reactive, ref, toRefs, watch } from 'vue';
+import { PlBtnGhost, PlBtnSecondary, PlIcon24, PlMaskIcon16, PlMaskIcon24, PlSlideModal } from '@milaboratories/uikit';
 import type {
-  PlTableFiltersModel,
-  PlTableFilterType,
   PlTableFilter,
-  PTableColumnSpec,
+  PlTableFilterColumnId,
+  PlTableFiltersModel,
   PlTableFiltersState,
   PlTableFiltersStateEntry,
-  PlTableFilterColumnId,
+  PlTableFilterType,
+  PTableColumnSpec,
 } from '@platforma-sdk/model';
 import * as lodash from 'lodash';
-import type { PlTableFiltersDefault, PlTableFiltersRestriction } from '../PlAgDataTable/types';
-import PlTableFilterEntry from './PlTableFilterEntry.vue';
+import { computed, onBeforeUnmount, onMounted, reactive, ref, toRefs, watch } from 'vue';
+import type { PlTableFiltersRestriction } from '../PlAgDataTable/types';
+import { useDataTableToolsPanelTarget } from '../PlAgDataTableToolsPanel';
 import PlTableAddFilter from './PlTableAddFilter.vue';
+import PlTableFilterEntry from './PlTableFilterEntry.vue';
 import {
   filterTypesNumber,
   filterTypesString,
@@ -25,13 +26,14 @@ import {
   makePredicate,
 } from './filters_logic';
 import './pl-table-filters.scss';
-import { useDataTableToolsPanelTarget } from '../PlAgDataTableToolsPanel';
+
+type DefaultFilters = (spec: PTableColumnSpec) => (PlTableFilter | undefined);
 
 const model = defineModel<PlTableFiltersModel>({ required: true });
 const props = defineProps<{
   columns: Readonly<PTableColumnSpec[]>;
   restrictions?: Readonly<PlTableFiltersRestriction[]>;
-  defaults?: Readonly<PlTableFiltersDefault[]>;
+  defaults?: DefaultFilters;
 }>();
 const { columns, restrictions, defaults } = toRefs(props);
 
@@ -53,6 +55,27 @@ const columnsById = computed<Record<PlTableFilterColumnId, PTableColumnSpec>>(()
   }
   return result;
 });
+
+const defaultsMap = computed<Record<PlTableFilterColumnId, PlTableFiltersStateEntry>>(() => {
+  const cols = columns.value;
+  const defFn = defaults.value;
+
+  if (!cols || !defFn) return {};
+
+  const result: Record<PlTableFilterColumnId, PlTableFiltersStateEntry> = {};
+  for (const column of cols) {
+    const f = defFn(column);
+    if (!f) continue;
+    const id = makeColumnId(column);
+    result[id] = {
+      columnId: id,
+      filter: f,
+      disabled: false,
+    };
+  }
+  return result;
+});
+
 const restrictionsMap = computed<Record<PlTableFilterColumnId, PlTableFilterType[]>>(() => {
   const restrictionsValue = restrictions.value ?? [];
   const map: Record<PlTableFilterColumnId, PlTableFilterType[]> = {};
@@ -62,21 +85,6 @@ const restrictionsMap = computed<Record<PlTableFilterColumnId, PlTableFilterType
       (entry) => lodash.isEqual(entry.column.id, column.id),
     );
     if (entry) map[id] = entry.allowedFilterTypes;
-  }
-  return map;
-});
-const defaultsMap = computed<Record<PlTableFilterColumnId, PlTableFiltersStateEntry>>(() => {
-  const defaultsValue = defaults.value ?? [];
-  const map: Record<PlTableFilterColumnId, PlTableFiltersStateEntry> = {};
-  for (const [id, column] of Object.entries(columnsById.value)) {
-    const entry = lodash.find(defaultsValue, (entry) => lodash.isEqual(entry.column.id, column.id));
-    if (entry) {
-      map[id] = {
-        columnId: id,
-        filter: entry.default,
-        disabled: false,
-      };
-    }
   }
   return map;
 });
@@ -93,10 +101,30 @@ const defaultsMap = computed<Record<PlTableFilterColumnId, PlTableFiltersStateEn
       }));
   }
 })();
+
+const defaultState = () => lodash.cloneDeep(Object.values(defaultsMap.value));
+
 const makeState = (state?: PlTableFiltersState): PlTableFiltersState => {
-  return state ?? Object.values(defaultsMap.value);
+  return state ?? [];
 };
 const reactiveModel = reactive({ state: makeState(model.value.state) });
+
+const resetToDefaults = () => {
+  reactiveModel.state = defaultState();
+};
+
+watch(
+  () => columns.value,
+  (columns, previousColumns) => {
+    // @TODO: we need to somehow store that user modified defaults
+    // rn we will e.g. reset to defaults on page refresh if user removed all filters at all
+    if (defaults.value && model.value.state?.length === 0 && (!previousColumns || previousColumns.length === 0) && columns.length > 0) {
+      resetToDefaults();
+    }
+  },
+  { immediate: true },
+);
+
 watch(
   () => model.value,
   (model) => {
@@ -178,6 +206,7 @@ const makeFilter = (columnId: string): PlTableFiltersStateEntry =>
     filter: getFilterDefault(filterOptions.value[columnId][0].value),
     disabled: false,
   };
+
 const resetFilter = (index: number) => {
   reactiveModel.state[index] = makeFilter(reactiveModel.state[index].columnId);
 };
@@ -306,6 +335,7 @@ const teleportTarget = useDataTableToolsPanelTarget();
 
       <div v-if="!filterOptionsPresent">No filters applicable</div>
     </div>
+    <PlBtnSecondary v-if="defaults" @click.stop="resetToDefaults">Reset to defaults</PlBtnSecondary>
   </PlSlideModal>
 
   <PlTableAddFilter
