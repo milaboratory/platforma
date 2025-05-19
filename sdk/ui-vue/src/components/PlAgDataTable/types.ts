@@ -7,9 +7,12 @@ import type {
   PlTableFilterType,
   PTableColumnId,
   PTableHandle,
+  PTableKey,
+  PTableRowKey,
   PTableValue,
   RemoteBlobHandleAndSize,
 } from '@platforma-sdk/model';
+import type { PTableHidden } from './sources/common';
 
 export type PlDataTableSettingsPTable = {
   /** The type of the source to feed the data into the table */
@@ -62,9 +65,6 @@ export type PlTableFiltersDefault = {
   default: PlTableFilter;
 };
 
-/** Key is a set of all axes values, which means it is unique across rows */
-export type PTableRowKey = PTableValue[];
-
 /** PlAgDataTable controller contains all exported methods */
 export type PlAgDataTableController = {
   /**
@@ -74,8 +74,20 @@ export type PlAgDataTableController = {
   focusRow: (rowKey: PTableRowKey) => Promise<void>;
 };
 
-/** Canonicalized PTableValue array JSON string */
-export type PTableRowKeyJson = CanonicalizedJson<PTableValue[]>;
+/** PlAgDataTable controller contains all exported methods */
+export type PlAgDataTableV2Controller = {
+  /**
+   * Scroll table to make row with provided key visible
+   * Warning: works reliably only in client side mode.
+   */
+  focusRow: (rowKey: PTableKey) => Promise<void>;
+};
+
+/**
+ * Canonicalized PTableValue array JSON string
+ * @deprecated Migrate to PlAgDataTableV2
+ */
+export type PTableRowKeyJson = CanonicalizedJson<PTableRowKey>;
 
 /** PlAgDataTable row */
 export type PlAgDataTableRow = {
@@ -85,6 +97,18 @@ export type PlAgDataTableRow = {
   id: PTableRowKeyJson | `${number}`;
   /** Row values by column; sheet axes and labeled axes are excluded */
   [field: `${number}` | `hC${number}`]: PTableValue;
+};
+
+export type PTableKeyJson = CanonicalizedJson<PTableKey>;
+
+/** PlAgDataTableV2 row */
+export type PlAgDataTableV2Row = {
+  /** Axis key is not present for heterogeneous axes */
+  key?: PTableKey;
+  /** Unique row identifier, created as canonicalize(key)! when key is present */
+  id: PTableKeyJson;
+  /** Row values by column; sheet axes and labeled axes are excluded */
+  [field: `${number}`]: PTableValue | PTableHidden;
 };
 
 export type PlAgOverlayLoadingParams = {

@@ -16,16 +16,30 @@ import type {
   PTableRecordFilter,
   PTableRecordSingleValueFilterV2,
   PTableSorting,
+  PTableValue,
 } from '@milaboratories/pl-model-common';
-import { canonicalizeJson, getAxisId, getColumnIdAndSpec, matchAxisId } from '@milaboratories/pl-model-common';
-import type { AxisLabelProvider, ColumnProvider, RenderCtx } from '../render';
-import { PColumnCollection, TreeNodeAccessor } from '../render';
+import {
+  canonicalizeJson,
+  getAxisId,
+  getColumnIdAndSpec,
+  matchAxisId,
+  parseJson,
+} from '@milaboratories/pl-model-common';
+import type {
+  AxisLabelProvider,
+  ColumnProvider,
+  RenderCtx,
+} from '../render';
+import {
+  PColumnCollection,
+  TreeNodeAccessor,
+} from '../render';
 
 /** Canonicalized PTableColumnSpec JSON string */
 export type PTableColumnSpecJson = CanonicalizedJson<PTableColumnSpec>;
 
 /** Encode `PTableColumnId` as canonicalized JSON string */
-export function stringifyPTableColumnId(spec: PTableColumnSpec): PTableColumnSpecJson {
+export function stringifyPTableColumnSpec(spec: PTableColumnSpec): PTableColumnSpecJson {
   const type = spec.type;
   switch (type) {
     case 'axis':
@@ -36,11 +50,6 @@ export function stringifyPTableColumnId(spec: PTableColumnSpec): PTableColumnSpe
       // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
       throw Error(`unsupported column type: ${type satisfies never}`);
   }
-}
-
-/** Parse `PTableColumnId` from JSON string */
-export function parsePTableColumnId(str: PTableColumnSpecJson): PTableColumnSpec {
-  return JSON.parse(str) as PTableColumnSpec;
 }
 
 /** Data table state */
@@ -568,6 +577,17 @@ export type PlDataTableModel = {
   tableHandle: PTableHandle;
 };
 
+/**
+ * @deprecated Used only in PlAgDataTable v1 that is no longer maintained.
+ * Please migrate to v2.
+ */
+export type PTableRowKey = PTableValue[];
+
+/** Check if column should be omitted from the table */
+export function isColumnHidden(spec: { annotations?: Record<string, string> }): boolean {
+  return spec.annotations?.['pl7.app/table/visibility'] === 'hidden';
+}
+
 /** Check if column is hidden by default */
 export function isColumnOptional(spec: { annotations?: Record<string, string> }): boolean {
   return spec.annotations?.['pl7.app/table/visibility'] === 'optional';
@@ -583,7 +603,7 @@ export function isColumnOptional(spec: { annotations?: Record<string, string> })
  */
 export function createPlDataTableV2<A, U>(
   ctx: RenderCtx<A, U>,
-  columns: PColumn<TreeNodeAccessor | PColumnValues | DataInfo<TreeNodeAccessor>>[],
+  inputColumns: PColumn<TreeNodeAccessor | PColumnValues | DataInfo<TreeNodeAccessor>>[],
   mainColumnPredicate: (spec: PColumnSpec) => boolean,
   tableState: PlDataTableState | undefined,
   ops?: CreatePlDataTableOps,
@@ -592,6 +612,7 @@ export function createPlDataTableV2<A, U>(
   const filters: PTableRecordSingleValueFilterV2[]
     = [...(ops?.filters ?? []), ...(tableState?.pTableParams?.filters ?? [])];
   const sorting: PTableSorting[] = tableState?.pTableParams?.sorting ?? [];
+  const columns = inputColumns.filter((c) => !isColumnHidden(c.spec));
 
   const mainColumn = columns.find((c) => mainColumnPredicate(c.spec));
   if (!mainColumn) return undefined;
@@ -604,7 +625,7 @@ export function createPlDataTableV2<A, U>(
     if (coreJoinType === 'inner') return [];
 
     const hiddenColIds = tableState?.gridState.columnVisibility?.hiddenColIds
-      ?.map(parsePTableColumnId)
+      ?.map(parseJson)
       .filter((c) => c.type === 'column')
       .map((c) => c.id);
     if (hiddenColIds) return hiddenColIds;

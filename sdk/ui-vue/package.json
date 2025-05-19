@@ -29,34 +29,36 @@
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "dependencies": {
+    "@biowasm/aioli": "catalog:",
     "@milaboratories/uikit": "workspace:^",
     "@platforma-sdk/model": "workspace:^",
-    "lru-cache": "catalog:",
-    "vue": "catalog:",
-    "canonicalize": "catalog:",
     "ag-grid-enterprise": "catalog:",
-    "ag-grid-vue3": "catalog:"
+    "ag-grid-vue3": "catalog:",
+    "canonicalize": "catalog:",
+    "comlink": "catalog:",
+    "lru-cache": "catalog:",
+    "vue": "catalog:"
   },
   "devDependencies": {
-    "@milaboratories/helpers": "workspace:^",
-    "@milaboratories/eslint-config": "workspace:^",
     "@faker-js/faker": "catalog:",
+    "@milaboratories/eslint-config": "workspace:^",
+    "@milaboratories/helpers": "workspace:^",
     "@types/lodash": "catalog:",
     "@types/node": "catalog:",
+    "@types/semver": "catalog:",
     "@vitejs/plugin-vue": "catalog:",
     "@vueuse/core": "catalog:",
     "canonicalize": "catalog:",
     "happy-dom": "catalog:",
     "lodash": "catalog:",
+    "rollup-plugin-sourcemaps2": "catalog:",
     "sass": "catalog:",
+    "semver": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:",
     "vue-tsc": "catalog:",
-    "zod": "catalog:",
     "yarpm": "catalog:",
-    "semver": "catalog:",
-    "@types/semver": "catalog:",
-    "rollup-plugin-sourcemaps2": "catalog:"
+    "zod": "catalog:"
   }
 }
