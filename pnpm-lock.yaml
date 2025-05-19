@@ -12,6 +12,9 @@ catalogs:
     '@aws-sdk/lib-storage':
       specifier: 3.775.0
       version: 3.775.0
+    '@biowasm/aioli':
+      specifier: ~3.2.1
+      version: 3.2.1
     '@changesets/cli':
       specifier: ^2.29.2
       version: 2.29.2
@@ -114,6 +117,9 @@ catalogs:
     canonicalize:
       specifier: ~2.1.0
       version: 2.1.0
+    comlink:
+      specifier: ~4.4.2
+      version: 4.4.2
     d3:
       specifier: ^7.9.0
       version: 7.9.0
@@ -2284,6 +2290,9 @@ importers:
 
   sdk/ui-vue:
     dependencies:
+      '@biowasm/aioli':
+        specifier: 'catalog:'
+        version: 3.2.1
       '@milaboratories/uikit':
         specifier: workspace:^
         version: link:../../lib/ui/uikit
@@ -2299,6 +2308,9 @@ importers:
       canonicalize:
         specifier: 'catalog:'
         version: 2.1.0
+      comlink:
+        specifier: 'catalog:'
+        version: 4.4.2
       lru-cache:
         specifier: 'catalog:'
         version: 11.1.0
@@ -3503,6 +3515,9 @@ packages:
 
   '@bcoe/v8-coverage@0.2.3':
     resolution: {integrity: sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==}
+
+  '@biowasm/aioli@3.2.1':
+    resolution: {integrity: sha512-Zz912Scd6YWJ7uw4EYpI96QWD8hgUcZlAH/un1kJoZJzo53LL88tfeDd8O1iR1lJDb0LPMHRdGHcC3E5V9KsOA==}
 
   '@changesets/apply-release-plan@7.0.12':
     resolution: {integrity: sha512-EaET7As5CeuhTzvXTQCRZeBUcisoYPDDcXvgTE/2jmmypKp0RC7LxKj/yzqeh/1qFTZI7oDGFcL1PHRuQuketQ==}
@@ -6083,6 +6098,9 @@ packages:
   combined-stream@1.0.8:
     resolution: {integrity: sha512-FQN4MRfuJeHf7cBbBMJFXhKSDq+2kAArBlmRBvcvFE5BB1HZKXtSFASDhdlz9zOYwxh8lDdnvmMOe/+5cdoEdg==}
     engines: {node: '>= 0.8'}
+
+  comlink@4.4.2:
+    resolution: {integrity: sha512-OxGdvBmJuNKSCMO4NTl1L47VRp6xn2wG4F/2hYzB6tiCb709otOxtEYCSvK80PtjODfXXZu8ds+Nw5kVCjqd2g==}
 
   comma-separated-tokens@2.0.3:
     resolution: {integrity: sha512-Fu4hJdvzeylCfQPp9SGWidpzrMs7tTrlu6Vb8XGaRGck8QSNZJJp538Wrb60Lax4fPwR64ViY468OIUTbRlGZg==}
@@ -8934,6 +8952,9 @@ packages:
   walker@1.0.8:
     resolution: {integrity: sha512-ts/8E8l5b7kY0vlWLewOkDXMmPdLcVV4GmOQLyxuSswIJsweeFZtAsMF7k1Nszz+TYBQrlYRmzOnr398y1JemQ==}
 
+  wasm-feature-detect@1.8.0:
+    resolution: {integrity: sha512-zksaLKM2fVlnB5jQQDqKXXwYHLQUVH9es+5TOOHwGOVJOCeRBCiPjwSg+3tN2AdTCzjgli4jijCH290kXb/zWQ==}
+
   webidl-conversions@3.0.1:
     resolution: {integrity: sha512-2JAn3z8AR6rjK8Sm8orRC0h/bcl/DqL7tRPdGZ4I1CjdF+EaMLmYxBHyXuKL849eucPFhvBoxMsflfOb8kxaeQ==}
 
@@ -10250,6 +10271,11 @@ snapshots:
   '@balena/dockerignore@1.0.2': {}
 
   '@bcoe/v8-coverage@0.2.3': {}
+
+  '@biowasm/aioli@3.2.1':
+    dependencies:
+      comlink: 4.4.2
+      wasm-feature-detect: 1.8.0
 
   '@changesets/apply-release-plan@7.0.12':
     dependencies:
@@ -13435,6 +13461,8 @@ snapshots:
   combined-stream@1.0.8:
     dependencies:
       delayed-stream: 1.0.0
+
+  comlink@4.4.2: {}
 
   comma-separated-tokens@2.0.3: {}
 
@@ -16897,6 +16925,8 @@ snapshots:
   walker@1.0.8:
     dependencies:
       makeerror: 1.0.12
+
+  wasm-feature-detect@1.8.0: {}
 
   webidl-conversions@3.0.1: {}
 

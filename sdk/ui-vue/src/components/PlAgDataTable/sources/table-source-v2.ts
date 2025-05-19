@@ -1,35 +1,44 @@
 import type {
   ColDef,
+  ICellRendererParams,
   IServerSideDatasource,
   IServerSideGetRowsParams,
   RowModelType,
 } from 'ag-grid-enterprise';
 import type {
+  AxisId,
   PlDataTableGridStateWithoutSheets,
   PlDataTableModel,
   PTableColumnSpec,
+  PTableKey,
 } from '@platforma-sdk/model';
 import {
+  canonicalizeJson,
   getAxisId,
+  isColumnOptional,
+  mapPTableValueToAxisKey,
   pTableValue,
+  stringifyPTableColumnSpec,
   type PColumnSpec,
   type PFrameDriver,
   type PlDataTableSheet,
   type PTableVector,
 } from '@platforma-sdk/model';
 import * as lodash from 'lodash';
-import type { PlAgDataTableRow } from '../types';
+import type { PlAgDataTableV2Row, PTableKeyJson } from '../types';
 import { makeRowNumberColDef, PlAgDataTableRowNumberColId } from './row-number';
 import { objectHash } from '../../../objectHash';
 import type { Ref } from 'vue';
 import {
+  defaultValueFormatter,
   isLabelColumn,
-  makeColDef,
-  makeRowId,
   PTableHidden,
-  type PlAgCellButtonAxisParams,
 } from './common';
 import canonicalize from 'canonicalize';
+import type { PlAgHeaderComponentType, PlAgHeaderComponentParams } from '../../PlAgColumnHeader';
+import { PlAgColumnHeader } from '../../PlAgColumnHeader';
+import { PlAgTextAndButtonCell } from '../../PlAgTextAndButtonCell';
+import { defaultMainMenuItems } from './menu-items';
 
 /** Convert columnar data from the driver to rows, used by ag-grid */
 function columns2rows(
@@ -37,11 +46,15 @@ function columns2rows(
   columns: PTableVector[],
   axes: number[],
   resultMapping: number[],
-): PlAgDataTableRow[] {
-  const rowData: PlAgDataTableRow[] = [];
+): PlAgDataTableV2Row[] {
+  const rowData: PlAgDataTableV2Row[] = [];
   for (let iRow = 0; iRow < columns[0].data.length; ++iRow) {
-    const key = axes.map((iAxis) => pTableValue(columns[resultMapping[iAxis]], iRow));
-    const row: PlAgDataTableRow = { id: makeRowId(key), key };
+    const key = axes.map((iAxis) => {
+      return mapPTableValueToAxisKey(
+        pTableValue(columns[resultMapping[iAxis]], iRow),
+      );
+    });
+    const row: PlAgDataTableV2Row = { id: makeRowId(key), key };
     fields.forEach((field, iCol) => {
       row[field.toString() as `${number}`] = resultMapping[iCol] === -1
         ? PTableHidden
@@ -66,7 +79,7 @@ export async function updatePFrameGridOptions(
     columnDefs: ColDef[];
     serverSideDatasource?: IServerSideDatasource;
     rowModelType: RowModelType;
-    rowData?: PlAgDataTableRow[];
+    rowData?: PlAgDataTableV2Row[];
   }> {
   const pt = model.tableHandle;
   const specs = model.tableSpec;
@@ -153,7 +166,7 @@ export async function updatePFrameGridOptions(
 
   const ptShape = await pfDriver.getShape(pt);
   const rowCount = ptShape.rows;
-  const columnDefs: ColDef<PlAgDataTableRow>[] = [
+  const columnDefs: ColDef<PlAgDataTableV2Row>[] = [
     makeRowNumberColDef(),
     ...fields.map((i) => makeColDef(i, specs[i], columnVisibility?.hiddenColIds, cellButtonAxisParams)),
   ];
@@ -229,7 +242,7 @@ export async function updatePFrameGridOptions(
         lastParams = params;
 
         let length = 0;
-        let rowData: PlAgDataTableRow[] = [];
+        let rowData: PlAgDataTableV2Row[] = [];
         if (rowCount > 0 && params.request.startRow !== undefined && params.request.endRow !== undefined) {
           length = Math.min(rowCount, params.request.endRow) - params.request.startRow;
           if (length > 0) {
@@ -257,4 +270,86 @@ export async function updatePFrameGridOptions(
     columnDefs,
     serverSideDatasource,
   };
+}
+
+export type PlAgCellButtonAxisParams = {
+  showCellButtonForAxisId?: AxisId;
+  cellButtonInvokeRowsOnDoubleClick?: boolean;
+  trigger: (key?: PTableKey) => void;
+};
+
+/**
+ * Calculates column definition for a given p-table column
+ */
+export function makeColDef(
+  iCol: number,
+  spec: PTableColumnSpec,
+  hiddenColIds?: string[],
+  cellButtonAxisParams?: PlAgCellButtonAxisParams,
+): ColDef {
+  const colId = stringifyPTableColumnSpec(spec);
+  const valueType = spec.type === 'axis' ? spec.spec.type : spec.spec.valueType;
+  return {
+    colId,
+    mainMenuItems: defaultMainMenuItems,
+    context: spec,
+    field: iCol.toString(),
+    headerName: spec.spec.annotations?.['pl7.app/label']?.trim() ?? 'Unlabeled ' + spec.type + ' ' + iCol.toString(),
+    lockPosition: spec.type === 'axis',
+    hide: hiddenColIds?.includes(colId) ?? isColumnOptional(spec.spec),
+    valueFormatter: defaultValueFormatter,
+    headerComponent: PlAgColumnHeader,
+    cellRendererSelector: cellButtonAxisParams?.showCellButtonForAxisId
+      ? (params: ICellRendererParams) => {
+          if (spec.type !== 'axis') return;
+
+          const axisId = (params.colDef?.context as PTableColumnSpec)?.id as AxisId;
+          if (lodash.isEqual(axisId, cellButtonAxisParams.showCellButtonForAxisId)) {
+            return {
+              component: PlAgTextAndButtonCell,
+              params: {
+                invokeRowsOnDoubleClick: cellButtonAxisParams.cellButtonInvokeRowsOnDoubleClick,
+                onClick: (params: ICellRendererParams<PlAgDataTableV2Row>) => {
+                  cellButtonAxisParams.trigger(params.data?.key);
+                },
+              },
+            };
+          }
+        }
+      : undefined,
+    headerComponentParams: {
+      type: ((): PlAgHeaderComponentType => {
+        switch (valueType) {
+          case 'Int':
+          case 'Long':
+          case 'Float':
+          case 'Double':
+            return 'Number';
+          case 'String':
+          case 'Bytes':
+            return 'Text';
+          default:
+            throw Error(`unsupported data type: ${valueType}`);
+        }
+      })(),
+    } satisfies PlAgHeaderComponentParams,
+    cellDataType: (() => {
+      switch (valueType) {
+        case 'Int':
+        case 'Long':
+        case 'Float':
+        case 'Double':
+          return 'number';
+        case 'String':
+        case 'Bytes':
+          return 'text';
+        default:
+          throw Error(`unsupported data type: ${valueType}`);
+      }
+    })(),
+  };
+}
+
+export function makeRowId(rowKey: PTableKey): PTableKeyJson {
+  return canonicalizeJson(rowKey);
 }
