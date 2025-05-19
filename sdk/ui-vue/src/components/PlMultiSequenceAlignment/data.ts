@@ -8,12 +8,12 @@ import type {
   PColumnIdAndSpec,
   PColumnPredicate,
   PFrameHandle,
+  PlSelectionModel,
   PObjectId,
   PTableColumnIdAxis,
   PTableColumnIdColumn,
   PTableColumnIdJson,
   PTableSorting,
-  SelectionModel,
 } from '@platforma-sdk/model';
 import {
   canonicalizeJson,
@@ -30,8 +30,7 @@ import type { MaybeRefOrGetter } from 'vue';
 import { onWatcherCleanup, ref, toValue, watchEffect } from 'vue';
 import type { SequenceRow } from './types';
 
-const platforma = getRawPlatformaInstance();
-const pFrameDriver = platforma.pFrameDriver;
+const getPFrameDriver = () => getRawPlatformaInstance().pFrameDriver;
 
 export function useSequenceColumns(
   params: MaybeRefOrGetter<{
@@ -129,7 +128,7 @@ export function useSequenceRows(
     sequenceColumnIds: PObjectId[];
     labelColumnIds: PTableColumnIdJson[];
     linkerColumnPredicate?: PColumnPredicate;
-    selection: SelectionModel | undefined;
+    selection: PlSelectionModel | undefined;
   }>,
 ) {
   const data = ref<SequenceRow[]>([]);
@@ -180,6 +179,7 @@ async function getSequenceColumnsOptions({
     options: ListOption<PObjectId>[];
     defaults: PObjectId[];
   }> {
+  const pFrameDriver = getPFrameDriver();
   const columns = await pFrameDriver.listColumns(pframe);
   const options = columns
     .filter((column) => sequenceColumnPredicate(column))
@@ -207,6 +207,7 @@ async function getLabelColumnsOptions(
   }> {
   const processedAxes = new Set<CanonicalizedJson<AxisId>>();
   const optionLabels = new Map<PTableColumnIdJson, string>();
+  const pFrameDriver = getPFrameDriver();
   const columns = await pFrameDriver.listColumns(pframe);
   for (const column of columns) {
     if (sequenceColumnIds.includes(column.columnId)) {
@@ -262,11 +263,12 @@ async function getSequenceRows(
     sequenceColumnIds: PObjectId[];
     labelColumnIds: PTableColumnIdJson[];
     linkerColumnPredicate?: PColumnPredicate;
-    selection?: SelectionModel;
+    selection?: PlSelectionModel;
   },
 ): Promise<SequenceRow[]> {
   if (!pframe || sequenceColumnIds.length === 0) return [];
 
+  const pFrameDriver = getPFrameDriver();
   const columns = await pFrameDriver.listColumns(pframe);
   const linkerColumns = linkerColumnPredicate
     ? columns.filter((c) => linkerColumnPredicate(c))

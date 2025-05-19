@@ -11,7 +11,7 @@ import type {
   PColumnPredicate,
   PFrameHandle,
   PlMultiSequenceAlignmentModel,
-  SelectionModel,
+  PlSelectionModel,
 } from '@platforma-sdk/model';
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useDataTableToolsPanelTarget } from '../PlAgDataTableToolsPanel';
@@ -52,7 +52,7 @@ const props = defineProps<{
    * If not provided or empty, all rows will be considered selected.
    * Warning: should be forwarded as a field of `reactive` object
    */
-  readonly selection?: SelectionModel | undefined;
+  readonly selection?: PlSelectionModel | undefined;
 }>();
 
 // SlidePanel visibility flag

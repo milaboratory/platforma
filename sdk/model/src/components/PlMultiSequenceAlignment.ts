@@ -12,7 +12,7 @@ import {
   canonicalizeJson,
   isPTableAbsent,
 } from '@milaboratories/pl-model-common';
-import type { SelectionModel } from './PlDataTable';
+import type { PlSelectionModel } from './PlSelectionModel';
 
 /** Canonicalized PTableColumnId JSON string */
 export type PTableColumnIdJson = CanonicalizedJson<PTableColumnId>;
@@ -42,7 +42,7 @@ export type PlMultiSequenceAlignmentModel = {
 
 export function createRowSelectionColumn(
   columnId: PObjectId,
-  rowSelectionModel: SelectionModel | undefined,
+  rowSelectionModel: PlSelectionModel | undefined,
   label?: string,
   domain?: Record<string, string>,
 ): PColumn<PColumnValues> | undefined {

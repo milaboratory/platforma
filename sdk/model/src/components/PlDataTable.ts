@@ -1,5 +1,4 @@
 import type {
-  AxesSpec,
   AxisId,
   AxisSpec,
   CanonicalizedJson,
@@ -10,7 +9,6 @@ import type {
   PColumnSpec,
   PColumnValues,
   PObjectId,
-  PTableAbsent,
   PTableColumnIdColumn,
   PTableColumnSpec,
   PTableDef,
@@ -26,7 +24,6 @@ import {
   getColumnIdAndSpec,
   matchAxisId,
   parseJson,
-  PTableNA,
 } from '@milaboratories/pl-model-common';
 import type {
   AxisLabelProvider,
@@ -585,31 +582,6 @@ export type PlDataTableModel = {
  * Please migrate to v2.
  */
 export type PTableRowKey = PTableValue[];
-
-/** Key is a set of all axes values, which means it is unique across rows */
-export type PTableKey = AxisValue[];
-
-/** Readable axis value */
-export type AxisValue = string | number | PTableAbsent;
-
-export function mapPTableValueToAxisKey(value: PTableValue): AxisValue {
-  if (value === PTableNA) {
-    throw new Error('Axis value can never be N/A');
-  }
-  return value;
-}
-
-/**
- * Information on selected rows.
- * for selectedKeys = [[axis1Value, axis2Value, axis3Value], ...]
- * axesSpec would be [axis1Spec, axis2Spec, axis3Spec]
- */
-export type SelectionModel = {
-  /** Specs for {@link AxisValue}'s in {@link PTableKey} */
-  axesSpec: AxesSpec;
-  /** Row keys (arrays of axes values) of selected rows */
-  selectedKeys: PTableKey[];
-};
 
 /** Check if column should be omitted from the table */
 export function isColumnHidden(spec: { annotations?: Record<string, string> }): boolean {
