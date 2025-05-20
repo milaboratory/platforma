@@ -137,7 +137,7 @@ _loadPythonRunEnvironment := func(operationMode, descriptor, softName, softPkg) 
 	pythonRefVar := _newRefVar(_ARG_VAR_PYTHON_RUN_ENV, softName+"/python", venv.python())
 	pythonVenvRefVar := _newRefVar(_ARG_VAR_PYTHON_VENV, softName + "/venv", venv.venv())
 	venvBinDirRefVar := _newRefVar(_ARG_VAR_VENV_BIN_DIR, softName + "/binDir", venv.binDir() )
-    pathDelimeterRefVar := _newRefVar(_ARG_PATH_DELIMETER, softName + "/pathDelimeter", venv.pathDelimeter())
+	pathDelimeterRefVar := _newRefVar(_ARG_PATH_DELIMETER, softName + "/pathDelimeter", venv.pathDelimeter())
 
 	return ll.toStrict({
 		runEnvType: "python",
@@ -401,6 +401,7 @@ _activateRenv := func(wd, opts) {
 	activateRenv := prepareCommandRun(wd, opts)
 	activateRenv.
 		cmd("R").
+		inQueue(constants.LIGHT_QUEUE).
 		arg("-e").arg("renv::activate()")
 
 	activateRenvRun := activateRenv.build()
