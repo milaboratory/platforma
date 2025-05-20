@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.31.0
+
+### Minor Changes
+
+- 0fc6b76: PlAgDataTable: Added defaults lambda for filters
+
 ## 1.30.38
 
 ### Patch Changes
