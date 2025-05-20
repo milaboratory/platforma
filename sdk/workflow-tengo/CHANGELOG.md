@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 4.5.1
+
+### Patch Changes
+
+- 1d20d57: wf: exec: renv: fix missing queue: allocation panicked
+
 ## 4.5.0
 
 ### Minor Changes
