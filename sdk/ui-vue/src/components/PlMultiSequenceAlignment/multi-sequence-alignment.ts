@@ -2,17 +2,15 @@ import Aioli from '@biowasm/aioli';
 import {
   type MaybeRefOrGetter,
   onWatcherCleanup,
-  reactive,
+  ref,
   toValue,
   watchEffect,
 } from 'vue';
 import type { SequenceRow } from './types';
 
 export function useAlignedRows(sequenceRows: MaybeRefOrGetter<SequenceRow[]>) {
-  const alignment = reactive({
-    value: new Map<string, string>(),
-    loading: false,
-  });
+  const data = ref<string[]>([]);
+  const loading = ref(false);
   watchEffect(async () => {
     const inputRows = toValue(sequenceRows);
     let aborted = false;
@@ -20,33 +18,35 @@ export function useAlignedRows(sequenceRows: MaybeRefOrGetter<SequenceRow[]>) {
       aborted = true;
     });
     try {
-      alignment.loading = true;
-      const value = await multiSequenceAlignment(inputRows);
+      loading.value = true;
+      const value = await multiSequenceAlignment(
+        inputRows.map(({ sequence }) => sequence),
+      );
       if (aborted) return;
-      alignment.value = value;
+      data.value = value;
     } catch (error) {
       console.error(error);
-      alignment.value.clear();
+      data.value = [];
     } finally {
-      alignment.loading = false;
+      loading.value = false;
     }
   });
-  return alignment;
+  return { data, loading };
 }
 
-const cache = new Map<string, Map<string, string>>();
+const cache = new Map<string, string[]>();
 
 async function multiSequenceAlignment(
-  sequenceRows: SequenceRow[],
-): Promise<Map<string, string>> {
-  const inputHash = await hash(sequenceRows);
+  sequences: string[],
+): Promise<string[]> {
+  const inputHash = await hash(sequences);
   let result = cache.get(inputHash);
   if (result) {
     return result;
   }
   const CLI = await new Aioli(['kalign/3.3.1']);
   const file = new File(
-    sequenceRows.map((row) => `>${row.header}\n${row.sequence}\n`),
+    sequences.map((sequence, index) => `>${index}\n${sequence}\n`),
     'input',
   );
   await CLI.mount(file);
@@ -57,36 +57,31 @@ async function multiSequenceAlignment(
   return result;
 }
 
-function parseKalignOutput(output: string): Map<string, string> {
-  const result = new Map<string, string>();
-  let lastHeader = '';
+function parseKalignOutput(output: string): string[] {
+  const result: string[] = [];
+  let index = -1;
   for (let line of output.split('\n')) {
     line = line.trim();
     if (!line) {
       continue;
     }
     if (line.startsWith('>')) {
-      const header = line.slice(1);
-      result.set(header, '');
-      lastHeader = header;
+      index += 1;
       continue;
     }
-    const sequence = result.get(lastHeader);
-    if (sequence === undefined) {
-      throw new Error('Malformed kalign output, aborting.');
-    }
-    result.set(lastHeader, sequence + line);
+    const sequence = result[index] ?? '';
+    result[index] = sequence + line;
   }
   return result;
 }
 
-async function hash(rows: SequenceRow[]): Promise<string> {
+async function hash(rows: string[]): Promise<string> {
   const encoder = new TextEncoder();
   const decoder = new TextDecoder();
   const sha256 = (input: BufferSource) =>
     crypto.subtle.digest('SHA-256', input);
   const chunks = await Promise.all(rows.map(
-    ({ header, sequence }) => sha256(encoder.encode(`${header} ${sequence}`)),
+    (sequence) => sha256(encoder.encode(sequence)),
   ));
   const data = chunks.reduce<Uint8Array>((acc, chunk, index) => {
     acc.set(new Uint8Array(chunk), index * 32);
@@ -111,24 +106,12 @@ IQDFQREKQ-EFERNLARFREDHPDLIQNAKK--
 >2lef_A
 -----MHI---KKPLNAFMLYMKEMRANVVAESTLKESAAINQILGRRWHALSREEQAKY
 YELARKERQLHMQLYPGWSARDNYGKKKKRKREK`;
-    const parsed = new Map([
-      [
-        '1aab_',
-        'GKGDPKKPRG-KMSSYAFFVQTSREEHKKKHPDASVNFSEFSKKCSERWKTMSAKEKGKFEDMAKADKARYEREMKTY-IPPKGE---------',
-      ],
-      [
-        '1j46_A',
-        '-----MQDRV-KRPMNAFIVWSRDQRRKMALENPRMRNSEISKQLGYQWKMLTEAEKWPFFQEAQKLQAMHREKYPNYKYRPRRKAKMLPK---',
-      ],
-      [
-        '1k99_A',
-        'MKKLKKHPDFPKKPLTPYFRFFMEKRAKYAKLHPEMSNLDLTKILSKKYKELPEKKKMKYIQDFQREKQ-EFERNLARFREDHPDLIQNAKK--',
-      ],
-      [
-        '2lef_A',
-        '-----MHI---KKPLNAFMLYMKEMRANVVAESTLKESAAINQILGRRWHALSREEQAKYYELARKERQLHMQLYPGWSARDNYGKKKKRKREK',
-      ],
+
+    expect(parseKalignOutput(serialized)).toEqual([
+      'GKGDPKKPRG-KMSSYAFFVQTSREEHKKKHPDASVNFSEFSKKCSERWKTMSAKEKGKFEDMAKADKARYEREMKTY-IPPKGE---------',
+      '-----MQDRV-KRPMNAFIVWSRDQRRKMALENPRMRNSEISKQLGYQWKMLTEAEKWPFFQEAQKLQAMHREKYPNYKYRPRRKAKMLPK---',
+      'MKKLKKHPDFPKKPLTPYFRFFMEKRAKYAKLHPEMSNLDLTKILSKKYKELPEKKKMKYIQDFQREKQ-EFERNLARFREDHPDLIQNAKK--',
+      '-----MHI---KKPLNAFMLYMKEMRANVVAESTLKESAAINQILGRRWHALSREEQAKYYELARKERQLHMQLYPGWSARDNYGKKKKRKREK',
     ]);
-    expect(parseKalignOutput(serialized)).toEqual(parsed);
   });
 }

@@ -219,6 +219,8 @@ catalog:
   'ag-grid-enterprise': &ag-grid ^33.0.4
   'ag-grid-vue3': *ag-grid
 
+  '@milaboratories/miplots4': ^1.0.95
+
   'monaco-editor': ^0.52.2
 
   # SW

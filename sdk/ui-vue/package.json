@@ -30,6 +30,7 @@
   },
   "dependencies": {
     "@biowasm/aioli": "catalog:",
+    "@milaboratories/miplots4": "catalog:",
     "@milaboratories/uikit": "workspace:^",
     "@platforma-sdk/model": "workspace:^",
     "ag-grid-enterprise": "catalog:",
