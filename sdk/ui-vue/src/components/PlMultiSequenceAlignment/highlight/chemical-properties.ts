@@ -1,7 +1,7 @@
 import type { Remote } from 'comlink';
 import { wrap } from 'comlink';
 import type { MaybeRefOrGetter } from 'vue';
-import { onWatcherCleanup, ref, toValue, watchEffect } from 'vue';
+import { onWatcherCleanup, ref, toRaw, toValue, watchEffect } from 'vue';
 import type { ChemicalPropertiesWorkerApi } from './chemical-properties.worker';
 import ChemicalPropertiesWorker from './chemical-properties.worker?worker&inline';
 import type { HighlightedColumn } from './types';
@@ -17,8 +17,8 @@ function getWorker(): Remote<ChemicalPropertiesWorkerApi> {
 
 export const chemicalCategories = [
   'hydrophobic',
-  'positive_charge',
-  'negative_charge',
+  'positiveCharge',
+  'negativeCharge',
   'polar',
   'cysteine',
   'glycine',
@@ -30,8 +30,8 @@ export type ChemicalCategory = typeof chemicalCategories[number];
 
 export const chemicalPropertiesLabels: Record<ChemicalCategory, string> = {
   hydrophobic: 'Hydrophobic',
-  positive_charge: 'Positive Charge',
-  negative_charge: 'Negative Charge',
+  positiveCharge: 'Positive Charge',
+  negativeCharge: 'Negative Charge',
   polar: 'Polar',
   cysteine: 'Cysteine',
   glycine: 'Glycine',
@@ -41,8 +41,8 @@ export const chemicalPropertiesLabels: Record<ChemicalCategory, string> = {
 
 export const chemicalPropertiesColors: Record<ChemicalCategory, string> = {
   hydrophobic: '#99CCFF',
-  positive_charge: '#FFA2A3',
-  negative_charge: '#C1ADFF',
+  positiveCharge: '#FFA2A3',
+  negativeCharge: '#C1ADFF',
   polar: '#99E099',
   cysteine: '#FAAAFA',
   glycine: '#F7BC5D',
@@ -64,7 +64,9 @@ export function useChemicalPropertiesHighlight(
     });
     try {
       loading.value = true;
-      const value = await getWorker().getChemicalPropertiesHighlight(rows);
+      const value = await getWorker().getChemicalPropertiesHighlight(
+        toRaw(rows),
+      );
       if (aborted) return;
       data.value = value;
     } catch (error) {

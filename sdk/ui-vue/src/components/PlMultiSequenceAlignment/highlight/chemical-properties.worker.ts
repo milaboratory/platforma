@@ -57,9 +57,9 @@ function getChemicalPropertiesHighlight(
         residues.includes(segment.residue)
         && rules.some((rule) =>
           rule.groups.some((group) =>
-            (groupMatches[group] ?? 0) > alignedRows.length * rule.threshold,
-          ),
-        ),
+            (groupMatches[group] ?? 0) > alignedRows.length * rule.threshold
+          )
+        )
       );
       if (!entry) {
         continue;
@@ -93,7 +93,7 @@ const colorScheme: ColorScheme = [
   },
   {
     residues: 'KR',
-    category: 'positive_charge',
+    category: 'positiveCharge',
     rules: [
       { groups: ['KR'], threshold: 0.6 },
       { groups: [...'KRQ'], threshold: 0.8 },
@@ -101,7 +101,7 @@ const colorScheme: ColorScheme = [
   },
   {
     residues: 'E',
-    category: 'negative_charge',
+    category: 'negativeCharge',
     rules: [
       { groups: ['KR'], threshold: 0.6 },
       { groups: ['QE'], threshold: 0.5 },
@@ -111,7 +111,7 @@ const colorScheme: ColorScheme = [
   },
   {
     residues: 'D',
-    category: 'negative_charge',
+    category: 'negativeCharge',
     rules: [
       { groups: ['KR'], threshold: 0.6 },
       { groups: [...'DEN'], threshold: 0.85 },
