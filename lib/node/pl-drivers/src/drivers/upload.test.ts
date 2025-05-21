@@ -11,6 +11,7 @@ import { expect, test } from 'vitest';
 import { Computable } from '@milaboratories/computable';
 import { SynchronizedTreeState } from '@milaboratories/pl-tree';
 import type { ImportResourceSnapshot } from './types';
+import * as env from '../test_env';
 
 test('upload a blob', async () => {
   await withTest(async ({ client, uploader, signer }: TestArg) => {
@@ -227,7 +228,7 @@ test('index a blob', async () => {
     const uploadId = await createBlobIndex(
       client,
       './another_answer_to_the_ultimate_question.txt',
-      'library',
+      env.libraryStorage,
     );
     const handleRes = await getSnapshot(client, uploadId);
 
