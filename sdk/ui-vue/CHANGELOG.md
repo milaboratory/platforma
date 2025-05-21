@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.31.1
+
+### Patch Changes
+
+- 590d06c: Bug fix in table selection and MSA component
+
 ## 1.31.0
 
 ### Minor Changes
