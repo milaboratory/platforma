@@ -28,6 +28,7 @@ import {
   mapPObjectData,
   mapPTableDef,
   mapValueInVOE,
+  newRangeBytesOpt,
 } from '@platforma-sdk/model';
 import { notEmpty } from '@milaboratories/ts-helpers';
 import { randomUUID } from 'node:crypto';
@@ -186,14 +187,14 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
     return fHandle;
   }
 
-  public getBlobContentAsString(handle: string, fromBytes?: number, toBytes?: number): string {
+  public getBlobContentAsString(handle: string, range?: RangeBytes): string {
     const resourceInfo = this.getAccessor(handle).resourceInfo;
     return this.registerComputable(
       'getBlobContentAsString',
-      Computable.make((ctx) => this.env.driverKit.blobDriver.getDownloadedBlob(resourceInfo, ctx, fromBytes, toBytes), {
+      Computable.make((ctx) => this.env.driverKit.blobDriver.getDownloadedBlob(resourceInfo, ctx), {
         postprocessValue: async (value) => {
           if (value === undefined) return undefined;
-          return Buffer.from(await this.env.driverKit.blobDriver.getContent(value.handle)).toString(
+          return Buffer.from(await this.env.driverKit.blobDriver.getContent(value.handle, range)).toString(
             'utf-8',
           );
         },
@@ -201,14 +202,14 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
     );
   }
 
-  public getBlobContentAsBase64(handle: string, fromBytes?: number, toBytes?: number): string {
+  public getBlobContentAsBase64(handle: string, range?: RangeBytes): string {
     const resourceInfo = this.getAccessor(handle).resourceInfo;
     return this.registerComputable(
       'getBlobContentAsBase64',
-      Computable.make((ctx) => this.env.driverKit.blobDriver.getDownloadedBlob(resourceInfo, ctx, fromBytes, toBytes), {
+      Computable.make((ctx) => this.env.driverKit.blobDriver.getDownloadedBlob(resourceInfo, ctx), {
         postprocessValue: async (value) => {
           if (value === undefined) return undefined;
-          return Buffer.from(await this.env.driverKit.blobDriver.getContent(value.handle)).toString(
+          return Buffer.from(await this.env.driverKit.blobDriver.getContent(value.handle, range)).toString(
             'base64',
           );
         },
@@ -216,19 +217,19 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
     );
   }
 
-  public getDownloadedBlobContentHandle(handle: string, fromBytes?: number, toBytes?: number): string {
+  public getDownloadedBlobContentHandle(handle: string): string {
     const resourceInfo = this.getAccessor(handle).resourceInfo;
     return this.registerComputable(
       'getDownloadedBlobContentHandle',
-      this.env.driverKit.blobDriver.getDownloadedBlob(resourceInfo, undefined, fromBytes, toBytes),
+      this.env.driverKit.blobDriver.getDownloadedBlob(resourceInfo),
     );
   }
 
-  public getOnDemandBlobContentHandle(handle: string, fromBytes?: number, toBytes?: number): string {
+  public getOnDemandBlobContentHandle(handle: string): string {
     const resource = this.getAccessor(handle).persist();
     return this.registerComputable(
       'getOnDemandBlobContentHandle',
-      this.env.driverKit.blobDriver.getOnDemandBlob(resource, undefined, fromBytes, toBytes),
+      this.env.driverKit.blobDriver.getOnDemandBlob(resource),
     );
   }
 
@@ -596,54 +597,42 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
       // Blobs
       //
 
-      exportCtxFunction('getBlobContentAsBase64', (handle, fromBytes, toBytes) => {
-        const fromRaw = vm.getNumber(fromBytes);
+      exportCtxFunction('getBlobContentAsBase64', (handle, range) => {
+        const fromRaw = vm.getNumber(vm.getProp(range, 'from'));
         const from = isNaN(fromRaw) ? undefined : fromRaw;
 
-        const toRaw = vm.getNumber(toBytes);
+        const toRaw = vm.getNumber(vm.getProp(range, 'to'));
         const to = isNaN(toRaw) ? undefined : toRaw;
 
         return parent.exportSingleValue(
-          this.getBlobContentAsBase64(vm.getString(handle), from, to),
+          this.getBlobContentAsBase64(vm.getString(handle), newRangeBytesOpt(from, to)),
           undefined,
         );
       });
 
-      exportCtxFunction('getBlobContentAsString', (handle, fromBytes, toBytes) => {
-        const fromRaw = vm.getNumber(fromBytes);
+      exportCtxFunction('getBlobContentAsString', (handle, range) => {
+        const fromRaw = vm.getNumber(vm.getProp(range, 'from'));
         const from = isNaN(fromRaw) ? undefined : fromRaw;
 
-        const toRaw = vm.getNumber(toBytes);
+        const toRaw = vm.getNumber(vm.getProp(range, 'to'));
         const to = isNaN(toRaw) ? undefined : toRaw;
 
         return parent.exportSingleValue(
-          this.getBlobContentAsString(vm.getString(handle), from, to),
+          this.getBlobContentAsString(vm.getString(handle), newRangeBytesOpt(from, to)),
           undefined,
         );
       });
 
-      exportCtxFunction('getDownloadedBlobContentHandle', (handle, fromBytes, toBytes) => {
-        const fromRaw = vm.getNumber(fromBytes);
-        const from = isNaN(fromRaw) ? undefined : fromRaw;
-
-        const toRaw = vm.getNumber(toBytes);
-        const to = isNaN(toRaw) ? undefined : toRaw;
-
+      exportCtxFunction('getDownloadedBlobContentHandle', (handle) => {
         return parent.exportSingleValue(
-          this.getDownloadedBlobContentHandle(vm.getString(handle), from, to),
+          this.getDownloadedBlobContentHandle(vm.getString(handle)),
           undefined,
         );
       });
 
-      exportCtxFunction('getOnDemandBlobContentHandle', (handle, fromBytes, toBytes) => {
-        const fromRaw = vm.getNumber(fromBytes);
-        const from = isNaN(fromRaw) ? undefined : fromRaw;
-
-        const toRaw = vm.getNumber(toBytes);
-        const to = isNaN(toRaw) ? undefined : toRaw;
-
+      exportCtxFunction('getOnDemandBlobContentHandle', (handle) => {
         return parent.exportSingleValue(
-          this.getOnDemandBlobContentHandle(vm.getString(handle), from, to),
+          this.getOnDemandBlobContentHandle(vm.getString(handle)),
           undefined,
         );
       });

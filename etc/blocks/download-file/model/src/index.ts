@@ -49,12 +49,12 @@ export const platforma = BlockModel.create('Heavy')
       .mapDefined((v) => v + v)
   )
 
-  .output('contentAsStringRange', getBlobContentAsString(getResourceField(MainOutputs, 'downloadable'), 1, 2))
+  .output('contentAsStringRange', getBlobContentAsString(getResourceField(MainOutputs, 'downloadable'), { from: 1, to: 2 }))
 
   .output('contentAsStringRange1', (ctx) =>
     ctx.outputs
       ?.resolve('downloadable')
-      ?.getFileContentAsString(1, 2)
+      ?.getFileContentAsString({ from: 1, to: 2 })
       .mapDefined((v) => v + v))
 
   .output('contentAsJson', getBlobContentAsJson()(getResourceField(MainOutputs, 'downloadable')))

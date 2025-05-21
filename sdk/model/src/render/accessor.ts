@@ -8,6 +8,7 @@ import type {
   FolderURL,
   ArchiveFormat,
   ProgressLogWithInfo,
+  RangeBytes,
 } from '@milaboratories/pl-model-common';
 import {
   isPColumn,
@@ -244,17 +245,17 @@ export class TreeNodeAccessor {
     return result;
   }
 
-  public getFileContentAsBase64(fromBytes?: number, toBytes?: number): FutureRef<string | undefined> {
-    return new FutureRef(getCfgRenderCtx().getBlobContentAsBase64(this.handle, fromBytes, toBytes));
+  public getFileContentAsBase64(range?: RangeBytes): FutureRef<string | undefined> {
+    return new FutureRef(getCfgRenderCtx().getBlobContentAsBase64(this.handle, range));
   }
 
-  public getFileContentAsString(fromBytes?: number, toBytes?: number): FutureRef<string | undefined> {
-    return new FutureRef(getCfgRenderCtx().getBlobContentAsString(this.handle, fromBytes, toBytes));
+  public getFileContentAsString(range?: RangeBytes): FutureRef<string | undefined> {
+    return new FutureRef(getCfgRenderCtx().getBlobContentAsString(this.handle, range));
   }
 
-  public getFileContentAsJson<T>(fromBytes?: number, toBytes?: number): FutureRef<T | undefined> {
+  public getFileContentAsJson<T>(range?: RangeBytes): FutureRef<T | undefined> {
     return new FutureRef<string | undefined>(
-      getCfgRenderCtx().getBlobContentAsString(this.handle, fromBytes, toBytes),
+      getCfgRenderCtx().getBlobContentAsString(this.handle, range),
     ).mapDefined((v) => JSON.parse(v) as T);
   }
 
@@ -275,8 +276,8 @@ export class TreeNodeAccessor {
   /**
    * @returns downloaded file handle
    */
-  public getFileHandle(fromBytes?: number, toBytes?: number): FutureRef<LocalBlobHandleAndSize | undefined> {
-    return new FutureRef(getCfgRenderCtx().getDownloadedBlobContentHandle(this.handle, fromBytes, toBytes));
+  public getFileHandle(): FutureRef<LocalBlobHandleAndSize | undefined> {
+    return new FutureRef(getCfgRenderCtx().getDownloadedBlobContentHandle(this.handle));
   }
 
   /**
@@ -289,8 +290,8 @@ export class TreeNodeAccessor {
   /**
    * @returns downloaded file handle
    */
-  public getRemoteFileHandle(fromBytes?: number, toBytes?: number): FutureRef<RemoteBlobHandleAndSize | undefined> {
-    return new FutureRef(getCfgRenderCtx().getOnDemandBlobContentHandle(this.handle, fromBytes, toBytes));
+  public getRemoteFileHandle(): FutureRef<RemoteBlobHandleAndSize | undefined> {
+    return new FutureRef(getCfgRenderCtx().getOnDemandBlobContentHandle(this.handle));
   }
 
   /**
