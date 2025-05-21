@@ -6,6 +6,7 @@ import { randomUUID } from 'node:crypto';
 import { MiddleLayer } from './middle_layer';
 import { PlClient, TestHelpers } from '@milaboratories/pl-client';
 import { Project } from './project';
+import * as env from '../test_env';
 
 export async function withMl(
   cb: (ml: MiddleLayer, workFolder: string) => Promise<void>
@@ -125,7 +126,7 @@ test.skip('test JS render download', async () => {
     });
 
     await prj.setBlockArgs(block1Id, {
-      storageId: 'library',
+      storageId: env.libraryStorage,
       filePath: 'answer_to_the_ultimate_question.txt'
     });
 
