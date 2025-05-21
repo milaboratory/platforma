@@ -3,8 +3,6 @@ import type {
   AxisId,
   CalculateTableDataRequest,
   CanonicalizedJson,
-  ColumnJoinEntry,
-  InlineColumnJoinEntry,
   PColumnIdAndSpec,
   PColumnPredicate,
   PFrameHandle,
@@ -13,7 +11,6 @@ import type {
   PTableColumnIdAxis,
   PTableColumnIdColumn,
   PTableColumnIdJson,
-  PTableSorting,
 } from '@platforma-sdk/model';
 import {
   canonicalizeJson,
@@ -280,7 +277,7 @@ async function getSequenceRows(
     rowSelectionModel,
   );
 
-  const predef = {
+  const predef: CalculateTableDataRequest<PObjectId> = {
     src: {
       type: 'outer',
       primary: {
@@ -288,40 +285,32 @@ async function getSequenceRows(
         entries: [
           ...(filterColumn && filterColumn.data.length > 0
             ? [
-              {
-                type: 'inlineColumn',
-                column: filterColumn,
-              } satisfies InlineColumnJoinEntry,
+                {
+                  type: 'inlineColumn' as const,
+                  column: filterColumn,
+                },
               ]
             : []),
-          ...linkerColumns.map((c) => ({
-            type: 'column',
-            column: c.columnId,
-          } satisfies ColumnJoinEntry<PObjectId>)),
           ...sequenceColumnIds.map((c) => ({
-            type: 'column',
+            type: 'column' as const,
             column: c,
-          } satisfies ColumnJoinEntry<PObjectId>)),
-        ].filter((e): e is ColumnJoinEntry<PObjectId> => e !== undefined),
+          })),
+        ],
       },
-      secondary: labelColumnIds
-        .map((c) => parseJson(c))
-        .filter((c) => c.type === 'column')
-        .map((c) => ({
-          type: 'column',
-          column: c.id,
-        } satisfies ColumnJoinEntry<PObjectId>)),
+      secondary: [
+        ...linkerColumns.map((c) => c.columnId),
+        ...labelColumnIds.map((c) => parseJson(c))
+          .filter((c) => c.type === 'column')
+          .map((c) => c.id),
+      ].map((c) => ({
+        type: 'column' as const,
+        column: c,
+      })),
     },
     filters: [],
-    sorting: sequenceColumnIds.map((c) => ({
-      column: {
-        type: 'column',
-        id: c,
-      },
-      ascending: true,
-      naAndAbsentAreLeastValues: true,
-    } satisfies PTableSorting)),
-  } satisfies CalculateTableDataRequest<PObjectId>;
+
+    sorting: [], // @TODO: may be add sorting ?
+  };
 
   const def = JSON.parse(JSON.stringify(predef));
   const table = await pFrameDriver.calculateTableData(pframe, def);

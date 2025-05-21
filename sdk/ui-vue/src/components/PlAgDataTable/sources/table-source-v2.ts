@@ -1,11 +1,4 @@
 import type {
-  ColDef,
-  ICellRendererParams,
-  IServerSideDatasource,
-  IServerSideGetRowsParams,
-  RowModelType,
-} from 'ag-grid-enterprise';
-import type {
   AxisId,
   PlDataTableGridStateWithoutSheets,
   PlDataTableModel,
@@ -24,21 +17,28 @@ import {
   type PlDataTableSheet,
   type PTableVector,
 } from '@platforma-sdk/model';
+import type {
+  ColDef,
+  ICellRendererParams,
+  IServerSideDatasource,
+  IServerSideGetRowsParams,
+  RowModelType,
+} from 'ag-grid-enterprise';
+import canonicalize from 'canonicalize';
 import * as lodash from 'lodash';
-import type { PlAgDataTableV2Row, PTableKeyJson } from '../types';
-import { makeRowNumberColDef, PlAgDataTableRowNumberColId } from './row-number';
-import { objectHash } from '../../../objectHash';
 import type { Ref } from 'vue';
+import { objectHash } from '../../../objectHash';
+import type { PlAgHeaderComponentParams, PlAgHeaderComponentType } from '../../PlAgColumnHeader';
+import { PlAgColumnHeader } from '../../PlAgColumnHeader';
+import { PlAgTextAndButtonCell } from '../../PlAgTextAndButtonCell';
+import type { PlAgDataTableV2Row, PTableKeyJson } from '../types';
 import {
   defaultValueFormatter,
   isLabelColumn,
   PTableHidden,
 } from './common';
-import canonicalize from 'canonicalize';
-import type { PlAgHeaderComponentType, PlAgHeaderComponentParams } from '../../PlAgColumnHeader';
-import { PlAgColumnHeader } from '../../PlAgColumnHeader';
-import { PlAgTextAndButtonCell } from '../../PlAgTextAndButtonCell';
 import { defaultMainMenuItems } from './menu-items';
+import { makeRowNumberColDef, PlAgDataTableRowNumberColId } from './row-number';
 
 /** Convert columnar data from the driver to rows, used by ag-grid */
 function columns2rows(
@@ -192,13 +192,23 @@ export async function updatePFrameGridOptions(
     }
   }
 
-  // indices of axes in allIndices array
-  const axes: number[] = [];
-  for (let i = 0; i < numberOfAxes; ++i) {
-    const fieldIdx = axisToFieldIdx.get(i);
-    if (fieldIdx === undefined || fieldIdx === -1) throw new Error('assertion exception');
-    axes.push(fieldIdx);
-  }
+  // Construct the `axes` array for key generation in `columns2rows`.
+  // The key components should be ordered according to the display order of axis columns from the `fields` array.
+  const axes: number[] = fields.filter((idx) => specs[idx].type === 'axis').map((idx) => {
+    const r = allIndices.indexOf(idx);
+    if (r === -1) {
+      console.error(
+        'Key construction error: Original axis spec index from `fields` not found in `allIndices`.',
+        {
+          originalAxisSpecIdx: idx,
+        },
+      );
+      throw new Error(
+        `Assertion failed: Original axis spec index ${idx} (from fields) for key construction not found in allIndices.`,
+      );
+    }
+    return r;
+  });
 
   const requestIndices: number[] = [];
   const resultMapping: number[] = [];
