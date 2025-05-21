@@ -15,7 +15,8 @@ slices := import(":slices")
 limits := import(":exec.limits")
 
 _RTYPE_RUN_COMMAND_V1 := { Name: "RunCommand/executor", Version: "1" }
-_RTYPE_RUN_COMMAND_V2 := { Name: "RunCommand/executor", Version: "2" }
+_RTYPE_RUN_COMMAND_EXEC_V2 := { Name: "RunCommand/executor", Version: "2" }
+_RTYPE_RUN_COMMAND_BATCH_V2 := { Name: "RunCommand/batch", Version: "2" }
 _RTYPE_RUN_COMMAND_CMD := { Name: "RunCommandCmd", Version: "1" }
 _RTYPE_RUN_COMMAND_ARGS := { Name: "RunCommandArgs", Version: "1" }
 _RTYPE_RUN_COMMAND_OPTIONS := { Name: "run-command/options", Version: "1" }
@@ -73,20 +74,10 @@ _createExpressionArg := func(argTpl) {
 /**
  * Builder function for creating a RunCommand resource.
  *
- * @param workdir: string - the working directory for the command.
+ * @param workdir: smart.reference - the working directory for the command.
  * @return builder - the builder object with methods for configuring and building the RunCommand resource.
  */
 builder := func(workdir) {
-	res := undefined
-
-	if feats.computeLimits {
-		res = smart.ephemeralBuilder(_RTYPE_RUN_COMMAND_V2)
-	} else {
-		res = smart.ephemeralBuilder(_RTYPE_RUN_COMMAND_V1)
-	}
-
-	res.getField(_FIELD_WORKDIR_IN).set(workdir)
-
 	self := undefined
 
 	cmd := undefined
@@ -105,7 +96,7 @@ builder := func(workdir) {
 	stderr := "stderr.txt"
 	nErrorLines := 200
 
-	self = ll.toStrict(oop.inherit(res, {
+	self = ll.toStrict({
 		/**
 		 * Use given compute allocation for command execution.
 		 *
@@ -387,6 +378,15 @@ builder := func(workdir) {
 		 * @return object - the built RunCommand resource.
 		 */
 		build: func() {
+			runRes := undefined
+			if feats.computeLimits {
+				runRes = smart.ephemeralBuilder(_RTYPE_RUN_COMMAND_EXEC_V2)
+			} else {
+				runRes = smart.ephemeralBuilder(_RTYPE_RUN_COMMAND_V1)
+			}
+
+			runRes.getField(_FIELD_WORKDIR_IN).set(workdir)
+
 			// TODO: add assertions about the state
 
 			ll.assert(!hasPatternArgs || len(substRules) != 0,
@@ -403,14 +403,14 @@ builder := func(workdir) {
 					_quota := limits.quotaBuilder().queue(queue).build()
 					_allocation = limits.computeRequestBuilder().quota(_quota).build().allocation
 				}
-				self.getField(_FIELD_ALLOCATION).set(_allocation)
+				runRes.getField(_FIELD_ALLOCATION).set(_allocation)
 			}
 
 			refsRes := smart.createMapResourceWithType(_RTYPE_RUN_COMMAND_REFS, refs)
-			self.getField(_FIELD_REFS).set(refsRes)
+			runRes.getField(_FIELD_REFS).set(refsRes)
 
 			cmdRes := smart.createValueResource(_RTYPE_RUN_COMMAND_CMD, json.encode(cmd))
-			self.getField(_FIELD_CMD).set(cmdRes)
+			runRes.getField(_FIELD_CMD).set(cmdRes)
 
 			options := {
 				queueName: queue,
@@ -423,19 +423,19 @@ builder := func(workdir) {
 			}
 
 			optionsRes := smart.createValueResource(_RTYPE_RUN_COMMAND_OPTIONS, json.encode(options))
-			self.getField(_FIELD_OPTIONS).set(optionsRes)
+			runRes.getField(_FIELD_OPTIONS).set(optionsRes)
 
 			argsRes := smart.createValueResource(_RTYPE_RUN_COMMAND_ARGS, json.encode(args))
-			self.getField(_FIELD_ARGS).set(argsRes)
+			runRes.getField(_FIELD_ARGS).set(argsRes)
 
-			res := ll.toStrict(oop.inherit(self.lockAndBuild(), {
-				"workdir": self.outputs()[_FIELD_WORKDIR_OUT],
+			res := ll.toStrict(oop.inherit(runRes.lockAndBuild(), {
+				"workdir": runRes.outputs()[_FIELD_WORKDIR_OUT],
 				"options": options
 			}))
 
 			return res
 		}
-	}))
+	})
 
 	return self
 }
