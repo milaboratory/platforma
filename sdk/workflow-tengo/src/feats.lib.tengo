@@ -18,7 +18,22 @@ _isEnabled := func(featName) {
 	return _checker(featName)
 }
 
+_executors := undefined
+_hasRunner := func(e_id) {
+	if is_undefined(_executors) {
+		_executors = {}
+		for e in plapi.getExecutors() {
+			_executors[e] = true
+		}
+	}
+
+	return !is_undefined(_executors[e_id])
+}
+
 export ll.toStrict({
+	hasExec:                    _hasRunner("exec"),     // local binary execution is available
+	hasBatch:                   _hasRunner("batch"),    // batch system execution is available
+
 	pureFutureFields:           _isEnabled("pureFutureFields")   || _api >= 1, // 'pure' future fields magic that provides deduplication
 	commandExpressions:         _isEnabled("commandExpressions") || _api >= 2, // rich expressions in command arguments ( {{ system.ram_bytes / 20 }} )
 	workdirLimits:              _isEnabled("workdirLimits")      || _api >= 4, // workdir storage controller can limit concurrency
