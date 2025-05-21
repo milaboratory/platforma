@@ -18,6 +18,7 @@ import { scheduler } from 'node:timers/promises';
 import { createDownloadClient, createLogsClient } from '../../clients/constructors';
 import { DownloadDriver } from './download_blob';
 import type { OnDemandBlobResourceSnapshot } from '../types';
+import * as env from '../../test_env';
 
 const fileName = 'answer_to_the_ultimate_question.txt';
 
@@ -208,7 +209,7 @@ async function makeDownloadableBlobFromAssets(client: PlClient, fileName: string
   await client.withWriteTx('MakeAssetDownloadable', async (tx: PlTransaction) => {
     const importSettings = jsonToData({
       path: fileName,
-      storageId: 'library',
+      storageId: env.libraryStorage,
     });
     const importer = tx.createStruct({ name: 'BlobImportInternal', version: '1' }, importSettings);
     const importerBlob: FieldRef = {

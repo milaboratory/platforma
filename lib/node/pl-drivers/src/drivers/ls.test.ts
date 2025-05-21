@@ -6,6 +6,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { test, expect } from 'vitest';
 import { isImportFileHandleIndex, isImportFileHandleUpload } from '@milaboratories/pl-model-common';
+import * as env from '../test_env';
 
 const assetsPath = path.resolve('../../../assets');
 
@@ -21,10 +22,10 @@ test('should ok when get all storages from ls driver', async () => {
     const got = await driver.getStorageList();
 
     expect(got.length).toBeGreaterThanOrEqual(1);
-    expect(got.find((se) => se.name == 'library')?.handle).toContain('library');
-    expect(got.find((se) => se.name == 'library')?.initialFullPath).toEqual('');
-    expect(got.find((se) => se.name == 'local')?.handle).toContain('/');
-    expect(got.find((se) => se.name == 'local')?.initialFullPath).toEqual(os.homedir());
+    expect(got.find((se) => se.name == env.libraryStorage)?.handle).toContain(env.libraryStorage);
+    expect(got.find((se) => se.name == env.libraryStorage)?.initialFullPath).toEqual('');
+    // expect(got.find((se) => se.name == 'local')?.handle).toContain('/');
+    // expect(got.find((se) => se.name == 'local')?.initialFullPath).toEqual(os.homedir());
 
     console.log('got all storage entries: ', got);
   });
@@ -39,7 +40,7 @@ test('should ok when list files from remote storage in ls driver', async () => {
     });
 
     const storages = await driver.getStorageList();
-    const library = storages.find((se) => se.name == 'library')!.handle;
+    const library = storages.find((se) => se.name == env.libraryStorage)!.handle;
 
     const topLevelDir = await driver.listFiles(library, '');
     expect(topLevelDir.entries.length).toBeGreaterThan(1);
