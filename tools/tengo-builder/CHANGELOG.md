@@ -1,5 +1,11 @@
 # @platforma-sdk/tengo-builder
 
+## 2.1.4
+
+### Patch Changes
+
+- a7024c8: pl-tengo: ctags: fix generation if we have a big dir tree
+
 ## 2.1.3
 
 ### Patch Changes
