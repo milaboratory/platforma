@@ -10,6 +10,7 @@ import {
   ensureDirExists,
   fileExists,
   createPathAtomically,
+  CallersCounter,
 } from '@milaboratories/ts-helpers';
 import fs from 'node:fs';
 import * as fsp from 'node:fs/promises';
@@ -18,20 +19,15 @@ import { Writable } from 'node:stream';
 import type { ClientDownload } from '../../clients/download';
 import { UnknownStorageError, WrongLocalFileUrl } from '../../clients/download';
 import { NetworkError400 } from '../../helpers/download';
-import { CachedFileRange, fileRangeSize } from '../helpers/range_blobs_cache';
-import { RangeBytes } from '@milaboratories/pl-model-common';
-import { randomBytes } from 'node:crypto';
-
-/** Sometimes we don't know the size of the file until we download it. */
-export type NotDownloadedFile = Omit<CachedFileRange, 'range'> & { range?: RangeBytes };
 
 /** Downloads a blob and holds callers and watchers for the blob. */
 export class DownloadBlobTask {
   readonly change = new ChangeSource();
   private readonly signalCtl = new AbortController();
+  public readonly counter = new CallersCounter();
   private error: unknown | undefined;
   private done = false;
-  private size = 0;
+  public size = 0;
   private state: DownloadState = {};
 
   constructor(
@@ -39,58 +35,22 @@ export class DownloadBlobTask {
     private readonly clientDownload: ClientDownload,
     readonly rInfo: ResourceSnapshot,
     private readonly handle: LocalBlobHandle,
-    readonly file: NotDownloadedFile,
+    readonly path: string,
   ) {}
-
-  static fromCachedFile(
-    logger: MiLogger,
-    clientDownload: ClientDownload,
-    rInfo: ResourceSnapshot,
-    handle: LocalBlobHandle,
-    cachedFile: CachedFileRange,
-  ) {
-    const task = new DownloadBlobTask(
-      logger,
-      clientDownload,
-      rInfo,
-      handle,
-      cachedFile,
-    );
-    task.setDone(fileRangeSize(cachedFile));
-
-    return task;
-  }
 
   /** Returns a simple object that describes this task for debugging purposes. */
   public info() {
     return {
       rInfo: this.rInfo,
-      file: this.file,
+      fPath: this.path,
       done: this.done,
       error: this.error,
       state: this.state,
     };
   }
 
-  public cachedFile(): CachedFileRange {
-    if (!this.done) {
-      // we need the size of the download file.
-      throw new Error('Cannot get cached file if the download is not done');
-    }
-
-    const range = this.file.range ?? { from: 0, to: this.size };
-
-    return {
-      path: this.file.path,
-      baseKey: this.file.baseKey,
-      key: this.file.key,
-      range,
-      counter: this.file.counter,
-    };
-  }
-
   public attach(w: Watcher, callerId: string) {
-    this.file.counter.inc(callerId);
+    this.counter.inc(callerId);
     if (!this.done) this.change.attachWatcher(w);
   }
 
@@ -105,7 +65,7 @@ export class DownloadBlobTask {
         this.setError(e);
         this.change.markChanged();
         // Just in case we were half-way extracting an archive.
-        await fsp.rm(this.file.path);
+        await fsp.rm(this.path);
       }
 
       throw e;
@@ -114,7 +74,7 @@ export class DownloadBlobTask {
 
   private async ensureDownloaded() {
     this.state = {};
-    this.state.filePath = this.file.path;
+    this.state.filePath = this.path;
     await ensureDirExists(path.dirname(this.state.filePath));
     this.state.dirExists = true;
 
@@ -131,8 +91,6 @@ export class DownloadBlobTask {
       this.rInfo,
       {},
       undefined,
-      this.file.range?.from,
-      this.file.range?.to,
     );
     this.state.fileSize = size;
     this.state.downloaded = true;
@@ -152,7 +110,7 @@ export class DownloadBlobTask {
     this.signalCtl.abort(new DownloadAborted(reason));
   }
 
-  public getBlob(neededRange?: RangeBytes):
+  public getBlob():
     | { done: false }
     | {
       done: true;
@@ -162,7 +120,7 @@ export class DownloadBlobTask {
 
     return {
       done: this.done,
-      result: getDownloadedBlobResponse({ cached: this.cachedFile(), handle: this.handle }, this.error, neededRange),
+      result: getDownloadedBlobResponse(this.handle, this.size, this.error),
     };
   }
 
@@ -195,33 +153,23 @@ export function nonRecoverableError(e: any) {
 class DownloadAborted extends Error {}
 
 export function getDownloadedBlobResponse(
-  file?: { cached: CachedFileRange, handle: LocalBlobHandle },
+  handle: LocalBlobHandle | undefined,
+  size: number,
   error?: unknown,
-  neededRange?: RangeBytes,
 ): ValueOrError<LocalBlobHandleAndSize> {
   if (error) {
     return { ok: false, error };
   }
 
-  if (!file) {
+  if (!handle) {
     return { ok: false, error: new Error('No file or handle provided') };
-  }
-
-  let start = 0;
-  let end = fileRangeSize(file.cached);
-
-  if (neededRange != undefined) {
-    start = neededRange.from - file.cached.range.from;
-    end = start + neededRange.to - neededRange.from;
   }
 
   return {
     ok: true,
     value: {
-      handle: file.handle,
-      size: end - start,
-      startByte: start,
-      endByte: end,
+      handle,
+      size,
     },
   };
 }

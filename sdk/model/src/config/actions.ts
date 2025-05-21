@@ -30,7 +30,7 @@ import type {
 import type { ExtractAction, POCExtractAction, PrimitiveOrConfig, TypedConfig } from './type_engine';
 import type { Cfg } from './model';
 import type { CheckedSyncConf } from './type_util';
-import type { ArchiveFormat } from '@milaboratories/pl-model-common';
+import type { ArchiveFormat, RangeBytes } from '@milaboratories/pl-model-common';
 
 //
 // Helpers
@@ -337,26 +337,22 @@ export function mapResourceFields<
 
 export function getBlobContent<const Source extends TypedConfig>(
   source: Source,
-  fromBytes?: number,
-  toBytes?: number,
+  range?: RangeBytes,
 ): TypedConfig<ActGetBlobContent<ExtractAction<Source>>> {
   return {
     type: 'GetBlobContent',
-    fromBytes,
-    toBytes,
+    range,
     source: primitiveToConfig(source),
   } as Cfg as any;
 }
 
 export function getBlobContentAsString<const Source extends TypedConfig>(
   source: Source,
-  fromBytes?: number,
-  toBytes?: number,
+  range?: RangeBytes,
 ): TypedConfig<ActGetBlobContentAsString<ExtractAction<Source>>> {
   return {
     type: 'GetBlobContentAsString',
-    fromBytes,
-    toBytes,
+    range,
     source: primitiveToConfig(source),
   } as Cfg as any;
 }
@@ -364,13 +360,11 @@ export function getBlobContentAsString<const Source extends TypedConfig>(
 export function getBlobContentAsJson<T>() {
   return function <const Source extends TypedConfig>(
     source: Source,
-    fromBytes?: number,
-    toBytes?: number,
+    range?: RangeBytes,
   ): TypedConfig<ActGetBlobContentAsJson<ExtractAction<Source>, T>> {
     return {
       type: 'GetBlobContentAsJson',
-      fromBytes,
-      toBytes,
+      range,
       source: primitiveToConfig(source),
     } as Cfg as any;
   };
@@ -378,26 +372,18 @@ export function getBlobContentAsJson<T>() {
 
 export function getDownloadedBlobContent<const Source extends TypedConfig>(
   source: Source,
-  fromBytes?: number,
-  toBytes?: number,
 ): TypedConfig<ActGetDownloadedBlobContent<ExtractAction<Source>>> {
   return {
     type: 'GetDownloadedBlobContent',
-    fromBytes,
-    toBytes,
     source: primitiveToConfig(source),
   } as Cfg as any;
 }
 
 export function getOnDemandBlobContent<const Source extends TypedConfig>(
   source: Source,
-  fromBytes?: number,
-  toBytes?: number,
 ): TypedConfig<ActGetOnDemandBlobContent<ExtractAction<Source>>> {
   return {
     type: 'GetOnDemandBlobContent',
-    fromBytes,
-    toBytes,
     source: primitiveToConfig(source),
   } as Cfg as any;
 }

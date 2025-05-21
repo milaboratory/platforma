@@ -17,6 +17,7 @@ import type {
   ResultCollection,
   ValueOrError,
   DataInfo,
+  RangeBytes,
 } from '@milaboratories/pl-model-common';
 
 export const StagingAccessorName = 'staging';
@@ -80,13 +81,13 @@ export interface GlobalCfgRenderCtxMethods<AHandle = AccessorHandle, FHandle = F
   // Blob
   //
 
-  getBlobContentAsBase64(handle: AHandle, fromBytes?: number, toNumber?: number): FHandle; // string | undefined
+  getBlobContentAsBase64(handle: AHandle, range?: RangeBytes): FHandle; // string | undefined
 
-  getBlobContentAsString(handle: AHandle, fromBytes?: number, toNumber?: number): FHandle; // string | undefined
+  getBlobContentAsString(handle: AHandle, range?: RangeBytes): FHandle; // string | undefined
 
-  getDownloadedBlobContentHandle(handle: AHandle, fromBytes?: number, toNumber?: number): FHandle; // LocalBlobHandleAndSize | undefined;
+  getDownloadedBlobContentHandle(handle: AHandle): FHandle; // LocalBlobHandleAndSize | undefined;
 
-  getOnDemandBlobContentHandle(handle: AHandle, fromBytes?: number, toNumber?: number): FHandle; // RemoteBlobHandleAndSize | undefined;
+  getOnDemandBlobContentHandle(handle: AHandle): FHandle; // RemoteBlobHandleAndSize | undefined;
 
   //
   // Blobs to URLs

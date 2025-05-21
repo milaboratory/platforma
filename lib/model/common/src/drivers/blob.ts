@@ -19,12 +19,6 @@ export interface BlobHandleAndSize<
 
   /** Blob size in bytes. */
   readonly size: number;
-
-  /** From where the requested blob should be read included. */
-  readonly startByte: number;
-
-  /** To where the requested blob should be read excluded. */
-  readonly endByte: number;
 }
 
 /** Range in bytes, from should be less or equal than to. */
