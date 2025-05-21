@@ -30,12 +30,12 @@
   },
   "dependencies": {
     "@biowasm/aioli": "catalog:",
+    "@milaboratories/miplots4": "catalog:",
     "@milaboratories/uikit": "workspace:^",
     "@platforma-sdk/model": "workspace:^",
     "ag-grid-enterprise": "catalog:",
     "ag-grid-vue3": "catalog:",
     "canonicalize": "catalog:",
-    "comlink": "catalog:",
     "lru-cache": "catalog:",
     "vue": "catalog:"
   },
