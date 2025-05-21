@@ -348,22 +348,22 @@ resource = func(r) {
 
 		/**
 		 * Resource info:
-		 *
-		 *	ID:			   int64
-		 *	Data:		   byte[],
-		 *	Type:		   { Name: string, Version: string }
-		 *	Features:	   { ephemeral: bool }
-		 *	Inputs:		   strict map
-		 *	Outputs:	   strict map
-		 *	Dynamic:	   strict map
-		 *	OTW:		   strict map
-		 *	ResourceReady: bool
-		 *	AllInputsSet:  bool
-		 *	AllOutputsSet: bool
-		 *	IsDuplicate:   bool
-		 *	InputsLocked:  bool
-		 *	OutputsLocked: bool
-		 *	HasErrors:	   bool
+		 *  ID:            int64
+		 *  Data:          byte[],
+		 *  Type:          { Name: string, Version: string }
+		 *  Features:      { ephemeral: bool }
+		 *  Inputs:        strict map
+		 *  ServiceFields: strict map
+		 *  Outputs:       strict map
+		 *  Dynamic:       strict map
+		 *  OTW:           strict map
+		 *  ResourceReady: bool
+		 *  AllInputsSet:  bool
+		 *  AllOutputsSet: bool
+		 *  IsDuplicate:   bool
+		 *  InputsLocked:  bool
+		 *  OutputsLocked: bool
+		 *  HasErrors:     bool
 		 */
 		info: func() {
 			return tx.getResource(self.id)
@@ -477,7 +477,7 @@ resource = func(r) {
 				self._hasField("OneTimeWritables", name)
 		},
 
-		// cached _inputs
+		// cached input fields (smart.Field)
 		_inputs: undefined,
 		/**
 		 * Returns resource inputs map name -> smart.Field
@@ -486,6 +486,7 @@ resource = func(r) {
 			if self._inputs == undefined {
 				info := self.info()
 				inputs := maps.mapValues(info.Inputs, field)
+
 				if !info.InputsLocked {
 					return inputs
 				}
@@ -494,7 +495,33 @@ resource = func(r) {
 			return self._inputs
 		},
 
-		// cached _outputs
+		// cached service fields (smart.Field)
+		_serviceInputs: undefined,
+		/**
+		 * Returns resource service fields map name -> smart.Field
+		 */
+		serviceInputs: func() {
+			if self._serviceInputs == undefined {
+				info := self.info()
+
+				if !maps.containsKey(info, "ServiceFields") {
+					// old Workflow controller API with bug (no service fields in resource info struct)
+					// FIXME: remove this safely after 2026-02-01
+					self._serviceInputs = {}
+					return self._serviceInputs
+				}
+
+				svcs := maps.mapValues(info.ServiceFields, field)
+
+				if !info.InputsLocked {
+					return svcs
+				}
+				self._serviceInputs = svcs
+			}
+			return self._serviceInputs
+		},
+
+		// cached resource outputs (smart.Field)
 		_outputs: undefined,
 		/**
 		 * Returns resource outputs map name -> smart.Field

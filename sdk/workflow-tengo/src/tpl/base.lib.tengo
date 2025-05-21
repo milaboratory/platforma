@@ -50,6 +50,7 @@ _unmarshal := func(resource, preprocessors) {
 
 		// unmarshal map
 		result := {}
+
 		for field, value in resource.inputs() {
 			if value.isErrorSet() {
 				ll.panic("input %v field has error: %v", field, field.getError().getDataAsJson().message)
@@ -58,8 +59,18 @@ _unmarshal := func(resource, preprocessors) {
 			} else {
 				result[field] = value
 			}
-
 		}
+
+		for field, value in resource.serviceInputs() {
+			if value.isErrorSet() {
+				ll.panic("service input %v field has error: %v", field, field.getError().getDataAsJson().message)
+			} else if value.isSet() {
+				result[field] = _unmarshal(value.getValue(), preprocessors)
+			} else {
+				result[field] = value
+			}
+		}
+
 		return result
 	} else {
 		// nothing todo
@@ -158,8 +169,15 @@ tpl := func(ops) {
 			return self.renderer().get(tplutil.INPUTS_MAP_FIELD).inputs()
 		},
 
-		_inputs: undefined,
+		/**
+		 * @return map[string]field: - a map of inputs to the fields of the input map.
+		 */
+		rawServiceInputs: func() {
+			return self.renderer().get(tplutil.INPUTS_MAP_FIELD).serviceInputs()
+		},
 
+		// cache of inputs, processed by unmarshallers
+		_inputs: undefined,
 		/**
 		 * @return map: a map of the template inputs
 		 */
@@ -365,6 +383,10 @@ tpl := func(ops) {
 			ll.assert(!self.ignorePrepare, "expected !ignorePrepare")
 
 			inputs := self.inputs()
+
+			if len(self.rawServiceInputs()) > 0 {
+				ll.panic("prepare() statement is not available for templates with service inputs in this verson of workflow-tengo SDK")
+			}
 
 			// create new inputs map
 			newInputs := copy(inputs)
