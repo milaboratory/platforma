@@ -13,9 +13,13 @@ import type {
   PlMultiSequenceAlignmentModel,
   PlSelectionModel,
 } from '@platforma-sdk/model';
-import { computed, onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useDataTableToolsPanelTarget } from '../PlAgDataTableToolsPanel';
-import { useLabelColumns, useSequenceColumns, useSequenceRows } from './data';
+import {
+  useLabelColumnsOptions,
+  useSequenceColumnsOptions,
+  useSequenceRows,
+} from './data';
 import {
   chemicalCategories,
   chemicalPropertiesColors,
@@ -52,7 +56,7 @@ const props = defineProps<{
    * If not provided or empty, all rows will be considered selected.
    * Warning: should be forwarded as a field of `reactive` object
    */
-  readonly selection?: PlSelectionModel | undefined;
+  readonly selection?: PlSelectionModel;
 }>();
 
 // SlidePanel visibility flag
@@ -65,37 +69,38 @@ onMounted(() => {
 });
 const teleportTarget = useDataTableToolsPanelTarget();
 
-const sequenceColumns = reactive(useSequenceColumns(() => ({
-  pframe: props.pFrame,
+const sequenceColumns = useSequenceColumnsOptions(() => ({
+  pFrame: props.pFrame,
   sequenceColumnPredicate: props.sequenceColumnPredicate,
-})));
+}));
 
-const labelColumns = reactive(useLabelColumns(() => ({
-  pframe: props.pFrame,
-  sequenceColumnIds: sequenceColumns.defaults,
+const labelColumns = useLabelColumnsOptions(() => ({
+  pFrame: props.pFrame,
+  sequenceColumnIds: sequenceColumns.value.defaults,
   labelColumnOptionPredicate: props.labelColumnOptionPredicate,
-})));
+}));
 
 const selectedSequenceColumnIds = computed({
-  get: () => model.value.sequenceColumnIds ?? sequenceColumns.defaults,
+  get: () => model.value.sequenceColumnIds ?? sequenceColumns.value.defaults,
   set: (value) => {
     model.value.sequenceColumnIds = value;
   },
 });
+
 const selectedLabelColumnIds = computed({
-  get: () => model.value.labelColumnIds ?? labelColumns.defaults,
+  get: () => model.value.labelColumnIds ?? labelColumns.value.defaults,
   set: (value) => {
     model.value.labelColumnIds = value;
   },
 });
 
-const sequenceRows = reactive(useSequenceRows(() => ({
+const sequenceRows = useSequenceRows(() => ({
   pframe: props.pFrame,
   sequenceColumnIds: selectedSequenceColumnIds.value,
   labelColumnIds: selectedLabelColumnIds.value,
   linkerColumnPredicate: props.linkerColumnPredicate,
   selection: props.selection,
-})));
+}));
 </script>
 
 <template>
@@ -134,25 +139,25 @@ const sequenceRows = reactive(useSequenceRows(() => ({
       v-model="selectedSequenceColumnIds"
       label="Sequence Columns"
       :options="sequenceColumns.options"
-      :disabled="sequenceColumns.loading"
+      :disabled="!sequenceColumns.options.length"
       clearable
     />
     <PlDropdownMulti
       v-model="selectedLabelColumnIds"
       label="Label Columns"
       :options="labelColumns.options"
-      :disabled="labelColumns.loading"
+      :disabled="!labelColumns.options.length"
       clearable
     />
 
-    <PlAlert v-if="sequenceRows.data.length < 2" type="warn">
+    <PlAlert v-if="sequenceRows.length < 2" type="warn">
       Please select at least one sequence column and two or more rows to run
       alignment
     </PlAlert>
 
     <MultiSequenceAlignmentView
       v-else
-      :sequenceRows="sequenceRows.data"
+      :sequenceRows="sequenceRows"
       highlight="chemical-properties"
     />
   </PlSlideModal>
