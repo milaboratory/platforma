@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.31.2
+
+### Patch Changes
+
+- bd01fd1: PlMultiSequenceAlignment: SeqLogo + various improvements
+
 ## 1.31.1
 
 ### Patch Changes
