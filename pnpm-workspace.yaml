@@ -113,7 +113,6 @@ packages:
 
 catalog:
   # Build
-
   'typescript': ~5.5.4
   'tsconfig-paths': ^4.2.0
   'tsup': ~8.3.5
@@ -221,7 +220,7 @@ catalog:
   'ag-grid-enterprise': &ag-grid ^33.0.4
   'ag-grid-vue3': *ag-grid
 
-  '@milaboratories/miplots4': ^1.0.97
+  '@milaboratories/miplots4': ^1.0.98
 
   'monaco-editor': ^0.52.2
 
