@@ -28,60 +28,65 @@ useResizeObserver(plotEl, ([{ contentRect: { width, height } }]) => {
   size.value = { width, height };
 });
 
-const palette = {
-  blue: '#549EE7',
-  red: '#E85456',
-  green: '#65BF65',
-  magenta: '#9178E1',
-  pink: '#D568D5',
-  orange: '#C59445',
-  cyan: '#62C7CC',
-  yellow: '#D5D549',
-  black: '#000000',
-};
-
-const residueColors = {
-  A: palette.blue,
-  R: palette.red,
-  N: palette.green,
-  D: palette.magenta,
-  C: palette.pink,
-  Q: palette.green,
-  E: palette.magenta,
-  G: palette.orange,
-  H: palette.cyan,
-  I: palette.blue,
-  L: palette.blue,
-  K: palette.red,
-  M: palette.blue,
-  F: palette.blue,
-  P: palette.yellow,
-  S: palette.green,
-  T: palette.green,
-  W: palette.blue,
-  Y: palette.cyan,
-  V: palette.blue,
-  B: palette.black,
-  X: palette.black,
-  Z: palette.black,
-};
+const columns = computed(() => {
+  return residueCounts.map((column) => {
+    let totalCount = 0;
+    let topResidue = { label: '', count: 0 };
+    for (const [residue, count] of Object.entries(column)) {
+      totalCount += count;
+      if (residue === '-') continue;
+      if (count > topResidue.count) topResidue = { label: residue, count };
+    }
+    const confidence = CSS.percent(topResidue.count / totalCount * 100);
+    return {
+      label: topResidue.label,
+      color: `color-mix(in oklab, ${confidence} #3056AE, #C1CDE9)`,
+    };
+  });
+});
 
 const settings = computed<Settings | undefined>(() => {
   if (!size.value) return;
   return ({
     type: 'discrete',
+    y: {
+      type: 'column',
+      value: 'countKey',
+    },
+    legend: { show: false },
+    primaryGrouping: {
+      columnName: {
+        type: 'column',
+        value: 'columnKey',
+      },
+      order: residueCounts.map((_, i) => i),
+      inheritedAes: Object.fromEntries(
+        columns.value.map(({ color }) => ({ fillColor: color })).entries(),
+      ),
+    },
+    layers: [{
+      type: 'bar',
+      height: 'max',
+      aes: {
+        ...residueCounts.length && {
+          width: (size.value.width - residueCounts.length + 1)
+            / residueCounts.length,
+        },
+        fillColor: {
+          type: 'primaryGrouping',
+        },
+        lineColor: '#ffffff',
+      },
+    }],
     title: {
       name: '',
       show: false,
     },
     size: {
       width: size.value.width,
-      height: size.value.height,
-      innerOffset: 0,
+      height: 60,
       outerOffset: 0,
-    },
-    frame: {
-      type: 'empty',
+      innerOffset: 0,
     },
     xAxis: {
       title: '',
@@ -95,26 +100,9 @@ const settings = computed<Settings | undefined>(() => {
       showTicks: false,
       hiddenLabels: true,
     },
-    y: {
-      type: 'column',
-      value: 'countKey',
+    frame: {
+      type: 'empty',
     },
-    primaryGrouping: {
-      columnName: {
-        type: 'column',
-        value: 'columnKey',
-      },
-    },
-    secondaryGrouping: {
-      columnName: {
-        type: 'column',
-        value: 'residueKey',
-      },
-    },
-    layers: [{
-      type: 'logo',
-      aes: { fillColor: residueColors },
-    }],
   });
 });
 
@@ -122,19 +110,17 @@ const data = computed<DataByColumns>(
   () => {
     const countKey: number[] = [];
     const columnKey: number[] = [];
-    const residueKey: string[] = [];
     for (const [columnIndex, column] of residueCounts.entries()) {
       for (const [residue, count] of Object.entries(column)) {
         if (residue === '-') continue;
         countKey.push(count);
         columnKey.push(columnIndex);
-        residueKey.push(residue);
       }
     }
     return ({
       type: 'columns',
-      id: 'seq-logo',
-      values: { countKey, columnKey, residueKey },
+      id: 'consensus',
+      values: { countKey, columnKey },
     });
   },
 );
@@ -158,14 +144,34 @@ onBeforeUnmount(() => {
 
 <template>
   <div :class="$style.container">
-    <div ref="plotEl" :class="$style.plot" />
+    <div :class="$style.labels">
+      {{ columns.map(column => column.label).join('') }}
+    </div>
+    <div :class="$style['plot-container']">
+      <div ref="plotEl" :class="$style.plot" />
+    </div>
   </div>
 </template>
 
 <style module>
 .container {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.labels {
+  font-family: Spline Sans Mono;
+  font-weight: 600;
+  line-height: calc(24 / 14);
+  letter-spacing: 12px;
+  text-indent: 6px;
+  margin-inline-end: -6px;
+}
+
+.plot-container {
   position: relative;
-  block-size: 80px;
+  block-size: 60px;
 }
 
 .plot {

@@ -1,61 +1,61 @@
 <script lang="ts" setup>
+import { PlSplash } from '@milaboratories/uikit';
 import { useObjectUrl } from '@vueuse/core';
-import { computed } from 'vue';
+import { computed, reactive } from 'vue';
+import Consensus from './Consensus.vue';
 import { colorizeSegmentedColumns } from './highlight';
 import {
   alignedSequencesToSegmentedColumns,
   chemicalPropertiesColors,
-  getColumnConsensuses,
+  getColumnChemicalProperties,
 } from './highlight/chemical-properties';
 import { useAlignedSequences } from './multi-sequence-alignment';
-import { getResidueFrequencies } from './residue-frequencies';
+import { getResidueCounts } from './residue-counts';
 import SeqLogo from './SeqLogo.vue';
 import type { ColorScheme, SequenceRow } from './types';
 
-const { sequenceRows, colorScheme: highlight } = defineProps<{
+const { sequenceRows, colorScheme } = defineProps<{
   sequenceRows: SequenceRow[];
-  colorScheme: ColorScheme | undefined;
+  colorScheme: ColorScheme;
+  consensus: boolean;
   seqLogo: boolean;
 }>();
 
-const alignedSequences = useAlignedSequences(
+const alignedSequences = reactive(useAlignedSequences(
   () => sequenceRows.map(({ sequence }) => sequence),
-);
+));
 
-const residueFrequencies = computed(
-  () => getResidueFrequencies(alignedSequences.value),
+const residueCounts = computed(
+  () => getResidueCounts(alignedSequences.data),
 );
 
 const segmentedColumns = computed(() => {
-  const columnConsensuses = getColumnConsensuses({
-    residueFrequencies: residueFrequencies.value,
-    rowCount: alignedSequences.value.length,
+  const columnConsensuses = getColumnChemicalProperties({
+    residueCounts: residueCounts.value,
+    rowCount: alignedSequences.data.length,
   });
   const segmentedColumns = alignedSequencesToSegmentedColumns({
-    alignedSequences: alignedSequences.value,
+    alignedSequences: alignedSequences.data,
     consensuses: columnConsensuses,
   });
   return segmentedColumns;
 });
 
-const selectedHighlight = computed(() => {
-  if (!highlight) {
-    return;
-  }
-  switch (highlight) {
+const selectedColorScheme = computed(() => {
+  switch (colorScheme) {
+    case 'no-color':
+      return;
     case 'chemical-properties':
       return segmentedColumns.value;
     default:
-      throw new Error(`Unknown highlight ${highlight}`);
+      throw new Error(`Unknown highlight ${colorScheme}`);
   }
 });
 
 const highlightImageBlob = computed(() => {
   const rowCount = sequenceRows.length;
-  const columns = selectedHighlight.value;
-  if (!columns?.length) {
-    return;
-  }
+  const columns = selectedColorScheme.value;
+  if (!columns?.length) return;
   return colorizeSegmentedColumns({
     columns,
     rowCount,
@@ -65,47 +65,44 @@ const highlightImageBlob = computed(() => {
 
 const objectUrl = useObjectUrl(highlightImageBlob);
 
-const highlightImage = computed(() => {
-  if (!objectUrl.value) {
-    return 'none';
-  }
-  return `url('${objectUrl.value}')`;
-});
-
-const sequenceLetterSpacing = '12px';
+const highlightImage = computed(
+  () => objectUrl.value ? `url('${objectUrl.value}')` : 'none',
+);
 </script>
 
 <template>
-  <div v-if="alignedSequences.length" :class="['pl-scrollable', $style.root]">
+  <PlSplash
+    :class="['pl-scrollable', $style.root]"
+    :loading="alignedSequences.loading"
+    type="transparent"
+  >
     <div :class="$style.corner" />
     <div :class="$style.header">
-      <div v-if="seqLogo" :class="$style['seq-logo-container']">
-        <SeqLogo
-          :class="$style['seq-logo']"
-          :residue-frequencies="residueFrequencies"
-        />
-      </div>
+      <Consensus v-if="consensus" :residueCounts />
+      <SeqLogo v-if="seqLogo" :residueCounts />
     </div>
-    <div :class="$style['labels-container']">
-      <template v-for="({ labels }, rowIndex) of sequenceRows">
+    <template v-if="alignedSequences.data.length">
+      <div :class="$style['labels-container']">
+        <template v-for="({ labels }, rowIndex) of sequenceRows">
+          <div
+            v-for="(label, labelIndex) of labels"
+            :key="labelIndex"
+            :style="{ gridRow: rowIndex + 1 }"
+          >
+            {{ label }}
+          </div>
+        </template>
+      </div>
+      <div :class="$style['sequence-data']">
         <div
-          v-for="(label, labelIndex) of labels"
-          :key="labelIndex"
-          :style="{ gridRow: rowIndex + 1 }"
+          v-for="(sequence, sequenceIndex) of alignedSequences.data"
+          :key="sequenceIndex"
         >
-          {{ label }}
+          {{ sequence }}
         </div>
-      </template>
-    </div>
-    <div :class="$style['sequence-data']">
-      <div
-        v-for="(sequence, sequenceIndex) of alignedSequences"
-        :key="sequenceIndex"
-      >
-        {{ sequence }}
       </div>
-    </div>
-  </div>
+    </template>
+  </PlSplash>
 </template>
 
 <style module>
@@ -129,21 +126,11 @@ const sequenceLetterSpacing = '12px';
 
 .header {
   grid-area: header;
-  padding-inline-end: calc(v-bind(sequenceLetterSpacing) / 2);
+  padding-inline-end: 6px;
   background-color: white;
   position: sticky;
   inset-block-start: 0;
   z-index: 1;
-}
-
-.seq-logo-container {
-  position: relative;
-  block-size: 76px;
-}
-
-.seq-logo {
-  position: absolute;
-  inset: 0;
 }
 
 .labels-container {
@@ -167,10 +154,10 @@ const sequenceLetterSpacing = '12px';
   font-family: Spline Sans Mono;
   font-weight: 600;
   line-height: calc(24 / 14);
+  letter-spacing: 12px;
+  text-indent: 6px;
   background-image: v-bind(highlightImage);
   background-repeat: no-repeat;
-  background-size: calc(100% - v-bind(sequenceLetterSpacing) / 2) 100%;
-  letter-spacing: v-bind(sequenceLetterSpacing);
-  text-indent: calc(v-bind(sequenceLetterSpacing) / 2);
+  background-size: calc(100% - 6px) 100%;
 }
 </style>
