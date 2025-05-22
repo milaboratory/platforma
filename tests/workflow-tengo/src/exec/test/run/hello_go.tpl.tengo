@@ -13,6 +13,8 @@ sw := assets.importSoftware("@platforma-open/milaboratories.software-small-binar
 self.body(func(inputs) {
 	run := exec.builder().
         software(sw).
+		cpu(1).
+		ram("1M").
 		arg(inputs.text).
 		saveStdoutContent().
 		run()

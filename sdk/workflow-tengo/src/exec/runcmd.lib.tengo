@@ -379,8 +379,18 @@ builder := func(workdir) {
 		 */
 		build: func() {
 			runRes := undefined
-			if feats.computeLimits {
+
+			useBatch := limits.useBatch(queue)
+
+			if useBatch {
+				// Put everything into batch queue if we don't need fast execution of light task.
+				// We can't put light tasks (i.e. UI tasks) into batch because batch job could
+				// easily _start_ for 10 seconds and we don't want to make user to wait so long in UI.
+				runRes = smart.ephemeralBuilder(_RTYPE_RUN_COMMAND_BATCH_V2)
+
+			} else if feats.computeLimits {
 				runRes = smart.ephemeralBuilder(_RTYPE_RUN_COMMAND_EXEC_V2)
+
 			} else {
 				runRes = smart.ephemeralBuilder(_RTYPE_RUN_COMMAND_V1)
 			}
@@ -396,12 +406,16 @@ builder := func(workdir) {
 				"runcmd.builder().build: expression arguments must be enabled only if platforma backend supports expressions, found: %v",
 				hasExpressionArgs)
 
-			if feats.computeLimits {
+			if feats.computeLimits || useBatch {
 				if !smart.isReference(_allocation) {
 					// Use default compute request limits when no was configured out of the box,
 					// or runcmd won't work at all.
 					_quota := limits.quotaBuilder().queue(queue).build()
-					_allocation = limits.computeRequestBuilder().quota(_quota).build().allocation
+					_resReq := limits.computeRequestBuilder().quota(_quota)
+					if useBatch {
+						_resReq.inBatch()
+					}
+					_allocation = _resReq.build().allocation
 				}
 				runRes.getField(_FIELD_ALLOCATION).set(_allocation)
 			}
