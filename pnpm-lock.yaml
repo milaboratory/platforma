@@ -31,8 +31,8 @@ catalogs:
       specifier: ^29.7.0
       version: 29.7.0
     '@milaboratories/miplots4':
-      specifier: ^1.0.95
-      version: 1.0.95
+      specifier: ^1.0.97
+      version: 1.0.97
     '@milaboratories/pframes-rs-node':
       specifier: 1.0.37
       version: 1.0.37
@@ -2295,7 +2295,7 @@ importers:
         version: 3.2.1
       '@milaboratories/miplots4':
         specifier: 'catalog:'
-        version: 1.0.95(d3-dispatch@3.0.1)(d3-path@3.1.0)(d3-scale-chromatic@3.1.0)
+        version: 1.0.97(d3-dispatch@3.0.1)(d3-path@3.1.0)(d3-scale-chromatic@3.1.0)
       '@milaboratories/uikit':
         specifier: workspace:^
         version: link:../../lib/ui/uikit
@@ -4419,8 +4419,8 @@ packages:
   '@microsoft/tsdoc@0.15.1':
     resolution: {integrity: sha512-4aErSrCR/On/e5G2hDP0wjooqDdauzEbIq8hIkIe5pXV0rtWJZvdCEKL0ykZxex+IxIwBp0eGeV48hQN07dXtw==}
 
-  '@milaboratories/miplots4@1.0.95':
-    resolution: {integrity: sha512-u7z5FBAWNMA5LMu8ZLwwWoNB+AF3aa65lmXJhSau5TLQOIgeIMWsX0nwuXR2fBKblatS8zl1Ok1AVVtm46y58Q==}
+  '@milaboratories/miplots4@1.0.97':
+    resolution: {integrity: sha512-mq4n/dd8klKDa6R4mTnRh4UgbP6ukWh7FeGyt1N31SAVy5DoYIx0i9GUE3Lugdg5Qkezo/98BV3QzVbOqzqYeg==}
 
   '@milaboratories/pframes-rs-node@1.0.37':
     resolution: {integrity: sha512-TSUBZHFgJghUNBFnaPNS9f+pY5ItCNOQOnFZ1iZYoO6IWhlaqQ04/1eMEZAiZRKngoOk1OXQEVWGjrC2t19KrA==}
@@ -12824,7 +12824,7 @@ snapshots:
 
   '@microsoft/tsdoc@0.15.1': {}
 
-  '@milaboratories/miplots4@1.0.95(d3-dispatch@3.0.1)(d3-path@3.1.0)(d3-scale-chromatic@3.1.0)':
+  '@milaboratories/miplots4@1.0.97(d3-dispatch@3.0.1)(d3-path@3.1.0)(d3-scale-chromatic@3.1.0)':
     dependencies:
       '@d3fc/d3fc-chart': 5.1.9(d3-array@3.2.4)(d3-path@3.1.0)(d3-scale-chromatic@3.1.0)(d3-scale@4.0.2)(d3-selection@3.0.0)(d3-shape@3.2.0)
       '@d3fc/d3fc-pointer': 3.0.3(d3-dispatch@3.0.1)(d3-selection@3.0.0)
