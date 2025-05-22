@@ -1,24 +1,9 @@
-import type { Remote } from 'comlink';
-import { wrap } from 'comlink';
-import type { MaybeRefOrGetter } from 'vue';
-import { onWatcherCleanup, ref, toValue, watchEffect } from 'vue';
-import type { ChemicalPropertiesWorkerApi } from './chemical-properties.worker';
-import ChemicalPropertiesWorker from './chemical-properties.worker?worker&inline';
-import type { HighlightedColumn } from './types';
-
-let worker: Remote<ChemicalPropertiesWorkerApi> | undefined;
-
-function getWorker(): Remote<ChemicalPropertiesWorkerApi> {
-  if (!worker) {
-    worker = wrap<ChemicalPropertiesWorkerApi>(new ChemicalPropertiesWorker());
-  }
-  return worker;
-}
+import type { SegmentedColumn } from './types';
 
 export const chemicalCategories = [
   'hydrophobic',
-  'positive_charge',
-  'negative_charge',
+  'positiveCharge',
+  'negativeCharge',
   'polar',
   'cysteine',
   'glycine',
@@ -30,19 +15,19 @@ export type ChemicalCategory = typeof chemicalCategories[number];
 
 export const chemicalPropertiesLabels: Record<ChemicalCategory, string> = {
   hydrophobic: 'Hydrophobic',
-  positive_charge: 'Positive Charge',
-  negative_charge: 'Negative Charge',
+  positiveCharge: 'Positive Charged',
+  negativeCharge: 'Negative Charged',
   polar: 'Polar',
-  cysteine: 'Cysteine',
-  glycine: 'Glycine',
-  proline: 'Proline',
+  cysteine: 'Cysteines',
+  glycine: 'Glycines',
+  proline: 'Prolines',
   aromatic: 'Aromatic',
 };
 
 export const chemicalPropertiesColors: Record<ChemicalCategory, string> = {
   hydrophobic: '#99CCFF',
-  positive_charge: '#FFA2A3',
-  negative_charge: '#C1ADFF',
+  positiveCharge: '#FFA2A3',
+  negativeCharge: '#C1ADFF',
   polar: '#99E099',
   cysteine: '#FAAAFA',
   glycine: '#F7BC5D',
@@ -50,29 +35,165 @@ export const chemicalPropertiesColors: Record<ChemicalCategory, string> = {
   aromatic: '#A2F5FA',
 };
 
-export function useChemicalPropertiesHighlight(
-  alignedRows: MaybeRefOrGetter<string[] | undefined>,
-) {
-  const data = ref<HighlightedColumn<ChemicalCategory>[]>([]);
-  const loading = ref(false);
-  watchEffect(async () => {
-    const rows = toValue(alignedRows);
-    if (!rows) return;
-    let aborted = false;
-    onWatcherCleanup(() => {
-      aborted = true;
-    });
-    try {
-      loading.value = true;
-      const value = await getWorker().getChemicalPropertiesHighlight(rows);
-      if (aborted) return;
-      data.value = value;
-    } catch (error) {
-      console.error(error);
-      data.value = [];
-    } finally {
-      loading.value = false;
+type ColumnConsensus = { residues: string; category: ChemicalCategory }[];
+
+export const getColumnConsensuses = (
+  { residueFrequencies, rowCount }: {
+    residueFrequencies: Record<string, number>[];
+    rowCount: number;
+  },
+): ColumnConsensus[] =>
+  // for every column in a residue frequencies table
+  // (e.g. table = [{ A: 3, R: 5, Q: 1}, { E: 4, T: 2 }, ...])
+  residueFrequencies.map((column) => (
+    // find all matching criterion
+    categoryCriterion
+      .filter(({ rules }) =>
+        // by matching at least one rule
+        rules.some(({ groups, threshold }) =>
+          // where at least one residue group
+          groups.some((group) => {
+            // combined
+            const groupFrequency = group.split('').reduce(
+              (acc, residue) => acc + (column[residue] ?? 0),
+              0,
+            );
+            // is above the required threshold
+            return groupFrequency > rowCount * threshold;
+          }),
+        ),
+      )
+      .map(({ residues, category }) => ({ residues, category }))
+  ));
+
+export function alignedSequencesToSegmentedColumns(
+  { alignedSequences, consensuses }: {
+    alignedSequences: string[];
+    consensuses: ColumnConsensus[];
+  },
+): SegmentedColumn<ChemicalCategory>[] {
+  const columns: SegmentedColumn<ChemicalCategory>[] = [];
+  for (const [rowIndex, sequence] of alignedSequences.entries()) {
+    for (const [columnIndex, residue] of sequence.split('').entries()) {
+      const column = (columns[columnIndex] ??= []);
+      const category = consensuses
+        .at(columnIndex)
+        ?.find(({ residues }) => residues.includes(residue))
+        ?.category;
+      if (!category) continue;
+      const lastSegment = column.at(-1);
+      if (
+        !lastSegment
+        || lastSegment.category !== category
+        || lastSegment.end + 1 !== rowIndex
+      ) {
+        column.push({ category, start: rowIndex, end: rowIndex });
+      } else {
+        lastSegment.end = rowIndex;
+      }
     }
-  });
-  return { data, loading };
+  }
+  return columns;
 }
+
+/** @see {@link https://www.jalview.org/help/html/colourSchemes/clustal.html} */
+const categoryCriterion: Criteria[] = [
+  {
+    residues: 'ACILMFWV',
+    category: 'hydrophobic',
+    rules: [
+      { groups: ['WLVIMAFCYHP'], threshold: 0.6 },
+    ],
+  },
+  {
+    residues: 'KR',
+    category: 'positiveCharge',
+    rules: [
+      { groups: ['KR'], threshold: 0.6 },
+      { groups: [...'KRQ'], threshold: 0.8 },
+    ],
+  },
+  {
+    residues: 'E',
+    category: 'negativeCharge',
+    rules: [
+      { groups: ['KR'], threshold: 0.6 },
+      { groups: ['QE'], threshold: 0.5 },
+      { groups: ['ED'], threshold: 0.5 },
+      { groups: [...'EQD'], threshold: 0.85 },
+    ],
+  },
+  {
+    residues: 'D',
+    category: 'negativeCharge',
+    rules: [
+      { groups: ['KR'], threshold: 0.6 },
+      { groups: [...'DEN'], threshold: 0.85 },
+      { groups: ['ED'], threshold: 0.5 },
+    ],
+  },
+  {
+    residues: 'N',
+    category: 'polar',
+    rules: [
+      { groups: ['N'], threshold: 0.5 },
+      { groups: [...'ND'], threshold: 0.85 },
+    ],
+  },
+  {
+    residues: 'Q',
+    category: 'polar',
+    rules: [
+      { groups: ['KR'], threshold: 0.6 },
+      { groups: ['QE'], threshold: 0.5 },
+      { groups: [...'QTKR'], threshold: 0.85 },
+    ],
+  },
+  {
+    residues: 'ST',
+    category: 'polar',
+    rules: [
+      { groups: ['WLVIMAFCYHP'], threshold: 0.6 },
+      { groups: ['TS'], threshold: 0.5 },
+      { groups: [...'ST'], threshold: 0.85 },
+    ],
+  },
+  {
+    residues: 'C',
+    category: 'cysteine',
+    rules: [
+      { groups: ['C'], threshold: 0.85 },
+    ],
+  },
+  {
+    residues: 'G',
+    category: 'glycine',
+    rules: [
+      { groups: ['G'], threshold: 0 },
+    ],
+  },
+  {
+    residues: 'P',
+    category: 'proline',
+    rules: [
+      { groups: ['P'], threshold: 0 },
+    ],
+  },
+  {
+    residues: 'HY',
+    category: 'aromatic',
+    rules: [
+      { groups: ['WLVIMAFCYHP'], threshold: 0.6 },
+      { groups: [...'WYACPQFHILMV'], threshold: 0.85 },
+    ],
+  },
+];
+
+type Criteria = {
+  residues: string;
+  category: ChemicalCategory;
+  rules: {
+    groups: string[];
+    threshold: number;
+  }[];
+};
