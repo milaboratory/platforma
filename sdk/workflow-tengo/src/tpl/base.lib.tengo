@@ -132,7 +132,7 @@ tpl := func(ops) {
 	_stateRequests := []
 	_delegatedOutputs := []
 
-	self = {
+	self = ll.toStrict({
 
 		/**
 		 * Current renderer smart resource
@@ -653,7 +653,7 @@ tpl := func(ops) {
 				template                : self.template
 			})
 		}
-	}
+	})
 	return self
 }
 
