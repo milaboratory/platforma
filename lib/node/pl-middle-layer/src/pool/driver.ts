@@ -116,7 +116,7 @@ class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
     ];
 
     try {
-      const pFrame = new PFrame(this.spillPath, getDebugFlags().logPFrameRequests ? logFunc : undefined);
+      const pFrame = new PFrame(this.spillPath, logFunc);
       pFrame.setDataSource(this);
       for (const column of distinctСolumns) {
         pFrame.addColumnSpec(column.id, column.spec);
