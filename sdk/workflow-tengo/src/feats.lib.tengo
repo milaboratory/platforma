@@ -31,7 +31,7 @@ _hasRunner := func(e_id) {
 }
 
 export ll.toStrict({
-	hasExec:                    _hasRunner("exec"),     // local binary execution is available
+	hasExec:                    _hasRunner("executor"),     // local binary execution is available
 	hasBatch:                   _hasRunner("batch"),    // batch system execution is available
 
 	pureFutureFields:           _isEnabled("pureFutureFields")   || _api >= 1, // 'pure' future fields magic that provides deduplication
