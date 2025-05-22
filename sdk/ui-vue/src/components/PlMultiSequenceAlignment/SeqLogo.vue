@@ -1,5 +1,10 @@
 <script lang="ts" setup>
-import { MiPlots, type Settings } from '@milaboratories/miplots4';
+import {
+  type ChartInterface,
+  type DataByColumns,
+  MiPlots,
+  type Settings,
+} from '@milaboratories/miplots4';
 import { useResizeObserver } from '@vueuse/core';
 import {
   computed,
@@ -34,7 +39,7 @@ const palette = {
   black: '#000000',
 };
 
-const settings = computed(() => {
+const settings = computed<Settings | undefined>(() => {
   if (!size.value) return;
   return (
     {
@@ -66,19 +71,19 @@ const settings = computed(() => {
       },
       y: {
         type: 'column',
-        value: 'yColumnKey',
+        value: 'frequencyKey',
       },
       primaryGrouping: {
         columnName: {
           type: 'column',
-          value: 'positionKey',
+          value: 'columnKey',
         },
         order: residueFrequencies.map((_, i) => i),
       },
       secondaryGrouping: {
         columnName: {
           type: 'column',
-          value: 'letterKey',
+          value: 'residueKey',
         },
       },
       layers: [{
@@ -111,29 +116,31 @@ const settings = computed(() => {
           },
         },
       }],
-    } satisfies Settings
+    }
   );
 });
 
-const data = computed(() => {
-  const yColumnKey: number[] = [];
-  const positionKey: number[] = [];
-  const letterKey: string[] = [];
-  for (const [columnIndex, column] of residueFrequencies.entries()) {
-    for (const [residue, frequency] of Object.entries(column)) {
-      yColumnKey.push(frequency);
-      positionKey.push(columnIndex);
-      letterKey.push(residue);
+const data = computed<DataByColumns>(
+  () => {
+    const frequencyKey: number[] = [];
+    const columnKey: number[] = [];
+    const residueKey: string[] = [];
+    for (const [columnIndex, column] of residueFrequencies.entries()) {
+      for (const [residue, frequency] of Object.entries(column)) {
+        frequencyKey.push(frequency);
+        columnKey.push(columnIndex);
+        residueKey.push(residue);
+      }
     }
-  }
-  return ({
-    type: 'columns' as const,
-    id: 'test',
-    values: { yColumnKey, positionKey, letterKey },
-  });
-});
+    return ({
+      type: 'columns',
+      id: 'seq-logo',
+      values: { frequencyKey, columnKey, residueKey },
+    });
+  },
+);
 
-const plot = shallowRef<MiPlots>();
+const plot = shallowRef<ChartInterface>();
 
 watchEffect(() => {
   if (!settings.value || !container.value) return;
