@@ -219,6 +219,8 @@ catalog:
   'ag-grid-enterprise': &ag-grid ^33.0.4
   'ag-grid-vue3': *ag-grid
 
+  '@milaboratories/miplots4': ^1.0.97
+
   'monaco-editor': ^0.52.2
 
   # SW
@@ -226,7 +228,6 @@ catalog:
   '@milaboratories/software-pframes-conv': &pframes-version 2.2.2
   '@platforma-open/milaboratories.software-small-binaries': ^1.15.21
   '@biowasm/aioli': ~3.2.1
-  comlink: ~4.4.2
 
   # Test
 
