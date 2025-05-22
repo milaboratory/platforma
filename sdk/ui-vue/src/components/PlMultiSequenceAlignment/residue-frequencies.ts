@@ -3,8 +3,7 @@ export function getResidueFrequencies(
 ): Record<string, number>[] {
   const columns: Record<string, number>[] = [];
   for (const sequence of alignedSequences) {
-    for (let columnIndex = 0; columnIndex < sequence.length; columnIndex += 1) {
-      const residue = sequence[columnIndex];
+    for (const [columnIndex, residue] of sequence.split('').entries()) {
       if (residue === '-') continue;
       const column = columns[columnIndex] ??= {};
       column[residue] = (column[residue] ?? 0) + 1;
