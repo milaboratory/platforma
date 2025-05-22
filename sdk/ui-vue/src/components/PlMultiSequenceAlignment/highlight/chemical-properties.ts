@@ -15,12 +15,12 @@ export type ChemicalCategory = typeof chemicalCategories[number];
 
 export const chemicalPropertiesLabels: Record<ChemicalCategory, string> = {
   hydrophobic: 'Hydrophobic',
-  positiveCharge: 'Positive Charge',
-  negativeCharge: 'Negative Charge',
+  positiveCharge: 'Positive Charged',
+  negativeCharge: 'Negative Charged',
   polar: 'Polar',
-  cysteine: 'Cysteine',
-  glycine: 'Glycine',
-  proline: 'Proline',
+  cysteine: 'Cysteines',
+  glycine: 'Glycines',
+  proline: 'Prolines',
   aromatic: 'Aromatic',
 };
 
@@ -38,23 +38,30 @@ export const chemicalPropertiesColors: Record<ChemicalCategory, string> = {
 type ColumnConsensus = { residues: string; category: ChemicalCategory }[];
 
 export const getColumnConsensuses = (
-  { residueFrequencies, rowsCount }: {
+  { residueFrequencies, rowCount }: {
     residueFrequencies: Record<string, number>[];
-    rowsCount: number;
+    rowCount: number;
   },
 ): ColumnConsensus[] =>
+  // for every column in a residue frequencies table
+  // (e.g. table = [{ A: 3, R: 5, Q: 1}, { E: 4, T: 2 }, ...])
   residueFrequencies.map((column) => (
+    // find all matching criterion
     categoryCriterion
       .filter(({ rules }) =>
+        // by matching at least one rule
         rules.some(({ groups, threshold }) =>
+          // where at least one residue group
           groups.some((group) => {
-            const groupFrequency = Array.from(group).reduce(
+            // combined
+            const groupFrequency = group.split('').reduce(
               (acc, residue) => acc + (column[residue] ?? 0),
               0,
             );
-            return groupFrequency > rowsCount * threshold;
-          })
-        )
+            // is above the required threshold
+            return groupFrequency > rowCount * threshold;
+          }),
+        ),
       )
       .map(({ residues, category }) => ({ residues, category }))
   ));
@@ -67,28 +74,29 @@ export function alignedSequencesToSegmentedColumns(
 ): SegmentedColumn<ChemicalCategory>[] {
   const columns: SegmentedColumn<ChemicalCategory>[] = [];
   for (const [rowIndex, sequence] of alignedSequences.entries()) {
-    for (const [columnIndex, residue] of Array.from(sequence).entries()) {
+    for (const [columnIndex, residue] of sequence.split('').entries()) {
+      const column = (columns[columnIndex] ??= []);
       const category = consensuses
         .at(columnIndex)
         ?.find(({ residues }) => residues.includes(residue))
         ?.category;
       if (!category) continue;
-      const column = (columns[columnIndex] ??= []);
       const lastSegment = column.at(-1);
       if (
         !lastSegment
         || lastSegment.category !== category
-        || lastSegment.end !== rowIndex
+        || lastSegment.end + 1 !== rowIndex
       ) {
-        column.push({ category, start: rowIndex, end: rowIndex + 1 });
+        column.push({ category, start: rowIndex, end: rowIndex });
       } else {
-        lastSegment.end += 1;
+        lastSegment.end = rowIndex;
       }
     }
   }
   return columns;
 }
 
+/** @see {@link https://www.jalview.org/help/html/colourSchemes/clustal.html} */
 const categoryCriterion: Criteria[] = [
   {
     residues: 'ACILMFWV',

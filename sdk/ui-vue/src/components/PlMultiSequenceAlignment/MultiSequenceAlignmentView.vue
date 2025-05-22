@@ -10,11 +10,12 @@ import {
 import { useAlignedSequences } from './multi-sequence-alignment';
 import { getResidueFrequencies } from './residue-frequencies';
 import SeqLogo from './SeqLogo.vue';
-import type { SequenceRow } from './types';
+import type { ColorScheme, SequenceRow } from './types';
 
-const { sequenceRows, highlight } = defineProps<{
+const { sequenceRows, colorScheme: highlight } = defineProps<{
   sequenceRows: SequenceRow[];
-  highlight?: 'chemical-properties' | undefined;
+  colorScheme: ColorScheme | undefined;
+  seqLogo: boolean;
 }>();
 
 const alignedSequences = useAlignedSequences(
@@ -28,7 +29,7 @@ const residueFrequencies = computed(
 const segmentedColumns = computed(() => {
   const columnConsensuses = getColumnConsensuses({
     residueFrequencies: residueFrequencies.value,
-    rowsCount: alignedSequences.value.length,
+    rowCount: alignedSequences.value.length,
   });
   const segmentedColumns = alignedSequencesToSegmentedColumns({
     alignedSequences: alignedSequences.value,
@@ -78,7 +79,7 @@ const sequenceLetterSpacing = '12px';
   <div v-if="alignedSequences.length" :class="['pl-scrollable', $style.root]">
     <div :class="$style.corner" />
     <div :class="$style.header">
-      <div :class="$style['seq-logo-container']">
+      <div v-if="seqLogo" :class="$style['seq-logo-container']">
         <SeqLogo
           :class="$style['seq-logo']"
           :residue-frequencies="residueFrequencies"

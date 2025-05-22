@@ -46,8 +46,7 @@ function parseKalignOutput(output: string): string[] {
       index += 1;
       continue;
     }
-    const sequence = result[index] ?? '';
-    result[index] = sequence + line;
+    result[index] = (result[index] ?? '').concat(line);
   }
   return result;
 }

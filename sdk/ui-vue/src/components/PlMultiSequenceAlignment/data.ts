@@ -84,9 +84,9 @@ async function getSequenceColumnsOptions({
   pFrame: PFrameHandle | undefined;
   sequenceColumnPredicate: (column: PColumnIdAndSpec) => boolean;
 }): Promise<{
-  options: ListOption<PObjectId>[];
-  defaults: PObjectId[];
-}> {
+    options: ListOption<PObjectId>[];
+    defaults: PObjectId[];
+  }> {
   if (!pFrame) return getEmptyOptions();
   const pFrameDriver = getPFrameDriver();
   const columns = await pFrameDriver.listColumns(pFrame);
@@ -113,9 +113,9 @@ async function getLabelColumnsOptions(
       | undefined;
   },
 ): Promise<{
-  options: ListOption<PTableColumnIdJson>[];
-  defaults: PTableColumnIdJson[];
-}> {
+    options: ListOption<PTableColumnIdJson>[];
+    defaults: PTableColumnIdJson[];
+  }> {
   if (!pFrame) return getEmptyOptions();
   const processedAxes = new Set<CanonicalizedJson<AxisId>>();
   const optionLabels = new Map<PTableColumnIdJson, string>();
@@ -215,13 +215,19 @@ async function getSequenceRows(
           .filter((c) => c.type === 'column')
           .map((c) => c.id),
       ].map((c) => ({
-        type: 'column' as const,
+        type: 'column',
         column: c,
       })),
     },
     filters: [],
-
-    sorting: [], // @TODO: may be add sorting ?
+    sorting: sequenceColumnIds.map((c) => ({
+      column: {
+        type: 'column',
+        id: c,
+      },
+      ascending: true,
+      naAndAbsentAreLeastValues: true,
+    })),
   };
 
   const def = JSON.parse(JSON.stringify(predef));
@@ -270,20 +276,20 @@ async function getSequenceRows(
   /// sort by index in input dropdowns
   const labelColumnsIndices = [...labelColumnsMap.keys()];
   labelColumnsIndices.sort((a, b) =>
-    labelColumnsMap.get(a)! - labelColumnsMap.get(b)!
+    labelColumnsMap.get(a)! - labelColumnsMap.get(b)!,
   );
   const sequenceColumnsIndices = [...sequenceColumnsMap.keys()];
   sequenceColumnsIndices.sort((a, b) =>
-    sequenceColumnsMap.get(a)! - sequenceColumnsMap.get(b)!
+    sequenceColumnsMap.get(a)! - sequenceColumnsMap.get(b)!,
   );
 
   const rowCount = table[0].data.data.length;
   for (let iRow = 0; iRow < rowCount; iRow++) {
     const labels = labelColumnsIndices.map((iCol) =>
-      pTableValue(table[iCol].data, iRow, { na: '', absent: '' })?.toString()
+      pTableValue(table[iCol].data, iRow, { na: '', absent: '' })?.toString(),
     );
     const sequences = sequenceColumnsIndices.map((iCol) =>
-      pTableValue(table[iCol].data, iRow, { na: '', absent: '' })?.toString()
+      pTableValue(table[iCol].data, iRow, { na: '', absent: '' })?.toString(),
     );
 
     const isValid = (s: unknown): s is string => typeof s === 'string';
