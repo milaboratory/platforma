@@ -1,5 +1,11 @@
 # @milaboratories/ts-helpers
 
+## 1.3.0
+
+### Minor Changes
+
+- ce87da7: Allow to limit max delay between attempts for poller
+
 ## 1.2.0
 
 ### Minor Changes

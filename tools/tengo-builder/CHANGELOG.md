@@ -1,5 +1,12 @@
 # @platforma-sdk/tengo-builder
 
+## 2.1.5
+
+### Patch Changes
+
+- Updated dependencies [ce87da7]
+  - @milaboratories/ts-helpers@1.3.0
+
 ## 2.1.4
 
 ### Patch Changes
