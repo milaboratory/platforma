@@ -29,6 +29,7 @@ import { autoUpdateCdnPings, backendPings, blockGARegistryOverviewPings, blockGA
 import type { Dispatcher } from 'undici';
 import type { TemplateReport } from './template';
 import { uploadTemplate, uploadFile, downloadFile, createTempFile, pythonSoftware, softwareCheck, createBigTempFile, downloadFromEveryStorage } from './template';
+import { randomUUID } from 'node:crypto';
 
 /** All reports we need to collect. */
 interface NetworkReports {
@@ -227,7 +228,7 @@ export async function initNetworkCheck(
 
   // exposing alternative root for fields not to interfere with
   // projects of the user.
-  plConfig.alternativeRoot = `check_network_${Date.now()}`;
+  plConfig.alternativeRoot = `check_network_${randomUUID()}`;
 
   const uaClient = new UnauthenticatedPlClient(plConfig);
 
