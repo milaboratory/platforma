@@ -28,6 +28,7 @@ jobs:
       notify-telegram: true
       node-version: '20.x'
       build-script-name: 'build'
+      pl-docker-tag: '1.33.4'
       test: true
       test-script-name: 'test'
       publish-to-public: 'true'
