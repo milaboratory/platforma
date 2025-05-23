@@ -1,5 +1,12 @@
 # @milaboratories/pl-model-common
 
+## 1.15.1
+
+### Patch Changes
+
+- 89fd5d3: drivers: download: implement definitions in middle layer
+- 7878cb5: drivers: download: add range
+
 ## 1.15.0
 
 ### Minor Changes
