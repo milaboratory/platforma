@@ -60,5 +60,5 @@ export interface BlobDriver {
   /** Given the blob handle returns its content. Depending on the handle type,
    * content will be served from locally downloaded file, or directly from
    * remote platforma storage. */
-  getContent(handle: LocalBlobHandle | RemoteBlobHandle): Promise<Uint8Array>;
+  getContent(handle: LocalBlobHandle | RemoteBlobHandle, range?: RangeBytes): Promise<Uint8Array>;
 }
