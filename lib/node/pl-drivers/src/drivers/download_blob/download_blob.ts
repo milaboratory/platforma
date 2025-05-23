@@ -19,17 +19,19 @@ import type {
   RemoteBlobHandleAndSize,
   StreamingApiResponse,
 } from '@milaboratories/pl-model-common';
+import { newRangeBytesOpt, type RangeBytes, validateRangeBytes } from '@milaboratories/pl-model-common';
 import type {
   PlTreeEntry,
   ResourceInfo,
-  ResourceSnapshot } from '@milaboratories/pl-tree';
+  ResourceSnapshot
+} from '@milaboratories/pl-tree';
 import {
   isPlTreeEntry,
   makeResourceSnapshot,
   treeEntryToResourceInfo,
 } from '@milaboratories/pl-tree';
 import type { MiLogger, Signer } from '@milaboratories/ts-helpers';
-import { CallersCounter, TaskProcessor } from '@milaboratories/ts-helpers';
+import { CallersCounter, mapGet, notEmpty, TaskProcessor } from '@milaboratories/ts-helpers';
 import Denque from 'denque';
 import * as fs from 'fs';
 import { randomUUID } from 'node:crypto';
@@ -41,21 +43,22 @@ import { Readable, Writable } from 'node:stream';
 import { buffer } from 'node:stream/consumers';
 import type { ClientDownload } from '../../clients/download';
 import type { ClientLogs } from '../../clients/logs';
-import { DownloadBlobTask, nonRecoverableError } from './download_blob_task';
-import { FilesCache } from '../helpers/files_cache';
 import {
   isLocalBlobHandle,
   newLocalHandle,
   parseLocalHandle,
 } from '../helpers/download_local_handle';
-import { getSize, OnDemandBlobResourceSnapshot } from '../types';
 import {
   isRemoteBlobHandle,
   newRemoteHandle,
   parseRemoteHandle,
 } from '../helpers/download_remote_handle';
-import { getResourceInfoFromLogHandle, newLogHandle } from '../helpers/logs_handle';
 import { Updater, WrongResourceTypeError } from '../helpers/helpers';
+import { getResourceInfoFromLogHandle, newLogHandle } from '../helpers/logs_handle';
+import { getSize, OnDemandBlobResourceSnapshot } from '../types';
+import { blobKey, pathToKey } from './blob_key';
+import { DownloadBlobTask, nonRecoverableError } from './download_blob_task';
+import { FilesCache } from '../helpers/files_cache';
 
 export type DownloadDriverOps = {
   /**
@@ -75,7 +78,7 @@ export type DownloadDriverOps = {
  * and notifies every watcher when a file were downloaded. */
 export class DownloadDriver implements BlobDriver {
   /** Represents a unique key to the path of a blob as a map. */
-  private idToDownload: Map<string, DownloadBlobTask> = new Map();
+  private keyToDownload: Map<string, DownloadBlobTask> = new Map();
 
   /** Writes and removes files to a hard drive and holds a counter for every
    * file that should be kept. */
@@ -84,7 +87,7 @@ export class DownloadDriver implements BlobDriver {
   /** Downloads files and writes them to the local dir. */
   private downloadQueue: TaskProcessor;
 
-  private idToOnDemand: Map<string, OnDemandBlobHolder> = new Map();
+  private keyToOnDemand: Map<string, OnDemandBlobHolder> = new Map();
 
   private idToLastLines: Map<string, LastLinesGetter> = new Map();
   private idToProgressLog: Map<string, LastLinesGetter> = new Map();
@@ -105,37 +108,75 @@ export class DownloadDriver implements BlobDriver {
     this.saveDir = path.resolve(saveDir);
   }
 
+  static async init(
+    logger: MiLogger,
+    clientDownload: ClientDownload,
+    clientLogs: ClientLogs,
+    saveDir: string,
+    signer: Signer,
+    ops: DownloadDriverOps,
+  ): Promise<DownloadDriver> {
+    const driver = new DownloadDriver(logger, clientDownload, clientLogs, saveDir, signer, ops);
+    await driver.initCache();
+
+    return driver;
+  }
+
+  private async initCache() {
+    let files: string[];
+    try {
+      files = await fsp.readdir(this.saveDir);
+    } catch (e: unknown) {
+      if (typeof e === 'object' && e !== null && (e as { code?: string }).code === 'ENOENT') {
+        return;
+      }
+
+      throw e;
+    }
+
+    // for (const file of files) {
+    //   const { size } = await fsp.stat(path.resolve(this.saveDir, file));
+
+    //   const blobInfo = pathToBlobInfo(file);
+    //   if (blobInfo == undefined) {
+    //     continue;
+    //   }
+
+    //   this.cache.addCache({
+    //     path: path.resolve(this.saveDir, file),
+    //     baseKey: blobKey(blobInfo.resourceId),
+    //     key: blobKey(blobInfo.resourceId, blobInfo.range),
+    //     counter: new CallersCounter(),
+    //     range,
+    //   });
+    // }
+  }
+
   /** Gets a blob or part of the blob by its resource id or downloads a blob and sets it in a cache. */
   public getDownloadedBlob(
     res: ResourceInfo | PlTreeEntry,
     ctx: ComputableCtx,
-    fromBytes?: number,
-    toBytes?: number,
   ): LocalBlobHandleAndSize | undefined;
   public getDownloadedBlob(
     res: ResourceInfo | PlTreeEntry,
-    ctx?: undefined,
-    fromBytes?: number,
-    toBytes?: number,
   ): ComputableStableDefined<LocalBlobHandleAndSize>;
   public getDownloadedBlob(
     res: ResourceInfo | PlTreeEntry,
     ctx?: ComputableCtx,
-    fromBytes?: number,
-    toBytes?: number,
   ): Computable<LocalBlobHandleAndSize | undefined> | LocalBlobHandleAndSize | undefined {
     if (ctx === undefined) {
-      return Computable.make((ctx) => this.getDownloadedBlob(res, ctx, fromBytes, toBytes));
+      return Computable.make((ctx) => this.getDownloadedBlob(res, ctx));
     }
 
     const rInfo = treeEntryToResourceInfo(res, ctx);
-    const key = blobKey(rInfo.id, fromBytes, toBytes);
 
     const callerId = randomUUID();
-    ctx.addOnDestroy(() => this.releaseBlob(key, callerId));
+    ctx.addOnDestroy(() => this.releaseBlob(rInfo, callerId));
 
-    const result = this.getDownloadedBlobNoCtx(ctx.watcher, rInfo as ResourceSnapshot, callerId, fromBytes, toBytes);
-    if (result == undefined) ctx.markUnstable('download blob is still undefined');
+    const result = this.getDownloadedBlobNoCtx(ctx.watcher, rInfo as ResourceSnapshot, callerId);
+    if (result == undefined) {
+      ctx.markUnstable('download blob is still undefined');
+    }
 
     return result;
   }
@@ -144,42 +185,54 @@ export class DownloadDriver implements BlobDriver {
     w: Watcher,
     rInfo: ResourceSnapshot,
     callerId: string,
-    fromBytes?: number,
-    toBytes?: number,
   ): LocalBlobHandleAndSize | undefined {
     validateDownloadableResourceType('getDownloadedBlob', rInfo.type);
 
-    let task = this.idToDownload.get(blobKey(rInfo.id, fromBytes, toBytes));
+    // We don't need to request files with wider limits,
+    // PFrame's engine does it disk-optimally by itself.
 
-    if (task === undefined) {
-      // schedule the blob downloading
-      const newTask = this.setNewDownloadTask(rInfo);
-      this.downloadQueue.push({
-        fn: () => this.downloadBlob(newTask, callerId),
-        recoverableErrorPredicate: (e) => !nonRecoverableError(e),
-      });
-      task = newTask;
-    }
-
+    const task = this.getOrSetNewTask(rInfo, callerId);
     task.attach(w, callerId);
+
     const result = task.getBlob();
-    if (!result.done) return undefined;
-    if (result.result.ok) return result.result.value;
+    if (!result.done) {
+      return undefined;
+    }
+    if (result.result.ok) {
+      return result.result.value;
+    }
     throw result.result.error;
   }
 
-  private setNewDownloadTask(rInfo: ResourceSnapshot, fromBytes?: number, toBytes?: number) {
-    const fPath = path.resolve(this.saveDir, blobKey(rInfo.id, fromBytes, toBytes));
-    const result = new DownloadBlobTask(
+  private getOrSetNewTask(
+    rInfo: ResourceSnapshot,
+    callerId: string,
+  ): DownloadBlobTask {
+    const key = blobKey(rInfo.id);
+
+    const inMemoryTask = this.keyToDownload.get(key);
+    if (inMemoryTask) {
+      return inMemoryTask;
+    }
+
+    // schedule the blob downloading, then it'll be added to the cache.
+    const fPath = path.resolve(this.saveDir, key);
+
+    const newTask = new DownloadBlobTask(
       this.logger,
       this.clientDownload,
       rInfo,
-      fPath,
       newLocalHandle(fPath, this.signer),
+      fPath,
     );
-    this.idToDownload.set(blobKey(rInfo.id, fromBytes, toBytes), result);
+    this.keyToDownload.set(key, newTask);
 
-    return result;
+    this.downloadQueue.push({
+      fn: () => this.downloadBlob(newTask, callerId),
+      recoverableErrorPredicate: (e) => !nonRecoverableError(e),
+    });
+
+    return newTask;
   }
 
   private async downloadBlob(task: DownloadBlobTask, callerId: string) {
@@ -192,11 +245,19 @@ export class DownloadDriver implements BlobDriver {
 
   /** Gets on demand blob. */
   public getOnDemandBlob(
-    res: OnDemandBlobResourceSnapshot | PlTreeEntry
+    res: OnDemandBlobResourceSnapshot | PlTreeEntry,
   ): Computable<RemoteBlobHandleAndSize>;
   public getOnDemandBlob(
     res: OnDemandBlobResourceSnapshot | PlTreeEntry,
-    ctx: ComputableCtx
+    ctx?: undefined,
+    fromBytes?: number,
+    toBytes?: number,
+  ): Computable<RemoteBlobHandleAndSize>;
+  public getOnDemandBlob(
+    res: OnDemandBlobResourceSnapshot | PlTreeEntry,
+    ctx: ComputableCtx,
+    fromBytes?: number,
+    toBytes?: number,
   ): RemoteBlobHandleAndSize;
   public getOnDemandBlob(
     res: OnDemandBlobResourceSnapshot | PlTreeEntry,
@@ -224,11 +285,11 @@ export class DownloadDriver implements BlobDriver {
   ): RemoteBlobHandleAndSize {
     validateDownloadableResourceType('getOnDemandBlob', info.type);
 
-    let blob = this.idToOnDemand.get(blobKey(info.id));
+    let blob = this.keyToOnDemand.get(blobKey(info.id));
 
     if (blob === undefined) {
       blob = new OnDemandBlobHolder(getSize(info), newRemoteHandle(info, this.signer));
-      this.idToOnDemand.set(blobKey(info.id), blob);
+      this.keyToOnDemand.set(blobKey(info.id), blob);
     }
 
     blob.attach(callerId);
@@ -243,13 +304,23 @@ export class DownloadDriver implements BlobDriver {
   }
 
   /** Gets a content of a blob by a handle. */
-  public async getContent(handle: LocalBlobHandle | RemoteBlobHandle): Promise<Uint8Array> {
+  public async getContent(handle: LocalBlobHandle | RemoteBlobHandle, range?: RangeBytes): Promise<Uint8Array> {
+    if (range) {
+      validateRangeBytes(range, `getContent`);
+    }
+
     if (isLocalBlobHandle(handle)) {
-      return await read(this.getLocalPath(handle));
+      return await read(this.getLocalPath(handle), range);
     }
     if (isRemoteBlobHandle(handle)) {
       const result = parseRemoteHandle(handle, this.signer);
-      const { content } = await this.clientDownload.downloadBlob(result);
+      const { content } = await this.clientDownload.downloadBlob(
+        { id: result.id, type: result.type },
+        undefined,
+        undefined,
+        range?.from,
+        range?.to,
+      );
 
       return await buffer(content);
     }
@@ -262,12 +333,17 @@ export class DownloadDriver implements BlobDriver {
    * Uses downloaded blob handle under the hood, so stores corresponding blob in file system.
    */
   public getComputableContent(
-    res: ResourceInfo | PlTreeEntry
-  ): ComputableStableDefined<Uint8Array>{
+    res: ResourceInfo | PlTreeEntry,
+    range?: RangeBytes,
+  ): ComputableStableDefined<Uint8Array> {
+    if (range) {
+      validateRangeBytes(range, `getComputableContent`);
+    }
+
     return Computable.make((ctx) =>
       this.getDownloadedBlob(res, ctx), {
-        postprocessValue: (v) => v ? this.getContent(v.handle) : undefined
-      }
+        postprocessValue: (v) => v ? this.getContent(v.handle, range) : undefined
+    }
     ).withStableType()
   }
 
@@ -291,7 +367,7 @@ export class DownloadDriver implements BlobDriver {
 
     const r = treeEntryToResourceInfo(res, ctx);
     const callerId = randomUUID();
-    ctx.addOnDestroy(() => this.releaseBlob(blobKey(r.id), callerId));
+    ctx.addOnDestroy(() => this.releaseBlob(r, callerId));
 
     const result = this.getLastLogsNoCtx(ctx.watcher, r as ResourceSnapshot, lines, callerId);
     if (result == undefined)
@@ -347,7 +423,7 @@ export class DownloadDriver implements BlobDriver {
 
     const r = treeEntryToResourceInfo(res, ctx);
     const callerId = randomUUID();
-    ctx.addOnDestroy(() => this.releaseBlob(blobKey(r.id), callerId));
+    ctx.addOnDestroy(() => this.releaseBlob(r, callerId));
 
     const result = this.getProgressLogNoCtx(
       ctx.watcher,
@@ -452,22 +528,25 @@ export class DownloadDriver implements BlobDriver {
     };
   }
 
-  private async releaseBlob(blobKey: string, callerId: string) {
-    const task = this.idToDownload.get(blobKey);
-    if (task == undefined) return;
+  private async releaseBlob(rInfo: ResourceInfo, callerId: string) {
+    const task = this.keyToDownload.get(blobKey(rInfo.id));
+    if (task == undefined) {
+      return;
+    }
 
-    if (this.cache.existsFile(task.path)) {
-      const toDelete = this.cache.removeFile(task.path, callerId);
+    if (this.cache.existsFile(blobKey(rInfo.id))) {
+      const toDelete = this.cache.removeFile(blobKey(rInfo.id), callerId);
+
       await Promise.all(
-        toDelete.map(async (task) => {
-          await fsp.rm(task.path);
+        toDelete.map(async (cachedFile) => {
+          await fsp.rm(cachedFile.path);
 
-          this.cache.removeCache(task);
+          this.cache.removeCache(cachedFile);
 
           this.removeTask(
-            task,
-            `the task ${stringifyWithResourceId(task.info())} was removed`
-            + `from cache along with ${stringifyWithResourceId(toDelete.map((d) => d.info()))}`,
+            mapGet(this.keyToDownload, pathToKey(cachedFile.path)),
+            `the task ${stringifyWithResourceId(cachedFile)} was removed`
+            + `from cache along with ${stringifyWithResourceId(toDelete.map((d) => d.path))}`,
           );
         }),
       );
@@ -486,22 +565,22 @@ export class DownloadDriver implements BlobDriver {
   private removeTask(task: DownloadBlobTask, reason: string) {
     task.abort(reason);
     task.change.markChanged();
-    this.idToDownload.delete(blobKey(task.rInfo.id));
+    this.keyToDownload.delete(pathToKey(task.path));
     this.idToLastLines.delete(blobKey(task.rInfo.id));
     this.idToProgressLog.delete(blobKey(task.rInfo.id));
   }
 
   private async releaseOnDemandBlob(blobId: ResourceId, callerId: string) {
-    const deleted = this.idToOnDemand.get(blobKey(blobId))?.release(callerId) ?? false;
-    if (deleted) this.idToOnDemand.delete(blobKey(blobId));
+    const deleted = this.keyToOnDemand.get(blobKey(blobId))?.release(callerId) ?? false;
+    if (deleted) this.keyToOnDemand.delete(blobKey(blobId));
   }
 
   /** Removes all files from a hard drive. */
   async releaseAll() {
     this.downloadQueue.stop();
 
-    this.idToDownload.forEach((task, blobId) => {
-      this.idToDownload.delete(blobId);
+    this.keyToDownload.forEach((task, key) => {
+      this.keyToDownload.delete(key);
       task.change.markChanged();
     });
   }
@@ -605,8 +684,16 @@ function getLastLines(fPath: string, nLines: number, patternToSearch?: string): 
   });
 }
 
-async function read(path: string): Promise<Uint8Array> {
-  return await buffer(Readable.toWeb(fs.createReadStream(path)));
+async function read(path: string, range?: RangeBytes): Promise<Uint8Array> {
+  const ops: { start?: number; end?: number } = {};
+  if (range) {
+    ops.start = range.from;
+    ops.end = range.to - 1;
+  }
+
+  const stream = fs.createReadStream(path, ops);
+
+  return await buffer(Readable.toWeb(stream));
 }
 
 function validateDownloadableResourceType(methodName: string, rType: ResourceType) {
@@ -617,13 +704,4 @@ function validateDownloadableResourceType(methodName: string, rType: ResourceTyp
 
     throw new WrongResourceTypeError(message);
   }
-}
-
-/** Returns a file name and the unique key of the file.*/
-function blobKey(rId: ResourceId, fromBytes?: number, toBytes?: number): string {
-  if (fromBytes !== undefined && toBytes !== undefined) {
-    return `${BigInt(rId)}_${fromBytes}-${toBytes}`;
-  }
-
-  return `${BigInt(rId)}`;
 }

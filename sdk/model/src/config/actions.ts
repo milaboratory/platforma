@@ -30,7 +30,7 @@ import type {
 import type { ExtractAction, POCExtractAction, PrimitiveOrConfig, TypedConfig } from './type_engine';
 import type { Cfg } from './model';
 import type { CheckedSyncConf } from './type_util';
-import type { ArchiveFormat } from '@milaboratories/pl-model-common';
+import type { ArchiveFormat, RangeBytes } from '@milaboratories/pl-model-common';
 
 //
 // Helpers
@@ -337,18 +337,22 @@ export function mapResourceFields<
 
 export function getBlobContent<const Source extends TypedConfig>(
   source: Source,
+  range?: RangeBytes,
 ): TypedConfig<ActGetBlobContent<ExtractAction<Source>>> {
   return {
     type: 'GetBlobContent',
+    range,
     source: primitiveToConfig(source),
   } as Cfg as any;
 }
 
 export function getBlobContentAsString<const Source extends TypedConfig>(
   source: Source,
+  range?: RangeBytes,
 ): TypedConfig<ActGetBlobContentAsString<ExtractAction<Source>>> {
   return {
     type: 'GetBlobContentAsString',
+    range,
     source: primitiveToConfig(source),
   } as Cfg as any;
 }
@@ -356,9 +360,11 @@ export function getBlobContentAsString<const Source extends TypedConfig>(
 export function getBlobContentAsJson<T>() {
   return function <const Source extends TypedConfig>(
     source: Source,
+    range?: RangeBytes,
   ): TypedConfig<ActGetBlobContentAsJson<ExtractAction<Source>, T>> {
     return {
       type: 'GetBlobContentAsJson',
+      range,
       source: primitiveToConfig(source),
     } as Cfg as any;
   };

@@ -20,6 +20,7 @@ import type {
   ResourceType as ResourceTypeFromSDK,
   ResultCollection,
   ValueOrError,
+  RangeBytes,
 } from '@platforma-sdk/model';
 import {
   isDataInfo,
@@ -27,6 +28,7 @@ import {
   mapPObjectData,
   mapPTableDef,
   mapValueInVOE,
+  newRangeBytesOpt,
 } from '@platforma-sdk/model';
 import { notEmpty } from '@milaboratories/ts-helpers';
 import { randomUUID } from 'node:crypto';
@@ -185,14 +187,14 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
     return fHandle;
   }
 
-  public getBlobContentAsString(handle: string): string {
+  public getBlobContentAsString(handle: string, range?: RangeBytes): string {
     const resourceInfo = this.getAccessor(handle).resourceInfo;
     return this.registerComputable(
       'getBlobContentAsString',
       Computable.make((ctx) => this.env.driverKit.blobDriver.getDownloadedBlob(resourceInfo, ctx), {
         postprocessValue: async (value) => {
           if (value === undefined) return undefined;
-          return Buffer.from(await this.env.driverKit.blobDriver.getContent(value.handle)).toString(
+          return Buffer.from(await this.env.driverKit.blobDriver.getContent(value.handle, range)).toString(
             'utf-8',
           );
         },
@@ -200,14 +202,14 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
     );
   }
 
-  public getBlobContentAsBase64(handle: string): string {
+  public getBlobContentAsBase64(handle: string, range?: RangeBytes): string {
     const resourceInfo = this.getAccessor(handle).resourceInfo;
     return this.registerComputable(
       'getBlobContentAsBase64',
       Computable.make((ctx) => this.env.driverKit.blobDriver.getDownloadedBlob(resourceInfo, ctx), {
         postprocessValue: async (value) => {
           if (value === undefined) return undefined;
-          return Buffer.from(await this.env.driverKit.blobDriver.getContent(value.handle)).toString(
+          return Buffer.from(await this.env.driverKit.blobDriver.getContent(value.handle, range)).toString(
             'base64',
           );
         },
@@ -595,16 +597,28 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
       // Blobs
       //
 
-      exportCtxFunction('getBlobContentAsBase64', (handle) => {
+      exportCtxFunction('getBlobContentAsBase64', (handle, range) => {
+        const fromRaw = vm.getNumber(vm.getProp(range, 'from'));
+        const from = isNaN(fromRaw) ? undefined : fromRaw;
+
+        const toRaw = vm.getNumber(vm.getProp(range, 'to'));
+        const to = isNaN(toRaw) ? undefined : toRaw;
+
         return parent.exportSingleValue(
-          this.getBlobContentAsBase64(vm.getString(handle)),
+          this.getBlobContentAsBase64(vm.getString(handle), newRangeBytesOpt(from, to)),
           undefined,
         );
       });
 
-      exportCtxFunction('getBlobContentAsString', (handle) => {
+      exportCtxFunction('getBlobContentAsString', (handle, range) => {
+        const fromRaw = vm.getNumber(vm.getProp(range, 'from'));
+        const from = isNaN(fromRaw) ? undefined : fromRaw;
+
+        const toRaw = vm.getNumber(vm.getProp(range, 'to'));
+        const to = isNaN(toRaw) ? undefined : toRaw;
+
         return parent.exportSingleValue(
-          this.getBlobContentAsString(vm.getString(handle)),
+          this.getBlobContentAsString(vm.getString(handle), newRangeBytesOpt(from, to)),
           undefined,
         );
       });
