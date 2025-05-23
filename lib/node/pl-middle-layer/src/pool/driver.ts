@@ -48,7 +48,6 @@ import canonicalize from 'canonicalize';
 import { PFrame } from '@milaboratories/pframes-rs-node';
 import * as fsp from 'node:fs/promises';
 import * as path from 'node:path';
-import { LRUCache } from 'lru-cache';
 import { getDebugFlags } from '../debug';
 
 function blobKey(res: ResourceInfo): string {
@@ -96,7 +95,6 @@ class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
     private readonly blobDriver: DownloadDriver,
     private readonly logger: MiLogger,
     private readonly spillPath: string,
-    private readonly blobContentCache: LRUCache<string, Uint8Array>,
     columns: InternalPFrameData,
   ) {
     const logFunc: PFrameInternal.Logger = (level, message) => this.logger[level](message);
@@ -159,7 +157,7 @@ class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
     try {
       const computable = this.getOrCreateComputableForBlob(blobId);
       const path = this.blobDriver.getLocalPath((await computable.awaitStableValue()).handle);
-      return await this.blobContentCache.forceFetch(path);
+      return await fsp.readFile(path);
     } catch (err: unknown) {
       const error = JSON.stringify(err);
       console.log(`resolveBlobContent catched error: ${error}`);
@@ -197,7 +195,8 @@ export interface InternalPFrameDriver extends SdkPFrameDriver {
   /**
    * Dump active PFrames allocations in pprof format.
    * The result of this function should be saved as `profile.pb.gz`.
-   * Use @link https://pprof.me/ to view the allocation flamechart.
+   * Use {@link https://pprof.me/} or {@link https://www.speedscope.app/}
+   * to view the allocation flamechart.
    * @warning This method will always reject on Windows!
    */
   pprofDump(): Promise<Uint8Array>;
@@ -269,12 +268,6 @@ export class PFrameDriver implements InternalPFrameDriver {
     private readonly logger: MiLogger,
     private readonly spillPath: string,
   ) {
-    const blobContentCache = new LRUCache<string, Uint8Array>({
-      maxSize: 1_000_000_000, // 1Gb
-      fetchMethod: async (key) => await fsp.readFile(key),
-      sizeCalculation: (v) => v.length,
-    });
-
     const concurrencyLimiter = new ConcurrencyLimitingExecutor(4);
     this.concurrencyLimiter = concurrencyLimiter;
 
@@ -292,7 +285,7 @@ export class PFrameDriver implements InternalPFrameDriver {
           logger.info(
             `PFrame creation (pFrameHandle = ${this.calculateParamsKey(params)}): ${JSON.stringify(params, bigintReplacer)}`,
           );
-        return new PFrameHolder(this.blobDriver, this.logger, this.spillPath, blobContentCache, params);
+        return new PFrameHolder(this.blobDriver, this.logger, this.spillPath, params);
       }
 
       protected calculateParamsKey(params: InternalPFrameData): string {
