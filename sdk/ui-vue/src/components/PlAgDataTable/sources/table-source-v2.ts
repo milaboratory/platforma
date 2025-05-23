@@ -33,12 +33,11 @@ import { PlAgColumnHeader } from '../../PlAgColumnHeader';
 import { PlAgTextAndButtonCell } from '../../PlAgTextAndButtonCell';
 import type { PlAgDataTableV2Row, PTableKeyJson } from '../types';
 import {
-  defaultValueFormatter,
   isLabelColumn,
-  PTableHidden,
 } from './common';
 import { defaultMainMenuItems } from './menu-items';
 import { makeRowNumberColDef, PlAgDataTableRowNumberColId } from './row-number';
+import { getColumnRenderingSpec, PTableHidden } from './value-rendering';
 
 /** Convert columnar data from the driver to rows, used by ag-grid */
 function columns2rows(
@@ -299,6 +298,7 @@ export function makeColDef(
 ): ColDef {
   const colId = stringifyPTableColumnSpec(spec);
   const valueType = spec.type === 'axis' ? spec.spec.type : spec.spec.valueType;
+  const columnRenderingSpec = getColumnRenderingSpec(spec);
   return {
     colId,
     mainMenuItems: defaultMainMenuItems,
@@ -307,7 +307,7 @@ export function makeColDef(
     headerName: spec.spec.annotations?.['pl7.app/label']?.trim() ?? 'Unlabeled ' + spec.type + ' ' + iCol.toString(),
     lockPosition: spec.type === 'axis',
     hide: hiddenColIds?.includes(colId) ?? isColumnOptional(spec.spec),
-    valueFormatter: defaultValueFormatter,
+    valueFormatter: columnRenderingSpec.valueFormatter,
     headerComponent: PlAgColumnHeader,
     cellRendererSelector: cellButtonAxisParams?.showCellButtonForAxisId
       ? (params: ICellRendererParams) => {
@@ -357,6 +357,7 @@ export function makeColDef(
           throw Error(`unsupported data type: ${valueType}`);
       }
     })(),
+    valueFormatter: columnRenderingSpec?.valueFormatter,
   };
 }
 
