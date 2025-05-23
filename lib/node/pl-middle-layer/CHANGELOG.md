@@ -1,5 +1,19 @@
 # @milaboratories/pl-middle-layer
 
+## 1.37.33
+
+### Patch Changes
+
+- 89fd5d3: drivers: download: implement definitions in middle layer
+- Updated dependencies [89fd5d3]
+- Updated dependencies [7878cb5]
+  - @milaboratories/pl-deployments@2.2.1
+  - @milaboratories/pl-model-common@1.15.1
+  - @platforma-sdk/model@1.31.6
+  - @milaboratories/pl-drivers@1.5.58
+  - @milaboratories/pl-model-middle-layer@1.7.33
+  - @platforma-sdk/block-tools@2.5.48
+
 ## 1.37.32
 
 ### Patch Changes

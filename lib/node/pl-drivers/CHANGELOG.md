@@ -1,5 +1,14 @@
 # @milaboratories/pl-drivers
 
+## 1.5.58
+
+### Patch Changes
+
+- 7878cb5: drivers: download: add range
+- Updated dependencies [89fd5d3]
+- Updated dependencies [7878cb5]
+  - @milaboratories/pl-model-common@1.15.1
+
 ## 1.5.57
 
 ### Patch Changes

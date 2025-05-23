@@ -1,5 +1,11 @@
 # @milaboratories/pl-local
 
+## 2.2.1
+
+### Patch Changes
+
+- 89fd5d3: drivers: download: implement definitions in middle layer
+
 ## 2.2.0
 
 ### Minor Changes

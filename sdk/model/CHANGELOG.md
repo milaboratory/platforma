@@ -1,5 +1,14 @@
 # @platforma-sdk/model
 
+## 1.31.6
+
+### Patch Changes
+
+- 89fd5d3: drivers: download: implement definitions in middle layer
+- Updated dependencies [89fd5d3]
+- Updated dependencies [7878cb5]
+  - @milaboratories/pl-model-common@1.15.1
+
 ## 1.30.37
 
 ### Patch Changes
