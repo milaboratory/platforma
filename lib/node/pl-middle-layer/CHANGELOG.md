@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 1.37.37
+
+### Patch Changes
+
+- e50f178: PFrames abort all operations on computable destruction
+
 ## 1.37.36
 
 ### Patch Changes
