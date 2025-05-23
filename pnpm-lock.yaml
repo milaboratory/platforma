@@ -69,6 +69,9 @@ catalogs:
     '@types/d3':
       specifier: ^7.4.3
       version: 7.4.3
+    '@types/d3-format':
+      specifier: ^3.0.4
+      version: 3.0.4
     '@types/decompress':
       specifier: ^4.2.7
       version: 4.2.7
@@ -126,6 +129,9 @@ catalogs:
     d3:
       specifier: ^7.9.0
       version: 7.9.0
+    d3-format:
+      specifier: ^3.1.0
+      version: 3.1.0
     decompress:
       specifier: ^4.2.1
       version: 4.2.1
@@ -2336,6 +2342,9 @@ importers:
       '@milaboratories/helpers':
         specifier: workspace:^
         version: link:../../lib/util/helpers
+      '@types/d3-format':
+        specifier: 'catalog:'
+        version: 3.0.4
       '@types/lodash':
         specifier: 'catalog:'
         version: 4.17.16
@@ -2351,6 +2360,9 @@ importers:
       '@vueuse/core':
         specifier: 'catalog:'
         version: 12.4.0(typescript@5.5.4)
+      d3-format:
+        specifier: 'catalog:'
+        version: 3.1.0
       happy-dom:
         specifier: 'catalog:'
         version: 15.11.7

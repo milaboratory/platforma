@@ -34,10 +34,11 @@ import { PlAgTextAndButtonCell } from '../../PlAgTextAndButtonCell';
 import type { PlAgDataTableV2Row, PTableKeyJson } from '../types';
 import {
   isLabelColumn,
+  PTableHidden,
 } from './common';
 import { defaultMainMenuItems } from './menu-items';
 import { makeRowNumberColDef, PlAgDataTableRowNumberColId } from './row-number';
-import { getColumnRenderingSpec, PTableHidden } from './value-rendering';
+import { getColumnRenderingSpec } from './value-rendering';
 
 /** Convert columnar data from the driver to rows, used by ag-grid */
 function columns2rows(
@@ -357,7 +358,6 @@ export function makeColDef(
           throw Error(`unsupported data type: ${valueType}`);
       }
     })(),
-    valueFormatter: columnRenderingSpec?.valueFormatter,
   };
 }
 
