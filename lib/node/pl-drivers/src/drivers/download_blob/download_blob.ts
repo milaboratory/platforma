@@ -342,7 +342,7 @@ export class DownloadDriver implements BlobDriver {
 
     return Computable.make((ctx) =>
       this.getDownloadedBlob(res, ctx), {
-      postprocessValue: (v) => v ? this.getContent(v.handle) : undefined
+        postprocessValue: (v) => v ? this.getContent(v.handle, range) : undefined
     }
     ).withStableType()
   }
