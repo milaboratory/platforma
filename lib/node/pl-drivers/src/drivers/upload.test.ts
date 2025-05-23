@@ -227,7 +227,7 @@ test('index a blob', async () => {
   await withTest(async ({ client, uploader }: TestArg) => {
     const uploadId = await createBlobIndex(
       client,
-      './another_answer_to_the_ultimate_question.txt',
+      'another_answer_to_the_ultimate_question.txt',
       env.libraryStorage,
     );
     const handleRes = await getSnapshot(client, uploadId);
