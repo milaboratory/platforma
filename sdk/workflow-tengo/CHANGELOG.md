@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 4.5.2
+
+### Patch Changes
+
+- 0f084c1: Pass service inputs to tpl.body() callback
+
 ## 4.5.1
 
 ### Patch Changes
