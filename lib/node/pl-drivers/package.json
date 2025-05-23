@@ -18,7 +18,7 @@
   "scripts": {
     "type-check": "tsc --noEmit --composite false",
     "build": "vite build",
-    "test": "vitest",
+    "test": "vitest run --coverage",
     "lint": "eslint .",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
@@ -41,7 +41,8 @@
     "denque": "catalog:",
     "tar-fs": "catalog:",
     "undici": "catalog:",
-    "zod": "catalog:"
+    "zod": "catalog:",
+    "upath": "catalog:"
   },
   "devDependencies": {
     "eslint": "catalog:",
@@ -52,6 +53,7 @@
     "vite": "catalog:",
     "@types/node": "catalog:",
     "vitest": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
     "@types/tar-fs": "catalog:"
   }
 }

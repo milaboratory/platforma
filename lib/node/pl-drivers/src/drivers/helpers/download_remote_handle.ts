@@ -3,19 +3,20 @@
 
 import type { Signer } from '@milaboratories/ts-helpers';
 import type { OnDemandBlobResourceSnapshot } from '../types';
-import type { RemoteBlobHandle } from '@milaboratories/pl-model-common';
-import type { ResourceInfo } from '@milaboratories/pl-tree';
-import { bigintToResourceId } from '@milaboratories/pl-client';
+import type { RemoteBlobHandle, RangeBytes } from '@milaboratories/pl-model-common';
+import { bigintToResourceId, ResourceId, ResourceType } from '@milaboratories/pl-client';
+import { ResourceInfo } from '@milaboratories/pl-tree';
 
-// https://regex101.com/r/rvbPZt/1
+// https://regex101.com/r/Q4YdTa/4
 const remoteHandleRegex
-  = /^blob\+remote:\/\/download\/(?<content>(?<resourceType>.*)\/(?<resourceVersion>.*)\/(?<resourceId>.*))#(?<signature>.*)$/;
+  = /^blob\+remote:\/\/download\/(?<content>(?<resourceType>.+)\/(?<resourceVersion>.+?)\/(?<resourceId>\d+?))#(?<signature>.*)$/;
 
 export function newRemoteHandle(
   rInfo: OnDemandBlobResourceSnapshot,
   signer: Signer,
 ): RemoteBlobHandle {
-  const content = `${rInfo.type.name}/${rInfo.type.version}/${BigInt(rInfo.id)}`;
+  let content = `${rInfo.type.name}/${rInfo.type.version}/${BigInt(rInfo.id)}`;
+
   return `blob+remote://download/${content}#${signer.sign(content)}` as RemoteBlobHandle;
 }
 

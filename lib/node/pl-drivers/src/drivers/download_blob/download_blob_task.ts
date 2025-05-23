@@ -7,10 +7,10 @@ import type {
   MiLogger,
 } from '@milaboratories/ts-helpers';
 import {
-  CallersCounter,
   ensureDirExists,
   fileExists,
   createPathAtomically,
+  CallersCounter,
 } from '@milaboratories/ts-helpers';
 import fs from 'node:fs';
 import * as fsp from 'node:fs/promises';
@@ -20,32 +20,32 @@ import type { ClientDownload } from '../../clients/download';
 import { UnknownStorageError, WrongLocalFileUrl } from '../../clients/download';
 import { NetworkError400 } from '../../helpers/download';
 
-/** Downloads a blob. */
+/** Downloads a blob and holds callers and watchers for the blob. */
 export class DownloadBlobTask {
-  readonly counter = new CallersCounter();
   readonly change = new ChangeSource();
   private readonly signalCtl = new AbortController();
-  private error: any | undefined;
+  public readonly counter = new CallersCounter();
+  private error: unknown | undefined;
   private done = false;
-  /** Represents a size in bytes of the downloaded blob. */
-  size = 0;
+  public size = 0;
+  private state: DownloadState = {};
 
   constructor(
     private readonly logger: MiLogger,
     private readonly clientDownload: ClientDownload,
     readonly rInfo: ResourceSnapshot,
-    readonly path: string,
     private readonly handle: LocalBlobHandle,
+    readonly path: string,
   ) {}
 
-  /** Returns a simple object that describes this task. */
+  /** Returns a simple object that describes this task for debugging purposes. */
   public info() {
     return {
       rInfo: this.rInfo,
-      path: this.path,
+      fPath: this.path,
       done: this.done,
-      size: this.size,
       error: this.error,
+      state: this.state,
     };
   }
 
@@ -60,6 +60,7 @@ export class DownloadBlobTask {
       this.setDone(size);
       this.change.markChanged();
     } catch (e: any) {
+      this.logger.error(`task failed: ${e}, ${JSON.stringify(this.state)}`);
       if (nonRecoverableError(e)) {
         this.setError(e);
         this.change.markChanged();
@@ -72,20 +73,35 @@ export class DownloadBlobTask {
   }
 
   private async ensureDownloaded() {
-    await ensureDirExists(path.dirname(this.path));
+    this.state = {};
+    this.state.filePath = this.path;
+    await ensureDirExists(path.dirname(this.state.filePath));
+    this.state.dirExists = true;
 
-    if (await fileExists(this.path)) {
-      this.logger.info(`a blob was already downloaded: ${this.path}`);
-      const stat = await fsp.stat(this.path);
-      return stat.size;
+    if (await fileExists(this.state.filePath)) {
+      this.state.fileExists = true;
+      this.logger.info(`a blob was already downloaded: ${this.state.filePath}`);
+      const stat = await fsp.stat(this.state.filePath);
+      this.state.fileSize = stat.size;
+
+      return this.state.fileSize;
     }
 
-    const { content, size } = await this.clientDownload.downloadBlob(this.rInfo);
+    const { content, size } = await this.clientDownload.downloadBlob(
+      this.rInfo,
+      {},
+      undefined,
+    );
+    this.state.fileSize = size;
+    this.state.downloaded = true;
 
-    await createPathAtomically(this.logger, this.path, async (fPath: string) => {
+    await createPathAtomically(this.logger, this.state.filePath, async (fPath: string) => {
       const f = Writable.toWeb(fs.createWriteStream(fPath, { flags: 'wx' }));
       await content.pipeTo(f);
+      this.state.tempWritten = true;
     });
+
+    this.state.done = true;
 
     return size;
   }
@@ -102,21 +118,9 @@ export class DownloadBlobTask {
     } {
     if (!this.done) return { done: false };
 
-    if (this.error)
-      return {
-        done: true,
-        result: { ok: false, error: this.error },
-      };
-
     return {
-      done: true,
-      result: {
-        ok: true,
-        value: {
-          handle: this.handle,
-          size: this.size,
-        },
-      },
+      done: this.done,
+      result: getDownloadedBlobResponse(this.handle, this.size, this.error),
     };
   }
 
@@ -125,7 +129,7 @@ export class DownloadBlobTask {
     this.size = sizeBytes;
   }
 
-  private setError(e: any) {
+  private setError(e: unknown) {
     this.done = true;
     this.error = e;
   }
@@ -147,3 +151,35 @@ export function nonRecoverableError(e: any) {
 /** The downloading task was aborted by a signal.
  * It may happen when the computable is done, for example. */
 class DownloadAborted extends Error {}
+
+export function getDownloadedBlobResponse(
+  handle: LocalBlobHandle | undefined,
+  size: number,
+  error?: unknown,
+): ValueOrError<LocalBlobHandleAndSize> {
+  if (error) {
+    return { ok: false, error };
+  }
+
+  if (!handle) {
+    return { ok: false, error: new Error('No file or handle provided') };
+  }
+
+  return {
+    ok: true,
+    value: {
+      handle,
+      size,
+    },
+  };
+}
+
+type DownloadState = {
+  filePath?: string;
+  dirExists?: boolean;
+  fileExists?: boolean;
+  fileSize?: number;
+  downloaded?: boolean;
+  tempWritten?: boolean;
+  done?: boolean;
+}
