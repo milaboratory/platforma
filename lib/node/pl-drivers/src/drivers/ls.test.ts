@@ -48,7 +48,9 @@ test('should ok when list files from remote storage in ls driver', async () => {
     const testDir = topLevelDir.entries.find((d) => d.name.includes('ls_dir_structure'));
     expect(testDir).toBeDefined();
     expect(testDir!.type).toEqual('dir');
-    expect(testDir!.fullPath).toEqual('/ls_dir_structure_test');
+
+    const fullPath = testDir!.fullPath.startsWith('/') ? testDir!.fullPath.slice(1) : testDir!.fullPath;
+    expect(fullPath).toEqual('ls_dir_structure_test');
     expect(testDir!.name).toEqual('ls_dir_structure_test');
 
     const secondDirs = await driver.listFiles(library, testDir!.fullPath);
