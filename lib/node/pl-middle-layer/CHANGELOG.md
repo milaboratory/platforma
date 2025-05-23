@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 1.37.32
+
+### Patch Changes
+
+- d52e33f: Remove 1gb blob cache from PFrame driver
+
 ## 1.37.31
 
 ### Patch Changes
