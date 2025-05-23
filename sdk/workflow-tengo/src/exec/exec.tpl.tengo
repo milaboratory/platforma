@@ -43,7 +43,7 @@ _runBinaryCommand := func(inputs) {
 	quota := inputs.quota
 
 	storageSpace := undefined
-	if !is_undefined(quota) {
+	if !is_undefined(quota) && feats.workdirLimits {
 		storageSpace = limits.storageSpaceRequestBuilder().
 			quota(quota).
 			build()
@@ -195,38 +195,38 @@ _runBinaryCommand := func(inputs) {
 	}
 }
 
-self.body(func(inputs) {
-	// assert we have inputs we expect.
-	validation.assertType(inputs, {
-		"softwareInfo,?": validation.resource(),
-		filesToAdd: { any: validation.resource() },
-		filesToWrite: { any: validation.resource() },
-		"dirsToCreate,?": ["string"],
-		runOptions: {
-			"software,?": pkg.softwareInfoScheme,
-			"cmd,?": "string",
-			args: ["string"],
-			envs: { any: "string" },
-			"argsTyped,?": [{type: "string", value: "string"}],
-			"envsTyped,?": {"any": {type: "string", value: "string"}},
-			secrets: { any: "string" },
-			queue: "string",
-			stdout: "string",
-			stderr: "string",
-			nErrorLines: "number",
-			"monetization,?": monetization.schema
-		},
-		"saveFiles,?": ["string"],
-		"saveFilesContents,?": ["string"],
-		"streams,?": ["string"],
-		"assets,?": { any: validation.resource() },
-		"assetDescriptors,?": { any: {asset: desc.assetScheme } },
-		"assetRules,?": { any: { any: ["string"] } },
-		"assetCache,?": { any: "number" },
+self.validateInputs({
+	"softwareInfo,?": validation.resource(),
+	filesToAdd: { any: validation.resource() },
+	filesToWrite: { any: validation.resource() },
+	"dirsToCreate,?": ["string"],
+	runOptions: {
+		"software,?": pkg.softwareInfoScheme,
+		"cmd,?": "string",
+		args: ["string"],
+		envs: { any: "string" },
+		"argsTyped,?": [{type: "string", value: "string"}],
+		"envsTyped,?": {"any": {type: "string", value: "string"}},
+		secrets: { any: "string" },
+		queue: "string",
+		stdout: "string",
+		stderr: "string",
+		nErrorLines: "number",
+		"monetization,?": monetization.schema
+	},
+	"saveFiles,?": ["string"],
+	"saveFilesContents,?": ["string"],
+	"streams,?": ["string"],
+	"assets,?": { any: validation.resource() },
+	"assetDescriptors,?": { any: {asset: desc.assetScheme } },
+	"assetRules,?": { any: { any: ["string"] } },
+	"assetCache,?": { any: "number" },
 
-		// Service inputs
-		"quota,?": validation.resource()
-	})
+	// Service inputs
+	"quota,?": validation.resource()
+})
+
+self.body(func(inputs) {
 
 	ll.toStrict(inputs)
 	inputs.runOptions = ll.toStrict(inputs.runOptions)
