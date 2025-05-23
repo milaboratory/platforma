@@ -52,7 +52,12 @@ _unmarshal := func(resource, preprocessors) {
 		result := {}
 		for field, value in resource.inputs() {
 			if value.isErrorSet() {
-				ll.panic("input %v field has error: %v", field, field.getError().getDataAsJson().message)
+				decodedError := value.getError().getDataAsJson()
+				if is_map(decodedError) && decodedError.message != undefined {
+					ll.panic("input %v field has error: %v", field, decodedError.message)
+				} else {
+					ll.panic("input %v field has error: %v", field, value.getError().getData())
+				}
 			} else if value.isSet() {
 				result[field] = _unmarshal(value.getValue(), preprocessors)
 			} else {
