@@ -261,6 +261,7 @@ export class PFrameDriver implements InternalPFrameDriver {
   private readonly pFrames: RefCountResourcePool<InternalPFrameData, PFrameHolder>;
   private readonly pTables: RefCountResourcePool<FullPTableDef, PTableHolder>;
   private readonly concurrencyLimiter: ConcurrencyLimitingExecutor;
+  private readonly getDataLimiter: ConcurrencyLimitingExecutor;
 
   public async pprofDump(): Promise<Uint8Array> {
     return await PFrame.pprofDump();
@@ -281,8 +282,9 @@ export class PFrameDriver implements InternalPFrameDriver {
     private readonly logger: MiLogger,
     private readonly spillPath: string,
   ) {
-    const concurrencyLimiter = new ConcurrencyLimitingExecutor(4);
+    const concurrencyLimiter = new ConcurrencyLimitingExecutor(1);
     this.concurrencyLimiter = concurrencyLimiter;
+    this.getDataLimiter = new ConcurrencyLimitingExecutor(1);
 
     this.pFrames = new (class extends RefCountResourcePool<InternalPFrameData, PFrameHolder> {
       constructor(
@@ -521,10 +523,10 @@ export class PFrameDriver implements InternalPFrameDriver {
     range: TableRange | undefined,
     signal?: AbortSignal,
   ): Promise<PTableVector[]> {
-    const pTableHolder = this.pTables.getByKey(handle);
-    const combinedSignal = AbortSignal.any([signal, pTableHolder.disposeSignal].filter((s) => !!s));
-    const pTable = await pTableHolder.table;
-    return await this.concurrencyLimiter.run(async () => {
+    return await this.getDataLimiter.run(async () => {
+      const pTableHolder = this.pTables.getByKey(handle);
+      const pTable = await pTableHolder.table;
+      const combinedSignal = AbortSignal.any([signal, pTableHolder.disposeSignal].filter((s) => !!s));
       return await pTable.getData(columnIndices, range, combinedSignal);
     });
   }
