@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 4.5.3
+
+### Patch Changes
+
+- cf508e9: Fix error handling in \_unmarshal function
+
 ## 4.5.2
 
 ### Patch Changes
