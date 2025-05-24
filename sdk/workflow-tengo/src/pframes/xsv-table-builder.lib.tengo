@@ -1,0 +1,495 @@
+ll := import(":ll")
+maps := import(":maps")
+strings := import(":strings")
+pSpec := import(":pframes.spec")
+pBuilder := import(":pframes.builder")
+xsv := import(":pframes.xsv")
+
+xsvFileBuilder := func(xsvType) {
+    ll.assert(xsvType == "csv" || xsvType == "tsv", "xsvType must be 'csv' or 'tsv'")
+
+    requests := []
+    addedColumnInternalIds := {}
+    localAxisHeaderOverrides := []
+    distiller := undefined
+    nextSequentialId := 1
+    nextPFrameKeyIndex := 1
+
+    // Helper to parse flat frame input: { "col1.spec": ..., "col1.data": ... }
+    // into an array of { spec: ..., data: ..., key: "col1" }
+    parseFlatFrameInput := func(flatFrame) {
+        parsedColumns := {}
+        processedBaseKeys := {}
+
+        for key, value in flatFrame {
+            if strings.has_suffix(key, ".spec") {
+                baseKey := strings.trim_suffix(key, ".spec")
+                if is_undefined(parsedColumns[baseKey]) {
+                    parsedColumns[baseKey] = { key: baseKey }
+                }
+                parsedColumns[baseKey].spec = value
+                processedBaseKeys[baseKey] = true
+            } else if strings.has_suffix(key, ".data") {
+                baseKey := strings.trim_suffix(key, ".data")
+                if is_undefined(parsedColumns[baseKey]) {
+                    parsedColumns[baseKey] = { key: baseKey }
+                }
+                parsedColumns[baseKey].data = value
+                processedBaseKeys[baseKey] = true
+            } else {
+                ll.panic("Invalid key format in flat frame input: %s. Expected '.spec' or '.data' suffix.", key)
+            }
+        }
+
+        resultArray := []
+        for baseKey, colParts in parsedColumns {
+            if is_undefined(colParts.spec) {
+                ll.panic("Missing .spec for base key '%s' in flat frame input.", baseKey)
+            }
+            if is_undefined(colParts.data) {
+                ll.panic("Missing .data for base key '%s' in flat frame input.", baseKey)
+            }
+            resultArray = append(resultArray, {
+                spec: colParts.spec,
+                data: colParts.data,
+                key: baseKey
+            })
+        }
+        return resultArray
+    }
+
+    self := undefined // Forward declaration for builder methods
+
+    getSpecDistiller := func() {
+        if is_undefined(distiller) {
+            columnsToDistill := []
+            for request in requests {
+                columnsToDistill = append(columnsToDistill, request.spec)
+            }
+            // Let createSpecDistiller handle empty or invalid inputs
+            distiller = pSpec.createSpecDistiller(columnsToDistill)
+        }
+        return distiller
+    }
+
+    findAxisHeaderOverride := func(axisSpec) {
+        for _, override in localAxisHeaderOverrides {
+            matcher := override[0]
+            if matcher.name == axisSpec.name {
+                specDistiller := getSpecDistiller()
+                discriminativeDomains := specDistiller.getDiscriminativeDomainsSet(axisSpec.name)
+                domainsMatch := true
+                for domainKey, domainValue in matcher.domain {
+                    if is_undefined(discriminativeDomains[domainKey]) {
+                        continue
+                    }
+                    if is_undefined(axisSpec.domain) || is_undefined(axisSpec.domain[domainKey]) || axisSpec.domain[domainKey] != domainValue {
+                        domainsMatch = false
+                        break
+                    }
+                }
+                if domainsMatch {
+                    return override[1]
+                }
+            }
+        }
+        return undefined
+    }
+
+    generateLabelForAxis := func(axisSpec) {
+        label := findAxisHeaderOverride(axisSpec)
+        if !is_undefined(label) {
+            return label
+        }
+
+        specDistiller := getSpecDistiller()
+        discriminativeDomains := specDistiller.getDiscriminativeDomains(axisSpec.name)
+
+        if len(discriminativeDomains) == 0 {
+            label = strings.substituteSpecialCharacters(axisSpec.name)
+        } else {
+            // This behavior is from the old code. Consider if it should error or have a better default.
+            // For now, replicating the error for consistency.
+            ll.panic(
+                "Cannot deduce header for axis '%s'. Discriminative domains: %s. Please provide a header override using setAxisHeader().",
+                axisSpec.name,
+                discriminativeDomains
+            )
+        }
+        return label
+    }
+
+    processSingleCol := func(col, ops) {
+        if !is_map(col) || is_undefined(col.spec) || is_undefined(col.data) {
+            ll.panic("Invalid single column input. Expected {spec: ..., data: ..., key?: ...}, got: %v", col)
+        }
+        // Multi-column options are now allowed for single column add.
+        // Single-column specific options like 'id' and 'header' still take precedence if provided.
+
+        idPrefix := ops.idPrefix ? ops.idPrefix : ""
+        idSuffix := ops.idSuffix ? ops.idSuffix : ""
+        headerPrefix := ops.headerPrefix ? ops.headerPrefix : ""
+        headerSuffix := ops.headerSuffix ? ops.headerSuffix : ""
+
+        baseId := undefined
+        if !is_undefined(ops.id) {
+            if !is_string(ops.id) {
+                ll.panic("Option 'id' must be a string.")
+            }
+            baseId = ops.id
+        } else if !is_undefined(col.key) {
+            if !is_string(col.key) {
+                ll.panic("Column 'key' must be a string if provided.")
+            }
+            baseId = col.key
+        } else {
+            baseId = "user_col" + nextSequentialId
+            nextSequentialId += 1
+        }
+
+        internalId := idPrefix + baseId + idSuffix
+
+        if !is_undefined(addedColumnInternalIds[internalId]) {
+            ll.panic("Duplicate internalId detected: '%s'. Column IDs must be unique.", internalId)
+        }
+        addedColumnInternalIds[internalId] = true
+
+        header := undefined
+        if !is_undefined(ops.header) {
+            if !is_string(ops.header) {
+                ll.panic("Option 'header' must be a string.")
+            }
+            header = ops.header // Explicit header takes full precedence, no prefix/suffix from ops apply here
+        } else {
+            baseHeaderForOps := undefined
+            if !is_undefined(col.spec) &&
+               !is_undefined(col.spec.annotations) &&
+               !is_undefined(col.spec.annotations["pl7.app/label"]) &&
+               is_string(col.spec.annotations["pl7.app/label"]) &&
+               col.spec.annotations["pl7.app/label"] != "" {
+                baseHeaderForOps = col.spec.annotations["pl7.app/label"]
+            } else {
+                baseHeaderForOps = strings.substituteSpecialCharacters(internalId) // Fallback to internalId
+            }
+            header = headerPrefix + baseHeaderForOps + headerSuffix
+        }
+
+        // @TODO: Eventually migrate pFrameKey to use a stable hash of internalId or content
+        pFrameKey := "col" + nextPFrameKeyIndex
+        nextPFrameKeyIndex += 1
+
+        requests = append(requests, {
+            internalId: internalId,
+            header: header,
+            spec: col.spec,
+            data: col.data,
+            originalKey: col.key, // Store original key if present
+            pFrameKey: pFrameKey
+        })
+        distiller = undefined // Invalidate distiller
+    }
+
+    processMultiCol := func(colsArray, ops) {
+        if !is_undefined(ops.id) || !is_undefined(ops.header) {
+            ll.panic("Single-column options ('id', 'header') cannot be used with multi-column 'add'.")
+        }
+        idPrefix := ops.idPrefix ? ops.idPrefix : ""
+        idSuffix := ops.idSuffix ? ops.idSuffix : ""
+        headerPrefix := ops.headerPrefix ? ops.headerPrefix : ""
+        headerSuffix := ops.headerSuffix ? ops.headerSuffix : ""
+
+        for col in colsArray {
+            if !is_map(col) || is_undefined(col.spec) || is_undefined(col.data) {
+                ll.panic("Invalid column item in array/frame. Expected {spec: ..., data: ..., key?: ...}, got: %v", col)
+            }
+
+            baseId := undefined
+            if !is_undefined(col.key) {
+                if !is_string(col.key) {
+                    ll.panic("Column 'key' must be a string if provided in multi-add.")
+                }
+                baseId = col.key
+            } else {
+                baseId = "user_col" + nextSequentialId
+                nextSequentialId += 1
+            }
+
+            internalId := idPrefix + baseId + idSuffix
+
+            if !is_undefined(addedColumnInternalIds[internalId]) {
+                ll.panic("Duplicate internalId detected: '%s'. Column IDs must be unique.", internalId)
+            }
+            addedColumnInternalIds[internalId] = true
+
+            baseHeader := undefined
+            if !is_undefined(col.spec) &&
+               !is_undefined(col.spec.annotations) &&
+               !is_undefined(col.spec.annotations["pl7.app/label"]) &&
+               is_string(col.spec.annotations["pl7.app/label"]) &&
+               col.spec.annotations["pl7.app/label"] != "" {
+                baseHeader = col.spec.annotations["pl7.app/label"]
+            } else {
+                baseHeader = strings.substituteSpecialCharacters(internalId) // Fallback to internalId
+            }
+            header := headerPrefix + baseHeader + headerSuffix
+
+            // @TODO: Eventually migrate pFrameKey to use a stable hash of internalId or content
+            pFrameKey := "col" + nextPFrameKeyIndex
+            nextPFrameKeyIndex += 1
+
+            requests = append(requests, {
+                internalId: internalId,
+                header: header,
+                spec: col.spec,
+                data: col.data,
+                originalKey: col.key,
+                pFrameKey: pFrameKey
+            })
+        }
+        distiller = undefined // Invalidate distiller
+    }
+
+
+    self = {
+        /**
+         * Adds one or more columns to the XSV table being built.
+         *
+         * This method is highly flexible and accepts columns in several formats:
+         * 1. A single column object.
+         * 2. An array of column objects.
+         * 3. A map representing a frame of columns, where keys are column identifiers and values are column objects.
+         * 4. A flat map representing a frame, with keys like "colKey.spec" and "colKey.data".
+         *
+         * === Column Object Structure ===
+         * Each column object should have the following structure:
+         *   {
+         *     spec: PColumnSpec,  // The PColumnSpec for the column.
+         *     data: ResourceRef,  // A reference to the column's data resource.
+         *     key?: string        // Optional: A string key for the column, used in internalId and default header generation.
+         *   }
+         *
+         * === Options (opts) ===
+         * The optional second argument is a map providing more control over ID and header generation.
+         *
+         * Common options (applicable when `item` is a single column, array, or frame):
+         *   - idPrefix?: string    - String to prepend to the base internalId of each column.
+         *   - idSuffix?: string    - String to append to the base internalId of each column.
+         *   - headerPrefix?: string - String to prepend to the generated header of each column (if not explicitly set by `opts.header` or found in spec annotation).
+         *   - headerSuffix?: string - String to append to the generated header of each column (if not explicitly set by `opts.header` or found in spec annotation).
+         *
+         * Single-Column specific options (applicable only when `item` is a single column object):
+         *   - id?: string         - Explicitly sets the base for the `internalId` for this column. Overrides `col.key` or sequential ID.
+         *   - header?: string     - Explicitly sets the header for this column. Overrides default generation (from spec annotation or internalId) and ignores `headerPrefix`/`headerSuffix` from `ops`.
+         *
+         * === Internal ID (internalId) Generation ===
+         * Each column added to the builder gets a unique `internalId`. This ID is used by `getHeader()` and `getSpec()`.
+         * The base for `internalId` is determined in this order of precedence:
+         *   1. `opts.id` (if adding a single column and `id` option is provided).
+         *   2. `col.key` (if the column object has a `key` field).
+         *   3. The map key (if adding a frame as a map of column objects or a flat map).
+         *   4. A sequential ID like "user_col1", "user_col2", etc.
+         * The `idPrefix` and `idSuffix` from `ops` are then applied to this base.
+         *
+         * === Header Generation ===
+         * The column header in the output XSV is determined as follows:
+         *   1. If `opts.header` is provided (for single column add), it's used directly. `headerPrefix`/`headerSuffix` from `ops` are NOT applied.
+         *   2. Otherwise, the base header is determined by:
+         *      a. The value of `col.spec.annotations["pl7.app/label"]` if it's a non-empty string.
+         *      b. Fallback: `strings.substituteSpecialCharacters(internalId)`.
+         *   3. The `headerPrefix` and `headerSuffix` from `ops` are then applied to this base header.
+         *
+         * === Error Conditions ===
+         *   - Using single-column options (`id`, `header`) when `item` is an array or frame will result in an error.
+         *   - Duplicate `internalId` values will cause an error.
+         *
+         * @param item (object|array|map) - The column(s) to add. See description for formats.
+         * @param ...options (map) - Optional map of options for ID and header generation. See description for details.
+         * @returns object - The builder instance for chaining.
+         */
+        add: func(item, ...options) {
+            ops := {}
+            if len(options) > 0 {
+                if !is_map(options[0]) {
+                    ll.panic("Options for 'add' method must be a map.")
+                }
+                ops = options[0]
+            }
+
+            if is_array(item) { // Array of columns
+                processMultiCol(item, ops)
+            } else if is_map(item) {
+                // Check if it's a single column {spec, data, key?}
+                if !is_undefined(item.spec) && !is_undefined(item.data) {
+                     processSingleCol(item, ops)
+                } else {
+                    // Try to parse as a frame (map of columns or flat map)
+                    // Heuristic: if any key has ".spec" or ".data", assume flat frame
+                    isFlatFrame := false
+                    for k, _ in item {
+                        if strings.has_suffix(k, ".spec") || strings.has_suffix(k, ".data") {
+                            isFlatFrame = true
+                            break
+                        }
+                    }
+
+                    colsToProcess := []
+                    if isFlatFrame {
+                        colsToProcess = parseFlatFrameInput(item)
+                    } else { // Assume map of column objects: { "id1": {spec, data}, ... }
+                        for k, v_col in item {
+                             if !is_map(v_col) || is_undefined(v_col.spec) || is_undefined(v_col.data) {
+                                ll.panic("Invalid column value in frame for key '%s'. Expected {spec: ..., data: ...}.", k)
+                            }
+                            colsToProcess = append(colsToProcess, {
+                                spec: v_col.spec,
+                                data: v_col.data,
+                                key: k // Use map key as original key
+                            })
+                        }
+                    }
+                    processMultiCol(colsToProcess, ops)
+                }
+            } else {
+                ll.panic("'add' method input item must be a single column object, an array of columns, or a frame (map). Got: %v", item)
+            }
+            return self
+        },
+
+        /**
+         * Sets a custom header label for a specific axis in the XSV output.
+         *
+         * This overrides the default label generation for an axis that matches the `matcher`.
+         * The overrides are applied during the `build()` step.
+         *
+         * @param matcher (string|map) - Identifies the axis.
+         *   - If string: Interpreted as the axis `name`.
+         *   - If map: It must be an AxisSpec-like object (minimally containing string fields 'name' and 'type').
+         *             It will be processed by `pSpec.axisSpecToMatcher` to extract `name`, `type`, and `domain` for matching.
+         *     The `domain` map allows matching axes with specific domain key-value pairs.
+         *     Only discriminative domains (those that vary among columns added to the builder) are considered for matching.
+         * @param header string - The custom header text to use for the matched axis.
+         * @returns object - The builder instance for chaining.
+         */
+        setAxisHeader: func(matcher, header) {
+            processedMatcher := undefined
+            if is_string(matcher) {
+                processedMatcher = { name: matcher, domain: {} }
+            } else if is_map(matcher) {
+                // Pass to axisSpecToMatcher which validates against P_AXIS_SPEC_SCHEMA
+                // (requires at least 'name' and 'type' string fields)
+                // and extracts name, type, and domain.
+                processedMatcher = pSpec.axisSpecToMatcher(matcher)
+            } else {
+                 ll.panic("Matcher for setAxisHeader must be a string (axis name) or an AxisSpec-like map (with at least 'name' and 'type' fields).")
+            }
+
+            if !is_string(header) {
+                ll.panic("Header for setAxisHeader must be a string.")
+            }
+
+            localAxisHeaderOverrides = [[processedMatcher, header]] + localAxisHeaderOverrides
+
+            return self
+        },
+
+        /**
+         * Retrieves the generated or explicitly set header for a column that has been added to the builder.
+         *
+         * @param internalId string - The unique internal identifier of the column (derived from `opts.id`, `col.key`, map key, or sequential ID, with prefixes/suffixes applied).
+         * @returns string - The header for the specified column.
+         * @throws If no column with the given `internalId` is found.
+         */
+        getHeader: func(internalId) {
+            if !is_string(internalId) {
+                ll.panic("internalId for getHeader must be a string.")
+            }
+            for request in requests {
+                if request.internalId == internalId {
+                    return request.header
+                }
+            }
+            ll.panic("Header not found for internalId: '%s'. Ensure column was added and ID is correct.", internalId)
+            return undefined // Should not reach here
+        },
+
+        /**
+         * Retrieves the PColumnSpec for a column that has been added to the builder.
+         *
+         * @param internalId string - The unique internal identifier of the column.
+         * @returns PColumnSpec - The specification object for the specified column.
+         * @throws If no column with the given `internalId` is found.
+         */
+        getSpec: func(internalId) {
+            if !is_string(internalId) {
+                ll.panic("internalId for getSpec must be a string.")
+            }
+            for request in requests {
+                if request.internalId == internalId {
+                    return request.spec
+                }
+            }
+            ll.panic("Spec not found for internalId: '%s'. Ensure column was added and ID is correct.", internalId)
+            return undefined // Should not reach here
+        },
+
+        /**
+         * Builds the XSV file (CSV or TSV) from the added columns and configurations.
+         *
+         * This method performs spec distillation, applies header and axis label configurations,
+         * constructs a PFrame internally, and then exports it to the specified XSV format.
+         *
+         * @param ...params (map) - Optional. A map of parameters for XSV export, passed directly to `xsv.exportFrame()`.
+         *                        Example: `{ naStr: "N/A", nullStr: "<EMPTY>" }`.
+         *                        Defaults: `{ naStr: "", nullStr: "" }`.
+         * @returns ResourceRef - A reference to the generated XSV file resource.
+         * @throws If no columns have been added to the builder before calling `build()`.
+         */
+        build: func(...params) {
+            if len(requests) == 0 {
+                ll.panic("Cannot build XSV: no columns have been added.")
+            }
+
+            exportParams := { naStr: "", nullStr: "" } // Default XSV export params
+            if len(params) > 0 {
+                if !is_map(params[0]) {
+                    ll.panic("Optional build params must be a map.")
+                }
+                exportParams = maps.deepMerge(exportParams, params[0])
+            }
+
+            frameBuilder := pBuilder.pFrameBuilder()
+            currentDistiller := getSpecDistiller() // Ensure distiller is created/updated
+
+            for request in requests {
+                distilledSpec := currentDistiller.distill(request.spec)
+
+                // Add column header as annotation
+                distilledSpec = maps.deepMerge(distilledSpec, {
+                    annotations: { "pl7.app/label": request.header }
+                })
+
+                // Add axis labels as annotations
+                if !is_undefined(distilledSpec.axesSpec) && is_array(distilledSpec.axesSpec) {
+                    newAxesSpec := []
+                    for axis in distilledSpec.axesSpec {
+                        newAxesSpec = append(newAxesSpec, maps.deepMerge(axis, {
+                            annotations: { "pl7.app/label": generateLabelForAxis(axis) }
+                        }))
+                    }
+                    distilledSpec.axesSpec = newAxesSpec
+                }
+
+                // Add to PFrame using the sequential pFrameKey
+                // "Eventually we must migrate to hashes" - for PFrame key
+                frameBuilder.add(request.pFrameKey, distilledSpec, request.data)
+            }
+
+            return xsv.exportFrame(frameBuilder.build(), xsvType, exportParams)
+        }
+    }
+    return ll.toStrict(self)
+}
+
+export ll.toStrict({
+    xsvFileBuilder: xsvFileBuilder
+})
