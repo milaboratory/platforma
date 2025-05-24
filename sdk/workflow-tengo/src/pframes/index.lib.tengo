@@ -13,7 +13,7 @@ pUtil := import(":pframes.util")
 pSpec := import(":pframes.spec")
 validation := import(":validation")
 constants := import(":pframes.constants")
-xsvBuilder := import(":pframes.xsv-table-builder")
+xsvBuilder := import(":pframes.xsv-builder")
 
 llProcessTpl := assets.importTemplate(":pframes.process-pcolumn-data")
 
