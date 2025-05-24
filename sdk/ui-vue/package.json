@@ -48,6 +48,8 @@
     "@types/semver": "catalog:",
     "@vitejs/plugin-vue": "catalog:",
     "@vueuse/core": "catalog:",
+    "d3-format": "catalog:",
+    "@types/d3-format": "catalog:",
     "canonicalize": "catalog:",
     "happy-dom": "catalog:",
     "lodash": "catalog:",
