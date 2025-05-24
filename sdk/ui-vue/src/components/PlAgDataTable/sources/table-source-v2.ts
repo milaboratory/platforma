@@ -18,6 +18,7 @@ import {
   type PTableVector,
 } from '@platforma-sdk/model';
 import type {
+  CellStyle,
   ColDef,
   ICellRendererParams,
   IServerSideDatasource,
@@ -300,6 +301,15 @@ export function makeColDef(
   const colId = stringifyPTableColumnSpec(spec);
   const valueType = spec.type === 'axis' ? spec.spec.type : spec.spec.valueType;
   const columnRenderingSpec = getColumnRenderingSpec(spec);
+  const cellStyle: CellStyle = {};
+  if (columnRenderingSpec.fontFamily) {
+    if (columnRenderingSpec.fontFamily === 'monospace') {
+      cellStyle.fontFamily = 'Spline Sans Mono';
+      cellStyle.fontWeight = 300;
+    } else {
+      cellStyle.fontFamily = columnRenderingSpec.fontFamily;
+    }
+  }
   return {
     colId,
     mainMenuItems: defaultMainMenuItems,
@@ -328,6 +338,7 @@ export function makeColDef(
           }
         }
       : undefined,
+    cellStyle,
     headerComponentParams: {
       type: ((): PlAgHeaderComponentType => {
         switch (valueType) {
