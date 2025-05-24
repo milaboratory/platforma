@@ -19,10 +19,12 @@ export function formatSpecialValues(value: PTableValue | PTableHidden | undefine
 
 export type ColumnRenderingSpec = {
   valueFormatter: ValueFormatterFunc<PlAgDataTableRow, PTableValue | PTableHidden>;
+  fontFamily?: string;
 };
 
 export function getColumnRenderingSpec(spec: PTableColumnSpec): ColumnRenderingSpec {
   const valueType = spec.type === 'axis' ? spec.spec.type : spec.spec.valueType;
+  let renderSpec: ColumnRenderingSpec;
   switch (valueType) {
     case 'Int':
     case 'Long':
@@ -30,21 +32,26 @@ export function getColumnRenderingSpec(spec: PTableColumnSpec): ColumnRenderingS
     case 'Double': {
       const format = spec.spec.annotations?.['pl7.app/format'];
       const formatFn = format ? d3.format(format) : undefined;
-      return {
+      renderSpec = {
         valueFormatter: (params) => {
           const formatted = formatSpecialValues(params.value);
           if (formatted !== undefined) return formatted;
           return formatFn ? formatFn(Number(params.value)) : params.value!.toString();
         },
       };
+      break;
     }
     default:
-      return {
+      renderSpec = {
         valueFormatter: (params) => {
           const formatted = formatSpecialValues(params.value);
           if (formatted !== undefined) return formatted;
           return params.value!.toString();
         },
       };
+      break;
   }
+  const fontFamily = spec.spec.annotations?.['pl7.app/table/fontFamily'];
+  if (fontFamily) renderSpec.fontFamily = fontFamily;
+  return renderSpec;
 }
