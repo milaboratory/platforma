@@ -4,9 +4,13 @@ strings := import(":strings")
 pSpec := import(":pframes.spec")
 pBuilder := import(":pframes.builder")
 xsv := import(":pframes.xsv")
+canonical := import(":canonical")
 
 xsvFileBuilder := func(xsvType) {
     ll.assert(xsvType == "csv" || xsvType == "tsv", "xsvType must be 'csv' or 'tsv'")
+
+    PTablerNA := "%%NA%%" // Constant for PTabler NA representation
+    naValueInternal := ""  // Default NA value, can be changed by setNA
 
     requests := []
     addedColumnInternalIds := {}
@@ -14,6 +18,19 @@ xsvFileBuilder := func(xsvType) {
     distiller := undefined
     nextSequentialId := 1
     nextPFrameKeyIndex := 1
+
+    getSpecDistiller := func() {
+        if is_undefined(distiller) {
+            columnsToDistill := []
+            for request in requests {
+                columnsToDistill = append(columnsToDistill, request.spec)
+            }
+            // Let createSpecDistiller handle empty or invalid inputs
+            distiller = pSpec.createSpecDistiller(columnsToDistill)
+        }
+        return distiller
+    }
+
 
     // Helper to parse flat frame input: { "col1.spec": ..., "col1.data": ... }
     // into an array of { spec: ..., data: ..., key: "col1" }
@@ -58,18 +75,20 @@ xsvFileBuilder := func(xsvType) {
         return resultArray
     }
 
-    self := undefined // Forward declaration for builder methods
+    getCanonicalAxisKey := func(axisSpec) {
+        // name and type are guaranteed to be strings in a valid axisSpec
+        nameStr := axisSpec.name
+        typeStr := axisSpec.type
 
-    getSpecDistiller := func() {
-        if is_undefined(distiller) {
-            columnsToDistill := []
-            for request in requests {
-                columnsToDistill = append(columnsToDistill, request.spec)
-            }
-            // Let createSpecDistiller handle empty or invalid inputs
-            distiller = pSpec.createSpecDistiller(columnsToDistill)
+        domainCanonicalStr := ""
+        if is_map(axisSpec.domain) {
+            domainCanonicalStr = canonical.encode(axisSpec.domain)
+        } else {
+            // If domain is not a map (e.g., undefined or null), encode an empty map
+            // canonical.encode({}) usually produces "^{}" or similar
+            domainCanonicalStr = canonical.encode({})
         }
-        return distiller
+        return nameStr + "|" + typeStr + "|" + domainCanonicalStr
     }
 
     findAxisHeaderOverride := func(axisSpec) {
@@ -118,6 +137,55 @@ xsvFileBuilder := func(xsvType) {
         }
         return label
     }
+
+    _constructPFrameAndDistillSpecs := func() {
+        frameBuilder := pBuilder.pFrameBuilder()
+        currentDistiller := getSpecDistiller() // Ensure distiller is created/updated
+        processedAxesMap := {}
+
+        for request in requests {
+            distilledSpec := currentDistiller.distill(request.spec)
+
+            // Add column header as annotation
+            distilledSpec = maps.deepMerge(distilledSpec, {
+                annotations: { "pl7.app/label": request.header }
+            })
+
+            // Add axis labels as annotations and collect unique axes
+            if !is_undefined(distilledSpec.axesSpec) && is_array(distilledSpec.axesSpec) {
+                newAxesSpec := []
+                for axis_idx, axis_orig in distilledSpec.axesSpec {
+                    labelledAxis := maps.deepMerge(axis_orig, {
+                        annotations: { "pl7.app/label": generateLabelForAxis(axis_orig) }
+                    })
+                    newAxesSpec = append(newAxesSpec, labelledAxis)
+
+                    // Use the labelledAxis for canonical key generation and storage
+                    canonicalKey := getCanonicalAxisKey(labelledAxis) // Pass the whole axis spec
+                    if is_undefined(processedAxesMap[canonicalKey]) {
+                        processedAxesMap[canonicalKey] = {
+                            name: labelledAxis.name,
+                            type: labelledAxis.type,
+                            domain: labelledAxis.domain, // Store original domain from the labelled (effectively distilled) axis
+                            label: labelledAxis.annotations["pl7.app/label"]
+                        }
+                    }
+                }
+                distilledSpec.axesSpec = newAxesSpec
+            }
+
+            // Add to PFrame using the sequential pFrameKey
+            frameBuilder.add(request.pFrameKey, distilledSpec, request.data)
+        }
+
+        finalProcessedAxes := maps.getValues(processedAxesMap)
+        return {
+            pFrame: frameBuilder.build(),
+            uniqueAxes: finalProcessedAxes
+        }
+    }
+
+    self := undefined // Forward declaration for builder methods
 
     processSingleCol := func(col, ops) {
         if !is_map(col) || is_undefined(col.spec) || is_undefined(col.data) {
@@ -433,14 +501,33 @@ xsvFileBuilder := func(xsvType) {
         },
 
         /**
+         * Sets a custom string to represent Not Available (NA) values in the XSV output.
+         * This value will be used for both `naStr` and `nullStr` when `xsv.exportFrame` is called
+         * by the `build()` method, unless overridden by parameters passed directly to `build()`.
+         * This setting is ignored by `buildForPTabler()`.
+         *
+         * @param value string - The string to use for NA values.
+         * @returns object - The builder instance for chaining.
+         */
+        setNA: func(value) {
+            if !is_string(value) {
+                ll.panic("NA value for setNA must be a string.")
+            }
+            naValueInternal = value
+            return self
+        },
+
+        /**
          * Builds the XSV file (CSV or TSV) from the added columns and configurations.
          *
          * This method performs spec distillation, applies header and axis label configurations,
          * constructs a PFrame internally, and then exports it to the specified XSV format.
          *
+         * The `naStr` and `nullStr` for export will default to the value set by `setNA()` (or "" if not set),
+         * but can be overridden by providing `naStr` or `nullStr` in the `params` map.
+         *
          * @param ...params (map) - Optional. A map of parameters for XSV export, passed directly to `xsv.exportFrame()`.
          *                        Example: `{ naStr: "N/A", nullStr: "<EMPTY>" }`.
-         *                        Defaults: `{ naStr: "", nullStr: "" }`.
          * @returns ResourceRef - A reference to the generated XSV file resource.
          * @throws If no columns have been added to the builder before calling `build()`.
          */
@@ -449,42 +536,83 @@ xsvFileBuilder := func(xsvType) {
                 ll.panic("Cannot build XSV: no columns have been added.")
             }
 
-            exportParams := { naStr: "", nullStr: "" } // Default XSV export params
+            // Start with NA values from setNA (or default "")
+            currentExportParams := { naStr: naValueInternal, nullStr: naValueInternal }
+
             if len(params) > 0 {
                 if !is_map(params[0]) {
                     ll.panic("Optional build params must be a map.")
                 }
-                exportParams = maps.deepMerge(exportParams, params[0])
+                // User params can override naStr/nullStr set by setNA or defaults
+                currentExportParams = maps.deepMerge(currentExportParams, params[0])
             }
 
-            frameBuilder := pBuilder.pFrameBuilder()
-            currentDistiller := getSpecDistiller() // Ensure distiller is created/updated
+            pFrame := _constructPFrameAndDistillSpecs().pFrame
+            return xsv.exportFrame(pFrame, xsvType, currentExportParams)
+        },
 
-            for request in requests {
-                distilledSpec := currentDistiller.distill(request.spec)
+        /**
+         * Builds the XSV file and a PTabler compatible schema.
+         *
+         * This method is similar to `build()` but with specific configurations for PTabler:
+         * - It uses "%%NA%%" for `naStr` and `nullStr` in the XSV export, ignoring any value set by `setNA()`
+         *   or provided in `params` for these specific keys. Other `params` are respected.
+         * - It generates a schema array compatible with PTabler.
+         *
+         * The schema for each column includes:
+         *   - `column`: The column header string.
+         *   - `nullValue`: Fixed to "%%NA%%".
+         *   - `type`: The string type of the column, derived from `PAxisSpec.type` or `PColumnSpec.valueType`.
+         *
+         * @returns map - A map containing:
+         *                  {
+         *                    table: ResourceRef, // Reference to the generated XSV file.
+         *                    schema: array       // Array of PTabler column schema objects.
+         *                  }
+         * @throws If no columns have been added to the builder.
+         */
+        buildForPTabler: func() {
+            if len(requests) == 0 {
+                ll.panic("Cannot build PTabler output: no columns have been added.")
+            }
 
-                // Add column header as annotation
-                distilledSpec = maps.deepMerge(distilledSpec, {
-                    annotations: { "pl7.app/label": request.header }
-                })
+            finalExportParams := {
+                naStr: PTablerNA,
+                nullStr: PTablerNA
+            }
 
-                // Add axis labels as annotations
-                if !is_undefined(distilledSpec.axesSpec) && is_array(distilledSpec.axesSpec) {
-                    newAxesSpec := []
-                    for axis in distilledSpec.axesSpec {
-                        newAxesSpec = append(newAxesSpec, maps.deepMerge(axis, {
-                            annotations: { "pl7.app/label": generateLabelForAxis(axis) }
-                        }))
-                    }
-                    distilledSpec.axesSpec = newAxesSpec
+            buildOutput := _constructPFrameAndDistillSpecs()
+            pFrame := buildOutput.pFrame
+            uniqueAxes := buildOutput.uniqueAxes
+
+            tableResource := xsv.exportFrame(pFrame, xsvType, finalExportParams)
+
+            schema := []
+
+            // Adding axes to schema
+            for axisEntry in uniqueAxes {
+                axisSchema := {
+                    column: axisEntry.label,
+                    nullValue: PTablerNA
                 }
-
-                // Add to PFrame using the sequential pFrameKey
-                // "Eventually we must migrate to hashes" - for PFrame key
-                frameBuilder.add(request.pFrameKey, distilledSpec, request.data)
+                axisSchema.type = axisEntry.type
+                schema = append(schema, axisSchema)
             }
 
-            return xsv.exportFrame(frameBuilder.build(), xsvType, exportParams)
+            // Adding columns to schema
+            for request in requests {
+                colSchema := {
+                    column: request.header,
+                    nullValue: PTablerNA
+                }
+                colSchema.type = request.spec.valueType
+                schema = append(schema, colSchema)
+            }
+
+            return {
+                table: tableResource,
+                schema: schema
+            }
         }
     }
     return ll.toStrict(self)
