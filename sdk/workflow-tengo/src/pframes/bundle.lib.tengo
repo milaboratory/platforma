@@ -1,17 +1,13 @@
 smart := import(":smart")
 json := import("json")
-text := import("text")
 pConstants := import(":pframes.constants")
 bquery := import(":workflow.bquery")
 canonical := import(":canonical")
 pSpec := import(":pframes.spec")
-pBuilder := import(":pframes.builder")
 maps := import(":maps")
 ll := import(":ll")
-xsv := import(":pframes.xsv")
 assets := import(":assets")
 render := import(":render")
-strings := import(":strings")
 
 /**
  * Creates a collector to asynchronously aggregate PColumns into a resolved PColumnBundle.
