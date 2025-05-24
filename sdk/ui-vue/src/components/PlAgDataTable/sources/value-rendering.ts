@@ -21,8 +21,6 @@ export type ColumnRenderingSpec = {
   valueFormatter: ValueFormatterFunc<PlAgDataTableRow, PTableValue | PTableHidden>;
 };
 
-export const FormatAnnotation = 'pl7.app/format';
-
 export function getColumnRenderingSpec(spec: PTableColumnSpec): ColumnRenderingSpec {
   const valueType = spec.type === 'axis' ? spec.spec.type : spec.spec.valueType;
   switch (valueType) {
@@ -30,7 +28,7 @@ export function getColumnRenderingSpec(spec: PTableColumnSpec): ColumnRenderingS
     case 'Long':
     case 'Float':
     case 'Double': {
-      const format = spec.spec.annotations?.[FormatAnnotation];
+      const format = spec.spec.annotations?.['pl7.app/format'];
       const formatFn = format ? d3.format(format) : undefined;
       return {
         valueFormatter: (params) => {
