@@ -21,7 +21,8 @@ export type PlSelectionModel = {
 
 export function mapPTableValueToAxisKey(value: PTableValue): AxisValue {
   if (value === PTableNA) {
-    throw new Error('Axis value can never be N/A');
+    console.error('Axis value can never be N/A');
+    return ''; // @TODO: add proper handling
   }
   return value;
 }
