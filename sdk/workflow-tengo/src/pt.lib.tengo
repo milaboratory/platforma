@@ -1,0 +1,624 @@
+ll := import(":ll")
+maps := import(":maps")
+slices := import(":slices")
+
+
+/**
+ * This library tries to bring API closely resembling Polars DataFrames API to Platforma SDK.
+ */
+
+// Forward declarations
+_newDataFrame := undefined
+_newDataFrameGroupBy := undefined
+_newExpression := undefined
+_newWindowExpression := undefined
+col := undefined
+lit := undefined
+allHorizontal := undefined
+anyHorizontal := undefined
+and := undefined // Top-level alias for allHorizontal
+or := undefined  // Top-level alias for anyHorizontal
+when := undefined
+rank := undefined
+
+// Helper function to check if an item is a valid expression object
+_isExpression := func(item) {
+	return ll.isMap(item) && ll.methodExists(item, "getExpression")
+}
+
+// Helper function to map string column names or expression objects to their JSON structure
+_mapToExpressionStructList := func(itemsList) {
+	if !is_array(itemsList) {
+		itemsList = [itemsList] // Allow single item to be passed
+	}
+	return slices.map(itemsList, func(item) {
+		if is_string(item) {
+			return col(item).getExpression()
+		} else if _isExpression(item) {
+			return item.getExpression()
+		} else {
+			ll.panic("Invalid item type in list: %T. Must be a string or an expression object.", item)
+			return undefined // Unreachable
+		}
+	})
+}
+
+_mapToSingleExpressionStruct := func(item) {
+	if is_string(item) {
+		return col(item).getExpression()
+	} else if _isExpression(item) {
+		return item.getExpression()
+	} else if is_int(item) || is_float(item) || is_bool(item) || item == undefined {
+		return lit(item).getExpression()
+	} else {
+		ll.panic("Invalid item type: %T. Must be a string, an expression object, a number, a boolean or null.", item)
+		return undefined // Unreachable
+	}
+}
+
+
+/**
+ * @param expression - WindowExpression - ptabler window expression structure
+ * @param currentAlias - string - The alias to use for the expression if passed to steps like withColumns
+ * @returns {object} - The expression object.
+ */
+_newWindowExpression = func(expression, currentAlias) {
+	return ll.toStrict({
+		getExpression: func() {
+			return expression
+		},
+		getAlias: func() {
+			if currentAlias == undefined {
+				ll.panic("Alias is not defined for this window expression.")
+			}
+			return currentAlias
+		},
+		alias: func(newAlias) {
+			return _newWindowExpression(expression, newAlias)
+		},
+		over: func(partitionBy) {
+			ll.assert(is_array(partitionBy) || is_string(partitionBy) || _isExpression(partitionBy), "partitionBy must be an array of strings/expressions or a single string/expression")
+
+			if len(expression.partitionBy) > 0 {
+				ll.warn("partitionBy already set on this window expression, overriding.")
+			}
+
+			// Use maps.deepMerge to update the partitionBy field
+			newExpression := maps.deepMerge(expression, {
+				partitionBy: _mapToExpressionStructList(partitionBy)
+			})
+
+			return _newWindowExpression(newExpression, currentAlias)
+		}
+	})
+}
+
+/**
+ * @param expression - Expression - ptabler expression structure
+ * @param currentAlias - string - The alias to use for the expression if passed to steps like withColumns
+ * @returns {object} - The expression object.
+ */
+_newExpression = func(expression, currentAlias) {
+	self := undefined // forward declaration
+
+	// Helper for binary operations
+	binaryOp := func(opType, otherExprObj) {
+		ll.assert(_isExpression(otherExprObj), opType + " expects an expression object as argument")
+		return _newExpression(
+			{type: opType, lhs: expression, rhs: otherExprObj.getExpression()},
+			undefined // Result of operation typically doesn't carry forward alias
+		)
+	}
+
+	// Helper for unary operations
+	unaryOp := func(opType) {
+		return _newExpression(
+			{type: opType, value: expression},
+			undefined
+		)
+	}
+
+	// Helper for string unary operations (operates on `value.str`)
+	unaryStrOp := func(opType) {
+		return _newExpression(
+			{type: opType, value: expression},
+			undefined
+		)
+	}
+
+	// Helper for aggregation functions that return a WindowExpression
+	aggOp := func(aggType) {
+		return _newWindowExpression(
+			{type: "aggregate", aggregation: aggType, value: expression, partitionBy: []},
+			undefined // Alias of underlying col, window expression itself is typically aliased later
+		)
+	}
+
+	self = ll.toStrict({
+		getExpression: func() { return expression },
+		getAlias: func() {
+			if currentAlias == undefined {
+				ll.panic("Alias is not defined for this expression.")
+			}
+			return currentAlias
+		},
+		alias: func(newAlias) {
+			return _newExpression(expression, newAlias)
+		},
+
+		// Comparison
+		gt: func(other) { return binaryOp("gt", other) },
+		ge: func(other) { return binaryOp("ge", other) },
+		eq: func(other) { return binaryOp("eq", other) },
+		lt: func(other) { return binaryOp("lt", other) },
+		le: func(other) { return binaryOp("le", other) },
+		neq: func(other) { return binaryOp("neq", other) },
+
+		// Arithmetic
+		plus: func(other) { return binaryOp("plus", other) },
+		minus: func(other) { return binaryOp("minus", other) },
+		multiply: func(other) { return binaryOp("multiply", other) },
+		truediv: func(other) { return binaryOp("truediv", other) },
+		floordiv: func(other) { return binaryOp("floordiv", other) },
+
+		log10: func() { return unaryOp("log10") },
+		log: func() { return unaryOp("log") },
+		log2: func() { return unaryOp("log2") },
+		abs: func() { return unaryOp("abs") },
+		sqrt: func() { return unaryOp("sqrt") },
+		negate: func() { return unaryOp("negate") },
+		floor: func() { return unaryOp("floor") },
+		round: func() { return unaryOp("round") },
+		ceil: func() { return unaryOp("ceil") },
+
+		// Cast
+		cast: func(dtype, strict) {
+			strictVal := false
+			if strict != undefined {
+				ll.assert(is_bool(strict), "strict parameter for cast must be a boolean")
+				strictVal = strict
+			}
+			return _newExpression(
+				{type: "cast", value: expression, dtype: dtype, strict: strictVal},
+				undefined
+			)
+		},
+
+		// Boolean
+		and: func(other) {
+			ll.assert(_isExpression(other), "and method expects an expression object as argument")
+			return allHorizontal(self, other) // Refer to top-level function
+		},
+		or: func(other) {
+			ll.assert(_isExpression(other), "or method expects an expression object as argument")
+			return anyHorizontal(self, other) // Refer to top-level function
+		},
+		not: func() {
+			return unaryOp("not")
+		},
+
+		// Null checks
+		isNull: func() { return unaryOp("is_na") }, // Polars: is_null(), TS: is_na
+		isNotNull: func() { return unaryOp("is_not_na") }, // Polars: is_not_null(), TS: is_not_na
+
+		// String operations
+		strToUpper: func() { return unaryStrOp("to_upper") },
+		strToLower: func() { return unaryStrOp("to_lower") },
+		strLenChars: func() { return unaryStrOp("str_len")},
+
+		strSlice: func(start, ...lengthArgs) { // Primary method with optional length via varargs
+			ll.assert(is_int(start), "start must be an integer")
+			ll.assert(len(lengthArgs) <= 1, "strSlice expects at most one optional length argument.")
+
+			exprDetails := {type: "substring", value: expression, start: start}
+			if len(lengthArgs) == 1 {
+				lengthVal := lengthArgs[0]
+				ll.assert(is_int(lengthVal), "length, if provided, must be an integer")
+				exprDetails.length = lengthVal
+			}
+			// If lengthArgs is empty, the PTabler backend should interpret this as slicing to the end.
+			return _newExpression(exprDetails, undefined)
+		},
+
+		strSliceEnd: func(start, endIdx) { // Method with end index
+			ll.assert(is_int(start), "start must be an integer")
+			ll.assert(is_int(endIdx), "endIdx must be an integer")
+
+			exprDetails := {type: "substring", value: expression, start: start, end: endIdx}
+			return _newExpression(exprDetails, undefined)
+		},
+
+		strReplace: func(pattern, replacement, replaceAll, literal) {
+			replaceAllVal := false
+			if replaceAll != undefined {
+				ll.assert(is_bool(replaceAll), "replaceAll must be a boolean")
+				replaceAllVal = replaceAll
+			}
+			literalVal := false
+			if literal != undefined {
+				ll.assert(is_bool(literal), "literal must be a boolean")
+				literalVal = literal
+			}
+
+			return _newExpression({
+				type: "str_replace",
+				value: expression,
+				pattern: _mapToSingleExpressionStruct(pattern),
+				replacement: _mapToSingleExpressionStruct(replacement),
+				replaceAll: replaceAllVal,
+				literal: literalVal
+			}, undefined)
+		},
+
+		// Fuzzy string
+		strDistance: func(string2, metric, returnSimilarity) {
+			ll.assert(_isExpression(string2), "string2 must be an expression object")
+			ll.assert(is_string(metric), "metric must be a string")
+
+			returnSimilarityVal := false
+			if returnSimilarity != undefined {
+				ll.assert(is_bool(returnSimilarity), "returnSimilarity must be a boolean")
+				returnSimilarityVal = returnSimilarity
+			}
+
+			return _newExpression({
+				type: "string_distance",
+				string1: expression,
+				string2: string2.getExpression(),
+				metric: metric,
+				returnSimilarity: returnSimilarityVal
+			}, undefined)
+		},
+
+		fuzzyFilter: func(patternExpr, metric, bound) {
+			ll.assert(_isExpression(patternExpr), "patternExpr must be an expression object")
+			ll.assert(is_string(metric), "metric must be a string")
+			ll.assert(is_int(bound) || is_float(bound), "bound must be a number")
+
+			return _newExpression({
+				type: "fuzzy_string_filter",
+				value: expression,
+				pattern: patternExpr.getExpression(),
+				metric: metric,
+				bound: bound
+			}, undefined)
+		},
+
+		// Hash
+		hash: func(hashType, encoding, bits) {
+			ll.assert(is_string(hashType), "hashType must be a string")
+			ll.assert(is_string(encoding), "encoding must be a string")
+			if bits != undefined {
+				ll.assert(is_int(bits), "bits must be a number")
+			}
+
+			hashExpr := {
+				type: "hash",
+				value: expression,
+				hashType: hashType,
+				encoding: encoding
+			}
+			if bits != undefined {
+				hashExpr.bits = bits
+			}
+			return _newExpression(hashExpr, undefined)
+		},
+
+		// Conditional
+		fillNull: func(fillValueExpr) {
+			ll.assert(_isExpression(fillValueExpr), "fillValueExpr must be an expression object")
+			return _newExpression(
+				{type: "fill_na", input: expression, fillValue: fillValueExpr.getExpression()},
+				undefined
+			)
+		},
+
+		// Window/Aggregations
+		sum: func() { return aggOp("sum") },
+		mean: func() { return aggOp("mean") },
+		median: func() { return aggOp("median") },
+		min: func() { return aggOp("min") },
+		max: func() { return aggOp("max") },
+		std: func() { return aggOp("std") },
+		var: func() { return aggOp("var") },
+		count: func() { return aggOp("count") },
+		first: func() { return aggOp("first") },
+		last: func() { return aggOp("last") },
+		nUnique: func() { return aggOp("n_unique") },
+
+		rank: func(...descendingArgs) {
+			ll.assert(len(descendingArgs) <= 1, "rank method expects at most one optional boolean argument for descending.")
+			descendingVal := false
+			if len(descendingArgs) == 1 {
+				ll.assert(is_bool(descendingArgs[0]), "descending argument for rank must be a boolean")
+				descendingVal = descendingArgs[0]
+			}
+			return _newWindowExpression({
+				type: "rank",
+				orderBy: [expression],
+				partitionBy: [], // To be set by .over()
+				descending: descendingVal
+			}, undefined)
+		},
+
+		cumsum: func(...args) {
+			additionalOrderByVal := []
+			descendingVal := false
+			actualArgs := args
+
+			if len(args) > 0 && is_map(args[len(args)-1]) && !(_isExpression(args[len(args)-1])) {
+				ops := args[len(args)-1]
+				actualArgs = args[0:len(args)-1]
+				if maps.containsKey(ops, "orderBy") {
+					additionalOrderByVal = _mapToExpressionStructList(ops.orderBy)
+				}
+				if maps.containsKey(ops, "descending") {
+					ll.assert(is_bool(ops.descending), "descending in options map must be a boolean")
+					descendingVal = ops.descending
+				}
+			}
+
+			// Process remaining actualArgs if not handled by options map
+			if len(additionalOrderByVal) == 0 && len(actualArgs) > 0 {
+				if is_array(actualArgs[0]) || is_string(actualArgs[0]) || _isExpression(actualArgs[0]) {
+					additionalOrderByVal = _mapToExpressionStructList(actualArgs[0])
+					if len(actualArgs) > 1 && is_bool(actualArgs[1]) {
+						descendingVal = actualArgs[1]
+					}
+				} else if is_bool(actualArgs[0]) && len(additionalOrderByVal) == 0 { // only if not set by ops.orderBy
+					descendingVal = actualArgs[0]
+				} else if len(actualArgs) > 0 {
+					ll.panic("Invalid arguments to cumsum. Expected order expressions or options map.")
+				}
+			}
+
+			return _newWindowExpression({
+				type: "cumsum",
+				value: expression,
+				additionalOrderBy: additionalOrderByVal,
+				partitionBy: [],
+				descending: descendingVal
+			}, undefined)
+		}
+	})
+	return self
+}
+
+col = func(name) {
+	ll.assert(is_string(name), "col name must be a string")
+	return _newExpression({
+		type: "col",
+		name: name
+	}, name)
+}
+
+lit = func(value) {
+	return _newExpression({
+		type: "const",
+		value: value
+	}, undefined)
+}
+
+// Top-level functions
+concatStr := func(expressions, delimiterStr) {
+	ll.assert(is_array(expressions), "First argument to concatStr must be an array of expressions")
+	ll.assert(len(expressions) > 0, "Expression array for concatStr cannot be empty")
+	if delimiterStr != undefined {
+		ll.assert(is_string(delimiterStr), "Delimiter for concatStr must be a string")
+	}
+
+	return _newExpression({
+		type: "str_join",
+		operands: _mapToExpressionStructList(expressions),
+		delimiter: delimiterStr
+	}, undefined)
+}
+
+minHorizontal := func(expressions) {
+	ll.assert(is_array(expressions), "Argument to minHorizontal must be an array of expressions")
+	ll.assert(len(expressions) > 0, "Expression array for minHorizontal cannot be empty")
+	return _newExpression({
+		type: "min",
+		operands: _mapToExpressionStructList(expressions)
+	}, undefined)
+}
+
+maxHorizontal := func(expressions) {
+	ll.assert(is_array(expressions), "Argument to maxHorizontal must be an array of expressions")
+	ll.assert(len(expressions) > 0, "Expression array for maxHorizontal cannot be empty")
+	return _newExpression({
+		type: "max",
+		operands: _mapToExpressionStructList(expressions)
+	}, undefined)
+}
+
+allHorizontal = func(...args){
+    processedOperands := []
+    for arg in args {
+        exprStruct := undefined
+        if _isExpression(arg) {
+            exprStruct = arg.getExpression()
+        } else if is_string(arg) {
+            exprStruct = col(arg).getExpression()
+        } else {
+            ll.panic("Invalid argument type for allHorizontal: %T. Must be an expression object or string.", arg)
+        }
+
+        if exprStruct.type == "and" && is_array(exprStruct.operands) {
+            processedOperands = append(processedOperands, exprStruct.operands...)
+        } else {
+            processedOperands = append(processedOperands, exprStruct)
+        }
+    }
+    if len(processedOperands) == 0 {
+        ll.panic("allHorizontal requires at least one expression.")
+    }
+    return _newExpression({
+        type: "and",
+        operands: processedOperands
+    }, undefined)
+}
+
+anyHorizontal = func(...args){
+    processedOperands := []
+    for arg in args {
+        exprStruct := undefined
+        if _isExpression(arg) {
+            exprStruct = arg.getExpression()
+        } else if is_string(arg) {
+            exprStruct = col(arg).getExpression()
+        } else {
+            ll.panic("Invalid argument type for anyHorizontal: %T. Must be an expression object or string.", arg)
+        }
+
+        if exprStruct.type == "or" && is_array(exprStruct.operands) {
+            processedOperands = append(processedOperands, exprStruct.operands...)
+        } else {
+            processedOperands = append(processedOperands, exprStruct)
+        }
+    }
+    if len(processedOperands) == 0 {
+        ll.panic("anyHorizontal requires at least one expression.")
+    }
+    return _newExpression({
+        type: "or",
+        operands: processedOperands
+    }, undefined)
+}
+
+// Top-level aliases for horizontal boolean operations
+and = func(...args) {
+	return allHorizontal(args...)
+}
+
+or = func(...args) {
+	return anyHorizontal(args...)
+}
+
+
+rank = func(orderByExpressions, ...options) {
+	orderByVal := []
+	descendingVal := false
+
+	ll.assert(orderByExpressions != undefined, "rank() requires orderByExpressions (single expression/string or array of them).")
+	orderByVal = _mapToExpressionStructList(orderByExpressions)
+	ll.assert(len(orderByVal) > 0, "rank() 'orderBy' list cannot be empty after processing arguments.")
+
+	if len(options) > 0 {
+		ll.assert(len(options) == 1, "rank() accepts at most one options map argument.")
+		opsMap := options[0]
+		ll.assert(is_map(opsMap), "Second argument to rank(), if provided, must be an options map.")
+		if maps.containsKey(opsMap, "descending") {
+			ll.assert(is_bool(opsMap.descending), "descending in options map must be a boolean")
+			descendingVal = opsMap.descending
+		}
+	}
+
+	return _newWindowExpression({
+		type: "rank",
+		orderBy: orderByVal,
+		partitionBy: [],
+		descending: descendingVal
+	}, undefined)
+}
+
+
+// When/Then/Otherwise builder (Immutable)
+_newWhenThenBuilder := func(currentClauses, currentWhenExprOrUndefined) {
+	// Ensure immutability by working with copies internally
+	// currentClauses is expected to be an array of clause maps {when: ..., then: ...}
+	// currentWhenExprOrUndefined is an expression object or undefined
+
+	builderSelf := undefined
+	builderSelf = ll.toStrict({
+		then: func(thenExpr) {
+			ll.assert(currentWhenExprOrUndefined != undefined, ".then() must follow a .when() or initial when() call.")
+			ll.assert(_isExpression(thenExpr), ".then() expects an expression object argument.")
+
+			// Create new list of clauses for the new builder state
+			newClauses := maps.clone(currentClauses) // Deep copy existing clauses
+			newClauses = append(newClauses, {
+				when: currentWhenExprOrUndefined.getExpression(),
+				then: thenExpr.getExpression()
+			})
+
+			// Return a new builder instance: clauses updated, currentWhenExpr is now undefined (ready for next .when or .otherwise)
+			return _newWhenThenBuilder(newClauses, undefined)
+		},
+		when: func(conditionExpr) {
+			ll.assert(currentWhenExprOrUndefined == undefined, ".when() must follow a .then() call.")
+			ll.assert(_isExpression(conditionExpr), ".when() expects an expression object argument.")
+
+			// Return a new builder instance: clauses remain the same (copied in next call), new currentWhenExpr
+			// Pass currentClauses directly as it will be deepCopied by the next .then() or by .otherwise()
+			return _newWhenThenBuilder(currentClauses, conditionExpr)
+		},
+		otherwise: func(otherwiseExpr) {
+			ll.assert(currentWhenExprOrUndefined == undefined, ".otherwise() must follow a .then() call.")
+			ll.assert(len(currentClauses) > 0, "At least one .when().then() clause is required before .otherwise().")
+			ll.assert(_isExpression(otherwiseExpr), ".otherwise() expects an expression object argument.")
+
+			// Final expression construction, ensure to use a deep copy of clauses for safety
+			finalClauses := maps.clone(currentClauses)
+			return _newExpression({
+				type: "when_then_otherwise",
+				conditions: finalClauses,
+				otherwise: otherwiseExpr.getExpression()
+			}, undefined)
+		}
+	})
+	return builderSelf
+}
+
+when = func(conditionExpr) {
+	ll.assert(_isExpression(conditionExpr), "Initial when() expects an expression object argument.")
+	// Initial call: starts with empty clauses and the first condition expression
+	return _newWhenThenBuilder([], conditionExpr)
+}
+
+
+/**
+ * Creates a new workflow. Workflow serves as a main object, that allows to build a PTabler pipeline,
+ * using convenient Polars DataFrames API.
+ *
+ * @returns {object} - The workflow object.
+ */
+newWorkflow := func() {
+	steps := []
+	inFiles := []
+	dataFrames := []
+	self := undefined
+
+	self = {
+		addFrame: func(frame) {
+			// Implementation needed
+		},
+		addRawStep: func(step) {
+			steps = append(steps, step)
+			return self
+		}
+	}
+
+    return ll.toStrict(self)
+}
+
+_newDataFrame = func(parentWorkflow, name) {
+	return ll.toStrict({
+		// Implementation needed
+	})
+}
+
+export ll.toStrict({
+    newWorkflow: newWorkflow,
+	col: col,
+	lit: lit,
+	concatStr: concatStr,
+	minHorizontal: minHorizontal,
+	maxHorizontal: maxHorizontal,
+	allHorizontal: allHorizontal,
+	anyHorizontal: anyHorizontal,
+	and: and, // Top-level alias for allHorizontal
+	or: or,   // Top-level alias for anyHorizontal
+	rank: rank,
+	when: when
+})
