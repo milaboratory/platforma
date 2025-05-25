@@ -1,0 +1,309 @@
+ll := import(":ll")
+exp := import(":pt.expression")
+assets := import(":assets")
+smart := import(":smart")
+exec := import(":exec")
+json := import("json")
+text := import("text")
+
+ptablerSw := assets.importSoftware("@platforma-open/milaboratories.software-ptabler:main")
+
+/**
+ * This library tries to bring API closely resembling Polars DataFrames API to Platforma SDK.
+ */
+
+_newDataFrame := undefined
+_newDataFrameGroupBy := undefined
+
+/**
+ * Creates a new workflow. Workflow serves as a main object, that allows to build a PTabler pipeline,
+ * using convenient Polars DataFrames API.
+ *
+ * @returns {object} - The workflow object.
+ */
+workflow := func() {
+	steps := []
+
+	// { file?: ResourceRef, content?: string, name: string }[]
+	inFiles := []
+	// string[]
+	outFiles := []
+	// string[]
+	outContentFiles := []
+
+	anonymousFilesCounter := 0
+	anonymousDFCounter := 0
+
+	self := undefined
+
+	self = {
+		addRawStep: func(step) {
+			steps = append(steps, step)
+			return self
+		},
+
+		frame: func(frameInput, ...optionsRaw) {
+			opts := {}
+			if len(optionsRaw) > 0 {
+				if len(optionsRaw) == 1 && is_map(optionsRaw[0]) {
+					opts = optionsRaw[0]
+				} else {
+					ll.panic("frame options must be a single map argument")
+				}
+			}
+
+			fileRef := undefined
+			fileContent := undefined
+			inputSchema := undefined
+			inputXsvType := undefined
+			finalDataFrameId := undefined
+			finalFileName := undefined
+			finalXsvType := undefined
+
+			isStructuralInput := is_map(frameInput) && !is_undefined(frameInput.file)
+
+			if isStructuralInput {
+				fileRef = frameInput.file
+				inputXsvType = frameInput.xsvType
+				// schema might be undefined in the input, which is fine
+				if !is_undefined(frameInput.schema) {
+					inputSchema = frameInput.schema
+				}
+
+				finalXsvType = inputXsvType
+			} else {
+				if smart.isReference(frameInput) {
+					fileRef = frameInput
+				} else {
+					fileContent = frameInput
+				}
+			}
+
+			ll.assert(is_undefined(finalXsvType) || is_undefined(opts.xsvType), "xsvType option cannot be used with structural input as xsvType is already defined in the input structure")
+
+			finalXsvType = opts.xsvType
+			ll.assert(!is_undefined(finalXsvType), "xsvType option is required for direct file input")
+			ll.assert(finalXsvType == "csv" || finalXsvType == "tsv", "xsvType must be 'csv' or 'tsv'")
+
+			if !is_undefined(opts.id) {
+				finalDataFrameId = opts.id
+			} else {
+				finalDataFrameId = self._newAnonymousDataFrameId()
+			}
+
+			if !is_undefined(opts.fileName) {
+				finalFileName = opts.fileName
+			} else {
+				finalFileName = self._newAnonymousFileId(finalXsvType)
+			}
+
+			if !is_undefined(fileRef) && !smart.isReference(fileRef) {
+				ll.panic("frameInput.file (for structural input) or frameInput (for direct reference) must be a valid resource reference. Got: %v", fileRef)
+			} else if !is_undefined(fileContent) && !is_string(fileContent) {
+				ll.panic("frameInput (for direct content) must be a string. Got: %v", fileContent)
+			}
+
+			if !is_undefined(fileRef) {
+				inFiles = append(inFiles, { file: fileRef, name: finalFileName })
+			} else {
+				inFiles = append(inFiles, { content: fileContent, name: finalFileName })
+			}
+
+			readCsvStep := {
+				type: "read_csv",
+				file: finalFileName,
+				name: finalDataFrameId
+			}
+
+			if finalXsvType == "csv" {
+				readCsvStep.delimiter = ","
+			} else if finalXsvType == "tsv" {
+				readCsvStep.delimiter = "\t"
+			}
+
+			if !is_undefined(inputSchema) {
+				readCsvStep.schema = inputSchema
+			}
+
+			self.addRawStep(readCsvStep)
+			return _newDataFrame(self, finalDataFrameId)
+		},
+
+		_newAnonymousDataFrameId: func() {
+			anonymousDFCounter += 1
+			return "anonymous_" + string(anonymousDFCounter)
+		},
+		_newAnonymousFileId: func(extension) {
+			anonymousFilesCounter += 1
+			return "anonymous_" + string(anonymousFilesCounter) + "." + extension
+		},
+		_saveFile: func(name) {
+			outFiles = append(outFiles, name)
+		},
+		_saveFileContent: func(name) {
+			outContentFiles = append(outContentFiles, name)
+		},
+
+		run: func() {
+			ptablerCmdBuilder := exec.builder().
+				inMediumQueue().
+				printErrStreamToStdout().
+				dontSaveStdoutOrStderr().
+				software(ptablerSw).
+				arg("workflow_sc.json").
+				writeFile("workflow_sc.json", json.encode({
+					workflow: steps
+				}));
+
+			for inFile in inFiles {
+				if !is_undefined(inFile.file) {
+					ptablerCmdBuilder.addFile(inFile.name, inFile.file)
+				} else {
+					ptablerCmdBuilder.writeFile(inFile.name, inFile.content)
+				}
+			}
+
+			for outFile in outFiles {
+				ptablerCmdBuilder.saveFile(outFile)
+			}
+
+			for outContentFile in outContentFiles {
+				ptablerCmdBuilder.saveFileContent(outContentFile)
+			}
+
+			return ptablerCmdBuilder.run()
+		}
+	}
+
+    return ll.toStrict(self)
+}
+
+_newDataFrame = func(parentWorkflow, dfName) {
+	_mapExprsToStepCols := func(exprs, methodName) {
+		ll.assert(len(exprs) > 0, methodName + " requires at least one expression argument.")
+		cols := []
+		for expr in exprs {
+			if !exp._isExpression(expr) {
+				ll.panic("Invalid argument to " + methodName + ": Expected an expression object, got %v", expr)
+			}
+			cols = append(cols, {
+				name: expr.getAlias(),
+				expression: expr.getExpression()
+			})
+		}
+		return cols
+	}
+
+	_addSaveStep := func(outputFile, ...options) {
+		opts := {}
+		if len(options) > 0 {
+			opts = options[0]
+		}
+
+		delimiter := undefined
+		if text.has_suffix(outputFile, ".csv") {
+			delimiter = ","
+		} else if text.has_suffix(outputFile, ".tsv") {
+			delimiter = "\t"
+		}
+
+		if !is_undefined(opts.xsvType) {
+			if opts.xsvType == "csv" {
+				delimiter = ","
+			} else if opts.xsvType == "tsv" {
+				delimiter = "\t"
+			} else {
+				ll.panic("Unsupported xsvType: %v", opts.xsvType)
+			}
+		}
+
+		if is_undefined(delimiter) {
+			ll.panic("Can't infer xsvType from outputFile extension, and xsvType is not specified in options")
+		}
+
+		step := {
+			type: "write_csv",
+			table: dfName,
+			file: outputFile,
+			delimiter: delimiter
+		}
+
+		if !is_undefined(opts.columns) {
+			step.columns = opts.columns
+		}
+
+		parentWorkflow.addRawStep(step)
+	}
+
+	self := undefined
+
+	self = ll.toStrict({
+		withColumns: func(...expressions) {
+			stepCols := _mapExprsToStepCols(expressions, "withColumns")
+			outputDfName := parentWorkflow._newAnonymousDataFrameId()
+			parentWorkflow.addRawStep({
+				type: "with_columns",
+				inputTable: dfName,
+				outputTable: outputDfName,
+				columns: stepCols
+			})
+			return _newDataFrame(parentWorkflow, outputDfName)
+		},
+
+		select: func(...expressions) {
+			stepCols := _mapExprsToStepCols(expressions, "select")
+			outputDfName := parentWorkflow._newAnonymousDataFrameId()
+			parentWorkflow.addRawStep({
+				type: "select",
+				inputTable: dfName,
+				outputTable: outputDfName,
+				columns: stepCols
+			})
+			return _newDataFrame(parentWorkflow, outputDfName)
+		},
+
+		addColumns: func(...expressions) {
+			stepCols := _mapExprsToStepCols(expressions, "addColumns")
+			parentWorkflow.addRawStep({
+				type: "add_columns",
+				table: dfName,
+				columns: stepCols
+			})
+			return self
+		},
+
+		save: func(outputFile, ...options) {
+			_addSaveStep(outputFile, options...)
+
+			parentWorkflow._saveFile(outputFile)
+
+			return self
+		},
+
+		saveContent: func(outputFile, ...options) {
+			_addSaveStep(outputFile, options...)
+
+			parentWorkflow._saveFileContent(outputFile)
+
+			return self
+		}
+	})
+	return self
+}
+
+export ll.toStrict({
+	workflow: workflow,
+
+	col: exp.col,
+	lit: exp.lit,
+	concatStr: exp.concatStr,
+	minHorizontal: exp.minHorizontal,
+	maxHorizontal: exp.maxHorizontal,
+	allHorizontal: exp.allHorizontal,
+	anyHorizontal: exp.anyHorizontal,
+	and: exp.and,
+	or: exp.or,
+	rank: exp.rank,
+	when: exp.when,
+	rawExp: exp.rawExp
+})

@@ -45,6 +45,9 @@ catalogs:
     '@oclif/core':
       specifier: ^4.0.37
       version: 4.0.37
+    '@platforma-open/milaboratories.software-ptabler':
+      specifier: 1.3.0
+      version: 1.3.0
     '@platforma-open/milaboratories.software-small-binaries':
       specifier: ^1.15.21
       version: 1.15.21
@@ -2402,6 +2405,9 @@ importers:
       '@milaboratories/software-pframes-conv':
         specifier: 'catalog:'
         version: 2.2.2
+      '@platforma-open/milaboratories.software-ptabler':
+        specifier: 'catalog:'
+        version: 1.3.0
       '@platforma-open/milaboratories.software-small-binaries':
         specifier: 'catalog:'
         version: 1.15.21
@@ -4581,6 +4587,9 @@ packages:
   '@pkgjs/parseargs@0.11.0':
     resolution: {integrity: sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==}
     engines: {node: '>=14'}
+
+  '@platforma-open/milaboratories.software-ptabler@1.3.0':
+    resolution: {integrity: sha512-/xh4+7d04wPx0RNs2j1WFb2Q/wgW2ZXoNjrY/CaIvDKB1JeUChsAGm7ZtzeIAn46eXUB+MJOPRXwl+plz6hYWg==}
 
   '@platforma-open/milaboratories.software-small-binaries.guided-command@1.0.4':
     resolution: {integrity: sha512-LD8XQDnR+L9oRD7JXE0VWGmv1/0cm+J71flrwBUWeIbuaenPC8Nsza8oy7JjLJ8AX+bm8XAyyJALuqBBqkL95Q==}
@@ -13054,6 +13063,8 @@ snapshots:
 
   '@pkgjs/parseargs@0.11.0':
     optional: true
+
+  '@platforma-open/milaboratories.software-ptabler@1.3.0': {}
 
   '@platforma-open/milaboratories.software-small-binaries.guided-command@1.0.4': {}
 
