@@ -46,6 +46,8 @@ slices := import(":slices")
 _newDataFrame := undefined
 _newDataFrameGroupBy := undefined
 
+workflowCounter := 0
+
 /**
  * Creates a new workflow. Workflow serves as a main object, that allows to build a PTabler pipeline,
  * using convenient Polars DataFrames API.
@@ -67,7 +69,12 @@ workflow := func() {
 
 	self := undefined
 
+	id := workflowCounter
+	workflowCounter += 1
+
 	self = {
+		_wfId: id,
+
 		/**
 		 * Adds a raw PTabler step to the workflow.
 		 * This is an advanced feature for users who need to define steps not covered by the high-level API.
@@ -359,6 +366,12 @@ _newDataFrame = func(parentWorkflow, dfName) {
 	self := undefined
 
 	self = ll.toStrict({
+		_getWorkflow: func() {
+			return parentWorkflow
+		},
+		_getDfName: func() {
+			return dfName
+		},
 		/**
 		 * Adds or replaces columns in the DataFrame.
 		 * If a column with the alias specified in an expression already exists, it will be replaced.
@@ -655,6 +668,173 @@ _newDataFrame = func(parentWorkflow, dfName) {
 			}
 
 			parentWorkflow.addRawStep(sortStep)
+			return _newDataFrame(parentWorkflow, outputDfName)
+		},
+
+		/**
+		 * Joins this DataFrame with another DataFrame.
+		 *
+		 * @param rightDf {object} - The right DataFrame object to join with.
+		 * @param opts {map} - A map of join options:
+		 *   - `how` {string} (optional): Join strategy. One of 'inner', 'left', 'right', 'full', 'cross'. Defaults to 'inner'.
+		 *   - `on` {string|array} (optional): Column name(s) to join on if they are the same in both DataFrames.
+		 *                                      Cannot be used with `leftOn` or `rightOn`.
+		 *   - `leftOn` {string|array} (optional): Column name(s) from the left DataFrame. Must be used with `rightOn`.
+		 *   - `rightOn` {string|array} (optional): Column name(s) from the right DataFrame. Must be used with `leftOn`.
+		 *   - `coalesce` {boolean} (optional): If true, identically named key columns are merged.
+		 *                                       Does not apply to 'cross' join. PTabler default behavior applies if omitted.
+		 *   - `leftColumns` {array} (optional): Array of maps `{column: "originalName", rename: "newName"}`
+		 *                                      to select/rename columns from the left table.
+		 *   - `rightColumns` {array} (optional): Array of maps `{column: "originalName", rename: "newName"}`
+		 *                                       to select/rename columns from the right table.
+		 * @returns {object} - A new DataFrame object representing the result of the join.
+		 * @example
+		 *   // Inner join on 'id' column
+		 *   joinedDf := df1.join(df2, {on: "id"})
+		 *
+		 *   // Left join on different column names
+		 *   joinedDf := df1.join(df2, {
+		 *       how: "left",
+		 *       leftOn: "user_id",
+		 *       rightOn: "id",
+		 *       rightColumns: [{column: "value", rename: "right_value"}]
+		 *   })
+		 *
+		 *   // Cross join
+		 *   crossJoinedDf := df1.join(df2, {how: "cross"})
+		 */
+		join: func(rightDf, opts) {
+			if is_undefined(opts) || !is_map(opts) {
+				ll.panic("join options must be a map argument.")
+			}
+			if is_undefined(rightDf) || is_undefined(rightDf._getDfName) || is_undefined(rightDf._getWorkflow) {
+				ll.panic("rightDf argument for join must be a DataFrame object created by pt.workflow().frame().")
+			}
+			if rightDf._getWorkflow()._wfId != parentWorkflow._wfId {
+				ll.panic("Both DataFrames in a join operation must belong to the same workflow.")
+			}
+
+			_ensureArrayLocal := func(val, argName) {
+				if is_undefined(val) {
+					return undefined
+				}
+				if is_string(val) {
+					return [val]
+				}
+				if is_array(val) {
+					for i, item in val {
+						if !is_string(item) {
+							ll.panic("'%s' option: if an array, all elements must be strings. Found type %T at index %d.", argName, item, i)
+						}
+					}
+					return val
+				}
+				ll.panic("'%s' option must be a string or an array of strings. Got: %T", argName, val)
+			}
+
+			_validateAndSetColumnsLocal := func(columnsOpt, optName) {
+				if is_undefined(columnsOpt) {
+					return undefined
+				}
+				if !is_array(columnsOpt) {
+					ll.panic("'%s' option must be an array of column mappings or strings. Got: %T", optName, columnsOpt)
+				}
+				mappings := []
+				for i, item in columnsOpt {
+					entry := undefined
+					if is_string(item) {
+						entry = { column: item }
+					} else if is_map(item) {
+						if is_undefined(item.column) || !is_string(item.column) {
+							ll.panic("Each map mapping in '%s' at index %d must have a 'column' string field. Got: %v", optName, i, item.column)
+						}
+						entry = { column: item.column }
+						if !is_undefined(item.rename) {
+							if !is_string(item.rename) {
+								ll.panic("The 'rename' field in '%s' mapping at index %d must be a string. Got: %T", optName, i, item.rename)
+							}
+							entry.rename = item.rename
+						}
+					} else {
+						ll.panic("Each element in '%s' at index %d must be a string or a map. Got: %T", optName, i, item)
+					}
+					mappings = append(mappings, entry)
+				}
+				if len(mappings) == 0 { // PTabler schema might not like empty arrays for this.
+					return undefined
+				}
+				return mappings
+			}
+
+			how := opts.how
+			if is_undefined(how) {
+				how = "inner" // Default join type
+			}
+			validHowTypes := ["inner", "left", "right", "full", "cross"]
+			if !slices.hasElement(validHowTypes, how) {
+				ll.panic("Invalid 'how' value for join: '%s'. Must be one of %v", how, validHowTypes)
+			}
+
+			onOpt := _ensureArrayLocal(opts.on, "on")
+			leftOnOpt := _ensureArrayLocal(opts.leftOn, "leftOn")
+			rightOnOpt := _ensureArrayLocal(opts.rightOn, "rightOn")
+
+			outputDfName := parentWorkflow._newAnonymousDataFrameId()
+			joinStep := {
+				type: "join",
+				leftTable: dfName,
+				rightTable: rightDf._getDfName(),
+				outputTable: outputDfName,
+				how: how
+			}
+
+			if how == "cross" {
+				if !is_undefined(onOpt) || !is_undefined(leftOnOpt) || !is_undefined(rightOnOpt) {
+					ll.panic("'on', 'leftOn', 'rightOn' options cannot be used with 'cross' join.")
+				}
+				if !is_undefined(opts.coalesce) {
+					ll.panic("'coalesce' option cannot be used with 'cross' join.")
+				}
+			} else { // 'inner', 'left', 'right', 'full'
+				if !is_undefined(onOpt) {
+					if !is_undefined(leftOnOpt) || !is_undefined(rightOnOpt) {
+						ll.assert(len(onOpt) > 0, "'on' option, if provided, cannot be an empty list.")
+						joinStep.leftOn = onOpt
+						joinStep.rightOn = onOpt
+					} else {
+						ll.panic("For '%s' join, you must specify either 'on' option or both 'leftOn' and 'rightOn' options.", how)
+					}
+				} else if !is_undefined(leftOnOpt) && !is_undefined(rightOnOpt) {
+					ll.assert(len(leftOnOpt) > 0, "'leftOn' option, if provided, cannot be an empty list.")
+					ll.assert(len(rightOnOpt) > 0, "'rightOn' option, if provided, cannot be an empty list.")
+					if len(leftOnOpt) != len(rightOnOpt) {
+						ll.panic("'leftOn' and 'rightOn' lists must have the same number of columns. Got %d and %d.", len(leftOnOpt), len(rightOnOpt))
+					}
+					joinStep.leftOn = leftOnOpt
+					joinStep.rightOn = rightOnOpt
+				} else {
+					ll.panic("For '%s' join, you must specify either 'on' option or both 'leftOn' and 'rightOn' options.", how)
+				}
+
+				if !is_undefined(opts.coalesce) {
+					if !is_bool(opts.coalesce) {
+						ll.panic("'coalesce' option must be a boolean. Got: %T", opts.coalesce)
+					}
+					joinStep.coalesce = opts.coalesce
+				}
+			}
+
+			leftCols := _validateAndSetColumnsLocal(opts.leftColumns, "leftColumns")
+			if !is_undefined(leftCols) {
+				joinStep.leftColumns = leftCols
+			}
+
+			rightCols := _validateAndSetColumnsLocal(opts.rightColumns, "rightColumns")
+			if !is_undefined(rightCols) {
+				joinStep.rightColumns = rightCols
+			}
+
+			parentWorkflow.addRawStep(joinStep)
 			return _newDataFrame(parentWorkflow, outputDfName)
 		}
 	})
