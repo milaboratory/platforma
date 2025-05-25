@@ -566,12 +566,13 @@ xsvFileBuilder := func(xsvType) {
          *
          * @returns map - A map containing:
          *                  {
-         *                    table: ResourceRef, // Reference to the generated XSV file.
+         *                    xsvType: "tsv" | "csv", // The format of the XSV file.
+         *                    file: ResourceRef, // Reference to the generated XSV file.
          *                    schema: array       // Array of PTabler column schema objects.
          *                  }
          * @throws If no columns have been added to the builder.
          */
-        buildForPTabler: func() {
+        buildForPT: func() {
             if len(requests) == 0 {
                 ll.panic("Cannot build PTabler output: no columns have been added.")
             }
@@ -610,7 +611,8 @@ xsvFileBuilder := func(xsvType) {
             }
 
             return {
-                table: tableResource,
+                xsvType: xsvType,
+                file: tableResource,
                 schema: schema
             }
         }

@@ -3,13 +3,7 @@ maps := import(":maps")
 slices := import(":slices")
 
 
-/**
- * This library tries to bring API closely resembling Polars DataFrames API to Platforma SDK.
- */
-
 // Forward declarations
-_newDataFrame := undefined
-_newDataFrameGroupBy := undefined
 _newExpression := undefined
 _newWindowExpression := undefined
 col := undefined
@@ -576,40 +570,17 @@ when = func(conditionExpr) {
 	return _newWhenThenBuilder([], conditionExpr)
 }
 
-
-/**
- * Creates a new workflow. Workflow serves as a main object, that allows to build a PTabler pipeline,
- * using convenient Polars DataFrames API.
- *
- * @returns {object} - The workflow object.
- */
-newWorkflow := func() {
-	steps := []
-	inFiles := []
-	dataFrames := []
-	self := undefined
-
-	self = {
-		addFrame: func(frame) {
-			// Implementation needed
-		},
-		addRawStep: func(step) {
-			steps = append(steps, step)
-			return self
-		}
+rawExp := func(expression, ...alias) {
+	ll.assert(len(alias) <= 1, "rawExpression expects at most one alias argument")
+	aliasVal := undefined
+	if len(alias) > 0 {
+		aliasVal = alias[0]
 	}
-
-    return ll.toStrict(self)
-}
-
-_newDataFrame = func(parentWorkflow, name) {
-	return ll.toStrict({
-		// Implementation needed
-	})
+	ll.assert(is_map(expression), "rawExpression expects a map as argument")
+	return _newExpression(expression, aliasVal)
 }
 
 export ll.toStrict({
-    newWorkflow: newWorkflow,
 	col: col,
 	lit: lit,
 	concatStr: concatStr,
@@ -620,5 +591,7 @@ export ll.toStrict({
 	and: and, // Top-level alias for allHorizontal
 	or: or,   // Top-level alias for anyHorizontal
 	rank: rank,
-	when: when
+	when: when,
+	rawExp: rawExp,
+	_isExpression: _isExpression
 })
