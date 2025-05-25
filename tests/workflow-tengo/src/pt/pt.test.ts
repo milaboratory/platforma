@@ -166,3 +166,97 @@ B\tuser7\t190\t110`;
     expect(normalizeTsv(outputContent)).toEqual(normalizeTsv(expectedOutputTsvData));
   },
 );
+
+tplTest(
+  'pt ex3 test - join operations',
+  { timeout: 40000 }, // Increased timeout for multiple PTabler steps
+  async ({ helper, expect, driverKit }) => {
+    // No input files needed as data is defined in the template as strings
+
+    const expectedOutputInnerJoin = `id,name,val_left,name_from_right,val_right,info_for_test1
+1,Alice,100,Alice_R1,10,R_Info_1
+2,Bob,200,Bob_R1,20,R_Info_2
+4,David,400,David_R1,40,R_Info_4`;
+
+    // dfLeft: id,name,val_left (1,Alice,100; 2,Bob,200; 3,Charlie,300; 4,David,400)
+    // dfRight: id_r,name,val_right,info (ID1,Alice,10; ID2,Bob,20; ID4,David,40; ID5,Frank,50)
+    // Joining on 'name'
+    const expectedOutputLeftJoinOn = `id,name,val_left,id_from_right,val_right,info
+1,Alice,100,ID1,10,R_Info_Alice
+2,Bob,200,ID2,20,R_Info_Bob
+3,Charlie,300,,,// Charlie is in left, not in right
+4,David,400,ID4,40,R_Info_David`; // David is in both
+    // Frank from right is not included due to left join
+
+    // dfLeftOn: common_key,name_l,val_l (K1,Alice_LO,100; K2,Bob_LO,200; K3,Charlie_LO,300)
+    // dfRightOn: common_key,name_r,val_r (K1,Andrea_RO,10; K2,Robert_RO,20; K4,David_RO,400)
+    // Joining on 'common_key' with coalesce=false
+    // Polars default for coalesce=false on full join with common key names like 'common_key'
+    // will create 'common_key' (from left) and 'common_key_right' (from right)
+    const expectedOutputFullJoinOnNoCoalesce = `common_key,name_l,common_key_right,name_r
+K1,Alice_LO,K1,Andrea_RO
+K2,Bob_LO,K2,Robert_RO
+K3,Charlie_LO,,
+,,K4,David_RO`; // K3 only in left, K4 only in right
+
+    // dfCrossLeft: item_id,item_name (L1,Apple; L2,Banana)
+    // dfCrossRight: color_id,color_name (C1,Red; C2,Yellow)
+    const expectedOutputCrossJoin = `item_name,item_color
+Apple,Red
+Apple,Yellow
+Banana,Red
+Banana,Yellow`;
+
+    const result = await helper.renderTemplate(
+      false,
+      'pt.ex3',
+      [
+        'out_inner_join',
+        'out_left_join_on',
+        'out_full_join_on_nocoalesce',
+        'out_cross_join',
+      ],
+      (tx) => ({}), // No dynamic inputs needed for this test
+    );
+
+    const getFileContentLocal = async (
+      outputName: 
+        | 'out_inner_join' 
+        | 'out_left_join_on' 
+        | 'out_full_join_on_nocoalesce' 
+        | 'out_cross_join',
+    ) => {
+      const fileHandle = await awaitStableState(
+        result.computeOutput(outputName, (fileHandle, ctx) => {
+          if (!fileHandle) {
+            return undefined;
+          }
+          return driverKit.blobDriver.getOnDemandBlob(fileHandle.persist(), ctx).handle;
+        }),
+        35000, // Allow more time for ptabler execution with multiple joins
+      );
+      expect(fileHandle).toBeDefined();
+      return (await driverKit.blobDriver.getContent(fileHandle!)).toString();
+    };
+
+    const normalizeTsv = (str: string) => str.replace(/\r\n/g, '\n').trim();
+    const normalizeAndSortTsv = (str: string) => {
+      const lines = str.replace(/\r\n/g, '\n').trim().split('\n');
+      const header = lines.shift();
+      lines.sort(); // Sort data lines for consistent comparison
+      return [header, ...lines].join('\n');
+    };
+
+    const outputInnerJoin = await getFileContentLocal('out_inner_join');
+    expect(normalizeAndSortTsv(outputInnerJoin)).toEqual(normalizeAndSortTsv(expectedOutputInnerJoin));
+
+    const outputLeftJoinOn = await getFileContentLocal('out_left_join_on');
+    expect(normalizeAndSortTsv(outputLeftJoinOn)).toEqual(normalizeAndSortTsv(expectedOutputLeftJoinOn));
+
+    const outputFullJoinOnNoCoalesce = await getFileContentLocal('out_full_join_on_nocoalesce');
+    expect(normalizeAndSortTsv(outputFullJoinOnNoCoalesce)).toEqual(normalizeAndSortTsv(expectedOutputFullJoinOnNoCoalesce));
+
+    const outputCrossJoin = await getFileContentLocal('out_cross_join');
+    expect(normalizeAndSortTsv(outputCrossJoin)).toEqual(normalizeAndSortTsv(expectedOutputCrossJoin));
+  },
+);
