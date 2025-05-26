@@ -229,7 +229,7 @@ catalog:
 
   '@milaboratories/software-pframes-conv': &pframes-version 2.2.2
   '@platforma-open/milaboratories.software-small-binaries': ^1.15.21
-  '@platforma-open/milaboratories.software-ptabler': 1.5.0
+  '@platforma-open/milaboratories.software-ptabler': 1.6.0
   '@biowasm/aioli': ~3.2.1
 
   # Test
