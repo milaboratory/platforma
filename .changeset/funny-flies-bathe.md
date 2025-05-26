@@ -5,6 +5,7 @@
 Refactored XSV table generation and improved column handling in pframe bundles.
 
 Key changes:
+- Major: Polars-like API to work with tables based on PTabler Python module
 - Decoupled XSV Table Generation:
   - Removed `PColumnBundle.xsvTableBuilder()`.
   - Introduced `pframes.tsvFileBuilder()` and `pframes.csvFileBuilder()` for standalone XSV file creation.
