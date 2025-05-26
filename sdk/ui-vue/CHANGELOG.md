@@ -1,5 +1,14 @@
 # @platforma-sdk/ui-vue
 
+## 1.31.15
+
+### Patch Changes
+
+- bf88576: Fix default filters behaviour on reload with empty filters
+- Updated dependencies [bf88576]
+  - @platforma-sdk/model@1.31.15
+  - @milaboratories/uikit@2.2.75
+
 ## 1.31.14
 
 ### Patch Changes
