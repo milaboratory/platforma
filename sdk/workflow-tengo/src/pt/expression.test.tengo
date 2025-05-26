@@ -142,8 +142,8 @@ TestStringExpressions := func() {
 	test.isEqual(getExpr(expr1), {type: "to_upper", value: {type: "col", name: "name"}})
 
 	// firstName + " " + lastName
-	expr2 := pt.concatStr([firstName, pt.lit(" "), lastName], " ") // Delimiter here is for Polars concat_str, not for our func.
-                                                                // Our concatStr 2nd arg is the separator for ptabler.
+	expr2 := pt.concatStr([firstName, " ", lastName], {delimiter: " "})
+
 	test.isEqual(getExpr(expr2), {
 		type: "str_join",
 		operands: [
