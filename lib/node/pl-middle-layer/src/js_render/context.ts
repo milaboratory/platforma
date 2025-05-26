@@ -78,8 +78,11 @@ export class JsExecutionContext {
     notEmpty(this.computableHelper, 'Computable context helper is not initialized').resetComputableCtx();
   }
 
-  private static cleanErrorContext(error: unknown): void {
-    if (typeof error === 'object' && error !== null && 'context' in error) delete error['context'];
+  private static cleanError(error: unknown): unknown {
+    if (error instanceof errors.QuickJSUnwrapError) {
+      return new errors.QuickJSUnwrapError(error.cause);
+    }
+    return error;
   }
 
   public evaluateBundle(code: string) {
@@ -87,8 +90,7 @@ export class JsExecutionContext {
       this.deadlineSetter({ currentExecutionTarget: 'evaluateBundle', deadline: Date.now() + 10000 });
       this.vm.unwrapResult(this.vm.evalCode(code, 'bundle.js', { type: 'global' })).dispose();
     } catch (err: unknown) {
-      JsExecutionContext.cleanErrorContext(err);
-      throw err;
+      throw JsExecutionContext.cleanError(err);
     } finally {
       this.deadlineSetter(undefined);
     }
@@ -114,8 +116,7 @@ export class JsExecutionContext {
         );
       });
     } catch (err: unknown) {
-      JsExecutionContext.cleanErrorContext(err);
-      const original = this.errorRepo.getOriginal(err);
+      const original = this.errorRepo.getOriginal(JsExecutionContext.cleanError(err));
       throw original;
     } finally {
       this.deadlineSetter(undefined);
