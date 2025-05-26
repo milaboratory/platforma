@@ -132,7 +132,10 @@ tpl := func(ops) {
 	_stateRequests := []
 	_delegatedOutputs := []
 
-	self = ll.toStrict({
+	// TODO: make it to be strict map.
+	//       For now, any '_key: undefined' in self object is completely cut by ll.toStrict and
+	//       causes an error in is_undefined(self._key) checks.
+	self = {
 
 		/**
 		 * Current renderer smart resource
@@ -653,7 +656,7 @@ tpl := func(ops) {
 				template                : self.template
 			})
 		}
-	})
+	}
 	return self
 }
 
