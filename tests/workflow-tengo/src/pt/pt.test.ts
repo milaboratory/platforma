@@ -184,7 +184,7 @@ tplTest(
     const expectedOutputLeftJoinOn = `id,name,val_left,id_from_right,val_right,info
 1,Alice,100,ID1,10,R_Info_Alice
 2,Bob,200,ID2,20,R_Info_Bob
-3,Charlie,300,,,// Charlie is in left, not in right
+3,Charlie,300,,,
 4,David,400,ID4,40,R_Info_David`; // David is in both
     // Frank from right is not included due to left join
 

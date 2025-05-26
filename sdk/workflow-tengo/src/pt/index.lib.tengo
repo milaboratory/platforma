@@ -798,12 +798,11 @@ _newDataFrame = func(parentWorkflow, dfName) {
 			} else { // 'inner', 'left', 'right', 'full'
 				if !is_undefined(onOpt) {
 					if !is_undefined(leftOnOpt) || !is_undefined(rightOnOpt) {
-						ll.assert(len(onOpt) > 0, "'on' option, if provided, cannot be an empty list.")
-						joinStep.leftOn = onOpt
-						joinStep.rightOn = onOpt
-					} else {
 						ll.panic("For '%s' join, you must specify either 'on' option or both 'leftOn' and 'rightOn' options.", how)
 					}
+					ll.assert(len(onOpt) > 0, "'on' option, if provided, cannot be an empty list.")
+					joinStep.leftOn = onOpt
+					joinStep.rightOn = onOpt
 				} else if !is_undefined(leftOnOpt) && !is_undefined(rightOnOpt) {
 					ll.assert(len(leftOnOpt) > 0, "'leftOn' option, if provided, cannot be an empty list.")
 					ll.assert(len(rightOnOpt) > 0, "'rightOn' option, if provided, cannot be an empty list.")
