@@ -26,32 +26,47 @@ _isAggregation := func(item) {
 }
 
 // Helper function to map string column names or expression objects to their JSON structure
-_mapToExpressionStructList := func(itemsList) {
+_mapToExpressionStructList := func(itemsList, stringInterpretation) {
 	if !is_array(itemsList) {
 		itemsList = [itemsList] // Allow single item to be passed
 	}
+	if stringInterpretation != "col" && stringInterpretation != "lit" {
+		ll.panic("Invalid stringInterpretation ('%v') for _mapToExpressionStructList. Must be 'col' or 'lit'.", stringInterpretation)
+		return undefined // Unreachable
+	}
 	return slices.map(itemsList, func(item) {
 		if is_string(item) {
-			return col(item).getExpression()
+			if stringInterpretation == "col" {
+				return col(item).getExpression()
+			} else { // Must be "lit" due to the check above
+				return lit(item).getExpression()
+			}
 		} else if _isExpression(item) {
 			return item.getExpression()
 		} else {
-			ll.panic("Invalid item type in list: %T. Must be a string or an expression object.", item)
+			ll.panic("Invalid item type in list: %T. Must be a string (interpreted as '%s') or an expression object.", item, stringInterpretation)
 			return undefined // Unreachable
 		}
 	})
 }
 
-_mapToSingleExpressionStruct := func(item) {
-	if is_string(item) {
-		return col(item).getExpression()
-	} else if _isExpression(item) {
+_mapToSingleExpressionStruct := func(item, stringInterpretation) {
+	if _isExpression(item) {
 		return item.getExpression()
-	} else if is_int(item) || is_float(item) || is_bool(item) || item == undefined {
+	} else if is_int(item) || is_float(item) || is_bool(item) { // These are always literals
 		return lit(item).getExpression()
+	} else if is_string(item) {
+		if stringInterpretation == "col" {
+			return col(item).getExpression()
+		} else if stringInterpretation == "lit" {
+			return lit(item).getExpression()
+		} else { // stringInterpretation is undefined or an invalid value
+			ll.panic("String item '%v' provided, but its interpretation as 'col' or 'lit' was not specified or is not applicable in this context. (stringInterpretation: '%v')", item, stringInterpretation)
+			return undefined
+		}
 	} else {
-		ll.panic("Invalid item type: %T. Must be a string, an expression object, a number, a boolean or null.", item)
-		return undefined // Unreachable
+		ll.panic("Invalid item type: %T. Expected an expression, literal (number, bool, null), or string (with 'col'/'lit' interpretation).", item)
+		return undefined
 	}
 }
 
@@ -109,7 +124,7 @@ _newWindowExpression = func(expression, aggregation, currentAlias) {
 			}
 
 			newExpression := maps.deepMerge(expression, {
-				partitionBy: _mapToExpressionStructList(partitionBy)
+				partitionBy: _mapToExpressionStructList(partitionBy, "col")
 			})
 
 			return _newWindowExpression(newExpression, undefined, currentAlias)
@@ -131,7 +146,7 @@ _newExpression = func(expression, currentAlias) {
 		rhsExprStruct := undefined
 		if _isExpression(other) {
 			rhsExprStruct = other.getExpression()
-		} else if is_int(other) || is_float(other) || is_bool(other) || other == undefined {
+		} else if is_int(other) || is_float(other) || is_bool(other) || is_string(other) {
 			rhsExprStruct = lit(other).getExpression()
 		} else {
 			ll.panic(opType + " expects an expression object or a literal (number, boolean, null) as argument. Got type: %T", other)
@@ -171,7 +186,7 @@ _newExpression = func(expression, currentAlias) {
 	aggOpBy := func(aggType, by) {
 		return _newWindowExpression(
 			undefined,
-			{aggregation: aggType, expression: expression, by: _mapToExpressionStructList(by)},
+			{aggregation: aggType, expression: expression, by: _mapToExpressionStructList(by, "col")},
 			undefined // Alias of underlying col, window expression itself is typically aliased later
 		)
 	}
@@ -242,17 +257,24 @@ _newExpression = func(expression, currentAlias) {
 		ceil: func() { return unaryOp("ceil") },
 
 		// Cast
+
 		/**
 		 * Casts this expression to a different data type.
 		 * @param dtype - string - The target data type. Supported types: 'Int8', 'Int16', 'Int32', 'Int64', 'UInt8', 'UInt16', 'UInt32', 'UInt64', 'Float32', 'Float64', 'Boolean', 'String', 'Date', 'Datetime', 'Time', 'Int', 'Long', 'Float', 'Double'.
-		 * @param strict - boolean (optional) - If true, casting errors will panic. Defaults to false (errors result in null).
+		 * @param options - map (optional) - An optional map with options:
+		 *   - strict (boolean, optional): If true, casting errors will panic. Defaults to false (errors result in null).
 		 * @returns {object} - A new expression object representing the cast operation.
 		 */
-		cast: func(dtype, strict) {
+		cast: func(dtype, ...options) {
 			strictVal := false
-			if strict != undefined {
-				ll.assert(is_bool(strict), "strict parameter for cast must be a boolean")
-				strictVal = strict
+			if len(options) > 0 {
+				ll.assert(len(options) == 1, "cast accepts at most one options map argument.")
+				opsMap := options[0]
+				ll.assert(is_map(opsMap), "Second argument to cast(), if provided, must be an options map.")
+				if !is_undefined(opsMap.strict) {
+					ll.assert(is_bool(opsMap.strict), "strict in options map must be a boolean")
+					strictVal = opsMap.strict
+				}
 			}
 			return _newExpression(
 				{type: "cast", value: expression, dtype: dtype, strict: strictVal},
@@ -328,27 +350,34 @@ _newExpression = func(expression, currentAlias) {
 		 * Replaces occurrences of a pattern in this string expression with a replacement string.
 		 * @param pattern - string|object - The pattern (string literal, regex, or an expression object evaluating to a string) to search for.
 		 * @param replacement - string|object - The replacement string (string literal or an expression object evaluating to a string). Can use $n or ${name} for regex capture groups.
-		 * @param replaceAll - boolean (optional) - If true, replace all occurrences. Defaults to false (replace first).
-		 * @param literal - boolean (optional) - If true, treat pattern as a literal string. Defaults to false (pattern is regex).
+		 * @param options - map (optional) - An optional map with options:
+		 *   - replaceAll (boolean, optional): If true, replace all occurrences. Defaults to false (replace first).
+		 *   - literal (boolean, optional): If true, treat pattern as a literal string. Defaults to false (pattern is regex).
 		 * @returns {object} - A new expression object representing the replacement.
 		 */
-		strReplace: func(pattern, replacement, replaceAll, literal) {
+		strReplace: func(pattern, replacement, ...options) {
 			replaceAllVal := false
-			if replaceAll != undefined {
-				ll.assert(is_bool(replaceAll), "replaceAll must be a boolean")
-				replaceAllVal = replaceAll
-			}
 			literalVal := false
-			if literal != undefined {
-				ll.assert(is_bool(literal), "literal must be a boolean")
-				literalVal = literal
+
+			if len(options) > 0 {
+				ll.assert(len(options) == 1, "strReplace accepts at most one options map argument.")
+				opsMap := options[0]
+				ll.assert(is_map(opsMap), "Third argument to strReplace(), if provided, must be an options map.")
+				if !is_undefined(opsMap.replaceAll) {
+					ll.assert(is_bool(opsMap.replaceAll), "replaceAll in options map must be a boolean")
+					replaceAllVal = opsMap.replaceAll
+				}
+				if !is_undefined(opsMap.literal) {
+					ll.assert(is_bool(opsMap.literal), "literal in options map must be a boolean")
+					literalVal = opsMap.literal
+				}
 			}
 
 			return _newExpression({
 				type: "str_replace",
 				value: expression,
-				pattern: _mapToSingleExpressionStruct(pattern),
-				replacement: _mapToSingleExpressionStruct(replacement),
+				pattern: _mapToSingleExpressionStruct(pattern, "lit"),
+				replacement: _mapToSingleExpressionStruct(replacement, "lit"),
 				replaceAll: replaceAllVal,
 				literal: literalVal
 			}, undefined)
@@ -514,7 +543,7 @@ _newExpression = func(expression, currentAlias) {
 				ops := args[len(args)-1]
 				actualArgs = args[0:len(args)-1]
 				if maps.containsKey(ops, "orderBy") {
-					additionalOrderByVal = _mapToExpressionStructList(ops.orderBy)
+					additionalOrderByVal = _mapToExpressionStructList(ops.orderBy, "col")
 				}
 				if maps.containsKey(ops, "descending") {
 					ll.assert(is_bool(ops.descending), "descending in options map must be a boolean")
@@ -525,7 +554,7 @@ _newExpression = func(expression, currentAlias) {
 			// Process remaining actualArgs if not handled by options map
 			if len(additionalOrderByVal) == 0 && len(actualArgs) > 0 {
 				if is_array(actualArgs[0]) || is_string(actualArgs[0]) || _isExpression(actualArgs[0]) {
-					additionalOrderByVal = _mapToExpressionStructList(actualArgs[0])
+					additionalOrderByVal = _mapToExpressionStructList(actualArgs[0], "col")
 					if len(actualArgs) > 1 && is_bool(actualArgs[1]) {
 						descendingVal = actualArgs[1]
 					}
@@ -580,20 +609,29 @@ lit = func(value) {
 /**
  * Concatenates string representations of multiple expressions, optionally separated by a delimiter.
  * @param expressions - array - An array of expression objects or column names whose string representations will be joined.
- * @param delimiterStr - string (optional) - The delimiter string to insert between joined elements.
+ * @param options - map (optional) - An optional map with options:
+ *   - delimiter (string, optional): The delimiter string to insert between joined elements. Defaults to "".
  * @returns {object} - An expression object.
  */
-concatStr := func(expressions, delimiterStr) {
+concatStr := func(expressions, ...options) {
 	ll.assert(is_array(expressions), "First argument to concatStr must be an array of expressions")
 	ll.assert(len(expressions) > 0, "Expression array for concatStr cannot be empty")
-	if delimiterStr != undefined {
-		ll.assert(is_string(delimiterStr), "Delimiter for concatStr must be a string")
+
+	delimiterVal := "" // Default to empty string
+	if len(options) > 0 {
+		ll.assert(len(options) == 1, "concatStr accepts at most one options map argument.")
+		opsMap := options[0]
+		ll.assert(is_map(opsMap), "Second argument to concatStr(), if provided, must be an options map.")
+		if !is_undefined(opsMap.delimiter) {
+			ll.assert(is_string(opsMap.delimiter), "delimiter in options map must be a string")
+			delimiterVal = opsMap.delimiter
+		}
 	}
 
 	return _newExpression({
 		type: "str_join",
-		operands: _mapToExpressionStructList(expressions),
-		delimiter: delimiterStr
+		operands: _mapToExpressionStructList(expressions, "lit"),
+		delimiter: delimiterVal
 	}, undefined)
 }
 
@@ -607,7 +645,7 @@ minHorizontal := func(expressions) {
 	ll.assert(len(expressions) > 0, "Expression array for minHorizontal cannot be empty")
 	return _newExpression({
 		type: "min",
-		operands: _mapToExpressionStructList(expressions)
+		operands: _mapToExpressionStructList(expressions, "col")
 	}, undefined)
 }
 
@@ -621,7 +659,7 @@ maxHorizontal := func(expressions) {
 	ll.assert(len(expressions) > 0, "Expression array for maxHorizontal cannot be empty")
 	return _newExpression({
 		type: "max",
-		operands: _mapToExpressionStructList(expressions)
+		operands: _mapToExpressionStructList(expressions, "col")
 	}, undefined)
 }
 
@@ -731,7 +769,7 @@ rank = func(orderByExpressions, ...options) {
 	descendingVal := false
 
 	ll.assert(orderByExpressions != undefined, "rank() requires orderByExpressions (single expression/string or array of them).")
-	orderByVal = _mapToExpressionStructList(orderByExpressions)
+	orderByVal = _mapToExpressionStructList(orderByExpressions, "col")
 	ll.assert(len(orderByVal) > 0, "rank() 'orderBy' list cannot be empty after processing arguments.")
 
 	if len(options) > 0 {
@@ -863,5 +901,6 @@ export ll.toStrict({
 	rawExp: rawExp,
 	_isExpression: _isExpression,
 	_isAggregation: _isAggregation,
-	_mapToExpressionStructList: _mapToExpressionStructList
+	_mapToExpressionStructList: _mapToExpressionStructList,
+	_mapToSingleExpressionStruct: _mapToSingleExpressionStruct
 })

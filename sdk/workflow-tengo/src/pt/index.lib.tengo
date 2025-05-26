@@ -107,6 +107,9 @@ workflow := func() {
 		 *                         and cannot be inferred. Overrides `xsvType` from structural input if provided there.
 		 *   - `id` {string} (optional): A specific ID to assign to this DataFrame. If not provided, an anonymous ID is generated.
 		 *   - `fileName` {string} (optional): A specific name for the input file within PTabler. If not provided, an anonymous name is generated.
+		 *   - `inferSchema` {boolean} (optional): Whether to infer the schema from the input file. Defaults to `true`. If `false`,
+		 *                                        type inference is disabled, and types will rely on the `schema` field (if provided
+		 *                                        in a structural input) or PTabler's defaults.
 		 * @returns {object} - A DataFrame object representing the loaded data.
 		 * @example
 		 *   // From a resource reference (assuming TSV)
@@ -137,6 +140,7 @@ workflow := func() {
 			finalDataFrameId := undefined
 			finalFileName := undefined
 			finalXsvType := undefined
+			inferSchemaOpt := undefined
 
 			isStructuralInput := is_map(frameInput) && !is_undefined(frameInput.file)
 
@@ -159,7 +163,10 @@ workflow := func() {
 
 			ll.assert(is_undefined(finalXsvType) || is_undefined(opts.xsvType), "xsvType option cannot be used with structural input as xsvType is already defined in the input structure")
 
-			finalXsvType = opts.xsvType
+			if !is_undefined(opts.xsvType) {
+				finalXsvType = opts.xsvType
+			}
+
 			ll.assert(!is_undefined(finalXsvType), "xsvType option is required for direct file input")
 			ll.assert(finalXsvType == "csv" || finalXsvType == "tsv", "xsvType must be 'csv' or 'tsv'")
 
@@ -173,6 +180,14 @@ workflow := func() {
 				finalFileName = opts.fileName
 			} else {
 				finalFileName = self._newAnonymousFileId(finalXsvType)
+			}
+
+			// Handle inferSchema option
+			if !is_undefined(opts.inferSchema) {
+				if !is_bool(opts.inferSchema) {
+					ll.panic("'inferSchema' option must be a boolean. Got: %T", opts.inferSchema)
+				}
+				inferSchemaOpt = opts.inferSchema
 			}
 
 			if !is_undefined(fileRef) && !smart.isReference(fileRef) {
@@ -201,6 +216,12 @@ workflow := func() {
 
 			if !is_undefined(inputSchema) {
 				readCsvStep.schema = inputSchema
+			}
+
+			// Only add infer_schema to the step if it's explicitly set to false,
+			// as PTabler defaults to true.
+			if !is_undefined(inferSchemaOpt) && inferSchemaOpt == false {
+				readCsvStep.infer_schema = false
 			}
 
 			self.addRawStep(readCsvStep)
@@ -297,7 +318,7 @@ _newDataFrameGroupBy = func(parentWorkflow, dfName, groupByExpressions) {
 				type: "aggregate",
 				inputTable: dfName,
 				outputTable: outputDfName,
-				groupBy: exp._mapToExpressionStructList(groupByExpressions),
+				groupBy: exp._mapToExpressionStructList(groupByExpressions, "col"),
 				aggregations: aggregations
 			})
 			return _newDataFrame(parentWorkflow, outputDfName)
@@ -798,7 +819,7 @@ _newDataFrame = func(parentWorkflow, dfName) {
 			} else { // 'inner', 'left', 'right', 'full'
 				if !is_undefined(onOpt) {
 					if !is_undefined(leftOnOpt) || !is_undefined(rightOnOpt) {
-						ll.panic("For '%s' join, you must specify either 'on' option or both 'leftOn' and 'rightOn' options.", how)
+						ll.panic("For '%s' join, you must specify either 'on' option or both 'leftOn' and 'rightOn' options. 'on' was provided, but so was 'leftOn' or 'rightOn'.", how)
 					}
 					ll.assert(len(onOpt) > 0, "'on' option, if provided, cannot be an empty list.")
 					joinStep.leftOn = onOpt
@@ -835,13 +856,114 @@ _newDataFrame = func(parentWorkflow, dfName) {
 
 			parentWorkflow.addRawStep(joinStep)
 			return _newDataFrame(parentWorkflow, outputDfName)
+		},
+
+		/**
+		 * Excludes a specific set of columns from the DataFrame.
+		 *
+		 * @param columns {array} - An array of column name strings to exclude.
+		 * @returns {object} - A new DataFrame object with the specified columns removed.
+		 * @example
+		 *   dfWithoutCols := df.withoutColumns(["colA", "colB"])
+		 */
+		withoutColumns: func(...columns) {
+			ll.assert(is_array(columns), "Argument to withoutColumns must be an array of column names.")
+			ll.assert(len(columns) > 0, "Columns array for withoutColumns cannot be empty.")
+			for i, colName in columns {
+				ll.assert(is_string(colName), "Each element in the columns array for withoutColumns (at index %d) must be a string. Got: %T", i, colName)
+			}
+
+			outputDfName := parentWorkflow._newAnonymousDataFrameId()
+			parentWorkflow.addRawStep({
+				type: "without_columns",
+				inputTable: dfName,
+				outputTable: outputDfName,
+				columns: columns
+			})
+			return _newDataFrame(parentWorkflow, outputDfName)
 		}
 	})
 	return self
 }
 
+/**
+ * Concatenates multiple DataFrames vertically.
+ * Columns are matched by name. If the `columns` option is provided, only those columns
+ * will be selected from all input DataFrames and included in the output.
+ * All input DataFrames must belong to the same workflow.
+ *
+ * @param dataframes {array} - An array of DataFrame objects to concatenate.
+ * @param ...optionsRaw {map} (optional) - A single map argument for additional options:
+ *   - `columns` {array} (optional): An array of column name strings to select from all input DataFrames.
+ *                                  If omitted, all columns are included. All input DataFrames must
+ *                                  contain all specified columns if this option is used.
+ * @returns {object} - A new DataFrame object representing the concatenated result.
+ * @example
+ *   // Assuming df1, df2, and df3 are DataFrames from the same workflow
+ *   concatenatedDf := pt.concat([df1, df2, df3])
+ *
+ *   // Concatenate and select specific columns
+ *   selectedColumnsDf := pt.concat(
+ *       [df1, df2],
+ *       {columns: ["id", "name", "value"]}
+ *   )
+ */
+concat := func(dataframes, ...optionsRaw) {
+	ll.assert(is_array(dataframes), "First argument to concat must be an array of DataFrame objects.")
+	ll.assert(len(dataframes) > 0, "DataFrame array for concat cannot be empty.")
+
+	opts := {}
+	if len(optionsRaw) > 0 {
+		if len(optionsRaw) == 1 && is_map(optionsRaw[0]) {
+			opts = optionsRaw[0]
+		} else {
+			ll.panic("concat options must be a single map argument")
+		}
+	}
+
+	parentWorkflow := undefined
+	inputTableNames := []
+
+	for i, df in dataframes {
+		if is_undefined(df) || is_undefined(df._getDfName) || is_undefined(df._getWorkflow) {
+			ll.panic("Argument at index %d in dataframes array is not a valid DataFrame object.", i)
+		}
+		currentWorkflow := df._getWorkflow()
+		if is_undefined(parentWorkflow) {
+			parentWorkflow = currentWorkflow
+		} else if currentWorkflow._wfId != parentWorkflow._wfId {
+			ll.panic("All DataFrames in a concat operation must belong to the same workflow.")
+		}
+		inputTableNames = append(inputTableNames, df._getDfName())
+	}
+
+	outputDfName := parentWorkflow._newAnonymousDataFrameId()
+
+	concatenateStep := {
+		type: "concatenate",
+		inputTables: inputTableNames,
+		outputTable: outputDfName
+	}
+
+	if !is_undefined(opts.columns) {
+		if !is_array(opts.columns) {
+			ll.panic("'columns' option for concat must be an array of strings.")
+		}
+		for i, colName in opts.columns {
+			if !is_string(colName) {
+				ll.panic("Each element in 'columns' option array (at index %d) must be a string. Got: %T", i, colName)
+			}
+		}
+		concatenateStep.columns = opts.columns
+	}
+
+	parentWorkflow.addRawStep(concatenateStep)
+	return _newDataFrame(parentWorkflow, outputDfName)
+}
+
 export ll.toStrict({
 	workflow: workflow,
+	concat: concat,
 
 	col: exp.col,
 	lit: exp.lit,
