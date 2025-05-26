@@ -212,29 +212,29 @@ _newExpression = func(expression, currentAlias) {
 		},
 
 		// Comparison
-		/** Checks if this expression is greater than another. */
+		/** Checks if this expression is greater than another. Raw literal values can be used directly, e.g., `expr.gt(2)`. */
 		gt: func(other) { return binaryOp("gt", other) },
-		/** Checks if this expression is greater than or equal to another. */
+		/** Checks if this expression is greater than or equal to another. Raw literal values can be used directly, e.g., `expr.ge(2)`. */
 		ge: func(other) { return binaryOp("ge", other) },
-		/** Checks if this expression is equal to another. */
+		/** Checks if this expression is equal to another. Raw literal values can be used directly, e.g., `expr.eq(2)`. */
 		eq: func(other) { return binaryOp("eq", other) },
-		/** Checks if this expression is less than another. */
+		/** Checks if this expression is less than another. Raw literal values can be used directly, e.g., `expr.lt(2)`. */
 		lt: func(other) { return binaryOp("lt", other) },
-		/** Checks if this expression is less than or equal to another. */
+		/** Checks if this expression is less than or equal to another. Raw literal values can be used directly, e.g., `expr.le(2)`. */
 		le: func(other) { return binaryOp("le", other) },
-		/** Checks if this expression is not equal to another. */
+		/** Checks if this expression is not equal to another. Raw literal values can be used directly, e.g., `expr.neq(2)`. */
 		neq: func(other) { return binaryOp("neq", other) },
 
 		// Arithmetic
-		/** Adds another expression to this expression. */
+		/** Adds another expression to this expression. Raw literal values can be used directly, e.g., `expr.plus(2)`. */
 		plus: func(other) { return binaryOp("plus", other) },
-		/** Subtracts another expression from this expression. */
+		/** Subtracts another expression from this expression. Raw literal values can be used directly, e.g., `expr.minus(2)`. */
 		minus: func(other) { return binaryOp("minus", other) },
-		/** Multiplies this expression by another. */
+		/** Multiplies this expression by another. Raw literal values can be used directly, e.g., `expr.multiply(2)`. */
 		multiply: func(other) { return binaryOp("multiply", other) },
-		/** Performs true division of this expression by another. */
+		/** Performs true division of this expression by another. Raw literal values can be used directly, e.g., `expr.truediv(2)`. */
 		truediv: func(other) { return binaryOp("truediv", other) },
-		/** Performs floor division of this expression by another. */
+		/** Performs floor division of this expression by another. Raw literal values can be used directly, e.g., `expr.floordiv(2)`. */
 		floordiv: func(other) { return binaryOp("floordiv", other) },
 
 		/** Computes the base-10 logarithm of this expression. */
@@ -608,7 +608,7 @@ lit = func(value) {
 
 /**
  * Concatenates string representations of multiple expressions, optionally separated by a delimiter.
- * @param expressions - array - An array of expression objects or column names whose string representations will be joined.
+ * @param expressions - array - An array of expression objects or string literals whose string representations will be joined.
  * @param options - map (optional) - An optional map with options:
  *   - delimiter (string, optional): The delimiter string to insert between joined elements. Defaults to "".
  * @returns {object} - An expression object.
