@@ -598,27 +598,15 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
       //
 
       exportCtxFunction('getBlobContentAsBase64', (handle, range) => {
-        const fromRaw = vm.getNumber(vm.getProp(range, 'from'));
-        const from = isNaN(fromRaw) ? undefined : fromRaw;
-
-        const toRaw = vm.getNumber(vm.getProp(range, 'to'));
-        const to = isNaN(toRaw) ? undefined : toRaw;
-
         return parent.exportSingleValue(
-          this.getBlobContentAsBase64(vm.getString(handle), newRangeBytesOpt(from, to)),
+          this.getBlobContentAsBase64(vm.getString(handle), parent.importObjectUniversal(range) as RangeBytes | undefined),
           undefined,
         );
       });
 
       exportCtxFunction('getBlobContentAsString', (handle, range) => {
-        const fromRaw = vm.getNumber(vm.getProp(range, 'from'));
-        const from = isNaN(fromRaw) ? undefined : fromRaw;
-
-        const toRaw = vm.getNumber(vm.getProp(range, 'to'));
-        const to = isNaN(toRaw) ? undefined : toRaw;
-
         return parent.exportSingleValue(
-          this.getBlobContentAsString(vm.getString(handle), newRangeBytesOpt(from, to)),
+          this.getBlobContentAsString(vm.getString(handle), parent.importObjectUniversal(range) as RangeBytes | undefined),
           undefined,
         );
       });
