@@ -1,5 +1,12 @@
 # @milaboratories/pl-middle-layer
 
+## 1.37.40
+
+### Patch Changes
+
+- dfcce31: "Accept undefined as QuickJS function param"
+- 5a5b65d: "Revert PFrameDriver changes"
+
 ## 1.37.39
 
 ### Patch Changes
