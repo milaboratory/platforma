@@ -1,5 +1,13 @@
 # @platforma-sdk/test
 
+## 1.31.14
+
+### Patch Changes
+
+- Updated dependencies [e25600e]
+  - @platforma-sdk/model@1.31.14
+  - @milaboratories/pl-middle-layer@1.37.41
+
 ## 1.31.13
 
 ### Patch Changes
