@@ -45,6 +45,9 @@ catalogs:
     '@oclif/core':
       specifier: ^4.0.37
       version: 4.0.37
+    '@platforma-open/milaboratories.software-ptabler':
+      specifier: 1.6.0
+      version: 1.6.0
     '@platforma-open/milaboratories.software-small-binaries':
       specifier: ^1.15.21
       version: 1.15.21
@@ -69,6 +72,9 @@ catalogs:
     '@types/d3':
       specifier: ^7.4.3
       version: 7.4.3
+    '@types/d3-format':
+      specifier: ^3.0.4
+      version: 3.0.4
     '@types/decompress':
       specifier: ^4.2.7
       version: 4.2.7
@@ -126,6 +132,9 @@ catalogs:
     d3:
       specifier: ^7.9.0
       version: 7.9.0
+    d3-format:
+      specifier: ^3.1.0
+      version: 3.1.0
     decompress:
       specifier: ^4.2.1
       version: 4.2.1
@@ -2336,6 +2345,9 @@ importers:
       '@milaboratories/helpers':
         specifier: workspace:^
         version: link:../../lib/util/helpers
+      '@types/d3-format':
+        specifier: 'catalog:'
+        version: 3.0.4
       '@types/lodash':
         specifier: 'catalog:'
         version: 4.17.16
@@ -2351,6 +2363,9 @@ importers:
       '@vueuse/core':
         specifier: 'catalog:'
         version: 12.4.0(typescript@5.5.4)
+      d3-format:
+        specifier: 'catalog:'
+        version: 3.1.0
       happy-dom:
         specifier: 'catalog:'
         version: 15.11.7
@@ -2390,6 +2405,9 @@ importers:
       '@milaboratories/software-pframes-conv':
         specifier: 'catalog:'
         version: 2.2.2
+      '@platforma-open/milaboratories.software-ptabler':
+        specifier: 'catalog:'
+        version: 1.6.0
       '@platforma-open/milaboratories.software-small-binaries':
         specifier: 'catalog:'
         version: 1.15.21
@@ -4569,6 +4587,9 @@ packages:
   '@pkgjs/parseargs@0.11.0':
     resolution: {integrity: sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==}
     engines: {node: '>=14'}
+
+  '@platforma-open/milaboratories.software-ptabler@1.6.0':
+    resolution: {integrity: sha512-pHOMYwDikYB2L8K7XoTHDNJ7lr+mGIXv88iov1UZkSdvdOTb+owD3xZ3u9uxDNwyzyiQ7a4E+MIAdx/eJEYL8g==}
 
   '@platforma-open/milaboratories.software-small-binaries.guided-command@1.0.4':
     resolution: {integrity: sha512-LD8XQDnR+L9oRD7JXE0VWGmv1/0cm+J71flrwBUWeIbuaenPC8Nsza8oy7JjLJ8AX+bm8XAyyJALuqBBqkL95Q==}
@@ -13042,6 +13063,8 @@ snapshots:
 
   '@pkgjs/parseargs@0.11.0':
     optional: true
+
+  '@platforma-open/milaboratories.software-ptabler@1.6.0': {}
 
   '@platforma-open/milaboratories.software-small-binaries.guided-command@1.0.4': {}
 

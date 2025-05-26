@@ -477,6 +477,25 @@ prepareAxisFilters := func(rules, spec) {
 	}
 }
 
+/**
+ * Converts an AxisSpec object into a matcher object suitable for functions like matchAxis.
+ * It copies the 'name', 'type', and 'domain' (if present) fields from the AxisSpec.
+ *
+ * @param axisSpec P_AXIS_SPEC_SCHEMA - The axis specification object.
+ * @returns map - A matcher object with 'name', 'type', and optionally 'domain'.
+ */
+axisSpecToMatcher := func(axisSpec) {
+	validation.assertType(axisSpec, P_AXIS_SPEC_SCHEMA)
+	matcher := {
+		name: axisSpec.name,
+		type: axisSpec.type
+	}
+	if !is_undefined(axisSpec.domain) {
+		matcher.domain = maps.clone(axisSpec.domain) // Clone to avoid modifying original spec's domain
+	}
+	return matcher
+}
+
 export ll.toStrict({
 	P_AXIS_SPEC_SCHEMA: P_AXIS_SPEC_SCHEMA,
 	P_COLUMN_SPEC_SCHEMA: P_COLUMN_SPEC_SCHEMA,
@@ -500,6 +519,7 @@ export ll.toStrict({
 
 	createSpecDistiller: createSpecDistiller,
 
-	prepareAxisFilters: prepareAxisFilters
+	prepareAxisFilters: prepareAxisFilters,
+	axisSpecToMatcher: axisSpecToMatcher
 })
 

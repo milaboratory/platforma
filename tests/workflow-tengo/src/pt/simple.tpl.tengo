@@ -1,0 +1,24 @@
+self := import("@platforma-sdk/workflow-tengo:tpl")
+pt := import("@platforma-sdk/workflow-tengo:pt")
+file := import("@platforma-sdk/workflow-tengo:file")
+
+self.defineOutputs("out")
+
+self.body(func(inputs){
+
+	tsv := inputs.inputTsv
+
+	wf := pt.workflow()
+
+	df := wf.frame(tsv, {
+		xsvType: "tsv"
+	})
+	df1 := df.select(pt.col("a"), pt.col("a").sqrt().alias("a_sqrt"))
+	df1.save("output.tsv")
+
+	ptablerResult := wf.run()
+
+	return {
+		out: file.exportFile(ptablerResult.getFile("output.tsv"))
+	}
+})

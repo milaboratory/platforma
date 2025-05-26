@@ -1,10 +1,5 @@
-import {
-  type PTableColumnSpec,
-  type PTableValue,
-  isLabelColumn as isLabelColumnSpec,
-  isPTableAbsent,
-  PTableNA,
-} from '@platforma-sdk/model';
+import type { PTableValue } from '@platforma-sdk/model';
+import { type PTableColumnSpec, PTableNA, isLabelColumn as isLabelColumnSpec, isPTableAbsent } from '@platforma-sdk/model';
 import type { ValueFormatterParams } from 'ag-grid-enterprise';
 import type { PlAgDataTableRow } from '../types';
 
