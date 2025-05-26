@@ -141,6 +141,7 @@ workflow := func() {
 			finalFileName := undefined
 			finalXsvType := undefined
 			inferSchemaOpt := undefined
+			optionsSchema := undefined
 
 			isStructuralInput := is_map(frameInput) && !is_undefined(frameInput.file)
 
@@ -149,6 +150,9 @@ workflow := func() {
 				inputXsvType = frameInput.xsvType
 				// schema might be undefined in the input, which is fine
 				if !is_undefined(frameInput.schema) {
+					if !is_array(frameInput.schema) {
+						ll.panic("frameInput.schema (for structural input) must be an array if provided. Got: %T", frameInput.schema)
+					}
 					inputSchema = frameInput.schema
 				}
 
@@ -190,6 +194,14 @@ workflow := func() {
 				inferSchemaOpt = opts.inferSchema
 			}
 
+			// Handle schema option from opts
+			if !is_undefined(opts.schema) {
+				if !is_array(opts.schema) {
+					ll.panic("'schema' option (from options map) must be an array. Got: %T", opts.schema)
+				}
+				optionsSchema = opts.schema
+			}
+
 			if !is_undefined(fileRef) && !smart.isReference(fileRef) {
 				ll.panic("frameInput.file (for structural input) or frameInput (for direct reference) must be a valid resource reference. Got: %v", fileRef)
 			} else if !is_undefined(fileContent) && !is_string(fileContent) {
@@ -214,14 +226,22 @@ workflow := func() {
 				readCsvStep.delimiter = "\t"
 			}
 
-			if !is_undefined(inputSchema) {
-				readCsvStep.schema = inputSchema
+			// Determine final schema for PTabler: optionsSchema (from opts) overrides inputSchema (from structural input)
+			finalSchemaToUse := undefined
+			if !is_undefined(optionsSchema) {
+				finalSchemaToUse = optionsSchema
+			} else {
+				finalSchemaToUse = inputSchema
+			}
+
+			if !is_undefined(finalSchemaToUse) {
+				readCsvStep.schema = finalSchemaToUse
 			}
 
 			// Only add infer_schema to the step if it's explicitly set to false,
 			// as PTabler defaults to true.
 			if !is_undefined(inferSchemaOpt) && inferSchemaOpt == false {
-				readCsvStep.infer_schema = false
+				readCsvStep.inferSchema = false
 			}
 
 			self.addRawStep(readCsvStep)
