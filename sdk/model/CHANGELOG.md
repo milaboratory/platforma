@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.31.14
+
+### Patch Changes
+
+- e25600e: Temp fix for NA in axis values
+
 ## 1.31.6
 
 ### Patch Changes
