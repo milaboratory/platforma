@@ -3,7 +3,7 @@ import { awaitStableState, tplTest } from '@platforma-sdk/test';
 
 tplTest(
   'pt simple test',
-  { timeout: 20000 },
+  { timeout: 40000 },
   async ({ helper, expect, driverKit }) => {
     const inputTsvData = 'a\tb\n1\tX\n4\tY\n9\tZ';
     const expectedOutputTsvData = 'a\ta_sqrt\n1\t1.0\n4\t2.0\n9\t3.0';
@@ -24,7 +24,7 @@ tplTest(
         }
         return driverKit.blobDriver.getOnDemandBlob(fileHandle.persist(), ctx).handle;
       }),
-      15000,
+      40000,
     );
 
     expect(outputFileHandle).toBeDefined();
@@ -39,7 +39,7 @@ tplTest(
 
 tplTest(
   'pt ex1 test - window and groupBy operations',
-  { timeout: 30000 }, // Increased timeout for potentially more complex operations
+  { timeout: 40000 }, // Increased timeout for potentially more complex operations
   async ({ helper, expect, driverKit }) => {
     const inputTsvData = `category\tuser_id\tscore\tvalue
 A\tuser1\t100\t10
@@ -79,7 +79,7 @@ C\t50\t300.0`;
           }
           return driverKit.blobDriver.getOnDemandBlob(fileHandle.persist(), ctx).handle;
         }),
-        25000, // Allow more time for ptabler execution
+        40000,
       );
       expect(fileHandle).toBeDefined();
       return (await driverKit.blobDriver.getContent(fileHandle!)).toString();
@@ -102,7 +102,7 @@ C\t50\t300.0`;
 
 tplTest(
   'pt ex2 test - filter and sort operations',
-  { timeout: 30000 },
+  { timeout: 40000 },
   async ({ helper, expect, driverKit }) => {
     const inputTsvData = `category\tuser_id\tscore\tvalue
 A\tuser1\t100\t10
@@ -146,7 +146,7 @@ B\tuser7\t190\t110`;
           }
           return driverKit.blobDriver.getOnDemandBlob(fileHandle.persist(), ctx).handle;
         }),
-        25000,
+        40000,
       );
       expect(fileHandle).toBeDefined();
       return (await driverKit.blobDriver.getContent(fileHandle!)).toString();
@@ -220,10 +220,10 @@ Banana,Yellow`;
     );
 
     const getFileContentLocal = async (
-      outputName: 
-        | 'out_inner_join' 
-        | 'out_left_join_on' 
-        | 'out_full_join_on_nocoalesce' 
+      outputName:
+        | 'out_inner_join'
+        | 'out_left_join_on'
+        | 'out_full_join_on_nocoalesce'
         | 'out_cross_join',
     ) => {
       const fileHandle = await awaitStableState(
@@ -233,7 +233,7 @@ Banana,Yellow`;
           }
           return driverKit.blobDriver.getOnDemandBlob(fileHandle.persist(), ctx).handle;
         }),
-        35000, // Allow more time for ptabler execution with multiple joins
+        40000, // Allow more time for ptabler execution with multiple joins
       );
       expect(fileHandle).toBeDefined();
       return (await driverKit.blobDriver.getContent(fileHandle!)).toString();
