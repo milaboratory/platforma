@@ -80,7 +80,10 @@ export class JsExecutionContext {
 
   private static cleanError(error: unknown): unknown {
     if (error instanceof errors.QuickJSUnwrapError) {
-      return new errors.QuickJSUnwrapError(error.cause);
+      const { context: _, ...rest } = error;
+      const clean = new errors.QuickJSUnwrapError(error.cause);
+      Object.assign(clean, rest);
+      return clean;
     }
     return error;
   }
