@@ -28,6 +28,10 @@ import {
 import './pl-table-filters.scss';
 
 type DefaultFilters = (spec: PTableColumnSpec) => (PlTableFilter | undefined);
+type InnerState = {
+  state: PlTableFiltersState;
+  defaultsApplied: boolean;
+};
 
 const model = defineModel<PlTableFiltersModel>({ required: true });
 const props = defineProps<{
@@ -104,21 +108,23 @@ const restrictionsMap = computed<Record<PlTableFilterColumnId, PlTableFilterType
 
 const defaultState = () => lodash.cloneDeep(Object.values(defaultsMap.value));
 
-const makeState = (state?: PlTableFiltersState): PlTableFiltersState => {
-  return state ?? [];
+const makeState = (state?: PlTableFiltersModel): InnerState => {
+  return {
+    state: state?.state ?? [],
+    defaultsApplied: state?.defaultsApplied ?? false,
+  };
 };
-const reactiveModel = reactive({ state: makeState(model.value.state) });
+const reactiveModel = reactive({ ...makeState(model.value) });
 
 const resetToDefaults = () => {
   reactiveModel.state = defaultState();
+  reactiveModel.defaultsApplied = true;
 };
 
 watch(
   () => columns.value,
   (columns, previousColumns) => {
-    // @TODO: we need to somehow store that user modified defaults
-    // rn we will e.g. reset to defaults on page refresh if user removed all filters at all
-    if (defaults.value && model.value.state?.length === 0 && (!previousColumns || previousColumns.length === 0) && columns.length > 0) {
+    if (defaults.value && !(model.value.defaultsApplied ?? false) && (!previousColumns || previousColumns.length === 0) && columns.length > 0) {
       resetToDefaults();
     }
   },
@@ -127,16 +133,17 @@ watch(
 
 watch(
   () => model.value,
-  (model) => {
-    if (!lodash.isEqual(reactiveModel.state, model.state)) {
-      reactiveModel.state = makeState(model.state);
+  (newModelPropValue) => {
+    const authoritativeInnerState = makeState(newModelPropValue);
+    if (!lodash.isEqual(reactiveModel, authoritativeInnerState)) {
+      Object.assign(reactiveModel, authoritativeInnerState);
     }
   },
 );
 watch(
   () => reactiveModel,
   (reactiveModel) => {
-    if (!lodash.isEqual(reactiveModel.state, model.value.state)) {
+    if (!lodash.isEqual(reactiveModel.state, model.value.state) || !lodash.isEqual(reactiveModel.defaultsApplied, model.value.defaultsApplied)) {
       model.value = {
         state: lodash.cloneDeep(reactiveModel.state),
         filters: reactiveModel.state
@@ -151,6 +158,7 @@ watch(
               predicate: makePredicate(column, entry.filter),
             };
           }),
+        defaultsApplied: reactiveModel.defaultsApplied,
       };
     }
   },
