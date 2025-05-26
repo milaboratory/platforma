@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.31.15
+
+### Patch Changes
+
+- bf88576: Fix default filters behaviour on reload with empty filters
+
 ## 1.31.14
 
 ### Patch Changes
