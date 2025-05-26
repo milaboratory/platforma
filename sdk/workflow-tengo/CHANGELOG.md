@@ -1,5 +1,13 @@
 # @platforma-sdk/workflow-tengo
 
+## 4.6.1
+
+### Patch Changes
+
+- 0ce0375: PT library fixes:
+  - fix for infetSchema parameter in pt.frame()
+  - schema now can be set via opts in pt.frame()
+
 ## 4.6.0
 
 ### Minor Changes
