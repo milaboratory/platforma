@@ -466,9 +466,8 @@ _newExpression = func(expression, currentAlias) {
 		 * @returns {object} - A new expression object.
 		 */
 		fillNull: func(fillValueExpr) {
-			ll.assert(_isExpression(fillValueExpr), "fillValueExpr must be an expression object")
 			return _newExpression(
-				{type: "fill_na", input: expression, fillValue: fillValueExpr.getExpression()},
+				{type: "fill_na", input: expression, fillValue: _mapToSingleExpressionStruct(fillValueExpr, "lit")},
 				undefined
 			)
 		},
