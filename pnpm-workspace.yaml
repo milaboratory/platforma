@@ -215,6 +215,8 @@ catalog:
   'highlight.js': '11.10.0'
   'd3': '^7.9.0'
   '@types/d3': '^7.4.3'
+  'd3-format': ^3.1.0
+  '@types/d3-format': ^3.0.4
 
   'ag-grid-enterprise': &ag-grid ^33.0.4
   'ag-grid-vue3': *ag-grid
@@ -227,6 +229,7 @@ catalog:
 
   '@milaboratories/software-pframes-conv': &pframes-version 2.2.2
   '@platforma-open/milaboratories.software-small-binaries': ^1.15.21
+  '@platforma-open/milaboratories.software-ptabler': 1.6.0
   '@biowasm/aioli': ~3.2.1
 
   # Test

@@ -1,0 +1,38 @@
+self := import("@platforma-sdk/workflow-tengo:tpl")
+pt := import("@platforma-sdk/workflow-tengo:pt")
+file := import("@platforma-sdk/workflow-tengo:file")
+
+self.defineOutputs("out_windows", "out_grouped")
+
+self.body(func(inputs){
+    tsvInput := inputs.inputTsv
+
+    wf := pt.workflow()
+
+    df := wf.frame(tsvInput, {
+        xsvType: "tsv"
+    })
+
+    // 1. Window operations + rank
+    // Calculate sum of 'value' per 'category' and rank 'score' (desc) per 'category'
+    dfWithWindows := df.withColumns(
+        pt.col("value").sum().over("category").alias("category_sum_value"),
+        pt.rank(pt.col("score"), {descending: true}).over("category").alias("rank_in_category")
+    )
+    dfWithWindows.save("output_with_windows.tsv")
+
+    // 2. GroupBy operation
+    // Calculate total 'value' and average 'score' per 'category'
+    groupedDf := df.groupBy("category").agg(
+        pt.col("value").sum().alias("total_value_by_cat"),
+        pt.col("score").mean().alias("avg_score_by_cat")
+    )
+    groupedDf.save("output_grouped.tsv")
+
+    ptablerResult := wf.run()
+
+    return {
+        out_windows: file.exportFile(ptablerResult.getFile("output_with_windows.tsv")),
+        out_grouped: file.exportFile(ptablerResult.getFile("output_grouped.tsv"))
+    }
+})

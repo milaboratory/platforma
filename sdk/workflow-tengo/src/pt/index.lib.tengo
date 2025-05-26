@@ -1,0 +1,980 @@
+ll := import(":ll")
+exp := import(":pt.expression")
+assets := import(":assets")
+smart := import(":smart")
+exec := import(":exec")
+json := import("json")
+text := import("text")
+slices := import(":slices")
+
+/**
+ * This library provides a high-level API, inspired by Polars DataFrames, for building and executing
+ * PTabler data processing workflows within the Platforma SDK using Tengo.
+ *
+ * It allows users to define a sequence of data transformation steps (e.g., reading files,
+ * selecting columns, filtering rows, performing aggregations, and window operations)
+ * and then run them as a PTabler pipeline.
+ *
+ * @example
+ *   pt := import("@platforma-sdk/workflow-tengo:pt")
+ *   file := import("@platforma-sdk/workflow-tengo:file")
+ *
+ *   // Assuming 'inputs.myTsvFile' is a resource reference to a TSV file
+ *   // and self.defineOutputs("outputResult") has been called.
+ *
+ *   wf := pt.workflow()
+ *
+ *   // Read a TSV file into a DataFrame
+ *   df := wf.frame(inputs.myTsvFile, {xsvType: "tsv"})
+ *
+ *   // Example: Select column 'colA' and calculate its square root aliased as 'colA_sqrt'
+ *   processedDf := df.select(
+ *       pt.col("colA"),
+ *       pt.col("colA").sqrt().alias("colA_sqrt")
+ *   )
+ *
+ *   // Save the processed DataFrame to a file named "result.tsv"
+ *   processedDf.save("result.tsv")
+ *
+ *   // Run the defined workflow
+ *   ptablerResult := wf.run()
+ *
+ *   // Export the output file
+ *   // return { outputResult: file.exportFile(ptablerResult.getFile("result.tsv")) }
+ */
+
+_newDataFrame := undefined
+_newDataFrameGroupBy := undefined
+
+workflowCounter := 0
+
+/**
+ * Creates a new workflow. Workflow serves as a main object, that allows to build a PTabler pipeline,
+ * using convenient Polars DataFrames API.
+ *
+ * @returns {object} - The workflow object.
+ */
+workflow := func() {
+	steps := []
+
+	// { file?: ResourceRef, content?: string, name: string }[]
+	inFiles := []
+	// string[]
+	outFiles := []
+	// string[]
+	outContentFiles := []
+
+	anonymousFilesCounter := 0
+	anonymousDFCounter := 0
+
+	self := undefined
+
+	id := workflowCounter
+	workflowCounter += 1
+
+	self = {
+		_wfId: id,
+
+		/**
+		 * Adds a raw PTabler step to the workflow.
+		 * This is an advanced feature for users who need to define steps not covered by the high-level API.
+		 * @param step {map} - A map representing the PTabler step structure.
+		 * @returns {object} - The workflow object, allowing for method chaining.
+		 */
+		addRawStep: func(step) {
+			steps = append(steps, step)
+			return self
+		},
+
+		/**
+		 * Creates a new DataFrame in the workflow by reading from an input source.
+		 * The input can be a resource reference, a string containing file content, or a structured map
+		 * specifying the file and its properties.
+		 *
+		 * The structured input format (`{ file: ResourceRef, xsvType: "csv"|"tsv", schema?: map }`) is primarily
+		 * intended for compatibility with the output of `xsvFileBuilder.buildForPT()` from
+		 * `@platforma-sdk/workflow-tengo:pframes.xsv-builder`.
+		 *
+		 * @param frameInput {object|string} - The input source. Can be:
+		 *   - A resource reference (e.g., `inputs.myFile`).
+		 *   - A string containing the raw content of the file (e.g., "colA\\tcolB\\n1\\t2").
+		 *   - A map with the following fields (i.e. result of `xsvFileBuilder.buildForPT()`):
+		 *     - `file` {object}: A resource reference to the input file.
+		 *     - `xsvType` {string}: The type of the file, either "csv" or "tsv".
+		 *     - `schema` {map} (optional): A PTabler schema definition for the input file.
+		 * @param ...optionsRaw {map} (optional) - A single map argument for additional options:
+		 *   - `xsvType` {string}: The type of the file ("csv" or "tsv"). Required if `frameInput` is a direct file reference or content,
+		 *                         and cannot be inferred. Overrides `xsvType` from structural input if provided there.
+		 *   - `id` {string} (optional): A specific ID to assign to this DataFrame. If not provided, an anonymous ID is generated.
+		 *   - `fileName` {string} (optional): A specific name for the input file within PTabler. If not provided, an anonymous name is generated.
+		 *   - `inferSchema` {boolean} (optional): Whether to infer the schema from the input file. Defaults to `true`. If `false`,
+		 *                                        type inference is disabled, and types will rely on the `schema` field (if provided
+		 *                                        in a structural input) or PTabler's defaults.
+		 * @returns {object} - A DataFrame object representing the loaded data.
+		 * @example
+		 *   // From a resource reference (assuming TSV)
+		 *   df1 := wf.frame(inputs.myTsvFile, {xsvType: "tsv"})
+		 *
+		 *   // From string content (CSV)
+		 *   csvContent := "header1,header2\\nvalue1,value2"
+		 *   df2 := wf.frame(csvContent, {xsvType: "csv", id: "myCsvData"})
+		 *
+		 *   // From a structured input (e.g., using output from xsvFileBuilder)
+		 *   // xsvBuilderOutput := xsv.xsvFileBuilder("tsv").add(...).buildForPT()
+		 *   // df3 := wf.frame(xsvBuilderOutput) // xsvBuilderOutput contains {file, xsvType, schema}
+		 */
+		frame: func(frameInput, ...optionsRaw) {
+			opts := {}
+			if len(optionsRaw) > 0 {
+				if len(optionsRaw) == 1 && is_map(optionsRaw[0]) {
+					opts = optionsRaw[0]
+				} else {
+					ll.panic("frame options must be a single map argument")
+				}
+			}
+
+			fileRef := undefined
+			fileContent := undefined
+			inputSchema := undefined
+			inputXsvType := undefined
+			finalDataFrameId := undefined
+			finalFileName := undefined
+			finalXsvType := undefined
+			inferSchemaOpt := undefined
+
+			isStructuralInput := is_map(frameInput) && !is_undefined(frameInput.file)
+
+			if isStructuralInput {
+				fileRef = frameInput.file
+				inputXsvType = frameInput.xsvType
+				// schema might be undefined in the input, which is fine
+				if !is_undefined(frameInput.schema) {
+					inputSchema = frameInput.schema
+				}
+
+				finalXsvType = inputXsvType
+			} else {
+				if smart.isReference(frameInput) {
+					fileRef = frameInput
+				} else {
+					fileContent = frameInput
+				}
+			}
+
+			ll.assert(is_undefined(finalXsvType) || is_undefined(opts.xsvType), "xsvType option cannot be used with structural input as xsvType is already defined in the input structure")
+
+			if !is_undefined(opts.xsvType) {
+				finalXsvType = opts.xsvType
+			}
+
+			ll.assert(!is_undefined(finalXsvType), "xsvType option is required for direct file input")
+			ll.assert(finalXsvType == "csv" || finalXsvType == "tsv", "xsvType must be 'csv' or 'tsv'")
+
+			if !is_undefined(opts.id) {
+				finalDataFrameId = opts.id
+			} else {
+				finalDataFrameId = self._newAnonymousDataFrameId()
+			}
+
+			if !is_undefined(opts.fileName) {
+				finalFileName = opts.fileName
+			} else {
+				finalFileName = self._newAnonymousFileId(finalXsvType)
+			}
+
+			// Handle inferSchema option
+			if !is_undefined(opts.inferSchema) {
+				if !is_bool(opts.inferSchema) {
+					ll.panic("'inferSchema' option must be a boolean. Got: %T", opts.inferSchema)
+				}
+				inferSchemaOpt = opts.inferSchema
+			}
+
+			if !is_undefined(fileRef) && !smart.isReference(fileRef) {
+				ll.panic("frameInput.file (for structural input) or frameInput (for direct reference) must be a valid resource reference. Got: %v", fileRef)
+			} else if !is_undefined(fileContent) && !is_string(fileContent) {
+				ll.panic("frameInput (for direct content) must be a string. Got: %v", fileContent)
+			}
+
+			if !is_undefined(fileRef) {
+				inFiles = append(inFiles, { file: fileRef, name: finalFileName })
+			} else {
+				inFiles = append(inFiles, { content: fileContent, name: finalFileName })
+			}
+
+			readCsvStep := {
+				type: "read_csv",
+				file: finalFileName,
+				name: finalDataFrameId
+			}
+
+			if finalXsvType == "csv" {
+				readCsvStep.delimiter = ","
+			} else if finalXsvType == "tsv" {
+				readCsvStep.delimiter = "\t"
+			}
+
+			if !is_undefined(inputSchema) {
+				readCsvStep.schema = inputSchema
+			}
+
+			// Only add infer_schema to the step if it's explicitly set to false,
+			// as PTabler defaults to true.
+			if !is_undefined(inferSchemaOpt) && inferSchemaOpt == false {
+				readCsvStep.infer_schema = false
+			}
+
+			self.addRawStep(readCsvStep)
+			return _newDataFrame(self, finalDataFrameId)
+		},
+
+		_newAnonymousDataFrameId: func() {
+			anonymousDFCounter += 1
+			return "anonymous_" + string(anonymousDFCounter)
+		},
+		_newAnonymousFileId: func(extension) {
+			anonymousFilesCounter += 1
+			return "anonymous_" + string(anonymousFilesCounter) + "." + extension
+		},
+		_saveFile: func(name) {
+			outFiles = append(outFiles, name)
+		},
+		_saveFileContent: func(name) {
+			outContentFiles = append(outContentFiles, name)
+		},
+
+		/**
+		 * Executes the defined PTabler workflow.
+		 * This compiles all the added steps and input/output file configurations,
+		 * then runs the PTabler command.
+		 * @returns {object} - A result object from `exec.run()`, typically providing access to output files via `getFile()` or `getFileContent()`.
+		 */
+		run: func() {
+			ptablerSw := assets.importSoftware("@platforma-open/milaboratories.software-ptabler:main")
+			ptablerCmdBuilder := exec.builder().
+				inMediumQueue().
+				printErrStreamToStdout().
+				dontSaveStdoutOrStderr().
+				software(ptablerSw).
+				arg("workflow_sc.json").
+				writeFile("workflow_sc.json", json.encode({
+					workflow: steps
+				}));
+
+			for inFile in inFiles {
+				if !is_undefined(inFile.file) {
+					ptablerCmdBuilder.addFile(inFile.name, inFile.file)
+				} else {
+					ptablerCmdBuilder.writeFile(inFile.name, inFile.content)
+				}
+			}
+
+			for outFile in outFiles {
+				ptablerCmdBuilder.saveFile(outFile)
+			}
+
+			for outContentFile in outContentFiles {
+				ptablerCmdBuilder.saveFileContent(outContentFile)
+			}
+
+			return ptablerCmdBuilder.run()
+		}
+	}
+
+    return ll.toStrict(self)
+}
+
+_newDataFrameGroupBy = func(parentWorkflow, dfName, groupByExpressions) {
+	self := undefined
+	self = ll.toStrict({
+		/**
+		 * Performs aggregations on the grouped data.
+		 * Takes one or more aggregation expressions created by applying aggregation functions (e.g., `sum()`, `mean()`)
+		 * to column expressions (e.g., `pt.col("my_column").sum()`).
+		 * Each aggregation expression should typically have an alias defined using `.alias("new_column_name")`.
+		 *
+		 * @param ...aggExpressions {object} - One or more aggregation expression objects.
+		 * @returns {object} - A new DataFrame object with the aggregated results.
+		 * @example
+		 *   // Assuming df is a DataFrame
+		 *   groupedDf := df.groupBy("category")
+		 *                  .agg(
+		 *                      pt.col("value").sum().alias("total_value"),
+		 *                      pt.col("score").mean().alias("average_score")
+		 *                  )
+		 */
+		agg: func(...aggExpressions) {
+			ll.assert(len(aggExpressions) > 0, "agg method requires at least one aggregation expression.")
+
+			aggregations := slices.map(aggExpressions, func(aggExpr) {
+				if !exp._isAggregation(aggExpr) {
+					ll.panic("Invalid argument to agg: Expected an aggregation expression object, got %v", aggExpr)
+				}
+				return aggExpr.getAggregation()
+			})
+
+			outputDfName := parentWorkflow._newAnonymousDataFrameId()
+			parentWorkflow.addRawStep({
+				type: "aggregate",
+				inputTable: dfName,
+				outputTable: outputDfName,
+				groupBy: exp._mapToExpressionStructList(groupByExpressions, "col"),
+				aggregations: aggregations
+			})
+			return _newDataFrame(parentWorkflow, outputDfName)
+		}
+	})
+	return self
+}
+
+_newDataFrame = func(parentWorkflow, dfName) {
+	_mapExprsToStepCols := func(exprs, methodName) {
+		ll.assert(len(exprs) > 0, methodName + " requires at least one expression argument.")
+		cols := []
+		for expr in exprs {
+			if !exp._isExpression(expr) {
+				ll.panic("Invalid argument to " + methodName + ": Expected an expression object, got %v", expr)
+			}
+			cols = append(cols, {
+				name: expr.getAlias(),
+				expression: expr.getExpression()
+			})
+		}
+		return cols
+	}
+
+	_addSaveStep := func(outputFile, ...options) {
+		opts := {}
+		if len(options) > 0 {
+			opts = options[0]
+		}
+
+		delimiter := undefined
+		if text.has_suffix(outputFile, ".csv") {
+			delimiter = ","
+		} else if text.has_suffix(outputFile, ".tsv") {
+			delimiter = "\t"
+		}
+
+		if !is_undefined(opts.xsvType) {
+			if opts.xsvType == "csv" {
+				delimiter = ","
+			} else if opts.xsvType == "tsv" {
+				delimiter = "\t"
+			} else {
+				ll.panic("Unsupported xsvType: %v", opts.xsvType)
+			}
+		}
+
+		if is_undefined(delimiter) {
+			ll.panic("Can't infer xsvType from outputFile extension, and xsvType is not specified in options")
+		}
+
+		step := {
+			type: "write_csv",
+			table: dfName,
+			file: outputFile,
+			delimiter: delimiter
+		}
+
+		if !is_undefined(opts.columns) {
+			step.columns = opts.columns
+		}
+
+		parentWorkflow.addRawStep(step)
+	}
+
+	self := undefined
+
+	self = ll.toStrict({
+		_getWorkflow: func() {
+			return parentWorkflow
+		},
+		_getDfName: func() {
+			return dfName
+		},
+		/**
+		 * Adds or replaces columns in the DataFrame.
+		 * If a column with the alias specified in an expression already exists, it will be replaced.
+		 * If it doesn't exist, a new column is added.
+		 *
+		 * @param ...expressions {object} - One or more expression objects. Each expression should define an alias
+		 *                                   using `.alias("new_column_name")` which will be the name of the resulting column.
+		 * @returns {object} - A new DataFrame object with the modified columns.
+		 * @example
+		 *   dfWithNewCols := df.withColumns(
+		 *       pt.col("price").multiply(pt.lit(1.2)).alias("price_with_tax"), // New column
+		 *       pt.col("name").strToUpper().alias("name_uppercase")      // New column or replaces 'name_uppercase'
+		 *   )
+		 */
+		withColumns: func(...expressions) {
+			stepCols := _mapExprsToStepCols(expressions, "withColumns")
+			outputDfName := parentWorkflow._newAnonymousDataFrameId()
+			parentWorkflow.addRawStep({
+				type: "with_columns",
+				inputTable: dfName,
+				outputTable: outputDfName,
+				columns: stepCols
+			})
+			return _newDataFrame(parentWorkflow, outputDfName)
+		},
+
+		/**
+		 * Selects a subset of columns, potentially transforming them or creating new ones.
+		 * Only the columns resulting from the provided expressions will be present in the new DataFrame.
+		 *
+		 * @param ...expressions {object} - One or more expression objects. Each expression should define an alias
+		 *                                   using `.alias("column_name")` which will be the name of the column in the output.
+		 * @returns {object} - A new DataFrame object containing only the selected/transformed columns.
+		 * @example
+		 *   selectedDf := df.select(
+		 *       pt.col("id"),
+		 *       pt.col("value").plus(pt.lit(10)).alias("value_plus_10")
+		 *   )
+		 */
+		select: func(...expressions) {
+			stepCols := _mapExprsToStepCols(expressions, "select")
+			outputDfName := parentWorkflow._newAnonymousDataFrameId()
+			parentWorkflow.addRawStep({
+				type: "select",
+				inputTable: dfName,
+				outputTable: outputDfName,
+				columns: stepCols
+			})
+			return _newDataFrame(parentWorkflow, outputDfName)
+		},
+
+		/**
+		 * Adds new columns to the DataFrame. This operation modifies the DataFrame in-place.
+		 * If a column with the same alias already exists, PTabler's behavior might vary (e.g. error or overwrite);
+		 * it's generally safer to use `withColumns` if overwriting is intended and predictable behavior is desired.
+		 *
+		 * @param ...expressions {object} - One or more expression objects. Each expression should define an alias
+		 *                                   using `.alias("new_column_name")`.
+		 * @returns {object} - The same DataFrame object, now with the added columns (for chaining).
+		 * @example
+		 *   df.addColumns(
+		 *       pt.col("colA").plus(pt.col("colB")).alias("sum_A_B")
+		 *   ) // df is modified
+		 */
+		addColumns: func(...expressions) {
+			stepCols := _mapExprsToStepCols(expressions, "addColumns")
+			parentWorkflow.addRawStep({
+				type: "add_columns",
+				table: dfName,
+				columns: stepCols
+			})
+			return self
+		},
+
+		/**
+		 * Saves the DataFrame to a file.
+		 * The file format (CSV/TSV) is inferred from the `outputFile` extension if not specified in options.
+		 *
+		 * @param outputFile {string} - The path/name of the file to save the DataFrame to (e.g., "result.csv", "data/output.tsv").
+		 * @param ...options {map} (optional) - A single map argument for additional options:
+		 *   - `xsvType` {string} (optional): Specify "csv" or "tsv". Overrides inference from file extension.
+		 *   - `columns` {array} (optional): An array of column name strings to include in the output. If not provided, all columns are saved.
+		 * @returns {object} - The same DataFrame object (for chaining).
+		 * @example
+		 *   df.save("my_data.tsv")
+		 *   df.save("specific_cols.csv", {columns: ["id", "name", "value"]})
+		 */
+		save: func(outputFile, ...options) {
+			_addSaveStep(outputFile, options...)
+
+			parentWorkflow._saveFile(outputFile)
+
+			return self
+		},
+
+		/**
+		 * Saves the DataFrame to a file and registers it to have its content accessible after `wf.run()`.
+		 * Useful when the content of the saved file needs to be read directly in the Tengo script
+		 * after the PTabler execution, rather than just being an output artifact.
+		 * The file format (CSV/TSV) is inferred from the `outputFile` extension if not specified in options.
+		 *
+		 * @param outputFile {string} - The path/name of the file.
+		 * @param ...options {map} (optional) - A single map argument for additional options:
+		 *   - `xsvType` {string} (optional): Specify "csv" or "tsv". Overrides inference from file extension.
+		 *   - `columns` {array} (optional): An array of column name strings to include.
+		 * @returns {object} - The same DataFrame object (for chaining).
+		 * @example
+		 *   // Content will be available via ptablerResult.getFileContent("report.csv")
+		 *   df.saveContent("report.csv")
+		 */
+		saveContent: func(outputFile, ...options) {
+			_addSaveStep(outputFile, options...)
+
+			parentWorkflow._saveFileContent(outputFile)
+
+			return self
+		},
+
+		/**
+		 * Groups the DataFrame by one or more columns or expressions.
+		 * This is followed by an `.agg()` call to perform aggregations on the groups.
+		 *
+		 * @param ...expressions {string|object} - One or more column names (strings) or expression objects to group by.
+		 * @returns {object} - A DataFrameGroupBy object, which has an `agg()` method.
+		 * @example
+		 *   grouped := df.groupBy("category", pt.col("year").alias("sale_year"))
+		 *   // now call .agg() on 'grouped'
+		 */
+		groupBy: func(...expressions) {
+			ll.assert(len(expressions) > 0, "groupBy requires at least one expression argument.")
+			// Validate expressions - they should be resolvable to column names or be expressions
+			// _mapToExpressionStructList in agg step will do the final mapping
+			for expr in expressions {
+				if !is_string(expr) && !exp._isExpression(expr) {
+					ll.panic("Invalid argument to groupBy: Expected a column name (string) or an expression object, got %v", expr)
+				}
+			}
+			return _newDataFrameGroupBy(parentWorkflow, dfName, expressions)
+		},
+
+		/**
+		 * Filters rows in the DataFrame based on one or more predicate expressions.
+		 * If multiple predicates are provided, they are combined with a logical AND.
+		 *
+		 * @param ...predicates {object} - One or more boolean expression objects.
+		 * @returns {object} - A new DataFrame object containing only the rows that satisfy the condition(s).
+		 * @example
+		 *   filteredDf := df.filter(
+		 *       pt.col("value").gt(pt.lit(100)),
+		 *       pt.col("category").eq(pt.lit("A"))
+		 *   )
+		 */
+		filter: func(...predicates) {
+			ll.assert(len(predicates) > 0, "filter method requires at least one predicate expression.")
+
+			allConditions := []
+			for p in predicates {
+				if !exp._isExpression(p) {
+					ll.panic("Invalid argument in filter: Expected an expression object, got %v", p)
+				}
+				allConditions = append(allConditions, p)
+			}
+
+			condition := undefined
+			if len(allConditions) == 1 {
+				condition = allConditions[0]
+			} else {
+				condition = exp.and(allConditions...)
+			}
+
+			outputDfName := parentWorkflow._newAnonymousDataFrameId()
+			parentWorkflow.addRawStep({
+				type: "filter",
+				inputTable: dfName,
+				outputTable: outputDfName,
+				condition: condition.getExpression()
+			})
+			return _newDataFrame(parentWorkflow, outputDfName)
+		},
+
+		/**
+		 * Sorts the DataFrame by one or more columns or expressions.
+		 *
+		 * @param by {array} - An array of sort keys. Each key can be a column name (string) or an expression object.
+		 * @param ...optionsRaw {map} (optional) - A single map argument for additional options:
+		 *   - `descending` {boolean|array} (optional): If a boolean, applies to all sort keys. If an array of booleans,
+		 *     it must match the length of `by` and specifies descending order for each key individually. Defaults to false (ascending).
+		 *   - `nulls_last` {boolean|array} (optional): If a boolean, applies to all sort keys. If an array of booleans,
+		 *     it must match the length of `by`. If true, nulls are placed after non-nulls; if false, before. PTabler's default may vary.
+		 *   - `maintain_order` {boolean} (optional): If true, maintains the original order of rows that have equal sort key values (stable sort).
+		 *     Defaults to false (which might be faster but not stable). Corresponds to 'stable' in PTabler.
+		 * @returns {object} - A new DataFrame object with sorted rows.
+		 * @example
+		 *   // Sort by 'score' descending, then 'name' ascending
+		 *   sortedDf := df.sort(
+		 *       [pt.col("score"), "name"],
+		 *       {descending: [true, false]}
+		 *   )
+		 *
+		 *   // Sort by 'date', nulls first, maintaining original order for ties
+		 *   stableSortedDf := df.sort(
+		 *       ["date"],
+		 *       {nulls_last: false, maintain_order: true}
+		 *   )
+		 */
+		sort: func(by, ...optionsRaw) {
+			ll.assert(is_array(by), "First argument to sort must be an array of sort keys (column names or expressions).")
+			ll.assert(len(by) > 0, "Sort keys array cannot be empty.")
+
+			opts := {}
+			if len(optionsRaw) > 0 {
+				ll.assert(len(optionsRaw) == 1, "sort expects at most one options map argument after the sort keys array.")
+				if !is_map(optionsRaw[0]) {
+					ll.panic("Second argument to sort (if provided) must be an options map. Got: %T", optionsRaw[0])
+				}
+				opts = optionsRaw[0]
+			}
+
+			descendingOpt := opts.descending
+			nullsLastOpt := opts.nulls_last
+			maintainOrderOpt := opts.maintain_order // Corresponds to 'stable' in PTabler SortStep
+
+			if !is_undefined(descendingOpt) && !is_bool(descendingOpt) && !is_array(descendingOpt) {
+				ll.panic("sort 'descending' option must be a boolean or an array of booleans. Got: %T", descendingOpt)
+			}
+			if is_array(descendingOpt) && len(descendingOpt) != len(by) {
+				ll.panic("sort 'descending' array length (%d) must match the number of sort keys (%d).", len(descendingOpt), len(by))
+			}
+
+			if !is_undefined(nullsLastOpt) && !is_bool(nullsLastOpt) && !is_array(nullsLastOpt) {
+				ll.panic("sort 'nulls_last' option must be a boolean or an array of booleans. Got: %T", nullsLastOpt)
+			}
+			if is_array(nullsLastOpt) && len(nullsLastOpt) != len(by) {
+				ll.panic("sort 'nulls_last' array length (%d) must match the number of sort keys (%d).", len(nullsLastOpt), len(by))
+			}
+
+			if !is_undefined(maintainOrderOpt) && !is_bool(maintainOrderOpt) {
+				ll.panic("sort 'maintain_order' option must be a boolean. Got: %T", maintainOrderOpt)
+			}
+
+			sortDirectives := []
+			for i, item in by {
+				directive := { value: undefined }
+
+				if is_string(item) {
+					directive.value = exp.col(item).getExpression()
+				} else if exp._isExpression(item) {
+					directive.value = item.getExpression()
+				} else {
+					ll.panic("Invalid sort key at index %d in array: Expected a column name (string) or an expression object, got %T", i, item)
+				}
+
+				// Handle 'descending'
+				itemDesc := false // Polars default
+				if is_array(descendingOpt) {
+					val := descendingOpt[i]
+					ll.assert(is_bool(val), "Elements of 'descending' array (at index %d) must be booleans. Got: %T", i, val)
+					itemDesc = val
+				} else if is_bool(descendingOpt) {
+					itemDesc = descendingOpt
+				}
+				if itemDesc { // Only include if true, as PTabler 'descending' defaults to false
+					directive.descending = true
+				}
+
+				// Handle 'nulls_last'
+				itemNullsLast := undefined // Let PTabler use its default if not specified
+				if is_array(nullsLastOpt) {
+					val := nullsLastOpt[i]
+					ll.assert(is_bool(val), "Elements of 'nulls_last' array (at index %d) must be booleans. Got: %T", i, val)
+					itemNullsLast = val
+				} else if is_bool(nullsLastOpt) {
+					itemNullsLast = nullsLastOpt
+				}
+
+				if !is_undefined(itemNullsLast) { // Only include if explicitly set
+					directive.nullsLast = itemNullsLast
+				}
+
+				sortDirectives = append(sortDirectives, directive)
+			}
+
+			outputDfName := parentWorkflow._newAnonymousDataFrameId()
+
+			sortStep := {
+				type: "sort",
+				inputTable: dfName,
+				outputTable: outputDfName,
+				by: sortDirectives
+			}
+
+			if !is_undefined(maintainOrderOpt) && maintainOrderOpt == true {
+				sortStep.stable = true // PTabler 'stable' maps to Polars 'maintain_order'
+			}
+
+			parentWorkflow.addRawStep(sortStep)
+			return _newDataFrame(parentWorkflow, outputDfName)
+		},
+
+		/**
+		 * Joins this DataFrame with another DataFrame.
+		 *
+		 * @param rightDf {object} - The right DataFrame object to join with.
+		 * @param opts {map} - A map of join options:
+		 *   - `how` {string} (optional): Join strategy. One of 'inner', 'left', 'right', 'full', 'cross'. Defaults to 'inner'.
+		 *   - `on` {string|array} (optional): Column name(s) to join on if they are the same in both DataFrames.
+		 *                                      Cannot be used with `leftOn` or `rightOn`.
+		 *   - `leftOn` {string|array} (optional): Column name(s) from the left DataFrame. Must be used with `rightOn`.
+		 *   - `rightOn` {string|array} (optional): Column name(s) from the right DataFrame. Must be used with `leftOn`.
+		 *   - `coalesce` {boolean} (optional): If true, identically named key columns are merged.
+		 *                                       Does not apply to 'cross' join. PTabler default behavior applies if omitted.
+		 *   - `leftColumns` {array} (optional): Array of maps `{column: "originalName", rename: "newName"}`
+		 *                                      to select/rename columns from the left table.
+		 *   - `rightColumns` {array} (optional): Array of maps `{column: "originalName", rename: "newName"}`
+		 *                                       to select/rename columns from the right table.
+		 * @returns {object} - A new DataFrame object representing the result of the join.
+		 * @example
+		 *   // Inner join on 'id' column
+		 *   joinedDf := df1.join(df2, {on: "id"})
+		 *
+		 *   // Left join on different column names
+		 *   joinedDf := df1.join(df2, {
+		 *       how: "left",
+		 *       leftOn: "user_id",
+		 *       rightOn: "id",
+		 *       rightColumns: [{column: "value", rename: "right_value"}]
+		 *   })
+		 *
+		 *   // Cross join
+		 *   crossJoinedDf := df1.join(df2, {how: "cross"})
+		 */
+		join: func(rightDf, opts) {
+			if is_undefined(opts) || !is_map(opts) {
+				ll.panic("join options must be a map argument.")
+			}
+			if is_undefined(rightDf) || is_undefined(rightDf._getDfName) || is_undefined(rightDf._getWorkflow) {
+				ll.panic("rightDf argument for join must be a DataFrame object created by pt.workflow().frame().")
+			}
+			if rightDf._getWorkflow()._wfId != parentWorkflow._wfId {
+				ll.panic("Both DataFrames in a join operation must belong to the same workflow.")
+			}
+
+			_ensureArrayLocal := func(val, argName) {
+				if is_undefined(val) {
+					return undefined
+				}
+				if is_string(val) {
+					return [val]
+				}
+				if is_array(val) {
+					for i, item in val {
+						if !is_string(item) {
+							ll.panic("'%s' option: if an array, all elements must be strings. Found type %T at index %d.", argName, item, i)
+						}
+					}
+					return val
+				}
+				ll.panic("'%s' option must be a string or an array of strings. Got: %T", argName, val)
+			}
+
+			_validateAndSetColumnsLocal := func(columnsOpt, optName) {
+				if is_undefined(columnsOpt) {
+					return undefined
+				}
+				if !is_array(columnsOpt) {
+					ll.panic("'%s' option must be an array of column mappings or strings. Got: %T", optName, columnsOpt)
+				}
+				mappings := []
+				for i, item in columnsOpt {
+					entry := undefined
+					if is_string(item) {
+						entry = { column: item }
+					} else if is_map(item) {
+						if is_undefined(item.column) || !is_string(item.column) {
+							ll.panic("Each map mapping in '%s' at index %d must have a 'column' string field. Got: %v", optName, i, item.column)
+						}
+						entry = { column: item.column }
+						if !is_undefined(item.rename) {
+							if !is_string(item.rename) {
+								ll.panic("The 'rename' field in '%s' mapping at index %d must be a string. Got: %T", optName, i, item.rename)
+							}
+							entry.rename = item.rename
+						}
+					} else {
+						ll.panic("Each element in '%s' at index %d must be a string or a map. Got: %T", optName, i, item)
+					}
+					mappings = append(mappings, entry)
+				}
+				if len(mappings) == 0 { // PTabler schema might not like empty arrays for this.
+					return undefined
+				}
+				return mappings
+			}
+
+			how := opts.how
+			if is_undefined(how) {
+				how = "inner" // Default join type
+			}
+			validHowTypes := ["inner", "left", "right", "full", "cross"]
+			if !slices.hasElement(validHowTypes, how) {
+				ll.panic("Invalid 'how' value for join: '%s'. Must be one of %v", how, validHowTypes)
+			}
+
+			onOpt := _ensureArrayLocal(opts.on, "on")
+			leftOnOpt := _ensureArrayLocal(opts.leftOn, "leftOn")
+			rightOnOpt := _ensureArrayLocal(opts.rightOn, "rightOn")
+
+			outputDfName := parentWorkflow._newAnonymousDataFrameId()
+			joinStep := {
+				type: "join",
+				leftTable: dfName,
+				rightTable: rightDf._getDfName(),
+				outputTable: outputDfName,
+				how: how
+			}
+
+			if how == "cross" {
+				if !is_undefined(onOpt) || !is_undefined(leftOnOpt) || !is_undefined(rightOnOpt) {
+					ll.panic("'on', 'leftOn', 'rightOn' options cannot be used with 'cross' join.")
+				}
+				if !is_undefined(opts.coalesce) {
+					ll.panic("'coalesce' option cannot be used with 'cross' join.")
+				}
+			} else { // 'inner', 'left', 'right', 'full'
+				if !is_undefined(onOpt) {
+					if !is_undefined(leftOnOpt) || !is_undefined(rightOnOpt) {
+						ll.panic("For '%s' join, you must specify either 'on' option or both 'leftOn' and 'rightOn' options. 'on' was provided, but so was 'leftOn' or 'rightOn'.", how)
+					}
+					ll.assert(len(onOpt) > 0, "'on' option, if provided, cannot be an empty list.")
+					joinStep.leftOn = onOpt
+					joinStep.rightOn = onOpt
+				} else if !is_undefined(leftOnOpt) && !is_undefined(rightOnOpt) {
+					ll.assert(len(leftOnOpt) > 0, "'leftOn' option, if provided, cannot be an empty list.")
+					ll.assert(len(rightOnOpt) > 0, "'rightOn' option, if provided, cannot be an empty list.")
+					if len(leftOnOpt) != len(rightOnOpt) {
+						ll.panic("'leftOn' and 'rightOn' lists must have the same number of columns. Got %d and %d.", len(leftOnOpt), len(rightOnOpt))
+					}
+					joinStep.leftOn = leftOnOpt
+					joinStep.rightOn = rightOnOpt
+				} else {
+					ll.panic("For '%s' join, you must specify either 'on' option or both 'leftOn' and 'rightOn' options.", how)
+				}
+
+				if !is_undefined(opts.coalesce) {
+					if !is_bool(opts.coalesce) {
+						ll.panic("'coalesce' option must be a boolean. Got: %T", opts.coalesce)
+					}
+					joinStep.coalesce = opts.coalesce
+				}
+			}
+
+			leftCols := _validateAndSetColumnsLocal(opts.leftColumns, "leftColumns")
+			if !is_undefined(leftCols) {
+				joinStep.leftColumns = leftCols
+			}
+
+			rightCols := _validateAndSetColumnsLocal(opts.rightColumns, "rightColumns")
+			if !is_undefined(rightCols) {
+				joinStep.rightColumns = rightCols
+			}
+
+			parentWorkflow.addRawStep(joinStep)
+			return _newDataFrame(parentWorkflow, outputDfName)
+		},
+
+		/**
+		 * Excludes a specific set of columns from the DataFrame.
+		 *
+		 * @param columns {array} - An array of column name strings to exclude.
+		 * @returns {object} - A new DataFrame object with the specified columns removed.
+		 * @example
+		 *   dfWithoutCols := df.withoutColumns(["colA", "colB"])
+		 */
+		withoutColumns: func(...columns) {
+			ll.assert(is_array(columns), "Argument to withoutColumns must be an array of column names.")
+			ll.assert(len(columns) > 0, "Columns array for withoutColumns cannot be empty.")
+			for i, colName in columns {
+				ll.assert(is_string(colName), "Each element in the columns array for withoutColumns (at index %d) must be a string. Got: %T", i, colName)
+			}
+
+			outputDfName := parentWorkflow._newAnonymousDataFrameId()
+			parentWorkflow.addRawStep({
+				type: "without_columns",
+				inputTable: dfName,
+				outputTable: outputDfName,
+				columns: columns
+			})
+			return _newDataFrame(parentWorkflow, outputDfName)
+		}
+	})
+	return self
+}
+
+/**
+ * Concatenates multiple DataFrames vertically.
+ * Columns are matched by name. If the `columns` option is provided, only those columns
+ * will be selected from all input DataFrames and included in the output.
+ * All input DataFrames must belong to the same workflow.
+ *
+ * @param dataframes {array} - An array of DataFrame objects to concatenate.
+ * @param ...optionsRaw {map} (optional) - A single map argument for additional options:
+ *   - `columns` {array} (optional): An array of column name strings to select from all input DataFrames.
+ *                                  If omitted, all columns are included. All input DataFrames must
+ *                                  contain all specified columns if this option is used.
+ * @returns {object} - A new DataFrame object representing the concatenated result.
+ * @example
+ *   // Assuming df1, df2, and df3 are DataFrames from the same workflow
+ *   concatenatedDf := pt.concat([df1, df2, df3])
+ *
+ *   // Concatenate and select specific columns
+ *   selectedColumnsDf := pt.concat(
+ *       [df1, df2],
+ *       {columns: ["id", "name", "value"]}
+ *   )
+ */
+concat := func(dataframes, ...optionsRaw) {
+	ll.assert(is_array(dataframes), "First argument to concat must be an array of DataFrame objects.")
+	ll.assert(len(dataframes) > 0, "DataFrame array for concat cannot be empty.")
+
+	opts := {}
+	if len(optionsRaw) > 0 {
+		if len(optionsRaw) == 1 && is_map(optionsRaw[0]) {
+			opts = optionsRaw[0]
+		} else {
+			ll.panic("concat options must be a single map argument")
+		}
+	}
+
+	parentWorkflow := undefined
+	inputTableNames := []
+
+	for i, df in dataframes {
+		if is_undefined(df) || is_undefined(df._getDfName) || is_undefined(df._getWorkflow) {
+			ll.panic("Argument at index %d in dataframes array is not a valid DataFrame object.", i)
+		}
+		currentWorkflow := df._getWorkflow()
+		if is_undefined(parentWorkflow) {
+			parentWorkflow = currentWorkflow
+		} else if currentWorkflow._wfId != parentWorkflow._wfId {
+			ll.panic("All DataFrames in a concat operation must belong to the same workflow.")
+		}
+		inputTableNames = append(inputTableNames, df._getDfName())
+	}
+
+	outputDfName := parentWorkflow._newAnonymousDataFrameId()
+
+	concatenateStep := {
+		type: "concatenate",
+		inputTables: inputTableNames,
+		outputTable: outputDfName
+	}
+
+	if !is_undefined(opts.columns) {
+		if !is_array(opts.columns) {
+			ll.panic("'columns' option for concat must be an array of strings.")
+		}
+		for i, colName in opts.columns {
+			if !is_string(colName) {
+				ll.panic("Each element in 'columns' option array (at index %d) must be a string. Got: %T", i, colName)
+			}
+		}
+		concatenateStep.columns = opts.columns
+	}
+
+	parentWorkflow.addRawStep(concatenateStep)
+	return _newDataFrame(parentWorkflow, outputDfName)
+}
+
+export ll.toStrict({
+	workflow: workflow,
+	concat: concat,
+
+	col: exp.col,
+	lit: exp.lit,
+	concatStr: exp.concatStr,
+	minHorizontal: exp.minHorizontal,
+	maxHorizontal: exp.maxHorizontal,
+	allHorizontal: exp.allHorizontal,
+	anyHorizontal: exp.anyHorizontal,
+	and: exp.and,
+	or: exp.or,
+	rank: exp.rank,
+	when: exp.when,
+	rawExp: exp.rawExp
+})
