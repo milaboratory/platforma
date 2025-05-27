@@ -1,5 +1,13 @@
 # @platforma-sdk/model
 
+## 1.31.16
+
+### Patch Changes
+
+- 1cbbd66: PFrame driver - accept range in calculateTableData
+- Updated dependencies [1cbbd66]
+  - @milaboratories/pl-model-common@1.15.2
+
 ## 1.31.15
 
 ### Patch Changes
