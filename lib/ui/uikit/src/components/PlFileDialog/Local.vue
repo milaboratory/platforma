@@ -48,7 +48,7 @@ const openNativeDialog = async () => {
     ? [
         {
           name: 'All Files',
-          extensions: props.extensions,
+          extensions: [...props.extensions],
         },
       ]
     : [];

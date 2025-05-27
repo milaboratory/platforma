@@ -1,4 +1,5 @@
 import type { PObjectId } from '../../pool';
+import type { TableRange } from './data_types';
 import type { FindColumnsRequest, FindColumnsResponse } from './find_columns';
 import type { PColumn, PColumnIdAndSpec, PColumnSpec } from './spec/spec';
 import type {
@@ -23,7 +24,8 @@ export interface PFrame {
 
   /** Calculates data for the table and returns complete data representation of it */
   calculateTableData(
-    request: CalculateTableDataRequest<PObjectId>
+    request: CalculateTableDataRequest<PObjectId>,
+    range?: TableRange,
   ): Promise<CalculateTableDataResponse>;
 
   /** Calculate set of unique values for a specific axis for the filtered set of records */

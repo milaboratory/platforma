@@ -46,7 +46,8 @@ export interface PFrameDriver {
   /** Calculates data for the table and returns complete data representation of it */
   calculateTableData(
     handle: PFrameHandle,
-    request: CalculateTableDataRequest<PObjectId>
+    request: CalculateTableDataRequest<PObjectId>,
+    range?: TableRange,
   ): Promise<CalculateTableDataResponse>;
 
   /** Calculate set of unique values for a specific axis for the filtered set of records */

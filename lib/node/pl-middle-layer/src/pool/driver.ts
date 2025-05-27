@@ -231,6 +231,7 @@ export interface InternalPFrameDriver extends SdkPFrameDriver {
   calculateTableData(
     handle: PFrameHandle,
     request: CalculateTableDataRequest<PObjectId>,
+    range: TableRange | undefined,
     signal?: AbortSignal
   ): Promise<CalculateTableDataResponse>;
 
@@ -446,6 +447,7 @@ export class PFrameDriver implements InternalPFrameDriver {
   public async calculateTableData(
     handle: PFrameHandle,
     request: CalculateTableDataRequest<PObjectId>,
+    range: TableRange | undefined,
     signal?: AbortSignal,
   ): Promise<CalculateTableDataResponse> {
     if (getDebugFlags().logPFrameRequests) {
@@ -472,7 +474,7 @@ export class PFrameDriver implements InternalPFrameDriver {
 
       try {
         const spec = sortedTable.getSpec();
-        const data = await sortedTable.getData([...spec.keys()], undefined, combinedSignal);
+        const data = await sortedTable.getData([...spec.keys()], range, combinedSignal);
         return spec.map((spec, i) => ({
           spec: spec,
           data: data[i],
