@@ -102,6 +102,7 @@ workflow := func() {
 		 *     - `file` {object}: A resource reference to the input file.
 		 *     - `xsvType` {string}: The type of the file, either "csv" or "tsv".
 		 *     - `schema` {map} (optional): A PTabler schema definition for the input file.
+		 *     - `noHeader` {boolean} (optional): Whether the input file has no header row. Defaults to `false`.
 		 * @param ...optionsRaw {map} (optional) - A single map argument for additional options:
 		 *   - `xsvType` {string}: The type of the file ("csv" or "tsv"). Required if `frameInput` is a direct file reference or content,
 		 *                         and cannot be inferred. Overrides `xsvType` from structural input if provided there.
@@ -136,6 +137,7 @@ workflow := func() {
 			fileRef := undefined
 			fileContent := undefined
 			inputSchema := undefined
+			noHeader := false
 			inputXsvType := undefined
 			finalDataFrameId := undefined
 			finalFileName := undefined
@@ -194,6 +196,14 @@ workflow := func() {
 				inferSchemaOpt = opts.inferSchema
 			}
 
+			// Handle noHeader option
+			if !is_undefined(opts.noHeader) {
+				if !is_bool(opts.noHeader) {
+					ll.panic("'noHeader' option must be a boolean. Got: %T", opts.noHeader)
+				}
+				noHeader = opts.noHeader
+			}
+
 			// Handle schema option from opts
 			if !is_undefined(opts.schema) {
 				if !is_array(opts.schema) {
@@ -218,6 +228,10 @@ workflow := func() {
 				type: "read_csv",
 				file: finalFileName,
 				name: finalDataFrameId
+			}
+
+			if noHeader {
+				readCsvStep.noHeader = true
 			}
 
 			if finalXsvType == "csv" {
