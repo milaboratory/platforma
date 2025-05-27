@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/milaboratories.pool-explorer.ui",
-  "version": "1.1.95",
+  "version": "1.1.96",
   "type": "module",
   "scripts": {
     "dev": "vite",

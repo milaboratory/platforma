@@ -1,5 +1,13 @@
 # @platforma-sdk/test
 
+## 1.31.16
+
+### Patch Changes
+
+- Updated dependencies [1cbbd66]
+  - @milaboratories/pl-middle-layer@1.37.43
+  - @platforma-sdk/model@1.31.16
+
 ## 1.31.15
 
 ### Patch Changes
