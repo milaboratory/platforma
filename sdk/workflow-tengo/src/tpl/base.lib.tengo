@@ -96,11 +96,11 @@ AWAIT_TEMPLATES := {
 		["spec", "ResourceReady"]
 	],
 	"PColumnBundle": [
-		[{ wildcard: "*" }, "ref", "ResourceReady"],
+		[{ wildcard: "*" }, { match: "^ref$" }, "ResourceReady"], // optional ref field
 		[{ wildcard: "*" }, "spec", "ResourceReady"]
 	],
 	"PColumnBundleWithPartitions": [
-		[{ wildcard: "*" }, "ref", "ResourceReady"],
+		[{ wildcard: "*" }, { match: "^ref$" }, "ResourceReady"], // optional ref field
 		[{ wildcard: "*" }, "spec", "ResourceReady"],
 		[{ wildcard: "*" }, "data", "InputsLocked"]
 	]
