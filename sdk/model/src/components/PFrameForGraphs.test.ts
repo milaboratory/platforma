@@ -2,6 +2,8 @@ import {test, expect, describe} from '@jest/globals';
 import {
     enrichColumnsWithCompatible,
     getAdditionalColumns,
+    getLinkerColumnsMap,
+    IS_LINKER_COLUMN,
     IS_VIRTUAL_COLUMN,
     LABEL_ANNOTATION
 } from './PFrameForGraphs';
@@ -223,7 +225,6 @@ describe('PFrameForGraph', () => {
         expect(enrichedColumns.map((c) => c.id)).toEqual(['id1', 'id3', 'id4'])
     })
 
-
     test('Labels of added columns include added domains, but not include common domains', () => {
         const columnSpec1: PColumnSpec = {
             kind: 'PColumn',
@@ -249,5 +250,126 @@ describe('PFrameForGraph', () => {
         const additionalColumns = getAdditionalColumns(columns);
         expect(additionalColumns[0].spec.annotations?.[LABEL_ANNOTATION]).toEqual('Label of column2 / a');
         expect(additionalColumns[1].spec.annotations?.[LABEL_ANNOTATION]).toEqual('Label of column2 / b');
+    })
+
+    test('Column added from upstream with linker column', () => {
+        const columnSpec1: PColumnSpec = {
+            kind: 'PColumn',
+            name: 'column1',
+            valueType: 'Int',
+            axesSpec: [
+                {type: 'String', name: 'axis1', domain: {key1: 'a'}},
+                {type: 'String', name: 'axis2', domain: {key1: 'b'}},
+            ]
+        };
+        const metaColumnSpec1: PColumnSpec = {
+            kind: 'PColumn',
+            name: 'metadata1',
+            valueType: 'Int',
+            axesSpec: [{type: 'String', name: 'axis1'}]
+        };
+        const metaColumnSpec2: PColumnSpec = {
+            kind: 'PColumn',
+            name: 'metadata2',
+            valueType: 'String',
+            axesSpec: [{type: 'String', name: 'axis1', domain: {key1: 'a'}}]
+        };
+        const metaColumnSpec3: PColumnSpec = {
+            kind: 'PColumn',
+            name: 'metadata2',
+            valueType: 'String',
+            axesSpec: [{type: 'String', name: 'axis3'}]
+        };
+        const linkerColumn13: PColumnSpec = {
+            kind: 'PColumn',
+            name: 'linker13',
+            valueType: 'String',
+            annotations: {[IS_LINKER_COLUMN]: 'true'},
+            axesSpec: [
+                {type: 'String', name: 'axis1'},
+                {type: 'String', name: 'axis3'}
+            ]
+        }
+
+        const columns: PColumn<TreeNodeAccessor | PColumnValues>[] = [
+            {id: 'id1' as PObjectId, spec: columnSpec1, data: []},
+        ] as PColumn<PColumnValues>[];
+        const upstream: PColumn<TreeNodeAccessor | PColumnValues>[] = [
+            {id: 'id1' as PObjectId, spec: columnSpec1, data: []},
+            {id: 'id2' as PObjectId, spec: metaColumnSpec1, data: []},
+            {id: 'id3' as PObjectId, spec: metaColumnSpec2, data: []},
+            {id: 'id4' as PObjectId, spec: metaColumnSpec3, data: []},
+            {id: 'id5' as PObjectId, spec: linkerColumn13, data: []},
+        ] as PColumn<PColumnValues>[];
+
+        const linkerColumns = [{id: 'id5' as PObjectId, spec: linkerColumn13, data: []}];
+        const linkerColumnsMap = getLinkerColumnsMap(linkerColumns);
+        const enrichedColumns = enrichColumnsWithCompatible(columns, upstream, linkerColumns, linkerColumnsMap);
+        expect(enrichedColumns.map((c) => c.id)).toEqual(['id1', 'id2', 'id3', 'id4', 'id5'])
+    })
+
+    test('Column added from upstream with linker columns chain', () => {
+        const columnSpec1: PColumnSpec = {
+            kind: 'PColumn',
+            name: 'column1',
+            valueType: 'Int',
+            axesSpec: [{type: 'String', name: 'axis1'}]
+        };
+        const metaColumnSpec1: PColumnSpec = {
+            kind: 'PColumn',
+            name: 'metadata1',
+            valueType: 'Int',
+            axesSpec: [{type: 'String', name: 'axis4'}]
+        };
+        const linkerColumn12: PColumnSpec = {
+            kind: 'PColumn',
+            name: 'linker12',
+            valueType: 'String',
+            annotations: {[IS_LINKER_COLUMN]: 'true'},
+            axesSpec: [
+                {type: 'String', name: 'axis1'},
+                {type: 'String', name: 'axis2'}
+            ]
+        }
+        const linkerColumn23: PColumnSpec = {
+            kind: 'PColumn',
+            name: 'linker23',
+            valueType: 'String',
+            annotations: {[IS_LINKER_COLUMN]: 'true'},
+            axesSpec: [
+                {type: 'String', name: 'axis2'},
+                {type: 'String', name: 'axis3'}
+            ]
+        }
+        const linkerColumn34: PColumnSpec = {
+            kind: 'PColumn',
+            name: 'linker34',
+            valueType: 'String',
+            annotations: {[IS_LINKER_COLUMN]: 'true'},
+            axesSpec: [
+                {type: 'String', name: 'axis3'},
+                {type: 'String', name: 'axis4'}
+            ]
+        }
+
+        const columns: PColumn<TreeNodeAccessor | PColumnValues>[] = [
+            {id: 'id1' as PObjectId, spec: columnSpec1, data: []},
+        ] as PColumn<PColumnValues>[];
+        const upstream: PColumn<TreeNodeAccessor | PColumnValues>[] = [
+            {id: 'id1' as PObjectId, spec: columnSpec1, data: []},
+            {id: 'id2' as PObjectId, spec: metaColumnSpec1, data: []},
+            {id: 'id3' as PObjectId, spec: linkerColumn12, data: []},
+            {id: 'id4' as PObjectId, spec: linkerColumn23, data: []},
+            {id: 'id5' as PObjectId, spec: linkerColumn34, data: []},
+        ] as PColumn<PColumnValues>[];
+
+        const linkerColumns = [
+            {id: 'id3' as PObjectId, spec: linkerColumn12, data: []},
+            {id: 'id4' as PObjectId, spec: linkerColumn23, data: []},
+            {id: 'id5' as PObjectId, spec: linkerColumn34, data: []},
+        ];
+        const linkerColumnsMap = getLinkerColumnsMap(linkerColumns);
+        const enrichedColumns = enrichColumnsWithCompatible(columns, upstream, linkerColumns, linkerColumnsMap);
+        expect(enrichedColumns.map((c) => c.id)).toEqual(['id1', 'id2', 'id3', 'id4', 'id5'])
     })
 })
