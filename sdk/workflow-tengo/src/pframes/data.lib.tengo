@@ -1,0 +1,611 @@
+\
+ll := import("@platforma-sdk/workflow-tengo:ll")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+json := import("json")
+text := import("text")
+// Assuming these utility modules are available as they are used in similar contexts
+slices := import("@platforma-sdk/workflow-tengo:slices")
+maps := import("@platforma-sdk/workflow-tengo:maps")
+pConstants := import("@platforma-sdk/workflow-tengo:pframes.constants")
+
+_createPColumnDataInstance := undefined // Forward declaration
+
+_createDecodeKeyString := func(expectedLength) {
+    return func(keyStr) {
+        decoded := json.decode(keyStr)
+        if !is_array(decoded) {
+            ll.panic("Decoded key '%v' from string '%s' is not an array for resource type %s (expected JSON array string).", decoded, keyStr, state.resourceType)
+        }
+        if len(decoded) != expectedLength {
+            ll.panic("Decoded key array '%v' (from string '%s') length %d does not match expected top-layer key length %d for resource type %s.", decoded, keyStr, len(decoded), expectedLength, state.resourceType)
+        }
+        return decoded
+    }
+}
+
+/**
+ * parseData creates a new PColumnData "instance" from a resource.
+ * The returned object directly exposes its fields and methods.
+ *
+ * @param resourceParam The PColumnData resource (e.g., PColumnData/Json, PColumnData/JsonPartitioned).
+ * @param ...optsRaw Optional map with:
+ *   - recursive (bool): If true, recursively parse nested PColumnData for super-partitioned types.
+ *   - spec (map): Optional PColumnSpec associated with this data.
+ *   - parse (bool): If false, return the resource wrapper without particular features (default: true)
+ * @returns {object} A PColumnData object with fields and methods.
+ */
+parseData := func(resourceParam, ...optsRaw) {
+    opts := {}
+    if len(optsRaw) > 0 {
+        if len(optsRaw) == 1 && is_map(optsRaw[0]) {
+            opts = optsRaw[0]
+        } else {
+            ll.panic("parseData opts must be a single map argument. Got: %v", optsRaw)
+        }
+    }
+
+    parse := opts.parse != false
+    recursive := opts.recursive == true
+
+    state := {
+        resource: resourceParam,
+        resourceType: resourceParam.info().Type.Name,
+        parsed: parse,
+        keyLength: undefined,                 // For PColumnData/Json and PColumnData/ResourceMap
+        partitionKeyLength: undefined,        // For partitioned types (top or only level for this instance)
+        superPartitionKeyLength: undefined,   // For super-partitioned types
+        relevantTopLayerKeyLength: 0,         // Calculated after parsing type
+        data: {},                             // The main data store: map[stringKey] -> value | ResourceRef | PColumnDataInstance
+        spec: opts.spec
+    }
+
+    if !parse {
+        return _createPColumnDataInstance(state)
+    }
+
+    resourceData := resourceParam.getDataAsJson()
+    if is_undefined(resourceData) {
+         ll.panic("Failed to get JSON data (metadata) from resource of type %s", state.resourceType)
+    }
+
+    // Determine relevantTopLayerKeyLength first
+    if state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_JSON {
+        state.keyLength = resourceData.keyLength
+        state.relevantTopLayerKeyLength = state.keyLength
+    } else if state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_JSON_PARTITIONED ||
+              state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_BINARY_PARTITIONED ||
+              state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP_PARTITIONED {
+        state.partitionKeyLength = resourceData.partitionKeyLength
+        state.relevantTopLayerKeyLength = state.partitionKeyLength
+    } else if state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_JSON_SUPER_PARTITIONED ||
+              state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_BINARY_SUPER_PARTITIONED ||
+              state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP_SUPER_PARTITIONED {
+        state.superPartitionKeyLength = resourceData.superPartitionKeyLength
+        state.partitionKeyLength = resourceData.partitionKeyLength // This is PKL of *nested* structures
+        state.relevantTopLayerKeyLength = state.superPartitionKeyLength
+    } else if state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP {
+        state.keyLength = resourceData.keyLength
+        state.relevantTopLayerKeyLength = state.keyLength
+    } else {
+        ll.panic("Unsupported PColumn data resource type for initial key length determination: %s", state.resourceType)
+    }
+
+    _decodeKeyString := _createDecodeKeyString(state.relevantTopLayerKeyLength)
+
+    // Populate state.data
+    if state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_JSON {
+        state.data = resourceData.data
+        for key, _ in state.data { _decodeKeyString(key) }
+    } else if state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_JSON_PARTITIONED ||
+              state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP {
+        for key, fieldRef in resourceParam.inputs() {
+            _decodeKeyString(key) // Validate key structure early
+            state.data[key] = fieldRef
+        }
+    } else if state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_BINARY_PARTITIONED {
+        tempData := {}
+        for key, fieldRef in resourceParam.inputs() {
+            partKey := undefined
+            isIndex := false
+            if text.has_suffix(key, ".index") {
+                partKey = key[:len(key)-6]
+                isIndex = true
+            } else if text.has_suffix(key, ".values") {
+                partKey = key[:len(key)-7]
+            } else {
+                ll.warn("Unexpected file in BinaryPartitioned resource: %s", key)
+                continue
+            }
+            _decodeKeyString(partKey) // Validate key structure
+            if is_undefined(tempData[partKey]) { tempData[partKey] = {} }
+            if isIndex {
+                tempData[partKey].index = fieldRef
+            } else {
+                tempData[partKey].values = fieldRef
+            }
+        }
+        for pk, parts in tempData { // Ensure all parts have both index and values
+            if is_undefined(parts.index) || is_undefined(parts.values) {
+                ll.panic("Binary partition key %s is incomplete (missing index or values).", pk)
+            }
+        }
+        state.data = tempData
+    } else if state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_JSON_SUPER_PARTITIONED ||
+              state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_BINARY_SUPER_PARTITIONED ||
+              state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP_PARTITIONED {
+        nestedOpts := { parse: recursive } // if not recursive, the nested resource will not be parsed
+        if !is_undefined(state.spec) {
+            nestedOpts.spec = maps.deepTransform(state.spec, {
+                axesSpec: func(axesSpec) {
+                    return axesSpec[state.superPartitionKeyLength:]
+                }
+            });
+        }
+        for key, fieldRef in resourceParam.inputs() {
+            _decodeKeyString(key)
+            state.data[key] = parseData(recursive ? fieldRef.getValue() : fieldRef, nestedOpts)
+        }
+    } else if state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP {
+        for key, fieldRef in resourceParam.inputs() {
+            _decodeKeyString(key)
+            state.data[key] = fieldRef
+        }
+    } else {
+        ll.panic("Unsupported resource type for parseData: %s", state.resourceType)
+    }
+
+    if resourceParam.info().Type.Version != "1" {
+        ll.panic("Resource version %s is not supported for parseData.", resourceParam.info().Type.Version)
+    }
+
+    return _createPColumnDataInstance(state)
+}
+
+_createPColumnDataInstance = func(state) {
+    _decodeKeyString := state.parsed ? _createDecodeKeyString(state.relevantTopLayerKeyLength) : undefined
+
+    self := undefined
+
+    self = ll.toStrict({
+        resource: state.resource,
+
+        parsed: state.parsed,
+
+        spec: state.spec,
+
+        resourceType: state.resourceType,
+
+        keyLength: state.keyLength,
+        partitionKeyLength: state.partitionKeyLength,
+        superPartitionKeyLength: state.superPartitionKeyLength,
+
+        data: state.data,
+
+        parseKey: _createDecodeKeyString,
+
+        uniqueKeyValues: func(axisIdx) {
+            if !state.parsed {
+                ll.panic("uniqueKeyValues: resource is not parsed.")
+            }
+            ll.assert(is_int(axisIdx) && axisIdx >= 0, "axisIdx must be a non-negative integer.")
+            ll.assert(axisIdx < state.relevantTopLayerKeyLength, "axisIdx %d is out of bounds for the top-layer key structure (length %d).", axisIdx, state.relevantTopLayerKeyLength)
+
+            uniqueValsMap := {}
+            for keyStr, _ in state.data {
+                keyArray := _decodeKeyString(keyStr)
+                val := keyArray[axisIdx]
+                uniqueValsMap[string(val)] = val
+            }
+            return maps.values(uniqueValsMap)
+        },
+
+        createResource: func() {
+            if !is_undefined(state.resource) {
+                // if possible, just return the original resource
+                return state.resource
+            }
+
+            if !state.parsed {
+                ll.panic("createResource: resource is not parsed and no original resource is set.")
+            }
+
+            builder := smart.structBuilder({ Name: state.resourceType, Version: "1" })
+
+            if state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_JSON {
+                builder.setDataAsJson({ keyLength: state.keyLength, data: state.data })
+            } else if state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_JSON_PARTITIONED ||
+                    state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP_PARTITIONED {
+                builder.setDataAsJson({ partitionKeyLength: state.partitionKeyLength })
+                for key, resourceRef in state.data {
+                    builder.createInputField(key).set(resourceRef)
+                }
+            } else if state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_BINARY_PARTITIONED {
+                builder.setDataAsJson({ partitionKeyLength: state.partitionKeyLength })
+                for key, binaryParts in state.data {
+                    builder.createInputField(key + ".index").set(binaryParts.index)
+                    builder.createInputField(key + ".values").set(binaryParts.values)
+                }
+            } else if state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_JSON_SUPER_PARTITIONED ||
+                    state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_BINARY_SUPER_PARTITIONED ||
+                    state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP_PARTITIONED {
+                builder.setDataAsJson({
+                    superPartitionKeyLength: state.superPartitionKeyLength,
+                    partitionKeyLength: state.partitionKeyLength
+                })
+                for key, item in state.data {
+                    builder.createInputField(key).set(item.createResource())
+                }
+            } else if state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP {
+                builder.setDataAsJson({ keyLength: state.keyLength })
+                for key, resRef in state.data {
+                    builder.createInputField(key).set(resRef)
+                }
+            } else {
+                ll.panic("Unsupported resource type for createResource: %s", state.resourceType)
+            }
+            return builder.lockAndBuild()
+        },
+
+        filter: func(slicingParams) {
+            if len(slicingParams) == 0 {
+                return self
+            }
+
+            if !state.parsed {
+                ll.panic("filter: resource is not parsed.")
+            }
+
+            slicingParams = maps.clone(slicingParams)
+            slices.quickSortInPlaceFn(slicingParams, func(a, b) {
+                return a[0] < b[0]
+            })
+
+            _validateSlicingParamFormat := func(sp) {
+                if !is_array(sp) || len(sp) != 2 { ll.panic("Invalid slicing param: %v", sp) }
+                if !is_int(sp[0]) || sp[0] < 0 { ll.panic("Invalid axisIdx: %v", sp[0]) }
+            }
+
+            fixedAxesGlobal := {}
+            for param in slicingParams {
+                _validateSlicingParamFormat(param) // Corrected variable name from p to param
+                if fixedAxesGlobal[param[0]] { ll.panic("Duplicate axisIdx %d", param[0]) }
+                if param[0] >= state.relevantTopLayerKeyLength {
+                    ll.panic("Slicing axis %d out of bounds for RTLKL %d", param[0], state.relevantTopLayerKeyLength)
+                }
+                fixedAxesGlobal[param[0]] = true
+            }
+
+            _matchesFilter := func(keyArray) {
+                for param in slicingParams {
+                    axisIdx := param[0]
+                    value := param[1]
+                    if keyArray[axisIdx] != value {
+                        return false
+                    }
+                }
+                return true
+            }
+
+            _transformKey := func(keyArray) {
+                newKeyArray := []
+                for i, value in keyArray { if !fixedAxesGlobal[i] { newKeyArray = append(newKeyArray, value) } }
+                return newKeyArray
+            }
+
+            newSpec := undefined
+
+            if !is_undefined(state.spec) {
+                newSpec = maps.deepTransform(state.spec, {
+                    axesSpec: func(axesSpec) {
+                        updatedAxesSpec := []
+                        for i, axisSpecEntry in axesSpec { if !fixedAxesGlobal[i] { updatedAxesSpec = append(updatedAxesSpec, axisSpecEntry) } }
+                        return updatedAxesSpec
+                    }
+                })
+            }
+
+            if state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_JSON_SUPER_PARTITIONED ||
+               state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_BINARY_SUPER_PARTITIONED ||
+               state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP_PARTITIONED {
+
+                newData := {}
+                for superKeyStr, item in state.data {
+                    superKeyArray := _decodeKeyString(superKeyStr)
+                    if _matchesFilter(superKeyArray) {
+                        newSuperKeyArray := _transformKey(superKeyArray)
+                        newData[string(json.encode(newSuperKeyArray))] = item // Nested item taken as is
+                    }
+                }
+
+                newSuperPartitionKeyLength := state.superPartitionKeyLength - len(slicingParams)
+
+                if newSuperPartitionKeyLength < 0 {
+                    ll.panic("Internal filter error: newSuperPartitionKeyLength is negative.")
+                }
+
+                if newSuperPartitionKeyLength == 0 {
+                    // All super-partitioning dimensions are sliced away.
+                    // The result should be based on the single selected nested item (if any).
+                    if len(newData) > 1 {
+                        ll.panic("Filter error: too many items (%d) after reducing super-partition key length to 0. Expected 0 or 1.", len(newData))
+                    }
+
+                    newInstanceOpts := {
+                        parsed: true,
+                        spec: newSpec
+                    }
+
+                    if len(newData) == 0 {
+                        // No matching super-key, return an empty PColumnData of the appropriate *nested* type.
+                        newInstanceOpts.data = {}
+
+                        if state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_JSON_SUPER_PARTITIONED {
+                            partitionKeyLength := state.partitionKeyLength
+                            newInstanceOpts.resourceType = pConstants.RTYPE_P_COLUMN_DATA_JSON_PARTITIONED
+                            newInstanceOpts.partitionKeyLength = partitionKeyLength
+                            newInstanceOpts.relevantTopLayerKeyLength = partitionKeyLength
+                        } else if state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_BINARY_SUPER_PARTITIONED {
+                            partitionKeyLength := state.partitionKeyLength
+                            newInstanceOpts.resourceType = pConstants.RTYPE_P_COLUMN_DATA_BINARY_PARTITIONED
+                            newInstanceOpts.partitionKeyLength = partitionKeyLength
+                            newInstanceOpts.relevantTopLayerKeyLength = partitionKeyLength
+                        } else { // RTYPE_P_COLUMN_DATA_RESOURCE_MAP_PARTITIONED (PColumnData/Partitioned/ResourceMap)
+                            keyLength := state.keyLength
+                            newInstanceOpts.resourceType = pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP
+                            newInstanceOpts.keyLength = keyLength
+                            newInstanceOpts.relevantTopLayerKeyLength = keyLength
+                        }
+
+                        return _createPColumnDataInstance(newInstanceOpts)
+                    } else { // len(newData) == 1
+                        singleNestedItem := newData["[]"] // This is a PColumnData instance
+                        if is_undefined(singleNestedItem) || is_undefined(singleNestedItem.resourceType) {
+                            ll.panic("Filter error: expected a PColumnData instance for key '[]' when unwrapping, got %v", singleNestedItem)
+                        }
+                        return singleNestedItem
+                    }
+                } else { // newSuperPartitionKeyLength > 0, still super-partitioned
+                    return _createPColumnDataInstance({
+                        parsed: true,
+                        resourceType: state.resourceType,
+                        superPartitionKeyLength: newSuperPartitionKeyLength,
+                        partitionKeyLength: state.partitionKeyLength, // This is PKL of nested structures or KL of nested ResourceMap. It doesn't change by slicing super keys.
+                        relevantTopLayerKeyLength: newSuperPartitionKeyLength,
+                        data: newData,
+                        spec: newSpec,
+                        isRecursive: state.isRecursive,
+                        originalResource: undefined
+                    })
+                }
+            } else if state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_JSON_PARTITIONED ||
+                      state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_BINARY_PARTITIONED {
+                newData := {}
+                for keyStr, item in state.data {
+                    keyArray := _decodeKeyString(keyStr)
+                    if _matchesFilter(keyArray) {
+                        newKeyArray := _transformKey(keyArray)
+                        newData[string(json.encode(newKeyArray))] = item
+                    }
+                }
+                newPartitionKeyLength := state.partitionKeyLength - len(slicingParams)
+                return _createPColumnDataInstance({
+                    parsed: true,
+                    resourceType: state.resourceType,
+                    partitionKeyLength: newPartitionKeyLength,
+                    relevantTopLayerKeyLength: newPartitionKeyLength,
+                    data: newData,
+                    spec: newSpec,
+                    isRecursive: state.isRecursive
+                })
+            } else if state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP {
+                newData := {}
+                for keyStr, item in state.data {
+                    keyArray := _decodeKeyString(keyStr)
+                    if _matchesFilter(keyArray) {
+                        newKeyArray := _transformKey(keyArray)
+                        newData[string(json.encode(newKeyArray))] = item
+                    }
+                }
+                newKeyLength := state.keyLength - len(slicingParams)
+                return _createPColumnDataInstance({
+                    parsed: true,
+                    resourceType: state.resourceType,
+                    keyLength: newKeyLength,
+                    relevantTopLayerKeyLength: newKeyLength,
+                    data: newData,
+                    spec: newSpec,
+                    isRecursive: state.isRecursive
+                })
+            } else if state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_JSON {
+                newData := {}
+                for keyStr, val in state.data {
+                    keyArray := _decodeKeyString(keyStr)
+                    if _matchesFilter(keyArray) {
+                        newKeyArray := _transformKey(keyArray)
+                        newData[string(json.encode(newKeyArray))] = val
+                    }
+                }
+                newKeyLength := state.keyLength - len(slicingParams)
+                return _createPColumnDataInstance({
+                    parsed: true,
+                    resourceType: state.resourceType,
+                    keyLength: newKeyLength,
+                    relevantTopLayerKeyLength: newKeyLength,
+                    data: newData,
+                    spec: newSpec,
+                    isRecursive: state.isRecursive,
+                    originalResource: undefined
+                })
+            } else {
+                ll.panic("Filtering not supported for type %s", state.resourceType)
+            }
+        },
+
+        partition: func(...axesToPartitionBy) {
+            if !state.parsed {
+                ll.panic("partition: resource is not parsed.")
+            }
+            if len(axesToPartitionBy) == 0 {
+                ll.panic("partition: at least one axis index must be provided.")
+            }
+
+            // Validate axesToPartitionBy
+            seenAxesValidation := {}
+            for _, axisIdx in axesToPartitionBy {
+                if !is_int(axisIdx) || axisIdx < 0 {
+                    ll.panic("partition: axis index '%v' must be a non-negative integer.", axisIdx)
+                }
+                if axisIdx >= state.relevantTopLayerKeyLength {
+                    ll.panic("partition: axis index %d is out of bounds for the top-layer key structure (length %d). Current type: %s", axisIdx, state.relevantTopLayerKeyLength, state.resourceType)
+                }
+                if seenAxesValidation[axisIdx] {
+                    ll.panic("partition: duplicate axis index %d provided.", axisIdx)
+                }
+                seenAxesValidation[axisIdx] = true
+            }
+
+            resultPartitions := {}
+
+            for keyStr, _ in state.data {
+                keyArray := _decodeKeyString(keyStr)
+
+                currentPartitionTuple := []
+                for _, axisIdx in axesToPartitionBy {
+                    currentPartitionTuple = append(currentPartitionTuple, keyArray[axisIdx])
+                }
+                partitionMapKeyStr := string(json.encode(currentPartitionTuple))
+
+                if is_undefined(resultPartitions[partitionMapKeyStr]) {
+                    slicingParamsForThisPartition := []
+                    for i, axisIdx in axesToPartitionBy {
+                        slicingParamsForThisPartition = append(slicingParamsForThisPartition, [axisIdx, currentPartitionTuple[i]])
+                    }
+                    resultPartitions[partitionMapKeyStr] = self.filter(slicingParamsForThisPartition)
+                }
+            }
+            return resultPartitions
+        },
+
+        forEach: func(userCallback) {
+            if !state.parsed {
+                ll.panic("forEach: resource is not parsed.")
+            }
+            if !is_callable(userCallback) {
+                ll.panic("forEach: provided argument is not a function.")
+            }
+
+            maps.forEach(state.data, func(keyStr, value) {
+                decodedKey := _decodeKeyString(keyStr)
+                userCallback(decodedKey, value)
+            })
+        },
+
+        flatten: func() {
+            if !state.parsed {
+                ll.panic("flatten: resource is not parsed.")
+            }
+
+            isJsonSuper := state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_JSON_SUPER_PARTITIONED
+            isBinarySuper := state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_BINARY_SUPER_PARTITIONED
+            isResourceMapSuper := state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP_SUPER_PARTITIONED
+
+            if !(isJsonSuper || isBinarySuper || isResourceMapSuper) {
+                return self // Not a type that can be flattened
+            }
+
+            // finalResourceType, usePartitionKeyLengthForFinal determined as before
+            finalResourceType := undefined
+            usePartitionKeyLengthForFinal := false
+            if isJsonSuper {
+                finalResourceType = pConstants.RTYPE_P_COLUMN_DATA_JSON_PARTITIONED
+                usePartitionKeyLengthForFinal = true
+            } else if isBinarySuper {
+                finalResourceType = pConstants.RTYPE_P_COLUMN_DATA_BINARY_PARTITIONED
+                usePartitionKeyLengthForFinal = true
+            } else { // isResourceMapSuper
+                finalResourceType = pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP
+                // usePartitionKeyLengthForFinal remains false
+            }
+
+            // Calculate newCombinedKeyLength upfront from the current (super) instance's properties.
+            // state.partitionKeyLength of the super-instance stores the key-length-contribution of the nested part.
+            if is_undefined(state.superPartitionKeyLength) || is_undefined(state.partitionKeyLength) {
+                ll.panic(
+                    "Flatten setup error: superPartitionKeyLength (%v) or partitionKeyLength (%v) is undefined for super-type %s. These are needed to determine combined key length.",
+                    state.superPartitionKeyLength, state.partitionKeyLength, state.resourceType
+                )
+            }
+            newCombinedKeyLength := usePartitionKeyLengthForFinal ? state.superPartitionKeyLength + state.partitionKeyLength : state.partitionKeyLength + state.keyLength
+
+            newData := {}
+
+            for superKeyStr, nestedPCDInstance in state.data {
+                superKeyArray := _decodeKeyString(superKeyStr) // Uses outer state's _decodeKeyString (based on superPartitionKeyLength)
+
+                if !nestedPCDInstance.parsed || is_undefined(nestedPCDInstance.resourceType) {
+                    ll.panic("Flatten error: Nested PCD for superKey '%s' (superType %s) is not parsed or missing resourceType.", superKeyStr, state.resourceType)
+                }
+                if nestedPCDInstance.resourceType != finalResourceType {
+                    ll.panic("Flatten error: For superKey '%s' (superType %s), expected nested type %s, got %s.",
+                        superKeyStr, state.resourceType, finalResourceType, nestedPCDInstance.resourceType)
+                }
+
+                expectedNestedIndividualKeyLen := usePartitionKeyLengthForFinal ? state.partitionKeyLength : state.keyLength // Outer state's expectation for its children's key length contribution.
+                actualNestedIndividualKeyLen := 0
+                nestedPropertyTested := ""
+
+                if finalResourceType == pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP { // Nested is ResourceMap
+                    if is_undefined(nestedPCDInstance.keyLength) {
+                         ll.panic("Flatten error: Nested ResourceMap PCD for superKey '%s' (superType %s) is missing its 'keyLength'.", superKeyStr, state.resourceType)
+                    }
+                    actualNestedIndividualKeyLen = nestedPCDInstance.keyLength
+                    nestedPropertyTested = "keyLength"
+                } else { // Nested is JsonPartitioned or BinaryPartitioned
+                    if is_undefined(nestedPCDInstance.partitionKeyLength) {
+                         ll.panic("Flatten error: Nested Partitioned PCD for superKey '%s' (superType %s) is missing its 'partitionKeyLength'.", superKeyStr, state.resourceType)
+                    }
+                    actualNestedIndividualKeyLen = nestedPCDInstance.partitionKeyLength
+                    nestedPropertyTested = "partitionKeyLength"
+                }
+
+                if actualNestedIndividualKeyLen != expectedNestedIndividualKeyLen {
+                    ll.panic(
+                        "Flatten consistency error for super-type %s, superKey '%s': Expected nested key length %d (derived from super-type's state.partitionKeyLength), but actual nested key length is %d (from nestedPCDInstance.%s).",
+                        state.resourceType,
+                        superKeyStr,
+                        expectedNestedIndividualKeyLen,
+                        actualNestedIndividualKeyLen,
+                        nestedPropertyTested
+                    )
+                }
+
+                nestedPCDInstance.forEach(func(nestedKeyArray, valueOrParts) {
+                    combinedKeyArray := superKeyArray + nestedKeyArray
+                    newData[string(json.encode(combinedKeyArray))] = valueOrParts
+                })
+            }
+
+            newInstanceOpts := {
+                parsed: true,
+                resourceType: finalResourceType,
+                relevantTopLayerKeyLength: newCombinedKeyLength,
+                data: newData,
+                spec: state.spec // User's comment update incorporated
+            }
+
+            if usePartitionKeyLengthForFinal {
+                newInstanceOpts.partitionKeyLength = newCombinedKeyLength
+            } else { // For ResourceMap, the length field is 'keyLength'
+                newInstanceOpts.keyLength = newCombinedKeyLength
+            }
+
+            return _createPColumnDataInstance(newInstanceOpts)
+        }
+    })
+
+    return self
+}
+
+export ll.toStrict({
+    parseData: parseData
+})
