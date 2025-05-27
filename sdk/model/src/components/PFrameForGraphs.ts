@@ -10,6 +10,7 @@ import type {
   PObjectId,
 } from '@milaboratories/pl-model-common';
 import {
+  canonicalizeAxisId,
   canonicalizeJson,
   getAxisId,
   getPColumnSpecId,
@@ -49,24 +50,84 @@ function getKeysCombinations(idsLists: AxisId[][]) {
   return result;
 }
 
+type LinkerColumnsMap = Record<string, Record<string, { id: string, spec: PColumnSpec }>>;
+export const IS_LINKER_COLUMN = 'pl7.app/isLinkerColumn';
+function getLinkerColumnsMap(linkerColumns:PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor> | PColumnValues>[]) {
+  const resultMap: LinkerColumnsMap = {};
+  for (const {id, spec} of linkerColumns) {
+    const axesSpec = spec.axesSpec ?? [];
+    if (axesSpec.length !== 2) {
+      throw Error(`Linker column with wrong axes count: ${canonicalizeJson(spec)}`)
+    }
+    if (axesSpec.length) {
+      const [axisA, axisB] = axesSpec;
+      const idA = canonicalizeAxisId(getAxisId(axisA));
+      const idB = canonicalizeAxisId(getAxisId(axisB));
+      if (!resultMap[idA]) {
+        resultMap[idA] = {};
+      }
+      if (!resultMap[idB]) {
+        resultMap[idB] = {};
+      }
+      resultMap[idA][idB] = {id, spec};
+      resultMap[idB][idA] = {id, spec};
+    }
+  }
+  return resultMap;
+}
+
+export function hasPathWithLinkerColumns(
+    linkerColumnsMap:LinkerColumnsMap,
+    startId: string,
+    endId: string
+):boolean {
+  const visited = new Set([startId])
+  let nextIds = [startId];
+  while (nextIds.length) {
+    const next = new Set<string>();
+    for (const nextId of nextIds) {
+      if (linkerColumnsMap[nextId]) {
+        const availableIds = Object.keys(linkerColumnsMap[nextId]);
+        for (const availableId of availableIds) {
+          if (availableId === endId) {
+            return true;
+          } else if (!visited.has(availableId)) {
+            next.add(availableId);
+            visited.add(availableId);
+          }
+        }
+      }
+    }
+    nextIds = [...next];
+  }
+  return false;
+}
+
+
 /** Check if axes of secondary column are exactly in axes of main column */
 function checkFullCompatibility(
   mainColumn: PColumnSpec,
   secondaryColumn: PColumnSpec,
+  linkerColumnsMap?: LinkerColumnsMap
 ): boolean {
   const mainAxesIds = mainColumn.axesSpec.map(getAxisId);
   const secondaryAxesIds = secondaryColumn.axesSpec.map(getAxisId);
-  return secondaryAxesIds.every((id) => mainAxesIds.some((mainId) => matchAxisId(mainId, id) && matchAxisId(id, mainId)));
+  // with fixed axes (sliced columns) in data-mapping there is enough to have only one axis in intersection
+  return secondaryAxesIds.some((id) => mainAxesIds.some((mainId) => matchAxisId(mainId, id) && matchAxisId(id, mainId))) ||
+      linkerColumnsMap !== undefined && secondaryAxesIds.some((id) => mainAxesIds.some((mainId) => hasPathWithLinkerColumns(linkerColumnsMap, canonicalizeAxisId(mainId), canonicalizeAxisId(id))));
 }
 
 /** Check if axes of secondary column are in axes of main column, but they can have compatible difference in domains */
 function checkCompatibility(
   mainColumn: PColumnSpec,
   secondaryColumn: PColumnSpec,
+  linkerColumnsMap?: LinkerColumnsMap
 ): boolean {
   const mainAxesIds = mainColumn.axesSpec.map(getAxisId);
   const secondaryAxesIds = secondaryColumn.axesSpec.map(getAxisId);
-  return secondaryAxesIds.every((id) => mainAxesIds.some((mainId) => matchAxisId(mainId, id)));
+  // with fixed axes (sliced columns) in data-mapping there is enough to have only one axis in intersection
+  return secondaryAxesIds.some((id) => mainAxesIds.some((mainId) => matchAxisId(mainId, id))) ||
+      linkerColumnsMap !== undefined && secondaryAxesIds.some((id) => mainAxesIds.some((mainId) => hasPathWithLinkerColumns(linkerColumnsMap, canonicalizeAxisId(mainId), canonicalizeAxisId(id))));
 }
 
 export const IS_VIRTUAL_COLUMN = 'pl7.app/graph/isVirtual'; // annotation for column duplicates with extended domains
@@ -77,15 +138,16 @@ export const LABEL_ANNOTATION = 'pl7.app/label';
 function getAdditionalColumnsForPair(
   mainColumn: PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor> | PColumnValues>,
   secondaryColumn: PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor> | PColumnValues>,
+  linkerColumnsMap?: LinkerColumnsMap
 ): PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor> | PColumnValues>[] {
   const mainAxesIds = mainColumn.spec.axesSpec.map(getAxisId);
   const secondaryAxesIds = secondaryColumn.spec.axesSpec.map(getAxisId);
 
-  const isFullCompatible = checkFullCompatibility(mainColumn.spec, secondaryColumn.spec);
+  const isFullCompatible = checkFullCompatibility(mainColumn.spec, secondaryColumn.spec, linkerColumnsMap);
   if (isFullCompatible) { // in this case it isn't necessary to add more columns
     return [];
   }
-  const isCompatible = checkCompatibility(mainColumn.spec, secondaryColumn.spec);
+  const isCompatible = checkCompatibility(mainColumn.spec, secondaryColumn.spec, linkerColumnsMap);
   if (!isCompatible) { // in this case it is impossible to add some compatible column
     return [];
   }
@@ -159,6 +221,7 @@ function getAdditionalColumnsForPair(
 
 export function getAdditionalColumns(
   columns: PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor> | PColumnValues>[],
+  linkerColumnsMap: LinkerColumnsMap = {}
 ): PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor> | PColumnValues>[] {
   const additionalColumns: PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor> | PColumnValues>[] = [];
   for (let i = 0; i < columns.length; i++) {
@@ -168,9 +231,26 @@ export function getAdditionalColumns(
 
       // check if column 1 is meta for column 2 or backward
       additionalColumns.push(
-        ...getAdditionalColumnsForPair(column1, column2),
-        ...getAdditionalColumnsForPair(column2, column1),
+        ...getAdditionalColumnsForPair(column1, column2, linkerColumnsMap),
+        ...getAdditionalColumnsForPair(column2, column1, linkerColumnsMap),
       );
+    }
+  }
+  return additionalColumns;
+}
+
+export function getAdditionalLinkerColumns(
+    mainColumns: PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor> | PColumnValues>[],
+    linkerColumns: PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor> | PColumnValues>[]
+) {
+  const additionalColumns: PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor> | PColumnValues>[] = [];
+  for (let i = 0; i < mainColumns.length; i++) {
+    for (let j = 0; j < linkerColumns.length; j++) {
+      const mainColumn = mainColumns[i];
+      const linkerColumn = linkerColumns[j];
+
+      // check if linker column is compatible with other columns as secondary
+      additionalColumns.push(...getAdditionalColumnsForPair(mainColumn, linkerColumn));
     }
   }
   return additionalColumns;
@@ -179,6 +259,7 @@ export function getAdditionalColumns(
 export function enrichColumnsWithCompatible(
   mainColumns: PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor> | PColumnValues>[],
   secondaryColumns: PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor> | PColumnValues>[],
+  linkerColumnsMap: LinkerColumnsMap = {}
 ): PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor> | PColumnValues>[] {
   const mainColumnsIds = new Set<PObjectId>();
   const mainColumnsBySpec = new Map<CanonicalizedJson<PColumnSpecId>, typeof mainColumns[number]>();
@@ -195,7 +276,7 @@ export function enrichColumnsWithCompatible(
     if (mainColumnsBySpec.has(spec)) continue;
 
     for (const mainColumn of mainColumnsBySpec.values()) {
-      if (checkCompatibility(mainColumn.spec, secondaryColumn.spec)) {
+      if (checkCompatibility(mainColumn.spec, secondaryColumn.spec, linkerColumnsMap)) {
         secondaryColumnsBySpec.set(spec, secondaryColumn);
         break;
       }
@@ -216,10 +297,15 @@ export function createPFrameForGraphs<A, U>(
     .entries.map((v) => v.obj)
     .filter(isPColumn);
 
-  const columnsWithCompatibleFromUpstream = enrichColumnsWithCompatible(blockColumns, upstreamColumns);
+  const allAvailableColumns = [...blockColumns, ...upstreamColumns];
+  const linkerColumns = allAvailableColumns.filter((item) => item.spec.annotations?.[IS_LINKER_COLUMN] === 'true');
+  const extendedLinkerColumns = [...linkerColumns, ...getAdditionalLinkerColumns(allAvailableColumns, linkerColumns)]
+
+  const linkerColumnsMap = getLinkerColumnsMap(extendedLinkerColumns);
+  const columnsWithCompatibleFromUpstream = enrichColumnsWithCompatible(blockColumns, upstreamColumns, linkerColumnsMap);
 
   // additional columns are duplicates with extra fields in domains for compatibility in all possible pairs of columns set
-  const extendedColumns = [...columnsWithCompatibleFromUpstream, ...getAdditionalColumns(columnsWithCompatibleFromUpstream)];
+  const extendedColumns = [...columnsWithCompatibleFromUpstream, ...getAdditionalColumns(columnsWithCompatibleFromUpstream, linkerColumnsMap)];
 
   // if at least one column is not yet ready, we can't show the table
   if (
