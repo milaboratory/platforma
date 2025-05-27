@@ -245,23 +245,6 @@ export function getAdditionalColumns(
   return additionalColumns;
 }
 
-export function getAdditionalLinkerColumns(
-    mainColumns: PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor> | PColumnValues>[],
-    linkerColumns: PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor> | PColumnValues>[]
-) {
-  const additionalColumns: PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor> | PColumnValues>[] = [];
-  for (let i = 0; i < mainColumns.length; i++) {
-    for (let j = 0; j < linkerColumns.length; j++) {
-      const mainColumn = mainColumns[i];
-      const linkerColumn = linkerColumns[j];
-
-      // check if linker column is compatible with other columns as secondary
-      additionalColumns.push(...getAdditionalColumnsForPair(mainColumn, linkerColumn));
-    }
-  }
-  return additionalColumns;
-}
-
 export function enrichColumnsWithCompatible(
   mainColumns: PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor> | PColumnValues>[],
   secondaryColumns: PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor> | PColumnValues>[],
