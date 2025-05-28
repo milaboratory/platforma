@@ -3,7 +3,7 @@ import {
     enrichColumnsWithCompatible,
     getAdditionalColumns,
     getLinkerColumnsMap,
-    IS_LINKER_COLUMN,
+    LINKER_COLUMN_ANNOTATION,
     IS_VIRTUAL_COLUMN,
     LABEL_ANNOTATION
 } from './PFrameForGraphs';
@@ -284,7 +284,7 @@ describe('PFrameForGraph', () => {
             kind: 'PColumn',
             name: 'linker13',
             valueType: 'String',
-            annotations: {[IS_LINKER_COLUMN]: 'true'},
+            annotations: {[LINKER_COLUMN_ANNOTATION]: 'true'},
             axesSpec: [
                 {type: 'String', name: 'axis1'},
                 {type: 'String', name: 'axis3'}
@@ -325,7 +325,7 @@ describe('PFrameForGraph', () => {
             kind: 'PColumn',
             name: 'linker12',
             valueType: 'String',
-            annotations: {[IS_LINKER_COLUMN]: 'true'},
+            annotations: {[LINKER_COLUMN_ANNOTATION]: 'true'},
             axesSpec: [
                 {type: 'String', name: 'axis1'},
                 {type: 'String', name: 'axis2'}
@@ -335,7 +335,7 @@ describe('PFrameForGraph', () => {
             kind: 'PColumn',
             name: 'linker23',
             valueType: 'String',
-            annotations: {[IS_LINKER_COLUMN]: 'true'},
+            annotations: {[LINKER_COLUMN_ANNOTATION]: 'true'},
             axesSpec: [
                 {type: 'String', name: 'axis2'},
                 {type: 'String', name: 'axis3'}
@@ -345,7 +345,7 @@ describe('PFrameForGraph', () => {
             kind: 'PColumn',
             name: 'linker34',
             valueType: 'String',
-            annotations: {[IS_LINKER_COLUMN]: 'true'},
+            annotations: {[LINKER_COLUMN_ANNOTATION]: 'true'},
             axesSpec: [
                 {type: 'String', name: 'axis3'},
                 {type: 'String', name: 'axis4'}

@@ -56,15 +56,19 @@ export function isLinkerColumn(column: PColumnSpec) {
   return column.axesSpec.length === 2 && column.annotations?.[LINKER_COLUMN_ANNOTATION] === 'true';
 }
 
-export type LinkerColumnsMap = Record<CanonicalizedJson<AxisId>, Record<CanonicalizedJson<AxisId>, PColumnIdAndSpec>>;
+export type LinkerColumnsMap = Map<CanonicalizedJson<AxisId>, Map<CanonicalizedJson<AxisId>, PColumnIdAndSpec>>;
 export function getLinkerColumnsMap(linkerColumns: PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor> | PColumnValues>[]) {
-  const resultMap: LinkerColumnsMap = {};
+  const resultMap: LinkerColumnsMap = new Map();
   for (const { id, spec } of linkerColumns) {
     const [idA, idB] = spec.axesSpec.map(getAxisId).map(canonicalizeJson);
-    resultMap[idA] ??= {};
-    resultMap[idB] ??= {};
-    resultMap[idA][idB] = { columnId: id, spec };
-    resultMap[idB][idA] = { columnId: id, spec };
+    if (!resultMap.has(idA)) {
+      resultMap.set(idA, new Map());
+    }
+    if (!resultMap.has(idB)) {
+      resultMap.set(idB, new Map());
+    }
+    resultMap.get(idA)?.set(idB, { columnId: id, spec })
+    resultMap.get(idB)?.set(idA, { columnId: id, spec })
   }
   return resultMap;
 }
@@ -74,7 +78,7 @@ export function hasPathWithLinkerColumns(
   startId: AxisId,
   endId: AxisId,
 ): boolean {
-  const linkerColumnsMapIds = (Object.keys(linkerColumnsMap) as (keyof typeof linkerColumnsMap)[]).map(parseJson);
+  const linkerColumnsMapIds = [...linkerColumnsMap.keys()].map(parseJson);
   const startIdMatched = linkerColumnsMapIds.find((id) => matchAxisId(startId, id));
   if (!startIdMatched) return false;
 
@@ -85,7 +89,7 @@ export function hasPathWithLinkerColumns(
   while (nextKeys.length) {
     const next: CanonicalizedJson<AxisId>[] = [];
     for (const nextKey of nextKeys) {
-      for (const availableKey of Object.keys(linkerColumnsMap[nextKey]) as (keyof typeof linkerColumnsMap)[]) {
+      for (const availableKey of linkerColumnsMap.get(nextKey)?.keys() ?? []) {
         const availableId = parseJson(availableKey);
         if (matchAxisId(endId, availableId)) return true;
         if (!visited.has(availableKey)) {
@@ -217,7 +221,7 @@ function getAdditionalColumnsForPair(
 
 export function getAdditionalColumns(
   columns: PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor> | PColumnValues>[],
-  linkerColumnsMap: LinkerColumnsMap = {},
+  linkerColumnsMap: LinkerColumnsMap = new Map(),
 ): PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor> | PColumnValues>[] {
   const additionalColumns: PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor> | PColumnValues>[] = [];
   for (let i = 0; i < columns.length; i++) {
@@ -239,7 +243,7 @@ export function enrichColumnsWithCompatible(
   mainColumns: PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor> | PColumnValues>[],
   secondaryColumns: PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor> | PColumnValues>[],
   linkerColumns: PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor> | PColumnValues>[] = [],
-  linkerColumnsMap: LinkerColumnsMap = {},
+  linkerColumnsMap: LinkerColumnsMap = new Map(),
 ): PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor> | PColumnValues>[] {
   const mainColumnsIds = new Set<PObjectId>();
   const mainColumnsBySpec = new Map<CanonicalizedJson<PColumnSpecId>, typeof mainColumns[number]>();
