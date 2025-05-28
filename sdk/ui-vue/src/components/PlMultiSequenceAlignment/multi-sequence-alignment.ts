@@ -1,4 +1,5 @@
-import Aioli from '@biowasm/aioli';
+/* eslint-disable @stylistic/indent */
+import Aioli from '@milaboratories/biowasm-tools';
 import { computedAsync, type MaybeRefOrGetter } from '@vueuse/core';
 import { ref, toValue } from 'vue';
 
@@ -14,7 +15,7 @@ export function useAlignedSequences(sequences: MaybeRefOrGetter<string[]>) {
   return { data, loading };
 }
 
-async function multiSequenceAlignment(
+export async function multiSequenceAlignment(
   sequences: string[],
 ): Promise<string[]> {
   const inputHash = await hash(sequences);
@@ -22,14 +23,14 @@ async function multiSequenceAlignment(
   if (result) {
     return result;
   }
-  const CLI = await new Aioli(['kalign/3.3.1']);
+  const CLI = await new Aioli(['kalign']);
   const file = new File(
     sequences.map((sequence, index) => `>${index}\n${sequence}\n`),
     'input',
   );
   await CLI.mount(file);
-  await CLI.exec('kalign -f fasta -i input -o output');
-  const output = await CLI.cat('output');
+  await CLI.exec('kalign -f fasta -i /shared/data/input -o /shared/data/output');
+  const output = await CLI.cat('/shared/data/output');
   result = parseKalignOutput(output);
   cache.set(inputHash, result);
   return result;
