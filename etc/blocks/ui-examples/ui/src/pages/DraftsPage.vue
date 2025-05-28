@@ -10,8 +10,9 @@ import {
   PlTextField,
   PlBtnGhost,
   Color,
+  multiSequenceAlignment,
 } from '@platforma-sdk/ui-vue';
-import { computed, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 
 const data = reactive({
   title: "Title example",
@@ -62,6 +63,30 @@ const onClickSettings = () => {
 const triggerError = () => {
   Color.fromString('invalid color');
 };
+
+const sequences = [
+  "GKGDPKKPRGKMSSYAFFVQTSREEHKKKHPDASVNFSEFSKKCSERWKTMSAKEKGKFEDMAKADKARYEREMKTYIPPKGE",
+  "MQDRVKRPMNAFIVWSRDQRRKMALENPRMRNSEISKQLGYQWKMLTEAEKWPFFQEAQKLQAMHREKYPNYKYRPRRKAKMLPK",
+  "MKKLKKHPDFPKKPLTPYFRFFMEKRAKYAKLHPEMSNLDLTKILSKKYKELPEKKKMKYIQDFQREKQEFERNLARFREDHPDLIQNAKK",
+  "MHIKKPLNAFMLYMKEMRANVVAESTLKESAAINQILGRRWHALSREEQAKYYELARKERQLHMQLYPGWSARDNYGKKKKRKREK",
+];
+
+const expectedSequences = [
+  "GKGDPKKPRG-KMSSYAFFVQTSREEHKKKHPDASVNFSEFSKKCSERWKTMSAKEKGKFEDMAKADKARYEREMKTY-IPPKGE---------",
+  "-----MQDRV-KRPMNAFIVWSRDQRRKMALENPRMRNSEISKQLGYQWKMLTEAEKWPFFQEAQKLQAMHREKYPNYKYRPRRKAKMLPK---",
+  "MKKLKKHPDFPKKPLTPYFRFFMEKRAKYAKLHPEMSNLDLTKILSKKYKELPEKKKMKYIQDFQREKQ-EFERNLARFREDHPDLIQNAKK--",
+  "-----MHI---KKPLNAFMLYMKEMRANVVAESTLKESAAINQILGRRWHALSREEQAKYYELARKERQLHMQLYPGWSARDNYGKKKKRKREK",
+];
+
+const alignResult = ref<string[]>([]);
+
+onMounted(async () => {
+  console.log('before');
+  const result = await multiSequenceAlignment(sequences);
+  console.log('result', result);
+  alignResult.value = result;
+  console.log('Expected Sequences (static):', expectedSequences);
+});
 </script>
 
 <template>
@@ -96,6 +121,11 @@ const triggerError = () => {
     </PlRow>
     <PlRow>
       <PlBtnPrimary @click="triggerError">Trigger ui vue error</PlBtnPrimary>
+    </PlRow>
+    <PlRow>
+      <h4>Align Result</h4>
+      <pre>{{ sequences.join('\n') }}<br><br>{{ alignResult.join('\n') }}</pre>
+      <pre>{{ expectedSequences.join('\n') === alignResult.join('\n') }}</pre>
     </PlRow>
   </PlBlockPage>
 </template>
