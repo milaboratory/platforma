@@ -1,5 +1,5 @@
 /* eslint-disable @stylistic/indent */
-import Aioli from '@milaboratories/aioli-main';
+import Aioli from '@milaboratories/biowasm-tools';
 import { computedAsync, type MaybeRefOrGetter } from '@vueuse/core';
 import { ref, toValue } from 'vue';
 

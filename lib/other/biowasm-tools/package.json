@@ -1,5 +1,5 @@
 {
-  "name": "@milaboratories/aioli-main",
+  "name": "@milaboratories/biowasm-tools",
   "version": "1.0.0",
   "description": "A framework for building WebAssembly-based genomics tools",
   "repository": {

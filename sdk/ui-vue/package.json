@@ -29,7 +29,7 @@
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "dependencies": {
-    "@milaboratories/aioli-main": "workspace:^",
+    "@milaboratories/biowasm-tools": "workspace:^",
     "@milaboratories/miplots4": "catalog:",
     "@milaboratories/uikit": "workspace:^",
     "@platforma-sdk/model": "workspace:^",

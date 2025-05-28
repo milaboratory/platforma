@@ -22,7 +22,7 @@ export default defineConfig({
         'vue',
         'ag-grid-enterprise',
         'ag-grid-vue3',
-        '@milaboratories/aioli-main',
+        '@milaboratories/biowasm-tools',
       ],
       output: {
         globals: {

@@ -3,7 +3,7 @@ packages:
   - lib/util/helpers
   - lib/util/sequences
 
-  - lib/other/aioli-main
+  - lib/other/biowasm-tools
 
   - lib/model/common
   - lib/model/middle-layer
