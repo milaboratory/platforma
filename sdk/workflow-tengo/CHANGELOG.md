@@ -1,5 +1,12 @@
 # @platforma-sdk/workflow-tengo
 
+## 4.6.2
+
+### Patch Changes
+
+- ac02ffd: - Fix for PColumnBundle and PColumnBundleWithPartitions await aliases.
+  - Separation of PColumn data parsing logic
+
 ## 4.6.1
 
 ### Patch Changes
