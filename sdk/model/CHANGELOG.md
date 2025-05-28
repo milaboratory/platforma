@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.31.17
+
+### Patch Changes
+
+- 8bd34d1: add linker columns to createPFramesForGraph
+
 ## 1.31.16
 
 ### Patch Changes
