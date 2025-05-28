@@ -3,6 +3,8 @@ packages:
   - lib/util/helpers
   - lib/util/sequences
 
+  - lib/other/biowasm-tools
+
   - lib/model/common
   - lib/model/middle-layer
   - lib/model/backend
