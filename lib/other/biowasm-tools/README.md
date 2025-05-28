@@ -1,3 +1,7 @@
+# Biowasm Tools
+
+This package provides pre-bundled genomics tools, enabling offline usage. Currently, it includes kalign.
+
 # Aioli
 
 [![npm](https://img.shields.io/npm/v/@biowasm/aioli)](https://www.npmjs.com/package/@biowasm/aioli) ![Aioli Tests](https://github.com/biowasm/aioli/workflows/Aioli%20Tests/badge.svg)
