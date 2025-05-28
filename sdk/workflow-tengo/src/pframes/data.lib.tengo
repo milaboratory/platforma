@@ -1,4 +1,3 @@
-\
 ll := import("@platforma-sdk/workflow-tengo:ll")
 smart := import("@platforma-sdk/workflow-tengo:smart")
 json := import("json")
@@ -14,27 +13,28 @@ _createDecodeKeyString := func(expectedLength) {
     return func(keyStr) {
         decoded := json.decode(keyStr)
         if !is_array(decoded) {
-            ll.panic("Decoded key '%v' from string '%s' is not an array for resource type %s (expected JSON array string).", decoded, keyStr, state.resourceType)
+            ll.panic("Decoded key '%v' from string '%s' is not an array(expected JSON array string).", decoded, keyStr)
         }
         if len(decoded) != expectedLength {
-            ll.panic("Decoded key array '%v' (from string '%s') length %d does not match expected top-layer key length %d for resource type %s.", decoded, keyStr, len(decoded), expectedLength, state.resourceType)
+            ll.panic("Decoded key array '%v' (from string '%s') length %d does not match expected top-layer key length %d.", decoded, keyStr, len(decoded), expectedLength)
         }
         return decoded
     }
 }
 
 /**
- * parseData creates a new PColumnData "instance" from a resource.
+ * parseData creates a new PColumnData "instance" from an input parameter.
+ * The input can be a PColumnData resource directly, or a map of the form {data: resource, spec: map}.
  * The returned object directly exposes its fields and methods.
  *
- * @param resourceParam The PColumnData resource (e.g., PColumnData/Json, PColumnData/JsonPartitioned).
+ * @param inputParam The PColumnData resource (e.g., PColumnData/Json) or a map {data: PColumnDataResource, spec: PColumnSpecMap}.
  * @param ...optsRaw Optional map with:
  *   - recursive (bool): If true, recursively parse nested PColumnData for super-partitioned types.
- *   - spec (map): Optional PColumnSpec associated with this data.
+ *   - spec (map): Optional PColumnSpec. If provided, this will override any spec from inputParam.
  *   - parse (bool): If false, return the resource wrapper without particular features (default: true)
  * @returns {object} A PColumnData object with fields and methods.
  */
-parseData := func(resourceParam, ...optsRaw) {
+parseData := func(inputParam, ...optsRaw) {
     opts := {}
     if len(optsRaw) > 0 {
         if len(optsRaw) == 1 && is_map(optsRaw[0]) {
@@ -47,29 +47,53 @@ parseData := func(resourceParam, ...optsRaw) {
     parse := opts.parse != false
     recursive := opts.recursive == true
 
+    actualResource := undefined
+    initialSpec := undefined
+
+    // Check if inputParam is a resource by looking for a typical resource method like .info()
+    isResourceDirectly := smart.isResource(inputParam)
+
+    if !isResourceDirectly && is_map(inputParam) && !is_undefined(inputParam.data) {
+        actualResource = inputParam.data
+        if parse && !smart.isResource(actualResource) {
+            ll.panic("The 'data' field in inputParam must be a valid resource. Got: %v", actualResource)
+        }
+        if !is_undefined(inputParam.spec) {
+            initialSpec = inputParam.spec
+        }
+    } else if isResourceDirectly {
+        actualResource = inputParam
+    } else {
+        ll.panic(
+            "parseData input must be a resource (a map with an .info() method) or a map of the form {data: resource, spec: map}. Got: %v",
+            inputParam
+        )
+    }
+
     state := {
-        resource: resourceParam,
-        resourceType: resourceParam.info().Type.Name,
+        resource: actualResource,
+        resourceType: actualResource.info().Type,
         parsed: parse,
         keyLength: undefined,                 // For PColumnData/Json and PColumnData/ResourceMap
         partitionKeyLength: undefined,        // For partitioned types (top or only level for this instance)
         superPartitionKeyLength: undefined,   // For super-partitioned types
         relevantTopLayerKeyLength: 0,         // Calculated after parsing type
         data: {},                             // The main data store: map[stringKey] -> value | ResourceRef | PColumnDataInstance
-        spec: opts.spec
+        spec: !is_undefined(opts.spec) ? opts.spec : initialSpec
     }
 
     if !parse {
         return _createPColumnDataInstance(state)
     }
 
-    resourceData := resourceParam.getDataAsJson()
+    resourceData := actualResource.getDataAsJson()
     if is_undefined(resourceData) {
          ll.panic("Failed to get JSON data (metadata) from resource of type %s", state.resourceType)
     }
 
     // Determine relevantTopLayerKeyLength first
-    if state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_JSON {
+    if state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_JSON ||
+       state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP {
         state.keyLength = resourceData.keyLength
         state.relevantTopLayerKeyLength = state.keyLength
     } else if state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_JSON_PARTITIONED ||
@@ -78,14 +102,10 @@ parseData := func(resourceParam, ...optsRaw) {
         state.partitionKeyLength = resourceData.partitionKeyLength
         state.relevantTopLayerKeyLength = state.partitionKeyLength
     } else if state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_JSON_SUPER_PARTITIONED ||
-              state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_BINARY_SUPER_PARTITIONED ||
-              state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP_SUPER_PARTITIONED {
+              state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_BINARY_SUPER_PARTITIONED {
         state.superPartitionKeyLength = resourceData.superPartitionKeyLength
         state.partitionKeyLength = resourceData.partitionKeyLength // This is PKL of *nested* structures
         state.relevantTopLayerKeyLength = state.superPartitionKeyLength
-    } else if state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP {
-        state.keyLength = resourceData.keyLength
-        state.relevantTopLayerKeyLength = state.keyLength
     } else {
         ll.panic("Unsupported PColumn data resource type for initial key length determination: %s", state.resourceType)
     }
@@ -98,13 +118,13 @@ parseData := func(resourceParam, ...optsRaw) {
         for key, _ in state.data { _decodeKeyString(key) }
     } else if state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_JSON_PARTITIONED ||
               state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP {
-        for key, fieldRef in resourceParam.inputs() {
+        for key, fieldRef in actualResource.inputs() {
             _decodeKeyString(key) // Validate key structure early
             state.data[key] = fieldRef
         }
     } else if state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_BINARY_PARTITIONED {
         tempData := {}
-        for key, fieldRef in resourceParam.inputs() {
+        for key, fieldRef in actualResource.inputs() {
             partKey := undefined
             isIndex := false
             if text.has_suffix(key, ".index") {
@@ -141,21 +161,17 @@ parseData := func(resourceParam, ...optsRaw) {
                 }
             });
         }
-        for key, fieldRef in resourceParam.inputs() {
+        for key, fieldRef in actualResource.inputs() {
             _decodeKeyString(key)
             state.data[key] = parseData(recursive ? fieldRef.getValue() : fieldRef, nestedOpts)
         }
     } else if state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP {
-        for key, fieldRef in resourceParam.inputs() {
+        for key, fieldRef in actualResource.inputs() {
             _decodeKeyString(key)
             state.data[key] = fieldRef
         }
     } else {
-        ll.panic("Unsupported resource type for parseData: %s", state.resourceType)
-    }
-
-    if resourceParam.info().Type.Version != "1" {
-        ll.panic("Resource version %s is not supported for parseData.", resourceParam.info().Type.Version)
+        ll.panic("Unsupported resource type for parseData data population: %s", state.resourceType)
     }
 
     return _createPColumnDataInstance(state)
@@ -171,9 +187,13 @@ _createPColumnDataInstance = func(state) {
 
         parsed: state.parsed,
 
-        spec: state.spec,
+        getSpec: func() {
+            return state.spec
+        },
 
-        resourceType: state.resourceType,
+        getResourceType: func() {
+            return state.resourceType
+        },
 
         keyLength: state.keyLength,
         partitionKeyLength: state.partitionKeyLength,
@@ -199,28 +219,27 @@ _createPColumnDataInstance = func(state) {
             return maps.values(uniqueValsMap)
         },
 
-        createResource: func() {
+        createDataResource: func() {
             if !is_undefined(state.resource) {
                 // if possible, just return the original resource
                 return state.resource
             }
 
             if !state.parsed {
-                ll.panic("createResource: resource is not parsed and no original resource is set.")
+                ll.panic("createDataResource: resource is not parsed and no original resource is set.")
             }
 
-            builder := smart.structBuilder({ Name: state.resourceType, Version: "1" })
-
+            builder := undefined
             if state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_JSON {
-                builder.setDataAsJson({ keyLength: state.keyLength, data: state.data })
+                builder = smart.structBuilder(state.resourceType, json.encode({ keyLength: state.keyLength, data: state.data }))
             } else if state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_JSON_PARTITIONED ||
                     state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP_PARTITIONED {
-                builder.setDataAsJson({ partitionKeyLength: state.partitionKeyLength })
+                builder = smart.structBuilder(state.resourceType, json.encode({ partitionKeyLength: state.partitionKeyLength }))
                 for key, resourceRef in state.data {
                     builder.createInputField(key).set(resourceRef)
                 }
             } else if state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_BINARY_PARTITIONED {
-                builder.setDataAsJson({ partitionKeyLength: state.partitionKeyLength })
+                builder = smart.structBuilder(state.resourceType, json.encode({ partitionKeyLength: state.partitionKeyLength }))
                 for key, binaryParts in state.data {
                     builder.createInputField(key + ".index").set(binaryParts.index)
                     builder.createInputField(key + ".values").set(binaryParts.values)
@@ -228,21 +247,22 @@ _createPColumnDataInstance = func(state) {
             } else if state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_JSON_SUPER_PARTITIONED ||
                     state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_BINARY_SUPER_PARTITIONED ||
                     state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP_PARTITIONED {
-                builder.setDataAsJson({
+                builder = smart.structBuilder(state.resourceType, json.encode({
                     superPartitionKeyLength: state.superPartitionKeyLength,
                     partitionKeyLength: state.partitionKeyLength
-                })
+                }))
                 for key, item in state.data {
-                    builder.createInputField(key).set(item.createResource())
+                    builder.createInputField(key).set(item.createDataResource())
                 }
             } else if state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP {
-                builder.setDataAsJson({ keyLength: state.keyLength })
+                builder = smart.structBuilder(state.resourceType, json.encode({ keyLength: state.keyLength }))
                 for key, resRef in state.data {
                     builder.createInputField(key).set(resRef)
                 }
             } else {
-                ll.panic("Unsupported resource type for createResource: %s", state.resourceType)
+                ll.panic("Unsupported resource type for createDataResource: %s", state.resourceType)
             }
+
             return builder.lockAndBuild()
         },
 
@@ -359,7 +379,7 @@ _createPColumnDataInstance = func(state) {
                         return _createPColumnDataInstance(newInstanceOpts)
                     } else { // len(newData) == 1
                         singleNestedItem := newData["[]"] // This is a PColumnData instance
-                        if is_undefined(singleNestedItem) || is_undefined(singleNestedItem.resourceType) {
+                        if is_undefined(singleNestedItem) || is_undefined(singleNestedItem.getResourceType()) {
                             ll.panic("Filter error: expected a PColumnData instance for key '[]' when unwrapping, got %v", singleNestedItem)
                         }
                         return singleNestedItem
@@ -513,7 +533,6 @@ _createPColumnDataInstance = func(state) {
                 return self // Not a type that can be flattened
             }
 
-            // finalResourceType, usePartitionKeyLengthForFinal determined as before
             finalResourceType := undefined
             usePartitionKeyLengthForFinal := false
             if isJsonSuper {
@@ -527,63 +546,61 @@ _createPColumnDataInstance = func(state) {
                 // usePartitionKeyLengthForFinal remains false
             }
 
-            // Calculate newCombinedKeyLength upfront from the current (super) instance's properties.
-            // state.partitionKeyLength of the super-instance stores the key-length-contribution of the nested part.
-            if is_undefined(state.superPartitionKeyLength) || is_undefined(state.partitionKeyLength) {
-                ll.panic(
-                    "Flatten setup error: superPartitionKeyLength (%v) or partitionKeyLength (%v) is undefined for super-type %s. These are needed to determine combined key length.",
-                    state.superPartitionKeyLength, state.partitionKeyLength, state.resourceType
-                )
+            newCombinedKeyLength := -1
+            if usePartitionKeyLengthForFinal {
+                if is_undefined(state.superPartitionKeyLength) || is_undefined(state.partitionKeyLength) {
+                    ll.panic(
+                        "Flatten setup error: superPartitionKeyLength (%v) or partitionKeyLength (%v) is undefined for super-type %s. These are needed to determine combined key length.",
+                        state.superPartitionKeyLength, state.partitionKeyLength, state.resourceType
+                    )
+                }
+                newCombinedKeyLength = state.superPartitionKeyLength + state.partitionKeyLength
+            } else {
+                if is_undefined(state.partitionKeyLength) || is_undefined(state.keyLength) {
+                    ll.panic(
+                        "Flatten setup error: partitionKeyLength (%v) or keyLength (%v) is undefined for super-type %s. These are needed to determine combined key length.",
+                        state.partitionKeyLength, state.keyLength, state.resourceType
+                    )
+                }
+                newCombinedKeyLength = state.partitionKeyLength + state.keyLength
             }
-            newCombinedKeyLength := usePartitionKeyLengthForFinal ? state.superPartitionKeyLength + state.partitionKeyLength : state.partitionKeyLength + state.keyLength
 
             newData := {}
 
-            for superKeyStr, nestedPCDInstance in state.data {
-                superKeyArray := _decodeKeyString(superKeyStr) // Uses outer state's _decodeKeyString (based on superPartitionKeyLength)
-
-                if !nestedPCDInstance.parsed || is_undefined(nestedPCDInstance.resourceType) {
-                    ll.panic("Flatten error: Nested PCD for superKey '%s' (superType %s) is not parsed or missing resourceType.", superKeyStr, state.resourceType)
+            self.forEach(func(superKeyArray, nestedPCDInstance) {
+                if !nestedPCDInstance.parsed {
+                    ll.panic("Flatten error: Nested PCD for superKey '%s' (superType %s) is not parsed or missing resourceType.", superKeyArray, state.resourceType)
                 }
-                if nestedPCDInstance.resourceType != finalResourceType {
+                if nestedPCDInstance.getResourceType() != finalResourceType {
                     ll.panic("Flatten error: For superKey '%s' (superType %s), expected nested type %s, got %s.",
-                        superKeyStr, state.resourceType, finalResourceType, nestedPCDInstance.resourceType)
+                        superKeyArray, state.resourceType, finalResourceType, nestedPCDInstance.getResourceType())
                 }
 
-                expectedNestedIndividualKeyLen := usePartitionKeyLengthForFinal ? state.partitionKeyLength : state.keyLength // Outer state's expectation for its children's key length contribution.
-                actualNestedIndividualKeyLen := 0
-                nestedPropertyTested := ""
-
-                if finalResourceType == pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP { // Nested is ResourceMap
+                if !usePartitionKeyLengthForFinal { // Nested is ResourceMap
                     if is_undefined(nestedPCDInstance.keyLength) {
-                         ll.panic("Flatten error: Nested ResourceMap PCD for superKey '%s' (superType %s) is missing its 'keyLength'.", superKeyStr, state.resourceType)
+                         ll.panic("Flatten error: Nested ResourceMap PCD for superKey '%s' (superType %s) is missing its 'keyLength'.",
+                            superKeyArray, state.resourceType)
                     }
-                    actualNestedIndividualKeyLen = nestedPCDInstance.keyLength
-                    nestedPropertyTested = "keyLength"
+                    if nestedPCDInstance.keyLength != state.keyLength {
+                        ll.panic("Flatten error: Nested ResourceMap PCD for superKey '%s' (superType %s) has keyLength %d, expected %d.",
+                            superKeyArray, state.resourceType, nestedPCDInstance.keyLength, state.keyLength)
+                    }
                 } else { // Nested is JsonPartitioned or BinaryPartitioned
                     if is_undefined(nestedPCDInstance.partitionKeyLength) {
-                         ll.panic("Flatten error: Nested Partitioned PCD for superKey '%s' (superType %s) is missing its 'partitionKeyLength'.", superKeyStr, state.resourceType)
+                         ll.panic("Flatten error: Nested Partitioned PCD for superKey '%s' (superType %s) is missing its 'partitionKeyLength'.",
+                            superKeyArray, state.resourceType)
                     }
-                    actualNestedIndividualKeyLen = nestedPCDInstance.partitionKeyLength
-                    nestedPropertyTested = "partitionKeyLength"
-                }
-
-                if actualNestedIndividualKeyLen != expectedNestedIndividualKeyLen {
-                    ll.panic(
-                        "Flatten consistency error for super-type %s, superKey '%s': Expected nested key length %d (derived from super-type's state.partitionKeyLength), but actual nested key length is %d (from nestedPCDInstance.%s).",
-                        state.resourceType,
-                        superKeyStr,
-                        expectedNestedIndividualKeyLen,
-                        actualNestedIndividualKeyLen,
-                        nestedPropertyTested
-                    )
+                    if nestedPCDInstance.partitionKeyLength != state.partitionKeyLength {
+                        ll.panic("Flatten error: Nested Partitioned PCD for superKey '%s' (superType %s) has partitionKeyLength %d, expected %d.",
+                            superKeyArray, state.resourceType, nestedPCDInstance.partitionKeyLength, state.partitionKeyLength)
+                    }
                 }
 
                 nestedPCDInstance.forEach(func(nestedKeyArray, valueOrParts) {
                     combinedKeyArray := superKeyArray + nestedKeyArray
                     newData[string(json.encode(combinedKeyArray))] = valueOrParts
                 })
-            }
+            })
 
             newInstanceOpts := {
                 parsed: true,
