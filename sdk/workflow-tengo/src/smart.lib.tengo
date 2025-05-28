@@ -366,7 +366,10 @@ resource = func(r) {
 		 *  HasErrors:     bool
 		 */
 		info: func() {
-			return tx.getResource(self.id)
+			_resourceInfo := tx.getResource(self.id)
+			// Converting type to normal map to allow for easy "==" comparison
+			_resourceInfo.Type = { Name: _resourceInfo.Type.Name, Version: _resourceInfo.Type.Version }
+			return _resourceInfo
 		},
 
 		/**
