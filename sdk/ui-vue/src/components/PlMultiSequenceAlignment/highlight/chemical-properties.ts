@@ -1,3 +1,4 @@
+import type { ResidueCounts } from '../types';
 import type { SegmentedColumn } from './types';
 
 export const chemicalCategories = [
@@ -35,17 +36,20 @@ export const chemicalPropertiesColors: Record<ChemicalCategory, string> = {
   aromatic: '#A2F5FA',
 };
 
-type ColumnConsensus = { residues: string; category: ChemicalCategory }[];
+type ColumnChemicalProperties = {
+  residues: string;
+  category: ChemicalCategory;
+}[];
 
-export const getColumnConsensuses = (
-  { residueFrequencies, rowCount }: {
-    residueFrequencies: Record<string, number>[];
+export const getColumnChemicalProperties = (
+  { residueCounts, rowCount }: {
+    residueCounts: ResidueCounts;
     rowCount: number;
   },
-): ColumnConsensus[] =>
-  // for every column in a residue frequencies table
+): ColumnChemicalProperties[] =>
+  // for every column in a residue counts table
   // (e.g. table = [{ A: 3, R: 5, Q: 1}, { E: 4, T: 2 }, ...])
-  residueFrequencies.map((column) => (
+  residueCounts.map((column) => (
     // find all matching criterion
     categoryCriterion
       .filter(({ rules }) =>
@@ -54,12 +58,12 @@ export const getColumnConsensuses = (
           // where at least one residue group
           groups.some((group) => {
             // combined
-            const groupFrequency = group.split('').reduce(
+            const groupCount = group.split('').reduce(
               (acc, residue) => acc + (column[residue] ?? 0),
               0,
             );
             // is above the required threshold
-            return groupFrequency > rowCount * threshold;
+            return groupCount > rowCount * threshold;
           }),
         ),
       )
@@ -69,7 +73,7 @@ export const getColumnConsensuses = (
 export function alignedSequencesToSegmentedColumns(
   { alignedSequences, consensuses }: {
     alignedSequences: string[];
-    consensuses: ColumnConsensus[];
+    consensuses: ColumnChemicalProperties[];
   },
 ): SegmentedColumn<ChemicalCategory>[] {
   const columns: SegmentedColumn<ChemicalCategory>[] = [];

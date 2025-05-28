@@ -1,32 +1,21 @@
 <script lang="ts" setup>
-import {
-  PlAlert,
-  PlBtnGhost,
-  PlCheckbox,
-  PlDropdown,
-  PlDropdownMulti,
-  PlSlideModal,
-} from '@milaboratories/uikit';
+import { PlAlert } from '@milaboratories/uikit';
 import type {
   PColumnPredicate,
   PFrameHandle,
   PlMultiSequenceAlignmentModel,
   PlSelectionModel,
 } from '@platforma-sdk/model';
-import { computed, onMounted, reactive, ref } from 'vue';
-import { useDataTableToolsPanelTarget } from '../PlAgDataTableToolsPanel';
+import { computed, ref } from 'vue';
 import {
   useLabelColumnsOptions,
   useSequenceColumnsOptions,
   useSequenceRows,
 } from './data';
-import {
-  chemicalCategories,
-  chemicalPropertiesColors,
-  chemicalPropertiesLabels,
-} from './highlight/chemical-properties';
+import Legend from './Legend.vue';
 import MultiSequenceAlignmentView from './MultiSequenceAlignmentView.vue';
-import type { ColorScheme } from './types';
+import { defaultSettings } from './settings';
+import Toolbar from './Toolbar.vue';
 
 const model = defineModel<PlMultiSequenceAlignmentModel>({ default: {} });
 
@@ -59,16 +48,6 @@ const props = defineProps<{
    */
   readonly selection?: PlSelectionModel;
 }>();
-
-// SlidePanel visibility flag
-const show = ref(false);
-
-// Teleport open button to DataTableToolsPanel after mount
-const mounted = ref(false);
-onMounted(() => {
-  mounted.value = true;
-});
-const teleportTarget = useDataTableToolsPanelTarget();
 
 const sequenceColumns = useSequenceColumnsOptions(() => ({
   pFrame: props.pFrame,
@@ -103,135 +82,28 @@ const sequenceRows = useSequenceRows(() => ({
   selection: props.selection,
 }));
 
-const settings = reactive({
-  colorScheme: 'chemical-properties' as ColorScheme,
-  seqLogo: true,
-  noColor: false,
-  legend: true,
-});
+const settings = ref(defaultSettings);
 </script>
 
 <template>
-  <Teleport v-if="mounted && teleportTarget" :to="teleportTarget">
-    <PlBtnGhost icon="dna" @click.stop="show = true">
-      Multi Alignment
-    </PlBtnGhost>
-  </Teleport>
-
-  <PlSlideModal v-model="show" width="100%" :close-on-outside-click="false">
-    <template #title>Multiple Sequence Alignment</template>
-
-    <div :class="$style.toolbar">
-      <div :class="$style['toolbar-line']">
-        <div :class="$style['toolbar-section']">
-          <PlDropdownMulti
-            v-model="selectedSequenceColumnIds"
-            label="Sequence Columns"
-            :options="sequenceColumns.options"
-            :disabled="!sequenceColumns.options.length"
-            clearable
-          />
-          <PlDropdownMulti
-            v-model="selectedLabelColumnIds"
-            label="Label Columns"
-            :options="labelColumns.options"
-            :disabled="!labelColumns.options.length"
-            clearable
-          />
-          <PlDropdown
-            v-model="settings.colorScheme"
-            label="Color Scheme"
-            :options="
-              [{
-                label: 'Chemical Properties',
-                value: 'chemical-properties',
-              }]
-            "
-            disabled
-          />
-        </div>
-        <div :class="$style['toolbar-buttons']">
-          <PlBtnGhost icon="settings">Settings</PlBtnGhost>
-          <PlBtnGhost icon="export">Export</PlBtnGhost>
-        </div>
-      </div>
-      <div :class="$style['toolbar-line']">
-        <div :class="$style['toolbar-section']">
-          <PlCheckbox v-model="settings.seqLogo">Seq logo</PlCheckbox>
-          <PlCheckbox :model-value="false" disabled>Histogram</PlCheckbox>
-          <PlCheckbox :model-value="false" disabled>Navigator</PlCheckbox>
-          <PlCheckbox :model-value="false" disabled>Tree</PlCheckbox>
-          <PlCheckbox v-model="settings.noColor">No Color</PlCheckbox>
-          <PlCheckbox v-model="settings.legend">Legend</PlCheckbox>
-        </div>
-      </div>
-    </div>
-    <PlAlert v-if="sequenceRows.length < 2" type="warn">
-      Please select at least one sequence column and two or more rows to run
-      alignment
-    </PlAlert>
-
+  <PlAlert v-if="sequenceRows.length < 2" type="warn">
+    Please select at least one sequence column and two or more rows to run
+    alignment
+  </PlAlert>
+  <template v-else>
+    <Toolbar
+      v-model:sequence-columns="selectedSequenceColumnIds"
+      v-model:label-columns="selectedLabelColumnIds"
+      v-model:settings="settings"
+      :sequence-column-options="sequenceColumns.options"
+      :label-column-options="labelColumns.options"
+    />
     <MultiSequenceAlignmentView
-      v-else
-      :sequenceRows="sequenceRows"
-      :colorScheme="settings.noColor ? undefined : settings.colorScheme"
+      :sequenceRows
+      :colorScheme="settings.colorScheme"
+      :consensus="settings.consensus"
       :seq-logo="settings.seqLogo"
     />
-
-    <div v-if="settings.legend" :class="$style.legend">
-      <div
-        v-for="category in chemicalCategories"
-        :key="category"
-        :class="$style['legend-item']"
-      >
-        <div
-          :class="$style['color-sample']"
-          :style="{ backgroundColor: chemicalPropertiesColors[category] }"
-        />
-        {{ chemicalPropertiesLabels[category] }}
-      </div>
-    </div>
-  </PlSlideModal>
+    <Legend v-if="settings.legend" />
+  </template>
 </template>
-
-<style module>
-.toolbar {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-.toolbar-line {
-  display: flex;
-  justify-content: space-between;
-}
-
-.toolbar-section {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 24px;
-}
-
-.toolbar-buttons {
-  display: flex;
-}
-
-.legend {
-  margin-block-start: auto;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.legend-item {
-  display: flex;
-  gap: 4px;
-}
-
-.color-sample {
-  display: inline-block;
-  block-size: 18px;
-  inline-size: 18px;
-  border-radius: 3px;
-}
-</style>
