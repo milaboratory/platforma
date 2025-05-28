@@ -1,16 +1,17 @@
 import Aioli from '@biowasm/aioli';
 import { computedAsync, type MaybeRefOrGetter } from '@vueuse/core';
-import { toValue } from 'vue';
+import { ref, toValue } from 'vue';
 
 const cache = new Map<string, string[]>();
 
 export function useAlignedSequences(sequences: MaybeRefOrGetter<string[]>) {
-  const result = computedAsync(
+  const loading = ref(false);
+  const data = computedAsync(
     () => multiSequenceAlignment(toValue(sequences)),
     [],
-    { onError: () => (result.value = []) },
+    { onError: () => (data.value = []), evaluating: loading },
   );
-  return result;
+  return { data, loading };
 }
 
 async function multiSequenceAlignment(
