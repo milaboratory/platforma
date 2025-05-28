@@ -1,5 +1,16 @@
 # @platforma-sdk/ui-vue
 
+## 1.32.0
+
+### Minor Changes
+
+- 992b49d: [desktop] Repack kalignment: add @milaboratories/biowasm-tools package with prebundled tools (kalign only)
+
+### Patch Changes
+
+- Updated dependencies [992b49d]
+  - @milaboratories/biowasm-tools@1.1.0
+
 ## 1.31.19
 
 ### Patch Changes
