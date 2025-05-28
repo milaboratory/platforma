@@ -11,15 +11,14 @@ export const colorizeSegmentedColumns = <T extends string>(
   for (const [columnIndex, column] of columns.entries()) {
     for (const { category, start, end } of column) {
       const color = colors[category];
-      pathsByColor[color] = (pathsByColor[color] ?? '').concat(
-        [
-          `M${columnIndex},${start}`,
-          'h1',
-          `v${end - start + 1}`,
-          'h-1',
-          'z',
-        ].join(''),
-      );
+      pathsByColor[color] = [
+        pathsByColor[color] ?? '',
+        `M${columnIndex},${start}`,
+        'h1',
+        `v${end - start + 1}`,
+        'h-1',
+        'z',
+      ].join('');
     }
   }
   return new Blob([

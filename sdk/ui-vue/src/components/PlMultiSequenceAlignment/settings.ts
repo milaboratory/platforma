@@ -1,7 +1,7 @@
 import type { ColorScheme } from './types';
 
 export const defaultSettings = {
-  colorScheme: 'chemical-properties' as ColorScheme,
+  colorScheme: { type: 'no-color' } as ColorScheme,
   consensus: true,
   seqLogo: true,
   legend: true,

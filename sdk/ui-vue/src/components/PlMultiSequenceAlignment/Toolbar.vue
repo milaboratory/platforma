@@ -1,20 +1,21 @@
 <script setup lang="ts">
-import type { ListOption } from '@milaboratories/uikit';
+import type { ListOptionNormalized } from '@milaboratories/uikit';
 import {
   PlBtnGhost,
   PlCheckbox,
   PlDropdown,
   PlDropdownMulti,
 } from '@milaboratories/uikit';
-import type { PObjectId, PTableColumnIdJson } from '@platforma-sdk/model';
+import type { PObjectId, PTableColumnId } from '@platforma-sdk/model';
 import type { Settings } from './settings';
+import type { ColorScheme } from './types';
 
 const sequenceColumns = defineModel<PObjectId[]>(
   'sequenceColumns',
   { required: true },
 );
 
-const labelColumns = defineModel<PTableColumnIdJson[]>(
+const labelColumns = defineModel<PTableColumnId[]>(
   'labelColumns',
   { required: true },
 );
@@ -25,8 +26,9 @@ const settings = defineModel<Settings>(
 );
 
 defineProps<{
-  sequenceColumnOptions: ListOption<PObjectId>[];
-  labelColumnOptions: ListOption<PTableColumnIdJson>[];
+  sequenceColumnOptions: ListOptionNormalized<PObjectId>[];
+  labelColumnOptions: ListOptionNormalized<PTableColumnId>[];
+  annotationColumnOptions: ListOptionNormalized<PObjectId>[];
 }>();
 </script>
 
@@ -52,13 +54,22 @@ defineProps<{
           v-model="settings.colorScheme"
           label="Color Scheme"
           :options="
-            [{
-              label: 'Chemical Properties',
-              value: 'chemical-properties',
-            }, {
-              label: 'No Color',
-              value: 'no-color',
-            }]
+            [
+              {
+                label: 'Chemical Properties',
+                value: { type: 'chemical-properties' },
+              },
+              {
+                label: 'No Color',
+                value: { type: 'no-color' },
+              },
+              ...annotationColumnOptions.map<
+                ListOptionNormalized<ColorScheme>
+                >(({ label, value }) => ({
+                  label,
+                  value: { type: 'annotation', columnId: value },
+                })),
+            ]
           "
         />
       </div>

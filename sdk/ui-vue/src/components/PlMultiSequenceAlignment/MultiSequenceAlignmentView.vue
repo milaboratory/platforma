@@ -22,31 +22,36 @@ const { sequenceRows, colorScheme } = defineProps<{
 }>();
 
 const alignedSequences = reactive(useAlignedSequences(
-  () => sequenceRows.map(({ sequence }) => sequence),
+  () => sequenceRows.map(({ sequences }) => sequences.join('')),
 ));
 
 const residueCounts = computed(
   () => getResidueCounts(alignedSequences.data),
 );
 
-const segmentedColumns = computed(() => {
-  const columnConsensuses = getColumnChemicalProperties({
-    residueCounts: residueCounts.value,
-    rowCount: alignedSequences.data.length,
-  });
-  const segmentedColumns = alignedSequencesToSegmentedColumns({
-    alignedSequences: alignedSequences.data,
-    consensuses: columnConsensuses,
-  });
-  return segmentedColumns;
-});
-
 const selectedColorScheme = computed(() => {
-  switch (colorScheme) {
+  switch (colorScheme.type) {
     case 'no-color':
-      return;
-    case 'chemical-properties':
-      return segmentedColumns.value;
+      return [];
+
+    case 'chemical-properties': {
+      const columnConsensuses = getColumnChemicalProperties({
+        residueCounts: residueCounts.value,
+        rowCount: alignedSequences.data.length,
+      });
+      const segmentedColumns = alignedSequencesToSegmentedColumns({
+        alignedSequences: alignedSequences.data,
+        consensuses: columnConsensuses,
+      });
+      console.log('calculated chemical properties');
+      return segmentedColumns;
+    }
+
+    case 'annotation': {
+      console.warn('annotation coloring isn\'t implemented yet');
+      return [];
+    }
+
     default:
       throw new Error(`Unknown highlight ${colorScheme}`);
   }
@@ -76,12 +81,12 @@ const highlightImage = computed(
     :loading="alignedSequences.loading"
     type="transparent"
   >
-    <div :class="$style.corner" />
-    <div :class="$style.header">
-      <Consensus v-if="consensus" :residueCounts />
-      <SeqLogo v-if="seqLogo" :residueCounts />
-    </div>
     <template v-if="alignedSequences.data.length">
+      <div :class="$style.corner" />
+      <div :class="$style.header">
+        <Consensus v-if="consensus" :residueCounts />
+        <SeqLogo v-if="seqLogo" :residueCounts />
+      </div>
       <div :class="$style['labels-container']">
         <template v-for="({ labels }, rowIndex) of sequenceRows">
           <div

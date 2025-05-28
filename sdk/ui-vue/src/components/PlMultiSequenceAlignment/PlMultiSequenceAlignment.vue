@@ -6,8 +6,9 @@ import type {
   PlMultiSequenceAlignmentModel,
   PlSelectionModel,
 } from '@platforma-sdk/model';
-import { computed, ref } from 'vue';
+import { computed, ref, watchEffect } from 'vue';
 import {
+  useAnnotationColumnOptions,
   useLabelColumnsOptions,
   useSequenceColumnsOptions,
   useSequenceRows,
@@ -49,6 +50,8 @@ const props = defineProps<{
   readonly selection?: PlSelectionModel;
 }>();
 
+const settings = ref(defaultSettings);
+
 const sequenceColumns = useSequenceColumnsOptions(() => ({
   pFrame: props.pFrame,
   sequenceColumnPredicate: props.sequenceColumnPredicate,
@@ -59,6 +62,8 @@ const labelColumns = useLabelColumnsOptions(() => ({
   sequenceColumnIds: sequenceColumns.value.defaults,
   labelColumnOptionPredicate: props.labelColumnOptionPredicate,
 }));
+
+const annotationColumnOptions = useAnnotationColumnOptions(() => props.pFrame);
 
 const selectedSequenceColumnIds = computed({
   get: () => model.value.sequenceColumnIds ?? sequenceColumns.value.defaults,
@@ -78,32 +83,38 @@ const sequenceRows = useSequenceRows(() => ({
   pframe: props.pFrame,
   sequenceColumnIds: selectedSequenceColumnIds.value,
   labelColumnIds: selectedLabelColumnIds.value,
+  annotationColumnId: settings.value.colorScheme.type === 'annotation'
+    ? settings.value.colorScheme.columnId
+    : undefined,
   linkerColumnPredicate: props.linkerColumnPredicate,
   selection: props.selection,
 }));
 
-const settings = ref(defaultSettings);
+watchEffect(async () => {
+  console.log(sequenceRows.value);
+});
 </script>
 
 <template>
-  <PlAlert v-if="sequenceRows.length < 2" type="warn">
-    Please select at least one sequence column and two or more rows to run
-    alignment
-  </PlAlert>
-  <template v-else>
-    <Toolbar
-      v-model:sequence-columns="selectedSequenceColumnIds"
-      v-model:label-columns="selectedLabelColumnIds"
-      v-model:settings="settings"
-      :sequence-column-options="sequenceColumns.options"
-      :label-column-options="labelColumns.options"
-    />
+  <Toolbar
+    v-model:sequence-columns="selectedSequenceColumnIds"
+    v-model:label-columns="selectedLabelColumnIds"
+    v-model:settings="settings"
+    :sequence-column-options="sequenceColumns.options"
+    :label-column-options="labelColumns.options"
+    :annotation-column-options
+  />
+  <template v-if="sequenceRows.data.length > 1">
     <MultiSequenceAlignmentView
-      :sequenceRows
+      :sequenceRows="sequenceRows.data"
       :colorScheme="settings.colorScheme"
       :consensus="settings.consensus"
       :seq-logo="settings.seqLogo"
     />
     <Legend v-if="settings.legend" />
   </template>
+  <PlAlert v-else type="warn">
+    Please select at least one sequence column and two or more rows to run
+    alignment
+  </PlAlert>
 </template>

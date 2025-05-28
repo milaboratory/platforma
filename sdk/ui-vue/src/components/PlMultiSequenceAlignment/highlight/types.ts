@@ -1,7 +1,12 @@
-type ColumnSegment<T> = {
+type HighlightSegment<T> = {
   category: T;
   start: number;
   end: number;
 };
 
-export type SegmentedColumn<T> = ColumnSegment<T>[];
+export type Highlight<T> = {
+  rows?: HighlightSegment<T>[][];
+  columns?: HighlightSegment<T>[][];
+};
+
+export type SegmentedColumn<T> = HighlightSegment<T>[];
