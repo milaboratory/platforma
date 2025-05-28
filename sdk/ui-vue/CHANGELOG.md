@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.31.19
+
+### Patch Changes
+
+- 3f77701: [sdk/ui-vue] PlMultiSequenceAlignment: added consensus visualization
+
 ## 1.31.17
 
 ### Patch Changes
