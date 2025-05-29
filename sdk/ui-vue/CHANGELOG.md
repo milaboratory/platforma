@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.32.2
+
+### Patch Changes
+
+- a6e4f5c: Apply concurrency limiting to PFrames requests
+
 ## 1.32.1
 
 ### Patch Changes

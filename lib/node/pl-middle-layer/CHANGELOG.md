@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 1.37.47
+
+### Patch Changes
+
+- a6e4f5c: Apply concurrency limiting to PFrames requests
+
 ## 1.37.46
 
 ### Patch Changes
