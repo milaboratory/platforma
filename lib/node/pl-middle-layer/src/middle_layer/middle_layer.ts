@@ -11,6 +11,7 @@ import { createProject, withProjectAuthored } from '../mutator/project';
 import type { SynchronizedTreeState } from '@milaboratories/pl-tree';
 import { BlockPackPreparer } from '../mutator/block-pack/block_pack';
 import type { MiLogger, Signer } from '@milaboratories/ts-helpers';
+import { BlockEventDispatcher } from '@milaboratories/ts-helpers';
 import { HmacSha256Signer } from '@milaboratories/ts-helpers';
 import type { ComputableStableDefined } from '@milaboratories/computable';
 import { WatchableValue } from '@milaboratories/computable';
@@ -42,6 +43,7 @@ import { ProjectHelper } from '../model/project_helper';
 export interface MiddleLayerEnvironment {
   readonly pl: PlClient;
   readonly logger: MiLogger;
+  readonly blockEventDispatcher: BlockEventDispatcher;
   readonly httpDispatcher: Dispatcher;
   readonly retryHttpDispatcher: Dispatcher;
   readonly signer: Signer;
@@ -195,6 +197,11 @@ export class MiddleLayer {
     return HmacSha256Signer.generateSecret();
   }
 
+  /** Returns a block event dispatcher, which can be used to listen to block events. */
+  public get blockEventDispatcher(): BlockEventDispatcher {
+    return this.env.blockEventDispatcher;
+  }
+
   /** Initialize middle layer */
   public static async init(
     pl: PlClient,
@@ -257,6 +264,7 @@ export class MiddleLayer {
 
     const env: MiddleLayerEnvironment = {
       pl,
+      blockEventDispatcher: new BlockEventDispatcher(),
       signer: driverKit.signer,
       logger,
       httpDispatcher: pl.httpDispatcher,
