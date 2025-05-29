@@ -40,6 +40,8 @@ import { NavigationStates } from './navigation_states';
 import { extractConfig } from '@platforma-sdk/model';
 import fs from 'node:fs/promises';
 import canonicalize from 'canonicalize';
+import type { ProjectOverviewLight } from './project_overview_light';
+import { projectOverviewLight } from './project_overview_light';
 
 type BlockStateComputables = {
   readonly fullState: Computable<BlockStateInternal>;
@@ -78,9 +80,11 @@ export class Project {
 
   /** Data for the left panel, contain basic information about block status. */
   public readonly overview: ComputableStableDefined<ProjectOverview>;
+  private readonly overviewLight: Computable<ProjectOverviewLight>;
 
   private readonly navigationStates = new NavigationStates();
-  private readonly blockComputables = new Map<string, BlockStateComputables>();
+  // null is set for deleted blocks
+  private readonly blockComputables = new Map<string, BlockStateComputables | null>();
 
   private readonly blockFrontends = new Map<string, ComputableStableDefined<FrontendData>>();
   private readonly activeConfigs: Computable<unknown[]>;
@@ -99,6 +103,8 @@ export class Project {
       this.navigationStates,
       env,
     ).withPreCalculatedValueTree();
+    this.overviewLight = projectOverviewLight(projectTree.entry())
+      .withPreCalculatedValueTree();
     this.rid = rid;
     this.refreshLoopResult = this.refreshLoop();
     this.activeConfigs = activeConfigs(projectTree.entry(), env);
@@ -112,6 +118,18 @@ export class Project {
         });
         await this.activeConfigs.getValue();
         await setTimeout(this.env.ops.projectRefreshInterval, this.abortController.signal);
+
+        // Block computables houskeeping
+        const overviewLight = await this.overviewLight.getValue();
+        const existingBlocks = new Set(overviewLight.listOfBlocks);
+        // Doing cleanup for deleted blocks
+        for (const blockId of this.blockComputables.keys()) {
+          if (!existingBlocks.has(blockId)) {
+            const computable = this.blockComputables.get(blockId);
+            if (computable !== undefined && computable !== null) computable.fullState.resetState();
+            this.blockComputables.set(blockId, null);
+          }
+        }
       } catch (e: unknown) {
         if (isNotFoundError(e)) {
           console.warn(
@@ -339,6 +357,7 @@ export class Project {
 
   private getBlockComputables(blockId: string): BlockStateComputables {
     const cached = this.blockComputables.get(blockId);
+    if (cached === null) throw new Error(`Block ${blockId} is deleted`);
     if (cached === undefined) {
       // state consists of inputs (args + ui state) and outputs
       const outputs = blockOutputs(this.projectTree.entry(), blockId, this.env);
@@ -420,7 +439,7 @@ export class Project {
     this.overview.resetState();
     this.blockFrontends.forEach((c) => c.resetState());
     this.blockComputables.forEach((c) => {
-      c.fullState.resetState();
+      if (c !== null) c.fullState.resetState();
     });
     this.activeConfigs.resetState();
   }
