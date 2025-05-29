@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 1.37.48
+
+### Patch Changes
+
+- a72e303: Running computable resetState for deleted blocks
+
 ## 1.37.47
 
 ### Patch Changes
