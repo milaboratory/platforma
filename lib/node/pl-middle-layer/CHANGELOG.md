@@ -1,5 +1,23 @@
 # @milaboratories/pl-middle-layer
 
+## 1.37.46
+
+### Patch Changes
+
+- 0f511ff: Support for logging from the block model
+- Updated dependencies [0f511ff]
+  - @milaboratories/ts-helpers@1.3.1
+  - @platforma-sdk/model@1.32.1
+  - @milaboratories/computable@2.4.9
+  - @milaboratories/pl-client@2.9.2
+  - @milaboratories/pl-config@1.4.11
+  - @milaboratories/pl-deployments@2.2.3
+  - @milaboratories/pl-drivers@1.5.61
+  - @milaboratories/pl-errors@1.1.2
+  - @milaboratories/pl-tree@1.6.3
+  - @platforma-sdk/block-tools@2.5.51
+  - @platforma-sdk/workflow-tengo@4.6.2
+
 ## 1.37.45
 
 ### Patch Changes

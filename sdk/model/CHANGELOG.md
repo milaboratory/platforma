@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.32.1
+
+### Patch Changes
+
+- 0f511ff: Support for logging from the block model
+
 ## 1.31.17
 
 ### Patch Changes
