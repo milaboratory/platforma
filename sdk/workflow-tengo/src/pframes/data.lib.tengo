@@ -113,6 +113,10 @@ parseData := func(inputParam, ...optsRaw) {
 
     _decodeKeyString := _createDecodeKeyString(state.relevantTopLayerKeyLength)
 
+    if !actualResource.info().InputsLocked {
+        ll.panic("Can't parse data resource which inputs are not locked.")
+    }
+
     // Populate state.data
     if state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_JSON {
         state.data = resourceData.data
