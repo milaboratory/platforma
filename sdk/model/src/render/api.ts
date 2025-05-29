@@ -626,6 +626,18 @@ export class RenderCtx<Args, UiState> {
   public getCurrentUnstableMarker(): string | undefined {
     return this.ctx.getCurrentUnstableMarker();
   }
+
+  public logInfo(msg: string): void {
+    this.ctx.logInfo(msg);
+  }
+
+  public logWarn(msg: string): void {
+    this.ctx.logWarn(msg);
+  }
+
+  public logError(msg: string): void {
+    this.ctx.logError(msg);
+  }
 }
 
 export type RenderFunction<Args = unknown, UiState = unknown, Ret = unknown> = (

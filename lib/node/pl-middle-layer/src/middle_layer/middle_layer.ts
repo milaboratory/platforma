@@ -11,6 +11,7 @@ import { createProject, withProjectAuthored } from '../mutator/project';
 import type { SynchronizedTreeState } from '@milaboratories/pl-tree';
 import { BlockPackPreparer } from '../mutator/block-pack/block_pack';
 import type { MiLogger, Signer } from '@milaboratories/ts-helpers';
+import { BlockModelLogDispatcher } from '@milaboratories/ts-helpers';
 import { HmacSha256Signer } from '@milaboratories/ts-helpers';
 import type { ComputableStableDefined } from '@milaboratories/computable';
 import { WatchableValue } from '@milaboratories/computable';
@@ -42,6 +43,7 @@ import { ProjectHelper } from '../model/project_helper';
 export interface MiddleLayerEnvironment {
   readonly pl: PlClient;
   readonly logger: MiLogger;
+  readonly blockModelLogDispatcher: BlockModelLogDispatcher;
   readonly httpDispatcher: Dispatcher;
   readonly retryHttpDispatcher: Dispatcher;
   readonly signer: Signer;
@@ -257,6 +259,7 @@ export class MiddleLayer {
 
     const env: MiddleLayerEnvironment = {
       pl,
+      blockModelLogDispatcher: new BlockModelLogDispatcher(logger),
       signer: driverKit.signer,
       logger,
       httpDispatcher: pl.httpDispatcher,
