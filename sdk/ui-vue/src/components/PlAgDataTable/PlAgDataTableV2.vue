@@ -495,8 +495,8 @@ const onSheetChanged = (sheetId: string, newValue: string | number) => {
   });
 };
 
+let generation = 0;
 let oldSettings: PlAgDataTableSettings | undefined = undefined;
-
 watch(
   () => [settings.value] as const,
   async (state) => {
@@ -514,6 +514,7 @@ watch(
         return;
       }
 
+      const localGeneration = generation = generation + 1;
       oldSettings = settings;
 
       const sourceType = settings?.sourceType;
@@ -566,6 +567,7 @@ watch(
               trigger: (key?: PTableKey) => emit('cellButtonClicked', key),
             } satisfies PlAgCellButtonAxisParams,
           ).catch((err) => {
+            if (localGeneration !== generation) return;
             gridApi.updateGridOptions({
               loading: false,
               loadingOverlayComponentParams: {
@@ -575,6 +577,7 @@ watch(
             });
             throw err;
           });
+          if (localGeneration !== generation) return;
 
           return gridApi.updateGridOptions({
             loading: false,

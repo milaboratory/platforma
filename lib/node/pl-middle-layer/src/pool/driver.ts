@@ -283,9 +283,9 @@ export class PFrameDriver implements InternalPFrameDriver {
     private readonly logger: MiLogger,
     private readonly spillPath: string,
   ) {
-    const concurrencyLimiter = new ConcurrencyLimitingExecutor(4);
+    const concurrencyLimiter = new ConcurrencyLimitingExecutor(1);
     this.concurrencyLimiter = concurrencyLimiter;
-    this.getDataLimiter = new ConcurrencyLimitingExecutor(4);
+    this.getDataLimiter = new ConcurrencyLimitingExecutor(1);
 
     this.pFrames = new (class extends RefCountResourcePool<InternalPFrameData, PFrameHolder> {
       constructor(
