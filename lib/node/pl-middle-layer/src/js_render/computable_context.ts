@@ -28,7 +28,6 @@ import {
   mapPObjectData,
   mapPTableDef,
   mapValueInVOE,
-  newRangeBytesOpt,
 } from '@platforma-sdk/model';
 import { notEmpty } from '@milaboratories/ts-helpers';
 import { randomUUID } from 'node:crypto';
@@ -428,6 +427,22 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
   }
 
   //
+  // Logging
+  //
+
+  public logInfo(message: string): void {
+    this.env.blockModelLogDispatcher.logInfo(this.blockCtx.blockId, message);
+  }
+
+  public logWarn(message: string): void {
+    this.env.blockModelLogDispatcher.logWarn(this.blockCtx.blockId, message);
+  }
+
+  public logError(message: string): void {
+    this.env.blockModelLogDispatcher.logError(this.blockCtx.blockId, message);
+  }
+
+  //
   // Helpers
   //
 
@@ -749,6 +764,22 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
 
       exportCtxFunction('getCurrentUnstableMarker', () => {
         return parent.exportSingleValue(this.getCurrentUnstableMarker(), undefined);
+      });
+
+      //
+      // Logging
+      //
+
+      exportCtxFunction('logInfo', (message) => {
+        this.logInfo(vm.getString(message));
+      });
+
+      exportCtxFunction('logWarn', (message) => {
+        this.logWarn(vm.getString(message));
+      });
+
+      exportCtxFunction('logError', (message) => {
+        this.logError(vm.getString(message));
       });
     });
   }

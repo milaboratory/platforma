@@ -27,6 +27,7 @@ import { blockArgsAndUiState, blockOutputs } from './block';
 import type { FrontendData } from '../model/frontend';
 import type { ProjectStructure } from '../model/project_model';
 import { projectFieldName } from '../model/project_model';
+import type { BlockModelLogEvent, MiLoggerLogEvent } from '@milaboratories/ts-helpers';
 import { cachedDeserialize, notEmpty } from '@milaboratories/ts-helpers';
 import type { BlockPackInfo } from '../model/block_pack';
 import type {
@@ -40,6 +41,7 @@ import { NavigationStates } from './navigation_states';
 import { extractConfig } from '@platforma-sdk/model';
 import fs from 'node:fs/promises';
 import canonicalize from 'canonicalize';
+import { Readable } from 'node:stream';
 
 type BlockStateComputables = {
   readonly fullState: Computable<BlockStateInternal>;
@@ -81,6 +83,7 @@ export class Project {
 
   private readonly navigationStates = new NavigationStates();
   private readonly blockComputables = new Map<string, BlockStateComputables>();
+  private readonly blockLogStreams = new Map<string, Readable>();
 
   private readonly blockFrontends = new Map<string, ComputableStableDefined<FrontendData>>();
   private readonly activeConfigs: Computable<unknown[]>;
@@ -189,6 +192,13 @@ export class Project {
 
   /** Deletes a block with all associated data. */
   public async deleteBlock(blockId: string, author?: AuthorMarker): Promise<void> {
+    // Clean up log stream if it exists
+    const logStream = this.blockLogStreams.get(blockId);
+    if (logStream) {
+      logStream.destroy();
+      this.blockLogStreams.delete(blockId);
+    }
+
     await withProjectAuthored(this.env.projectHelper, this.env.pl, this.rid, author, (mut) => mut.deleteBlock(blockId));
     this.navigationStates.deleteBlock(blockId);
     await this.projectTree.refreshState();
@@ -380,6 +390,46 @@ export class Project {
   }
 
   /**
+   * Returns a Readable stream of log entries for the given blockId.
+   * The stream is cached per block and will only emit logs for that block.
+   * Log entries are of type {@link MiLoggerLogEvent}.
+   */
+  public getBlockModelLogStream(blockId: string): Readable {
+    let stream = this.blockLogStreams.get(blockId);
+    if (stream) return stream;
+
+    // Create a new Readable stream in object mode
+    stream = new Readable({
+      objectMode: true,
+      read() {}, // No-op, we'll push from the event handler
+      destroy: (err, cb) => {
+        this.env.blockModelLogDispatcher.off('log', onLog);
+        cb?.(err);
+      },
+    });
+
+    const onLog = (event: BlockModelLogEvent) => {
+      if (event.blockId === blockId) {
+        const { level, message } = event;
+        stream.push({ level, message } satisfies MiLoggerLogEvent);
+      }
+    };
+    this.env.blockModelLogDispatcher.on('log', onLog);
+
+    // Remove listener if stream is closed/destroyed
+    const onClose = () => {
+      this.env.blockModelLogDispatcher.off('log', onLog);
+      this.blockLogStreams.delete(blockId);
+    };
+    stream.on('close', onClose);
+    stream.on('error', onClose);
+    stream.on('end', onClose);
+
+    this.blockLogStreams.set(blockId, stream);
+    return stream;
+  }
+
+  /**
    * Returns a computable, that can be used to retrieve and watch full block state,
    * including outputs, arguments, ui state.
    * */
@@ -407,6 +457,12 @@ export class Project {
 
   /** Called by middle layer on close */
   public async destroy(): Promise<void> {
+    // Clean up all log streams
+    for (const stream of this.blockLogStreams.values()) {
+      stream.destroy();
+    }
+    this.blockLogStreams.clear();
+
     // terminating the project service loop
     this.destroyed = true;
     this.abortController.abort();
