@@ -331,6 +331,9 @@ self.body(func(inputs) {
 				// if nested xsv import is known to produce unpartitioned output we don't create
 				// redundant super-partitioned structures
 				unwrapZeroPartition := partitionKeyLength == 0
+				// if groupKeyLength == 0 we will directly return the result of xsv.importFile
+				// without adding trivial super-partitioning layer
+				unwrapZeroGroupKey := groupKeyLength == 0
 
 				dataResType := undefined
 
@@ -361,27 +364,34 @@ self.body(func(inputs) {
 				}
 
 				// aggragation column results from all iterations into super-partitioned structures
+				// or unwrap them and pass as is if groupKeyLength == 0
+
 				columnResults := {}
 				for col in output.settings.columns {
 					id := pUtil.xsvColumnId(col)
 					parts := outputMaps[output.name][id]
-					dataRes := smart.structBuilder(
-						dataResType, dataResData
-					)
-					for sGroupKey, partData in parts {
-						if unwrapZeroPartition {
-							if binary {
-								for suffix in [".index", ".values"] {
-									dataRes.createInputField(sGroupKey + suffix).set(partData.buildFutureField({name: pUtil.EMPTY_JSON_KEY + suffix, optional: true}))
+					if unwrapZeroGroupKey {
+						ll.assert(len(parts) == 1, "Expected exactly one partition for unwrapping zero group key")
+						data := parts[pUtil.EMPTY_JSON_KEY]
+						ll.assert(!is_undefined(data), "Expected part \"[]\" to be defined for unwrapping zero group key")
+						columnResults[id] = data
+					} else {
+						dataRes := smart.structBuilder(dataResType, dataResData)
+						for sGroupKey, partData in parts {
+							if unwrapZeroPartition {
+								if binary {
+									for suffix in [".index", ".values"] {
+										dataRes.createInputField(sGroupKey + suffix).set(partData.buildFutureField({name: pUtil.EMPTY_JSON_KEY + suffix, optional: true}))
+									}
+								} else {
+									dataRes.createInputField(sGroupKey).set(partData.buildFutureField({name: pUtil.EMPTY_JSON_KEY, optional: true}))
 								}
 							} else {
-								dataRes.createInputField(sGroupKey).set(partData.buildFutureField({name: pUtil.EMPTY_JSON_KEY, optional: true}))
+								dataRes.createInputField(sGroupKey).set(partData)
 							}
-						} else {
-							dataRes.createInputField(sGroupKey).set(partData)
 						}
+						columnResults[id] = removeNullsLib.removeNulls(dataRes.lockAndBuild())
 					}
-					columnResults[id] = removeNullsLib.removeNulls(dataRes.lockAndBuild())
 				}
 
 				if !is_undefined(output.flattenWithDelimiter) {
