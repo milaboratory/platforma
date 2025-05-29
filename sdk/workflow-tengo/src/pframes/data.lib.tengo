@@ -51,23 +51,24 @@ parseData := func(inputParam, ...optsRaw) {
     initialSpec := undefined
 
     // Check if inputParam is a resource by looking for a typical resource method like .info()
-    isResourceDirectly := smart.isResource(inputParam)
+    isReferenceDirectly := smart.isReference(inputParam)
 
-    if !isResourceDirectly && is_map(inputParam) && !is_undefined(inputParam.data) {
+    if !isReferenceDirectly && is_map(inputParam) && !is_undefined(inputParam.data) {
         actualResource = inputParam.data
-        if parse && !smart.isResource(actualResource) {
-            ll.panic("The 'data' field in inputParam must be a valid resource. Got: %v", actualResource)
-        }
         if !is_undefined(inputParam.spec) {
             initialSpec = inputParam.spec
         }
-    } else if isResourceDirectly {
+    } else if isReferenceDirectly {
         actualResource = inputParam
     } else {
         ll.panic(
             "parseData input must be a resource (a map with an .info() method) or a map of the form {data: resource, spec: map}. Got: %v",
             inputParam
         )
+    }
+
+    if parse && !smart.isResource(actualResource) {
+        ll.panic("Data must be a valid resource. Got: %v", actualResource)
     }
 
     state := {
