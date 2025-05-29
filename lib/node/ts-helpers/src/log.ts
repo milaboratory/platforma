@@ -34,42 +34,43 @@ export type MiLoggerLogEvent = {
   message: string;
 };
 
-export type BlockModelLogEvent = MiLoggerLogEvent & {
-  blockId: string;
-};
+export type BlockEventDispatcherEvent =
+  | {
+    type: 'log';
+    blockId: string;
+    level: MiLoggerLevel;
+    message: string;
+  };
 
-export class BlockModelLogDispatcher extends EventEmitter<{
-  log: [BlockModelLogEvent];
+export class BlockEventDispatcher extends EventEmitter<{
+  [key: string]: [BlockEventDispatcherEvent];
 }> {
-  constructor(private readonly logger: MiLogger) {
+  constructor() {
     super();
   }
 
-  public emit(eventName: 'log', ...args: [BlockModelLogEvent]): boolean {
-    const [event] = args;
-    switch (event.level) {
-      case 'info':
-        this.logger.info(event.message);
-        break;
-      case 'warn':
-        this.logger.warn(event.message);
-        break;
-      case 'error':
-        this.logger.error(event.message);
-        break;
-    }
-    return super.emit(eventName, ...args);
+  private eventKey(blockId: string): string {
+    return `${blockId}`;
   }
 
   public logInfo(blockId: string, message: string): void {
-    this.emit('log', { blockId, level: 'info', message });
+    this.emit(this.eventKey(blockId), { type: 'log', blockId, level: 'info', message });
   }
 
   public logWarn(blockId: string, message: string): void {
-    this.emit('log', { blockId, level: 'warn', message });
+    this.emit(this.eventKey(blockId), { type: 'log', blockId, level: 'warn', message });
   }
 
   public logError(blockId: string, message: string): void {
-    this.emit('log', { blockId, level: 'error', message });
+    this.emit(this.eventKey(blockId), { type: 'log', blockId, level: 'error', message });
+  }
+
+  public onBlockEvent(blockId: string, callback: (event: BlockEventDispatcherEvent) => void): () => void {
+    this.on(this.eventKey(blockId), callback);
+    return () => this.off(this.eventKey(blockId), callback);
+  }
+
+  public removeAllBlockListeners(blockId: string): void {
+    this.removeAllListeners(this.eventKey(blockId));
   }
 }

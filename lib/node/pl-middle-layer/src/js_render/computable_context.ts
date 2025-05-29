@@ -431,15 +431,15 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
   //
 
   public logInfo(message: string): void {
-    this.env.blockModelLogDispatcher.logInfo(this.blockCtx.blockId, message);
+    this.env.blockEventDispatcher.logInfo(this.blockCtx.blockId, message);
   }
 
   public logWarn(message: string): void {
-    this.env.blockModelLogDispatcher.logWarn(this.blockCtx.blockId, message);
+    this.env.blockEventDispatcher.logWarn(this.blockCtx.blockId, message);
   }
 
   public logError(message: string): void {
-    this.env.blockModelLogDispatcher.logError(this.blockCtx.blockId, message);
+    this.env.blockEventDispatcher.logError(this.blockCtx.blockId, message);
   }
 
   //
