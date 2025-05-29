@@ -135,6 +135,7 @@ isReference := func(f) {
  */
 _getFutureField := func(from, name, fieldType, isEph) {
 	ll.assert(isReference(from), "'from' must be either a resource or a field, got: %#v", from)
+	ll.assert(is_string(name) && name != "", "field name must be a non-empty string")
 
 	futureField := tx.createFutureFieldID(fieldType, name, !isEph)
 	f := field(futureField.ResourceFID)
@@ -385,8 +386,8 @@ resource = func(r) {
 		/**
 		 * Resource is ready when all inputs are set to the terminal values.
 		 */
-		isReady: func() {
-			return self.info().ResourceReady
+		isFinal: func() {
+			return self.info().ResourceReady || self.info().IsDuplicate || self.info().HasErrors
 		},
 
 		isEphemeral: func() {
@@ -589,6 +590,7 @@ resource = func(r) {
 				isEph = eph[0]
 			}
 
+			ll.assert(is_string(name) && name != "", "field name must be a non-empty string")
 			fieldId := ffDefault.getFutureFieldWithDefault(self.id, name, fieldType, isEph)
 			return field(fieldId)
 		},
@@ -1024,6 +1026,7 @@ field = func(f) {
 				isEph = eph[0]
 			}
 
+			ll.assert(is_string(name) && name != "", "field name must be a non-empty string")
 			fieldId := ffDefault.getFutureFieldWithDefault(self.id, name, fieldType, isEph)
 			return field(fieldId)
 		},
@@ -1114,6 +1117,7 @@ resourceBuilder = func(r) {
 		 */
 		createField: func(name, fieldType) {
 			assertNotBuilt()
+			ll.assert(is_string(name) && name != "", "field name must be a non-empty string")
 			fid := ll.fieldId(super.id, name)
 			tx.createField(fid, fieldType)
 			return field(fid)

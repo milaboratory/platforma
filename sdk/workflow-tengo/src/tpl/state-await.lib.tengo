@@ -158,7 +158,9 @@ awaitOneState := func(field, path, state) {
 					}
 				}
 			} else if state == "ResourceReady" {
-				if resource.info().ResourceReady {
+				// What user actually wants is to wait for the resource to be in final state,
+				// so we use isFinal() instead of resourceReady
+				if resource.isFinal() {
 					return { type: "Ready" }
 				} else {
 					return {
