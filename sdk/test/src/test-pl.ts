@@ -40,21 +40,21 @@ export const plTest = test.extend<{
   },
 
   pl: async ({ onTestFinished }, use) => {
-    const altRoot = `test_${Date.now()}_${randomUUID()}`;
+    const alternativeRoot = `test_${Date.now()}_${randomUUID()}`;
     let altRootId: OptionalResourceId = NullResourceId;
-    const client = await TestHelpers.getTestClient(altRoot);
+    const client = await TestHelpers.getTestClient(alternativeRoot);
     altRootId = client.clientRoot;
     await use(client);
     onTestFinished(async (task) => {
       if (task.errors !== undefined) {
         console.log(
-          `TEST FAILED SO ALTERNATIVE ROOT IS PRESETVED IN PL: ${altRoot} (${resourceIdToString(
+          `TEST FAILED SO ALTERNATIVE ROOT IS PRESETVED IN PL: ${alternativeRoot} (${resourceIdToString(
             altRootId
           )})`
         );
       } else {
         const rawClient = await TestHelpers.getTestClient();
-        await rawClient.deleteAlternativeRoot(altRoot);
+        await rawClient.deleteAlternativeRoot(alternativeRoot);
       }
     });
   },
