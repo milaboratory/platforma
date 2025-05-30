@@ -135,6 +135,9 @@ isReference := func(f) {
  */
 _getFutureField := func(from, name, fieldType, isEph) {
 	ll.assert(isReference(from), "'from' must be either a resource or a field, got: %#v", from)
+	if is_bytes(name) {
+		name = string(name)
+	}
 	ll.assert(is_string(name) && name != "", "field name must be a non-empty string")
 
 	futureField := tx.createFutureFieldID(fieldType, name, !isEph)
@@ -590,6 +593,9 @@ resource = func(r) {
 				isEph = eph[0]
 			}
 
+			if is_bytes(name) {
+				name = string(name)
+			}
 			ll.assert(is_string(name) && name != "", "field name must be a non-empty string")
 			fieldId := ffDefault.getFutureFieldWithDefault(self.id, name, fieldType, isEph)
 			return field(fieldId)
@@ -1026,6 +1032,9 @@ field = func(f) {
 				isEph = eph[0]
 			}
 
+			if is_bytes(name) {
+				name = string(name)
+			}
 			ll.assert(is_string(name) && name != "", "field name must be a non-empty string")
 			fieldId := ffDefault.getFutureFieldWithDefault(self.id, name, fieldType, isEph)
 			return field(fieldId)
@@ -1117,6 +1126,9 @@ resourceBuilder = func(r) {
 		 */
 		createField: func(name, fieldType) {
 			assertNotBuilt()
+			if is_bytes(name) {
+				name = string(name)
+			}
 			ll.assert(is_string(name) && name != "", "field name must be a non-empty string")
 			fid := ll.fieldId(super.id, name)
 			tx.createField(fid, fieldType)
