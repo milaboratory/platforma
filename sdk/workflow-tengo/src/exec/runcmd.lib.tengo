@@ -410,13 +410,11 @@ builder := func(workdir) {
 				if !smart.isReference(_allocation) {
 					// Use default compute request limits when no was configured out of the box,
 					// or runcmd won't work at all.
-					_quota := limits.quotaBuilder().queue(queue).build()
-					_resReq := limits.computeRequestBuilder().quota(_quota)
-					if useBatch {
-						_resReq.inBatch()
-					}
-					_allocation = _resReq.build().allocation
+					_quotaRef := limits.quotaBuilder().queue(queue).build()
+					_resReqRef := limits.computeRequestBuilder().queue(queue).quota(_quotaRef).build()
+					_allocation = _resReqRef.allocation
 				}
+
 				runRes.getField(_FIELD_ALLOCATION).set(_allocation)
 			}
 
