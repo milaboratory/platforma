@@ -11,7 +11,7 @@
     "build:dry-run": "turbo run build --dry-run=json",
     "watch-build": "turbo watch build",
     "test": "turbo run test --concurrency 1 --env-mode=loose",
-    "test:dry-run":"turbo run test --env-mode=loose --dry-run=json",
+    "test:dry-run": "turbo run test --env-mode=loose --dry-run=json",
     "test:no-cache": "turbo run test --concurrency 1 --env-mode=loose --force",
     "publish-to-local-registry": "turbo run publish-to-local-registry",
     "do-pack": "turbo run do-pack",
@@ -41,6 +41,7 @@
     }
   },
   "//": {
+    "overrides": {},
     "eslint": "catalog:",
     "@eslint/js": "catalog:",
     "@types/eslint__js": "catalog:",

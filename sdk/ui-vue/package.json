@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/ui-vue",
-  "version": "1.31.6",
+  "version": "1.32.2",
   "type": "module",
   "main": "dist/lib.umd.cjs",
   "module": "dist/lib.js",
@@ -29,7 +29,7 @@
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "dependencies": {
-    "@biowasm/aioli": "catalog:",
+    "@milaboratories/biowasm-tools": "workspace:^",
     "@milaboratories/miplots4": "catalog:",
     "@milaboratories/uikit": "workspace:^",
     "@platforma-sdk/model": "workspace:^",
@@ -48,6 +48,8 @@
     "@types/semver": "catalog:",
     "@vitejs/plugin-vue": "catalog:",
     "@vueuse/core": "catalog:",
+    "d3-format": "catalog:",
+    "@types/d3-format": "catalog:",
     "canonicalize": "catalog:",
     "happy-dom": "catalog:",
     "lodash": "catalog:",

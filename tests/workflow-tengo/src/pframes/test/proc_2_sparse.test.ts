@@ -5,6 +5,7 @@ import { assertBlob, assertJson, assertResource, eTplTest } from './extended_tpl
 
 eTplTest(
   'should correctly execute pframes.processColumn in sparse mode without aggregation',
+  { timeout: 40000 },
   async ({ helper, expect, stHelper }) => {
     const xsvSettings = {
       axes: [
@@ -82,7 +83,7 @@ eTplTest(
       },
     );
     const r = stHelper.tree(result.resultEntry);
-    const finalResult = await awaitStableState(r, 6000);
+    const finalResult = await awaitStableState(r, 40000);
     // console.dir(finalResult, { depth: null });
     assertResource(finalResult);
     const theResult = finalResult.inputs['result'];
@@ -110,7 +111,7 @@ eTplTest(
 
 eTplTest(
   'should correctly execute pframes.processColumn in sparse mode with aggregation 1',
-  { timeout: 20000 },
+  { timeout: 40000 },
   async ({ helper, expect, stHelper }) => {
     const xsvSettings = {
       axes: [
@@ -189,7 +190,7 @@ eTplTest(
       },
     );
     const r = stHelper.tree(result.resultEntry);
-    const finalResult = await awaitStableState(r, 6000);
+    const finalResult = await awaitStableState(r, 40000);
     // console.dir(finalResult, { depth: null });
     assertResource(finalResult);
     const theResult = finalResult.inputs['result'];

@@ -1,0 +1,100 @@
+self := import("@platforma-sdk/workflow-tengo:tpl")
+pt := import("@platforma-sdk/workflow-tengo:pt")
+file := import("@platforma-sdk/workflow-tengo:file")
+
+self.defineOutputs(
+    "out_inner_join",
+    "out_left_join_on",
+    "out_full_join_on_nocoalesce",
+    "out_cross_join"
+)
+
+self.body(func(inputs){
+    // Data definitions as strings
+    // dfLeft schema: id,name,val_left
+    left_content := "id,name,val_left\n1,Alice,100\n2,Bob,200\n3,Charlie,300\n4,David,400"
+    // dfRight schema: id_r,name,val_right,info (name is common with dfLeft for 'on' join tests)
+    right_content := "id_r,name,val_right,info\nID1,Alice,10,R_Info_Alice\nID2,Bob,20,R_Info_Bob\nID4,David,40,R_Info_David\nID5,Frank,50,R_Info_Frank"
+
+    // dfLeftOn schema: common_key,name_l,val_l
+    left_on_content := "common_key,name_l,val_l\nK1,Alice_LO,100\nK2,Bob_LO,200\nK3,Charlie_LO,300"
+    // dfRightOn schema: common_key,name_r,val_r
+    right_on_content := "common_key,name_r,val_r\nK1,Andrea_RO,10\nK2,Robert_RO,20\nK4,David_RO,400"
+
+    // dfCrossLeft schema: item_id,item_name
+    cross_left_content := "item_id,item_name\nL1,Apple\nL2,Banana"
+    // dfCrossRight schema: color_id,color_name
+    cross_right_content := "color_id,color_name\nC1,Red\nC2,Yellow"
+
+    wf := pt.workflow()
+
+    // Create DataFrames
+    dfLeft := wf.frame(left_content, {xsvType:"csv", id:"dfLeft"})
+    dfRight := wf.frame(right_content, {xsvType:"csv", id:"dfRight"})
+    dfLeftOn := wf.frame(left_on_content, {xsvType:"csv", id:"dfLeftOn"})
+    dfRightOn := wf.frame(right_on_content, {xsvType:"csv", id:"dfRightOn"})
+    dfCrossLeft := wf.frame(cross_left_content, {xsvType:"csv", id:"dfCrossLeft"})
+    dfCrossRight := wf.frame(cross_right_content, {xsvType:"csv", id:"dfCrossRight"})
+
+    // Test 1: Inner join using leftOn, rightOn
+    // dfLeft schema: id,name,val_left
+    // dfRight schema: id_r,name,val_right,info
+    // Joining dfLeft.id with dfRight.id_r (requires renaming one of the id columns for clarity in test data if they were same)
+    // Let's modify right_content to have a unique id_r that matches some ids in dfLeft
+    // Corrected right_content for Test 1 specific needs (original had 'name' as common field)
+    right_content_for_test1 := "id_r,name_for_test1,val_right_for_test1,info_for_test1\n1,Alice_R1,10,R_Info_1\n2,Bob_R1,20,R_Info_2\n4,David_R1,40,R_Info_4\n5,Frank_R1,50,R_Info_5"
+    dfRightTest1 := wf.frame(right_content_for_test1, {xsvType:"csv", id:"dfRightTest1"})
+
+    inner_join_df := dfLeft.join(dfRightTest1, {
+        how:"inner",
+        leftOn:"id", // from dfLeft
+        rightOn:"id_r", // from dfRightTest1
+        leftColumns:["id","name","val_left"],
+        rightColumns:[{column:"name_for_test1", rename:"name_from_right"}, {column:"val_right_for_test1", rename:"val_right"}, "info_for_test1"]
+    })
+    inner_join_df.save("output_inner_join.csv")
+
+    // Test 2: Left join using 'on' (common column 'name')
+    // dfLeft schema: id,name,val_left
+    // dfRight schema: id_r,name,val_right,info
+    left_join_df := dfLeft.join(dfRight, {
+        how:"left",
+        on:"name", // Common column
+        leftColumns:["id","name","val_left"], // Explicitly select from left
+        rightColumns:[{column:"id_r", rename:"id_from_right"}, "val_right", "info"] // Explicitly select/rename from right
+    })
+    left_join_df.save("output_left_join.csv")
+
+    // Test 3: Full join with on="common_key", coalesce=false
+    // dfLeftOn schema: common_key,name_l,val_l
+    // dfRightOn schema: common_key,name_r,val_r
+    // Expect common_key (from left) and common_key_right (auto-generated from right)
+    full_join_df := dfLeftOn.join(dfRightOn, {
+        how:"full",
+        on:"common_key",
+        coalesce:false,
+        leftColumns:["common_key", "name_l"], // Selects common_key from left table
+        rightColumns:["common_key", "name_r"]  // Selects common_key from right table (this will be the one auto-suffixed)
+    })
+    full_join_df.save("output_full_join_on_nocoalesce.csv")
+
+    // Test 4: Cross Join
+    // dfCrossLeft schema: item_id,item_name
+    // dfCrossRight schema: color_id,color_name
+    cross_join_df := dfCrossLeft.join(dfCrossRight, {
+        how: "cross",
+        leftColumns: ["item_name"],
+        rightColumns:[{column:"color_name", rename:"item_color"}]
+    })
+    cross_join_df.save("output_cross_join.csv")
+
+
+    ptablerResult := wf.run()
+
+    return {
+        out_inner_join: file.exportFile(ptablerResult.getFile("output_inner_join.csv")),
+        out_left_join_on: file.exportFile(ptablerResult.getFile("output_left_join.csv")),
+        out_full_join_on_nocoalesce: file.exportFile(ptablerResult.getFile("output_full_join_on_nocoalesce.csv")),
+        out_cross_join: file.exportFile(ptablerResult.getFile("output_cross_join.csv"))
+    }
+})

@@ -8,6 +8,7 @@ import type {
   PFrame,
   PFrameHandle,
   PObjectId,
+  TableRange,
   UniqueValuesRequest,
   UniqueValuesResponse,
 } from '@milaboratories/pl-model-common';
@@ -29,8 +30,9 @@ export class PFrameImpl implements PFrame {
 
   public async calculateTableData(
     request: CalculateTableDataRequest<PObjectId>,
+    range?: TableRange,
   ): Promise<CalculateTableDataResponse> {
-    return await platforma.pFrameDriver.calculateTableData(this.handle, request);
+    return await platforma.pFrameDriver.calculateTableData(this.handle, request, range);
   }
 
   public async getUniqueValues(request: UniqueValuesRequest): Promise<UniqueValuesResponse> {

@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.76
+
+### Patch Changes
+
+- 576a72e: Removed reactivity from extensions for IPC serialization
+
 ## 2.2.75
 
 ### Patch Changes
