@@ -1,27 +1,30 @@
-import {
-  Computable,
+import type {
   ComputableCtx,
   ComputableStableDefined,
-  UnwrapComputables
+  UnwrapComputables,
 } from '@milaboratories/computable';
 import {
+  Computable,
+} from '@milaboratories/computable';
+import type {
   AnyRef,
+  MiddleLayerDriverKit,
+  PlClient,
+  PlTransaction,
+  ResourceId,
+  TemplateSpecAny } from '@milaboratories/pl-middle-layer';
+import {
   createRenderTemplate,
   field,
   FieldRef,
   initDriverKit,
   loadTemplate,
   MiddleLayer,
-  MiddleLayerDriverKit,
   Pl,
-  PlClient,
-  PlTransaction,
   prepareTemplateSpec,
-  ResourceId,
-  TemplateSpecAny,
-  toGlobalResourceId
+  toGlobalResourceId,
 } from '@milaboratories/pl-middle-layer';
-import { PlTreeEntry, PlTreeNodeAccessor, SynchronizedTreeState } from '@milaboratories/pl-tree';
+import type { PlTreeEntry, PlTreeNodeAccessor, SynchronizedTreeState } from '@milaboratories/pl-tree';
 import { ConsoleLoggerAdapter } from '@milaboratories/ts-helpers';
 import { randomUUID } from 'node:crypto';
 import * as fsp from 'node:fs/promises';
@@ -39,7 +42,7 @@ export class TestRenderResults<O extends string> {
 
   public computeOutput<R>(
     name: O,
-    cb: (acc: PlTreeNodeAccessor | undefined, ctx: ComputableCtx) => R
+    cb: (acc: PlTreeNodeAccessor | undefined, ctx: ComputableCtx) => R,
   ): Computable<UnwrapComputables<R> | undefined> {
     return Computable.make((ctx) => {
       const outputAccessor = ctx
@@ -55,7 +58,7 @@ export class TestWorkflowResults {
   constructor(
     public readonly renderResult: TestRenderResults<'context' | 'result'>,
     public readonly processedExportsResult: TestRenderResults<'result'> | undefined,
-    public readonly blockId: string
+    public readonly blockId: string,
   ) {}
 
   /**
@@ -74,7 +77,7 @@ export class TestWorkflowResults {
 
   public export<R>(
     name: string,
-    cb: (acc: PlTreeNodeAccessor | undefined, ctx: ComputableCtx) => R
+    cb: (acc: PlTreeNodeAccessor | undefined, ctx: ComputableCtx) => R,
   ) {
     if (this.processedExportsResult !== undefined)
       return this.processedExportsResult.computeOutput('result', (acc, ctx) => {
@@ -88,7 +91,7 @@ export class TestWorkflowResults {
 
   public output<R>(
     name: string,
-    cb: (acc: PlTreeNodeAccessor | undefined, ctx: ComputableCtx) => R
+    cb: (acc: PlTreeNodeAccessor | undefined, ctx: ComputableCtx) => R,
   ) {
     return this.renderResult.computeOutput('result', (acc, ctx) => {
       return cb(acc?.traverse({ field: name, assertFieldType: 'Input' }), ctx);
@@ -100,22 +103,22 @@ export class TplTestHelpers {
   constructor(
     private readonly pl: PlClient,
     private readonly resultRootRid: ResourceId,
-    private readonly resultRootTree: SynchronizedTreeState
+    private readonly resultRootTree: SynchronizedTreeState,
   ) {}
 
   async renderTemplate<const O extends string>(
     ephemeral: boolean,
     template: string | TemplateSpecAny,
     outputs: O[],
-    inputs: (tx: PlTransaction) => Record<string, AnyRef> | Promise<Record<string, AnyRef>>
+    inputs: (tx: PlTransaction) => Record<string, AnyRef> | Promise<Record<string, AnyRef>>,
   ): Promise<TestRenderResults<O>> {
     const runId = randomUUID();
-    const spec =
-      typeof template === 'string'
+    const spec
+      = typeof template === 'string'
         ? await prepareTemplateSpec({
-            type: 'from-file',
-            path: `./dist/tengo/tpl/${template}.plj.gz`
-          })
+          type: 'from-file',
+          path: `./dist/tengo/tpl/${template}.plj.gz`,
+        })
         : await prepareTemplateSpec(template);
     const { resultMapRid } = await this.pl.withWriteTx('TemplateRender', async (tx) => {
       const tpl = loadTemplate(tx, spec);
@@ -128,7 +131,7 @@ export class TplTestHelpers {
       const resultMapRid = await toGlobalResourceId(resultMap);
       await tx.commit();
       return {
-        resultMapRid
+        resultMapRid,
       };
     });
     await this.resultRootTree.refreshState();
@@ -143,7 +146,7 @@ export class TplTestHelpers {
     workflow: string | TemplateSpecAny,
     preRun: boolean,
     args: Record<string, any> | Promise<Record<string, any>>,
-    ops: WorkflowRenderOps = {}
+    ops: WorkflowRenderOps = {},
   ): Promise<TestWorkflowResults> {
     const blockId = ops.blockId ?? randomUUID();
     const mainResult: TestRenderResults<'result' | 'context'> = await this.renderTemplate(
@@ -163,15 +166,15 @@ export class TplTestHelpers {
           args: this.createObject(tx, args),
           blockId: this.createObject(tx, blockId),
           isProduction: this.createObject(tx, !preRun),
-          context: ctx
+          context: ctx,
         };
-      }
+      },
     );
 
     const exports: TestRenderResults<'result'> | undefined = undefined;
     if (ops.exportProcessor !== undefined) {
       const exports = await this.renderTemplate(true, ops.exportProcessor, ['result'], (tx) => ({
-        pf: tx.getFutureFieldValue(mainResult.resultEntry.rid, 'context', 'Input')
+        pf: tx.getFutureFieldValue(mainResult.resultEntry.rid, 'context', 'Input'),
       }));
     }
 
@@ -200,9 +203,9 @@ export const tplTest = plTest.extend<{
       localProjections: [], // TODO must be different with local pl
       openFileDialogCallback: () => {
         throw new Error('Not implemented.');
-      }
+      },
     });
 
     await use(driverKit);
-  }
+  },
 });
