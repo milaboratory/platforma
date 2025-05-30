@@ -1,5 +1,5 @@
 import { WatchableValue, ObservableAccessor } from '../watchable_value';
-import { test, expect } from '@jest/globals';
+import { test, expect } from 'vitest';
 
 import { AccessorProvider, UsageGuard } from './accessor_provider';
 import { Aborted, sleep } from '@milaboratories/ts-helpers';
