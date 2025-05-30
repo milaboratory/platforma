@@ -1,4 +1,7 @@
 import type { ListOption } from '@milaboratories/uikit';
+import type {
+  JoinEntry,
+} from '@platforma-sdk/model';
 import {
   type AxisId,
   type CalculateTableDataRequest,
@@ -192,25 +195,47 @@ async function getSequenceRows(
     rowSelectionModel,
   );
 
+  // inner join of sequence columns
+  let primaryEntry: JoinEntry<PObjectId> = {
+    type: 'inner',
+    entries: sequenceColumnIds.map((c) => ({
+      type: 'column' as const,
+      column: c,
+    })),
+  };
+
+  // if we have linkers, left join them
+  if (linkerColumns.length > 0) {
+    primaryEntry = {
+      type: 'outer',
+      primary: primaryEntry,
+      secondary: linkerColumns.map((c) => ({
+        type: 'column' as const,
+        column: c.columnId,
+      })),
+    };
+  }
+
+  // inner join with filters
+  if (filterColumn && filterColumn.data.length > 0) {
+    primaryEntry = {
+      type: 'inner',
+      entries: [
+        primaryEntry,
+        {
+          type: 'inlineColumn' as const,
+          column: filterColumn,
+        },
+      ],
+    };
+  }
+
+  // left join with labels
   const predef: CalculateTableDataRequest<PObjectId> = {
     src: {
       type: 'outer',
-      primary: {
-        type: 'inner',
-        entries: [
-          ...(
-            filterColumn && filterColumn.data.length > 0
-              ? [{ type: 'inlineColumn' as const, column: filterColumn }]
-              : []
-          ),
-          ...sequenceColumnIds.map((c) => ({
-            type: 'column' as const,
-            column: c,
-          })),
-        ],
-      },
+      primary: primaryEntry,
       secondary: [
-        ...linkerColumns.map((c) => c.columnId),
         ...labelColumnIds.map((c) => parseJson(c))
           .filter((c) => c.type === 'column')
           .map((c) => c.id),
