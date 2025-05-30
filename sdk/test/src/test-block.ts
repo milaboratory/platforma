@@ -1,10 +1,12 @@
 import path from 'path';
 import * as fsp from 'node:fs/promises';
-import {
+import type {
   InferBlockState, LocalImportFileHandle,
-  MiddleLayer,
   Platforma,
-  Project
+  Project,
+} from '@milaboratories/pl-middle-layer';
+import {
+  MiddleLayer,
 } from '@milaboratories/pl-middle-layer';
 import { plTest } from './test-pl';
 import { awaitStableState } from './util';
@@ -20,26 +22,26 @@ export type AwaitBlockDoneNormalized = {
 };
 
 function normalizeABDOpts(
-  timeoutOrOps?: number | AwaitBlockDoneOps
+  timeoutOrOps?: number | AwaitBlockDoneOps,
 ): AwaitBlockDoneNormalized {
   let ops: AwaitBlockDoneOps = {};
   if (timeoutOrOps !== undefined) {
     if (
-      typeof timeoutOrOps === 'object' &&
-      !(timeoutOrOps instanceof AbortSignal)
+      typeof timeoutOrOps === 'object'
+      && !(timeoutOrOps instanceof AbortSignal)
     )
       ops = { ...ops, ...timeoutOrOps };
     else ops.timeout = timeoutOrOps;
   }
-  const abortSignal =
-    typeof ops.timeout === 'undefined'
+  const abortSignal
+    = typeof ops.timeout === 'undefined'
       ? AbortSignal.timeout(DEFAULT_AWAIT_BLOCK_DONE_TIMEOUT)
       : typeof ops.timeout === 'number'
         ? AbortSignal.timeout(ops.timeout)
         : ops.timeout;
   return {
     timeout: abortSignal,
-    ignoreBlockError: Boolean(ops.ignoreBlockError)
+    ignoreBlockError: Boolean(ops.ignoreBlockError),
   };
 }
 
@@ -48,7 +50,7 @@ export const DEFAULT_AWAIT_BLOCK_DONE_TIMEOUT = 5000;
 async function awaitBlockDone(
   prj: Project,
   blockId: string,
-  timeoutOrOps?: number | AwaitBlockDoneOps
+  timeoutOrOps?: number | AwaitBlockDoneOps,
 ) {
   const ops = normalizeABDOpts(timeoutOrOps);
   const overview = prj.overview;
@@ -70,7 +72,7 @@ async function awaitBlockDone(
     if (blockOverview.calculationStatus === 'Done') return;
     if (blockOverview.calculationStatus !== 'Running')
       throw new Error(
-        `Unexpected block status, block not calculating anything at the moment: ${blockOverview.calculationStatus}`
+        `Unexpected block status, block not calculating anything at the moment: ${blockOverview.calculationStatus}`,
       );
     try {
       await overview.awaitChange(ops.timeout);
@@ -112,7 +114,7 @@ export const blockTest = plTest.extend<{
       localProjections: [], // TODO must be different with local pl
       openFileDialogCallback: () => {
         throw new Error('Not implemented.');
-      }
+      },
     });
 
     await use(ml);
@@ -122,7 +124,7 @@ export const blockTest = plTest.extend<{
   rawPrj: async ({ ml }, use) => {
     const pRid1 = await ml.createProject(
       { label: 'Test Project' },
-      'test_project'
+      'test_project',
     );
     await ml.openProject(pRid1);
     const prj = ml.getOpenedProject(pRid1);
@@ -136,20 +138,20 @@ export const blockTest = plTest.extend<{
       },
       awaitBlockDoneAndGetStableBlockState: async <Pl extends Platforma>(
         blockId: string,
-        timeoutOrOps?: number | AwaitBlockDoneOps
+        timeoutOrOps?: number | AwaitBlockDoneOps,
       ) => {
         const ops = normalizeABDOpts(timeoutOrOps);
         await awaitBlockDone(rawPrj, blockId, ops);
         return (await awaitStableState(
           rawPrj.getBlockState(blockId),
-          ops.timeout
+          ops.timeout,
         )) as InferBlockState<Pl>;
       },
       async getLocalFileHandle(localPath) {
         return await ml.internalDriverKit.lsDriver.getLocalFileHandle(
-          path.resolve(localPath)
+          path.resolve(localPath),
         );
-      }
+      },
     });
-  }
+  },
 });

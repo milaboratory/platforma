@@ -152,17 +152,17 @@ export async function getTestClient(alternativeRoot?: string) {
 }
 
 export async function withTempRoot<T>(body: (pl: PlClient) => Promise<T>): Promise<T> {
-  const altRoot = `test_${Date.now()}_${randomUUID()}`;
+  const alternativeRoot = `test_${Date.now()}_${randomUUID()}`;
   let altRootId: OptionalResourceId = NullResourceId;
   try {
-    const client = await getTestClient(altRoot);
+    const client = await getTestClient(alternativeRoot);
     altRootId = client.clientRoot;
     const value = await body(client);
     const rawClient = await getTestClient();
-    await rawClient.deleteAlternativeRoot(altRoot);
+    await rawClient.deleteAlternativeRoot(alternativeRoot);
     return value;
   } catch (err: any) {
-    console.log(`ALTERNATIVE ROOT: ${altRoot} (${resourceIdToString(altRootId)})`);
+    console.log(`ALTERNATIVE ROOT: ${alternativeRoot} (${resourceIdToString(altRootId)})`);
     throw new Error(err.message, { cause: err });
   }
 }
