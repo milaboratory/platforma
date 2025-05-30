@@ -1,4 +1,4 @@
-import { test, expect } from '@jest/globals';
+import { test, expect } from 'vitest';
 import * as tp from 'node:timers/promises';
 import { PollActor, PollComputablePool, PollPool } from './poll_pool';
 import { ChangeSource } from '../change_source';
