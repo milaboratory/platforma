@@ -1,4 +1,4 @@
-import { test, expect } from '@jest/globals';
+import { test, expect } from 'vitest';
 import { FakeTreeAccessor, FakeTreeDriver, PersistentFakeTreeNode } from './test_backend';
 import { Computable, ComputableRenderingOps } from './computable';
 
