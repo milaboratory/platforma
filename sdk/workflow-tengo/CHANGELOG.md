@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 4.6.4
+
+### Patch Changes
+
+- f8e88c1: Fix for final resource state await logic
+
 ## 4.6.3
 
 ### Patch Changes
