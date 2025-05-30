@@ -1,7 +1,7 @@
 import { fullNameFromFileName } from './main';
 import { expect, describe, test } from 'vitest';
 
-describe('fullNameFromFileName', () => {
+describe.concurrent('fullNameFromFileName', () => {
   const defaultPackageId = {
     name: 'test-package',
     version: '1.0.0'
