@@ -11,6 +11,7 @@ self.body(func(inputs) {
 	inputFile := file.importFile(inputs.file).file
 
 	run := exec.builder().
+		cpu(1).ram("50Mi").
 		cmd("/usr/bin/env").
 		arg("bash").
 		arg("-c").

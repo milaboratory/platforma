@@ -8,6 +8,7 @@ hwSoftware := assets.importSoftware("@platforma-open/milaboratories.software-sma
 
 self.body(func(inputs) {
 	run := exec.builder().
+		cpu(1).ram("50Mi").
 		software(hwSoftware).
 		saveStdoutContent().
 		run()

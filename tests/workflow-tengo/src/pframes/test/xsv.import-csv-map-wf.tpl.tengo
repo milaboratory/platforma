@@ -18,6 +18,7 @@ wf.body(func(args) {
 	// populate with the same data file
 	for k, csv in csvDataMap {
 		e := exec.builder().
+			cpu(1).ram("50Mi").
 			cmd("env").
 			writeFile("data.csv", csv).
 			saveFile("data.csv").
