@@ -194,7 +194,10 @@ export function getAxesId(spec: AxesSpec): AxesId {
   return spec.map(getAxisId);
 }
 
-/** Canonicalizes axis id */
+/**
+ * Canonicalizes axis id
+ * @deprecated Use {@link canonicalizeJson} instead to preserve type
+ */
 export function canonicalizeAxisId(id: AxisId): string {
   return canonicalize(getAxisId(id))!;
 }

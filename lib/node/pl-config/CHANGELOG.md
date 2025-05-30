@@ -1,5 +1,12 @@
 # @milaboratories/pl-config
 
+## 1.4.11
+
+### Patch Changes
+
+- Updated dependencies [0f511ff]
+  - @milaboratories/ts-helpers@1.3.1
+
 ## 1.4.10
 
 ### Patch Changes

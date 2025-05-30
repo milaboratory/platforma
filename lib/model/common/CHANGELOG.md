@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.15.2
+
+### Patch Changes
+
+- 1cbbd66: PFrame driver - accept range in calculateTableData
+
 ## 1.15.1
 
 ### Patch Changes

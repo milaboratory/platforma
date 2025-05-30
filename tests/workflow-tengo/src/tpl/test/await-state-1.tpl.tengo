@@ -9,6 +9,6 @@ self.awaitState("input1", "nestedField", "ResourceReady")
 self.body(func(inputs) {
 	res := inputs["input1"].get("nestedField")
 	return {
-		main: res.isReady() ? "A" : "B"
+		main: res.isFinal() ? "A" : "B"
 	}
 })

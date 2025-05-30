@@ -1,5 +1,31 @@
 # @platforma-sdk/workflow-tengo
 
+## 4.6.5
+
+### Patch Changes
+
+- daaaf08: Fixes field name type convertion and assertion
+
+## 4.6.4
+
+### Patch Changes
+
+- f8e88c1: Fix for final resource state await logic
+
+## 4.6.3
+
+### Patch Changes
+
+- d8db125: - Fix for PColumn data parsing logic: allow field references as input is parse = false
+  - Optimization for processColumn: unwrapping result for empty grouping after aggregation
+
+## 4.6.2
+
+### Patch Changes
+
+- ac02ffd: - Fix for PColumnBundle and PColumnBundleWithPartitions await aliases.
+  - Separation of PColumn data parsing logic
+
 ## 4.6.1
 
 ### Patch Changes

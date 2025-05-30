@@ -1,5 +1,70 @@
 # @platforma-sdk/ui-vue
 
+## 1.32.2
+
+### Patch Changes
+
+- a6e4f5c: Apply concurrency limiting to PFrames requests
+
+## 1.32.1
+
+### Patch Changes
+
+- Updated dependencies [0f511ff]
+  - @platforma-sdk/model@1.32.1
+  - @milaboratories/uikit@2.2.76
+
+## 1.32.0
+
+### Minor Changes
+
+- 992b49d: [desktop] Repack kalignment: add @milaboratories/biowasm-tools package with prebundled tools (kalign only)
+
+### Patch Changes
+
+- Updated dependencies [992b49d]
+  - @milaboratories/biowasm-tools@1.1.0
+
+## 1.31.19
+
+### Patch Changes
+
+- 3f77701: [sdk/ui-vue] PlMultiSequenceAlignment: added consensus visualization
+
+## 1.31.17
+
+### Patch Changes
+
+- Updated dependencies [8bd34d1]
+  - @platforma-sdk/model@1.31.17
+  - @milaboratories/uikit@2.2.76
+
+## 1.31.16
+
+### Patch Changes
+
+- Updated dependencies [1cbbd66]
+- Updated dependencies [576a72e]
+  - @platforma-sdk/model@1.31.16
+  - @milaboratories/uikit@2.2.76
+
+## 1.31.15
+
+### Patch Changes
+
+- bf88576: Fix default filters behaviour on reload with empty filters
+- Updated dependencies [bf88576]
+  - @platforma-sdk/model@1.31.15
+  - @milaboratories/uikit@2.2.75
+
+## 1.31.14
+
+### Patch Changes
+
+- Updated dependencies [e25600e]
+  - @platforma-sdk/model@1.31.14
+  - @milaboratories/uikit@2.2.75
+
 ## 1.31.11
 
 ### Patch Changes

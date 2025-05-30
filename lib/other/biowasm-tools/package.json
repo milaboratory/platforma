@@ -1,0 +1,34 @@
+{
+  "name": "@milaboratories/biowasm-tools",
+  "version": "1.1.0",
+  "description": "A framework for building WebAssembly-based genomics tools",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/biowasm/aioli.git"
+  },
+  "author": "Robert Aboukhalil & Milaboratories",
+  "license": "MIT",
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/aioli.js",
+  "module": "./dist/aioli.mjs",
+  "types": "./index.d.ts",
+  "dependencies": {
+    "comlink": "^4.3.1",
+    "wasm-feature-detect": "^1.2.11"
+  },
+  "devDependencies": {
+    "cypress": "^10.6.0",
+    "vite": "catalog:",
+    "vitest": "catalog:"
+  },
+  "scripts": {
+    "dev": "vite build --sourcemap true --minify false && vite",
+    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
+    "build": "vite build",
+    "test": "exit 0",
+    "test-cypress": "vite build && cypress run",
+    "test-open": "vite build && cypress open"
+  }
+}

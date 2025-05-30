@@ -1,5 +1,37 @@
 # @platforma-sdk/model
 
+## 1.32.1
+
+### Patch Changes
+
+- 0f511ff: Support for logging from the block model
+
+## 1.31.17
+
+### Patch Changes
+
+- 8bd34d1: add linker columns to createPFramesForGraph
+
+## 1.31.16
+
+### Patch Changes
+
+- 1cbbd66: PFrame driver - accept range in calculateTableData
+- Updated dependencies [1cbbd66]
+  - @milaboratories/pl-model-common@1.15.2
+
+## 1.31.15
+
+### Patch Changes
+
+- bf88576: Fix default filters behaviour on reload with empty filters
+
+## 1.31.14
+
+### Patch Changes
+
+- e25600e: Temp fix for NA in axis values
+
 ## 1.31.6
 
 ### Patch Changes

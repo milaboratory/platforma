@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/ts-helpers",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "description": "Useful helpers for our TS projects",
   "engines": {
     "node": ">=20.16.0"

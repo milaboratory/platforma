@@ -14,6 +14,7 @@ pSpec := import(":pframes.spec")
 validation := import(":validation")
 constants := import(":pframes.constants")
 xsvBuilder := import(":pframes.xsv-builder")
+pColumnData := import(":pframes.data")
 
 llProcessTpl := assets.importTemplate(":pframes.process-pcolumn-data")
 
@@ -607,6 +608,7 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 }
 
 export ll.toStrict({
+	parseData: pColumnData.parseData,
 	processColumn: processColumn,
 	exportFrame: exportFrame,
 	pFrameBuilder: builder.pFrameBuilder,

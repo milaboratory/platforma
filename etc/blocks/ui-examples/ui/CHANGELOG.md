@@ -1,5 +1,51 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.4.1
+
+### Patch Changes
+
+- Updated dependencies [0f511ff]
+  - @platforma-sdk/model@1.32.1
+  - @milaboratories/milaboratories.ui-examples.model@1.1.64
+
+## 1.4.0
+
+### Minor Changes
+
+- 992b49d: [desktop] Repack kalignment: add @milaboratories/biowasm-tools package with prebundled tools (kalign only)
+
+## 1.3.87
+
+### Patch Changes
+
+- Updated dependencies [8bd34d1]
+  - @platforma-sdk/model@1.31.17
+  - @milaboratories/milaboratories.ui-examples.model@1.1.63
+
+## 1.3.86
+
+### Patch Changes
+
+- Updated dependencies [1cbbd66]
+  - @platforma-sdk/model@1.31.16
+  - @milaboratories/milaboratories.ui-examples.model@1.1.62
+
+## 1.3.85
+
+### Patch Changes
+
+- Updated dependencies [bf88576]
+  - @platforma-sdk/model@1.31.15
+  - @milaboratories/milaboratories.ui-examples.model@1.1.61
+
+## 1.3.84
+
+### Patch Changes
+
+- Updated dependencies [e25600e]
+  - @platforma-sdk/model@1.31.14
+  - @milaboratories/milaboratories.ui-examples.model@1.1.60
+
 ## 1.3.83
 
 ### Patch Changes

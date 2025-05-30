@@ -1,5 +1,96 @@
 # @milaboratories/pl-middle-layer
 
+## 1.37.51
+
+### Patch Changes
+
+- Updated dependencies [daaaf08]
+  - @platforma-sdk/workflow-tengo@4.6.5
+
+## 1.37.50
+
+### Patch Changes
+
+- Updated dependencies [f8e88c1]
+  - @platforma-sdk/workflow-tengo@4.6.4
+
+## 1.37.49
+
+### Patch Changes
+
+- Updated dependencies [d8db125]
+  - @platforma-sdk/workflow-tengo@4.6.3
+
+## 1.37.48
+
+### Patch Changes
+
+- a72e303: Running computable resetState for deleted blocks
+
+## 1.37.47
+
+### Patch Changes
+
+- a6e4f5c: Apply concurrency limiting to PFrames requests
+
+## 1.37.46
+
+### Patch Changes
+
+- 0f511ff: Support for logging from the block model
+- Updated dependencies [0f511ff]
+  - @milaboratories/ts-helpers@1.3.1
+  - @platforma-sdk/model@1.32.1
+  - @milaboratories/computable@2.4.9
+  - @milaboratories/pl-client@2.9.2
+  - @milaboratories/pl-config@1.4.11
+  - @milaboratories/pl-deployments@2.2.3
+  - @milaboratories/pl-drivers@1.5.61
+  - @milaboratories/pl-errors@1.1.2
+  - @milaboratories/pl-tree@1.6.3
+  - @platforma-sdk/block-tools@2.5.51
+  - @platforma-sdk/workflow-tengo@4.6.2
+
+## 1.37.45
+
+### Patch Changes
+
+- Updated dependencies [ac02ffd]
+  - @platforma-sdk/workflow-tengo@4.6.2
+
+## 1.37.44
+
+### Patch Changes
+
+- Updated dependencies [8bd34d1]
+  - @platforma-sdk/model@1.31.17
+
+## 1.37.43
+
+### Patch Changes
+
+- 1cbbd66: PFrame driver - accept range in calculateTableData
+- Updated dependencies [1cbbd66]
+  - @milaboratories/pl-model-common@1.15.2
+  - @platforma-sdk/model@1.31.16
+  - @milaboratories/pl-model-middle-layer@1.7.34
+  - @milaboratories/pl-drivers@1.5.60
+  - @platforma-sdk/block-tools@2.5.50
+
+## 1.37.42
+
+### Patch Changes
+
+- Updated dependencies [bf88576]
+  - @platforma-sdk/model@1.31.15
+
+## 1.37.41
+
+### Patch Changes
+
+- Updated dependencies [e25600e]
+  - @platforma-sdk/model@1.31.14
+
 ## 1.37.40
 
 ### Patch Changes

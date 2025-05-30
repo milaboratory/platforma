@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-errors",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Parsing errors from Pl backend",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
