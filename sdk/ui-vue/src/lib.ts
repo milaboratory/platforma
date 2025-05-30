@@ -48,6 +48,8 @@ export * from './computedResult';
 
 export * from './composition/fileContent';
 
+export { multiSequenceAlignment } from './components/PlMultiSequenceAlignment/multi-sequence-alignment';
+
 export * from '@milaboratories/uikit';
 
 export type * from '@milaboratories/uikit';

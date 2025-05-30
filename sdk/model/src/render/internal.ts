@@ -151,6 +151,16 @@ export interface GlobalCfgRenderCtxMethods<AHandle = AccessorHandle, FHandle = F
   //
 
   getCurrentUnstableMarker(): string | undefined;
+
+  //
+  // Logging
+  //
+
+  logInfo(message: string): void;
+
+  logWarn(message: string): void;
+
+  logError(message: string): void;
 }
 
 export const GlobalCfgRenderCtxFeatureFlags = {

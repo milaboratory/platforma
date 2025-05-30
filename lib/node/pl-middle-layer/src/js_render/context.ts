@@ -195,7 +195,7 @@ export class JsExecutionContext {
     return scope !== undefined ? scope.manage(result) : result;
   }
 
-  public importObjectUniversal(handle: QuickJSHandle): unknown {
+  public importObjectUniversal(handle: QuickJSHandle | undefined): unknown {
     if (handle === undefined) return undefined;
     switch (this.vm.typeof(handle)) {
       case 'undefined':
