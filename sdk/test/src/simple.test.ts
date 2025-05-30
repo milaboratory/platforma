@@ -7,8 +7,8 @@ blockTest('test', { timeout: 60000 }, async ({ expect, rawPrj, helpers }) => {
     id: {
       organization: 'milaboratory',
       name: 'enter-numbers',
-      version: '1.1.1'
-    }
+      version: '1.1.1',
+    },
   });
 
   await rawPrj.setBlockArgs(testBlockId, { numbers: [1, 2, 3] });
