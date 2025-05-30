@@ -17,8 +17,6 @@ feats := import(":feats")
 
 _RTYPE_QUOTA := { Name: "Quota", Version: "1" }
 
-_only_local_queues := [ constants.UI_TASKS_QUEUE ]
-
 /**
  * Check if we should use batch executor for command in given queue.
  *
@@ -26,7 +24,7 @@ _only_local_queues := [ constants.UI_TASKS_QUEUE ]
  * @return bool - true = we should use batch executor, false = run command locally.
  */
 useBatch := func(queueName) {
-	return feats.hasBatch && !slices.hasElement(_only_local_queues, queueName)
+	return feats.hasBatch && !slices.hasElement([ constants.UI_TASKS_QUEUE ], queueName)
 }
 
 /**
@@ -147,9 +145,11 @@ storageSpaceRequestBuilder := func() {
 			requestBuilder := smart.ephemeralBuilder(_RTYPE_STORAGE_SPACE_REQUEST)
 			requestBuilder.getField(_SSR_FIELD_REQUEST).set(quota)
 
+			requestRef := requestBuilder.lockAndBuild()
+
 			return ll.toStrict(
-				oop.inherit(requestBuilder, {
-					allocation: requestBuilder.getField(_SSR_FIELD_ALLOCATION)
+				oop.inherit(requestRef, {
+					allocation: requestRef.getField(_SSR_FIELD_ALLOCATION)
 				})
 			)
 		}
@@ -158,10 +158,9 @@ storageSpaceRequestBuilder := func() {
 	return self
 }
 
-_RTYPE_COMPUTE_REQUEST              := func(executor) { return { Name: "ComputeRequest/" + executor, Version: "1" } }
-_CR_EXECUTOR_ID_EXECUTOR            := "executor"
-_CR_EXECUTOR_ID_BATCH               := "batch"
-_CR_DEFAULT_EXECUTOR_ID             := _CR_EXECUTOR_ID_EXECUTOR
+_RTYPE_COMPUTE_REQUEST_EXECUTOR_V1  := { Name: "ComputeRequest/executor", Version: "1" }
+_RTYPE_COMPUTE_REQUEST_BATCH_V1     := { Name: "ComputeRequest/batch", Version: "1" }
+
 _CR_FIELD_REQUEST                   := "request"    // input
 _CR_FIELD_ALLOCATION                := "allocation" // output
 
@@ -169,7 +168,7 @@ computeRequestBuilder := func() {
 	self := undefined
 
 	quota := undefined
-	executor := _CR_DEFAULT_EXECUTOR_ID
+	queue_name := undefined
 
 	self = ll.toStrict({
 		/**
@@ -186,22 +185,14 @@ computeRequestBuilder := func() {
 		},
 
 		/**
-		 * Create compute request for batch executor
-		 *
-		 * @return computeRequestBuilder
+		 * Provide name of the queue this request is for. This value exists in the 'quota' resource, but it is
+		 * a bad design to rely on it, as quota may be a reference to a field.
+		 * We need queue name to decide, where to put compute request: to batch controller, or to executor.
 		 */
-		inBatch: func() {
-			executor = _CR_EXECUTOR_ID_BATCH
-			return self
-		},
+		queue: func(name) {
+			validation.assertType(name, "string", "exec.limits.queue: queue name should be a string")
+			queue_name = name
 
-		/**
-		 * Create compute request for local executor
-		 *
-		 * @return computeRequestBuilder
-		 */
-		inLocal: func() {
-			executor = _CR_EXECUTOR_ID_EXECUTOR
 			return self
 		},
 
@@ -212,14 +203,23 @@ computeRequestBuilder := func() {
 		 */
 		build: func() {
 			ll.assert(smart.isReference(quota), "exec.limits.build: quota of ComputeRequest must be a valid reference")
+			ll.assert(queue_name != "", "exec.limits.build: queue name is required for computeRequestBuilder")
 
-			rType := _RTYPE_COMPUTE_REQUEST(executor)
-			requestBuilder := smart.ephemeralBuilder(rType)
+			requestBuilder := undefined
+
+			if useBatch(queue_name) {
+				requestBuilder = smart.ephemeralBuilder(_RTYPE_COMPUTE_REQUEST_BATCH_V1)
+			} else {
+				requestBuilder = smart.ephemeralBuilder(_RTYPE_COMPUTE_REQUEST_EXECUTOR_V1)
+			}
+
 			requestBuilder.getField(_CR_FIELD_REQUEST).set(quota)
 
+			requestRef := requestBuilder.lockAndBuild()
+
 			return ll.toStrict(
-				oop.inherit(requestBuilder, {
-					allocation: requestBuilder.getField(_CR_FIELD_ALLOCATION)
+				oop.inherit(requestRef, {
+					allocation: requestRef.getField(_CR_FIELD_ALLOCATION)
 				})
 			)
 		}

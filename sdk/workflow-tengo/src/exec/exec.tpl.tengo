@@ -42,7 +42,6 @@ _runBinaryCommand := func(inputs) {
 
 	quota := inputs.quota
 
-	storageSpace := undefined
 	if !is_undefined(quota) && (feats.workdirLimits || limits.useBatch(quota.queue)) {
 		quotaBuilder := limits.quotaBuilder().
 			cpu(quota.cpu).
@@ -54,11 +53,11 @@ _runBinaryCommand := func(inputs) {
 			quotaBuilder.queue(quota.queue)
 		}
 
-		storageSpace = limits.storageSpaceRequestBuilder().
+		storageSpaceRef := limits.storageSpaceRequestBuilder().
 			quota(quotaBuilder.build()).
 			build()
 
-		wdBuilder.allocation(storageSpace.allocation)
+		wdBuilder.allocation(storageSpaceRef.allocation)
 	}
 
 	// add files
@@ -116,20 +115,18 @@ _runBinaryCommand := func(inputs) {
 	runBuilder := execInternal.prepareCommandRun(wdForCmd, opts)
 
 	if !is_undefined(quota) && (feats.computeLimits || limits.useBatch(quota.queue)) {
-		quotaResource := limits.quotaBuilder().
+		quotaRef := limits.quotaBuilder().
 			queue(opts.queue).
 			cpu(quota.cpu).
 			ram(quota.ram).
 			build()
 
-		computeResources := limits.computeRequestBuilder().
-			quota(quotaResource)
+		computeRequestRef := limits.computeRequestBuilder().
+			quota(quotaRef).
+			queue(opts.queue).
+			build()
 
-		if limits.useBatch(opts.queue) {
-			computeResources.inBatch()
-		}
-
-		runBuilder.allocation(computeResources.build().allocation)
+		runBuilder.allocation(computeRequestRef.allocation)
 	}
 
 	// Load secrets
