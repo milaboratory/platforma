@@ -33,9 +33,23 @@ tplTest.concurrent(
  * break anything it its execution. We can't check what _controller_ saw,
  * but we at least know SDK does not get broken when custom limits are applied.
  */
-tplTest.concurrent(
-  'run-hello-world-limits',
-  async ({ helper, expect }) => {
+tplTest.concurrent.for([
+  { cpuLimit: 1, ramLimit: '10MiB' },
+  { cpuLimit: 2, ramLimit: '10mib' },
+  { cpuLimit: 1, ramLimit: '10mb' },
+  { cpuLimit: 1, ramLimit: '10m' },
+  { cpuLimit: 1, ramLimit: '10M' },
+  { cpuLimit: 1, ramLimit: '1024k' },
+  { cpuLimit: 1, ramLimit: '1024kb' },
+  { cpuLimit: 1, ramLimit: '1024Kb' },
+  { cpuLimit: 1, ramLimit: '1024kB' },
+  { cpuLimit: 1, ramLimit: '1024Kib' },
+  { cpuLimit: 1, ramLimit: '1024KiB' },
+  { cpuLimit: 1, ramLimit: '1024kiB' },
+  { cpuLimit: 1, ramLimit: 1048576 },
+])(
+  'run-hello-world-go (limits) CPU=$cpuLimit, RAM=$ramLimit',
+  async ({ cpuLimit, ramLimit }, { helper, expect }) => {
     const helloText = 'Hello from go!';
 
     const result = await helper.renderTemplate(
@@ -44,6 +58,8 @@ tplTest.concurrent(
       ['main'],
       (tx) => ({
         text: tx.createValue(Pl.JsonObject, JSON.stringify(helloText)),
+        cpu: tx.createValue(Pl.JsonObject, JSON.stringify(cpuLimit)),
+        ram: tx.createValue(Pl.JsonObject, JSON.stringify(ramLimit)),
       }),
     );
     const mainResult = result.computeOutput('main', (a) =>
