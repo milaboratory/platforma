@@ -760,6 +760,9 @@ builder := func() {
 
 			serviceExecInputs := {}
 			if feats.workdirLimits || feats.computeLimits || limits.useBatch(queue) {
+				if (is_int(ramRequest)) {
+					ramRequest = string(ramRequest) + "b"
+				}
 				serviceExecInputs.quota = {
 					queue: queue,
 					cpu: cpuRequest,
