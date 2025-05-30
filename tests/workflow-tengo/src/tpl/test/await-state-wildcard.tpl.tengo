@@ -9,7 +9,7 @@ self.awaitState("input1", { wildcard: "*" }, "ResourceReady")
 self.body(func(inputs) {
 	res := ""
 	for _, input in inputs["input1"].inputs() {
-		res += input.getValue().isReady() ? "A" : "B"
+		res += input.getValue().isFinal() ? "A" : "B"
 	}
 	return {
 		main: res

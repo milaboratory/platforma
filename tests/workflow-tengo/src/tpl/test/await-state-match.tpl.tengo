@@ -10,7 +10,7 @@ self.body(func(inputs) {
 	ready := 0
 	notReady := 0
 	for _, input in inputs["input1"].inputs() {
-		if input.getValue().isReady() {
+		if input.getValue().isFinal() {
 			ready += 1
 		} else {
 			notReady += 1
