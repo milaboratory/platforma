@@ -1,5 +1,11 @@
 # @milaboratories/computable
 
+## 2.4.10
+
+### Patch Changes
+
+- 73b9f26: Migrate from jest to vitest
+
 ## 2.4.9
 
 ### Patch Changes
