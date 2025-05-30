@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 4.6.5
+
+### Patch Changes
+
+- daaaf08: Fixes field name type convertion and assertion
+
 ## 4.6.4
 
 ### Patch Changes
