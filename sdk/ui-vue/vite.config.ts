@@ -22,6 +22,7 @@ export default defineConfig({
         'vue',
         'ag-grid-enterprise',
         'ag-grid-vue3',
+        '@milaboratories/biowasm-tools',
       ],
       output: {
         globals: {

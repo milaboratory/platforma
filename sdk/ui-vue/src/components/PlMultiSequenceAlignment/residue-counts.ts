@@ -1,10 +1,11 @@
-export function getResidueFrequencies(
+import type { ResidueCounts } from './types';
+
+export function getResidueCounts(
   alignedSequences: string[],
-): Record<string, number>[] {
-  const columns: Record<string, number>[] = [];
+): ResidueCounts {
+  const columns: ResidueCounts = [];
   for (const sequence of alignedSequences) {
     for (const [columnIndex, residue] of sequence.split('').entries()) {
-      if (residue === '-') continue;
       const column = columns[columnIndex] ??= {};
       column[residue] = (column[residue] ?? 0) + 1;
     }
@@ -23,18 +24,18 @@ if (import.meta.vitest) {
       '-----MHI---KKPLNAFMLYMKEMRANVVAESTLKESAAINQILGRRWHALSREEQAKYYELARKERQLHMQLYPGWSARDNYGKKKKRKREK',
     ];
 
-    expect(getResidueFrequencies(alignedSequences)).toEqual([
-      { G: 1, M: 1 },
-      { K: 2 },
-      { G: 1, K: 1 },
-      { D: 1, L: 1 },
-      { K: 1, P: 1 },
+    expect(getResidueCounts(alignedSequences)).toEqual([
+      { '-': 2, 'G': 1, 'M': 1 },
+      { '-': 2, 'K': 2 },
+      { '-': 2, 'G': 1, 'K': 1 },
+      { '-': 2, 'D': 1, 'L': 1 },
+      { '-': 2, 'K': 1, 'P': 1 },
       { K: 2, M: 2 },
       { H: 2, K: 1, Q: 1 },
       { D: 1, I: 1, P: 2 },
-      { D: 1, R: 2 },
-      { F: 1, G: 1, V: 1 },
-      { P: 1 },
+      { '-': 1, 'D': 1, 'R': 2 },
+      { '-': 1, 'F': 1, 'G': 1, 'V': 1 },
+      { '-': 3, 'P': 1 },
       { K: 4 },
       { K: 2, M: 1, R: 1 },
       { P: 3, S: 1 },
@@ -93,7 +94,7 @@ if (import.meta.vitest) {
       { D: 1, E: 2, L: 1 },
       { K: 2, Q: 1, R: 1 },
       { A: 2, Q: 2 },
-      { L: 1, M: 1, R: 1 },
+      { '-': 1, 'L': 1, 'M': 1, 'R': 1 },
       { E: 1, H: 2, Y: 1 },
       { E: 1, F: 1, M: 1, R: 1 },
       { E: 2, Q: 1, R: 1 },
@@ -102,22 +103,22 @@ if (import.meta.vitest) {
       { K: 1, L: 1, P: 2 },
       { A: 1, G: 1, N: 1, T: 1 },
       { R: 1, W: 1, Y: 2 },
-      { F: 1, K: 1, S: 1 },
+      { '-': 1, 'F': 1, 'K': 1, 'S': 1 },
       { A: 1, I: 1, R: 1, Y: 1 },
       { E: 1, P: 1, R: 2 },
       { D: 2, P: 2 },
       { H: 1, K: 1, N: 1, R: 1 },
       { G: 1, P: 1, R: 1, Y: 1 },
       { D: 1, E: 1, G: 1, K: 1 },
-      { A: 1, K: 1, L: 1 },
-      { I: 1, K: 2 },
-      { K: 1, M: 1, Q: 1 },
-      { K: 1, L: 1, N: 1 },
-      { A: 1, P: 1, R: 1 },
-      { K: 3 },
-      { K: 1, R: 1 },
-      { E: 1 },
-      { K: 1 },
+      { '-': 1, 'A': 1, 'K': 1, 'L': 1 },
+      { '-': 1, 'I': 1, 'K': 2 },
+      { '-': 1, 'K': 1, 'M': 1, 'Q': 1 },
+      { '-': 1, 'K': 1, 'L': 1, 'N': 1 },
+      { '-': 1, 'A': 1, 'P': 1, 'R': 1 },
+      { '-': 1, 'K': 3 },
+      { '-': 2, 'K': 1, 'R': 1 },
+      { '-': 3, 'E': 1 },
+      { '-': 3, 'K': 1 },
     ]);
   });
 }

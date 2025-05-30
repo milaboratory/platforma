@@ -1,5 +1,11 @@
 # @milaboratories/ts-helpers
 
+## 1.3.1
+
+### Patch Changes
+
+- 0f511ff: Support for logging from the block model
+
 ## 1.3.0
 
 ### Minor Changes

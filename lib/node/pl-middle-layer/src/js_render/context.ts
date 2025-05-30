@@ -82,6 +82,16 @@ export class JsExecutionContext {
     if (typeof error === 'object' && error !== null && 'context' in error) delete error['context'];
   }
 
+  // private static cleanError(error: unknown): unknown {
+  //   if (error instanceof errors.QuickJSUnwrapError) {
+  //     const { cause, context: _, name, message, stack, ...rest } = error;
+  //     const clean = new errors.QuickJSUnwrapError(cause);
+  //     Object.assign(clean, { ...rest, name, message, stack });
+  //     return clean;
+  //   }
+  //   return error;
+  // }
+
   public evaluateBundle(code: string) {
     try {
       this.deadlineSetter({ currentExecutionTarget: 'evaluateBundle', deadline: Date.now() + 10000 });
@@ -185,7 +195,8 @@ export class JsExecutionContext {
     return scope !== undefined ? scope.manage(result) : result;
   }
 
-  public importObjectUniversal(handle: QuickJSHandle): unknown {
+  public importObjectUniversal(handle: QuickJSHandle | undefined): unknown {
+    if (handle === undefined) return undefined;
     switch (this.vm.typeof(handle)) {
       case 'undefined':
         return undefined;

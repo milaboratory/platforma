@@ -28,7 +28,6 @@ import {
   mapPObjectData,
   mapPTableDef,
   mapValueInVOE,
-  newRangeBytesOpt,
 } from '@platforma-sdk/model';
 import { notEmpty } from '@milaboratories/ts-helpers';
 import { randomUUID } from 'node:crypto';
@@ -428,6 +427,22 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
   }
 
   //
+  // Logging
+  //
+
+  public logInfo(message: string): void {
+    this.env.blockEventDispatcher.logInfo(this.blockCtx.blockId, message);
+  }
+
+  public logWarn(message: string): void {
+    this.env.blockEventDispatcher.logWarn(this.blockCtx.blockId, message);
+  }
+
+  public logError(message: string): void {
+    this.env.blockEventDispatcher.logError(this.blockCtx.blockId, message);
+  }
+
+  //
   // Helpers
   //
 
@@ -598,27 +613,15 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
       //
 
       exportCtxFunction('getBlobContentAsBase64', (handle, range) => {
-        const fromRaw = vm.getNumber(vm.getProp(range, 'from'));
-        const from = isNaN(fromRaw) ? undefined : fromRaw;
-
-        const toRaw = vm.getNumber(vm.getProp(range, 'to'));
-        const to = isNaN(toRaw) ? undefined : toRaw;
-
         return parent.exportSingleValue(
-          this.getBlobContentAsBase64(vm.getString(handle), newRangeBytesOpt(from, to)),
+          this.getBlobContentAsBase64(vm.getString(handle), parent.importObjectUniversal(range) as RangeBytes | undefined),
           undefined,
         );
       });
 
       exportCtxFunction('getBlobContentAsString', (handle, range) => {
-        const fromRaw = vm.getNumber(vm.getProp(range, 'from'));
-        const from = isNaN(fromRaw) ? undefined : fromRaw;
-
-        const toRaw = vm.getNumber(vm.getProp(range, 'to'));
-        const to = isNaN(toRaw) ? undefined : toRaw;
-
         return parent.exportSingleValue(
-          this.getBlobContentAsString(vm.getString(handle), newRangeBytesOpt(from, to)),
+          this.getBlobContentAsString(vm.getString(handle), parent.importObjectUniversal(range) as RangeBytes | undefined),
           undefined,
         );
       });
@@ -761,6 +764,22 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
 
       exportCtxFunction('getCurrentUnstableMarker', () => {
         return parent.exportSingleValue(this.getCurrentUnstableMarker(), undefined);
+      });
+
+      //
+      // Logging
+      //
+
+      exportCtxFunction('logInfo', (message) => {
+        this.logInfo(vm.getString(message));
+      });
+
+      exportCtxFunction('logWarn', (message) => {
+        this.logWarn(vm.getString(message));
+      });
+
+      exportCtxFunction('logError', (message) => {
+        this.logError(vm.getString(message));
       });
     });
   }

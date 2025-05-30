@@ -3,6 +3,8 @@ packages:
   - lib/util/helpers
   - lib/util/sequences
 
+  - lib/other/biowasm-tools
+
   - lib/model/common
   - lib/model/middle-layer
   - lib/model/backend
@@ -113,7 +115,6 @@ packages:
 
 catalog:
   # Build
-
   'typescript': ~5.5.4
   'tsconfig-paths': ^4.2.0
   'tsup': ~8.3.5
@@ -197,7 +198,7 @@ catalog:
   'winston': ^3.17.0
 
   '@milaboratories/tengo-tester': ^1.6.1
-  '@milaboratories/pframes-rs-node': &pframes-rs-version 1.0.38
+  '@milaboratories/pframes-rs-node': &pframes-rs-version 1.0.39
 
   'remeda': ^2.21.2
 
@@ -215,11 +216,13 @@ catalog:
   'highlight.js': '11.10.0'
   'd3': '^7.9.0'
   '@types/d3': '^7.4.3'
+  'd3-format': ^3.1.0
+  '@types/d3-format': ^3.0.4
 
   'ag-grid-enterprise': &ag-grid ^33.0.4
   'ag-grid-vue3': *ag-grid
 
-  '@milaboratories/miplots4': ^1.0.97
+  '@milaboratories/miplots4': ^1.0.98
 
   'monaco-editor': ^0.52.2
 
@@ -227,6 +230,7 @@ catalog:
 
   '@milaboratories/software-pframes-conv': &pframes-version 2.2.2
   '@platforma-open/milaboratories.software-small-binaries': ^1.15.21
+  '@platforma-open/milaboratories.software-ptabler': 1.6.0
   '@biowasm/aioli': ~3.2.1
 
   # Test

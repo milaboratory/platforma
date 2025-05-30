@@ -323,6 +323,9 @@ export type PlTableFiltersState = PlTableFiltersStateEntry[];
 export type PlTableFiltersModel = {
   /** Internal PlTableFilters component state, do not change! */
   state?: PlTableFiltersState;
+  /** Internal PlTableFilters component state, do not change!
+   *  Defaults filters applied to the table */
+  defaultsApplied?: boolean;
   /** Resulting filters which should be used in Join */
   filters?: PTableRecordFilter[];
 };

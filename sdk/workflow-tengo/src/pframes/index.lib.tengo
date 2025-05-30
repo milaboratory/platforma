@@ -13,6 +13,8 @@ pUtil := import(":pframes.util")
 pSpec := import(":pframes.spec")
 validation := import(":validation")
 constants := import(":pframes.constants")
+xsvBuilder := import(":pframes.xsv-builder")
+pColumnData := import(":pframes.data")
 
 llProcessTpl := assets.importTemplate(":pframes.process-pcolumn-data")
 
@@ -606,9 +608,12 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 }
 
 export ll.toStrict({
+	parseData: pColumnData.parseData,
 	processColumn: processColumn,
 	exportFrame: exportFrame,
 	pFrameBuilder: builder.pFrameBuilder,
 	exportColumnData: exportColumnData,
-	pColumnResourceMapDataBuilder: pColumnResourceMapDataBuilder
+	pColumnResourceMapDataBuilder: pColumnResourceMapDataBuilder,
+	tsvFileBuilder: func() { return xsvBuilder.xsvFileBuilder("tsv") },
+	csvFileBuilder: func() { return xsvBuilder.xsvFileBuilder("csv") }
 })

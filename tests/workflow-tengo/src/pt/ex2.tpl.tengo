@@ -1,0 +1,35 @@
+self := import("@platforma-sdk/workflow-tengo:tpl")
+pt := import("@platforma-sdk/workflow-tengo:pt")
+file := import("@platforma-sdk/workflow-tengo:file")
+
+self.defineOutputs("out_filtered_sorted")
+
+self.body(func(inputs){
+    tsvInput := inputs.inputTsv
+
+    wf := pt.workflow()
+
+    df := wf.frame(tsvInput, {
+        xsvType: "tsv"
+    })
+
+    // Filter: value > 100 AND category != "C"
+    filteredDf := df.filter(
+        pt.col("value").gt(pt.lit(100)),
+        pt.col("category").neq(pt.lit("C"))
+    )
+
+    // Sort: by category (ascending), then by score (descending)
+    sortedDf := filteredDf.sort(
+        [pt.col("category"), pt.col("score")],
+        {descending: [false, true]}
+    )
+
+    sortedDf.save("output_filtered_sorted.tsv")
+
+    ptablerResult := wf.run()
+
+    return {
+        out_filtered_sorted: file.exportFile(ptablerResult.getFile("output_filtered_sorted.tsv"))
+    }
+})

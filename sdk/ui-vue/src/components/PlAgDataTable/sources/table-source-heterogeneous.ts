@@ -10,7 +10,7 @@ import type {
 } from '@platforma-sdk/model';
 import { getAxisId, pTableValue } from '@platforma-sdk/model';
 import canonicalize from 'canonicalize';
-import * as lodash from 'lodash';
+import lodash from 'lodash';
 import { defaultValueFormatter } from './common';
 import type { PlAgDataTableRow } from '../types';
 

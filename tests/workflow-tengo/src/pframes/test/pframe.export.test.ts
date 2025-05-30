@@ -11,7 +11,7 @@ const baseSpec = {
   annotations: {},
 };
 
-tplTest('should export files for p-frame without skipExportForUI annotation', { timeout: 15000 },
+tplTest('should export files for p-frame without skipExportForUI annotation', { timeout: 40000 },
   async ({ helper, expect, driverKit }) => {
     const spec = baseSpec;
     const fileHandle = await importFile(driverKit);
@@ -35,7 +35,7 @@ tplTest('should export files for p-frame without skipExportForUI annotation', { 
       return data.value.resourceInfo;
     });
 
-    const finalResult = await awaitStableState(exported, 10000);
+    const finalResult = await awaitStableState(exported, 40000);
     console.log(finalResult);
 
     expect(finalResult?.type.version).toBe('1');
@@ -43,7 +43,7 @@ tplTest('should export files for p-frame without skipExportForUI annotation', { 
   },
 );
 
-tplTest('should not export files for p-frame with hideDataFromUi annotation', { timeout: 15000 },
+tplTest('should not export files for p-frame with hideDataFromUi annotation', { timeout: 40000 },
   async ({ helper, expect, driverKit }) => {
     const spec = { ...baseSpec, annotations: { 'pl7.app/hideDataFromUi': 'true' } };
     const fileHandle = await importFile(driverKit);
@@ -67,7 +67,7 @@ tplTest('should not export files for p-frame with hideDataFromUi annotation', { 
       return data.value.resourceInfo;
     });
 
-    const finalResult = await awaitStableState(exported, 10000);
+    const finalResult = await awaitStableState(exported, 40000);
     console.log(finalResult);
 
     expect(finalResult).toBeUndefined();

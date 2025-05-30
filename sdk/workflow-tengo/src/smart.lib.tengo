@@ -135,6 +135,10 @@ isReference := func(f) {
  */
 _getFutureField := func(from, name, fieldType, isEph) {
 	ll.assert(isReference(from), "'from' must be either a resource or a field, got: %#v", from)
+	if is_bytes(name) {
+		name = string(name)
+	}
+	ll.assert(is_string(name) && name != "", "field name must be a non-empty string")
 
 	futureField := tx.createFutureFieldID(fieldType, name, !isEph)
 	f := field(futureField.ResourceFID)
@@ -366,7 +370,10 @@ resource = func(r) {
 		 *  HasErrors:     bool
 		 */
 		info: func() {
-			return tx.getResource(self.id)
+			_resourceInfo := tx.getResource(self.id)
+			// Converting type to normal map to allow for easy "==" comparison
+			_resourceInfo.Type = { Name: _resourceInfo.Type.Name, Version: _resourceInfo.Type.Version }
+			return _resourceInfo
 		},
 
 		/**
@@ -382,8 +389,8 @@ resource = func(r) {
 		/**
 		 * Resource is ready when all inputs are set to the terminal values.
 		 */
-		isReady: func() {
-			return self.info().ResourceReady
+		isFinal: func() {
+			return self.info().ResourceReady || self.info().IsDuplicate || self.info().HasErrors
 		},
 
 		isEphemeral: func() {
@@ -586,6 +593,10 @@ resource = func(r) {
 				isEph = eph[0]
 			}
 
+			if is_bytes(name) {
+				name = string(name)
+			}
+			ll.assert(is_string(name) && name != "", "field name must be a non-empty string")
 			fieldId := ffDefault.getFutureFieldWithDefault(self.id, name, fieldType, isEph)
 			return field(fieldId)
 		},
@@ -1021,6 +1032,10 @@ field = func(f) {
 				isEph = eph[0]
 			}
 
+			if is_bytes(name) {
+				name = string(name)
+			}
+			ll.assert(is_string(name) && name != "", "field name must be a non-empty string")
 			fieldId := ffDefault.getFutureFieldWithDefault(self.id, name, fieldType, isEph)
 			return field(fieldId)
 		},
@@ -1111,6 +1126,10 @@ resourceBuilder = func(r) {
 		 */
 		createField: func(name, fieldType) {
 			assertNotBuilt()
+			if is_bytes(name) {
+				name = string(name)
+			}
+			ll.assert(is_string(name) && name != "", "field name must be a non-empty string")
 			fid := ll.fieldId(super.id, name)
 			tx.createField(fid, fieldType)
 			return field(fid)
