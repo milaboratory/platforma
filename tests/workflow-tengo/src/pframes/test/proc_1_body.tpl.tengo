@@ -43,6 +43,7 @@ self.body(func(inputs) {
 	}
 
 	run := exec.builder().
+		cpu(1).ram("50Mi").
         software(hwSoftware).
 		arg("a").
 		writeFile("file.tsv", inputFileContent).

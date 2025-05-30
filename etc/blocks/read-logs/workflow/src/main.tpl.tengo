@@ -12,6 +12,7 @@ wf.body(func(args) {
 	readLogsSW := assets.importSoftware("@platforma-open/milaboratories.software-small-binaries:read-file-to-stdout-with-sleep")
 
 	run := exec.builder().
+		cpu(1).ram("50Mi").
 		software(readLogsSW).
 		addFile("file.txt", inputFile.file).
 		arg("file.txt")

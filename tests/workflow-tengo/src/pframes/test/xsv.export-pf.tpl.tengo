@@ -13,6 +13,7 @@ self.body(func(inputs){
 	csv := inputs.csv
 
 	e := exec.builder().
+		cpu(1).ram("50Mi").
 		cmd("env").
 		writeFile("data.csv", csv).
 		saveFile("data.csv").

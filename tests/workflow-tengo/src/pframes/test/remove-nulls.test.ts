@@ -3,7 +3,7 @@ import { field, Pl, resourceType, toGlobalResourceId } from '@milaboratories/pl-
 import { awaitStableState, tplTest } from '@platforma-sdk/test';
 import { Templates as SdkTemplates } from '@platforma-sdk/workflow-tengo';
 
-tplTest.for([
+tplTest.concurrent.for([
   { isEph: true, name: 'ephemeral mode' },
   { isEph: false, name: 'pure mode' },
 ])(
@@ -39,7 +39,7 @@ tplTest.for([
   },
 );
 
-tplTest.for([
+tplTest.concurrent.for([
   { isEph: true, name: 'ephemeral mode' },
   { isEph: false, name: 'pure mode' },
 ])(
@@ -72,7 +72,7 @@ tplTest.for([
   },
 );
 
-tplTest.for([
+tplTest.concurrent.for([
   { isEph: true, name: 'ephemeral mode' },
   { isEph: false, name: 'pure mode' },
 ])(
@@ -115,7 +115,7 @@ tplTest.for([
   },
 );
 
-tplTest.for([
+tplTest.concurrent.for([
   { isEph: true, name: 'ephemeral mode' },
   { isEph: false, name: 'pure mode' },
 ])(

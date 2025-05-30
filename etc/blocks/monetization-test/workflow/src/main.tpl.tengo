@@ -13,6 +13,7 @@ self.setPreRun(assets.importTemplate(":pre-run"))
 self.body(func(inputs) {
 	// TODO: it should be changed to software that prints an env.
 	builder := exec.builder().
+		cpu(1).ram("50Mi").
 		cmd("/usr/bin/env").
 		arg("bash").
 		arg("-c").

@@ -3,7 +3,11 @@ import { Pl } from '@milaboratories/pl-middle-layer';
 import { tplTest } from '@platforma-sdk/test';
 import * as env from '../../test/env';
 
-tplTest(
+/*
+ * Checks, that default limits are applied based
+ * on queue block developer choses when bulding the command
+ */
+tplTest.concurrent(
   'run-hello-world-go',
   async ({ helper, expect }) => {
     const helloText = 'Hello from go!';
@@ -24,9 +28,28 @@ tplTest(
   },
 );
 
-tplTest(
-  'run-hello-world-limits',
-  async ({ helper, expect }) => {
+/*
+ * Checks, that custom limits applied to the command do not
+ * break anything it its execution. We can't check what _controller_ saw,
+ * but we at least know SDK does not get broken when custom limits are applied.
+ */
+tplTest.concurrent.for([
+  { cpuLimit: 1, ramLimit: '10MiB' },
+  { cpuLimit: 2, ramLimit: '10mib' },
+  { cpuLimit: 1, ramLimit: '10mb' },
+  { cpuLimit: 1, ramLimit: '10m' },
+  { cpuLimit: 1, ramLimit: '10M' },
+  { cpuLimit: 1, ramLimit: '1024k' },
+  { cpuLimit: 1, ramLimit: '1024kb' },
+  { cpuLimit: 1, ramLimit: '1024Kb' },
+  { cpuLimit: 1, ramLimit: '1024kB' },
+  { cpuLimit: 1, ramLimit: '1024Kib' },
+  { cpuLimit: 1, ramLimit: '1024KiB' },
+  { cpuLimit: 1, ramLimit: '1024kiB' },
+  { cpuLimit: 1, ramLimit: 1048576 },
+])(
+  'run-hello-world-go (limits) CPU=$cpuLimit, RAM=$ramLimit',
+  async ({ cpuLimit, ramLimit }, { helper, expect }) => {
     const helloText = 'Hello from go!';
 
     const result = await helper.renderTemplate(
@@ -35,6 +58,8 @@ tplTest(
       ['main'],
       (tx) => ({
         text: tx.createValue(Pl.JsonObject, JSON.stringify(helloText)),
+        cpu: tx.createValue(Pl.JsonObject, JSON.stringify(cpuLimit)),
+        ram: tx.createValue(Pl.JsonObject, JSON.stringify(ramLimit)),
       }),
     );
     const mainResult = result.computeOutput('main', (a) =>
@@ -66,7 +91,7 @@ tplTest(
 //   }
 // );
 
-tplTest(
+tplTest.concurrent(
   'should run bash from the template, echo a string to stdout and returns a value resource',
   async ({ helper, expect }) => {
     const helloText = 'Hello from bash';
@@ -87,7 +112,7 @@ tplTest(
   },
 );
 
-tplTest(
+tplTest.concurrent(
   'should run bash from the template, echo a string to stdout and returns a stream log',
   async ({ driverKit, helper, expect }) => {
     const result = await helper.renderTemplate(
@@ -107,7 +132,7 @@ tplTest(
   },
 );
 
-tplTest(
+tplTest.concurrent(
   'should run bash from the template, cat a file from a directory and returns its content as a value resource',
   async ({ driverKit, helper, expect }) => {
     const storages = await driverKit.lsDriver.getStorageList();
@@ -141,7 +166,7 @@ tplTest(
   },
 );
 
-tplTest(
+tplTest.concurrent(
   'should run bash from the template, cat a file created by content and gets a content from stdout',
   async ({ driverKit, helper, expect }) => {
     const result = await helper.renderTemplate(
@@ -161,7 +186,7 @@ tplTest(
   },
 );
 
-tplTest(
+tplTest.concurrent(
   'should save file set by regex',
   async ({ driverKit, helper, expect }) => {
     const result = await helper.renderTemplate(
@@ -187,7 +212,7 @@ tplTest(
   },
 );
 
-tplTest(
+tplTest.concurrent(
   'should run workdir processor',
   async ({ driverKit, helper, expect }) => {
     const result = await helper.renderTemplate(
@@ -213,7 +238,7 @@ tplTest(
   },
 );
 
-tplTest(
+tplTest.concurrent(
   'should run exec and eval all arguments as expressions',
   async ({ helper, expect }) => {
     const result = await helper.renderTemplate(

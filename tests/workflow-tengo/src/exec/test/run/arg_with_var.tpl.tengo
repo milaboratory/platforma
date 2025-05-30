@@ -9,6 +9,7 @@ self.defineOutputs(["out"])
 
 self.body(func(inputs) {
 	run := exec.builder().
+		cpu(1).ram("50Mi").
 		cmd("/usr/bin/env").
 		argWithVar("{'bash'}").
 		arg("-c").
