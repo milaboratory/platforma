@@ -46,6 +46,7 @@ self.body(func(inputs) {
 
 	if inputFileContent != "no_content" {
 		run := exec.builder().
+			cpu(1).ram("50Mi").
 			software(hwSoftware).
 			arg("a").
 			writeFile("file.tsv", inputFileContent).

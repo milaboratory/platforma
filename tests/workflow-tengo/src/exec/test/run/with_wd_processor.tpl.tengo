@@ -10,11 +10,12 @@ self.defineOutputs(["p"])
 
 self.body(func(inputs) {
 	run := exec.builder().
+		cpu(1).ram("50Mi").
 		cmd("/usr/bin/env").
 		arg("bash").
 		arg("-c").
 		arg("echo 'text1' > file1.txt && echo 'text2' > file2.txt").
-		processWorkdir("p", assets.importTemplate(":exec.test.wd_processor_1"), {}).
+		processWorkdir("p", assets.importTemplate(":exec.test.run.wd_processor_1"), {}).
 		run()
 
 	return {

@@ -11,7 +11,7 @@ smart := import("@platforma-sdk/workflow-tengo:smart")
 self.defineOutputs("csvFile")
 
 self.body(func(inputs){
-// map with csv as text
+	// map with csv as text
 	csvDataMap := inputs.csvMap
 	keyLength := inputs.keyLength
 	spec := inputs.spec
@@ -20,6 +20,7 @@ self.body(func(inputs){
 	// populate with the same data file
 	for k, csv in csvDataMap {
 		e := exec.builder().
+			cpu(1).ram("50Mi").
 			cmd("env").
 			writeFile("data.csv", csv).
 			saveFile("data.csv").

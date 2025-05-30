@@ -21,6 +21,7 @@ self.body(func(inputs){
 	// populate with the same data file
 	for k, csv in csvDataMap {
 		e := exec.builder().
+			cpu(1).ram("50M").
 			cmd("env").
 			writeFile("data.csv", csv).
 			saveFile("data.csv").
