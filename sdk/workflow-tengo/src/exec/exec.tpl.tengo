@@ -250,7 +250,7 @@ self.validateInputs({
 	"quota,?": {
 		queue: "string",
 		"cpu,?": "number",
-		"ram,?": ["or", "string", "number"]
+		"ram,?": "string"
 	}
 })
 
