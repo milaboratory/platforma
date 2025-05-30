@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { tplTest } from '@platforma-sdk/test';
 
-tplTest('software-info-loads', async ({ helper, expect }) => {
+tplTest.concurrent('software-info-loads', async ({ helper, expect }) => {
   const result = await helper.renderTemplate(
     false,
     'exec.test.artifacts-software',
@@ -26,7 +26,7 @@ tplTest('software-info-loads', async ({ helper, expect }) => {
   expect(val).toHaveProperty('descriptor');
 });
 
-tplTest('asset-info-loads', async ({ helper, expect }) => {
+tplTest.concurrent('asset-info-loads', async ({ helper, expect }) => {
   const result = await helper.renderTemplate(
     false,
     'exec.test.artifacts-asset',

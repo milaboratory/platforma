@@ -3,7 +3,11 @@ import { Pl } from '@milaboratories/pl-middle-layer';
 import { tplTest } from '@platforma-sdk/test';
 import * as env from '../../test/env';
 
-tplTest(
+/*
+ * Checks, that default limits are applied based
+ * on queue block developer choses when bulding the command
+ */
+tplTest.concurrent(
   'run-hello-world-go',
   async ({ helper, expect }) => {
     const helloText = 'Hello from go!';
@@ -24,7 +28,12 @@ tplTest(
   },
 );
 
-tplTest(
+/*
+ * Checks, that custom limits applied to the command do not
+ * break anything it its execution. We can't check what _controller_ saw,
+ * but we at least know SDK does not get broken when custom limits are applied.
+ */
+tplTest.concurrent(
   'run-hello-world-limits',
   async ({ helper, expect }) => {
     const helloText = 'Hello from go!';
@@ -66,7 +75,7 @@ tplTest(
 //   }
 // );
 
-tplTest(
+tplTest.concurrent(
   'should run bash from the template, echo a string to stdout and returns a value resource',
   async ({ helper, expect }) => {
     const helloText = 'Hello from bash';
@@ -87,7 +96,7 @@ tplTest(
   },
 );
 
-tplTest(
+tplTest.concurrent(
   'should run bash from the template, echo a string to stdout and returns a stream log',
   async ({ driverKit, helper, expect }) => {
     const result = await helper.renderTemplate(
@@ -107,7 +116,7 @@ tplTest(
   },
 );
 
-tplTest(
+tplTest.concurrent(
   'should run bash from the template, cat a file from a directory and returns its content as a value resource',
   async ({ driverKit, helper, expect }) => {
     const storages = await driverKit.lsDriver.getStorageList();
@@ -141,7 +150,7 @@ tplTest(
   },
 );
 
-tplTest(
+tplTest.concurrent(
   'should run bash from the template, cat a file created by content and gets a content from stdout',
   async ({ driverKit, helper, expect }) => {
     const result = await helper.renderTemplate(
@@ -161,7 +170,7 @@ tplTest(
   },
 );
 
-tplTest(
+tplTest.concurrent(
   'should save file set by regex',
   async ({ driverKit, helper, expect }) => {
     const result = await helper.renderTemplate(
@@ -187,7 +196,7 @@ tplTest(
   },
 );
 
-tplTest(
+tplTest.concurrent(
   'should run workdir processor',
   async ({ driverKit, helper, expect }) => {
     const result = await helper.renderTemplate(
@@ -213,7 +222,7 @@ tplTest(
   },
 );
 
-tplTest(
+tplTest.concurrent(
   'should run exec and eval all arguments as expressions',
   async ({ helper, expect }) => {
     const result = await helper.renderTemplate(

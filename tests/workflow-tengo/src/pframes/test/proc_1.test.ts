@@ -3,7 +3,7 @@ import { field, Pl, resourceType } from '@milaboratories/pl-middle-layer';
 import { awaitStableState } from '@platforma-sdk/test';
 import { assertBlob, assertJson, assertResource, eTplTest } from './extended_tpl_test';
 
-eTplTest(
+eTplTest.concurrent(
   'should correctly execute pframes.processColumn without aggregation',
   { timeout: 15000 },
   async ({ helper, expect, stHelper }) => {
@@ -112,7 +112,7 @@ eTplTest(
   },
 );
 
-eTplTest(
+eTplTest.concurrent(
   'should correctly execute pframes.processColumn with aggregation 1',
   async ({ helper, expect, stHelper }) => {
     const xsvSettings = {
@@ -221,7 +221,7 @@ eTplTest(
   },
 );
 
-eTplTest(
+eTplTest.concurrent(
   'should correctly execute pframes.processColumn with aggregation 2',
   async ({ helper, expect, stHelper }) => {
     const xsvSettings = {

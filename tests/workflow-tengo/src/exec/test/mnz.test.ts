@@ -6,7 +6,7 @@ import { tplTest } from '@platforma-sdk/test';
  * - run monetization with a fake product key
  * - collect lines of the file
  * - returns jwt token */
-tplTest(
+tplTest.concurrent(
   'should run monetization and return jwt token as env',
   async ({ helper, expect }) => {
     const result = await helper.renderTemplate(
@@ -27,7 +27,7 @@ tplTest(
   },
 );
 
-tplTest(
+tplTest.concurrent(
   'should run dry-run monetization and return info with remaining runs',
   async ({ helper, expect }) => {
     const result = await helper.renderTemplate(
