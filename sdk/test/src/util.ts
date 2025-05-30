@@ -1,6 +1,6 @@
-import { Computable } from '@milaboratories/computable';
+import type { Computable } from '@milaboratories/computable';
 import { isTimeoutOrCancelError } from '@milaboratories/pl-client';
-import { BigIntStats } from 'node:fs';
+import type { BigIntStats } from 'node:fs';
 import * as fsp from 'node:fs/promises';
 
 export async function tryStat(path: string): Promise<BigIntStats | undefined> {
@@ -16,11 +16,11 @@ export async function tryStat(path: string): Promise<BigIntStats | undefined> {
 
 export async function awaitStableState<S>(
   computable: Computable<unknown, S>,
-  timeout: number | AbortSignal = 5000
+  timeout: number | AbortSignal = 5000,
 ): Promise<S> {
   try {
     return await computable.awaitStableValue(
-      typeof timeout === 'number' ? AbortSignal.timeout(timeout) : timeout
+      typeof timeout === 'number' ? AbortSignal.timeout(timeout) : timeout,
     );
   } catch (e: unknown) {
     if (isTimeoutOrCancelError(e)) {
@@ -28,7 +28,7 @@ export async function awaitStableState<S>(
       console.dir(fullValue, { depth: 5 });
       throw new Error(
         `Aborted while awaiting stable value. Unstable marker: ${fullValue.unstableMarker}`,
-        { cause: e }
+        { cause: e },
       );
     } else throw e;
   }
