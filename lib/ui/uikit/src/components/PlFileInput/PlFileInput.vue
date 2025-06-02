@@ -10,6 +10,7 @@ import { getFileNameFromHandle, getFilePathFromHandle } from '@platforma-sdk/mod
 import DoubleContour from '@/utils/DoubleContour.vue';
 import { useLabelNotch } from '@/utils/useLabelNotch';
 import { prettyBytes } from '@milaboratories/helpers';
+import { N } from 'vitest/dist/chunks/reporters.nr4dxCkA.js';
 
 const data = reactive({
   fileDialogOpen: false,
@@ -55,7 +56,7 @@ const props = withDefaults(
     /**
      * An error message to display below the input field.
      */
-    error?: string | { message: string };
+    error?: string | { message: string } | unknown;
     /**
      * A helper text to display below the input field when there are no errors.
      */
@@ -99,6 +100,10 @@ const tryValue = <T extends ImportFileHandle>(v: T | undefined, cb: (v: T) => st
   }
 };
 
+const isErrorObject = (error: unknown): error is { message: string } => {
+  return typeof error === 'object' && error != null && 'message' in error && typeof error.message === 'string';
+};
+
 const fileName = computed(() => tryValue(props.modelValue, getFileNameFromHandle));
 
 const filePath = computed(() => tryValue(props.modelValue, getFilePathFromHandle));
@@ -114,10 +119,10 @@ const computedError = computed(() => {
     message = data.error;
   } else if (typeof props.error === 'string') {
     message = props.error;
-  } else if (typeof props.error === 'object' && typeof props.error.message === 'string') {
+  } else if (isErrorObject(props.error)) {
     message = props.error.message;
   } else if (props.error != null) {
-    message = `Unknown error type: ${props.error}`;
+    message = `Unknown error type:\n${JSON.stringify(props.error, null, 4)}`;
   }
 
   if (typeof message === 'string' && message.length === 0) {

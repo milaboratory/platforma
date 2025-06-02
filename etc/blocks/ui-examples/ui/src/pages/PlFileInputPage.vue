@@ -11,10 +11,26 @@ const props = reactive({
 <template>
   <PlBlockPage style="max-width: 100%">
     <div class="d-flex flex-column gap-16" style="width: 400px">
+      <h2>Erorrs</h2>
       <PlFileInput
         v-model="props.model"
         :extensions="['txt']"
-        error="hello my"
+        error="Error as string"
+      />
+      <PlFileInput
+        v-model="props.model"
+        :extensions="['txt']"
+        :error="{ message: 'error as object' }"
+      />
+      <PlFileInput
+        v-model="props.model"
+        :extensions="['txt']"
+        :error="new Error('error as class')"
+      />
+      <PlFileInput
+        v-model="props.model"
+        :extensions="['txt']"
+        :error="{ unknown: 'error as unknown entity' }"
       />
     </div>
   </PlBlockPage>
