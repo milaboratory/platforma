@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.32.9
+
+### Patch Changes
+
+- e1227f9: Update embedded pl core version to 1.33.5
+
 ## 1.32.2
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @milaboratories/pl-local
 
+## 2.2.4
+
+### Patch Changes
+
+- e1227f9: Update embedded pl core version to 1.33.5
+
 ## 2.2.3
 
 ### Patch Changes
