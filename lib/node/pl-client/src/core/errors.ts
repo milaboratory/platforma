@@ -36,6 +36,7 @@ export function isTimeoutOrCancelError(err: unknown, nested: boolean = false): b
 export const PlErrorCodeNotFound = 5;
 
 export class PlError extends Error {
+  name = 'PlError';
   constructor(public readonly status: Status) {
     super(`code=${status.code} ${status.message}`);
   }
@@ -46,12 +47,14 @@ export function throwPlNotFoundError(message: string): never {
 }
 
 export class RecoverablePlError extends PlError {
+  name = 'RecoverablePlError';
   constructor(status: Status) {
     super(status);
   }
 }
 
 export class UnrecoverablePlError extends PlError {
+  name = 'UnrecoverablePlError';
   constructor(status: Status) {
     super(status);
   }
@@ -64,12 +67,14 @@ export function isNotFoundError(err: unknown, nested: boolean = false): boolean 
 }
 
 export class UnauthenticatedError extends Error {
+  name = 'UnauthenticatedError';
   constructor(message: string) {
     super('LoginFailed: ' + message);
   }
 }
 
 export class DisconnectedError extends Error {
+  name = 'DisconnectedError';
   constructor(message: string) {
     super('Disconnected: ' + message);
   }
