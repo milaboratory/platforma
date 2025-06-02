@@ -1,4 +1,4 @@
-import { test, expect } from '@jest/globals';
+import { test, expect } from 'vitest';
 import { HierarchicalWatcher } from './hierarchical_watcher';
 import { Aborted } from '@milaboratories/ts-helpers';
 

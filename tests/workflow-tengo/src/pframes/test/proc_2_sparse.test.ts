@@ -3,7 +3,7 @@ import { field, Pl, resourceType } from '@milaboratories/pl-middle-layer';
 import { awaitStableState } from '@platforma-sdk/test';
 import { assertBlob, assertJson, assertResource, eTplTest } from './extended_tpl_test';
 
-eTplTest(
+eTplTest.concurrent(
   'should correctly execute pframes.processColumn in sparse mode without aggregation',
   { timeout: 40000 },
   async ({ helper, expect, stHelper }) => {
@@ -109,7 +109,7 @@ eTplTest(
   },
 );
 
-eTplTest(
+eTplTest.concurrent(
   'should correctly execute pframes.processColumn in sparse mode with aggregation 1',
   { timeout: 40000 },
   async ({ helper, expect, stHelper }) => {
