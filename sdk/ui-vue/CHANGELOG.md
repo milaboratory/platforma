@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.33.0
+
+### Minor Changes
+
+- 8b908b1: Fix join calculation for MSA component
+
 ## 1.32.9
 
 ### Patch Changes
