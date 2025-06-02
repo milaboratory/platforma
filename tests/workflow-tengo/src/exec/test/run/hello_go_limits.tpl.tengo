@@ -11,10 +11,12 @@ self.defineOutputs(["main"])
 sw := assets.importSoftware("@platforma-open/milaboratories.software-small-binaries:hello-world")
 
 self.body(func(inputs) {
+	/* Checks, that custom limits applied to the command do not
+	 * break anything it its execution. We can't check what _controller_ saw,
+	 * but we at least know SDK does not get broken when custom limits are applied. */
 	run := exec.builder().
-        software(sw).
-		cpu(1).
-		ram("10MiB").
+		software(sw).
+		cpu(inputs.cpu).ram(inputs.ram).
 		arg(inputs.text).
 		saveStdoutContent().
 		run()

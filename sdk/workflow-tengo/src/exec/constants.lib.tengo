@@ -1,21 +1,25 @@
+ll := import(":ll")
+
 ARG_TYPE_STRING := "string"
 ARG_TYPE_EXPRESSION := "expressionRef"
 ARG_TYPE_VAR        := "variableRef" // TODO: deprecated, remove after 15 Mar 2025
 ARG_TYPES := [ARG_TYPE_STRING, ARG_TYPE_EXPRESSION, ARG_TYPE_VAR]
 
+BATCH_QUEUE    := "batch" // special queue in storage controller with no limits
 HEAVY_QUEUE    := "heavy"
 MEDIUM_QUEUE   := "medium"
 LIGHT_QUEUE    := "light"
 UI_TASKS_QUEUE := "ui-tasks"
 
-export {
+export ll.toStrict({
 	ARG_TYPE_STRING: ARG_TYPE_STRING,
 	ARG_TYPE_EXPRESSION: ARG_TYPE_EXPRESSION,
 	ARG_TYPE_VAR: ARG_TYPE_VAR,
 	ARG_TYPES: ARG_TYPES,
 
+	BATCH_QUEUE: BATCH_QUEUE,
 	UI_TASKS_QUEUE: UI_TASKS_QUEUE,
 	LIGHT_QUEUE: LIGHT_QUEUE,
 	MEDIUM_QUEUE: MEDIUM_QUEUE,
 	HEAVY_QUEUE: HEAVY_QUEUE
-}
+})
