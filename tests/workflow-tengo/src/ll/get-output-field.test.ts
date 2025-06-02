@@ -3,7 +3,7 @@ import { field, Pl, resourceType, toGlobalFieldId } from '@milaboratories/pl-mid
 import { sleep } from '@milaboratories/ts-helpers';
 import { tplTest } from '@platforma-sdk/test';
 
-tplTest.for([
+tplTest.concurrent.for([
   { isEph: true, name: 'ephemeral mode' },
   { isEph: false, name: 'pure field' },
 ])(
@@ -38,7 +38,7 @@ tplTest.for([
   },
 );
 
-tplTest.for([
+tplTest.concurrent.for([
   { isEph: true, name: 'ephemeral mode' },
   { isEph: false, name: 'pure field' },
 ])(
@@ -73,7 +73,7 @@ tplTest.for([
   },
 );
 
-tplTest.for([
+tplTest.concurrent.for([
   { isEph: true, name: 'ephemeral mode' },
   { isEph: false, name: 'pure field' },
 ])(
@@ -123,7 +123,7 @@ tplTest.for([
   },
 );
 
-tplTest.for([
+tplTest.concurrent.for([
   { isEph: true, name: 'ephemeral mode' },
   { isEph: false, name: 'pure field' },
 ])(
