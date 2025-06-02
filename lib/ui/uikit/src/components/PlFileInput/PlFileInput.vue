@@ -10,7 +10,6 @@ import { getFileNameFromHandle, getFilePathFromHandle } from '@platforma-sdk/mod
 import DoubleContour from '@/utils/DoubleContour.vue';
 import { useLabelNotch } from '@/utils/useLabelNotch';
 import { prettyBytes } from '@milaboratories/helpers';
-import { N } from 'vitest/dist/chunks/reporters.nr4dxCkA.js';
 
 const data = reactive({
   fileDialogOpen: false,
@@ -56,7 +55,7 @@ const props = withDefaults(
     /**
      * An error message to display below the input field.
      */
-    error?: string | { message: string } | unknown;
+    error?: unknown;
     /**
      * A helper text to display below the input field when there are no errors.
      */
