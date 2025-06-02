@@ -59,6 +59,8 @@ export type Ports = {
 
   grpcLocal?: number;
   minioLocal?: number;
+
+  httpEndpoint?: number;
 };
 
 export type Endpoints = {
@@ -73,6 +75,8 @@ export type Endpoints = {
 
   grpcLocal?: string;
   minioLocal?: string;
+
+  httpEndpoint?: string;
 };
 
 export type PortsWithMinio = {
@@ -98,6 +102,7 @@ async function getFreePorts(): Promise<Ports> {
     grpc: await getFreePort(),
     monitoring: await getFreePort(),
     debug: await getFreePort(),
+    httpEndpoint: await getFreePort(),
   };
 }
 
@@ -124,8 +129,12 @@ function getRandomPorts(opts: PlConfigPortsRandom): Ports {
   while (grpc == debug || monitoring == debug) {
     debug = getPort();
   }
+  let httpEndpoint = getPort();
+  while (grpc == httpEndpoint || monitoring == httpEndpoint || debug == httpEndpoint) {
+    httpEndpoint = getPort();
+  }
 
-  return { debug, monitoring, grpc };
+  return { debug, monitoring, grpc, httpEndpoint };
 }
 
 /** Turns ports to endpoints by adding host */
@@ -143,5 +152,6 @@ export function withHost(host: string, localHost: string, ports: Ports): Endpoin
 
     grpcLocal: ports.grpcLocal ? endp(localHost, ports.grpcLocal) : undefined,
     minioLocal: ports.minioLocal ? endp(localHost, ports.minioLocal) : undefined,
+    httpEndpoint: ports.httpEndpoint ? endp(localHost, ports.httpEndpoint) : undefined,
   };
 }

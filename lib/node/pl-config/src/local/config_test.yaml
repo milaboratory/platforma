@@ -24,8 +24,9 @@ core:
 
   grpc:
     listen: '127.0.0.1:11234'
-    tls:
-      enabled: false
+ 
+  http:
+    listen: '127.0.0.1:11237'
 
   authEnabled: true
   auth:
@@ -35,6 +36,8 @@ core:
       path: 'users.htpasswd'
   db:
     path: 'db'
+  tls:
+    enabled: false
 
 controllers:
   data:
@@ -57,16 +60,22 @@ controllers:
         type: 'FS'
         indexCachePeriod: '1m'
         rootPath: ''
+        allowRemoteAccess: false
+        externalURL: ''
 
       - id: 'work'
         type: 'FS'
         indexCachePeriod: '1m'
         rootPath: 'storages/work'
+        allowRemoteAccess: false
+        externalURL: ''
 
       - id: 'main'
         type: 'FS'
         indexCachePeriod: '0m'
         rootPath: 'storages/main'
+        allowRemoteAccess: true
+        externalURL: 'http://127.0.0.1:11237'
 
   runner:
     type: local

@@ -23,8 +23,8 @@ core:
 
   grpc:
     listen: 127.0.0.1:42097
-    tls:
-      enabled: false
+  http:
+    listen: ""
 
   authEnabled: true
   auth:
@@ -34,6 +34,8 @@ core:
       path: /home/pl-doctor/platforma_backend/users.htpasswd
   db:
     path: db
+  tls:
+    enabled: false
 
 controllers:
   workflows: {}
@@ -67,11 +69,15 @@ controllers:
         type: FS
         indexCachePeriod: 1m
         rootPath: ""
+        allowRemoteAccess: false
+        externalURL: ""
 
       - id: work
         type: FS
         indexCachePeriod: 1m
         rootPath: /home/pl-doctor/platforma_backend/storages/work
+        allowRemoteAccess: false
+        externalURL: ""
 
       - id: main
         type: S3

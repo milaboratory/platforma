@@ -14,6 +14,7 @@ test('should return right configs', async ({ expect }) => {
   const opts: SshPlConfigGeneratorOptions = {
     logger,
     workingDir,
+    useGlobalAccess: false,
     licenseMode: { type: 'plain', value: 'abc' },
     portsMode: {
       type: 'customWithMinio',

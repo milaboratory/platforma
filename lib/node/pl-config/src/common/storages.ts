@@ -72,6 +72,8 @@ export function newRemoteConfigStorages(
       type: 'FS',
       indexCachePeriod: '1m',
       rootPath: '',
+      allowRemoteAccess: false,
+      externalURL: '',
     },
   };
 
@@ -85,6 +87,8 @@ export function newRemoteConfigStorages(
       type: 'FS',
       indexCachePeriod: '1m',
       rootPath: workPath,
+      allowRemoteAccess: false,
+      externalURL: '',
     },
   };
 
@@ -96,8 +100,11 @@ export function newRemoteConfigStorages(
   };
 }
 
-export async function createDefaultLocalStorages(workdir: string): Promise<StoragesSettings> {
-  const storages = newDefaultLocalStorages(workdir);
+export async function createDefaultLocalStorages(workdir: string, externalURL?: string): Promise<StoragesSettings> {
+  if (!externalURL) {
+    throw new Error('External URL is required in local deployments');
+  }
+  const storages = newDefaultLocalStorages(workdir, externalURL);
 
   for (const d of storages.dirsToCreate) {
     await fs.mkdir(d, { recursive: true });
@@ -106,7 +113,7 @@ export async function createDefaultLocalStorages(workdir: string): Promise<Stora
   return storages;
 }
 
-export function newDefaultLocalStorages(workdir: string): StoragesSettings {
+function newDefaultLocalStorages(workdir: string, externalURL: string): StoragesSettings {
   const workPath = upath.join(workdir, 'storages', 'work');
   const mainPath = upath.join(workdir, 'storages', 'main');
 
@@ -124,6 +131,8 @@ export function newDefaultLocalStorages(workdir: string): StoragesSettings {
       type: 'FS',
       indexCachePeriod: '1m',
       rootPath: '',
+      allowRemoteAccess: false,
+      externalURL: '',
     },
   };
 
@@ -138,6 +147,8 @@ export function newDefaultLocalStorages(workdir: string): StoragesSettings {
       type: 'FS',
       indexCachePeriod: '0m',
       rootPath: mainPath,
+      allowRemoteAccess: true,
+      externalURL: externalURL,
     },
   };
 
@@ -151,6 +162,8 @@ export function newDefaultLocalStorages(workdir: string): StoragesSettings {
       type: 'FS',
       indexCachePeriod: '1m',
       rootPath: workPath,
+      allowRemoteAccess: false,
+      externalURL: '',
     },
   };
 
