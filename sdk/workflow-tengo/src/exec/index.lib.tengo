@@ -759,12 +759,15 @@ builder := func() {
 			}
 
 			serviceExecInputs := {}
-			if feats.workdirLimits || feats.computeLimits {
-				serviceExecInputs.quota = limits.quotaBuilder().
-					queue(queue).
-					cpu(cpuRequest). // 'undefined' value is OK and makes runner to apply default queue limits
-					ram(ramRequest). // 'undefined' value is OK and makes runner to apply default queue limits
-					build()
+			if feats.workdirLimits || feats.computeLimits || limits.useBatch(queue) {
+				if (is_int(ramRequest)) {
+					ramRequest = string(ramRequest) + "b"
+				}
+				serviceExecInputs.quota = {
+					queue: queue,
+					cpu: cpuRequest,
+					ram: ramRequest
+				}
 			}
 
 			// We add monetization only if it's enabled

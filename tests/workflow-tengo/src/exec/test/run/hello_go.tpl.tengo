@@ -11,8 +11,11 @@ self.defineOutputs(["main"])
 sw := assets.importSoftware("@platforma-open/milaboratories.software-small-binaries:hello-world")
 
 self.body(func(inputs) {
+	/* Checks, that default limits are applied based
+	 * on queue block developer choses when bulding the command */
 	run := exec.builder().
         software(sw).
+		inLightQueue().
 		arg(inputs.text).
 		saveStdoutContent().
 		run()

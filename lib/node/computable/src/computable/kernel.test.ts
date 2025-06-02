@@ -1,3 +1,4 @@
+import { test } from 'vitest';
 import { ComputableKernel, UnwrapComputables } from './kernel';
 
 type AssertEqual<T, Expected> = [T] extends [Expected]

@@ -1,4 +1,4 @@
-import { deepClone, isJsonEqual } from '@milaboratories/helpers';
+import { clamp, deepClone, isJsonEqual, tap } from '@milaboratories/helpers';
 import type { Mutable } from '@milaboratories/helpers';
 import type { NavigationState, BlockOutputsBase, BlockState, Platforma } from '@platforma-sdk/model';
 import { reactive, nextTick, computed, watch } from 'vue';
@@ -54,9 +54,9 @@ export function createApp<
     navigationState: Readonly<NavigationState<Href>>;
   };
 
-  const debounceSpan = settings.debounceSpan ?? 100;
+  const debounceSpan = settings.debounceSpan ?? 200;
 
-  const maxWait = settings.debounceMaxWait ?? 1000;
+  const maxWait = tap(settings.debounceMaxWait ?? 0, (v) => v < 20_000 ? 20_000 : v < debounceSpan ? debounceSpan * 100 : v);
 
   const setBlockArgs = useDebounceFn((args: Args) => {
     if (!isJsonEqual(args, snapshot.args)) {
@@ -72,6 +72,7 @@ export function createApp<
 
   const setBlockArgsAndUiState = useDebounceFn((args: Args, ui: UiState) => {
     if (!isJsonEqual(args, snapshot.args) || !isJsonEqual(ui, snapshot.ui)) {
+      console.log('onSave args debounced', JSON.stringify(args));
       platforma.setBlockArgsAndUiState(args, ui);
     }
   }, debounceSpan, { maxWait });

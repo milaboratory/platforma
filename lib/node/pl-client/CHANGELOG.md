@@ -1,5 +1,11 @@
 # @milaboratories/pl-client
 
+## 2.9.3
+
+### Patch Changes
+
+- 2d5ee55: Add names to pl-client errors
+
 ## 2.9.2
 
 ### Patch Changes

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { tplTest } from '@platforma-sdk/test';
 
-tplTest('package-loads-and-installs', async ({ helper, expect }) => {
+tplTest.concurrent('package-loads-and-installs', async ({ helper, expect }) => {
   const result = await helper.renderTemplate(
     false,
     'exec.test.pkg.pkg-install',
@@ -20,7 +20,7 @@ tplTest('package-loads-and-installs', async ({ helper, expect }) => {
   expect(descriptor).toHaveProperty('binary');
 });
 
-tplTest('pkg-file-is-exported', async ({ helper, expect, driverKit }) => {
+tplTest.concurrent('pkg-file-is-exported', async ({ helper, expect, driverKit }) => {
   const result = await helper.renderTemplate(
     false,
     'exec.test.pkg.pkg-export',
@@ -52,7 +52,7 @@ tplTest('pkg-file-is-exported', async ({ helper, expect, driverKit }) => {
   expect(assetContent).toEqual(assetData);
 });
 
-tplTest('pkg-file-is-exported', async ({ helper, expect, driverKit }) => {
+tplTest.concurrent('pkg-file-is-exported', async ({ helper, expect, driverKit }) => {
   const result = await helper.renderTemplate(
     false,
     'exec.test.pkg.pkg-export',

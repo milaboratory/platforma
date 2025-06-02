@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 4.7.0
+
+### Minor Changes
+
+- 42a9492: Support batch systems execution in workflows
+
 ## 4.6.5
 
 ### Patch Changes

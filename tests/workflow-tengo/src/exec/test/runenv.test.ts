@@ -1,7 +1,7 @@
 import { Pl } from '@milaboratories/pl-middle-layer';
 import { tplTest } from '@platforma-sdk/test';
 
-tplTest('run-fake-java', async ({ helper, expect }) => {
+tplTest.concurrent('run-fake-java', async ({ helper, expect }) => {
   const customTestText = 'hello from fake java';
 
   const result = await helper.renderTemplate(false, 'exec.test.run.fake_java', ['main'], (tx) => ({
@@ -24,7 +24,7 @@ tplTest('run-fake-java', async ({ helper, expect }) => {
   expect(lines[4].trim()).toBe(`arg[3] = "${customTestText}"`);
 });
 
-tplTest('run-fake-python', async ({ helper, expect }) => {
+tplTest.concurrent('run-fake-python', async ({ helper, expect }) => {
   const customTestText = 'hello from fake python';
 
   const result = await helper.renderTemplate(

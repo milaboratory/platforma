@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/computable",
-  "version": "2.4.9",
+  "version": "2.4.10",
   "engines": {
     "node": ">=20.0.0"
   },
@@ -18,7 +18,7 @@
   "scripts": {
     "type-check": "tsc --noEmit --composite false",
     "build": "vite build",
-    "test": "jest --runInBand",
+    "test": "vitest run",
     "lint": "eslint .",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
@@ -37,9 +37,6 @@
     "@milaboratories/platforma-build-configs": "workspace:*",
     "typescript": "catalog:",
     "vite": "catalog:",
-    "@types/jest": "catalog:",
-    "jest": "catalog:",
-    "@jest/globals": "catalog:",
-    "ts-jest": "catalog:"
+    "vitest": "catalog:"
   }
 }

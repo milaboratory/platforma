@@ -42,13 +42,22 @@ _runBinaryCommand := func(inputs) {
 
 	quota := inputs.quota
 
-	storageSpace := undefined
-	if !is_undefined(quota) && feats.workdirLimits {
-		storageSpace = limits.storageSpaceRequestBuilder().
-			quota(quota).
+	if !is_undefined(quota) && (feats.workdirLimits || limits.useBatch(quota.queue)) {
+		quotaBuilder := limits.quotaBuilder().
+			cpu(quota.cpu).
+			ram(quota.ram)
+
+		if limits.useBatch(quota.queue) {
+			quotaBuilder.queue(constants.BATCH_QUEUE)
+		} else {
+			quotaBuilder.queue(quota.queue)
+		}
+
+		storageSpaceRef := limits.storageSpaceRequestBuilder().
+			quota(quotaBuilder.build()).
 			build()
 
-		wdBuilder.allocation(storageSpace.allocation)
+		wdBuilder.allocation(storageSpaceRef.allocation)
 	}
 
 	// add files
@@ -104,6 +113,21 @@ _runBinaryCommand := func(inputs) {
 	//
 
 	runBuilder := execInternal.prepareCommandRun(wdForCmd, opts)
+
+	if !is_undefined(quota) && (feats.computeLimits || limits.useBatch(quota.queue)) {
+		quotaRef := limits.quotaBuilder().
+			queue(opts.queue).
+			cpu(quota.cpu).
+			ram(quota.ram).
+			build()
+
+		computeRequestRef := limits.computeRequestBuilder().
+			quota(quotaRef).
+			queue(opts.queue).
+			build()
+
+		runBuilder.allocation(computeRequestRef.allocation)
+	}
 
 	// Load secrets
 	for envName, secretVar in inputs.runOptions.secrets {
@@ -223,7 +247,11 @@ self.validateInputs({
 	"assetCache,?": { any: "number" },
 
 	// Service inputs
-	"quota,?": validation.resource()
+	"quota,?": {
+		queue: "string",
+		"cpu,?": "number",
+		"ram,?": "string"
+	}
 })
 
 self.body(func(inputs) {

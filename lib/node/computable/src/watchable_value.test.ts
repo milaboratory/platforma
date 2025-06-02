@@ -1,4 +1,4 @@
-import { test, expect } from '@jest/globals';
+import { test, expect } from 'vitest';
 import { WatchableValue } from './watchable_value';
 import { Computable } from './computable/computable';
 
@@ -23,7 +23,9 @@ test('simple observable', async () => {
   obs1.setValue(2);
   expect(c.isChanged()).toEqual(true);
   const fullValue = await c.getValueOrError();
-  if (fullValue.type !== 'ok') fail();
+  if (fullValue.type !== 'ok') {
+    throw new Error('getValueOrError did not return "ok" status');
+  }
   expect(fullValue.value).toEqual(2);
 
   obs2.setValue(1);

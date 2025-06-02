@@ -3,7 +3,7 @@ import { Pl, field, resourceType } from '@milaboratories/pl-middle-layer';
 import { awaitStableState, tplTest } from '@platforma-sdk/test';
 import { assertBlob, assertResource, eTplTest } from './extended_tpl_test';
 
-tplTest.for([
+tplTest.concurrent.for([
   {
     name: '[0]',
     nested: false,

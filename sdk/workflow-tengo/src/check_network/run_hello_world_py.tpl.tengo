@@ -8,6 +8,7 @@ helloWorldPySW := assets.importSoftware("@platforma-open/milaboratories.software
 
 self.body(func(inputs) {
 	run := exec.builder().
+		cpu(1).ram("100Mi").
 		software(helloWorldPySW).
 		arg(inputs.name).
 		saveStdoutContent().

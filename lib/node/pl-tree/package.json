@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-tree",
-  "version": "1.6.3",
+  "version": "1.6.5",
   "description": "Reactive pl tree state",
   "engines": {
     "node": ">=20.16.0"
