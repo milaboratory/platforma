@@ -28,6 +28,7 @@ import { StackedBarPage } from './pages/StackedBarPage';
 import PlSplashPage from './pages/PlSplashPage.vue';
 import PlAutocompletePage from './pages/PlAutocompletePage.vue';
 import RadioPage from './pages/RadioPage.vue';
+import PlFileInputPage from './pages/PlFileInputPage.vue';
 
 export const sdkPlugin = defineApp(platforma, (app) => {
   // Additional data
@@ -92,6 +93,7 @@ export const sdkPlugin = defineApp(platforma, (app) => {
       '/pl-ag-data-table': () => PlAgDataTablePage,
       '/pl-ag-data-table-v2': () => PlAgDataTableV2Page,
       '/pl-splash-page': () => PlSplashPage,
+      '/pl-file-input-page': () => PlFileInputPage,
       '/select-files': () => SelectFilesPage,
       '/errors': () => ErrorsPage,
       '/text-fields': () => PlTextFieldPage,
