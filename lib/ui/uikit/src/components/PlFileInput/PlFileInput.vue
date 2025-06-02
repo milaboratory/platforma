@@ -55,7 +55,7 @@ const props = withDefaults(
     /**
      * An error message to display below the input field.
      */
-    error?: string;
+    error?: string | { message: string };
     /**
      * A helper text to display below the input field when there are no errors.
      */
@@ -107,9 +107,27 @@ const isUploading = computed(() => props.progress && !props.progress.done);
 
 const isUploaded = computed(() => props.progress && props.progress.done);
 
-const computedError = computed(() => data.error ?? props.error);
+const computedError = computed(() => {
+  let message: undefined | string = undefined;
 
-const hasErrors = computed(() => !!computedError.value);
+  if (data.error.length > 0) {
+    message = data.error;
+  } else if (typeof props.error === 'string') {
+    message = props.error;
+  } else if (typeof props.error === 'object' && typeof props.error.message === 'string') {
+    message = props.error.message;
+  } else if (props.error != null) {
+    message = `Unknown error type: ${props.error}`;
+  }
+
+  if (typeof message === 'string' && message.length === 0) {
+    message = 'Empty error';
+  }
+
+  return message;
+});
+
+const hasErrors = computed(() => typeof computedError.value === 'string' && computedError.value.length > 0);
 
 const uploadStats = computed(() => {
   const { status, done } = props.progress ?? {};
