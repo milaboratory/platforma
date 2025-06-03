@@ -166,3 +166,15 @@ export function exclusiveRequest<A, R>(request: (...args: A[]) => Promise<R>) {
     };
   };
 }
+
+function tryDo<R1>(fn: () => R1): R1 | undefined
+function tryDo<R1, R2>(fn: () => R1, fallback?: () => R2): R1 | R2
+function tryDo<R1, R2>(fn: () => R1, fallback?: () => R2) {
+  try {
+    return fn();
+  } catch (cause: unknown) {
+    return fallback?.()
+  }
+}
+
+export { tryDo };

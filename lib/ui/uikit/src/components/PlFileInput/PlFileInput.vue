@@ -9,7 +9,7 @@ import type { ImportFileHandle, ImportProgress } from '@platforma-sdk/model';
 import { getFileNameFromHandle, getFilePathFromHandle } from '@platforma-sdk/model';
 import DoubleContour from '@/utils/DoubleContour.vue';
 import { useLabelNotch } from '@/utils/useLabelNotch';
-import { prettyBytes } from '@milaboratories/helpers';
+import { prettyBytes, tryDo } from '@milaboratories/helpers';
 
 const data = reactive({
   fileDialogOpen: false,
@@ -55,7 +55,7 @@ const props = withDefaults(
     /**
      * An error message to display below the input field.
      */
-    error?: string;
+    error?: unknown;
     /**
      * A helper text to display below the input field when there are no errors.
      */
@@ -99,6 +99,10 @@ const tryValue = <T extends ImportFileHandle>(v: T | undefined, cb: (v: T) => st
   }
 };
 
+const isErrorObject = (error: unknown): error is { message: string } => {
+  return typeof error === 'object' && error != null && 'message' in error && typeof error.message === 'string';
+};
+
 const fileName = computed(() => tryValue(props.modelValue, getFileNameFromHandle));
 
 const filePath = computed(() => tryValue(props.modelValue, getFilePathFromHandle));
@@ -107,9 +111,28 @@ const isUploading = computed(() => props.progress && !props.progress.done);
 
 const isUploaded = computed(() => props.progress && props.progress.done);
 
-const computedError = computed(() => data.error ?? props.error);
+const computedError = computed(() => {
+  let message: undefined | string = undefined;
 
-const hasErrors = computed(() => !!computedError.value);
+  if (data.error.length > 0) {
+    message = data.error;
+  } else if (typeof props.error === 'string') {
+    message = props.error;
+  } else if (isErrorObject(props.error)) {
+    message = props.error.message;
+  } else if (props.error != null) {
+    const unknownString = tryDo(() => JSON.stringify(props.error, null, 4), () => String(props.error));
+    message = `Unknown error type:\n${unknownString}`;
+  }
+
+  if (typeof message === 'string' && message.length === 0) {
+    message = 'Empty error';
+  }
+
+  return message;
+});
+
+const hasErrors = computed(() => typeof computedError.value === 'string' && computedError.value.length > 0);
 
 const uploadStats = computed(() => {
   const { status, done } = props.progress ?? {};
