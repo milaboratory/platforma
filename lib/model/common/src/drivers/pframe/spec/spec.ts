@@ -186,7 +186,11 @@ export type AxesId = AxisId[];
 /** Extracts axis ids from axis spec */
 export function getAxisId(spec: AxisSpec): AxisId {
   const { type, name, domain } = spec;
-  return { type, name, ...(domain && { domain }) };
+  const result = { type, name };
+  if (domain && Object.entries(domain).length > 0) {
+    Object.assign(result, { domain });
+  }
+  return result;
 }
 
 /** Extracts axes ids from axes spec array from column spec */
