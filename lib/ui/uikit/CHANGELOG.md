@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.77
+
+### Patch Changes
+
+- a23199f: PlFileInput support custom errors
+
 ## 2.2.76
 
 ### Patch Changes
