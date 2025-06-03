@@ -36,6 +36,8 @@ import type { LRUCache } from 'lru-cache';
 import type { ResourceDataCacheRecord } from './cache';
 import type { TxStat } from './stat';
 import { initialTxStat } from './stat';
+import type { ErrorResourceData } from './error_resource';
+import { ErrorResourceType } from './error_resource';
 
 /** Reference to resource, used only within transaction */
 export interface ResourceRef {
@@ -440,6 +442,10 @@ export class PlTransaction {
     );
   }
 
+  public createError(message: string): ResourceRef {
+    return this.createValue(ErrorResourceType, JSON.stringify({ message } satisfies ErrorResourceData));
+  }
+
   public setResourceName(name: string, rId: AnyResourceRef): void {
     this.sendVoidAsync({
       oneofKind: 'resourceNameSet',
@@ -628,6 +634,13 @@ export class PlTransaction {
   public lock(rID: AnyResourceRef): void {
     this.lockInputs(rID);
     this.lockOutputs(rID);
+  }
+
+  public setResourceError(rId: AnyResourceRef, ref: AnyResourceRef): void {
+    this.sendVoidAsync({
+      oneofKind: 'resourceSetError',
+      resourceSetError: { resourceId: toResourceId(rId), errorResourceId: toResourceId(ref) },
+    });
   }
 
   //

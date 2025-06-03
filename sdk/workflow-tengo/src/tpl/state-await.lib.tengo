@@ -7,6 +7,7 @@ tx := import("tx")
 ll := import(":ll")
 text := import("text")
 regexp := import(":regexp")
+smart := import(":smart")
 
 createContext := func() {
 	return {
@@ -14,6 +15,9 @@ createContext := func() {
 		resolvedStates: {}
 	}
 }
+
+// temporary used until we have all the events exposed to tengo
+RTYPE_AWAITER := { Name: "awaiter", Version: "1" }
 
 awaitOneState := func(field, path, state) {
 	if field.isErrorSet() && !field.isValueSet() {
@@ -157,7 +161,7 @@ awaitOneState := func(field, path, state) {
 						}]
 					}
 				}
-			} else if state == "ResourceReady" {
+			} else if state == "ResourceReady" || state == "Final" {
 				// What user actually wants is to wait for the resource to be in final state,
 				// so we use isFinal() instead of resourceReady
 				if resource.isFinal() {
@@ -167,7 +171,7 @@ awaitOneState := func(field, path, state) {
 						type: "Subscribe",
 						subscriptions: [{
 							resource: resource.id,
-							event: "ResourceReady"
+							event: "Final" // will also effectively subscribe to ResourceDuplicate and ResourceError
 						}]
 					}
 				}
@@ -177,6 +181,8 @@ awaitOneState := func(field, path, state) {
 		}
 	}
 }
+
+_renderer := smart.resource(ll.getCurrentTemplateRenderer())
 
 /** Returns true if all requested states are reached */
 await := func(rootField, ctxStorageResource, requests) {
@@ -227,9 +233,28 @@ await := func(rootField, ctxStorageResource, requests) {
 			// don't create subscription, if it was created in the past
 			continue
 		}
+
+		fullEventId := pssKey + ":" + key
+		targetResource := sub.resource
+		targetEvents := [sub.event]
+
+		if sub.event == "Final" { // special case
+			// special hack for ResourceReady event until there is no ResourceDuplicate event support
+			//, "ResourceDuplicate"
+			// awaiterBuilder := smart.ephemeralBuilder(RTYPE_AWAITER)
+			awaiterBuilder := smart.structBuilder(RTYPE_AWAITER, fullEventId)
+			awaiterBuilder.createInputField("target").set(smart.resource(targetResource))
+			awaiter := awaiterBuilder.lockAndBuild()
+			_renderer.createDynamicField("tmp:" + fullEventId).set(awaiter)
+			targetResource = awaiter.id
+			targetEvents = ["ResourceReady", "ResourceError"]
+		}
+
 		e := {}
-		e[sub.event] = true
-		tx.subscribeTo(sub.resource, pssKey + ":" + key, e)
+		for event in targetEvents {
+			e[event] = true
+		}
+		tx.subscribeTo(targetResource, fullEventId, e)
 	}
 
 	// unsubscribing from subscriptions we don't need anymore

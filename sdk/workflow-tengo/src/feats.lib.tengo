@@ -37,5 +37,6 @@ export ll.toStrict({
 	pureFutureFields:           _isEnabled("pureFutureFields")   || _api >= 1, // 'pure' future fields magic that provides deduplication
 	commandExpressions:         _isEnabled("commandExpressions") || _api >= 2, // rich expressions in command arguments ( {{ system.ram_bytes / 20 }} )
 	workdirLimits:              _isEnabled("workdirLimits")      || _api >= 4, // workdir storage controller can limit concurrency
-	computeLimits:              _isEnabled("computeLimits")                    // runner can plan CPU and RAM
+	computeLimits:              _isEnabled("computeLimits"),                   // runner can plan CPU and RAM
+	resourceDuplicateEvent:     false                                          // template can subscribe to ResourceDuplicate event
 })
