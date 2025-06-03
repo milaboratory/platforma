@@ -8,6 +8,8 @@ ll := import(":ll")
 text := import("text")
 regexp := import(":regexp")
 smart := import(":smart")
+maps := import(":maps")
+feats := import(":feats")
 
 createContext := func() {
 	return {
@@ -189,14 +191,14 @@ await := func(rootField, ctxStorageResource, requests) {
 	pssKey := "await:" + string(rootField.id.ResourceID) + ":" + rootField.id.Name
 	prevSubscriptions := ctxStorageResource.kvGetAsJson(pssKey)
 
-	if !is_undefined(prevSubscriptions) && len(prevSubscriptions) == 0 {
-		// initialization was finished before, in a previous template execution
-		ll.panic("Unexpected state, desired state was reached in the previous call")
-	}
-
-	if is_undefined(prevSubscriptions) {
-		// initializing previous subscriptions set
-		prevSubscriptions = {}
+	lastSubscriptionKey := undefined
+	if !is_undefined(prevSubscriptions) {
+		if is_undefined(prevSubscriptions.lastSubscriptionKey) {
+			// initialization was finished before, in a previous template execution
+			ll.panic("Unexpected state, desired state was reached in the previous call")
+		} else {
+			lastSubscriptionKey = prevSubscriptions.lastSubscriptionKey
+		}
 	}
 
 	subscriptions := {}
@@ -227,27 +229,53 @@ await := func(rootField, ctxStorageResource, requests) {
 		}
 	}
 
-	// creating new subscriptions
-	for key, sub in subscriptions {
-		if !is_undefined(prevSubscriptions[key]) {
-			// don't create subscription, if it was created in the past
-			continue
+	//
+	// Our goal is to reach all await states, so we can subscribe to any of the subscriptions,
+	// and check the state again when it fires.
+	//
+
+	// Here we check, if there are any subscriptions that were already created in the past
+	// if yes, we don't need to create new subscriptions. If no intersection, we will
+	// subscribe to the first subscription.
+	firstSubscriptionKey := undefined
+	firstSubscription := undefined
+	maps.forEach(subscriptions, func(key, sub) {
+		if is_undefined(firstSubscriptionKey) {
+			firstSubscriptionKey = key
+			firstSubscription = sub
 		}
+		if !is_undefined(lastSubscriptionKey) && lastSubscriptionKey == key {
+			// there is an intersection, so we don't need to create new subscriptions,
+			// we just continue to wait for the previously awaited state to be reached
+			return false
+		}
+	})
 
-		fullEventId := pssKey + ":" + key
-		targetResource := sub.resource
-		targetEvents := [sub.event]
+	// subscribing to the first subscription from the list
+	if !is_undefined(firstSubscriptionKey) {
 
-		if sub.event == "Final" { // special case
-			// special hack for ResourceReady event until there is no ResourceDuplicate event support
-			//, "ResourceDuplicate"
-			// awaiterBuilder := smart.ephemeralBuilder(RTYPE_AWAITER)
-			awaiterBuilder := smart.structBuilder(RTYPE_AWAITER, fullEventId)
-			awaiterBuilder.createInputField("target").set(smart.resource(targetResource))
-			awaiter := awaiterBuilder.lockAndBuild()
-			_renderer.createDynamicField("tmp:" + fullEventId).set(awaiter)
-			targetResource = awaiter.id
-			targetEvents = ["ResourceReady", "ResourceError"]
+		fullEventId := pssKey + ":" + firstSubscriptionKey
+		targetResource := firstSubscription.resource
+		targetEvents := [firstSubscription.event]
+
+		if firstSubscription.event == "Final" { // special case
+			if !feats.resourceDuplicateEvent {
+
+				//
+				// TODO: special hack for ResourceReady event until there is no ResourceDuplicate event support
+				// Should be safe to remove after ~2026-01-01
+				//
+
+				awaiterBuilder := smart.ephemeralBuilder(RTYPE_AWAITER)
+				awaiterBuilder.createInputField("target").set(smart.resource(targetResource))
+				awaiter := awaiterBuilder.lockAndBuild()
+				_renderer.createDynamicField("tmp:" + fullEventId).set(awaiter)
+				targetResource = awaiter.info().ID // converting to global resource id; this is a hack to overcome the fact that tx.subscribeTo can't work with local ids
+				targetEvents = ["ResourceReady", "ResourceError"]
+
+			} else {
+				targetEvents = ["ResourceReady", "ResourceError", "ResourceDuplicate"]
+			}
 		}
 
 		e := {}
@@ -255,26 +283,23 @@ await := func(rootField, ctxStorageResource, requests) {
 			e[event] = true
 		}
 		tx.subscribeTo(targetResource, fullEventId, e)
+
 	}
 
-	// unsubscribing from subscriptions we don't need anymore
-	for key, _ in prevSubscriptions {
-		if !is_undefined(subscriptions[key]) {
-			// don't unsubscribe from subscriptions, we still need
-			continue
-		}
-		tx.unsubscribeFrom(pssKey + ":" + key)
+	// unsubscribing from previous subscriptions we don't need anymore
+	if !is_undefined(lastSubscriptionKey) {
+		tx.unsubscribeFrom(pssKey + ":" + lastSubscriptionKey)
 	}
 
-	// creating and saving new context; savong only keys
+	// creating and saving new context
 	newPrevSubscriptions := {}
-	for key, _ in subscriptions {
-		newPrevSubscriptions[key] = true
+	if !is_undefined(firstSubscriptionKey) {
+		newPrevSubscriptions.lastSubscriptionKey = firstSubscriptionKey
 	}
 	// saving the context
 	ctxStorageResource.kvSetJson(pssKey, newPrevSubscriptions)
 
-	return len(subscriptions) == 0
+	return is_undefined(firstSubscriptionKey)
 }
 
 export ll.toStrict({
