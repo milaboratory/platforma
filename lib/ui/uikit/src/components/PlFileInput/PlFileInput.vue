@@ -9,7 +9,7 @@ import type { ImportFileHandle, ImportProgress } from '@platforma-sdk/model';
 import { getFileNameFromHandle, getFilePathFromHandle } from '@platforma-sdk/model';
 import DoubleContour from '@/utils/DoubleContour.vue';
 import { useLabelNotch } from '@/utils/useLabelNotch';
-import { prettyBytes } from '@milaboratories/helpers';
+import { prettyBytes, tryDo } from '@milaboratories/helpers';
 
 const data = reactive({
   fileDialogOpen: false,
@@ -121,7 +121,8 @@ const computedError = computed(() => {
   } else if (isErrorObject(props.error)) {
     message = props.error.message;
   } else if (props.error != null) {
-    message = `Unknown error type:\n${JSON.stringify(props.error, null, 4)}`;
+    const unknownString = tryDo(() => JSON.stringify(props.error, null, 4), () => String(props.error));
+    message = `Unknown error type:\n${unknownString}`;
   }
 
   if (typeof message === 'string' && message.length === 0) {
