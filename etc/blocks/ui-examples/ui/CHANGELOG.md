@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.4.2
+
+### Patch Changes
+
+- a23199f: PlFileInput support custom errors
+
 ## 1.4.1
 
 ### Patch Changes
