@@ -99,19 +99,19 @@ awaitOneState := func(field, path, state) {
 			}
 
 			subscriptions := []
-			for nextFieldName, nextField in resource.inputs() {
+			maps.forEach(resource.inputs(), func(nextFieldName, nextField) {
 				if !matcher(nextFieldName) {
-					continue
+					return
 				}
 				res := awaitOneState(nextField, rPath, state)
 				if res.type == "Ready" {
-					continue
+					return
 				} else if res.type == "Subscribe" {
 					subscriptions = append(subscriptions, res.subscriptions...)
 				} else {
 					ll.panic("Unknown result type: %v", res.type)
 				}
-			}
+			})
 			if len(subscriptions) == 0 {
 				return { type: "Ready" }
 			} else {
@@ -239,17 +239,22 @@ await := func(rootField, ctxStorageResource, requests) {
 	// subscribe to the first subscription.
 	firstSubscriptionKey := undefined
 	firstSubscription := undefined
+	lastSubscriptionKeyPresent := false
 	maps.forEach(subscriptions, func(key, sub) {
 		if is_undefined(firstSubscriptionKey) {
 			firstSubscriptionKey = key
 			firstSubscription = sub
 		}
 		if !is_undefined(lastSubscriptionKey) && lastSubscriptionKey == key {
-			// there is an intersection, so we don't need to create new subscriptions,
-			// we just continue to wait for the previously awaited state to be reached
-			return false
+			lastSubscriptionKeyPresent = true
 		}
 	})
+
+	// there is an intersection, so we don't need to create new subscriptions,
+	// we just continue to wait for the previously awaited state to be reached
+	if lastSubscriptionKeyPresent {
+		return false
+	}
 
 	// subscribing to the first subscription from the list
 	if !is_undefined(firstSubscriptionKey) {
