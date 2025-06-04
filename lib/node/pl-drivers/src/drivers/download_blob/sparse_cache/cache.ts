@@ -1,5 +1,5 @@
 import { RangeBytes } from '@milaboratories/pl-model-common';
-import { fileExists, mapEntries, MiLogger } from '@milaboratories/ts-helpers';
+import { ensureDirExists, fileExists, mapEntries, MiLogger } from '@milaboratories/ts-helpers';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { addRange, existRange, Ranges, rangesFileName, rangesFilePostfix, rangesSize, readRangesFile, writeRangesFile } from './ranges';
@@ -60,6 +60,7 @@ export class SparseCacheFsFile implements SparseFile {
   }
 
   async write(key: string, data: Uint8Array, from: number): Promise<void> {
+    await ensureDirExists(this.cacheDir);
     await writeToSparseFile(this.logger, process.platform, this.path(key), data, from);
   }
 
@@ -83,6 +84,8 @@ export class SparseCache {
   ) {}
 
   public async initFromDir(cacheDir: string) {
+    await ensureDirExists(cacheDir);
+
     const now = new Date();
     for (const file of await fs.readdir(cacheDir)) {
       if (file.endsWith(rangesFilePostfix)) {
