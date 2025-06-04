@@ -5,7 +5,7 @@ export default {
 </script>
 
 <script lang="ts" setup>
-import { PlIcon16 } from '@/components/PlIcon16';
+import { PlMaskIcon16 } from '@/components/PlMaskIcon16';
 import type { Size } from '@/types.ts';
 import { computed, onUnmounted, ref } from 'vue';
 
@@ -36,7 +36,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <PlIcon16 :name="iconName" :size="props.size" :class="$style.copy" @click="onCopy" />
+  <PlMaskIcon16 :name="iconName" :size="props.size" :class="$style.copy" @click="onCopy" />
 </template>
 
 <style module>

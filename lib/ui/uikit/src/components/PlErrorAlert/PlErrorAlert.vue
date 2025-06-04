@@ -5,15 +5,23 @@ export default {
 </script>
 
 <script lang="ts" setup>
-import { PlIcon16 } from '@/components/PlIcon16';
 import { PlClipboard } from '@/components/PlClipboard';
+import { PlMaskIcon16 } from '@/components/PlMaskIcon16';
 
-const props = defineProps<{
-  title?: string;
-  message?: string;
-  maxHeight?: string;
-  copyMessage?: string;
-}>();
+const props = withDefaults(
+  defineProps<{
+    title?: string;
+    message?: string;
+    maxHeight?: string;
+    copyMessage?: string;
+  }>(),
+  {
+    title: undefined,
+    message: undefined,
+    maxHeight: '300px',
+    copyMessage: undefined,
+  },
+);
 
 function onCopy() {
   const value = props.copyMessage ?? props.message;
@@ -24,11 +32,11 @@ function onCopy() {
 </script>
 
 <template>
-  <div :style="{ maxHeight: props.maxHeight }" class="root">
+  <div :style="{ maxHeight: props.maxHeight }" :class="$style.root">
     <PlClipboard :class="$style.copy" @copy="onCopy" />
     <slot name="title">
       <div :class="$style.title">
-        <PlIcon16 name="warning" />
+        <PlMaskIcon16 :class="$style.titleIcon" name="warning" />
         <div :class="$style.titleText">{{ props.title }}</div>
       </div>
     </slot>
@@ -58,7 +66,12 @@ function onCopy() {
   position: absolute;
   right: 12px;
   top: 12px;
-  background: var(--txt-error);
+  opacity: 0.4;
+  transition: opacity 0.3s;
+
+  &:hover {
+    opacity: 1;
+  }
 }
 
 .title {
@@ -71,6 +84,10 @@ function onCopy() {
   overflow: hidden;
 }
 
+.titleIcon {
+  background-color: var(--txt-error);
+}
+
 .titleText {
   width: 100%;
   overflow: hidden;
@@ -78,6 +95,8 @@ function onCopy() {
 }
 
 .message {
+  overflow: auto;
+  max-height: 100%;
   white-space: pre-wrap;
   word-break: break-word;
 }
