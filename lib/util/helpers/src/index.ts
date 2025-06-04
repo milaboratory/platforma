@@ -12,6 +12,7 @@ export * from './collections';
 export * from './functions';
 export * from './types';
 export * from './regexp';
+export * from './error';
 
 export {
   utils,
