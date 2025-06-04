@@ -6,11 +6,7 @@
 /state/
 /src/.test
 .test
-/test-assets/!simple-server.js
 
-/test-assets/log.txt
-/test-assets/private-key.private
-/test-assets/pub-key.pub
 /test-assets/*
 !/test-assets/simple-server.js
 
