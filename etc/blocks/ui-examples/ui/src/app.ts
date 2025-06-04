@@ -29,6 +29,7 @@ import PlSplashPage from './pages/PlSplashPage.vue';
 import PlAutocompletePage from './pages/PlAutocompletePage.vue';
 import RadioPage from './pages/RadioPage.vue';
 import PlFileInputPage from './pages/PlFileInputPage.vue';
+import PlErrorBoundaryPage from './pages/PlErrorBoundaryPage.vue';
 
 export const sdkPlugin = defineApp(platforma, (app) => {
   // Additional data
@@ -94,6 +95,7 @@ export const sdkPlugin = defineApp(platforma, (app) => {
       '/pl-ag-data-table-v2': () => PlAgDataTableV2Page,
       '/pl-splash-page': () => PlSplashPage,
       '/pl-file-input-page': () => PlFileInputPage,
+      '/pl-error-boundary-page': () => PlErrorBoundaryPage,
       '/select-files': () => SelectFilesPage,
       '/errors': () => ErrorsPage,
       '/text-fields': () => PlTextFieldPage,

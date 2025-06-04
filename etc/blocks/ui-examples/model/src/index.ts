@@ -236,6 +236,7 @@ export const platforma = BlockModel.create('Heavy')
       { type: 'link', href: '/pl-ag-data-table-v2', label: 'PlAgDataTableV2' },
       { type: 'link', href: '/pl-splash-page', label: 'PlSplashPage' },
       { type: 'link', href: '/pl-file-input-page', label: 'PlFileInputPage' },
+      { type: 'link', href: '/pl-error-boundary-page', label: 'PlErrorBoundaryPage' },
       { type: 'link', href: '/errors', label: 'Errors' },
       { type: 'link', href: '/text-fields', label: 'PlTextField' },
       { type: 'link', href: '/tabs', label: 'PlTabs' },

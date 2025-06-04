@@ -9,7 +9,7 @@ import type { ImportFileHandle, ImportProgress } from '@platforma-sdk/model';
 import { getFileNameFromHandle, getFilePathFromHandle } from '@platforma-sdk/model';
 import DoubleContour from '@/utils/DoubleContour.vue';
 import { useLabelNotch } from '@/utils/useLabelNotch';
-import { prettyBytes, tryDo } from '@milaboratories/helpers';
+import { isErrorLike, prettyBytes, tryDo } from '@milaboratories/helpers';
 
 const data = reactive({
   fileDialogOpen: false,
@@ -25,52 +25,52 @@ const emit = defineEmits<{
 const props = withDefaults(
   defineProps<{
     /**
-     * The current import file handle.
-     */
+       * The current import file handle.
+       */
     modelValue: ImportFileHandle | undefined;
     /**
-     * The label to display above the input field.
-     */
+       * The label to display above the input field.
+       */
     label?: string;
     /**
-     * If `true`, the input field is marked as required.
-     */
+       * If `true`, the input field is marked as required.
+       */
     required?: boolean;
     /**
-     * If `true`, the component border is dashed.
-     */
+       * If `true`, the component border is dashed.
+       */
     dashed?: boolean;
     /**
-     * Allowed file extensions (should start with `.`)
-     */
+       * Allowed file extensions (should start with `.`)
+       */
     extensions?: string[];
     /**
-     * Placeholder text
-     */
+       * Placeholder text
+       */
     placeholder?: string;
     /**
-     * Import/Upload progress
-     */
+       * Import/Upload progress
+       */
     progress?: ImportProgress;
     /**
-     * An error message to display below the input field.
-     */
+       * An error message to display below the input field.
+       */
     error?: unknown;
     /**
-     * A helper text to display below the input field when there are no errors.
-     */
+       * A helper text to display below the input field when there are no errors.
+       */
     helper?: string;
     /**
-     * Remove rounded border and change styles
-     */
+       * Remove rounded border and change styles
+       */
     cellStyle?: boolean;
     /**
-     * File dialog title
-     */
+       * File dialog title
+       */
     fileDialogTitle?: string;
     /**
-     * If `true`, the file dialog window closes when clicking outside the modal area (default: `true`)
-     */
+       * If `true`, the file dialog window closes when clicking outside the modal area (default: `true`)
+       */
     fileDialogCloseOnOutsideClick?: boolean;
   }>(),
   {
@@ -99,10 +99,6 @@ const tryValue = <T extends ImportFileHandle>(v: T | undefined, cb: (v: T) => st
   }
 };
 
-const isErrorObject = (error: unknown): error is { message: string } => {
-  return typeof error === 'object' && error != null && 'message' in error && typeof error.message === 'string';
-};
-
 const fileName = computed(() => tryValue(props.modelValue, getFileNameFromHandle));
 
 const filePath = computed(() => tryValue(props.modelValue, getFilePathFromHandle));
@@ -118,7 +114,7 @@ const computedError = computed(() => {
     message = data.error;
   } else if (typeof props.error === 'string') {
     message = props.error;
-  } else if (isErrorObject(props.error)) {
+  } else if (isErrorLike(props.error)) {
     message = props.error.message;
   } else if (props.error != null) {
     const unknownString = tryDo(() => JSON.stringify(props.error, null, 4), () => String(props.error));
@@ -191,13 +187,13 @@ if (!props.cellStyle) {
   <div :class="{ 'pl-file-input__cell-style': !!cellStyle, 'has-file': !!fileName }" class="pl-file-input__envelope">
     <div
       ref="rootRef"
+      :class="{ dashed, error: hasErrors }"
       class="pl-file-input"
       tabindex="0"
-      :class="{ dashed, error: hasErrors }"
       @keyup.enter="openFileDialog"
       @click.stop="openFileDialog"
     >
-      <div class="pl-file-input__progress" :style="progressStyle" />
+      <div :style="progressStyle" class="pl-file-input__progress" />
       <label v-if="!cellStyle && label" ref="label">
         <i v-if="required" class="required-icon" />
         <span>{{ label }}</span>
@@ -226,9 +222,9 @@ if (!props.cellStyle) {
   </div>
   <PlFileDialog
     v-model="data.fileDialogOpen"
+    :close-on-outside-click="fileDialogCloseOnOutsideClick"
     :extensions="extensions"
     :title="fileDialogTitle"
-    :close-on-outside-click="fileDialogCloseOnOutsideClick"
     @import:files="onImport"
   />
 </template>
