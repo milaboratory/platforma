@@ -1,4 +1,4 @@
-@use "@/assets/mixins" as *;
+@use "../../assets/mixins" as *;
 
 .pl-line-dropdown {
     display: flex;
@@ -57,17 +57,17 @@
         align-items: center;
         min-width: 16px;
         background-color: var(--control-mask-fill);
-        @include mask(url(@/assets/images/16_chevron-down.svg), 16px);
+        @include mask(url(../../assets/images/16_chevron-down.svg), 16px);
     }
 
     &__icon-clear {
-        @include mask(url(@/assets/images/16_clear.svg), 16px);
+        @include mask(url(../../assets/images/16_clear.svg), 16px);
         background-color: var(--color-ic-02);
     }
 
     &.open {
         #{$this}__icon {
-            @include mask(url(@/assets/images/16_chevron-up.svg), 16px);
+            @include mask(url(../../assets/images/16_chevron-up.svg), 16px);
         }
     }
 

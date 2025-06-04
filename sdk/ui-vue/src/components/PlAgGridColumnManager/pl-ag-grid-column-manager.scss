@@ -1,87 +1,86 @@
-@use '@milaboratories/uikit/src/assets/mixins.scss' as *;
+@use '@milaboratories/uikit/styles/mixins' as *;
 
 .pl-ag-columns {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  height: 100%;
+  overflow-y: auto;
+  @include scrollbar(true);
+
+  .sortable__item {
+    border-radius: 6px;
+    box-shadow: 0px 0px 0px 4px rgba(73, 204, 73, 0.24);
+    border-width: 2px;
+  }
+
+  &__drag.handle {
+    cursor: grab;
+  }
+
+  &__drag {
+
+    line-height: 0;
+
+    .mask-16 {
+      background-color: var(--ic-02);
+    }
+  }
+
+  &__item:hover &__visibility {
+    visibility: visible;
+  }
+
+  &__pin {
+    .mask-24 {
+      background-color: var(--ic-02);
+    }
+  }
+
+  &__visibility {
+    cursor: pointer;
+    visibility: hidden;
+
+    .mask-24 {
+      background-color: var(--ic-02);
+
+      &:hover {
+        background-color: var(--ic-01);
+      }
+    }
+  }
+
+  &__item {
+    padding: 10px 12px;
     display: flex;
-    flex-direction: column;
-    gap: 6px;
-    height: 100%;
-    overflow-y: auto;
-    @include scrollbar(true);
+    align-items: center;
+    gap: 8px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color-div-grey);
+    background: var(--bg-elevated-01);
+    height: 40px;
 
-    .sortable__item {
-        border-radius: 6px;
-        box-shadow: 0px 0px 0px 4px rgba(73, 204, 73, 0.24);
-        border-width: 2px;
+
+    &:hover {
+      border-color: var(--border-color-focus);
     }
+  }
 
-    &__drag.handle {
-        cursor: grab;
+  &__item.pinned {
+    background: var(--bg-base-light) !important;
+    border: 1px solid var(--border-color-div-grey);
+  }
+
+  &__title {
+    flex-grow: 1;
+    color: var(--txt-03);
+    text-transform: none;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    text-wrap: nowrap;
+
+    &.visible {
+      color: var(--txt-01);
     }
-
-    &__drag {
-
-        line-height: 0;
-
-        .mask-16 {
-            background-color: var(--ic-02);
-        }
-    }
-
-    &__item:hover &__visibility {
-        visibility: visible;
-    }
-
-    &__pin {
-        .mask-24 {
-            background-color: var(--ic-02);
-        }
-    }
-
-    &__visibility {
-        cursor: pointer;
-        visibility: hidden;
-
-        .mask-24 {
-            background-color: var(--ic-02);
-
-            &:hover {
-                background-color: var(--ic-01);
-            }
-        }
-    }
-
-    &__item {
-        padding: 10px 12px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        border-radius: 6px;
-        border: 1px solid var(--border-color-div-grey);
-        background: var(--bg-elevated-01);
-        height: 40px;
-
-
-
-        &:hover {
-            border-color: var(--border-color-focus);
-        }
-    }
-
-    &__item.pinned {
-        background: var(--bg-base-light) !important;
-        border: 1px solid var(--border-color-div-grey);
-    }
-
-    &__title {
-        flex-grow: 1;
-        color: var(--txt-03);
-        text-transform: none;
-        text-overflow: ellipsis;
-        overflow: hidden;
-        text-wrap: nowrap;
-
-        &.visible {
-            color: var(--txt-01);
-        }
-    }
+  }
 }

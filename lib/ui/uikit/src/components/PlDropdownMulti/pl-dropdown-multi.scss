@@ -1,4 +1,4 @@
-@use "@/assets/mixins" as *;
+@use "../../assets/mixins" as *;
 
 .pl-dropdown-multi {
   $root: &;
@@ -83,8 +83,8 @@
       align-items: center;
       gap: 12px;
 
-      --base-icon: url('@/assets/images/24_checkbox-light-enabled-unchecked.svg');
-      --checked-icon: url('@/assets/images/24_checkbox-light-enabled-checked.svg');
+      --base-icon: url('../../assets/images/24_checkbox-light-enabled-unchecked.svg');
+      --checked-icon: url('../../assets/images/24_checkbox-light-enabled-checked.svg');
 
       .pl-dropdown-multi__checkmark {
         cursor: pointer;
@@ -93,8 +93,8 @@
         @include icon(var(--base-icon), 24px);
 
         [data-theme="dark"] & {
-          --base-icon: url('@/assets/images/24_checkbox-dark-enabled-unchecked.svg');
-          --checked-icon: url('@/assets/images/24_checkbox-dark-enabled-checked.svg');
+          --base-icon: url('../../assets/images/24_checkbox-dark-enabled-unchecked.svg');
+          --checked-icon: url('../../assets/images/24_checkbox-dark-enabled-checked.svg');
         }
       }
 
@@ -219,7 +219,7 @@
     &.arrow-icon-default {
       transition: transform .2s;
       background-color: var(--control-mask-fill);
-      @include mask(url('@/assets/images/16_chevron-down.svg'), 16px);
+      @include mask(url('../../assets/images/16_chevron-down.svg'), 16px);
     }
   }
 
@@ -246,7 +246,7 @@
     @include abs-center-y;
     right: 36px;
     z-index: 1;
-    @include icon(url("@/assets/images/16_clear.svg"), 16px); // @todo mask-image
+    @include icon(url("../../assets/images/16_clear.svg"), 16px); // @todo mask-image
     cursor: pointer;
   }
 
@@ -272,7 +272,7 @@
 
     .arrow {
       background-color: var(--control-mask-fill);
-      @include mask(url(@/assets/images/16_chevron-up.svg), 16px);
+      @include mask(url(../../assets/images/16_chevron-up.svg), 16px);
     }
   }
 

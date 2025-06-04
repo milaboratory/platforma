@@ -2,20 +2,11 @@
   "name": "@milaboratories/uikit",
   "version": "2.2.77",
   "type": "module",
-  "main": "dist/pl-uikit.umd.js",
-  "module": "dist/pl-uikit.js",
-  "types": "dist/src/index.d.ts",
-  "styles": "dist/style.css",
+  "module": "./src/index.ts",
   "exports": {
-    ".": {
-      "style": "./styles/main.css",
-      "types": "./dist/src/index.d.ts",
-      "default": "./dist/pl-uikit.js"
-    },
-    "./styles": {
-      "default": "./dist/style.css"
-    },
-    "./*": "./*"
+    ".": "./src/index.ts",
+    "./styles": "./src/style.css",
+    "./styles/mixins": "./src/assets/mixins.scss"
   },
   "scripts": {
     "dev": "vite",
@@ -47,6 +38,7 @@
     "jsdom": "catalog:",
     "resize-observer-polyfill": "catalog:",
     "@vitejs/plugin-vue": "catalog:",
+    "vite-tsconfig-paths": "catalog:",
     "tsc-alias": "catalog:",
     "vitest": "catalog:",
     "vite": "catalog:",

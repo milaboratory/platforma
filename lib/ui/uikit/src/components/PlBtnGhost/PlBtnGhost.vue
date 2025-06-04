@@ -9,10 +9,10 @@ export default {
 
 <script lang="ts" setup>
 import './pl-btn-ghost.scss';
-import type { MaskIconName24, Size } from '@/types';
-import { PlMaskIcon24 } from '@/components/PlMaskIcon24';
+import type { MaskIconName24, Size } from '../../types';
+import { PlMaskIcon24 } from '../../components/PlMaskIcon24';
 import { computed, ref, useSlots } from 'vue';
-import { useRipple } from '@/composition/useRipple';
+import { useRipple } from '../../composition/useRipple';
 
 const props = withDefaults(
   defineProps<{

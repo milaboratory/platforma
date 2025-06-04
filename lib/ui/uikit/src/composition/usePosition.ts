@@ -1,7 +1,7 @@
 import { type Ref, onMounted } from 'vue';
-import { useEventListener } from '@/composition/useEventListener';
-import { requestTick } from '@/helpers/utils';
-import type { ElementPosition } from '@/types';
+import { useEventListener } from './useEventListener.ts';
+import { requestTick } from '../helpers/utils';
+import type { ElementPosition } from '../types';
 
 export function useElementPosition(el: Ref<HTMLElement | undefined>, cb: (pos: ElementPosition) => void) {
   const update = () => {

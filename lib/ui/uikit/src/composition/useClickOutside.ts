@@ -1,6 +1,6 @@
 import type { Ref } from 'vue';
-import { useEventListener } from '@/composition/useEventListener';
-import { flatValue } from '@/helpers/functions';
+import { useEventListener } from './useEventListener.ts';
+import { flatValue } from '../helpers/functions';
 
 type HtmlRef = Ref<HTMLElement | undefined>;
 

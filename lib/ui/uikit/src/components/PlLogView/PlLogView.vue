@@ -14,8 +14,8 @@ import './pl-log-view.scss';
 import { okOptional, tapIf } from '@milaboratories/helpers';
 import type { AnyLogHandle, Platforma, ValueOrErrors } from '@platforma-sdk/model';
 import { useLogHandle } from './useLogHandle';
-import { useLabelNotch } from '@/utils/useLabelNotch';
-import DoubleContour from '@/utils/DoubleContour.vue';
+import { useLabelNotch } from '../../utils/useLabelNotch';
+import DoubleContour from '../../utils/DoubleContour.vue';
 import { PlTooltip } from '../PlTooltip';
 
 const getOutputError = <T>(o?: ValueOrErrors<T>) => {

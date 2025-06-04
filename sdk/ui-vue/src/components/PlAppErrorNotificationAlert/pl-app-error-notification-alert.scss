@@ -1,30 +1,30 @@
-@use '@milaboratories/uikit/src/assets/mixins.scss' as *;
+@use '@milaboratories/uikit/styles/mixins' as *;
 
 .pl-app-notification-alert {
-    position: fixed;
-    bottom: 12px;
-    right: 12px;
-    width: 256px;
-    height: auto;
-    z-index: 87;
+  position: fixed;
+  bottom: 12px;
+  right: 12px;
+  width: 256px;
+  height: auto;
+  z-index: 87;
 
-    &__content {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-        max-height: 100%;
-    }
+  &__content {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 100%;
+  }
 
-    &__item {
-        position: relative;
-    }
+  &__item {
+    position: relative;
+  }
 
-    &__title {
-        color: var(--txt-01);
-        font-size: 14px;
-        font-style: normal;
-        font-weight: 600;
-        line-height: 20px;
-        margin-bottom: 6px;
-    }
+  &__title {
+    color: var(--txt-01);
+    font-size: 14px;
+    font-style: normal;
+    font-weight: 600;
+    line-height: 20px;
+    margin-bottom: 6px;
+  }
 }

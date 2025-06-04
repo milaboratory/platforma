@@ -1,9 +1,9 @@
 <script lang="ts" setup>
-import VScroll from '@/components/VScroll.vue';
-import HScroll from '@/components/HScroll.vue';
+import VScroll from '../components/VScroll.vue';
+import HScroll from '../components/HScroll.vue';
 import { onMounted, onUnmounted, reactive, ref, unref } from 'vue';
-import { tapIf, copyProps } from '@/helpers/functions';
-import { useResizeObserver } from '@/composition/useResizeObserver';
+import { tapIf, copyProps } from '../helpers/functions';
+import { useResizeObserver } from '../composition/useResizeObserver';
 
 const containerRef = ref<HTMLElement>();
 

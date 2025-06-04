@@ -1,6 +1,6 @@
-<script setup lang="ts">
-import { PlBtnSecondary } from '@/components/PlBtnSecondary';
-import { PlBtnGhost } from '@/components/PlBtnGhost';
+<script lang="ts" setup>
+import { PlBtnSecondary } from '../components/PlBtnSecondary';
+import { PlBtnGhost } from '../components/PlBtnGhost';
 import { computed, ref } from 'vue';
 
 type PropsType = {
@@ -31,6 +31,7 @@ const fileInput = ref<HTMLInputElement>();
 const dragging = ref(false);
 
 const hasFiles = computed(() => props.modelValue && props.modelValue.length > 0);
+
 function triggerFileInput() {
   fileInput.value?.click();
 }
@@ -86,11 +87,11 @@ function deleteFile(file: File) {
   <div
     :class="{ dragging: dragging, active: hasFiles, disabled }"
     class="pl-file-base-input"
-    @dragover.prevent="dragging = true"
-    @dragenter.prevent
+    @click="triggerFileInput"
     @dragleave="dragging = false"
     @drop="handleDrop"
-    @click="triggerFileInput"
+    @dragover.prevent="dragging = true"
+    @dragenter.prevent
   >
     <div class="d-flex">
       <div class="pl-file-base-input__text flex-grow-1">
@@ -100,7 +101,7 @@ function deleteFile(file: File) {
         </div>
       </div>
       <div class="pl-file-base-input__buttons d-flex gap-2">
-        <input ref="fileInput" :multiple="multiple" :accept="acceptedTypes" type="file" @change="handleFiles" />
+        <input ref="fileInput" :accept="acceptedTypes" :multiple="multiple" type="file" @change="handleFiles" />
         <PlBtnSecondary :disabled="disabled" class="text-caps11">
           {{ buttonText }}
         </PlBtnSecondary>
@@ -113,7 +114,10 @@ function deleteFile(file: File) {
         <div class="pl-file-base-input__file-name text-m">
           {{ file.name }}
         </div>
-        <PlBtnGhost :disabled="disabled" icon="close" round size="small" class="flex-shrink-0" @click.stop="deleteFile(file)" />
+        <PlBtnGhost
+          :disabled="disabled" class="flex-shrink-0" icon="close" round size="small"
+          @click.stop="deleteFile(file)"
+        />
       </div>
     </div>
   </div>

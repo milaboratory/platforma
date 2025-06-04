@@ -8,8 +8,8 @@ export default {
 <script lang="ts" setup>
 import './pl-slide-modal.scss';
 import { ref, useAttrs, useSlots } from 'vue';
-import TransitionSlidePanel from '@/components/TransitionSlidePanel.vue';
-import { useClickOutside, useEventListener } from '@/index';
+import TransitionSlidePanel from '../../components/TransitionSlidePanel.vue';
+import { useClickOutside, useEventListener } from '../../index';
 
 const slots = useSlots(); // title & actions
 

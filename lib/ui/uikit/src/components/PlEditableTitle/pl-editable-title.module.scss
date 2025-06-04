@@ -1,4 +1,4 @@
-@use "@/assets/mixins" as *;
+@use "../../assets/mixins" as *;
 
 .component {
   position: relative;
@@ -58,7 +58,7 @@
 
     &::before {
       content: '';
-      @include mask-var(url(@icons/icon-assets-min/24_edit.svg));
+      @include mask-var(url(../../assets/icons/icon-assets-min/24_edit.svg));
       position: absolute;
       right: calc((var(--mask-size)) * -1);
       bottom: 6px;

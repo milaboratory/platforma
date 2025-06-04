@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import './pl-btn-link.scss';
-import type { MaskIconName16, Size } from '@/types';
-import BtnSecondary from '@/components/PlBtnSecondary/PlBtnSecondary.vue';
+import type { MaskIconName16, Size } from '../../types';
+import BtnSecondary from '../../components/PlBtnSecondary/PlBtnSecondary.vue';
 import { ref } from 'vue';
 
 const props = defineProps<{

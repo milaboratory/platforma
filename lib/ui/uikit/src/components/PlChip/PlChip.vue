@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import './pl-chip.scss';
 import { onMounted, ref } from 'vue';
-import { PlTooltip } from '@/components/PlTooltip';
+import { PlTooltip } from '../../components/PlTooltip';
 
 defineEmits(['close']);
 

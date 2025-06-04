@@ -9,8 +9,8 @@ export default {
 
 <script lang="ts" setup>
 import './pl-btn-accent.scss';
-import type { MaskIconName16, Size } from '@/types';
-import BtnBase from '@/base/BtnBase.vue';
+import type { MaskIconName16, Size } from '../../types';
+import BtnBase from '../../base/BtnBase.vue';
 
 const props = defineProps<{
   /**

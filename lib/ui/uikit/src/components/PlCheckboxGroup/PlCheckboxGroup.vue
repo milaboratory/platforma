@@ -9,8 +9,8 @@ export default {
 
 <script lang="ts" setup generic="M = unknown">
 import './pl-checkbox-group.scss';
-import type { SimpleOption } from '@/types';
-import PlCheckboxBase from '@/components/PlCheckbox/PlCheckboxBase.vue';
+import type { SimpleOption } from '../../types';
+import PlCheckboxBase from '../../components/PlCheckbox/PlCheckboxBase.vue';
 import { PlTooltip } from '../PlTooltip';
 import { useSlots } from 'vue';
 

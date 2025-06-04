@@ -1,6 +1,6 @@
 <script lang="ts" setup>
-import { useEventListener } from '@/composition/useEventListener';
-import type { ImportedFiles } from '@/types';
+import { useEventListener } from '../../composition/useEventListener';
+import type { ImportedFiles } from '../../types';
 import { between, notEmpty, tapIf } from '@milaboratories/helpers';
 import { getRawPlatformaInstance, type StorageHandle } from '@platforma-sdk/model';
 import { computed, onMounted, reactive, toRef, watch } from 'vue';

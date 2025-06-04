@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { computed } from 'vue';
-import type { MaskIconName24, Size } from '@/types';
+import type { MaskIconName24, Size } from '../../types';
 
 const props = defineProps<{
   name: MaskIconName24;

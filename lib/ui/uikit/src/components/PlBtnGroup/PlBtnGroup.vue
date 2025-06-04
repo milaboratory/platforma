@@ -10,9 +10,9 @@ export default {
 <script lang="ts" setup generic="M = unknown">
 import './pl-btn-group.scss';
 import { computed, useSlots } from 'vue';
-import { PlTooltip } from '@/components/PlTooltip';
-import InnerBorder from '@/utils/InnerBorder.vue';
-import type { SimpleOption } from '@/types';
+import { PlTooltip } from '../../components/PlTooltip';
+import InnerBorder from '../../utils/InnerBorder.vue';
+import type { SimpleOption } from '../../types';
 
 const slots = useSlots();
 

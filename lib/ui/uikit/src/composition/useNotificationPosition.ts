@@ -1,6 +1,6 @@
 import { type Ref, ref } from 'vue';
-import { call } from '@/helpers/utils';
-import { useElementPosition } from '@/composition/usePosition';
+import { call } from '../helpers/utils';
+import { useElementPosition } from '../composition/usePosition';
 
 export function useNotificationPosition(el: Ref<HTMLElement | undefined>) {
   const style = ref('');

@@ -1,6 +1,6 @@
-<script setup lang="ts">
+<script lang="ts" setup>
 import { computed } from 'vue';
-import type { ListOptionNormalized } from '@/types';
+import type { ListOptionNormalized } from '../types';
 
 const props = withDefaults(
   defineProps<{

@@ -1,6 +1,6 @@
 import { computed, onMounted, onUnmounted, ref, unref, watch } from 'vue';
-import { mapIterable, toList } from '@/helpers/iterators';
-import { useLocalStorage } from '@/composition/useLocalStorage';
+import { mapIterable, toList } from '../helpers/iterators';
+import { useLocalStorage } from '../composition/useLocalStorage';
 
 type Theme = 'light' | 'dark';
 

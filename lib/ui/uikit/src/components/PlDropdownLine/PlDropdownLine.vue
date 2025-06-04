@@ -2,17 +2,17 @@
 import './pl-dropdown-line.scss';
 import type { StyleValue } from 'vue';
 import { computed, nextTick, reactive, ref, toRef, watch } from 'vue';
-import { deepEqual } from '@/helpers/objects';
-import { useClickOutside } from '@/composition/useClickOutside';
-import { useFilteredList } from '@/composition/useFilteredList';
+import { deepEqual } from '../../helpers/objects';
+import { useClickOutside } from '../../composition/useClickOutside';
+import { useFilteredList } from '../../composition/useFilteredList';
 import ResizableInput from './ResizableInput.vue';
-import { tapIf, tap } from '@/helpers/functions';
-import { scrollIntoView } from '@/helpers/dom';
-import DropdownListItem from '@/components/DropdownListItem.vue';
-import TabItem from '@/components/TabItem.vue';
-import type { ListOption } from '@/types';
-import { normalizeListOptions } from '@/helpers/utils';
-import { useElementPosition } from '@/composition/usePosition';
+import { tapIf, tap } from '../../helpers/functions';
+import { scrollIntoView } from '../../helpers/dom';
+import DropdownListItem from '../../components/DropdownListItem.vue';
+import TabItem from '../../components/TabItem.vue';
+import type { ListOption } from '../../types';
+import { normalizeListOptions } from '../../helpers/utils';
+import { useElementPosition } from '../../composition/usePosition';
 
 const emit = defineEmits(['update:modelValue']); // at the top always
 

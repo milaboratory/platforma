@@ -1,4 +1,4 @@
-@use "@/assets/mixins" as *;
+@use "../../assets/mixins" as *;
 
 .pl-autocomplete__options {
   --option-hover-bg: var(--btn-sec-hover-grey);
@@ -214,7 +214,7 @@
     &.arrow-icon-default {
       transition: transform .2s;
       background-color: var(--control-mask-fill);
-      @include mask(url('@/assets/images/16_chevron-down.svg'), 16px);
+      @include mask(url('../../assets/images/16_chevron-down.svg'), 16px);
     }
   }
 

@@ -1,4 +1,4 @@
-@use "@/assets/mixins" as *;
+@use "../../assets/mixins" as *;
 
 .pl-chip-tooltip {
   display: inline-flex;
@@ -63,7 +63,7 @@
 
     &--icon {
       background: var(--mask-color);
-      @include mask(url('@/assets/images/16_close.svg'), 16px);
+      @include mask(url('../../assets/images/16_close.svg'), 16px);
     }
   }
 }

@@ -10,18 +10,18 @@ export default {
 <script lang="ts" setup generic="M = unknown">
 import './pl-dropdown-legacy.scss';
 import { computed, reactive, ref, unref, useSlots, watch, watchPostEffect } from 'vue';
-import { tap, tapIf } from '@/helpers/functions';
-import { PlTooltip } from '@/components/PlTooltip';
-import DoubleContour from '@/utils/DoubleContour.vue';
-import { useLabelNotch } from '@/utils/useLabelNotch';
-import type { ListOption, ListOptionNormalized } from '@/types';
-import { scrollIntoView } from '@/helpers/dom';
-import { deepEqual } from '@/helpers/objects';
-import DropdownListItem from '@/components/DropdownListItem.vue';
-import LongText from '@/components/LongText.vue';
+import { tap, tapIf } from '../../helpers/functions';
+import { PlTooltip } from '../../components/PlTooltip';
+import DoubleContour from '../../utils/DoubleContour.vue';
+import { useLabelNotch } from '../../utils/useLabelNotch';
+import type { ListOption, ListOptionNormalized } from '../../types';
+import { scrollIntoView } from '../../helpers/dom';
+import { deepEqual } from '../../helpers/objects';
+import DropdownListItem from '../../components/DropdownListItem.vue';
+import LongText from '../../components/LongText.vue';
 import { PlIcon16 } from '../PlIcon16';
 import { PlMaskIcon24 } from '../PlMaskIcon24';
-import { normalizeListOptions } from '@/helpers/utils';
+import { normalizeListOptions } from '../../helpers/utils';
 
 const emit = defineEmits<{
   /**

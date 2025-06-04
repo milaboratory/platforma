@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import './pl-number-field.scss';
-import DoubleContour from '@/utils/DoubleContour.vue';
-import { useLabelNotch } from '@/utils/useLabelNotch';
+import DoubleContour from '../../utils/DoubleContour.vue';
+import { useLabelNotch } from '../../utils/useLabelNotch';
 import { computed, ref, useSlots, watch } from 'vue';
-import { PlTooltip } from '@/components/PlTooltip';
+import { PlTooltip } from '../../components/PlTooltip';
 
 type NumberInputProps = {
   /** Input is disabled if true */

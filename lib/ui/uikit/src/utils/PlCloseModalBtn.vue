@@ -5,7 +5,7 @@
 </template>
 
 <style lang="scss" module>
-@use '@/assets/mixins' as *;
+@use '../assets/mixins' as *;
 
 .component {
   display: flex;
@@ -19,9 +19,10 @@
     background-color: var(--btn-sec-hover-grey);
     transition: all 0.1s ease-in-out;
   }
+
   > div {
     background-color: var(--ic-01);
-    @include mask(url(@/assets/images/24_close.svg), 24px);
+    @include mask(url(../assets/images/24_close.svg), 24px);
   }
 }
 </style>

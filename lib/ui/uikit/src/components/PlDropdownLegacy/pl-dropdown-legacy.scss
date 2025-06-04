@@ -1,4 +1,4 @@
-@use "@/assets/mixins" as *;
+@use "../../assets/mixins" as *;
 
 .pl-dropdown-legacy {
   $root: &;
@@ -203,7 +203,7 @@
     // Default "arrow" icon (16x16) 
     &.arrow-icon-default {
       background-color: var(--control-mask-fill);
-      @include mask(url('@/assets/images/16_chevron-down.svg'), 16px);
+      @include mask(url('../../assets/images/16_chevron-down.svg'), 16px);
     }
   }
 
@@ -224,7 +224,7 @@
 
     .arrow-icon {
       background-color: var(--control-mask-fill);
-      @include mask(url(@/assets/images/16_chevron-up.svg), 16px);
+      @include mask(url(../../assets/images/16_chevron-up.svg), 16px);
     }
   }
 

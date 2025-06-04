@@ -1,4 +1,4 @@
-@use "@/assets/mixins" as *;
+@use "../../assets/mixins" as *;
 
 .pl-slide-modal {
   --padding-top: 24px;
@@ -33,7 +33,7 @@
     right: 12px;
     cursor: pointer;
     background-color: #d3d7e0;
-    @include mask(url('@/assets/images/24_close.svg'), 24px);
+    @include mask(url('../../assets/images/24_close.svg'), 24px);
 
     &:hover {
       background-color: var(--main-dark-color);

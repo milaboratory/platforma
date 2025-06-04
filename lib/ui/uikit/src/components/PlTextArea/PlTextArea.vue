@@ -8,10 +8,10 @@ export default {
 <script lang="ts" setup>
 import './pl-textarea.scss';
 import { computed, onMounted, ref, useSlots } from 'vue';
-import { PlTooltip } from '@/components/PlTooltip';
-import DoubleContour from '@/utils/DoubleContour.vue';
-import { useLabelNotch } from '@/utils/useLabelNotch';
-import { useValidation } from '@/utils/useValidation';
+import { PlTooltip } from '../../components/PlTooltip';
+import DoubleContour from '../../utils/DoubleContour.vue';
+import { useLabelNotch } from '../../utils/useLabelNotch';
+import { useValidation } from '../../utils/useValidation';
 
 const slots = useSlots();
 

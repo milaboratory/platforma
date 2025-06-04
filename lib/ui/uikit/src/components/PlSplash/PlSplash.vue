@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import style from './pl-splash.module.scss';
-import { PlLoaderCircular } from '@/components/PlLoaderCircular';
+import { PlLoaderCircular } from '../../components/PlLoaderCircular';
 
 withDefaults(defineProps<{
   /**

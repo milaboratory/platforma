@@ -1,4 +1,4 @@
-import type { MaybeRef } from '@/types';
+import type { MaybeRef } from '../types';
 import { onMounted, onUnmounted, unref } from 'vue';
 
 type Position = {

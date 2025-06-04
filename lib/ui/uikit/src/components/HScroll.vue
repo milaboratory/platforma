@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { computed, ref, unref } from 'vue';
-import { useEventListener } from '@/composition/useEventListener';
-import { eventListener } from '@/helpers/dom';
+import { useEventListener } from '../composition/useEventListener';
+import { eventListener } from '../helpers/dom';
 
 const emit = defineEmits(['update:scrollLeft']);
 
@@ -49,6 +49,6 @@ useEventListener(scrollRef, 'pointerdown', (down: PointerEvent) => {
 
 <template>
   <div v-if="visibleRef" ref="scrollRef" class="h-scroll">
-    <div class="h-scroll__scrollbar" :style="scrollbarStyle" />
+    <div :style="scrollbarStyle" class="h-scroll__scrollbar" />
   </div>
 </template>

@@ -1,4 +1,4 @@
-import { animate, makeEaseOut } from '@/helpers/utils';
+import { animate, makeEaseOut } from './utils.ts';
 
 export function isElementVisible(parent: HTMLElement, el: HTMLElement) {
   const scrollTop = parent.scrollTop;
@@ -55,7 +55,7 @@ export function eventListener<K extends keyof DocumentEventMap>(
   type: K,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   listener: (this: Document, ev: DocumentEventMap[K]) => any,
-  options?: boolean | AddEventListenerOptions,
+  options?: boolean | AddEventListenerOptions
 ): () => void;
 
 export function eventListener<K extends keyof HTMLElementEventMap>(
@@ -63,7 +63,7 @@ export function eventListener<K extends keyof HTMLElementEventMap>(
   type: K,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any,
-  options?: boolean | AddEventListenerOptions,
+  options?: boolean | AddEventListenerOptions
 ): () => void;
 
 export function eventListener<K extends string>(

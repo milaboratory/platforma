@@ -5,11 +5,11 @@ export default {
 </script>
 
 <script lang="ts" setup>
-import { useEventListener } from '@/composition/useEventListener';
+import { useEventListener } from '../../composition/useEventListener';
 import './pl-dialog-modal.scss';
 import { computed, ref, useSlots } from 'vue';
-import PlCloseModalBtn from '@/utils/PlCloseModalBtn.vue';
-import type { Size } from '@/types';
+import PlCloseModalBtn from '../../utils/PlCloseModalBtn.vue';
+import type { Size } from '../../types';
 
 const slots = useSlots();
 

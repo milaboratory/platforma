@@ -23,9 +23,7 @@
 
   @if $h ==null {
     height: $w;
-  }
-
-  @else {
+  } @else {
     height: $h;
   }
 }
@@ -36,9 +34,7 @@
 
   @if $h ==null {
     height: $w;
-  }
-
-  @else {
+  } @else {
     height: $h;
   }
 }
@@ -50,9 +46,7 @@
 
   @if $h ==null {
     height: $w;
-  }
-
-  @else {
+  } @else {
     height: $h;
   }
 }
@@ -70,9 +64,7 @@
 
   @if $h ==null {
     height: $w;
-  }
-
-  @else {
+  } @else {
     height: $h;
   }
 }
@@ -155,14 +147,14 @@
   border-bottom-left-radius: 4px;
   background: var(--bg-elevated-01);
 
-  >span {
+  > span {
     overflow: hidden;
     white-space: pre;
     text-overflow: ellipsis;
   }
 
   .required-icon {
-    background: url(@/assets/images/required.svg);
+    background: url(../assets/images/required.svg);
     width: 5px;
     height: 12px;
     margin-top: 2px;

@@ -1,4 +1,4 @@
-@use "@/assets/mixins" as *;
+@use "../../assets/mixins" as *;
 
 .component {
   .local {
@@ -136,7 +136,7 @@
         margin-top: 40px;
         width: 240px;
         height: 200px;
-        background: url('@/assets/images/no-data-cat.svg');
+        background: url('../../assets/images/no-data-cat.svg');
       }
 
       .message {
@@ -162,7 +162,7 @@
         margin-top: 40px;
         width: 400px;
         height: 200px;
-        background: url('@/assets/images/empty-cat.svg');
+        background: url('../../assets/images/empty-cat.svg');
       }
 
       .message {

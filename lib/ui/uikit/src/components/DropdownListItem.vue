@@ -1,8 +1,8 @@
-<script setup lang="ts">
+<script lang="ts" setup>
 import { computed } from 'vue';
-import CheckboxUncheckedSvg from '@/assets/images/24_checkbox-light-enabled-unchecked.svg?raw';
-import CheckboxCheckedSvg from '@/assets/images/24_checkbox-light-enabled-checked.svg?raw';
-import type { ListOptionNormalized } from '@/types';
+import CheckboxUncheckedSvg from '../assets/images/24_checkbox-light-enabled-unchecked.svg?raw';
+import CheckboxCheckedSvg from '../assets/images/24_checkbox-light-enabled-checked.svg?raw';
+import type { ListOptionNormalized } from '../types';
 
 const props = withDefaults(
   defineProps<{

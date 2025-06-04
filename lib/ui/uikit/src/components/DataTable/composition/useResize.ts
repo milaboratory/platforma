@@ -3,11 +3,11 @@ import { watchEffect, unref } from 'vue';
 import type { ResizeTh } from '../types';
 import { useColumn } from './useColumn';
 import { MIN_COLUMN_WIDTH, RESIZE_GAP } from '../constants';
-import { useMouse } from '@/composition/useMouse';
-import { useHover } from '@/composition/useHover';
 import { tapIf, clamp } from '@milaboratories/helpers';
 import { identity } from '@milaboratories/helpers';
 import type { State } from '../state';
+import { useMouse } from '../../../composition/useMouse.ts';
+import { useHover } from '../../../composition/useHover.ts';
 
 type MaybeRef<T> = T | Ref<T>;
 

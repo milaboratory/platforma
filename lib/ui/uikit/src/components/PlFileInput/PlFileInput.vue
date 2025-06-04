@@ -1,14 +1,14 @@
 <script lang="ts" setup>
 import './pl-file-input.scss';
-import { PlTooltip } from '@/components/PlTooltip';
-import { PlFileDialog } from '@/components/PlFileDialog';
-import type { ImportedFiles } from '@/types';
+import { PlTooltip } from '../../components/PlTooltip';
+import { PlFileDialog } from '../../components/PlFileDialog';
+import type { ImportedFiles } from '../../types';
 import { PlMaskIcon24 } from '../PlMaskIcon24';
 import { computed, reactive, ref, useSlots, watch } from 'vue';
 import type { ImportFileHandle, ImportProgress } from '@platforma-sdk/model';
 import { getFileNameFromHandle, getFilePathFromHandle } from '@platforma-sdk/model';
-import DoubleContour from '@/utils/DoubleContour.vue';
-import { useLabelNotch } from '@/utils/useLabelNotch';
+import DoubleContour from '../../utils/DoubleContour.vue';
+import { useLabelNotch } from '../../utils/useLabelNotch';
 import { prettyBytes, tryDo } from '@milaboratories/helpers';
 
 const data = reactive({

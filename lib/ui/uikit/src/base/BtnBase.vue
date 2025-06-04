@@ -5,10 +5,10 @@ export default {
 </script>
 
 <script lang="ts" setup>
-import type { MaskIconName16, Size } from '@/types';
+import type { MaskIconName16, Size } from '../types';
 import { computed, ref } from 'vue';
-import { PlMaskIcon16 } from '@/components/PlMaskIcon16';
-import { useRipple } from '@/composition/useRipple';
+import { PlMaskIcon16 } from '../components/PlMaskIcon16';
+import { useRipple } from '../composition/useRipple';
 
 const props = defineProps<{
   loading?: boolean;
@@ -32,14 +32,14 @@ useRipple(btn);
 <template>
   <button
     ref="btn"
-    tabindex="0"
     :class="{ loading, small, large, round, reverse, justifyCenter, [$attrs.class + '']: true }"
+    tabindex="0"
     v-bind="{ ...$attrs, disabled: Boolean($attrs.disabled) || loading }"
   >
     <span v-if="!round">
       <slot />
     </span>
-    <PlMaskIcon16 v-if="loading" name="loading" :size="size" />
+    <PlMaskIcon16 v-if="loading" :size="size" name="loading" />
     <PlMaskIcon16 v-else-if="icon" :name="icon" :size="size" />
   </button>
 </template>
