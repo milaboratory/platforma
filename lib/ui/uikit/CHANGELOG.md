@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.78
+
+### Patch Changes
+
+- 84656a6: Get rid of .cjs and .umd in ui packages
+
 ## 2.2.77
 
 ### Patch Changes

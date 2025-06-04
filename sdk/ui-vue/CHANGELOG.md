@@ -1,5 +1,13 @@
 # @platforma-sdk/ui-vue
 
+## 1.33.3
+
+### Patch Changes
+
+- 84656a6: Get rid of .cjs and .umd in ui packages
+- Updated dependencies [84656a6]
+  - @milaboratories/uikit@2.2.78
+
 ## 1.33.2
 
 ### Patch Changes
