@@ -268,7 +268,7 @@ await := func(rootField, ctxStorageResource, requests) {
 
 				//
 				// TODO: special hack for ResourceReady event until there is no ResourceDuplicate event support
-				// Should be safe to remove after ~2026-01-01
+				// Should be safe to remove after ~2026-01-01. Check MILAB-2904 is done.
 				//
 
 				awaiterBuilder := smart.ephemeralBuilder(RTYPE_AWAITER)
