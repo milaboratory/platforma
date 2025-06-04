@@ -57,9 +57,6 @@ awaitOneState := func(field, path, state) {
 					subscriptions: [{
 						resource: resource.id,
 						event: "FieldCreated"
-					},{
-						resource: resource.id,
-						event: "InputsLocked"
 					}]
 				}
 			}
@@ -285,6 +282,9 @@ await := func(rootField, ctxStorageResource, requests) {
 			} else {
 				targetEvents = ["ResourceReady", "ResourceError", "ResourceDuplicate"]
 			}
+		} else if firstSubscription.event == "FieldCreated" { // another special case
+			// also waiting for inputs locked to detect field absence
+			targetEvents = ["FieldCreated", "InputsLocked"]
 		}
 
 		e := {}
