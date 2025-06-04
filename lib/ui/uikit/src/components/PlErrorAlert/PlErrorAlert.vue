@@ -40,7 +40,7 @@ function onCopy() {
   </div>
 </template>
 
-<style mode>
+<style module>
 .root {
   position: relative;
   overflow: auto;
