@@ -155,7 +155,7 @@ function getAdditionalColumnsForPair(
   const secondaryIdsOptions = secondaryAxesIds.map((id) => {
     return mainAxesIds.filter((mainId) => matchAxisId(mainId, id));
   });
-    // all possible combinations of axes with added domains
+  // all possible combinations of axes with added domains
   const secondaryIdsVariants = getKeysCombinations(secondaryIdsOptions);
 
   // sets of added to column domain fields
@@ -300,7 +300,8 @@ export function createPFrameForGraphs<A, U>(
   const columnsWithCompatibleFromUpstream = enrichColumnsWithCompatible(blockColumns, upstreamColumns, linkerColumns, linkerColumnsMap);
 
   // additional columns are duplicates with extra fields in domains for compatibility in all possible pairs of columns set
-  const extendedColumns = [...columnsWithCompatibleFromUpstream, ...getAdditionalColumns(columnsWithCompatibleFromUpstream, linkerColumnsMap)];
+  // const extendedColumns = [...columnsWithCompatibleFromUpstream, ...getAdditionalColumns(columnsWithCompatibleFromUpstream, linkerColumnsMap)];
+  const extendedColumns = [...columnsWithCompatibleFromUpstream];
 
   // if at least one column is not yet ready, we can't show the table
   if (
