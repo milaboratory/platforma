@@ -36,7 +36,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <PlIcon16 :name="iconName" :size="props.size" class="copy" @click="onCopy" />
+  <PlIcon16 :name="iconName" :size="props.size" :class="$style.copy" @click="onCopy" />
 </template>
 
 <style module>
