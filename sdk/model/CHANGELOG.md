@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.33.2
+
+### Patch Changes
+
+- 9b15f24: Possible fix for excessive CPU usage in createPFrameForGraphs
+
 ## 1.32.1
 
 ### Patch Changes
