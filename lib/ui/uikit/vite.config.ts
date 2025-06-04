@@ -48,6 +48,7 @@ export default defineConfig({
       name: 'pl-uikit',
       // the proper extensions will be added
       fileName: 'pl-uikit',
+      formats: ['es'],
     },
     rollupOptions: {
       external: ['vue'],
