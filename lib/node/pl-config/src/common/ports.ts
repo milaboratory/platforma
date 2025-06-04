@@ -152,6 +152,6 @@ export function withHost(host: string, localHost: string, ports: Ports): Endpoin
 
     grpcLocal: ports.grpcLocal ? endp(localHost, ports.grpcLocal) : undefined,
     minioLocal: ports.minioLocal ? endp(localHost, ports.minioLocal) : undefined,
-    httpEndpoint: ports.httpEndpoint ? endp(localHost, ports.httpEndpoint) : undefined,
+    httpEndpoint: ports.httpEndpoint ? endp(host, ports.httpEndpoint) : undefined,
   };
 }

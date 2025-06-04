@@ -74,7 +74,7 @@ controllers:
         type: 'FS'
         indexCachePeriod: '0m'
         rootPath: 'storages/main'
-        allowRemoteAccess: true
+        allowRemoteAccess: false
         externalURL: 'http://127.0.0.1:11237'
 
   runner:

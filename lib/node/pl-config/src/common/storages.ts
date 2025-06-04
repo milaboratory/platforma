@@ -100,10 +100,7 @@ export function newRemoteConfigStorages(
   };
 }
 
-export async function createDefaultLocalStorages(workdir: string, externalURL?: string): Promise<StoragesSettings> {
-  if (!externalURL) {
-    throw new Error('External URL is required in local deployments');
-  }
+export async function createDefaultLocalStorages(workdir: string, externalURL: string): Promise<StoragesSettings> {
   const storages = newDefaultLocalStorages(workdir, externalURL);
 
   for (const d of storages.dirsToCreate) {
@@ -147,7 +144,7 @@ function newDefaultLocalStorages(workdir: string, externalURL: string): Storages
       type: 'FS',
       indexCachePeriod: '0m',
       rootPath: mainPath,
-      allowRemoteAccess: true,
+      allowRemoteAccess: false, // should launch a http-server but leave upload / download URL with 'storage://' prefix
       externalURL: externalURL,
     },
   };
