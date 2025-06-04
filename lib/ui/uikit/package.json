@@ -2,7 +2,7 @@
   "name": "@milaboratories/uikit",
   "version": "2.2.77",
   "type": "module",
-  "main": "dist/pl-uikit.umd.js",
+  "main": "dist/pl-uikit.js",
   "module": "dist/pl-uikit.js",
   "types": "dist/src/index.d.ts",
   "styles": "dist/style.css",
