@@ -19,7 +19,7 @@ import type {
   RemoteBlobHandleAndSize,
   StreamingApiResponse,
 } from '@milaboratories/pl-model-common';
-import { newRangeBytesOpt, type RangeBytes, validateRangeBytes } from '@milaboratories/pl-model-common';
+import { type RangeBytes, validateRangeBytes } from '@milaboratories/pl-model-common';
 import type {
   PlTreeEntry,
   ResourceInfo,
@@ -31,7 +31,7 @@ import {
   treeEntryToResourceInfo,
 } from '@milaboratories/pl-tree';
 import type { MiLogger, Signer } from '@milaboratories/ts-helpers';
-import { CallersCounter, mapGet, notEmpty, TaskProcessor } from '@milaboratories/ts-helpers';
+import { CallersCounter, mapGet, TaskProcessor } from '@milaboratories/ts-helpers';
 import Denque from 'denque';
 import * as fs from 'fs';
 import { randomUUID } from 'node:crypto';
@@ -59,6 +59,7 @@ import { getSize, OnDemandBlobResourceSnapshot } from '../types';
 import { blobKey, pathToKey } from './blob_key';
 import { DownloadBlobTask, nonRecoverableError } from './download_blob_task';
 import { FilesCache } from '../helpers/files_cache';
+import { SparseCache, SparseCacheFsFile, SparseCacheFsRanges } from './sparse_cache/cache';
 
 export type DownloadDriverOps = {
   /**
@@ -67,6 +68,16 @@ export type DownloadDriverOps = {
    * when they become unneeded.
    * */
   cacheSoftSizeBytes: number;
+
+  /**
+   * A soft limit of the amount of sparse cache, in bytes.
+   * Once exceeded, the download driver will start deleting blobs one by one
+   * when they become unneeded.
+   *
+   * The sparse cache is used to store ranges of blobs.
+   * */
+  rangesCacheMaxSizeBytes: number;
+
   /**
    * Max number of concurrent downloads while calculating computable states
    * derived from this driver
@@ -83,6 +94,7 @@ export class DownloadDriver implements BlobDriver {
   /** Writes and removes files to a hard drive and holds a counter for every
    * file that should be kept. */
   private cache: FilesCache<DownloadBlobTask>;
+  private rangesCache: SparseCache;
 
   /** Downloads files and writes them to the local dir. */
   private downloadQueue: TaskProcessor;
@@ -99,10 +111,16 @@ export class DownloadDriver implements BlobDriver {
     private readonly clientDownload: ClientDownload,
     private readonly clientLogs: ClientLogs,
     saveDir: string,
+    private readonly rangesCacheDir: string,
     private readonly signer: Signer,
-    ops: DownloadDriverOps,
+    private readonly ops: DownloadDriverOps,
   ) {
-    this.cache = new FilesCache(ops.cacheSoftSizeBytes);
+    this.cache = new FilesCache(this.ops.cacheSoftSizeBytes);
+
+    const fsRanges = new SparseCacheFsRanges(this.logger, this.rangesCacheDir);
+    const fsStorage = new SparseCacheFsFile(this.logger, this.rangesCacheDir);
+    this.rangesCache = new SparseCache(this.logger, this.ops.rangesCacheMaxSizeBytes, fsRanges, fsStorage);
+
     this.downloadQueue = new TaskProcessor(this.logger, ops.nConcurrentDownloads);
 
     this.saveDir = path.resolve(saveDir);
@@ -113,43 +131,14 @@ export class DownloadDriver implements BlobDriver {
     clientDownload: ClientDownload,
     clientLogs: ClientLogs,
     saveDir: string,
+    rangesCacheDir: string,
     signer: Signer,
     ops: DownloadDriverOps,
   ): Promise<DownloadDriver> {
-    const driver = new DownloadDriver(logger, clientDownload, clientLogs, saveDir, signer, ops);
-    await driver.initCache();
+    const driver = new DownloadDriver(logger, clientDownload, clientLogs, saveDir, rangesCacheDir, signer, ops);
+    await driver.rangesCache.initFromDir(driver.rangesCacheDir);
 
     return driver;
-  }
-
-  private async initCache() {
-    let files: string[];
-    try {
-      files = await fsp.readdir(this.saveDir);
-    } catch (e: unknown) {
-      if (typeof e === 'object' && e !== null && (e as { code?: string }).code === 'ENOENT') {
-        return;
-      }
-
-      throw e;
-    }
-
-    // for (const file of files) {
-    //   const { size } = await fsp.stat(path.resolve(this.saveDir, file));
-
-    //   const blobInfo = pathToBlobInfo(file);
-    //   if (blobInfo == undefined) {
-    //     continue;
-    //   }
-
-    //   this.cache.addCache({
-    //     path: path.resolve(this.saveDir, file),
-    //     baseKey: blobKey(blobInfo.resourceId),
-    //     key: blobKey(blobInfo.resourceId, blobInfo.range),
-    //     counter: new CallersCounter(),
-    //     range,
-    //   });
-    // }
   }
 
   /** Gets a blob or part of the blob by its resource id or downloads a blob and sets it in a cache. */
@@ -312,17 +301,28 @@ export class DownloadDriver implements BlobDriver {
     if (isLocalBlobHandle(handle)) {
       return await read(this.getLocalPath(handle), range);
     }
+
     if (isRemoteBlobHandle(handle)) {
       const result = parseRemoteHandle(handle, this.signer);
+
+      const key = blobKey(result.info.id);
+      const filePath = await this.rangesCache.get(key, range ?? { from: 0, to: result.size });
+      if (filePath) {
+        return await read(filePath, range);
+      }
+
       const { content } = await this.clientDownload.downloadBlob(
-        { id: result.id, type: result.type },
+        { id: result.info.id, type: result.info.type },
         undefined,
         undefined,
         range?.from,
         range?.to,
       );
 
-      return await buffer(content);
+      const data = await buffer(content);
+      await this.rangesCache.set(key, range ?? { from: 0, to: result.size }, data);
+
+      return data;
     }
 
     throw new Error('Malformed remote handle');
@@ -342,7 +342,7 @@ export class DownloadDriver implements BlobDriver {
 
     return Computable.make((ctx) =>
       this.getDownloadedBlob(res, ctx), {
-        postprocessValue: (v) => v ? this.getContent(v.handle, range) : undefined
+      postprocessValue: (v) => v ? this.getContent(v.handle, range) : undefined
     }
     ).withStableType()
   }
