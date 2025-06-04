@@ -569,7 +569,7 @@ tpl := func(ops) {
 			if _hasPrepared {
 				_stateRequests = append(_stateRequests, {
 					path: [tplutil.PREPARE_MAP_FIELD_NAME],
-					state: "ResourceReady"
+					state: "Final"
 				})
 			}
 
