@@ -15,6 +15,7 @@ export default defineConfig({
       name: 'SdkVueLib',
       // the proper extensions will be added
       fileName: 'lib',
+      formats: ['es'],
     },
     rollupOptions: {
       plugins: [sourcemaps()],
