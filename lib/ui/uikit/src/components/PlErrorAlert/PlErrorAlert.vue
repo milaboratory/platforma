@@ -25,15 +25,15 @@ function onCopy() {
 
 <template>
   <div :style="{ maxHeight: props.maxHeight }" class="root">
-    <PlClipboard class="copy" @copy="onCopy" />
+    <PlClipboard :class="$style.copy" @copy="onCopy" />
     <slot name="title">
-      <div class="title">
+      <div :class="$style.title">
         <PlIcon16 name="warning" />
-        <div class="title-text">{{ props.title }}</div>
+        <div :class="$style.titleText">{{ props.title }}</div>
       </div>
     </slot>
     <slot name="message">
-      <div class="message">
+      <div :class="$style.message">
         {{ props.message }}
       </div>
     </slot>
@@ -58,6 +58,7 @@ function onCopy() {
   position: absolute;
   right: 12px;
   top: 12px;
+  background: var(--txt-error);
 }
 
 .title {
@@ -70,7 +71,7 @@ function onCopy() {
   overflow: hidden;
 }
 
-.title-text {
+.titleText {
   width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
