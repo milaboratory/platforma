@@ -271,11 +271,15 @@ await := func(rootField, ctxStorageResource, requests) {
 				// Should be safe to remove after ~2026-01-01. Check MILAB-2904 is done.
 				//
 
-				awaiterBuilder := smart.ephemeralBuilder(RTYPE_AWAITER)
-				awaiterBuilder.createInputField("target").set(smart.resource(targetResource))
-				awaiter := awaiterBuilder.lockAndBuild()
-				_renderer.createDynamicField("tmp:" + fullEventId).set(awaiter)
-				targetResource = awaiter.info().ID // converting to global resource id; this is a hack to overcome the fact that tx.subscribeTo can't work with local ids
+				target := smart.resource(targetResource)
+				isEphemeral := target.info().Features.ephemeral
+				if !isEphemeral { // doing proxy-object workaround for pure resources only
+					awaiterBuilder := smart.ephemeralBuilder(RTYPE_AWAITER)
+					awaiterBuilder.createInputField("target").set(target)
+					awaiter := awaiterBuilder.lockAndBuild()
+					_renderer.createDynamicField("tmp:" + fullEventId).set(awaiter)
+					targetResource = awaiter.info().ID // converting to global resource id; this is a hack to overcome the fact that tx.subscribeTo can't work with local ids
+				}
 				targetEvents = ["ResourceReady", "ResourceError"]
 
 			} else {

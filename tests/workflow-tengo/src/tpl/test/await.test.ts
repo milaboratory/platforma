@@ -10,7 +10,10 @@ import { tplTest } from '@platforma-sdk/test';
 import { Templates } from '../../..';
 import crypto from 'crypto';
 
-tplTest('test await simple state', async ({ pl, helper, expect }) => {
+tplTest.concurrent.for([
+  { isEph: true, name: 'ephemeral' },
+  { isEph: false, name: 'pure' },
+])('test await simple state ($name)', async ({ isEph }, { pl, helper, expect }) => {
   let inputResource: ResourceId = 0n as ResourceId; // hack
   const result = await helper.renderTemplate(
     true,
@@ -18,7 +21,7 @@ tplTest('test await simple state', async ({ pl, helper, expect }) => {
     ['main'],
     async (tx) => {
       inputResource = await toGlobalResourceId(
-        tx.createStruct(resourceType('TestEph', '1')),
+        isEph ? tx.createEphemeral(resourceType('TestEph', '1')) : tx.createStruct(resourceType('TestEph', '1')),
       );
       return {
         input1: inputResource,
@@ -54,7 +57,10 @@ tplTest('test await simple state', async ({ pl, helper, expect }) => {
   expect(await mainResult.awaitStableValue()).eq('A');
 });
 
-tplTest('await simple state with duplicate', async ({ pl, helper, expect }) => {
+tplTest.concurrent.for([
+  { isEph: true, name: 'ephemeral' },
+  { isEph: false, name: 'pure' },
+])('await simple state with duplicate ($name)', async ({ isEph }, { pl, helper, expect }) => {
   let inputResource: ResourceId = 0n as ResourceId; // hack
   let r1: ResourceId = 0n as ResourceId; // hack; original
   let r2: ResourceId = 0n as ResourceId; // hack; duplicate
@@ -66,10 +72,10 @@ tplTest('await simple state with duplicate', async ({ pl, helper, expect }) => {
     ['main'],
     async (tx) => {
       inputResource = await toGlobalResourceId(
-        tx.createStruct(resourceType('TestRes', '1')),
+        isEph ? tx.createEphemeral(resourceType('TestRes', '1')) : tx.createStruct(resourceType('TestRes', '1')),
       );
       r1 = await toGlobalResourceId(
-        tx.createStruct(resourceType('TestRes', '1')),
+        isEph ? tx.createEphemeral(resourceType('TestRes', '1')) : tx.createStruct(resourceType('TestRes', '1')),
       );
       const r1f1 = field(r1, 'f1');
       tx.createField(r1f1, 'Input');
@@ -89,7 +95,7 @@ tplTest('await simple state with duplicate', async ({ pl, helper, expect }) => {
     const nestedField = field(inputResource, 'nestedField');
     tx.createField(nestedField, 'Input');
     r2 = await toGlobalResourceId(
-      tx.createStruct(resourceType('TestRes', '1')),
+      isEph ? tx.createEphemeral(resourceType('TestRes', '1')) : tx.createStruct(resourceType('TestRes', '1')),
     );
     tx.createField(field(r2, 'f1'), 'Input');
     tx.lockInputs(inputResource);
@@ -109,7 +115,10 @@ tplTest('await simple state with duplicate', async ({ pl, helper, expect }) => {
   expect(await mainResult.awaitStableValue()).eq('A');
 });
 
-tplTest('await simple state with field error', async ({ pl, helper, expect }) => {
+tplTest.concurrent.for([
+  { isEph: true, name: 'ephemeral' },
+  { isEph: false, name: 'pure' },
+])('await simple state with field error ($name)', async ({ isEph }, { pl, helper, expect }) => {
   let inputResource: ResourceId = 0n as ResourceId; // hack
   let r1: ResourceId = 0n as ResourceId; // hack
 
@@ -119,12 +128,12 @@ tplTest('await simple state with field error', async ({ pl, helper, expect }) =>
     ['main'],
     async (tx) => {
       inputResource = await toGlobalResourceId(
-        tx.createStruct(resourceType('TestRes', '1')),
+        isEph ? tx.createEphemeral(resourceType('TestRes', '1')) : tx.createStruct(resourceType('TestRes', '1')),
       );
       const nestedField = field(inputResource, 'nestedField');
       tx.createField(nestedField, 'Input');
       r1 = await toGlobalResourceId(
-        tx.createStruct(resourceType('TestRes', '1')),
+        isEph ? tx.createEphemeral(resourceType('TestRes', '1')) : tx.createStruct(resourceType('TestRes', '1')),
       );
       const r1f1 = field(r1, 'f1');
       tx.createField(r1f1, 'Input');
@@ -149,7 +158,10 @@ tplTest('await simple state with field error', async ({ pl, helper, expect }) =>
   await expect(async () => await mainResult.awaitStableValue()).rejects.toThrow(/the_test_error/);
 });
 
-tplTest('await simple state with resource error', async ({ pl, helper, expect }) => {
+tplTest.concurrent.for([
+  { isEph: true, name: 'ephemeral' },
+  { isEph: false, name: 'pure' },
+])('await simple state with resource error ($name)', async ({ isEph }, { pl, helper, expect }) => {
   let inputResource: ResourceId = 0n as ResourceId; // hack
   let r1: ResourceId = 0n as ResourceId; // hack
   let r2: ResourceId = 0n as ResourceId; // hack
@@ -161,11 +173,11 @@ tplTest('await simple state with resource error', async ({ pl, helper, expect })
     ['main'],
     async (tx) => {
       inputResource = await toGlobalResourceId(
-        tx.createStruct(resourceType('TestRes', '1')),
+        isEph ? tx.createEphemeral(resourceType('TestRes', '1')) : tx.createStruct(resourceType('TestRes', '1')),
       );
       // r1 resource will keep input template from ready state, and prevent automatic error propagation mechanism from engaging
       r1 = await toGlobalResourceId(
-        tx.createStruct(resourceType('TestRes', '1'), uuid),
+        isEph ? tx.createEphemeral(resourceType('TestRes', '1')) : tx.createStruct(resourceType('TestRes', '1'), uuid),
       );
       tx.createField(field(r1, 'f1'), 'Input');
       tx.lockInputs(r1);
@@ -183,7 +195,7 @@ tplTest('await simple state with resource error', async ({ pl, helper, expect })
     const nestedField = field(inputResource, 'nestedField');
     tx.createField(nestedField, 'Input');
     r2 = await toGlobalResourceId(
-      tx.createStruct(resourceType('TestRes', '1')),
+      isEph ? tx.createEphemeral(resourceType('TestRes', '1')) : tx.createStruct(resourceType('TestRes', '1')),
     );
     tx.createField(field(r2, 'f1'), 'Input');
     tx.lockInputs(inputResource);
