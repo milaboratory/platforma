@@ -39,7 +39,7 @@ onUnmounted(() => {
   <PlIcon16 :name="iconName" :size="props.size" class="copy" @click="onCopy" />
 </template>
 
-<style scoped>
+<style module>
 .copy {
   cursor: pointer;
   display: block;
