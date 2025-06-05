@@ -9,11 +9,12 @@ import type { ImportFileHandle, ImportProgress } from '@platforma-sdk/model';
 import { getFileNameFromHandle, getFilePathFromHandle } from '@platforma-sdk/model';
 import DoubleContour from '@/utils/DoubleContour.vue';
 import { useLabelNotch } from '@/utils/useLabelNotch';
-import { isErrorLike, prettyBytes, tryDo } from '@milaboratories/helpers';
+import { prettyBytes } from '@milaboratories/helpers';
+import { useErrorMessage } from '@/composition/useErrorMessage.ts';
 
 const data = reactive({
   fileDialogOpen: false,
-  error: '',
+  error: undefined as undefined | string,
 });
 
 const slots = useSlots();
@@ -107,28 +108,9 @@ const isUploading = computed(() => props.progress && !props.progress.done);
 
 const isUploaded = computed(() => props.progress && props.progress.done);
 
-const computedError = computed(() => {
-  let message: undefined | string = undefined;
+const computedErrorMessage = computed(() => useErrorMessage(data.error, props.error));
 
-  if (data.error.length > 0) {
-    message = data.error;
-  } else if (typeof props.error === 'string') {
-    message = props.error;
-  } else if (isErrorLike(props.error)) {
-    message = props.error.message;
-  } else if (props.error != null) {
-    const unknownString = tryDo(() => JSON.stringify(props.error, null, 4), () => String(props.error));
-    message = `Unknown error type:\n${unknownString}`;
-  }
-
-  if (typeof message === 'string' && message.length === 0) {
-    message = 'Empty error';
-  }
-
-  return message;
-});
-
-const hasErrors = computed(() => typeof computedError.value === 'string' && computedError.value.length > 0);
+const hasErrors = computed(() => typeof computedErrorMessage.value === 'string');
 
 const uploadStats = computed(() => {
   const { status, done } = props.progress ?? {};
@@ -170,9 +152,7 @@ const clear = () => emit('update:modelValue', undefined);
 
 watch(
   () => props.modelValue,
-  () => {
-    data.error = '';
-  },
+  () => (data.error = undefined),
   { immediate: true },
 );
 
@@ -216,7 +196,7 @@ if (!props.cellStyle) {
       <DoubleContour class="pl-file-input__contour" />
     </div>
     <div v-if="hasErrors" class="pl-file-input__error">
-      {{ computedError }}
+      {{ computedErrorMessage }}
     </div>
     <div v-else-if="helper" class="pl-file-input__helper">{{ helper }}</div>
   </div>

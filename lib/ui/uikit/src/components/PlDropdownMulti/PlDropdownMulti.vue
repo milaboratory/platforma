@@ -21,6 +21,7 @@ import { deepEqual, deepIncludes } from '@/helpers/objects';
 import { normalizeListOptions } from '@/helpers/utils';
 import DropdownOverlay from '@/utils/DropdownOverlay/DropdownOverlay.vue';
 import { PlMaskIcon24 } from '../PlMaskIcon24';
+import { useErrorMessage } from '@/composition/useErrorMessage.ts';
 
 const emit = defineEmits<{
   (e: 'update:modelValue', v: M[]): void;
@@ -51,7 +52,7 @@ const props = withDefaults(
     /**
      * Error message displayed below the dropdown (optional)
      */
-    error?: string;
+    error?: unknown;
     /**
      * Placeholder text shown when no value is selected.
      */
@@ -312,7 +313,7 @@ watchPostEffect(() => {
         <DoubleContour class="pl-dropdown-multi__contour" />
       </div>
     </div>
-    <div v-if="error" class="pl-dropdown-multi__error">{{ error }}</div>
+    <div v-if="error" class="pl-dropdown-multi__error">{{ useErrorMessage(error) }}</div>
     <div v-else-if="helper" class="pl-dropdown-multi__helper">{{ helper }}</div>
   </div>
 </template>

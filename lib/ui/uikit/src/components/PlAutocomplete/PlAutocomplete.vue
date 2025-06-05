@@ -24,6 +24,7 @@ import { PlMaskIcon24 } from '../PlMaskIcon24';
 import { DropdownOverlay } from '@/utils/DropdownOverlay';
 import { refDebounced } from '@vueuse/core';
 import { useWatchFetch } from '@/composition/useWatchFetch.ts';
+import { useErrorMessage } from '@/composition/useErrorMessage.ts';
 
 /**
  * The current selected value.
@@ -55,7 +56,7 @@ const props = withDefaults(
     /**
      * Error message displayed below the dropdown (optional)
      */
-    error?: string;
+    error?: unknown;
     /**
      * Placeholder text shown when no value is selected.
      */
@@ -155,7 +156,7 @@ const computedError = computed(() => {
   }
 
   if (props.error) {
-    return props.error;
+    return useErrorMessage(props.error);
   }
 
   if (isLoadingError.value) {
