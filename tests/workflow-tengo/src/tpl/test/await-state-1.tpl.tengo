@@ -1,5 +1,3 @@
-// await-state-1
-
 self := import("@platforma-sdk/workflow-tengo:tpl")
 
 self.defineOutputs(["main"])
