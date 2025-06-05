@@ -1,5 +1,11 @@
 # @milaboratories/helpers
 
+## 1.6.12
+
+### Patch Changes
+
+- 4ccd249: Implementation PlErrorBoundary over reusable PlErrorAlert + PlClibpboard
+
 ## 1.6.11
 
 ### Patch Changes
