@@ -18,7 +18,7 @@ export * from './layout/PlGrid';
  * Components
  */
 export * from './components/PlErrorBoundary';
-export * from './components/PlErrorAlert';
+// export * from './components/PlErrorAlert'; // @TODO discuss if we should export it
 export * from './components/PlAlert';
 export * from './components/PlBtnSplit';
 export * from './components/PlBtnPrimary';
