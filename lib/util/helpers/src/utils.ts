@@ -1,4 +1,4 @@
-import type { Option, AwaitedStruct, Unionize, Result } from './types';
+import type { AwaitedStruct, Option, Result, Unionize } from './types';
 
 export function notEmpty<T>(v: T | null | undefined, message?: string): T {
   if (v === null || v === undefined) {
@@ -77,14 +77,19 @@ export function async<A extends unknown[]>(gf: (...args: A) => Generator) {
 
 export class Deferred<T> {
   public readonly promise: Promise<T>;
-  public resolve: (v: T) => void = () => {};
-  public reject: (err: Error) => void = () => {};
+
   constructor() {
     this.promise = new Promise<T>((res, rej) => {
       this.resolve = res;
       this.reject = rej;
     });
   }
+
+  public resolve: (v: T) => void = () => {
+  };
+
+  public reject: (err: Error) => void = () => {
+  };
 }
 
 export function delay(ms: number) {
@@ -164,7 +169,7 @@ export class Interval {
   constructor(private _delay: number) {
   }
 
-  async *generate(): AsyncGenerator<number> {
+  async* generate(): AsyncGenerator<number> {
     let i = 0;
     while (true) {
       await delay(this._delay);
@@ -172,7 +177,7 @@ export class Interval {
     }
   }
 
-  async *[Symbol.asyncIterator]() {
+  async* [Symbol.asyncIterator]() {
     let i = 0;
     while (true) {
       await delay(this._delay);

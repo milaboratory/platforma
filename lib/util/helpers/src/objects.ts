@@ -12,6 +12,10 @@ export function isNonPrimitive<V, T extends PlainObject<V> | V[]>(obj: T | unkno
   return obj !== null && typeof obj === 'object';
 }
 
+export function isObject(value: unknown): value is object {
+  return typeof value === 'object' && value !== null;
+}
+
 /**
  * Checks if the given value is a plain object.
  *
@@ -32,7 +36,7 @@ export function isNonPrimitive<V, T extends PlainObject<V> | V[]>(obj: T | unkno
  * ```
  */
 export function isPlainObject(value: unknown): value is PlainObject {
-  if (typeof value !== 'object' || value === null) {
+  if (!isObject(value)) {
     return false;
   }
 
