@@ -31,8 +31,8 @@ catalogs:
       specifier: ^1.0.98
       version: 1.0.98
     '@milaboratories/pframes-rs-node':
-      specifier: 1.0.40
-      version: 1.0.40
+      specifier: 1.0.42
+      version: 1.0.42
     '@milaboratories/software-pframes-conv':
       specifier: 2.2.2
       version: 2.2.2
@@ -1849,7 +1849,7 @@ importers:
         version: link:../computable
       '@milaboratories/pframes-rs-node':
         specifier: 'catalog:'
-        version: 1.0.40(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)
+        version: 1.0.42(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)
       '@milaboratories/pl-client':
         specifier: workspace:^
         version: link:../pl-client
@@ -4463,8 +4463,8 @@ packages:
   '@milaboratories/miplots4@1.0.98':
     resolution: {integrity: sha512-600e9Xt1rJNyLAh/KOMoXWkvAxfvM6+sw8x/aeufsXyJITk0uo0PwEYKQhZJvasGAu/QPy0hA+3/HmsGhBqJWg==}
 
-  '@milaboratories/pframes-rs-node@1.0.40':
-    resolution: {integrity: sha512-PgCfltNIJZ48M77V0d1o7kA5ugpZTn569s3alkPpuSB9zAUL8EcmNrqNJlmbpqUD7G2o2++dRCvAv6abkFCbTg==}
+  '@milaboratories/pframes-rs-node@1.0.42':
+    resolution: {integrity: sha512-L5JtuJ5g3TEO79en+o/PuEOdOQg0Ayh3hQhBQX59dH4o8Emv9fUwqTG82eaDMqheDZbhwjenJF10/OwccSQ8Fw==}
     peerDependencies:
       '@milaboratories/pl-model-common': '*'
 
@@ -13322,7 +13322,7 @@ snapshots:
       - d3-scale-chromatic
       - supports-color
 
-  '@milaboratories/pframes-rs-node@1.0.40(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)':
+  '@milaboratories/pframes-rs-node@1.0.42(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)':
     dependencies:
       '@mapbox/node-pre-gyp': 2.0.0(encoding@0.1.13)
       '@milaboratories/pl-model-common': link:lib/model/common
