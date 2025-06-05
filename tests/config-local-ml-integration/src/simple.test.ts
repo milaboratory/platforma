@@ -20,7 +20,7 @@ test(
       portsMode: {
         type: 'random',
         from: 11234,
-        to: 11237
+        to: 11239
       },
       licenseMode: { type: 'env' }
     };
