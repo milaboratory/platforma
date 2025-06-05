@@ -8,14 +8,10 @@
   "styles": "dist/style.css",
   "exports": {
     ".": {
-      "style": "./styles/main.css",
       "types": "./dist/src/lib.d.ts",
       "default": "./dist/lib.js"
     },
-    "./styles": {
-      "default": "./dist/style.css"
-    },
-    "./*": "./*"
+    "./styles": "./dist/lib.css"
   },
   "scripts": {
     "test": "vitest run --passWithNoTests",
