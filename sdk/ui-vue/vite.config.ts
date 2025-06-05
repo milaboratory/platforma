@@ -32,13 +32,6 @@ export default defineConfig({
       },
     },
   },
-  css: {
-    preprocessorOptions: {
-      scss: {
-        api: 'modern-compiler',
-      },
-    },
-  },
   define: {
     'import.meta.vitest': 'undefined',
   },
