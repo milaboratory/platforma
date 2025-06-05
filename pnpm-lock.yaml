@@ -458,9 +458,15 @@ importers:
       '@milaboratories/milaboratories.test-download-file.model':
         specifier: workspace:*
         version: link:../model
+      '@platforma-sdk/model':
+        specifier: workspace:^
+        version: link:../../../../sdk/model
       '@platforma-sdk/ui-vue':
         specifier: workspace:^
         version: link:../../../../sdk/ui-vue
+      '@vueuse/core':
+        specifier: 'catalog:'
+        version: 12.4.0(typescript@5.5.4)
       vue:
         specifier: 'catalog:'
         version: 3.5.13(typescript@5.5.4)
