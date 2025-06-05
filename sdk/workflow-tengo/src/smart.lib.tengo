@@ -680,6 +680,22 @@ resource = func(r) {
 		},
 
 		/**
+		 * Create new dynamic field with given name.
+		 * Dynamic fields are fields that can be created modified and deleted.
+		 *
+		 * @param name field name
+		 */
+		createDynamicField: func(name) {
+			if is_bytes(name) {
+				name = string(name)
+			}
+			ll.assert(is_string(name) && name != "", "field name must be a non-empty string")
+			fid := ll.fieldId(self.id, name)
+			tx.createField(fid, constants.FTYPE_DYNAMIC)
+			return field(fid)
+		},
+
+		/**
 		 * Gets value from key value storage associated with resource if corresponding
 		 * record exists.
 		 *
