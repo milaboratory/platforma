@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, onErrorCaptured, ref } from 'vue';
+import { computed, onErrorCaptured, ref, onBeforeUpdate } from 'vue';
 import { PlErrorAlert } from '@/components/PlErrorAlert';
 import { isErrorLike, tryDo } from '@milaboratories/helpers';
 
@@ -31,6 +31,16 @@ function reset() {
   data.value = null;
 }
 
+const errorAlert = ref<InstanceType<typeof PlErrorAlert> | null>(null);
+
+onBeforeUpdate(() => {
+  // If an error is currently displayed, and the component updates (e.g., due to slot content changing),
+  // reset the error state.
+  if (data.value !== null && errorAlert.value) {
+    reset();
+  }
+});
+
 onErrorCaptured((err, instance) => {
   data.value = {
     title: instance?.$?.type?.name ?? undefined,
@@ -44,13 +54,6 @@ defineExpose({ error, reset });
 </script>
 
 <template>
-  <slot v-if="!error" />
-  <slot
-    v-else
-    :error="error"
-    :reset="reset"
-    name="fallback"
-  >
-    <PlErrorAlert :message="message" :title="data?.title" />
-  </slot>
+  <slot />
+  <PlErrorAlert v-if="error" ref="errorAlert" :message="message" :title="data?.title" />
 </template>
