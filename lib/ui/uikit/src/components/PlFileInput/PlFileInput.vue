@@ -25,52 +25,52 @@ const emit = defineEmits<{
 const props = withDefaults(
   defineProps<{
     /**
-       * The current import file handle.
-       */
+     * The current import file handle.
+     */
     modelValue: ImportFileHandle | undefined;
     /**
-       * The label to display above the input field.
-       */
+     * The label to display above the input field.
+     */
     label?: string;
     /**
-       * If `true`, the input field is marked as required.
-       */
+     * If `true`, the input field is marked as required.
+     */
     required?: boolean;
     /**
-       * If `true`, the component border is dashed.
-       */
+     * If `true`, the component border is dashed.
+     */
     dashed?: boolean;
     /**
-       * Allowed file extensions (should start with `.`)
-       */
+     * Allowed file extensions (should start with `.`)
+     */
     extensions?: string[];
     /**
-       * Placeholder text
-       */
+     * Placeholder text
+     */
     placeholder?: string;
     /**
-       * Import/Upload progress
-       */
+     * Import/Upload progress
+     */
     progress?: ImportProgress;
     /**
-       * An error message to display below the input field.
-       */
+     * An error message to display below the input field.
+     */
     error?: unknown;
     /**
-       * A helper text to display below the input field when there are no errors.
-       */
+     * A helper text to display below the input field when there are no errors.
+     */
     helper?: string;
     /**
-       * Remove rounded border and change styles
-       */
+     * Remove rounded border and change styles
+     */
     cellStyle?: boolean;
     /**
-       * File dialog title
-       */
+     * File dialog title
+     */
     fileDialogTitle?: string;
     /**
-       * If `true`, the file dialog window closes when clicking outside the modal area (default: `true`)
-       */
+     * If `true`, the file dialog window closes when clicking outside the modal area (default: `true`)
+     */
     fileDialogCloseOnOutsideClick?: boolean;
   }>(),
   {

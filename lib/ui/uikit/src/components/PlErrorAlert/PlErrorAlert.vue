@@ -57,9 +57,9 @@ function onCopy() {
   gap: 12px;
   padding: 12px;
   background: var(--bg-error);
-  border: 2px red solid;
+  border: 1px var(--border-color-error) solid;
   border-radius: var(--border-radius-control);
-  color: var(--txt-error);
+  /* color: var(--txt-error); */
 }
 
 .copy {
@@ -79,7 +79,8 @@ function onCopy() {
   align-items: center;
   gap: 10px;
   max-width: calc(100% - 20px);
-  line-height: 20px;
+  min-height: 24px;
+  line-height: 24px;
   font-weight: bold;
   overflow: hidden;
 }
@@ -99,5 +100,6 @@ function onCopy() {
   max-height: 100%;
   white-space: pre-wrap;
   word-break: break-word;
+  font-family: var(--font-family-monospace);
 }
 </style>
