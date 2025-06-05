@@ -6,6 +6,7 @@ import { clamp } from '@/helpers/math';
 import { PlTooltip } from '@/components/PlTooltip';
 import type { SliderMode } from '@/types';
 import { useSliderBreakpoints } from '@/composition/useSliderBreakpoints';
+import { useErrorMessage } from '@/composition/useErrorMessage.ts';
 
 type ModelType = [number, number, number];
 const slots = useSlots();
@@ -20,7 +21,7 @@ const props = withDefaults(
     step?: number;
     label?: string;
     helper?: string;
-    error?: string;
+    error?: unknown;
     mode?: SliderMode;
     measure?: string;
     breakpoints?: boolean;
@@ -84,7 +85,7 @@ const error = computed(() => {
     return errors.join(' ');
   }
 
-  return props.error;
+  return useErrorMessage(props.error);
 });
 
 const position1 = computed(() => {
