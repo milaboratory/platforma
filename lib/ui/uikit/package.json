@@ -5,17 +5,14 @@
   "main": "dist/pl-uikit.js",
   "module": "dist/pl-uikit.js",
   "types": "dist/src/index.d.ts",
-  "styles": "dist/style.css",
+  "styles": "dist/pl-uikit.css",
   "exports": {
     ".": {
-      "style": "./styles/main.css",
       "types": "./dist/src/index.d.ts",
       "default": "./dist/pl-uikit.js"
     },
-    "./styles": {
-      "default": "./dist/style.css"
-    },
-    "./*": "./*"
+    "./styles": "./dist/pl-uikit.css",
+    "./styles/mixins": "./src/assets/mixins.scss"
   },
   "scripts": {
     "dev": "vite",
