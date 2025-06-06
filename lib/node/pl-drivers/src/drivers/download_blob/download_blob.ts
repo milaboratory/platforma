@@ -136,7 +136,7 @@ export class DownloadDriver implements BlobDriver {
     ops: DownloadDriverOps,
   ): Promise<DownloadDriver> {
     const driver = new DownloadDriver(logger, clientDownload, clientLogs, saveDir, rangesCacheDir, signer, ops);
-    await driver.rangesCache.initFromDir(driver.rangesCacheDir);
+    await driver.rangesCache.reset();
 
     return driver;
   }
