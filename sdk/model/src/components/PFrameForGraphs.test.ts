@@ -2,10 +2,10 @@ import {test, expect, describe} from '@jest/globals';
 import {
     IS_VIRTUAL_COLUMN,
     LABEL_ANNOTATION,
-    enrichCompatible
+    enrichCompatible, LINKER_COLUMN_ANNOTATION, getAvailableWithLinkersAxes
 } from './PFrameForGraphs';
 import {
-    AxisId,
+    AxisId, CanonicalizedJson,
     canonicalizeJson, DataInfo,
     getAxisId,
     PColumn,
@@ -15,8 +15,8 @@ import {
 } from "@milaboratories/pl-model-common";
 import {TreeNodeAccessor} from "../render";
 
-function getAllAxesFromSpecs (specs:PColumnSpec[]):Map<string, AxisId> {
-    const allAxes:Map<string, AxisId> = new Map();
+function getAllAxesFromSpecs (specs:PColumnSpec[]):Map<CanonicalizedJson<AxisId>, AxisId> {
+    const allAxes:Map<CanonicalizedJson<AxisId>, AxisId> = new Map();
     for (const spec of specs) {
         for (const id of spec.axesSpec) {
             const aid = getAxisId(id);
@@ -191,5 +191,84 @@ describe('PFrameForGraph', () => {
         const resultColumns = enrichCompatible(allAxes, columns);
         expect(resultColumns[2].spec.annotations?.[LABEL_ANNOTATION]).toEqual('Label of column2 / a');
         expect(resultColumns[3].spec.annotations?.[LABEL_ANNOTATION]).toEqual('Label of column2 / b');
+    })
+
+    test('Linker column adds available axis', () => {
+        const columnSpec1: PColumnSpec = {
+            kind: 'PColumn',
+            name: 'column1',
+            valueType: 'Int',
+            axesSpec: [
+                {type: 'String', name: 'axis1', domain: {key1: 'a'}},
+                {type: 'String', name: 'axis2', domain: {key1: 'b'}},
+            ]
+        };
+        const linkerColumn13: PColumnSpec = {
+            kind: 'PColumn',
+            name: 'linker13',
+            valueType: 'String',
+            annotations: {[LINKER_COLUMN_ANNOTATION]: 'true'},
+            axesSpec: [
+                {type: 'String', name: 'axis1'},
+                {type: 'String', name: 'axis3'}
+            ]
+        }
+
+        const linkerColumns = [{id: 'id5' as PObjectId, spec: linkerColumn13, data: []}];
+        const availableAxes = getAvailableWithLinkersAxes(
+            linkerColumns,
+            getAllAxesFromSpecs([columnSpec1])
+        );
+        expect([...availableAxes.values()].map(id => id.name)).toEqual(['axis3'])
+    })
+
+    test('Linker columns add available axes by chains', () => {
+        const columnSpec1: PColumnSpec = {
+            kind: 'PColumn',
+            name: 'column1',
+            valueType: 'Int',
+            axesSpec: [{type: 'String', name: 'axis1'}]
+        };
+        const linkerColumn12: PColumnSpec = {
+            kind: 'PColumn',
+            name: 'linker12',
+            valueType: 'String',
+            annotations: {[LINKER_COLUMN_ANNOTATION]: 'true'},
+            axesSpec: [
+                {type: 'String', name: 'axis1'},
+                {type: 'String', name: 'axis2'}
+            ]
+        }
+        const linkerColumn23: PColumnSpec = {
+            kind: 'PColumn',
+            name: 'linker23',
+            valueType: 'String',
+            annotations: {[LINKER_COLUMN_ANNOTATION]: 'true'},
+            axesSpec: [
+                {type: 'String', name: 'axis2'},
+                {type: 'String', name: 'axis3'}
+            ]
+        }
+        const linkerColumn34: PColumnSpec = {
+            kind: 'PColumn',
+            name: 'linker34',
+            valueType: 'String',
+            annotations: {[LINKER_COLUMN_ANNOTATION]: 'true'},
+            axesSpec: [
+                {type: 'String', name: 'axis3'},
+                {type: 'String', name: 'axis4'}
+            ]
+        }
+
+        const linkerColumns = [
+            {id: 'id3' as PObjectId, spec: linkerColumn12, data: []},
+            {id: 'id4' as PObjectId, spec: linkerColumn23, data: []},
+            {id: 'id5' as PObjectId, spec: linkerColumn34, data: []},
+        ];
+        const availableAxes = getAvailableWithLinkersAxes(
+            linkerColumns,
+            getAllAxesFromSpecs([columnSpec1])
+        );
+        expect([...availableAxes.values()].map(id => id.name)).toEqual(['axis2', 'axis3', 'axis4'])
     })
 })

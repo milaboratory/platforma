@@ -1,15 +1,16 @@
 import type {
-  AxisId,
+  AxisId, CanonicalizedJson,
   DataInfo,
   PColumn,
-  PColumnSpec, PColumnValues,
+  PColumnSpec,
+  PColumnValues,
   PFrameHandle,
   PObjectId,
 } from '@milaboratories/pl-model-common';
 import {
   canonicalizeJson,
   getAxisId,
-  matchAxisId,
+  matchAxisId, parseJson,
 } from '@milaboratories/pl-model-common';
 import type { RenderCtx } from '../render';
 import { PColumnCollection, TreeNodeAccessor } from '../render';
@@ -54,6 +55,60 @@ export const IS_VIRTUAL_COLUMN = 'pl7.app/graph/isVirtual'; // annotation for co
 export const LABEL_ANNOTATION = 'pl7.app/label';
 export const LINKER_COLUMN_ANNOTATION = 'pl7.app/isLinkerColumn';
 
+export type LinkerColumnsMap = Map<CanonicalizedJson<AxisId>, Set<CanonicalizedJson<AxisId>>>;
+export function getLinkerColumnsMap(linkerColumns: PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor> | PColumnValues>[]) {
+  const resultMap: LinkerColumnsMap = new Map();
+  for (const { spec } of linkerColumns) {
+    const axisIds = spec.axesSpec.map(getAxisId).map(canonicalizeJson);
+    axisIds.forEach((id) => {
+      if (!resultMap.has(id)) {
+        resultMap.set(id, new Set());
+      }
+    });
+    for (let i = 0; i < axisIds.length - 1; i++) {
+      for (let j = i + 1; j < axisIds.length; j++) {
+        const id1 = axisIds[i];
+        const id2 = axisIds[j];
+        resultMap.get(id1)?.add(id2);
+        resultMap.get(id2)?.add(id1);
+      }
+    }
+  }
+  return resultMap;
+}
+
+export function getAvailableWithLinkersAxes(
+  linkerColumns: PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor> | PColumnValues>[],
+  blockAxes: Map<CanonicalizedJson<AxisId>, AxisId>,
+): Map<CanonicalizedJson<AxisId>, AxisId> {
+  const linkerColumnsMap = getLinkerColumnsMap(linkerColumns);
+  const linkerColumnsMapIds = [...linkerColumnsMap.keys()].map(parseJson);
+  const startKeys: CanonicalizedJson<AxisId>[] = [];
+  for (const startId of blockAxes.values()) {
+    const matched = linkerColumnsMapIds.find((id) => matchAxisId(startId, id));
+    if (matched) {
+      startKeys.push(canonicalizeJson(matched)); // linker column can contain fewer domains than in block's columns, it's fixed on next step in enrichCompatible
+    }
+  }
+  const visited: Set<CanonicalizedJson<AxisId>> = new Set(startKeys);
+  const addedAvailableAxes: Map<CanonicalizedJson<AxisId>, AxisId> = new Map();
+  let nextKeys = [...startKeys];
+
+  while (nextKeys.length) {
+    const next: CanonicalizedJson<AxisId>[] = [];
+    for (const nextKey of nextKeys) {
+      for (const availableKey of linkerColumnsMap.get(nextKey) ?? []) {
+        if (!visited.has(availableKey)) {
+          next.push(availableKey);
+          visited.add(availableKey);
+          addedAvailableAxes.set(availableKey, parseJson(availableKey));
+        }
+      }
+    }
+    nextKeys = next;
+  }
+  return addedAvailableAxes;
+}
 /** Add columns with fully compatible axes created from partial compatible ones */
 export function enrichCompatible(blockAxes: Map<string, AxisId>, columns: PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor> | PColumnValues>[]) {
   const result: PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor> | PColumnValues>[] = [];
@@ -160,7 +215,7 @@ export function createPFrameForGraphs<A, U>(
   columns.addColumns(blockColumns as PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor>>[]);
 
   // all possible axes from block columns
-  const allAxes = new Map<string, AxisId>();
+  const allAxes = new Map<CanonicalizedJson<AxisId>, AxisId>();
   for (const c of blockColumns) {
     for (const id of c.spec.axesSpec) {
       const aid = getAxisId(id);
@@ -169,17 +224,13 @@ export function createPFrameForGraphs<A, U>(
   }
 
   // all linker columns always go to pFrame - even it's impossible to use some of them they all are hidden
-  const linkerColumns = columns.getColumns(
-    (spec) => isLinkerColumn(spec)
-      && spec.axesSpec.some((ax) => allAxes.has(canonicalizeJson(getAxisId(ax)))), // TODO: linkers chains missed
-  ) ?? [];
+  const linkerColumns = columns.getColumns((spec) => isLinkerColumn(spec)) ?? [];
+  const availableWithLinkersAxes = getAvailableWithLinkersAxes(linkerColumns, allAxes);
   const labelColumns = columns.getColumns(isLabelColumn) ?? [];
+
   // all possible axes from connected linkers
-  for (const c of linkerColumns) {
-    for (const id of c.spec.axesSpec) {
-      const aid = getAxisId(id);
-      allAxes.set(canonicalizeJson(aid), aid);
-    }
+  for (const item of availableWithLinkersAxes) {
+    allAxes.set(...item);
   }
 
   let compatible = (columns.getColumns([...allAxes.values()]
