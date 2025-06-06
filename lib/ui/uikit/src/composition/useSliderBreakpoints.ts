@@ -1,4 +1,4 @@
-import { clamp } from '@/helpers/math';
+import { clamp } from '../helpers/math';
 import type { ComputedRef } from 'vue';
 import { computed } from 'vue';
 export const useSliderBreakpoints = (props: ComputedRef<{ min: number; max: number; step: number }>) => {

@@ -1,9 +1,9 @@
 <script lang="ts" setup>
-import Layout from '@/Layout.vue';
-import Split from '@/Split.vue';
+import Layout from '../Layout.vue';
+import Split from '../Split.vue';
 import { reactive } from 'vue';
 import { PlDropdown } from '@milaboratories/uikit';
-import { generate } from '@/imports';
+import { generate } from '../imports';
 import { faker } from '@faker-js/faker';
 
 const testItemOptions = generate(100, (i) => ({

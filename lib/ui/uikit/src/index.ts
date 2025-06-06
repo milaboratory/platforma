@@ -1,7 +1,7 @@
 import './assets/ui.scss';
 
 // @TODO review
-import * as DataTable from '@/components/DataTable';
+import * as DataTable from './components/DataTable';
 import ThemeSwitcher from './components/ThemeSwitcher.vue';
 
 /**

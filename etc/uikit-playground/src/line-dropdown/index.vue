@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { PlDropdownLine } from '@milaboratories/uikit';
-import Layout from '@/Layout.vue';
-import Split from '@/Split.vue';
-import { generate } from '@/imports';
+import Layout from '../Layout.vue';
+import Split from '../Split.vue';
+import { generate } from '../imports';
 import { ref } from 'vue';
-import PropsDisplay from '@/PropsDisplay.vue';
+import PropsDisplay from '../PropsDisplay.vue';
 import { listToOptions } from '@milaboratories/helpers';
 
 const lorem = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ';

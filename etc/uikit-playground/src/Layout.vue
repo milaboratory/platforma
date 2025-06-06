@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import Sidebar from '@/Sidebar/index.vue';
+import Sidebar from './Sidebar/index.vue';
 
 defineProps<{
   mainClass?: string;

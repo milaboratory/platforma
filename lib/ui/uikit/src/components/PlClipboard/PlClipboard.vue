@@ -5,8 +5,8 @@ export default {
 </script>
 
 <script lang="ts" setup>
-import { PlMaskIcon16 } from '@/components/PlMaskIcon16';
-import type { Size } from '@/types.ts';
+import { PlMaskIcon16 } from '../PlMaskIcon16';
+import type { Size } from '../../types.ts';
 import { computed, onUnmounted, ref } from 'vue';
 
 const props = defineProps<{
