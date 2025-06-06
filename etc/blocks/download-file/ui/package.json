@@ -12,8 +12,11 @@
   "dependencies": {
     "@milaboratories/milaboratories.test-download-file.model": "workspace:*",
     "vue": "catalog:",
-    "@platforma-sdk/ui-vue": "workspace:^"
+    "@vueuse/core": "catalog:",
+    "@platforma-sdk/ui-vue": "workspace:^",
+    "@platforma-sdk/model": "workspace:^"
   },
+  
   "devDependencies": {
     "@vitejs/plugin-vue": "catalog:",
     "typescript": "catalog:",

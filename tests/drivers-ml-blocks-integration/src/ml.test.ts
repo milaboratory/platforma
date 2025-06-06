@@ -608,6 +608,7 @@ blockTest(
         expect((outputs.contentAsJson as any).value).toStrictEqual(42);
         const localBlob = (outputs.downloadedBlobContent as any).value as LocalBlobHandleAndSize;
         const remoteBlob = (outputs.onDemandBlobContent as any).value as RemoteBlobHandleAndSize;
+        const quickJsRemoteBlob = (outputs.onDemandBlobContent1 as any).value as RemoteBlobHandleAndSize;
 
         expect(
           Buffer.from(await ml.driverKit.blobDriver.getContent(localBlob.handle)).toString('utf-8')
@@ -616,6 +617,14 @@ blockTest(
         expect(
           Buffer.from(await ml.driverKit.blobDriver.getContent(remoteBlob.handle)).toString('utf-8')
         ).toEqual('42\n');
+
+        expect(
+          Buffer.from(await ml.driverKit.blobDriver.getContent(remoteBlob.handle, { from: 1, to: 2 })).toString('utf-8')
+        ).toEqual('2');
+
+        expect(
+          Buffer.from(await ml.driverKit.blobDriver.getContent(quickJsRemoteBlob.handle, { from: 1, to: 2 })).toString('utf-8')
+        ).toEqual('2');
 
         return;
       }

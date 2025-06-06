@@ -1,4 +1,5 @@
 import type { Branded } from '../branding';
+import { z } from 'zod';
 
 /** Handle of locally downloaded blob. This handle is issued only after the
  * blob's content is downloaded locally, and ready for quick access. */
@@ -22,13 +23,14 @@ export interface BlobHandleAndSize<
 }
 
 /** Range in bytes, from should be less or equal than to. */
-export type RangeBytes = {
+export const RangeBytes = z.object({
   /** Included left border. */
-  from: number;
-
+  from: z.number(),
   /** Excluded right border. */
-  to: number;
-};
+  to: z.number(),
+});
+
+export type RangeBytes = z.infer<typeof RangeBytes>;
 
 export function newRangeBytesOpt(from?: number, to?: number): RangeBytes | undefined {
   if (from == undefined || to == undefined) {

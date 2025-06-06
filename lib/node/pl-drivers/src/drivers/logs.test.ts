@@ -25,6 +25,12 @@ import { DownloadDriver } from './download_blob/download_blob';
 import { LogsDriver } from './logs';
 import { LogsStreamDriver } from './logs_stream';
 
+const downloadDriverOps = {
+  cacheSoftSizeBytes: 700 * 1024,
+  nConcurrentDownloads: 10,
+  rangesCacheMaxSizeBytes: 1024,
+};
+
 test('should get all logs', async () => {
   await TestHelpers.withTempRoot(async (client) => {
     const logger = new ConsoleLoggerAdapter();
@@ -35,13 +41,15 @@ test('should get all logs', async () => {
     });
     const logsStream = new LogsStreamDriver(logger, createLogsClient(client, logger));
     const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-logs-1-'));
-    const download = new DownloadDriver(
+    const rangesCacheDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-logs-ranges'));
+    const download = await DownloadDriver.init(
       logger,
       createDownloadClient(logger, client, []),
       createLogsClient(client, logger),
       dir,
+      rangesCacheDir,
       new HmacSha256Signer(HmacSha256Signer.generateSecret()),
-      { cacheSoftSizeBytes: 700 * 1024, nConcurrentDownloads: 10 },
+      downloadDriverOps,
     );
     const logs = new LogsDriver(logger, logsStream, download);
 
@@ -80,13 +88,15 @@ test('should get last line with a prefix', async () => {
     });
     const logsStream = new LogsStreamDriver(logger, createLogsClient(client, logger));
     const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-logs-2-'));
-    const download = new DownloadDriver(
+    const rangesCacheDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-logs-ranges'));
+    const download = await DownloadDriver.init(
       logger,
       createDownloadClient(logger, client, []),
       createLogsClient(client, logger),
       dir,
+      rangesCacheDir,
       new HmacSha256Signer(HmacSha256Signer.generateSecret()),
-      { cacheSoftSizeBytes: 700 * 1024, nConcurrentDownloads: 10 },
+      downloadDriverOps,
     );
     const logs = new LogsDriver(logger, logsStream, download);
 
@@ -133,13 +143,15 @@ test('should get log smart object and get log lines from that', async () => {
     });
     const logsStream = new LogsStreamDriver(logger, createLogsClient(client, logger));
     const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-logs-3-'));
-    const download = new DownloadDriver(
+    const rangesCacheDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-logs-ranges'));
+    const download = await DownloadDriver.init(
       logger,
       createDownloadClient(logger, client, []),
       createLogsClient(client, logger),
       dir,
+      rangesCacheDir,
       new HmacSha256Signer(HmacSha256Signer.generateSecret()),
-      { cacheSoftSizeBytes: 700 * 1024, nConcurrentDownloads: 10 },
+      downloadDriverOps,
     );
     const logs = new LogsDriver(logger, logsStream, download);
 
