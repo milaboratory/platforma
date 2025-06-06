@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { computed } from 'vue';
-import type { Color } from '@/colors';
+import type { Color } from '../../colors';
 
 function splitBy<T>(arr: T[], n: number): T[][] {
   const res = [];

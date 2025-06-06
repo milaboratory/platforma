@@ -8,7 +8,7 @@ export default {
 </script>
 
 <script lang="ts" setup>
-import type { ModelRef, RefOption } from '@/types';
+import type { ModelRef, RefOption } from '../../types';
 import { PlDropdown } from '../PlDropdown';
 import { computed, useSlots } from 'vue';
 

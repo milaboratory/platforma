@@ -1,4 +1,4 @@
-import type { ListOption } from '@/types';
+import type { ListOption } from '../../types';
 import type { CellEvent, ColumnEvent } from './types';
 
 export const RESIZE_GAP = 10;

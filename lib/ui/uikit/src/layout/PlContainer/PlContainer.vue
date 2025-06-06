@@ -8,7 +8,7 @@ export default {
 <script lang="ts" setup>
 import { computed } from 'vue';
 import './pl-container.scss';
-import PlSplash from '@/components/PlSplash/PlSplash.vue';
+import PlSplash from '../../components/PlSplash/PlSplash.vue';
 
 const props = defineProps<{
   /**
