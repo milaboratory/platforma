@@ -1,11 +1,11 @@
 {
   "name": "@platforma-sdk/ui-vue",
-  "version": "1.33.3",
+  "version": "1.33.6",
   "type": "module",
   "main": "dist/lib.js",
   "module": "dist/lib.js",
   "types": "dist/src/lib.d.ts",
-  "styles": "dist/style.css",
+  "styles": "dist/lib.css",
   "exports": {
     ".": {
       "types": "./dist/src/lib.d.ts",
