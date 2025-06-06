@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.80
+
+### Patch Changes
+
+- cd3b6d5: Bump vite version and related plugins
+
 ## 2.2.79
 
 ### Patch Changes

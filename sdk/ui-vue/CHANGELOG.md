@@ -1,5 +1,13 @@
 # @platforma-sdk/ui-vue
 
+## 1.33.7
+
+### Patch Changes
+
+- cd3b6d5: Bump vite version and related plugins
+- Updated dependencies [cd3b6d5]
+  - @milaboratories/uikit@2.2.80
+
 ## 1.33.6
 
 ### Patch Changes
