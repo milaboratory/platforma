@@ -70,9 +70,8 @@ export type DownloadDriverOps = {
   cacheSoftSizeBytes: number;
 
   /**
-   * A soft limit of the amount of sparse cache, in bytes.
-   * Once exceeded, the download driver will start deleting blobs one by one
-   * when they become unneeded.
+   * A hard limit of the amount of sparse cache, in bytes.
+   * Once exceeded, the download driver will start deleting blobs one by one.
    *
    * The sparse cache is used to store ranges of blobs.
    * */
@@ -136,7 +135,7 @@ export class DownloadDriver implements BlobDriver {
     ops: DownloadDriverOps,
   ): Promise<DownloadDriver> {
     const driver = new DownloadDriver(logger, clientDownload, clientLogs, saveDir, rangesCacheDir, signer, ops);
-    await driver.rangesCache.initFromDir(driver.rangesCacheDir);
+    await driver.rangesCache.reset();
 
     return driver;
   }

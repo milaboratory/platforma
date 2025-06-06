@@ -25,6 +25,12 @@ import { DownloadDriver } from './download_blob/download_blob';
 import { LogsDriver } from './logs';
 import { LogsStreamDriver } from './logs_stream';
 
+const downloadDriverOps = {
+  cacheSoftSizeBytes: 700 * 1024,
+  nConcurrentDownloads: 10,
+  rangesCacheMaxSizeBytes: 1024,
+};
+
 test('should get all logs', async () => {
   await TestHelpers.withTempRoot(async (client) => {
     const logger = new ConsoleLoggerAdapter();
@@ -43,7 +49,7 @@ test('should get all logs', async () => {
       dir,
       rangesCacheDir,
       new HmacSha256Signer(HmacSha256Signer.generateSecret()),
-      { cacheSoftSizeBytes: 700 * 1024, nConcurrentDownloads: 10, rangesCacheMaxSizeBytes: 1024 },
+      downloadDriverOps,
     );
     const logs = new LogsDriver(logger, logsStream, download);
 
@@ -90,7 +96,7 @@ test('should get last line with a prefix', async () => {
       dir,
       rangesCacheDir,
       new HmacSha256Signer(HmacSha256Signer.generateSecret()),
-      { cacheSoftSizeBytes: 700 * 1024, nConcurrentDownloads: 10, rangesCacheMaxSizeBytes: 1024 },
+      downloadDriverOps,
     );
     const logs = new LogsDriver(logger, logsStream, download);
 
@@ -145,7 +151,7 @@ test('should get log smart object and get log lines from that', async () => {
       dir,
       rangesCacheDir,
       new HmacSha256Signer(HmacSha256Signer.generateSecret()),
-      { cacheSoftSizeBytes: 700 * 1024, nConcurrentDownloads: 10, rangesCacheMaxSizeBytes: 1024 },
+      downloadDriverOps,
     );
     const logs = new LogsDriver(logger, logsStream, download);
 

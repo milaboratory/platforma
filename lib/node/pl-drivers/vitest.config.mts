@@ -6,7 +6,7 @@ export default defineConfig({
   test: {
     watch: false,
     coverage: {
-      exclude: ['src/proto'],
+      exclude: ['src/proto', '**/*.js'],
       include: ['src'],
     }
   }
