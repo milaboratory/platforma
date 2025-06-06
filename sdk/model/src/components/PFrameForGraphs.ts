@@ -12,7 +12,7 @@ import {
   getAxisId,
   matchAxisId, parseJson,
 } from '@milaboratories/pl-model-common';
-import type { RenderCtx } from '../render';
+import type { PColumnDataUniversal, RenderCtx } from '../render';
 import { PColumnCollection, TreeNodeAccessor } from '../render';
 import { isLabelColumn } from './PlDataTable';
 
@@ -56,7 +56,7 @@ export const LABEL_ANNOTATION = 'pl7.app/label';
 export const LINKER_COLUMN_ANNOTATION = 'pl7.app/isLinkerColumn';
 
 export type LinkerColumnsMap = Map<CanonicalizedJson<AxisId>, Set<CanonicalizedJson<AxisId>>>;
-export function getLinkerColumnsMap(linkerColumns: PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor> | PColumnValues>[]) {
+export function getLinkerColumnsMap(linkerColumns: PColumn<PColumnDataUniversal>[]) {
   const resultMap: LinkerColumnsMap = new Map();
   for (const { spec } of linkerColumns) {
     const axisIds = spec.axesSpec.map(getAxisId).map(canonicalizeJson);
@@ -78,7 +78,7 @@ export function getLinkerColumnsMap(linkerColumns: PColumn<TreeNodeAccessor | Da
 }
 
 export function getAvailableWithLinkersAxes(
-  linkerColumns: PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor> | PColumnValues>[],
+  linkerColumns: PColumn<PColumnDataUniversal>[],
   blockAxes: Map<CanonicalizedJson<AxisId>, AxisId>,
 ): Map<CanonicalizedJson<AxisId>, AxisId> {
   const linkerColumnsMap = getLinkerColumnsMap(linkerColumns);
@@ -110,8 +110,8 @@ export function getAvailableWithLinkersAxes(
   return addedAvailableAxes;
 }
 /** Add columns with fully compatible axes created from partial compatible ones */
-export function enrichCompatible(blockAxes: Map<string, AxisId>, columns: PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor> | PColumnValues>[]) {
-  const result: PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor> | PColumnValues>[] = [];
+export function enrichCompatible(blockAxes: Map<string, AxisId>, columns: PColumn<PColumnDataUniversal>[]) {
+  const result: PColumn<PColumnDataUniversal>[] = [];
   columns.forEach((column) => {
     result.push(...getAdditionalColumnsForColumn(blockAxes, column));
   });
@@ -120,8 +120,8 @@ export function enrichCompatible(blockAxes: Map<string, AxisId>, columns: PColum
 
 function getAdditionalColumnsForColumn(
   blockAxes: Map<string, AxisId>,
-  column: PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor> | PColumnValues>,
-): PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor> | PColumnValues>[] {
+  column: PColumn<PColumnDataUniversal>,
+): PColumn<PColumnDataUniversal>[] {
   const columnAxesIds = column.spec.axesSpec.map(getAxisId);
 
   if (columnAxesIds.every((id) => blockAxes.has(canonicalizeJson(id)))) {
@@ -206,13 +206,13 @@ function getAdditionalColumnsForColumn(
 
 export function createPFrameForGraphs<A, U>(
   ctx: RenderCtx<A, U>,
-  blockColumns: PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor> | PColumnValues>[] | undefined,
+  blockColumns: PColumn<PColumnDataUniversal>[] | undefined,
 ): PFrameHandle | undefined {
   if (!blockColumns) return undefined;
 
   const columns = new PColumnCollection();
   columns.addColumnProvider(ctx.resultPool);
-  columns.addColumns(blockColumns as PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor>>[]);
+  columns.addColumns(blockColumns);
 
   // all possible axes from block columns
   const allAxes = new Map<CanonicalizedJson<AxisId>, AxisId>();
