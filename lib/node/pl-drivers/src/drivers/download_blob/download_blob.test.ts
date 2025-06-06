@@ -4,7 +4,8 @@ import type {
   FieldRef,
   PlClient,
   PlTransaction,
-  PollTxAccessor } from '@milaboratories/pl-client';
+  PollTxAccessor
+} from '@milaboratories/pl-client';
 import {
   jsonToData,
   poll,
@@ -22,16 +23,12 @@ import * as env from '../../test_env';
 
 const fileName = 'answer_to_the_ultimate_question.txt';
 
-test('should download a blob and read its content', { timeout: 10000 },  async () => {
+test('should download a blob and read its content', { timeout: 10000 }, async () => {
   await TestHelpers.withTempRoot(async (client) => {
     const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-download-driver'));
     const rangesCacheDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-download-ranges'));
 
-    const driver = await genDriver(client, dir, rangesCacheDir, genSigner(), {
-      cacheSoftSizeBytes: 700 * 1024,
-      nConcurrentDownloads: 10,
-      rangesCacheMaxSizeBytes: 1024,
-    });
+    const driver = await genDriver(client, dir, rangesCacheDir, genSigner());
     const downloadable = await makeDownloadableBlobFromAssets(client, fileName);
 
     const c = driver.getDownloadedBlob(downloadable);
@@ -58,11 +55,7 @@ test('should download a blob range and read its content with a range', async () 
     const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-download-driver'));
     const rangesCacheDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-download-ranges'));
 
-    const driver = await genDriver(client, dir, rangesCacheDir, genSigner(), {
-      cacheSoftSizeBytes: 700 * 1024,
-      nConcurrentDownloads: 10,
-      rangesCacheMaxSizeBytes: 1024,
-    });
+    const driver = await genDriver(client, dir, rangesCacheDir, genSigner());
     const downloadable = await makeDownloadableBlobFromAssets(client, fileName);
 
     const c = driver.getDownloadedBlob(downloadable);
@@ -90,11 +83,7 @@ test('should not redownload a blob when a file already exists', async () => {
     const rangesCacheDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-download-ranges'));
     const signer = genSigner();
 
-    const driver = await genDriver(client, dir, rangesCacheDir, signer, {
-      cacheSoftSizeBytes: 700 * 1024,
-      nConcurrentDownloads: 10,
-      rangesCacheMaxSizeBytes: 1024,
-    });
+    const driver = await genDriver(client, dir, rangesCacheDir, signer);
 
     console.log('Download the first time');
     const downloadable = await makeDownloadableBlobFromAssets(client, fileName);
@@ -106,11 +95,7 @@ test('should not redownload a blob when a file already exists', async () => {
 
     await driver.releaseAll();
 
-    const driver2 = await genDriver(client, dir, rangesCacheDir, signer, {
-      cacheSoftSizeBytes: 700 * 1024,
-      nConcurrentDownloads: 10,
-      rangesCacheMaxSizeBytes: 1024,
-    });
+    const driver2 = await genDriver(client, dir, rangesCacheDir, signer);
 
     console.log('Download the second time');
     const c2 = driver2.getDownloadedBlob(downloadable);
@@ -128,11 +113,7 @@ test('should get on demand blob without downloading a blob', async () => {
     const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-download-2-'));
     const rangesCacheDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-download-ranges'));
 
-    const driver = await genDriver(client, dir, rangesCacheDir, genSigner(), {
-      cacheSoftSizeBytes: 700 * 1024,
-      nConcurrentDownloads: 10,
-      rangesCacheMaxSizeBytes: 1024,
-    });
+    const driver = await genDriver(client, dir, rangesCacheDir, genSigner());
 
     const downloadable = await makeDownloadableBlobFromAssets(client, fileName);
     const c = driver.getOnDemandBlob(downloadable);
@@ -151,11 +132,7 @@ test('should get on demand blob without downloading a blob range', async () => {
     const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-download-2-'));
     const rangesCacheDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-download-ranges'));
 
-    const driver = await genDriver(client, dir, rangesCacheDir, genSigner(), {
-      cacheSoftSizeBytes: 700 * 1024,
-      nConcurrentDownloads: 10,
-      rangesCacheMaxSizeBytes: 1024,
-    });
+    const driver = await genDriver(client, dir, rangesCacheDir, genSigner());
 
     const downloadable = await makeDownloadableBlobFromAssets(client, fileName);
 
@@ -256,8 +233,20 @@ function genSigner() {
   return new HmacSha256Signer(HmacSha256Signer.generateSecret())
 }
 
-async function genDriver(client: PlClient, dir: string, rangesCacheDir: string, signer: Signer, ops: DownloadDriverOps) {
+async function genDriver(
+  client: PlClient,
+  dir: string,
+  rangesCacheDir: string,
+  signer: Signer,
+  ops?: Partial<DownloadDriverOps>,
+) {
   const logger = new ConsoleLoggerAdapter();
+
+  const defaultOps = {
+    cacheSoftSizeBytes: 700 * 1024,
+    nConcurrentDownloads: 10,
+    rangesCacheMaxSizeBytes: 1024,
+  };
 
   const driver = await DownloadDriver.init(
     logger,
@@ -266,7 +255,7 @@ async function genDriver(client: PlClient, dir: string, rangesCacheDir: string, 
     dir,
     rangesCacheDir,
     signer,
-    ops,
+    { ...defaultOps, ...ops },
   );
 
   return driver;

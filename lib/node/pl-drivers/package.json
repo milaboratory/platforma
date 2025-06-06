@@ -30,6 +30,7 @@
     "decompress": "catalog:",
     "@grpc/grpc-js": "catalog:",
     "@milaboratories/ts-helpers": "workspace:^",
+    "@milaboratories/helpers": "workspace:^",
     "@milaboratories/computable": "workspace:^",
     "@milaboratories/pl-client": "workspace:^",
     "@milaboratories/pl-tree": "workspace:^",

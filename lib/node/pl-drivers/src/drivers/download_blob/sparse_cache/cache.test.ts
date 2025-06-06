@@ -1,4 +1,4 @@
-import { SparseCache, type SparseFile, type SparseCacheRanges } from './cache';
+import { SparseCache, type SparseFileStorage, type SparseCacheRanges } from './cache';
 import { ConsoleLoggerAdapter } from '@milaboratories/ts-helpers';
 import type { Ranges } from './ranges';
 import { describe, it, expect } from 'vitest';
@@ -38,10 +38,14 @@ class InMemoryRanges implements SparseCacheRanges {
 }
 
 /** In-memory implementation for a sparse file. */
-class InMemoryFile implements SparseFile {
+class InMemoryFile implements SparseFileStorage {
   constructor(
     public readonly keyToFromToData: Record<string, Record<number, string>>,
   ) {}
+
+  async all() {
+    return Object.entries(this.keyToFromToData).map(([k, _]) => k);
+  }
 
   async exists(key: string) {
     return key in this.keyToFromToData;
@@ -158,7 +162,7 @@ describe('SparseCache.get', () => {
   }
 });
 
-describe('SparseCache.setNoClear', () => {
+describe('SparseCache.setWithoutEviction', () => {
   it('should add a new key and range', async () => {
     const c = genCache(
       {},
@@ -168,7 +172,7 @@ describe('SparseCache.setNoClear', () => {
       {},
     );
 
-    await c.cache.setNoClear('key1', { from: 0, to: 10 }, genData('abc123abc1'));
+    await c.cache.setWithoutEviction('key1', { from: 0, to: 10 }, genData('abc123abc1'));
 
     expect(c.ranges.keyToRanges).toMatchObject({
       'key1': { ranges: [{ from: 0, to: 10 }] },
@@ -188,7 +192,7 @@ describe('SparseCache.setNoClear', () => {
       { 'key1': { 0: 'data' } },
     );
 
-    await c.cache.setNoClear('key1', { from: 0, to: 10 }, genData('abc123abc1'));
+    await c.cache.setWithoutEviction('key1', { from: 0, to: 10 }, genData('abc123abc1'));
 
     expect(c.ranges.keyToRanges).toMatchObject({
       'key1': { ranges: [{ from: 0, to: 10 }] },
@@ -208,7 +212,7 @@ describe('SparseCache.setNoClear', () => {
       { 'key1': { 0: 'original  ' } } // 10 chars
     );
 
-    await c.cache.setNoClear('key1', { from: 20, to: 30 }, genData('new       ')); // 10 chars
+    await c.cache.setWithoutEviction('key1', { from: 20, to: 30 }, genData('new       ')); // 10 chars
 
     expect(c.ranges.keyToRanges['key1']).toEqual({ ranges: [{ from: 0, to: 10 }, { from: 20, to: 30 }] });
     expect(c.storage.keyToFromToData['key1']).toMatchObject({
@@ -228,7 +232,7 @@ describe('SparseCache.setNoClear', () => {
     );
 
     // Add range 5-15, overlaps with 0-10
-    await c.cache.setNoClear('key1', { from: 5, to: 15 }, genData('nal1231231')); // data for 5-15
+    await c.cache.setWithoutEviction('key1', { from: 5, to: 15 }, genData('nal1231231')); // data for 5-15
 
     expect(c.ranges.keyToRanges['key1']).toEqual({ ranges: [{ from: 0, to: 15 }] });
     expect(c.storage.keyToFromToData['key1']).toMatchObject({
@@ -249,7 +253,7 @@ describe('SparseCache.setNoClear', () => {
 
     // Add range 5-15, which is a sub-range of 0-20. The total range 0-20 should remain.
     // The size should remain 20 as normalizeRanges will keep the outer [0, 20] range.
-    await c.cache.setNoClear('key1', { from: 5, to: 15 }, genData('subrange  '));
+    await c.cache.setWithoutEviction('key1', { from: 5, to: 15 }, genData('subrange  '));
 
     expect(c.cache.size).toEqual(20);
     expect(c.ranges.keyToRanges['key1']).toEqual({ ranges: [{ from: 0, to: 20 }] });
@@ -260,7 +264,7 @@ describe('SparseCache.setNoClear', () => {
   });
 });
 
-describe('SparseCache.ensureCleared', () => {
+describe('SparseCache.ensureEvicted', () => {
   it('should do nothing if cache size is below or equal to maxSize', async () => {
     const c = genCache(
       {
@@ -279,7 +283,7 @@ describe('SparseCache.ensureCleared', () => {
       }
     );
 
-    await c.cache.ensureCleared();
+    await c.cache.ensureEvicted();
 
     expect(c.cache.size).toEqual(20);
     expect(c.ranges.keyToRanges).toMatchObject({
@@ -313,7 +317,7 @@ describe('SparseCache.ensureCleared', () => {
       }
     );
 
-    await c.cache.ensureCleared();
+    await c.cache.ensureEvicted();
 
     expect(c.cache.size).toEqual(10);
     expect(c.ranges.keyToRanges).toMatchObject({
@@ -342,7 +346,7 @@ describe('SparseCache.ensureCleared', () => {
       }
     );
 
-    await c.cache.ensureCleared();
+    await c.cache.ensureEvicted();
 
     expect(c.cache.size).toEqual(0);
     expect(Object.keys(c.ranges.keyToRanges).length).toEqual(0);
@@ -358,7 +362,7 @@ describe('SparseCache.ensureCleared', () => {
       {}
     );
 
-    await c.cache.ensureCleared();
+    await c.cache.ensureEvicted();
 
     expect(c.cache.size).toEqual(0);
     expect(Object.keys(c.ranges.keyToRanges).length).toEqual(0);
