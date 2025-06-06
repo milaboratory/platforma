@@ -1,5 +1,12 @@
 # @milaboratories/pl-client
 
+## 2.10.0
+
+### Minor Changes
+
+- f7dedbe: - setResourceError method from the backend API exposed
+  - createError helper method
+
 ## 2.9.3
 
 ### Patch Changes

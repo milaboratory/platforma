@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.79
+
+### Patch Changes
+
+- 4ccd249: Implementation PlErrorBoundary over reusable PlErrorAlert + PlClibpboard
+
 ## 2.2.78
 
 ### Patch Changes
