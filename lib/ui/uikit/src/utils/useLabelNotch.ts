@@ -1,8 +1,8 @@
 import { onBeforeUnmount, type Ref } from 'vue';
-import { tap, tapIf } from '@/helpers/functions';
-import { onChanged } from '@/composition/utils';
-import { call } from '@/helpers/utils';
-import { startResizeObserving, stopResizeObserving } from '@/global/resizeObserver';
+import { tap, tapIf } from '../helpers/functions';
+import { onChanged } from '../composition/utils';
+import { call } from '../helpers/utils';
+import { startResizeObserving, stopResizeObserving } from '../global/resizeObserver';
 
 const offset = 8; // see --label-offset-left-x css var
 

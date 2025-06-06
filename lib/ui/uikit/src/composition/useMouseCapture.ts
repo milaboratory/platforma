@@ -1,6 +1,6 @@
-import type { MaybeRef } from '@/types';
+import type { MaybeRef } from '../types';
 import { unref } from 'vue';
-import { useEventListener } from '@/composition/useEventListener';
+import { useEventListener } from './useEventListener';
 
 type CustomEvent = {
   x: number;

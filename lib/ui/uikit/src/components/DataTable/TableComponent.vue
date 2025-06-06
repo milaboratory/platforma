@@ -8,7 +8,7 @@ import TrHead from './TrHead.vue';
 import ThCell from './ThCell.vue';
 import TrBody from './TrBody.vue';
 import ColumnCaret from './ColumnCaret.vue';
-import { useEventListener } from '@/index';
+import { useEventListener } from '../../index';
 import { tapIf } from '@milaboratories/helpers';
 import { useResize } from './composition/useResize';
 import RowsCommandMenu from './RowsCommandMenu.vue';

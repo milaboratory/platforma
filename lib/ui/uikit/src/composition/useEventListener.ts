@@ -1,5 +1,5 @@
 import { onMounted, onUnmounted, unref } from 'vue';
-import type { MaybeRef } from '@/types';
+import type { MaybeRef } from '../types';
 
 type EventMap = WindowEventMap & HTMLElementEventMap & { adjust: Event };
 

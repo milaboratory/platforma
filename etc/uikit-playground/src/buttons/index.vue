@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { reactive } from 'vue';
-import Layout from '@/Layout.vue';
+import Layout from '../Layout.vue';
 import {
   PlBtnPrimary,
   PlBtnSecondary,
@@ -11,7 +11,7 @@ import {
   type Size,
   maskIcons24
 } from '@milaboratories/uikit';
-import Split from '@/Split.vue';
+import Split from '../Split.vue';
 
 const props = reactive({
   size: 'medium' as Size,

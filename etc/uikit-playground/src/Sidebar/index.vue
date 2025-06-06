@@ -1,8 +1,8 @@
 <!-- eslint-disable vue/no-undef-components -->
 <script lang="ts" setup>
 import { state } from '../state';
-import ToggleMenu from '@/Sidebar/ToggleMenu.vue';
-import { routes } from '@/router';
+import ToggleMenu from './ToggleMenu.vue';
+import { routes } from '../router';
 
 // eslint-disable-next-line no-undef
 const appVersion = APP_VERSION;

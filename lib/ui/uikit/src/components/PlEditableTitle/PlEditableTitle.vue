@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { useTransformedModel } from '@/composition/useTransformedModel';
+import { useTransformedModel } from '../../composition/useTransformedModel';
 import style from './pl-editable-title.module.scss';
 import { computed, ref } from 'vue';
 

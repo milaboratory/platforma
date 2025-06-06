@@ -1,6 +1,6 @@
 <script lang="ts" setup>
-import { useElementPosition } from '@/composition/usePosition';
-import { scrollIntoView } from '@/helpers/dom';
+import { useElementPosition } from '../../composition/usePosition';
+import { scrollIntoView } from '../../helpers/dom';
 import { tapIf } from '@milaboratories/helpers';
 import { reactive, ref, toRef, watch } from 'vue';
 
