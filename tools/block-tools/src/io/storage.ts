@@ -102,7 +102,7 @@ export class FSStorage implements RegistryStorage {
       return (await fs.promises.readdir(listRoot, { recursive: true, withFileTypes: true }))
         .filter((e: any) => e.isFile())
         .map((e: any) =>
-          path.relative(listRoot, path.resolve(e.path, e.name)).split(path.sep).join(pathPosix.sep)
+          path.relative(listRoot, path.resolve(e.parentPath, e.name)).split(path.sep).join(pathPosix.sep)
         );
     } catch (err: any) {
       if (err.code == 'ENOENT') return [];

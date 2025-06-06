@@ -37,11 +37,14 @@ export function newDefaultPlConfig(
       },
       grpc: {
         listen: ports.grpc,
-        tls: { enabled: false },
+      },
+      http: {
+        listen: ports.httpEndpoint ?? '',
       },
       authEnabled: true,
       auth: getDefaultAuthMethods(htpasswdAuth, jwtKey),
       db: { path: dbPath },
+      tls: { enabled: false },
     },
     controllers: {
       workflows: {},
