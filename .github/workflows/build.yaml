@@ -20,10 +20,11 @@ jobs:
   run:
     needs:
       - init
-    uses: milaboratory/github-ci/.github/workflows/node-simple-pnpm.yaml@v4
+    uses: milaboratory/github-ci/.github/workflows/node-simple-pnpm.yaml@v4-beta
     with:
       app-name: Platforma SDK
       app-name-slug: 'platforma-sdk'
+      require-review: true
       gha-runner-label: 'dev-pl-sdk'
       notify-telegram: true
       node-version: '20.x'
