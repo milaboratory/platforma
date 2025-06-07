@@ -1,0 +1,8 @@
+name: Check review
+on:
+  pull_request_review:
+    types: [submitted, dismissed, edited]
+
+jobs:
+  run:
+    uses: milaboratory/github-ci/.github/workflows/require-review.yaml@monorepo-js
