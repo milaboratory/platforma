@@ -5,8 +5,8 @@ export default {
 </script>
 
 <script lang="ts" setup>
-import { PlClipboard } from '@/components/PlClipboard';
-import { PlMaskIcon16 } from '@/components/PlMaskIcon16';
+import { PlClipboard } from '../PlClipboard';
+import { PlMaskIcon16 } from '../PlMaskIcon16';
 
 const props = withDefaults(
   defineProps<{

@@ -1,9 +1,9 @@
 <script lang="ts" setup>
 import { reactive } from 'vue';
-import Layout from '@/Layout.vue';
+import Layout from '../Layout.vue';
 import { PlBtnGroup } from '@milaboratories/uikit';
-import Split from '@/Split.vue';
-import { generate } from '@/imports';
+import Split from '../Split.vue';
+import { generate } from '../imports';
 
 const data = reactive({
   num: 1,

@@ -8,7 +8,7 @@ export default {
 <script lang="ts" setup>
 import { useSlots } from 'vue';
 import './pl-block-page.scss';
-import PlSplash from '@/components/PlSplash/PlSplash.vue';
+import PlSplash from '../../components/PlSplash/PlSplash.vue';
 
 const slots = useSlots();
 

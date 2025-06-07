@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { computed, onErrorCaptured, ref, onBeforeUpdate } from 'vue';
-import { PlErrorAlert } from '@/components/PlErrorAlert';
+import { PlErrorAlert } from '../PlErrorAlert';
 import { isErrorLike, tryDo } from '@milaboratories/helpers';
 
 const extractMessage = (err: unknown): undefined | string => {

@@ -1,6 +1,6 @@
-import { useEventListener } from '@/composition/useEventListener.ts';
+import { useEventListener } from '../../composition/useEventListener.ts';
 import { useMouseUp } from './useMouseUp';
-import { requestTick } from '@/helpers';
+import { requestTick } from '../../helpers';
 
 export function useColumn(cb: (state: { x: number; width: number; diff: number }) => void, clear: () => void) {
   let state = undefined as { x: number; width: number } | undefined;

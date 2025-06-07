@@ -1,7 +1,7 @@
 import type { ComputedRef, Ref } from 'vue';
 import { computed } from 'vue';
-import type { ListOption, ListOptionNormalized } from '@/types';
-import { normalizeListOptions } from '@/helpers/utils';
+import type { ListOption, ListOptionNormalized } from '../types';
+import { normalizeListOptions } from '../helpers/utils';
 
 export function useFilteredList<V = unknown>(optionsRef: Ref<ListOption<V>[]>, searchPhrase: Ref<string>): ComputedRef<ListOptionNormalized<V>[]> {
   return computed(() => {

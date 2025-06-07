@@ -1,4 +1,4 @@
-import type { ListOption } from '@/types';
+import type { ListOption } from '../../types';
 
 type TypeMap = {
   integer: number;

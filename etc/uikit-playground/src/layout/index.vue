@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import Layout from '@/Layout.vue';
+import Layout from '../Layout.vue';
 import { PlBlockPage, PlBtnGroup, PlDropdown, PlRow, PlTextField, PlGrid, PlContainer, PlBtnGhost } from '@milaboratories/uikit';
 import { reactive } from 'vue';
 
