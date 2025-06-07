@@ -1,5 +1,6 @@
 export type TxStat = {
   txCount: number;
+  timeMs: number;
 
   rootsCreated: number;
   structsCreated: number;
@@ -33,7 +34,9 @@ export type TxStat = {
   kvGetBytes: number;
 };
 
-export function initialTxStat(): TxStat {
+export type TxStatWithoutTime = Omit<TxStat, 'timeMs'>;
+
+export function initialTxStatWithoutTime(): TxStatWithoutTime {
   return {
     txCount: 0,
     rootsCreated: 0,
@@ -63,10 +66,17 @@ export function initialTxStat(): TxStat {
     kvGetBytes: 0,
   };
 }
+export function initialTxStat(): TxStat {
+  return {
+    ...initialTxStatWithoutTime(),
+    timeMs: 0,
+  };
+}
 
 export function addStat(a: TxStat, b: TxStat): TxStat {
   return {
     txCount: a.txCount + b.txCount,
+    timeMs: a.timeMs + b.timeMs,
     rootsCreated: a.rootsCreated + b.rootsCreated,
     structsCreated: a.structsCreated + b.structsCreated,
     structsCreatedDataBytes: a.structsCreatedDataBytes + b.structsCreatedDataBytes,
