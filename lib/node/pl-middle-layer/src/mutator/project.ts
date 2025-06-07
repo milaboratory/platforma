@@ -504,15 +504,15 @@ export class ProjectMutator {
         if (!(stateKey in req)) continue;
         const statePart = req[stateKey] ?? '{}';
 
-        blockChanged = true;
-        if (stateKey === 'args') changedArgs.push(req.blockId);
-
         const fieldName = stateKey === 'args' ? 'currentArgs' : 'uiState';
         JSON.parse(statePart); // checking
         const binary = Buffer.from(statePart);
         if (Buffer.compare(info.fields[fieldName]!.value!, binary) === 0) continue;
         const statePartRef = this.tx.createValue(Pl.JsonObject, binary);
         this.setBlockField(req.blockId, fieldName, statePartRef, 'Ready', binary);
+
+        blockChanged = true;
+        if (stateKey === 'args') changedArgs.push(req.blockId);
       }
       if (blockChanged) {
         // will be assigned our author marker
