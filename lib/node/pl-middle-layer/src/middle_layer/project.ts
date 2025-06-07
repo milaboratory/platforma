@@ -42,6 +42,7 @@ import fs from 'node:fs/promises';
 import canonicalize from 'canonicalize';
 import type { ProjectOverviewLight } from './project_overview_light';
 import { projectOverviewLight } from './project_overview_light';
+import { applyProjectMigrations } from '../mutator/migration';
 
 type BlockStateComputables = {
   readonly fullState: Computable<BlockStateInternal>;
@@ -281,7 +282,7 @@ export class Project {
    * */
   public async setBlockArgs(blockId: string, args: unknown, author?: AuthorMarker) {
     await withProjectAuthored(this.env.projectHelper, this.env.pl, this.rid, author, (mut) =>
-      mut.setArgs([{ blockId, args: canonicalize(args)! }]),
+      mut.setStates([{ blockId, args: canonicalize(args)! }]),
     );
     await this.projectTree.refreshState();
   }
@@ -294,7 +295,7 @@ export class Project {
    * */
   public async setUiState(blockId: string, uiState: unknown, author?: AuthorMarker) {
     await withProjectAuthored(this.env.projectHelper, this.env.pl, this.rid, author, (mut) =>
-      mut.setUiState(blockId, uiState === undefined ? undefined : canonicalize(uiState)!),
+      mut.setStates([{ blockId, uiState: canonicalize(uiState)! }]),
     );
     await this.projectTree.refreshState();
   }
@@ -320,8 +321,7 @@ export class Project {
     author?: AuthorMarker,
   ) {
     await withProjectAuthored(this.env.projectHelper, this.env.pl, this.rid, author, (mut) => {
-      mut.setArgs([{ blockId, args: canonicalize(args)! }]);
-      mut.setUiState(blockId, canonicalize(uiState));
+      mut.setStates([{ blockId, args: canonicalize(args)!, uiState: canonicalize(uiState)! }]);
     });
     await this.projectTree.refreshState();
   }
@@ -347,8 +347,7 @@ export class Project {
       const bpData = await tx.getResourceData(bpRid, false);
       const config = extractConfig((cachedDeserialize(notEmpty(bpData.data)) as BlockPackInfo).config);
       await withProjectAuthored(this.env.projectHelper, tx, this.rid, author, (prj) => {
-        prj.setArgs([{ blockId, args: canonicalize(config.initialArgs)! }]);
-        prj.setUiState(blockId, canonicalize(config.initialUiState));
+        prj.setStates([{ blockId, args: canonicalize(config.initialArgs)!, uiState: canonicalize(config.initialUiState)! }]);
       });
       await tx.commit();
     });
@@ -450,6 +449,9 @@ export class Project {
   }
 
   public static async init(env: MiddleLayerEnvironment, rid: ResourceId): Promise<Project> {
+    // Applying migrations to the project resource, if needed
+    await applyProjectMigrations(env.pl, rid);
+
     // Doing a no-op mutation to apply all migration and schema fixes
     await withProject(env.projectHelper, env.pl, rid, (_) => {});
 

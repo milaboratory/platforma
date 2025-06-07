@@ -2,7 +2,6 @@ import { field, poll, TestHelpers, toGlobalResourceId } from '@milaboratories/pl
 import { createProject, ProjectMutator, withProject } from './project';
 import { outputRef } from '../model/args';
 import {
-  blockFrontendStateKey,
   BlockRenderingStateKey,
   projectFieldName,
   ProjectRenderingState
@@ -14,6 +13,7 @@ import {
 } from '../test/block_packs';
 import { getQuickJS } from 'quickjs-emscripten';
 import { ProjectHelper } from '../model/project_helper';
+import { cachedDeserialize } from '@milaboratories/ts-helpers';
 
 test('simple test #1', async () => {
   const quickJs = await getQuickJS();
@@ -69,8 +69,10 @@ test('simple test #1', async () => {
       );
       const rendered = mut.renderProduction(['block3'], true);
       expect([...rendered]).toEqual(['block3']);
-      mut.setUiState('block2', '{"some":1}');
-      mut.setUiState('block3', '{"some":2}');
+      mut.setStates([
+        { blockId: 'block2', uiState: '{"some":1}' },
+        { blockId: 'block3', uiState: '{"some":2}' }
+      ]);
       mut.doRefresh();
       mut.save();
       await tx.commit();
@@ -96,9 +98,15 @@ test('simple test #1', async () => {
       expect(new Set(Object.keys(all))).toEqual(new Set(['opts', 'dependsOnBlocks']));
     });
 
-    await pl.withReadTx('CheckFrontendStatePresent', async (tx) => {
-      expect(await tx.getKValueString(prj, blockFrontendStateKey('block2'))).toEqual('{"some":1}');
-      expect(await tx.getKValueString(prj, blockFrontendStateKey('block3'))).toEqual('{"some":2}');
+    await poll(pl, async (tx) => {
+      const prjR = await tx.get(prj);
+      const uiStateB2 = await prjR
+        .get(projectFieldName('block2', 'uiState'));
+      expect(Buffer.from(uiStateB2.data.data!).toString()).toEqual('{"some":1}');
+
+      const uiStateB3 = await prjR
+        .get(projectFieldName('block3', 'uiState'));
+      expect(Buffer.from(uiStateB3.data.data!).toString()).toEqual('{"some":2}');
     });
 
     await pl.withWriteTx('DeleteBlock2', async (tx) => {
@@ -108,30 +116,10 @@ test('simple test #1', async () => {
       await tx.commit();
     });
 
-    await pl.withReadTx('CheckFrontendStateAbsent', async (tx) => {
-      expect(
-        await tx.getKValueStringIfExists(prj, blockFrontendStateKey('block2'))
-      ).toBeUndefined();
-    });
-
-    await withProject(new ProjectHelper(quickJs), pl, prj, (mut) => {
-      mut.setUiState('block3', undefined);
-    });
-
-    await pl.withReadTx('CheckFrontendStatePresent', async (tx) => {
-      expect(
-        await tx.getKValueStringIfExists(prj, blockFrontendStateKey('block3'))
-      ).toBeUndefined();
-    });
-
-    await withProject(new ProjectHelper(quickJs), pl, prj, (mut) => {
-      mut.setUiState('block3', undefined);
-    });
-
-    await pl.withReadTx('CheckFrontendStatePresent', async (tx) => {
-      expect(
-        await tx.getKValueStringIfExists(prj, blockFrontendStateKey('block3'))
-      ).toBeUndefined();
+    await poll(pl, async (tx) => {
+      const prjR = await tx.get(prj);
+      const uiState = prjR.data.fields.find((f) => f.name === projectFieldName('block2', 'uiState'));
+      expect(uiState).toBeUndefined();
     });
 
     await poll(pl, async (tx) => {

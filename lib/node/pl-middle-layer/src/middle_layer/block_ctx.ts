@@ -7,7 +7,6 @@ import type {
   ProjectStructure } from '../model/project_model';
 import {
   ProjectStructureKey,
-  blockFrontendStateKey,
   projectFieldName,
 } from '../model/project_model';
 import { allBlocks } from '../model/project_model_util';
@@ -60,7 +59,14 @@ export function constructBlockContextArgsOnly(
       })
       ?.getDataAsString();
   const uiState = (cCtx: ComputableCtx) =>
-    cCtx.accessor(projectEntry).node().getKeyValueAsString(blockFrontendStateKey(blockId));
+    cCtx
+      .accessor(projectEntry)
+      .node()
+      .traverse({
+        field: projectFieldName(blockId, 'uiState'),
+        stableIfNotFound: true,
+      })
+      ?.getDataAsString();
   return {
     blockId,
     args,
