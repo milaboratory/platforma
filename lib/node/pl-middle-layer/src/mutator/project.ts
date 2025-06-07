@@ -69,6 +69,7 @@ import { cachedDeserialize, notEmpty } from '@milaboratories/ts-helpers';
 import type { ProjectHelper } from '../model/project_helper';
 import { extractConfig, type BlockConfig } from '@platforma-sdk/model';
 import type { BlockPackInfo } from '../model/block_pack';
+import { getDebugFlags } from '../debug';
 type FieldStatus = 'NotReady' | 'Ready' | 'Error';
 
 interface BlockFieldState {
@@ -1256,11 +1257,11 @@ export async function withProjectAuthored<T>(
       const mut = await ProjectMutator.load(projectHelper, tx, rid, author);
       const result = await cb(mut);
       if (!mut.wasModified)
-        // skipping save and commit altogether if no modifications were
-        // actually made
+        // skipping save and commit altogether if no modifications were actually made
         return result;
       mut.save();
       await tx.commit();
+      if (getDebugFlags().logProjectMutationStat) console.log(JSON.stringify(tx.stat));
       return result;
     });
   } else {
