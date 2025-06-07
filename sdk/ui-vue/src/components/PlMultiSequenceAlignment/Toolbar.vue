@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import type { ListOption } from '@milaboratories/uikit';
 import {
+  type ListOptionNormalized,
   PlBtnGhost,
   PlCheckbox,
   PlDropdown,
   PlDropdownMulti,
 } from '@milaboratories/uikit';
-import type { PObjectId, PTableColumnIdJson } from '@platforma-sdk/model';
+import type { PObjectId, PTableColumnId } from '@platforma-sdk/model';
 import type { Settings } from './settings';
 
 const sequenceColumns = defineModel<PObjectId[]>(
@@ -14,7 +14,7 @@ const sequenceColumns = defineModel<PObjectId[]>(
   { required: true },
 );
 
-const labelColumns = defineModel<PTableColumnIdJson[]>(
+const labelColumns = defineModel<PTableColumnId[]>(
   'labelColumns',
   { required: true },
 );
@@ -25,8 +25,8 @@ const settings = defineModel<Settings>(
 );
 
 defineProps<{
-  sequenceColumnOptions: ListOption<PObjectId>[];
-  labelColumnOptions: ListOption<PTableColumnIdJson>[];
+  sequenceColumnOptions: ListOptionNormalized<PObjectId>[];
+  labelColumnOptions: ListOptionNormalized<PTableColumnId>[];
 }>();
 </script>
 
