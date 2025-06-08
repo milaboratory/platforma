@@ -117,12 +117,12 @@ export function cachedDecode(data: Uint8Array): string {
  * @param data The Uint8Array containing the JSON text to deserialize.
  * @returns The deserialized JavaScript object (deeply frozen).
  */
-export function cachedDeserialize(data: Uint8Array): unknown {
+export function cachedDeserialize<T>(data: Uint8Array): T {
   const fromCache = deserializationCache.get(data);
   if (fromCache) {
     numberOfCacheHits++;
     cacheHitBytes += data.byteLength;
-    return fromCache;
+    return fromCache as T;
   }
 
   const text = cachedDecode(data);
