@@ -1,7 +1,8 @@
 import type { PlClient, PlTransaction, ResourceId } from '@milaboratories/pl-client';
 import { projectFieldName, SchemaVersionCurrent, SchemaVersionKey } from '../model/project_model';
 import { parseBlockFrontendStateKeyV1, SchemaVersionV1 } from '../model/project_model_v1';
-import { field, Pl } from '@milaboratories/pl-client';
+import { field } from '@milaboratories/pl-client';
+import { cachedDeserialize } from '@milaboratories/ts-helpers';
 
 /**
  * Migrates the project to the latest schema version.
@@ -29,11 +30,12 @@ export async function applyProjectMigrations(pl: PlClient, rid: ResourceId) {
  * @param rid - The resource id of the project.
  */
 async function migrateV1ToV2(tx: PlTransaction, rid: ResourceId) {
-  const allKV = await tx.listKeyValuesString(rid);
+  const allKV = await tx.listKeyValues(rid);
   for (const kv of allKV) {
     const blockId = parseBlockFrontendStateKeyV1(kv.key);
     if (blockId === undefined) continue;
-    const uiStateR = tx.createValue(Pl.JsonObject, kv.value);
+    const valueJson = cachedDeserialize(kv.value);
+    const uiStateR = tx.createJsonGzValue(valueJson);
     const uiStateF = field(rid, projectFieldName(blockId, 'uiState'));
     tx.createField(uiStateF, 'Dynamic', uiStateR);
     tx.deleteKValue(rid, kv.key);

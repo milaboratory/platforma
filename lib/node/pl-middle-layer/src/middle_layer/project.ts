@@ -200,7 +200,7 @@ export class Project {
       mut.migrateBlockPack(
         blockId,
         preparedBp,
-        resetArgs ? { args: canonicalize(blockCfg.initialArgs)!, uiState: canonicalize(blockCfg.initialUiState)! } : undefined,
+        resetArgs ? { args: blockCfg.initialArgs, uiState: blockCfg.initialUiState } : undefined,
       ),
     );
     await this.projectTree.refreshState();
@@ -282,7 +282,7 @@ export class Project {
    * */
   public async setBlockArgs(blockId: string, args: unknown, author?: AuthorMarker) {
     await withProjectAuthored(this.env.projectHelper, this.env.pl, this.rid, author, (mut) =>
-      mut.setStates([{ blockId, args: canonicalize(args)! }]),
+      mut.setStates([{ blockId, args }]),
     );
     await this.projectTree.refreshState();
   }
@@ -295,7 +295,7 @@ export class Project {
    * */
   public async setUiState(blockId: string, uiState: unknown, author?: AuthorMarker) {
     await withProjectAuthored(this.env.projectHelper, this.env.pl, this.rid, author, (mut) =>
-      mut.setStates([{ blockId, uiState: canonicalize(uiState)! }]),
+      mut.setStates([{ blockId, uiState }]),
     );
     await this.projectTree.refreshState();
   }
@@ -321,7 +321,7 @@ export class Project {
     author?: AuthorMarker,
   ) {
     await withProjectAuthored(this.env.projectHelper, this.env.pl, this.rid, author, (mut) => {
-      mut.setStates([{ blockId, args: canonicalize(args)!, uiState: canonicalize(uiState)! }]);
+      mut.setStates([{ blockId, args, uiState }]);
     });
     await this.projectTree.refreshState();
   }
@@ -347,7 +347,7 @@ export class Project {
       const bpData = await tx.getResourceData(bpRid, false);
       const config = extractConfig((cachedDeserialize(notEmpty(bpData.data)) as BlockPackInfo).config);
       await withProjectAuthored(this.env.projectHelper, tx, this.rid, author, (prj) => {
-        prj.setStates([{ blockId, args: canonicalize(config.initialArgs)!, uiState: canonicalize(config.initialUiState)! }]);
+        prj.setStates([{ blockId, args: config.initialArgs, uiState: config.initialUiState }]);
       });
       await tx.commit();
     });

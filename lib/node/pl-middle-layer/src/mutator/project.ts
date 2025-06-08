@@ -63,7 +63,7 @@ import {
 import Denque from 'denque';
 import { exportContext, getPreparedExportTemplateEnvelope } from './context_export';
 import { loadTemplate } from './template/template_loading';
-import { cachedDeserialize, notEmpty } from '@milaboratories/ts-helpers';
+import { cachedDeserialize, canonicalJsonGzBytes, notEmpty } from '@milaboratories/ts-helpers';
 import type { ProjectHelper } from '../model/project_helper';
 import { extractConfig, type BlockConfig } from '@platforma-sdk/model';
 import type { BlockPackInfo } from '../model/block_pack';
@@ -211,8 +211,8 @@ const NoNewBlocks = (blockId: string) => {
 
 export interface SetStatesRequest {
   blockId: string;
-  args?: string;
-  uiState?: string;
+  args?: unknown;
+  uiState?: unknown;
 }
 
 type _GraphInfoFields =
@@ -224,8 +224,8 @@ type _GraphInfoFields =
   | 'actualProductionDownstream';
 
 export type ArgsAndUiState = {
-  args: string;
-  uiState: string;
+  args: unknown;
+  uiState: unknown;
 };
 
 export class ProjectMutator {
@@ -502,13 +502,15 @@ export class ProjectMutator {
       let blockChanged = false;
       for (const stateKey of ['args', 'uiState'] as const) {
         if (!(stateKey in req)) continue;
-        const statePart = req[stateKey] ?? '{}';
+        const statePart = req[stateKey] ?? {};
 
         const fieldName = stateKey === 'args' ? 'currentArgs' : 'uiState';
-        JSON.parse(statePart); // checking
-        const binary = Buffer.from(statePart);
+
+        // don't gzip args, workflow code can't uncompress gzip yet
+        const tryGzipSize = stateKey === 'args' ? undefined : 16_384;
+        const { data: binary, isGzipped } = canonicalJsonGzBytes(statePart, tryGzipSize);
         if (Buffer.compare(info.fields[fieldName]!.value!, binary) === 0) continue;
-        const statePartRef = this.tx.createValue(Pl.JsonObject, binary);
+        const statePartRef = this.tx.createValue(isGzipped ? Pl.JsonGzObject : Pl.JsonObject, binary);
         this.setBlockField(req.blockId, fieldName, statePartRef, 'Ready', binary);
 
         blockChanged = true;

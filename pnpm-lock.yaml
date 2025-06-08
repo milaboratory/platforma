@@ -2013,6 +2013,9 @@ importers:
 
   lib/node/ts-helpers:
     dependencies:
+      canonicalize:
+        specifier: 'catalog:'
+        version: 2.1.0
       denque:
         specifier: 'catalog:'
         version: 2.1.0
