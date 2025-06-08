@@ -71,6 +71,7 @@ export const DefaultFinalResourceDataPredicate: FinalResourceDataPredicate = (r)
     case 'json/resourceError':
       return r.type.version === '1';
     case 'json/object':
+    case 'json-gz/object':
     case 'json/string':
     case 'json/array':
     case 'json/number':
@@ -79,6 +80,7 @@ export const DefaultFinalResourceDataPredicate: FinalResourceDataPredicate = (r)
     case 'Frontend/FromFolder':
     case 'BObjectSpec':
     case 'Blob':
+    case 'Null':
     case 'binary':
     case 'LSProvider':
       return true;
