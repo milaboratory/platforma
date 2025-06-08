@@ -29,7 +29,7 @@ import { TxAPI_Open_Request_WritableTx } from '../proto/github.com/milaboratory/
 import type { NonUndefined } from 'utility-types';
 import { toBytes } from '../util/util';
 import { fieldTypeToProto, protoToField, protoToResource } from './type_conversion';
-import { deepFreeze, notEmpty } from '@milaboratories/ts-helpers';
+import { canonicalJsonBytes, canonicalJsonGzBytes, deepFreeze, notEmpty } from '@milaboratories/ts-helpers';
 import { isNotFoundError } from './errors';
 import type { FinalResourceDataPredicate } from './final';
 import type { LRUCache } from 'lru-cache';
@@ -38,6 +38,7 @@ import type { TxStat } from './stat';
 import { initialTxStatWithoutTime } from './stat';
 import type { ErrorResourceData } from './error_resource';
 import { ErrorResourceType } from './error_resource';
+import { JsonGzObject, JsonObject } from '../helpers/pl';
 
 /** Reference to resource, used only within transaction */
 export interface ResourceRef {
@@ -447,6 +448,16 @@ export class PlTransaction {
       }),
       (r) => r.resourceCreateValue.resourceId,
     );
+  }
+
+  public createJsonValue(data: unknown): ResourceRef {
+    const jsonData = canonicalJsonBytes(data);
+    return this.createValue(JsonObject, jsonData, false);
+  }
+
+  public createJsonGzValue(data: unknown, minSizeToGzip: number | undefined = 16_384): ResourceRef {
+    const { data: jsonData, isGzipped } = canonicalJsonGzBytes(data, minSizeToGzip);
+    return this.createValue(isGzipped ? JsonGzObject : JsonObject, jsonData, false);
   }
 
   public createError(message: string): ResourceRef {

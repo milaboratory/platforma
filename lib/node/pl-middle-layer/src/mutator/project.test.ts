@@ -70,8 +70,8 @@ test('simple test #1', async () => {
       const rendered = mut.renderProduction(['block3'], true);
       expect([...rendered]).toEqual(['block3']);
       mut.setStates([
-        { blockId: 'block2', uiState: '{"some":1}' },
-        { blockId: 'block3', uiState: '{"some":2}' }
+        { blockId: 'block2', uiState: {"some":1} },
+        { blockId: 'block3', uiState: {"some":2} }
       ]);
       mut.doRefresh();
       mut.save();
