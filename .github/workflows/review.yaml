@@ -1,0 +1,13 @@
+name: Check if review is required and done
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - 'main'
+
+  pull_request_review:
+    types: [submitted]
+
+jobs:
+  run:
+    uses: milaboratory/github-ci/.github/workflows/review-required.yaml@feat/monorepo-js
