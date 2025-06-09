@@ -1,12 +1,7 @@
 name: Check review
 on:
-  pull_request:
-    types: [opened, reopened, synchronize]
-    branches:
-      - 'main'
-
   pull_request_review:
-    types: [submitted]
+    types: [submitted, dismissed, edited]
 
 jobs:
   run:
