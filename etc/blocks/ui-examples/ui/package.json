@@ -4,12 +4,16 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "build-dev": "NODE_ENV=development vite build --mode=development",
+    "watch-dev": "NODE_ENV=development vite build --mode=development --watch",
     "watch": "vue-tsc && vite build --watch",
-    "build": "vue-tsc -b && vite build",
+    "build": "vite build && pnpm run build:types",
+    "build:types": "vue-tsc --declaration --emitDeclarationOnly -p tsconfig.lib.json",
     "preview": "vite preview",
     "lint": "eslint ."
   },
   "dependencies": {
+    "@milaboratories/platforma-build-configs": "workspace:*",
     "@milaboratories/milaboratories.ui-examples.model": "workspace:*",
     "vue": "catalog:",
     "@platforma-sdk/model": "workspace:^"
@@ -20,6 +24,7 @@
     "@vitejs/plugin-vue": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
+    "vitest": "catalog:",
     "vue-tsc": "catalog:",
     "@faker-js/faker": "catalog:",
     "@milaboratories/helpers": "workspace:^",

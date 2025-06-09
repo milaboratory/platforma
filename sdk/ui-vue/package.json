@@ -3,19 +3,16 @@
   "version": "1.37.0",
   "type": "module",
   "main": "dist/lib.js",
-  "module": "dist/lib.js",
   "types": "dist/src/lib.d.ts",
   "styles": "dist/lib.css",
   "exports": {
-    ".": {
-      "types": "./dist/src/lib.d.ts",
-      "default": "./dist/lib.js"
-    },
-    "./styles": "./dist/lib.css"
+    ".": "./src/lib.ts"
   },
   "scripts": {
     "test": "vitest run --passWithNoTests",
     "dev": "vite",
+    "build-dev": "NODE_ENV=development vite build --mode=development",
+    "watch-dev": "NODE_ENV=development vite build --mode=development --watch",
     "build": "vite build && vue-tsc --declaration --emitDeclarationOnly -p tsconfig.lib.json",
     "watch": "vite build --watch",
     "type-check": "vue-tsc --noEmit --project ./tsconfig.json",
@@ -25,6 +22,7 @@
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "dependencies": {
+    "@milaboratories/platforma-build-configs": "workspace:*",
     "@milaboratories/biowasm-tools": "workspace:^",
     "@milaboratories/miplots4": "catalog:",
     "@milaboratories/uikit": "workspace:^",
