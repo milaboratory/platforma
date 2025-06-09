@@ -209,7 +209,7 @@ const toggleOpen = () => {
 
 watch(() => data.open, (v) => {
   search.value = v ? '' : null;
-})
+});
 
 const onInputFocus = () => {
   data.open = true;

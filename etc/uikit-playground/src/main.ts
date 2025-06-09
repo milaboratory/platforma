@@ -1,6 +1,6 @@
 import { createApp } from 'vue';
 import router from './router';
-import '@milaboratories/uikit/dist/style.css';
+import '@milaboratories/uikit/styles';
 import './demo.scss';
 import DemoApp from '@/App.vue';
 

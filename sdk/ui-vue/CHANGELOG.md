@@ -1,5 +1,33 @@
 # @platforma-sdk/ui-vue
 
+## 1.33.9
+
+### Patch Changes
+
+- 9495969: Externalize miplots4 dependency
+
+## 1.33.8
+
+### Patch Changes
+
+- @platforma-sdk/model@1.33.8
+- @milaboratories/uikit@2.2.80
+
+## 1.33.7
+
+### Patch Changes
+
+- cd3b6d5: Bump vite version and related plugins
+- Updated dependencies [cd3b6d5]
+  - @milaboratories/uikit@2.2.80
+
+## 1.33.6
+
+### Patch Changes
+
+- Updated dependencies [4ccd249]
+  - @milaboratories/uikit@2.2.79
+
 ## 1.33.3
 
 ### Patch Changes

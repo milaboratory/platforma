@@ -1,5 +1,18 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.4.5
+
+### Patch Changes
+
+- @platforma-sdk/model@1.33.8
+- @milaboratories/milaboratories.ui-examples.model@1.1.66
+
+## 1.4.4
+
+### Patch Changes
+
+- 4ccd249: Implementation PlErrorBoundary over reusable PlErrorAlert + PlClibpboard
+
 ## 1.4.3
 
 ### Patch Changes

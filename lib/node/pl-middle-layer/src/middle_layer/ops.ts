@@ -17,6 +17,9 @@ export type DriverKitOpsPaths = {
   /** Common root where to put downloaded blobs / downloaded blob cache */
   readonly blobDownloadPath: string;
 
+  /** Common root for a cache for range queries. */
+  readonly blobDownloadRangesCachePath: string;
+
   /** Common root where to put downloaded blobs with */
   readonly downloadBlobToURLPath: string;
 
@@ -124,10 +127,11 @@ export const DefaultDriverKitOpsSettings: Pick<
   logger: new ConsoleLoggerAdapter(),
   blobDriverOps: {
     cacheSoftSizeBytes: 8 * 1024 * 1024 * 1024, // 8 GB
+    rangesCacheMaxSizeBytes: 8 * 1024 * 1024 * 1024, // 8 GB
     nConcurrentDownloads: 10,
   },
   downloadBlobToURLDriverOps: {
-    cacheSoftSizeBytes: 100 * 1024 * 1024, // 100MB
+    cacheSoftSizeBytes: 1 * 1024 * 1024 * 1024, // 1 GB
     nConcurrentDownloads: 10,
   },
   uploadDriverOps: {
@@ -147,10 +151,12 @@ export function DefaultDriverKitOpsPaths(
   workDir: string,
 ): Pick<DriverKitOpsPaths,
 | 'blobDownloadPath'
+| 'blobDownloadRangesCachePath'
 | 'downloadBlobToURLPath'
 | 'pframesSpillPath'> {
   return {
     blobDownloadPath: path.join(workDir, 'download'),
+    blobDownloadRangesCachePath: path.join(workDir, 'downloadRangesCache'),
     downloadBlobToURLPath: path.join(workDir, 'downloadToURL'),
     pframesSpillPath: path.join(workDir, 'pframes'),
   };
