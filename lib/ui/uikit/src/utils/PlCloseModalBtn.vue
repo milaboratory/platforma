@@ -21,7 +21,7 @@
   }
   > div {
     background-color: var(--ic-01);
-    @include mask(url(@/assets/images/24_close.svg), 24px);
+    @include mask(url(../assets/images/24_close.svg), 24px);
   }
 }
 </style>

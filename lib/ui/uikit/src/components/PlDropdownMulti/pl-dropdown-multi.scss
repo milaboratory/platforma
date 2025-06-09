@@ -246,7 +246,7 @@
     @include abs-center-y;
     right: 36px;
     z-index: 1;
-    @include icon(url("@/assets/images/16_clear.svg"), 16px); // @todo mask-image
+    @include icon(url("../../assets/images/16_clear.svg"), 16px); // @todo mask-image
     cursor: pointer;
   }
 
@@ -272,7 +272,7 @@
 
     .arrow {
       background-color: var(--control-mask-fill);
-      @include mask(url(@/assets/images/16_chevron-up.svg), 16px);
+      @include mask(url(../../assets/images/16_chevron-up.svg), 16px);
     }
   }
 

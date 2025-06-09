@@ -224,7 +224,7 @@
 
     .arrow-icon {
       background-color: var(--control-mask-fill);
-      @include mask(url(@/assets/images/16_chevron-up.svg), 16px);
+      @include mask(url(../../assets/images/16_chevron-up.svg), 16px);
     }
   }
 
