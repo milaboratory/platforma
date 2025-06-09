@@ -94,6 +94,8 @@ export const DefaultFinalResourceDataPredicate: FinalResourceDataPredicate = (r)
         return readyAndHasAllOutputsFilled(r);
       } else if (r.type.name.startsWith('PColumnData/')) {
         return readyOrDuplicateOrError(r);
+      } else if (r.type.name.startsWith('StreamWorkdir/')) {
+        return readyOrDuplicateOrError(r);
       } else {
         // Unknonw resource type detected
         // Set used to log this message only once

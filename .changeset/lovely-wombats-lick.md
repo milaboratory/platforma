@@ -2,4 +2,8 @@
 '@milaboratories/pl-middle-layer': patch
 ---
 
-Better stats reporting env vars
+Main change: V2 project schema, resource-based uiState storage, uiState compression.
+Minor changes:
+- better stats reporting env vars
+- better tree pruning for StreamWorkdir/* resources
+

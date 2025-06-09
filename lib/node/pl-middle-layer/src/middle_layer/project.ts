@@ -488,6 +488,8 @@ function projectTreePruning(r: ExtendedResourceData): FieldData[] {
   //     }
   //   )
   // );
+  if (r.type.name.startsWith('StreamWorkdir/'))
+    return [];
   switch (r.type.name) {
     case 'BlockPackCustom':
       return r.fields.filter((f) => f.name !== 'template');

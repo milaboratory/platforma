@@ -2,4 +2,4 @@
 '@milaboratories/computable': minor
 ---
 
-Poll pool force refresh
+- State refresh request now interrups delay in polling loop

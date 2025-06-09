@@ -2,4 +2,6 @@
 '@milaboratories/ts-helpers': minor
 ---
 
-Gzipped serialization and deserialization of jsons
+- gzipped serialization and deserialization of jsons
+- cached string decoding
+
