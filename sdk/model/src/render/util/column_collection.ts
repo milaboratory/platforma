@@ -1,7 +1,6 @@
 import type {
   AnchoredIdDeriver,
   AxisId,
-  DataInfo,
   PColumn,
   PColumnSelector,
   PColumnSpec,
@@ -13,6 +12,7 @@ import type {
   PartitionedDataInfoEntries,
   ResolveAnchorsOptions,
   NativePObjectId,
+  PColumnValues,
 } from '@milaboratories/pl-model-common';
 import {
   selectorsToPredicate,
@@ -32,9 +32,17 @@ import type { APColumnSelectorWithSplit, PColumnSelectorWithSplit } from './spli
 import canonicalize from 'canonicalize';
 import { getUniquePartitionKeys, convertOrParsePColumnData } from './pcolumn_data';
 import { filterDataInfoEntries } from './axis_filtering';
+import type { PColumnDataUniversal } from '../api';
+
+function isPColumnValues(value: unknown): value is PColumnValues {
+  if (!Array.isArray(value)) return false;
+  if (value.length === 0) return true;
+  const first = value[0];
+  return typeof first === 'object' && first !== null && 'key' in first && 'val' in first;
+}
 
 export interface ColumnProvider {
-  selectColumns(selectors: ((spec: PColumnSpec) => boolean) | PColumnSelector | PColumnSelector[]): PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor> | undefined>[];
+  selectColumns(selectors: ((spec: PColumnSpec) => boolean) | PColumnSelector | PColumnSelector[]): PColumn<PColumnDataUniversal | undefined>[];
 }
 
 export interface AxisLabelProvider {
@@ -45,13 +53,13 @@ export interface AxisLabelProvider {
  * A simple implementation of {@link ColumnProvider} backed by a pre-defined array of columns.
  */
 class ArrayColumnProvider implements ColumnProvider {
-  constructor(private readonly columns: PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor> | undefined>[]) {}
+  constructor(private readonly columns: PColumn<PColumnDataUniversal | undefined>[]) {}
 
   selectColumns(selectors: ((spec: PColumnSpec) => boolean) | PColumnSelector | PColumnSelector[]):
-  PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor> | undefined>[] {
+  PColumn<PColumnDataUniversal | undefined>[] {
     const predicate = typeof selectors === 'function' ? selectors : selectorsToPredicate(selectors);
     // Filter based on spec, ignoring data type for now
-    return this.columns.filter((column): column is PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor> | undefined> => predicate(column.spec));
+    return this.columns.filter((column): column is PColumn<PColumnDataUniversal | undefined> => predicate(column.spec));
   }
 }
 
@@ -59,7 +67,7 @@ export type PColumnEntryWithLabel = {
   id: PObjectId;
   spec: PColumnSpec;
   /** Lazy calculates the data, returns undefined if data is not ready. */
-  data(): DataInfo<TreeNodeAccessor> | TreeNodeAccessor | undefined;
+  data(): PColumnDataUniversal | undefined;
   label: string;
 };
 
@@ -79,7 +87,7 @@ type AxisFilterInfo = {
 // Intermediate representation for columns requiring splitting
 type IntermediateSplitEntry = {
   type: 'split';
-  originalColumn: PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor> | undefined>;
+  originalColumn: PColumn<PColumnDataUniversal | undefined>;
   spec: PColumnSpec;
   /** With splitting axes removed */
   adjustedSpec: PColumnSpec;
@@ -90,7 +98,7 @@ type IntermediateSplitEntry = {
 // Intermediate representation for columns NOT requiring splitting
 type IntermediateDirectEntry = {
   type: 'direct';
-  originalColumn: PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor> | undefined>;
+  originalColumn: PColumn<PColumnDataUniversal | undefined>;
   spec: PColumnSpec;
   /** The same as `spec` */
   adjustedSpec: PColumnSpec;
@@ -169,7 +177,7 @@ type UniversalPColumnOpts = UniversalPColumnOptsNoDeriver & {
 } & ResolveAnchorsOptions;
 
 export class PColumnCollection {
-  private readonly defaultProviderStore: PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor> | undefined>[] = [];
+  private readonly defaultProviderStore: PColumn<PColumnDataUniversal | undefined>[] = [];
   private readonly providers: ColumnProvider[] = [new ArrayColumnProvider(this.defaultProviderStore)];
   private readonly axisLabelProviders: AxisLabelProvider[] = [];
 
@@ -185,12 +193,12 @@ export class PColumnCollection {
     return this;
   }
 
-  public addColumns(columns: PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor> | undefined>[]): this {
+  public addColumns(columns: PColumn<PColumnDataUniversal | undefined>[]): this {
     this.defaultProviderStore.push(...columns);
     return this;
   }
 
-  public addColumn(column: PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor> | undefined>): this {
+  public addColumn(column: PColumn<PColumnDataUniversal | undefined>): this {
     this.defaultProviderStore.push(column);
     return this;
   }
@@ -256,7 +264,7 @@ export class PColumnCollection {
         currentSelector = rawSelector as PColumnSelectorWithSplit | ((spec: PColumnSpec) => boolean);
 
       const selectedIds = new Set<PObjectId>();
-      const selectedColumns: PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor> | undefined>[] = [];
+      const selectedColumns: PColumn<PColumnDataUniversal | undefined>[] = [];
       for (const provider of this.providers) {
         const providerColumns = provider.selectColumns(currentSelector);
         for (const col of providerColumns) {
@@ -283,6 +291,8 @@ export class PColumnCollection {
         const originalSpec = column.spec;
 
         if (needsSplitting) {
+          if (isPColumnValues(column.data))
+            throw new Error(`Splitting is not supported for PColumns with PColumnValues data format. Column id: ${column.id}`);
           const dataEntries = convertOrParsePColumnData(column.data);
 
           if (!dataEntries) {
@@ -417,20 +427,20 @@ export class PColumnCollection {
 
   public getColumns(
     predicateOrSelectors: ((spec: PColumnSpec) => boolean) | APColumnSelectorWithSplit | APColumnSelectorWithSplit[],
-    opts: UniversalPColumnOpts): PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor>>[] | undefined;
+    opts: UniversalPColumnOpts): PColumn<PColumnDataUniversal>[] | undefined;
   public getColumns(
     predicateOrSelectors: ((spec: PColumnSpec) => boolean) | PColumnSelectorWithSplit | PColumnSelectorWithSplit[],
-    opts?: UniversalPColumnOptsNoDeriver): PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor>>[] | undefined;
+    opts?: UniversalPColumnOptsNoDeriver): PColumn<PColumnDataUniversal>[] | undefined;
   public getColumns(
     predicateOrSelectors: ((spec: PColumnSpec) => boolean) | APColumnSelectorWithSplit | APColumnSelectorWithSplit[],
-    opts?: Optional<UniversalPColumnOpts, 'anchorCtx'>): PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor>>[] | undefined {
+    opts?: Optional<UniversalPColumnOpts, 'anchorCtx'>): PColumn<PColumnDataUniversal>[] | undefined {
     const entries = this.getUniversalEntries(predicateOrSelectors, {
       overrideLabelAnnotation: true, // default for getColumns
       ...(opts ?? {}),
     } as UniversalPColumnOpts);
     if (!entries) return undefined;
 
-    const columns: PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor>>[] = [];
+    const columns: PColumn<PColumnDataUniversal>[] = [];
     for (const entry of entries) {
       const data = entry.data();
       if (!data) {
