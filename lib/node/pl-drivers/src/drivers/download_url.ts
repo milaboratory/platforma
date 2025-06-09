@@ -58,7 +58,7 @@ export class DownloadUrlDriver implements DownloadUrlSyncReader {
     httpClient: Dispatcher,
     private readonly saveDir: string,
     private readonly opts: DownloadUrlDriverOps = {
-      cacheSoftSizeBytes: 50 * 1024 * 1024,
+      cacheSoftSizeBytes: 1 * 1024 * 1024 * 1024, // 1 GB
       withGunzip: true,
       nConcurrentDownloads: 50,
     },
