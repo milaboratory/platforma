@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.15.3
+
+### Patch Changes
+
+- f191f2a: drivers: download: add sparse cache for ranges
+
 ## 1.15.2
 
 ### Patch Changes
