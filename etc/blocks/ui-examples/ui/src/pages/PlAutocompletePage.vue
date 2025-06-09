@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { ListOption } from '@platforma-sdk/ui-vue';
-import { PlBlockPage, PlAutocomplete } from '@platforma-sdk/ui-vue';
+import { PlAutocomplete, PlBlockPage } from '@platforma-sdk/ui-vue';
 import { reactive } from 'vue';
 import { delay } from '@milaboratories/helpers';
 
@@ -30,6 +30,7 @@ async function requestOptionsError(_str: string): Promise<ListOption<string>[]> 
       <PlAutocomplete
         v-model="data.selected1"
         label="Autocomplete"
+        :required="true"
         :optionsSearch="requestOptions"
       />
       <PlAutocomplete

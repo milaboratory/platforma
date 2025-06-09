@@ -1,3 +1,5 @@
+// Deprecated, use vue Svg*** icons
+
 @use '../mixins.scss' as *;
 @use './icons-16-generated.scss' as *;
 @use './icons-24-generated.scss' as *;
@@ -12,7 +14,7 @@
 
   @each $name, $path in $icons16 {
     &.icon-#{$name} {
-      background: url(./icon-assets-min/16_#{$path});
+      background: #{$path};
     }
   }
 }
@@ -27,7 +29,7 @@
 
   @each $name, $path in $icons24 {
     &.icon-#{$name} {
-      background: url(./icon-assets-min/24_#{$path});
+      background: #{$path};
     }
   }
 }
@@ -38,7 +40,7 @@
 
   @each $name, $path in $icons16 {
     &.mask-#{$name} {
-      @include mask-var(url(./icon-assets-min/16_#{$path}));
+      @include mask-var(#{$path});
     }
   }
 }
@@ -49,7 +51,7 @@
 
   @each $name, $path in $icons24 {
     &.mask-#{$name} {
-      @include mask-var(url(./icon-assets-min/24_#{$path}));
+      @include mask-var(#{$path});
     }
   }
 }
