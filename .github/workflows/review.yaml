@@ -1,4 +1,4 @@
-name: Check if review is required and done
+name: Check review
 on:
   pull_request:
     types: [opened, reopened, synchronize]
