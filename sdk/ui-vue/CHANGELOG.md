@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.33.9
+
+### Patch Changes
+
+- 9495969: Externalize miplots4 dependency
+
 ## 1.33.8
 
 ### Patch Changes
