@@ -8,6 +8,7 @@ export default defineConfig({
   build: {
     lib: {
       entry: {
+        index: resolve('src', 'index.ts'),
         tsup: resolve('src', 'tsup.ts'),
         vite: resolve('src', 'vite.ts')
       },
