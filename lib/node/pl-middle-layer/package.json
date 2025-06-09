@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-middle-layer",
-  "version": "1.37.57",
+  "version": "1.37.60",
   "description": "Pl Middle Layer",
   "engines": {
     "node": ">=20.16.0"
@@ -19,7 +19,7 @@
     "type-check": "tsc --noEmit --composite false",
     "build": "vite build",
     "lint": "eslint .",
-    "test": "npm run build && vitest",
+    "test": "vitest",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "files": [

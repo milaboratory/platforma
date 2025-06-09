@@ -1,5 +1,17 @@
 # @milaboratories/uikit
 
+## 2.2.80
+
+### Patch Changes
+
+- cd3b6d5: Bump vite version and related plugins
+
+## 2.2.79
+
+### Patch Changes
+
+- 4ccd249: Implementation PlErrorBoundary over reusable PlErrorAlert + PlClibpboard
+
 ## 2.2.78
 
 ### Patch Changes

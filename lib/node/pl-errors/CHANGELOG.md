@@ -1,5 +1,20 @@
 # @milaboratories/pl-errors
 
+## 1.1.5
+
+### Patch Changes
+
+- Updated dependencies [f191f2a]
+  - @milaboratories/ts-helpers@1.3.2
+  - @milaboratories/pl-client@2.10.1
+
+## 1.1.4
+
+### Patch Changes
+
+- Updated dependencies [f7dedbe]
+  - @milaboratories/pl-client@2.10.0
+
 ## 1.1.3
 
 ### Patch Changes

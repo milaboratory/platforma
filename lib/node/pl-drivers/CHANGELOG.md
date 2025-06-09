@@ -1,5 +1,25 @@
 # @milaboratories/pl-drivers
 
+## 1.5.65
+
+### Patch Changes
+
+- f191f2a: drivers: download: add sparse cache for ranges
+- Updated dependencies [f191f2a]
+  - @milaboratories/ts-helpers@1.3.2
+  - @milaboratories/pl-model-common@1.15.3
+  - @milaboratories/computable@2.4.11
+  - @milaboratories/pl-client@2.10.1
+  - @milaboratories/pl-tree@1.6.7
+
+## 1.5.64
+
+### Patch Changes
+
+- Updated dependencies [f7dedbe]
+  - @milaboratories/pl-client@2.10.0
+  - @milaboratories/pl-tree@1.6.6
+
 ## 1.5.63
 
 ### Patch Changes

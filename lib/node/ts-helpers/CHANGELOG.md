@@ -1,5 +1,11 @@
 # @milaboratories/ts-helpers
 
+## 1.3.2
+
+### Patch Changes
+
+- f191f2a: drivers: download: add sparse cache for ranges
+
 ## 1.3.1
 
 ### Patch Changes

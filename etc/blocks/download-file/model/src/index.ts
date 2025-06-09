@@ -68,7 +68,13 @@ export const platforma = BlockModel.create('Heavy')
     'onDemandBlobContent',
     getOnDemandBlobContent(getResourceField(MainOutputs, 'downloadable'))
   )
-  .output('onDemandBlobContent1', (ctx) => ctx.outputs?.resolve('downloadable')?.getFileHandle())
+
+  .output(
+    'onDemandBlobContent1',
+    (ctx) => ctx.outputs?.resolve('downloadable')?.getRemoteFileHandle()
+  )
+
+  .output('getFileHandle', (ctx) => ctx.outputs?.resolve('downloadable')?.getFileHandle())
 
   .sections((ctx) => {
     return [{ type: 'link', href: '/', label: 'Main' }];
