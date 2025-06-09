@@ -345,7 +345,7 @@ export class Project {
         (await tx.getField(field(bpHolderRid, Pl.HolderRefField))).value,
       );
       const bpData = await tx.getResourceData(bpRid, false);
-      const config = extractConfig((cachedDeserialize(notEmpty(bpData.data)) as BlockPackInfo).config);
+      const config = extractConfig(cachedDeserialize<BlockPackInfo>(notEmpty(bpData.data)).config);
       await withProjectAuthored(this.env.projectHelper, tx, this.rid, author, (prj) => {
         prj.setStates([{ blockId, args: config.initialArgs, uiState: config.initialUiState }]);
       });
