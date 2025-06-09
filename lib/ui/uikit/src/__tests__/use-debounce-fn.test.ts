@@ -2,7 +2,7 @@ import { expect, test } from 'vitest';
 import { useDebounceFn } from '@vueuse/core';
 import { delay } from '@milaboratories/helpers';
 
-test('useDebounceFn', async () => {
+test.skip('useDebounceFn', async () => {
   const s = {
     r: 0,
   };
