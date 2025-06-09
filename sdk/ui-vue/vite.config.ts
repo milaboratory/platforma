@@ -1,24 +1,15 @@
-import vue from '@vitejs/plugin-vue';
+import type { UserConfig } from 'vite';
+import { defineConfig, mergeConfig } from 'vite';
 import { resolve } from 'path';
-import sourcemaps from 'rollup-plugin-sourcemaps2';
-import { defineConfig } from 'vite';
+import { createViteLibConfig } from '@milaboratories/platforma-build-configs';
 
 // https://vitejs.dev/config/
-export default defineConfig({
-  plugins: [vue()],
-  build: {
-    emptyOutDir: true,
-    sourcemap: true,
-    lib: {
-      // Could also be a dictionary or array of multiple entry points
-      entry: [resolve(__dirname, 'src/lib.ts')],
-      name: 'SdkVueLib',
-      // the proper extensions will be added
-      fileName: 'lib',
-      formats: ['es'],
+export default defineConfig((configEnv): UserConfig => {
+  return mergeConfig(createViteLibConfig(configEnv), {
+    build: {
+      lib: { name: 'SdkVueLib', entry: resolve(__dirname, 'src/lib.ts') },
     },
     rollupOptions: {
-      plugins: [sourcemaps()],
       external: [
         'vue',
         'ag-grid-enterprise',
@@ -32,8 +23,5 @@ export default defineConfig({
         },
       },
     },
-  },
-  define: {
-    'import.meta.vitest': 'undefined',
-  },
+  });
 });

@@ -31,6 +31,7 @@ packages:
   - tools/tengo-builder
   - tools/oclif-index
   - tools/block-tools
+  - tools/build-configs
   - tools/package-builder
   - tools/r-builder
   - tools/pl-bootstrap
