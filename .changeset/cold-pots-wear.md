@@ -4,4 +4,4 @@
 '@milaboratories/pl-http': patch
 ---
 
-Network-related dependency upgrade
+- network-related dependency upgrade

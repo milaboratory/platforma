@@ -2,4 +2,6 @@
 '@milaboratories/pl-client': minor
 ---
 
-Delay interuption in case of state refresh signal in main loop of synchronized tree
+- state refresh signal now interupts delay in main loop of synchronized tree
+- added information about final states about resources of the following types: json-gz/object, Null, StreamWorkdir/*
+- adding transaction time to pl-client stats
