@@ -160,13 +160,6 @@
     white-space: pre;
     text-overflow: ellipsis;
   }
-
-  .required-icon {
-    background: url(../assets/images/required.svg);
-    width: 5px;
-    height: 12px;
-    margin-top: 2px;
-  }
 }
 
 @mixin field-helper {

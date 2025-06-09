@@ -21,6 +21,7 @@ import { deepEqual, deepIncludes } from '../../helpers/objects';
 import { normalizeListOptions } from '../../helpers/utils';
 import DropdownOverlay from '../../utils/DropdownOverlay/DropdownOverlay.vue';
 import { PlMaskIcon24 } from '../PlMaskIcon24';
+import SvgRequired from '../../generated/components/svg/images/SvgRequired.vue';
 
 const emit = defineEmits<{
   (e: 'update:modelValue', v: M[]): void;
@@ -274,7 +275,7 @@ watchPostEffect(() => {
           </div>
         </div>
         <label v-if="label">
-          <i v-if="required" class="required-icon" />
+          <SvgRequired v-if="required" />
           <span>{{ label }}</span>
           <PlTooltip v-if="slots.tooltip" class="info" position="top">
             <template #tooltip>

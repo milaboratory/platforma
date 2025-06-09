@@ -24,6 +24,7 @@ import { PlMaskIcon24 } from '../PlMaskIcon24';
 import { DropdownOverlay } from '../../utils/DropdownOverlay';
 import { refDebounced } from '@vueuse/core';
 import { useWatchFetch } from '../../composition/useWatchFetch.ts';
+import SvgRequired from '../../generated/components/svg/images/SvgRequired.vue';
 
 /**
  * The current selected value.
@@ -371,7 +372,7 @@ watch(() => optionsRequest.loading || modelOptionRequest.loading, (loading) => {
           </div>
         </div>
         <label v-if="label">
-          <i v-if="required" class="required-icon" />
+          <SvgRequired v-if="required" />
           <span>{{ label }}</span>
           <PlTooltip v-if="slots.tooltip" class="info" position="top">
             <template #tooltip>

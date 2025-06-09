@@ -17,6 +17,7 @@ import { useValidation } from '../../utils/useValidation';
 import { PlIcon16 } from '../PlIcon16';
 import { PlMaskIcon24 } from '../PlMaskIcon24';
 import type { Equal } from '@milaboratories/helpers';
+import SvgRequired from '../../generated/components/svg/images/SvgRequired.vue';
 
 const slots = useSlots();
 
@@ -188,7 +189,7 @@ useLabelNotch(rootRef);
       }"
     >
       <label v-if="label" ref="label">
-        <i v-if="required" class="required-icon" />
+        <SvgRequired v-if="required" />
         <span>{{ label }}</span>
         <PlTooltip v-if="slots.tooltip" class="info" position="top">
           <template #tooltip>
