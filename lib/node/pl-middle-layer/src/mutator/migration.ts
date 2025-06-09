@@ -14,7 +14,11 @@ export async function applyProjectMigrations(pl: PlClient, rid: ResourceId) {
   await pl.withWriteTx('ProjectMigration', async (tx) => {
     const schemaVersion = await tx.getKValueJson<string>(rid, SchemaVersionKey);
     if (schemaVersion === SchemaVersionCurrent) return;
-    if (schemaVersion === SchemaVersionV1) await migrateV1ToV2(tx, rid);
+    if (schemaVersion === SchemaVersionV1) {
+      await migrateV1ToV2(tx, rid);
+    } else {
+      throw new Error(`Unknown project schema version: ${schemaVersion}`);
+    }
     tx.setKValue(rid, SchemaVersionKey, JSON.stringify(SchemaVersionCurrent));
     await tx.commit();
   });
