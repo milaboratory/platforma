@@ -51,6 +51,8 @@ import type { LabelDerivationOps } from './util/label';
 import { deriveLabels } from './util/label';
 import type { APColumnSelectorWithSplit } from './util/split_selectors';
 
+export type PColumnDataUniversal = TreeNodeAccessor | DataInfo<TreeNodeAccessor> | PColumnValues;
+
 /**
  * Helper function to match domain objects
  * @param query Optional domain to match against
@@ -73,7 +75,7 @@ export type UniversalColumnOption = { label: string; value: SUniversalPColumnId 
  * @param data Data from a PColumn to transform
  * @returns Transformed data compatible with platform API
  */
-function transformPColumnData(data: PColumn<TreeNodeAccessor | PColumnValues | DataInfo<TreeNodeAccessor>>):
+function transformPColumnData(data: PColumn<PColumnDataUniversal>):
 PColumn<PColumnValues | AccessorHandle | DataInfo<AccessorHandle>> {
   return mapPObjectData(data, (d) => {
     if (d instanceof TreeNodeAccessor) {
@@ -191,7 +193,7 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
     anchorsOrCtx: AnchoredIdDeriver | Record<string, PColumnSpec | PlRef>,
     predicateOrSelectors: ((spec: PColumnSpec) => boolean) | APColumnSelectorWithSplit | APColumnSelectorWithSplit[],
     opts?: UniversalPColumnOpts,
-  ): PColumn<DataInfo<TreeNodeAccessor> | TreeNodeAccessor>[] | undefined {
+  ): PColumn<PColumnDataUniversal>[] | undefined {
     const anchorCtx = this.resolveAnchorCtx(anchorsOrCtx);
     if (!anchorCtx) return undefined;
     return new PColumnCollection()
@@ -565,7 +567,7 @@ export class RenderCtx<Args, UiState> {
     return this.resultPool.findLabels(axis);
   }
 
-  private verifyInlineAndExplicitColumnsSupport(columns: PColumn<TreeNodeAccessor | PColumnValues | DataInfo<TreeNodeAccessor>>[]) {
+  private verifyInlineAndExplicitColumnsSupport(columns: PColumn<PColumnDataUniversal>[]) {
     const hasInlineColumns = columns.some((c) => !(c.data instanceof TreeNodeAccessor) || isDataInfo(c.data)); // Updated check for DataInfo
     const inlineColumnsSupport = this.ctx.featureFlags?.inlineColumnsSupport === true;
     if (hasInlineColumns && !inlineColumnsSupport) throw Error(`Inline or explicit columns not supported`); // Combined check
@@ -574,7 +576,7 @@ export class RenderCtx<Args, UiState> {
   }
 
   // TODO remove all non-PColumn fields
-  public createPFrame(def: PFrameDef<TreeNodeAccessor | PColumnValues | DataInfo<TreeNodeAccessor>>): PFrameHandle {
+  public createPFrame(def: PFrameDef<PColumnDataUniversal>): PFrameHandle {
     this.verifyInlineAndExplicitColumnsSupport(def);
     return this.ctx.createPFrame(
       def.map((c) => transformPColumnData(c)),
@@ -582,24 +584,24 @@ export class RenderCtx<Args, UiState> {
   }
 
   // TODO remove all non-PColumn fields
-  public createPTable(def: PTableDef<PColumn<TreeNodeAccessor | PColumnValues | DataInfo<TreeNodeAccessor>>>): PTableHandle;
+  public createPTable(def: PTableDef<PColumn<PColumnDataUniversal>>): PTableHandle;
   public createPTable(def: {
-    columns: PColumn<TreeNodeAccessor | PColumnValues | DataInfo<TreeNodeAccessor>>[];
+    columns: PColumn<PColumnDataUniversal>[];
     filters?: PTableRecordFilter[];
     /** Table sorting */
     sorting?: PTableSorting[];
   }): PTableHandle;
   public createPTable(
     def:
-      | PTableDef<PColumn<TreeNodeAccessor | PColumnValues | DataInfo<TreeNodeAccessor>>>
+      | PTableDef<PColumn<PColumnDataUniversal>>
       | {
-        columns: PColumn<TreeNodeAccessor | PColumnValues | DataInfo<TreeNodeAccessor>>[];
+        columns: PColumn<PColumnDataUniversal>[];
         filters?: PTableRecordFilter[];
         /** Table sorting */
         sorting?: PTableSorting[];
       },
   ): PTableHandle {
-    let rawDef: PTableDef<PColumn<TreeNodeAccessor | PColumnValues | DataInfo<TreeNodeAccessor>>>;
+    let rawDef: PTableDef<PColumn<PColumnDataUniversal>>;
     if ('columns' in def) {
       rawDef = {
         src: {

@@ -82,6 +82,7 @@ export async function initDriverKit(
     downloadClient,
     logsClient,
     ops.blobDownloadPath,
+    ops.blobDownloadRangesCachePath,
     signer,
     ops.blobDriverOps,
   );

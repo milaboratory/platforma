@@ -28,6 +28,7 @@ import {
 import type {
   AxisLabelProvider,
   ColumnProvider,
+  PColumnDataUniversal,
   RenderCtx,
 } from '../render';
 import {
@@ -363,7 +364,7 @@ export function isLabelColumn(column: PColumnSpec) {
 /** Get all label columns from the result pool */
 export function getAllLabelColumns(
   resultPool: AxisLabelProvider & ColumnProvider,
-): PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor>>[] | undefined {
+): PColumn<PColumnDataUniversal>[] | undefined {
   return new PColumnCollection()
     .addAxisLabelProvider(resultPool)
     .addColumnProvider(resultPool)
@@ -376,8 +377,8 @@ export function getAllLabelColumns(
 /** Get label columns matching the provided columns from the result pool */
 export function getMatchingLabelColumns(
   columns: PColumnIdAndSpec[],
-  allLabelColumns: PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor>>[],
-): PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor>>[] {
+  allLabelColumns: PColumn<PColumnDataUniversal>[],
+): PColumn<PColumnDataUniversal>[] {
   // split input columns into label and value columns
   const inputLabelColumns: typeof columns = [];
   const inputValueColumns: typeof columns = [];
@@ -485,8 +486,8 @@ export function allColumnsComputed(
 }
 
 function createPTableDef(
-  columns: PColumn<TreeNodeAccessor | PColumnValues | DataInfo<TreeNodeAccessor>>[],
-  labelColumns: PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor>>[],
+  columns: PColumn<PColumnDataUniversal>[],
+  labelColumns: PColumn<PColumnDataUniversal>[],
   coreJoinType: 'inner' | 'full',
   filters: PTableRecordSingleValueFilterV2[],
   sorting: PTableSorting[],

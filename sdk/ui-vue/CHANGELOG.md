@@ -1,5 +1,26 @@
 # @platforma-sdk/ui-vue
 
+## 1.33.10
+
+### Patch Changes
+
+- Updated dependencies [f0ea01c]
+  - @platforma-sdk/model@1.33.10
+  - @milaboratories/uikit@2.2.80
+
+## 1.33.9
+
+### Patch Changes
+
+- 9495969: Externalize miplots4 dependency
+
+## 1.33.8
+
+### Patch Changes
+
+- @platforma-sdk/model@1.33.8
+- @milaboratories/uikit@2.2.80
+
 ## 1.33.7
 
 ### Patch Changes
