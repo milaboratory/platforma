@@ -63,11 +63,12 @@ import {
 import Denque from 'denque';
 import { exportContext, getPreparedExportTemplateEnvelope } from './context_export';
 import { loadTemplate } from './template/template_loading';
-import { cachedDeserialize, canonicalJsonGzBytes, notEmpty } from '@milaboratories/ts-helpers';
+import { cachedDeserialize, notEmpty, canonicalJsonGzBytes } from '@milaboratories/ts-helpers';
 import type { ProjectHelper } from '../model/project_helper';
 import { extractConfig, type BlockConfig } from '@platforma-sdk/model';
-import type { BlockPackInfo } from '../model/block_pack';
 import { getDebugFlags } from '../debug';
+import { BlockPackInfo } from '../model/block_pack';
+
 type FieldStatus = 'NotReady' | 'Ready' | 'Error';
 
 interface BlockFieldState {
@@ -502,7 +503,11 @@ export class ProjectMutator {
       let blockChanged = false;
       for (const stateKey of ['args', 'uiState'] as const) {
         if (!(stateKey in req)) continue;
-        const statePart = req[stateKey] ?? {};
+        const statePart = req[stateKey];
+        if (statePart === undefined || statePart === null)
+          throw new Error(
+            `Can't set ${stateKey} to null or undefined, please omit the key if you don't want to change it`,
+          );
 
         const fieldName = stateKey === 'args' ? 'currentArgs' : 'uiState';
 
@@ -1111,7 +1116,7 @@ export class ProjectMutator {
 
     for (const [info, response] of blockPackRequests) {
       const result = await response;
-      const bpInfo = cachedDeserialize(notEmpty(result.data)) as BlockPackInfo;
+      const bpInfo = cachedDeserialize<BlockPackInfo>(notEmpty(result.data));
       info.blockConfig = extractConfig(bpInfo.config);
       info.blockPack = bpInfo.source;
     }

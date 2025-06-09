@@ -45,7 +45,6 @@ export class PollPool<A extends PollActor = PollActor> {
       this.currentLoopDelayInterrupt.abort();
       this.currentLoopDelayInterrupt = undefined;
     }
-    console.log('requestImmediateRefresh', this.refreshRequests);
   }
 
   private async mainLoop() {
