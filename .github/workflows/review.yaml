@@ -5,4 +5,4 @@ on:
 
 jobs:
   run:
-    uses: milaboratory/github-ci/.github/workflows/require-review.yaml@monorepo-js
+    uses: milaboratory/github-ci/.github/workflows/require-review.yaml@v4
