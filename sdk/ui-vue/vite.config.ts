@@ -24,6 +24,7 @@ export default defineConfig({
         'ag-grid-enterprise',
         'ag-grid-vue3',
         '@milaboratories/biowasm-tools',
+        '@milaboratories/miplots4',
       ],
       output: {
         globals: {
