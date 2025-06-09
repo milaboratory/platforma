@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import style from './pl-file-dialog.module.scss';
-import type { ImportedFiles } from '@/types';
+import type { ImportedFiles } from '../../types';
 import { PlIcon24 } from '../PlIcon24';
 import { computed, reactive } from 'vue';
 import { getRawPlatformaInstance, type OpenDialogFilter } from '@platforma-sdk/model';

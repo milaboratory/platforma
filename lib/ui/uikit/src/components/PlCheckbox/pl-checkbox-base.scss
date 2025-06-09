@@ -1,10 +1,10 @@
 .pl-checkbox-base {
-  --enabled-unchecked-icon: url('@/assets/images/24_checkbox-light-enabled-unchecked.svg');
-  --enabled-checked-icon: url('@/assets/images/24_checkbox-light-enabled-checked.svg');
-  --enabled-indeterminate-icon: url('@/assets/images/24_checkbox-light-enabled-indeterminate.svg');
-  --disabled-unchecked-icon: url('@/assets/images/24_checkbox-light-disabled-unchecked.svg');
-  --disabled-checked-icon: url('@/assets/images/24_checkbox-light-disabled-checked.svg');
-  --disabled-indeterminate-icon: url('@/assets/images/24_checkbox-light-disabled-indeterminate.svg');
+  --enabled-unchecked-icon: url('../../assets/images/24_checkbox-light-enabled-unchecked.svg');
+  --enabled-checked-icon: url('../../assets/images/24_checkbox-light-enabled-checked.svg');
+  --enabled-indeterminate-icon: url('../../assets/images/24_checkbox-light-enabled-indeterminate.svg');
+  --disabled-unchecked-icon: url('../../assets/images/24_checkbox-light-disabled-unchecked.svg');
+  --disabled-checked-icon: url('../../assets/images/24_checkbox-light-disabled-checked.svg');
+  --disabled-indeterminate-icon: url('../../assets/images/24_checkbox-light-disabled-indeterminate.svg');
 
   cursor: pointer;
   outline: none;
@@ -36,11 +36,11 @@
   }
 
   [data-theme="dark"] & {
-    --enabled-unchecked-icon: url('@/assets/images/24_checkbox-dark-enabled-unchecked.svg');
-    --enabled-checked-icon: url('@/assets/images/24_checkbox-dark-enabled-checked.svg');
-    --enabled-indeterminate-icon: url('@/assets/images/24_checkbox-dark-enabled-indeterminate.svg');
-    --disabled-unchecked-icon: url('@/assets/images/24_checkbox-dark-disabled-unchecked.svg');
-    --disabled-checked-icon: url('@/assets/images/24_checkbox-dark-disabled-checked.svg');
-    --disabled-indeterminate-icon: url('@/assets/images/24_checkbox-dark-disabled-indeterminate.svg');
+    --enabled-unchecked-icon: url('../../assets/images/24_checkbox-dark-enabled-unchecked.svg');
+    --enabled-checked-icon: url('../../assets/images/24_checkbox-dark-enabled-checked.svg');
+    --enabled-indeterminate-icon: url('../../assets/images/24_checkbox-dark-enabled-indeterminate.svg');
+    --disabled-unchecked-icon: url('../../assets/images/24_checkbox-dark-disabled-unchecked.svg');
+    --disabled-checked-icon: url('../../assets/images/24_checkbox-dark-disabled-checked.svg');
+    --disabled-indeterminate-icon: url('../../assets/images/24_checkbox-dark-disabled-indeterminate.svg');
   }
 }

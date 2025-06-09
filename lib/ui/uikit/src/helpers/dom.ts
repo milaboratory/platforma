@@ -1,4 +1,4 @@
-import { animate, makeEaseOut } from '@/helpers/utils';
+import { animate, makeEaseOut } from './utils';
 
 export function isElementVisible(parent: HTMLElement, el: HTMLElement) {
   const scrollTop = parent.scrollTop;

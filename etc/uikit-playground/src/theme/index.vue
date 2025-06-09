@@ -1,6 +1,6 @@
 <script lang="ts" setup>
-import Layout from '@/Layout.vue';
-import Heap from '@/theme/Heap.vue';
+import Layout from '../Layout.vue';
+import Heap from './Heap.vue';
 import { useTheme, ThemeSwitcher } from '@milaboratories/uikit';
 
 const [theme] = useTheme((theme) => {

@@ -1,6 +1,6 @@
 <script lang="ts" setup>
-import Layout from '@/Layout.vue';
-import Split from '@/Split.vue';
+import Layout from '../Layout.vue';
+import Split from '../Split.vue';
 import { ref } from 'vue';
 import { Slider, SliderRange, SliderRangeTriple, PlBtnSecondary } from '@milaboratories/uikit';
 
