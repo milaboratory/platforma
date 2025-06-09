@@ -1,9 +1,8 @@
 <script lang="ts" setup>
-import {
-  type ChartInterface,
-  type DataByColumns,
-  MiPlots,
-  type Settings,
+import type {
+  ChartInterface,
+  DataByColumns,
+  Settings,
 } from '@milaboratories/miplots4';
 import { useResizeObserver } from '@vueuse/core';
 import {
@@ -127,9 +126,10 @@ const data = computed<DataByColumns>(
 
 const plot = shallowRef<ChartInterface>();
 
-watchEffect(() => {
+watchEffect(async () => {
   if (!settings.value || !plotEl.value) return;
   if (!plot.value) {
+    const { MiPlots } = await import('@milaboratories/miplots4');
     plot.value = MiPlots.newPlot(data.value, settings.value);
     plot.value.mount(plotEl.value);
   } else {
