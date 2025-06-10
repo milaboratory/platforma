@@ -17,7 +17,7 @@ import { useValidation } from '@/utils/useValidation';
 import { PlIcon16 } from '../PlIcon16';
 import { PlMaskIcon24 } from '../PlMaskIcon24';
 import type { Equal } from '@milaboratories/helpers';
-import { useErrorMessage } from '@/composition/useErrorMessage.ts';
+import { getErrorMessage } from '@/helpers/error.ts';
 
 const slots = useSlots();
 
@@ -149,7 +149,7 @@ const nonEmpty = computed(() => !isEmpty.value);
 
 const displayErrors = computed(() => {
   const errors: string[] = [];
-  const propsError = useErrorMessage(props.error);
+  const propsError = getErrorMessage(props.error);
   if (propsError) {
     errors.push(propsError);
   }

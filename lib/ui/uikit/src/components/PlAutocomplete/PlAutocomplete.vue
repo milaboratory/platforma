@@ -24,7 +24,7 @@ import { PlMaskIcon24 } from '../PlMaskIcon24';
 import { DropdownOverlay } from '@/utils/DropdownOverlay';
 import { refDebounced } from '@vueuse/core';
 import { useWatchFetch } from '@/composition/useWatchFetch.ts';
-import { useErrorMessage } from '@/composition/useErrorMessage.ts';
+import { getErrorMessage } from '@/helpers/error.ts';
 
 /**
  * The current selected value.
@@ -156,7 +156,7 @@ const computedError = computed(() => {
   }
 
   if (props.error) {
-    return useErrorMessage(props.error);
+    return getErrorMessage(props.error);
   }
 
   if (isLoadingError.value) {

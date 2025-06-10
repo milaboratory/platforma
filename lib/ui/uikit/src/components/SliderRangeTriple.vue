@@ -6,7 +6,7 @@ import { clamp } from '@/helpers/math';
 import { PlTooltip } from '@/components/PlTooltip';
 import type { SliderMode } from '@/types';
 import { useSliderBreakpoints } from '@/composition/useSliderBreakpoints';
-import { useErrorMessage } from '@/composition/useErrorMessage.ts';
+import { getErrorMessage } from '@/helpers/error.ts';
 
 type ModelType = [number, number, number];
 const slots = useSlots();
@@ -85,7 +85,7 @@ const error = computed(() => {
     return errors.join(' ');
   }
 
-  return useErrorMessage(props.error);
+  return getErrorMessage(props.error);
 });
 
 const position1 = computed(() => {
