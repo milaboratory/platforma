@@ -3,7 +3,7 @@ import { computed } from 'vue';
 import './pl-progress-cell.scss';
 import PlMaskIcon24 from '../PlMaskIcon24/PlMaskIcon24.vue';
 import type { PlProgressCellProps } from './types';
-import { useErrorMessage } from '@/composition/useErrorMessage.ts';
+import { getErrorMessage } from '@/helpers/error.ts';
 
 const props = withDefaults(defineProps<PlProgressCellProps>(), {
   stage: 'not_started',
@@ -28,7 +28,7 @@ const canShowInfinityLoader = computed(() => props.progress === undefined && pro
     <div v-if="!canShowInfinityLoader && !error" class="progress-cell__indicator" :style="{ width: currentProgress + '%' }"/>
     <div class="progress-cell__body">
       <div class="progress-cell__stage text-s">
-        {{ error ? useErrorMessage(error) : step }}
+        {{ error ? getErrorMessage(error) : step }}
       </div>
       <div class="progress-cell__percentage text-s d-flex align-center justify-end">
         <PlMaskIcon24 v-if="error" name="error" />

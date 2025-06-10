@@ -1,7 +1,7 @@
 import { isErrorLike, tryDo } from '@milaboratories/helpers';
 
 // order of errors is important, we will show first
-export function useErrorMessage(...errors: unknown[]): undefined | string {
+export function getErrorMessage(...errors: unknown[]): undefined | string {
   for (let i = 0; i < errors.length; i++) {
     const error = errors[i];
     const message = extractMessage(error);

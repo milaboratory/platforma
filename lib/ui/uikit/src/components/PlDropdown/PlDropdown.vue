@@ -22,7 +22,7 @@ import { normalizeListOptions } from '@/helpers/utils';
 import { PlIcon16 } from '../PlIcon16';
 import { PlMaskIcon24 } from '../PlMaskIcon24';
 import { DropdownOverlay } from '@/utils/DropdownOverlay';
-import { useErrorMessage } from '@/composition/useErrorMessage.ts';
+import { getErrorMessage } from '@/helpers/error.ts';
 
 const emit = defineEmits<{
   /**
@@ -146,7 +146,7 @@ const computedError = computed(() => {
   }
 
   if (props.error) {
-    return useErrorMessage(props.error);
+    return getErrorMessage(props.error);
   }
 
   if (props.modelValue !== undefined && selectedIndex.value === -1) {

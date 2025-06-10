@@ -10,7 +10,7 @@ import { getFileNameFromHandle, getFilePathFromHandle } from '@platforma-sdk/mod
 import DoubleContour from '@/utils/DoubleContour.vue';
 import { useLabelNotch } from '@/utils/useLabelNotch';
 import { prettyBytes } from '@milaboratories/helpers';
-import { useErrorMessage } from '@/composition/useErrorMessage.ts';
+import { getErrorMessage } from '@/helpers/error.ts';
 
 const data = reactive({
   fileDialogOpen: false,
@@ -108,7 +108,7 @@ const isUploading = computed(() => props.progress && !props.progress.done);
 
 const isUploaded = computed(() => props.progress && props.progress.done);
 
-const computedErrorMessage = computed(() => useErrorMessage(data.error, props.error));
+const computedErrorMessage = computed(() => getErrorMessage(data.error, props.error));
 
 const hasErrors = computed(() => typeof computedErrorMessage.value === 'string');
 

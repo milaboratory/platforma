@@ -12,7 +12,7 @@ import { PlTooltip } from '@/components/PlTooltip';
 import DoubleContour from '@/utils/DoubleContour.vue';
 import { useLabelNotch } from '@/utils/useLabelNotch';
 import { useValidation } from '@/utils/useValidation';
-import { useErrorMessage } from '@/composition/useErrorMessage.ts';
+import { getErrorMessage } from '@/helpers/error.ts';
 
 const slots = useSlots();
 
@@ -93,7 +93,7 @@ useLabelNotch(root);
 
 const displayErrors = computed(() => {
   const errors: string[] = [];
-  const propsError = useErrorMessage(props.error);
+  const propsError = getErrorMessage(props.error);
 
   if (propsError) {
     errors.push(propsError);
