@@ -11,9 +11,9 @@ const baseSpec = {
   annotations: {},
 };
 
-tplTest('should export files for p-frame without skipExportForUI annotation', { timeout: 40000 },
+tplTest.concurrent('should export files for p-frame without skipExportForUI annotation', { timeout: 40000 },
   async ({ helper, expect, driverKit }) => {
-    const spec = baseSpec;
+    const spec = deepClone(baseSpec);
     const fileHandle = await importFile(driverKit);
 
     const result = await helper.renderTemplate(
@@ -43,9 +43,9 @@ tplTest('should export files for p-frame without skipExportForUI annotation', { 
   },
 );
 
-tplTest('should not export files for p-frame with hideDataFromUi annotation', { timeout: 40000 },
+tplTest.concurrent('should not export files for p-frame with hideDataFromUi annotation', { timeout: 40000 },
   async ({ helper, expect, driverKit }) => {
-    const spec = { ...baseSpec, annotations: { 'pl7.app/hideDataFromUi': 'true' } };
+    const spec = { ...deepClone(baseSpec), annotations: { 'pl7.app/hideDataFromUi': 'true' } };
     const fileHandle = await importFile(driverKit);
 
     const result = await helper.renderTemplate(
@@ -86,4 +86,8 @@ async function importFile(driverKit: DriverKit) {
   if (ourFile.type !== 'file') throw new Error('Dir');
 
   return ourFile.handle;
+}
+
+function deepClone<T>(obj: T): T {
+  return JSON.parse(JSON.stringify(obj));
 }
