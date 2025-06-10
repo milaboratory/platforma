@@ -40,6 +40,8 @@ import type { ResultPool } from '../pool/result_pool';
 import type { JsExecutionContext } from './context';
 import type { VmFunctionImplementation } from 'quickjs-emscripten';
 import { Scope, type QuickJSHandle } from 'quickjs-emscripten';
+import semver from 'semver';
+import { FIRST_SDK_VERSION_WITH_FUNCTION_STATE } from '../../../../../sdk/model/dist/render/internal';
 
 function bytesToBase64(data: Uint8Array | undefined): string | undefined {
   return data !== undefined ? Buffer.from(data).toString('base64') : undefined;
@@ -54,10 +56,17 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
 
   private readonly meta: Map<string, Block>;
 
+  readonly args: string | (() => string);
+
+  readonly uiState: string | (() => string);
+
+  readonly activeArgs: undefined | string | (() => string | undefined);
+
   constructor(
     private readonly parent: JsExecutionContext,
     private readonly blockCtx: BlockContextAny,
     private readonly env: MiddleLayerEnvironment,
+    private readonly sdkVersion: string,
     computableCtx: ComputableCtx,
   ) {
     this.computableCtx = computableCtx;
@@ -468,17 +477,6 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
     const vm = parent.vm;
 
     Scope.withScope((localScope) => {
-      // Exporting props
-
-      const args = this.blockCtx.args(this.computableCtx!);
-      const activeArgs = this.blockCtx.activeArgs(this.computableCtx!);
-      const uiState = this.blockCtx.uiState(this.computableCtx!);
-      vm.setProp(configCtx, 'args', localScope.manage(vm.newString(args)));
-      if (uiState !== undefined)
-        vm.setProp(configCtx, 'uiState', localScope.manage(vm.newString(uiState)));
-      if (activeArgs !== undefined)
-        vm.setProp(configCtx, 'activeArgs', localScope.manage(vm.newString(activeArgs)));
-
       // Exporting methods
 
       const exportCtxFunction = (
@@ -486,9 +484,9 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
         fn: VmFunctionImplementation<QuickJSHandle>,
       ): void => {
         const withCachedError: VmFunctionImplementation<QuickJSHandle> = (...args) => {
-        // QuickJS strips all fields from errors apart from 'name' and 'message'.
-        // That's why here we need to store them, and rethrow them when we exit
-        // from QuickJS code.
+          // QuickJS strips all fields from errors apart from 'name' and 'message'.
+          // That's why here we need to store them, and rethrow them when we exit
+          // from QuickJS code.
           try {
             return (fn as any)(...args);
           } catch (e: unknown) {
@@ -502,6 +500,32 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
         vm.newFunction(name, withCachedError).consume((fnh) => vm.setProp(configCtx, name, fnh));
         vm.newFunction(name, fn).consume((fnh) => vm.setProp(configCtx, name + '__internal__', fnh));
       };
+
+      if (semver.gte(sdkVersion, FIRST_SDK_VERSION_WITH_FUNCTION_STATE)) {
+        this.args = () => this.blockCtx.args(this.computableCtx!);
+        this.uiState = () => this.blockCtx.uiState(this.computableCtx!) ?? '{}';
+        this.activeArgs = () => this.blockCtx.activeArgs(this.computableCtx!);
+      } else {
+        this.args = this.blockCtx.args(computableCtx);
+        this.uiState = this.blockCtx.uiState(computableCtx) ?? '{}';
+        this.activeArgs = this.blockCtx.activeArgs(computableCtx);
+      }
+
+      if (typeof this.args === 'function') {
+        exportCtxFunction('args', () => {
+          return localScope.manage(vm.newString(this.args()));
+        });
+      } else {
+        vm.setProp(configCtx, 'args', localScope.manage(vm.newString(this.args)));
+      }
+
+      const activeArgs = this.blockCtx.activeArgs(this.computableCtx!);
+      const uiState = this.blockCtx.uiState(this.computableCtx!);
+      vm.setProp(configCtx, 'args', localScope.manage(vm.newString(args)));
+      if (uiState !== undefined)
+        vm.setProp(configCtx, 'uiState', localScope.manage(vm.newString(uiState)));
+      if (activeArgs !== undefined)
+        vm.setProp(configCtx, 'activeArgs', localScope.manage(vm.newString(activeArgs)));
 
       //
       // Methods for injected ctx object

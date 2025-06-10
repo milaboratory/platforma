@@ -6,6 +6,11 @@ export type Code = {
   content: string;
 };
 
+export type CodeAndSdkVersion = {
+  code: Code;
+  sdkVersion: string;
+};
+
 export function isConfigLambda(
   cfgOrFh: TypedConfigOrConfigLambda,
 ): cfgOrFh is ConfigRenderLambda {

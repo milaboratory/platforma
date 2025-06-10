@@ -11,6 +11,7 @@ import type { MiddleLayerEnvironment } from '../middle_layer/middle_layer';
 import { stringifyWithResourceId } from '@milaboratories/pl-client';
 import { PlQuickJSError } from '@milaboratories/pl-errors';
 import { ComputableContextHelper } from './computable_context';
+import semver from 'semver';
 
 export type DeadlineSettings = {
   currentExecutionTarget: string;
