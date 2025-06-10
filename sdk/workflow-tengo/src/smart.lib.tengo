@@ -353,21 +353,28 @@ resource = func(r) {
 		/**
 		 * Resource info:
 		 *  ID:            int64
+		 *  Kind:          "string": Structural or Value
+		 *  CanonicalID:   byte[]
 		 *  Data:          byte[],
 		 *  Type:          { Name: string, Version: string }
 		 *  Features:      { ephemeral: bool }
+		 *
+		 *  Fields:        strict map: all the fields
 		 *  Inputs:        strict map
-		 *  ServiceFields: strict map
 		 *  Outputs:       strict map
 		 *  Dynamic:       strict map
 		 *  OTW:           strict map
-		 *  ResourceReady: bool
-		 *  AllInputsSet:  bool
-		 *  AllOutputsSet: bool
-		 *  IsDuplicate:   bool
-		 *  InputsLocked:  bool
-		 *  OutputsLocked: bool
-		 *  HasErrors:     bool
+		 *  ServiceFields: strict map
+		 *
+		 *  ResourceReady:  bool
+		 *  IsFinal:        bool
+		 *  AllFieldsLoaded bool
+		 *  AllInputsSet:   bool
+		 *  AllOutputsSet:  bool
+		 *  IsDuplicate:    bool
+		 *  InputsLocked:   bool
+		 *  OutputsLocked:  bool
+		 *  HasErrors:      bool
 		 */
 		info: func() {
 			_resourceInfo := tx.getResource(self.id)
@@ -390,7 +397,8 @@ resource = func(r) {
 		 * Resource is ready when all inputs are set to the terminal values.
 		 */
 		isFinal: func() {
-			return self.info().ResourceReady || self.info().IsDuplicate || self.info().HasErrors
+			info := self.info()
+			return info.ResourceReady || info.IsDuplicate || info.HasErrors
 		},
 
 		isEphemeral: func() {
@@ -699,11 +707,23 @@ resource = func(r) {
 		 * Gets value from key value storage associated with resource if corresponding
 		 * record exists.
 		 *
-		 * @param key string key
-		 * @return bytes or undefined
+		 * Note: it uses resourceKeyValueGetIfExists under the hood.
+		 *
+		 * @param key: string - key
+		 * @return bytes
 		 */
 		kvGet: func(key) {
 			return tx.resourceKeyValueGet(self.id, key)
+		},
+
+		/**
+		 * Gets a flag from key value storage associated with resource
+		 *
+		 * @param key: string - key
+		 * @return bool
+		 */
+		kvGetFlag: func(key) {
+			return tx.resourceKeyValueGetFlag(self.id, key)
 		},
 
 		/**
@@ -715,6 +735,16 @@ resource = func(r) {
 		 */
 		kvSet: func(key, value) {
 			tx.resourceKeyValueSet(self.id, key, value)
+		},
+
+		/**
+		 * Sets a flag to a key value storage associated with resource
+		 *
+		 * @param key: string - key
+		 * @param flag: bool
+		 */
+		kvSetFlag: func(key, flag) {
+			return tx.resourceKeyValueSetFlag(self.id, key, flag)
 		},
 
 		/**
@@ -757,6 +787,13 @@ resource = func(r) {
 		 */
 		kvSetJson: func(key, value) {
 			self.kvSet(key, json.encode(value))
+		},
+
+		/**
+		 * Removes a resource that is not garbage-collectible.
+		 */
+		remove: func() {
+			tx.removeResource(self.id)
 		}
 	}
 
@@ -1108,6 +1145,20 @@ field = func(f) {
 		 */
 		buildFutureField: func(nameOrPath) {
 			return _buildFutureField(strictSelf, nameOrPath)
+		},
+
+		/**
+		 * Removes a value from multi-time writable fields (e.g. a dynamic field).
+		 */
+		reset: func() {
+			tx.resetField(self.id)
+		},
+
+		/**
+		 * Removes a multi-time writable (such as dynamic) field entirely.
+		 */
+		remove: func() {
+			tx.removeField(self.id)
 		}
 	}
 
