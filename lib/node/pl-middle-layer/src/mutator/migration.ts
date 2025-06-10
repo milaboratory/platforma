@@ -1,8 +1,9 @@
-import type { PlClient, PlTransaction, ResourceId } from '@milaboratories/pl-client';
-import { projectFieldName, SchemaVersionCurrent, SchemaVersionKey } from '../model/project_model';
-import { parseBlockFrontendStateKeyV1, SchemaVersionV1 } from '../model/project_model_v1';
+import type { KeyValue, PlClient, PlTransaction, ResourceId } from '@milaboratories/pl-client';
+import { projectFieldName, ProjectStructure, ProjectStructureKey, SchemaVersionCurrent, SchemaVersionKey } from '../model/project_model';
+import { BlockFrontendStateKeyPrefixV1, parseBlockFrontendStateKeyV1, SchemaVersionV1 } from '../model/project_model_v1';
 import { field } from '@milaboratories/pl-client';
 import { cachedDeserialize } from '@milaboratories/ts-helpers';
+import { allBlocks } from '../model/project_model_util';
 
 /**
  * Migrates the project to the latest schema version.
@@ -34,14 +35,18 @@ export async function applyProjectMigrations(pl: PlClient, rid: ResourceId) {
  * @param rid - The resource id of the project.
  */
 async function migrateV1ToV2(tx: PlTransaction, rid: ResourceId) {
-  const allKV = await tx.listKeyValues(rid);
-  for (const kv of allKV) {
-    const blockId = parseBlockFrontendStateKeyV1(kv.key);
-    if (blockId === undefined) continue;
-    const valueJson = cachedDeserialize(kv.value);
+  const [structure, allKV] = await Promise.all([
+    tx.getKValueJson<ProjectStructure>(rid, ProjectStructureKey),
+    tx.listKeyValues(rid),
+  ]);
+  const kvMap = new Map<string, Uint8Array>(allKV.map((kv) => [kv.key, kv.value]));
+  for (const block of allBlocks(structure)) {
+    const kvKey = BlockFrontendStateKeyPrefixV1 + block.id;
+    const uiState = kvMap.get(kvKey);
+    const valueJson = uiState ? cachedDeserialize(uiState) : {};
     const uiStateR = tx.createJsonGzValue(valueJson);
-    const uiStateF = field(rid, projectFieldName(blockId, 'uiState'));
+    const uiStateF = field(rid, projectFieldName(block.id, 'uiState'));
     tx.createField(uiStateF, 'Dynamic', uiStateR);
-    tx.deleteKValue(rid, kv.key);
+    tx.deleteKValue(rid, kvKey);
   }
 }
