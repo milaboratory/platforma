@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.82
+
+### Patch Changes
+
+- 54ebbe9: PlAgDataTable: fix reset hidden columns state, remove scroll to top after reordering columns
+
 ## 2.2.81
 
 ### Patch Changes
