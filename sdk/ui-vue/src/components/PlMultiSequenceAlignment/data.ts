@@ -38,7 +38,12 @@ export function useSequenceColumnsOptions(
   const result = computedAsync(
     () => getSequenceColumnsOptions(toValue(params)),
     getEmptyOptions(),
-    { onError: () => (result.value = getEmptyOptions()) },
+    {
+      onError: (error) => {
+        console.error(error);
+        result.value = getEmptyOptions();
+      },
+    },
   );
   return result;
 }
@@ -55,7 +60,12 @@ export function useLabelColumnsOptions(
   const result = computedAsync(
     () => getLabelColumnsOptions(toValue(params)),
     getEmptyOptions(),
-    { onError: () => (result.value = getEmptyOptions()) },
+    {
+      onError: (error) => {
+        console.error(error);
+        result.value = getEmptyOptions();
+      },
+    },
   );
   return result;
 }
@@ -74,7 +84,10 @@ export function useMultipleAlignmentData(
     () => getMultipleAlignmentData(toValue(params)),
     { sequences: [], labels: [] },
     {
-      onError: () => (result.value = { sequences: [], labels: [] }),
+      onError: (error) => {
+        console.error(error);
+        result.value = { sequences: [], labels: [] };
+      },
       evaluating: loading,
     },
   );
