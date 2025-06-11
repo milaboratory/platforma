@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { type Column, type GridApi } from 'ag-grid-enterprise';
+import { type Column, type DisplayedColumnsChangedEvent, type GridApi } from 'ag-grid-enterprise';
 import { PlBtnGhost, PlMaskIcon16, PlMaskIcon24, PlSlideModal, PlTooltip, useSortable2 } from '@milaboratories/uikit';
 import { ref, toRefs, watch } from 'vue';
 import './pl-ag-grid-column-manager.scss';
@@ -25,11 +25,13 @@ const columns = ref<Column[]>([]);
 const listRef = ref<HTMLElement>();
 const slideModal = ref(false);
 const listKey = ref(0);
+const isOrderChanged = ref(false);
 
 useSortable2(listRef, {
   handle: '.handle',
   onChange(indices) {
     gridApi.value.moveColumns(indices.map((i) => columns.value[i]), 0);
+    isOrderChanged.value = true;
   },
 });
 
@@ -47,10 +49,13 @@ watch(
       gridApi.moveColumns(columns.value, 0);
     }
 
-    gridApi.addEventListener('displayedColumnsChanged', (event) => {
+    gridApi.addEventListener('displayedColumnsChanged', (event: DisplayedColumnsChangedEvent) => {
       if (gridApi.isDestroyed()) return;
       columns.value = event.api.getAllGridColumns();
-      listKey.value++;
+      if (isOrderChanged.value) {
+        listKey.value++;
+        isOrderChanged.value = false;
+      }
     });
   },
   { immediate: true },
@@ -82,7 +87,7 @@ const teleportTarget = useDataTableToolsPanelTarget();
             {{ col.getColDef().headerName }}
           </div>
           <div class="pl-ag-columns__visibility" @click="toggleColumnVisibility(col)">
-            <PlTooltip :close-delay="500" position="top">
+            <PlTooltip :open-delay="5000" :close-delay="500" position="top">
               <PlMaskIcon24 :name="col.isVisible() ? 'view-show' : 'view-hide'" />
               <template #tooltip>Show/Hide</template>
             </PlTooltip>
