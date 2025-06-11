@@ -126,7 +126,9 @@ export function field(resourceId: AnyResourceRef, fieldName: string): AnyFieldRe
 }
 
 /** If transaction commit failed due to write conflicts */
-export class TxCommitConflict extends Error {}
+export class TxCommitConflict extends Error {
+  name = 'TxCommitConflict';
+}
 
 async function notFoundToUndefined<T>(cb: () => Promise<T>): Promise<T | undefined> {
   try {
