@@ -1,6 +1,7 @@
 test := import(":test")
 ll := import(":ll")
 plapi := import("plapi")
+hex := import("hex")
 
 Test_ll_MethodExists := func() {
 	//
@@ -16,17 +17,6 @@ Test_ll_MethodExists := func() {
 	test.isFalse(ll.methodExists(plapi, "nonexistent"), "wrong result from 'methodExists' check for plapi.nonexistent")
 }
 
-// The test just checks that a binding to Go backend works.
-// Ideally we should test that the value is stored between template runs,
-// but it's not possible to do it here.
-// TODO: add a test in TypeScript.
-Test_ll_getPersistentCtx := func() {
-	ctx := ll.getPersistentCtx()
-	ctx["theAnswer"] = 42
-
-	test.isEqual(ll.getPersistentCtx()["theAnswer"], 42, "wrong value in persistent ctx")
-}
-
 // The test just checks that the value is stored between function calls.
 Test_ll_getExecutionCtx := func() {
 	ctx := ll.getExecutionCtx()
@@ -36,7 +26,7 @@ Test_ll_getExecutionCtx := func() {
 }
 
 // The test checks that global variables are stored between different moduleVars invocations.
-Test_ll_moduleVars := func() {
+Test_ll_moduleVars_get_set := func() {
 	vars := ll.moduleVars("mySuperFineModule")
 	vars.set("theAnswer", 42)
 
@@ -46,7 +36,84 @@ Test_ll_moduleVars := func() {
 	test.isEqual(vars2.get("theAnswer"), 42, "wrong value in module vars")
 }
 
+// The test checks that global variables are not mixed between different modules.
+Test_ll_moduleVars_different_modules := func() {
+	vars := ll.moduleVars("mySuperFineModule1")
+	vars.set("theAnswer", 42)
+
+	vars2 := ll.moduleVars("myMegaBadModule2")
+	vars2.set("theAnswer", 43)
+
+	oldVars := ll.moduleVars("mySuperFineModule1")
+	test.isEqual(oldVars.get("theAnswer"), 42, "wrong value in module vars")
+}
+
 Test_ll_sha256Encode := func() {
 	hash := ll.sha256Encode(bytes("hello"))
-	test.isEqual(hash, "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824", "wrong sha256 hash")
+
+	test.isEqual(
+		"2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824",
+		hex.encode(hash),
+		"wrong sha256 hash"
+	)
+}
+
+Test_ll_gzipEncode := func() {
+	encoded := ll.gzipEncode(bytes("hello"))
+
+	test.isEqual(
+		"1f8b08000000000000ffca48cdc9c907040000ffff86a6103605000000",
+		hex.encode(encoded),
+		"wrong gzip encoded bytes"
+	)
+}
+
+Test_ll_gzipDecode := func() {
+	decoded := ll.gzipDecode(hex.decode("1f8b08000000000000ffca48cdc9c907040000ffff86a6103605000000"))
+
+	test.isEqual(
+		"hello",
+		string(decoded),
+		"wrong gzip decoded bytes"
+	)
+}
+
+Test_ll_base32Encode := func() {
+	encoded := ll.base32Encode(bytes("hello"))
+
+	test.isEqual(
+		"NBSWY3DP",
+		encoded,
+		"wrong base32 encoded bytes"
+	)
+}
+
+Test_ll_base32HexEncode := func() {
+	encoded := ll.base32HexEncode(bytes("hello"))
+
+	test.isEqual(
+		"D1IMOR3F",
+		encoded,
+		"wrong base32hex encoded bytes"
+	)
+}
+
+Test_ll_base32Decode := func() {
+	decoded := ll.base32Decode("NBSWY3DP")
+
+	test.isEqual(
+		"hello",
+		string(decoded),
+		"wrong base32 decoded bytes"
+	)
+}
+
+Test_ll_base32HexDecode := func() {
+	decoded := ll.base32HexDecode("D1IMOR3F")
+
+	test.isEqual(
+		"hello",
+		string(decoded),
+		"wrong base32hex decoded bytes"
+	)
 }

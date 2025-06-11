@@ -38,14 +38,10 @@ export ll.toStrict({
 	commandExpressions:         _isEnabled("commandExpressions") || _api >= 2, // rich expressions in command arguments ( {{ system.ram_bytes / 20 }} )
 	workdirLimits:              _isEnabled("workdirLimits")      || _api >= 4, // workdir storage controller can limit concurrency
 	computeLimits:              _isEnabled("computeLimits"),                   // runner can plan CPU and RAM
-	resourceDuplicateEvent:     _isEnabled("completeResourceEvents"), // template can subscribe to ResourceDuplicate. Same as completeResourceEvents
 
-	// template can subscirbe to ResourceDuplicate, FieldGotError, OutputSet, AllOutputsSet and GenericOTWSet.
-	completeResourceEvents:     _isEnabled("completeResourceEvents"),
-
-	// sha256Encode, gzipEncode, gzipDecode, base32Encode, base32HexEncode, base32Decode, base32HexDecode
-	hashFunctions: _isEnabled("hashFunctions"),
-
-	executionContext: _isEnabled("executionContext"), // not persistent context for global variables
-	completeTxMethods: _isEnabled("completeTxMethods") // missing tx methods.
+	// - template can subscirbe to ResourceDuplicate, FieldGotError, OutputSet, AllOutputsSet and GenericOTWSet.
+	// - hashing funcs: sha256Encode, gzipEncode, gzipDecode, base32Encode, base32HexEncode, base32Decode, base32HexDecode
+	// - execution context: not persistent context for global variables.
+	// - missing tx methods.
+	fullFeaturedApi:        _isEnabled("fullFeaturedAPI")
 })

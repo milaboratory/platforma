@@ -397,7 +397,12 @@ resource = func(r) {
 		 * Resource is ready when all inputs are set to the terminal values.
 		 */
 		isFinal: func() {
+			if feats.fullFeaturedApi {
+				return self.info().IsFinal
+			}
+
 			info := self.info()
+
 			return info.ResourceReady || info.IsDuplicate || info.HasErrors
 		},
 
@@ -723,6 +728,7 @@ resource = func(r) {
 		 * @return bool
 		 */
 		kvGetFlag: func(key) {
+			ll.assert(feats.fullFeaturedApi, "smart.resource.kvGetFlag: the feature is not available on older backends. Please, update the backend.")
 			return tx.resourceKeyValueGetFlag(self.id, key)
 		},
 
@@ -744,7 +750,8 @@ resource = func(r) {
 		 * @param flag: bool
 		 */
 		kvSetFlag: func(key, flag) {
-			return tx.resourceKeyValueSetFlag(self.id, key, flag)
+			ll.assert(feats.fullFeaturedApi, "smart.resource.kvSetFlag: the feature is not available on older backends. Please, update the backend.")
+			tx.resourceKeyValueSetFlag(self.id, key, flag)
 		},
 
 		/**
@@ -787,13 +794,6 @@ resource = func(r) {
 		 */
 		kvSetJson: func(key, value) {
 			self.kvSet(key, json.encode(value))
-		},
-
-		/**
-		 * Removes a resource that is not garbage-collectible.
-		 */
-		remove: func() {
-			tx.removeResource(self.id)
 		}
 	}
 
@@ -1151,6 +1151,7 @@ field = func(f) {
 		 * Removes a value from multi-time writable fields (e.g. a dynamic field).
 		 */
 		reset: func() {
+			ll.assert(feats.fullFeaturedApi, "smart.field.reset: the feature is not available on older backends. Please, update the backend.")
 			tx.resetField(self.id)
 		},
 
@@ -1158,6 +1159,7 @@ field = func(f) {
 		 * Removes a multi-time writable (such as dynamic) field entirely.
 		 */
 		remove: func() {
+			ll.assert(feats.fullFeaturedApi, "smart.field.remove: the feature is not available on older backends. Please, update the backend.")
 			tx.removeField(self.id)
 		}
 	}
