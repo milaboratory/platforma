@@ -54,6 +54,7 @@ export class JsExecutionContext {
     public readonly scope: Scope,
     public readonly vm: QuickJSContext,
     private readonly deadlineSetter: DeadlineSetter,
+    sdkVersion: string,
     computableEnv?: ComputableEnv,
   ) {
     this.callbackRegistry = this.scope.manage(this.vm.newObject());
@@ -70,7 +71,7 @@ export class JsExecutionContext {
     if (vm.typeof(this.fnJSONParse) !== 'function') throw new Error(`JSON.parse() not found.`);
 
     if (computableEnv !== undefined)
-      this.computableHelper = new ComputableContextHelper(this, computableEnv.blockCtx, computableEnv.mlEnv, computableEnv.computableCtx);
+      this.computableHelper = new ComputableContextHelper(this, computableEnv.blockCtx, computableEnv.mlEnv, sdkVersion, computableEnv.computableCtx);
 
     this.injectCtx();
   }

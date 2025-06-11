@@ -1,8 +1,10 @@
 import type { ComputableCtx } from '@milaboratories/computable';
 import { Computable } from '@milaboratories/computable';
 import type { PlTreeNodeAccessor } from '@milaboratories/pl-tree';
-import type {
+import {
   JsRenderInternal,
+} from '@platforma-sdk/model';
+import type {
   ArchiveFormat,
   CommonFieldTraverseOps as CommonFieldTraverseOpsFromSDK,
   DataInfo,
@@ -41,7 +43,6 @@ import type { JsExecutionContext } from './context';
 import type { VmFunctionImplementation } from 'quickjs-emscripten';
 import { Scope, type QuickJSHandle } from 'quickjs-emscripten';
 import semver from 'semver';
-import { FIRST_SDK_VERSION_WITH_FUNCTION_STATE } from '../../../../../sdk/model/dist/render/internal';
 
 function bytesToBase64(data: Uint8Array | undefined): string | undefined {
   return data !== undefined ? Buffer.from(data).toString('base64') : undefined;
@@ -55,12 +56,6 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
   private readonly accessors = new Map<string, PlTreeNodeAccessor | undefined>();
 
   private readonly meta: Map<string, Block>;
-
-  readonly args: string | (() => string);
-
-  readonly uiState: string | (() => string);
-
-  readonly activeArgs: undefined | string | (() => string | undefined);
 
   constructor(
     private readonly parent: JsExecutionContext,
@@ -501,31 +496,32 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
         vm.newFunction(name, fn).consume((fnh) => vm.setProp(configCtx, name + '__internal__', fnh));
       };
 
-      if (semver.gte(sdkVersion, FIRST_SDK_VERSION_WITH_FUNCTION_STATE)) {
-        this.args = () => this.blockCtx.args(this.computableCtx!);
-        this.uiState = () => this.blockCtx.uiState(this.computableCtx!) ?? '{}';
-        this.activeArgs = () => this.blockCtx.activeArgs(this.computableCtx!);
-      } else {
-        this.args = this.blockCtx.args(computableCtx);
-        this.uiState = this.blockCtx.uiState(computableCtx) ?? '{}';
-        this.activeArgs = this.blockCtx.activeArgs(computableCtx);
-      }
-
-      if (typeof this.args === 'function') {
+      if (semver.gte(this.sdkVersion, JsRenderInternal.FIRST_SDK_VERSION_WITH_FUNCTION_STATE)) {
         exportCtxFunction('args', () => {
-          return localScope.manage(vm.newString(this.args()));
+          if (this.computableCtx === undefined)
+            throw new Error(`Add dummy call to ctx.args outside the future lambda. Can't be directly used in this context.`);
+          return localScope.manage(vm.newString(this.blockCtx.args(this.computableCtx)));
+        });
+        exportCtxFunction('uiState', () => {
+          if (this.computableCtx === undefined)
+            throw new Error(`Add dummy call to ctx.uiState outside the future lambda. Can't be directly used in this context.`);
+          return localScope.manage(vm.newString(this.blockCtx.uiState(this.computableCtx) ?? '{}'));
+        });
+        exportCtxFunction('activeArgs', () => {
+          if (this.computableCtx === undefined)
+            throw new Error(`Add dummy call to ctx.activeArgs outside the future lambda. Can't be directly used in this context.`);
+          const res = this.blockCtx.activeArgs(this.computableCtx);
+          return localScope.manage(res === undefined ? vm.undefined : vm.newString(res));
         });
       } else {
-        vm.setProp(configCtx, 'args', localScope.manage(vm.newString(this.args)));
+        const args = this.blockCtx.args(this.computableCtx!);
+        const activeArgs = this.blockCtx.activeArgs(this.computableCtx!);
+        const uiState = this.blockCtx.uiState(this.computableCtx!);
+        vm.setProp(configCtx, 'args', localScope.manage(vm.newString(args)));
+        vm.setProp(configCtx, 'uiState', localScope.manage(vm.newString(uiState ?? '{}')));
+        if (activeArgs !== undefined)
+          vm.setProp(configCtx, 'activeArgs', localScope.manage(vm.newString(activeArgs)));
       }
-
-      const activeArgs = this.blockCtx.activeArgs(this.computableCtx!);
-      const uiState = this.blockCtx.uiState(this.computableCtx!);
-      vm.setProp(configCtx, 'args', localScope.manage(vm.newString(args)));
-      if (uiState !== undefined)
-        vm.setProp(configCtx, 'uiState', localScope.manage(vm.newString(uiState)));
-      if (activeArgs !== undefined)
-        vm.setProp(configCtx, 'activeArgs', localScope.manage(vm.newString(activeArgs)));
 
       //
       // Methods for injected ctx object

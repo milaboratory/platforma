@@ -25,7 +25,7 @@ import type {
 } from '@milaboratories/pl-model-middle-layer';
 import { constructBlockContextArgsOnly } from './block_ctx';
 import { ifNotUndef } from '../cfg_render/util';
-import type { BlockSection } from '@platforma-sdk/model';
+import { extractCodeAndSdkVersion, type BlockSection } from '@platforma-sdk/model';
 import { computableFromCfgOrRF } from './render';
 import type { NavigationStates } from './navigation_states';
 import { getBlockPackInfo } from './util';
@@ -162,7 +162,7 @@ export function projectOverview(
                 env,
                 blockCtxArgsOnly,
                 cfg.sections,
-                cfg.code,
+                extractCodeAndSdkVersion(cfg),
                 bpId,
               ).wrap({
                 recover: (e) => {
@@ -178,7 +178,7 @@ export function projectOverview(
                     env,
                     blockCtxArgsOnly,
                     title,
-                    cfg.code,
+                    extractCodeAndSdkVersion(cfg),
                     bpId,
                   ).wrap({
                     recover: (e) => {
@@ -192,7 +192,7 @@ export function projectOverview(
                 env,
                 blockCtxArgsOnly,
                 cfg.inputsValid,
-                cfg.code,
+                extractCodeAndSdkVersion(cfg),
                 bpId,
               ).wrap({
                 recover: (e) => {

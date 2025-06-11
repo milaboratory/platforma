@@ -39,6 +39,7 @@ export function computableFromRF(
     const vm = scope.manage(runtime.newContext());
     const rCtx = new JsExecutionContext(scope, vm,
       (s) => { deadlineSettings = s; },
+      codeAndSdkVersion.sdkVersion,
       { computableCtx: cCtx, blockCtx: ctx, mlEnv: env });
 
     rCtx.evaluateBundle(code.content);
@@ -85,7 +86,7 @@ export function executeSingleLambda(
   codeAndSdkVersion: CodeAndSdkVersion,
   ...args: unknown[]
 ): unknown {
-  const { code } = codeAndSdkVersion;
+  const { code, sdkVersion } = codeAndSdkVersion;
   const scope = new Scope();
   try {
     const runtime = scope.manage(quickJs.newRuntime());
@@ -100,7 +101,9 @@ export function executeSingleLambda(
     });
     const vm = scope.manage(runtime.newContext());
     const rCtx = new JsExecutionContext(scope, vm,
-      (s) => { deadlineSettings = s; });
+      (s) => { deadlineSettings = s; },
+      sdkVersion,
+    );
 
     // Initializing the model
     rCtx.evaluateBundle(code.content);
