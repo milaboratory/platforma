@@ -72,7 +72,6 @@ export function createApp<
 
   const setBlockArgsAndUiState = useDebounceFn((args: Args, ui: UiState) => {
     if (!isJsonEqual(args, snapshot.args) || !isJsonEqual(ui, snapshot.ui)) {
-      console.log('onSave args debounced', JSON.stringify(args));
       platforma.setBlockArgsAndUiState(args, ui);
     }
   }, debounceSpan, { maxWait });
