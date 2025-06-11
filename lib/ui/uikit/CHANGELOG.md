@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.81
+
+### Patch Changes
+
+- d707ab4: Unify error processing in uikit
+
 ## 2.2.80
 
 ### Patch Changes
