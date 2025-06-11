@@ -61,6 +61,7 @@ function isRecoverable(status: Status): boolean {
 }
 
 export class RethrowError extends Error {
+  name = 'RethrowError';
   constructor(public readonly rethrowLambda: () => never) {
     super('Rethrow error, you should never see this one.');
   }

@@ -8,7 +8,9 @@ import {
 } from '@milaboratories/pl-client';
 
 /** Throws when a driver gets a resource with a wrong resource type. */
-export class WrongResourceTypeError extends Error {}
+export class WrongResourceTypeError extends Error {
+  name = 'WrongResourceTypeError';
+}
 
 /** Updater incorporates a pattern when someone wants to run a callback
  * that updates something only when it's not already running. */
