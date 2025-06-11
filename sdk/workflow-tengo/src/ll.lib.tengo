@@ -292,7 +292,11 @@ parseUrl := func(url) {
  * DEPRECATED: use `ll.getPersistentCtx`
  */
 getCtx := func() {
-	// TODO: rename to getPersistentCtx
+	if methodExists(plapi, "getPersistentCtx") {
+		return plapi.getPersistentCtx()
+	}
+
+	// DEPRECATED
 	return plapi.getCtx()
 }
 
@@ -301,7 +305,11 @@ getCtx := func() {
  * It is persisted between template runs, but the cons are we could store only serializable data here (tengo maps, strings, slices, numbers etc).
  */
 getPersistentCtx := func() {
-	// TODO: rename to getPersistentCtx
+	if methodExists(plapi, "getPersistentCtx") {
+		return plapi.getPersistentCtx()
+	}
+
+	// DEPRECATED
 	return plapi.getCtx()
 }
 
@@ -316,6 +324,7 @@ getPersistentCtx := func() {
  * Cons: it's not saved after the script execution.
  */
 getExecutionCtx := func() {
+	assert(methodExists(plapi, "getExecutionCtx"), "ll.getExecutionCtx: method does not exists in this backend instance.")
 	return plapi.getExecutionCtx()
 }
 
