@@ -43,10 +43,6 @@ export function ensureError(value: unknown): Error {
     return value;
   }
 
-  if (typeof value === 'string') {
-    return new Error(value);
-  }
-
   return new Error(stringifyValue(value));
 }
 
