@@ -1,5 +1,13 @@
 # @platforma-sdk/ui-vue
 
+## 1.33.13
+
+### Patch Changes
+
+- 54ebbe9: PlAgDataTable: fix reset hidden columns state, remove scroll to top after reordering columns
+- Updated dependencies [54ebbe9]
+  - @milaboratories/uikit@2.2.82
+
 ## 1.33.12
 
 ### Patch Changes
