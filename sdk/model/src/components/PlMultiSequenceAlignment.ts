@@ -13,23 +13,22 @@ import { type PlSelectionModel } from './PlSelectionModel';
 export type PColumnPredicate = (column: PColumnIdAndSpec) => boolean;
 
 export type PlMultiSequenceAlignmentModel = {
+  version?: number;
   sequenceColumnIds?: PObjectId[];
   labelColumnIds?: PTableColumnId[];
 };
 
-export function createRowSelectionColumn(
-  {
-    selection,
-    columnId = uniquePlId() as string as PObjectId,
-    label = 'Selection marker',
-    domain,
-  }: {
-    selection: PlSelectionModel | undefined;
-    columnId?: PObjectId;
-    label?: string;
-    domain?: Record<string, string>;
-  },
-): PColumn<PColumnValues> | undefined {
+export function createRowSelectionColumn({
+  selection,
+  columnId = uniquePlId() as string as PObjectId,
+  label = 'Selection marker',
+  domain,
+}: {
+  selection: PlSelectionModel | undefined;
+  columnId?: PObjectId;
+  label?: string;
+  domain?: Record<string, string>;
+}): PColumn<PColumnValues> | undefined {
   if (!selection?.axesSpec.length) {
     return;
   }

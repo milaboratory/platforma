@@ -6,7 +6,7 @@ import type {
   PlMultiSequenceAlignmentModel,
   PlSelectionModel,
 } from '@platforma-sdk/model';
-import { computed, reactive, ref } from 'vue';
+import { computed, onBeforeMount, reactive, ref } from 'vue';
 import {
   sequenceLimit,
   useLabelColumnsOptions,
@@ -14,11 +14,16 @@ import {
   useSequenceColumnsOptions,
 } from './data';
 import Legend from './Legend.vue';
+import { runMigrations } from './migrations';
 import MultiSequenceAlignmentView from './MultiSequenceAlignmentView.vue';
 import { defaultSettings } from './settings';
 import Toolbar from './Toolbar.vue';
 
 const model = defineModel<PlMultiSequenceAlignmentModel>({ default: {} });
+
+onBeforeMount(() => {
+  runMigrations(model);
+});
 
 const props = defineProps<{
   /**
