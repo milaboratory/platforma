@@ -111,7 +111,7 @@ function partitionKeyJson(str: string): any {
   return JSON.stringify(JSON.parse(str.replace('.index', '').replace('.values', '')));
 }
 
-tplTest.for([
+tplTest.concurrent.for([
   { partitionKeyLength: 0, storageFormat: 'Binary' },
   { partitionKeyLength: 1, storageFormat: 'Binary' },
   { partitionKeyLength: 2, storageFormat: 'Binary' },
@@ -128,7 +128,7 @@ tplTest.for([
   // execution takes 1-2 seconds at most.
   { timeout: 30000 },
   async ({ partitionKeyLength, storageFormat }, { helper, expect, driverKit }) => {
-    const spec = baseSpec;
+    const spec = deepClone(baseSpec);
     spec.partitionKeyLength = partitionKeyLength;
     spec.storageFormat = storageFormat;
     const expectedPKeys = [...expectedPartitionKeys(spec)].sort();
@@ -228,7 +228,7 @@ function superPartitionKeys(keyLen: number): string[] {
   return r;
 }
 
-tplTest.for([
+tplTest.concurrent.for([
   {
     superPartitionKeyLength: 0,
     partitionKeyLength: 0,
@@ -284,7 +284,7 @@ tplTest.for([
   { timeout: 30000 },
   async ({ superPartitionKeyLength, partitionKeyLength, storageFormat }, { helper, expect }) => {
     const supKeys = superPartitionKeys(superPartitionKeyLength).sort();
-    const spec = baseSpec;
+    const spec = deepClone(baseSpec);
     spec.partitionKeyLength = partitionKeyLength;
     spec.storageFormat = storageFormat;
     // inner keys
@@ -393,7 +393,7 @@ tplTest.for([
   },
 );
 
-tplTest.for([
+tplTest.concurrent.for([
   {
     superPartitionKeyLength: 0,
     partitionKeyLength: 0,
@@ -449,7 +449,7 @@ tplTest.for([
   { timeout: 30000 },
   async ({ superPartitionKeyLength, partitionKeyLength, storageFormat }, { helper, expect }) => {
     const supKeys = superPartitionKeys(superPartitionKeyLength).sort();
-    const spec = baseSpec;
+    const spec = deepClone(baseSpec);
     spec.partitionKeyLength = partitionKeyLength;
     spec.storageFormat = storageFormat;
     // inner keys
@@ -548,3 +548,7 @@ tplTest.for([
     }
   },
 );
+
+function deepClone<T>(obj: T): T {
+  return JSON.parse(JSON.stringify(obj));
+}
