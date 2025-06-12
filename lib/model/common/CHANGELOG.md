@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.15.4
+
+### Patch Changes
+
+- 61aa680: Bug cutting empty domain{} from spec fixed
+
 ## 1.15.3
 
 ### Patch Changes
