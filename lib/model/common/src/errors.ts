@@ -5,6 +5,13 @@ export class AbortError extends Error {
   name = 'AbortError';
 }
 
+/**
+ * Throw this to show a message without stack trace in UI
+ */
+export class UiError extends Error {
+  name = 'UiError';
+}
+
 export function isAbortError(error: unknown): error is Error & { name: 'AbortError' } {
   return error instanceof Error && error.name === 'AbortError';
 }
