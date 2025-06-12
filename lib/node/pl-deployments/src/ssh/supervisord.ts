@@ -37,6 +37,10 @@ export type SupervisorStatus = {
   execError?: string;
 };
 
+export function isSupervisordRunning(status: SupervisorStatus) {
+  return status.execError === undefined;
+}
+
 export async function supervisorStatus(
   logger: MiLogger,
   sshClient: SshClient,

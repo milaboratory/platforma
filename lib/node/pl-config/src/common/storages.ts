@@ -31,7 +31,68 @@ export interface RemoteMinioSettings {
   bucketName: string;
 }
 
-export function newRemoteConfigStorages(
+export function newRemoteConfigStoragesFS(
+  workdir: string,
+  localhttpPort?: number,
+): StoragesSettings {
+  const workPath = upath.join(workdir, 'storages', 'work');
+  const mainPath = upath.join(workdir, 'storages', 'main');
+
+  if (!localhttpPort) {
+    throw new Error('httpPort is required for remote FS storage config generation');
+  }
+
+  const main: StorageSettings = {
+    main: {
+      mode: 'primary',
+      downloadable: true,
+    },
+    storage: {
+      id: 'main',
+      type: 'FS',
+      indexCachePeriod: '0s',
+      rootPath: mainPath,
+      externalUrl: `http://localhost:${localhttpPort}`,
+      allowRemoteAccess: true,
+    },
+  };
+
+  const remoteRoot: StorageSettings = {
+    localPath: '',
+    main: {
+      mode: 'passive',
+      downloadable: true,
+    },
+    storage: {
+      id: 'remoteRoot',
+      type: 'FS',
+      indexCachePeriod: '1m',
+      rootPath: '',
+    },
+  };
+
+  const work: StorageSettings = {
+    main: {
+      mode: 'active',
+      downloadable: false,
+    },
+    storage: {
+      id: 'work',
+      type: 'FS',
+      indexCachePeriod: '1m',
+      rootPath: workPath,
+    },
+  };
+
+  return {
+    runner: workPath,
+    dirsToCreate: [workPath, mainPath],
+    storages: [remoteRoot, work, main],
+    mainStoragePath: mainPath,
+  };
+}
+
+export function newRemoteConfigStoragesMinio(
   workdir: string,
   minioOpts: RemoteMinioSettings,
 ): StoragesSettings {
@@ -44,7 +105,7 @@ export function newRemoteConfigStorages(
       downloadable: true,
     },
     storage: {
-      id: 'main',
+   id: 'main',
       type: 'S3',
       indexCachePeriod: '0s',
       endpoint: minioOpts.endpoint,
