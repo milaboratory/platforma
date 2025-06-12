@@ -1,5 +1,11 @@
 # @platforma-sdk/tengo-builder
 
+## 2.1.8
+
+### Patch Changes
+
+- f771d67: bump tengo-tester
+
 ## 2.1.7
 
 ### Patch Changes
