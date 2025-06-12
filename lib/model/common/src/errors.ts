@@ -23,12 +23,12 @@ export function isAggregateError(error: unknown): error is AggregateError {
 
 function stringifyValue(value: unknown): string {
   if (typeof value === 'string') {
-    return value;
+    return `String value was thrown: ${value}`;
   }
 
   if (value && typeof value === 'object') {
     try {
-      return JSON.stringify(value);
+      return `Plain object was thrown: ${JSON.stringify(value)}`;
     } catch (jsonError) {
       const errorMessage = jsonError instanceof Error ? jsonError.message : String(jsonError);
       return `Non-serializable object was thrown (JSON.stringify failed: ${errorMessage}): ${String(value)}`;
