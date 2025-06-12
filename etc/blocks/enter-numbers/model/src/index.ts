@@ -21,6 +21,13 @@ export const platforma = BlockModel.create('Heavy')
 
   .output('numbers', (ctx) => ctx.outputs?.resolve('numbers')?.getDataAsJson<number[]>())
 
+  .output('errorIfNumberIs999', (ctx) => {
+    if (ctx.args.numbers.length === 1 && ctx.args.numbers[0] === 999) {
+      return ctx.prerun?.resolve('numbers')?.getFileContentAsJson<number[]>()
+    }
+    return ctx.args.numbers;
+  })
+
   .output('activeArgs', (ctx) => ctx.activeArgs)
 
   .argsValid((ctx) => ctx.args.numbers.length > 0)
