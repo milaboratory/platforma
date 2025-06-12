@@ -82,7 +82,6 @@ export type ResultOrError<S, F = Error> = {
   error?: undefined;
 } | {
   error: F;
-  value?: undefined;
 };
 
 export function unwrapResult<T>(result: ResultOrError<T>): T {
