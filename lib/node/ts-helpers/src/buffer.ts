@@ -174,13 +174,9 @@ export function canonicalJsonBytes(data: unknown): Uint8Array {
  */
 export function canonicalJsonGzBytes(
   data: unknown,
-  minSizeToGzip: number | undefined = 16_384,
+  minSizeToGzip: number = 16_384,
 ): { data: Uint8Array; isGzipped: boolean } {
   const jsonData = canonicalJsonBytes(data);
-
-  if (minSizeToGzip === undefined) {
-    return { data: jsonData, isGzipped: false };
-  }
 
   if (minSizeToGzip === -1 || jsonData.length >= minSizeToGzip) {
     return { data: gzipSync(jsonData), isGzipped: true };
