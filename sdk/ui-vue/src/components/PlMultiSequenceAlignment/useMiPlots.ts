@@ -1,6 +1,5 @@
-import { shallowRef } from 'vue';
-import { onMounted } from 'vue';
 import { ensureError } from '@platforma-sdk/model';
+import { onMounted, shallowRef } from 'vue';
 
 export function useMiPlots() {
   const load = async () => {
