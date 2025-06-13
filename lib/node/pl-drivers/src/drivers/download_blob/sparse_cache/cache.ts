@@ -7,7 +7,9 @@ import { writeToSparseFile } from './file';
 import { functions } from '@milaboratories/helpers';
 
 /** The implementer of SparseCacheRanges could throw it if ranges were corrupted. */
-export class CorruptedRangesError extends Error {}
+export class CorruptedRangesError extends Error {
+  name = 'CorruptedRangesError';
+}
 
 /** Extracted ranges methods to be able to store ranges somewhere else (e.g. in memory for tests). */
 export interface SparseCacheRanges {

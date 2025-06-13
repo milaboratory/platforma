@@ -1,4 +1,4 @@
-import { clamp, deepClone, isJsonEqual, tap } from '@milaboratories/helpers';
+import { deepClone, isJsonEqual, tap } from '@milaboratories/helpers';
 import type { Mutable } from '@milaboratories/helpers';
 import type { NavigationState, BlockOutputsBase, BlockState, Platforma } from '@platforma-sdk/model';
 import { reactive, nextTick, computed, watch } from 'vue';
