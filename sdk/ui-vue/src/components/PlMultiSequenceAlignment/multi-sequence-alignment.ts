@@ -1,4 +1,3 @@
-/* eslint-disable @stylistic/indent */
 import Aioli from '@milaboratories/biowasm-tools';
 import { computedAsync, type MaybeRefOrGetter } from '@vueuse/core';
 import { ref, toValue } from 'vue';
@@ -8,9 +7,12 @@ const cache = new Map<string, string[]>();
 export function useAlignedSequences(sequences: MaybeRefOrGetter<string[]>) {
   const loading = ref(false);
   const data = computedAsync(
-    () => multiSequenceAlignment(toValue(sequences)),
+    () => multiSequenceAlignment(toValue(sequences)).catch((err) => {
+      console.error(err);
+      return [];
+    }),
     [],
-    { onError: () => (data.value = []), evaluating: loading },
+    { evaluating: loading },
   );
   return { data, loading };
 }

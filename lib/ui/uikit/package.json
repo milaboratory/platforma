@@ -12,7 +12,9 @@
       "default": "./dist/pl-uikit.js"
     },
     "./styles": "./dist/pl-uikit.css",
-    "./styles/mixins": "./src/assets/mixins.scss"
+    "./styles/mixins": "./src/assets/mixins.scss",
+    "./svg/icons/*": "./src/assets/icons/icon-assets-min/*",
+    "./svg/images/*": "./src/assets/images/*"
   },
   "scripts": {
     "dev": "vite",

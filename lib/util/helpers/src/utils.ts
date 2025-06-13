@@ -1,5 +1,9 @@
 import type { AwaitedStruct, Option, Result, Unionize } from './types';
 
+export function isNil<T>(v: T): v is Extract<T, null | undefined> {
+  return v == null;
+}
+
 export function notEmpty<T>(v: T | null | undefined, message?: string): T {
   if (v === null || v === undefined) {
     throw Error(message ?? 'Empty (null | undefined) value');
@@ -132,18 +136,6 @@ export function tapIf<T, R>(v: T | null | undefined, cb: (v: T) => R) {
   }
 
   return;
-}
-
-/**
- * Generates a random integer between min (inclusive) and max (exclusive).
- * @param min The minimum integer value (inclusive).
- * @param max The maximum integer value (exclusive).
- * @returns A random integer within the specified range.
- */
-export function randomInt(min: number, max: number) {
-  min = Math.ceil(min);
-  max = Math.floor(max);
-  return Math.floor(Math.random() * (max - min)) + min;
 }
 
 export function* range(from: number, to: number, step = 1) {

@@ -1,7 +1,6 @@
 import type { DataTable } from '@milaboratories/uikit';
-import { randomString, uniqueId } from '@milaboratories/helpers';
-import { arrayFrom, randomInt } from '@milaboratories/helpers';
-import { reactive, computed } from 'vue';
+import { arrayFrom, randomRangeInt, randomString, uniqueId } from '@milaboratories/helpers';
+import { computed, reactive } from 'vue';
 import { faker } from '@faker-js/faker';
 import { asConst, renderSequence } from './helpers';
 
@@ -62,7 +61,7 @@ export function useData() {
             return [col.id, id];
           }
 
-          return [col.id, colIndex % 2 === 0 ? randomInt(0, 1000) : lorem()];
+          return [col.id, colIndex % 2 === 0 ? randomRangeInt(0, 1000) : lorem()];
         }),
       );
       rows.push(row);

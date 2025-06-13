@@ -1,7 +1,5 @@
 import type { ListOption } from '@milaboratories/uikit';
-import type {
-  JoinEntry,
-} from '@platforma-sdk/model';
+import type { JoinEntry } from '@platforma-sdk/model';
 import {
   type AxisId,
   type CalculateTableDataRequest,
@@ -22,7 +20,7 @@ import {
   type PTableColumnIdColumn,
   type PTableColumnIdJson,
   pTableValue,
-  stringifyPTableColumnId,
+  stringifyPTableColumnId
 } from '@platforma-sdk/model';
 import { computedAsync } from '@vueuse/core';
 import { type MaybeRefOrGetter, toValue } from 'vue';
@@ -38,12 +36,10 @@ export function useSequenceColumnsOptions(
     sequenceColumnPredicate: PColumnPredicate;
   }>,
 ) {
-  const result = computedAsync(
-    () => getSequenceColumnsOptions(toValue(params)),
+  return computedAsync(
+    () => getSequenceColumnsOptions(toValue(params)).catch(getEmptyOptions),
     getEmptyOptions(),
-    { onError: () => (result.value = getEmptyOptions()) },
   );
-  return result;
 }
 
 export function useLabelColumnsOptions(
@@ -55,12 +51,10 @@ export function useLabelColumnsOptions(
       | undefined;
   }>,
 ) {
-  const result = computedAsync(
-    () => getLabelColumnsOptions(toValue(params)),
+  return computedAsync(
+    () => getLabelColumnsOptions(toValue(params)).catch(getEmptyOptions),
     getEmptyOptions(),
-    { onError: () => (result.value = getEmptyOptions()) },
   );
-  return result;
 }
 
 export function useSequenceRows(
@@ -72,12 +66,10 @@ export function useSequenceRows(
     selection: PlSelectionModel | undefined;
   }>,
 ) {
-  const result = computedAsync(
-    () => getSequenceRows(toValue(params)),
+  return computedAsync(
+    () => getSequenceRows(toValue(params)).catch(getEmptyOptions),
     [],
-    { onError: () => (result.value = []) },
   );
-  return result;
 }
 
 async function getSequenceColumnsOptions({

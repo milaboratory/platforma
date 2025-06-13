@@ -13,6 +13,8 @@ export * from './functions';
 export * from './types';
 export * from './regexp';
 export * from './error';
+export * from './hash';
+export * from './random';
 
 export {
   utils,
@@ -20,5 +22,5 @@ export {
   objects,
   collections,
   functions,
-  prettyBytes,
+  prettyBytes
 };

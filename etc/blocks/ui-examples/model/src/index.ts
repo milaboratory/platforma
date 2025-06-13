@@ -1,19 +1,14 @@
 import type {
+  ImportFileHandle,
   InferHrefType,
   InferOutputsType,
-  PlDataTableState,
-  PlTableFiltersModel,
   PColumn,
   PColumnValues,
+  PlDataTableState,
+  PlTableFiltersModel,
   PObjectId,
-  ImportFileHandle,
 } from '@platforma-sdk/model';
-import {
-  BlockModel,
-  createPlDataTable,
-  createPlDataTableV2,
-  selectorsToPredicate,
-} from '@platforma-sdk/model';
+import { BlockModel, createPlDataTable, createPlDataTableV2, selectorsToPredicate } from '@platforma-sdk/model';
 import { z } from 'zod';
 
 export const ImportFileHandleSchema = z
@@ -237,6 +232,7 @@ export const platforma = BlockModel.create('Heavy')
       { type: 'link', href: '/pl-splash-page', label: 'PlSplashPage' },
       { type: 'link', href: '/pl-file-input-page', label: 'PlFileInputPage' },
       { type: 'link', href: '/pl-error-boundary-page', label: 'PlErrorBoundaryPage' },
+      { type: 'link', href: '/pl-element-list-page', label: 'PlElementList' },
       { type: 'link', href: '/errors', label: 'Errors' },
       { type: 'link', href: '/text-fields', label: 'PlTextField' },
       { type: 'link', href: '/tabs', label: 'PlTabs' },
