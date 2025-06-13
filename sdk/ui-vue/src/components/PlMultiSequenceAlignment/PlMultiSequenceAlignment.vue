@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import type { ListOptionNormalized } from '@milaboratories/uikit';
 import { PlAlert, PlSplash } from '@milaboratories/uikit';
 import type {
   PColumnPredicate,
@@ -6,18 +7,22 @@ import type {
   PlMultiSequenceAlignmentModel,
   PlSelectionModel,
 } from '@platforma-sdk/model';
-import { computed, onBeforeMount, reactive, ref } from 'vue';
+import { computed, onBeforeMount, reactive, ref, watchEffect } from 'vue';
+import { chemicalPropertiesColorMap } from './chemical-properties';
 import {
   sequenceLimit,
   useLabelColumnsOptions,
+  useMarkupColumnsOptions,
   useMultipleAlignmentData,
   useSequenceColumnsOptions,
 } from './data';
 import Legend from './Legend.vue';
+import { markupColors } from './markup';
 import { runMigrations } from './migrations';
 import MultiSequenceAlignmentView from './MultiSequenceAlignmentView.vue';
 import { defaultSettings } from './settings';
 import Toolbar from './Toolbar.vue';
+import type { ColorScheme, ColorSchemeOption } from './types';
 
 const model = defineModel<PlMultiSequenceAlignmentModel>({ default: {} });
 
@@ -55,15 +60,11 @@ const props = defineProps<{
   readonly selection?: PlSelectionModel;
 }>();
 
+const settings = ref(defaultSettings);
+
 const sequenceColumns = useSequenceColumnsOptions(() => ({
   pFrame: props.pFrame,
   sequenceColumnPredicate: props.sequenceColumnPredicate,
-}));
-
-const labelColumns = useLabelColumnsOptions(() => ({
-  pFrame: props.pFrame,
-  sequenceColumnIds: sequenceColumns.value.defaults,
-  labelColumnOptionPredicate: props.labelColumnOptionPredicate,
 }));
 
 const selectedSequenceColumnIds = computed({
@@ -73,6 +74,12 @@ const selectedSequenceColumnIds = computed({
   },
 });
 
+const labelColumns = useLabelColumnsOptions(() => ({
+  pFrame: props.pFrame,
+  sequenceColumnIds: selectedSequenceColumnIds.value,
+  labelColumnOptionPredicate: props.labelColumnOptionPredicate,
+}));
+
 const selectedLabelColumnIds = computed({
   get: () => model.value.labelColumnIds ?? labelColumns.value.defaults,
   set: (value) => {
@@ -80,21 +87,88 @@ const selectedLabelColumnIds = computed({
   },
 });
 
+const markupColumns = useMarkupColumnsOptions(() => ({
+  pFrame: props.pFrame,
+  sequenceColumnIds: selectedSequenceColumnIds.value,
+}));
+
 const multipleAlignmentData = reactive(useMultipleAlignmentData(() => ({
   pframe: props.pFrame,
   sequenceColumnIds: selectedSequenceColumnIds.value,
   labelColumnIds: selectedLabelColumnIds.value,
+  markupColumnId: settings.value.colorScheme.type === 'markup'
+    ? settings.value.colorScheme.columnId
+    : undefined,
   linkerColumnPredicate: props.linkerColumnPredicate,
   selection: props.selection,
 })));
-
-const settings = ref(defaultSettings);
 
 const formatNumber = new Intl.NumberFormat('en').format;
 
 const selectedTooManySequences = computed(
   () => props.selection && props.selection.selectedKeys.length > sequenceLimit,
 );
+
+const colorSchemeOptions = computed<ListOptionNormalized<ColorSchemeOption>[]>(
+  () => [
+    {
+      label: 'Chemical Properties',
+      value: { type: 'chemical-properties' },
+    },
+    {
+      label: 'No Color',
+      value: { type: 'no-color' },
+    },
+    ...markupColumns.value.map(({ label, value }) => ({
+      label,
+      value: {
+        type: 'markup' as const,
+        columnId: value,
+      },
+    })),
+  ],
+);
+
+const colorScheme = computed<ColorScheme>(() => {
+  switch (settings.value.colorScheme.type) {
+    case 'no-color':
+      return {
+        type: 'no-color',
+        colors: {},
+      };
+    case 'chemical-properties':
+      return {
+        type: 'chemical-properties',
+        colors: chemicalPropertiesColorMap,
+      };
+    case 'markup':
+      return {
+        type: 'markup',
+        colors: Object.fromEntries(
+          Object.entries(
+            multipleAlignmentData.data.markup?.labels ?? {},
+          ).map(([id, label], index) => [
+            id,
+            { label, color: markupColors[index % markupColors.length] },
+          ]),
+        ),
+      };
+    default:
+      throw new Error(`Unknown color scheme ${settings.value.colorScheme}`);
+  }
+});
+
+watchEffect(() => {
+  const markupColumnId = settings.value.colorScheme.type === 'markup'
+    ? settings.value.colorScheme.columnId
+    : undefined;
+  if (
+    markupColumnId
+    && markupColumns.value.every(({ value }) => value !== markupColumnId)
+  ) {
+    settings.value.colorScheme = { type: 'no-color' };
+  }
+});
 </script>
 
 <template>
@@ -104,6 +178,7 @@ const selectedTooManySequences = computed(
     v-model:settings="settings"
     :sequence-column-options="sequenceColumns.options"
     :label-column-options="labelColumns.options"
+    :color-scheme-options="colorSchemeOptions"
   />
   <PlAlert
     v-if="
@@ -125,7 +200,7 @@ const selectedTooManySequences = computed(
     >
       MSA visualization supports {{ formatNumber(2) }} to
       {{ formatNumber(sequenceLimit) }} sequences. Only the first
-      {{ formatNumber(sequenceLimit) }} will be desplayed.
+      {{ formatNumber(sequenceLimit) }} will be displayed.
     </PlAlert>
     <PlSplash
       type="transparent"
@@ -136,11 +211,18 @@ const selectedTooManySequences = computed(
         <MultiSequenceAlignmentView
           :sequence-rows="multipleAlignmentData.data.sequences"
           :label-rows="multipleAlignmentData.data.labels"
-          :colorScheme="settings.colorScheme"
+          :markup="multipleAlignmentData.data.markup"
+          :colorScheme
           :consensus="settings.consensus"
           :seq-logo="settings.seqLogo"
         />
-        <Legend v-if="settings.legend" />
+        <Legend
+          v-if="
+            settings.legend
+              && settings.colorScheme.type !== 'no-color'
+          "
+          :colors="colorScheme.colors"
+        />
       </template>
     </PlSplash>
   </template>

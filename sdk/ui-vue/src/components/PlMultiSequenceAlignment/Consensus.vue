@@ -4,7 +4,7 @@ import type {
   DataByColumns,
   Settings,
 } from '@milaboratories/miplots4';
-import { useResizeObserver } from '@vueuse/core';
+import { computedAsync, useResizeObserver } from '@vueuse/core';
 import {
   computed,
   onBeforeUnmount,
@@ -18,6 +18,10 @@ import type { ResidueCounts } from './types';
 const { residueCounts } = defineProps<{
   residueCounts: ResidueCounts;
 }>();
+
+const MiPlots = computedAsync(async () =>
+  (await import('@milaboratories/miplots4')).MiPlots,
+);
 
 const plotEl = useTemplateRef('plotEl');
 
@@ -127,10 +131,9 @@ const data = computed<DataByColumns>(
 const plot = shallowRef<ChartInterface>();
 
 watchEffect(async () => {
-  if (!settings.value || !plotEl.value) return;
+  if (!MiPlots.value || !settings.value || !plotEl.value) return;
   if (!plot.value) {
-    const { MiPlots } = await import('@milaboratories/miplots4');
-    plot.value = MiPlots.newPlot(data.value, settings.value);
+    plot.value = MiPlots.value.newPlot(data.value, settings.value);
     plot.value.mount(plotEl.value);
   } else {
     plot.value.updateSettingsAndData(data.value, settings.value);
@@ -163,10 +166,10 @@ onBeforeUnmount(() => {
 .labels {
   font-family: Spline Sans Mono;
   font-weight: 600;
-  line-height: calc(24 / 14);
-  letter-spacing: 12px;
-  text-indent: 6px;
-  margin-inline-end: -6px;
+  line-height: 24px;
+  letter-spacing: 11.6px;
+  text-indent: 5.8px;
+  margin-inline-end: -5.8px;
 }
 
 .plot-container {
