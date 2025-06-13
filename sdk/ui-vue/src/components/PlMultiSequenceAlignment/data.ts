@@ -21,6 +21,8 @@ import {
 } from '@platforma-sdk/model';
 import { computedAsync } from '@vueuse/core';
 import { type MaybeRefOrGetter, ref, toValue } from 'vue';
+import type { Markup } from './markup';
+import { markupAlignedSequence, parseMarkup } from './markup';
 import { multiSequenceAlignment } from './multi-sequence-alignment';
 
 const getPFrameDriver = () => getRawPlatformaInstance().pFrameDriver;
@@ -70,11 +72,31 @@ export function useLabelColumnsOptions(
   return result;
 }
 
+export function useMarkupColumnsOptions(
+  params: MaybeRefOrGetter<{
+    pFrame: PFrameHandle | undefined;
+    sequenceColumnIds: PObjectId[];
+  }>,
+) {
+  const result = computedAsync(
+    () => getMarkupColumnsOptions(toValue(params)),
+    [],
+    {
+      onError: (error) => {
+        console.error(error);
+        result.value = [];
+      },
+    },
+  );
+  return result;
+}
+
 export function useMultipleAlignmentData(
   params: MaybeRefOrGetter<{
     pframe: PFrameHandle | undefined;
     sequenceColumnIds: PObjectId[];
     labelColumnIds: PTableColumnId[];
+    markupColumnId: PObjectId | undefined;
     linkerColumnPredicate: PColumnPredicate | undefined;
     selection: PlSelectionModel | undefined;
   }>,
@@ -174,24 +196,54 @@ async function getLabelColumnsOptions({
   return { options, defaults };
 }
 
-async function getMultipleAlignmentData(
-  {
-    pframe,
-    sequenceColumnIds,
-    labelColumnIds,
-    linkerColumnPredicate,
-    selection,
-  }: {
-    pframe: PFrameHandle | undefined;
-    sequenceColumnIds: PObjectId[];
-    labelColumnIds: PTableColumnId[];
-    linkerColumnPredicate: PColumnPredicate | undefined;
-    selection: PlSelectionModel | undefined;
-  },
-): Promise<{
-    sequences: string[][];
-    labels: string[][];
-  }> {
+async function getMarkupColumnsOptions({
+  pFrame,
+  sequenceColumnIds,
+}: {
+  pFrame: PFrameHandle | undefined;
+  sequenceColumnIds: PObjectId[];
+}): Promise<ListOptionNormalized<PObjectId>[]> {
+  if (!pFrame || sequenceColumnIds.length !== 1) return [];
+  const pFrameDriver = getPFrameDriver();
+  const columns = await pFrameDriver.listColumns(pFrame);
+  const sequenceColumn = columns.find((column) =>
+    column.columnId === sequenceColumnIds[0],
+  );
+  if (!sequenceColumn) {
+    throw new Error(
+      `Couldn't find sequence column (ID: ${sequenceColumnIds[0]})`,
+    );
+  }
+  return columns
+    .filter((column) =>
+      column.spec.annotations?.['pl7.app/sequence/isAnnotation'] === 'true'
+      && sequenceColumn.spec.axesSpec.every((axisSpec, index) =>
+        isJsonEqual(axisSpec, column.spec.axesSpec[index]),
+      )
+      && Object.entries(sequenceColumn.spec.domain ?? {}).every((
+        [key, value],
+      ) => column.spec.domain?.[key] === value),
+    ).map(({ columnId, spec }) => ({
+      value: columnId,
+      label: spec.annotations?.['pl7.app/label'] ?? 'Unlabelled column',
+    }));
+}
+
+async function getMultipleAlignmentData({
+  pframe,
+  sequenceColumnIds,
+  labelColumnIds,
+  markupColumnId,
+  linkerColumnPredicate,
+  selection,
+}: {
+  pframe: PFrameHandle | undefined;
+  sequenceColumnIds: PObjectId[];
+  labelColumnIds: PTableColumnId[];
+  markupColumnId: PObjectId | undefined;
+  linkerColumnPredicate: PColumnPredicate | undefined;
+  selection: PlSelectionModel | undefined;
+}): Promise<MultipleAlignmentData> {
   if (!pframe || sequenceColumnIds.length === 0) {
     return { sequences: [], labels: [] };
   }
@@ -239,13 +291,18 @@ async function getMultipleAlignmentData(
     };
   }
 
+  // left join with labels
   const secondaryEntry: JoinEntry<PObjectId>[] = labelColumnIds
     .flatMap((column) => {
       if (column.type !== 'column') return [];
       return { type: 'column', column: column.id };
     });
 
-  // left join with labels
+  // and markup
+  if (markupColumnId) {
+    secondaryEntry.push({ type: 'column', column: markupColumnId });
+  }
+
   const request: CalculateTableDataRequest<PObjectId> = {
     src: {
       type: 'outer',
@@ -301,6 +358,9 @@ async function getMultipleAlignmentData(
     return column;
   });
 
+  const markupColumn = markupColumnId
+    && table.find(({ spec }) => spec.id === markupColumnId);
+
   const alignedSequences = await Promise.all(
     sequenceColumns.map((column) =>
       multiSequenceAlignment(Array.from(
@@ -325,5 +385,35 @@ async function getMultipleAlignmentData(
       ),
   );
 
-  return { sequences, labels };
+  const result: MultipleAlignmentData = { sequences, labels };
+
+  if (markupColumn) {
+    const labels = JSON.parse(
+      markupColumn.spec.spec.annotations
+        ?.['pl7.app/sequence/annotation/mapping'] ?? '{}',
+    );
+    const data = Array.from(
+      { length: rowCount },
+      (_, row) => {
+        const markup = parseMarkup(
+          pTableValue(markupColumn.data, row, { na: '', absent: '' })
+            ?.toString()
+            ?? '',
+        );
+        return markupAlignedSequence(sequences[row][0], markup);
+      },
+    );
+    result.markup = { labels, data };
+  }
+
+  return result;
 }
+
+type MultipleAlignmentData = {
+  sequences: string[][];
+  labels: string[][];
+  markup?: {
+    labels: Record<string, string>;
+    data: Markup[];
+  };
+};

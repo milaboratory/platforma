@@ -8,6 +8,7 @@ import {
 } from '@milaboratories/uikit';
 import type { PObjectId, PTableColumnId } from '@platforma-sdk/model';
 import type { Settings } from './settings';
+import type { ColorSchemeOption } from './types';
 
 const sequenceColumns = defineModel<PObjectId[]>(
   'sequenceColumns',
@@ -27,6 +28,7 @@ const settings = defineModel<Settings>(
 defineProps<{
   sequenceColumnOptions: ListOptionNormalized<PObjectId>[];
   labelColumnOptions: ListOptionNormalized<PTableColumnId>[];
+  colorSchemeOptions: ListOptionNormalized<ColorSchemeOption>[];
 }>();
 </script>
 
@@ -51,15 +53,7 @@ defineProps<{
         <PlDropdown
           v-model="settings.colorScheme"
           label="Color Scheme"
-          :options="
-            [{
-              label: 'Chemical Properties',
-              value: 'chemical-properties',
-            }, {
-              label: 'No Color',
-              value: 'no-color',
-            }]
-          "
+          :options="colorSchemeOptions"
         />
       </div>
       <div :class="$style.buttons">
@@ -73,7 +67,12 @@ defineProps<{
         <PlCheckbox v-model="settings.consensus">Consensus</PlCheckbox>
         <PlCheckbox :model-value="false" disabled>Navigator</PlCheckbox>
         <PlCheckbox :model-value="false" disabled>Tree</PlCheckbox>
-        <PlCheckbox v-model="settings.legend">Legend</PlCheckbox>
+        <PlCheckbox
+          v-model="settings.legend"
+          :disabled="settings.colorScheme.type === 'no-color'"
+        >
+          Legend
+        </PlCheckbox>
       </div>
     </div>
   </div>
