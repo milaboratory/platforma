@@ -1,5 +1,5 @@
 import type { BlockRenderingMode } from '@milaboratories/pl-model-common';
-import type { Code, TypedConfigOrConfigLambda } from './types';
+import type { Code, CodeAndSdkVersion, TypedConfigOrConfigLambda } from './types';
 import type { ConfigRenderLambda } from './lambdas';
 
 export type BlockConfigV3<
@@ -50,3 +50,11 @@ export type BlockConfigV3<
 };
 
 export type BlockConfig = BlockConfigV3;
+
+export function extractCodeAndSdkVersion(cfg: BlockConfigV3): CodeAndSdkVersion | undefined {
+  if (cfg.code === undefined) return undefined;
+  return {
+    code: cfg.code,
+    sdkVersion: cfg.sdkVersion,
+  };
+}

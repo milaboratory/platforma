@@ -16,6 +16,7 @@ import type { AuthorMarker, BlockStateInternal } from '@milaboratories/pl-model-
 import { computableFromCfgOrRF } from './render';
 import { resourceIdToString } from '@milaboratories/pl-client';
 import { deepFreeze } from '@milaboratories/ts-helpers';
+import { extractCodeAndSdkVersion } from '@platforma-sdk/model';
 
 export type BlockArgsAndUiState = Omit<BlockStateInternal, 'outputs' | 'navigationState'>;
 
@@ -63,7 +64,7 @@ export function blockOutputs(
       return ifNotUndef(getBlockPackInfo(prj, blockId), ({ cfg, bpId }) => {
         const outputs: Record<string, Computable<any>> = {};
         for (const [cellId, cellCfg] of Object.entries(cfg.outputs)) {
-          const computableOutput = computableFromCfgOrRF(env, ctx, cellCfg, cfg.code, bpId);
+          const computableOutput = computableFromCfgOrRF(env, ctx, cellCfg, extractCodeAndSdkVersion(cfg), bpId);
           outputs[cellId] = Computable.wrapError(computableOutput, 1);
         }
         return outputs;

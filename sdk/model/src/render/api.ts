@@ -512,13 +512,30 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
 export class RenderCtx<Args, UiState> {
   private readonly ctx: GlobalCfgRenderCtx;
 
-  public readonly args: Args;
-  public readonly uiState: UiState;
-
   constructor() {
     this.ctx = getCfgRenderCtx();
-    this.args = JSON.parse(this.ctx.args);
-    this.uiState = this.ctx.uiState !== undefined ? JSON.parse(this.ctx.uiState) : {};
+  }
+
+  private _argsCache?: { v: Args };
+
+  public get args(): Args {
+    if (this._argsCache === undefined) {
+      const raw = this.ctx.args;
+      const value = typeof raw === 'function' ? raw() : raw;
+      this._argsCache = { v: JSON.parse(value) };
+    }
+    return this._argsCache.v;
+  }
+
+  private _uiStateCache?: { v: UiState };
+
+  public get uiState(): UiState {
+    if (this._uiStateCache === undefined) {
+      const raw = this.ctx.uiState;
+      const value = typeof raw === 'function' ? raw() : raw;
+      this._uiStateCache = { v: value ? JSON.parse(value) : ({} as UiState) };
+    }
+    return this._uiStateCache.v;
   }
 
   // lazy rendering because this feature is rarely used
@@ -529,10 +546,13 @@ export class RenderCtx<Args, UiState> {
    * Returns undefined, if block was never executed or stopped mid-way execution, so that the result was cleared.
    * */
   public get activeArgs(): Args | undefined {
-    if (this._activeArgsCache === undefined)
+    if (this._activeArgsCache === undefined) {
+      const raw = this.ctx.activeArgs;
+      const value = typeof raw === 'function' ? raw() : raw;
       this._activeArgsCache = {
-        v: this.ctx.activeArgs ? JSON.parse(this.ctx.activeArgs) : undefined,
+        v: value ? JSON.parse(value) : undefined,
       };
+    }
     return this._activeArgsCache.v;
   }
 
