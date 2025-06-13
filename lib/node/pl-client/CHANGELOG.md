@@ -1,5 +1,13 @@
 # @milaboratories/pl-client
 
+## 2.10.2
+
+### Patch Changes
+
+- 49cf7ee: Standard Error serialization/deserialization
+- Updated dependencies [49cf7ee]
+  - @milaboratories/ts-helpers@1.3.3
+
 ## 2.10.1
 
 ### Patch Changes
