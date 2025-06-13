@@ -1,9 +1,8 @@
 import type {
-  AxisId, CanonicalizedJson,
-  DataInfo,
+  AxisId,
+  CanonicalizedJson,
   PColumn,
   PColumnSpec,
-  PColumnValues,
   PFrameHandle,
   PObjectId,
 } from '@milaboratories/pl-model-common';
@@ -215,33 +214,53 @@ export function createPFrameForGraphs<A, U>(
   columns.addColumns(blockColumns);
 
   // all possible axes from block columns
+  const blockAxes = new Map<CanonicalizedJson<AxisId>, AxisId>();
+  // axes from block columns and compatible result pool columns
   const allAxes = new Map<CanonicalizedJson<AxisId>, AxisId>();
   for (const c of blockColumns) {
     for (const id of c.spec.axesSpec) {
       const aid = getAxisId(id);
+      blockAxes.set(canonicalizeJson(aid), aid);
       allAxes.set(canonicalizeJson(aid), aid);
     }
   }
 
   // all linker columns always go to pFrame - even it's impossible to use some of them they all are hidden
   const linkerColumns = columns.getColumns((spec) => isLinkerColumn(spec)) ?? [];
-  const availableWithLinkersAxes = getAvailableWithLinkersAxes(linkerColumns, allAxes);
-  const labelColumns = columns.getColumns(isLabelColumn) ?? [];
+  const availableWithLinkersAxes = getAvailableWithLinkersAxes(linkerColumns, blockAxes);
 
   // all possible axes from connected linkers
   for (const item of availableWithLinkersAxes) {
+    blockAxes.set(...item);
     allAxes.set(...item);
   }
 
-  let compatible = (columns.getColumns([...allAxes.values()]
+  // all compatible with block columns but without label columns
+  const compatibleWithoutLabels = (columns.getColumns([...blockAxes.values()]
     .map((ax) => ({
       axes: [ax],
       partialAxesMatch: true,
-    }))) ?? []).filter((column) => !isLabelColumn(column.spec));
-  compatible = compatible.concat(labelColumns); // add all available labels columns to avoid problems with fixed axes, but don't add twice
+    })), {dontWaitAllData: true, overrideLabelAnnotation: false}) ?? []).filter((column) => !isLabelColumn(column.spec));
+
+  // extend axes set for label columns request
+  for (const c of compatibleWithoutLabels) {
+    for (const id of c.spec.axesSpec) {
+      const aid = getAxisId(id);
+      allAxes.set(canonicalizeJson(aid), aid);
+    }
+  }
+
+  // label columns must be compatible with full set of axes - block axes and axes from compatible columns from result pool
+  const compatibleLabels = (columns.getColumns([...allAxes.values()]
+    .map((ax) => ({
+      axes: [ax],
+      partialAxesMatch: true,
+    })), {dontWaitAllData: true, overrideLabelAnnotation: false}) ?? []).filter((column) => isLabelColumn(column.spec));
+
+  const compatible = [...compatibleWithoutLabels, ...compatibleLabels];
 
   // additional columns are duplicates with extra fields in domains for compatibility if there are ones with partial match
-  const extendedColumns = enrichCompatible(allAxes, compatible);
+  const extendedColumns = enrichCompatible(blockAxes, compatible);
 
   // if at least one column is not yet ready, we can't show the table
   if (
