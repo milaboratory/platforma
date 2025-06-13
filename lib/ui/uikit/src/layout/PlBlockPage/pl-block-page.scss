@@ -15,13 +15,14 @@
   }
 
   &__title {
-    height: 80px;
     display: flex;
+    flex-direction: column;
     align-items: center;
     gap: 12px;
     padding: 20px 24px;
     min-width: 0;
     max-width: 100%;
+    box-shadow: 0 2px 4px 1px rgba(0, 0, 0, 0.5);
 
     &__default {
       flex: 1;
