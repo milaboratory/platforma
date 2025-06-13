@@ -1,23 +1,29 @@
 <script lang="ts" setup>
-import { PlAlert } from '@milaboratories/uikit';
+import { PlAlert, PlSplash } from '@milaboratories/uikit';
 import type {
   PColumnPredicate,
   PFrameHandle,
   PlMultiSequenceAlignmentModel,
   PlSelectionModel,
 } from '@platforma-sdk/model';
-import { computed, ref } from 'vue';
+import { computed, onBeforeMount, reactive, ref } from 'vue';
 import {
+  sequenceLimit,
   useLabelColumnsOptions,
+  useMultipleAlignmentData,
   useSequenceColumnsOptions,
-  useSequenceRows,
 } from './data';
 import Legend from './Legend.vue';
+import { runMigrations } from './migrations';
 import MultiSequenceAlignmentView from './MultiSequenceAlignmentView.vue';
 import { defaultSettings } from './settings';
 import Toolbar from './Toolbar.vue';
 
 const model = defineModel<PlMultiSequenceAlignmentModel>({ default: {} });
+
+onBeforeMount(() => {
+  runMigrations(model);
+});
 
 const props = defineProps<{
   /**
@@ -74,36 +80,78 @@ const selectedLabelColumnIds = computed({
   },
 });
 
-const sequenceRows = useSequenceRows(() => ({
+const multipleAlignmentData = reactive(useMultipleAlignmentData(() => ({
   pframe: props.pFrame,
   sequenceColumnIds: selectedSequenceColumnIds.value,
   labelColumnIds: selectedLabelColumnIds.value,
   linkerColumnPredicate: props.linkerColumnPredicate,
   selection: props.selection,
-}));
+})));
 
 const settings = ref(defaultSettings);
+
+const formatNumber = new Intl.NumberFormat('en').format;
+
+const selectedTooManySequences = computed(
+  () => props.selection && props.selection.selectedKeys.length > sequenceLimit,
+);
 </script>
 
 <template>
-  <PlAlert v-if="sequenceRows.length < 2" type="warn">
+  <Toolbar
+    v-model:sequence-columns="selectedSequenceColumnIds"
+    v-model:label-columns="selectedLabelColumnIds"
+    v-model:settings="settings"
+    :sequence-column-options="sequenceColumns.options"
+    :label-column-options="labelColumns.options"
+  />
+  <PlAlert
+    v-if="
+      !multipleAlignmentData.loading
+        && multipleAlignmentData.data.sequences.length < 2
+    "
+    type="warn"
+    icon
+  >
     Please select at least one sequence column and two or more rows to run
     alignment
   </PlAlert>
   <template v-else>
-    <Toolbar
-      v-model:sequence-columns="selectedSequenceColumnIds"
-      v-model:label-columns="selectedLabelColumnIds"
-      v-model:settings="settings"
-      :sequence-column-options="sequenceColumns.options"
-      :label-column-options="labelColumns.options"
-    />
-    <MultiSequenceAlignmentView
-      :sequenceRows
-      :colorScheme="settings.colorScheme"
-      :consensus="settings.consensus"
-      :seq-logo="settings.seqLogo"
-    />
-    <Legend v-if="settings.legend" />
+    <PlAlert
+      v-if="selectedTooManySequences"
+      type="warn"
+      icon
+      label="Visualization is limited"
+    >
+      MSA visualization supports {{ formatNumber(2) }} to
+      {{ formatNumber(sequenceLimit) }} sequences. Only the first
+      {{ formatNumber(sequenceLimit) }} will be desplayed.
+    </PlAlert>
+    <PlSplash
+      type="transparent"
+      :class="$style.splash"
+      :loading="multipleAlignmentData.loading"
+    >
+      <template v-if="multipleAlignmentData.data.sequences.length">
+        <MultiSequenceAlignmentView
+          :sequence-rows="multipleAlignmentData.data.sequences"
+          :label-rows="multipleAlignmentData.data.labels"
+          :colorScheme="settings.colorScheme"
+          :consensus="settings.consensus"
+          :seq-logo="settings.seqLogo"
+        />
+        <Legend v-if="settings.legend" />
+      </template>
+    </PlSplash>
   </template>
 </template>
+
+<style module>
+.splash {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow: hidden;
+}
+</style>
