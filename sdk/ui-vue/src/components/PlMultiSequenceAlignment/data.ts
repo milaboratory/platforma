@@ -67,7 +67,7 @@ export function useSequenceRows(
   }>,
 ) {
   return computedAsync(
-    () => getSequenceRows(toValue(params)).catch(getEmptyOptions),
+    () => getSequenceRows(toValue(params)).catch(() => []),
     [],
   );
 }
