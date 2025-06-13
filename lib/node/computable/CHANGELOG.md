@@ -1,5 +1,13 @@
 # @milaboratories/computable
 
+## 2.4.12
+
+### Patch Changes
+
+- 49cf7ee: Standard Error serialization/deserialization
+- Updated dependencies [49cf7ee]
+  - @milaboratories/ts-helpers@1.3.3
+
 ## 2.4.11
 
 ### Patch Changes

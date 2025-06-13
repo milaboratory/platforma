@@ -1,5 +1,13 @@
 # @platforma-sdk/ui-vue
 
+## 1.33.17
+
+### Patch Changes
+
+- 49cf7ee: Standard Error serialization/deserialization
+  - @platforma-sdk/model@1.33.17
+  - @milaboratories/uikit@2.2.82
+
 ## 1.33.16
 
 ### Patch Changes
