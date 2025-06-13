@@ -1,10 +1,15 @@
 import { type ErrorLike, type ValueOrErrors } from '@platforma-sdk/model';
 import type { OptionalResult } from './types';
 import type { ZodError } from 'zod';
-export class UnresolvedError extends Error {}
+
+export class UnresolvedError extends Error {
+  name = 'UnresolvedError';
+}
 
 // @TODO use AggregateError
 export class MultiError extends Error {
+  name = 'MultiError';
+
   public readonly fullMessage: string;
 
   constructor(public readonly errors: (ErrorLike | string)[]) {
@@ -18,19 +23,7 @@ export class MultiError extends Error {
       return e.message;
     }).join('\n');
   }
-
-  // toString() {
-  //   return this.errors.map(getErrorMessage).join('\n');
-  // }
 }
-
-// function getErrorMessage(e: ErrorLike | string) {
-//   if (typeof e === 'string') {
-//     const errorLike = parseErrorLikeSafe(e);
-//     return errorLike.success ? errorLike.data.message : e;
-//   }
-//   return e.message;
-// }
 
 export function wrapValueOrErrors<V>(value: V): ValueOrErrors<V> {
   return {
@@ -58,18 +51,6 @@ export function wrapOptionalResult<V>(value: V): OptionalResult<V> {
     value,
     errors: undefined,
   };
-}
-
-export function unwrapOptionalResult<V>(result: OptionalResult<V>): V {
-  if (result.errors) {
-    throw new MultiError(result.errors);
-  }
-
-  if (!result.value) {
-    throw new UnresolvedError();
-  }
-
-  return result.value;
 }
 
 export function isDefined<T>(v: T | undefined): v is T {

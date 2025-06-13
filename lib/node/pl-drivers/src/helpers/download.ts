@@ -12,7 +12,9 @@ export interface DownloadResponse {
 }
 
 /** Throws when a status code of the downloading URL was in range [400, 500). */
-export class NetworkError400 extends Error {}
+export class NetworkError400 extends Error {
+  name = 'NetworkError400';
+}
 
 export class RemoteFileDownloader {
   constructor(public readonly httpClient: Dispatcher) {}
