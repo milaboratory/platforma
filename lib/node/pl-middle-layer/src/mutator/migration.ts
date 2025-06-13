@@ -48,6 +48,6 @@ async function migrateV1ToV2(tx: PlTransaction, rid: ResourceId) {
     const uiStateR = tx.createJsonGzValue(valueJson);
     const uiStateF = field(rid, projectFieldName(block.id, 'uiState'));
     tx.createField(uiStateF, 'Dynamic', uiStateR);
-    tx.deleteKValue(rid, BlockFrontendStateKeyPrefixV1 + block.id);
+    tx.deleteKValue(rid, kvKey);
   }
 }

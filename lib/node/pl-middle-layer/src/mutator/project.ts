@@ -63,11 +63,11 @@ import {
 import Denque from 'denque';
 import { exportContext, getPreparedExportTemplateEnvelope } from './context_export';
 import { loadTemplate } from './template/template_loading';
-import { cachedDeserialize, notEmpty, canonicalJsonGzBytes } from '@milaboratories/ts-helpers';
+import { cachedDeserialize, notEmpty, canonicalJsonGzBytes, canonicalJsonBytes } from '@milaboratories/ts-helpers';
 import type { ProjectHelper } from '../model/project_helper';
 import { extractConfig, type BlockConfig } from '@platforma-sdk/model';
 import { getDebugFlags } from '../debug';
-import { BlockPackInfo } from '../model/block_pack';
+import type { BlockPackInfo } from '../model/block_pack';
 
 type FieldStatus = 'NotReady' | 'Ready' | 'Error';
 
@@ -511,12 +511,20 @@ export class ProjectMutator {
 
         const fieldName = stateKey === 'args' ? 'currentArgs' : 'uiState';
 
-        // don't gzip args, workflow code can't uncompress gzip yet
-        const tryGzipSize = stateKey === 'args' ? undefined : 16_384;
-        const { data: binary, isGzipped } = canonicalJsonGzBytes(statePart, tryGzipSize);
-        if (Buffer.compare(info.fields[fieldName]!.value!, binary) === 0) continue;
-        const statePartRef = this.tx.createValue(isGzipped ? Pl.JsonGzObject : Pl.JsonObject, binary);
-        this.setBlockField(req.blockId, fieldName, statePartRef, 'Ready', binary);
+        let data: Uint8Array;
+        let gzipped: boolean = false;
+        if (stateKey === 'args') {
+          // don't gzip args, workflow code can't uncompress gzip yet
+          data = canonicalJsonBytes(statePart);
+        } else {
+          const { data: binary, isGzipped } = canonicalJsonGzBytes(statePart);
+          data = binary;
+          gzipped = isGzipped;
+        }
+        if (Buffer.compare(info.fields[fieldName]!.value!, data) === 0) continue;
+        console.log('setting', fieldName, gzipped, data.length);
+        const statePartRef = this.tx.createValue(gzipped ? Pl.JsonGzObject : Pl.JsonObject, data);
+        this.setBlockField(req.blockId, fieldName, statePartRef, 'Ready', data);
 
         blockChanged = true;
         if (stateKey === 'args') changedArgs.push(req.blockId);
