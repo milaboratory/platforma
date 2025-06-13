@@ -1,5 +1,12 @@
 # @milaboratories/pl-middle-layer
 
+## 1.37.65
+
+### Patch Changes
+
+- Updated dependencies [1c10475]
+  - @platforma-sdk/model@1.33.16
+
 ## 1.37.64
 
 ### Patch Changes
