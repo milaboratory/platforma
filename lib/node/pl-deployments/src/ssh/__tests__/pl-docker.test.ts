@@ -48,17 +48,17 @@ describe('SshPl', async () => {
       localWorkdir: downloadDestination,
       license: { type: 'env' },
     });
-    expect((await sshPl.isAlive()).allAlive).toBe(true);
+    expect((await sshPl.isAlive()).platforma).toBe(true);
 
     await sshPl.stop();
-    expect((await sshPl.isAlive()).allAlive).toBe(false);
+    expect((await sshPl.isAlive()).platforma).toBe(false);
 
     // FIXME: it's not working in CI
     // await sshPl.start();
     // expect((await sshPl.isAlive()).allAlive).toBe(true);
 
     await sshPl.stopAndClean();
-    expect((await sshPl.isAlive()).allAlive).toBe(false);
+    expect((await sshPl.isAlive()).platforma).toBe(undefined);
   });
 
   it('downloadBinariesAndUploadToServer', async () => {
@@ -70,13 +70,16 @@ describe('SshPl', async () => {
       { type: 'Download', version: getDefaultPlVersion() },
       remoteHome,
       arch,
+      false,
     );
 
     const pathSupervisor = `${plpath.supervisorBinDir(remoteHome, arch.arch)}/supervisord`;
-    const pathMinio = `${plpath.minioDir(remoteHome, arch.arch)}/minio`;
+    // NOTE: minio was removed from the test container
+    // const pathMinio = `${plpath.minioDir(remoteHome, arch.arch)}/minio`;
 
     expect((await sshPl?.sshClient.checkPathExists(pathSupervisor))?.exists).toBe(true);
-    expect((await sshPl?.sshClient.checkPathExists(pathMinio))?.exists).toBe(true);
+    // NOTE: minio was removed from the test container
+    // expect((await sshPl?.sshClient.checkPathExists(pathMinio))?.exists).toBe(true);
   });
 
   it('platformaInit', async () => {
@@ -122,7 +125,7 @@ describe('SshPl', async () => {
       license: { type: 'env' },
     });
     const isAlive = await sshPl?.isAlive();
-    expect(isAlive.allAlive).toBe(true);
+    expect(isAlive.platforma).toBe(true);
 
     const arch = await sshPl.getArch();
     const remoteHome = await sshPl.getUserHomeDirectory();
@@ -170,7 +173,7 @@ describe('SshPl', async () => {
 
     await sshPl.platformaInit({ localWorkdir: downloadDestination, license: { type: 'env' } });
     let isAlive = await sshPl?.isAlive();
-    expect(isAlive.allAlive).toBe(true);
+    expect(isAlive.platforma).toBe(true);
 
     await sshPl.platformaInit({
       localWorkdir: downloadDestination,
@@ -178,7 +181,7 @@ describe('SshPl', async () => {
       useGlobalAccess: true,
     });
     isAlive = await sshPl?.isAlive();
-    expect(isAlive.allAlive).toBe(true);
+    expect(isAlive.platforma).toBe(true);
 
     const config = await sshPl.sshClient.readFile(plpath.platformaConf(remoteHome));
     expect(config).contain('bin-ga');
@@ -191,7 +194,7 @@ describe('SshPl', async () => {
       plBinary: { type: 'Download', version: '1.18.3' },
     });
     let isAlive = await sshPl?.isAlive();
-    expect(isAlive.allAlive).toBe(true);
+    expect(isAlive.platforma).toBe(true);
 
     await sshPl.platformaInit({
       localWorkdir: downloadDestination,
@@ -199,7 +202,7 @@ describe('SshPl', async () => {
       // latest version of pl binary will be get by default
     });
     isAlive = await sshPl?.isAlive();
-    expect(isAlive.allAlive).toBe(true);
+    expect(isAlive.platforma).toBe(true);
   });
 
   it('Download pl. We have archive and extracted data', async () => {
