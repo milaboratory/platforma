@@ -82,9 +82,12 @@ export class SshPl {
     const remoteHome = await this.getUserHomeDirectory();
 
     try {
-      if (isSupervisordRunning((await this.isAlive()))) {
+      const alive = await this.isAlive();
+      if (isSupervisordRunning(alive)) {
         await supervisorCtlShutdown(this.sshClient, remoteHome, arch.arch);
-        return await this.checkIsAliveWithInterval(false, undefined, undefined, false);
+        // Check if Minio is running by looking at the alive status
+        const shouldUseMinio = alive.minio === true;
+        return await this.checkIsAliveWithInterval(shouldUseMinio, 1000, 15, false);
       }
     } catch (e: unknown) {
       const msg = `PlSsh.stop: ${e}`;
