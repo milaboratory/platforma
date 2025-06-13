@@ -21,6 +21,7 @@ test('should return right configs', async ({ expect }) => {
       ports: {
         grpc: 42097,
         http: 42098,
+        httpLocal: 11112,
         monitoring: 37659,
         debug: 39841,
 

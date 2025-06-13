@@ -18,7 +18,7 @@ ENV LANG en_US.UTF-8
 
 EXPOSE 22 3001
 
-COPY ./test-assets/pub-key.pub /home/pl-doctor/.ssh/authorized_ke
+COPY ./test-assets/pub-key.pub /home/pl-doctor/.ssh/authorized_keys
 COPY ./test-assets/simple-server.js /home/pl-doctor/simple-server.js
 
 RUN chmod 755 /home/pl-doctor

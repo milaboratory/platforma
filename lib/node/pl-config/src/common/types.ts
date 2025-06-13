@@ -159,7 +159,7 @@ type PlFsStorageType = { type: 'FS' };
 
 type PlFsStorageTypeSettings = {
   rootPath: string;
-  externalUrl?: string;
+  externalURL?: string;
   allowRemoteAccess?: boolean;
 };
 

@@ -12,7 +12,7 @@ import net from 'node:net';
 import type { PlConfig, PlLicenseMode, RemoteMinioSettings, SshPlConfigGenerationResult, SshPlConfigGeneratorOptions } from '@milaboratories/pl-config';
 import { getFreePort, generateSshPlConfigs } from '@milaboratories/pl-config';
 import type { SupervisorStatus } from './supervisord';
-import { supervisorStatus, supervisorStop as supervisorCtlShutdown, generateSupervisordConfig, supervisorCtlStart, isSupervisordRunning } from './supervisord';
+import { supervisorStatus, supervisorStop as supervisorCtlShutdown, generateSupervisordConfigWithMinio, supervisorCtlStart, isSupervisordRunning, generateSupervisordConfig, isAllAlive } from './supervisord';
 import type { ConnectionInfo, SshPlPorts } from './connection_info';
 import { newConnectionInfo, parseConnectionInfo, stringifyConnectionInfo } from './connection_info';
 import type { PlBinarySourceDownload } from '../common/pl_binary';
@@ -57,16 +57,16 @@ export class SshPl {
 
   /** Starts all the services on the server.
     * Idempotent semantic: we could call it several times. */
-  public async start() {
+  public async start(shouldUseMinio: boolean) {
     const arch = await this.getArch();
     const remoteHome = await this.getUserHomeDirectory();
 
     try {
-      if (!(await this.isAlive()).allAlive) {
+      if (!isAllAlive(await this.isAlive(), shouldUseMinio)) {
         await supervisorCtlStart(this.sshClient, remoteHome, arch.arch);
 
         // We are waiting for Platforma to run to ensure that it has started.
-        return await this.checkIsAliveWithInterval();
+        return await this.checkIsAliveWithInterval(shouldUseMinio);
       }
     } catch (e: unknown) {
       const msg = `SshPl.start: ${e}`;
@@ -84,7 +84,7 @@ export class SshPl {
     try {
       if (isSupervisordRunning((await this.isAlive()))) {
         await supervisorCtlShutdown(this.sshClient, remoteHome, arch.arch);
-        return await this.checkIsAliveWithInterval(undefined, undefined, false);
+        return await this.checkIsAliveWithInterval(false, undefined, undefined, false);
       }
     } catch (e: unknown) {
       const msg = `PlSsh.stop: ${e}`;
@@ -157,7 +157,7 @@ export class SshPl {
   }
   private async doStepStopExistedPlatforma(state: PlatformaInitState, onProgress: ((...args: any) => Promise<any>) | undefined) {
     state.step = 'stopExistedPlatforma';
-    if (! state.alive?.allAlive) {
+    if (! isAllAlive(state.alive!, state.shouldUseMinio ?? false)) {
       return
     }
 
@@ -174,7 +174,7 @@ export class SshPl {
   private async doStepStartPlatforma(state: PlatformaInitState, onProgress: ((...args: any) => Promise<any>) | undefined) {
     state.step = 'startPlatforma';
     await onProgress?.('Starting Platforma on the server...');
-    await this.start();
+    await this.start(state.shouldUseMinio ?? false);
     state.started = true;
     this.initState = state;
 
@@ -206,15 +206,26 @@ export class SshPl {
     state.step = 'configureSupervisord';
 
     const config = state.generatedConfig!;
-    const supervisorConfig = generateSupervisordConfig(
+
+    let supervisorConfig: string;
+    if (state.shouldUseMinio) {
+      supervisorConfig = generateSupervisordConfigWithMinio(
       config.minioConfig.storageDir,
       config.minioConfig.envs,
       await this.getFreePortForPlatformaOnServer(state.remoteHome!, state.arch!),
       config.workingDir,
       config.plConfig.configPath,
-      state.binPaths!.minioRelPath,
+      state.binPaths!.minioRelPath!,
       state.binPaths!.downloadedPl,
     );
+  } else {
+    supervisorConfig = generateSupervisordConfig(
+      await this.getFreePortForPlatformaOnServer(state.remoteHome!, state.arch!),
+      config.workingDir,
+      config.plConfig.configPath,
+      state.binPaths!.downloadedPl,
+    );
+  }
 
     const writeResult = await this.sshClient.writeFileOnTheServer(plpath.supervisorConf(state.remoteHome!), supervisorConfig);
     if (!writeResult) {
@@ -293,7 +304,7 @@ export class SshPl {
       throw new Error(`glibc version ${glibcVersion} is too old. Version ${minRequiredGlibcVersion} or higher is required for Platforma.`);
 
     const downloadRes = await this.downloadBinariesAndUploadToTheServer(
-      ops.localWorkdir, ops.plBinary!, state.remoteHome!, state.arch!
+      ops.localWorkdir, ops.plBinary!, state.remoteHome!, state.arch!, state.shouldUseMinio ?? false
     );
     await onProgress?.('All required binaries have been downloaded and uploaded.');
 
@@ -324,8 +335,7 @@ export class SshPl {
     await onProgress?.('Checking platform status...');
     state.alive = await this.isAlive();
 
-
-    if (!state.alive.allAlive) {
+    if (!state.alive?.platforma) {
       return true
     }
 
@@ -364,6 +374,7 @@ export class SshPl {
     plBinary: PlBinarySourceDownload,
     remoteHome: string,
     arch: Arch,
+    shouldUseMinio: boolean,
   ) {
     const state: DownloadAndUntarState[] = [];
     try {
@@ -380,16 +391,18 @@ export class SshPl {
       state.push(supervisor);
 
       const minioPath = plpath.minioBin(remoteHome, arch.arch);
+      if (shouldUseMinio) {
       const minio = await this.downloadAndUntar(
         localWorkdir, remoteHome, arch,
         'minio', plpath.minioDirName,
       );
       state.push(minio);
       await this.sshClient.chmod(minioPath, 0o750);
+    }
 
       return {
         history: state,
-        minioRelPath: minioPath,
+        minioRelPath: shouldUseMinio ? minioPath : undefined,
         downloadedPl: plpath.platformaBin(remoteHome, arch.arch),
       };
     } catch (e: unknown) {
@@ -479,12 +492,12 @@ export class SshPl {
     return false;
   }
 
-  public async checkIsAliveWithInterval(interval: number = 1000, count = 15, shouldStart = true): Promise<void> {
+  public async checkIsAliveWithInterval(shouldUseMinio: boolean, interval: number = 1000, count = 15, shouldStart = true): Promise<void> {
     const maxMs = count * interval;
 
     let total = 0;
     let alive = await this.isAlive();
-    while (shouldStart ? !alive.allAlive : alive.allAlive) {
+    while (shouldStart ? !isAllAlive(alive, shouldUseMinio) : isAllAlive(alive, shouldUseMinio)) {
       await sleep(interval);
       total += interval;
       if (total > maxMs) {
@@ -604,7 +617,7 @@ const defaultSshPlConfig: Pick<
 
 type BinPaths = {
   history?: DownloadAndUntarState[];
-  minioRelPath: string;
+  minioRelPath?: string;
   downloadedPl: string;
 };
 
@@ -681,4 +694,5 @@ export function parseGlibcVersion(output: string): number {
 
   return parseFloat(versionMatch[0]);
 }
+
 

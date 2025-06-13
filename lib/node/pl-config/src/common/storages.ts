@@ -33,12 +33,12 @@ export interface RemoteMinioSettings {
 
 export function newRemoteConfigStoragesFS(
   workdir: string,
-  localhttpPort?: number,
+  localHTTPPort?: number,
 ): StoragesSettings {
   const workPath = upath.join(workdir, 'storages', 'work');
   const mainPath = upath.join(workdir, 'storages', 'main');
 
-  if (!localhttpPort) {
+  if (!localHTTPPort) {
     throw new Error('httpPort is required for remote FS storage config generation');
   }
 
@@ -52,7 +52,7 @@ export function newRemoteConfigStoragesFS(
       type: 'FS',
       indexCachePeriod: '0s',
       rootPath: mainPath,
-      externalUrl: `http://localhost:${localhttpPort}`,
+      externalURL: `http://localhost:${localHTTPPort}`,
       allowRemoteAccess: true,
     },
   };

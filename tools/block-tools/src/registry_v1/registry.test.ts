@@ -4,7 +4,6 @@ import { RegistryStorage, storageByUrl } from '../io';
 import fs from 'node:fs';
 import { BlockRegistry } from './registry';
 import { ConsoleLoggerAdapter } from '@milaboratories/ts-helpers';
-import { test, expect } from 'vitest';
 
 type TestStorageInstance = {
   storage: RegistryStorage;
