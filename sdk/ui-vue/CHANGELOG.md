@@ -1,5 +1,17 @@
 # @platforma-sdk/ui-vue
 
+## 1.34.0
+
+### Minor Changes
+
+- 35ce863: PlMultiSequenceAlignment improvements
+
+### Patch Changes
+
+- Updated dependencies [35ce863]
+  - @platforma-sdk/model@1.34.0
+  - @milaboratories/uikit@2.2.82
+
 ## 1.33.17
 
 ### Patch Changes

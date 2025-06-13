@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.34.0
+
+### Minor Changes
+
+- 35ce863: PlMultiSequenceAlignment improvements
+
 ## 1.33.17
 
 ### Patch Changes
