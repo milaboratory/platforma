@@ -20,6 +20,7 @@ test('should return right configs', async ({ expect }) => {
         grpc: 11234,
         monitoring: 11235,
         debug: 11236,
+        httpEndpoint: 11237,
       },
     },
     numCpu: 5,
