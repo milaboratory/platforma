@@ -97,11 +97,19 @@ export class SynchronizedTreeState {
     await this.hooks.refreshState();
   }
 
+  private currentLoopDelayInterrupt: AbortController | undefined = undefined;
   private scheduledOnNextState: ScheduledRefresh[] = [];
 
+  /** Called from computable hooks when external observer asks for state refresh */
   private scheduleOnNextState(resolve: () => void, reject: (err: any) => void): void {
     if (this.terminated) reject(new Error('tree synchronization is terminated'));
-    else this.scheduledOnNextState.push({ resolve, reject });
+    else {
+      this.scheduledOnNextState.push({ resolve, reject });
+      if (this.currentLoopDelayInterrupt) {
+        this.currentLoopDelayInterrupt.abort();
+        this.currentLoopDelayInterrupt = undefined;
+      }
+    }
   }
 
   /** Called from observer */
@@ -138,8 +146,10 @@ export class SynchronizedTreeState {
     // will hold request stats
     let stat = this.logStat ? initialTreeLoadingStat() : undefined;
 
+    let lastUpdate = Date.now();
+
     while (true) {
-      if (!this.keepRunning) break;
+      if (!this.keepRunning || this.terminated) break;
 
       // saving those who want to be notified about new state here
       // because those who will be added during the tree retrieval
@@ -158,13 +168,15 @@ export class SynchronizedTreeState {
         await this.refresh(stat);
 
         // logging stats if we were asked to
-        if (stat && this.logger) this.logger.info(`Tree stat (success): ${JSON.stringify(stat)}`);
+        if (stat && this.logger) this.logger.info(`Tree stat (success, after ${Date.now() - lastUpdate}ms): ${JSON.stringify(stat)}`);
+        lastUpdate = Date.now();
 
         // notifying that we got new state
         if (toNotify !== undefined) for (const n of toNotify) n.resolve();
       } catch (e: any) {
         // logging stats if we were asked to (even if error occured)
-        if (stat && this.logger) this.logger.info(`Tree stat (error): ${JSON.stringify(stat)}`);
+        if (stat && this.logger) this.logger.info(`Tree stat (error, after ${Date.now() - lastUpdate}ms): ${JSON.stringify(stat)}`);
+        lastUpdate = Date.now();
 
         // notifying that we failed to refresh the state
         if (toNotify !== undefined) for (const n of toNotify) n.reject(e);
@@ -191,11 +203,17 @@ export class SynchronizedTreeState {
 
       if (!this.keepRunning || this.terminated) break;
 
-      try {
-        await tp.setTimeout(this.pollingInterval, this.abortController.signal);
-      } catch (e: unknown) {
-        if (!isTimeoutOrCancelError(e)) throw new Error('Unexpected error', { cause: e });
-        break;
+      if (this.scheduledOnNextState.length === 0) {
+        try {
+          this.currentLoopDelayInterrupt = new AbortController();
+          await tp.setTimeout(this.pollingInterval,
+            AbortSignal.any([this.abortController.signal, this.currentLoopDelayInterrupt.signal]));
+        } catch (e: unknown) {
+          if (!isTimeoutOrCancelError(e)) throw new Error('Unexpected error', { cause: e });
+          break;
+        } finally {
+          this.currentLoopDelayInterrupt = undefined;
+        }
       }
     }
 

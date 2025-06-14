@@ -1,13 +1,12 @@
 import type { ComputableCtx } from '@milaboratories/computable';
 import type { PlTreeEntry } from '@milaboratories/pl-tree';
-import { notEmpty } from '@milaboratories/ts-helpers';
+import { cachedDecode, notEmpty } from '@milaboratories/ts-helpers';
 import type { Optional } from 'utility-types';
 import type {
   Block,
   ProjectStructure } from '../model/project_model';
 import {
   ProjectStructureKey,
-  blockFrontendStateKey,
   projectFieldName,
 } from '../model/project_model';
 import { allBlocks } from '../model/project_model_util';
@@ -40,7 +39,7 @@ export function constructBlockContextArgsOnly(
   blockId: string,
 ): BlockContextArgsOnly {
   const args = (cCtx: ComputableCtx) =>
-    notEmpty(
+    cachedDecode(notEmpty(
       cCtx
         .accessor(projectEntry)
         .node()
@@ -48,19 +47,30 @@ export function constructBlockContextArgsOnly(
           field: projectFieldName(blockId, 'currentArgs'),
           errorIfFieldNotSet: true,
         })
-        .getDataAsString(),
-    );
-  const activeArgs = (cCtx: ComputableCtx) =>
-    cCtx
+        .getData(),
+    ));
+  const activeArgs = (cCtx: ComputableCtx) => {
+    const data = cCtx
       .accessor(projectEntry)
       .node()
       .traverse({
         field: projectFieldName(blockId, 'prodArgs'),
         stableIfNotFound: true,
       })
-      ?.getDataAsString();
-  const uiState = (cCtx: ComputableCtx) =>
-    cCtx.accessor(projectEntry).node().getKeyValueAsString(blockFrontendStateKey(blockId));
+      ?.getData();
+    return data ? cachedDecode(data) : undefined;
+  };
+  const uiState = (cCtx: ComputableCtx) => {
+    const data = cCtx
+      .accessor(projectEntry)
+      .node()
+      .traverse({
+        field: projectFieldName(blockId, 'uiState'),
+        stableIfNotFound: true,
+      })
+      ?.getData();
+    return data ? cachedDecode(data) : undefined;
+  };
   return {
     blockId,
     args,

@@ -36,9 +36,22 @@ export class PollPool<A extends PollActor = PollActor> {
     this.mainLoopHandle = this.mainLoop();
   }
 
+  private currentLoopDelayInterrupt: AbortController | undefined = undefined;
+  private refreshRequests: number = 0;
+
+  public requestImmediateRefresh() {
+    this.refreshRequests++;
+    if (this.currentLoopDelayInterrupt) {
+      this.currentLoopDelayInterrupt.abort();
+      this.currentLoopDelayInterrupt = undefined;
+    }
+  }
+
   private async mainLoop() {
     try {
       while (true) {
+        this.refreshRequests = 0;
+
         if (this.terminated) break;
 
         // select actors for this iteration and cleaning up the pool
@@ -100,11 +113,17 @@ export class PollPool<A extends PollActor = PollActor> {
 
         if (this.terminated) break;
 
-        try {
-          const delay = Math.max(0, this.ops.minDelay - (Date.now() - begin));
-          await tp.setTimeout(delay, undefined, { signal: this.terminateController.signal });
-        } catch (_e) {
-          // will terminate on next iteration
+        if (this.refreshRequests === 0) {
+          try {
+            const delay = Math.max(0, this.ops.minDelay - (Date.now() - begin));
+            this.currentLoopDelayInterrupt = new AbortController();
+            await tp.setTimeout(delay, undefined,
+              { signal: AbortSignal.any([this.terminateController.signal, this.currentLoopDelayInterrupt.signal]) });
+          } catch (_e) {
+            // will terminate on next iteration if terminated
+          } finally {
+            this.currentLoopDelayInterrupt = undefined;
+          }
         }
       }
     } catch (err: unknown) {
@@ -183,7 +202,7 @@ class PollPoolPauseComputableAdapter implements ComputableHooks {
   // initiated in paused state, because nobody listen to us yet
   private _pollPauseRequest: symbol | undefined = Symbol();
 
-  constructor() {}
+  constructor(private readonly onRefreshRequest: () => void) {}
 
   /** Return this in {@link PollActor.pollPauseRequest} */
   public get pollPauseRequest(): symbol | undefined {
@@ -237,6 +256,7 @@ class PollPoolPauseComputableAdapter implements ComputableHooks {
     });
     this._pollPauseRequest = undefined;
     this.pollPauseRequestChange.markChanged();
+    this.onRefreshRequest();
     return result;
   }
 }
@@ -277,7 +297,7 @@ export abstract class PollComputablePool<Req, Res> {
       error: unknown = undefined;
       readonly change = new ChangeSource();
 
-      readonly hooks = new PollPoolPauseComputableAdapter();
+      readonly hooks = new PollPoolPauseComputableAdapter(() => parent.pool.requestImmediateRefresh());
 
       get pollPauseRequest(): symbol | undefined {
         return this.hooks.pollPauseRequest;

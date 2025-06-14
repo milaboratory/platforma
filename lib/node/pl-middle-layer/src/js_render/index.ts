@@ -7,7 +7,7 @@ import { Scope } from 'quickjs-emscripten';
 import type { DeadlineSettings } from './context';
 import { JsExecutionContext } from './context';
 import type { BlockContextAny } from '../middle_layer/block_ctx';
-import { LogOutputStatus } from '../middle_layer/util';
+import { getDebugFlags } from '../debug';
 
 export function computableFromRF(
   env: MiddleLayerEnvironment,
@@ -47,7 +47,7 @@ export function computableFromRF(
 
     let recalculationCounter = 0;
 
-    if (LogOutputStatus && LogOutputStatus !== 'unstable-only')
+    if (getDebugFlags().logOutputStatus === 'any')
       console.log(`Output ${fh.handle} scaffold calculated.`);
 
     return {
@@ -61,7 +61,7 @@ export function computableFromRF(
 
         // logging
         recalculationCounter++;
-        if (LogOutputStatus && (LogOutputStatus !== 'unstable-only' || !stable)) {
+        if (getDebugFlags().logOutputStatus && (getDebugFlags().logOutputStatus === 'any' || !stable)) {
           if (stable)
             console.log(
               `Stable output ${fh.handle} calculated ${renderedResult !== undefined ? 'defined' : 'undefined'}; (#${recalculationCounter})`,

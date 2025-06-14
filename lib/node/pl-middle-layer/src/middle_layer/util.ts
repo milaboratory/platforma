@@ -38,5 +38,3 @@ export function getBlockPackInfo(
     },
   );
 }
-
-export const LogOutputStatus = process.env.MI_LOG_OUTPUT_STATUS;
