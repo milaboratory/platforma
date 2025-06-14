@@ -27,6 +27,7 @@
     "./src/**/*"
   ],
   "dependencies": {
+    "canonicalize": "catalog:",
     "denque": "catalog:"
   },
   "devDependencies": {
