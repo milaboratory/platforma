@@ -73,20 +73,13 @@ export const InitialBlockMeta: ProjectMeta = {
 export const ProjectResourceType: ResourceType = { name: 'UserProject', version: '2' };
 
 export const SchemaVersionKey = 'SchemaVersion';
-export const SchemaVersionCurrent = '1';
+export const SchemaVersionCurrent = '2';
 
 export const ProjectCreatedTimestamp = 'ProjectCreated';
 export const ProjectLastModifiedTimestamp = 'ProjectLastModified';
 export const ProjectMetaKey = 'ProjectMeta';
 export const ProjectStructureKey = 'ProjectStructure';
 export const BlockRenderingStateKey = 'BlockRenderingState';
-
-export const BlockFrontendStateKeyPrefix = 'BlockFrontendState/';
-export const BlockFrontendStateKeyPattern = /^BlockFrontendState\/(?<blockid>.*)$/;
-
-export function blockFrontendStateKey(blockId: string): string {
-  return `${BlockFrontendStateKeyPrefix}${blockId}`;
-}
 
 export const BlockArgsAuthorKeyPrefix = 'BlockArgsAuthor/';
 export const BlockArgsAuthorKeyPattern = /^BlockArgsAuthor\/(?<blockid>.*)$/;
@@ -96,13 +89,6 @@ export function blockArgsAuthorKey(blockId: string): string {
 }
 
 export const ProjectStructureAuthorKey = 'ProjectStructureAuthor';
-
-/** Returns block id, or undefined if key does not match the pattern. */
-export function parseBlockFrontendStateKey(key: string): string | undefined {
-  const match = key.match(BlockFrontendStateKeyPattern);
-  if (match === null) return undefined;
-  return match.groups!['blockid'];
-}
 
 export const ServiceTemplateCacheFieldPrefix = '__serviceTemplate_';
 
@@ -115,6 +101,7 @@ export interface ProjectField {
   fieldName:
     | 'blockPack'
     | 'blockSettings'
+    | 'uiState'
     | 'prodArgs'
     | 'currentArgs'
     | 'prodCtx'
@@ -136,7 +123,7 @@ export function projectFieldName(blockId: string, fieldName: ProjectField['field
 }
 
 const projectFieldPattern
-  = /^(?<blockId>.*)-(?<fieldName>blockPack|blockSettings|prodArgs|currentArgs|prodCtx|prodUiCtx|prodOutput|prodCtxPrevious|prodUiCtxPrevious|prodOutputPrevious|stagingCtx|stagingUiCtx|stagingOutput|stagingCtxPrevious|stagingUiCtxPrevious|stagingOutputPrevious)$/;
+  = /^(?<blockId>.*)-(?<fieldName>blockPack|blockSettings|uiState|prodArgs|currentArgs|prodCtx|prodUiCtx|prodOutput|prodCtxPrevious|prodUiCtxPrevious|prodOutputPrevious|stagingCtx|stagingUiCtx|stagingOutput|stagingCtxPrevious|stagingUiCtxPrevious|stagingOutputPrevious)$/;
 
 export function parseProjectField(name: string): ProjectField | undefined {
   const match = name.match(projectFieldPattern);

@@ -42,6 +42,7 @@ import fs from 'node:fs/promises';
 import canonicalize from 'canonicalize';
 import type { ProjectOverviewLight } from './project_overview_light';
 import { projectOverviewLight } from './project_overview_light';
+import { applyProjectMigrations } from '../mutator/migration';
 
 type BlockStateComputables = {
   readonly fullState: Computable<BlockStateInternal>;
@@ -199,7 +200,7 @@ export class Project {
       mut.migrateBlockPack(
         blockId,
         preparedBp,
-        resetArgs ? { args: canonicalize(blockCfg.initialArgs)!, uiState: canonicalize(blockCfg.initialUiState)! } : undefined,
+        resetArgs ? { args: blockCfg.initialArgs, uiState: blockCfg.initialUiState } : undefined,
       ),
     );
     await this.projectTree.refreshState();
@@ -281,7 +282,7 @@ export class Project {
    * */
   public async setBlockArgs(blockId: string, args: unknown, author?: AuthorMarker) {
     await withProjectAuthored(this.env.projectHelper, this.env.pl, this.rid, author, (mut) =>
-      mut.setArgs([{ blockId, args: canonicalize(args)! }]),
+      mut.setStates([{ blockId, args }]),
     );
     await this.projectTree.refreshState();
   }
@@ -294,7 +295,7 @@ export class Project {
    * */
   public async setUiState(blockId: string, uiState: unknown, author?: AuthorMarker) {
     await withProjectAuthored(this.env.projectHelper, this.env.pl, this.rid, author, (mut) =>
-      mut.setUiState(blockId, uiState === undefined ? undefined : canonicalize(uiState)!),
+      mut.setStates([{ blockId, uiState }]),
     );
     await this.projectTree.refreshState();
   }
@@ -320,8 +321,7 @@ export class Project {
     author?: AuthorMarker,
   ) {
     await withProjectAuthored(this.env.projectHelper, this.env.pl, this.rid, author, (mut) => {
-      mut.setArgs([{ blockId, args: canonicalize(args)! }]);
-      mut.setUiState(blockId, canonicalize(uiState));
+      mut.setStates([{ blockId, args, uiState }]);
     });
     await this.projectTree.refreshState();
   }
@@ -345,10 +345,9 @@ export class Project {
         (await tx.getField(field(bpHolderRid, Pl.HolderRefField))).value,
       );
       const bpData = await tx.getResourceData(bpRid, false);
-      const config = extractConfig((cachedDeserialize(notEmpty(bpData.data)) as BlockPackInfo).config);
+      const config = extractConfig(cachedDeserialize<BlockPackInfo>(notEmpty(bpData.data)).config);
       await withProjectAuthored(this.env.projectHelper, tx, this.rid, author, (prj) => {
-        prj.setArgs([{ blockId, args: canonicalize(config.initialArgs)! }]);
-        prj.setUiState(blockId, canonicalize(config.initialUiState));
+        prj.setStates([{ blockId, args: config.initialArgs, uiState: config.initialUiState }]);
       });
       await tx.commit();
     });
@@ -450,6 +449,9 @@ export class Project {
   }
 
   public static async init(env: MiddleLayerEnvironment, rid: ResourceId): Promise<Project> {
+    // Applying migrations to the project resource, if needed
+    await applyProjectMigrations(env.pl, rid);
+
     // Doing a no-op mutation to apply all migration and schema fixes
     await withProject(env.projectHelper, env.pl, rid, (_) => {});
 
@@ -486,6 +488,8 @@ function projectTreePruning(r: ExtendedResourceData): FieldData[] {
   //     }
   //   )
   // );
+  if (r.type.name.startsWith('StreamWorkdir/'))
+    return [];
   switch (r.type.name) {
     case 'BlockPackCustom':
       return r.fields.filter((f) => f.name !== 'template');
