@@ -65,7 +65,7 @@ import { exportContext, getPreparedExportTemplateEnvelope } from './context_expo
 import { loadTemplate } from './template/template_loading';
 import { cachedDeserialize, notEmpty, canonicalJsonGzBytes, canonicalJsonBytes } from '@milaboratories/ts-helpers';
 import type { ProjectHelper } from '../model/project_helper';
-import { extractConfig, type BlockConfig } from '@platforma-sdk/model';
+import { extractConfig, UiError, type BlockConfig } from '@platforma-sdk/model';
 import { getDebugFlags } from '../debug';
 import type { BlockPackInfo } from '../model/block_pack';
 
@@ -1086,10 +1086,14 @@ export class ProjectMutator {
       structureP,
       renderingStateP,
     ]);
-    if (schema !== SchemaVersionCurrent)
-      throw new Error(
-        `Can't act on this project resource because it has a wrong schema version: ${schema}`,
-      );
+
+    // Checking schema version of the project
+    if (schema !== SchemaVersionCurrent) {
+      if (Number(schema) < Number(SchemaVersionCurrent))
+        throw new UiError(`Can't perform this action on this project because it has older schema. Try (re)loading the project to update it.`);
+      else
+        throw new UiError(`Can't perform this action on this project because it has newer schema. Upgrade your desktop app to the latest version.`);
+    }
 
     //
     // <- at this point we have all the responses from round-trip #1
