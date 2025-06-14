@@ -12,6 +12,6 @@ export const moveElements = <T>(array: T[], from: number, to: number): T[] => {
 
 export function optionalUpdateRef<T>(ref: T) {
   if (isRef(ref) && isShallow(ref)) {
-    ref.value = shallowClone(ref);
+    ref.value = shallowClone(ref.value);
   }
 }
