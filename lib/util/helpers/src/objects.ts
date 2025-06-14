@@ -1,6 +1,7 @@
 /* eslint-disable  @typescript-eslint/no-explicit-any */
 
 import type { PartialBy, PlainObject } from './types';
+import { isNil } from './utils';
 
 /**
  * Alias to Array.isArray
@@ -131,13 +132,12 @@ export function deepClone<T>(obj: T): T {
 }
 
 export function shallowClone<T>(obj: T): T {
-  if (Array.isArray(obj)) {
-    return Object.assign([], obj);
-  } else if (isNonPrimitive(obj)) {
-    return Object.assign({}, obj);
-  } else {
-    return obj;
-  }
+  if (isNil(obj)) return obj;
+  if (Array.isArray(obj)) return obj.slice() as T;
+  if (isPlainObject(obj)) return Object.assign({}, obj) as T;
+  if (obj instanceof Map) return new Map(obj) as T;
+  if (obj instanceof Set) return new Set(obj) as T;
+  throw Error(`Not implemented clone strategy for ${ JSON.stringify(obj) }`);
 }
 
 export function shallowDiff<T>(to: T, from: T): Partial<T> {
