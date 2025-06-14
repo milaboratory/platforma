@@ -1,5 +1,8 @@
 export const random = Math.random;
-export const randomInt = (random() * Number.MAX_SAFE_INTEGER) | 0;
+
+export function randomInt(): number {
+  return (random() * Number.MAX_SAFE_INTEGER) | 0;
+}
 
 export function randomRangeFloat(min: number, max: number): number {
   return random() * (max - min) + min;
