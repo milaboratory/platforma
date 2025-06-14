@@ -1,5 +1,21 @@
 # @milaboratories/pl-client
 
+## 2.11.0
+
+### Minor Changes
+
+- babb3eb: - state refresh signal now interupts delay in main loop of synchronized tree
+  - added information about final states about resources of the following types: json-gz/object, Null, StreamWorkdir/\*
+  - adding transaction time to pl-client stats
+
+### Patch Changes
+
+- c243d64: - network-related dependency upgrade
+- Updated dependencies [c243d64]
+- Updated dependencies [c7894c2]
+  - @milaboratories/pl-http@1.1.3
+  - @milaboratories/ts-helpers@1.4.0
+
 ## 2.10.2
 
 ### Patch Changes

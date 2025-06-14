@@ -1,5 +1,16 @@
 # @milaboratories/computable
 
+## 2.5.0
+
+### Minor Changes
+
+- babb3eb: - State refresh request now interrups delay in polling loop
+
+### Patch Changes
+
+- Updated dependencies [c7894c2]
+  - @milaboratories/ts-helpers@1.4.0
+
 ## 2.4.12
 
 ### Patch Changes
