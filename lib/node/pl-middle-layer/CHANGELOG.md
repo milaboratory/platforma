@@ -1,5 +1,29 @@
 # @milaboratories/pl-middle-layer
 
+## 1.37.68
+
+### Patch Changes
+
+- c243d64: Main change: V2 project schema, resource-based uiState storage, uiState compression.
+  Minor changes:
+  - better stats reporting env vars
+  - better tree pruning for StreamWorkdir/\* resources
+- Updated dependencies [c243d64]
+- Updated dependencies [babb3eb]
+- Updated dependencies [c7894c2]
+- Updated dependencies [babb3eb]
+  - @milaboratories/pl-client@2.11.0
+  - @milaboratories/pl-drivers@1.5.68
+  - @milaboratories/pl-http@1.1.3
+  - @milaboratories/computable@2.5.0
+  - @milaboratories/ts-helpers@1.4.0
+  - @milaboratories/pl-errors@1.1.7
+  - @milaboratories/pl-tree@1.6.9
+  - @platforma-sdk/block-tools@2.5.55
+  - @milaboratories/pl-config@1.4.14
+  - @milaboratories/pl-deployments@2.3.2
+  - @platforma-sdk/workflow-tengo@4.7.2
+
 ## 1.37.67
 
 ### Patch Changes
