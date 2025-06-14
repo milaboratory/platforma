@@ -46,4 +46,6 @@ export async function asyncPool(
   }
 }
 
-export class AsyncPoolError extends Error {}
+export class AsyncPoolError extends Error {
+  name = 'AsyncPoolError';
+}

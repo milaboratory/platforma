@@ -212,7 +212,9 @@ type DownloadCtx = {
 };
 
 /** Throws when a downloading aborts. */
-class URLAborted extends Error {}
+class URLAborted extends Error {
+  name = 'URLAborted';
+}
 
 export function nonRecoverableError(e: any) {
   return (

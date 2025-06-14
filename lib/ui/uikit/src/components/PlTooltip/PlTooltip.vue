@@ -108,7 +108,7 @@ const onOver = async () => {
 
   clearTimeout();
 
-  await utils.delay(100);
+  await utils.delay(props.openDelay ?? 100);
 
   if (data.over) {
     showTooltip();
@@ -154,7 +154,7 @@ onUnmounted(() => {
     <slot />
     <Teleport v-if="$slots['tooltip'] && data.open" to="body">
       <Transition name="tooltip-transition">
-        <div v-if="data.tooltipOpen" class="pl-tooltip__container" :style="style">
+        <div v-if="data.tooltipOpen" class="pl-tooltip__container" :style="style" @click.stop>
           <div ref="tooltip" class="pl-tooltip" :style="tooltipStyle" :class="position" @mouseover="onOver" @mouseleave="onLeave">
             <!-- should be one line -->
             <div><slot name="tooltip" /></div>
