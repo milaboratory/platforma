@@ -192,4 +192,3 @@ const emit = defineEmits<{
   opacity: 1;
 }
 </style>
-[
