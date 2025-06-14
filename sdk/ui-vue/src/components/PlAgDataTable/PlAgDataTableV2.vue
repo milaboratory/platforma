@@ -397,7 +397,7 @@ const makePartialState = (state: GridState) => {
     sort: state.sort,
     columnVisibility: state.columnVisibility as {
       hiddenColIds: PTableColumnSpecJson[];
-    } | undefined,
+    } ?? { hiddenColIds: [] },
   };
 };
 

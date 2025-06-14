@@ -121,10 +121,14 @@ function isLocal(url: string) {
 }
 
 /** Throws when a local URL have invalid scheme. */
-export class WrongLocalFileUrl extends Error {}
+export class WrongLocalFileUrl extends Error {
+  name = 'WrongLocalFileUrl';
+}
 
 /** Happens when a storage for a local file can't be found.  */
-export class UnknownStorageError extends Error {}
+export class UnknownStorageError extends Error {
+  name = 'UnknownStorageError';
+}
 
 export function newLocalStorageIdsToRoot(projections: LocalStorageProjection[]) {
   const idToRoot: Map<string, string> = new Map();

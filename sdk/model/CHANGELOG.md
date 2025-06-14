@@ -1,5 +1,31 @@
 # @platforma-sdk/model
 
+## 1.34.0
+
+### Minor Changes
+
+- 35ce863: PlMultiSequenceAlignment improvements
+
+## 1.33.17
+
+### Patch Changes
+
+- Updated dependencies [49cf7ee]
+  - @milaboratories/pl-model-common@1.15.5
+
+## 1.33.16
+
+### Patch Changes
+
+- 1c10475: fix createPFrameForGraphs
+
+## 1.33.14
+
+### Patch Changes
+
+- Updated dependencies [61aa680]
+  - @milaboratories/pl-model-common@1.15.4
+
 ## 1.33.10
 
 ### Patch Changes

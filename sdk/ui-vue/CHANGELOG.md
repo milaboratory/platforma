@@ -1,5 +1,55 @@
 # @platforma-sdk/ui-vue
 
+## 1.34.0
+
+### Minor Changes
+
+- 35ce863: PlMultiSequenceAlignment improvements
+
+### Patch Changes
+
+- Updated dependencies [35ce863]
+  - @platforma-sdk/model@1.34.0
+  - @milaboratories/uikit@2.2.82
+
+## 1.33.17
+
+### Patch Changes
+
+- 49cf7ee: Standard Error serialization/deserialization
+  - @platforma-sdk/model@1.33.17
+  - @milaboratories/uikit@2.2.82
+
+## 1.33.16
+
+### Patch Changes
+
+- Updated dependencies [1c10475]
+  - @platforma-sdk/model@1.33.16
+  - @milaboratories/uikit@2.2.82
+
+## 1.33.14
+
+### Patch Changes
+
+- @platforma-sdk/model@1.33.14
+- @milaboratories/uikit@2.2.82
+
+## 1.33.13
+
+### Patch Changes
+
+- 54ebbe9: PlAgDataTable: fix reset hidden columns state, remove scroll to top after reordering columns
+- Updated dependencies [54ebbe9]
+  - @milaboratories/uikit@2.2.82
+
+## 1.33.12
+
+### Patch Changes
+
+- Updated dependencies [d707ab4]
+  - @milaboratories/uikit@2.2.81
+
 ## 1.33.10
 
 ### Patch Changes
