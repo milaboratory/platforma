@@ -1,9 +1,9 @@
 <script generic="T extends unknown = unknown, K extends number | string = number | string" lang="ts" setup>
-import { computed, ShallowRef, shallowRef, toRaw, watch } from 'vue';
+import { computed, ShallowRef, shallowRef, watch } from 'vue';
 import { isNil, shallowHash } from '@milaboratories/helpers';
 import { useSortable } from '@vueuse/integrations/useSortable';
 import { SortableEvent } from 'sortablejs';
-import { moveElements } from './utils.ts';
+import { moveElements, optionalUpdateRef } from './utils.ts';
 import PlElementListItem from './PlElementListItem.vue';
 
 const itemsRef = defineModel<T[]>('items', { required: true });
@@ -19,7 +19,7 @@ const toggledSetRef = defineModel<Set<T>>('toggledItems');
 const props = withDefaults(
     defineProps<{
       getItemKey: (item: T) => K;
-      onSort?: (sorted: T[], oldIndex: number, newIndex: number) => void | boolean;
+      onSort?: (oldIndex: number, newIndex: number) => void | boolean;
 
       enableDragging?: boolean;
       onDragEnd?: (oldIndex: number, newIndex: number) => void | boolean;
@@ -59,13 +59,13 @@ const unpinnedContainerRef = shallowRef<HTMLElement>();
 
 // version fix problem with sync between data and rendered values when items have been changed
 const versionRef = computed<number>((oldVersion) => {
-  const currentItems = toRaw(itemsRef.value);
-  const lastSortedItems = toRaw(domProjectionItemsRef.value) ?? [];
-  if (currentItems === lastSortedItems) return oldVersion ?? 0;
+  const currentVersion = shallowHash(...itemsRef.value);
 
-  const currentVersion = shallowHash(...currentItems);
-  const lastSortedVersion = shallowHash(...lastSortedItems);
-  if (currentVersion === lastSortedVersion) return oldVersion ?? 0;
+  if (domProjectionItemsRef.value === undefined) return oldVersion ?? currentVersion;
+
+  const lastSortedVersion = shallowHash(...domProjectionItemsRef.value);
+
+  if (currentVersion === lastSortedVersion) return oldVersion ?? currentVersion;
 
   return oldVersion !== currentVersion ? currentVersion : lastSortedVersion;
 });
@@ -93,16 +93,15 @@ function createSortable(toggler: ShallowRef<boolean>, elRef: ShallowRef<undefine
 function moveItems(oldIndex: number, newIndex: number, afterUpdateDom: boolean) {
   if (oldIndex === newIndex) return;
 
-  const sortedItems = moveElements(itemsRef.value?.map(toRaw), oldIndex, newIndex);
-
   if (afterUpdateDom) {
-    domProjectionItemsRef.value = sortedItems;
+    domProjectionItemsRef.value = moveElements(itemsRef.value.slice(), oldIndex, newIndex);
   }
 
-  const preventDefault = props.onSort?.(sortedItems, oldIndex, newIndex) === false;
+  const preventDefault = props.onSort?.(oldIndex, newIndex) === false;
 
   if (!preventDefault) {
-    itemsRef.value = sortedItems;
+    moveElements(itemsRef.value, oldIndex, newIndex);
+    optionalUpdateRef(itemsRef);
   }
 }
 
@@ -140,51 +139,51 @@ function isRemovable(item: T) {
 }
 
 function handleToggle(item: T, index: number) {
-  item = toRaw(item);
-  index = toRaw(index);
-
   if (props.onToggle?.(item, index) === false || isNil(toggledSetRef.value)) return;
 
-  const toggled = toRaw(toggledSetRef.value);
+  const toggled = toggledSetRef.value;
   if (toggled.has(item)) toggled.delete(item);
   else toggled.add(item);
-  toggledSetRef.value = new Set(toggled);
+  optionalUpdateRef(toggledSetRef);
 }
 
 function handlePin(item: T, oldIndex: number) {
-  item = toRaw(item);
-  oldIndex = toRaw(oldIndex);
-
   if (oldIndex === -1) {
     throw new Error('Pinnable item not found');
   }
 
   if (props.onPin?.(item, oldIndex) === false || isNil(pinnedSetRef.value)) return;
 
-  const pinned = toRaw(pinnedSetRef.value);
+  const pinned = pinnedSetRef.value;
   const alreadyPinned = pinned.has(item);
   if (alreadyPinned) pinned.delete(item);
   else pinned.add(item);
-
-  pinnedSetRef.value = new Set(pinned);
+  optionalUpdateRef(pinnedSetRef);
   moveItems(oldIndex, pinned.size + (alreadyPinned ? 0 : -1), false);
 }
 
 function handleRemove(item: T, index: number) {
-  item = toRaw(item);
-
   if (props.onRemove?.(item, index) !== false) {
-    itemsRef.value = itemsRef.value.filter((i) => i !== item);
+    itemsRef.value.splice(index, 1);
+    optionalUpdateRef(itemsRef);
+
+    if (pinnedSetRef.value?.has(item)) {
+      pinnedSetRef.value.delete(item);
+      optionalUpdateRef(pinnedSetRef);
+    }
+
+    if (toggledSetRef.value?.has(item)) {
+      toggledSetRef.value.delete(item);
+      optionalUpdateRef(toggledSetRef);
+    }
   }
 }
 
 function handleToggleContent(item: T) {
-  item = toRaw(item);
-
-  const opened = toRaw(openedSetRef.value) as Set<T>;
+  const opened = openedSetRef.value;
   if (opened.has(item)) opened.delete(item);
   else opened.add(item);
-  openedSetRef.value = new Set(opened);
+  optionalUpdateRef(openedSetRef);
 }
 
 // version fix problem with sync between data and rendered values
