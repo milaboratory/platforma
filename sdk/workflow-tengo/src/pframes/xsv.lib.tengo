@@ -81,6 +81,9 @@ getColumnSpec := func(axesSpec, col) {
  *                              valueName: string - (optional) the name of the value column; default "Value"
  *                              separatorOverride: string - (optional) specify separator in the output (optional)
  *                            }
+ *                 cpu: number - (optional) number of cores requested for command.
+ *                 mem: number | string - (optional) amount of RAM in bytes or string with size suffix
+ *                 queue: string - (optional) the name of the queue. Defaults to the light queue.
  *               }
  * @return map: reference - a reference to a map resource storing imported data.
  */
@@ -134,6 +137,9 @@ importFile := func(xsvFile, xsvType, spec, ...ops) {
  *                              valueName: string - (optional) the name of the value column; default "Value"
  *                              separatorOverride: string - (optional) specify separator in the output (optional)
  *                            }
+ *                 cpu: number - (optional) number of cores requested for command.
+ *                 mem: number | string - (optional) amount of RAM in bytes or string with size suffix
+ *                 queue: string - (optional) the name of the queue. Defaults to the light queue.
  *               }
  * @return map: reference - a reference to a map resource storing imported data.
  */
@@ -153,11 +159,25 @@ importFileMap := func(xsvMap, xsvType, spec, ...ops) {
 	pureSpec := decomposedSpec.purifiedCfg
 	columnsSpec := decomposedSpec.columnsSpec
 
+	templateOps := {
+		dataOnly: true,
+		transpose: ops.transpose
+	}
+	if !is_undefined(ops.cpu) {
+		templateOps.cpu = ops.cpu
+	}
+	if !is_undefined(ops.mem) {
+		templateOps.mem = ops.mem
+	}
+	if !is_undefined(ops.queue) {
+		templateOps.queue = ops.queue
+	}
+
 	r := render.createEphemeral(importXsvMapTpl, {
 		xsvMap: xsvMap,
 		xsvType: xsvType,
 		spec: pureSpec,
-		ops: { dataOnly: true, transpose: ops.transpose }
+		ops: templateOps
 	})
 
 	if ops.dataOnly && ops.splitDataAndSpec {
@@ -258,6 +278,9 @@ isStructuredPfMap := func(pf) {
  * @param ops: object - additional options
  *               {
  *                 partitions: {axisIdx: [keys]} - map of partitions to export; if not specified, all data is exported
+ *                 cpu: number - (optional) number of cores requested for command.
+ *                 mem: number | string - (optional) amount of RAM in bytes or string with size suffix
+ *                 queue: string - (optional) the name of the queue. Defaults to the light queue.
  *				 }
  * @return object: reference - a reference to exported xsv file.
  */

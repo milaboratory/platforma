@@ -297,7 +297,28 @@ self.body(func(inputs) {
 				reultMightBeNull := optionalOutputs[output.name]
 
 				if output.type == "Xsv" {
-					pf := xsv.importFile(ref, output.xsvType, output.settings, { dataOnly: true, allowNullInput: reultMightBeNull })
+					importOps := { dataOnly: true, allowNullInput: reultMightBeNull }
+
+					// Per-output override
+					if !is_undefined(output.cpu) {
+						importOps.cpu = output.cpu
+					} else if !is_undefined(params.cpu) { // Global setting
+						importOps.cpu = params.cpu
+					}
+
+					if !is_undefined(output.mem) {
+						importOps.mem = output.mem
+					} else if !is_undefined(params.mem) {
+						importOps.mem = params.mem
+					}
+
+					if !is_undefined(output.queue) {
+						importOps.queue = output.queue
+					} else if !is_undefined(params.queue) {
+						importOps.queue = params.queue
+					}
+
+					pf := xsv.importFile(ref, output.xsvType, output.settings, importOps)
 					for col in output.settings.columns {
 						id := pUtil.xsvColumnId(col)
 						data := pf.getFutureInputField({name: id, optional: reultMightBeNull})

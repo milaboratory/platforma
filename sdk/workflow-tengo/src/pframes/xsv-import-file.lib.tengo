@@ -6,6 +6,7 @@ objects := import(":objects")
 util := import(":pframes.util")
 json := import("json")
 constants := import(":pframes.constants")
+execConstants := import(":exec.constants")
 
 transposeXsvSw := assets.importSoftware("@platforma-open/milaboratories.software-small-binaries:table-converter")
 pfconvSw := assets.importSoftware("@milaboratories/software-pframes-conv:main")
@@ -51,6 +52,34 @@ getColumnSpec := func(axesSpec, col) {
 
 /**
  * Actual implementation of xsv.importFile() (without allowNullInput)
+ * Imports xsv data into p-frame. The resulting map resource contains all columns specified in the params (column identifiers as
+ * provided by the spec used as map keys). Resulting p-columns will be always single-partitioned at most.
+ *
+ * @param xsvFile: reference - a reference to a file
+ * @param xsvType: string - either csv or tsv
+ * @param spec: object - xsv conversion specification
+ * @param ops: object - additional options
+ *               {
+ *                 dataOnly: boolean  - set to true to completely skip creation of specs
+ *                 splitDataAndSpec: boolean  - if true, resulting map will have nested structures,
+ *                                              with "spec" + "data" fields in nested maps
+ *                 transpose: object - if specified, then the input table will be transposed
+ *                            {
+ *                              separator: string - (optional) use separator instead of inferring from the file extension
+ *                              pAxisIdx: index - (optional) the index of the primary axis (column in the input xsv); default 0
+ *                              pAxisName: string - (optional) the name of the primary axis (column name in the input xsv); default undefined
+ *                              pAxisSearch: regex - (optional) the regex pattern of the name of the primary axis (column name in the input xsv); default undefined
+ *                              pAxisNameOverride: string - (optional) override primary axis header in the output; default undefined
+ *                              sAxisSearch: string - (optional) regex to filter secondary axis columns in the input table;
+ *                              sAxisName: string - (optional) the name of the secondary axis (column name in the output xsv); default "Metric"
+ *                              valueName: string - (optional) the name of the value column; default "Value"
+ *                              separatorOverride: string - (optional) specify separator in the output (optional)
+ *                            }
+ *                 cpu: number - (optional) number of cores requested for command.
+ *                 mem: number | string - (optional) amount of RAM in bytes or string with size suffix
+ *                 queue: string - (optional) the name of the queue. Defaults to the light queue.
+ *               }
+ * @return map: reference - a reference to a map resource storing imported data.
  */
 importFile := func(xsvFile, xsvType, spec, ...ops) {
 	ll.assert(xsvType == "csv" || xsvType == "tsv", "expected one of [tsv, csv] types, found: " + xsvType)
@@ -67,7 +96,7 @@ importFile := func(xsvFile, xsvType, spec, ...ops) {
 
 	xsvFileName := "file." + xsvType
 
-	ops := renderOps({ dataOnly: false, splitDataAndSpec: false }, ops...)
+	ops := renderOps({ dataOnly: false, splitDataAndSpec: false, queue: execConstants.LIGHT_QUEUE }, ops...)
 
 	if ops.transpose != undefined {
 
@@ -78,8 +107,17 @@ importFile := func(xsvFile, xsvType, spec, ...ops) {
 		// convert csv to p-frame and read resulting data
 		transposeXsv := exec.builder().
 			software(transposeXsvSw).
-			printErrStreamToStdout().
-			inLightQueue()
+			printErrStreamToStdout()
+
+		if ops.queue != undefined {
+			transposeXsv.setQueue(ops.queue)
+		}
+		if ops.cpu != undefined {
+			transposeXsv.cpu(ops.cpu)
+		}
+		if ops.mem != undefined {
+			transposeXsv.mem(ops.mem)
+		}
 
 		if (tops.separator != undefined) {
 			transposeXsv = transposeXsv.arg("-input-separator").arg(tops.separator)
@@ -126,15 +164,25 @@ importFile := func(xsvFile, xsvType, spec, ...ops) {
 	pfconv := exec.builder().
 		software(pfconvSw).
 		printErrStreamToStdout().
-		inLightQueue().
 		arg("importCsv").
 		arg(xsvFileName).
 		arg("-p").arg("spec.json").
 		arg("-o").arg("out").
 		addFile(xsvFileName, xsvFile).
 		writeFile("spec.json", json.encode(pureSpec)).
-		processWorkdir("pf", importDirTpl, pureSpec).
-		run()
+		processWorkdir("pf", importDirTpl, pureSpec)
+
+	if ops.queue != undefined {
+		pfconv.setQueue(ops.queue)
+	}
+	if ops.cpu != undefined {
+		pfconv.cpu(ops.cpu)
+	}
+	if ops.mem != undefined {
+		pfconv.mem(ops.mem)
+	}
+
+	pfconv = pfconv.run()
 
 	// p-columns data
 	pf := pfconv.getProcessorResult("pf")
