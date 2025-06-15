@@ -7,6 +7,7 @@ import { PlTooltip } from './PlTooltip';
 import type { SliderMode } from '../types';
 import InputRange from './InputRange.vue';
 import { useSliderBreakpoints } from '../composition/useSliderBreakpoints';
+import { getErrorMessage } from '../helpers/error.ts';
 
 const slots = useSlots();
 
@@ -20,7 +21,7 @@ const props = withDefaults(
     step?: number;
     label?: string;
     helper?: string;
-    error?: string;
+    error?: unknown;
     mode?: SliderMode;
     measure?: string;
     breakpoints?: boolean;
@@ -74,7 +75,7 @@ const error = computed(() => {
     return 'Expected model [number, number]';
   }
 
-  return props.error;
+  return getErrorMessage(props.error);
 });
 
 const position1 = computed(() => {

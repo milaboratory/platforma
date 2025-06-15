@@ -23,6 +23,7 @@ import { PlIcon16 } from '../PlIcon16';
 import { PlMaskIcon24 } from '../PlMaskIcon24';
 import { normalizeListOptions } from '../../helpers/utils';
 import SvgRequired from '../../generated/components/svg/images/SvgRequired.vue';
+import { getErrorMessage } from '../../helpers/error.ts';
 
 const emit = defineEmits<{
   /**
@@ -56,7 +57,7 @@ const props = withDefaults(
     /**
      * Error message displayed below the dropdown (optional)
      */
-    error?: string;
+    error?: unknown;
     /**
      * Placeholder text shown when no value is selected.
      */
@@ -144,7 +145,7 @@ const computedError = computed(() => {
   }
 
   if (props.error) {
-    return props.error;
+    return getErrorMessage(props.error);
   }
 
   if (props.modelValue !== undefined && selectedIndex.value === -1) {

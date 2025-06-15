@@ -1,7 +1,6 @@
 <script lang="ts" setup>
-import { PlSplash } from '@milaboratories/uikit';
 import { useObjectUrl } from '@vueuse/core';
-import { computed, reactive } from 'vue';
+import { computed } from 'vue';
 import Consensus from './Consensus.vue';
 import { colorizeSegmentedColumns } from './highlight';
 import {
@@ -9,33 +8,33 @@ import {
   chemicalPropertiesColors,
   getColumnChemicalProperties,
 } from './highlight/chemical-properties';
-import { useAlignedSequences } from './multi-sequence-alignment';
 import { getResidueCounts } from './residue-counts';
 import SeqLogo from './SeqLogo.vue';
-import type { ColorScheme, SequenceRow } from './types';
+import type { ColorScheme } from './types';
 
-const { sequenceRows, colorScheme } = defineProps<{
-  sequenceRows: SequenceRow[];
+const { sequenceRows, labelRows, colorScheme } = defineProps<{
+  sequenceRows: string[][];
+  labelRows: string[][];
   colorScheme: ColorScheme;
   consensus: boolean;
   seqLogo: boolean;
 }>();
 
-const alignedSequences = reactive(useAlignedSequences(
-  () => sequenceRows.map(({ sequence }) => sequence),
-));
+const concatenatedSequences = computed(() =>
+  sequenceRows.map((row) => row.join('')),
+);
 
 const residueCounts = computed(
-  () => getResidueCounts(alignedSequences.data),
+  () => getResidueCounts(concatenatedSequences.value),
 );
 
 const segmentedColumns = computed(() => {
   const columnConsensuses = getColumnChemicalProperties({
     residueCounts: residueCounts.value,
-    rowCount: alignedSequences.data.length,
+    rowCount: sequenceRows.length,
   });
   const segmentedColumns = alignedSequencesToSegmentedColumns({
-    alignedSequences: alignedSequences.data,
+    alignedSequences: concatenatedSequences.value,
     consensuses: columnConsensuses,
   });
   return segmentedColumns;
@@ -71,38 +70,32 @@ const highlightImage = computed(
 </script>
 
 <template>
-  <PlSplash
-    :class="['pl-scrollable', $style.root]"
-    :loading="alignedSequences.loading"
-    type="transparent"
-  >
+  <div :class="['pl-scrollable', $style.root]">
     <div :class="$style.corner" />
     <div :class="$style.header">
       <Consensus v-if="consensus" :residueCounts />
       <SeqLogo v-if="seqLogo" :residueCounts />
     </div>
-    <template v-if="alignedSequences.data.length">
-      <div :class="$style['labels-container']">
-        <template v-for="({ labels }, rowIndex) of sequenceRows">
-          <div
-            v-for="(label, labelIndex) of labels"
-            :key="labelIndex"
-            :style="{ gridRow: rowIndex + 1 }"
-          >
-            {{ label }}
-          </div>
-        </template>
-      </div>
-      <div :class="$style['sequence-data']">
+    <div :class="$style.labels">
+      <template v-for="(labelRow, rowIndex) of labelRows">
         <div
-          v-for="(sequence, sequenceIndex) of alignedSequences.data"
-          :key="sequenceIndex"
+          v-for="(label, labelIndex) of labelRow"
+          :key="labelIndex"
+          :style="{ gridRow: rowIndex + 1 }"
         >
-          {{ sequence }}
+          {{ label }}
         </div>
+      </template>
+    </div>
+    <div :class="$style.sequences">
+      <div
+        v-for="(sequence, sequenceIndex) of concatenatedSequences"
+        :key="sequenceIndex"
+      >
+        {{ sequence }}
       </div>
-    </template>
-  </PlSplash>
+    </div>
+  </div>
 </template>
 
 <style module>
@@ -133,7 +126,7 @@ const highlightImage = computed(
   z-index: 1;
 }
 
-.labels-container {
+.labels {
   grid-area: labels;
   display: grid;
   grid-auto-flow: dense;
@@ -147,7 +140,7 @@ const highlightImage = computed(
   line-height: calc(24 / 14);
 }
 
-.sequence-data {
+.sequences {
   grid-area: sequences;
   display: flex;
   flex-direction: column;
