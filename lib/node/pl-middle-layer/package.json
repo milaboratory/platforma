@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-middle-layer",
-  "version": "1.37.69",
+  "version": "1.37.70",
   "description": "Pl Middle Layer",
   "engines": {
     "node": ">=20.16.0"
