@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 4.7.4
+
+### Patch Changes
+
+- 5ac72c3: Allow to set CPU, Mem and Queue for pfconv jobs in various contexts
+
 ## 4.7.3
 
 ### Patch Changes
