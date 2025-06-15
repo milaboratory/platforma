@@ -12,14 +12,22 @@ import { UploadClient } from '../proto/github.com/milaboratory/pl/controllers/sh
 import { toHeadersMap } from './helpers';
 import type { IncomingHttpHeaders } from 'undici/types/header';
 
-export class MTimeError extends Error {}
+export class MTimeError extends Error {
+  name = 'MTimeError';
+}
 
-export class UnexpectedEOF extends Error {}
+export class UnexpectedEOF extends Error {
+  name = 'UnexpectedEOF';
+}
 
-export class NetworkError extends Error {}
+export class NetworkError extends Error {
+  name = 'NetworkError';
+}
 
 /** Happens when the file doesn't exist */
-export class NoFileForUploading extends Error {}
+export class NoFileForUploading extends Error {
+  name = 'NoFileForUploading';
+}
 
 /** Low-level client for grpc uploadapi.
  * The user should pass here a concrete BlobUpload/<storageId> resource,

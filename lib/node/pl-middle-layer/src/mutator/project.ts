@@ -34,8 +34,6 @@ import {
   InitialProjectRenderingState,
   ProjectMetaKey,
   InitialBlockMeta,
-  parseBlockFrontendStateKey,
-  blockFrontendStateKey,
   blockArgsAuthorKey,
   ProjectLastModifiedTimestamp,
   ProjectCreatedTimestamp,
@@ -65,10 +63,12 @@ import {
 import Denque from 'denque';
 import { exportContext, getPreparedExportTemplateEnvelope } from './context_export';
 import { loadTemplate } from './template/template_loading';
-import { cachedDeserialize, notEmpty } from '@milaboratories/ts-helpers';
+import { cachedDeserialize, notEmpty, canonicalJsonGzBytes, canonicalJsonBytes } from '@milaboratories/ts-helpers';
 import type { ProjectHelper } from '../model/project_helper';
-import { extractConfig, type BlockConfig } from '@platforma-sdk/model';
+import { extractConfig, UiError, type BlockConfig } from '@platforma-sdk/model';
+import { getDebugFlags } from '../debug';
 import type { BlockPackInfo } from '../model/block_pack';
+
 type FieldStatus = 'NotReady' | 'Ready' | 'Error';
 
 interface BlockFieldState {
@@ -210,9 +210,10 @@ const NoNewBlocks = (blockId: string) => {
   throw new Error(`No new block info for ${blockId}`);
 };
 
-export interface SetArgsRequest {
+export interface SetStatesRequest {
   blockId: string;
-  args: string;
+  args?: unknown;
+  uiState?: unknown;
 }
 
 type _GraphInfoFields =
@@ -224,8 +225,8 @@ type _GraphInfoFields =
   | 'actualProductionDownstream';
 
 export type ArgsAndUiState = {
-  args: string;
-  uiState: string;
+  args: unknown;
+  uiState: unknown;
 };
 
 export class ProjectMutator {
@@ -240,7 +241,6 @@ export class ProjectMutator {
   private structureChanged = false;
   private metaChanged = false;
   private renderingStateChanged = false;
-  private readonly changedBlockFrontendStates = new Set<string>();
 
   /** Set blocks will be assigned current mutator author marker on save */
   private readonly blocksWithChangedInputs = new Set<string>();
@@ -256,7 +256,6 @@ export class ProjectMutator {
     private readonly renderingState: Omit<ProjectRenderingState, 'blocksInLimbo'>,
     private readonly blocksInLimbo: Set<string>,
     private readonly blockInfos: Map<string, BlockInfo>,
-    private readonly blockFrontendStates: Map<string, string>,
     private readonly ctxExportTplHolder: AnyResourceRef,
     private readonly projectHelper: ProjectHelper,
   ) {}
@@ -290,7 +289,6 @@ export class ProjectMutator {
       || this.fieldsChanged
       || this.metaChanged
       || this.renderingStateChanged
-      || this.changedBlockFrontendStates.size > 0
     );
   }
 
@@ -497,35 +495,51 @@ export class ProjectMutator {
   }
 
   /** Optimally sets inputs for multiple blocks in one go */
-  public setArgs(requests: SetArgsRequest[]) {
-    const changed: string[] = [];
-    for (const { blockId, args } of requests) {
-      const info = this.getBlockInfo(blockId);
-      JSON.parse(args); // checking
-      const binary = Buffer.from(args);
-      if (Buffer.compare(info.fields.currentArgs!.value!, binary) === 0) continue;
-      const argsRef = this.tx.createValue(Pl.JsonObject, binary);
-      this.setBlockField(blockId, 'currentArgs', argsRef, 'Ready', binary);
-      // will be assigned our author marker
-      this.blocksWithChangedInputs.add(blockId);
-      changed.push(blockId);
+  public setStates(requests: SetStatesRequest[]) {
+    const changedArgs: string[] = [];
+    let somethingChanged = false;
+    for (const req of requests) {
+      const info = this.getBlockInfo(req.blockId);
+      let blockChanged = false;
+      for (const stateKey of ['args', 'uiState'] as const) {
+        if (!(stateKey in req)) continue;
+        const statePart = req[stateKey];
+        if (statePart === undefined || statePart === null)
+          throw new Error(
+            `Can't set ${stateKey} to null or undefined, please omit the key if you don't want to change it`,
+          );
+
+        const fieldName = stateKey === 'args' ? 'currentArgs' : 'uiState';
+
+        let data: Uint8Array;
+        let gzipped: boolean = false;
+        if (stateKey === 'args') {
+          // don't gzip args, workflow code can't uncompress gzip yet
+          data = canonicalJsonBytes(statePart);
+        } else {
+          const { data: binary, isGzipped } = canonicalJsonGzBytes(statePart);
+          data = binary;
+          gzipped = isGzipped;
+        }
+        if (Buffer.compare(info.fields[fieldName]!.value!, data) === 0) continue;
+        console.log('setting', fieldName, gzipped, data.length);
+        const statePartRef = this.tx.createValue(gzipped ? Pl.JsonGzObject : Pl.JsonObject, data);
+        this.setBlockField(req.blockId, fieldName, statePartRef, 'Ready', data);
+
+        blockChanged = true;
+        if (stateKey === 'args') changedArgs.push(req.blockId);
+      }
+      if (blockChanged) {
+        // will be assigned our author marker
+        this.blocksWithChangedInputs.add(req.blockId);
+        somethingChanged = true;
+      }
     }
 
     // resetting staging outputs for all downstream blocks
-    this.getStagingGraph().traverse('downstream', changed, ({ id }) => this.resetStaging(id));
+    this.getStagingGraph().traverse('downstream', changedArgs, ({ id }) => this.resetStaging(id));
 
-    if (changed.length > 0) this.updateLastModified();
-  }
-
-  public setUiState(blockId: string, newState: string | undefined): void {
-    if (this.blockInfos.get(blockId) === undefined) throw new Error('no such block');
-    if (this.blockFrontendStates.get(blockId) === newState) return;
-    if (newState === undefined) this.blockFrontendStates.delete(blockId);
-    else this.blockFrontendStates.set(blockId, newState);
-    this.changedBlockFrontendStates.add(blockId);
-    // will be assigned our author marker
-    this.blocksWithChangedInputs.add(blockId);
-    this.updateLastModified();
+    if (somethingChanged) this.updateLastModified();
   }
 
   public setBlockSettings(blockId: string, newValue: BlockSettings): void {
@@ -647,7 +661,6 @@ export class ProjectMutator {
       this.deleteBlockFields(blockId, ...(Object.keys(fields) as ProjectField['fieldName'][]));
       this.blockInfos.delete(blockId);
       if (this.blocksInLimbo.delete(blockId)) this.renderingStateChanged = true;
-      if (this.blockFrontendStates.delete(blockId)) this.changedBlockFrontendStates.add(blockId);
     }
 
     // creating new blocks
@@ -673,10 +686,7 @@ export class ProjectMutator {
       this.setBlockFieldObj(blockId, 'currentArgs', this.createJsonFieldValueByContent(spec.args));
 
       // uiState
-      if (spec.uiState /* this check is for compatibility with old configs */) {
-        this.blockFrontendStates.set(blockId, spec.uiState);
-        this.changedBlockFrontendStates.add(blockId);
-      }
+      this.setBlockFieldObj(blockId, 'uiState', this.createJsonFieldValueByContent(spec.uiState ?? '{}'));
 
       // checking structure
       info.check();
@@ -771,9 +781,7 @@ export class ProjectMutator {
 
     if (newArgsAndUiState !== undefined) {
       // this will also reset all downstream stagings
-      this.setArgs([{ blockId, args: newArgsAndUiState.args }]);
-      // reset UI state along with args
-      this.setUiState(blockId, newArgsAndUiState.uiState);
+      this.setStates([{ blockId, args: newArgsAndUiState.args, uiState: newArgsAndUiState.uiState }]);
     } else {
       // resetting staging outputs for all downstream blocks
       this.getStagingGraph().traverse('downstream', [blockId], ({ id }) => this.resetStaging(id));
@@ -1000,12 +1008,6 @@ export class ProjectMutator {
 
     if (this.metaChanged) this.tx.setKValue(this.rid, ProjectMetaKey, JSON.stringify(this.meta));
 
-    for (const blockId of this.changedBlockFrontendStates) {
-      const uiState = this.blockFrontendStates.get(blockId);
-      if (uiState === undefined) this.tx.deleteKValue(this.rid, blockFrontendStateKey(blockId));
-      else this.tx.setKValue(this.rid, blockFrontendStateKey(blockId), uiState);
-    }
-
     this.assignAuthorMarkers();
   }
 
@@ -1025,8 +1027,6 @@ export class ProjectMutator {
     const metaP = tx.getKValueJson<ProjectMeta>(rid, ProjectMetaKey);
     const structureP = tx.getKValueJson<ProjectStructure>(rid, ProjectStructureKey);
     const renderingStateP = tx.getKValueJson<ProjectRenderingState>(rid, BlockRenderingStateKey);
-
-    const allKVP = tx.listKeyValuesString(rid);
 
     const fullResourceState = await fullResourceStateP;
 
@@ -1079,19 +1079,21 @@ export class ProjectMutator {
       meta,
       structure,
       { stagingRefreshTimestamp, blocksInLimbo },
-      allKV,
     ] = await Promise.all([
       schemaP,
       lastModifiedP,
       metaP,
       structureP,
       renderingStateP,
-      allKVP,
     ]);
-    if (schema !== SchemaVersionCurrent)
-      throw new Error(
-        `Can't act on this project resource because it has a wrong schema version: ${schema}`,
-      );
+
+    // Checking schema version of the project
+    if (schema !== SchemaVersionCurrent) {
+      if (Number(schema) < Number(SchemaVersionCurrent))
+        throw new UiError(`Can't perform this action on this project because it has older schema. Try (re)loading the project to update it.`);
+      else
+        throw new UiError(`Can't perform this action on this project because it has newer schema. Upgrade your desktop app to the latest version.`);
+    }
 
     //
     // <- at this point we have all the responses from round-trip #1
@@ -1126,7 +1128,7 @@ export class ProjectMutator {
 
     for (const [info, response] of blockPackRequests) {
       const result = await response;
-      const bpInfo = cachedDeserialize(notEmpty(result.data)) as BlockPackInfo;
+      const bpInfo = cachedDeserialize<BlockPackInfo>(notEmpty(result.data));
       info.blockConfig = extractConfig(bpInfo.config);
       info.blockPack = bpInfo.source;
     }
@@ -1158,13 +1160,6 @@ export class ProjectMutator {
     const renderingState = { stagingRefreshTimestamp };
     const blocksInLimboSet = new Set(blocksInLimbo);
 
-    const blockFrontendStates = new Map<string, string>();
-    for (const kv of allKV) {
-      const blockId = parseBlockFrontendStateKey(kv.key);
-      if (blockId === undefined) continue;
-      blockFrontendStates.set(blockId, kv.value);
-    }
-
     const blockInfos = new Map<string, BlockInfo>();
     blockInfoStates.forEach(({ id, fields, blockConfig, blockPack }) => blockInfos.set(id,
       new BlockInfo(id, fields, notEmpty(blockConfig), notEmpty(blockPack))));
@@ -1194,7 +1189,6 @@ export class ProjectMutator {
       renderingState,
       blocksInLimboSet,
       blockInfos,
-      blockFrontendStates,
       ctxExportTplHolder,
       projectHelper,
     );
@@ -1256,11 +1250,11 @@ export async function withProjectAuthored<T>(
       const mut = await ProjectMutator.load(projectHelper, tx, rid, author);
       const result = await cb(mut);
       if (!mut.wasModified)
-        // skipping save and commit altogether if no modifications were
-        // actually made
+        // skipping save and commit altogether if no modifications were actually made
         return result;
       mut.save();
       await tx.commit();
+      if (getDebugFlags().logProjectMutationStat) console.log(JSON.stringify(tx.stat));
       return result;
     });
   } else {

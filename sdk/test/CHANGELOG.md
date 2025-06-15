@@ -1,5 +1,81 @@
 # @platforma-sdk/test
 
+## 1.34.2
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.37.69
+
+## 1.34.1
+
+### Patch Changes
+
+- Updated dependencies [c243d64]
+- Updated dependencies [babb3eb]
+- Updated dependencies [c243d64]
+- Updated dependencies [c7894c2]
+- Updated dependencies [babb3eb]
+  - @milaboratories/pl-client@2.11.0
+  - @milaboratories/computable@2.5.0
+  - @milaboratories/pl-middle-layer@1.37.68
+  - @milaboratories/ts-helpers@1.4.0
+  - @milaboratories/pl-tree@1.6.9
+
+## 1.34.0
+
+### Patch Changes
+
+- Updated dependencies [35ce863]
+  - @platforma-sdk/model@1.34.0
+  - @milaboratories/pl-middle-layer@1.37.67
+
+## 1.33.17
+
+### Patch Changes
+
+- Updated dependencies [49cf7ee]
+  - @milaboratories/computable@2.4.12
+  - @milaboratories/ts-helpers@1.3.3
+  - @milaboratories/pl-client@2.10.2
+  - @milaboratories/pl-middle-layer@1.37.66
+  - @milaboratories/pl-tree@1.6.8
+  - @platforma-sdk/model@1.33.17
+
+## 1.33.16
+
+### Patch Changes
+
+- Updated dependencies [1c10475]
+  - @platforma-sdk/model@1.33.16
+  - @milaboratories/pl-middle-layer@1.37.65
+
+## 1.33.15
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.37.64
+
+## 1.33.14
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.37.63
+- @platforma-sdk/model@1.33.14
+
+## 1.33.11
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.37.62
+
+## 1.33.10
+
+### Patch Changes
+
+- Updated dependencies [f0ea01c]
+  - @platforma-sdk/model@1.33.10
+  - @milaboratories/pl-middle-layer@1.37.61
+
 ## 1.33.8
 
 ### Patch Changes

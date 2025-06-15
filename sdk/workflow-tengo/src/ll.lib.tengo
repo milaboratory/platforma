@@ -287,11 +287,138 @@ parseUrl := func(url) {
 }
 
 /**
- * Returns current execution context, which cab be used is a simple kv-store associated with the renderer instance.
+ * Returns a persistent tengo map, which cab be used is a simple kv-store associated with the renderer instance.
+ * It is persisted between template runs, but the cons are we could store only serializable data here (tengo maps, strings, slices, numbers etc).
+ * DEPRECATED: use `ll.getPersistentCtx`
  */
 getCtx := func() {
+	if methodExists(plapi, "getPersistentCtx") {
+		return plapi.getPersistentCtx()
+	}
+
+	// DEPRECATED
 	return plapi.getCtx()
 }
+
+/**
+ * Returns a persistent tengo map context, which can be used is a simple kv-store associated with the renderer instance.
+ * It is persisted between template runs, but the cons are we could store only serializable data here (tengo maps, strings, slices, numbers etc).
+ */
+getPersistentCtx := func() {
+	if methodExists(plapi, "getPersistentCtx") {
+		return plapi.getPersistentCtx()
+	}
+
+	// DEPRECATED
+	return plapi.getCtx()
+}
+
+/**
+ * Returns
+ * It's a map for cases when
+ * we need to have a place for global variables.
+ * For example, tengo modules instantiate on each import and don't store global state.
+ * So we can use this map to store temporary data.
+ *
+ * Pros: it can store non-serializable data, like methods.
+ * Cons: it's not saved after the script execution.
+ */
+getExecutionCtx := func() {
+	assert(methodExists(plapi, "getExecutionCtx"), "ll.getExecutionCtx: method does not exists in this backend instance.")
+	return plapi.getExecutionCtx()
+}
+
+/**
+ * Returns a storage for global variables of the module.
+ * We have a problem that every import instantiates its own instance of a module,
+ * and they don't share state between each other.
+ * the execution context could help to store a state between these modules.
+ */
+moduleVars := func(moduleName) {
+	assert(is_string(moduleName), "ll.moduleVars: moduleName must be a string")
+
+	name := "module/" + moduleName
+
+	ctx := getExecutionCtx()
+	if is_undefined(ctx[name]) {
+		ctx[name] = {}
+	}
+
+	return {
+		get: func(k) {
+			return ctx[name][k]
+		},
+
+		set: func(k, v) {
+			ctx[name][k] = v
+		}
+	}
+}
+
+/**
+ * Returns sha256 hash from bytes.
+ */
+sha256Encode := func(b) {
+	assert(methodExists(plapi, "sha256Encode"), "ll.sha256Encode: method does not exists in this backend instance.")
+	return plapi.sha256Encode(b)
+}
+
+/**
+ * Returns gzip encoded bytes from bytes.
+ */
+gzipEncode := func(b) {
+	assert(methodExists(plapi, "gzipEncode"), "ll.gzipEncode: method does not exists in this backend instance.")
+	return plapi.gzipEncode(b)
+}
+
+/**
+ * Decodes gzip bytes from bytes.
+ */
+gzipDecode := func(b) {
+	assert(methodExists(plapi, "gzipDecode"), "ll.gzipDecode: method does not exists in this backend instance.")
+	return plapi.gzipDecode(b)
+}
+
+/**
+ * Encodes bytes to base32 string.
+ */
+base32Encode := func(b) {
+	assert(methodExists(plapi, "base32Encode"), "ll.base32Encode: method does not exists in this backend instance.")
+	return plapi.base32Encode(b)
+}
+
+/**
+ * Encodes bytes to base32hex string.
+ *
+ *	One property with this alphabet, which the base64 and base32
+ *	alphabets lack, is that encoded data maintains its sort order when
+ *	the encoded data is compared bit-wise.
+ */
+base32HexEncode := func(b) {
+	assert(methodExists(plapi, "base32HexEncode"), "ll.base32HexEncode: method does not exists in this backend instance.")
+	return plapi.base32HexEncode(b)
+}
+
+/**
+ * Decodes base32 string to bytes
+ */
+base32Decode := func(s) {
+	assert(methodExists(plapi, "base32Decode"), "ll.base32Decode: method does not exists in this backend instance.")
+	return plapi.base32Decode(s)
+}
+
+/**
+ * Decodes base32hex string to bytes.
+ *
+ *	One property with this encoding, which the base64 and base32
+ *	alphabets lack, is that encoded data maintains its sort order when
+ *	the encoded data is compared bit-wise.
+ */
+base32HexDecode := func(s) {
+	assert(methodExists(plapi, "base32HexDecode"), "ll.base32HexDecode: method does not exists in this backend instance.")
+	return plapi.base32HexDecode(s)
+}
+
 
 export toStrict({
 	apiVersion: apiVersion,
@@ -315,5 +442,15 @@ export toStrict({
 	pathSeparator: pathSeparator,
 	filepathCanonize: filepathCanonize,
 	parseUrl: parseUrl,
-	getCtx: getCtx
+	getCtx: getCtx,
+	getPersistentCtx: getPersistentCtx,
+	getExecutionCtx: getExecutionCtx,
+	moduleVars: moduleVars,
+	sha256Encode: sha256Encode,
+	gzipEncode: gzipEncode,
+	gzipDecode: gzipDecode,
+	base32Encode: base32Encode,
+	base32HexEncode: base32HexEncode,
+	base32Decode: base32Decode,
+	base32HexDecode: base32HexDecode
 })

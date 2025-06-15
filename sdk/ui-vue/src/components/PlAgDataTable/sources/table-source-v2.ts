@@ -106,7 +106,7 @@ export async function updatePFrameGridOptions(
 
   const isSourceIdChanged = oldSourceId !== newSourceId;
 
-  const columnVisibility = isSourceIdChanged ? undefined : gridState.value.columnVisibility;
+  const columnVisibility = isSourceIdChanged ? undefined : gridState.value.columnVisibility ?? { hiddenColIds: [] }; // We made all the columns visible by hand
 
   if (isSourceIdChanged) {
     gridState.value = {

@@ -21,7 +21,7 @@ import { ChangeSource } from '@milaboratories/computable';
 import { PlTreeEntry } from './accessors';
 import type { ValueAndError } from './value_and_error';
 import type { MiLogger } from '@milaboratories/ts-helpers';
-import { cachedDeserialize, deepFreeze, notEmpty } from '@milaboratories/ts-helpers';
+import { cachedDecode, cachedDeserialize, notEmpty } from '@milaboratories/ts-helpers';
 import type { FieldTraversalStep, GetFieldStep } from './traversal_ops';
 import type { FinalResourceDataPredicate } from '@milaboratories/pl-client';
 
@@ -62,8 +62,6 @@ class PlTreeField implements FieldData {
 }
 
 const InitialResourceVersion = 0;
-
-const decoder = new TextDecoder();
 
 export type ResourceDataWithFinalState = ResourceData & {
   finalState: boolean;
@@ -303,7 +301,7 @@ export class PlTreeResource implements ResourceDataWithFinalState {
   public getKeyValueString(watcher: Watcher, key: string): string | undefined {
     const bytes = this.getKeyValue(watcher, key);
     if (bytes === undefined) return undefined;
-    return decoder.decode(bytes);
+    return cachedDecode(bytes);
   }
 
   public getKeyValueAsJson<T = unknown>(watcher: Watcher, key: string): T | undefined {
@@ -314,7 +312,7 @@ export class PlTreeResource implements ResourceDataWithFinalState {
 
   public getDataAsString(): string | undefined {
     if (this.data === undefined) return undefined;
-    if (this.dataAsString === undefined) this.dataAsString = decoder.decode(this.data);
+    if (this.dataAsString === undefined) this.dataAsString = cachedDecode(this.data);
     return this.dataAsString;
   }
 

@@ -289,7 +289,9 @@ class DownloadByUrlTask {
 }
 
 /** Throws when a downloading aborts. */
-class URLAborted extends Error {}
+class URLAborted extends Error {
+  name = 'URLAborted';
+}
 
 /** Gets a directory size by calculating sizes recursively. */
 async function dirSize(dir: string): Promise<number> {

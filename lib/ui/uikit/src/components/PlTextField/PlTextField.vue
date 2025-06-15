@@ -18,6 +18,7 @@ import { PlIcon16 } from '../PlIcon16';
 import { PlMaskIcon24 } from '../PlMaskIcon24';
 import type { Equal } from '@milaboratories/helpers';
 import SvgRequired from '../../generated/components/svg/images/SvgRequired.vue';
+import { getErrorMessage } from '../../helpers/error.ts';
 
 const slots = useSlots();
 
@@ -52,7 +53,7 @@ const props = defineProps<{
   /**
    * An error message to display below the input field.
    */
-  error?: string;
+  error?: unknown;
   /**
    * A helper text to display below the input field when there are no errors.
    */
@@ -149,8 +150,9 @@ const nonEmpty = computed(() => !isEmpty.value);
 
 const displayErrors = computed(() => {
   const errors: string[] = [];
-  if (props.error) {
-    errors.push(props.error);
+  const propsError = getErrorMessage(props.error);
+  if (propsError) {
+    errors.push(propsError);
   }
   if (data.cached) {
     errors.push(data.cached.error);

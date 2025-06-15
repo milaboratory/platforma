@@ -1,5 +1,17 @@
 # @platforma-sdk/workflow-tengo
 
+## 4.7.3
+
+### Patch Changes
+
+- 2c52dc7: Job scheduling options exposed for pt builde: mem, cpu and queue.
+
+## 4.7.2
+
+### Patch Changes
+
+- 2dad052: tengo API enchancements: more notification filters, hashing functions, execution context, more methods in fields and resources API
+
 ## 4.7.1
 
 ### Patch Changes

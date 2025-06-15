@@ -21,7 +21,9 @@ import type { PlTransaction } from '../core/transaction';
 import * as tp from 'node:timers/promises';
 
 /** This error tells state assertion mechanism that required state is not yet ready */
-export class ContinuePolling extends Error {}
+export class ContinuePolling extends Error {
+  name = 'ContinuePolling';
+}
 
 export type PollFieldTraverseOps = {
   expectedType?: FieldType;

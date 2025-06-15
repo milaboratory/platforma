@@ -25,6 +25,7 @@ import { DropdownOverlay } from '../../utils/DropdownOverlay';
 import { refDebounced } from '@vueuse/core';
 import { useWatchFetch } from '../../composition/useWatchFetch.ts';
 import SvgRequired from '../../generated/components/svg/images/SvgRequired.vue';
+import { getErrorMessage } from '../../helpers/error.ts';
 
 /**
  * The current selected value.
@@ -56,7 +57,7 @@ const props = withDefaults(
     /**
      * Error message displayed below the dropdown (optional)
      */
-    error?: string;
+    error?: unknown;
     /**
      * Placeholder text shown when no value is selected.
      */
@@ -156,7 +157,7 @@ const computedError = computed(() => {
   }
 
   if (props.error) {
-    return props.error;
+    return getErrorMessage(props.error);
   }
 
   if (isLoadingError.value) {

@@ -1,5 +1,27 @@
 # @milaboratories/pl-local
 
+## 2.3.2
+
+### Patch Changes
+
+- Updated dependencies [c7894c2]
+  - @milaboratories/ts-helpers@1.4.0
+  - @milaboratories/pl-config@1.4.14
+
+## 2.3.1
+
+### Patch Changes
+
+- Updated dependencies [49cf7ee]
+  - @milaboratories/ts-helpers@1.3.3
+  - @milaboratories/pl-config@1.4.13
+
+## 2.3.0
+
+### Minor Changes
+
+- f6e9a33: Release pl=1.33.8
+
 ## 2.2.5
 
 ### Patch Changes

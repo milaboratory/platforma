@@ -29,15 +29,16 @@ import { TxAPI_Open_Request_WritableTx } from '../proto/github.com/milaboratory/
 import type { NonUndefined } from 'utility-types';
 import { toBytes } from '../util/util';
 import { fieldTypeToProto, protoToField, protoToResource } from './type_conversion';
-import { deepFreeze, notEmpty } from '@milaboratories/ts-helpers';
+import { canonicalJsonBytes, canonicalJsonGzBytes, deepFreeze, notEmpty } from '@milaboratories/ts-helpers';
 import { isNotFoundError } from './errors';
 import type { FinalResourceDataPredicate } from './final';
 import type { LRUCache } from 'lru-cache';
 import type { ResourceDataCacheRecord } from './cache';
 import type { TxStat } from './stat';
-import { initialTxStat } from './stat';
+import { initialTxStatWithoutTime } from './stat';
 import type { ErrorResourceData } from './error_resource';
 import { ErrorResourceType } from './error_resource';
+import { JsonGzObject, JsonObject } from '../helpers/pl';
 
 /** Reference to resource, used only within transaction */
 export interface ResourceRef {
@@ -126,7 +127,9 @@ export function field(resourceId: AnyResourceRef, fieldName: string): AnyFieldRe
 }
 
 /** If transaction commit failed due to write conflicts */
-export class TxCommitConflict extends Error {}
+export class TxCommitConflict extends Error {
+  name = 'TxCommitConflict';
+}
 
 async function notFoundToUndefined<T>(cb: () => Promise<T>): Promise<T | undefined> {
   try {
@@ -166,7 +169,14 @@ export class PlTransaction {
 
   private globalTxIdWasAwaited: boolean = false;
 
-  public readonly stat: TxStat = initialTxStat();
+  private readonly _startTime = Date.now();
+  private readonly _stat = initialTxStatWithoutTime();
+  public get stat(): TxStat {
+    return {
+      ...this._stat,
+      timeMs: Date.now() - this._startTime,
+    };
+  }
 
   constructor(
     private readonly ll: LLPlTransaction,
@@ -198,7 +208,7 @@ export class PlTransaction {
     });
 
     // Adding stats
-    this.stat.txCount++;
+    this._stat.txCount++;
   }
 
   private async drainAndAwaitPendingOps(): Promise<void> {
@@ -378,7 +388,7 @@ export class PlTransaction {
   }
 
   public createRoot(type: ResourceType): ResourceRef {
-    this.stat.rootsCreated++;
+    this._stat.rootsCreated++;
     return this.createResource(
       true,
       (localId) => ({ oneofKind: 'resourceCreateRoot', resourceCreateRoot: { type, id: localId } }),
@@ -387,8 +397,8 @@ export class PlTransaction {
   }
 
   public createStruct(type: ResourceType, data?: Uint8Array | string): ResourceRef {
-    this.stat.structsCreated++;
-    this.stat.structsCreatedDataBytes += data?.length ?? 0;
+    this._stat.structsCreated++;
+    this._stat.structsCreatedDataBytes += data?.length ?? 0;
     return this.createResource(
       false,
       (localId) => ({
@@ -404,8 +414,8 @@ export class PlTransaction {
   }
 
   public createEphemeral(type: ResourceType, data?: Uint8Array | string): ResourceRef {
-    this.stat.ephemeralsCreated++;
-    this.stat.ephemeralsCreatedDataBytes += data?.length ?? 0;
+    this._stat.ephemeralsCreated++;
+    this._stat.ephemeralsCreatedDataBytes += data?.length ?? 0;
     return this.createResource(
       false,
       (localId) => ({
@@ -425,8 +435,8 @@ export class PlTransaction {
     data: Uint8Array | string,
     errorIfExists: boolean = false,
   ): ResourceRef {
-    this.stat.valuesCreated++;
-    this.stat.valuesCreatedDataBytes += data?.length ?? 0;
+    this._stat.valuesCreated++;
+    this._stat.valuesCreatedDataBytes += data?.length ?? 0;
     return this.createResource(
       false,
       (localId) => ({
@@ -440,6 +450,16 @@ export class PlTransaction {
       }),
       (r) => r.resourceCreateValue.resourceId,
     );
+  }
+
+  public createJsonValue(data: unknown): ResourceRef {
+    const jsonData = canonicalJsonBytes(data);
+    return this.createValue(JsonObject, jsonData, false);
+  }
+
+  public createJsonGzValue(data: unknown, minSizeToGzip: number | undefined = 16_384): ResourceRef {
+    const { data: jsonData, isGzipped } = canonicalJsonGzBytes(data, minSizeToGzip);
+    return this.createValue(isGzipped ? JsonGzObject : JsonObject, jsonData, false);
   }
 
   public createError(message: string): ResourceRef {
@@ -519,13 +539,13 @@ export class PlTransaction {
       const fromCache = this.sharedResourceDataCache.get(rId);
       if (fromCache && fromCache.cacheTxOpenTimestamp < this.txOpenTimestamp) {
         if (!loadFields) {
-          this.stat.rGetDataCacheHits++;
-          this.stat.rGetDataCacheBytes += fromCache.basicData.data?.length ?? 0;
+          this._stat.rGetDataCacheHits++;
+          this._stat.rGetDataCacheBytes += fromCache.basicData.data?.length ?? 0;
           return fromCache.basicData;
         } else if (fromCache.data) {
-          this.stat.rGetDataCacheHits++;
-          this.stat.rGetDataCacheBytes += fromCache.basicData.data?.length ?? 0;
-          this.stat.rGetDataCacheFields += fromCache.data.fields.length;
+          this._stat.rGetDataCacheHits++;
+          this._stat.rGetDataCacheBytes += fromCache.basicData.data?.length ?? 0;
+          this._stat.rGetDataCacheFields += fromCache.data.fields.length;
           return fromCache.data;
         }
       }
@@ -539,9 +559,9 @@ export class PlTransaction {
       (r) => protoToResource(notEmpty(r.resourceGet.resource)),
     );
 
-    this.stat.rGetDataNetRequests++;
-    this.stat.rGetDataNetBytes += result.data?.length ?? 0;
-    this.stat.rGetDataNetFields += result.fields.length;
+    this._stat.rGetDataNetRequests++;
+    this._stat.rGetDataNetBytes += result.data?.length ?? 0;
+    this._stat.rGetDataNetFields += result.fields.length;
 
     // we will cache only final resource data states
     // caching result even if we were ignore the cache
@@ -612,7 +632,7 @@ export class PlTransaction {
    * have their values, if inputs list is not locked.
    */
   public lockInputs(rId: AnyResourceRef): void {
-    this.stat.inputsLocked++;
+    this._stat.inputsLocked++;
     this.sendVoidAsync({
       oneofKind: 'resourceLockInputs',
       resourceLockInputs: { resourceId: toResourceId(rId) },
@@ -624,7 +644,7 @@ export class PlTransaction {
    * This is required for resource to pass deduplication.
    */
   public lockOutputs(rId: AnyResourceRef): void {
-    this.stat.outputsLocked++;
+    this._stat.outputsLocked++;
     this.sendVoidAsync({
       oneofKind: 'resourceLockOutputs',
       resourceLockOutputs: { resourceId: toResourceId(rId) },
@@ -648,7 +668,7 @@ export class PlTransaction {
   //
 
   public createField(fId: AnyFieldRef, fieldType: FieldType, value?: AnyRef): void {
-    this.stat.fieldsCreated++;
+    this._stat.fieldsCreated++;
     this.sendVoidAsync({
       oneofKind: 'fieldCreate',
       fieldCreate: { type: fieldTypeToProto(fieldType), id: toFieldId(fId) },
@@ -667,7 +687,7 @@ export class PlTransaction {
   }
 
   public setField(fId: AnyFieldRef, ref: AnyRef): void {
-    this.stat.fieldsSet++;
+    this._stat.fieldsSet++;
     if (isResource(ref))
       this.sendVoidAsync({
         oneofKind: 'fieldSet',
@@ -690,7 +710,7 @@ export class PlTransaction {
   }
 
   public setFieldError(fId: AnyFieldRef, ref: AnyResourceRef): void {
-    this.stat.fieldsSet++;
+    this._stat.fieldsSet++;
     this.sendVoidAsync({
       oneofKind: 'fieldSetError',
       fieldSetError: { field: toFieldId(fId), errResourceId: toResourceId(ref) },
@@ -698,7 +718,7 @@ export class PlTransaction {
   }
 
   public async getField(fId: AnyFieldRef): Promise<FieldData> {
-    this.stat.fieldsGet++;
+    this._stat.fieldsGet++;
     return await this.sendSingleAndParse(
       { oneofKind: 'fieldGet', fieldGet: { field: toFieldId(fId) } },
       (r) => protoToField(notEmpty(r.fieldGet.field)),
@@ -730,9 +750,9 @@ export class PlTransaction {
       (r) => r.map((e) => e.resourceKeyValueList.record!),
     );
 
-    this.stat.kvListRequests++;
-    this.stat.kvListEntries += result.length;
-    for (const kv of result) this.stat.kvListBytes += kv.key.length + kv.value.length;
+    this._stat.kvListRequests++;
+    this._stat.kvListEntries += result.length;
+    for (const kv of result) this._stat.kvListBytes += kv.key.length + kv.value.length;
 
     return result;
   }
@@ -755,8 +775,8 @@ export class PlTransaction {
   }
 
   public setKValue(rId: AnyResourceRef, key: string, value: Uint8Array | string): void {
-    this.stat.kvSetRequests++;
-    this.stat.kvSetBytes++;
+    this._stat.kvSetRequests++;
+    this._stat.kvSetBytes++;
     this.sendVoidAsync({
       oneofKind: 'resourceKeyValueSet',
       resourceKeyValueSet: {
@@ -786,8 +806,8 @@ export class PlTransaction {
       (r) => r.resourceKeyValueGet.value,
     );
 
-    this.stat.kvGetRequests++;
-    this.stat.kvGetBytes += result.length;
+    this._stat.kvGetRequests++;
+    this._stat.kvGetBytes += result.length;
 
     return result;
   }
@@ -813,8 +833,8 @@ export class PlTransaction {
         r.resourceKeyValueGetIfExists.exists ? r.resourceKeyValueGetIfExists.value : undefined,
     );
 
-    this.stat.kvGetRequests++;
-    this.stat.kvGetBytes += result?.length ?? 0;
+    this._stat.kvGetRequests++;
+    this._stat.kvGetBytes += result?.length ?? 0;
 
     return result;
   }
