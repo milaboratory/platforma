@@ -41,7 +41,7 @@ import {
       <PlBtnGhost v-for="(name, i) of maskIcons16" :key="i">
         {{ name }}
         <template #append>
-          <PlMaskIcon16 style="background-color: red" :name="name" />
+          <PlMaskIcon16 :name="name" />
         </template>
       </PlBtnGhost>
     </PlRow>
