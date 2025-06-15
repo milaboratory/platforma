@@ -1,12 +1,12 @@
 <script lang="ts" setup>
 import { computed, onMounted, reactive, ref, unref, useSlots } from 'vue';
-import { useMouseCapture } from '@/composition/useMouseCapture';
-import { tapIf } from '@/helpers/functions';
-import { clamp } from '@/helpers/math';
-import { PlTooltip } from '@/components/PlTooltip';
-import type { SliderMode } from '@/types';
-import { useSliderBreakpoints } from '@/composition/useSliderBreakpoints';
-import { getErrorMessage } from '@/helpers/error.ts';
+import { useMouseCapture } from '../composition/useMouseCapture';
+import { tapIf } from '../helpers/functions';
+import { clamp } from '../helpers/math';
+import { PlTooltip } from './PlTooltip';
+import type { SliderMode } from '../types';
+import { useSliderBreakpoints } from '../composition/useSliderBreakpoints';
+import { getErrorMessage } from '../helpers/error.ts';
 
 type ModelType = [number, number, number];
 const slots = useSlots();

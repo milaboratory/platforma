@@ -1,8 +1,8 @@
 <script lang="ts" setup>
-import Layout from '@/Layout.vue';
-import Split from '@/Split.vue';
+import Layout from '../Layout.vue';
+import Split from '../Split.vue';
 import { ref } from 'vue';
-import { Slider, SliderRange, SliderRangeTriple, PlBtnSecondary } from '@milaboratories/uikit';
+import { Slider, SliderRange, SliderRangeTriple, PlBtnSecondary } from 'milaboratories/uikit';
 
 const value = ref(2);
 const value2 = ref<[number, number]>([2, 15]);

@@ -1,8 +1,8 @@
 <script lang="ts" setup>
-import Layout from '@/Layout.vue';
-import Split from '@/Split.vue';
-import { PlChip } from '@milaboratories/uikit';
-import ChipsExample from '@/figma/ChipsExample.vue';
+import Layout from '../Layout.vue';
+import Split from '../Split.vue';
+import { PlChip } from 'milaboratories/uikit';
+import ChipsExample from '../figma/ChipsExample.vue';
 import { faker } from '@faker-js/faker';
 
 const longText = faker.lorem.sentence({ min: 10, max: 20 });

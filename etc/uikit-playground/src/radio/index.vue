@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import Layout from '@/Layout.vue';
-import Split from '@/Split.vue';
+import Layout from '../Layout.vue';
+import Split from '../Split.vue';
 import { faker } from '@faker-js/faker';
-import { PlRadio, PlRadioGroup, randomString } from '@milaboratories/uikit';
+import { PlRadio, PlRadioGroup, randomString } from 'milaboratories/uikit';
 import { ref } from 'vue';
 
 function generateOption() {

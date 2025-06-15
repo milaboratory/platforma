@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { PlDropdownLine } from '@milaboratories/uikit';
-import Layout from '@/Layout.vue';
-import Split from '@/Split.vue';
-import { generate } from '@/imports';
+import { PlDropdownLine } from 'milaboratories/uikit';
+import Layout from '../Layout.vue';
+import Split from '../Split.vue';
+import { generate } from '../imports';
 import { ref } from 'vue';
-import PropsDisplay from '@/PropsDisplay.vue';
+import PropsDisplay from '../PropsDisplay.vue';
 import { listToOptions } from '@milaboratories/helpers';
 
 const lorem = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ';
@@ -72,7 +72,7 @@ const model1 = ref({ i: 35 });
 const model2 = ref({ i: 2 });
 
 const propsDescription = {
-  modelValue: {
+  'modelValue': {
     type: 'unknown',
     description: 'Model for component v-model',
   },
@@ -84,7 +84,7 @@ const propsDescription = {
     type: 'string;',
     description: 'Prefix in UI',
   },
-  options: {
+  'options': {
     type: 'Option<unknown>[];',
     description: 'Items for component',
   },
@@ -115,7 +115,7 @@ const propsDescription = {
         <PlDropdownLine v-model="model3" :options="listToOptions([0, 1, 2, 3])" prefix="Option:" />
       </div>
       <div style="display: flex">
-        <PlDropdownLine v-model="model0" :options="items0" prefix="Option(s):" :input-max-width="'400px'" clearable> </PlDropdownLine>
+        <PlDropdownLine v-model="model0" :options="items0" prefix="Option(s):" :input-max-width="'400px'" clearable/>
         <PlDropdownLine v-model="model0" :options="itemsLong" prefix="Option:" />
         <PlDropdownLine v-model="model1" :options="items1" prefix="List:" :disabled="true" />
         <PlDropdownLine v-model="model1" :options="items1" prefix="List:" clearable />
