@@ -6,6 +6,7 @@ exec := import(":exec")
 json := import("json")
 text := import("text")
 slices := import(":slices")
+execConstants := import(":exec.constants")
 
 /**
  * This library provides a high-level API, inspired by Polars DataFrames, for building and executing
@@ -66,6 +67,10 @@ workflow := func() {
 
 	anonymousFilesCounter := 0
 	anonymousDFCounter := 0
+
+	cpu := undefined
+	mem := undefined
+	queue := execConstants.MEDIUM_QUEUE
 
 	self := undefined
 
@@ -264,6 +269,64 @@ workflow := func() {
 		},
 
 		/**
+		 * Execute pt in the 'heavy' queue.
+		 */
+		inHeavyQueue: func() {
+			queue = execConstants.HEAVY_QUEUE
+			return self
+		},
+
+		/**
+		 * Execute pt in the 'medium' queue.
+		 */
+		inMediumQueue: func() {
+			queue = execConstants.MEDIUM_QUEUE
+			return self
+		},
+
+		/**
+		 * Execute pt in the 'light' queue.
+		 */
+		inLightQueue: func() {
+			queue = execConstants.LIGHT_QUEUE
+			return self
+		},
+
+		/**
+		 * Execute pt in the 'ui-tasks' queue.
+		 */
+		inUiQueue: func() {
+			queue = execConstants.UI_TASKS_QUEUE
+			return self
+		},
+
+		/**
+		 * Sets the number of CPUs to request from the underlying executor (i.e. Google/AWS Batch, PBS, Slurm, etc.).
+		 *
+		 * @param amount: number - number of cores requested for command.
+		 */
+		cpu: func(amount) {
+			cpu = amount
+			return self
+		},
+
+		/**
+		 * Sets the amount of RAM to request from the underlying executor (i.e. Google/AWS Batch, PBS, Slurm, etc.).
+		 *
+		 * @param amount: number | string - amount of RAM in bytes or string with size suffix (case-insensitive):
+		 *                                     K,  KB,  M,  MB,  G,  GB for base-10 sizes (powers of 1000)
+		 *                                    Ki, KiB, Mi, MiB, Gi, GiB for base-2 sizes (powers of 1024)
+		 *                                  when operating with bytes, you may use 'units' package for convenience:
+		 *                                    120 * units.GiB
+		 *
+		 * @return builder
+		 */
+		mem: func(amount) {
+			mem = amount
+			return self
+		},
+
+		/**
 		 * Executes the defined PTabler workflow.
 		 * This compiles all the added steps and input/output file configurations,
 		 * then runs the PTabler command.
@@ -272,7 +335,7 @@ workflow := func() {
 		run: func() {
 			ptablerSw := assets.importSoftware("@platforma-open/milaboratories.software-ptabler:main")
 			ptablerCmdBuilder := exec.builder().
-				inMediumQueue().
+				setQueue(queue).
 				printErrStreamToStdout().
 				dontSaveStdoutOrStderr().
 				software(ptablerSw).
@@ -280,6 +343,14 @@ workflow := func() {
 				writeFile("workflow_sc.json", json.encode({
 					workflow: steps
 				}));
+
+			if !is_undefined(cpu) {
+				ptablerCmdBuilder.cpu(cpu)
+			}
+
+			if !is_undefined(mem) {
+				ptablerCmdBuilder.mem(mem)
+			}
 
 			for inFile in inFiles {
 				if !is_undefined(inFile.file) {

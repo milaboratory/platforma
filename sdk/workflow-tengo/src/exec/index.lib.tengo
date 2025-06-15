@@ -217,6 +217,16 @@ builder := func() {
 		},
 
 		/**
+		 * Sets the queue to execute the command in.
+		 *
+		 * @param queue: string - the name of the queue.
+		 */
+		setQueue: func(newQueue) {
+			queue = newQueue
+			return self
+		},
+
+		/**
 		 * Execute command in the 'heavy' queue.
 		 */
 		inHeavyQueue: func() {
@@ -249,7 +259,7 @@ builder := func() {
 		},
 
 		/**
-		 * Preserve CPUs in environments that plan CPU resources (like PBS or Slurm).
+		 * Sets the number of CPUs to request from the underlying executor (i.e. Google/AWS Batch, PBS, Slurm, etc.).
 		 *
 		 * @param amount: number - number of cores requested for command.
 		 */
@@ -262,7 +272,7 @@ builder := func() {
 		},
 
 		/**
-		 * Amount of RAM to request.
+		 * Sets the amount of RAM to request from the underlying executor (i.e. Google/AWS Batch, PBS, Slurm, etc.).
 		 *
 		 * @param amount: number | string - amount of RAM in bytes or string with size suffix (case-insensitive):
 		 *                                     K,  KB,  M,  MB,  G,  GB for base-10 sizes (x1000)
@@ -272,11 +282,21 @@ builder := func() {
 		 *
 		 * @return builder
 		 */
-		ram: func(amount) {
-			validation.assertType(amount, ["or", "number", "string"], "exec.builder.ram: RAM amount should be a number or string")
-			ll.assert(is_string(amount) || amount > 0, "exec.builder.ram: amount in bytes should be greater than 0")
+		mem: func(amount) {
+			validation.assertType(amount, ["or", "number", "string"], "exec.builder.mem: RAM amount should be a number or string")
+			ll.assert(is_string(amount) || amount > 0, "exec.builder.mem: amount in bytes should be greater than 0")
 			ramRequest = amount
 
+			return self
+		},
+
+		/**
+		 * Deprecated: use mem() instead.
+		 *
+		 * @return builder
+		 */
+		ram: func(amount) {
+			self.mem(amount)
 			return self
 		},
 
