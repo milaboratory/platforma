@@ -19,6 +19,7 @@ import type {
 import {
   downgradeCfgOrLambda,
 } from './bconfig';
+import type { BlockCodeKnownFeatureFlags } from './bconfig/block_flags';
 
 type SectionsExpectedType = readonly BlockSection[];
 
@@ -66,6 +67,7 @@ export class BlockModel<
     private readonly _sections: TypedConfigOrConfigLambda,
     private readonly _title: ConfigRenderLambda | undefined,
     private readonly _enrichmentTargets: ConfigRenderLambda | undefined,
+    private readonly _featureFlags: BlockCodeKnownFeatureFlags,
   ) {}
 
   /** Initiates configuration builder */
@@ -92,6 +94,9 @@ export class BlockModel<
       getImmediate([]),
       undefined,
       undefined,
+      {
+        supportsLazyState: true,
+      },
     );
   }
 
@@ -149,6 +154,7 @@ export class BlockModel<
         this._sections,
         this._title,
         this._enrichmentTargets,
+        this._featureFlags,
       );
     } else
       return new BlockModel(
@@ -163,6 +169,7 @@ export class BlockModel<
         this._sections,
         this._title,
         this._enrichmentTargets,
+        this._featureFlags,
       );
   }
 
@@ -205,6 +212,7 @@ export class BlockModel<
         this._sections,
         this._title,
         this._enrichmentTargets,
+        this._featureFlags,
       );
     } else
       return new BlockModel<Args, OutputsCfg, UiState>(
@@ -216,6 +224,7 @@ export class BlockModel<
         this._sections,
         this._title,
         this._enrichmentTargets,
+        this._featureFlags,
       );
   }
 
@@ -253,6 +262,7 @@ export class BlockModel<
         { __renderLambda: true, handle: 'sections' } as ConfigRenderLambda,
         this._title,
         this._enrichmentTargets,
+        this._featureFlags,
       );
     } else
       return new BlockModel<Args, OutputsCfg, UiState>(
@@ -264,6 +274,7 @@ export class BlockModel<
         arrOrCfgOrRf as TypedConfig,
         this._title,
         this._enrichmentTargets,
+        this._featureFlags,
       );
   }
 
@@ -281,6 +292,7 @@ export class BlockModel<
       this._sections,
       { __renderLambda: true, handle: 'title' } as ConfigRenderLambda,
       this._enrichmentTargets,
+      this._featureFlags,
     );
   }
 
@@ -298,6 +310,7 @@ export class BlockModel<
       this._sections,
       this._title,
       this._enrichmentTargets,
+      this._featureFlags,
     );
   }
 
@@ -312,6 +325,7 @@ export class BlockModel<
       this._sections,
       this._title,
       this._enrichmentTargets,
+      this._featureFlags,
     );
   }
 
@@ -326,6 +340,7 @@ export class BlockModel<
       this._sections,
       this._title,
       this._enrichmentTargets,
+      this._featureFlags,
     );
   }
 
@@ -346,6 +361,7 @@ export class BlockModel<
       this._sections,
       this._title,
       { __renderLambda: true, handle: 'enrichmentTargets' } as ConfigRenderLambda,
+      this._featureFlags,
     );
   }
 
@@ -371,6 +387,7 @@ export class BlockModel<
         title: this._title,
         outputs: this._outputs,
         enrichmentTargets: this._enrichmentTargets,
+        featureFlags: this._featureFlags,
       },
 
       // fields below are added to allow previous desktop versions read generated configs

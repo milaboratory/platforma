@@ -1,4 +1,5 @@
 import type { TypedConfig } from '../config';
+import type { BlockCodeFeatureFlags } from './block_flags';
 import type { ConfigRenderLambda } from './lambdas';
 
 export type Code = {
@@ -6,9 +7,10 @@ export type Code = {
   content: string;
 };
 
-export type CodeAndSdkVersion = {
-  code: Code;
-  sdkVersion: string;
+export type BlockCodeWithInfo = {
+  readonly code: Code;
+  readonly sdkVersion: string;
+  readonly featureFlags: BlockCodeFeatureFlags | undefined;
 };
 
 export function isConfigLambda(
