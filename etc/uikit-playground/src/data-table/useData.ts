@@ -1,4 +1,4 @@
-import type { DataTable } from '@milaboratories/uikit';
+import type { DataTable } from 'milaboratories/uikit';
 import { randomString, uniqueId } from '@milaboratories/helpers';
 import { arrayFrom, randomInt } from '@milaboratories/helpers';
 import { reactive, computed } from 'vue';

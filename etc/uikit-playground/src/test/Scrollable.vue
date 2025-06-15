@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { generate } from '../imports';
 import { ref } from 'vue';
-import { scrollIntoView } from '@milaboratories/uikit';
+import { scrollIntoView } from 'milaboratories/uikit';
 
 const scrollable = ref<HTMLElement>();
 
