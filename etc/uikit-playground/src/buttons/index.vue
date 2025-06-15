@@ -9,8 +9,8 @@ import {
   PlBtnLink,
   PlBtnGhost,
   type Size,
-  maskIcons24
-} from '@milaboratories/uikit';
+  maskIcons24,
+} from 'milaboratories/uikit';
 import Split from '../Split.vue';
 
 const props = reactive({
@@ -18,7 +18,7 @@ const props = reactive({
   disabled: false,
   reverse: false,
   loading: false,
-  justifyCenter: false
+  justifyCenter: false,
 });
 
 const sizeOptions = ['small', 'medium', 'large'].map((it) => ({ text: it, value: it }));
@@ -83,9 +83,9 @@ function onClick() {
         </fieldset>
         <fieldset>
           <legend>PlBtnGhost with all the icons</legend>
-          <PlBtnGhost v-for="icon in maskIcons24" :size="props.size" :key="icon" :icon="icon"
-            >(24x24): {{ icon }}</PlBtnGhost
-          >
+          <PlBtnGhost v-for="icon in maskIcons24" :key="icon" :size="props.size" :icon="icon">
+            (24x24): {{ icon }}
+          </PlBtnGhost>
         </fieldset>
       </div>
     </Split>
