@@ -131,7 +131,10 @@ __primitiveValueTypes := { "Int": true, "Long": true, "Float": true, "Double": t
  *                    | {
  *                        type: "Xsv",          // CSV/TSV formatted text file for xsv conversion
  *						  xsvType: "tsv"|"csv", // Expected file format
- *                        settings: object      // Xsv conversion specification
+ *                        settings: object,      // Xsv conversion specification
+ *                        cpu: number,           // Override CPU for this output
+ *                        mem: number | string,  // Override MEM for this output
+ *                        queue: string          // Override queue for this output
  *                      }
  *
  * @param opts 			Optional additional settings
@@ -174,6 +177,9 @@ __primitiveValueTypes := { "Int": true, "Long": true, "Float": true, "Double": t
  *                      isEphemeral?: boolean   // Whether to render mapping template in ephemeral mode
  *                                              // Defaults to false if omitted, template will be rendered
  *                                              // as pure resource
+ *                      cpu: number,            // Global CPU setting for XSV imports
+ *                      mem: number | string,   // Global MEM setting for XSV imports
+ *                      queue: string           // Global queue setting for XSV imports
  *                    }
  *
  * === Return ===
@@ -234,6 +240,16 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 	processTemplateParams := {
 		eph: opts.isEphemeral,
 		passKey: opts.passKey
+	}
+
+	if !is_undefined(opts.cpu) {
+		processTemplateParams.cpu = opts.cpu
+	}
+	if !is_undefined(opts.mem) {
+		processTemplateParams.mem = opts.mem
+	}
+	if !is_undefined(opts.queue) {
+		processTemplateParams.queue = opts.queue
 	}
 
 	// Infer if data is likely partitioned based on valueType
