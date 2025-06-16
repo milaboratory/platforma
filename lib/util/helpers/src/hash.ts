@@ -1,4 +1,5 @@
 import { createGetIncrementalId } from './uniqId';
+import { isPrimitive } from './utils';
 
 export function hashString(str: string, seed = 0): number {
   let h1 = 0xdeadbeef ^ seed,
@@ -15,22 +16,16 @@ export function hashString(str: string, seed = 0): number {
   return 4294967296 * (2097151 & h2) + (h1 >>> 0);
 }
 
-
 export function shallowHash(...values: unknown[]): number {
   let str = '';
 
   for (let i = 0; i < values.length; i += 1) {
     const value = values[i];
 
-    if (value === undefined) {
-      str += '/undefined';
-    } else if (value === null) {
-      str += '/null';
-    } else if (typeof value === 'object' || typeof value === 'function') {
-      str += '/' + getIdForPointer(value as object);
-    } else {
-      // don't forget about value == empty string
+    if (isPrimitive(value)) {
       str += '/' + String(value);
+    } else {
+      str += '/' + getIdForPointer(value as object);
     }
   }
 
@@ -40,7 +35,7 @@ export function shallowHash(...values: unknown[]): number {
 const mapPointerToMap = new WeakMap<object, string>();
 const getIncrementalId = createGetIncrementalId();
 
-function getIdForPointer(obj: object | ((...args: unknown[]) => unknown)): string {
+function getIdForPointer(obj: object): string {
   if (!mapPointerToMap.has(obj)) {
     mapPointerToMap.set(obj, getIncrementalId().toString());
   }

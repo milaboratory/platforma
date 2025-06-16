@@ -1,7 +1,16 @@
-import type { AwaitedStruct, Option, Result, Unionize } from './types';
+import type { AwaitedStruct, Option, Primitive, Result, Unionize } from './types';
 
-export function isNil<T>(v: T): v is Extract<T, null | undefined> {
-  return v == null;
+export function isNil<T>(v: T): v is NonNullable<T> {
+  return v === null || v === undefined;
+}
+
+export function isPrimitive<T>(v: T): v is Extract<T, Primitive> {
+  return isNil(v)
+    || typeof v === 'string'
+    || typeof v === 'number'
+    || typeof v === 'boolean'
+    || typeof v === 'bigint'
+  ;
 }
 
 export function notEmpty<T>(v: T | null | undefined, message?: string): T {

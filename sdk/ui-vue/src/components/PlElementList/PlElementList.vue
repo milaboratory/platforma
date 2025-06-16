@@ -1,8 +1,9 @@
 <script generic="T extends unknown = unknown, K extends number | string = number | string" lang="ts" setup>
-import { computed, ShallowRef, shallowRef, watch } from 'vue';
+import type { ShallowRef } from 'vue';
+import { computed, shallowRef, watch } from 'vue';
 import { isNil, shallowHash } from '@milaboratories/helpers';
 import { useSortable } from '@vueuse/integrations/useSortable';
-import { SortableEvent } from 'sortablejs';
+import type { SortableEvent } from 'sortablejs';
 import { moveElements, optionalUpdateRef } from './utils.ts';
 import PlElementListItem from './PlElementListItem.vue';
 
@@ -17,27 +18,32 @@ const toggableSetRef = defineModel<Set<T>>('toggableItems');
 const toggledSetRef = defineModel<Set<T>>('toggledItems');
 
 const props = withDefaults(
-    defineProps<{
-      getItemKey: (item: T) => K;
-      onSort?: (oldIndex: number, newIndex: number) => void | boolean;
+  defineProps<{
+    getItemKey: (item: T) => K;
+    onSort?: (oldIndex: number, newIndex: number) => void | boolean;
 
-      enableDragging?: boolean;
-      onDragEnd?: (oldIndex: number, newIndex: number) => void | boolean;
+    enableDragging?: boolean;
+    onDragEnd?: (oldIndex: number, newIndex: number) => void | boolean;
 
-      enableRemoving?: boolean;
-      onRemove?: (item: T, index: number) => void | boolean;
+    enableRemoving?: boolean;
+    onRemove?: (item: T, index: number) => void | boolean;
 
-      enableToggling?: boolean;
-      onToggle?: (item: T, index: number) => void | boolean;
+    enableToggling?: boolean;
+    onToggle?: (item: T, index: number) => void | boolean;
 
-      enablePinning?: boolean;
-      onPin?: (item: T, index: number) => void | boolean;
-    }>(), {
-      enableDragging: true,
-      enableRemoving: undefined,
-      enableToggling: true,
-      enablePinning: true
-    }
+    enablePinning?: boolean;
+    onPin?: (item: T, index: number) => void | boolean;
+  }>(), {
+    enableDragging: true,
+    enableRemoving: undefined,
+    enableToggling: true,
+    enablePinning: true,
+    onSort: undefined,
+    onDragEnd: undefined,
+    onRemove: undefined,
+    onToggle: undefined,
+    onPin: undefined,
+  },
 );
 
 const slots = defineSlots<{
@@ -83,7 +89,7 @@ function createSortable(toggler: ShallowRef<boolean>, elRef: ShallowRef<undefine
       if (props.onDragEnd?.(evt.oldIndex, evt.newIndex) !== false) {
         moveItems(getOffset() + evt.oldIndex, getOffset() + evt.newIndex, true);
       }
-    }
+    },
   });
   watch(toggler, (on) => on ? sortable.start() : sortable.stop());
 
@@ -187,7 +193,7 @@ function handleToggleContent(item: T) {
 }
 
 // version fix problem with sync between data and rendered values
-const getKey = (item: T) => `${ versionRef.value }-${ props.getItemKey(item) }`;
+const getKey = (item: T) => `${versionRef.value}-${props.getItemKey(item)}`;
 const pinnedKeysRef = computed(() => pinnedItemsRef.value.map(getKey));
 const unpinnedKeysRef = computed(() => unpinnedItemsRef.value.map(getKey));
 
@@ -195,24 +201,24 @@ const unpinnedKeysRef = computed(() => unpinnedItemsRef.value.map(getKey));
 
 <template>
   <div :class="$style.root">
-    <div :class="$style.list" ref="pinnedContainerRef">
-      <div v-for="(item, index) in pinnedItemsRef" :key="pinnedKeysRef[index]" :class="$style.item">
+    <div ref="pinnedContainerRef" :class="$style.list">
+      <div v-for="(pinnedItem, pinnedIndex) in pinnedItemsRef" :key="pinnedKeysRef[pinnedIndex]" :class="$style.item">
         <PlElementListItem
-            :index="index"
-            :item="item"
-            :showDragHandle="props.enableDragging"
-            :isDraggable="isDraggable(item)"
-            :isRemovable="isRemovable(item)"
-            :isToggable="isToggable(item)"
-            :isToggled="isToggled(item)"
-            :isPinnable="isPinnable(item)"
-            :isPinned="isPinned(item)"
-            :isOpened="isOpened(item)"
+          :index="pinnedIndex"
+          :item="pinnedItem"
+          :showDragHandle="props.enableDragging"
+          :isDraggable="isDraggable(pinnedItem)"
+          :isRemovable="isRemovable(pinnedItem)"
+          :isToggable="isToggable(pinnedItem)"
+          :isToggled="isToggled(pinnedItem)"
+          :isPinnable="isPinnable(pinnedItem)"
+          :isPinned="isPinned(pinnedItem)"
+          :isOpened="isOpened(pinnedItem)"
 
-            @remove="handleRemove"
-            @toggle="handleToggle"
-            @pin="handlePin"
-            @toggleContent="handleToggleContent"
+          @remove="handleRemove"
+          @toggle="handleToggle"
+          @pin="handlePin"
+          @toggleContent="handleToggleContent"
         >
           <template #title="{ item, index }">
             <slot :index="index" :item="item" name="item-title" />
@@ -223,24 +229,27 @@ const unpinnedKeysRef = computed(() => unpinnedItemsRef.value.map(getKey));
         </PlElementListItem>
       </div>
     </div>
-    <div :class="$style.list" ref="unpinnedContainerRef" v-if="hasUnpinnedItems">
-      <div v-for="(item, index) in unpinnedItemsRef" :key="unpinnedKeysRef[index]" :class="$style.item">
+    <div v-if="hasUnpinnedItems" ref="unpinnedContainerRef" :class="$style.list">
+      <div
+        v-for="(unpinnedItem, unpinnedIndex) in unpinnedItemsRef" :key="unpinnedKeysRef[unpinnedIndex]"
+        :class="$style.item"
+      >
         <PlElementListItem
-            :index="index + (pinnedSetRef?.size ?? 0)"
-            :item="item"
-            :showDragHandle="props.enableDragging"
-            :isDraggable="isDraggable(item)"
-            :isRemovable="isRemovable(item)"
-            :isToggable="isToggable(item)"
-            :isToggled="isToggled(item)"
-            :isPinnable="isPinnable(item)"
-            :isPinned="isPinned(item)"
-            :isOpened="isOpened(item)"
+          :index="unpinnedIndex + (pinnedSetRef?.size ?? 0)"
+          :item="unpinnedItem"
+          :showDragHandle="props.enableDragging"
+          :isDraggable="isDraggable(unpinnedItem)"
+          :isRemovable="isRemovable(unpinnedItem)"
+          :isToggable="isToggable(unpinnedItem)"
+          :isToggled="isToggled(unpinnedItem)"
+          :isPinnable="isPinnable(unpinnedItem)"
+          :isPinned="isPinned(unpinnedItem)"
+          :isOpened="isOpened(unpinnedItem)"
 
-            @remove="handleRemove"
-            @toggle="handleToggle"
-            @pin="handlePin"
-            @toggleContent="handleToggleContent"
+          @remove="handleRemove"
+          @toggle="handleToggle"
+          @pin="handlePin"
+          @toggleContent="handleToggleContent"
         >
           <template #title="{ item, index }">
             <slot :index="index" :item="item" name="item-title" />

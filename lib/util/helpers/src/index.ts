@@ -23,5 +23,5 @@ export {
   objects,
   collections,
   functions,
-  prettyBytes
+  prettyBytes,
 };

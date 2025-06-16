@@ -36,21 +36,21 @@ const emit = defineEmits<{
 
 <template>
   <div
-      :class="[$style.root, {
-        [$style.pinned]: props.isPinned,
-        [$style.disabled]: props.isToggled,
-      }]"
+    :class="[$style.root, {
+      [$style.pinned]: props.isPinned,
+      [$style.disabled]: props.isToggled,
+    }]"
   >
     <div
-        :class="[$style.head, {
-          [$style.clickable]: hasContentSlot,
-        }]"
-        @click="emit('toggleContent', props.item, props.index)"
+      :class="[$style.head, {
+        [$style.clickable]: hasContentSlot,
+      }]"
+      @click="emit('toggleContent', props.item, props.index)"
     >
       <div
-          v-if="props.showDragHandle"
-          :class="[$style.action, $style.draggable, { [$style.disable]: !props.isDraggable } ]"
-          :data-draggable="props.isDraggable"
+        v-if="props.showDragHandle"
+        :class="[$style.action, $style.draggable, { [$style.disable]: !props.isDraggable } ]"
+        :data-draggable="props.isDraggable"
       >
         <PlIcon :uri="SvgDragDots" />
       </div>
@@ -59,26 +59,26 @@ const emit = defineEmits<{
       </div>
       <div :class="[$style.actions, $style.showOnHover]">
         <div
-            v-if="props.isToggable"
-            :class="[$style.action, $style.clickable, { [$style.disable]: !props.isToggable }]"
-            @click.stop="emit('toggle', props.item, props.index)"
+          v-if="props.isToggable"
+          :class="[$style.action, $style.clickable, { [$style.disable]: !props.isToggable }]"
+          @click.stop="emit('toggle', props.item, props.index)"
         >
           <PlIcon :uri="props.isToggled === true ? SvgViewHide : SvgViewShow" />
         </div>
         <div
-            v-if="props.isPinnable"
-            :class="[$style.action, $style.clickable, {
-                [$style.disable]: !props.isPinnable,
-                [$style.activated]: props.isPinned,
-              }]"
-            @click.stop="emit('pin', props.item, props.index)"
+          v-if="props.isPinnable"
+          :class="[$style.action, $style.clickable, {
+            [$style.disable]: !props.isPinnable,
+            [$style.activated]: props.isPinned,
+          }]"
+          @click.stop="emit('pin', props.item, props.index)"
         >
           <PlIcon :uri="SvgPin" />
         </div>
         <div
-            v-if="props.isRemovable"
-            :class="[$style.action, $style.clickable]"
-            @click.stop="emit('remove', props.item, props.index)"
+          v-if="props.isRemovable"
+          :class="[$style.action, $style.clickable]"
+          @click.stop="emit('remove', props.item, props.index)"
         >
           <PlIcon :uri="SvgClose" />
         </div>

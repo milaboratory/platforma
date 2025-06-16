@@ -3,14 +3,14 @@ import { PlBlockPage, PlElementList } from '@platforma-sdk/ui-vue';
 import { computed, ref, toRaw, watch } from 'vue';
 import { randomRangeInt, range } from '@milaboratories/helpers';
 
-type Item = { id: number, label: string, description?: string };
+type Item = { id: number; label: string; description?: string };
 const description = 'Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry\'s standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum';
 
 function generateList(): Item[] {
   return [...range(1, 10)].map((i) => ({
     id: i,
-    label: `Item ${ i };` + (Math.random() > 0.8 ? description : ''),
-    description: description.substring(0, randomRangeInt(100, description.length))
+    label: `Item ${i};` + (Math.random() > 0.8 ? description : ''),
+    description: description.substring(0, randomRangeInt(100, description.length)),
   }));
 }
 
@@ -90,7 +90,7 @@ const handleManualRemove = (item: Item, index: number) => {
     <div v-if="enabledDebug">
       <h4>Reference</h4>
       <div>
-        <div v-for="(item, index) in list" :key="getKey(item)">
+        <div v-for="(item) in list" :key="getKey(item)">
           {{ item.id }} {{ item.label.substring(0, 30) }}
           {{ pinnedSet.has(item) ? 'pinned' : '' }}
           {{ toggledSet.has(item) ? 'toggled' : '' }}
@@ -100,14 +100,14 @@ const handleManualRemove = (item: Item, index: number) => {
 
     <h4>All at once</h4>
     <PlElementList
-        :enableDragging="enabledDragging"
-        :enableRemoving="enabledRemoving"
-        :enableToggling="enabledToggling"
-        :enablePinning="enabledPinning"
-        :getItemKey="getKey"
-        v-model:items="list"
-        v-model:pinnedItems="pinnedSet"
-        v-model:toggledItems="toggledSet"
+      v-model:items="list"
+      v-model:pinnedItems="pinnedSet"
+      v-model:toggledItems="toggledSet"
+      :enableDragging="enabledDragging"
+      :enableRemoving="enabledRemoving"
+      :enableToggling="enabledToggling"
+      :enablePinning="enabledPinning"
+      :getItemKey="getKey"
     >
       <template #item-title="{ item }">
         <strong>{{ item.label }}</strong>
@@ -120,10 +120,11 @@ const handleManualRemove = (item: Item, index: number) => {
     <div v-if="!enabledDebug">
       <h4>Dragging</h4>
       <PlElementList
-          v-model:items="list"
-          :enableDragging="enabledDragging"
-          :getItemKey="getKey"
-          :onSort="handleSort">
+        v-model:items="list"
+        :enableDragging="enabledDragging"
+        :getItemKey="getKey"
+        :onSort="handleSort"
+      >
         <template #item-title="{ item }">
           <strong>{{ item.label }}</strong>
         </template>
@@ -134,11 +135,12 @@ const handleManualRemove = (item: Item, index: number) => {
 
       <h4>Dragging + removing</h4>
       <PlElementList
-          v-model:items="list"
-          :enableDragging="enabledDragging"
-          :enableRemoving="enabledRemoving"
-          :getItemKey="getKey"
-          :onSort="handleSort">
+        v-model:items="list"
+        :enableDragging="enabledDragging"
+        :enableRemoving="enabledRemoving"
+        :getItemKey="getKey"
+        :onSort="handleSort"
+      >
         <template #item-title="{ item }">
           <strong>{{ item.label }}</strong>
         </template>
@@ -149,12 +151,12 @@ const handleManualRemove = (item: Item, index: number) => {
 
       <h4>Dragging + removing + partial disabling</h4>
       <PlElementList
-          :enableDragging="enabledDragging"
-          :enableRemoving="enabledRemoving"
-          v-model:items="list"
-          :getItemKey="getKey"
-          v-model:draggableItems="draggableItems"
-          v-model:removableItems="removableItems"
+        v-model:items="list"
+        v-model:draggableItems="draggableItems"
+        v-model:removableItems="removableItems"
+        :enableDragging="enabledDragging"
+        :enableRemoving="enabledRemoving"
+        :getItemKey="getKey"
       >
         <template #item-title="{ item }">
           <strong>{{ item.label }}</strong>
@@ -166,12 +168,12 @@ const handleManualRemove = (item: Item, index: number) => {
 
       <h4>Pinning</h4>
       <PlElementList
-          :enableDragging="enabledDragging"
-          :enableRemoving="enabledRemoving"
-          :enablePinning="enabledPinning"
-          v-model:items="list"
-          v-model:pinnedItems="pinnedSet"
-          :getItemKey="getKey"
+        v-model:items="list"
+        v-model:pinnedItems="pinnedSet"
+        :enableDragging="enabledDragging"
+        :enableRemoving="enabledRemoving"
+        :enablePinning="enabledPinning"
+        :getItemKey="getKey"
       >
         <template #item-title="{ item }">
           <strong>{{ item.label }}</strong>
@@ -183,12 +185,12 @@ const handleManualRemove = (item: Item, index: number) => {
 
       <h4>Partial pinning</h4>
       <PlElementList
-          :enableDragging="enabledDragging"
-          :enablePinning="enabledPinning"
-          v-model:items="list"
-          v-model:pinnedItems="pinnedSet"
-          v-model:pinnableItems="pinnableSet"
-          :getItemKey="getKey"
+        v-model:items="list"
+        v-model:pinnedItems="pinnedSet"
+        v-model:pinnableItems="pinnableSet"
+        :enableDragging="enabledDragging"
+        :enablePinning="enabledPinning"
+        :getItemKey="getKey"
       >
         <template #item-title="{ item }">
           <strong>{{ item.label }}</strong>
@@ -200,11 +202,11 @@ const handleManualRemove = (item: Item, index: number) => {
 
       <h4>Toggable</h4>
       <PlElementList
-          :enableDragging="enabledDragging"
-          :enableToggling="enabledToggling"
-          v-model:items="list"
-          v-model:toggledItems="toggledSet"
-          :getItemKey="getKey"
+        v-model:items="list"
+        v-model:toggledItems="toggledSet"
+        :enableDragging="enabledDragging"
+        :enableToggling="enabledToggling"
+        :getItemKey="getKey"
       >
         <template #item-title="{ item }">
           <strong>{{ item.label }}</strong>
@@ -216,12 +218,12 @@ const handleManualRemove = (item: Item, index: number) => {
 
       <h4>Partial Toggable</h4>
       <PlElementList
-          :enableDragging="enabledDragging"
-          :enableToggling="enabledToggling"
-          v-model:items="list"
-          v-model:toggledItems="toggledSet"
-          v-model:toggableItems="toggableSet"
-          :getItemKey="getKey"
+        v-model:items="list"
+        v-model:toggledItems="toggledSet"
+        v-model:toggableItems="toggableSet"
+        :enableDragging="enabledDragging"
+        :enableToggling="enabledToggling"
+        :getItemKey="getKey"
       >
         <template #item-title="{ item }">
           <strong>{{ item.label }}</strong>
@@ -233,18 +235,18 @@ const handleManualRemove = (item: Item, index: number) => {
 
       <h4>Manual controlled</h4>
       <PlElementList
-          :enableDragging="enabledDragging"
-          :enableRemoving="enabledRemoving"
-          :enableToggling="enabledToggling"
-          :enablePinning="enabledPinning"
-          :getItemKey="getKey"
-          v-model:items="list"
-          v-model:toggledItems="toggledSet"
-          v-model:toggableItems="toggableSet"
-          v-model:pinnedItems="pinnedSet"
-          v-model:pinnableItems="pinnableSet"
-          :onRemove="handleManualRemove"
-          :onSort="handleManualSort"
+        v-model:items="list"
+        v-model:toggledItems="toggledSet"
+        v-model:toggableItems="toggableSet"
+        v-model:pinnedItems="pinnedSet"
+        v-model:pinnableItems="pinnableSet"
+        :enableDragging="enabledDragging"
+        :enableRemoving="enabledRemoving"
+        :enableToggling="enabledToggling"
+        :enablePinning="enabledPinning"
+        :getItemKey="getKey"
+        :onRemove="handleManualRemove"
+        :onSort="handleManualSort"
       >
         <template #item-title="{ item }">
           <strong>{{ item.label }}</strong>
