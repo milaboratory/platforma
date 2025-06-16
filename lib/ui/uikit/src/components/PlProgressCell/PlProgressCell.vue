@@ -3,7 +3,7 @@ import { computed } from 'vue';
 import './pl-progress-cell.scss';
 import PlMaskIcon24 from '../PlMaskIcon24/PlMaskIcon24.vue';
 import type { PlProgressCellProps } from './types';
-import { getErrorMessage } from '@/helpers/error.ts';
+import { getErrorMessage } from '../../helpers/error.ts';
 
 const props = withDefaults(defineProps<PlProgressCellProps>(), {
   stage: 'not_started',

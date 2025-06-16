@@ -1,7 +1,7 @@
 import type { Ref } from 'vue';
 import { ref } from 'vue';
 import { useEventListener } from './useEventListener';
-import type { MaybeRef } from '@/types';
+import type { MaybeRef } from '../types';
 
 export interface UseElementHoverOptions {
   delayEnter?: number;

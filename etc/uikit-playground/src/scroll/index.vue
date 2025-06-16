@@ -1,8 +1,8 @@
 <script lang="ts" setup>
 import Layout from '../Layout.vue';
-import Split from '@/Split.vue';
-import DomScroll from '@/scroll/CustomScroll.vue';
-import NativeScroll from '@/scroll/NativeScroll.vue';
+import Split from '../Split.vue';
+import DomScroll from './CustomScroll.vue';
+import NativeScroll from './NativeScroll.vue';
 </script>
 
 <template>

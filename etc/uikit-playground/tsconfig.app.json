@@ -19,13 +19,18 @@
 
     /* Linting */
     "strict": true,
-    "noUnusedLocals": true,
+    "noUnusedLocals": false,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-
+    "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
-    },
+      "milaboratories/uikit": [
+        "../../lib/ui/uikit/src/index.ts"
+      ],
+      "milaboratories/uikit/styles": [
+        "../../lib/ui/uikit/src/assets/ui.scss"
+      ]
+    }
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue"]
+  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue", "../../lib/ui/uikit/src/**/*.ts", "../../lib/ui/uikit/src/**/*.vue", "../../lib/ui/uikit/src/**/*.d.ts"]
 }

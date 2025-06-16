@@ -5,7 +5,7 @@ import type { RawTableSettings } from './types';
 import type { ComputedRef } from 'vue';
 import { computed, h, reactive, unref } from 'vue';
 import { RawData } from './adapters/RawData';
-import type { MaybeRef } from '@/types';
+import type { MaybeRef } from '../../types';
 export { AsyncData } from './adapters/AsyncData';
 
 type AnyRef<T> = MaybeRef<T> | ComputedRef<T>;

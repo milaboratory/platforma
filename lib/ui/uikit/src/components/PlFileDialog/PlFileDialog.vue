@@ -2,7 +2,7 @@
 import style from './pl-file-dialog.module.scss';
 import { computed, ref, useTemplateRef } from 'vue';
 import { notEmpty } from '@milaboratories/helpers';
-import type { ImportedFiles, SimpleOption } from '@/types';
+import type { ImportedFiles, SimpleOption } from '../../types';
 import { PlDialogModal } from '../PlDialogModal';
 import { PlBtnPrimary } from '../PlBtnPrimary';
 import { PlBtnGhost } from '../PlBtnGhost';
