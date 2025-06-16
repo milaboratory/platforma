@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import type { MaskIconName16 } from '../../types';
-import { PlIcon } from '@/components/PlIcon';
+import { PlSvg } from '../PlSvg';
 
 const props = defineProps<{
   name: MaskIconName16;
@@ -9,7 +9,7 @@ const props = defineProps<{
 </script>
 
 <template>
-  <PlIcon :name="`16_${props.name}`" :class="['mask-16', $style.icon]" :width="props.size ?? 16" :height="props.size ?? 16" />
+  <PlSvg :name="`16_${props.name}`" :class="['mask-16', $style.icon]" :width="props.size ?? 16" :height="props.size ?? 16" />
 </template>
 
 <style module>

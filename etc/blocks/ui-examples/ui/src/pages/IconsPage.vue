@@ -4,12 +4,12 @@ import {
   icons24,
   PlBlockPage,
   PlBtnGhost,
-  PlIcon,
   PlIcon16,
   PlIcon24,
   PlMaskIcon16,
   PlMaskIcon24,
   PlRow,
+  PlSvg,
   PlTooltip,
 } from '@platforma-sdk/ui-vue';
 import { computed, ref } from 'vue';
@@ -52,7 +52,7 @@ const filteredIcons24 = computed(() => icons24.filter((v) => v.includes(iconFilt
       </div>
 
       <PlTooltip v-for="(name, i) of filteredIcons16" :key="i">
-        <PlIcon
+        <PlSvg
           :name="`16_${name}`"
           :width="iconSize"
           :height="iconSize"
@@ -63,7 +63,7 @@ const filteredIcons24 = computed(() => icons24.filter((v) => v.includes(iconFilt
       </PlTooltip>
 
       <PlTooltip v-for="(name, i) of filteredIcons24" :key="i">
-        <PlIcon
+        <PlSvg
           :name="`24_${name}`"
           :width="iconSize"
           :height="iconSize"
