@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.83
+
+### Patch Changes
+
+- 697b8a5: Replace all aliases to relative paths
+
 ## 2.2.82
 
 ### Patch Changes

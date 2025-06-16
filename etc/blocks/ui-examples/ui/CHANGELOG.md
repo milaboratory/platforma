@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.4.11
+
+### Patch Changes
+
+- 9d7ae59: uikit-playground: use vite aliases to directly consume source code
+
 ## 1.4.10
 
 ### Patch Changes
