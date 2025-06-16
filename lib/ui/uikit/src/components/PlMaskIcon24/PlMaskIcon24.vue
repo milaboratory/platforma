@@ -4,11 +4,12 @@ import { PlIcon } from '@/components/PlIcon';
 
 const props = defineProps<{
   name: MaskIconName24;
+  size?: string | number;
 }>();
 </script>
 
 <template>
-  <PlIcon :name="`24_${props.name}`" :class="['mask-24', $style.icon]" />
+  <PlIcon :name="`24_${props.name}`" :class="['mask-24', $style.icon]" :width="props.size ?? 24" :height="props.size ?? 24" />
 </template>
 
 <style module>
