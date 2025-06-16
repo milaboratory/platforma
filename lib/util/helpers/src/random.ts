@@ -15,11 +15,3 @@ export function randomRangeInt(min: number, max: number): number {
 export function randomSign(): number {
   return random() > 0.5 ? 1 : -1;
 }
-
-export function randomId(): string {
-  return String(Math.trunc(Date.now() * Math.random()));
-}
-
-export function randomShortId(): string {
-  return randomId().slice(-6);
-}
