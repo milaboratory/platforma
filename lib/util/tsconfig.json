@@ -6,9 +6,6 @@
     "module": "esnext",                                /* Specify what module code is generated. */
     "moduleResolution": "node",
     "baseUrl": ".",
-    "paths": {
-      "@/*": ["src/*"]
-    },
     "allowJs": true,
     "rootDir": "./src",                                  /* Specify the root folder within your source files. */
     "outDir": "./dist",                                   /* Specify an output folder for all emitted files. */

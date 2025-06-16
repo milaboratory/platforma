@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import type { ModelRef, RefOption } from '@/types';
+import type { ModelRef, RefOption } from '../../types';
 import PlDropdownMulti from '../PlDropdownMulti/PlDropdownMulti.vue';
 import { computed, useSlots } from 'vue';
 

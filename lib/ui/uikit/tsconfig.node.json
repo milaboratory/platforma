@@ -7,10 +7,7 @@
     "allowSyntheticDefaultImports": true,
     "strict": true,
     "noEmit": true,
-    "types": ["node"],
-    "paths": {
-      "@/*": ["./src/*"]
-    },
+    "types": ["node"]
   },
   "include": ["vite.config.ts"]
 }

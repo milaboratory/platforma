@@ -1,7 +1,6 @@
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import { resolve } from 'path';
-import { fileURLToPath, URL } from 'node:url';
 import { exec } from 'child_process';
 
 // https://vitejs.dev/config/
@@ -32,12 +31,6 @@ export default defineConfig({
   ],
   define: {
     APP_VERSION: JSON.stringify(process.env.npm_package_version),
-  },
-  resolve: {
-    alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url)),
-      '@icons': fileURLToPath(new URL('./src/assets/icons', import.meta.url)),
-    },
   },
   build: {
     sourcemap: true,

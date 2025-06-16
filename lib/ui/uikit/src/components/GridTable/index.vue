@@ -10,8 +10,8 @@ import TableIcon from './assets/TableIcon.vue';
 import ThCell from './ThCell.vue';
 import TRow from './TRow.vue';
 import { compareRecords } from './domain';
-import { throttle } from '@/helpers/utils';
-import { useEventListener } from '@/index';
+import { throttle } from '../../helpers/utils';
+import { useEventListener } from '../../index';
 
 const minRowHeight = 40;
 

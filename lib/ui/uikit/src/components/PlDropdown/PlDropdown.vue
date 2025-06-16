@@ -10,19 +10,20 @@ export default {
 <script lang="ts" setup generic="M = unknown">
 import './pl-dropdown.scss';
 import { computed, reactive, ref, unref, useSlots, useTemplateRef, watch, watchPostEffect } from 'vue';
-import { tap } from '@/helpers/functions';
-import { PlTooltip } from '@/components/PlTooltip';
-import DoubleContour from '@/utils/DoubleContour.vue';
-import { useLabelNotch } from '@/utils/useLabelNotch';
-import type { ListOption, ListOptionNormalized } from '@/types';
-import { deepEqual } from '@/helpers/objects';
-import DropdownListItem from '@/components/DropdownListItem.vue';
-import LongText from '@/components/LongText.vue';
-import { normalizeListOptions } from '@/helpers/utils';
+import { tap } from '../../helpers/functions';
+import { PlTooltip } from '../PlTooltip';
+import DoubleContour from '../../utils/DoubleContour.vue';
+import { useLabelNotch } from '../../utils/useLabelNotch';
+import type { ListOption, ListOptionNormalized } from '../../types';
+import { deepEqual } from '../../helpers/objects';
+import DropdownListItem from '../DropdownListItem.vue';
+import LongText from '../LongText.vue';
+import { normalizeListOptions } from '../../helpers/utils';
 import { PlIcon16 } from '../PlIcon16';
 import { PlMaskIcon24 } from '../PlMaskIcon24';
-import { DropdownOverlay } from '@/utils/DropdownOverlay';
-import { getErrorMessage } from '@/helpers/error.ts';
+import { DropdownOverlay } from '../../utils/DropdownOverlay';
+import SvgRequired from '../../generated/components/svg/images/SvgRequired.vue';
+import { getErrorMessage } from '../../helpers/error.ts';
 
 const emit = defineEmits<{
   /**
@@ -343,7 +344,7 @@ watchPostEffect(() => {
           </div>
         </div>
         <label v-if="label">
-          <i v-if="required" class="required-icon" />
+          <SvgRequired v-if="required" />
           <span>{{ label }}</span>
           <PlTooltip v-if="slots.tooltip" class="info" position="top">
             <template #tooltip>

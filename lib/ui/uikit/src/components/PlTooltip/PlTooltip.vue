@@ -9,8 +9,8 @@ export default {
 import './pl-tooltip.scss';
 import { computed, onUnmounted, reactive, ref, toRef, watch } from 'vue';
 import { useTooltipPosition } from './useTooltipPosition';
-import * as utils from '@/helpers/utils';
-import { useClickOutside } from '@/composition/useClickOutside';
+import * as utils from '../../helpers/utils';
+import { useClickOutside } from '../../composition/useClickOutside';
 import Beak from './Beak.vue';
 import { tMap } from './global';
 

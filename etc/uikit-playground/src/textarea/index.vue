@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { reactive } from 'vue';
-import { PlTextArea } from '@milaboratories/uikit';
-import Layout from '@/Layout.vue';
-import Split from '@/Split.vue';
+import { PlTextArea } from 'milaboratories/uikit';
+import Layout from '../Layout.vue';
+import Split from '../Split.vue';
 import { times } from '@milaboratories/helpers';
 import { faker } from '@faker-js/faker';
 

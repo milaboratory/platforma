@@ -1,6 +1,6 @@
 import { computed, type Ref, ref, unref } from 'vue';
-import { useElementPosition } from '@/composition/usePosition';
-import type { ElementPosition } from '@/types';
+import { useElementPosition } from '../../composition/usePosition';
+import type { ElementPosition } from '../../types';
 
 type Options = {
   position: 'top-left' | 'right' | 'left' | 'top' | 'southwest';
