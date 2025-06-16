@@ -4,8 +4,6 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build-dev": "NODE_ENV=development vite build --mode=development",
-    "watch-dev": "NODE_ENV=development vite build --mode=development --watch",
     "watch": "vue-tsc && vite build --watch",
     "build": "vite build && pnpm run build:types",
     "build:types": "vue-tsc --declaration --emitDeclarationOnly -p tsconfig.lib.json",
