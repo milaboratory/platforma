@@ -24,7 +24,7 @@ const svgMeta = computed(() => (uri.value == null ? undefined : registerSvg(uri.
 const styleSize = computed(() =>
   svgMeta.value == null
     ? undefined
-    : `--svg-width: ${getSize(props.width, svgMeta.value.defaultWidth)}; --svg-height: ${getSize(props.width, svgMeta.value.defaultWidth)};`,
+    : `--svg-width: ${getSize(props.width, svgMeta.value.defaultWidth)}; --svg-height: ${getSize(props.height, svgMeta.value.defaultHeight)};`,
 );
 const styleColor = computed(() => getStyleColor('fill', props.colors, props.color));
 const styleStroke = computed(() => getStyleColor('stroke', props.strokes, props.stroke));
