@@ -1,5 +1,13 @@
 # @platforma-sdk/ui-vue
 
+## 1.34.4
+
+### Patch Changes
+
+- 697b8a5: Replace all aliases to relative paths
+- Updated dependencies [697b8a5]
+  - @milaboratories/uikit@2.2.83
+
 ## 1.34.0
 
 ### Minor Changes
