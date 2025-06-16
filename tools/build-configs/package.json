@@ -5,12 +5,12 @@
   "exports": {
     ".": "./src/index.ts",
     "./tsup": {
-      "types": "./src/tsup.ts",
+      "types": "./dist/tsup.d.ts",
       "import": "./dist/tsup.mjs",
       "require": "./dist/tsup.js"
     },
     "./vite": {
-      "types": "./src/vite.ts",
+      "types": "./dist/vite.d.ts",
       "import": "./dist/vite.mjs",
       "require": "./dist/vite.js"
     },
@@ -18,11 +18,11 @@
   },
   "files": [
     "./dist/**",
-    "tsconfig_lib_bundled.json"
+    "./tsconfig_lib_bundled.json"
   ],
   "scripts": {
-    "type-check": "node_modules/.bin/tsc --noEmit --composite false",
-    "build": "node_modules/.bin/vite build"
+    "type-check": "tsc --noEmit --composite false",
+    "build": "vite build"
   },
   "dependencies": {
     "@rollup/plugin-node-resolve": "catalog:",
