@@ -55,13 +55,13 @@ function getStyleColor(prop: 'fill' | 'stroke', colors: undefined | string[], co
 
 <style module>
 :root {
-  --svg-height: unset;
   --svg-width: unset;
+  --svg-height: unset;
 }
 
 .icon {
-  width: var(--svg-width, 16px);
-  height: var(--svg-width, 16px);
+  width: var(--svg-width);
+  height: var(--svg-height);
   fill: black;
 }
 </style>
