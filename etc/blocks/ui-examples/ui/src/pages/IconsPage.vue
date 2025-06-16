@@ -15,7 +15,10 @@ import {
 import { computed, ref } from 'vue';
 
 const iconFilter = ref('');
-const iconSize = ref(16);
+const iconSizeRaw = ref();
+const iconSize = computed(() =>
+  iconSizeRaw.value == null ? undefined : iconSizeRaw.value == 0 ? undefined : iconSizeRaw.value,
+);
 const iconColor1 = ref('');
 const iconColor2 = ref('');
 const iconStroke = ref('');
@@ -32,7 +35,7 @@ const filteredMaskIcons24 = computed(() => maskIcons24.filter((v) => v.includes(
     <input v-model="iconFilter" :class="$style.input" placeholder="icon filter" />
     <div :class="$style.inputs">
       <input
-        v-model="iconSize"
+        v-model="iconSizeRaw"
         :class="$style.input"
         placeholder="size"
         type="number"
@@ -51,8 +54,8 @@ const filteredMaskIcons24 = computed(() => maskIcons24.filter((v) => v.includes(
       <PlTooltip v-for="(name, i) of filteredMaskIcons16" :key="i">
         <PlIcon
           :name="`16_${name}`"
-          :width="iconSize + 'px'"
-          :height="iconSize + 'px'"
+          :width="iconSize"
+          :height="iconSize"
           :colors="[iconColor1, iconColor2]"
           :stroke="iconStroke"
         />
@@ -62,8 +65,8 @@ const filteredMaskIcons24 = computed(() => maskIcons24.filter((v) => v.includes(
       <PlTooltip v-for="(name, i) of filteredMaskIcons24" :key="i">
         <PlIcon
           :name="`24_${name}`"
-          :width="iconSize + 'px'"
-          :height="iconSize + 'px'"
+          :width="iconSize"
+          :height="iconSize"
           :colors="[iconColor1, iconColor2]"
           :stroke="iconStroke"
         />
