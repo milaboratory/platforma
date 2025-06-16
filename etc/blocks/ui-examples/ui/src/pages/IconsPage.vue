@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {
-  maskIcons16,
-  maskIcons24,
+  icons16,
+  icons24,
   PlBlockPage,
   PlBtnGhost,
   PlIcon,
@@ -23,8 +23,8 @@ const iconColor1 = ref('');
 const iconColor2 = ref('');
 const iconStroke = ref('');
 
-const filteredMaskIcons16 = computed(() => maskIcons16.filter((v) => v.includes(iconFilter.value)));
-const filteredMaskIcons24 = computed(() => maskIcons24.filter((v) => v.includes(iconFilter.value)));
+const filteredIcons16 = computed(() => icons16.filter((v) => v.includes(iconFilter.value)));
+const filteredIcons24 = computed(() => icons24.filter((v) => v.includes(iconFilter.value)));
 </script>
 
 <template>
@@ -47,11 +47,11 @@ const filteredMaskIcons24 = computed(() => maskIcons24.filter((v) => v.includes(
       <input v-model="iconStroke" :class="$style.input" placeholder="stroke color" />
     </div>
     <PlRow wrap>
-      <div v-if="filteredMaskIcons16.length === 0 && filteredMaskIcons24.length === 0">
+      <div v-if="filteredIcons16.length === 0 && filteredIcons24.length === 0">
         Cannot find Icons
       </div>
 
-      <PlTooltip v-for="(name, i) of filteredMaskIcons16" :key="i">
+      <PlTooltip v-for="(name, i) of filteredIcons16" :key="i">
         <PlIcon
           :name="`16_${name}`"
           :width="iconSize"
@@ -62,7 +62,7 @@ const filteredMaskIcons24 = computed(() => maskIcons24.filter((v) => v.includes(
         <template #tooltip>{{ `16_${name}` }}</template>
       </PlTooltip>
 
-      <PlTooltip v-for="(name, i) of filteredMaskIcons24" :key="i">
+      <PlTooltip v-for="(name, i) of filteredIcons24" :key="i">
         <PlIcon
           :name="`24_${name}`"
           :width="iconSize"
@@ -77,7 +77,7 @@ const filteredMaskIcons24 = computed(() => maskIcons24.filter((v) => v.includes(
     <h4>PlIcon16</h4>
 
     <PlRow wrap>
-      <PlTooltip v-for="(name, i) of maskIcons16" :key="i">
+      <PlTooltip v-for="(name, i) of icons16" :key="i">
         <PlIcon16 :name="name" />
         <template #tooltip> icon-16 icon-{{ name }}</template>
       </PlTooltip>
@@ -86,7 +86,7 @@ const filteredMaskIcons24 = computed(() => maskIcons24.filter((v) => v.includes(
     <h4>PlIcon24</h4>
 
     <PlRow wrap>
-      <PlTooltip v-for="(name, i) of maskIcons24" :key="i">
+      <PlTooltip v-for="(name, i) of icons24" :key="i">
         <PlIcon24 :name="name" />
         <template #tooltip> icon-24 icon-{{ name }}</template>
       </PlTooltip>
@@ -95,7 +95,7 @@ const filteredMaskIcons24 = computed(() => maskIcons24.filter((v) => v.includes(
     <h4>PlMaskIcon16</h4>
 
     <PlRow wrap>
-      <PlBtnGhost v-for="(name, i) of maskIcons16" :key="i">
+      <PlBtnGhost v-for="(name, i) of icons16" :key="i">
         {{ name }}
         <template #append>
           <PlMaskIcon16 :name="name" />
@@ -106,7 +106,7 @@ const filteredMaskIcons24 = computed(() => maskIcons24.filter((v) => v.includes(
     <h4>PlMaskIcon24</h4>
 
     <PlRow wrap>
-      <PlBtnGhost v-for="(name, i) of maskIcons24" :key="i">
+      <PlBtnGhost v-for="(name, i) of icons24" :key="i">
         {{ name }}
         <template #append>
           <PlMaskIcon24 :name="name" />

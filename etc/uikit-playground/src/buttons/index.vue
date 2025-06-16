@@ -2,15 +2,15 @@
 import { reactive } from 'vue';
 import Layout from '../Layout.vue';
 import {
-  PlBtnPrimary,
-  PlBtnSecondary,
+  icons24,
   PlBtnAccent,
+  PlBtnGhost,
   PlBtnGroup,
   PlBtnLink,
-  PlBtnGhost,
+  PlBtnPrimary,
+  PlBtnSecondary,
   type Size,
-  maskIcons24,
-} from 'milaboratories/uikit';
+} from '@milaboratories/uikit';
 import Split from '../Split.vue';
 
 const props = reactive({
@@ -83,7 +83,7 @@ function onClick() {
         </fieldset>
         <fieldset>
           <legend>PlBtnGhost with all the icons</legend>
-          <PlBtnGhost v-for="icon in maskIcons24" :key="icon" :size="props.size" :icon="icon">
+          <PlBtnGhost v-for="icon in icons24" :key="icon" :key="icon" :size="props.size" :icon="icon">
             (24x24): {{ icon }}
           </PlBtnGhost>
         </fieldset>

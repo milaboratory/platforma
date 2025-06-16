@@ -3,6 +3,20 @@ import './assets/ui.scss';
 // @TODO review
 import * as DataTable from './components/DataTable';
 import ThemeSwitcher from './components/ThemeSwitcher.vue';
+// @TODO review (may be private)
+import DropdownListItem from './components/DropdownListItem.vue';
+
+// @TODO review
+import ContextProvider from './components/ContextProvider.vue';
+import Slider from './components/Slider.vue';
+import { showContextMenu } from './components/contextMenu/index.ts';
+// for new version
+import LongText from './components/LongText.vue';
+import SliderRangeTriple from './components/SliderRangeTriple.vue';
+import SliderRange from './components/SliderRange.vue';
+import Scrollable from './components/Scrollable.vue';
+
+import { allCssVariables } from './demo-site-data/all-css-variables.ts';
 
 /**
  * Layout components
@@ -74,14 +88,6 @@ export * from './components/PlRadio';
 
 export * from './colors';
 
-// @TODO review (may be private)
-import DropdownListItem from './components/DropdownListItem.vue';
-
-// @TODO review
-import ContextProvider from './components/ContextProvider.vue';
-import Slider from './components/Slider.vue';
-import { showContextMenu } from './components/contextMenu/index.ts';
-
 /**
  * Usables
  */
@@ -117,20 +123,9 @@ export * from './utils/DropdownOverlay';
  */
 export { useLabelNotch } from './utils/useLabelNotch.ts';
 
-// for new version
-import LongText from './components/LongText.vue';
-import SliderRangeTriple from './components/SliderRangeTriple.vue';
-import SliderRange from './components/SliderRange.vue';
-import Scrollable from './components/Scrollable.vue';
-
-import icons16 from './assets/icons/icons-16-generated.json';
-import icons24 from './assets/icons/icons-24-generated.json';
-
-import { allCssVariables } from './demo-site-data/all-css-variables.ts';
-
 export type * from './types';
 
-export { maskIcons16, maskIcons24 } from './types';
+export { icons16, icons24 } from './types';
 
 export * from './helpers/dom';
 
@@ -148,5 +143,5 @@ export { showContextMenu };
 export { LongText, SliderRangeTriple, SliderRange, Scrollable };
 
 // @todo
-const DemoData = { allCssVariables: allCssVariables(), icons16, icons24 };
+const DemoData = { allCssVariables: allCssVariables() };
 export { DemoData };

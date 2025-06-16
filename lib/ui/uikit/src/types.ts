@@ -1,7 +1,7 @@
-import type { ImportFileHandle, Platforma, StorageHandle, PlRef as ModelRef } from '@platforma-sdk/model';
-import type { Ref, ComputedRef, Component } from 'vue';
-import { maskIcons16 } from './generated/icons-16';
-import { maskIcons24 } from './generated/icons-24';
+import type { ImportFileHandle, Platforma, PlRef as ModelRef, StorageHandle } from '@platforma-sdk/model';
+import type { Component, ComputedRef, Ref } from 'vue';
+import { icons16 } from './generated/icons-16';
+import { icons24 } from './generated/icons-24';
 
 export type Size = 'small' | 'medium' | 'large';
 
@@ -65,11 +65,11 @@ export type RefOption = {
 
 export type ListOptionType<Type> = Type extends ListOption<infer X>[] ? X : never;
 
-export { maskIcons16, maskIcons24 };
+export { icons16, icons24 };
 
-export type MaskIconName16 = (typeof maskIcons16)[number];
+export type MaskIconName16 = (typeof icons16)[number];
 
-export type MaskIconName24 = (typeof maskIcons24)[number];
+export type MaskIconName24 = (typeof icons24)[number];
 
 export type SliderMode = 'input' | 'text';
 
@@ -82,6 +82,7 @@ export type InferComponentProps<C extends Component> = C extends Component<infer
 
 declare global {
   const platforma: Platforma | undefined;
+
   interface Window {
     platforma: Platforma | undefined;
   }
