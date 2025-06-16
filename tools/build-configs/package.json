@@ -5,12 +5,12 @@
   "exports": {
     ".": "./src/index.ts",
     "./tsup": {
-      "types": "./dist/tsup.d.ts",
+      "types": "./src/tsup.ts",
       "import": "./dist/tsup.mjs",
       "require": "./dist/tsup.js"
     },
     "./vite": {
-      "types": "./dist/vite.d.ts",
+      "types": "./src/vite.ts",
       "import": "./dist/vite.mjs",
       "require": "./dist/vite.js"
     },
