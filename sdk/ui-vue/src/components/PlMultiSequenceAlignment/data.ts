@@ -67,9 +67,9 @@ export function useMultipleAlignmentData(
 ) {
   const loading = ref(true);
   const result = computedAsync(
-    () => getSequenceRows(toValue(params)).catch(() => ({ sequences: [], labels: [] })),
+    () => getMultipleAlignmentData(toValue(params)).catch(() => ({ sequences: [], labels: [] })),
     { sequences: [], labels: [] },
-    { evaluating: loading }
+    { evaluating: loading },
   );
   return { data: result, loading };
 }
