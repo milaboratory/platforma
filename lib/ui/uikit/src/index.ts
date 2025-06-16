@@ -61,6 +61,7 @@ export * from './components/PlFileDialog';
 export * from './components/PlFileInput';
 export * from './components/PlNotificationAlert';
 
+export * from './components/PlIcon';
 export * from './components/PlMaskIcon16';
 export * from './components/PlMaskIcon24';
 export * from './components/PlIcon16';
