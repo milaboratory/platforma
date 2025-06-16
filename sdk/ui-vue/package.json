@@ -11,8 +11,6 @@
   "scripts": {
     "test": "vitest run --passWithNoTests",
     "dev": "vite",
-    "build-dev": "NODE_ENV=development vite build --mode=development",
-    "watch-dev": "NODE_ENV=development vite build --mode=development --watch",
     "build": "vite build && vue-tsc --declaration --emitDeclarationOnly -p tsconfig.lib.json",
     "watch": "vite build --watch",
     "type-check": "vue-tsc --noEmit --project ./tsconfig.json",
