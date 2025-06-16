@@ -11,7 +11,7 @@
   "scripts": {
     "test": "vitest run --passWithNoTests",
     "dev": "vite",
-    "build": "vite build && vue-tsc --declaration --emitDeclarationOnly -p tsconfig.lib.json",
+    "build": "vite build && vue-tsc --declaration --noEmit false --emitDeclarationOnly -p tsconfig.lib.json",
     "watch": "vite build --watch",
     "type-check": "vue-tsc --noEmit --project ./tsconfig.json",
     "preview": "vite preview",
@@ -20,6 +20,7 @@
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "dependencies": {
+    "@milaboratories/ts-configs": "workspace:*",
     "@milaboratories/platforma-build-configs": "workspace:*",
     "@milaboratories/biowasm-tools": "workspace:^",
     "@milaboratories/miplots4": "catalog:",

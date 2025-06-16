@@ -1060,8 +1060,11 @@ importers:
         specifier: workspace:*
         version: link:../model
       '@milaboratories/platforma-build-configs':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../../../tools/build-configs
+      '@milaboratories/ts-configs':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-configs
       '@platforma-sdk/model':
         specifier: workspace:^
         version: link:../../../../sdk/model
@@ -1099,6 +1102,9 @@ importers:
       vite:
         specifier: 'catalog:'
         version: 6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0)
+      vitest:
+        specifier: 'catalog:'
+        version: 2.1.9(@types/node@22.5.5)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4)
       vue-tsc:
         specifier: 'catalog:'
         version: 2.1.10(typescript@5.5.4)
@@ -2326,6 +2332,9 @@ importers:
       '@milaboratories/platforma-build-configs':
         specifier: workspace:*
         version: link:../../tools/build-configs
+      '@milaboratories/ts-configs':
+        specifier: workspace:*
+        version: link:../../tools/ts-configs
       '@milaboratories/uikit':
         specifier: workspace:^
         version: link:../../lib/ui/uikit
@@ -2794,7 +2803,7 @@ importers:
         version: 8.0.0(rollup@4.41.1)
       rollup-plugin-sourcemaps2:
         specifier: 'catalog:'
-        version: 0.5.0(@types/node@20.16.15)(rollup@4.41.1)
+        version: 0.5.2(@types/node@20.16.15)(rollup@4.41.1)
       tsup:
         specifier: 'catalog:'
         version: 8.3.5(@microsoft/api-extractor@7.52.2(@types/node@20.16.15))(postcss@8.5.4)(tsx@4.19.1)(typescript@5.5.4)(yaml@2.7.0)
@@ -3085,6 +3094,15 @@ importers:
       vitest:
         specifier: 'catalog:'
         version: 2.1.9(@types/node@20.16.15)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4)
+
+  tools/ts-configs:
+    dependencies:
+      vite:
+        specifier: 'catalog:'
+        version: 6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0)
+      vitest:
+        specifier: 'catalog:'
+        version: 2.1.9(@types/node@22.5.5)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4)
 
 packages:
 
