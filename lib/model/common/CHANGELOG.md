@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.15.5
+
+### Patch Changes
+
+- 49cf7ee: Standard Error serialization/deserialization
+
 ## 1.15.4
 
 ### Patch Changes

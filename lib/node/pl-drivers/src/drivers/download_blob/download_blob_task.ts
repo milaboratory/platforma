@@ -150,7 +150,9 @@ export function nonRecoverableError(e: any) {
 
 /** The downloading task was aborted by a signal.
  * It may happen when the computable is done, for example. */
-class DownloadAborted extends Error {}
+class DownloadAborted extends Error {
+  name = 'DownloadAborted';
+}
 
 export function getDownloadedBlobResponse(
   handle: LocalBlobHandle | undefined,

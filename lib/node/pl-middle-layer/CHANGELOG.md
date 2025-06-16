@@ -1,5 +1,83 @@
 # @milaboratories/pl-middle-layer
 
+## 1.37.70
+
+### Patch Changes
+
+- Updated dependencies [5ac72c3]
+  - @platforma-sdk/workflow-tengo@4.7.4
+
+## 1.37.69
+
+### Patch Changes
+
+- Updated dependencies [2c52dc7]
+  - @platforma-sdk/workflow-tengo@4.7.3
+
+## 1.37.68
+
+### Patch Changes
+
+- c243d64: Main change: V2 project schema, resource-based uiState storage, uiState compression.
+  Minor changes:
+  - better stats reporting env vars
+  - better tree pruning for StreamWorkdir/\* resources
+- Updated dependencies [c243d64]
+- Updated dependencies [babb3eb]
+- Updated dependencies [c7894c2]
+- Updated dependencies [babb3eb]
+  - @milaboratories/pl-client@2.11.0
+  - @milaboratories/pl-drivers@1.5.68
+  - @milaboratories/pl-http@1.1.3
+  - @milaboratories/computable@2.5.0
+  - @milaboratories/ts-helpers@1.4.0
+  - @milaboratories/pl-errors@1.1.7
+  - @milaboratories/pl-tree@1.6.9
+  - @platforma-sdk/block-tools@2.5.55
+  - @milaboratories/pl-config@1.4.14
+  - @milaboratories/pl-deployments@2.3.2
+  - @platforma-sdk/workflow-tengo@4.7.2
+
+## 1.37.67
+
+### Patch Changes
+
+- Updated dependencies [35ce863]
+  - @platforma-sdk/model@1.34.0
+
+## 1.37.66
+
+### Patch Changes
+
+- Updated dependencies [49cf7ee]
+  - @milaboratories/computable@2.4.12
+  - @milaboratories/pl-drivers@1.5.67
+  - @milaboratories/ts-helpers@1.3.3
+  - @milaboratories/pl-client@2.10.2
+  - @milaboratories/pl-errors@1.1.6
+  - @milaboratories/pl-model-common@1.15.5
+  - @milaboratories/pl-tree@1.6.8
+  - @milaboratories/pl-config@1.4.13
+  - @milaboratories/pl-deployments@2.3.1
+  - @platforma-sdk/block-tools@2.5.54
+  - @milaboratories/pl-model-middle-layer@1.7.37
+  - @platforma-sdk/model@1.33.17
+  - @platforma-sdk/workflow-tengo@4.7.2
+
+## 1.37.65
+
+### Patch Changes
+
+- Updated dependencies [1c10475]
+  - @platforma-sdk/model@1.33.16
+
+## 1.37.64
+
+### Patch Changes
+
+- Updated dependencies [2dad052]
+  - @platforma-sdk/workflow-tengo@4.7.2
+
 ## 1.37.63
 
 ### Patch Changes

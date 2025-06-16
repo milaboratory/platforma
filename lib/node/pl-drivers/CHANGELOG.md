@@ -1,5 +1,31 @@
 # @milaboratories/pl-drivers
 
+## 1.5.68
+
+### Patch Changes
+
+- c243d64: - network-related dependency upgrade
+- Updated dependencies [c243d64]
+- Updated dependencies [babb3eb]
+- Updated dependencies [c7894c2]
+- Updated dependencies [babb3eb]
+  - @milaboratories/pl-client@2.11.0
+  - @milaboratories/computable@2.5.0
+  - @milaboratories/ts-helpers@1.4.0
+  - @milaboratories/pl-tree@1.6.9
+
+## 1.5.67
+
+### Patch Changes
+
+- 49cf7ee: Standard Error serialization/deserialization
+- Updated dependencies [49cf7ee]
+  - @milaboratories/computable@2.4.12
+  - @milaboratories/ts-helpers@1.3.3
+  - @milaboratories/pl-client@2.10.2
+  - @milaboratories/pl-model-common@1.15.5
+  - @milaboratories/pl-tree@1.6.8
+
 ## 1.5.66
 
 ### Patch Changes

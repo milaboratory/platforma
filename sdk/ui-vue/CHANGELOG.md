@@ -1,5 +1,33 @@
 # @platforma-sdk/ui-vue
 
+## 1.34.0
+
+### Minor Changes
+
+- 35ce863: PlMultiSequenceAlignment improvements
+
+### Patch Changes
+
+- Updated dependencies [35ce863]
+  - @platforma-sdk/model@1.34.0
+  - @milaboratories/uikit@2.2.82
+
+## 1.33.17
+
+### Patch Changes
+
+- 49cf7ee: Standard Error serialization/deserialization
+  - @platforma-sdk/model@1.33.17
+  - @milaboratories/uikit@2.2.82
+
+## 1.33.16
+
+### Patch Changes
+
+- Updated dependencies [1c10475]
+  - @platforma-sdk/model@1.33.16
+  - @milaboratories/uikit@2.2.82
+
 ## 1.33.14
 
 ### Patch Changes
