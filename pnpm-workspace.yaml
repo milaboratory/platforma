@@ -1,5 +1,4 @@
 packages:
-  - lib/util/build-configs
   - lib/util/helpers
   - lib/util/sequences
 
@@ -31,6 +30,7 @@ packages:
   - tools/tengo-builder
   - tools/oclif-index
   - tools/block-tools
+  - tools/ts-configs
   - tools/build-configs
   - tools/package-builder
   - tools/r-builder

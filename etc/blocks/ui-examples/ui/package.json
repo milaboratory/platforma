@@ -6,11 +6,12 @@
     "dev": "vite",
     "watch": "vue-tsc && vite build --watch",
     "build": "vite build && pnpm run build:types",
-    "build:types": "vue-tsc --declaration --emitDeclarationOnly -p tsconfig.lib.json",
+    "build:types": "vue-tsc --declaration --noEmit false --emitDeclarationOnly -p tsconfig.app.json",
     "preview": "vite preview",
     "lint": "eslint ."
   },
   "dependencies": {
+    "@milaboratories/ts-configs": "workspace:*",
     "@milaboratories/platforma-build-configs": "workspace:*",
     "@milaboratories/milaboratories.ui-examples.model": "workspace:*",
     "vue": "catalog:",
