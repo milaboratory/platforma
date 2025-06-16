@@ -1,4 +1,4 @@
-import { getIncrementalId } from './uniqId';
+import { createGetIncrementalId } from './uniqId';
 
 export function hashString(str: string, seed = 0): number {
   let h1 = 0xdeadbeef ^ seed,
@@ -38,10 +38,11 @@ export function shallowHash(...values: unknown[]): number {
 }
 
 const mapPointerToMap = new WeakMap<object, string>();
+const getIncrementalId = createGetIncrementalId();
 
 function getIdForPointer(obj: object | ((...args: unknown[]) => unknown)): string {
   if (!mapPointerToMap.has(obj)) {
-    mapPointerToMap.set(obj, getIncrementalId());
+    mapPointerToMap.set(obj, getIncrementalId().toString());
   }
 
   return mapPointerToMap.get(obj)!;
