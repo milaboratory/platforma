@@ -824,16 +824,21 @@ builder := func() {
 			}
 
 			serviceExecInputs := {}
-			if feats.workdirLimits || feats.computeLimits || limits.useBatch(queue) {
-				if (is_int(ramRequest)) {
-					ramRequest = string(ramRequest) + "b"
-				}
-				serviceExecInputs.quota = {
-					queue: queue,
-					cpu: cpuRequest,
-					ram: ramRequest
-				}
+
+			// if feats.workdirLimits || feats.computeLimits || limits.useBatch(queue) {
+
+			if (is_int(ramRequest)) {
+				ramRequest = string(ramRequest) + "b"
 			}
+			serviceExecInputs.quota = smart.createJsonResource({
+				queue: queue,
+				cpu: cpuRequest,
+				ram: ramRequest
+			})
+
+			ll.print("__THE_LOG__ serviceExecInputs %v", serviceExecInputs)
+
+			// }
 
 			// We add monetization only if it's enabled
 			// to not break a deduplication of exec's
