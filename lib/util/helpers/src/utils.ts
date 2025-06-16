@@ -1,10 +1,10 @@
 import type { AwaitedStruct, Option, Primitive, Result, Unionize } from './types';
 
-export function isNil<T>(v: T): v is NonNullable<T> {
+export function isNil(v: unknown): v is null | undefined | void {
   return v === null || v === undefined;
 }
 
-export function isPrimitive<T>(v: T): v is Extract<T, Primitive> {
+export function isPrimitive(v: unknown): v is Primitive {
   return isNil(v)
     || typeof v === 'string'
     || typeof v === 'number'
