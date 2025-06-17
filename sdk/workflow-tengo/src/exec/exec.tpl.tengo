@@ -42,9 +42,7 @@ _runBinaryCommand := func(inputs) {
 
 	quota := inputs.quota
 
-	// && (feats.workdirLimits || limits.useBatch(quota.queue))
-	if !is_undefined(quota) {
-		ll.print("__THE_LOG__ quota %v", quota)
+	if !is_undefined(quota) && (feats.workdirLimits || limits.useBatch(quota.queue)) {
 		quotaBuilder := limits.quotaBuilder().
 			cpu(quota.cpu).
 			ram(quota.ram)
@@ -116,9 +114,7 @@ _runBinaryCommand := func(inputs) {
 
 	runBuilder := execInternal.prepareCommandRun(wdForCmd, opts)
 
-	// && (feats.computeLimits || limits.useBatch(quota.queue))
-	if !is_undefined(quota) {
-		ll.print("__THE_LOG__ quota %v", quota)
+	if !is_undefined(quota) && (feats.computeLimits || limits.useBatch(quota.queue)) {
 		quotaRef := limits.quotaBuilder().
 			queue(opts.queue).
 			cpu(quota.cpu).
@@ -259,8 +255,7 @@ self.validateInputs({
 })
 
 self.body(func(inputs) {
-	ll.print("__THE_LOG__ AAAAAAAAAAAAAA")
-	ll.print("__THE_LOG__ quota %v", inputs)
+
 	ll.toStrict(inputs)
 	inputs.runOptions = ll.toStrict(inputs.runOptions)
 	if !is_undefined(inputs.assets) {
