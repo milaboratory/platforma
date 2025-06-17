@@ -3,11 +3,9 @@ import type { ColGroupDef, GridApi, GridOptions, GridReadyEvent, ICellRendererPa
 import type { Component } from 'vue';
 import { computed, shallowRef, watch } from 'vue';
 import { AgGridTheme } from '../aggrid';
-import { PlAgOverlayLoading } from '../components/PlAgDataTable';
+import { autoSizeRowNumberColumn, makeRowNumberColDef, PlAgOverlayLoading, type PlAgOverlayLoadingParams } from '../components/PlAgDataTable';
 import { PlAgOverlayNoRows } from '../components/PlAgDataTable';
-import type { ColDefExtended } from './createAgGridColDef';
-import type { PlAgOverlayLoadingParams } from '../lib';
-import { autoSizeRowNumberColumn, createAgGridColDef, makeRowNumberColDef } from '../lib';
+import { createAgGridColDef, type ColDefExtended } from './createAgGridColDef';
 import { whenever } from '@vueuse/core';
 import { PlAgCellFile } from '../components/PlAgCellFile';
 import { PlAgChartStackedBarCell } from '../components/PlAgChartStackedBarCell';

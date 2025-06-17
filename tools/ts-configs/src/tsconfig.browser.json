@@ -25,6 +25,12 @@
     "types": [
       "vite/client",
       "vitest/importMeta"
-    ]
+    ],
+    /* Global Aliases */
+    "baseUrl": "../../../",
+    "paths": {
+      "@milaboratories/uikit": ["lib/ui/uikit/src"],
+      "@platforma-sdk/ui-vue": ["sdk/ui-vue/src"],
+    }
   }
 }
