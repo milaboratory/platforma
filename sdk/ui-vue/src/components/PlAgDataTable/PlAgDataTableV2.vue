@@ -42,7 +42,7 @@ import { AgGridVue } from 'ag-grid-vue3';
 import canonicalize from 'canonicalize';
 import * as lodash from 'lodash';
 import { computed, nextTick, ref, shallowRef, toRefs, watch } from 'vue';
-import { AgGridTheme } from '../../lib';
+import { AgGridTheme } from '../../aggrid';
 import PlAgCsvExporter from '../PlAgCsvExporter/PlAgCsvExporter.vue';
 import { PlAgGridColumnManager } from '../PlAgGridColumnManager';
 import PlOverlayLoading from './PlAgOverlayLoading.vue';

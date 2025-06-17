@@ -14,14 +14,14 @@ export default defineConfig((configEnv): UserConfig => {
           'ag-grid-enterprise',
           'ag-grid-vue3',
           '@milaboratories/biowasm-tools',
-          '@milaboratories/miplots4'
+          '@milaboratories/miplots4',
         ],
         output: {
           globals: {
-            vue: 'Vue'
-          }
-        }
-      }
+            vue: 'Vue',
+          },
+        },
+      },
     },
   } satisfies UserConfig);
 });
