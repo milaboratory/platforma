@@ -249,9 +249,6 @@ catalogs:
     ts-node:
       specifier: ^10.9.2
       version: 10.9.2
-    tsc-alias:
-      specifier: ^1.8.11
-      version: 1.8.11
     tsconfig-paths:
       specifier: ^4.2.0
       version: 4.2.0
@@ -382,6 +379,12 @@ importers:
       '@milaboratories/milaboratories.test-blob-url-custom-protocol.model':
         specifier: workspace:*
         version: link:../model
+      '@milaboratories/platforma-build-configs':
+        specifier: workspace:*
+        version: link:../../../../tools/build-configs
+      '@milaboratories/ts-configs':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-configs
       '@platforma-sdk/ui-vue':
         specifier: workspace:^
         version: link:../../../../sdk/ui-vue
@@ -467,6 +470,12 @@ importers:
       '@milaboratories/milaboratories.test-download-file.model':
         specifier: workspace:*
         version: link:../model
+      '@milaboratories/platforma-build-configs':
+        specifier: workspace:*
+        version: link:../../../../tools/build-configs
+      '@milaboratories/ts-configs':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-configs
       '@platforma-sdk/model':
         specifier: workspace:^
         version: link:../../../../sdk/model
@@ -558,6 +567,12 @@ importers:
       '@milaboratories/milaboratories.test-enter-numbers.model':
         specifier: workspace:*
         version: link:../model
+      '@milaboratories/platforma-build-configs':
+        specifier: workspace:*
+        version: link:../../../../tools/build-configs
+      '@milaboratories/ts-configs':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-configs
       '@platforma-sdk/ui-vue':
         specifier: workspace:^
         version: link:../../../../sdk/ui-vue
@@ -640,6 +655,12 @@ importers:
       '@milaboratories/milaboratories.test-block-model.model':
         specifier: workspace:*
         version: link:../model
+      '@milaboratories/platforma-build-configs':
+        specifier: workspace:*
+        version: link:../../../../tools/build-configs
+      '@milaboratories/ts-configs':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-configs
       '@platforma-sdk/ui-vue':
         specifier: workspace:^
         version: link:../../../../sdk/ui-vue
@@ -713,6 +734,12 @@ importers:
       '@milaboratories/milaboratories.monetization-test.model':
         specifier: workspace:*
         version: link:../model
+      '@milaboratories/platforma-build-configs':
+        specifier: workspace:*
+        version: link:../../../../tools/build-configs
+      '@milaboratories/ts-configs':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-configs
       '@platforma-sdk/model':
         specifier: workspace:*
         version: link:../../../../sdk/model
@@ -795,6 +822,12 @@ importers:
       '@milaboratories/milaboratories.pool-explorer.model':
         specifier: workspace:*
         version: link:../model
+      '@milaboratories/platforma-build-configs':
+        specifier: workspace:*
+        version: link:../../../../tools/build-configs
+      '@milaboratories/ts-configs':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-configs
       '@platforma-sdk/ui-vue':
         specifier: workspace:^
         version: link:../../../../sdk/ui-vue
@@ -877,6 +910,12 @@ importers:
       '@milaboratories/milaboratories.test-read-logs.model':
         specifier: workspace:*
         version: link:../model
+      '@milaboratories/platforma-build-configs':
+        specifier: workspace:*
+        version: link:../../../../tools/build-configs
+      '@milaboratories/ts-configs':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-configs
       '@platforma-sdk/model':
         specifier: workspace:*
         version: link:../../../../sdk/model
@@ -974,6 +1013,12 @@ importers:
       '@milaboratories/milaboratories.test-sum-numbers.model':
         specifier: workspace:*
         version: link:../model
+      '@milaboratories/platforma-build-configs':
+        specifier: workspace:*
+        version: link:../../../../tools/build-configs
+      '@milaboratories/ts-configs':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-configs
       '@platforma-sdk/ui-vue':
         specifier: workspace:^
         version: link:../../../../sdk/ui-vue
@@ -1168,6 +1213,12 @@ importers:
       '@milaboratories/milaboratories.test-upload-file.model':
         specifier: workspace:*
         version: link:../model
+      '@milaboratories/platforma-build-configs':
+        specifier: workspace:*
+        version: link:../../../../tools/build-configs
+      '@milaboratories/ts-configs':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-configs
       '@platforma-sdk/ui-vue':
         specifier: workspace:^
         version: link:../../../../sdk/ui-vue
@@ -1246,6 +1297,12 @@ importers:
       '@milaboratories/helpers':
         specifier: workspace:^
         version: link:../../lib/util/helpers
+      '@milaboratories/platforma-build-configs':
+        specifier: workspace:*
+        version: link:../../tools/build-configs
+      '@milaboratories/ts-configs':
+        specifier: workspace:*
+        version: link:../../tools/ts-configs
       '@milaboratories/uikit':
         specifier: workspace:^
         version: link:../../lib/ui/uikit
@@ -1332,6 +1389,12 @@ importers:
       '@milaboratories/helpers':
         specifier: workspace:^
         version: link:../../lib/util/helpers
+      '@milaboratories/platforma-build-configs':
+        specifier: workspace:*
+        version: link:../../tools/build-configs
+      '@milaboratories/ts-configs':
+        specifier: workspace:*
+        version: link:../../tools/ts-configs
       '@vitejs/plugin-vue':
         specifier: 'catalog:'
         version: 5.2.3(vite@6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0))(vue@3.5.13(typescript@5.5.4))
@@ -2147,6 +2210,12 @@ importers:
       '@milaboratories/helpers':
         specifier: workspace:^
         version: link:../../util/helpers
+      '@milaboratories/platforma-build-configs':
+        specifier: workspace:*
+        version: link:../../../tools/build-configs
+      '@milaboratories/ts-configs':
+        specifier: workspace:*
+        version: link:../../../tools/ts-configs
       '@platforma-sdk/model':
         specifier: workspace:^
         version: link:../../../sdk/model
@@ -2171,9 +2240,6 @@ importers:
       svgo:
         specifier: 'catalog:'
         version: 3.3.2
-      tsc-alias:
-        specifier: 'catalog:'
-        version: 1.8.11
       vite:
         specifier: 'catalog:'
         version: 6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0)
@@ -7819,10 +7885,6 @@ packages:
     resolution: {integrity: sha512-pbnl5XzGBdrFU/wT4jqmJVPn2B6UHPBOhzMQkY/SPUPB6QtUXtmBHBIwCbXJol93mOpGMnQyP/+BB19q04xj7g==}
     engines: {node: '>=4'}
 
-  binary-extensions@2.3.0:
-    resolution: {integrity: sha512-Ceh+7ox5qe7LJuLHoY0feh3pHuUDHAcRUeyL2VYghZwfpkNIy/+8Ocg0a3UuSoYzavmylwuLWQOf3hl0jjMMIw==}
-    engines: {node: '>=8'}
-
   birpc@0.2.19:
     resolution: {integrity: sha512-5WeXXAvTmitV1RqJFppT5QtUiz2p1mRSYU000Jkft5ZUCLJIk4uQriYNO50HknxKwM6jd8utNc66K1qGIwwWBQ==}
 
@@ -7999,10 +8061,6 @@ packages:
     resolution: {integrity: sha512-Pj779qHxV2tuapviy1bSZNEL1maXr13bPYpsvSDB68HlYcYuhlDrmGd63i0JHMCLKzc7rUSNIrpdJlhVlNwrxA==}
     engines: {node: '>= 0.8.0'}
 
-  chokidar@3.6.0:
-    resolution: {integrity: sha512-7VT13fmjotKpGipCW9JEQAusEPE+Ei8nl6/g4FBAmIm0GOOLMua9NDDo/DWp0ZAxCr3cPq5ZpBqmPAQgDda2Pw==}
-    engines: {node: '>= 8.10.0'}
-
   chokidar@4.0.1:
     resolution: {integrity: sha512-n8enUVCED/KVRQlab1hr3MVpcVMvxtZjmEa956u+4YijlmQED223XMSYj2tLuKvr4jcCTzNNMpQDUer72MMmzA==}
     engines: {node: '>= 14.16.0'}
@@ -8116,10 +8174,6 @@ packages:
   commander@7.2.0:
     resolution: {integrity: sha512-QrWXB+ZQSVPmIWIhtEO9H+gwHaMGYiF5ChvoJ+K9ZGHG/sVsa6yiesAD1GC/x46sET00Xlwo1u49RVVVzvcSkw==}
     engines: {node: '>= 10'}
-
-  commander@9.5.0:
-    resolution: {integrity: sha512-KRs7WVDKg86PWiuAqhDrAQnTXZKraVcCc6vFdL14qrZ/DcWwuRo7VoiYXalXO7S5GKpqYiVEwCbgFDfxNHKJBQ==}
-    engines: {node: ^12.20.0 || >=14}
 
   common-tags@1.8.2:
     resolution: {integrity: sha512-gk/Z852D2Wtb//0I+kRFNKKE9dIIVirjoqPoA1wJU+XePVXZfGeBpk45+A1rKO4Q43prqWBNY/MiIeRLbPWUaA==}
@@ -9224,10 +9278,6 @@ packages:
   is-arrayish@0.3.2:
     resolution: {integrity: sha512-eVRqCvVlZbuw3GrM63ovNSNAeA1K16kaR/LRY/92w0zxQ5/1YzwblUX652i4Xs9RwAGjW9d9y6X88t8OaAJfWQ==}
 
-  is-binary-path@2.1.0:
-    resolution: {integrity: sha512-ZMERYes6pDydyuGidse7OsHxtbI7WVeUEozgR/g7rd0xUimYNlvZRE/K2MgZTjWy725IfelLeVcEM97mmtRGXw==}
-    engines: {node: '>=8'}
-
   is-ci@3.0.1:
     resolution: {integrity: sha512-ZYvCgrefwqoQ6yTyYUbQu64HsITZ3NfKX1lzaEYdkTDcfKzzCI/wthRRYKkdjHKFVgNiXKAKm65Zo1pk2as/QQ==}
     hasBin: true
@@ -9868,10 +9918,6 @@ packages:
     resolution: {integrity: sha512-WWdIxpyjEn+FhQJQQv9aQAYlHoNVdzIzUySNV1gHUPDSdZJ3yZn7pAAbQcV7B56Mvu881q9FZV+0Vx2xC44VWA==}
     engines: {node: ^18.17.0 || >=20.5.0}
 
-  mylas@2.1.13:
-    resolution: {integrity: sha512-+MrqnJRtxdF+xngFfUUkIMQrUUL0KsxbADUkn23Z/4ibGg192Q+z+CQyiYwvWTsYjJygmMR8+w3ZDa98Zh6ESg==}
-    engines: {node: '>=12.0.0'}
-
   mz@2.7.0:
     resolution: {integrity: sha512-z81GNO7nnYMEhrGh9LeymoE4+Yr0Wn5McHIZMK5cfQCl+NDX08sCZgUc9/6MHni9IWuFLm1Z3HTCXu2z9fN62Q==}
 
@@ -10144,10 +10190,6 @@ packages:
   pkg-types@2.1.0:
     resolution: {integrity: sha512-wmJwA+8ihJixSoHKxZJRBQG1oY8Yr9pGLzRmSsNms0iNWyHHAlZCa7mmKiFR10YPZuz/2k169JiS/inOjBCZ2A==}
 
-  plimit-lit@1.6.1:
-    resolution: {integrity: sha512-B7+VDyb8Tl6oMJT9oSO2CW8XC/T4UcJGrwOVoNGwOQsQYhlpfajmrMj5xeejqaASq3V/EqThyOeATEOMuSEXiA==}
-    engines: {node: '>=12'}
-
   postcss-load-config@6.0.1:
     resolution: {integrity: sha512-oPtTM4oerL+UXmx+93ytZVN82RrlY/wPUV8IeDxFrzIjXOLF1pN+EmKPLbubvKHT2HC20xXsCAH2Z+CKV6Oz/g==}
     engines: {node: '>= 18'}
@@ -10260,10 +10302,6 @@ packages:
   querystringify@2.2.0:
     resolution: {integrity: sha512-FIqgj2EUvTa7R50u0rGsyTftzjYmv/a3hO345bZNrqabNqjtgiDMgmo4mkUjd+nzU5oF3dClKqFIPUKybUyqoQ==}
 
-  queue-lit@1.5.2:
-    resolution: {integrity: sha512-tLc36IOPeMAubu8BkW8YDBV+WyIgKlYU7zUNs0J5Vk9skSZ4JfGlPOqplP0aHdfv7HL0B2Pg6nwiq60Qc6M2Hw==}
-    engines: {node: '>=12'}
-
   queue-microtask@1.2.3:
     resolution: {integrity: sha512-NuaNSa6flKT5JaSYQzJok04JzTL1CA6aGhv5rfLW3PgqA+M2ChpZQnAC8h8i4ZFkBS8X5RqkDBHA7r4hej3K9A==}
 
@@ -10316,10 +10354,6 @@ packages:
 
   readdir-glob@1.1.3:
     resolution: {integrity: sha512-v05I2k7xN8zXvPD9N+z/uhXPaj0sUFCe2rcWZIpBsqxfP7xXFQ0tipAd/wjj1YxWyWtUS5IDJpOG82JKt2EAVA==}
-
-  readdirp@3.6.0:
-    resolution: {integrity: sha512-hOS089on8RduqdbhvQ5Z37A0ESjsqz6qnRcffsMU3495FuTdqSm+7bhJ29JvIOsBDEEnan5DPu9t3To9VRlMzA==}
-    engines: {node: '>=8.10.0'}
 
   readdirp@4.0.2:
     resolution: {integrity: sha512-yDMz9g+VaZkqBYS/ozoBJwaBhTbZo3UNYQHNRw1D3UFQB8oHB4uS/tAODO+ZLjGWmUbKnIlOWO+aaIiAxrUWHA==}
@@ -10950,10 +10984,6 @@ packages:
         optional: true
       '@swc/wasm':
         optional: true
-
-  tsc-alias@1.8.11:
-    resolution: {integrity: sha512-2DuEQ58A9Rj2NE2c1+/qaGKlshni9MCK95MJzRGhQG0CYLw0bE/ACgbhhTSf/p1svLelwqafOd8stQate2bYbg==}
-    hasBin: true
 
   tsconfig-paths@4.2.0:
     resolution: {integrity: sha512-NoZ4roiN7LnbKn9QqE1amc9DJfzvZXxF4xDavcOWt1BPkdx+m+0gJuPM+S0vCe7zTJMYUP0R8pO2XMr+Y8oLIg==}
@@ -18050,8 +18080,6 @@ snapshots:
     dependencies:
       is-windows: 1.0.2
 
-  binary-extensions@2.3.0: {}
-
   birpc@0.2.19: {}
 
   bl@1.2.3:
@@ -18238,18 +18266,6 @@ snapshots:
 
   check-more-types@2.24.0: {}
 
-  chokidar@3.6.0:
-    dependencies:
-      anymatch: 3.1.3
-      braces: 3.0.3
-      glob-parent: 5.1.2
-      is-binary-path: 2.1.0
-      is-glob: 4.0.3
-      normalize-path: 3.0.0
-      readdirp: 3.6.0
-    optionalDependencies:
-      fsevents: 2.3.3
-
   chokidar@4.0.1:
     dependencies:
       readdirp: 4.0.2
@@ -18345,8 +18361,6 @@ snapshots:
   commander@5.1.0: {}
 
   commander@7.2.0: {}
-
-  commander@9.5.0: {}
 
   common-tags@1.8.2: {}
 
@@ -19665,10 +19679,6 @@ snapshots:
 
   is-arrayish@0.3.2: {}
 
-  is-binary-path@2.1.0:
-    dependencies:
-      binary-extensions: 2.3.0
-
   is-ci@3.0.1:
     dependencies:
       ci-info: 3.9.0
@@ -20559,8 +20569,6 @@ snapshots:
 
   mute-stream@2.0.0: {}
 
-  mylas@2.1.13: {}
-
   mz@2.7.0:
     dependencies:
       any-promise: 1.3.0
@@ -20829,10 +20837,6 @@ snapshots:
       exsolve: 1.0.4
       pathe: 2.0.3
 
-  plimit-lit@1.6.1:
-    dependencies:
-      queue-lit: 1.5.2
-
   postcss-load-config@6.0.1(postcss@8.5.4)(tsx@4.19.1)(yaml@2.7.0):
     dependencies:
       lilconfig: 3.1.3
@@ -20938,8 +20942,6 @@ snapshots:
 
   querystringify@2.2.0: {}
 
-  queue-lit@1.5.2: {}
-
   queue-microtask@1.2.3: {}
 
   queue-tick@1.0.1: {}
@@ -21010,10 +21012,6 @@ snapshots:
   readdir-glob@1.1.3:
     dependencies:
       minimatch: 5.1.6
-
-  readdirp@3.6.0:
-    dependencies:
-      picomatch: 2.3.1
 
   readdirp@4.0.2: {}
 
@@ -21761,15 +21759,6 @@ snapshots:
       v8-compile-cache-lib: 3.0.1
       yn: 3.1.1
     optional: true
-
-  tsc-alias@1.8.11:
-    dependencies:
-      chokidar: 3.6.0
-      commander: 9.5.0
-      globby: 11.1.0
-      mylas: 2.1.13
-      normalize-path: 3.0.0
-      plimit-lit: 1.6.1
 
   tsconfig-paths@4.2.0:
     dependencies:

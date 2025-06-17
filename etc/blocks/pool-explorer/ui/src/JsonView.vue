@@ -1,6 +1,5 @@
 <script lang="ts" generic="T" setup>
 import * as monaco from 'monaco-editor';
-// @ts-expect-error @todo
 import jsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker';
 import { onMounted, reactive, ref, watchEffect } from 'vue';
 import { notEmpty } from '@milaboratories/helpers';
