@@ -11,8 +11,8 @@
   --label-offset-left-x: 8px;
   --label-offset-right-x: 8px;
   --prefix-color: var(--color-placeholder);
-  --icon-color: #000;
   --contour-offset: 2px;
+  --svg-fill-0: #000;
 
   width: 100%;
   height: var(--control-height, 40px);
@@ -114,23 +114,6 @@
     color: var(--prefix-color);
   }
 
-  &__append {
-    padding-right: 12px;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 4px;
-
-    .icon {
-      cursor: pointer;
-    }
-
-    .mask {
-      --svg-fill-0: var(--control-mask-fill);
-      cursor: pointer;
-    }
-  }
-
   &__helper {
     @include field-helper();
   }
@@ -169,7 +152,7 @@
     --contour-color: var(--txt-error);
     --label-color: var(--txt-error);
     --text-color: var(--txt-error);
-    --icon-color: var(--txt-error);
+    --svg-fill-0: var(--txt-error);
 
     .pl-file-input__progress {
       display: none;

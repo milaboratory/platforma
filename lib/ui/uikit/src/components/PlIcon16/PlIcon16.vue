@@ -21,7 +21,14 @@ const size = computed(() => {
 </script>
 
 <template>
-  <PlSvg :name="`16_${props.name}`" :class="['icon-16', $style.icon]" :width="size" :height="size" :color="props.color" :stroke="props.stroke" />
+  <PlSvg
+    :name="`16_${props.name}`"
+    :class="['icon-16', 'maks-16', `icon-${props.name}`, `mask-${props.name}`, $style.icon]"
+    :width="size"
+    :height="size"
+    :color="props.color"
+    :stroke="props.stroke"
+  />
 </template>
 
 <style module>
