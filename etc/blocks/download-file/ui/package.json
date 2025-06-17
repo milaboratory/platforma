@@ -10,6 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@milaboratories/ts-configs": "workspace:*",
+    "@milaboratories/platforma-build-configs": "workspace:*",
     "@milaboratories/milaboratories.test-download-file.model": "workspace:*",
     "vue": "catalog:",
     "@vueuse/core": "catalog:",

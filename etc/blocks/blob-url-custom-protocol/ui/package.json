@@ -10,6 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@milaboratories/ts-configs": "workspace:*",
+    "@milaboratories/platforma-build-configs": "workspace:*",
     "@milaboratories/milaboratories.test-blob-url-custom-protocol.model": "workspace:*",
     "vue": "catalog:",
     "@platforma-sdk/ui-vue": "workspace:^"
