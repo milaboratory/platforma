@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 4.7.5
+
+### Patch Changes
+
+- 2d2a39d: Fixes cannot get element from strictMap: key "has_suffix" in xsv builder
+
 ## 4.7.4
 
 ### Patch Changes
