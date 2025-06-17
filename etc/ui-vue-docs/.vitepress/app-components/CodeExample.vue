@@ -114,7 +114,7 @@ function copyCode() {
     top: 4px;
 
     .mask-16 {
-      background-color: green;
+      --svg-fill-0: green;
     }
   }
 }

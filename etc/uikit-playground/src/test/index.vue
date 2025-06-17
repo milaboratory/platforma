@@ -26,8 +26,8 @@ function onCloseTooltip() {
       <div>Item 2</div>
       <div>Item 3</div>
       <div>
-        <PlMaskIcon16 style="background-color: red" name="play" />
-        <PlMaskIcon16 style="background-color: red" name="checkmark" />
+        <PlMaskIcon16 style="--svg-fill-0: red" name="play" />
+        <PlMaskIcon16 style="--svg-fill-0: red" name="checkmark" />
       </div>
     </div>
     <div style="display: flex; background-color: #fff; padding: 12px; margin-top: 12px">

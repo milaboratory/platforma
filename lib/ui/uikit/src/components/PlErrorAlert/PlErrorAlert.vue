@@ -86,7 +86,7 @@ function onCopy() {
 }
 
 .titleIcon {
-  background-color: var(--txt-error);
+  --svg-fill-0: var(--txt-error);
 }
 
 .titleText {

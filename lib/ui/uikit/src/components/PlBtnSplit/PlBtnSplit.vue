@@ -6,7 +6,7 @@ import type { ListOption } from '../../types';
 import { useElementPosition } from '../../composition/usePosition';
 import { normalizeListOptions } from '../../helpers/utils';
 import { deepEqual } from '@milaboratories/helpers';
-import PlMaskIcon16 from '../PlMaskIcon16/PlMaskIcon16.vue';
+import { PlMaskIcon16 } from '../PlMaskIcon16';
 
 const props = defineProps<{
   /**

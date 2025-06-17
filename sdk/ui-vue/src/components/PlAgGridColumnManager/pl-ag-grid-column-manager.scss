@@ -23,7 +23,7 @@
         line-height: 0;
 
         .mask-16 {
-            background-color: var(--ic-02);
+            --svg-fill-0: var(--ic-02);
         }
     }
 
@@ -33,7 +33,7 @@
 
     &__pin {
         .mask-24 {
-            background-color: var(--ic-02);
+            --svg-fill-0: var(--ic-02);
         }
     }
 
@@ -42,10 +42,10 @@
         visibility: hidden;
 
         .mask-24 {
-            background-color: var(--ic-02);
+            --svg-fill-0: var(--ic-02);
 
             &:hover {
-                background-color: var(--ic-01);
+                --svg-fill-0: var(--ic-01);
             }
         }
     }

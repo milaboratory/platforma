@@ -7,7 +7,7 @@
     border-radius: 2px;
 
     .mask-error {
-        background: var(--txt-error);
+        --svg-fill-0: var(--txt-error);
     }
 
     &.not-started {

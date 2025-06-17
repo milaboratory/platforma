@@ -37,7 +37,7 @@
   .mask-24 {
     display: block;
     min-width: 24px;
-    background-color: var(--icon-color);
+    --svg-fill-0: var(--icon-color);
   }
 
   .mask-close {
@@ -126,7 +126,7 @@
     }
 
     .mask {
-      background-color: var(--control-mask-fill);
+      --svg-fill-0: var(--control-mask-fill);
       cursor: pointer;
     }
   }

@@ -3,11 +3,8 @@ import {
   icons16,
   icons24,
   PlBlockPage,
-  PlBtnGhost,
   PlIcon16,
   PlIcon24,
-  PlMaskIcon16,
-  PlMaskIcon24,
   PlRow,
   PlSvg,
   PlTooltip,
@@ -56,7 +53,7 @@ const filteredIcons24 = computed(() => icons24.filter((v) => v.includes(iconFilt
           :name="`16_${name}`"
           :width="iconSize"
           :height="iconSize"
-          :colors="[iconColor1, iconColor2]"
+          :color="[iconColor1, iconColor2]"
           :stroke="iconStroke"
         />
         <template #tooltip>{{ `16_${name}` }}</template>
@@ -67,7 +64,7 @@ const filteredIcons24 = computed(() => icons24.filter((v) => v.includes(iconFilt
           :name="`24_${name}`"
           :width="iconSize"
           :height="iconSize"
-          :colors="[iconColor1, iconColor2]"
+          :color="[iconColor1, iconColor2]"
           :stroke="iconStroke"
         />
         <template #tooltip>{{ `24_${name}` }}</template>
@@ -90,28 +87,6 @@ const filteredIcons24 = computed(() => icons24.filter((v) => v.includes(iconFilt
         <PlIcon24 :name="name" />
         <template #tooltip> icon-24 icon-{{ name }}</template>
       </PlTooltip>
-    </PlRow>
-
-    <h4>PlMaskIcon16</h4>
-
-    <PlRow wrap>
-      <PlBtnGhost v-for="(name, i) of icons16" :key="i">
-        {{ name }}
-        <template #append>
-          <PlMaskIcon16 :name="name" />
-        </template>
-      </PlBtnGhost>
-    </PlRow>
-
-    <h4>PlMaskIcon24</h4>
-
-    <PlRow wrap>
-      <PlBtnGhost v-for="(name, i) of icons24" :key="i">
-        {{ name }}
-        <template #append>
-          <PlMaskIcon24 :name="name" />
-        </template>
-      </PlBtnGhost>
     </PlRow>
   </PlBlockPage>
 </template>

@@ -38,8 +38,8 @@ export function registerSvg(raw: string): SvgMeta {
     const preparedSvg = raw
       .replace(/^<svg[^>]*>/, `<svg id="${id}" viewBox="${viewBox}">`)
       .replace(/<\/svg>\s*$/, '</svg>')
-      .replace(/\bfill\s*=\s*(['"])(.*?)\1/gi, (_, q, value) => `fill=${q}var(--fill-${fillIdx++}, ${value})${q}`)
-      .replace(/\bstroke\s*=\s*(['"])(.*?)\1/gi, (_, q, value) => `stroke=${q}var(--stroke-${strokeIdx++}, ${value})${q}`);
+      .replace(/\bfill\s*=\s*(['"])(.*?)\1/gi, (_, q, value) => `fill=${q}var(--svg-fill-${fillIdx++}, ${value})${q}`)
+      .replace(/\bstroke\s*=\s*(['"])(.*?)\1/gi, (_, q, value) => `stroke=${q}var(--svg-stroke-${strokeIdx++}, ${value})${q}`);
 
     const template = document.createElement('template');
     template.innerHTML = preparedSvg;

@@ -9,10 +9,8 @@ const props = defineProps<{
   name?: `16_${MaskIconName16}` | `24_${MaskIconName24}`;
   width?: number | string;
   height?: number | string;
-  color?: string;
-  colors?: string[];
-  stroke?: string;
-  strokes?: string[];
+  color?: string | string[];
+  stroke?: string | string[];
 }>();
 
 const uri = computedAsync(async () => {
@@ -26,21 +24,21 @@ const styleSize = computed(() =>
     ? undefined
     : `--svg-width: ${getSize(props.width, svgMeta.value.defaultWidth)}; --svg-height: ${getSize(props.height, svgMeta.value.defaultHeight)};`,
 );
-const styleColor = computed(() => getStyleColor('fill', props.colors, props.color));
-const styleStroke = computed(() => getStyleColor('stroke', props.strokes, props.stroke));
+const styleColor = computed(() => getStyleColor('fill', props.color));
+const styleStroke = computed(() => getStyleColor('stroke', props.stroke));
 
 function getSize(propSize: undefined | number | string, svgSize: number): string {
   if (propSize != null) return typeof propSize === 'string' ? propSize : `${propSize}px`;
   return `${svgSize}px`;
 }
 
-function getStyleColor(prop: 'fill' | 'stroke', colors: undefined | string[], color: undefined | string): undefined | string {
-  if (Array.isArray(colors)) {
-    return colors.reduce((acc, color, i) => acc + `--${prop}-${i}: ${color};`, '');
+function getStyleColor(prop: 'fill' | 'stroke', color: undefined | string | string[]): undefined | string {
+  if (Array.isArray(color)) {
+    return color.reduce((acc, color, i) => acc + `--svg-${prop}-${i}: ${color};`, '');
   }
 
   if (typeof color === 'string' && color.length > 0) {
-    return `--${prop}-0: ${color};`;
+    return `--svg-${prop}-0: ${color};`;
   }
 
   return undefined;
@@ -57,11 +55,12 @@ function getStyleColor(prop: 'fill' | 'stroke', colors: undefined | string[], co
 :root {
   --svg-width: unset;
   --svg-height: unset;
+  --svg-fill-0: unset; /* can be in any quantity, depends on the icon (--svg-fill-X) */
+  --svg-stroke-0: unset; /* can be in any quantity, depends on the icon (--svg-stroke-X) */
 }
 
 .icon {
   width: var(--svg-width);
   height: var(--svg-height);
-  fill: black;
 }
 </style>

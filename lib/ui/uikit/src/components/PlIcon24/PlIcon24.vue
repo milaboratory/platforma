@@ -1,15 +1,27 @@
 <script lang="ts" setup>
-import type { MaskIconName24 } from '../../types';
+import type { MaskIconName24, Size } from '../../types';
 import { PlSvg } from '../PlSvg';
+import { computed } from 'vue';
 
 const props = defineProps<{
   name: MaskIconName24;
-  size?: number | string;
+  size?: number | string | Size;
+  color?: string | string[];
+  stroke?: string | string[];
 }>();
+
+const size = computed(() => {
+  if (typeof props.size === 'string') {
+    if (props.size === 'small') return 16;
+    if (props.size === 'medium') return 24;
+    if (props.size === 'large') return 32;
+  }
+  return props.size ?? 24;
+});
 </script>
 
 <template>
-  <PlSvg :name="`24_${props.name}`" :class="['icon-24', $style.icon]" :width="props.size ?? 24" :height="props.size ?? 24" />
+  <PlSvg :name="`24_${props.name}`" :class="['icon-24', $style.icon]" :width="size" :height="size" :color="props.color" :stroke="props.stroke" />
 </template>
 
 <style module>
