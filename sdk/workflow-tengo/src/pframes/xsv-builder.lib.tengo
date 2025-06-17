@@ -1,6 +1,7 @@
 ll := import(":ll")
 maps := import(":maps")
 strings := import(":strings")
+text := import("text")
 pSpec := import(":pframes.spec")
 pBuilder := import(":pframes.builder")
 xsv := import(":pframes.xsv")
@@ -44,15 +45,15 @@ xsvFileBuilder := func(xsvType) {
         processedBaseKeys := {}
 
         for key, value in flatFrame {
-            if strings.has_suffix(key, ".spec") {
-                baseKey := strings.trim_suffix(key, ".spec")
+            if text.has_suffix(key, ".spec") {
+                baseKey := text.trim_suffix(key, ".spec")
                 if is_undefined(parsedColumns[baseKey]) {
                     parsedColumns[baseKey] = { key: baseKey }
                 }
                 parsedColumns[baseKey].spec = value
                 processedBaseKeys[baseKey] = true
-            } else if strings.has_suffix(key, ".data") {
-                baseKey := strings.trim_suffix(key, ".data")
+            } else if text.has_suffix(key, ".data") {
+                baseKey := text.trim_suffix(key, ".data")
                 if is_undefined(parsedColumns[baseKey]) {
                     parsedColumns[baseKey] = { key: baseKey }
                 }
@@ -457,7 +458,7 @@ xsvFileBuilder := func(xsvType) {
                     // Heuristic: if any key has ".spec" or ".data", assume flat frame
                     isFlatFrame := false
                     for k, _ in item {
-                        if strings.has_suffix(k, ".spec") || strings.has_suffix(k, ".data") {
+                        if text.has_suffix(k, ".spec") || text.has_suffix(k, ".data") {
                             isFlatFrame = true
                             break
                         }
