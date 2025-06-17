@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 4.8.0
+
+### Minor Changes
+
+- e18117d: Force quota feature flags to true, added serviceFields feature flag to allow execution on previous platforma version with an issue with service fields
+
 ## 4.7.5
 
 ### Patch Changes
