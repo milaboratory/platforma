@@ -1,17 +1,18 @@
 {
   "version": "1.0.3",
   "name": "@milaboratories/platforma-build-configs",
+  "type": "module",
   "exports": {
     ".": "./src/index.ts",
     "./tsup": {
       "types": "./src/tsup.ts",
-      "import": "./dist/tsup.mjs",
-      "require": "./dist/tsup.js"
+      "import": "./dist/tsup.js",
+      "require": "./dist/tsup.cjs"
     },
     "./vite": {
       "types": "./src/vite.ts",
-      "import": "./dist/vite.mjs",
-      "require": "./dist/vite.js"
+      "import": "./dist/vite.js",
+      "require": "./dist/vite.cjs"
     },
     "./tsconfig_lib_bundled.json": "./tsconfig_lib_bundled.json"
   },
