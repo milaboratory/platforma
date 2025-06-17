@@ -6,15 +6,18 @@
   "types": "dist/src/index.d.ts",
   "styles": "dist/pl-uikit.css",
   "exports": {
-    ".": "./src/index.ts",
-    "./styles/mixins": "./src/assets/mixins.scss"
+    ".": {
+      "default": "./dist/pl-uikit.js",
+      "types": "./dist/src/index.d.ts",
+      "styles": "./dist/pl-uikit.css"
+    }
   },
   "scripts": {
     "dev": "vite",
     "build": "vite build && pnpm run build:types",
     "test:unit": "vitest run",
     "test": "vitest run",
-    "build:types": "vue-tsc --declaration --emitDeclarationOnly -p ./tsconfig.lib.json",
+    "build:types": "vue-tsc --declaration --noEmit false --emitDeclarationOnly -p ./tsconfig.lib.json",
     "tsc": "tsc",
     "watch": "vite build --watch",
     "type-check": "vue-tsc --project ./tsconfig.lib.json",

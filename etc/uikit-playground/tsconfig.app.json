@@ -2,14 +2,8 @@
   "extends": "@milaboratories/ts-configs/browser",
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
-    "paths": {
-      "milaboratories/uikit": [
-        "../../lib/ui/uikit/src/index.ts"
-      ],
-      "milaboratories/uikit/styles": [
-        "../../lib/ui/uikit/src/assets/ui.scss"
-      ]
-    }
+    "outDir": "dist",
+    "baseUrl": ".",
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue", "../../lib/ui/uikit/src/**/*.ts", "../../lib/ui/uikit/src/**/*.vue", "../../lib/ui/uikit/src/**/*.d.ts"]
+  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue"]
 }

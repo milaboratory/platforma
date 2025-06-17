@@ -6,7 +6,9 @@
   "types": "dist/src/lib.d.ts",
   "styles": "dist/lib.css",
   "exports": {
-    ".": "./src/lib.ts"
+    "types": "./dist/src/lib.d.ts",
+    "styles": "./dist/lib.css",
+    "default": "./dist/lib.js"
   },
   "scripts": {
     "test": "vitest run --passWithNoTests",
