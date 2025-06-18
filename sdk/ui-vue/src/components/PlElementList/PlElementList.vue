@@ -279,7 +279,7 @@ const unpinnedKeysRef = computed(() => unpinnedItemsRef.value.map(getKey));
 }
 
 :global(.sortable-ghost) {
-  opacity: 0;
+  visibility: hidden;
 }
 :global(.sortable-drag) {
   opacity: 1;
