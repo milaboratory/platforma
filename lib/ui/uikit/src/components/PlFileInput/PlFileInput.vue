@@ -10,6 +10,7 @@ import DoubleContour from '../../utils/DoubleContour.vue';
 import { useLabelNotch } from '../../utils/useLabelNotch';
 import { PlFileDialog } from '../PlFileDialog';
 import { PlMaskIcon24 } from '../PlMaskIcon24';
+import { PlSvg } from '../PlSvg';
 import { PlTooltip } from '../PlTooltip';
 import './pl-file-input.scss';
 
@@ -176,7 +177,7 @@ if (!props.cellStyle) {
     >
       <div :style="progressStyle" class="pl-file-input__progress" />
       <label v-if="!cellStyle && label" ref="label">
-        <SvgRequired v-if="required" />
+        <PlSvg v-if="required" :uri="SvgRequired" />
         <span>{{ label }}</span>
         <PlTooltip v-if="slots.tooltip || filePath" class="info" position="top">
           <template #tooltip>

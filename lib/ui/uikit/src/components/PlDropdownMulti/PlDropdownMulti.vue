@@ -20,8 +20,9 @@ import { deepEqual, deepIncludes } from '../../helpers/objects';
 import { normalizeListOptions } from '../../helpers/utils';
 import DropdownOverlay from '../../utils/DropdownOverlay/DropdownOverlay.vue';
 import { PlMaskIcon24 } from '../PlMaskIcon24';
-import SvgRequired from '../../generated/components/svg/images/SvgRequired.vue';
 import { getErrorMessage } from '../../helpers/error.ts';
+import { PlSvg } from '../PlSvg';
+import SvgRequired from '../../assets/images/required.svg?raw';
 
 const emit = defineEmits<{
   (e: 'update:modelValue', v: M[]): void;
