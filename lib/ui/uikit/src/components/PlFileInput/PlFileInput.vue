@@ -10,8 +10,9 @@ import { getFileNameFromHandle, getFilePathFromHandle } from '@platforma-sdk/mod
 import DoubleContour from '../../utils/DoubleContour.vue';
 import { useLabelNotch } from '../../utils/useLabelNotch';
 import { prettyBytes } from '@milaboratories/helpers';
-import SvgRequired from '../../generated/components/svg/images/SvgRequired.vue';
 import { getErrorMessage } from '../../helpers/error.ts';
+import { PlSvg } from '../PlSvg';
+import SvgRequired from '../../assets/images/required.svg?raw';
 
 const data = reactive({
   fileDialogOpen: false,
@@ -176,7 +177,7 @@ if (!props.cellStyle) {
     >
       <div :style="progressStyle" class="pl-file-input__progress" />
       <label v-if="!cellStyle && label" ref="label">
-        <SvgRequired v-if="required" />
+        <PlSvg v-if="required" :uri="SvgRequired" />
         <span>{{ label }}</span>
         <PlTooltip v-if="slots.tooltip || filePath" class="info" position="top">
           <template #tooltip>
