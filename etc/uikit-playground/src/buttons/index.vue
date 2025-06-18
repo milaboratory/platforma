@@ -83,7 +83,7 @@ function onClick() {
         </fieldset>
         <fieldset>
           <legend>PlBtnGhost with all the icons</legend>
-          <PlBtnGhost v-for="icon in icons24" :key="icon" :key="icon" :size="props.size" :icon="icon">
+          <PlBtnGhost v-for="icon in icons24" :key="icon" :size="props.size" :icon="icon">
             (24x24): {{ icon }}
           </PlBtnGhost>
         </fieldset>

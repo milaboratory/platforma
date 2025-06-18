@@ -81,8 +81,6 @@ export type ImportedFiles = {
 export type InferComponentProps<C extends Component> = C extends Component<infer P> ? P : never;
 
 declare global {
-  const platforma: Platforma | undefined;
-
   interface Window {
     platforma: Platforma | undefined;
   }
