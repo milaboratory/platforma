@@ -1,5 +1,14 @@
 # @platforma-sdk/ui-vue
 
+## 1.34.8
+
+### Patch Changes
+
+- 33d6252: Fix Seqlogo overlap in the MSA component
+- Updated dependencies [23f719d]
+  - @platforma-sdk/model@1.34.8
+  - @milaboratories/uikit@2.2.83
+
 ## 1.34.4
 
 ### Patch Changes
