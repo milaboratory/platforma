@@ -46,20 +46,18 @@ function getStyleColor(prop: 'fill' | 'stroke', color: undefined | string | stri
 </script>
 
 <template>
-  <svg v-if="svgMeta" :style="[styleSize, styleColor, styleStroke]" :class="$style.icon">
+  <svg v-if="svgMeta" :style="[styleSize, styleColor, styleStroke]" :class="$style.svg">
     <use :href="`#${svgMeta.spriteId}`" />
   </svg>
 </template>
 
 <style module>
-:root {
+.svg {
   --svg-width: unset;
   --svg-height: unset;
   --svg-fill-0: unset; /* can be in any quantity, depends on the icon (--svg-fill-X) */
   --svg-stroke-0: unset; /* can be in any quantity, depends on the icon (--svg-stroke-X) */
-}
 
-.icon {
   width: var(--svg-width);
   height: var(--svg-height);
 }

@@ -59,7 +59,7 @@
 
     &__icon,
     .mask-loading {
-        --svg-fill-0: var(--border-color);
+        --icon-color: var(--border-color);
     }
 
     &__icon-container {

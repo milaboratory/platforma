@@ -33,6 +33,8 @@ const size = computed(() => {
 
 <style module>
 .icon {
+  /* pass color to svg variable */
+  --svg-fill-0: var(--icon-color, var(--mask-icon-bg-color));
   display: inline-block;
 }
 </style>

@@ -23,7 +23,7 @@ const size = computed(() => {
 <template>
   <PlSvg
     :name="`16_${props.name}`"
-    :class="['icon-16', 'maks-16', `icon-${props.name}`, `mask-${props.name}`, $style.icon]"
+    :class="['icon-16', 'mask-16', `icon-${props.name}`, `mask-${props.name}`, $style.icon]"
     :width="size"
     :height="size"
     :color="props.color"
@@ -33,6 +33,8 @@ const size = computed(() => {
 
 <style module>
 .icon {
+  /* pass color to svg variable */
+  --svg-fill-0: var(--icon-color, var(--mask-icon-bg-color));
   display: inline-block;
 }
 </style>
