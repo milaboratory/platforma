@@ -1,8 +1,8 @@
 import { resolve } from 'path';
-import { defineConfig, mergeConfig } from 'vite';
+import { defineConfig, mergeConfig, type UserConfig } from 'vite';
 import { createViteDevConfig } from '@milaboratories/platforma-build-configs';
 
-export default defineConfig((configEnv) => {
+export default defineConfig((configEnv): UserConfig => {
   return mergeConfig(createViteDevConfig(configEnv), {
     define: {
       APP_VERSION: JSON.stringify(process.env.npm_package_version),
