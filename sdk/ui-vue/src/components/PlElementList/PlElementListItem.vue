@@ -1,6 +1,6 @@
 <script generic="T extends unknown = unknown" lang="ts" setup>
 import { computed } from 'vue';
-import { PlIcon } from '@milaboratories/uikit';
+import { PlIcon, PlIcon16 } from '@milaboratories/uikit';
 import SvgViewHide from '@milaboratories/uikit/svg/icons/24_view-hide.svg?raw';
 import SvgViewShow from '@milaboratories/uikit/svg/icons/24_view-show.svg?raw';
 import SvgPin from '@milaboratories/uikit/svg/icons/24_pin.svg?raw';
@@ -54,9 +54,12 @@ const emit = defineEmits<{
       >
         <PlIcon :uri="SvgDragDots" />
       </div>
+      <PlIcon16 :class="[$style.contentChevron, { [$style.opened]: props.isOpened }]" name="chevron-down" />
+
       <div :class="$style.title">
         <slot name="title" :item="props.item" :index="props.index" />
       </div>
+
       <div :class="[$style.actions, $style.showOnHover]">
         <div
           v-if="props.isToggable"
@@ -91,15 +94,12 @@ const emit = defineEmits<{
 </template>
 
 <style module>
-:root {
-  --background: white;
-}
-
 .root {
+  --background: rgba(255, 255, 255, 0.8);
+
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 8px;
   border-radius: var(--border-radius);
   border: 1px solid var(--color-div-grey);
   background-color: var(--background);
@@ -107,6 +107,9 @@ const emit = defineEmits<{
 
   &:hover {
     border-color: var(--border-color-focus);
+  }
+
+  &[draggable="true"] {
     box-shadow: 0 0 0 4px color-mix(in srgb, var(--border-color-focus) 50%, transparent);
   }
 
@@ -124,23 +127,43 @@ const emit = defineEmits<{
   position: relative;
   display: flex;
   align-items: center;
+  padding: 8px;
+  border-radius: var(--border-radius) var(--border-radius) 0 0;
+
+  &:hover, &.opened {
+    background: var(--gradient-light-lime);
+  }
+}
+
+.contentChevron {
+  display: block;
+  width: 16px;
+  height: 16px;
+  margin-right: 4px;
+  transform: rotate(-90deg);
+  transition: transform 0.15s;
+
+  &.opened {
+    transform: rotate(0deg);
+  }
 }
 
 .title {
-  flex-grow: 1;
-  margin-left: 4px;
+  display: block;
+  max-width: calc(100% - 50px);
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .body {
-
+  padding: 24px;
+  border-radius: 0 0 var(--border-radius) var(--border-radius);
 }
 
 .actions {
   position: absolute;
-  top: 0;
-  right: 0;
+  top: 8px;
+  right: 8px;
   display: flex;
   align-items: center;
   background-color: var(--background);

@@ -3,9 +3,10 @@ import type { ShallowRef } from 'vue';
 import { computed, shallowRef, watch } from 'vue';
 import { isNil, shallowHash } from '@milaboratories/helpers';
 import { useSortable } from '@vueuse/integrations/useSortable';
-import type { SortableEvent } from 'sortablejs';
+import { type SortableEvent } from 'sortablejs';
 import { moveElements, optionalUpdateRef } from './utils.ts';
 import PlElementListItem from './PlElementListItem.vue';
+import { log } from 'console';
 
 const itemsRef = defineModel<T[]>('items', { required: true });
 const draggableSetRef = defineModel<Set<T>>('draggableItems');
@@ -83,6 +84,13 @@ function createSortable(toggler: ShallowRef<boolean>, elRef: ShallowRef<undefine
   const sortable = useSortable(elRef, itemsRef, {
     handle: `[data-draggable="true"]`,
     animation: 150,
+    direction: 'vertical',
+    scrollSensitivity: 80,
+    forceAutoScrollFallback: true,
+    // setData: function (dataTransfer: DataTransfer) {
+    //   dataTransfer.setDragImage
+    //   console.log('setData', dataTransfer, dragEl);
+    // },
     onUpdate: (evt: SortableEvent) => {
       if (evt.oldIndex == null || evt.newIndex == null) {
         throw new Error('Sortable event has no index');
@@ -203,63 +211,62 @@ const unpinnedKeysRef = computed(() => unpinnedItemsRef.value.map(getKey));
 <template>
   <div :class="$style.root">
     <div ref="pinnedContainerRef" :class="$style.list">
-      <div v-for="(pinnedItem, pinnedIndex) in pinnedItemsRef" :key="pinnedKeysRef[pinnedIndex]" :class="$style.item">
-        <PlElementListItem
-          :index="pinnedIndex"
-          :item="pinnedItem"
-          :showDragHandle="props.enableDragging"
-          :isDraggable="isDraggable(pinnedItem)"
-          :isRemovable="isRemovable(pinnedItem)"
-          :isToggable="isToggable(pinnedItem)"
-          :isToggled="isToggled(pinnedItem)"
-          :isPinnable="isPinnable(pinnedItem)"
-          :isPinned="isPinned(pinnedItem)"
-          :isOpened="isOpened(pinnedItem)"
+      <PlElementListItem
+        v-for="(pinnedItem, pinnedIndex) in pinnedItemsRef" :key="pinnedKeysRef[pinnedIndex]"
+        :class="$style.item"
 
-          @remove="handleRemove"
-          @toggle="handleToggle"
-          @pin="handlePin"
-          @toggleContent="handleToggleContent"
-        >
-          <template #title="{ item, index }">
-            <slot :index="index" :item="item" name="item-title" />
-          </template>
-          <template v-if="slots['item-content']" #content="{ item, index }">
-            <slot :index="index" :item="item" name="item-content" />
-          </template>
-        </PlElementListItem>
-      </div>
+        :index="pinnedIndex"
+        :item="pinnedItem"
+        :showDragHandle="props.enableDragging"
+        :isDraggable="isDraggable(pinnedItem)"
+        :isRemovable="isRemovable(pinnedItem)"
+        :isToggable="isToggable(pinnedItem)"
+        :isToggled="isToggled(pinnedItem)"
+        :isPinnable="isPinnable(pinnedItem)"
+        :isPinned="isPinned(pinnedItem)"
+        :isOpened="isOpened(pinnedItem)"
+
+        @remove="handleRemove"
+        @toggle="handleToggle"
+        @pin="handlePin"
+        @toggleContent="handleToggleContent"
+      >
+        <template #title="{ item, index }">
+          <slot :index="index" :item="item" name="item-title" />
+        </template>
+        <template v-if="slots['item-content']" #content="{ item, index }">
+          <slot :index="index" :item="item" name="item-content" />
+        </template>
+      </PlElementListItem>
     </div>
     <div v-if="hasUnpinnedItems" ref="unpinnedContainerRef" :class="$style.list">
-      <div
+      <PlElementListItem
         v-for="(unpinnedItem, unpinnedIndex) in unpinnedItemsRef" :key="unpinnedKeysRef[unpinnedIndex]"
         :class="$style.item"
-      >
-        <PlElementListItem
-          :index="unpinnedIndex + (pinnedSetRef?.size ?? 0)"
-          :item="unpinnedItem"
-          :showDragHandle="props.enableDragging"
-          :isDraggable="isDraggable(unpinnedItem)"
-          :isRemovable="isRemovable(unpinnedItem)"
-          :isToggable="isToggable(unpinnedItem)"
-          :isToggled="isToggled(unpinnedItem)"
-          :isPinnable="isPinnable(unpinnedItem)"
-          :isPinned="isPinned(unpinnedItem)"
-          :isOpened="isOpened(unpinnedItem)"
 
-          @remove="handleRemove"
-          @toggle="handleToggle"
-          @pin="handlePin"
-          @toggleContent="handleToggleContent"
-        >
-          <template #title="{ item, index }">
-            <slot :index="index" :item="item" name="item-title" />
-          </template>
-          <template v-if="slots['item-content']" #content="{ item, index }">
-            <slot :index="index" :item="item" name="item-content" />
-          </template>
-        </PlElementListItem>
-      </div>
+        :index="unpinnedIndex + (pinnedSetRef?.size ?? 0)"
+        :item="unpinnedItem"
+        :showDragHandle="props.enableDragging"
+        :isDraggable="isDraggable(unpinnedItem)"
+        :isRemovable="isRemovable(unpinnedItem)"
+        :isToggable="isToggable(unpinnedItem)"
+        :isToggled="isToggled(unpinnedItem)"
+        :isPinnable="isPinnable(unpinnedItem)"
+        :isPinned="isPinned(unpinnedItem)"
+        :isOpened="isOpened(unpinnedItem)"
+
+        @remove="handleRemove"
+        @toggle="handleToggle"
+        @pin="handlePin"
+        @toggleContent="handleToggleContent"
+      >
+        <template #title="{ item, index }">
+          <slot :index="index" :item="item" name="item-title" />
+        </template>
+        <template v-if="slots['item-content']" #content="{ item, index }">
+          <slot :index="index" :item="item" name="item-content" />
+        </template>
+      </PlElementListItem>
     </div>
   </div>
 </template>
@@ -274,5 +281,12 @@ const unpinnedKeysRef = computed(() => unpinnedItemsRef.value.map(getKey));
 
 .item {
   width: 100%;
+}
+
+:global(.sortable-ghost) {
+  opacity: 0;
+}
+:global(.sortable-drag) {
+  opacity: 1;
 }
 </style>
