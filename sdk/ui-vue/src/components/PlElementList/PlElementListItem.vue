@@ -96,21 +96,30 @@ const emit = defineEmits<{
 <style module>
 .root {
   --background: rgba(255, 255, 255, 0.8);
+  --border-color: var(--color-div-grey);
+  --head-background: unset;
+  --box-shadow: none;
+  --box-shadow-active: 0 0 0 4px color-mix(in srgb, var(--border-color-focus) 50%, transparent);
 
+  &:global(.sortable-drag),
+  &:global(.sortable-chosen) {
+    --head-background: var(--gradient-light-lime);
+    --border-color: var(--border-color-focus);
+    --box-shadow: var(--box-shadow-active)
+  }
+}
+.root {
   display: flex;
   flex-direction: column;
   justify-content: center;
   border-radius: var(--border-radius);
-  border: 1px solid var(--color-div-grey);
+  border: 1px solid var(--border-color);
   background-color: var(--background);
   transition: box-shadow 0.15s;
+  box-shadow: var(--box-shadow);
 
   &:hover {
-    border-color: var(--border-color-focus);
-  }
-
-  &[draggable="true"] {
-    box-shadow: 0 0 0 4px color-mix(in srgb, var(--border-color-focus) 50%, transparent);
+    --border-color: var(--border-color-focus);
   }
 
   &.disabled {
@@ -129,9 +138,10 @@ const emit = defineEmits<{
   align-items: center;
   padding: 8px;
   border-radius: var(--border-radius) var(--border-radius) 0 0;
+  background: var(--head-background);
 
   &:hover, &.opened {
-    background: var(--gradient-light-lime);
+    --head-background: var(--gradient-light-lime);
   }
 }
 

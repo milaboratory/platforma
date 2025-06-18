@@ -84,13 +84,9 @@ function createSortable(toggler: ShallowRef<boolean>, elRef: ShallowRef<undefine
   const sortable = useSortable(elRef, itemsRef, {
     handle: `[data-draggable="true"]`,
     animation: 150,
-    direction: 'vertical',
+    forceFallback: true,
     scrollSensitivity: 80,
     forceAutoScrollFallback: true,
-    // setData: function (dataTransfer: DataTransfer) {
-    //   dataTransfer.setDragImage
-    //   console.log('setData', dataTransfer, dragEl);
-    // },
     onUpdate: (evt: SortableEvent) => {
       if (evt.oldIndex == null || evt.newIndex == null) {
         throw new Error('Sortable event has no index');
