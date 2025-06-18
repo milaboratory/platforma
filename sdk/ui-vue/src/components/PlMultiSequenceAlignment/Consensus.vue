@@ -14,6 +14,8 @@ import {
   watchEffect,
 } from 'vue';
 import type { ResidueCounts } from './types';
+import { useMiPlots } from './useMiPlots';
+import { PlAlert } from '@milaboratories/uikit';
 
 const { residueCounts } = defineProps<{
   residueCounts: ResidueCounts;
@@ -126,11 +128,12 @@ const data = computed<DataByColumns>(
 
 const plot = shallowRef<ChartInterface>();
 
+const { miplots, error } = useMiPlots();
+
 watchEffect(async () => {
-  if (!settings.value || !plotEl.value) return;
+  if (!settings.value || !plotEl.value || !miplots.value) return;
   if (!plot.value) {
-    const { MiPlots } = await import('@milaboratories/miplots4');
-    plot.value = MiPlots.newPlot(data.value, settings.value);
+    plot.value = miplots.value.newPlot(data.value, settings.value);
     plot.value.mount(plotEl.value);
   } else {
     plot.value.updateSettingsAndData(data.value, settings.value);
@@ -149,6 +152,9 @@ onBeforeUnmount(() => {
     </div>
     <div :class="$style['plot-container']">
       <div ref="plotEl" :class="$style.plot" />
+      <PlAlert v-if="error" type="error">
+        {{ error.message }}
+      </PlAlert>
     </div>
   </div>
 </template>
