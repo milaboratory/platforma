@@ -6,7 +6,6 @@ import { useSortable } from '@vueuse/integrations/useSortable';
 import { type SortableEvent } from 'sortablejs';
 import { moveElements, optionalUpdateRef } from './utils.ts';
 import PlElementListItem from './PlElementListItem.vue';
-import { log } from 'console';
 
 const itemsRef = defineModel<T[]>('items', { required: true });
 const draggableSetRef = defineModel<Set<T>>('draggableItems');

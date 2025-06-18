@@ -1,11 +1,6 @@
 <script generic="T extends unknown = unknown" lang="ts" setup>
 import { computed } from 'vue';
-import { PlIcon, PlIcon16 } from '@milaboratories/uikit';
-import SvgViewHide from '@milaboratories/uikit/svg/icons/24_view-hide.svg?raw';
-import SvgViewShow from '@milaboratories/uikit/svg/icons/24_view-show.svg?raw';
-import SvgPin from '@milaboratories/uikit/svg/icons/24_pin.svg?raw';
-import SvgClose from '@milaboratories/uikit/svg/icons/16_close.svg?raw';
-import SvgDragDots from '@milaboratories/uikit/svg/icons/16_drag-dots.svg?raw';
+import { PlIcon16, PlIcon24 } from '@milaboratories/uikit';
 
 const props = defineProps<{
   item: T;
@@ -52,7 +47,7 @@ const emit = defineEmits<{
         :class="[$style.action, $style.draggable, { [$style.disable]: !props.isDraggable } ]"
         :data-draggable="props.isDraggable"
       >
-        <PlIcon :uri="SvgDragDots" />
+        <PlIcon16 name="drag-dots" />
       </div>
       <PlIcon16 :class="[$style.contentChevron, { [$style.opened]: props.isOpened }]" name="chevron-down" />
 
@@ -66,7 +61,7 @@ const emit = defineEmits<{
           :class="[$style.action, $style.clickable, { [$style.disable]: !props.isToggable }]"
           @click.stop="emit('toggle', props.item, props.index)"
         >
-          <PlIcon :uri="props.isToggled === true ? SvgViewHide : SvgViewShow" />
+          <PlIcon24 :name="props.isToggled === true ? 'view-hide' : 'view-show'" size="16" />
         </div>
         <div
           v-if="props.isPinnable"
@@ -76,14 +71,14 @@ const emit = defineEmits<{
           }]"
           @click.stop="emit('pin', props.item, props.index)"
         >
-          <PlIcon :uri="SvgPin" />
+          <PlIcon24 name="pin" size="16" />
         </div>
         <div
           v-if="props.isRemovable"
           :class="[$style.action, $style.clickable]"
           @click.stop="emit('remove', props.item, props.index)"
         >
-          <PlIcon :uri="SvgClose" />
+          <PlIcon16 name="close" />
         </div>
       </div>
     </div>
