@@ -1,0 +1,36 @@
+{
+  "compilerOptions": {
+    "composite": true,
+    "target": "ESNext",
+    "module": "ESNext",
+    "useDefineForClassFields": true,
+    "lib": [
+      "ESNext",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "skipLibCheck": true,
+    /* Bundler mode */
+    "moduleResolution": "Bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "moduleDetection": "force",
+    "declarationMap": true,
+    "noEmit": true,
+    "jsx": "preserve",
+    /* Linting */
+    "strict": true,
+    "noFallthroughCasesInSwitch": true,
+    "types": [
+      "vite/client",
+      "vitest/importMeta"
+    ],
+    /* Global Aliases */
+    "baseUrl": "../../../",
+    "paths": {
+      "@milaboratories/uikit": ["lib/ui/uikit/src"],
+      "@platforma-sdk/ui-vue": ["sdk/ui-vue/src"],
+    }
+  }
+}

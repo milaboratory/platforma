@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive } from 'vue';
-import { PlTextField, PlBtnGroup, PlDropdown, Slider, PlToggleSwitch } from 'milaboratories/uikit';
+import { PlTextField, PlBtnGroup, PlDropdown, Slider, PlToggleSwitch } from '@milaboratories/uikit';
 import Layout from '../Layout.vue';
 import Split from '../Split.vue';
 

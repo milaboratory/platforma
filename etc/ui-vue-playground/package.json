@@ -11,6 +11,8 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "@milaboratories/ts-configs": "workspace:*",
+    "@milaboratories/platforma-build-configs": "workspace:*",
     "@milaboratories/helpers": "workspace:^",
     "@milaboratories/uikit": "workspace:^",
     "@platforma-sdk/model": "workspace:^",
