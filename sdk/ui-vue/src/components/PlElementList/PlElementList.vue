@@ -82,6 +82,7 @@ createSortable(hasUnpinnedItems, unpinnedContainerRef, unpinnedItemsRef, () => p
 function createSortable(toggler: ShallowRef<boolean>, elRef: ShallowRef<undefined | HTMLElement>, itemsRef: ShallowRef<T[]>, getOffset: () => number) {
   const sortable = useSortable(elRef, itemsRef, {
     handle: `[data-draggable="true"]`,
+    animation: 150,
     onUpdate: (evt: SortableEvent) => {
       if (evt.oldIndex == null || evt.newIndex == null) {
         throw new Error('Sortable event has no index');
