@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.34.10
+
+### Patch Changes
+
+- c570fd4: createPFrameForGraphs fix
+
 ## 1.34.8
 
 ### Patch Changes
