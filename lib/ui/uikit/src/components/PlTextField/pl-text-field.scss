@@ -87,7 +87,7 @@
       cursor: pointer;
     }
     .mask-16 {
-      background-color: var(--control-mask-fill);
+      --icon-color: var(--control-mask-fill);
       cursor: pointer;
     }
   }

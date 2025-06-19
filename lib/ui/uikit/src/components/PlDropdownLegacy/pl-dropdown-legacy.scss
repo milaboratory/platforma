@@ -187,13 +187,13 @@
 
     .mask-16,
     .mask-24 {
-      background-color: var(--control-mask-fill);
+      --icon-color: var(--control-mask-fill);
       cursor: pointer;
     }
 
     .mask-loading {
+      --icon-color: var(#07AD3E);
       animation: spin 2.5s linear infinite;
-      background-color: #07AD3E;
     }
   }
 

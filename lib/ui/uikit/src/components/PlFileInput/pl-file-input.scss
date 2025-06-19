@@ -11,8 +11,8 @@
   --label-offset-left-x: 8px;
   --label-offset-right-x: 8px;
   --prefix-color: var(--color-placeholder);
-  --icon-color: #000;
   --contour-offset: 2px;
+  --icon-color: #000;
 
   width: 100%;
   height: var(--control-height, 40px);
@@ -37,7 +37,6 @@
   .mask-24 {
     display: block;
     min-width: 24px;
-    background-color: var(--icon-color);
   }
 
   .mask-close {
@@ -112,23 +111,6 @@
     white-space: nowrap;
     margin-right: -12px;
     color: var(--prefix-color);
-  }
-
-  &__append {
-    padding-right: 12px;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 4px;
-
-    .icon {
-      cursor: pointer;
-    }
-
-    .mask {
-      background-color: var(--control-mask-fill);
-      cursor: pointer;
-    }
   }
 
   &__helper {

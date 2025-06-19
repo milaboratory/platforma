@@ -16,6 +16,7 @@
   },
   "devDependencies": {
     "@platforma-sdk/ui-vue": "workspace:^",
+    "@milaboratories/uikit": "workspace:^",
     "@vitejs/plugin-vue": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",

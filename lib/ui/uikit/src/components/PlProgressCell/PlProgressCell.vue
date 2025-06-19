@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed } from 'vue';
 import './pl-progress-cell.scss';
-import PlMaskIcon24 from '../PlMaskIcon24/PlMaskIcon24.vue';
+import { computed } from 'vue';
+import { PlMaskIcon24 } from '../PlMaskIcon24';
 import type { PlProgressCellProps } from './types';
 import { getErrorMessage } from '../../helpers/error.ts';
 
