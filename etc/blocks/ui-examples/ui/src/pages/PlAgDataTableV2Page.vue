@@ -10,7 +10,7 @@ import {
   PlCheckbox,
 } from '@platforma-sdk/ui-vue';
 import { useApp } from '../app';
-import type { PTableColumnSpec } from '@platforma-sdk/model';
+import { type PTableColumnSpec } from '@platforma-sdk/model';
 import type { ICellRendererParams } from 'ag-grid-enterprise';
 const app = useApp();
 
@@ -27,7 +27,7 @@ const tableSettings = computed<PlAgDataTableSettings>(() => (
   {
     sourceType: 'ptable',
     model: app.model.outputs.ptV2,
-    sheets: [],
+    inputAnchor: { __isRef: true, blockId: 'uiExamples', name: 'ptV2Anchor' },
   }
 ));
 const columns = ref<PTableColumnSpec[]>([]);

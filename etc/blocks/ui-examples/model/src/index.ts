@@ -8,7 +8,11 @@ import type {
   PlTableFiltersModel,
   PObjectId,
 } from '@platforma-sdk/model';
-import { BlockModel, createPlDataTable, createPlDataTableV2, selectorsToPredicate } from '@platforma-sdk/model';
+import {
+  BlockModel,
+  createPlDataTable,
+  createPlDataTableV2,
+} from '@platforma-sdk/model';
 import { z } from 'zod';
 
 export const ImportFileHandleSchema = z
@@ -182,9 +186,6 @@ export const platforma = BlockModel.create('Heavy')
           data,
         } satisfies PColumn<PColumnValues>,
       ],
-      selectorsToPredicate({
-        name: 'example',
-      }),
       ctx.uiState.dataTableState.tableState,
       {
         filters: [

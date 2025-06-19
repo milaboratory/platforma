@@ -19,7 +19,6 @@ import type {
   PTableValue,
 } from '@milaboratories/pl-model-common';
 import {
-  canonicalizeJson,
   getAxisId,
   getColumnIdAndSpec,
   matchAxisId,
@@ -38,20 +37,6 @@ import {
 
 /** Canonicalized PTableColumnSpec JSON string */
 export type PTableColumnSpecJson = CanonicalizedJson<PTableColumnSpec>;
-
-/** Encode `PTableColumnId` as canonicalized JSON string */
-export function stringifyPTableColumnSpec(spec: PTableColumnSpec): PTableColumnSpecJson {
-  const type = spec.type;
-  switch (type) {
-    case 'axis':
-      return canonicalizeJson(spec);
-    case 'column':
-      return canonicalizeJson(spec);
-    default:
-      // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
-      throw Error(`unsupported column type: ${type satisfies never}`);
-  }
-}
 
 /** Data table state */
 export type PlDataTableGridState = {
@@ -575,10 +560,10 @@ export function createPlDataTable<A, U>(
 
 /** PlAgDataTable model */
 export type PlDataTableModel = {
-  /** p-table specification (full, including hidden columns) */
-  tableSpec: PTableColumnSpec[];
-  /** p-table handle (integration of visible columns data) */
-  tableHandle: PTableHandle;
+  /** p-table including all columns, used to show the full specification of the table */
+  fullTableHandle: PTableHandle;
+  /** p-table including only visible columns, used to get the data */
+  visibleTableHandle: PTableHandle;
 };
 
 /**
@@ -608,7 +593,6 @@ export function isColumnOptional(spec: { annotations?: Record<string, string> })
 export function createPlDataTableV2<A, U>(
   ctx: RenderCtx<A, U>,
   inputColumns: PColumn<TreeNodeAccessor | PColumnValues | DataInfo<TreeNodeAccessor>>[],
-  mainColumnPredicate: (spec: PColumnSpec) => boolean,
   tableState: PlDataTableState | undefined,
   ops?: CreatePlDataTableOps,
 ): PlDataTableModel | undefined {
@@ -618,11 +602,12 @@ export function createPlDataTableV2<A, U>(
   const sorting: PTableSorting[] = tableState?.pTableParams?.sorting ?? [];
   const columns = inputColumns.filter((c) => !isColumnHidden(c.spec));
 
-  const mainColumn = columns.find((c) => mainColumnPredicate(c.spec));
-  if (!mainColumn) return undefined;
-
   const allLabelColumns = getAllLabelColumns(ctx.resultPool);
   if (!allLabelColumns) return undefined;
+
+  const fullLabelColumns = getMatchingLabelColumns(columns.map(getColumnIdAndSpec), allLabelColumns);
+  const fullDef = createPTableDef(columns, fullLabelColumns, coreJoinType, filters, sorting, ops?.coreColumnPredicate);
+  const fullHandle = ctx.createPTable(fullDef);
 
   const hiddenColumns = new Set<PObjectId>(((): PObjectId[] => {
     // Inner join works as a filter - all columns must be present
@@ -639,38 +624,29 @@ export function createPlDataTableV2<A, U>(
       .map((c) => c.id);
   })());
 
-  // Main column must always be included in join to integrate all other columns
-  hiddenColumns.delete(mainColumn.id);
+  // Preserve core columns as they change the shape of join.
+  if (ops?.coreColumnPredicate) {
+    const coreColumns = columns.flatMap((c) => ops?.coreColumnPredicate?.(c.spec) ? [c.id] : []);
+    coreColumns.forEach((c) => hiddenColumns.delete(c));
+  }
+
   // Filters decrease the number of result rows, sorting changes the order of result rows
   [...filters.map((f) => f.column), ...sorting.map((s) => s.column)]
     .filter((c): c is PTableColumnIdColumn => c.type === 'column')
     .map((c) => hiddenColumns.delete(c.id));
 
   const visibleColumns = columns.filter((c) => !hiddenColumns.has(c.id));
-  const labelColumns = getMatchingLabelColumns(visibleColumns.map(getColumnIdAndSpec), allLabelColumns);
-
-  const spec: PTableColumnSpec[] = [
-    ...mainColumn.spec.axesSpec.map((axis) => ({
-      type: 'axis',
-      id: getAxisId(axis),
-      spec: axis,
-    } satisfies PTableColumnSpec)),
-    ...[...columns, ...labelColumns].map((c) => ({
-      type: 'column',
-      id: c.id,
-      spec: c.spec,
-    } satisfies PTableColumnSpec)),
-  ];
+  const visibleLabelColumns = getMatchingLabelColumns(visibleColumns.map(getColumnIdAndSpec), allLabelColumns);
 
   // if at least one column is not yet computed, we can't show the table
-  if (!allColumnsComputed([...visibleColumns, ...labelColumns])) return undefined;
+  if (!allColumnsComputed([...visibleColumns, ...visibleLabelColumns])) return undefined;
 
-  const handle = ctx.createPTable(
-    createPTableDef(columns, labelColumns, coreJoinType, filters, sorting, ops?.coreColumnPredicate));
+  const visibleDef = createPTableDef(visibleColumns, visibleLabelColumns, coreJoinType, filters, sorting, ops?.coreColumnPredicate);
+  const visibleHandle = ctx.createPTable(visibleDef);
 
   return {
-    tableSpec: spec,
-    tableHandle: handle,
+    fullTableHandle: fullHandle,
+    visibleTableHandle: visibleHandle,
   } satisfies PlDataTableModel;
 }
 
