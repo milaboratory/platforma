@@ -105,6 +105,7 @@ const toggleRefValue = (r: Ref<unknown>) => {
 const showOptionsLoading = () => {
   toggleRefValue(simpleOptions);
   toggleRefValue(refOptions);
+  toggleRefValue(refOptionsMulti);
 };
 </script>
 
@@ -153,14 +154,14 @@ const showOptionsLoading = () => {
         <PlDropdownMulti
           v-model="data.multi"
           :disabled="data.disabled"
-          :options="simpleOptions ?? []"
+          :options="simpleOptions"
           label="PlDropdownMulti"
         />
 
         <PlDropdownMulti
           v-model="data.multi"
           :disabled="data.disabled"
-          :options="simpleOptions ?? []"
+          :options="simpleOptions"
           label="PlDropdownMulti"
         >
           <template #append>
@@ -171,25 +172,9 @@ const showOptionsLoading = () => {
         <PlDropdownMultiRef
           v-model="data.multiRefSelected"
           :disabled="data.disabled"
-          :options="refOptionsMulti ?? []"
+          :options="refOptionsMulti"
           label="PlDropdownMultiRef"
         />
-
-        <PlDropdownMulti
-          v-model="data.multi"
-          :disabled="data.disabled"
-          :options="undefined"
-          label="PlDropdownMulti"
-        />
-
-        <PlDropdownMultiRef
-          v-model="data.multi"
-          :disabled="data.disabled"
-          :options="undefined"
-          label="PlDropdownMultiRef"
-        />
-
-        <div v-if="false" style="height: 1200px; background-color: green; width: 50px"/>
       </PlContainer>
     </PlRow>
     <PlRow>
