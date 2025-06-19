@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.84
+
+### Patch Changes
+
+- 540e690: Unified svg icon component
+
 ## 2.2.83
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.4.13
+
+### Patch Changes
+
+- 540e690: Unified svg icon component
+
 ## 1.4.12
 
 ### Patch Changes
