@@ -154,7 +154,7 @@ export function projectOverview(
 
         const bp = getBlockPackInfo(prj, id);
 
-        const { sections, title, inputsValid, sdkVersion }
+        const { sections, title, inputsValid, sdkVersion, platformaApiVersion }
           = ifNotUndef(bp, ({ bpId, cfg }) => {
             const blockCtxArgsOnly = constructBlockContextArgsOnly(prjEntry, id);
             return {
@@ -203,6 +203,7 @@ export function projectOverview(
                 },
               }) as ComputableStableDefined<boolean>,
               sdkVersion: cfg.sdkVersion,
+              platformaApiVersion: cfg.platformaApiVersion,
             };
           }) || {};
 
@@ -239,6 +240,7 @@ export function projectOverview(
           currentBlockPack: bp?.info?.source,
           updates,
           sdkVersion,
+          platformaApiVersion,
           navigationState: navigationStates.getState(id),
         };
       });

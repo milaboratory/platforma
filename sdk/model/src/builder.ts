@@ -19,6 +19,7 @@ import type {
 import {
   downgradeCfgOrLambda,
 } from './bconfig';
+import { PlatformaApiVersion } from './api_version';
 
 type SectionsExpectedType = readonly BlockSection[];
 
@@ -363,6 +364,7 @@ export class BlockModel<
     const config: BlockConfigContainer = {
       v3: {
         sdkVersion: PlatformaSDKVersion,
+        platformaApiVersion: PlatformaApiVersion,
         renderingMode: this._renderingMode,
         initialArgs: this._initialArgs,
         initialUiState: this._initialUiState,

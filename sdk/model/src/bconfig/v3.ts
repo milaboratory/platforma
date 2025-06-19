@@ -13,6 +13,9 @@ export type BlockConfigV3<
   /** SDK version used by the block */
   readonly sdkVersion: string;
 
+  /** Platforma API version used by the block */
+  readonly platformaApiVersion: `${number}` | undefined; // TODO: temp for the test, create v4 config
+
   /** Main rendering mode for the block */
   readonly renderingMode: BlockRenderingMode;
 
