@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.7.38
+
+### Patch Changes
+
+- 619f490: PFrames make getShape truly asynchronous
+
 ## 1.7.37
 
 ### Patch Changes
