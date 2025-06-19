@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-model-middle-layer",
-  "version": "1.7.37",
+  "version": "1.7.38",
   "description": "Common model between middle layer and non-block UI code",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
