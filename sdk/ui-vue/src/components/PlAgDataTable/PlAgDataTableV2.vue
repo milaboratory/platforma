@@ -10,9 +10,9 @@ import type {
   PTableColumnSpecJson,
   PTableKey,
   PTableRecordFilter,
-  PTableSorting,
 } from '@platforma-sdk/model';
 import {
+  canonicalizeJson,
   getAxisId,
   getRawPlatformaInstance,
   parseJson,
@@ -27,7 +27,6 @@ import type {
   GridState,
   ManagedGridOptionKey,
   ManagedGridOptions,
-  SortState,
   StateUpdatedEvent,
 } from 'ag-grid-enterprise';
 import {
@@ -59,6 +58,7 @@ import {
 } from './sources/row-number';
 import {
   makeRowId,
+  makeTableSorting,
   type PlAgCellButtonAxisParams,
   updatePFrameGridOptions,
 } from './sources/table-source-v2';
@@ -83,7 +83,9 @@ const tableState = defineModel<PlDataTableState>({
 });
 const selection = defineModel<PlSelectionModel>('selection');
 const props = defineProps<{
-  settings?: Readonly<PlAgDataTableSettings>;
+  /** Required component settings */
+  settings: Readonly<PlAgDataTableSettings> | null;
+
   /**
    * The showColumnsPanel prop controls the display of a button that activates
    * the columns management panel in the table. To make the button functional
@@ -91,10 +93,12 @@ const props = defineProps<{
    * This component serves as the target for teleporting the button.
    */
   showColumnsPanel?: boolean;
+
   /**
    * Css width of the Column Manager (Panel) modal (default value is `368px`)
    */
   columnsPanelWidth?: string;
+
   /**
    * The showExportButton prop controls the display of a button that allows
    * to export table data in CSV format. To make the button functional
@@ -102,12 +106,6 @@ const props = defineProps<{
    * This component serves as the target for teleporting the button.
    */
   showExportButton?: boolean;
-  /**
-   * Force use of client-side row model.
-   * Required for reliable work of focusRow.
-   * Auto-enabled when selectedRows provided.
-   */
-  clientSideModel?: boolean;
 
   /**
    * The AxisId property is used to configure and display the PlAgTextAndButtonCell component
@@ -149,22 +147,6 @@ const emit = defineEmits<{
   if (!tableState.value.pTableParams) tableState.value.pTableParams = {};
 })();
 
-function makeSorting(state?: SortState): PTableSorting[] {
-  return (
-    state?.sortModel.map((item) => {
-      const { spec, ...column } = parseJson(
-        item.colId as PTableColumnSpecJson,
-      );
-      const _ = spec;
-      return {
-        column,
-        ascending: item.sort === 'asc',
-        naAndAbsentAreLeastValues: item.sort === 'asc',
-      };
-    }) ?? []
-  );
-}
-
 const gridState = computed<PlDataTableGridStateWithoutSheets>({
   get: () => {
     const state = tableState.value;
@@ -178,9 +160,8 @@ const gridState = computed<PlDataTableGridStateWithoutSheets>({
   set: (gridState) => {
     // do not apply driver sorting for client side rendering
     const sorting = settings.value?.sourceType !== 'ptable'
-      || gridOptions.value.rowModelType === 'clientSide'
       ? undefined
-      : makeSorting(gridState.sort);
+      : makeTableSorting(gridState.sort);
 
     const oldState = tableState.value;
 
@@ -199,7 +180,7 @@ const gridState = computed<PlDataTableGridStateWithoutSheets>({
 
 const makeSheetId = (axis: AxisId) => canonicalize(getAxisId(axis))!;
 
-function makeFilters(
+function makeTableFilters(
   sheetsState: Record<string, string | number>,
 ): PTableRecordFilter[] | undefined {
   if (settings.value?.sourceType !== 'ptable') return undefined;
@@ -221,7 +202,7 @@ function makeFilters(
 const sheetsState = computed({
   get: () => tableState.value.gridState.sheets ?? {},
   set: (sheetsState) => {
-    const filters = makeFilters(sheetsState);
+    const filters = makeTableFilters(sheetsState);
 
     const oldState = tableState.value;
     tableState.value = {
@@ -326,7 +307,7 @@ const gridOptions = shallowRef<GridOptions<PlAgDataTableV2Row>>({
   localeText: {
     loadingError: '...',
   },
-  rowModelType: 'clientSide',
+  rowModelType: 'serverSide',
   maxBlocksInCache: 1000,
   // cacheBlockSize: 100,
   blockLoadDebounceMillis: 500,
@@ -390,14 +371,14 @@ const onGridReady = (event: GridReadyEvent) => {
   gridApiDef.value.resolve(gridApi.value);
 };
 
-const makePartialState = (state: GridState) => {
+const makePartialState = (state: GridState): PlDataTableGridStateWithoutSheets => {
   return {
     sourceId: gridState.value.sourceId,
     columnOrder: state.columnOrder,
     sort: state.sort,
     columnVisibility: state.columnVisibility as {
       hiddenColIds: PTableColumnSpecJson[];
-    } ?? { hiddenColIds: [] },
+    } | undefined,
   };
 };
 
@@ -437,6 +418,7 @@ watch(
     if (lodash.isEqual(gridState, selfState)) return;
 
     gridOptions.value.initialState = gridState;
+    gridApiDef.value = new Deferred<GridApi>();
     ++reloadKey.value;
   },
 );
@@ -444,7 +426,6 @@ watch(
   () => gridOptions.value,
   (options, oldOptions) => {
     if (!oldOptions) return;
-    if (options.rowModelType != oldOptions.rowModelType) ++reloadKey.value;
     if (
       options.columnDefs
       && !lodash.isEqual(options.columnDefs, oldOptions.columnDefs)
@@ -496,13 +477,11 @@ const onSheetChanged = (sheetId: string, newValue: string | number) => {
 };
 
 let generation = 0;
-let oldSettings: PlAgDataTableSettings | undefined = undefined;
+let oldSettings: PlAgDataTableSettings | null = null;
 watch(
-  () => [settings.value] as const,
-  async (state) => {
+  () => [settings.value, reloadKey.value] as const,
+  async ([settings]) => {
     try {
-      const [settings] = state;
-
       const gridApi = await gridApiDef.value.promise;
 
       if (gridApi.isDestroyed()) {
@@ -517,9 +496,7 @@ watch(
       const localGeneration = generation = generation + 1;
       oldSettings = settings;
 
-      const sourceType = settings?.sourceType;
-
-      switch (sourceType) {
+      switch (settings?.sourceType) {
         case undefined:
           return gridApi.updateGridOptions({
             loading: true,
@@ -533,7 +510,20 @@ watch(
           });
 
         case 'ptable': {
-          if (!settings?.model) {
+          const oldSourceId = gridState.value.sourceId;
+          const newSourceId = canonicalizeJson(settings.inputAnchor);
+          const sourceIdChanged = oldSourceId !== newSourceId;
+          let hiddenColIds = gridState.value.columnVisibility?.hiddenColIds;
+          if (sourceIdChanged) {
+            hiddenColIds = undefined;
+            gridState.value = {
+              ...gridState.value,
+              sourceId: newSourceId,
+              columnVisibility: undefined,
+            };
+          }
+
+          if (!settings.model) {
             return gridApi.updateGridOptions({
               loading: true,
               loadingOverlayComponentParams: {
@@ -558,8 +548,7 @@ watch(
             getRawPlatformaInstance().pFrameDriver,
             settings.model,
             settings.sheets ?? [],
-            !!props.clientSideModel || !!selection.value,
-            gridState,
+            hiddenColIds,
             {
               showCellButtonForAxisId: props.showCellButtonForAxisId,
               cellButtonInvokeRowsOnDoubleClick:
@@ -590,7 +579,7 @@ watch(
         }
 
         default:
-          throw Error(`unsupported source type: ${sourceType satisfies never}`);
+          throw Error(`unsupported source type: ${settings!.sourceType satisfies never}`);
       }
     } catch (error: unknown) {
       // How should we handle possible errors?
@@ -624,14 +613,14 @@ watch(
     <PlAgCsvExporter v-if="gridApi && showExportButton" :api="gridApi" />
     <div
       v-if="
-        hasSheets(settings)
+        settings && hasSheets(settings)
           || $slots['before-sheets']
           || $slots['after-sheets']
       "
       class="ap-ag-data-table-sheets"
     >
       <slot name="before-sheets" />
-      <template v-if="hasSheets(settings)">
+      <template v-if="settings && hasSheets(settings)">
         <PlDropdownLine
           v-for="(sheet, i) in settings.sheets"
           :key="i"

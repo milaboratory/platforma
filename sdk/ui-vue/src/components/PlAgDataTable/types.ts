@@ -3,6 +3,7 @@ import type {
   LocalBlobHandleAndSize,
   PlDataTableModel,
   PlDataTableSheet,
+  PlRef,
   PlTableFilter,
   PlTableFilterType,
   PTableColumnId,
@@ -38,6 +39,8 @@ export type PlDataTableSettings =
 export type PlAgDataTableSettingsPTable = {
   /** The type of the source to feed the data into the table */
   sourceType: 'ptable';
+  /** Used to derive sourceId, allows for better state management */
+  inputAnchor: PlRef;
   /** PTable handle output */
   model: PlDataTableModel | undefined;
   /** Sheets that we want to show in our table */

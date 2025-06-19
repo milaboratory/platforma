@@ -16,7 +16,6 @@ import {
   getAxisId,
   isColumnOptional,
   pTableValue,
-  stringifyPTableColumnSpec,
   type PColumnSpec,
   type PFrameDriver,
   type PlDataTableSheet,
@@ -273,7 +272,7 @@ export function makeColDef(
   hiddenColIds?: string[],
   cellButtonAxisParams?: PlAgCellButtonAxisParams,
 ): ColDef {
-  const colId = stringifyPTableColumnSpec(spec);
+  const colId = canonicalizeJson<PTableColumnSpec>(spec);
   const valueType = spec.type === 'axis' ? spec.spec.type : spec.spec.valueType;
   return {
     colId,
