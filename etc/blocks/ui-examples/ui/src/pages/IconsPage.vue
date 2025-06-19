@@ -8,6 +8,7 @@ import {
   PlRow,
   PlSvg,
   PlTooltip,
+  PlMaskIcon24,
 } from '@platforma-sdk/ui-vue';
 import { computed, ref } from 'vue';
 
@@ -29,6 +30,9 @@ const filteredIcons24 = computed(() => icons24.filter((v) => v.includes(iconFilt
     <template #title>Icons/Masks page</template>
 
     <h4>Icons</h4>
+    <div style="--icon-color: red;">
+      <PlMaskIcon24 name="clipboard" />
+    </div>
     <input v-model="iconFilter" :class="$style.input" placeholder="icon filter" />
     <div :class="$style.inputs">
       <input

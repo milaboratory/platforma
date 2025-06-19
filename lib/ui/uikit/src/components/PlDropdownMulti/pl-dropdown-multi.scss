@@ -200,7 +200,7 @@
     }
 
     .mask-loading {
-      --icon-color: var(#07AD3E);
+      --icon-color: var(--ic-accent);
       animation: spin 2.5s linear infinite;
     }
   }
@@ -306,7 +306,7 @@
 
     .mask-loading {
       animation: spin 2.5s linear infinite;
-      background-color: #07AD3E;
+      --icon-color: var(--ic-accent);
     }
   }
 
