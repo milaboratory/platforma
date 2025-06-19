@@ -248,11 +248,15 @@ export function createPFrameForGraphs<A, U>(
   }
 
   // all compatible with block columns but without label columns
-  const compatibleWithoutLabels = (columns.getColumns([...blockAxes.values()]
-    .map((ax) => ({
-      axes: [ax],
-      partialAxesMatch: true,
-    })), {dontWaitAllData: true, overrideLabelAnnotation: false}) ?? []).filter((column) => !isLabelColumn(column.spec));
+  const compatibleWithoutLabels = (columns.getColumns((spec) => spec.axesSpec.some(axisSpec => {
+    const axisId = getAxisId(axisSpec);
+    for (const selectorAxisId of blockAxes.values()) {
+      if (matchAxisId(selectorAxisId, axisId)) {
+        return true;
+      }
+    }
+    return false;
+  }), {dontWaitAllData: true, overrideLabelAnnotation: false}) ?? []).filter((column) => !isLabelColumn(column.spec));
 
   // extend axes set for label columns request
   for (const c of compatibleWithoutLabels) {
@@ -263,11 +267,15 @@ export function createPFrameForGraphs<A, U>(
   }
 
   // label columns must be compatible with full set of axes - block axes and axes from compatible columns from result pool
-  const compatibleLabels = (columns.getColumns([...allAxes.values()]
-    .map((ax) => ({
-      axes: [ax],
-      partialAxesMatch: true,
-    })), {dontWaitAllData: true, overrideLabelAnnotation: false}) ?? []).filter((column) => isLabelColumn(column.spec));
+  const compatibleLabels = (columns.getColumns((spec) => spec.axesSpec.some(axisSpec => {
+    const axisId = getAxisId(axisSpec);
+    for (const selectorAxisId of allAxes.values()) {
+      if (matchAxisId(selectorAxisId, axisId)) {
+        return true;
+      }
+    }
+    return false;
+  }), {dontWaitAllData: true, overrideLabelAnnotation: false}) ?? []).filter((column) => isLabelColumn(column.spec));
 
   const compatible = [...compatibleWithoutLabels, ...compatibleLabels];
 
