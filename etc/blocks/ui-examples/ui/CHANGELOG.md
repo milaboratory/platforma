@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.4.15
+
+### Patch Changes
+
+- 2299e3e: Fix loading icon in the PlMultiDropdown and multi path mask icons (clipboard and similar)
+
 ## 1.4.14
 
 ### Patch Changes

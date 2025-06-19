@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.85
+
+### Patch Changes
+
+- 2299e3e: Fix loading icon in the PlMultiDropdown and multi path mask icons (clipboard and similar)
+
 ## 2.2.84
 
 ### Patch Changes

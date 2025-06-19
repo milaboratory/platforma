@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.pool-explorer.ui
 
+## 1.1.122
+
+### Patch Changes
+
+- @platforma-sdk/ui-vue@1.34.12
+
 ## 1.1.121
 
 ### Patch Changes

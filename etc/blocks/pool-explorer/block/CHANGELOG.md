@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.pool-explorer
 
+## 1.0.185
+
+### Patch Changes
+
+- @milaboratories/milaboratories.pool-explorer.ui@1.1.122
+
 ## 1.0.184
 
 ### Patch Changes
