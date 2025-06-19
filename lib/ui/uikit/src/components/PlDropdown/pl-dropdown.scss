@@ -194,7 +194,7 @@
     }
 
     .mask-loading {
-      --icon-color: #07AD3E;
+      --icon-color: var(--ic-accent);
       animation: spin 2.5s linear infinite;
     }
   }
