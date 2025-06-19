@@ -1063,6 +1063,9 @@ importers:
       '@milaboratories/helpers':
         specifier: workspace:^
         version: link:../../../../lib/util/helpers
+      '@milaboratories/uikit':
+        specifier: workspace:^
+        version: link:../../../../lib/ui/uikit
       '@platforma-sdk/ui-vue':
         specifier: workspace:^
         version: link:../../../../sdk/ui-vue

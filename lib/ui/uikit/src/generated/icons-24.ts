@@ -1,4 +1,4 @@
-export const maskIcons24 = [
+export const icons24 = [
   'add-layer',
   'add',
   'align-center',

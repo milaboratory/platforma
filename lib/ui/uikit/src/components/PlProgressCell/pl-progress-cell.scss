@@ -7,7 +7,7 @@
     border-radius: 2px;
 
     .mask-error {
-        background: var(--txt-error);
+        --icon-color: var(--txt-error);
     }
 
     &.not-started {

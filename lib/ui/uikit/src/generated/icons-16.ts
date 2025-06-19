@@ -1,4 +1,4 @@
-export const maskIcons16 = [
+export const icons16 = [
   'add',
   'arrow-down',
   'arrow-left',
