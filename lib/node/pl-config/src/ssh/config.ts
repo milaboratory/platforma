@@ -109,8 +109,8 @@ export async function generateSshPlConfigs(
   let storages: StoragesSettings;
   if (opts.useMinio) {
     storages = newRemoteConfigStoragesMinio(opts.workingDir, {
-      endpoint: `http://localhost:${opts.portsMode.ports.minioLocal}`,
-      presignEndpoint: `http://localhost:${opts.portsMode.ports.minioLocal}`,
+     endpoint: 'http://' + endpoints.minio!,
+     presignEndpoint: 'http://' + endpoints.minioLocal!,
       key: minioUser,
       secret: minioPassword,
       bucketName,
