@@ -117,7 +117,7 @@ export async function generateLocalPlConfigs(
 
   const ports = await getLocalhostEndpoints(opts.portsMode);
 
-  const storages = await createDefaultLocalStorages(workdir);
+  const storages = await createDefaultLocalStorages(workdir, `http://${ports.httpEndpoint}`);
 
   return {
     workingDir: opts.workingDir,
