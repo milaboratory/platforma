@@ -7,7 +7,9 @@ import type {
 } from 'ag-grid-enterprise';
 import type {
   AxisId,
+  CanonicalizedJson,
   PlDataTableGridStateWithoutSheets,
+  PlRef,
   PTableColumnSpec,
   PTableRowKey,
 } from '@platforma-sdk/model';

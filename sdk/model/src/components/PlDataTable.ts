@@ -4,6 +4,7 @@ import type {
   CanonicalizedJson,
   DataInfo,
   JoinEntry,
+  ListOptionBase,
   PColumn,
   PColumnIdAndSpec,
   PColumnSpec,
@@ -40,22 +41,19 @@ export type PTableColumnSpecJson = CanonicalizedJson<PTableColumnSpec>;
 
 /** Data table state */
 export type PlDataTableGridState = {
-  // TODO request stable key from the driver
-  /**
-   * Hash of the specs for now, but in the future it will be a stable id of the source
-   */
+  /** DataSource identifier for state management */
   sourceId?: string;
   /** Includes column ordering */
   columnOrder?: {
     /** All colIds in order */
-    orderedColIds: string[];
+    orderedColIds: PTableColumnSpecJson[];
   };
   /** Includes current sort columns and direction */
   sort?: {
     /** Sorted columns and directions in order */
     sortModel: {
       /** Column Id to apply the sort to. */
-      colId: string;
+      colId: PTableColumnSpecJson;
       /** Sort direction */
       sort: 'asc' | 'desc';
     }[];
@@ -66,7 +64,7 @@ export type PlDataTableGridState = {
     hiddenColIds: PTableColumnSpecJson[];
   };
   /** current sheet selections */
-  sheets?: Record<string, string | number>;
+  sheets?: Record<CanonicalizedJson<AxisId>, string | number>;
 };
 
 /** TODO: refactor to use sheets in the grid state */
@@ -75,13 +73,8 @@ export type PlDataTableGridStateWithoutSheets = Omit<PlDataTableGridState, 'shee
 export type PlDataTableSheet = {
   /** spec of the axis to use */
   axis: AxisSpec;
-  /** options to show in the filter tan */
-  options: {
-    /** value of the option (should be one of the values in the axis or column) */
-    value: string | number;
-    /** corresponding label */
-    label: string;
-  }[];
+  /** options to show in the filter dropdown */
+  options: ListOptionBase<string | number>[];
   /** default (selected) value */
   defaultValue?: string | number;
 };

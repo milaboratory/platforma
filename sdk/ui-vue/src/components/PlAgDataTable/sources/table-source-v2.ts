@@ -24,7 +24,6 @@ import type {
   ICellRendererParams,
   IServerSideDatasource,
   IServerSideGetRowsParams,
-  RowModelType,
   SortState,
 } from 'ag-grid-enterprise';
 import canonicalize from 'canonicalize';
