@@ -4,6 +4,7 @@ import type {
   PTableColumnSpec,
   PTableColumnSpecJson,
   PTableKey,
+  PTableRecordFilter,
   PTableSorting,
 } from '@platforma-sdk/model';
 import {
@@ -54,6 +55,20 @@ export function makeTableSorting(state: SortState | undefined): PTableSorting[] 
       };
     }) ?? []
   );
+}
+
+export function makeTableFilter(axisId: AxisId, value: string | number): PTableRecordFilter {
+  return {
+    type: 'bySingleColumnV2',
+    column: {
+      type: 'axis',
+      id: axisId,
+    },
+    predicate: {
+      operator: 'Equal',
+      reference: value,
+    },
+  };
 }
 
 /** Convert columnar data from the driver to rows, used by ag-grid */
@@ -255,21 +270,16 @@ export async function updatePFrameGridOptions(
           }
         }
 
-        console.log('updatePFrameGridOptions 12');
-
         params.success({ rowData, rowCount });
         params.api.autoSizeColumns(params.api.getAllDisplayedColumns().filter((column) => column.getColId() !== PlAgDataTableRowNumberColId));
         params.api.setGridOption('loading', false);
       } catch (error: unknown) {
-        console.log('updatePFrameGridOptions 13');
         params.api.setGridOption('loading', true);
         params.fail();
         console.trace(error);
       }
     },
   } satisfies IServerSideDatasource;
-
-  console.log('updatePFrameGridOptions 14');
 
   return {
     columnDefs,

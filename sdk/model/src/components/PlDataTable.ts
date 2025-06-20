@@ -39,10 +39,7 @@ import {
 /** Canonicalized PTableColumnSpec JSON string */
 export type PTableColumnSpecJson = CanonicalizedJson<PTableColumnSpec>;
 
-/** Data table state */
-export type PlDataTableGridState = {
-  /** DataSource identifier for state management */
-  sourceId?: string;
+export type PlDataTableGridStateCore = {
   /** Includes column ordering */
   columnOrder?: {
     /** All colIds in order */
@@ -63,12 +60,19 @@ export type PlDataTableGridState = {
     /** All colIds which were hidden */
     hiddenColIds: PTableColumnSpecJson[];
   };
-  /** current sheet selections */
-  sheets?: Record<CanonicalizedJson<AxisId>, string | number>;
 };
 
 /** TODO: refactor to use sheets in the grid state */
-export type PlDataTableGridStateWithoutSheets = Omit<PlDataTableGridState, 'sheets'>;
+export type PlDataTableGridStateWithoutSheets = PlDataTableGridStateCore & {
+  /** DataSource identifier for state management */
+  sourceId?: string;
+};
+
+/** Data table state */
+export type PlDataTableGridState = PlDataTableGridStateWithoutSheets & {
+  /** current sheet selections */
+  sheets?: Record<CanonicalizedJson<AxisId>, string | number>;
+};
 
 export type PlDataTableSheet = {
   /** spec of the axis to use */
@@ -77,6 +81,13 @@ export type PlDataTableSheet = {
   options: ListOptionBase<string | number>[];
   /** default (selected) value */
   defaultValue?: string | number;
+};
+
+export type PlDataTableSheetState = {
+  /** id of the axis */
+  axisId: AxisId;
+  /** selected value */
+  value: string | number;
 };
 
 /**
@@ -98,6 +109,74 @@ export type PlDataTableState = {
   // mapping of gridState onto the p-table data structures
   pTableParams?: PTableParams;
 };
+
+/**
+ * PlDataTableV2 persisted state
+ */
+export type PlDataTableStateV2 =
+  // Old versions of the state
+  | PlDataTableState
+  // Normalized state
+  | PlDataTableStateV2Normalized;
+
+export type PlDataTableStateV2CacheEntry = {
+  /** DataSource identifier for state management */
+  sourceId: string;
+  /** Internal ag-grid state */
+  gridState: PlDataTableGridStateCore;
+  /** Sheets state */
+  sheetsState: PlDataTableSheetState[];
+};
+
+export type PlDataTableStateV2Normalized = {
+  // version for upgrades
+  version: 2;
+  // internal ag-grid states, LRU cache for 5 sourceId-s
+  stateCache: PlDataTableStateV2CacheEntry[];
+  // mapping of gridState for current sourceId onto the p-table data structures
+  pTableParams: PTableParams;
+};
+
+/** Create default PlDataTableStateV2 */
+export function createPlDataTableStateV2(): PlDataTableStateV2Normalized {
+  return {
+    version: 2,
+    stateCache: [],
+    pTableParams: {},
+  };
+}
+
+/** Upgrade PlDataTableStateV2 to the latest version */
+export function upgradePlDataTableStateV2(state: PlDataTableStateV2): PlDataTableStateV2Normalized {
+  // v1 -> v2
+  if (!('version' in state)) {
+    const stateCache: PlDataTableStateV2CacheEntry[] = [];
+    const pTableParams: PTableParams = {};
+    if (state.gridState.sourceId) {
+      stateCache.push({
+        sourceId: state.gridState.sourceId,
+        gridState: {
+          columnOrder: state.gridState.columnOrder,
+          columnVisibility: state.gridState.columnVisibility,
+          sort: state.gridState.sort,
+        },
+        sheetsState: Object.entries(state.gridState.sheets ?? {}).map(([axisId, value]) => ({
+          axisId: parseJson(axisId as CanonicalizedJson<AxisId>),
+          value,
+        })),
+      });
+      if (state.pTableParams) {
+        Object.assign(pTableParams, state.pTableParams);
+      }
+    }
+    state = {
+      version: 2,
+      stateCache,
+      pTableParams,
+    } satisfies PlDataTableStateV2Normalized;
+  }
+  return state;
+}
 
 /** PlTableFilters filter entry */
 export type PlTableFilterIsNotNA = {
