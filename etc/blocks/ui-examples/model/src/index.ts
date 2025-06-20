@@ -7,10 +7,12 @@ import type {
   PlDataTableState,
   PlTableFiltersModel,
   PObjectId,
+  PlDataTableStateV2,
 } from '@platforma-sdk/model';
 import {
   BlockModel,
   createPlDataTable,
+  createPlDataTableStateV2,
   createPlDataTableV2,
 } from '@platforma-sdk/model';
 import { z } from 'zod';
@@ -54,8 +56,14 @@ export type TableState = {
   filterModel: PlTableFiltersModel;
 };
 
+export type TableStateV2 = {
+  tableState: PlDataTableStateV2;
+  filterModel: PlTableFiltersModel;
+};
+
 export type UiState = {
   dataTableState: TableState | undefined;
+  dataTableStateV2: TableStateV2;
   dynamicSections: {
     id: string;
     label: string;
@@ -66,7 +74,14 @@ export const platforma = BlockModel.create('Heavy')
 
   .withArgs<BlockArgs>({ numbers: [1, 2, 3, 4], tableNumRows: 100, handles: [] })
 
-  .withUiState<UiState>({ dataTableState: undefined, dynamicSections: [] })
+  .withUiState<UiState>({
+    dataTableState: undefined,
+    dataTableStateV2: {
+      tableState: createPlDataTableStateV2(),
+      filterModel: {},
+    },
+    dynamicSections: [],
+  })
 
   .argsValid((ctx) => {
     if (ctx.args.numbers.length === 5) {
@@ -141,8 +156,6 @@ export const platforma = BlockModel.create('Heavy')
   })
 
   .output('ptV2', (ctx) => {
-    if (!ctx.uiState?.dataTableState?.tableState.pTableParams?.filters) return undefined;
-
     const data = times(ctx.args.tableNumRows ?? 0, (i) => {
       const v = i + 1;
       return {
@@ -186,13 +199,8 @@ export const platforma = BlockModel.create('Heavy')
           data,
         } satisfies PColumn<PColumnValues>,
       ],
-      ctx.uiState.dataTableState.tableState,
-      {
-        filters: [
-          ...(ctx.uiState.dataTableState.tableState.pTableParams?.filters ?? []),
-          ...(ctx.uiState.dataTableState.filterModel?.filters ?? []),
-        ],
-      },
+      ctx.uiState.dataTableStateV2.tableState,
+      { filters: ctx.uiState.dataTableStateV2.filterModel?.filters ?? [] },
     );
   })
 

@@ -10,11 +10,6 @@ import {
   type ManagedGridOptions,
   type SortState,
   type StateUpdatedEvent,
-  ModuleRegistry,
-  ClientSideRowModelModule,
-  ClipboardModule,
-  CellSelectionModule,
-  ServerSideRowModelModule,
   isColumnSelectionCol,
 } from 'ag-grid-enterprise';
 import { AgGridVue } from 'ag-grid-vue3';
@@ -43,19 +38,12 @@ import PlOverlayLoading from './PlAgOverlayLoading.vue';
 import PlOverlayNoRows from './PlAgOverlayNoRows.vue';
 import { updateXsvGridOptions } from './sources/file-source';
 import { type PlAgCellButtonAxisParams, makeRowId, updatePFrameGridOptions } from './sources/table-source';
-import type { PlAgDataTableController, PlDataTableSettings, PlAgDataTableRow, PlDataTableSettingsPTable } from './types';
+import type { PlAgDataTableController, PlDataTableSettings, PlAgDataTableRow, PlDataTableSettingsPTable, PlDataTableColumnsInfo } from './types';
 import { PlAgGridColumnManager } from '../PlAgGridColumnManager';
 import { autoSizeRowNumberColumn, PlAgDataTableRowNumberColId } from './sources/row-number';
 import { focusRow, makeOnceTracker, trackFirstDataRendered } from './sources/focus-row';
 import PlAgCsvExporter from '../PlAgCsvExporter/PlAgCsvExporter.vue';
 import { Deferred, isJsonEqual } from '@milaboratories/helpers';
-
-ModuleRegistry.registerModules([
-  ClientSideRowModelModule,
-  ClipboardModule,
-  ServerSideRowModelModule,
-  CellSelectionModule,
-]);
 
 const tableState = defineModel<PlDataTableState>({ default: { gridState: {} } });
 const selectedRows = defineModel<PTableRowKey[]>('selectedRows');
@@ -103,7 +91,7 @@ const props = defineProps<{
 const { settings } = toRefs(props);
 const emit = defineEmits<{
   rowDoubleClicked: [key?: PTableRowKey];
-  columnsChanged: [columns: PTableColumnSpec[]];
+  columnsChanged: [info: PlDataTableColumnsInfo];
   cellButtonClicked: [key?: PTableRowKey];
 }>();
 
@@ -377,16 +365,27 @@ watch(
     if (!oldOptions) return;
     if (options.rowModelType != oldOptions.rowModelType) ++reloadKey.value;
     if (options.columnDefs && !lodash.isEqual(options.columnDefs, oldOptions.columnDefs)) {
-      const isColDef = (def: ColDef | ColGroupDef): def is ColDef => !('children' in def);
-      const colDefs = options.columnDefs?.filter(isColDef) ?? [];
-      const columns
+      const sourceId = gridState.value.sourceId;
+      if (!sourceId) {
+        emit('columnsChanged', {
+          sourceId: null,
+          columns: [],
+        });
+      } else {
+        const isColDef = (def: ColDef | ColGroupDef): def is ColDef => !('children' in def);
+        const colDefs = options.columnDefs?.filter(isColDef) ?? [];
+        const columns
         = colDefs
           .map((def) => def.colId)
           .filter((colId) => colId !== undefined)
           .filter((colId) => colId !== PlAgDataTableRowNumberColId)
           .filter((colId) => !isColumnSelectionCol(colId))
           .map((colId) => parseJson(colId as PTableColumnSpecJson)) ?? [];
-      emit('columnsChanged', columns);
+        emit('columnsChanged', {
+          sourceId,
+          columns,
+        });
+      }
     }
     if (!lodash.isEqual(options.loadingOverlayComponentParams, oldOptions.loadingOverlayComponentParams) && options.loading) {
       gridApi.value?.setGridOption('loading', false);

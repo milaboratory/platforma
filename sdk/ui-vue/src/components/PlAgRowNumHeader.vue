@@ -2,27 +2,40 @@
 import { PlCheckbox } from '@milaboratories/uikit';
 import type { IHeaderParams } from 'ag-grid-enterprise';
 import { computed, onBeforeMount, onBeforeUnmount, ref } from 'vue';
+import { deselectAll, getSelectedRowsCount, getTotalRowsCount, isSelectionEnabled, selectAll } from '../lib';
 
 const { params } = defineProps<{
   params: IHeaderParams;
 }>();
 
-const selectedRowCount = ref(params.api.getSelectedRows().length);
-const totalRowCount = ref(params.api.getDisplayedRowCount());
-const isSelectable = ref(Boolean(params.api.getGridOption('rowSelection')));
+const selectedRowCount = ref(getSelectedRowsCount(params.api));
+const totalRowCount = ref(getTotalRowsCount(params.api));
+const isSelectable = ref(isSelectionEnabled(params.api));
 
 const allRowsSelected = computed(() =>
   selectedRowCount.value === totalRowCount.value
   && selectedRowCount.value > 0,
 );
 
+const someRowsSelected = computed(() =>
+  selectedRowCount.value > 0,
+);
+
+function toggleSelectAll() {
+  if (someRowsSelected.value) {
+    deselectAll(params.api);
+  } else {
+    selectAll(params.api);
+  }
+}
+
 function updateRowCounts() {
-  selectedRowCount.value = params.api.getSelectedRows().length;
-  totalRowCount.value = params.api.getDisplayedRowCount();
+  selectedRowCount.value = getSelectedRowsCount(params.api);
+  totalRowCount.value = getTotalRowsCount(params.api);
 }
 
 function updateIsSelectable() {
-  isSelectable.value = Boolean(params.api.getGridOption('rowSelection'));
+  isSelectable.value = isSelectionEnabled(params.api);
 }
 
 onBeforeMount(() => {
@@ -52,13 +65,9 @@ onBeforeUnmount(() => {
   >
     <PlCheckbox
       v-if="isSelectable"
-      :model-value="allRowsSelected"
-      :indeterminate="!allRowsSelected && selectedRowCount > 0"
-      @update:model-value="
-        allRowsSelected
-          ? params.api.deselectAll()
-          : params.api.selectAll()
-      "
+      :model-value="someRowsSelected"
+      :indeterminate="someRowsSelected && !allRowsSelected"
+      @update:model-value="toggleSelectAll"
     />
     <span v-else>
       {{ params.displayName }}
