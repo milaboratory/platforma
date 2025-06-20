@@ -20,6 +20,7 @@ import {
 import { AgGridVue } from 'ag-grid-vue3';
 import { PlDropdownLine } from '@milaboratories/uikit';
 import type {
+  CanonicalizedJson,
   PTableColumnSpecJson,
   PTableRowKey,
 } from '@platforma-sdk/model';
@@ -33,8 +34,8 @@ import {
   type PTableRecordFilter,
   type PTableSorting,
   parseJson,
+  canonicalizeJson,
 } from '@platforma-sdk/model';
-import canonicalize from 'canonicalize';
 import * as lodash from 'lodash';
 import { computed, nextTick, ref, shallowRef, toRefs, watch } from 'vue';
 import { AgGridTheme } from '../../lib';
@@ -154,7 +155,7 @@ const gridState = computed<PlDataTableGridStateWithoutSheets>({
   },
 });
 
-const makeSheetId = (axis: AxisId) => canonicalize(getAxisId(axis))!;
+const makeSheetId = (axis: AxisId): CanonicalizedJson<AxisId> => canonicalizeJson(getAxisId(axis))!;
 
 function makeFilters(sheetsState: Record<string, string | number>): PTableRecordFilter[] | undefined {
   if (settings.value?.sourceType !== 'ptable') return undefined;
@@ -173,7 +174,7 @@ function makeFilters(sheetsState: Record<string, string | number>): PTableRecord
   );
 }
 
-const sheetsState = computed({
+const sheetsState = computed<Record<CanonicalizedJson<AxisId>, string | number>>({
   get: () => tableState.value.gridState.sheets ?? {},
   set: (sheetsState) => {
     const filters = makeFilters(sheetsState);
@@ -206,7 +207,7 @@ watch(
     if (oldSettings && oldSettings.sourceType === 'ptable' && lodash.isEqual(settings.sheets, oldSettings.sheets)) return;
 
     const oldSheetsState = sheetsState.value;
-    const newSheetsState: Record<string, string | number> = {};
+    const newSheetsState: Record<CanonicalizedJson<AxisId>, string | number> = {};
     for (const sheet of settings.sheets) {
       const sheetId = makeSheetId(sheet.axis);
       newSheetsState[sheetId] = oldSheetsState[sheetId] ?? sheet.defaultValue ?? sheet.options[0]?.value;
@@ -324,9 +325,18 @@ const onGridReady = (event: GridReadyEvent) => {
 const makePartialState = (state: GridState) => {
   return {
     sourceId: gridState.value.sourceId,
-    columnOrder: state.columnOrder,
-    sort: state.sort,
-    columnVisibility: state.columnVisibility as { hiddenColIds: PTableColumnSpecJson[] } | undefined,
+    columnOrder: state.columnOrder as {
+      orderedColIds: PTableColumnSpecJson[];
+    } | undefined,
+    sort: state.sort as {
+      sortModel: {
+        colId: PTableColumnSpecJson;
+        sort: 'asc' | 'desc';
+      }[];
+    } | undefined,
+    columnVisibility: state.columnVisibility as {
+      hiddenColIds: PTableColumnSpecJson[];
+    } | undefined,
   };
 };
 
@@ -386,7 +396,7 @@ watch(
   { immediate: true },
 );
 
-const onSheetChanged = (sheetId: string, newValue: string | number) => {
+const onSheetChanged = (sheetId: CanonicalizedJson<AxisId>, newValue: string | number) => {
   const state = sheetsState.value;
   if (state[sheetId] === newValue) return;
   state[sheetId] = newValue;

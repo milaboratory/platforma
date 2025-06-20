@@ -1,4 +1,4 @@
-import type { ImportFileHandle, Platforma, PlRef as ModelRef, StorageHandle } from '@platforma-sdk/model';
+import type { ImportFileHandle, Platforma, PlRef as ModelRef, StorageHandle, ListOptionBase } from '@platforma-sdk/model';
 import type { Component, ComputedRef, Ref } from 'vue';
 import { icons16 } from './generated/icons-16';
 import { icons24 } from './generated/icons-24';
@@ -50,11 +50,7 @@ export type ListOption<T = unknown> =
     value: T;
   };
 
-export type ListOptionNormalized<T = unknown> = {
-  label: string;
-  description?: string;
-  value: T;
-};
+export type ListOptionNormalized<T = unknown> = ListOptionBase<T>;
 
 export type { ModelRef };
 

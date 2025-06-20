@@ -3,6 +3,7 @@ import { Deferred, isJsonEqual } from '@milaboratories/helpers';
 import { PlDropdownLine } from '@milaboratories/uikit';
 import type {
   AxisId,
+  CanonicalizedJson,
   PlDataTableGridStateWithoutSheets,
   PlDataTableState,
   PlSelectionModel,
@@ -38,7 +39,6 @@ import {
   ServerSideRowModelModule,
 } from 'ag-grid-enterprise';
 import { AgGridVue } from 'ag-grid-vue3';
-import canonicalize from 'canonicalize';
 import * as lodash from 'lodash';
 import { computed, nextTick, ref, shallowRef, toRefs, watch } from 'vue';
 import { AgGridTheme } from '../../lib';
@@ -178,10 +178,10 @@ const gridState = computed<PlDataTableGridStateWithoutSheets>({
   },
 });
 
-const makeSheetId = (axis: AxisId) => canonicalize(getAxisId(axis))!;
+const makeSheetId = (axis: AxisId): CanonicalizedJson<AxisId> => canonicalizeJson(getAxisId(axis));
 
 function makeTableFilters(
-  sheetsState: Record<string, string | number>,
+  sheetsState: Record<CanonicalizedJson<AxisId>, string | number>,
 ): PTableRecordFilter[] | undefined {
   if (settings.value?.sourceType !== 'ptable') return undefined;
   return (
@@ -374,8 +374,15 @@ const onGridReady = (event: GridReadyEvent) => {
 const makePartialState = (state: GridState): PlDataTableGridStateWithoutSheets => {
   return {
     sourceId: gridState.value.sourceId,
-    columnOrder: state.columnOrder,
-    sort: state.sort,
+    columnOrder: state.columnOrder as {
+      orderedColIds: PTableColumnSpecJson[];
+    } | undefined,
+    sort: state.sort as {
+      sortModel: {
+        colId: PTableColumnSpecJson;
+        sort: 'asc' | 'desc';
+      }[];
+    } | undefined,
     columnVisibility: state.columnVisibility as {
       hiddenColIds: PTableColumnSpecJson[];
     } | undefined,
@@ -462,7 +469,7 @@ watch(
   { immediate: true },
 );
 
-const onSheetChanged = (sheetId: string, newValue: string | number) => {
+const onSheetChanged = (sheetId: CanonicalizedJson<AxisId>, newValue: string | number) => {
   const state = sheetsState.value;
   if (state[sheetId] === newValue) return;
   state[sheetId] = newValue;
