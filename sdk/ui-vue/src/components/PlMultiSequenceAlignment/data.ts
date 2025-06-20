@@ -35,17 +35,10 @@ export function useSequenceColumnsOptions(
     sequenceColumnPredicate: PColumnPredicate;
   }>,
 ) {
-  const result = computedAsync(
-    () => getSequenceColumnsOptions(toValue(params)),
+  return computedAsync(
+    () => getSequenceColumnsOptions(toValue(params)).catch(getEmptyOptions),
     getEmptyOptions(),
-    {
-      onError: (error) => {
-        console.error(error);
-        result.value = getEmptyOptions();
-      },
-    },
   );
-  return result;
 }
 
 export function useLabelColumnsOptions(
@@ -57,17 +50,10 @@ export function useLabelColumnsOptions(
       | undefined;
   }>,
 ) {
-  const result = computedAsync(
-    () => getLabelColumnsOptions(toValue(params)),
+  return computedAsync(
+    () => getLabelColumnsOptions(toValue(params)).catch(getEmptyOptions),
     getEmptyOptions(),
-    {
-      onError: (error) => {
-        console.error(error);
-        result.value = getEmptyOptions();
-      },
-    },
   );
-  return result;
 }
 
 export function useMultipleAlignmentData(
@@ -81,15 +67,9 @@ export function useMultipleAlignmentData(
 ) {
   const loading = ref(true);
   const result = computedAsync(
-    () => getMultipleAlignmentData(toValue(params)),
+    () => getMultipleAlignmentData(toValue(params)).catch(() => ({ sequences: [], labels: [] })),
     { sequences: [], labels: [] },
-    {
-      onError: (error) => {
-        console.error(error);
-        result.value = { sequences: [], labels: [] };
-      },
-      evaluating: loading,
-    },
+    { evaluating: loading },
   );
   return { data: result, loading };
 }

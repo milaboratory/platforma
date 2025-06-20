@@ -206,9 +206,8 @@ catalog:
   # UI
 
   'vue': ^3.5.13
-  # TODO upgrade (see https://github.com/vueuse/vueuse/pull/4543)
-  # '@vueuse/core': ^12.8.2
-  '@vueuse/core': ~12.4.0
+  '@vueuse/core': ^13.3.0
+  '@vueuse/integrations': ^13.3.0
   'vue-tsc': ^2.1.10
   'sass': ~1.83.4
   'vitepress': '1.5.0'
@@ -224,6 +223,9 @@ catalog:
   '@milaboratories/miplots4': ^1.0.98
 
   'monaco-editor': ^0.52.2
+
+  'sortablejs': ^1.15.6
+  '@types/sortablejs': ^1.15.6
 
   # SW
 
