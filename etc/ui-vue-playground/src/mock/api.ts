@@ -40,6 +40,7 @@ export function createMockApi<
   return {
     sdkInfo: {
       sdkVersion: 'dev',
+      platformaApiVersion: undefined,
     },
     loadBlockState: async function (): Promise<BlockState<Args, Outputs, UiState>> {
       return block.getState();

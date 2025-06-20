@@ -1,6 +1,6 @@
 import { ProjectMeta } from './project';
 import { BlockPackSpec } from './block_registry/block_pack_spec';
-import { BlockRenderingMode, BlockSection, NavigationState } from '@milaboratories/pl-model-common';
+import { BlockRenderingMode, BlockSection, NavigationState, ApiVersion } from '@milaboratories/pl-model-common';
 import { AuthorMarker } from './author_marker';
 import { UpdateSuggestions } from './update_info';
 import { BlockSettings } from './block_settings';
@@ -132,7 +132,7 @@ export type BlockStateOverview = {
    * Platforma API version the block was compiled with.
    * Undefined when block-pack for this block is not yet materialized.
    * */
-  platformaApiVersion: `${number}` | undefined;
+  platformaApiVersion: ApiVersion | undefined;
 
   /** Information on where the block pack for this block came from */
   currentBlockPack: BlockPackSpec | undefined;

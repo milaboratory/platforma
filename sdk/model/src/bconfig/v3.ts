@@ -1,4 +1,4 @@
-import type { BlockRenderingMode } from '@milaboratories/pl-model-common';
+import type { BlockRenderingMode, ApiVersion } from '@milaboratories/pl-model-common';
 import type { Code, TypedConfigOrConfigLambda } from './types';
 import type { ConfigRenderLambda } from './lambdas';
 
@@ -14,7 +14,7 @@ export type BlockConfigV3<
   readonly sdkVersion: string;
 
   /** Platforma API version used by the block */
-  readonly platformaApiVersion: `${number}` | undefined; // TODO: temp for the test, create v4 config
+  readonly platformaApiVersion: ApiVersion | undefined;
 
   /** Main rendering mode for the block */
   readonly renderingMode: BlockRenderingMode;
