@@ -1,3 +1,5 @@
+import { uniqueId } from '@milaboratories/helpers';
+
 let defs: SVGDefsElement | null = null;
 export type SvgMeta = {
   spriteId: string;
@@ -16,9 +18,9 @@ function ensureSpriteContainer() {
   document.body.prepend(defs);
 }
 
-export function registerSvg(raw: string): SvgMeta {
+export function registerSvg(raw: string, name?: string): SvgMeta {
   if (!registeredRaw.has(raw)) {
-    const id = `svg-${registeredRaw.size}`;
+    const id = `svg-${name ? `${name}-` : ''}${uniqueId()}`;
 
     ensureSpriteContainer();
 

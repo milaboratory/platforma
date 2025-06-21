@@ -18,7 +18,7 @@ const uri = computedAsync(async () => {
   if (typeof props.name === 'string') return import(`../../assets/icons/icon-assets-min/${props.name}.svg?raw`).then((m) => m.default);
   return undefined;
 });
-const svgMeta = computed(() => (uri.value == null ? undefined : registerSvg(uri.value)));
+const svgMeta = computed(() => (uri.value == null ? undefined : registerSvg(uri.value, props.name)));
 const styleSize = computed(() =>
   svgMeta.value == null
     ? undefined
