@@ -7,7 +7,9 @@ import type {
 } from 'ag-grid-enterprise';
 import type {
   AxisId,
+  CanonicalizedJson,
   PlDataTableGridStateWithoutSheets,
+  PlRef,
   PTableColumnSpec,
   PTableRowKey,
 } from '@platforma-sdk/model';
@@ -16,7 +18,6 @@ import {
   getAxisId,
   isColumnOptional,
   pTableValue,
-  stringifyPTableColumnSpec,
   type PColumnSpec,
   type PFrameDriver,
   type PlDataTableSheet,
@@ -273,7 +274,7 @@ export function makeColDef(
   hiddenColIds?: string[],
   cellButtonAxisParams?: PlAgCellButtonAxisParams,
 ): ColDef {
-  const colId = stringifyPTableColumnSpec(spec);
+  const colId = canonicalizeJson<PTableColumnSpec>(spec);
   const valueType = spec.type === 'axis' ? spec.spec.type : spec.spec.valueType;
   return {
     colId,

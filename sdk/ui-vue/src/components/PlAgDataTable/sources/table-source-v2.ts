@@ -1,17 +1,19 @@
 import type {
   AxisId,
-  PlDataTableGridStateWithoutSheets,
   PlDataTableModel,
   PTableColumnSpec,
+  PTableColumnSpecJson,
   PTableKey,
+  PTableRecordFilter,
+  PTableSorting,
 } from '@platforma-sdk/model';
 import {
   canonicalizeJson,
   getAxisId,
   isColumnOptional,
   mapPTableValueToAxisKey,
+  parseJson,
   pTableValue,
-  stringifyPTableColumnSpec,
   type PColumnSpec,
   type PFrameDriver,
   type PlDataTableSheet,
@@ -23,12 +25,10 @@ import type {
   ICellRendererParams,
   IServerSideDatasource,
   IServerSideGetRowsParams,
-  RowModelType,
+  SortState,
 } from 'ag-grid-enterprise';
 import canonicalize from 'canonicalize';
 import * as lodash from 'lodash';
-import type { Ref } from 'vue';
-import { objectHash } from '../../../objectHash';
 import type { PlAgHeaderComponentParams, PlAgHeaderComponentType } from '../../PlAgColumnHeader';
 import { PlAgColumnHeader } from '../../PlAgColumnHeader';
 import { PlAgTextAndButtonCell } from '../../PlAgTextAndButtonCell';
@@ -40,6 +40,36 @@ import {
 import { defaultMainMenuItems } from './menu-items';
 import { makeRowNumberColDef, PlAgDataTableRowNumberColId } from './row-number';
 import { getColumnRenderingSpec } from './value-rendering';
+
+export function makeTableSorting(state: SortState | undefined): PTableSorting[] {
+  return (
+    state?.sortModel.map((item) => {
+      const { spec, ...column } = parseJson(
+        item.colId as PTableColumnSpecJson,
+      );
+      const _ = spec;
+      return {
+        column,
+        ascending: item.sort === 'asc',
+        naAndAbsentAreLeastValues: item.sort === 'asc',
+      };
+    }) ?? []
+  );
+}
+
+export function makeTableFilter(axisId: AxisId, value: string | number): PTableRecordFilter {
+  return {
+    type: 'bySingleColumnV2',
+    column: {
+      type: 'axis',
+      id: axisId,
+    },
+    predicate: {
+      operator: 'Equal',
+      reference: value,
+    },
+  };
+}
 
 /** Convert columnar data from the driver to rows, used by ag-grid */
 function columns2rows(
@@ -66,24 +96,19 @@ function columns2rows(
   return rowData;
 }
 
-/**
- * Calculate GridOptions for p-table data source type
- */
+/** Calculate GridOptions for p-table data source type */
 export async function updatePFrameGridOptions(
   pfDriver: PFrameDriver,
   model: PlDataTableModel,
   sheets: PlDataTableSheet[],
-  clientSide: boolean,
-  gridState: Ref<PlDataTableGridStateWithoutSheets>,
+  hiddenColIds?: string[],
   cellButtonAxisParams?: PlAgCellButtonAxisParams,
 ): Promise<{
     columnDefs: ColDef[];
-    serverSideDatasource?: IServerSideDatasource;
-    rowModelType: RowModelType;
-    rowData?: PlAgDataTableV2Row[];
+    serverSideDatasource: IServerSideDatasource;
   }> {
-  const pt = model.tableHandle;
-  const specs = model.tableSpec;
+  const pt = model.visibleTableHandle;
+  const specs = await pfDriver.getSpec(model.fullTableHandle);
   type SpecId = string;
   const specId = (spec: PTableColumnSpec): SpecId =>
     spec.type === 'axis' ? canonicalize(getAxisId(spec.spec))! : spec.id;
@@ -99,21 +124,6 @@ export async function updatePFrameGridOptions(
       throw new Error(`axis ${JSON.stringify(spec.spec)} not present in join result`);
     specsToDataSpecsMapping.set(i, dataSpecIdx ?? -1);
   });
-
-  const oldSourceId = gridState.value.sourceId;
-
-  const newSourceId = await objectHash(specs);
-
-  const isSourceIdChanged = oldSourceId !== newSourceId;
-
-  const columnVisibility = isSourceIdChanged ? undefined : gridState.value.columnVisibility ?? { hiddenColIds: [] }; // We made all the columns visible by hand
-
-  if (isSourceIdChanged) {
-    gridState.value = {
-      ...gridState.value,
-      sourceId: newSourceId,
-    };
-  }
 
   let numberOfAxes = specs.findIndex((s) => s.type === 'column');
   if (numberOfAxes === -1) numberOfAxes = specs.length;
@@ -165,11 +175,9 @@ export async function updatePFrameGridOptions(
     fields.splice(i, 1);
   }
 
-  const ptShape = await pfDriver.getShape(pt);
-  const rowCount = ptShape.rows;
   const columnDefs: ColDef<PlAgDataTableV2Row>[] = [
     makeRowNumberColDef(),
-    ...fields.map((i) => makeColDef(i, specs[i], columnVisibility?.hiddenColIds, cellButtonAxisParams)),
+    ...fields.map((i) => makeColDef(i, specs[i], hiddenColIds, cellButtonAxisParams)),
   ];
 
   // mixing in axis indices
@@ -223,19 +231,16 @@ export async function updatePFrameGridOptions(
     }
   });
 
-  if (clientSide) {
-    const data = await pfDriver.getData(pt, requestIndices);
-    return {
-      rowModelType: 'clientSide',
-      columnDefs,
-      rowData: columns2rows(fields, data, axes, resultMapping),
-    };
-  }
-
+  let rowCount = -1;
   let lastParams: IServerSideGetRowsParams | undefined = undefined;
   const serverSideDatasource = {
     getRows: async (params: IServerSideGetRowsParams) => {
       try {
+        if (rowCount === -1) {
+          const ptShape = await pfDriver.getShape(pt);
+          rowCount = ptShape.rows;
+        }
+
         if (rowCount == 0) {
           params.success({ rowData: [], rowCount });
           params.api.setGridOption('loading', false);
@@ -277,7 +282,6 @@ export async function updatePFrameGridOptions(
   } satisfies IServerSideDatasource;
 
   return {
-    rowModelType: 'serverSide',
     columnDefs,
     serverSideDatasource,
   };
@@ -298,7 +302,7 @@ export function makeColDef(
   hiddenColIds?: string[],
   cellButtonAxisParams?: PlAgCellButtonAxisParams,
 ): ColDef {
-  const colId = stringifyPTableColumnSpec(spec);
+  const colId = canonicalizeJson<PTableColumnSpec>(spec);
   const valueType = spec.type === 'axis' ? spec.spec.type : spec.spec.valueType;
   const columnRenderingSpec = getColumnRenderingSpec(spec);
   const cellStyle: CellStyle = {};

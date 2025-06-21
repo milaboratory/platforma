@@ -12,7 +12,6 @@ import {
   BlockModel,
   createPlDataTable,
   createPlDataTableV2,
-  selectorsToPredicate,
 } from '@platforma-sdk/model';
 import { z } from 'zod';
 
@@ -187,9 +186,6 @@ export const platforma = BlockModel.create('Heavy')
           data,
         } satisfies PColumn<PColumnValues>,
       ],
-      selectorsToPredicate({
-        name: 'example',
-      }),
       ctx.uiState.dataTableState.tableState,
       {
         filters: [
