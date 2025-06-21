@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.86
+
+### Patch Changes
+
+- 8248b67: Fix svg icons ids collisions
+
 ## 2.2.85
 
 ### Patch Changes
