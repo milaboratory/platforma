@@ -10,7 +10,8 @@ export default class DumpAll extends Command {
     '<%= config.bin %> <%= command.id %>',
   ];
 
-  public run(): void {
+  // eslint-disable-next-line @typescript-eslint/require-await
+  public async run() {
     const logger = createLogger();
     dumpAll(logger, stdout);
   }

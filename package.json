@@ -15,12 +15,12 @@
     "test:no-cache": "turbo run test --concurrency 1 --env-mode=loose --force",
     "publish-to-local-registry": "turbo run publish-to-local-registry",
     "do-pack": "turbo run do-pack",
-    "lint": "pnpm -r lint",
+    "lint": "turbo run lint",
     "changeset": "changeset",
     "version-packages": "changeset version",
     "pretty": "prettier --write \"./**/*.{js,jsx,mjs,cjs,ts,tsx,json,yaml}\"",
     "prepare": "husky",
-    "check": "true || turbo run check"
+    "check": "pnpm run type-check && pnpm run lint"
   },
   "devDependencies": {
     "@changesets/cli": "catalog:",
