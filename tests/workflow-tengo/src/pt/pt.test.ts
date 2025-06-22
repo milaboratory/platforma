@@ -154,13 +154,6 @@ B\tuser7\t190\t110`;
 
     const outputContent = await getFileContent('out_filtered_sorted');
 
-    const normalizeAndSortTsv = (str: string) => {
-      const lines = str.replace(/\r\n/g, '\n').trim().split('\n');
-      const header = lines.shift();
-      // Data is already sorted by the template, so just join
-      return [header, ...lines].join('\n');
-    };
-
     const normalizeTsv = (str: string) => str.replace(/\r\n/g, '\n').trim();
 
     expect(normalizeTsv(outputContent)).toEqual(normalizeTsv(expectedOutputTsvData));
@@ -216,7 +209,7 @@ Banana,Yellow`;
         'out_full_join_on_nocoalesce',
         'out_cross_join',
       ],
-      (tx) => ({}), // No dynamic inputs needed for this test
+      () => ({}), // No dynamic inputs needed for this test
     );
 
     const getFileContentLocal = async (
@@ -239,7 +232,6 @@ Banana,Yellow`;
       return (await driverKit.blobDriver.getContent(fileHandle!)).toString();
     };
 
-    const normalizeTsv = (str: string) => str.replace(/\r\n/g, '\n').trim();
     const normalizeAndSortTsv = (str: string) => {
       const lines = str.replace(/\r\n/g, '\n').trim().split('\n');
       const header = lines.shift();

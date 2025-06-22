@@ -1,4 +1,4 @@
-import type { TemplateDataV3, TemplateLibDataV3 } from '@milaboratories/pl-model-backend';
+import type { TemplateDataV3 } from '@milaboratories/pl-model-backend';
 import type { CompilerOption } from './package';
 import * as util from './util';
 
@@ -13,7 +13,7 @@ export function applyTemplateCompilerOptions(opts: CompilerOption[], tpl: Templa
   }
 }
 
-export function applyLibraryCompilerOptions(opts: CompilerOption[], lib: TemplateLibDataV3) {
+export function applyLibraryCompilerOptions(opts: CompilerOption[]) {
   for (const opt of opts) {
     switch (opt.name) {
       case 'hash_override': {

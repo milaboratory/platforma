@@ -10,7 +10,7 @@ export default class DumpTests extends Command {
     '<%= config.bin %> <%= command.id %>',
   ];
 
-  public async run(): Promise<void> {
+  public run(): void {
     const logger = createLogger();
     dumpTests(logger, stdout);
   }
