@@ -110,7 +110,7 @@ tplTest.concurrent.for([
   },
 );
 
-eTplTest(
+eTplTest.concurrent(
   'should correctly execute low level aggregation routine with xsv parsing',
   async ({ helper, expect, stHelper }) => {
     const xsvSettings = {

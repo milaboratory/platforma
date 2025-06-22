@@ -71,7 +71,7 @@ const baseSpec = {
   partitionKeyLength: 2,
 };
 
-tplTest.for([
+tplTest.concurrent.for([
   { partitionKeyLength: 0, storageFormat: 'Binary' },
   { partitionKeyLength: 1, storageFormat: 'Binary' },
   { partitionKeyLength: 2, storageFormat: 'Binary' },
@@ -88,7 +88,7 @@ tplTest.for([
   // execution takes 1-2 seconds at most.
   { timeout: 30000 },
   async ({ partitionKeyLength, storageFormat }, { helper, expect, driverKit }) => {
-    const spec = baseSpec;
+    const spec = deepClone(baseSpec);
     spec.partitionKeyLength = partitionKeyLength;
     spec.storageFormat = storageFormat;
 
@@ -129,7 +129,7 @@ tplTest.for([
   },
 );
 
-tplTest.for([
+tplTest.concurrent.for([
   { partitionKeyLength: 1, storageFormat: 'Binary' },
   { partitionKeyLength: 2, storageFormat: 'Binary' },
   { partitionKeyLength: 1, storageFormat: 'Json' },
@@ -144,7 +144,7 @@ tplTest.for([
   // execution takes 1-2 seconds at most.
   { timeout: 30000 },
   async ({ partitionKeyLength, storageFormat }, { helper, expect, driverKit }) => {
-    const spec = baseSpec;
+    const spec = deepClone(baseSpec);
     spec.partitionKeyLength = partitionKeyLength;
     spec.storageFormat = storageFormat;
 
@@ -198,7 +198,7 @@ function superPartitionKeys(keyLen: number): string[] {
   return r;
 }
 
-tplTest.for([
+tplTest.concurrent.for([
   {
     superPartitionKeyLength: 0,
     partitionKeyLength: 0,
@@ -257,7 +257,7 @@ tplTest.for([
     { helper, expect, driverKit },
   ) => {
     const supKeys = superPartitionKeys(superPartitionKeyLength).sort();
-    const spec = baseSpec;
+    const spec = deepClone(baseSpec);
     spec.partitionKeyLength = partitionKeyLength;
     spec.storageFormat = storageFormat;
 
@@ -308,3 +308,7 @@ tplTest.for([
     if (superPartitionKeyLength === 0) expect(actual).toEqual(expected);
   },
 );
+
+function deepClone<T>(obj: T): T {
+  return JSON.parse(JSON.stringify(obj));
+}
