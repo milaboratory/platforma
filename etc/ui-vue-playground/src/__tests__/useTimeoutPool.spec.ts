@@ -16,7 +16,7 @@ const createTest = (immediate: boolean) => {
 
     const callback = vi.fn(fetchData);
     const interval = ref(10);
-    const { pause, resume } = useTimeoutPoll(callback, interval, { immediate });
+    const { pause, resume } = useTimeoutPoll(callback, interval, { immediate, immediateCallback: true });
 
     if (!immediate) resume();
     expect(callback).toBeCalledTimes(1);
