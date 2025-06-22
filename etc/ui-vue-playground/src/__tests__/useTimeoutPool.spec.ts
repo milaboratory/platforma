@@ -1,6 +1,6 @@
 import { ref } from 'vue';
 import { describe, it, vi, expect } from 'vitest';
-import { useTimeoutPoll } from '@vueuse/core';
+import { useTimeoutPoll, isClient } from '@vueuse/core';
 import { delay } from '@milaboratories/helpers';
 
 async function fetchData() {
@@ -9,6 +9,11 @@ async function fetchData() {
 
 const createTest = (immediate: boolean) => {
   it(`supports reactive intervals when immediate is ${immediate}`, async () => {
+    // Librarry have unpredictable behaviour and `immediate` flag will work only in the main thread in browser!
+    if (!isClient) {
+      immediate = false;
+    }
+
     const callback = vi.fn(fetchData);
     const interval = ref(10);
     const { pause, resume } = useTimeoutPoll(callback, interval, { immediate });
