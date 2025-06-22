@@ -3,49 +3,38 @@ import { describe, it, vi, expect } from 'vitest';
 import { useTimeoutPoll } from '@vueuse/core';
 import { delay } from '@milaboratories/helpers';
 
-const count = ref(0);
 async function fetchData() {
   await new Promise((resolve) => setTimeout(resolve, 0));
-  count.value++;
 }
 
 const createTest = (immediate: boolean) => {
   it(`supports reactive intervals when immediate is ${immediate}`, async () => {
     const callback = vi.fn(fetchData);
-    const interval = ref(0);
+    const interval = ref(10);
     const { pause, resume } = useTimeoutPoll(callback, interval, { immediate });
 
-    if (!immediate)
-      resume();
-    await delay(1);
-    expect(callback).toBeCalled();
-    await delay(2);
+    if (!immediate) resume();
+    expect(callback).toBeCalledTimes(1);
+    await delay(interval.value + 5);
     expect(callback).toBeCalledTimes(2);
-    pause();
+    await delay(interval.value);
+    expect(callback).toBeCalledTimes(3);
 
+    // Stop and check that no more calls are made
+    callback.mockReset();
+    pause();
+    await delay(100);
+    expect(callback).toBeCalledTimes(0);
+
+    // Change the interval and resume
     interval.value = 50;
-
     resume();
-    callback.mockReset();
 
-    // @TODO (flapping, may be a bug)
-    // await delay(10)
-    // expect(callback).not.toBeCalled()
-    await delay(102);
-    expect(callback).toBeCalled();
-
-    callback.mockReset();
-    pause();
-    await delay(102);
-    expect(callback).not.toBeCalled();
-
-    resume();
-    await delay(1);
-    expect(callback).toBeCalled();
-
-    callback.mockReset();
-    await delay(102);
-    expect(callback).toBeCalled();
+    expect(callback).toBeCalledTimes(1);
+    await delay(interval.value + 5);
+    expect(callback).toBeCalledTimes(2);
+    await delay(interval.value);
+    expect(callback).toBeCalledTimes(3);
   });
 };
 
