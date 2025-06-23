@@ -2,8 +2,7 @@
   "extends": "@milaboratories/ts-configs/browser",
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
-    "outDir": "dist",
-    "baseUrl": ".",
+    "outDir": "./dist"
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue"]
 }

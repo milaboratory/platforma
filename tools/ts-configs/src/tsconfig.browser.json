@@ -1,6 +1,7 @@
 {
+  "extends": "./tsconfig.aliases.json",
   "compilerOptions": {
-    "composite": true,
+    "incremental": true,
     "target": "ESNext",
     "module": "ESNext",
     "useDefineForClassFields": true,
@@ -16,6 +17,7 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "moduleDetection": "force",
+    "declaration": true,
     "declarationMap": true,
     "noEmit": true,
     "jsx": "preserve",
@@ -25,12 +27,6 @@
     "types": [
       "vite/client",
       "vitest/importMeta"
-    ],
-    /* Global Aliases */
-    "baseUrl": "../../../",
-    "paths": {
-      "@milaboratories/uikit": ["lib/ui/uikit/src"],
-      "@platforma-sdk/ui-vue": ["sdk/ui-vue/src"],
-    }
+    ]
   }
 }
