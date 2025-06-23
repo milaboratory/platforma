@@ -1,5 +1,11 @@
 # @milaboratories/helpers
 
+## 1.6.14
+
+### Patch Changes
+
+- e9d02ae: Correct clear icon color
+
 ## 1.6.13
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.88
+
+### Patch Changes
+
+- e9d02ae: Correct clear icon color
+
 ## 2.2.87
 
 ### Patch Changes
