@@ -7,7 +7,6 @@ import type {
   PlDataTableGridStateCore,
   PlDataTableStateV2,
   PlSelectionModel,
-  PTableColumnSpec,
   PTableColumnSpecJson,
   PTableKey,
 } from '@platforma-sdk/model';
@@ -299,33 +298,30 @@ watch(
   () => [gridApi.value, gridState.value] as const,
   ([gridApi, gridState]) => {
     if (!gridApi || gridApi.isDestroyed()) return;
-
     const selfState = makePartialState(gridApi.getState());
-    if (isJsonEqual(gridState, selfState)) return;
-
-    gridOptions.value.initialState = gridState;
-    ++reloadKey.value;
+    if (!isJsonEqual(gridState, {}) && !isJsonEqual(gridState, selfState)) {
+      gridOptions.value.initialState = gridState;
+      ++reloadKey.value;
+    }
   },
 );
 
 // Make loadingOverlayComponentParams reactive
-let oldLoadingOverlayComponentParams: PlAgOverlayLoadingParams | null = null;
+let oldOptions: GridOptions | null = null;
 watch(
   () => [gridApi.value, gridOptions.value] as const,
   ([gridApi, options]) => {
     // Wait for AgGrid reinitialization, gridApi will eventially become initialized
     if (!gridApi || gridApi.isDestroyed()) return;
-    // Verify that this is not a false watch trigger
-    if (isJsonEqual(
+    if (options.loading && oldOptions?.loading && !isJsonEqual(
       options.loadingOverlayComponentParams,
-      oldLoadingOverlayComponentParams,
-    )) return;
-    if (options.loading) {
+      oldOptions?.loadingOverlayComponentParams,
+    )) {
       // Hack to reapply loadingOverlayComponentParams
       gridApi.setGridOption('loading', false);
       gridApi.setGridOption('loading', true);
     }
-    oldLoadingOverlayComponentParams = options.loadingOverlayComponentParams;
+    oldOptions = options;
   },
   { immediate: true },
 );
@@ -407,6 +403,9 @@ watch(
     if (isJsonEqual(settings, oldSettings)) return;
     const stateGeneration = ++generation;
     try {
+      // Hide no rows overlay if it is shown, or else loading overlay will not be shown
+      gridApi.hideOverlay();
+
       // No data source selected -> reset state to default
       if (!settings.sourceId) {
         return gridApi.updateGridOptions({
@@ -415,8 +414,8 @@ watch(
             ...gridOptions.value.loadingOverlayComponentParams,
             notReady: true,
           } satisfies PlAgOverlayLoadingParams,
-          columnDefs: [],
-          datasource: undefined,
+          columnDefs: undefined,
+          serverSideDatasource: undefined,
         });
       }
 

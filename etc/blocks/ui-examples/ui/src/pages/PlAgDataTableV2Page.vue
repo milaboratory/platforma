@@ -15,7 +15,7 @@ import {
   PlAgDataTableV2,
   PlNumberField,
   PlCheckbox,
-  PlBtnPrimary,
+  PlDropdown,
 } from '@platforma-sdk/ui-vue';
 import {
   useApp,
@@ -30,12 +30,22 @@ import type {
 
 const app = useApp();
 
-const sourceGeneration = ref(0);
+const sources = [...new Array(10)].map((_, i) => {
+  return {
+    label: `Source ${i}`,
+    value: `source_${i}`,
+  };
+});
+const activeSource = ref(sources[0].value);
 
-const tableSettings = computed<PlDataTableSettingsV2>(() => ({
-  sourceId: `source_${sourceGeneration.value}`,
-  model: app.model.outputs.ptV2,
-}));
+const tableSettings = computed<PlDataTableSettingsV2>(() => (
+  activeSource.value
+    ? {
+        sourceId: activeSource.value,
+        model: app.model.outputs.ptV2,
+      }
+    : { sourceId: null }
+));
 
 const columns = ref<PTableColumnSpec[]>([]);
 
@@ -57,19 +67,7 @@ const selection = ref<PlSelectionModel>({
 });
 watch(
   () => selection.value,
-  (selection, oldSelection) => {
-    selection.selectedKeys.sort();
-    if (oldSelection) {
-      oldSelection.selectedKeys.sort();
-      if (oldSelection.selectedKeys.length === selection.selectedKeys.length) {
-        if (oldSelection.selectedKeys.every((key, index) => key === selection.selectedKeys[index])) {
-          return;
-        }
-      }
-    }
-    console.log(`selection changed`, toValue(selection));
-  },
-  { deep: true },
+  (selection) => console.log(`selection changed`, toValue(selection)),
 );
 </script>
 
@@ -95,9 +93,7 @@ watch(
         Table controls could be placed here
         <PlNumberField v-model="app.model.args.tableNumRows" />
         <PlCheckbox v-model="verbose">Use custom cell renderer for numbers</PlCheckbox>
-        <PlBtnPrimary @click="sourceGeneration++">
-          Change sourceId
-        </PlBtnPrimary>
+        <PlDropdown v-model="activeSource" :options="sources" clearable />
       </template>
     </PlAgDataTableV2>
   </PlBlockPage>
