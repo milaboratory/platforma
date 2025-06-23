@@ -11,6 +11,7 @@ export const createViteDevConfig = (({ mode }: ConfigEnv) => {
   const isProd = mode === 'production';
 
   return {
+    base: './',
     plugins: [vue()],
     build: {
       emptyOutDir: isProd,
