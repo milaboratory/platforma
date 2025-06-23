@@ -1,5 +1,13 @@
 # @platforma-sdk/ui-vue
 
+## 1.34.17
+
+### Patch Changes
+
+- 45badc9: PlElementList implementation
+- Updated dependencies [45badc9]
+  - @milaboratories/uikit@2.2.87
+
 ## 1.34.15
 
 ### Patch Changes

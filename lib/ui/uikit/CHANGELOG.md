@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.87
+
+### Patch Changes
+
+- 45badc9: PlElementList implementation
+
 ## 2.2.86
 
 ### Patch Changes

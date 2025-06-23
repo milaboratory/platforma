@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 1.37.80
+
+### Patch Changes
+
+- @milaboratories/pl-drivers@1.5.69
+
 ## 1.37.79
 
 ### Patch Changes
