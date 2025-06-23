@@ -8,12 +8,14 @@
   "exports": {
     "types": "./dist/src/lib.d.ts",
     "styles": "./dist/lib.css",
+    "development": "./src/lib.ts",
     "default": "./dist/lib.js"
   },
   "scripts": {
     "test": "vitest run --passWithNoTests",
     "dev": "vite",
-    "build": "vite build && vue-tsc --declaration --noEmit false --emitDeclarationOnly -p tsconfig.lib.json",
+    "build": "vite build && pnpm run build:types",
+    "build:types": "vue-tsc -p tsconfig.lib.build.json",
     "watch": "vite build --watch",
     "type-check": "vue-tsc --noEmit --project ./tsconfig.json",
     "preview": "vite preview",

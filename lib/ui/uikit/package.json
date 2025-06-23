@@ -2,16 +2,15 @@
   "name": "@milaboratories/uikit",
   "version": "2.2.89",
   "type": "module",
-  "main": "dist/pl-uikit.js",
+  "main": "dist/index.js",
   "types": "dist/src/index.d.ts",
-  "styles": "dist/pl-uikit.css",
   "exports": {
     ".": {
       "types": "./dist/src/index.d.ts",
-      "default": "./dist/pl-uikit.js"
+      "development": "./src/index.ts",
+      "default": "./dist/index.js"
     },
-    "./styles": "./dist/pl-uikit.css",
-    "./styles/mixins": "./src/assets/mixins.scss",
+    "./assets/mixins.scss": "./src/assets/mixins.scss",
     "./svg/icons/*": "./src/assets/icons/icon-assets-min/*",
     "./svg/images/*": "./src/assets/images/*"
   },
@@ -20,7 +19,7 @@
     "build": "vite build && pnpm run build:types",
     "test:unit": "vitest run",
     "test": "vitest run",
-    "build:types": "vue-tsc --declaration --noEmit false --emitDeclarationOnly -p ./tsconfig.lib.json",
+    "build:types": "vue-tsc -p ./tsconfig.lib.build.json",
     "tsc": "tsc",
     "watch": "vite build --watch",
     "type-check": "vue-tsc --project ./tsconfig.lib.json",

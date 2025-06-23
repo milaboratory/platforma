@@ -1,2 +1,2 @@
-export * from './createViteDevConfig.ts';
-export * from './createViteLibConfig.ts';
+export * from './createViteDevConfig';
+export * from './createViteLibConfig';

@@ -276,6 +276,9 @@ catalogs:
     vite:
       specifier: ^6.3.5
       version: 6.3.5
+    vite-plugin-css-injected-by-js:
+      specifier: ^3.5.2
+      version: 3.5.2
     vite-plugin-dts:
       specifier: ^4.5.3
       version: 4.5.3
@@ -2879,6 +2882,9 @@ importers:
       vite:
         specifier: 'catalog:'
         version: 6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0)
+      vite-plugin-css-injected-by-js:
+        specifier: 'catalog:'
+        version: 3.5.2(vite@6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0))
       vite-plugin-dts:
         specifier: 'catalog:'
         version: 4.5.3(@types/node@20.16.15)(rollup@4.41.1)(typescript@5.5.4)(vite@6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0))
@@ -11226,6 +11232,11 @@ packages:
     resolution: {integrity: sha512-AM9aQ/IPrW/6ENLQg3AGY4K1N2TGZdR5e4gu/MmmR2xR3Ll1+dib+nook92g4TV3PXVyeyxdWwtaCAiUL0hMxA==}
     engines: {node: ^18.0.0 || >=20.0.0}
     hasBin: true
+
+  vite-plugin-css-injected-by-js@3.5.2:
+    resolution: {integrity: sha512-2MpU/Y+SCZyWUB6ua3HbJCrgnF0KACAsmzOQt1UvRVJCGF6S8xdA3ZUhWcWdM9ivG4I5az8PnQmwwrkC2CAQrQ==}
+    peerDependencies:
+      vite: '>2.0.0-0'
 
   vite-plugin-dts@4.5.3:
     resolution: {integrity: sha512-P64VnD00dR+e8S26ESoFELqc17+w7pKkwlBpgXteOljFyT0zDwD8hH4zXp49M/kciy//7ZbVXIwQCekBJjfWzA==}
@@ -22045,6 +22056,10 @@ snapshots:
       - sugarss
       - supports-color
       - terser
+
+  vite-plugin-css-injected-by-js@3.5.2(vite@6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0)):
+    dependencies:
+      vite: 6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0)
 
   vite-plugin-dts@4.5.3(@types/node@20.16.15)(rollup@4.41.1)(typescript@5.5.4)(vite@6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0)):
     dependencies:

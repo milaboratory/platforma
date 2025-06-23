@@ -1,9 +1,0 @@
-{
-  "compilerOptions": {
-    "baseUrl": "../../../",
-    "paths": {
-      "@milaboratories/uikit": ["lib/ui/uikit/src"],
-      "@platforma-sdk/ui-vue": ["sdk/ui-vue/src"],
-    }
-  }
-}

@@ -1,7 +1,7 @@
 {
-  "extends": "./tsconfig.aliases.json",
   "compilerOptions": {
-    "incremental": true,
+    "customConditions": ["development"],
+    "composite": true,
     "target": "ESNext",
     "module": "ESNext",
     "useDefineForClassFields": true,
