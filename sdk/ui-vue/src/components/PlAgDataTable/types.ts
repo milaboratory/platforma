@@ -46,9 +46,9 @@ export type PlDataTableSettingsV2 =
     /** Unique source id for state caching */
     sourceId: string;
     /** Sheets that we want to show in our table */
-    sheets?: PlDataTableSheet[];
+    sheets: PlDataTableSheet[];
     /** Result of `createPlDataTableV2` */
-    model?: PlDataTableModel;
+    model: PlDataTableModel | undefined;
   };
 
 /** PlTableFilters restriction entry */

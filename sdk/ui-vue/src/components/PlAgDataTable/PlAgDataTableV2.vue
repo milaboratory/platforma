@@ -393,7 +393,7 @@ watch(
 
 // Update AgGrid when settings change
 let oldSettings: PlDataTableSettingsV2 | null = null;
-let generation = 0;
+const generation = ref(0);
 watch(
   () => [gridApi.value, settings.value] as const,
   ([gridApi, settings]) => {
@@ -401,7 +401,7 @@ watch(
     if (!gridApi || gridApi.isDestroyed()) return;
     // Verify that this is not a false watch trigger
     if (isJsonEqual(settings, oldSettings)) return;
-    const stateGeneration = ++generation;
+    ++generation.value;
     try {
       // Hide no rows overlay if it is shown, or else loading overlay will not be shown
       gridApi.hideOverlay();
@@ -428,10 +428,12 @@ watch(
             notReady: false,
           } satisfies PlAgOverlayLoadingParams,
         });
-        gridApi.setServerSideSelectionState({
-          selectAll: false,
-          toggledNodes: [],
-        });
+        if (selection.value) {
+          gridApi.setServerSideSelectionState({
+            selectAll: false,
+            toggledNodes: [],
+          });
+        }
       }
 
       // Model updated -> show skeletons instead of data
@@ -448,7 +450,9 @@ watch(
       }
 
       // Model ready -> calculate new state
+      const stateGeneration = generation.value;
       calculateGridOptions(
+        generation,
         getRawPlatformaInstance().pFrameDriver,
         settings.model,
         settings.sheets ?? [],
@@ -460,15 +464,15 @@ watch(
           trigger: (key?: PTableKey) => emit('cellButtonClicked', key),
         } satisfies PlAgCellButtonAxisParams,
       ).then((options) => {
-        if (gridApi.isDestroyed() || stateGeneration !== generation) return;
+        if (gridApi.isDestroyed() || stateGeneration !== generation.value) return;
         return gridApi.updateGridOptions({
           ...options,
         });
       }).catch((error: unknown) => {
-        if (gridApi.isDestroyed() || stateGeneration !== generation) return;
+        if (gridApi.isDestroyed() || stateGeneration !== generation.value) return;
         console.trace(error);
       }).finally(() => {
-        if (gridApi.isDestroyed() || stateGeneration !== generation) return;
+        if (gridApi.isDestroyed() || stateGeneration !== generation.value) return;
         gridApi.updateGridOptions({
           loading: false,
         });

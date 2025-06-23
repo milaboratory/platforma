@@ -62,6 +62,10 @@ const sheets = computed<PlDataTableSheetNormalized[]>(() => {
     });
 });
 
+function isValidOption(sheet: PlDataTableSheet, value: string | number): boolean {
+  return sheet.options.some((option) => option.value === value);
+}
+
 // Restore state from settings
 watchEffect(() => {
   const oldState = [...state.value];
@@ -70,10 +74,6 @@ watchEffect(() => {
     state.value = newState;
   }
 });
-
-function isValidOption(sheet: PlDataTableSheet, value: string | number): boolean {
-  return sheet.options.some((option) => option.value === value);
-}
 
 function makeStateEntry(i: number, value: string | number): PlDataTableSheetState {
   const axisId = sheets.value[i].axisId;
@@ -100,14 +100,16 @@ function onSheetChanged(i: number, newValue: string | number): void {
     :class="$style.container"
   >
     <slot name="before" />
-    <PlDropdownLine
-      v-for="(sheet, i) in sheets"
-      :key="i"
-      :model-value="state[i].value"
-      :options="sheet.options"
-      :prefix="sheet.prefix"
-      @update:model-value="(newValue: string | number) => onSheetChanged(i, newValue)"
-    />
+    <template v-for="(sheet, i) in sheets" :key="i">
+      <!-- For some reason state[i] is undefined when the sheet initially loads, so v-if to suppress the error -->
+      <PlDropdownLine
+        v-if="state[i]"
+        :model-value="state[i].value"
+        :options="sheet.options"
+        :prefix="sheet.prefix"
+        @update:model-value="(newValue: string | number) => onSheetChanged(i, newValue)"
+      />
+    </template>
     <slot name="after" />
   </div>
 </template>

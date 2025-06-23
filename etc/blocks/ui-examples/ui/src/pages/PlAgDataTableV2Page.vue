@@ -32,16 +32,17 @@ const app = useApp();
 
 const sources = [...new Array(10)].map((_, i) => {
   return {
-    label: `Source ${i}`,
+    label: `Source ${1 + i}`,
     value: `source_${i}`,
   };
 });
 const activeSource = ref(sources[0].value);
 
 const tableSettings = computed<PlDataTableSettingsV2>(() => (
-  activeSource.value
+  activeSource.value && app.model.outputs.ptV2Sheets
     ? {
         sourceId: activeSource.value,
+        sheets: app.model.outputs.ptV2Sheets,
         model: app.model.outputs.ptV2,
       }
     : { sourceId: null }
@@ -90,7 +91,6 @@ watch(
       @columns-changed="(info) => (columns = info.columns)"
     >
       <template #before-sheets>
-        Table controls could be placed here
         <PlNumberField v-model="app.model.args.tableNumRows" />
         <PlCheckbox v-model="verbose">Use custom cell renderer for numbers</PlCheckbox>
         <PlDropdown v-model="activeSource" :options="sources" clearable />

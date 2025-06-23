@@ -36,6 +36,7 @@ import {
 import { defaultMainMenuItems } from './menu-items';
 import { makeRowNumberColDef, PlAgDataTableRowNumberColId } from './row-number';
 import { getColumnRenderingSpec } from './value-rendering';
+import type { Ref } from 'vue';
 
 /** Convert columnar data from the driver to rows, used by ag-grid */
 function columns2rows(
@@ -64,6 +65,7 @@ function columns2rows(
 
 /** Calculate GridOptions for selected p-table data source */
 export async function calculateGridOptions(
+  generation: Ref<number>,
   pfDriver: PFrameDriver,
   model: PlDataTableModel,
   sheets: PlDataTableSheet[],
@@ -194,13 +196,16 @@ export async function calculateGridOptions(
     }
   });
 
+  const stateGeneration = generation.value;
   let rowCount = -1;
   let lastParams: IServerSideGetRowsParams | undefined = undefined;
   const serverSideDatasource: IServerSideDatasource<PlAgDataTableV2Row> = {
     getRows: async (params: IServerSideGetRowsParams) => {
+      if (stateGeneration !== generation.value) return;
       try {
         if (rowCount === -1) {
           const ptShape = await pfDriver.getShape(pt);
+          if (stateGeneration !== generation.value) return;
           rowCount = ptShape.rows;
         }
 
@@ -228,6 +233,7 @@ export async function calculateGridOptions(
               offset: params.request.startRow,
               length,
             });
+            if (stateGeneration !== generation.value) return;
             rowData = columns2rows(fields, data, axes, resultMapping);
           }
         }
@@ -239,6 +245,7 @@ export async function calculateGridOptions(
         );
         params.api.setGridOption('loading', false);
       } catch (error: unknown) {
+        if (stateGeneration !== generation.value) return;
         params.api.setGridOption('loading', true);
         params.fail();
         console.trace(error);
