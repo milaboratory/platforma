@@ -751,6 +751,74 @@ export class ProjectMutator {
     });
   }
 
+  /**
+   * Duplicates an existing block by copying all its fields and structure.
+   * This method creates a deep copy of the block at the mutator level.
+   *
+   * @param originalBlockId id of the block to duplicate
+   * @param newBlockId id for the new duplicated block
+   * @param before id of the block to insert new block before
+   */
+  public duplicateBlock(originalBlockId: string, newBlockId: string, before?: string): void {
+    // Get the original block from structure
+    const originalBlock = this.getBlock(originalBlockId);
+    const originalBlockInfo = this.getBlockInfo(originalBlockId);
+
+    // Create new block in structure
+    const newBlock: Block = {
+      id: newBlockId,
+      label: originalBlock.label,
+      renderingMode: originalBlock.renderingMode,
+    };
+
+    // Add the new block to structure
+    const newStruct = this.structure; // copy current structure
+    if (before === undefined) {
+      // adding as a very last block
+      newStruct.groups[newStruct.groups.length - 1].blocks.push(newBlock);
+    } else {
+      let done = false;
+      for (const group of newStruct.groups) {
+        const idx = group.blocks.findIndex((b) => b.id === before);
+        if (idx < 0) continue;
+        group.blocks.splice(idx, 0, newBlock);
+        done = true;
+        break;
+      }
+      if (!done) throw new Error(`Can't find element with id: ${before}`);
+    }
+
+    // Update structure manually (TODO: move to the updateStructure?)
+    this.struct = newStruct;
+    this.structureChanged = true;
+    this.stagingGraph = undefined;
+    this.pendingProductionGraph = undefined;
+    this.actualProductionGraph = undefined;
+
+    // Create new block info
+    const newBlockInfo = new BlockInfo(
+      newBlockId,
+      {},
+      originalBlockInfo.config,
+      originalBlockInfo.source,
+    );
+
+    this.blockInfos.set(newBlockId, newBlockInfo);
+
+    // Copy all fields from original block to new block by sharing references
+    for (const [fieldName, fieldState] of Object.entries(originalBlockInfo.fields)) {
+      if (fieldState && fieldState.ref) {
+        this.setBlockFieldObj(newBlockId, fieldName as keyof BlockFieldStates, {
+          ref: fieldState.ref,
+          status: fieldState.status,
+          value: fieldState.value,
+        });
+      }
+    }
+
+    this.updateLastModified();
+  }
+
   public deleteBlock(blockId: string): void {
     const newStruct = this.structure; // copy current structure
     let done = false;
