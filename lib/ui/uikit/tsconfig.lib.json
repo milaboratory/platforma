@@ -1,8 +1,7 @@
 {
   "extends": "@milaboratories/ts-configs/browser",
   "compilerOptions": {
-    "outDir": "dist",
-    "baseUrl": "."
+    "outDir": "./dist"
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue", "src/**/*.json"]
 }
