@@ -794,6 +794,7 @@ export class ProjectMutator {
     this.stagingGraph = undefined;
     this.pendingProductionGraph = undefined;
     this.actualProductionGraph = undefined;
+    this.resetStagingRefreshTimestamp();
 
     // Create new block info
     const newBlockInfo = new BlockInfo(
