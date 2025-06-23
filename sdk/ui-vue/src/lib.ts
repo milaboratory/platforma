@@ -1,12 +1,11 @@
 import './assets/ui.scss';
-import BlockLayout from './components/BlockLayout.vue';
-import PlAgDataTable from './components/PlAgDataTable/PlAgDataTable.vue';
-import PlAgDataTableV2 from './components/PlAgDataTable/PlAgDataTableV2.vue';
-import PlAgOverlayLoading from './components/PlAgDataTable/PlAgOverlayLoading.vue';
-import PlAgOverlayNoRows from './components/PlAgDataTable/PlAgOverlayNoRows.vue';
-import ValueOrErrorsComponent from './components/ValueOrErrorsComponent.vue';
 
-export { BlockLayout, PlAgDataTable, PlAgDataTableV2, PlAgOverlayLoading, PlAgOverlayNoRows, ValueOrErrorsComponent };
+export { default as BlockLayout } from './components/BlockLayout.vue';
+export { default as PlAgDataTable } from './components/PlAgDataTable/PlAgDataTable.vue';
+export { default as PlAgDataTableV2 } from './components/PlAgDataTable/PlAgDataTableV2.vue';
+export { default as PlAgOverlayLoading } from './components/PlAgDataTable/PlAgOverlayLoading.vue';
+export { default as PlAgOverlayNoRows } from './components/PlAgDataTable/PlAgOverlayNoRows.vue';
+export { default as ValueOrErrorsComponent } from './components/ValueOrErrorsComponent.vue';
 
 export * from './AgGridVue';
 
@@ -29,6 +28,8 @@ export * from './components/PlAgGridColumnManager';
 export * from './components/PlTableFilters';
 
 export * from './components/PlMultiSequenceAlignment';
+
+export * from './components/PlElementList';
 
 export * from './defineApp';
 

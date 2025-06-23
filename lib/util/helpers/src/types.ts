@@ -1,4 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+export type Nil = null | undefined;
+
+export type Primitive = Nil | string | number | boolean | bigint;
+
 export type AnyFunction = (...args: any[]) => any;
 
 export type AnyAsyncFunction = (...args: any[]) => Promise<any>;

@@ -9,7 +9,7 @@ import DropdownListItem from './components/DropdownListItem.vue';
 // @TODO review
 import ContextProvider from './components/ContextProvider.vue';
 import Slider from './components/Slider.vue';
-import { showContextMenu } from './components/contextMenu/index.ts';
+import { showContextMenu } from './components/contextMenu';
 // for new version
 import LongText from './components/LongText.vue';
 import SliderRangeTriple from './components/SliderRangeTriple.vue';

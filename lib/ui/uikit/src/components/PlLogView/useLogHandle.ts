@@ -80,7 +80,7 @@ export function useLogHandle(
     });
 
   // Only trigger after last fetch is done
-  const timeoutPoll = useTimeoutPoll(fetchAndCatch, 1500, { immediate: false });
+  const timeoutPoll = useTimeoutPoll(fetchAndCatch, 1500, { immediate: false, immediateCallback: true });
 
   whenever(
     () => logState?.value?.finished,

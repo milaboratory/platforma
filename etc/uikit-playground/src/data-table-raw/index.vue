@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import Layout from '../Layout.vue';
 import { faker } from '@faker-js/faker';
-import { randomInt } from '@milaboratories/helpers';
+import { randomRangeInt } from '@milaboratories/helpers';
 import { DataTable } from 'milaboratories/uikit';
 import { computed, onMounted, reactive } from 'vue';
 import UserForm from './UserForm.vue';
@@ -33,7 +33,7 @@ const createRandomRecord = () => {
   data.rows.push({
     id: data.rows.length + 1,
     name: faker.person.fullName(),
-    size: randomInt(50, 80),
+    size: randomRangeInt(50, 80),
     user: {
       name: faker.person.fullName(),
     },
