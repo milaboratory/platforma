@@ -59,7 +59,7 @@ export class TengoTemplateCompiler {
             sourceHash: lib.sourceHash,
           };
 
-          applyLibraryCompilerOptions(lib.compilerOptions, tplLib);
+          applyLibraryCompilerOptions(lib.compilerOptions);
           data.template.libs[artifactNameToString(dep)] = tplLib;
           data.hashToSource[tplLib.sourceHash] = lib.src;
 

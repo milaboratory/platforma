@@ -2,9 +2,8 @@
   "$schema": "https://turbo.build/schema.json",
   "globalDependencies": ["tsconfig.json"],
   "tasks": {
-    "type-check": {
-      "dependsOn": ["^build"]
-    },
+    "type-check": {},
+    "lint": {},
     "build": {
       "inputs": ["$TURBO_DEFAULT$"],
       "outputs": ["./dist/**", "./block-pack/**"],
