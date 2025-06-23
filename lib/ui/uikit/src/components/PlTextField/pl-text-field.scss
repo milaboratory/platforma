@@ -94,6 +94,7 @@
 
   &__clearable {
     display: var(--show-clearable) !important;
+    --icon-color: var(--ic-02) !important;
   }
 
   &__helper {

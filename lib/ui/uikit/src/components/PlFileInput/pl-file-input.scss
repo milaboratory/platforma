@@ -54,6 +54,10 @@
     width: 0;
   }
 
+  &__clear {
+    --icon-color: var(--ic-02);
+  }
+
   &__filename {
     width: 100%;
     border: none;

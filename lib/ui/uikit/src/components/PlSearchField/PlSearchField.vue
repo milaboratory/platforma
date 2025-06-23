@@ -77,6 +77,7 @@ const clear = () => emit('update:modelValue', '');
   }
 
   .clear {
+    --icon-color: var(--ic-02);
     cursor: pointer;
     margin-left: auto;
     display: var(--pl-search-field-clear-display);

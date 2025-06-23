@@ -193,7 +193,7 @@ if (!props.cellStyle) {
         {{ fileName }}
       </div>
       <div v-if="uploadStats" class="pl-file-input__stats">{{ uploadStats }}</div>
-      <PlMaskIcon24 v-if="modelValue" name="close" @click.stop="clear" />
+      <PlMaskIcon24 v-if="modelValue" class="pl-file-input__clear" name="close" @click.stop="clear" />
       <DoubleContour class="pl-file-input__contour" />
     </div>
     <div v-if="hasErrors" class="pl-file-input__error">

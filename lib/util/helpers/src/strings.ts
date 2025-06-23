@@ -86,8 +86,8 @@ export function randomString(length: number) {
   return s;
 }
 
-export function uniqueId() {
-  return randomString(42);
+export function uniqueId(length: number = 42) {
+  return randomString(length);
 }
 
 export function before(str: string, sub: string) {

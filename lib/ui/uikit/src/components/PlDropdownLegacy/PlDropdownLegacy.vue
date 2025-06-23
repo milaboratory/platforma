@@ -337,7 +337,7 @@ watchPostEffect(() => {
 
           <div class="ui-dropdown__controls">
             <PlMaskIcon24 v-if="isLoadingOptions" name="loading" />
-            <PlIcon16 v-if="clearable && hasValue" name="delete-clear" @click.stop="clear" />
+            <PlIcon16 v-if="clearable && hasValue" class="clear" name="delete-clear" @click.stop="clear" />
             <slot name="append" />
             <div v-if="arrowIconLarge" class="arrow-icon" :class="[`icon-24 ${arrowIconLarge}`]" @click.stop="toggleOpen" />
             <div v-else-if="arrowIcon" class="arrow-icon" :class="[`icon-16 ${arrowIcon}`]" @click.stop="toggleOpen" />

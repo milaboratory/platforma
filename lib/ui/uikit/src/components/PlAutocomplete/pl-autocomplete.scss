@@ -185,14 +185,14 @@
 
     margin-left: auto;
 
-    .icon-delete-clear {
-      cursor: pointer;
-    }
-
     .mask-16,
     .mask-24 {
       --icon-color: var(--control-mask-fill);
       cursor: pointer;
+    }
+
+    .clear {
+      --icon-color: var(--ic-02);
     }
 
     .mask-loading {
