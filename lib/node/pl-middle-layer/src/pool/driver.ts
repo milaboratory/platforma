@@ -517,9 +517,10 @@ export class PFrameDriver implements InternalPFrameDriver {
 
   public async getShape(handle: PTableHandle, signal?: AbortSignal): Promise<PTableShape> {
     return await this.tableConcurrencyLimiter.run(async () => {
-      const pTable = this.pTables.getByKey(handle).pTable;
-      return await pTable.getShape({
-        signal,
+      const pTableHolder = this.pTables.getByKey(handle);
+      const combinedSignal = AbortSignal.any([signal, pTableHolder.disposeSignal].filter((s) => !!s));
+      return await pTableHolder.pTable.getShape({
+        signal: combinedSignal,
       });
     });
   }
