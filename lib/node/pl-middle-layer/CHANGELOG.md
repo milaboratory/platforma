@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 1.37.82
+
+### Patch Changes
+
+- 2d5b5c9: PFrames driver - fix cancelation
+
 ## 1.37.81
 
 ### Patch Changes
