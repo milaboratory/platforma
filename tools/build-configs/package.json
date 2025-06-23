@@ -32,6 +32,7 @@
     "@rollup/plugin-node-resolve": "catalog:",
     "rollup-plugin-node-externals": "catalog:",
     "rollup-plugin-sourcemaps2": "catalog:",
+    "vite-plugin-css-injected-by-js": "catalog:",
     "tsup": "catalog:",
     "vite": "catalog:",
     "vite-plugin-dts": "catalog:",
