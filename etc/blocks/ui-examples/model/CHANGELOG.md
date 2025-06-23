@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.model
 
+## 1.1.74
+
+### Patch Changes
+
+- 45badc9: PlElementList implementation
+
 ## 1.1.73
 
 ### Patch Changes
