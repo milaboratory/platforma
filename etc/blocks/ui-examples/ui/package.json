@@ -11,13 +11,13 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@milaboratories/ts-configs": "workspace:*",
-    "@milaboratories/platforma-build-configs": "workspace:*",
     "@milaboratories/milaboratories.ui-examples.model": "workspace:*",
     "vue": "catalog:",
     "@platforma-sdk/model": "workspace:^"
   },
   "devDependencies": {
+    "@milaboratories/ts-configs": "workspace:*",
+    "@milaboratories/platforma-build-configs": "workspace:*",
     "@platforma-sdk/ui-vue": "workspace:^",
     "@milaboratories/uikit": "workspace:^",
     "@vitejs/plugin-vue": "catalog:",

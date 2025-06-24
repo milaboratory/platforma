@@ -9,8 +9,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@milaboratories/ts-configs": "workspace:*",
-    "@milaboratories/platforma-build-configs": "workspace:*",
     "@milaboratories/milaboratories.monetization-test.model": "workspace:*",
     "@platforma-sdk/model": "workspace:*",
     "@platforma-sdk/ui-vue": "workspace:",
@@ -18,6 +16,8 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@milaboratories/ts-configs": "workspace:*",
+    "@milaboratories/platforma-build-configs": "workspace:*",
     "@vitejs/plugin-vue": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",

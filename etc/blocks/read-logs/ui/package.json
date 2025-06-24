@@ -10,14 +10,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@milaboratories/ts-configs": "workspace:*",
-    "@milaboratories/platforma-build-configs": "workspace:*",
     "@milaboratories/milaboratories.test-read-logs.model": "workspace:*",
     "@platforma-sdk/model": "workspace:*",
     "vue": "catalog:",
     "@platforma-sdk/ui-vue": "workspace:^"
   },
   "devDependencies": {
+    "@milaboratories/ts-configs": "workspace:*",
+    "@milaboratories/platforma-build-configs": "workspace:*",
     "@vitejs/plugin-vue": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
