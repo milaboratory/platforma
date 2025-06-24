@@ -23,6 +23,7 @@ import type {
   ResultCollection,
   ValueOrError,
   RangeBytes,
+  BlockCodeKnownFeatureFlags,
 } from '@platforma-sdk/model';
 import {
   isDataInfo,
@@ -62,6 +63,7 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
     private readonly blockCtx: BlockContextAny,
     private readonly env: MiddleLayerEnvironment,
     private readonly sdkVersion: string,
+    private readonly featureFlags: BlockCodeKnownFeatureFlags,
     computableCtx: ComputableCtx,
   ) {
     this.computableCtx = computableCtx;

@@ -1,4 +1,4 @@
-import type { BlockRenderingMode, BlockSection, ValueOrErrors, AnyFunction, PlRef } from '@milaboratories/pl-model-common';
+import type { BlockRenderingMode, BlockSection, ValueOrErrors, AnyFunction, PlRef, BlockCodeKnownFeatureFlags } from '@milaboratories/pl-model-common';
 import type { Checked, ConfigResult, TypedConfig } from './config';
 import { getImmediate } from './config';
 import { getPlatformaInstance, isInUI, tryRegisterCallback } from './internal';
@@ -19,7 +19,6 @@ import type {
 import {
   downgradeCfgOrLambda,
 } from './bconfig';
-import type { BlockCodeKnownFeatureFlags } from '../../../lib/model/common/src/flags/block_flags';
 
 type SectionsExpectedType = readonly BlockSection[];
 
@@ -70,6 +69,11 @@ export class BlockModel<
     private readonly _featureFlags: BlockCodeKnownFeatureFlags,
   ) {}
 
+  public static readonly INITIAL_BLOCK_FEATURE_FLAGS: BlockCodeKnownFeatureFlags = {
+    supportsLazyState: true,
+    requiresUIAPIVersion: 1,
+  };
+
   /** Initiates configuration builder */
   public static create(renderingMode: BlockRenderingMode): BlockModel<NoOb, {}, NoOb>;
   /** Initiates configuration builder */
@@ -94,9 +98,7 @@ export class BlockModel<
       getImmediate([]),
       undefined,
       undefined,
-      {
-        supportsLazyState: true,
-      },
+      { ...BlockModel.INITIAL_BLOCK_FEATURE_FLAGS },
     );
   }
 

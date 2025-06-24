@@ -1,5 +1,5 @@
 import type { MiddleLayerEnvironment } from '../middle_layer/middle_layer';
-import type { CodeAndSdkVersion, ConfigRenderLambda } from '@platforma-sdk/model';
+import type { BlockCodeWithInfo, ConfigRenderLambda } from '@platforma-sdk/model';
 import type { ComputableRenderingOps } from '@milaboratories/computable';
 import { Computable } from '@milaboratories/computable';
 import type { QuickJSWASMModule } from 'quickjs-emscripten';
@@ -13,11 +13,11 @@ export function computableFromRF(
   env: MiddleLayerEnvironment,
   ctx: BlockContextAny,
   fh: ConfigRenderLambda,
-  codeAndSdkVersion: CodeAndSdkVersion,
+  codeWithInfo: BlockCodeWithInfo,
   configKey: string,
   ops: Partial<ComputableRenderingOps> = {},
 ): Computable<unknown> {
-  const { code } = codeAndSdkVersion;
+  const { code } = codeWithInfo;
   // adding configKey to reload all outputs on block-pack update
   const key = `${ctx.blockId}#lambda#${configKey}#${fh.handle}`;
   ops = { ...ops, key };
@@ -39,7 +39,7 @@ export function computableFromRF(
     const vm = scope.manage(runtime.newContext());
     const rCtx = new JsExecutionContext(scope, vm,
       (s) => { deadlineSettings = s; },
-      codeAndSdkVersion.sdkVersion,
+      codeWithInfo.sdkVersion,
       { computableCtx: cCtx, blockCtx: ctx, mlEnv: env });
 
     rCtx.evaluateBundle(code.content);
@@ -83,7 +83,7 @@ export function computableFromRF(
 export function executeSingleLambda(
   quickJs: QuickJSWASMModule,
   fh: ConfigRenderLambda,
-  codeAndSdkVersion: CodeAndSdkVersion,
+  codeAndSdkVersion: BlockCodeWithInfo,
   ...args: unknown[]
 ): unknown {
   const { code, sdkVersion } = codeAndSdkVersion;

@@ -4,6 +4,6 @@
     "outDir": "./dist",
     "rootDir": "./src"
   },
-  "include": ["src", "../../lib/model/common/src/flags/block_flags.ts", "../../lib/model/common/src/flags/type_utils.ts"],
+  "include": ["src"],
   "exclude": ["src/**/*.test.ts"]
 }

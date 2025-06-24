@@ -1,5 +1,6 @@
 import type { ComputableCtx } from '@milaboratories/computable';
 import {
+  BlockCodeKnownFeatureFlags,
   JsRenderInternal,
 } from '@platforma-sdk/model';
 import { notEmpty } from '@milaboratories/ts-helpers';
@@ -54,7 +55,7 @@ export class JsExecutionContext {
     public readonly scope: Scope,
     public readonly vm: QuickJSContext,
     private readonly deadlineSetter: DeadlineSetter,
-    sdkVersion: string,
+    sdkVersion: string, featureFlags: BlockCodeKnownFeatureFlags,
     computableEnv?: ComputableEnv,
   ) {
     this.callbackRegistry = this.scope.manage(this.vm.newObject());
