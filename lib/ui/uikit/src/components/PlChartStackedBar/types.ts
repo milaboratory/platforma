@@ -1,4 +1,4 @@
-import type { Color } from '@/colors';
+import type { Color } from '../../colors';
 
 export type PlChartStackedBarSegment = {
   value: number;

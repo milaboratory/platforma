@@ -5,10 +5,10 @@ export default {
 </script>
 
 <script lang="ts" setup>
-import type { MaskIconName16, Size } from '@/types';
+import type { MaskIconName16, Size } from '../types';
 import { computed, ref } from 'vue';
-import { PlMaskIcon16 } from '@/components/PlMaskIcon16';
-import { useRipple } from '@/composition/useRipple';
+import { PlMaskIcon16 } from '../components/PlMaskIcon16';
+import { useRipple } from '../composition/useRipple';
 
 const props = defineProps<{
   loading?: boolean;

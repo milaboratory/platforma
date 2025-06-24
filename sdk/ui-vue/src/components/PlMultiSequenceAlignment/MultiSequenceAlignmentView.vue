@@ -1,20 +1,23 @@
 <script lang="ts" setup>
-import { useObjectUrl } from '@vueuse/core';
+import { computedAsync, useObjectUrl } from '@vueuse/core';
 import { computed } from 'vue';
-import Consensus from './Consensus.vue';
-import { colorizeSegmentedColumns } from './highlight';
 import {
-  alignedSequencesToSegmentedColumns,
-  chemicalPropertiesColors,
-  getColumnChemicalProperties,
-} from './highlight/chemical-properties';
+  chemicalPropertiesColorMap,
+  colorizeSequencesByChemicalProperties,
+} from './chemical-properties';
+import Consensus from './Consensus.vue';
+import { colorizeSequencesByMarkup, type Markup } from './markup';
 import { getResidueCounts } from './residue-counts';
 import SeqLogo from './SeqLogo.vue';
 import type { ColorScheme } from './types';
 
-const { sequenceRows, labelRows, colorScheme } = defineProps<{
+const { sequenceRows, labelRows, markup, colorScheme } = defineProps<{
   sequenceRows: string[][];
   labelRows: string[][];
+  markup: {
+    labels: Record<string, string>;
+    data: Markup[];
+  } | undefined;
   colorScheme: ColorScheme;
   consensus: boolean;
   seqLogo: boolean;
@@ -28,38 +31,25 @@ const residueCounts = computed(
   () => getResidueCounts(concatenatedSequences.value),
 );
 
-const segmentedColumns = computed(() => {
-  const columnConsensuses = getColumnChemicalProperties({
-    residueCounts: residueCounts.value,
-    rowCount: sequenceRows.length,
-  });
-  const segmentedColumns = alignedSequencesToSegmentedColumns({
-    alignedSequences: concatenatedSequences.value,
-    consensuses: columnConsensuses,
-  });
-  return segmentedColumns;
-});
-
-const selectedColorScheme = computed(() => {
-  switch (colorScheme) {
+const highlightImageBlob = computedAsync(() => {
+  switch (colorScheme.type) {
     case 'no-color':
       return;
     case 'chemical-properties':
-      return segmentedColumns.value;
+      return colorizeSequencesByChemicalProperties({
+        sequences: concatenatedSequences.value,
+        residueCounts: residueCounts.value,
+        colorMap: chemicalPropertiesColorMap,
+      });
+    case 'markup':
+      return colorizeSequencesByMarkup({
+        markupRows: markup?.data ?? [],
+        colorMap: colorScheme.colors,
+        columnCount: concatenatedSequences.value?.[0].length ?? 0,
+      });
     default:
-      throw new Error(`Unknown highlight ${colorScheme}`);
+      throw new Error(`Unknown color scheme: ${colorScheme.type}`);
   }
-});
-
-const highlightImageBlob = computed(() => {
-  const rowCount = sequenceRows.length;
-  const columns = selectedColorScheme.value;
-  if (!columns?.length) return;
-  return colorizeSegmentedColumns({
-    columns,
-    rowCount,
-    colors: chemicalPropertiesColors,
-  });
 });
 
 const objectUrl = useObjectUrl(highlightImageBlob);
@@ -137,7 +127,7 @@ const highlightImage = computed(
   z-index: 1;
   padding-inline-end: 12px;
   font-family: Spline Sans Mono;
-  line-height: calc(24 / 14);
+  line-height: 24px;
 }
 
 .sequences {
@@ -146,11 +136,12 @@ const highlightImage = computed(
   flex-direction: column;
   font-family: Spline Sans Mono;
   font-weight: 600;
-  line-height: calc(24 / 14);
-  letter-spacing: 12px;
-  text-indent: 6px;
+  line-height: 24px;
+  letter-spacing: 11.6px;
+  text-indent: 5.8px;
   background-image: v-bind(highlightImage);
   background-repeat: no-repeat;
-  background-size: calc(100% - 6px) 100%;
+  background-size: calc(100% - 5.8px) 100%;
+  image-rendering: pixelated;
 }
 </style>

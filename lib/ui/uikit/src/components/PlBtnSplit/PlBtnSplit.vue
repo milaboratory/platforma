@@ -2,11 +2,11 @@
 import { computed, reactive, ref, unref, watch } from 'vue';
 import './pl-btn-split.scss';
 import DropdownListItem from '../DropdownListItem.vue';
-import type { ListOption } from '@/types';
-import { useElementPosition } from '@/composition/usePosition';
-import { normalizeListOptions } from '@/helpers/utils';
+import type { ListOption } from '../../types';
+import { useElementPosition } from '../../composition/usePosition';
+import { normalizeListOptions } from '../../helpers/utils';
 import { deepEqual } from '@milaboratories/helpers';
-import PlMaskIcon16 from '../PlMaskIcon16/PlMaskIcon16.vue';
+import { PlMaskIcon16 } from '../PlMaskIcon16';
 
 const props = defineProps<{
   /**

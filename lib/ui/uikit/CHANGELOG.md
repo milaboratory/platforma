@@ -1,5 +1,41 @@
 # @milaboratories/uikit
 
+## 2.2.88
+
+### Patch Changes
+
+- e9d02ae: Correct clear icon color
+
+## 2.2.87
+
+### Patch Changes
+
+- 45badc9: PlElementList implementation
+
+## 2.2.86
+
+### Patch Changes
+
+- 8248b67: Fix svg icons ids collisions
+
+## 2.2.85
+
+### Patch Changes
+
+- 2299e3e: Fix loading icon in the PlMultiDropdown and multi path mask icons (clipboard and similar)
+
+## 2.2.84
+
+### Patch Changes
+
+- 540e690: Unified svg icon component
+
+## 2.2.83
+
+### Patch Changes
+
+- 697b8a5: Replace all aliases to relative paths
+
 ## 2.2.82
 
 ### Patch Changes

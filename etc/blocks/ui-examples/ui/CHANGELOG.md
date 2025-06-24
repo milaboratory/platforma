@@ -1,5 +1,47 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.4.16
+
+### Patch Changes
+
+- 45badc9: PlElementList implementation
+- Updated dependencies [45badc9]
+  - @milaboratories/milaboratories.ui-examples.model@1.1.74
+
+## 1.4.15
+
+### Patch Changes
+
+- 2299e3e: Fix loading icon in the PlMultiDropdown and multi path mask icons (clipboard and similar)
+
+## 1.4.14
+
+### Patch Changes
+
+- Updated dependencies [c570fd4]
+  - @platforma-sdk/model@1.34.10
+  - @milaboratories/milaboratories.ui-examples.model@1.1.73
+
+## 1.4.13
+
+### Patch Changes
+
+- 540e690: Unified svg icon component
+
+## 1.4.12
+
+### Patch Changes
+
+- Updated dependencies [23f719d]
+  - @platforma-sdk/model@1.34.8
+  - @milaboratories/milaboratories.ui-examples.model@1.1.72
+
+## 1.4.11
+
+### Patch Changes
+
+- 9d7ae59: uikit-playground: use vite aliases to directly consume source code
+
 ## 1.4.10
 
 ### Patch Changes

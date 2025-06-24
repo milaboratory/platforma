@@ -11,6 +11,7 @@ oop := import(":oop")
 tx := import("tx")
 times := import("times")
 maps := import(":maps")
+feats := import(":feats")
 
 
 _SUBSCRIPTION_FIELD := "subscription"
@@ -55,7 +56,11 @@ createUniversal := func(tpl, isEph, inputs, ...opts) {
 	}
 	for name, value in serviceInputs {
 		if !is_undefined(value) {
-			inputsMap.addService(name, value)
+			if feats.serviceFields {
+				inputsMap.addService(name, value)
+			} else {
+				inputsMap.add(name, value)
+			}
 		}
 	}
 

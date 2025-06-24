@@ -362,7 +362,7 @@ export class Core {
     const dstName = pkg.fullName(platform);
 
     if (!storageURL) {
-      const regNameUpper = pkg.registry.name.toUpperCase();
+      const regNameUpper = pkg.registry.name.toUpperCase().replaceAll(/[^A-Z0-9_]/g, '_');
       this.logger.error(`no storage URL is set for registry ${pkg.registry.name}`);
       throw new Error(
         `'registry.storageURL' of package '${pkg.id}' is empty. Set it as command option, in '${util.softwareConfigName}' file or via environment variable 'PL_REGISTRY_${regNameUpper}_UPLOAD_URL'`,

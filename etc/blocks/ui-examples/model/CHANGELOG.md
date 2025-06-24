@@ -1,5 +1,25 @@
 # @milaboratories/milaboratories.ui-examples.model
 
+## 1.1.74
+
+### Patch Changes
+
+- 45badc9: PlElementList implementation
+
+## 1.1.73
+
+### Patch Changes
+
+- Updated dependencies [c570fd4]
+  - @platforma-sdk/model@1.34.10
+
+## 1.1.72
+
+### Patch Changes
+
+- Updated dependencies [23f719d]
+  - @platforma-sdk/model@1.34.8
+
 ## 1.1.71
 
 ### Patch Changes

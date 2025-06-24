@@ -1,5 +1,100 @@
 # @milaboratories/pl-middle-layer
 
+## 1.37.82
+
+### Patch Changes
+
+- 2d5b5c9: PFrames driver - fix cancelation
+
+## 1.37.81
+
+### Patch Changes
+
+- @milaboratories/pl-drivers@1.5.70
+
+## 1.37.80
+
+### Patch Changes
+
+- @milaboratories/pl-drivers@1.5.69
+
+## 1.37.79
+
+### Patch Changes
+
+- 68978fb: PFrames version bump
+
+## 1.37.78
+
+### Patch Changes
+
+- 45e6054: PFrames version bump
+
+## 1.37.77
+
+### Patch Changes
+
+- 2bcc47f: PFrames version bump
+- Updated dependencies [2bcc47f]
+  - @milaboratories/pl-model-middle-layer@1.7.39
+  - @platforma-sdk/block-tools@2.5.57
+
+## 1.37.76
+
+### Patch Changes
+
+- Updated dependencies [619f490]
+  - @milaboratories/pl-model-middle-layer@1.7.38
+  - @platforma-sdk/block-tools@2.5.56
+
+## 1.37.75
+
+### Patch Changes
+
+- Updated dependencies [c570fd4]
+  - @platforma-sdk/model@1.34.10
+
+## 1.37.74
+
+### Patch Changes
+
+- Updated dependencies [23f719d]
+  - @platforma-sdk/model@1.34.8
+
+## 1.37.73
+
+### Patch Changes
+
+- 0fcaae2: PFrames version bump
+
+## 1.37.72
+
+### Patch Changes
+
+- Updated dependencies [e18117d]
+  - @platforma-sdk/workflow-tengo@4.8.0
+
+## 1.37.71
+
+### Patch Changes
+
+- Updated dependencies [2d2a39d]
+  - @platforma-sdk/workflow-tengo@4.7.5
+
+## 1.37.70
+
+### Patch Changes
+
+- Updated dependencies [5ac72c3]
+  - @platforma-sdk/workflow-tengo@4.7.4
+
+## 1.37.69
+
+### Patch Changes
+
+- Updated dependencies [2c52dc7]
+  - @platforma-sdk/workflow-tengo@4.7.3
+
 ## 1.37.68
 
 ### Patch Changes

@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { computed, ref, unref } from 'vue';
-import { useEventListener } from '@/composition/useEventListener';
-import { eventListener } from '@/helpers/dom';
+import { useEventListener } from '../composition/useEventListener';
+import { eventListener } from '../helpers/dom';
 
 const emit = defineEmits(['update:scrollLeft']);
 

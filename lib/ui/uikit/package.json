@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/uikit",
-  "version": "2.2.82",
+  "version": "2.2.88",
   "type": "module",
   "main": "dist/pl-uikit.js",
   "module": "dist/pl-uikit.js",
@@ -12,7 +12,9 @@
       "default": "./dist/pl-uikit.js"
     },
     "./styles": "./dist/pl-uikit.css",
-    "./styles/mixins": "./src/assets/mixins.scss"
+    "./styles/mixins": "./src/assets/mixins.scss",
+    "./svg/icons/*": "./src/assets/icons/icon-assets-min/*",
+    "./svg/images/*": "./src/assets/images/*"
   },
   "scripts": {
     "dev": "vite",
@@ -24,6 +26,7 @@
     "watch": "vite build --watch",
     "type-check": "vue-tsc --project ./tsconfig.lib.json",
     "preview": "vite preview",
+    "create-svg-components": "node scripts/create-svg-components.js",
     "parse-icons-folder": "node scripts/parse-icons.js",
     "minify-icons": "svgo -f src/assets/icons/icon-assets -o src/assets/icons/icon-assets-min",
     "generate-icons": "pnpm run parse-icons-folder && pnpm run minify-icons",

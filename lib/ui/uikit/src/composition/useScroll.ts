@@ -1,6 +1,6 @@
 import { type Ref, onMounted } from 'vue';
-import { useEventListener } from '@/composition/useEventListener';
-import { requestTick } from '@/helpers/utils';
+import { useEventListener } from './useEventListener';
+import { requestTick } from '../helpers/utils';
 
 export function useScroll($el: Ref<HTMLElement | undefined>, fadeHeight: number | null = null, fadeWidth: number | null = null) {
   function getYMask(el: HTMLElement) {

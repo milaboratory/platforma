@@ -1,5 +1,68 @@
 # @milaboratories/milaboratories.pool-explorer.ui
 
+## 1.1.126
+
+### Patch Changes
+
+- Updated dependencies [3781bd8]
+  - @platforma-sdk/ui-vue@1.35.0
+
+## 1.1.125
+
+### Patch Changes
+
+- Updated dependencies [e9d02ae]
+  - @milaboratories/helpers@1.6.14
+  - @platforma-sdk/ui-vue@1.34.18
+
+## 1.1.124
+
+### Patch Changes
+
+- Updated dependencies [45badc9]
+  - @milaboratories/helpers@1.6.13
+  - @platforma-sdk/ui-vue@1.34.17
+
+## 1.1.123
+
+### Patch Changes
+
+- @platforma-sdk/ui-vue@1.34.15
+
+## 1.1.122
+
+### Patch Changes
+
+- @platforma-sdk/ui-vue@1.34.12
+
+## 1.1.121
+
+### Patch Changes
+
+- @milaboratories/milaboratories.pool-explorer.model@1.0.55
+- @platforma-sdk/ui-vue@1.34.10
+
+## 1.1.120
+
+### Patch Changes
+
+- @platforma-sdk/ui-vue@1.34.9
+
+## 1.1.119
+
+### Patch Changes
+
+- Updated dependencies [33d6252]
+  - @platforma-sdk/ui-vue@1.34.8
+  - @milaboratories/milaboratories.pool-explorer.model@1.0.54
+
+## 1.1.118
+
+### Patch Changes
+
+- Updated dependencies [697b8a5]
+  - @platforma-sdk/ui-vue@1.34.4
+
 ## 1.1.117
 
 ### Patch Changes

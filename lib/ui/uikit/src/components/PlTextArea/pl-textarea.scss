@@ -1,4 +1,4 @@
-@use '@/assets/mixins' as *;
+@use '../../assets/mixins' as *;
 
 .ui-text-area {
   $root: &;
@@ -70,13 +70,6 @@
     flex-direction: row;
     align-items: center;
     gap: 4px;
-    .icon {
-      cursor: pointer;
-    }
-    .mask {
-      background-color: var(--control-mask-fill);
-      cursor: pointer;
-    }
   }
 
   &__helper {

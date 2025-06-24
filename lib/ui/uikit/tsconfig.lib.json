@@ -22,10 +22,7 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "outDir": "dist",
-    "rootDir": ".",
-    "paths": {
-      "@/*": ["./src/*"]
-    }
+    "rootDir": "."
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue", "src/**/*.json"]
 }

@@ -1,5 +1,72 @@
 # @platforma-sdk/ui-vue
 
+## 1.35.0
+
+### Minor Changes
+
+- 3781bd8: Added markup support to PlMultiSequenceAlignment
+
+## 1.34.18
+
+### Patch Changes
+
+- Updated dependencies [e9d02ae]
+  - @milaboratories/uikit@2.2.88
+
+## 1.34.17
+
+### Patch Changes
+
+- 45badc9: PlElementList implementation
+- Updated dependencies [45badc9]
+  - @milaboratories/uikit@2.2.87
+
+## 1.34.15
+
+### Patch Changes
+
+- Updated dependencies [8248b67]
+  - @milaboratories/uikit@2.2.86
+
+## 1.34.12
+
+### Patch Changes
+
+- Updated dependencies [2299e3e]
+  - @milaboratories/uikit@2.2.85
+
+## 1.34.10
+
+### Patch Changes
+
+- Updated dependencies [c570fd4]
+  - @platforma-sdk/model@1.34.10
+  - @milaboratories/uikit@2.2.84
+
+## 1.34.9
+
+### Patch Changes
+
+- Updated dependencies [540e690]
+  - @milaboratories/uikit@2.2.84
+
+## 1.34.8
+
+### Patch Changes
+
+- 33d6252: Fix Seqlogo overlap in the MSA component
+- Updated dependencies [23f719d]
+  - @platforma-sdk/model@1.34.8
+  - @milaboratories/uikit@2.2.83
+
+## 1.34.4
+
+### Patch Changes
+
+- 697b8a5: Replace all aliases to relative paths
+- Updated dependencies [697b8a5]
+  - @milaboratories/uikit@2.2.83
+
 ## 1.34.0
 
 ### Minor Changes

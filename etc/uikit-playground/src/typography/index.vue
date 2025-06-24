@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import Layout from '@/Layout.vue';
-import Split from '@/Split.vue';
+import Layout from '../Layout.vue';
+import Split from '../Split.vue';
 
 const classes: string[] = [
   'text-h1',
