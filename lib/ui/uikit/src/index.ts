@@ -76,6 +76,9 @@ export * from './components/PlFileDialog';
 export * from './components/PlFileInput';
 export * from './components/PlNotificationAlert';
 
+export * from './components/PlSidebar';
+export * from './components/PlAnnotationSidebar';
+
 export * from './components/PlSvg';
 export * from './components/PlMaskIcon16';
 export * from './components/PlMaskIcon24';
