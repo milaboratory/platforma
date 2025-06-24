@@ -1,5 +1,12 @@
 # @platforma-sdk/test
 
+## 1.35.1
+
+### Patch Changes
+
+- Updated dependencies [b210d3d]
+  - @milaboratories/pl-middle-layer@1.37.83
+
 ## 1.34.19
 
 ### Patch Changes
