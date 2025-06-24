@@ -24,8 +24,6 @@
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "dependencies": {
-    "@milaboratories/ts-configs": "workspace:*",
-    "@milaboratories/platforma-build-configs": "workspace:*",
     "@milaboratories/biowasm-tools": "workspace:^",
     "@milaboratories/miplots4": "catalog:",
     "@milaboratories/uikit": "workspace:^",
@@ -37,9 +35,11 @@
     "vue": "catalog:"
   },
   "devDependencies": {
-    "@faker-js/faker": "catalog:",
+    "@milaboratories/ts-configs": "workspace:*",
+    "@milaboratories/platforma-build-configs": "workspace:*",
     "@milaboratories/eslint-config": "workspace:^",
     "@milaboratories/helpers": "workspace:^",
+    "@faker-js/faker": "catalog:",
     "@types/lodash": "catalog:",
     "@types/node": "catalog:",
     "@types/semver": "catalog:",
