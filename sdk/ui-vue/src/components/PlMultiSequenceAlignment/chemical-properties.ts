@@ -1,47 +1,75 @@
-import type { ResidueCounts } from '../types';
-import type { SegmentedColumn } from './types';
+import type { ColorMap, ResidueCounts } from './types';
 
-export const chemicalCategories = [
-  'hydrophobic',
-  'positiveCharge',
-  'negativeCharge',
-  'polar',
-  'cysteine',
-  'glycine',
-  'proline',
-  'aromatic',
-] as const;
-
-export type ChemicalCategory = typeof chemicalCategories[number];
-
-export const chemicalPropertiesLabels: Record<ChemicalCategory, string> = {
-  hydrophobic: 'Hydrophobic',
-  positiveCharge: 'Positive Charged',
-  negativeCharge: 'Negative Charged',
-  polar: 'Polar',
-  cysteine: 'Cysteines',
-  glycine: 'Glycines',
-  proline: 'Prolines',
-  aromatic: 'Aromatic',
+export const chemicalPropertiesColorMap: ColorMap = {
+  hydrophobic: {
+    label: 'Hydrophobic',
+    color: '#99CCFF',
+  },
+  positiveCharge: {
+    label: 'Positive Charged',
+    color: '#FFA2A3',
+  },
+  negativeCharge: {
+    label: 'Negative Charged',
+    color: '#C1ADFF',
+  },
+  polar: {
+    label: 'Polar',
+    color: '#99E099',
+  },
+  cysteine: {
+    label: 'Cysteines',
+    color: '#FAAAFA',
+  },
+  glycine: {
+    label: 'Glycines',
+    color: '#F7BC5D',
+  },
+  proline: {
+    label: 'Prolines',
+    color: '#FFFF8F',
+  },
+  aromatic: {
+    label: 'Aromatic',
+    color: '#A2F5FA',
+  },
 };
 
-export const chemicalPropertiesColors: Record<ChemicalCategory, string> = {
-  hydrophobic: '#99CCFF',
-  positiveCharge: '#FFA2A3',
-  negativeCharge: '#C1ADFF',
-  polar: '#99E099',
-  cysteine: '#FAAAFA',
-  glycine: '#F7BC5D',
-  proline: '#FFFF8F',
-  aromatic: '#A2F5FA',
-};
+export type ChemicalCategory = keyof typeof chemicalPropertiesColorMap;
 
-type ColumnChemicalProperties = {
-  residues: string;
-  category: ChemicalCategory;
-}[];
+export function colorizeSequencesByChemicalProperties(
+  { sequences, residueCounts, colorMap }: {
+    sequences: string[];
+    residueCounts: ResidueCounts;
+    colorMap: ColorMap;
+  },
+): Promise<Blob> {
+  const canvas = new OffscreenCanvas(
+    sequences[0]?.length ?? 0,
+    sequences.length,
+  );
+  const context = canvas.getContext('2d')!;
+  const chemicalProperties = getAlignmentChemicalProperties({
+    residueCounts,
+    rowCount: sequences.length,
+  });
+  for (const [rowIndex, sequence] of sequences.entries()) {
+    for (const [columnIndex, residue] of sequence.split('').entries()) {
+      const category = chemicalProperties
+        .at(columnIndex)
+        ?.find(({ residues }) => residues.includes(residue))
+        ?.category;
+      if (!category) continue;
+      const color = colorMap[category]?.color;
+      if (!color) continue;
+      context.fillStyle = colorMap[category].color;
+      context.fillRect(columnIndex, rowIndex, 1, 1);
+    }
+  }
+  return canvas.convertToBlob();
+}
 
-export const getColumnChemicalProperties = (
+const getAlignmentChemicalProperties = (
   { residueCounts, rowCount }: {
     residueCounts: ResidueCounts;
     rowCount: number;
@@ -70,35 +98,10 @@ export const getColumnChemicalProperties = (
       .map(({ residues, category }) => ({ residues, category }))
   ));
 
-export function alignedSequencesToSegmentedColumns(
-  { alignedSequences, consensuses }: {
-    alignedSequences: string[];
-    consensuses: ColumnChemicalProperties[];
-  },
-): SegmentedColumn<ChemicalCategory>[] {
-  const columns: SegmentedColumn<ChemicalCategory>[] = [];
-  for (const [rowIndex, sequence] of alignedSequences.entries()) {
-    for (const [columnIndex, residue] of sequence.split('').entries()) {
-      const column = (columns[columnIndex] ??= []);
-      const category = consensuses
-        .at(columnIndex)
-        ?.find(({ residues }) => residues.includes(residue))
-        ?.category;
-      if (!category) continue;
-      const lastSegment = column.at(-1);
-      if (
-        !lastSegment
-        || lastSegment.category !== category
-        || lastSegment.end + 1 !== rowIndex
-      ) {
-        column.push({ category, start: rowIndex, end: rowIndex });
-      } else {
-        lastSegment.end = rowIndex;
-      }
-    }
-  }
-  return columns;
-}
+type ColumnChemicalProperties = {
+  residues: string;
+  category: ChemicalCategory;
+}[];
 
 /** @see {@link https://www.jalview.org/help/html/colourSchemes/clustal.html} */
 const categoryCriterion: Criteria[] = [
