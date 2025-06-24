@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 1.37.83
+
+### Patch Changes
+
+- b210d3d: PFrames version bump
+
 ## 1.37.82
 
 ### Patch Changes
