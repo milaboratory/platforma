@@ -3,23 +3,23 @@
   "version": "2.2.89",
   "type": "module",
   "main": "dist/index.js",
-  "types": "dist/src/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/src/index.d.ts",
+      "types": "./dist/index.d.ts",
+      "styles": "./dist/index.js",
       "development": "./src/index.ts",
       "default": "./dist/index.js"
     },
+    "./styles": "./dist/index.js",
     "./assets/mixins.scss": "./src/assets/mixins.scss",
     "./svg/icons/*": "./src/assets/icons/icon-assets-min/*",
     "./svg/images/*": "./src/assets/images/*"
   },
   "scripts": {
     "dev": "vite",
-    "build": "vite build && pnpm run build:types",
+    "build": "vite build",
     "test:unit": "vitest run",
     "test": "vitest run",
-    "build:types": "vue-tsc -p ./tsconfig.lib.build.json",
     "tsc": "tsc",
     "watch": "vite build --watch",
     "type-check": "vue-tsc --project ./tsconfig.lib.json",
