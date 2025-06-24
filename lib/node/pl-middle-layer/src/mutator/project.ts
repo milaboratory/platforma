@@ -472,25 +472,38 @@ export class ProjectMutator {
   }
 
   /** Running blocks are reset, already computed moved to limbo. Returns if
-   * either of the actions were actually performed. */
+   * either of the actions were actually performed.
+   * This method ensures the block is left in a consistent state that passes check() constraints. */
   private resetOrLimboProduction(blockId: string): boolean {
     const fields = this.getBlockInfo(blockId).fields;
+
+    // Check if we can safely move to limbo (both core production fields are ready)
     if (fields.prodOutput?.status === 'Ready' && fields.prodCtx?.status === 'Ready') {
       if (this.blocksInLimbo.has(blockId))
         // we are already in limbo
         return false;
 
-      // limbo
+      // limbo - keep the ready production results but clean up cache
       this.blocksInLimbo.add(blockId);
       this.renderingStateChanged = true;
 
-      // doing some gc
+      // doing some gc - clean up previous cache fields
       this.deleteBlockFields(blockId, 'prodOutputPrevious', 'prodCtxPrevious', 'prodUiCtxPrevious');
 
       return true;
     } else {
-      // reset
-      return this.deleteBlockFields(blockId, 'prodOutput', 'prodCtx', 'prodUiCtx', 'prodArgs');
+      // reset - clean up any partial/inconsistent production state
+      // This ensures consistency for check() method which requires prodOutput and prodCtx
+      // to both exist or both be undefined
+      let deleted = false;
+
+      // Clean up all production-related fields to ensure consistent state
+      deleted = this.deleteBlockFields(blockId, 'prodOutput', 'prodCtx', 'prodUiCtx', 'prodArgs') || deleted;
+
+      // Also clean up any inconsistent cache fields
+      deleted = this.deleteBlockFields(blockId, 'prodOutputPrevious', 'prodCtxPrevious', 'prodUiCtxPrevious') || deleted;
+
+      return deleted;
     }
   }
 
