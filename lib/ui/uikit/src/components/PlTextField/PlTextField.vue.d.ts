@@ -1,3 +1,0 @@
-/**
- * PlTextField component
- */

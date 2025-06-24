@@ -1,7 +1,6 @@
 {
   "compilerOptions": {
     "customConditions": ["development"],
-    "composite": true,
     "target": "ESNext",
     "module": "ESNext",
     "useDefineForClassFields": true,

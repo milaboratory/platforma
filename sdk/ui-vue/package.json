@@ -3,19 +3,20 @@
   "version": "1.37.0",
   "type": "module",
   "main": "dist/lib.js",
-  "types": "dist/src/lib.d.ts",
-  "styles": "dist/lib.css",
+  "styles": "dist/lib.js",
   "exports": {
-    "types": "./dist/src/lib.d.ts",
-    "styles": "./dist/lib.css",
-    "development": "./src/lib.ts",
-    "default": "./dist/lib.js"
+    ".": {
+      "types": "./dist/lib.d.ts",
+      "styles": "./dist/lib.js",
+      "development": "./src/lib.ts",
+      "default": "./dist/lib.js"
+    },
+    "./styles": "./dist/lib.js"
   },
   "scripts": {
     "test": "vitest run --passWithNoTests",
     "dev": "vite",
-    "build": "vite build && pnpm run build:types",
-    "build:types": "vue-tsc -p tsconfig.lib.build.json",
+    "build": "vite build",
     "watch": "vite build --watch",
     "type-check": "vue-tsc --noEmit --project ./tsconfig.json",
     "preview": "vite preview",
