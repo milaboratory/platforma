@@ -67,6 +67,7 @@ export function useLabelColumnsOptions(
         error.value = undefined;
         return await getLabelColumnsOptions(toValue(params));
       } catch (err) {
+        console.error(err);
         error.value = ensureError(err);
         return { options: [], defaults: [] };
       }
@@ -89,6 +90,7 @@ export function useMarkupColumnsOptions(
         error.value = undefined;
         return await getMarkupColumnsOptions(toValue(params));
       } catch (err) {
+        console.error(err);
         error.value = ensureError(err);
         return [];
       }
@@ -116,6 +118,7 @@ export function useMultipleAlignmentData(
         error.value = undefined;
         return await getMultipleAlignmentData(toValue(params));
       } catch (err) {
+        console.error(err);
         error.value = ensureError(err);
         return { sequences: [], labels: [] };
       }

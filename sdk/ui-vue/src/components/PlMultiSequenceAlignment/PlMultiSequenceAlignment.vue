@@ -187,8 +187,11 @@ const error = computed(() =>
     :label-column-options="labelColumns.data.options"
     :color-scheme-options="colorSchemeOptions"
   />
+  <PlAlert v-if="error" type="error">
+    {{ error }}
+  </PlAlert>
   <PlAlert
-    v-if="
+    v-else-if="
       !multipleAlignmentData.loading
         && multipleAlignmentData.data.sequences.length < 2
     "
@@ -197,9 +200,6 @@ const error = computed(() =>
   >
     Please select at least one sequence column and two or more rows to run
     alignment
-  </PlAlert>
-  <PlAlert v-else-if="error" type="error">
-    {{ error }}
   </PlAlert>
   <template v-else>
     <PlAlert
