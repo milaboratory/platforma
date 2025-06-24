@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.35.0
+
+### Minor Changes
+
+- 3781bd8: Added markup support to PlMultiSequenceAlignment
+
 ## 1.34.18
 
 ### Patch Changes
