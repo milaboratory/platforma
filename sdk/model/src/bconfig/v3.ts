@@ -1,7 +1,6 @@
-import type { BlockRenderingMode } from '@milaboratories/pl-model-common';
+import type { BlockCodeFeatureFlags, BlockRenderingMode } from '@milaboratories/pl-model-common';
 import type { Code, BlockCodeWithInfo, TypedConfigOrConfigLambda } from './types';
 import type { ConfigRenderLambda } from './lambdas';
-import type { BlockCodeFeatureFlags } from './block_flags';
 
 export type BlockConfigV3<
   Args = unknown,

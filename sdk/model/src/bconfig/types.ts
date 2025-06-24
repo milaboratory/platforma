@@ -1,5 +1,5 @@
+import type { BlockCodeFeatureFlags } from '@milaboratories/pl-model-common';
 import type { TypedConfig } from '../config';
-import type { BlockCodeFeatureFlags } from './block_flags';
 import type { ConfigRenderLambda } from './lambdas';
 
 export type Code = {

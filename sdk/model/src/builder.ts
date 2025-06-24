@@ -19,7 +19,7 @@ import type {
 import {
   downgradeCfgOrLambda,
 } from './bconfig';
-import type { BlockCodeKnownFeatureFlags } from './bconfig/block_flags';
+import type { BlockCodeKnownFeatureFlags } from '../../../lib/model/common/src/flags/block_flags';
 
 type SectionsExpectedType = readonly BlockSection[];
 
