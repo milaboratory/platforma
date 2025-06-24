@@ -22,8 +22,9 @@ import { normalizeListOptions } from '../../helpers/utils';
 import { PlIcon16 } from '../PlIcon16';
 import { PlMaskIcon24 } from '../PlMaskIcon24';
 import { DropdownOverlay } from '../../utils/DropdownOverlay';
-import SvgRequired from '../../generated/components/svg/images/SvgRequired.vue';
 import { getErrorMessage } from '../../helpers/error.ts';
+import { PlSvg } from '../PlSvg';
+import SvgRequired from '../../assets/images/required.svg?raw';
 
 const emit = defineEmits<{
   /**
@@ -344,7 +345,7 @@ watchPostEffect(() => {
           </div>
         </div>
         <label v-if="label">
-          <SvgRequired v-if="required" />
+          <PlSvg v-if="required" :uri="SvgRequired" />
           <span>{{ label }}</span>
           <PlTooltip v-if="slots.tooltip" class="info" position="top">
             <template #tooltip>
