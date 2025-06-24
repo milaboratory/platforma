@@ -604,12 +604,12 @@ export function createPlDataTable<A, U>(
 
   const coreJoinType = ops?.coreJoinType ?? 'full';
   const filters: PTableRecordSingleValueFilterV2[]
-    = unique_by(
+    = uniqueBy(
       [...(ops?.filters ?? []), ...(tableState?.pTableParams?.filters ?? [])],
       (f) => canonicalizeJson<PTableColumnId>(f.column),
     );
   const sorting: PTableSorting[]
-    = unique_by(
+    = uniqueBy(
       [...(ops?.sorting ?? []), ...(tableState?.pTableParams?.sorting ?? [])],
       (s) => canonicalizeJson<PTableColumnId>(s.column),
     );
@@ -654,7 +654,7 @@ export function isColumnOptional(spec: { annotations?: Record<string, string> })
  * Return unique entries of the array by the provided id
  * For each id, the last entry is kept
  */
-export function unique_by<T>(array: T[], makeId: (entry: T) => string): T[] {
+export function uniqueBy<T>(array: T[], makeId: (entry: T) => string): T[] {
   return [...new Map(array.map((e) => [makeId(e), e])).values()];
 }
 
@@ -676,12 +676,12 @@ export function createPlDataTableV2<A, U>(
 
   const coreJoinType = ops?.coreJoinType ?? 'full';
   const filters: PTableRecordSingleValueFilterV2[]
-    = unique_by(
+    = uniqueBy(
       [...(ops?.filters ?? []), ...tableStateNormalized.pTableParams.filters],
       (f) => canonicalizeJson<PTableColumnId>(f.column),
     );
   const sorting: PTableSorting[]
-    = unique_by(
+    = uniqueBy(
       [...(ops?.sorting ?? []), ...tableStateNormalized.pTableParams.sorting],
       (s) => canonicalizeJson<PTableColumnId>(s.column),
     );

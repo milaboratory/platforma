@@ -12,13 +12,13 @@ const selectedRowCount = ref(getSelectedRowsCount(params.api));
 const totalRowCount = ref(getTotalRowsCount(params.api));
 const isSelectable = ref(isSelectionEnabled(params.api));
 
-const allRowsSelected = computed(() =>
-  selectedRowCount.value === totalRowCount.value
-  && selectedRowCount.value > 0,
-);
-
 const someRowsSelected = computed(() =>
   selectedRowCount.value > 0,
+);
+
+const allRowsSelected = computed(() =>
+  someRowsSelected.value
+  && selectedRowCount.value === totalRowCount.value,
 );
 
 function toggleSelectAll() {

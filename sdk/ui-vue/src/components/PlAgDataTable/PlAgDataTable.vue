@@ -25,7 +25,6 @@ import {
   type PlDataTableGridStateWithoutSheets,
   type AxisId,
   type PlDataTableState,
-  type PTableColumnSpec,
   type PTableRecordFilter,
   type PTableSorting,
   parseJson,
