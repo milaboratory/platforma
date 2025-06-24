@@ -5,8 +5,6 @@
   "main": "dist/index.js",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "styles": "./dist/index.js",
       "development": "./src/index.ts",
       "default": "./dist/index.js"
     },
