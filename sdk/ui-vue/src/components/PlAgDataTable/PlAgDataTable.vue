@@ -10,16 +10,12 @@ import {
   type ManagedGridOptions,
   type SortState,
   type StateUpdatedEvent,
-  ModuleRegistry,
-  ClientSideRowModelModule,
-  ClipboardModule,
-  CellSelectionModule,
-  ServerSideRowModelModule,
   isColumnSelectionCol,
 } from 'ag-grid-enterprise';
 import { AgGridVue } from 'ag-grid-vue3';
 import { PlDropdownLine } from '@milaboratories/uikit';
 import type {
+  CanonicalizedJson,
   PTableColumnSpecJson,
   PTableRowKey,
 } from '@platforma-sdk/model';
@@ -29,12 +25,11 @@ import {
   type PlDataTableGridStateWithoutSheets,
   type AxisId,
   type PlDataTableState,
-  type PTableColumnSpec,
   type PTableRecordFilter,
   type PTableSorting,
   parseJson,
+  canonicalizeJson,
 } from '@platforma-sdk/model';
-import canonicalize from 'canonicalize';
 import * as lodash from 'lodash';
 import { computed, nextTick, ref, shallowRef, toRefs, watch } from 'vue';
 import { AgGridTheme } from '../../lib';
@@ -42,19 +37,12 @@ import PlOverlayLoading from './PlAgOverlayLoading.vue';
 import PlOverlayNoRows from './PlAgOverlayNoRows.vue';
 import { updateXsvGridOptions } from './sources/file-source';
 import { type PlAgCellButtonAxisParams, makeRowId, updatePFrameGridOptions } from './sources/table-source';
-import type { PlAgDataTableController, PlDataTableSettings, PlAgDataTableRow, PlDataTableSettingsPTable } from './types';
+import type { PlAgDataTableController, PlDataTableSettings, PlAgDataTableRow, PlDataTableSettingsPTable, PlDataTableColumnsInfo } from './types';
 import { PlAgGridColumnManager } from '../PlAgGridColumnManager';
 import { autoSizeRowNumberColumn, PlAgDataTableRowNumberColId } from './sources/row-number';
 import { focusRow, makeOnceTracker, trackFirstDataRendered } from './sources/focus-row';
 import PlAgCsvExporter from '../PlAgCsvExporter/PlAgCsvExporter.vue';
 import { Deferred, isJsonEqual } from '@milaboratories/helpers';
-
-ModuleRegistry.registerModules([
-  ClientSideRowModelModule,
-  ClipboardModule,
-  ServerSideRowModelModule,
-  CellSelectionModule,
-]);
 
 const tableState = defineModel<PlDataTableState>({ default: { gridState: {} } });
 const selectedRows = defineModel<PTableRowKey[]>('selectedRows');
@@ -102,7 +90,7 @@ const props = defineProps<{
 const { settings } = toRefs(props);
 const emit = defineEmits<{
   rowDoubleClicked: [key?: PTableRowKey];
-  columnsChanged: [columns: PTableColumnSpec[]];
+  columnsChanged: [info: PlDataTableColumnsInfo];
   cellButtonClicked: [key?: PTableRowKey];
 }>();
 
@@ -154,7 +142,7 @@ const gridState = computed<PlDataTableGridStateWithoutSheets>({
   },
 });
 
-const makeSheetId = (axis: AxisId) => canonicalize(getAxisId(axis))!;
+const makeSheetId = (axis: AxisId): CanonicalizedJson<AxisId> => canonicalizeJson(getAxisId(axis))!;
 
 function makeFilters(sheetsState: Record<string, string | number>): PTableRecordFilter[] | undefined {
   if (settings.value?.sourceType !== 'ptable') return undefined;
@@ -173,7 +161,7 @@ function makeFilters(sheetsState: Record<string, string | number>): PTableRecord
   );
 }
 
-const sheetsState = computed({
+const sheetsState = computed<Record<CanonicalizedJson<AxisId>, string | number>>({
   get: () => tableState.value.gridState.sheets ?? {},
   set: (sheetsState) => {
     const filters = makeFilters(sheetsState);
@@ -206,7 +194,7 @@ watch(
     if (oldSettings && oldSettings.sourceType === 'ptable' && lodash.isEqual(settings.sheets, oldSettings.sheets)) return;
 
     const oldSheetsState = sheetsState.value;
-    const newSheetsState: Record<string, string | number> = {};
+    const newSheetsState: Record<CanonicalizedJson<AxisId>, string | number> = {};
     for (const sheet of settings.sheets) {
       const sheetId = makeSheetId(sheet.axis);
       newSheetsState[sheetId] = oldSheetsState[sheetId] ?? sheet.defaultValue ?? sheet.options[0]?.value;
@@ -324,9 +312,18 @@ const onGridReady = (event: GridReadyEvent) => {
 const makePartialState = (state: GridState) => {
   return {
     sourceId: gridState.value.sourceId,
-    columnOrder: state.columnOrder,
-    sort: state.sort,
-    columnVisibility: state.columnVisibility as { hiddenColIds: PTableColumnSpecJson[] } | undefined,
+    columnOrder: state.columnOrder as {
+      orderedColIds: PTableColumnSpecJson[];
+    } | undefined,
+    sort: state.sort as {
+      sortModel: {
+        colId: PTableColumnSpecJson;
+        sort: 'asc' | 'desc';
+      }[];
+    } | undefined,
+    columnVisibility: state.columnVisibility as {
+      hiddenColIds: PTableColumnSpecJson[];
+    } | undefined,
   };
 };
 
@@ -367,16 +364,27 @@ watch(
     if (!oldOptions) return;
     if (options.rowModelType != oldOptions.rowModelType) ++reloadKey.value;
     if (options.columnDefs && !lodash.isEqual(options.columnDefs, oldOptions.columnDefs)) {
-      const isColDef = (def: ColDef | ColGroupDef): def is ColDef => !('children' in def);
-      const colDefs = options.columnDefs?.filter(isColDef) ?? [];
-      const columns
+      const sourceId = gridState.value.sourceId;
+      if (!sourceId) {
+        emit('columnsChanged', {
+          sourceId: null,
+          columns: [],
+        });
+      } else {
+        const isColDef = (def: ColDef | ColGroupDef): def is ColDef => !('children' in def);
+        const colDefs = options.columnDefs?.filter(isColDef) ?? [];
+        const columns
         = colDefs
           .map((def) => def.colId)
           .filter((colId) => colId !== undefined)
           .filter((colId) => colId !== PlAgDataTableRowNumberColId)
           .filter((colId) => !isColumnSelectionCol(colId))
           .map((colId) => parseJson(colId as PTableColumnSpecJson)) ?? [];
-      emit('columnsChanged', columns);
+        emit('columnsChanged', {
+          sourceId,
+          columns,
+        });
+      }
     }
     if (!lodash.isEqual(options.loadingOverlayComponentParams, oldOptions.loadingOverlayComponentParams) && options.loading) {
       gridApi.value?.setGridOption('loading', false);
@@ -386,7 +394,7 @@ watch(
   { immediate: true },
 );
 
-const onSheetChanged = (sheetId: string, newValue: string | number) => {
+const onSheetChanged = (sheetId: CanonicalizedJson<AxisId>, newValue: string | number) => {
   const state = sheetsState.value;
   if (state[sheetId] === newValue) return;
   state[sheetId] = newValue;

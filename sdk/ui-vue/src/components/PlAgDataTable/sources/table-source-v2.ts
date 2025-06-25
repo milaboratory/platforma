@@ -1,6 +1,5 @@
 import type {
   AxisId,
-  PlDataTableGridStateWithoutSheets,
   PlDataTableModel,
   PTableColumnSpec,
   PTableKey,
@@ -11,7 +10,6 @@ import {
   isColumnOptional,
   mapPTableValueToAxisKey,
   pTableValue,
-  stringifyPTableColumnSpec,
   type PColumnSpec,
   type PFrameDriver,
   type PlDataTableSheet,
@@ -23,12 +21,10 @@ import type {
   ICellRendererParams,
   IServerSideDatasource,
   IServerSideGetRowsParams,
-  RowModelType,
+  ManagedGridOptions,
 } from 'ag-grid-enterprise';
 import canonicalize from 'canonicalize';
 import * as lodash from 'lodash';
-import type { Ref } from 'vue';
-import { objectHash } from '../../../objectHash';
 import type { PlAgHeaderComponentParams, PlAgHeaderComponentType } from '../../PlAgColumnHeader';
 import { PlAgColumnHeader } from '../../PlAgColumnHeader';
 import { PlAgTextAndButtonCell } from '../../PlAgTextAndButtonCell';
@@ -40,6 +36,7 @@ import {
 import { defaultMainMenuItems } from './menu-items';
 import { makeRowNumberColDef, PlAgDataTableRowNumberColId } from './row-number';
 import { getColumnRenderingSpec } from './value-rendering';
+import type { Ref } from 'vue';
 
 /** Convert columnar data from the driver to rows, used by ag-grid */
 function columns2rows(
@@ -66,24 +63,17 @@ function columns2rows(
   return rowData;
 }
 
-/**
- * Calculate GridOptions for p-table data source type
- */
-export async function updatePFrameGridOptions(
+/** Calculate GridOptions for selected p-table data source */
+export async function calculateGridOptions(
+  generation: Ref<number>,
   pfDriver: PFrameDriver,
   model: PlDataTableModel,
   sheets: PlDataTableSheet[],
-  clientSide: boolean,
-  gridState: Ref<PlDataTableGridStateWithoutSheets>,
+  hiddenColIds?: string[],
   cellButtonAxisParams?: PlAgCellButtonAxisParams,
-): Promise<{
-    columnDefs: ColDef[];
-    serverSideDatasource?: IServerSideDatasource;
-    rowModelType: RowModelType;
-    rowData?: PlAgDataTableV2Row[];
-  }> {
-  const pt = model.tableHandle;
-  const specs = model.tableSpec;
+): Promise<Pick<ManagedGridOptions<PlAgDataTableV2Row>, 'columnDefs' | 'serverSideDatasource'>> {
+  const pt = model.visibleTableHandle;
+  const specs = await pfDriver.getSpec(model.fullTableHandle);
   type SpecId = string;
   const specId = (spec: PTableColumnSpec): SpecId =>
     spec.type === 'axis' ? canonicalize(getAxisId(spec.spec))! : spec.id;
@@ -99,21 +89,6 @@ export async function updatePFrameGridOptions(
       throw new Error(`axis ${JSON.stringify(spec.spec)} not present in join result`);
     specsToDataSpecsMapping.set(i, dataSpecIdx ?? -1);
   });
-
-  const oldSourceId = gridState.value.sourceId;
-
-  const newSourceId = await objectHash(specs);
-
-  const isSourceIdChanged = oldSourceId !== newSourceId;
-
-  const columnVisibility = isSourceIdChanged ? undefined : gridState.value.columnVisibility ?? { hiddenColIds: [] }; // We made all the columns visible by hand
-
-  if (isSourceIdChanged) {
-    gridState.value = {
-      ...gridState.value,
-      sourceId: newSourceId,
-    };
-  }
 
   let numberOfAxes = specs.findIndex((s) => s.type === 'column');
   if (numberOfAxes === -1) numberOfAxes = specs.length;
@@ -165,11 +140,9 @@ export async function updatePFrameGridOptions(
     fields.splice(i, 1);
   }
 
-  const ptShape = await pfDriver.getShape(pt);
-  const rowCount = ptShape.rows;
   const columnDefs: ColDef<PlAgDataTableV2Row>[] = [
     makeRowNumberColDef(),
-    ...fields.map((i) => makeColDef(i, specs[i], columnVisibility?.hiddenColIds, cellButtonAxisParams)),
+    ...fields.map((i) => makeColDef(i, specs[i], hiddenColIds, cellButtonAxisParams)),
   ];
 
   // mixing in axis indices
@@ -223,32 +196,31 @@ export async function updatePFrameGridOptions(
     }
   });
 
-  if (clientSide) {
-    const data = await pfDriver.getData(pt, requestIndices);
-    return {
-      rowModelType: 'clientSide',
-      columnDefs,
-      rowData: columns2rows(fields, data, axes, resultMapping),
-    };
-  }
-
+  const stateGeneration = generation.value;
+  let rowCount = -1;
   let lastParams: IServerSideGetRowsParams | undefined = undefined;
-  const serverSideDatasource = {
+  const serverSideDatasource: IServerSideDatasource<PlAgDataTableV2Row> = {
     getRows: async (params: IServerSideGetRowsParams) => {
+      if (stateGeneration !== generation.value) return params.fail();
       try {
+        if (rowCount === -1) {
+          const ptShape = await pfDriver.getShape(pt);
+          if (stateGeneration !== generation.value) return params.fail();
+          rowCount = ptShape.rows;
+        }
+
         if (rowCount == 0) {
           params.success({ rowData: [], rowCount });
+          // Warning: AgGrid cannot show two overlays at once,
+          // so first hide loading overlay, then show no rows overlay
           params.api.setGridOption('loading', false);
           params.api.showNoRowsOverlay();
           return;
         }
 
-        // this is to avoid double flickering when underlying table is changed
+        // If sort has changed - show skeletons instead of data
         if (lastParams && !lodash.isEqual(lastParams.request.sortModel, params.request.sortModel)) {
-          lastParams = undefined;
-          params.api.setGridOption('loading', true);
-          params.success({ rowData: [], rowCount: 0 });
-          return;
+          return params.success({ rowData: [], rowCount });
         }
         lastParams = params;
 
@@ -261,23 +233,27 @@ export async function updatePFrameGridOptions(
               offset: params.request.startRow,
               length,
             });
+            if (stateGeneration !== generation.value) return params.fail();
             rowData = columns2rows(fields, data, axes, resultMapping);
           }
         }
 
         params.success({ rowData, rowCount });
-        params.api.autoSizeColumns(params.api.getAllDisplayedColumns().filter((column) => column.getColId() !== PlAgDataTableRowNumberColId));
+        params.api.autoSizeColumns(
+          params.api.getAllDisplayedColumns()
+            .filter((column) => column.getColId() !== PlAgDataTableRowNumberColId),
+        );
         params.api.setGridOption('loading', false);
       } catch (error: unknown) {
+        if (stateGeneration !== generation.value) return params.fail();
         params.api.setGridOption('loading', true);
         params.fail();
         console.trace(error);
       }
     },
-  } satisfies IServerSideDatasource;
+  };
 
   return {
-    rowModelType: 'serverSide',
     columnDefs,
     serverSideDatasource,
   };
@@ -295,10 +271,10 @@ export type PlAgCellButtonAxisParams = {
 export function makeColDef(
   iCol: number,
   spec: PTableColumnSpec,
-  hiddenColIds?: string[],
+  hiddenColIds: string[] | undefined,
   cellButtonAxisParams?: PlAgCellButtonAxisParams,
 ): ColDef {
-  const colId = stringifyPTableColumnSpec(spec);
+  const colId = canonicalizeJson<PTableColumnSpec>(spec);
   const valueType = spec.type === 'axis' ? spec.spec.type : spec.spec.valueType;
   const columnRenderingSpec = getColumnRenderingSpec(spec);
   const cellStyle: CellStyle = {};

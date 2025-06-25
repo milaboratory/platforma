@@ -64,7 +64,7 @@ const options = useFilteredList(toRef(props, 'options'), searchPhrase);
 const canShowClearBtn = computed<boolean>(() => !!(props.clearable && data.isOpen && props.modelValue && modelText.value));
 
 const modelText = computed<string>(() => {
-  if (props.modelValue) {
+  if (props.modelValue !== undefined) {
     const index = getIndexForModelInItems();
     if (index !== -1) {
       const item = normalizeListOptions(props.options)[index];

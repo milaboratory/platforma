@@ -46,7 +46,7 @@ const columns = ref<PTableColumnSpec[]>([]);
       :settings="tableSettings"
       show-columns-panel
       show-export-button
-      @columns-changed="(newColumns) => (columns = newColumns)"
+      @columns-changed="(info) => (columns = info.columns)"
     >
       <template #before-sheets>
         Table controls could be placed here
