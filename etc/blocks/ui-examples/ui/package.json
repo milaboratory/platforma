@@ -17,7 +17,7 @@
   },
   "devDependencies": {
     "@milaboratories/ts-configs": "workspace:*",
-    "@milaboratories/platforma-build-configs": "workspace:*",
+    "@milaboratories/build-configs": "workspace:*",
     "@platforma-sdk/ui-vue": "workspace:^",
     "@milaboratories/uikit": "workspace:^",
     "@vitejs/plugin-vue": "catalog:",

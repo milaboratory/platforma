@@ -1,7 +1,7 @@
 import type { UserConfig } from 'vite';
 import { defineConfig, mergeConfig } from 'vite';
 import { resolve } from 'path';
-import { createViteLibConfig } from '@milaboratories/platforma-build-configs';
+import { createViteLibConfig } from '@milaboratories/build-configs';
 
 // https://vitejs.dev/config/
 export default defineConfig((configEnv): UserConfig => {

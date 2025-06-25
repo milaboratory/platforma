@@ -38,7 +38,7 @@
   "license": "UNLICENSED",
   "devDependencies": {
     "@milaboratories/eslint-config": "workspace:^",
-    "@milaboratories/platforma-build-configs": "workspace:*",
+    "@milaboratories/build-configs": "workspace:*",
     "@types/decompress": "catalog:",
     "@types/jest": "catalog:",
     "@types/node": "catalog:",

@@ -23,6 +23,11 @@
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "dependencies": {
+    "@types/lodash": "catalog:",
+    "@types/node": "catalog:",
+    "@types/semver": "catalog:",
+    "@types/sortablejs": "catalog:",
+    "@types/d3-format": "catalog:",
     "@milaboratories/biowasm-tools": "workspace:^",
     "@milaboratories/miplots4": "catalog:",
     "@milaboratories/uikit": "workspace:^",
@@ -31,27 +36,22 @@
     "ag-grid-vue3": "catalog:",
     "canonicalize": "catalog:",
     "lru-cache": "catalog:",
-    "vue": "catalog:"
-  },
-  "devDependencies": {
-    "@milaboratories/ts-configs": "workspace:*",
-    "@milaboratories/platforma-build-configs": "workspace:*",
-    "@milaboratories/eslint-config": "workspace:^",
-    "@milaboratories/helpers": "workspace:^",
+    "vue": "catalog:",
     "@faker-js/faker": "catalog:",
-    "@types/lodash": "catalog:",
-    "@types/node": "catalog:",
-    "@types/semver": "catalog:",
     "@vitejs/plugin-vue": "catalog:",
     "@vueuse/core": "catalog:",
     "@vueuse/integrations": "catalog:",
     "sortablejs": "catalog:",
-    "@types/sortablejs": "catalog:",
     "d3-format": "catalog:",
-    "@types/d3-format": "catalog:",
-    "canonicalize": "catalog:",
-    "happy-dom": "catalog:",
     "lodash": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@milaboratories/ts-configs": "workspace:*",
+    "@milaboratories/build-configs": "workspace:*",
+    "@milaboratories/eslint-config": "workspace:^",
+    "@milaboratories/helpers": "workspace:^",
+    "happy-dom": "catalog:",
     "rollup-plugin-sourcemaps2": "catalog:",
     "sass": "catalog:",
     "semver": "catalog:",
@@ -59,7 +59,6 @@
     "vite": "catalog:",
     "vitest": "catalog:",
     "vue-tsc": "catalog:",
-    "yarpm": "catalog:",
-    "zod": "catalog:"
+    "yarpm": "catalog:"
   }
 }
