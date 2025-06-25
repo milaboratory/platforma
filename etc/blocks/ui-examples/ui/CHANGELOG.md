@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.4.18
+
+### Patch Changes
+
+- 2c3bb60: Developer build ui-examples don't required build/watch for deps
+
 ## 1.4.17
 
 ### Patch Changes

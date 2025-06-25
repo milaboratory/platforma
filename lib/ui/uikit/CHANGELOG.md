@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.91
+
+### Patch Changes
+
+- 2c3bb60: Developer build ui-examples don't required build/watch for deps
+
 ## 2.2.90
 
 ### Patch Changes
