@@ -1,5 +1,11 @@
 # @milaboratories/pl-drivers
 
+## 1.5.72
+
+### Patch Changes
+
+- 295e939: Abort canceled blob downloads
+
 ## 1.5.71
 
 ### Patch Changes
