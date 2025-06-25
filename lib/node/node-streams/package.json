@@ -23,7 +23,7 @@
     "./src/**/*"
   ],
   "devDependencies": {
-    "@milaboratories/platforma-build-configs": "workspace:*",
+    "@milaboratories/build-configs": "workspace:*",
     "@types/node": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:"

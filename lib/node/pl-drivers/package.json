@@ -49,7 +49,7 @@
     "eslint": "catalog:",
     "@types/decompress": "catalog:",
     "@milaboratories/eslint-config": "workspace:^",
-    "@milaboratories/platforma-build-configs": "workspace:*",
+    "@milaboratories/build-configs": "workspace:*",
     "typescript": "catalog:",
     "vite": "catalog:",
     "@types/node": "catalog:",

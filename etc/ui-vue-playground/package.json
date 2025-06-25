@@ -20,7 +20,7 @@
   },
   "devDependencies": {
     "@milaboratories/ts-configs": "workspace:*",
-    "@milaboratories/platforma-build-configs": "workspace:*",
+    "@milaboratories/build-configs": "workspace:*",
     "ag-grid-enterprise": "catalog:",
     "ag-grid-vue3": "catalog:",
     "@faker-js/faker": "catalog:",
