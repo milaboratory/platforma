@@ -1,11 +1,15 @@
 import type {
+  AxisId,
   CanonicalizedJson,
+  ListOptionBase,
   LocalBlobHandleAndSize,
   PlDataTableModel,
   PlDataTableSheet,
+  PlDataTableSheetState,
   PlTableFilter,
   PlTableFilterType,
   PTableColumnId,
+  PTableColumnSpec,
   PTableHandle,
   PTableKey,
   PTableRowKey,
@@ -35,19 +39,17 @@ export type PlDataTableSettings =
   | PlDataTableSettingsPTable
   | PlDataTableSettingsXsv;
 
-export type PlAgDataTableSettingsPTable = {
-  /** The type of the source to feed the data into the table */
-  sourceType: 'ptable';
-  /** PTable handle output */
-  model: PlDataTableModel | undefined;
-  /** Sheets that we want to show in our table */
-  sheets?: PlDataTableSheet[];
-};
-
-/** Data table settings */
-export type PlAgDataTableSettings =
-  | undefined
-  | PlAgDataTableSettingsPTable;
+/** Data table V2 settings */
+export type PlDataTableSettingsV2 =
+  | { sourceId: null }
+  | {
+    /** Unique source id for state caching */
+    sourceId: string;
+    /** Sheets that we want to show in our table */
+    sheets: PlDataTableSheet[];
+    /** Result of `createPlDataTableV2` */
+    model: PlDataTableModel | undefined;
+  };
 
 /** PlTableFilters restriction entry */
 export type PlTableFiltersRestriction = {
@@ -135,4 +137,30 @@ export type PlAgOverlayNoRowsParams = {
    * Prop to override default "Empty" text
    */
   text?: string;
+};
+
+export type PlDataTableSheetsSettings = {
+  /** User-provided sheets for the sourceId */
+  sheets: PlDataTableSheet[];
+  /** Persisted selection for the sourceId */
+  cachedState: PlDataTableSheetState[];
+};
+
+export type PlDataTableSheetNormalized = {
+  /** id of the axis */
+  axisId: AxisId;
+  /** sheet prefix */
+  prefix: string;
+  /** options to show in the filter dropdown */
+  options: ListOptionBase<string | number>[];
+  /** default (selected) value */
+  defaultValue: string | number;
+};
+
+export type PlDataTableColumnsInfo = {
+  sourceId: null;
+  columns: [];
+} | {
+  sourceId: string;
+  columns: PTableColumnSpec[];
 };
