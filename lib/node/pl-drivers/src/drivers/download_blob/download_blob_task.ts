@@ -66,7 +66,7 @@ export class DownloadBlobTask {
         this.setError(e);
         this.change.markChanged();
         // Just in case we were half-way extracting an archive.
-        await fsp.rm(this.path);
+        await fsp.rm(this.path, { force: true });
       }
 
       throw e;
