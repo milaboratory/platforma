@@ -103,7 +103,9 @@ const props = withDefaults(
   },
 );
 
-const slots = useSlots();
+const slots = defineSlots<{
+  [key: string]: unknown;
+}>();
 
 const rootRef = ref<HTMLElement | undefined>();
 const input = ref<HTMLInputElement | undefined>();

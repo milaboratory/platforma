@@ -1,4 +1,11 @@
-import { LicenseManager, type Theme, themeQuartz, createPart, ModuleRegistry, AllEnterpriseModule } from 'ag-grid-enterprise';
+import {
+  AllEnterpriseModule,
+  createPart,
+  LicenseManager,
+  ModuleRegistry,
+  type Theme,
+  themeQuartz,
+} from 'ag-grid-enterprise';
 import { getEnvironmentValue } from '@platforma-sdk/model';
 import OverrideCss from './components/PlAgDataTable/ag-override.css?raw';
 

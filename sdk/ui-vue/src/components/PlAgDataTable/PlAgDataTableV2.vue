@@ -37,7 +37,7 @@ import {
 } from 'vue';
 import {
   AgGridTheme,
-} from '../../lib';
+} from '../../aggrid';
 import PlAgCsvExporter from '../PlAgCsvExporter/PlAgCsvExporter.vue';
 import {
   PlAgGridColumnManager,

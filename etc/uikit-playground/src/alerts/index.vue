@@ -3,7 +3,7 @@ import Layout from '../Layout.vue';
 import Split from '../Split.vue';
 import { faker } from '@faker-js/faker';
 import { range, toList } from '@milaboratories/helpers';
-import { PlCheckbox, PlAlert } from 'milaboratories/uikit';
+import { PlCheckbox, PlAlert } from '@milaboratories/uikit';
 import { reactive } from 'vue';
 
 const data = reactive({

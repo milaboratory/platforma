@@ -1,55 +1,26 @@
-import { defineConfig } from 'vite';
-import vue from '@vitejs/plugin-vue';
 import { resolve } from 'path';
-import { exec } from 'child_process';
+import { defineConfig, mergeConfig, type UserConfig } from 'vite';
+import { createViteLibConfig } from '@milaboratories/platforma-build-configs';
 
-// https://vitejs.dev/config/
-export default defineConfig({
-  plugins: [
-    vue({
-      template: {
-        compilerOptions: {
-          whitespace: 'preserve',
-          isCustomElement: (tag) => {
-            return tag.startsWith('web');
+export default defineConfig((configEnv): UserConfig => {
+  return mergeConfig(createViteLibConfig(configEnv), {
+    define: {
+      APP_VERSION: JSON.stringify(process.env.npm_package_version),
+    },
+    build: {
+      lib: {
+        // Could also be a dictionary or array of multiple entry points
+        entry: [resolve(__dirname, 'src/index.ts')],
+        name: 'pl-uikit',
+      },
+      rollupOptions: {
+        external: ['vue'],
+        output: {
+          globals: {
+            vue: 'Vue',
           },
         },
       },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    }) as any,
-    {
-      name: 'run-build-types',
-      closeBundle() {
-        exec('npm run build:types', (err, stdout, stderr) => {
-          if (err) {
-            console.error(`Error running build:types: ${stderr}`, err);
-            return;
-          }
-        });
-      },
     },
-  ],
-  define: {
-    APP_VERSION: JSON.stringify(process.env.npm_package_version),
-  },
-  build: {
-    sourcemap: true,
-    emptyOutDir: true,
-    lib: {
-      // Could also be a dictionary or array of multiple entry points
-      entry: [resolve(__dirname, 'src/index.ts')],
-      name: 'pl-uikit',
-      // the proper extensions will be added
-      fileName: 'pl-uikit',
-      formats: ['es'],
-    },
-    rollupOptions: {
-      external: ['vue'],
-      output: {
-        globals: {
-          vue: 'Vue',
-        },
-      },
-    },
-  },
+  });
 });

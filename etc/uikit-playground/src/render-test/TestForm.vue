@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { PlTextField } from 'milaboratories/uikit';
+import { PlTextField } from '@milaboratories/uikit';
 import { computed } from 'vue';
 
 type Model = {

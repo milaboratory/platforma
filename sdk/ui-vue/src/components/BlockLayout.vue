@@ -1,5 +1,4 @@
 <script lang="ts" setup>
-import '@milaboratories/uikit/styles';
 import '../assets/block.scss';
 import { computed } from 'vue';
 import { useSdkPlugin } from '../defineApp';

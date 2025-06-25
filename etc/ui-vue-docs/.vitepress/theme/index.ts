@@ -5,7 +5,6 @@ import DefaultTheme from 'vitepress/theme';
 import './override.scss';
 import './style.css';
 import 'highlight.js/styles/a11y-dark.css';
-import '@platforma-sdk/ui-vue/styles';
 
 export default {
   extends: DefaultTheme,

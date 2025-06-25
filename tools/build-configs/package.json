@@ -1,0 +1,44 @@
+{
+  "version": "1.0.3",
+  "private": true,
+  "name": "@milaboratories/platforma-build-configs",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./tsup": {
+      "types": "./src/tsup.ts",
+      "import": "./dist/tsup.js",
+      "require": "./dist/tsup.cjs"
+    },
+    "./vite": {
+      "types": "./src/vite.ts",
+      "import": "./dist/vite.js",
+      "require": "./dist/vite.cjs"
+    },
+    "./tsconfig_lib_bundled.json": "./tsconfig_lib_bundled.json"
+  },
+  "files": [
+    "./dist/**",
+    "./tsconfig_lib_bundled.json"
+  ],
+  "scripts": {
+    "type-check": "tsc --noEmit --composite false",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@rollup/plugin-node-resolve": "catalog:",
+    "rollup-plugin-node-externals": "catalog:",
+    "rollup-plugin-sourcemaps2": "catalog:",
+    "vite-plugin-css-injected-by-js": "catalog:",
+    "tsup": "catalog:",
+    "vite": "catalog:",
+    "vite-plugin-dts": "catalog:",
+    "@types/node": "catalog:",
+    "@vitejs/plugin-vue": "catalog:",
+    "typescript": "catalog:"
+  }
+}

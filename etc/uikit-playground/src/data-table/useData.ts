@@ -1,4 +1,4 @@
-import type { DataTable } from 'milaboratories/uikit';
+import type { DataTable } from '@milaboratories/uikit';
 import { arrayFrom, randomRangeInt, randomString, uniqueId } from '@milaboratories/helpers';
 import { computed, reactive } from 'vue';
 import { faker } from '@faker-js/faker';

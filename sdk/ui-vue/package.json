@@ -3,20 +3,18 @@
   "version": "1.37.0",
   "type": "module",
   "main": "dist/lib.js",
-  "module": "dist/lib.js",
-  "types": "dist/src/lib.d.ts",
-  "styles": "dist/lib.css",
+  "styles": "dist/lib.js",
   "exports": {
     ".": {
-      "types": "./dist/src/lib.d.ts",
+      "development": "./src/lib.ts",
       "default": "./dist/lib.js"
     },
-    "./styles": "./dist/lib.css"
+    "./styles": "./dist/lib.js"
   },
   "scripts": {
     "test": "vitest run --passWithNoTests",
     "dev": "vite",
-    "build": "vite build && vue-tsc --declaration --emitDeclarationOnly -p tsconfig.lib.json",
+    "build": "vite build",
     "watch": "vite build --watch",
     "type-check": "vue-tsc --noEmit --project ./tsconfig.json",
     "preview": "vite preview",
@@ -36,9 +34,11 @@
     "vue": "catalog:"
   },
   "devDependencies": {
-    "@faker-js/faker": "catalog:",
+    "@milaboratories/ts-configs": "workspace:*",
+    "@milaboratories/platforma-build-configs": "workspace:*",
     "@milaboratories/eslint-config": "workspace:^",
     "@milaboratories/helpers": "workspace:^",
+    "@faker-js/faker": "catalog:",
     "@types/lodash": "catalog:",
     "@types/node": "catalog:",
     "@types/semver": "catalog:",
