@@ -1,5 +1,14 @@
 # @milaboratories/pl-drivers
 
+## 1.5.71
+
+### Patch Changes
+
+- 3d34876: Fix for closed channel error. All gRPC clients are now used via GrpcClientProvider to refresh underlying transport.
+- Updated dependencies [3d34876]
+  - @milaboratories/pl-client@2.11.1
+  - @milaboratories/pl-tree@1.6.10
+
 ## 1.5.70
 
 ### Patch Changes
