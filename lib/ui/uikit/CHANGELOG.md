@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.89
+
+### Patch Changes
+
+- 60540e8: Fix: return platforma variable declaration to global scope
+
 ## 2.2.88
 
 ### Patch Changes
