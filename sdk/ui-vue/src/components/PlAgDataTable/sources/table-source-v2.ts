@@ -201,11 +201,11 @@ export async function calculateGridOptions(
   let lastParams: IServerSideGetRowsParams | undefined = undefined;
   const serverSideDatasource: IServerSideDatasource<PlAgDataTableV2Row> = {
     getRows: async (params: IServerSideGetRowsParams) => {
-      if (stateGeneration !== generation.value) return;
+      if (stateGeneration !== generation.value) return params.fail();
       try {
         if (rowCount === -1) {
           const ptShape = await pfDriver.getShape(pt);
-          if (stateGeneration !== generation.value) return;
+          if (stateGeneration !== generation.value) return params.fail();
           rowCount = ptShape.rows;
         }
 
@@ -233,7 +233,7 @@ export async function calculateGridOptions(
               offset: params.request.startRow,
               length,
             });
-            if (stateGeneration !== generation.value) return;
+            if (stateGeneration !== generation.value) return params.fail();
             rowData = columns2rows(fields, data, axes, resultMapping);
           }
         }
@@ -245,7 +245,7 @@ export async function calculateGridOptions(
         );
         params.api.setGridOption('loading', false);
       } catch (error: unknown) {
-        if (stateGeneration !== generation.value) return;
+        if (stateGeneration !== generation.value) return params.fail();
         params.api.setGridOption('loading', true);
         params.fail();
         console.trace(error);
