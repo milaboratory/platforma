@@ -17,6 +17,8 @@
     "@platforma-sdk/model": "workspace:^"
   },
   "devDependencies": {
+    "@milaboratories/ts-configs": "workspace:*",
+    "@milaboratories/platforma-build-configs": "workspace:*",
     "@vitejs/plugin-vue": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",

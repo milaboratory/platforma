@@ -2,26 +2,22 @@
   "name": "@milaboratories/uikit",
   "version": "2.2.90",
   "type": "module",
-  "main": "dist/pl-uikit.js",
-  "module": "dist/pl-uikit.js",
-  "types": "dist/src/index.d.ts",
-  "styles": "dist/pl-uikit.css",
+  "main": "dist/index.js",
   "exports": {
     ".": {
-      "types": "./dist/src/index.d.ts",
-      "default": "./dist/pl-uikit.js"
+      "development": "./src/index.ts",
+      "default": "./dist/index.js"
     },
-    "./styles": "./dist/pl-uikit.css",
-    "./styles/mixins": "./src/assets/mixins.scss",
+    "./styles": "./dist/index.js",
+    "./assets/mixins.scss": "./src/assets/mixins.scss",
     "./svg/icons/*": "./src/assets/icons/icon-assets-min/*",
     "./svg/images/*": "./src/assets/images/*"
   },
   "scripts": {
     "dev": "vite",
-    "build": "vite build && pnpm run build:types",
+    "build": "vite build",
     "test:unit": "vitest run",
     "test": "vitest run",
-    "build:types": "vue-tsc --declaration --emitDeclarationOnly -p ./tsconfig.lib.json && tsc-alias -p tsconfig.lib.json",
     "tsc": "tsc",
     "watch": "vite build --watch",
     "type-check": "vue-tsc --project ./tsconfig.lib.json",
@@ -39,6 +35,8 @@
     "d3": "catalog:"
   },
   "devDependencies": {
+    "@milaboratories/ts-configs": "workspace:*",
+    "@milaboratories/platforma-build-configs": "workspace:*",
     "@milaboratories/eslint-config": "workspace:^",
     "@milaboratories/helpers": "workspace:^",
     "@platforma-sdk/model": "workspace:^",
@@ -47,7 +45,6 @@
     "jsdom": "catalog:",
     "resize-observer-polyfill": "catalog:",
     "@vitejs/plugin-vue": "catalog:",
-    "tsc-alias": "catalog:",
     "vitest": "catalog:",
     "vite": "catalog:",
     "vue-tsc": "catalog:",
