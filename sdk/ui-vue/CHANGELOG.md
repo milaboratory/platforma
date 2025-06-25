@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.36.0
+
+### Minor Changes
+
+- 105ea31: MSA: error handling improvements
+
 ## 1.35.2
 
 ### Patch Changes
