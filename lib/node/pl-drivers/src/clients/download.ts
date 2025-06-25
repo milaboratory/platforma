@@ -1,8 +1,8 @@
 /* eslint-disable n/no-unsupported-features/node-builtins */
+import type { GrpcClientProvider, GrpcClientProviderFactory } from '@milaboratories/pl-client';
 import { addRTypeToMetadata } from '@milaboratories/pl-client';
 import type { ResourceInfo } from '@milaboratories/pl-tree';
 import type { MiLogger } from '@milaboratories/ts-helpers';
-import type { GrpcTransport } from '@protobuf-ts/grpc-transport';
 import type { RpcOptions } from '@protobuf-ts/runtime-rpc';
 import * as fs from 'node:fs';
 import * as fsp from 'node:fs/promises';
@@ -20,20 +20,20 @@ import { toHeadersMap } from './helpers';
 /** Gets URLs for downloading from pl-core, parses them and reads or downloads
  * files locally and from the web. */
 export class ClientDownload {
-  public readonly grpcClient: DownloadClient;
+  public readonly grpcClient: GrpcClientProvider<DownloadClient>;
   private readonly remoteFileDownloader: RemoteFileDownloader;
 
   /** Helps to find a storage root directory by a storage id from URL scheme. */
   private readonly localStorageIdsToRoot: Map<string, string>;
 
   constructor(
-    public readonly grpcTransport: GrpcTransport,
+    grpcClientProviderFactory: GrpcClientProviderFactory,
     public readonly httpClient: Dispatcher,
     public readonly logger: MiLogger,
     /** Pl storages available locally */
     localProjections: LocalStorageProjection[],
   ) {
-    this.grpcClient = new DownloadClient(this.grpcTransport);
+    this.grpcClient = grpcClientProviderFactory.createGrpcClientProvider((transport) => new DownloadClient(transport));
     this.remoteFileDownloader = new RemoteFileDownloader(httpClient);
     this.localStorageIdsToRoot = newLocalStorageIdsToRoot(localProjections);
   }
@@ -84,7 +84,7 @@ export class ClientDownload {
     const withAbort = options ?? {};
     withAbort.abort = signal;
 
-    return await this.grpcClient.getDownloadURL(
+    return await this.grpcClient.get().getDownloadURL(
       { resourceId: id },
       addRTypeToMetadata(type, withAbort),
     ).response;

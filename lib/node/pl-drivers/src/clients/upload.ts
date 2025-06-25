@@ -1,8 +1,7 @@
-import type { PlClient, ResourceId, ResourceType } from '@milaboratories/pl-client';
+import type { GrpcClientProvider, GrpcClientProviderFactory, PlClient, ResourceId, ResourceType } from '@milaboratories/pl-client';
 import { addRTypeToMetadata } from '@milaboratories/pl-client';
 import type { ResourceInfo } from '@milaboratories/pl-tree';
 import type { MiLogger } from '@milaboratories/ts-helpers';
-import type { GrpcTransport } from '@protobuf-ts/grpc-transport';
 import type { RpcOptions } from '@protobuf-ts/runtime-rpc';
 import * as fs from 'node:fs/promises';
 import type { Dispatcher } from 'undici';
@@ -33,15 +32,15 @@ export class NoFileForUploading extends Error {
  * The user should pass here a concrete BlobUpload/<storageId> resource,
  * it can be got from handle field of BlobUpload. */
 export class ClientUpload {
-  private readonly grpcClient: UploadClient;
+  private readonly grpcClient: GrpcClientProvider<UploadClient>;
 
   constructor(
-    public readonly grpcTransport: GrpcTransport,
+    grpcClientProviderFactory: GrpcClientProviderFactory,
     public readonly httpClient: Dispatcher,
     _: PlClient,
     public readonly logger: MiLogger,
   ) {
-    this.grpcClient = new UploadClient(this.grpcTransport);
+    this.grpcClient = grpcClientProviderFactory.createGrpcClientProvider((transport) => new UploadClient(transport));
   }
 
   close() {}
@@ -126,7 +125,7 @@ export class ClientUpload {
   }
 
   private async grpcInit(id: ResourceId, type: ResourceType, options?: RpcOptions) {
-    return await this.grpcClient.init({ resourceId: id }, addRTypeToMetadata(type, options))
+    return await this.grpcClient.get().init({ resourceId: id }, addRTypeToMetadata(type, options))
       .response;
   }
 
@@ -136,7 +135,7 @@ export class ClientUpload {
     uploadedPartSize: bigint,
     options?: RpcOptions,
   ) {
-    return await this.grpcClient.getPartURL(
+    return await this.grpcClient.get().getPartURL(
       { resourceId: id, partNumber, uploadedPartSize },
       addRTypeToMetadata(type, options),
     ).response;
@@ -147,7 +146,7 @@ export class ClientUpload {
     bytesProcessed: bigint,
     options?: RpcOptions,
   ) {
-    await this.grpcClient.updateProgress(
+    await this.grpcClient.get().updateProgress(
       {
         resourceId: id,
         bytesProcessed,
@@ -157,7 +156,7 @@ export class ClientUpload {
   }
 
   private async grpcFinalize({ id, type }: ResourceInfo, options?: RpcOptions) {
-    return await this.grpcClient.finalize({ resourceId: id }, addRTypeToMetadata(type, options))
+    return await this.grpcClient.get().finalize({ resourceId: id }, addRTypeToMetadata(type, options))
       .response;
   }
 }

@@ -21,14 +21,31 @@ import { parsePlJwt } from '../util/pl';
 import type { Dispatcher } from 'undici';
 import { inferAuthRefreshTime } from './auth';
 import { defaultHttpDispatcher } from '@milaboratories/pl-http';
+import type { GrpcClientProvider, GrpcClientProviderFactory } from './grpc';
 
 export interface PlCallOps {
   timeout?: number;
   abortSignal?: AbortSignal;
 }
 
+class GrpcClientProviderImpl<Client> implements GrpcClientProvider<Client> {
+  private client: Client | undefined = undefined;
+
+  constructor(private readonly grpcTransport: () => GrpcTransport, private readonly clientConstructor: (transport: GrpcTransport) => Client) {}
+
+  public reset(): void {
+    this.client = undefined;
+  }
+
+  public get(): Client {
+    if (this.client === undefined)
+      this.client = this.clientConstructor(this.grpcTransport());
+    return this.client;
+  }
+}
+
 /** Abstract out low level networking and authorization details */
-export class LLPlClient {
+export class LLPlClient implements GrpcClientProviderFactory {
   public readonly conf: PlClientConfig;
 
   /** Initial authorization information */
@@ -47,7 +64,9 @@ export class LLPlClient {
 
   private readonly grpcInterceptors: Interceptor[];
   private _grpcTransport!: GrpcTransport;
-  private _grpcPl!: PlatformClient;
+  private readonly providers: WeakRef<GrpcClientProviderImpl<any>>[] = [];
+
+  public readonly grpcPl: GrpcClientProvider<PlatformClient>;
 
   public readonly httpDispatcher: Dispatcher;
 
@@ -89,6 +108,8 @@ export class LLPlClient {
       this.statusListener = statusListener;
       statusListener(this._status);
     }
+
+    this.grpcPl = this.createGrpcClientProvider((transport) => new PlatformClient(transport));
   }
 
   /**
@@ -125,17 +146,52 @@ export class LLPlClient {
     const oldTransport = this._grpcTransport;
 
     this._grpcTransport = new GrpcTransport(grpcOptions);
-    this._grpcPl = new PlatformClient(this._grpcTransport);
+
+    // Reset all providers to let them reinitialize their clients
+    for (let i = 0; i < this.providers.length; i++) {
+      const provider = this.providers[i].deref();
+      if (provider === undefined) {
+        // at the same time we need to remove providers that are no longer valid
+        this.providers.splice(i, 1);
+        i--;
+      } else {
+        provider.reset();
+      }
+    }
 
     if (oldTransport !== undefined) oldTransport.close();
   }
 
-  public get grpcTransport(): GrpcTransport {
-    return this._grpcTransport;
+  private providerCleanupCounter = 0;
+
+  /**
+   * Creates a provider for a grpc client. Returned provider will create fresh client whenever the underlying transport is reset.
+   *
+   * @param clientConstructor - a factory function that creates a grpc client
+   */
+  public createGrpcClientProvider<Client>(clientConstructor: (transport: GrpcTransport) => Client): GrpcClientProvider<Client> {
+    // We need to cleanup providers periodically to avoid memory leaks.
+    // This is a simple heuristic to avoid memory leaks.
+    // We could use a more sophisticated algorithm, but this is good enough for now.
+    this.providerCleanupCounter++;
+    if (this.providerCleanupCounter >= 16) {
+      for (let i = 0; i < this.providers.length; i++) {
+        const provider = this.providers[i].deref();
+        if (provider === undefined) {
+          this.providers.splice(i, 1);
+          i--;
+        }
+      }
+      this.providerCleanupCounter = 0;
+    }
+
+    const provider = new GrpcClientProviderImpl<Client>(() => this._grpcTransport, clientConstructor);
+    this.providers.push(new WeakRef(provider));
+    return provider;
   }
 
-  public get grpcPl(): PlatformClient {
-    return this._grpcPl;
+  public get grpcTransport(): GrpcTransport {
+    return this._grpcTransport;
   }
 
   /** Returns true if client is authenticated. Even with anonymous auth information
@@ -182,7 +238,7 @@ export class LLPlClient {
     this.authRefreshInProgress = true;
     void (async () => {
       try {
-        const response = await this.grpcPl.getJWTToken({
+        const response = await this.grpcPl.get().getJWTToken({
           expiration: {
             seconds: BigInt(this.conf.authTTLSeconds),
             nanos: 0,
@@ -244,7 +300,7 @@ export class LLPlClient {
     return new LLPlTransaction((abortSignal) => {
       let totalAbortSignal = abortSignal;
       if (ops.abortSignal) totalAbortSignal = AbortSignal.any([totalAbortSignal, ops.abortSignal]);
-      return this.grpcPl.tx({
+      return this.grpcPl.get().tx({
         abort: totalAbortSignal,
         timeout:
           ops.timeout

@@ -1,4 +1,4 @@
-import type { PlClient } from '@milaboratories/pl-client';
+import type { GrpcClientProviderFactory, PlClient } from '@milaboratories/pl-client';
 import type { MiLogger } from '@milaboratories/ts-helpers';
 import type { GrpcTransport } from '@protobuf-ts/grpc-transport';
 import type { Dispatcher } from 'undici';
@@ -16,39 +16,39 @@ export function createDownloadClient(
 ) {
   return client.getDriver({
     name: 'DownloadBlob',
-    init: (_: PlClient, grpcTransport: GrpcTransport, httpDispatcher: Dispatcher) =>
-      new ClientDownload(grpcTransport, httpDispatcher, logger, localProjections),
+    init: (_: PlClient, grpcClientProviderFactory: GrpcClientProviderFactory, httpDispatcher: Dispatcher) =>
+      new ClientDownload(grpcClientProviderFactory, httpDispatcher, logger, localProjections),
   });
 }
 
 export function createLogsClient(client: PlClient, logger: MiLogger) {
   return client.getDriver({
     name: 'StreamLogs',
-    init: (_: PlClient, grpcTransport: GrpcTransport, httpDispatcher: Dispatcher) =>
-      new ClientLogs(grpcTransport, httpDispatcher, logger),
+    init: (_: PlClient, grpcClientProviderFactory: GrpcClientProviderFactory, httpDispatcher: Dispatcher) =>
+      new ClientLogs(grpcClientProviderFactory, httpDispatcher, logger),
   });
 }
 
 export function createUploadProgressClient(client: PlClient, logger: MiLogger) {
   return client.getDriver({
     name: 'UploadProgress',
-    init: (_: PlClient, grpcTransport: GrpcTransport, httpDispatcher: Dispatcher) =>
-      new ClientProgress(grpcTransport, httpDispatcher, client, logger),
+    init: (_: PlClient, grpcClientProviderFactory: GrpcClientProviderFactory, httpDispatcher: Dispatcher) =>
+      new ClientProgress(grpcClientProviderFactory, httpDispatcher, client, logger),
   });
 }
 
 export function createUploadBlobClient(client: PlClient, logger: MiLogger) {
   return client.getDriver({
     name: 'UploadBlob',
-    init: (_: PlClient, grpcTransport: GrpcTransport, httpDispatcher: Dispatcher) =>
-      new ClientUpload(grpcTransport, httpDispatcher, client, logger),
+    init: (_: PlClient, grpcClientProviderFactory: GrpcClientProviderFactory, httpDispatcher: Dispatcher) =>
+      new ClientUpload(grpcClientProviderFactory, httpDispatcher, client, logger),
   });
 }
 
 export function createLsFilesClient(client: PlClient, logger: MiLogger) {
   return client.getDriver({
     name: 'LsFiles',
-    init: (_client: PlClient, grpcTransport: GrpcTransport, _httpDispatcher: Dispatcher) =>
-      new ClientLs(grpcTransport, logger),
+    init: (_client: PlClient, grpcClientProviderFactory: GrpcClientProviderFactory, _httpDispatcher: Dispatcher) =>
+      new ClientLs(grpcClientProviderFactory, logger),
   });
 }

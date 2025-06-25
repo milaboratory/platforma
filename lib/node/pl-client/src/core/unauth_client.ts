@@ -16,11 +16,11 @@ export class UnauthenticatedPlClient {
   }
 
   public async ping(): Promise<MaintenanceAPI_Ping_Response> {
-    return (await this.ll.grpcPl.ping({})).response;
+    return (await this.ll.grpcPl.get().ping({})).response;
   }
 
   public async authMethods(): Promise<AuthAPI_ListMethods_Response> {
-    return (await this.ll.grpcPl.authMethods({})).response;
+    return (await this.ll.grpcPl.get().authMethods({})).response;
   }
 
   public async requireAuth(): Promise<boolean> {
@@ -29,7 +29,7 @@ export class UnauthenticatedPlClient {
 
   public async login(user: string, password: string): Promise<AuthInformation> {
     try {
-      const response = await this.ll.grpcPl.getJWTToken(
+      const response = await this.ll.grpcPl.get().getJWTToken(
         { expiration: { seconds: BigInt(this.ll.conf.authTTLSeconds), nanos: 0 } },
         {
           meta: {

@@ -1,19 +1,19 @@
 import type { MiLogger } from '@milaboratories/ts-helpers';
 import type { LsAPI_List_Response } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/lsapi/protocol';
 import { LSClient } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/lsapi/protocol.client';
-import type { GrpcTransport } from '@protobuf-ts/grpc-transport';
 import type { RpcOptions } from '@protobuf-ts/runtime-rpc';
+import type { GrpcClientProvider, GrpcClientProviderFactory } from '@milaboratories/pl-client';
 import { addRTypeToMetadata } from '@milaboratories/pl-client';
 import type { ResourceInfo } from '@milaboratories/pl-tree';
 
 export class ClientLs {
-  private readonly grpcClient: LSClient;
+  private readonly grpcClient: GrpcClientProvider<LSClient>;
 
   constructor(
-    grpcTransport: GrpcTransport,
+    grpcClientProviderFactory: GrpcClientProviderFactory,
     private readonly logger: MiLogger,
   ) {
-    this.grpcClient = new LSClient(grpcTransport);
+    this.grpcClient = grpcClientProviderFactory.createGrpcClientProvider((transport) => new LSClient(transport));
   }
 
   close() {}
@@ -23,7 +23,7 @@ export class ClientLs {
     path: string,
     options?: RpcOptions,
   ): Promise<LsAPI_List_Response> {
-    return await this.grpcClient.list(
+    return await this.grpcClient.get().list(
       {
         resourceId: rInfo.id,
         location: path,
