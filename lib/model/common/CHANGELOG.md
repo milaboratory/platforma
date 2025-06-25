@@ -1,5 +1,12 @@
 # @milaboratories/pl-model-common
 
+## 1.15.6
+
+### Patch Changes
+
+- 6ffe944: PlAgDataTableV2 refactoring
+- 6ffe944: PlAgDataTable types fixed
+
 ## 1.15.5
 
 ### Patch Changes

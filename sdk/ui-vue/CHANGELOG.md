@@ -1,5 +1,21 @@
 # @platforma-sdk/ui-vue
 
+## 1.37.0
+
+### Minor Changes
+
+- 6ffe944: PlAgDataTableV2 - significant interface change
+
+### Patch Changes
+
+- 6ffe944: PlAgDataTableV2 refactoring
+- 6ffe944: PlAgDataTable types fixed
+- Updated dependencies [6ffe944]
+- Updated dependencies [6ffe944]
+- Updated dependencies [6ffe944]
+  - @milaboratories/uikit@2.2.90
+  - @platforma-sdk/model@1.37.0
+
 ## 1.36.0
 
 ### Minor Changes

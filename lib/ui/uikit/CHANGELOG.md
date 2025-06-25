@@ -1,5 +1,12 @@
 # @milaboratories/uikit
 
+## 2.2.90
+
+### Patch Changes
+
+- 6ffe944: PlAgDataTableV2 refactoring
+- 6ffe944: PlAgDataTable types fixed
+
 ## 2.2.89
 
 ### Patch Changes
