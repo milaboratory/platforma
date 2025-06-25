@@ -29,7 +29,8 @@
     "@milaboratories/pl-error-like": "workspace:^",
     "utility-types": "catalog:",
     "canonicalize": "catalog:",
-    "zod": "catalog:"
+    "zod": "catalog:",
+    "lodash": "catalog:"
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
@@ -37,6 +38,7 @@
     "typescript": "catalog:",
     "vite": "catalog:",
     "@types/jest": "catalog:",
+    "@types/lodash": "catalog:",
     "jest": "catalog:",
     "@jest/globals": "catalog:",
     "ts-jest": "catalog:"
