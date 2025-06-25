@@ -1,5 +1,11 @@
 # @milaboratories/pl-drivers
 
+## 1.5.73
+
+### Patch Changes
+
+- df1a454: Blob driver - fix error on deleting not downloaded file
+
 ## 1.5.72
 
 ### Patch Changes
