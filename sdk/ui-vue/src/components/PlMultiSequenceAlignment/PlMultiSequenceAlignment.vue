@@ -42,11 +42,6 @@ const props = defineProps<{
    */
   readonly sequenceColumnPredicate: PColumnPredicate;
   /**
-   * Return true if column should be shown in label columns dropdown.
-   * By default, common axes of selected sequence columns are selected.
-   */
-  readonly labelColumnOptionPredicate?: PColumnPredicate;
-  /**
    * Sometimes sequence column and label column have disjoint axes.
    * In this case you have to define `linkerColumnPredicate` to select columns
    * connecting axes of sequence and label columns.
@@ -77,7 +72,6 @@ const selectedSequenceColumnIds = computed({
 const labelColumns = reactive(useLabelColumnsOptions(() => ({
   pFrame: props.pFrame,
   sequenceColumnIds: selectedSequenceColumnIds.value,
-  labelColumnOptionPredicate: props.labelColumnOptionPredicate,
 })));
 
 const selectedLabelColumnIds = computed({
@@ -104,10 +98,6 @@ const multipleAlignmentData = reactive(useMultipleAlignmentData(() => ({
 })));
 
 const formatNumber = new Intl.NumberFormat('en').format;
-
-const selectedTooManySequences = computed(
-  () => props.selection && props.selection.selectedKeys.length > sequenceLimit,
-);
 
 const colorSchemeOptions = computed<ListOptionNormalized<ColorSchemeOption>[]>(
   () => [
@@ -187,8 +177,11 @@ const error = computed(() =>
     :label-column-options="labelColumns.data.options"
     :color-scheme-options="colorSchemeOptions"
   />
+  <PlAlert v-if="error" type="error">
+    {{ error }}
+  </PlAlert>
   <PlAlert
-    v-if="
+    v-else-if="
       !multipleAlignmentData.loading
         && multipleAlignmentData.data.sequences.length < 2
     "
@@ -198,12 +191,9 @@ const error = computed(() =>
     Please select at least one sequence column and two or more rows to run
     alignment
   </PlAlert>
-  <PlAlert v-else-if="error" type="error">
-    {{ error }}
-  </PlAlert>
   <template v-else>
     <PlAlert
-      v-if="selectedTooManySequences"
+      v-if="multipleAlignmentData.data.exceedsLimit"
       type="warn"
       icon
       label="Visualization is limited"

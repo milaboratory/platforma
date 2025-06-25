@@ -5,6 +5,7 @@ const cache = new Map<string, string[]>();
 export async function multiSequenceAlignment(
   sequences: string[],
 ): Promise<string[]> {
+  if (sequences.length < 2) return sequences;
   const inputHash = await hash(sequences);
   let result = cache.get(inputHash);
   if (result) {
