@@ -1,6 +1,6 @@
 /* eslint-disable n/no-unsupported-features/node-builtins */
 import type { GrpcClientProvider, GrpcClientProviderFactory } from '@milaboratories/pl-client';
-import { addRTypeToMetadata } from '@milaboratories/pl-client';
+import { addRTypeToMetadata, stringifyWithResourceId } from '@milaboratories/pl-client';
 import type { ResourceInfo } from '@milaboratories/pl-tree';
 import type { MiLogger } from '@milaboratories/ts-helpers';
 import type { RpcOptions } from '@protobuf-ts/runtime-rpc';
@@ -55,7 +55,7 @@ export class ClientDownload {
     const { downloadUrl, headers } = await this.grpcGetDownloadUrl(info, options, signal);
 
     const remoteHeaders = toHeadersMap(headers, fromBytes, toBytes);
-    this.logger.info(`download blob from url ${downloadUrl}, headers: ${JSON.stringify(remoteHeaders)}`);
+    this.logger.info(`download blob ${stringifyWithResourceId(info)} from url ${downloadUrl}, headers: ${JSON.stringify(remoteHeaders)}`);
 
     return isLocal(downloadUrl)
       ? await this.readLocalFile(downloadUrl, fromBytes, toBytes)
