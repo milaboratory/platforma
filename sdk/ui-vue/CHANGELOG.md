@@ -1,5 +1,13 @@
 # @platforma-sdk/ui-vue
 
+## 1.37.1
+
+### Patch Changes
+
+- 2c3bb60: Developer build ui-examples don't required build/watch for deps
+- Updated dependencies [2c3bb60]
+  - @milaboratories/uikit@2.2.91
+
 ## 1.37.0
 
 ### Minor Changes
