@@ -2321,6 +2321,9 @@ importers:
       canonicalize:
         specifier: 'catalog:'
         version: 2.1.0
+      lodash:
+        specifier: 'catalog:'
+        version: 4.17.21
       utility-types:
         specifier: 'catalog:'
         version: 3.11.0
@@ -2340,6 +2343,9 @@ importers:
       '@types/jest':
         specifier: 'catalog:'
         version: 29.5.14
+      '@types/lodash':
+        specifier: 'catalog:'
+        version: 4.17.16
       jest:
         specifier: 'catalog:'
         version: 29.7.0(@types/node@22.5.5)(ts-node@10.9.2(@types/node@22.5.5)(typescript@5.5.4))
