@@ -146,24 +146,13 @@ class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
 
   public readonly preloadBlob = async (blobIds: string[]): Promise<void> => {
     const computables = blobIds.map((blobId) => this.getOrCreateComputableForBlob(blobId));
-    for (const computable of computables) await computable.awaitStableFullValue();
-  };
-
-  public readonly resolveBlob = async (blobId: string): Promise<string> => {
-    const computable = this.getOrCreateComputableForBlob(blobId);
-    return this.blobDriver.getLocalPath((await computable.awaitStableValue()).handle);
+    for (const computable of computables) await computable.awaitStableFullValue(this.disposeSignal);
   };
 
   public readonly resolveBlobContent = async (blobId: string): Promise<Uint8Array> => {
-    try {
-      const computable = this.getOrCreateComputableForBlob(blobId);
-      const path = this.blobDriver.getLocalPath((await computable.awaitStableValue()).handle);
-      return await fsp.readFile(path);
-    } catch (err: unknown) {
-      const error = JSON.stringify(err);
-      console.log(`resolveBlobContent catched error: ${error}`);
-      throw err;
-    }
+    const computable = this.getOrCreateComputableForBlob(blobId);
+    const path = this.blobDriver.getLocalPath((await computable.awaitStableValue(this.disposeSignal)).handle);
+    return await fsp.readFile(path);
   };
 
   public get disposeSignal(): AbortSignal {
