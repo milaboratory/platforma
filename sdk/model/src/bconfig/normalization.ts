@@ -43,6 +43,7 @@ export function extractConfig(cfg: BlockConfigContainer): BlockConfig {
       outputs,
       renderingMode,
       sdkVersion,
+      platformaApiVersion,
       sections,
       title,
       enrichmentTargets,
@@ -55,6 +56,7 @@ export function extractConfig(cfg: BlockConfigContainer): BlockConfig {
       outputs,
       renderingMode,
       sdkVersion,
+      platformaApiVersion,
       sections,
       title,
       code,
@@ -77,6 +79,7 @@ export function extractConfig(cfg: BlockConfigContainer): BlockConfig {
       );
     return {
       sdkVersion,
+      platformaApiVersion: undefined,
       renderingMode,
       initialArgs,
       outputs: Object.fromEntries(
@@ -103,6 +106,7 @@ export function extractConfig(cfg: BlockConfigContainer): BlockConfig {
       );
     return {
       sdkVersion: sdkVersion ?? 'unknown',
+      platformaApiVersion: undefined,
       renderingMode,
       initialArgs,
       outputs: Object.fromEntries(
