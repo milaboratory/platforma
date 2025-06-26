@@ -372,11 +372,11 @@ app:
   # ref: [http://kubernetes.io/docs/user-guide/compute-resources/](http://kubernetes.io/docs/user-guide/compute-resources/
   resources:
     limits:
-      memory: 32768Mi
-      cpu: 8000m
+      memory: 4096Mi
+      cpu: 2000m
     requests:
-      memory: 16384Mi
-      cpu: 4000m
+      memory: 2048Mi
+      cpu: 1000m
   # Indicates whether the Container is ready to service requests. If the readiness probe fails, the endpoints controller removes the Pod's IP address from the endpoints of all Services that match the Pod. The default state of readiness before the initial delay is Failure. If a Container does not provide a readiness probe, the default state is Success.
   readinessProbe:
     grpc:
@@ -430,7 +430,6 @@ app:
   service:
     # -- Service annotations
     annotations:
-      external-dns.alpha.kubernetes.io/hostname: pl2.gcp.milaboratories.com
     # -- Service labels
     extraLabels: {}
     # -- Service ClusterIP
@@ -450,7 +449,7 @@ app:
     # -- Node port
     # nodePort: 30000
     # -- Service type
-    type: LoadBalancer
+    type: ClusterIP
     # Ref: https://kubernetes.io/docs/tasks/access-application-cluster/create-external-load-balancer/#preserving-the-client-source-ip
     # externalTrafficPolicy: "local"
     # healthCheckNodePort: 0
