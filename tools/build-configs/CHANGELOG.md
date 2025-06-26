@@ -1,4 +1,4 @@
-# @milaboratories/platforma-build-configs
+# @milaboratories/build-configs
 
 ## 1.0.3
 
