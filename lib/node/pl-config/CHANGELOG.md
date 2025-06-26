@@ -1,5 +1,11 @@
 # @milaboratories/pl-config
 
+## 1.5.0
+
+### Minor Changes
+
+- e2f106b: use local FS for SSH storage
+
 ## 1.4.15
 
 ### Patch Changes
