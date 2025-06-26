@@ -129,7 +129,7 @@ _runBinaryCommand := func(inputs) {
 		// which is a prerequisite for the computation itself.
 
 		quotaAfterWd := waiter.builder(quotaRef).
-			wait(wdForCmd).
+			wait(wdBefore).
 			build().
 			output()
 
