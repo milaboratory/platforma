@@ -49,8 +49,10 @@ jobs:
       env: |
         { "PL_CI_TEST_USER": ${{ toJSON(secrets.PL_CI_TEST_USER) }},
           "PL_CI_TEST_PASSWORD": ${{ toJSON(secrets.PL_CI_TEST_PASSWORD) }},
-          "NPMJS_TOKEN": ${{ toJSON(secrets.NPMJS_TOKEN) }} 
-          "GCLOUD_CI_GKE_REGION": "${{ toJSON(secrets.GCLOUD_CI_GKE_REGION) }}" }
+          "NPMJS_TOKEN": ${{ toJSON(secrets.NPMJS_TOKEN) }},
+          "GCLOUD_CI_GKE_BUCKET_NAME": ${{ toJSON(secrets.GCLOUD_CI_GKE_BUCKET_NAME) }},
+          "GCLOUD_CI_GKE_REGION": ${{ toJSON(secrets.GCLOUD_CI_GKE_REGION) }},
+          "GCLOUD_CI_GKE_PROJECT_ID": ${{ toJSON(secrets.GCLOUD_CI_GKE_PROJECT_ID) }} }
 
       TELEGRAM_NOTIFICATION_TARGET: ${{ secrets.TG_CHANNEL_MIBUILDS }}
       TELEGRAM_API_TOKEN: ${{ secrets.TG_CI_BOT_TOKEN }}
