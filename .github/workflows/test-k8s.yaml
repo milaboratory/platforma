@@ -22,13 +22,13 @@ jobs:
       - init
     uses: milaboratory/github-ci/.github/workflows/node-simple-pnpm-k8s.yaml@v4-beta
     with:
-      helm-chart-values: './helm/gcp/values.yaml'
       gha-runner-label: 'dev-gke'
       node-version: '20.x'
       pl-version: 'main'
       pnpm-build-command: '--filter "*/workflow-tengo*"'
       pnpm-test-command: '--filter "*/workflow-tengo-tests" -- --testTimeout=300000 exec.test.ts'
       helm-release-name: 'pl-dev-gcp'
+      helm-chart-values-file: 'helm/gcp/values.yaml'
       namespace: 'dev-gke'
       npmrc-config: |
         {
