@@ -25,12 +25,13 @@ import type {
 } from '@milaboratories/pl-model-middle-layer';
 import { constructBlockContextArgsOnly } from './block_ctx';
 import { ifNotUndef } from '../cfg_render/util';
-import { extractCodeAndSdkVersion, type BlockSection } from '@platforma-sdk/model';
+import { extractCodeWithInfo, type BlockSection } from '@platforma-sdk/model';
 import { computableFromCfgOrRF } from './render';
 import type { NavigationStates } from './navigation_states';
 import { getBlockPackInfo } from './util';
 import { resourceIdToString, type ResourceId } from '@milaboratories/pl-client';
 import * as R from 'remeda';
+import { getRuntimeCapabilities } from './runtime_capabilities';
 
 type BlockInfo = {
   argsRid: ResourceId;
@@ -154,15 +155,21 @@ export function projectOverview(
 
         const bp = getBlockPackInfo(prj, id);
 
-        const { sections, title, inputsValid, sdkVersion }
+        const { sections, title, inputsValid, sdkVersion, featureFlags, isIncompatibleWithRuntime }
           = ifNotUndef(bp, ({ bpId, cfg }) => {
+            if (!getRuntimeCapabilities().checkCompatibility(cfg.featureFlags)) {
+              return {
+                isIncompatibleWithRuntime: true,
+              };
+            }
             const blockCtxArgsOnly = constructBlockContextArgsOnly(prjEntry, id);
+            const codeWithInfo = extractCodeWithInfo(cfg);
             return {
               sections: computableFromCfgOrRF(
                 env,
                 blockCtxArgsOnly,
                 cfg.sections,
-                extractCodeAndSdkVersion(cfg),
+                codeWithInfo,
                 bpId,
               ).wrap({
                 recover: (e) => {
@@ -178,7 +185,7 @@ export function projectOverview(
                     env,
                     blockCtxArgsOnly,
                     title,
-                    extractCodeAndSdkVersion(cfg),
+                    codeWithInfo,
                     bpId,
                   ).wrap({
                     recover: (e) => {
@@ -192,7 +199,7 @@ export function projectOverview(
                 env,
                 blockCtxArgsOnly,
                 cfg.inputsValid,
-                extractCodeAndSdkVersion(cfg),
+                codeWithInfo,
                 bpId,
               ).wrap({
                 recover: (e) => {
@@ -202,7 +209,9 @@ export function projectOverview(
                   return false;
                 },
               }) as ComputableStableDefined<boolean>,
-              sdkVersion: cfg.sdkVersion,
+              sdkVersion: codeWithInfo?.sdkVersion,
+              featureFlags: codeWithInfo?.featureFlags ?? {},
+              isIncompatibleWithRuntime: false,
             };
           }) || {};
 
@@ -239,6 +248,8 @@ export function projectOverview(
           currentBlockPack: bp?.info?.source,
           updates,
           sdkVersion,
+          featureFlags,
+          isIncompatibleWithRuntime,
           navigationState: navigationStates.getState(id),
         };
       });

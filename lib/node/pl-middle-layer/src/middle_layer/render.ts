@@ -1,4 +1,4 @@
-import type { CodeAndSdkVersion, TypedConfigOrConfigLambda } from '@platforma-sdk/model';
+import type { BlockCodeWithInfo, TypedConfigOrConfigLambda } from '@platforma-sdk/model';
 import { isConfigLambda } from '@platforma-sdk/model';
 import type { Computable, ComputableRenderingOps } from '@milaboratories/computable';
 import { computableFromCfg } from '../cfg_render/executor';
@@ -16,12 +16,12 @@ export function computableFromCfgOrRF(
   env: MiddleLayerEnvironment,
   ctx: BlockContextAny,
   cfgOrFh: TypedConfigOrConfigLambda,
-  codeAndSdkVersion: CodeAndSdkVersion | undefined,
+  codeWithInfo: BlockCodeWithInfo | undefined,
   configKey: string,
   ops: Partial<ComputableRenderingOps> = {},
 ): Computable<unknown> {
   if (isConfigLambda(cfgOrFh)) {
-    if (codeAndSdkVersion === undefined) throw new Error('No code bundle.');
-    return computableFromRF(env, ctx, cfgOrFh, codeAndSdkVersion, configKey, ops);
+    if (codeWithInfo === undefined) throw new Error('No code bundle.');
+    return computableFromRF(env, ctx, cfgOrFh, codeWithInfo, configKey, ops);
   } else return computableFromCfg(env.driverKit, ctx, cfgOrFh, ops);
 }

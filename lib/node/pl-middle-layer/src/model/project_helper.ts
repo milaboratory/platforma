@@ -1,4 +1,4 @@
-import { extractCodeAndSdkVersion, type BlockConfig, type PlRef } from '@platforma-sdk/model';
+import { extractCodeWithInfo, type BlockConfig, type PlRef } from '@platforma-sdk/model';
 import { LRUCache } from 'lru-cache';
 import type { QuickJSWASMModule } from 'quickjs-emscripten';
 import { executeSingleLambda } from '../js_render';
@@ -27,7 +27,7 @@ export class ProjectHelper {
     const blockConfig = req.blockConfig();
     if (blockConfig.enrichmentTargets === undefined) return undefined;
     const args = req.args();
-    const result = executeSingleLambda(this.quickJs, blockConfig.enrichmentTargets, extractCodeAndSdkVersion(blockConfig)!, args) as PlRef[];
+    const result = executeSingleLambda(this.quickJs, blockConfig.enrichmentTargets, extractCodeWithInfo(blockConfig)!, args) as PlRef[];
     return result;
   }
 

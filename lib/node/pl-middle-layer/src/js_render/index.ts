@@ -17,7 +17,7 @@ export function computableFromRF(
   configKey: string,
   ops: Partial<ComputableRenderingOps> = {},
 ): Computable<unknown> {
-  const { code } = codeWithInfo;
+  const { code, featureFlags, sdkVersion } = codeWithInfo;
   // adding configKey to reload all outputs on block-pack update
   const key = `${ctx.blockId}#lambda#${configKey}#${fh.handle}`;
   ops = { ...ops, key };
@@ -39,7 +39,8 @@ export function computableFromRF(
     const vm = scope.manage(runtime.newContext());
     const rCtx = new JsExecutionContext(scope, vm,
       (s) => { deadlineSettings = s; },
-      codeWithInfo.sdkVersion,
+      sdkVersion,
+      featureFlags,
       { computableCtx: cCtx, blockCtx: ctx, mlEnv: env });
 
     rCtx.evaluateBundle(code.content);
@@ -83,10 +84,10 @@ export function computableFromRF(
 export function executeSingleLambda(
   quickJs: QuickJSWASMModule,
   fh: ConfigRenderLambda,
-  codeAndSdkVersion: BlockCodeWithInfo,
+  codeWithInfo: BlockCodeWithInfo,
   ...args: unknown[]
 ): unknown {
-  const { code, sdkVersion } = codeAndSdkVersion;
+  const { code, sdkVersion, featureFlags } = codeWithInfo;
   const scope = new Scope();
   try {
     const runtime = scope.manage(quickJs.newRuntime());
@@ -103,6 +104,7 @@ export function executeSingleLambda(
     const rCtx = new JsExecutionContext(scope, vm,
       (s) => { deadlineSettings = s; },
       sdkVersion,
+      featureFlags,
     );
 
     // Initializing the model

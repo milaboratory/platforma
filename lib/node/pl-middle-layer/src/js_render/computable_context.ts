@@ -2,7 +2,7 @@ import type { ComputableCtx } from '@milaboratories/computable';
 import { Computable } from '@milaboratories/computable';
 import type { PlTreeNodeAccessor } from '@milaboratories/pl-tree';
 import {
-  JsRenderInternal,
+  checkBlockFlag,
 } from '@platforma-sdk/model';
 import type {
   ArchiveFormat,
@@ -24,7 +24,8 @@ import type {
   ValueOrError,
   RangeBytes,
   BlockCodeKnownFeatureFlags,
-} from '@platforma-sdk/model';
+
+  JsRenderInternal } from '@platforma-sdk/model';
 import {
   isDataInfo,
   mapDataInfo,
@@ -63,7 +64,7 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
     private readonly blockCtx: BlockContextAny,
     private readonly env: MiddleLayerEnvironment,
     private readonly sdkVersion: string,
-    private readonly featureFlags: BlockCodeKnownFeatureFlags,
+    private readonly featureFlags: BlockCodeKnownFeatureFlags | undefined,
     computableCtx: ComputableCtx,
   ) {
     this.computableCtx = computableCtx;
@@ -498,7 +499,8 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
         vm.newFunction(name, fn).consume((fnh) => vm.setProp(configCtx, name + '__internal__', fnh));
       };
 
-      if (semver.gte(this.sdkVersion, JsRenderInternal.FIRST_SDK_VERSION_WITH_FUNCTION_STATE)) {
+      if (checkBlockFlag(this.featureFlags, 'supportsLazyState')) {
+        // injecting lazy state functions
         exportCtxFunction('args', () => {
           if (this.computableCtx === undefined)
             throw new Error(`Add dummy call to ctx.args outside the future lambda. Can't be directly used in this context.`);

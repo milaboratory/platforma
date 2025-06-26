@@ -26,8 +26,6 @@ export const MainAccessorName = 'main';
 export type AccessorHandle = Branded<string, 'AccessorHandle'>;
 export type FutureHandle = Branded<string, 'FutureHandle'>;
 
-export const FIRST_SDK_VERSION_WITH_FUNCTION_STATE = '1.34.0';
-
 export interface GlobalCfgRenderCtxMethods<AHandle = AccessorHandle, FHandle = FutureHandle> {
 
   //
@@ -177,7 +175,8 @@ export interface GlobalCfgRenderCtx extends GlobalCfgRenderCtxMethods {
   // State: Args, UI State, Active Args
   //
   // Old runtime injects these values as strings, new runtime injects them as functions
-  // that return strings, if function not called then resulting output will not depend on these values,
+  // that return strings, if block declares supportsLazyState flag.
+  // If function not called in lazy state API, then resulting output will not depend on these values,
   // and thus will not be recalculated on corresponding state change.
   //
 

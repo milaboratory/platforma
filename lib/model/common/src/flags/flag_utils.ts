@@ -1,7 +1,7 @@
 import type { BlockCodeFeatureFlags, BlockCodeKnownFeatureFlags } from './block_flags';
 import type { FilterKeysByPrefix } from './type_utils';
 
-export function checkFlag(flags: BlockCodeFeatureFlags | undefined, flag: `requires${string}` | `supports${string}`, flagValue: boolean | number = true): boolean {
+export function checkBlockFlag(flags: BlockCodeFeatureFlags | undefined, flag: keyof BlockCodeKnownFeatureFlags, flagValue: boolean | number = true): boolean {
   if (flags === undefined) return false;
   return flags[flag] === flagValue;
 }

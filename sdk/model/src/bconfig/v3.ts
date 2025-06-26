@@ -54,7 +54,7 @@ export type BlockConfigV3<
 
 export type BlockConfig = BlockConfigV3;
 
-export function extractCodeAndFeatureFlags(cfg: BlockConfigV3): BlockCodeWithInfo | undefined {
+export function extractCodeWithInfo(cfg: BlockConfigV3): BlockCodeWithInfo | undefined {
   if (cfg.code === undefined) return undefined;
   return {
     code: cfg.code,
