@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.37.4
+
+### Patch Changes
+
+- ab005b5: PlDataTableSettingsV2 creation helpers
+
 ## 1.37.2
 
 ### Patch Changes
