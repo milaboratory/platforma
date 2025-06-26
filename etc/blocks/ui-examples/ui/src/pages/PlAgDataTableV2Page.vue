@@ -5,9 +5,6 @@ import {
   watch,
   toValue,
 } from 'vue';
-import type {
-  PlDataTableSettingsV2,
-} from '@platforma-sdk/ui-vue';
 import {
   PlAgDataTableToolsPanel,
   PlTableFilters,
@@ -16,6 +13,7 @@ import {
   PlNumberField,
   PlCheckbox,
   PlDropdown,
+  usePlDataTableSettingsV2,
 } from '@platforma-sdk/ui-vue';
 import {
   useApp,
@@ -38,15 +36,10 @@ const sources = [...new Array(10)].map((_, i) => {
 });
 const activeSource = ref(sources[0].value);
 
-const tableSettings = computed<PlDataTableSettingsV2>(() => (
-  activeSource.value && app.model.outputs.ptV2Sheets
-    ? {
-        sourceId: activeSource.value,
-        sheets: app.model.outputs.ptV2Sheets,
-        model: app.model.outputs.ptV2,
-      }
-    : { sourceId: null }
-));
+const tableSettings = usePlDataTableSettingsV2({
+  model: () => app.model.outputs.ptV2,
+  sheets: () => app.model.outputs.ptV2Sheets,
+});
 
 const columns = ref<PTableColumnSpec[]>([]);
 

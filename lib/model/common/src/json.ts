@@ -9,7 +9,7 @@ type JsonValue = JsonPrimitive | JsonValue[] | {
 // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
 type NotAssignableToJson = bigint | symbol | Function;
 
-type JsonCompatible<T> = unknown extends T ? never : {
+export type JsonCompatible<T> = unknown extends T ? never : {
   [P in keyof T]:
   T[P] extends JsonValue ? T[P] :
     T[P] extends NotAssignableToJson ? never :
