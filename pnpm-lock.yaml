@@ -2392,9 +2392,6 @@ importers:
 
   sdk/ui-vue:
     dependencies:
-      '@faker-js/faker':
-        specifier: 'catalog:'
-        version: 9.2.0
       '@milaboratories/biowasm-tools':
         specifier: workspace:^
         version: link:../../lib/other/biowasm-tools
@@ -2422,9 +2419,6 @@ importers:
       '@types/sortablejs':
         specifier: 'catalog:'
         version: 1.15.8
-      '@vitejs/plugin-vue':
-        specifier: 'catalog:'
-        version: 5.2.3(vite@6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0))(vue@3.5.13(typescript@5.5.4))
       '@vueuse/core':
         specifier: 'catalog:'
         version: 13.3.0(vue@3.5.13(typescript@5.5.4))
@@ -2471,6 +2465,9 @@ importers:
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../tools/ts-configs
+      '@vitejs/plugin-vue':
+        specifier: 'catalog:'
+        version: 5.2.3(vite@6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0))(vue@3.5.13(typescript@5.5.4))
       happy-dom:
         specifier: 'catalog:'
         version: 15.11.7
