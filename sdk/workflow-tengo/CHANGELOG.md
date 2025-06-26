@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 4.8.1
+
+### Patch Changes
+
+- 1004519: Fixes deadlock in exec between a storage and compute quotas, leading to sporadic freezes of block workflows
+
 ## 4.8.0
 
 ### Minor Changes
