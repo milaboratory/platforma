@@ -1,4 +1,4 @@
-name: Build and Test NPM packages
+name: Test K8S
 on:
   merge_group:
   pull_request:
@@ -25,6 +25,7 @@ jobs:
       helm-chart-values: './helm/gcp/values.yaml'
       gha-runner-label: 'dev-gke'
       node-version: '20.x'
+      pl-version: 'main'
       pnpm-build-command: '--filter "*/workflow-tengo*"'
       pnpm-test-command: '--filter "*/workflow-tengo-tests" -- --testTimeout=300000 exec.test.ts'
       npmrc-config: |
