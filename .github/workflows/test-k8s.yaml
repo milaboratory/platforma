@@ -41,6 +41,8 @@ jobs:
             }
           }
         }
+      env: |
+        { "BODY_LIMIT": "1048576000" }  
     secrets:
       env: |
         { "PL_CI_TEST_USER": ${{ toJSON(secrets.PL_CI_TEST_USER) }},
