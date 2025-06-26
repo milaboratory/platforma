@@ -52,7 +52,9 @@ jobs:
           "NPMJS_TOKEN": ${{ toJSON(secrets.NPMJS_TOKEN) }},
           "GCLOUD_CI_GKE_BUCKET_NAME": ${{ toJSON(secrets.GCLOUD_CI_GKE_BUCKET_NAME) }},
           "GCLOUD_CI_GKE_REGION": ${{ toJSON(secrets.GCLOUD_CI_GKE_REGION) }},
-          "GCLOUD_CI_GKE_PROJECT_ID": ${{ toJSON(secrets.GCLOUD_CI_GKE_PROJECT_ID) }} }
+          "GCLOUD_CI_GKE_PROJECT_ID": ${{ toJSON(secrets.GCLOUD_CI_GKE_PROJECT_ID) }},
+          "GCLOUD_CI_GKE_NETWORK": ${{ toJSON(secrets.GCLOUD_CI_GKE_NETWORK) }},
+          "GCLOUD_CI_GKE_SUBNETWORK": ${{ toJSON(secrets.GCLOUD_CI_GKE_SUBNETWORK) }} }
 
       TELEGRAM_NOTIFICATION_TARGET: ${{ secrets.TG_CHANNEL_MIBUILDS }}
       TELEGRAM_API_TOKEN: ${{ secrets.TG_CI_BOT_TOKEN }}
