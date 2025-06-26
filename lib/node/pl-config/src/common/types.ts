@@ -37,7 +37,9 @@ export type PlDebugSettings = {
 
 export type PlCoreSettings = {
   logging: PlCoreLoggingSettings;
+  tls: PlTlsSettings;
   grpc: PlGrpcSettings;
+  http: PlHttpSettings;
   authEnabled: boolean;
   auth: PlAuthDriver[];
   db: PlDbSettings;
@@ -73,9 +75,12 @@ export type PlAuthDriverHtpasswd = {
   path: string;
 };
 
+export type PlHttpSettings = {
+  listen: string;
+};
+
 export type PlGrpcSettings = {
   listen: string;
-  tls: PlTlsSettings;
 };
 
 export type PlTlsSettings =
@@ -154,6 +159,8 @@ type PlFsStorageType = { type: 'FS' };
 
 type PlFsStorageTypeSettings = {
   rootPath: string;
+  externalURL?: string;
+  allowRemoteAccess?: boolean;
 };
 
 export type PlControllerRunnerSettings = PlControllerRunnerSettingsLocal;

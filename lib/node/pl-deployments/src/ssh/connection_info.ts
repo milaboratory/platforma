@@ -15,9 +15,12 @@ export type PortPair = z.infer<typeof PortPair>;
 
 export const SshPlPorts = z.object({
   grpc: PortPair,
+  http: PortPair.optional(),
   monitoring: PortPair,
   debug: PortPair,
+  /** @deprecated */
   minioPort: PortPair,
+  /** @deprecated */
   minioConsolePort: PortPair,
 });
 /** All info about ports that are forwarded. */
@@ -34,6 +37,9 @@ export const ConnectionInfo = z.object({
 
   // We added the field afterwards, the pl backend was this version.
   plVersion: z.string().default('1.18.3'),
+
+  // It's true by default because it was added later and previous installation use minio.
+  minioIsUsed: z.boolean().default(true),
 });
 /** The content of the file that holds all the info about the connection on the remote server. */
 export type ConnectionInfo = z.infer<typeof ConnectionInfo>;
@@ -48,6 +54,7 @@ export function newConnectionInfo(
   ports: SshPlPorts,
   useGlobalAccess: boolean,
   plVersion: string,
+  minioIsUsed: boolean,
 ): ConnectionInfo {
   return {
     plUser,
@@ -55,6 +62,7 @@ export function newConnectionInfo(
     ports,
     useGlobalAccess,
     plVersion,
+    minioIsUsed: minioIsUsed,
   };
 }
 

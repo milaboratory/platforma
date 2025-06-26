@@ -35,9 +35,12 @@ export function newDefaultPlConfig(
         extendedInfo: true,
         dumpResourceData: true,
       },
+      tls: { enabled: false },
       grpc: {
         listen: ports.grpc,
-        tls: { enabled: false },
+      },
+      http: {
+        listen: ports.http,
       },
       authEnabled: true,
       auth: getDefaultAuthMethods(htpasswdAuth, jwtKey),
