@@ -1,4 +1,4 @@
-import type { SUniversalPColumnId } from '@platforma-sdk/model';
+import type { SUniversalPColumnId } from '@milaboratories/pl-model-common';
 import type { SimplifiedPColumnSpec } from './types';
 import type { AnnotationFilter, AnnotationScript, AnnotationMode, PatternPredicate, IsNA, NotFilter, PatternFilter, NumericalComparisonFilter, ValueRank } from './filter';
 

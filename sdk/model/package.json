@@ -2,12 +2,11 @@
   "name": "@platforma-sdk/model",
   "version": "1.37.0",
   "description": "Platforma.bio SDK / Block Model",
-  "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
+      "development": "./src/index.ts",
       "require": "./dist/index.js",
       "import": "./dist/index.mjs"
     }

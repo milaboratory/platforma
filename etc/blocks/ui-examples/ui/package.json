@@ -4,9 +4,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "watch": "vue-tsc && vite build --watch",
-    "build": "vite build && pnpm run build:types",
-    "build:types": "vue-tsc -p tsconfig.app.build.json",
+    "watch": "vite build --watch",
+    "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint ."
   },

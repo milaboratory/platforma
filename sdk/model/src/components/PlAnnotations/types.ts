@@ -1,3 +1,3 @@
-import type { PColumnSpec } from '@platforma-sdk/model';
+import type { PColumnSpec } from '@milaboratories/pl-model-common';
 
 export type SimplifiedPColumnSpec = Pick<PColumnSpec, 'valueType' | 'annotations'>;

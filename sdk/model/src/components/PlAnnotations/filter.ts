@@ -1,5 +1,4 @@
-import type { SUniversalPColumnId } from '@platforma-sdk/model';
-
+import type { SUniversalPColumnId } from '@milaboratories/pl-model-common';
 //
 // Sequence filter
 //
