@@ -32,9 +32,11 @@ export async function buildBlockPackDist(
 
   const manifest: BlockPackManifest = BlockPackManifest.parse({
     schema: 'v2',
-    description: descriptionRelative,
+    description: {
+      ...descriptionRelative,
+      featureFlags
+    },
     files: filesForManifest,
-    codeFeatureFlags: featureFlags,
     timestamp: Date.now()
   } satisfies BlockPackManifest);
   await fsp.writeFile(path.resolve(dst, BlockPackManifestFile), JSON.stringify(manifest));

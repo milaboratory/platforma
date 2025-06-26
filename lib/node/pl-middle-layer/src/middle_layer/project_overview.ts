@@ -31,7 +31,6 @@ import type { NavigationStates } from './navigation_states';
 import { getBlockPackInfo } from './util';
 import { resourceIdToString, type ResourceId } from '@milaboratories/pl-client';
 import * as R from 'remeda';
-import { getRuntimeCapabilities } from './runtime_capabilities';
 
 type BlockInfo = {
   argsRid: ResourceId;
@@ -157,9 +156,10 @@ export function projectOverview(
 
         const { sections, title, inputsValid, sdkVersion, featureFlags, isIncompatibleWithRuntime }
           = ifNotUndef(bp, ({ bpId, cfg }) => {
-            if (!getRuntimeCapabilities().checkCompatibility(cfg.featureFlags)) {
+            if (!env.runtimeCapabilities.checkCompatibility(cfg.featureFlags)) {
               return {
                 isIncompatibleWithRuntime: true,
+                featureFlags: cfg.featureFlags,
               };
             }
             const blockCtxArgsOnly = constructBlockContextArgsOnly(prjEntry, id);

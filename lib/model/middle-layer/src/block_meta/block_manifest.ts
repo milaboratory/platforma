@@ -36,7 +36,6 @@ export const BlockPackManifest = z.object({
   schema: z.literal('v2'),
   description: BlockPackDescriptionManifest,
   timestamp: z.number().optional(),
-  codeFeatureFlags: z.record(z.string(), z.boolean()).optional(),
   files: z.array(ManifestFileInfo)
 });
 export type BlockPackManifest = z.infer<typeof BlockPackManifest>;

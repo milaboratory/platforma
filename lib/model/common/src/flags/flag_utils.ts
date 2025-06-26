@@ -47,7 +47,7 @@ export class IncompatibleFlagsError extends Error {
 export type SupportedRequirement = FilterKeysByPrefix<BlockCodeKnownFeatureFlags, 'requires'>;
 
 export class RuntimeCapabilities {
-  private readonly supportedRequirements: Map<`requires${string}`, number | boolean> = new Map();
+  private readonly supportedRequirements: Map<`requires${string}`, Set<number | boolean>> = new Map();
 
   /**
      * Adds a supported requirement to the runtime capabilities.
@@ -55,7 +55,10 @@ export class RuntimeCapabilities {
      * @param value - The value of the requirement. If not provided, defaults to true.
      */
   public addSupportedRequirement(requirement: SupportedRequirement, value: number | boolean = true): this {
-    this.supportedRequirements.set(requirement, value);
+    if (!this.supportedRequirements.has(requirement)) {
+      this.supportedRequirements.set(requirement, new Set());
+    }
+    this.supportedRequirements.get(requirement)!.add(value);
     return this;
   }
 
@@ -69,8 +72,9 @@ export class RuntimeCapabilities {
     const incompatibleFlags = new Map<`requires${string}`, number | boolean>();
     for (const [key, value] of Object.entries(blockFlags)) {
       if (key.startsWith('requires')) {
-        const supportedValue = this.supportedRequirements.get(key as `requires${string}`);
-        if (supportedValue !== undefined && supportedValue !== value) {
+        if (value === undefined) continue;
+        const supportedValues = this.supportedRequirements.get(key as `requires${string}`);
+        if (supportedValues !== undefined && !supportedValues.has(value as number | boolean)) {
           incompatibleFlags.set(key as `requires${string}`, value as number | boolean);
         }
       }
