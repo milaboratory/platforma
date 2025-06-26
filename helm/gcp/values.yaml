@@ -61,6 +61,13 @@ app:
     type: Recreate
   # -- Depoyment's (continer level) security context
   securityContext:
+    ulimits:
+      - name: nofile
+        hard: 1048576
+        soft: 1048576
+      - name: nproc
+        hard: 4096
+        soft: 4096
     privileged: true # This is the most impactful setting.
     runAsUser: 0
     runAsGroup: 0
@@ -220,40 +227,40 @@ app:
           - id: "primary"
             type: S3
             endpoint: "https://storage.googleapis.com"
-            bucketName: {{ .Values.app.coreConfig.s3.bucketName | quote }}
-            keyPrefix: {{ .Values.app.coreConfig.s3.primaryStorageKeyPrefix | quote }}
+            bucketName: {{ .Values.app.coreConfig.s3.bucketName }}
+            keyPrefix: {{ .Values.app.coreConfig.s3.primaryStorageKeyPrefix }}
 
           - id: "raw"
             type: S3
             endpoint: "https://storage.googleapis.com"
-            bucketName: {{ .Values.app.coreConfig.s3.bucketName | quote }}
+            bucketName: {{ .Values.app.coreConfig.s3.bucketName }}
             keyPrefix: "corp-library/"
 
           - id: "test-assets"
             type: S3
             endpoint: "https://storage.googleapis.com"
-            bucketName: {{ .Values.app.coreConfig.s3.bucketName | quote }}
+            bucketName: {{ .Values.app.coreConfig.s3.bucketName }}
             keyPrefix: "test-assets/"
 
           - id: "work"
             type: FS
-            rootPath: {{ .Values.app.persistentVolume.work.mountPath | quote }}
+            rootPath: {{ .Values.app.persistentVolume.work.mountPath }}
 
       packageLoader:
-        packagesRoot: {{ .Values.app.persistentVolume.softwareloader.mountPath | quote }}
+        packagesRoot: {{ .Values.app.persistentVolume.softwareloader.mountPath }}
       runner:
-        storageRoot: {{ .Values.app.persistentVolume.work.mountPath | quote }}
+        storageRoot: {{ .Values.app.persistentVolume.work.mountPath }}
         batch:
           type: 'google-batch'
           storage:
             type: "nfs"
             addr: "10.244.108.130"
             path: "/nfs_share"
-            mount: {{ .Values.app.persistentVolume.nfsShareVolume.mountPath | quote }}
-          projectId: {{ .Values.app.coreConfig.batch.projectId | quote }}
-          region: {{ .Values.app.coreConfig.batch.region | quote }}
-          network: {{ .Values.app.coreConfig.batch.network | quote }}
-          subnetwork: {{ .Values.app.coreConfig.batch.subnetwork | quote }}
+            mount: {{ .Values.app.persistentVolume.nfsShareVolume.mountPath }}
+          projectId: {{ .Values.app.coreConfig.batch.projectId }}
+          region: {{ .Values.app.coreConfig.batch.region }}
+          network: {{ .Values.app.coreConfig.batch.network }}
+          subnetwork: {{ .Values.app.coreConfig.batch.subnetwork }}
 
       workflows:
         features:
@@ -263,10 +270,10 @@ app:
       enabled: true
       type: ldap
     s3:
-      bucketName: mik8s-platforma-ci-euwe3-dev-gke
+      bucketName: "mik8s-platforma-ci-euwe3-dev-gke"
       primaryStorageKeyPrefix: "platforma-ci-primary/"
     batch:
-      projectId: "gke-project"
+      projectId: "gke-project-id"
       region: "gke-region"
       network: "gke-vpc"
       subnetwork: "gke-subnetwork"
