@@ -365,7 +365,7 @@ app:
       # -- StorageClass to use for persistent volume. Requires server.persistentVolume.enabled: true. If defined, PVC created automatically
       storageClass: "filestore-nfs"
       # -- Existing Claim name. If defined, PVC must be created manually before volume will be bound
-      existingClaim: "filestore-fast-pvc"
+      existingClaim: "filestore-ci-fast-pvc"
       # -- Bind Persistent Volume by labels. Must match all labels of targeted PV.
       matchLabels: {}
   # -- Resource object.
