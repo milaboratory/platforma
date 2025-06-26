@@ -1,22 +1,26 @@
-import type {
-  AxisId,
-  CanonicalizedJson,
-  ListOptionBase,
-  LocalBlobHandleAndSize,
-  PlDataTableModel,
-  PlDataTableSheet,
-  PlDataTableSheetState,
-  PlTableFilter,
-  PlTableFilterType,
-  PTableColumnId,
-  PTableColumnSpec,
-  PTableHandle,
-  PTableKey,
-  PTableRowKey,
-  PTableValue,
-  RemoteBlobHandleAndSize,
+import {
+  canonicalizeJson,
+  type JsonCompatible,
+  type AxisId,
+  type CanonicalizedJson,
+  type ListOptionBase,
+  type LocalBlobHandleAndSize,
+  type PlDataTableModel,
+  type PlDataTableSheet,
+  type PlDataTableSheetState,
+  type PlTableFilter,
+  type PlTableFilterType,
+  type PTableColumnId,
+  type PTableColumnSpec,
+  type PTableHandle,
+  type PTableKey,
+  type PTableRowKey,
+  type PTableValue,
+  type RemoteBlobHandleAndSize,
 } from '@platforma-sdk/model';
 import type { PTableHidden } from './sources/common';
+import type { ComputedRef, MaybeRefOrGetter } from 'vue';
+import { computed, toValue } from 'vue';
 
 export type PlDataTableSettingsPTable = {
   /** The type of the source to feed the data into the table */
@@ -50,6 +54,71 @@ export type PlDataTableSettingsV2 =
     /** Result of `createPlDataTableV2` */
     model: PlDataTableModel | undefined;
   };
+
+export function usePlDataTableSettingsV2<T = string>({
+  /**
+   * Block property (such as inputAnchor) used to produce the data source.
+   * Mandatory for cases when the table can change without block run.
+   * Skip when the table is changed only after block run.
+   * Ask developers for help if you don't know what to set here.
+   */
+  sourceId,
+  /** Block output created by `createPlDataTableV2` */
+  model,
+  /**
+   * Sheets for partitioned data sources.
+   * Do not set if data source is never partitioned.
+   */
+  sheets,
+}: {
+  sourceId?: MaybeRefOrGetter<JsonCompatible<T> | undefined>;
+  model: MaybeRefOrGetter<PlDataTableModel | undefined>;
+  sheets?: MaybeRefOrGetter<PlDataTableSheet[] | undefined>;
+}): ComputedRef<PlDataTableSettingsV2> {
+  return computed(() => {
+    const modelValue = toValue(model);
+    if (sourceId) {
+      const sourceIdValue = toValue(sourceId);
+      if (sheets) {
+        const sheetsValue = toValue(sheets);
+        return sourceIdValue && sheetsValue
+          ? {
+              sourceId: canonicalizeJson(sourceIdValue),
+              sheets: sheetsValue,
+              model: modelValue,
+            }
+          : { sourceId: null };
+      } else {
+        return sourceIdValue
+          ? {
+              sourceId: canonicalizeJson(sourceIdValue),
+              sheets: [],
+              model: modelValue,
+            }
+          : { sourceId: null };
+      }
+    } else {
+      if (sheets) {
+        const sheetsValue = toValue(sheets);
+        return sheetsValue
+          ? {
+              sourceId: canonicalizeJson<string>('static'),
+              sheets: sheetsValue,
+              model: modelValue,
+            }
+          : { sourceId: null };
+      } else {
+        return modelValue
+          ? {
+              sourceId: canonicalizeJson<string>('static'),
+              sheets: [],
+              model: modelValue,
+            }
+          : { sourceId: null };
+      }
+    }
+  });
+};
 
 /** PlTableFilters restriction entry */
 export type PlTableFiltersRestriction = {
