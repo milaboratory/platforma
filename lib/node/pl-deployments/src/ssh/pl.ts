@@ -9,7 +9,7 @@ import * as plpath from './pl_paths';
 import { getDefaultPlVersion } from '../common/pl_version';
 
 import net from 'node:net';
-import type { PlConfig, PlLicenseMode, RemoteMinioSettings, SshPlConfigGenerationResult, SshPlConfigGeneratorOptions } from '@milaboratories/pl-config';
+import type { PlConfig, PlLicenseMode, SshPlConfigGenerationResult } from '@milaboratories/pl-config';
 import { getFreePort, generateSshPlConfigs } from '@milaboratories/pl-config';
 import type { SupervisorStatus } from './supervisord';
 import { supervisorStatus, supervisorStop as supervisorCtlShutdown, generateSupervisordConfigWithMinio, supervisorCtlStart, isSupervisordRunning, generateSupervisordConfig, isAllAlive } from './supervisord';
@@ -158,10 +158,11 @@ export class SshPl {
       throw new Error(msg);
     }
   }
+
   private async doStepStopExistedPlatforma(state: PlatformaInitState, onProgress: ((...args: any) => Promise<any>) | undefined) {
     state.step = 'stopExistedPlatforma';
-    if (! isAllAlive(state.alive!, state.shouldUseMinio ?? false)) {
-      return
+    if (!isAllAlive(state.alive!, state.shouldUseMinio ?? false)) {
+      return;
     }
 
     await onProgress?.('Stopping services...');
@@ -185,7 +186,6 @@ export class SshPl {
   }
 
   private async doStepSaveNewConnectionInfo(state: PlatformaInitState, onProgress: ((...args: any) => Promise<any>) | undefined, ops: SshPlConfig) {
-
     state.step = 'saveNewConnectionInfo';
     const config = state.generatedConfig!;
     await onProgress?.('Saving connection information...');
@@ -195,11 +195,11 @@ export class SshPl {
       state.ports!,
       notEmpty(ops.useGlobalAccess),
       ops.plBinary!.version,
-      state.shouldUseMinio ?? false
+      state.shouldUseMinio ?? false,
     );
     await this.sshClient.writeFileOnTheServer(
       plpath.connectionInfo(state.remoteHome!),
-      stringifyConnectionInfo(state.connectionInfo)
+      stringifyConnectionInfo(state.connectionInfo),
     );
     await onProgress?.('Connection information saved.');
   }
@@ -213,22 +213,22 @@ export class SshPl {
     let supervisorConfig: string;
     if (state.shouldUseMinio) {
       supervisorConfig = generateSupervisordConfigWithMinio(
-      config.minioConfig.storageDir,
-      config.minioConfig.envs,
-      await this.getFreePortForPlatformaOnServer(state.remoteHome!, state.arch!),
-      config.workingDir,
-      config.plConfig.configPath,
-      state.binPaths!.minioRelPath!,
-      state.binPaths!.downloadedPl,
-    );
-  } else {
-    supervisorConfig = generateSupervisordConfig(
-      await this.getFreePortForPlatformaOnServer(state.remoteHome!, state.arch!),
-      config.workingDir,
-      config.plConfig.configPath,
-      state.binPaths!.downloadedPl,
-    );
-  }
+        config.minioConfig.storageDir,
+        config.minioConfig.envs,
+        await this.getFreePortForPlatformaOnServer(state.remoteHome!, state.arch!),
+        config.workingDir,
+        config.plConfig.configPath,
+        state.binPaths!.minioRelPath!,
+        state.binPaths!.downloadedPl,
+      );
+    } else {
+      supervisorConfig = generateSupervisordConfig(
+        await this.getFreePortForPlatformaOnServer(state.remoteHome!, state.arch!),
+        config.workingDir,
+        config.plConfig.configPath,
+        state.binPaths!.downloadedPl,
+      );
+    }
 
     const writeResult = await this.sshClient.writeFileOnTheServer(plpath.supervisorConf(state.remoteHome!), supervisorConfig);
     if (!writeResult) {
@@ -258,29 +258,29 @@ export class SshPl {
 
     await onProgress?.('Generating new config...');
     const config = await generateSshPlConfigs({
-        logger: this.logger,
-        workingDir: plpath.workDir(state.remoteHome!),
-        portsMode: {
-          type: 'customWithMinio',
-          ports: {
-            debug: state.ports!.debug.remote,
-            grpc: state.ports!.grpc.remote,
-            http: state.ports!.http!.remote,
-            minio: state.ports!.minioPort.remote,
-            minioConsole: state.ports!.minioConsolePort.remote,
-            monitoring: state.ports!.monitoring.remote,
-            
-            httpLocal: state.ports!.http!.local,
-            grpcLocal: state.ports!.grpc.local,
-            minioLocal: state.ports!.minioPort.local,
-          },
+      logger: this.logger,
+      workingDir: plpath.workDir(state.remoteHome!),
+      portsMode: {
+        type: 'customWithMinio',
+        ports: {
+          debug: state.ports!.debug.remote,
+          grpc: state.ports!.grpc.remote,
+          http: state.ports!.http!.remote,
+          minio: state.ports!.minioPort.remote,
+          minioConsole: state.ports!.minioConsolePort.remote,
+          monitoring: state.ports!.monitoring.remote,
+
+          httpLocal: state.ports!.http!.local,
+          grpcLocal: state.ports!.grpc.local,
+          minioLocal: state.ports!.minioPort.local,
         },
-        licenseMode: ops.license,
-        useGlobalAccess: notEmpty(ops.useGlobalAccess),
-        plConfigPostprocessing: ops.plConfigPostprocessing,
-        useMinio: state.shouldUseMinio ?? false,
-      });
-      state.generatedConfig = { ...config  };
+      },
+      licenseMode: ops.license,
+      useGlobalAccess: notEmpty(ops.useGlobalAccess),
+      plConfigPostprocessing: ops.plConfigPostprocessing,
+      useMinio: state.shouldUseMinio ?? false,
+    });
+    state.generatedConfig = { ...config };
     await onProgress?.('New config generated');
   }
 
@@ -307,7 +307,7 @@ export class SshPl {
       throw new Error(`glibc version ${glibcVersion} is too old. Version ${minRequiredGlibcVersion} or higher is required for Platforma.`);
 
     const downloadRes = await this.downloadBinariesAndUploadToTheServer(
-      ops.localWorkdir, ops.plBinary!, state.remoteHome!, state.arch!, state.shouldUseMinio ?? false
+      ops.localWorkdir, ops.plBinary!, state.remoteHome!, state.arch!, state.shouldUseMinio ?? false,
     );
     await onProgress?.('All required binaries have been downloaded and uploaded.');
 
@@ -339,7 +339,7 @@ export class SshPl {
     state.alive = await this.isAlive();
 
     if (!state.alive?.platforma) {
-      return true
+      return true;
     }
 
     await onProgress?.('All required services are running.');
@@ -395,13 +395,13 @@ export class SshPl {
 
       const minioPath = plpath.minioBin(remoteHome, arch.arch);
       if (shouldUseMinio) {
-      const minio = await this.downloadAndUntar(
-        localWorkdir, remoteHome, arch,
-        'minio', plpath.minioDirName,
-      );
-      state.push(minio);
-      await this.sshClient.chmod(minioPath, 0o750);
-    }
+        const minio = await this.downloadAndUntar(
+          localWorkdir, remoteHome, arch,
+          'minio', plpath.minioDirName,
+        );
+        state.push(minio);
+        await this.sshClient.chmod(minioPath, 0o750);
+      }
 
       return {
         history: state,
@@ -637,19 +637,19 @@ type DownloadAndUntarState = {
   untarDone?: boolean;
 };
 
-type PlatformaInitStep = 
+type PlatformaInitStep =
   'init'
-| 'detectArch' 
-| 'detectHome' 
-| 'checkAlive' 
-| 'stopExistedPlatforma'
-| 'downloadBinaries' 
-| 'fetchPorts'
-| 'generateNewConfig' 
-| 'createFoldersAndSaveFiles' 
-| 'configureSupervisord' 
-| 'saveNewConnectionInfo' 
-| 'startPlatforma';
+  | 'detectArch'
+  | 'detectHome'
+  | 'checkAlive'
+  | 'stopExistedPlatforma'
+  | 'downloadBinaries'
+  | 'fetchPorts'
+  | 'generateNewConfig'
+  | 'createFoldersAndSaveFiles'
+  | 'configureSupervisord'
+  | 'saveNewConnectionInfo'
+  | 'startPlatforma';
 
 type PlatformaInitState = {
   step: PlatformaInitStep;
@@ -668,8 +668,6 @@ type PlatformaInitState = {
   connectionInfo?: ConnectionInfo;
   started?: boolean;
 };
-
-
 
 /**
  * Gets the glibc version on the remote system
@@ -697,5 +695,3 @@ export function parseGlibcVersion(output: string): number {
 
   return parseFloat(versionMatch[0]);
 }
-
-

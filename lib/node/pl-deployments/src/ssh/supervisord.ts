@@ -41,7 +41,7 @@ export function isAllAlive(status: SupervisorStatus, shouldUseMinio: boolean) {
     return status.platforma && status.minio;
   }
 
-  return status.platforma
+  return status.platforma;
 }
 
 export function isSupervisordRunning(status: SupervisorStatus) {
