@@ -21,6 +21,7 @@ pkg := import(":exec.package")
 blobs := import(":file.internal")
 desc := import(":exec.descriptor")
 constants := import(":exec.constants")
+waiter := import(":waiter")
 monetization := import(":exec.monetization_internal")
 
 self.defineOutputs(
@@ -121,8 +122,19 @@ _runBinaryCommand := func(inputs) {
 			ram(quota.ram).
 			build()
 
+		// Delay requesting compute quota until the workdir is ready.
+		// This prevents a deadlock between storage and compute quotas.
+		// A waiter ensures that a task requests compute quota only after
+		// it has acquired the storage quota required for workdir creation,
+		// which is a prerequisite for the computation itself.
+
+		quotaAfterWd := waiter.builder(quotaRef).
+			wait(wdForCmd).
+			build().
+			output()
+
 		computeRequestRef := limits.computeRequestBuilder().
-			quota(quotaRef).
+			quota(quotaAfterWd).
 			queue(opts.queue).
 			build()
 
