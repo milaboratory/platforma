@@ -1,0 +1,30 @@
+self := import(":tpl.light")
+limits := import(":exec.limits")
+
+//
+// This templates allows to delay compute quota request allocation until the workdir is ready,
+// this prevents a deadlock between storage and compute quotas.
+// It is used in exec.tpl.tengo.
+//
+
+// awaits the whole input map to become ready
+self.awaitState("ResourceReady")
+
+self.body(func(inputs) {
+	request := inputs.request
+
+	quotaRef := limits.quotaBuilder().
+		queue(request.queue).
+		cpu(request.cpu).
+		ram(request.ram).
+		build()
+
+	computeRequestRef := limits.computeRequestBuilder().
+		quota(quotaRef).
+		queue(request.queue).
+		build()
+
+    return {
+        allocation: computeRequestRef.allocation
+    }
+})
