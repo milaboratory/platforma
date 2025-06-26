@@ -116,6 +116,8 @@ export const blockTest = plTest.extend<{
         throw new Error('Not implemented.');
       },
     });
+    ml.addRuntimeCapability('requiresUIAPIVersion', 1);
+    ml.addRuntimeCapability('requiresUIAPIVersion', 2);
 
     await use(ml);
 

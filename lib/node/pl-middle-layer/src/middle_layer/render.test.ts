@@ -23,6 +23,8 @@ export async function withMl(
         throw new Error('Not implemented.');
       }
     });
+    ml.addRuntimeCapability('requiresUIAPIVersion', 1);
+    ml.addRuntimeCapability('requiresUIAPIVersion', 2);
     try {
       await cb(ml, workFolder);
     } finally {

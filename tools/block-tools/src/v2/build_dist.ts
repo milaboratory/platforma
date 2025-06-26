@@ -24,9 +24,18 @@ export async function buildBlockPackDist(
       return { name: f, size: bytes.length, sha256 };
     })
   );
+
+  // reading model.json and extracting feature flags
+  const modelJson = await fsp.readFile(path.join(dst, descriptionRelative.components.model.path), 'utf-8');
+  const modelJsonParsed = JSON.parse(modelJson);
+  const featureFlags = modelJsonParsed.featureFlags;
+
   const manifest: BlockPackManifest = BlockPackManifest.parse({
     schema: 'v2',
-    description: descriptionRelative,
+    description: {
+      ...descriptionRelative,
+      featureFlags
+    },
     files: filesForManifest,
     timestamp: Date.now()
   } satisfies BlockPackManifest);

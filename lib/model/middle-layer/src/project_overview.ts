@@ -1,6 +1,6 @@
 import { ProjectMeta } from './project';
 import { BlockPackSpec } from './block_registry/block_pack_spec';
-import { BlockRenderingMode, BlockSection, NavigationState } from '@milaboratories/pl-model-common';
+import { BlockCodeFeatureFlags, BlockRenderingMode, BlockSection, NavigationState } from '@milaboratories/pl-model-common';
 import { AuthorMarker } from './author_marker';
 import { UpdateSuggestions } from './update_info';
 import { BlockSettings } from './block_settings';
@@ -127,6 +127,20 @@ export type BlockStateOverview = {
    * Udefined when block-pack for this block is not yet materialized.
    * */
   sdkVersion: string | undefined;
+
+  /**
+   * Feature flags the block was compiled with.
+   * Udefined when block-pack for this block is not yet materialized.
+   * */
+  featureFlags: BlockCodeFeatureFlags | undefined;
+
+  /**
+   * True if block is incompatible with the runtime.
+   * Other properties of this block overview will be filled with best effort.
+   * This block should not be openable; the only available action for it is deletion.
+   * Undefined when block-pack for this block is not yet materialized.
+   * */
+  isIncompatibleWithRuntime: boolean | undefined;
 
   /** Information on where the block pack for this block came from */
   currentBlockPack: BlockPackSpec | undefined;

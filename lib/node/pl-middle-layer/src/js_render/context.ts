@@ -1,4 +1,6 @@
 import type { ComputableCtx } from '@milaboratories/computable';
+import type {
+  BlockCodeKnownFeatureFlags } from '@platforma-sdk/model';
 import {
   JsRenderInternal,
 } from '@platforma-sdk/model';
@@ -11,6 +13,7 @@ import type { MiddleLayerEnvironment } from '../middle_layer/middle_layer';
 import { stringifyWithResourceId } from '@milaboratories/pl-client';
 import { PlQuickJSError } from '@milaboratories/pl-errors';
 import { ComputableContextHelper } from './computable_context';
+import semver from 'semver';
 
 export type DeadlineSettings = {
   currentExecutionTarget: string;
@@ -53,6 +56,7 @@ export class JsExecutionContext {
     public readonly scope: Scope,
     public readonly vm: QuickJSContext,
     private readonly deadlineSetter: DeadlineSetter,
+    sdkVersion: string, featureFlags: BlockCodeKnownFeatureFlags | undefined,
     computableEnv?: ComputableEnv,
   ) {
     this.callbackRegistry = this.scope.manage(this.vm.newObject());
@@ -69,7 +73,7 @@ export class JsExecutionContext {
     if (vm.typeof(this.fnJSONParse) !== 'function') throw new Error(`JSON.parse() not found.`);
 
     if (computableEnv !== undefined)
-      this.computableHelper = new ComputableContextHelper(this, computableEnv.blockCtx, computableEnv.mlEnv, computableEnv.computableCtx);
+      this.computableHelper = new ComputableContextHelper(this, computableEnv.blockCtx, computableEnv.mlEnv, sdkVersion, featureFlags, computableEnv.computableCtx);
 
     this.injectCtx();
   }

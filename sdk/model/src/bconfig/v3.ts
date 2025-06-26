@@ -1,5 +1,5 @@
-import type { BlockRenderingMode } from '@milaboratories/pl-model-common';
-import type { Code, TypedConfigOrConfigLambda } from './types';
+import type { BlockCodeFeatureFlags, BlockRenderingMode } from '@milaboratories/pl-model-common';
+import type { Code, BlockCodeWithInfo, TypedConfigOrConfigLambda } from './types';
 import type { ConfigRenderLambda } from './lambdas';
 
 export type BlockConfigV3<
@@ -47,6 +47,18 @@ export type BlockConfigV3<
 
   /** Config code bundle */
   readonly code?: Code;
+
+  /** Feature flags for the block Model and UI code. */
+  readonly featureFlags?: BlockCodeFeatureFlags;
 };
 
 export type BlockConfig = BlockConfigV3;
+
+export function extractCodeWithInfo(cfg: BlockConfigV3): BlockCodeWithInfo | undefined {
+  if (cfg.code === undefined) return undefined;
+  return {
+    code: cfg.code,
+    sdkVersion: cfg.sdkVersion,
+    featureFlags: cfg.featureFlags,
+  };
+}
