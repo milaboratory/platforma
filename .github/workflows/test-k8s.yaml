@@ -48,8 +48,7 @@ jobs:
         { "PL_CI_TEST_USER": ${{ toJSON(secrets.PL_CI_TEST_USER) }},
           "PL_CI_TEST_PASSWORD": ${{ toJSON(secrets.PL_CI_TEST_PASSWORD) }},
           "NPMJS_TOKEN": ${{ toJSON(secrets.NPMJS_TOKEN) }},
-          "GCLOUDCI_GKE_PROJECT_ID": ${{ toJSON(secrets.GCLOUD_CI_GKE_PROJECT_ID) }},
-          "GCLOUD_CI_GKE_REGION": "${{ toJSON(secrets.GCLOUD_CI_GKE_REGION) }}",
+          "GCLOUD_CI_GKE_PROJECT_ID": ${{ toJSON(secrets.GCLOUD_CI_GKE_PROJECT_ID) }},
           "GCLOUD_CI_GKE_NETWORK": "${{ toJSON(secrets.GCLOUD_CI_GKE_NETWORK) }}",
           "GCLOUD_CI_GKE_SUBNETWORK": "${{ toJSON(secrets.GCLOUD_CI_GKE_SUBNETWORK) }}" }
 
