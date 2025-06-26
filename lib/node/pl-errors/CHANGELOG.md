@@ -1,5 +1,62 @@
 # @milaboratories/pl-errors
 
+## 1.1.9
+
+### Patch Changes
+
+- 37800c5: Public tools packages
+- Updated dependencies [37800c5]
+  - @milaboratories/ts-helpers@1.4.1
+  - @milaboratories/pl-client@2.11.2
+
+## 1.1.8
+
+### Patch Changes
+
+- Updated dependencies [3d34876]
+  - @milaboratories/pl-client@2.11.1
+
+## 1.1.7
+
+### Patch Changes
+
+- Updated dependencies [c243d64]
+- Updated dependencies [c7894c2]
+- Updated dependencies [babb3eb]
+  - @milaboratories/pl-client@2.11.0
+  - @milaboratories/ts-helpers@1.4.0
+
+## 1.1.6
+
+### Patch Changes
+
+- 49cf7ee: Standard Error serialization/deserialization
+- Updated dependencies [49cf7ee]
+  - @milaboratories/ts-helpers@1.3.3
+  - @milaboratories/pl-client@2.10.2
+
+## 1.1.5
+
+### Patch Changes
+
+- Updated dependencies [f191f2a]
+  - @milaboratories/ts-helpers@1.3.2
+  - @milaboratories/pl-client@2.10.1
+
+## 1.1.4
+
+### Patch Changes
+
+- Updated dependencies [f7dedbe]
+  - @milaboratories/pl-client@2.10.0
+
+## 1.1.3
+
+### Patch Changes
+
+- Updated dependencies [2d5ee55]
+  - @milaboratories/pl-client@2.9.3
+
 ## 1.1.2
 
 ### Patch Changes

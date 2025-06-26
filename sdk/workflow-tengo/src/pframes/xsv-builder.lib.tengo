@@ -1,10 +1,12 @@
 ll := import(":ll")
 maps := import(":maps")
 strings := import(":strings")
+text := import("text")
 pSpec := import(":pframes.spec")
 pBuilder := import(":pframes.builder")
 xsv := import(":pframes.xsv")
 canonical := import(":canonical")
+execConstants := import(":exec.constants")
 
 xsvFileBuilder := func(xsvType) {
     ll.assert(xsvType == "csv" || xsvType == "tsv", "xsvType must be 'csv' or 'tsv'")
@@ -18,6 +20,10 @@ xsvFileBuilder := func(xsvType) {
     distiller := undefined
     nextSequentialId := 1
     nextPFrameKeyIndex := 1
+
+    cpu := undefined
+    mem := undefined
+    queue := undefined
 
     getSpecDistiller := func() {
         if is_undefined(distiller) {
@@ -39,15 +45,15 @@ xsvFileBuilder := func(xsvType) {
         processedBaseKeys := {}
 
         for key, value in flatFrame {
-            if strings.has_suffix(key, ".spec") {
-                baseKey := strings.trim_suffix(key, ".spec")
+            if text.has_suffix(key, ".spec") {
+                baseKey := text.trim_suffix(key, ".spec")
                 if is_undefined(parsedColumns[baseKey]) {
                     parsedColumns[baseKey] = { key: baseKey }
                 }
                 parsedColumns[baseKey].spec = value
                 processedBaseKeys[baseKey] = true
-            } else if strings.has_suffix(key, ".data") {
-                baseKey := strings.trim_suffix(key, ".data")
+            } else if text.has_suffix(key, ".data") {
+                baseKey := text.trim_suffix(key, ".data")
                 if is_undefined(parsedColumns[baseKey]) {
                     parsedColumns[baseKey] = { key: baseKey }
                 }
@@ -320,6 +326,64 @@ xsvFileBuilder := func(xsvType) {
 
     self = {
         /**
+         * Execute command in the 'heavy' queue.
+         */
+        inHeavyQueue: func() {
+            queue = execConstants.HEAVY_QUEUE
+            return self
+        },
+
+        /**
+         * Execute command in the 'medium' queue.
+         */
+        inMediumQueue: func() {
+            queue = execConstants.MEDIUM_QUEUE
+            return self
+        },
+
+        /**
+         * Execute command in the 'light' queue.
+         */
+        inLightQueue: func() {
+            queue = execConstants.LIGHT_QUEUE
+            return self
+        },
+
+        /**
+         * Execute command in the 'ui-tasks' queue.
+         */
+        inUiQueue: func() {
+            queue = execConstants.UI_TASKS_QUEUE
+            return self
+        },
+
+        /**
+         * Sets the number of CPUs to request from the underlying executor (i.e. Google/AWS Batch, PBS, Slurm, etc.).
+         *
+         * @param amount: number - number of cores requested for command.
+         */
+        cpu: func(amount) {
+            cpu = amount
+            return self
+        },
+
+        /**
+         * Sets the amount of RAM to request from the underlying executor (i.e. Google/AWS Batch, PBS, Slurm, etc.).
+         *
+         * @param amount: number | string - amount of RAM in bytes or string with size suffix (case-insensitive):
+         *                                     K,  KB,  M,  MB,  G,  GB for base-10 sizes (powers of 1000)
+         *                                    Ki, KiB, Mi, MiB, Gi, GiB for base-2 sizes (powers of 1024)
+         *                                  when operating with bytes, you may use 'units' package for convenience:
+         *                                    120 * units.GiB
+         *
+         * @return builder
+         */
+        mem: func(amount) {
+            mem = amount
+            return self
+        },
+
+        /**
          * Adds one or more columns to the XSV table being built.
          *
          * This method is highly flexible and accepts columns in several formats:
@@ -394,7 +458,7 @@ xsvFileBuilder := func(xsvType) {
                     // Heuristic: if any key has ".spec" or ".data", assume flat frame
                     isFlatFrame := false
                     for k, _ in item {
-                        if strings.has_suffix(k, ".spec") || strings.has_suffix(k, ".data") {
+                        if text.has_suffix(k, ".spec") || text.has_suffix(k, ".data") {
                             isFlatFrame = true
                             break
                         }
@@ -548,7 +612,19 @@ xsvFileBuilder := func(xsvType) {
             }
 
             pFrame := _constructPFrameAndDistillSpecs().pFrame
-            return xsv.exportFrame(pFrame, xsvType, currentExportParams)
+
+            ops := {}
+            if !is_undefined(cpu) {
+                ops.cpu = cpu
+            }
+            if !is_undefined(mem) {
+                ops.mem = mem
+            }
+            if !is_undefined(queue) {
+                ops.queue = queue
+            }
+
+            return xsv.exportFrame(pFrame, xsvType, currentExportParams, ops)
         },
 
         /**
@@ -586,7 +662,18 @@ xsvFileBuilder := func(xsvType) {
             pFrame := buildOutput.pFrame
             uniqueAxes := buildOutput.uniqueAxes
 
-            tableResource := xsv.exportFrame(pFrame, xsvType, finalExportParams)
+            ops := {}
+            if !is_undefined(cpu) {
+                ops.cpu = cpu
+            }
+            if !is_undefined(mem) {
+                ops.mem = mem
+            }
+            if !is_undefined(queue) {
+                ops.queue = queue
+            }
+
+            tableResource := xsv.exportFrame(pFrame, xsvType, finalExportParams, ops)
 
             schema := []
 

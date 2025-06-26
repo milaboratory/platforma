@@ -6,8 +6,9 @@ json := import("json")
 bquery := import(":workflow.bquery")
 model := import(":workflow.model")
 validation := import(":validation")
+smart := import(":smart")
 
-self.awaitState("anchorSpecs", { wildcard: "*" }, "ResourceReady")
+self.awaitState("anchorSpecs", "ResourceReady")
 self.awaitState("request", "ResourceReady")
 
 self.body(func(inputs) {
@@ -137,6 +138,14 @@ self.body(func(inputs) {
                         // Check if the anchor exists
                         if is_undefined(anchors[anchorId]) {
                             ll.panic("Cannot resolve anchored axis: anchor '%s' not found", anchorId)
+                        }
+
+                        // Checking anchor spec was properly unmarshalled
+                        if smart.isReference(anchors[anchorId]) {
+                            if smart.isFieldReference(anchors[anchorId]) {
+                                ll.panic("Anchor '%s' is not unmarshalled. Is a field ref.", anchorId)
+                            }
+                            ll.panic("Anchor '%s' is not unmarshalled. Is aresource ref, type: %v", anchorId, anchors[anchorId].info().Type)
                         }
 
 						foundAxis := undefined

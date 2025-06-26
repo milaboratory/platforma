@@ -36,6 +36,19 @@ export ll.toStrict({
 
 	pureFutureFields:           _isEnabled("pureFutureFields")   || _api >= 1, // 'pure' future fields magic that provides deduplication
 	commandExpressions:         _isEnabled("commandExpressions") || _api >= 2, // rich expressions in command arguments ( {{ system.ram_bytes / 20 }} )
-	workdirLimits:              _isEnabled("workdirLimits")      || _api >= 4, // workdir storage controller can limit concurrency
-	computeLimits:              _isEnabled("computeLimits")                    // runner can plan CPU and RAM
+
+	// this was removed in 2025-06-17 (last @platforma-sdk/workflow-tengo version with this code was 4.7.5)
+	// workdirLimits:              _isEnabled("workdirLimits")      || _api >= 4, // workdir storage controller can limit concurrency
+	// computeLimits:              _isEnabled("computeLimits"),                   // runner can plan CPU and RAM
+	workdirLimits: true,
+	computeLimits: true,
+
+	// false for backend versions where service fields were not exposed to the template
+	serviceFields: _isEnabled("serviceFields"),
+
+	// - template can subscirbe to ResourceDuplicate, FieldGotError, OutputSet, AllOutputsSet and GenericOTWSet.
+	// - hashing funcs: sha256Encode, gzipEncode, gzipDecode, base32Encode, base32HexEncode, base32Decode, base32HexDecode
+	// - execution context: not persistent context for global variables.
+	// - missing tx methods.
+	fullFeaturedApi:        _isEnabled("fullFeaturedAPI")
 })

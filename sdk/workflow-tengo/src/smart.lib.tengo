@@ -353,21 +353,28 @@ resource = func(r) {
 		/**
 		 * Resource info:
 		 *  ID:            int64
+		 *  Kind:          "string": Structural or Value
+		 *  CanonicalID:   byte[]
 		 *  Data:          byte[],
 		 *  Type:          { Name: string, Version: string }
 		 *  Features:      { ephemeral: bool }
+		 *
+		 *  Fields:        strict map: all the fields
 		 *  Inputs:        strict map
-		 *  ServiceFields: strict map
 		 *  Outputs:       strict map
 		 *  Dynamic:       strict map
 		 *  OTW:           strict map
-		 *  ResourceReady: bool
-		 *  AllInputsSet:  bool
-		 *  AllOutputsSet: bool
-		 *  IsDuplicate:   bool
-		 *  InputsLocked:  bool
-		 *  OutputsLocked: bool
-		 *  HasErrors:     bool
+		 *  ServiceFields: strict map
+		 *
+		 *  ResourceReady:  bool
+		 *  IsFinal:        bool
+		 *  AllFieldsLoaded bool
+		 *  AllInputsSet:   bool
+		 *  AllOutputsSet:  bool
+		 *  IsDuplicate:    bool
+		 *  InputsLocked:   bool
+		 *  OutputsLocked:  bool
+		 *  HasErrors:      bool
 		 */
 		info: func() {
 			_resourceInfo := tx.getResource(self.id)
@@ -390,7 +397,14 @@ resource = func(r) {
 		 * Resource is ready when all inputs are set to the terminal values.
 		 */
 		isFinal: func() {
-			return self.info().ResourceReady || self.info().IsDuplicate || self.info().HasErrors
+			// FIXME: it failed with some tests although it should be the same line as below.
+			if false /* feats.fullFeaturedApi */ {
+				return self.info().IsFinal
+			}
+
+			info := self.info()
+
+			return info.ResourceReady || info.IsDuplicate || info.HasErrors
 		},
 
 		isEphemeral: func() {
@@ -680,14 +694,43 @@ resource = func(r) {
 		},
 
 		/**
+		 * Create new dynamic field with given name.
+		 * Dynamic fields are fields that can be created modified and deleted.
+		 *
+		 * @param name field name
+		 */
+		createDynamicField: func(name) {
+			if is_bytes(name) {
+				name = string(name)
+			}
+			ll.assert(is_string(name) && name != "", "field name must be a non-empty string")
+			fid := ll.fieldId(self.id, name)
+			tx.createField(fid, constants.FTYPE_DYNAMIC)
+			return field(fid)
+		},
+
+		/**
 		 * Gets value from key value storage associated with resource if corresponding
 		 * record exists.
 		 *
-		 * @param key string key
-		 * @return bytes or undefined
+		 * Note: it uses resourceKeyValueGetIfExists under the hood.
+		 *
+		 * @param key: string - key
+		 * @return bytes
 		 */
 		kvGet: func(key) {
 			return tx.resourceKeyValueGet(self.id, key)
+		},
+
+		/**
+		 * Gets a flag from key value storage associated with resource
+		 *
+		 * @param key: string - key
+		 * @return bool
+		 */
+		kvGetFlag: func(key) {
+			ll.assert(feats.fullFeaturedApi, "smart.resource.kvGetFlag: the feature is not available on older backends. Please, update the backend.")
+			return tx.resourceKeyValueGetFlag(self.id, key)
 		},
 
 		/**
@@ -699,6 +742,17 @@ resource = func(r) {
 		 */
 		kvSet: func(key, value) {
 			tx.resourceKeyValueSet(self.id, key, value)
+		},
+
+		/**
+		 * Sets a flag to a key value storage associated with resource
+		 *
+		 * @param key: string - key
+		 * @param flag: bool
+		 */
+		kvSetFlag: func(key, flag) {
+			ll.assert(feats.fullFeaturedApi, "smart.resource.kvSetFlag: the feature is not available on older backends. Please, update the backend.")
+			tx.resourceKeyValueSetFlag(self.id, key, flag)
 		},
 
 		/**
@@ -1092,6 +1146,22 @@ field = func(f) {
 		 */
 		buildFutureField: func(nameOrPath) {
 			return _buildFutureField(strictSelf, nameOrPath)
+		},
+
+		/**
+		 * Removes a value from multi-time writable fields (e.g. a dynamic field).
+		 */
+		reset: func() {
+			ll.assert(feats.fullFeaturedApi, "smart.field.reset: the feature is not available on older backends. Please, update the backend.")
+			tx.resetField(self.id)
+		},
+
+		/**
+		 * Removes a multi-time writable (such as dynamic) field entirely.
+		 */
+		remove: func() {
+			ll.assert(feats.fullFeaturedApi, "smart.field.remove: the feature is not available on older backends. Please, update the backend.")
+			tx.removeField(self.id)
 		}
 	}
 

@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/block-tools",
-  "version": "2.5.51",
+  "version": "2.5.59",
   "description": "Utility to manipulate Platforma Blocks and Block Registry",
   "types": "./dist/lib.d.ts",
   "main": "./dist/index.js",
@@ -47,7 +47,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@milaboratories/platforma-build-configs": "workspace:*",
+    "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/oclif-index": "workspace:*",
     "typescript": "catalog:",
     "vite": "catalog:",

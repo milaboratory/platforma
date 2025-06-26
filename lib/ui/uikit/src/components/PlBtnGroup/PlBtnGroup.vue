@@ -10,9 +10,10 @@ export default {
 <script lang="ts" setup generic="M = unknown">
 import './pl-btn-group.scss';
 import { computed, useSlots } from 'vue';
-import { PlTooltip } from '@/components/PlTooltip';
-import InnerBorder from '@/utils/InnerBorder.vue';
-import type { SimpleOption } from '@/types';
+import { PlTooltip } from '../PlTooltip';
+import InnerBorder from '../../utils/InnerBorder.vue';
+import type { SimpleOption } from '../../types';
+import { getErrorMessage } from '../../helpers/error.ts';
 
 const slots = useSlots();
 
@@ -53,7 +54,7 @@ const props = defineProps<{
   /**
    * Error message displayed below the component (optional)
    */
-  error?: string;
+  error?: unknown;
 }>();
 
 const normalizedOptions = computed(() =>
@@ -88,6 +89,6 @@ const normalizedOptions = computed(() =>
       </div>
     </InnerBorder>
     <div v-if="helper" class="pl-btn-group__helper">{{ helper }}</div>
-    <div v-else-if="error" class="pl-btn-group__error">{{ error }}</div>
+    <div v-else-if="error" class="pl-btn-group__error">{{ getErrorMessage(error) }}</div>
   </div>
 </template>

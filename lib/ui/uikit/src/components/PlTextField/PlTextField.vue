@@ -10,13 +10,15 @@ export default {
 <script lang="ts" setup generic="M, E = string, C = E">
 import './pl-text-field.scss';
 import { computed, reactive, ref, useSlots } from 'vue';
-import { PlTooltip } from '@/components/PlTooltip';
-import DoubleContour from '@/utils/DoubleContour.vue';
-import { useLabelNotch } from '@/utils/useLabelNotch';
-import { useValidation } from '@/utils/useValidation';
+import { PlTooltip } from '../PlTooltip';
+import DoubleContour from '../../utils/DoubleContour.vue';
+import { useLabelNotch } from '../../utils/useLabelNotch';
+import { useValidation } from '../../utils/useValidation';
 import { PlIcon16 } from '../PlIcon16';
 import { PlMaskIcon24 } from '../PlMaskIcon24';
 import type { Equal } from '@milaboratories/helpers';
+import SvgRequired from '../../generated/components/svg/images/SvgRequired.vue';
+import { getErrorMessage } from '../../helpers/error.ts';
 
 const slots = useSlots();
 
@@ -51,7 +53,7 @@ const props = defineProps<{
   /**
    * An error message to display below the input field.
    */
-  error?: string;
+  error?: unknown;
   /**
    * A helper text to display below the input field when there are no errors.
    */
@@ -148,8 +150,9 @@ const nonEmpty = computed(() => !isEmpty.value);
 
 const displayErrors = computed(() => {
   const errors: string[] = [];
-  if (props.error) {
-    errors.push(props.error);
+  const propsError = getErrorMessage(props.error);
+  if (propsError) {
+    errors.push(propsError);
   }
   if (data.cached) {
     errors.push(data.cached.error);
@@ -188,7 +191,7 @@ useLabelNotch(rootRef);
       }"
     >
       <label v-if="label" ref="label">
-        <i v-if="required" class="required-icon" />
+        <SvgRequired v-if="required" />
         <span>{{ label }}</span>
         <PlTooltip v-if="slots.tooltip" class="info" position="top">
           <template #tooltip>

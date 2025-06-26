@@ -8,7 +8,7 @@ export default {
 </script>
 
 <script lang="ts" setup>
-import type { ModelRef, RefOption } from '@/types';
+import type { ModelRef, RefOption } from '../../types';
 import { PlDropdown } from '../PlDropdown';
 import { computed, useSlots } from 'vue';
 
@@ -47,7 +47,7 @@ const props = withDefaults(
     /**
      * Error message displayed below the dropdown (optional)
      */
-    error?: string;
+    error?: unknown;
     /**
      * Placeholder text shown when no value is selected.
      */

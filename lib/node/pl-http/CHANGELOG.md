@@ -1,5 +1,17 @@
 # @milaboratories/pl-http
 
+## 1.1.4
+
+### Patch Changes
+
+- 37800c5: Public tools packages
+
+## 1.1.3
+
+### Patch Changes
+
+- c243d64: - network-related dependency upgrade
+
 ## 1.1.2
 
 ### Patch Changes

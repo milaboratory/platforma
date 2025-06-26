@@ -1,19 +1,21 @@
 <script lang="ts" setup>
 import './pl-file-input.scss';
-import { PlTooltip } from '@/components/PlTooltip';
-import { PlFileDialog } from '@/components/PlFileDialog';
-import type { ImportedFiles } from '@/types';
+import { PlTooltip } from '../PlTooltip';
+import { PlFileDialog } from '../PlFileDialog';
+import type { ImportedFiles } from '../../types';
 import { PlMaskIcon24 } from '../PlMaskIcon24';
 import { computed, reactive, ref, useSlots, watch } from 'vue';
 import type { ImportFileHandle, ImportProgress } from '@platforma-sdk/model';
 import { getFileNameFromHandle, getFilePathFromHandle } from '@platforma-sdk/model';
-import DoubleContour from '@/utils/DoubleContour.vue';
-import { useLabelNotch } from '@/utils/useLabelNotch';
+import DoubleContour from '../../utils/DoubleContour.vue';
+import { useLabelNotch } from '../../utils/useLabelNotch';
 import { prettyBytes } from '@milaboratories/helpers';
+import SvgRequired from '../../generated/components/svg/images/SvgRequired.vue';
+import { getErrorMessage } from '../../helpers/error.ts';
 
 const data = reactive({
   fileDialogOpen: false,
-  error: '',
+  error: undefined as undefined | string,
 });
 
 const slots = useSlots();
@@ -55,7 +57,7 @@ const props = withDefaults(
     /**
      * An error message to display below the input field.
      */
-    error?: string;
+    error?: unknown;
     /**
      * A helper text to display below the input field when there are no errors.
      */
@@ -107,9 +109,9 @@ const isUploading = computed(() => props.progress && !props.progress.done);
 
 const isUploaded = computed(() => props.progress && props.progress.done);
 
-const computedError = computed(() => data.error ?? props.error);
+const computedErrorMessage = computed(() => getErrorMessage(data.error, props.error));
 
-const hasErrors = computed(() => !!computedError.value);
+const hasErrors = computed(() => typeof computedErrorMessage.value === 'string');
 
 const uploadStats = computed(() => {
   const { status, done } = props.progress ?? {};
@@ -151,9 +153,7 @@ const clear = () => emit('update:modelValue', undefined);
 
 watch(
   () => props.modelValue,
-  () => {
-    data.error = '';
-  },
+  () => (data.error = undefined),
   { immediate: true },
 );
 
@@ -168,15 +168,15 @@ if (!props.cellStyle) {
   <div :class="{ 'pl-file-input__cell-style': !!cellStyle, 'has-file': !!fileName }" class="pl-file-input__envelope">
     <div
       ref="rootRef"
+      :class="{ dashed, error: hasErrors }"
       class="pl-file-input"
       tabindex="0"
-      :class="{ dashed, error: hasErrors }"
       @keyup.enter="openFileDialog"
       @click.stop="openFileDialog"
     >
-      <div class="pl-file-input__progress" :style="progressStyle" />
+      <div :style="progressStyle" class="pl-file-input__progress" />
       <label v-if="!cellStyle && label" ref="label">
-        <i v-if="required" class="required-icon" />
+        <SvgRequired v-if="required" />
         <span>{{ label }}</span>
         <PlTooltip v-if="slots.tooltip || filePath" class="info" position="top">
           <template #tooltip>
@@ -193,19 +193,19 @@ if (!props.cellStyle) {
         {{ fileName }}
       </div>
       <div v-if="uploadStats" class="pl-file-input__stats">{{ uploadStats }}</div>
-      <PlMaskIcon24 v-if="modelValue" name="close" @click.stop="clear" />
+      <PlMaskIcon24 v-if="modelValue" class="pl-file-input__clear" name="close" @click.stop="clear" />
       <DoubleContour class="pl-file-input__contour" />
     </div>
     <div v-if="hasErrors" class="pl-file-input__error">
-      {{ computedError }}
+      {{ computedErrorMessage }}
     </div>
     <div v-else-if="helper" class="pl-file-input__helper">{{ helper }}</div>
   </div>
   <PlFileDialog
     v-model="data.fileDialogOpen"
+    :close-on-outside-click="fileDialogCloseOnOutsideClick"
     :extensions="extensions"
     :title="fileDialogTitle"
-    :close-on-outside-click="fileDialogCloseOnOutsideClick"
     @import:files="onImport"
   />
 </template>

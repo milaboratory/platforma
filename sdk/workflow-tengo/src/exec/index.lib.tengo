@@ -217,6 +217,61 @@ builder := func() {
 		},
 
 		/**
+		 * Sets the queue to execute the command in.
+		 *
+		 * In local execution mode, the platform distributes available host RAM among four predefined queues:
+		 * 'heavy', 'medium', 'light', and 'ui-tasks'. This allows managing resource consumption for concurrent tasks.
+		 * The RAM allocation is dynamic and depends on the total system memory, with different allocation strategies
+		 * for different hardware configurations.
+		 *
+		 * Each queue has a memory limit, which represents the absolute maximum memory a queue can use.
+		 *
+		 * Here are a couple of examples of how memory is distributed:
+		 *
+		 * **For a system with 32GiB of available RAM:**
+		 * - `ui-tasks`:      Memory Limit ~9.9GiB
+		 * - `light`:         Memory Limit ~10.5GiB
+		 * - `medium`:        Memory Limit ~12.7GiB
+		 * - `heavy`:         Memory Limit ~23.5GiB
+		 *
+		 * **For a system with 64GiB of available RAM:**
+		 * - `ui-tasks`:      Memory Limit ~12.6GiB
+		 * - `light`:         Memory Limit ~16.0GiB
+		 * - `medium`:        Memory Limit ~21.4GiB
+		 * - `heavy`:         Memory Limit ~39.1GiB
+		 *
+		 * **For a system with 256GiB of available RAM:**
+		 * - `ui-tasks`:      Memory Limit ~36.2GiB
+		 * - `light`:         Memory Limit ~51.0GiB
+		 * - `medium`:        Memory Limit ~72.8GiB
+		 * - `heavy`:         Memory Limit ~156.0GiB
+		 *
+		 * If a task is submitted without specifying memory requirements, it receives a default amount of RAM based on its queue:
+		 * - `heavy`: 32GiB
+		 * - `medium`: 1GiB
+		 * - `light`: 512MiB
+		 * - `ui-tasks`: 100MiB
+		 *
+		 * **Important Note:** The queue behavior and memory limits described above apply specifically to **local execution**.
+		 * When using a batch executor (such as Slurm, Google Cloud Batch, or AWS Batch), the interpretation of queue names
+		 * and the enforcement of memory limits are determined by the configuration of the specific execution backend.
+		 * Furthermore, if you request more memory than a queue can provide, your request will be capped at the queue's limit.
+		 * For example, requesting 100GiB in `ui-tasks` on a 32GiB system will result in an allocation of ~9.9GiB.
+		 *
+		 * Available queues are:
+		 * - execConstants.HEAVY_QUEUE ('heavy') - default
+		 * - execConstants.MEDIUM_QUEUE ('medium')
+		 * - execConstants.LIGHT_QUEUE ('light')
+		 * - execConstants.UI_TASKS_QUEUE ('ui-tasks')
+		 *
+		 * @param newQueue: string - the name of the queue.
+		 */
+		setQueue: func(newQueue) {
+			queue = newQueue
+			return self
+		},
+
+		/**
 		 * Execute command in the 'heavy' queue.
 		 */
 		inHeavyQueue: func() {
@@ -249,7 +304,7 @@ builder := func() {
 		},
 
 		/**
-		 * Preserve CPUs in environments that plan CPU resources (like PBS or Slurm).
+		 * Sets the number of CPUs to request from the underlying executor (i.e. Google/AWS Batch, PBS, Slurm, etc.).
 		 *
 		 * @param amount: number - number of cores requested for command.
 		 */
@@ -262,7 +317,7 @@ builder := func() {
 		},
 
 		/**
-		 * Amount of RAM to request.
+		 * Sets the amount of RAM to request from the underlying executor (i.e. Google/AWS Batch, PBS, Slurm, etc.).
 		 *
 		 * @param amount: number | string - amount of RAM in bytes or string with size suffix (case-insensitive):
 		 *                                     K,  KB,  M,  MB,  G,  GB for base-10 sizes (x1000)
@@ -272,11 +327,21 @@ builder := func() {
 		 *
 		 * @return builder
 		 */
-		ram: func(amount) {
-			validation.assertType(amount, ["or", "number", "string"], "exec.builder.ram: RAM amount should be a number or string")
-			ll.assert(is_string(amount) || amount > 0, "exec.builder.ram: amount in bytes should be greater than 0")
+		mem: func(amount) {
+			validation.assertType(amount, ["or", "number", "string"], "exec.builder.mem: RAM amount should be a number or string")
+			ll.assert(is_string(amount) || amount > 0, "exec.builder.mem: amount in bytes should be greater than 0")
 			ramRequest = amount
 
+			return self
+		},
+
+		/**
+		 * Deprecated: use mem() instead.
+		 *
+		 * @return builder
+		 */
+		ram: func(amount) {
+			self.mem(amount)
 			return self
 		},
 

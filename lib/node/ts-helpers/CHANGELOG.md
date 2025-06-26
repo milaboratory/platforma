@@ -1,5 +1,30 @@
 # @milaboratories/ts-helpers
 
+## 1.4.1
+
+### Patch Changes
+
+- 37800c5: Public tools packages
+
+## 1.4.0
+
+### Minor Changes
+
+- c7894c2: - gzipped serialization and deserialization of jsons
+  - cached string decoding
+
+## 1.3.3
+
+### Patch Changes
+
+- 49cf7ee: Standard Error serialization/deserialization
+
+## 1.3.2
+
+### Patch Changes
+
+- f191f2a: drivers: download: add sparse cache for ranges
+
 ## 1.3.1
 
 ### Patch Changes

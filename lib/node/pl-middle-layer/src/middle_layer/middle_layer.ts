@@ -241,10 +241,7 @@ export class MiddleLayer {
     const driverKit = await initDriverKit(pl, workdir, ops);
 
     // passed to components having no own retry logic
-    const retryHttpDispatcher = new RetryAgent(pl.httpDispatcher, {
-      minTimeout: 250,
-      maxRetries: 4,
-    });
+    const retryHttpDispatcher = new RetryAgent(pl.httpDispatcher);
 
     const v2RegistryProvider = new V2RegistryProvider(retryHttpDispatcher);
 

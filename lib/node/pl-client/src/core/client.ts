@@ -142,7 +142,7 @@ export class PlClient {
   }
 
   public async ping(): Promise<MaintenanceAPI_Ping_Response> {
-    return (await this._ll.grpcPl.ping({})).response;
+    return (await this._ll.grpcPl.get().ping({})).response;
   }
 
   public get conf(): PlClientConfig {
@@ -296,7 +296,7 @@ export class PlClient {
       if (ok) {
         // syncing on transaction if requested
         if (ops?.sync === undefined ? this.forceSync : ops?.sync)
-          await this._ll.grpcPl.txSync({ txId });
+          await this._ll.grpcPl.get().txSync({ txId });
 
         // introducing artificial delay, if requested
         if (writable && this.txDelay > 0)
@@ -342,7 +342,7 @@ export class PlClient {
   public getDriver<Drv extends PlDriver>(definition: PlDriverDefinition<Drv>): Drv {
     const attached = this.drivers.get(definition.name);
     if (attached !== undefined) return attached as Drv;
-    const driver = definition.init(this, this.grpcTransport, this.httpDispatcher);
+    const driver = definition.init(this, this._ll, this.httpDispatcher);
     this.drivers.set(definition.name, driver);
     return driver;
   }

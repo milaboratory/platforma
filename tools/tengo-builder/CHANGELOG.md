@@ -1,5 +1,41 @@
 # @platforma-sdk/tengo-builder
 
+## 2.1.11
+
+### Patch Changes
+
+- 37800c5: Public tools packages
+- Updated dependencies [37800c5]
+  - @milaboratories/ts-helpers@1.4.1
+  - @milaboratories/pl-model-backend@1.1.1
+
+## 2.1.10
+
+### Patch Changes
+
+- Updated dependencies [c7894c2]
+  - @milaboratories/ts-helpers@1.4.0
+
+## 2.1.9
+
+### Patch Changes
+
+- Updated dependencies [49cf7ee]
+  - @milaboratories/ts-helpers@1.3.3
+
+## 2.1.8
+
+### Patch Changes
+
+- f771d67: bump tengo-tester
+
+## 2.1.7
+
+### Patch Changes
+
+- Updated dependencies [f191f2a]
+  - @milaboratories/ts-helpers@1.3.2
+
 ## 2.1.6
 
 ### Patch Changes

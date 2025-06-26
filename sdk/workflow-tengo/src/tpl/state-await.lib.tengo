@@ -7,6 +7,9 @@ tx := import("tx")
 ll := import(":ll")
 text := import("text")
 regexp := import(":regexp")
+smart := import(":smart")
+maps := import(":maps")
+feats := import(":feats")
 
 createContext := func() {
 	return {
@@ -14,6 +17,9 @@ createContext := func() {
 		resolvedStates: {}
 	}
 }
+
+// temporary used until we have all the events exposed to tengo
+RTYPE_AWAITER := { Name: "awaiter", Version: "1" }
 
 awaitOneState := func(field, path, state) {
 	if field.isErrorSet() && !field.isValueSet() {
@@ -51,9 +57,6 @@ awaitOneState := func(field, path, state) {
 					subscriptions: [{
 						resource: resource.id,
 						event: "FieldCreated"
-					},{
-						resource: resource.id,
-						event: "InputsLocked"
 					}]
 				}
 			}
@@ -93,19 +96,19 @@ awaitOneState := func(field, path, state) {
 			}
 
 			subscriptions := []
-			for nextFieldName, nextField in resource.inputs() {
+			maps.forEach(resource.inputs(), func(nextFieldName, nextField) {
 				if !matcher(nextFieldName) {
-					continue
+					return
 				}
 				res := awaitOneState(nextField, rPath, state)
 				if res.type == "Ready" {
-					continue
+					return
 				} else if res.type == "Subscribe" {
 					subscriptions = append(subscriptions, res.subscriptions...)
 				} else {
 					ll.panic("Unknown result type: %v", res.type)
 				}
-			}
+			})
 			if len(subscriptions) == 0 {
 				return { type: "Ready" }
 			} else {
@@ -157,7 +160,7 @@ awaitOneState := func(field, path, state) {
 						}]
 					}
 				}
-			} else if state == "ResourceReady" {
+			} else if state == "ResourceReady" || state == "Final" {
 				// What user actually wants is to wait for the resource to be in final state,
 				// so we use isFinal() instead of resourceReady
 				if resource.isFinal() {
@@ -167,7 +170,7 @@ awaitOneState := func(field, path, state) {
 						type: "Subscribe",
 						subscriptions: [{
 							resource: resource.id,
-							event: "ResourceReady"
+							event: "Final" // will also effectively subscribe to ResourceDuplicate and ResourceError
 						}]
 					}
 				}
@@ -178,19 +181,21 @@ awaitOneState := func(field, path, state) {
 	}
 }
 
+_renderer := smart.resource(ll.getCurrentTemplateRenderer())
+
 /** Returns true if all requested states are reached */
 await := func(rootField, ctxStorageResource, requests) {
 	pssKey := "await:" + string(rootField.id.ResourceID) + ":" + rootField.id.Name
 	prevSubscriptions := ctxStorageResource.kvGetAsJson(pssKey)
 
-	if !is_undefined(prevSubscriptions) && len(prevSubscriptions) == 0 {
-		// initialization was finished before, in a previous template execution
-		ll.panic("Unexpected state, desired state was reached in the previous call")
-	}
-
-	if is_undefined(prevSubscriptions) {
-		// initializing previous subscriptions set
-		prevSubscriptions = {}
+	lastSubscriptionKey := undefined
+	if !is_undefined(prevSubscriptions) {
+		if is_undefined(prevSubscriptions.lastSubscriptionKey) {
+			// initialization was finished before, in a previous template execution
+			ll.panic("Unexpected state, desired state was reached in the previous call")
+		} else {
+			lastSubscriptionKey = prevSubscriptions.lastSubscriptionKey
+		}
 	}
 
 	subscriptions := {}
@@ -221,35 +226,89 @@ await := func(rootField, ctxStorageResource, requests) {
 		}
 	}
 
-	// creating new subscriptions
-	for key, sub in subscriptions {
-		if !is_undefined(prevSubscriptions[key]) {
-			// don't create subscription, if it was created in the past
-			continue
+	//
+	// Our goal is to reach all await states, so we can subscribe to any of the subscriptions,
+	// and check the state again when it fires.
+	//
+
+	// Here we check, if there are any subscriptions that were already created in the past
+	// if yes, we don't need to create new subscriptions. If no intersection, we will
+	// subscribe to the first subscription.
+	firstSubscriptionKey := undefined
+	firstSubscription := undefined
+	lastSubscriptionKeyPresent := false
+	maps.forEach(subscriptions, func(key, sub) {
+		if is_undefined(firstSubscriptionKey) {
+			firstSubscriptionKey = key
+			firstSubscription = sub
 		}
+		if !is_undefined(lastSubscriptionKey) && lastSubscriptionKey == key {
+			lastSubscriptionKeyPresent = true
+		}
+	})
+
+	// there is an intersection, so we don't need to create new subscriptions,
+	// we just continue to wait for the previously awaited state to be reached
+	if lastSubscriptionKeyPresent {
+		return false
+	}
+
+	// subscribing to the first subscription from the list
+	if !is_undefined(firstSubscriptionKey) {
+
+		fullEventId := pssKey + ":" + firstSubscriptionKey
+		targetResource := firstSubscription.resource
+		targetEvents := [firstSubscription.event]
+
+		if firstSubscription.event == "Final" { // special case
+			if !feats.fullFeaturedApi {
+
+				//
+				// TODO: special hack for ResourceReady event until there is no ResourceDuplicate event support
+				// Should be safe to remove after ~2026-01-01. Check MILAB-2904 is done.
+				//
+
+				target := smart.resource(targetResource)
+				isEphemeral := target.info().Features.ephemeral
+				if !isEphemeral { // doing proxy-object workaround for pure resources only
+					awaiterBuilder := smart.ephemeralBuilder(RTYPE_AWAITER)
+					awaiterBuilder.createInputField("target").set(target)
+					awaiter := awaiterBuilder.lockAndBuild()
+					_renderer.createDynamicField("tmp:" + fullEventId).set(awaiter)
+					targetResource = awaiter.info().ID // converting to global resource id; this is a hack to overcome the fact that tx.subscribeTo can't work with local ids
+				}
+				targetEvents = ["ResourceReady", "ResourceError"]
+
+			} else {
+				targetEvents = ["ResourceReady", "ResourceError", "ResourceDuplicate"]
+			}
+		} else if firstSubscription.event == "FieldCreated" { // another special case
+			// also waiting for inputs locked to detect field absence
+			targetEvents = ["FieldCreated", "InputsLocked"]
+		}
+
 		e := {}
-		e[sub.event] = true
-		tx.subscribeTo(sub.resource, pssKey + ":" + key, e)
-	}
-
-	// unsubscribing from subscriptions we don't need anymore
-	for key, _ in prevSubscriptions {
-		if !is_undefined(subscriptions[key]) {
-			// don't unsubscribe from subscriptions, we still need
-			continue
+		for event in targetEvents {
+			e[event] = true
 		}
-		tx.unsubscribeFrom(pssKey + ":" + key)
+		tx.subscribeTo(targetResource, fullEventId, e)
+
 	}
 
-	// creating and saving new context; savong only keys
+	// unsubscribing from previous subscriptions we don't need anymore
+	if !is_undefined(lastSubscriptionKey) {
+		tx.unsubscribeFrom(pssKey + ":" + lastSubscriptionKey)
+	}
+
+	// creating and saving new context
 	newPrevSubscriptions := {}
-	for key, _ in subscriptions {
-		newPrevSubscriptions[key] = true
+	if !is_undefined(firstSubscriptionKey) {
+		newPrevSubscriptions.lastSubscriptionKey = firstSubscriptionKey
 	}
 	// saving the context
 	ctxStorageResource.kvSetJson(pssKey, newPrevSubscriptions)
 
-	return len(subscriptions) == 0
+	return is_undefined(firstSubscriptionKey)
 }
 
 export ll.toStrict({

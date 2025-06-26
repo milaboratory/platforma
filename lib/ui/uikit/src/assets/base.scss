@@ -37,6 +37,7 @@
 
   --font-size-base: 14px;
   --font-weigh-base: 500;
+  --line-height-base: 16px;
 
   --control-height: 40px;
   --control-hover-color: #363452;
@@ -69,8 +70,6 @@
   --divider-color: var(--txt-01); // @TODO
 
   --pl-dropdown-options-bg: #fff;
-
-  --mask-icon-bg-color: #000;
 }
 
 [data-theme='dark'] {
@@ -135,8 +134,8 @@ body,
   height: 100%;
   padding: 0;
   margin: 0;
-  font-size: 14px;
-  line-height: 16px;
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-base);
   color: var(--main-dark-color);
   box-sizing: border-box;
   position: relative;

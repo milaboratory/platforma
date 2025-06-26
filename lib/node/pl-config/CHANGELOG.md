@@ -1,5 +1,34 @@
 # @milaboratories/pl-config
 
+## 1.4.15
+
+### Patch Changes
+
+- 37800c5: Public tools packages
+- Updated dependencies [37800c5]
+  - @milaboratories/ts-helpers@1.4.1
+
+## 1.4.14
+
+### Patch Changes
+
+- Updated dependencies [c7894c2]
+  - @milaboratories/ts-helpers@1.4.0
+
+## 1.4.13
+
+### Patch Changes
+
+- Updated dependencies [49cf7ee]
+  - @milaboratories/ts-helpers@1.3.3
+
+## 1.4.12
+
+### Patch Changes
+
+- Updated dependencies [f191f2a]
+  - @milaboratories/ts-helpers@1.3.2
+
 ## 1.4.11
 
 ### Patch Changes

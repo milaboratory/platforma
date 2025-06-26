@@ -10,20 +10,22 @@ export default {
 <script lang="ts" setup generic="M = unknown">
 import './pl-autocomplete.scss';
 import { computed, reactive, ref, unref, useSlots, useTemplateRef, watch, watchPostEffect } from 'vue';
-import { tap } from '@/helpers/functions';
-import { PlTooltip } from '@/components/PlTooltip';
-import DoubleContour from '@/utils/DoubleContour.vue';
-import { useLabelNotch } from '@/utils/useLabelNotch';
-import type { ListOption, ListOptionNormalized } from '@/types';
-import { deepEqual } from '@/helpers/objects';
-import DropdownListItem from '@/components/DropdownListItem.vue';
-import LongText from '@/components/LongText.vue';
-import { normalizeListOptions } from '@/helpers/utils';
+import { tap } from '../../helpers/functions';
+import { PlTooltip } from '../PlTooltip';
+import DoubleContour from '../../utils/DoubleContour.vue';
+import { useLabelNotch } from '../../utils/useLabelNotch';
+import type { ListOption, ListOptionNormalized } from '../../types';
+import { deepEqual } from '../../helpers/objects';
+import DropdownListItem from '../DropdownListItem.vue';
+import LongText from '../LongText.vue';
+import { normalizeListOptions } from '../../helpers/utils';
 import { PlIcon16 } from '../PlIcon16';
 import { PlMaskIcon24 } from '../PlMaskIcon24';
-import { DropdownOverlay } from '@/utils/DropdownOverlay';
+import { DropdownOverlay } from '../../utils/DropdownOverlay';
 import { refDebounced } from '@vueuse/core';
-import { useWatchFetch } from '@/composition/useWatchFetch.ts';
+import { useWatchFetch } from '../../composition/useWatchFetch.ts';
+import SvgRequired from '../../generated/components/svg/images/SvgRequired.vue';
+import { getErrorMessage } from '../../helpers/error.ts';
 
 /**
  * The current selected value.
@@ -55,7 +57,7 @@ const props = withDefaults(
     /**
      * Error message displayed below the dropdown (optional)
      */
-    error?: string;
+    error?: unknown;
     /**
      * Placeholder text shown when no value is selected.
      */
@@ -106,7 +108,9 @@ const props = withDefaults(
   },
 );
 
-const slots = useSlots();
+const slots = defineSlots<{
+  [key: string]: unknown;
+}>();
 
 const rootRef = ref<HTMLElement | undefined>();
 const input = ref<HTMLInputElement | undefined>();
@@ -155,7 +159,7 @@ const computedError = computed(() => {
   }
 
   if (props.error) {
-    return props.error;
+    return getErrorMessage(props.error);
   }
 
   if (isLoadingError.value) {
@@ -209,7 +213,7 @@ const toggleOpen = () => {
 
 watch(() => data.open, (v) => {
   search.value = v ? '' : null;
-})
+});
 
 const onInputFocus = () => {
   data.open = true;
@@ -361,7 +365,7 @@ watch(() => optionsRequest.loading || modelOptionRequest.loading, (loading) => {
 
           <div class="pl-autocomplete__controls">
             <PlMaskIcon24 v-if="isLoadingOptions" name="loading" />
-            <PlIcon16 v-if="clearable && hasValue" name="delete-clear" @click.stop="clear" />
+            <PlIcon16 v-if="clearable && hasValue" class="clear" name="delete-clear" @click.stop="clear" />
             <slot name="append" />
             <div class="pl-autocomplete__arrow-wrapper" @click.stop="toggleOpen">
               <div v-if="arrowIconLarge" class="arrow-icon" :class="[`icon-24 ${arrowIconLarge}`]" />
@@ -371,7 +375,7 @@ watch(() => optionsRequest.loading || modelOptionRequest.loading, (loading) => {
           </div>
         </div>
         <label v-if="label">
-          <i v-if="required" class="required-icon" />
+          <SvgRequired v-if="required" />
           <span>{{ label }}</span>
           <PlTooltip v-if="slots.tooltip" class="info" position="top">
             <template #tooltip>

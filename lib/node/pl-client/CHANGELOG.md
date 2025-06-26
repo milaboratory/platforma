@@ -1,5 +1,64 @@
 # @milaboratories/pl-client
 
+## 2.11.2
+
+### Patch Changes
+
+- 37800c5: Public tools packages
+- Updated dependencies [37800c5]
+  - @milaboratories/ts-helpers@1.4.1
+  - @milaboratories/pl-http@1.1.4
+
+## 2.11.1
+
+### Patch Changes
+
+- 3d34876: Fix for closed channel error. All gRPC clients are now used via GrpcClientProvider to refresh underlying transport.
+
+## 2.11.0
+
+### Minor Changes
+
+- babb3eb: - state refresh signal now interupts delay in main loop of synchronized tree
+  - added information about final states about resources of the following types: json-gz/object, Null, StreamWorkdir/\*
+  - adding transaction time to pl-client stats
+
+### Patch Changes
+
+- c243d64: - network-related dependency upgrade
+- Updated dependencies [c243d64]
+- Updated dependencies [c7894c2]
+  - @milaboratories/pl-http@1.1.3
+  - @milaboratories/ts-helpers@1.4.0
+
+## 2.10.2
+
+### Patch Changes
+
+- 49cf7ee: Standard Error serialization/deserialization
+- Updated dependencies [49cf7ee]
+  - @milaboratories/ts-helpers@1.3.3
+
+## 2.10.1
+
+### Patch Changes
+
+- Updated dependencies [f191f2a]
+  - @milaboratories/ts-helpers@1.3.2
+
+## 2.10.0
+
+### Minor Changes
+
+- f7dedbe: - setResourceError method from the backend API exposed
+  - createError helper method
+
+## 2.9.3
+
+### Patch Changes
+
+- 2d5ee55: Add names to pl-client errors
+
 ## 2.9.2
 
 ### Patch Changes

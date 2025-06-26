@@ -1,5 +1,138 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.4.19
+
+### Patch Changes
+
+- 37800c5: Public tools packages
+- Updated dependencies [37800c5]
+  - @platforma-sdk/model@1.37.2
+  - @milaboratories/milaboratories.ui-examples.model@1.1.76
+
+## 1.4.18
+
+### Patch Changes
+
+- 2c3bb60: Developer build ui-examples don't required build/watch for deps
+
+## 1.4.17
+
+### Patch Changes
+
+- 6ffe944: PlAgDataTableV2 refactoring
+- Updated dependencies [6ffe944]
+- Updated dependencies [6ffe944]
+- Updated dependencies [6ffe944]
+  - @milaboratories/milaboratories.ui-examples.model@1.1.75
+  - @platforma-sdk/model@1.37.0
+
+## 1.4.16
+
+### Patch Changes
+
+- 45badc9: PlElementList implementation
+- Updated dependencies [45badc9]
+  - @milaboratories/milaboratories.ui-examples.model@1.1.74
+
+## 1.4.15
+
+### Patch Changes
+
+- 2299e3e: Fix loading icon in the PlMultiDropdown and multi path mask icons (clipboard and similar)
+
+## 1.4.14
+
+### Patch Changes
+
+- Updated dependencies [c570fd4]
+  - @platforma-sdk/model@1.34.10
+  - @milaboratories/milaboratories.ui-examples.model@1.1.73
+
+## 1.4.13
+
+### Patch Changes
+
+- 540e690: Unified svg icon component
+
+## 1.4.12
+
+### Patch Changes
+
+- Updated dependencies [23f719d]
+  - @platforma-sdk/model@1.34.8
+  - @milaboratories/milaboratories.ui-examples.model@1.1.72
+
+## 1.4.11
+
+### Patch Changes
+
+- 9d7ae59: uikit-playground: use vite aliases to directly consume source code
+
+## 1.4.10
+
+### Patch Changes
+
+- Updated dependencies [35ce863]
+  - @platforma-sdk/model@1.34.0
+  - @milaboratories/milaboratories.ui-examples.model@1.1.71
+
+## 1.4.9
+
+### Patch Changes
+
+- @platforma-sdk/model@1.33.17
+- @milaboratories/milaboratories.ui-examples.model@1.1.70
+
+## 1.4.8
+
+### Patch Changes
+
+- Updated dependencies [1c10475]
+  - @platforma-sdk/model@1.33.16
+  - @milaboratories/milaboratories.ui-examples.model@1.1.69
+
+## 1.4.7
+
+### Patch Changes
+
+- @platforma-sdk/model@1.33.14
+- @milaboratories/milaboratories.ui-examples.model@1.1.68
+
+## 1.4.6
+
+### Patch Changes
+
+- Updated dependencies [f0ea01c]
+  - @platforma-sdk/model@1.33.10
+  - @milaboratories/milaboratories.ui-examples.model@1.1.67
+
+## 1.4.5
+
+### Patch Changes
+
+- @platforma-sdk/model@1.33.8
+- @milaboratories/milaboratories.ui-examples.model@1.1.66
+
+## 1.4.4
+
+### Patch Changes
+
+- 4ccd249: Implementation PlErrorBoundary over reusable PlErrorAlert + PlClibpboard
+
+## 1.4.3
+
+### Patch Changes
+
+- Updated dependencies [9b15f24]
+  - @platforma-sdk/model@1.33.2
+  - @milaboratories/milaboratories.ui-examples.model@1.1.65
+
+## 1.4.2
+
+### Patch Changes
+
+- a23199f: PlFileInput support custom errors
+
 ## 1.4.1
 
 ### Patch Changes

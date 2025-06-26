@@ -10,18 +10,20 @@ export default {
 <script lang="ts" setup generic="M = unknown">
 import './pl-dropdown-legacy.scss';
 import { computed, reactive, ref, unref, useSlots, watch, watchPostEffect } from 'vue';
-import { tap, tapIf } from '@/helpers/functions';
-import { PlTooltip } from '@/components/PlTooltip';
-import DoubleContour from '@/utils/DoubleContour.vue';
-import { useLabelNotch } from '@/utils/useLabelNotch';
-import type { ListOption, ListOptionNormalized } from '@/types';
-import { scrollIntoView } from '@/helpers/dom';
-import { deepEqual } from '@/helpers/objects';
-import DropdownListItem from '@/components/DropdownListItem.vue';
-import LongText from '@/components/LongText.vue';
+import { tap, tapIf } from '../../helpers/functions';
+import { PlTooltip } from '../PlTooltip';
+import DoubleContour from '../../utils/DoubleContour.vue';
+import { useLabelNotch } from '../../utils/useLabelNotch';
+import type { ListOption, ListOptionNormalized } from '../../types';
+import { scrollIntoView } from '../../helpers/dom';
+import { deepEqual } from '../../helpers/objects';
+import DropdownListItem from '../DropdownListItem.vue';
+import LongText from '../LongText.vue';
 import { PlIcon16 } from '../PlIcon16';
 import { PlMaskIcon24 } from '../PlMaskIcon24';
-import { normalizeListOptions } from '@/helpers/utils';
+import { normalizeListOptions } from '../../helpers/utils';
+import SvgRequired from '../../generated/components/svg/images/SvgRequired.vue';
+import { getErrorMessage } from '../../helpers/error.ts';
 
 const emit = defineEmits<{
   /**
@@ -55,7 +57,7 @@ const props = withDefaults(
     /**
      * Error message displayed below the dropdown (optional)
      */
-    error?: string;
+    error?: unknown;
     /**
      * Placeholder text shown when no value is selected.
      */
@@ -143,7 +145,7 @@ const computedError = computed(() => {
   }
 
   if (props.error) {
-    return props.error;
+    return getErrorMessage(props.error);
   }
 
   if (props.modelValue !== undefined && selectedIndex.value === -1) {
@@ -335,7 +337,7 @@ watchPostEffect(() => {
 
           <div class="ui-dropdown__controls">
             <PlMaskIcon24 v-if="isLoadingOptions" name="loading" />
-            <PlIcon16 v-if="clearable && hasValue" name="delete-clear" @click.stop="clear" />
+            <PlIcon16 v-if="clearable && hasValue" class="clear" name="delete-clear" @click.stop="clear" />
             <slot name="append" />
             <div v-if="arrowIconLarge" class="arrow-icon" :class="[`icon-24 ${arrowIconLarge}`]" @click.stop="toggleOpen" />
             <div v-else-if="arrowIcon" class="arrow-icon" :class="[`icon-16 ${arrowIcon}`]" @click.stop="toggleOpen" />
@@ -343,7 +345,7 @@ watchPostEffect(() => {
           </div>
         </div>
         <label v-if="label">
-          <i v-if="required" class="required-icon" />
+          <SvgRequired v-if="required" />
           <span>{{ label }}</span>
           <PlTooltip v-if="slots.tooltip" class="info" position="top">
             <template #tooltip>

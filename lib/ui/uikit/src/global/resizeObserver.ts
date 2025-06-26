@@ -1,4 +1,4 @@
-import { tapIf } from '@/helpers/functions';
+import { tapIf } from '../helpers/functions';
 
 const cm = new WeakMap<Element, (entry: ResizeObserverEntry) => void>();
 

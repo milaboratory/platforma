@@ -475,6 +475,47 @@ test('limbo test', async ({ expect }) => {
   });
 });
 
+test('test error propagation', async ({ expect }) => {
+  await withMl(async (ml) => {
+    const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
+    await ml.openProject(pRid1);
+    const prj = ml.getOpenedProject(pRid1);
+
+    const block1Id = await prj.addBlock('Block 1', enterNumberSpec);
+
+    const overview0 = await prj.overview.awaitStableValue();
+    overview0.blocks.forEach((block) => {
+      expect(block.sections).toBeDefined();
+      expect(block.canRun).toEqual(false);
+      expect(block.currentBlockPack).toBeDefined();
+    });
+
+    await prj.setBlockArgs(block1Id, { numbers: [1] });
+
+    const block1StableState1 = await prj.getBlockState(block1Id).awaitStableValue();
+    expect(block1StableState1.outputs!['errorIfNumberIs999']).toStrictEqual({
+      ok: true,
+      value: [1]
+    });
+
+    await prj.setBlockArgs(block1Id, { numbers: [999] });
+
+
+    const block1StableState2 = await prj.getBlockState(block1Id).awaitStableValue();
+
+    const result = block1StableState2.outputs!['errorIfNumberIs999'];
+
+    expect(result.ok).toBe(false);
+
+    if (result.ok) {
+      throw new Error('Result is ok (unexpected)');
+    }
+
+    expect(result.errors).toHaveLength(1);
+    expect(result.errors[0].name).toBe('WrongResourceTypeError');
+  });
+});
+
 test('block update test', async ({ expect }) => {
   await withMl(async (ml, workFolder) => {
     const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
@@ -608,6 +649,7 @@ blockTest(
         expect((outputs.contentAsJson as any).value).toStrictEqual(42);
         const localBlob = (outputs.downloadedBlobContent as any).value as LocalBlobHandleAndSize;
         const remoteBlob = (outputs.onDemandBlobContent as any).value as RemoteBlobHandleAndSize;
+        const quickJsRemoteBlob = (outputs.onDemandBlobContent1 as any).value as RemoteBlobHandleAndSize;
 
         expect(
           Buffer.from(await ml.driverKit.blobDriver.getContent(localBlob.handle)).toString('utf-8')
@@ -616,6 +658,14 @@ blockTest(
         expect(
           Buffer.from(await ml.driverKit.blobDriver.getContent(remoteBlob.handle)).toString('utf-8')
         ).toEqual('42\n');
+
+        expect(
+          Buffer.from(await ml.driverKit.blobDriver.getContent(remoteBlob.handle, { from: 1, to: 2 })).toString('utf-8')
+        ).toEqual('2');
+
+        expect(
+          Buffer.from(await ml.driverKit.blobDriver.getContent(quickJsRemoteBlob.handle, { from: 1, to: 2 })).toString('utf-8')
+        ).toEqual('2');
 
         return;
       }

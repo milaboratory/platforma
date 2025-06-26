@@ -1,5 +1,102 @@
 # @milaboratories/uikit
 
+## 2.2.92
+
+### Patch Changes
+
+- 37800c5: Public tools packages
+
+## 2.2.91
+
+### Patch Changes
+
+- 2c3bb60: Developer build ui-examples don't required build/watch for deps
+
+## 2.2.90
+
+### Patch Changes
+
+- 6ffe944: PlAgDataTableV2 refactoring
+- 6ffe944: PlAgDataTable types fixed
+
+## 2.2.89
+
+### Patch Changes
+
+- 60540e8: Fix: return platforma variable declaration to global scope
+
+## 2.2.88
+
+### Patch Changes
+
+- e9d02ae: Correct clear icon color
+
+## 2.2.87
+
+### Patch Changes
+
+- 45badc9: PlElementList implementation
+
+## 2.2.86
+
+### Patch Changes
+
+- 8248b67: Fix svg icons ids collisions
+
+## 2.2.85
+
+### Patch Changes
+
+- 2299e3e: Fix loading icon in the PlMultiDropdown and multi path mask icons (clipboard and similar)
+
+## 2.2.84
+
+### Patch Changes
+
+- 540e690: Unified svg icon component
+
+## 2.2.83
+
+### Patch Changes
+
+- 697b8a5: Replace all aliases to relative paths
+
+## 2.2.82
+
+### Patch Changes
+
+- 54ebbe9: PlAgDataTable: fix reset hidden columns state, remove scroll to top after reordering columns
+
+## 2.2.81
+
+### Patch Changes
+
+- d707ab4: Unify error processing in uikit
+
+## 2.2.80
+
+### Patch Changes
+
+- cd3b6d5: Bump vite version and related plugins
+
+## 2.2.79
+
+### Patch Changes
+
+- 4ccd249: Implementation PlErrorBoundary over reusable PlErrorAlert + PlClibpboard
+
+## 2.2.78
+
+### Patch Changes
+
+- 84656a6: Get rid of .cjs and .umd in ui packages
+
+## 2.2.77
+
+### Patch Changes
+
+- a23199f: PlFileInput support custom errors
+
 ## 2.2.76
 
 ### Patch Changes

@@ -1,5 +1,45 @@
 # @platforma-sdk/workflow-tengo
 
+## 4.8.0
+
+### Minor Changes
+
+- e18117d: Force quota feature flags to true, added serviceFields feature flag to allow execution on previous platforma version with an issue with service fields
+
+## 4.7.5
+
+### Patch Changes
+
+- 2d2a39d: Fixes cannot get element from strictMap: key "has_suffix" in xsv builder
+
+## 4.7.4
+
+### Patch Changes
+
+- 5ac72c3: Allow to set CPU, Mem and Queue for pfconv jobs in various contexts
+
+## 4.7.3
+
+### Patch Changes
+
+- 2c52dc7: Job scheduling options exposed for pt builde: mem, cpu and queue.
+
+## 4.7.2
+
+### Patch Changes
+
+- 2dad052: tengo API enchancements: more notification filters, hashing functions, execution context, more methods in fields and resources API
+
+## 4.7.1
+
+### Patch Changes
+
+- b1bf419: - significant review of await logic
+  - fix via hacky workaround for "Final" resource state await
+  - significant optimization of await logic, so it uses less subscriptions
+  - resourceDuplicateEvent feat for future backend upgrade
+  - createDynamicField method for smart resource
+
 ## 4.7.0
 
 ### Minor Changes

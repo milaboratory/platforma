@@ -1,5 +1,54 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.7.41
+
+### Patch Changes
+
+- 37800c5: Public tools packages
+- Updated dependencies [37800c5]
+  - @milaboratories/pl-model-common@1.15.7
+
+## 1.7.40
+
+### Patch Changes
+
+- Updated dependencies [6ffe944]
+- Updated dependencies [6ffe944]
+  - @milaboratories/pl-model-common@1.15.6
+
+## 1.7.39
+
+### Patch Changes
+
+- 2bcc47f: Remove old PFrame interface
+
+## 1.7.38
+
+### Patch Changes
+
+- 619f490: PFrames make getShape truly asynchronous
+
+## 1.7.37
+
+### Patch Changes
+
+- Updated dependencies [49cf7ee]
+  - @milaboratories/pl-model-common@1.15.5
+
+## 1.7.36
+
+### Patch Changes
+
+- Updated dependencies [61aa680]
+  - @milaboratories/pl-model-common@1.15.4
+
+## 1.7.35
+
+### Patch Changes
+
+- Updated dependencies [f191f2a]
+  - @milaboratories/pl-model-common@1.15.3
+
 ## 1.7.34
 
 ### Patch Changes

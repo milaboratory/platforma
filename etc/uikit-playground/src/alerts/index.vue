@@ -1,6 +1,6 @@
 <script lang="ts" setup>
-import Layout from '@/Layout.vue';
-import Split from '@/Split.vue';
+import Layout from '../Layout.vue';
+import Split from '../Split.vue';
 import { faker } from '@faker-js/faker';
 import { range, toList } from '@milaboratories/helpers';
 import { PlCheckbox, PlAlert } from '@milaboratories/uikit';

@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { computed, ref } from 'vue';
-import { useMouseCapture } from '@/composition/useMouseCapture';
+import { useMouseCapture } from '../../composition/useMouseCapture';
 
 const emit = defineEmits<{
   (e: 'change:offset', value: number): void;

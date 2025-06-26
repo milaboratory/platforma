@@ -1,5 +1,88 @@
 # @milaboratories/milaboratories.ui-examples.model
 
+## 1.1.76
+
+### Patch Changes
+
+- Updated dependencies [37800c5]
+  - @platforma-sdk/model@1.37.2
+
+## 1.1.75
+
+### Patch Changes
+
+- 6ffe944: PlAgDataTableV2 refactoring
+- Updated dependencies [6ffe944]
+- Updated dependencies [6ffe944]
+- Updated dependencies [6ffe944]
+  - @platforma-sdk/model@1.37.0
+
+## 1.1.74
+
+### Patch Changes
+
+- 45badc9: PlElementList implementation
+
+## 1.1.73
+
+### Patch Changes
+
+- Updated dependencies [c570fd4]
+  - @platforma-sdk/model@1.34.10
+
+## 1.1.72
+
+### Patch Changes
+
+- Updated dependencies [23f719d]
+  - @platforma-sdk/model@1.34.8
+
+## 1.1.71
+
+### Patch Changes
+
+- Updated dependencies [35ce863]
+  - @platforma-sdk/model@1.34.0
+
+## 1.1.70
+
+### Patch Changes
+
+- @platforma-sdk/model@1.33.17
+
+## 1.1.69
+
+### Patch Changes
+
+- Updated dependencies [1c10475]
+  - @platforma-sdk/model@1.33.16
+
+## 1.1.68
+
+### Patch Changes
+
+- @platforma-sdk/model@1.33.14
+
+## 1.1.67
+
+### Patch Changes
+
+- Updated dependencies [f0ea01c]
+  - @platforma-sdk/model@1.33.10
+
+## 1.1.66
+
+### Patch Changes
+
+- @platforma-sdk/model@1.33.8
+
+## 1.1.65
+
+### Patch Changes
+
+- Updated dependencies [9b15f24]
+  - @platforma-sdk/model@1.33.2
+
 ## 1.1.64
 
 ### Patch Changes

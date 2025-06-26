@@ -1,5 +1,85 @@
 # @platforma-sdk/model
 
+## 1.37.2
+
+### Patch Changes
+
+- 37800c5: Public tools packages
+- Updated dependencies [37800c5]
+  - @milaboratories/pl-error-like@1.12.2
+  - @milaboratories/pl-model-common@1.15.7
+
+## 1.37.0
+
+### Minor Changes
+
+- 6ffe944: PlAgDataTableV2 - significant interface change
+
+### Patch Changes
+
+- 6ffe944: PlAgDataTableV2 refactoring
+- 6ffe944: PlAgDataTable types fixed
+- Updated dependencies [6ffe944]
+- Updated dependencies [6ffe944]
+  - @milaboratories/pl-model-common@1.15.6
+
+## 1.34.10
+
+### Patch Changes
+
+- c570fd4: createPFrameForGraphs fix
+
+## 1.34.8
+
+### Patch Changes
+
+- 23f719d: add createPFrameForGraphsDescription
+
+## 1.34.0
+
+### Minor Changes
+
+- 35ce863: PlMultiSequenceAlignment improvements
+
+## 1.33.17
+
+### Patch Changes
+
+- Updated dependencies [49cf7ee]
+  - @milaboratories/pl-model-common@1.15.5
+
+## 1.33.16
+
+### Patch Changes
+
+- 1c10475: fix createPFrameForGraphs
+
+## 1.33.14
+
+### Patch Changes
+
+- Updated dependencies [61aa680]
+  - @milaboratories/pl-model-common@1.15.4
+
+## 1.33.10
+
+### Patch Changes
+
+- f0ea01c: createPFrameForGraphs fix
+
+## 1.33.8
+
+### Patch Changes
+
+- Updated dependencies [f191f2a]
+  - @milaboratories/pl-model-common@1.15.3
+
+## 1.33.2
+
+### Patch Changes
+
+- 9b15f24: Possible fix for excessive CPU usage in createPFrameForGraphs
+
 ## 1.32.1
 
 ### Patch Changes

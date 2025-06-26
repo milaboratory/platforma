@@ -1,13 +1,15 @@
-import type { ListOption } from '@milaboratories/uikit';
+import { isJsonEqual } from '@milaboratories/helpers';
+import type { ListOptionNormalized } from '@milaboratories/uikit';
 import {
-  type AxisId,
   type CalculateTableDataRequest,
   type CanonicalizedJson,
   canonicalizeJson,
   createRowSelectionColumn,
+  ensureError,
   getAxisId,
   getRawPlatformaInstance,
   isLabelColumn,
+  type JoinEntry,
   matchAxisId,
   parseJson,
   type PColumnIdAndSpec,
@@ -15,19 +17,18 @@ import {
   type PFrameHandle,
   type PlSelectionModel,
   type PObjectId,
-  type PTableColumnIdAxis,
-  type PTableColumnIdColumn,
-  type PTableColumnIdJson,
+  type PTableColumnId,
+  type PTableSorting,
   pTableValue,
-  stringifyPTableColumnId,
 } from '@platforma-sdk/model';
 import { computedAsync } from '@vueuse/core';
-import { type MaybeRefOrGetter, toValue } from 'vue';
-import type { SequenceRow } from './types';
+import { type MaybeRefOrGetter, ref, shallowRef, toValue } from 'vue';
+import { type Markup, markupAlignedSequence, parseMarkup } from './markup';
+import { multiSequenceAlignment } from './multi-sequence-alignment';
 
 const getPFrameDriver = () => getRawPlatformaInstance().pFrameDriver;
 
-const getEmptyOptions = () => ({ defaults: [], options: [] });
+export const sequenceLimit = 1000;
 
 export function useSequenceColumnsOptions(
   params: MaybeRefOrGetter<{
@@ -35,46 +36,95 @@ export function useSequenceColumnsOptions(
     sequenceColumnPredicate: PColumnPredicate;
   }>,
 ) {
-  const result = computedAsync(
-    () => getSequenceColumnsOptions(toValue(params)),
-    getEmptyOptions(),
-    { onError: () => (result.value = getEmptyOptions()) },
+  const error = shallowRef<Error>();
+  const data = computedAsync(
+    async () => {
+      try {
+        error.value = undefined;
+        return await getSequenceColumnsOptions(toValue(params));
+      } catch (err) {
+        error.value = ensureError(err);
+        return { options: [], defaults: [] };
+      }
+    },
+    { options: [], defaults: [] },
   );
-  return result;
+  return { data, error };
 }
 
 export function useLabelColumnsOptions(
   params: MaybeRefOrGetter<{
     pFrame: PFrameHandle | undefined;
     sequenceColumnIds: PObjectId[];
-    labelColumnOptionPredicate:
-      | ((column: PColumnIdAndSpec) => boolean)
-      | undefined;
   }>,
 ) {
-  const result = computedAsync(
-    () => getLabelColumnsOptions(toValue(params)),
-    getEmptyOptions(),
-    { onError: () => (result.value = getEmptyOptions()) },
+  const error = shallowRef<Error>();
+  const data = computedAsync(
+    async () => {
+      try {
+        error.value = undefined;
+        return await getLabelColumnsOptions(toValue(params));
+      } catch (err) {
+        console.error(err);
+        error.value = ensureError(err);
+        return { options: [], defaults: [] };
+      }
+    },
+    { options: [], defaults: [] },
   );
-  return result;
+  return { data, error };
 }
 
-export function useSequenceRows(
+export function useMarkupColumnsOptions(
+  params: MaybeRefOrGetter<{
+    pFrame: PFrameHandle | undefined;
+    sequenceColumnIds: PObjectId[];
+  }>,
+) {
+  const error = shallowRef<Error>();
+  const data = computedAsync(
+    async () => {
+      try {
+        error.value = undefined;
+        return await getMarkupColumnsOptions(toValue(params));
+      } catch (err) {
+        console.error(err);
+        error.value = ensureError(err);
+        return [];
+      }
+    },
+    [],
+  );
+  return { data, error };
+}
+
+export function useMultipleAlignmentData(
   params: MaybeRefOrGetter<{
     pframe: PFrameHandle | undefined;
     sequenceColumnIds: PObjectId[];
-    labelColumnIds: PTableColumnIdJson[];
+    labelColumnIds: PTableColumnId[];
+    markupColumnId: PObjectId | undefined;
     linkerColumnPredicate: PColumnPredicate | undefined;
     selection: PlSelectionModel | undefined;
   }>,
 ) {
-  const result = computedAsync(
-    () => getSequenceRows(toValue(params)),
-    [],
-    { onError: () => (result.value = []) },
+  const loading = ref(true);
+  const error = shallowRef<Error>();
+  const data = computedAsync(
+    async () => {
+      try {
+        error.value = undefined;
+        return await getMultipleAlignmentData(toValue(params));
+      } catch (err) {
+        console.error(err);
+        error.value = ensureError(err);
+        return { sequences: [], labels: [], exceedsLimit: false };
+      }
+    },
+    { sequences: [], labels: [], exceedsLimit: false },
+    { evaluating: loading },
   );
-  return result;
+  return { data, error, loading };
 }
 
 async function getSequenceColumnsOptions({
@@ -83,11 +133,8 @@ async function getSequenceColumnsOptions({
 }: {
   pFrame: PFrameHandle | undefined;
   sequenceColumnPredicate: (column: PColumnIdAndSpec) => boolean;
-}): Promise<{
-    options: ListOption<PObjectId>[];
-    defaults: PObjectId[];
-  }> {
-  if (!pFrame) return getEmptyOptions();
+}): Promise<OptionsWithDefaults<PObjectId>> {
+  if (!pFrame) return { options: [], defaults: [] };
   const pFrameDriver = getPFrameDriver();
   const columns = await pFrameDriver.listColumns(pFrame);
   const options = columns
@@ -100,85 +147,123 @@ async function getSequenceColumnsOptions({
   return { options, defaults };
 }
 
-async function getLabelColumnsOptions(
-  {
-    pFrame,
-    sequenceColumnIds,
-    labelColumnOptionPredicate,
-  }: {
-    pFrame: PFrameHandle | undefined;
-    sequenceColumnIds: PObjectId[];
-    labelColumnOptionPredicate:
-      | ((column: PColumnIdAndSpec) => boolean)
-      | undefined;
-  },
-): Promise<{
-    options: ListOption<PTableColumnIdJson>[];
-    defaults: PTableColumnIdJson[];
-  }> {
-  if (!pFrame) return getEmptyOptions();
-  const processedAxes = new Set<CanonicalizedJson<AxisId>>();
-  const optionLabels = new Map<PTableColumnIdJson, string>();
+async function getLabelColumnsOptions({
+  pFrame,
+  sequenceColumnIds,
+}: {
+  pFrame: PFrameHandle | undefined;
+  sequenceColumnIds: PObjectId[];
+}): Promise<OptionsWithDefaults<PTableColumnId>> {
+  if (!pFrame) return { options: [], defaults: [] };
   const pFrameDriver = getPFrameDriver();
   const columns = await pFrameDriver.listColumns(pFrame);
-  for (const column of columns) {
-    if (sequenceColumnIds.includes(column.columnId)) {
-      for (const axisSpec of column.spec.axesSpec) {
-        const axisId = getAxisId(axisSpec);
-        const canonicalizedAxisId = canonicalizeJson(axisId);
-        if (processedAxes.has(canonicalizedAxisId)) continue;
-        processedAxes.add(canonicalizedAxisId);
-        const labelColumn = columns.find(
-          ({ spec }) =>
-            isLabelColumn(spec)
-            && matchAxisId(axisId, getAxisId(spec.axesSpec[0])),
-        );
-        optionLabels.set(
-          labelColumn
-            ? canonicalizeJson({ type: 'column', id: labelColumn.columnId })
-            : canonicalizeJson({ type: 'axis', id: axisId }),
-          axisSpec.annotations?.['pl7.app/label'] ?? 'Unlabelled axis',
-        );
-      }
-    }
-    if (labelColumnOptionPredicate?.(column)) {
-      optionLabels.set(
-        canonicalizeJson({ type: 'column', id: column.columnId }),
-        column.spec.annotations?.['pl7.app/label'] ?? 'Unlabelled column',
-      );
-    }
-  }
-  const options = Array.from(optionLabels).map(
-    ([value, label]) => ({ label, value }),
-  );
-  const defaults = options
-    .filter((option) => {
-      const value = parseJson(option.value);
-      if (value.type === 'axis') return true;
+  const optionMap = new Map<CanonicalizedJson<PTableColumnId>, string>();
 
-      const column = columns.find((c) => c.columnId === value.id);
+  const sequenceColumnsAxes = new Map(sequenceColumnIds.flatMap((id) => {
+    const column = columns.find(({ columnId }) => columnId === id);
+    if (!column) {
+      throw new Error(`Couldn't find sequence column (ID: \`${id}\`).`);
+    }
+    return column.spec.axesSpec
+      .map((spec) => [canonicalizeJson(getAxisId(spec)), spec]);
+  }));
+
+  for (const [axisIdJson, axisSpec] of sequenceColumnsAxes.entries()) {
+    const axisId = parseJson(axisIdJson);
+    const labelColumn = columns.find(({ spec }) =>
+      isLabelColumn(spec) && matchAxisId(axisId, getAxisId(spec.axesSpec[0])),
+    );
+    optionMap.set(
+      labelColumn
+        ? canonicalizeJson({ type: 'column', id: labelColumn.columnId })
+        : canonicalizeJson({ type: 'axis', id: axisId }),
+      labelColumn?.spec.annotations?.['pl7.app/label']
+      ?? axisSpec.annotations?.['pl7.app/label']
+      ?? 'Unlabelled axis',
+    );
+  }
+
+  const { hits: compatibleColumns } = await pFrameDriver.findColumns(pFrame, {
+    columnFilter: {},
+    compatibleWith: Array.from(
+      sequenceColumnsAxes.keys(),
+      (axisIdJson) => parseJson(axisIdJson),
+    ),
+    strictlyCompatible: false,
+  });
+
+  for (const { columnId, spec } of compatibleColumns) {
+    const columnIdJson = canonicalizeJson({ type: 'column', id: columnId });
+    if (optionMap.has(columnIdJson)) continue;
+    optionMap.set(
+      columnIdJson,
+      spec.annotations?.['pl7.app/label'] ?? 'Unlabelled column',
+    );
+  }
+
+  const options = Array.from(optionMap).map(
+    ([value, label]) => ({ label, value: parseJson(value) }),
+  );
+
+  const defaults = options
+    .filter(({ value }) => {
+      if (value.type === 'axis') return true;
+      const column = columns.find(({ columnId }) => columnId === value.id);
       return column && isLabelColumn(column.spec);
     })
-    .map((o) => o.value);
+    .map(({ value }) => value);
   return { options, defaults };
 }
 
-async function getSequenceRows(
-  {
-    pframe,
-    sequenceColumnIds,
-    labelColumnIds,
-    linkerColumnPredicate,
-    selection: rowSelectionModel,
-  }: {
-    pframe: PFrameHandle | undefined;
-    sequenceColumnIds: PObjectId[];
-    labelColumnIds: PTableColumnIdJson[];
-    linkerColumnPredicate: PColumnPredicate | undefined;
-    selection: PlSelectionModel | undefined;
-  },
-): Promise<SequenceRow[]> {
-  if (!pframe || sequenceColumnIds.length === 0) return [];
+async function getMarkupColumnsOptions({
+  pFrame,
+  sequenceColumnIds,
+}: {
+  pFrame: PFrameHandle | undefined;
+  sequenceColumnIds: PObjectId[];
+}): Promise<ListOptionNormalized<PObjectId>[]> {
+  if (!pFrame || sequenceColumnIds.length !== 1) return [];
+  const pFrameDriver = getPFrameDriver();
+  const columns = await pFrameDriver.listColumns(pFrame);
+  const sequenceColumn = columns.find((column) =>
+    column.columnId === sequenceColumnIds[0],
+  );
+  if (!sequenceColumn) {
+    throw new Error(
+      `Couldn't find sequence column (ID: \`${sequenceColumnIds[0]}\`).`,
+    );
+  }
+  return columns
+    .filter((column) =>
+      column.spec.annotations?.['pl7.app/sequence/isAnnotation'] === 'true'
+      && isJsonEqual(sequenceColumn.spec.axesSpec, column.spec.axesSpec)
+      && Object.entries(sequenceColumn.spec.domain ?? {}).every((
+        [key, value],
+      ) => column.spec.domain?.[key] === value),
+    ).map(({ columnId, spec }) => ({
+      value: columnId,
+      label: spec.annotations?.['pl7.app/label'] ?? 'Unlabelled column',
+    }));
+}
+
+async function getMultipleAlignmentData({
+  pframe,
+  sequenceColumnIds,
+  labelColumnIds,
+  markupColumnId,
+  linkerColumnPredicate,
+  selection,
+}: {
+  pframe: PFrameHandle | undefined;
+  sequenceColumnIds: PObjectId[];
+  labelColumnIds: PTableColumnId[];
+  markupColumnId: PObjectId | undefined;
+  linkerColumnPredicate: PColumnPredicate | undefined;
+  selection: PlSelectionModel | undefined;
+}): Promise<MultipleAlignmentData> {
+  if (!pframe || sequenceColumnIds.length === 0) {
+    return { sequences: [], labels: [], exceedsLimit: false };
+  }
 
   const pFrameDriver = getPFrameDriver();
   const columns = await pFrameDriver.listColumns(pframe);
@@ -186,125 +271,184 @@ async function getSequenceRows(
     ? columns.filter((c) => linkerColumnPredicate(c))
     : [];
 
-  const FilterColumnId = '__FILTER_COLUMN__' as PObjectId;
-  const filterColumn = createRowSelectionColumn(
-    FilterColumnId,
-    rowSelectionModel,
-  );
+  const filterColumn = createRowSelectionColumn({ selection });
 
-  const predef: CalculateTableDataRequest<PObjectId> = {
-    src: {
-      type: 'outer',
-      primary: {
-        type: 'inner',
-        entries: [
-          ...(
-            filterColumn && filterColumn.data.length > 0
-              ? [{ type: 'inlineColumn' as const, column: filterColumn }]
-              : []
-          ),
-          ...sequenceColumnIds.map((c) => ({
-            type: 'column' as const,
-            column: c,
-          })),
-        ],
-      },
-      secondary: [
-        ...linkerColumns.map((c) => c.columnId),
-        ...labelColumnIds.map((c) => parseJson(c))
-          .filter((c) => c.type === 'column')
-          .map((c) => c.id),
-      ].map((c) => ({
-        type: 'column',
-        column: c,
-      })),
-    },
-    filters: [],
-    sorting: sequenceColumnIds.map((c) => ({
-      column: {
-        type: 'column',
-        id: c,
-      },
-      ascending: true,
-      naAndAbsentAreLeastValues: true,
+  // inner join of sequence columns
+  let primaryEntry: JoinEntry<PObjectId> = {
+    type: 'inner',
+    entries: sequenceColumnIds.map((column) => ({
+      type: 'column',
+      column,
     })),
   };
 
-  const def = JSON.parse(JSON.stringify(predef));
-  const table = await pFrameDriver.calculateTableData(pframe, def);
+  // if we have linkers, left join them
+  if (linkerColumns.length > 0) {
+    primaryEntry = {
+      type: 'outer',
+      primary: primaryEntry,
+      secondary: linkerColumns.map(({ columnId }) => ({
+        type: 'column',
+        column: columnId,
+      })),
+    };
+  }
 
-  const result: SequenceRow[] = [];
-  // map index in spec (join result) to index in input (dropdown selection)
-  const labelColumnsMap = new Map<number, number>();
-  const sequenceColumnsMap = new Map<number, number>();
-  for (let i = 0; i < table.length; i++) {
-    const spec = table[i].spec;
+  // inner join with filters
+  if (filterColumn) {
+    primaryEntry = {
+      type: 'inner',
+      entries: [
+        primaryEntry,
+        {
+          type: 'inlineColumn',
+          column: filterColumn,
+        },
+      ],
+    };
+  }
 
-    if (spec.type === 'column') {
-      if (spec.id === FilterColumnId) continue;
+  // left join with labels
+  const secondaryEntry: JoinEntry<PObjectId>[] = labelColumnIds
+    .flatMap((column) => {
+      if (column.type !== 'column') return [];
+      return { type: 'column', column: column.id };
+    });
 
-      const sequenceIndex = sequenceColumnIds.findIndex((id) => id === spec.id);
-      if (sequenceIndex !== -1) {
-        sequenceColumnsMap.set(i, sequenceIndex);
-        continue;
+  // and markup
+  if (markupColumnId) {
+    secondaryEntry.push({ type: 'column', column: markupColumnId });
+  }
+
+  const sorting: PTableSorting[] = Array.from(
+    new Set(sequenceColumnIds.flatMap((id) => {
+      const column = columns.find(({ columnId }) => columnId === id);
+      if (!column) {
+        throw new Error(`Couldn't find sequence column (ID: ${id})`);
       }
-    }
+      return column.spec.axesSpec
+        .map((spec) => canonicalizeJson(getAxisId(spec)));
+    })),
+  )
+    .sort()
+    .map((id) => ({
+      column: { type: 'axis', id: parseJson(id) },
+      ascending: true,
+      naAndAbsentAreLeastValues: true,
+    }));
 
-    const stringifiedId = stringifyPTableColumnId(
-      spec.type === 'axis'
-        ? {
-          type: 'axis',
-          id: getAxisId(spec.spec),
-        } satisfies PTableColumnIdAxis
-        : {
-          type: 'column',
-          id: spec.id,
-        } satisfies PTableColumnIdColumn,
-    );
-    const labelIndex = labelColumnIds.findIndex((id) => id === stringifiedId);
-    if (labelIndex !== -1) {
-      labelColumnsMap.set(i, labelIndex);
-    }
-  }
-  if (
-    labelColumnsMap.size !== labelColumnIds.length
-    || sequenceColumnsMap.size !== sequenceColumnIds.length
-  ) {
-    throw new Error('Some label or sequence columns are missing');
-  }
+  const request: CalculateTableDataRequest<PObjectId> = {
+    src: {
+      type: 'outer',
+      primary: primaryEntry,
+      secondary: secondaryEntry,
+    },
+    filters: [],
+    sorting,
+  };
 
-  /// sort by index in input dropdowns
-  const labelColumnsIndices = [...labelColumnsMap.keys()];
-  labelColumnsIndices.sort((a, b) =>
-    labelColumnsMap.get(a)! - labelColumnsMap.get(b)!,
-  );
-  const sequenceColumnsIndices = [...sequenceColumnsMap.keys()];
-  sequenceColumnsIndices.sort((a, b) =>
-    sequenceColumnsMap.get(a)! - sequenceColumnsMap.get(b)!,
+  const table = await pFrameDriver.calculateTableData(
+    pframe,
+    JSON.parse(JSON.stringify(request)),
+    {
+      offset: 0,
+      // +1 is a hack to check whether the selection is over the limit
+      length: sequenceLimit + 1,
+    },
   );
 
-  const rowCount = table[0].data.data.length;
-  for (let iRow = 0; iRow < rowCount; iRow++) {
-    const labels = labelColumnsIndices.map((iCol) =>
-      pTableValue(table[iCol].data, iRow, { na: '', absent: '' })?.toString(),
-    );
-    const sequences = sequenceColumnsIndices.map((iCol) =>
-      pTableValue(table[iCol].data, iRow, { na: '', absent: '' })?.toString(),
-    );
-
-    const isValid = (s: unknown): s is string => typeof s === 'string';
-    if (labels.every(isValid) && sequences.every(isValid)) {
-      result.push({
-        labels,
-        sequence: sequences.join(''),
-      });
-    } else {
-      console.warn(
-        `skipping record at row ${iRow} because of invalid labels or sequences`,
-        labels,
-        sequences,
-      );
-    }
+  let rowCount = table?.[0].data.data.length ?? 0;
+  let exceedsLimit = false;
+  if (rowCount > sequenceLimit) {
+    rowCount = sequenceLimit;
+    exceedsLimit = true;
   }
+
+  const sequenceColumns = sequenceColumnIds.map((columnId) => {
+    const column = table.find(({ spec }) => spec.id === columnId);
+    if (!column) {
+      throw new Error(`Couldn't find sequence column (ID: \`${columnId}\`).`);
+    }
+    return column;
+  });
+
+  const labelColumns = labelColumnIds.map((labelColumn) => {
+    const column = table.find(({ spec }) => {
+      if (labelColumn.type === 'axis' && spec.type === 'axis') {
+        return isJsonEqual(labelColumn.id, spec.id);
+      }
+      if (labelColumn.type === 'column' && spec.type === 'column') {
+        return labelColumn.id === spec.id;
+      }
+    });
+    if (!column) {
+      throw new Error(`Couldn't find label column (ID: \`${labelColumn}\`).`);
+    }
+    return column;
+  });
+
+  const markupColumn = markupColumnId
+    && table.find(({ spec }) => spec.id === markupColumnId);
+
+  const alignedSequences = await Promise.all(
+    sequenceColumns.map((column) =>
+      multiSequenceAlignment(Array.from(
+        { length: rowCount },
+        (_, row) =>
+          pTableValue(column.data, row, { na: '', absent: '' })?.toString()
+          ?? '',
+      )),
+    ),
+  );
+
+  const sequences = Array.from(
+    { length: rowCount },
+    (_, row) => alignedSequences.map((column) => column[row]),
+  );
+
+  const labels = Array.from(
+    { length: rowCount },
+    (_, row) =>
+      labelColumns.map((column) =>
+        pTableValue(column.data, row, { na: '', absent: '' })?.toString() ?? '',
+      ),
+  );
+
+  const result: MultipleAlignmentData = { sequences, labels, exceedsLimit };
+
+  if (markupColumn) {
+    const labels = JSON.parse(
+      markupColumn.spec.spec.annotations
+        ?.['pl7.app/sequence/annotation/mapping'] ?? '{}',
+    );
+    const data = Array.from(
+      { length: rowCount },
+      (_, row) => {
+        const markup = parseMarkup(
+          pTableValue(markupColumn.data, row, { na: '', absent: '' })
+            ?.toString()
+            ?? '',
+        );
+        return markupAlignedSequence(sequences[row][0], markup);
+      },
+    );
+    result.markup = { labels, data };
+  }
+
   return result;
 }
+
+type MultipleAlignmentData = {
+  sequences: string[][];
+  labels: string[][];
+  markup?: {
+    labels: Record<string, string>;
+    data: Markup[];
+  };
+  exceedsLimit: boolean;
+};
+
+type OptionsWithDefaults<T> = {
+  options: ListOptionNormalized<T>[];
+  defaults: T[];
+};

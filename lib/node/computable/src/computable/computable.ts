@@ -84,6 +84,8 @@ export type AnyComputableError = ComputableError | AggregateComputableError;
 
 /** Error class for a single error encountered during computable calculation */
 export class ComputableError extends Error {
+  name = 'ComputableError';
+
   constructor(public readonly cause: any) {
     super(`Computable error: ${cause.message}`, { cause });
   }

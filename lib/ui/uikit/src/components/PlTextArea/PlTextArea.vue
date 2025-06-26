@@ -8,10 +8,12 @@ export default {
 <script lang="ts" setup>
 import './pl-textarea.scss';
 import { computed, onMounted, ref, useSlots } from 'vue';
-import { PlTooltip } from '@/components/PlTooltip';
-import DoubleContour from '@/utils/DoubleContour.vue';
-import { useLabelNotch } from '@/utils/useLabelNotch';
-import { useValidation } from '@/utils/useValidation';
+import { PlTooltip } from '../PlTooltip';
+import DoubleContour from '../../utils/DoubleContour.vue';
+import { useLabelNotch } from '../../utils/useLabelNotch';
+import { useValidation } from '../../utils/useValidation';
+import SvgRequired from '../../generated/components/svg/images/SvgRequired.vue';
+import { getErrorMessage } from '../../helpers/error.ts';
 
 const slots = useSlots();
 
@@ -38,7 +40,7 @@ const props = defineProps<{
   /**
    * An error message to display below the textarea.
    */
-  error?: string;
+  error?: unknown;
   /**
    * A helper text to display below the textarea when there are no errors.
    */
@@ -92,10 +94,14 @@ useLabelNotch(root);
 
 const displayErrors = computed(() => {
   const errors: string[] = [];
-  if (props.error) {
-    errors.push(props.error);
+  const propsError = getErrorMessage(props.error);
+
+  if (propsError) {
+    errors.push(propsError);
   }
+
   errors.push(...validationData.value.errors);
+
   return errors;
 });
 
@@ -121,7 +127,7 @@ onMounted(() => {
   <div class="ui-text-area__envelope">
     <div ref="root" class="ui-text-area" :class="{ error: hasErrors, disabled, dashed, nonEmpty }">
       <label v-if="label" ref="label">
-        <i v-if="required" class="required-icon" />
+        <SvgRequired v-if="required" />
         <span>{{ label }}</span>
         <PlTooltip v-if="slots.tooltip" class="info" position="top">
           <template #tooltip>

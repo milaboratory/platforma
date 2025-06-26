@@ -1,4 +1,17 @@
-import type { Option, AwaitedStruct, Unionize, Result } from './types';
+import type { AwaitedStruct, Option, Primitive, Result, Unionize } from './types';
+
+export function isNil(v: unknown): v is null | undefined | void {
+  return v === null || v === undefined;
+}
+
+export function isPrimitive(v: unknown): v is Primitive {
+  return isNil(v)
+    || typeof v === 'string'
+    || typeof v === 'number'
+    || typeof v === 'boolean'
+    || typeof v === 'bigint'
+  ;
+}
 
 export function notEmpty<T>(v: T | null | undefined, message?: string): T {
   if (v === null || v === undefined) {
@@ -77,14 +90,19 @@ export function async<A extends unknown[]>(gf: (...args: A) => Generator) {
 
 export class Deferred<T> {
   public readonly promise: Promise<T>;
-  public resolve: (v: T) => void = () => {};
-  public reject: (err: Error) => void = () => {};
+
   constructor() {
     this.promise = new Promise<T>((res, rej) => {
       this.resolve = res;
       this.reject = rej;
     });
   }
+
+  public resolve: (v: T) => void = () => {
+  };
+
+  public reject: (err: Error) => void = () => {
+  };
 }
 
 export function delay(ms: number) {
@@ -129,18 +147,6 @@ export function tapIf<T, R>(v: T | null | undefined, cb: (v: T) => R) {
   return;
 }
 
-/**
- * Generates a random integer between min (inclusive) and max (exclusive).
- * @param min The minimum integer value (inclusive).
- * @param max The maximum integer value (exclusive).
- * @returns A random integer within the specified range.
- */
-export function randomInt(min: number, max: number) {
-  min = Math.ceil(min);
-  max = Math.floor(max);
-  return Math.floor(Math.random() * (max - min)) + min;
-}
-
 export function* range(from: number, to: number, step = 1) {
   for (let i = from; i < to; i += step) {
     yield i;
@@ -164,7 +170,7 @@ export class Interval {
   constructor(private _delay: number) {
   }
 
-  async *generate(): AsyncGenerator<number> {
+  async* generate(): AsyncGenerator<number> {
     let i = 0;
     while (true) {
       await delay(this._delay);
@@ -172,7 +178,7 @@ export class Interval {
     }
   }
 
-  async *[Symbol.asyncIterator]() {
+  async* [Symbol.asyncIterator]() {
     let i = 0;
     while (true) {
       await delay(this._delay);

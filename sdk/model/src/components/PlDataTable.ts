@@ -3,12 +3,13 @@ import type {
   AxisSpec,
   CanonicalizedJson,
   DataInfo,
-  JoinEntry,
+  ListOptionBase,
   PColumn,
   PColumnIdAndSpec,
   PColumnSpec,
   PColumnValues,
   PObjectId,
+  PTableColumnId,
   PTableColumnIdColumn,
   PTableColumnSpec,
   PTableDef,
@@ -23,11 +24,11 @@ import {
   getAxisId,
   getColumnIdAndSpec,
   matchAxisId,
-  parseJson,
 } from '@milaboratories/pl-model-common';
 import type {
   AxisLabelProvider,
   ColumnProvider,
+  PColumnDataUniversal,
   RenderCtx,
 } from '../render';
 import {
@@ -38,38 +39,18 @@ import {
 /** Canonicalized PTableColumnSpec JSON string */
 export type PTableColumnSpecJson = CanonicalizedJson<PTableColumnSpec>;
 
-/** Encode `PTableColumnId` as canonicalized JSON string */
-export function stringifyPTableColumnSpec(spec: PTableColumnSpec): PTableColumnSpecJson {
-  const type = spec.type;
-  switch (type) {
-    case 'axis':
-      return canonicalizeJson(spec);
-    case 'column':
-      return canonicalizeJson(spec);
-    default:
-      // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
-      throw Error(`unsupported column type: ${type satisfies never}`);
-  }
-}
-
-/** Data table state */
-export type PlDataTableGridState = {
-  // TODO request stable key from the driver
-  /**
-   * Hash of the specs for now, but in the future it will be a stable id of the source
-   */
-  sourceId?: string;
+export type PlDataTableGridStateCore = {
   /** Includes column ordering */
   columnOrder?: {
     /** All colIds in order */
-    orderedColIds: string[];
+    orderedColIds: PTableColumnSpecJson[];
   };
   /** Includes current sort columns and direction */
   sort?: {
     /** Sorted columns and directions in order */
     sortModel: {
       /** Column Id to apply the sort to. */
-      colId: string;
+      colId: PTableColumnSpecJson;
       /** Sort direction */
       sort: 'asc' | 'desc';
     }[];
@@ -79,33 +60,40 @@ export type PlDataTableGridState = {
     /** All colIds which were hidden */
     hiddenColIds: PTableColumnSpecJson[];
   };
-  /** current sheet selections */
-  sheets?: Record<string, string | number>;
 };
 
 /** TODO: refactor to use sheets in the grid state */
-export type PlDataTableGridStateWithoutSheets = Omit<PlDataTableGridState, 'sheets'>;
+export type PlDataTableGridStateWithoutSheets = PlDataTableGridStateCore & {
+  /** DataSource identifier for state management */
+  sourceId?: string;
+};
+
+/** Data table state */
+export type PlDataTableGridState = PlDataTableGridStateWithoutSheets & {
+  /** current sheet selections */
+  sheets?: Record<CanonicalizedJson<AxisId>, string | number>;
+};
 
 export type PlDataTableSheet = {
   /** spec of the axis to use */
   axis: AxisSpec;
-  /** options to show in the filter tan */
-  options: {
-    /** value of the option (should be one of the values in the axis or column) */
-    value: string | number;
-    /** corresponding label */
-    label: string;
-  }[];
+  /** options to show in the filter dropdown */
+  options: ListOptionBase<string | number>[];
   /** default (selected) value */
   defaultValue?: string | number;
+};
+
+export type PlDataTableSheetState = {
+  /** id of the axis */
+  axisId: AxisId;
+  /** selected value */
+  value: string | number;
 };
 
 /**
  * Params used to get p-table handle from the driver
  */
 export type PTableParams = {
-  /** For sourceType: 'pframe' the join is original one, enriched with label columns */
-  join?: JoinEntry<PColumnIdAndSpec>;
   sorting?: PTableSorting[];
   filters?: PTableRecordFilter[];
 };
@@ -119,6 +107,62 @@ export type PlDataTableState = {
   // mapping of gridState onto the p-table data structures
   pTableParams?: PTableParams;
 };
+
+/**
+ * PlDataTableV2 persisted state
+ */
+export type PlDataTableStateV2 =
+  // Old versions of the state
+  | PlDataTableState
+  // Normalized state
+  | PlDataTableStateV2Normalized;
+
+export type PlDataTableStateV2CacheEntry = {
+  /** DataSource identifier for state management */
+  sourceId: string;
+  /** Internal ag-grid state */
+  gridState: PlDataTableGridStateCore;
+  /** Sheets state */
+  sheetsState: PlDataTableSheetState[];
+};
+
+export type PTableParamsV2 = {
+  sorting: PTableSorting[];
+  filters: PTableRecordFilter[];
+  hiddenColIds: PObjectId[] | null;
+};
+
+export type PlDataTableStateV2Normalized = {
+  // version for upgrades
+  version: 2;
+  // internal ag-grid states, LRU cache for 5 sourceId-s
+  stateCache: PlDataTableStateV2CacheEntry[];
+  // mapping of gridState for current sourceId onto the p-table data structures
+  pTableParams: PTableParamsV2;
+};
+
+/** Create default PlDataTableStateV2 */
+export function createPlDataTableStateV2(): PlDataTableStateV2Normalized {
+  return {
+    version: 2,
+    stateCache: [],
+    pTableParams: {
+      sorting: [],
+      filters: [],
+      hiddenColIds: null,
+    },
+  };
+}
+
+/** Upgrade PlDataTableStateV2 to the latest version */
+export function upgradePlDataTableStateV2(state: PlDataTableStateV2): PlDataTableStateV2Normalized {
+  // v1 -> v2
+  if (!('version' in state)) {
+    // Non upgradeable as sourceId calculation algorithm has changed, resetting state to default
+    return createPlDataTableStateV2();
+  }
+  return state;
+}
 
 /** PlTableFilters filter entry */
 export type PlTableFilterIsNotNA = {
@@ -331,8 +375,11 @@ export type PlTableFiltersModel = {
 };
 
 export type CreatePlDataTableOps = {
-  /** Table filters, should contain */
+  /** Filters for columns and non-partitioned axes */
   filters?: PTableRecordFilter[];
+
+  /** Sorting to columns hidden from user */
+  sorting?: PTableSorting[];
 
   /**
    * Selects columns for which will be inner-joined to the table.
@@ -363,7 +410,7 @@ export function isLabelColumn(column: PColumnSpec) {
 /** Get all label columns from the result pool */
 export function getAllLabelColumns(
   resultPool: AxisLabelProvider & ColumnProvider,
-): PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor>>[] | undefined {
+): PColumn<PColumnDataUniversal>[] | undefined {
   return new PColumnCollection()
     .addAxisLabelProvider(resultPool)
     .addColumnProvider(resultPool)
@@ -376,8 +423,8 @@ export function getAllLabelColumns(
 /** Get label columns matching the provided columns from the result pool */
 export function getMatchingLabelColumns(
   columns: PColumnIdAndSpec[],
-  allLabelColumns: PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor>>[],
-): PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor>>[] {
+  allLabelColumns: PColumn<PColumnDataUniversal>[],
+): PColumn<PColumnDataUniversal>[] {
   // split input columns into label and value columns
   const inputLabelColumns: typeof columns = [];
   const inputValueColumns: typeof columns = [];
@@ -485,8 +532,8 @@ export function allColumnsComputed(
 }
 
 function createPTableDef(
-  columns: PColumn<TreeNodeAccessor | PColumnValues | DataInfo<TreeNodeAccessor>>[],
-  labelColumns: PColumn<TreeNodeAccessor | DataInfo<TreeNodeAccessor>>[],
+  columns: PColumn<PColumnDataUniversal>[],
+  labelColumns: PColumn<PColumnDataUniversal>[],
   coreJoinType: 'inner' | 'full',
   filters: PTableRecordSingleValueFilterV2[],
   sorting: PTableSorting[],
@@ -557,8 +604,15 @@ export function createPlDataTable<A, U>(
 
   const coreJoinType = ops?.coreJoinType ?? 'full';
   const filters: PTableRecordSingleValueFilterV2[]
-    = [...(ops?.filters ?? []), ...(tableState?.pTableParams?.filters ?? [])];
-  const sorting: PTableSorting[] = tableState?.pTableParams?.sorting ?? [];
+    = uniqueBy(
+      [...(ops?.filters ?? []), ...(tableState?.pTableParams?.filters ?? [])],
+      (f) => canonicalizeJson<PTableColumnId>(f.column),
+    );
+  const sorting: PTableSorting[]
+    = uniqueBy(
+      [...(ops?.sorting ?? []), ...(tableState?.pTableParams?.sorting ?? [])],
+      (s) => canonicalizeJson<PTableColumnId>(s.column),
+    );
 
   const allLabelColumns = getAllLabelColumns(ctx.resultPool);
   if (!allLabelColumns) return undefined;
@@ -574,10 +628,10 @@ export function createPlDataTable<A, U>(
 
 /** PlAgDataTable model */
 export type PlDataTableModel = {
-  /** p-table specification (full, including hidden columns) */
-  tableSpec: PTableColumnSpec[];
-  /** p-table handle (integration of visible columns data) */
-  tableHandle: PTableHandle;
+  /** p-table including all columns, used to show the full specification of the table */
+  fullTableHandle: PTableHandle;
+  /** p-table including only visible columns, used to get the data */
+  visibleTableHandle: PTableHandle;
 };
 
 /**
@@ -597,6 +651,14 @@ export function isColumnOptional(spec: { annotations?: Record<string, string> })
 }
 
 /**
+ * Return unique entries of the array by the provided id
+ * For each id, the last entry is kept
+ */
+export function uniqueBy<T>(array: T[], makeId: (entry: T) => string): T[] {
+  return [...new Map(array.map((e) => [makeId(e), e])).values()];
+}
+
+/**
  * Create p-table spec and handle given ui table state
  *
  * @param ctx context
@@ -607,30 +669,36 @@ export function isColumnOptional(spec: { annotations?: Record<string, string> })
 export function createPlDataTableV2<A, U>(
   ctx: RenderCtx<A, U>,
   inputColumns: PColumn<TreeNodeAccessor | PColumnValues | DataInfo<TreeNodeAccessor>>[],
-  mainColumnPredicate: (spec: PColumnSpec) => boolean,
-  tableState: PlDataTableState | undefined,
+  tableState: PlDataTableStateV2 | undefined,
   ops?: CreatePlDataTableOps,
 ): PlDataTableModel | undefined {
+  const tableStateNormalized = upgradePlDataTableStateV2(tableState ?? createPlDataTableStateV2());
+
   const coreJoinType = ops?.coreJoinType ?? 'full';
   const filters: PTableRecordSingleValueFilterV2[]
-    = [...(ops?.filters ?? []), ...(tableState?.pTableParams?.filters ?? [])];
-  const sorting: PTableSorting[] = tableState?.pTableParams?.sorting ?? [];
+    = uniqueBy(
+      [...(ops?.filters ?? []), ...tableStateNormalized.pTableParams.filters],
+      (f) => canonicalizeJson<PTableColumnId>(f.column),
+    );
+  const sorting: PTableSorting[]
+    = uniqueBy(
+      [...(ops?.sorting ?? []), ...tableStateNormalized.pTableParams.sorting],
+      (s) => canonicalizeJson<PTableColumnId>(s.column),
+    );
   const columns = inputColumns.filter((c) => !isColumnHidden(c.spec));
-
-  const mainColumn = columns.find((c) => mainColumnPredicate(c.spec));
-  if (!mainColumn) return undefined;
 
   const allLabelColumns = getAllLabelColumns(ctx.resultPool);
   if (!allLabelColumns) return undefined;
+
+  const fullLabelColumns = getMatchingLabelColumns(columns.map(getColumnIdAndSpec), allLabelColumns);
+  const fullDef = createPTableDef(columns, fullLabelColumns, coreJoinType, filters, sorting, ops?.coreColumnPredicate);
+  const fullHandle = ctx.createPTable(fullDef);
 
   const hiddenColumns = new Set<PObjectId>(((): PObjectId[] => {
     // Inner join works as a filter - all columns must be present
     if (coreJoinType === 'inner') return [];
 
-    const hiddenColIds = tableState?.gridState.columnVisibility?.hiddenColIds
-      ?.map(parseJson)
-      .filter((c) => c.type === 'column')
-      .map((c) => c.id);
+    const hiddenColIds = tableStateNormalized.pTableParams.hiddenColIds;
     if (hiddenColIds) return hiddenColIds;
 
     return columns
@@ -638,38 +706,29 @@ export function createPlDataTableV2<A, U>(
       .map((c) => c.id);
   })());
 
-  // Main column must always be included in join to integrate all other columns
-  hiddenColumns.delete(mainColumn.id);
+  // Preserve core columns as they change the shape of join.
+  if (ops?.coreColumnPredicate) {
+    const coreColumns = columns.flatMap((c) => ops?.coreColumnPredicate?.(c.spec) ? [c.id] : []);
+    coreColumns.forEach((c) => hiddenColumns.delete(c));
+  }
+
   // Filters decrease the number of result rows, sorting changes the order of result rows
   [...filters.map((f) => f.column), ...sorting.map((s) => s.column)]
     .filter((c): c is PTableColumnIdColumn => c.type === 'column')
     .map((c) => hiddenColumns.delete(c.id));
 
   const visibleColumns = columns.filter((c) => !hiddenColumns.has(c.id));
-  const labelColumns = getMatchingLabelColumns(visibleColumns.map(getColumnIdAndSpec), allLabelColumns);
-
-  const spec: PTableColumnSpec[] = [
-    ...mainColumn.spec.axesSpec.map((axis) => ({
-      type: 'axis',
-      id: getAxisId(axis),
-      spec: axis,
-    } satisfies PTableColumnSpec)),
-    ...[...columns, ...labelColumns].map((c) => ({
-      type: 'column',
-      id: c.id,
-      spec: c.spec,
-    } satisfies PTableColumnSpec)),
-  ];
+  const visibleLabelColumns = getMatchingLabelColumns(visibleColumns.map(getColumnIdAndSpec), allLabelColumns);
 
   // if at least one column is not yet computed, we can't show the table
-  if (!allColumnsComputed([...visibleColumns, ...labelColumns])) return undefined;
+  if (!allColumnsComputed([...visibleColumns, ...visibleLabelColumns])) return undefined;
 
-  const handle = ctx.createPTable(
-    createPTableDef(columns, labelColumns, coreJoinType, filters, sorting, ops?.coreColumnPredicate));
+  const visibleDef = createPTableDef(visibleColumns, visibleLabelColumns, coreJoinType, filters, sorting, ops?.coreColumnPredicate);
+  const visibleHandle = ctx.createPTable(visibleDef);
 
   return {
-    tableSpec: spec,
-    tableHandle: handle,
+    fullTableHandle: fullHandle,
+    visibleTableHandle: visibleHandle,
   } satisfies PlDataTableModel;
 }
 

@@ -39,6 +39,7 @@
   --bg-base-light: #f7f8fa;
   --bg-elevated-01: #ffffff;
   --bg-elevated-02: #e1e3eb;
+  --bg-error: #FFF5F5;
   //filled
   --filled-V-BG: #d0f0c0;
   --filled-D-BG: #ffcecc;
@@ -61,11 +62,14 @@
   --gradient-red: linear-gradient(0deg, #ffd5cc 0%, #ff9494 100%);
   --gradient-violet: linear-gradient(180deg, #bca3ff 0%, #e5e5ff 100%);
   --TT-gradient-violet: linear-gradient(180deg, #bca3ff 0%, #e5e5ff 100%);
+  --gradient-light-lime: linear-gradient(180deg, #EBFFEB 0%, transparent 100%);
 
   // Layout
   --main-spacing: 24px;
   --gap-v: 24px;
   --gap-h: 12px;
+  --border-radius: 6px;
+
   // @TODO global overlays
   --z-splash: 50;
   --z-slide-shadow: 80;
@@ -120,6 +124,7 @@
   --bg-base-light: #0d0d0f;
   --bg-elevated-01: #1b1b1f;
   --bg-elevated-02: #2d2d33;
+  --bg-error: #FFF5F5;
   //filled
   --filled-V-BG: rgba(66, 184, 66, 0.4);
   --filled-D-BG: rgba(229, 83, 229, 0.4);
@@ -141,4 +146,5 @@
   --gradient-rose: linear-gradient(0deg, #478063 0%, #2e4652 45.93%, #24223d 91.63%);
   --gradient-red: linear-gradient(0deg, #478063 0%, #2e4652 45.93%, #24223d 91.63%);
   --gradient-violet: linear-gradient(0deg, #478063 0%, #2e4652 45.93%, #24223d 91.63%);
+
 }

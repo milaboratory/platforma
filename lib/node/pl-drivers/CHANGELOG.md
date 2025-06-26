@@ -1,5 +1,122 @@
 # @milaboratories/pl-drivers
 
+## 1.5.75
+
+### Patch Changes
+
+- 37800c5: Public tools packages
+- Updated dependencies [37800c5]
+  - @milaboratories/computable@2.5.1
+  - @milaboratories/ts-helpers@1.4.1
+  - @milaboratories/pl-client@2.11.2
+  - @milaboratories/pl-model-common@1.15.7
+  - @milaboratories/pl-tree@1.6.11
+  - @milaboratories/helpers@1.6.15
+
+## 1.5.74
+
+### Patch Changes
+
+- Updated dependencies [6ffe944]
+- Updated dependencies [6ffe944]
+  - @milaboratories/pl-model-common@1.15.6
+
+## 1.5.73
+
+### Patch Changes
+
+- df1a454: Blob driver - fix error on deleting not downloaded file
+
+## 1.5.72
+
+### Patch Changes
+
+- 295e939: Abort canceled blob downloads
+
+## 1.5.71
+
+### Patch Changes
+
+- 3d34876: Fix for closed channel error. All gRPC clients are now used via GrpcClientProvider to refresh underlying transport.
+- Updated dependencies [3d34876]
+  - @milaboratories/pl-client@2.11.1
+  - @milaboratories/pl-tree@1.6.10
+
+## 1.5.70
+
+### Patch Changes
+
+- Updated dependencies [e9d02ae]
+  - @milaboratories/helpers@1.6.14
+
+## 1.5.69
+
+### Patch Changes
+
+- Updated dependencies [45badc9]
+  - @milaboratories/helpers@1.6.13
+
+## 1.5.68
+
+### Patch Changes
+
+- c243d64: - network-related dependency upgrade
+- Updated dependencies [c243d64]
+- Updated dependencies [babb3eb]
+- Updated dependencies [c7894c2]
+- Updated dependencies [babb3eb]
+  - @milaboratories/pl-client@2.11.0
+  - @milaboratories/computable@2.5.0
+  - @milaboratories/ts-helpers@1.4.0
+  - @milaboratories/pl-tree@1.6.9
+
+## 1.5.67
+
+### Patch Changes
+
+- 49cf7ee: Standard Error serialization/deserialization
+- Updated dependencies [49cf7ee]
+  - @milaboratories/computable@2.4.12
+  - @milaboratories/ts-helpers@1.3.3
+  - @milaboratories/pl-client@2.10.2
+  - @milaboratories/pl-model-common@1.15.5
+  - @milaboratories/pl-tree@1.6.8
+
+## 1.5.66
+
+### Patch Changes
+
+- Updated dependencies [61aa680]
+  - @milaboratories/pl-model-common@1.15.4
+
+## 1.5.65
+
+### Patch Changes
+
+- f191f2a: drivers: download: add sparse cache for ranges
+- Updated dependencies [f191f2a]
+  - @milaboratories/ts-helpers@1.3.2
+  - @milaboratories/pl-model-common@1.15.3
+  - @milaboratories/computable@2.4.11
+  - @milaboratories/pl-client@2.10.1
+  - @milaboratories/pl-tree@1.6.7
+
+## 1.5.64
+
+### Patch Changes
+
+- Updated dependencies [f7dedbe]
+  - @milaboratories/pl-client@2.10.0
+  - @milaboratories/pl-tree@1.6.6
+
+## 1.5.63
+
+### Patch Changes
+
+- Updated dependencies [2d5ee55]
+  - @milaboratories/pl-client@2.9.3
+  - @milaboratories/pl-tree@1.6.5
+
 ## 1.5.62
 
 ### Patch Changes

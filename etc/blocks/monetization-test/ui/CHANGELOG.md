@@ -1,5 +1,95 @@
 # @milaboratories/milaboratories.monetization-test.ui
 
+## 1.1.53
+
+### Patch Changes
+
+- 37800c5: Public tools packages
+- Updated dependencies [37800c5]
+  - @platforma-sdk/ui-vue@1.37.2
+  - @platforma-sdk/model@1.37.2
+
+## 1.1.52
+
+### Patch Changes
+
+- Updated dependencies [6ffe944]
+- Updated dependencies [6ffe944]
+- Updated dependencies [6ffe944]
+  - @platforma-sdk/ui-vue@1.37.0
+  - @platforma-sdk/model@1.37.0
+
+## 1.1.51
+
+### Patch Changes
+
+- Updated dependencies [c570fd4]
+  - @platforma-sdk/model@1.34.10
+  - @platforma-sdk/ui-vue@1.34.10
+
+## 1.1.50
+
+### Patch Changes
+
+- Updated dependencies [23f719d]
+- Updated dependencies [33d6252]
+  - @platforma-sdk/model@1.34.8
+  - @platforma-sdk/ui-vue@1.34.8
+
+## 1.1.49
+
+### Patch Changes
+
+- Updated dependencies [35ce863]
+  - @platforma-sdk/ui-vue@1.34.0
+  - @platforma-sdk/model@1.34.0
+
+## 1.1.48
+
+### Patch Changes
+
+- Updated dependencies [49cf7ee]
+  - @platforma-sdk/ui-vue@1.33.17
+  - @platforma-sdk/model@1.33.17
+
+## 1.1.47
+
+### Patch Changes
+
+- Updated dependencies [1c10475]
+  - @platforma-sdk/model@1.33.16
+  - @platforma-sdk/ui-vue@1.33.16
+
+## 1.1.46
+
+### Patch Changes
+
+- @platforma-sdk/model@1.33.14
+- @platforma-sdk/ui-vue@1.33.14
+
+## 1.1.45
+
+### Patch Changes
+
+- Updated dependencies [f0ea01c]
+  - @platforma-sdk/model@1.33.10
+  - @platforma-sdk/ui-vue@1.33.10
+
+## 1.1.44
+
+### Patch Changes
+
+- @platforma-sdk/model@1.33.8
+- @platforma-sdk/ui-vue@1.33.8
+
+## 1.1.43
+
+### Patch Changes
+
+- Updated dependencies [9b15f24]
+  - @platforma-sdk/model@1.33.2
+  - @platforma-sdk/ui-vue@1.33.2
+
 ## 1.1.42
 
 ### Patch Changes

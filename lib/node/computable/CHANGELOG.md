@@ -1,5 +1,40 @@
 # @milaboratories/computable
 
+## 2.5.1
+
+### Patch Changes
+
+- 37800c5: Public tools packages
+- Updated dependencies [37800c5]
+  - @milaboratories/pl-error-like@1.12.2
+  - @milaboratories/ts-helpers@1.4.1
+
+## 2.5.0
+
+### Minor Changes
+
+- babb3eb: - State refresh request now interrups delay in polling loop
+
+### Patch Changes
+
+- Updated dependencies [c7894c2]
+  - @milaboratories/ts-helpers@1.4.0
+
+## 2.4.12
+
+### Patch Changes
+
+- 49cf7ee: Standard Error serialization/deserialization
+- Updated dependencies [49cf7ee]
+  - @milaboratories/ts-helpers@1.3.3
+
+## 2.4.11
+
+### Patch Changes
+
+- Updated dependencies [f191f2a]
+  - @milaboratories/ts-helpers@1.3.2
+
 ## 2.4.10
 
 ### Patch Changes

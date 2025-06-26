@@ -12,6 +12,8 @@
     "@milaboratories/uikit": "workspace:*"
   },
   "devDependencies": {
+    "@milaboratories/ts-configs": "workspace:*",
+    "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/eslint-config": "workspace:^",
     "typescript": "catalog:",
     "vite": "catalog:",

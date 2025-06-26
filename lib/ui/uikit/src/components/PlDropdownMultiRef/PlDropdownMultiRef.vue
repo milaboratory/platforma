@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import type { ModelRef, RefOption } from '@/types';
+import type { ModelRef, RefOption } from '../../types';
 import PlDropdownMulti from '../PlDropdownMulti/PlDropdownMulti.vue';
 import { computed, useSlots } from 'vue';
 
@@ -34,7 +34,7 @@ const props = withDefaults(
     /**
      * Error message displayed below the dropdown (optional)
      */
-    error?: string;
+    error?: unknown;
     /**
      * Placeholder text shown when no value is selected.
      */

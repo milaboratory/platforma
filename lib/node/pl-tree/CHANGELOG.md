@@ -1,5 +1,74 @@
 # @milaboratories/pl-tree
 
+## 1.6.11
+
+### Patch Changes
+
+- 37800c5: Public tools packages
+- Updated dependencies [37800c5]
+  - @milaboratories/pl-error-like@1.12.2
+  - @milaboratories/computable@2.5.1
+  - @milaboratories/ts-helpers@1.4.1
+  - @milaboratories/pl-client@2.11.2
+  - @milaboratories/pl-errors@1.1.9
+
+## 1.6.10
+
+### Patch Changes
+
+- Updated dependencies [3d34876]
+  - @milaboratories/pl-client@2.11.1
+  - @milaboratories/pl-errors@1.1.8
+
+## 1.6.9
+
+### Patch Changes
+
+- Updated dependencies [c243d64]
+- Updated dependencies [babb3eb]
+- Updated dependencies [c7894c2]
+- Updated dependencies [babb3eb]
+  - @milaboratories/pl-client@2.11.0
+  - @milaboratories/computable@2.5.0
+  - @milaboratories/ts-helpers@1.4.0
+  - @milaboratories/pl-errors@1.1.7
+
+## 1.6.8
+
+### Patch Changes
+
+- Updated dependencies [49cf7ee]
+  - @milaboratories/computable@2.4.12
+  - @milaboratories/ts-helpers@1.3.3
+  - @milaboratories/pl-client@2.10.2
+  - @milaboratories/pl-errors@1.1.6
+
+## 1.6.7
+
+### Patch Changes
+
+- Updated dependencies [f191f2a]
+  - @milaboratories/ts-helpers@1.3.2
+  - @milaboratories/computable@2.4.11
+  - @milaboratories/pl-client@2.10.1
+  - @milaboratories/pl-errors@1.1.5
+
+## 1.6.6
+
+### Patch Changes
+
+- Updated dependencies [f7dedbe]
+  - @milaboratories/pl-client@2.10.0
+  - @milaboratories/pl-errors@1.1.4
+
+## 1.6.5
+
+### Patch Changes
+
+- Updated dependencies [2d5ee55]
+  - @milaboratories/pl-client@2.9.3
+  - @milaboratories/pl-errors@1.1.3
+
 ## 1.6.4
 
 ### Patch Changes

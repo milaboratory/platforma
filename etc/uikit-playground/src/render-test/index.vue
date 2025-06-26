@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import Layout from '@/Layout.vue';
+import Layout from '../Layout.vue';
 import type { Component } from 'vue';
 import { reactive, h } from 'vue';
 import TestForm from './TestForm.vue';

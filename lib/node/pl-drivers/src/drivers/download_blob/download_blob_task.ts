@@ -19,6 +19,7 @@ import { Writable } from 'node:stream';
 import type { ClientDownload } from '../../clients/download';
 import { UnknownStorageError, WrongLocalFileUrl } from '../../clients/download';
 import { NetworkError400 } from '../../helpers/download';
+import { stringifyWithResourceId } from '@milaboratories/pl-client';
 
 /** Downloads a blob and holds callers and watchers for the blob. */
 export class DownloadBlobTask {
@@ -60,12 +61,12 @@ export class DownloadBlobTask {
       this.setDone(size);
       this.change.markChanged();
     } catch (e: any) {
-      this.logger.error(`task failed: ${e}, ${JSON.stringify(this.state)}`);
+      this.logger.error(`download blob ${stringifyWithResourceId(this.rInfo)} failed: ${e}, state: ${JSON.stringify(this.state)}`);
       if (nonRecoverableError(e)) {
         this.setError(e);
         this.change.markChanged();
         // Just in case we were half-way extracting an archive.
-        await fsp.rm(this.path);
+        await fsp.rm(this.path, { force: true });
       }
 
       throw e;
@@ -73,15 +74,21 @@ export class DownloadBlobTask {
   }
 
   private async ensureDownloaded() {
+    this.signalCtl.signal.throwIfAborted();
+
     this.state = {};
     this.state.filePath = this.path;
     await ensureDirExists(path.dirname(this.state.filePath));
+    this.signalCtl.signal.throwIfAborted();
     this.state.dirExists = true;
 
-    if (await fileExists(this.state.filePath)) {
+    const alreadyExists = await fileExists(this.state.filePath);
+    this.signalCtl.signal.throwIfAborted();
+    if (alreadyExists) {
       this.state.fileExists = true;
       this.logger.info(`a blob was already downloaded: ${this.state.filePath}`);
       const stat = await fsp.stat(this.state.filePath);
+      this.signalCtl.signal.throwIfAborted();
       this.state.fileSize = stat.size;
 
       return this.state.fileSize;
@@ -90,14 +97,14 @@ export class DownloadBlobTask {
     const { content, size } = await this.clientDownload.downloadBlob(
       this.rInfo,
       {},
-      undefined,
+      this.signalCtl.signal,
     );
     this.state.fileSize = size;
     this.state.downloaded = true;
 
     await createPathAtomically(this.logger, this.state.filePath, async (fPath: string) => {
       const f = Writable.toWeb(fs.createWriteStream(fPath, { flags: 'wx' }));
-      await content.pipeTo(f);
+      await content.pipeTo(f, { signal: this.signalCtl.signal });
       this.state.tempWritten = true;
     });
 
@@ -150,7 +157,9 @@ export function nonRecoverableError(e: any) {
 
 /** The downloading task was aborted by a signal.
  * It may happen when the computable is done, for example. */
-class DownloadAborted extends Error {}
+class DownloadAborted extends Error {
+  name = 'DownloadAborted';
+}
 
 export function getDownloadedBlobResponse(
   handle: LocalBlobHandle | undefined,

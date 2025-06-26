@@ -1,19 +1,17 @@
 <script lang="ts" setup>
-import { Deferred, isJsonEqual } from '@milaboratories/helpers';
-import { PlDropdownLine } from '@milaboratories/uikit';
+import {
+  isJsonEqual,
+} from '@milaboratories/helpers';
 import type {
   AxisId,
-  PlDataTableGridStateWithoutSheets,
-  PlDataTableState,
+  PlDataTableGridStateCore,
+  PlDataTableStateV2,
   PlSelectionModel,
-  PTableColumnSpec,
   PTableColumnSpecJson,
   PTableKey,
-  PTableRecordFilter,
-  PTableSorting,
 } from '@platforma-sdk/model';
 import {
-  getAxisId,
+  createPlDataTableStateV2,
   getRawPlatformaInstance,
   parseJson,
 } from '@platforma-sdk/model';
@@ -23,31 +21,31 @@ import type {
   ColGroupDef,
   GridApi,
   GridOptions,
-  GridReadyEvent,
   GridState,
   ManagedGridOptionKey,
   ManagedGridOptions,
-  SortState,
-  StateUpdatedEvent,
 } from 'ag-grid-enterprise';
 import {
-  CellSelectionModule,
-  ClientSideRowModelModule,
-  ClipboardModule,
-  isColumnSelectionCol,
-  ModuleRegistry,
-  ServerSideRowModelModule,
-} from 'ag-grid-enterprise';
-import { AgGridVue } from 'ag-grid-vue3';
-import canonicalize from 'canonicalize';
-import * as lodash from 'lodash';
-import { computed, nextTick, ref, shallowRef, toRefs, watch } from 'vue';
-import { AgGridTheme } from '../../lib';
+  AgGridVue,
+} from 'ag-grid-vue3';
+import {
+  computed,
+  ref,
+  shallowRef,
+  toRefs,
+  watch,
+} from 'vue';
+import {
+  AgGridTheme,
+} from '../../aggrid';
 import PlAgCsvExporter from '../PlAgCsvExporter/PlAgCsvExporter.vue';
-import { PlAgGridColumnManager } from '../PlAgGridColumnManager';
+import {
+  PlAgGridColumnManager,
+} from '../PlAgGridColumnManager';
 import PlOverlayLoading from './PlAgOverlayLoading.vue';
 import PlOverlayNoRows from './PlAgOverlayNoRows.vue';
 import PlAgRowCount from './PlAgRowCount.vue';
+import PlAgDataTableSheets from './PlAgDataTableSheets.vue';
 import {
   focusRow,
   makeOnceTracker,
@@ -57,33 +55,35 @@ import {
   autoSizeRowNumberColumn,
   PlAgDataTableRowNumberColId,
 } from './sources/row-number';
+import type {
+  PlAgCellButtonAxisParams,
+} from './sources/table-source-v2';
 import {
   makeRowId,
-  type PlAgCellButtonAxisParams,
-  updatePFrameGridOptions,
+  calculateGridOptions,
 } from './sources/table-source-v2';
 import type {
-  PlAgDataTableSettings,
-  PlAgDataTableSettingsPTable,
   PlAgDataTableV2Controller,
   PlAgDataTableV2Row,
   PlAgOverlayLoadingParams,
   PlAgOverlayNoRowsParams,
+  PlDataTableColumnsInfo,
+  PlDataTableSettingsV2,
+  PlDataTableSheetsSettings,
+  PTableKeyJson,
 } from './types';
+import {
+  useTableState,
+} from './sources/table-state-v2';
 
-ModuleRegistry.registerModules([
-  ClientSideRowModelModule,
-  ClipboardModule,
-  ServerSideRowModelModule,
-  CellSelectionModule,
-]);
-
-const tableState = defineModel<PlDataTableState>({
-  default: { gridState: {} },
+const tableState = defineModel<PlDataTableStateV2>({
+  default: createPlDataTableStateV2(),
 });
 const selection = defineModel<PlSelectionModel>('selection');
 const props = defineProps<{
-  settings?: Readonly<PlAgDataTableSettings>;
+  /** Required component settings */
+  settings: Readonly<PlDataTableSettingsV2>;
+
   /**
    * The showColumnsPanel prop controls the display of a button that activates
    * the columns management panel in the table. To make the button functional
@@ -91,10 +91,12 @@ const props = defineProps<{
    * This component serves as the target for teleporting the button.
    */
   showColumnsPanel?: boolean;
+
   /**
    * Css width of the Column Manager (Panel) modal (default value is `368px`)
    */
   columnsPanelWidth?: string;
+
   /**
    * The showExportButton prop controls the display of a button that allows
    * to export table data in CSV format. To make the button functional
@@ -102,12 +104,6 @@ const props = defineProps<{
    * This component serves as the target for teleporting the button.
    */
   showExportButton?: boolean;
-  /**
-   * Force use of client-side row model.
-   * Required for reliable work of focusRow.
-   * Auto-enabled when selectedRows provided.
-   */
-  clientSideModel?: boolean;
 
   /**
    * The AxisId property is used to configure and display the PlAgTextAndButtonCell component
@@ -141,137 +137,27 @@ const props = defineProps<{
 const { settings } = toRefs(props);
 const emit = defineEmits<{
   rowDoubleClicked: [key?: PTableKey];
-  columnsChanged: [columns: PTableColumnSpec[]];
+  columnsChanged: [info: PlDataTableColumnsInfo];
   cellButtonClicked: [key?: PTableKey];
 }>();
 
-/** State upgrader */ (() => {
-  if (!tableState.value.pTableParams) tableState.value.pTableParams = {};
-})();
+const { gridState, sheetsState } = useTableState(tableState, settings);
 
-function makeSorting(state?: SortState): PTableSorting[] {
-  return (
-    state?.sortModel.map((item) => {
-      const { spec, ...column } = parseJson(
-        item.colId as PTableColumnSpecJson,
-      );
-      const _ = spec;
-      return {
-        column,
-        ascending: item.sort === 'asc',
-        naAndAbsentAreLeastValues: item.sort === 'asc',
+const sheetsSettings = computed<PlDataTableSheetsSettings>(() => {
+  const settingsCopy = { ...settings.value };
+  return settingsCopy.sourceId
+    ? {
+        sheets: settingsCopy.sheets ?? [],
+        cachedState: [...sheetsState.value],
+      }
+    : {
+        sheets: [],
+        cachedState: [],
       };
-    }) ?? []
-  );
-}
-
-const gridState = computed<PlDataTableGridStateWithoutSheets>({
-  get: () => {
-    const state = tableState.value;
-    return {
-      sourceId: state.gridState.sourceId,
-      columnOrder: state.gridState.columnOrder,
-      sort: state.gridState.sort,
-      columnVisibility: state.gridState.columnVisibility,
-    };
-  },
-  set: (gridState) => {
-    // do not apply driver sorting for client side rendering
-    const sorting = settings.value?.sourceType !== 'ptable'
-      || gridOptions.value.rowModelType === 'clientSide'
-      ? undefined
-      : makeSorting(gridState.sort);
-
-    const oldState = tableState.value;
-
-    const newState = {
-      ...oldState,
-      gridState: { ...oldState.gridState, ...gridState },
-      pTableParams: { ...oldState.pTableParams, sorting },
-    };
-
-    // Note: the table constantly emits an unchanged state, so I added this
-    if (!isJsonEqual(oldState, newState)) {
-      tableState.value = newState;
-    }
-  },
 });
 
-const makeSheetId = (axis: AxisId) => canonicalize(getAxisId(axis))!;
-
-function makeFilters(
-  sheetsState: Record<string, string | number>,
-): PTableRecordFilter[] | undefined {
-  if (settings.value?.sourceType !== 'ptable') return undefined;
-  return (
-    settings.value.sheets?.map((sheet) => ({
-      type: 'bySingleColumnV2',
-      column: {
-        type: 'axis',
-        id: sheet.axis,
-      },
-      predicate: {
-        operator: 'Equal',
-        reference: sheetsState[makeSheetId(sheet.axis)],
-      },
-    })) ?? []
-  );
-}
-
-const sheetsState = computed({
-  get: () => tableState.value.gridState.sheets ?? {},
-  set: (sheetsState) => {
-    const filters = makeFilters(sheetsState);
-
-    const oldState = tableState.value;
-    tableState.value = {
-      ...oldState,
-      gridState: { ...oldState.gridState, sheets: sheetsState },
-      pTableParams: { ...oldState.pTableParams, filters },
-    };
-  },
-});
-
-const hasSheets = (
-  settings?: Readonly<PlAgDataTableSettings>,
-): settings is PlAgDataTableSettingsPTable => {
-  return settings?.sourceType === 'ptable'
-    && !!settings.sheets
-    && settings.sheets.length > 0;
-};
-
-watch(
-  () => settings.value,
-  (settings, oldSettings) => {
-    if (settings?.sourceType !== 'ptable' || !settings.sheets) {
-      sheetsState.value = {};
-      return;
-    }
-
-    if (
-      oldSettings && oldSettings.sourceType === 'ptable'
-      && lodash.isEqual(settings.sheets, oldSettings.sheets)
-    ) return;
-
-    const oldSheetsState = sheetsState.value;
-    const newSheetsState: Record<string, string | number> = {};
-    for (const sheet of settings.sheets) {
-      const sheetId = makeSheetId(sheet.axis);
-      newSheetsState[sheetId] = oldSheetsState[sheetId]
-      ?? sheet.defaultValue
-      ?? sheet.options[0]?.value;
-    }
-    sheetsState.value = newSheetsState;
-  },
-  { immediate: true },
-);
-
-const gridApi = shallowRef<GridApi>();
-
-const gridApiDef = shallowRef(new Deferred<GridApi>());
-
+const gridApi = shallowRef<GridApi<PlAgDataTableV2Row> | null>(null);
 const firstDataRenderedTracker = makeOnceTracker<GridApi<PlAgDataTableV2Row>>();
-
 const gridOptions = shallowRef<GridOptions<PlAgDataTableV2Row>>({
   animateRows: false,
   suppressColumnMoveAnimation: true,
@@ -281,36 +167,17 @@ const gridOptions = shallowRef<GridOptions<PlAgDataTableV2Row>>({
   rowSelection: selection.value !== undefined
     ? {
         mode: 'multiRow',
+        selectAll: 'all',
+        groupSelects: 'self',
         checkboxes: false,
         headerCheckbox: false,
         enableClickSelection: false,
       }
     : undefined,
-  selectionColumnDef: {
-    mainMenuItems: [],
-    contextMenuItems: [],
-    pinned: 'left',
-    lockPinned: true,
-    suppressSizeToFit: true,
-    suppressAutoSize: true,
-    sortable: false,
-    resizable: false,
-  },
-  onRowDataUpdated: (event) => {
-    const selectionValue = selection.value;
-    if (selectionValue) {
-      const nodes = selectionValue
-        .selectedKeys
-        .map((rowKey) => event.api.getRowNode(makeRowId(rowKey)))
-        .filter((node) => !!node);
-      event.api.setNodesSelected({ nodes, newValue: true });
-    }
-  },
   onSelectionChanged: (event) => {
     if (selection.value) {
-      const selectedKeys = event.api.getSelectedNodes()
-        .map((rowNode) => rowNode.data?.key)
-        .filter((rowKey) => !!rowKey);
+      const state = event.api.getServerSideSelectionState();
+      const selectedKeys = state?.toggledNodes?.map((nodeId) => parseJson(nodeId as PTableKeyJson)) ?? [];
       selection.value = { ...selection.value, selectedKeys };
     }
   },
@@ -326,9 +193,11 @@ const gridOptions = shallowRef<GridOptions<PlAgDataTableV2Row>>({
   localeText: {
     loadingError: '...',
   },
-  rowModelType: 'clientSide',
-  maxBlocksInCache: 1000,
-  // cacheBlockSize: 100,
+  rowModelType: 'serverSide',
+  // cacheBlockSize should be tha same as PlMultiSequenceAlignment limit
+  // so that selectAll will add all rows to selection
+  cacheBlockSize: 1000,
+  maxBlocksInCache: 100,
   blockLoadDebounceMillis: 500,
   serverSideSortAllLevels: true,
   suppressServerSideFullWidthLoadingRow: true,
@@ -354,101 +223,147 @@ const gridOptions = shallowRef<GridOptions<PlAgDataTableV2Row>>({
       { statusPanel: PlAgRowCount, align: 'left' },
     ],
   },
+  onGridReady: (event) => {
+    const api = event.api;
+    trackFirstDataRendered(api, firstDataRenderedTracker);
+    autoSizeRowNumberColumn(api);
+    const setGridOption = (
+      key: ManagedGridOptionKey,
+      value: GridOptions[ManagedGridOptionKey],
+    ) => {
+      const options = { ...gridOptions.value };
+      options[key] = value;
+      gridOptions.value = options;
+      api.setGridOption(key, value);
+    };
+    const updateGridOptions = (options: ManagedGridOptions) => {
+      gridOptions.value = {
+        ...gridOptions.value,
+        ...options,
+      };
+      api.updateGridOptions(options);
+    };
+    gridApi.value = new Proxy(api, {
+      get(target, prop, receiver) {
+        switch (prop) {
+          case 'setGridOption':
+            return setGridOption;
+          case 'updateGridOptions':
+            return updateGridOptions;
+          default:
+            return Reflect.get(target, prop, receiver);
+        }
+      },
+    });
+  },
+  onStateUpdated: (event) => {
+    gridOptions.value.initialState = gridState.value = makePartialState(
+      event.state,
+    );
+    event.api.autoSizeColumns(
+      event.api.getAllDisplayedColumns().filter(
+        (column) => column.getColId() !== PlAgDataTableRowNumberColId,
+      ),
+    );
+  },
+  onGridPreDestroyed: (event) => {
+    gridOptions.value.initialState = gridState.value = makePartialState(
+      event.api.getState(),
+    );
+    gridApi.value = null;
+  },
 });
 
-const onGridReady = (event: GridReadyEvent) => {
-  const api = event.api;
-  trackFirstDataRendered(api, firstDataRenderedTracker);
-  autoSizeRowNumberColumn(api);
-  gridApi.value = new Proxy(api, {
-    get(target, prop, receiver) {
-      switch (prop) {
-        case 'setGridOption':
-          return (
-            key: ManagedGridOptionKey,
-            value: GridOptions[ManagedGridOptionKey],
-          ) => {
-            const options = gridOptions.value;
-            options[key] = value;
-            gridOptions.value = options;
-            api.setGridOption(key, value);
-          };
-        case 'updateGridOptions':
-          return (options: ManagedGridOptions) => {
-            gridOptions.value = {
-              ...gridOptions.value,
-              ...options,
-            };
-            api.updateGridOptions(options);
-          };
-        default:
-          return Reflect.get(target, prop, receiver);
-      }
-    },
-  });
-
-  gridApiDef.value.resolve(gridApi.value);
-};
-
-const makePartialState = (state: GridState) => {
+// Restore proper types erased by AgGrid
+function makePartialState(state: GridState): PlDataTableGridStateCore {
   return {
-    sourceId: gridState.value.sourceId,
-    columnOrder: state.columnOrder,
-    sort: state.sort,
+    columnOrder: state.columnOrder as {
+      orderedColIds: PTableColumnSpecJson[];
+    } | undefined,
+    sort: state.sort as {
+      sortModel: {
+        colId: PTableColumnSpecJson;
+        sort: 'asc' | 'desc';
+      }[];
+    } | undefined,
     columnVisibility: state.columnVisibility as {
       hiddenColIds: PTableColumnSpecJson[];
     } | undefined,
   };
 };
 
-const onStateUpdated = (event: StateUpdatedEvent) => {
-  gridOptions.value.initialState = gridState.value = makePartialState(
-    event.state,
-  );
-  event.api.autoSizeColumns(
-    event.api.getAllDisplayedColumns().filter(
-      (column) => column.getColId() !== PlAgDataTableRowNumberColId,
-    ),
-  );
-};
+// Reload AgGrid when new state arrives from server
+const reloadKey = ref(0);
+watch(
+  () => [gridApi.value, gridState.value] as const,
+  ([gridApi, gridState]) => {
+    if (!gridApi || gridApi.isDestroyed()) return;
+    const selfState = makePartialState(gridApi.getState());
+    if (!isJsonEqual(gridState, {}) && !isJsonEqual(gridState, selfState)) {
+      gridOptions.value.initialState = gridState;
+      ++reloadKey.value;
+    }
+  },
+);
 
-const onGridPreDestroyed = () => {
-  gridOptions.value.initialState = gridState.value = makePartialState(
-    gridApi.value!.getState(),
-  );
-  gridApi.value = undefined;
-  gridApiDef.value = new Deferred<GridApi>();
-};
+// Make loadingOverlayComponentParams reactive
+let oldOptions: GridOptions | null = null;
+watch(
+  () => [gridApi.value, gridOptions.value] as const,
+  ([gridApi, options]) => {
+    // Wait for AgGrid reinitialization, gridApi will eventially become initialized
+    if (!gridApi || gridApi.isDestroyed()) return;
+    if (options.loading && oldOptions?.loading && !isJsonEqual(
+      options.loadingOverlayComponentParams,
+      oldOptions?.loadingOverlayComponentParams,
+    )) {
+      // Hack to reapply loadingOverlayComponentParams
+      gridApi.setGridOption('loading', false);
+      gridApi.setGridOption('loading', true);
+    }
+    oldOptions = options;
+  },
+  { immediate: true },
+);
+
+// Make cellRendererSelector reactive
+const cellRendererSelector = computed(() => props.cellRendererSelector ?? null);
+watch(
+  () => [gridApi.value, cellRendererSelector.value] as const,
+  ([gridApi, cellRendererSelector]) => {
+    if (!gridApi || gridApi.isDestroyed()) return;
+    gridApi.setGridOption('defaultColDef', {
+      ...gridOptions.value.defaultColDef,
+      cellRendererSelector: cellRendererSelector ?? undefined,
+    });
+  },
+);
 
 defineExpose<PlAgDataTableV2Controller>({
   focusRow: (rowKey) => focusRow(makeRowId(rowKey), firstDataRenderedTracker),
 });
 
-const reloadKey = ref(0);
-watch(
-  () => [gridApi.value, gridState.value] as const,
-  (state, oldState) => {
-    if (lodash.isEqual(state, oldState)) return;
-
-    const [gridApi, gridState] = state;
-    if (!gridApi) return;
-
-    const selfState = makePartialState(gridApi.getState());
-    if (lodash.isEqual(gridState, selfState)) return;
-
-    gridOptions.value.initialState = gridState;
-    ++reloadKey.value;
-  },
-);
+// Propagate columns for filter component
 watch(
   () => gridOptions.value,
   (options, oldOptions) => {
-    if (!oldOptions) return;
-    if (options.rowModelType != oldOptions.rowModelType) ++reloadKey.value;
     if (
       options.columnDefs
-      && !lodash.isEqual(options.columnDefs, oldOptions.columnDefs)
+      && !isJsonEqual(options.columnDefs, oldOptions?.columnDefs)
     ) {
+      const sourceId = settings.value.sourceId;
+      if (sourceId === null) {
+        if (selection.value) {
+          selection.value = {
+            axesSpec: [],
+            selectedKeys: [],
+          };
+        }
+        return emit('columnsChanged', {
+          sourceId: null,
+          columns: [],
+        });
+      }
       const isColDef = (def: ColDef | ColGroupDef): def is ColDef =>
         !('children' in def);
       const colDefs = options.columnDefs?.filter(isColDef) ?? [];
@@ -456,228 +371,161 @@ watch(
         .map((def) => def.colId)
         .filter((colId) => colId !== undefined)
         .filter((colId) => colId !== PlAgDataTableRowNumberColId)
-        .filter((colId) => !isColumnSelectionCol(colId))
         .map((colId) => parseJson(colId as PTableColumnSpecJson))
         ?? [];
       const axesSpec = columns
         .filter((column) => column.type === 'axis')
         .map((axis) => axis.spec);
       if (selection.value) {
-        selection.value = { ...selection.value, axesSpec };
+        selection.value = {
+          ...selection.value,
+          axesSpec,
+        };
       }
-      // axesSpec.value = axes;
-      emit('columnsChanged', columns);
-    }
-    if (
-      !lodash.isEqual(
-        options.loadingOverlayComponentParams,
-        oldOptions.loadingOverlayComponentParams,
-      ) && options.loading
-    ) {
-      gridApi.value?.setGridOption('loading', false);
-      nextTick(() => gridApi.value?.setGridOption('loading', true));
+      emit('columnsChanged', {
+        sourceId,
+        columns,
+      });
     }
   },
   { immediate: true },
 );
 
-const onSheetChanged = (sheetId: string, newValue: string | number) => {
-  const state = sheetsState.value;
-  if (state[sheetId] === newValue) return;
-  state[sheetId] = newValue;
-  sheetsState.value = state;
-  return gridApi.value?.updateGridOptions({
-    loading: true,
-    loadingOverlayComponentParams: {
-      ...gridOptions.value.loadingOverlayComponentParams,
-      notReady: false,
-    } satisfies PlAgOverlayLoadingParams,
-  });
-};
-
-let generation = 0;
-let oldSettings: PlAgDataTableSettings | undefined = undefined;
+// Update AgGrid when settings change
+let oldSettings: PlDataTableSettingsV2 | null = null;
+const generation = ref(0);
 watch(
-  () => [settings.value] as const,
-  async (state) => {
+  () => [gridApi.value, settings.value] as const,
+  ([gridApi, settings]) => {
+    // Wait for AgGrid reinitialization, gridApi will eventially become initialized
+    if (!gridApi || gridApi.isDestroyed()) return;
+    // Verify that this is not a false watch trigger
+    if (isJsonEqual(settings, oldSettings)) return;
+    ++generation.value;
     try {
-      const [settings] = state;
+      // Hide no rows overlay if it is shown, or else loading overlay will not be shown
+      gridApi.hideOverlay();
 
-      const gridApi = await gridApiDef.value.promise;
-
-      if (gridApi.isDestroyed()) {
-        console.warn('gridApi is destroyed');
-        return;
+      // No data source selected -> reset state to default
+      if (!settings.sourceId) {
+        return gridApi.updateGridOptions({
+          loading: true,
+          loadingOverlayComponentParams: {
+            ...gridOptions.value.loadingOverlayComponentParams,
+            notReady: true,
+          } satisfies PlAgOverlayLoadingParams,
+          columnDefs: undefined,
+          serverSideDatasource: undefined,
+        });
       }
 
-      if (lodash.isEqual(settings, oldSettings)) {
-        return;
-      }
-
-      const localGeneration = generation = generation + 1;
-      oldSettings = settings;
-
-      const sourceType = settings?.sourceType;
-
-      switch (sourceType) {
-        case undefined:
-          return gridApi.updateGridOptions({
-            loading: true,
-            loadingOverlayComponentParams: {
-              ...gridOptions.value.loadingOverlayComponentParams,
-              notReady: true,
-            } satisfies PlAgOverlayLoadingParams,
-            columnDefs: [],
-            rowData: undefined,
-            datasource: undefined,
-          });
-
-        case 'ptable': {
-          if (!settings?.model) {
-            return gridApi.updateGridOptions({
-              loading: true,
-              loadingOverlayComponentParams: {
-                ...gridOptions.value.loadingOverlayComponentParams,
-                notReady: false,
-              } satisfies PlAgOverlayLoadingParams,
-              columnDefs: [],
-              rowData: undefined,
-              datasource: undefined,
-            });
-          }
-
-          gridApi.updateGridOptions({
-            loading: true,
-            loadingOverlayComponentParams: {
-              ...gridOptions.value.loadingOverlayComponentParams,
-              notReady: false,
-            } satisfies PlAgOverlayLoadingParams,
-          });
-
-          const options = await updatePFrameGridOptions(
-            getRawPlatformaInstance().pFrameDriver,
-            settings.model,
-            settings.sheets ?? [],
-            !!props.clientSideModel || !!selection.value,
-            gridState,
-            {
-              showCellButtonForAxisId: props.showCellButtonForAxisId,
-              cellButtonInvokeRowsOnDoubleClick:
-                props.cellButtonInvokeRowsOnDoubleClick,
-              trigger: (key?: PTableKey) => emit('cellButtonClicked', key),
-            } satisfies PlAgCellButtonAxisParams,
-          ).catch((err) => {
-            if (localGeneration !== generation) return;
-            gridApi.updateGridOptions({
-              loading: false,
-              loadingOverlayComponentParams: {
-                ...gridOptions.value.loadingOverlayComponentParams,
-                notReady: false,
-              } satisfies PlAgOverlayLoadingParams,
-            });
-            throw err;
-          });
-          if (localGeneration !== generation) return;
-
-          return gridApi.updateGridOptions({
-            loading: false,
-            loadingOverlayComponentParams: {
-              ...gridOptions.value.loadingOverlayComponentParams,
-              notReady: false,
-            } satisfies PlAgOverlayLoadingParams,
-            ...options,
+      // Data source changed -> show full page loader, clear selection
+      if (settings.sourceId !== oldSettings?.sourceId) {
+        gridApi.updateGridOptions({
+          loading: true,
+          loadingOverlayComponentParams: {
+            ...gridOptions.value.loadingOverlayComponentParams,
+            notReady: false,
+          } satisfies PlAgOverlayLoadingParams,
+        });
+        if (selection.value) {
+          gridApi.setServerSideSelectionState({
+            selectAll: false,
+            toggledNodes: [],
           });
         }
-
-        default:
-          throw Error(`unsupported source type: ${sourceType satisfies never}`);
       }
-    } catch (error: unknown) {
-      // How should we handle possible errors?
-      console.trace(error);
-    }
-  },
-  { immediate: true, deep: true },
-);
 
-watch(
-  () => props.cellRendererSelector,
-  (cellRendererSelector) => {
-    if (!gridApi.value) {
-      return;
+      // Model updated -> show skeletons instead of data
+      if (!settings.model) {
+        const state = gridApi.getServerSideGroupLevelState();
+        const rowCount = state.length > 0 ? state[0].rowCount : undefined;
+        return gridApi.updateGridOptions({
+          serverSideDatasource: {
+            getRows: (params) => {
+              params.success({ rowData: [], rowCount });
+            },
+          },
+        });
+      }
+
+      // Model ready -> calculate new state
+      const stateGeneration = generation.value;
+      calculateGridOptions(
+        generation,
+        getRawPlatformaInstance().pFrameDriver,
+        settings.model,
+        settings.sheets ?? [],
+        gridState.value.columnVisibility?.hiddenColIds,
+        {
+          showCellButtonForAxisId: props.showCellButtonForAxisId,
+          cellButtonInvokeRowsOnDoubleClick:
+            props.cellButtonInvokeRowsOnDoubleClick,
+          trigger: (key?: PTableKey) => emit('cellButtonClicked', key),
+        } satisfies PlAgCellButtonAxisParams,
+      ).then((options) => {
+        if (gridApi.isDestroyed() || stateGeneration !== generation.value) return;
+        return gridApi.updateGridOptions({
+          ...options,
+        });
+      }).catch((error: unknown) => {
+        if (gridApi.isDestroyed() || stateGeneration !== generation.value) return;
+        console.trace(error);
+      }).finally(() => {
+        if (gridApi.isDestroyed() || stateGeneration !== generation.value) return;
+        gridApi.updateGridOptions({
+          loading: false,
+        });
+      });
+    } catch (error: unknown) {
+      console.trace(error);
+    } finally {
+      oldSettings = settings;
     }
-    gridApi.value.setGridOption('defaultColDef', {
-      ...gridOptions.value.defaultColDef,
-      cellRendererSelector,
-    });
   },
 );
 </script>
 
 <template>
-  <div class="ap-ag-data-table-container">
+  <div :class="$style.container">
     <PlAgGridColumnManager
       v-if="gridApi && showColumnsPanel"
       :api="gridApi"
       :width="columnsPanelWidth"
     />
-    <PlAgCsvExporter v-if="gridApi && showExportButton" :api="gridApi" />
-    <div
-      v-if="
-        hasSheets(settings)
-          || $slots['before-sheets']
-          || $slots['after-sheets']
-      "
-      class="ap-ag-data-table-sheets"
+    <PlAgCsvExporter
+      v-if="gridApi && showExportButton"
+      :api="gridApi"
+    />
+    <PlAgDataTableSheets
+      v-model="sheetsState"
+      :settings="sheetsSettings"
     >
-      <slot name="before-sheets" />
-      <template v-if="hasSheets(settings)">
-        <PlDropdownLine
-          v-for="(sheet, i) in settings.sheets"
-          :key="i"
-          :model-value="sheetsState[makeSheetId(sheet.axis)]"
-          :options="sheet.options"
-          :prefix="
-            (sheet.axis.annotations?.['pl7.app/label']?.trim()
-              ?? `Unlabeled axis ${i}`) + ':'
-          "
-          @update:model-value="
-            (newValue) =>
-              onSheetChanged(makeSheetId(sheet.axis), newValue)
-          "
-        />
+      <template #before>
+        <slot name="before-sheets" />
       </template>
-      <slot name="after-sheets" />
-    </div>
+      <template #after>
+        <slot name="after-sheets" />
+      </template>
+    </PlAgDataTableSheets>
     <AgGridVue
       :key="reloadKey"
       :theme="AgGridTheme"
-      class="ap-ag-data-table-grid"
+      :class="$style.grid"
       :grid-options="gridOptions"
-      @grid-ready="onGridReady"
-      @state-updated="onStateUpdated"
-      @grid-pre-destroyed="onGridPreDestroyed"
     />
   </div>
 </template>
 
-<style lang="css" scoped>
-.ap-ag-data-table-container {
+<style lang="css" module>
+.container {
   display: flex;
   flex-direction: column;
   height: 100%;
   gap: 12px;
 }
 
-.ap-ag-data-table-sheets {
-  display: flex;
-  flex-direction: row;
-  gap: 12px;
-  flex-wrap: wrap;
-  z-index: 3;
-}
-
-.ap-ag-data-table-grid {
+.grid {
   flex: 1;
 }
 </style>

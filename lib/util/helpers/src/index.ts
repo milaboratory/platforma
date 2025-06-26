@@ -12,6 +12,10 @@ export * from './collections';
 export * from './functions';
 export * from './types';
 export * from './regexp';
+export * from './error';
+export * from './hash';
+export * from './random';
+export * from './uniqId';
 
 export {
   utils,

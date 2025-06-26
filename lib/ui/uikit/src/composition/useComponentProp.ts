@@ -1,4 +1,4 @@
-import type { InferComponentProps } from '@/types';
+import type { InferComponentProps } from '../types';
 import { computed, type Component, type ComputedRef } from 'vue';
 
 /**

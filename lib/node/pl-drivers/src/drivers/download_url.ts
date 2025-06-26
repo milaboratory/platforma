@@ -58,7 +58,7 @@ export class DownloadUrlDriver implements DownloadUrlSyncReader {
     httpClient: Dispatcher,
     private readonly saveDir: string,
     private readonly opts: DownloadUrlDriverOps = {
-      cacheSoftSizeBytes: 50 * 1024 * 1024,
+      cacheSoftSizeBytes: 1 * 1024 * 1024 * 1024, // 1 GB
       withGunzip: true,
       nConcurrentDownloads: 50,
     },
@@ -289,7 +289,9 @@ class DownloadByUrlTask {
 }
 
 /** Throws when a downloading aborts. */
-class URLAborted extends Error {}
+class URLAborted extends Error {
+  name = 'URLAborted';
+}
 
 /** Gets a directory size by calculating sizes recursively. */
 async function dirSize(dir: string): Promise<number> {

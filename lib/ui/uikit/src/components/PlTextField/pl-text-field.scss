@@ -1,4 +1,4 @@
-@use "@/assets/mixins" as *;
+@use "../../assets/mixins.scss" as *;
 
 .pl-text-field {
   $root: &;
@@ -87,13 +87,14 @@
       cursor: pointer;
     }
     .mask-16 {
-      background-color: var(--control-mask-fill);
+      --icon-color: var(--control-mask-fill);
       cursor: pointer;
     }
   }
 
   &__clearable {
     display: var(--show-clearable) !important;
+    --icon-color: var(--ic-02) !important;
   }
 
   &__helper {

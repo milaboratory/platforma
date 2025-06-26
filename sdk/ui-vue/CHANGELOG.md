@@ -1,5 +1,233 @@
 # @platforma-sdk/ui-vue
 
+## 1.37.2
+
+### Patch Changes
+
+- 37800c5: Public tools packages
+- Updated dependencies [37800c5]
+  - @milaboratories/uikit@2.2.92
+  - @platforma-sdk/model@1.37.2
+
+## 1.37.1
+
+### Patch Changes
+
+- 2c3bb60: Developer build ui-examples don't required build/watch for deps
+- Updated dependencies [2c3bb60]
+  - @milaboratories/uikit@2.2.91
+
+## 1.37.0
+
+### Minor Changes
+
+- 6ffe944: PlAgDataTableV2 - significant interface change
+
+### Patch Changes
+
+- 6ffe944: PlAgDataTableV2 refactoring
+- 6ffe944: PlAgDataTable types fixed
+- Updated dependencies [6ffe944]
+- Updated dependencies [6ffe944]
+- Updated dependencies [6ffe944]
+  - @milaboratories/uikit@2.2.90
+  - @platforma-sdk/model@1.37.0
+
+## 1.36.0
+
+### Minor Changes
+
+- 105ea31: MSA: error handling improvements
+
+## 1.35.2
+
+### Patch Changes
+
+- Updated dependencies [60540e8]
+  - @milaboratories/uikit@2.2.89
+
+## 1.35.0
+
+### Minor Changes
+
+- 3781bd8: Added markup support to PlMultiSequenceAlignment
+
+## 1.34.18
+
+### Patch Changes
+
+- Updated dependencies [e9d02ae]
+  - @milaboratories/uikit@2.2.88
+
+## 1.34.17
+
+### Patch Changes
+
+- 45badc9: PlElementList implementation
+- Updated dependencies [45badc9]
+  - @milaboratories/uikit@2.2.87
+
+## 1.34.15
+
+### Patch Changes
+
+- Updated dependencies [8248b67]
+  - @milaboratories/uikit@2.2.86
+
+## 1.34.12
+
+### Patch Changes
+
+- Updated dependencies [2299e3e]
+  - @milaboratories/uikit@2.2.85
+
+## 1.34.10
+
+### Patch Changes
+
+- Updated dependencies [c570fd4]
+  - @platforma-sdk/model@1.34.10
+  - @milaboratories/uikit@2.2.84
+
+## 1.34.9
+
+### Patch Changes
+
+- Updated dependencies [540e690]
+  - @milaboratories/uikit@2.2.84
+
+## 1.34.8
+
+### Patch Changes
+
+- 33d6252: Fix Seqlogo overlap in the MSA component
+- Updated dependencies [23f719d]
+  - @platforma-sdk/model@1.34.8
+  - @milaboratories/uikit@2.2.83
+
+## 1.34.4
+
+### Patch Changes
+
+- 697b8a5: Replace all aliases to relative paths
+- Updated dependencies [697b8a5]
+  - @milaboratories/uikit@2.2.83
+
+## 1.34.0
+
+### Minor Changes
+
+- 35ce863: PlMultiSequenceAlignment improvements
+
+### Patch Changes
+
+- Updated dependencies [35ce863]
+  - @platforma-sdk/model@1.34.0
+  - @milaboratories/uikit@2.2.82
+
+## 1.33.17
+
+### Patch Changes
+
+- 49cf7ee: Standard Error serialization/deserialization
+  - @platforma-sdk/model@1.33.17
+  - @milaboratories/uikit@2.2.82
+
+## 1.33.16
+
+### Patch Changes
+
+- Updated dependencies [1c10475]
+  - @platforma-sdk/model@1.33.16
+  - @milaboratories/uikit@2.2.82
+
+## 1.33.14
+
+### Patch Changes
+
+- @platforma-sdk/model@1.33.14
+- @milaboratories/uikit@2.2.82
+
+## 1.33.13
+
+### Patch Changes
+
+- 54ebbe9: PlAgDataTable: fix reset hidden columns state, remove scroll to top after reordering columns
+- Updated dependencies [54ebbe9]
+  - @milaboratories/uikit@2.2.82
+
+## 1.33.12
+
+### Patch Changes
+
+- Updated dependencies [d707ab4]
+  - @milaboratories/uikit@2.2.81
+
+## 1.33.10
+
+### Patch Changes
+
+- Updated dependencies [f0ea01c]
+  - @platforma-sdk/model@1.33.10
+  - @milaboratories/uikit@2.2.80
+
+## 1.33.9
+
+### Patch Changes
+
+- 9495969: Externalize miplots4 dependency
+
+## 1.33.8
+
+### Patch Changes
+
+- @platforma-sdk/model@1.33.8
+- @milaboratories/uikit@2.2.80
+
+## 1.33.7
+
+### Patch Changes
+
+- cd3b6d5: Bump vite version and related plugins
+- Updated dependencies [cd3b6d5]
+  - @milaboratories/uikit@2.2.80
+
+## 1.33.6
+
+### Patch Changes
+
+- Updated dependencies [4ccd249]
+  - @milaboratories/uikit@2.2.79
+
+## 1.33.3
+
+### Patch Changes
+
+- 84656a6: Get rid of .cjs and .umd in ui packages
+- Updated dependencies [84656a6]
+  - @milaboratories/uikit@2.2.78
+
+## 1.33.2
+
+### Patch Changes
+
+- Updated dependencies [9b15f24]
+  - @platforma-sdk/model@1.33.2
+  - @milaboratories/uikit@2.2.77
+
+## 1.33.1
+
+### Patch Changes
+
+- Updated dependencies [a23199f]
+  - @milaboratories/uikit@2.2.77
+
+## 1.33.0
+
+### Minor Changes
+
+- 8b908b1: Fix join calculation for MSA component
+
 ## 1.32.9
 
 ### Patch Changes

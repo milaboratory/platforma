@@ -1,9 +1,8 @@
 <script lang="ts" setup>
-import {
-  type ChartInterface,
-  type DataByColumns,
-  MiPlots,
-  type Settings,
+import type {
+  ChartInterface,
+  DataByColumns,
+  Settings,
 } from '@milaboratories/miplots4';
 import { useResizeObserver } from '@vueuse/core';
 import {
@@ -15,6 +14,8 @@ import {
   watchEffect,
 } from 'vue';
 import type { ResidueCounts } from './types';
+import { useMiPlots } from './useMiPlots';
+import { PlAlert } from '@milaboratories/uikit';
 
 const { residueCounts } = defineProps<{
   residueCounts: ResidueCounts;
@@ -139,12 +140,14 @@ const data = computed<DataByColumns>(
   },
 );
 
+const { miplots, error } = useMiPlots();
+
 const plot = shallowRef<ChartInterface>();
 
-watchEffect(() => {
-  if (!settings.value || !plotEl.value) return;
+watchEffect(async () => {
+  if (!settings.value || !plotEl.value || !miplots.value) return;
   if (!plot.value) {
-    plot.value = MiPlots.newPlot(data.value, settings.value);
+    plot.value = miplots.value.newPlot(data.value, settings.value);
     plot.value.mount(plotEl.value);
   } else {
     plot.value.updateSettingsAndData(data.value, settings.value);
@@ -159,6 +162,9 @@ onBeforeUnmount(() => {
 <template>
   <div :class="$style.container">
     <div ref="plotEl" :class="$style.plot" />
+    <PlAlert v-if="error" type="error">
+      {{ error.message }}
+    </PlAlert>
   </div>
 </template>
 
