@@ -1,5 +1,17 @@
 # @platforma-sdk/package-builder
 
+## 2.16.2
+
+### Patch Changes
+
+- 37800c5: Public tools packages
+
+## 2.16.1
+
+### Patch Changes
+
+- 0dfe522: Print valid env variable name in error message about absent storage URL
+
 ## 2.16.0
 
 ### Minor Changes

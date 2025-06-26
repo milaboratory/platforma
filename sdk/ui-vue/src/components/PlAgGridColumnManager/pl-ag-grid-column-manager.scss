@@ -1,4 +1,4 @@
-@use '@milaboratories/uikit/styles/mixins' as *;
+@use '@milaboratories/uikit/assets/mixins.scss' as *;
 
 .pl-ag-columns {
     display: flex;
@@ -23,7 +23,7 @@
         line-height: 0;
 
         .mask-16 {
-            background-color: var(--ic-02);
+            --icon-color: var(--ic-02);
         }
     }
 
@@ -33,7 +33,7 @@
 
     &__pin {
         .mask-24 {
-            background-color: var(--ic-02);
+            --icon-color: var(--ic-02);
         }
     }
 
@@ -42,10 +42,10 @@
         visibility: hidden;
 
         .mask-24 {
-            background-color: var(--ic-02);
+            --icon-color: var(--ic-02);
 
             &:hover {
-                background-color: var(--ic-01);
+                --icon-color: var(--ic-01);
             }
         }
     }

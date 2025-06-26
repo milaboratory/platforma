@@ -84,7 +84,7 @@ function migrateFilters(filters: PTableRecordFilter[]): PTableRecordFilter[] {
 const bigintReplacer = (_: string, v: unknown) => (typeof v === 'bigint' ? v.toString() : v);
 
 class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
-  public readonly pFrame: PFrameInternal.PFrameV6;
+  public readonly pFrame: PFrameInternal.PFrameV7;
   private readonly abortController = new AbortController();
   private readonly blobIdToResource = new Map<string, ResourceInfo>();
   private readonly blobHandleComputables = new Map<
@@ -146,24 +146,13 @@ class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
 
   public readonly preloadBlob = async (blobIds: string[]): Promise<void> => {
     const computables = blobIds.map((blobId) => this.getOrCreateComputableForBlob(blobId));
-    for (const computable of computables) await computable.awaitStableFullValue();
-  };
-
-  public readonly resolveBlob = async (blobId: string): Promise<string> => {
-    const computable = this.getOrCreateComputableForBlob(blobId);
-    return this.blobDriver.getLocalPath((await computable.awaitStableValue()).handle);
+    for (const computable of computables) await computable.awaitStableFullValue(this.disposeSignal);
   };
 
   public readonly resolveBlobContent = async (blobId: string): Promise<Uint8Array> => {
-    try {
-      const computable = this.getOrCreateComputableForBlob(blobId);
-      const path = this.blobDriver.getLocalPath((await computable.awaitStableValue()).handle);
-      return await fsp.readFile(path);
-    } catch (err: unknown) {
-      const error = JSON.stringify(err);
-      console.log(`resolveBlobContent catched error: ${error}`);
-      throw err;
-    }
+    const computable = this.getOrCreateComputableForBlob(blobId);
+    const path = this.blobDriver.getLocalPath((await computable.awaitStableValue(this.disposeSignal)).handle);
+    return await fsp.readFile(path);
   };
 
   public get disposeSignal(): AbortSignal {
@@ -179,7 +168,7 @@ class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
 
 class PTableHolder implements Disposable {
   constructor(
-    public readonly table: Promise<PFrameInternal.PTableV4>,
+    public readonly pTable: PFrameInternal.PTableV5,
     private readonly abortController: AbortController,
   ) {}
 
@@ -189,15 +178,13 @@ class PTableHolder implements Disposable {
 
   [Symbol.dispose](): void {
     this.abortController.abort();
-    // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    this.table.then((table) => table.dispose());
+    this.pTable.dispose();
   }
 }
 
 type FullPTableDef = {
   pFrameHandle: PFrameHandle;
   def: PTableDef<PObjectId>;
-  signal?: AbortSignal;
 };
 
 /**
@@ -224,7 +211,6 @@ export interface InternalPFrameDriver extends SdkPFrameDriver {
   createPTable(
     def: PTableDef<PColumn<PlTreeNodeAccessor | PColumnValues | DataInfo<PlTreeNodeAccessor>>>,
     ctx: ComputableCtx,
-    signal?: AbortSignal,
   ): PTableHandle;
 
   /** Calculates data for the table and returns complete data representation of it */
@@ -241,6 +227,12 @@ export interface InternalPFrameDriver extends SdkPFrameDriver {
     request: UniqueValuesRequest,
     signal?: AbortSignal
   ): Promise<UniqueValuesResponse>;
+
+  /** Unified table shape */
+  getShape(
+    handle: PTableHandle,
+    signal?: AbortSignal,
+  ): Promise<PTableShape>;
 
   /**
    * Retrieve the data from the table. To retrieve only data required, it can be
@@ -261,8 +253,8 @@ export interface InternalPFrameDriver extends SdkPFrameDriver {
 export class PFrameDriver implements InternalPFrameDriver {
   private readonly pFrames: RefCountResourcePool<InternalPFrameData, PFrameHolder>;
   private readonly pTables: RefCountResourcePool<FullPTableDef, PTableHolder>;
-  private readonly concurrencyLimiter: ConcurrencyLimitingExecutor;
-  private readonly getDataLimiter: ConcurrencyLimitingExecutor;
+  private readonly frameConcurrencyLimiter: ConcurrencyLimitingExecutor;
+  private readonly tableConcurrencyLimiter: ConcurrencyLimitingExecutor;
 
   public async pprofDump(): Promise<Uint8Array> {
     return await PFrame.pprofDump();
@@ -284,8 +276,8 @@ export class PFrameDriver implements InternalPFrameDriver {
     private readonly spillPath: string,
   ) {
     const concurrencyLimiter = new ConcurrencyLimitingExecutor(1);
-    this.concurrencyLimiter = concurrencyLimiter;
-    this.getDataLimiter = new ConcurrencyLimitingExecutor(1);
+    this.frameConcurrencyLimiter = concurrencyLimiter;
+    this.tableConcurrencyLimiter = new ConcurrencyLimitingExecutor(1);
 
     this.pFrames = new (class extends RefCountResourcePool<InternalPFrameData, PFrameHolder> {
       constructor(
@@ -329,28 +321,22 @@ export class PFrameDriver implements InternalPFrameDriver {
 
         const pFrameHolder = this.pFrames.getByKey(handle);
         const abortController = new AbortController();
-        const combinedSignal = AbortSignal.any(
-          [params.signal, abortController.signal, pFrameHolder.disposeSignal].filter((s) => !!s),
-        );
 
-        const tablePromise = concurrencyLimiter.run(async () => {
-          const table = await pFrameHolder.pFrame.createTable({
-            src: joinEntryToInternal(params.def.src),
-            filters: migrateFilters(params.def.filters),
-          }, combinedSignal);
-
-          let sortedTable = table;
-          if (params.def.sorting.length > 0) {
-            try {
-              sortedTable = await table.sort(params.def.sorting, combinedSignal);
-            } finally {
-              table.dispose();
-            }
-          }
-
-          return sortedTable;
+        const table = pFrameHolder.pFrame.createTable({
+          src: joinEntryToInternal(params.def.src),
+          filters: migrateFilters(params.def.filters),
         });
-        return new PTableHolder(tablePromise, abortController);
+
+        let sortedTable = table;
+        if (params.def.sorting.length > 0) {
+          try {
+            sortedTable = table.sort(params.def.sorting);
+          } finally {
+            table.dispose();
+          }
+        }
+
+        return new PTableHolder(sortedTable, abortController);
       }
 
       protected calculateParamsKey(params: FullPTableDef): string {
@@ -386,11 +372,10 @@ export class PFrameDriver implements InternalPFrameDriver {
   public createPTable(
     def: PTableDef<PColumn<PlTreeNodeAccessor | PColumnValues | DataInfo<PlTreeNodeAccessor>>>,
     ctx: ComputableCtx,
-    signal?: AbortSignal,
   ): PTableHandle {
     const pFrameHandle = this.createPFrame(extractAllColumns(def.src), ctx);
     const defIds = mapPTableDef(def, (c) => c.id);
-    const res = this.pTables.acquire({ def: defIds, pFrameHandle, signal });
+    const res = this.pTables.acquire({ def: defIds, pFrameHandle });
     if (getDebugFlags().logPFrameRequests)
       this.logger.info(
         `Create PTable call (pFrameHandle = ${pFrameHandle}; pTableHandle = ${JSON.stringify(res)}): ${JSON.stringify(
@@ -455,18 +440,18 @@ export class PFrameDriver implements InternalPFrameDriver {
         `Call calculateTableData, handle = ${handle}, request = ${JSON.stringify(request, bigintReplacer)}`,
       );
     }
-    return await this.concurrencyLimiter.run(async () => {
+    return await this.frameConcurrencyLimiter.run(async () => {
       const pFrameHolder = this.pFrames.getByKey(handle);
       const combinedSignal = AbortSignal.any([signal, pFrameHolder.disposeSignal].filter((s) => !!s));
-      const table = await pFrameHolder.pFrame.createTable({
+      const table = pFrameHolder.pFrame.createTable({
         src: joinEntryToInternal(request.src),
         filters: migrateFilters(request.filters),
-      }, combinedSignal);
+      });
 
       let sortedTable = table;
       if (request.sorting.length > 0) {
         try {
-          sortedTable = await table.sort(request.sorting, combinedSignal);
+          sortedTable = table.sort(request.sorting);
         } finally {
           table.dispose();
         }
@@ -474,7 +459,10 @@ export class PFrameDriver implements InternalPFrameDriver {
 
       try {
         const spec = sortedTable.getSpec();
-        const data = await sortedTable.getData([...spec.keys()], range, combinedSignal);
+        const data = await sortedTable.getData([...spec.keys()], {
+          range,
+          signal: combinedSignal,
+        });
         return spec.map((spec, i) => ({
           spec: spec,
           data: data[i],
@@ -495,13 +483,15 @@ export class PFrameDriver implements InternalPFrameDriver {
         `Call getUniqueValues, handle = ${handle}, request = ${JSON.stringify(request, bigintReplacer)}`,
       );
     }
-    return await this.concurrencyLimiter.run(async () => {
+    return await this.frameConcurrencyLimiter.run(async () => {
       const pFrameHolder = this.pFrames.getByKey(handle);
       const combinedSignal = AbortSignal.any([signal, pFrameHolder.disposeSignal].filter((s) => !!s));
       return await pFrameHolder.pFrame.getUniqueValues({
         ...request,
         filters: migrateFilters(request.filters),
-      }, combinedSignal);
+      }, {
+        signal: combinedSignal,
+      });
     });
   }
 
@@ -509,14 +499,19 @@ export class PFrameDriver implements InternalPFrameDriver {
   // PTable istance methods
   //
 
-  public async getShape(handle: PTableHandle): Promise<PTableShape> {
-    const pTable = await this.pTables.getByKey(handle).table;
-    return pTable.getShape();
+  public getSpec(handle: PTableHandle): Promise<PTableColumnSpec[]> {
+    const pTable = this.pTables.getByKey(handle).pTable;
+    return Promise.resolve(pTable.getSpec());
   }
 
-  public async getSpec(handle: PTableHandle): Promise<PTableColumnSpec[]> {
-    const pTable = await this.pTables.getByKey(handle).table;
-    return pTable.getSpec();
+  public async getShape(handle: PTableHandle, signal?: AbortSignal): Promise<PTableShape> {
+    return await this.tableConcurrencyLimiter.run(async () => {
+      const pTableHolder = this.pTables.getByKey(handle);
+      const combinedSignal = AbortSignal.any([signal, pTableHolder.disposeSignal].filter((s) => !!s));
+      return await pTableHolder.pTable.getShape({
+        signal: combinedSignal,
+      });
+    });
   }
 
   public async getData(
@@ -525,11 +520,13 @@ export class PFrameDriver implements InternalPFrameDriver {
     range: TableRange | undefined,
     signal?: AbortSignal,
   ): Promise<PTableVector[]> {
-    return await this.getDataLimiter.run(async () => {
+    return await this.tableConcurrencyLimiter.run(async () => {
       const pTableHolder = this.pTables.getByKey(handle);
-      const pTable = await pTableHolder.table;
       const combinedSignal = AbortSignal.any([signal, pTableHolder.disposeSignal].filter((s) => !!s));
-      return await pTable.getData(columnIndices, range, combinedSignal);
+      return await pTableHolder.pTable.getData(columnIndices, {
+        range,
+        signal: combinedSignal,
+      });
     });
   }
 }

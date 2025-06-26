@@ -1,4 +1,4 @@
-@use "@/assets/mixins" as *;
+@use "../../assets/mixins.scss" as *;
 
 .pl-log-view {
   --log-background: var(--bg-base-light);
@@ -49,12 +49,12 @@
     cursor: pointer;
 
     .mask-24 {
-      background-color: var(--ic-02);
+      --icon-color: var(--ic-02);
     }
 
     &:hover {
       .mask-24 {
-        background-color: var(--txt-01);
+        --icon-color: var(--txt-01);
       }
     }
   }

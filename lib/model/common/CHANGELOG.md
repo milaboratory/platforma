@@ -1,5 +1,20 @@
 # @milaboratories/pl-model-common
 
+## 1.15.7
+
+### Patch Changes
+
+- 37800c5: Public tools packages
+- Updated dependencies [37800c5]
+  - @milaboratories/pl-error-like@1.12.2
+
+## 1.15.6
+
+### Patch Changes
+
+- 6ffe944: PlAgDataTableV2 refactoring
+- 6ffe944: PlAgDataTable types fixed
+
 ## 1.15.5
 
 ### Patch Changes

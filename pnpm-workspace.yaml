@@ -1,5 +1,4 @@
 packages:
-  - lib/util/build-configs
   - lib/util/helpers
   - lib/util/sequences
 
@@ -31,6 +30,8 @@ packages:
   - tools/tengo-builder
   - tools/oclif-index
   - tools/block-tools
+  - tools/ts-configs
+  - tools/build-configs
   - tools/package-builder
   - tools/r-builder
   - tools/pl-bootstrap
@@ -123,6 +124,7 @@ catalog:
   '@rollup/plugin-node-resolve': ^16.0.1
   'rollup-plugin-sourcemaps2': ^0.5.2
   'vite-plugin-dts': ^4.5.3
+  'vite-plugin-css-injected-by-js': ^3.5.2
   'tsc-alias': ^1.8.11
   'yarpm': ^1.2.0
   'ts-node': ^10.9.2
@@ -197,7 +199,7 @@ catalog:
   'winston': ^3.17.0
 
   '@milaboratories/tengo-tester': ^1.6.2
-  '@milaboratories/pframes-rs-node': &pframes-rs-version 1.0.42
+  '@milaboratories/pframes-rs-node': &pframes-rs-version 1.0.47
 
   'remeda': ^2.22.6
 
@@ -206,9 +208,8 @@ catalog:
   # UI
 
   'vue': ^3.5.13
-  # TODO upgrade (see https://github.com/vueuse/vueuse/pull/4543)
-  # '@vueuse/core': ^12.8.2
-  '@vueuse/core': ~12.4.0
+  '@vueuse/core': ^13.3.0
+  '@vueuse/integrations': ^13.3.0
   'vue-tsc': ^2.1.10
   'sass': ~1.83.4
   'vitepress': '1.5.0'
@@ -218,12 +219,15 @@ catalog:
   'd3-format': ^3.1.0
   '@types/d3-format': ^3.0.4
 
-  'ag-grid-enterprise': &ag-grid ^33.0.4
+  'ag-grid-enterprise': &ag-grid ^33.3.2
   'ag-grid-vue3': *ag-grid
 
   '@milaboratories/miplots4': ^1.0.98
 
   'monaco-editor': ^0.52.2
+
+  'sortablejs': ^1.15.6
+  '@types/sortablejs': ^1.15.6
 
   # SW
 

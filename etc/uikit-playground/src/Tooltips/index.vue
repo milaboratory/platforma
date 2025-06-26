@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import Layout from '@/Layout.vue';
+import Layout from '../Layout.vue';
 import { listToOptions } from '@milaboratories/helpers';
 import { PlBtnAccent, PlDropdown, PlTooltip } from '@milaboratories/uikit';
 import { reactive } from 'vue';

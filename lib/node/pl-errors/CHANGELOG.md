@@ -1,5 +1,21 @@
 # @milaboratories/pl-errors
 
+## 1.1.9
+
+### Patch Changes
+
+- 37800c5: Public tools packages
+- Updated dependencies [37800c5]
+  - @milaboratories/ts-helpers@1.4.1
+  - @milaboratories/pl-client@2.11.2
+
+## 1.1.8
+
+### Patch Changes
+
+- Updated dependencies [3d34876]
+  - @milaboratories/pl-client@2.11.1
+
 ## 1.1.7
 
 ### Patch Changes

@@ -1,5 +1,66 @@
 # @milaboratories/uikit
 
+## 2.2.92
+
+### Patch Changes
+
+- 37800c5: Public tools packages
+
+## 2.2.91
+
+### Patch Changes
+
+- 2c3bb60: Developer build ui-examples don't required build/watch for deps
+
+## 2.2.90
+
+### Patch Changes
+
+- 6ffe944: PlAgDataTableV2 refactoring
+- 6ffe944: PlAgDataTable types fixed
+
+## 2.2.89
+
+### Patch Changes
+
+- 60540e8: Fix: return platforma variable declaration to global scope
+
+## 2.2.88
+
+### Patch Changes
+
+- e9d02ae: Correct clear icon color
+
+## 2.2.87
+
+### Patch Changes
+
+- 45badc9: PlElementList implementation
+
+## 2.2.86
+
+### Patch Changes
+
+- 8248b67: Fix svg icons ids collisions
+
+## 2.2.85
+
+### Patch Changes
+
+- 2299e3e: Fix loading icon in the PlMultiDropdown and multi path mask icons (clipboard and similar)
+
+## 2.2.84
+
+### Patch Changes
+
+- 540e690: Unified svg icon component
+
+## 2.2.83
+
+### Patch Changes
+
+- 697b8a5: Replace all aliases to relative paths
+
 ## 2.2.82
 
 ### Patch Changes

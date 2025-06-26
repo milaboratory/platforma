@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { inject, unref } from 'vue';
-import TodoItem from '@/context/TodoItem.vue';
+import TodoItem from './TodoItem.vue';
 import { todoListKey } from './keys';
 import { notEmpty } from '@milaboratories/helpers';
 import { randomString } from '@milaboratories/helpers';

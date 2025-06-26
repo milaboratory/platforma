@@ -31,8 +31,8 @@ catalogs:
       specifier: ^1.0.98
       version: 1.0.103
     '@milaboratories/pframes-rs-node':
-      specifier: 1.0.42
-      version: 1.0.42
+      specifier: 1.0.47
+      version: 1.0.47
     '@milaboratories/software-pframes-conv':
       specifier: 2.2.2
       version: 2.2.2
@@ -99,6 +99,9 @@ catalogs:
     '@types/semver':
       specifier: ^7.7.0
       version: 7.7.0
+    '@types/sortablejs':
+      specifier: ^1.15.6
+      version: 1.15.8
     '@types/ssh2':
       specifier: ^1.15.5
       version: 1.15.5
@@ -115,14 +118,17 @@ catalogs:
       specifier: ^2.4.6
       version: 2.4.6
     '@vueuse/core':
-      specifier: ~12.4.0
-      version: 12.4.0
+      specifier: ^13.3.0
+      version: 13.3.0
+    '@vueuse/integrations':
+      specifier: ^13.3.0
+      version: 13.3.0
     ag-grid-enterprise:
-      specifier: ^33.0.4
-      version: 33.0.4
+      specifier: ^33.3.2
+      version: 33.3.2
     ag-grid-vue3:
-      specifier: ^33.0.4
-      version: 33.0.4
+      specifier: ^33.3.2
+      version: 33.3.2
     canonicalize:
       specifier: ~2.1.0
       version: 2.1.0
@@ -219,6 +225,9 @@ catalogs:
     semver:
       specifier: ^7.7.2
       version: 7.7.2
+    sortablejs:
+      specifier: ^1.15.6
+      version: 1.15.6
     ssh2:
       specifier: ^1.16.0
       version: 1.16.0
@@ -240,9 +249,6 @@ catalogs:
     ts-node:
       specifier: ^10.9.2
       version: 10.9.2
-    tsc-alias:
-      specifier: ^1.8.11
-      version: 1.8.11
     tsconfig-paths:
       specifier: ^4.2.0
       version: 4.2.0
@@ -270,6 +276,9 @@ catalogs:
     vite:
       specifier: ^6.3.5
       version: 6.3.5
+    vite-plugin-css-injected-by-js:
+      specifier: ^3.5.2
+      version: 3.5.2
     vite-plugin-dts:
       specifier: ^4.5.3
       version: 4.5.3
@@ -383,9 +392,15 @@ importers:
       '@faker-js/faker':
         specifier: 'catalog:'
         version: 9.2.0
+      '@milaboratories/build-configs':
+        specifier: workspace:*
+        version: link:../../../../tools/build-configs
       '@milaboratories/helpers':
         specifier: workspace:^
         version: link:../../../../lib/util/helpers
+      '@milaboratories/ts-configs':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-configs
       '@vitejs/plugin-vue':
         specifier: 'catalog:'
         version: 5.2.3(vite@6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0))(vue@3.5.13(typescript@5.5.4))
@@ -466,7 +481,7 @@ importers:
         version: link:../../../../sdk/ui-vue
       '@vueuse/core':
         specifier: 'catalog:'
-        version: 12.4.0(typescript@5.5.4)
+        version: 13.3.0(vue@3.5.13(typescript@5.5.4))
       vue:
         specifier: 'catalog:'
         version: 3.5.13(typescript@5.5.4)
@@ -474,9 +489,15 @@ importers:
       '@faker-js/faker':
         specifier: 'catalog:'
         version: 9.2.0
+      '@milaboratories/build-configs':
+        specifier: workspace:*
+        version: link:../../../../tools/build-configs
       '@milaboratories/helpers':
         specifier: workspace:^
         version: link:../../../../lib/util/helpers
+      '@milaboratories/ts-configs':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-configs
       '@vitejs/plugin-vue':
         specifier: 'catalog:'
         version: 5.2.3(vite@6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0))(vue@3.5.13(typescript@5.5.4))
@@ -559,9 +580,15 @@ importers:
       '@faker-js/faker':
         specifier: 'catalog:'
         version: 9.2.0
+      '@milaboratories/build-configs':
+        specifier: workspace:*
+        version: link:../../../../tools/build-configs
       '@milaboratories/helpers':
         specifier: workspace:^
         version: link:../../../../lib/util/helpers
+      '@milaboratories/ts-configs':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-configs
       '@vitejs/plugin-vue':
         specifier: 'catalog:'
         version: 5.2.3(vite@6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0))(vue@3.5.13(typescript@5.5.4))
@@ -638,6 +665,12 @@ importers:
         specifier: 'catalog:'
         version: 3.5.13(typescript@5.5.4)
     devDependencies:
+      '@milaboratories/build-configs':
+        specifier: workspace:*
+        version: link:../../../../tools/build-configs
+      '@milaboratories/ts-configs':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-configs
       '@vitejs/plugin-vue':
         specifier: 'catalog:'
         version: 5.2.3(vite@6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0))(vue@3.5.13(typescript@5.5.4))
@@ -717,6 +750,12 @@ importers:
         specifier: 'catalog:'
         version: 3.23.8
     devDependencies:
+      '@milaboratories/build-configs':
+        specifier: workspace:*
+        version: link:../../../../tools/build-configs
+      '@milaboratories/ts-configs':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-configs
       '@vitejs/plugin-vue':
         specifier: 'catalog:'
         version: 5.2.3(vite@6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0))(vue@3.5.13(typescript@5.5.4))
@@ -796,6 +835,12 @@ importers:
         specifier: 'catalog:'
         version: 3.5.13(typescript@5.5.4)
     devDependencies:
+      '@milaboratories/build-configs':
+        specifier: workspace:*
+        version: link:../../../../tools/build-configs
+      '@milaboratories/ts-configs':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-configs
       '@vitejs/plugin-vue':
         specifier: 'catalog:'
         version: 5.2.3(vite@6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0))(vue@3.5.13(typescript@5.5.4))
@@ -881,9 +926,15 @@ importers:
       '@faker-js/faker':
         specifier: 'catalog:'
         version: 9.2.0
+      '@milaboratories/build-configs':
+        specifier: workspace:*
+        version: link:../../../../tools/build-configs
       '@milaboratories/helpers':
         specifier: workspace:^
         version: link:../../../../lib/util/helpers
+      '@milaboratories/ts-configs':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-configs
       '@vitejs/plugin-vue':
         specifier: 'catalog:'
         version: 5.2.3(vite@6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0))(vue@3.5.13(typescript@5.5.4))
@@ -975,9 +1026,15 @@ importers:
       '@faker-js/faker':
         specifier: 'catalog:'
         version: 9.2.0
+      '@milaboratories/build-configs':
+        specifier: workspace:*
+        version: link:../../../../tools/build-configs
       '@milaboratories/helpers':
         specifier: workspace:^
         version: link:../../../../lib/util/helpers
+      '@milaboratories/ts-configs':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-configs
       '@vitejs/plugin-vue':
         specifier: 'catalog:'
         version: 5.2.3(vite@6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0))(vue@3.5.13(typescript@5.5.4))
@@ -1060,9 +1117,18 @@ importers:
       '@faker-js/faker':
         specifier: 'catalog:'
         version: 9.2.0
+      '@milaboratories/build-configs':
+        specifier: workspace:*
+        version: link:../../../../tools/build-configs
       '@milaboratories/helpers':
         specifier: workspace:^
         version: link:../../../../lib/util/helpers
+      '@milaboratories/ts-configs':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-configs
+      '@milaboratories/uikit':
+        specifier: workspace:^
+        version: link:../../../../lib/ui/uikit
       '@platforma-sdk/ui-vue':
         specifier: workspace:^
         version: link:../../../../sdk/ui-vue
@@ -1071,10 +1137,10 @@ importers:
         version: 5.2.3(vite@6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0))(vue@3.5.13(typescript@5.5.4))
       ag-grid-enterprise:
         specifier: 'catalog:'
-        version: 33.0.4
+        version: 33.3.2
       ag-grid-vue3:
         specifier: 'catalog:'
-        version: 33.0.4(vue@3.5.13(typescript@5.5.4))
+        version: 33.3.2(vue@3.5.13(typescript@5.5.4))
       rollup-plugin-sourcemaps2:
         specifier: 'catalog:'
         version: 0.5.2(@types/node@22.5.5)(rollup@4.41.1)
@@ -1084,6 +1150,9 @@ importers:
       vite:
         specifier: 'catalog:'
         version: 6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0)
+      vitest:
+        specifier: 'catalog:'
+        version: 2.1.9(@types/node@22.5.5)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4)
       vue-tsc:
         specifier: 'catalog:'
         version: 2.1.10(typescript@5.5.4)
@@ -1157,9 +1226,15 @@ importers:
       '@faker-js/faker':
         specifier: 'catalog:'
         version: 9.2.0
+      '@milaboratories/build-configs':
+        specifier: workspace:*
+        version: link:../../../../tools/build-configs
       '@milaboratories/helpers':
         specifier: workspace:^
         version: link:../../../../lib/util/helpers
+      '@milaboratories/ts-configs':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-configs
       '@vitejs/plugin-vue':
         specifier: 'catalog:'
         version: 5.2.3(vite@6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0))(vue@3.5.13(typescript@5.5.4))
@@ -1218,7 +1293,7 @@ importers:
         version: 1.83.4
       vitepress:
         specifier: 'catalog:'
-        version: 1.5.0(@algolia/client-search@4.24.0)(@types/node@22.5.5)(axios@1.8.1)(postcss@8.5.4)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(sass@1.83.4)(search-insights@2.17.2)(typescript@5.6.3)
+        version: 1.5.0(@algolia/client-search@4.24.0)(@types/node@22.5.5)(axios@1.8.1)(postcss@8.5.4)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(sass@1.83.4)(search-insights@2.17.2)(sortablejs@1.15.6)(typescript@5.6.3)
 
   etc/ui-vue-playground:
     dependencies:
@@ -1244,9 +1319,15 @@ importers:
       '@faker-js/faker':
         specifier: 'catalog:'
         version: 9.2.0
+      '@milaboratories/build-configs':
+        specifier: workspace:*
+        version: link:../../tools/build-configs
       '@milaboratories/eslint-config':
         specifier: workspace:^
         version: link:../../tools/eslint-config
+      '@milaboratories/ts-configs':
+        specifier: workspace:*
+        version: link:../../tools/ts-configs
       '@types/lodash':
         specifier: 'catalog:'
         version: 4.17.16
@@ -1261,13 +1342,13 @@ importers:
         version: 2.4.6
       '@vueuse/core':
         specifier: 'catalog:'
-        version: 12.4.0(typescript@5.5.4)
+        version: 13.3.0(vue@3.5.13(typescript@5.5.4))
       ag-grid-enterprise:
         specifier: 'catalog:'
-        version: 33.0.4
+        version: 33.3.2
       ag-grid-vue3:
         specifier: 'catalog:'
-        version: 33.0.4(vue@3.5.13(typescript@5.5.4))
+        version: 33.3.2(vue@3.5.13(typescript@5.5.4))
       canonicalize:
         specifier: 'catalog:'
         version: 2.1.0
@@ -1305,12 +1386,18 @@ importers:
       '@faker-js/faker':
         specifier: 'catalog:'
         version: 9.2.0
+      '@milaboratories/build-configs':
+        specifier: workspace:*
+        version: link:../../tools/build-configs
       '@milaboratories/eslint-config':
         specifier: workspace:^
         version: link:../../tools/eslint-config
       '@milaboratories/helpers':
         specifier: workspace:^
         version: link:../../lib/util/helpers
+      '@milaboratories/ts-configs':
+        specifier: workspace:*
+        version: link:../../tools/ts-configs
       '@vitejs/plugin-vue':
         specifier: 'catalog:'
         version: 5.2.3(vite@6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0))(vue@3.5.13(typescript@5.5.4))
@@ -1345,12 +1432,12 @@ importers:
         specifier: 'catalog:'
         version: 3.23.8
     devDependencies:
+      '@milaboratories/build-configs':
+        specifier: workspace:*
+        version: link:../../../tools/build-configs
       '@milaboratories/eslint-config':
         specifier: workspace:^
         version: link:../../../tools/eslint-config
-      '@milaboratories/platforma-build-configs':
-        specifier: workspace:*
-        version: link:../../util/build-configs
       '@types/node':
         specifier: 'catalog:'
         version: 20.16.15
@@ -1373,9 +1460,9 @@ importers:
         specifier: 'catalog:'
         version: 3.23.8
     devDependencies:
-      '@milaboratories/platforma-build-configs':
+      '@milaboratories/build-configs':
         specifier: workspace:*
-        version: link:../../util/build-configs
+        version: link:../../../tools/build-configs
       '@platforma-sdk/eslint-config':
         specifier: workspace:*
         version: link:../../../sdk/eslint-config
@@ -1407,9 +1494,9 @@ importers:
         specifier: 'catalog:'
         version: 3.23.8
     devDependencies:
-      '@milaboratories/platforma-build-configs':
+      '@milaboratories/build-configs':
         specifier: workspace:*
-        version: link:../../util/build-configs
+        version: link:../../../tools/build-configs
       typescript:
         specifier: 'catalog:'
         version: 5.5.4
@@ -1429,12 +1516,12 @@ importers:
         specifier: 'catalog:'
         version: 3.23.8
     devDependencies:
+      '@milaboratories/build-configs':
+        specifier: workspace:*
+        version: link:../../../tools/build-configs
       '@milaboratories/eslint-config':
         specifier: workspace:*
         version: link:../../../tools/eslint-config
-      '@milaboratories/platforma-build-configs':
-        specifier: workspace:*
-        version: link:../../util/build-configs
       '@types/json-stringify-safe':
         specifier: 'catalog:'
         version: 5.0.3
@@ -1469,9 +1556,9 @@ importers:
         specifier: 'catalog:'
         version: 3.23.8
     devDependencies:
-      '@milaboratories/platforma-build-configs':
+      '@milaboratories/build-configs':
         specifier: workspace:*
-        version: link:../../util/build-configs
+        version: link:../../../tools/build-configs
       typescript:
         specifier: 'catalog:'
         version: 5.5.4
@@ -1484,9 +1571,9 @@ importers:
 
   lib/node/node-streams:
     devDependencies:
-      '@milaboratories/platforma-build-configs':
+      '@milaboratories/build-configs':
         specifier: workspace:*
-        version: link:../../util/build-configs
+        version: link:../../../tools/build-configs
       '@types/node':
         specifier: 'catalog:'
         version: 20.16.15
@@ -1545,9 +1632,9 @@ importers:
       '@jest/globals':
         specifier: 'catalog:'
         version: 29.7.0
-      '@milaboratories/platforma-build-configs':
+      '@milaboratories/build-configs':
         specifier: workspace:*
-        version: link:../../util/build-configs
+        version: link:../../../tools/build-configs
       '@protobuf-ts/plugin':
         specifier: 'catalog:'
         version: 2.11.0
@@ -1591,12 +1678,12 @@ importers:
         specifier: 'catalog:'
         version: 3.23.8
     devDependencies:
+      '@milaboratories/build-configs':
+        specifier: workspace:*
+        version: link:../../../tools/build-configs
       '@milaboratories/eslint-config':
         specifier: workspace:^
         version: link:../../../tools/eslint-config
-      '@milaboratories/platforma-build-configs':
-        specifier: workspace:*
-        version: link:../../util/build-configs
       '@types/jest':
         specifier: 'catalog:'
         version: 29.5.14
@@ -1658,12 +1745,12 @@ importers:
         specifier: 'catalog:'
         version: 3.23.8
     devDependencies:
+      '@milaboratories/build-configs':
+        specifier: workspace:*
+        version: link:../../../tools/build-configs
       '@milaboratories/eslint-config':
         specifier: workspace:^
         version: link:../../../tools/eslint-config
-      '@milaboratories/platforma-build-configs':
-        specifier: workspace:*
-        version: link:../../util/build-configs
       '@types/decompress':
         specifier: 'catalog:'
         version: 4.2.7
@@ -1761,12 +1848,12 @@ importers:
         specifier: 'catalog:'
         version: 3.23.8
     devDependencies:
+      '@milaboratories/build-configs':
+        specifier: workspace:*
+        version: link:../../../tools/build-configs
       '@milaboratories/eslint-config':
         specifier: workspace:^
         version: link:../../../tools/eslint-config
-      '@milaboratories/platforma-build-configs':
-        specifier: workspace:*
-        version: link:../../util/build-configs
       '@types/decompress':
         specifier: 'catalog:'
         version: 4.2.7
@@ -1804,15 +1891,15 @@ importers:
         specifier: 'catalog:'
         version: 3.23.8
     devDependencies:
+      '@milaboratories/build-configs':
+        specifier: workspace:*
+        version: link:../../../tools/build-configs
       '@milaboratories/eslint-config':
         specifier: workspace:^
         version: link:../../../tools/eslint-config
       '@milaboratories/pl-error-like':
         specifier: workspace:*
         version: link:../../model/pl-error-like
-      '@milaboratories/platforma-build-configs':
-        specifier: workspace:*
-        version: link:../../util/build-configs
       typescript:
         specifier: 'catalog:'
         version: 5.5.4
@@ -1832,9 +1919,9 @@ importers:
         specifier: 'catalog:'
         version: 7.10.0
     devDependencies:
-      '@milaboratories/platforma-build-configs':
+      '@milaboratories/build-configs':
         specifier: workspace:*
-        version: link:../../util/build-configs
+        version: link:../../../tools/build-configs
       '@types/http-proxy':
         specifier: 'catalog:'
         version: 1.17.16
@@ -1858,7 +1945,7 @@ importers:
         version: link:../computable
       '@milaboratories/pframes-rs-node':
         specifier: 'catalog:'
-        version: 1.0.42(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)
+        version: 1.0.47(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)
       '@milaboratories/pl-client':
         specifier: workspace:^
         version: link:../pl-client
@@ -1935,12 +2022,12 @@ importers:
       '@jest/globals':
         specifier: 'catalog:'
         version: 29.7.0
+      '@milaboratories/build-configs':
+        specifier: workspace:*
+        version: link:../../../tools/build-configs
       '@milaboratories/eslint-config':
         specifier: workspace:^
         version: link:../../../tools/eslint-config
-      '@milaboratories/platforma-build-configs':
-        specifier: workspace:*
-        version: link:../../util/build-configs
       '@types/jest':
         specifier: 'catalog:'
         version: 29.5.14
@@ -1999,9 +2086,9 @@ importers:
       '@jest/globals':
         specifier: 'catalog:'
         version: 29.7.0
-      '@milaboratories/platforma-build-configs':
+      '@milaboratories/build-configs':
         specifier: workspace:*
-        version: link:../../util/build-configs
+        version: link:../../../tools/build-configs
       '@types/jest':
         specifier: 'catalog:'
         version: 29.5.14
@@ -2032,9 +2119,9 @@ importers:
       '@jest/globals':
         specifier: 'catalog:'
         version: 29.7.0
-      '@milaboratories/platforma-build-configs':
+      '@milaboratories/build-configs':
         specifier: workspace:*
-        version: link:../../util/build-configs
+        version: link:../../../tools/build-configs
       '@types/jest':
         specifier: 'catalog:'
         version: 29.5.14
@@ -2063,9 +2150,9 @@ importers:
         specifier: 'catalog:'
         version: 4.0.37
     devDependencies:
-      '@milaboratories/platforma-build-configs':
+      '@milaboratories/build-configs':
         specifier: workspace:*
-        version: link:../../util/build-configs
+        version: link:../../../tools/build-configs
       typescript:
         specifier: 'catalog:'
         version: 5.5.4
@@ -2082,9 +2169,9 @@ importers:
         specifier: 'catalog:'
         version: 3.17.0
     devDependencies:
-      '@milaboratories/platforma-build-configs':
+      '@milaboratories/build-configs':
         specifier: workspace:*
-        version: link:../../util/build-configs
+        version: link:../../../tools/build-configs
       typescript:
         specifier: 'catalog:'
         version: 5.5.4
@@ -2120,12 +2207,18 @@ importers:
         specifier: 'catalog:'
         version: 3.5.13(typescript@5.6.3)
     devDependencies:
+      '@milaboratories/build-configs':
+        specifier: workspace:*
+        version: link:../../../tools/build-configs
       '@milaboratories/eslint-config':
         specifier: workspace:^
         version: link:../../../tools/eslint-config
       '@milaboratories/helpers':
         specifier: workspace:^
         version: link:../../util/helpers
+      '@milaboratories/ts-configs':
+        specifier: workspace:*
+        version: link:../../../tools/ts-configs
       '@platforma-sdk/model':
         specifier: workspace:^
         version: link:../../../sdk/model
@@ -2140,7 +2233,7 @@ importers:
         version: 2.4.6
       '@vueuse/core':
         specifier: 'catalog:'
-        version: 12.4.0(typescript@5.6.3)
+        version: 13.3.0(vue@3.5.13(typescript@5.6.3))
       jsdom:
         specifier: 'catalog:'
         version: 25.0.1
@@ -2150,9 +2243,6 @@ importers:
       svgo:
         specifier: 'catalog:'
         version: 3.3.2
-      tsc-alias:
-        specifier: 'catalog:'
-        version: 1.8.11
       vite:
         specifier: 'catalog:'
         version: 6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0)
@@ -2166,39 +2256,14 @@ importers:
         specifier: 'catalog:'
         version: 1.2.0
 
-  lib/util/build-configs:
-    dependencies:
-      '@rollup/plugin-node-resolve':
-        specifier: 'catalog:'
-        version: 16.0.1(rollup@4.41.1)
-      rollup-plugin-node-externals:
-        specifier: 'catalog:'
-        version: 8.0.0(rollup@4.41.1)
-      tsup:
-        specifier: 'catalog:'
-        version: 8.3.5(@microsoft/api-extractor@7.52.2(@types/node@20.16.15))(postcss@8.5.4)(tsx@4.19.1)(typescript@5.5.4)(yaml@2.7.0)
-      vite:
-        specifier: 'catalog:'
-        version: 6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0)
-      vite-plugin-dts:
-        specifier: 'catalog:'
-        version: 4.5.3(@types/node@20.16.15)(rollup@4.41.1)(typescript@5.5.4)(vite@6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0))
-    devDependencies:
-      '@types/node':
-        specifier: 'catalog:'
-        version: 20.16.15
-      typescript:
-        specifier: 'catalog:'
-        version: 5.5.4
-
   lib/util/helpers:
     devDependencies:
+      '@milaboratories/build-configs':
+        specifier: workspace:*
+        version: link:../../../tools/build-configs
       '@milaboratories/eslint-config':
         specifier: workspace:^
         version: link:../../../tools/eslint-config
-      '@milaboratories/platforma-build-configs':
-        specifier: workspace:*
-        version: link:../build-configs
       typescript:
         specifier: 'catalog:'
         version: 5.5.4
@@ -2208,9 +2273,9 @@ importers:
 
   lib/util/sequences:
     devDependencies:
-      '@milaboratories/platforma-build-configs':
+      '@milaboratories/build-configs':
         specifier: workspace:*
-        version: link:../build-configs
+        version: link:../../../tools/build-configs
       typescript:
         specifier: 'catalog:'
         version: 5.5.4
@@ -2266,9 +2331,9 @@ importers:
       '@jest/globals':
         specifier: 'catalog:'
         version: 29.7.0
-      '@milaboratories/platforma-build-configs':
+      '@milaboratories/build-configs':
         specifier: workspace:*
-        version: link:../../lib/util/build-configs
+        version: link:../../tools/build-configs
       '@platforma-sdk/eslint-config':
         specifier: workspace:*
         version: link:../eslint-config
@@ -2312,9 +2377,9 @@ importers:
         specifier: 'catalog:'
         version: 2.1.9(@types/node@20.16.15)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4)
     devDependencies:
-      '@milaboratories/platforma-build-configs':
+      '@milaboratories/build-configs':
         specifier: workspace:*
-        version: link:../../lib/util/build-configs
+        version: link:../../tools/build-configs
       '@types/node':
         specifier: 'catalog:'
         version: 20.16.15
@@ -2339,31 +2404,6 @@ importers:
       '@platforma-sdk/model':
         specifier: workspace:^
         version: link:../model
-      ag-grid-enterprise:
-        specifier: 'catalog:'
-        version: 33.0.4
-      ag-grid-vue3:
-        specifier: 'catalog:'
-        version: 33.0.4(vue@3.5.13(typescript@5.5.4))
-      canonicalize:
-        specifier: 'catalog:'
-        version: 2.1.0
-      lru-cache:
-        specifier: 'catalog:'
-        version: 11.1.0
-      vue:
-        specifier: 'catalog:'
-        version: 3.5.13(typescript@5.5.4)
-    devDependencies:
-      '@faker-js/faker':
-        specifier: 'catalog:'
-        version: 9.2.0
-      '@milaboratories/eslint-config':
-        specifier: workspace:^
-        version: link:../../tools/eslint-config
-      '@milaboratories/helpers':
-        specifier: workspace:^
-        version: link:../../lib/util/helpers
       '@types/d3-format':
         specifier: 'catalog:'
         version: 3.0.4
@@ -2376,21 +2416,61 @@ importers:
       '@types/semver':
         specifier: 'catalog:'
         version: 7.7.0
-      '@vitejs/plugin-vue':
+      '@types/sortablejs':
         specifier: 'catalog:'
-        version: 5.2.3(vite@6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0))(vue@3.5.13(typescript@5.5.4))
+        version: 1.15.8
       '@vueuse/core':
         specifier: 'catalog:'
-        version: 12.4.0(typescript@5.5.4)
+        version: 13.3.0(vue@3.5.13(typescript@5.5.4))
+      '@vueuse/integrations':
+        specifier: 'catalog:'
+        version: 13.3.0(axios@1.8.1)(focus-trap@7.6.0)(sortablejs@1.15.6)(vue@3.5.13(typescript@5.5.4))
+      ag-grid-enterprise:
+        specifier: 'catalog:'
+        version: 33.3.2
+      ag-grid-vue3:
+        specifier: 'catalog:'
+        version: 33.3.2(vue@3.5.13(typescript@5.5.4))
+      canonicalize:
+        specifier: 'catalog:'
+        version: 2.1.0
       d3-format:
         specifier: 'catalog:'
         version: 3.1.0
-      happy-dom:
-        specifier: 'catalog:'
-        version: 15.11.7
       lodash:
         specifier: 'catalog:'
         version: 4.17.21
+      lru-cache:
+        specifier: 'catalog:'
+        version: 11.1.0
+      sortablejs:
+        specifier: 'catalog:'
+        version: 1.15.6
+      vue:
+        specifier: 'catalog:'
+        version: 3.5.13(typescript@5.5.4)
+      zod:
+        specifier: 'catalog:'
+        version: 3.23.8
+    devDependencies:
+      '@milaboratories/build-configs':
+        specifier: workspace:*
+        version: link:../../tools/build-configs
+      '@milaboratories/eslint-config':
+        specifier: workspace:^
+        version: link:../../tools/eslint-config
+      '@milaboratories/helpers':
+        specifier: workspace:^
+        version: link:../../lib/util/helpers
+      '@milaboratories/ts-configs':
+        specifier: workspace:*
+        version: link:../../tools/ts-configs
+      '@vitejs/plugin-vue':
+        specifier: 'catalog:'
+        version: 5.2.3(vite@6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0))(vue@3.5.13(typescript@5.5.4))
+      happy-dom:
+        specifier: 'catalog:'
+        version: 15.11.7
       rollup-plugin-sourcemaps2:
         specifier: 'catalog:'
         version: 0.5.2(@types/node@20.16.15)(rollup@4.41.1)
@@ -2415,9 +2495,6 @@ importers:
       yarpm:
         specifier: 'catalog:'
         version: 1.2.0
-      zod:
-        specifier: 'catalog:'
-        version: 3.23.8
 
   sdk/workflow-tengo:
     dependencies:
@@ -2437,15 +2514,15 @@ importers:
 
   tests/block-repo:
     devDependencies:
+      '@milaboratories/build-configs':
+        specifier: workspace:*
+        version: link:../../tools/build-configs
       '@milaboratories/milaboratories.test-enter-numbers':
         specifier: workspace:*
         version: link:../../etc/blocks/enter-numbers/block
       '@milaboratories/pl-model-middle-layer':
         specifier: workspace:*
         version: link:../../lib/model/middle-layer
-      '@milaboratories/platforma-build-configs':
-        specifier: workspace:*
-        version: link:../../lib/util/build-configs
       '@platforma-sdk/block-tools':
         specifier: workspace:*
         version: link:../../tools/block-tools
@@ -2477,9 +2554,9 @@ importers:
         specifier: workspace:*
         version: link:../../lib/node/ts-helpers
     devDependencies:
-      '@milaboratories/platforma-build-configs':
+      '@milaboratories/build-configs':
         specifier: workspace:*
-        version: link:../../lib/util/build-configs
+        version: link:../../tools/build-configs
       '@types/node':
         specifier: 'catalog:'
         version: 20.16.15
@@ -2547,9 +2624,9 @@ importers:
         specifier: 'catalog:'
         version: 7.10.0
     devDependencies:
-      '@milaboratories/platforma-build-configs':
+      '@milaboratories/build-configs':
         specifier: workspace:*
-        version: link:../../lib/util/build-configs
+        version: link:../../tools/build-configs
       '@types/node':
         specifier: 'catalog:'
         version: 20.16.15
@@ -2578,12 +2655,12 @@ importers:
       '@jest/globals':
         specifier: 'catalog:'
         version: 29.7.0
+      '@milaboratories/build-configs':
+        specifier: workspace:*
+        version: link:../../tools/build-configs
       '@milaboratories/eslint-config':
         specifier: workspace:*
         version: link:../../tools/eslint-config
-      '@milaboratories/platforma-build-configs':
-        specifier: workspace:*
-        version: link:../../lib/util/build-configs
       '@types/jest':
         specifier: 'catalog:'
         version: 29.5.14
@@ -2645,6 +2722,9 @@ importers:
         specifier: workspace:*
         version: link:../../sdk/workflow-tengo
     devDependencies:
+      '@milaboratories/build-configs':
+        specifier: workspace:*
+        version: link:../../tools/build-configs
       '@milaboratories/computable':
         specifier: workspace:*
         version: link:../../lib/node/computable
@@ -2660,9 +2740,6 @@ importers:
       '@milaboratories/pl-tree':
         specifier: workspace:*
         version: link:../../lib/node/pl-tree
-      '@milaboratories/platforma-build-configs':
-        specifier: workspace:*
-        version: link:../../lib/util/build-configs
       '@milaboratories/ts-helpers':
         specifier: workspace:*
         version: link:../../lib/node/ts-helpers
@@ -2730,12 +2807,12 @@ importers:
       '@jest/globals':
         specifier: 'catalog:'
         version: 29.7.0
+      '@milaboratories/build-configs':
+        specifier: workspace:*
+        version: link:../build-configs
       '@milaboratories/oclif-index':
         specifier: workspace:*
         version: link:../oclif-index
-      '@milaboratories/platforma-build-configs':
-        specifier: workspace:*
-        version: link:../../lib/util/build-configs
       '@rollup/plugin-node-resolve':
         specifier: 'catalog:'
         version: 16.0.1(rollup@4.41.1)
@@ -2772,6 +2849,39 @@ importers:
       vite:
         specifier: 'catalog:'
         version: 6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0)
+      vite-plugin-dts:
+        specifier: 'catalog:'
+        version: 4.5.3(@types/node@20.16.15)(rollup@4.41.1)(typescript@5.5.4)(vite@6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0))
+
+  tools/build-configs:
+    dependencies:
+      '@rollup/plugin-node-resolve':
+        specifier: 'catalog:'
+        version: 16.0.1(rollup@4.41.1)
+      '@types/node':
+        specifier: 'catalog:'
+        version: 20.16.15
+      '@vitejs/plugin-vue':
+        specifier: 'catalog:'
+        version: 5.2.3(vite@6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0))(vue@3.5.13(typescript@5.5.4))
+      rollup-plugin-node-externals:
+        specifier: 'catalog:'
+        version: 8.0.0(rollup@4.41.1)
+      rollup-plugin-sourcemaps2:
+        specifier: 'catalog:'
+        version: 0.5.2(@types/node@20.16.15)(rollup@4.41.1)
+      tsup:
+        specifier: 'catalog:'
+        version: 8.3.5(@microsoft/api-extractor@7.52.2(@types/node@20.16.15))(postcss@8.5.4)(tsx@4.19.1)(typescript@5.5.4)(yaml@2.7.0)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.5.4
+      vite:
+        specifier: 'catalog:'
+        version: 6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0)
+      vite-plugin-css-injected-by-js:
+        specifier: 'catalog:'
+        version: 3.5.2(vite@6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0))
       vite-plugin-dts:
         specifier: 'catalog:'
         version: 4.5.3(@types/node@20.16.15)(rollup@4.41.1)(typescript@5.5.4)(vite@6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0))
@@ -2815,9 +2925,9 @@ importers:
       '@jest/globals':
         specifier: 'catalog:'
         version: 29.7.0
-      '@milaboratories/platforma-build-configs':
+      '@milaboratories/build-configs':
         specifier: workspace:*
-        version: link:../../lib/util/build-configs
+        version: link:../build-configs
       '@types/jest':
         specifier: 'catalog:'
         version: 29.5.14
@@ -2870,15 +2980,15 @@ importers:
       '@jest/globals':
         specifier: 'catalog:'
         version: 29.7.0
+      '@milaboratories/build-configs':
+        specifier: workspace:*
+        version: link:../build-configs
       '@milaboratories/eslint-config':
         specifier: workspace:^
         version: link:../eslint-config
       '@milaboratories/oclif-index':
         specifier: workspace:*
         version: link:../oclif-index
-      '@milaboratories/platforma-build-configs':
-        specifier: workspace:*
-        version: link:../../lib/util/build-configs
       '@types/archiver':
         specifier: ^6.0.3
         version: 6.0.3
@@ -2934,15 +3044,15 @@ importers:
         specifier: 'catalog:'
         version: 3.23.8
     devDependencies:
+      '@milaboratories/build-configs':
+        specifier: workspace:*
+        version: link:../build-configs
       '@milaboratories/eslint-config':
         specifier: workspace:^
         version: link:../eslint-config
       '@milaboratories/oclif-index':
         specifier: workspace:*
         version: link:../oclif-index
-      '@milaboratories/platforma-build-configs':
-        specifier: workspace:*
-        version: link:../../lib/util/build-configs
       '@rollup/plugin-node-resolve':
         specifier: 'catalog:'
         version: 16.0.1(rollup@4.41.1)
@@ -3032,15 +3142,15 @@ importers:
         specifier: 'catalog:'
         version: 3.17.0
     devDependencies:
+      '@milaboratories/build-configs':
+        specifier: workspace:*
+        version: link:../build-configs
       '@milaboratories/eslint-config':
         specifier: workspace:^
         version: link:../eslint-config
       '@milaboratories/oclif-index':
         specifier: workspace:*
         version: link:../oclif-index
-      '@milaboratories/platforma-build-configs':
-        specifier: workspace:*
-        version: link:../../lib/util/build-configs
       '@types/node':
         specifier: 'catalog:'
         version: 20.16.15
@@ -3053,6 +3163,15 @@ importers:
       vitest:
         specifier: 'catalog:'
         version: 2.1.9(@types/node@20.16.15)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4)
+
+  tools/ts-configs:
+    dependencies:
+      vite:
+        specifier: 'catalog:'
+        version: 6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0)
+      vitest:
+        specifier: 'catalog:'
+        version: 2.1.9(@types/node@22.5.5)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4)
 
 packages:
 
@@ -4631,19 +4750,19 @@ packages:
   '@milaboratories/miplots4@1.0.103':
     resolution: {integrity: sha512-w7PbLnv+7kgvcy/L2PqRUaRqIZhjgzKPhtexwV347vI+xpmNJS28ekWf+HbqlApWuNrHUw4Wu1hY0S1P5UL0Ow==}
 
-  '@milaboratories/pframes-rs-node@1.0.42':
-    resolution: {integrity: sha512-L5JtuJ5g3TEO79en+o/PuEOdOQg0Ayh3hQhBQX59dH4o8Emv9fUwqTG82eaDMqheDZbhwjenJF10/OwccSQ8Fw==}
+  '@milaboratories/pframes-rs-node@1.0.47':
+    resolution: {integrity: sha512-26kdDUfafqIq+sEImroH+BMi4rzaNy2jWZ+abOXs/YlaD5HEfYvNIC2Slx+/cUkMgpHFatkZl+W/cqiA83GXdw==}
     peerDependencies:
       '@milaboratories/pl-model-common': '*'
 
   '@milaboratories/pl-error-like@1.12.1':
     resolution: {integrity: sha512-cFK6RJyTzX8JmEjyqTsnAJK48HZnKEmP/wVYAIV1iNFruanwdw377Gc8w8Ized2gDeMQT67yDDl9Qq/U4AO4gw==}
 
-  '@milaboratories/pl-model-common@1.15.2':
-    resolution: {integrity: sha512-ftbh69rPidjacSNFlPDUBHk9SnhGyegOqu7Qdpw4UC4idx2M75iJH7LugIcuEN170qcuDKWzo35w+llzn4U6ww==}
+  '@milaboratories/pl-model-common@1.15.5':
+    resolution: {integrity: sha512-uwja27q9ahhZEg/vSUFoLhHPNAYJoHE7x/QemqtalVrApDaQZ9Dj0cQzB/ndM6zVZcwVZgaNsWIRDoq89YmdKQ==}
 
-  '@milaboratories/pl-model-middle-layer@1.7.34':
-    resolution: {integrity: sha512-ZFZsOXYq/rGei3n1qIREBwBusPs/xHZZYtnytuhJIeFewTB3b66/zDW5z+6T0AfUjxJoxDKKc/5mAgMFp2iiZA==}
+  '@milaboratories/pl-model-middle-layer@1.7.39':
+    resolution: {integrity: sha512-uN56FDzflxslEXcHvZceNOUqwkN2M9SnPR9707dvRsok7JQY+1PFs3N6szME9dJPRxqTrUWhetfd3MU4hxdz6Q==}
 
   '@milaboratories/software-pframes-conv@2.2.2':
     resolution: {integrity: sha512-eJIp1YGi6g83peviw8SYlr5N4KV2SmDi3Mhz2FjrS4d/WaKOhoTD9+YvRpOTCQ0KyT44FNRF+nCoN/idKT3SzA==}
@@ -7169,6 +7288,9 @@ packages:
   '@types/sizzle@2.3.9':
     resolution: {integrity: sha512-xzLEyKB50yqCUPUJkIsrVvoWNfFUbIZI+RspLWt8u+tIW/BetMBZtgV2LY/2o+tYH8dRvQ+eoPf3NdhQCcLE2w==}
 
+  '@types/sortablejs@1.15.8':
+    resolution: {integrity: sha512-b79830lW+RZfwaztgs1aVPgbasJ8e7AXtZYHTELNXZPsERt4ymJdjV4OccDbHQAvHrCcFpbF78jkm0R6h/pZVg==}
+
   '@types/ssh2-streams@0.1.12':
     resolution: {integrity: sha512-Sy8tpEmCce4Tq0oSOYdfqaBpA3hDM8SoxoFh5vzFsu2oL+znzGz8oVWW7xb4K920yYMUY+PIG31qZnFMfPWNCg==}
 
@@ -7195,6 +7317,9 @@ packages:
 
   '@types/web-bluetooth@0.0.20':
     resolution: {integrity: sha512-g9gZnnXVq7gM7v3tJCWV/qw7w+KeOlSHAhgF9RytFyifW6AF61hdT2ucrYhPq9hLs5JIryeupHV3qGk95dH9ow==}
+
+  '@types/web-bluetooth@0.0.21':
+    resolution: {integrity: sha512-oIQLCGWtcFZy2JW77j9k8nHzAOpqMHLQejDA48XXMWH6tjCQHz5RCFz1bzsmROyL6PUm+LLnUiI4BCn221inxA==}
 
   '@types/wrap-ansi@3.0.0':
     resolution: {integrity: sha512-ltIpx+kM7g/MLRZfkbL7EsCEjfzCcScLpkg37eXEtx5kmrAKBkTJwd1GIAjDSL8wTpM6Hzn5YO4pSb91BEwu1g==}
@@ -7405,8 +7530,10 @@ packages:
   '@vueuse/core@11.1.0':
     resolution: {integrity: sha512-P6dk79QYA6sKQnghrUz/1tHi0n9mrb/iO1WTMk/ElLmTyNqgDeSZ3wcDf6fRBGzRJbeG1dxzEOvLENMjr+E3fg==}
 
-  '@vueuse/core@12.4.0':
-    resolution: {integrity: sha512-XnjQYcJwCsyXyIafyA6SvyN/OBtfPnjvJmbxNxQjCcyWD198urwm5TYvIUUyAxEAN0K7HJggOgT15cOlWFyLeA==}
+  '@vueuse/core@13.3.0':
+    resolution: {integrity: sha512-uYRz5oEfebHCoRhK4moXFM3NSCd5vu2XMLOq/Riz5FdqZMy2RvBtazdtL3gEcmDyqkztDe9ZP/zymObMIbiYSg==}
+    peerDependencies:
+      vue: ^3.5.0
 
   '@vueuse/integrations@11.1.0':
     resolution: {integrity: sha512-O2ZgrAGPy0qAjpoI2YR3egNgyEqwG85fxfwmA9BshRIGjV4G6yu6CfOPpMHAOoCD+UfsIl7Vb1bXJ6ifrHYDDA==}
@@ -7449,17 +7576,61 @@ packages:
       universal-cookie:
         optional: true
 
+  '@vueuse/integrations@13.3.0':
+    resolution: {integrity: sha512-h5mGRYPbiTZTFP/AKELLPGnUDBly7z7Qd1pgEQlT3ItQ0NlZM0vB+8SOQycpSBOBlgg72Zgw+mi2r+4O/G8RuQ==}
+    peerDependencies:
+      async-validator: ^4
+      axios: ^1
+      change-case: ^5
+      drauu: ^0.4
+      focus-trap: ^7
+      fuse.js: ^7
+      idb-keyval: ^6
+      jwt-decode: ^4
+      nprogress: ^0.2
+      qrcode: ^1.5
+      sortablejs: ^1
+      universal-cookie: ^7
+      vue: ^3.5.0
+    peerDependenciesMeta:
+      async-validator:
+        optional: true
+      axios:
+        optional: true
+      change-case:
+        optional: true
+      drauu:
+        optional: true
+      focus-trap:
+        optional: true
+      fuse.js:
+        optional: true
+      idb-keyval:
+        optional: true
+      jwt-decode:
+        optional: true
+      nprogress:
+        optional: true
+      qrcode:
+        optional: true
+      sortablejs:
+        optional: true
+      universal-cookie:
+        optional: true
+
   '@vueuse/metadata@11.1.0':
     resolution: {integrity: sha512-l9Q502TBTaPYGanl1G+hPgd3QX5s4CGnpXriVBR5fEZ/goI6fvDaVmIl3Td8oKFurOxTmbXvBPSsgrd6eu6HYg==}
 
-  '@vueuse/metadata@12.4.0':
-    resolution: {integrity: sha512-AhPuHs/qtYrKHUlEoNO6zCXufu8OgbR8S/n2oMw1OQuBQJ3+HOLQ+EpvXs+feOlZMa0p8QVvDWNlmcJJY8rW2g==}
+  '@vueuse/metadata@13.3.0':
+    resolution: {integrity: sha512-42IzJIOYCKIb0Yjv1JfaKpx8JlCiTmtCWrPxt7Ja6Wzoq0h79+YVXmBV03N966KEmDEESTbp5R/qO3AB5BDnGw==}
 
   '@vueuse/shared@11.1.0':
     resolution: {integrity: sha512-YUtIpY122q7osj+zsNMFAfMTubGz0sn5QzE5gPzAIiCmtt2ha3uQUY1+JPyL4gRCTsLPX82Y9brNbo/aqlA91w==}
 
-  '@vueuse/shared@12.4.0':
-    resolution: {integrity: sha512-9yLgbHVIF12OSCojnjTIoZL1+UA10+O4E1aD6Hpfo/DKVm5o3SZIwz6CupqGy3+IcKI8d6Jnl26EQj/YucnW0Q==}
+  '@vueuse/shared@13.3.0':
+    resolution: {integrity: sha512-L1QKsF0Eg9tiZSFXTgodYnu0Rsa2P0En2LuLrIs/jgrkyiDuJSsPZK+tx+wU0mMsYHUYEjNsuE41uqqkuR8VhA==}
+    peerDependencies:
+      vue: ^3.5.0
 
   abbrev@2.0.0:
     resolution: {integrity: sha512-6/mh1E2u2YgEsCHdY0Yx5oW+61gZU+1vXaoiHHrpKeuRNNgFvS+/jrwHiQhB5apAf5oB7UB7E19ol2R2LKH8hQ==}
@@ -7487,26 +7658,29 @@ packages:
     engines: {node: '>=0.4.0'}
     hasBin: true
 
-  ag-charts-community@11.0.4:
-    resolution: {integrity: sha512-TFShWfZaA1yJ/hb3jwtNAqBG2Qy9VvoQ9mWLr29ilT6+2R2e30RSk2oH7FAQ2l5nS1367dRf137Td9tUTTuVLg==}
+  ag-charts-community@11.3.2:
+    resolution: {integrity: sha512-4ZshRqfeCoQKgJ8WNxLfgkKtLszIxEF9WWOSuT2Uvyyy3x0rUUPQbl98+kVh+sRyGGQ6Qj8uoStqHAhwPwgTOQ==}
 
-  ag-charts-enterprise@11.0.4:
-    resolution: {integrity: sha512-3jKKbzei4hzSSbPih0EFyIBJ/VvLDZAi+5QsbzxRHfsjfAuqQFYCNXx55FqOzOGg1KSa8sAwmpmTSGdLPxBfDw==}
+  ag-charts-core@11.3.2:
+    resolution: {integrity: sha512-D66lTBVXRDI6vFTcmL91KeBghOx63MmWrgDSJEEhsrK1ioWeYnFcRXStX0msx60D12i+Ba+uhM9xrxgRmqzM5w==}
 
-  ag-charts-locale@11.0.4:
-    resolution: {integrity: sha512-xCQA8CtcUyqU4qYg7u9oUQ+SghIsWAQvY60Bu0ghJJ/bDeW8+ptEU0ogBapuDqfb9B9kqWKgASxbX6diqb+HVQ==}
+  ag-charts-enterprise@11.3.2:
+    resolution: {integrity: sha512-5HRfEI2w0IxfyWy6bpu9Db2UVPxPyxYihSHJdlJLmmCCgPNoyUqnghZqr7vnRSrh/mVSeSo2WBzxZuuphr+Wtg==}
 
-  ag-charts-types@11.0.4:
-    resolution: {integrity: sha512-K/Mi7FXvSCoABLSrqQ70k1QrIL5R6RNCt2NAppOxMEir+DVFPqKZtghruobc2MGVUUKkT9MCn6Dun+fL6yZjfA==}
+  ag-charts-locale@11.3.2:
+    resolution: {integrity: sha512-6DrHD53PfdVNqFAlmNkHTnlQ9QY9EzME0vvaiotUpO8boKflGivgqmfx/uNTp6AsvOrsnRBBZW4b4XSg0LKG2w==}
 
-  ag-grid-community@33.0.4:
-    resolution: {integrity: sha512-iBD8g8bNIl95w9CzCQpDid+eTdmOoT39204sPUOhE9eE50vfoDHIaF5U4fRYQHbLsT4bwbXfQYdsqBAOLJL24w==}
+  ag-charts-types@11.3.2:
+    resolution: {integrity: sha512-trPGqgGYiTeLgtf9nLuztDYOPOFOLbqHn1g2D99phf7QowcwdX0TPx0wfWG8Hm90LjB8IH+G2s3AZe2vrdAtMQ==}
 
-  ag-grid-enterprise@33.0.4:
-    resolution: {integrity: sha512-Ig4mBWanf2NAJWF1DDiRJAMwbxaxqhIf4rvr/ub5iFksHyvtk5GNrDHsT5PGGZX7xMjOqZoyFYBNJtK0OfUFWQ==}
+  ag-grid-community@33.3.2:
+    resolution: {integrity: sha512-9bx0e/+ykOyLvUxHqmdy0cRVANH6JAtv0yZdnBZEXYYqBAwN+G5a4NY+2I1KvoOCYzbk8SnStG7y4hCdVAAWOQ==}
 
-  ag-grid-vue3@33.0.4:
-    resolution: {integrity: sha512-aqAd+xGMbi/nnWGhaclKBjHa1NbIpIqVdAUE+hHyGHGD2a6KK3zftPL2TokrBkWCEhKbseHz1blVNT1q67O3nQ==}
+  ag-grid-enterprise@33.3.2:
+    resolution: {integrity: sha512-wf1JMDdAk9GhWbB0WF5RIOYp4p/y6h7zJoscFsymEeFV7325Zyx0ZBQ/kQQ9R9MqnhIYp5xjpjYJ4r2rpIXH+A==}
+
+  ag-grid-vue3@33.3.2:
+    resolution: {integrity: sha512-O1FS0MQNNBdMZTUTGrk/KjdK9nuPPRbmmL+bFQr8jKp7VCmO9wLV4w9taWbLTgQqGN6rQ4BAb6m2RJ78cHM3tQ==}
     peerDependencies:
       vue: ^3.5.0
 
@@ -7717,10 +7891,6 @@ packages:
     resolution: {integrity: sha512-pbnl5XzGBdrFU/wT4jqmJVPn2B6UHPBOhzMQkY/SPUPB6QtUXtmBHBIwCbXJol93mOpGMnQyP/+BB19q04xj7g==}
     engines: {node: '>=4'}
 
-  binary-extensions@2.3.0:
-    resolution: {integrity: sha512-Ceh+7ox5qe7LJuLHoY0feh3pHuUDHAcRUeyL2VYghZwfpkNIy/+8Ocg0a3UuSoYzavmylwuLWQOf3hl0jjMMIw==}
-    engines: {node: '>=8'}
-
   birpc@0.2.19:
     resolution: {integrity: sha512-5WeXXAvTmitV1RqJFppT5QtUiz2p1mRSYU000Jkft5ZUCLJIk4uQriYNO50HknxKwM6jd8utNc66K1qGIwwWBQ==}
 
@@ -7897,10 +8067,6 @@ packages:
     resolution: {integrity: sha512-Pj779qHxV2tuapviy1bSZNEL1maXr13bPYpsvSDB68HlYcYuhlDrmGd63i0JHMCLKzc7rUSNIrpdJlhVlNwrxA==}
     engines: {node: '>= 0.8.0'}
 
-  chokidar@3.6.0:
-    resolution: {integrity: sha512-7VT13fmjotKpGipCW9JEQAusEPE+Ei8nl6/g4FBAmIm0GOOLMua9NDDo/DWp0ZAxCr3cPq5ZpBqmPAQgDda2Pw==}
-    engines: {node: '>= 8.10.0'}
-
   chokidar@4.0.1:
     resolution: {integrity: sha512-n8enUVCED/KVRQlab1hr3MVpcVMvxtZjmEa956u+4YijlmQED223XMSYj2tLuKvr4jcCTzNNMpQDUer72MMmzA==}
     engines: {node: '>= 14.16.0'}
@@ -8014,10 +8180,6 @@ packages:
   commander@7.2.0:
     resolution: {integrity: sha512-QrWXB+ZQSVPmIWIhtEO9H+gwHaMGYiF5ChvoJ+K9ZGHG/sVsa6yiesAD1GC/x46sET00Xlwo1u49RVVVzvcSkw==}
     engines: {node: '>= 10'}
-
-  commander@9.5.0:
-    resolution: {integrity: sha512-KRs7WVDKg86PWiuAqhDrAQnTXZKraVcCc6vFdL14qrZ/DcWwuRo7VoiYXalXO7S5GKpqYiVEwCbgFDfxNHKJBQ==}
-    engines: {node: ^12.20.0 || >=14}
 
   common-tags@1.8.2:
     resolution: {integrity: sha512-gk/Z852D2Wtb//0I+kRFNKKE9dIIVirjoqPoA1wJU+XePVXZfGeBpk45+A1rKO4Q43prqWBNY/MiIeRLbPWUaA==}
@@ -9052,8 +9214,8 @@ packages:
     resolution: {integrity: sha512-B4FFZ6q/T2jhhksgkbEW3HBvWIfDW85snkQgawt07S7J5QXTk6BkNV+0yAeZrM5QpMAdYlocGoljn0sJ/WQkFw==}
     engines: {node: '>=10.17.0'}
 
-  humanize-duration@3.32.2:
-    resolution: {integrity: sha512-jcTwWYeCJf4dN5GJnjBmHd42bNyK94lY49QTkrsAQrMTUoIYLevvDpmQtg5uv8ZrdIRIbzdasmSNZ278HHUPEg==}
+  humanize-duration@3.33.0:
+    resolution: {integrity: sha512-vYJX7BSzn7EQ4SaP2lPYVy+icHDppB6k7myNeI3wrSRfwMS5+BHyGgzpHR0ptqJ2AQ6UuIKrclSg5ve6Ci4IAQ==}
 
   husky@9.1.7:
     resolution: {integrity: sha512-5gs5ytaNjBrh5Ow3zrvdUUY+0VxIuWVL4i9irt6friV+BqdCfmV11CQTWMiBYWHbXhco+J1kHfTOUkePhCDvMA==}
@@ -9121,10 +9283,6 @@ packages:
 
   is-arrayish@0.3.2:
     resolution: {integrity: sha512-eVRqCvVlZbuw3GrM63ovNSNAeA1K16kaR/LRY/92w0zxQ5/1YzwblUX652i4Xs9RwAGjW9d9y6X88t8OaAJfWQ==}
-
-  is-binary-path@2.1.0:
-    resolution: {integrity: sha512-ZMERYes6pDydyuGidse7OsHxtbI7WVeUEozgR/g7rd0xUimYNlvZRE/K2MgZTjWy725IfelLeVcEM97mmtRGXw==}
-    engines: {node: '>=8'}
 
   is-ci@3.0.1:
     resolution: {integrity: sha512-ZYvCgrefwqoQ6yTyYUbQu64HsITZ3NfKX1lzaEYdkTDcfKzzCI/wthRRYKkdjHKFVgNiXKAKm65Zo1pk2as/QQ==}
@@ -9766,10 +9924,6 @@ packages:
     resolution: {integrity: sha512-WWdIxpyjEn+FhQJQQv9aQAYlHoNVdzIzUySNV1gHUPDSdZJ3yZn7pAAbQcV7B56Mvu881q9FZV+0Vx2xC44VWA==}
     engines: {node: ^18.17.0 || >=20.5.0}
 
-  mylas@2.1.13:
-    resolution: {integrity: sha512-+MrqnJRtxdF+xngFfUUkIMQrUUL0KsxbADUkn23Z/4ibGg192Q+z+CQyiYwvWTsYjJygmMR8+w3ZDa98Zh6ESg==}
-    engines: {node: '>=12.0.0'}
-
   mz@2.7.0:
     resolution: {integrity: sha512-z81GNO7nnYMEhrGh9LeymoE4+Yr0Wn5McHIZMK5cfQCl+NDX08sCZgUc9/6MHni9IWuFLm1Z3HTCXu2z9fN62Q==}
 
@@ -10042,10 +10196,6 @@ packages:
   pkg-types@2.1.0:
     resolution: {integrity: sha512-wmJwA+8ihJixSoHKxZJRBQG1oY8Yr9pGLzRmSsNms0iNWyHHAlZCa7mmKiFR10YPZuz/2k169JiS/inOjBCZ2A==}
 
-  plimit-lit@1.6.1:
-    resolution: {integrity: sha512-B7+VDyb8Tl6oMJT9oSO2CW8XC/T4UcJGrwOVoNGwOQsQYhlpfajmrMj5xeejqaASq3V/EqThyOeATEOMuSEXiA==}
-    engines: {node: '>=12'}
-
   postcss-load-config@6.0.1:
     resolution: {integrity: sha512-oPtTM4oerL+UXmx+93ytZVN82RrlY/wPUV8IeDxFrzIjXOLF1pN+EmKPLbubvKHT2HC20xXsCAH2Z+CKV6Oz/g==}
     engines: {node: '>= 18'}
@@ -10158,10 +10308,6 @@ packages:
   querystringify@2.2.0:
     resolution: {integrity: sha512-FIqgj2EUvTa7R50u0rGsyTftzjYmv/a3hO345bZNrqabNqjtgiDMgmo4mkUjd+nzU5oF3dClKqFIPUKybUyqoQ==}
 
-  queue-lit@1.5.2:
-    resolution: {integrity: sha512-tLc36IOPeMAubu8BkW8YDBV+WyIgKlYU7zUNs0J5Vk9skSZ4JfGlPOqplP0aHdfv7HL0B2Pg6nwiq60Qc6M2Hw==}
-    engines: {node: '>=12'}
-
   queue-microtask@1.2.3:
     resolution: {integrity: sha512-NuaNSa6flKT5JaSYQzJok04JzTL1CA6aGhv5rfLW3PgqA+M2ChpZQnAC8h8i4ZFkBS8X5RqkDBHA7r4hej3K9A==}
 
@@ -10214,10 +10360,6 @@ packages:
 
   readdir-glob@1.1.3:
     resolution: {integrity: sha512-v05I2k7xN8zXvPD9N+z/uhXPaj0sUFCe2rcWZIpBsqxfP7xXFQ0tipAd/wjj1YxWyWtUS5IDJpOG82JKt2EAVA==}
-
-  readdirp@3.6.0:
-    resolution: {integrity: sha512-hOS089on8RduqdbhvQ5Z37A0ESjsqz6qnRcffsMU3495FuTdqSm+7bhJ29JvIOsBDEEnan5DPu9t3To9VRlMzA==}
-    engines: {node: '>=8.10.0'}
 
   readdirp@4.0.2:
     resolution: {integrity: sha512-yDMz9g+VaZkqBYS/ozoBJwaBhTbZo3UNYQHNRw1D3UFQB8oHB4uS/tAODO+ZLjGWmUbKnIlOWO+aaIiAxrUWHA==}
@@ -10484,6 +10626,9 @@ packages:
   sort-package-json@2.10.1:
     resolution: {integrity: sha512-d76wfhgUuGypKqY72Unm5LFnMpACbdxXsLPcL27pOsSrmVqH3PztFp1uq+Z22suk15h7vXmTesuh2aEjdCqb5w==}
     hasBin: true
+
+  sortablejs@1.15.6:
+    resolution: {integrity: sha512-aNfiuwMEpfBM/CN6LY0ibyhxPfPbyFeBTYJKCvzkJ2GkUpazIt3H+QIPAMHwqQ7tMKaHz1Qj+rJJCqljnf4p3A==}
 
   source-map-js@1.2.1:
     resolution: {integrity: sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==}
@@ -10846,10 +10991,6 @@ packages:
       '@swc/wasm':
         optional: true
 
-  tsc-alias@1.8.11:
-    resolution: {integrity: sha512-2DuEQ58A9Rj2NE2c1+/qaGKlshni9MCK95MJzRGhQG0CYLw0bE/ACgbhhTSf/p1svLelwqafOd8stQate2bYbg==}
-    hasBin: true
-
   tsconfig-paths@4.2.0:
     resolution: {integrity: sha512-NoZ4roiN7LnbKn9QqE1amc9DJfzvZXxF4xDavcOWt1BPkdx+m+0gJuPM+S0vCe7zTJMYUP0R8pO2XMr+Y8oLIg==}
     engines: {node: '>=6'}
@@ -10974,8 +11115,8 @@ packages:
   ufo@1.5.4:
     resolution: {integrity: sha512-UsUk3byDzKd04EyoZ7U4DOlxQaD14JUKQl6/P7wiX4FNvUfm3XL246n9W5AmqwW5RSFJ27NAuM0iLscAOYUiGQ==}
 
-  ulid@3.0.0:
-    resolution: {integrity: sha512-yvZYdXInnJve6LdlPIuYmURdS2NP41ZoF4QW7SXwbUKYt53+0eDAySO+rGSvM2O/ciuB/G+8N7GQrZ1mCJpuqw==}
+  ulid@3.0.1:
+    resolution: {integrity: sha512-dPJyqPzx8preQhqq24bBG1YNkvigm87K8kVEHCD+ruZg24t6IFEFv00xMWfxcC4djmFtiTLdFuADn4+DOz6R7Q==}
     hasBin: true
 
   unbzip2-stream@1.4.3:
@@ -11091,6 +11232,11 @@ packages:
     resolution: {integrity: sha512-AM9aQ/IPrW/6ENLQg3AGY4K1N2TGZdR5e4gu/MmmR2xR3Ll1+dib+nook92g4TV3PXVyeyxdWwtaCAiUL0hMxA==}
     engines: {node: ^18.0.0 || >=20.0.0}
     hasBin: true
+
+  vite-plugin-css-injected-by-js@3.5.2:
+    resolution: {integrity: sha512-2MpU/Y+SCZyWUB6ua3HbJCrgnF0KACAsmzOQt1UvRVJCGF6S8xdA3ZUhWcWdM9ivG4I5az8PnQmwwrkC2CAQrQ==}
+    peerDependencies:
+      vite: '>2.0.0-0'
 
   vite-plugin-dts@4.5.3:
     resolution: {integrity: sha512-P64VnD00dR+e8S26ESoFELqc17+w7pKkwlBpgXteOljFyT0zDwD8hH4zXp49M/kciy//7ZbVXIwQCekBJjfWzA==}
@@ -13769,14 +13915,14 @@ snapshots:
       - d3-scale-chromatic
       - supports-color
 
-  '@milaboratories/pframes-rs-node@1.0.42(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)':
+  '@milaboratories/pframes-rs-node@1.0.47(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)':
     dependencies:
       '@mapbox/node-pre-gyp': 2.0.0(encoding@0.1.13)
       '@milaboratories/pl-model-common': link:lib/model/common
-      '@milaboratories/pl-model-middle-layer': 1.7.34
+      '@milaboratories/pl-model-middle-layer': 1.7.39
       '@types/humanize-duration': 3.27.4
-      humanize-duration: 3.32.2
-      ulid: 3.0.0
+      humanize-duration: 3.33.0
+      ulid: 3.0.1
     transitivePeerDependencies:
       - encoding
       - supports-color
@@ -13787,15 +13933,15 @@ snapshots:
       json-stringify-safe: 5.0.1
       zod: 3.23.8
 
-  '@milaboratories/pl-model-common@1.15.2':
+  '@milaboratories/pl-model-common@1.15.5':
     dependencies:
       '@milaboratories/pl-error-like': 1.12.1
       canonicalize: 2.1.0
       zod: 3.23.8
 
-  '@milaboratories/pl-model-middle-layer@1.7.34':
+  '@milaboratories/pl-model-middle-layer@1.7.39':
     dependencies:
-      '@milaboratories/pl-model-common': 1.15.2
+      '@milaboratories/pl-model-common': 1.15.5
       remeda: 2.22.6
       utility-types: 3.11.0
       zod: 3.23.8
@@ -17215,6 +17361,8 @@ snapshots:
 
   '@types/sizzle@2.3.9': {}
 
+  '@types/sortablejs@1.15.8': {}
+
   '@types/ssh2-streams@0.1.12':
     dependencies:
       '@types/node': 22.5.5
@@ -17244,6 +17392,8 @@ snapshots:
   '@types/unist@3.0.3': {}
 
   '@types/web-bluetooth@0.0.20': {}
+
+  '@types/web-bluetooth@0.0.21': {}
 
   '@types/wrap-ansi@3.0.0': {}
 
@@ -17586,25 +17736,21 @@ snapshots:
       - '@vue/composition-api'
       - vue
 
-  '@vueuse/core@12.4.0(typescript@5.5.4)':
+  '@vueuse/core@13.3.0(vue@3.5.13(typescript@5.5.4))':
     dependencies:
-      '@types/web-bluetooth': 0.0.20
-      '@vueuse/metadata': 12.4.0
-      '@vueuse/shared': 12.4.0(typescript@5.5.4)
+      '@types/web-bluetooth': 0.0.21
+      '@vueuse/metadata': 13.3.0
+      '@vueuse/shared': 13.3.0(vue@3.5.13(typescript@5.5.4))
       vue: 3.5.13(typescript@5.5.4)
-    transitivePeerDependencies:
-      - typescript
 
-  '@vueuse/core@12.4.0(typescript@5.6.3)':
+  '@vueuse/core@13.3.0(vue@3.5.13(typescript@5.6.3))':
     dependencies:
-      '@types/web-bluetooth': 0.0.20
-      '@vueuse/metadata': 12.4.0
-      '@vueuse/shared': 12.4.0(typescript@5.6.3)
+      '@types/web-bluetooth': 0.0.21
+      '@vueuse/metadata': 13.3.0
+      '@vueuse/shared': 13.3.0(vue@3.5.13(typescript@5.6.3))
       vue: 3.5.13(typescript@5.6.3)
-    transitivePeerDependencies:
-      - typescript
 
-  '@vueuse/integrations@11.1.0(axios@1.8.1)(focus-trap@7.6.0)(vue@3.5.13(typescript@5.6.3))':
+  '@vueuse/integrations@11.1.0(axios@1.8.1)(focus-trap@7.6.0)(sortablejs@1.15.6)(vue@3.5.13(typescript@5.6.3))':
     dependencies:
       '@vueuse/core': 11.1.0(vue@3.5.13(typescript@5.6.3))
       '@vueuse/shared': 11.1.0(vue@3.5.13(typescript@5.6.3))
@@ -17612,13 +17758,24 @@ snapshots:
     optionalDependencies:
       axios: 1.8.1
       focus-trap: 7.6.0
+      sortablejs: 1.15.6
     transitivePeerDependencies:
       - '@vue/composition-api'
       - vue
 
+  '@vueuse/integrations@13.3.0(axios@1.8.1)(focus-trap@7.6.0)(sortablejs@1.15.6)(vue@3.5.13(typescript@5.5.4))':
+    dependencies:
+      '@vueuse/core': 13.3.0(vue@3.5.13(typescript@5.5.4))
+      '@vueuse/shared': 13.3.0(vue@3.5.13(typescript@5.5.4))
+      vue: 3.5.13(typescript@5.5.4)
+    optionalDependencies:
+      axios: 1.8.1
+      focus-trap: 7.6.0
+      sortablejs: 1.15.6
+
   '@vueuse/metadata@11.1.0': {}
 
-  '@vueuse/metadata@12.4.0': {}
+  '@vueuse/metadata@13.3.0': {}
 
   '@vueuse/shared@11.1.0(vue@3.5.13(typescript@5.6.3))':
     dependencies:
@@ -17627,17 +17784,13 @@ snapshots:
       - '@vue/composition-api'
       - vue
 
-  '@vueuse/shared@12.4.0(typescript@5.5.4)':
+  '@vueuse/shared@13.3.0(vue@3.5.13(typescript@5.5.4))':
     dependencies:
       vue: 3.5.13(typescript@5.5.4)
-    transitivePeerDependencies:
-      - typescript
 
-  '@vueuse/shared@12.4.0(typescript@5.6.3)':
+  '@vueuse/shared@13.3.0(vue@3.5.13(typescript@5.6.3))':
     dependencies:
       vue: 3.5.13(typescript@5.6.3)
-    transitivePeerDependencies:
-      - typescript
 
   abbrev@2.0.0: {}
 
@@ -17657,36 +17810,43 @@ snapshots:
 
   acorn@8.14.0: {}
 
-  ag-charts-community@11.0.4:
+  ag-charts-community@11.3.2:
     dependencies:
-      ag-charts-locale: 11.0.4
-      ag-charts-types: 11.0.4
+      ag-charts-core: 11.3.2
+      ag-charts-locale: 11.3.2
+      ag-charts-types: 11.3.2
     optional: true
 
-  ag-charts-enterprise@11.0.4:
+  ag-charts-core@11.3.2:
     dependencies:
-      ag-charts-community: 11.0.4
+      ag-charts-types: 11.3.2
     optional: true
 
-  ag-charts-locale@11.0.4:
+  ag-charts-enterprise@11.3.2:
+    dependencies:
+      ag-charts-community: 11.3.2
+      ag-charts-core: 11.3.2
     optional: true
 
-  ag-charts-types@11.0.4: {}
+  ag-charts-locale@11.3.2:
+    optional: true
 
-  ag-grid-community@33.0.4:
-    dependencies:
-      ag-charts-types: 11.0.4
+  ag-charts-types@11.3.2: {}
 
-  ag-grid-enterprise@33.0.4:
+  ag-grid-community@33.3.2:
     dependencies:
-      ag-grid-community: 33.0.4
+      ag-charts-types: 11.3.2
+
+  ag-grid-enterprise@33.3.2:
+    dependencies:
+      ag-grid-community: 33.3.2
     optionalDependencies:
-      ag-charts-community: 11.0.4
-      ag-charts-enterprise: 11.0.4
+      ag-charts-community: 11.3.2
+      ag-charts-enterprise: 11.3.2
 
-  ag-grid-vue3@33.0.4(vue@3.5.13(typescript@5.5.4)):
+  ag-grid-vue3@33.3.2(vue@3.5.13(typescript@5.5.4)):
     dependencies:
-      ag-grid-community: 33.0.4
+      ag-grid-community: 33.3.2
       vue: 3.5.13(typescript@5.5.4)
 
   agent-base@7.1.3: {}
@@ -17938,8 +18098,6 @@ snapshots:
     dependencies:
       is-windows: 1.0.2
 
-  binary-extensions@2.3.0: {}
-
   birpc@0.2.19: {}
 
   bl@1.2.3:
@@ -18126,18 +18284,6 @@ snapshots:
 
   check-more-types@2.24.0: {}
 
-  chokidar@3.6.0:
-    dependencies:
-      anymatch: 3.1.3
-      braces: 3.0.3
-      glob-parent: 5.1.2
-      is-binary-path: 2.1.0
-      is-glob: 4.0.3
-      normalize-path: 3.0.0
-      readdirp: 3.6.0
-    optionalDependencies:
-      fsevents: 2.3.3
-
   chokidar@4.0.1:
     dependencies:
       readdirp: 4.0.2
@@ -18233,8 +18379,6 @@ snapshots:
   commander@5.1.0: {}
 
   commander@7.2.0: {}
-
-  commander@9.5.0: {}
 
   common-tags@1.8.2: {}
 
@@ -19029,7 +19173,7 @@ snapshots:
 
   estree-walker@3.0.3:
     dependencies:
-      '@types/estree': 1.0.6
+      '@types/estree': 1.0.7
 
   esutils@2.0.3: {}
 
@@ -19502,7 +19646,7 @@ snapshots:
 
   human-signals@2.1.0: {}
 
-  humanize-duration@3.32.2: {}
+  humanize-duration@3.33.0: {}
 
   husky@9.1.7: {}
 
@@ -19552,10 +19696,6 @@ snapshots:
   is-arrayish@0.2.1: {}
 
   is-arrayish@0.3.2: {}
-
-  is-binary-path@2.1.0:
-    dependencies:
-      binary-extensions: 2.3.0
 
   is-ci@3.0.1:
     dependencies:
@@ -20447,8 +20587,6 @@ snapshots:
 
   mute-stream@2.0.0: {}
 
-  mylas@2.1.13: {}
-
   mz@2.7.0:
     dependencies:
       any-promise: 1.3.0
@@ -20717,10 +20855,6 @@ snapshots:
       exsolve: 1.0.4
       pathe: 2.0.3
 
-  plimit-lit@1.6.1:
-    dependencies:
-      queue-lit: 1.5.2
-
   postcss-load-config@6.0.1(postcss@8.5.4)(tsx@4.19.1)(yaml@2.7.0):
     dependencies:
       lilconfig: 3.1.3
@@ -20826,8 +20960,6 @@ snapshots:
 
   querystringify@2.2.0: {}
 
-  queue-lit@1.5.2: {}
-
   queue-microtask@1.2.3: {}
 
   queue-tick@1.0.1: {}
@@ -20898,10 +21030,6 @@ snapshots:
   readdir-glob@1.1.3:
     dependencies:
       minimatch: 5.1.6
-
-  readdirp@3.6.0:
-    dependencies:
-      picomatch: 2.3.1
 
   readdirp@4.0.2: {}
 
@@ -21201,6 +21329,8 @@ snapshots:
       is-plain-obj: 4.1.0
       semver: 7.7.2
       sort-object-keys: 1.1.3
+
+  sortablejs@1.15.6: {}
 
   source-map-js@1.2.1: {}
 
@@ -21648,15 +21778,6 @@ snapshots:
       yn: 3.1.1
     optional: true
 
-  tsc-alias@1.8.11:
-    dependencies:
-      chokidar: 3.6.0
-      commander: 9.5.0
-      globby: 11.1.0
-      mylas: 2.1.13
-      normalize-path: 3.0.0
-      plimit-lit: 1.6.1
-
   tsconfig-paths@4.2.0:
     dependencies:
       json5: 2.2.3
@@ -21795,7 +21916,7 @@ snapshots:
 
   ufo@1.5.4: {}
 
-  ulid@3.0.0: {}
+  ulid@3.0.1: {}
 
   unbzip2-stream@1.4.3:
     dependencies:
@@ -21943,6 +22064,10 @@ snapshots:
       - supports-color
       - terser
 
+  vite-plugin-css-injected-by-js@3.5.2(vite@6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0)):
+    dependencies:
+      vite: 6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0)
+
   vite-plugin-dts@4.5.3(@types/node@20.16.15)(rollup@4.41.1)(typescript@5.5.4)(vite@6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0)):
     dependencies:
       '@microsoft/api-extractor': 7.52.2(@types/node@20.16.15)
@@ -22012,7 +22137,7 @@ snapshots:
       tsx: 4.19.1
       yaml: 2.7.0
 
-  vitepress@1.5.0(@algolia/client-search@4.24.0)(@types/node@22.5.5)(axios@1.8.1)(postcss@8.5.4)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(sass@1.83.4)(search-insights@2.17.2)(typescript@5.6.3):
+  vitepress@1.5.0(@algolia/client-search@4.24.0)(@types/node@22.5.5)(axios@1.8.1)(postcss@8.5.4)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(sass@1.83.4)(search-insights@2.17.2)(sortablejs@1.15.6)(typescript@5.6.3):
     dependencies:
       '@docsearch/css': 3.6.2
       '@docsearch/js': 3.6.2(@algolia/client-search@4.24.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(search-insights@2.17.2)
@@ -22025,7 +22150,7 @@ snapshots:
       '@vue/devtools-api': 7.6.5
       '@vue/shared': 3.5.13
       '@vueuse/core': 11.1.0(vue@3.5.13(typescript@5.6.3))
-      '@vueuse/integrations': 11.1.0(axios@1.8.1)(focus-trap@7.6.0)(vue@3.5.13(typescript@5.6.3))
+      '@vueuse/integrations': 11.1.0(axios@1.8.1)(focus-trap@7.6.0)(sortablejs@1.15.6)(vue@3.5.13(typescript@5.6.3))
       focus-trap: 7.6.0
       mark.js: 8.11.1
       minisearch: 7.1.0

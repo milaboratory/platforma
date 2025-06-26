@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import Layout from '@/Layout.vue';
+import Layout from '../Layout.vue';
 import { DataTable, PlNumberField, PlBtnSecondary } from '@milaboratories/uikit';
 import { computed, onMounted } from 'vue';
 import { useData } from './useData';

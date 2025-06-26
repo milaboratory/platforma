@@ -1,13 +1,14 @@
 <script lang="ts" setup>
 import type { GridApi } from 'ag-grid-enterprise';
 import { computed, onBeforeMount, onBeforeUnmount, ref } from 'vue';
+import { getSelectedRowsCount, getTotalRowsCount } from '../../lib';
 
 const { params } = defineProps<{
   params: { api: GridApi };
 }>();
 
-const totalRowCount = ref(params.api.getDisplayedRowCount());
-const selectedRowCount = ref(params.api.getSelectedRows().length);
+const totalRowCount = ref(getTotalRowsCount(params.api));
+const selectedRowCount = ref(getSelectedRowsCount(params.api));
 
 const pluralRules = new Intl.PluralRules('en');
 const numberFormatter = new Intl.NumberFormat('en');
@@ -22,8 +23,8 @@ const output = computed(() => {
 });
 
 function updateRowCounts() {
-  totalRowCount.value = params.api.getDisplayedRowCount();
-  selectedRowCount.value = params.api.getSelectedRows().length;
+  totalRowCount.value = getTotalRowsCount(params.api);
+  selectedRowCount.value = getSelectedRowsCount(params.api);
 }
 
 onBeforeMount(() => {

@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { generate } from '@/imports';
+import { generate } from '../imports';
 import { ref } from 'vue';
 import { scrollIntoView } from '@milaboratories/uikit';
 

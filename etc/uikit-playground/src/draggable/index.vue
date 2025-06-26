@@ -1,8 +1,8 @@
 <script lang="ts" setup>
-import Layout from '@/Layout.vue';
-import Split from '@/Split.vue';
-import List from '@/draggable/List.vue';
-import Tbl from '@/draggable/Tbl.vue';
+import Layout from '../Layout.vue';
+import Split from '../Split.vue';
+import List from './List.vue';
+import Tbl from './Tbl.vue';
 </script>
 
 <template>

@@ -1,0 +1,12 @@
+{
+  "version": "1.0.4",
+  "name": "@milaboratories/ts-configs",
+  "exports": {
+    "./browser": "./src/tsconfig.browser.json"
+  },
+  "scripts": {},
+  "dependencies": {
+    "vite": "catalog:",
+    "vitest": "catalog:"
+  }
+}

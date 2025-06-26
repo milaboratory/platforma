@@ -1,24 +1,24 @@
 <script lang="ts" setup>
 import { reactive } from 'vue';
-import Layout from '@/Layout.vue';
+import Layout from '../Layout.vue';
 import {
-  PlBtnPrimary,
-  PlBtnSecondary,
+  icons24,
   PlBtnAccent,
+  PlBtnGhost,
   PlBtnGroup,
   PlBtnLink,
-  PlBtnGhost,
+  PlBtnPrimary,
+  PlBtnSecondary,
   type Size,
-  maskIcons24
 } from '@milaboratories/uikit';
-import Split from '@/Split.vue';
+import Split from '../Split.vue';
 
 const props = reactive({
   size: 'medium' as Size,
   disabled: false,
   reverse: false,
   loading: false,
-  justifyCenter: false
+  justifyCenter: false,
 });
 
 const sizeOptions = ['small', 'medium', 'large'].map((it) => ({ text: it, value: it }));
@@ -83,9 +83,9 @@ function onClick() {
         </fieldset>
         <fieldset>
           <legend>PlBtnGhost with all the icons</legend>
-          <PlBtnGhost v-for="icon in maskIcons24" :size="props.size" :key="icon" :icon="icon"
-            >(24x24): {{ icon }}</PlBtnGhost
-          >
+          <PlBtnGhost v-for="icon in icons24" :key="icon" :size="props.size" :icon="icon">
+            (24x24): {{ icon }}
+          </PlBtnGhost>
         </fieldset>
       </div>
     </Split>

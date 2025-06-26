@@ -69,19 +69,19 @@
         display: none;
 
         .mask-24 {
-            background-color: var(--ic-02);
+            --icon-color: var(--ic-02);
         }
     }
 
     &__toggle:hover {
         .mask-24 {
-            background-color: var(--ic-01);
+            --icon-color: var(--ic-01);
         }
     }
 
     &__delete:hover {
         .mask-24 {
-            background-color: var(--ic-01);
+            --icon-color: var(--ic-01);
         }
     }
 

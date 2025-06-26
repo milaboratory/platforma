@@ -1,22 +1,20 @@
 {
   "name": "@platforma-sdk/ui-vue",
-  "version": "1.34.0",
+  "version": "1.37.2",
   "type": "module",
   "main": "dist/lib.js",
-  "module": "dist/lib.js",
-  "types": "dist/src/lib.d.ts",
-  "styles": "dist/lib.css",
+  "styles": "dist/lib.js",
   "exports": {
     ".": {
-      "types": "./dist/src/lib.d.ts",
+      "development": "./src/lib.ts",
       "default": "./dist/lib.js"
     },
-    "./styles": "./dist/lib.css"
+    "./styles": "./dist/lib.js"
   },
   "scripts": {
     "test": "vitest run --passWithNoTests",
     "dev": "vite",
-    "build": "vite build && vue-tsc --declaration --emitDeclarationOnly -p tsconfig.lib.json",
+    "build": "vite build",
     "watch": "vite build --watch",
     "type-check": "vue-tsc --noEmit --project ./tsconfig.json",
     "preview": "vite preview",
@@ -25,6 +23,11 @@
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "dependencies": {
+    "@types/lodash": "catalog:",
+    "@types/node": "catalog:",
+    "@types/semver": "catalog:",
+    "@types/sortablejs": "catalog:",
+    "@types/d3-format": "catalog:",
     "@milaboratories/biowasm-tools": "workspace:^",
     "@milaboratories/miplots4": "catalog:",
     "@milaboratories/uikit": "workspace:^",
@@ -33,22 +36,21 @@
     "ag-grid-vue3": "catalog:",
     "canonicalize": "catalog:",
     "lru-cache": "catalog:",
-    "vue": "catalog:"
+    "vue": "catalog:",
+    "@vueuse/core": "catalog:",
+    "@vueuse/integrations": "catalog:",
+    "sortablejs": "catalog:",
+    "d3-format": "catalog:",
+    "lodash": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
-    "@faker-js/faker": "catalog:",
+    "@milaboratories/ts-configs": "workspace:*",
+    "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/eslint-config": "workspace:^",
     "@milaboratories/helpers": "workspace:^",
-    "@types/lodash": "catalog:",
-    "@types/node": "catalog:",
-    "@types/semver": "catalog:",
-    "@vitejs/plugin-vue": "catalog:",
-    "@vueuse/core": "catalog:",
-    "d3-format": "catalog:",
-    "@types/d3-format": "catalog:",
-    "canonicalize": "catalog:",
     "happy-dom": "catalog:",
-    "lodash": "catalog:",
+    "@vitejs/plugin-vue": "catalog:",
     "rollup-plugin-sourcemaps2": "catalog:",
     "sass": "catalog:",
     "semver": "catalog:",
@@ -56,7 +58,6 @@
     "vite": "catalog:",
     "vitest": "catalog:",
     "vue-tsc": "catalog:",
-    "yarpm": "catalog:",
-    "zod": "catalog:"
+    "yarpm": "catalog:"
   }
 }

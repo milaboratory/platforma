@@ -15,7 +15,7 @@
   },
   "devDependencies": {
     "@milaboratories/eslint-config": "workspace:*",
-    "@milaboratories/platforma-build-configs": "workspace:*",
+    "@milaboratories/build-configs": "workspace:*",
     "typescript": "catalog:",
     "jest": "catalog:",
     "@jest/globals": "catalog:",

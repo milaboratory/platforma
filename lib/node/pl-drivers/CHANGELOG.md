@@ -1,5 +1,61 @@
 # @milaboratories/pl-drivers
 
+## 1.5.75
+
+### Patch Changes
+
+- 37800c5: Public tools packages
+- Updated dependencies [37800c5]
+  - @milaboratories/computable@2.5.1
+  - @milaboratories/ts-helpers@1.4.1
+  - @milaboratories/pl-client@2.11.2
+  - @milaboratories/pl-model-common@1.15.7
+  - @milaboratories/pl-tree@1.6.11
+  - @milaboratories/helpers@1.6.15
+
+## 1.5.74
+
+### Patch Changes
+
+- Updated dependencies [6ffe944]
+- Updated dependencies [6ffe944]
+  - @milaboratories/pl-model-common@1.15.6
+
+## 1.5.73
+
+### Patch Changes
+
+- df1a454: Blob driver - fix error on deleting not downloaded file
+
+## 1.5.72
+
+### Patch Changes
+
+- 295e939: Abort canceled blob downloads
+
+## 1.5.71
+
+### Patch Changes
+
+- 3d34876: Fix for closed channel error. All gRPC clients are now used via GrpcClientProvider to refresh underlying transport.
+- Updated dependencies [3d34876]
+  - @milaboratories/pl-client@2.11.1
+  - @milaboratories/pl-tree@1.6.10
+
+## 1.5.70
+
+### Patch Changes
+
+- Updated dependencies [e9d02ae]
+  - @milaboratories/helpers@1.6.14
+
+## 1.5.69
+
+### Patch Changes
+
+- Updated dependencies [45badc9]
+  - @milaboratories/helpers@1.6.13
+
 ## 1.5.68
 
 ### Patch Changes

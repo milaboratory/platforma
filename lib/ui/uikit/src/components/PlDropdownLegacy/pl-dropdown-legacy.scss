@@ -1,4 +1,4 @@
-@use "@/assets/mixins" as *;
+@use "../../assets/mixins.scss" as *;
 
 .pl-dropdown-legacy {
   $root: &;
@@ -181,19 +181,19 @@
     gap: 6px;
     margin-left: auto;
 
-    .icon-delete-clear {
+    .mask-16,
+    .mask-24 {
+      --icon-color: var(--control-mask-fill);
       cursor: pointer;
     }
 
-    .mask-16,
-    .mask-24 {
-      background-color: var(--control-mask-fill);
-      cursor: pointer;
+    .clear {
+      --icon-color: var(--ic-02);
     }
 
     .mask-loading {
+      --icon-color: var(#07AD3E);
       animation: spin 2.5s linear infinite;
-      background-color: #07AD3E;
     }
   }
 
@@ -203,7 +203,7 @@
     // Default "arrow" icon (16x16) 
     &.arrow-icon-default {
       background-color: var(--control-mask-fill);
-      @include mask(url('@/assets/images/16_chevron-down.svg'), 16px);
+      @include mask(url('../../assets/images/16_chevron-down.svg'), 16px);
     }
   }
 
@@ -224,7 +224,7 @@
 
     .arrow-icon {
       background-color: var(--control-mask-fill);
-      @include mask(url(@/assets/images/16_chevron-up.svg), 16px);
+      @include mask(url(../../assets/images/16_chevron-up.svg), 16px);
     }
   }
 

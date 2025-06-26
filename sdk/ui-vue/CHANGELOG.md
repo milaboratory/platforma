@@ -1,5 +1,118 @@
 # @platforma-sdk/ui-vue
 
+## 1.37.2
+
+### Patch Changes
+
+- 37800c5: Public tools packages
+- Updated dependencies [37800c5]
+  - @milaboratories/uikit@2.2.92
+  - @platforma-sdk/model@1.37.2
+
+## 1.37.1
+
+### Patch Changes
+
+- 2c3bb60: Developer build ui-examples don't required build/watch for deps
+- Updated dependencies [2c3bb60]
+  - @milaboratories/uikit@2.2.91
+
+## 1.37.0
+
+### Minor Changes
+
+- 6ffe944: PlAgDataTableV2 - significant interface change
+
+### Patch Changes
+
+- 6ffe944: PlAgDataTableV2 refactoring
+- 6ffe944: PlAgDataTable types fixed
+- Updated dependencies [6ffe944]
+- Updated dependencies [6ffe944]
+- Updated dependencies [6ffe944]
+  - @milaboratories/uikit@2.2.90
+  - @platforma-sdk/model@1.37.0
+
+## 1.36.0
+
+### Minor Changes
+
+- 105ea31: MSA: error handling improvements
+
+## 1.35.2
+
+### Patch Changes
+
+- Updated dependencies [60540e8]
+  - @milaboratories/uikit@2.2.89
+
+## 1.35.0
+
+### Minor Changes
+
+- 3781bd8: Added markup support to PlMultiSequenceAlignment
+
+## 1.34.18
+
+### Patch Changes
+
+- Updated dependencies [e9d02ae]
+  - @milaboratories/uikit@2.2.88
+
+## 1.34.17
+
+### Patch Changes
+
+- 45badc9: PlElementList implementation
+- Updated dependencies [45badc9]
+  - @milaboratories/uikit@2.2.87
+
+## 1.34.15
+
+### Patch Changes
+
+- Updated dependencies [8248b67]
+  - @milaboratories/uikit@2.2.86
+
+## 1.34.12
+
+### Patch Changes
+
+- Updated dependencies [2299e3e]
+  - @milaboratories/uikit@2.2.85
+
+## 1.34.10
+
+### Patch Changes
+
+- Updated dependencies [c570fd4]
+  - @platforma-sdk/model@1.34.10
+  - @milaboratories/uikit@2.2.84
+
+## 1.34.9
+
+### Patch Changes
+
+- Updated dependencies [540e690]
+  - @milaboratories/uikit@2.2.84
+
+## 1.34.8
+
+### Patch Changes
+
+- 33d6252: Fix Seqlogo overlap in the MSA component
+- Updated dependencies [23f719d]
+  - @platforma-sdk/model@1.34.8
+  - @milaboratories/uikit@2.2.83
+
+## 1.34.4
+
+### Patch Changes
+
+- 697b8a5: Replace all aliases to relative paths
+- Updated dependencies [697b8a5]
+  - @milaboratories/uikit@2.2.83
+
 ## 1.34.0
 
 ### Minor Changes
