@@ -3,6 +3,7 @@ ll := import(":ll")
 render := import(":render")
 validation := import(":validation")
 assets := import(":assets")
+smart := import(":smart")
 
 waiterTpl := assets.importTemplate(":waiter.waiter")
 
@@ -32,15 +33,29 @@ builder := func(pass) {
 			return self
 		},
 
+		/**
+		 * Build the waiter.
+		 *
+		 * @returns {object} The waiter instance, that has `output()` method to get the reference to result.
+		 */
 		build: func() {
-			waits := {}
-			for i, v in whatToWait {
-				waits[fmt.sprintf("input_%d", i)] = v
+			ll.assert(len(whatToWait) > 0, "waiter.builder.build(): at least one wait is required")
+
+			trigger := undefined
+
+			if len(whatToWait) == 1 {
+				trigger = whatToWait[0]
+			} else {
+				triggerBuilder := smart.ephemeralMapBuilder()
+				for i, v in whatToWait {
+					triggerBuilder.addRef(fmt.sprintf("input_%d", i), v)
+				}
+				trigger = triggerBuilder.build()
 			}
 
 			tpl := render.createEphemeral(waiterTpl, {
-				"pass": pass,
-				"trigger": waits
+				pass: pass,
+				trigger: trigger
 			})
 
 			return ll.toStrict({
@@ -55,5 +70,5 @@ builder := func(pass) {
 }
 
 export ll.toStrict({
-	builder:                 	builder
+	builder: builder
 })
