@@ -11,7 +11,7 @@
   },
   "devDependencies": {
     "remeda": "catalog:",
-    "@milaboratories/platforma-build-configs": "workspace:*",
+    "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/milaboratories.test-enter-numbers": "workspace:*",
     "@milaboratories/pl-model-middle-layer": "workspace:*",
     "@platforma-sdk/block-tools": "workspace:*",

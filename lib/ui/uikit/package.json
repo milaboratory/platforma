@@ -36,7 +36,7 @@
   },
   "devDependencies": {
     "@milaboratories/ts-configs": "workspace:*",
-    "@milaboratories/platforma-build-configs": "workspace:*",
+    "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/eslint-config": "workspace:^",
     "@milaboratories/helpers": "workspace:^",
     "@platforma-sdk/model": "workspace:^",

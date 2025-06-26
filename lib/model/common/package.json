@@ -29,7 +29,7 @@
     "@milaboratories/pl-error-like": "workspace:*"
   },
   "devDependencies": {
-    "@milaboratories/platforma-build-configs": "workspace:*",
+    "@milaboratories/build-configs": "workspace:*",
     "@platforma-sdk/eslint-config": "workspace:*",
     "eslint": "catalog:",
     "typescript": "catalog:",

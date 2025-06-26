@@ -1,4 +1,4 @@
-import { PlViteStdNode } from '@milaboratories/platforma-build-configs/vite';
+import { PlViteStdNode } from '@milaboratories/build-configs/vite';
 import { resolve } from 'node:path';
 
 export default PlViteStdNode({

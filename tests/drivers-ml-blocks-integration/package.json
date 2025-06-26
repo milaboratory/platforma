@@ -28,7 +28,7 @@
     "@milaboratories/milaboratories.test-read-logs.model": "workspace:*"
   },
   "devDependencies": {
-    "@milaboratories/platforma-build-configs": "workspace:*",
+    "@milaboratories/build-configs": "workspace:*",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:",

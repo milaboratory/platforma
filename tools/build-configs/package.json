@@ -1,7 +1,6 @@
 {
   "version": "1.0.3",
-  "private": true,
-  "name": "@milaboratories/platforma-build-configs",
+  "name": "@milaboratories/build-configs",
   "type": "module",
   "exports": {
     ".": {

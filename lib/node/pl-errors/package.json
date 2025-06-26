@@ -30,7 +30,7 @@
   },
   "devDependencies": {
     "@milaboratories/pl-error-like": "workspace:*",
-    "@milaboratories/platforma-build-configs": "workspace:*",
+    "@milaboratories/build-configs": "workspace:*",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:",

@@ -57,7 +57,7 @@
     "@milaboratories/pl-deployments": "workspace:^"
   },
   "devDependencies": {
-    "@milaboratories/platforma-build-configs": "workspace:*",
+    "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/eslint-config": "workspace:^",
     "semver": "catalog:",
     "@types/semver": "catalog:",

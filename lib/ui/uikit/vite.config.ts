@@ -1,6 +1,6 @@
 import { resolve } from 'path';
 import { defineConfig, mergeConfig, type UserConfig } from 'vite';
-import { createViteLibConfig } from '@milaboratories/platforma-build-configs';
+import { createViteLibConfig } from '@milaboratories/build-configs';
 
 export default defineConfig((configEnv): UserConfig => {
   return mergeConfig(createViteLibConfig(configEnv), {
