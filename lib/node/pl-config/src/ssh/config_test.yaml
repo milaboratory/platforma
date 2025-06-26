@@ -70,7 +70,6 @@ controllers:
       type: FS
       indexCachePeriod: 1m
       rootPath: ""
-
     - id: work
       type: FS
       indexCachePeriod: 1m
@@ -80,5 +79,5 @@ controllers:
       type: FS
       indexCachePeriod: "0s"
       rootPath: /home/pl-doctor/platforma_backend/storages/main
-      externalURL: http://localhost:11112
       allowRemoteAccess: true
+      externalURL: "http://localhost:11112"

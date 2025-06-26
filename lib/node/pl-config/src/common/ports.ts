@@ -79,6 +79,7 @@ export type Endpoints = {
   httpLocal?: string;
   grpcLocal?: string;
   minioLocal?: string;
+
 };
 
 export type PortsWithMinio = {
