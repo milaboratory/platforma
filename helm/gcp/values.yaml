@@ -250,10 +250,10 @@ app:
             addr: "10.244.108.130"
             path: "/nfs_share"
             mount: {{ .Values.app.persistentVolume.nfsShareVolume.mountPath | quote }}
-          projectId: {{ .Values.app.batch.projectId | quote }}
-          region: {{ .Values.app.batch.region | quote }}
-          network: {{ .Values.app.batch.network | quote }}
-          subnetwork: {{ .Values.app.batch.subnetwork | quote }}
+          projectId: {{ .Values.app.coreConfig.batch.projectId | quote }}
+          region: {{ .Values.app.coreConfig.batch.region | quote }}
+          network: {{ .Values.app.coreConfig.batch.network | quote }}
+          subnetwork: {{ .Values.app.coreConfig.batch.subnetwork | quote }}
 
       workflows:
         features:
