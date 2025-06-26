@@ -1,5 +1,13 @@
 # @milaboratories/pl-model-backend
 
+## 1.1.1
+
+### Patch Changes
+
+- 37800c5: Public tools packages
+- Updated dependencies [37800c5]
+  - @milaboratories/pl-client@2.11.2
+
 ## 1.1.0
 
 ### Minor Changes

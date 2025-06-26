@@ -1,5 +1,27 @@
 # @milaboratories/pl-middle-layer
 
+## 1.37.88
+
+### Patch Changes
+
+- 37800c5: Public tools packages
+- Updated dependencies [37800c5]
+  - @milaboratories/pl-deployments@2.3.3
+  - @milaboratories/pl-model-middle-layer@1.7.41
+  - @milaboratories/computable@2.5.1
+  - @milaboratories/pl-drivers@1.5.75
+  - @milaboratories/ts-helpers@1.4.1
+  - @milaboratories/pl-client@2.11.2
+  - @milaboratories/pl-config@1.4.15
+  - @milaboratories/pl-errors@1.1.9
+  - @milaboratories/pl-model-backend@1.1.1
+  - @platforma-sdk/block-tools@2.5.59
+  - @milaboratories/pl-model-common@1.15.7
+  - @milaboratories/pl-http@1.1.4
+  - @milaboratories/pl-tree@1.6.11
+  - @platforma-sdk/model@1.37.2
+  - @platforma-sdk/workflow-tengo@4.8.0
+
 ## 1.37.87
 
 ### Patch Changes

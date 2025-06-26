@@ -1,5 +1,14 @@
 # @milaboratories/pl-local
 
+## 2.3.3
+
+### Patch Changes
+
+- 37800c5: Public tools packages
+- Updated dependencies [37800c5]
+  - @milaboratories/ts-helpers@1.4.1
+  - @milaboratories/pl-config@1.4.15
+
 ## 2.3.2
 
 ### Patch Changes

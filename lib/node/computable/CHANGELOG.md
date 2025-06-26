@@ -1,5 +1,14 @@
 # @milaboratories/computable
 
+## 2.5.1
+
+### Patch Changes
+
+- 37800c5: Public tools packages
+- Updated dependencies [37800c5]
+  - @milaboratories/pl-error-like@1.12.2
+  - @milaboratories/ts-helpers@1.4.1
+
 ## 2.5.0
 
 ### Minor Changes

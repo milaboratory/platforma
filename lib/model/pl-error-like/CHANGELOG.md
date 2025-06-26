@@ -1,5 +1,11 @@
 # @milaboratories/pl-error-like
 
+## 1.12.2
+
+### Patch Changes
+
+- 37800c5: Public tools packages
+
 ## 1.12.1
 
 ### Patch Changes

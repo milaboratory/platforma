@@ -1,5 +1,14 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.4.19
+
+### Patch Changes
+
+- 37800c5: Public tools packages
+- Updated dependencies [37800c5]
+  - @platforma-sdk/model@1.37.2
+  - @milaboratories/milaboratories.ui-examples.model@1.1.76
+
 ## 1.4.18
 
 ### Patch Changes

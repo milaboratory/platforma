@@ -1,5 +1,13 @@
 # @platforma-sdk/bootstrap
 
+## 3.5.11
+
+### Patch Changes
+
+- 37800c5: Public tools packages
+- Updated dependencies [37800c5]
+  - @milaboratories/pl-deployments@2.3.3
+
 ## 3.5.10
 
 ### Patch Changes
