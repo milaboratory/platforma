@@ -35,16 +35,16 @@ export function newDefaultPlConfig(
         extendedInfo: true,
         dumpResourceData: true,
       },
+      tls: { enabled: false },
       grpc: {
         listen: ports.grpc,
       },
       http: {
-        listen: ports.httpEndpoint ?? '',
+        listen: ports.http,
       },
       authEnabled: true,
       auth: getDefaultAuthMethods(htpasswdAuth, jwtKey),
       db: { path: dbPath },
-      tls: { enabled: false },
     },
     controllers: {
       workflows: {},

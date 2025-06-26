@@ -14,6 +14,7 @@ test(
     const workingDir = path.resolve(path.join(__dirname, '..', '.test'));
 
     // create configs for everything
+    console.log('Generating configs...');
     const configOpts: LocalPlConfigGeneratorOptions = {
       logger,
       workingDir,
@@ -27,6 +28,7 @@ test(
     const genResult = await generateLocalPlConfigs(configOpts);
 
     // start local platforma
+    console.log('Starting local platforma...');
     const plLocal = await localPlatformaInit(logger, {
       workingDir: genResult.workingDir,
       config: genResult.plConfigContent,
@@ -35,6 +37,7 @@ test(
 
     // start pl-client
     const uaClient = new UnauthenticatedPlClient(genResult.plAddress);
+    console.log('Waiting for local platforma to be ready...');
     while (true) {
       try {
         await uaClient.ping();
@@ -47,6 +50,7 @@ test(
     const client = await PlClient.init(genResult.plAddress, { authInformation: auth });
 
     // start middle-layer
+    console.log('Starting middle-layer...');
     const ml = await MiddleLayer.init(client, workingDir, {
       localSecret: MiddleLayer.generateLocalSecret(),
       localProjections: genResult.localStorageProjections,
@@ -56,6 +60,7 @@ test(
     });
 
     // assertions that everything is working
+    console.log('Checking if local platforma is ready...');
     expect(await plLocal.isAlive()).toBeTruthy();
     const rId = await ml.createProject({ label: 'abc' });
     console.log('Project was created: ', rId);
@@ -63,6 +68,7 @@ test(
     expect(rId).not.toBe(0);
 
     // stop everything
+    console.log('Checking if local platforma is ready...');
     await ml.close();
     client.close();
     plLocal.stop();

@@ -18,9 +18,9 @@ test('should return right configs', async ({ expect }) => {
       type: 'custom',
       ports: {
         grpc: 11234,
+        http: 11237,
         monitoring: 11235,
         debug: 11236,
-        httpEndpoint: 11237,
       },
     },
     numCpu: 5,

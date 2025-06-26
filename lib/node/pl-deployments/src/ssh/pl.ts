@@ -10,9 +10,9 @@ import { getDefaultPlVersion } from '../common/pl_version';
 
 import net from 'node:net';
 import type { PlConfig, PlLicenseMode, SshPlConfigGenerationResult } from '@milaboratories/pl-config';
-import { generateSshPlConfigs, getFreePort } from '@milaboratories/pl-config';
+import { getFreePort, generateSshPlConfigs } from '@milaboratories/pl-config';
 import type { SupervisorStatus } from './supervisord';
-import { supervisorStatus, supervisorStop as supervisorCtlShutdown, generateSupervisordConfig, supervisorCtlStart } from './supervisord';
+import { supervisorStatus, supervisorStop as supervisorCtlShutdown, generateSupervisordConfigWithMinio, supervisorCtlStart, isSupervisordRunning, generateSupervisordConfig, isAllAlive } from './supervisord';
 import type { ConnectionInfo, SshPlPorts } from './connection_info';
 import { newConnectionInfo, parseConnectionInfo, stringifyConnectionInfo } from './connection_info';
 import type { PlBinarySourceDownload } from '../common/pl_binary';
@@ -20,7 +20,7 @@ import type { PlBinarySourceDownload } from '../common/pl_binary';
 const minRequiredGlibcVersion = 2.28;
 
 export class SshPl {
-  private initState: PlatformaInitState = {};
+  private initState: PlatformaInitState = { step: 'init' };
   constructor(
     public readonly logger: MiLogger,
     public readonly sshClient: SshClient,
@@ -57,16 +57,16 @@ export class SshPl {
 
   /** Starts all the services on the server.
     * Idempotent semantic: we could call it several times. */
-  public async start() {
+  public async start(shouldUseMinio: boolean) {
     const arch = await this.getArch();
     const remoteHome = await this.getUserHomeDirectory();
 
     try {
-      if (!(await this.isAlive()).allAlive) {
+      if (!isAllAlive(await this.isAlive(), shouldUseMinio)) {
         await supervisorCtlStart(this.sshClient, remoteHome, arch.arch);
 
         // We are waiting for Platforma to run to ensure that it has started.
-        return await this.checkIsAliveWithInterval();
+        return await this.checkIsAliveWithInterval(shouldUseMinio);
       }
     } catch (e: unknown) {
       const msg = `SshPl.start: ${e}`;
@@ -82,9 +82,12 @@ export class SshPl {
     const remoteHome = await this.getUserHomeDirectory();
 
     try {
-      if ((await this.isAlive()).allAlive) {
+      const alive = await this.isAlive();
+      if (isSupervisordRunning(alive)) {
         await supervisorCtlShutdown(this.sshClient, remoteHome, arch.arch);
-        return await this.checkIsAliveWithInterval(undefined, undefined, false);
+        // Check if Minio is running by looking at the alive status
+        const shouldUseMinio = alive.minio === true;
+        return await this.checkIsAliveWithInterval(shouldUseMinio, 1000, 15, false);
       }
     } catch (e: unknown) {
       const msg = `PlSsh.stop: ${e}`;
@@ -115,154 +118,258 @@ export class SshPl {
    * generates all the configs, creates necessary dirs,
    * and finally starts all the services. */
   public async platformaInit(options: SshPlConfig): Promise<ConnectionInfo> {
-    const state: PlatformaInitState = { localWorkdir: options.localWorkdir };
+    const state: PlatformaInitState = { localWorkdir: options.localWorkdir, step: 'init' };
 
     const { onProgress } = options;
 
+    // merge options with default ops.
+    const ops: SshPlConfig = {
+      ...defaultSshPlConfig,
+      ...options,
+    };
+    state.plBinaryOps = ops.plBinary;
+
     try {
-      // merge options with default ops.
-      const ops: SshPlConfig = {
-        ...defaultSshPlConfig,
-        ...options,
-      };
-      state.plBinaryOps = ops.plBinary;
+      await this.doStepDetectArch(state, onProgress);
+      await this.doStepDetectHome(state, onProgress);
 
-      await onProgress?.('Detecting server architecture...');
-      state.arch = await this.getArch();
-      await onProgress?.('Server architecture detected.');
-
-      await onProgress?.('Fetching user home directory...');
-      state.remoteHome = await this.getUserHomeDirectory();
-      await onProgress?.('User home directory retrieved.');
-
-      await onProgress?.('Checking platform status...');
-      state.alive = await this.isAlive();
-
-      if (state.alive.allAlive) {
-        await onProgress?.('All required services are running.');
+      const needRestartPlatforma = await this.doStepReadExistedConfig(state, ops, onProgress);
+      if (!needRestartPlatforma) {
+        await onProgress?.('Platforma is already running. Skipping initialization.');
+        return state.existedSettings!;
       }
+      await this.doStepStopExistedPlatforma(state, onProgress);
 
-      if (state.alive.allAlive) {
-        state.userCredentials = await this.getUserCredentials(state.remoteHome);
-        if (!state.userCredentials) {
-          throw new Error(`SshPl.platformaInit: platforma is alive but userCredentials are not found`);
-        }
-        const sameGA = state.userCredentials.useGlobalAccess == ops.useGlobalAccess;
-        const samePlVersion = state.userCredentials.plVersion == ops.plBinary!.version;
-        state.needRestart = !(sameGA && samePlVersion);
-        this.logger.info(`SshPl.platformaInit: need restart? ${state.needRestart}`);
+      await onProgress?.('Installation platforma...');
 
-        if (!state.needRestart) {
-          await onProgress?.('Server setup completed.');
-          return state.userCredentials;
-        }
+      await this.doStepDownloadBinaries(state, onProgress, ops);
+      await this.doStepFetchPorts(state);
+      await this.doStepGenerateNewConfig(state, onProgress, ops);
+      await this.doStepCreateFoldersAndSaveFiles(state, onProgress);
+      await this.doStepConfigureSupervisord(state, onProgress);
+      await this.doStepSaveNewConnectionInfo(state, onProgress, ops);
+      await this.doStepStartPlatforma(state, onProgress);
 
-        await onProgress?.('Stopping services...');
-        await this.stop();
-      }
-
-      await onProgress?.('Downloading and uploading required binaries...');
-
-      const glibcVersion = await getGlibcVersion(this.logger, this.sshClient);
-      if (glibcVersion < minRequiredGlibcVersion)
-        throw new Error(`glibc version ${glibcVersion} is too old. Version ${minRequiredGlibcVersion} or higher is required for Platforma.`);
-
-      const downloadRes = await this.downloadBinariesAndUploadToTheServer(
-        ops.localWorkdir, ops.plBinary!, state.remoteHome, state.arch,
-      );
-      await onProgress?.('All required binaries have been downloaded and uploaded.');
-
-      state.binPaths = { ...downloadRes, history: undefined };
-      state.downloadedBinaries = downloadRes.history;
-
-      state.ports = await this.fetchPorts(state.remoteHome, state.arch);
-
-      if (!state.ports.debug.remote || !state.ports.grpc.remote || !state.ports.minioPort.remote || !state.ports.minioConsolePort.remote || !state.ports.monitoring.remote) {
-        throw new Error(`SshPl.platformaInit: remote ports are not defined`);
-      }
-
-      await onProgress?.('Generating server configuration...');
-      const config = await generateSshPlConfigs({
-        logger: this.logger,
-        workingDir: plpath.workDir(state.remoteHome),
-        portsMode: {
-          type: 'customWithMinio',
-          ports: {
-            debug: state.ports.debug.remote,
-            grpc: state.ports.grpc.remote,
-            minio: state.ports.minioPort.remote,
-            minioConsole: state.ports.minioConsolePort.remote,
-            monitoring: state.ports.monitoring.remote,
-
-            grpcLocal: state.ports.grpc.local,
-            minioLocal: state.ports.minioPort.local,
-          },
-        },
-        licenseMode: ops.license,
-        useGlobalAccess: notEmpty(ops.useGlobalAccess),
-        plConfigPostprocessing: ops.plConfigPostprocessing,
-      });
-      state.generatedConfig = { ...config, filesToCreate: { skipped: 'it is too wordy' } };
-
-      await onProgress?.('Server configuration generated.');
-
-      await onProgress?.('Generating folder structure...');
-      for (const [filePath, content] of Object.entries(config.filesToCreate)) {
-        await this.sshClient.writeFileOnTheServer(filePath, content);
-        this.logger.info(`Created file ${filePath}`);
-      }
-
-      for (const dir of config.dirsToCreate) {
-        await this.sshClient.ensureRemoteDirCreated(dir);
-        this.logger.info(`Created directory ${dir}`);
-      }
-      await onProgress?.('Folder structure created.');
-
-      await onProgress?.('Writing supervisord configuration...');
-      const supervisorConfig = generateSupervisordConfig(
-        config.minioConfig.storageDir,
-        config.minioConfig.envs,
-        await this.getFreePortForPlatformaOnServer(state.remoteHome, state.arch),
-        config.workingDir,
-        config.plConfig.configPath,
-        state.binPaths.minioRelPath,
-        state.binPaths.downloadedPl,
-      );
-
-      const writeResult = await this.sshClient.writeFileOnTheServer(plpath.supervisorConf(state.remoteHome), supervisorConfig);
-      if (!writeResult) {
-        throw new Error(`Can not write supervisord config on the server ${plpath.workDir(state.remoteHome)}`);
-      }
-      await onProgress?.('Supervisord configuration written.');
-
-      await onProgress?.('Saving connection information...');
-      state.connectionInfo = newConnectionInfo(
-        config.plUser,
-        config.plPassword,
-        state.ports,
-        notEmpty(ops.useGlobalAccess),
-        ops.plBinary!.version,
-      );
-      await this.sshClient.writeFileOnTheServer(
-        plpath.connectionInfo(state.remoteHome),
-        stringifyConnectionInfo(state.connectionInfo),
-      );
-      await onProgress?.('Connection information saved.');
-
-      await onProgress?.('Starting Platforma on the server...');
-      await this.start();
-      state.started = true;
-      this.initState = state;
-
-      await onProgress?.('Platforma has been started successfully.');
-
-      return state.connectionInfo;
+      return state.connectionInfo!;
     } catch (e: unknown) {
-      const msg = `SshPl.platformaInit: ${e}, state: ${JSON.stringify(state)}`;
+      const msg = `SshPl.platformaInit: ${e}, state: ${JSON.stringify(this.removeSensitiveData(state))}`;
       this.logger.error(msg);
 
       throw new Error(msg);
     }
+  }
+
+  private async doStepStopExistedPlatforma(state: PlatformaInitState, onProgress: ((...args: any) => Promise<any>) | undefined) {
+    state.step = 'stopExistedPlatforma';
+    if (!isAllAlive(state.alive!, state.shouldUseMinio ?? false)) {
+      return;
+    }
+
+    await onProgress?.('Stopping services...');
+    await this.stop();
+  }
+
+  private removeSensitiveData(state: PlatformaInitState): PlatformaInitState {
+    const stateCopy = { ...state };
+    stateCopy.generatedConfig = { ...stateCopy.generatedConfig, filesToCreate: { skipped: 'sanitized' } } as SshPlConfigGenerationResult;
+    return stateCopy;
+  }
+
+  private async doStepStartPlatforma(state: PlatformaInitState, onProgress: ((...args: any) => Promise<any>) | undefined) {
+    state.step = 'startPlatforma';
+    await onProgress?.('Starting Platforma on the server...');
+    await this.start(state.shouldUseMinio ?? false);
+    state.started = true;
+    this.initState = state;
+
+    await onProgress?.('Platforma has been started successfully.');
+  }
+
+  private async doStepSaveNewConnectionInfo(state: PlatformaInitState, onProgress: ((...args: any) => Promise<any>) | undefined, ops: SshPlConfig) {
+    state.step = 'saveNewConnectionInfo';
+    const config = state.generatedConfig!;
+    await onProgress?.('Saving connection information...');
+    state.connectionInfo = newConnectionInfo(
+      config.plUser,
+      config.plPassword,
+      state.ports!,
+      notEmpty(ops.useGlobalAccess),
+      ops.plBinary!.version,
+      state.shouldUseMinio ?? false,
+    );
+    await this.sshClient.writeFileOnTheServer(
+      plpath.connectionInfo(state.remoteHome!),
+      stringifyConnectionInfo(state.connectionInfo),
+    );
+    await onProgress?.('Connection information saved.');
+  }
+
+  private async doStepConfigureSupervisord(state: PlatformaInitState, onProgress: ((...args: any) => Promise<any>) | undefined) {
+    await onProgress?.('Writing supervisord configuration...');
+    state.step = 'configureSupervisord';
+
+    const config = state.generatedConfig!;
+
+    let supervisorConfig: string;
+    if (state.shouldUseMinio) {
+      supervisorConfig = generateSupervisordConfigWithMinio(
+        config.minioConfig.storageDir,
+        config.minioConfig.envs,
+        await this.getFreePortForPlatformaOnServer(state.remoteHome!, state.arch!),
+        config.workingDir,
+        config.plConfig.configPath,
+        state.binPaths!.minioRelPath!,
+        state.binPaths!.downloadedPl,
+      );
+    } else {
+      supervisorConfig = generateSupervisordConfig(
+        await this.getFreePortForPlatformaOnServer(state.remoteHome!, state.arch!),
+        config.workingDir,
+        config.plConfig.configPath,
+        state.binPaths!.downloadedPl,
+      );
+    }
+
+    const writeResult = await this.sshClient.writeFileOnTheServer(plpath.supervisorConf(state.remoteHome!), supervisorConfig);
+    if (!writeResult) {
+      throw new Error(`Can not write supervisord config on the server ${plpath.workDir(state.remoteHome!)}`);
+    }
+    await onProgress?.('Supervisord configuration written.');
+  }
+
+  private async doStepCreateFoldersAndSaveFiles(state: PlatformaInitState, onProgress: ((...args: any) => Promise<any>) | undefined) {
+    state.step = 'createFoldersAndSaveFiles';
+    const config = state.generatedConfig!;
+    await onProgress?.('Generating folder structure...');
+    for (const [filePath, content] of Object.entries(config.filesToCreate)) {
+      await this.sshClient.writeFileOnTheServer(filePath, content);
+      this.logger.info(`Created file ${filePath}`);
+    }
+
+    for (const dir of config.dirsToCreate) {
+      await this.sshClient.ensureRemoteDirCreated(dir);
+      this.logger.info(`Created directory ${dir}`);
+    }
+    await onProgress?.('Folder structure created.');
+  }
+
+  private async doStepGenerateNewConfig(state: PlatformaInitState, onProgress: ((...args: any) => Promise<any>) | undefined, ops: SshPlConfig) {
+    state.step = 'generateNewConfig';
+
+    await onProgress?.('Generating new config...');
+    const config = await generateSshPlConfigs({
+      logger: this.logger,
+      workingDir: plpath.workDir(state.remoteHome!),
+      portsMode: {
+        type: 'customWithMinio',
+        ports: {
+          debug: state.ports!.debug.remote,
+          grpc: state.ports!.grpc.remote,
+          http: state.ports!.http!.remote,
+          minio: state.ports!.minioPort.remote,
+          minioConsole: state.ports!.minioConsolePort.remote,
+          monitoring: state.ports!.monitoring.remote,
+
+          httpLocal: state.ports!.http!.local,
+          grpcLocal: state.ports!.grpc.local,
+          minioLocal: state.ports!.minioPort.local,
+        },
+      },
+      licenseMode: ops.license,
+      useGlobalAccess: notEmpty(ops.useGlobalAccess),
+      plConfigPostprocessing: ops.plConfigPostprocessing,
+      useMinio: state.shouldUseMinio ?? false,
+    });
+    state.generatedConfig = { ...config };
+    await onProgress?.('New config generated');
+  }
+
+  private async doStepFetchPorts(state: PlatformaInitState) {
+    state.step = 'fetchPorts';
+    state.ports = await this.fetchPorts(state.remoteHome!, state.arch!);
+
+    if (!state.ports.debug.remote
+      || !state.ports.grpc.remote
+      || !state.ports.minioPort.remote
+      || !state.ports.minioConsolePort.remote
+      || !state.ports.monitoring.remote
+      || !state.ports.http?.remote) {
+      throw new Error(`SshPl.platformaInit: remote ports are not defined`);
+    }
+  }
+
+  private async doStepDownloadBinaries(state: PlatformaInitState, onProgress: ((...args: any) => Promise<any>) | undefined, ops: SshPlConfig) {
+    state.step = 'downloadBinaries';
+    await onProgress?.('Downloading and uploading required binaries...');
+
+    const glibcVersion = await getGlibcVersion(this.logger, this.sshClient);
+    if (glibcVersion < minRequiredGlibcVersion)
+      throw new Error(`glibc version ${glibcVersion} is too old. Version ${minRequiredGlibcVersion} or higher is required for Platforma.`);
+
+    const downloadRes = await this.downloadBinariesAndUploadToTheServer(
+      ops.localWorkdir, ops.plBinary!, state.remoteHome!, state.arch!, state.shouldUseMinio ?? false,
+    );
+    await onProgress?.('All required binaries have been downloaded and uploaded.');
+
+    state.binPaths = { ...downloadRes, history: undefined };
+    state.downloadedBinaries = downloadRes.history;
+  }
+
+  private async doStepDetectArch(state: PlatformaInitState, onProgress: ((...args: any) => Promise<any>) | undefined) {
+    state.step = 'detectArch';
+    await onProgress?.('Detecting server architecture...');
+    state.arch = await this.getArch();
+    await onProgress?.('Server architecture detected.');
+  }
+
+  private async doStepDetectHome(state: PlatformaInitState, onProgress: ((...args: any) => Promise<any>) | undefined) {
+    state.step = 'detectHome';
+    await onProgress?.('Fetching user home directory...');
+    state.remoteHome = await this.getUserHomeDirectory();
+    await onProgress?.('User home directory retrieved.');
+  }
+
+  private async doStepReadExistedConfig(
+    state: PlatformaInitState,
+    ops: SshPlConfig,
+    onProgress: ((...args: any) => Promise<any>) | undefined,
+  ): Promise<boolean> {
+    state.step = 'checkAlive';
+    await onProgress?.('Checking platform status...');
+    state.alive = await this.isAlive();
+
+    if (!state.alive?.platforma) {
+      return true;
+    }
+
+    await onProgress?.('All required services are running.');
+
+    state.existedSettings = await this.readExistedConfig(state.remoteHome!);
+    if (!state.existedSettings) {
+      throw new Error(`SshPl.platformaInit: platforma is alive but existed settings are not found`);
+    }
+
+    const sameGA = state.existedSettings.useGlobalAccess == ops.useGlobalAccess;
+    const samePlVersion = state.existedSettings.plVersion == ops.plBinary!.version;
+    state.needRestart = !(sameGA && samePlVersion);
+    this.logger.info(`SshPl.platformaInit: need restart? ${state.needRestart}`);
+
+    state.shouldUseMinio = state.existedSettings.minioIsUsed;
+    if (state.shouldUseMinio) {
+      this.logger.info(`SshPl.platformaInit: minio is used`);
+    } else {
+      this.logger.info(`SshPl.platformaInit: minio is not used`);
+    }
+
+    if (!state.needRestart) {
+      await onProgress?.('Server setup completed.');
+      return false;
+    }
+
+    await onProgress?.('Stopping services...');
+    await this.stop();
+
+    return true;
   }
 
   public async downloadBinariesAndUploadToTheServer(
@@ -270,6 +377,7 @@ export class SshPl {
     plBinary: PlBinarySourceDownload,
     remoteHome: string,
     arch: Arch,
+    shouldUseMinio: boolean,
   ) {
     const state: DownloadAndUntarState[] = [];
     try {
@@ -286,16 +394,18 @@ export class SshPl {
       state.push(supervisor);
 
       const minioPath = plpath.minioBin(remoteHome, arch.arch);
-      const minio = await this.downloadAndUntar(
-        localWorkdir, remoteHome, arch,
-        'minio', plpath.minioDirName,
-      );
-      state.push(minio);
-      await this.sshClient.chmod(minioPath, 0o750);
+      if (shouldUseMinio) {
+        const minio = await this.downloadAndUntar(
+          localWorkdir, remoteHome, arch,
+          'minio', plpath.minioDirName,
+        );
+        state.push(minio);
+        await this.sshClient.chmod(minioPath, 0o750);
+      }
 
       return {
         history: state,
-        minioRelPath: minioPath,
+        minioRelPath: shouldUseMinio ? minioPath : undefined,
         downloadedPl: plpath.platformaBin(remoteHome, arch.arch),
       };
     } catch (e: unknown) {
@@ -385,12 +495,12 @@ export class SshPl {
     return false;
   }
 
-  public async checkIsAliveWithInterval(interval: number = 1000, count = 15, shouldStart = true): Promise<void> {
+  public async checkIsAliveWithInterval(shouldUseMinio: boolean, interval: number = 1000, count = 15, shouldStart = true): Promise<void> {
     const maxMs = count * interval;
 
     let total = 0;
     let alive = await this.isAlive();
-    while (shouldStart ? !alive.allAlive : alive.allAlive) {
+    while (shouldStart ? !isAllAlive(alive, shouldUseMinio) : isAllAlive(alive, shouldUseMinio)) {
       await sleep(interval);
       total += interval;
       if (total > maxMs) {
@@ -400,7 +510,7 @@ export class SshPl {
     }
   }
 
-  public async getUserCredentials(remoteHome: string): Promise<ConnectionInfo> {
+  public async readExistedConfig(remoteHome: string): Promise<ConnectionInfo> {
     const connectionInfo = await this.sshClient.readFile(plpath.connectionInfo(remoteHome));
     return parseConnectionInfo(connectionInfo);
   }
@@ -416,6 +526,10 @@ export class SshPl {
         remote: await this.getFreePortForPlatformaOnServer(remoteHome, arch),
       },
       debug: {
+        local: await getFreePort(),
+        remote: await this.getFreePortForPlatformaOnServer(remoteHome, arch),
+      },
+      http: {
         local: await getFreePort(),
         remote: await this.getFreePortForPlatformaOnServer(remoteHome, arch),
       },
@@ -506,7 +620,7 @@ const defaultSshPlConfig: Pick<
 
 type BinPaths = {
   history?: DownloadAndUntarState[];
-  minioRelPath: string;
+  minioRelPath?: string;
   downloadedPl: string;
 };
 
@@ -523,14 +637,30 @@ type DownloadAndUntarState = {
   untarDone?: boolean;
 };
 
+type PlatformaInitStep =
+  'init'
+  | 'detectArch'
+  | 'detectHome'
+  | 'checkAlive'
+  | 'stopExistedPlatforma'
+  | 'downloadBinaries'
+  | 'fetchPorts'
+  | 'generateNewConfig'
+  | 'createFoldersAndSaveFiles'
+  | 'configureSupervisord'
+  | 'saveNewConnectionInfo'
+  | 'startPlatforma';
+
 type PlatformaInitState = {
+  step: PlatformaInitStep;
   localWorkdir?: string;
   plBinaryOps?: PlBinarySourceDownload;
   arch?: Arch;
   remoteHome?: string;
   alive?: SupervisorStatus;
-  userCredentials?: ConnectionInfo;
+  existedSettings?: ConnectionInfo;
   needRestart?: boolean;
+  shouldUseMinio?: boolean;
   downloadedBinaries?: DownloadAndUntarState[];
   binPaths?: BinPaths;
   ports?: SshPlPorts;
