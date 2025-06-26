@@ -42,15 +42,12 @@ jobs:
           }
         }
       env: |
-        { "BODY_LIMIT": "1048576000" }  
+        { "BODY_LIMIT": "1048576000" }
     secrets:
       env: |
         { "PL_CI_TEST_USER": ${{ toJSON(secrets.PL_CI_TEST_USER) }},
           "PL_CI_TEST_PASSWORD": ${{ toJSON(secrets.PL_CI_TEST_PASSWORD) }},
-          "NPMJS_TOKEN": ${{ toJSON(secrets.NPMJS_TOKEN) }},
-          "GCLOUD_CI_GKE_PROJECT_ID": ${{ toJSON(secrets.GCLOUD_CI_GKE_PROJECT_ID) }},
-          "GCLOUD_CI_GKE_NETWORK": "${{ toJSON(secrets.GCLOUD_CI_GKE_NETWORK) }}",
-          "GCLOUD_CI_GKE_SUBNETWORK": "${{ toJSON(secrets.GCLOUD_CI_GKE_SUBNETWORK) }}" }
+          "NPMJS_TOKEN": ${{ toJSON(secrets.NPMJS_TOKEN) }} }
 
       TELEGRAM_NOTIFICATION_TARGET: ${{ secrets.TG_CHANNEL_MIBUILDS }}
       TELEGRAM_API_TOKEN: ${{ secrets.TG_CI_BOT_TOKEN }}
