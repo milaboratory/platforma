@@ -1,5 +1,18 @@
 # @platforma-sdk/test
 
+## 1.37.2
+
+### Patch Changes
+
+- 37800c5: Public tools packages
+- Updated dependencies [37800c5]
+  - @milaboratories/pl-middle-layer@1.37.88
+  - @milaboratories/computable@2.5.1
+  - @milaboratories/ts-helpers@1.4.1
+  - @milaboratories/pl-client@2.11.2
+  - @milaboratories/pl-tree@1.6.11
+  - @platforma-sdk/model@1.37.2
+
 ## 1.37.0
 
 ### Patch Changes

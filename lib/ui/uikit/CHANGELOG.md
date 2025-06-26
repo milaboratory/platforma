@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.92
+
+### Patch Changes
+
+- 37800c5: Public tools packages
+
 ## 2.2.91
 
 ### Patch Changes

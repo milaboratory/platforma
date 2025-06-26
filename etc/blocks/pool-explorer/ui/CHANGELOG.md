@@ -1,5 +1,15 @@
 # @milaboratories/milaboratories.pool-explorer.ui
 
+## 1.1.131
+
+### Patch Changes
+
+- 37800c5: Public tools packages
+- Updated dependencies [37800c5]
+  - @milaboratories/helpers@1.6.15
+  - @platforma-sdk/ui-vue@1.37.2
+  - @milaboratories/milaboratories.pool-explorer.model@1.0.57
+
 ## 1.1.130
 
 ### Patch Changes

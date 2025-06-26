@@ -1,5 +1,14 @@
 # @platforma-sdk/ui-vue
 
+## 1.37.2
+
+### Patch Changes
+
+- 37800c5: Public tools packages
+- Updated dependencies [37800c5]
+  - @milaboratories/uikit@2.2.92
+  - @platforma-sdk/model@1.37.2
+
 ## 1.37.1
 
 ### Patch Changes
