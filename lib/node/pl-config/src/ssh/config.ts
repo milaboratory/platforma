@@ -1,4 +1,3 @@
-import type { MiLogger } from '@milaboratories/ts-helpers';
 import upath from 'upath';
 import yaml from 'yaml';
 import type { PlConfigPortsCustomWithMinio } from '../common/ports';
@@ -11,10 +10,11 @@ import {
   getLicenseValue,
 } from '../common/license';
 import { newHtpasswdFile } from '../common/auth';
-import { newRemoteConfigStorages } from '../common/storages';
+import { newRemoteConfigStoragesFS, newRemoteConfigStoragesMinio, StoragesSettings } from '../common/storages';
 import { packageLoaderConfig } from '../common/packageloader';
 import * as crypto from 'node:crypto';
 import { newDefaultPlConfig } from '../common/config';
+import { MiLogger } from '@milaboratories/ts-helpers';
 
 export type SshPlConfigGeneratorOptions = {
   /** Logger for Middle-Layer */
@@ -30,6 +30,9 @@ export type SshPlConfigGeneratorOptions = {
 
   /** Should binary registries be overridden. */
   useGlobalAccess: boolean;
+
+  /** Should we use S3 for storage. */
+  useMinio: boolean;
 
   /**
    * A hook that allows to override any default configuration.
@@ -103,13 +106,18 @@ export async function generateSshPlConfigs(
 
   const endpoints = await getLocalhostEndpoints(opts.portsMode);
 
-  const storages = newRemoteConfigStorages(opts.workingDir, {
-    endpoint: 'http://' + endpoints.minio!,
-    presignEndpoint: 'http://' + endpoints.minioLocal!,
-    key: minioUser,
-    secret: minioPassword,
-    bucketName,
-  });
+  let storages: StoragesSettings;
+  if (opts.useMinio) {
+    storages = newRemoteConfigStoragesMinio(opts.workingDir, {
+     endpoint: 'http://' + endpoints.minio!,
+     presignEndpoint: 'http://' + endpoints.minioLocal!,
+      key: minioUser,
+      secret: minioPassword,
+      bucketName,
+    });
+  } else {
+    storages = newRemoteConfigStoragesFS(opts.workingDir, opts.portsMode.ports.httpLocal!);
+  }
 
   const license = await getLicenseValue(opts.licenseMode);
   const htpasswd = newHtpasswdFile(opts.workingDir, [{ user: plUser, password: plPassword }]);

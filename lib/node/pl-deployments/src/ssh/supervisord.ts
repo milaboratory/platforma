@@ -32,10 +32,21 @@ export async function supervisorStop(
 export type SupervisorStatus = {
   platforma?: boolean;
   minio?: boolean;
-  allAlive: boolean; // true when both pl and minio are alive.
   rawResult?: SshExecResult;
   execError?: string;
 };
+
+export function isAllAlive(status: SupervisorStatus, shouldUseMinio: boolean) {
+  if (shouldUseMinio) {
+    return status.platforma && status.minio;
+  }
+
+  return status.platforma;
+}
+
+export function isSupervisordRunning(status: SupervisorStatus) {
+  return status.execError === undefined;
+}
 
 export async function supervisorStatus(
   logger: MiLogger,
@@ -46,13 +57,13 @@ export async function supervisorStatus(
   try {
     result = await supervisorExec(sshClient, remoteHome, arch, 'ctl status');
   } catch (e: unknown) {
-    return { execError: String(e), allAlive: false };
+    return { execError: String(e) };
   }
 
   if (result.stderr) {
     logger.info(`supervisord ctl status: stderr occurred: ${result.stderr}, stdout: ${result.stdout}`);
 
-    return { rawResult: result, allAlive: false };
+    return { rawResult: result };
   }
 
   const platforma = isProgramRunning(result.stdout, 'platforma');
@@ -61,12 +72,7 @@ export async function supervisorStatus(
     rawResult: result,
     platforma,
     minio,
-    allAlive: platforma && minio,
   };
-
-  if (status.allAlive) {
-    return status;
-  }
 
   if (!status.minio) {
     logger.warn('Minio is not running on the server');
@@ -80,6 +86,39 @@ export async function supervisorStatus(
 }
 
 export function generateSupervisordConfig(
+  supervisorRemotePort: number,
+  remoteWorkDir: string,
+  platformaConfigPath: string,
+  plPath: string,
+) {
+  const password = randomBytes(16).toString('hex');
+  const freePort = supervisorRemotePort;
+
+  return `
+[supervisord]
+logfile=${remoteWorkDir}/supervisord.log
+loglevel=info
+pidfile=${remoteWorkDir}/supervisord.pid
+
+[inet_http_server]
+port=127.0.0.1:${freePort}
+username=default-user
+password=${password}
+
+[supervisorctl]
+serverurl=http://127.0.0.1:${freePort}
+username=default-user
+password=${password}
+
+[program:platforma]
+autostart=true
+command=${plPath} --config ${platformaConfigPath}
+directory=${remoteWorkDir}
+autorestart=true
+`;
+}
+
+export function generateSupervisordConfigWithMinio(
   minioStorageDir: string,
   minioEnvs: Record<string, string>,
   supervisorRemotePort: number,
