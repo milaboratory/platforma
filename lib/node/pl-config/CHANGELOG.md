@@ -1,5 +1,11 @@
 # @milaboratories/pl-config
 
+## 1.6.0
+
+### Minor Changes
+
+- 5f10370: setup public URL for local storage in builtin mode
+
 ## 1.5.0
 
 ### Minor Changes

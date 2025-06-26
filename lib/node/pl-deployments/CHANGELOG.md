@@ -1,5 +1,12 @@
 # @milaboratories/pl-local
 
+## 2.4.1
+
+### Patch Changes
+
+- Updated dependencies [5f10370]
+  - @milaboratories/pl-config@1.6.0
+
 ## 2.4.0
 
 ### Minor Changes
