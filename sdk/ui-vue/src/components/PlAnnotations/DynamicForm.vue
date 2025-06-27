@@ -3,7 +3,7 @@
 import type { SUniversalPColumnId } from '@platforma-sdk/model';
 import type { AnyForm, FilterUiType } from '@platforma-sdk/model';
 import { computed, watch } from 'vue';
-import { PlTextField, PlDropdown, PlNumberField, PlCheckbox } from '@platforma-sdk/ui-vue';
+import { PlTextField, PlDropdown, PlNumberField, PlCheckbox } from '@milaboratories/uikit';
 import { getFilterUiTypeOptions, getFilterUiMetadata } from '@platforma-sdk/model';
 import { useAnnotationsState } from './AnnotationsState';
 

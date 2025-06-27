@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import Step from './Step.vue';
-import { useSortable } from '@platforma-sdk/ui-vue';
+import { useSortable } from '@milaboratories/uikit';
 import type { AnnotationStepUi } from '@platforma-sdk/model';
 import { ref } from 'vue';
 

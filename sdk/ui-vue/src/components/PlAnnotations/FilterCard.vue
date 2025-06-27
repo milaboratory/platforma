@@ -2,7 +2,7 @@
 import type { FilterUi, AnyForm } from '@platforma-sdk/model';
 import { computed } from 'vue';
 import { getFilterUiMetadata } from '@platforma-sdk/model';
-import { PlIcon16, PlMaskIcon16 } from '@platforma-sdk/ui-vue';
+import { PlIcon16, PlMaskIcon16 } from '@milaboratories/uikit';
 import { useAnnotationsState } from './AnnotationsState';
 import DynamicForm from './DynamicForm.vue';
 

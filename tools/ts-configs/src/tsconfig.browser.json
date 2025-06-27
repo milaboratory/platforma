@@ -19,7 +19,6 @@
     "declaration": true,
     "declarationMap": true,
     "noEmit": true,
-    "jsx": "preserve",
     /* Linting */
     "strict": true,
     "noFallthroughCasesInSwitch": true,

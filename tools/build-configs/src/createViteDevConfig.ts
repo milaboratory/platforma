@@ -1,6 +1,7 @@
 import type { ConfigEnv } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import sourcemaps from 'rollup-plugin-sourcemaps2';
+import { resolve } from 'node:path';
 
 export const createViteDevConfig = (({ mode, command }: ConfigEnv) => {
   const isDev = mode === 'development';
@@ -23,6 +24,6 @@ export const createViteDevConfig = (({ mode, command }: ConfigEnv) => {
     },
     define: {
       'import.meta.vitest': 'undefined',
-    },
+    }
   }
 })

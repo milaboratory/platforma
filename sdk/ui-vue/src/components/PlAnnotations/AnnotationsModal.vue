@@ -9,7 +9,7 @@ import {
   PlIcon16,
   type SimpleOption,
   PlEditableTitle,
-} from '@platforma-sdk/ui-vue';
+} from '@milaboratories/uikit';
 import { compileAnnotationScript } from '@platforma-sdk/model';
 
 import { getDefaultAnnotationScript } from './getDefaultAnnotationScript';
@@ -27,20 +27,13 @@ const state = provideAnnotationsState({
   columns: props.columns,
 });
 
-const form = computed({
-  get: () => ui.value ?? getDefaultAnnotationScript(),
-  set: (value) => (ui.value = value),
-});
+const form = computed(() => ui.value ?? getDefaultAnnotationScript());
 
-// useSyncUiToArgs
-watchDebounced(form.value, (value, oldValue) => {
-  if (value && (value === oldValue)) { // same ref
-    try {
-      // useless operation in theory
-      args.value = compileAnnotationScript(value);
-    } catch (e) {
-      console.error(e);
-    }
+watchDebounced(form, (value) => {
+  try {
+    args.value = compileAnnotationScript(value);
+  } catch (e) {
+    console.error(e);
   }
 }, { deep: true, debounce: 2000 });
 

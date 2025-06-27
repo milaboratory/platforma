@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onUnmounted, useTemplateRef, computed, ref } from 'vue';
 import type { AnnotationStepUi, FilterUi } from '@platforma-sdk/model';
-import { PlSlideModal, PlBtnPrimary, PlBtnSecondary, PlBtnDanger, PlIcon24, PlMaskIcon16, PlIcon16, PlEditableTitle } from '@platforma-sdk/ui-vue';
+import { PlSlideModal, PlBtnPrimary, PlBtnSecondary, PlBtnDanger, PlIcon24, PlMaskIcon16, PlIcon16, PlEditableTitle } from '@milaboratories/uikit';
 import FilterCard from './FilterCard.vue';
 import AddFilterForm from './AddFilterForm.vue';
 import { useAnnotationsState } from './AnnotationsState';

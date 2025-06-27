@@ -1,7 +1,6 @@
 {
   "extends": "./tsconfig.lib.json",
   "compilerOptions": {
-    "customConditions": ["default"],
     "noEmit": false,
     "declaration": true,
     "emitDeclarationOnly": true,

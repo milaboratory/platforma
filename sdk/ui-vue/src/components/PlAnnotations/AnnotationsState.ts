@@ -10,8 +10,9 @@ type AnnotationsState = {
 };
 
 export function provideAnnotationsState(initial: Partial<AnnotationsState> = {}) {
-  provide(key, ref<AnnotationsState>(initial));
-  return useAnnotationsState();
+  const state = ref<AnnotationsState>(initial);
+  provide(key, state);
+  return state;
 }
 
 export function useAnnotationsState() {
