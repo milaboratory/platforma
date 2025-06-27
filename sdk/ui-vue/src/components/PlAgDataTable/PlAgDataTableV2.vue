@@ -7,6 +7,9 @@ import type {
   PlDataTableGridStateCore,
   PlDataTableStateV2,
   PlSelectionModel,
+  PlTableFilter,
+  PlTableFilterType,
+  PTableColumnSpec,
   PTableColumnSpecJson,
   PTableKey,
 } from '@platforma-sdk/model';
@@ -84,6 +87,16 @@ const props = defineProps<{
   /** Required component settings */
   settings: Readonly<PlDataTableSettingsV2>;
 
+  configureFilters?: (spec: PTableColumnSpec) => {
+    /**
+     * Possible filter options for the column.
+     * Set to `[]` to disable filtering by this column.
+     */
+    options?: PlTableFilterType[];
+    /** Default filter for the column */
+    default?: PlTableFilter;
+  };
+
   /**
    * The showColumnsPanel prop controls the display of a button that activates
    * the columns management panel in the table. To make the button functional
@@ -145,7 +158,7 @@ const { gridState, sheetsState } = useTableState(tableState, settings);
 
 const sheetsSettings = computed<PlDataTableSheetsSettings>(() => {
   const settingsCopy = { ...settings.value };
-  return settingsCopy.sourceId
+  return settingsCopy.sourceId !== null
     ? {
         sheets: settingsCopy.sheets ?? [],
         cachedState: [...sheetsState.value],

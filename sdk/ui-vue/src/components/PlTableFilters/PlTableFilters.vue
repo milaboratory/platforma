@@ -22,6 +22,7 @@ import {
   getColumnName,
   getFilterDefault,
   getFilterLabel,
+  isAlphabetic,
   makeColumnId,
   makePredicate,
 } from './filters_logic';
@@ -155,7 +156,7 @@ watch(
             return {
               type: 'bySingleColumnV2',
               column: columnId,
-              predicate: makePredicate(column, entry.filter),
+              predicate: makePredicate(isAlphabetic(column), entry.filter),
             };
           }),
         defaultsApplied: reactiveModel.defaultsApplied,

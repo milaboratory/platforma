@@ -83,7 +83,7 @@ export function usePlDataTableSettingsV2<T = string>({
         const sheetsValue = toValue(sheets);
         return sourceIdValue && sheetsValue
           ? {
-              sourceId: canonicalizeJson(sourceIdValue),
+              sourceId: canonicalizeJson<T>(sourceIdValue),
               sheets: sheetsValue,
               model: modelValue,
             }
@@ -91,7 +91,7 @@ export function usePlDataTableSettingsV2<T = string>({
       } else {
         return sourceIdValue
           ? {
-              sourceId: canonicalizeJson(sourceIdValue),
+              sourceId: canonicalizeJson<T>(sourceIdValue),
               sheets: [],
               model: modelValue,
             }
@@ -118,6 +118,14 @@ export function usePlDataTableSettingsV2<T = string>({
       }
     }
   });
+};
+
+export type PlDataTableColumnsInfo = {
+  sourceId: null;
+  columns: [];
+} | {
+  sourceId: string;
+  columns: PTableColumnSpec[];
 };
 
 /** PlTableFilters restriction entry */
@@ -224,12 +232,4 @@ export type PlDataTableSheetNormalized = {
   options: ListOptionBase<string | number>[];
   /** default (selected) value */
   defaultValue: string | number;
-};
-
-export type PlDataTableColumnsInfo = {
-  sourceId: null;
-  columns: [];
-} | {
-  sourceId: string;
-  columns: PTableColumnSpec[];
 };
