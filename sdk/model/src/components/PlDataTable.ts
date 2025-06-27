@@ -133,11 +133,11 @@ export type PTableParamsV2 = {
 };
 
 export type PlDataTableStateV2Normalized = {
-  // version for upgrades
+  /** Version for upgrades */
   version: 2;
-  // internal ag-grid states, LRU cache for 5 sourceId-s
+  /** Internal states, LRU cache for 5 sourceId-s */
   stateCache: PlDataTableStateV2CacheEntry[];
-  // mapping of gridState for current sourceId onto the p-table data structures
+  /** PTable params derived from the cache state for the current sourceId */
   pTableParams: PTableParamsV2;
 };
 
@@ -163,6 +163,62 @@ export function upgradePlDataTableStateV2(state: PlDataTableStateV2): PlDataTabl
   }
   return state;
 }
+
+/** PlTableFilters persisted state */
+export type PlTableFiltersStateV2 =
+  | {
+    state?: {
+      columnId: string;
+      filter: PlTableFilter;
+      disabled: boolean;
+    };
+    defaultsApplied?: boolean;
+    filters?: PTableRecordFilter[];
+  }
+  | PlTableFiltersStateV2Normalized;
+
+export type PlTableFiltersStateV2Normalized = {
+  /** Version for upgrades */
+  version: 2;
+  /** Internal states, LRU cache for 5 sourceId-s */
+  stateCache: PlTableFiltersStateV2CacheEntry[];
+  /** PTable filters derived from the stateCache for the current sourceId */
+  pTableFilters: PTableRecordFilter[];
+};
+
+/** Create default PlTableFiltersStateV2 */
+export function createPlTableFiltersStateV2(): PlTableFiltersStateV2Normalized {
+  return {
+    version: 2,
+    stateCache: [],
+    pTableFilters: [],
+  };
+}
+
+/** Upgrade PlTableFiltersStateV2 to the latest version */
+export function upgradePlTableFiltersStateV2(state: PlTableFiltersStateV2): PlTableFiltersStateV2Normalized {
+  // v1 -> v2
+  if (!('version' in state)) {
+    // Non upgradeable as sourceId was not present
+    return createPlTableFiltersStateV2();
+  }
+  return state;
+}
+
+export type PlTableFiltersStateV2CacheEntry = {
+  sourceId: string;
+  columnsState: PlTableFiltersColumnState[];
+};
+
+export type PlTableFiltersColumnState = {
+  id: PTableColumnId;
+  alphabetic: boolean;
+  options: PlTableFilterType[];
+  filter: null | {
+    value: PlTableFilter;
+    disabled: boolean;
+  };
+};
 
 /** PlTableFilters filter entry */
 export type PlTableFilterIsNotNA = {
