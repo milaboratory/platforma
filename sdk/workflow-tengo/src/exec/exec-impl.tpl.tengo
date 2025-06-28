@@ -1,9 +1,8 @@
-//tengo:hash_override 6FB763E3-AB0C-4676-8F74-C7E23069DCCF
-
 /**
- * Creates and fill a workdir, runs a command on it
- * and saves a chosen resulted files from this dir.
+ * Takes most of the responsibilities of exec.tpl.tengo
+ * after the underlying software is already installed.
  */
+
 
 self := import(":tpl.light")
 
@@ -45,7 +44,7 @@ _runBinaryCommand := func(inputs) {
 
 	quota := inputs.quota
 
-	if !is_undefined(quota) {
+	if !is_undefined(quota) && (feats.workdirLimits || limits.useBatch(quota.queue)) {
 		quotaBuilder := limits.quotaBuilder().
 			cpu(quota.cpu).
 			ram(quota.ram)

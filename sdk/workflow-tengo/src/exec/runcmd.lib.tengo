@@ -38,7 +38,7 @@ _FIELD_WORKDIR_OUT := "workdirOut"
  *
  * @param argument: string - the argument to create.
  */
-_createSimpleArg := func(argument) {
+simpleArg := func(argument) {
 	return {
 		type: constants.ARG_TYPE_STRING,
 		value: argument
@@ -50,7 +50,7 @@ _createSimpleArg := func(argument) {
  * Creates 'variableRef' argument.
  * @param argTpl: string - argument value in any form with variables inside (e.g. "file://{pkg}/some-file" or "o-{java}-o")
  */
-_createVariableArg := func(argTpl) {
+variableArg := func(argTpl) {
 	return {
 		type: constants.ARG_TYPE_VAR,
 		value: argTpl
@@ -64,7 +64,7 @@ _createVariableArg := func(argTpl) {
  *   - `file://{pkg}/some-file`
  *   - `o-{java}-o`
  */
-_createExpressionArg := func(argTpl) {
+expressionArg := func(argTpl) {
 	return {
 		type: constants.ARG_TYPE_EXPRESSION,
 		value: argTpl
@@ -111,10 +111,14 @@ builder := func(workdir) {
 		/**
 		 * Sets the command, e.g. /usr/bin/env or sh.
 		 *
-		 * @param commandName: string - the name of the command.
+		 * @param commandName: string | { type: ArgType, value: string } - the name of the command.
 		 */
 		cmd: func(commandName) {
-			cmd = _createSimpleArg(commandName)
+			if ll.isMap(commandName) {
+				cmdTyped(commandName.type, commandName.value)
+			} else {
+				cmd = simpleArg(commandName)
+			}
 			return self
 		},
 
@@ -127,7 +131,7 @@ builder := func(workdir) {
 		 *                             and .substitutionRules(),
 		 */
 		cmdVar: func(commandTpl) {
-			cmd = _createVariableArg(commandTpl)
+			cmd = variableArg(commandTpl)
 			hasPatternArgs = true
 			return self
 		},
@@ -141,7 +145,7 @@ builder := func(workdir) {
 		 *                             and .substitutionRules(),
 		 */
 		cmdExpression: func(commandTpl) {
-			cmd = _createExpressionArg(commandTpl)
+			cmd = expressionArg(commandTpl)
 			hasExpressionArgs = true
 			return self
 		},
@@ -164,10 +168,14 @@ builder := func(workdir) {
 		/**
 		 * Adds an argument to the command.
 		 *
-		 * @param arg: string - the argument to add.
+		 * @param arg: string | { type: ArgType, value: string } - the argument to add.
 		 */
 		arg: func(arg) {
-			args = append(args, _createSimpleArg(arg))
+			if ll.isMap(arg) {
+				argTyped(arg.type, arg.value)
+			} else {
+				args = append(args, simpleArg(arg))
+			}
 			return self
 		},
 
@@ -180,7 +188,7 @@ builder := func(workdir) {
 		 *                         and .substitutionRules(),
 		 */
 		argVar: func(argTpl) {
-			args = append(args, _createVariableArg(argTpl))
+			args = append(args, variableArg(argTpl))
 			hasPatternArgs = true
 			return self
 		},
@@ -194,7 +202,7 @@ builder := func(workdir) {
 		 *                         and .substitutionRules(),
 		 */
 		argExpression: func(argTpl) {
-			args = append(args, _createExpressionArg(argTpl))
+			args = append(args, expressionArg(argTpl))
 			hasExpressionArgs = true
 			return self
 		},
@@ -250,7 +258,7 @@ builder := func(workdir) {
 		 * @param valueTpl: string - the value of the environment variable.
 		 */
 		envVar: func(name, valueTpl) {
-			envs[name] = _createVariableArg(valueTpl)
+			envs[name] = variableArg(valueTpl)
 			hasPatternArgs = true
 			return self
 		},
@@ -263,7 +271,7 @@ builder := func(workdir) {
 		 * @param valueTpl: string - the value of the environment variable.
 		 */
 		envExpression: func(name, valueTpl) {
-			envs[name] = _createExpressionArg(valueTpl)
+			envs[name] = expressionArg(valueTpl)
 			hasExpressionArgs = true
 			return self
 		},
@@ -294,12 +302,12 @@ builder := func(workdir) {
 				"runcmd.builder().addToPath: unknown type %s, expect: %v", type, constants.ARG_TYPES)
 
 			if type == constants.ARG_TYPE_STRING {
-				customPaths = append(customPaths, _createSimpleArg(value))
+				customPaths = append(customPaths, simpleArg(value))
 			} else if type == constants.ARG_TYPE_EXPRESSION {
-				customPaths = append(customPaths, _createExpressionArg(value))
+				customPaths = append(customPaths, expressionArg(value))
 				hasExpressionArgs = true
 			} else if type == constants.ARG_TYPE_VAR {
-				customPaths = append(customPaths, _createVariableArg(value))
+				customPaths = append(customPaths, variableArg(value))
 				hasPatternArgs = true
 			} else {
 				ll.panic("runcmd.builder().addToPath: unknown type %s, expect: %v", type, constants.ARG_TYPES)
@@ -406,17 +414,8 @@ builder := func(workdir) {
 				"runcmd.builder().build: expression arguments must be enabled only if platforma backend supports expressions, found: %v",
 				hasExpressionArgs)
 
-			if feats.computeLimits || useBatch {
-				if !smart.isReference(_allocation) {
-					// Use default compute request limits when no was configured out of the box,
-					// or runcmd won't work at all.
-					_quotaRef := limits.quotaBuilder().queue(queue).build()
-					_resReqRef := limits.computeRequestBuilder().queue(queue).quota(_quotaRef).build()
-					_allocation = _resReqRef.allocation
-				}
-
-				runRes.getField(_FIELD_ALLOCATION).set(_allocation)
-			}
+			ll.assert(!is_undefined(_allocation), "Allocation must be set for runcmd.")
+			runRes.getField(_FIELD_ALLOCATION).set(_allocation)
 
 			refsRes := smart.createMapResourceWithType(_RTYPE_RUN_COMMAND_REFS, refs)
 			runRes.getField(_FIELD_REFS).set(refsRes)
@@ -453,5 +452,8 @@ builder := func(workdir) {
 }
 
 export ll.toStrict({
-	builder: builder
+	builder: builder,
+	simpleArg: simpleArg,
+	variableArg: variableArg,
+	expressionArg: expressionArg
 })

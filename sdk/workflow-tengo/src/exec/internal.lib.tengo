@@ -34,54 +34,16 @@ _ARG_VAR_VENV_BIN_DIR        := "venv_bin_dir" // name of bin dir in python venv
 _ARG_PYTHON_LOCAL_SCRIPT_DIR := "python_local_script_dir" // abs path to directory with local python scripts.
 _ARG_PATH_DELIMETER          := "path_delimeter"
 
-_ARG_VAR_R              := "R" // abs path to 'R' run environment runtime
-_ARG_VAR_R_VENV         := "rVenv" // abs path to 'R' portable virtual environment
-_ARG_VAR_MNZ            := "monetization" // monetization env value
-
-//
-// Headers for functions that are declared in this file below.
-//
-pythonBinDir := undefined
+_ARG_VAR_R                   := "R" // abs path to 'R' run environment runtime
+_ARG_VAR_R_VENV              := "rVenv" // abs path to 'R' portable virtual environment
+_ARG_VAR_MNZ                 := "monetization" // monetization env value
 
 /** Converts the args above to the expressions. */
 _expr := func(varName) {
 	return "{" + varName + "}"
 }
 
-_newTypedArg := func(type, value) {
-	return ll.toStrict({
-		type: type,
-		value: value
-	})
-}
-
-/**
- * Create new argument with a type. The type can be either string, expression or variable.
- * Decides whether we need a simple argument or an expression one.
- * Until 15 Mar 2025, we keep deprecated variable arguments.
- *
- * @param isString: boolean - whether it is a plain string or an expression argument requiring interpolation.
- */
-_newArg := func(isString, value) {
-	if isString {
-		return _newTypedArg(constants.ARG_TYPE_STRING, value)
-	}
-	if feats.commandExpressions {
-		return _newTypedArg(constants.ARG_TYPE_EXPRESSION, value)
-	}
-	return _newTypedArg(constants.ARG_TYPE_VAR, value)
-}
-
 _newRefVar := func(varName, refName, reference) {
-	// deprecated, remove on 15 Mar 2025
-	if !feats.commandExpressions {
-		return ll.toStrict({
-			varName: "{" + varName + "}",
-			refName: refName,
-			reference: reference
-		})
-	}
-
 	return ll.toStrict({
 		varName: varName,
 		refName: refName,
@@ -101,7 +63,7 @@ _directCallOptions := func(runOptions) {
 	return ll.toStrict({
 		variables: [],
 		customPaths: [],
-		cmd: _newArg(true, runOptions.cmd),
+		cmd: runcmd.simpleArg(runOptions.cmd),
 		args: [],
 		envs: {}
 	})
@@ -115,7 +77,7 @@ _loadJavaRunEnvironment := func(operationMode, descriptor) {
 		runEnvType: "java",
 
 		variables: [ javaRefVar ],
-		customPaths: [ _newArg(false, path.join(_expr(_ARG_VAR_JAVA), descriptor.runEnv.binDir)) ],
+		customPaths: [ runcmd.expressionArg(path.join(_expr(_ARG_VAR_JAVA), descriptor.runEnv.binDir)) ],
 		envs: {}
 	})
 }
@@ -134,7 +96,7 @@ _loadPythonRunEnvironment := func(operationMode, descriptor, softName, softPkg) 
 		cacheDays(7).
 		build()
 
-	pythonRefVar := _newRefVar(_ARG_VAR_PYTHON_RUN_ENV, softName+"/python", venv.python())
+	pythonRefVar := _newRefVar(_ARG_VAR_PYTHON_RUN_ENV, softName + "/python", venv.python())
 	pythonVenvRefVar := _newRefVar(_ARG_VAR_PYTHON_VENV, softName + "/venv", venv.venv())
 	venvBinDirRefVar := _newRefVar(_ARG_VAR_VENV_BIN_DIR, softName + "/binDir", venv.binDir() )
 	pathDelimeterRefVar := _newRefVar(_ARG_PATH_DELIMETER, softName + "/pathDelimeter", venv.pathDelimeter())
@@ -143,10 +105,10 @@ _loadPythonRunEnvironment := func(operationMode, descriptor, softName, softPkg) 
 		runEnvType: "python",
 
 		variables: [ pythonRefVar, pythonVenvRefVar, venvBinDirRefVar, pathDelimeterRefVar ],
-		customPaths: [ _newArg(false, path.join(_expr(_ARG_VAR_PYTHON_VENV), "venv", _expr(_ARG_VAR_VENV_BIN_DIR))) ],
+		customPaths: [ runcmd.expressionArg(path.join(_expr(_ARG_VAR_PYTHON_VENV), "venv", _expr(_ARG_VAR_VENV_BIN_DIR))) ],
 		envs: {
-			"VIRTUAL_ENV": _newArg(false, path.join(_expr(_ARG_VAR_PYTHON_VENV), "venv")),
-			"PYTHONPATH": _newArg(false, path.join(_expr(_ARG_VAR_PYTHON_RUN_ENV), descriptor.runEnv.binDir, "python_stdlib") + _expr(_ARG_PATH_DELIMETER) + _expr(_ARG_VAR_PKG))
+			"VIRTUAL_ENV": runcmd.expressionArg(path.join(_expr(_ARG_VAR_PYTHON_VENV), "venv")),
+			"PYTHONPATH": runcmd.expressionArg(path.join(_expr(_ARG_VAR_PYTHON_RUN_ENV), descriptor.runEnv.binDir, "python_stdlib") + _expr(_ARG_PATH_DELIMETER) + _expr(_ARG_VAR_PKG))
 		}
 	})
 }
@@ -180,26 +142,26 @@ _loadRRunEnvironment := func(operationMode, descriptor, softName, softPkg) {
 	renvRootArg := path.join(_expr(_ARG_VAR_R), "renv-root")
 
 	envs := {
-		"RHOME": _newArg(false, _expr(_ARG_VAR_R)), // for Rscript (it uses RHOME instead of R_HOME)
-		"R_HOME_DIR": _newArg(false, _expr(_ARG_VAR_R)), // for R startup script. It configures all the rest required for R to start.
-		"RENV_PATHS_ROOT": _newArg(false, renvRootArg),
-		"RENV_PATHS_BINARY": _newArg(false, path.join(renvRootArg, "binaries")),
-		"RENV_PATHS_SOURCE": _newArg(false, path.join(renvRootArg, "sources")),
-		"RENV_PATHS_CACHE": _newArg(false, path.join(renvRootArg, "cache")),
-		"RENV_PATHS_RENV": _newArg(false, path.join(_expr(_ARG_VAR_R_VENV), "renv")),
-		"RENV_PATHS_LOCKFILE": _newArg(false, path.join(renvRootArg, "renv.lock"))
+		"RHOME": runcmd.expressionArg(_expr(_ARG_VAR_R)), // for Rscript (it uses RHOME instead of R_HOME)
+		"R_HOME_DIR": runcmd.expressionArg(_expr(_ARG_VAR_R)), // for R startup script. It configures all the rest required for R to start.
+		"RENV_PATHS_ROOT": runcmd.expressionArg(renvRootArg),
+		"RENV_PATHS_BINARY": runcmd.expressionArg(path.join(renvRootArg, "binaries")),
+		"RENV_PATHS_SOURCE": runcmd.expressionArg(path.join(renvRootArg, "sources")),
+		"RENV_PATHS_CACHE": runcmd.expressionArg(path.join(renvRootArg, "cache")),
+		"RENV_PATHS_RENV": runcmd.expressionArg(path.join(_expr(_ARG_VAR_R_VENV), "renv")),
+		"RENV_PATHS_LOCKFILE": runcmd.expressionArg(path.join(renvRootArg, "renv.lock"))
 	}
 
 	// Force block developer to install R packages when building R run environment.
 	// Most of our commercial clients have very restricted network without access to pypi, CRAN and other external resources.
 	// The only firewall rule we're guaranteed to have is to our own registries.
-	envs["RENV_CONFIG_REPOS_OVERRIDE"] = _newArg(false, path.join(_expr(_ARG_VAR_R), "packages"))
+	envs["RENV_CONFIG_REPOS_OVERRIDE"] = runcmd.expressionArg(path.join(_expr(_ARG_VAR_R), "packages"))
 
 	return ll.toStrict({
 		runEnvType: "R",
 
 		variables: [ rRefVar, rEnvRefVar ],
-		customPaths: [ _newArg(false, rBinDir) ],
+		customPaths: [ runcmd.expressionArg(rBinDir) ],
 		envs: envs
 	})
 }
@@ -251,10 +213,10 @@ _binPackageCallOptions := func(operationMode, softwareName, variables, descripto
 		len(descriptor.cmd) != 0,
 		"cannot render final command for software: empty 'cmd' and 'command' in software descriptor")
 
-	cmd := _newArg(false, descriptor.cmd[0])
+	cmd := runcmd.expressionArg(descriptor.cmd[0])
 
 	for arg in splice(descriptor.cmd, 1) {
-		args = append(args, _newArg(false, arg))
+		args = append(args, runcmd.expressionArg(arg))
 	}
 
 	return ll.toStrict({
@@ -352,20 +314,20 @@ binaryRunOptions := func(runOptions, mnzEnvs) {
 
 	args := shouldUseNewTyped ? runOptions.argsTyped : runOptions.args
 	for _, arg in args {
-		typedArg := shouldUseNewTyped ? _newTypedArg(arg.type, arg.value) :	_newArg(true, arg)
+		typedArg := shouldUseNewTyped ? arg :	runcmd.simpleArg(arg)
 		runCmdOpts.args = append(runCmdOpts.args, typedArg)
 	}
 
 	envs := shouldUseNewTyped ? runOptions.envsTyped : runOptions.envs
 	for name, v in envs {
-		typedEnv := shouldUseNewTyped ? _newTypedArg(v.type, v.value) : _newArg(true, v)
+		typedEnv := shouldUseNewTyped ? v : runcmd.simpleArg(v)
 		runCmdOpts.envs[name] = typedEnv
 	}
 
 	for name, val in mnzEnvs { // can be empty
 		// if it's not empty, then we create an env that has
 		// a result of monetization client.
-		runCmdOpts.envs[name] = _newArg(false, _expr(_ARG_VAR_MNZ))
+		runCmdOpts.envs[name] = runcmd.expressionArg(_expr(_ARG_VAR_MNZ))
 
 		runCmdOpts.variables = append(runCmdOpts.variables,
 			_newRefVar(_ARG_VAR_MNZ, "monetization", val))
