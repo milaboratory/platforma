@@ -17,6 +17,7 @@ import {
   type PTableRowKey,
   type PTableValue,
   type RemoteBlobHandleAndSize,
+  parseJson,
 } from '@platforma-sdk/model';
 import type { PTableHidden } from './sources/common';
 import type { ComputedRef, MaybeRefOrGetter } from 'vue';
@@ -45,6 +46,7 @@ export type PlDataTableSettings =
 
 /** Data table V2 settings */
 export type PlDataTableSettingsV2 =
+(
   | { sourceId: null }
   | {
     /** Unique source id for state caching */
@@ -53,9 +55,42 @@ export type PlDataTableSettingsV2 =
     sheets: PlDataTableSheet[];
     /** Result of `createPlDataTableV2` */
     model: PlDataTableModel | undefined;
+  }
+) & {
+  /** Callback configuring filters for the table */
+  filtersConfig?: (info: {
+    sourceId: string;
+    column: PTableColumnSpec;
+  }) => {
+    options?: PlTableFilterType[];
+    default?: PlTableFilter;
   };
+};
 
-export function usePlDataTableSettingsV2<T = string>({
+export function usePlDataTableSettingsV2({
+  /** Block output created by `createPlDataTableV2` */
+  model,
+  /**
+   * Sheets for partitioned data sources.
+   * Do not set if data source is never partitioned.
+   */
+  sheets,
+  /**
+   * Callback configuring filters for the table.
+   * If not provided, filtering will be disabled.
+   */
+  filtersConfig,
+}: {
+  model: MaybeRefOrGetter<PlDataTableModel | undefined>;
+  sheets?: MaybeRefOrGetter<PlDataTableSheet[] | undefined>;
+  filtersConfig?: (info: {
+    column: PTableColumnSpec;
+  }) => {
+    options?: PlTableFilterType[];
+    default?: PlTableFilter;
+  };
+}): ComputedRef<PlDataTableSettingsV2>;
+export function usePlDataTableSettingsV2<T>({
   /**
    * Block property (such as inputAnchor) used to produce the data source.
    * Mandatory for cases when the table can change without block run.
@@ -70,11 +105,54 @@ export function usePlDataTableSettingsV2<T = string>({
    * Do not set if data source is never partitioned.
    */
   sheets,
+  /**
+   * Callback configuring filters for the table.
+   * If not provided, filtering will be disabled.
+   */
+  filtersConfig,
 }: {
   sourceId?: MaybeRefOrGetter<JsonCompatible<T> | undefined>;
   model: MaybeRefOrGetter<PlDataTableModel | undefined>;
   sheets?: MaybeRefOrGetter<PlDataTableSheet[] | undefined>;
+  filtersConfig?: (info: {
+    sourceId: T;
+    column: PTableColumnSpec;
+  }) => {
+    options?: PlTableFilterType[];
+    default?: PlTableFilter;
+  };
+}): ComputedRef<PlDataTableSettingsV2>;
+export function usePlDataTableSettingsV2<T = string>({
+  sourceId,
+  model,
+  sheets,
+  filtersConfig,
+}: {
+  sourceId?: MaybeRefOrGetter<JsonCompatible<T> | undefined>;
+  model: MaybeRefOrGetter<PlDataTableModel | undefined>;
+  sheets?: MaybeRefOrGetter<PlDataTableSheet[] | undefined>;
+  filtersConfig?: (info: {
+    sourceId: T;
+    column: PTableColumnSpec;
+  }) => {
+    options?: PlTableFilterType[];
+    default?: PlTableFilter;
+  };
 }): ComputedRef<PlDataTableSettingsV2> {
+  const filtersConfigValue = filtersConfig
+    ? ({
+        sourceId,
+        column,
+      }: {
+        sourceId: string;
+        column: PTableColumnSpec;
+      }) => {
+        return filtersConfig({
+          sourceId: parseJson<T>(sourceId as CanonicalizedJson<T>),
+          column,
+        });
+      }
+    : undefined;
   return computed(() => {
     const modelValue = toValue(model);
     if (sourceId) {
@@ -86,16 +164,24 @@ export function usePlDataTableSettingsV2<T = string>({
               sourceId: canonicalizeJson<T>(sourceIdValue),
               sheets: sheetsValue,
               model: modelValue,
+              filtersConfig: filtersConfigValue,
             }
-          : { sourceId: null };
+          : {
+              sourceId: null,
+              filtersConfig: filtersConfigValue,
+            };
       } else {
         return sourceIdValue
           ? {
               sourceId: canonicalizeJson<T>(sourceIdValue),
               sheets: [],
               model: modelValue,
+              filtersConfig: filtersConfigValue,
             }
-          : { sourceId: null };
+          : {
+              sourceId: null,
+              filtersConfig: filtersConfigValue,
+            };
       }
     } else {
       if (sheets) {
@@ -105,16 +191,24 @@ export function usePlDataTableSettingsV2<T = string>({
               sourceId: canonicalizeJson<string>('static'),
               sheets: sheetsValue,
               model: modelValue,
+              filtersConfig: filtersConfigValue,
             }
-          : { sourceId: null };
+          : {
+              sourceId: null,
+              filtersConfig: filtersConfigValue,
+            };
       } else {
         return modelValue
           ? {
               sourceId: canonicalizeJson<string>('static'),
               sheets: [],
               model: modelValue,
+              filtersConfig: filtersConfigValue,
             }
-          : { sourceId: null };
+          : {
+              sourceId: null,
+              filtersConfig: filtersConfigValue,
+            };
       }
     }
   });
