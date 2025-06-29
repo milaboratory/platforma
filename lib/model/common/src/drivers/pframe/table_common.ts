@@ -26,3 +26,18 @@ export type PTableColumnIdColumn = {
 
 /** Unified PTable column identifier */
 export type PTableColumnId = PTableColumnIdAxis | PTableColumnIdColumn;
+
+export function getPTableColumnId(spec: PTableColumnSpec): PTableColumnId {
+  switch (spec.type) {
+    case 'axis':
+      return {
+        type: 'axis',
+        id: spec.id,
+      };
+    case 'column':
+      return {
+        type: 'column',
+        id: spec.id,
+      };
+  }
+}

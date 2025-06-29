@@ -7,6 +7,7 @@ import type {
   PlDataTableGridStateCore,
   PlDataTableStateV2,
   PlSelectionModel,
+  PTableColumnSpec,
   PTableColumnSpecJson,
   PTableKey,
 } from '@platforma-sdk/model';
@@ -67,7 +68,6 @@ import type {
   PlAgDataTableV2Row,
   PlAgOverlayLoadingParams,
   PlAgOverlayNoRowsParams,
-  PlDataTableColumnsInfo,
   PlDataTableSettingsV2,
   PlDataTableSheetsSettings,
   PTableKeyJson,
@@ -91,11 +91,6 @@ const props = defineProps<{
    * This component serves as the target for teleporting the button.
    */
   showColumnsPanel?: boolean;
-
-  /**
-   * Css width of the Column Manager (Panel) modal (default value is `368px`)
-   */
-  columnsPanelWidth?: string;
 
   /**
    * The showExportButton prop controls the display of a button that allows
@@ -137,7 +132,6 @@ const props = defineProps<{
 const { settings } = toRefs(props);
 const emit = defineEmits<{
   rowDoubleClicked: [key?: PTableKey];
-  columnsChanged: [info: PlDataTableColumnsInfo];
   cellButtonClicked: [key?: PTableKey];
 }>();
 
@@ -145,7 +139,7 @@ const { gridState, sheetsState } = useTableState(tableState, settings);
 
 const sheetsSettings = computed<PlDataTableSheetsSettings>(() => {
   const settingsCopy = { ...settings.value };
-  return settingsCopy.sourceId
+  return settingsCopy.sourceId !== null
     ? {
         sheets: settingsCopy.sheets ?? [],
         cachedState: [...sheetsState.value],
@@ -155,6 +149,9 @@ const sheetsSettings = computed<PlDataTableSheetsSettings>(() => {
         cachedState: [],
       };
 });
+
+const filterableColumns = ref<PTableColumnSpec[]>([]);
+const _filtersConfig = computed(() => settings.value.filtersConfig);
 
 const gridApi = shallowRef<GridApi<PlAgDataTableV2Row> | null>(null);
 const firstDataRenderedTracker = makeOnceTracker<GridApi<PlAgDataTableV2Row>>();
@@ -353,39 +350,34 @@ watch(
     ) {
       const sourceId = settings.value.sourceId;
       if (sourceId === null) {
+        filterableColumns.value = [];
         if (selection.value) {
           selection.value = {
             axesSpec: [],
             selectedKeys: [],
           };
         }
-        return emit('columnsChanged', {
-          sourceId: null,
-          columns: [],
-        });
+      } else {
+        const isColDef = (def: ColDef | ColGroupDef): def is ColDef =>
+          !('children' in def);
+        const colDefs = options.columnDefs?.filter(isColDef) ?? [];
+        const columns = colDefs
+          .map((def) => def.colId)
+          .filter((colId) => colId !== undefined)
+          .filter((colId) => colId !== PlAgDataTableRowNumberColId)
+          .map((colId) => parseJson(colId as PTableColumnSpecJson))
+          ?? [];
+        filterableColumns.value = columns;
+        if (selection.value) {
+          const axesSpec = columns
+            .filter((column) => column.type === 'axis')
+            .map((axis) => axis.spec);
+          selection.value = {
+            ...selection.value,
+            axesSpec,
+          };
+        }
       }
-      const isColDef = (def: ColDef | ColGroupDef): def is ColDef =>
-        !('children' in def);
-      const colDefs = options.columnDefs?.filter(isColDef) ?? [];
-      const columns = colDefs
-        .map((def) => def.colId)
-        .filter((colId) => colId !== undefined)
-        .filter((colId) => colId !== PlAgDataTableRowNumberColId)
-        .map((colId) => parseJson(colId as PTableColumnSpecJson))
-        ?? [];
-      const axesSpec = columns
-        .filter((column) => column.type === 'axis')
-        .map((axis) => axis.spec);
-      if (selection.value) {
-        selection.value = {
-          ...selection.value,
-          axesSpec,
-        };
-      }
-      emit('columnsChanged', {
-        sourceId,
-        columns,
-      });
     }
   },
   { immediate: true },
@@ -491,7 +483,6 @@ watch(
     <PlAgGridColumnManager
       v-if="gridApi && showColumnsPanel"
       :api="gridApi"
-      :width="columnsPanelWidth"
     />
     <PlAgCsvExporter
       v-if="gridApi && showExportButton"

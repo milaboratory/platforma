@@ -283,11 +283,13 @@ export function makeDiscreteOptions(column: PTableColumnSpec): ListOption<number
   }));
 }
 
-export function makePredicate(column: PTableColumnSpec, filter: PlTableFilter): SingleValuePredicateV2 {
-  const alphabetic
-    = semver.gt(getRawPlatformaInstance().sdkInfo.sdkVersion, '1.14.0')
+export function isAlphabetic(column: PTableColumnSpec): boolean {
+  return semver.gt(getRawPlatformaInstance().sdkInfo.sdkVersion, '1.14.0')
     && (column.type === 'column' ? column.spec.valueType : column.spec.type) === 'String'
     && (column.spec.domain?.['pl7.app/alphabet'] ?? column.spec.annotations?.['pl7.app/alphabet']) !== undefined;
+}
+
+export function makePredicate(alphabetic: boolean, filter: PlTableFilter): SingleValuePredicateV2 {
   const type = filter.type;
   switch (type) {
     case 'isNotNA':
