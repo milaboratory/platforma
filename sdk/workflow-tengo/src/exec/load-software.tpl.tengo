@@ -1,0 +1,10 @@
+self := import(":tpl.light")
+loadSoftware := import(":exec.load-software")
+
+self.body(func(inputs) {
+	software := inputs.software
+
+    return {
+        plan: loadSoftware.swToRunCmdOptions(software.name, software.version, software.descriptor)
+    }
+})
