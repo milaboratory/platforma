@@ -34,7 +34,7 @@ self.prepare(func(inputs){
 	builder.
 		ref("python-run-environment", pythonPackage).
 		substitutionRule(pythonRule, "python-run-environment").
-		addToPath(t, path.join("{python}", pythonDescriptor.binDir))
+		addPathTyped(t, path.join("{python}", pythonDescriptor.binDir))
 
     getVenvBinPath := "import platform; print(platform.system().lower())"
 	builder.

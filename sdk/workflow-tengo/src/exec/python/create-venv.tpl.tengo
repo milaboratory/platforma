@@ -26,7 +26,7 @@ _createVenv := func(pythonPackage, pythonDescriptor) {
 	venvBuilder.
 		ref("python-run-environment", pythonPackage).
 		substitutionRule(pythonRule, "python-run-environment").
-		addToPath(t, path.join("{python}", pythonDescriptor.binDir))
+		addPathTyped(t, path.join("{python}", pythonDescriptor.binDir))
 
 	venvBuilder.
 		cmd("python").

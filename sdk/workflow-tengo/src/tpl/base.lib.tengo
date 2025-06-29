@@ -10,7 +10,6 @@ stateAwait := import(":tpl.state-await")
 validation := import(":validation")
 
 // This import is required to guard the code generated with this package from being executed on backends having insufficient capabilities.
-import(":feature-guard")
 
 /**
  * Unmarshal resource according by:
