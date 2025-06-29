@@ -4,6 +4,7 @@ import type {
   DataByColumns,
   Settings,
 } from '@milaboratories/miplots4';
+import { PlAlert } from '@milaboratories/uikit';
 import { useResizeObserver } from '@vueuse/core';
 import {
   computed,
@@ -15,7 +16,6 @@ import {
 } from 'vue';
 import type { ResidueCounts } from './types';
 import { useMiPlots } from './useMiPlots';
-import { PlAlert } from '@milaboratories/uikit';
 
 const { residueCounts } = defineProps<{
   residueCounts: ResidueCounts;
