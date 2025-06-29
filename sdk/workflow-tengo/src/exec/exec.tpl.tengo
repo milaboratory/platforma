@@ -22,8 +22,9 @@ desc := import(":exec.descriptor")
 constants := import(":exec.constants")
 monetization := import(":exec.monetization_internal")
 assets := import(":assets")
+loadSoftware := import(":exec.load-software")
 
-loadSoftware := assets.importTemplate(":exec.load-software")
+mnzSw := assets.importSoftware("@platforma-open/milaboratories.software-small-binaries:mnz-client")
 
 self.defineOutputs(
 	"files",
@@ -90,6 +91,11 @@ self.body(func(inputs) {
 		plan = loadSoftware.swToRunCmdOptions(software.name, software.version, software.descriptor)
 	}
 
+	mnzPlan := undefined
+	if !is_undefined(inputs.runOptions.monetization) {
+		mnzPlan = loadSoftware.swToRunCmdOptions(mnzSw.name, mnzSw.version, mnzSw.descriptor)
+	}
+
 	serviceImplInputs := {}
 	if !is_undefined(self.rawServiceInputs().quota) {
 		serviceImplInputs.quota = self.rawServiceInputs().quota
@@ -113,9 +119,13 @@ self.body(func(inputs) {
 	if !is_undefined(self.rawInputs().wdProcessors) {
 		pureImplInputs.wdProcessors = self.rawInputs().wdProcessors
 	}
+	if !is_undefined(mnzPlan) {
+		pureImplInputs.mnzPlanRefs = mnzPlan.refs
+	}
 
 	pureImplInputs.settings = smart.createJsonResource(maps.clone({
 		planOptions: plan.options,
+		mnzPlanOptions: mnzPlan.options,
 		dirsToCreate: inputs.dirsToCreate,
 		runOptions: inputs.runOptions,
 		filesToSave: inputs.filesToSave,

@@ -59,9 +59,11 @@ self.validateInputs({
 		}
 	},
 	planRefs: { any: validation.reference() },
+	"mnzPlanRefs,?": { any: validation.reference() },
 
 	settings: {
 		planOptions: EXTENDED_PLAN_OPTIONS_SCHEMA,
+		"mnzPlanOptions,?": EXTENDED_PLAN_OPTIONS_SCHEMA,
 		"dirsToCreate,?": ["string"],
 		runOptions: {
 			"software,?": pkg.softwareInfoScheme,
@@ -85,7 +87,7 @@ self.validateInputs({
 
 		"assetDescriptors,?": { any: { asset: desc.assetScheme } },
 		"assetRules,?": { any: { any: ["string"] } },
-		"assetCache,?": { any: "number" },
+		"assetCache,?": { any: "number" }
 	},
 
 	// Service inputs
@@ -183,7 +185,7 @@ self.body(func(inputs) {
 
 	mnz := runOptions.monetization
 	if !is_undefined(mnz) {
-		result := monetization.run(mnz, wdBefore, computeAllocation)
+		result := monetization.run(mnz, wdBefore, { options: settings.mnzPlanOptions, refs: inputs.mnzPlanRefs }, computeAllocation)
 		wdBefore = result.wdAfter
 		mainRunBuilder.refVar(result.jwtEnvName, result.jwtEnvName, result.jwtEnvValue)
 		mainRunBuilder.envExpression(result.jwtEnvName, "{" + result.jwtEnvName + "}")

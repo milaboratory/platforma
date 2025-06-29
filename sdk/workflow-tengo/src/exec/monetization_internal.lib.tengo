@@ -8,7 +8,6 @@ feats := import(":feats")
 
 validation := import(":validation")
 assets := import(":assets")
-internal := import(":exec.internal")
 fmt := import("fmt")
 text := import("text")
 runcmd := import(":exec.runcmd")
@@ -212,28 +211,11 @@ setUrl := func(mnz, url) {
  * @param: mnz: monetization -- see a beginning of this file.
  * @param: wd: workdir -- workdir where all files from mnz.fileParams already exist.
  * @param: queue: queue - in which queue we should run monetization. */
-run := func(mnz, wd, allocation) {
+run := func(mnz, wd, plan, allocation) {
 	_validateIsReady(mnz)
 
-	mnzSw := assets.importSoftware("@platforma-open/milaboratories.software-small-binaries:mnz-client")
-
-	exprType := feats.commandExpressions ? constants.ARG_TYPE_EXPRESSION : constants.ARG_TYPE_VAR
-
-	builder := runcmd.builder(wd)
-	builder.envTyped("MI_LICENSE", exprType, "{secrets.MI_LICENSE}")
-
-	opts := internal.swToRunCmdOptions(mnzSw.name, mnzSw.version, mnzSw.descriptor)
-	// load pkg var that points to mnz-client location.
-	for _, varInfo in opts.variables {
-		builder.ref(varInfo.refName, varInfo.reference)
-		builder.substitutionRule(varInfo.varName, varInfo.refName)
-	}
-
-	builder.cmdTyped(exprType, opts.cmd.value)
-	for _, arg in opts.args {
-		// now mnz-client doesn't have additional args; this line is just in case.
-		builder.argTyped(exprType, arg)
-	}
+	builder := runcmd.builder(wd, plan)
+	builder.envExpression("MI_LICENSE", "{secrets.MI_LICENSE}")
 	if mnz.isDryRun {
 		builder.arg("-dry-run")
 	}
