@@ -2343,6 +2343,9 @@ importers:
       '@milaboratories/build-configs':
         specifier: workspace:*
         version: link:../../tools/build-configs
+      '@milaboratories/helpers':
+        specifier: workspace:^
+        version: link:../../lib/util/helpers
       '@platforma-sdk/eslint-config':
         specifier: workspace:*
         version: link:../eslint-config
@@ -17735,16 +17738,6 @@ snapshots:
     transitivePeerDependencies:
       - '@vue/composition-api'
       - vue
-
-  '@vueuse/integrations@13.3.0(axios@1.8.1)(focus-trap@7.6.0)(sortablejs@1.15.6)(vue@3.5.13(typescript@5.6.3))':
-    dependencies:
-      '@vueuse/core': 13.3.0(vue@3.5.13(typescript@5.6.3))
-      '@vueuse/shared': 13.3.0(vue@3.5.13(typescript@5.6.3))
-      vue: 3.5.13(typescript@5.6.3)
-    optionalDependencies:
-      axios: 1.8.1
-      focus-trap: 7.6.0
-      sortablejs: 1.15.6
 
   '@vueuse/integrations@13.3.0(axios@1.8.1)(focus-trap@7.6.0)(sortablejs@1.15.6)(vue@3.5.13(typescript@5.6.3))':
     dependencies:

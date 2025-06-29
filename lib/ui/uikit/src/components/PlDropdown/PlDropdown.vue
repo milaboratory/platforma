@@ -178,7 +178,7 @@ const textValue = computed(() => {
 });
 
 const computedPlaceholder = computed(() => {
-  if (!data.open && props.modelValue) {
+  if (!data.open && props.modelValue !== undefined) {
     return '';
   }
 

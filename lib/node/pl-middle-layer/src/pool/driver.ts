@@ -324,7 +324,7 @@ export class PFrameDriver implements InternalPFrameDriver {
 
         const table = pFrameHolder.pFrame.createTable({
           src: joinEntryToInternal(params.def.src),
-          filters: migrateFilters(params.def.filters),
+          filters: migrateFilters([...params.def.partitionFilters, ...params.def.filters]),
         });
 
         let sortedTable = table;

@@ -7,7 +7,6 @@ import {
 } from 'vue';
 import {
   PlAgDataTableToolsPanel,
-  PlTableFilters,
   PlBlockPage,
   PlAgDataTableV2,
   PlNumberField,
@@ -20,7 +19,6 @@ import {
 } from '../app';
 import type {
   PlSelectionModel,
-  PTableColumnSpec,
 } from '@platforma-sdk/model';
 import type {
   ICellRendererParams,
@@ -36,12 +34,12 @@ const sources = [...new Array(10)].map((_, i) => {
 });
 const activeSource = ref(sources[0].value);
 
-const tableSettings = usePlDataTableSettingsV2({
+const tableSettings = usePlDataTableSettingsV2<typeof activeSource.value>({
+  sourceId: () => activeSource.value,
   model: () => app.model.outputs.ptV2,
   sheets: () => app.model.outputs.ptV2Sheets,
+  filtersConfig: ({ sourceId: _sourceId, column: _column }) => ({}),
 });
-
-const columns = ref<PTableColumnSpec[]>([]);
 
 const verbose = ref(false);
 const cellRendererSelector = computed(() => {
@@ -69,19 +67,16 @@ watch(
   <PlBlockPage style="max-width: 100%">
     <template #title>PlAgDataTable V2</template>
     <template #append>
-      <PlAgDataTableToolsPanel>
-        <PlTableFilters v-model="app.model.ui.dataTableStateV2.filterModel" :columns="columns" />
-      </PlAgDataTableToolsPanel>
+      <PlAgDataTableToolsPanel />
     </template>
     <PlAgDataTableV2
       ref="tableInstance"
-      v-model="app.model.ui.dataTableStateV2.tableState"
+      v-model="app.model.ui.dataTableStateV2"
       v-model:selection="selection"
       :settings="tableSettings"
       :cell-renderer-selector="cellRendererSelector"
       show-columns-panel
       show-export-button
-      @columns-changed="(info) => (columns = info.columns)"
     >
       <template #before-sheets>
         <PlNumberField v-model="app.model.args.tableNumRows" />

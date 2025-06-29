@@ -17,7 +17,6 @@ import type {
   PTableRecordFilter,
   PTableRecordSingleValueFilterV2,
   PTableSorting,
-  PTableValue,
 } from '@milaboratories/pl-model-common';
 import {
   canonicalizeJson,
@@ -25,6 +24,7 @@ import {
   getColumnIdAndSpec,
   matchAxisId,
 } from '@milaboratories/pl-model-common';
+import { isJsonEqual } from '@milaboratories/helpers';
 import type {
   AxisLabelProvider,
   ColumnProvider,
@@ -62,18 +62,6 @@ export type PlDataTableGridStateCore = {
   };
 };
 
-/** TODO: refactor to use sheets in the grid state */
-export type PlDataTableGridStateWithoutSheets = PlDataTableGridStateCore & {
-  /** DataSource identifier for state management */
-  sourceId?: string;
-};
-
-/** Data table state */
-export type PlDataTableGridState = PlDataTableGridStateWithoutSheets & {
-  /** current sheet selections */
-  sheets?: Record<CanonicalizedJson<AxisId>, string | number>;
-};
-
 export type PlDataTableSheet = {
   /** spec of the axis to use */
   axis: AxisSpec;
@@ -99,21 +87,30 @@ export type PTableParams = {
 };
 
 /**
- * PlDataTable persisted state
- */
-export type PlDataTableState = {
-  // internal ag-grid state
-  gridState: PlDataTableGridState;
-  // mapping of gridState onto the p-table data structures
-  pTableParams?: PTableParams;
-};
-
-/**
  * PlDataTableV2 persisted state
  */
 export type PlDataTableStateV2 =
   // Old versions of the state
-  | PlDataTableState
+  | {
+    gridState: PlDataTableGridStateCore & {
+      sourceId?: string;
+      sheets?: Record<CanonicalizedJson<AxisId>, string | number>;
+    };
+    pTableParams?: PTableParams;
+  }
+  | {
+    version: 2;
+    stateCache: {
+      sourceId: string;
+      gridState: PlDataTableGridStateCore;
+      sheetsState: PlDataTableSheetState[];
+    }[];
+    pTableParams: {
+      hiddenColIds: PObjectId[] | null;
+      filters: PTableRecordFilter[];
+      sorting: PTableSorting[];
+    };
+  }
   // Normalized state
   | PlDataTableStateV2Normalized;
 
@@ -124,17 +121,20 @@ export type PlDataTableStateV2CacheEntry = {
   gridState: PlDataTableGridStateCore;
   /** Sheets state */
   sheetsState: PlDataTableSheetState[];
+  /** Filters state */
+  filtersState: PlDataTableFilterState[];
 };
 
 export type PTableParamsV2 = {
-  sorting: PTableSorting[];
-  filters: PTableRecordFilter[];
   hiddenColIds: PObjectId[] | null;
+  partitionFilters: PTableRecordFilter[];
+  filters: PTableRecordFilter[];
+  sorting: PTableSorting[];
 };
 
 export type PlDataTableStateV2Normalized = {
   /** Version for upgrades */
-  version: 2;
+  version: 3;
   /** Internal states, LRU cache for 5 sourceId-s */
   stateCache: PlDataTableStateV2CacheEntry[];
   /** PTable params derived from the cache state for the current sourceId */
@@ -144,12 +144,13 @@ export type PlDataTableStateV2Normalized = {
 /** Create default PlDataTableStateV2 */
 export function createPlDataTableStateV2(): PlDataTableStateV2Normalized {
   return {
-    version: 2,
+    version: 3,
     stateCache: [],
     pTableParams: {
-      sorting: [],
-      filters: [],
       hiddenColIds: null,
+      partitionFilters: [],
+      filters: [],
+      sorting: [],
     },
   };
 }
@@ -161,59 +162,27 @@ export function upgradePlDataTableStateV2(state: PlDataTableStateV2): PlDataTabl
     // Non upgradeable as sourceId calculation algorithm has changed, resetting state to default
     return createPlDataTableStateV2();
   }
-  return state;
-}
-
-/** PlTableFilters persisted state */
-export type PlTableFiltersStateV2 =
-  | {
-    state?: {
-      columnId: string;
-      filter: PlTableFilter;
-      disabled: boolean;
+  // v2 -> v3
+  if (state.version === 2) {
+    state = {
+      version: 3,
+      stateCache: state.stateCache.map((entry) => ({
+        ...entry,
+        filtersState: [],
+      })),
+      pTableParams: {
+        ...state.pTableParams,
+        partitionFilters: state.pTableParams.filters,
+        filters: [],
+      },
     };
-    defaultsApplied?: boolean;
-    filters?: PTableRecordFilter[];
-  }
-  | PlTableFiltersStateV2Normalized;
-
-export type PlTableFiltersStateV2Normalized = {
-  /** Version for upgrades */
-  version: 2;
-  /** Internal states, LRU cache for 5 sourceId-s */
-  stateCache: PlTableFiltersStateV2CacheEntry[];
-  /** PTable filters derived from the stateCache for the current sourceId */
-  pTableFilters: PTableRecordFilter[];
-};
-
-/** Create default PlTableFiltersStateV2 */
-export function createPlTableFiltersStateV2(): PlTableFiltersStateV2Normalized {
-  return {
-    version: 2,
-    stateCache: [],
-    pTableFilters: [],
-  };
-}
-
-/** Upgrade PlTableFiltersStateV2 to the latest version */
-export function upgradePlTableFiltersStateV2(state: PlTableFiltersStateV2): PlTableFiltersStateV2Normalized {
-  // v1 -> v2
-  if (!('version' in state)) {
-    // Non upgradeable as sourceId was not present
-    return createPlTableFiltersStateV2();
   }
   return state;
 }
 
-export type PlTableFiltersStateV2CacheEntry = {
-  sourceId: string;
-  columnsState: PlTableFiltersColumnState[];
-};
-
-export type PlTableFiltersColumnState = {
+export type PlDataTableFilterState = {
   id: PTableColumnId;
   alphabetic: boolean;
-  options: PlTableFilterType[];
   filter: null | {
     value: PlTableFilter;
     disabled: boolean;
@@ -403,33 +372,6 @@ export type PlTableFilter = PlTableFilterNumber | PlTableFilterString;
 /** All types of PlTableFilters filter entries */
 export type PlTableFilterType = PlTableFilter['type'];
 
-/** Internal grid column identifier */
-export type PlTableFilterColumnId = string;
-
-/** PlTableFiltersState entry */
-export type PlTableFiltersStateEntry = {
-  /** Column identifier */
-  columnId: PlTableFilterColumnId;
-  /** Active filter */
-  filter: PlTableFilter;
-  /** Flag to temporarily disable filter */
-  disabled: boolean;
-};
-
-/** PlTableFiltersModel state */
-export type PlTableFiltersState = PlTableFiltersStateEntry[];
-
-/** PlTableFilters model */
-export type PlTableFiltersModel = {
-  /** Internal PlTableFilters component state, do not change! */
-  state?: PlTableFiltersState;
-  /** Internal PlTableFilters component state, do not change!
-   *  Defaults filters applied to the table */
-  defaultsApplied?: boolean;
-  /** Resulting filters which should be used in Join */
-  filters?: PTableRecordFilter[];
-};
-
 export type CreatePlDataTableOps = {
   /** Filters for columns and non-partitioned axes */
   filters?: PTableRecordFilter[];
@@ -587,99 +529,40 @@ export function allColumnsComputed(
     });
 }
 
-function createPTableDef(
-  columns: PColumn<PColumnDataUniversal>[],
-  labelColumns: PColumn<PColumnDataUniversal>[],
-  coreJoinType: 'inner' | 'full',
-  filters: PTableRecordSingleValueFilterV2[],
-  sorting: PTableSorting[],
-  coreColumnPredicate?: ((spec: PColumnSpec) => boolean),
-): PTableDef<PColumn<TreeNodeAccessor | PColumnValues | DataInfo<TreeNodeAccessor>>> {
-  let coreColumns = columns;
-  const secondaryColumns: typeof columns = [];
+function createPTableDef(params: {
+  columns: PColumn<PColumnDataUniversal>[];
+  labelColumns: PColumn<PColumnDataUniversal>[];
+  coreJoinType: 'inner' | 'full';
+  partitionFilters: PTableRecordSingleValueFilterV2[];
+  filters: PTableRecordSingleValueFilterV2[];
+  sorting: PTableSorting[];
+  coreColumnPredicate?: ((spec: PColumnSpec) => boolean);
+}): PTableDef<PColumn<TreeNodeAccessor | PColumnValues | DataInfo<TreeNodeAccessor>>> {
+  let coreColumns = params.columns;
+  const secondaryColumns: typeof params.columns = [];
 
-  if (coreColumnPredicate) {
+  if (params.coreColumnPredicate) {
     coreColumns = [];
-    for (const c of columns)
-      if (coreColumnPredicate(c.spec)) coreColumns.push(c);
+    for (const c of params.columns)
+      if (params.coreColumnPredicate(c.spec)) coreColumns.push(c);
       else secondaryColumns.push(c);
   }
 
-  secondaryColumns.push(...labelColumns);
+  secondaryColumns.push(...params.labelColumns);
 
   return {
     src: {
       type: 'outer',
       primary: {
-        type: coreJoinType,
+        type: params.coreJoinType,
         entries: coreColumns.map((c) => ({ type: 'column', column: c })),
       },
       secondary: secondaryColumns.map((c) => ({ type: 'column', column: c })),
     },
-    filters,
-    sorting,
+    partitionFilters: params.partitionFilters,
+    filters: params.filters,
+    sorting: params.sorting,
   };
-}
-
-/**
- * Create p-table handle given ui table state
- *
- * @param ctx context
- * @param columns column list
- * @param tableState table ui state
- * @returns PlAgDataTable table source
- */
-export function createPlDataTable<A, U>(
-  ctx: RenderCtx<A, U>,
-  columns: PColumn<TreeNodeAccessor | PColumnValues | DataInfo<TreeNodeAccessor>>[],
-  tableState: PlDataTableState | undefined
-): PTableHandle | undefined;
-export function createPlDataTable<A, U>(
-  ctx: RenderCtx<A, U>,
-  columns: PColumn<TreeNodeAccessor | PColumnValues | DataInfo<TreeNodeAccessor>>[],
-  tableState: PlDataTableState | undefined,
-  ops: CreatePlDataTableOps
-): PTableHandle | undefined;
-/** @deprecated use method with extended ops as the last argument */
-export function createPlDataTable<A, U>(
-  ctx: RenderCtx<A, U>,
-  columns: PColumn<TreeNodeAccessor | PColumnValues | DataInfo<TreeNodeAccessor>>[],
-  tableState: PlDataTableState | undefined,
-  filters: PTableRecordFilter[]
-): PTableHandle | undefined;
-export function createPlDataTable<A, U>(
-  ctx: RenderCtx<A, U>,
-  columns: PColumn<TreeNodeAccessor | PColumnValues | DataInfo<TreeNodeAccessor>>[],
-  tableState: PlDataTableState | undefined,
-  ops?: PTableRecordFilter[] | CreatePlDataTableOps,
-): PTableHandle | undefined {
-  // ops migration for backward compatibility with previous deprecated API
-  if (Array.isArray(ops)) {
-    ops = { filters: ops };
-  }
-
-  const coreJoinType = ops?.coreJoinType ?? 'full';
-  const filters: PTableRecordSingleValueFilterV2[]
-    = uniqueBy(
-      [...(ops?.filters ?? []), ...(tableState?.pTableParams?.filters ?? [])],
-      (f) => canonicalizeJson<PTableColumnId>(f.column),
-    );
-  const sorting: PTableSorting[]
-    = uniqueBy(
-      [...(ops?.sorting ?? []), ...(tableState?.pTableParams?.sorting ?? [])],
-      (s) => canonicalizeJson<PTableColumnId>(s.column),
-    );
-
-  const allLabelColumns = getAllLabelColumns(ctx.resultPool);
-  if (!allLabelColumns) return undefined;
-
-  const labelColumns = getMatchingLabelColumns(columns.map(getColumnIdAndSpec), allLabelColumns);
-
-  // if at least one column is not yet computed, we can't show the table
-  if (!allColumnsComputed([...columns, ...labelColumns])) return undefined;
-
-  return ctx.createPTable(
-    createPTableDef(columns, labelColumns, coreJoinType, filters, sorting, ops?.coreColumnPredicate));
 }
 
 /** PlAgDataTable model */
@@ -689,12 +572,6 @@ export type PlDataTableModel = {
   /** p-table including only visible columns, used to get the data */
   visibleTableHandle: PTableHandle;
 };
-
-/**
- * @deprecated Used only in PlAgDataTable v1 that is no longer maintained.
- * Please migrate to v2.
- */
-export type PTableRowKey = PTableValue[];
 
 /** Check if column should be omitted from the table */
 export function isColumnHidden(spec: { annotations?: Record<string, string> }): boolean {
@@ -732,11 +609,12 @@ export function createPlDataTableV2<A, U>(
   const tableStateNormalized = upgradePlDataTableStateV2(tableState ?? createPlDataTableStateV2());
 
   const coreJoinType = ops?.coreJoinType ?? 'full';
+  const partitionFilters: PTableRecordSingleValueFilterV2[] = tableStateNormalized.pTableParams.partitionFilters;
   const filters: PTableRecordSingleValueFilterV2[]
     = uniqueBy(
       [...(ops?.filters ?? []), ...tableStateNormalized.pTableParams.filters],
       (f) => canonicalizeJson<PTableColumnId>(f.column),
-    );
+    ).filter((f) => !partitionFilters.some((pf) => isJsonEqual(f.column, pf.column)));
   const sorting: PTableSorting[]
     = uniqueBy(
       [...(ops?.sorting ?? []), ...tableStateNormalized.pTableParams.sorting],
@@ -748,7 +626,15 @@ export function createPlDataTableV2<A, U>(
   if (!allLabelColumns) return undefined;
 
   const fullLabelColumns = getMatchingLabelColumns(columns.map(getColumnIdAndSpec), allLabelColumns);
-  const fullDef = createPTableDef(columns, fullLabelColumns, coreJoinType, filters, sorting, ops?.coreColumnPredicate);
+  const fullDef = createPTableDef({
+    columns,
+    labelColumns: fullLabelColumns,
+    coreJoinType,
+    partitionFilters,
+    filters,
+    sorting,
+    coreColumnPredicate: ops?.coreColumnPredicate,
+  });
   const fullHandle = ctx.createPTable(fullDef);
 
   const hiddenColumns = new Set<PObjectId>(((): PObjectId[] => {
@@ -785,7 +671,15 @@ export function createPlDataTableV2<A, U>(
   // if at least one column is not yet computed, we can't show the table
   if (!allColumnsComputed([...visibleColumns, ...visibleLabelColumns])) return undefined;
 
-  const visibleDef = createPTableDef(visibleColumns, visibleLabelColumns, coreJoinType, filters, sorting, ops?.coreColumnPredicate);
+  const visibleDef = createPTableDef({
+    columns: visibleColumns,
+    labelColumns: visibleLabelColumns,
+    coreJoinType,
+    partitionFilters,
+    filters,
+    sorting,
+    coreColumnPredicate: ops?.coreColumnPredicate,
+  });
   const visibleHandle = ctx.createPTable(visibleDef);
 
   return {

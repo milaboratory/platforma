@@ -1,7 +1,6 @@
 import './assets/ui.scss';
 
 export { default as BlockLayout } from './components/BlockLayout.vue';
-export { default as PlAgDataTable } from './components/PlAgDataTable/PlAgDataTable.vue';
 export { default as PlAgDataTableV2 } from './components/PlAgDataTable/PlAgDataTableV2.vue';
 export { default as PlAgOverlayLoading } from './components/PlAgDataTable/PlAgOverlayLoading.vue';
 export { default as PlAgOverlayNoRows } from './components/PlAgDataTable/PlAgOverlayNoRows.vue';

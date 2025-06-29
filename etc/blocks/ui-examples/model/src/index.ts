@@ -4,15 +4,12 @@ import type {
   InferOutputsType,
   PColumn,
   PColumnValues,
-  PlDataTableState,
-  PlTableFiltersModel,
   PObjectId,
   PlDataTableStateV2,
   PlDataTableSheet,
 } from '@platforma-sdk/model';
 import {
   BlockModel,
-  createPlDataTable,
   createPlDataTableStateV2,
   createPlDataTableV2,
 } from '@platforma-sdk/model';
@@ -52,19 +49,8 @@ export const $BlockArgs = z.object({
 
 export type BlockArgs = z.infer<typeof $BlockArgs>;
 
-export type TableState = {
-  tableState: PlDataTableState;
-  filterModel: PlTableFiltersModel;
-};
-
-export type TableStateV2 = {
-  tableState: PlDataTableStateV2;
-  filterModel: PlTableFiltersModel;
-};
-
 export type UiState = {
-  dataTableState: TableState | undefined;
-  dataTableStateV2: TableStateV2;
+  dataTableStateV2: PlDataTableStateV2;
   dynamicSections: {
     id: string;
     label: string;
@@ -76,11 +62,7 @@ export const platforma = BlockModel.create('Heavy')
   .withArgs<BlockArgs>({ numbers: [1, 2, 3, 4], tableNumRows: 100, handles: [] })
 
   .withUiState<UiState>({
-    dataTableState: undefined,
-    dataTableStateV2: {
-      tableState: createPlDataTableStateV2(),
-      filterModel: {},
-    },
+    dataTableStateV2: createPlDataTableStateV2(),
     dynamicSections: [],
   })
 
@@ -98,62 +80,6 @@ export const platforma = BlockModel.create('Heavy')
     const m = ctx.outputs?.resolve('progresses');
     const progresses = m?.mapFields((name, val) => [name, val?.getImportProgress()] as const);
     return Object.fromEntries(progresses ?? []);
-  })
-
-  .output('pt', (ctx) => {
-    if (!ctx.uiState?.dataTableState?.tableState.pTableParams?.filters) return undefined;
-
-    const data = times(ctx.args.tableNumRows ?? 0, (i) => {
-      const v = i + 1;
-      return {
-        key: [v, v + 0.1],
-        val: v.toString(),
-      };
-    });
-
-    return createPlDataTable(
-      ctx,
-      [
-        {
-          id: 'example' as PObjectId,
-          spec: {
-            kind: 'PColumn',
-            valueType: 'String',
-            name: 'example',
-            annotations: {
-              'pl7.app/label': 'String column',
-              'pl7.app/discreteValues': '["up","down"]',
-            },
-            axesSpec: [
-              {
-                type: 'Int',
-                name: 'index',
-                annotations: {
-                  'pl7.app/label': 'Int axis',
-                  'pl7.app/discreteValues': '[1,2]',
-                },
-              },
-              {
-                type: 'Float',
-                name: 'value',
-                annotations: {
-                  'pl7.app/label': 'Float axis',
-                  'pl7.app/table/visibility': 'optional',
-                },
-              },
-            ],
-          },
-          data,
-        } satisfies PColumn<PColumnValues>,
-      ],
-      ctx.uiState.dataTableState.tableState,
-      {
-        filters: [
-          ...(ctx.uiState.dataTableState.tableState.pTableParams?.filters ?? []),
-          ...(ctx.uiState.dataTableState.filterModel?.filters ?? []),
-        ],
-      },
-    );
   })
 
   .output('ptV2Sheets', (ctx) => {
@@ -257,8 +183,7 @@ export const platforma = BlockModel.create('Heavy')
     return createPlDataTableV2(
       ctx,
       columns,
-      ctx.uiState.dataTableStateV2.tableState,
-      { filters: ctx.uiState.dataTableStateV2.filterModel?.filters ?? [] },
+      ctx.uiState.dataTableStateV2,
     );
   })
 
@@ -294,7 +219,6 @@ export const platforma = BlockModel.create('Heavy')
       { type: 'link', href: '/typography', label: 'Typography' },
       { type: 'link', href: '/ag-grid-vue', label: 'AgGridVue' },
       { type: 'link', href: '/ag-grid-vue-with-builder', label: 'AgGridVue with builder' },
-      { type: 'link', href: '/pl-ag-data-table', label: 'PlAgDataTable' },
       { type: 'link', href: '/pl-ag-data-table-v2', label: 'PlAgDataTableV2' },
       { type: 'link', href: '/pl-splash-page', label: 'PlSplashPage' },
       { type: 'link', href: '/pl-file-input-page', label: 'PlFileInputPage' },
