@@ -12,6 +12,7 @@ import SeqLogo from './SeqLogo.vue';
 import type { ColorScheme } from './types';
 
 const { sequenceRows, labelRows, markup, colorScheme } = defineProps<{
+  sequenceNames: string[];
   sequenceRows: string[][];
   labelRows: string[][];
   markup: {
@@ -24,7 +25,7 @@ const { sequenceRows, labelRows, markup, colorScheme } = defineProps<{
 }>();
 
 const concatenatedSequences = computed(() =>
-  sequenceRows.map((row) => row.join('')),
+  sequenceRows.map((row) => row.join(' ')),
 );
 
 const residueCounts = computed(
@@ -57,12 +58,22 @@ const objectUrl = useObjectUrl(highlightImageBlob);
 const highlightImage = computed(
   () => objectUrl.value ? `url('${objectUrl.value}')` : 'none',
 );
+
+function sequenceLength(index: number) {
+  return sequenceRows.at(0)?.at(index)?.length ?? 0;
+}
 </script>
 
 <template>
   <div :class="['pl-scrollable', $style.root]">
     <div :class="$style.corner" />
     <div :class="$style.header">
+      <div v-if="sequenceNames.length > 1" :class="$style['sequence-names']">
+        <span
+          v-for="(name, index) of sequenceNames"
+          :style="{ inlineSize: `calc(${sequenceLength(index)} * 20px)` }"
+        >{{ name }}</span>
+      </div>
       <Consensus v-if="consensus" :residueCounts />
       <SeqLogo v-if="seqLogo" :residueCounts />
     </div>
@@ -114,6 +125,14 @@ const highlightImage = computed(
   position: sticky;
   inset-block-start: 0;
   z-index: 1;
+}
+
+.sequence-names {
+  display: flex;
+  font-weight: 700;
+  line-height: 20px;
+  margin-block-end: 4px;
+  gap: 20px;
 }
 
 .labels {

@@ -114,7 +114,7 @@ const data = computed<DataByColumns>(
     for (const [columnIndex, column] of residueCounts.entries()) {
       for (const [residue, count] of Object.entries(column)) {
         if (residue === '-') continue;
-        countKey.push(count);
+        countKey.push(residue === ' ' ? 0 : count);
         columnKey.push(columnIndex);
       }
     }
