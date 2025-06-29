@@ -50,19 +50,22 @@ _installSoftware := func(registry, pkgName) {
 }
 
 _loadJavaRunEnvironment := func(operationMode, descriptor) {
+	plan := runcmd.createRunCommandPlan()
+
 	javaPkg := _installSoftware(descriptor.runEnv.registry, descriptor.runEnv.package)
-	javaRefVar := _newRefVar(_ARG_VAR_JAVA, descriptor.runEnv.name, javaPkg)
+	plan.refVar(_ARG_VAR_JAVA, descriptor.runEnv.name, javaPkg)
+
+	plan.addPathExpression(path.join(_expr(_ARG_VAR_JAVA), descriptor.runEnv.binDir))
 
 	return ll.toStrict({
 		runEnvType: "java",
-
-		variables: [ javaRefVar ],
-		customPaths: [ runcmd.expressionArg(path.join(_expr(_ARG_VAR_JAVA), descriptor.runEnv.binDir)) ],
-		envs: {}
+		plan:       plan
 	})
 }
 
 _loadPythonRunEnvironment := func(operationMode, descriptor, softName, softPkg) {
+	plan := runcmd.createRunCommandPlan()
+
 	venvBuilder := python.venvBuilder().
 		software(softPkg).
 		runEnvDescriptor(descriptor.runEnv).
@@ -76,24 +79,24 @@ _loadPythonRunEnvironment := func(operationMode, descriptor, softName, softPkg) 
 		cacheDays(7).
 		build()
 
-	pythonRefVar := _newRefVar(_ARG_VAR_PYTHON_RUN_ENV, softName + "/python", venv.python())
-	pythonVenvRefVar := _newRefVar(_ARG_VAR_PYTHON_VENV, softName + "/venv", venv.venv())
-	venvBinDirRefVar := _newRefVar(_ARG_VAR_VENV_BIN_DIR, softName + "/binDir", venv.binDir() )
-	pathDelimeterRefVar := _newRefVar(_ARG_PATH_DELIMETER, softName + "/pathDelimeter", venv.pathDelimeter())
+	plan.refVar(_ARG_VAR_PYTHON_RUN_ENV, softName + "/python", venv.python())
+	plan.refVar(_ARG_VAR_PYTHON_VENV, softName + "/venv", venv.venv())
+	plan.refVar(_ARG_VAR_VENV_BIN_DIR, softName + "/binDir", venv.binDir() )
+	plan.refVar(_ARG_PATH_DELIMETER, softName + "/pathDelimeter", venv.pathDelimeter())
+
+	plan.addPathExpression(path.join(_expr(_ARG_VAR_PYTHON_VENV), "venv", _expr(_ARG_VAR_VENV_BIN_DIR)))
+	plan.envExpression("VIRTUAL_ENV", path.join(_expr(_ARG_VAR_PYTHON_VENV), "venv"))
+	plan.envExpression("PYTHONPATH", path.join(_expr(_ARG_VAR_PYTHON_RUN_ENV), descriptor.runEnv.binDir, "python_stdlib") + _expr(_ARG_PATH_DELIMETER) + _expr(_ARG_VAR_PKG))
 
 	return ll.toStrict({
 		runEnvType: "python",
-
-		variables: [ pythonRefVar, pythonVenvRefVar, venvBinDirRefVar, pathDelimeterRefVar ],
-		customPaths: [ runcmd.expressionArg(path.join(_expr(_ARG_VAR_PYTHON_VENV), "venv", _expr(_ARG_VAR_VENV_BIN_DIR))) ],
-		envs: {
-			"VIRTUAL_ENV": runcmd.expressionArg(path.join(_expr(_ARG_VAR_PYTHON_VENV), "venv")),
-			"PYTHONPATH": runcmd.expressionArg(path.join(_expr(_ARG_VAR_PYTHON_RUN_ENV), descriptor.runEnv.binDir, "python_stdlib") + _expr(_ARG_PATH_DELIMETER) + _expr(_ARG_VAR_PKG))
-		}
+		plan:       plan
 	})
 }
 
 _loadRRunEnvironment := func(operationMode, descriptor, softName, softPkg) {
+	plan := runcmd.createRunCommandPlan()
+
 	renvBuilder := R.rVenvBuilder().
 		operationMode(operationMode).
 		software(softPkg).
@@ -114,35 +117,35 @@ _loadRRunEnvironment := func(operationMode, descriptor, softName, softPkg) {
 	rBinDir := path.join(_expr(_ARG_VAR_R), descriptor.runEnv.binDir)
 
 	rRefKey := softName + "/R-runtime"
-	rRefVar := _newRefVar(_ARG_VAR_R, rRefKey, rPackage)
+	plan.refVar(_ARG_VAR_R, rRefKey, rPackage)
 
 	rEnvRefKey := softName + "/R-virtual-env"
-	rEnvRefVar := _newRefVar(_ARG_VAR_R_VENV, rEnvRefKey, rEnv)
+	plan.refVar(_ARG_VAR_R_VENV, rEnvRefKey, rEnv)
 
 	renvRootArg := path.join(_expr(_ARG_VAR_R), "renv-root")
 
-	envs := {
-		"RHOME": runcmd.expressionArg(_expr(_ARG_VAR_R)), // for Rscript (it uses RHOME instead of R_HOME)
-		"R_HOME_DIR": runcmd.expressionArg(_expr(_ARG_VAR_R)), // for R startup script. It configures all the rest required for R to start.
-		"RENV_PATHS_ROOT": runcmd.expressionArg(renvRootArg),
-		"RENV_PATHS_BINARY": runcmd.expressionArg(path.join(renvRootArg, "binaries")),
-		"RENV_PATHS_SOURCE": runcmd.expressionArg(path.join(renvRootArg, "sources")),
-		"RENV_PATHS_CACHE": runcmd.expressionArg(path.join(renvRootArg, "cache")),
-		"RENV_PATHS_RENV": runcmd.expressionArg(path.join(_expr(_ARG_VAR_R_VENV), "renv")),
-		"RENV_PATHS_LOCKFILE": runcmd.expressionArg(path.join(renvRootArg, "renv.lock"))
-	}
+
+	plan.envExpression("RHOME", _expr(_ARG_VAR_R)) // for Rscript (it uses RHOME instead of R_HOME)
+	plan.envExpression("R_HOME_DIR", _expr(_ARG_VAR_R)) // for R startup script. It configures all the rest required for R to start.
+	plan.envExpression("RENV_PATHS_ROOT", renvRootArg)
+	plan.envExpression("RENV_PATHS_BINARY", path.join(renvRootArg, "binaries"))
+	plan.envExpression("RENV_PATHS_SOURCE", path.join(renvRootArg, "sources"))
+	plan.envExpression("RENV_PATHS_CACHE", path.join(renvRootArg, "cache"))
+	plan.envExpression("RENV_PATHS_RENV", path.join(_expr(_ARG_VAR_R_VENV), "renv"))
+	plan.envExpression("RENV_PATHS_LOCKFILE", path.join(renvRootArg, "renv.lock"))
+
 
 	// Force block developer to install R packages when building R run environment.
 	// Most of our commercial clients have very restricted network without access to pypi, CRAN and other external resources.
 	// The only firewall rule we're guaranteed to have is to our own registries.
-	envs["RENV_CONFIG_REPOS_OVERRIDE"] = runcmd.expressionArg(path.join(_expr(_ARG_VAR_R), "packages"))
+	plan.envExpression("RENV_CONFIG_REPOS_OVERRIDE", path.join(_expr(_ARG_VAR_R), "packages"))
+
+
+	plan.addPathExpression(rBinDir)
 
 	return ll.toStrict({
 		runEnvType: "R",
-
-		variables: [ rRefVar, rEnvRefVar ],
-		customPaths: [ runcmd.expressionArg(rBinDir) ],
-		envs: envs
+		plan:       plan
 	})
 }
 
@@ -165,9 +168,7 @@ _loadRunEnvironment := func(operationMode, descriptor, softName, softPackage) {
  * @param operationMode: "remote" | "dev-local"
  */
 _binPackageCallOptions := func(operationMode, softwareName, variables, descriptor, softPackage) {
-	customPaths := []
-	envs := ll.toStrict({})
-	args := []
+	runEnvPlan := runcmd.createRunCommandPlan()
 	runEnvType := "binary"
 
 	// Real command should be:
@@ -176,36 +177,27 @@ _binPackageCallOptions := func(operationMode, softwareName, variables, descripto
 		runEnvInfo := _loadRunEnvironment(operationMode, descriptor, softwareName, softPackage)
 
 		runEnvType = runEnvInfo.runEnvType
-		if len(runEnvInfo.variables) > 0 {
-			variables = append(variables, runEnvInfo.variables...)
-		}
-		if len(runEnvInfo.customPaths) > 0 {
-			customPaths = append(customPaths, runEnvInfo.customPaths...)
-		}
-		if len(runEnvInfo.envs) > 0 {
-			for n, v in runEnvInfo.envs {
-				envs[n] = v
-			}
-		}
+		runEnvPlan = runEnvInfo.plan
 	}
 
 	ll.assert(
 		len(descriptor.cmd) != 0,
 		"cannot render final command for software: empty 'cmd' and 'command' in software descriptor")
 
-	cmd := runcmd.expressionArg(descriptor.cmd[0])
+	plan := runcmd.createRunCommandPlan(runEnvPlan.state())
+
+	for _, v in variables {
+		plan.refVar(v.varName, v.refName, v.reference)
+	}
+	plan.cmdExpression(descriptor.cmd[0])
 
 	for arg in splice(descriptor.cmd, 1) {
-		args = append(args, runcmd.expressionArg(arg))
+		plan.argExpression(arg)
 	}
 
 	return ll.toStrict({
 		runEnvType: runEnvType,
-		variables: variables,
-		customPaths: customPaths,
-		cmd: cmd,
-		args: args,
-		envs: envs
+		plan:       plan
 	})
 }
 
@@ -236,51 +228,13 @@ _remotePackageCallOptions := func(softwareName, binaryDescriptor) {
 
 /**
  * Turns a given software to a list of options that needs to be passed to run cmd builder.
- * Creates resources to install a software
- * and runs R or Python env builder templates
+ * Creates resources to install a software and runs R or Python env builder templates
  * if it's necessary.
  *
- * The function returns a strict map with the following structure:
- * {
- *   runEnvType: string,
- *   variables: [
- *     {
- *       varName: string, // Name of the variable to be used in expression arguments, e.g. "pkg"
- *       refName: string, // A human-readable name for the reference, e.g., "my-package"
- *       reference: smart.reference // A reference to a resource, like a software package or a virtual environment.
- *     },
- *     ...
- *   ],
- *   customPaths: [
- *     {
- *       type: "expression",
- *       value: string, // A string with expression to be added to the PATH, e.g., "{pkg}/bin"
- *     },
- *     ...
- *   ],
- *   cmd: {
- *     type: "expression",
- *     value: string, // Command to execute as an expression, e.g., "{pkg}/bin/my-app"
- *   },
- *   args: [
- *     {
- *       type: "expression",
- *       value: string, // Command arguments as expressions, e.g., "--input={some_ref}"
- *     },
- *     ...
- *   ],
- *   envs: {
- *     <env_var_name>: {
- *       type: "expression",
- *       value: string, // Environment variable value as an expression.
- *     },
- *     ...
- *   }
- * }
+ * The function returns a plan state object that can be passed to runcmd functions.
+ * The plan state is augmented with `runEnvType` in `options` property.
  *
- * The `smart.reference` is an opaque type representing a handle to a resource within the system.
- * The `expression` type arguments are resolved at execution time, where variables like `{pkg}`
- * are substituted with the actual paths of the resources provided in the `variables` list.
+ * @see exec.runcmd.createRunCommandPlan
  */
 swToRunCmdOptions := func(softwareName, softwareVersion, softwareDescriptor) {
 	ll.assert(is_string(softwareName),
@@ -301,16 +255,10 @@ swToRunCmdOptions := func(softwareName, softwareVersion, softwareDescriptor) {
 			softwareName, softwareVersion)
 	}
 
-	// Clone result fields explicitly here
-	// just to have a gist of what the function returns.
-	return ll.toStrict({
-		runEnvType: result.runEnvType,
-		variables: result.variables,
-		customPaths: result.customPaths,
-		cmd: result.cmd,
-		args: result.args,
-		envs: result.envs
-	})
+	plan := result.plan.state()
+	plan.options.runEnvType = result.runEnvType
+
+	return plan
 }
 
 export {

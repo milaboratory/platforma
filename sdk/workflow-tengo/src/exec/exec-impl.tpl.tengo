@@ -1,8 +1,7 @@
 /**
- * Takes most of the responsibilities of exec.tpl.tengo
- * after the underlying software is already installed.
+ * Creates and fill a workdir, runs a command on it
+ * and saves a chosen resulted files from this dir.
  */
-
 
 self := import(":tpl.light")
 
@@ -14,7 +13,6 @@ smart := import(":smart")
 render := import(":render")
 workdir := import(":workdir")
 stream := import(":exec.stream")
-execInternal := import(":exec.internal")
 limits := import(":exec.limits")
 pkg := import(":exec.package")
 blobs := import(":file.internal")
@@ -22,8 +20,18 @@ desc := import(":exec.descriptor")
 constants := import(":exec.constants")
 monetization := import(":exec.monetization_internal")
 assets := import(":assets")
+runcmd := import(":exec.runcmd")
 
 delayedComputeAllocationTpl := assets.importTemplate(":exec.delayed_compute_allocation")
+
+_activateRenvForWD := func(wd, allocation, plan) {
+	activateRenv := runcmd.builder(wd, plan).
+		cmd("R").
+		allocation(allocation).
+		arg("-e").arg("renv::activate()")
+
+	return activateRenv.build().workdir
+}
 
 self.defineOutputs(
 	"files",
@@ -35,7 +43,66 @@ self.defineOutputs(
 	"wdProcessors"
 )
 
-_runBinaryCommand := func(inputs) {
+EXTENDED_PLAN_OPTIONS_SCHEMA := maps.merge(runcmd.RUN_CMD_PLAN_OPTIONS_SCHEMA, {
+	"__options__,closed": true,
+	"runEnvType,?": "string"
+})
+
+self.validateInputs({
+	filesToAdd: { any: validation.resource() },
+	filesToWrite: { any: validation.resource() },
+	"assets,?": { any: validation.resource() },
+	"wdProcessors,?": {
+		any: {
+			tpl: validation.resource(),
+			"tplArgs,?": validation.any
+		}
+	},
+	planRefs: { any: validation.reference() },
+
+	settings: {
+		planOptions: EXTENDED_PLAN_OPTIONS_SCHEMA,
+		"dirsToCreate,?": ["string"],
+		runOptions: {
+			"software,?": pkg.softwareInfoScheme,
+			"cmd,?": "string",
+			args: ["string"],
+			envs: { any: "string" },
+			"argsTyped,?": [{type: "string", value: "string"}],
+			"envsTyped,?": {"any": {type: "string", value: "string"}},
+			secrets: { any: "string" },
+			queue: "string",
+			stdout: "string",
+			stderr: "string",
+			nErrorLines: "number",
+			"monetization,?": monetization.schema
+		},
+		"filesToSave,?": ["string"],
+		"filesContentToSave,?": ["string"],
+		"fileSetsToSave,?": { any: "string" },
+		"fileSetsContentToSave,?": { any: "string" },
+		"filesToStream,?": ["string"],
+
+		"assetDescriptors,?": { any: { asset: desc.assetScheme } },
+		"assetRules,?": { any: { any: ["string"] } },
+		"assetCache,?": { any: "number" },
+	},
+
+	// Service inputs
+	"quota,?": {
+		queue: "string",
+		"cpu,?": "number",
+		"ram,?": "string"
+	}
+})
+
+self.body(func(inputs) {
+	settings := inputs.settings
+	// original run options passed by the user
+	runOptions := settings.runOptions
+	// run plan options generated after software is loaded
+	planOptions := settings.planOptions
+
 	//
 	// Create and fill the workdir with files that were passed from inputs.
 	//
@@ -44,7 +111,7 @@ _runBinaryCommand := func(inputs) {
 
 	quota := inputs.quota
 
-	if !is_undefined(quota) && (feats.workdirLimits || limits.useBatch(quota.queue)) {
+	if !is_undefined(quota) {
 		quotaBuilder := limits.quotaBuilder().
 			cpu(quota.cpu).
 			ram(quota.ram)
@@ -64,103 +131,108 @@ _runBinaryCommand := func(inputs) {
 
 	// add files
 	wdBuilder.addFiles(inputs.filesToAdd)
-	wdBuilder.mkDirs(inputs.dirsToCreate)
+	wdBuilder.mkDirs(settings.dirsToCreate)
 
 	// add assets
-	archives := ll.toStrict({})
-	for k, descriptor in inputs.assetDescriptors {
+	archives := {}
+	for k, descriptor in settings.assetDescriptors {
 		assetBlob := blobs.createBlobImportExternal({
 			dataURL: descriptor.asset.url
 		}).file
 
 		archives[k] = assetBlob
-		if is_int(inputs.assetCache[k]) {
-			assetBlob.setCache(inputs.assetCache[k])
+		if is_int(settings.assetCache[k]) {
+			assetBlob.setCache(settings.assetCache[k])
 		} else {
 			assetBlob.setCacheDays(1)
 		}
 	}
-	for k, archiveRules in inputs.assetRules {
+	for k, archiveRules in settings.assetRules {
 		for dir, filesToExtract in archiveRules {
 			wdBuilder.addFromZip(archives[k], dir, filesToExtract)
 		}
 	}
+
 	// pass values as fields for saving the topology in pl-core
 	// and avoiding deduplication issues:
 	wdBuilder.writeFiles(self.rawInputs().filesToWrite.getValue().inputs())
 
 	// working directory with input files added; before run
-	wdWithAllFiles := wdBuilder.build()
+	wdBefore := wdBuilder.build()
 
-	// run monetization if it's defined and return a workdir after.
-	wdBefore := wdWithAllFiles
-	mnzEnvs := {}
-	mnzResult := {}
-	mnz := ll.fromStrict(inputs.runOptions).monetization
+	// Delay requesting compute quota until the workdir is ready.
+	// This prevents a deadlock between storage and compute quotas.
+	// A waiter ensures that a task requests compute quota only after
+	// it has acquired the storage quota required for workdir creation,
+	// which is a prerequisite for the computation itself.
+
+	delayedComputeAllocation := render.createEphemeral(delayedComputeAllocationTpl, {
+		request: smart.createJsonResource({
+			queue: runOptions.queue,
+			cpu: quota.cpu,
+			ram: quota.ram
+		}),
+		// whole input map is awaited by the template to be ready before the allocation is requested
+		wd: wdBefore
+	})
+
+	runEnvType := planOptions.runEnvType
+	mainRunBuilder := runcmd.builder(wdBefore, { options: planOptions, refs: inputs.planRefs })
+
+	computeAllocation := delayedComputeAllocation.output("allocation")
+
+	mnz := runOptions.monetization
 	if !is_undefined(mnz) {
-		result := monetization.run(mnz, wdWithAllFiles, inputs.runOptions.queue)
+		result := monetization.run(mnz, wdBefore, computeAllocation)
 		wdBefore = result.wdAfter
-		mnzEnvs[result.jwtEnvName] = result.jwtEnvValue
+		mainRunBuilder.refVar(result.jwtEnvName, result.jwtEnvName, result.jwtEnvValue)
+		mainRunBuilder.envExpression(result.jwtEnvName, "{" + result.jwtEnvName + "}")
 	}
 
-	opts := execInternal.binaryRunOptions(inputs.runOptions, mnzEnvs)
+	// Passing arguments and environment variables from run options passed by the user
+
+	shouldUseNewTyped := !is_undefined(runOptions.argsTyped) || !is_undefined(runOptions.envsTyped)
+
+	args := shouldUseNewTyped ? runOptions.argsTyped : runOptions.args
+	for _, arg in args {
+		if shouldUseNewTyped {
+			mainRunBuilder.argTyped(arg.type, arg.value)
+		} else {
+			mainRunBuilder.arg(arg)
+		}
+	}
+
+	envs := shouldUseNewTyped ? runOptions.envsTyped : runOptions.envs
+	for name, v in envs {
+		if shouldUseNewTyped {
+			mainRunBuilder.envTyped(name, v.type, v.value)
+		} else {
+			mainRunBuilder.env(name, v)
+		}
+	}
 
 	// Working directory after run environment preparation steps.
 	// The same as wdBefore, but might get additional files if they are required for run environment,
 	// like .Rprofile for R with activated renv.
-	wdForCmd := execInternal.prepareWDForRunEnvironment(wdBefore, opts)
+	if (runEnvType == "R") {
+		wdBefore = _activateRenvForWD(wdBefore, computeAllocation, { options: planOptions, refs: inputs.planRefs })
+	}
 
 	//
 	// Build runcmd resource
 	//
 
-	runBuilder := execInternal.prepareCommandRun(wdForCmd, opts)
-
-	if !is_undefined(quota) && (feats.computeLimits || limits.useBatch(quota.queue)) {
-		// Delay requesting compute quota until the workdir is ready.
-		// This prevents a deadlock between storage and compute quotas.
-		// A waiter ensures that a task requests compute quota only after
-		// it has acquired the storage quota required for workdir creation,
-		// which is a prerequisite for the computation itself.
-
-		delayedComputeAllocation := render.createEphemeral(delayedComputeAllocationTpl, {
-				request: smart.createJsonResource({
-					queue: opts.queue,
-					cpu: quota.cpu,
-					ram: quota.ram
-				}),
-				// whole input map is awaited by the template to be ready before the allocation is requested
-				wd: wdBefore
-			})
-
-		runBuilder.allocation(delayedComputeAllocation.output("allocation"))
-	}
-
 	// Load secrets
-	for envName, secretVar in inputs.runOptions.secrets {
-		if feats.commandExpressions {
-			runBuilder.envTyped(envName, constants.ARG_TYPE_EXPRESSION, secretVar)
-		} else { // deprecated, remove after 15 Mar 2025
-			runBuilder.envTyped(envName, constants.ARG_TYPE_VAR, secretVar)
-		}
-	}
-
-	// exec command
-	ll.assert(!is_undefined(ll.fromStrict(opts.cmd).type), opts.cmd)
-	runBuilder.cmdTyped(opts.cmd.type, opts.cmd.value)
-
-	// cmd args
-
-	for name, arg in opts.args {
-		runBuilder.argTyped(arg.type, arg.value)
+	for envName, secretVar in runOptions.secrets {
+		mainRunBuilder.envExpression(envName, secretVar)
 	}
 
 	// other options
-	runBuilder.inQueue(opts.queue)
-	runBuilder.stdout(opts.stdout)
-	runBuilder.stderr(opts.stderr)
-	runBuilder.nErrorLines(opts.nErrorLines)
-	run := runBuilder.build()
+	mainRunBuilder.stdout(runOptions.stdout)
+	mainRunBuilder.stderr(runOptions.stderr)
+	mainRunBuilder.nErrorLines(runOptions.nErrorLines)
+	run := mainRunBuilder.build()
+
 	// get the workdir containing all the files, including produced by the run command
 	wdAfter := run.workdir
 
@@ -169,18 +241,20 @@ _runBinaryCommand := func(inputs) {
 	//
 
 	wdProcessorsResults := {}
-	for name, p in inputs.wdProcessors {
-		tpl := p.tpl
-		tplInputs := {
-			workdir: wdAfter,
-			args: p.tplArgs
+	if !is_undefined(inputs.wdProcessors) {
+		for name, p in inputs.wdProcessors {
+			tpl := p.tpl
+			tplInputs := {
+				workdir: wdAfter,
+				args: p.tplArgs
+			}
+
+			// render template & get results
+			r := render.createEphemeral(tpl, tplInputs)
+
+			wdProcessorsResults[name] = r.output("result")
+			wdAfter = r.output("workdir")
 		}
-
-		// render template & get results
-		r := render.createEphemeral(tpl, tplInputs)
-
-		wdProcessorsResults[name] = r.output("result")
-		wdAfter = r.output("workdir")
 	}
 
 	//
@@ -190,20 +264,28 @@ _runBinaryCommand := func(inputs) {
 	// saver resource
 	wdSaver := workdir.save(wdAfter)
 	// save files
-	for fName in inputs.filesToSave {
-		wdSaver.saveFile(fName)
+	if !is_undefined(settings.filesToSave) {
+		for fName in settings.filesToSave {
+			wdSaver.saveFile(fName)
+		}
 	}
 	// save files content
-	for fName in inputs.filesContentToSave {
-		wdSaver.saveFileContent(fName)
+	if !is_undefined(settings.filesContentToSave) {
+		for fName in settings.filesContentToSave {
+			wdSaver.saveFileContent(fName)
+		}
 	}
 	// save file sets
-	for name, regex in inputs.fileSetsToSave {
-		wdSaver.saveFileSet(name, regex)
+	if !is_undefined(settings.fileSetsToSave) {
+		for name, regex in settings.fileSetsToSave {
+			wdSaver.saveFileSet(name, regex)
+		}
 	}
 	// save file sets content
-	for name, regex in inputs.fileSetsContentToSave {
-		wdSaver.saveFileSetContent(name, regex)
+	if !is_undefined(settings.fileSetsContentToSave) {
+		for name, regex in settings.fileSetsContentToSave {
+			wdSaver.saveFileSetContent(name, regex)
+		}
 	}
 
 	// resulting wd
@@ -211,8 +293,10 @@ _runBinaryCommand := func(inputs) {
 
 	// create streams for all requested file streams.
 	streams := smart.mapBuilder()
-	for fName in inputs.filesToStream {
-		streams.add(fName, stream.create(wdBefore, wdResult, fName))
+	if !is_undefined(settings.filesToStream) {
+		for fName in settings.filesToStream {
+			streams.add(fName, stream.create(wdBefore, wdResult, fName))
+		}
 	}
 
 	return {
@@ -224,56 +308,4 @@ _runBinaryCommand := func(inputs) {
 		wdProcessors: wdProcessorsResults,
 		progress: wdResult.progress
 	}
-}
-
-self.validateInputs({
-	"softwareInfo,?": validation.resource(),
-	filesToAdd: { any: validation.resource() },
-	filesToWrite: { any: validation.resource() },
-	"dirsToCreate,?": ["string"],
-	runOptions: {
-		"software,?": pkg.softwareInfoScheme,
-		"cmd,?": "string",
-		args: ["string"],
-		envs: { any: "string" },
-		"argsTyped,?": [{type: "string", value: "string"}],
-		"envsTyped,?": {"any": {type: "string", value: "string"}},
-		secrets: { any: "string" },
-		queue: "string",
-		stdout: "string",
-		stderr: "string",
-		nErrorLines: "number",
-		"monetization,?": monetization.schema
-	},
-	"saveFiles,?": ["string"],
-	"saveFilesContents,?": ["string"],
-	"streams,?": ["string"],
-	"assets,?": { any: validation.resource() },
-	"assetDescriptors,?": { any: { asset: desc.assetScheme } },
-	"assetRules,?": { any: { any: ["string"] } },
-	"assetCache,?": { any: "number" },
-
-	// Service inputs
-	"quota,?": {
-		queue: "string",
-		"cpu,?": "number",
-		"ram,?": "string"
-	}
-})
-
-self.body(func(inputs) {
-
-	ll.toStrict(inputs)
-	inputs.runOptions = ll.toStrict(inputs.runOptions)
-	if !is_undefined(inputs.assets) {
-		inputs.assets = ll.toStrict(inputs.assets)
-	}
-	if (!is_undefined(inputs.assetDescriptors)) {
-		inputs.assetDescriptors = ll.toStrict(inputs.assetDescriptors, true)
-	}
-	if (!is_undefined(inputs.assetRules)) {
-		inputs.assetRules = ll.toStrict(inputs.assetRules, true)
-	}
-
-	return _runBinaryCommand(inputs)
 })

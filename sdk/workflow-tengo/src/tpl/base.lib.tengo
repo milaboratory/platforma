@@ -647,6 +647,7 @@ tpl := func(ops) {
 				renderer                : self.renderer,
 				registerUnmarshaller    : self.registerUnmarshaller,
 				rawInputs               : self.rawInputs,
+				rawServiceInputs        : self.rawServiceInputs,
 				hasInput                : self.hasInput,
 				inputs                  : self.inputs,
 				defineOutputs           : self.defineOutputs,

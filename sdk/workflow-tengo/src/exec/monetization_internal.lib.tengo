@@ -212,7 +212,7 @@ setUrl := func(mnz, url) {
  * @param: mnz: monetization -- see a beginning of this file.
  * @param: wd: workdir -- workdir where all files from mnz.fileParams already exist.
  * @param: queue: queue - in which queue we should run monetization. */
-run := func(mnz, wd, queue) {
+run := func(mnz, wd, allocation) {
 	_validateIsReady(mnz)
 
 	mnzSw := assets.importSoftware("@platforma-open/milaboratories.software-small-binaries:mnz-client")
@@ -252,7 +252,7 @@ run := func(mnz, wd, queue) {
 		}
 	}
 
-	builder.inQueue(queue)
+	builder.allocation(allocation)
 	stdoutName := "mnz_stdout.txt"
 	builder.stdout(stdoutName)
 	run := builder.build()

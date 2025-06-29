@@ -13,6 +13,10 @@ json := import("json")
 constants := import(":exec.constants")
 slices := import(":slices")
 limits := import(":exec.limits")
+render := import(":render")
+assets := import(":assets")
+
+delayedComputeAllocationTpl := assets.importTemplate(":exec.delayed_compute_allocation")
 
 _RTYPE_RUN_COMMAND_V1 := { Name: "RunCommand/executor", Version: "1" }
 _RTYPE_RUN_COMMAND_EXEC_V2 := { Name: "RunCommand/executor", Version: "2" }
@@ -33,7 +37,6 @@ RUN_CMD_PLAN_REFS_SCHEMA := {
 }
 
 RUN_CMD_PLAN_OPTIONS_SCHEMA := {
-	"__options__,closed": true,
 	"cmd": ["or", ARG_SCHEMA, "null"],
 	"args": [ARG_SCHEMA],
 	"envs": { "any": ARG_SCHEMA },
@@ -389,7 +392,13 @@ createRunCommandPlan := func(...initialState) {
 		initState := initialState[0]
 		validation.assertType(initState, RUN_CMD_PLAN_SCHEMA, "invalid initial state for run command plan")
 
-		state.options = maps.clone(initState.options)
+		initOptions := initState.options
+		state.options.cmd = maps.clone(initOptions.cmd)
+		state.options.args = maps.clone(initOptions.args)
+		state.options.envs = maps.clone(initOptions.envs)
+		state.options.substRules = maps.clone(initOptions.substRules)
+		state.options.customPaths = maps.clone(initOptions.customPaths)
+
 		for k, v in initState.refs {
 			state.refs[k] = v
 		}
@@ -437,7 +446,13 @@ builder := func(workdir, ...initialState) {
 		initState := initialState[0]
 		validation.assertType(initState, RUN_CMD_PLAN_SCHEMA, "invalid initial state for run command builder")
 
-		state.options = maps.clone(initState.options)
+		initOptions := initState.options
+		state.options.cmd = maps.clone(initOptions.cmd)
+		state.options.args = maps.clone(initOptions.args)
+		state.options.envs = maps.clone(initOptions.envs)
+		state.options.substRules = maps.clone(initOptions.substRules)
+		state.options.customPaths = maps.clone(initOptions.customPaths)
+
 		for k, v in initState.refs {
 			state.refs[k] = v
 		}
@@ -445,8 +460,10 @@ builder := func(workdir, ...initialState) {
 		ll.assert(len(initialState) == 0, "builder accepts at most two arguments")
 	}
 
-	queue := ""
-	_allocation := undefined
+	allocation := undefined
+	queue := undefined
+	cpu := undefined
+	ram := undefined
 
 	stdout := "stdout.txt"
 	stderr := "stderr.txt"
@@ -460,9 +477,28 @@ builder := func(workdir, ...initialState) {
 		 *
 		 * @param allocation: reference
 		 */
-		allocation: func(allocation) {
-			validation.assertType(allocation, validation.reference, "runcmd.builder: allocation should be a valid reference")
-			_allocation = allocation
+		allocation: func(value) {
+			validation.assertType(value, validation.reference, "runcmd.builder: allocation should be a valid reference")
+			allocation = value
+			return self
+		},
+
+		/**
+		 * Sets compute resource request for the command.
+		 *
+		 * @param request: map - contains `queue`, `cpu` and `ram` for the job.
+		 */
+		request: func(request) {
+			validation.assertType(request, {
+				"queue": "string",
+				"cpu,?": "number",
+				"ram,?": "number"
+			}, "runcmd.builder.request: request must be a valid request")
+
+			queue = request.queue
+			cpu = request.cpu
+			ram = request.ram
+
 			return self
 		},
 
@@ -545,6 +581,17 @@ builder := func(workdir, ...initialState) {
 				check(path)
 			}
 
+			/**
+			 * Check that either allocation or compute resources are set, but not both.
+			 */
+			ll.assert(is_undefined(allocation) || (is_undefined(cpu) && is_undefined(ram)),
+				"runcmd.builder.build: allocation cannot be set along with cpu or ram")
+
+			ll.assert(!is_undefined(allocation) || !is_undefined(cpu) || !is_undefined(ram),
+				"runcmd.builder.build: either allocation or compute resources (cpu or ram) must be set")
+
+			ll.assert(!is_undefined(queue), "queue must be set")
+
 			useBatch := limits.useBatch(queue)
 
 			if useBatch {
@@ -571,9 +618,31 @@ builder := func(workdir, ...initialState) {
 				"runcmd.builder().build: expression arguments must be enabled only if platforma backend supports expressions, found: %v",
 				hasExpressionArgs)
 
-			// ll.assert(!is_undefined(_allocation), "Allocation must be set for runcmd.")
-			if !is_undefined(_allocation) {
-				runRes.getField(_FIELD_ALLOCATION).set(_allocation)
+			if !is_undefined(allocation) {
+				runRes.getField(_FIELD_ALLOCATION).set(allocation)
+			} else {
+				request := {
+					queue: queue
+				}
+				if !is_undefined(cpu) {
+					request.cpu = cpu
+				}
+				if !is_undefined(ram) {
+					request.ram = ram
+				}
+
+				// Delay requesting compute quota until the workdir is ready.
+				// This prevents a deadlock between storage and compute quotas.
+				// A waiter ensures that a task requests compute quota only after
+				// it has acquired the storage quota required for workdir creation,
+				// which is a prerequisite for the computation itself.
+
+				delayedComputeAllocation := render.createEphemeral(delayedComputeAllocationTpl, {
+					request: smart.createJsonResource(request),
+					// whole input map is awaited by the template to be ready before the allocation is requested
+					wd: workdir
+				})
+				runRes.getField(_FIELD_ALLOCATION).set(delayedComputeAllocation.output("allocation"))
 			}
 
 			refsRes := smart.createMapResourceWithType(_RTYPE_RUN_COMMAND_REFS, refs)
