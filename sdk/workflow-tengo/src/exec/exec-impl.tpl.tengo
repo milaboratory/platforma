@@ -5,8 +5,6 @@
 
 self := import(":tpl.light")
 
-ll := import(":ll")
-feats := import(":feats")
 validation := import(":validation")
 
 smart := import(":smart")
@@ -20,6 +18,7 @@ desc := import(":exec.descriptor")
 constants := import(":exec.constants")
 monetization := import(":exec.monetization_internal")
 assets := import(":assets")
+maps := import(":maps")
 runcmd := import(":exec.runcmd")
 
 delayedComputeAllocationTpl := assets.importTemplate(":exec.delayed_compute_allocation")

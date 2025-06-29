@@ -7,21 +7,16 @@
 
 self := import(":tpl.light")
 
-ll := import(":ll")
-feats := import(":feats")
 validation := import(":validation")
 
 smart := import(":smart")
 render := import(":render")
-workdir := import(":workdir")
-stream := import(":exec.stream")
-limits := import(":exec.limits")
 pkg := import(":exec.package")
-blobs := import(":file.internal")
 desc := import(":exec.descriptor")
-constants := import(":exec.constants")
 monetization := import(":exec.monetization_internal")
 assets := import(":assets")
+maps := import(":maps")
+runcmd := import(":exec.runcmd")
 loadSoftware := import(":exec.load-software")
 
 mnzSw := assets.importSoftware("@platforma-open/milaboratories.software-small-binaries:mnz-client")
@@ -44,7 +39,7 @@ self.validateInputs({
 	"wdProcessors,?": {
 		any: {
 			tpl: validation.resource(),
-			"tplArgs,?": validation.any
+			"tplArgs,?": "any"
 		}
 	},
 
@@ -135,7 +130,7 @@ self.body(func(inputs) {
 		filesToStream: inputs.filesToStream,
 		assetDescriptors: inputs.assetDescriptors,
 		assetRules: inputs.assetRules,
-		assetCache: inputs.assetCache,
+		assetCache: inputs.assetCache
 	}, { removeUndefs: true }))
 
 	execImplTpl := assets.importTemplate(":exec.exec-impl")

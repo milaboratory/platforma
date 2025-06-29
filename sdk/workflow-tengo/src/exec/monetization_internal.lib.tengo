@@ -4,7 +4,6 @@ base64 := import("base64")
 json := import("json")
 
 ll := import(":ll")
-feats := import(":feats")
 
 validation := import(":validation")
 assets := import(":assets")
@@ -13,7 +12,6 @@ text := import("text")
 runcmd := import(":exec.runcmd")
 workdir := import(":workdir")
 render := import(":render")
-constants := import(":exec.constants")
 slices := import(":slices")
 sets := import(":sets")
 
