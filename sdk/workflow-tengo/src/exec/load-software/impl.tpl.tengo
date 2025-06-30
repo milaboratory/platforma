@@ -173,9 +173,8 @@ _binPackageCallOptions := func(operationMode, softwareName, variables, descripto
 	//   [<runEnv bin>] [<runEnv options>] [<entrypoint bin>] [<entrypoint options>] <cmd> <args>
 	if (maps.containsKey(descriptor, "runEnv")) {
 		runEnvInfo := _loadRunEnvironment(operationMode, descriptor, softwareName, softPackage)
-
-		runEnvType = runEnvInfo.runEnvType
 		runEnvPlan = runEnvInfo.plan
+		runEnvType = runEnvInfo.runEnvType
 	}
 
 	ll.assert(

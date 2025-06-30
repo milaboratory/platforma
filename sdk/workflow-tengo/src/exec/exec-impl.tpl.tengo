@@ -17,11 +17,10 @@ blobs := import(":file.internal")
 desc := import(":exec.descriptor")
 constants := import(":exec.constants")
 monetization := import(":exec.monetization_internal")
-assets := import(":assets")
 maps := import(":maps")
 runcmd := import(":exec.runcmd")
 
-delayedComputeAllocationTpl := assets.importTemplate(":exec.delayed_compute_allocation")
+delayedCompAlloc := import(":exec.delayed-compute-allocation")
 
 _activateRenvForWD := func(wd, queue, allocation, plan) {
 	activateRenv := runcmd.builder(wd, plan).
@@ -93,7 +92,7 @@ self.validateInputs({
 	},
 
 	// Service inputs
-	"quota,?": {
+	"quota": {
 		queue: "string",
 		"cpu,?": "number",
 		"ram,?": "string"
@@ -113,23 +112,21 @@ self.body(func(inputs) {
 
 	quota := inputs.quota
 
-	if !is_undefined(quota) {
-		quotaBuilder := limits.quotaBuilder().
-			cpu(quota.cpu).
-			ram(quota.ram)
+	quotaBuilder := limits.quotaBuilder().
+		cpu(quota.cpu).
+		ram(quota.ram)
 
-		if limits.useBatch(quota.queue) {
-			quotaBuilder.queue(constants.BATCH_QUEUE)
-		} else {
-			quotaBuilder.queue(quota.queue)
-		}
-
-		storageSpaceRef := limits.storageSpaceRequestBuilder().
-			quota(quotaBuilder.build()).
-			build()
-
-		wdBuilder.allocation(storageSpaceRef.allocation)
+	if limits.useBatch(quota.queue) {
+		quotaBuilder.queue(constants.BATCH_QUEUE)
+	} else {
+		quotaBuilder.queue(quota.queue)
 	}
+
+	storageSpaceRef := limits.storageSpaceRequestBuilder().
+		quota(quotaBuilder.build()).
+		build()
+
+	wdBuilder.allocation(storageSpaceRef.allocation)
 
 	// add files
 	wdBuilder.addFiles(inputs.filesToAdd)
@@ -168,16 +165,11 @@ self.body(func(inputs) {
 	// it has acquired the storage quota required for workdir creation,
 	// which is a prerequisite for the computation itself.
 
-	delayedComputeAllocation := render.createEphemeral(delayedComputeAllocationTpl, {
-		request: smart.createJsonResource({
-			queue: runOptions.queue,
-			cpu: quota.cpu,
-			ram: quota.ram
-		}),
-		// whole input map is awaited by the template to be ready before the allocation is requested
-		wd: wdBefore
+	computeAllocation := delayedCompAlloc.create(wdBefore, {
+		queue: runOptions.queue,
+		cpu: quota.cpu,
+		ram: quota.ram
 	})
-	computeAllocation := delayedComputeAllocation.output("allocation")
 
 	runEnvType := inputs.mainPlan.options.runEnvType
 
