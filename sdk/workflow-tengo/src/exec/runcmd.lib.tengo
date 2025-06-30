@@ -608,9 +608,6 @@ builder := func(workdir, ...initialState) {
 			ll.assert(is_undefined(allocation) || (is_undefined(cpu) && is_undefined(ram)),
 				"runcmd.builder.build: allocation cannot be set along with cpu or ram")
 
-			ll.assert(!is_undefined(allocation) || !is_undefined(cpu) || !is_undefined(ram),
-				"runcmd.builder.build: either allocation or compute resources (cpu or ram) must be set")
-
 			ll.assert(!is_undefined(queue), "queue must be set")
 
 			useBatch := limits.useBatch(queue)
