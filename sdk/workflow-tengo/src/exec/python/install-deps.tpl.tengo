@@ -21,11 +21,14 @@ _runInVenv := func(python, venv, wd, pythonBinDir, pythonVenvBinDir) {
 	pythonRunenvVar := feats.commandExpressions ? "python_runenv" : "{python_runenv}"
 
 	return runcmd.builder(wd).
+		inQueue("light").
+		cpu(1).
+		mem("1GiB").
 		ref("python-venv", venv).
 		ref("python-run-environment", python).
 		substitutionRule(pythonVenvVar, "python-venv").
 		substitutionRule(pythonRunenvVar, "python-run-environment").
-		addToPath(t, path.join("{python_venv}", "venv", pythonVenvBinDir)).
+		addPathTyped(t, path.join("{python_venv}", "venv", pythonVenvBinDir)).
 		envTyped("VIRTUAL_ENV", t, path.join("{python_venv}", "venv")).
 		envTyped("PYTHONPATH", t, path.join("{python_runenv}", pythonBinDir, "python_stdlib"))
 }

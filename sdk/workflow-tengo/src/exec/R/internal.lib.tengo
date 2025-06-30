@@ -22,9 +22,12 @@ runRBuilder := func(operationMode, wd, rPackage, rDescriptor) {
 	rule := feats.commandExpressions ? "R" : "{R}"
 
 	builder := runcmd.builder(wd).
+		inQueue("light").
+		cpu(1).
+		mem("1GiB").
 		ref("r-run-environment", rPackage).
 		substitutionRule(rule, "r-run-environment").
-		addToPath(t, path.join("{R}", rDescriptor.binDir)).
+		addPathTyped(t, path.join("{R}", rDescriptor.binDir)).
 		envTyped("RHOME", t, "{R}").
 		envTyped("R_HOME_DIR", t, "{R}").
 		envTyped("RENV_PATHS_ROOT", t, path.join("{R}", "renv-root")).

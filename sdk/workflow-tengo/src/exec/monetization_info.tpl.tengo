@@ -15,13 +15,14 @@ self.body(func(args) {
 	mnz := args.monetization
 	filesToAdd := args.filesToAdd
 	filesToWrite := args.filesToWrite
+	mnzPlan := args.mnzPlan
 
 	wd := workdir.builder().
 		addFiles(filesToAdd).
 		writeFiles(filesToWrite).
 		build()
 
-	result := monetization.run(mnz, wd, constants.UI_TASKS_QUEUE)
+	result := monetization.run(mnz, wd, mnzPlan, constants.UI_TASKS_QUEUE)
 
 	return {
 		info: result.info
