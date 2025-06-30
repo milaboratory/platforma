@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 4.9.0
+
+### Minor Changes
+
+- 964ba27: Fix for software materialization deadlock
+
 ## 4.8.1
 
 ### Patch Changes
