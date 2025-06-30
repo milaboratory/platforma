@@ -13,9 +13,9 @@ export type Optional<T> = T | undefined;
 
 export type OneOrMany<T> = T | T[];
 
-type _Resolve<T> = T;
-
-export type Prettify<T> = _Resolve<{ [K in keyof T]: T[K] }>;
+export type Prettify<T> = {
+  [K in keyof T]: Prettify<T[K]>;
+} & {};
 
 export type WithRequired<T, K extends keyof T> = T & { [P in K]-?: T[P] };
 

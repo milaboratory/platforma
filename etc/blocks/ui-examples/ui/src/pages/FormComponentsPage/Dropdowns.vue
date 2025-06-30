@@ -11,14 +11,16 @@ import {
   PlRow,
   PlMaskIcon16,
 } from '@platforma-sdk/ui-vue';
-import type { Ref } from 'vue';
-import { reactive, ref } from 'vue';
+import { computed, reactive, ref } from 'vue';
+import type { ListOption } from '@platforma-sdk/ui-vue';
 
 const data = reactive({
   disabled: false,
   clearable: true,
-  model: 1,
-  multi: [],
+  withGroups: false,
+  optionsLoading: false,
+  model: 1 as number | string | undefined,
+  multi: [] as (number | string)[],
   multiRefSelected: [
     {
       __isRef: true as const,
@@ -29,7 +31,7 @@ const data = reactive({
   ref: undefined,
 });
 
-const simpleOptions = ref(
+const simpleOptionsBase = ref<ListOption<unknown>[] | undefined>(
   undef([
     {
       label: 'One',
@@ -40,18 +42,49 @@ const simpleOptions = ref(
       value: 2,
     },
     {
-      text: 'Three',
+      label: 'Three',
       value: 3,
     },
     {
-      text: 'NaN',
-      value: NaN,
+      label: 'Four (4)',
+      value: 4,
+    },
+    {
+      label: 'Five',
+      value: 5,
+    },
+    {
+      text: 'Letter A',
+      value: 'A',
+    },
+    {
+      label: 'Letter B',
+      value: 'B',
+    },
+    {
+      label: 'Letter C',
+      value: 'C',
     },
   ]),
 );
 
-const refOptions = ref(
-  undef([
+const simpleOptions = computed(() => {
+  if (data.optionsLoading) {
+    return undefined;
+  }
+
+  return simpleOptionsBase.value?.map((option) => ({
+    ...option,
+    group: data.withGroups ? (Number.isNaN(option.value) ? undefined : typeof option.value) : undefined,
+  }));
+});
+
+const refOptions = computed(() => {
+  if (data.optionsLoading) {
+    return undefined;
+  }
+
+  return undef([
     {
       label: 'Block 1 label',
       ref: {
@@ -59,6 +92,7 @@ const refOptions = ref(
         blockId: '1',
         name: 'Block 1',
       },
+      group: data.withGroups ? 'Group 1' : undefined,
     },
     {
       label: 'Block 2 label',
@@ -67,12 +101,17 @@ const refOptions = ref(
         blockId: '2',
         name: 'Block 2',
       },
+      group: data.withGroups ? 'Group 2' : undefined,
     },
-  ]),
-);
+  ]);
+});
 
-const refOptionsMulti = ref(
-  undef([
+const refOptionsMulti = computed(() => {
+  if (data.optionsLoading) {
+    return undefined;
+  }
+
+  return undef([
     {
       label: 'Block 1 label Ref',
       ref: {
@@ -89,23 +128,19 @@ const refOptionsMulti = ref(
         name: 'Block 2 Ref',
       },
     },
-  ]),
-);
+  ]);
+});
 
-const toggleRefValue = (r: Ref<unknown>) => {
-  const prev = r.value;
-
-  r.value = undefined;
+const showOptionsLoading = () => {
+  data.optionsLoading = true;
 
   setTimeout(() => {
-    r.value = prev;
+    data.optionsLoading = false;
   }, 3000);
 };
 
-const showOptionsLoading = () => {
-  toggleRefValue(simpleOptions);
-  toggleRefValue(refOptions);
-  toggleRefValue(refOptionsMulti);
+const toggleGroups = () => {
+  data.withGroups = !data.withGroups;
 };
 </script>
 
@@ -115,9 +150,11 @@ const showOptionsLoading = () => {
       <PlCheckbox v-model="data.disabled">Disabled</PlCheckbox>
       <PlCheckbox v-model="data.clearable">Clearable</PlCheckbox>
       <PlBtnPrimary @click="showOptionsLoading">Show options loading</PlBtnPrimary>
+      <PlBtnPrimary @click="toggleGroups">With groups ({{ data.withGroups }})</PlBtnPrimary>
     </PlRow>
     <PlRow>
       <PlContainer width="400px">
+        <pre>{{ data.model }}</pre>
         <PlDropdown
           v-model="data.model"
           :disabled="data.disabled"
