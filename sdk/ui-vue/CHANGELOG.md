@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.37.7
+
+### Patch Changes
+
+- 30d7dc8: MSA: find linker columns automatically
+
 ## 1.37.4
 
 ### Patch Changes
