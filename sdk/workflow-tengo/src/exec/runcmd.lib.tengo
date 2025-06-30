@@ -490,7 +490,7 @@ builder := func(workdir, ...initialState) {
 			validation.assertType(request, {
 				"queue": "string",
 				"cpu,?": "number",
-				"ram,?": "number"
+				"ram,?": ["or", "number", "string"]
 			}, "runcmd.builder.request: request must be a valid request")
 
 			queue = request.queue

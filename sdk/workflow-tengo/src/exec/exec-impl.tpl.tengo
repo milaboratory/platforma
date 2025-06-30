@@ -47,6 +47,9 @@ EXTENDED_PLAN_OPTIONS_SCHEMA := maps.merge(runcmd.RUN_CMD_PLAN_OPTIONS_SCHEMA, {
 	"runEnvType,?": "string"
 })
 
+// awaits the whole input map to become ready
+self.awaitState("ResourceReady")
+
 self.validateInputs({
 	filesToAdd: { any: validation.resource() },
 	filesToWrite: { any: validation.resource() },
@@ -57,12 +60,12 @@ self.validateInputs({
 			"tplArgs,?": "any"
 		}
 	},
-	planRefs: { any: "any" },
-	"mnzPlanRefs,?": { any: validation.resource() },
+	planRefs: runcmd.RUN_CMD_PLAN_REFS_SCHEMA,
+	"mnzPlanRefs,?": runcmd.RUN_CMD_PLAN_REFS_SCHEMA,
 
 	settings: {
 		planOptions: EXTENDED_PLAN_OPTIONS_SCHEMA,
-		"mnzPlanOptions,?": EXTENDED_PLAN_OPTIONS_SCHEMA,
+		"mnzPlanOptions,?": runcmd.RUN_CMD_PLAN_OPTIONS_SCHEMA,
 		"dirsToCreate,?": ["string"],
 		runOptions: {
 			"software,?": pkg.softwareInfoScheme,
@@ -185,7 +188,7 @@ self.body(func(inputs) {
 
 	mnz := runOptions.monetization
 	if !is_undefined(mnz) {
-		result := monetization.run(mnz, wdBefore, { options: settings.mnzPlanOptions, refs: inputs.mnzPlanRefs }, computeAllocation, runOptions.queue)
+		result := monetization.run(mnz, wdBefore, { options: settings.mnzPlanOptions, refs: inputs.mnzPlanRefs }, runOptions.queue, computeAllocation)
 		wdBefore = result.wdAfter
 		mainRunBuilder.refVar(result.jwtEnvName, result.jwtEnvName, result.jwtEnvValue)
 		mainRunBuilder.envExpression(result.jwtEnvName, "{" + result.jwtEnvName + "}")

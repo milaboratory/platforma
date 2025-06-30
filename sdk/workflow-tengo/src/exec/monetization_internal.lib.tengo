@@ -211,12 +211,22 @@ setUrl := func(mnz, url) {
  * @param: plan: plan -- plan for the runcmd for monetization software.
  * @param: allocation: allocation -- allocation for the runcmd.
  * @param: queue: queue - queue for the runcmd. */
-run := func(mnz, wd, plan, allocation, queue) {
+run := func(mnz, wd, plan, queue, ...allocationOpt) {
 	_validateIsReady(mnz)
 
+	allocation := undefined
+	if len(allocationOpt) > 0 {
+		allocation = allocationOpt[0]
+	}
+
 	builder := runcmd.builder(wd, plan).
-		inQueue(queue).
-		allocation(allocation)
+		inQueue(queue)
+
+	if is_undefined(allocation) {
+		builder.cpu(1).mem("512MiB")
+	} else {
+		builder.allocation(allocation)
+	}
 
 	builder.envExpression("MI_LICENSE", "{secrets.MI_LICENSE}")
 	if mnz.isDryRun {

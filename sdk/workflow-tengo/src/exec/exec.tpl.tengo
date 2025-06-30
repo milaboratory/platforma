@@ -20,6 +20,7 @@ runcmd := import(":exec.runcmd")
 loadSoftware := import(":exec.load-software")
 
 mnzSw := assets.importSoftware("@platforma-open/milaboratories.software-small-binaries:mnz-client")
+execImplTpl := assets.importTemplate(":exec.exec-impl")
 
 self.defineOutputs(
 	"files",
@@ -133,8 +134,7 @@ self.body(func(inputs) {
 		assetCache: inputs.assetCache
 	}, { removeUndefs: true }))
 
-	execImplTpl := assets.importTemplate(":exec.exec-impl")
-	execImpl := render.create(execImplTpl, pureImplInputs, serviceImplInputs)
+	execImpl := render.createEphemeral(execImplTpl, pureImplInputs, serviceImplInputs)
 
 	return {
 		files: execImpl.output("files"),
