@@ -84,12 +84,12 @@ self.body(func(inputs) {
 		plan = runcmd.createRunCommandPlan().cmd(inputs.runOptions.cmd).state()
 	} else {
 		software := inputs.runOptions.software
-		plan = loadSoftware.swToRunCmdOptions(software.name, software.version, software.descriptor)
+		plan = loadSoftware.loadSoftware(software)
 	}
 
 	mnzPlan := undefined
 	if !is_undefined(inputs.runOptions.monetization) {
-		mnzPlan = loadSoftware.swToRunCmdOptions(mnzSw.name, mnzSw.version, mnzSw.descriptor)
+		mnzPlan = loadSoftware.loadSoftware(mnzSw)
 	}
 
 	serviceImplInputs := {}
@@ -98,7 +98,7 @@ self.body(func(inputs) {
 	}
 
 	pureImplInputs := {
-		planRefs: plan.refs
+		mainPlan: plan
 	}
 	if !is_undefined(self.rawInputs().filesToAdd) {
 		pureImplInputs.filesToAdd = self.rawInputs().filesToAdd
@@ -109,19 +109,14 @@ self.body(func(inputs) {
 	if !is_undefined(self.rawInputs().assets) {
 		pureImplInputs.assets = self.rawInputs().assets
 	}
-	if !is_undefined(self.rawInputs().planRefs) {
-		pureImplInputs.planRefs = self.rawInputs().planRefs
-	}
 	if !is_undefined(self.rawInputs().wdProcessors) {
 		pureImplInputs.wdProcessors = self.rawInputs().wdProcessors
 	}
 	if !is_undefined(mnzPlan) {
-		pureImplInputs.mnzPlanRefs = mnzPlan.refs
+		pureImplInputs.mnzPlan = mnzPlan
 	}
 
 	pureImplInputs.settings = smart.createJsonResource(maps.clone({
-		planOptions: plan.options,
-		mnzPlanOptions: mnzPlan.options,
 		dirsToCreate: inputs.dirsToCreate,
 		runOptions: inputs.runOptions,
 		filesToSave: inputs.filesToSave,

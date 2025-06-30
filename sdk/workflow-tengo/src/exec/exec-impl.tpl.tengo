@@ -60,12 +60,10 @@ self.validateInputs({
 			"tplArgs,?": "any"
 		}
 	},
-	planRefs: runcmd.RUN_CMD_PLAN_REFS_SCHEMA,
-	"mnzPlanRefs,?": runcmd.RUN_CMD_PLAN_REFS_SCHEMA,
+	mainPlan: runcmd.RUN_CMD_PLAN_SCHEMA,
+	"mnzPlan,?": runcmd.RUN_CMD_PLAN_SCHEMA,
 
 	settings: {
-		planOptions: EXTENDED_PLAN_OPTIONS_SCHEMA,
-		"mnzPlanOptions,?": runcmd.RUN_CMD_PLAN_OPTIONS_SCHEMA,
 		"dirsToCreate,?": ["string"],
 		runOptions: {
 			"software,?": pkg.softwareInfoScheme,
@@ -182,13 +180,13 @@ self.body(func(inputs) {
 	computeAllocation := delayedComputeAllocation.output("allocation")
 
 	runEnvType := planOptions.runEnvType
-	mainRunBuilder := runcmd.builder(wdBefore, { options: planOptions, refs: inputs.planRefs }).
+	mainRunBuilder := runcmd.builder(wdBefore, inputs.mainPlan).
 		inQueue(runOptions.queue).
 		allocation(computeAllocation)
 
 	mnz := runOptions.monetization
 	if !is_undefined(mnz) {
-		result := monetization.run(mnz, wdBefore, { options: settings.mnzPlanOptions, refs: inputs.mnzPlanRefs }, runOptions.queue, computeAllocation)
+		result := monetization.run(mnz, wdBefore, inputs.mnzPlan, runOptions.queue, computeAllocation)
 		wdBefore = result.wdAfter
 		mainRunBuilder.refVar(result.jwtEnvName, result.jwtEnvName, result.jwtEnvValue)
 		mainRunBuilder.envExpression(result.jwtEnvName, "{" + result.jwtEnvName + "}")
