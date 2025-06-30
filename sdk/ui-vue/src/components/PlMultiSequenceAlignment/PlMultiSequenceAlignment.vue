@@ -42,12 +42,6 @@ const props = defineProps<{
    */
   readonly sequenceColumnPredicate: PColumnPredicate;
   /**
-   * Sometimes sequence column and label column have disjoint axes.
-   * In this case you have to define `linkerColumnPredicate` to select columns
-   * connecting axes of sequence and label columns.
-   */
-  readonly linkerColumnPredicate?: PColumnPredicate;
-  /**
    * Row selection model (from `PlAgDataTableV2` or `GraphMaker`).
    * If not provided or empty, all rows will be considered selected.
    * Warning: should be forwarded as a field of `reactive` object
@@ -93,7 +87,6 @@ const multipleAlignmentData = reactive(useMultipleAlignmentData(() => ({
   markupColumnId: settings.value.colorScheme.type === 'markup'
     ? settings.value.colorScheme.columnId
     : undefined,
-  linkerColumnPredicate: props.linkerColumnPredicate,
   selection: props.selection,
 })));
 

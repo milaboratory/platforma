@@ -9,6 +9,7 @@ import {
   getAxisId,
   getRawPlatformaInstance,
   isLabelColumn,
+  isLinkerColumn,
   type JoinEntry,
   matchAxisId,
   parseJson,
@@ -104,7 +105,6 @@ export function useMultipleAlignmentData(
     sequenceColumnIds: PObjectId[];
     labelColumnIds: PTableColumnId[];
     markupColumnId: PObjectId | undefined;
-    linkerColumnPredicate: PColumnPredicate | undefined;
     selection: PlSelectionModel | undefined;
   }>,
 ) {
@@ -251,14 +251,12 @@ async function getMultipleAlignmentData({
   sequenceColumnIds,
   labelColumnIds,
   markupColumnId,
-  linkerColumnPredicate,
   selection,
 }: {
   pframe: PFrameHandle | undefined;
   sequenceColumnIds: PObjectId[];
   labelColumnIds: PTableColumnId[];
   markupColumnId: PObjectId | undefined;
-  linkerColumnPredicate: PColumnPredicate | undefined;
   selection: PlSelectionModel | undefined;
 }): Promise<MultipleAlignmentData> {
   if (!pframe || sequenceColumnIds.length === 0) {
@@ -267,9 +265,7 @@ async function getMultipleAlignmentData({
 
   const pFrameDriver = getPFrameDriver();
   const columns = await pFrameDriver.listColumns(pframe);
-  const linkerColumns = linkerColumnPredicate
-    ? columns.filter((c) => linkerColumnPredicate(c))
-    : [];
+  const linkerColumns = columns.filter((column) => isLinkerColumn(column.spec));
 
   const filterColumn = createRowSelectionColumn({ selection });
 
