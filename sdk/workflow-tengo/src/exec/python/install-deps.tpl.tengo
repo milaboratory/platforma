@@ -21,6 +21,9 @@ _runInVenv := func(python, venv, wd, pythonBinDir, pythonVenvBinDir) {
 	pythonRunenvVar := feats.commandExpressions ? "python_runenv" : "{python_runenv}"
 
 	return runcmd.builder(wd).
+		inQueue("light").
+		cpu(1).
+		mem("1GiB").
 		ref("python-venv", venv).
 		ref("python-run-environment", python).
 		substitutionRule(pythonVenvVar, "python-venv").

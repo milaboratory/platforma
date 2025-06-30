@@ -32,12 +32,10 @@ ARG_SCHEMA := {
 	"value": "string"
 }
 
-RUN_CMD_PLAN_REFS_SCHEMA := {
-	"any": validation.reference
-}
+RUN_CMD_PLAN_REFS_SCHEMA := "any"
 
 RUN_CMD_PLAN_OPTIONS_SCHEMA := {
-	"cmd": ["or", ARG_SCHEMA, "null"],
+	"cmd,?": ARG_SCHEMA,
 	"args": [ARG_SCHEMA],
 	"envs": { "any": ARG_SCHEMA },
 	"substRules": { "any": "string" },
@@ -98,7 +96,7 @@ expressionArg := func(argTpl) {
 	}
 }
 
-_createAbstractRunCommandPlan := func(state) {
+_createAbstractRunCommandPlan := func(state, returnSelfFn) {
 	self := undefined
 
 	self = ll.toStrict({
@@ -113,7 +111,7 @@ _createAbstractRunCommandPlan := func(state) {
 			} else {
 				state.options.cmd = simpleArg(commandName)
 			}
-			return self
+			return returnSelfFn()
 		},
 
 		/**
@@ -126,7 +124,7 @@ _createAbstractRunCommandPlan := func(state) {
 		 */
 		cmdVar: func(commandTpl) {
 			state.options.cmd = variableArg(commandTpl)
-			return self
+			return returnSelfFn()
 		},
 
 		/**
@@ -139,7 +137,7 @@ _createAbstractRunCommandPlan := func(state) {
 		 */
 		cmdExpression: func(commandTpl) {
 			state.options.cmd = expressionArg(commandTpl)
-			return self
+			return returnSelfFn()
 		},
 
 		cmdTyped: func(type, value) {
@@ -168,7 +166,7 @@ _createAbstractRunCommandPlan := func(state) {
 			} else {
 				state.options.args = append(state.options.args, simpleArg(arg))
 			}
-			return self
+			return returnSelfFn()
 		},
 
 		/**
@@ -181,7 +179,7 @@ _createAbstractRunCommandPlan := func(state) {
 		 */
 		argVar: func(argTpl) {
 			state.options.args = append(state.options.args, variableArg(argTpl))
-			return self
+			return returnSelfFn()
 		},
 
 		/**
@@ -194,7 +192,7 @@ _createAbstractRunCommandPlan := func(state) {
 		 */
 		argExpression: func(argTpl) {
 			state.options.args = append(state.options.args, expressionArg(argTpl))
-			return self
+			return returnSelfFn()
 		},
 
 		argTyped: func(type, value) {
@@ -226,7 +224,7 @@ _createAbstractRunCommandPlan := func(state) {
 				"attempt to override existing reference %q", refKey)
 
 			state.refs[refKey] = ref
-			return self
+			return returnSelfFn()
 		},
 
 		/**
@@ -240,7 +238,7 @@ _createAbstractRunCommandPlan := func(state) {
 		refVar: func(varName, refKey, ref) {
 			self.ref(refKey, ref)
 			self.substitutionRule(varName, refKey)
-			return self
+			return returnSelfFn()
 		},
 
 		/**
@@ -255,7 +253,7 @@ _createAbstractRunCommandPlan := func(state) {
 			} else {
 				state.options.envs[name] = simpleArg(value)
 			}
-			return self
+			return returnSelfFn()
 		},
 
 		/**
@@ -267,7 +265,7 @@ _createAbstractRunCommandPlan := func(state) {
 		 */
 		envVar: func(name, valueTpl) {
 			state.options.envs[name] = variableArg(valueTpl)
-			return self
+			return returnSelfFn()
 		},
 
 		/**
@@ -279,7 +277,7 @@ _createAbstractRunCommandPlan := func(state) {
 		 */
 		envExpression: func(name, valueTpl) {
 			state.options.envs[name] = expressionArg(valueTpl)
-			return self
+			return returnSelfFn()
 		},
 
 		envTyped: func(name, type, value) {
@@ -308,7 +306,7 @@ _createAbstractRunCommandPlan := func(state) {
 			} else {
 				state.options.customPaths = append(state.options.customPaths, simpleArg(path))
 			}
-			return self
+			return returnSelfFn()
 		},
 
 		/**
@@ -319,7 +317,7 @@ _createAbstractRunCommandPlan := func(state) {
 		 */
 		addPathVar: func(pathTpl) {
 			state.options.customPaths = append(state.options.customPaths, variableArg(pathTpl))
-			return self
+			return returnSelfFn()
 		},
 
 		/**
@@ -330,7 +328,7 @@ _createAbstractRunCommandPlan := func(state) {
 		 */
 		addPathExpression: func(pathTpl) {
 			state.options.customPaths = append(state.options.customPaths, expressionArg(pathTpl))
-			return self
+			return returnSelfFn()
 		},
 
 		addPathTyped: func(type, value) {
@@ -357,7 +355,7 @@ _createAbstractRunCommandPlan := func(state) {
 		 */
 		substitutionRule: func(varName, refKey) {
 			state.options.substRules[varName] = refKey
-			return self
+			return returnSelfFn()
 		},
 
 		/**
@@ -369,7 +367,7 @@ _createAbstractRunCommandPlan := func(state) {
 			for k, v in rules {
 				state.options.substRules[k] = v
 			}
-			return self
+			return returnSelfFn()
 		}
 	})
 
@@ -406,9 +404,9 @@ createRunCommandPlan := func(...initialState) {
 		ll.assert(len(initialState) == 0, "createRunCommandPlan accepts at most one argument")
 	}
 
-	plan := _createAbstractRunCommandPlan(state)
+	self := undefined
 
-	return oop.inherit(plan, {
+	self = oop.inherit(_createAbstractRunCommandPlan(state, func() { return self }), {
 		state: func() {
 			newState := {
 				options: maps.clone(state.options),
@@ -420,6 +418,8 @@ createRunCommandPlan := func(...initialState) {
 			return newState
 		}
 	})
+
+	return self
 }
 
 /**
@@ -469,9 +469,7 @@ builder := func(workdir, ...initialState) {
 	stderr := "stderr.txt"
 	nErrorLines := 200
 
-	plan := _createAbstractRunCommandPlan(state)
-
-	self = oop.inherit(plan, {
+	self = oop.inherit(_createAbstractRunCommandPlan(state, func() { return self }), {
 		/**
 		 * Use given compute allocation for command execution.
 		 *
@@ -509,6 +507,29 @@ builder := func(workdir, ...initialState) {
 		 */
 		inQueue: func(queueName) {
 			queue = queueName
+			return self
+		},
+
+		/**
+		 * Sets the memory (RAM) limit for the command.
+		 *
+		 * @param value: number - the memory limit in MB.
+		 */
+		mem: func(value) {
+			validation.assertType(value, ["or", "number", "string"], "exec.builder.mem: RAM amount should be a number or string")
+			ll.assert(is_string(value) || value > 0, "exec.builder.mem: amount in bytes should be greater than 0")
+			ram = value
+			return self
+		},
+
+		/**
+		 * Sets the CPU limit for the command.
+		 *
+		 * @param value: number - the CPU limit in number of cores.
+		 */
+		cpu: func(value) {
+			validation.assertType(value, "number", "runcmd.builder.cpu: value must be a number")
+			cpu = value
 			return self
 		},
 

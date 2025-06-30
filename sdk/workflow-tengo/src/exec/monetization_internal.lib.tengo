@@ -208,11 +208,16 @@ setUrl := func(mnz, url) {
  *
  * @param: mnz: monetization -- see a beginning of this file.
  * @param: wd: workdir -- workdir where all files from mnz.fileParams already exist.
- * @param: queue: queue - in which queue we should run monetization. */
-run := func(mnz, wd, plan, allocation) {
+ * @param: plan: plan -- plan for the runcmd for monetization software.
+ * @param: allocation: allocation -- allocation for the runcmd.
+ * @param: queue: queue - queue for the runcmd. */
+run := func(mnz, wd, plan, allocation, queue) {
 	_validateIsReady(mnz)
 
-	builder := runcmd.builder(wd, plan)
+	builder := runcmd.builder(wd, plan).
+		inQueue(queue).
+		allocation(allocation)
+
 	builder.envExpression("MI_LICENSE", "{secrets.MI_LICENSE}")
 	if mnz.isDryRun {
 		builder.arg("-dry-run")
@@ -232,7 +237,6 @@ run := func(mnz, wd, plan, allocation) {
 		}
 	}
 
-	builder.allocation(allocation)
 	stdoutName := "mnz_stdout.txt"
 	builder.stdout(stdoutName)
 	run := builder.build()

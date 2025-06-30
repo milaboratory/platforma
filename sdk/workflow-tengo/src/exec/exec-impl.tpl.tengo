@@ -54,11 +54,11 @@ self.validateInputs({
 	"wdProcessors,?": {
 		any: {
 			tpl: validation.resource(),
-			"tplArgs,?": validation.any
+			"tplArgs,?": "any"
 		}
 	},
-	planRefs: { any: validation.reference() },
-	"mnzPlanRefs,?": { any: validation.reference() },
+	planRefs: { any: "any" },
+	"mnzPlanRefs,?": { any: validation.resource() },
 
 	settings: {
 		planOptions: EXTENDED_PLAN_OPTIONS_SCHEMA,
@@ -176,15 +176,16 @@ self.body(func(inputs) {
 		// whole input map is awaited by the template to be ready before the allocation is requested
 		wd: wdBefore
 	})
+	computeAllocation := delayedComputeAllocation.output("allocation")
 
 	runEnvType := planOptions.runEnvType
-	mainRunBuilder := runcmd.builder(wdBefore, { options: planOptions, refs: inputs.planRefs })
-
-	computeAllocation := delayedComputeAllocation.output("allocation")
+	mainRunBuilder := runcmd.builder(wdBefore, { options: planOptions, refs: inputs.planRefs }).
+		inQueue(runOptions.queue).
+		allocation(computeAllocation)
 
 	mnz := runOptions.monetization
 	if !is_undefined(mnz) {
-		result := monetization.run(mnz, wdBefore, { options: settings.mnzPlanOptions, refs: inputs.mnzPlanRefs }, computeAllocation)
+		result := monetization.run(mnz, wdBefore, { options: settings.mnzPlanOptions, refs: inputs.mnzPlanRefs }, computeAllocation, runOptions.queue)
 		wdBefore = result.wdAfter
 		mainRunBuilder.refVar(result.jwtEnvName, result.jwtEnvName, result.jwtEnvValue)
 		mainRunBuilder.envExpression(result.jwtEnvName, "{" + result.jwtEnvName + "}")

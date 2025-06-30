@@ -25,6 +25,9 @@ _createVenv := func(pythonPackage, pythonDescriptor) {
 	venvBuilder := runcmd.builder(wdBefore)
 	venvBuilder.
 		ref("python-run-environment", pythonPackage).
+		inQueue("light").
+		cpu(1).
+		mem("1GiB").
 		substitutionRule(pythonRule, "python-run-environment").
 		addPathTyped(t, path.join("{python}", pythonDescriptor.binDir))
 
@@ -35,7 +38,6 @@ _createVenv := func(pythonPackage, pythonDescriptor) {
 		arg("./venv")
 
 	venvBuilder.
-		inQueue("light").
 		stdout("./output").
 		stderr("./output").
 		nErrorLines(20)
