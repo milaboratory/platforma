@@ -211,6 +211,14 @@ _createAbstractRunCommandPlan := func(state, returnSelfFn) {
 		},
 
 		/**
+		 * Resets all arguments to an empty array.
+		 */
+		resetArgs: func() {
+			state.options.args = []
+			return returnSelfFn()
+		},
+
+		/**
 		 * Adds a reference for using it in expressions next.
 		 *
 		 * @param refKey: string - the name of the ref

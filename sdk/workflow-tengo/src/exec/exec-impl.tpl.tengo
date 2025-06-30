@@ -23,10 +23,12 @@ runcmd := import(":exec.runcmd")
 
 delayedComputeAllocationTpl := assets.importTemplate(":exec.delayed_compute_allocation")
 
-_activateRenvForWD := func(wd, allocation, plan) {
+_activateRenvForWD := func(wd, queue, allocation, plan) {
 	activateRenv := runcmd.builder(wd, plan).
 		cmd("R").
+		inQueue(queue).
 		allocation(allocation).
+		resetArgs().
 		arg("-e").arg("renv::activate()")
 
 	return activateRenv.build().workdir
@@ -102,8 +104,6 @@ self.body(func(inputs) {
 	settings := inputs.settings
 	// original run options passed by the user
 	runOptions := settings.runOptions
-	// run plan options generated after software is loaded
-	planOptions := settings.planOptions
 
 	//
 	// Create and fill the workdir with files that were passed from inputs.
@@ -179,7 +179,7 @@ self.body(func(inputs) {
 	})
 	computeAllocation := delayedComputeAllocation.output("allocation")
 
-	runEnvType := planOptions.runEnvType
+	runEnvType := inputs.mainPlan.options.runEnvType
 
 	mainPlanPreBuilder := runcmd.createRunCommandPlan(inputs.mainPlan)
 
@@ -189,6 +189,13 @@ self.body(func(inputs) {
 		wdBefore = result.wdAfter
 		mainPlanPreBuilder.refVar(result.jwtEnvName, result.jwtEnvName, result.jwtEnvValue)
 		mainPlanPreBuilder.envExpression(result.jwtEnvName, "{" + result.jwtEnvName + "}")
+	}
+
+	// Working directory after run environment preparation steps.
+	// The same as wdBefore, but might get additional files if they are required for run environment,
+	// like .Rprofile for R with activated renv.
+	if (runEnvType == "R") {
+		wdBefore = _activateRenvForWD(wdBefore, runOptions.queue, computeAllocation, inputs.mainPlan)
 	}
 
 	mainRunBuilder := runcmd.builder(wdBefore, mainPlanPreBuilder.state()).
@@ -215,13 +222,6 @@ self.body(func(inputs) {
 		} else {
 			mainRunBuilder.env(name, v)
 		}
-	}
-
-	// Working directory after run environment preparation steps.
-	// The same as wdBefore, but might get additional files if they are required for run environment,
-	// like .Rprofile for R with activated renv.
-	if (runEnvType == "R") {
-		wdBefore = _activateRenvForWD(wdBefore, computeAllocation, { options: planOptions, refs: inputs.planRefs })
 	}
 
 	//
