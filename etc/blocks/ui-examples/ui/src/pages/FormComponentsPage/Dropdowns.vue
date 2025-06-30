@@ -46,6 +46,10 @@ const simpleOptionsBase = ref<ListOption<unknown>[] | undefined>(
       value: 3,
     },
     {
+      label: 'Letter C',
+      value: 'C',
+    },
+    {
       label: 'Four (4)',
       value: 4,
     },
@@ -62,8 +66,8 @@ const simpleOptionsBase = ref<ListOption<unknown>[] | undefined>(
       value: 'B',
     },
     {
-      label: 'Letter C',
-      value: 'C',
+      label: 'Letter D (no group)',
+      value: 'D',
     },
   ]),
 );
@@ -75,7 +79,7 @@ const simpleOptions = computed(() => {
 
   return simpleOptionsBase.value?.map((option) => ({
     ...option,
-    group: data.withGroups ? (Number.isNaN(option.value) ? undefined : typeof option.value) : undefined,
+    group: data.withGroups ? (option.value === 'D' ? undefined : typeof option.value) : undefined,
   }));
 });
 
@@ -154,7 +158,6 @@ const toggleGroups = () => {
     </PlRow>
     <PlRow>
       <PlContainer width="400px">
-        <pre>{{ data.model }}</pre>
         <PlDropdown
           v-model="data.model"
           :disabled="data.disabled"

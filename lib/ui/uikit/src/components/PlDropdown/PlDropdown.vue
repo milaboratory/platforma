@@ -23,6 +23,7 @@ import { PlMaskIcon24 } from '../PlMaskIcon24';
 import SvgRequired from '../../generated/components/svg/images/SvgRequired.vue';
 import { getErrorMessage } from '../../helpers/error.ts';
 import OptionList from './OptionList.vue';
+import { useGroupByList } from './useGroupByList';
 
 const emit = defineEmits<{
   /**
@@ -120,7 +121,7 @@ const data = reactive({
 
 const findActiveIndex = () =>
   tap(
-    filteredRef.value.findIndex((o) => deepEqual(o.value, props.modelValue)),
+    orderedRef.value.findIndex((o) => deepEqual(o.value, props.modelValue)),
     (v) => (v < 0 ? 0 : v),
   );
 
@@ -213,6 +214,8 @@ const filteredRef = computed(() => {
   return options;
 });
 
+const { orderedRef, groupsRef, restRef } = useGroupByList(filteredRef, 'group');
+
 const tabindex = computed(() => (isDisabled.value ? undefined : '0'));
 
 const selectOption = (v: M | undefined) => {
@@ -269,25 +272,25 @@ const handleKeydown = (e: { code: string; preventDefault(): void }) => {
     rootRef.value?.focus();
   }
 
-  const filtered = unref(filteredRef);
+  const ordered = orderedRef.value;
 
-  const { length } = filtered;
+  const { length } = ordered;
 
   if (!length) {
     return;
   }
 
   if (e.code === 'Enter') {
-    selectOption(filtered.find((it) => it.index === activeIndex)?.value);
+    selectOption(ordered.find((it) => it.index === activeIndex)?.value);
   }
 
-  const localIndex = filtered.findIndex((it) => it.index === activeIndex) ?? -1;
+  const localIndex = ordered.findIndex((it) => it.index === activeIndex) ?? -1;
 
   const delta = e.code === 'ArrowDown' ? 1 : e.code === 'ArrowUp' ? -1 : 0;
 
   const newIndex = Math.abs(localIndex + delta + length) % length;
 
-  data.activeIndex = filteredRef.value[newIndex].index ?? -1;
+  data.activeIndex = ordered[newIndex].index ?? -1;
 };
 
 useLabelNotch(rootRef);
@@ -361,7 +364,8 @@ watchPostEffect(() => {
           v-if="data.open"
           ref="optionListRef"
           :root-ref="rootRef!"
-          :list="filteredRef"
+          :groups="groupsRef"
+          :rest="restRef"
           :option-size="optionSize"
           :select-option="selectOptionWrapper"
         />
