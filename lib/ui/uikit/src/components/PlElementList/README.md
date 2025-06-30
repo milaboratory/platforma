@@ -1,106 +1,86 @@
 PlElementList.vue
 =================
-A **generic, feature-rich list component** that supports drag-and-drop re-ordering,
-pin/unpin, expand/collapse, and optional removal of items. Written in the
-`<script setup lang="ts">` style and fully type-safe thanks to the generic
-parameters **`T`** (item type) and **`K`** (key type).
----------------------------------------------------------------------------
 
-1. GENERICS
+## 1. GENERICS
 
----------------------------------------------------------------------------
 • **`T`** – Runtime type of a single list element
 • **`K`** – Type returned by `getItemKey` (typically `string` or `number`)
----------------------------------------------------------------------------
 
-2. TWO-WAY BINDINGS (`v-model`)
 
----------------------------------------------------------------------------
+## 2. TWO-WAY BINDINGS (`v-model`)
 
-| Model name       | Type     | Purpose / Behaviour                                    |
-|------------------|----------|--------------------------------------------------------|
-| `items`*         | `T[]`    | Source array; the list you render & mutate             |
-| `draggableItems` | `Set<T>` | Restricts which items may be dragged                   |
-| `removableItems` | `Set<T>` | Restricts which items may be removed                   |
-| `pinnableItems`  | `Set<T>` | Restricts which items may be pinned                    |
-| `pinnedItems`    | `Set<T>` | Tracks the *current* pinned elements                   |
-| `toggableItems`  | `Set<T>` | Restricts which items may be toggled (expand/collapse) |
-| `toggledItems`   | `Set<T>` | Tracks the expand/collapse state per item              |
+| Model name        | Type     | Purpose / Behaviour                                    |
+|-------------------|----------|--------------------------------------------------------|
+| `items`*          | `T[]`    | Source array; the list you render & mutate             |
+| `draggableItems`  | `Set<T>` | Restricts which items may be dragged                   |
+| `removableItems`  | `Set<T>` | Restricts which items may be removed                   |
+| `expandableItems` | `Set<T>` | Restricts which items may be expanded                  |
+| `expandedItems`   | `Set<T>` | Tracks the expand/collapse state per item              |
+| `pinnableItems`   | `Set<T>` | Restricts which items may be pinned                    |
+| `pinnedItems`     | `Set<T>` | Tracks the *current* pinned elements                   |
+| `toggableItems`   | `Set<T>` | Restricts which items may be toggled (show/hide)       |
+| `toggledItems`    | `Set<T>` | Tracks the visibility toggle state per item            |
 
 (*required)
-All sets are **fully replaceable**; assign a new `Set()` to trigger re-render.
----------------------------------------------------------------------------
 
-3. PROPS
-
----------------------------------------------------------------------------
+## 3. PROPS
 
 | Prop             | Type                                                      | Default     | Notes                                           |
 |------------------|-----------------------------------------------------------|-------------|-------------------------------------------------|
-| `getItemKey`*    | `(item:T) ⇒ K`                                            | —           | Stable key for `v-for` & SortableJS             |
+| `getItemKey`     | `(item:T) ⇒ K`                                            | —           | Stable key for `v-for` & SortableJS            |
+| `itemClass`      | `string \| string[] \| ((item:T, index:number) ⇒ string \| string[])` | — | CSS classes for individual items |
+| `activeItems`    | `Set<T>`                                                  | —           | Set of currently active items                   |
 | **Sorting**      |                                                           |             |                                                 |
-| `onSort`         | `(sorted:T[], oldIdx:number, newIdx:number) ⇒ void\|bool` | —           | Return **false** to cancel applying new order   |
-| **Dragging**     |                                                           |             |                                                 |
-| `enableDragging` | `boolean`                                                 | `true`      | Master switch                                   |
-| `onDragEnd`      | `(oldIdx:number, newIdx:number) ⇒ void\|bool`             | —           | Fired by SortableJS; return **false** to ignore |
+| `enableDragging` | `boolean`                                                 | `undefined` | Master switch for drag-and-drop                |
+| `onDragEnd`      | `(oldIdx:number, newIdx:number) ⇒ void\|bool`            | —           | Fired by SortableJS; return **false** to ignore |
+| `onSort`         | `(oldIdx:number, newIdx:number) ⇒ void\|bool`            | —           | Return **false** to cancel applying new order  |
 | **Removing**     |                                                           |             |                                                 |
 | `enableRemoving` | `boolean`                                                 | `undefined` | `true` ⇒ always show remove, `false` ⇒ never    |
-| `onRemove`       | `(item:T, index:number) ⇒ void\|bool`                     | —           | Return **false** to veto                        |
+| `onRemove`       | `(item:T, index:number) ⇒ void\|bool`                    | —           | Return **false** to veto                        |
+| **Expanding**    |                                                           |             |                                                 |
+| `enableExpanding`| `boolean`                                                 | `undefined` | Master switch for expand/collapse               |
+| `onExpand`       | `(item:T, index:number) ⇒ void\|bool`                    | —           | Return **false** to veto                        |
 | **Toggling**     |                                                           |             |                                                 |
-| `enableToggling` | `boolean`                                                 | `true`      | Master switch                                   |
-| `onToggle`       | `(item:T, index:number) ⇒ void\|bool`                     | —           | Return **false** to veto                        |
+| `enableToggling` | `boolean`                                                 | `undefined` | Master switch for visibility toggle             |
+| `onToggle`       | `(item:T, index:number) ⇒ void\|bool`                    | —           | Return **false** to veto                        |
 | **Pinning**      |                                                           |             |                                                 |
-| `enablePinning`  | `boolean`                                                 | `true`      | Master switch                                   |
-| `onPin`          | `(item:T, index:number) ⇒ void\|bool`                     | —           | Return **false** to veto                        |
+| `enablePinning`  | `boolean`                                                 | `undefined` | Master switch for pinning                       |
+| `onPin`          | `(item:T, index:number) ⇒ void\|bool`                    | —           | Return **false** to veto                        |
 
----------------------------------------------------------------------------
 
-4. SLOTS
-
----------------------------------------------------------------------------
+## 4. SLOTS
 
 - **`item-title`** – **required**. Receives `{ item, index }`.
 - **`item-content`** – optional. Same slot props; rendered only when the item
   is in the “opened” state (`toggleContent` event).
 
----------------------------------------------------------------------------
 
-5. EVENTS EMITTED BY `<PlElementListItem>`
+## 5. EVENTS
 
----------------------------------------------------------------------------
-`remove`, `toggle`, `pin`, `toggleContent` – all bubble up with
-`(item:T, index:number)` so you can hook into your own logic if the higher-level
-callbacks are not enough.
----------------------------------------------------------------------------
+| Event      | Payload             | Description                                    |
+|------------|---------------------|------------------------------------------------|
+| `itemClick`| `(item: T)`         | Emitted when an item is clicked               |
 
-6. BEHAVIOUR SUMMARY
+Additionally, these events bubble up from `<PlElementListItem>`:
+- `remove` – `(item: T, index: number)` 
+- `toggle` – `(item: T, index: number)` 
+- `pin` – `(item: T, index: number)` 
+- `expand` – `(item: T, index: number)`
 
----------------------------------------------------------------------------
 
-- **Drag-and-drop** – powered by `useSortable()` (SortableJS).
-- **Pinning** – moves an item between “pinned” and “unpinned” regions; the two
-  regions render in separate `<div>` containers for visual clarity.
-- **Toggling** – expands/collapses the content slot and updates `toggledItems`.
-- **Removing** – deletes the item from `items` after `onRemove` (if supplied)
-  resolves to anything except `false`.
-- **Versioning** (`versionRef`) – a shallow hash of the items array keeps Vue
-  keys stable even when the array reference itself is unchanged but content
-  reorders.
-
----------------------------------------------------------------------------
-
-7. EXAMPLE USAGE
-
----------------------------------------------------------------------------
+## 6. EXAMPLE USAGE
 
 ```vue
-
 <PlElementList
     v-model:items="elements"
     v-model:pinnedItems="pinned"
-    v-model:toggledItems="opened"
+    v-model:expandedItems="expanded"
+    v-model:toggledItems="hidden"
     :getItemKey="el => el.id"
-    :onSort="(newArr) => api.saveOrder(newArr)"
+    :onSort="(oldIdx, newIdx) => api.saveOrder(oldIdx, newIdx)"
+    :activeItems="activeSet"
+    :itemClass="(item, index) => ({ 'special-item': item.isSpecial })"
+    @itemClick="handleItemClick"
 >
   <template #item-title="{ item }">
     {{ item.name }}
@@ -110,14 +90,3 @@ callbacks are not enough.
   </template>
 </PlElementList>
 ```
-
----------------------------------------------------------------------------
-
-8. CAVEATS
-
----------------------------------------------------------------------------
-
-1. Each item **must** be referentially stable or provide a deterministic key.
-2. Never mutate `items` in place; always assign a new array to preserve reactivity.
-3. Indexes supplied to callbacks are **visual** indexes (pinned items are listed
-   first).
