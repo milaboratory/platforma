@@ -1,21 +1,28 @@
 <script setup lang="ts">
-
+const slots = defineSlots<{
+  'header'?: () => unknown;
+  'header-content'?: () => unknown;
+  'body'?: () => unknown;
+  'body-content'?: () => unknown;
+  'footer'?: () => unknown;
+  'footer-content'?: () => unknown;
+}>();
 </script>
 
 <template>
   <div :class="$style.root">
     <slot name="header">
-      <div :class="$style.header">
+      <div v-if="slots['header-content']" :class="$style.header">
         <slot name="header-content" />
       </div>
     </slot>
     <slot name="body">
-      <div :class="$style.body">
+      <div v-if="slots['body-content']" :class="$style.body">
         <slot name="body-content" />
       </div>
     </slot>
     <slot name="footer">
-      <div :class="$style.footer">
+      <div v-if="slots['footer-content']" :class="$style.footer">
         <slot name="footer-content" />
       </div>
     </slot>
@@ -23,7 +30,7 @@
 </template>
 
 <style lang="scss" module>
-@import '../../assets/variables.scss';
+@use '../../assets/variables.scss';
 
 .root {
   position: relative;
