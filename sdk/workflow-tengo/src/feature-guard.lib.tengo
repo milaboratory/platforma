@@ -1,0 +1,14 @@
+// This file contains check for the features provided by platforma that are required by the code of this package.
+
+// This file is imported in template base lib, which serves as a entrypoint for all executable code,
+// effectively guarding any code generated with this package to be executable on backends having insufficient capabilities.
+
+ll := import(":ll")
+feat := import(":feats")
+
+if(!feat.commandExpressions) {
+	ll.panic("INCOMPATIBLE PLATFORMA BACKEND, PLEASE UPGRADE PLATFORMA TO THE LATEST VERSION! " +
+		"(commandExpressions feature is not supported)")
+}
+
+export {}

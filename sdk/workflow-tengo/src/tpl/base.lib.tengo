@@ -9,6 +9,8 @@ constants := import(":constants")
 stateAwait := import(":tpl.state-await")
 validation := import(":validation")
 
+// This import is required to guard the code generated with this package from being executed on backends having insufficient capabilities.
+
 /**
  * Unmarshal resource according by:
  *  - converting all json resources (potentially nested) into a tengo objects (maps)
@@ -645,6 +647,7 @@ tpl := func(ops) {
 				renderer                : self.renderer,
 				registerUnmarshaller    : self.registerUnmarshaller,
 				rawInputs               : self.rawInputs,
+				rawServiceInputs        : self.rawServiceInputs,
 				hasInput                : self.hasInput,
 				inputs                  : self.inputs,
 				defineOutputs           : self.defineOutputs,

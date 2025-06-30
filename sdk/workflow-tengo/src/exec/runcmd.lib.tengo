@@ -14,6 +14,8 @@ constants := import(":exec.constants")
 slices := import(":slices")
 limits := import(":exec.limits")
 
+delayedCompAlloc := import(":exec.delayed-compute-allocation")
+
 _RTYPE_RUN_COMMAND_V1 := { Name: "RunCommand/executor", Version: "1" }
 _RTYPE_RUN_COMMAND_EXEC_V2 := { Name: "RunCommand/executor", Version: "2" }
 _RTYPE_RUN_COMMAND_BATCH_V2 := { Name: "RunCommand/batch", Version: "2" }
@@ -21,6 +23,42 @@ _RTYPE_RUN_COMMAND_CMD := { Name: "RunCommandCmd", Version: "1" }
 _RTYPE_RUN_COMMAND_ARGS := { Name: "RunCommandArgs", Version: "1" }
 _RTYPE_RUN_COMMAND_OPTIONS := { Name: "run-command/options", Version: "1" }
 _RTYPE_RUN_COMMAND_REFS := { Name: "RunCommandRefs", Version: "1" }
+
+ARG_SCHEMA := {
+	"__options__,closed": true,
+	"type": "string,regex=string|expressionRef|variableRef",
+	"value": "string"
+}
+
+RUN_CMD_PLAN_REFS_SCHEMA := "any"
+
+RUN_CMD_PLAN_OPTIONS_SCHEMA := {
+	"cmd,?": ARG_SCHEMA,
+	"args": [ARG_SCHEMA],
+	"envs": { "any": ARG_SCHEMA },
+	"substRules": { "any": "string" },
+	"customPaths": [ARG_SCHEMA]
+}
+
+RUN_CMD_PLAN_SCHEMA := {
+	"refs": RUN_CMD_PLAN_REFS_SCHEMA,
+	"options": RUN_CMD_PLAN_OPTIONS_SCHEMA
+}
+
+_initStateFromPlan := func(state, initState, context) {
+	validation.assertType(initState, RUN_CMD_PLAN_SCHEMA, "invalid initial state for " + context)
+
+	initOptions := initState.options
+	state.options.cmd = maps.clone(initOptions.cmd)
+	state.options.args = maps.clone(initOptions.args)
+	state.options.envs = maps.clone(initOptions.envs)
+	state.options.substRules = maps.clone(initOptions.substRules)
+	state.options.customPaths = maps.clone(initOptions.customPaths)
+
+	for k, v in initState.refs {
+		state.refs[k] = v
+	}
+}
 
 // Inputs
 _FIELD_ALLOCATION := "allocation" // not in v1
@@ -38,7 +76,7 @@ _FIELD_WORKDIR_OUT := "workdirOut"
  *
  * @param argument: string - the argument to create.
  */
-_createSimpleArg := func(argument) {
+simpleArg := func(argument) {
 	return {
 		type: constants.ARG_TYPE_STRING,
 		value: argument
@@ -50,7 +88,7 @@ _createSimpleArg := func(argument) {
  * Creates 'variableRef' argument.
  * @param argTpl: string - argument value in any form with variables inside (e.g. "file://{pkg}/some-file" or "o-{java}-o")
  */
-_createVariableArg := func(argTpl) {
+variableArg := func(argTpl) {
 	return {
 		type: constants.ARG_TYPE_VAR,
 		value: argTpl
@@ -64,58 +102,29 @@ _createVariableArg := func(argTpl) {
  *   - `file://{pkg}/some-file`
  *   - `o-{java}-o`
  */
-_createExpressionArg := func(argTpl) {
+expressionArg := func(argTpl) {
 	return {
 		type: constants.ARG_TYPE_EXPRESSION,
 		value: argTpl
 	}
 }
 
-/**
- * Builder function for creating a RunCommand resource.
- *
- * @param workdir: smart.reference - the working directory for the command.
- * @return builder - the builder object with methods for configuring and building the RunCommand resource.
- */
-builder := func(workdir) {
+_createAbstractRunCommandPlan := func(state, returnSelfFn) {
 	self := undefined
-
-	cmd := undefined
-	args := []
-	envs := {}
-	queue := ""
-	refs := {}
-	_allocation := undefined
-
-	substRules := {}
-	hasPatternArgs := false // TODO: deprecated, remove after a month of expressionRefs in prod.
-	hasExpressionArgs := false
-	customPaths := []
-
-	stdout := "stdout.txt"
-	stderr := "stderr.txt"
-	nErrorLines := 200
 
 	self = ll.toStrict({
 		/**
-		 * Use given compute allocation for command execution.
-		 *
-		 * @param allocation: reference
-		 */
-		allocation: func(allocation) {
-			validation.assertType(allocation, validation.reference, "runcmd.builder: allocation should be a valid reference")
-			_allocation = allocation
-			return self
-		},
-
-		/**
 		 * Sets the command, e.g. /usr/bin/env or sh.
 		 *
-		 * @param commandName: string - the name of the command.
+		 * @param commandName: string | { type: ArgType, value: string } - the name of the command.
 		 */
 		cmd: func(commandName) {
-			cmd = _createSimpleArg(commandName)
-			return self
+			if ll.isMap(commandName) {
+				self.cmdTyped(commandName.type, commandName.value)
+			} else {
+				state.options.cmd = simpleArg(commandName)
+			}
+			return returnSelfFn()
 		},
 
 		/**
@@ -127,9 +136,8 @@ builder := func(workdir) {
 		 *                             and .substitutionRules(),
 		 */
 		cmdVar: func(commandTpl) {
-			cmd = _createVariableArg(commandTpl)
-			hasPatternArgs = true
-			return self
+			state.options.cmd = variableArg(commandTpl)
+			return returnSelfFn()
 		},
 
 		/**
@@ -141,14 +149,13 @@ builder := func(workdir) {
 		 *                             and .substitutionRules(),
 		 */
 		cmdExpression: func(commandTpl) {
-			cmd = _createExpressionArg(commandTpl)
-			hasExpressionArgs = true
-			return self
+			state.options.cmd = expressionArg(commandTpl)
+			return returnSelfFn()
 		},
 
 		cmdTyped: func(type, value) {
 			ll.assert(slices.hasElement(constants.ARG_TYPES, type),
-				"runcmd.builder().cmdTyped: unknown type %s, expect: %v", type, constants.ARG_TYPES)
+				"runcmd.plan.cmdTyped: unknown type %s, expect: %v", type, constants.ARG_TYPES)
 
 			if type == constants.ARG_TYPE_STRING {
 				return self.cmd(value)
@@ -158,17 +165,21 @@ builder := func(workdir) {
 				return self.cmdVar(value)
 			}
 
-			ll.panic("runcmd.builder().cmdTyped: unknown type %s, expect: %v", type, constants.ARG_TYPES)
+			ll.panic("runcmd.plan.cmdTyped: unknown type %s, expect: %v", type, constants.ARG_TYPES)
 		},
 
 		/**
 		 * Adds an argument to the command.
 		 *
-		 * @param arg: string - the argument to add.
+		 * @param arg: string | { type: ArgType, value: string } - the argument to add.
 		 */
 		arg: func(arg) {
-			args = append(args, _createSimpleArg(arg))
-			return self
+			if ll.isMap(arg) {
+				self.argTyped(arg.type, arg.value)
+			} else {
+				state.options.args = append(state.options.args, simpleArg(arg))
+			}
+			return returnSelfFn()
 		},
 
 		/**
@@ -180,9 +191,8 @@ builder := func(workdir) {
 		 *                         and .substitutionRules(),
 		 */
 		argVar: func(argTpl) {
-			args = append(args, _createVariableArg(argTpl))
-			hasPatternArgs = true
-			return self
+			state.options.args = append(state.options.args, variableArg(argTpl))
+			return returnSelfFn()
 		},
 
 		/**
@@ -194,14 +204,13 @@ builder := func(workdir) {
 		 *                         and .substitutionRules(),
 		 */
 		argExpression: func(argTpl) {
-			args = append(args, _createExpressionArg(argTpl))
-			hasExpressionArgs = true
-			return self
+			state.options.args = append(state.options.args, expressionArg(argTpl))
+			return returnSelfFn()
 		},
 
 		argTyped: func(type, value) {
 			ll.assert(slices.hasElement(constants.ARG_TYPES, type),
-				"runcmd.builder().argTyped: unknown type %s, expect: %v", type, constants.ARG_TYPES)
+				"runcmd.plan.argTyped: unknown type %s, expect: %v", type, constants.ARG_TYPES)
 
 			if type == constants.ARG_TYPE_STRING {
 				return self.arg(value)
@@ -211,7 +220,15 @@ builder := func(workdir) {
 				return self.argVar(value)
 			}
 
-			ll.panic("runcmd.builder().argTyped: unknown type %s, expect: %v", type, constants.ARG_TYPES)
+			ll.panic("runcmd.plan.argTyped: unknown type %s, expect: %v", type, constants.ARG_TYPES)
+		},
+
+		/**
+		 * Resets all arguments to an empty array.
+		 */
+		resetArgs: func() {
+			state.options.args = []
+			return returnSelfFn()
 		},
 
 		/**
@@ -222,24 +239,42 @@ builder := func(workdir) {
 		 */
 		ref: func(refKey, ref) {
 			ll.assert(smart.isReference(ref),
-				"runcmd.builder().ref() must be a reference (valid field or resource) %s", refKey)
+				"runcmd.plan.ref() must be a reference (valid field or resource) %s", refKey)
 
-			ll.assert(!maps.containsKey(refs, refKey),
+			ll.assert(!maps.containsKey(state.refs, refKey),
 				"attempt to override existing reference %q", refKey)
 
-			refs[refKey] = ref
-			return self
+			state.refs[refKey] = ref
+			return returnSelfFn()
+		},
+
+		/**
+		 * A shortcut for .ref() and .substitutionRule() pair.
+		 *
+		 * @param varName: string - variable to be substituted in arg value ("var1" would be
+		 *                          substituted in place of {var1} of arg value)
+		 * @param refKey: string - key of ref (added with .ref()) that points to installed software.
+		 * @param ref: reference - a reference to the valid field or resource
+		 */
+		refVar: func(varName, refKey, ref) {
+			self.ref(refKey, ref)
+			self.substitutionRule(varName, refKey)
+			return returnSelfFn()
 		},
 
 		/**
 		 * Sets an environment variable for the command.
 		 *
 		 * @param name: string - the name of the environment variable.
-		 * @param value: string - the value of the environment variable.
+		 * @param value: string | { type: ArgType, value: string } - the value of the environment variable.
 		 */
 		env: func(name, value) {
-			envs[name] = value
-			return self
+			if ll.isMap(value) {
+				self.envTyped(name, value.type, value.value)
+			} else {
+				state.options.envs[name] = simpleArg(value)
+			}
+			return returnSelfFn()
 		},
 
 		/**
@@ -250,9 +285,8 @@ builder := func(workdir) {
 		 * @param valueTpl: string - the value of the environment variable.
 		 */
 		envVar: func(name, valueTpl) {
-			envs[name] = _createVariableArg(valueTpl)
-			hasPatternArgs = true
-			return self
+			state.options.envs[name] = variableArg(valueTpl)
+			return returnSelfFn()
 		},
 
 		/**
@@ -263,14 +297,13 @@ builder := func(workdir) {
 		 * @param valueTpl: string - the value of the environment variable.
 		 */
 		envExpression: func(name, valueTpl) {
-			envs[name] = _createExpressionArg(valueTpl)
-			hasExpressionArgs = true
-			return self
+			state.options.envs[name] = expressionArg(valueTpl)
+			return returnSelfFn()
 		},
 
 		envTyped: func(name, type, value) {
 			ll.assert(slices.hasElement(constants.ARG_TYPES, type),
-				"runcmd.builder().envTyped: unknown type %s, expect: %v", type, constants.ARG_TYPES)
+				"runcmd.plan.envTyped: unknown type %s, expect: %v", type, constants.ARG_TYPES)
 
 			if type == constants.ARG_TYPE_STRING {
 				return self.env(name, value)
@@ -280,32 +313,58 @@ builder := func(workdir) {
 				return self.envVar(name, value)
 			}
 
-			ll.panic("runcmd.builder().envTyped: unknown type %s, expect: %v", type, constants.ARG_TYPES)
+			ll.panic("runcmd.plan.envTyped: unknown type %s, expect: %v", type, constants.ARG_TYPES)
 		},
 
-		/*
-		 * Patch 'PATH' environment variable, adding software path to it.
+		/**
+		 * Adds a path to the PATH environment variable.
 		 *
-		 * @param type: constants.ARG_TYPES - whether Platforma Backend should try to substitute variables or expressions inside <value> on server side
-		 * @param value: string - the value of the environment variable with variables to be replaced to software path.
+		 * @param path: string | { type: ArgType, value: string } - the path to add.
 		 */
-		addToPath: func(type, value) {
+		addPath: func(path) {
+			if ll.isMap(path) {
+				self.addPathTyped(path.type, path.value)
+			} else {
+				state.options.customPaths = append(state.options.customPaths, simpleArg(path))
+			}
+			return returnSelfFn()
+		},
+
+		/**
+		 * Adds a path with variables inside to the PATH environment variable.
+		 *
+		 * @param pathTpl: string - string with '{varName}' substitutions to be replaced with
+		 *                         software paths.
+		 */
+		addPathVar: func(pathTpl) {
+			state.options.customPaths = append(state.options.customPaths, variableArg(pathTpl))
+			return returnSelfFn()
+		},
+
+		/**
+		 * Adds a path with expressions inside to the PATH environment variable.
+		 *
+		 * @param pathTpl: string - string with '{expression}' substitutions to be replaced with
+		 *                         expression value.
+		 */
+		addPathExpression: func(pathTpl) {
+			state.options.customPaths = append(state.options.customPaths, expressionArg(pathTpl))
+			return returnSelfFn()
+		},
+
+		addPathTyped: func(type, value) {
 			ll.assert(slices.hasElement(constants.ARG_TYPES, type),
-				"runcmd.builder().addToPath: unknown type %s, expect: %v", type, constants.ARG_TYPES)
+				"runcmd.plan.addPathTyped: unknown type %s, expect: %v", type, constants.ARG_TYPES)
 
 			if type == constants.ARG_TYPE_STRING {
-				customPaths = append(customPaths, _createSimpleArg(value))
+				return self.addPath(value)
 			} else if type == constants.ARG_TYPE_EXPRESSION {
-				customPaths = append(customPaths, _createExpressionArg(value))
-				hasExpressionArgs = true
+				return self.addPathExpression(value)
 			} else if type == constants.ARG_TYPE_VAR {
-				customPaths = append(customPaths, _createVariableArg(value))
-				hasPatternArgs = true
-			} else {
-				ll.panic("runcmd.builder().addToPath: unknown type %s, expect: %v", type, constants.ARG_TYPES)
+				return self.addPathVar(value)
 			}
 
-			return self
+			ll.panic("runcmd.plan.addPathTyped: unknown type %s, expect: %v", type, constants.ARG_TYPES)
 		},
 
 		/**
@@ -316,8 +375,8 @@ builder := func(workdir) {
 		 * @param refKey: string - key of ref (added with .ref()) that points to installed software.
 		 */
 		substitutionRule: func(varName, refKey) {
-			substRules[varName] = refKey
-			return self
+			state.options.substRules[varName] = refKey
+			return returnSelfFn()
 		},
 
 		/**
@@ -327,8 +386,116 @@ builder := func(workdir) {
 		 */
 		substitutionRules: func(rules) {
 			for k, v in rules {
-				substRules[k] = v
+				state.options.substRules[k] = v
 			}
+			return returnSelfFn()
+		}
+	})
+
+	return self
+}
+
+createRunCommandPlan := func(...initialState) {
+	state := {
+		refs: {},
+		options: {
+			cmd: undefined,
+			args: [],
+			envs: {},
+			substRules: {},
+			customPaths: []
+		}
+	}
+
+	if len(initialState) == 1 {
+		initState := initialState[0]
+		_initStateFromPlan(state, initState, "run command plan")
+	} else {
+		ll.assert(len(initialState) == 0, "createRunCommandPlan accepts at most one argument")
+	}
+
+	self := undefined
+
+	self = oop.inherit(_createAbstractRunCommandPlan(state, func() { return self }), {
+		state: func() {
+			newState := {
+				options: maps.clone(state.options),
+				refs: {}
+			}
+			for k, v in state.refs {
+				newState.refs[k] = v
+			}
+			return newState
+		}
+	})
+
+	return self
+}
+
+/**
+ * Builder function for creating a RunCommand resource.
+ *
+ * @param workdir: smart.reference - the working directory for the command.
+ * @return builder - the builder object with methods for configuring and building the RunCommand resource.
+ */
+builder := func(workdir, ...initialState) {
+	self := undefined
+
+	state := {
+		refs: {},
+		options: {
+			cmd: undefined,
+			args: [],
+			envs: {},
+			substRules: {},
+			customPaths: []
+		}
+	}
+
+	if len(initialState) == 1 {
+		initState := initialState[0]
+		_initStateFromPlan(state, initState, "run command builder")
+	} else {
+		ll.assert(len(initialState) == 0, "builder accepts at most two arguments")
+	}
+
+	allocation := undefined
+	queue := undefined
+	cpu := undefined
+	ram := undefined
+
+	stdout := "stdout.txt"
+	stderr := "stderr.txt"
+	nErrorLines := 200
+
+	self = oop.inherit(_createAbstractRunCommandPlan(state, func() { return self }), {
+		/**
+		 * Use given compute allocation for command execution.
+		 *
+		 * @param allocation: reference
+		 */
+		allocation: func(value) {
+			validation.assertType(value, validation.reference, "runcmd.builder: allocation should be a valid reference")
+			allocation = value
+			return self
+		},
+
+		/**
+		 * Sets compute resource request for the command.
+		 *
+		 * @param request: map - contains `queue`, `cpu` and `ram` for the job.
+		 */
+		request: func(request) {
+			validation.assertType(request, {
+				"queue": "string",
+				"cpu,?": "number",
+				"ram,?": ["or", "number", "string"]
+			}, "runcmd.builder.request: request must be a valid request")
+
+			queue = request.queue
+			cpu = request.cpu
+			ram = request.ram
+
 			return self
 		},
 
@@ -339,6 +506,29 @@ builder := func(workdir) {
 		 */
 		inQueue: func(queueName) {
 			queue = queueName
+			return self
+		},
+
+		/**
+		 * Sets the memory (RAM) limit for the command.
+		 *
+		 * @param value: number - the memory limit in MB.
+		 */
+		mem: func(value) {
+			validation.assertType(value, ["or", "number", "string"], "exec.builder.mem: RAM amount should be a number or string")
+			ll.assert(is_string(value) || value > 0, "exec.builder.mem: amount in bytes should be greater than 0")
+			ram = value
+			return self
+		},
+
+		/**
+		 * Sets the CPU limit for the command.
+		 *
+		 * @param value: number - the CPU limit in number of cores.
+		 */
+		cpu: func(value) {
+			validation.assertType(value, "number", "runcmd.builder.cpu: value must be a number")
+			cpu = value
 			return self
 		},
 
@@ -379,6 +569,45 @@ builder := func(workdir) {
 		 */
 		build: func() {
 			runRes := undefined
+			options := state.options
+			refs := state.refs
+
+			hasPatternArgs := false
+			hasExpressionArgs := false
+
+			check := func(arg) {
+				if !ll.isMap(arg) {
+					return
+				}
+				if arg.type == constants.ARG_TYPE_VAR {
+					hasPatternArgs = true
+				}
+				if arg.type == constants.ARG_TYPE_EXPRESSION {
+					hasExpressionArgs = true
+				}
+			}
+
+			check(options.cmd)
+
+			for arg in options.args {
+				check(arg)
+			}
+
+			for _, env in options.envs {
+				check(env)
+			}
+
+			for path in options.customPaths {
+				check(path)
+			}
+
+			/**
+			 * Check that either allocation or compute resources are set, but not both.
+			 */
+			ll.assert(is_undefined(allocation) || (is_undefined(cpu) && is_undefined(ram)),
+				"runcmd.builder.build: allocation cannot be set along with cpu or ram")
+
+			ll.assert(!is_undefined(queue), "queue must be set")
 
 			useBatch := limits.useBatch(queue)
 
@@ -399,51 +628,60 @@ builder := func(workdir) {
 
 			// TODO: add assertions about the state
 
-			ll.assert(!hasPatternArgs || len(substRules) != 0,
+			ll.assert(!hasPatternArgs || len(options.substRules) != 0,
 				"found pattern argument, but no substitution rules were set: hasPatternArgs: %v, substRules: %v, cmd: %v, args: %v, envs: %v",
-				hasPatternArgs, substRules, cmd, args, envs)
+				hasPatternArgs, options.substRules, options.cmd, options.args, options.envs)
 			ll.assert(!hasExpressionArgs || feats.commandExpressions,
 				"runcmd.builder().build: expression arguments must be enabled only if platforma backend supports expressions, found: %v",
 				hasExpressionArgs)
 
-			if feats.computeLimits || useBatch {
-				if !smart.isReference(_allocation) {
-					// Use default compute request limits when no was configured out of the box,
-					// or runcmd won't work at all.
-					_quotaRef := limits.quotaBuilder().queue(queue).build()
-					_resReqRef := limits.computeRequestBuilder().queue(queue).quota(_quotaRef).build()
-					_allocation = _resReqRef.allocation
+			if !is_undefined(allocation) {
+				runRes.getField(_FIELD_ALLOCATION).set(allocation)
+			} else {
+				request := {
+					queue: queue
+				}
+				if !is_undefined(cpu) {
+					request.cpu = cpu
+				}
+				if !is_undefined(ram) {
+					request.ram = ram
 				}
 
-				runRes.getField(_FIELD_ALLOCATION).set(_allocation)
+				// Delay requesting compute quota until the workdir is ready.
+				// This prevents a deadlock between storage and compute quotas.
+				// A waiter ensures that a task requests compute quota only after
+				// it has acquired the storage quota required for workdir creation,
+				// which is a prerequisite for the computation itself.
+				runRes.getField(_FIELD_ALLOCATION).set(delayedCompAlloc.create(workdir, request))
 			}
 
 			refsRes := smart.createMapResourceWithType(_RTYPE_RUN_COMMAND_REFS, refs)
 			runRes.getField(_FIELD_REFS).set(refsRes)
 
-			cmdRes := smart.createValueResource(_RTYPE_RUN_COMMAND_CMD, json.encode(cmd))
+			cmdRes := smart.createValueResource(_RTYPE_RUN_COMMAND_CMD, json.encode(options.cmd))
 			runRes.getField(_FIELD_CMD).set(cmdRes)
 
-			options := {
+			buildOptions := {
 				queueName: queue,
 				errorLines: nErrorLines,
 				redirectStdout: stdout,
 				redirectStderr: stderr,
-				env: envs,
-				additionalPaths: customPaths,
-				substitutions: substRules
+				env: options.envs,
+				additionalPaths: options.customPaths,
+				substitutions: options.substRules
 			}
 
-			optionsRes := smart.createValueResource(_RTYPE_RUN_COMMAND_OPTIONS, json.encode(options))
+			optionsRes := smart.createValueResource(_RTYPE_RUN_COMMAND_OPTIONS, json.encode(buildOptions))
 			runRes.getField(_FIELD_OPTIONS).set(optionsRes)
 
-			argsRes := smart.createValueResource(_RTYPE_RUN_COMMAND_ARGS, json.encode(args))
+			argsRes := smart.createValueResource(_RTYPE_RUN_COMMAND_ARGS, json.encode(options.args))
 			runRes.getField(_FIELD_ARGS).set(argsRes)
 
-			res := ll.toStrict(oop.inherit(runRes.lockAndBuild(), {
+			res := oop.inherit(runRes.lockAndBuild(), {
 				"workdir": runRes.outputs()[_FIELD_WORKDIR_OUT],
-				"options": options
-			}))
+				"options": buildOptions
+			})
 
 			return res
 		}
@@ -453,5 +691,13 @@ builder := func(workdir) {
 }
 
 export ll.toStrict({
-	builder: builder
+	builder: builder,
+	simpleArg: simpleArg,
+	variableArg: variableArg,
+	expressionArg: expressionArg,
+	createRunCommandPlan: createRunCommandPlan,
+	ARG_SCHEMA: ARG_SCHEMA,
+	RUN_CMD_PLAN_REFS_SCHEMA: RUN_CMD_PLAN_REFS_SCHEMA,
+	RUN_CMD_PLAN_OPTIONS_SCHEMA: RUN_CMD_PLAN_OPTIONS_SCHEMA,
+	RUN_CMD_PLAN_SCHEMA: RUN_CMD_PLAN_SCHEMA
 })

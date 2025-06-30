@@ -1,0 +1,32 @@
+/**
+ * Library for loading software packages.
+ */
+
+render := import(":render")
+smart := import(":smart")
+assets := import(":assets")
+ll := import(":ll")
+
+times := import("times")
+
+loadSoftwareTpl := assets.importTemplate(":exec.load-software.impl")
+
+/**
+ * Output of this method should only be passed to ephemeral templates.
+ * Output is a reference, not a materialized plan. Plan will be cached
+ * for 9 days.
+ */
+loadSoftware := func(software) {
+	loadSoftwareResult := render.create(loadSoftwareTpl, {
+		software: smart.createJsonResource({
+			name: software.name,
+			version: software.version,
+			descriptor: ll.fromStrict(software.descriptor)
+		})
+	})
+	return loadSoftwareResult.output("plan", 9 * times.hour * 24)
+}
+
+export {
+	loadSoftware: loadSoftware
+}
