@@ -87,11 +87,6 @@ self.body(func(inputs) {
 		plan = loadSoftware.loadSoftware(software)
 	}
 
-	mnzPlan := undefined
-	if !is_undefined(inputs.runOptions.monetization) {
-		mnzPlan = loadSoftware.loadSoftware(mnzSw)
-	}
-
 	serviceImplInputs := {}
 	if !is_undefined(self.rawServiceInputs().quota) {
 		serviceImplInputs.quota = self.rawServiceInputs().quota
@@ -100,6 +95,16 @@ self.body(func(inputs) {
 	pureImplInputs := {
 		mainPlan: plan
 	}
+
+	if !is_undefined(inputs.runOptions.monetization) {
+		pureImplInputs.mnzPlan = loadSoftware.loadSoftware(mnzSw)
+	}
+
+	//
+	// Code below uses raw inputs, to pass exactly same resource as we received in inputs.
+	// This will not be needed after we finish MILAB-685: https://github.com/milaboratory/platforma/pull/8
+	//
+
 	if !is_undefined(self.rawInputs().filesToAdd) {
 		pureImplInputs.filesToAdd = self.rawInputs().filesToAdd
 	}
@@ -111,9 +116,6 @@ self.body(func(inputs) {
 	}
 	if !is_undefined(self.rawInputs().wdProcessors) {
 		pureImplInputs.wdProcessors = self.rawInputs().wdProcessors
-	}
-	if !is_undefined(mnzPlan) {
-		pureImplInputs.mnzPlan = mnzPlan
 	}
 
 	pureImplInputs.settings = smart.createJsonResource(maps.clone({
