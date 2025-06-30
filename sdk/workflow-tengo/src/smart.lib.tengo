@@ -516,20 +516,20 @@ resource = func(r) {
 			return self._inputs
 		},
 
-		// cached service fields (smart.Field)
-		_serviceInputs: undefined,
+		// cached meta fields (smart.Field)
+		_metaInputs: undefined,
 		/**
-		 * Returns resource service fields map name -> smart.Field
+		 * Returns resource meta fields map name -> smart.Field
 		 */
-		serviceInputs: func() {
-			if self._serviceInputs == undefined {
+		metaInputs: func() {
+			if self._metaInputs == undefined {
 				info := self.info()
 
 				if !maps.containsKey(info, "ServiceFields") {
 					// old Workflow controller API with bug (no service fields in resource info struct)
 					// FIXME: remove this safely after 2026-02-01
-					self._serviceInputs = {}
-					return self._serviceInputs
+					self._metaInputs = {}
+					return self._metaInputs
 				}
 
 				svcs := maps.mapValues(info.ServiceFields, field)
@@ -537,9 +537,17 @@ resource = func(r) {
 				if !info.InputsLocked {
 					return svcs
 				}
-				self._serviceInputs = svcs
+				self._metaInputs = svcs
 			}
-			return self._serviceInputs
+			return self._metaInputs
+		},
+
+		/**
+		 * @deprecated Use metaInputs instead.
+		 * Returns resource service fields map name -> smart.Field
+		 */
+		serviceInputs: func() {
+			return self.metaInputs()
 		},
 
 		// cached resource outputs (smart.Field)
@@ -1206,14 +1214,25 @@ resourceBuilder = func(r) {
 		},
 
 		/**
+		 * Create meta field with given name.
+		 * Meta fields behave very like inputs, but with deduplication disabled.
+		 * This means, that if you create 2 resources, each having 1 input field with value "A" and the meta
+		 * field with different values, they would be considered the same by backend.
+		 */
+		createMetaField: func(name) {
+			assertNotBuilt()
+			return self.createField(name, constants.FTYPE_SERVICE)
+		},
+
+		/**
+		 * @deprecated Use createMetaField instead.
 		 * Create service field with given name.
 		 * Service fields behave very like inputs, but with deduplication disabled.
 		 * This means, that if you create 2 resources, each having 1 input field with value "A" and the service
 		 * field with different values, they would be considered the same by backend.
 		 */
 		createServiceField: func(name) {
-			assertNotBuilt()
-			return self.createField(name, constants.FTYPE_SERVICE)
+			return self.createMetaField(name)
 		},
 
 		/**
@@ -1374,6 +1393,20 @@ _mapBuilder := func(isEph, ...resourceType) {
 
 		/**
 		 * Adds object automatically converting non-reference objects into Json values.
+		 * The object is added into meta field, meaning the value would not affect deduplication of the map.
+		 *
+		 * @param key: string - how the field will be named in the map
+		 * @param value: any - a reference or a primitive value
+		 * @return self: mapBuilder
+		 */
+		addMeta: func(key, value) {
+			builder.createMetaField(key).setRefOrJson(value)
+			return self
+		},
+
+		/**
+		 * @deprecated Use addMeta instead.
+		 * Adds object automatically converting non-reference objects into Json values.
 		 * The object is added into service field, meaning the value would not affect deduplication of the map.
 		 *
 		 * @param key: string - how the field will be named in the map
@@ -1381,8 +1414,7 @@ _mapBuilder := func(isEph, ...resourceType) {
 		 * @return self: mapBuilder
 		 */
 		addService: func(key, value) {
-			builder.createServiceField(key).setRefOrJson(value)
-			return self
+			return self.addMeta(key, value)
 		},
 
 		/**
