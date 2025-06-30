@@ -287,6 +287,7 @@ export const platforma = BlockModel.create('Heavy')
       { type: 'link', href: '/pl-file-input-page', label: 'PlFileInputPage' },
       { type: 'link', href: '/pl-error-boundary-page', label: 'PlErrorBoundaryPage' },
       { type: 'link', href: '/pl-element-list-page', label: 'PlElementList' },
+      { type: 'link', href: '/pl-annotation-sidebar-page', label: 'PlAnnotationSidebar' },
       { type: 'link', href: '/errors', label: 'Errors' },
       { type: 'link', href: '/text-fields', label: 'PlTextField' },
       { type: 'link', href: '/tabs', label: 'PlTabs' },

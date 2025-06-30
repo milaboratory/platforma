@@ -14,13 +14,6 @@
     min-width: var(--btn-min-width);
   }
 
-  [data-theme="dark"] & {
-    &:hover {
-      --color-text: #87E087;
-    }
-    --mask-icon-bg-color: #fff;
-  }
-
   &:disabled {
     --color-text: var(--btn-disabled-bg);
     --icon-color: var(--dis-01);
