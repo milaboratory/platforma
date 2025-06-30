@@ -180,17 +180,20 @@ self.body(func(inputs) {
 	computeAllocation := delayedComputeAllocation.output("allocation")
 
 	runEnvType := planOptions.runEnvType
-	mainRunBuilder := runcmd.builder(wdBefore, inputs.mainPlan).
-		inQueue(runOptions.queue).
-		allocation(computeAllocation)
+
+	mainPlanPreBuilder := runcmd.createRunCommandPlan(inputs.mainPlan)
 
 	mnz := runOptions.monetization
 	if !is_undefined(mnz) {
 		result := monetization.run(mnz, wdBefore, inputs.mnzPlan, runOptions.queue, computeAllocation)
 		wdBefore = result.wdAfter
-		mainRunBuilder.refVar(result.jwtEnvName, result.jwtEnvName, result.jwtEnvValue)
-		mainRunBuilder.envExpression(result.jwtEnvName, "{" + result.jwtEnvName + "}")
+		mainPlanPreBuilder.refVar(result.jwtEnvName, result.jwtEnvName, result.jwtEnvValue)
+		mainPlanPreBuilder.envExpression(result.jwtEnvName, "{" + result.jwtEnvName + "}")
 	}
+
+	mainRunBuilder := runcmd.builder(wdBefore, mainPlanPreBuilder.state()).
+		inQueue(runOptions.queue).
+		allocation(computeAllocation)
 
 	// Passing arguments and environment variables from run options passed by the user
 
