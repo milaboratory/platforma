@@ -1,18 +1,21 @@
 <script generic="T extends unknown = unknown" lang="ts" setup>
 import { computed } from 'vue';
-import { PlIcon16, PlIcon24 } from '@milaboratories/uikit';
+import { PlIcon16 } from '../PlIcon16';
+import { PlIcon24 } from '../PlIcon24';
 
 const props = defineProps<{
   item: T;
   index: number;
   showDragHandle: boolean;
+  isActive: boolean;
   isDraggable: boolean;
   isRemovable: boolean;
+  isExpandable: boolean;
+  isExpanded: boolean;
   isToggable: boolean;
   isToggled: boolean;
   isPinnable: boolean;
   isPinned: boolean;
-  isOpened: boolean;
 }>();
 
 const slots = defineSlots<{
@@ -22,16 +25,17 @@ const slots = defineSlots<{
 const hasContentSlot = computed(() => slots['content'] !== undefined);
 
 const emit = defineEmits<{
+  (e: 'expand', item: T, index: number): void;
   (e: 'toggle', item: T, index: number): void;
   (e: 'pin', item: T, index: number): void;
   (e: 'remove', item: T, index: number): void;
-  (e: 'toggleContent', item: T, index: number): void;
 }>();
 </script>
 
 <template>
   <div
     :class="[$style.root, {
+      [$style.active]: props.isActive,
       [$style.pinned]: props.isPinned,
       [$style.disabled]: props.isToggled,
     }]"
@@ -40,7 +44,7 @@ const emit = defineEmits<{
       :class="[$style.head, {
         [$style.clickable]: hasContentSlot,
       }]"
-      @click="emit('toggleContent', props.item, props.index)"
+      @click="isExpandable && emit('expand', props.item, props.index)"
     >
       <div
         v-if="props.showDragHandle"
@@ -49,7 +53,7 @@ const emit = defineEmits<{
       >
         <PlIcon16 name="drag-dots" />
       </div>
-      <PlIcon16 :class="[$style.contentChevron, { [$style.opened]: props.isOpened }]" name="chevron-down" />
+      <PlIcon16 v-if="isExpandable" :class="[$style.contentChevron, { [$style.opened]: props.isExpanded }]" name="chevron-down" />
 
       <div :class="$style.title">
         <slot name="title" :item="props.item" :index="props.index" />
@@ -82,13 +86,15 @@ const emit = defineEmits<{
         </div>
       </div>
     </div>
-    <div v-if="hasContentSlot && isOpened" :class="$style.body">
+    <div v-if="hasContentSlot && props.isExpanded" :class="$style.body">
       <slot name="content" :item="props.item" :index="props.index" />
     </div>
   </div>
 </template>
 
 <style module>
+@use '../../assets/variables.scss' as *;
+
 .root {
   --background: rgba(255, 255, 255, 0.8);
   --border-color: var(--color-div-grey);
@@ -111,7 +117,8 @@ const emit = defineEmits<{
   border: 1px solid var(--border-color);
   background-color: var(--background);
   transition: box-shadow 0.15s;
-  box-shadow: var(--box-shadow);
+  box-shadow: var(--box-shadow);;
+  overflow: hidden;
 
   &:hover {
     --border-color: var(--border-color-focus);
@@ -124,6 +131,11 @@ const emit = defineEmits<{
 
   &.pinned {
     --background: var(--bg-base-light);
+  }
+
+  &.active {
+    --border-color: var(--border-color-focus);
+    --head-background: var(--btn-accent-positive-500);
   }
 }
 
@@ -154,13 +166,16 @@ const emit = defineEmits<{
 }
 
 .title {
-  display: block;
+  display: flex;
+  gap: 8px;
   max-width: calc(100% - 50px);
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .body {
+  display: flex;
+  gap: 8px;
   padding: 24px;
   border-radius: 0 0 var(--border-radius) var(--border-radius);
 }
