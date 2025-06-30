@@ -174,6 +174,10 @@ __primitiveValueTypes := { "Int": true, "Long": true, "Float": true, "Double": t
  *                                              // Additional parameters passed to each body invocation
  *                                              // Keys match template input names
  *
+ *                      metaExtra?: Map<string, Ref>,
+ *                                              // Additional meta parameters passed to each body invocation
+ *                                              // Keys match template input names
+ *
  *                      isEphemeral?: boolean   // Whether to render mapping template in ephemeral mode
  *                                              // Defaults to false if omitted, template will be rendered
  *                                              // as pure resource
@@ -259,6 +263,11 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 	extra := opts.extra
 	if is_undefined(extra) {
 		extra = {}
+	}
+
+	metaExtra := opts.metaExtra
+	if is_undefined(metaExtra) {
+		metaExtra = {}
 	}
 
 	iterationAxesSpec := input.spec.axesSpec
@@ -370,6 +379,10 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 
 	for k, v in extra {
 		renderInputs["__extra_" + k] = v
+	}
+
+	for k, v in metaExtra {
+		renderInputs["__meta_" + k] = v
 	}
 
 	renderResult := render.createEphemeral(llProcessTpl, renderInputs)
