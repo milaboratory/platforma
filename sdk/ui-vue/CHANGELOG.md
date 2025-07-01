@@ -1,5 +1,13 @@
 # @platforma-sdk/ui-vue
 
+## 1.37.10
+
+### Patch Changes
+
+- c6b4dd2: Extend interface for PlElementList
+- Updated dependencies [c6b4dd2]
+  - @milaboratories/uikit@2.2.93
+
 ## 1.37.7
 
 ### Patch Changes
