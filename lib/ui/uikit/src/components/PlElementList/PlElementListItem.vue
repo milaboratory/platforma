@@ -167,6 +167,7 @@ const emit = defineEmits<{
 
 .title {
   display: flex;
+  flex-direction: row;
   gap: 8px;
   max-width: calc(100% - 50px);
   overflow: hidden;
@@ -175,6 +176,7 @@ const emit = defineEmits<{
 
 .body {
   display: flex;
+  flex-direction: column;
   gap: 8px;
   padding: 24px;
   border-radius: 0 0 var(--border-radius) var(--border-radius);
