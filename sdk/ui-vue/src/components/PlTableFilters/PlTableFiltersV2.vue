@@ -138,51 +138,51 @@ const resetToDefaults = () => {
       </template>
     </PlElementList> -->
 
-    <div ref="filterManager" class="filter-manager d-flex flex-column gap-6">
+    <div ref="filterManager" :class="[$style['filter-manager'], 'd-flex', 'flex-column', 'gap-6']">
       <template v-for="(entry, index) in filters.value" :key="canonicalizeJson<PTableColumnId>(entry.id)">
         <div
           v-if="entry.filter"
-          :class="[$style['filter-manager__filter'], { open: entry.filter.open, disabled: entry.filter.disabled }]"
+          :class="[$style['filter'], { open: entry.filter.open, disabled: entry.filter.disabled }]"
         >
           <div
-            :class="[$style['filter-manager__header'], 'd-flex', 'align-center', 'gap-8']"
+            :class="[$style['header'], 'd-flex', 'align-center', 'gap-8']"
             @click="entry.filter.open = !entry.filter.open"
           >
-            <div :class="$style['filter-manager__expand-icon']">
+            <div :class="$style['expand-icon']">
               <PlMaskIcon16 name="chevron-right" />
             </div>
 
-            <div :class="[$style['filter-manager__title'], 'flex-grow-1', 'text-s-btn']">
+            <div :class="[$style['title'], 'flex-grow-1', 'text-s-btn']">
               {{ entry.label }}
             </div>
 
-            <div :class="[$style['filter-manager__actions'], 'd-flex', 'gap-12']">
-              <div :class="$style['filter-manager__toggle']" @click.stop="entry.filter.disabled = !entry.filter.disabled">
+            <div :class="[$style['actions'], 'd-flex', 'gap-12']">
+              <div :class="$style['toggle']" @click.stop="entry.filter.disabled = !entry.filter.disabled">
                 <PlMaskIcon24 :name="entry.filter.disabled ? 'view-hide' : 'view-show'" />
               </div>
 
-              <div :class="$style['filter-manager__delete']" @click.stop="entry.filter = null">
+              <div :class="$style['delete']" @click.stop="entry.filter = null">
                 <PlMaskIcon24 name="close" />
               </div>
             </div>
           </div>
 
-          <div :class="[$style['filter-manager__content'], 'd-flex', 'gap-24', 'p-24', 'flex-column']">
+          <div :class="[$style['content'], 'd-flex', 'gap-24', 'p-24', 'flex-column']">
             <PlTableFilterEntryV2 v-model="filters.value[index]" />
           </div>
         </div>
       </template>
 
-      <div :class="[$style['filter-manager__add-action-wrapper'], { 'pt-24': scrollIsActive }]">
+      <div :class="[$style['add-action-wrapper'], { 'pt-24': scrollIsActive }]">
         <div
           v-if="canAddFilter"
-          :class="$style['filter-manager__add-btn']"
+          :class="$style['add-btn']"
           @click="showAddFilter = true"
         >
-          <div :class="$style['filter-manager__add-btn-icon']">
+          <div :class="$style['add-btn-icon']">
             <PlMaskIcon16 name="add" />
           </div>
-          <div :class="[$style['filter-manager__add-btn-title'], 'text-s-btn']">Add Filter</div>
+          <div :class="[$style['add-btn-title'], 'text-s-btn']">Add Filter</div>
         </div>
       </div>
 
@@ -206,135 +206,120 @@ const resetToDefaults = () => {
 
 <style lang="scss" module>
 .filter-manager {
-    $this: &;
+    --expand-icon-rotation: rotate(0deg);
+}
 
-    .text-s {
-        font-weight: 600;
-    }
+.filter-manager .text-s {
+    font-weight: 600;
+}
 
-    &__add-action-wrapper {
-        position: sticky;
-        bottom: -16px;
-        background-color: var(--bg-elevated-01);
-        transition: all .15s ease-in-out;
-    }
+.add-action-wrapper {
+    position: sticky;
+    bottom: -16px;
+    background-color: var(--bg-elevated-01);
+    transition: all .15s ease-in-out;
+}
 
-    &__add-btn {
-        height: 40px;
-        background-color: var(--bg-elevated-01);
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding-left: 12px;
-        padding-right: 12px;
-        border-radius: 6px;
-        border: 1px dashed var(--border-color-div-grey);
-        line-height: 0;
-        cursor: pointer;
-    }
+.add-btn {
+    height: 40px;
+    background-color: var(--bg-elevated-01);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-left: 12px;
+    padding-right: 12px;
+    border-radius: 6px;
+    border: 1px dashed var(--border-color-div-grey);
+    line-height: 0;
+    cursor: pointer;
+}
 
-    &__add-btn:hover {
-        border-radius: 6px;
-        border: 1px dashed var(--border-color-focus, #49CC49);
-        background: rgba(99, 224, 36, 0.12);
-    }
+.add-btn:hover {
+    border-radius: 6px;
+    border: 1px dashed var(--border-color-focus, #49CC49);
+    background: rgba(99, 224, 36, 0.12);
+}
 
-    &__add-btn-title {
-        flex-grow: 1;
-    }
+.add-btn-title {
+    flex-grow: 1;
+}
 
-    &__header {
-        height: 40px;
-        padding-left: 12px;
-        padding-right: 12px;
-        cursor: pointer;
-    }
+.header {
+    height: 40px;
+    padding-left: 12px;
+    padding-right: 12px;
+    cursor: pointer;
+}
 
-    &__content {
-        max-height: 0;
-        overflow: hidden;
-        transition: all .2s ease-in-out;
-        padding-top: 0;
-        padding-bottom: 0;
-    }
+.content {
+    max-height: 0;
+    overflow: hidden;
+    transition: all .2s ease-in-out;
+    padding-top: 0;
+    padding-bottom: 0;
+}
 
-    &__expand-icon {
-        .mask-16 {
-            transition: all .15s ease-in-out;
-        }
-    }
+.expand-icon {
+    transition: all .15s ease-in-out;
+    transform: var(--expand-icon-rotation);
+    line-height: 0;
+    cursor: pointer;
+}
 
-    &__toggle,
-    &__expand-icon,
-    &__delete {
-        line-height: 0;
-        cursor: pointer;
-    }
+.toggle,
+.delete {
+    line-height: 0;
+    cursor: pointer;
+    display: none;
+}
 
-    &__toggle,
-    &__delete {
-        display: none;
+.toggle .mask-24,
+.delete .mask-24 {
+    --icon-color: var(--ic-02);
+}
 
-        .mask-24 {
-            --icon-color: var(--ic-02);
-        }
-    }
+.toggle:hover .mask-24 {
+    --icon-color: var(--ic-01);
+}
 
-    &__toggle:hover {
-        .mask-24 {
-            --icon-color: var(--ic-01);
-        }
-    }
+.delete:hover .mask-24 {
+    --icon-color: var(--ic-01);
+}
 
-    &__delete:hover {
-        .mask-24 {
-            --icon-color: var(--ic-01);
-        }
-    }
+.filter:hover .toggle,
+.filter:hover .delete {
+    display: block;
+}
 
-    &__filter:hover &__toggle,
-    &__filter:hover &__delete {
-        display: block;
-    }
+.filter {
+    border-radius: 6px;
+    border: 1px solid var(--border-color-div-grey);
+    background-color: var(--bg-base-light);
+    transition: background-color .15s ease-in-out;
+    overflow: auto;
+}
 
-    &__filter {
-        border-radius: 6px;
-        border: 1px solid var(--border-color-div-grey);
-        background-color: var(--bg-base-light);
-        transition: background-color .15s ease-in-out;
-        overflow: auto;
-    }
+.filter.disabled .expand-icon,
+.filter.disabled .title {
+    opacity: 0.3;
+}
 
-    &__filter.disabled {
-        #{$this}__expand-icon,
-        #{$this}__title {
-            opacity: 0.3;
-        }
-    }
+.filter:hover {
+    background-color: var(--bg-elevated-01);
+}
 
-    &__filter:hover {
-        background-color: var(--bg-elevated-01);
-    }
+.filter:global(.open) {
+    background-color: var(--bg-elevated-01);
+    --expand-icon-rotation: rotate(90deg);
+}
 
-    &__filter:global(.open) {
-        background-color: var(--bg-elevated-01);
+.filter:global(.open) .content {
+    max-height: 1600px;
+    padding: 24px;
+    transition: all .2s ease-in-out;
+}
 
-        #{$this}__content {
-            max-height: 1600px;
-            // overflow: auto;
-            padding: 24px;
-            transition: all .2s ease-in-out;
-        }
-
-        #{$this}__header {
-            background: linear-gradient(180deg, #EBFFEB 0%, #FFF 100%);
-        }
-
-        #{$this}__expand-icon {
-            .mask-16 {
-                transform: rotate(90deg);
-            }
-        }
-    }
+.filter:global(.open) .header {
+    background: linear-gradient(180deg, #EBFFEB 0%, #FFF 100%);
 }
 </style>
