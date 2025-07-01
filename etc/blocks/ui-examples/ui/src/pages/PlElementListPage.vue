@@ -21,13 +21,13 @@ watch(list, () => {
   console.log('list changed', toRaw(list.value));
 }, { deep: true });
 
-const draggableItems = computed(() => new Set(list.value.slice(2, 5)));
-const removableItems = computed(() => new Set(list.value.slice(4, 8)));
-const expandedSet = ref(new Set<Item>());
-const pinnedSet = ref(new Set<Item>());
-const pinnableSet = computed(() => new Set(list.value.slice(3, 7)));
-const toggledSet = ref(new Set<Item>());
-const toggableSet = computed(() => new Set(list.value.slice(1, 5)));
+const draggableItems = computed(() => new Set(list.value.slice(2, 5).map(getKey)));
+const removableItems = computed(() => new Set(list.value.slice(4, 8).map(getKey)));
+const expandedSet = ref(new Set<Item['id']>());
+const pinnedSet = ref(new Set<Item['id']>());
+const pinnableSet = computed(() => new Set(list.value.slice(3, 7).map(getKey)));
+const toggledSet = ref(new Set<Item['id']>());
+const toggableSet = computed(() => new Set(list.value.slice(1, 5).map(getKey)));
 
 const enabledDebug = ref(true);
 const enabledSorting = ref(true);
@@ -38,8 +38,8 @@ const enabledToggling = ref(true);
 
 const handleReset = () => {
   list.value = generateList();
-  pinnedSet.value = new Set<Item>();
-  toggledSet.value = new Set<Item>();
+  pinnedSet.value = new Set<Item['id']>();
+  toggledSet.value = new Set<Item['id']>();
 };
 
 const handleShuffle = () => {
@@ -93,8 +93,8 @@ const handleManualRemove = (item: Item, index: number) => {
       <div>
         <div v-for="(item) in list" :key="getKey(item)">
           {{ item.id }} {{ item.label.substring(0, 30) }}
-          {{ pinnedSet.has(item) ? 'pinned' : '' }}
-          {{ toggledSet.has(item) ? 'toggled' : '' }}
+          {{ pinnedSet.has(getKey(item)) ? 'pinned' : '' }}
+          {{ toggledSet.has(getKey(item)) ? 'toggled' : '' }}
         </div>
       </div>
     </div>
