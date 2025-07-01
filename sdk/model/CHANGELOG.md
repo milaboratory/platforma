@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.37.11
+
+### Patch Changes
+
+- 10e5841: createPlDataTableV2 - always add linker columns to join
+
 ## 1.37.2
 
 ### Patch Changes
