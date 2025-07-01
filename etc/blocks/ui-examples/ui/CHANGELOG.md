@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.4.22
+
+### Patch Changes
+
+- 70eff11: update plelementlist interface
+
 ## 1.4.21
 
 ### Patch Changes
