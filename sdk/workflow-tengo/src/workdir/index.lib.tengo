@@ -5,7 +5,6 @@
 json := import("json")
 
 ll := import(":ll")
-feats := import(":feats")
 validation := import(":validation")
 
 assets := import(":assets")
@@ -23,17 +22,6 @@ _WD_CREATE_FIELD_WORKDIR    := "workdir"
 
 _WD_FILL_FIELD_WORKDIR_IN   := "workdirIn"
 _WD_FILL_FIELD_WORKDIR_OUT  := "workdirOut"
-
-/**
- * Create empty working directory
- *
- * @return smart.field - field where working directory will appear after creation
- */
-create := func() {
-	// working directories without quotas (old-style)
-	wdCreate := smart.ephemeralBuilder(constants.RTYPE_WORKDIR_CREATE).lockAndBuild()
-	return wdCreate.getField(_WD_CREATE_FIELD_WORKDIR)
-}
 
 /**
  * Create empry working directory for given allocation. This means, the WD would actually be created only
@@ -269,12 +257,8 @@ _fill := func() {
 		 * @return wd: reference - a reference to the filled workdir.
 		 */
 		build: func() {
-			emptyWorkdir := undefined
-			if feats.workdirLimits && smart.isReference(_allocation) {
-				emptyWorkdir = createV2(_allocation)
-			} else {
-				emptyWorkdir = create()
-			}
+			ll.assert(smart.isReference(_allocation), "workdir.builder: allocation is mandatory")
+			emptyWorkdir := createV2(_allocation)
 
 			wd.getField(_WD_FILL_FIELD_WORKDIR_IN).set(emptyWorkdir)
 
@@ -422,7 +406,6 @@ save := func(workdir) {
 
 export ll.toStrict({
 	builder: builder,
-	create: create,
 	createV2: createV2,
 	save: save
 })
