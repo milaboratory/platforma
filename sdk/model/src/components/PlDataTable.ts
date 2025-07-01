@@ -669,9 +669,10 @@ export function uniqueBy<T>(array: T[], makeId: (entry: T) => string): T[] {
 export function createPlDataTableV2<A, U>(
   ctx: RenderCtx<A, U>,
   inputColumns: PColumn<TreeNodeAccessor | PColumnValues | DataInfo<TreeNodeAccessor>>[],
-  tableState: PlDataTableStateV2 | undefined,
+  tableState: PlDataTableStateV2,
   ops?: CreatePlDataTableOps,
 ): PlDataTableModel | undefined {
+  if (inputColumns.length === 0) return undefined;
   const tableStateNormalized = upgradePlDataTableStateV2(tableState ?? createPlDataTableStateV2());
 
   const coreJoinType = ops?.coreJoinType ?? 'full';
@@ -706,6 +707,11 @@ export function createPlDataTableV2<A, U>(
       .map((c) => c.id);
   })());
 
+  // Preserve linker columns
+  columns
+    .filter((c) => c.spec.annotations?.['pl7.app/isLinkerColumn'] === 'true')
+    .forEach((c) => hiddenColumns.delete(c.id));
+
   // Preserve core columns as they change the shape of join.
   if (ops?.coreColumnPredicate) {
     const coreColumns = columns.flatMap((c) => ops?.coreColumnPredicate?.(c.spec) ? [c.id] : []);
@@ -715,7 +721,7 @@ export function createPlDataTableV2<A, U>(
   // Filters decrease the number of result rows, sorting changes the order of result rows
   [...filters.map((f) => f.column), ...sorting.map((s) => s.column)]
     .filter((c): c is PTableColumnIdColumn => c.type === 'column')
-    .map((c) => hiddenColumns.delete(c.id));
+    .forEach((c) => hiddenColumns.delete(c.id));
 
   const visibleColumns = columns.filter((c) => !hiddenColumns.has(c.id));
   const visibleLabelColumns = getMatchingLabelColumns(visibleColumns.map(getColumnIdAndSpec), allLabelColumns);
