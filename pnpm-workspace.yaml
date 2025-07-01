@@ -189,6 +189,8 @@ catalog:
 
   'fs-extra': '^11.2.0'
 
+  'fast-json-patch': ^3.1.1
+
   # dont upgrade, ask @dbolotin first
   'zod': ~3.23.8
 

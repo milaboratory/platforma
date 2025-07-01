@@ -13,9 +13,11 @@ import type {
   OpenSingleFileResponse,
   Platforma,
   StorageHandle,
+  ValueWithUTag,
 } from '@platforma-sdk/model';
 import { getLsFilesResult } from './utils';
 import type { BlockMock } from './BlockMock';
+import type { Operation } from 'fast-json-patch';
 
 export function createMockApi<
   Args,
@@ -41,14 +43,23 @@ export function createMockApi<
     sdkInfo: {
       sdkVersion: 'dev',
     },
-    loadBlockState: async function (): Promise<BlockState<Args, Outputs, UiState>> {
-      return block.getState();
+    loadBlockState: async function (): Promise<ValueWithUTag<BlockState<Args, Outputs, UiState, Href>>> {
+      return {
+        value: block.getState(),
+        uTag: 'mock-utag-' + Date.now(),
+      };
     },
-    onStateUpdates(cb: OnUpdates): () => void {
-      onUpdateListeners.push(cb);
+    getPatches: async function (uTag: string): Promise<ValueWithUTag<Operation[]>> {
+      const patches = block.getJsonPatches();
 
-      return () => {
-        // do nothing
+      // Add delay when no patches to prevent tight polling loop
+      if (patches.length === 0) {
+        await delay(50);
+      }
+
+      return {
+        value: patches,
+        uTag: 'mock-patches-utag-' + Date.now(),
       };
     },
     async setBlockArgs(value: Args): Promise<void> {

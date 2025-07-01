@@ -1,16 +1,37 @@
-import type { BlockApi } from './block_api';
+import type { BlockApi, BlockApiV2 } from './block_api';
 import type { BlockOutputsBase, BlockState, DriverKit, ValueOrErrors } from '@milaboratories/pl-model-common';
 import type { SdkInfo } from './sdk_info';
 import type { BlockStatePatch } from './block_state_patch';
 
 /** Defines all methods to interact with the platform environment from within a block UI. */
-export interface Platforma<
+export interface PlatformaV1<
   Args = unknown,
   Outputs extends Record<string, ValueOrErrors<unknown>> = Record<string, ValueOrErrors<unknown>>,
   UiState = unknown,
   Href extends `/${string}` = `/${string}`,
 > extends BlockApi<Args, Outputs, UiState, Href>,
   DriverKit {
+  /** Information about SDK version current platforma environment was compiled with. */
+  readonly sdkInfo: SdkInfo;
+}
+
+export interface PlatformaV2<
+  Args = unknown,
+  Outputs extends Record<string, ValueOrErrors<unknown>> = Record<string, ValueOrErrors<unknown>>,
+  UiState = unknown,
+  Href extends `/${string}` = `/${string}`,
+> extends BlockApiV2<Args, Outputs, UiState, Href>,
+  DriverKit {
+  /** Information about SDK version current platforma environment was compiled with. */
+  readonly sdkInfo: SdkInfo;
+}
+
+export interface Platforma<
+  Args = unknown,
+  Outputs extends Record<string, ValueOrErrors<unknown>> = Record<string, ValueOrErrors<unknown>>,
+  UiState = unknown,
+  Href extends `/${string}` = `/${string}`,
+> extends PlatformaV2<Args, Outputs, UiState, Href> {
   /** Information about SDK version current platforma environment was compiled with. */
   readonly sdkInfo: SdkInfo;
 }

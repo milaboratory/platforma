@@ -1,9 +1,10 @@
-import { deepClone, unionize } from '@milaboratories/helpers';
+import { deepClone } from '@milaboratories/helpers';
 import type {
   BlockOutputsBase,
   BlockState,
   BlockStatePatch,
 } from '@platforma-sdk/model';
+import { compare, type Operation } from 'fast-json-patch';
 
 export abstract class BlockMock<
   Args = unknown,
@@ -12,12 +13,19 @@ export abstract class BlockMock<
   Href extends `/${string}` = `/${string}`,
 > {
   #afterUpdate: ((updates: BlockStatePatch<Args, Outputs, UiState, Href>[]) => Promise<void>) | undefined;
+  #previousState: BlockState<Args, Outputs, UiState, Href>;
+  #hasPendingChanges = false;
 
   constructor(public args: Args, public outputs: Outputs, public ui: UiState, public href: Href) {
+    this.#previousState = this.getState();
+  }
 
+  onNewState(callback: (patches: BlockStatePatch<Args, Outputs, UiState, Href>[]) => Promise<void>) {
+    this.#afterUpdate = callback;
   }
 
   async setBlockArgs(args: Args) {
+    console.log('setBlockArgs', args);
     this.args = args;
     await this.doUpdate();
   }
@@ -44,24 +52,37 @@ export abstract class BlockMock<
     });
   }
 
-  getPatches(): BlockStatePatch<Args, Outputs, UiState, Href>[] {
-    return unionize(deepClone({
-      outputs: this.outputs,
-    }));
+  getJsonPatches(): Operation[] {
+    if (!this.#hasPendingChanges) {
+      return [];
+    }
+
+    const currentState = this.getState();
+    const patches = compare(this.#previousState, currentState);
+    this.#previousState = currentState;
+    this.#hasPendingChanges = false;
+    console.log('getJsonPatches', patches);
+    return patches;
+  }
+
+  getBlockStatePatches(): BlockStatePatch<Args, Outputs, UiState, Href>[] {
+    return [
+      {
+        key: 'outputs',
+        value: deepClone(this.outputs),
+      },
+    ];
   }
 
   private async doUpdate() {
     await this.process();
+    this.#hasPendingChanges = true;
     if (this.#afterUpdate) {
-      await this.#afterUpdate(this.getPatches());
+      await this.#afterUpdate(this.getBlockStatePatches());
     }
   }
 
   abstract process(): Promise<void>;
-
-  onNewState(cb: (updates: BlockStatePatch<Args, Outputs, UiState, Href>[]) => Promise<void>) {
-    this.#afterUpdate = cb;
-  }
 }
 
 export type InferState<B> = B extends BlockMock<infer S> ? S : never;

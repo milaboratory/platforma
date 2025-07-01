@@ -58,6 +58,7 @@
     "vite": "catalog:",
     "vitest": "catalog:",
     "vue-tsc": "catalog:",
-    "yarpm": "catalog:"
+    "yarpm": "catalog:",
+    "fast-json-patch": "catalog:"
   }
 }

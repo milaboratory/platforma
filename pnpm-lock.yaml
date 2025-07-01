@@ -153,6 +153,9 @@ catalogs:
     eslint-plugin-vue:
       specifier: ^9.26.0
       version: 9.31.0
+    fast-json-patch:
+      specifier: ^3.1.1
+      version: 3.1.1
     fs-extra:
       specifier: ^11.2.0
       version: 11.3.0
@@ -1352,6 +1355,9 @@ importers:
       canonicalize:
         specifier: 'catalog:'
         version: 2.1.0
+      fast-json-patch:
+        specifier: 'catalog:'
+        version: 3.1.1
       happy-dom:
         specifier: 'catalog:'
         version: 15.11.7
@@ -2349,6 +2355,9 @@ importers:
       '@types/jest':
         specifier: 'catalog:'
         version: 29.5.14
+      fast-json-patch:
+        specifier: 'catalog:'
+        version: 3.1.1
       jest:
         specifier: 'catalog:'
         version: 29.7.0(@types/node@22.5.5)(ts-node@10.9.2(@types/node@22.5.5)(typescript@5.5.4))
@@ -2477,6 +2486,9 @@ importers:
       '@vitejs/plugin-vue':
         specifier: 'catalog:'
         version: 5.2.3(vite@6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0))(vue@3.5.13(typescript@5.5.4))
+      fast-json-patch:
+        specifier: 'catalog:'
+        version: 3.1.1
       happy-dom:
         specifier: 'catalog:'
         version: 15.11.7
@@ -8859,6 +8871,9 @@ packages:
   fast-glob@3.3.2:
     resolution: {integrity: sha512-oX2ruAFQwf/Orj8m737Y5adxDQO0LAB7/S5MnxCdTNDd4p6BsyIVsv9JQsATbTSq8KHRpLwIHbVlUNatxd+1Ow==}
     engines: {node: '>=8.6.0'}
+
+  fast-json-patch@3.1.1:
+    resolution: {integrity: sha512-vf6IHUX2SBcA+5/+4883dsIjpBTqmfBjmYiWK1savxQmFk4JfBMLa7ynTYOs1Rolp/T1betJxHiGD3g1Mn8lUQ==}
 
   fast-json-stable-stringify@2.1.0:
     resolution: {integrity: sha512-lhd/wF+Lk98HZoTCtlVraHtfh5XYijIjalXck7saUtuanSDyLMxnHhSXEDJqHxD7msR8D0uCmqlkwjCV8xvwHw==}
@@ -19277,6 +19292,8 @@ snapshots:
       glob-parent: 5.1.2
       merge2: 1.4.1
       micromatch: 4.0.8
+
+  fast-json-patch@3.1.1: {}
 
   fast-json-stable-stringify@2.1.0: {}
 
