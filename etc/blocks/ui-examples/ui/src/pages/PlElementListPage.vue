@@ -15,6 +15,7 @@ function generateList(): Item[] {
 }
 
 const list = ref(generateList());
+const getKey = (v: { id: number }) => v.id;
 
 watch(list, () => {
   console.log('list changed', toRaw(list.value));
@@ -22,13 +23,13 @@ watch(list, () => {
 
 const draggableItems = computed(() => new Set(list.value.slice(2, 5)));
 const removableItems = computed(() => new Set(list.value.slice(4, 8)));
-const getKey = (v: { id: number }) => v.id;
+const expandedSet = ref(new Set<Item>());
 const pinnedSet = ref(new Set<Item>());
 const pinnableSet = computed(() => new Set(list.value.slice(3, 7)));
 const toggledSet = ref(new Set<Item>());
 const toggableSet = computed(() => new Set(list.value.slice(1, 5)));
 
-const enabledDebug = ref(false);
+const enabledDebug = ref(true);
 const enabledSorting = ref(true);
 const enabledDragging = ref(true);
 const enabledRemoving = ref(true);
@@ -101,6 +102,7 @@ const handleManualRemove = (item: Item, index: number) => {
     <h4>All at once</h4>
     <PlElementList
       v-model:items="list"
+      v-model:expandedItems="expandedSet"
       v-model:pinnedItems="pinnedSet"
       v-model:toggledItems="toggledSet"
       :enableDragging="enabledDragging"

@@ -29,8 +29,6 @@ export * from './components/PlTableFilters';
 
 export * from './components/PlMultiSequenceAlignment';
 
-export * from './components/PlElementList';
-
 export * from './defineApp';
 
 export * from './createModel';

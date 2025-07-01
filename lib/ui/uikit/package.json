@@ -31,16 +31,20 @@
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "dependencies": {
+    "@milaboratories/helpers": "workspace:^",
+    "@platforma-sdk/model": "workspace:^",
+    "@vue/test-utils": "catalog:",
+    "@vueuse/integrations": "catalog:",
+    "sortablejs": "catalog:",
     "vue": "catalog:",
     "d3": "catalog:"
   },
   "devDependencies": {
+    "@types/d3": "catalog:",
+    "@types/sortablejs": "catalog:",
     "@milaboratories/ts-configs": "workspace:*",
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/eslint-config": "workspace:^",
-    "@milaboratories/helpers": "workspace:^",
-    "@platforma-sdk/model": "workspace:^",
-    "@vue/test-utils": "catalog:",
     "@vueuse/core": "catalog:",
     "jsdom": "catalog:",
     "resize-observer-polyfill": "catalog:",
@@ -49,7 +53,6 @@
     "vite": "catalog:",
     "vue-tsc": "catalog:",
     "yarpm": "catalog:",
-    "svgo": "catalog:",
-    "@types/d3": "catalog:"
+    "svgo": "catalog:"
   }
 }
