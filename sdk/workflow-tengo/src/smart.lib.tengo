@@ -148,6 +148,7 @@ _getFutureField := func(from, name, fieldType, isEph) {
 }
 
 /**
+ * @deprecated Use buildFutureField instead.
  * Gets future field given field name or a path
  *
  * @param resourceOrField: reference - resource or field to get future field from
@@ -519,6 +520,7 @@ resource = func(r) {
 		// cached meta fields (smart.Field)
 		_metaInputs: undefined,
 		/**
+		 * @deprecated Use metaInputs instead.
 		 * Returns resource meta fields map name -> smart.Field
 		 */
 		metaInputs: func() {

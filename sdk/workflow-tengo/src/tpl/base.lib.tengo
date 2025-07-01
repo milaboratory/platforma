@@ -181,8 +181,8 @@ tpl := func(ops) {
 		},
 
 		/**
-		 * @return map[string]field: - a map of meta inputs to the fields of the input map.
 		 * @deprecated Use rawMetaInputs instead.
+		 * @return map[string]field: - a map of meta inputs to the fields of the input map.
 		 */
 		rawServiceInputs: func() {
 			return self.rawMetaInputs()

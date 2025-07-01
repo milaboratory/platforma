@@ -34,6 +34,7 @@ exportColumnData := func(data) {
 }
 
 /**
+ * @deprecated pframes.pColumnResourceMapDataBuilder is not supported any more; use pcolumn.resourceMapBuilder
  * Creates a builder for a resource map p-column's data.
  */
 pColumnResourceMapDataBuilder := func(keyLength) {
