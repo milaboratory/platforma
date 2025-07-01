@@ -86,8 +86,6 @@ const unpinnedContainerRef = shallowRef<HTMLElement>();
 
 // version fix problem with sync between data and rendered values when items have been changed
 const versionRef = computed<number>((oldVersion) => {
-  if (!dndSortingEnabled.value) return 0;
-
   const currentVersion = shallowHash(...itemsRef.value.map(props.getItemKey));
 
   if (domProjectionItemsRef.value === undefined) return oldVersion ?? currentVersion;
