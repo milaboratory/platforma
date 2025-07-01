@@ -1,5 +1,14 @@
 # @milaboratories/uikit
 
+## 2.2.96
+
+### Patch Changes
+
+- 8236387: Grouping in PlDropdown
+- Updated dependencies [8236387]
+  - @milaboratories/helpers@1.6.16
+  - @platforma-sdk/model@1.37.14
+
 ## 2.2.95
 
 ### Patch Changes
