@@ -68,7 +68,7 @@ self.validateInputs({
 	"assetRules,?": { any: { any: ["string"] } },
 	"assetCache,?": { any: "number" },
 
-	// Service inputs
+	// Meta inputs
 	"quota,?": {
 		queue: "string",
 		"cpu,?": "number",
@@ -87,9 +87,9 @@ self.body(func(inputs) {
 		plan = loadSoftware.loadSoftware(software)
 	}
 
-	serviceImplInputs := {}
-	if !is_undefined(self.rawServiceInputs().quota) {
-		serviceImplInputs.quota = self.rawServiceInputs().quota
+	metaImplInputs := {}
+	if !is_undefined(self.rawMetaInputs().quota) {
+		metaImplInputs.quota = self.rawMetaInputs().quota
 	}
 
 	pureImplInputs := {
@@ -131,7 +131,7 @@ self.body(func(inputs) {
 		assetCache: inputs.assetCache
 	}, { removeUndefs: true }))
 
-	execImpl := render.createEphemeral(execImplTpl, pureImplInputs, serviceImplInputs)
+	execImpl := render.createEphemeral(execImplTpl, pureImplInputs, metaImplInputs)
 
 	return {
 		files: execImpl.output("files"),

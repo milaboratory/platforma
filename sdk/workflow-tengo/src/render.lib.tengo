@@ -22,14 +22,14 @@ _SUBSCRIPTION_FIELD := "subscription"
  * @param tpl: template resource (see assets.importTemplate())
  * @param isEph: whether template is ephemeral
  * @param inputs: a map of inputs to be passed to the template
- * @param serviceInputs: (optional) a map of service inputs to be passed to the template.
- *                                  Service inputs are not accounted in dedupliation and recovering.
- *                                  Two resources with the same <inputs> and different <serviceInputs>
+ * @param metaInputs: (optional) a map of meta inputs to be passed to the template.
+ *                                  Meta inputs are not accounted in dedupliation and recovering.
+ *                                  Two resources with the same <inputs> and different <metaInputs>
  *                                  would be considered as copies of each-other.
  * @return renderer: a smart resource with additional output("name") method
  */
 createUniversal := func(tpl, isEph, inputs, ...opts) {
-	serviceInputs := opts[0]
+	metaInputs := opts[0]
 
 	// build renderer resource
 	rbuilder := undefined
@@ -54,10 +54,10 @@ createUniversal := func(tpl, isEph, inputs, ...opts) {
 			inputsMap.add(name, value)
 		}
 	}
-	for name, value in serviceInputs {
+	for name, value in metaInputs {
 		if !is_undefined(value) {
 			if feats.serviceFields {
-				inputsMap.addService(name, value)
+				inputsMap.addMeta(name, value)
 			} else {
 				inputsMap.add(name, value)
 			}
@@ -148,9 +148,9 @@ createUniversal := func(tpl, isEph, inputs, ...opts) {
  *
  * @param tpl: template resource (see assets.importTemplate())
  * @param inputs: a map of inputs to be passed to the template
- * @param serviceInputs: (optional) a map of service inputs to be passed to the template.
- *                                  Service inputs are not accounted in dedupliation and recovering.
- *                                  Two resources with the same <inputs> and different <serviceInputs>
+ * @param metaInputs: (optional) a map of meta inputs to be passed to the template.
+ *                                  Meta inputs are not accounted in dedupliation and recovering.
+ *                                  Two resources with the same <inputs> and different <metaInputs>
  *                                  would be considered as copies of each-other.
  * @return renderer: a smart resource with additional output("name") method
  */
@@ -163,8 +163,8 @@ create := func(tpl, inputs, ...opts) {
  *
  * @param tpl: template resource (see assets.importTemplate())
  * @param inputs: a map of inputs to be passed to the template
- * @param serviceInputs: (optional) a map of service inputs to be passed to the template.
- *                                  The split into <inputs> and <serviceInputs> has no
+ * @param metaInputs: (optional) a map of meta inputs to be passed to the template.
+ *                                  The split into <inputs> and <metaInputs> has no
  *                                  effect on ephemeral templates, as they do not
  *                                  have deduplication.
  * @return renderer: a smart resource with additional output("name") method
