@@ -4,7 +4,6 @@ import {
 } from '@milaboratories/helpers';
 import type {
   AxisId,
-  PlDataTableFilterState,
   PlDataTableGridStateCore,
   PlDataTableStateV2,
   PlSelectionModel,
@@ -447,9 +446,12 @@ watch(
       }
 
       // Model updated -> show skeletons instead of data
-      if (!settings.model) {
+      const sourceChanged = (settings.model?.sourceId && settings.model.sourceId !== settings.sourceId);
+      if (!settings.model || sourceChanged) {
         const state = gridApi.getServerSideGroupLevelState();
-        const rowCount = state.length > 0 ? state[0].rowCount : undefined;
+        const rowCount = !sourceChanged && state.length > 0
+          ? state[0].rowCount
+          : 1;
         return gridApi.updateGridOptions({
           serverSideDatasource: {
             getRows: (params) => {

@@ -79,24 +79,20 @@ export type PlDataTableSheetState = {
 };
 
 /**
- * Params used to get p-table handle from the driver
- */
-export type PTableParams = {
-  sorting?: PTableSorting[];
-  filters?: PTableRecordFilter[];
-};
-
-/**
  * PlDataTableV2 persisted state
  */
 export type PlDataTableStateV2 =
   // Old versions of the state
   | {
+    // no version
     gridState: PlDataTableGridStateCore & {
       sourceId?: string;
       sheets?: Record<CanonicalizedJson<AxisId>, string | number>;
     };
-    pTableParams?: PTableParams;
+    pTableParams?: {
+      sorting?: PTableSorting[];
+      filters?: PTableRecordFilter[];
+    };
   }
   | {
     version: 2;
@@ -125,12 +121,21 @@ export type PlDataTableStateV2CacheEntry = {
   filtersState: PlDataTableFilterState[];
 };
 
-export type PTableParamsV2 = {
-  hiddenColIds: PObjectId[] | null;
-  partitionFilters: PTableRecordFilter[];
-  filters: PTableRecordFilter[];
-  sorting: PTableSorting[];
-};
+export type PTableParamsV2 =
+  | {
+    sourceId: null;
+    hiddenColIds: null;
+    partitionFilters: [];
+    filters: [];
+    sorting: [];
+  }
+  | {
+    sourceId: string;
+    hiddenColIds: PObjectId[] | null;
+    partitionFilters: PTableRecordFilter[];
+    filters: PTableRecordFilter[];
+    sorting: PTableSorting[];
+  };
 
 export type PlDataTableStateV2Normalized = {
   /** Version for upgrades */
@@ -141,23 +146,28 @@ export type PlDataTableStateV2Normalized = {
   pTableParams: PTableParamsV2;
 };
 
+export function makeDefaultPTableParams(): PTableParamsV2 {
+  return {
+    sourceId: null,
+    hiddenColIds: null,
+    partitionFilters: [],
+    filters: [],
+    sorting: [],
+  };
+}
+
 /** Create default PlDataTableStateV2 */
 export function createPlDataTableStateV2(): PlDataTableStateV2Normalized {
   return {
     version: 3,
     stateCache: [],
-    pTableParams: {
-      hiddenColIds: null,
-      partitionFilters: [],
-      filters: [],
-      sorting: [],
-    },
+    pTableParams: makeDefaultPTableParams(),
   };
 }
 
 /** Upgrade PlDataTableStateV2 to the latest version */
 export function upgradePlDataTableStateV2(state: PlDataTableStateV2): PlDataTableStateV2Normalized {
-  // v1 -> v2
+  // v1
   if (!('version' in state)) {
     // Non upgradeable as sourceId calculation algorithm has changed, resetting state to default
     return createPlDataTableStateV2();
@@ -170,11 +180,7 @@ export function upgradePlDataTableStateV2(state: PlDataTableStateV2): PlDataTabl
         ...entry,
         filtersState: [],
       })),
-      pTableParams: {
-        ...state.pTableParams,
-        partitionFilters: state.pTableParams.filters,
-        filters: [],
-      },
+      pTableParams: makeDefaultPTableParams(),
     };
   }
   return state;
@@ -567,6 +573,8 @@ function createPTableDef(params: {
 
 /** PlAgDataTable model */
 export type PlDataTableModel = {
+  /** DataSource identifier for state management */
+  sourceId: string | null;
   /** p-table including all columns, used to show the full specification of the table */
   fullTableHandle: PTableHandle;
   /** p-table including only visible columns, used to get the data */
@@ -606,7 +614,7 @@ export function createPlDataTableV2<A, U>(
   ops?: CreatePlDataTableOps,
 ): PlDataTableModel | undefined {
   if (inputColumns.length === 0) return undefined;
-  const tableStateNormalized = upgradePlDataTableStateV2(tableState ?? createPlDataTableStateV2());
+  const tableStateNormalized = upgradePlDataTableStateV2(tableState);
 
   const coreJoinType = ops?.coreJoinType ?? 'full';
   const partitionFilters: PTableRecordSingleValueFilterV2[] = tableStateNormalized.pTableParams.partitionFilters;
@@ -683,6 +691,7 @@ export function createPlDataTableV2<A, U>(
   const visibleHandle = ctx.createPTable(visibleDef);
 
   return {
+    sourceId: tableStateNormalized.pTableParams.sourceId,
     fullTableHandle: fullHandle,
     visibleTableHandle: visibleHandle,
   } satisfies PlDataTableModel;

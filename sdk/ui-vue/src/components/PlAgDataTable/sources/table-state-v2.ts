@@ -9,6 +9,7 @@ import type {
   PTableSorting,
 } from '@platforma-sdk/model';
 import {
+  makeDefaultPTableParams,
   parseJson,
   upgradePlDataTableStateV2,
   type PlDataTableGridStateCore,
@@ -31,8 +32,16 @@ import {
 } from '@milaboratories/helpers';
 import { makePredicate } from '../../PlTableFilters/filters_logic';
 
-function makeDefaultState(): Omit<PlDataTableStateV2CacheEntry, 'sourceId'> {
+type PlDataTableStateV2CacheEntryNullable = PlDataTableStateV2CacheEntry | {
+  sourceId: null;
+  gridState: Record<string, never>;
+  sheetsState: [];
+  filtersState: [];
+};
+
+function makeDefaultState(): PlDataTableStateV2CacheEntryNullable {
   return {
+    sourceId: null,
     gridState: {},
     sheetsState: [],
     filtersState: [],
@@ -90,17 +99,9 @@ function makeSorting(state: PlDataTableGridStateCore['sort']): PTableSorting[] {
   );
 }
 
-function makeDefaultPTableParams(): PTableParamsV2 {
+function makePTableParams(state: PlDataTableStateV2CacheEntry): PTableParamsV2 {
   return {
-    hiddenColIds: null,
-    partitionFilters: [],
-    filters: [],
-    sorting: [],
-  };
-}
-
-function makePTableParams(state: Omit<PlDataTableStateV2CacheEntry, 'sourceId'>): PTableParamsV2 {
-  return {
+    sourceId: state.sourceId,
     hiddenColIds: getHiddenColIds(state.gridState.columnVisibility),
     partitionFilters: makePartitionFilters(state.sheetsState),
     filters: makeFilters(state.filtersState),
@@ -126,7 +127,7 @@ export function useTableState(
     },
   });
 
-  const tableState = computed<Omit<PlDataTableStateV2CacheEntry, 'sourceId'>>({
+  const tableState = computed<PlDataTableStateV2CacheEntryNullable>({
     get: () => {
       const defaultState = makeDefaultState();
 
@@ -135,7 +136,10 @@ export function useTableState(
 
       const cachedState = tableStateNormalized.value.stateCache
         .find((entry) => entry.sourceId === sourceId);
-      if (!cachedState) return defaultState;
+      if (!cachedState) return {
+        ...defaultState,
+        sourceId,
+      };
 
       return cachedState;
     },
@@ -146,20 +150,15 @@ export function useTableState(
         pTableParams: makeDefaultPTableParams(),
       };
 
-      const sourceId = settings.value.sourceId;
-      if (sourceId) {
+      if (state.sourceId) {
         newState.pTableParams = makePTableParams(state);
 
-        const cacheEntry = {
-          sourceId,
-          ...state,
-        };
-        const stateIdx = newState.stateCache.findIndex((entry) => entry.sourceId === sourceId);
+        const stateIdx = newState.stateCache.findIndex((entry) => entry.sourceId === state.sourceId);
         if (stateIdx !== -1) {
-          newState.stateCache[stateIdx] = cacheEntry;
+          newState.stateCache[stateIdx] = state;
         } else {
           const CacheDepth = 5;
-          newState.stateCache.push(cacheEntry);
+          newState.stateCache.push(state);
           newState.stateCache = newState.stateCache.slice(-CacheDepth);
         }
       }
@@ -172,7 +171,7 @@ export function useTableState(
   watch(
     () => tableState.value,
     (state) => {
-      const newParams = makePTableParams(state);
+      const newParams = state.sourceId ? makePTableParams(state) : makeDefaultPTableParams();
       const oldParams = tableStateNormalized.value.pTableParams;
       if (!isJsonEqual(newParams, oldParams)) {
         tableStateNormalized.value = {
@@ -186,30 +185,39 @@ export function useTableState(
   const gridState = computed<PlDataTableGridStateCore>({
     get: () => tableState.value.gridState,
     set: (gridState) => {
-      tableState.value = {
-        ...tableState.value,
-        gridState,
-      };
+      const oldState = tableState.value;
+      if (oldState.sourceId) {
+        tableState.value = {
+          ...oldState,
+          gridState,
+        };
+      }
     },
   });
 
   const sheetsState = computed<PlDataTableSheetState[]>({
     get: () => tableState.value.sheetsState,
     set: (sheetsState) => {
-      tableState.value = {
-        ...tableState.value,
-        sheetsState,
-      };
+      const oldState = tableState.value;
+      if (oldState.sourceId) {
+        tableState.value = {
+          ...oldState,
+          sheetsState,
+        };
+      }
     },
   });
 
   const filtersState = computed<PlDataTableFilterState[]>({
     get: () => tableState.value.filtersState,
     set: (filtersState) => {
-      tableState.value = {
-        ...tableState.value,
-        filtersState,
-      };
+      const oldState = tableState.value;
+      if (oldState.sourceId) {
+        tableState.value = {
+          ...oldState,
+          filtersState,
+        };
+      }
     },
   });
 
