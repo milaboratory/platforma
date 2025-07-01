@@ -88,6 +88,7 @@ const options = computed(() =>
   props.options?.map((opt) => ({
     label: opt.label,
     value: opt.ref,
+    group: opt.group,
   })),
 );
 

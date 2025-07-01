@@ -4,15 +4,15 @@ import { PlMaskIcon16 } from '../PlMaskIcon16';
 import { PlSectionSeparator } from '../PlSectionSeparator';
 import ExpandTransition from './ExpandTransition.vue';
 import type { Ref } from 'vue';
-import { computed, inject } from 'vue';
+import { computed, inject, toRef } from 'vue';
 
-const $m = inject<Ref<string>>('pl-accordion-model');
+const $m = inject<Ref<string>>('pl-accordion-model', () => toRef(''), true);
 
 const $p = inject<
   Ref<{
     multiple?: boolean;
   }>
->('pl-accordion-props');
+>('pl-accordion-props', () => toRef({ multiple: false }), true);
 
 const model = defineModel<boolean>();
 

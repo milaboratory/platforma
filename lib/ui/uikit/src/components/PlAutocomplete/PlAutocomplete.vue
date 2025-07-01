@@ -9,7 +9,7 @@ export default {
 
 <script lang="ts" setup generic="M = unknown">
 import './pl-autocomplete.scss';
-import { computed, reactive, ref, unref, useSlots, useTemplateRef, watch, watchPostEffect } from 'vue';
+import { computed, reactive, ref, unref, useTemplateRef, watch, watchPostEffect } from 'vue';
 import { tap } from '../../helpers/functions';
 import { PlTooltip } from '../PlTooltip';
 import DoubleContour from '../../utils/DoubleContour.vue';

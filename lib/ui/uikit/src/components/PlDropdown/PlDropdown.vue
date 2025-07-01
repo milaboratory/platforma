@@ -9,21 +9,22 @@ export default {
 
 <script lang="ts" setup generic="M = unknown">
 import './pl-dropdown.scss';
-import { computed, reactive, ref, unref, useSlots, useTemplateRef, watch, watchPostEffect } from 'vue';
+import { computed, reactive, ref, unref, useTemplateRef, watch, watchPostEffect } from 'vue';
 import { tap } from '../../helpers/functions';
 import { PlTooltip } from '../PlTooltip';
 import DoubleContour from '../../utils/DoubleContour.vue';
 import { useLabelNotch } from '../../utils/useLabelNotch';
 import type { ListOption, ListOptionNormalized } from '../../types';
 import { deepEqual } from '../../helpers/objects';
-import DropdownListItem from '../DropdownListItem.vue';
 import LongText from '../LongText.vue';
 import { normalizeListOptions } from '../../helpers/utils';
 import { PlIcon16 } from '../PlIcon16';
 import { PlMaskIcon24 } from '../PlMaskIcon24';
-import { DropdownOverlay } from '../../utils/DropdownOverlay';
 import SvgRequired from '../../generated/components/svg/images/SvgRequired.vue';
 import { getErrorMessage } from '../../helpers/error.ts';
+import OptionList from './OptionList.vue';
+import { useGroupBy } from './useGroupBy';
+import type { LOption } from './types';
 
 const emit = defineEmits<{
   /**
@@ -110,7 +111,7 @@ const slots = defineSlots<{
 const rootRef = ref<HTMLElement | undefined>();
 const input = ref<HTMLInputElement | undefined>();
 
-const overlayRef = useTemplateRef('overlay');
+const optionListRef = useTemplateRef<InstanceType<typeof OptionList>>('optionListRef');
 
 const data = reactive({
   search: '',
@@ -121,7 +122,7 @@ const data = reactive({
 
 const findActiveIndex = () =>
   tap(
-    filteredRef.value.findIndex((o) => deepEqual(o.value, props.modelValue)),
+    orderedRef.value.findIndex((o) => deepEqual(o.value, props.modelValue)),
     (v) => (v < 0 ? 0 : v),
   );
 
@@ -159,7 +160,7 @@ const computedError = computed(() => {
   return undefined;
 });
 
-const optionsRef = computed(() =>
+const optionsRef = computed<LOption<M>[]>(() =>
   normalizeListOptions(props.options ?? []).map((opt, index) => ({
     ...opt,
     index,
@@ -214,6 +215,8 @@ const filteredRef = computed(() => {
   return options;
 });
 
+const { orderedRef, groupsRef, restRef } = useGroupBy(filteredRef, 'group');
+
 const tabindex = computed(() => (isDisabled.value ? undefined : '0'));
 
 const selectOption = (v: M | undefined) => {
@@ -221,6 +224,10 @@ const selectOption = (v: M | undefined) => {
   data.search = '';
   data.open = false;
   rootRef?.value?.focus();
+};
+
+const selectOptionWrapper = (v: unknown) => {
+  selectOption(v as M | undefined);
 };
 
 const clear = () => emit('update:modelValue', undefined);
@@ -239,7 +246,7 @@ const onInputFocus = () => (data.open = true);
 const onFocusOut = (event: FocusEvent) => {
   const relatedTarget = event.relatedTarget as Node | null;
 
-  if (!rootRef.value?.contains(relatedTarget) && !overlayRef.value?.listRef?.contains(relatedTarget)) {
+  if (!rootRef.value?.contains(relatedTarget) && !optionListRef.value?.listRef?.contains(relatedTarget)) {
     data.search = '';
     data.open = false;
   }
@@ -266,25 +273,25 @@ const handleKeydown = (e: { code: string; preventDefault(): void }) => {
     rootRef.value?.focus();
   }
 
-  const filtered = unref(filteredRef);
+  const ordered = orderedRef.value;
 
-  const { length } = filtered;
+  const { length } = ordered;
 
   if (!length) {
     return;
   }
 
   if (e.code === 'Enter') {
-    selectOption(filtered.find((it) => it.index === activeIndex)?.value);
+    selectOption(ordered.find((it) => it.index === activeIndex)?.value);
   }
 
-  const localIndex = filtered.findIndex((it) => it.index === activeIndex) ?? -1;
+  const localIndex = ordered.findIndex((it) => it.index === activeIndex) ?? -1;
 
   const delta = e.code === 'ArrowDown' ? 1 : e.code === 'ArrowUp' ? -1 : 0;
 
   const newIndex = Math.abs(localIndex + delta + length) % length;
 
-  data.activeIndex = filteredRef.value[newIndex].index ?? -1;
+  data.activeIndex = ordered[newIndex].index ?? -1;
 };
 
 useLabelNotch(rootRef);
@@ -301,7 +308,7 @@ watchPostEffect(() => {
   data.search; // to watch
 
   if (data.activeIndex >= 0 && data.open) {
-    overlayRef.value?.scrollIntoActive();
+    optionListRef.value?.scrollIntoActive();
   }
 });
 </script>
@@ -354,18 +361,15 @@ watchPostEffect(() => {
             </template>
           </PlTooltip>
         </label>
-        <DropdownOverlay v-if="data.open" ref="overlay" :root="rootRef" class="pl-dropdown__options" tabindex="-1" :gap="3">
-          <DropdownListItem
-            v-for="(item, index) in filteredRef"
-            :key="index"
-            :option="item"
-            :is-selected="item.isSelected"
-            :is-hovered="item.isActive"
-            :size="optionSize"
-            @click.stop="selectOption(item.value)"
-          />
-          <div v-if="!filteredRef.length" class="nothing-found">Nothing found</div>
-        </DropdownOverlay>
+        <OptionList
+          v-if="data.open"
+          ref="optionListRef"
+          :root-ref="rootRef!"
+          :groups="groupsRef"
+          :rest="restRef"
+          :option-size="optionSize"
+          :select-option="selectOptionWrapper"
+        />
         <DoubleContour class="pl-dropdown__contour" />
       </div>
     </div>

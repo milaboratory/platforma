@@ -3,7 +3,8 @@ import type { ColDef, ICellRendererParams } from 'ag-grid-enterprise';
 import { PlAgCellProgress } from '../components/PlAgCellProgress';
 import type { MaskIconName16, PlProgressCellProps } from '@milaboratories/uikit';
 import { tapIf } from '@milaboratories/helpers';
-import { PlAgColumnHeader, PlAgHeaderComponentParams } from '../components/PlAgColumnHeader';
+import type { PlAgHeaderComponentParams } from '../components/PlAgColumnHeader';
+import { PlAgColumnHeader } from '../components/PlAgColumnHeader';
 import { PlAgTextAndButtonCell } from '../components/PlAgTextAndButtonCell';
 
 /**
