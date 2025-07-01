@@ -202,6 +202,7 @@ const error = computed(() =>
     >
       <template v-if="multipleAlignmentData.data.sequences.length">
         <MultiSequenceAlignmentView
+          :sequence-names="multipleAlignmentData.data.sequenceNames"
           :sequence-rows="multipleAlignmentData.data.sequences"
           :label-rows="multipleAlignmentData.data.labels"
           :markup="multipleAlignmentData.data.markup"

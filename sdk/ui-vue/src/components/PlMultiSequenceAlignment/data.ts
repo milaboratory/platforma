@@ -38,17 +38,17 @@ export function useSequenceColumnsOptions(
   }>,
 ) {
   const error = shallowRef<Error>();
-  const data = computedAsync(
+  const data = computedAsync<OptionsWithDefaults<PObjectId>>(
     async () => {
       try {
         error.value = undefined;
         return await getSequenceColumnsOptions(toValue(params));
       } catch (err) {
         error.value = ensureError(err);
-        return { options: [], defaults: [] };
+        return getEmtpyOptions();
       }
     },
-    { options: [], defaults: [] },
+    getEmtpyOptions(),
   );
   return { data, error };
 }
@@ -60,7 +60,7 @@ export function useLabelColumnsOptions(
   }>,
 ) {
   const error = shallowRef<Error>();
-  const data = computedAsync(
+  const data = computedAsync<OptionsWithDefaults<PTableColumnId>>(
     async () => {
       try {
         error.value = undefined;
@@ -68,10 +68,10 @@ export function useLabelColumnsOptions(
       } catch (err) {
         console.error(err);
         error.value = ensureError(err);
-        return { options: [], defaults: [] };
+        return getEmtpyOptions();
       }
     },
-    { options: [], defaults: [] },
+    getEmtpyOptions(),
   );
   return { data, error };
 }
@@ -83,7 +83,7 @@ export function useMarkupColumnsOptions(
   }>,
 ) {
   const error = shallowRef<Error>();
-  const data = computedAsync(
+  const data = computedAsync<ListOptionNormalized<PObjectId>[]>(
     async () => {
       try {
         error.value = undefined;
@@ -110,7 +110,7 @@ export function useMultipleAlignmentData(
 ) {
   const loading = ref(true);
   const error = shallowRef<Error>();
-  const data = computedAsync(
+  const data = computedAsync<MultipleAlignmentData>(
     async () => {
       try {
         error.value = undefined;
@@ -118,10 +118,10 @@ export function useMultipleAlignmentData(
       } catch (err) {
         console.error(err);
         error.value = ensureError(err);
-        return { sequences: [], labels: [], exceedsLimit: false };
+        return getEmtpyMultipleAlignmentData();
       }
     },
-    { sequences: [], labels: [], exceedsLimit: false },
+    getEmtpyMultipleAlignmentData(),
     { evaluating: loading },
   );
   return { data, error, loading };
@@ -134,7 +134,7 @@ async function getSequenceColumnsOptions({
   pFrame: PFrameHandle | undefined;
   sequenceColumnPredicate: (column: PColumnIdAndSpec) => boolean;
 }): Promise<OptionsWithDefaults<PObjectId>> {
-  if (!pFrame) return { options: [], defaults: [] };
+  if (!pFrame) return getEmtpyOptions();
   const pFrameDriver = getPFrameDriver();
   const columns = await pFrameDriver.listColumns(pFrame);
   const options = columns
@@ -154,7 +154,7 @@ async function getLabelColumnsOptions({
   pFrame: PFrameHandle | undefined;
   sequenceColumnIds: PObjectId[];
 }): Promise<OptionsWithDefaults<PTableColumnId>> {
-  if (!pFrame) return { options: [], defaults: [] };
+  if (!pFrame) return getEmtpyOptions();
   const pFrameDriver = getPFrameDriver();
   const columns = await pFrameDriver.listColumns(pFrame);
   const optionMap = new Map<CanonicalizedJson<PTableColumnId>, string>();
@@ -260,7 +260,7 @@ async function getMultipleAlignmentData({
   selection: PlSelectionModel | undefined;
 }): Promise<MultipleAlignmentData> {
   if (!pframe || sequenceColumnIds.length === 0) {
-    return { sequences: [], labels: [], exceedsLimit: false };
+    return getEmtpyMultipleAlignmentData();
   }
 
   const pFrameDriver = getPFrameDriver();
@@ -402,6 +402,10 @@ async function getMultipleAlignmentData({
     (_, row) => alignedSequences.map((column) => column[row]),
   );
 
+  const sequenceNames = sequenceColumns.map((column) =>
+    column.spec.spec.annotations?.['pl7.app/label'] ?? 'Unlabelled column',
+  );
+
   const labels = Array.from(
     { length: rowCount },
     (_, row) =>
@@ -410,7 +414,12 @@ async function getMultipleAlignmentData({
       ),
   );
 
-  const result: MultipleAlignmentData = { sequences, labels, exceedsLimit };
+  const result: MultipleAlignmentData = {
+    sequences,
+    sequenceNames,
+    labels,
+    exceedsLimit,
+  };
 
   if (markupColumn) {
     const labels = JSON.parse(
@@ -434,8 +443,22 @@ async function getMultipleAlignmentData({
   return result;
 }
 
+function getEmtpyOptions<T>(): OptionsWithDefaults<T> {
+  return { options: [], defaults: [] };
+}
+
+function getEmtpyMultipleAlignmentData(): MultipleAlignmentData {
+  return {
+    sequences: [],
+    sequenceNames: [],
+    labels: [],
+    exceedsLimit: false,
+  };
+}
+
 type MultipleAlignmentData = {
   sequences: string[][];
+  sequenceNames: string[];
   labels: string[][];
   markup?: {
     labels: Record<string, string>;
