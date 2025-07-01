@@ -2200,9 +2200,24 @@ importers:
 
   lib/ui/uikit:
     dependencies:
+      '@milaboratories/helpers':
+        specifier: workspace:^
+        version: link:../../util/helpers
+      '@platforma-sdk/model':
+        specifier: workspace:^
+        version: link:../../../sdk/model
+      '@vue/test-utils':
+        specifier: 'catalog:'
+        version: 2.4.6
+      '@vueuse/integrations':
+        specifier: 'catalog:'
+        version: 13.3.0(axios@1.8.1)(focus-trap@7.6.0)(sortablejs@1.15.6)(vue@3.5.13(typescript@5.6.3))
       d3:
         specifier: 'catalog:'
         version: 7.9.0
+      sortablejs:
+        specifier: 'catalog:'
+        version: 1.15.6
       vue:
         specifier: 'catalog:'
         version: 3.5.13(typescript@5.6.3)
@@ -2213,24 +2228,18 @@ importers:
       '@milaboratories/eslint-config':
         specifier: workspace:^
         version: link:../../../tools/eslint-config
-      '@milaboratories/helpers':
-        specifier: workspace:^
-        version: link:../../util/helpers
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../tools/ts-configs
-      '@platforma-sdk/model':
-        specifier: workspace:^
-        version: link:../../../sdk/model
       '@types/d3':
         specifier: 'catalog:'
         version: 7.4.3
+      '@types/sortablejs':
+        specifier: 'catalog:'
+        version: 1.15.8
       '@vitejs/plugin-vue':
         specifier: 'catalog:'
         version: 5.2.3(vite@6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0))(vue@3.5.13(typescript@5.6.3))
-      '@vue/test-utils':
-        specifier: 'catalog:'
-        version: 2.4.6
       '@vueuse/core':
         specifier: 'catalog:'
         version: 13.3.0(vue@3.5.13(typescript@5.6.3))
@@ -17768,6 +17777,16 @@ snapshots:
       '@vueuse/core': 13.3.0(vue@3.5.13(typescript@5.5.4))
       '@vueuse/shared': 13.3.0(vue@3.5.13(typescript@5.5.4))
       vue: 3.5.13(typescript@5.5.4)
+    optionalDependencies:
+      axios: 1.8.1
+      focus-trap: 7.6.0
+      sortablejs: 1.15.6
+
+  '@vueuse/integrations@13.3.0(axios@1.8.1)(focus-trap@7.6.0)(sortablejs@1.15.6)(vue@3.5.13(typescript@5.6.3))':
+    dependencies:
+      '@vueuse/core': 13.3.0(vue@3.5.13(typescript@5.6.3))
+      '@vueuse/shared': 13.3.0(vue@3.5.13(typescript@5.6.3))
+      vue: 3.5.13(typescript@5.6.3)
     optionalDependencies:
       axios: 1.8.1
       focus-trap: 7.6.0
