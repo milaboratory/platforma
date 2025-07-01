@@ -1,5 +1,6 @@
-import type { BlockOutputsBase, BlockState, NavigationState } from '@milaboratories/pl-model-common';
+import type { BlockOutputsBase, BlockState, NavigationState, ValueWithUTag } from '@milaboratories/pl-model-common';
 import type { BlockStatePatch } from './block_state_patch';
+import type { Operation } from 'fast-json-patch';
 
 /** Returned by state subscription methods to be able to cancel the subscription. */
 export type CancelSubscription = () => void;
@@ -70,6 +71,60 @@ export interface BlockApi<
 
   /**
    * Sets block navigatiopn state.
+   * */
+  setNavigationState(state: NavigationState<Href>): Promise<void>;
+}
+
+/** Defines methods to read and write current block data. */
+export interface BlockApiV2<
+  Args = unknown,
+  Outputs extends BlockOutputsBase = BlockOutputsBase,
+  UiState = unknown,
+  Href extends `/${string}` = `/${string}`,
+> {
+  /**
+   * Use this method to retrieve block state during UI initialization. Then use
+   * {@link onStateUpdates} method to subscribe for updates.
+   * */
+  loadBlockState(): Promise<ValueWithUTag<BlockState<Args, Outputs, UiState, Href>>>;
+
+  /**
+   * Get all patches that were applied to the block state.
+   * */
+  getPatches(uTag: string): Promise<ValueWithUTag<Operation[]>>;
+
+  /**
+   * Sets block args.
+   *
+   * This method returns when corresponding arguments are safely saved so in
+   * case the window is closed there will be no information losses. This
+   * function under the hood may delay actual persistence of the supplied
+   * arguments.
+   * */
+  setBlockArgs(args: Args): Promise<void>;
+
+  /**
+   * Sets block ui state.
+   *
+   * This method returns when corresponding arguments are safely saved so in
+   * case the window is closed there will be no information losses. This
+   * function under the hood may delay actual persistence of the supplied
+   * values.
+   * */
+  setBlockUiState(state: UiState): Promise<void>;
+
+  /**
+   * Sets block args and ui state.
+   *
+   * This method returns when corresponding arguments are safely saved so in
+   * case the window is closed there will be no information losses. This
+   * function under the hood may delay actual persistence of the supplied
+   * values.
+   * */
+  setBlockArgsAndUiState(args: Args, state: UiState): Promise<void>;
+
+  /**
+   * Sets block navigation state.
    * */
   setNavigationState(state: NavigationState<Href>): Promise<void>;
 }

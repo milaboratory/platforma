@@ -1,13 +1,14 @@
 import { deepClone, isJsonEqual, tap } from '@milaboratories/helpers';
 import type { Mutable } from '@milaboratories/helpers';
-import type { NavigationState, BlockOutputsBase, BlockState, Platforma } from '@platforma-sdk/model';
-import { reactive, nextTick, computed, watch } from 'vue';
+import type { NavigationState, BlockOutputsBase, BlockState, Platforma, ValueWithUTag } from '@platforma-sdk/model';
+import { reactive, computed, watch, ref } from 'vue';
 import type { StateModelOptions, UnwrapOutputs, OptionalResult, OutputValues, OutputErrors, AppSettings } from '../types';
 import { createModel } from '../createModel';
 import { createAppModel } from './createAppModel';
 import { parseQuery } from '../urls';
 import { MultiError, unwrapValueOrErrors } from '../utils';
 import { useDebounceFn } from '@vueuse/core';
+import { compare, applyPatch } from 'fast-json-patch';
 /**
  * Creates an application instance with reactive state management, outputs, and methods for state updates and navigation.
  *
@@ -27,11 +28,15 @@ export function createApp<
   Outputs extends BlockOutputsBase = BlockOutputsBase,
   UiState = unknown,
   Href extends `/${string}` = `/${string}`,
->(state: BlockState<Args, Outputs, UiState, Href>, platforma: Platforma<Args, Outputs, UiState, Href>, settings: AppSettings) {
+>(state: ValueWithUTag<BlockState<Args, Outputs, UiState, Href>>, platforma: Platforma<Args, Outputs, UiState, Href>, settings: AppSettings) {
   type AppModel = {
     args: Args;
     ui: UiState;
   };
+
+  const closedRef = ref(false);
+
+  const uTagRef = ref(state.uTag);
 
   const log = (msg: string, ...rest: unknown[]) => {
     if (settings.debug) {
@@ -43,10 +48,10 @@ export function createApp<
    * Reactive snapshot of the application state, including args, outputs, UI state, and navigation state.
    */
   const snapshot = reactive({
-    args: Object.freeze(state.args),
-    outputs: Object.freeze(state.outputs),
-    ui: Object.freeze(state.ui),
-    navigationState: Object.freeze(state.navigationState) as NavigationState<Href>,
+    args: Object.freeze(state.value.args),
+    outputs: Object.freeze(state.value.outputs),
+    ui: Object.freeze(state.value.ui),
+    navigationState: Object.freeze(state.value.navigationState) as NavigationState<Href>,
   }) as {
     args: Readonly<Args>;
     outputs: Partial<Readonly<Outputs>>;
@@ -76,31 +81,50 @@ export function createApp<
     }
   }, debounceSpan, { maxWait });
 
-  platforma.onStateUpdates(async (updates) => {
-    updates.forEach((patch) => {
-      if (patch.key === 'args' && !isJsonEqual(snapshot.args, patch.value)) {
-        snapshot.args = Object.freeze(patch.value);
-        log('args patch', snapshot.args);
-      }
+  // Temporary solution to handle patches
+  (async () => {
+    while (!closedRef.value) {
+      console.log('getPatches', uTagRef.value);
+      const patches = await platforma.getPatches(uTagRef.value);
+      uTagRef.value = patches.uTag;
 
-      if (patch.key === 'ui' && !isJsonEqual(snapshot.ui, patch.value)) {
-        snapshot.ui = Object.freeze(patch.value);
-        log('ui patch', snapshot.ui);
-      }
+      const newState = applyPatch(snapshot, patches.value).newDocument;
 
-      if (patch.key === 'outputs' && !isJsonEqual(snapshot.outputs, patch.value)) {
-        snapshot.outputs = Object.freeze(patch.value);
-        log('outputs patch', snapshot.outputs);
-      }
+      console.log('newState', newState);
 
-      if (patch.key === 'navigationState' && !isJsonEqual(snapshot.navigationState, patch.value)) {
-        snapshot.navigationState = Object.freeze(patch.value);
-        log('navigationState patch', snapshot.navigationState);
-      }
-    });
-
-    await nextTick();
+      Object.assign(snapshot, newState);
+    }
+  })().catch((err) => {
+    console.error('error in patches loop', err);
   });
+
+  // TODO loop through patches and update snapshot
+
+  // platforma.onStateUpdates(async (updates) => {
+  //   updates.forEach((patch) => {
+  //     if (patch.key === 'args' && !isJsonEqual(snapshot.args, patch.value)) {
+  //       snapshot.args = Object.freeze(patch.value);
+  //       log('args patch', snapshot.args);
+  //     }
+
+  //     if (patch.key === 'ui' && !isJsonEqual(snapshot.ui, patch.value)) {
+  //       snapshot.ui = Object.freeze(patch.value);
+  //       log('ui patch', snapshot.ui);
+  //     }
+
+  //     if (patch.key === 'outputs' && !isJsonEqual(snapshot.outputs, patch.value)) {
+  //       snapshot.outputs = Object.freeze(patch.value);
+  //       log('outputs patch', snapshot.outputs);
+  //     }
+
+  //     if (patch.key === 'navigationState' && !isJsonEqual(snapshot.navigationState, patch.value)) {
+  //       snapshot.navigationState = Object.freeze(patch.value);
+  //       log('navigationState patch', snapshot.navigationState);
+  //     }
+  //   });
+
+  //   await nextTick();
+  // });
 
   const cloneArgs = () => deepClone(snapshot.args) as Args;
   const cloneUiState = () => deepClone(snapshot.ui) as UiState;

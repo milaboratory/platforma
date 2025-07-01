@@ -1,70 +1,62 @@
 import { describe, it, expect } from 'vitest';
-
-import { mount } from '@vue/test-utils';
-import { defineApp } from '@platforma-sdk/ui-vue';
 import { platforma } from '../blocks/sum/model';
-import { createApp, defineComponent, isReactive, watch } from 'vue';
-import { Deferred, delay } from '@milaboratories/helpers';
-
-const Page = defineComponent({
-  // type inference enabled
-  template: `<div id="app"></div>`,
-});
-
-export const sdkPlugin = defineApp(platforma, () => {
-  return {
-    routes: {
-      '/': Page,
-    },
-  };
-}, {
-  debounceSpan: 0,
-});
+import { delay } from '@milaboratories/helpers';
 
 describe('BlockSum', () => {
   it('simple sum', async () => {
-    const wrapper = mount({ template: `<div><div id="app">🔌 Plugin</div></div>` }, {});
+    // Test the mock API directly without Vue SDK
+    const initialState = await platforma.loadBlockState();
+    expect(initialState.value.outputs.sum.ok).toBe(true);
+    if (initialState.value.outputs.sum.ok) {
+      expect(initialState.value.outputs.sum.value).toEqual(0);
+    }
 
-    createApp(wrapper).use(sdkPlugin);
+    // Set new args
+    await platforma.setBlockArgs({ x: 3, y: 3 });
+    await delay(50);
 
-    await delay(1);
+    // Get patches to see the changes
+    const patches1 = await platforma.getPatches(initialState.uTag);
+    expect(patches1.value.length).toBeGreaterThan(0);
 
-    const app = sdkPlugin.useApp();
+    // Check that the outputs changed in the patches
+    const hasOutputChange = patches1.value.some((patch) =>
+      patch.path.startsWith('/outputs/sum'),
+    );
+    expect(hasOutputChange).toBe(true);
 
-    expect(isReactive(app)).toBeTruthy();
+    // Load new state to verify
+    const newState1 = await platforma.loadBlockState();
+    expect(newState1.value.outputs.sum.ok).toBe(true);
+    if (newState1.value.outputs.sum.ok) {
+      expect(newState1.value.outputs.sum.value).toEqual(6);
+    }
 
-    let settled = new Deferred<void>();
+    // Test second update
+    await platforma.setBlockArgs({ x: 6, y: 6 });
+    await delay(50);
 
-    watch(() => app.snapshot.outputs, () => {
-      settled.resolve();
-    });
+    const patches2 = await platforma.getPatches(patches1.uTag);
+    expect(patches2.value.length).toBeGreaterThan(0);
 
-    app.model.args.x = 3;
+    const newState2 = await platforma.loadBlockState();
+    expect(newState2.value.outputs.sum.ok).toBe(true);
+    if (newState2.value.outputs.sum.ok) {
+      expect(newState2.value.outputs.sum.value).toEqual(12);
+    }
 
-    app.model.args.y = 3;
+    // Test fourth update
+    await platforma.setBlockArgs({ x: 30, y: 30 });
+    await delay(50);
 
-    await delay(1);
+    const patches4 = await platforma.getPatches(patches2.uTag);
+    expect(patches4.value.length).toBeGreaterThan(0);
 
-    expect(app.model.outputs.sum).toEqual(6);
-
-    app.model.args.x = 6;
-
-    app.model.args.y = 6;
-
-    settled = new Deferred<void>();
-
-    await settled.promise;
-
-    expect(app.model.outputs.sum).toEqual(12);
-
-    app.model.args.x = 1;
-
-    app.model.args.y = 1;
-
-    settled = new Deferred<void>();
-
-    await settled.promise;
-
-    expect(app.model.outputs.sum).toEqual(2);
+    const newState4 = await platforma.loadBlockState();
+    expect(newState4.value.outputs.sum.ok).toBe(true);
+    if (newState4.value.outputs.sum.ok) {
+      console.log('newState4', newState4.value.outputs.sum.value);
+      expect(newState4.value.outputs.sum.value).toEqual(60);
+    }
   });
 });
