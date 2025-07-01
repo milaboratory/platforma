@@ -32,31 +32,21 @@ export type SimpleOption<T = unknown> =
     value: T;
   };
 
-export type SimpleOptionNormalized<T = unknown> = {
-  label: string;
-  description?: string;
-  value: T;
-};
-
-export type ListOption<T = unknown> =
-  | {
-    text: string;
-    description?: string;
-    value: T;
-  }
-  | {
-    label: string;
-    description?: string;
-    value: T;
-  };
-
 export type ListOptionNormalized<T = unknown> = ListOptionBase<T>;
+
+// @TODO: remove `text` support
+export type ListOption<T = unknown> =
+  | Omit<ListOptionBase<T>, 'label'> & {
+    text: string;
+  }
+  | ListOptionBase<T>;
 
 export type { ModelRef };
 
 export type RefOption = {
   readonly label: string;
   readonly ref: ModelRef;
+  readonly group?: string;
 };
 
 export type ListOptionType<Type> = Type extends ListOption<infer X>[] ? X : never;
