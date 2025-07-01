@@ -86,7 +86,10 @@ const emit = defineEmits<{
         </div>
       </div>
     </div>
-    <div v-if="hasContentSlot && props.isExpanded" :class="$style.body">
+    <div
+      v-if="hasContentSlot && props.isExpanded"
+      :class="[$style.body, { [$style.disabled]: props.isToggled} ]"
+    >
       <slot name="content" :item="props.item" :index="props.index" />
     </div>
   </div>
@@ -180,6 +183,10 @@ const emit = defineEmits<{
   gap: 12px;
   padding: 24px;
   border-radius: 0 0 var(--border-radius) var(--border-radius);
+
+  &.disabled {
+    pointer-events: none;
+  }
 }
 
 .actions {
