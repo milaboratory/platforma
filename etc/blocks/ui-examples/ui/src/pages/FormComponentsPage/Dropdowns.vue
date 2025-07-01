@@ -142,10 +142,6 @@ const showOptionsLoading = () => {
     data.optionsLoading = false;
   }, 3000);
 };
-
-const toggleGroups = () => {
-  data.withGroups = !data.withGroups;
-};
 </script>
 
 <template>
@@ -153,8 +149,8 @@ const toggleGroups = () => {
     <PlRow>
       <PlCheckbox v-model="data.disabled">Disabled</PlCheckbox>
       <PlCheckbox v-model="data.clearable">Clearable</PlCheckbox>
+      <PlCheckbox v-model="data.withGroups">With groups</PlCheckbox>
       <PlBtnPrimary @click="showOptionsLoading">Show options loading</PlBtnPrimary>
-      <PlBtnPrimary @click="toggleGroups">With groups ({{ data.withGroups }})</PlBtnPrimary>
     </PlRow>
     <PlRow>
       <PlContainer width="400px">

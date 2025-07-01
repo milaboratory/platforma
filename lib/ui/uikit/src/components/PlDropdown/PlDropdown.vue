@@ -23,7 +23,8 @@ import { PlMaskIcon24 } from '../PlMaskIcon24';
 import SvgRequired from '../../generated/components/svg/images/SvgRequired.vue';
 import { getErrorMessage } from '../../helpers/error.ts';
 import OptionList from './OptionList.vue';
-import { useGroupByList } from './useGroupByList';
+import { useGroupBy } from './useGroupBy';
+import type { LOption } from './types';
 
 const emit = defineEmits<{
   /**
@@ -159,7 +160,7 @@ const computedError = computed(() => {
   return undefined;
 });
 
-const optionsRef = computed(() =>
+const optionsRef = computed<LOption<M>[]>(() =>
   normalizeListOptions(props.options ?? []).map((opt, index) => ({
     ...opt,
     index,
@@ -214,7 +215,7 @@ const filteredRef = computed(() => {
   return options;
 });
 
-const { orderedRef, groupsRef, restRef } = useGroupByList(filteredRef, 'group');
+const { orderedRef, groupsRef, restRef } = useGroupBy(filteredRef, 'group');
 
 const tabindex = computed(() => (isDisabled.value ? undefined : '0'));
 

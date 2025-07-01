@@ -1,15 +1,15 @@
 import type { Ref } from 'vue';
 import { computed } from 'vue';
 
-export function groupByList<T, K extends keyof T>(
+function groupBy<T, K extends keyof T>(
   list: T[],
   groupBy: K,
 ): {
-    grouped: Map<K, T[]>;
+    grouped: Map<NonNullable<T[K]>, T[]>;
     rest: T[];
     ordered: T[];
   } {
-  const grouped: Map<K, T[]> = new Map();
+  const grouped: Map<NonNullable<T[K]>, T[]> = new Map();
 
   if (!list) {
     return {
@@ -21,15 +21,16 @@ export function groupByList<T, K extends keyof T>(
 
   // Group items by the specified key
   for (const item of list) {
-    const key = item[groupBy] as string | number | symbol;
+    const key = item[groupBy];
     if (key === undefined) continue;
-    if (!grouped.has(key as K)) grouped.set(key as K, []);
-    grouped.get(key as K)?.push(item);
+    if (key === null) continue;
+    if (!grouped.has(key)) grouped.set(key, []);
+    grouped.get(key)?.push(item);
   }
 
   // Items without a group key
   const rest = list.filter((item: T) => {
-    const key = item[groupBy] as string | number | symbol;
+    const key = item[groupBy];
     return key === undefined;
   });
 
@@ -42,11 +43,11 @@ export function groupByList<T, K extends keyof T>(
   };
 }
 
-export function useGroupByList<T, K extends keyof T>(
+export function useGroupBy<T, K extends keyof T>(
   list: Ref<T[]>,
-  groupBy: K,
+  byKey: K,
 ) {
-  const result = computed(() => groupByList(list.value, groupBy));
+  const result = computed(() => groupBy(list.value, byKey));
 
   const orderedRef = computed(() => result.value.ordered);
 

@@ -1,11 +1,9 @@
 <script lang="ts" setup>
-import type { ListOptionNormalized } from '../../types';
 import DropdownListItem from '../DropdownListItem.vue';
 import { DropdownOverlay } from '../../utils/DropdownOverlay';
 import TextLabel from '../../utils/TextLabel.vue';
 import { computed, useTemplateRef } from 'vue';
-
-type LOption = ListOptionNormalized & { isSelected: boolean; isActive: boolean; index: number };
+import type { LOption } from './types';
 
 const props = defineProps<{
   rootRef: HTMLElement;
