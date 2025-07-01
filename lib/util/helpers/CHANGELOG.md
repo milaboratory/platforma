@@ -1,5 +1,11 @@
 # @milaboratories/helpers
 
+## 1.6.16
+
+### Patch Changes
+
+- 8236387: Add a correct Prettify helper type (for debugging)
+
 ## 1.6.15
 
 ### Patch Changes

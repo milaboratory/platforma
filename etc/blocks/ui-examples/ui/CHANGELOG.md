@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.4.23
+
+### Patch Changes
+
+- 8236387: Grouping in PlDropdown
+  - @platforma-sdk/model@1.37.14
+  - @milaboratories/milaboratories.ui-examples.model@1.1.78
+
 ## 1.4.22
 
 ### Patch Changes
