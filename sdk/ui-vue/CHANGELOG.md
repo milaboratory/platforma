@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.37.13
+
+### Patch Changes
+
+- eb52553: MSA: show multiple sequence columns separately
+
 ## 1.37.12
 
 ### Patch Changes
