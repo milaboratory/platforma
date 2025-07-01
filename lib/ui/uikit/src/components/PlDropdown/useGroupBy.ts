@@ -31,7 +31,7 @@ function groupBy<T, K extends keyof T>(
   // Items without a group key
   const rest = list.filter((item: T) => {
     const key = item[groupBy];
-    return key === undefined;
+    return key === undefined || key === null;
   });
 
   const ordered = [...Array.from(grouped.values()).flat(), ...rest];
