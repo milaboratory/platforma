@@ -1,5 +1,12 @@
 # @platforma-sdk/workflow-tengo
 
+## 4.9.1
+
+### Patch Changes
+
+- 2e3c3ab: - Rename service to meta fields in developer facing API
+  - Add metaExtra to process column
+
 ## 4.9.0
 
 ### Minor Changes
