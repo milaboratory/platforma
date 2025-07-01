@@ -8,25 +8,26 @@ import { moveElements, optionalUpdateRef } from './utils.ts';
 import PlElementListItem from './PlElementListItem.vue';
 
 const itemsRef = defineModel<T[]>('items', { required: true });
-const draggableSetRef = defineModel<Set<T>>('draggableItems');
-const removableSetRef = defineModel<Set<T>>('removableItems');
+const draggableSetRef = defineModel<Set<K>>('draggableItems');
+const removableSetRef = defineModel<Set<K>>('removableItems');
 
-const expandableSetRef = defineModel<Set<T>>('expandableItems');
-const expandedSetRef = defineModel<Set<T>>('expandedItems');
+const expandableSetRef = defineModel<Set<K>>('expandableItems');
+const expandedSetRef = defineModel<Set<K>>('expandedItems');
 
-const pinnableSetRef = defineModel<Set<T>>('pinnableItems');
-const pinnedSetRef = defineModel<Set<T>>('pinnedItems');
+const pinnableSetRef = defineModel<Set<K>>('pinnableItems');
+const pinnedSetRef = defineModel<Set<K>>('pinnedItems');
 
-const toggableSetRef = defineModel<Set<T>>('toggableItems');
-const toggledSetRef = defineModel<Set<T>>('toggledItems');
+const toggableSetRef = defineModel<Set<K>>('toggableItems');
+const toggledSetRef = defineModel<Set<K>>('toggledItems');
 
 const props = withDefaults(
   defineProps<{
+    getItemKey: (item: T, index: number) => K;
+
     itemClass?: string | string[] | ((item: T, index: number) => string | string[]);
-    activeItems?: Set<T>;
+    activeItems?: Set<K>;
 
     enableDragging?: boolean;
-    getItemKey?: (item: T) => K;
     onDragEnd?: (oldIndex: number, newIndex: number) => void | boolean;
     onSort?: (oldIndex: number, newIndex: number) => void | boolean;
 
@@ -51,7 +52,6 @@ const props = withDefaults(
     enableToggling: undefined,
     enablePinning: undefined,
 
-    getItemKey: undefined,
     onDragEnd: undefined,
     onSort: undefined,
     onRemove: undefined,
@@ -71,13 +71,13 @@ const slots = defineSlots<{
 }>();
 
 const dndSortingEnabled = computed((): boolean => {
-  return props.enableDragging !== false && !isNil(props.getItemKey);
+  return props.enableDragging !== false;
 });
 
 const pinnedItemsRef = computed(() => itemsRef.value.filter(isPinned));
 const hasPinnedItems = computed(() => pinnedItemsRef.value.length > 0);
 
-const unpinnedItemsRef = computed(() => itemsRef.value.filter((item) => !isPinned(item)));
+const unpinnedItemsRef = computed(() => itemsRef.value.filter((item, index) => !isPinned(item, index)));
 const hasUnpinnedItems = computed(() => unpinnedItemsRef.value.length > 0);
 
 const domProjectionItemsRef = shallowRef<undefined | T[]>();
@@ -86,11 +86,11 @@ const unpinnedContainerRef = shallowRef<HTMLElement>();
 
 // version fix problem with sync between data and rendered values when items have been changed
 const versionRef = computed<number>((oldVersion) => {
-  const currentVersion = shallowHash(...itemsRef.value);
+  const currentVersion = shallowHash(...itemsRef.value.map(props.getItemKey));
 
   if (domProjectionItemsRef.value === undefined) return oldVersion ?? currentVersion;
 
-  const lastSortedVersion = shallowHash(...domProjectionItemsRef.value);
+  const lastSortedVersion = shallowHash(...domProjectionItemsRef.value.map(props.getItemKey));
 
   if (currentVersion === lastSortedVersion) return oldVersion ?? currentVersion;
 
@@ -137,93 +137,105 @@ function moveItems(oldIndex: number, newIndex: number, afterUpdateDom: boolean) 
   }
 }
 
-function isActive(item: T): boolean {
-  return props.activeItems?.has(item) ?? false;
+function isActive(item: T, index: number): boolean {
+  const k = props.getItemKey(item, index);
+  return props.activeItems?.has(k) ?? false;
 }
 
-function isDraggable(item: T): boolean {
+function isDraggable(item: T, index: number): boolean {
+  const k = props.getItemKey(item, index);
   if (props.enableDragging === false) return false;
-  return (draggableSetRef.value?.has(item) ?? true);
+  return (draggableSetRef.value?.has(k) ?? true);
 }
 
-function isToggable(item: T): boolean {
+function isToggable(item: T, index: number): boolean {
+  const k = props.getItemKey(item, index);
   if (props.enableToggling === false) return false;
-  return !isNil(toggledSetRef.value) && (toggableSetRef.value?.has(item) ?? true);
+  return !isNil(toggledSetRef.value) && (toggableSetRef.value?.has(k) ?? true);
 }
 
-function isToggled(item: T): boolean {
-  return toggledSetRef.value?.has(item) ?? false;
+function isToggled(item: T, index: number): boolean {
+  const k = props.getItemKey(item, index);
+  return toggledSetRef.value?.has(k) ?? false;
 }
 
-function isPinnable(item: T): boolean {
+function isPinnable(item: T, index: number): boolean {
+  const k = props.getItemKey(item, index);
   if (props.enablePinning === false) return false;
-  return !isNil(pinnedSetRef.value) && (pinnableSetRef.value?.has(item) ?? true);
+  return !isNil(pinnedSetRef.value) && (pinnableSetRef.value?.has(k) ?? true);
 }
 
-function isPinned(item: T): boolean {
-  return pinnedSetRef.value?.has(item) ?? false;
+function isPinned(item: T, index: number): boolean {
+  const k = props.getItemKey(item, index);
+  return pinnedSetRef.value?.has(k) ?? false;
 }
 
-function isExpandable(item: T): boolean {
+function isExpandable(item: T, index: number): boolean {
+  const k = props.getItemKey(item, index);
   if (props.enableExpanding === false) return false;
-  return !isNil(expandedSetRef.value) && (expandableSetRef.value?.has(item) ?? true);
+  return !isNil(expandedSetRef.value) && (expandableSetRef.value?.has(k) ?? true);
 }
 
-function isExpanded(item: T): boolean {
-  return expandedSetRef.value?.has(item) ?? false;
+function isExpanded(item: T, index: number): boolean {
+  const k = props.getItemKey(item, index);
+  return expandedSetRef.value?.has(k) ?? false;
 }
 
-function isRemovable(item: T): boolean {
+function isRemovable(item: T, index: number): boolean {
+  const k = props.getItemKey(item, index);
   if (props.enableRemoving === false) return false;
-  if (removableSetRef.value?.has(item) === false) return false;
+  if (removableSetRef.value?.has(k) === false) return false;
   return props.enableRemoving === true || typeof props.onRemove === 'function';
 }
 
 function handleExpand(item: T, index: number) {
   if (props.onExpand?.(item, index) === false || isNil(expandedSetRef.value)) return;
-
+  const k = props.getItemKey(item, index);
   const expanded = expandedSetRef.value;
-  if (expanded.has(item)) expanded.delete(item);
-  else expanded.add(item);
+  if (expanded.has(k)) expanded.delete(k);
+  else expanded.add(k);
   optionalUpdateRef(expandedSetRef);
 }
 
 function handleToggle(item: T, index: number) {
   if (props.onToggle?.(item, index) === false || isNil(toggledSetRef.value)) return;
-
+  const k = props.getItemKey(item, index);
   const toggled = toggledSetRef.value;
-  if (toggled.has(item)) toggled.delete(item);
-  else toggled.add(item);
+  if (toggled.has(k)) toggled.delete(k);
+  else toggled.add(k);
   optionalUpdateRef(toggledSetRef);
 }
 
-function handlePin(item: T, oldIndex: number) {
-  if (oldIndex === -1) {
+function handlePin(item: T, index: number) {
+  if (index === -1) {
     throw new Error('Pinnable item not found');
   }
 
-  if (props.onPin?.(item, oldIndex) === false || isNil(pinnedSetRef.value)) return;
+  if (props.onPin?.(item, index) === false || isNil(pinnedSetRef.value)) return;
 
+  const k = props.getItemKey(item, index);
   const pinned = pinnedSetRef.value;
-  const alreadyPinned = pinned.has(item);
-  if (alreadyPinned) pinned.delete(item);
-  else pinned.add(item);
+  const alreadyPinned = pinned.has(k);
+  if (alreadyPinned) pinned.delete(k);
+  else pinned.add(k);
   optionalUpdateRef(pinnedSetRef);
-  moveItems(oldIndex, pinned.size + (alreadyPinned ? 0 : -1), false);
+  moveItems(index, pinned.size + (alreadyPinned ? 0 : -1), false);
 }
 
 function handleRemove(item: T, index: number) {
   if (props.onRemove?.(item, index) !== false) {
+    const k = props.getItemKey(item, index);
+
     itemsRef.value.splice(index, 1);
     optionalUpdateRef(itemsRef);
 
-    if (pinnedSetRef.value?.has(item)) {
-      pinnedSetRef.value.delete(item);
+    if (pinnedSetRef.value?.has(k)) {
+      pinnedSetRef.value.delete(k);
       optionalUpdateRef(pinnedSetRef);
     }
 
-    if (toggledSetRef.value?.has(item)) {
-      toggledSetRef.value.delete(item);
+    if (toggledSetRef.value?.has(k)) {
+      toggledSetRef.value.delete(k);
       optionalUpdateRef(toggledSetRef);
     }
   }
@@ -231,8 +243,7 @@ function handleRemove(item: T, index: number) {
 
 // version fix problem with sync between data and rendered values
 const getKey = (item: T, index: number) => {
-  if (isNil(props.getItemKey)) return `${versionRef.value}-${index}`;
-  return `${versionRef.value}-${props.getItemKey(item)}`;
+  return `${versionRef.value}-${props.getItemKey(item, index)}`;
 };
 const pinnedKeysRef = computed(() => pinnedItemsRef.value.map(getKey));
 const unpinnedKeysRef = computed(() => unpinnedItemsRef.value.map(getKey));
@@ -256,15 +267,15 @@ const getItemClass = (item: T, index: number): null | string | string[] => {
         :index="pinnedIndex"
         :item="pinnedItem"
         :showDragHandle="dndSortingEnabled"
-        :isActive="isActive(pinnedItem)"
-        :isDraggable="isDraggable(pinnedItem)"
-        :isRemovable="isRemovable(pinnedItem)"
-        :isToggable="isToggable(pinnedItem)"
-        :isToggled="isToggled(pinnedItem)"
-        :isPinnable="isPinnable(pinnedItem)"
-        :isPinned="isPinned(pinnedItem)"
-        :isExpandable="isExpandable(pinnedItem)"
-        :isExpanded="isExpanded(pinnedItem)"
+        :isActive="isActive(pinnedItem, pinnedIndex)"
+        :isDraggable="isDraggable(pinnedItem, pinnedIndex)"
+        :isRemovable="isRemovable(pinnedItem, pinnedIndex)"
+        :isToggable="isToggable(pinnedItem, pinnedIndex)"
+        :isToggled="isToggled(pinnedItem, pinnedIndex)"
+        :isPinnable="isPinnable(pinnedItem, pinnedIndex)"
+        :isPinned="isPinned(pinnedItem, pinnedIndex)"
+        :isExpandable="isExpandable(pinnedItem, pinnedIndex)"
+        :isExpanded="isExpanded(pinnedItem, pinnedIndex)"
 
         @click="emits('itemClick', pinnedItem)"
         @remove="handleRemove"
@@ -288,15 +299,15 @@ const getItemClass = (item: T, index: number): null | string | string[] => {
         :index="unpinnedIndex + (pinnedSetRef?.size ?? 0)"
         :item="unpinnedItem"
         :showDragHandle="dndSortingEnabled"
-        :isActive="isActive(unpinnedItem)"
-        :isDraggable="isDraggable(unpinnedItem)"
-        :isRemovable="isRemovable(unpinnedItem)"
-        :isToggable="isToggable(unpinnedItem)"
-        :isToggled="isToggled(unpinnedItem)"
-        :isPinnable="isPinnable(unpinnedItem)"
-        :isPinned="isPinned(unpinnedItem)"
-        :isExpandable="isExpandable(unpinnedItem)"
-        :isExpanded="isExpanded(unpinnedItem)"
+        :isActive="isActive(unpinnedItem, unpinnedIndex)"
+        :isDraggable="isDraggable(unpinnedItem, unpinnedIndex)"
+        :isRemovable="isRemovable(unpinnedItem, unpinnedIndex)"
+        :isToggable="isToggable(unpinnedItem, unpinnedIndex)"
+        :isToggled="isToggled(unpinnedItem, unpinnedIndex)"
+        :isPinnable="isPinnable(unpinnedItem, unpinnedIndex)"
+        :isPinned="isPinned(unpinnedItem, unpinnedIndex)"
+        :isExpandable="isExpandable(unpinnedItem, unpinnedIndex)"
+        :isExpanded="isExpanded(unpinnedItem, unpinnedIndex)"
 
         @click="emits('itemClick', unpinnedItem)"
         @remove="handleRemove"
