@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.93
+
+### Patch Changes
+
+- c6b4dd2: Extend interface for PlElementList
+
 ## 2.2.92
 
 ### Patch Changes

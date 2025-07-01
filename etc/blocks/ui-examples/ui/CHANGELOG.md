@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.4.20
+
+### Patch Changes
+
+- c6b4dd2: Extend interface for PlElementList
+
 ## 1.4.19
 
 ### Patch Changes
