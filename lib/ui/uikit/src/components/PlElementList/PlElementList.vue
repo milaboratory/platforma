@@ -105,6 +105,7 @@ function createSortable(toggler: ShallowRef<boolean>, elRef: ShallowRef<undefine
     handle: `[data-draggable="true"]`,
     animation: 150,
     forceFallback: true,
+    fallbackOnBody: true,
     scrollSensitivity: 80,
     forceAutoScrollFallback: true,
     onUpdate: (evt: SortableEvent) => {
