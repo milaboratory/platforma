@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.95
+
+### Patch Changes
+
+- 70eff11: update plelementlist interface
+
 ## 2.2.94
 
 ### Patch Changes
