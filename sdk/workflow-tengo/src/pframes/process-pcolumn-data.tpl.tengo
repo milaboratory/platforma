@@ -65,12 +65,16 @@ self.body(func(inputs) {
 	}
 
 	extraInputs := {}
-	for name, field in inputs {
+	metaInputs := {}
+	for name, field in self.rawInputs() {
 		if name != "params" && name != "data" && name != "body" {
-			if name[:8] != "__extra_" {
+			if name[:8] == "__extra_" {
+				extraInputs[name[8:]] = field
+			} else if name[:7] == "__meta_" {
+				metaInputs[name[7:]] = field
+			} else {
 				ll.panic("Unexpected input: %v", name)
 			}
-			extraInputs[name[8:]] = field
 		}
 	}
 
@@ -286,7 +290,7 @@ self.body(func(inputs) {
 				renderInputs[name] = field
 			}
 
-			renderResult := render.createUniversal(body, eph, renderInputs)
+			renderResult := render.createUniversal(body, eph, renderInputs, metaInputs)
 			for output in outputs {
 				path := output.path
 				if is_undefined(path) {

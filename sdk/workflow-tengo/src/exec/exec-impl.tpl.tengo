@@ -91,7 +91,7 @@ self.validateInputs({
 		"assetCache,?": { any: "number" }
 	},
 
-	// Service inputs
+	// Meta inputs
 	"quota": {
 		queue: "string",
 		"cpu,?": "number",

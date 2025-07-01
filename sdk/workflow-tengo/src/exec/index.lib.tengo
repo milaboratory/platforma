@@ -140,6 +140,7 @@ builder := func() {
 		},
 
 		/**
+		 * @deprecated: remove ARG_TYPE_VAR and this check after 15 Mar 2025
 		 * Adds an argument that will be evaluated as expression in the command.
 		 *
 		 * @param arg: string - e.g. -Xms{system.memory_mb * 80 / 100}m
@@ -175,6 +176,7 @@ builder := func() {
 		},
 
 		/**
+		 * @deprecated: remove ARG_TYPE_VAR and this check after 15 Mar 2025
 		 * Sets an environment variable.
 		 *
 		 * @param name: string - the name of the environment variable.
@@ -336,6 +338,7 @@ builder := func() {
 		},
 
 		/**
+		 * @deprecated: use mem() instead.
 		 * Deprecated: use mem() instead.
 		 *
 		 * @return builder
