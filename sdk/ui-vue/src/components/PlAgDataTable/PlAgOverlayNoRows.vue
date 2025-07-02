@@ -1,9 +1,18 @@
 <script lang="ts" setup>
+import { ref } from 'vue';
 import type { PlAgOverlayNoRowsParams } from './types';
 
-defineProps<{
+const props = defineProps<{
   params: PlAgOverlayNoRowsParams;
 }>();
+
+const params = ref(props.params);
+
+defineExpose({
+  refresh: (newParams: PlAgOverlayNoRowsParams) => {
+    params.value = newParams;
+  },
+});
 </script>
 
 <template>
