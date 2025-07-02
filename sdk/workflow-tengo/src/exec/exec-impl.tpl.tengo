@@ -11,11 +11,9 @@ smart := import(":smart")
 render := import(":render")
 workdir := import(":workdir")
 stream := import(":exec.stream")
-limits := import(":exec.limits")
 pkg := import(":exec.package")
 blobs := import(":file.internal")
 desc := import(":exec.descriptor")
-constants := import(":exec.constants")
 monetization := import(":exec.monetization_internal")
 maps := import(":maps")
 runcmd := import(":exec.runcmd")
@@ -111,22 +109,7 @@ self.body(func(inputs) {
 	wdBuilder := workdir.builder()
 
 	quota := inputs.quota
-
-	quotaBuilder := limits.quotaBuilder().
-		cpu(quota.cpu).
-		ram(quota.ram)
-
-	if limits.useBatch(quota.queue) {
-		quotaBuilder.queue(constants.BATCH_QUEUE)
-	} else {
-		quotaBuilder.queue(quota.queue)
-	}
-
-	storageSpaceRef := limits.storageSpaceRequestBuilder().
-		quota(quotaBuilder.build()).
-		build()
-
-	wdBuilder.allocation(storageSpaceRef.allocation)
+	wdBuilder.inQueue(quota.queue).cpu(quota.cpu).mem(quota.ram)
 
 	// add files
 	wdBuilder.addFiles(inputs.filesToAdd)

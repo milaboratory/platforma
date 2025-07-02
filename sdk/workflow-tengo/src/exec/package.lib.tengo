@@ -24,6 +24,10 @@ _INPUT_PACKAGE_NAME := "packageName"
 _INPUT_REGISTRY := "registry"
 _OUTPUT_ARCHIVE := "archive"
 
+DEFAULT_ALLOCATION_QUEUE := "light"
+DEFAULT_ALLOCATION_RAM := "1GiB"
+DEFAULT_ALLOCATION_CPU := 1
+
 get := func(registryName, pkgName) {
 	res := smart.structBuilder(_RTYPE_PACKAGE_GET)
 
@@ -163,7 +167,11 @@ pkgFileLoader := func(pkg) {
 		},
 
 		load: func() {
-			wd := workdir.create()
+			wd := workdir.builder().
+				inQueue(DEFAULT_ALLOCATION_QUEUE).
+				cpu(DEFAULT_ALLOCATION_CPU).
+				mem(DEFAULT_ALLOCATION_RAM).
+				build()
 
 			allPaths := sets.fromSlice(filePaths)
 			allPaths = sets.add(allPaths, fileContentPaths...)
@@ -260,6 +268,10 @@ export ll.toStrict({
 	softwareInfoScheme                 : softwareInfoScheme,
 
 	META_KEY_DESCRIPTOR                : META_KEY_DESCRIPTOR,
+
+	DEFAULT_ALLOCATION_QUEUE           : DEFAULT_ALLOCATION_QUEUE,
+	DEFAULT_ALLOCATION_RAM             : DEFAULT_ALLOCATION_RAM,
+	DEFAULT_ALLOCATION_CPU             : DEFAULT_ALLOCATION_CPU,
 
 	get                                : get,
 	install                            : install,

@@ -1,15 +1,34 @@
 /** Just a simple template that creates a workdir . */
 
-self := import(":tpl")
+self := import(":tpl.light")
 file := import(":file")
 workdir := import(":workdir")
+render := import(":render")
+limits := import(":exec.limits")
+assets := import(":assets")
+execConstants := import(":exec.constants")
+
+workdirTypeNameExtractorTpl := assets.importTemplate(":check_network.workdir_type_name_extractor")
 
 self.body(func(inputs) {
-	wd := workdir.builder()
-	result := file.importFile(inputs.file)
-	wd.addFile("test_file", result.file)
+
+	storageAllocation := limits.storageSpaceRequestBuilder().
+		quota(limits.quotaBuilder().
+			queue(execConstants.LIGHT_QUEUE).
+			cpu(1).
+			ram("10MiB").
+			build()).
+		build().allocation
+
+	wd := workdir.builder().
+		allocation(storageAllocation).
+		addFile("test_file", file.importFile(inputs.file).file)
+
+	workdirTypeNameExtractor := render.createEphemeral(workdirTypeNameExtractorTpl, {
+		wd: wd.build()
+	})
 
 	return {
-		"workdir": wd.build()
+		workdirTypeName: workdirTypeNameExtractor.output("workdirTypeName")
 	}
 })

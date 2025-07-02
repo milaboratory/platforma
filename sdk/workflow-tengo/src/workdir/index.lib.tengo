@@ -6,6 +6,8 @@ json := import("json")
 
 ll := import(":ll")
 validation := import(":validation")
+limits := import(":exec.limits")
+execConstants := import(":exec.constants")
 
 assets := import(":assets")
 constants := import(":constants")
@@ -116,6 +118,10 @@ _fill := func() {
 	values := {}
 	dirs := {}
 
+	queue := undefined
+	cpu := undefined
+	ram := undefined
+
 	self := undefined
 	self = ll.toStrict(oop.inherit(wd, {
 		_getAllDirs: func(fileName) {
@@ -136,6 +142,46 @@ _fill := func() {
 		allocation: func(allocation) {
 			validation.assertType(allocation, validation.reference, "workdir.builder: allocation should be a valid reference")
 			_allocation = allocation
+			return self
+		},
+
+		/**
+		 * Sets the queue name for the command.
+		 *
+		 * @param queueName: string - the name of the queue.
+		 */
+		inQueue: func(queueName) {
+			queue = queueName
+			return self
+		},
+
+		/**
+		 * Sets the memory (RAM) limit for the command.
+		 *
+		 * @param value: number - the memory limit in MB.
+		 */
+		mem: func(value) {
+			if is_undefined(value) {
+				return self
+			}
+			validation.assertType(value, ["or", "number", "string"], "workdir.builder.mem: RAM amount should be a number or string")
+			ll.assert(is_string(value) || value > 0, "workdir.builder.mem: amount in bytes should be greater than 0")
+			ram = value
+			return self
+		},
+
+		/**
+		 * Sets the CPU limit for the command.
+		 *
+		 * @param value: number - the CPU limit in number of cores.
+		 */
+		cpu: func(value) {
+			if is_undefined(value) {
+				return self
+			}
+			validation.assertType(value, "number", "workdir.builder.cpu: value must be a number")
+			cpu = value
+			return self
 		},
 
 		/**
@@ -257,8 +303,40 @@ _fill := func() {
 		 * @return wd: reference - a reference to the filled workdir.
 		 */
 		build: func() {
-			ll.assert(smart.isReference(_allocation), "workdir.builder: allocation is mandatory")
-			emptyWorkdir := createV2(_allocation)
+			ll.assert(!is_undefined(_allocation) || !is_undefined(queue),
+				"workdir.builder: either allocation or queue must be provided")
+			ll.assert(is_undefined(_allocation) || is_undefined(queue),
+				"workdir.builder: allocation and queue must not be set at the same time")
+
+			if !is_undefined(_allocation) {
+				ll.assert(is_undefined(cpu) && is_undefined(ram),
+					"workdir.builder: cpu and ram cannot be set when allocation is provided")
+			}
+
+			allocation := _allocation
+			if is_undefined(allocation) {
+				quotaBuilder := limits.quotaBuilder()
+				if !is_undefined(cpu) {
+					quotaBuilder.cpu(cpu)
+				}
+				if !is_undefined(ram) {
+					quotaBuilder.ram(ram)
+				}
+
+				if limits.useBatch(queue) {
+					quotaBuilder.queue(execConstants.BATCH_QUEUE)
+				} else {
+					quotaBuilder.queue(queue)
+				}
+
+				storageSpaceRef := limits.storageSpaceRequestBuilder().
+					quota(quotaBuilder.build()).
+					build()
+
+				allocation = storageSpaceRef.allocation
+			}
+
+			emptyWorkdir := createV2(allocation)
 
 			wd.getField(_WD_FILL_FIELD_WORKDIR_IN).set(emptyWorkdir)
 

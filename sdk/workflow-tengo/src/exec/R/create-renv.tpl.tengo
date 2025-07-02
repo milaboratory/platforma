@@ -15,6 +15,7 @@ validation := import(":validation")
 runenv := import(":exec.runenv")
 internal := import(":exec.R.internal")
 constants := import(":exec.constants")
+pkg := import(":exec.package")
 
 //
 // Function declarations (see definitions below)
@@ -48,7 +49,11 @@ _createRvenv = func(operationMode, swPackage, rPackage, rDescriptor, toolset, de
 }
 
 _toolsetRenvCreate = func(operationMode, swPackage, rPackage, rDescriptor, dependencies) {
-	wdBefore := workdir.builder().build()
+	wdBefore := workdir.builder()
+		.inQueue(pkg.DEFAULT_ALLOCATION_QUEUE)
+		.cpu(pkg.DEFAULT_ALLOCATION_CPU)
+		.mem(pkg.DEFAULT_ALLOCATION_RAM)
+		.build()
 
 	//
 	// Activate run environment in current working directory
@@ -63,7 +68,9 @@ _toolsetRenvCreate = func(operationMode, swPackage, rPackage, rDescriptor, depen
 		arg("-e").arg("renv::activate()")
 
 	renvBuilder.
-		inQueue("light").
+		inQueue(pkg.DEFAULT_ALLOCATION_QUEUE).
+		cpu(pkg.DEFAULT_ALLOCATION_CPU).
+		mem(pkg.DEFAULT_ALLOCATION_RAM).
 		stdout("./output").
 		stderr("./output").
 		nErrorLines(20)
@@ -91,7 +98,9 @@ _toolsetRenvCreate = func(operationMode, swPackage, rPackage, rDescriptor, depen
 		arg("-e").arg("renv::restore( clean = TRUE )")
 
 	depsInstaller.
-		inQueue("light").
+		inQueue(pkg.DEFAULT_ALLOCATION_QUEUE).
+		cpu(pkg.DEFAULT_ALLOCATION_CPU).
+		mem(pkg.DEFAULT_ALLOCATION_RAM).
 		stdout("./output").
 		stderr("./output").
 		nErrorLines(20)
