@@ -17,11 +17,9 @@ import {
 } from 'vue';
 import {
   PlBtnGhost,
-  PlIcon24,
   PlSlideModal,
   PlBtnSecondary,
   PlMaskIcon16,
-  PlMaskIcon24,
   PlElementList,
 } from '@milaboratories/uikit';
 import {
@@ -108,11 +106,8 @@ const items = computed(() => filters.value.filter((s) => s.filter !== null));
 
 <template>
   <Teleport v-if="mounted && teleportTarget" :to="teleportTarget">
-    <PlBtnGhost @click.stop="showManager = true">
+    <PlBtnGhost :icon="filtersOn ? 'filter-on' : 'filter'" @click.stop="showManager = true">
       Filters
-      <template #append>
-        <PlIcon24 :name="filtersOn ? 'filter-on' : 'filter'" />
-      </template>
     </PlBtnGhost>
   </Teleport>
 

@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { type Column, type DisplayedColumnsChangedEvent, type GridApi } from 'ag-grid-enterprise';
-import { PlBtnGhost, PlMaskIcon16, PlMaskIcon24, PlSlideModal, PlTooltip, useSortable2 } from '@milaboratories/uikit';
-import { ref, toRefs, watch } from 'vue';
-import './pl-ag-grid-column-manager.scss';
+import { PlBtnGhost, PlSlideModal, PlElementList } from '@milaboratories/uikit';
+import { ref, toRefs, watch, computed } from 'vue';
 import { useDataTableToolsPanelTarget } from '../PlAgDataTableToolsPanel';
+import { PlAgDataTableRowNumberColId } from '../PlAgDataTable/sources/row-number';
 
 const props = defineProps<{
   /**
@@ -22,81 +22,71 @@ const props = defineProps<{
 const { api: gridApi } = toRefs(props);
 
 const columns = ref<Column[]>([]);
-const listRef = ref<HTMLElement>();
-const slideModal = ref(false);
-const listKey = ref(0);
-const isOrderChanged = ref(false);
-
-useSortable2(listRef, {
-  handle: '.handle',
-  onChange(indices) {
-    gridApi.value.moveColumns(indices.map((i) => columns.value[i]), 0);
-    isOrderChanged.value = true;
-  },
-});
-
-function toggleColumnVisibility(col: Column) {
-  gridApi.value.setColumnsVisible([col], !col.isVisible());
-}
-
 watch(
   () => gridApi.value,
   (gridApi) => {
     if (gridApi.isDestroyed()) return;
 
+    gridApi.addEventListener('displayedColumnsChanged', (event: DisplayedColumnsChangedEvent) => {
+      columns.value = event.api.getAllGridColumns();
+    });
+
     columns.value = gridApi.getAllGridColumns();
     if (columns.value.length > 0) {
       gridApi.moveColumns(columns.value, 0);
     }
-
-    gridApi.addEventListener('displayedColumnsChanged', (event: DisplayedColumnsChangedEvent) => {
-      if (gridApi.isDestroyed()) return;
-      columns.value = event.api.getAllGridColumns();
-      if (isOrderChanged.value) {
-        listKey.value++;
-        isOrderChanged.value = false;
-      }
-    });
   },
   { immediate: true },
 );
 
+const items = computed(() => {
+  return columns.value.map((col) => ({
+    column: col,
+    id: col.getId(),
+    label: col.getColDef().headerName!,
+  }));
+});
+
+const slideModal = ref(false);
 const teleportTarget = useDataTableToolsPanelTarget();
 </script>
 
 <template>
   <div>
     <Teleport v-if="teleportTarget" :to="teleportTarget">
-      <PlBtnGhost @click.stop="slideModal = !slideModal">
+      <PlBtnGhost icon="columns" @click.stop="slideModal = !slideModal">
         Columns
-        <template #append>
-          <PlMaskIcon24 name="columns" />
-        </template>
       </PlBtnGhost>
     </Teleport>
 
     <PlSlideModal v-model="slideModal" :width="width" close-on-outside-click>
       <template #title>Manage Columns</template>
-
-      <div ref="listRef" :key="listKey" class="pl-ag-columns pl-2 pr-2">
-        <div v-for="col in columns" :key="col.getId()" :class="{ pinned: col.getColDef().lockPosition }" class="pl-ag-columns__item">
-          <div :class="{ handle: !col.getColDef().lockPosition }" class="pl-ag-columns__drag">
-            <PlMaskIcon16 name="drag-dots" />
-          </div>
-          <div :class="{ visible: col.isVisible() }" class="pl-ag-columns__title text-s-btn">
-            {{ col.getColDef().headerName }}
-          </div>
-          <div class="pl-ag-columns__visibility" @click="toggleColumnVisibility(col)">
-            <PlTooltip :open-delay="5000" :close-delay="500" position="top">
-              <PlMaskIcon24 :name="col.isVisible() ? 'view-show' : 'view-hide'" />
-              <template #tooltip>Show/Hide</template>
-            </PlTooltip>
-          </div>
-          <div v-if="col.getColDef().lockPosition" class="pl-ag-columns__pin">
-            <PlMaskIcon24 name="pin" />
-          </div>
-        </div>
-      </div>
+      <PlElementList
+        :items="items"
+        :get-item-key="(item) => item.id"
+        :is-draggable="(item) => !item.column.getColDef().lockPosition"
+        :on-sort="(fromIndex, toIndex) => {
+          if (!gridApi.isDestroyed()) {
+            const columnToMove = columns[fromIndex];
+            gridApi.moveColumns([columnToMove], toIndex);
+          }
+          return true; // Let PlElementList handle the visual update
+        }"
+        :on-toggle="(item) => {
+          if (!gridApi.isDestroyed()) {
+            gridApi.setColumnsVisible([item.column], !item.column.isVisible());
+          }
+        }"
+        :is-toggled="(item) => !item.column.isVisible()"
+        :is-toggable="(item) => item.id !== PlAgDataTableRowNumberColId"
+        :is-pinned="(item) => !!item.column.getColDef().lockPosition"
+        :is-pinnable="() => false"
+        disable-removing
+      >
+        <template #item-title="{ item }">
+          {{ item.label }}
+        </template>
+      </PlElementList>
     </PlSlideModal>
   </div>
 </template>
