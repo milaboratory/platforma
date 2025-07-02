@@ -166,7 +166,7 @@ async function createDefaultPlLocalConfig(
   // Let's fix defaults loading in the backend and remove hardcoded constants from here.
   config.controllers.runner.resources = {
     cpu: notEmpty(opts.numCpu),
-  }
+  };
 
   if (opts.plConfigPostprocessing) config = opts.plConfigPostprocessing(config);
 

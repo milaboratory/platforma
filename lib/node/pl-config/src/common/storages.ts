@@ -105,7 +105,7 @@ export function newRemoteConfigStoragesMinio(
       downloadable: true,
     },
     storage: {
-   id: 'main',
+      id: 'main',
       type: 'S3',
       indexCachePeriod: '0s',
       endpoint: minioOpts.endpoint,
