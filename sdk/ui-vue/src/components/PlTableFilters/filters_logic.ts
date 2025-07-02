@@ -286,11 +286,16 @@ export function makeDiscreteOptions(column: PTableColumnSpec): ListOption<number
   const discreteValuesAnnotation = column.spec.annotations?.['pl7.app/discreteValues'];
   if (!discreteValuesAnnotation) return [];
 
-  const discreteValues: (string | number)[] = JSON.parse(discreteValuesAnnotation);
-  return discreteValues.map((v) => ({
-    label: v.toString(),
-    value: v,
-  }));
+  try {
+    const discreteValues: (string | number)[] = JSON.parse(discreteValuesAnnotation);
+    return discreteValues.map((v) => ({
+      label: v.toString(),
+      value: v,
+    }));
+  } catch (err: unknown) {
+    console.error(`Column ${column.id} has invalid 'pl7.app/discreteValues' annotation: '${discreteValuesAnnotation}'`, err);
+    return [];
+  }
 }
 
 export function isAlphabetic(column: PTableColumnSpec): boolean {

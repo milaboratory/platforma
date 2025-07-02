@@ -46,32 +46,37 @@ export function useFilters(
       const defaultStateMapValue = defaultStateMap.value = new Map(
         columns
           .map((c, i) => {
-            const id = getPTableColumnId(c);
-            const config = configFn(c);
-            const options = config.options
-              ? getFilterOptions(c).filter((o) => config.options!.includes(o.value))
-              : getFilterOptions(c);
-            if (options.length === 0) return null;
-            const discreteOptions = makeDiscreteOptions(c);
-            const defaultFilter = config.default && isFilterValid(config.default, options, discreteOptions) ? config.default : null;
-            const filter = defaultFilter
-              ? {
-                  value: defaultFilter,
-                  disabled: false,
-                  open: false,
-                }
-              : null;
-            const state: PlDataTableFilterStateInternal = {
-              id,
-              spec: c,
-              label: getColumnName(c, i),
-              alphabetic: isAlphabetic(c),
-              options,
-              discreteOptions,
-              defaultFilter,
-              filter,
-            };
-            return [canonicalizeJson<PTableColumnId>(id), state] as const;
+            try {
+              const id = getPTableColumnId(c);
+              const config = configFn(c);
+              const options = config.options
+                ? getFilterOptions(c).filter((o) => config.options!.includes(o.value))
+                : getFilterOptions(c);
+              if (options.length === 0) return null;
+              const discreteOptions = makeDiscreteOptions(c);
+              const defaultFilter = config.default && isFilterValid(config.default, options, discreteOptions) ? config.default : null;
+              const filter = defaultFilter
+                ? {
+                    value: defaultFilter,
+                    disabled: false,
+                    open: false,
+                  }
+                : null;
+              const state: PlDataTableFilterStateInternal = {
+                id,
+                spec: c,
+                label: getColumnName(c, i),
+                alphabetic: isAlphabetic(c),
+                options,
+                discreteOptions,
+                defaultFilter,
+                filter,
+              };
+              return [canonicalizeJson<PTableColumnId>(id), state] as const;
+            } catch (err: unknown) {
+              console.error(`Filter creation for column ${c.id} has failed`, err);
+              return null;
+            }
           })
           .filter((e) => e !== null),
       );

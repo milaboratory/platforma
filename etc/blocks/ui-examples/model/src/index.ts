@@ -180,6 +180,36 @@ export const platforma = BlockModel.create('Heavy')
         }),
       },
     ];
+    for (let j = 3; j < 10; ++j) {
+      columns.push({
+        id: `column${j}` as PObjectId,
+        spec: {
+          kind: 'PColumn',
+          valueType: 'String',
+          name: 'value',
+          annotations: {
+            'pl7.app/label': `Alphabetical column ${j - 2}`,
+            'pl7.app/table/visibility': 'optional',
+          },
+          axesSpec: [
+            {
+              type: 'Int',
+              name: 'index',
+              annotations: {
+                'pl7.app/label': 'Int axis',
+              },
+            },
+          ],
+        },
+        data: times(rowCount, (i) => {
+          const v = i + 1;
+          return {
+            key: [v],
+            val: v.toString().repeat(j),
+          };
+        }),
+      });
+    }
     return createPlDataTableV2(
       ctx,
       columns,

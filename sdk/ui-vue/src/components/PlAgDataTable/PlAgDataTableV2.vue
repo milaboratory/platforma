@@ -157,7 +157,7 @@ const filtersSettings = computed<PlDataTableFiltersSettings | null>(() => {
   const settingsCopy = { ...settings.value };
   if (!settingsCopy.filtersConfig) return null;
   const columns = filterableColumns.value;
-  return settingsCopy.sourceId !== null && columns.length > 0
+  const result = settingsCopy.sourceId !== null && columns.length > 0
     ? {
         columns,
         config: (column: PTableColumnSpec) => settingsCopy.filtersConfig!({ sourceId: settingsCopy.sourceId, column }),
@@ -168,6 +168,7 @@ const filtersSettings = computed<PlDataTableFiltersSettings | null>(() => {
         config: () => ({}),
         cachedState: [],
       };
+  return result;
 });
 
 const gridApi = shallowRef<GridApi<PlAgDataTableV2Row> | null>(null);

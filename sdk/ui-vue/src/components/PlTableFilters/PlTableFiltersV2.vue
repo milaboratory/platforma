@@ -84,7 +84,6 @@ onBeforeUnmount(() => {
 const canAddFilter = computed<boolean>(() => filters.value.some((s) => !s.filter));
 const showAddFilter = ref(false);
 
-const hasDefaults = computed<boolean>(() => filters.value.some((s) => s.defaultFilter));
 const canResetToDefaults = computed<boolean>(() => {
   return filters.value
     .some((s) => (!s.defaultFilter && s.filter) || (s.defaultFilter
@@ -179,9 +178,12 @@ const resetToDefaults = () => {
         </div>
       </template>
 
-      <div :class="[$style['add-action-wrapper'], { 'pt-24': scrollIsActive }]">
+      <div
+        v-if="filters.value.length"
+        :class="[$style['add-action-wrapper'], { 'pt-24': scrollIsActive }, 'd-flex', 'gap-24', 'flex-column']"
+      >
         <div
-          v-if="canAddFilter"
+          :disabled="canAddFilter"
           :class="$style['add-btn']"
           @click="showAddFilter = true"
         >
@@ -190,18 +192,17 @@ const resetToDefaults = () => {
           </div>
           <div :class="[$style['add-btn-title'], 'text-s-btn']">Add Filter</div>
         </div>
+
+        <PlBtnSecondary
+          :disabled="!canResetToDefaults"
+          @click.stop="resetToDefaults"
+        >
+          Reset to defaults
+        </PlBtnSecondary>
       </div>
 
       <div v-if="!filters.value.length">No filters applicable</div>
     </div>
-
-    <PlBtnSecondary
-      v-if="hasDefaults"
-      :disabled="!canResetToDefaults"
-      @click.stop="resetToDefaults"
-    >
-      Reset to defaults
-    </PlBtnSecondary>
   </PlSlideModal>
 
   <PlTableAddFilterV2
