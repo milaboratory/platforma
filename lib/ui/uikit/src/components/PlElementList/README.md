@@ -98,10 +98,7 @@ Basic string list with drag and remove functionality:
 
 ```vue
 <template>
-  <PlElementList
-    v-model:items="items"
-    :onRemove="handleRemove"
-  >
+  <PlElementList v-model:items="items">
     <template #item-title="{ item }">
       {{ item }}
     </template>
