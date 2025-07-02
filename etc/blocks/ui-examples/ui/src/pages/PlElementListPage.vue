@@ -146,6 +146,7 @@ const handleShuffle = () => {
     <h4>All at once</h4>
     <PlElementList
       v-model:items="list"
+      :get-item-key="getKey"
 
       :is-active="isActiveItem"
       :is-draggable="isDraggableItem"

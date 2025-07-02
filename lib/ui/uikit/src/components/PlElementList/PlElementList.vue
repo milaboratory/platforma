@@ -4,7 +4,7 @@ import { computed, shallowRef, watch } from 'vue';
 import { isFunction, shallowHash } from '@milaboratories/helpers';
 import { useSortable } from '@vueuse/integrations/useSortable';
 import { type SortableEvent } from 'sortablejs';
-import { moveElements, optionalUpdateRef } from './utils.ts';
+import { moveElements } from './utils.ts';
 import PlElementListItem from './PlElementListItem.vue';
 
 const itemsRef = defineModel<T[]>('items', { required: true });
@@ -94,17 +94,32 @@ const domProjectionItemsRef = shallowRef<undefined | T[]>();
 const pinnedContainerRef = shallowRef<HTMLElement>();
 const unpinnedContainerRef = shallowRef<HTMLElement>();
 
+// version fix problem with sync between data and rendered values
+const getKey = (item: T, index: number) => {
+  return `${versionRef.value}-${props.getItemKey(item, index)}`;
+};
+const pinnedKeysRef = computed(() => pinnedItemsRef.value.map(getKey));
+const unpinnedKeysRef = computed(() => unpinnedItemsRef.value.map(getKey));
+
 // version fix problem with sync between data and rendered values when items have been changed
 const versionRef = computed<number>((oldVersion) => {
-  const currentVersion = shallowHash(...itemsRef.value.map(props.getItemKey));
+  const currentKeys = itemsRef.value.map(props.getItemKey);
 
-  if (domProjectionItemsRef.value === undefined) return oldVersion ?? currentVersion;
+  if (domProjectionItemsRef.value === undefined) return oldVersion ?? shallowHash(...currentKeys);
+  if (currentKeys.length !== domProjectionItemsRef.value.length) return shallowHash(...currentKeys);
 
-  const lastSortedVersion = shallowHash(...domProjectionItemsRef.value.map(props.getItemKey));
+  const domProjectionKeys = domProjectionItemsRef.value.map(props.getItemKey);
+  const domProjectionKeysSet = new Set(domProjectionKeys);
 
-  if (currentVersion === lastSortedVersion) return oldVersion ?? currentVersion;
+  for (let i = 0; i < currentKeys.length; i++) {
+    const hasInconsistentPosition = domProjectionKeysSet.has(currentKeys[i]) && domProjectionKeys[i] !== currentKeys[i];
 
-  return oldVersion !== currentVersion ? currentVersion : lastSortedVersion;
+    if (hasInconsistentPosition) {
+      return shallowHash(...currentKeys);
+    }
+  }
+
+  return oldVersion ?? shallowHash(...currentKeys);
 });
 
 createSortable(hasPinnedItems, pinnedContainerRef, pinnedItemsRef, () => 0);
@@ -145,7 +160,6 @@ function moveItems(oldIndex: number, newIndex: number, afterUpdateDom: boolean) 
 
   if (!preventDefault) {
     moveElements(itemsRef.value, oldIndex, newIndex);
-    optionalUpdateRef(itemsRef);
   }
 }
 
@@ -156,6 +170,11 @@ function isActiveItem(item: T, index: number): boolean {
 function isDraggableItem(item: T, index: number): boolean {
   if (props.disableDragging === true) return false;
   return (props.isDraggable?.(item, index) ?? true);
+}
+
+function isRemovableItem(item: T, index: number): boolean {
+  if (props.disableRemoving === true) return false;
+  return (props.isRemovable?.(item, index) ?? true);
 }
 
 function isToggableItem(item: T, index: number): boolean {
@@ -185,11 +204,6 @@ function isExpandedItem(item: T, index: number): boolean {
   return props.isExpanded?.(item, index) ?? false;
 }
 
-function isRemovableItem(item: T, index: number): boolean {
-  if (props.disableRemoving === true) return false;
-  return (props.isRemovable?.(item, index) ?? isFunction(props.onRemove));
-}
-
 function handleExpand(item: T, index: number) {
   props.onExpand?.(item, index);
 }
@@ -214,13 +228,6 @@ function handleRemove(item: T, index: number) {
   if (props.onRemove?.(item, index) === false) return;
   itemsRef.value.splice(index, 1);
 }
-
-// version fix problem with sync between data and rendered values
-const getKey = (item: T, index: number) => {
-  return `${versionRef.value}-${props.getItemKey(item, index)}`;
-};
-const pinnedKeysRef = computed(() => pinnedItemsRef.value.map(getKey));
-const unpinnedKeysRef = computed(() => unpinnedItemsRef.value.map(getKey));
 
 const getItemClass = (item: T, index: number): null | string | string[] => {
   if (typeof props.itemClass === 'function') {
@@ -248,8 +255,8 @@ const getItemClass = (item: T, index: number): null | string | string[] => {
         :isToggled="isToggledItem(pinnedItem, pinnedIndex)"
         :isPinnable="isPinnableItem(pinnedItem, pinnedIndex)"
         :isPinned="true"
-        :isExpandable="isExpandable(pinnedItem, pinnedIndex)"
-        :isExpanded="isExpanded(pinnedItem, pinnedIndex)"
+        :isExpandable="isExpandableItem(pinnedItem, pinnedIndex)"
+        :isExpanded="isExpandedItem(pinnedItem, pinnedIndex)"
 
         @click="emits('itemClick', pinnedItem)"
         @remove="handleRemove"

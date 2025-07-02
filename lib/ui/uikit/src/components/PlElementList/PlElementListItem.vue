@@ -88,7 +88,7 @@ const emit = defineEmits<{
     </div>
     <div
       v-if="hasContentSlot && props.isExpanded"
-      :class="[$style.body, { [$style.disabled]: props.isToggled} ]"
+      :class="[$style.body, { [$style.disabled]: props.isToggled }]"
     >
       <slot name="content" :item="props.item" :index="props.index" />
     </div>
@@ -147,6 +147,7 @@ const emit = defineEmits<{
   display: flex;
   align-items: center;
   padding: 8px;
+  min-height: 40px;
   border-radius: var(--border-radius) var(--border-radius) 0 0;
   background: var(--head-background);
 
