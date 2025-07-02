@@ -5,7 +5,7 @@
 
 self := import(":tpl.light")
 monetization := import(":exec.monetization_internal")
-constants := import(":exec.constants")
+execConstants := import(":exec.constants")
 workdir := import(":workdir")
 
 self.defineOutputs("info")
@@ -18,11 +18,12 @@ self.body(func(args) {
 	mnzPlan := args.mnzPlan
 
 	wd := workdir.builder().
+		inQueue(execConstants.UI_TASKS_QUEUE).
 		addFiles(filesToAdd).
 		writeFiles(filesToWrite).
 		build()
 
-	result := monetization.run(mnz, wd, mnzPlan, constants.UI_TASKS_QUEUE)
+	result := monetization.run(mnz, wd, mnzPlan, execConstants.UI_TASKS_QUEUE)
 
 	return {
 		info: result.info

@@ -69,10 +69,10 @@ self.validateInputs({
 	"assetCache,?": { any: "number" },
 
 	// Meta inputs
-	"quota,?": {
+	"quota": {
 		queue: "string",
 		"cpu,?": "number",
-		"ram,?": "string"
+		"ram,?": ["or", "number", "string"]
 	}
 })
 
@@ -87,9 +87,8 @@ self.body(func(inputs) {
 		plan = loadSoftware.loadSoftware(software)
 	}
 
-	metaImplInputs := {}
-	if !is_undefined(self.rawMetaInputs().quota) {
-		metaImplInputs.quota = self.rawMetaInputs().quota
+	metaImplInputs := {
+		quota: is_undefined(self.rawMetaInputs().quota) ? self.rawInputs().quota : self.rawMetaInputs().quota
 	}
 
 	pureImplInputs := {

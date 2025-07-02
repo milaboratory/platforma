@@ -6,6 +6,7 @@ runcmd := import(":exec.runcmd")
 path := import(":path")
 desc := import(":exec.descriptor")
 constants := import(":exec.constants")
+pkg := import(":exec.package")
 
 rVenvInputSchema := {
 	operationMode: "string",
@@ -22,9 +23,9 @@ runRBuilder := func(operationMode, wd, rPackage, rDescriptor) {
 	rule := feats.commandExpressions ? "R" : "{R}"
 
 	builder := runcmd.builder(wd).
-		inQueue("light").
-		cpu(1).
-		mem("1GiB").
+		inQueue(pkg.DEFAULT_ALLOCATION_QUEUE).
+		cpu(pkg.DEFAULT_ALLOCATION_CPU).
+		mem(pkg.DEFAULT_ALLOCATION_RAM).
 		ref("r-run-environment", rPackage).
 		substitutionRule(rule, "r-run-environment").
 		addPathTyped(t, path.join("{R}", rDescriptor.binDir)).

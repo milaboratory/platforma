@@ -617,11 +617,8 @@ builder := func(workdir, ...initialState) {
 				// easily _start_ for 10 seconds and we don't want to make user to wait so long in UI.
 				runRes = smart.ephemeralBuilder(_RTYPE_RUN_COMMAND_BATCH_V2)
 
-			} else if feats.computeLimits {
-				runRes = smart.ephemeralBuilder(_RTYPE_RUN_COMMAND_EXEC_V2)
-
 			} else {
-				runRes = smart.ephemeralBuilder(_RTYPE_RUN_COMMAND_V1)
+				runRes = smart.ephemeralBuilder(_RTYPE_RUN_COMMAND_EXEC_V2)
 			}
 
 			runRes.getField(_FIELD_WORKDIR_IN).set(workdir)

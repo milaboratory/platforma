@@ -17,7 +17,6 @@ render := import(":render")
 enum := import("enum")
 oop := import(":oop")
 constants := import(":constants")
-limits := import(":exec.limits")
 monetization := import(":exec.monetization_internal")
 execConstants := import(":exec.constants")
 
@@ -826,16 +825,15 @@ builder := func() {
 				assetCache: assetCache
 			}
 
-			serviceExecInputs := {}
-			if feats.workdirLimits || feats.computeLimits || limits.useBatch(queue) {
-				if (is_int(ramRequest)) {
-					ramRequest = string(ramRequest) + "b"
-				}
-				serviceExecInputs.quota = {
+			if (is_int(ramRequest)) {
+				ramRequest = string(ramRequest) + "b"
+			}
+			metaExecInputs := {
+				quota: smart.createJsonResource({
 					queue: queue,
 					cpu: cpuRequest,
 					ram: ramRequest
-				}
+				})
 			}
 
 			// We add monetization only if it's enabled
@@ -861,7 +859,7 @@ builder := func() {
 				}
 			}
 
-			tpl := render.create(assets.importTemplate(":exec.exec"), pureExecInputs, serviceExecInputs)
+			tpl := render.create(assets.importTemplate(":exec.exec"), pureExecInputs, metaExecInputs)
 
 			self := undefined
 			self = ll.toStrict(oop.inherit(tpl, {
