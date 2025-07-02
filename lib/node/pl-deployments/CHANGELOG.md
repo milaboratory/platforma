@@ -1,5 +1,12 @@
 # @milaboratories/pl-local
 
+## 2.4.2
+
+### Patch Changes
+
+- Updated dependencies [d60b0fe]
+  - @milaboratories/pl-config@1.6.1
+
 ## 2.4.1
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @milaboratories/pl-tree
 
+## 1.6.12
+
+### Patch Changes
+
+- d60b0fe: Chore: fix linter errors
+
 ## 1.6.11
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-backend
 
+## 1.1.2
+
+### Patch Changes
+
+- d60b0fe: Chore: fix linter errors
+
 ## 1.1.1
 
 ### Patch Changes
