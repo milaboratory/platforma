@@ -1,5 +1,11 @@
 # @milaboratories/pl-local
 
+## 2.4.3
+
+### Patch Changes
+
+- e6d4998: Backend version upgraded to 1.35.2
+
 ## 2.4.2
 
 ### Patch Changes
