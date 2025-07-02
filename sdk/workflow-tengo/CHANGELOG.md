@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 4.9.2
+
+### Patch Changes
+
+- 5e85fea: Final fixes for resource allocation logic
+
 ## 4.9.1
 
 ### Patch Changes
