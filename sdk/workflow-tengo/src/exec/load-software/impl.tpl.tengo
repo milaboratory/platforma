@@ -1,0 +1,273 @@
+self := import(":tpl.light")
+
+ll := import(":ll")
+json := import("json")
+maps := import(":maps")
+path := import(":path")
+pkg := import(":exec.package")
+runcmd := import(":exec.runcmd")
+python := import(":exec.python")
+R := import(":exec.R")
+desc := import(":exec.descriptor")
+validation := import(":validation")
+
+//
+// Variables, substituted in command arguments and environment variable values.
+//
+_ARG_VAR_PKG                 := "pkg"  // abs path to software package
+_ARG_VAR_JAVA                := "java" // abs path to 'java' run environment
+
+_ARG_VAR_PYTHON_VENV         := "python" // abs path to python virtual environment. WARNING: not change the name, it's used in other part of code
+_ARG_VAR_PYTHON_RUN_ENV      := "python_run_env" // abs path to python run environment used to create venv
+_ARG_VAR_VENV_BIN_DIR        := "venv_bin_dir" // name of bin dir in python venv depending on OS type (Scripts on Windows, bin on Unix)
+_ARG_PYTHON_LOCAL_SCRIPT_DIR := "python_local_script_dir" // abs path to directory with local python scripts.
+_ARG_PATH_DELIMETER          := "path_delimeter"
+
+_ARG_VAR_R                   := "R" // abs path to 'R' run environment runtime
+_ARG_VAR_R_VENV              := "rVenv" // abs path to 'R' portable virtual environment
+
+/** Converts the args above to the expressions. */
+_expr := func(varName) {
+	return "{" + varName + "}"
+}
+
+_newRefVar := func(varName, refName, reference) {
+	return ll.toStrict({
+		varName: varName,
+		refName: refName,
+		reference: reference
+	})
+}
+
+_installSoftware := func(registry, pkgName) {
+	ll.assert(is_string(registry), "exec.internal._installSoftware(): registry is not a string, got: %v", registry, pkgName)
+	ll.assert(is_string(pkgName), "exec.internal._installSoftware(): pkgName is not a string, got: %v", pkgName, registry)
+
+	archive := pkg.get(registry, pkgName).archive()
+	return pkg.install(archive).package()
+}
+
+_loadJavaRunEnvironment := func(operationMode, descriptor) {
+	plan := runcmd.createRunCommandPlan()
+
+	javaPkg := _installSoftware(descriptor.runEnv.registry, descriptor.runEnv.package)
+	plan.refVar(_ARG_VAR_JAVA, descriptor.runEnv.name, javaPkg)
+
+	plan.addPathExpression(path.join(_expr(_ARG_VAR_JAVA), descriptor.runEnv.binDir))
+
+	return ll.toStrict({
+		runEnvType: "java",
+		plan:       plan
+	})
+}
+
+_loadPythonRunEnvironment := func(operationMode, descriptor, softName, softPkg) {
+	plan := runcmd.createRunCommandPlan()
+
+	venvBuilder := python.venvBuilder().
+		software(softPkg).
+		runEnvDescriptor(descriptor.runEnv).
+		dependencies(descriptor.dependencies)
+
+	if !is_undefined(descriptor.toolset) && descriptor.toolset != "" {
+		venvBuilder.useToolset(descriptor.toolset)
+	}
+
+	venv := venvBuilder.
+		cacheDays(7).
+		build()
+
+	plan.refVar(_ARG_VAR_PYTHON_RUN_ENV, softName + "/python", venv.python())
+	plan.refVar(_ARG_VAR_PYTHON_VENV, softName + "/venv", venv.venv())
+	plan.refVar(_ARG_VAR_VENV_BIN_DIR, softName + "/binDir", venv.binDir() )
+	plan.refVar(_ARG_PATH_DELIMETER, softName + "/pathDelimeter", venv.pathDelimeter())
+
+	plan.addPathExpression(path.join(_expr(_ARG_VAR_PYTHON_VENV), "venv", _expr(_ARG_VAR_VENV_BIN_DIR)))
+	plan.envExpression("VIRTUAL_ENV", path.join(_expr(_ARG_VAR_PYTHON_VENV), "venv"))
+	plan.envExpression("PYTHONPATH", path.join(_expr(_ARG_VAR_PYTHON_RUN_ENV), descriptor.runEnv.binDir, "python_stdlib") + _expr(_ARG_PATH_DELIMETER) + _expr(_ARG_VAR_PKG))
+
+	return ll.toStrict({
+		runEnvType: "python",
+		plan:       plan
+	})
+}
+
+_loadRRunEnvironment := func(operationMode, descriptor, softName, softPkg) {
+	plan := runcmd.createRunCommandPlan()
+
+	renvBuilder := R.rVenvBuilder().
+		operationMode(operationMode).
+		software(softPkg).
+		runEnvDescriptor(descriptor.runEnv).
+		dependencies(descriptor.dependencies)
+
+	if !is_undefined(descriptor.toolset) && descriptor.toolset != "" {
+		renvBuilder.useToolset(descriptor.toolset)
+	}
+
+	rRuntime := renvBuilder.
+		cacheDays(7).
+		build()
+
+	rEnv := rRuntime.venv()
+	rPackage := rRuntime.R()
+
+	rBinDir := path.join(_expr(_ARG_VAR_R), descriptor.runEnv.binDir)
+
+	rRefKey := softName + "/R-runtime"
+	plan.refVar(_ARG_VAR_R, rRefKey, rPackage)
+
+	rEnvRefKey := softName + "/R-virtual-env"
+	plan.refVar(_ARG_VAR_R_VENV, rEnvRefKey, rEnv)
+
+	renvRootArg := path.join(_expr(_ARG_VAR_R), "renv-root")
+
+
+	plan.envExpression("RHOME", _expr(_ARG_VAR_R)) // for Rscript (it uses RHOME instead of R_HOME)
+	plan.envExpression("R_HOME_DIR", _expr(_ARG_VAR_R)) // for R startup script. It configures all the rest required for R to start.
+	plan.envExpression("RENV_PATHS_ROOT", renvRootArg)
+	plan.envExpression("RENV_PATHS_BINARY", path.join(renvRootArg, "binaries"))
+	plan.envExpression("RENV_PATHS_SOURCE", path.join(renvRootArg, "sources"))
+	plan.envExpression("RENV_PATHS_CACHE", path.join(renvRootArg, "cache"))
+	plan.envExpression("RENV_PATHS_RENV", path.join(_expr(_ARG_VAR_R_VENV), "renv"))
+	plan.envExpression("RENV_PATHS_LOCKFILE", path.join(renvRootArg, "renv.lock"))
+
+
+	// Force block developer to install R packages when building R run environment.
+	// Most of our commercial clients have very restricted network without access to pypi, CRAN and other external resources.
+	// The only firewall rule we're guaranteed to have is to our own registries.
+	plan.envExpression("RENV_CONFIG_REPOS_OVERRIDE", path.join(_expr(_ARG_VAR_R), "packages"))
+
+
+	plan.addPathExpression(rBinDir)
+
+	return ll.toStrict({
+		runEnvType: "R",
+		plan:       plan
+	})
+}
+
+
+_loadRunEnvironment := func(operationMode, descriptor, softName, softPackage) {
+	if descriptor.runEnv.type == "java" {
+		return _loadJavaRunEnvironment(operationMode, descriptor)
+	}
+	if descriptor.runEnv.type == "python" {
+		return _loadPythonRunEnvironment(operationMode, descriptor, softName, softPackage)
+	}
+	if descriptor.runEnv.type == "R" {
+		return _loadRRunEnvironment(operationMode, descriptor, softName, softPackage)
+	}
+
+	ll.panic("run environment type %q is not currently supported by workflow-sdk",	descriptor.runEnv.type)
+}
+
+/**
+ * @param operationMode: "remote" | "dev-local"
+ */
+_binPackageCallOptions := func(operationMode, softwareName, variables, descriptor, softPackage) {
+	runEnvPlan := runcmd.createRunCommandPlan()
+	runEnvType := "binary"
+
+	// Real command should be:
+	//   [<runEnv bin>] [<runEnv options>] [<entrypoint bin>] [<entrypoint options>] <cmd> <args>
+	if (maps.containsKey(descriptor, "runEnv")) {
+		runEnvInfo := _loadRunEnvironment(operationMode, descriptor, softwareName, softPackage)
+		runEnvPlan = runEnvInfo.plan
+		runEnvType = runEnvInfo.runEnvType
+	}
+
+	ll.assert(
+		len(descriptor.cmd) != 0,
+		"cannot render final command for software: empty 'cmd' and 'command' in software descriptor")
+
+	plan := runcmd.createRunCommandPlan(runEnvPlan.state())
+
+	for _, v in variables {
+		plan.refVar(v.varName, v.refName, v.reference)
+	}
+	plan.cmdExpression(descriptor.cmd[0])
+
+	for arg in splice(descriptor.cmd, 1) {
+		plan.argExpression(arg)
+	}
+
+	return ll.toStrict({
+		runEnvType: runEnvType,
+		plan:       plan
+	})
+}
+
+_devLocalPackageCallOptions := func(softwareName, localDescriptor) {
+	softPackage := pkg.use({
+		hash: localDescriptor.hash,
+		path: localDescriptor.path,
+		descriptor: json.encode(ll.fromStrict(localDescriptor)),
+		origin: {
+			registry: "dev-local",
+			url: "file://" + localDescriptor.path,
+			packageName: softwareName
+		}
+	}).package()
+
+	variables := [ _newRefVar(_ARG_VAR_PKG, softwareName, softPackage) ]
+
+	return _binPackageCallOptions("dev-local", softwareName, variables, localDescriptor, softPackage)
+}
+
+_remotePackageCallOptions := func(softwareName, binaryDescriptor) {
+	softPackage := _installSoftware(binaryDescriptor.registry, binaryDescriptor.package)
+
+	variables := [ _newRefVar(_ARG_VAR_PKG, softwareName, softPackage) ]
+
+	return _binPackageCallOptions("remote", softwareName, variables, binaryDescriptor, softPackage)
+}
+
+/**
+ * Turns a given software to a list of options that needs to be passed to run cmd builder.
+ * Creates resources to install a software and runs R or Python env builder templates
+ * if it's necessary.
+ *
+ * The function returns a plan state object that can be passed to runcmd functions.
+ * The plan state is augmented with `runEnvType` in `options` property.
+ *
+ * @see exec.runcmd.createRunCommandPlan
+ */
+swToRuncmdPlan := func(softwareName, softwareVersion, softwareDescriptor) {
+	ll.assert(is_string(softwareName),
+		"exec.internal.swToRunCmdOptions: software name must be a string, got %v", softwareName)
+	ll.assert(is_string(softwareVersion),
+		"exec.internal.swToRunCmdOptions: software version must be a string, got %v", softwareVersion)
+	validation.assertType(softwareDescriptor, desc.scheme,
+		"exec.internal.swToRunCmdOptions: descriptor does not fit schema")
+
+	result := undefined
+	if maps.containsKey(softwareDescriptor, "local") {
+		result = _devLocalPackageCallOptions(softwareName, softwareDescriptor.local)
+	} else if maps.containsKey(softwareDescriptor, "binary") {
+		result = _remotePackageCallOptions(softwareName, softwareDescriptor.binary)
+	} else {
+		ll.panic(
+			"Unable to run software %s v%s: 'binary' execution mode is not enabled in software descriptor",
+			softwareName, softwareVersion)
+	}
+
+	plan := result.plan.state()
+	plan.options.runEnvType = result.runEnvType
+
+	return plan
+}
+
+self.defineOutputs("plan")
+
+self.validateInputs({
+	software: pkg.softwareInfoScheme
+})
+
+self.body(func(inputs) {
+	software := inputs.software
+
+	return {
+		plan: swToRuncmdPlan(software.name, software.version, software.descriptor)
+	}
+})

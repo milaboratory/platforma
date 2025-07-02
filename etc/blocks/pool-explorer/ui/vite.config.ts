@@ -1,11 +1,8 @@
-import { defineConfig } from 'vite';
-import vue from '@vitejs/plugin-vue';
+import type { UserConfig } from 'vite';
+import { defineConfig, mergeConfig } from 'vite';
+import { createViteDevConfig } from '@milaboratories/build-configs';
 
 // https://vitejs.dev/config/
-export default defineConfig({
-  plugins: [vue()],
-  base: './',
-  build: {
-    sourcemap: true
-  }
+export default defineConfig((configEnv): UserConfig => {
+  return mergeConfig(createViteDevConfig(configEnv), {});
 });

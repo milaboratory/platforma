@@ -1,5 +1,35 @@
 # @milaboratories/milaboratories.ui-examples.model
 
+## 1.1.78
+
+### Patch Changes
+
+- @platforma-sdk/model@1.37.14
+
+## 1.1.77
+
+### Patch Changes
+
+- Updated dependencies [10e5841]
+  - @platforma-sdk/model@1.37.11
+
+## 1.1.76
+
+### Patch Changes
+
+- Updated dependencies [37800c5]
+  - @platforma-sdk/model@1.37.2
+
+## 1.1.75
+
+### Patch Changes
+
+- 6ffe944: PlAgDataTableV2 refactoring
+- Updated dependencies [6ffe944]
+- Updated dependencies [6ffe944]
+- Updated dependencies [6ffe944]
+  - @platforma-sdk/model@1.37.0
+
 ## 1.1.74
 
 ### Patch Changes

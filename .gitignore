@@ -3,6 +3,7 @@
 .idea/
 *.tgz
 .DS_Store
+.vscode/
 
 # Testing
 test_config.json
@@ -22,3 +23,4 @@ tmp/
 **/dist/
 dev/
 work/
+*.tsbuildinfo

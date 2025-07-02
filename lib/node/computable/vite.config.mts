@@ -1,3 +1,3 @@
-import { PlViteStdNode } from '@milaboratories/platforma-build-configs/vite';
+import { PlViteStdNode } from '@milaboratories/build-configs/vite';
 
 export default PlViteStdNode();

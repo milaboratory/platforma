@@ -131,5 +131,6 @@ export function normalizeListOptions<V = unknown>(options: Readonly<ListOption<V
     label: 'label' in it ? it.label : it.text,
     value: it.value,
     description: it.description,
+    group: it.group,
   }));
 }

@@ -11,6 +11,7 @@ runcmd := import(":exec.runcmd")
 path := import(":path")
 validation := import(":validation")
 constants := import(":exec.constants")
+pkg := import(":exec.package")
 
 self.defineOutputs("runEnv")
 
@@ -21,11 +22,14 @@ _runInVenv := func(python, venv, wd, pythonBinDir, pythonVenvBinDir) {
 	pythonRunenvVar := feats.commandExpressions ? "python_runenv" : "{python_runenv}"
 
 	return runcmd.builder(wd).
+		inQueue(pkg.DEFAULT_ALLOCATION_QUEUE).
+		cpu(pkg.DEFAULT_ALLOCATION_CPU).
+		mem(pkg.DEFAULT_ALLOCATION_RAM).
 		ref("python-venv", venv).
 		ref("python-run-environment", python).
 		substitutionRule(pythonVenvVar, "python-venv").
 		substitutionRule(pythonRunenvVar, "python-run-environment").
-		addToPath(t, path.join("{python_venv}", "venv", pythonVenvBinDir)).
+		addPathTyped(t, path.join("{python_venv}", "venv", pythonVenvBinDir)).
 		envTyped("VIRTUAL_ENV", t, path.join("{python_venv}", "venv")).
 		envTyped("PYTHONPATH", t, path.join("{python_runenv}", pythonBinDir, "python_stdlib"))
 }
@@ -34,6 +38,9 @@ _installPipDependencies := func(python, venv, dependencies, pythonBinDir, python
 	requirementsRef := dependencies.requirements
 
 	wdForDeps := workdir.builder().
+		inQueue(pkg.DEFAULT_ALLOCATION_QUEUE).
+		cpu(pkg.DEFAULT_ALLOCATION_CPU).
+		mem(pkg.DEFAULT_ALLOCATION_RAM).
 		addFile("requirements.txt", requirementsRef).
 		build()
 
@@ -50,7 +57,9 @@ _installPipDependencies := func(python, venv, dependencies, pythonBinDir, python
 		arg("--find-links").argTyped(t, "{python_runenv}/packages/")
 
 	depsBuilder.
-		inQueue("light").
+		inQueue(pkg.DEFAULT_ALLOCATION_QUEUE).
+		cpu(pkg.DEFAULT_ALLOCATION_CPU).
+		mem(pkg.DEFAULT_ALLOCATION_RAM).
 		stdout("./output").
 		stderr("./output").
 		nErrorLines(20)

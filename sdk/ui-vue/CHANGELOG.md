@@ -1,5 +1,113 @@
 # @platforma-sdk/ui-vue
 
+## 1.37.17
+
+### Patch Changes
+
+- Updated dependencies [e210414]
+  - @milaboratories/uikit@2.2.97
+
+## 1.37.15
+
+### Patch Changes
+
+- de26a80: PlAgDataTableV2: make overlay text props reactive
+
+## 1.37.14
+
+### Patch Changes
+
+- Updated dependencies [8236387]
+  - @milaboratories/uikit@2.2.96
+  - @platforma-sdk/model@1.37.14
+
+## 1.37.13
+
+### Patch Changes
+
+- eb52553: MSA: show multiple sequence columns separately
+
+## 1.37.12
+
+### Patch Changes
+
+- Updated dependencies [70eff11]
+  - @milaboratories/uikit@2.2.95
+
+## 1.37.11
+
+### Patch Changes
+
+- Updated dependencies [10e5841]
+  - @platforma-sdk/model@1.37.11
+  - @milaboratories/uikit@2.2.94
+
+## 1.37.10
+
+### Patch Changes
+
+- c6b4dd2: Extend interface for PlElementList
+- Updated dependencies [c6b4dd2]
+  - @milaboratories/uikit@2.2.93
+
+## 1.37.7
+
+### Patch Changes
+
+- 30d7dc8: MSA: find linker columns automatically
+
+## 1.37.4
+
+### Patch Changes
+
+- ab005b5: PlDataTableSettingsV2 creation helpers
+
+## 1.37.2
+
+### Patch Changes
+
+- 37800c5: Public tools packages
+- Updated dependencies [37800c5]
+  - @milaboratories/uikit@2.2.92
+  - @platforma-sdk/model@1.37.2
+
+## 1.37.1
+
+### Patch Changes
+
+- 2c3bb60: Developer build ui-examples don't required build/watch for deps
+- Updated dependencies [2c3bb60]
+  - @milaboratories/uikit@2.2.91
+
+## 1.37.0
+
+### Minor Changes
+
+- 6ffe944: PlAgDataTableV2 - significant interface change
+
+### Patch Changes
+
+- 6ffe944: PlAgDataTableV2 refactoring
+- 6ffe944: PlAgDataTable types fixed
+- Updated dependencies [6ffe944]
+- Updated dependencies [6ffe944]
+- Updated dependencies [6ffe944]
+  - @milaboratories/uikit@2.2.90
+  - @platforma-sdk/model@1.37.0
+
+## 1.36.0
+
+### Minor Changes
+
+- 105ea31: MSA: error handling improvements
+
+## 1.35.2
+
+### Patch Changes
+
+- Updated dependencies [60540e8]
+  - @milaboratories/uikit@2.2.89
+
 ## 1.35.0
 
 ### Minor Changes

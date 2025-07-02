@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-middle-layer",
-  "version": "1.37.82",
+  "version": "1.37.97",
   "description": "Pl Middle Layer",
   "engines": {
     "node": ">=20.16.0"
@@ -57,7 +57,7 @@
     "@milaboratories/pl-deployments": "workspace:^"
   },
   "devDependencies": {
-    "@milaboratories/platforma-build-configs": "workspace:*",
+    "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/eslint-config": "workspace:^",
     "semver": "catalog:",
     "@types/semver": "catalog:",

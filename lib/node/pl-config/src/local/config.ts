@@ -117,7 +117,7 @@ export async function generateLocalPlConfigs(
 
   const ports = await getLocalhostEndpoints(opts.portsMode);
 
-  const storages = await createDefaultLocalStorages(workdir);
+  const storages = await createDefaultLocalStorages(workdir, `http://${ports.http}`);
 
   return {
     workingDir: opts.workingDir,
@@ -166,7 +166,7 @@ async function createDefaultPlLocalConfig(
   // Let's fix defaults loading in the backend and remove hardcoded constants from here.
   config.controllers.runner.resources = {
     cpu: notEmpty(opts.numCpu),
-  }
+  };
 
   if (opts.plConfigPostprocessing) config = opts.plConfigPostprocessing(config);
 

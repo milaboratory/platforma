@@ -7,21 +7,20 @@
 
 self := import(":tpl.light")
 
-ll := import(":ll")
-feats := import(":feats")
 validation := import(":validation")
 
 smart := import(":smart")
 render := import(":render")
-workdir := import(":workdir")
-stream := import(":exec.stream")
-execInternal := import(":exec.internal")
-limits := import(":exec.limits")
 pkg := import(":exec.package")
-blobs := import(":file.internal")
 desc := import(":exec.descriptor")
-constants := import(":exec.constants")
 monetization := import(":exec.monetization_internal")
+assets := import(":assets")
+maps := import(":maps")
+runcmd := import(":exec.runcmd")
+loadSoftware := import(":exec.load-software")
+
+mnzSw := assets.importSoftware("@platforma-open/milaboratories.software-small-binaries:mnz-client")
+execImplTpl := assets.importTemplate(":exec.exec-impl")
 
 self.defineOutputs(
 	"files",
@@ -33,196 +32,18 @@ self.defineOutputs(
 	"wdProcessors"
 )
 
-_runBinaryCommand := func(inputs) {
-	//
-	// Create and fill the workdir with files that were passed from inputs.
-	//
-
-	wdBuilder := workdir.builder()
-
-	quota := inputs.quota
-
-	if !is_undefined(quota) && (feats.workdirLimits || limits.useBatch(quota.queue)) {
-		quotaBuilder := limits.quotaBuilder().
-			cpu(quota.cpu).
-			ram(quota.ram)
-
-		if limits.useBatch(quota.queue) {
-			quotaBuilder.queue(constants.BATCH_QUEUE)
-		} else {
-			quotaBuilder.queue(quota.queue)
-		}
-
-		storageSpaceRef := limits.storageSpaceRequestBuilder().
-			quota(quotaBuilder.build()).
-			build()
-
-		wdBuilder.allocation(storageSpaceRef.allocation)
-	}
-
-	// add files
-	wdBuilder.addFiles(inputs.filesToAdd)
-	wdBuilder.mkDirs(inputs.dirsToCreate)
-
-	// add assets
-	archives := ll.toStrict({})
-	for k, descriptor in inputs.assetDescriptors {
-		assetBlob := blobs.createBlobImportExternal({
-			dataURL: descriptor.asset.url
-		}).file
-
-		archives[k] = assetBlob
-		if is_int(inputs.assetCache[k]) {
-			assetBlob.setCache(inputs.assetCache[k])
-		} else {
-			assetBlob.setCacheDays(1)
-		}
-	}
-	for k, archiveRules in inputs.assetRules {
-		for dir, filesToExtract in archiveRules {
-			wdBuilder.addFromZip(archives[k], dir, filesToExtract)
-		}
-	}
-	// pass values as fields for saving the topology in pl-core
-	// and avoiding deduplication issues:
-	wdBuilder.writeFiles(self.rawInputs().filesToWrite.getValue().inputs())
-
-	// working directory with input files added; before run
-	wdWithAllFiles := wdBuilder.build()
-
-	// run monetization if it's defined and return a workdir after.
-	wdBefore := wdWithAllFiles
-	mnzEnvs := {}
-	mnzResult := {}
-	mnz := ll.fromStrict(inputs.runOptions).monetization
-	if !is_undefined(mnz) {
-		result := monetization.run(mnz, wdWithAllFiles, inputs.runOptions.queue)
-		wdBefore = result.wdAfter
-		mnzEnvs[result.jwtEnvName] = result.jwtEnvValue
-	}
-
-	opts := execInternal.binaryRunOptions(inputs.runOptions, mnzEnvs)
-
-	// Working directory after run environment preparation steps.
-	// The same as wdBefore, but might get additional files if they are required for run environment,
-	// like .Rprofile for R with activated renv.
-	wdForCmd := execInternal.prepareWDForRunEnvironment(wdBefore, opts)
-
-	//
-	// Build runcmd resource
-	//
-
-	runBuilder := execInternal.prepareCommandRun(wdForCmd, opts)
-
-	if !is_undefined(quota) && (feats.computeLimits || limits.useBatch(quota.queue)) {
-		quotaRef := limits.quotaBuilder().
-			queue(opts.queue).
-			cpu(quota.cpu).
-			ram(quota.ram).
-			build()
-
-		computeRequestRef := limits.computeRequestBuilder().
-			quota(quotaRef).
-			queue(opts.queue).
-			build()
-
-		runBuilder.allocation(computeRequestRef.allocation)
-	}
-
-	// Load secrets
-	for envName, secretVar in inputs.runOptions.secrets {
-		if feats.commandExpressions {
-			runBuilder.envTyped(envName, constants.ARG_TYPE_EXPRESSION, secretVar)
-		} else { // deprecated, remove after 15 Mar 2025
-			runBuilder.envTyped(envName, constants.ARG_TYPE_VAR, secretVar)
-		}
-	}
-
-	// exec command
-	ll.assert(!is_undefined(ll.fromStrict(opts.cmd).type), opts.cmd)
-	runBuilder.cmdTyped(opts.cmd.type, opts.cmd.value)
-
-	// cmd args
-
-	for name, arg in opts.args {
-		runBuilder.argTyped(arg.type, arg.value)
-	}
-
-	// other options
-	runBuilder.inQueue(opts.queue)
-	runBuilder.stdout(opts.stdout)
-	runBuilder.stderr(opts.stderr)
-	runBuilder.nErrorLines(opts.nErrorLines)
-	run := runBuilder.build()
-	// get the workdir containing all the files, including produced by the run command
-	wdAfter := run.workdir
-
-	//
-	// Run workdir processors
-	//
-
-	wdProcessorsResults := {}
-	for name, p in inputs.wdProcessors {
-		tpl := p.tpl
-		tplInputs := {
-			workdir: wdAfter,
-			args: p.tplArgs
-		}
-
-		// render template & get results
-		r := render.createEphemeral(tpl, tplInputs)
-
-		wdProcessorsResults[name] = r.output("result")
-		wdAfter = r.output("workdir")
-	}
-
-	//
-	// Save data from the workdir
-	//
-
-	// saver resource
-	wdSaver := workdir.save(wdAfter)
-	// save files
-	for fName in inputs.filesToSave {
-		wdSaver.saveFile(fName)
-	}
-	// save files content
-	for fName in inputs.filesContentToSave {
-		wdSaver.saveFileContent(fName)
-	}
-	// save file sets
-	for name, regex in inputs.fileSetsToSave {
-		wdSaver.saveFileSet(name, regex)
-	}
-	// save file sets content
-	for name, regex in inputs.fileSetsContentToSave {
-		wdSaver.saveFileSetContent(name, regex)
-	}
-
-	// resulting wd
-	wdResult := wdSaver.build()
-
-	// create streams for all requested file streams.
-	streams := smart.mapBuilder()
-	for fName in inputs.filesToStream {
-		streams.add(fName, stream.create(wdBefore, wdResult, fName))
-	}
-
-	return {
-		files: wdResult.files,
-		filesContent: wdResult.filesContent,
-		fileSets: wdResult.fileSets,
-		fileSetsContent: wdResult.fileSetsContent,
-		fileStreams: streams.build(),
-		wdProcessors: wdProcessorsResults,
-		progress: wdResult.progress
-	}
-}
-
 self.validateInputs({
 	"softwareInfo,?": validation.resource(),
 	filesToAdd: { any: validation.resource() },
 	filesToWrite: { any: validation.resource() },
+	"assets,?": { any: validation.resource() },
+	"wdProcessors,?": {
+		any: {
+			tpl: validation.resource(),
+			"tplArgs,?": "any"
+		}
+	},
+
 	"dirsToCreate,?": ["string"],
 	runOptions: {
 		"software,?": pkg.softwareInfoScheme,
@@ -238,35 +59,86 @@ self.validateInputs({
 		nErrorLines: "number",
 		"monetization,?": monetization.schema
 	},
-	"saveFiles,?": ["string"],
-	"saveFilesContents,?": ["string"],
-	"streams,?": ["string"],
-	"assets,?": { any: validation.resource() },
-	"assetDescriptors,?": { any: {asset: desc.assetScheme } },
+	"filesToSave,?": ["string"],
+	"filesContentToSave,?": ["string"],
+	"fileSetsToSave,?": { any: "string" },
+	"fileSetsContentToSave,?": { any: "string" },
+	"filesToStream,?": ["string"],
+	"assetDescriptors,?": { any: { asset: desc.assetScheme } },
 	"assetRules,?": { any: { any: ["string"] } },
 	"assetCache,?": { any: "number" },
 
-	// Service inputs
-	"quota,?": {
+	// Meta inputs
+	"quota": {
 		queue: "string",
 		"cpu,?": "number",
-		"ram,?": "string"
+		"ram,?": ["or", "number", "string"]
 	}
 })
 
 self.body(func(inputs) {
 
-	ll.toStrict(inputs)
-	inputs.runOptions = ll.toStrict(inputs.runOptions)
-	if !is_undefined(inputs.assets) {
-		inputs.assets = ll.toStrict(inputs.assets)
-	}
-	if (!is_undefined(inputs.assetDescriptors)) {
-		inputs.assetDescriptors = ll.toStrict(inputs.assetDescriptors, true)
-	}
-	if (!is_undefined(inputs.assetRules)) {
-		inputs.assetRules = ll.toStrict(inputs.assetRules, true)
+	plan := undefined
+	if (is_undefined(inputs.runOptions.software)) {
+		// Simple local command run, no software packages involved (backward compatibility)
+		plan = runcmd.createRunCommandPlan().cmd(inputs.runOptions.cmd).state()
+	} else {
+		software := inputs.runOptions.software
+		plan = loadSoftware.loadSoftware(software)
 	}
 
-	return _runBinaryCommand(inputs)
+	metaImplInputs := {
+		quota: is_undefined(self.rawMetaInputs().quota) ? self.rawInputs().quota : self.rawMetaInputs().quota
+	}
+
+	pureImplInputs := {
+		mainPlan: plan
+	}
+
+	if !is_undefined(inputs.runOptions.monetization) {
+		pureImplInputs.mnzPlan = loadSoftware.loadSoftware(mnzSw)
+	}
+
+	//
+	// Code below uses raw inputs, to pass exactly same resource as we received in inputs.
+	// This will not be needed after we finish MILAB-685: https://github.com/milaboratory/platforma/pull/8
+	//
+
+	if !is_undefined(self.rawInputs().filesToAdd) {
+		pureImplInputs.filesToAdd = self.rawInputs().filesToAdd
+	}
+	if !is_undefined(self.rawInputs().filesToWrite) {
+		pureImplInputs.filesToWrite = self.rawInputs().filesToWrite
+	}
+	if !is_undefined(self.rawInputs().assets) {
+		pureImplInputs.assets = self.rawInputs().assets
+	}
+	if !is_undefined(self.rawInputs().wdProcessors) {
+		pureImplInputs.wdProcessors = self.rawInputs().wdProcessors
+	}
+
+	pureImplInputs.settings = smart.createJsonResource(maps.clone({
+		dirsToCreate: inputs.dirsToCreate,
+		runOptions: inputs.runOptions,
+		filesToSave: inputs.filesToSave,
+		filesContentToSave: inputs.filesContentToSave,
+		fileSetsToSave: inputs.fileSetsToSave,
+		fileSetsContentToSave: inputs.fileSetsContentToSave,
+		filesToStream: inputs.filesToStream,
+		assetDescriptors: inputs.assetDescriptors,
+		assetRules: inputs.assetRules,
+		assetCache: inputs.assetCache
+	}, { removeUndefs: true }))
+
+	execImpl := render.createEphemeral(execImplTpl, pureImplInputs, metaImplInputs)
+
+	return {
+		files: execImpl.output("files"),
+		filesContent: execImpl.output("filesContent"),
+		fileSets: execImpl.output("fileSets"),
+		fileSetsContent: execImpl.output("fileSetsContent"),
+		fileStreams: execImpl.output("fileStreams"),
+		wdProcessors: execImpl.output("wdProcessors"),
+		progress: execImpl.output("progress")
+	}
 })

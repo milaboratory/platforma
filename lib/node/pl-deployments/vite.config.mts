@@ -1,4 +1,4 @@
-import { PlViteStdNode } from '@milaboratories/platforma-build-configs/vite';
+import { PlViteStdNode } from '@milaboratories/build-configs/vite';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 

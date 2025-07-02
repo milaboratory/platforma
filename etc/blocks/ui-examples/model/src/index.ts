@@ -7,8 +7,15 @@ import type {
   PlDataTableState,
   PlTableFiltersModel,
   PObjectId,
+  PlDataTableStateV2,
+  PlDataTableSheet,
 } from '@platforma-sdk/model';
-import { BlockModel, createPlDataTable, createPlDataTableV2, selectorsToPredicate } from '@platforma-sdk/model';
+import {
+  BlockModel,
+  createPlDataTable,
+  createPlDataTableStateV2,
+  createPlDataTableV2,
+} from '@platforma-sdk/model';
 import { z } from 'zod';
 
 export const ImportFileHandleSchema = z
@@ -50,8 +57,14 @@ export type TableState = {
   filterModel: PlTableFiltersModel;
 };
 
+export type TableStateV2 = {
+  tableState: PlDataTableStateV2;
+  filterModel: PlTableFiltersModel;
+};
+
 export type UiState = {
   dataTableState: TableState | undefined;
+  dataTableStateV2: TableStateV2;
   dynamicSections: {
     id: string;
     label: string;
@@ -62,7 +75,14 @@ export const platforma = BlockModel.create('Heavy')
 
   .withArgs<BlockArgs>({ numbers: [1, 2, 3, 4], tableNumRows: 100, handles: [] })
 
-  .withUiState<UiState>({ dataTableState: undefined, dynamicSections: [] })
+  .withUiState<UiState>({
+    dataTableState: undefined,
+    dataTableStateV2: {
+      tableState: createPlDataTableStateV2(),
+      filterModel: {},
+    },
+    dynamicSections: [],
+  })
 
   .argsValid((ctx) => {
     if (ctx.args.numbers.length === 5) {
@@ -136,62 +156,109 @@ export const platforma = BlockModel.create('Heavy')
     );
   })
 
+  .output('ptV2Sheets', (ctx) => {
+    const rowCount = ctx.args.tableNumRows ?? 0;
+    const sheets = [
+      {
+        axis: {
+          type: 'Int',
+          name: 'part',
+          annotations: {
+            'pl7.app/label': 'Partitioned axis',
+            'pl7.app/discreteValues': '[0,1]',
+          },
+        },
+        options: [
+          { value: 0, label: 'Partition 1' },
+          { value: 1, label: 'Partition 2' },
+        ],
+      } satisfies PlDataTableSheet,
+    ];
+    return rowCount > 0 ? sheets : [];
+  })
+
   .output('ptV2', (ctx) => {
-    if (!ctx.uiState?.dataTableState?.tableState.pTableParams?.filters) return undefined;
-
-    const data = times(ctx.args.tableNumRows ?? 0, (i) => {
-      const v = i + 1;
-      return {
-        key: [v, v + 0.1],
-        val: v.toString(),
-      };
-    });
-
+    const rowCount = ctx.args.tableNumRows ?? 0;
+    const makePartitionId = (rowCount: number, i: number) => Math.floor((2 * i) / (rowCount + 1));
+    const columns: PColumn<PColumnValues>[] = [
+      {
+        id: 'column1' as PObjectId,
+        spec: {
+          kind: 'PColumn',
+          valueType: 'String',
+          name: 'example',
+          annotations: {
+            'pl7.app/label': 'String column',
+            'pl7.app/discreteValues': '["up","down"]',
+          },
+          axesSpec: [
+            {
+              type: 'Int',
+              name: 'part',
+              annotations: {
+                'pl7.app/label': 'Partitioned axis',
+                'pl7.app/discreteValues': '[0,1]',
+              },
+            },
+            {
+              type: 'Int',
+              name: 'index',
+              annotations: {
+                'pl7.app/label': 'Int axis',
+              },
+            },
+          ],
+        },
+        data: times(rowCount, (i) => {
+          const v = i + 1;
+          return {
+            key: [makePartitionId(rowCount, v), v],
+            val: v.toString(),
+          };
+        }),
+      },
+      {
+        id: 'column2' as PObjectId,
+        spec: {
+          kind: 'PColumn',
+          valueType: 'Float',
+          name: 'value',
+          annotations: {
+            'pl7.app/label': 'Float column',
+            'pl7.app/table/visibility': 'optional',
+          },
+          axesSpec: [
+            {
+              type: 'Int',
+              name: 'part',
+              annotations: {
+                'pl7.app/label': 'Partitioned axis',
+                'pl7.app/discreteValues': '[0,1]',
+              },
+            },
+            {
+              type: 'Int',
+              name: 'index',
+              annotations: {
+                'pl7.app/label': 'Int axis',
+              },
+            },
+          ],
+        },
+        data: times(rowCount, (i) => {
+          const v = i + 1;
+          return {
+            key: [makePartitionId(rowCount, v), v],
+            val: v + 0.1,
+          };
+        }),
+      },
+    ];
     return createPlDataTableV2(
       ctx,
-      [
-        {
-          id: 'example' as PObjectId,
-          spec: {
-            kind: 'PColumn',
-            valueType: 'String',
-            name: 'example',
-            annotations: {
-              'pl7.app/label': 'String column',
-              'pl7.app/discreteValues': '["up","down"]',
-            },
-            axesSpec: [
-              {
-                type: 'Int',
-                name: 'index',
-                annotations: {
-                  'pl7.app/label': 'Int axis',
-                  'pl7.app/discreteValues': '[1,2]',
-                },
-              },
-              {
-                type: 'Float',
-                name: 'value',
-                annotations: {
-                  'pl7.app/label': 'Float axis',
-                  'pl7.app/table/visibility': 'optional',
-                },
-              },
-            ],
-          },
-          data,
-        } satisfies PColumn<PColumnValues>,
-      ],
-      selectorsToPredicate({
-        name: 'example',
-      }),
-      ctx.uiState.dataTableState.tableState,
-      {
-        filters: [
-          ...(ctx.uiState.dataTableState.tableState.pTableParams?.filters ?? []),
-          ...(ctx.uiState.dataTableState.filterModel?.filters ?? []),
-        ],
-      },
+      columns,
+      ctx.uiState.dataTableStateV2.tableState,
+      { filters: ctx.uiState.dataTableStateV2.filterModel?.filters ?? [] },
     );
   })
 

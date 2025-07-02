@@ -1,22 +1,22 @@
 import { StreamingClient } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/streamingapi/protocol.client';
-import type { GrpcTransport } from '@protobuf-ts/grpc-transport';
 import type { RpcOptions } from '@protobuf-ts/runtime-rpc';
 import type { MiLogger } from '@milaboratories/ts-helpers';
 import { notEmpty } from '@milaboratories/ts-helpers';
 import type { Dispatcher } from 'undici';
+import type { GrpcClientProvider, GrpcClientProviderFactory } from '@milaboratories/pl-client';
 import { addRTypeToMetadata } from '@milaboratories/pl-client';
 import type { StreamingAPI_Response } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/streamingapi/protocol';
 import type { ResourceInfo } from '@milaboratories/pl-tree';
 
 export class ClientLogs {
-  public readonly grpcClient: StreamingClient;
+  public readonly grpcClient: GrpcClientProvider<StreamingClient>;
 
   constructor(
-    public readonly grpcTransport: GrpcTransport,
+    grpcClientProviderFactory: GrpcClientProviderFactory,
     public readonly httpClient: Dispatcher,
     public readonly logger: MiLogger,
   ) {
-    this.grpcClient = new StreamingClient(this.grpcTransport);
+    this.grpcClient = grpcClientProviderFactory.createGrpcClientProvider((transport) => new StreamingClient(transport));
   }
 
   close() {}
@@ -32,7 +32,7 @@ export class ClientLogs {
     options?: RpcOptions,
   ): Promise<StreamingAPI_Response> {
     return (
-      await this.grpcClient.lastLines(
+      await this.grpcClient.get().lastLines(
         {
           resourceId: rId,
           lineCount: lineCount,
@@ -55,7 +55,7 @@ export class ClientLogs {
     options?: RpcOptions,
   ): Promise<StreamingAPI_Response> {
     return (
-      await this.grpcClient.readText(
+      await this.grpcClient.get().readText(
         {
           resourceId: notEmpty(rId),
           readLimit: BigInt(lineCount),

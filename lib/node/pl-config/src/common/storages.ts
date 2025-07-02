@@ -31,7 +31,68 @@ export interface RemoteMinioSettings {
   bucketName: string;
 }
 
-export function newRemoteConfigStorages(
+export function newRemoteConfigStoragesFS(
+  workdir: string,
+  localHTTPPort?: number,
+): StoragesSettings {
+  const workPath = upath.join(workdir, 'storages', 'work');
+  const mainPath = upath.join(workdir, 'storages', 'main');
+
+  if (!localHTTPPort) {
+    throw new Error('httpPort is required for remote FS storage config generation');
+  }
+
+  const main: StorageSettings = {
+    main: {
+      mode: 'primary',
+      downloadable: true,
+    },
+    storage: {
+      id: 'main',
+      type: 'FS',
+      indexCachePeriod: '0s',
+      rootPath: mainPath,
+      externalURL: `http://localhost:${localHTTPPort}`,
+      allowRemoteAccess: true,
+    },
+  };
+
+  const remoteRoot: StorageSettings = {
+    localPath: '',
+    main: {
+      mode: 'passive',
+      downloadable: true,
+    },
+    storage: {
+      id: 'remoteRoot',
+      type: 'FS',
+      indexCachePeriod: '1m',
+      rootPath: '',
+    },
+  };
+
+  const work: StorageSettings = {
+    main: {
+      mode: 'active',
+      downloadable: false,
+    },
+    storage: {
+      id: 'work',
+      type: 'FS',
+      indexCachePeriod: '1m',
+      rootPath: workPath,
+    },
+  };
+
+  return {
+    runner: workPath,
+    dirsToCreate: [workPath, mainPath],
+    storages: [remoteRoot, work, main],
+    mainStoragePath: mainPath,
+  };
+}
+
+export function newRemoteConfigStoragesMinio(
   workdir: string,
   minioOpts: RemoteMinioSettings,
 ): StoragesSettings {
@@ -72,6 +133,8 @@ export function newRemoteConfigStorages(
       type: 'FS',
       indexCachePeriod: '1m',
       rootPath: '',
+      allowRemoteAccess: false,
+      externalURL: '',
     },
   };
 
@@ -85,6 +148,8 @@ export function newRemoteConfigStorages(
       type: 'FS',
       indexCachePeriod: '1m',
       rootPath: workPath,
+      allowRemoteAccess: false,
+      externalURL: '',
     },
   };
 
@@ -96,8 +161,8 @@ export function newRemoteConfigStorages(
   };
 }
 
-export async function createDefaultLocalStorages(workdir: string): Promise<StoragesSettings> {
-  const storages = newDefaultLocalStorages(workdir);
+export async function createDefaultLocalStorages(workdir: string, externalURL: string): Promise<StoragesSettings> {
+  const storages = newDefaultLocalStorages(workdir, externalURL);
 
   for (const d of storages.dirsToCreate) {
     await fs.mkdir(d, { recursive: true });
@@ -106,7 +171,7 @@ export async function createDefaultLocalStorages(workdir: string): Promise<Stora
   return storages;
 }
 
-export function newDefaultLocalStorages(workdir: string): StoragesSettings {
+function newDefaultLocalStorages(workdir: string, externalURL: string): StoragesSettings {
   const workPath = upath.join(workdir, 'storages', 'work');
   const mainPath = upath.join(workdir, 'storages', 'main');
 
@@ -124,6 +189,8 @@ export function newDefaultLocalStorages(workdir: string): StoragesSettings {
       type: 'FS',
       indexCachePeriod: '1m',
       rootPath: '',
+      allowRemoteAccess: false,
+      externalURL: '',
     },
   };
 
@@ -138,6 +205,8 @@ export function newDefaultLocalStorages(workdir: string): StoragesSettings {
       type: 'FS',
       indexCachePeriod: '0m',
       rootPath: mainPath,
+      allowRemoteAccess: false, // should launch a http-server but leave upload / download URL with 'storage://' prefix
+      externalURL: externalURL,
     },
   };
 
@@ -151,6 +220,8 @@ export function newDefaultLocalStorages(workdir: string): StoragesSettings {
       type: 'FS',
       indexCachePeriod: '1m',
       rootPath: workPath,
+      allowRemoteAccess: false,
+      externalURL: '',
     },
   };
 

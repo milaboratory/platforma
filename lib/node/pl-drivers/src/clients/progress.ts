@@ -1,8 +1,7 @@
 import { ProgressClient } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/progressapi/protocol.client';
-import type { GrpcTransport } from '@protobuf-ts/grpc-transport';
 import type { RpcOptions } from '@protobuf-ts/runtime-rpc';
 import { Duration } from '../proto/google/protobuf/duration';
-import type { PlClient } from '@milaboratories/pl-client';
+import type { GrpcClientProvider, GrpcClientProviderFactory, PlClient } from '@milaboratories/pl-client';
 import { addRTypeToMetadata } from '@milaboratories/pl-client';
 import type { MiLogger } from '@milaboratories/ts-helpers';
 import { notEmpty } from '@milaboratories/ts-helpers';
@@ -21,22 +20,22 @@ export type ProgressStatus = {
 // When blobs are transfered, one can got a status of transfering
 // using this API.
 export class ClientProgress {
-  public readonly grpcClient: ProgressClient;
+  public readonly grpcClient: GrpcClientProvider<ProgressClient>;
 
   constructor(
-    public readonly grpcTransport: GrpcTransport,
+    grpcClientProviderFactory: GrpcClientProviderFactory,
     _: Dispatcher,
     public readonly client: PlClient,
     public readonly logger: MiLogger,
   ) {
-    this.grpcClient = new ProgressClient(this.grpcTransport);
+    this.grpcClient = grpcClientProviderFactory.createGrpcClientProvider((transport) => new ProgressClient(transport));
   }
 
   close() {}
 
   /** getStatus gets a progress status by given rId and rType. */
   async getStatus({ id, type }: ResourceInfo, options?: RpcOptions): Promise<ProgressStatus> {
-    const status = await this.grpcClient.getStatus(
+    const status = await this.grpcClient.get().getStatus(
       { resourceId: id },
       addRTypeToMetadata(type, options),
     );
@@ -68,7 +67,7 @@ export class ClientProgress {
     });
 
     try {
-      const { responses } = this.grpcClient.realtimeStatus(
+      const { responses } = this.grpcClient.get().realtimeStatus(
         {
           resourceId: id,
           updateInterval: updateInterval,

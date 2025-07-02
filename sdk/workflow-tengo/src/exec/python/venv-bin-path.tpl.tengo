@@ -12,6 +12,7 @@ path := import(":path")
 workdir := import(":workdir")
 validation := import(":validation")
 text := import("text")
+pkg := import(":exec.package")
 
 self.defineOutputs("binPath")
 self.defineOutputs("osPathDelimeter")
@@ -21,7 +22,11 @@ self.prepare(func(inputs){
 		pythonPackage: validation.reference,
 	    pythonDescriptor: desc.runEnvScheme
 	})
-   	wdBefore := workdir.builder().build()
+   	wdBefore := workdir.builder().
+		inQueue(pkg.DEFAULT_ALLOCATION_QUEUE).
+		cpu(pkg.DEFAULT_ALLOCATION_CPU).
+		mem(pkg.DEFAULT_ALLOCATION_RAM).
+		build()
 
 
     pythonPackage := inputs.pythonPackage
@@ -30,11 +35,13 @@ self.prepare(func(inputs){
     t := feats.commandExpressions ? constants.ARG_TYPE_EXPRESSION : constants.ARG_TYPE_VAR
 	pythonRule := feats.commandExpressions ? "python" : "{python}"
 
-	builder := runcmd.builder(wdBefore)
-	builder.
+	builder := runcmd.builder(wdBefore).
+		inQueue(pkg.DEFAULT_ALLOCATION_QUEUE).
+		cpu(pkg.DEFAULT_ALLOCATION_CPU).
+		mem(pkg.DEFAULT_ALLOCATION_RAM).
 		ref("python-run-environment", pythonPackage).
 		substitutionRule(pythonRule, "python-run-environment").
-		addToPath(t, path.join("{python}", pythonDescriptor.binDir))
+		addPathTyped(t, path.join("{python}", pythonDescriptor.binDir))
 
     getVenvBinPath := "import platform; print(platform.system().lower())"
 	builder.
@@ -42,7 +49,10 @@ self.prepare(func(inputs){
 		arg("-c").
 		arg(getVenvBinPath)
 
-	builder.inQueue(constants.LIGHT_QUEUE)
+	builder.inQueue(pkg.DEFAULT_ALLOCATION_QUEUE).
+		cpu(pkg.DEFAULT_ALLOCATION_CPU).
+		mem(pkg.DEFAULT_ALLOCATION_RAM)
+
 	stdoutName := "output.txt"
 	builder.stdout(stdoutName)
 	run := builder.build()

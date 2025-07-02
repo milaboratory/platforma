@@ -1,5 +1,25 @@
 # @milaboratories/pl-config
 
+## 1.6.0
+
+### Minor Changes
+
+- 5f10370: setup public URL for local storage in builtin mode
+
+## 1.5.0
+
+### Minor Changes
+
+- e2f106b: use local FS for SSH storage
+
+## 1.4.15
+
+### Patch Changes
+
+- 37800c5: Public tools packages
+- Updated dependencies [37800c5]
+  - @milaboratories/ts-helpers@1.4.1
+
 ## 1.4.14
 
 ### Patch Changes

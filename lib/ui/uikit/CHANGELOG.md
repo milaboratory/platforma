@@ -1,5 +1,66 @@
 # @milaboratories/uikit
 
+## 2.2.97
+
+### Patch Changes
+
+- e210414: Reimplement interface for PlElementList
+- Updated dependencies [e210414]
+  - @milaboratories/helpers@1.6.17
+
+## 2.2.96
+
+### Patch Changes
+
+- 8236387: Grouping in PlDropdown
+- Updated dependencies [8236387]
+  - @milaboratories/helpers@1.6.16
+  - @platforma-sdk/model@1.37.14
+
+## 2.2.95
+
+### Patch Changes
+
+- 70eff11: update plelementlist interface
+
+## 2.2.94
+
+### Patch Changes
+
+- Updated dependencies [10e5841]
+  - @platforma-sdk/model@1.37.11
+
+## 2.2.93
+
+### Patch Changes
+
+- c6b4dd2: Extend interface for PlElementList
+
+## 2.2.92
+
+### Patch Changes
+
+- 37800c5: Public tools packages
+
+## 2.2.91
+
+### Patch Changes
+
+- 2c3bb60: Developer build ui-examples don't required build/watch for deps
+
+## 2.2.90
+
+### Patch Changes
+
+- 6ffe944: PlAgDataTableV2 refactoring
+- 6ffe944: PlAgDataTable types fixed
+
+## 2.2.89
+
+### Patch Changes
+
+- 60540e8: Fix: return platforma variable declaration to global scope
+
 ## 2.2.88
 
 ### Patch Changes

@@ -1,5 +1,32 @@
 # @milaboratories/pl-local
 
+## 2.4.1
+
+### Patch Changes
+
+- Updated dependencies [5f10370]
+  - @milaboratories/pl-config@1.6.0
+
+## 2.4.0
+
+### Minor Changes
+
+- e2f106b: use local FS for SSH storage
+
+### Patch Changes
+
+- Updated dependencies [e2f106b]
+  - @milaboratories/pl-config@1.5.0
+
+## 2.3.3
+
+### Patch Changes
+
+- 37800c5: Public tools packages
+- Updated dependencies [37800c5]
+  - @milaboratories/ts-helpers@1.4.1
+  - @milaboratories/pl-config@1.4.15
+
 ## 2.3.2
 
 ### Patch Changes

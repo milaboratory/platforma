@@ -1,5 +1,20 @@
 # @milaboratories/pl-client
 
+## 2.11.2
+
+### Patch Changes
+
+- 37800c5: Public tools packages
+- Updated dependencies [37800c5]
+  - @milaboratories/ts-helpers@1.4.1
+  - @milaboratories/pl-http@1.1.4
+
+## 2.11.1
+
+### Patch Changes
+
+- 3d34876: Fix for closed channel error. All gRPC clients are now used via GrpcClientProvider to refresh underlying transport.
+
 ## 2.11.0
 
 ### Minor Changes

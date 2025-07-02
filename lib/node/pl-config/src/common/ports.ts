@@ -49,20 +49,25 @@ export type PlConfigPortsPickFree = {
 export type Ports = {
   /** Grpc, monitoring and debug ports of Pl Backend. */
   grpc: number;
+  http: number;
   monitoring: number;
   debug: number;
 
   // the following fields are not empty only when the client provided them at creation.
 
+  // @deprecated
   minio?: number;
+  // @deprecated
   minioConsole?: number;
 
+  httpLocal?: number;
   grpcLocal?: number;
   minioLocal?: number;
 };
 
 export type Endpoints = {
   grpc: string;
+  http: string;
   monitoring: string;
   debug: string;
 
@@ -71,20 +76,27 @@ export type Endpoints = {
   minio?: string;
   minioConsole?: string;
 
+  httpLocal?: string;
   grpcLocal?: string;
   minioLocal?: string;
+
 };
 
 export type PortsWithMinio = {
   grpc: number;
+  http: number;
+
   monitoring: number;
   debug: number;
 
+  // @deprecated
   minio: number;
+  // @deprecated
   minioConsole: number;
 
   grpcLocal: number;
   minioLocal: number;
+  httpLocal: number;
 };
 
 export type PlConfigPorts =
@@ -96,6 +108,7 @@ export type PlConfigPorts =
 async function getFreePorts(): Promise<Ports> {
   return {
     grpc: await getFreePort(),
+    http: await getFreePort(),
     monitoring: await getFreePort(),
     debug: await getFreePort(),
   };
@@ -124,8 +137,12 @@ function getRandomPorts(opts: PlConfigPortsRandom): Ports {
   while (grpc == debug || monitoring == debug) {
     debug = getPort();
   }
+  let http = getPort();
+  while (grpc == http || monitoring == http || debug == http) {
+    http = getPort();
+  }
 
-  return { debug, monitoring, grpc };
+  return { debug, monitoring, grpc, http };
 }
 
 /** Turns ports to endpoints by adding host */
@@ -137,10 +154,12 @@ export function withHost(host: string, localHost: string, ports: Ports): Endpoin
     grpc: endp(host, ports.grpc),
     monitoring: endp(host, ports.monitoring),
     debug: endp(host, ports.debug),
+    http: endp(host, ports.http),
 
     minio: ports.minio ? endp(host, ports.minio) : undefined,
     minioConsole: ports.minioConsole ? endp(host, ports.minioConsole) : undefined,
 
+    httpLocal: ports.httpLocal ? endp(localHost, ports.httpLocal) : undefined,
     grpcLocal: ports.grpcLocal ? endp(localHost, ports.grpcLocal) : undefined,
     minioLocal: ports.minioLocal ? endp(localHost, ports.minioLocal) : undefined,
   };
