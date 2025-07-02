@@ -46,8 +46,8 @@ function getStyleColor(prop: 'fill' | 'stroke', color: undefined | string | stri
 </script>
 
 <template>
-  <svg v-if="svgMeta" :style="[styleSize, styleColor, styleStroke]" :class="$style.svg">
-    <use :href="`#${svgMeta.spriteId}`" />
+  <svg :style="[styleSize, styleColor, styleStroke]" :class="$style.svg">
+    <use :href="`#${svgMeta?.spriteId}`" />
   </svg>
 </template>
 
