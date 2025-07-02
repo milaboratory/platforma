@@ -10,11 +10,12 @@ import {
   getLicenseValue,
 } from '../common/license';
 import { newHtpasswdFile } from '../common/auth';
-import { newRemoteConfigStoragesFS, newRemoteConfigStoragesMinio, StoragesSettings } from '../common/storages';
+import type { StoragesSettings } from '../common/storages';
+import { newRemoteConfigStoragesFS, newRemoteConfigStoragesMinio } from '../common/storages';
 import { packageLoaderConfig } from '../common/packageloader';
 import * as crypto from 'node:crypto';
 import { newDefaultPlConfig } from '../common/config';
-import { MiLogger } from '@milaboratories/ts-helpers';
+import type { MiLogger } from '@milaboratories/ts-helpers';
 
 export type SshPlConfigGeneratorOptions = {
   /** Logger for Middle-Layer */
@@ -109,14 +110,14 @@ export async function generateSshPlConfigs(
   let storages: StoragesSettings;
   if (opts.useMinio) {
     storages = newRemoteConfigStoragesMinio(opts.workingDir, {
-     endpoint: 'http://' + endpoints.minio!,
-     presignEndpoint: 'http://' + endpoints.minioLocal!,
+      endpoint: 'http://' + endpoints.minio!,
+      presignEndpoint: 'http://' + endpoints.minioLocal!,
       key: minioUser,
       secret: minioPassword,
       bucketName,
     });
   } else {
-    storages = newRemoteConfigStoragesFS(opts.workingDir, opts.portsMode.ports.httpLocal!);
+    storages = newRemoteConfigStoragesFS(opts.workingDir, opts.portsMode.ports.httpLocal);
   }
 
   const license = await getLicenseValue(opts.licenseMode);
