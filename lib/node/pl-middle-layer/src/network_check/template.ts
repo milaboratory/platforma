@@ -291,13 +291,13 @@ export async function downloadFromEveryStorage(
         SdkTemplates['check_network.create_workdir_from_storage'],
         true,
         (tx) => ({ file: tx.createValue(Pl.JsonObject, JSON.stringify((result.file as { handle: string }).handle)) }),
-        ['workdir'],
+        ['workdirTypeName'],
       );
 
       try {
-        const workdir = await getFieldValue(pl, outputs.workdir);
+        const workdirTypeName = JSON.parse(Buffer.from((await getFieldValue(pl, outputs.workdirTypeName)).data!).toString()) as string;
 
-        if (workdir.type.name.startsWith('WorkingDirectory')) {
+        if (workdirTypeName?.startsWith('WorkingDirectory')) {
           results[storage.name] = {
             status: 'ok',
             message: `Workdir creation succeeded, size of file: ${result.file?.size}, `
@@ -306,7 +306,7 @@ export async function downloadFromEveryStorage(
         } else {
           results[storage.name] = {
             status: 'failed',
-            message: `Workdir creation failed: ${workdir.type.name}, size of file: ${result.file?.size}, `
+            message: `Workdir creation failed: ${workdirTypeName}, size of file: ${result.file?.size}, `
               + `checked ${result.nCheckedFiles} files, did ${result.nLsRequests} ls requests`,
           };
         }
