@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.37.15
+
+### Patch Changes
+
+- de26a80: PlAgDataTableV2: make overlay text props reactive
+
 ## 1.37.14
 
 ### Patch Changes
