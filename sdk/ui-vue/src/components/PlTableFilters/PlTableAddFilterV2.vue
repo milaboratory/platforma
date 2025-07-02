@@ -35,7 +35,8 @@ const filterOptions = computed<ListOption<number>[]>(() => {
         value: i,
         text: s.label,
       };
-    });
+    })
+    .filter((o) => props.filters[o.value].filter === null);
 });
 
 const newFilterIdx = ref<number>();

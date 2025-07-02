@@ -30,6 +30,7 @@ import {
 import { useFilters } from './filters-state';
 import PlTableAddFilterV2 from './PlTableAddFilterV2.vue';
 import PlTableFilterEntryV2 from './PlTableFilterEntryV2.vue';
+import { isJsonEqual } from '@milaboratories/helpers';
 
 const state = defineModel<PlDataTableFilterState[]>({
   default: [],
@@ -84,13 +85,18 @@ const canAddFilter = computed<boolean>(() => filters.value.some((s) => !s.filter
 const showAddFilter = ref(false);
 
 const hasDefaults = computed<boolean>(() => filters.value.some((s) => s.defaultFilter));
+const canResetToDefaults = computed<boolean>(() => {
+  return filters.value
+    .some((s) => (!s.defaultFilter && s.filter) || (s.defaultFilter
+      && (s.filter?.disabled === true || !isJsonEqual(s.filter?.value, s.defaultFilter))));
+});
 const resetToDefaults = () => {
   filters.value.forEach((s) => {
     if (s.defaultFilter) {
       s.filter = {
         value: s.defaultFilter,
         disabled: false,
-        open: true,
+        open: false,
       };
     } else {
       s.filter = null;
@@ -191,6 +197,7 @@ const resetToDefaults = () => {
 
     <PlBtnSecondary
       v-if="hasDefaults"
+      :disabled="!canResetToDefaults"
       @click.stop="resetToDefaults"
     >
       Reset to defaults

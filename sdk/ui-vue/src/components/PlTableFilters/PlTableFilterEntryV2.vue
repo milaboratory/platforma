@@ -4,8 +4,9 @@ import {
   PlTextField,
   PlToggleSwitch,
   Slider,
-  PlMaskIcon24,
+  PlBtnGhost,
 } from '@milaboratories/uikit';
+import { isJsonEqual } from '@milaboratories/helpers';
 import {
   changeFilter,
   parseNumber,
@@ -157,37 +158,13 @@ watchEffect(() => {
     </template>
 
     <div v-if="entry.defaultFilter" class="d-flex justify-center">
-      <div
-        :class="[
-          $style['revert-btn'],
-          'text-s-btn',
-          'd-flex',
-          'align-center',
-          'gap-8',
-          { disabled: entry.filter.disabled },
-        ]"
+      <PlBtnGhost
+        :disabled="entry.filter.disabled || isJsonEqual(entry.filter.value, entry.defaultFilter)"
+        icon="reverse"
         @click="entry.filter.value = entry.defaultFilter"
       >
         Revert Settings to Default
-        <PlMaskIcon24 name="reverse" />
-      </div>
+      </PlBtnGhost>
     </div>
   </div>
 </template>
-
-<style module>
-.revert-btn {
-    padding: 8px 14px;
-    border-radius: 6px;
-    cursor: pointer;
-}
-
-.revert-btn:hover {
-    background-color: var(--btn-sec-hover-grey);
-}
-
-.revert-btn.disabled {
-    opacity: 0.3;
-    pointer-events: none;
-}
-</style>

@@ -6,6 +6,9 @@ import {
   toValue,
 } from 'vue';
 import {
+  isJsonEqual,
+} from '@milaboratories/helpers';
+import {
   PlAgDataTableToolsPanel,
   PlBlockPage,
   PlAgDataTableV2,
@@ -17,8 +20,9 @@ import {
 import {
   useApp,
 } from '../app';
-import type {
-  PlSelectionModel,
+import {
+  matchAxisId,
+  type PlSelectionModel,
 } from '@platforma-sdk/model';
 import type {
   ICellRendererParams,
@@ -39,7 +43,31 @@ const tableSettings = usePlDataTableSettingsV2({
   model: () => app.model.outputs.ptV2,
   sheets: () => app.model.outputs.ptV2Sheets,
   filtersConfig: ({ sourceId, column }) => {
-    const _ = { sourceId, column };
+    if (isJsonEqual(sourceId, sources[0].value)) {
+      if (column.id === 'column1') {
+        return {
+          default: {
+            type: 'string_contains',
+            reference: '1',
+          },
+        };
+      }
+      if (column.id === 'column2') {
+        return {
+          options: ['isNotNA', 'isNA'],
+        };
+      }
+    }
+    if (isJsonEqual(sourceId, sources[1].value)) {
+      if (column.type === 'axis' && matchAxisId({ type: 'Int', name: 'index' }, column.id)) {
+        return {
+          default: {
+            type: 'number_lessThanOrEqualTo',
+            reference: 10,
+          },
+        };
+      }
+    }
     return {};
   },
 });

@@ -1,5 +1,4 @@
 import {
-  canonicalizeJson,
   type JsonCompatible,
   type AxisId,
   type CanonicalizedJson,
@@ -13,12 +12,16 @@ import {
   type PTableColumnSpec,
   type PTableKey,
   type PTableValue,
-  parseJson,
 } from '@platforma-sdk/model';
 import type { PTableHidden } from './sources/common';
 import type { ComputedRef, MaybeRefOrGetter } from 'vue';
 import { computed, toValue } from 'vue';
 import canonicalize from 'canonicalize';
+
+export type PlDataTableFilterConfig = {
+  options?: PlTableFilterType[];
+  default?: PlTableFilter;
+};
 
 /** Data table V2 settings */
 export type PlDataTableSettingsV2 =
@@ -37,34 +40,50 @@ export type PlDataTableSettingsV2 =
   filtersConfig?: (info: {
     sourceId: string;
     column: PTableColumnSpec;
-  }) => {
-    options?: PlTableFilterType[];
-    default?: PlTableFilter;
-  };
+  }) => PlDataTableFilterConfig;
 };
 
 type OptionsAdvanced<T> = {
+  /**
+   * Block property (such as inputAnchor) used to produce the data source.
+   * Mandatory for cases when the table can change without block run.
+   * Skip when the table is changed only after block run.
+   * Ask developers for help if you don't know what to set here.
+   */
   sourceId: MaybeRefOrGetter<T | undefined>;
+  /** Block output created by `createPlDataTableV2` */
   model: MaybeRefOrGetter<PlDataTableModel | undefined>;
+  /**
+   * Sheets for partitioned data sources.
+   * Do not set if data source is never partitioned.
+   */
   sheets?: MaybeRefOrGetter<PlDataTableSheet[] | undefined>;
+  /**
+   * Callback configuring filters for the table.
+   * If not provided, filtering will be disabled.
+   * Parameter `sourceId` should be compared using `isJsonEqual` from `@milaboratories/helpers`.
+   */
   filtersConfig?: (info: {
-    sourceId: T;
+    sourceId: JsonCompatible<T>;
     column: PTableColumnSpec;
-  }) => {
-    options?: PlTableFilterType[];
-    default?: PlTableFilter;
-  };
+  }) => PlDataTableFilterConfig;
 };
 
 type OptionsSimple = {
+  /** Block output created by `createPlDataTableV2` */
   model: MaybeRefOrGetter<PlDataTableModel | undefined>;
+  /**
+   * Sheets for partitioned data sources.
+   * Do not set if data source is never partitioned.
+   */
   sheets?: MaybeRefOrGetter<PlDataTableSheet[] | undefined>;
+  /**
+   * Callback configuring filters for the table.
+   * If not provided, filtering will be disabled.
+   */
   filtersConfig?: (info: {
     column: PTableColumnSpec;
-  }) => {
-    options?: PlTableFilterType[];
-    default?: PlTableFilter;
-  };
+  }) => PlDataTableFilterConfig;
 };
 
 export function usePlDataTableSettingsV2<T>(options: OptionsAdvanced<T>): ComputedRef<PlDataTableSettingsV2>;
@@ -80,7 +99,7 @@ export function usePlDataTableSettingsV2<T>(options: OptionsAdvanced<T> | Option
         column: PTableColumnSpec;
       }) => {
         return fc({
-          sourceId: JSON.parse(sourceId) as T,
+          sourceId: JSON.parse(sourceId) as JsonCompatible<T>,
           column,
         });
       }
