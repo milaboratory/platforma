@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.37.18
+
+### Patch Changes
+
+- d60b0fe: Chore: fix linter errors
+
 ## 1.37.14
 
 ### Patch Changes

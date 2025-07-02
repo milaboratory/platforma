@@ -1,5 +1,13 @@
 # @milaboratories/uikit
 
+## 2.2.98
+
+### Patch Changes
+
+- d60b0fe: Chore: fix linter errors
+- Updated dependencies [d60b0fe]
+  - @platforma-sdk/model@1.37.18
+
 ## 2.2.97
 
 ### Patch Changes

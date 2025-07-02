@@ -1,5 +1,14 @@
 # @platforma-sdk/ui-vue
 
+## 1.37.18
+
+### Patch Changes
+
+- d60b0fe: Chore: fix linter errors
+- Updated dependencies [d60b0fe]
+  - @milaboratories/uikit@2.2.98
+  - @platforma-sdk/model@1.37.18
+
 ## 1.37.17
 
 ### Patch Changes
