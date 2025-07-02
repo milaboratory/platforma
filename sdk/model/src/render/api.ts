@@ -576,39 +576,15 @@ export class RenderCtx<Args, UiState> {
   }
 
   private patchPTableDef(def: PTableDef<PColumn<PColumnDataUniversal>>): PTableDef<PColumn<PColumnDataUniversal>> {
-    type OldDef = Omit<PTableDef<PColumn<PColumnDataUniversal>>, 'partitionFilters'>;
-    if (this.ctx.featureFlags?.pTablePartitionFiltersSupport === true) {
-      // New desktop
-      if ('partitionFilters' in (def as OldDef)) {
-        // New block
-        // Return as is
-        return def;
-      } else {
-        // Old block
-        // Move all filters to partitionFilters as new desktop first performs join with partition filters
-        // and without them filled it will try to join everything, which will be veeeeeery slow
-        return {
-          ...def,
-          partitionFilters: def.filters,
-          filters: [],
-        };
-      }
-    } else {
-      // Old desktop
-      if ('partitionFilters' in (def as OldDef)) {
-        // New block
-        // Move all partition filters to filters as old desktop doesn't support partition filters
-        return {
-          ...def,
-          filters: [...def.partitionFilters, ...def.filters],
-          partitionFilters: [],
-        };
-      } else {
-        // Old block
-        // Return as is
-        return def;
-      }
+    if (!this.ctx.featureFlags?.pTablePartitionFiltersSupport) {
+      // For old desktop move all partition filters to filters field as it doesn't read partitionFilters field
+      return {
+        ...def,
+        partitionFilters: [],
+        filters: [...def.partitionFilters, ...def.filters],
+      };
     }
+    return def;
   }
 
   // TODO remove all non-PColumn fields
@@ -644,9 +620,10 @@ export class RenderCtx<Args, UiState> {
           type: 'full',
           entries: def.columns.map((c) => ({ type: 'column', column: c })),
         },
-        filters: def.filters ?? [],
+        partitionFilters: def.filters ?? [],
+        filters: [],
         sorting: def.sorting ?? [],
-      } /* Imaginary old block */ as PTableDef<PColumn<PColumnDataUniversal>>);
+      });
     } else {
       rawDef = this.patchPTableDef(def);
     }

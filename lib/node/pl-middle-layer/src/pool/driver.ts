@@ -81,6 +81,20 @@ function migrateFilters(filters: PTableRecordFilter[]): PTableRecordFilter[] {
   return filtersV2;
 }
 
+function migratePTableDef(
+  def: PTableDef<PColumn<PlTreeNodeAccessor | PColumnValues | DataInfo<PlTreeNodeAccessor>>>,
+): PTableDef<PColumn<PlTreeNodeAccessor | PColumnValues | DataInfo<PlTreeNodeAccessor>>> {
+  if (!('partitionFilters' in (def as Omit<typeof def, 'partitionFilters'>))) {
+    // For old blocks make all filters partition filters
+    return {
+      ...def,
+      partitionFilters: def.filters,
+      filters: [],
+    };
+  }
+  return def;
+}
+
 const bigintReplacer = (_: string, v: unknown) => (typeof v === 'bigint' ? v.toString() : v);
 
 class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
@@ -370,9 +384,10 @@ export class PFrameDriver implements InternalPFrameDriver {
   }
 
   public createPTable(
-    def: PTableDef<PColumn<PlTreeNodeAccessor | PColumnValues | DataInfo<PlTreeNodeAccessor>>>,
+    rawDef: PTableDef<PColumn<PlTreeNodeAccessor | PColumnValues | DataInfo<PlTreeNodeAccessor>>>,
     ctx: ComputableCtx,
   ): PTableHandle {
+    const def = migratePTableDef(rawDef);
     const pFrameHandle = this.createPFrame(extractAllColumns(def.src), ctx);
     const defIds = mapPTableDef(def, (c) => c.id);
     const res = this.pTables.acquire({ def: defIds, pFrameHandle });
