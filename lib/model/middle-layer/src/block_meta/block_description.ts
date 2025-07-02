@@ -24,7 +24,7 @@ export function CreateBlockPackDescriptionSchema<
     id: BlockPackId,
     components,
     meta,
-    featureFlags: FeatureFlags
+    featureFlags: FeatureFlags.optional()
   });
 }
 
