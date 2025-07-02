@@ -191,12 +191,12 @@ export type PlControllerRunnerQueueConfig = {
   maxConcurrency?: number;
   memorySoftLimit?: string;
   memoryHardLimit?: string;
-}
+};
 
 export type PlControllerRunnerResourcesConfig = {
   cpu?: number;
   memory?: string;
-}
+};
 
 export type PlControllerPackageLoaderSettings = {
   packagesRoot: string;

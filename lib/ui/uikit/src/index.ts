@@ -1,5 +1,7 @@
 import './assets/ui.scss';
 
+const x = 10;
+
 // @TODO review
 import * as DataTable from './components/DataTable';
 import ThemeSwitcher from './components/ThemeSwitcher.vue';

@@ -307,7 +307,7 @@ export class PlTreeResource implements ResourceDataWithFinalState {
   public getKeyValueAsJson<T = unknown>(watcher: Watcher, key: string): T | undefined {
     const bytes = this.getKeyValue(watcher, key);
     if (bytes === undefined) return undefined;
-    return cachedDeserialize(bytes) as T;
+    return cachedDeserialize(bytes);
   }
 
   public getDataAsString(): string | undefined {
