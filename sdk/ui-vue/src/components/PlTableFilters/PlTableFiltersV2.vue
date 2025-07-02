@@ -22,7 +22,7 @@ import {
   PlBtnSecondary,
   PlMaskIcon16,
   PlMaskIcon24,
-  // PlElementList,
+  PlElementList,
 } from '@milaboratories/uikit';
 import {
   useDataTableToolsPanelTarget,
@@ -103,17 +103,7 @@ const resetToDefaults = () => {
   });
 };
 
-// const items = computed(() => filters.value.filter((s) => s.filter !== null));
-// const toggledItems = computed({
-//   get: () => new Set(items.value.filter((s) => s.filter?.disabled).map((s) => canonicalizeJson<PTableColumnId>(s.id))),
-//   set: (keys) => {
-//     items.value.forEach((s) => {
-//       if (s.filter) {
-//         s.filter.disabled = keys.has(canonicalizeJson<PTableColumnId>(s.id));
-//       }
-//     });
-//   },
-// });
+const items = computed(() => filters.value.filter((s) => s.filter !== null));
 </script>
 
 <template>
@@ -129,58 +119,40 @@ const resetToDefaults = () => {
   <PlSlideModal v-model="showManager" :close-on-outside-click="false">
     <template #title>Manage Filters</template>
 
-    <!-- <PlElementList
-      v-model:items="items"
-      v-model:toggled-items="toggledItems"
-      :enable-dragging="false"
-      :get-item-key="(item) => canonicalizeJson<PTableColumnId>(item.id)"
-    >
-      <template #item-title="{ item }">
-        {{ item.label }}
-      </template>
-      <template #item-content="{ index }">
-        <PlTableFilterEntryV2 v-model="filters.value[index]" />
-      </template>
-    </PlElementList> -->
-
-    <div ref="filterManager" :class="[$style['filter-manager'], 'd-flex', 'flex-column', 'gap-6']">
-      <template v-for="(entry, index) in filters.value" :key="canonicalizeJson<PTableColumnId>(entry.id)">
-        <div
-          v-if="entry.filter"
-          :class="[$style['filter'], { open: entry.filter.open, disabled: entry.filter.disabled }]"
-        >
-          <div
-            :class="[$style['header'], 'd-flex', 'align-center', 'gap-8']"
-            @click="entry.filter.open = !entry.filter.open"
-          >
-            <div :class="$style['expand-icon']">
-              <PlMaskIcon16 name="chevron-right" />
-            </div>
-
-            <div :class="[$style['title'], 'flex-grow-1', 'text-s-btn']">
-              {{ entry.label }}
-            </div>
-
-            <div :class="[$style['actions'], 'd-flex', 'gap-12']">
-              <div :class="$style['toggle']" @click.stop="entry.filter.disabled = !entry.filter.disabled">
-                <PlMaskIcon24 :name="entry.filter.disabled ? 'view-hide' : 'view-show'" />
-              </div>
-
-              <div :class="$style['delete']" @click.stop="entry.filter = null">
-                <PlMaskIcon24 name="close" />
-              </div>
-            </div>
-          </div>
-
-          <div :class="[$style['content'], 'd-flex', 'gap-24', 'p-24', 'flex-column']">
-            <PlTableFilterEntryV2 v-model="filters.value[index]" />
-          </div>
-        </div>
-      </template>
+    <div ref="filterManager" :class="$style['filter-manager']">
+      <PlElementList
+        v-model:items="items"
+        :on-expand="(item) => {
+          if (item.filter) {
+            item.filter.open = !item.filter.open;
+          }
+        }"
+        :is-expanded="(item) => item.filter?.open ?? false"
+        :on-toggle="(item) => {
+          if (item.filter) {
+            item.filter.disabled = !item.filter.disabled;
+          }
+        }"
+        :is-toggled="(item) => item.filter?.disabled ?? false"
+        :on-remove="(item) => {
+          if (item.filter) {
+            item.filter = null;
+          }
+        }"
+        :get-item-key="(item) => canonicalizeJson<PTableColumnId>(item.id)"
+        disable-dragging
+      >
+        <template #item-title="{ item }">
+          {{ item.label }}
+        </template>
+        <template #item-content="{ index }">
+          <PlTableFilterEntryV2 v-model="filters.value[index]" />
+        </template>
+      </PlElementList>
 
       <div
         v-if="filters.value.length"
-        :class="[$style['add-action-wrapper'], { 'pt-24': scrollIsActive }, 'd-flex', 'gap-24', 'flex-column']"
+        :class="$style['add-action-wrapper']"
       >
         <div
           :disabled="canAddFilter"
@@ -190,7 +162,7 @@ const resetToDefaults = () => {
           <div :class="$style['add-btn-icon']">
             <PlMaskIcon16 name="add" />
           </div>
-          <div :class="[$style['add-btn-title'], 'text-s-btn']">Add Filter</div>
+          <div :class="$style['add-btn-title']">Add Filter</div>
         </div>
 
         <PlBtnSecondary
@@ -215,10 +187,9 @@ const resetToDefaults = () => {
 <style lang="scss" module>
 .filter-manager {
     --expand-icon-rotation: rotate(0deg);
-}
-
-.filter-manager .text-s {
-    font-weight: 600;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
 }
 
 .add-action-wrapper {
@@ -226,6 +197,9 @@ const resetToDefaults = () => {
     bottom: -16px;
     background-color: var(--bg-elevated-01);
     transition: all .15s ease-in-out;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
 }
 
 .add-btn {
@@ -250,21 +224,7 @@ const resetToDefaults = () => {
 
 .add-btn-title {
     flex-grow: 1;
-}
-
-.header {
-    height: 40px;
-    padding-left: 12px;
-    padding-right: 12px;
-    cursor: pointer;
-}
-
-.content {
-    max-height: 0;
-    overflow: hidden;
-    transition: all .2s ease-in-out;
-    padding-top: 0;
-    padding-bottom: 0;
+    font-weight: 600;
 }
 
 .expand-icon {
@@ -319,15 +279,5 @@ const resetToDefaults = () => {
 .filter:global(.open) {
     background-color: var(--bg-elevated-01);
     --expand-icon-rotation: rotate(90deg);
-}
-
-.filter:global(.open) .content {
-    max-height: 1600px;
-    padding: 24px;
-    transition: all .2s ease-in-out;
-}
-
-.filter:global(.open) .header {
-    background: linear-gradient(180deg, #EBFFEB 0%, #FFF 100%);
 }
 </style>
