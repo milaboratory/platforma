@@ -29,13 +29,13 @@ _WD_FILL_FIELD_WORKDIR_OUT  := "workdirOut"
  * Create empry working directory for given allocation. This means, the WD would actually be created only
  * when allocation is ready for usage.
  *
- * @param allocation: smart.reference - a reference to storage space allocation.
+ * @param allocationRef: smart.reference - a reference to storage space allocation.
  *                                      It is usually obtained from StorageSpaceRequest
  *                                      (see exec.limits.storageSpaceRequestBuilder)
  */
-createV2 := func(allocation) {
+createV2 := func(allocationRef) {
 	wdCreate := smart.ephemeralBuilder(constants.RTYPE_WORKDIR_CREATE_2).lockAndBuild()
-	wdCreate.getField(_WD_CREATE_FIELD_ALLOCATION).set(allocation)
+	wdCreate.getField(_WD_CREATE_FIELD_ALLOCATION).set(allocationRef)
 
 	return wdCreate.getField(_WD_CREATE_FIELD_WORKDIR)
 }
@@ -111,7 +111,7 @@ _fill := func() {
 	wd := smart.ephemeralBuilder(constants.RTYPE_WORKDIR_FILL)
 
 	/** @type reference - space allocation to be used for WD */
-	_allocation := undefined
+	_allocationRef := undefined
 	blobs := {}
 	files := {}
 	zipExtractions := {}
@@ -137,11 +137,11 @@ _fill := func() {
 		/**
 		 * Use given storage allocation for working directory.
 		 *
-		 * @param allocation: reference
+		 * @param ref: reference
 		 */
-		allocation: func(allocation) {
-			validation.assertType(allocation, validation.reference, "workdir.builder: allocation should be a valid reference")
-			_allocation = allocation
+		allocation: func(ref) {
+			validation.assertType(ref, validation.reference, "workdir.builder: allocation should be a valid reference")
+			_allocationRef = ref
 			return self
 		},
 
@@ -303,18 +303,18 @@ _fill := func() {
 		 * @return wd: reference - a reference to the filled workdir.
 		 */
 		build: func() {
-			ll.assert(!is_undefined(_allocation) || !is_undefined(queue),
+			ll.assert(!is_undefined(_allocationRef) || !is_undefined(queue),
 				"workdir.builder: either allocation or queue must be provided")
-			ll.assert(is_undefined(_allocation) || is_undefined(queue),
+			ll.assert(is_undefined(_allocationRef) || is_undefined(queue),
 				"workdir.builder: allocation and queue must not be set at the same time")
 
-			if !is_undefined(_allocation) {
+			if !is_undefined(_allocationRef) {
 				ll.assert(is_undefined(cpu) && is_undefined(ram),
 					"workdir.builder: cpu and ram cannot be set when allocation is provided")
 			}
 
-			allocation := _allocation
-			if is_undefined(allocation) {
+			allocationRef := _allocationRef
+			if is_undefined(allocationRef) {
 				quotaBuilder := limits.quotaBuilder()
 				if !is_undefined(cpu) {
 					quotaBuilder.cpu(cpu)
@@ -333,10 +333,10 @@ _fill := func() {
 					quota(quotaBuilder.build()).
 					build()
 
-				allocation = storageSpaceRef.allocation
+				allocationRef = storageSpaceRef.allocation
 			}
 
-			emptyWorkdir := createV2(allocation)
+			emptyWorkdir := createV2(allocationRef)
 
 			wd.getField(_WD_FILL_FIELD_WORKDIR_IN).set(emptyWorkdir)
 
