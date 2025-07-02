@@ -16,6 +16,10 @@ const downloadDestination = upath.resolve(__dirname, '..', '..', '..', 'test-ass
 
 async function cleanUp() {
   const version = getDefaultPlVersion();
+  // FIXME: I'm not sure why sshPl is undefined. Tracked in
+  // https://www.notion.so/mixcr/ml-ssh-Test-crash-2023a83ff4af809f90cecdc57b3446d4
+  // It happens when the docker image wasn't deleted from a previous run.
+  // Try `pnpm run cleanup-docker` (in pl-deployments package.json) and run tests again.
   const arch = await sshPl.getArch();
   const tgzName = 'supervisord-0.7.3';
 
