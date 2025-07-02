@@ -49,11 +49,11 @@ _createRvenv = func(operationMode, swPackage, rPackage, rDescriptor, toolset, de
 }
 
 _toolsetRenvCreate = func(operationMode, swPackage, rPackage, rDescriptor, dependencies) {
-	wdBefore := workdir.builder()
-		.inQueue(pkg.DEFAULT_ALLOCATION_QUEUE)
-		.cpu(pkg.DEFAULT_ALLOCATION_CPU)
-		.mem(pkg.DEFAULT_ALLOCATION_RAM)
-		.build()
+	wdBefore := workdir.builder().
+		inQueue(pkg.DEFAULT_ALLOCATION_QUEUE).
+		cpu(pkg.DEFAULT_ALLOCATION_CPU).
+		mem(pkg.DEFAULT_ALLOCATION_RAM).
+		build()
 
 	//
 	// Activate run environment in current working directory
