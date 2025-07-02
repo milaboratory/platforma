@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.4.24
+
+### Patch Changes
+
+- e210414: Reimplement interface for PlElementList
+
 ## 1.4.23
 
 ### Patch Changes

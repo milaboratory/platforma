@@ -1,5 +1,13 @@
 # @milaboratories/uikit
 
+## 2.2.97
+
+### Patch Changes
+
+- e210414: Reimplement interface for PlElementList
+- Updated dependencies [e210414]
+  - @milaboratories/helpers@1.6.17
+
 ## 2.2.96
 
 ### Patch Changes
