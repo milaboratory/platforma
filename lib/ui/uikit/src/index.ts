@@ -1,6 +1,6 @@
 import './assets/ui.scss';
 
-const x = 10;
+const x = 12;
 
 // @TODO review
 import * as DataTable from './components/DataTable';
