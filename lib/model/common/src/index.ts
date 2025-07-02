@@ -1,4 +1,4 @@
-export * from './block';
+export * from './bmodel';
 export * from './block_state';
 export * from './utag';
 export * from './drivers';
@@ -12,3 +12,4 @@ export * from './plid';
 export * from './json';
 export * from './errors';
 export * from './flags';
+export * from './bmodel';

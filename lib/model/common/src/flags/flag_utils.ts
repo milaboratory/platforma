@@ -74,7 +74,7 @@ export class RuntimeCapabilities {
       if (key.startsWith('requires')) {
         if (value === undefined) continue;
         const supportedValues = this.supportedRequirements.get(key as `requires${string}`);
-        if (supportedValues !== undefined && !supportedValues.has(value as number | boolean)) {
+        if (supportedValues === undefined || !supportedValues.has(value as number | boolean)) {
           incompatibleFlags.set(key as `requires${string}`, value as number | boolean);
         }
       }

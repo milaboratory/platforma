@@ -44,7 +44,6 @@ import type { ResultPool } from '../pool/result_pool';
 import type { JsExecutionContext } from './context';
 import type { VmFunctionImplementation } from 'quickjs-emscripten';
 import { Scope, type QuickJSHandle } from 'quickjs-emscripten';
-import semver from 'semver';
 
 function bytesToBase64(data: Uint8Array | undefined): string | undefined {
   return data !== undefined ? Buffer.from(data).toString('base64') : undefined;

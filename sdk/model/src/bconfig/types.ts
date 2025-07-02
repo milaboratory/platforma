@@ -1,17 +1,5 @@
-import type { BlockCodeFeatureFlags } from '@milaboratories/pl-model-common';
 import type { TypedConfig } from '../config';
 import type { ConfigRenderLambda } from './lambdas';
-
-export type Code = {
-  type: 'plain';
-  content: string;
-};
-
-export type BlockCodeWithInfo = {
-  readonly code: Code;
-  readonly sdkVersion: string;
-  readonly featureFlags: BlockCodeFeatureFlags | undefined;
-};
 
 export function isConfigLambda(
   cfgOrFh: TypedConfigOrConfigLambda,

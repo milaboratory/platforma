@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { base32Encode } from './base32-encode';
+import { base32Encode } from './base32_encode';
 
 /** Number of raw bytes in the PlId. */
 export const PlIdBytes = 15;

@@ -2773,6 +2773,9 @@ importers:
       '@milaboratories/pl-http':
         specifier: workspace:^
         version: link:../../lib/node/pl-http
+      '@milaboratories/pl-model-common':
+        specifier: workspace:^
+        version: link:../../lib/model/common
       '@milaboratories/pl-model-middle-layer':
         specifier: workspace:^
         version: link:../../lib/model/middle-layer

@@ -1,4 +1,4 @@
-import type { BlockRenderingMode, BlockSection, ValueOrErrors, AnyFunction, PlRef, BlockCodeKnownFeatureFlags } from '@milaboratories/pl-model-common';
+import type { BlockRenderingMode, BlockSection, ValueOrErrors, AnyFunction, PlRef, BlockCodeKnownFeatureFlags, BlockConfigContainer } from '@milaboratories/pl-model-common';
 import type { Checked, ConfigResult, TypedConfig } from './config';
 import { getImmediate } from './config';
 import { getPlatformaInstance, isInUI, tryRegisterCallback } from './internal';
@@ -13,7 +13,6 @@ import type {
   DeriveHref,
   ResolveCfgType,
   ExtractFunctionHandleReturn,
-  BlockConfigContainer,
   ConfigRenderLambdaFlags,
 } from './bconfig';
 import {
