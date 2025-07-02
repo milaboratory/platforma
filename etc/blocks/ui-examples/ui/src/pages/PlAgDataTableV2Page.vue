@@ -34,11 +34,14 @@ const sources = [...new Array(10)].map((_, i) => {
 });
 const activeSource = ref(sources[0].value);
 
-const tableSettings = usePlDataTableSettingsV2<typeof activeSource.value>({
+const tableSettings = usePlDataTableSettingsV2({
   sourceId: () => activeSource.value,
   model: () => app.model.outputs.ptV2,
   sheets: () => app.model.outputs.ptV2Sheets,
-  filtersConfig: ({ sourceId: _sourceId, column: _column }) => ({}),
+  filtersConfig: ({ sourceId, column }) => {
+    const _ = { sourceId, column };
+    return {};
+  },
 });
 
 const verbose = ref(false);

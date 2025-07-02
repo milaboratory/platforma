@@ -18,6 +18,7 @@ import {
 import type { PTableHidden } from './sources/common';
 import type { ComputedRef, MaybeRefOrGetter } from 'vue';
 import { computed, toValue } from 'vue';
+import canonicalize from 'canonicalize';
 
 /** Data table V2 settings */
 export type PlDataTableSettingsV2 =
@@ -42,51 +43,8 @@ export type PlDataTableSettingsV2 =
   };
 };
 
-export function usePlDataTableSettingsV2({
-  /** Block output created by `createPlDataTableV2` */
-  model,
-  /**
-   * Sheets for partitioned data sources.
-   * Do not set if data source is never partitioned.
-   */
-  sheets,
-  /**
-   * Callback configuring filters for the table.
-   * If not provided, filtering will be disabled.
-   */
-  filtersConfig,
-}: {
-  model: MaybeRefOrGetter<PlDataTableModel | undefined>;
-  sheets?: MaybeRefOrGetter<PlDataTableSheet[] | undefined>;
-  filtersConfig?: (info: {
-    column: PTableColumnSpec;
-  }) => {
-    options?: PlTableFilterType[];
-    default?: PlTableFilter;
-  };
-}): ComputedRef<PlDataTableSettingsV2>;
-export function usePlDataTableSettingsV2<T>({
-  /**
-   * Block property (such as inputAnchor) used to produce the data source.
-   * Mandatory for cases when the table can change without block run.
-   * Skip when the table is changed only after block run.
-   * Ask developers for help if you don't know what to set here.
-   */
-  sourceId,
-  /** Block output created by `createPlDataTableV2` */
-  model,
-  /**
-   * Sheets for partitioned data sources.
-   * Do not set if data source is never partitioned.
-   */
-  sheets,
-  /**
-   * Callback configuring filters for the table.
-   * If not provided, filtering will be disabled.
-   */
-  filtersConfig,
-}: {
-  sourceId?: MaybeRefOrGetter<JsonCompatible<T> | undefined>;
+type OptionsAdvanced<T> = {
+  sourceId: MaybeRefOrGetter<T | undefined>;
   model: MaybeRefOrGetter<PlDataTableModel | undefined>;
   sheets?: MaybeRefOrGetter<PlDataTableSheet[] | undefined>;
   filtersConfig?: (info: {
@@ -96,25 +54,24 @@ export function usePlDataTableSettingsV2<T>({
     options?: PlTableFilterType[];
     default?: PlTableFilter;
   };
-}): ComputedRef<PlDataTableSettingsV2>;
-export function usePlDataTableSettingsV2<T = string>({
-  sourceId,
-  model,
-  sheets,
-  filtersConfig,
-}: {
-  sourceId?: MaybeRefOrGetter<JsonCompatible<T> | undefined>;
+};
+
+type OptionsSimple = {
   model: MaybeRefOrGetter<PlDataTableModel | undefined>;
   sheets?: MaybeRefOrGetter<PlDataTableSheet[] | undefined>;
   filtersConfig?: (info: {
-    sourceId: T;
     column: PTableColumnSpec;
   }) => {
     options?: PlTableFilterType[];
     default?: PlTableFilter;
   };
-}): ComputedRef<PlDataTableSettingsV2> {
-  const filtersConfigValue = filtersConfig
+};
+
+export function usePlDataTableSettingsV2<T>(options: OptionsAdvanced<T>): ComputedRef<PlDataTableSettingsV2>;
+export function usePlDataTableSettingsV2(options: OptionsSimple): ComputedRef<PlDataTableSettingsV2>;
+export function usePlDataTableSettingsV2<T>(options: OptionsAdvanced<T> | OptionsSimple): ComputedRef<PlDataTableSettingsV2> {
+  const fc = options.filtersConfig;
+  const filtersConfigValue = typeof fc === 'function'
     ? ({
         sourceId,
         column,
@@ -122,21 +79,21 @@ export function usePlDataTableSettingsV2<T = string>({
         sourceId: string;
         column: PTableColumnSpec;
       }) => {
-        return filtersConfig({
-          sourceId: parseJson<T>(sourceId as CanonicalizedJson<T>),
+        return fc({
+          sourceId: JSON.parse(sourceId) as T,
           column,
         });
       }
     : undefined;
   return computed(() => {
-    const modelValue = toValue(model);
-    if (sourceId) {
-      const sourceIdValue = toValue(sourceId);
-      if (sheets) {
-        const sheetsValue = toValue(sheets);
+    const modelValue = toValue(options.model);
+    if ('sourceId' in options) {
+      const sourceIdValue = toValue(options.sourceId);
+      if (options.sheets) {
+        const sheetsValue = toValue(options.sheets);
         return sourceIdValue && sheetsValue
           ? {
-              sourceId: canonicalizeJson<T>(sourceIdValue),
+              sourceId: canonicalize(sourceIdValue)!,
               sheets: sheetsValue,
               model: modelValue,
               filtersConfig: filtersConfigValue,
@@ -148,7 +105,7 @@ export function usePlDataTableSettingsV2<T = string>({
       } else {
         return sourceIdValue
           ? {
-              sourceId: canonicalizeJson<T>(sourceIdValue),
+              sourceId: canonicalize(sourceIdValue)!,
               sheets: [],
               model: modelValue,
               filtersConfig: filtersConfigValue,
@@ -159,11 +116,11 @@ export function usePlDataTableSettingsV2<T = string>({
             };
       }
     } else {
-      if (sheets) {
-        const sheetsValue = toValue(sheets);
+      if (options.sheets) {
+        const sheetsValue = toValue(options.sheets);
         return sheetsValue
           ? {
-              sourceId: canonicalizeJson<string>('static'),
+              sourceId: canonicalize('static')!,
               sheets: sheetsValue,
               model: modelValue,
               filtersConfig: filtersConfigValue,
@@ -175,7 +132,7 @@ export function usePlDataTableSettingsV2<T = string>({
       } else {
         return modelValue
           ? {
-              sourceId: canonicalizeJson<string>('static'),
+              sourceId: canonicalize('static')!,
               sheets: [],
               model: modelValue,
               filtersConfig: filtersConfigValue,
