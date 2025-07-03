@@ -48,7 +48,8 @@ const vTextOverflownTitle = {
         <span v-text-overflown-title><slot name="title" /></span>
         <slot name="after-title" />
       </div>
-      <div :id="PlBlockPageTitleTeleportId" class="pl-block-page__title__append">
+      <div class="pl-block-page__title__append">
+        <div :id="PlBlockPageTitleTeleportId" class="pl-block-page__title__append__teleport" />
         <slot name="append" />
       </div>
     </div>
