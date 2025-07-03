@@ -147,16 +147,14 @@ const items = computed(() => filters.value.filter((s) => s.filter !== null));
         v-if="filters.value.length"
         :class="$style['add-action-wrapper']"
       >
-        <div
-          :disabled="canAddFilter"
+        <button
+          :disabled="!canAddFilter"
           :class="$style['add-btn']"
           @click="showAddFilter = true"
         >
-          <div :class="$style['add-btn-icon']">
-            <PlMaskIcon16 name="add" />
-          </div>
+          <PlMaskIcon16 name="add" />
           <div :class="$style['add-btn-title']">Add Filter</div>
-        </div>
+        </button>
 
         <PlBtnSecondary
           :disabled="!canResetToDefaults"
@@ -207,9 +205,15 @@ const items = computed(() => filters.value.filter((s) => s.filter !== null));
     border: 1px dashed var(--border-color-div-grey);
     line-height: 0;
     cursor: pointer;
+    text-align: left;
 }
 
-.add-btn:hover {
+.add-btn:disabled {
+    --icon-color: var(--dis-01);
+    cursor: auto;
+}
+
+.add-btn:not([disabled]):hover {
     border-radius: 6px;
     border: 1px dashed var(--border-color-focus, #49CC49);
     background: rgba(99, 224, 36, 0.12);
