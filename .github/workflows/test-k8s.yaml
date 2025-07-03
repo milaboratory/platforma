@@ -22,6 +22,8 @@ jobs:
       - init
     uses: milaboratory/github-ci/.github/workflows/node-simple-pnpm-k8s.yaml@v4-beta
     with:
+      app-name: Platforma SDK Ggoogle Batch Int Tests
+      app-name-slug: 'platforma-sdk-gcp'
       gha-runner-label: 'dev-gke'
       node-version: '20.x'
       pl-version: 'main'
