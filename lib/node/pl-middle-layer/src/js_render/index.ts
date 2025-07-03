@@ -17,12 +17,15 @@ export function computableFromRF(
   configKey: string,
   ops: Partial<ComputableRenderingOps> = {},
 ): Computable<unknown> {
-  const { code, featureFlags, sdkVersion } = codeWithInfo;
+  const { code, featureFlags } = codeWithInfo;
   // adding configKey to reload all outputs on block-pack update
   const key = `${ctx.blockId}#lambda#${configKey}#${fh.handle}`;
   ops = { ...ops, key };
   if (ops.mode === undefined && fh.retentive === true) ops.mode = 'StableOnlyRetentive';
   return Computable.makeRaw((cCtx) => {
+    if (getDebugFlags().logOutputRecalculations)
+      console.log(`Block lambda recalculation : ${key} (${cCtx.changeSourceMarker}; ${cCtx.bodyInvocations} invocations)`);
+
     const scope = new Scope();
     cCtx.addOnDestroy(() => scope.dispose());
 
@@ -39,7 +42,6 @@ export function computableFromRF(
     const vm = scope.manage(runtime.newContext());
     const rCtx = new JsExecutionContext(scope, vm,
       (s) => { deadlineSettings = s; },
-      sdkVersion,
       featureFlags,
       { computableCtx: cCtx, blockCtx: ctx, mlEnv: env });
 
@@ -87,7 +89,7 @@ export function executeSingleLambda(
   codeWithInfo: BlockCodeWithInfo,
   ...args: unknown[]
 ): unknown {
-  const { code, sdkVersion, featureFlags } = codeWithInfo;
+  const { code, featureFlags } = codeWithInfo;
   const scope = new Scope();
   try {
     const runtime = scope.manage(quickJs.newRuntime());
@@ -103,7 +105,6 @@ export function executeSingleLambda(
     const vm = scope.manage(runtime.newContext());
     const rCtx = new JsExecutionContext(scope, vm,
       (s) => { deadlineSettings = s; },
-      sdkVersion,
       featureFlags,
     );
 

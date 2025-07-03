@@ -23,6 +23,8 @@ export class HierarchicalWatcher implements Watcher {
    */
   private onChangeCallbacks?: Map<symbol, () => void> | undefined = undefined;
 
+  public changeSourceMarker?: string;
+
   private changed: boolean = false;
 
   constructor(children: HierarchicalWatcher[] = []) {
@@ -46,10 +48,11 @@ export class HierarchicalWatcher implements Watcher {
     this.parent = undefined;
   }
 
-  public markChanged(): void {
+  public markChanged(marker?: string): void {
     if (this.changed) return;
 
     this.changed = true;
+    this.changeSourceMarker = marker;
     this.children.forEach((c) => c.resetParent());
 
     // triggering change event for those who listen
@@ -59,7 +62,7 @@ export class HierarchicalWatcher implements Watcher {
     }
 
     if (this.parent != undefined) {
-      this.parent.markChanged();
+      this.parent.markChanged(marker);
       this.parent = undefined;
     }
   }

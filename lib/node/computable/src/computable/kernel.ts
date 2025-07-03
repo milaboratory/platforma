@@ -29,6 +29,9 @@ export interface ComputableCtx {
   /** Allows to check whether current context was marked as unstable. */
   readonly unstableMarker?: string;
 
+  /** Marker of the change source. */
+  readonly changeSourceMarker?: string;
+
   /** Sets a callback to be executed when this computable detaches from current computable tree.
    * If onDestroy callback is already set, context will first schedule execution of that previous callback,
    * and then associate new callback with the context.
@@ -61,6 +64,9 @@ export interface ComputableCtx {
 
   /** Creates accessor, that will be valid for this invocation only. */
   accessor<A>(provider: AccessorProvider<A>): A;
+
+  /** Count of times the body of the computable has been invoked. */
+  readonly bodyInvocations: number;
 }
 
 export type CellRenderingMode =

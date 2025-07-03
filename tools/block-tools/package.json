@@ -17,7 +17,8 @@
     "oclif:index": "oclif-index --commands-root=./src/cmd/ --index-file=./src/cmd/index.ts",
     "build": "vite build",
     "readme": "oclif readme",
-    "test": "jest"
+    "test": "jest",
+    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "bin": {
     "block-tools": "./bin/run.js"
