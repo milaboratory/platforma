@@ -339,6 +339,9 @@ export interface PTableDef<Col> {
   /** Join tree to populate the PTable */
   readonly src: JoinEntry<Col>;
 
+  /** Partition filters */
+  readonly partitionFilters: PTableRecordSingleValueFilterV2[];
+
   /** Record filters */
   readonly filters: PTableRecordFilter[];
 
@@ -347,7 +350,16 @@ export interface PTableDef<Col> {
 }
 
 /** Request to create and retrieve entirety of data of PTable. */
-export type CalculateTableDataRequest<Col> = PTableDef<Col>;
+export type CalculateTableDataRequest<Col> = {
+  /** Join tree to populate the PTable */
+  readonly src: JoinEntry<Col>;
+
+  /** Record filters */
+  readonly filters: PTableRecordFilter[];
+
+  /** Table sorting */
+  readonly sorting: PTableSorting[];
+};
 
 /** Response for {@link CalculateTableDataRequest} */
 export type CalculateTableDataResponse = FullPTableColumnData[];

@@ -23,6 +23,7 @@
 
   &:disabled {
     --color-text: var(--btn-disabled-bg);
+    --icon-color: var(--dis-01);
     box-shadow: none !important;
     cursor: auto;
   }

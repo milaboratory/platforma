@@ -575,6 +575,18 @@ export class RenderCtx<Args, UiState> {
     // Removed redundant explicitColumns check
   }
 
+  private patchPTableDef(def: PTableDef<PColumn<PColumnDataUniversal>>): PTableDef<PColumn<PColumnDataUniversal>> {
+    if (!this.ctx.featureFlags?.pTablePartitionFiltersSupport) {
+      // For old desktop move all partition filters to filters field as it doesn't read partitionFilters field
+      return {
+        ...def,
+        partitionFilters: [],
+        filters: [...def.partitionFilters, ...def.filters],
+      };
+    }
+    return def;
+  }
+
   // TODO remove all non-PColumn fields
   public createPFrame(def: PFrameDef<PColumnDataUniversal>): PFrameHandle {
     this.verifyInlineAndExplicitColumnsSupport(def);
@@ -603,16 +615,17 @@ export class RenderCtx<Args, UiState> {
   ): PTableHandle {
     let rawDef: PTableDef<PColumn<PColumnDataUniversal>>;
     if ('columns' in def) {
-      rawDef = {
+      rawDef = this.patchPTableDef({
         src: {
           type: 'full',
           entries: def.columns.map((c) => ({ type: 'column', column: c })),
         },
-        filters: def.filters ?? [],
+        partitionFilters: def.filters ?? [],
+        filters: [],
         sorting: def.sorting ?? [],
-      };
+      });
     } else {
-      rawDef = def;
+      rawDef = this.patchPTableDef(def);
     }
     this.verifyInlineAndExplicitColumnsSupport(extractAllColumns(rawDef.src));
     return this.ctx.createPTable(

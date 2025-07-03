@@ -9,7 +9,6 @@ import TypographyPage from './pages/TypographyPage.vue';
 import { AgGridVuePage, AgGridVuePageWithBuilder } from './pages/AgGridVuePage';
 import SelectFilesPage from './pages/SelectFilesPage.vue';
 import ErrorsPage from './pages/ErrorsPage.vue';
-import PlAgDataTablePage from './pages/PlAgDataTablePage.vue';
 import PlAgDataTableV2Page from './pages/PlAgDataTableV2Page.vue';
 import IconsPage from './pages/IconsPage.vue';
 import PlTextFieldPage from './pages/PlTextFieldPage.vue';
@@ -92,7 +91,6 @@ export const sdkPlugin = defineApp(platforma, (app) => {
       '/typography': () => TypographyPage,
       '/ag-grid-vue': () => AgGridVuePage,
       '/ag-grid-vue-with-builder': () => AgGridVuePageWithBuilder,
-      '/pl-ag-data-table': () => PlAgDataTablePage,
       '/pl-ag-data-table-v2': () => PlAgDataTableV2Page,
       '/pl-splash-page': () => PlSplashPage,
       '/pl-file-input-page': () => PlFileInputPage,

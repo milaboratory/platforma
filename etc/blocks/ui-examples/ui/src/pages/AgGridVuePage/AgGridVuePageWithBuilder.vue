@@ -3,7 +3,6 @@ import type { Component } from 'vue';
 import { computed, h, ref } from 'vue';
 import {
   PlBlockPage,
-  PlAgDataTableToolsPanel,
   PlAgGridColumnManager,
   PlAgCsvExporter,
   defaultMainMenuItems,
@@ -263,10 +262,8 @@ const { gridOptions, gridApi } = useAgGridOptions<Row>(({ builder }) => {
     <template #title>AgGridVue (Builder)</template>
     <template #append>
       <PlBtnPrimary @click="showProgress">Show progress</PlBtnPrimary>
-      <PlAgDataTableToolsPanel>
-        <PlAgGridColumnManager v-if="gridApi" :api="gridApi" />
-        <PlAgCsvExporter v-if="gridApi" :api="gridApi" />
-      </PlAgDataTableToolsPanel>
+      <PlAgGridColumnManager v-if="gridApi" :api="gridApi" />
+      <PlAgCsvExporter v-if="gridApi" :api="gridApi" />
     </template>
 
     <PlRow wrap>

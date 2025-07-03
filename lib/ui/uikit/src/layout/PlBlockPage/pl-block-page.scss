@@ -53,6 +53,12 @@
       display: flex;
       align-items: center;
       gap: 2px;
+
+      &__teleport {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+      }
     }
   }
 

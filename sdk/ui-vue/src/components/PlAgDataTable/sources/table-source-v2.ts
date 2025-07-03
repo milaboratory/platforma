@@ -1,9 +1,3 @@
-import type {
-  AxisId,
-  PlDataTableModel,
-  PTableColumnSpec,
-  PTableKey,
-} from '@platforma-sdk/model';
 import {
   canonicalizeJson,
   getAxisId,
@@ -14,6 +8,11 @@ import {
   type PFrameDriver,
   type PlDataTableSheet,
   type PTableVector,
+  type AxisId,
+  type PlDataTableModel,
+  type PTableColumnSpec,
+  type PTableKey,
+  isLabelColumn as isLabelColumnSpec,
 } from '@platforma-sdk/model';
 import type {
   CellStyle,
@@ -30,13 +29,16 @@ import { PlAgColumnHeader } from '../../PlAgColumnHeader';
 import { PlAgTextAndButtonCell } from '../../PlAgTextAndButtonCell';
 import type { PlAgDataTableV2Row, PTableKeyJson } from '../types';
 import {
-  isLabelColumn,
   PTableHidden,
 } from './common';
 import { defaultMainMenuItems } from './menu-items';
 import { makeRowNumberColDef, PlAgDataTableRowNumberColId } from './row-number';
 import { getColumnRenderingSpec } from './value-rendering';
 import type { Ref } from 'vue';
+
+export function isLabelColumn(column: PTableColumnSpec) {
+  return column.type === 'column' && isLabelColumnSpec(column.spec);
+}
 
 /** Convert columnar data from the driver to rows, used by ag-grid */
 function columns2rows(
