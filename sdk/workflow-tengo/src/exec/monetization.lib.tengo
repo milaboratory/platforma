@@ -6,6 +6,9 @@ assets := import(":assets")
 render := import(":render")
 smart := import(":smart")
 validation := import(":validation")
+loadSoftware := import(":exec.load-software")
+
+mnzSw := assets.importSoftware("@platforma-open/milaboratories.software-small-binaries:mnz-client")
 
 mznInfoTpl := assets.importTemplate(":exec.monetization_info")
 
@@ -116,6 +119,8 @@ builder := func(productKey) {
 		build: func() {
 			ll.assert(!is_undefined(date), "monetization.builder().build: date must be set")
 
+			mnzPlan := loadSoftware.loadSoftware(mnzSw)
+
 			// Don't DDoS milm service: here we deduplicate a monetization run,
 			// but the client could control deduplication by providing a different date.
 			// Thus, a deduplication is controlled from a client's side.
@@ -126,7 +131,8 @@ builder := func(productKey) {
 					date: date, // solely for deduplication
 					monetization: monetization.toJson(mnz),
 					filesToAdd: filesToAdd,
-					filesToWrite: filesToWrite
+					filesToWrite: filesToWrite,
+					mnzPlan: mnzPlan
 				}
 			)
 

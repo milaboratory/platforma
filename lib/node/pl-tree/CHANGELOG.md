@@ -1,5 +1,31 @@
 # @milaboratories/pl-tree
 
+## 1.6.12
+
+### Patch Changes
+
+- d60b0fe: Chore: fix linter errors
+
+## 1.6.11
+
+### Patch Changes
+
+- 37800c5: Public tools packages
+- Updated dependencies [37800c5]
+  - @milaboratories/pl-error-like@1.12.2
+  - @milaboratories/computable@2.5.1
+  - @milaboratories/ts-helpers@1.4.1
+  - @milaboratories/pl-client@2.11.2
+  - @milaboratories/pl-errors@1.1.9
+
+## 1.6.10
+
+### Patch Changes
+
+- Updated dependencies [3d34876]
+  - @milaboratories/pl-client@2.11.1
+  - @milaboratories/pl-errors@1.1.8
+
 ## 1.6.9
 
 ### Patch Changes

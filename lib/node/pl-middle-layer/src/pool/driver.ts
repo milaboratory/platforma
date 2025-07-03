@@ -146,24 +146,13 @@ class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
 
   public readonly preloadBlob = async (blobIds: string[]): Promise<void> => {
     const computables = blobIds.map((blobId) => this.getOrCreateComputableForBlob(blobId));
-    for (const computable of computables) await computable.awaitStableFullValue();
-  };
-
-  public readonly resolveBlob = async (blobId: string): Promise<string> => {
-    const computable = this.getOrCreateComputableForBlob(blobId);
-    return this.blobDriver.getLocalPath((await computable.awaitStableValue()).handle);
+    for (const computable of computables) await computable.awaitStableFullValue(this.disposeSignal);
   };
 
   public readonly resolveBlobContent = async (blobId: string): Promise<Uint8Array> => {
-    try {
-      const computable = this.getOrCreateComputableForBlob(blobId);
-      const path = this.blobDriver.getLocalPath((await computable.awaitStableValue()).handle);
-      return await fsp.readFile(path);
-    } catch (err: unknown) {
-      const error = JSON.stringify(err);
-      console.log(`resolveBlobContent catched error: ${error}`);
-      throw err;
-    }
+    const computable = this.getOrCreateComputableForBlob(blobId);
+    const path = this.blobDriver.getLocalPath((await computable.awaitStableValue(this.disposeSignal)).handle);
+    return await fsp.readFile(path);
   };
 
   public get disposeSignal(): AbortSignal {
@@ -517,9 +506,10 @@ export class PFrameDriver implements InternalPFrameDriver {
 
   public async getShape(handle: PTableHandle, signal?: AbortSignal): Promise<PTableShape> {
     return await this.tableConcurrencyLimiter.run(async () => {
-      const pTable = this.pTables.getByKey(handle).pTable;
-      return await pTable.getShape({
-        signal,
+      const pTableHolder = this.pTables.getByKey(handle);
+      const combinedSignal = AbortSignal.any([signal, pTableHolder.disposeSignal].filter((s) => !!s));
+      return await pTableHolder.pTable.getShape({
+        signal: combinedSignal,
       });
     });
   }

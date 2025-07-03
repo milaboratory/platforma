@@ -1,5 +1,28 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.7.42
+
+### Patch Changes
+
+- Updated dependencies [8236387]
+  - @milaboratories/pl-model-common@1.15.8
+
+## 1.7.41
+
+### Patch Changes
+
+- 37800c5: Public tools packages
+- Updated dependencies [37800c5]
+  - @milaboratories/pl-model-common@1.15.7
+
+## 1.7.40
+
+### Patch Changes
+
+- Updated dependencies [6ffe944]
+- Updated dependencies [6ffe944]
+  - @milaboratories/pl-model-common@1.15.6
+
 ## 1.7.39
 
 ### Patch Changes

@@ -1,5 +1,22 @@
 # @platforma-sdk/tengo-builder
 
+## 2.1.12
+
+### Patch Changes
+
+- d60b0fe: Chore: fix linter errors
+- Updated dependencies [d60b0fe]
+  - @milaboratories/pl-model-backend@1.1.2
+
+## 2.1.11
+
+### Patch Changes
+
+- 37800c5: Public tools packages
+- Updated dependencies [37800c5]
+  - @milaboratories/ts-helpers@1.4.1
+  - @milaboratories/pl-model-backend@1.1.1
+
 ## 2.1.10
 
 ### Patch Changes

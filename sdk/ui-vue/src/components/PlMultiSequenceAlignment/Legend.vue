@@ -1,23 +1,23 @@
 <script setup lang="ts">
-import {
-  chemicalCategories,
-  chemicalPropertiesColors,
-  chemicalPropertiesLabels,
-} from './highlight/chemical-properties';
+import type { ColorMap } from './types';
+
+defineProps<{
+  colors: ColorMap;
+}>();
 </script>
 
 <template>
   <div :class="$style.container">
     <div
-      v-for="category in chemicalCategories"
-      :key="category"
+      v-for="([key, { label, color }]) in Object.entries(colors)"
+      :key="key"
       :class="$style.item"
     >
       <div
         :class="$style['color-sample']"
-        :style="{ backgroundColor: chemicalPropertiesColors[category] }"
+        :style="{ backgroundColor: color }"
       />
-      {{ chemicalPropertiesLabels[category] }}
+      {{ label }}
     </div>
   </div>
 </template>

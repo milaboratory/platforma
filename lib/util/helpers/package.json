@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/helpers",
-  "version": "1.6.13",
+  "version": "1.6.17",
   "description": "",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
@@ -27,7 +27,7 @@
   },
   "devDependencies": {
     "@milaboratories/eslint-config": "workspace:^",
-    "@milaboratories/platforma-build-configs": "workspace:*",
+    "@milaboratories/build-configs": "workspace:*",
     "typescript": "catalog:",
     "vite": "catalog:"
   }

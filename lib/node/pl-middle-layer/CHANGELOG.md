@@ -1,5 +1,171 @@
 # @milaboratories/pl-middle-layer
 
+## 1.37.99
+
+### Patch Changes
+
+- Updated dependencies [e6d4998]
+  - @milaboratories/pl-deployments@2.4.3
+
+## 1.37.98
+
+### Patch Changes
+
+- Updated dependencies [d60b0fe]
+  - @milaboratories/pl-drivers@1.5.78
+  - @milaboratories/pl-config@1.6.1
+  - @milaboratories/pl-model-backend@1.1.2
+  - @milaboratories/pl-tree@1.6.12
+  - @platforma-sdk/model@1.37.18
+  - @platforma-sdk/workflow-tengo@4.9.2
+  - @milaboratories/pl-deployments@2.4.2
+
+## 1.37.97
+
+### Patch Changes
+
+- @milaboratories/pl-drivers@1.5.77
+
+## 1.37.96
+
+### Patch Changes
+
+- Updated dependencies [5e85fea]
+  - @platforma-sdk/workflow-tengo@4.9.2
+
+## 1.37.95
+
+### Patch Changes
+
+- Updated dependencies [8236387]
+  - @milaboratories/pl-model-common@1.15.8
+  - @milaboratories/pl-model-middle-layer@1.7.42
+  - @milaboratories/pl-drivers@1.5.76
+  - @platforma-sdk/model@1.37.14
+  - @platforma-sdk/block-tools@2.5.60
+
+## 1.37.94
+
+### Patch Changes
+
+- Updated dependencies [10e5841]
+  - @platforma-sdk/model@1.37.11
+
+## 1.37.93
+
+### Patch Changes
+
+- Updated dependencies [2e3c3ab]
+  - @platforma-sdk/workflow-tengo@4.9.1
+
+## 1.37.92
+
+### Patch Changes
+
+- Updated dependencies [964ba27]
+  - @platforma-sdk/workflow-tengo@4.9.0
+
+## 1.37.91
+
+### Patch Changes
+
+- Updated dependencies [1004519]
+  - @platforma-sdk/workflow-tengo@4.8.1
+
+## 1.37.90
+
+### Patch Changes
+
+- Updated dependencies [5f10370]
+  - @milaboratories/pl-config@1.6.0
+  - @milaboratories/pl-deployments@2.4.1
+
+## 1.37.89
+
+### Patch Changes
+
+- Updated dependencies [e2f106b]
+  - @milaboratories/pl-deployments@2.4.0
+  - @milaboratories/pl-config@1.5.0
+
+## 1.37.88
+
+### Patch Changes
+
+- 37800c5: Public tools packages
+- Updated dependencies [37800c5]
+  - @milaboratories/pl-deployments@2.3.3
+  - @milaboratories/pl-model-middle-layer@1.7.41
+  - @milaboratories/computable@2.5.1
+  - @milaboratories/pl-drivers@1.5.75
+  - @milaboratories/ts-helpers@1.4.1
+  - @milaboratories/pl-client@2.11.2
+  - @milaboratories/pl-config@1.4.15
+  - @milaboratories/pl-errors@1.1.9
+  - @milaboratories/pl-model-backend@1.1.1
+  - @platforma-sdk/block-tools@2.5.59
+  - @milaboratories/pl-model-common@1.15.7
+  - @milaboratories/pl-http@1.1.4
+  - @milaboratories/pl-tree@1.6.11
+  - @platforma-sdk/model@1.37.2
+  - @platforma-sdk/workflow-tengo@4.8.0
+
+## 1.37.87
+
+### Patch Changes
+
+- Updated dependencies [6ffe944]
+- Updated dependencies [6ffe944]
+- Updated dependencies [6ffe944]
+  - @milaboratories/pl-model-common@1.15.6
+  - @platforma-sdk/model@1.37.0
+  - @milaboratories/pl-model-middle-layer@1.7.40
+  - @milaboratories/pl-drivers@1.5.74
+  - @platforma-sdk/block-tools@2.5.58
+
+## 1.37.86
+
+### Patch Changes
+
+- df1a454: PFrames driver - cancel all downloads on computable unref
+- Updated dependencies [df1a454]
+  - @milaboratories/pl-drivers@1.5.73
+
+## 1.37.85
+
+### Patch Changes
+
+- Updated dependencies [295e939]
+  - @milaboratories/pl-drivers@1.5.72
+
+## 1.37.84
+
+### Patch Changes
+
+- Updated dependencies [3d34876]
+  - @milaboratories/pl-drivers@1.5.71
+  - @milaboratories/pl-client@2.11.1
+  - @milaboratories/pl-errors@1.1.8
+  - @milaboratories/pl-tree@1.6.10
+
+## 1.37.83
+
+### Patch Changes
+
+- b210d3d: PFrames version bump
+
+## 1.37.82
+
+### Patch Changes
+
+- 2d5b5c9: PFrames driver - fix cancelation
+
+## 1.37.81
+
+### Patch Changes
+
+- @milaboratories/pl-drivers@1.5.70
+
 ## 1.37.80
 
 ### Patch Changes

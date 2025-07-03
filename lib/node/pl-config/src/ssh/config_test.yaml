@@ -6,7 +6,7 @@ license:
 logging:
   level: info
   destinations:
-    - path: platforma.log
+  - path: platforma.log
 
 monitoring:
   enabled: true
@@ -21,17 +21,20 @@ core:
     extendedInfo: true
     dumpResourceData: true
 
+  tls:
+    enabled: false
   grpc:
     listen: 127.0.0.1:42097
-    tls:
-      enabled: false
+
+  http:
+    listen: 127.0.0.1:42098
 
   authEnabled: true
   auth:
-    - driver: jwt
-      key: jwtkey
-    - driver: htpasswd
-      path: /home/pl-doctor/platforma_backend/users.htpasswd
+  - driver: jwt
+    key: jwtkey
+  - driver: htpasswd
+    path: /home/pl-doctor/platforma_backend/users.htpasswd
   db:
     path: db
 
@@ -46,8 +49,8 @@ controllers:
     storageRoot: /home/pl-doctor/platforma_backend/storages/work
     workdirCacheOnFailure: 1h
     secrets:
-      - map:
-          MI_LICENSE: 'abc'
+    - map:
+        MI_LICENSE: 'abc'
 
   data:
     main:
@@ -63,27 +66,18 @@ controllers:
           downloadable: true
 
     storages:
-      - id: remoteRoot
-        type: FS
-        indexCachePeriod: 1m
-        rootPath: ""
+    - id: remoteRoot
+      type: FS
+      indexCachePeriod: 1m
+      rootPath: ""
+    - id: work
+      type: FS
+      indexCachePeriod: 1m
+      rootPath: /home/pl-doctor/platforma_backend/storages/work
 
-      - id: work
-        type: FS
-        indexCachePeriod: 1m
-        rootPath: /home/pl-doctor/platforma_backend/storages/work
-
-      - id: main
-        type: S3
-        indexCachePeriod: "0s"
-        endpoint: http://127.0.0.1:9000
-        region: ""
-        presignEndpoint: http://127.0.0.1:22222
-        bucketName: main-bucket
-        createBucket: true
-        forcePathStyle: true
-        key: static:minio-user
-        secret: 'thesecret'
-        keyPrefix: ""
-        accessPrefixes: [""]
-        uploadKeyPrefix: ""
+    - id: main
+      type: FS
+      indexCachePeriod: "0s"
+      rootPath: /home/pl-doctor/platforma_backend/storages/main
+      allowRemoteAccess: true
+      externalURL: "http://localhost:11112"

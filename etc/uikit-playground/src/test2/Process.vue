@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { onMounted, reactive } from 'vue';
-import { animateInfinite } from 'milaboratories/uikit';
+import { animateInfinite } from '@milaboratories/uikit';
 
 const data = reactive({
   progress: '0%',

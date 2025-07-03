@@ -9,7 +9,7 @@ export default {
 
 <script lang="ts" setup generic="M = unknown">
 import './pl-autocomplete.scss';
-import { computed, reactive, ref, unref, useSlots, useTemplateRef, watch, watchPostEffect } from 'vue';
+import { computed, reactive, ref, unref, useTemplateRef, watch, watchPostEffect } from 'vue';
 import { tap } from '../../helpers/functions';
 import { PlTooltip } from '../PlTooltip';
 import DoubleContour from '../../utils/DoubleContour.vue';
@@ -108,7 +108,9 @@ const props = withDefaults(
   },
 );
 
-const slots = useSlots();
+const slots = defineSlots<{
+  [key: string]: unknown;
+}>();
 
 const rootRef = ref<HTMLElement | undefined>();
 const input = ref<HTMLInputElement | undefined>();
@@ -363,7 +365,7 @@ watch(() => optionsRequest.loading || modelOptionRequest.loading, (loading) => {
 
           <div class="pl-autocomplete__controls">
             <PlMaskIcon24 v-if="isLoadingOptions" name="loading" />
-            <PlIcon16 v-if="clearable && hasValue" name="delete-clear" @click.stop="clear" />
+            <PlIcon16 v-if="clearable && hasValue" class="clear" name="delete-clear" @click.stop="clear" />
             <slot name="append" />
             <div class="pl-autocomplete__arrow-wrapper" @click.stop="toggleOpen">
               <div v-if="arrowIconLarge" class="arrow-icon" :class="[`icon-24 ${arrowIconLarge}`]" />

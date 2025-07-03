@@ -10,3 +10,10 @@ export type ValueOrErrors<T> =
 
 /** Base type for block outputs */
 export type BlockOutputsBase = Record<string, ValueOrErrors<unknown>>;
+
+export type ListOptionBase<T = unknown> = {
+  label: string;
+  description?: string;
+  value: T;
+  group?: string;
+};

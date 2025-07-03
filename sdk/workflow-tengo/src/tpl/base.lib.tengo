@@ -9,6 +9,8 @@ constants := import(":constants")
 stateAwait := import(":tpl.state-await")
 validation := import(":validation")
 
+// This import is required to guard the code generated with this package from being executed on backends having insufficient capabilities.
+
 /**
  * Unmarshal resource according by:
  *  - converting all json resources (potentially nested) into a tengo objects (maps)
@@ -66,9 +68,9 @@ _unmarshal := func(resource, preprocessors) {
 			}
 		}
 
-		for field, value in resource.serviceInputs() {
+		for field, value in resource.metaInputs() {
 			if value.isErrorSet() {
-				ll.panic("service input %v field has error: %v", field, field.getError().getDataAsJson().message)
+				ll.panic("meta input %v field has error: %v", field, field.getError().getDataAsJson().message)
 			} else if value.isSet() {
 				result[field] = _unmarshal(value.getValue(), preprocessors)
 			} else {
@@ -179,10 +181,18 @@ tpl := func(ops) {
 		},
 
 		/**
-		 * @return map[string]field: - a map of inputs to the fields of the input map.
+		 * @deprecated Use rawMetaInputs instead.
+		 * @return map[string]field: - a map of meta inputs to the fields of the input map.
 		 */
 		rawServiceInputs: func() {
-			return self.renderer().get(tplutil.INPUTS_MAP_FIELD).serviceInputs()
+			return self.rawMetaInputs()
+		},
+
+		/**
+		 * @return map[string]field: - a map of meta inputs to the fields of the input map.
+		 */
+		rawMetaInputs: func() {
+			return self.renderer().get(tplutil.INPUTS_MAP_FIELD).metaInputs()
 		},
 
 		// cache of inputs, processed by unmarshallers
@@ -393,8 +403,8 @@ tpl := func(ops) {
 
 			inputs := self.inputs()
 
-			if len(self.rawServiceInputs()) > 0 {
-				ll.panic("prepare() statement is not available for templates with service inputs in this verson of workflow-tengo SDK")
+			if len(self.rawMetaInputs()) > 0 {
+				ll.panic("prepare() statement is not available for templates with meta inputs in this verson of workflow-tengo SDK")
 			}
 
 			// create new inputs map
@@ -645,6 +655,8 @@ tpl := func(ops) {
 				renderer                : self.renderer,
 				registerUnmarshaller    : self.registerUnmarshaller,
 				rawInputs               : self.rawInputs,
+				rawServiceInputs        : self.rawServiceInputs,
+				rawMetaInputs           : self.rawMetaInputs,
 				hasInput                : self.hasInput,
 				inputs                  : self.inputs,
 				defineOutputs           : self.defineOutputs,

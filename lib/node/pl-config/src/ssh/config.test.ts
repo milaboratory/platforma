@@ -14,11 +14,15 @@ test('should return right configs', async ({ expect }) => {
   const opts: SshPlConfigGeneratorOptions = {
     logger,
     workingDir,
+    useGlobalAccess: false,
     licenseMode: { type: 'plain', value: 'abc' },
+    useGlobalAccess: false,
     portsMode: {
       type: 'customWithMinio',
       ports: {
         grpc: 42097,
+        http: 42098,
+        httpLocal: 11112,
         monitoring: 37659,
         debug: 39841,
 
@@ -31,7 +35,6 @@ test('should return right configs', async ({ expect }) => {
     },
     plConfigPostprocessing: (config: PlConfig) => {
       (config.core.auth[0] as PlAuthDriverJwt).key = 'jwtkey';
-      (config.controllers.data.storages[2] as PlS3StorageSettings).secret = 'thesecret';
       return config;
     },
   };

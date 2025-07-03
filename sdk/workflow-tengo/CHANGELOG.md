@@ -1,5 +1,30 @@
 # @platforma-sdk/workflow-tengo
 
+## 4.9.2
+
+### Patch Changes
+
+- 5e85fea: Final fixes for resource allocation logic
+
+## 4.9.1
+
+### Patch Changes
+
+- 2e3c3ab: - Rename service to meta fields in developer facing API
+  - Add metaExtra to process column
+
+## 4.9.0
+
+### Minor Changes
+
+- 964ba27: Fix for software materialization deadlock
+
+## 4.8.1
+
+### Patch Changes
+
+- 1004519: Fixes deadlock in exec between a storage and compute quotas, leading to sporadic freezes of block workflows
+
 ## 4.8.0
 
 ### Minor Changes

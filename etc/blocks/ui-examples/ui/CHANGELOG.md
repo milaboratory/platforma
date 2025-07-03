@@ -1,5 +1,73 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.4.25
+
+### Patch Changes
+
+- Updated dependencies [d60b0fe]
+  - @platforma-sdk/model@1.37.18
+  - @milaboratories/milaboratories.ui-examples.model@1.1.79
+
+## 1.4.24
+
+### Patch Changes
+
+- e210414: Reimplement interface for PlElementList
+
+## 1.4.23
+
+### Patch Changes
+
+- 8236387: Grouping in PlDropdown
+  - @platforma-sdk/model@1.37.14
+  - @milaboratories/milaboratories.ui-examples.model@1.1.78
+
+## 1.4.22
+
+### Patch Changes
+
+- 70eff11: update plelementlist interface
+
+## 1.4.21
+
+### Patch Changes
+
+- Updated dependencies [10e5841]
+  - @platforma-sdk/model@1.37.11
+  - @milaboratories/milaboratories.ui-examples.model@1.1.77
+
+## 1.4.20
+
+### Patch Changes
+
+- c6b4dd2: Extend interface for PlElementList
+
+## 1.4.19
+
+### Patch Changes
+
+- 37800c5: Public tools packages
+- Updated dependencies [37800c5]
+  - @platforma-sdk/model@1.37.2
+  - @milaboratories/milaboratories.ui-examples.model@1.1.76
+
+## 1.4.18
+
+### Patch Changes
+
+- 2c3bb60: Developer build ui-examples don't required build/watch for deps
+
+## 1.4.17
+
+### Patch Changes
+
+- 6ffe944: PlAgDataTableV2 refactoring
+- Updated dependencies [6ffe944]
+- Updated dependencies [6ffe944]
+- Updated dependencies [6ffe944]
+  - @milaboratories/milaboratories.ui-examples.model@1.1.75
+  - @platforma-sdk/model@1.37.0
+
 ## 1.4.16
 
 ### Patch Changes

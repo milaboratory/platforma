@@ -1,5 +1,47 @@
 # @platforma-sdk/model
 
+## 1.37.18
+
+### Patch Changes
+
+- d60b0fe: Chore: fix linter errors
+
+## 1.37.14
+
+### Patch Changes
+
+- Updated dependencies [8236387]
+  - @milaboratories/pl-model-common@1.15.8
+
+## 1.37.11
+
+### Patch Changes
+
+- 10e5841: createPlDataTableV2 - always add linker columns to join
+
+## 1.37.2
+
+### Patch Changes
+
+- 37800c5: Public tools packages
+- Updated dependencies [37800c5]
+  - @milaboratories/pl-error-like@1.12.2
+  - @milaboratories/pl-model-common@1.15.7
+
+## 1.37.0
+
+### Minor Changes
+
+- 6ffe944: PlAgDataTableV2 - significant interface change
+
+### Patch Changes
+
+- 6ffe944: PlAgDataTableV2 refactoring
+- 6ffe944: PlAgDataTable types fixed
+- Updated dependencies [6ffe944]
+- Updated dependencies [6ffe944]
+  - @milaboratories/pl-model-common@1.15.6
+
 ## 1.34.10
 
 ### Patch Changes
