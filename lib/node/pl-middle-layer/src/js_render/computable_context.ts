@@ -498,24 +498,20 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
       };
 
       if (checkBlockFlag(this.featureFlags, 'supportsLazyState')) {
-        console.log('injecting lazy state functions');
         // injecting lazy state functions
         exportCtxFunction('args', () => {
           if (this.computableCtx === undefined)
             throw new Error(`Add dummy call to ctx.args outside the future lambda. Can't be directly used in this context.`);
-          console.log('args requested');
           return vm.newString(this.blockCtx.args(this.computableCtx));
         });
         exportCtxFunction('uiState', () => {
           if (this.computableCtx === undefined)
             throw new Error(`Add dummy call to ctx.uiState outside the future lambda. Can't be directly used in this context.`);
-          console.log('uiState requested');
           return vm.newString(this.blockCtx.uiState(this.computableCtx) ?? '{}');
         });
         exportCtxFunction('activeArgs', () => {
           if (this.computableCtx === undefined)
             throw new Error(`Add dummy call to ctx.activeArgs outside the future lambda. Can't be directly used in this context.`);
-          console.log('activeArgs requested');
           const res = this.blockCtx.activeArgs(this.computableCtx);
           return res === undefined ? vm.undefined : vm.newString(res);
         });
