@@ -87,12 +87,20 @@ const props = defineProps<{
   settings: Readonly<PlDataTableSettingsV2>;
 
   /**
-   * The showColumnsPanel prop controls the display of a button that activates
+   * The disableColumnsPanel prop controls the display of a button that activates
    * the columns management panel in the table. To make the button functional
    * and visible, you must also include the PlAgDataTableToolsPanel component in your layout.
    * This component serves as the target for teleporting the button.
    */
-  showColumnsPanel?: boolean;
+  disableColumnsPanel?: boolean;
+
+  /**
+   * The disableFiltersPanel prop controls the display of a button that activates
+   * the filters management panel in the table. To make the button functional
+   * and visible, you must also include the PlAgDataTableToolsPanel component in your layout.
+   * This component serves as the target for teleporting the button.
+   */
+  disableFiltersPanel?: boolean;
 
   /**
    * The showExportButton prop controls the display of a button that allows
@@ -153,14 +161,13 @@ const sheetsSettings = computed<PlDataTableSheetsSettings>(() => {
 });
 
 const filterableColumns = ref<PTableColumnSpec[]>([]);
-const filtersSettings = computed<PlDataTableFiltersSettings | null>(() => {
+const filtersSettings = computed<PlDataTableFiltersSettings>(() => {
   const settingsCopy = { ...settings.value };
-  if (!settingsCopy.filtersConfig) return null;
   const columns = filterableColumns.value;
   const result = settingsCopy.sourceId !== null && columns.length > 0
     ? {
         columns,
-        config: (column: PTableColumnSpec) => settingsCopy.filtersConfig!({ sourceId: settingsCopy.sourceId, column }),
+        config: (column: PTableColumnSpec) => settingsCopy.filtersConfig({ sourceId: settingsCopy.sourceId, column }),
         cachedState: [...filtersState.value],
       }
     : {
@@ -525,11 +532,11 @@ watch(
 <template>
   <div :class="$style.container">
     <PlAgGridColumnManager
-      v-if="gridApi && showColumnsPanel"
+      v-if="gridApi && !disableColumnsPanel"
       :api="gridApi"
     />
     <PlTableFiltersV2
-      v-if="filtersSettings"
+      v-if="!disableFiltersPanel"
       v-model="filtersState"
       :settings="filtersSettings"
     />

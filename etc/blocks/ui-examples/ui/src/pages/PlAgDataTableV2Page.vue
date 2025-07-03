@@ -95,18 +95,16 @@ watch(
 </script>
 
 <template>
-  <PlBlockPage style="max-width: 100%">
+  <PlBlockPage>
     <template #title>PlAgDataTable V2</template>
     <template #append>
       <PlAgDataTableToolsPanel />
     </template>
     <PlAgDataTableV2
-      ref="tableInstance"
       v-model="app.model.ui.dataTableStateV2"
       v-model:selection="selection"
       :settings="tableSettings"
       :cell-renderer-selector="cellRendererSelector"
-      show-columns-panel
       show-export-button
     >
       <template #before-sheets>

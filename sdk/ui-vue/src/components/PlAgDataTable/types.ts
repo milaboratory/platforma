@@ -37,7 +37,7 @@ export type PlDataTableSettingsV2 =
   }
 ) & {
   /** Callback configuring filters for the table */
-  filtersConfig?: (info: {
+  filtersConfig: (info: {
     sourceId: string;
     column: PTableColumnSpec;
   }) => PlDataTableFilterConfig;
@@ -103,7 +103,7 @@ export function usePlDataTableSettingsV2<T>(options: OptionsAdvanced<T> | Option
           column,
         });
       }
-    : undefined;
+    : () => ({});
   return computed(() => {
     const modelValue = toValue(options.model);
     if ('sourceId' in options) {
