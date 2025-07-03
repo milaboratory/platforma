@@ -91,17 +91,19 @@ export function usePlDataTableSettingsV2(options: OptionsSimple): ComputedRef<Pl
 export function usePlDataTableSettingsV2<T>(options: OptionsAdvanced<T> | OptionsSimple): ComputedRef<PlDataTableSettingsV2> {
   const fc = options.filtersConfig;
   const filtersConfigValue = typeof fc === 'function'
-    ? ({
-        sourceId,
-        column,
-      }: {
+    ? (ops: {
         sourceId: string;
         column: PTableColumnSpec;
       }) => {
-        return fc({
-          sourceId: JSON.parse(sourceId) as JsonCompatible<T>,
-          column,
-        });
+        try {
+          return fc({
+            sourceId: JSON.parse(ops.sourceId) as JsonCompatible<T>,
+            column: ops.column,
+          });
+        } catch (e) {
+          console.error(`filtersConfig failed for sourceId: ${ops.sourceId}, column: ${JSON.stringify(ops.column)} - using default config`, e);
+          return {};
+        }
       }
     : () => ({});
   return computed(() => {
