@@ -1,9 +1,9 @@
 ---
-'@milaboratories/milaboratories.ui-examples.model': major
-'@milaboratories/milaboratories.ui-examples.ui': major
-'@milaboratories/uikit': major
-'@platforma-sdk/ui-vue': major
-'@platforma-sdk/model': major
+'@milaboratories/milaboratories.ui-examples.model': minor
+'@milaboratories/milaboratories.ui-examples.ui': minor
+'@milaboratories/uikit': minor
+'@platforma-sdk/ui-vue': minor
+'@platforma-sdk/model': minor
 ---
 
 PlAgDataTable V1 removed, V2 significantly changed
