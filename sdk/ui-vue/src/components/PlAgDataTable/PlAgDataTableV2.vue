@@ -7,6 +7,7 @@ import type {
   PlDataTableGridStateCore,
   PlDataTableStateV2,
   PlSelectionModel,
+  PTableColumnSpec,
   PTableColumnSpecJson,
   PTableKey,
 } from '@platforma-sdk/model';
@@ -67,7 +68,6 @@ import type {
   PlAgDataTableV2Row,
   PlAgOverlayLoadingParams,
   PlAgOverlayNoRowsParams,
-  PlDataTableColumnsInfo,
   PlDataTableSettingsV2,
   PlDataTableSheetsSettings,
   PTableKeyJson,
@@ -75,6 +75,8 @@ import type {
 import {
   useTableState,
 } from './sources/table-state-v2';
+import type { PlDataTableFiltersSettings } from '../PlTableFilters';
+import PlTableFiltersV2 from '../PlTableFilters/PlTableFiltersV2.vue';
 
 const tableState = defineModel<PlDataTableStateV2>({
   default: createPlDataTableStateV2(),
@@ -85,17 +87,20 @@ const props = defineProps<{
   settings: Readonly<PlDataTableSettingsV2>;
 
   /**
-   * The showColumnsPanel prop controls the display of a button that activates
+   * The disableColumnsPanel prop controls the display of a button that activates
    * the columns management panel in the table. To make the button functional
    * and visible, you must also include the PlAgDataTableToolsPanel component in your layout.
    * This component serves as the target for teleporting the button.
    */
-  showColumnsPanel?: boolean;
+  disableColumnsPanel?: boolean;
 
   /**
-   * Css width of the Column Manager (Panel) modal (default value is `368px`)
+   * The disableFiltersPanel prop controls the display of a button that activates
+   * the filters management panel in the table. To make the button functional
+   * and visible, you must also include the PlAgDataTableToolsPanel component in your layout.
+   * This component serves as the target for teleporting the button.
    */
-  columnsPanelWidth?: string;
+  disableFiltersPanel?: boolean;
 
   /**
    * The showExportButton prop controls the display of a button that allows
@@ -137,15 +142,14 @@ const props = defineProps<{
 const { settings } = toRefs(props);
 const emit = defineEmits<{
   rowDoubleClicked: [key?: PTableKey];
-  columnsChanged: [info: PlDataTableColumnsInfo];
   cellButtonClicked: [key?: PTableKey];
 }>();
 
-const { gridState, sheetsState } = useTableState(tableState, settings);
+const { gridState, sheetsState, filtersState } = useTableState(tableState, settings);
 
 const sheetsSettings = computed<PlDataTableSheetsSettings>(() => {
   const settingsCopy = { ...settings.value };
-  return settingsCopy.sourceId
+  return settingsCopy.sourceId !== null
     ? {
         sheets: settingsCopy.sheets ?? [],
         cachedState: [...sheetsState.value],
@@ -154,6 +158,24 @@ const sheetsSettings = computed<PlDataTableSheetsSettings>(() => {
         sheets: [],
         cachedState: [],
       };
+});
+
+const filterableColumns = ref<PTableColumnSpec[]>([]);
+const filtersSettings = computed<PlDataTableFiltersSettings>(() => {
+  const settingsCopy = { ...settings.value };
+  const columns = filterableColumns.value;
+  const result = settingsCopy.sourceId !== null && columns.length > 0
+    ? {
+        columns,
+        config: (column: PTableColumnSpec) => settingsCopy.filtersConfig({ sourceId: settingsCopy.sourceId, column }),
+        cachedState: [...filtersState.value],
+      }
+    : {
+        columns: [],
+        config: () => ({}),
+        cachedState: [],
+      };
+  return result;
 });
 
 const gridApi = shallowRef<GridApi<PlAgDataTableV2Row> | null>(null);
@@ -353,39 +375,34 @@ watch(
     ) {
       const sourceId = settings.value.sourceId;
       if (sourceId === null) {
+        filterableColumns.value = [];
         if (selection.value) {
           selection.value = {
             axesSpec: [],
             selectedKeys: [],
           };
         }
-        return emit('columnsChanged', {
-          sourceId: null,
-          columns: [],
-        });
+      } else {
+        const isColDef = (def: ColDef | ColGroupDef): def is ColDef =>
+          !('children' in def);
+        const colDefs = options.columnDefs?.filter(isColDef) ?? [];
+        const columns = colDefs
+          .map((def) => def.colId)
+          .filter((colId) => colId !== undefined)
+          .filter((colId) => colId !== PlAgDataTableRowNumberColId)
+          .map((colId) => parseJson(colId as PTableColumnSpecJson))
+          ?? [];
+        filterableColumns.value = columns;
+        if (selection.value) {
+          const axesSpec = columns
+            .filter((column) => column.type === 'axis')
+            .map((axis) => axis.spec);
+          selection.value = {
+            ...selection.value,
+            axesSpec,
+          };
+        }
       }
-      const isColDef = (def: ColDef | ColGroupDef): def is ColDef =>
-        !('children' in def);
-      const colDefs = options.columnDefs?.filter(isColDef) ?? [];
-      const columns = colDefs
-        .map((def) => def.colId)
-        .filter((colId) => colId !== undefined)
-        .filter((colId) => colId !== PlAgDataTableRowNumberColId)
-        .map((colId) => parseJson(colId as PTableColumnSpecJson))
-        ?? [];
-      const axesSpec = columns
-        .filter((column) => column.type === 'axis')
-        .map((axis) => axis.spec);
-      if (selection.value) {
-        selection.value = {
-          ...selection.value,
-          axesSpec,
-        };
-      }
-      emit('columnsChanged', {
-        sourceId,
-        columns,
-      });
     }
   },
   { immediate: true },
@@ -437,9 +454,12 @@ watch(
       }
 
       // Model updated -> show skeletons instead of data
-      if (!settings.model) {
+      const sourceChanged = (settings.model?.sourceId && settings.model.sourceId !== settings.sourceId);
+      if (!settings.model || sourceChanged) {
         const state = gridApi.getServerSideGroupLevelState();
-        const rowCount = state.length > 0 ? state[0].rowCount : undefined;
+        const rowCount = !sourceChanged && state.length > 0
+          ? state[0].rowCount
+          : 1;
         return gridApi.updateGridOptions({
           serverSideDatasource: {
             getRows: (params) => {
@@ -512,9 +532,13 @@ watch(
 <template>
   <div :class="$style.container">
     <PlAgGridColumnManager
-      v-if="gridApi && showColumnsPanel"
+      v-if="gridApi && !disableColumnsPanel"
       :api="gridApi"
-      :width="columnsPanelWidth"
+    />
+    <PlTableFiltersV2
+      v-if="!disableFiltersPanel"
+      v-model="filtersState"
+      :settings="filtersSettings"
     />
     <PlAgCsvExporter
       v-if="gridApi && showExportButton"

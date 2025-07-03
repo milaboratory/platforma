@@ -1,10 +1,8 @@
 import {
-  canonicalizeJson,
   type JsonCompatible,
   type AxisId,
   type CanonicalizedJson,
   type ListOptionBase,
-  type LocalBlobHandleAndSize,
   type PlDataTableModel,
   type PlDataTableSheet,
   type PlDataTableSheetState,
@@ -12,39 +10,22 @@ import {
   type PlTableFilterType,
   type PTableColumnId,
   type PTableColumnSpec,
-  type PTableHandle,
   type PTableKey,
-  type PTableRowKey,
   type PTableValue,
-  type RemoteBlobHandleAndSize,
 } from '@platforma-sdk/model';
 import type { PTableHidden } from './sources/common';
 import type { ComputedRef, MaybeRefOrGetter } from 'vue';
 import { computed, toValue } from 'vue';
+import canonicalize from 'canonicalize';
 
-export type PlDataTableSettingsPTable = {
-  /** The type of the source to feed the data into the table */
-  sourceType: 'ptable';
-  /** PTable handle output */
-  pTable?: PTableHandle;
-  /** Sheets that we want to show in our table */
-  sheets?: PlDataTableSheet[];
+export type PlDataTableFilterConfig = {
+  options?: PlTableFilterType[];
+  default?: PlTableFilter;
 };
-
-export type PlDataTableSettingsXsv = {
-  /** The type of the source to feed the data into the table */
-  sourceType: 'xsv';
-  xsvFile?: LocalBlobHandleAndSize | RemoteBlobHandleAndSize;
-};
-
-/** Data table settings */
-export type PlDataTableSettings =
-  | undefined
-  | PlDataTableSettingsPTable
-  | PlDataTableSettingsXsv;
 
 /** Data table V2 settings */
 export type PlDataTableSettingsV2 =
+(
   | { sourceId: null }
   | {
     /** Unique source id for state caching */
@@ -53,68 +34,134 @@ export type PlDataTableSettingsV2 =
     sheets: PlDataTableSheet[];
     /** Result of `createPlDataTableV2` */
     model: PlDataTableModel | undefined;
-  };
+  }
+) & {
+  /** Callback configuring filters for the table */
+  filtersConfig: (info: {
+    sourceId: string;
+    column: PTableColumnSpec;
+  }) => PlDataTableFilterConfig;
+};
 
-export function usePlDataTableSettingsV2<T = string>({
+type OptionsAdvanced<T> = {
   /**
    * Block property (such as inputAnchor) used to produce the data source.
    * Mandatory for cases when the table can change without block run.
    * Skip when the table is changed only after block run.
    * Ask developers for help if you don't know what to set here.
    */
-  sourceId,
+  sourceId: MaybeRefOrGetter<T | undefined>;
   /** Block output created by `createPlDataTableV2` */
-  model,
+  model: MaybeRefOrGetter<PlDataTableModel | undefined>;
   /**
    * Sheets for partitioned data sources.
    * Do not set if data source is never partitioned.
    */
-  sheets,
-}: {
-  sourceId?: MaybeRefOrGetter<JsonCompatible<T> | undefined>;
-  model: MaybeRefOrGetter<PlDataTableModel | undefined>;
   sheets?: MaybeRefOrGetter<PlDataTableSheet[] | undefined>;
-}): ComputedRef<PlDataTableSettingsV2> {
+  /**
+   * Callback configuring filters for the table.
+   * If not provided, filtering will be disabled.
+   * Parameter `sourceId` should be compared using `isJsonEqual` from `@milaboratories/helpers`.
+   */
+  filtersConfig?: (info: {
+    sourceId: JsonCompatible<T>;
+    column: PTableColumnSpec;
+  }) => PlDataTableFilterConfig;
+};
+
+type OptionsSimple = {
+  /** Block output created by `createPlDataTableV2` */
+  model: MaybeRefOrGetter<PlDataTableModel | undefined>;
+  /**
+   * Sheets for partitioned data sources.
+   * Do not set if data source is never partitioned.
+   */
+  sheets?: MaybeRefOrGetter<PlDataTableSheet[] | undefined>;
+  /**
+   * Callback configuring filters for the table.
+   * If not provided, filtering will be disabled.
+   */
+  filtersConfig?: (info: {
+    column: PTableColumnSpec;
+  }) => PlDataTableFilterConfig;
+};
+
+export function usePlDataTableSettingsV2<T>(options: OptionsAdvanced<T>): ComputedRef<PlDataTableSettingsV2>;
+export function usePlDataTableSettingsV2(options: OptionsSimple): ComputedRef<PlDataTableSettingsV2>;
+export function usePlDataTableSettingsV2<T>(options: OptionsAdvanced<T> | OptionsSimple): ComputedRef<PlDataTableSettingsV2> {
+  const fc = options.filtersConfig;
+  const filtersConfigValue = typeof fc === 'function'
+    ? (ops: {
+        sourceId: string;
+        column: PTableColumnSpec;
+      }) => {
+        try {
+          return fc({
+            sourceId: JSON.parse(ops.sourceId) as JsonCompatible<T>,
+            column: ops.column,
+          });
+        } catch (e) {
+          console.error(`filtersConfig failed for sourceId: ${ops.sourceId}, column: ${JSON.stringify(ops.column)} - using default config`, e);
+          return {};
+        }
+      }
+    : () => ({});
   return computed(() => {
-    const modelValue = toValue(model);
-    if (sourceId) {
-      const sourceIdValue = toValue(sourceId);
-      if (sheets) {
-        const sheetsValue = toValue(sheets);
+    const modelValue = toValue(options.model);
+    if ('sourceId' in options) {
+      const sourceIdValue = toValue(options.sourceId);
+      if (options.sheets) {
+        const sheetsValue = toValue(options.sheets);
         return sourceIdValue && sheetsValue
           ? {
-              sourceId: canonicalizeJson(sourceIdValue),
+              sourceId: canonicalize(sourceIdValue)!,
               sheets: sheetsValue,
               model: modelValue,
+              filtersConfig: filtersConfigValue,
             }
-          : { sourceId: null };
+          : {
+              sourceId: null,
+              filtersConfig: filtersConfigValue,
+            };
       } else {
         return sourceIdValue
           ? {
-              sourceId: canonicalizeJson(sourceIdValue),
+              sourceId: canonicalize(sourceIdValue)!,
               sheets: [],
               model: modelValue,
+              filtersConfig: filtersConfigValue,
             }
-          : { sourceId: null };
+          : {
+              sourceId: null,
+              filtersConfig: filtersConfigValue,
+            };
       }
     } else {
-      if (sheets) {
-        const sheetsValue = toValue(sheets);
+      if (options.sheets) {
+        const sheetsValue = toValue(options.sheets);
         return sheetsValue
           ? {
-              sourceId: canonicalizeJson<string>('static'),
+              sourceId: canonicalize('static')!,
               sheets: sheetsValue,
               model: modelValue,
+              filtersConfig: filtersConfigValue,
             }
-          : { sourceId: null };
+          : {
+              sourceId: null,
+              filtersConfig: filtersConfigValue,
+            };
       } else {
         return modelValue
           ? {
-              sourceId: canonicalizeJson<string>('static'),
+              sourceId: canonicalize('static')!,
               sheets: [],
               model: modelValue,
+              filtersConfig: filtersConfigValue,
             }
-          : { sourceId: null };
+          : {
+              sourceId: null,
+              filtersConfig: filtersConfigValue,
+            };
       }
     }
   });
@@ -137,37 +184,12 @@ export type PlTableFiltersDefault = {
 };
 
 /** PlAgDataTable controller contains all exported methods */
-export type PlAgDataTableController = {
-  /**
-   * Scroll table to make row with provided key visible
-   * Warning: works reliably only in client side mode.
-   */
-  focusRow: (rowKey: PTableRowKey) => Promise<void>;
-};
-
-/** PlAgDataTable controller contains all exported methods */
 export type PlAgDataTableV2Controller = {
   /**
    * Scroll table to make row with provided key visible
    * Warning: works reliably only in client side mode.
    */
   focusRow: (rowKey: PTableKey) => Promise<void>;
-};
-
-/**
- * Canonicalized PTableValue array JSON string
- * @deprecated Migrate to PlAgDataTableV2
- */
-export type PTableRowKeyJson = CanonicalizedJson<PTableRowKey>;
-
-/** PlAgDataTable row */
-export type PlAgDataTableRow = {
-  /** Axis key is not present for heterogeneous axes */
-  key?: PTableRowKey;
-  /** Unique row identifier, created as canonicalize(key)! when key is present */
-  id: PTableRowKeyJson | `${number}`;
-  /** Row values by column; sheet axes and labeled axes are excluded */
-  [field: `${number}` | `hC${number}`]: PTableValue;
 };
 
 export type PTableKeyJson = CanonicalizedJson<PTableKey>;
@@ -224,12 +246,4 @@ export type PlDataTableSheetNormalized = {
   options: ListOptionBase<string | number>[];
   /** default (selected) value */
   defaultValue: string | number;
-};
-
-export type PlDataTableColumnsInfo = {
-  sourceId: null;
-  columns: [];
-} | {
-  sourceId: string;
-  columns: PTableColumnSpec[];
 };
