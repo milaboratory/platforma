@@ -10,6 +10,7 @@ import type {
   PColumnValues,
   PObjectId,
   PTableColumnId,
+  PTableColumnIdAxis,
   PTableColumnIdColumn,
   PTableColumnSpec,
   PTableDef,
@@ -24,7 +25,6 @@ import {
   getColumnIdAndSpec,
   matchAxisId,
 } from '@milaboratories/pl-model-common';
-import { isJsonEqual } from '@milaboratories/helpers';
 import type {
   AxisLabelProvider,
   ColumnProvider,
@@ -614,26 +614,54 @@ export function createPlDataTableV2<A, U>(
   ops?: CreatePlDataTableOps,
 ): PlDataTableModel | undefined {
   if (inputColumns.length === 0) return undefined;
-  const tableStateNormalized = upgradePlDataTableStateV2(tableState);
-
-  const coreJoinType = ops?.coreJoinType ?? 'full';
-  const partitionFilters: PTableRecordSingleValueFilterV2[] = tableStateNormalized.pTableParams.partitionFilters;
-  const filters: PTableRecordSingleValueFilterV2[]
-    = uniqueBy(
-      [...(ops?.filters ?? []), ...tableStateNormalized.pTableParams.filters],
-      (f) => canonicalizeJson<PTableColumnId>(f.column),
-    ).filter((f) => !partitionFilters.some((pf) => isJsonEqual(f.column, pf.column)));
-  const sorting: PTableSorting[]
-    = uniqueBy(
-      [...(ops?.sorting ?? []), ...tableStateNormalized.pTableParams.sorting],
-      (s) => canonicalizeJson<PTableColumnId>(s.column),
-    );
   const columns = inputColumns.filter((c) => !isColumnHidden(c.spec));
+
+  const tableStateNormalized = upgradePlDataTableStateV2(tableState);
 
   const allLabelColumns = getAllLabelColumns(ctx.resultPool);
   if (!allLabelColumns) return undefined;
 
   const fullLabelColumns = getMatchingLabelColumns(columns.map(getColumnIdAndSpec), allLabelColumns);
+  const fullColumns = [...columns, ...fullLabelColumns];
+
+  const fullColumnsAxes = uniqueBy(
+    [...fullColumns.flatMap((c) => c.spec.axesSpec.map((a) => getAxisId(a)))],
+    (a) => canonicalizeJson<AxisId>(a),
+  );
+  const fullColumnsIds: PTableColumnId[] = [
+    ...fullColumnsAxes.map((a) => ({ type: 'axis', id: a } satisfies PTableColumnIdAxis)),
+    ...fullColumns.map((c) => ({ type: 'column', id: c.id } satisfies PTableColumnIdColumn)),
+  ];
+  const fullColumnsIdsSet = new Set(fullColumnsIds.map((c) => canonicalizeJson<PTableColumnId>(c)));
+  const isValidColumnId = (id: PTableColumnId): boolean => fullColumnsIdsSet.has(canonicalizeJson<PTableColumnId>(id));
+
+  const coreJoinType = ops?.coreJoinType ?? 'full';
+  const partitionFilters: PTableRecordSingleValueFilterV2[]
+    = tableStateNormalized.pTableParams.partitionFilters
+      .filter((f) => {
+        const valid = isValidColumnId(f.column);
+        if (!valid) ctx.logWarn(`Partition filter ${JSON.stringify(f)} does not match provided columns, skipping`);
+        return valid;
+      });
+  const filters: PTableRecordSingleValueFilterV2[]
+    = uniqueBy(
+      [...(ops?.filters ?? []), ...tableStateNormalized.pTableParams.filters],
+      (f) => canonicalizeJson<PTableColumnId>(f.column),
+    ).filter((f) => {
+      const valid = isValidColumnId(f.column);
+      if (!valid) ctx.logWarn(`Filter ${JSON.stringify(f)} does not match provided columns, skipping`);
+      return valid;
+    });
+  const sorting: PTableSorting[]
+    = uniqueBy(
+      [...(ops?.sorting ?? []), ...tableStateNormalized.pTableParams.sorting],
+      (s) => canonicalizeJson<PTableColumnId>(s.column),
+    ).filter((s) => {
+      const valid = isValidColumnId(s.column);
+      if (!valid) ctx.logWarn(`Sorting ${JSON.stringify(s)} does not match provided columns, skipping`);
+      return valid;
+    });
+
   const fullDef = createPTableDef({
     columns,
     labelColumns: fullLabelColumns,
@@ -669,7 +697,7 @@ export function createPlDataTableV2<A, U>(
   }
 
   // Filters decrease the number of result rows, sorting changes the order of result rows
-  [...filters.map((f) => f.column), ...sorting.map((s) => s.column)]
+  [...partitionFilters.map((f) => f.column), ...filters.map((f) => f.column), ...sorting.map((s) => s.column)]
     .filter((c): c is PTableColumnIdColumn => c.type === 'column')
     .forEach((c) => hiddenColumns.delete(c.id));
 
