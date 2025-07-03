@@ -1,5 +1,16 @@
 # @platforma-sdk/model
 
+## 1.38.0
+
+### Minor Changes
+
+- bd788f9: PlAgDataTable V1 removed, V2 significantly changed
+
+### Patch Changes
+
+- Updated dependencies [bd788f9]
+  - @milaboratories/pl-model-common@1.15.9
+
 ## 1.37.18
 
 ### Patch Changes

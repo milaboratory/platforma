@@ -1,5 +1,18 @@
 # @milaboratories/pl-middle-layer
 
+## 1.37.100
+
+### Patch Changes
+
+- bd788f9: PFrames driver - accept partitionFilters separately from all other fields
+- Updated dependencies [bd788f9]
+- Updated dependencies [bd788f9]
+  - @platforma-sdk/model@1.38.0
+  - @milaboratories/pl-model-common@1.15.9
+  - @milaboratories/pl-model-middle-layer@1.7.43
+  - @milaboratories/pl-drivers@1.5.79
+  - @platforma-sdk/block-tools@2.5.61
+
 ## 1.37.99
 
 ### Patch Changes

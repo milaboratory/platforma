@@ -1,5 +1,17 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.5.0
+
+### Minor Changes
+
+- bd788f9: PlAgDataTable V1 removed, V2 significantly changed
+
+### Patch Changes
+
+- Updated dependencies [bd788f9]
+  - @milaboratories/milaboratories.ui-examples.model@1.2.0
+  - @platforma-sdk/model@1.38.0
+
 ## 1.4.25
 
 ### Patch Changes
