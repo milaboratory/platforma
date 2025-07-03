@@ -1,5 +1,27 @@
 # @platforma-sdk/ui-vue
 
+## 1.37.18
+
+### Patch Changes
+
+- d60b0fe: Chore: fix linter errors
+- Updated dependencies [d60b0fe]
+  - @milaboratories/uikit@2.2.98
+  - @platforma-sdk/model@1.37.18
+
+## 1.37.17
+
+### Patch Changes
+
+- Updated dependencies [e210414]
+  - @milaboratories/uikit@2.2.97
+
+## 1.37.15
+
+### Patch Changes
+
+- de26a80: PlAgDataTableV2: make overlay text props reactive
+
 ## 1.37.14
 
 ### Patch Changes

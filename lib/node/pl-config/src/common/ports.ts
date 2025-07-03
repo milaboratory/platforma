@@ -85,15 +85,15 @@ export type Endpoints = {
 export type PortsWithMinio = {
   grpc: number;
   http: number;
-  
+
   monitoring: number;
   debug: number;
-  
+
   // @deprecated
   minio: number;
   // @deprecated
   minioConsole: number;
-  
+
   grpcLocal: number;
   minioLocal: number;
   httpLocal: number;

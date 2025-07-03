@@ -1,6 +1,5 @@
 import type { GrpcClientProviderFactory, PlClient } from '@milaboratories/pl-client';
 import type { MiLogger } from '@milaboratories/ts-helpers';
-import type { GrpcTransport } from '@protobuf-ts/grpc-transport';
 import type { Dispatcher } from 'undici';
 import { ClientDownload } from './download';
 import { ClientLogs } from './logs';

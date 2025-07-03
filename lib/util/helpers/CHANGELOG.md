@@ -1,5 +1,11 @@
 # @milaboratories/helpers
 
+## 1.6.17
+
+### Patch Changes
+
+- e210414: Reimplement interface for PlElementList
+
 ## 1.6.16
 
 ### Patch Changes

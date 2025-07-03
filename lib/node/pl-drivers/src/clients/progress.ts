@@ -1,5 +1,4 @@
 import { ProgressClient } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/progressapi/protocol.client';
-import type { GrpcTransport } from '@protobuf-ts/grpc-transport';
 import type { RpcOptions } from '@protobuf-ts/runtime-rpc';
 import { Duration } from '../proto/google/protobuf/duration';
 import type { GrpcClientProvider, GrpcClientProviderFactory, PlClient } from '@milaboratories/pl-client';

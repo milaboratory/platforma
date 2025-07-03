@@ -484,6 +484,29 @@ watch(
     }
   },
 );
+
+watch(
+  () => ({
+    gridApi: gridApi.value,
+    loadingText: props.loadingText,
+    notReadyText: props.notReadyText,
+    noRowsText: props.noRowsText,
+  }),
+  ({ gridApi, loadingText, notReadyText, noRowsText }) => {
+    if (!gridApi || gridApi.isDestroyed()) return;
+    gridApi.updateGridOptions({
+      loadingOverlayComponentParams: {
+        ...gridOptions.value.loadingOverlayComponentParams,
+        loadingText,
+        notReadyText,
+      },
+      noRowsOverlayComponentParams: {
+        ...gridOptions.value.noRowsOverlayComponentParams,
+        text: noRowsText,
+      },
+    });
+  },
+);
 </script>
 
 <template>

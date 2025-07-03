@@ -13,7 +13,7 @@ export function applyTemplateCompilerOptions(opts: CompilerOption[], tpl: Templa
   }
 }
 
-export function applyLibraryCompilerOptions(opts: CompilerOption[], lib: TemplateLibDataV3) {
+export function applyLibraryCompilerOptions(opts: CompilerOption[], _lib: TemplateLibDataV3) {
   for (const opt of opts) {
     switch (opt.name) {
       case 'hash_override': {

@@ -1,5 +1,9 @@
 import type { AnyFunction } from './types';
 
+export function isFunction(value: unknown): value is AnyFunction {
+  return typeof value === 'function';
+}
+
 /**
  * A utility class that ensures asynchronous locks, allowing only one task to proceed at a time.
  */

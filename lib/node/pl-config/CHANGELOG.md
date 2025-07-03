@@ -1,5 +1,11 @@
 # @milaboratories/pl-config
 
+## 1.6.1
+
+### Patch Changes
+
+- d60b0fe: Chore: fix linter errors
+
 ## 1.6.0
 
 ### Minor Changes

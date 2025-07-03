@@ -71,6 +71,7 @@ function sequenceLength(index: number) {
       <div v-if="sequenceNames.length > 1" :class="$style['sequence-names']">
         <span
           v-for="(name, index) of sequenceNames"
+          :key="index"
           :style="{ inlineSize: `calc(${sequenceLength(index)} * 20px)` }"
         >{{ name }}</span>
       </div>

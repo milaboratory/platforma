@@ -14,9 +14,14 @@ validation := import(":validation")
 runenv := import(":exec.runenv")
 internal := import(":exec.python.internal")
 constants := import(":exec.constants")
+pkg := import(":exec.package")
 
 _createVenv := func(pythonPackage, pythonDescriptor) {
-	wdBefore := workdir.builder().build()
+	wdBefore := workdir.builder().
+		inQueue(pkg.DEFAULT_ALLOCATION_QUEUE).
+		cpu(pkg.DEFAULT_ALLOCATION_CPU).
+		mem(pkg.DEFAULT_ALLOCATION_RAM).
+		build()
 
 	// DEPRECATED: remove after 15 Mar 2025
 	t := feats.commandExpressions ? constants.ARG_TYPE_EXPRESSION : constants.ARG_TYPE_VAR
@@ -25,9 +30,9 @@ _createVenv := func(pythonPackage, pythonDescriptor) {
 	venvBuilder := runcmd.builder(wdBefore)
 	venvBuilder.
 		ref("python-run-environment", pythonPackage).
-		inQueue("light").
-		cpu(1).
-		mem("1GiB").
+		inQueue(pkg.DEFAULT_ALLOCATION_QUEUE).
+		cpu(pkg.DEFAULT_ALLOCATION_CPU).
+		mem(pkg.DEFAULT_ALLOCATION_RAM).
 		substitutionRule(pythonRule, "python-run-environment").
 		addPathTyped(t, path.join("{python}", pythonDescriptor.binDir))
 

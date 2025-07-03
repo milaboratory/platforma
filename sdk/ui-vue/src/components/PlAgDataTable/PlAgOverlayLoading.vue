@@ -1,16 +1,23 @@
 <script setup lang="ts">
-import style from './pl-ag-overlay-loading.module.scss';
 import { PlSplash } from '@milaboratories/uikit';
+import { ref } from 'vue';
+import style from './pl-ag-overlay-loading.module.scss';
 import type { PlAgOverlayLoadingParams } from './types';
 
 // @TODO move this component from this folder
 
-defineProps<{
-  /**
-   * Required object that contains props from loadingOverlayComponentParams.
-   */
+const props = defineProps<{
+  /** Required object that contains props from loadingOverlayComponentParams. */
   params: PlAgOverlayLoadingParams;
 }>();
+
+const params = ref(props.params);
+
+defineExpose({
+  refresh: (newParams: PlAgOverlayLoadingParams) => {
+    params.value = newParams;
+  },
+});
 </script>
 
 <template>

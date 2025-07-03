@@ -11,11 +11,9 @@ smart := import(":smart")
 render := import(":render")
 workdir := import(":workdir")
 stream := import(":exec.stream")
-limits := import(":exec.limits")
 pkg := import(":exec.package")
 blobs := import(":file.internal")
 desc := import(":exec.descriptor")
-constants := import(":exec.constants")
 monetization := import(":exec.monetization_internal")
 maps := import(":maps")
 runcmd := import(":exec.runcmd")
@@ -111,22 +109,7 @@ self.body(func(inputs) {
 	wdBuilder := workdir.builder()
 
 	quota := inputs.quota
-
-	quotaBuilder := limits.quotaBuilder().
-		cpu(quota.cpu).
-		ram(quota.ram)
-
-	if limits.useBatch(quota.queue) {
-		quotaBuilder.queue(constants.BATCH_QUEUE)
-	} else {
-		quotaBuilder.queue(quota.queue)
-	}
-
-	storageSpaceRef := limits.storageSpaceRequestBuilder().
-		quota(quotaBuilder.build()).
-		build()
-
-	wdBuilder.allocation(storageSpaceRef.allocation)
+	wdBuilder.inQueue(quota.queue).cpu(quota.cpu).mem(quota.ram)
 
 	// add files
 	wdBuilder.addFiles(inputs.filesToAdd)
@@ -165,7 +148,7 @@ self.body(func(inputs) {
 	// it has acquired the storage quota required for workdir creation,
 	// which is a prerequisite for the computation itself.
 
-	computeAllocation := delayedCompAlloc.create(wdBefore, {
+	computeAllocationRef := delayedCompAlloc.create(wdBefore, {
 		queue: runOptions.queue,
 		cpu: quota.cpu,
 		ram: quota.ram
@@ -177,7 +160,7 @@ self.body(func(inputs) {
 
 	mnz := runOptions.monetization
 	if !is_undefined(mnz) {
-		result := monetization.run(mnz, wdBefore, inputs.mnzPlan, runOptions.queue, computeAllocation)
+		result := monetization.run(mnz, wdBefore, inputs.mnzPlan, runOptions.queue, computeAllocationRef)
 		wdBefore = result.wdAfter
 		mainPlanPreBuilder.refVar(result.jwtEnvName, result.jwtEnvName, result.jwtEnvValue)
 		mainPlanPreBuilder.envExpression(result.jwtEnvName, "{" + result.jwtEnvName + "}")
@@ -187,12 +170,12 @@ self.body(func(inputs) {
 	// The same as wdBefore, but might get additional files if they are required for run environment,
 	// like .Rprofile for R with activated renv.
 	if (runEnvType == "R") {
-		wdBefore = _activateRenvForWD(wdBefore, runOptions.queue, computeAllocation, inputs.mainPlan)
+		wdBefore = _activateRenvForWD(wdBefore, runOptions.queue, computeAllocationRef, inputs.mainPlan)
 	}
 
 	mainRunBuilder := runcmd.builder(wdBefore, mainPlanPreBuilder.state()).
 		inQueue(runOptions.queue).
-		allocation(computeAllocation)
+		allocation(computeAllocationRef)
 
 	// Passing arguments and environment variables from run options passed by the user
 

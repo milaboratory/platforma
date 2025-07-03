@@ -1,0 +1,9 @@
+self := import(":tpl.light")
+
+self.awaitState("ResourceReady")
+
+self.body(func(inputs) {
+	return {
+		workdirTypeName: inputs.wd.info().Type.Name
+	}
+})
