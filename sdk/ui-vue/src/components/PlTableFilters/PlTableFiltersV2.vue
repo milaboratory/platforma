@@ -21,10 +21,8 @@ import {
   PlBtnSecondary,
   PlMaskIcon16,
   PlElementList,
+  usePlBlockPageTitleTeleportTarget,
 } from '@milaboratories/uikit';
-import {
-  useDataTableToolsPanelTarget,
-} from '../PlAgDataTableToolsPanel';
 import { useFilters } from './filters-state';
 import PlTableAddFilterV2 from './PlTableAddFilterV2.vue';
 import PlTableFilterEntryV2 from './PlTableFilterEntryV2.vue';
@@ -46,7 +44,7 @@ const mounted = ref(false);
 onMounted(() => {
   mounted.value = true;
 });
-const teleportTarget = useDataTableToolsPanelTarget();
+const teleportTarget = usePlBlockPageTitleTeleportTarget('PlTableFiltersV2');
 
 const showManager = ref(false);
 

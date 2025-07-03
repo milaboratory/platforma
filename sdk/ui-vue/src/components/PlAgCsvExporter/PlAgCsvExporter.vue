@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import type { GridApi } from 'ag-grid-enterprise';
-import { PlBtnGhost } from '@milaboratories/uikit';
+import { PlBtnGhost, usePlBlockPageTitleTeleportTarget } from '@milaboratories/uikit';
 import { shallowRef, toRefs } from 'vue';
 import { exportCsv } from './export-csv';
-import { useDataTableToolsPanelTarget } from '../PlAgDataTableToolsPanel';
 
 const props = defineProps<{
   api: GridApi;
@@ -16,7 +15,7 @@ const initiateExport = () => {
   exportCsv(gridApi.value, () => exporting.value = false);
 };
 
-const teleportTarget = useDataTableToolsPanelTarget();
+const teleportTarget = usePlBlockPageTitleTeleportTarget('PlAgCsvExporter');
 </script>
 
 <template>

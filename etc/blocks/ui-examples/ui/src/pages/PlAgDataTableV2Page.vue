@@ -9,7 +9,6 @@ import {
   isJsonEqual,
 } from '@milaboratories/helpers';
 import {
-  PlAgDataTableToolsPanel,
   PlBlockPage,
   PlAgDataTableV2,
   PlNumberField,
@@ -97,9 +96,6 @@ watch(
 <template>
   <PlBlockPage>
     <template #title>PlAgDataTable V2</template>
-    <template #append>
-      <PlAgDataTableToolsPanel />
-    </template>
     <PlAgDataTableV2
       v-model="app.model.ui.dataTableStateV2"
       v-model:selection="selection"

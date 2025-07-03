@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { type Column, type DisplayedColumnsChangedEvent, type GridApi } from 'ag-grid-enterprise';
-import { PlBtnGhost, PlSlideModal, PlElementList } from '@milaboratories/uikit';
+import { PlBtnGhost, PlSlideModal, PlElementList, usePlBlockPageTitleTeleportTarget } from '@milaboratories/uikit';
 import { ref, toRefs, watch, computed } from 'vue';
-import { useDataTableToolsPanelTarget } from '../PlAgDataTableToolsPanel';
 import { PlAgDataTableRowNumberColId } from '../PlAgDataTable/sources/row-number';
 
 const props = defineProps<{
@@ -48,7 +47,7 @@ const items = computed(() => {
 });
 
 const slideModal = ref(false);
-const teleportTarget = useDataTableToolsPanelTarget();
+const teleportTarget = usePlBlockPageTitleTeleportTarget('PlAgGridColumnManager');
 </script>
 
 <template>
