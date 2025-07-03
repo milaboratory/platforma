@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.15.9
+
+### Patch Changes
+
+- bd788f9: PFrames driver - accept partitionFilters separately from all other fields
+
 ## 1.15.8
 
 ### Patch Changes
