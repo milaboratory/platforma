@@ -123,7 +123,7 @@ const versionRef = computed<number>((oldVersion) => {
 });
 
 createSortable(hasPinnedItems, pinnedContainerRef, pinnedItemsRef, () => 0);
-createSortable(hasUnpinnedItems, unpinnedContainerRef, unpinnedItemsRef, () => pinnedItemsRef.value.length);
+createSortable(hasUnpinnedItems, unpinnedContainerRef, unpinnedItemsRef, () => unpinnedItemsRef.value.length);
 
 function createSortable(toggler: ShallowRef<boolean>, elRef: ShallowRef<undefined | HTMLElement>, itemsRef: ShallowRef<T[]>, getOffset: () => number) {
   const sortable = useSortable(elRef, itemsRef, {
@@ -142,9 +142,17 @@ function createSortable(toggler: ShallowRef<boolean>, elRef: ShallowRef<undefine
       }
     },
   });
-  watch([() => props.disableDragging, toggler], ([disabled, on]) => disabled || !on ? sortable.stop() : sortable.start(), {
-    immediate: true,
-  });
+  watch(
+    [elRef, () => props.disableDragging, toggler],
+    ([elRef, disabled, on]) => {
+      if (!elRef || disabled || !on) {
+        sortable.stop();
+      } else {
+        sortable.start();
+      }
+    },
+    { immediate: true },
+  );
 
   return sortable;
 }

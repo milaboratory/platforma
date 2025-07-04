@@ -36,6 +36,7 @@
     "canonicalize": "catalog:",
     "lru-cache": "catalog:",
     "vue": "catalog:",
+    "@vue/reactivity": "catalog:",
     "@vueuse/core": "catalog:",
     "@vueuse/integrations": "catalog:",
     "d3-format": "catalog:",

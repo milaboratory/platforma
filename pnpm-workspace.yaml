@@ -208,6 +208,7 @@ catalog:
   # UI
 
   'vue': ^3.5.13
+  '@vue/reactivity': ^3.5.13
   '@vueuse/core': ^13.3.0
   '@vueuse/integrations': ^13.3.0
   'vue-tsc': ^2.2.10
