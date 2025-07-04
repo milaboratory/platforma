@@ -6,8 +6,6 @@ type JsonValue = JsonPrimitive | JsonValue[] | {
   [key: string]: JsonValue;
 };
 
-type a = Extract<[], {}>;
-
 // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
 type NotAssignableToJson = bigint | symbol | Function;
 
