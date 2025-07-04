@@ -25,7 +25,7 @@ import type {
 } from '@milaboratories/pl-model-middle-layer';
 import { constructBlockContextArgsOnly } from './block_ctx';
 import { ifNotUndef } from '../cfg_render/util';
-import type { BlockSection } from '@platforma-sdk/model';
+import { extractCodeWithInfo, type BlockSection } from '@platforma-sdk/model';
 import { computableFromCfgOrRF } from './render';
 import type { NavigationStates } from './navigation_states';
 import { getBlockPackInfo } from './util';
@@ -154,15 +154,22 @@ export function projectOverview(
 
         const bp = getBlockPackInfo(prj, id);
 
-        const { sections, title, inputsValid, sdkVersion }
+        const { sections, title, inputsValid, sdkVersion, featureFlags, isIncompatibleWithRuntime }
           = ifNotUndef(bp, ({ bpId, cfg }) => {
+            if (!env.runtimeCapabilities.checkCompatibility(cfg.featureFlags)) {
+              return {
+                isIncompatibleWithRuntime: true,
+                featureFlags: cfg.featureFlags,
+              };
+            }
             const blockCtxArgsOnly = constructBlockContextArgsOnly(prjEntry, id);
+            const codeWithInfo = extractCodeWithInfo(cfg);
             return {
               sections: computableFromCfgOrRF(
                 env,
                 blockCtxArgsOnly,
                 cfg.sections,
-                cfg.code,
+                codeWithInfo,
                 bpId,
               ).wrap({
                 recover: (e) => {
@@ -178,7 +185,7 @@ export function projectOverview(
                     env,
                     blockCtxArgsOnly,
                     title,
-                    cfg.code,
+                    codeWithInfo,
                     bpId,
                   ).wrap({
                     recover: (e) => {
@@ -192,7 +199,7 @@ export function projectOverview(
                 env,
                 blockCtxArgsOnly,
                 cfg.inputsValid,
-                cfg.code,
+                codeWithInfo,
                 bpId,
               ).wrap({
                 recover: (e) => {
@@ -202,7 +209,9 @@ export function projectOverview(
                   return false;
                 },
               }) as ComputableStableDefined<boolean>,
-              sdkVersion: cfg.sdkVersion,
+              sdkVersion: codeWithInfo?.sdkVersion,
+              featureFlags: codeWithInfo?.featureFlags ?? {},
+              isIncompatibleWithRuntime: false,
             };
           }) || {};
 
@@ -239,6 +248,8 @@ export function projectOverview(
           currentBlockPack: bp?.info?.source,
           updates,
           sdkVersion,
+          featureFlags,
+          isIncompatibleWithRuntime,
           navigationState: navigationStates.getState(id),
         };
       });

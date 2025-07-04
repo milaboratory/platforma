@@ -7,8 +7,19 @@
  */
 export interface Watcher {
   /** True, if this object was marked as changed. */
-  isChanged: boolean;
+  readonly isChanged: boolean;
 
-  /** Marks watcher as changed. */
-  markChanged(): void;
+  /**
+   * Marker of the change source.
+   *
+   * Optionally set by some change source, marker can be used to identify the source of the change.
+   */
+  readonly changeSourceMarker?: string;
+
+  /**
+   * Marks watcher as changed.
+   *
+   * @param marker - optional marker to identify the source of the change.
+   */
+  markChanged(marker?: string): void;
 }

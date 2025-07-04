@@ -204,6 +204,18 @@ test('testing wider range of types in computables', async () => {
   ).toBeInstanceOf(Uint32Array);
 });
 
+test('change source marker', async () => {
+  const watchable = new WatchableValue(1);
+  const wc = watchable;
+  const c1 = Computable.make((ctx) => ctx.accessor(wc).getValue() + (ctx.changeSourceMarker ?? 'undefined'));
+
+  expect(await c1.getValue()).toBe('1undefined');
+
+  watchable.setValue(2, 'test');
+
+  expect(await c1.getValue()).toBe('2test');
+});
+
 test('nested computable test 1', async () => {
   const watchable = new WatchableValue(1);
   const wc = watchable.asComputable();

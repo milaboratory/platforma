@@ -180,7 +180,7 @@ export class DownloadUrlDriver implements DownloadUrlSyncReader {
 
   private removeTask(task: DownloadByUrlTask, reason: string) {
     task.abort(reason);
-    task.change.markChanged();
+    task.change.markChanged(`task for url ${task.url} removed: ${reason}`);
     this.urlToDownload.delete(task.url.toString());
   }
 
@@ -224,11 +224,11 @@ class DownloadByUrlTask {
     try {
       const size = await this.downloadAndUntar(clientDownload, withGunzip, this.signalCtl.signal);
       this.setDone(size);
-      this.change.markChanged();
+      this.change.markChanged(`download of ${this.url} finished`);
     } catch (e: any) {
       if (e instanceof URLAborted || e instanceof NetworkError400) {
         this.setError(e);
-        this.change.markChanged();
+        this.change.markChanged(`download of ${this.url} failed`);
         // Just in case we were half-way extracting an archive.
         await rmRFDir(this.path);
         return;
