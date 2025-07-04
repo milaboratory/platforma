@@ -5,11 +5,9 @@ import type {
   Settings,
 } from '@milaboratories/miplots4';
 import { PlAlert } from '@milaboratories/uikit';
-import { useResizeObserver } from '@vueuse/core';
 import {
   computed,
   onBeforeUnmount,
-  ref,
   shallowRef,
   useTemplateRef,
   watchEffect,
@@ -22,12 +20,6 @@ const { residueCounts } = defineProps<{
 }>();
 
 const plotEl = useTemplateRef('plotEl');
-
-const size = ref<{ width: number; height: number }>();
-
-useResizeObserver(plotEl, ([{ contentRect: { width, height } }]) => {
-  size.value = { width, height };
-});
 
 const palette = {
   blue: '#549EE7',
@@ -68,7 +60,6 @@ const residueColors = {
 };
 
 const settings = computed<Settings | undefined>(() => {
-  if (!size.value) return;
   return ({
     type: 'discrete',
     title: {
@@ -76,8 +67,8 @@ const settings = computed<Settings | undefined>(() => {
       show: false,
     },
     size: {
-      width: size.value.width,
-      height: size.value.height,
+      width: residueCounts.length * 20,
+      height: 80,
       innerOffset: 0,
       outerOffset: 0,
     },
@@ -134,7 +125,7 @@ const data = computed<DataByColumns>(
     }
     return ({
       type: 'columns',
-      id: 'seq-logo',
+      id: `seq-logo-${crypto.randomUUID()}`,
       values: { countKey, columnKey, residueKey },
     });
   },
@@ -160,22 +151,8 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div :class="$style.container">
-    <div ref="plotEl" :class="$style.plot" />
-    <PlAlert v-if="error" type="error">
-      {{ error.message }}
-    </PlAlert>
-  </div>
+  <PlAlert v-if="error" type="error">
+    {{ error.message }}
+  </PlAlert>
+  <div v-else ref="plotEl" />
 </template>
-
-<style module>
-.container {
-  position: relative;
-  block-size: 80px;
-}
-
-.plot {
-  position: absolute;
-  inset: 0;
-}
-</style>
