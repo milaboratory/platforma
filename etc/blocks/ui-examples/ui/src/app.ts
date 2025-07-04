@@ -30,7 +30,6 @@ import RadioPage from './pages/RadioPage.vue';
 import PlFileInputPage from './pages/PlFileInputPage.vue';
 import PlErrorBoundaryPage from './pages/PlErrorBoundaryPage.vue';
 import PlElementListPage from './pages/PlElementListPage.vue';
-import PlAnnotationSidebarPage from './pages/PlAnnotationSidebarPage.vue';
 
 export const sdkPlugin = defineApp(platforma, (app) => {
   // Additional data
@@ -97,7 +96,6 @@ export const sdkPlugin = defineApp(platforma, (app) => {
       '/pl-file-input-page': () => PlFileInputPage,
       '/pl-error-boundary-page': () => PlErrorBoundaryPage,
       '/pl-element-list-page': () => PlElementListPage,
-      '/pl-annotation-sidebar-page': () => PlAnnotationSidebarPage,
       '/select-files': () => SelectFilesPage,
       '/errors': () => ErrorsPage,
       '/text-fields': () => PlTextFieldPage,
