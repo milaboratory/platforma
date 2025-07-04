@@ -1,11 +1,11 @@
-import type { BlockRenderingMode } from '@milaboratories/pl-model-common';
-import type { Code, TypedConfigOrString } from './types';
-import type { BlockConfigV3 } from './v3';
+import type { BlockConfigV3Generic } from './block_config';
+import type { Code } from './code';
+import type { BlockRenderingMode } from './types';
 
 /** Container simplifying maintenance of forward and backward compatibility */
 export type BlockConfigContainer = {
   /** Actual config */
-  readonly v3: Omit<BlockConfigV3, 'code'>;
+  readonly v3: Omit<BlockConfigV3Generic, 'code'>;
 
   /** Config code bundle */
   readonly code?: Code;
@@ -36,23 +36,23 @@ export type BlockConfigContainer = {
    * For backward compatibility
    * @deprecated
    */
-  readonly canRun?: TypedConfigOrString;
+  readonly canRun?: unknown;
 
   /**
    * For backward compatibility
    * @deprecated
    */
-  readonly inputsValid?: TypedConfigOrString;
+  readonly inputsValid?: unknown;
 
   /**
    * For backward compatibility
    * @deprecated
    */
-  readonly sections?: TypedConfigOrString;
+  readonly sections?: unknown;
 
   /**
    * For backward compatibility
    * @deprecated
    */
-  readonly outputs?: Record<string, TypedConfigOrString>;
+  readonly outputs?: Record<string, unknown>;
 };

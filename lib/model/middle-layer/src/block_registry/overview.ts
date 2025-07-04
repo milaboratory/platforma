@@ -3,6 +3,7 @@ import {
   BlockPackId,
   BlockPackIdNoVersion,
   BlockPackMetaEmbeddedBytes,
+  FeatureFlags,
   SemVer
 } from '../block_meta';
 import { BlockPackFromRegistryV2, BlockPackSpec } from './block_pack_spec';
@@ -34,7 +35,8 @@ export const VersionWithChannels = z.object({
 export const SingleBlockPackOverview = z.object({
   id: BlockPackId,
   meta: BlockPackMetaEmbeddedBytes,
-  spec: BlockPackSpec
+  featureFlags: FeatureFlags.optional(),
+  spec: BlockPackSpec,
 });
 export type SingleBlockPackOverview = z.infer<typeof SingleBlockPackOverview>;
 

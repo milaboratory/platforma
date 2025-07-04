@@ -19,7 +19,7 @@ import { Writable } from 'node:stream';
 import type { ClientDownload } from '../../clients/download';
 import { UnknownStorageError, WrongLocalFileUrl } from '../../clients/download';
 import { NetworkError400 } from '../../helpers/download';
-import { stringifyWithResourceId } from '@milaboratories/pl-client';
+import { resourceIdToString, stringifyWithResourceId } from '@milaboratories/pl-client';
 
 /** Downloads a blob and holds callers and watchers for the blob. */
 export class DownloadBlobTask {
@@ -59,12 +59,12 @@ export class DownloadBlobTask {
     try {
       const size = await this.ensureDownloaded();
       this.setDone(size);
-      this.change.markChanged();
+      this.change.markChanged(`blob download for ${resourceIdToString(this.rInfo.id)} finished`);
     } catch (e: any) {
       this.logger.error(`download blob ${stringifyWithResourceId(this.rInfo)} failed: ${e}, state: ${JSON.stringify(this.state)}`);
       if (nonRecoverableError(e)) {
         this.setError(e);
-        this.change.markChanged();
+        this.change.markChanged(`blob download for ${resourceIdToString(this.rInfo.id)} failed`);
         // Just in case we were half-way extracting an archive.
         await fsp.rm(this.path, { force: true });
       }

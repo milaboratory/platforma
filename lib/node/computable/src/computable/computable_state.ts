@@ -49,6 +49,9 @@ class CellComputableContext implements ComputableCtx {
    * during a specific call */
   public hooks: Set<ComputableHooks> | undefined = undefined;
 
+  public bodyInvocations: number = 0;
+  public changeSourceMarker?: string;
+
   private checkForLeak() {
     if (this._watcher === undefined) throw new Error('Computable context leak.');
   }
@@ -145,7 +148,7 @@ class CellComputableContext implements ComputableCtx {
 
   /** Must be executed by the computable state engine before running the sync
    * kernel callback. */
-  beforeCall(watcher: Watcher) {
+  beforeCall(watcher: Watcher, changeSourceMarker: string | undefined) {
     this.hooks?.clear();
     this._watcher = watcher;
     const guardData = { finished: false };
@@ -155,6 +158,7 @@ class CellComputableContext implements ComputableCtx {
     this.guardData = guardData;
     this.previousOnDestroy = this.currentOnDestroy;
     this.currentOnDestroy = undefined;
+    this.changeSourceMarker = changeSourceMarker;
   }
 
   /** Must be executed by the computable state engine after sync kernel callback
@@ -173,6 +177,8 @@ class CellComputableContext implements ComputableCtx {
           console.error('Error in computable onDestroy', err);
         }
     this.previousOnDestroy = undefined;
+    this.changeSourceMarker = undefined;
+    this.bodyInvocations++;
   }
 
   destroy() {
@@ -384,6 +390,7 @@ async function fillCellValue<T>(state: Writable<CellState<T>>, previousValue?: T
 function renderSelfState<T>(
   kernel: ComputableKernel<T>,
   ctx: CellComputableContext = new CellComputableContext(),
+  changeSourceMarker: string | undefined = undefined,
 ): SelfCellState<T> {
   // Creating self watcher, to inject it into rendering process
   const selfWatcher = new HierarchicalWatcher();
@@ -395,7 +402,7 @@ function renderSelfState<T>(
     ctx.unstableMarker = undefined;
 
     // initialize ctx for the call
-    ctx.beforeCall(selfWatcher);
+    ctx.beforeCall(selfWatcher, changeSourceMarker);
 
     // running main kernel callback
     const iResult = kernel.___kernel___(ctx);
@@ -580,7 +587,7 @@ export function updateCellStateWithoutValue<T>(cell: CellState<T>): CellState<T>
 
   // update self state, if necessary
   const selfState = cell.selfState.selfWatcher.isChanged
-    ? renderSelfState(cell.selfState.kernel, cell.selfState.ctx)
+    ? renderSelfState(cell.selfState.kernel, cell.selfState.ctx, cell.selfState.selfWatcher.changeSourceMarker)
     : cell.selfState;
 
   // recalculating children states

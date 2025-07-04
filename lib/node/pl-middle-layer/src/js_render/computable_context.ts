@@ -1,8 +1,10 @@
 import type { ComputableCtx } from '@milaboratories/computable';
 import { Computable } from '@milaboratories/computable';
 import type { PlTreeNodeAccessor } from '@milaboratories/pl-tree';
+import {
+  checkBlockFlag,
+} from '@platforma-sdk/model';
 import type {
-  JsRenderInternal,
   ArchiveFormat,
   CommonFieldTraverseOps as CommonFieldTraverseOpsFromSDK,
   DataInfo,
@@ -21,7 +23,9 @@ import type {
   ResultCollection,
   ValueOrError,
   RangeBytes,
-} from '@platforma-sdk/model';
+  BlockCodeKnownFeatureFlags,
+
+  JsRenderInternal } from '@platforma-sdk/model';
 import {
   isDataInfo,
   mapDataInfo,
@@ -58,6 +62,7 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
     private readonly parent: JsExecutionContext,
     private readonly blockCtx: BlockContextAny,
     private readonly env: MiddleLayerEnvironment,
+    private readonly featureFlags: BlockCodeKnownFeatureFlags | undefined,
     computableCtx: ComputableCtx,
   ) {
     this.computableCtx = computableCtx;
@@ -468,17 +473,6 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
     const vm = parent.vm;
 
     Scope.withScope((localScope) => {
-      // Exporting props
-
-      const args = this.blockCtx.args(this.computableCtx!);
-      const activeArgs = this.blockCtx.activeArgs(this.computableCtx!);
-      const uiState = this.blockCtx.uiState(this.computableCtx!);
-      vm.setProp(configCtx, 'args', localScope.manage(vm.newString(args)));
-      if (uiState !== undefined)
-        vm.setProp(configCtx, 'uiState', localScope.manage(vm.newString(uiState)));
-      if (activeArgs !== undefined)
-        vm.setProp(configCtx, 'activeArgs', localScope.manage(vm.newString(activeArgs)));
-
       // Exporting methods
 
       const exportCtxFunction = (
@@ -486,9 +480,9 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
         fn: VmFunctionImplementation<QuickJSHandle>,
       ): void => {
         const withCachedError: VmFunctionImplementation<QuickJSHandle> = (...args) => {
-        // QuickJS strips all fields from errors apart from 'name' and 'message'.
-        // That's why here we need to store them, and rethrow them when we exit
-        // from QuickJS code.
+          // QuickJS strips all fields from errors apart from 'name' and 'message'.
+          // That's why here we need to store them, and rethrow them when we exit
+          // from QuickJS code.
           try {
             return (fn as any)(...args);
           } catch (e: unknown) {
@@ -502,6 +496,34 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
         vm.newFunction(name, withCachedError).consume((fnh) => vm.setProp(configCtx, name, fnh));
         vm.newFunction(name, fn).consume((fnh) => vm.setProp(configCtx, name + '__internal__', fnh));
       };
+
+      if (checkBlockFlag(this.featureFlags, 'supportsLazyState')) {
+        // injecting lazy state functions
+        exportCtxFunction('args', () => {
+          if (this.computableCtx === undefined)
+            throw new Error(`Add dummy call to ctx.args outside the future lambda. Can't be directly used in this context.`);
+          return vm.newString(this.blockCtx.args(this.computableCtx));
+        });
+        exportCtxFunction('uiState', () => {
+          if (this.computableCtx === undefined)
+            throw new Error(`Add dummy call to ctx.uiState outside the future lambda. Can't be directly used in this context.`);
+          return vm.newString(this.blockCtx.uiState(this.computableCtx) ?? '{}');
+        });
+        exportCtxFunction('activeArgs', () => {
+          if (this.computableCtx === undefined)
+            throw new Error(`Add dummy call to ctx.activeArgs outside the future lambda. Can't be directly used in this context.`);
+          const res = this.blockCtx.activeArgs(this.computableCtx);
+          return res === undefined ? vm.undefined : vm.newString(res);
+        });
+      } else {
+        const args = this.blockCtx.args(this.computableCtx!);
+        const activeArgs = this.blockCtx.activeArgs(this.computableCtx!);
+        const uiState = this.blockCtx.uiState(this.computableCtx!);
+        vm.setProp(configCtx, 'args', localScope.manage(vm.newString(args)));
+        vm.setProp(configCtx, 'uiState', localScope.manage(vm.newString(uiState ?? '{}')));
+        if (activeArgs !== undefined)
+          vm.setProp(configCtx, 'activeArgs', localScope.manage(vm.newString(activeArgs)));
+      }
 
       //
       // Methods for injected ctx object

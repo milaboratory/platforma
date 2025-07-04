@@ -27,6 +27,7 @@ export type AccessorHandle = Branded<string, 'AccessorHandle'>;
 export type FutureHandle = Branded<string, 'FutureHandle'>;
 
 export interface GlobalCfgRenderCtxMethods<AHandle = AccessorHandle, FHandle = FutureHandle> {
+
   //
   // Root accessor creation
   //
@@ -171,12 +172,22 @@ export const GlobalCfgRenderCtxFeatureFlags = {
 };
 
 export interface GlobalCfgRenderCtx extends GlobalCfgRenderCtxMethods {
+  //
+  // State: Args, UI State, Active Args
+  //
+  // Old runtime injects these values as strings, new runtime injects them as functions
+  // that return strings, if block declares supportsLazyState flag.
+  // If function not called in lazy state API, then resulting output will not depend on these values,
+  // and thus will not be recalculated on corresponding state change.
+  //
+
+  readonly args: string | (() => string);
+  readonly uiState: string | (() => string);
+  readonly activeArgs: undefined | string | (() => string | undefined);
+
   // Note: strings below are used because, anyway, using strings is the only way
   // to get data inside the QuickJS context, as it is implemented now. With this
   // approach deserialization can be lazily postponed until it is actually needed.
-  readonly args: string;
-  readonly uiState: string;
-  readonly activeArgs?: string;
   readonly callbackRegistry: Record<string, AnyFunction>;
   readonly featureFlags?: typeof GlobalCfgRenderCtxFeatureFlags;
 }

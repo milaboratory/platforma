@@ -16,6 +16,8 @@ import type { AuthorMarker, BlockStateInternal } from '@milaboratories/pl-model-
 import { computableFromCfgOrRF } from './render';
 import { resourceIdToString } from '@milaboratories/pl-client';
 import { deepFreeze } from '@milaboratories/ts-helpers';
+import { extractCodeWithInfo } from '@platforma-sdk/model';
+import { getDebugFlags } from '../debug';
 
 export type BlockArgsAndUiState = Omit<BlockStateInternal, 'outputs' | 'navigationState'>;
 
@@ -55,20 +57,25 @@ export function blockOutputs(
   blockId: string,
   env: MiddleLayerEnvironment,
 ): ComputableStableDefined<Record<string, ComputableValueOrErrors<unknown>>> {
+  const key = 'outputs#' + resourceIdToString(projectEntry.rid) + '#' + blockId;
   return Computable.make(
     (c) => {
+      if (getDebugFlags().logOutputRecalculations) {
+        console.log(`blockOutput recalculation : ${key} (${c.changeSourceMarker}; ${c.bodyInvocations} invocations)`);
+      }
+
       const prj = c.accessor(projectEntry).node();
       const ctx = constructBlockContext(projectEntry, blockId);
 
       return ifNotUndef(getBlockPackInfo(prj, blockId), ({ cfg, bpId }) => {
         const outputs: Record<string, Computable<any>> = {};
         for (const [cellId, cellCfg] of Object.entries(cfg.outputs)) {
-          const computableOutput = computableFromCfgOrRF(env, ctx, cellCfg, cfg.code, bpId);
+          const computableOutput = computableFromCfgOrRF(env, ctx, cellCfg, extractCodeWithInfo(cfg), bpId);
           outputs[cellId] = Computable.wrapError(computableOutput, 1);
         }
         return outputs;
       });
     },
-    { key: 'outputs#' + resourceIdToString(projectEntry.rid) + '#' + blockId },
+    { key },
   ).withStableType();
 }

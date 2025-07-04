@@ -358,9 +358,8 @@ class LogGetter {
         this.patternToSearch,
       );
 
-      const newLogs = resp.data.toString();
-
-      if (this.logs != newLogs) this.change.markChanged();
+      const newLogs = new TextDecoder().decode(resp.data);
+      if (this.logs != newLogs) this.change.markChanged(`logs for ${resourceIdToString(this.rInfo.id)} updated`);
       this.logs = newLogs;
       this.error = undefined;
 

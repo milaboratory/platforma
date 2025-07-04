@@ -1,4 +1,5 @@
 export * from './change_source';
+export * from './keyed_change_source';
 export * from './hierarchical_watcher';
 export * from './watcher';
 export * from './temporal';

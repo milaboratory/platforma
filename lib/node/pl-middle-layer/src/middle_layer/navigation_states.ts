@@ -18,7 +18,7 @@ export class NavigationStates {
       return;
     }
     entry.state = { ...state };
-    entry.change.markChanged();
+    entry.change.markChanged('navigation state changed');
   }
 
   private readState(ctx: ComputableCtx, blockId: string): NavigationState {
@@ -44,7 +44,7 @@ export class NavigationStates {
     const entry = this.states.get(blockId);
     if (entry !== undefined) {
       this.states.delete(blockId);
-      entry.change.markChanged();
+      entry.change.markChanged('block deleted');
     }
   }
 }

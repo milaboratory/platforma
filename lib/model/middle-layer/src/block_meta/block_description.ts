@@ -3,6 +3,7 @@ import { BlockComponentsDescriptionRaw } from './block_components';
 import { BlockPackMetaDescriptionRaw } from './block_meta';
 import { BlockPackId } from './block_id';
 import * as R from 'remeda';
+import { BlockCodeKnownFeatureFlags } from '@milaboratories/pl-model-common';
 
 /** Description, as appears in root block package.json file,
  * `file:` references are parsed into relative content of corresponding type, depending on the context,
@@ -12,6 +13,9 @@ export const BlockPackDescriptionFromPackageJsonRaw = z.object({
   meta: BlockPackMetaDescriptionRaw
 });
 
+export const FeatureFlags = z.record(z.string(), z.union([z.boolean(), z.number()]))
+  .transform((flags) => flags as BlockCodeKnownFeatureFlags);
+
 export function CreateBlockPackDescriptionSchema<
   Components extends ZodTypeAny,
   Meta extends ZodTypeAny
@@ -19,7 +23,8 @@ export function CreateBlockPackDescriptionSchema<
   return z.object({
     id: BlockPackId,
     components,
-    meta
+    meta,
+    featureFlags: FeatureFlags.optional()
   });
 }
 

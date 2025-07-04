@@ -40,10 +40,10 @@ export class ChangeSource {
   }
 
   /** Marks all watchers as changed and clears current watcher list. */
-  public markChanged() {
+  public markChanged(marker?: string) {
     if (this.watchers === undefined) return;
 
-    this.watchers.forEach((w) => w.deref()?.markChanged());
+    this.watchers.forEach((w) => w.deref()?.markChanged(marker));
 
     this.modCount = 0;
     this.watchers = undefined;
