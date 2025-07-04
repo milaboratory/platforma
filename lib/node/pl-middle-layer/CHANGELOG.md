@@ -1,5 +1,26 @@
 # @milaboratories/pl-middle-layer
 
+## 1.38.0
+
+### Minor Changes
+
+- 3b46d33: SDK and ML support for lazy retrieval of args and uiState by model outputs
+
+### Patch Changes
+
+- Updated dependencies [3b46d33]
+- Updated dependencies [3b46d33]
+- Updated dependencies [3b46d33]
+- Updated dependencies [3b46d33]
+- Updated dependencies [3b46d33]
+  - @milaboratories/pl-tree@1.7.0
+  - @platforma-sdk/model@1.39.0
+  - @milaboratories/pl-model-common@1.16.0
+  - @milaboratories/computable@2.6.0
+  - @milaboratories/pl-drivers@1.6.0
+  - @milaboratories/pl-model-middle-layer@1.7.44
+  - @platforma-sdk/block-tools@2.5.62
+
 ## 1.37.100
 
 ### Patch Changes

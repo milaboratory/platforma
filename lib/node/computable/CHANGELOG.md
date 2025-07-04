@@ -1,5 +1,12 @@
 # @milaboratories/computable
 
+## 2.6.0
+
+### Minor Changes
+
+- 3b46d33: - Change source marker
+  - Keyed change source for more granular change tracking
+
 ## 2.5.1
 
 ### Patch Changes

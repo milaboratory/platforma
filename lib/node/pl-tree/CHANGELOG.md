@@ -1,5 +1,17 @@
 # @milaboratories/pl-tree
 
+## 1.7.0
+
+### Minor Changes
+
+- 3b46d33: - Reporting of change marker in computables provided by this module
+  - Per key reporting of KV changes
+
+### Patch Changes
+
+- Updated dependencies [3b46d33]
+  - @milaboratories/computable@2.6.0
+
 ## 1.6.12
 
 ### Patch Changes
