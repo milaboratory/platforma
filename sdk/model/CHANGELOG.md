@@ -1,5 +1,17 @@
 # @platforma-sdk/model
 
+## 1.39.0
+
+### Minor Changes
+
+- 3b46d33: Refactored block configuration model and introduced a feature flag system. This provides a more robust way to manage different block config versions and check for feature compatibility.
+- 3b46d33: SDK and ML support for lazy retrieval of args and uiState by model outputs
+
+### Patch Changes
+
+- Updated dependencies [3b46d33]
+  - @milaboratories/pl-model-common@1.16.0
+
 ## 1.38.0
 
 ### Minor Changes

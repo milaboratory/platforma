@@ -1,5 +1,20 @@
 # @milaboratories/pl-drivers
 
+## 1.6.0
+
+### Minor Changes
+
+- 3b46d33: - Reporting of change marker in computables provided by this module
+
+### Patch Changes
+
+- Updated dependencies [3b46d33]
+- Updated dependencies [3b46d33]
+- Updated dependencies [3b46d33]
+  - @milaboratories/pl-tree@1.7.0
+  - @milaboratories/pl-model-common@1.16.0
+  - @milaboratories/computable@2.6.0
+
 ## 1.5.79
 
 ### Patch Changes
