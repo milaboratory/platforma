@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 1.39.0
+
+### Minor Changes
+
+- 4c6785c: Introduces path for output caluculation with early dispose of QuickJS VM (will be engaged in most cases)
+
 ## 1.38.1
 
 ### Patch Changes
