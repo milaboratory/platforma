@@ -117,7 +117,7 @@ export function computableFromRF(
 
       if (Object.keys(toBeResolved).length === 0) {
         const importedResult = rCtx.importObjectUniversal(result);
-        logOutputStatus(fh.handle, importedResult, cCtx.unstableMarker !== undefined, -1, cCtx.unstableMarker);
+        logOutputStatus(fh.handle, importedResult, cCtx.unstableMarker === undefined, -1, cCtx.unstableMarker);
         return { ir: importedResult };
       }
 
