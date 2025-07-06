@@ -4,8 +4,7 @@
   "description": "Test package for npm-asset-packer with sample assets",
   "private": true,
   "scripts": {
-    "build": "npm-asset-packer build",
-    "test": "vitest run"
+    "build": "npm-asset-packer build"
   },
   "assetPacker": {
     "mode": "npm"

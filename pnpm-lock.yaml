@@ -75,6 +75,9 @@ catalogs:
     '@types/decompress':
       specifier: ^4.2.7
       version: 4.2.7
+    '@types/fs-extra':
+      specifier: ^11.0.1
+      version: 11.0.4
     '@types/http-proxy':
       specifier: ^1.17.16
       version: 1.17.16
@@ -3009,7 +3012,7 @@ importers:
         specifier: workspace:*
         version: link:../oclif-index
       '@types/fs-extra':
-        specifier: ^11.0.1
+        specifier: 'catalog:'
         version: 11.0.4
       '@types/mime-types':
         specifier: 'catalog:'
