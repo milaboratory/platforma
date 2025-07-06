@@ -1,0 +1,61 @@
+{
+  "name": "@milaboratories/npm-asset-packer",
+  "version": "1.0.0",
+  "description": "A CLI tool for managing large binary assets in NPM packages",
+  "scripts": {
+    "type-check": "tsc --noEmit --composite false",
+    "build": "oclif-index && vite build",
+    "test": "vitest",
+    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
+  },
+  "bin": {
+    "npm-asset-packer": "./bin/run.mjs"
+  },
+  "files": [
+    "bin/run.cmd",
+    "bin/run.mjs",
+    "dist"
+  ],
+  "keywords": [
+    "npm",
+    "assets",
+    "s3",
+    "binary",
+    "package"
+  ],
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@aws-sdk/client-s3": "catalog:",
+    "@oclif/core": "catalog:",
+    "fs-extra": "catalog:",
+    "zod": "catalog:",
+    "yaml": "catalog:",
+    "tar": "catalog:",
+    "mime-types": "catalog:",
+    "winston": "catalog:",
+    "remeda": "catalog:",
+    "undici": "catalog:",
+    "@milaboratories/resolve-helper": "workspace:^"
+  },
+  "devDependencies": {
+    "@milaboratories/oclif-index": "workspace:*",
+    "@milaboratories/build-configs": "workspace:*",
+    "@milaboratories/eslint-config": "workspace:^",
+    "@types/fs-extra": "^11.0.1",
+    "@types/mime-types": "catalog:",
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:"
+  },
+  "oclif": {
+    "bin": "npm-asset-packer",
+    "commands": {
+      "strategy": "explicit",
+      "target": "./dist/index.js",
+      "identifier": "COMMANDS"
+    },
+    "dirname": "npm-asset-packer",
+    "topicSeparator": " "
+  }
+}
