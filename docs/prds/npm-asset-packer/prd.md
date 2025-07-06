@@ -123,8 +123,10 @@ export interface AssetFile {
    * Resolves the local path to the asset.
    * Triggers a download if the file is not available locally.
    * Returns a promise that resolves to the absolute path of the file on the local filesystem.
+   * @param opts - Optional parameters for resolution.
+   * @param opts.ignoreLinkedAssets - If true, bypasses the linked asset check (Local-First Resolution) and proceeds to other resolution methods. Useful for testing the npm mode in a monorepo.
    */
-  path(): Promise<string>;
+  path(opts?: { ignoreLinkedAssets?: boolean }): Promise<string>;
 }
 
 type AssetKeys = "data/file1.fastq.gz" | "images/logo.png";
@@ -138,7 +140,7 @@ export const myAssetPackage: Record<AssetKeys, AssetFile>;
 
 The path() method provides a unified way to access files, with the download strategy determined by the asset package developer. The resolution order is as follows:
 
-1. **Local-First Resolution (Linked Packages):** It will first attempt to resolve the asset locally from the original assets directory, relative to its own position in node\_modules. This is to support "linked" packages in monorepos or via npm link. It will use a try...catch block around a require.resolve() call (for CJS) or equivalent logic (for ESM) to check for the presence of the original assets directory. If successful, it returns the path immediately.
+1. **Local-First Resolution (Linked Packages):** It will first attempt to resolve the asset locally from the original assets directory, relative to its own position in node\_modules. This is to support "linked" packages in monorepos or via npm link. It will use a try...catch block around a require.resolve() call (for CJS) or equivalent logic (for ESM) to check for the presence of the original assets directory. If successful, it returns the path immediately. This step is skipped if `path()` is called with `{ ignoreLinkedAssets: true }`.
 2. **Packaged Asset Check (Eager/NPM Mode):** It will check for the file within the package's dist/assets/ directory, using the content hash for the filename (e.g., ./dist/assets/\<sha256\>). This location is populated by both the npm mode build and the eager remote mode's prepare script.
 3. **Global Cache Check (Lazy Mode):** If the above checks fail, it checks the shared global cache at \~/.cache/mi-asset-packer/\<sha256\>.
 4. **Download (Lazy Mode):** If the file is not found anywhere, it is downloaded from its downloadUrl to the **global cache** (\~/.cache/mi-asset-packer/\<sha256\>). The promise resolves with the path to the cached file.
@@ -229,3 +231,41 @@ The tool will rely **exclusively** on the default AWS SDK credential provider ch
 * **Developer Satisfaction:** Positive qualitative feedback from developers regarding ease of use, reliability, and improved workflows.
 * **Performance:** Measurable reduction in npm install times for projects consuming these asset packages compared to bundling assets directly.
 * **Package Size:** Significant reduction in the published size of NPM packages that previously contained large assets. 
+
+## 10. Testing Strategy
+
+This tool will be developed and tested within the existing pnpm monorepo. The testing strategy will focus on verifying the `npm` and `linked` package resolution modes, as testing S3-dependent features (uploading and remote downloading) is complex to automate in a standard CI environment.
+
+### 10.1. Test Package Structure
+
+To achieve this, the following packages will be created within the monorepo:
+
+*   **`@milaboratories/npm-asset-packer` (`tools/npm-asset-packer`):**
+    *   The core CLI tool and library will be located in the `tools` directory, following the repository's convention for build-related utilities.
+
+*   **Test Asset Package (`etc/test-assets`):**
+    *   This package will serve as the provider of assets.
+    *   It will contain a small set of files in an `assets/` directory.
+    *   Its `package.json` will be configured for `"mode": "npm"`.
+    *   It will list `@milaboratories/npm-asset-packer` as a `devDependency` and use it in its `build` script to generate the `dist` directory.
+
+*   **Consumer Test Packages (`tests/assets-test-mjs` and `tests/assets-test-cjs`):**
+    *   Two separate packages will be created to consume `etc/test-assets` and run tests.
+    *   `tests/assets-test-mjs`: Will be configured as an ES Module (`"type": "module"` in `package.json`).
+    *   `tests/assets-test-cjs`: Will be configured as a CommonJS module.
+    *   Both packages will depend on the test asset package using the pnpm workspace protocol (`"etc/test-assets": "workspace:*"`), which creates a symlink. This setup directly simulates the "linked package" scenario common in monorepo development.
+
+### 10.2. Testing Scenarios
+
+The tests in the consumer packages will cover two primary scenarios:
+
+1.  **Linked Asset Resolution (Default):**
+    *   Tests will call `myAssetPackage['some/asset'].path()`.
+    *   The expected behavior is for the resolution logic to succeed at the "Local-First Resolution" step, returning a path that points directly to the source file in `etc/test-assets/assets/`.
+
+2.  **NPM-Bundled Asset Resolution:**
+    *   To test the fallback behavior that would occur in a published, non-linked package, tests will bypass the first resolution step.
+    *   Tests will call `myAssetPackage['some/asset'].path({ ignoreLinkedAssets: true })`.
+    *   This will force the resolver to skip the check for the original `assets` directory and instead find the asset in the `dist/assets/` directory of the `etc/test-assets` package, verifying the `npm` mode logic.
+
+This structure allows for comprehensive testing of the core resolution logic without requiring network access or cloud credentials. 
