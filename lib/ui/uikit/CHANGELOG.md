@@ -1,5 +1,24 @@
 # @milaboratories/uikit
 
+## 2.3.1
+
+### Patch Changes
+
+- Updated dependencies [3b46d33]
+- Updated dependencies [3b46d33]
+  - @platforma-sdk/model@1.39.0
+
+## 2.3.0
+
+### Minor Changes
+
+- bd788f9: PlAgDataTable V1 removed, V2 significantly changed
+
+### Patch Changes
+
+- Updated dependencies [bd788f9]
+  - @platforma-sdk/model@1.38.0
+
 ## 2.2.98
 
 ### Patch Changes

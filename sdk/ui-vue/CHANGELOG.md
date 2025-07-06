@@ -1,5 +1,30 @@
 # @platforma-sdk/ui-vue
 
+## 1.39.0
+
+### Minor Changes
+
+- 3b46d33: SDK and ML support for lazy retrieval of args and uiState by model outputs
+
+### Patch Changes
+
+- Updated dependencies [3b46d33]
+- Updated dependencies [3b46d33]
+  - @platforma-sdk/model@1.39.0
+  - @milaboratories/uikit@2.3.1
+
+## 1.38.0
+
+### Minor Changes
+
+- bd788f9: PlAgDataTable V1 removed, V2 significantly changed
+
+### Patch Changes
+
+- Updated dependencies [bd788f9]
+  - @milaboratories/uikit@2.3.0
+  - @platforma-sdk/model@1.38.0
+
 ## 1.37.18
 
 ### Patch Changes

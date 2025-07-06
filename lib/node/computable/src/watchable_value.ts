@@ -15,9 +15,9 @@ export class WatchableValue<T> implements AccessorProvider<ObservableAccessor<T>
 
   constructor(private value: T) {}
 
-  public setValue(value: T): void {
+  public setValue(value: T, marker?: string): void {
     this.value = value;
-    this.change.markChanged();
+    this.change.markChanged(marker);
   }
 
   public getValue(ctx: ComputableCtx): T {

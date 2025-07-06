@@ -7,6 +7,7 @@ export default {
 
 <script lang="ts" setup>
 import { useSlots } from 'vue';
+import { PlBlockPageTitleTeleportId } from './PlBlockPageTitleTeleportId';
 import './pl-block-page.scss';
 import PlSplash from '../../components/PlSplash/PlSplash.vue';
 
@@ -48,6 +49,7 @@ const vTextOverflownTitle = {
         <slot name="after-title" />
       </div>
       <div class="pl-block-page__title__append">
+        <div :id="PlBlockPageTitleTeleportId" class="pl-block-page__title__append__teleport" />
         <slot name="append" />
       </div>
     </div>

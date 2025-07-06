@@ -6,8 +6,9 @@ import {
   toValue,
 } from 'vue';
 import {
-  PlAgDataTableToolsPanel,
-  PlTableFilters,
+  isJsonEqual,
+} from '@milaboratories/helpers';
+import {
   PlBlockPage,
   PlAgDataTableV2,
   PlNumberField,
@@ -18,9 +19,9 @@ import {
 import {
   useApp,
 } from '../app';
-import type {
-  PlSelectionModel,
-  PTableColumnSpec,
+import {
+  matchAxisId,
+  type PlSelectionModel,
 } from '@platforma-sdk/model';
 import type {
   ICellRendererParams,
@@ -37,11 +38,38 @@ const sources = [...new Array(10)].map((_, i) => {
 const activeSource = ref(sources[0].value);
 
 const tableSettings = usePlDataTableSettingsV2({
+  sourceId: () => activeSource.value,
   model: () => app.model.outputs.ptV2,
   sheets: () => app.model.outputs.ptV2Sheets,
+  filtersConfig: ({ sourceId, column }) => {
+    if (isJsonEqual(sourceId, sources[0].value)) {
+      if (column.id === 'column1') {
+        return {
+          default: {
+            type: 'string_contains',
+            reference: '1',
+          },
+        };
+      }
+      if (column.id === 'column2') {
+        return {
+          options: ['isNotNA', 'isNA'],
+        };
+      }
+    }
+    if (isJsonEqual(sourceId, sources[1].value)) {
+      if (column.type === 'axis' && matchAxisId({ type: 'Int', name: 'index' }, column.id)) {
+        return {
+          default: {
+            type: 'number_lessThanOrEqualTo',
+            reference: 10,
+          },
+        };
+      }
+    }
+    return {};
+  },
 });
-
-const columns = ref<PTableColumnSpec[]>([]);
 
 const verbose = ref(false);
 const cellRendererSelector = computed(() => {
@@ -66,22 +94,14 @@ watch(
 </script>
 
 <template>
-  <PlBlockPage style="max-width: 100%">
+  <PlBlockPage>
     <template #title>PlAgDataTable V2</template>
-    <template #append>
-      <PlAgDataTableToolsPanel>
-        <PlTableFilters v-model="app.model.ui.dataTableStateV2.filterModel" :columns="columns" />
-      </PlAgDataTableToolsPanel>
-    </template>
     <PlAgDataTableV2
-      ref="tableInstance"
-      v-model="app.model.ui.dataTableStateV2.tableState"
+      v-model="app.model.ui.dataTableStateV2"
       v-model:selection="selection"
       :settings="tableSettings"
       :cell-renderer-selector="cellRendererSelector"
-      show-columns-panel
       show-export-button
-      @columns-changed="(info) => (columns = info.columns)"
     >
       <template #before-sheets>
         <PlNumberField v-model="app.model.args.tableNumRows" />

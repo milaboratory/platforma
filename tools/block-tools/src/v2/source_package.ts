@@ -72,7 +72,8 @@ export async function loadPackDescriptionRaw(moduleRoot: string): Promise<BlockP
         notEmpty(packageJson['name'], `"name" not found in ${fullPackageJsonPath}`)
       ),
       version: SemVer.parse(packageJson['version'])
-    }
+    },
+    featureFlags: {}
   };
 }
 

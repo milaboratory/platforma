@@ -1,4 +1,3 @@
-import canonicalize from 'canonicalize';
 import type {
   PlTableFilterNumberEquals,
   PlTableFilterNumberNotEquals,
@@ -12,17 +11,25 @@ import {
   type PlTableFilterStringType,
   type PlTableFilter,
   type PTableColumnSpec,
-  type PTableColumnId,
-  type PlTableFiltersStateEntry,
-  type PlTableFilterColumnId,
   getRawPlatformaInstance,
 } from '@platforma-sdk/model';
-import * as lodash from 'lodash';
 import semver from 'semver';
 import type { ListOption } from '@milaboratories/uikit';
 
-export function makeColumnId(column: PTableColumnId | PTableColumnSpec): PlTableFilterColumnId {
-  return canonicalize(column.id)!;
+export function isFilterValid(
+  filter: PlTableFilter,
+  options: ListOption<number | string>[],
+  discreteOptions: ListOption<number | string>[],
+): boolean {
+  const validOption = options.some((o) => o.value === filter.type);
+  if (!validOption) return false;
+
+  if (isFilterDiscreteType(filter.type) && discreteOptions.length > 0) {
+    const reference = getFilterReference(filter);
+    return discreteOptions.some((option) => option.value === reference);
+  }
+
+  return true;
 }
 
 export function getFilterLabel(type: PlTableFilterType): string {
@@ -85,6 +92,14 @@ export const filterTypesString: PlTableFilterStringType[] = [
   'string_doesNotMatch',
   'string_containsFuzzyMatch',
 ] as const;
+
+export function getFilterOptions(column: PTableColumnSpec): ListOption<PlTableFilterType>[] {
+  const valueType = column.type === 'column' ? column.spec.valueType : column.spec.type;
+  const types: PlTableFilterType[] = valueType === 'String' ? filterTypesString : filterTypesNumber;
+  return types
+    .filter((type) => column.type === 'axis' ? type !== 'isNotNA' && type !== 'isNA' : true)
+    .map((type) => ({ value: type, text: getFilterLabel(type) }));
+}
 
 export type PlTableFilterDiscrete =
   | PlTableFilterNumberEquals
@@ -183,23 +198,19 @@ export function getFilterDefault(type: PlTableFilterType, reference?: undefined 
   }
 }
 
-export function changeFilterType(
-  filter: PlTableFiltersStateEntry,
+export function changeFilter(
+  filter: PlTableFilter,
   type: PlTableFilterType,
   discreteOptions: ListOption<number | string>[],
-): PlTableFiltersStateEntry {
-  let reference = getFilterReference(filter.filter);
+): PlTableFilter {
+  let reference = getFilterReference(filter);
   if (isFilterDiscreteType(type)
     && discreteOptions !== undefined
     && discreteOptions.length > 0
-    && !lodash.find(discreteOptions, (option) => option.value === reference)) {
+    && !discreteOptions.some((option) => option.value === reference)) {
     reference = discreteOptions[0].value;
   }
-  return {
-    columnId: filter.columnId,
-    filter: getFilterDefault(type, reference),
-    disabled: filter.disabled,
-  };
+  return getFilterDefault(type, reference);
 }
 
 export function parseNumber(column: PTableColumnSpec, value: string): number {
@@ -264,9 +275,8 @@ export function makeWildcardOptions(
     }];
   }
 
-  const chars = lodash.uniq(reference);
-  chars.sort();
-  return chars.map((char) => ({
+  const chars = [...new Set<string>(reference).keys()];
+  return chars.sort().map((char) => ({
     label: char,
     value: char,
   }));
@@ -276,18 +286,25 @@ export function makeDiscreteOptions(column: PTableColumnSpec): ListOption<number
   const discreteValuesAnnotation = column.spec.annotations?.['pl7.app/discreteValues'];
   if (!discreteValuesAnnotation) return [];
 
-  const discreteValues: (string | number)[] = JSON.parse(discreteValuesAnnotation);
-  return discreteValues.map((v) => ({
-    label: v.toString(),
-    value: v,
-  }));
+  try {
+    const discreteValues: (string | number)[] = JSON.parse(discreteValuesAnnotation);
+    return discreteValues.map((v) => ({
+      label: v.toString(),
+      value: v,
+    }));
+  } catch (err: unknown) {
+    console.error(`Column ${column.id} has invalid 'pl7.app/discreteValues' annotation: '${discreteValuesAnnotation}'`, err);
+    return [];
+  }
 }
 
-export function makePredicate(column: PTableColumnSpec, filter: PlTableFilter): SingleValuePredicateV2 {
-  const alphabetic
-    = semver.gt(getRawPlatformaInstance().sdkInfo.sdkVersion, '1.14.0')
+export function isAlphabetic(column: PTableColumnSpec): boolean {
+  return semver.gt(getRawPlatformaInstance().sdkInfo.sdkVersion, '1.14.0')
     && (column.type === 'column' ? column.spec.valueType : column.spec.type) === 'String'
     && (column.spec.domain?.['pl7.app/alphabet'] ?? column.spec.annotations?.['pl7.app/alphabet']) !== undefined;
+}
+
+export function makePredicate(alphabetic: boolean, filter: PlTableFilter): SingleValuePredicateV2 {
   const type = filter.type;
   switch (type) {
     case 'isNotNA':

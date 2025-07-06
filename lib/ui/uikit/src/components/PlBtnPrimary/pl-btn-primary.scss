@@ -2,6 +2,7 @@
 
 .pl-btn-primary {
   @include base-btn;
+  --icon-color: var(--ic-00);
 
   & {
     --color-btn-hover: var(--color-primary-hover);

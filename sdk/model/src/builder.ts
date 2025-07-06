@@ -1,4 +1,4 @@
-import type { BlockRenderingMode, BlockSection, ValueOrErrors, AnyFunction, PlRef } from '@milaboratories/pl-model-common';
+import type { BlockRenderingMode, BlockSection, ValueOrErrors, AnyFunction, PlRef, BlockCodeKnownFeatureFlags, BlockConfigContainer } from '@milaboratories/pl-model-common';
 import type { Checked, ConfigResult, TypedConfig } from './config';
 import { getImmediate } from './config';
 import { getPlatformaInstance, isInUI, tryRegisterCallback } from './internal';
@@ -13,7 +13,6 @@ import type {
   DeriveHref,
   ResolveCfgType,
   ExtractFunctionHandleReturn,
-  BlockConfigContainer,
   ConfigRenderLambdaFlags,
 } from './bconfig';
 import {
@@ -66,7 +65,14 @@ export class BlockModel<
     private readonly _sections: TypedConfigOrConfigLambda,
     private readonly _title: ConfigRenderLambda | undefined,
     private readonly _enrichmentTargets: ConfigRenderLambda | undefined,
+    private readonly _featureFlags: BlockCodeKnownFeatureFlags,
   ) {}
+
+  public static readonly INITIAL_BLOCK_FEATURE_FLAGS: BlockCodeKnownFeatureFlags = {
+    supportsLazyState: true,
+    requiresUIAPIVersion: 1,
+    requiresModelAPIVersion: 1,
+  };
 
   /** Initiates configuration builder */
   public static create(renderingMode: BlockRenderingMode): BlockModel<NoOb, {}, NoOb>;
@@ -92,6 +98,7 @@ export class BlockModel<
       getImmediate([]),
       undefined,
       undefined,
+      { ...BlockModel.INITIAL_BLOCK_FEATURE_FLAGS },
     );
   }
 
@@ -149,6 +156,7 @@ export class BlockModel<
         this._sections,
         this._title,
         this._enrichmentTargets,
+        this._featureFlags,
       );
     } else
       return new BlockModel(
@@ -163,6 +171,7 @@ export class BlockModel<
         this._sections,
         this._title,
         this._enrichmentTargets,
+        this._featureFlags,
       );
   }
 
@@ -205,6 +214,7 @@ export class BlockModel<
         this._sections,
         this._title,
         this._enrichmentTargets,
+        this._featureFlags,
       );
     } else
       return new BlockModel<Args, OutputsCfg, UiState>(
@@ -216,6 +226,7 @@ export class BlockModel<
         this._sections,
         this._title,
         this._enrichmentTargets,
+        this._featureFlags,
       );
   }
 
@@ -253,6 +264,7 @@ export class BlockModel<
         { __renderLambda: true, handle: 'sections' } as ConfigRenderLambda,
         this._title,
         this._enrichmentTargets,
+        this._featureFlags,
       );
     } else
       return new BlockModel<Args, OutputsCfg, UiState>(
@@ -264,6 +276,7 @@ export class BlockModel<
         arrOrCfgOrRf as TypedConfig,
         this._title,
         this._enrichmentTargets,
+        this._featureFlags,
       );
   }
 
@@ -281,6 +294,7 @@ export class BlockModel<
       this._sections,
       { __renderLambda: true, handle: 'title' } as ConfigRenderLambda,
       this._enrichmentTargets,
+      this._featureFlags,
     );
   }
 
@@ -298,6 +312,7 @@ export class BlockModel<
       this._sections,
       this._title,
       this._enrichmentTargets,
+      this._featureFlags,
     );
   }
 
@@ -312,6 +327,7 @@ export class BlockModel<
       this._sections,
       this._title,
       this._enrichmentTargets,
+      this._featureFlags,
     );
   }
 
@@ -326,6 +342,7 @@ export class BlockModel<
       this._sections,
       this._title,
       this._enrichmentTargets,
+      this._featureFlags,
     );
   }
 
@@ -346,6 +363,7 @@ export class BlockModel<
       this._sections,
       this._title,
       { __renderLambda: true, handle: 'enrichmentTargets' } as ConfigRenderLambda,
+      this._featureFlags,
     );
   }
 
@@ -371,6 +389,7 @@ export class BlockModel<
         title: this._title,
         outputs: this._outputs,
         enrichmentTargets: this._enrichmentTargets,
+        featureFlags: this._featureFlags,
       },
 
       // fields below are added to allow previous desktop versions read generated configs

@@ -1,6 +1,6 @@
 import {
   Args,
-  BlockConfig,
+  BlockConfigGeneric,
   BlockModel,
   getJsonField,
   getResourceField,
@@ -37,7 +37,7 @@ test('local cfg test (no pl)', async () => {
         mapArrayValues(getJsonField(Args, 'b'), isolate(makeObject({ theField: It })))
       )
       .done() as any
-  ).config as BlockConfig;
+  ).config as BlockConfigGeneric;
 
   const ctx = { $args: args };
 
@@ -83,7 +83,7 @@ test('cfg test with pl, simple', async () => {
         )
       )
       .done() as any
-  ).config as BlockConfig;
+  ).config as BlockConfigGeneric;
 
   await TestHelpers.withTempRoot(async (pl) => {
     const tree = await SynchronizedTreeState.init(pl, pl.clientRoot, {

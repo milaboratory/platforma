@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/model",
-  "version": "1.37.18",
+  "version": "1.39.0",
   "description": "Platforma.bio SDK / Block Model",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
@@ -34,6 +34,7 @@
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
     "@platforma-sdk/eslint-config": "workspace:*",
+    "@milaboratories/helpers": "workspace:^",
     "typescript": "catalog:",
     "vite": "catalog:",
     "@types/jest": "catalog:",

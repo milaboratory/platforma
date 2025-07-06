@@ -1,13 +1,15 @@
 import type {
-  AxisId,
+  PlDataTableFilterState,
   PlDataTableStateV2CacheEntry,
   PlDataTableStateV2Normalized,
   PObjectId,
   PTableColumnSpecJson,
+  PTableParamsV2,
   PTableRecordFilter,
   PTableSorting,
 } from '@platforma-sdk/model';
 import {
+  makeDefaultPTableParams,
   parseJson,
   upgradePlDataTableStateV2,
   type PlDataTableGridStateCore,
@@ -20,6 +22,7 @@ import type {
 } from 'vue';
 import {
   computed,
+  watch,
 } from 'vue';
 import type {
   PlDataTableSettingsV2,
@@ -27,22 +30,60 @@ import type {
 import {
   isJsonEqual,
 } from '@milaboratories/helpers';
+import { makePredicate } from '../../PlTableFilters/filters_logic';
 
-function makeTableFilter(axisId: AxisId, value: string | number): PTableRecordFilter {
+type PlDataTableStateV2CacheEntryNullable = PlDataTableStateV2CacheEntry | {
+  sourceId: null;
+  gridState: Record<string, never>;
+  sheetsState: [];
+  filtersState: [];
+};
+
+function makeDefaultState(): PlDataTableStateV2CacheEntryNullable {
   return {
-    type: 'bySingleColumnV2',
-    column: {
-      type: 'axis',
-      id: axisId,
-    },
-    predicate: {
-      operator: 'Equal',
-      reference: value,
-    },
+    sourceId: null,
+    gridState: {},
+    sheetsState: [],
+    filtersState: [],
   };
 }
 
-function makeTableSorting(state: PlDataTableGridStateCore['sort']): PTableSorting[] {
+function getHiddenColIds(state: PlDataTableGridStateCore['columnVisibility']): PObjectId[] | null {
+  return state?.hiddenColIds
+    ?.map(parseJson)
+    .filter((c) => c.type === 'column')
+    .map((c) => c.id)
+    ?? null;
+}
+
+function makePartitionFilters(sheetsState: PlDataTableSheetState[]): PTableRecordFilter[] {
+  return sheetsState.map((s) => ({
+    type: 'bySingleColumnV2',
+    column: {
+      type: 'axis',
+      id: s.axisId,
+    },
+    predicate: {
+      operator: 'Equal',
+      reference: s.value,
+    },
+  }));
+}
+
+function makeFilters(columnsState: PlDataTableFilterState[]): PTableRecordFilter[] {
+  return columnsState
+    .flatMap((s) => {
+      return !s.filter || s.filter.disabled
+        ? []
+        : [{
+            type: 'bySingleColumnV2',
+            column: s.id,
+            predicate: makePredicate(s.alphabetic, s.filter.value),
+          }];
+    });
+}
+
+function makeSorting(state: PlDataTableGridStateCore['sort']): PTableSorting[] {
   return (
     state?.sortModel.map((item) => {
       const { spec, ...column } = parseJson(
@@ -58,12 +99,14 @@ function makeTableSorting(state: PlDataTableGridStateCore['sort']): PTableSortin
   );
 }
 
-function getHiddenColIds(state: PlDataTableGridStateCore['columnVisibility']): PObjectId[] | null {
-  return state?.hiddenColIds
-    ?.map(parseJson)
-    .filter((c) => c.type === 'column')
-    .map((c) => c.id)
-    ?? null;
+function makePTableParams(state: PlDataTableStateV2CacheEntry): PTableParamsV2 {
+  return {
+    sourceId: state.sourceId,
+    hiddenColIds: getHiddenColIds(state.gridState.columnVisibility),
+    partitionFilters: makePartitionFilters(state.sheetsState),
+    filters: makeFilters(state.filtersState),
+    sorting: makeSorting(state.gridState.sort),
+  };
 }
 
 export function useTableState(
@@ -72,6 +115,7 @@ export function useTableState(
 ): {
     gridState: WritableComputedRef<PlDataTableGridStateCore>;
     sheetsState: WritableComputedRef<PlDataTableSheetState[]>;
+    filtersState: WritableComputedRef<PlDataTableFilterState[]>;
   } {
   const tableStateNormalized = computed<PlDataTableStateV2Normalized>({
     get: () => upgradePlDataTableStateV2(tableStateDenormalized.value),
@@ -83,19 +127,19 @@ export function useTableState(
     },
   });
 
-  const tableState = computed<Omit<PlDataTableStateV2CacheEntry, 'sourceId'>>({
+  const tableState = computed<PlDataTableStateV2CacheEntryNullable>({
     get: () => {
-      const defaultState = {
-        gridState: {},
-        sheetsState: [],
-      };
+      const defaultState = makeDefaultState();
 
       const sourceId = settings.value.sourceId;
       if (!sourceId) return defaultState;
 
       const cachedState = tableStateNormalized.value.stateCache
         .find((entry) => entry.sourceId === sourceId);
-      if (!cachedState) return defaultState;
+      if (!cachedState) return {
+        ...defaultState,
+        sourceId,
+      };
 
       return cachedState;
     },
@@ -103,31 +147,18 @@ export function useTableState(
       const oldState = { ...tableStateNormalized.value };
       const newState: PlDataTableStateV2Normalized = {
         ...oldState,
-        pTableParams: {
-          filters: [],
-          sorting: [],
-          hiddenColIds: null,
-        },
+        pTableParams: makeDefaultPTableParams(),
       };
 
-      const sourceId = settings.value.sourceId;
-      if (sourceId) {
-        newState.pTableParams = {
-          filters: state.sheetsState.map((sheet) => makeTableFilter(sheet.axisId, sheet.value)),
-          sorting: makeTableSorting(state.gridState.sort),
-          hiddenColIds: getHiddenColIds(state.gridState.columnVisibility),
-        };
+      if (state.sourceId) {
+        newState.pTableParams = makePTableParams(state);
 
-        const cacheEntry = {
-          sourceId,
-          ...state,
-        };
-        const stateIdx = newState.stateCache.findIndex((entry) => entry.sourceId === sourceId);
+        const stateIdx = newState.stateCache.findIndex((entry) => entry.sourceId === state.sourceId);
         if (stateIdx !== -1) {
-          newState.stateCache[stateIdx] = cacheEntry;
+          newState.stateCache[stateIdx] = state;
         } else {
           const CacheDepth = 5;
-          newState.stateCache.push(cacheEntry);
+          newState.stateCache.push(state);
           newState.stateCache = newState.stateCache.slice(-CacheDepth);
         }
       }
@@ -136,25 +167,59 @@ export function useTableState(
     },
   });
 
+  // Update pTableParams when sourceId changes
+  watch(
+    () => tableState.value,
+    (state) => {
+      const newParams = state.sourceId ? makePTableParams(state) : makeDefaultPTableParams();
+      const oldParams = tableStateNormalized.value.pTableParams;
+      if (!isJsonEqual(newParams, oldParams)) {
+        tableStateNormalized.value = {
+          ...tableStateNormalized.value,
+          pTableParams: newParams,
+        };
+      }
+    },
+  );
+
   const gridState = computed<PlDataTableGridStateCore>({
     get: () => tableState.value.gridState,
     set: (gridState) => {
-      tableState.value = {
-        ...tableState.value,
-        gridState,
-      };
+      const oldState = tableState.value;
+      if (oldState.sourceId) {
+        tableState.value = {
+          ...oldState,
+          gridState,
+        };
+      }
     },
   });
 
   const sheetsState = computed<PlDataTableSheetState[]>({
     get: () => tableState.value.sheetsState,
     set: (sheetsState) => {
-      tableState.value = {
-        ...tableState.value,
-        sheetsState,
-      };
+      const oldState = tableState.value;
+      if (oldState.sourceId) {
+        tableState.value = {
+          ...oldState,
+          sheetsState,
+        };
+      }
     },
   });
 
-  return { gridState, sheetsState };
+  const filtersState = computed<PlDataTableFilterState[]>({
+    get: () => tableState.value.filtersState,
+    set: (filtersState) => {
+      const oldState = tableState.value;
+      if (oldState.sourceId) {
+        tableState.value = {
+          ...oldState,
+          filtersState,
+        };
+      }
+    },
+  });
+
+  return { gridState, sheetsState, filtersState };
 }

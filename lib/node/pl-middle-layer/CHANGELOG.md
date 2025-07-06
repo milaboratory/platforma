@@ -1,5 +1,54 @@
 # @milaboratories/pl-middle-layer
 
+## 1.39.0
+
+### Minor Changes
+
+- 4c6785c: Introduces path for output caluculation with early dispose of QuickJS VM (will be engaged in most cases)
+
+## 1.38.1
+
+### Patch Changes
+
+- a0c607a: PFrames version bump
+- Updated dependencies [a0c607a]
+  - @milaboratories/pl-model-middle-layer@1.7.45
+  - @platforma-sdk/block-tools@2.5.63
+
+## 1.38.0
+
+### Minor Changes
+
+- 3b46d33: SDK and ML support for lazy retrieval of args and uiState by model outputs
+
+### Patch Changes
+
+- Updated dependencies [3b46d33]
+- Updated dependencies [3b46d33]
+- Updated dependencies [3b46d33]
+- Updated dependencies [3b46d33]
+- Updated dependencies [3b46d33]
+  - @milaboratories/pl-tree@1.7.0
+  - @platforma-sdk/model@1.39.0
+  - @milaboratories/pl-model-common@1.16.0
+  - @milaboratories/computable@2.6.0
+  - @milaboratories/pl-drivers@1.6.0
+  - @milaboratories/pl-model-middle-layer@1.7.44
+  - @platforma-sdk/block-tools@2.5.62
+
+## 1.37.100
+
+### Patch Changes
+
+- bd788f9: PFrames driver - accept partitionFilters separately from all other fields
+- Updated dependencies [bd788f9]
+- Updated dependencies [bd788f9]
+  - @platforma-sdk/model@1.38.0
+  - @milaboratories/pl-model-common@1.15.9
+  - @milaboratories/pl-model-middle-layer@1.7.43
+  - @milaboratories/pl-drivers@1.5.79
+  - @platforma-sdk/block-tools@2.5.61
+
 ## 1.37.99
 
 ### Patch Changes

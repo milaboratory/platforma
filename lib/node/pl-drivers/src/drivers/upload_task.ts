@@ -1,6 +1,6 @@
 import type { Watcher } from '@milaboratories/computable';
 import { ChangeSource } from '@milaboratories/computable';
-import { stringifyWithResourceId } from '@milaboratories/pl-client';
+import { resourceIdToString, stringifyWithResourceId } from '@milaboratories/pl-client';
 import type * as sdk from '@milaboratories/pl-model-common';
 import type { AsyncPoolController, MiLogger, Signer } from '@milaboratories/ts-helpers';
 import { asyncPool, CallersCounter } from '@milaboratories/ts-helpers';
@@ -78,20 +78,20 @@ export class UploadTask {
           maxSpeed: this.maxNConcurrentPartsUpload,
         },
       );
-      this.change.markChanged();
+      this.change.markChanged(`blob upload for ${resourceIdToString(this.res.id)} finished`);
     } catch (e: any) {
       this.setRetriableError(e);
 
       if (isResourceWasDeletedError(e)) {
         this.logger.warn(`resource was deleted while uploading a blob: ${e}`);
-        this.change.markChanged();
+        this.change.markChanged(`blob upload for ${resourceIdToString(this.res.id)} aborted, resource was deleted`);
         this.setDone(true);
 
         return;
       }
 
       this.logger.error(`error while uploading a blob: ${e}`);
-      this.change.markChanged();
+      this.change.markChanged(`blob upload for ${resourceIdToString(this.res.id)} failed`);
 
       if (nonRecoverableError(e)) {
         this.setTerminalError(e);
@@ -118,7 +118,7 @@ export class UploadTask {
       this.setDone(status.done);
 
       if (status.done || this.progress.status.progress != oldStatus?.progress) {
-        this.change.markChanged();
+        this.change.markChanged(`upload status for ${resourceIdToString(this.res.id)} changed`);
       }
     } catch (e: any) {
       this.setRetriableError(e);
@@ -132,7 +132,7 @@ export class UploadTask {
         this.logger.warn(
           `resource was not found while updating a status of BlobImport: ${e}, ${stringifyWithResourceId(this.res)}`,
         );
-        this.change.markChanged();
+        this.change.markChanged(`upload status for ${resourceIdToString(this.res.id)} changed, resource not found`);
         this.setDone(true);
         return;
       }

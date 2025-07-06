@@ -10,7 +10,7 @@ import { randomUUID } from 'node:crypto';
 import * as path from 'node:path';
 import { FilesCache } from '../helpers/files_cache';
 import type { ResourceId } from '@milaboratories/pl-client';
-import { stringifyWithResourceId } from '@milaboratories/pl-client';
+import { resourceIdToString, stringifyWithResourceId } from '@milaboratories/pl-client';
 import type { ArchiveFormat, BlobToURLDriver, FolderURL } from '@milaboratories/pl-model-common';
 import type { DownloadableBlobSnapshot } from './snapshot';
 import { makeDownloadableBlobSnapshot } from './snapshot';
@@ -215,7 +215,7 @@ export class DownloadBlobToURLDriver implements BlobToURLDriver {
 
   private removeTask(task: DownloadAndUnarchiveTask, reason: string) {
     task.abort(reason);
-    task.change.markChanged();
+    task.change.markChanged(`task for ${resourceIdToString(task.rInfo.id)} removed: ${reason}`);
     this.idToDownload.delete(newId(task.rInfo.id, task.format));
   }
 

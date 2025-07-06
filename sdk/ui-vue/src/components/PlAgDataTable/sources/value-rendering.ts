@@ -1,9 +1,9 @@
 import { isPTableAbsent, PTableNA, type PTableColumnSpec, type PTableValue } from '@platforma-sdk/model';
 import type { ValueFormatterFunc } from 'ag-grid-enterprise';
-import type { PlAgDataTableRow } from '../types';
 import type { PTableHidden } from './common';
 import { isPTableHidden } from './common';
 import * as d3 from 'd3-format';
+import type { PlAgDataTableV2Row } from '../types';
 
 export function formatSpecialValues(value: PTableValue | PTableHidden | undefined): string | undefined {
   if (value === undefined) {
@@ -18,7 +18,7 @@ export function formatSpecialValues(value: PTableValue | PTableHidden | undefine
 };
 
 export type ColumnRenderingSpec = {
-  valueFormatter: ValueFormatterFunc<PlAgDataTableRow, PTableValue | PTableHidden>;
+  valueFormatter: ValueFormatterFunc<PlAgDataTableV2Row, PTableValue | PTableHidden>;
   fontFamily?: string;
 };
 

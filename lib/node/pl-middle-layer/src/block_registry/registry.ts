@@ -210,6 +210,7 @@ export class BlockPackRegistry {
               const latestOverview: SingleBlockPackOverview = {
                 id: v2Description.id,
                 meta: await BlockPackMetaEmbedAbsoluteBytes.parseAsync(v2Description.meta),
+                featureFlags: v2Description.featureFlags,
                 spec: {
                   type: 'dev-v2',
                   folder: actualDevPath,
