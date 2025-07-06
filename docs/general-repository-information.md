@@ -180,6 +180,29 @@ The monorepo uses [Changesets](https://github.com/changesets/changesets) to mana
 
 It is important to note that you should **never** manually edit `CHANGELOG.md` files or the `version` field in `package.json` files. The Changesets tool automates this process entirely. When your pull request is merged, a GitHub Action will automatically consume the changeset files, update the versions of the relevant packages, generate or update the `CHANGELOG.md` files, and then commit these changes.
 
+### Manual Changeset Creation
+
+The `pnpm changeset` command is interactive, which is not suitable for automated scripts or AI assistants. In these scenarios, you can create changeset files manually. Create a new file in the `.changeset/` directory with a `.md` extension (e.g., `my-cool-feature.md`).
+
+The file consists of YAML front matter specifying the packages and their bump types (`patch`, `minor`, `major`), followed by a summary of the changes in Markdown.
+
+**Example:**
+
+For a bug fix in one package and a new feature in another, you could create `.changeset/describe-my-changes.md`:
+
+```yaml
+---
+'@milaboratories/pl-model-common': patch
+'@milaboratories/pl-middle-layer': minor
+---
+
+**Feature**: A summary of the new feature.
+
+**Fix**: A summary of the bug fix.
+```
+
+This manual approach is equivalent to using the interactive command and is ideal for non-interactive environments.
+
 ---
 _The content of this document is based on the analysis of the following files. As the documentation evolves, more files will be added to this list._
 - `pnpm-workspace.yaml`
