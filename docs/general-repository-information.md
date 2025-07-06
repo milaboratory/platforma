@@ -38,6 +38,8 @@ A key feature of the PNPM setup is the use of a version `catalog`, defined in `p
 }
 ```
 
+When introducing a new external dependency into the monorepo, it is crucial that you **first** add it to the version catalog in `pnpm-workspace.yaml`. **Never** add a dependency with a specific version directly to a `package.json` file. This practice ensures that all dependency versions are managed centrally, preventing version conflicts and maintaining consistency across the entire workspace.
+
 ## Core Technologies & Standards
 
 - **Language**: TypeScript
