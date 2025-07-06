@@ -122,6 +122,24 @@ The repository uses [Vitest](https://vitest.dev/) as the primary testing framewo
 
 - **Vitest**: The root `vitest.workspace.ts` file configures the test environment. Individual packages can have a `vitest.config.mts` for minor adjustments.
 
+### Ensuring Non-Interactive Tests
+
+To ensure a consistent and non-interactive testing environment, especially for automated builds and CI/CD pipelines, it's important to configure `vitest` to not use its interactive "watch" mode.
+
+The recommended approach is to add a `vitest.config.mts` file to your package if it doesn't already have one, and set the `watch` option to `false`. This will ensure that `vitest` runs the tests once and then exits.
+
+Example `vitest.config.mts`:
+```typescript
+import { defineConfig } from 'vitest/config';
+
+export default defineConfig({
+  test: {
+    watch: false,
+  },
+});
+```
+This configuration is already in place for many packages, for example in `lib/model/common/vitest.config.mts`.
+
 ### Coding Standards
 
 - **ESLint**: The configuration is typically found in `eslint.config.mjs` files. These files extend a base configuration from the `@milaboratories/eslint-config` package and can add their own specific rules or ignores.
@@ -159,6 +177,8 @@ This approach keeps complex integration tests isolated from library code.
 ## Versioning and Publishing
 
 The monorepo uses [Changesets](https://github.com/changesets/changesets) to manage versioning and releases. When you make a change that should result in a package version bump, you should run `pnpm changeset` and follow the prompts. This will create a new changeset file in the `.changeset` directory.
+
+It is important to note that you should **never** manually edit `CHANGELOG.md` files or the `version` field in `package.json` files. The Changesets tool automates this process entirely. When your pull request is merged, a GitHub Action will automatically consume the changeset files, update the versions of the relevant packages, generate or update the `CHANGELOG.md` files, and then commit these changes.
 
 ---
 _The content of this document is based on the analysis of the following files. As the documentation evolves, more files will be added to this list._
