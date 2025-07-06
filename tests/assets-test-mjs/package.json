@@ -1,0 +1,17 @@
+{
+  "name": "@milaboratories/assets-test-mjs",
+  "version": "1.0.0",
+  "description": "ESM test package for npm-asset-packer integration testing",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@milaboratories/test-assets": "workspace:*"
+  },
+  "devDependencies": {
+    "vitest": "catalog:",
+    "@types/node": "catalog:"
+  }
+}

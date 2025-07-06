@@ -1261,6 +1261,15 @@ importers:
         specifier: workspace:*
         version: link:../../../../tools/tengo-builder
 
+  etc/test-assets:
+    devDependencies:
+      '@milaboratories/npm-asset-packer':
+        specifier: workspace:*
+        version: link:../../tools/npm-asset-packer
+      vitest:
+        specifier: 'catalog:'
+        version: 2.1.9(@types/node@22.5.5)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4)
+
   etc/ui-vue-docs:
     dependencies:
       '@faker-js/faker':
@@ -2523,6 +2532,32 @@ importers:
       '@platforma-sdk/tengo-builder':
         specifier: workspace:^
         version: link:../../tools/tengo-builder
+
+  tests/assets-test-cjs:
+    dependencies:
+      '@milaboratories/test-assets':
+        specifier: workspace:*
+        version: link:../../etc/test-assets
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 20.16.15
+      vitest:
+        specifier: 'catalog:'
+        version: 2.1.9(@types/node@20.16.15)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4)
+
+  tests/assets-test-mjs:
+    dependencies:
+      '@milaboratories/test-assets':
+        specifier: workspace:*
+        version: link:../../etc/test-assets
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 20.16.15
+      vitest:
+        specifier: 'catalog:'
+        version: 2.1.9(@types/node@20.16.15)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4)
 
   tests/block-repo:
     devDependencies:

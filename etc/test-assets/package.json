@@ -1,0 +1,29 @@
+{
+  "name": "@milaboratories/test-assets",
+  "version": "1.0.0",
+  "description": "Test package for npm-asset-packer with sample assets",
+  "private": true,
+  "scripts": {
+    "build": "npm-asset-packer build",
+    "test": "vitest run"
+  },
+  "assetPacker": {
+    "mode": "npm"
+  },
+  "devDependencies": {
+    "@milaboratories/npm-asset-packer": "workspace:*",
+    "vitest": "catalog:"
+  },
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  }
+}
