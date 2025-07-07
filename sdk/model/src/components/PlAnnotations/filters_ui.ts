@@ -1,6 +1,6 @@
 import type { SUniversalPColumnId } from '@milaboratories/pl-model-common';
+import type { AnnotationFilter, AnnotationMode, AnnotationScript, IsNA, NotFilter, NumericalComparisonFilter, PatternFilter, PatternPredicate, ValueRank } from './filter';
 import type { SimplifiedPColumnSpec } from './types';
-import type { AnnotationFilter, AnnotationScript, AnnotationMode, PatternPredicate, IsNA, NotFilter, PatternFilter, NumericalComparisonFilter, ValueRank } from './filter';
 
 export function unreachable(x: never): never {
   // eslint-disable-next-line @typescript-eslint/restrict-plus-operands
@@ -650,6 +650,7 @@ export type AnnotationStepUi = {
 };
 
 export type AnnotationScriptUi = {
+  isCreated?: boolean;
   title: string;
   mode: AnnotationMode;
   steps: AnnotationStepUi[];
