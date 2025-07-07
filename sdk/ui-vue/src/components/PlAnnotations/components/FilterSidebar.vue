@@ -9,9 +9,9 @@ import {
   PlSidebarItem,
   PlElementList,
 } from '@milaboratories/uikit';
-import type { SimplifiedUniversalPColumnEntry } from './types';
+import type { SimplifiedUniversalPColumnEntry } from '../types';
+import { createDefaultFilterMetadata } from '../utils';
 import DynamicForm from './DynamicForm.vue';
-import { createDefaultFilterMetadata } from './utils';
 
 // Models
 const annotation = defineModel<AnnotationScriptUi>('annotation', { required: true });

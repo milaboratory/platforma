@@ -1,2 +1,2 @@
-export { default as AnnotationsModal } from './AnnotationsModal.vue';
+export { default as PlAnnotationsModal } from './components/PlAnnotationsModal.vue';
 export { annotationModelController } from './annotationModelController';
