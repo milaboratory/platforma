@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { PlPureSlideModal, PlSidebarGroup } from '@milaboratories/uikit';
+import { isNil } from '@milaboratories/helpers';
+import { PlPureSlideModal, PlSidebarGroup, useConfirm } from '@milaboratories/uikit';
 import type { AnnotationScriptUi } from '@platforma-sdk/model';
 import { computed, effect, shallowRef } from 'vue';
 import type { SimplifiedUniversalPColumnEntry } from '../types';
@@ -15,6 +16,11 @@ const opened = defineModel<boolean>('opened', { required: true });
 const props = defineProps<{ columns: SimplifiedUniversalPColumnEntry[] }>();
 // State
 const selectedStepId = shallowRef<number | undefined>(undefined);
+const selectedStep = computed(() => {
+  return isNil(selectedStepId.value) || isNil(annotation.value)
+    ? undefined
+    : annotation.value.steps.find((step) => step.id === selectedStepId.value);
+});
 const hasAnnotation = computed(() => annotation.value.isCreated === true);
 
 const openedDialog = computed({
@@ -25,19 +31,38 @@ const openedModal = computed({
   get: () => hasAnnotation.value && opened.value,
   set: (value: boolean) => (opened.value = value),
 });
-
-effect(() => {
+// Watchers
+effect(function setDefaultStepId() {
   if (selectedStepId.value === undefined && annotation.value.steps.length > 0) {
     selectedStepId.value = annotation.value.steps[0].id;
   }
 });
-
+// Hooks
+const confirmResetSchema = useConfirm({
+  title: 'Reset Schema',
+  message: 'Are you sure you want to reset the schema? This action cannot be undone.',
+  confirmLabel: 'Yes, reset',
+  cancelLabel: 'No, cancel',
+});
+// Actions
 function handleCreateAnnotation(props: { type: 'byClonotype' | 'bySampleAndClonotype'; name: string }) {
   annotation.value.isCreated = true;
   annotation.value.mode = props.type;
   annotation.value.title = props.name;
   annotation.value.steps = [];
 }
+
+async function handleDeleteSchema() {
+  if (await confirmResetSchema()) {
+    annotation.value.isCreated = false;
+    annotation.value.title = '';
+    annotation.value.mode = 'byClonotype';
+    annotation.value.steps = [];
+    opened.value = false;
+    selectedStepId.value = undefined;
+  }
+}
+
 </script>
 
 <template>
@@ -50,11 +75,12 @@ function handleCreateAnnotation(props: { type: 'byClonotype' | 'bySampleAndClono
           v-model:selectedStepId="selectedStepId"
           :class="$style.sidebarItem"
           :columns="props.columns"
+          @delete-schema="handleDeleteSchema"
         />
       </template>
       <template #item-1>
         <FilterSidebar
-          v-model:annotation="annotation"
+          v-model:step="selectedStep"
           :class="$style.sidebarItem"
           :columns="props.columns"
           :selectedStepId="selectedStepId"

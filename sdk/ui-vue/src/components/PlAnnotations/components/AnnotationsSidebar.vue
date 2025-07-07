@@ -1,25 +1,27 @@
 <script setup lang="ts">
-import type { AnnotationScriptUi, AnnotationMode } from '@platforma-sdk/model';
 import { randomInt } from '@milaboratories/helpers';
 import {
-  PlBtnGroup,
-  PlBtnSecondary,
-  type SimpleOption,
-  PlEditableTitle,
-  PlSidebarItem,
   PlBtnGhost,
+  PlBtnSecondary,
+  PlEditableTitle,
   PlElementList,
+  PlSidebarItem,
 } from '@milaboratories/uikit';
+import type { AnnotationScriptUi } from '@platforma-sdk/model';
 
 // Models
 const annotation = defineModel<AnnotationScriptUi>('annotation', { required: true });
 const selectedStepId = defineModel<undefined | number>('selectedStepId');
+// Emits
+const emits = defineEmits<{
+  (e: 'delete-schema'): void;
+}>();
 // Actions
-const addStep = () => {
+function handleAddStep() {
   const id = randomInt();
   annotation.value.steps.push({
     id,
-    label: '',
+    label: `Filter #${annotation.value.steps.length + 1}`,
     filter: {
       type: 'and',
       filters: [],
@@ -27,18 +29,6 @@ const addStep = () => {
   });
   selectedStepId.value = id;
 };
-
-const updateAnnotationMode = async (mode: AnnotationMode) => {
-  if (await window.confirm('Changing the annotation mode will reset the current schema. Are you sure you want to proceed?')) {
-    annotation.value.steps = [];
-    annotation.value.mode = mode;
-  }
-};
-
-const groupOptions = [
-  { label: 'Global', value: 'byClonotype' },
-  { label: 'Per sample', value: 'bySampleAndClonotype' },
-] satisfies SimpleOption<AnnotationMode>[];
 </script>
 
 <template>
@@ -54,9 +44,7 @@ const groupOptions = [
     </template>
     <template v-if="annotation" #body-content>
       <div :class="$style.root">
-        <PlBtnGroup :model-value="annotation.mode" :options="groupOptions" @update:model-value="updateAnnotationMode" />
-
-        <PlBtnSecondary icon="add" @click="addStep">
+        <PlBtnSecondary icon="add" @click="handleAddStep">
           Add annotation
         </PlBtnSecondary>
 
@@ -81,9 +69,9 @@ const groupOptions = [
         icon="delete-bin"
         reverse
         :disabled="annotation.steps.length === 0"
-        @click.stop="annotation.steps = []"
+        @click.stop="emits('delete-schema')"
       >
-        Reset Schema
+        Delete Schema
       </PlBtnGhost>
     </template>
   </PlSidebarItem>

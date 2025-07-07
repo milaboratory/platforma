@@ -1,6 +1,6 @@
-import { watchDebounced } from '@vueuse/core';
+import type { AnnotationScript, AnnotationScriptUi } from '@platforma-sdk/model';
 import { compileAnnotationScript } from '@platforma-sdk/model';
-import type { AnnotationScriptUi, AnnotationScript } from '@platforma-sdk/model';
+import { watchDebounced } from '@vueuse/core';
 import { migratgeToWithId } from './utils';
 
 export function annotationModelController(
@@ -12,11 +12,9 @@ export function annotationModelController(
 
   watchDebounced(getUiState, (value) => {
     try {
-      const v = Object.assign(getArgsState(), compileAnnotationScript(value));
-      console.log('>> ui', value);
-      console.log('>> args', v);
+      Object.assign(getArgsState(), compileAnnotationScript(value));
     } catch (err) {
-      console.error(err);
+      console.error('Error while compiling annotation UI state to Args:', err);
     }
-  }, { deep: true, debounce: 300 });
+  }, { deep: true, debounce: 1000 });
 }

@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import type { SimpleOption } from '@milaboratories/uikit';
 import { PlBtnGhost, PlBtnPrimary, PlDialogModal, PlRadioGroup, PlTextField } from '@milaboratories/uikit';
+import type { AnnotationMode } from '@platforma-sdk/model';
 import { computed, ref } from 'vue';
 
 // Models
@@ -12,7 +14,7 @@ const emits = defineEmits<{
 const annotationSchemaTypes = [
   { label: 'Global', value: 'byClonotype' },
   { label: 'Per sample', value: 'bySampleAndClonotype' },
-];
+] satisfies SimpleOption<AnnotationMode>[];
 
 const modalState = ref<{
   type: 'byClonotype' | 'bySampleAndClonotype';
