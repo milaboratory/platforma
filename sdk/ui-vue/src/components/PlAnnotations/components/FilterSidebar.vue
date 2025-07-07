@@ -1,36 +1,28 @@
 <script setup lang="ts">
-import type { AnnotationScriptUi, FilterUi } from '@platforma-sdk/model';
-import { getFilterUiMetadata } from '@platforma-sdk/model';
 import { isNil, randomInt } from '@milaboratories/helpers';
-import { computed } from 'vue';
 import {
   PlBtnSecondary,
   PlEditableTitle,
-  PlSidebarItem,
   PlElementList,
+  PlSidebarItem,
 } from '@milaboratories/uikit';
+import type { AnnotationStepUi, FilterUi } from '@platforma-sdk/model';
+import { getFilterUiMetadata } from '@platforma-sdk/model';
 import type { SimplifiedUniversalPColumnEntry } from '../types';
 import { createDefaultFilterMetadata } from '../utils';
 import DynamicForm from './DynamicForm.vue';
 
 // Models
-const annotation = defineModel<AnnotationScriptUi>('annotation', { required: true });
+const step = defineModel<AnnotationStepUi>('step');
 // Props
 const props = defineProps<{
   columns: SimplifiedUniversalPColumnEntry[];
-  selectedStepId: undefined | number;
 }>();
-// State
-const selectedStep = computed(() => {
-  return isNil(props.selectedStepId) || isNil(annotation.value)
-    ? undefined
-    : annotation.value.steps.find((step) => step.id === props.selectedStepId);
-});
-
+// Actions
 const addFilter = () => {
-  if (isNil(selectedStep.value)) return;
+  if (isNil(step.value)) return;
 
-  selectedStep.value?.filter.filters.push({
+  step.value?.filter.filters.push({
     id: randomInt(),
     isExpanded: true,
     type: undefined,
@@ -49,15 +41,15 @@ const getFormMetadata = (filter: FilterUi) => {
 </script>
 
 <template>
-  <PlSidebarItem v-if="selectedStep">
+  <PlSidebarItem v-if="step">
     <template #header-content>
       <PlEditableTitle
-        :key="selectedStep.id"
-        v-model="selectedStep.label"
+        :key="step.id"
+        v-model="step.label"
         :max-length="40"
         max-width="600px"
         placeholder="Annotation Name"
-        :autofocus="selectedStep.label.length === 0"
+        :autofocus="step.label.length === 0"
       />
     </template>
     <template #body-content>
@@ -69,7 +61,7 @@ const getFormMetadata = (filter: FilterUi) => {
         <span :class="$style.tip">Lower annotations override the ones above. Rearrange them by dragging.</span>
 
         <PlElementList
-          v-model:items="selectedStep.filter.filters"
+          v-model:items="step.filter.filters"
           :get-item-key="(item) => item.id!"
           :is-expanded="(item) => Boolean(item.isExpanded)"
           :on-expand="(item) => item.isExpanded = !Boolean(item.isExpanded)"
@@ -79,7 +71,7 @@ const getFormMetadata = (filter: FilterUi) => {
           </template>
           <template #item-content="{ item, index }">
             <DynamicForm
-              v-model="selectedStep.filter.filters[index]"
+              v-model="step.filter.filters[index]"
               :form-metadata="getFormMetadata(item)"
               :columns="props.columns"
             />

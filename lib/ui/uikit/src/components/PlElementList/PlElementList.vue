@@ -1,11 +1,11 @@
 <script generic="T extends unknown = unknown, K extends number | string = number | string" lang="ts" setup>
-import type { ShallowRef } from 'vue';
-import { computed, shallowRef, watch } from 'vue';
 import { isFunction, shallowHash } from '@milaboratories/helpers';
 import { useSortable } from '@vueuse/integrations/useSortable';
 import { type SortableEvent } from 'sortablejs';
-import { moveElements } from './utils.ts';
+import type { ShallowRef } from 'vue';
+import { computed, shallowRef, watch } from 'vue';
 import PlElementListItem from './PlElementListItem.vue';
+import { moveElements } from './utils.ts';
 
 const itemsRef = defineModel<T[]>('items', { required: true });
 
@@ -123,7 +123,7 @@ const versionRef = computed<number>((oldVersion) => {
 });
 
 createSortable(hasPinnedItems, pinnedContainerRef, pinnedItemsRef, () => 0);
-createSortable(hasUnpinnedItems, unpinnedContainerRef, unpinnedItemsRef, () => unpinnedItemsRef.value.length);
+createSortable(hasUnpinnedItems, unpinnedContainerRef, unpinnedItemsRef, () => pinnedItemsRef.value.length);
 
 function createSortable(toggler: ShallowRef<boolean>, elRef: ShallowRef<undefined | HTMLElement>, itemsRef: ShallowRef<T[]>, getOffset: () => number) {
   const sortable = useSortable(elRef, itemsRef, {

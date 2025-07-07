@@ -12,9 +12,9 @@ import Slider from './components/Slider.vue';
 import { showContextMenu } from './components/contextMenu';
 // for new version
 import LongText from './components/LongText.vue';
-import SliderRangeTriple from './components/SliderRangeTriple.vue';
-import SliderRange from './components/SliderRange.vue';
 import Scrollable from './components/Scrollable.vue';
+import SliderRange from './components/SliderRange.vue';
+import SliderRangeTriple from './components/SliderRangeTriple.vue';
 
 import { allCssVariables } from './demo-site-data/all-css-variables.ts';
 
@@ -24,53 +24,53 @@ import { allCssVariables } from './demo-site-data/all-css-variables.ts';
 
 export * from './layout/PlBlockPage';
 export * from './layout/PlContainer';
+export * from './layout/PlGrid';
 export * from './layout/PlRow';
 export * from './layout/PlSpacer';
-export * from './layout/PlGrid';
 
 /**
  * Components
  */
 export * from './components/PlErrorBoundary';
 // export * from './components/PlErrorAlert'; // @TODO discuss if we should export it
+export * from './components/PlAccordion';
 export * from './components/PlAlert';
-export * from './components/PlBtnSplit';
-export * from './components/PlBtnPrimary';
+export * from './components/PlAutocomplete';
 export * from './components/PlBtnAccent';
 export * from './components/PlBtnDanger';
-export * from './components/PlBtnSecondary';
 export * from './components/PlBtnGhost';
-export * from './components/PlBtnLink';
 export * from './components/PlBtnGroup';
-export * from './components/PlEditableTitle';
-export * from './components/PlTextField';
-export * from './components/PlSearchField';
-export * from './components/PlTextArea';
-export * from './components/PlDropdown';
-export * from './components/PlDropdownRef';
-export * from './components/PlDropdownLine';
-export * from './components/PlDropdownLegacy';
-export * from './components/PlTooltip';
-export * from './components/PlProgressBar';
-export * from './components/PlNumberField';
-export * from './components/PlDropdownMulti';
-export * from './components/PlDropdownMultiRef';
+export * from './components/PlBtnLink';
+export * from './components/PlBtnPrimary';
+export * from './components/PlBtnSecondary';
+export * from './components/PlBtnSplit';
 export * from './components/PlCheckbox';
 export * from './components/PlCheckboxGroup';
 export * from './components/PlChip';
 export * from './components/PlDialogModal';
-export * from './components/PlSlideModal';
-export * from './components/PlToggleSwitch';
-export * from './components/PlLogView';
-export * from './components/PlTabs';
-export * from './components/PlSectionSeparator';
-export * from './components/PlAccordion';
-export * from './components/PlStatusTag';
-export * from './components/PlLoaderCircular';
-export * from './components/PlSplash';
-export * from './components/PlProgressCell';
-export * from './components/PlAutocomplete';
+export * from './components/PlDropdown';
+export * from './components/PlDropdownLegacy';
+export * from './components/PlDropdownLine';
+export * from './components/PlDropdownMulti';
+export * from './components/PlDropdownMultiRef';
+export * from './components/PlDropdownRef';
+export * from './components/PlEditableTitle';
 export * from './components/PlElementList';
+export * from './components/PlLoaderCircular';
+export * from './components/PlLogView';
+export * from './components/PlNumberField';
+export * from './components/PlProgressBar';
+export * from './components/PlProgressCell';
+export * from './components/PlSearchField';
+export * from './components/PlSectionSeparator';
+export * from './components/PlSlideModal';
+export * from './components/PlSplash';
+export * from './components/PlStatusTag';
+export * from './components/PlTabs';
+export * from './components/PlTextArea';
+export * from './components/PlTextField';
+export * from './components/PlToggleSwitch';
+export * from './components/PlTooltip';
 
 export * from './components/PlFileDialog';
 export * from './components/PlFileInput';
@@ -78,14 +78,14 @@ export * from './components/PlNotificationAlert';
 
 export * from './components/PlSidebar';
 
-export * from './components/PlSvg';
-export * from './components/PlMaskIcon16';
-export * from './components/PlMaskIcon24';
 export * from './components/PlIcon16';
 export * from './components/PlIcon24';
+export * from './components/PlMaskIcon16';
+export * from './components/PlMaskIcon24';
+export * from './components/PlSvg';
 
-export * from './components/PlChartStackedBar';
 export * from './components/PlChartHistogram';
+export * from './components/PlChartStackedBar';
 
 export * from './components/PlRadio';
 
@@ -94,23 +94,25 @@ export * from './colors';
 /**
  * Usables
  */
-export { useElementPosition as usePosition } from './composition/usePosition';
 export { useClickOutside } from './composition/useClickOutside';
+export { useComponentProp } from './composition/useComponentProp';
+export { useConfirm } from './composition/useConfirm';
+export { useDraggable } from './composition/useDraggable';
 export { useEventListener } from './composition/useEventListener';
-export { useScroll } from './composition/useScroll';
-export { useResizeObserver } from './composition/useResizeObserver';
-export { useTheme } from './composition/useTheme';
-export { useLocalStorage } from './composition/useLocalStorage';
-export { useMouseCapture } from './composition/useMouseCapture';
+export { useFormState } from './composition/useFormState';
 export { useHover } from './composition/useHover';
+export { useInterval } from './composition/useInterval';
+export { useLocalStorage } from './composition/useLocalStorage';
 export { useMouse } from './composition/useMouse';
+export { useMouseCapture } from './composition/useMouseCapture';
+export { useElementPosition as usePosition } from './composition/usePosition';
+export { useQuery } from './composition/useQuery.ts';
+export { useResizeObserver } from './composition/useResizeObserver';
+export { useScroll } from './composition/useScroll';
 export { useSortable } from './composition/useSortable';
 export { useSortable2 } from './composition/useSortable2';
-export { useInterval } from './composition/useInterval';
-export { useFormState } from './composition/useFormState';
-export { useQuery } from './composition/useQuery.ts';
-export { useDraggable } from './composition/useDraggable';
-export { useComponentProp } from './composition/useComponentProp';
+export { useTheme } from './composition/useTheme';
+
 export * from './composition/useWatchFetch';
 export * from './composition/watchCached';
 export * from './composition/computedCached';
@@ -119,8 +121,8 @@ export * from './composition/computedCached';
  * Utils/Partials
  */
 
-export { default as PlCloseModalBtn } from './utils/PlCloseModalBtn.vue';
 export * from './utils/DropdownOverlay';
+export { default as PlCloseModalBtn } from './utils/PlCloseModalBtn.vue';
 
 /**
  * Technical
@@ -139,13 +141,13 @@ export * from './helpers/utils';
 /**
  * @TODO review
  */
-export { ThemeSwitcher, DropdownListItem, DataTable, ContextProvider, Slider };
+export { ContextProvider, DataTable, DropdownListItem, Slider, ThemeSwitcher };
 
 // Helpers
 export { showContextMenu };
 
 // move to new version pl-uikit
-export { LongText, SliderRangeTriple, SliderRange, Scrollable };
+export { LongText, Scrollable, SliderRange, SliderRangeTriple };
 
 // @todo
 const DemoData = { allCssVariables: allCssVariables() };
