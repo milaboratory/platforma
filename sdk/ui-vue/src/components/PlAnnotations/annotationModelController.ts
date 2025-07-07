@@ -12,7 +12,9 @@ export function annotationModelController(
 
   watchDebounced(getUiState, (value) => {
     try {
-      Object.assign(getArgsState(), compileAnnotationScript(value));
+      const v = Object.assign(getArgsState(), compileAnnotationScript(value));
+      console.log('>> ui', value);
+      console.log('>> args', v);
     } catch (err) {
       console.error(err);
     }
