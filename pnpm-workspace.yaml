@@ -222,7 +222,7 @@ catalog:
   'ag-grid-enterprise': &ag-grid ^33.3.2
   'ag-grid-vue3': *ag-grid
 
-  '@milaboratories/miplots4': ^1.0.98
+  '@milaboratories/miplots4': ^1.0.123
 
   'monaco-editor': ^0.52.2
 
