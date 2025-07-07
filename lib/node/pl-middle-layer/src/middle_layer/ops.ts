@@ -11,6 +11,7 @@ import type { MiLogger } from '@milaboratories/ts-helpers';
 import { ConsoleLoggerAdapter } from '@milaboratories/ts-helpers';
 import type { LocalStorageProjection } from '@milaboratories/pl-drivers';
 import path from 'node:path';
+import type { PFrameDriverOps } from '../pool/driver';
 
 /** Paths part of {@link DriverKitOps}. */
 export type DriverKitOpsPaths = {
@@ -111,6 +112,13 @@ export type DriverKitOpsSettings = {
    * calls from the UI.
    */
   readonly openFileDialogCallback: OpenFileDialogCallback;
+
+  //
+  // PFrame Driver
+  //
+
+  /** Settings related to the PFrame driver */
+  readonly pFrameDriverOps: PFrameDriverOps;
 };
 
 export type DriverKitOps = DriverKitOpsPaths & DriverKitOpsSettings;
@@ -123,6 +131,7 @@ export const DefaultDriverKitOpsSettings: Pick<
   | 'downloadBlobToURLDriverOps'
   | 'uploadDriverOps'
   | 'logStreamDriverOps'
+  | 'pFrameDriverOps'
 > = {
   logger: new ConsoleLoggerAdapter(),
   blobDriverOps: {
@@ -144,6 +153,12 @@ export const DefaultDriverKitOpsSettings: Pick<
     nConcurrentGetLogs: 10,
     pollingInterval: 1000,
     stopPollingDelay: 1000,
+  },
+  pFrameDriverOps: {
+    pFrameConcurrency: 1,
+    pTableConcurrency: 1,
+    pFrameCacheMaxCount: 18, // 6 ptables, 3 layers each (join, filter, sort)
+    pFramesCacheMaxSize: 8 * 1024 * 1024 * 1024, // 8 GB
   },
 };
 
