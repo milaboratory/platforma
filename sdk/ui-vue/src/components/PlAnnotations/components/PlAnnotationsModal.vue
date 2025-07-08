@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { isNil } from '@milaboratories/helpers';
 import { PlPureSlideModal, PlSidebarGroup, useConfirm } from '@milaboratories/uikit';
-import type { AnnotationScriptUi } from '@platforma-sdk/model';
+import type { AnnotationScriptUi, PObjectId } from '@platforma-sdk/model';
 import { computed, effect, shallowRef } from 'vue';
 import type { SimplifiedUniversalPColumnEntry } from '../types';
 import { getDefaultAnnotationScript } from '../utils';
@@ -13,7 +13,11 @@ import PlAnnotationCreateDialog from './PlAnnotationCreateDialog.vue';
 const annotation = defineModel<AnnotationScriptUi>('annotation', { required: true, default: getDefaultAnnotationScript });
 const opened = defineModel<boolean>('opened', { required: true });
 // Props
-const props = defineProps<{ columns: SimplifiedUniversalPColumnEntry[] }>();
+const props = defineProps<{
+  columns: SimplifiedUniversalPColumnEntry[];
+  hasSelectedColumns: boolean;
+  getValuesForSelectedColumns: () => Promise<undefined | { columnId: PObjectId; values: string[] }>;
+}>();
 // State
 const selectedStepId = shallowRef<number | undefined>(undefined);
 const selectedStep = computed(() => {
@@ -80,10 +84,13 @@ async function handleDeleteSchema() {
       </template>
       <template #item-1>
         <FilterSidebar
+          v-if="selectedStep"
           v-model:step="selectedStep"
           :class="$style.sidebarItem"
           :columns="props.columns"
           :selectedStepId="selectedStepId"
+          :hasSelectedColumns="props.hasSelectedColumns"
+          :getValuesForSelectedColumns="props.getValuesForSelectedColumns"
         />
       </template>
     </PlSidebarGroup>

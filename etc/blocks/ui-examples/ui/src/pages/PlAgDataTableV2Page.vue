@@ -1,31 +1,31 @@
 <script setup lang="ts">
 import {
-  computed,
-  ref,
-  watch,
-  toValue,
-} from 'vue';
-import {
   isJsonEqual,
 } from '@milaboratories/helpers';
-import {
-  PlBlockPage,
-  PlAgDataTableV2,
-  PlNumberField,
-  PlCheckbox,
-  PlDropdown,
-  usePlDataTableSettingsV2,
-} from '@platforma-sdk/ui-vue';
-import {
-  useApp,
-} from '../app';
 import {
   matchAxisId,
   type PlSelectionModel,
 } from '@platforma-sdk/model';
+import {
+  PlAgDataTableV2,
+  PlBlockPage,
+  PlCheckbox,
+  PlDropdown,
+  PlNumberField,
+  usePlDataTableSettingsV2,
+} from '@platforma-sdk/ui-vue';
 import type {
   ICellRendererParams,
 } from 'ag-grid-enterprise';
+import {
+  computed,
+  ref,
+  toValue,
+  watch,
+} from 'vue';
+import {
+  useApp,
+} from '../app';
 
 const app = useApp();
 
