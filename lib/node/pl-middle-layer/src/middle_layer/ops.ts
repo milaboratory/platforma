@@ -157,7 +157,7 @@ export const DefaultDriverKitOpsSettings: Pick<
   pFrameDriverOps: {
     pFrameConcurrency: 1,
     pTableConcurrency: 1,
-    pFrameCacheMaxCount: 18, // 6 ptables, 3 layers each (join, filter, sort)
+    pFrameCacheMaxCount: 18, // SHM trees create 3 PTables per graphic, we want to cache 6 graphics per PFrame
     pFramesCacheMaxSize: 8 * 1024 * 1024 * 1024, // 8 GB
   },
 };

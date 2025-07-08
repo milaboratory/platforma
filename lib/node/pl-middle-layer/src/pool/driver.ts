@@ -109,6 +109,7 @@ const bigintReplacer = (_: string, v: unknown) => (typeof v === 'bigint' ? v.toS
 class PTableCache {
   private readonly perFrame = new Map<PFrameHandle, LRUCache<PTableHandle, PollResource<PTableHolder>>>();
   private readonly global: LRUCache<PTableHandle, PollResource<PTableHolder>>;
+  private readonly disposeListeners = new Map<PTableHandle, () => void>();
 
   constructor(
     private readonly logger: MiLogger,
@@ -120,23 +121,36 @@ class PTableCache {
         if (reason === 'evict') {
           this.perFrame.get(resource.resource.pFrame)?.delete(key);
         }
+
         if (this.perFrame.get(resource.resource.pFrame)?.size === 0) {
           this.perFrame.delete(resource.resource.pFrame);
         }
+
+        const disposeListener = this.disposeListeners.get(key)!;
+        this.disposeListeners.delete(key);
+        resource.resource.disposeSignal.removeEventListener('abort', disposeListener);
+
         resource.unref();
+        if (getDebugFlags().logPFrameRequests) {
+          this.logger.info(`calculateTableData cache - removed PTable ${key}`);
+        }
       },
     });
   }
 
   public cache(resource: PollResource<PTableHolder>, size: number): void {
-    this.global.set(resource.key as PTableHandle, resource, { size });
+    const key = resource.key as PTableHandle;
+    if (getDebugFlags().logPFrameRequests) {
+      this.logger.info(`calculateTableData cache - added PTable ${key} with size ${size}`);
+    }
+
+    this.global.set(key, resource, { size });
 
     let perFrame = this.perFrame.get(resource.resource.pFrame);
     if (!perFrame) {
       perFrame = new LRUCache<PTableHandle, PollResource<PTableHolder>>({
         max: this.ops.pFrameCacheMaxCount,
         dispose: (_resource, key, reason) => {
-          this.logger.info(`calculateTableData result - perFrame dispose, reason: ${reason}`);
           if (reason === 'evict') {
             this.global.delete(key);
           }
@@ -144,7 +158,14 @@ class PTableCache {
       });
       this.perFrame.set(resource.resource.pFrame, perFrame);
     }
-    perFrame.set(resource.key as PTableHandle, resource);
+    perFrame.set(key, resource);
+
+    const disposeListener = () => {
+      this.perFrame.get(resource.resource.pFrame)?.delete(key);
+      this.global.delete(key);
+    };
+    this.disposeListeners.set(key, disposeListener);
+    resource.resource.disposeSignal.addEventListener('abort', disposeListener);
   }
 }
 
