@@ -117,6 +117,7 @@ export async function initDriverKit(
     blobDriver,
     ops.logger,
     ops.pframesSpillPath,
+    ops.pFrameDriverOps,
   );
 
   return {
