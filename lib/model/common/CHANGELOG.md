@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.16.1
+
+### Patch Changes
+
+- d525c60: PFrames - support InSet filter
+
 ## 1.16.0
 
 ### Minor Changes

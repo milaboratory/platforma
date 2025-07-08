@@ -1,5 +1,13 @@
 # @platforma-sdk/model
 
+## 1.39.6
+
+### Patch Changes
+
+- d525c60: PFrames - support InSet filter
+- Updated dependencies [d525c60]
+  - @milaboratories/pl-model-common@1.16.1
+
 ## 1.39.0
 
 ### Minor Changes

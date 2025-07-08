@@ -1,5 +1,13 @@
 # @platforma-sdk/test
 
+## 1.39.6
+
+### Patch Changes
+
+- Updated dependencies [d525c60]
+  - @platforma-sdk/model@1.39.6
+  - @milaboratories/pl-middle-layer@1.39.3
+
 ## 1.39.5
 
 ### Patch Changes

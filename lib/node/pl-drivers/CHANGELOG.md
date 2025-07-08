@@ -1,5 +1,12 @@
 # @milaboratories/pl-drivers
 
+## 1.6.1
+
+### Patch Changes
+
+- Updated dependencies [d525c60]
+  - @milaboratories/pl-model-common@1.16.1
+
 ## 1.6.0
 
 ### Minor Changes
