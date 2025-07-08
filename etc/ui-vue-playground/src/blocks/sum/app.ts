@@ -6,7 +6,6 @@ import { reactive } from 'vue';
 window.platforma = platforma;
 
 export const appSettings = reactive({
-  deepPatchModel: true,
   debug: true,
 });
 

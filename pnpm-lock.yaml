@@ -2447,6 +2447,9 @@ importers:
         specifier: 'catalog:'
         version: 3.23.8
     devDependencies:
+      '@faker-js/faker':
+        specifier: 'catalog:'
+        version: 9.2.0
       '@milaboratories/build-configs':
         specifier: workspace:*
         version: link:../../tools/build-configs
@@ -2461,7 +2464,14 @@ importers:
         version: link:../../tools/ts-configs
       '@vitejs/plugin-vue':
         specifier: 'catalog:'
+<<<<<<< HEAD
         version: 5.2.3(vite@6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0))(vue@3.5.13(typescript@5.5.4))
+=======
+        version: 5.2.3(vite@6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0))(vue@3.5.13(typescript@5.6.3))
+      '@vue/test-utils':
+        specifier: 'catalog:'
+        version: 2.4.6
+>>>>>>> 413657d8d (wip)
       fast-json-patch:
         specifier: 'catalog:'
         version: 3.1.1

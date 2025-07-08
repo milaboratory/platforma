@@ -6,16 +6,6 @@ import { computedResult, isDefined } from '@platforma-sdk/ui-vue';
 
 const app = useApp();
 
-const partial = app.useOutputs('x', 'y');
-
-const sumOrError = computed(() => {
-  if (partial.value) {
-    return partial.value.x + partial.value.y;
-  }
-
-  return partial.errors;
-});
-
 const sum2 = computedResult(() => {
   const { x, y } = app.unwrapOutputs('x', 'y');
 
@@ -36,13 +26,6 @@ const sumOptional = computed(() => {
 <template>
   <div class="test-container">
     <Navigate />
-
-    <div>Sum or error: {{ sumOrError }}</div>
-
-    <div>{{ partial.value?.x }}</div>
-
-    <div v-if="partial.value">(Partial) Sum: {{ partial.value.x }} + {{ partial.value.y }} = {{ partial.value.x + partial.value.y }}</div>
-    <div v-else class="alert-error">Error: {{ partial.errors }}</div>
 
     <fieldset v-if="app.model.outputs.x !== undefined">
       <legend>x</legend>
