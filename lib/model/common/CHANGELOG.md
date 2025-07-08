@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.16.2
+
+### Patch Changes
+
+- dfb0086: Intruduced PFrameError
+
 ## 1.16.1
 
 ### Patch Changes
