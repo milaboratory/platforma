@@ -138,6 +138,14 @@ export interface SingleValueEqualPredicate {
   readonly reference: string | number;
 }
 
+export interface SingleValueInSetPredicate {
+  /** Comparison operator */
+  readonly operator: 'InSet';
+
+  /** Reference values, NA values will not match */
+  readonly references: (string | number)[];
+}
+
 export interface SingleValueIEqualPredicate {
   /** Comparison operator (case insensitive) */
   readonly operator: 'IEqual';
@@ -288,6 +296,7 @@ export interface SingleValueOrPredicateV2 {
 export type SingleValuePredicateV2 =
   | SingleValueIsNAPredicate
   | SingleValueEqualPredicate
+  | SingleValueInSetPredicate
   | SingleValueLessPredicate
   | SingleValueLessOrEqualPredicate
   | SingleValueGreaterPredicate
@@ -340,7 +349,7 @@ export interface PTableDef<Col> {
   readonly src: JoinEntry<Col>;
 
   /** Partition filters */
-  readonly partitionFilters: PTableRecordSingleValueFilterV2[];
+  readonly partitionFilters: PTableRecordFilter[];
 
   /** Record filters */
   readonly filters: PTableRecordFilter[];

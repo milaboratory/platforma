@@ -169,6 +169,7 @@ export const GlobalCfgRenderCtxFeatureFlags = {
   inlineColumnsSupport: true as const,
   activeArgs: true as const,
   pTablePartitionFiltersSupport: true as const,
+  pFrameInSetFilterSupport: true as const,
 };
 
 export interface GlobalCfgRenderCtx extends GlobalCfgRenderCtxMethods {
