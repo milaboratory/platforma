@@ -1,5 +1,14 @@
 # @milaboratories/pl-middle-layer
 
+## 1.39.1
+
+### Patch Changes
+
+- 98d48f6: PFrame driver - limit calculateTableData results cache by disk footprint
+- Updated dependencies [98d48f6]
+  - @milaboratories/pl-model-middle-layer@1.7.46
+  - @platforma-sdk/block-tools@2.5.64
+
 ## 1.39.0
 
 ### Minor Changes

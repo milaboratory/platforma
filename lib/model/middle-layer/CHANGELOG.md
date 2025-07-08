@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.7.46
+
+### Patch Changes
+
+- 98d48f6: PFrame driver - limit calculateTableData results cache by disk footprint
+
 ## 1.7.45
 
 ### Patch Changes
