@@ -111,9 +111,6 @@ catalogs:
     '@vitest/coverage-v8':
       specifier: ^2.1.9
       version: 2.1.9
-    '@vue/reactivity':
-      specifier: ^3.5.13
-      version: 3.5.13
     '@vue/test-utils':
       specifier: ^2.4.6
       version: 2.4.6
@@ -2416,9 +2413,6 @@ importers:
       '@types/semver':
         specifier: 'catalog:'
         version: 7.7.0
-      '@vue/reactivity':
-        specifier: 'catalog:'
-        version: 3.5.13
       '@vueuse/core':
         specifier: 'catalog:'
         version: 13.3.0(vue@3.5.13(typescript@5.6.3))
