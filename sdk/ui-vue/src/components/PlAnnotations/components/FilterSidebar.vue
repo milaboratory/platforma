@@ -6,30 +6,52 @@ import {
   PlElementList,
   PlSidebarItem,
 } from '@milaboratories/uikit';
-import type { AnnotationStepUi, FilterUi } from '@platforma-sdk/model';
+import type { AnnotationStepUi, FilterUi, PObjectId, SUniversalPColumnId } from '@platforma-sdk/model';
 import { getFilterUiMetadata } from '@platforma-sdk/model';
 import type { SimplifiedUniversalPColumnEntry } from '../types';
 import { createDefaultFilterMetadata } from '../utils';
 import DynamicForm from './DynamicForm.vue';
 
 // Models
-const step = defineModel<AnnotationStepUi>('step');
+const step = defineModel<AnnotationStepUi>('step', { required: true });
 // Props
 const props = defineProps<{
   columns: SimplifiedUniversalPColumnEntry[];
+  hasSelectedColumns: boolean;
+  getValuesForSelectedColumns: () => Promise<undefined | { columnId: PObjectId; values: string[] }>;
 }>();
 // Actions
-const addFilter = () => {
-  if (isNil(step.value)) return;
-
-  step.value?.filter.filters.push({
+const addFilterPlaceholder = () => {
+  step.value.filter.filters.push({
     id: randomInt(),
     isExpanded: true,
     type: undefined,
   });
 };
 
+async function addFilterFromSelected() {
+  const data = await props.getValuesForSelectedColumns();
+  if (!data || data.values.length === 0) return;
+
+  const { columnId, values } = data;
+  const shortReminder = values.slice(0, 3).join(', ') + (values.length > 3 ? ` and ${values.length - 3} more` : '');
+
+  step.value.filter.filters.push({
+    id: randomInt(),
+    name: `Selected list (${shortReminder})`,
+    isExpanded: false,
+    type: 'or',
+    filters: values.map((value) => ({
+      type: 'patternEquals',
+      column: columnId as SUniversalPColumnId,
+      value,
+    })),
+  });
+}
+
+// Getters
 const getColumnLabel = (filter: FilterUi) => {
+  if (!isNil(filter.name)) return filter.name;
   return props.columns
     .find((c) => 'column' in filter ? c.id === filter.column : false)?.label
     ?? filter.type;
@@ -37,6 +59,13 @@ const getColumnLabel = (filter: FilterUi) => {
 
 const getFormMetadata = (filter: FilterUi) => {
   return !isNil(filter.type) ? getFilterUiMetadata(filter.type).form : createDefaultFilterMetadata();
+};
+
+const getFilterValues = (filter: FilterUi) => {
+  if (filter.type === 'or' || filter.type === 'and') {
+    return filter.filters.map((f) => 'value' in f && !isNil(f.value) ? f.value : null).filter((v) => !isNil(v)).join (', ');
+  }
+  return null;
 };
 </script>
 
@@ -54,9 +83,14 @@ const getFormMetadata = (filter: FilterUi) => {
     </template>
     <template #body-content>
       <div :class="$style.root">
-        <PlBtnSecondary style="width: 100%;" icon="add" @click="addFilter">
-          Add filter
-        </PlBtnSecondary>
+        <div :class="$style.actions">
+          <PlBtnSecondary style="width: 100%;" icon="add" @click="addFilterPlaceholder">
+            Filter
+          </PlBtnSecondary>
+          <PlBtnSecondary style="width: 100%;" icon="add" :disabled="!props.hasSelectedColumns" @click="addFilterFromSelected">
+            From selection
+          </PlBtnSecondary>
+        </div>
 
         <span :class="$style.tip">Lower annotations override the ones above. Rearrange them by dragging.</span>
 
@@ -70,11 +104,16 @@ const getFormMetadata = (filter: FilterUi) => {
             {{ getColumnLabel(item) }}
           </template>
           <template #item-content="{ item, index }">
-            <DynamicForm
-              v-model="step.filter.filters[index]"
-              :form-metadata="getFormMetadata(item)"
-              :columns="props.columns"
-            />
+            <template v-if="item.type !== 'or' && item.type !== 'and'">
+              <DynamicForm
+                v-model="step.filter.filters[index]"
+                :form-metadata="getFormMetadata(item)"
+                :columns="props.columns"
+              />
+            </template>
+            <template v-else>
+              <div>{{ getFilterValues(item) }}</div>
+            </template>
           </template>
         </PlElementList>
       </div>
@@ -88,6 +127,12 @@ const getFormMetadata = (filter: FilterUi) => {
 .root {
   display: flex;
   flex-direction: column;
+  gap: 12px;
+}
+
+.actions {
+  display: flex;
+  flex-direction: row;
   gap: 12px;
 }
 

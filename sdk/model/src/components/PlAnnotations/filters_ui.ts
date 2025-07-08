@@ -15,14 +15,8 @@ function isStringValueType(spec: SimplifiedPColumnSpec): boolean {
   return spec.valueType === 'String';
 }
 
-// const isUniversalPColumnId = (x: unknown): x is SUniversalPColumnId => typeof x === 'string';
-
-// const isTransformedColumn = (x: unknown): x is TransformedColumn => typeof x === 'object' && x !== null && 'transformer' in x;
-
-// const isUniversalPColumnIdOrTransformedColumn = (x: unknown): x is SUniversalPColumnId | TransformedColumn => isUniversalPColumnId(x) || isTransformedColumn(x);
-
 // Define recursive type explicitly
-export type FilterUi = { id?: number; isExpanded?: boolean }
+export type FilterUi = { id?: number; name?: string; isExpanded?: boolean }
   & ({ type: undefined }
     | { type: 'or'; filters: FilterUi[] }
     | { type: 'and'; filters: FilterUi[] }
