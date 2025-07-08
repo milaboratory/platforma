@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 4.9.3
+
+### Patch Changes
+
+- 9a4b895: improve docs
+
 ## 4.9.2
 
 ### Patch Changes
