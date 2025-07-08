@@ -12,6 +12,7 @@ import type {
   UniqueValuesRequest,
   UniqueValuesResponse,
 } from '@milaboratories/pl-model-common';
+import { patchInSetFilters } from './render/util/pframe_upgraders';
 
 export class PFrameImpl implements PFrame {
   constructor(private readonly handle: PFrameHandle) {}
@@ -32,6 +33,12 @@ export class PFrameImpl implements PFrame {
     request: CalculateTableDataRequest<PObjectId>,
     range?: TableRange,
   ): Promise<CalculateTableDataResponse> {
+    if (!cfgRenderCtx.featureFlags?.pFrameInSetFilterSupport) {
+      request = {
+        ...request,
+        filters: patchInSetFilters(request.filters),
+      };
+    }
     return await platforma.pFrameDriver.calculateTableData(this.handle, request, range);
   }
 
