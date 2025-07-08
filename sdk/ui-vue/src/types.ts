@@ -53,10 +53,6 @@ export type RouteParams<Href extends `/${string}` = `/${string}`> = {
 
 export type AppSettings = {
   /**
-   * Deep patch `model.` This parameter affects how you listen to model changes; a deep watcher is required if you use the `source` function.
-   */
-  deepPatchModel?: boolean;
-  /**
    * Enables some debug logs
    */
   debug?: boolean;
@@ -68,6 +64,10 @@ export type AppSettings = {
    * Debounce max wait in ms (default is 1000ms)
    */
   debounceMaxWait?: number;
+  /**
+   * Use old behavior of the app, where model is updated as clone immediately
+   */
+  useOldBehavior?: boolean;
 };
 
 export type ExtendSettings<Href extends `/${string}` = `/${string}`> = {

@@ -7,9 +7,7 @@ const sdk = useSdkPlugin();
 const app = sdk.useApp();
 
 const goToMain = () => {
-  app.updateNavigationState((state) => {
-    state.href = '/';
-  });
+  app.navigateTo('/');
 };
 </script>
 

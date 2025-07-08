@@ -114,7 +114,6 @@ export const sdkPlugin = defineApp(platforma, (app) => {
   };
 }, {
   debug: true,
-  deepPatchModel: true,
 });
 
 export const useApp = sdkPlugin.useApp;

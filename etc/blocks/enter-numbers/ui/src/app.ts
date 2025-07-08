@@ -24,6 +24,8 @@ export const sdkPlugin = defineApp(platforma, (base) => {
       '/': () => MainPage
     }
   };
+}, {
+  debug: true,
 });
 
 type App = ReturnType<typeof sdkPlugin.useApp>;

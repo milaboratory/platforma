@@ -10,9 +10,7 @@ const href = computed({
     return app.snapshot.navigationState.href;
   },
   set(href) {
-    app.updateNavigationState((state) => {
-      state.href = href;
-    });
+    app.navigateTo(href);
   },
 });
 </script>

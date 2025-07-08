@@ -1,14 +1,16 @@
-import { deepClone, isJsonEqual, tap } from '@milaboratories/helpers';
+import { deepClone, delay } from '@milaboratories/helpers';
 import type { Mutable } from '@milaboratories/helpers';
 import type { NavigationState, BlockOutputsBase, BlockState, Platforma, ValueWithUTag } from '@platforma-sdk/model';
-import { reactive, computed, watch, ref } from 'vue';
-import type { StateModelOptions, UnwrapOutputs, OptionalResult, OutputValues, OutputErrors, AppSettings } from '../types';
+import type { Ref } from 'vue';
+import { reactive, computed, ref } from 'vue';
+import type { StateModelOptions, UnwrapOutputs, OutputValues, OutputErrors, AppSettings } from '../types';
 import { createModel } from '../createModel';
 import { createAppModel } from './createAppModel';
 import { parseQuery } from '../urls';
 import { MultiError, unwrapValueOrErrors } from '../utils';
-import { useDebounceFn } from '@vueuse/core';
 import { applyPatch } from 'fast-json-patch';
+import { UpdateSerializer } from './UpdateSerializer';
+
 /**
  * Creates an application instance with reactive state management, outputs, and methods for state updates and navigation.
  *
@@ -48,66 +50,81 @@ export function createApp<
     }
   };
 
+  const debounceSpan = settings.debounceSpan ?? 200;
+
+  const setArgsQueue = new UpdateSerializer({ debounceSpan });
+  const setUiStateQueue = new UpdateSerializer({ debounceSpan });
+  const setArgsAndUiStateQueue = new UpdateSerializer({ debounceSpan });
+  const setNavigationStateQueue = new UpdateSerializer({ debounceSpan });
   /**
    * Reactive snapshot of the application state, including args, outputs, UI state, and navigation state.
    */
   const snapshot = ref<{
-    args: Readonly<Args>;
-    outputs: Partial<Readonly<Outputs>>;
-    ui: Readonly<UiState>;
-    navigationState: Readonly<NavigationState<Href>>;
-  }>({
-    args: state.value.args,
-    outputs: state.value.outputs,
-    ui: state.value.ui,
-    navigationState: state.value.navigationState as NavigationState<Href>,
-  });
+    args: Args;
+    outputs: Partial<Outputs>;
+    ui: UiState;
+    navigationState: NavigationState<Href>;
+  }>(state.value) as Ref<{
+    args: Args;
+    outputs: Partial<Outputs>;
+    ui: UiState;
+    navigationState: NavigationState<Href>;
+  }>;
 
-  const debounceSpan = settings.debounceSpan ?? 200;
-
-  const maxWait = tap(settings.debounceMaxWait ?? 0, (v) => v < 20_000 ? 20_000 : v < debounceSpan ? debounceSpan * 100 : v);
-
-  const setBlockArgs = useDebounceFn((args: Args) => {
-    if (!isJsonEqual(args, snapshot.value.args)) {
-      platforma.setBlockArgs(args);
+  const setBlockArgs = async (args: Args) => {
+    if (settings.useOldBehavior) {
+      snapshot.value.args = args;
     }
-  }, debounceSpan, { maxWait });
+    return platforma.setBlockArgs(args);
+  };
 
-  const setBlockUiState = useDebounceFn((ui: UiState) => {
-    if (!isJsonEqual(ui, snapshot.value.ui)) {
-      platforma.setBlockUiState(ui);
+  const setBlockUiState = async (ui: UiState) => {
+    if (settings.useOldBehavior) {
+      snapshot.value.ui = ui;
     }
-  }, debounceSpan, { maxWait });
+    return platforma.setBlockUiState(ui);
+  };
 
-  const setBlockArgsAndUiState = useDebounceFn((args: Args, ui: UiState) => {
-    if (!isJsonEqual(args, snapshot.value.args) || !isJsonEqual(ui, snapshot.value.ui)) {
-      platforma.setBlockArgsAndUiState(args, ui);
+  const setBlockArgsAndUiState = async (args: Args, ui: UiState) => {
+    if (settings.useOldBehavior) {
+      snapshot.value.args = args;
+      snapshot.value.ui = ui;
     }
-  }, debounceSpan, { maxWait });
+    return platforma.setBlockArgsAndUiState(args, ui);
+  };
 
-  // Temporary solution to handle patches
+  const setNavigationState = async (state: NavigationState<Href>) => {
+    if (settings.useOldBehavior) {
+      snapshot.value.navigationState = state;
+    }
+    return platforma.setNavigationState(state);
+  };
+
   (async () => {
+    window.addEventListener('beforeunload', () => closedRef.value = true);
+
     while (!closedRef.value) {
       try {
-        log('await getPatches', uTagRef.value);
         const patches = await platforma.getPatches(uTagRef.value);
 
         log('patches', JSON.stringify(patches, null, 2));
-
         log('uTagRef.value', uTagRef.value);
         log('patches.uTag', patches.uTag);
         log('is the same uTag', uTagRef.value === patches.uTag);
 
         uTagRef.value = patches.uTag;
+        // Immutable behavior
+        if (settings.useOldBehavior) {
+          const newState = applyPatch(snapshot.value, patches.value, false, false).newDocument;
 
-        const newState = applyPatch(snapshot.value, patches.value).newDocument;
-
-        log('newState is the same', newState === snapshot.value);
-
-        snapshot.value = newState;
+          snapshot.value = newState;
+        } else {
+          // Mutable behavior
+          snapshot.value = applyPatch(snapshot.value, patches.value).newDocument;
+        }
       } catch (err) {
         console.error('error in patches loop', err);
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 10));
       }
     }
   })();
@@ -116,8 +133,36 @@ export function createApp<
   const cloneUiState = () => deepClone(snapshot.value.ui) as UiState;
   const cloneNavigationState = () => deepClone(snapshot.value.navigationState) as Mutable<NavigationState<Href>>;
 
+  const outputs = computed<OutputValues<Outputs>>(() => {
+    const entries = Object.entries(snapshot.value.outputs as Partial<Readonly<Outputs>>).map(([k, vOrErr]) => [k, vOrErr.ok && vOrErr.value !== undefined ? vOrErr.value : undefined]);
+    return Object.fromEntries(entries);
+  });
+
+  const outputErrors = computed<OutputErrors<Outputs>>(() => {
+    const entries = Object.entries(snapshot.value.outputs as Partial<Readonly<Outputs>>).map(([k, vOrErr]) => [k, vOrErr && !vOrErr.ok ? new MultiError(vOrErr.errors) : undefined]);
+    return Object.fromEntries(entries);
+  });
+
+  const appModel = createAppModel(
+    {
+      get() {
+        return { args: snapshot.value.args, ui: snapshot.value.ui } as AppModel;
+      },
+      autoSave: true,
+      onSave(newData: AppModel) {
+        log('onSave', newData);
+        setArgsAndUiStateQueue.run(() => setBlockArgsAndUiState(newData.args, newData.ui));
+      },
+    },
+    {
+      outputs,
+      outputErrors,
+    },
+    settings,
+  );
+
   const methods = {
-    createArgsModel<T = Args>(options: StateModelOptions<Args, T> = {}) {
+    createArgsModel<T extends Args = Args>(options: StateModelOptions<Args, T> = {}) {
       return createModel<T, Args>({
         get() {
           if (options.transform) {
@@ -129,14 +174,14 @@ export function createApp<
         validate: options.validate,
         autoSave: true,
         onSave(newArgs) {
-          setBlockArgs(newArgs);
+          setArgsQueue.run(() => setBlockArgs(newArgs));
         },
       });
     },
     /**
      * defaultUiState is temporarily here, remove it after implementing initialUiState
      */
-    createUiModel<T = UiState>(options: StateModelOptions<UiState, T> = {}, defaultUiState: () => UiState) {
+    createUiModel<T extends UiState = UiState>(options: StateModelOptions<UiState, T> = {}, defaultUiState: () => UiState) {
       return createModel<T, UiState>({
         get() {
           if (options.transform) {
@@ -148,40 +193,9 @@ export function createApp<
         validate: options.validate,
         autoSave: true,
         onSave(newData) {
-          setBlockUiState(newData);
+          setUiStateQueue.run(() => setBlockUiState(newData));
         },
       });
-    },
-    /**
-     * Note: Don't forget to list the output names, like: useOutputs('output1', 'output2', ...etc)
-     * @param keys - List of output names
-     * @returns {OptionalResult<UnwrapOutputs<Outputs, K>>}
-     */
-    useOutputs<K extends keyof Outputs>(...keys: K[]): OptionalResult<UnwrapOutputs<Outputs, K>> {
-      const data = reactive({
-        errors: undefined,
-        value: undefined,
-      });
-
-      watch(
-        () => snapshot.value.outputs,
-        () => {
-          try {
-            Object.assign(data, {
-              value: this.unwrapOutputs<K>(...keys),
-              errors: undefined,
-            });
-          } catch (error) {
-            Object.assign(data, {
-              value: undefined,
-              errors: [String(error)],
-            });
-          }
-        },
-        { immediate: true, deep: true },
-      );
-
-      return data as OptionalResult<UnwrapOutputs<Outputs, K>>;
     },
     /**
      * Retrieves the unwrapped values of outputs for the given keys.
@@ -202,10 +216,12 @@ export function createApp<
      * @param cb - Callback to modify the current arguments.
      * @returns A promise resolving after the update is applied.
      */
-    updateArgs(cb: (args: Args) => void) {
+    updateArgs(cb: (args: Args) => void): Promise<boolean> {
       const newArgs = cloneArgs();
       cb(newArgs);
-      return platforma.setBlockArgs(newArgs);
+      log('updateArgs', newArgs);
+      appModel.model.args = newArgs;
+      return setArgsQueue.run(() => setBlockArgs(newArgs));
     },
     /**
      * Updates the UI state by applying a callback.
@@ -214,21 +230,11 @@ export function createApp<
      * @returns A promise resolving after the update is applied.
      * @todo Make it mutable since there is already an initial one
      */
-    updateUiState(cb: (args: UiState) => UiState): Promise<void> {
-      const newUiState = cloneUiState();
-      return platforma.setBlockUiState(cb(newUiState));
-    },
-    /**
-     * Updates the navigation state by applying a callback.
-     *
-     * @param cb - Callback to modify the current navigation state.
-     * @returns A promise resolving after the update is applied.
-     */
-    updateNavigationState(cb: (args: Mutable<NavigationState<Href>>) => void) {
-      const newState = cloneNavigationState();
-      cb(newState);
-      log('>>> updateNavigationState', newState);
-      return platforma.setNavigationState(newState);
+    updateUiState(cb: (args: UiState) => UiState): Promise<boolean> {
+      const newUiState = cb(cloneUiState());
+      log('updateUiState', newUiState);
+      appModel.model.ui = newUiState;
+      return setUiStateQueue.run(() => setBlockUiState(newUiState));
     },
     /**
      * Navigates to a specific href by updating the navigation state.
@@ -239,46 +245,23 @@ export function createApp<
     navigateTo(href: Href) {
       const newState = cloneNavigationState();
       newState.href = href;
-      return platforma.setNavigationState(newState);
+      return setNavigationStateQueue.run(() => setNavigationState(newState));
+    },
+    async allSettled() {
+      await delay(0);
+      return setArgsAndUiStateQueue.allSettled();
     },
   };
 
-  const outputs = computed<OutputValues<Outputs>>(() => {
-    const entries = Object.entries(snapshot.value.outputs as Partial<Readonly<Outputs>>).map(([k, vOrErr]) => [k, vOrErr.ok && vOrErr.value !== undefined ? vOrErr.value : undefined]);
-    return Object.fromEntries(entries);
-  });
-
-  const outputErrors = computed<OutputErrors<Outputs>>(() => {
-    const entries = Object.entries(snapshot.value.outputs as Partial<Readonly<Outputs>>).map(([k, vOrErr]) => [k, vOrErr && !vOrErr.ok ? new MultiError(vOrErr.errors) : undefined]);
-    return Object.fromEntries(entries);
-  });
-
   const getters = {
+    closedRef,
     snapshot,
     queryParams: computed(() => parseQuery<Href>(snapshot.value.navigationState.href as Href)),
     href: computed(() => snapshot.value.navigationState.href),
     hasErrors: computed(() => Object.values(snapshot.value.outputs as Partial<Readonly<Outputs>>).some((v) => !v?.ok)),
   };
 
-  const model = createAppModel(
-    {
-      get() {
-        return { args: snapshot.value.args, ui: snapshot.value.ui } as AppModel;
-      },
-      autoSave: true,
-      onSave(newData: AppModel) {
-        log('>>> onSave', newData);
-        setBlockArgsAndUiState(newData.args, newData.ui);
-      },
-    },
-    {
-      outputs,
-      outputErrors,
-    },
-    settings,
-  );
-
-  return reactive(Object.assign(model, methods, getters));
+  return reactive(Object.assign(appModel, methods, getters));
 }
 
 export type BaseApp<
