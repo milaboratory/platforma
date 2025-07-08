@@ -1,7 +1,4 @@
-import { isNil, randomInt } from '@milaboratories/helpers';
 import type { AnnotationScriptUi, FilterUi, TypeFieldRecord } from '@platforma-sdk/model';
-// eslint-disable-next-line vue/prefer-import-from-vue
-import { enableTracking, pauseTracking, toRaw } from '@vue/reactivity';
 
 export function getDefaultAnnotationScript(): AnnotationScriptUi {
   return {
@@ -26,16 +23,3 @@ export function createDefaultFilterMetadata<T extends Extract<FilterUi, { column
     },
   } as TypeFieldRecord<T>;
 };
-
-export function migratgeToWithId(items: { id?: number }[]) {
-  pauseTracking();
-  items = toRaw(items);
-
-  for (let i = 0; i < items.length; i++) {
-    if (isNil(items[i].id)) {
-      items[i].id = randomInt();
-    }
-  }
-
-  enableTracking();
-}
