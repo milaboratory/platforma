@@ -73,7 +73,12 @@ export class DownloadBlobTask {
     }
   }
 
-  private async ensureDownloaded() {
+  /**
+   * If the blob is downloaded, just returns it's size.
+   * If the blob is not downloaded, downloads it, writes it to the disk atomically and returns the size.
+   * Has a signal to cancel the task and a state to print it if something goes wrong.
+   */
+  private async ensureDownloaded(): Promise<number> {
     this.signalCtl.signal.throwIfAborted();
 
     this.state = {};
