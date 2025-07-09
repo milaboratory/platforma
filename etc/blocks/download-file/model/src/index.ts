@@ -34,15 +34,18 @@ export const platforma = BlockModel.create('Heavy')
     inputHandle: undefined
   })
 
-  .output('blob', getResourceValueAsJson()(getResourceField(MainOutputs, 'blob')))
+  // .output('blob', getResourceValueAsJson()(getResourceField(MainOutputs, 'blob')))
 
   .output('handle', getImportProgress(getResourceField(MainOutputs, 'handle')))
 
-  .output('content', getBlobContent(getResourceField(MainOutputs, 'downloadable')))
+  
+  // .output('content', getBlobContent(getResourceField(MainOutputs, 'downloadable')))
 
-  .output('contentAsString', getBlobContentAsString(getResourceField(MainOutputs, 'downloadable')))
+  .output('content', getBlobContent(getResourceField(MainOutputs, 'downloadable'), {from: 0, to: 10}))
 
-  .output('contentAsString1', (ctx) =>
+  // .output('contentAsString', getBlobContentAsString(getResourceField(MainOutputs, 'downloadable')))
+
+/*   .output('contentAsString1', (ctx) =>
     ctx.outputs
       ?.resolve('downloadable')
       ?.getFileContentAsString()
@@ -63,17 +66,18 @@ export const platforma = BlockModel.create('Heavy')
     'downloadedBlobContent',
     getDownloadedBlobContent(getResourceField(MainOutputs, 'downloadable'))
   )
-
+*/
   .output(
     'onDemandBlobContent',
     getOnDemandBlobContent(getResourceField(MainOutputs, 'downloadable'))
   )
 
+  /*
   .output(
     'onDemandBlobContent1',
     (ctx) => ctx.outputs?.resolve('downloadable')?.getRemoteFileHandle()
   )
-
+ */
   .output('getFileHandle', (ctx) => ctx.outputs?.resolve('downloadable')?.getFileHandle())
 
   .sections((ctx) => {
