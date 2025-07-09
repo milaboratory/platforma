@@ -31,8 +31,8 @@ catalogs:
       specifier: ^1.0.123
       version: 1.0.123
     '@milaboratories/pframes-rs-node':
-      specifier: 1.0.51
-      version: 1.0.51
+      specifier: 1.0.52
+      version: 1.0.52
     '@milaboratories/software-pframes-conv':
       specifier: 2.2.2
       version: 2.2.2
@@ -1945,7 +1945,7 @@ importers:
         version: link:../computable
       '@milaboratories/pframes-rs-node':
         specifier: 'catalog:'
-        version: 1.0.51(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)
+        version: 1.0.52(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)
       '@milaboratories/pl-client':
         specifier: workspace:^
         version: link:../pl-client
@@ -4765,19 +4765,19 @@ packages:
   '@milaboratories/miplots4@1.0.123':
     resolution: {integrity: sha512-wOgBG8Fj6UcuCSK69+ldnxYNuFTppYA/Upb19a29vgncWMGOSJ7sGMFYWj5bbg571LHMoIHV/HPvhYnPkWeMDg==}
 
-  '@milaboratories/pframes-rs-node@1.0.51':
-    resolution: {integrity: sha512-lhjky8p5Zo8s+jVKZfp67MVVgGFZXmA2/hsuqGhCDNlFZU0FWFOWlFprgZNvFGPgnaGF0+/rCl6gf7vvIo/Fag==}
+  '@milaboratories/pframes-rs-node@1.0.52':
+    resolution: {integrity: sha512-erHNFY0laIC89U0ajhYpN89Ngfe/pepnLMD7y2YtrtcMIGyb4MbzOQQCxPtG+DTDnPDhFCn8Zlrnn9hA6LDVrQ==}
     peerDependencies:
       '@milaboratories/pl-model-common': '*'
 
   '@milaboratories/pl-error-like@1.12.2':
     resolution: {integrity: sha512-XgLS2vrgd/8jRNUodTNI1W3oCtaGVjOEBK8DP3V9+wX+TXVMyirP335GQo4rDiJN58lNxZpUmUOhrc60U3sfcQ==}
 
-  '@milaboratories/pl-model-common@1.16.0':
-    resolution: {integrity: sha512-EksNosNj8vqRaqtEjPyLBYd/5iXkwie9dYzQXjVp5ZqbdII5JvK04L3J2hW9u4PTrYPrl2OXEKwy62cM6CkRCQ==}
+  '@milaboratories/pl-model-common@1.16.2':
+    resolution: {integrity: sha512-lmGrbM0xn63U5FiAH3gmxeZo5DIlKPhhcPLdi1LwjVlYMNiTqeDmYzHCSza0BSkwArtlAkgi5iU/qvlxKxUG3g==}
 
-  '@milaboratories/pl-model-middle-layer@1.7.46':
-    resolution: {integrity: sha512-H3ggOAY8WoM9jJzBphzFtFO2lwgkw2ZAW0/RAv/1whSiXzTzsuvq8zPcozzAV3rtpDOt4OEqgTrbrAnGBFT2Ig==}
+  '@milaboratories/pl-model-middle-layer@1.7.48':
+    resolution: {integrity: sha512-JnYihRgPRhdMafMgodEBeEnBq7eGz0MHMNNBVdLaa4y/mrJ1mU9wjIn+pbl+MvvvXvvsk1YJoPyQPJJAEuNVFQ==}
 
   '@milaboratories/software-pframes-conv@2.2.2':
     resolution: {integrity: sha512-eJIp1YGi6g83peviw8SYlr5N4KV2SmDi3Mhz2FjrS4d/WaKOhoTD9+YvRpOTCQ0KyT44FNRF+nCoN/idKT3SzA==}
@@ -13925,11 +13925,11 @@ snapshots:
       - d3-scale-chromatic
       - supports-color
 
-  '@milaboratories/pframes-rs-node@1.0.51(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)':
+  '@milaboratories/pframes-rs-node@1.0.52(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)':
     dependencies:
       '@mapbox/node-pre-gyp': 2.0.0(encoding@0.1.13)
       '@milaboratories/pl-model-common': link:lib/model/common
-      '@milaboratories/pl-model-middle-layer': 1.7.46
+      '@milaboratories/pl-model-middle-layer': 1.7.48
       '@types/humanize-duration': 3.27.4
       humanize-duration: 3.33.0
       ulid: 3.0.1
@@ -13943,15 +13943,15 @@ snapshots:
       json-stringify-safe: 5.0.1
       zod: 3.23.8
 
-  '@milaboratories/pl-model-common@1.16.0':
+  '@milaboratories/pl-model-common@1.16.2':
     dependencies:
       '@milaboratories/pl-error-like': 1.12.2
       canonicalize: 2.1.0
       zod: 3.23.8
 
-  '@milaboratories/pl-model-middle-layer@1.7.46':
+  '@milaboratories/pl-model-middle-layer@1.7.48':
     dependencies:
-      '@milaboratories/pl-model-common': 1.16.0
+      '@milaboratories/pl-model-common': 1.16.2
       remeda: 2.22.6
       utility-types: 3.11.0
       zod: 3.23.8

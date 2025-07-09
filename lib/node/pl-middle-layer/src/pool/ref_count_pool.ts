@@ -66,8 +66,9 @@ export abstract class RefCountResourcePool<P, R> {
   }
 
   public getByKey(key: string): R {
-    if (!this.resources.has(key)) throw new Error(`resource not found, key = ${key}`);
-    return this.resources.get(key)!.resource;
+    const envelop = this.resources.get(key);
+    if (envelop === undefined) throw new Error(`resource not found, key = ${key}`);
+    return envelop.resource;
   }
 
   public tryGetByKey(key: string): R | undefined {
