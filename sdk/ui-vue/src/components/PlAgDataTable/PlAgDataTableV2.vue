@@ -12,7 +12,6 @@ import type {
   PTableKey,
 } from '@platforma-sdk/model';
 import {
-  createPlDataTableStateV2,
   getRawPlatformaInstance,
   parseJson,
 } from '@platforma-sdk/model';
@@ -79,7 +78,7 @@ import type { PlDataTableFiltersSettings } from '../PlTableFilters';
 import PlTableFiltersV2 from '../PlTableFilters/PlTableFiltersV2.vue';
 
 const tableState = defineModel<PlDataTableStateV2>({
-  default: createPlDataTableStateV2(),
+  required: true,
 });
 const selection = defineModel<PlSelectionModel>('selection');
 const props = defineProps<{
