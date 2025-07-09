@@ -128,7 +128,9 @@ const emit = defineEmits<{
   }
 
   &.disabled {
-    opacity: 0.6;
+    --icon-color: var(--ic-02);
+    --border-color: var(--border-color-div-grey);
+    color: var(--txt-03);
     filter: grayscale(1);
   }
 
@@ -174,7 +176,6 @@ const emit = defineEmits<{
   flex-direction: row;
   flex: 1 1 0;
   gap: 8px;
-  overflow: hidden;
   text-overflow: ellipsis;
 }
 
