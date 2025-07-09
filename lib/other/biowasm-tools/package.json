@@ -11,9 +11,9 @@
   "files": [
     "dist"
   ],
-  "main": "./dist/aioli.js",
+  "main": "./dist/aioli.umd.js",
   "module": "./dist/aioli.mjs",
-  "types": "./index.d.ts",
+  "types": "./dist/aioli.d.ts",
   "dependencies": {
     "comlink": "^4.3.1",
     "wasm-feature-detect": "^1.2.11"
