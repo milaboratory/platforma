@@ -39,6 +39,9 @@ import {
   mapDataInfo,
   isDataInfo,
   ensureError,
+  PFrameDriverError,
+  isAbortError,
+  isPFrameDriverError,
 } from '@platforma-sdk/model';
 import { LRUCache } from 'lru-cache';
 import type { PollResource } from './ref_count_pool';
@@ -209,8 +212,8 @@ class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
       }
       this.pFrame = pFrame;
     } catch (err: unknown) {
-      throw new Error(
-        `Rust PFrame creation failed, columns: ${JSON.stringify(distinctСolumns)}, error: ${err as Error}`,
+      throw new PFrameDriverError(
+        `PFrame creation failed, columns: ${JSON.stringify(distinctСolumns)}, error: ${ensureError(err)}`,
       );
     }
   }
@@ -220,7 +223,7 @@ class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
     if (computable !== undefined) return computable;
 
     const blobResource = this.blobIdToResource.get(blobId);
-    if (blobResource === undefined) throw new Error(`Blob with id ${blobId} not found.`);
+    if (blobResource === undefined) throw new PFrameDriverError(`Blob with id ${blobId} not found.`);
 
     // precalculation of value tree will trigger the download proecess right away
     computable = this.blobDriver.getDownloadedBlob(blobResource).withPreCalculatedValueTree();
@@ -232,7 +235,16 @@ class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
 
   public readonly preloadBlob = async (blobIds: string[]): Promise<void> => {
     const computables = blobIds.map((blobId) => this.getOrCreateComputableForBlob(blobId));
-    for (const computable of computables) await computable.awaitStableFullValue(this.disposeSignal);
+    for (const computable of computables) {
+      try {
+        await computable.awaitStableFullValue(this.disposeSignal);
+      } catch (err: unknown) {
+        if (isAbortError(err)) {
+          break; // silence abort errors
+        }
+        throw err;
+      }
+    }
   };
 
   public readonly resolveBlobContent = async (blobId: string): Promise<Uint8Array> => {
@@ -400,6 +412,16 @@ export class PFrameDriver implements InternalPFrameDriver {
         super();
       }
 
+      public acquire(params: InternalPFrameData): PollResource<PFrameHolder> {
+        return super.acquire(params);
+      }
+
+      public getByKey(key: PFrameHandle): PFrameHolder {
+        const resource = super.tryGetByKey(key);
+        if (!resource) throw new PFrameDriverError(`PFrame not found, handle = ${key}`);
+        return resource;
+      }
+
       protected createNewResource(params: InternalPFrameData): PFrameHolder {
         if (getDebugFlags().logPFrameRequests)
           logger.info(
@@ -409,7 +431,12 @@ export class PFrameDriver implements InternalPFrameDriver {
       }
 
       protected calculateParamsKey(params: InternalPFrameData): string {
-        return stableKeyFromPFrameData(params);
+        try {
+          return stableKeyFromPFrameData(params);
+        } catch (err: unknown) {
+          if (isPFrameDriverError(err)) throw err;
+          throw new PFrameDriverError(`PFrame handle calculation failed, request: ${JSON.stringify(params, bigintReplacer)}, error: ${ensureError(err)}`);
+        }
       }
     })(this.blobDriver, this.logger, this.spillPath);
 
@@ -421,6 +448,12 @@ export class PFrameDriver implements InternalPFrameDriver {
         private readonly pFrames: RefCountResourcePool<InternalPFrameData, PFrameHolder>,
       ) {
         super();
+      }
+
+      public getByKey(key: PTableHandle): PTableHolder {
+        const resource = super.tryGetByKey(key);
+        if (!resource) throw new PFrameDriverError(`PTable not found, handle = ${key}`);
+        return resource;
       }
 
       protected createNewResource(params: FullPTableDef): PTableHolder {
@@ -470,7 +503,11 @@ export class PFrameDriver implements InternalPFrameDriver {
       }
 
       protected calculateParamsKey(params: FullPTableDef): string {
-        return stableKeyFromFullPTableDef(params);
+        try {
+          return stableKeyFromFullPTableDef(params);
+        } catch (err: unknown) {
+          throw new PFrameDriverError(`PTable handle calculation failed, request: ${JSON.stringify(params)}, error: ${ensureError(err)}`);
+        }
       }
     })(this.pFrames);
   }
@@ -769,7 +806,7 @@ function stableKeyFromPFrameData(data: PColumn<DataInfo<ResourceInfo>>[]): strin
           };
           break;
         default:
-          throw Error(`unsupported resource type: ${JSON.stringify(type satisfies never)}`);
+          throw new PFrameDriverError(`unsupported resource type: ${JSON.stringify(type satisfies never)}`);
       }
       result.payload.sort((lhs, rhs) => lhs.key.localeCompare(rhs.key));
       return result;
