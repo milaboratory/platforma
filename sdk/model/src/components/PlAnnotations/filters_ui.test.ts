@@ -1,12 +1,12 @@
-import { describe, it, expect, test } from 'vitest';
-import { compileAnnotationScript, compileFilter, type FilterUi } from './filters_ui';
-import type { AnnotationFilter, AnnotationScript, NotFilter, IsNA, PatternFilter, NumericalComparisonFilter, ValueRank } from './filter';
 import type { SUniversalPColumnId } from '@platforma-sdk/model';
+import { describe, expect, it, test } from 'vitest';
+import type { AnnotationFilter, AnnotationScript, IsNA, NotFilter, NumericalComparisonFilter, PatternFilter, ValueRank } from './filter';
+import { compileAnnotationScript, compileFilter, type FilterUi } from './filters_ui';
 
 describe('compileAnnotationScript', () => {
   test('should compile an empty annotation script', () => {
-    const script = compileAnnotationScript({ mode: 'byClonotype', steps: [] });
-    expect(script).toEqual({ mode: 'byClonotype', steps: [] });
+    const script = compileAnnotationScript({ title: 'My Annotation', mode: 'byClonotype', steps: [] });
+    expect(script).toEqual({ title: 'My Annotation', mode: 'byClonotype', steps: [] });
   });
 
   test('should compile an annotation script with steps', () => {
@@ -15,7 +15,8 @@ describe('compileAnnotationScript', () => {
       label: string;
       filter: Extract<FilterUi, { type: 'and' | 'or' }>;
     };
-    const uiScript: { mode: 'byClonotype'; steps: AnnotationStepUi[] } = {
+    const uiScript: { title: string; mode: 'byClonotype'; steps: AnnotationStepUi[] } = {
+      title: 'My Annotation',
       mode: 'byClonotype',
       steps: [
         {
@@ -31,6 +32,7 @@ describe('compileAnnotationScript', () => {
       ],
     };
     const expectedScript: AnnotationScript = {
+      title: 'My Annotation',
       mode: 'byClonotype',
       steps: [
         {
