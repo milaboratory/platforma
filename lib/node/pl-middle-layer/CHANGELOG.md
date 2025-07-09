@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 1.39.6
+
+### Patch Changes
+
+- 3945904: Add duplicate block ability
+
 ## 1.39.5
 
 ### Patch Changes
