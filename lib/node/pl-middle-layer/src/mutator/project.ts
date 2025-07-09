@@ -39,6 +39,7 @@ import {
   ProjectCreatedTimestamp,
   ProjectStructureAuthorKey,
   getServiceTemplateField,
+  FieldsToDuplicate,
 } from '../model/project_model';
 import { BlockPackTemplateField, createBlockPack } from './block-pack/block_pack';
 import type {
@@ -472,25 +473,37 @@ export class ProjectMutator {
   }
 
   /** Running blocks are reset, already computed moved to limbo. Returns if
-   * either of the actions were actually performed. */
+   * either of the actions were actually performed.
+   * This method ensures the block is left in a consistent state that passes check() constraints. */
   private resetOrLimboProduction(blockId: string): boolean {
     const fields = this.getBlockInfo(blockId).fields;
+
+    // Check if we can safely move to limbo (both core production fields are ready)
     if (fields.prodOutput?.status === 'Ready' && fields.prodCtx?.status === 'Ready') {
       if (this.blocksInLimbo.has(blockId))
         // we are already in limbo
         return false;
 
-      // limbo
+      // limbo - keep the ready production results but clean up cache
       this.blocksInLimbo.add(blockId);
       this.renderingStateChanged = true;
 
-      // doing some gc
+      // doing some gc - clean up previous cache fields
       this.deleteBlockFields(blockId, 'prodOutputPrevious', 'prodCtxPrevious', 'prodUiCtxPrevious');
 
       return true;
     } else {
-      // reset
-      return this.deleteBlockFields(blockId, 'prodOutput', 'prodCtx', 'prodUiCtx', 'prodArgs');
+      // reset - clean up any partial/inconsistent production stat
+      return this.deleteBlockFields(
+        blockId,
+        'prodOutput',
+        'prodCtx',
+        'prodUiCtx',
+        'prodArgs',
+        'prodOutputPrevious',
+        'prodCtxPrevious',
+        'prodUiCtxPrevious',
+      );
     }
   }
 
@@ -643,10 +656,92 @@ export class ProjectMutator {
   // Structure changes
   //
 
+  private initializeNewBlock(blockId: string, spec: NewBlockSpec): void {
+    const info = new BlockInfo(blockId, {}, extractConfig(spec.blockPack.config), spec.blockPack.source);
+    this.blockInfos.set(blockId, info);
+
+    // block pack
+    const bp = createBlockPack(this.tx, spec.blockPack);
+    this.setBlockField(blockId, 'blockPack', Pl.wrapInHolder(this.tx, bp), 'NotReady');
+
+    // settings
+    this.setBlockFieldObj(
+      blockId,
+      'blockSettings',
+      this.createJsonFieldValue(InitialBlockSettings),
+    );
+
+    // args
+    this.setBlockFieldObj(blockId, 'currentArgs', this.createJsonFieldValueByContent(spec.args));
+
+    // uiState
+    this.setBlockFieldObj(blockId, 'uiState', this.createJsonFieldValueByContent(spec.uiState ?? '{}'));
+
+    // checking structure
+    info.check();
+  }
+
+  private getFieldNamesToDuplicate(blockId: string): Set<ProjectField['fieldName']> {
+    const fields = this.getBlockInfo(blockId).fields;
+
+    const diff = <T>(setA: Set<T>, setB: Set<T>): Set<T> => new Set([...setA].filter((x) => !setB.has(x)));
+
+    // Check if we can safely move to limbo (both core production fields are ready)
+    if (fields.prodOutput?.status === 'Ready' && fields.prodCtx?.status === 'Ready') {
+      if (this.blocksInLimbo.has(blockId))
+        // we are already in limbo
+        return FieldsToDuplicate;
+
+      return diff(FieldsToDuplicate, new Set([
+        'prodOutputPrevious',
+        'prodCtxPrevious',
+        'prodUiCtxPrevious',
+      ]));
+    } else {
+      return diff(FieldsToDuplicate, new Set([
+        'prodOutput',
+        'prodCtx',
+        'prodUiCtx',
+        'prodArgs',
+        'prodOutputPrevious',
+        'prodCtxPrevious',
+        'prodUiCtxPrevious',
+      ]));
+    }
+  }
+
+  private initializeBlockDuplicate(blockId: string, originalBlockInfo: BlockInfo) {
+    const info = new BlockInfo(
+      blockId,
+      {},
+      originalBlockInfo.config,
+      originalBlockInfo.source,
+    );
+
+    this.blockInfos.set(blockId, info);
+
+    const fieldNamesToDuplicate = this.getFieldNamesToDuplicate(blockId);
+
+    // Copy all fields from original block to new block by sharing references
+    for (const [fieldName, fieldState] of Object.entries(originalBlockInfo.fields)) {
+      if (fieldNamesToDuplicate.has(fieldName as ProjectField['fieldName']) && fieldState && fieldState.ref) {
+        this.setBlockFieldObj(blockId, fieldName as keyof BlockFieldStates, {
+          ref: fieldState.ref,
+          status: fieldState.status,
+          value: fieldState.value,
+        });
+      }
+    }
+
+    this.resetOrLimboProduction(blockId);
+
+    info.check();
+  }
+
   /** Very generic method, better check for more specialized case-specific methods first. */
   public updateStructure(
     newStructure: ProjectStructure,
-    newBlockSpecProvider: (blockId: string) => NewBlockSpec = NoNewBlocks,
+    newBlockInitializer: (blockId: string) => void = NoNewBlocks,
   ): void {
     const currentStagingGraph = this.getStagingGraph();
     const currentActualProductionGraph = this.getActualProductionGraph();
@@ -665,31 +760,7 @@ export class ProjectMutator {
 
     // creating new blocks
     for (const blockId of stagingDiff.onlyInB) {
-      const spec = newBlockSpecProvider(blockId);
-
-      // adding new block info
-      const info = new BlockInfo(blockId, {}, extractConfig(spec.blockPack.config), spec.blockPack.source);
-      this.blockInfos.set(blockId, info);
-
-      // block pack
-      const bp = createBlockPack(this.tx, spec.blockPack);
-      this.setBlockField(blockId, 'blockPack', Pl.wrapInHolder(this.tx, bp), 'NotReady');
-
-      // settings
-      this.setBlockFieldObj(
-        blockId,
-        'blockSettings',
-        this.createJsonFieldValue(InitialBlockSettings),
-      );
-
-      // args
-      this.setBlockFieldObj(blockId, 'currentArgs', this.createJsonFieldValueByContent(spec.args));
-
-      // uiState
-      this.setBlockFieldObj(blockId, 'uiState', this.createJsonFieldValueByContent(spec.uiState ?? '{}'));
-
-      // checking structure
-      info.check();
+      newBlockInitializer(blockId);
     }
 
     // resetting stagings affected by topology change
@@ -747,7 +818,50 @@ export class ProjectMutator {
     }
     this.updateStructure(newStruct, (blockId) => {
       if (blockId !== block.id) throw new Error('Unexpected');
-      return spec;
+      this.initializeNewBlock(blockId, spec);
+    });
+  }
+
+  /**
+   * Duplicates an existing block by copying all its fields and structure.
+   * This method creates a deep copy of the block at the mutator level.
+   *
+   * @param originalBlockId id of the block to duplicate
+   * @param newBlockId id for the new duplicated block
+   * @param after id of the block to insert new block after
+   */
+  public duplicateBlock(originalBlockId: string, newBlockId: string, after?: string): void {
+    // Get the original block from structure
+    const originalBlock = this.getBlock(originalBlockId);
+    const originalBlockInfo = this.getBlockInfo(originalBlockId);
+
+    // Create new block in structure
+    const newBlock: Block = {
+      id: newBlockId,
+      label: originalBlock.label,
+      renderingMode: originalBlock.renderingMode,
+    };
+
+    // Add the new block to structure
+    const newStruct = this.structure; // copy current structure
+    if (after === undefined) {
+      // adding as a very last block
+      newStruct.groups[newStruct.groups.length - 1].blocks.push(newBlock);
+    } else {
+      let done = false;
+      for (const group of newStruct.groups) {
+        const idx = group.blocks.findIndex((b) => b.id === after);
+        if (idx < 0) continue;
+        group.blocks.splice(idx + 1, 0, newBlock);
+        done = true;
+        break;
+      }
+      if (!done) throw new Error(`Can't find element with id: ${after}`);
+    }
+
+    this.updateStructure(newStruct, (blockId) => {
+      if (blockId !== newBlockId) throw new Error('Unexpected');
+      this.initializeBlockDuplicate(blockId, originalBlockInfo);
     });
   }
 

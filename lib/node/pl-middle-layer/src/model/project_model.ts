@@ -118,6 +118,17 @@ export interface ProjectField {
     | 'stagingOutputPrevious';
 }
 
+export const FieldsToDuplicate: Set<ProjectField['fieldName']> = new Set([
+  'blockPack',
+  'blockSettings',
+  'uiState',
+  'prodArgs',
+  'currentArgs',
+  'prodCtx',
+  'prodUiCtx',
+  'prodOutput',
+]);
+
 export function projectFieldName(blockId: string, fieldName: ProjectField['fieldName']): string {
   return `${blockId}-${fieldName}`;
 }

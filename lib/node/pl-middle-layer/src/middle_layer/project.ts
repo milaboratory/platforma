@@ -185,6 +185,32 @@ export class Project {
   }
 
   /**
+   * Duplicates an existing block by copying all its fields and state.
+   * This method works at the mutator level for efficient block copying.
+   *
+   * @param originalBlockId id of the block to duplicate
+   * @param before id of the block to insert new block before
+   * @param author author marker for the duplication operation
+   * @param newBlockId internal id to be assigned for the duplicated block,
+   *                   if omitted, a randomly generated UUID will be assigned
+   *
+   * @return returns newly created block id
+   * */
+  public async duplicateBlock(
+    originalBlockId: string,
+    before?: string,
+    author: AuthorMarker | undefined = undefined,
+    newBlockId: string = randomUUID(),
+  ): Promise<string> {
+    await withProjectAuthored(this.env.projectHelper, this.env.pl, this.rid, author, (mut) =>
+      mut.duplicateBlock(originalBlockId, newBlockId, before),
+    );
+    await this.projectTree.refreshState();
+
+    return newBlockId;
+  }
+
+  /**
    * Update block to new block pack, optionally resetting args and ui state to
    * initial values
    * */
