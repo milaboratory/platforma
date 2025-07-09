@@ -207,12 +207,8 @@ export function useTableState(
   });
 
   const filtersState = computed<PlDataTableFilterState[]>({
-    get: () => {
-      console.log('tableState / filtersState / get', tableState.value.filtersState);
-      return tableState.value.filtersState;
-    },
+    get: () => tableState.value.filtersState,
     set: (filtersState) => {
-      console.log('tableState / filtersState / set', filtersState);
       const oldState = tableState.value;
       if (oldState.sourceId) {
         tableState.value = {
