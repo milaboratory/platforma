@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.16.3
+
+### Patch Changes
+
+- 7be8a2b: Adopt PFrameError
+
 ## 1.16.2
 
 ### Patch Changes

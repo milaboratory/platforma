@@ -1,5 +1,17 @@
 # @milaboratories/pl-middle-layer
 
+## 1.39.5
+
+### Patch Changes
+
+- 7be8a2b: Adopt PFrameError
+- Updated dependencies [7be8a2b]
+  - @milaboratories/pl-model-common@1.16.3
+  - @milaboratories/pl-model-middle-layer@1.7.49
+  - @milaboratories/pl-drivers@1.6.3
+  - @platforma-sdk/model@1.39.8
+  - @platforma-sdk/block-tools@2.5.67
+
 ## 1.39.4
 
 ### Patch Changes

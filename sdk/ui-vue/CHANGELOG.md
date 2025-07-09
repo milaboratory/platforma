@@ -1,5 +1,13 @@
 # @platforma-sdk/ui-vue
 
+## 1.39.8
+
+### Patch Changes
+
+- 7be8a2b: Fix PlAgDataTableV2 filters reactivity
+  - @platforma-sdk/model@1.39.8
+  - @milaboratories/uikit@2.3.4
+
 ## 1.39.7
 
 ### Patch Changes
