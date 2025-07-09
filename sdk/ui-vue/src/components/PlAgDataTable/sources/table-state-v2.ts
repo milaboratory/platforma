@@ -31,6 +31,7 @@ import {
   isJsonEqual,
 } from '@milaboratories/helpers';
 import { makePredicate } from '../../PlTableFilters/filters_logic';
+import { cachedComputed } from '../../../composition/cachedComputed';
 
 type PlDataTableStateV2CacheEntryNullable = PlDataTableStateV2CacheEntry | {
   sourceId: null;
@@ -117,14 +118,10 @@ export function useTableState(
     sheetsState: WritableComputedRef<PlDataTableSheetState[]>;
     filtersState: WritableComputedRef<PlDataTableFilterState[]>;
   } {
-  const tableStateNormalized = computed<PlDataTableStateV2Normalized>({
+  const tableStateNormalized = cachedComputed<PlDataTableStateV2Normalized>({
     get: () => upgradePlDataTableStateV2(tableStateDenormalized.value),
-    set: (newState) => {
-      const oldState = tableStateDenormalized.value;
-      if (!isJsonEqual(oldState, newState)) {
-        tableStateDenormalized.value = newState;
-      }
-    },
+    set: (newState) => tableStateDenormalized.value = newState,
+    deep: true,
   });
 
   const tableState = computed<PlDataTableStateV2CacheEntryNullable>({
@@ -180,6 +177,7 @@ export function useTableState(
         };
       }
     },
+    { deep: true },
   );
 
   const gridState = computed<PlDataTableGridStateCore>({
@@ -209,8 +207,12 @@ export function useTableState(
   });
 
   const filtersState = computed<PlDataTableFilterState[]>({
-    get: () => tableState.value.filtersState,
+    get: () => {
+      console.log('tableState / filtersState / get', tableState.value.filtersState);
+      return tableState.value.filtersState;
+    },
     set: (filtersState) => {
+      console.log('tableState / filtersState / set', filtersState);
       const oldState = tableState.value;
       if (oldState.sourceId) {
         tableState.value = {
