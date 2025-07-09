@@ -1,15 +1,15 @@
 @use "../../assets/mixins.scss" as *;
 
 .pl-slide-modal {
-  --padding-top: 24px;
-  --padding-bottom: 24px;
+  --padding-top: 0;
+  --padding-bottom: 0;
   position: absolute;
   top: var(--title-bar-height);
   right: 0;
   bottom: 0;
   z-index: var(--z-slide-dialog);
-  display: grid;
-  grid-template-rows: auto 1fr auto;
+  display: flex;
+  flex-direction: column;
   padding-top: var(--padding-top);
   padding-bottom: var(--padding-bottom);
 
@@ -29,6 +29,7 @@
 
   .close-dialog-btn {
     position: absolute;
+    z-index: 1;
     top: 12px;
     right: 12px;
     cursor: pointer;

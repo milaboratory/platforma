@@ -43,10 +43,12 @@ import PlAgCsvExporter from '../PlAgCsvExporter/PlAgCsvExporter.vue';
 import {
   PlAgGridColumnManager,
 } from '../PlAgGridColumnManager';
+import type { PlDataTableFiltersSettings } from '../PlTableFilters';
+import PlTableFiltersV2 from '../PlTableFilters/PlTableFiltersV2.vue';
+import PlAgDataTableSheets from './PlAgDataTableSheets.vue';
 import PlOverlayLoading from './PlAgOverlayLoading.vue';
 import PlOverlayNoRows from './PlAgOverlayNoRows.vue';
 import PlAgRowCount from './PlAgRowCount.vue';
-import PlAgDataTableSheets from './PlAgDataTableSheets.vue';
 import {
   focusRow,
   makeOnceTracker,
@@ -60,9 +62,12 @@ import type {
   PlAgCellButtonAxisParams,
 } from './sources/table-source-v2';
 import {
-  makeRowId,
   calculateGridOptions,
+  makeRowId,
 } from './sources/table-source-v2';
+import {
+  useTableState,
+} from './sources/table-state-v2';
 import type {
   PlAgDataTableV2Controller,
   PlAgDataTableV2Row,
@@ -72,11 +77,6 @@ import type {
   PlDataTableSheetsSettings,
   PTableKeyJson,
 } from './types';
-import {
-  useTableState,
-} from './sources/table-state-v2';
-import type { PlDataTableFiltersSettings } from '../PlTableFilters';
-import PlTableFiltersV2 from '../PlTableFilters/PlTableFiltersV2.vue';
 
 const tableState = defineModel<PlDataTableStateV2>({
   default: createPlDataTableStateV2(),

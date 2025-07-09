@@ -9,6 +9,7 @@
       "default": "./dist/index.js"
     },
     "./styles": "./dist/index.js",
+    "./styles/variables": "./src/assets/variables.scss",
     "./assets/mixins.scss": "./src/assets/mixins.scss",
     "./svg/icons/*": "./src/assets/icons/icon-assets-min/*",
     "./svg/images/*": "./src/assets/images/*"
