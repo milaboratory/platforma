@@ -39,6 +39,7 @@ import {
   ProjectCreatedTimestamp,
   ProjectStructureAuthorKey,
   getServiceTemplateField,
+  FieldsToDuplicate,
 } from '../model/project_model';
 import { BlockPackTemplateField, createBlockPack } from './block-pack/block_pack';
 import type {
@@ -492,18 +493,17 @@ export class ProjectMutator {
 
       return true;
     } else {
-      // reset - clean up any partial/inconsistent production state
-      // This ensures consistency for check() method which requires prodOutput and prodCtx
-      // to both exist or both be undefined
-      let deleted = false;
-
-      // Clean up all production-related fields to ensure consistent state
-      deleted = this.deleteBlockFields(blockId, 'prodOutput', 'prodCtx', 'prodUiCtx', 'prodArgs') || deleted;
-
-      // Also clean up any inconsistent cache fields
-      deleted = this.deleteBlockFields(blockId, 'prodOutputPrevious', 'prodCtxPrevious', 'prodUiCtxPrevious') || deleted;
-
-      return deleted;
+      // reset - clean up any partial/inconsistent production stat
+      return this.deleteBlockFields(
+        blockId,
+        'prodOutput',
+        'prodCtx',
+        'prodUiCtx',
+        'prodArgs',
+        'prodOutputPrevious',
+        'prodCtxPrevious',
+        'prodUiCtxPrevious',
+      );
     }
   }
 
@@ -681,6 +681,35 @@ export class ProjectMutator {
     info.check();
   }
 
+  private getFieldNamesToDuplicate(blockId: string): Set<ProjectField['fieldName']> {
+    const fields = this.getBlockInfo(blockId).fields;
+
+    const diff = <T>(setA: Set<T>, setB: Set<T>): Set<T> => new Set([...setA].filter((x) => !setB.has(x)));
+
+    // Check if we can safely move to limbo (both core production fields are ready)
+    if (fields.prodOutput?.status === 'Ready' && fields.prodCtx?.status === 'Ready') {
+      if (this.blocksInLimbo.has(blockId))
+        // we are already in limbo
+        return FieldsToDuplicate;
+
+      return diff(FieldsToDuplicate, new Set([
+        'prodOutputPrevious',
+        'prodCtxPrevious',
+        'prodUiCtxPrevious',
+      ]));
+    } else {
+      return diff(FieldsToDuplicate, new Set([
+        'prodOutput',
+        'prodCtx',
+        'prodUiCtx',
+        'prodArgs',
+        'prodOutputPrevious',
+        'prodCtxPrevious',
+        'prodUiCtxPrevious',
+      ]));
+    }
+  }
+
   private initializeBlockDuplicate(blockId: string, originalBlockInfo: BlockInfo) {
     const info = new BlockInfo(
       blockId,
@@ -691,9 +720,11 @@ export class ProjectMutator {
 
     this.blockInfos.set(blockId, info);
 
+    const fieldNamesToDuplicate = this.getFieldNamesToDuplicate(blockId);
+
     // Copy all fields from original block to new block by sharing references
     for (const [fieldName, fieldState] of Object.entries(originalBlockInfo.fields)) {
-      if (fieldState && fieldState.ref) {
+      if (fieldNamesToDuplicate.has(fieldName as ProjectField['fieldName']) && fieldState && fieldState.ref) {
         this.setBlockFieldObj(blockId, fieldName as keyof BlockFieldStates, {
           ref: fieldState.ref,
           status: fieldState.status,
