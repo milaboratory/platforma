@@ -1,0 +1,16 @@
+{
+  "name": "@milaboratories/assets-test-cjs",
+  "version": "1.0.0",
+  "description": "CommonJS test package for npm-asset-packer integration testing",
+  "private": true,
+  "scripts": {
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@milaboratories/test-assets": "workspace:*"
+  },
+  "devDependencies": {
+    "vitest": "catalog:",
+    "@types/node": "catalog:"
+  }
+}
