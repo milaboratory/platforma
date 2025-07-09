@@ -518,6 +518,59 @@ test('test error propagation', async ({ expect }) => {
   });
 });
 
+test('block duplication test', async ({ expect }) => {
+  await withMl(async (ml) => {
+    const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
+    await ml.openProject(pRid1);
+    const prj = ml.getOpenedProject(pRid1);
+
+    // Create original block with some configuration
+    const originalBlockId = await prj.addBlock('Original Block', enterNumberSpec);
+    await prj.setBlockArgs(originalBlockId, { numbers: [1, 2, 3] });
+    await prj.setUiState(originalBlockId, { testUiState: 'some ui data' });
+    await prj.setBlockSettings(originalBlockId, { versionLock: 'patch' });
+
+    // Get initial overview
+    const overviewBefore = await prj.overview.awaitStableValue();
+    expect(overviewBefore.blocks).toHaveLength(1);
+    expect(overviewBefore.blocks[0].label).toBe('Original Block');
+
+    // Duplicate the block
+    const duplicatedBlockId = await prj.duplicateBlock(originalBlockId);
+
+    // Verify the duplicated block exists
+    const overviewAfter = await prj.overview.awaitStableValue();
+    expect(overviewAfter.blocks).toHaveLength(2);
+
+    const originalBlock = overviewAfter.blocks.find(b => b.id === originalBlockId);
+    const duplicatedBlock = overviewAfter.blocks.find(b => b.id === duplicatedBlockId);
+
+    expect(originalBlock).toBeDefined();
+    expect(duplicatedBlock).toBeDefined();
+
+    // Verify block structure is copied
+    expect(duplicatedBlock!.label).toBe('Original Block');
+    expect(duplicatedBlock!.currentBlockPack).toEqual(originalBlock!.currentBlockPack);
+    expect(duplicatedBlock!.settings).toEqual(originalBlock!.settings);
+
+    // Verify block state is copied
+    const originalState = await prj.getBlockState(originalBlockId).awaitStableValue();
+    const duplicatedState = await prj.getBlockState(duplicatedBlockId).awaitStableValue();
+
+    expect(duplicatedState.args).toEqual(originalState.args);
+    expect(duplicatedState.ui).toEqual(originalState.ui);
+
+    // Verify they are independent - changing one shouldn't affect the other
+    await prj.setBlockArgs(originalBlockId, { numbers: [4, 5, 6] });
+
+    const originalStateAfter = await prj.getBlockState(originalBlockId).awaitStableValue();
+    const duplicatedStateAfter = await prj.getBlockState(duplicatedBlockId).awaitStableValue();
+
+    expect(originalStateAfter.args).toEqual({ numbers: [4, 5, 6] });
+    expect(duplicatedStateAfter.args).toEqual({ numbers: [1, 2, 3] }); // unchanged
+  });
+});
+
 test('block update test', async ({ expect }) => {
   await withMl(async (ml, workFolder) => {
     const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
