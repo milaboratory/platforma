@@ -127,11 +127,11 @@ rsync_proto_files "${SYNC_SHARED_PATHS}" "${SYNC_ORIGIN_SHARED_ROOT}" "${SYNC_TA
 echo "Update";
 log "Updating dependencies..."
 (
-    cd ./proto/plapi/ && protodep up
+    cd ./proto/plapi/ && protodep up --cleanup
 )
 
 (
-    cd ./proto/shared/ && protodep up
+    cd ./proto/shared/ && protodep up --cleanup
 )
 
 echo ""
