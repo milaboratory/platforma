@@ -93,6 +93,11 @@ message uploadapi {
       // based on client's input.
       // Client is free to never sent this value (send zeroes in each request).
       uint64 uploaded_part_size = 3;
+
+      // Do we need to presign URL for internal use.
+      // Controllers could use this if they are trying to download something from internal network.
+      // For backward compatibility, by default pl backend will presign external urls.
+      bool is_internal_use = 4;
     }
 
     message HTTPHeader {
