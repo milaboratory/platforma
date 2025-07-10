@@ -1,5 +1,11 @@
 # @milaboratories/pl-client
 
+## 2.11.4
+
+### Patch Changes
+
+- 54e22c2: update protofiles twice
+
 ## 2.11.3
 
 ### Patch Changes
