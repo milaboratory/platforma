@@ -31,6 +31,10 @@ export function BlockPackMeta<
      */
     marketplaceRanking: z.number().optional(),
     /**
+     * If true, the block is deprecated and should not be used.
+     */
+    deprecated: z.boolean().optional(),
+    /**
      * The URL to the Terms of Service for the block. If provided checkbox with link to this URL should be shown in order to add block.
      */
     termsOfServiceUrl: z.string().url().optional()
