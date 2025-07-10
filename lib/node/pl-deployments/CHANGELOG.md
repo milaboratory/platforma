@@ -1,5 +1,11 @@
 # @milaboratories/pl-local
 
+## 2.4.4
+
+### Patch Changes
+
+- 01c5e05: deployments: ssh: fix test, add README
+
 ## 2.4.3
 
 ### Patch Changes
