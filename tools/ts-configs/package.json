@@ -2,7 +2,10 @@
   "version": "1.0.4",
   "name": "@milaboratories/ts-configs",
   "exports": {
-    "./browser": "./src/tsconfig.browser.json"
+    "./browser": "./src/tsconfig.browser-vue.json",
+    "./base": "./src/tsconfig.base.json",
+    "./build": "./src/tsconfig.build.json",
+    "./vue": "./src/tsconfig.vue.json"
   },
   "scripts": {},
   "dependencies": {

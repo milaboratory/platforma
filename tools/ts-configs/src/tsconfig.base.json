@@ -19,13 +19,8 @@
     "declaration": true,
     "declarationMap": true,
     "noEmit": true,
-    "jsx": "preserve",
     /* Linting */
     "strict": true,
-    "noFallthroughCasesInSwitch": true,
-    "types": [
-      "vite/client",
-      "vitest/importMeta"
-    ]
+    "noFallthroughCasesInSwitch": true
   }
 }
