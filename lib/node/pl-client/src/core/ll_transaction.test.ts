@@ -13,7 +13,7 @@ test('transaction timeout test', async () => {
     const response = await tx.send(
       {
         oneofKind: 'txOpen',
-        txOpen: { name: 'test', writable: TxAPI_Open_Request_WritableTx.WRITABLE }
+        txOpen: { name: 'test', writable: TxAPI_Open_Request_WritableTx.WRITABLE, enableFormattedErrors: false }
       },
       false
     );
@@ -30,7 +30,7 @@ test('check timeout error type (passive)', async () => {
     const response = await tx.send(
       {
         oneofKind: 'txOpen',
-        txOpen: { name: 'test', writable: TxAPI_Open_Request_WritableTx.WRITABLE }
+        txOpen: { name: 'test', writable: TxAPI_Open_Request_WritableTx.WRITABLE, enableFormattedErrors: false }
       },
       false
     );
@@ -49,7 +49,7 @@ test('check timeout error type (active)', async () => {
     const openResponse = await tx.send(
       {
         oneofKind: 'txOpen',
-        txOpen: { name: 'test', writable: TxAPI_Open_Request_WritableTx.WRITABLE }
+        txOpen: { name: 'test', writable: TxAPI_Open_Request_WritableTx.WRITABLE, enableFormattedErrors: false }
       },
       false
     );
@@ -104,7 +104,7 @@ test('check is abort error (active)', async () => {
     const openResponse = await tx.send(
       {
         oneofKind: 'txOpen',
-        txOpen: { name: 'test', writable: TxAPI_Open_Request_WritableTx.WRITABLE }
+        txOpen: { name: 'test', writable: TxAPI_Open_Request_WritableTx.WRITABLE, enableFormattedErrors: false }
       },
       false
     );
