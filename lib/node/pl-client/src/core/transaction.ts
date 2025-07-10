@@ -185,6 +185,7 @@ export class PlTransaction {
     private readonly _clientRoot: OptionalResourceId,
     private readonly finalPredicate: FinalResourceDataPredicate,
     private readonly sharedResourceDataCache: LRUCache<ResourceId, ResourceDataCacheRecord>,
+    private readonly enableFormattedErrors: boolean = false,
   ) {
     // initiating transaction
     this.globalTxId = this.sendSingleAndParse(
@@ -192,6 +193,7 @@ export class PlTransaction {
         oneofKind: 'txOpen',
         txOpen: {
           name,
+          enableFormattedErrors,
           writable: writable
             ? TxAPI_Open_Request_WritableTx.WRITABLE
             : TxAPI_Open_Request_WritableTx.NOT_WRITABLE,
