@@ -5,7 +5,8 @@
     "./browser": "./src/tsconfig.browser-vue.json",
     "./base": "./src/tsconfig.base.json",
     "./build": "./src/tsconfig.build.json",
-    "./vue": "./src/tsconfig.vue.json"
+    "./vite": "./src/tsconfig.vite.json",
+    "./vitest": "./src/tsconfig.vitest.json"
   },
   "scripts": {},
   "dependencies": {

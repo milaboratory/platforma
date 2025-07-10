@@ -1,6 +1,0 @@
-/**
-  * @deprecated Use composition of `tsconfig.base.json` and `tsconfig.vue.json` instead.
-  */
-{
-  "extends": ["./tsconfig.base.json", "./tsconfig.vue.json"]
-}
