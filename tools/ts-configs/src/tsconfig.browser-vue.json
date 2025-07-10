@@ -1,0 +1,6 @@
+/**
+  * @deprecated Use composition of `tsconfig.browser.json` and `tsconfig.vue.json` instead.
+  */
+{
+  "extends": ["./tsconfig.browser.json", "./tsconfig.vue.json"]
+}

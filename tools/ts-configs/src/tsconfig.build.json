@@ -1,0 +1,8 @@
+{
+  "compilerOptions": {
+    "customConditions": ["default"],
+    "noEmit": false,
+    "declaration": true,
+    "emitDeclarationOnly": true
+  }
+}

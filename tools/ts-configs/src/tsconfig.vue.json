@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "jsx": "preserve",
+    "types": [
+      "vite/client",
+      "vitest/importMeta"
+    ]
+  }
+}
