@@ -31,24 +31,24 @@
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "dependencies": {
+    "@types/d3": "catalog:",
+    "@types/sortablejs": "catalog:",
     "@milaboratories/helpers": "workspace:^",
     "@platforma-sdk/model": "workspace:^",
     "@vue/test-utils": "catalog:",
     "@vueuse/integrations": "catalog:",
     "sortablejs": "catalog:",
     "vue": "catalog:",
-    "d3": "catalog:"
+    "@vueuse/core": "catalog:",
+    "d3": "catalog:",
+    "resize-observer-polyfill": "catalog:"
   },
   "devDependencies": {
-    "@types/d3": "catalog:",
-    "@types/sortablejs": "catalog:",
     "@milaboratories/ts-configs": "workspace:*",
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/eslint-config": "workspace:^",
-    "@vueuse/core": "catalog:",
-    "jsdom": "catalog:",
-    "resize-observer-polyfill": "catalog:",
     "@vitejs/plugin-vue": "catalog:",
+    "jsdom": "catalog:",
     "vitest": "catalog:",
     "vite": "catalog:",
     "vue-tsc": "catalog:",
