@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.3.5
+
+### Patch Changes
+
+- 66a2689: update package json deps
+
 ## 2.3.4
 
 ### Patch Changes

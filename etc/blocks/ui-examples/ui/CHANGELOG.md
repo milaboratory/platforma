@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.5.5
+
+### Patch Changes
+
+- 6540ce2: Add PlAgDataTableV2 reactive text examples
+
 ## 1.5.4
 
 ### Patch Changes
