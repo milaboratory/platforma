@@ -1,5 +1,12 @@
 # @milaboratories/pl-middle-layer
 
+## 1.39.7
+
+### Patch Changes
+
+- Updated dependencies [01c5e05]
+  - @milaboratories/pl-deployments@2.4.4
+
 ## 1.39.6
 
 ### Patch Changes
