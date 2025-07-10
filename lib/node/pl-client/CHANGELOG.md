@@ -1,5 +1,11 @@
 # @milaboratories/pl-client
 
+## 2.11.3
+
+### Patch Changes
+
+- 4666cae: pl-client and pl-drivers: update proto
+
 ## 2.11.2
 
 ### Patch Changes
