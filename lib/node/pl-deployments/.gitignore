@@ -9,4 +9,5 @@
 
 /test-assets/*
 !/test-assets/simple-server.js
-
+!/test-assets/private-key.pem
+!/test-assets/public-key.pem

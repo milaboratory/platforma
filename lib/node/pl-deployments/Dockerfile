@@ -1,3 +1,7 @@
+# Dockerfile for pl-deployments tests with test containers.
+# It does 2 things: creates a server that hosts a simple server,
+# and passes a test SSH public key for the user "pl-doctor" to be able to connect to the server.
+
 FROM node:20
 
 RUN apt-get update && \
@@ -18,7 +22,7 @@ ENV LANG en_US.UTF-8
 
 EXPOSE 22 3001
 
-COPY ./test-assets/pub-key.pub /home/pl-doctor/.ssh/authorized_keys
+COPY ./test-assets/public-key.pem /home/pl-doctor/.ssh/authorized_keys
 COPY ./test-assets/simple-server.js /home/pl-doctor/simple-server.js
 
 RUN chmod 755 /home/pl-doctor

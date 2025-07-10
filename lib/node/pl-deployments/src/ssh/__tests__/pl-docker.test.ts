@@ -1,5 +1,5 @@
 import { describe, it, beforeAll, expect, afterAll } from 'vitest';
-import { initContainer, getConnectionForSsh, cleanUp as cleanUpT } from './common-utils';
+import { initContainer, getConnectionForSsh, cleanUp as cleanUpT, testAssetsPath } from './common-utils';
 import { SshPl } from '../pl';
 import upath from 'upath';
 import { getDefaultPlVersion } from '../../common/pl_version';
@@ -10,23 +10,11 @@ import { ConsoleLoggerAdapter } from '@milaboratories/ts-helpers';
 import * as plpath from '../pl_paths';
 
 let sshPl: SshPl;
+
 const testContainer = await initContainer('pl');
 
-const downloadDestination = upath.resolve(__dirname, '..', '..', '..', 'test-assets', 'downloads');
+const downloadDestination = upath.resolve(testAssetsPath, 'downloads');
 
-async function cleanUp() {
-  const version = getDefaultPlVersion();
-  // FIXME: I'm not sure why sshPl is undefined. Tracked in
-  // https://www.notion.so/mixcr/ml-ssh-Test-crash-2023a83ff4af809f90cecdc57b3446d4
-  // It happens when the docker image wasn't deleted from a previous run.
-  // Try `pnpm run cleanup-docker` (in pl-deployments package.json) and run tests again.
-  const arch = await sshPl.getArch();
-  const tgzName = 'supervisord-0.7.3';
-
-  unlinkSync(`${downloadDestination}/pl-${version}-${newArch(arch!.arch)}.tgz`);
-  unlinkSync(`${downloadDestination}/${tgzName}-${newArch(arch!.arch)}.tgz`);
-  rmSync(downloadDestination, { recursive: true });
-}
 beforeAll(async () => {
   const logger = new ConsoleLoggerAdapter();
   sshPl = await SshPl.init(logger, getConnectionForSsh(testContainer));
@@ -243,6 +231,16 @@ describe('SshPl', async () => {
     expect(existsSync(`${downloadDestination}/${tgzName}-${newArch(arch.arch)}.tgz`)).toBe(true);
   });
 });
+
+async function cleanUp() {
+  const version = getDefaultPlVersion();
+  const arch = await sshPl.getArch();
+  const tgzName = 'supervisord-0.7.3';
+
+  unlinkSync(`${downloadDestination}/pl-${version}-${newArch(arch!.arch)}.tgz`);
+  unlinkSync(`${downloadDestination}/${tgzName}-${newArch(arch!.arch)}.tgz`);
+  rmSync(downloadDestination, { recursive: true });
+}
 
 afterAll(async () => {
   await cleanUp();
