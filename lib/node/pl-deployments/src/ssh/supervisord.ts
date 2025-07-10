@@ -85,6 +85,9 @@ export async function supervisorStatus(
   return status;
 }
 
+/** Generates the config for supervisord.
+ * docs: https://github.com/ochinchina/supervisord?tab=readme-ov-file#supervised-program-settings
+ */
 export function generateSupervisordConfig(
   supervisorRemotePort: number,
   remoteWorkDir: string,
@@ -115,9 +118,15 @@ autostart=true
 command=${plPath} --config ${platformaConfigPath}
 directory=${remoteWorkDir}
 autorestart=true
+stdout_logfile=${remoteWorkDir}/platforma_cli_logs.log
+stdout_logfile_maxbytes=10000
+stdout_logfile_backups=10
+redirect_stderr=true
 `;
 }
 
+/** @deprecated, we use minio only on old deployments that existed before we remove minio,
+ * for new servers use generation of the config above. */
 export function generateSupervisordConfigWithMinio(
   minioStorageDir: string,
   minioEnvs: Record<string, string>,
