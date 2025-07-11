@@ -11,7 +11,6 @@ export const icons24 = [
   'arrow-left-curved',
   'arrow-left',
   'arrow-link',
-  'arrow-right-curved',
   'arrow-right',
   'arrow-up',
   'axes',

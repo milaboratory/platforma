@@ -69,6 +69,7 @@ useRipple(btnRef);
     <span v-if="slots.default && !round">
       <slot />
     </span>
+    <slot name="icon"/>
     <PlMaskIcon24 v-if="loading" name="loading" :size="size" />
     <PlMaskIcon24 v-else-if="icon" :name="icon" :size="size" />
     <slot name="append" />
