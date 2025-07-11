@@ -1,9 +1,9 @@
 import path from 'path';
 import { describe, test, expect } from 'vitest';
-import { isFolderURL, getPathForFolderURL } from './url';
+import { getPathForFolderURL } from './url';
 import type { Signer } from '@milaboratories/ts-helpers';
 import { HmacSha256Signer } from '@milaboratories/ts-helpers';
-import { FolderURL } from '@milaboratories/pl-model-common';
+import { FolderURL, isFolderURL } from '@milaboratories/pl-model-common';
 
 describe('isFolderURL', () => {
   test('should return true for a valid URL', () => {
