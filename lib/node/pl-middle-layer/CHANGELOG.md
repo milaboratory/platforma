@@ -1,5 +1,33 @@
 # @milaboratories/pl-middle-layer
 
+## 1.39.10
+
+### Patch Changes
+
+- Updated dependencies [54e22c2]
+  - @milaboratories/pl-drivers@1.6.5
+  - @milaboratories/pl-client@2.11.4
+  - @milaboratories/pl-errors@1.1.11
+  - @milaboratories/pl-tree@1.7.2
+
+## 1.39.9
+
+### Patch Changes
+
+- Updated dependencies [7afc448]
+  - @milaboratories/pl-model-middle-layer@1.7.50
+  - @platforma-sdk/block-tools@2.5.68
+
+## 1.39.8
+
+### Patch Changes
+
+- Updated dependencies [4666cae]
+  - @milaboratories/pl-drivers@1.6.4
+  - @milaboratories/pl-client@2.11.3
+  - @milaboratories/pl-errors@1.1.10
+  - @milaboratories/pl-tree@1.7.1
+
 ## 1.39.7
 
 ### Patch Changes

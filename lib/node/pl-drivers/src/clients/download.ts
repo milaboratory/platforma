@@ -85,7 +85,7 @@ export class ClientDownload {
     withAbort.abort = signal;
 
     return await this.grpcClient.get().getDownloadURL(
-      { resourceId: id },
+      { resourceId: id, isInternalUse: false },
       addRTypeToMetadata(type, withAbort),
     ).response;
   }

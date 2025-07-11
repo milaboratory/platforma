@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.7.50
+
+### Patch Changes
+
+- 7afc448: Add optional "deprecated" flag to the block meta
+
 ## 1.7.49
 
 ### Patch Changes

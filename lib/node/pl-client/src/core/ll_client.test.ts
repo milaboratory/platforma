@@ -12,7 +12,7 @@ test('authenticated instance test', async () => {
   const response = await tx.send(
     {
       oneofKind: 'txOpen',
-      txOpen: { name: 'test', writable: TxAPI_Open_Request_WritableTx.WRITABLE }
+      txOpen: { name: 'test', writable: TxAPI_Open_Request_WritableTx.WRITABLE, enableFormattedErrors: false }
     },
     false
   );
@@ -37,7 +37,7 @@ test('unauthenticated status change', async () => {
     await tx.send(
       {
         oneofKind: 'txOpen',
-        txOpen: { name: 'test', writable: TxAPI_Open_Request_WritableTx.WRITABLE }
+        txOpen: { name: 'test', writable: TxAPI_Open_Request_WritableTx.WRITABLE, enableFormattedErrors: false }
       },
       false
     );
@@ -71,7 +71,7 @@ test('automatic token update', async () => {
     const response = await tx.send(
       {
         oneofKind: 'txOpen',
-        txOpen: { name: 'test', writable: TxAPI_Open_Request_WritableTx.WRITABLE }
+        txOpen: { name: 'test', writable: TxAPI_Open_Request_WritableTx.WRITABLE, enableFormattedErrors: false }
       },
       false
     );

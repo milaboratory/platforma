@@ -136,7 +136,7 @@ export class ClientUpload {
     options?: RpcOptions,
   ) {
     return await this.grpcClient.get().getPartURL(
-      { resourceId: id, partNumber, uploadedPartSize },
+      { resourceId: id, partNumber, uploadedPartSize, isInternalUse: false },
       addRTypeToMetadata(type, options),
     ).response;
   }
