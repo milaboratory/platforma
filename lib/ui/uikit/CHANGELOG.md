@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.3.6
+
+### Patch Changes
+
+- 8aec1b5: add icons
+
 ## 2.3.5
 
 ### Patch Changes
