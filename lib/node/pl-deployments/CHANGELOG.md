@@ -1,5 +1,11 @@
 # @milaboratories/pl-local
 
+## 2.4.5
+
+### Patch Changes
+
+- da5900a: add stderr logs to the error of platforma
+
 ## 2.4.4
 
 ### Patch Changes

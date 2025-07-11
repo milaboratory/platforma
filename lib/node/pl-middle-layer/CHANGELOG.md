@@ -1,5 +1,12 @@
 # @milaboratories/pl-middle-layer
 
+## 1.39.11
+
+### Patch Changes
+
+- Updated dependencies [da5900a]
+  - @milaboratories/pl-deployments@2.4.5
+
 ## 1.39.10
 
 ### Patch Changes
