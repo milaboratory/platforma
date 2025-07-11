@@ -24,7 +24,8 @@ export async function withTrace<T>(
     const result = await fn((k: string, v: any) => trace(t, k, v), t);
     return result;
   } catch (e: any) {
-    logger.error(`error ${e} while doing traced operation, state: ${JSON.stringify(t)}`);
-    throw e;
+    const msg = `${e} while doing traced operation, state: ${JSON.stringify(t)}`;
+    logger.error(msg);
+    throw new Error(msg);
   }
 }
