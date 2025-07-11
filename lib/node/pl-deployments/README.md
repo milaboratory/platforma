@@ -16,3 +16,26 @@ require("fs").writeFileSync('test-assets/private-key.pem', keys.private);
 
 ### Clean docker containers
 If something went wrong with testcontainers, use `pnpm run cleanup-docker` from pl-deployments root.
+
+### Dev container
+The command starts a docker container for dev:
+```sh
+pnpm run dev-docker
+# in another terminal you can start bash
+pnpm run exec-dev-docker
+```
+Credentials:
+127.0.0.1:4343
+pl-doctor
+password
+
+### supervisor commands
+Go to SSH server, then to `~/.platforma_ssh` and check the status of binary:
+```sh
+./binaries/supervisord-0.7.3-amd64/supervisord_0.7.3_Linux_64-bit/supervisord -c supervisor.conf ctl status
+```
+
+To shutdown platforma:
+```sh
+./binaries/supervisord-0.7.3-amd64/supervisord_0.7.3_Linux_64-bit/supervisord -c supervisor.conf ctl shutdown
+```

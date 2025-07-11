@@ -69,7 +69,16 @@ export class SshPl {
         return await this.checkIsAliveWithInterval(shouldUseMinio);
       }
     } catch (e: unknown) {
-      const msg = `SshPl.start: ${e}`;
+      let msg = `SshPl.start: ${e}`;
+
+      let logs = '';
+      try {
+        logs = await this.sshClient.readFile(plpath.platformaCliLogs(remoteHome));
+        msg += `, platforma cli logs: ${logs}`;
+      } catch (e: unknown) {
+        msg += `, Can not read platforma cli logs: ${e}`;
+      }
+
       this.logger.error(msg);
       throw new Error(msg);
     }

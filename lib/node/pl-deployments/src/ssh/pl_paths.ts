@@ -59,3 +59,7 @@ export function supervisorConf(remoteHome: string) {
 export function connectionInfo(remoteHome: string) {
   return upath.join(workDir(remoteHome), `connection.txt`);
 }
+
+export function platformaCliLogs(remoteHome: string) {
+  return upath.join(workDir(remoteHome), 'platforma_cli_logs.log');
+}
