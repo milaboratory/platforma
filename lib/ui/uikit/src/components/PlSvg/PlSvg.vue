@@ -58,6 +58,10 @@ function getStyleColor(prop: 'fill' | 'stroke', color: undefined | string | stri
   --svg-fill-0: unset; /* can be in any quantity, depends on the icon (--svg-fill-X) */
   --svg-fill-1: unset; /* can be in any quantity, depends on the icon (--svg-fill-X) */
   --svg-fill-2: unset; /* can be in any quantity, depends on the icon (--svg-fill-X) */
+  --svg-fill-3: unset; /* can be in any quantity, depends on the icon (--svg-fill-X) */
+  --svg-fill-4: unset; /* can be in any quantity, depends on the icon (--svg-fill-X) */
+  --svg-fill-5: unset; /* can be in any quantity, depends on the icon (--svg-fill-X) */
+  --svg-fill-6: unset; /* can be in any quantity, depends on the icon (--svg-fill-X) */
   --svg-stroke-0: unset; /* can be in any quantity, depends on the icon (--svg-stroke-X) */
 
   width: var(--svg-width);
