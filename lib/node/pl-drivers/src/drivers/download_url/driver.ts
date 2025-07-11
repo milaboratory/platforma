@@ -1,36 +1,34 @@
 import type { ComputableCtx, Watcher } from '@milaboratories/computable';
-import { ChangeSource, Computable } from '@milaboratories/computable';
+import { Computable } from '@milaboratories/computable';
 import type {
-  MiLogger } from '@milaboratories/ts-helpers';
+  MiLogger,
+  Signer,
+} from '@milaboratories/ts-helpers';
 import {
-  CallersCounter,
   TaskProcessor,
-  createPathAtomically,
-  ensureDirExists,
-  fileExists,
-  notEmpty,
 } from '@milaboratories/ts-helpers';
 import { createHash, randomUUID } from 'node:crypto';
-import * as fsp from 'node:fs/promises';
 import * as path from 'node:path';
-import { Transform, Writable } from 'node:stream';
-import * as zlib from 'node:zlib';
-import * as tar from 'tar-fs';
 import type { Dispatcher } from 'undici';
-import { NetworkError400, RemoteFileDownloader } from '../helpers/download';
-import { FilesCache } from './helpers/files_cache';
+import { RemoteFileDownloader } from '../../helpers/download';
+import { FilesCache } from '../helpers/files_cache';
 import { stringifyWithResourceId } from '@milaboratories/pl-client';
+import type { BlockUIURL, FrontendDriver } from '@milaboratories/pl-model-common';
+import { isBlockUIURL } from '@milaboratories/pl-model-common';
+import { getPathForBlockUIURL } from '../urls/url';
+import { DownloadByUrlTask, rmRFDir } from './task';
 
 export interface DownloadUrlSyncReader {
   /** Returns a Computable that (when the time will come)
    * downloads an archive from an URL,
    * extracts it to the local dir and returns a path to that dir. */
-  getPath(url: URL): Computable<PathResult | undefined>;
+  getUrl(url: URL): Computable<UrlResult | undefined>;
 }
 
-export interface PathResult {
-  /** Path to the downloadable blob, might be undefined when the error happened. */
-  path?: string;
+export interface UrlResult {
+  /** Path to the downloadable blob along with the signature and a custom protocol,
+   * might be undefined when the error happened. */
+  url?: BlockUIURL;
   /** Error that happened when the archive were downloaded. */
   error?: string;
 }
@@ -43,7 +41,7 @@ export type DownloadUrlDriverOps = {
 
 /** Downloads .tar or .tar.gz archives by given URLs
  * and extracts them into saveDir. */
-export class DownloadUrlDriver implements DownloadUrlSyncReader {
+export class DownloadUrlDriver implements DownloadUrlSyncReader, FrontendDriver {
   private readonly downloadHelper: RemoteFileDownloader;
 
   private urlToDownload: Map<string, DownloadByUrlTask> = new Map();
@@ -57,6 +55,7 @@ export class DownloadUrlDriver implements DownloadUrlSyncReader {
     private readonly logger: MiLogger,
     httpClient: Dispatcher,
     private readonly saveDir: string,
+    private readonly signer: Signer,
     private readonly opts: DownloadUrlDriverOps = {
       cacheSoftSizeBytes: 1 * 1024 * 1024 * 1024, // 1 GB
       withGunzip: true,
@@ -69,25 +68,26 @@ export class DownloadUrlDriver implements DownloadUrlSyncReader {
   }
 
   /** Use to get a path result inside a computable context */
-  getPath(url: URL, ctx: ComputableCtx): PathResult | undefined;
+  getUrl(url: URL, ctx: ComputableCtx): UrlResult | undefined;
 
   /** Returns a Computable that do the work */
-  getPath(url: URL): Computable<PathResult | undefined>;
+  getUrl(url: URL): Computable<UrlResult | undefined>;
 
-  getPath(
+  /** Returns a computable that returns a custom protocol URL to the downloaded and unarchived path. */
+  getUrl(
     url: URL,
     ctx?: ComputableCtx,
-  ): Computable<PathResult | undefined> | PathResult | undefined {
+  ): Computable<UrlResult | undefined> | UrlResult | undefined {
     // wrap result as computable, if we were not given an existing computable context
-    if (ctx === undefined) return Computable.make((c) => this.getPath(url, c));
+    if (ctx === undefined) return Computable.make((c) => this.getUrl(url, c));
 
     const callerId = randomUUID();
 
     // read as ~ golang's defer
     ctx.addOnDestroy(() => this.releasePath(url, callerId));
 
-    const result = this.getPathNoCtx(url, ctx.watcher, callerId);
-    if (result?.path === undefined)
+    const result = this.getUrlNoCtx(url, ctx.watcher, callerId);
+    if (result?.url === undefined)
       ctx.markUnstable(
         `a path to the downloaded and untared archive might be undefined. The current result: ${result}`,
       );
@@ -95,13 +95,13 @@ export class DownloadUrlDriver implements DownloadUrlSyncReader {
     return result;
   }
 
-  getPathNoCtx(url: URL, w: Watcher, callerId: string) {
+  getUrlNoCtx(url: URL, w: Watcher, callerId: string) {
     const key = url.toString();
     const task = this.urlToDownload.get(key);
 
     if (task != undefined) {
       task.attach(w, callerId);
-      return task.getPath();
+      return task.getUrl();
     }
 
     const newTask = this.setNewTask(w, url, callerId);
@@ -110,14 +110,22 @@ export class DownloadUrlDriver implements DownloadUrlSyncReader {
       recoverableErrorPredicate: (e) => true,
     });
 
-    return newTask.getPath();
+    return newTask.getUrl();
+  }
+
+  getPathForBlockUI(url: string): string {
+    if (!isBlockUIURL(url)) {
+      throw new Error(`getPathForBlockUI: ${url} is invalid`);
+    }
+
+    return getPathForBlockUIURL(this.signer, url, this.saveDir);
   }
 
   /** Downloads and extracts a tar archive if it wasn't downloaded yet. */
   async downloadUrl(task: DownloadByUrlTask, callerId: string) {
     await task.download(this.downloadHelper, this.opts.withGunzip);
     // Might be undefined if a error happened
-    if (task.getPath()?.path != undefined) this.cache.addCache(task, callerId);
+    if (task.getUrl()?.url != undefined) this.cache.addCache(task, callerId);
   }
 
   /** Removes a directory and aborts a downloading task when all callers
@@ -171,7 +179,13 @@ export class DownloadUrlDriver implements DownloadUrlSyncReader {
   }
 
   private setNewTask(w: Watcher, url: URL, callerId: string) {
-    const result = new DownloadByUrlTask(this.logger, this.getFilePath(url), url);
+    const result = new DownloadByUrlTask(
+      this.logger,
+      this.getFilePath(url),
+      url,
+      this.signer,
+      this.saveDir,
+    );
     result.attach(w, callerId);
     this.urlToDownload.set(url.toString(), result);
 
@@ -188,129 +202,4 @@ export class DownloadUrlDriver implements DownloadUrlSyncReader {
     const sha256 = createHash('sha256').update(url.toString()).digest('hex');
     return path.join(this.saveDir, sha256);
   }
-}
-
-/** Downloads and extracts an archive to a directory. */
-class DownloadByUrlTask {
-  readonly counter = new CallersCounter();
-  readonly change = new ChangeSource();
-  private readonly signalCtl = new AbortController();
-  error: string | undefined;
-  done = false;
-  size = 0;
-
-  constructor(
-    private readonly logger: MiLogger,
-    readonly path: string,
-    readonly url: URL,
-  ) {}
-
-  public info() {
-    return {
-      url: this.url.toString(),
-      path: this.path,
-      done: this.done,
-      size: this.size,
-      error: this.error,
-    };
-  }
-
-  attach(w: Watcher, callerId: string) {
-    this.counter.inc(callerId);
-    if (!this.done) this.change.attachWatcher(w);
-  }
-
-  async download(clientDownload: RemoteFileDownloader, withGunzip: boolean) {
-    try {
-      const size = await this.downloadAndUntar(clientDownload, withGunzip, this.signalCtl.signal);
-      this.setDone(size);
-      this.change.markChanged(`download of ${this.url} finished`);
-    } catch (e: any) {
-      if (e instanceof URLAborted || e instanceof NetworkError400) {
-        this.setError(e);
-        this.change.markChanged(`download of ${this.url} failed`);
-        // Just in case we were half-way extracting an archive.
-        await rmRFDir(this.path);
-        return;
-      }
-
-      throw e;
-    }
-  }
-
-  private async downloadAndUntar(
-    clientDownload: RemoteFileDownloader,
-    withGunzip: boolean,
-    signal: AbortSignal,
-  ): Promise<number> {
-    await ensureDirExists(path.dirname(this.path));
-
-    if (await fileExists(this.path)) {
-      return await dirSize(this.path);
-    }
-
-    const resp = await clientDownload.download(this.url.toString(), {}, signal);
-
-    let content = resp.content;
-    if (withGunzip) {
-      const gunzip = Transform.toWeb(zlib.createGunzip());
-      content = content.pipeThrough(gunzip, { signal });
-    }
-
-    await createPathAtomically(this.logger, this.path, async (fPath: string) => {
-      await fsp.mkdir(fPath); // throws if a directory already exists.
-      const untar = Writable.toWeb(tar.extract(fPath));
-      await content.pipeTo(untar, { signal });
-    });
-
-    return resp.size;
-  }
-
-  getPath(): PathResult | undefined {
-    if (this.done) return { path: notEmpty(this.path) };
-
-    if (this.error) return { error: this.error };
-
-    return undefined;
-  }
-
-  private setDone(size: number) {
-    this.done = true;
-    this.size = size;
-  }
-
-  private setError(e: any) {
-    this.error = String(e);
-  }
-
-  abort(reason: string) {
-    this.signalCtl.abort(new URLAborted(reason));
-  }
-}
-
-/** Throws when a downloading aborts. */
-class URLAborted extends Error {
-  name = 'URLAborted';
-}
-
-/** Gets a directory size by calculating sizes recursively. */
-async function dirSize(dir: string): Promise<number> {
-  const files = await fsp.readdir(dir, { withFileTypes: true });
-  const sizes = await Promise.all(
-    files.map(async (file: any) => {
-      const fPath = path.join(dir, file.name);
-
-      if (file.isDirectory()) return await dirSize(fPath);
-
-      const stat = await fsp.stat(fPath);
-      return stat.size;
-    }),
-  );
-
-  return sizes.reduce((sum: any, size: any) => sum + size, 0);
-}
-
-/** Do rm -rf on dir. */
-async function rmRFDir(path: string) {
-  await fsp.rm(path, { recursive: true, force: true });
 }
