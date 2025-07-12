@@ -926,7 +926,7 @@ field = func(f) {
 				"smart.field.setCache: cache time must be an integer >= millisecond. Did you forget to import a standard tengo library 'times'?")
 
 			tx.cacheSetToField(self.id, time)
-			return self
+			return strictSelf
 		},
 
 		/**
@@ -1013,6 +1013,7 @@ field = func(f) {
 		 */
 		setJson: func(value) {
 			self.set(createJsonResource(value))
+			return strictSelf
 		},
 
 		/**
@@ -1022,6 +1023,7 @@ field = func(f) {
 		 */
 		setMap: func(keyToValue) {
 			self.set(createMapResource(keyToValue))
+			return strictSelf
 		},
 
 		/**
@@ -1039,6 +1041,8 @@ field = func(f) {
 			} else {
 				ll.panic("smart resource or smart field expected (target field %v), got %#v: ", self.name(), reference)
 			}
+
+			return strictSelf
 		},
 
 		/**
@@ -1356,16 +1360,28 @@ _mapBuilder := func(isEph, ...resourceType) {
 
 	self := undefined
 
+	applyCache := func(field, ...opts) {
+		if len(opts) > 0 {
+			opt := opts[0]
+			if is_map(opt) && !is_undefined(opt.cache) && opt.cache > 0 {
+				field.setCache(opt.cache)
+			}
+		}
+	}
+
 	self = ll.toStrict(oop.inherit(builder, {
 		/**
 		 * Adds a reference to the map by a given key.
 		 *
 		 * @param key: string - how the field will be named in the map
 		 * @param value: reference - a field or resource that will be set in the field
+		 * @param opts: optional map - cache options, e.g. { cache: times.hour }
 		 * @return self: mapBuilder
 		 */
-		addRef: func(key, value) {
-			builder.createInputField(key).set(value)
+		addRef: func(key, value, ...opts) {
+			field := builder.createInputField(key)
+			applyCache(field, opts...)
+			field.set(value)
 			return self
 		},
 
@@ -1374,10 +1390,13 @@ _mapBuilder := func(isEph, ...resourceType) {
 		 *
 		 * @param key: string - how the field will be named in the map
 		 * @param value: any - a primitive value, e.g. Tengo's map.
+		 * @param opts: optional map - cache options, e.g. { cache: times.hour }
 		 * @return self: mapBuilder
 		 */
-		addJson: func(key, value) {
-			builder.createInputField(key).set(createJsonResource(value))
+		addJson: func(key, value, ...opts) {
+			field := builder.createInputField(key)
+			applyCache(field, opts...)
+			field.set(createJsonResource(value))
 			return self
 		},
 
@@ -1386,10 +1405,13 @@ _mapBuilder := func(isEph, ...resourceType) {
 		 *
 		 * @param key: string - how the field will be named in the map
 		 * @param value: any - a reference or a primitive value
+		 * @param opts: optional map - cache options, e.g. { cache: times.hour }
 		 * @return self: mapBuilder
 		 */
-		add: func(key, value) {
-			builder.createInputField(key).setRefOrJson(value)
+		add: func(key, value, ...opts) {
+			field := builder.createInputField(key)
+			applyCache(field, opts...)
+			field.setRefOrJson(value)
 			return self
 		},
 

@@ -117,3 +117,13 @@ Test_ll_base32HexDecode := func() {
 		"wrong base32hex decoded bytes"
 	)
 }
+
+Test_ll_sha256Encode_and_base32Encode := func() {
+	hash := ll.base32Encode(ll.sha256Encode(bytes("asd"))[0:20])
+
+	test.isEqual(
+		"NCDYPWH7CRGFALD7LT72V7RMYWENQYDZ",
+		hash,
+		"wrong sha256 hash base32 encoding"
+	)
+}

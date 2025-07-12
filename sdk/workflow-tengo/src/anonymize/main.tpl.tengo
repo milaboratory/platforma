@@ -1,0 +1,14 @@
+// tpl := import(":tpl.light")
+// smart := import(":smart")
+
+// tpl.defineOutputs(
+// 	"result"
+// )
+
+// tpl.body(func() {
+// 	raw
+
+// 	return {
+// 		result: smart.createNullResource()
+// 	}
+// })

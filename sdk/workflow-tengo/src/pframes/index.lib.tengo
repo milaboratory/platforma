@@ -171,6 +171,11 @@ __primitiveValueTypes := { "Int": true, "Long": true, "Float": true, "Double": t
  *                                              // Pass *distilled* aggregation axes specs (no annotations, only
  *                                              // discriminative domains) in a distilled PColumnSpec via __distilled_aggregation_spec__ input
  *
+ *                      stepCache?: number      // Cache results of each iteration for a specified duration.
+ *                                              // Use constants from the 'times' module (e.g., `30 * times.seconds`).
+ *                                              // Caches on iteration level, both before and after xsv conversion.
+ *                                              // Useful for resuming after premature termination or restarts.
+ *
  *                      extra?: Map<string, Ref>,
  *                                              // Additional parameters passed to each body invocation
  *                                              // Keys match template input names
@@ -245,6 +250,10 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 	processTemplateParams := {
 		eph: opts.isEphemeral,
 		passKey: opts.passKey
+	}
+
+	if !is_undefined(opts.stepCache) && opts.stepCache > 0 {
+		processTemplateParams.stepCache = opts.stepCache
 	}
 
 	if !is_undefined(opts.cpu) {

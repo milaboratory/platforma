@@ -54,7 +54,7 @@ _unmarshal := func(resource, preprocessors) {
 		// unmarshal map
 		result := {}
 
-		for field, value in resource.inputs() + resource.metaInputs() {
+		for field, value in maps.merge(resource.inputs(), resource.metaInputs()) {
 			if value.isErrorSet() {
 				decodedError := value.getError().getDataAsJson()
 				if is_map(decodedError) && decodedError.message != undefined {

@@ -388,6 +388,10 @@ self.body(func(inputs) {
 		if !is_undefined(ops.mem) {
 			pfconv.mem(ops.mem)
 		}
+
+		if !is_undefined(ops.inputCache) {
+			pfconv.cacheInputs(ops.inputCache)
+		}
 	} else {
 		pfconv.inLightQueue()
 	}
