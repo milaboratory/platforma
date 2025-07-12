@@ -2,6 +2,7 @@ tx := import("tx")
 ll := import(":ll")
 render := import(":render")
 smart := import(":smart")
+times := import("times")
 sets := import(":sets")
 maps := import(":maps")
 tplutil := import(":tpl.util")
@@ -53,7 +54,7 @@ _unmarshal := func(resource, preprocessors) {
 		// unmarshal map
 		result := {}
 
-		for field, value in resource.inputs() {
+		for field, value in resource.inputs() + resource.metaInputs() {
 			if value.isErrorSet() {
 				decodedError := value.getError().getDataAsJson()
 				if is_map(decodedError) && decodedError.message != undefined {
@@ -61,16 +62,6 @@ _unmarshal := func(resource, preprocessors) {
 				} else {
 					ll.panic("input %v field has error: %v", field, value.getError().getData())
 				}
-			} else if value.isSet() {
-				result[field] = _unmarshal(value.getValue(), preprocessors)
-			} else {
-				result[field] = value
-			}
-		}
-
-		for field, value in resource.metaInputs() {
-			if value.isErrorSet() {
-				ll.panic("meta input %v field has error: %v", field, field.getError().getDataAsJson().message)
 			} else if value.isSet() {
 				result[field] = _unmarshal(value.getValue(), preprocessors)
 			} else {
@@ -230,6 +221,11 @@ tpl := func(ops) {
 		definedOutputs : [],
 
 		/**
+		 * Cache to set for the outputs during initialization phase of pure template
+		 */
+		outputCache: 0,
+
+		/**
 		 * Defines current template output(s) names.
 		 *
 		 * For pure templates, all outputs must be defined before the template body, and only registered outputs can be used
@@ -244,6 +240,75 @@ tpl := func(ops) {
 				self.definedOutputs = append(self.definedOutputs, name...)
 			}
 		},
+
+		/**
+		 * Use cacheMillis, cacheSeconds, cacheMinutes, cacheHours and cacheDays to not make hidden mistakes in cache time ranges.
+		 * Sets the cache time for the outputs.
+		 *
+		 * @param time: duration - the cache time from 'times' library.
+		 */
+		setOutputCache: func(time) {
+			ll.assert(is_int(time) && time >= times.millisecond,
+				"tpl.setOutputCache: cache time must be an integer >= millisecond. Did you forget to import a standard tengo library 'times'?")
+
+			self.outputCache = time
+			return self
+		},
+
+		/**
+		 * Sets the cache time for the outputs in milliseconds.
+		 *
+		 * @param millis: number
+		 */
+		setOutputCacheMillis: func(millis) {
+			ll.assert(is_int(millis) && millis > 0,
+				"tpl.setOutputCacheMillis: cache time must be a number of milliseconds (> 0)")
+			return self.setOutputCache(millis * times.millisecond)
+		},
+
+		/**
+		 * Sets the cache time for the outputs in seconds.
+		 *
+		 * @param seconds: number
+		 */
+		setOutputCacheSeconds: func(seconds) {
+			ll.assert(is_int(seconds) && seconds > 0,
+				"tpl.setOutputCacheSeconds: cache time must be a number of seconds (> 0)")
+			return self.setOutputCache(seconds * times.second)
+		},
+
+		/**
+		 * Sets the cache time for the outputs in minutes.
+		 *
+		 * @param minutes: number
+		 */
+		setOutputCacheMinutes: func(minutes) {
+			ll.assert(is_int(minutes) && minutes > 0,
+				"tpl.setOutputCacheMinutes: cache time must be a number of minutes (> 0)")
+			return self.setOutputCache(minutes * times.minute)
+		},
+
+		/**
+		 * Sets the cache time for the outputs in hours.
+		 *
+		 * @param hours: number
+		 */
+		setOutputCacheHours: func(hours) {
+			ll.assert(is_int(hours) && hours > 0, "tpl.setOutputCacheHours: cache time must be a number of hours (> 0)")
+			return self.setOutputCache(hours * times.hour)
+		},
+
+		/**
+		 * Sets the cache time for the outputs in days
+		 *
+		 * @param days: number
+		 */
+		setOutputCacheDays: func(days) {
+			ll.assert(is_int(days) && days > 0, "tpl.setOutputCacheDays: cache time must be a number of days (> 0)")
+			return self.setOutputCache(days * 24 * times.hour)
+		},
+
+
 
 		/**
 		 * In ephemeral template, body will only be executed when corresponding inputs state is
@@ -475,7 +540,10 @@ tpl := func(ops) {
 		 */
 		createOutputsAndLock: func(outputs) {
 			for name in outputs {
-				self.renderer().createOutputField(tplutil.TEMPLATE_OUTPUT_PREFIX + name)
+				field := self.renderer().createOutputField(tplutil.TEMPLATE_OUTPUT_PREFIX + name)
+				if self.outputCache > 0 {
+					field.setCache(self.outputCache)
+				}
 			}
 			self.renderer().lockOutputs()
 		},
@@ -660,6 +728,12 @@ tpl := func(ops) {
 				hasInput                : self.hasInput,
 				inputs                  : self.inputs,
 				defineOutputs           : self.defineOutputs,
+				setOutputCache			: self.setOutputCache,
+				setOutputCacheMillis	: self.setOutputCacheMillis,
+				setOutputCacheSeconds	: self.setOutputCacheSeconds,
+				setOutputCacheMinutes	: self.setOutputCacheMinutes,
+				setOutputCacheHours		: self.setOutputCacheHours,
+				setOutputCacheDays		: self.setOutputCacheDays,
 				prepare                 : self.prepare,
 				awaitState              : self.awaitState,
 				awaitStateIfEphemeral   : self.awaitStateIfEphemeral,
