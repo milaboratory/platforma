@@ -1,0 +1,32 @@
+/**
+ * Library for creating a resource with anonymized field names.
+ */
+render := import(":render")
+assets := import(":assets")
+ll := import(":ll")
+times := import("times")
+
+anonymizeImplTpl := assets.importTemplate(":anonymize.impl")
+
+/**
+ * Takes a resource (often a map) where values are placed under specific field names,
+ * and creates a new resource with the same values but with field names derived from
+ * the canonical IDs of those values.
+ *
+ * This effectively creates a map whose own CID does not depend on the field names
+ * (keys) of the original map, but only on its values. It models a "Set" and also
+ * handles repetitions if the same value is encountered multiple times.
+ *
+ * The output is a reference, not a materialized resource.
+ */
+anonymize := func(target) {
+	anonymizeResult := render.create(anonymizeImplTpl, {
+		target: target
+	})
+
+	return anonymizeResult.output("result")
+}
+
+export ll.toStrict({
+	anonymize: anonymize
+})

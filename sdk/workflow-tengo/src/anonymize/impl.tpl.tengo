@@ -1,0 +1,41 @@
+self := import(":tpl.light")
+smart := import(":smart")
+ll := import(":ll")
+fmt := import("fmt")
+
+self.defineOutputs("result")
+
+self.body(func() {
+	target := self.rawInputs().target
+
+	targetInfo := target.info()
+
+	ll.assert(len(target.outputs()) == 0, "target resource must not have outputs")
+	ll.assert(len(target.metaInputs()) == 0, "target resource must not have service inputs")
+
+	ll.assert(targetInfo.InputsLocked, "target resource inputs must be locked")
+	ll.assert(targetInfo.OutputsLocked, "target resource outputs must be locked")
+
+	resultBuilder := smart.structBuilder(targetInfo.Type)
+
+	cidCounts := {}
+	for _, field in target.inputs() {
+		value := field.getValue()
+
+		cid := value.info().CanonicalID
+		encodedCid := ll.base32Encode(cid[0:20])
+
+		repetitionIndex := 0
+		if !is_undefined(cidCounts[encodedCid]) {
+			repetitionIndex = cidCounts[encodedCid]
+		}
+		cidCounts[encodedCid] = repetitionIndex + 1
+
+		newFieldName := fmt.sprintf("%s-%d", encodedCid, repetitionIndex)
+		resultBuilder.createInputField(newFieldName).set(value)
+	}
+
+	return {
+		result: resultBuilder.lockAndBuild()
+	}
+})
