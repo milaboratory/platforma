@@ -148,6 +148,12 @@ __primitiveValueTypes := { "Int": true, "Long": true, "Float": true, "Double": t
  *                                              // If specified, selected axes are combined and
  *                                              // passed to each iteration as a group. These axes
  *                                              // won't be automatically added to output specs
+ *                                              // Each AxisMatcher can have an optional 'anonymize: true' flag.
+ *                                              // If set, the corresponding key elements will be anonymized.
+ *                                              // The anonymized key elements are replaced with a single anonymized key
+ *                                              // that is added as the last element of the key.
+ *                                              // This is useful for deduplication and recovery mechanisms.
+ *                                              //
  *                                              // Examples:
  *                                              //   - "pl7.app/sequencing/readIndex"
  *                                              //   - { name: "pl7.app/sequencing/readIndex" }
@@ -291,6 +297,33 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 		aggregationIndices := pSpec.matchAxes(input.spec.axesSpec, opts.aggregate)
 		processTemplateParams.aggregationIndices = aggregationIndices
 
+		// Collect indices of axes to be anonymized within the aggregation group
+		anonymizationIndices := []
+		anonymizedMatchers := slices.filter(opts.aggregate, func(m) { return is_map(m) && m.anonymize })
+
+		nonAnonymizedAggregationIndices := undefined
+
+		if len(anonymizedMatchers) > 0 {
+			anonymizedAxesIndices := pSpec.matchAxes(input.spec.axesSpec, anonymizedMatchers)
+			anonymizedIndicesSet := slices.toSet(anonymizedAxesIndices)
+
+			nonAnonymizedAggregationIndices = []
+			for i, aggIdx in aggregationIndices {
+				if anonymizedIndicesSet[aggIdx] {
+					anonymizationIndices = append(anonymizationIndices, i)
+				} else {
+					nonAnonymizedAggregationIndices = append(nonAnonymizedAggregationIndices, aggIdx)
+				}
+			}
+
+			if len(anonymizationIndices) > 0 {
+				processTemplateParams.anonymizationIndices = anonymizationIndices
+			}
+		} else {
+			nonAnonymizedAggregationIndices = aggregationIndices
+		}
+
+
 		// calculate iteration axes spec
 		groupAxesIndices := pUtil.calculateGroupAxesIndices(len(input.spec.axesSpec), aggregationIndices)
 		iterationAxesSpec = []
@@ -300,7 +333,7 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 
 		if opts.passAggregationAxesSpec {
 			aggregationAxesSpec := []
-			for i in aggregationIndices {
+			for i in nonAnonymizedAggregationIndices {
 				aggregationAxesSpec = append(aggregationAxesSpec, input.spec.axesSpec[i])
 			}
 
@@ -309,7 +342,7 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 
 		if opts.passAggregationAxesNames {
 			aggregationAxesNames := []
-			for i in aggregationIndices {
+			for i in nonAnonymizedAggregationIndices {
 				aggregationAxesNames = append(aggregationAxesNames, input.spec.axesSpec[i].name)
 			}
 
@@ -323,7 +356,7 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 			passSpec := maps.deepTransform(distilledSpec, {
 				axesSpec: func(axesSpec) {
 					aggregationAxesSpec := []
-					for i in aggregationIndices {
+					for i in nonAnonymizedAggregationIndices {
 						aggregationAxesSpec = append(aggregationAxesSpec, axesSpec[i])
 					}
 					return aggregationAxesSpec

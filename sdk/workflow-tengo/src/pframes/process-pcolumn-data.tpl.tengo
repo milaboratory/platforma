@@ -11,6 +11,7 @@ xsv := import(":pframes.xsv")
 builder := import(":pframes.builder")
 removeNullsLib := import(":pframes.remove-nulls")
 text := import("text")
+anonymize := import(":anonymize")
 
 json := import("json")
 
@@ -25,7 +26,8 @@ self.body(func(inputs) {
 	//   eph: boolean
 	//   passKey: boolean
 	//   outputs: (string)[]
-	//   expectedKeyLength: boolean
+	//   expectedKeyLength: int
+	//   stepCache?: int
 	params := inputs.params
 
 	if is_undefined(params) {
@@ -41,6 +43,7 @@ self.body(func(inputs) {
 	outputs := params.outputs
 	passKey := params.passKey
 	expectedKeyLength := params.expectedKeyLength
+	anonymizationIndices := params.anonymizationIndices
 
 	stepCache := params.stepCache
 	applyCache := func(field) {
@@ -291,7 +294,11 @@ self.body(func(inputs) {
 				renderInputs[pConstants.VALUE_FIELD_NAME] = groupValue
 			} else {
 				// in this case groupValue is a resource constructed above
-				renderInputs[pConstants.VALUE_FIELD_NAME] = groupValue.lockAndBuild()
+				value := groupValue.lockAndBuild()
+				if !is_undefined(anonymizationIndices) && len(anonymizationIndices) > 0 {
+					value = anonymize.anonimizePKeys(value, anonymizationIndices)
+				}
+				renderInputs[pConstants.VALUE_FIELD_NAME] = value
 			}
 
 			for name, field in extraInputs {
