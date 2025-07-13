@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.3.7
+
+### Patch Changes
+
+- bc814d2: Fix: stop click propagation from FileDialogModal
+
 ## 2.3.6
 
 ### Patch Changes
