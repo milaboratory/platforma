@@ -1,0 +1,12 @@
+self := import("@platforma-sdk/workflow-tengo:tpl")
+anonymize := import("@platforma-sdk/workflow-tengo:anonymize")
+
+self.body(func(inputs) {
+	pKeyIndices := inputs.pKeyIndices
+
+	result := anonymize.anonimizePKeys(self.rawInputs().target, pKeyIndices)
+
+	return {
+		result: result
+	}
+})

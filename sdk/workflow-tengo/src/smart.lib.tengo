@@ -1333,7 +1333,7 @@ resourceBuilder = func(r) {
  */
 structBuilder = func(resourceType, ...data) {
 	id := undefined
-	if len(data) > 0 {
+	if len(data) > 0 && !is_undefined(data[0]) {
 		id = tx.createStruct(resourceType.Name, resourceType.Version, data[0])
 	} else {
 		id = tx.createStruct(resourceType.Name, resourceType.Version)

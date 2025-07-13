@@ -1,41 +1,127 @@
 self := import(":tpl.light")
-smart := import(":smart")
 ll := import(":ll")
 fmt := import("fmt")
+json := import("json")
+text := import("text")
+regexp := import(":regexp")
+impl := import(":anonymize.impl")
+slices := import(":slices")
 
 self.defineOutputs("result")
 
-self.body(func() {
-	target := self.rawInputs().target
-
-	targetInfo := target.info()
-
-	ll.assert(len(target.outputs()) == 0, "target resource must not have outputs")
-	ll.assert(len(target.metaInputs()) == 0, "target resource must not have service inputs")
-
-	ll.assert(targetInfo.InputsLocked, "target resource inputs must be locked")
-	ll.assert(targetInfo.OutputsLocked, "target resource outputs must be locked")
-
-	resultBuilder := smart.structBuilder(targetInfo.Type)
-
-	cidCounts := {}
-	for _, field in target.inputs() {
-		value := field.getValue()
-
-		cid := value.info().CanonicalID
-		encodedCid := ll.base32Encode(cid[0:20])
-
-		repetitionIndex := 0
-		if !is_undefined(cidCounts[encodedCid]) {
-			repetitionIndex = cidCounts[encodedCid]
-		}
-		cidCounts[encodedCid] = repetitionIndex + 1
-
-		newFieldName := fmt.sprintf("%s-%d", encodedCid, repetitionIndex)
-		resultBuilder.createInputField(newFieldName).set(value)
+/**
+ * Removes suffix from a field name if present.
+ * If the field name ends with "]", returns the original field name.
+ * Otherwise, finds the last "]" and returns everything up to and including it.
+ *
+ * @param fieldName - The field name to process
+ * @returns The field name without suffix
+ */
+removeSuffix := func(fieldName) {
+	if text.has_suffix(fieldName, "]") {
+		return fieldName
 	}
 
+	lastBracketIndex := text.last_index(fieldName, "]")
+	if lastBracketIndex == -1 {
+		ll.panic("No closing bracket found in field name: %s", fieldName)
+	}
+
+	return fieldName[:lastBracketIndex + 1]
+}
+
+/**
+ * Transforms a key array by removing elements at specified indices and adding an anonymized name.
+ * Uses an O(N) algorithm with sorted indices for efficiency.
+ *
+ * @param keyArray - The original key array
+ * @param pKeyIndices - Sorted array of indices to remove
+ * @param anonimizedName - The anonymized name to add as the last element
+ * @returns The transformed key array
+ */
+transformKey := func(keyArray, pKeyIndices, anonimizedName) {
+	newKeyArray := []
+	indexPointer := 0
+
+	for i, element in keyArray {
+		if indexPointer < len(pKeyIndices) && i == pKeyIndices[indexPointer] {
+			indexPointer++
+		} else {
+			newKeyArray = append(newKeyArray, element)
+		}
+	}
+
+	newKeyArray = append(newKeyArray, anonimizedName)
+
+	return newKeyArray
+}
+
+self.body(func(inputs) {
+	target := self.rawInputs().target.getValue()
+	params := inputs.params
+
+	fieldRegex := params.fieldRegex
+	fieldPrefix := params.fieldPrefix
+	pKeyIndices := params.pKeyIndices
+
+	if !is_undefined(pKeyIndices) && (!is_undefined(fieldRegex) || !is_undefined(fieldPrefix)) {
+		ll.panic("pKeyIndices cannot be used together with fieldRegex or fieldPrefix")
+	}
+
+	options := {}
+
+	if !is_undefined(fieldRegex) {
+		compiledRegex := regexp.compile(fieldRegex)
+		options.fieldMatcher = func(fieldName) {
+			return compiledRegex.match(fieldName)
+		}
+	}
+
+	if !is_undefined(fieldPrefix) {
+		options.fieldNameDeriver = func(originalFieldName, anonymizedFieldName) {
+			return fieldPrefix + anonymizedFieldName
+		}
+	}
+
+	if !is_undefined(pKeyIndices) {
+		if !is_array(pKeyIndices) {
+			ll.panic("pKeyIndices must be an array of integers, got: %v", pKeyIndices)
+		}
+
+		for i, idx in pKeyIndices {
+			if !is_int(idx) {
+				ll.panic("pKeyIndices[%d] must be an integer, got: %v", i, idx)
+			}
+		}
+
+		slices.quickSortInPlace(pKeyIndices)
+
+		options.groupBy = func(fieldName) {
+			return removeSuffix(fieldName)
+		}
+
+		options.fieldNameDeriver = func(originalFieldName, anonymizedFieldName) {
+			keyPart := removeSuffix(originalFieldName)
+
+			suffix := ""
+			if len(originalFieldName) > len(keyPart) {
+				suffix = originalFieldName[len(keyPart):]
+			}
+
+			keyArray := json.decode(keyPart)
+			if !is_array(keyArray) {
+				ll.panic("Expected JSON array for pcolumn key, got: %v", keyArray)
+			}
+
+			newKeyArray := transformKey(keyArray, pKeyIndices, anonymizedFieldName)
+
+			return string(json.encode(newKeyArray)) + suffix
+		}
+	}
+
+	result := impl.anonimizeFields(target, options)
+
 	return {
-		result: resultBuilder.lockAndBuild()
+		result: result
 	}
 })

@@ -1,0 +1,12 @@
+self := import("@platforma-sdk/workflow-tengo:tpl")
+anonymize := import("@platforma-sdk/workflow-tengo:anonymize")
+
+self.body(func(inputs) {
+	params := inputs.params
+
+	result := anonymize.anonimizeFields(self.rawInputs().target, params)
+
+	return {
+		result: result
+	}
+})

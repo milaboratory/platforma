@@ -4,6 +4,7 @@
 render := import(":render")
 assets := import(":assets")
 ll := import(":ll")
+smart := import(":smart")
 times := import("times")
 
 anonymizeImplTpl := assets.importTemplate(":anonymize.impl")
@@ -18,15 +19,98 @@ anonymizeImplTpl := assets.importTemplate(":anonymize.impl")
  * handles repetitions if the same value is encountered multiple times.
  *
  * The output is a reference, not a materialized resource.
+ *
+ * @param target - The target resource to anonymize
+ * @param ...opts - Optional parameters:
+ *   - fieldRegex: string - Regular expression to match field names that should be anonymized
+ *   - fieldPrefix: string - Prefix to add to anonymized field names
  */
-anonymize := func(target) {
+anonimizeFields := func(target, ...opts) {
+	// Process optional parameters
+	options := {}
+	if len(opts) > 0 {
+		if len(opts) == 1 && is_map(opts[0]) {
+			options = opts[0]
+		} else {
+			ll.panic("anonimizeFields: optional parameters must be a single map argument, got: %v", opts)
+		}
+	}
+
+	params := {}
+	if !is_undefined(options.fieldRegex) {
+		params.fieldRegex = options.fieldRegex
+	}
+	if !is_undefined(options.fieldPrefix) {
+		params.fieldPrefix = options.fieldPrefix
+	}
+
 	anonymizeResult := render.create(anonymizeImplTpl, {
-		target: target
+		target: target,
+		params: smart.createJsonResource(params)
+	})
+
+	return anonymizeResult.output("result")
+}
+
+/**
+ * Anonymizes PColumnData resources by transforming PColumn keys to enable deduplication
+ * and recovery mechanisms across different datasets with the same underlying values.
+ *
+ * This function operates specifically on PColumnData resources where field names represent
+ * serialized PColumn keys (JSON arrays like `["key0",1,"key2"]`). It removes specified
+ * key elements at given indices and replaces them with a single anonymized key derived
+ * from the canonical IDs of the grouped values.
+ *
+ * The primary motivation is to prevent specific values of key elements from spoiling
+ * deduplication. This allows the system to detect that even though keys are different,
+ * if the underlying values are the same, this represents the same data. Deduplication
+ * and recovery mechanisms can then pick this up and recover previous results.
+ *
+ * Key transformation process:
+ * 1. Groups fields by their key prefix (handling suffixes like `.index`, `.values`)
+ * 2. For each group, removes key elements at the specified indices from the PColumn key array
+ * 3. Generates an anonymized key based on the canonical IDs of all values in the group
+ * 4. Appends the anonymized key as the last element in the transformed key array
+ * 5. Preserves any field name suffixes (e.g., `.index`, `.values` for binary partitioned data)
+ *
+ * Example: If original key is `["user123", "2023", "data"]` and `pKeyIndices` is `[0]`,
+ * the result might be `["2023", "data", "a1b2c3d4"]` where "a1b2c3d4" is the anonymized
+ * replacement for "user123".
+ *
+ * This creates a resource whose CID depends only on the data values and the structure
+ * of non-anonymized key elements, enabling effective deduplication across different
+ * datasets that contain the same underlying data.
+ *
+ * The output is a reference, not a materialized resource.
+ *
+ * @param target - The target PColumnData resource to anonymize
+ * @param pKeyIndices - Array of integers specifying indices of PColumn key elements to remove and anonymize.
+ *                     These elements will be replaced with a single anonymized key as the last element.
+ */
+anonimizePKeys := func(target, pKeyIndices) {
+	if !is_array(pKeyIndices) {
+		ll.panic("anonimizePKeys: pKeyIndices must be an array of integers, got: %v", pKeyIndices)
+	}
+
+	for i, idx in pKeyIndices {
+		if !is_int(idx) {
+			ll.panic("anonimizePKeys: pKeyIndices[%d] must be an integer, got: %v", i, idx)
+		}
+	}
+
+	params := {
+		pKeyIndices: pKeyIndices
+	}
+
+	anonymizeResult := render.create(anonymizeImplTpl, {
+		target: target,
+		params: smart.createJsonResource(params)
 	})
 
 	return anonymizeResult.output("result")
 }
 
 export ll.toStrict({
-	anonymize: anonymize
+	anonimizeFields: anonimizeFields,
+	anonimizePKeys: anonimizePKeys
 })
