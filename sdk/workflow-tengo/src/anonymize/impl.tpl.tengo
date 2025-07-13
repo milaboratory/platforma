@@ -6,6 +6,8 @@ text := import("text")
 regexp := import(":regexp")
 impl := import(":anonymize.impl")
 slices := import(":slices")
+smart := import(":smart")
+maps := import(":maps")
 
 self.defineOutputs("result")
 
@@ -57,7 +59,19 @@ transformKey := func(keyArray, pKeyIndices, anonimizedName) {
 }
 
 self.body(func(inputs) {
-	target := self.rawInputs().target.getValue()
+	targets := {}
+	isSingleTarget := false
+	if !is_undefined(self.rawInputs().target) {
+		targets = { "default": self.rawInputs().target.getValue() }
+		isSingleTarget = true
+	} else {
+		maps.forEach(self.rawInputs(), func(key, value) {
+			if text.has_prefix(key, "target.") {
+				targets[key[7:]] = value.getValue()
+			}
+		})
+	}
+
 	params := inputs.params
 
 	fieldRegex := params.fieldRegex
@@ -119,9 +133,20 @@ self.body(func(inputs) {
 		}
 	}
 
-	result := impl.anonimizeFields(target, options)
+	result := impl.anonimizeFields(targets, options)
+
+	if isSingleTarget {
+		return {
+			result: result["default"]
+		}
+	}
+
+	builder := smart.mapBuilder()
+	maps.forEach(result, func(key, value) {
+		builder.add(key, value)
+	})
 
 	return {
-		result: result
+		result: builder.lockAndBuild()
 	}
 })

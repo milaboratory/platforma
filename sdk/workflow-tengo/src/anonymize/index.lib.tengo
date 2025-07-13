@@ -6,11 +6,40 @@ assets := import(":assets")
 ll := import(":ll")
 smart := import(":smart")
 times := import("times")
+maps := import(":maps")
 
 anonymizeImplTpl := assets.importTemplate(":anonymize.impl")
 
+_renderAnonymization := func(targets, params) {
+	inputs := {
+		params: smart.createJsonResource(params)
+	}
+
+	isSingleTarget := smart.isReference(targets)
+
+	if isSingleTarget {
+		inputs.target = targets
+	} else {
+		for key, value in targets {
+			inputs["target." + key] = value
+		}
+	}
+
+	anonymizeResult := render.create(anonymizeImplTpl, inputs)
+
+	if isSingleTarget {
+		return anonymizeResult.output("result")
+	} else {
+		result := {}
+		for key in maps.getKeys(targets) {
+			result[key] = anonymizeResult.resolveOutput(["result", key])
+		}
+		return result
+	}
+}
+
 /**
- * Takes a resource (often a map) where values are placed under specific field names,
+ * Takes a resource (often a map) or a map of resources where values are placed under specific field names,
  * and creates a new resource with the same values but with field names derived from
  * the canonical IDs of those values.
  *
@@ -20,7 +49,7 @@ anonymizeImplTpl := assets.importTemplate(":anonymize.impl")
  *
  * The output is a reference, not a materialized resource.
  *
- * @param target - The target resource to anonymize
+ * @param target - The target resource or a map of resources to anonymize
  * @param ...opts - Optional parameters:
  *   - fieldRegex: string - Regular expression to match field names that should be anonymized
  *   - fieldPrefix: string - Prefix to add to anonymized field names
@@ -44,12 +73,7 @@ anonimizeFields := func(target, ...opts) {
 		params.fieldPrefix = options.fieldPrefix
 	}
 
-	anonymizeResult := render.create(anonymizeImplTpl, {
-		target: target,
-		params: smart.createJsonResource(params)
-	})
-
-	return anonymizeResult.output("result")
+	return _renderAnonymization(target, params)
 }
 
 /**
@@ -83,7 +107,7 @@ anonimizeFields := func(target, ...opts) {
  *
  * The output is a reference, not a materialized resource.
  *
- * @param target - The target PColumnData resource to anonymize
+ * @param target - The target PColumnData resource or a map of resources to anonymize
  * @param pKeyIndices - Array of integers specifying indices of PColumn key elements to remove and anonymize.
  *                     These elements will be replaced with a single anonymized key as the last element.
  */
@@ -102,12 +126,7 @@ anonimizePKeys := func(target, pKeyIndices) {
 		pKeyIndices: pKeyIndices
 	}
 
-	anonymizeResult := render.create(anonymizeImplTpl, {
-		target: target,
-		params: smart.createJsonResource(params)
-	})
-
-	return anonymizeResult.output("result")
+	return _renderAnonymization(target, params)
 }
 
 export ll.toStrict({

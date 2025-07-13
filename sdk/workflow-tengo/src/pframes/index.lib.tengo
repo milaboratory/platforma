@@ -6,6 +6,7 @@ ll := import(":ll")
 maps := import(":maps")
 smart := import(":smart")
 slices := import(":slices")
+sets := import(":sets")
 assets := import(":assets")
 render := import(":render")
 builder := import(":pframes.builder")
@@ -305,7 +306,7 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 
 		if len(anonymizedMatchers) > 0 {
 			anonymizedAxesIndices := pSpec.matchAxes(input.spec.axesSpec, anonymizedMatchers)
-			anonymizedIndicesSet := slices.toSet(anonymizedAxesIndices)
+			anonymizedIndicesSet := sets.fromSlice(anonymizedAxesIndices)
 
 			nonAnonymizedAggregationIndices = []
 			for i, aggIdx in aggregationIndices {

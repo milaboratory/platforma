@@ -4,9 +4,9 @@ anonymize := import("@platforma-sdk/workflow-tengo:anonymize")
 self.body(func(inputs) {
 	pKeyIndices := inputs.pKeyIndices
 
-	result := anonymize.anonimizePKeys(self.rawInputs().target, pKeyIndices)
+	result := anonymize.anonimizePKeys({"a": self.rawInputs().target, "b": self.rawInputs().target}, pKeyIndices)
 
 	return {
-		result: result
+		result: result["a"]
 	}
 })
