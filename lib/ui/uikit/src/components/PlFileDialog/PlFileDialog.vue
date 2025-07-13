@@ -101,6 +101,7 @@ const importFiles = (importedFiles: ImportedFiles) => {
     width="688px"
     height="720px"
     @update:model-value="closeModal"
+    @click.stop
   >
     <template #title>{{ title ?? defaultTitle }}</template>
     <div style="margin: 0 24px">
