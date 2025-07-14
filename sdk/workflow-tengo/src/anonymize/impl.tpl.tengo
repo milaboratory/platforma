@@ -14,20 +14,20 @@ self.defineOutputs("result", "mapping")
 
 /**
  * Transforms a key array based on the number of indices provided.
- * - If `pKeyIndices` contains a single index, it replaces the element at that index with `anonimizedName`.
- * - If `pKeyIndices` contains multiple indices, it removes elements at all specified indices and appends `anonimizedName` as the last element.
+ * - If `pKeyIndices` contains a single index, it replaces the element at that index with `anonymizedName`.
+ * - If `pKeyIndices` contains multiple indices, it removes elements at all specified indices and appends `anonymizedName` as the last element.
  *
  * This function assumes `pKeyIndices` is sorted for the multiple-index case and uses an O(N) algorithm for efficiency.
  *
  * @param keyArray - The original key array
  * @param pKeyIndices - Sorted array of indices to either replace or remove
- * @param anonimizedName - The anonymized name to use for replacement or appending
+ * @param anonymizedName - The anonymized name to use for replacement or appending
  * @returns The transformed key array
  */
-transformKey := func(keyArray, pKeyIndices, anonimizedName) {
+transformKey := func(keyArray, pKeyIndices, anonymizedName) {
 	if len(pKeyIndices) == 1 {
 		newKeyArray := copy(keyArray)
-		newKeyArray[pKeyIndices[0]] = anonimizedName
+		newKeyArray[pKeyIndices[0]] = anonymizedName
 		return newKeyArray
 	}
 
@@ -42,7 +42,7 @@ transformKey := func(keyArray, pKeyIndices, anonimizedName) {
 		}
 	}
 
-	newKeyArray = append(newKeyArray, anonimizedName)
+	newKeyArray = append(newKeyArray, anonymizedName)
 
 	return newKeyArray
 }
@@ -151,22 +151,22 @@ self.body(func(inputs) {
 		}
 	}
 
-	anonimizeResult := impl.anonimizeFields(targets, options)
+	anonymizeResult := impl.anonymizeFields(targets, options)
 
 	if isSingleTarget {
 		return {
-			result: anonimizeResult.result["default"],
-			mapping: smart.createJsonResource(anonimizeResult.mapping)
+			result: anonymizeResult.result["default"],
+			mapping: smart.createJsonResource(anonymizeResult.mapping)
 		}
 	}
 
 	builder := smart.mapBuilder()
-	maps.forEach(anonimizeResult.result, func(key, value) {
+	maps.forEach(anonymizeResult.result, func(key, value) {
 		builder.add(key, value)
 	})
 
 	return {
 		result: builder.lockAndBuild(),
-		mapping: smart.createJsonResource(anonimizeResult.mapping)
+		mapping: smart.createJsonResource(anonymizeResult.mapping)
 	}
 })

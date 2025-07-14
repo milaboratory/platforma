@@ -39,7 +39,7 @@ reconstructKey := func(anonymizedKeyArray, targetPKeyIndex, pKeyIndices, mapping
 
 	if len(pKeyIndices) == 1 {
 		// Single index case: insert the raw value back.
-		if pKeyIndices[0] >= len(baseKeyArray) {
+		if pKeyIndices[0] > len(baseKeyArray) {
 			ll.panic("pKeyIndices[0] %d is out of bounds for inserting into base key of length %d", pKeyIndices[0], len(baseKeyArray))
 		}
 		result := copy(baseKeyArray[:pKeyIndices[0]]) + [originalKeyPart] + copy(baseKeyArray[pKeyIndices[0]:])

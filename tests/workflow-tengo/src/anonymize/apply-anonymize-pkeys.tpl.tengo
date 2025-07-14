@@ -5,18 +5,18 @@ self.body(func(inputs) {
 	pKeyIndices := inputs.params.pKeyIndices
 	originalKeyLength := inputs.params.originalKeyLength
 
-	result := anonymize.anonimizePKeys({"a": self.rawInputs().target, "b": self.rawInputs().target}, pKeyIndices)
+	result := anonymize.anonymizePKeys({"a": self.rawInputs().target, "b": self.rawInputs().target}, pKeyIndices)
 
-	deanonimizeResult := undefined
+	deanonymizeResult := undefined
 	if len(pKeyIndices) == 1 {
-		deanonimizeResult = anonymize.deanonimizePKeys(result.result["a"], pKeyIndices[0], pKeyIndices, result.mapping)
+		deanonymizeResult = anonymize.deanonymizePKeys(result.result["a"], pKeyIndices[0], pKeyIndices, result.mapping)
 	} else {
-		deanonimizeResult = anonymize.deanonimizePKeys(result.result["a"], originalKeyLength - len(pKeyIndices), pKeyIndices, result.mapping)
+		deanonymizeResult = anonymize.deanonymizePKeys(result.result["a"], originalKeyLength - len(pKeyIndices), pKeyIndices, result.mapping)
 	}
 
 	return {
 		result: result.result["a"],
-		deanonimizeResult: deanonimizeResult,
+		deanonymizeResult: deanonymizeResult,
 		mapping: result.mapping
 	}
 })

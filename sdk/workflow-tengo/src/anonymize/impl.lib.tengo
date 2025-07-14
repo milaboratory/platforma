@@ -38,14 +38,14 @@ maps := import(":maps")
  *             Default: returns the original field name (each field is its own group).
  * @returns A new resource or a map of new resources with anonymized field names and copied resource data
  */
-anonimizeFields := func(targets, ...opts) {
+anonymizeFields := func(targets, ...opts) {
 	// Process optional parameters
 	options := {}
 	if len(opts) > 0 {
 		if len(opts) == 1 && is_map(opts[0]) {
 			options = opts[0]
 		} else {
-			ll.panic("anonimizeFields: optional parameters must be a single map argument, got: %v", opts)
+			ll.panic("anonymizeFields: optional parameters must be a single map argument, got: %v", opts)
 		}
 	}
 
@@ -72,19 +72,19 @@ anonimizeFields := func(targets, ...opts) {
 
 	// Validate option types
 	if !is_callable(fieldMatcher) {
-		ll.panic("anonimizeFields: fieldMatcher must be a function, got: %v", fieldMatcher)
+		ll.panic("anonymizeFields: fieldMatcher must be a function, got: %v", fieldMatcher)
 	}
 	if !is_callable(fieldNameDeriver) {
-		ll.panic("anonimizeFields: fieldNameDeriver must be a function, got: %v", fieldNameDeriver)
+		ll.panic("anonymizeFields: fieldNameDeriver must be a function, got: %v", fieldNameDeriver)
 	}
 	if !is_callable(groupBy) {
-		ll.panic("anonimizeFields: groupBy must be a function, got: %v", groupBy)
+		ll.panic("anonymizeFields: groupBy must be a function, got: %v", groupBy)
 	}
 	if !is_int(cidBytes) || cidBytes <= 0 {
-		ll.panic("anonimizeFields: cidBytes must be a positive integer, got: %v", cidBytes)
+		ll.panic("anonymizeFields: cidBytes must be a positive integer, got: %v", cidBytes)
 	}
 	if cidBytes % 5 != 0 {
-		ll.panic("anonimizeFields: cidBytes must be a multiple of 5 to maintain base32 encoding alignment, got: %v", cidBytes)
+		ll.panic("anonymizeFields: cidBytes must be a multiple of 5 to maintain base32 encoding alignment, got: %v", cidBytes)
 	}
 
 	isSingleTarget := false
@@ -124,7 +124,7 @@ anonimizeFields := func(targets, ...opts) {
 	groupRepetitionCounts := {}  // anonymizedFieldName -> repetition count
 	anonymizedToGroupId := {}  // anonymizedFieldName -> groupId
 
-	for groupId, concatenatedCIDs in groupCIDs {
+	maps.forEach(groupCIDs, func(groupId, concatenatedCIDs) {
 		hashedCIDs := ll.sha256Encode(concatenatedCIDs)
 		encodedCid := ll.base32Encode(hashedCIDs[0:cidBytes])
 
@@ -136,7 +136,7 @@ anonimizeFields := func(targets, ...opts) {
 		anonymizedName := encodedCid + "-" + repetitionIndex
 		groupAnonymizedNames[groupId] = anonymizedName
 		anonymizedToGroupId[anonymizedName] = groupId
-	}
+	})
 
 	results := {}
 	maps.forEach(targets, func(targetKey, target) {
@@ -173,5 +173,5 @@ anonimizeFields := func(targets, ...opts) {
 }
 
 export ll.toStrict({
-	anonimizeFields: anonimizeFields
+	anonymizeFields: anonymizeFields
 })

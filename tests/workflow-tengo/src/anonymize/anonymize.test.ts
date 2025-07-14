@@ -1,7 +1,7 @@
 import { field, Pl } from '@milaboratories/pl-middle-layer';
 import { tplTest } from '@platforma-sdk/test';
 
-tplTest.concurrent('anonimizeFields simple test', async ({ helper, expect }) => {
+tplTest.concurrent('anonymizeFields simple test', async ({ helper, expect }) => {
   const renderAnonymize = async (target: Record<string, string>) => {
     const result = await helper.renderTemplate(
       true,
@@ -45,12 +45,12 @@ tplTest.concurrent('anonimizeFields simple test', async ({ helper, expect }) => 
   expect(result1Fields!.sort()).toEqual(result2Fields!.sort());
 });
 
-tplTest.concurrent('anonimizePKeys simple test', async ({ helper, expect }) => {
+tplTest.concurrent('anonymizePKeys simple test', async ({ helper, expect }) => {
   const renderAnonymizePKeys = async (target: Record<string, unknown>, pKeyIndices: number[]) => {
     const result = await helper.renderTemplate(
       true,
       'anonymize.apply-anonymize-pkeys',
-      ['result', 'mapping', 'deanonimizeResult'],
+      ['result', 'mapping', 'deanonymizeResult'],
       (tx) => {
         const targetRef = tx.createStruct({ name: 'TestPkeys', version: '1' });
         for (const [key, value] of Object.entries(target)) {
@@ -65,7 +65,7 @@ tplTest.concurrent('anonimizePKeys simple test', async ({ helper, expect }) => {
     );
     return {
       result: result.computeOutput('result', (a) => a?.listInputFields()),
-      deanonimizeResult: result.computeOutput('deanonimizeResult', (a) => a?.listInputFields()),
+      deanonymizeResult: result.computeOutput('deanonymizeResult', (a) => a?.listInputFields()),
       mapping: result.computeOutput('mapping', (a) => a?.getDataAsJson<Record<string, string>>()),
     };
   };
@@ -111,9 +111,9 @@ tplTest.concurrent('anonimizePKeys simple test', async ({ helper, expect }) => {
   expect(result2Fields).toBeDefined();
   expect(result1Fields!.sort()).toEqual(result2Fields!.sort());
 
-  const deanonimizeResult1 = await anonymizeResult1.deanonimizeResult.awaitStableValue();
-  const deanonimizeResult2 = await anonymizeResult2.deanonimizeResult.awaitStableValue();
+  const deanonymizeResult1 = await anonymizeResult1.deanonymizeResult.awaitStableValue();
+  const deanonymizeResult2 = await anonymizeResult2.deanonymizeResult.awaitStableValue();
 
-  expect(deanonimizeResult1!.sort()).toEqual(Object.keys(target1).sort());
-  expect(deanonimizeResult2!.sort()).toEqual(Object.keys(target2).sort());
+  expect(deanonymizeResult1!.sort()).toEqual(Object.keys(target1).sort());
+  expect(deanonymizeResult2!.sort()).toEqual(Object.keys(target2).sort());
 });

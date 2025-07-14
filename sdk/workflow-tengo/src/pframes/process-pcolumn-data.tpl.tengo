@@ -296,7 +296,7 @@ self.body(func(inputs) {
 				// in this case groupValue is a resource constructed above
 				value := groupValue.lockAndBuild()
 				if !is_undefined(anonymizationIndices) && len(anonymizationIndices) > 0 {
-					value = anonymize.anonimizePKeys(value, anonymizationIndices).result
+					value = anonymize.anonymizePKeys(value, anonymizationIndices).result
 				}
 				renderInputs[pConstants.VALUE_FIELD_NAME] = value
 			}
