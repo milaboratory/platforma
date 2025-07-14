@@ -31,7 +31,7 @@ import {
   isJsonEqual,
 } from '@milaboratories/helpers';
 import { makePredicate } from '../../PlTableFilters/filters_logic';
-import { computedCached } from '../../../composition/computedCached';
+import { computedCached } from '@milaboratories/uikit';
 
 type PlDataTableStateV2CacheEntryNullable = PlDataTableStateV2CacheEntry | {
   sourceId: null;
