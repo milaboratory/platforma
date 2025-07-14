@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.3.9
+
+### Patch Changes
+
+- 986c20c: computedCached moved to uikit, watchCached implemented
+
 ## 2.3.8
 
 ### Patch Changes
