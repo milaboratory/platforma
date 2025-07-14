@@ -246,7 +246,7 @@ export function createPFrameForGraphs<A, U>(
 
     const allColumns = columns.getColumns(() => true, { dontWaitAllData: true, overrideLabelAnnotation: false }) ?? [];
     // if at least one column is not yet ready, we can't show the graph
-    if (allColumnsReady(allColumns)) {
+    if (!allColumnsReady(allColumns)) {
       return undefined;
     }
 
@@ -330,7 +330,7 @@ export function createPFrameForGraphs<A, U>(
   }), { dontWaitAllData: true, overrideLabelAnnotation: false }) ?? []).filter((column) => isLabelColumn(column.spec));
 
   // if at least one column is not yet ready, we can't show the graph
-  if (allColumnsReady(compatibleLabels)) {
+  if (!allColumnsReady(compatibleLabels)) {
     return undefined;
   }
 
