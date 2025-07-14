@@ -84,6 +84,7 @@ getColumnSpec := func(axesSpec, col) {
  *                 cpu: number - (optional) number of cores requested for command.
  *                 mem: number | string - (optional) amount of RAM in bytes or string with size suffix
  *                 queue: string - (optional) the name of the queue. Defaults to the light queue.
+ *                 inputCache: duration - (optional) cache duration for execution inputs.
  *               }
  * @return map: reference - a reference to a map resource storing imported data.
  */
@@ -140,6 +141,7 @@ importFile := func(xsvFile, xsvType, spec, ...ops) {
  *                 cpu: number - (optional) number of cores requested for command.
  *                 mem: number | string - (optional) amount of RAM in bytes or string with size suffix
  *                 queue: string - (optional) the name of the queue. Defaults to the light queue.
+ *                 inputCache: duration - (optional) cache duration for execution inputs.
  *               }
  * @return map: reference - a reference to a map resource storing imported data.
  */
@@ -151,7 +153,8 @@ importFileMap := func(xsvMap, xsvType, spec, ...ops) {
 		dataOnly: false,
 		splitDataAndSpec: false,
 		additionalAxesSpec: [],
-		transpose: undefined
+		transpose: undefined,
+		inputCache: undefined
 	}, ops...)
 
 	// spec without any metadata (for caching purposes)
@@ -171,6 +174,9 @@ importFileMap := func(xsvMap, xsvType, spec, ...ops) {
 	}
 	if !is_undefined(ops.queue) {
 		templateOps.queue = ops.queue
+	}
+	if !is_undefined(ops.inputCache) && ops.inputCache > 0 {
+		templateOps.inputCache = ops.inputCache
 	}
 
 	r := render.createEphemeral(importXsvMapTpl, {
@@ -281,6 +287,7 @@ isStructuredPfMap := func(pf) {
  *                 cpu: number - (optional) number of cores requested for command.
  *                 mem: number | string - (optional) amount of RAM in bytes or string with size suffix
  *                 queue: string - (optional) the name of the queue. Defaults to the light queue.
+ *				   inputCache: duration - (optional) cache duration for execution inputs.
  *				 }
  * @return object: reference - a reference to exported xsv file.
  */

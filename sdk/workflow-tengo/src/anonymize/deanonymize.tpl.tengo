@@ -1,0 +1,148 @@
+self := import(":tpl.light")
+ll := import(":ll")
+fmt := import("fmt")
+json := import("json")
+text := import("text")
+smart := import(":smart")
+maps := import(":maps")
+util := import(":anonymize.util")
+
+self.defineOutputs("result")
+
+/**
+ * Reconstructs the original p-column key from its anonymized version.
+ *
+ * @param anonymizedKeyArray - The array representing the anonymized key.
+ * @param targetPKeyIndex - The index of the anonymized component in `anonymizedKeyArray`.
+ * @param pKeyIndices - The original indices of the components that were anonymized.
+ * @param mapping - The mapping from anonymized keys to original key parts.
+ * @returns The reconstructed original key array.
+ */
+reconstructKey := func(anonymizedKeyArray, targetPKeyIndex, pKeyIndices, mapping) {
+	if targetPKeyIndex < 0 || targetPKeyIndex >= len(anonymizedKeyArray) {
+		ll.panic("targetPKeyIndex %d is out of bounds for key: %v", targetPKeyIndex, anonymizedKeyArray)
+	}
+
+	anonymizedComponent := anonymizedKeyArray[targetPKeyIndex]
+	if is_undefined(mapping[anonymizedComponent]) {
+		ll.panic("Anonymized component '%s' not found in mapping.", anonymizedComponent)
+	}
+
+	originalKeyPart := mapping[anonymizedComponent]
+
+	baseKeyArray := []
+	for i, element in anonymizedKeyArray {
+		if i != targetPKeyIndex {
+			baseKeyArray = append(baseKeyArray, element)
+		}
+	}
+
+	if len(pKeyIndices) == 1 {
+		// Single index case: insert the raw value back.
+		if pKeyIndices[0] > len(baseKeyArray) {
+			ll.panic("pKeyIndices[0] %d is out of bounds for inserting into base key of length %d", pKeyIndices[0], len(baseKeyArray))
+		}
+		result := copy(baseKeyArray[:pKeyIndices[0]]) + [originalKeyPart] + copy(baseKeyArray[pKeyIndices[0]:])
+		return result
+	}
+
+	// Multiple indices case: original parts are a JSON-encoded array.
+	originalKeyPartsArray := json.decode(originalKeyPart)
+	if !is_array(originalKeyPartsArray) {
+		ll.panic("Expected JSON array for original key parts, got: %v for key %s", originalKeyPart, anonymizedComponent)
+	}
+
+	if len(originalKeyPartsArray) != len(pKeyIndices) {
+		ll.panic("Mismatch between length of pKeyIndices (%d) and original key parts (%d)", len(pKeyIndices), len(originalKeyPartsArray))
+	}
+
+	pKeyMap := {}
+	for i, idx in pKeyIndices {
+		pKeyMap[idx] = originalKeyPartsArray[i]
+	}
+
+	reconstructedKey := []
+	baseKeyIdx := 0
+	totalLen := len(baseKeyArray) + len(originalKeyPartsArray)
+
+	for i := 0; i < totalLen; i++ {
+		if !is_undefined(pKeyMap[i]) {
+			reconstructedKey = append(reconstructedKey, pKeyMap[i])
+		} else {
+			if baseKeyIdx >= len(baseKeyArray) {
+				ll.panic("Error reconstructing key: baseKeyIdx out of bounds.")
+			}
+			reconstructedKey = append(reconstructedKey, baseKeyArray[baseKeyIdx])
+			baseKeyIdx++
+		}
+	}
+
+	return reconstructedKey
+}
+
+
+self.body(func(inputs) {
+	targets := {}
+	isSingleTarget := false
+	if !is_undefined(self.rawInputs().target) {
+		targets = { default: self.rawInputs().target.getValue() }
+		isSingleTarget = true
+	} else {
+		maps.forEach(self.rawInputs(), func(key, value) {
+			if text.has_prefix(key, "target.") {
+				targets[key[7:]] = value.getValue()
+			}
+		})
+	}
+
+	params := inputs.params
+	targetPKeyIndex := params.targetPKeyIndex
+	pKeyIndices := params.pKeyIndices
+	mapping := inputs.mapping
+
+	if is_undefined(targetPKeyIndex) || !is_int(targetPKeyIndex) {
+		ll.panic("targetPKeyIndex must be an integer, got: %v", targetPKeyIndex)
+	}
+	if is_undefined(pKeyIndices) || !is_array(pKeyIndices) {
+		ll.panic("pKeyIndices must be an array of integers, got: %v", pKeyIndices)
+	}
+	for i, idx in pKeyIndices {
+		if !is_int(idx) {
+			ll.panic("pKeyIndices[%d] must be an integer, got: %v", i, idx)
+		}
+	}
+
+	results := {}
+	maps.forEach(targets, func(targetKey, target) {
+		targetInfo := target.info()
+		resultBuilder := smart.structBuilder(targetInfo.Type, target.getData())
+		maps.forEach(target.inputs(), func(fieldName, field) {
+			value := field.getValue()
+
+			decoded := util.decodePDataField(fieldName)
+
+			reconstructedKeyArray := reconstructKey(decoded.key, targetPKeyIndex, pKeyIndices, mapping)
+
+			finalFieldName := string(json.encode(reconstructedKeyArray)) + decoded.suffix
+
+			resultBuilder.createInputField(finalFieldName).set(value)
+		})
+		results[targetKey] = resultBuilder.lockAndBuild()
+	})
+
+
+	if isSingleTarget {
+		return {
+			result: results["default"]
+		}
+	}
+
+	builder := smart.mapBuilder()
+	maps.forEach(results, func(key, value) {
+		builder.add(key, value)
+	})
+
+	return {
+		result: builder.lockAndBuild()
+	}
+})

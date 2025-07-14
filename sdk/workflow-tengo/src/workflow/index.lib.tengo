@@ -405,6 +405,7 @@ export ll.toStrict({
 	resolve: resolve,
 	anchoredQuery: anchoredQuery,
 	prepare: prepare,
+	rawInputs: self.rawInputs,
 	body: body,
 	setPreRun: setPreRun,
 	blockId: blockId,

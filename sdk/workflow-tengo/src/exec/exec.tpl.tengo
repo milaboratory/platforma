@@ -130,7 +130,7 @@ self.body(func(inputs) {
 		assetCache: inputs.assetCache
 	}, { removeUndefs: true }))
 
-	execImpl := render.createEphemeral(execImplTpl, pureImplInputs, metaImplInputs)
+	execImpl := render.createEphemeral(execImplTpl, pureImplInputs, { metaInputs: metaImplInputs })
 
 	return {
 		files: execImpl.output("files"),

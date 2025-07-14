@@ -6,6 +6,7 @@ exec := import(":exec")
 json := import("json")
 text := import("text")
 slices := import(":slices")
+validation := import(":validation")
 execConstants := import(":exec.constants")
 
 /**
@@ -166,6 +167,7 @@ workflow := func() {
 				if smart.isReference(frameInput) {
 					fileRef = frameInput
 				} else {
+					validation.assertType(frameInput, ["or", "string", "bytes"])
 					fileContent = frameInput
 				}
 			}

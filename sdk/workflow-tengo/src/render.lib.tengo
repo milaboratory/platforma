@@ -22,14 +22,27 @@ _SUBSCRIPTION_FIELD := "subscription"
  * @param tpl: template resource (see assets.importTemplate())
  * @param isEph: whether template is ephemeral
  * @param inputs: a map of inputs to be passed to the template
- * @param metaInputs: (optional) a map of meta inputs to be passed to the template.
+ * @param opts: (optional) a map of options:
+ *              - metaInputs: (optional) a map of meta inputs to be passed to the template.
  *                                  Meta inputs are not accounted in dedupliation and recovering.
  *                                  Two resources with the same <inputs> and different <metaInputs>
  *                                  would be considered as copies of each-other.
+ *              - inputCache: (optional) a cache time from 'times' library for all inputs.
+ *                                  Can be used only with non-ephemeral templates.
  * @return renderer: a smart resource with additional output("name") method
  */
 createUniversal := func(tpl, isEph, inputs, ...opts) {
-	metaInputs := opts[0]
+	ll.assert(len(opts) <= 1, "too many arguments, expected at most one options object")
+	metaInputs := undefined
+	inputCache := undefined
+	if len(opts) == 1 && opts[0] {
+		metaInputs = opts[0].metaInputs
+		inputCache = opts[0].inputCache
+	}
+
+	if !is_undefined(inputCache) && inputCache > 0 && isEph {
+		ll.panic("inputCache option cannot be used with ephemeral templates")
+	}
 
 	// build renderer resource
 	rbuilder := undefined
@@ -49,17 +62,27 @@ createUniversal := func(tpl, isEph, inputs, ...opts) {
 
 	// inputs input
 	inputsMap := isEph ? smart.ephemeralMapBuilder() : smart.mapBuilder()
+	inputAddOpts := undefined
+	if !is_undefined(inputCache) && inputCache > 0 {
+		inputAddOpts = { cache: inputCache }
+	}
 	for name, value in inputs {
 		if !is_undefined(value) {
-			inputsMap.add(name, value)
-		}
-	}
-	for name, value in metaInputs {
-		if !is_undefined(value) {
-			if feats.serviceFields {
-				inputsMap.addMeta(name, value)
+			if !is_undefined(inputAddOpts) {
+				inputsMap.add(name, value, inputAddOpts)
 			} else {
 				inputsMap.add(name, value)
+			}
+		}
+	}
+	if !is_undefined(metaInputs) {
+		for name, value in metaInputs {
+			if !is_undefined(value) {
+				if feats.serviceFields {
+					inputsMap.addMeta(name, value)
+				} else {
+					inputsMap.add(name, value)
+				}
 			}
 		}
 	}
@@ -148,10 +171,12 @@ createUniversal := func(tpl, isEph, inputs, ...opts) {
  *
  * @param tpl: template resource (see assets.importTemplate())
  * @param inputs: a map of inputs to be passed to the template
- * @param metaInputs: (optional) a map of meta inputs to be passed to the template.
+ * @param opts: (optional) a map of options:
+ *              - metaInputs: (optional) a map of meta inputs to be passed to the template.
  *                                  Meta inputs are not accounted in dedupliation and recovering.
  *                                  Two resources with the same <inputs> and different <metaInputs>
  *                                  would be considered as copies of each-other.
+ *              - inputCache: (optional) a cache time from 'times' library for all inputs.
  * @return renderer: a smart resource with additional output("name") method
  */
 create := func(tpl, inputs, ...opts) {
@@ -163,7 +188,8 @@ create := func(tpl, inputs, ...opts) {
  *
  * @param tpl: template resource (see assets.importTemplate())
  * @param inputs: a map of inputs to be passed to the template
- * @param metaInputs: (optional) a map of meta inputs to be passed to the template.
+ * @param opts: (optional) a map of options:
+ *              - metaInputs: (optional) a map of meta inputs to be passed to the template.
  *                                  The split into <inputs> and <metaInputs> has no
  *                                  effect on ephemeral templates, as they do not
  *                                  have deduplication.

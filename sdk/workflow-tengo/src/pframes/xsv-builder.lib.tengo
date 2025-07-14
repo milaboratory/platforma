@@ -2,6 +2,7 @@ ll := import(":ll")
 maps := import(":maps")
 strings := import(":strings")
 text := import("text")
+times := import("times")
 pSpec := import(":pframes.spec")
 pBuilder := import(":pframes.builder")
 xsv := import(":pframes.xsv")
@@ -24,6 +25,7 @@ xsvFileBuilder := func(xsvType) {
     cpu := undefined
     mem := undefined
     queue := undefined
+    inputCache := undefined
 
     getSpecDistiller := func() {
         if is_undefined(distiller) {
@@ -358,6 +360,75 @@ xsvFileBuilder := func(xsvType) {
         },
 
         /**
+         * Sets the cache time.
+         *
+         * @param time: duration - the cache time from 'times' library.
+         */
+        cacheInputs: func(time) {
+            ll.assert(
+                is_int(time),
+                "cache time must be an integer. " +
+                "Did you forget to import a standard tengo library 'times'?")
+            inputCache = time
+            return self
+        },
+
+        /**
+         * Sets the input cache time in milliseconds.
+         *
+         * @param millis: number
+         */
+        cacheInputsMillis: func(millis) {
+            ll.assert(is_int(millis) && millis > 0, "cache time must be a number of milliseconds")
+            inputCache = millis * times.millisecond
+            return self
+        },
+
+        /**
+         * Sets the input cache time in seconds.
+         *
+         * @param seconds: number
+         */
+        cacheInputsSeconds: func(seconds) {
+            ll.assert(is_int(seconds) && seconds > 0, "cache time must be a number of seconds")
+            inputCache = seconds * times.second
+            return self
+        },
+
+        /**
+         * Sets the input cache time in minutes.
+         *
+         * @param minutes: number
+         */
+        cacheInputsMinutes: func(minutes) {
+            ll.assert(is_int(minutes) && minutes > 0, "cache time must be a number of minutes")
+            inputCache = minutes * times.minute
+            return self
+        },
+
+        /**
+         * Sets the input cache time in hours.
+         *
+         * @param hours: number
+         */
+        cacheInputsHours: func(hours) {
+            ll.assert(is_int(hours) && hours > 0, "cache time must be a number of hours")
+            inputCache = hours * times.hour
+            return self
+        },
+
+        /**
+         * Sets the input cache time in days
+         *
+         * @param days: number
+         */
+        cacheInputsDays: func(days) {
+            ll.assert(is_int(days) && days > 0, "cache time must be a number of days")
+            inputCache = days * times.hour * 24
+            return self
+        },
+
+        /**
          * Sets the number of CPUs to request from the underlying executor (i.e. Google/AWS Batch, PBS, Slurm, etc.).
          *
          * @param amount: number - number of cores requested for command.
@@ -623,6 +694,9 @@ xsvFileBuilder := func(xsvType) {
             if !is_undefined(queue) {
                 ops.queue = queue
             }
+            if !is_undefined(inputCache) {
+                ops.inputCache = inputCache
+            }
 
             return xsv.exportFrame(pFrame, xsvType, currentExportParams, ops)
         },
@@ -671,6 +745,9 @@ xsvFileBuilder := func(xsvType) {
             }
             if !is_undefined(queue) {
                 ops.queue = queue
+            }
+            if !is_undefined(inputCache) {
+                ops.inputCache = inputCache
             }
 
             tableResource := xsv.exportFrame(pFrame, xsvType, finalExportParams, ops)

@@ -11,6 +11,7 @@ xsv := import(":pframes.xsv")
 builder := import(":pframes.builder")
 removeNullsLib := import(":pframes.remove-nulls")
 text := import("text")
+anonymize := import(":anonymize")
 
 json := import("json")
 
@@ -25,7 +26,8 @@ self.body(func(inputs) {
 	//   eph: boolean
 	//   passKey: boolean
 	//   outputs: (string)[]
-	//   expectedKeyLength: boolean
+	//   expectedKeyLength: int
+	//   stepCache?: int
 	params := inputs.params
 
 	if is_undefined(params) {
@@ -41,6 +43,15 @@ self.body(func(inputs) {
 	outputs := params.outputs
 	passKey := params.passKey
 	expectedKeyLength := params.expectedKeyLength
+	anonymizationIndices := params.anonymizationIndices
+
+	stepCache := params.stepCache
+	applyCache := func(field) {
+		if !is_undefined(stepCache) && stepCache > 0 {
+			field.setCache(stepCache)
+		}
+		return field
+	}
 
 	if !is_array(aggregationIndices) && !is_undefined(aggregationIndices) {
 		ll.panic("Wrong indices parameter type: %v", aggregationIndices)
@@ -283,14 +294,18 @@ self.body(func(inputs) {
 				renderInputs[pConstants.VALUE_FIELD_NAME] = groupValue
 			} else {
 				// in this case groupValue is a resource constructed above
-				renderInputs[pConstants.VALUE_FIELD_NAME] = groupValue.lockAndBuild()
+				value := groupValue.lockAndBuild()
+				if !is_undefined(anonymizationIndices) && len(anonymizationIndices) > 0 {
+					value = anonymize.anonymizePKeys(value, anonymizationIndices).result
+				}
+				renderInputs[pConstants.VALUE_FIELD_NAME] = value
 			}
 
 			for name, field in extraInputs {
 				renderInputs[name] = field
 			}
 
-			renderResult := render.createUniversal(body, eph, renderInputs, metaInputs)
+			renderResult := render.createUniversal(body, eph, renderInputs, { metaInputs: metaInputs })
 			for output in outputs {
 				path := output.path
 				if is_undefined(path) {
@@ -322,6 +337,10 @@ self.body(func(inputs) {
 						importOps.queue = params.queue
 					}
 
+					if !is_undefined(params.inputCache) && params.inputCache > 0 {
+						importOps.inputCache = params.inputCache
+					}
+
 					pf := xsv.importFile(ref, output.xsvType, output.settings, importOps)
 					for col in output.settings.columns {
 						id := pUtil.xsvColumnId(col)
@@ -329,8 +348,8 @@ self.body(func(inputs) {
 						outputMaps[output.name][id][sGroupKey] = data
 					}
 				} else {
-					outputMaps[output.name].
-						createInputField(sGroupKey).
+					applyCache(outputMaps[output.name].
+						createInputField(sGroupKey)).
 						set(ref)
 				}
 			}
@@ -406,13 +425,13 @@ self.body(func(inputs) {
 							if unwrapZeroPartition {
 								if binary {
 									for suffix in [".index", ".values"] {
-										dataRes.createInputField(sGroupKey + suffix).set(partData.buildFutureField({name: pUtil.EMPTY_JSON_KEY + suffix, optional: true}))
+										applyCache(dataRes.createInputField(sGroupKey + suffix)).set(partData.buildFutureField({name: pUtil.EMPTY_JSON_KEY + suffix, optional: true}))
 									}
 								} else {
-									dataRes.createInputField(sGroupKey).set(partData.buildFutureField({name: pUtil.EMPTY_JSON_KEY, optional: true}))
+									applyCache(dataRes.createInputField(sGroupKey)).set(partData.buildFutureField({name: pUtil.EMPTY_JSON_KEY, optional: true}))
 								}
 							} else {
-								dataRes.createInputField(sGroupKey).set(partData)
+								applyCache(dataRes.createInputField(sGroupKey)).set(partData)
 							}
 						}
 						columnResults[id] = removeNullsLib.removeNulls(dataRes.lockAndBuild())

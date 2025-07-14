@@ -1,0 +1,56 @@
+ll := import(":ll")
+text := import("text")
+json := import("json")
+
+/**
+ * Removes suffix from a field name if present.
+ * If the field name ends with "]", returns the original field name.
+ * Otherwise, finds the last "]" and returns everything up to and including it.
+ *
+ * @param fieldName - The field name to process
+ * @returns The field name without suffix
+ */
+removeSuffix := func(fieldName) {
+	if text.has_suffix(fieldName, "]") {
+		return fieldName
+	}
+
+	lastBracketIndex := text.last_index(fieldName, "]")
+	if lastBracketIndex == -1 {
+		ll.panic("No closing bracket found in field name: %s", fieldName)
+	}
+
+	return fieldName[:lastBracketIndex+1]
+}
+
+/**
+ * Decodes a pdata field name into its constituent parts.
+ * A pdata field name is expected to be a JSON array string, optionally followed by a suffix.
+ * e.g., '["a",1,"b"].c'
+ *
+ * @param fieldName - The pdata field name string.
+ * @returns An object with `key` (the decoded JSON array) and `suffix`.
+ */
+decodePDataField := func(fieldName) {
+	keyPart := removeSuffix(fieldName)
+
+	suffix := ""
+	if len(fieldName) > len(keyPart) {
+		suffix = fieldName[len(keyPart):]
+	}
+
+	keyArray := json.decode(keyPart)
+	if !is_array(keyArray) {
+		ll.panic("Expected JSON array for pcolumn key, got: %v", keyArray)
+	}
+
+	return {
+		key: keyArray,
+		suffix: suffix
+	}
+}
+
+export ll.toStrict({
+	removeSuffix: removeSuffix,
+	decodePDataField: decodePDataField
+})

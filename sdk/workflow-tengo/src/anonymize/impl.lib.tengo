@@ -1,0 +1,177 @@
+smart := import(":smart")
+ll := import(":ll")
+fmt := import("fmt")
+maps := import(":maps")
+
+/**
+ * Low-level function that implements the anonymization algorithm for resource field names.
+ *
+ * Takes a resource (often a map) or a map of resources where values are placed under specific field names,
+ * and creates a new resource or a map of resources with the same values but with field names derived from
+ * the canonical IDs of those values.
+ *
+ * This effectively creates a map whose own CID does not depend on the field names
+ * (keys) of the original map, but only on its values. It models a "Set" and also
+ * handles repetitions if the same value is encountered multiple times.
+ *
+ * When a map of targets is provided, the anonymization is performed collectively.
+ * The same group IDs across different targets are anonymized to the same name, based
+ * on the combined CIDs of all values in that group.
+ *
+ * **Important**: This function works on final resources only. If you need to anonymize
+ * a resource that is not yet final (i.e., not fully resolved), use the `anonymize` function
+ * from the index file in this folder instead.
+ *
+ * @param targets - The target resource or a map of target resources to anonymize. Must be final, with no outputs or meta inputs.
+ * @param ...opts - Optional parameters:
+ *   - fieldMatcher: function(fieldName) -> bool - A predicate function that determines which fields should be anonymized.
+ *                   Receives the field name (string) and returns true if the field should be anonymized.
+ *                   Default: all fields are anonymized.
+ *   - fieldNameDeriver: function(originalFieldName, anonymizedFieldName) -> string - A function that receives the
+ *                      original field name and the generated anonymized field name, and returns the final field name.
+ *                      This can be used to add prefixes, modify keys for complex contexts like pcolumn keys, etc.
+ *                      Default: returns the anonymized field name as-is.
+ *   - cidBytes: number - Number of bytes to use from the canonical ID for anonymization. Must be a multiple of 5
+ *              to maintain base32 encoding alignment (no padding). Default: 20.
+ *   - groupBy: function(fieldName) -> string - A function that determines how fields are grouped before anonymization.
+ *             Fields with the same group ID will be anonymized together based on their collective CIDs.
+ *             Default: returns the original field name (each field is its own group).
+ * @returns A new resource or a map of new resources with anonymized field names and copied resource data
+ */
+anonymizeFields := func(targets, ...opts) {
+	// Process optional parameters
+	options := {}
+	if len(opts) > 0 {
+		if len(opts) == 1 && is_map(opts[0]) {
+			options = opts[0]
+		} else {
+			ll.panic("anonymizeFields: optional parameters must be a single map argument, got: %v", opts)
+		}
+	}
+
+	// Set default values for options
+	fieldMatcher := options.fieldMatcher
+	if is_undefined(fieldMatcher) {
+		fieldMatcher = func(fieldName) { return true }
+	}
+
+	fieldNameDeriver := options.fieldNameDeriver
+	if is_undefined(fieldNameDeriver) {
+		fieldNameDeriver = func(originalFieldName, anonymizedFieldName) { return anonymizedFieldName }
+	}
+
+	cidBytes := options.cidBytes
+	if is_undefined(cidBytes) {
+		cidBytes = 20
+	}
+
+	groupBy := options.groupBy
+	if is_undefined(groupBy) {
+		groupBy = func(fieldName) { return fieldName }
+	}
+
+	// Validate option types
+	if !is_callable(fieldMatcher) {
+		ll.panic("anonymizeFields: fieldMatcher must be a function, got: %v", fieldMatcher)
+	}
+	if !is_callable(fieldNameDeriver) {
+		ll.panic("anonymizeFields: fieldNameDeriver must be a function, got: %v", fieldNameDeriver)
+	}
+	if !is_callable(groupBy) {
+		ll.panic("anonymizeFields: groupBy must be a function, got: %v", groupBy)
+	}
+	if !is_int(cidBytes) || cidBytes <= 0 {
+		ll.panic("anonymizeFields: cidBytes must be a positive integer, got: %v", cidBytes)
+	}
+	if cidBytes % 5 != 0 {
+		ll.panic("anonymizeFields: cidBytes must be a multiple of 5 to maintain base32 encoding alignment, got: %v", cidBytes)
+	}
+
+	isSingleTarget := false
+	if smart.isReference(targets) {
+		isSingleTarget = true
+		targets = { "default": targets }
+	}
+
+	groupCIDs := {}  // groupId -> concatenated CIDs bytes
+
+	maps.forEach(targets, func(targetKey, target) {
+		targetInfo := target.info()
+
+		ll.assert(target.isFinal(), "target resource must be final")
+
+		ll.assert(len(ll.fromStrict(target.outputs())) == 0, "target resource must not have outputs")
+		ll.assert(len(ll.fromStrict(target.metaInputs())) == 0, "target resource must not have service inputs")
+
+		maps.forEach(target.inputs(), func(fieldName, field) {
+			if !fieldMatcher(fieldName) {
+				return
+			}
+
+			groupId := groupBy(fieldName)
+			value := field.getValue()
+			cid := value.info().CanonicalID
+
+			if is_undefined(groupCIDs[groupId]) {
+				groupCIDs[groupId] = bytes(0)
+			}
+
+			groupCIDs[groupId] = groupCIDs[groupId] + cid
+		})
+	})
+
+	groupAnonymizedNames := {}  // groupId -> anonymizedFieldName
+	groupRepetitionCounts := {}  // anonymizedFieldName -> repetition count
+	anonymizedToGroupId := {}  // anonymizedFieldName -> groupId
+
+	maps.forEach(groupCIDs, func(groupId, concatenatedCIDs) {
+		hashedCIDs := ll.sha256Encode(concatenatedCIDs)
+		encodedCid := ll.base32Encode(hashedCIDs[0:cidBytes])
+
+		repetitionIndex := 0
+		if !is_undefined(groupRepetitionCounts[encodedCid]) {
+			repetitionIndex = groupRepetitionCounts[encodedCid]
+		}
+		groupRepetitionCounts[encodedCid] = repetitionIndex + 1
+		anonymizedName := encodedCid + "-" + repetitionIndex
+		groupAnonymizedNames[groupId] = anonymizedName
+		anonymizedToGroupId[anonymizedName] = groupId
+	})
+
+	results := {}
+	maps.forEach(targets, func(targetKey, target) {
+		targetInfo := target.info()
+		resultBuilder := smart.structBuilder(targetInfo.Type, target.getData())
+		maps.forEach(target.inputs(), func(fieldName, field) {
+			value := field.getValue()
+
+			if !fieldMatcher(fieldName) {
+				resultBuilder.createInputField(fieldName).set(value)
+				return
+			}
+
+			groupId := groupBy(fieldName)
+			anonymizedFieldName := groupAnonymizedNames[groupId]
+			finalFieldName := fieldNameDeriver(fieldName, anonymizedFieldName)
+
+			resultBuilder.createInputField(finalFieldName).set(value)
+		})
+		results[targetKey] = resultBuilder.lockAndBuild()
+	})
+
+	if isSingleTarget {
+		return {
+			result: results["default"],
+			mapping: anonymizedToGroupId
+		}
+	} else {
+		return {
+			result: results,
+			mapping: anonymizedToGroupId
+		}
+	}
+}
+
+export ll.toStrict({
+	anonymizeFields: anonymizeFields
+})

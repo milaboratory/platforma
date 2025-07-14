@@ -78,6 +78,7 @@ getColumnSpec := func(axesSpec, col) {
  *                 cpu: number - (optional) number of cores requested for command.
  *                 mem: number | string - (optional) amount of RAM in bytes or string with size suffix
  *                 queue: string - (optional) the name of the queue. Defaults to the light queue.
+ *                 inputCache: duration - (optional) cache duration for execution inputs.
  *               }
  * @return map: reference - a reference to a map resource storing imported data.
  */
@@ -96,7 +97,7 @@ importFile := func(xsvFile, xsvType, spec, ...ops) {
 
 	xsvFileName := "file." + xsvType
 
-	ops := renderOps({ dataOnly: false, splitDataAndSpec: false, queue: execConstants.LIGHT_QUEUE }, ops...)
+	ops := renderOps({ dataOnly: false, splitDataAndSpec: false, queue: execConstants.LIGHT_QUEUE, inputCache: undefined }, ops...)
 
 	if ops.transpose != undefined {
 
@@ -117,6 +118,9 @@ importFile := func(xsvFile, xsvType, spec, ...ops) {
 		}
 		if ops.mem != undefined {
 			transposeXsv.mem(ops.mem)
+		}
+		if ops.inputCache != undefined && ops.inputCache > 0 {
+			transposeXsv.cacheInputs(ops.inputCache)
 		}
 
 		if (tops.separator != undefined) {
@@ -180,6 +184,9 @@ importFile := func(xsvFile, xsvType, spec, ...ops) {
 	}
 	if ops.mem != undefined {
 		pfconv.mem(ops.mem)
+	}
+	if ops.inputCache != undefined && ops.inputCache > 0 {
+		pfconv.cacheInputs(ops.inputCache)
 	}
 
 	pfconv = pfconv.run()

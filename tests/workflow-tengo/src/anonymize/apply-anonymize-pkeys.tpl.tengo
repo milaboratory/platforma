@@ -1,0 +1,22 @@
+self := import("@platforma-sdk/workflow-tengo:tpl")
+anonymize := import("@platforma-sdk/workflow-tengo:anonymize")
+
+self.body(func(inputs) {
+	pKeyIndices := inputs.params.pKeyIndices
+	originalKeyLength := inputs.params.originalKeyLength
+
+	result := anonymize.anonymizePKeys({"a": self.rawInputs().target, "b": self.rawInputs().target}, pKeyIndices)
+
+	deanonymizeResult := undefined
+	if len(pKeyIndices) == 1 {
+		deanonymizeResult = anonymize.deanonymizePKeys(result.result["a"], pKeyIndices[0], pKeyIndices, result.mapping)
+	} else {
+		deanonymizeResult = anonymize.deanonymizePKeys(result.result["a"], originalKeyLength - len(pKeyIndices), pKeyIndices, result.mapping)
+	}
+
+	return {
+		result: result.result["a"],
+		deanonymizeResult: deanonymizeResult,
+		mapping: result.mapping
+	}
+})
