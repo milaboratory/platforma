@@ -1,5 +1,14 @@
 # @platforma-sdk/model
 
+## 1.39.18
+
+### Patch Changes
+
+- c12345a: createPFrameForGraphs can be used without block's columns
+- c12345a: createPFrameForGraphs update
+- Updated dependencies [c12345a]
+  - @milaboratories/pl-model-common@1.16.4
+
 ## 1.39.8
 
 ### Patch Changes
