@@ -206,17 +206,17 @@ function getAdditionalColumnsForColumn(
 }
 
 function isColumnReady(c: PColumn<PColumnDataUniversal>) {
-  let notReady = true;
+  let ready = true;
   if (c.data instanceof TreeNodeAccessor) {
-    notReady = c.data.getIsReadyOrError();
+    ready = c.data.getIsReadyOrError();
   } else if (isDataInfo(c.data)) {
     visitDataInfo(c.data, (v) => {
-      if (v.getIsReadyOrError()) {
-        notReady = false;
+      if (!v.getIsReadyOrError()) {
+        ready = false;
       }
     });
   }
-  return notReady;
+  return ready;
 }
 
 /**

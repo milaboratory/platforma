@@ -198,10 +198,6 @@ export function visitDataInfo<B>(
   dataInfo: DataInfo<B>,
   cb: (blob: B) => void,
 ): void {
-  if (dataInfo === undefined) {
-    return;
-  }
-
   switch (dataInfo.type) {
     case 'Json':
       // Json type doesn't contain blobs, so return as is
