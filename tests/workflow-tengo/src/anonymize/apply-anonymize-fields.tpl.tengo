@@ -7,6 +7,7 @@ self.body(func(inputs) {
 	result := anonymize.anonimizeFields(self.rawInputs().target, params)
 
 	return {
-		result: result
+		result: result.result,
+		mapping: result.mapping
 	}
 })

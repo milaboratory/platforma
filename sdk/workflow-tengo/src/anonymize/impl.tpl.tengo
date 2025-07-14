@@ -9,7 +9,7 @@ slices := import(":slices")
 smart := import(":smart")
 maps := import(":maps")
 
-self.defineOutputs("result")
+self.defineOutputs("result", "mapping")
 
 /**
  * Removes suffix from a field name if present.
@@ -33,15 +33,24 @@ removeSuffix := func(fieldName) {
 }
 
 /**
- * Transforms a key array by removing elements at specified indices and adding an anonymized name.
- * Uses an O(N) algorithm with sorted indices for efficiency.
+ * Transforms a key array based on the number of indices provided.
+ * - If `pKeyIndices` contains a single index, it replaces the element at that index with `anonimizedName`.
+ * - If `pKeyIndices` contains multiple indices, it removes elements at all specified indices and appends `anonimizedName` as the last element.
+ *
+ * This function assumes `pKeyIndices` is sorted for the multiple-index case and uses an O(N) algorithm for efficiency.
  *
  * @param keyArray - The original key array
- * @param pKeyIndices - Sorted array of indices to remove
- * @param anonimizedName - The anonymized name to add as the last element
+ * @param pKeyIndices - Sorted array of indices to either replace or remove
+ * @param anonimizedName - The anonymized name to use for replacement or appending
  * @returns The transformed key array
  */
 transformKey := func(keyArray, pKeyIndices, anonimizedName) {
+	if len(pKeyIndices) == 1 {
+		newKeyArray := copy(keyArray)
+		newKeyArray[pKeyIndices[0]] = anonimizedName
+		return newKeyArray
+	}
+
 	newKeyArray := []
 	indexPointer := 0
 
@@ -56,6 +65,33 @@ transformKey := func(keyArray, pKeyIndices, anonimizedName) {
 	newKeyArray = append(newKeyArray, anonimizedName)
 
 	return newKeyArray
+}
+
+/**
+ * Decodes a pdata field name into its constituent parts.
+ * A pdata field name is expected to be a JSON array string, optionally followed by a suffix.
+ * e.g., '["a",1,"b"].c'
+ *
+ * @param fieldName - The pdata field name string.
+ * @returns An object with `key` (the decoded JSON array) and `suffix`.
+ */
+decodePDataField := func(fieldName) {
+	keyPart := removeSuffix(fieldName)
+
+	suffix := ""
+	if len(fieldName) > len(keyPart) {
+		suffix = fieldName[len(keyPart):]
+	}
+
+	keyArray := json.decode(keyPart)
+	if !is_array(keyArray) {
+		ll.panic("Expected JSON array for pcolumn key, got: %v", keyArray)
+	}
+
+	return {
+		key: keyArray,
+		suffix: suffix
+	}
 }
 
 self.body(func(inputs) {
@@ -111,42 +147,46 @@ self.body(func(inputs) {
 		slices.quickSortInPlace(pKeyIndices)
 
 		options.groupBy = func(fieldName) {
-			return removeSuffix(fieldName)
+			decoded := decodePDataField(fieldName)
+			if len(pKeyIndices) == 1 {
+				if pKeyIndices[0] >= len(decoded.key) {
+					ll.panic("pKeyIndices[%d] is out of bounds for key: %v", pKeyIndices[0], decoded.key)
+				}
+				return decoded.key[pKeyIndices[0]]
+			}
+			groupKey := []
+			for idx in pKeyIndices {
+				if idx >= len(decoded.key) {
+					ll.panic("pKeyIndices[%d] is out of bounds for key: %v", idx, decoded.key)
+				}
+				groupKey = append(groupKey, decoded.key[idx])
+			}
+			return string(json.encode(groupKey))
 		}
 
 		options.fieldNameDeriver = func(originalFieldName, anonymizedFieldName) {
-			keyPart := removeSuffix(originalFieldName)
-
-			suffix := ""
-			if len(originalFieldName) > len(keyPart) {
-				suffix = originalFieldName[len(keyPart):]
-			}
-
-			keyArray := json.decode(keyPart)
-			if !is_array(keyArray) {
-				ll.panic("Expected JSON array for pcolumn key, got: %v", keyArray)
-			}
-
-			newKeyArray := transformKey(keyArray, pKeyIndices, anonymizedFieldName)
-
-			return string(json.encode(newKeyArray)) + suffix
+			decoded := decodePDataField(originalFieldName)
+			newKeyArray := transformKey(decoded.key, pKeyIndices, anonymizedFieldName)
+			return string(json.encode(newKeyArray)) + decoded.suffix
 		}
 	}
 
-	result := impl.anonimizeFields(targets, options)
+	anonimizeResult := impl.anonimizeFields(targets, options)
 
 	if isSingleTarget {
 		return {
-			result: result["default"]
+			result: anonimizeResult.result["default"],
+			mapping: smart.createJsonResource(anonimizeResult.mapping)
 		}
 	}
 
 	builder := smart.mapBuilder()
-	maps.forEach(result, func(key, value) {
+	maps.forEach(anonimizeResult.result, func(key, value) {
 		builder.add(key, value)
 	})
 
 	return {
-		result: builder.lockAndBuild()
+		result: builder.lockAndBuild(),
+		mapping: smart.createJsonResource(anonimizeResult.mapping)
 	}
 })

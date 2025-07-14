@@ -149,11 +149,13 @@ __primitiveValueTypes := { "Int": true, "Long": true, "Float": true, "Double": t
  *                                              // If specified, selected axes are combined and
  *                                              // passed to each iteration as a group. These axes
  *                                              // won't be automatically added to output specs
- *                                              // Each AxisMatcher can have an optional 'anonymize: true' flag.
- *                                              // If set, the corresponding key elements will be anonymized.
- *                                              // The anonymized key elements are replaced with a single anonymized key
- *                                              // that is added as the last element of the key.
- *                                              // This is useful for deduplication and recovery mechanisms.
+ *                                              // Each AxisMatcher can have an optional 'anonymize: true' flag to anonymize
+ *                                              // key elements for deduplication and recovery. The behavior depends on the
+ *                                              // number of axes marked for anonymization within the aggregation group:
+ *                                              //
+ *                                              //  - **Single axis**: its key element is **replaced** with an anonymized key.
+ *                                              //  - **Multiple axes**: their key elements are **removed**, and a single combined
+ *                                              //    anonymized key is **appended** to the group key.
  *                                              //
  *                                              // Examples:
  *                                              //   - "pl7.app/sequencing/readIndex"

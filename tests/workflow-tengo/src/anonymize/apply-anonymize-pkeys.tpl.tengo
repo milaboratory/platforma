@@ -7,6 +7,7 @@ self.body(func(inputs) {
 	result := anonymize.anonimizePKeys({"a": self.rawInputs().target, "b": self.rawInputs().target}, pKeyIndices)
 
 	return {
-		result: result["a"]
+		result: result.result["a"],
+		mapping: result.mapping
 	}
 })

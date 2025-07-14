@@ -28,13 +28,19 @@ _renderAnonymization := func(targets, params) {
 	anonymizeResult := render.create(anonymizeImplTpl, inputs)
 
 	if isSingleTarget {
-		return anonymizeResult.output("result")
+		return ll.toStrict({
+			result: anonymizeResult.output("result"),
+			mapping: anonymizeResult.output("mapping")
+		})
 	} else {
 		result := {}
 		for key in maps.getKeys(targets) {
 			result[key] = anonymizeResult.resolveOutput(["result", key])
 		}
-		return result
+		return ll.toStrict({
+			result: ll.toStrict(result),
+			mapping: anonymizeResult.output("mapping")
+		})
 	}
 }
 
@@ -81,9 +87,7 @@ anonimizeFields := func(target, ...opts) {
  * and recovery mechanisms across different datasets with the same underlying values.
  *
  * This function operates specifically on PColumnData resources where field names represent
- * serialized PColumn keys (JSON arrays like `["key0",1,"key2"]`). It removes specified
- * key elements at given indices and replaces them with a single anonymized key derived
- * from the canonical IDs of the grouped values.
+ * serialized PColumn keys (JSON arrays like `["key0",1,"key2"]`).
  *
  * The primary motivation is to prevent specific values of key elements from spoiling
  * deduplication. This allows the system to detect that even though keys are different,
@@ -91,15 +95,21 @@ anonimizeFields := func(target, ...opts) {
  * and recovery mechanisms can then pick this up and recover previous results.
  *
  * Key transformation process:
- * 1. Groups fields by their key prefix (handling suffixes like `.index`, `.values`)
- * 2. For each group, removes key elements at the specified indices from the PColumn key array
- * 3. Generates an anonymized key based on the canonical IDs of all values in the group
- * 4. Appends the anonymized key as the last element in the transformed key array
- * 5. Preserves any field name suffixes (e.g., `.index`, `.values` for binary partitioned data)
+ * - If a single index is provided in `pKeyIndices`, the key element at that index is **replaced**
+ *   with an anonymized key. The grouping for anonymization is based on the value of that single key element.
+ * - If multiple indices are provided, the key elements at those indices are **removed**, and a single
+ *   anonymized key is **appended** to the end of the key array. The grouping is based on the combination
+ *   of all key elements at the specified indices.
  *
- * Example: If original key is `["user123", "2023", "data"]` and `pKeyIndices` is `[0]`,
- * the result might be `["2023", "data", "a1b2c3d4"]` where "a1b2c3d4" is the anonymized
+ * This transformation is applied to each field, preserving any suffixes (e.g., `.index`, `.values`).
+ *
+ * Example 1 (single index): If `pKeyIndices` is `[0]`, an original key `["user123", "2023", "data"]`
+ * will be transformed into `["a1b2c3d4", "2023", "data"]`, where "a1b2c3d4" is the anonymized
  * replacement for "user123".
+ *
+ * Example 2 (multiple indices): If `pKeyIndices` is `[0, 1]`, an original key `["user123", "sessionA", "data"]`
+ * will be transformed into `["data", "e5f6g7h8"]`, where "e5f6g7h8" is the anonymized
+ * replacement for the combination of "user123" and "sessionA".
  *
  * This creates a resource whose CID depends only on the data values and the structure
  * of non-anonymized key elements, enabling effective deduplication across different
@@ -108,8 +118,8 @@ anonimizeFields := func(target, ...opts) {
  * The output is a reference, not a materialized resource.
  *
  * @param target - The target PColumnData resource or a map of resources to anonymize
- * @param pKeyIndices - Array of integers specifying indices of PColumn key elements to remove and anonymize.
- *                     These elements will be replaced with a single anonymized key as the last element.
+ * @param pKeyIndices - Array of integers specifying indices of PColumn key elements to either
+ *                     replace (for a single index) or remove and append (for multiple indices).
  */
 anonimizePKeys := func(target, pKeyIndices) {
 	if !is_array(pKeyIndices) {

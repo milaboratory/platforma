@@ -157,9 +157,15 @@ anonimizeFields := func(targets, ...opts) {
 	})
 
 	if isSingleTarget {
-		return results["default"]
+		return {
+			result: results["default"],
+			mapping: groupAnonymizedNames
+		}
 	} else {
-		return results
+		return {
+			result: results,
+			mapping: groupAnonymizedNames
+		}
 	}
 }
 

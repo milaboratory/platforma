@@ -50,7 +50,7 @@ tplTest.concurrent('anonimizePKeys simple test', async ({ helper, expect }) => {
     const result = await helper.renderTemplate(
       true,
       'anonymize.apply-anonymize-pkeys',
-      ['result'],
+      ['result', 'mapping'],
       (tx) => {
         const targetRef = tx.createStruct({ name: 'TestPkeys', version: '1' });
         for (const [key, value] of Object.entries(target)) {
@@ -63,7 +63,10 @@ tplTest.concurrent('anonimizePKeys simple test', async ({ helper, expect }) => {
         };
       },
     );
-    return result.computeOutput('result', (a) => a?.listInputFields());
+    return {
+      result: result.computeOutput('result', (a) => a?.listInputFields()),
+      mapping: result.computeOutput('mapping', (a) => a?.getDataAsJson<Record<string, string>>()),
+    };
   };
 
   const values = {
@@ -91,8 +94,17 @@ tplTest.concurrent('anonimizePKeys simple test', async ({ helper, expect }) => {
 
   const pKeyIndicesToAnonymize = [0];
 
-  const result1Fields = await (await renderAnonymizePKeys(target1, pKeyIndicesToAnonymize)).awaitStableValue();
-  const result2Fields = await (await renderAnonymizePKeys(target2, pKeyIndicesToAnonymize)).awaitStableValue();
+  const anonymizeResult1 = await renderAnonymizePKeys(target1, pKeyIndicesToAnonymize);
+  const anonymizeResult2 = await renderAnonymizePKeys(target2, pKeyIndicesToAnonymize);
+
+  const result1Fields = await anonymizeResult1.result.awaitStableValue();
+  const result2Fields = await anonymizeResult2.result.awaitStableValue();
+
+  const mapping1 = await anonymizeResult1.mapping.awaitStableValue();
+  const mapping2 = await anonymizeResult2.mapping.awaitStableValue();
+
+  expect(mapping1['user1']).toMatch(/.*-0/);
+  expect(mapping2['user2']).toMatch(/.*-0/);
 
   expect(result1Fields).toBeDefined();
   expect(result2Fields).toBeDefined();
