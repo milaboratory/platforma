@@ -241,6 +241,10 @@ export function createPFrameForGraphs<A, U>(
     columns.addColumnProvider(ctx.resultPool);
 
     const allColumns = columns.getColumns(() => true, { dontWaitAllData: true, overrideLabelAnnotation: false }) ?? [];
+    // if at least one column is not yet ready, we can't show the table
+    if (allColumns.some((c) => !isColumnReady(c)))
+      return undefined;
+
     const allAxes = new Map(allColumns
       .flatMap((column) => column.spec.axesSpec)
       .map((axisSpec) => {
@@ -250,10 +254,6 @@ export function createPFrameForGraphs<A, U>(
 
     // additional columns are duplicates with extra fields in domains for compatibility if there are ones with partial match
     const extendedColumns = enrichCompatible(allAxes, allColumns);
-
-    // if at least one column is not yet ready, we can't show the table
-    if (extendedColumns.some((c) => !isColumnReady(c)))
-      return undefined;
 
     return ctx.createPFrame(extendedColumns);
   };
@@ -296,6 +296,10 @@ export function createPFrameForGraphs<A, U>(
     return false;
   }), { dontWaitAllData: true, overrideLabelAnnotation: false }) ?? []).filter((column) => !isLabelColumn(column.spec));
 
+  // if at least one column is not yet ready, we can't show the table
+  if (compatibleWithoutLabels.some((c) => !isColumnReady(c)))
+    return undefined;
+
   // extend axes set for label columns request
   for (const c of compatibleWithoutLabels) {
     for (const id of c.spec.axesSpec) {
@@ -314,15 +318,14 @@ export function createPFrameForGraphs<A, U>(
     }
     return false;
   }), { dontWaitAllData: true, overrideLabelAnnotation: false }) ?? []).filter((column) => isLabelColumn(column.spec));
+  // if at least one column is not yet ready, we can't show the table
+  if (compatibleLabels.some((c) => !isColumnReady(c)))
+    return undefined;
 
   const compatible = [...compatibleWithoutLabels, ...compatibleLabels];
 
   // additional columns are duplicates with extra fields in domains for compatibility if there are ones with partial match
   const extendedColumns = enrichCompatible(blockAxes, compatible);
-
-  // if at least one column is not yet ready, we can't show the table
-  if (extendedColumns.some((c) => !isColumnReady(c)))
-    return undefined;
 
   return ctx.createPFrame(extendedColumns);
 }
