@@ -241,13 +241,12 @@ export function createPFrameForGraphs<A, U>(
     columns.addColumnProvider(ctx.resultPool);
 
     const allColumns = columns.getColumns(() => true, { dontWaitAllData: true, overrideLabelAnnotation: false }) ?? [];
-    const allAxes = new Map<CanonicalizedJson<AxisId>, AxisId>();
-    for (const c of allColumns) {
-      for (const id of c.spec.axesSpec) {
-        const aid = getAxisId(id);
-        allAxes.set(canonicalizeJson(aid), aid);
-      }
-    }
+    const allAxes = new Map(allColumns
+      .flatMap((column) => column.spec.axesSpec)
+      .map((axisSpec) => {
+        const axisId = getAxisId(axisSpec);
+        return [canonicalizeJson(axisId), axisId];
+      }));
 
     // additional columns are duplicates with extra fields in domains for compatibility if there are ones with partial match
     const extendedColumns = enrichCompatible(allAxes, allColumns);
