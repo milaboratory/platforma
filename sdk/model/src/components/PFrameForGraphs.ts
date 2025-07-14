@@ -203,6 +203,10 @@ function getAdditionalColumnsForColumn(
   return [column, ...additionalColumns];
 }
 
+function isColumnNotReady(c: PColumn<PColumnDataUniversal>) {
+  return c.data instanceof TreeNodeAccessor && !c.data.getIsReadyOrError();
+}
+
 /**
  The aim of createPFrameForGraphs: to create pframe with block’s columns and all compatible columns from result pool
  (including linker columns and all label columns).
@@ -219,8 +223,31 @@ export function createPFrameForGraphs<A, U>(
   ctx: RenderCtx<A, U>,
   blockColumns: PColumn<PColumnDataUniversal>[] | undefined,
 ): PFrameHandle | undefined {
-  if (!blockColumns) return undefined;
+  // if current block doesn't produce own columns then use all columns from result pool
+  if (!blockColumns) {
+    const columns = new PColumnCollection();
+    columns.addColumnProvider(ctx.resultPool);
 
+    const allColumns = columns.getColumns(() => true, { dontWaitAllData: true, overrideLabelAnnotation: false }) ?? [];
+    const allAxes = new Map<CanonicalizedJson<AxisId>, AxisId>();
+    for (const c of allColumns) {
+      for (const id of c.spec.axesSpec) {
+        const aid = getAxisId(id);
+        allAxes.set(canonicalizeJson(aid), aid);
+      }
+    }
+
+    // additional columns are duplicates with extra fields in domains for compatibility if there are ones with partial match
+    const extendedColumns = enrichCompatible(allAxes, allColumns);
+
+    // if at least one column is not yet ready, we can't show the table
+    if (extendedColumns.some(isColumnNotReady))
+      return undefined;
+
+    return ctx.createPFrame(extendedColumns);
+  };
+
+  // if current block has its own columns then take from result pool only compatible with them
   const columns = new PColumnCollection();
   columns.addColumnProvider(ctx.resultPool);
   columns.addColumns(blockColumns);
@@ -283,11 +310,7 @@ export function createPFrameForGraphs<A, U>(
   const extendedColumns = enrichCompatible(blockAxes, compatible);
 
   // if at least one column is not yet ready, we can't show the table
-  if (
-    extendedColumns.some(
-      (a) => a.data instanceof TreeNodeAccessor && !a.data.getIsReadyOrError(),
-    )
-  )
+  if (extendedColumns.some(isColumnNotReady))
     return undefined;
 
   return ctx.createPFrame(extendedColumns);
