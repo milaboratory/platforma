@@ -1,0 +1,223 @@
+/**
+ * Library for creating a resource with anonymized field names.
+ */
+render := import(":render")
+assets := import(":assets")
+ll := import(":ll")
+smart := import(":smart")
+times := import("times")
+maps := import(":maps")
+
+anonymizeImplTpl := assets.importTemplate(":anonymize.impl")
+deanonymizeTpl := assets.importTemplate(":anonymize.deanonymize")
+
+_renderAnonymization := func(targets, params) {
+	inputs := {
+		params: smart.createJsonResource(params)
+	}
+
+	isSingleTarget := smart.isReference(targets)
+
+	if isSingleTarget {
+		inputs.target = targets
+	} else {
+		for key, value in targets {
+			inputs["target." + key] = value
+		}
+	}
+
+	anonymizeResult := render.create(anonymizeImplTpl, inputs)
+
+	if isSingleTarget {
+		return ll.toStrict({
+			result: anonymizeResult.output("result"),
+			mapping: anonymizeResult.output("mapping")
+		})
+	} else {
+		result := {}
+		for key in maps.getKeys(targets) {
+			result[key] = anonymizeResult.resolveOutput(["result", key])
+		}
+		return ll.toStrict({
+			result: ll.toStrict(result),
+			mapping: anonymizeResult.output("mapping")
+		})
+	}
+}
+
+_renderDeAnonymization := func(targets, mapping, params) {
+	inputs := {
+		params: smart.createJsonResource(params),
+		mapping: mapping
+	}
+
+	isSingleTarget := smart.isReference(targets)
+
+	if isSingleTarget {
+		inputs.target = targets
+	} else {
+		for key, value in targets {
+			inputs["target." + key] = value
+		}
+	}
+
+	deanonymizeResult := render.create(deanonymizeTpl, inputs)
+
+	if isSingleTarget {
+		return deanonymizeResult.output("result")
+	} else {
+		result := {}
+		for key in maps.getKeys(targets) {
+			result[key] = deanonymizeResult.resolveOutput(["result", key])
+		}
+		return ll.toStrict(result)
+	}
+}
+
+/**
+ * Takes a resource (often a map) or a map of resources where values are placed under specific field names,
+ * and creates a new resource with the same values but with field names derived from
+ * the canonical IDs of those values.
+ *
+ * This effectively creates a map whose own CID does not depend on the field names
+ * (keys) of the original map, but only on its values. It models a "Set" and also
+ * handles repetitions if the same value is encountered multiple times.
+ *
+ * The output is a reference, not a materialized resource.
+ *
+ * @param target - The target resource or a map of resources to anonymize
+ * @param ...opts - Optional parameters:
+ *   - fieldRegex: string - Regular expression to match field names that should be anonymized
+ *   - fieldPrefix: string - Prefix to add to anonymized field names
+ */
+anonymizeFields := func(target, ...opts) {
+	// Process optional parameters
+	options := {}
+	if len(opts) > 0 {
+		if len(opts) == 1 && is_map(opts[0]) {
+			options = opts[0]
+		} else {
+			ll.panic("anonymizeFields: optional parameters must be a single map argument, got: %v", opts)
+		}
+	}
+
+	params := {}
+	if !is_undefined(options.fieldRegex) {
+		params.fieldRegex = options.fieldRegex
+	}
+	if !is_undefined(options.fieldPrefix) {
+		params.fieldPrefix = options.fieldPrefix
+	}
+
+	return _renderAnonymization(target, params)
+}
+
+/**
+ * Anonymizes PColumnData resources by transforming PColumn keys to enable deduplication
+ * and recovery mechanisms across different datasets with the same underlying values.
+ *
+ * This function operates specifically on PColumnData resources where field names represent
+ * serialized PColumn keys (JSON arrays like `["key0",1,"key2"]`).
+ *
+ * The primary motivation is to prevent specific values of key elements from spoiling
+ * deduplication. This allows the system to detect that even though keys are different,
+ * if the underlying values are the same, this represents the same data. Deduplication
+ * and recovery mechanisms can then pick this up and recover previous results.
+ *
+ * Key transformation process:
+ * - If a single index is provided in `pKeyIndices`, the key element at that index is **replaced**
+ *   with an anonymized key. The grouping for anonymization is based on the value of that single key element.
+ * - If multiple indices are provided, the key elements at those indices are **removed**, and a single
+ *   anonymized key is **appended** to the end of the key array. The grouping is based on the combination
+ *   of all key elements at the specified indices.
+ *
+ * This transformation is applied to each field, preserving any suffixes (e.g., `.index`, `.values`).
+ *
+ * Example 1 (single index): If `pKeyIndices` is `[0]`, an original key `["user123", "2023", "data"]`
+ * will be transformed into `["a1b2c3d4", "2023", "data"]`, where "a1b2c3d4" is the anonymized
+ * replacement for "user123".
+ *
+ * Example 2 (multiple indices): If `pKeyIndices` is `[0, 1]`, an original key `["user123", "sessionA", "data"]`
+ * will be transformed into `["data", "e5f6g7h8"]`, where "e5f6g7h8" is the anonymized
+ * replacement for the combination of "user123" and "sessionA".
+ *
+ * This creates a resource whose CID depends only on the data values and the structure
+ * of non-anonymized key elements, enabling effective deduplication across different
+ * datasets that contain the same underlying data.
+ *
+ * The output is a reference, not a materialized resource.
+ *
+ * @param target - The target PColumnData resource or a map of resources to anonymize
+ * @param pKeyIndices - Array of integers specifying indices of PColumn key elements to either
+ *                     replace (for a single index) or remove and append (for multiple indices).
+ */
+anonymizePKeys := func(target, pKeyIndices) {
+	if !is_array(pKeyIndices) {
+		ll.panic("anonymizePKeys: pKeyIndices must be an array of integers, got: %v", pKeyIndices)
+	}
+
+	for i, idx in pKeyIndices {
+		if !is_int(idx) {
+			ll.panic("anonymizePKeys: pKeyIndices[%d] must be an integer, got: %v", i, idx)
+		}
+	}
+
+	params := {
+		pKeyIndices: pKeyIndices
+	}
+
+	return _renderAnonymization(target, params)
+}
+
+/**
+ * Reverses the anonymization of PColumnData resources, restoring the original PColumn keys.
+ *
+ * This function is the inverse of `anonymizePKeys`. It takes a resource with anonymized
+ * keys and a mapping (generated by the anonymization process) and reconstructs the
+ * original field names (serialized PColumn keys).
+ *
+ * The key reconstruction logic depends on how the original anonymization was performed:
+ * - If a single index was used for anonymization, the anonymized component at `targetPKeyIndex`
+ *   is replaced with the original key component found in the `mapping`. The original component is
+ *   then inserted back into the key array at the index specified by `pKeyIndices[0]`.
+ * - If multiple indices were used, the anonymized component at `targetPKeyIndex` is first removed.
+ *   Then, the corresponding original key components (a JSON array from the `mapping`) are
+ *   inserted back into the key at the positions specified by `pKeyIndices`.
+ *
+ * This allows for the recovery of original data structures after deduplication or other
+ * processing has been performed on the anonymized version.
+ *
+ * The output is a reference, not a materialized resource.
+ *
+ * @param target - The target PColumnData resource or a map of resources with anonymized keys.
+ * @param targetPKeyIndex - The index in the anonymized PColumn key array where the anonymized component is located.
+ * @param pKeyIndices - An array of integers specifying the original indices of the key elements that were anonymized.
+ * @param mapping - A resource containing the mapping from anonymized keys to their original values. This is typically the 'mapping' output from `anonymizePKeys`.
+ */
+deanonymizePKeys := func(target, targetPKeyIndex, pKeyIndices, mapping) {
+	if !is_int(targetPKeyIndex) {
+		ll.panic("deanonymizePKeys: targetPKeyIndex must be an integer, got: %v", targetPKeyIndex)
+	}
+	if !is_array(pKeyIndices) {
+		ll.panic("deanonymizePKeys: pKeyIndices must be an array of integers, got: %v", pKeyIndices)
+	}
+
+	for i, idx in pKeyIndices {
+		if !is_int(idx) {
+			ll.panic("deanonymizePKeys: pKeyIndices[%d] must be an integer, got: %v", i, idx)
+		}
+	}
+
+	params := {
+		targetPKeyIndex: targetPKeyIndex,
+		pKeyIndices: pKeyIndices
+	}
+
+	return _renderDeAnonymization(target, mapping, params)
+}
+
+export ll.toStrict({
+	anonymizeFields: anonymizeFields,
+	anonymizePKeys: anonymizePKeys,
+	deanonymizePKeys: deanonymizePKeys
+})
