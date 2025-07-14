@@ -76,6 +76,7 @@ import {
 } from './sources/table-state-v2';
 import type { PlDataTableFiltersSettings } from '../PlTableFilters';
 import PlTableFiltersV2 from '../PlTableFilters/PlTableFiltersV2.vue';
+import { watchCached } from '@milaboratories/uikit';
 
 const tableState = defineModel<PlDataTableStateV2>({
   required: true,
@@ -365,42 +366,37 @@ defineExpose<PlAgDataTableV2Controller>({
 });
 
 // Propagate columns for filter component
-watch(
-  () => gridOptions.value,
-  (options, oldOptions) => {
-    if (
-      options.columnDefs
-      && !isJsonEqual(options.columnDefs, oldOptions?.columnDefs)
-    ) {
-      const sourceId = settings.value.sourceId;
-      if (sourceId === null) {
-        filterableColumns.value = [];
-        if (selection.value) {
-          selection.value = {
-            axesSpec: [],
-            selectedKeys: [],
-          };
-        }
-      } else {
-        const isColDef = (def: ColDef | ColGroupDef): def is ColDef =>
-          !('children' in def);
-        const colDefs = options.columnDefs?.filter(isColDef) ?? [];
-        const columns = colDefs
-          .map((def) => def.colId)
-          .filter((colId) => colId !== undefined)
-          .filter((colId) => colId !== PlAgDataTableRowNumberColId)
-          .map((colId) => parseJson(colId as PTableColumnSpecJson))
-          ?? [];
-        filterableColumns.value = columns;
-        if (selection.value) {
-          const axesSpec = columns
-            .filter((column) => column.type === 'axis')
-            .map((axis) => axis.spec);
-          selection.value = {
-            ...selection.value,
-            axesSpec,
-          };
-        }
+watchCached(
+  () => gridOptions.value.columnDefs,
+  (columnDefs) => {
+    const sourceId = settings.value.sourceId;
+    if (sourceId === null) {
+      filterableColumns.value = [];
+      if (selection.value) {
+        selection.value = {
+          axesSpec: [],
+          selectedKeys: [],
+        };
+      }
+    } else {
+      const isColDef = (def: ColDef | ColGroupDef): def is ColDef =>
+        !('children' in def);
+      const colDefs = columnDefs?.filter(isColDef) ?? [];
+      const columns = colDefs
+        .map((def) => def.colId)
+        .filter((colId) => colId !== undefined)
+        .filter((colId) => colId !== PlAgDataTableRowNumberColId)
+        .map((colId) => parseJson(colId as PTableColumnSpecJson))
+        ?? [];
+      filterableColumns.value = columns;
+      if (selection.value) {
+        const axesSpec = columns
+          .filter((column) => column.type === 'axis')
+          .map((axis) => axis.spec);
+        selection.value = {
+          ...selection.value,
+          axesSpec,
+        };
       }
     }
   },

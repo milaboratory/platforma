@@ -110,6 +110,8 @@ export { useQuery } from './composition/useQuery.ts';
 export { useDraggable } from './composition/useDraggable';
 export { useComponentProp } from './composition/useComponentProp';
 export * from './composition/useWatchFetch';
+export * from './composition/watchCached';
+export * from './composition/computedCached';
 
 /**
  * Utils/Partials
