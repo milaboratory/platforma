@@ -7,8 +7,8 @@ import type {
   PlDataTableGridStateCore,
   PlDataTableStateV2,
   PlSelectionModel,
+  PlTableColumnIdJson,
   PTableColumnSpec,
-  PTableColumnSpecJson,
   PTableKey,
 } from '@platforma-sdk/model';
 import {
@@ -49,7 +49,6 @@ import PlAgDataTableSheets from './PlAgDataTableSheets.vue';
 import {
   focusRow,
   makeOnceTracker,
-  trackFirstDataRendered,
 } from './sources/focus-row';
 import {
   autoSizeRowNumberColumn,
@@ -59,7 +58,6 @@ import type {
   PlAgCellButtonAxisParams,
 } from './sources/table-source-v2';
 import {
-  makeRowId,
   calculateGridOptions,
 } from './sources/table-source-v2';
 import type {
@@ -69,7 +67,8 @@ import type {
   PlAgOverlayNoRowsParams,
   PlDataTableSettingsV2,
   PlDataTableSheetsSettings,
-  PTableKeyJson,
+  PlTableLabeledSelectionModel,
+  PlTableRowIdJson,
 } from './types';
 import {
   useTableState,
@@ -82,6 +81,7 @@ const tableState = defineModel<PlDataTableStateV2>({
   required: true,
 });
 const selection = defineModel<PlSelectionModel>('selection');
+const selectionLabeled = defineModel<PlTableLabeledSelectionModel>('selectionLabeled');
 const props = defineProps<{
   /** Required component settings */
   settings: Readonly<PlDataTableSettingsV2>;
@@ -183,10 +183,10 @@ const firstDataRenderedTracker = makeOnceTracker<GridApi<PlAgDataTableV2Row>>();
 const gridOptions = shallowRef<GridOptions<PlAgDataTableV2Row>>({
   animateRows: false,
   suppressColumnMoveAnimation: true,
-  cellSelection: selection.value === undefined,
+  cellSelection: !selection.value && !selectionLabeled.value,
   initialState: gridState.value,
   autoSizeStrategy: { type: 'fitCellContents' },
-  rowSelection: selection.value !== undefined
+  rowSelection: selection.value || selectionLabeled.value
     ? {
         mode: 'multiRow',
         selectAll: 'all',
@@ -197,14 +197,18 @@ const gridOptions = shallowRef<GridOptions<PlAgDataTableV2Row>>({
       }
     : undefined,
   onSelectionChanged: (event) => {
+    const state = event.api.getServerSideSelectionState();
     if (selection.value) {
-      const state = event.api.getServerSideSelectionState();
-      const selectedKeys = state?.toggledNodes?.map((nodeId) => parseJson(nodeId as PTableKeyJson)) ?? [];
+      const selectedKeys = state?.toggledNodes?.map((nodeId) => parseJson(nodeId as PlTableRowIdJson).axesKey) ?? [];
       selection.value = { ...selection.value, selectedKeys };
+    }
+    if (selectionLabeled.value) {
+      const selectedLabeledKeys = state?.toggledNodes?.map((nodeId) => parseJson(nodeId as PlTableRowIdJson).labeled) ?? [];
+      selectionLabeled.value = { ...selectionLabeled.value, selectedLabeledKeys };
     }
   },
   onRowDoubleClicked: (event) => {
-    if (event.data && event.data.key) emit('rowDoubleClicked', event.data.key);
+    if (event.data && event.data.axesKey) emit('rowDoubleClicked', event.data.axesKey);
   },
   defaultColDef: {
     suppressHeaderMenuButton: true,
@@ -247,7 +251,6 @@ const gridOptions = shallowRef<GridOptions<PlAgDataTableV2Row>>({
   },
   onGridReady: (event) => {
     const api = event.api;
-    trackFirstDataRendered(api, firstDataRenderedTracker);
     autoSizeRowNumberColumn(api);
     const setGridOption = (
       key: ManagedGridOptionKey,
@@ -300,16 +303,16 @@ const gridOptions = shallowRef<GridOptions<PlAgDataTableV2Row>>({
 function makePartialState(state: GridState): PlDataTableGridStateCore {
   return {
     columnOrder: state.columnOrder as {
-      orderedColIds: PTableColumnSpecJson[];
+      orderedColIds: PlTableColumnIdJson[];
     } | undefined,
     sort: state.sort as {
       sortModel: {
-        colId: PTableColumnSpecJson;
+        colId: PlTableColumnIdJson;
         sort: 'asc' | 'desc';
       }[];
     } | undefined,
     columnVisibility: state.columnVisibility as {
-      hiddenColIds: PTableColumnSpecJson[];
+      hiddenColIds: PlTableColumnIdJson[];
     } | undefined,
   };
 };
@@ -362,7 +365,10 @@ watch(
 );
 
 defineExpose<PlAgDataTableV2Controller>({
-  focusRow: (rowKey) => focusRow(makeRowId(rowKey), firstDataRenderedTracker),
+  focusRow: (rowKey) => focusRow(
+    (row) => isJsonEqual(row.data?.axesKey, rowKey),
+    firstDataRenderedTracker,
+  ),
 });
 
 // Propagate columns for filter component
@@ -378,6 +384,12 @@ watchCached(
           selectedKeys: [],
         };
       }
+      if (selectionLabeled.value) {
+        selectionLabeled.value = {
+          spec: [],
+          selectedLabeledKeys: [],
+        };
+      }
     } else {
       const isColDef = (def: ColDef | ColGroupDef): def is ColDef =>
         !('children' in def);
@@ -386,16 +398,23 @@ watchCached(
         .map((def) => def.colId)
         .filter((colId) => colId !== undefined)
         .filter((colId) => colId !== PlAgDataTableRowNumberColId)
-        .map((colId) => parseJson(colId as PTableColumnSpecJson))
+        .map((colId) => parseJson(colId as PlTableColumnIdJson))
         ?? [];
-      filterableColumns.value = columns;
+      filterableColumns.value = columns.map((column) => column.labeled);
       if (selection.value) {
         const axesSpec = columns
-          .filter((column) => column.type === 'axis')
-          .map((axis) => axis.spec);
+          .flatMap((column) => column.source.type === 'axis' ? [column.source.spec] : []);
         selection.value = {
           ...selection.value,
           axesSpec,
+        };
+      }
+      if (selectionLabeled.value) {
+        const spec = columns
+          .flatMap((column) => column.source.type === 'axis' ? [column.labeled] : []);
+        selectionLabeled.value = {
+          ...selectionLabeled.value,
+          spec,
         };
       }
     }
@@ -417,10 +436,11 @@ watch(
     try {
       // Hide no rows overlay if it is shown, or else loading overlay will not be shown
       gridApi.hideOverlay();
+      firstDataRenderedTracker.reset();
 
       // No data source selected -> reset state to default
       if (!settings.sourceId) {
-        return gridApi.updateGridOptions({
+        gridApi.updateGridOptions({
           loading: true,
           loadingOverlayComponentParams: {
             ...gridOptions.value.loadingOverlayComponentParams,
@@ -429,6 +449,13 @@ watch(
           columnDefs: undefined,
           serverSideDatasource: undefined,
         });
+        if (selection.value || selectionLabeled.value) {
+          gridApi.setServerSideSelectionState({
+            selectAll: false,
+            toggledNodes: [],
+          });
+        }
+        return;
       }
 
       // Data source changed -> show full page loader, clear selection
@@ -440,7 +467,7 @@ watch(
             notReady: false,
           } satisfies PlAgOverlayLoadingParams,
         });
-        if (selection.value) {
+        if (selection.value || selectionLabeled.value) {
           gridApi.setServerSideSelectionState({
             selectAll: false,
             toggledNodes: [],
@@ -471,6 +498,7 @@ watch(
         getRawPlatformaInstance().pFrameDriver,
         settings.model,
         settings.sheets ?? [],
+        firstDataRenderedTracker.track,
         gridState.value.columnVisibility?.hiddenColIds,
         {
           showCellButtonForAxisId: props.showCellButtonForAxisId,

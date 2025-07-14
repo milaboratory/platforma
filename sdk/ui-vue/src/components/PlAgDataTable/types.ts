@@ -192,16 +192,31 @@ export type PlAgDataTableV2Controller = {
   focusRow: (rowKey: PTableKey) => Promise<void>;
 };
 
-export type PTableKeyJson = CanonicalizedJson<PTableKey>;
+export type PlTableRowId = {
+  /** Axes values */
+  axesKey: PTableKey;
+  /** Axes key where values of labeled axes are resolved to corresponding labels */
+  labeled: PTableKey;
+};
+
+export type PlTableRowIdJson = CanonicalizedJson<PlTableRowId>;
 
 /** PlAgDataTableV2 row */
 export type PlAgDataTableV2Row = {
-  /** Axis key is not present for heterogeneous axes */
-  key?: PTableKey;
-  /** Unique row identifier, created as canonicalize(key)! when key is present */
-  id: PTableKeyJson;
+  /** Axes key */
+  axesKey: PTableKey;
+  /** Unique row identifier` */
+  id: PlTableRowIdJson;
   /** Row values by column; sheet axes and labeled axes are excluded */
   [field: `${number}`]: PTableValue | PTableHidden;
+};
+
+/** PlSelectionModel with labeled axes replaced by label columns */
+export type PlTableLabeledSelectionModel = {
+  /** Specs for valuess in {@link PTableKey} */
+  spec: PTableColumnSpec[];
+  /** Row keys (arrays of axes values) of selected rows */
+  selectedLabeledKeys: PTableKey[];
 };
 
 export type PlAgOverlayLoadingParams = {

@@ -36,21 +36,27 @@ import {
   TreeNodeAccessor,
 } from '../render';
 
-/** Canonicalized PTableColumnSpec JSON string */
-export type PTableColumnSpecJson = CanonicalizedJson<PTableColumnSpec>;
+export type PlTableColumnId = {
+  /** Original column spec */
+  source: PTableColumnSpec;
+  /** Column spec with labeled axes replaced by label columns */
+  labeled: PTableColumnSpec;
+};
+
+export type PlTableColumnIdJson = CanonicalizedJson<PlTableColumnId>;
 
 export type PlDataTableGridStateCore = {
   /** Includes column ordering */
   columnOrder?: {
     /** All colIds in order */
-    orderedColIds: PTableColumnSpecJson[];
+    orderedColIds: PlTableColumnIdJson[];
   };
   /** Includes current sort columns and direction */
   sort?: {
     /** Sorted columns and directions in order */
     sortModel: {
       /** Column Id to apply the sort to. */
-      colId: PTableColumnSpecJson;
+      colId: PlTableColumnIdJson;
       /** Sort direction */
       sort: 'asc' | 'desc';
     }[];
@@ -58,7 +64,7 @@ export type PlDataTableGridStateCore = {
   /** Includes column visibility */
   columnVisibility?: {
     /** All colIds which were hidden */
-    hiddenColIds: PTableColumnSpecJson[];
+    hiddenColIds: PlTableColumnIdJson[];
   };
 };
 
