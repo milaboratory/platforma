@@ -43,12 +43,15 @@ export function registerSvg(raw: string, name?: string): SvgMeta {
     height = isNaN(height) ? 16 : height;
     const viewBox = `0 0 ${width} ${height}`;
 
-    // Parse the original SVG tag and preserve all its attributes except id and viewBox
+    // Parse the original SVG tag and preserve all its attributes
     const svgTagMatch = raw.match(/^<svg([^>]*)>/i);
     let svgAttributes = svgTagMatch ? svgTagMatch[1] : '';
-    // Remove any existing id or viewBox attributes
+    // Remove id, xmlns, width, height, and viewBox attributes
     svgAttributes = svgAttributes
       .replace(/\s*id\s*=\s*(['"])[^'"]*\1/gi, '')
+      .replace(/\s*xmlns\s*=\s*(['"])[^'"]*\1/gi, '')
+      .replace(/\s*width\s*=\s*(['"])[^'"]*\1/gi, '')
+      .replace(/\s*height\s*=\s*(['"])[^'"]*\1/gi, '')
       .replace(/\s*viewBox\s*=\s*(['"])[^'"]*\1/gi, '');
 
     let fillIdx = 0;
