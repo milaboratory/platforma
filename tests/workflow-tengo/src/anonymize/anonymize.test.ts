@@ -50,7 +50,7 @@ tplTest.concurrent('anonimizePKeys simple test', async ({ helper, expect }) => {
     const result = await helper.renderTemplate(
       true,
       'anonymize.apply-anonymize-pkeys',
-      ['result', 'mapping'],
+      ['result', 'mapping', 'deanonimizeResult'],
       (tx) => {
         const targetRef = tx.createStruct({ name: 'TestPkeys', version: '1' });
         for (const [key, value] of Object.entries(target)) {
@@ -59,12 +59,13 @@ tplTest.concurrent('anonimizePKeys simple test', async ({ helper, expect }) => {
         tx.lock(targetRef);
         return {
           target: targetRef,
-          pKeyIndices: tx.createValue(Pl.JsonObject, JSON.stringify(pKeyIndices)),
+          params: tx.createValue(Pl.JsonObject, JSON.stringify({ pKeyIndices, originalKeyLength: 3 })),
         };
       },
     );
     return {
       result: result.computeOutput('result', (a) => a?.listInputFields()),
+      deanonimizeResult: result.computeOutput('deanonimizeResult', (a) => a?.listInputFields()),
       mapping: result.computeOutput('mapping', (a) => a?.getDataAsJson<Record<string, string>>()),
     };
   };
@@ -103,10 +104,16 @@ tplTest.concurrent('anonimizePKeys simple test', async ({ helper, expect }) => {
   const mapping1 = await anonymizeResult1.mapping.awaitStableValue();
   const mapping2 = await anonymizeResult2.mapping.awaitStableValue();
 
-  expect(mapping1['user1']).toMatch(/.*-0/);
-  expect(mapping2['user2']).toMatch(/.*-0/);
+  expect(Object.keys(mapping1!)[0]).toMatch(/.*-0/);
+  expect(Object.keys(mapping2!)[0]).toMatch(/.*-0/);
 
   expect(result1Fields).toBeDefined();
   expect(result2Fields).toBeDefined();
   expect(result1Fields!.sort()).toEqual(result2Fields!.sort());
+
+  const deanonimizeResult1 = await anonymizeResult1.deanonimizeResult.awaitStableValue();
+  const deanonimizeResult2 = await anonymizeResult2.deanonimizeResult.awaitStableValue();
+
+  expect(deanonimizeResult1!.sort()).toEqual(Object.keys(target1).sort());
+  expect(deanonimizeResult2!.sort()).toEqual(Object.keys(target2).sort());
 });

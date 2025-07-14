@@ -122,6 +122,7 @@ anonimizeFields := func(targets, ...opts) {
 
 	groupAnonymizedNames := {}  // groupId -> anonymizedFieldName
 	groupRepetitionCounts := {}  // anonymizedFieldName -> repetition count
+	anonymizedToGroupId := {}  // anonymizedFieldName -> groupId
 
 	for groupId, concatenatedCIDs in groupCIDs {
 		hashedCIDs := ll.sha256Encode(concatenatedCIDs)
@@ -132,7 +133,9 @@ anonimizeFields := func(targets, ...opts) {
 			repetitionIndex = groupRepetitionCounts[encodedCid]
 		}
 		groupRepetitionCounts[encodedCid] = repetitionIndex + 1
-		groupAnonymizedNames[groupId] = encodedCid + "-" + repetitionIndex
+		anonymizedName := encodedCid + "-" + repetitionIndex
+		groupAnonymizedNames[groupId] = anonymizedName
+		anonymizedToGroupId[anonymizedName] = groupId
 	}
 
 	results := {}
@@ -159,12 +162,12 @@ anonimizeFields := func(targets, ...opts) {
 	if isSingleTarget {
 		return {
 			result: results["default"],
-			mapping: groupAnonymizedNames
+			mapping: anonymizedToGroupId
 		}
 	} else {
 		return {
 			result: results,
-			mapping: groupAnonymizedNames
+			mapping: anonymizedToGroupId
 		}
 	}
 }

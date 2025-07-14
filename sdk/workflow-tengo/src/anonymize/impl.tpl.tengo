@@ -8,29 +8,9 @@ impl := import(":anonymize.impl")
 slices := import(":slices")
 smart := import(":smart")
 maps := import(":maps")
+util := import(":anonymize.util")
 
 self.defineOutputs("result", "mapping")
-
-/**
- * Removes suffix from a field name if present.
- * If the field name ends with "]", returns the original field name.
- * Otherwise, finds the last "]" and returns everything up to and including it.
- *
- * @param fieldName - The field name to process
- * @returns The field name without suffix
- */
-removeSuffix := func(fieldName) {
-	if text.has_suffix(fieldName, "]") {
-		return fieldName
-	}
-
-	lastBracketIndex := text.last_index(fieldName, "]")
-	if lastBracketIndex == -1 {
-		ll.panic("No closing bracket found in field name: %s", fieldName)
-	}
-
-	return fieldName[:lastBracketIndex + 1]
-}
 
 /**
  * Transforms a key array based on the number of indices provided.
@@ -76,7 +56,7 @@ transformKey := func(keyArray, pKeyIndices, anonimizedName) {
  * @returns An object with `key` (the decoded JSON array) and `suffix`.
  */
 decodePDataField := func(fieldName) {
-	keyPart := removeSuffix(fieldName)
+	keyPart := util.removeSuffix(fieldName)
 
 	suffix := ""
 	if len(fieldName) > len(keyPart) {
@@ -144,10 +124,10 @@ self.body(func(inputs) {
 			}
 		}
 
-		slices.quickSortInPlace(pKeyIndices)
+		sortedPKeyIndices := slices.quickSort(pKeyIndices)
 
 		options.groupBy = func(fieldName) {
-			decoded := decodePDataField(fieldName)
+			decoded := util.decodePDataField(fieldName)
 			if len(pKeyIndices) == 1 {
 				if pKeyIndices[0] >= len(decoded.key) {
 					ll.panic("pKeyIndices[%d] is out of bounds for key: %v", pKeyIndices[0], decoded.key)
@@ -165,8 +145,8 @@ self.body(func(inputs) {
 		}
 
 		options.fieldNameDeriver = func(originalFieldName, anonymizedFieldName) {
-			decoded := decodePDataField(originalFieldName)
-			newKeyArray := transformKey(decoded.key, pKeyIndices, anonymizedFieldName)
+			decoded := util.decodePDataField(originalFieldName)
+			newKeyArray := transformKey(decoded.key, sortedPKeyIndices, anonymizedFieldName)
 			return string(json.encode(newKeyArray)) + decoded.suffix
 		}
 	}
