@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.39.19
+
+### Patch Changes
+
+- 21a8c4a: Renamed cachedComputed to computedCached
+
 ## 1.39.18
 
 ### Patch Changes
