@@ -1,5 +1,13 @@
 # @platforma-sdk/ui-vue
 
+## 1.39.20
+
+### Patch Changes
+
+- 986c20c: computedCached moved to uikit, watchCached implemented
+- Updated dependencies [986c20c]
+  - @milaboratories/uikit@2.3.9
+
 ## 1.39.19
 
 ### Patch Changes
