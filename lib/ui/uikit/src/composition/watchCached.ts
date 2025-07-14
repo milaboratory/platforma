@@ -32,7 +32,7 @@ export function watchCached<T, Immediate extends Readonly<boolean> = false>(
     },
   );
   watch<T, Immediate>(
-    () => cachedValue.value!, // `!` is safe as we always initialize cachedValue
+    () => cachedValue.value as T, // `as T` is safe as we always initialize cachedValue
     cb, // separate watch so that `onWatcherCleanup` would only be triggerred here
     {
       // standard vue `WatchOptions` conform to `WatchCachedOptions` interface,
@@ -41,5 +41,5 @@ export function watchCached<T, Immediate extends Readonly<boolean> = false>(
       immediate: options?.immediate,
     },
   );
-  return handle; // first handle is returned as stopping it would garbage collect the second one
+  return handle; // stopping first handle would effectively stop the second one
 }
