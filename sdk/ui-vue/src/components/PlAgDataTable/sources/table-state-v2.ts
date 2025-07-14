@@ -31,7 +31,7 @@ import {
   isJsonEqual,
 } from '@milaboratories/helpers';
 import { makePredicate } from '../../PlTableFilters/filters_logic';
-import { cachedComputed } from '../../../composition/cachedComputed';
+import { computedCached } from '../../../composition/computedCached';
 
 type PlDataTableStateV2CacheEntryNullable = PlDataTableStateV2CacheEntry | {
   sourceId: null;
@@ -118,7 +118,7 @@ export function useTableState(
     sheetsState: WritableComputedRef<PlDataTableSheetState[]>;
     filtersState: WritableComputedRef<PlDataTableFilterState[]>;
   } {
-  const tableStateNormalized = cachedComputed<PlDataTableStateV2Normalized>({
+  const tableStateNormalized = computedCached<PlDataTableStateV2Normalized>({
     get: () => upgradePlDataTableStateV2(tableStateDenormalized.value),
     set: (newState) => tableStateDenormalized.value = newState,
     deep: true,
