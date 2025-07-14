@@ -9,13 +9,17 @@ import {
   type WritableComputedRef,
 } from 'vue';
 
-export function cachedComputed<T>(options: {
+export function computedCached<T>(options: {
   get: ComputedGetter<T>;
-  set?: ComputedSetter<T>;
+  set: ComputedSetter<T>;
   deep?: boolean;
 }): WritableComputedRef<T>;
-export function cachedComputed<T>(getter: ComputedGetter<T>): ComputedRef<T>;
-export function cachedComputed<T>(options: ComputedGetter<T> | {
+export function computedCached<T>(options: {
+  get: ComputedGetter<T>;
+  deep?: boolean;
+}): ComputedRef<T>;
+export function computedCached<T>(getter: ComputedGetter<T>): ComputedRef<T>;
+export function computedCached<T>(options: ComputedGetter<T> | {
   get: ComputedGetter<T>;
   set?: ComputedSetter<T>;
   deep?: boolean;
