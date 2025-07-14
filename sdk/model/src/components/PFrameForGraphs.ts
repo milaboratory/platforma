@@ -211,9 +211,7 @@ export function isColumnReady(c: PColumn<PColumnDataUniversal>) {
     ready = ready && c.data.getIsReadyOrError();
   } else if (isDataInfo(c.data)) {
     visitDataInfo(c.data, (v) => {
-      if (ready) {
-        ready = ready && v.getIsReadyOrError();
-      }
+      ready = ready && v.getIsReadyOrError();
     });
   }
   return ready;
