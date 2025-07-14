@@ -2,7 +2,10 @@ import { deepClone, delay, uniqueId } from '@milaboratories/helpers';
 import type {
   BlockOutputsBase,
   BlockState,
+  NavigationState,
   ValueWithUTag,
+  AuthorMarker,
+  ValueWithUTagAndAuthor,
 } from '@platforma-sdk/model';
 import { compare, type Operation } from 'fast-json-patch';
 
@@ -15,7 +18,13 @@ export abstract class BlockMock<
   #uTag: string = uniqueId();
   #previousState: BlockState<Args, Outputs, UiState, Href>;
 
-  constructor(public args: Args, public outputs: Outputs, public ui: UiState, public href: Href) {
+  constructor(
+    public args: Args,
+    public outputs: Outputs,
+    public ui: UiState,
+    public href: Href,
+    public author?: AuthorMarker | undefined,
+  ) {
     this.#previousState = this.getState();
   }
 
@@ -44,6 +53,11 @@ export abstract class BlockMock<
     await this.doUpdate();
   }
 
+  async setNavigationState(navigationState: NavigationState<Href>) {
+    this.href = navigationState.href;
+    await this.doUpdate();
+  }
+
   getState(): BlockState<Args, Outputs, UiState, Href> {
     return deepClone({
       args: this.args,
@@ -52,10 +66,11 @@ export abstract class BlockMock<
       navigationState: {
         href: this.href,
       },
+      author: this.author,
     });
   }
 
-  async getJsonPatches(uTag: string): Promise<ValueWithUTag<Operation[]>> {
+  async getJsonPatches(uTag: string): Promise<ValueWithUTagAndAuthor<Operation[]>> {
     while (uTag === this.#uTag) {
       await delay(10);
     }
@@ -67,6 +82,7 @@ export abstract class BlockMock<
     return {
       uTag: this.#uTag,
       value: patches,
+      author: this.author,
     };
   }
 

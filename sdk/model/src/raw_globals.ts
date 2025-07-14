@@ -1,7 +1,7 @@
 import type { ValueOrErrors } from '@milaboratories/pl-model-common';
 import {} from './global';
 import { getPlatformaInstance } from './internal';
-import type { Platforma } from './platforma';
+import type { Platforma, PlatformaV1, PlatformaV2 } from './platforma';
 import { PlatformaSDKVersion } from './version';
 
 export function getRawPlatformaInstance<
@@ -19,7 +19,7 @@ export function getPlatformaOrDefault<
   Outputs extends Record<string, ValueOrErrors<unknown>> = Record<string, ValueOrErrors<unknown>>,
   UiState = unknown,
   Href extends `/${string}` = `/${string}`,
->(platforma: Platforma<Args, Outputs, UiState, Href>): Platforma<Args, Outputs, UiState, Href> {
+>(): PlatformaV1<Args, Outputs, UiState, Href> | PlatformaV2<Args, Outputs, UiState, Href> {
   try {
     return getRawPlatformaInstance<Args, Outputs, UiState, Href>();
   } catch {

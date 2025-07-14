@@ -110,7 +110,6 @@ packages:
 
   # Etc
 
-  - etc/ui-vue-playground
   - etc/uikit-playground
   - etc/ui-vue-docs
 

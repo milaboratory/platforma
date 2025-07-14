@@ -58,9 +58,16 @@ export type UiState = {
     id: string;
     label: string;
   }[];
+  datasets: {
+    id: string;
+    label: string;
+  }[];
 };
 
 export const platforma = BlockModel.create('Heavy')
+  .withFeatureFlags({
+    requiresUIAPIVersion: 2,
+  })
 
   .withArgs<BlockArgs>({ numbers: [1, 2, 3, 4], tableNumRows: 100, handles: [] })
 
@@ -70,6 +77,7 @@ export const platforma = BlockModel.create('Heavy')
       state: createPlDataTableStateV2(),
     },
     dynamicSections: [],
+    datasets: [],
   })
 
   .argsValid((ctx) => {
@@ -311,6 +319,7 @@ export const platforma = BlockModel.create('Heavy')
     return [
       { type: 'link', href: '/loaders', label: 'Loaders' },
       { type: 'link', href: '/', label: 'Icons/Masks' },
+      { type: 'link', href: '/state', label: 'State' },
       { type: 'link', href: '/layout', label: 'Layout' },
       { type: 'link', href: '/form-components', label: 'Form Components' },
       { type: 'link', href: '/log-view', label: 'PlLogView' },

@@ -2,7 +2,7 @@ import type { BlockRenderingMode, BlockSection, ValueOrErrors, AnyFunction, PlRe
 import type { Checked, ConfigResult, TypedConfig } from './config';
 import { getImmediate } from './config';
 import { getPlatformaInstance, isInUI, tryRegisterCallback } from './internal';
-import type { Platforma } from './platforma';
+import type { PlatformaV1, PlatformaV2 } from './platforma';
 import type { InferRenderFunctionReturn, RenderFunction } from './render';
 import { RenderCtx } from './render';
 import { PlatformaSDKVersion } from './version';
@@ -70,7 +70,7 @@ export class BlockModel<
 
   public static readonly INITIAL_BLOCK_FEATURE_FLAGS: BlockCodeKnownFeatureFlags = {
     supportsLazyState: true,
-    requiresUIAPIVersion: 2,
+    requiresUIAPIVersion: 1,
     requiresModelAPIVersion: 1,
   };
 
@@ -346,6 +346,21 @@ export class BlockModel<
     );
   }
 
+  /** Sets or overrides feature flags for the block. */
+  public withFeatureFlags(flags: Partial<BlockCodeKnownFeatureFlags>): BlockModel<Args, OutputsCfg, UiState, Href> {
+    return new BlockModel<Args, OutputsCfg, UiState, Href>(
+      this._renderingMode,
+      this._initialArgs,
+      this._initialUiState,
+      this._outputs,
+      this._inputsValid,
+      this._sections,
+      this._title,
+      this._enrichmentTargets,
+      { ...this._featureFlags, ...flags },
+    );
+  }
+
   /**
    * Defines how to derive list of upstream references this block is meant to enrich with its exports from block args.
    * Influences dependency graph construction.
@@ -370,7 +385,7 @@ export class BlockModel<
   /** Renders all provided block settings into a pre-configured platforma API
    * instance, that can be used in frontend to interact with block state, and
    * other features provided by the platforma to the block. */
-  public done(): Platforma<
+  public done(): PlatformaV1<
     Args,
     InferOutputsFromConfigs<Args, OutputsCfg, UiState>,
     UiState,
@@ -405,6 +420,46 @@ export class BlockModel<
 
     if (!isInUI())
       // we are in the configuration rendering routine, not in actual UI
+      return { config } as any;
+    // normal operation inside the UI
+    else return getPlatformaInstance({ sdkVersion: PlatformaSDKVersion }) as any;
+  }
+
+  public doneV2(): PlatformaV2<
+    Args,
+    InferOutputsFromConfigs<Args, OutputsCfg, UiState>,
+    UiState,
+    Href
+  > {
+    if (this._initialArgs === undefined) throw new Error('Initial arguments not set.');
+
+    const config: BlockConfigContainer = {
+      v3: {
+        sdkVersion: PlatformaSDKVersion,
+        renderingMode: this._renderingMode,
+        initialArgs: this._initialArgs,
+        initialUiState: this._initialUiState,
+        inputsValid: this._inputsValid,
+        sections: this._sections,
+        title: this._title,
+        outputs: this._outputs,
+        enrichmentTargets: this._enrichmentTargets,
+        featureFlags: this._featureFlags,
+      },
+
+      // fields below are added to allow previous desktop versions read generated configs
+      sdkVersion: PlatformaSDKVersion,
+      renderingMode: this._renderingMode,
+      initialArgs: this._initialArgs,
+      inputsValid: downgradeCfgOrLambda(this._inputsValid),
+      sections: downgradeCfgOrLambda(this._sections),
+      outputs: Object.fromEntries(
+        Object.entries(this._outputs).map(([key, value]) => [key, downgradeCfgOrLambda(value)]),
+      ),
+    };
+
+    if (!isInUI())
+    // we are in the configuration rendering routine, not in actual UI
       return { config } as any;
     // normal operation inside the UI
     else return getPlatformaInstance({ sdkVersion: PlatformaSDKVersion }) as any;

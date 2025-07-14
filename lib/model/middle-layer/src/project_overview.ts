@@ -1,7 +1,6 @@
 import { ProjectMeta } from './project';
 import { BlockPackSpec } from './block_registry/block_pack_spec';
-import { BlockCodeFeatureFlags, BlockRenderingMode, BlockSection, NavigationState } from '@milaboratories/pl-model-common';
-import { AuthorMarker } from './author_marker';
+import { BlockCodeFeatureFlags, BlockRenderingMode, BlockSection, NavigationState, AuthorMarker } from '@milaboratories/pl-model-common';
 import { UpdateSuggestions } from './update_info';
 import { BlockSettings } from './block_settings';
 

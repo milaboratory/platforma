@@ -1,6 +1,7 @@
-import { deepClone, delay } from '@milaboratories/helpers';
+import { deepClone, delay, uniqueId } from '@milaboratories/helpers';
 import type { Mutable } from '@milaboratories/helpers';
-import type { NavigationState, BlockOutputsBase, BlockState, Platforma, ValueWithUTag } from '@platforma-sdk/model';
+import type { NavigationState, BlockOutputsBase, BlockState, PlatformaV2, ValueWithUTag, AuthorMarker } from '@platforma-sdk/model';
+import { isAbortError, unwrapResult } from '@platforma-sdk/model';
 import type { Ref } from 'vue';
 import { reactive, computed, ref } from 'vue';
 import type { StateModelOptions, UnwrapOutputs, OutputValues, OutputErrors, AppSettings } from '../types';
@@ -10,6 +11,11 @@ import { parseQuery } from '../urls';
 import { MultiError, unwrapValueOrErrors } from '../utils';
 import { applyPatch } from 'fast-json-patch';
 import { UpdateSerializer } from './UpdateSerializer';
+
+export const createNextAuthorMarker = (marker: AuthorMarker | undefined): AuthorMarker => ({
+  authorId: marker?.authorId ?? uniqueId(),
+  localVersion: (marker?.localVersion ?? 0) + 1,
+});
 
 /**
  * Creates an application instance with reactive state management, outputs, and methods for state updates and navigation.
@@ -25,19 +31,32 @@ import { UpdateSerializer } from './UpdateSerializer';
  *
  * @returns A reactive application object with methods, getters, and state.
  */
-export function createApp<
+export function createAppV2<
   Args = unknown,
   Outputs extends BlockOutputsBase = BlockOutputsBase,
   UiState = unknown,
   Href extends `/${string}` = `/${string}`,
 >(
   state: ValueWithUTag<BlockState<Args, Outputs, UiState, Href>>,
-  platforma: Platforma<Args, Outputs, UiState, Href>,
+  platforma: PlatformaV2<Args, Outputs, UiState, Href>,
   settings: AppSettings,
 ) {
   type AppModel = {
     args: Args;
     ui: UiState;
+  };
+
+  const data = {
+    author: {
+      authorId: uniqueId(),
+      localVersion: 0,
+    } as AuthorMarker | undefined,
+  };
+
+  const nextAuthorMarker = () => {
+    data.author = createNextAuthorMarker(data.author);
+    console.log('nextAuthorMarker', data.author);
+    return data.author;
   };
 
   const closedRef = ref(false);
@@ -72,31 +91,18 @@ export function createApp<
   }>;
 
   const setBlockArgs = async (args: Args) => {
-    if (settings.useOldBehavior) {
-      snapshot.value.args = args;
-    }
-    return platforma.setBlockArgs(args);
+    return platforma.setBlockArgs(args, nextAuthorMarker());
   };
 
   const setBlockUiState = async (ui: UiState) => {
-    if (settings.useOldBehavior) {
-      snapshot.value.ui = ui;
-    }
-    return platforma.setBlockUiState(ui);
+    return platforma.setBlockUiState(ui, nextAuthorMarker());
   };
 
   const setBlockArgsAndUiState = async (args: Args, ui: UiState) => {
-    if (settings.useOldBehavior) {
-      snapshot.value.args = args;
-      snapshot.value.ui = ui;
-    }
-    return platforma.setBlockArgsAndUiState(args, ui);
+    return platforma.setBlockArgsAndUiState(args, ui, nextAuthorMarker());
   };
 
   const setNavigationState = async (state: NavigationState<Href>) => {
-    if (settings.useOldBehavior) {
-      snapshot.value.navigationState = state;
-    }
     return platforma.setNavigationState(state);
   };
 
@@ -105,26 +111,33 @@ export function createApp<
 
     while (!closedRef.value) {
       try {
-        const patches = await platforma.getPatches(uTagRef.value);
+        const patches = await platforma.getPatches(uTagRef.value).then(unwrapResult);
 
         log('patches', JSON.stringify(patches, null, 2));
         log('uTagRef.value', uTagRef.value);
         log('patches.uTag', patches.uTag);
-        log('is the same uTag', uTagRef.value === patches.uTag);
 
         uTagRef.value = patches.uTag;
-        // Immutable behavior
-        if (settings.useOldBehavior) {
-          const newState = applyPatch(snapshot.value, patches.value, false, false).newDocument;
 
-          snapshot.value = newState;
+        const isAuthorChanged = data.author?.authorId !== patches.author?.authorId;
+
+        // Immutable behavior, apply external changes to the snapshot
+        if (isAuthorChanged) {
+          log('got external changes, applying them to the snapshot');
+          snapshot.value = applyPatch(snapshot.value, patches.value, false, false).newDocument;
+          log('new snapshot', JSON.stringify(snapshot.value, null, 2));
         } else {
           // Mutable behavior
           snapshot.value = applyPatch(snapshot.value, patches.value).newDocument;
         }
       } catch (err) {
+        if (isAbortError(err)) {
+          console.log('abort error in patches loop', err);
+          closedRef.value = true;
+          break;
+        }
         console.error('error in patches loop', err);
-        await new Promise((resolve) => setTimeout(resolve, 10));
+        await new Promise((resolve) => setTimeout(resolve, 1000));
       }
     }
   })();
@@ -151,7 +164,7 @@ export function createApp<
       autoSave: true,
       onSave(newData: AppModel) {
         log('onSave', newData);
-        setArgsAndUiStateQueue.run(() => setBlockArgsAndUiState(newData.args, newData.ui));
+        setArgsAndUiStateQueue.run(() => setBlockArgsAndUiState(newData.args, newData.ui).then(unwrapResult));
       },
     },
     {
@@ -174,7 +187,7 @@ export function createApp<
         validate: options.validate,
         autoSave: true,
         onSave(newArgs) {
-          setArgsQueue.run(() => setBlockArgs(newArgs));
+          setArgsQueue.run(() => setBlockArgs(newArgs).then(unwrapResult));
         },
       });
     },
@@ -193,7 +206,7 @@ export function createApp<
         validate: options.validate,
         autoSave: true,
         onSave(newData) {
-          setUiStateQueue.run(() => setBlockUiState(newData));
+          setUiStateQueue.run(() => setBlockUiState(newData).then(unwrapResult));
         },
       });
     },
@@ -221,7 +234,7 @@ export function createApp<
       cb(newArgs);
       log('updateArgs', newArgs);
       appModel.model.args = newArgs;
-      return setArgsQueue.run(() => setBlockArgs(newArgs));
+      return setArgsQueue.run(() => setBlockArgs(newArgs).then(unwrapResult));
     },
     /**
      * Updates the UI state by applying a callback.
@@ -234,7 +247,7 @@ export function createApp<
       const newUiState = cb(cloneUiState());
       log('updateUiState', newUiState);
       appModel.model.ui = newUiState;
-      return setUiStateQueue.run(() => setBlockUiState(newUiState));
+      return setUiStateQueue.run(() => setBlockUiState(newUiState).then(unwrapResult));
     },
     /**
      * Navigates to a specific href by updating the navigation state.
@@ -245,7 +258,7 @@ export function createApp<
     navigateTo(href: Href) {
       const newState = cloneNavigationState();
       newState.href = href;
-      return setNavigationStateQueue.run(() => setNavigationState(newState));
+      return setNavigationStateQueue.run(() => setNavigationState(newState).then(unwrapResult));
     },
     async allSettled() {
       await delay(0);
@@ -264,9 +277,9 @@ export function createApp<
   return reactive(Object.assign(appModel, methods, getters));
 }
 
-export type BaseApp<
+export type BaseAppV2<
   Args = unknown,
   Outputs extends BlockOutputsBase = BlockOutputsBase,
   UiState = unknown,
   Href extends `/${string}` = `/${string}`,
-> = ReturnType<typeof createApp<Args, Outputs, UiState, Href>>;
+> = ReturnType<typeof createAppV2<Args, Outputs, UiState, Href>>;

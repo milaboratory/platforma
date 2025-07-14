@@ -1,6 +1,11 @@
-import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
-import { createApp } from '../createApp';
-import type { ValueWithUTag, BlockState, Platforma, BlockOutputsBase, ImportFileHandle, FileLike, ListFilesResult, LocalImportFileHandle, NavigationState, OpenDialogOps, OpenMultipleFilesResponse, OpenSingleFileResponse, StorageHandle, ValueOrErrors } from '@platforma-sdk/model';
+import type {
+  ValueWithUTag,
+  ValueWithUTagAndAuthor,
+  BlockState,
+  PlatformaV2,
+  BlockOutputsBase,
+  ImportFileHandle, FileLike, ListFilesResult, LocalImportFileHandle, NavigationState, OpenDialogOps, OpenMultipleFilesResponse, OpenSingleFileResponse, StorageHandle, ResultOrError } from '@platforma-sdk/model';
+import { serializeResult, wrapAsyncCallback } from '@platforma-sdk/model';
 import type { BlockMock } from './BlockMock';
 import type { Operation } from 'fast-json-patch';
 import { delay } from '@milaboratories/helpers';
@@ -11,31 +16,34 @@ export function createMockApi<
   Outputs extends BlockOutputsBase,
   UiState = unknown,
   Href extends `/${string}` = `/${string}`,
->(block: BlockMock<Args, Outputs, UiState, Href>): Platforma<Args, Outputs, UiState> {
+>(block: BlockMock<Args, Outputs, UiState, Href>): PlatformaV2<Args, Outputs, UiState, Href> {
   return {
+    requiresUIAPIVersion: 2,
     sdkInfo: {
       sdkVersion: 'dev',
     },
-    loadBlockState: async function (): Promise<ValueWithUTag<BlockState<Args, Outputs, UiState, Href>>> {
-      return {
-        value: block.getState(),
-        uTag: block.uTag,
-      };
+    loadBlockState: async function (): Promise<ResultOrError<ValueWithUTag<BlockState<Args, Outputs, UiState, Href>>>> {
+      return serializeResult({
+        value: {
+          value: block.getState(),
+          uTag: block.uTag,
+        },
+      });
     },
-    getPatches: async function (uTag: string): Promise<ValueWithUTag<Operation[]>> {
-      return await block.getJsonPatches(uTag);
+    getPatches: async function (uTag: string): Promise<ResultOrError<ValueWithUTagAndAuthor<Operation[]>>> {
+      return wrapAsyncCallback(() => block.getJsonPatches(uTag));
     },
-    async setBlockArgs(value: Args): Promise<void> {
-      await block.setBlockArgs(value);
+    async setBlockArgs(value: Args): Promise<ResultOrError<void>> {
+      return wrapAsyncCallback(() => block.setBlockArgs(value));
     },
-    async setBlockUiState(value: UiState): Promise<void> {
-      await block.setBlockUiState(value);
+    async setBlockUiState(value: UiState): Promise<ResultOrError<void>> {
+      return wrapAsyncCallback(() => block.setBlockUiState(value));
     },
-    async setBlockArgsAndUiState(args: Args, uiState: UiState): Promise<void> {
-      await block.setBlockArgsAndUiState(args, uiState);
+    async setBlockArgsAndUiState(args: Args, uiState: UiState): Promise<ResultOrError<void>> {
+      return wrapAsyncCallback(() => block.setBlockArgsAndUiState(args, uiState));
     },
-    async setNavigationState(navigationState: NavigationState<Href>): Promise<void> {
-      // await block.setNavigationState(navigationState);
+    async setNavigationState(navigationState: NavigationState<Href>): Promise<ResultOrError<void>> {
+      return wrapAsyncCallback(() => block.setNavigationState(navigationState));
     },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     blobDriver: undefined as any,

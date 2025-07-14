@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createApp } from './createApp';
+import { createAppV2 } from './createAppV2';
 import type { ValueOrErrors } from '@platforma-sdk/model';
 import { BlockMock } from './test-helpers/BlockMock';
 import { delay } from '@milaboratories/helpers';
@@ -44,9 +44,11 @@ class BlockSum extends BlockMock<Args, Outputs, UiState, `/${string}`> {
   }
 }
 
-export const platforma = createMockApi<Args, Outputs, UiState>(new BlockSum(defaultArgs(), defaultOutputs(), {
-  label: '',
-}, '/'));
+export const platforma = createMockApi<Args, Outputs, UiState>(new BlockSum(
+  defaultArgs(),
+  defaultOutputs(), {
+    label: '',
+  }, '/'));
 
 describe.only('createApp', { timeout: 20_000 }, () => {
   beforeEach(() => {
@@ -59,7 +61,7 @@ describe.only('createApp', { timeout: 20_000 }, () => {
   it('should create an app with reactive snapshot', async () => {
     const initialState = await platforma.loadBlockState();
 
-    const app = createApp(initialState, platforma, { debug: false, debounceSpan: 10 });
+    const app = createAppV2(initialState, platforma, { debug: false, debounceSpan: 10 });
 
     expect(app.model.args).toEqual({ x: 0, y: 0 });
     expect(app.model.ui).toEqual({ label: '' });
