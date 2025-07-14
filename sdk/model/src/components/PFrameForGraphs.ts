@@ -9,7 +9,9 @@ import type {
 import {
   canonicalizeJson,
   getAxisId,
+  isDataInfo,
   matchAxisId, parseJson,
+  visitDataInfo,
 } from '@milaboratories/pl-model-common';
 import type { PColumnDataUniversal, RenderCtx } from '../render';
 import { PColumnCollection, TreeNodeAccessor } from '../render';
@@ -203,8 +205,18 @@ function getAdditionalColumnsForColumn(
   return [column, ...additionalColumns];
 }
 
-function isColumnNotReady(c: PColumn<PColumnDataUniversal>) {
-  return c.data instanceof TreeNodeAccessor && !c.data.getIsReadyOrError();
+function isColumnReady(c: PColumn<PColumnDataUniversal>) {
+  let notReady = true;
+  if (c.data instanceof TreeNodeAccessor) {
+    notReady = c.data.getIsReadyOrError();
+  } else if (isDataInfo(c.data)) {
+    visitDataInfo(c.data, (v) => {
+      if (v.getIsReadyOrError()) {
+        notReady = false;
+      }
+    });
+  }
+  return notReady;
 }
 
 /**
@@ -221,7 +233,7 @@ function isColumnNotReady(c: PColumn<PColumnDataUniversal>) {
  */
 export function createPFrameForGraphs<A, U>(
   ctx: RenderCtx<A, U>,
-  blockColumns: PColumn<PColumnDataUniversal>[] | undefined,
+  blockColumns?: PColumn<PColumnDataUniversal>[],
 ): PFrameHandle | undefined {
   // if current block doesn't produce own columns then use all columns from result pool
   if (!blockColumns) {
@@ -241,7 +253,7 @@ export function createPFrameForGraphs<A, U>(
     const extendedColumns = enrichCompatible(allAxes, allColumns);
 
     // if at least one column is not yet ready, we can't show the table
-    if (extendedColumns.some(isColumnNotReady))
+    if (extendedColumns.some((c) => !isColumnReady(c)))
       return undefined;
 
     return ctx.createPFrame(extendedColumns);
@@ -310,7 +322,7 @@ export function createPFrameForGraphs<A, U>(
   const extendedColumns = enrichCompatible(blockAxes, compatible);
 
   // if at least one column is not yet ready, we can't show the table
-  if (extendedColumns.some(isColumnNotReady))
+  if (extendedColumns.some((c) => !isColumnReady(c)))
     return undefined;
 
   return ctx.createPFrame(extendedColumns);
