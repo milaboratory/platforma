@@ -205,18 +205,22 @@ function getAdditionalColumnsForColumn(
   return [column, ...additionalColumns];
 }
 
-function isColumnReady(c: PColumn<PColumnDataUniversal>) {
+export function isColumnReady(c: PColumn<PColumnDataUniversal>) {
   let ready = true;
   if (c.data instanceof TreeNodeAccessor) {
-    ready = c.data.getIsReadyOrError();
+    ready = ready && c.data.getIsReadyOrError();
   } else if (isDataInfo(c.data)) {
     visitDataInfo(c.data, (v) => {
-      if (!v.getIsReadyOrError()) {
-        ready = false;
+      if (ready) {
+        ready = ready && v.getIsReadyOrError();
       }
     });
   }
   return ready;
+}
+
+export function allColumnsReady(columns: PColumn<PColumnDataUniversal>[]): boolean {
+  return columns.every(isColumnReady);
 }
 
 /**
@@ -241,9 +245,10 @@ export function createPFrameForGraphs<A, U>(
     columns.addColumnProvider(ctx.resultPool);
 
     const allColumns = columns.getColumns(() => true, { dontWaitAllData: true, overrideLabelAnnotation: false }) ?? [];
-    // if at least one column is not yet ready, we can't show the table
-    if (allColumns.some((c) => !isColumnReady(c)))
+    // if at least one column is not yet ready, we can't show the graph
+    if (allColumns.some((c) => !isColumnReady(c))) {
       return undefined;
+    }
 
     const allAxes = new Map(allColumns
       .flatMap((column) => column.spec.axesSpec)
@@ -257,6 +262,10 @@ export function createPFrameForGraphs<A, U>(
 
     return ctx.createPFrame(extendedColumns);
   };
+
+  if (!allColumnsReady(blockColumns)) {
+    return undefined;
+  }
 
   // if current block has its own columns then take from result pool only compatible with them
   const columns = new PColumnCollection();
@@ -296,9 +305,10 @@ export function createPFrameForGraphs<A, U>(
     return false;
   }), { dontWaitAllData: true, overrideLabelAnnotation: false }) ?? []).filter((column) => !isLabelColumn(column.spec));
 
-  // if at least one column is not yet ready, we can't show the table
-  if (compatibleWithoutLabels.some((c) => !isColumnReady(c)))
+  // if at least one column is not yet ready, we can't show the graph
+  if (!allColumnsReady(compatibleWithoutLabels)) {
     return undefined;
+  }
 
   // extend axes set for label columns request
   for (const c of compatibleWithoutLabels) {
@@ -318,9 +328,11 @@ export function createPFrameForGraphs<A, U>(
     }
     return false;
   }), { dontWaitAllData: true, overrideLabelAnnotation: false }) ?? []).filter((column) => isLabelColumn(column.spec));
-  // if at least one column is not yet ready, we can't show the table
-  if (compatibleLabels.some((c) => !isColumnReady(c)))
+
+  // if at least one column is not yet ready, we can't show the graph
+  if (compatibleLabels.some((c) => !isColumnReady(c))) {
     return undefined;
+  }
 
   const compatible = [...compatibleWithoutLabels, ...compatibleLabels];
 
