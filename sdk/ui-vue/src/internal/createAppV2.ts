@@ -1,7 +1,7 @@
 import { deepClone, delay, uniqueId } from '@milaboratories/helpers';
 import type { Mutable } from '@milaboratories/helpers';
 import type { NavigationState, BlockOutputsBase, BlockState, PlatformaV2, ValueWithUTag, AuthorMarker } from '@platforma-sdk/model';
-import { deserializeResult, hasAbortError, unwrapResult } from '@platforma-sdk/model';
+import { hasAbortError, unwrapResult } from '@platforma-sdk/model';
 import type { Ref } from 'vue';
 import { reactive, computed, ref } from 'vue';
 import type { StateModelOptions, UnwrapOutputs, OutputValues, OutputErrors, AppSettings } from '../types';
@@ -46,6 +46,16 @@ export function createAppV2<
     ui: UiState;
   };
 
+  const debug = (msg: string, ...rest: unknown[]) => {
+    if (settings.debug) {
+      console.log(`%c>>> %c${msg}`, 'color: orange; font-weight: bold', 'color: orange', ...rest);
+    }
+  };
+
+  const error = (msg: string, ...rest: unknown[]) => {
+    console.error(`%c>>> %c${msg}`, 'color: red; font-weight: bold', 'color: red', ...rest);
+  };
+
   const data = {
     author: {
       authorId: uniqueId(),
@@ -55,23 +65,13 @@ export function createAppV2<
 
   const nextAuthorMarker = () => {
     data.author = createNextAuthorMarker(data.author);
-    console.log('nextAuthorMarker', data.author);
+    debug('nextAuthorMarker', data.author);
     return data.author;
   };
 
   const closedRef = ref(false);
 
   const uTagRef = ref(state.uTag);
-
-  const log = (msg: string, ...rest: unknown[]) => {
-    if (settings.debug) {
-      console.log(`%c>>> %c${msg}`, 'color: orange; font-weight: bold', 'color: orange', ...rest);
-    }
-  };
-
-  const error = (msg: string, ...rest: unknown[]) => {
-    console.error(`%c>>> %c${msg}`, 'color: red; font-weight: bold', 'color: red', ...rest);
-  };
 
   const debounceSpan = settings.debounceSpan ?? 200;
 
@@ -117,9 +117,9 @@ export function createAppV2<
       try {
         const patches = await platforma.getPatches(uTagRef.value).then(unwrapResult);
 
-        log('patches', JSON.stringify(patches, null, 2));
-        log('uTagRef.value', uTagRef.value);
-        log('patches.uTag', patches.uTag);
+        debug('patches', JSON.stringify(patches, null, 2));
+        debug('uTagRef.value', uTagRef.value);
+        debug('patches.uTag', patches.uTag);
 
         uTagRef.value = patches.uTag;
 
@@ -127,16 +127,17 @@ export function createAppV2<
 
         // Immutable behavior, apply external changes to the snapshot
         if (isAuthorChanged) {
-          log('got external changes, applying them to the snapshot');
+          debug('got external changes, applying them to the snapshot');
           snapshot.value = applyPatch(snapshot.value, patches.value, false, false).newDocument;
-          log('new snapshot', JSON.stringify(snapshot.value, null, 2));
         } else {
           // Mutable behavior
           snapshot.value = applyPatch(snapshot.value, patches.value).newDocument;
         }
+
+        await new Promise((resolve) => setTimeout(resolve, 1000));
       } catch (err) {
         if (hasAbortError(err)) {
-          log('patches loop aborted');
+          debug('patches loop aborted');
           closedRef.value = true;
         } else {
           error('error in patches loop', err);
@@ -145,10 +146,6 @@ export function createAppV2<
       }
     }
   })();
-
-  const cloneArgs = () => deepClone(snapshot.value.args) as Args;
-  const cloneUiState = () => deepClone(snapshot.value.ui) as UiState;
-  const cloneNavigationState = () => deepClone(snapshot.value.navigationState) as Mutable<NavigationState<Href>>;
 
   const outputs = computed<OutputValues<Outputs>>(() => {
     const entries = Object.entries(snapshot.value.outputs as Partial<Readonly<Outputs>>).map(([k, vOrErr]) => [k, vOrErr.ok && vOrErr.value !== undefined ? vOrErr.value : undefined]);
@@ -167,7 +164,7 @@ export function createAppV2<
       },
       autoSave: true,
       onSave(newData: AppModel) {
-        log('onSave', newData);
+        debug('onSave', newData);
         setArgsAndUiStateQueue.run(() => setBlockArgsAndUiState(newData.args, newData.ui).then(unwrapResult));
       },
     },
@@ -178,7 +175,14 @@ export function createAppV2<
     settings,
   );
 
+  const cloneArgs = () => deepClone(appModel.model.args) as Args;
+  const cloneUiState = () => deepClone(appModel.model.ui) as UiState;
+  const cloneNavigationState = () => deepClone(snapshot.value.navigationState) as Mutable<NavigationState<Href>>;
+
   const methods = {
+    cloneArgs,
+    cloneUiState,
+    cloneNavigationState,
     createArgsModel<T extends Args = Args>(options: StateModelOptions<Args, T> = {}) {
       return createModel<T, Args>({
         get() {
@@ -236,7 +240,7 @@ export function createAppV2<
     updateArgs(cb: (args: Args) => void): Promise<boolean> {
       const newArgs = cloneArgs();
       cb(newArgs);
-      log('updateArgs', newArgs);
+      debug('updateArgs', newArgs);
       appModel.model.args = newArgs;
       return setArgsQueue.run(() => setBlockArgs(newArgs).then(unwrapResult));
     },
@@ -249,7 +253,7 @@ export function createAppV2<
      */
     updateUiState(cb: (args: UiState) => UiState): Promise<boolean> {
       const newUiState = cb(cloneUiState());
-      log('updateUiState', newUiState);
+      debug('updateUiState', newUiState);
       appModel.model.ui = newUiState;
       return setUiStateQueue.run(() => setBlockUiState(newUiState).then(unwrapResult));
     },

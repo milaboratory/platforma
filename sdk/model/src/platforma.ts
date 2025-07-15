@@ -14,7 +14,7 @@ export interface PlatformaV1<
   DriverKit {
   /** Information about SDK version current platforma environment was compiled with. */
   readonly sdkInfo: SdkInfo;
-  readonly requiresUIAPIVersion?: undefined;
+  readonly apiVersion?: 1;
 }
 
 /** V2 version based on effective json patches pulling API */
@@ -27,7 +27,7 @@ export interface PlatformaV2<
   DriverKit {
   /** Information about SDK version current platforma environment was compiled with. */
   readonly sdkInfo: SdkInfo;
-  readonly requiresUIAPIVersion: 2;
+  readonly apiVersion: 2;
 }
 
 export type Platforma<

@@ -57,7 +57,7 @@ export function defineApp<
   const platforma = getPlatformaOrDefault<Args, Outputs, UiState, Href>();
 
   const loadApp = () => {
-    if (platforma.requiresUIAPIVersion === undefined) {
+    if (platforma.apiVersion === undefined) {
       platforma
         .loadBlockState()
         .then((state) => {
@@ -84,7 +84,7 @@ export function defineApp<
           console.error('load initial state error', err);
           plugin.error = err;
         });
-    } else if (platforma.requiresUIAPIVersion === 2) {
+    } else if (platforma.apiVersion === 2) {
       platforma
         .loadBlockState()
         .then((stateOrError) => {
