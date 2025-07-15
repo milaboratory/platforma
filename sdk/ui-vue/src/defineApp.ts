@@ -45,7 +45,7 @@ export function defineApp<
   Href extends `/${string}` = `/${string}`,
   Extend extends ExtendSettings<Href> = ExtendSettings<Href>,
 >(
-  _platforma: Platforma<Args, Outputs, UiState, Href>,
+  platforma: Platforma<Args, Outputs, UiState, Href>,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   extendApp: (app: any) => Extend,
   settings: AppSettings = {},
@@ -53,8 +53,6 @@ export function defineApp<
   let app: undefined | AppV1<Args, Outputs, UiState, Href, Extend> | AppV2<Args, Outputs, UiState, Href, Extend> = undefined;
 
   activateAgGrid();
-
-  const platforma = getPlatformaOrDefault<Args, Outputs, UiState, Href>();
 
   const loadApp = () => {
     if (platforma.apiVersion === undefined) {

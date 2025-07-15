@@ -5,6 +5,7 @@ import { BlockMock } from './test-helpers/BlockMock';
 import { delay } from '@milaboratories/helpers';
 import { createMockApi } from './test-helpers/createMockApi';
 import { watch } from 'vue';
+import { patchPoolingDelay } from './createAppV2';
 
 type Args = {
   x: number;
@@ -91,7 +92,7 @@ describe('createApp', { timeout: 20_000 }, () => {
 
     const t3 = performance.now();
     await app.allSettled();
-    await delay(100);
+    await delay(patchPoolingDelay + 10);
     const t4 = performance.now();
     console.log('allSettled', t4 - t3);
 

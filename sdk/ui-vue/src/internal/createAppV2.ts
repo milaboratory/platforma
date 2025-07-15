@@ -12,6 +12,8 @@ import { MultiError, unwrapValueOrErrors } from '../utils';
 import { applyPatch } from 'fast-json-patch';
 import { UpdateSerializer } from './UpdateSerializer';
 
+export const patchPoolingDelay = 100;
+
 export const createNextAuthorMarker = (marker: AuthorMarker | undefined): AuthorMarker => ({
   authorId: marker?.authorId ?? uniqueId(),
   localVersion: (marker?.localVersion ?? 0) + 1,
@@ -134,7 +136,7 @@ export function createAppV2<
           snapshot.value = applyPatch(snapshot.value, patches.value).newDocument;
         }
 
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, patchPoolingDelay));
       } catch (err) {
         if (hasAbortError(err)) {
           debug('patches loop aborted');

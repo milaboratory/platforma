@@ -28,7 +28,7 @@ export function createMockApi<
   Href extends `/${string}` = `/${string}`,
 >(block: BlockMock<Args, Outputs, UiState, Href>): PlatformaV2<Args, Outputs, UiState, Href> {
   return {
-    requiresUIAPIVersion: 2,
+    apiVersion: 2,
     sdkInfo: {
       sdkVersion: 'dev',
     },
