@@ -179,6 +179,33 @@ export const platforma = BlockModel.create('Heavy')
           };
         }),
       },
+      {
+        id: 'labelColumn' as PObjectId,
+        spec: {
+          kind: 'PColumn',
+          valueType: 'Int',
+          name: 'pl7.app/label',
+          annotations: {
+            'pl7.app/label': 'Int axis labels',
+          },
+          axesSpec: [
+            {
+              type: 'Int',
+              name: 'index',
+              annotations: {
+                'pl7.app/label': 'Int axis',
+              },
+            },
+          ],
+        },
+        data: times(rowCount, (i) => {
+          const v = i + 1;
+          return {
+            key: [v],
+            val: 100000 - v,
+          };
+        }),
+      },
     ];
     for (let j = 3; j < 10; ++j) {
       columns.push({

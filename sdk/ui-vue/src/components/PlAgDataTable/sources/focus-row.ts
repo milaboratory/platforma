@@ -1,45 +1,35 @@
 import type { GridApi, IRowNode } from 'ag-grid-enterprise';
-import { nextTick, shallowRef, watchEffect } from 'vue';
+import { nextTick, shallowRef, watch } from 'vue';
 
 export function makeOnceTracker<TContext = undefined>() {
   const state = shallowRef<[false, undefined] | [true, TContext]>([false, undefined]);
-  const track = (ctx: TContext) => state.value = [true, ctx];
-  const reset = () => state.value = [false, undefined];
+  const track = (ctx: TContext): void => {
+    state.value = [true, ctx];
+  };
+  const reset = (): void => {
+    state.value = [false, undefined];
+  };
   const onceTracked = (callback: (ctx: TContext) => void) => {
-    const { stop } = watchEffect(() => {
-      const [tracked, context] = state.value;
-      if (tracked) {
-        callback(context);
-        stop();
-      }
-    });
-    return stop;
+    const handle = watch(
+      state,
+      ([tracked, context]) => {
+        if (tracked) {
+          callback(context);
+          nextTick(() => handle.stop());
+        }
+      },
+      { immediate: true },
+    );
+    return handle;
   };
   return { track, reset, onceTracked };
 }
 export type OnceTracker<TContext = undefined> = ReturnType<typeof makeOnceTracker<TContext>>;
 
-export function trackFirstDataRendered(gridApi: GridApi, tracker: OnceTracker<GridApi>): void {
-  gridApi.addEventListener('firstDataRendered', (event) => {
-    if (event.api.getGridOption('rowModelType') === 'clientSide') {
-      tracker.track(event.api);
-    }
-  });
-  gridApi.addEventListener('modelUpdated', (event) => {
-    if (event.api.getGridOption('rowModelType') === 'serverSide') {
-      const groupState = event.api.getServerSideGroupLevelState();
-      if (groupState && groupState.length > 0 && groupState[0].lastRowIndexKnown) {
-        tracker.track(event.api);
-      }
-    }
-  });
-  gridApi.addEventListener('gridPreDestroyed', () => tracker.reset());
-}
-
-function ensureNodeVisible(api: GridApi, rowId: string): void {
+function ensureNodeVisible<TData>(api: GridApi<TData>, selector: (row: IRowNode<TData>) => boolean): void {
   let rowIndex: number | null = null;
-  const nodeSelector = (row: IRowNode): boolean => {
-    if (row.id === rowId) {
+  const nodeSelector = (row: IRowNode<TData>): boolean => {
+    if (selector(row)) {
       rowIndex = row.rowIndex;
       return true;
     }
@@ -55,10 +45,13 @@ function ensureNodeVisible(api: GridApi, rowId: string): void {
   }
 };
 
-export async function focusRow(rowId: string, tracker: OnceTracker<GridApi>): Promise<void> {
+export async function focusRow<TData>(
+  selector: (row: IRowNode<TData>) => boolean,
+  tracker: OnceTracker<GridApi<TData>>,
+): Promise<void> {
   return new Promise((resolve) => {
     nextTick(() => tracker.onceTracked((gridApi) => {
-      ensureNodeVisible(gridApi, rowId);
+      ensureNodeVisible(gridApi, selector);
       resolve();
     }));
   });
