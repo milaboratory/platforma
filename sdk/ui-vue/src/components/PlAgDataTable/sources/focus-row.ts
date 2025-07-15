@@ -4,11 +4,9 @@ import { nextTick, shallowRef, watch } from 'vue';
 export function makeOnceTracker<TContext = undefined>() {
   const state = shallowRef<[false, undefined] | [true, TContext]>([false, undefined]);
   const track = (ctx: TContext): void => {
-    console.log('onceTracker tracked');
     state.value = [true, ctx];
   };
   const reset = (): void => {
-    console.log('onceTracker reset');
     state.value = [false, undefined];
   };
   const onceTracked = (callback: (ctx: TContext) => void) => {
@@ -53,7 +51,6 @@ export async function focusRow<TData>(
 ): Promise<void> {
   return new Promise((resolve) => {
     nextTick(() => tracker.onceTracked((gridApi) => {
-      console.log('focusRow executed');
       ensureNodeVisible(gridApi, selector);
       resolve();
     }));

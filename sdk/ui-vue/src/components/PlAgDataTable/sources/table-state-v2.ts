@@ -45,7 +45,12 @@ function makeDefaultState(): PlDataTableStateV2CacheEntryNullable {
 function getHiddenColIds(state: PlDataTableGridStateCore['columnVisibility']): PObjectId[] | null {
   return state?.hiddenColIds
     ?.map(parseJson)
-    .flatMap((c) => c.source.type === 'column' ? [c.source.id] : [])
+    .reduce((acc, c) => {
+      if (c.source.type === 'column') {
+        acc.push(c.source.id);
+      }
+      return acc;
+    }, [] as PObjectId[])
     ?? null;
 }
 
@@ -65,15 +70,17 @@ function makePartitionFilters(sheetsState: PlDataTableSheetState[]): PTableRecor
 
 function makeFilters(columnsState: PlDataTableFilterState[]): PTableRecordFilter[] {
   return columnsState
-    .flatMap((s) => {
-      return !s.filter || s.filter.disabled
-        ? []
-        : [{
-            type: 'bySingleColumnV2',
-            column: s.id,
-            predicate: makePredicate(s.alphabetic, s.filter.value),
-          }];
-    });
+    .reduce((acc, s) => {
+      if (!s.filter || s.filter.disabled) {
+        return acc;
+      }
+      acc.push({
+        type: 'bySingleColumnV2',
+        column: s.id,
+        predicate: makePredicate(s.alphabetic, s.filter.value),
+      });
+      return acc;
+    }, [] as PTableRecordFilter[]);
 }
 
 function makeSorting(state: PlDataTableGridStateCore['sort']): PTableSorting[] {

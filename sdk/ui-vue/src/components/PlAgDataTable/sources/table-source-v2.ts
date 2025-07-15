@@ -1,6 +1,3 @@
-import type {
-  PlTableColumnId,
-  PlTableColumnIdJson } from '@platforma-sdk/model';
 import {
   canonicalizeJson,
   getAxisId,
@@ -15,6 +12,8 @@ import {
   type PlDataTableModel,
   type PTableColumnSpec,
   type PTableKey,
+  type PlTableColumnId,
+  type PlTableColumnIdJson,
   isLabelColumn as isLabelColumnSpec,
 } from '@platforma-sdk/model';
 import type {
@@ -80,15 +79,23 @@ function columns2rows(
 }
 
 /** Calculate GridOptions for selected p-table data source */
-export async function calculateGridOptions(
-  generation: Ref<number>,
-  pfDriver: PFrameDriver,
-  model: PlDataTableModel,
-  sheets: PlDataTableSheet[],
-  track: (ctx: GridApi<PlAgDataTableV2Row>) => void,
-  hiddenColIds?: PlTableColumnIdJson[],
-  cellButtonAxisParams?: PlAgCellButtonAxisParams,
-): Promise<Pick<ManagedGridOptions<PlAgDataTableV2Row>, 'columnDefs' | 'serverSideDatasource'>> {
+export async function calculateGridOptions({
+  generation,
+  pfDriver,
+  model,
+  sheets,
+  track,
+  hiddenColIds,
+  cellButtonAxisParams,
+}: {
+  generation: Ref<number>;
+  pfDriver: PFrameDriver;
+  model: PlDataTableModel;
+  sheets: PlDataTableSheet[];
+  track: (ctx: GridApi<PlAgDataTableV2Row>) => void;
+  hiddenColIds?: PlTableColumnIdJson[];
+  cellButtonAxisParams?: PlAgCellButtonAxisParams;
+}): Promise<Pick<ManagedGridOptions<PlAgDataTableV2Row>, 'columnDefs' | 'serverSideDatasource'>> {
   const pt = model.visibleTableHandle;
   const specs = await pfDriver.getSpec(model.fullTableHandle);
   type SpecId = string;
@@ -196,9 +203,12 @@ export async function calculateGridOptions(
       return r;
     });
   const labeledAxes: number[] = fields
-    .flatMap((field, index) => {
-      return specs[field].type === 'axis' ? [allIndices.indexOf(indices[index])] : [];
-    });
+    .reduce((acc, field, index) => {
+      if (specs[field].type === 'axis') {
+        acc.push(allIndices.indexOf(indices[index]));
+      }
+      return acc;
+    }, [] as number[]);
 
   const requestIndices: number[] = [];
   const resultMapping: number[] = [];

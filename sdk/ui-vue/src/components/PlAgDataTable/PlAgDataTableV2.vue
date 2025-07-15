@@ -4,6 +4,7 @@ import {
 } from '@milaboratories/helpers';
 import type {
   AxisId,
+  AxisSpec,
   PlDataTableGridStateCore,
   PlDataTableStateV2,
   PlSelectionModel,
@@ -403,7 +404,12 @@ watchCached(
       filterableColumns.value = columns.map((column) => column.labeled);
       if (selection.value) {
         const axesSpec = columns
-          .flatMap((column) => column.source.type === 'axis' ? [column.source.spec] : []);
+          .reduce((acc, column) => {
+            if (column.source.type === 'axis') {
+              acc.push(column.source.spec);
+            }
+            return acc;
+          }, [] as AxisSpec[]);
         selection.value = {
           ...selection.value,
           axesSpec,
@@ -411,7 +417,12 @@ watchCached(
       }
       if (selectionLabeled.value) {
         const spec = columns
-          .flatMap((column) => column.source.type === 'axis' ? [column.labeled] : []);
+          .reduce((acc, column) => {
+            if (column.source.type === 'axis') {
+              acc.push(column.labeled);
+            }
+            return acc;
+          }, [] as PTableColumnSpec[]);
         selectionLabeled.value = {
           ...selectionLabeled.value,
           spec,
@@ -493,20 +504,20 @@ watch(
 
       // Model ready -> calculate new state
       const stateGeneration = generation.value;
-      calculateGridOptions(
+      calculateGridOptions({
         generation,
-        getRawPlatformaInstance().pFrameDriver,
-        settings.model,
-        settings.sheets ?? [],
-        firstDataRenderedTracker.track,
-        gridState.value.columnVisibility?.hiddenColIds,
-        {
+        pfDriver: getRawPlatformaInstance().pFrameDriver,
+        model: settings.model,
+        sheets: settings.sheets ?? [],
+        track: firstDataRenderedTracker.track,
+        hiddenColIds: gridState.value.columnVisibility?.hiddenColIds,
+        cellButtonAxisParams: {
           showCellButtonForAxisId: props.showCellButtonForAxisId,
           cellButtonInvokeRowsOnDoubleClick:
             props.cellButtonInvokeRowsOnDoubleClick,
           trigger: (key?: PTableKey) => emit('cellButtonClicked', key),
         } satisfies PlAgCellButtonAxisParams,
-      ).then((options) => {
+      }).then((options) => {
         if (gridApi.isDestroyed() || stateGeneration !== generation.value) return;
         return gridApi.updateGridOptions({
           ...options,

@@ -205,7 +205,7 @@ export type PlTableRowIdJson = CanonicalizedJson<PlTableRowId>;
 export type PlAgDataTableV2Row = {
   /** Axes key */
   axesKey: PTableKey;
-  /** Unique row identifier` */
+  /** Unique row identifier */
   id: PlTableRowIdJson;
   /** Row values by column; sheet axes and labeled axes are excluded */
   [field: `${number}`]: PTableValue | PTableHidden;
