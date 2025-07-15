@@ -1,5 +1,14 @@
 # @platforma-sdk/ui-vue
 
+## 1.40.1
+
+### Patch Changes
+
+- 890240e: PlAgDataTableV2 - support sorting and filtering by label column
+- Updated dependencies [890240e]
+  - @platforma-sdk/model@1.40.1
+  - @milaboratories/uikit@2.3.11
+
 ## 1.40.0
 
 ### Minor Changes
