@@ -5,11 +5,9 @@ import type {
   Settings,
 } from '@milaboratories/miplots4';
 import { PlAlert } from '@milaboratories/uikit';
-import { useResizeObserver } from '@vueuse/core';
 import {
   computed,
   onBeforeUnmount,
-  ref,
   shallowRef,
   useTemplateRef,
   watchEffect,
@@ -22,12 +20,6 @@ const { residueCounts } = defineProps<{
 }>();
 
 const plotEl = useTemplateRef('plotEl');
-
-const size = ref<{ width: number; height: number }>();
-
-useResizeObserver(plotEl, ([{ contentRect: { width, height } }]) => {
-  size.value = { width, height };
-});
 
 const columns = computed(() => {
   return residueCounts.map((column) => {
@@ -47,7 +39,7 @@ const columns = computed(() => {
 });
 
 const settings = computed<Settings | undefined>(() => {
-  if (!size.value) return;
+  const width = residueCounts.length * 20;
   return ({
     type: 'discrete',
     y: {
@@ -70,8 +62,7 @@ const settings = computed<Settings | undefined>(() => {
       height: 'max',
       aes: {
         ...residueCounts.length && {
-          width: (size.value.width - residueCounts.length + 1)
-            / residueCounts.length,
+          width: (width - residueCounts.length + 1) / residueCounts.length,
         },
         fillColor: {
           type: 'primaryGrouping',
@@ -84,7 +75,7 @@ const settings = computed<Settings | undefined>(() => {
       show: false,
     },
     size: {
-      width: size.value.width,
+      width,
       height: 60,
       outerOffset: 0,
       innerOffset: 0,
@@ -120,7 +111,7 @@ const data = computed<DataByColumns>(
     }
     return ({
       type: 'columns',
-      id: 'consensus',
+      id: `consensus-${crypto.randomUUID()}`,
       values: { countKey, columnKey },
     });
   },
@@ -146,16 +137,14 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div :class="$style.container">
+  <PlAlert v-if="error" type="error">
+    {{ error.message }}
+  </PlAlert>
+  <div v-else :class="$style.container">
     <div :class="$style.labels">
       {{ columns.map(column => column.label).join('') }}
     </div>
-    <div :class="$style['plot-container']">
-      <div ref="plotEl" :class="$style.plot" />
-      <PlAlert v-if="error" type="error">
-        {{ error.message }}
-      </PlAlert>
-    </div>
+    <div ref="plotEl" />
   </div>
 </template>
 
@@ -173,15 +162,5 @@ onBeforeUnmount(() => {
   letter-spacing: 11.6px;
   text-indent: 5.8px;
   margin-inline-end: -5.8px;
-}
-
-.plot-container {
-  position: relative;
-  block-size: 60px;
-}
-
-.plot {
-  position: absolute;
-  inset: 0;
 }
 </style>

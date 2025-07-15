@@ -1,10 +1,8 @@
-import type { ColorSchemeOption } from './types';
+import type { PlMultiSequenceAlignmentSettings } from '@platforma-sdk/model';
+import { defaultAlignmentParams } from './multi-sequence-alignment';
 
-export const defaultSettings = {
-  colorScheme: { type: 'chemical-properties' } as ColorSchemeOption,
-  consensus: true,
-  seqLogo: true,
-  legend: true,
+export const defaultSettings: PlMultiSequenceAlignmentSettings = {
+  colorScheme: { type: 'chemical-properties' },
+  widgets: ['seqLogo', 'consensus', 'legend'],
+  alignmentParams: defaultAlignmentParams,
 };
-
-export type Settings = typeof defaultSettings;

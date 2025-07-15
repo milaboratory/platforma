@@ -14,118 +14,50 @@ import {
   matchAxisId,
   parseJson,
   type PColumnIdAndSpec,
-  type PColumnPredicate,
   type PFrameHandle,
+  type PlMultiSequenceAlignmentColorSchemeOption,
+  type PlMultiSequenceAlignmentSettings,
   type PlSelectionModel,
   type PObjectId,
   type PTableColumnId,
   type PTableSorting,
   pTableValue,
 } from '@platforma-sdk/model';
-import { computedAsync } from '@vueuse/core';
-import { type MaybeRefOrGetter, ref, shallowRef, toValue } from 'vue';
-import { type Markup, markupAlignedSequence, parseMarkup } from './markup';
+import { ref, watch } from 'vue';
+import {
+  chemicalPropertiesColorMap,
+  colorizeSequencesByChemicalProperties,
+} from './chemical-properties';
+import {
+  colorizeSequencesByMarkup,
+  type Markup,
+  markupAlignedSequence,
+  markupColors,
+  parseMarkup,
+} from './markup';
 import { multiSequenceAlignment } from './multi-sequence-alignment';
+import { getResidueCounts } from './residue-counts';
+import type { ColorMap, ResidueCounts } from './types';
 
 const getPFrameDriver = () => getRawPlatformaInstance().pFrameDriver;
 
 export const sequenceLimit = 1000;
 
-export function useSequenceColumnsOptions(
-  params: MaybeRefOrGetter<{
-    pFrame: PFrameHandle | undefined;
-    sequenceColumnPredicate: PColumnPredicate;
-  }>,
-) {
-  const error = shallowRef<Error>();
-  const data = computedAsync<OptionsWithDefaults<PObjectId>>(
-    async () => {
-      try {
-        error.value = undefined;
-        return await getSequenceColumnsOptions(toValue(params));
-      } catch (err) {
-        error.value = ensureError(err);
-        return getEmtpyOptions();
-      }
-    },
-    getEmtpyOptions(),
-  );
-  return { data, error };
-}
+export const useSequenceColumnsOptions = refreshOnDeepChange(
+  getSequenceColumnsOptions,
+);
 
-export function useLabelColumnsOptions(
-  params: MaybeRefOrGetter<{
-    pFrame: PFrameHandle | undefined;
-    sequenceColumnIds: PObjectId[];
-  }>,
-) {
-  const error = shallowRef<Error>();
-  const data = computedAsync<OptionsWithDefaults<PTableColumnId>>(
-    async () => {
-      try {
-        error.value = undefined;
-        return await getLabelColumnsOptions(toValue(params));
-      } catch (err) {
-        console.error(err);
-        error.value = ensureError(err);
-        return getEmtpyOptions();
-      }
-    },
-    getEmtpyOptions(),
-  );
-  return { data, error };
-}
+export const useLabelColumnsOptions = refreshOnDeepChange(
+  getLabelColumnsOptions,
+);
 
-export function useMarkupColumnsOptions(
-  params: MaybeRefOrGetter<{
-    pFrame: PFrameHandle | undefined;
-    sequenceColumnIds: PObjectId[];
-  }>,
-) {
-  const error = shallowRef<Error>();
-  const data = computedAsync<ListOptionNormalized<PObjectId>[]>(
-    async () => {
-      try {
-        error.value = undefined;
-        return await getMarkupColumnsOptions(toValue(params));
-      } catch (err) {
-        console.error(err);
-        error.value = ensureError(err);
-        return [];
-      }
-    },
-    [],
-  );
-  return { data, error };
-}
+export const useMarkupColumnsOptions = refreshOnDeepChange(
+  getMarkupColumnsOptions,
+);
 
-export function useMultipleAlignmentData(
-  params: MaybeRefOrGetter<{
-    pframe: PFrameHandle | undefined;
-    sequenceColumnIds: PObjectId[];
-    labelColumnIds: PTableColumnId[];
-    markupColumnId: PObjectId | undefined;
-    selection: PlSelectionModel | undefined;
-  }>,
-) {
-  const loading = ref(true);
-  const error = shallowRef<Error>();
-  const data = computedAsync<MultipleAlignmentData>(
-    async () => {
-      try {
-        error.value = undefined;
-        return await getMultipleAlignmentData(toValue(params));
-      } catch (err) {
-        console.error(err);
-        error.value = ensureError(err);
-        return getEmtpyMultipleAlignmentData();
-      }
-    },
-    getEmtpyMultipleAlignmentData(),
-    { evaluating: loading },
-  );
-  return { data, error, loading };
-}
+export const useMultipleAlignmentData = refreshOnDeepChange(
+  getMultipleAlignmentData,
+);
 
 async function getSequenceColumnsOptions({
   pFrame,
@@ -133,8 +65,9 @@ async function getSequenceColumnsOptions({
 }: {
   pFrame: PFrameHandle | undefined;
   sequenceColumnPredicate: (column: PColumnIdAndSpec) => boolean;
-}): Promise<OptionsWithDefaults<PObjectId>> {
-  if (!pFrame) return getEmtpyOptions();
+}): Promise<OptionsWithDefaults<PObjectId> | undefined> {
+  if (!pFrame) return;
+
   const pFrameDriver = getPFrameDriver();
   const columns = await pFrameDriver.listColumns(pFrame);
   const options = columns
@@ -152,9 +85,10 @@ async function getLabelColumnsOptions({
   sequenceColumnIds,
 }: {
   pFrame: PFrameHandle | undefined;
-  sequenceColumnIds: PObjectId[];
-}): Promise<OptionsWithDefaults<PTableColumnId>> {
-  if (!pFrame) return getEmtpyOptions();
+  sequenceColumnIds: PObjectId[] | undefined;
+}): Promise<OptionsWithDefaults<PTableColumnId> | undefined> {
+  if (!pFrame || !sequenceColumnIds) return;
+
   const pFrameDriver = getPFrameDriver();
   const columns = await pFrameDriver.listColumns(pFrame);
   const optionMap = new Map<CanonicalizedJson<PTableColumnId>, string>();
@@ -220,9 +154,10 @@ async function getMarkupColumnsOptions({
   sequenceColumnIds,
 }: {
   pFrame: PFrameHandle | undefined;
-  sequenceColumnIds: PObjectId[];
-}): Promise<ListOptionNormalized<PObjectId>[]> {
-  if (!pFrame || sequenceColumnIds.length !== 1) return [];
+  sequenceColumnIds: PObjectId[] | undefined;
+}): Promise<ListOptionNormalized<PObjectId>[] | undefined> {
+  if (!pFrame || sequenceColumnIds?.length !== 1) return;
+
   const pFrameDriver = getPFrameDriver();
   const columns = await pFrameDriver.listColumns(pFrame);
   const sequenceColumn = columns.find((column) =>
@@ -252,16 +187,18 @@ async function getMultipleAlignmentData({
   labelColumnIds,
   markupColumnId,
   selection,
+  colorScheme,
+  alignmentParams,
 }: {
   pframe: PFrameHandle | undefined;
-  sequenceColumnIds: PObjectId[];
-  labelColumnIds: PTableColumnId[];
+  sequenceColumnIds: PObjectId[] | undefined;
+  labelColumnIds: PTableColumnId[] | undefined;
   markupColumnId: PObjectId | undefined;
   selection: PlSelectionModel | undefined;
-}): Promise<MultipleAlignmentData> {
-  if (!pframe || sequenceColumnIds.length === 0) {
-    return getEmtpyMultipleAlignmentData();
-  }
+  colorScheme: PlMultiSequenceAlignmentColorSchemeOption;
+  alignmentParams: PlMultiSequenceAlignmentSettings['alignmentParams'];
+}): Promise<MultipleAlignmentData | undefined> {
+  if (!pframe || !sequenceColumnIds?.length || !labelColumnIds) return;
 
   const pFrameDriver = getPFrameDriver();
   const columns = await pFrameDriver.listColumns(pframe);
@@ -388,12 +325,15 @@ async function getMultipleAlignmentData({
 
   const alignedSequences = await Promise.all(
     sequenceColumns.map((column) =>
-      multiSequenceAlignment(Array.from(
-        { length: rowCount },
-        (_, row) =>
-          pTableValue(column.data, row, { na: '', absent: '' })?.toString()
-          ?? '',
-      )),
+      multiSequenceAlignment(
+        Array.from(
+          { length: rowCount },
+          (_, row) =>
+            pTableValue(column.data, row, { na: '', absent: '' })?.toString()
+            ?? '',
+        ),
+        alignmentParams,
+      ),
     ),
   );
 
@@ -414,11 +354,15 @@ async function getMultipleAlignmentData({
       ),
   );
 
+  const concatenatedSequences = sequences.map((row) => row.join(' '));
+  const residueCounts = getResidueCounts(concatenatedSequences);
+
   const result: MultipleAlignmentData = {
-    sequences,
+    sequences: concatenatedSequences,
     sequenceNames,
-    labels,
+    labelsRows: labels,
     exceedsLimit,
+    residueCounts,
   };
 
   if (markupColumn) {
@@ -440,29 +384,81 @@ async function getMultipleAlignmentData({
     result.markup = { labels, data };
   }
 
+  if (colorScheme.type === 'chemical-properties') {
+    const colorMap = chemicalPropertiesColorMap;
+    result.highlightImage = {
+      blob: await colorizeSequencesByChemicalProperties({
+        sequences: concatenatedSequences,
+        residueCounts,
+        colorMap,
+      }),
+      colorMap,
+    };
+  } else if (colorScheme.type === 'markup') {
+    const colorMap = Object.fromEntries(
+      Object.entries(
+        result.markup?.labels ?? {},
+      ).map(([id, label], index) => [
+        id,
+        { label, color: markupColors[index % markupColors.length] },
+      ]),
+    );
+    result.highlightImage = {
+      blob: await colorizeSequencesByMarkup({
+        markupRows: result.markup?.data ?? [],
+        colorMap,
+        columnCount: concatenatedSequences.at(0)?.length ?? 0,
+      }),
+      colorMap,
+    };
+  }
+
   return result;
 }
 
-function getEmtpyOptions<T>(): OptionsWithDefaults<T> {
-  return { options: [], defaults: [] };
-}
-
-function getEmtpyMultipleAlignmentData(): MultipleAlignmentData {
-  return {
-    sequences: [],
-    sequenceNames: [],
-    labels: [],
-    exceedsLimit: false,
+function refreshOnDeepChange<T, P>(cb: (params: P) => Promise<T>) {
+  const data = ref<T>();
+  const isLoading = ref(true);
+  const error = ref<Error>();
+  let requestId: symbol;
+  return (paramsGetter: () => P) => {
+    watch(paramsGetter, async (params, prevParams) => {
+      if (isJsonEqual(params, prevParams)) return;
+      const currentRequestId = requestId = Symbol();
+      try {
+        error.value = undefined;
+        isLoading.value = true;
+        const result = await cb(params);
+        if (currentRequestId === requestId) {
+          data.value = result;
+        }
+      } catch (err) {
+        console.error(err);
+        if (currentRequestId === requestId) {
+          error.value = ensureError(err);
+        }
+      } finally {
+        if (currentRequestId === requestId) {
+          isLoading.value = false;
+        }
+      }
+    }, { immediate: true });
+    return { data, isLoading, error };
   };
 }
 
 type MultipleAlignmentData = {
-  sequences: string[][];
+  sequences: string[];
   sequenceNames: string[];
-  labels: string[][];
+  labelsRows: string[][];
+  residueCounts: ResidueCounts;
   markup?: {
     labels: Record<string, string>;
     data: Markup[];
+  };
+  highlightImage?: {
+    blob: Blob;
+    colorMap: ColorMap;
   };
   exceedsLimit: boolean;
 };

@@ -1,14 +1,19 @@
 <script lang="ts" setup>
-import type { ListOptionNormalized } from '@milaboratories/uikit';
-import { PlAlert, PlSplash } from '@milaboratories/uikit';
+import { isJsonEqual } from '@milaboratories/helpers';
+import {
+  type ListOptionNormalized,
+  PlAlert,
+  PlSplash,
+} from '@milaboratories/uikit';
 import type {
   PColumnPredicate,
   PFrameHandle,
+  PlMultiSequenceAlignmentColorSchemeOption,
   PlMultiSequenceAlignmentModel,
+  PlMultiSequenceAlignmentSettings,
   PlSelectionModel,
 } from '@platforma-sdk/model';
-import { computed, onBeforeMount, reactive, ref, watchEffect } from 'vue';
-import { chemicalPropertiesColorMap } from './chemical-properties';
+import { computed, onBeforeMount, reactive, watchEffect } from 'vue';
 import {
   sequenceLimit,
   useLabelColumnsOptions,
@@ -17,17 +22,19 @@ import {
   useSequenceColumnsOptions,
 } from './data';
 import Legend from './Legend.vue';
-import { markupColors } from './markup';
 import { runMigrations } from './migrations';
 import MultiSequenceAlignmentView from './MultiSequenceAlignmentView.vue';
 import { defaultSettings } from './settings';
 import Toolbar from './Toolbar.vue';
-import type { ColorScheme, ColorSchemeOption } from './types';
 
 const model = defineModel<PlMultiSequenceAlignmentModel>({ default: {} });
 
 onBeforeMount(() => {
   runMigrations(model);
+});
+
+const settings = reactive<PlMultiSequenceAlignmentSettings>({
+  ...defaultSettings,
 });
 
 const props = defineProps<{
@@ -49,50 +56,42 @@ const props = defineProps<{
   readonly selection?: PlSelectionModel;
 }>();
 
-const settings = ref(defaultSettings);
-
 const sequenceColumns = reactive(useSequenceColumnsOptions(() => ({
   pFrame: props.pFrame,
   sequenceColumnPredicate: props.sequenceColumnPredicate,
 })));
 
-const selectedSequenceColumnIds = computed({
-  get: () => model.value.sequenceColumnIds ?? sequenceColumns.data.defaults,
-  set: (value) => {
-    model.value.sequenceColumnIds = value;
-  },
-});
-
 const labelColumns = reactive(useLabelColumnsOptions(() => ({
   pFrame: props.pFrame,
-  sequenceColumnIds: selectedSequenceColumnIds.value,
+  sequenceColumnIds: settings.sequenceColumnIds,
 })));
-
-const selectedLabelColumnIds = computed({
-  get: () => model.value.labelColumnIds ?? labelColumns.data.defaults,
-  set: (value) => {
-    model.value.labelColumnIds = value;
-  },
-});
 
 const markupColumns = reactive(useMarkupColumnsOptions(() => ({
   pFrame: props.pFrame,
-  sequenceColumnIds: selectedSequenceColumnIds.value,
+  sequenceColumnIds: settings.sequenceColumnIds,
 })));
+
+const markupColumnId = computed(() =>
+  settings.colorScheme?.type === 'markup'
+    ? settings.colorScheme.columnId
+    : undefined,
+);
 
 const multipleAlignmentData = reactive(useMultipleAlignmentData(() => ({
   pframe: props.pFrame,
-  sequenceColumnIds: selectedSequenceColumnIds.value,
-  labelColumnIds: selectedLabelColumnIds.value,
-  markupColumnId: settings.value.colorScheme.type === 'markup'
-    ? settings.value.colorScheme.columnId
-    : undefined,
+  sequenceColumnIds: settings.sequenceColumnIds,
+  labelColumnIds: settings.labelColumnIds,
+  markupColumnId: markupColumnId.value,
   selection: props.selection,
+  colorScheme: settings.colorScheme,
+  alignmentParams: settings.alignmentParams,
 })));
 
 const formatNumber = new Intl.NumberFormat('en').format;
 
-const colorSchemeOptions = computed<ListOptionNormalized<ColorSchemeOption>[]>(
+const colorSchemeOptions = computed<
+  ListOptionNormalized<PlMultiSequenceAlignmentColorSchemeOption>[]
+>(
   () => [
     {
       label: 'Chemical Properties',
@@ -102,7 +101,7 @@ const colorSchemeOptions = computed<ListOptionNormalized<ColorSchemeOption>[]>(
       label: 'No Color',
       value: { type: 'no-color' },
     },
-    ...markupColumns.data.map(({ label, value }) => ({
+    ...(markupColumns.data ?? []).map(({ label, value }) => ({
       label,
       value: {
         type: 'markup' as const,
@@ -112,71 +111,91 @@ const colorSchemeOptions = computed<ListOptionNormalized<ColorSchemeOption>[]>(
   ],
 );
 
-const colorScheme = computed<ColorScheme>(() => {
-  switch (settings.value.colorScheme.type) {
-    case 'no-color':
-      return {
-        type: 'no-color',
-        colors: {},
-      };
-    case 'chemical-properties':
-      return {
-        type: 'chemical-properties',
-        colors: chemicalPropertiesColorMap,
-      };
-    case 'markup':
-      return {
-        type: 'markup',
-        colors: Object.fromEntries(
-          Object.entries(
-            multipleAlignmentData.data.markup?.labels ?? {},
-          ).map(([id, label], index) => [
-            id,
-            { label, color: markupColors[index % markupColors.length] },
-          ]),
-        ),
-      };
-    default:
-      throw new Error(`Unknown color scheme ${settings.value.colorScheme}`);
-  }
-});
-
-watchEffect(() => {
-  const markupColumnId = settings.value.colorScheme.type === 'markup'
-    ? settings.value.colorScheme.columnId
-    : undefined;
-  if (
-    markupColumnId
-    && markupColumns.data.every(({ value }) => value !== markupColumnId)
-  ) {
-    settings.value.colorScheme = { type: 'no-color' };
-  }
-});
-
 const error = computed(() =>
   sequenceColumns.error
   ?? labelColumns.error
   ?? markupColumns.error
   ?? multipleAlignmentData.error,
 );
+
+function applySettings(
+  settingsPatch: Partial<PlMultiSequenceAlignmentSettings>,
+) {
+  model.value = Object.fromEntries(
+    Object.entries({ ...model.value, ...settingsPatch })
+      .filter(([_key, value]) => value !== undefined),
+  );
+}
+
+watchEffect(() => {
+  const patch: Partial<PlMultiSequenceAlignmentSettings> = Object.fromEntries(
+    Object.entries({
+      ...defaultSettings,
+      sequenceColumnIds: sequenceColumns.data?.defaults,
+      labelColumnIds: labelColumns.data?.defaults,
+      ...model.value,
+    }).filter(([key, value]) =>
+      !isJsonEqual(
+        settings[key as keyof PlMultiSequenceAlignmentSettings],
+        value,
+      ),
+    ),
+  );
+  Object.assign(settings, patch);
+});
+
+// Reset stale settings
+watchEffect(() => {
+  const settingsToReset: (keyof PlMultiSequenceAlignmentSettings)[] = [];
+  if (
+    settings.sequenceColumnIds?.some((id) =>
+      !sequenceColumns.data?.options.some(
+        ({ value }) => isJsonEqual(value, id),
+      ),
+    )
+  ) {
+    settingsToReset.push('sequenceColumnIds');
+  }
+  if (
+    settings.labelColumnIds?.some((id) =>
+      !labelColumns.data?.options.some(
+        ({ value }) => isJsonEqual(value, id),
+      ),
+    )
+  ) {
+    settingsToReset.push('labelColumnIds');
+  }
+  if (
+    markupColumnId.value
+    && !markupColumns.data?.some(
+      ({ value }) => isJsonEqual(value, markupColumnId.value),
+    )
+  ) {
+    settingsToReset.push('colorScheme');
+  }
+  if (settingsToReset.length) {
+    applySettings(Object.fromEntries(
+      settingsToReset.map((key) => [key, undefined]),
+    ));
+  }
+});
 </script>
 
 <template>
   <Toolbar
-    v-model:sequence-columns="selectedSequenceColumnIds"
-    v-model:label-columns="selectedLabelColumnIds"
-    v-model:settings="settings"
-    :sequence-column-options="sequenceColumns.data.options"
-    :label-column-options="labelColumns.data.options"
+    :settings="settings"
+    :sequence-column-options="sequenceColumns.data?.options"
+    :label-column-options="labelColumns.data?.options"
     :color-scheme-options="colorSchemeOptions"
+    @update-settings="applySettings"
   />
   <PlAlert v-if="error" type="error">
     {{ error }}
   </PlAlert>
   <PlAlert
     v-else-if="
-      !multipleAlignmentData.loading
-        && multipleAlignmentData.data.sequences.length < 2
+      !multipleAlignmentData.isLoading
+        && (multipleAlignmentData.data?.sequences ?? []).length < 2
     "
     type="warn"
     icon
@@ -186,7 +205,7 @@ const error = computed(() =>
   </PlAlert>
   <template v-else>
     <PlAlert
-      v-if="multipleAlignmentData.data.exceedsLimit"
+      v-if="multipleAlignmentData.data?.exceedsLimit"
       type="warn"
       icon
       label="Visualization is limited"
@@ -198,24 +217,24 @@ const error = computed(() =>
     <PlSplash
       type="transparent"
       :class="$style.splash"
-      :loading="multipleAlignmentData.loading"
+      :loading="multipleAlignmentData.isLoading"
     >
-      <template v-if="multipleAlignmentData.data.sequences.length">
+      <template v-if="multipleAlignmentData.data?.sequences.length">
         <MultiSequenceAlignmentView
           :sequence-names="multipleAlignmentData.data.sequenceNames"
-          :sequence-rows="multipleAlignmentData.data.sequences"
-          :label-rows="multipleAlignmentData.data.labels"
-          :markup="multipleAlignmentData.data.markup"
-          :colorScheme
-          :consensus="settings.consensus"
-          :seq-logo="settings.seqLogo"
+          :sequences="multipleAlignmentData.data.sequences"
+          :label-rows="multipleAlignmentData.data.labelsRows"
+          :residue-counts="multipleAlignmentData.data.residueCounts"
+          :highlight-image-blob="multipleAlignmentData.data.highlightImage?.blob"
+          :consensus="settings.widgets?.includes('consensus') ?? false"
+          :seq-logo="settings.widgets?.includes('seqLogo') ?? false"
         />
         <Legend
           v-if="
-            settings.legend
-              && settings.colorScheme.type !== 'no-color'
+            settings.widgets?.includes('legend')
+              && multipleAlignmentData.data.highlightImage?.colorMap
           "
-          :colors="colorScheme.colors"
+          :colors="multipleAlignmentData.data.highlightImage.colorMap"
         />
       </template>
     </PlSplash>

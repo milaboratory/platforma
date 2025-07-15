@@ -152,6 +152,10 @@ const isDecrementDisabled = computed(() => {
   return false;
 });
 
+const multiplier = computed(() =>
+  10 ** (props.step.toString().split('.').at(1)?.length ?? 0),
+);
+
 function increment() {
   const parsedValue = innerNumberValue.value;
   if (!isIncrementDisabled.value) {
@@ -159,7 +163,9 @@ function increment() {
     if (parsedValue === undefined) {
       nV = props.minValue ? props.minValue : 0;
     } else {
-      nV = (parsedValue || 0) + props.step;
+      nV = ((parsedValue || 0) * multiplier.value
+        + props.step * multiplier.value)
+      / multiplier.value;
     }
     modelValue.value = props.maxValue !== undefined ? Math.min(props.maxValue, nV) : nV;
   }
@@ -172,7 +178,9 @@ function decrement() {
     if (parsedValue === undefined) {
       nV = 0;
     } else {
-      nV = +(parsedValue || 0) - props.step;
+      nV = ((parsedValue || 0) * multiplier.value
+        - props.step * multiplier.value)
+      / multiplier.value;
     }
     modelValue.value = props.minValue !== undefined ? Math.max(props.minValue, nV) : nV;
   }
