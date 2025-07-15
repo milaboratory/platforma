@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.40.0
+
+### Minor Changes
+
+- 30ce5da: MSA settings
+
 ## 1.39.18
 
 ### Patch Changes

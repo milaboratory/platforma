@@ -1,5 +1,18 @@
 # @platforma-sdk/ui-vue
 
+## 1.40.0
+
+### Minor Changes
+
+- 30ce5da: MSA settings
+
+### Patch Changes
+
+- Updated dependencies [30ce5da]
+- Updated dependencies [30ce5da]
+  - @milaboratories/uikit@2.3.10
+  - @platforma-sdk/model@1.40.0
+
 ## 1.39.20
 
 ### Patch Changes
