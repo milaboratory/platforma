@@ -1,7 +1,7 @@
 import { deepClone, delay, uniqueId } from '@milaboratories/helpers';
 import type { Mutable } from '@milaboratories/helpers';
 import type { NavigationState, BlockOutputsBase, BlockState, PlatformaV2, ValueWithUTag, AuthorMarker } from '@platforma-sdk/model';
-import { isAbortError, unwrapResult } from '@platforma-sdk/model';
+import { deserializeResult, hasAbortError, unwrapResult } from '@platforma-sdk/model';
 import type { Ref } from 'vue';
 import { reactive, computed, ref } from 'vue';
 import type { StateModelOptions, UnwrapOutputs, OutputValues, OutputErrors, AppSettings } from '../types';
@@ -69,6 +69,10 @@ export function createAppV2<
     }
   };
 
+  const error = (msg: string, ...rest: unknown[]) => {
+    console.error(`%c>>> %c${msg}`, 'color: red; font-weight: bold', 'color: red', ...rest);
+  };
+
   const debounceSpan = settings.debounceSpan ?? 200;
 
   const setArgsQueue = new UpdateSerializer({ debounceSpan });
@@ -131,13 +135,13 @@ export function createAppV2<
           snapshot.value = applyPatch(snapshot.value, patches.value).newDocument;
         }
       } catch (err) {
-        if (isAbortError(err)) {
-          console.log('abort error in patches loop', err);
+        if (hasAbortError(err)) {
+          log('patches loop aborted');
           closedRef.value = true;
-          break;
+        } else {
+          error('error in patches loop', err);
+          await new Promise((resolve) => setTimeout(resolve, 1000));
         }
-        console.error('error in patches loop', err);
-        await new Promise((resolve) => setTimeout(resolve, 1000));
       }
     }
   })();

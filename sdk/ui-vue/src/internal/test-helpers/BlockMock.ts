@@ -95,7 +95,7 @@ export abstract class BlockMock<
       }
 
       const currentState = await this.loadBlockState().then(unwrapResult).then(({ value }) => value);
-      const patches = compare(this.#previousState, currentState);
+      const patches = compare(this.#previousState ?? {}, currentState);
       this.#previousState = currentState;
       console.log('new patches', patches);
       return {

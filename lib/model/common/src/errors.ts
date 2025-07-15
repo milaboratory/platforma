@@ -109,7 +109,7 @@ export type ResultOrError<S, F = Error> = {
 
 export function unwrapResult<T>(result: ResultOrError<T>): T {
   if (result.error) {
-    throw result.error;
+    throw result.error instanceof Error ? result.error : deserializeError(result.error);
   }
   return result.value;
 }

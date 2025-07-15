@@ -65,9 +65,6 @@ export type UiState = {
 };
 
 export const platforma = BlockModel.create('Heavy')
-  .withFeatureFlags({
-    requiresUIAPIVersion: 2,
-  })
 
   .withArgs<BlockArgs>({ numbers: [1, 2, 3, 4], tableNumRows: 100, handles: [] })
 
@@ -360,7 +357,7 @@ export const platforma = BlockModel.create('Heavy')
     ];
   })
 
-  .done();
+  .done(2); // api version 2
 
 export type BlockOutputs = InferOutputsType<typeof platforma>;
 export type Href = InferHrefType<typeof platforma>;
