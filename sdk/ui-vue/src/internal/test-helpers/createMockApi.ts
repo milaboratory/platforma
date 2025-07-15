@@ -4,8 +4,18 @@ import type {
   BlockState,
   PlatformaV2,
   BlockOutputsBase,
-  ImportFileHandle, FileLike, ListFilesResult, LocalImportFileHandle, NavigationState, OpenDialogOps, OpenMultipleFilesResponse, OpenSingleFileResponse, StorageHandle, ResultOrError } from '@platforma-sdk/model';
-import { serializeResult, wrapAsyncCallback } from '@platforma-sdk/model';
+  ImportFileHandle,
+  FileLike,
+  ListFilesResult,
+  LocalImportFileHandle,
+  NavigationState,
+  OpenDialogOps,
+  OpenMultipleFilesResponse,
+  OpenSingleFileResponse,
+  StorageHandle,
+  ResultOrError,
+  AuthorMarker,
+} from '@platforma-sdk/model';
 import type { BlockMock } from './BlockMock';
 import type { Operation } from 'fast-json-patch';
 import { delay } from '@milaboratories/helpers';
@@ -23,27 +33,22 @@ export function createMockApi<
       sdkVersion: 'dev',
     },
     loadBlockState: async function (): Promise<ResultOrError<ValueWithUTag<BlockState<Args, Outputs, UiState, Href>>>> {
-      return serializeResult({
-        value: {
-          value: block.getState(),
-          uTag: block.uTag,
-        },
-      });
+      return block.loadBlockState();
     },
     getPatches: async function (uTag: string): Promise<ResultOrError<ValueWithUTagAndAuthor<Operation[]>>> {
-      return wrapAsyncCallback(() => block.getJsonPatches(uTag));
+      return block.getPatches(uTag);
     },
-    async setBlockArgs(value: Args): Promise<ResultOrError<void>> {
-      return wrapAsyncCallback(() => block.setBlockArgs(value));
+    async setBlockArgs(value: Args, author?: AuthorMarker): Promise<ResultOrError<void>> {
+      return block.setBlockArgs(value, author);
     },
-    async setBlockUiState(value: UiState): Promise<ResultOrError<void>> {
-      return wrapAsyncCallback(() => block.setBlockUiState(value));
+    async setBlockUiState(value: UiState, author?: AuthorMarker): Promise<ResultOrError<void>> {
+      return block.setBlockUiState(value, author);
     },
-    async setBlockArgsAndUiState(args: Args, uiState: UiState): Promise<ResultOrError<void>> {
-      return wrapAsyncCallback(() => block.setBlockArgsAndUiState(args, uiState));
+    async setBlockArgsAndUiState(args: Args, uiState: UiState, author?: AuthorMarker): Promise<ResultOrError<void>> {
+      return block.setBlockArgsAndUiState(args, uiState, author);
     },
     async setNavigationState(navigationState: NavigationState<Href>): Promise<ResultOrError<void>> {
-      return wrapAsyncCallback(() => block.setNavigationState(navigationState));
+      return block.setNavigationState(navigationState);
     },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     blobDriver: undefined as any,

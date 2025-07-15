@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createAppV2 } from './createAppV2';
-import type { ValueOrErrors } from '@platforma-sdk/model';
+import { unwrapResult, type ValueOrErrors } from '@platforma-sdk/model';
 import { BlockMock } from './test-helpers/BlockMock';
 import { delay } from '@milaboratories/helpers';
 import { createMockApi } from './test-helpers/createMockApi';
@@ -50,7 +50,7 @@ export const platforma = createMockApi<Args, Outputs, UiState>(new BlockSum(
     label: '',
   }, '/'));
 
-describe.only('createApp', { timeout: 20_000 }, () => {
+describe('createApp', { timeout: 20_000 }, () => {
   beforeEach(() => {
     // Mock window.addEventListener to prevent actual event listeners
     vi.stubGlobal('window', {
@@ -59,15 +59,13 @@ describe.only('createApp', { timeout: 20_000 }, () => {
   });
 
   it('should create an app with reactive snapshot', async () => {
-    const initialState = await platforma.loadBlockState();
+    const initialState = await platforma.loadBlockState().then(unwrapResult);
 
     const app = createAppV2(initialState, platforma, { debug: false, debounceSpan: 10 });
 
     expect(app.model.args).toEqual({ x: 0, y: 0 });
     expect(app.model.ui).toEqual({ label: '' });
     expect(app.snapshot.navigationState.href).toBe('/');
-
-    const args = app.model.args;
 
     let watchCountShallow = 0;
 
@@ -78,8 +76,6 @@ describe.only('createApp', { timeout: 20_000 }, () => {
 
     app.model.args.x = 1;
     app.model.args.y = 2;
-
-    console.log('args === app.model.args', args === app.model.args);
 
     const t1 = performance.now();
     await app.allSettled();
