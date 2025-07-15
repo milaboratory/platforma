@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.40.1
+
+### Patch Changes
+
+- 890240e: PlAgDataTableV2 - support sorting and filtering by label column
+
 ## 1.40.0
 
 ### Minor Changes
