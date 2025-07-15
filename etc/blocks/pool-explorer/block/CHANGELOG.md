@@ -1,5 +1,14 @@
 # @milaboratories/milaboratories.pool-explorer
 
+## 1.0.223
+
+### Patch Changes
+
+- Updated dependencies [30ce5da]
+  - @platforma-sdk/model@1.40.0
+  - @milaboratories/milaboratories.pool-explorer.ui@1.1.154
+  - @milaboratories/milaboratories.pool-explorer.model@1.0.67
+
 ## 1.0.222
 
 ### Patch Changes

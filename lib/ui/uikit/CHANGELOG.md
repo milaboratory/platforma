@@ -1,5 +1,13 @@
 # @milaboratories/uikit
 
+## 2.3.10
+
+### Patch Changes
+
+- 30ce5da: Updated `PlNumberField` to handle fractional increments/decrements better
+- Updated dependencies [30ce5da]
+  - @platforma-sdk/model@1.40.0
+
 ## 2.3.9
 
 ### Patch Changes
