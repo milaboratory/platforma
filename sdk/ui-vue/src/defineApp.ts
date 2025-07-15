@@ -90,8 +90,6 @@ export function defineApp<
         .then((stateOrError) => {
           const state = unwrapResult(stateOrError);
           plugin.loaded = true;
-          console.log('loadApp', state);
-          console.log('platforma', platforma);
           const baseApp = createAppV2<Args, Outputs, UiState, Href>(state, platforma, settings);
 
           const localState = extendApp(baseApp);

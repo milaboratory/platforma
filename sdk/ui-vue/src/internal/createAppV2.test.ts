@@ -69,9 +69,8 @@ describe('createApp', { timeout: 20_000 }, () => {
 
     let watchCountShallow = 0;
 
-    watch(() => app.model.args, (newArgs, oldArgs) => {
+    watch(() => app.model.args, () => {
       watchCountShallow++;
-      console.log('newArgs', newArgs, newArgs === oldArgs);
     });
 
     app.model.args.x = 1;

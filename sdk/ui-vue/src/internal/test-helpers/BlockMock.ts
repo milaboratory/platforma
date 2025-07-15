@@ -38,7 +38,6 @@ export abstract class BlockMock<
   }
 
   async setBlockArgs(args: Args, author?: AuthorMarker) {
-    console.log('setBlockArgs', args, author);
     return wrapAsyncCallback(() => {
       this.author = author;
       this.args = args;
@@ -55,7 +54,6 @@ export abstract class BlockMock<
   }
 
   async setBlockArgsAndUiState(args: Args, ui: UiState, author?: AuthorMarker) {
-    console.log('setBlockArgsAndUiState', args, ui, author);
     return wrapAsyncCallback(() => {
       this.args = args;
       this.ui = ui;
@@ -97,7 +95,6 @@ export abstract class BlockMock<
       const currentState = await this.loadBlockState().then(unwrapResult).then(({ value }) => value);
       const patches = compare(this.#previousState ?? {}, currentState);
       this.#previousState = currentState;
-      console.log('new patches', patches);
       return {
         uTag: this.#uTag,
         value: patches,
