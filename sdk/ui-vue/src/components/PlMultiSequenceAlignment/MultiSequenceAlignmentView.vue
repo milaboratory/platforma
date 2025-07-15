@@ -1,67 +1,31 @@
 <script lang="ts" setup>
-import { computedAsync, useObjectUrl } from '@vueuse/core';
+import { useBase64 } from '@vueuse/core';
 import { computed } from 'vue';
-import {
-  chemicalPropertiesColorMap,
-  colorizeSequencesByChemicalProperties,
-} from './chemical-properties';
 import Consensus from './Consensus.vue';
-import { colorizeSequencesByMarkup, type Markup } from './markup';
-import { getResidueCounts } from './residue-counts';
 import SeqLogo from './SeqLogo.vue';
-import type { ColorScheme } from './types';
+import type { ResidueCounts } from './types';
 
-const { sequenceRows, labelRows, markup, colorScheme } = defineProps<{
+const { sequences, highlightImageBlob } = defineProps<{
   sequenceNames: string[];
-  sequenceRows: string[][];
+  sequences: string[];
   labelRows: string[][];
-  markup: {
-    labels: Record<string, string>;
-    data: Markup[];
-  } | undefined;
-  colorScheme: ColorScheme;
+  residueCounts: ResidueCounts;
+  highlightImageBlob: Blob | undefined;
   consensus: boolean;
   seqLogo: boolean;
 }>();
 
-const concatenatedSequences = computed(() =>
-  sequenceRows.map((row) => row.join(' ')),
+const { base64: highlightImageBase64 } = useBase64(() => highlightImageBlob);
+
+const highlightImageUrl = computed(() =>
+  highlightImageBase64.value
+    ? `url('${highlightImageBase64.value}')`
+    : 'none',
 );
 
-const residueCounts = computed(
-  () => getResidueCounts(concatenatedSequences.value),
+const sequenceLengths = computed(() =>
+  sequences.at(0)?.split(' ').map(({ length }) => length),
 );
-
-const highlightImageBlob = computedAsync(() => {
-  switch (colorScheme.type) {
-    case 'no-color':
-      return;
-    case 'chemical-properties':
-      return colorizeSequencesByChemicalProperties({
-        sequences: concatenatedSequences.value,
-        residueCounts: residueCounts.value,
-        colorMap: chemicalPropertiesColorMap,
-      });
-    case 'markup':
-      return colorizeSequencesByMarkup({
-        markupRows: markup?.data ?? [],
-        colorMap: colorScheme.colors,
-        columnCount: concatenatedSequences.value?.[0].length ?? 0,
-      });
-    default:
-      throw new Error(`Unknown color scheme: ${colorScheme.type}`);
-  }
-});
-
-const objectUrl = useObjectUrl(highlightImageBlob);
-
-const highlightImage = computed(
-  () => objectUrl.value ? `url('${objectUrl.value}')` : 'none',
-);
-
-function sequenceLength(index: number) {
-  return sequenceRows.at(0)?.at(index)?.length ?? 0;
-}
 </script>
 
 <template>
@@ -72,11 +36,17 @@ function sequenceLength(index: number) {
         <span
           v-for="(name, index) of sequenceNames"
           :key="index"
-          :style="{ inlineSize: `calc(${sequenceLength(index)} * 20px)` }"
+          :style="
+            {
+              inlineSize: `calc(${
+                sequenceLengths?.at(index) ?? 0
+              } * 20px)`,
+            }
+          "
         >{{ name }}</span>
       </div>
-      <Consensus v-if="consensus" :residueCounts />
-      <SeqLogo v-if="seqLogo" :residueCounts />
+      <Consensus v-if="consensus" :residue-counts />
+      <SeqLogo v-if="seqLogo" :residue-counts />
     </div>
     <div :class="$style.labels">
       <template v-for="(labelRow, rowIndex) of labelRows">
@@ -91,8 +61,8 @@ function sequenceLength(index: number) {
     </div>
     <div :class="$style.sequences">
       <div
-        v-for="(sequence, sequenceIndex) of concatenatedSequences"
-        :key="sequenceIndex"
+        v-for="(sequence, index) of sequences"
+        :key="index"
       >
         {{ sequence }}
       </div>
@@ -121,7 +91,6 @@ function sequenceLength(index: number) {
 
 .header {
   grid-area: header;
-  padding-inline-end: 6px;
   background-color: white;
   position: sticky;
   inset-block-start: 0;
@@ -159,7 +128,7 @@ function sequenceLength(index: number) {
   line-height: 24px;
   letter-spacing: 11.6px;
   text-indent: 5.8px;
-  background-image: v-bind(highlightImage);
+  background-image: v-bind(highlightImageUrl);
   background-repeat: no-repeat;
   background-size: calc(100% - 5.8px) 100%;
   image-rendering: pixelated;

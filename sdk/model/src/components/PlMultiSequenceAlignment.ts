@@ -12,11 +12,27 @@ import { type PlSelectionModel } from './PlSelectionModel';
 
 export type PColumnPredicate = (column: PColumnIdAndSpec) => boolean;
 
-export type PlMultiSequenceAlignmentModel = {
-  version?: number;
+export interface PlMultiSequenceAlignmentSettings {
   sequenceColumnIds?: PObjectId[];
   labelColumnIds?: PTableColumnId[];
-};
+  colorScheme: PlMultiSequenceAlignmentColorSchemeOption;
+  widgets: ('consensus' | 'seqLogo' | 'legend')[];
+  alignmentParams: {
+    gpo: number;
+    gpe: number;
+    tgpe: number;
+  };
+}
+
+export interface PlMultiSequenceAlignmentModel
+  extends Partial<PlMultiSequenceAlignmentSettings> {
+  version?: number;
+}
+
+export type PlMultiSequenceAlignmentColorSchemeOption =
+  | { type: 'no-color' }
+  | { type: 'chemical-properties' }
+  | { type: 'markup'; columnId: PObjectId };
 
 export function createRowSelectionColumn({
   selection,
