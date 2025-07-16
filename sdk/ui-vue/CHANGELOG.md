@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.40.2
+
+### Patch Changes
+
+- d6334f9: Adopt PlAgDataTableV2 for v2api in desktop
+
 ## 1.40.1
 
 ### Patch Changes
