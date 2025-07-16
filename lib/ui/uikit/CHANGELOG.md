@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.3.13
+
+### Patch Changes
+
+- 98eded5: Update styles
+
 ## 2.3.12
 
 ### Patch Changes
