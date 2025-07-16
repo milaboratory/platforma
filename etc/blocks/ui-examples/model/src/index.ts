@@ -50,7 +50,10 @@ export const $BlockArgs = z.object({
 export type BlockArgs = z.infer<typeof $BlockArgs>;
 
 export type UiState = {
-  dataTableStateV2: PlDataTableStateV2;
+  dataTableV2: {
+    sourceId?: string;
+    state: PlDataTableStateV2;
+  };
   dynamicSections: {
     id: string;
     label: string;
@@ -62,7 +65,10 @@ export const platforma = BlockModel.create('Heavy')
   .withArgs<BlockArgs>({ numbers: [1, 2, 3, 4], tableNumRows: 100, handles: [] })
 
   .withUiState<UiState>({
-    dataTableStateV2: createPlDataTableStateV2(),
+    dataTableV2: {
+      sourceId: 'source_1',
+      state: createPlDataTableStateV2(),
+    },
     dynamicSections: [],
   })
 
@@ -240,7 +246,7 @@ export const platforma = BlockModel.create('Heavy')
     return createPlDataTableV2(
       ctx,
       columns,
-      ctx.uiState.dataTableStateV2,
+      ctx.uiState.dataTableV2.state,
     );
   })
 

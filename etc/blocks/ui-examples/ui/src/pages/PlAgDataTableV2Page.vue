@@ -32,14 +32,13 @@ const settingsOpen = ref(false);
 const sources = [...new Array(10)].map((_, i) => {
   return {
     label: `Source ${1 + i}`,
-    value: `source_${i}`,
+    value: `source_${1 + i}`,
   };
 });
-const activeSource = ref(sources[0].value);
 
 const loading = ref(false);
 const tableSettings = usePlDataTableSettingsV2({
-  sourceId: () => loading.value ? 'loading_source' : activeSource.value,
+  sourceId: () => loading.value ? 'loading_source' : app.model.ui.dataTableV2.sourceId,
   model: () => loading.value ? undefined : app.model.outputs.ptV2,
   sheets: () => app.model.outputs.ptV2Sheets,
   filtersConfig: ({ sourceId, column }) => {
@@ -153,7 +152,7 @@ watch(
     </template>
     <PlAgDataTableV2
       ref="tableRef"
-      v-model="app.model.ui.dataTableStateV2"
+      v-model="app.model.ui.dataTableV2.state"
       v-model:selection="selection"
       v-model:selection-labeled="selectionLabeled"
       :settings="tableSettings"
@@ -162,7 +161,7 @@ watch(
       show-export-button
     >
       <template #before-sheets>
-        <PlDropdown v-model="activeSource" :options="sources" clearable />
+        <PlDropdown v-model="app.model.ui.dataTableV2.sourceId" :options="sources" clearable />
         <PlNumberField v-model="app.model.args.tableNumRows" />
       </template>
     </PlAgDataTableV2>

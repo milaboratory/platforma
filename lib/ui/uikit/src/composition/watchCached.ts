@@ -1,4 +1,4 @@
-import { isJsonEqual } from '@milaboratories/helpers';
+import { deepClone, isJsonEqual } from '@milaboratories/helpers';
 import {
   ref,
   watch,
@@ -10,9 +10,10 @@ import {
 type MaybeUndefined<T, I> = I extends true ? T | undefined : T;
 export interface WatchCachedOptions<Immediate = boolean> {
   immediate?: Immediate;
-  deep?: boolean;
-  // when `once` is needed, caching is useless, use plain watch instead
+  // deep: true; - caching is useless when you are using the source as a `shallowRef`
+  // once: false; - caching is useless when you need a single shot, use plain watch instead
 }
+/** Alternative to `watch`, but triggering only on actual data changes */
 export function watchCached<T, Immediate extends Readonly<boolean> = false>(
   source: WatchSource<T>,
   cb: WatchCallback<T, MaybeUndefined<T, Immediate>>,
@@ -23,11 +24,13 @@ export function watchCached<T, Immediate extends Readonly<boolean> = false>(
     source,
     (newValue) => {
       if (!isJsonEqual(newValue, cachedValue.value)) {
-        cachedValue.value = newValue;
+        // `deepClone` is needed because in case some fields are patched the deep would be triggered,
+        // but objects would be equal as the saved value was also patched
+        cachedValue.value = deepClone(newValue);
       }
     },
     {
-      deep: options?.deep,
+      deep: true,
       immediate: true, // always initialize cachedValue
     },
   );
@@ -37,7 +40,7 @@ export function watchCached<T, Immediate extends Readonly<boolean> = false>(
     {
       // standard vue `WatchOptions` conform to `WatchCachedOptions` interface,
       // so construct new options to remove unsupported entries
-      deep: options?.deep,
+      deep: true,
       immediate: options?.immediate,
     },
   );

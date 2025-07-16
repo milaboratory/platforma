@@ -17,6 +17,7 @@ import type { PTableHidden } from './sources/common';
 import type { ComputedRef, MaybeRefOrGetter } from 'vue';
 import { computed, toValue } from 'vue';
 import canonicalize from 'canonicalize';
+import { deepClone } from '@milaboratories/helpers';
 
 export type PlDataTableFilterConfig = {
   options?: PlTableFilterType[];
@@ -109,9 +110,9 @@ export function usePlDataTableSettingsV2<T>(options: OptionsAdvanced<T> | Option
   return computed(() => {
     const modelValue = toValue(options.model);
     if ('sourceId' in options) {
-      const sourceIdValue = toValue(options.sourceId);
+      const sourceIdValue = deepClone(toValue(options.sourceId));
       if (options.sheets) {
-        const sheetsValue = toValue(options.sheets);
+        const sheetsValue = deepClone(toValue(options.sheets));
         return sourceIdValue && sheetsValue
           ? {
               sourceId: canonicalize(sourceIdValue)!,
