@@ -2,7 +2,7 @@ import type { BlockRenderingMode, BlockSection, ValueOrErrors, AnyFunction, PlRe
 import type { Checked, ConfigResult, TypedConfig } from './config';
 import { getImmediate } from './config';
 import { getPlatformaInstance, isInUI, tryRegisterCallback } from './internal';
-import type { Platforma, PlatformaV1, PlatformaV2 } from './platforma';
+import type { Platforma, PlatformaApiVersion, PlatformaV1, PlatformaV2 } from './platforma';
 import type { InferRenderFunctionReturn, RenderFunction } from './render';
 import { RenderCtx } from './render';
 import { PlatformaSDKVersion } from './version';
@@ -411,7 +411,7 @@ export class BlockModel<
     })._done(apiVersion ?? 1);
   }
 
-  public _done(apiVersion: 1 | 2): Platforma<
+  public _done(apiVersion: PlatformaApiVersion): Platforma<
     Args,
     InferOutputsFromConfigs<Args, OutputsCfg, UiState>,
     UiState,

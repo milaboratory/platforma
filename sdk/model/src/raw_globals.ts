@@ -1,10 +1,10 @@
 import type { ValueOrErrors } from '@milaboratories/pl-model-common';
 import {} from './global';
 import { getPlatformaInstance } from './internal';
-import type { Platforma } from './platforma';
+import type { Platforma, PlatformaApiVersion } from './platforma';
 import { PlatformaSDKVersion } from './version';
 
-export function getPlatformaApiVersion(): 1 | 2 {
+export function getPlatformaApiVersion(): PlatformaApiVersion {
   return platformaApiVersion ?? 1; // undefined means 1 for backward compatibility
 }
 
