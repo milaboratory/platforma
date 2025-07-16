@@ -16,7 +16,7 @@ export function getPlatformaInstance<
   Outputs extends Record<string, ValueOrErrors<unknown>> = Record<string, ValueOrErrors<unknown>>,
   UiState = unknown,
   Href extends `/${string}` = `/${string}`,
->(config?: { sdkVersion: string }): Platforma<Args, Outputs, UiState, Href> {
+>(config?: { sdkVersion: string; apiVersion: 1 | 2 }): Platforma<Args, Outputs, UiState, Href> {
   if (config && typeof globalThis.getPlatforma === 'function')
     return globalThis.getPlatforma(config);
   else if (typeof globalThis.platforma !== 'undefined') return globalThis.platforma;

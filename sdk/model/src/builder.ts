@@ -408,10 +408,10 @@ export class BlockModel<
     return this.withFeatureFlags({
       ...this._featureFlags,
       requiresUIAPIVersion: apiVersion ?? 1,
-    })._done();
+    })._done(apiVersion ?? 1);
   }
 
-  public _done(): Platforma<
+  public _done(apiVersion: 1 | 2): Platforma<
     Args,
     InferOutputsFromConfigs<Args, OutputsCfg, UiState>,
     UiState,
@@ -444,11 +444,13 @@ export class BlockModel<
       ),
     };
 
+    globalThis.platformaApiVersion = apiVersion;
+
     if (!isInUI())
     // we are in the configuration rendering routine, not in actual UI
       return { config } as any;
     // normal operation inside the UI
-    else return getPlatformaInstance({ sdkVersion: PlatformaSDKVersion }) as any;
+    else return getPlatformaInstance({ sdkVersion: PlatformaSDKVersion, apiVersion: platformaApiVersion }) as any;
   }
 }
 

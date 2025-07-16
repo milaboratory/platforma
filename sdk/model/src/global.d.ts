@@ -2,6 +2,7 @@ declare global {
   /** Global factory method returning platforma instance */
   var getPlatforma: PlatformaSDKVersion;
   var platforma: Platforma;
+  var platformaApiVersion: 1 | 2;
 
   function getEnvironmentValue(name: string): string | undefined;
 

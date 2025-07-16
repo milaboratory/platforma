@@ -1,6 +1,6 @@
 import { notEmpty } from '@milaboratories/helpers';
 import type { PlatformaV1, PlatformaV2 } from '@platforma-sdk/model';
-import { getPlatformaOrDefault, unwrapResult, type BlockOutputsBase, type Platforma } from '@platforma-sdk/model';
+import { getPlatformaApiVersion, unwrapResult, type BlockOutputsBase, type Platforma } from '@platforma-sdk/model';
 import type { Component, Reactive } from 'vue';
 import { inject, markRaw, reactive } from 'vue';
 import { createAppV1, type BaseAppV1 } from './internal/createAppV1';
@@ -54,9 +54,18 @@ export function defineApp<
 
   activateAgGrid();
 
-  const loadApp = () => {
+  const runtimeApiVersion = platforma.apiVersion ?? 1; // undefined means 1 (backward compatibility)
+
+  const blockRequestedApiVersion = getPlatformaApiVersion();
+
+  const loadApp = async () => {
+    if (blockRequestedApiVersion !== runtimeApiVersion) {
+      throw new Error(`Block requested API version ${blockRequestedApiVersion} but runtime API version is ${runtimeApiVersion}.
+      Please update the desktop app to use the latest API version.`);
+    }
+
     if (platforma.apiVersion === undefined) {
-      platforma
+      await platforma
         .loadBlockState()
         .then((state) => {
           plugin.loaded = true;
@@ -77,13 +86,9 @@ export function defineApp<
               return routes[href];
             },
           } as unknown as AppV1<Args, Outputs, UiState, Href, Extend>);
-        })
-        .catch((err) => {
-          console.error('load initial state error', err);
-          plugin.error = err;
         });
     } else if (platforma.apiVersion === 2) {
-      platforma
+      await platforma
         .loadBlockState()
         .then((stateOrError) => {
           const state = unwrapResult(stateOrError);
@@ -105,10 +110,6 @@ export function defineApp<
               return routes[href];
             },
           } as unknown as AppV2<Args, Outputs, UiState, Href, Extend>);
-        })
-        .catch((err) => {
-          console.error('load initial state error', err);
-          plugin.error = err;
         });
     }
   };
@@ -124,7 +125,10 @@ export function defineApp<
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     install(app: any) {
       app.provide(pluginKey, this);
-      loadApp();
+      loadApp().catch((err) => {
+        console.error('load initial state error', err);
+        plugin.error = err;
+      });
     },
   });
 
