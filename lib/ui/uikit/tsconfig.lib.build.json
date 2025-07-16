@@ -1,10 +1,5 @@
 {
-  "extends": "./tsconfig.lib.json",
-  "compilerOptions": {
-    "customConditions": ["default"],
-    "noEmit": false,
-    "declaration": true,
-    "emitDeclarationOnly": true,
-  },
+  "extends": ["./tsconfig.lib.json", "@milaboratories/ts-configs/tsconfig.build.json"],
+  "compilerOptions": {},
   "exclude": ["**/*.spec.ts", "**/*.test.ts"],
 }

@@ -1,3 +1,4 @@
 {
-  "extends": ["./tsconfig.base.json", "./tsconfig.vite.json", "./tsconfig.vitest.json"],
+  "extends": ["./tsconfig.base.json", "./tsconfig.vite-vitest.json"],
+  "compilerOptions": {},
 }

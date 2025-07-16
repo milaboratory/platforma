@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "vite",
     "watch": "vue-tsc && vite build --watch",
-    "build": "vite build && pnpm run build:types",
+    "build": "vue-tsc -b && vite build",
     "build:types": "vue-tsc -p tsconfig.app.build.json",
     "preview": "vite preview",
     "lint": "eslint ."
