@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { useTransformedModel } from '../../composition/useTransformedModel';
 import style from './pl-editable-title.module.scss';
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 
 const model = defineModel<string>();
 
@@ -27,6 +27,10 @@ const props = withDefaults(
      * Min title length
      */
     minLength?: number;
+    /**
+     * If true, input will be focused on mount
+     */
+    autofocus?: boolean;
   }>(),
   {
     placeholder: 'Title',
@@ -58,6 +62,8 @@ const local = useTransformedModel(model, {
   },
 });
 
+const inputRef = ref<HTMLInputElement>();
+
 const computedStyle = computed(() => ({
   maxWidth: props.maxWidth ?? '80%',
 }));
@@ -67,7 +73,12 @@ const save = () => {
   local.reset();
 };
 
-const inputRef = ref<HTMLInputElement>();
+onMounted(() => {
+  if (props.autofocus) {
+    inputRef.value?.focus();
+  }
+});
+
 </script>
 
 <template>
