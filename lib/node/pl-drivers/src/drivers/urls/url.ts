@@ -41,7 +41,10 @@ function getPath(signer: Signer, url: string, rootDir: string): string {
 
   signer.verify(subfolder, sign, `signature verification failed for url: ${url}, subfolder: ${subfolder}`);
 
-  let fPath = parseNestedPathNoEscape(path.join(rootDir, `${subfolder}`), parsed.pathname.slice(1));
+  // Decoding changes '%20' to ' ' for example.
+  const pathname = decodeURIComponent(parsed.pathname.slice(1));
+
+  let fPath = parseNestedPathNoEscape(path.join(rootDir, `${subfolder}`), pathname);
 
   if (parsed.pathname == '' || parsed.pathname == '/') {
     fPath = path.join(fPath, 'index.html');

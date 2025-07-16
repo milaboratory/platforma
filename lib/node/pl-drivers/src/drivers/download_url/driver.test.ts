@@ -21,18 +21,21 @@ test('should download a tar archive and extracts its content and then deleted', 
 
     const c = driver.getUrl(url);
 
-    const path1 = await c.getValue();
-    expect(path1).toBeUndefined();
+    const url1 = await c.getValue();
+    expect(url1).toBeUndefined();
 
     await c.awaitChange();
 
-    const path2 = await c.getValue();
-    expect(path2).not.toBeUndefined();
-    expect(path2?.error).toBeUndefined();
-    expect(path2?.url).not.toBeUndefined();
+    const url2 = await c.getValue();
+    expect(url2).not.toBeUndefined();
+    expect(url2?.error).toBeUndefined();
+    expect(url2?.url).not.toBeUndefined();
 
-    console.log('frontend saved to dir: ', path2);
-    const indexJs = fs.createReadStream(path.join(path2!.url!, 'index.js'));
+    console.log('frontend saved to dir by url: ', url2);
+    const u = new URL(url2!.url!);
+    u.pathname = 'index.js';
+    const ui = driver.getPathForBlockUI(u.toString());
+    const indexJs = fs.createReadStream(ui);
     const indexJsCode = await text(Readable.toWeb(indexJs));
     expect(indexJsCode).toContain('use strict');
 
@@ -53,14 +56,14 @@ test('should show a error when 404 status code', async () => {
 
       const c = driver.getUrl(url);
 
-      const path1 = await c.getValue();
-      expect(path1).toBeUndefined();
+      const url1 = await c.getValue();
+      expect(url1).toBeUndefined();
 
       await c.awaitChange();
 
-      const path2 = await c.getValue();
-      expect(path2).not.toBeUndefined();
-      expect(path2?.error).not.toBeUndefined();
+      const url2 = await c.getValue();
+      expect(url2).not.toBeUndefined();
+      expect(url2?.error).not.toBeUndefined();
     });
   } catch (e) {
     console.log('HERE: ', e);
@@ -79,14 +82,14 @@ test('should abort a downloading process when we reset a state of a computable',
 
     const c = driver.getUrl(url);
 
-    const path1 = await c.getValue();
-    expect(path1).toBeUndefined();
+    const url1 = await c.getValue();
+    expect(url1).toBeUndefined();
 
     c.resetState();
     await c.awaitChange();
 
-    const path2 = await c.getValue();
-    expect(path2).toBeUndefined();
+    const url2 = await c.getValue();
+    expect(url2).toBeUndefined();
   });
 });
 
