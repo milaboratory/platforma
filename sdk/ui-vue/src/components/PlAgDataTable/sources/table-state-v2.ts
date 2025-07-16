@@ -119,7 +119,6 @@ export function useTableState(
   const tableStateNormalized = computedCached<PlDataTableStateV2Normalized>({
     get: () => upgradePlDataTableStateV2(tableStateDenormalized.value),
     set: (newState) => tableStateDenormalized.value = newState,
-    deep: true,
   });
 
   const tableState = computed<PlDataTableStateV2CacheEntryNullable>({

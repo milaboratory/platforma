@@ -1,4 +1,4 @@
-import { isJsonEqual } from '@milaboratories/helpers';
+import { deepClone, isJsonEqual } from '@milaboratories/helpers';
 import {
   computed,
   ref,
@@ -9,37 +9,39 @@ import {
   type WritableComputedRef,
 } from 'vue';
 
+/**
+ * Alternative to `computed`, but triggering only on actual data changes.
+ * Always `deep` as the plain `computed` is.
+ */
 export function computedCached<T>(options: {
   get: ComputedGetter<T>;
   set: ComputedSetter<T>;
-  deep?: boolean;
 }): WritableComputedRef<T>;
-export function computedCached<T>(options: {
-  get: ComputedGetter<T>;
-  deep?: boolean;
-}): ComputedRef<T>;
 export function computedCached<T>(getter: ComputedGetter<T>): ComputedRef<T>;
-export function computedCached<T>(options: ComputedGetter<T> | {
+export function computedCached<T>(arg: ComputedGetter<T> | {
   get: ComputedGetter<T>;
-  set?: ComputedSetter<T>;
-  deep?: boolean;
+  set: ComputedSetter<T>;
 }) {
-  if (typeof options === 'function') {
-    options = {
-      get: options,
-    };
+  let getter: ComputedGetter<T>;
+  let setter: ComputedSetter<T> | undefined = undefined;
+  if (typeof arg === 'function') {
+    getter = arg;
+  } else {
+    getter = arg.get;
+    setter = arg.set;
   }
-  const { get: getter, set: setter, deep } = options;
 
   const cachedValue = ref<T>(getter());
   watch(
     getter,
     (newValue) => {
       if (!isJsonEqual(newValue, cachedValue.value)) {
-        cachedValue.value = newValue;
+        // `deepClone` is needed because in case some fields are patched the deep would be triggered,
+        // but objects would be equal as the saved value was also patched
+        cachedValue.value = deepClone(newValue);
       }
     },
-    { deep },
+    { deep: true },
   );
 
   if (setter) {
