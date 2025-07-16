@@ -34,8 +34,18 @@ export interface UrlResult {
 }
 
 export type DownloadUrlDriverOps = {
+  /** A soft limit of the amount of blob storage, in bytes.
+   * Once exceeded, the download driver will start deleting blobs one by one
+   * when they become unneeded.
+   * */
   cacheSoftSizeBytes: number;
+
+  /** Whether to gunzip the downloaded archive (it will be untared automatically). */
   withGunzip: boolean;
+
+  /** Max number of concurrent downloads while calculating computable states
+   * derived from this driver.
+   * */
   nConcurrentDownloads: number;
 };
 

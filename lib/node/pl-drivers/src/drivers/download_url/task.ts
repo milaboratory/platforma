@@ -100,7 +100,9 @@ export class DownloadByUrlTask {
   }
 
   getUrl(): UrlResult | undefined {
-    if (this.done) return { url: newBlockUIURL(this.signer, this.saveDir, notEmpty(this.path)) };
+    if (this.done) return {
+      url: newBlockUIURL(this.signer, this.saveDir, notEmpty(this.path))
+     };
 
     if (this.error) return { error: this.error };
 
