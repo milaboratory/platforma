@@ -32,9 +32,12 @@ export function registerSvg(raw: string, name?: string): SvgMeta {
   if (!registeredRaw.has(raw)) {
     const id = `svg-${name ? `${name}-` : ''}${uniqueId(16)}`;
 
-    const widthMatch = raw.match(/width="(\d+)(px)?"/)?.[1];
-    const heightMatch = raw.match(/height="(\d+)(px)?"/)?.[1];
-    const viewBoxParts = raw.match(/viewBox="[-+]?\d*\.?\d+(?:e[-+]?\d+)?"/);
+    const openSvgTagMatch = raw.match(/^<svg[^>]*>/i)?.[0];
+    const fillMatch = openSvgTagMatch?.match(/fill\s*=\s*"(.*?)"/)?.[1];
+    const strokeMatch = openSvgTagMatch?.match(/stroke\s*=\s*"(.*?)"/)?.[1];
+    const widthMatch = openSvgTagMatch?.match(/width\s*=\s*"(\d+)(px)?"/)?.[1];
+    const heightMatch = openSvgTagMatch?.match(/height\s*=\s*"(\d+)(px)?"/)?.[1];
+    const viewBoxParts = openSvgTagMatch?.match(/viewBox\s*=\s*"[-+]?\d*\.?\d+(?:e[-+]?\d+)?"/);
     const viewBoxWidthMatch = viewBoxParts?.[2];
     const viewBoxHeightMatch = viewBoxParts?.[3];
     let width = Number(viewBoxWidthMatch ?? widthMatch ?? 16);
@@ -43,18 +46,13 @@ export function registerSvg(raw: string, name?: string): SvgMeta {
     height = isNaN(height) ? 16 : height;
     const viewBox = `0 0 ${width} ${height}`;
 
-    // Parse the original SVG tag and preserve all its attributes except id and viewBox
-    const svgTagMatch = raw.match(/^<svg([^>]*)>/i);
-    let svgAttributes = svgTagMatch ? svgTagMatch[1] : '';
-    // Remove any existing id or viewBox attributes
-    svgAttributes = svgAttributes
-      .replace(/\s*id\s*=\s*(['"])[^'"]*\1/gi, '')
-      .replace(/\s*viewBox\s*=\s*(['"])[^'"]*\1/gi, '');
-
     let fillIdx = 0;
     let strokeIdx = 0;
+    const fillAttr = fillMatch ? `fill="${fillMatch}"` : '';
+    const strokeAttr = strokeMatch ? `stroke="${strokeMatch}"` : '';
+
     const preparedSvg = raw
-      .replace(/^<svg[^>]*>/i, `<svg id="${id}" viewBox="${viewBox}" ${svgAttributes}>`)
+      .replace(/^<svg[^>]*>/i, `<svg id="${id}" viewBox="${viewBox}" ${fillAttr} ${strokeAttr}>`)
       .replace(/<\/svg>\s*$/, '</svg>')
       .replace(
         /\bfill\s*=\s*(['"])(.*?)\1/gi,
