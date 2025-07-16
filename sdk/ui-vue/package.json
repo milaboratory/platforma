@@ -25,7 +25,6 @@
   "dependencies": {
     "@types/node": "catalog:",
     "@types/semver": "catalog:",
-    "@types/sortablejs": "catalog:",
     "@types/d3-format": "catalog:",
     "@milaboratories/biowasm-tools": "workspace:^",
     "@milaboratories/miplots4": "catalog:",
@@ -38,7 +37,6 @@
     "vue": "catalog:",
     "@vueuse/core": "catalog:",
     "@vueuse/integrations": "catalog:",
-    "sortablejs": "catalog:",
     "d3-format": "catalog:",
     "zod": "catalog:"
   },

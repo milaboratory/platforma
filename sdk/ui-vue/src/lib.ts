@@ -28,6 +28,8 @@ export * from './components/PlTableFilters';
 
 export * from './components/PlMultiSequenceAlignment';
 
+export * from './components/PlAnnotations';
+
 export * from './defineApp';
 
 export * from './createModel';

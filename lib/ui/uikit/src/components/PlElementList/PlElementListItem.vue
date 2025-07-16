@@ -37,6 +37,7 @@ const emit = defineEmits<{
     :class="[$style.root, {
       [$style.active]: props.isActive,
       [$style.pinned]: props.isPinned,
+      [$style.opened]: props.isExpanded,
       [$style.disabled]: props.isToggled,
     }]"
   >
@@ -125,6 +126,11 @@ const emit = defineEmits<{
 
   &:hover {
     --border-color: var(--border-color-focus);
+    --head-background: var(--gradient-light-lime);
+  }
+
+  &.opened {
+    --head-background: var(--gradient-light-lime);
   }
 
   &.disabled {
@@ -152,10 +158,6 @@ const emit = defineEmits<{
   min-height: 40px;
   border-radius: var(--border-radius) var(--border-radius) 0 0;
   background: var(--head-background);
-
-  &:hover, &.opened {
-    --head-background: var(--gradient-light-lime);
-  }
 }
 
 .contentChevron {
