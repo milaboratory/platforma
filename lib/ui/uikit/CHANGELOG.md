@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.3.12
+
+### Patch Changes
+
+- 2273454: Dont use permament svg w/h
+
 ## 2.3.11
 
 ### Patch Changes
