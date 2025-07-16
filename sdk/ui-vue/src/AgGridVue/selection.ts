@@ -6,15 +6,17 @@ import type { GridApi } from 'ag-grid-enterprise';
  * @returns The number of selected rows.
  */
 export function getSelectedRowsCount(gridApi: GridApi) {
-  const rowModel = gridApi.getGridOption('rowModelType');
-  switch (rowModel) {
-    case 'clientSide': {
-      return gridApi.getSelectedRows().length;
-    }
-    case 'serverSide': {
-      const state = gridApi.getServerSideSelectionState();
-      // `state.selectAll` flag is ignored as we assume `selectAll` was used to select all rows
-      return state?.toggledNodes?.length ?? 0;
+  if (!gridApi.getGridOption('loading')) {
+    const rowModel = gridApi.getGridOption('rowModelType');
+    switch (rowModel) {
+      case 'clientSide': {
+        return gridApi.getSelectedRows().length;
+      }
+      case 'serverSide': {
+        const state = gridApi.getServerSideSelectionState();
+        // `state.selectAll` flag is ignored as we assume `selectAll` was used to select all rows
+        return state?.toggledNodes?.length ?? 0;
+      }
     }
   }
   return 0;
@@ -69,7 +71,7 @@ export function deselectAll(gridApi: GridApi) {
  * @returns The total number of rows.
  */
 export function getTotalRowsCount(gridApi: GridApi) {
-  return gridApi.getDisplayedRowCount();
+  return gridApi.getGridOption('loading') ? 0 : gridApi.getDisplayedRowCount();
 }
 
 /**

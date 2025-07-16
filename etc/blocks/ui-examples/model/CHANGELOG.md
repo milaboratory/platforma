@@ -1,5 +1,47 @@
 # @milaboratories/milaboratories.ui-examples.model
 
+## 1.2.7
+
+### Patch Changes
+
+- 890240e: PlAgDataTableV2 - support sorting and filtering by label column
+- Updated dependencies [890240e]
+  - @platforma-sdk/model@1.40.1
+
+## 1.2.6
+
+### Patch Changes
+
+- Updated dependencies [30ce5da]
+  - @platforma-sdk/model@1.40.0
+
+## 1.2.5
+
+### Patch Changes
+
+- Updated dependencies [c12345a]
+- Updated dependencies [c12345a]
+  - @platforma-sdk/model@1.39.18
+
+## 1.2.4
+
+### Patch Changes
+
+- @platforma-sdk/model@1.39.8
+
+## 1.2.3
+
+### Patch Changes
+
+- @platforma-sdk/model@1.39.7
+
+## 1.2.2
+
+### Patch Changes
+
+- Updated dependencies [d525c60]
+  - @platforma-sdk/model@1.39.6
+
 ## 1.2.1
 
 ### Patch Changes

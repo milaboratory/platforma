@@ -1,5 +1,45 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.7.51
+
+### Patch Changes
+
+- Updated dependencies [c12345a]
+  - @milaboratories/pl-model-common@1.16.4
+
+## 1.7.50
+
+### Patch Changes
+
+- 7afc448: Add optional "deprecated" flag to the block meta
+
+## 1.7.49
+
+### Patch Changes
+
+- Updated dependencies [7be8a2b]
+  - @milaboratories/pl-model-common@1.16.3
+
+## 1.7.48
+
+### Patch Changes
+
+- Updated dependencies [dfb0086]
+  - @milaboratories/pl-model-common@1.16.2
+
+## 1.7.47
+
+### Patch Changes
+
+- Updated dependencies [d525c60]
+  - @milaboratories/pl-model-common@1.16.1
+
+## 1.7.46
+
+### Patch Changes
+
+- 98d48f6: PFrame driver - limit calculateTableData results cache by disk footprint
+
 ## 1.7.45
 
 ### Patch Changes

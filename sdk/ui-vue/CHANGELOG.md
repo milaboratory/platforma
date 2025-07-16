@@ -1,5 +1,100 @@
 # @platforma-sdk/ui-vue
 
+## 1.40.1
+
+### Patch Changes
+
+- 890240e: PlAgDataTableV2 - support sorting and filtering by label column
+- Updated dependencies [890240e]
+  - @platforma-sdk/model@1.40.1
+  - @milaboratories/uikit@2.3.11
+
+## 1.40.0
+
+### Minor Changes
+
+- 30ce5da: MSA settings
+
+### Patch Changes
+
+- Updated dependencies [30ce5da]
+- Updated dependencies [30ce5da]
+  - @milaboratories/uikit@2.3.10
+  - @platforma-sdk/model@1.40.0
+
+## 1.39.20
+
+### Patch Changes
+
+- 986c20c: computedCached moved to uikit, watchCached implemented
+- Updated dependencies [986c20c]
+  - @milaboratories/uikit@2.3.9
+
+## 1.39.19
+
+### Patch Changes
+
+- 21a8c4a: Renamed cachedComputed to computedCached
+
+## 1.39.18
+
+### Patch Changes
+
+- Updated dependencies [c12345a]
+- Updated dependencies [c12345a]
+  - @platforma-sdk/model@1.39.18
+  - @milaboratories/uikit@2.3.8
+
+## 1.39.17
+
+### Patch Changes
+
+- Updated dependencies [bc814d2]
+  - @milaboratories/uikit@2.3.7
+
+## 1.39.16
+
+### Patch Changes
+
+- Updated dependencies [8aec1b5]
+  - @milaboratories/uikit@2.3.6
+
+## 1.39.10
+
+### Patch Changes
+
+- Updated dependencies [66a2689]
+  - @milaboratories/uikit@2.3.5
+
+## 1.39.8
+
+### Patch Changes
+
+- 7be8a2b: Fix PlAgDataTableV2 filters reactivity
+  - @platforma-sdk/model@1.39.8
+  - @milaboratories/uikit@2.3.4
+
+## 1.39.7
+
+### Patch Changes
+
+- @platforma-sdk/model@1.39.7
+- @milaboratories/uikit@2.3.3
+
+## 1.39.6
+
+### Patch Changes
+
+- Updated dependencies [d525c60]
+  - @platforma-sdk/model@1.39.6
+  - @milaboratories/uikit@2.3.2
+
+## 1.39.3
+
+### Patch Changes
+
+- b9a4ca8: Bump miplots4 version
+
 ## 1.39.0
 
 ### Minor Changes

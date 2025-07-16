@@ -53,6 +53,7 @@ builder := func() {
 	ramRequest := undefined
 
 	cache := 0
+	inputCache := 0
 	nErrorLines := 200
 
 	// files to be added in workdir
@@ -414,6 +415,79 @@ builder := func() {
 		cacheDays: func(days) {
 			ll.assert(is_int(days) && days > 0, "cache time must be a number of days")
 			cache = days * times.hour * 24
+			return self
+		},
+
+		/**
+		 * Sets the cache duration for the execution's inputs.
+		 *
+		 * This is useful for an execution that is part of a sequence that might be re-rendered soon.
+		 * Caching allows the inputs to be reused by the recovery mechanism, avoiding the need to
+		 * recalculate them. A duration of one minute is recommended.
+		 *
+		 * @param time: duration - the cache time from 'times' library.
+		 */
+		cacheInputs: func(time) {
+			ll.assert(
+				is_int(time),
+				"input cache time must be an integer. " +
+					"Did you forget to import a standard tengo library 'times'?")
+			inputCache = time
+			return self
+		},
+
+		/**
+		 * Sets the input cache time in milliseconds.
+		 *
+		 * @param millis: number
+		 */
+		cacheInputsMillis: func(millis) {
+			ll.assert(is_int(millis) && millis > 0, "input cache time must be a number of milliseconds")
+			inputCache = millis * times.millisecond
+			return self
+		},
+
+		/**
+		 * Sets the input cache time in seconds.
+		 *
+		 * @param seconds: number
+		 */
+		cacheInputsSeconds: func(seconds) {
+			ll.assert(is_int(seconds) && seconds > 0, "input cache time must be a number of seconds")
+			inputCache = seconds * times.second
+			return self
+		},
+
+		/**
+		 * Sets the input cache time in minutes.
+		 *
+		 * @param minutes: number
+		 */
+		cacheInputsMinutes: func(minutes) {
+			ll.assert(is_int(minutes) && minutes > 0, "input cache time must be a number of minutes")
+			inputCache = minutes * times.minute
+			return self
+		},
+
+		/**
+		 * Sets the input cache time in hours.
+		 *
+		 * @param hours: number
+		 */
+		cacheInputsHours: func(hours) {
+			ll.assert(is_int(hours) && hours > 0, "input cache time must be a number of hours")
+			inputCache = hours * times.hour
+			return self
+		},
+
+		/**
+		 * Sets the input cache time in days
+		 *
+		 * @param days: number
+		 */
+		cacheInputsDays: func(days) {
+			ll.assert(is_int(days) && days > 0, "input cache time must be a number of days")
+			inputCache = days * times.hour * 24
 			return self
 		},
 
@@ -859,7 +933,12 @@ builder := func() {
 				}
 			}
 
-			tpl := render.create(assets.importTemplate(":exec.exec"), pureExecInputs, metaExecInputs)
+			renderOpts := { metaInputs: metaExecInputs }
+			if inputCache > 0 {
+				renderOpts.inputCache = inputCache
+			}
+
+			tpl := render.create(assets.importTemplate(":exec.exec"), pureExecInputs, renderOpts)
 
 			self := undefined
 			self = ll.toStrict(oop.inherit(tpl, {

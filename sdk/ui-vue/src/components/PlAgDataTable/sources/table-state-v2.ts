@@ -1,13 +1,3 @@
-import type {
-  PlDataTableFilterState,
-  PlDataTableStateV2CacheEntry,
-  PlDataTableStateV2Normalized,
-  PObjectId,
-  PTableColumnSpecJson,
-  PTableParamsV2,
-  PTableRecordFilter,
-  PTableSorting,
-} from '@platforma-sdk/model';
 import {
   makeDefaultPTableParams,
   parseJson,
@@ -15,22 +5,26 @@ import {
   type PlDataTableGridStateCore,
   type PlDataTableSheetState,
   type PlDataTableStateV2,
+  type PlDataTableFilterState,
+  type PlDataTableStateV2CacheEntry,
+  type PlDataTableStateV2Normalized,
+  type PObjectId,
+  type PTableParamsV2,
+  type PTableRecordFilter,
+  type PTableSorting,
 } from '@platforma-sdk/model';
-import type {
-  Ref,
-  WritableComputedRef,
-} from 'vue';
 import {
   computed,
   watch,
+  type Ref,
+  type WritableComputedRef,
 } from 'vue';
 import type {
   PlDataTableSettingsV2,
 } from '../types';
-import {
-  isJsonEqual,
-} from '@milaboratories/helpers';
+import { isJsonEqual } from '@milaboratories/helpers';
 import { makePredicate } from '../../PlTableFilters/filters_logic';
+import { computedCached } from '@milaboratories/uikit';
 
 type PlDataTableStateV2CacheEntryNullable = PlDataTableStateV2CacheEntry | {
   sourceId: null;
@@ -51,8 +45,12 @@ function makeDefaultState(): PlDataTableStateV2CacheEntryNullable {
 function getHiddenColIds(state: PlDataTableGridStateCore['columnVisibility']): PObjectId[] | null {
   return state?.hiddenColIds
     ?.map(parseJson)
-    .filter((c) => c.type === 'column')
-    .map((c) => c.id)
+    .reduce((acc, c) => {
+      if (c.source.type === 'column') {
+        acc.push(c.source.id);
+      }
+      return acc;
+    }, [] as PObjectId[])
     ?? null;
 }
 
@@ -72,24 +70,25 @@ function makePartitionFilters(sheetsState: PlDataTableSheetState[]): PTableRecor
 
 function makeFilters(columnsState: PlDataTableFilterState[]): PTableRecordFilter[] {
   return columnsState
-    .flatMap((s) => {
-      return !s.filter || s.filter.disabled
-        ? []
-        : [{
-            type: 'bySingleColumnV2',
-            column: s.id,
-            predicate: makePredicate(s.alphabetic, s.filter.value),
-          }];
-    });
+    .reduce((acc, s) => {
+      if (!s.filter || s.filter.disabled) {
+        return acc;
+      }
+      acc.push({
+        type: 'bySingleColumnV2',
+        column: s.id,
+        predicate: makePredicate(s.alphabetic, s.filter.value),
+      });
+      return acc;
+    }, [] as PTableRecordFilter[]);
 }
 
 function makeSorting(state: PlDataTableGridStateCore['sort']): PTableSorting[] {
   return (
     state?.sortModel.map((item) => {
-      const { spec, ...column } = parseJson(
-        item.colId as PTableColumnSpecJson,
-      );
-      const _ = spec;
+      const { spec: _, ...column } = parseJson(
+        item.colId,
+      ).labeled;
       return {
         column,
         ascending: item.sort === 'asc',
@@ -117,14 +116,10 @@ export function useTableState(
     sheetsState: WritableComputedRef<PlDataTableSheetState[]>;
     filtersState: WritableComputedRef<PlDataTableFilterState[]>;
   } {
-  const tableStateNormalized = computed<PlDataTableStateV2Normalized>({
+  const tableStateNormalized = computedCached<PlDataTableStateV2Normalized>({
     get: () => upgradePlDataTableStateV2(tableStateDenormalized.value),
-    set: (newState) => {
-      const oldState = tableStateDenormalized.value;
-      if (!isJsonEqual(oldState, newState)) {
-        tableStateDenormalized.value = newState;
-      }
-    },
+    set: (newState) => tableStateDenormalized.value = newState,
+    deep: true,
   });
 
   const tableState = computed<PlDataTableStateV2CacheEntryNullable>({
@@ -180,6 +175,7 @@ export function useTableState(
         };
       }
     },
+    { deep: true },
   );
 
   const gridState = computed<PlDataTableGridStateCore>({

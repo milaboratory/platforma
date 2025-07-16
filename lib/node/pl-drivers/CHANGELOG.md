@@ -1,5 +1,51 @@
 # @milaboratories/pl-drivers
 
+## 1.6.6
+
+### Patch Changes
+
+- Updated dependencies [c12345a]
+  - @milaboratories/pl-model-common@1.16.4
+
+## 1.6.5
+
+### Patch Changes
+
+- 54e22c2: update protofiles twice
+- Updated dependencies [54e22c2]
+  - @milaboratories/pl-client@2.11.4
+  - @milaboratories/pl-tree@1.7.2
+
+## 1.6.4
+
+### Patch Changes
+
+- 4666cae: pl-client and pl-drivers: update proto
+- Updated dependencies [4666cae]
+  - @milaboratories/pl-client@2.11.3
+  - @milaboratories/pl-tree@1.7.1
+
+## 1.6.3
+
+### Patch Changes
+
+- Updated dependencies [7be8a2b]
+  - @milaboratories/pl-model-common@1.16.3
+
+## 1.6.2
+
+### Patch Changes
+
+- Updated dependencies [dfb0086]
+  - @milaboratories/pl-model-common@1.16.2
+
+## 1.6.1
+
+### Patch Changes
+
+- Updated dependencies [d525c60]
+  - @milaboratories/pl-model-common@1.16.1
+
 ## 1.6.0
 
 ### Minor Changes

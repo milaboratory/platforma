@@ -1,20 +1,25 @@
 import type { StartedTestContainer } from 'testcontainers';
 import { describe, it, beforeAll, afterAll, expect } from 'vitest';
-import { writeFileSync, readFileSync } from 'fs';
+import * as fs from 'node:fs/promises';
 import { SshClient } from '../ssh';
 import ssh from 'ssh2';
-import { downloadsFolder, cleanUp, getConnectionForSsh, getContainerHostAndPort, initContainer, localFileDownload, localFileUpload } from './common-utils';
+import { cleanUp, getConnectionForSsh, getContainerHostAndPort, initContainer, testAssetsPath } from './common-utils';
 import { ConsoleLoggerAdapter } from '@milaboratories/ts-helpers';
+import path from 'path';
+import { fileExists } from '@milaboratories/ts-helpers';
 
 let client: SshClient;
 let testContainer: StartedTestContainer;
 
+export const localFileUpload = path.resolve(testAssetsPath, 'test-file.txt');
+export const localFileDownload = path.resolve(testAssetsPath, 'test-file-download.txt');
+export const downloadsFolder = path.resolve(testAssetsPath, 'downloads');
+export const recUpload = path.resolve(testAssetsPath, 'downloads', 'rec-upload');
+
 beforeAll(async () => {
-  // FIXME: sometimes it fails with the error here.
-  // Then we will have a container available in docker ps.
-  // If it happened, try to retry to build the container the second time here and ask me (Gleb).
   testContainer = await initContainer('ssh');
   client = await SshClient.init(new ConsoleLoggerAdapter(), getConnectionForSsh(testContainer));
+  await createTestDirForRecursiveUpload();
 }, 200000);
 
 describe('SSH Tests', () => {
@@ -94,7 +99,7 @@ describe('SSH Tests', () => {
   it('should upload a file to the SSH server', async () => {
     const data = `Test data ${new Date().getTime()}`;
     const remoteFile = '/home/pl-doctor/uploaded-file.txt';
-    writeFileSync(localFileUpload, data);
+    await fs.writeFile(localFileUpload, data);
     const result = await client.uploadFile(localFileUpload, remoteFile);
     expect(result).toBe(true);
     const execResult = await testContainer.exec(['cat', remoteFile]);
@@ -107,14 +112,14 @@ describe('SSH Tests', () => {
     // const localFile = './test-file-upload.txt';
     const remoteFile = '/home/pl-doctor/uploaded-file.txt';
 
-    writeFileSync(localFileDownload, data);
+    await fs.writeFile(localFileDownload, data);
 
     const uploadResult = await client.uploadFile(localFileDownload, remoteFile);
     expect(uploadResult).toBe(true);
 
     const downloadResult = await client.downloadFile(remoteFile, localFileDownload);
     expect(downloadResult).toBe(true);
-    expect(readFileSync(localFileDownload, { encoding: 'utf-8' })).toBe(data);
+    expect(await fs.readFile(localFileDownload, { encoding: 'utf-8' })).toBe(data);
   });
 
   it('Simple server should forward remote SSH port to a local port', async () => {
@@ -246,6 +251,44 @@ describe('sshExec', () => {
   });
 });
 
+export async function createTestDirForRecursiveUpload() {
+  const pathBase = path.resolve(testAssetsPath, 'downloads', 'rec-upload', 'sub-1');
+  const path2 = path.resolve(testAssetsPath, 'downloads', 'rec-upload', 'sub-1', 'sub-1-1');
+
+  await fs.mkdir(pathBase, { recursive: true });
+  await fs.mkdir(path2, { recursive: true });
+
+  for (let i = 0; i < 19; i++) {
+    const path2 = path.resolve(testAssetsPath, 'downloads', 'rec-upload', 'sub-1', `sub-1-${i}`);
+    await fs.mkdir(path2, { recursive: true });
+
+    for (let i = 0; i < 3; i++) {
+      await fs.writeFile(path.resolve(path2, `test-${i}.txt`), `test-${i}`);
+    }
+  }
+
+  for (let i = 1; i < 100; i++) {
+    await fs.writeFile(path.resolve(pathBase, `test-${i}.txt`), `test-${i}`);
+  }
+  await fs.writeFile(path.resolve(pathBase, `test.txt`), `test-1`);
+  await fs.writeFile(path.resolve(path2, 'test-5.txt'), 'test-5');
+}
+
+export async function cleanUpTestAssets() {
+  if (await fileExists(localFileUpload)) {
+    await fs.unlink(localFileUpload);
+  }
+
+  if (await fileExists(localFileDownload)) {
+    await fs.unlink(localFileDownload);
+  }
+
+  if (await fileExists(recUpload)) {
+    await fs.rm(recUpload, { recursive: true });
+  }
+}
+
 afterAll(async () => {
+  await cleanUpTestAssets();
   await cleanUp(testContainer);
 }, 200000);

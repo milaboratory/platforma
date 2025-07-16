@@ -93,7 +93,7 @@ normalizeColumnSpec := func(spec) {
 //
 
 _P_MATCHER_SCHEMA := {
-	`__options__,closed`: ``,
+	// `__options__,closed`: ``, // commented out to allow for custom options be included in matchers
 	`type,?`: `string,regex=Int|Long|Float|Double|String`,
 	`name`: `string`,
 	`domain,?`: { any: `string` },

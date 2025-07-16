@@ -205,6 +205,7 @@ message TxAPI {
       ResourceAPI.Name.Exists.Request resource_name_exists = 68; // check if resource name exists in platform
       ResourceAPI.Name.Delete.Request resource_name_delete = 69; // detach name from resource
       ResourceAPI.Tree.Request resource_tree = 70; // load tree rooted at given resource
+      ResourceAPI.TreeSize.Request resource_tree_size = 71; // calculate size for all resources in tree
 
       FieldAPI.Create.Request field_create = 101; // add field to resource
       FieldAPI.Exists.Request field_exists = 107; // add field to resource
@@ -297,6 +298,7 @@ message TxAPI {
       ResourceAPI.Name.Exists.Response resource_name_exists = 68;
       ResourceAPI.Name.Delete.Response resource_name_delete = 69;
       ResourceAPI.Tree.Response resource_tree = 70;
+      ResourceAPI.TreeSize.Response resource_tree_size = 71;
 
       FieldAPI.Create.Response field_create = 101;
       FieldAPI.Exists.Response field_exists = 107;
@@ -350,6 +352,7 @@ message TxAPI {
       }
       string name = 1;
       WritableTx writable = 2;
+      bool enableFormattedErrors = 3;
     }
 
     message Response {
@@ -519,10 +522,26 @@ message ResourceAPI {
     message ByType {
       message Request {
         Base.ResourceType resource_type = 1;
+
+        // Non-zero value makes API to limit its responses count to at most
+        // <limit> number of items.
+        // Zero value makes API to return all available items.
+        uint32 limit = 3;
+
+        // Start listing from given resource ID (not including this resource ID itself)
+        // After == 100 means listing will NOT contain resources with ID = 100 and lower.
+        uint64 after = 6;
+
+        // True value makes API to return original resources instead of duplicates.
+        bool resolve_duplicates = 4;
+
+        // Load fields for each resource in list.
+        bool load_fields = 5;
       }
 
+      // Multi-message
       message Response {
-        map<uint64, Resource> resources = 1;
+        Resource resource = 1;
       }
     }
   }
@@ -604,6 +623,18 @@ message ResourceAPI {
     // Multi-message
     message Response {
       Resource resource = 1;
+    }
+  }
+
+  message TreeSize {
+    message Request {
+      uint64 resource_id = 1;
+    }
+    message Response {
+      // size of all tree resources in bytes
+      // could change between call regarding compression algorithm
+      uint64 size = 1;
+      uint64 resource_count = 2;
     }
   }
 }
@@ -1161,6 +1192,12 @@ message MaintenanceAPI {
 
       string server_info = 3;
       Compression compression = 4;
+
+      // instanceID is a unique ID that changes when we reset DB state.
+      // If we reset a state and a database, but the address of the backend is still the same,
+      // without instanceID we are not sure if it's the same state or not,
+      // and UI can't detect it and clear its state (e.g. caches of drivers).
+      string instance_id = 5;
     }
   }
 }

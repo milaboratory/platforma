@@ -359,6 +359,8 @@ assert := func(condition, msg, ...args) {
  *     ["or", "string", "number"] - value must be string or number
  *  - for arrays: ["string"], ["number"], ... (any valid scalar type)
  *  - for maps: {"name": "string", "age": "number"} - make sure <value> is map with "name" and "age" keys with given value types.
+ *  - for optional fields or fields that can be undefined use "?" symbol in the key name. For example:
+ *    {"name,?": any} - name field is optional and can be undefined
  *
  * @param value: any - the value to check.
  * @param schema: any - the schema to assert against (see comments above)

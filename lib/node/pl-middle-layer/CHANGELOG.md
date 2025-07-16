@@ -1,5 +1,142 @@
 # @milaboratories/pl-middle-layer
 
+## 1.39.16
+
+### Patch Changes
+
+- Updated dependencies [890240e]
+  - @platforma-sdk/model@1.40.1
+
+## 1.39.15
+
+### Patch Changes
+
+- Updated dependencies [30ce5da]
+  - @platforma-sdk/model@1.40.0
+
+## 1.39.14
+
+### Patch Changes
+
+- Updated dependencies [5d21b36]
+  - @platforma-sdk/workflow-tengo@4.10.0
+
+## 1.39.13
+
+### Patch Changes
+
+- 21a8c4a: PFrames version bump
+
+## 1.39.12
+
+### Patch Changes
+
+- Updated dependencies [c12345a]
+- Updated dependencies [c12345a]
+  - @platforma-sdk/model@1.39.18
+  - @milaboratories/pl-model-common@1.16.4
+  - @milaboratories/pl-model-middle-layer@1.7.51
+  - @milaboratories/pl-drivers@1.6.6
+  - @platforma-sdk/block-tools@2.5.69
+
+## 1.39.11
+
+### Patch Changes
+
+- Updated dependencies [da5900a]
+  - @milaboratories/pl-deployments@2.4.5
+
+## 1.39.10
+
+### Patch Changes
+
+- Updated dependencies [54e22c2]
+  - @milaboratories/pl-drivers@1.6.5
+  - @milaboratories/pl-client@2.11.4
+  - @milaboratories/pl-errors@1.1.11
+  - @milaboratories/pl-tree@1.7.2
+
+## 1.39.9
+
+### Patch Changes
+
+- Updated dependencies [7afc448]
+  - @milaboratories/pl-model-middle-layer@1.7.50
+  - @platforma-sdk/block-tools@2.5.68
+
+## 1.39.8
+
+### Patch Changes
+
+- Updated dependencies [4666cae]
+  - @milaboratories/pl-drivers@1.6.4
+  - @milaboratories/pl-client@2.11.3
+  - @milaboratories/pl-errors@1.1.10
+  - @milaboratories/pl-tree@1.7.1
+
+## 1.39.7
+
+### Patch Changes
+
+- Updated dependencies [01c5e05]
+  - @milaboratories/pl-deployments@2.4.4
+
+## 1.39.6
+
+### Patch Changes
+
+- 3945904: Add duplicate block ability
+
+## 1.39.5
+
+### Patch Changes
+
+- 7be8a2b: Adopt PFrameError
+- Updated dependencies [7be8a2b]
+  - @milaboratories/pl-model-common@1.16.3
+  - @milaboratories/pl-model-middle-layer@1.7.49
+  - @milaboratories/pl-drivers@1.6.3
+  - @platforma-sdk/model@1.39.8
+  - @platforma-sdk/block-tools@2.5.67
+
+## 1.39.4
+
+### Patch Changes
+
+- Updated dependencies [dfb0086]
+  - @milaboratories/pl-model-common@1.16.2
+  - @milaboratories/pl-model-middle-layer@1.7.48
+  - @milaboratories/pl-drivers@1.6.2
+  - @platforma-sdk/model@1.39.7
+  - @platforma-sdk/block-tools@2.5.66
+
+## 1.39.3
+
+### Patch Changes
+
+- Updated dependencies [d525c60]
+  - @milaboratories/pl-model-common@1.16.1
+  - @platforma-sdk/model@1.39.6
+  - @milaboratories/pl-model-middle-layer@1.7.47
+  - @milaboratories/pl-drivers@1.6.1
+  - @platforma-sdk/block-tools@2.5.65
+
+## 1.39.2
+
+### Patch Changes
+
+- Updated dependencies [9a4b895]
+  - @platforma-sdk/workflow-tengo@4.9.3
+
+## 1.39.1
+
+### Patch Changes
+
+- 98d48f6: PFrame driver - limit calculateTableData results cache by disk footprint
+- Updated dependencies [98d48f6]
+  - @milaboratories/pl-model-middle-layer@1.7.46
+  - @platforma-sdk/block-tools@2.5.64
+
 ## 1.39.0
 
 ### Minor Changes

@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/ui-vue",
-  "version": "1.39.0",
+  "version": "1.40.1",
   "type": "module",
   "main": "dist/lib.js",
   "styles": "dist/lib.js",
@@ -23,7 +23,6 @@
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "dependencies": {
-    "@types/lodash": "catalog:",
     "@types/node": "catalog:",
     "@types/semver": "catalog:",
     "@types/sortablejs": "catalog:",
@@ -41,7 +40,6 @@
     "@vueuse/integrations": "catalog:",
     "sortablejs": "catalog:",
     "d3-format": "catalog:",
-    "lodash": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {

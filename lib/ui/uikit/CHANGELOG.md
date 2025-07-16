@@ -1,5 +1,71 @@
 # @milaboratories/uikit
 
+## 2.3.11
+
+### Patch Changes
+
+- Updated dependencies [890240e]
+  - @platforma-sdk/model@1.40.1
+
+## 2.3.10
+
+### Patch Changes
+
+- 30ce5da: Updated `PlNumberField` to handle fractional increments/decrements better
+- Updated dependencies [30ce5da]
+  - @platforma-sdk/model@1.40.0
+
+## 2.3.9
+
+### Patch Changes
+
+- 986c20c: computedCached moved to uikit, watchCached implemented
+
+## 2.3.8
+
+### Patch Changes
+
+- Updated dependencies [c12345a]
+- Updated dependencies [c12345a]
+  - @platforma-sdk/model@1.39.18
+
+## 2.3.7
+
+### Patch Changes
+
+- bc814d2: Fix: stop click propagation from FileDialogModal
+
+## 2.3.6
+
+### Patch Changes
+
+- 8aec1b5: add icons
+
+## 2.3.5
+
+### Patch Changes
+
+- 66a2689: update package json deps
+
+## 2.3.4
+
+### Patch Changes
+
+- @platforma-sdk/model@1.39.8
+
+## 2.3.3
+
+### Patch Changes
+
+- @platforma-sdk/model@1.39.7
+
+## 2.3.2
+
+### Patch Changes
+
+- Updated dependencies [d525c60]
+  - @platforma-sdk/model@1.39.6
+
 ## 2.3.1
 
 ### Patch Changes

@@ -1,5 +1,122 @@
 # @platforma-sdk/test
 
+## 1.40.1
+
+### Patch Changes
+
+- Updated dependencies [890240e]
+  - @platforma-sdk/model@1.40.1
+  - @milaboratories/pl-middle-layer@1.39.16
+
+## 1.40.0
+
+### Patch Changes
+
+- Updated dependencies [30ce5da]
+  - @platforma-sdk/model@1.40.0
+  - @milaboratories/pl-middle-layer@1.39.15
+
+## 1.39.21
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.39.14
+
+## 1.39.19
+
+### Patch Changes
+
+- Updated dependencies [21a8c4a]
+  - @milaboratories/pl-middle-layer@1.39.13
+
+## 1.39.18
+
+### Patch Changes
+
+- Updated dependencies [c12345a]
+- Updated dependencies [c12345a]
+  - @platforma-sdk/model@1.39.18
+  - @milaboratories/pl-middle-layer@1.39.12
+
+## 1.39.15
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.39.11
+
+## 1.39.14
+
+### Patch Changes
+
+- Updated dependencies [54e22c2]
+  - @milaboratories/pl-client@2.11.4
+  - @milaboratories/pl-middle-layer@1.39.10
+  - @milaboratories/pl-tree@1.7.2
+
+## 1.39.13
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.39.9
+
+## 1.39.12
+
+### Patch Changes
+
+- Updated dependencies [4666cae]
+  - @milaboratories/pl-client@2.11.3
+  - @milaboratories/pl-middle-layer@1.39.8
+  - @milaboratories/pl-tree@1.7.1
+
+## 1.39.11
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.39.7
+
+## 1.39.9
+
+### Patch Changes
+
+- Updated dependencies [3945904]
+  - @milaboratories/pl-middle-layer@1.39.6
+
+## 1.39.8
+
+### Patch Changes
+
+- Updated dependencies [7be8a2b]
+  - @milaboratories/pl-middle-layer@1.39.5
+  - @platforma-sdk/model@1.39.8
+
+## 1.39.7
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.39.4
+- @platforma-sdk/model@1.39.7
+
+## 1.39.6
+
+### Patch Changes
+
+- Updated dependencies [d525c60]
+  - @platforma-sdk/model@1.39.6
+  - @milaboratories/pl-middle-layer@1.39.3
+
+## 1.39.5
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.39.2
+
+## 1.39.4
+
+### Patch Changes
+
+- Updated dependencies [98d48f6]
+  - @milaboratories/pl-middle-layer@1.39.1
+
 ## 1.39.2
 
 ### Patch Changes

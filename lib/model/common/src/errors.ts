@@ -28,6 +28,22 @@ export function isAggregateError(error: unknown): error is AggregateError {
   return error instanceof Error && error.name === 'AggregateError';
 }
 
+export class PFrameError extends Error {
+  name = 'PFrameError';
+}
+
+export function isPFrameError(error: unknown): error is PFrameError {
+  return error instanceof Error && error.name === 'PFrameError';
+}
+
+export class PFrameDriverError extends PFrameError {
+  name = 'PFrameError.Driver';
+}
+
+export function isPFrameDriverError(error: unknown): error is PFrameDriverError {
+  return error instanceof Error && error.name === 'PFrameError.Driver';
+}
+
 function stringifyValue(value: unknown): string {
   if (typeof value === 'string') {
     return `String value was thrown: ${value}`;

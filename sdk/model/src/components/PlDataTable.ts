@@ -36,21 +36,27 @@ import {
   TreeNodeAccessor,
 } from '../render';
 
-/** Canonicalized PTableColumnSpec JSON string */
-export type PTableColumnSpecJson = CanonicalizedJson<PTableColumnSpec>;
+export type PlTableColumnId = {
+  /** Original column spec */
+  source: PTableColumnSpec;
+  /** Column spec with labeled axes replaced by label columns */
+  labeled: PTableColumnSpec;
+};
+
+export type PlTableColumnIdJson = CanonicalizedJson<PlTableColumnId>;
 
 export type PlDataTableGridStateCore = {
   /** Includes column ordering */
   columnOrder?: {
     /** All colIds in order */
-    orderedColIds: PTableColumnSpecJson[];
+    orderedColIds: PlTableColumnIdJson[];
   };
   /** Includes current sort columns and direction */
   sort?: {
     /** Sorted columns and directions in order */
     sortModel: {
       /** Column Id to apply the sort to. */
-      colId: PTableColumnSpecJson;
+      colId: PlTableColumnIdJson;
       /** Sort direction */
       sort: 'asc' | 'desc';
     }[];
@@ -58,7 +64,7 @@ export type PlDataTableGridStateCore = {
   /** Includes column visibility */
   columnVisibility?: {
     /** All colIds which were hidden */
-    hiddenColIds: PTableColumnSpecJson[];
+    hiddenColIds: PlTableColumnIdJson[];
   };
 };
 
@@ -85,7 +91,19 @@ export type PlDataTableStateV2 =
   // Old versions of the state
   | {
     // no version
-    gridState: PlDataTableGridStateCore & {
+    gridState: {
+      columnOrder?: {
+        orderedColIds: CanonicalizedJson<PTableColumnSpec>[];
+      };
+      sort?: {
+        sortModel: {
+          colId: CanonicalizedJson<PTableColumnSpec>;
+          sort: 'asc' | 'desc';
+        }[];
+      };
+      columnVisibility?: {
+        hiddenColIds: CanonicalizedJson<PTableColumnSpec>[];
+      };
       sourceId?: string;
       sheets?: Record<CanonicalizedJson<AxisId>, string | number>;
     };
@@ -98,7 +116,20 @@ export type PlDataTableStateV2 =
     version: 2;
     stateCache: {
       sourceId: string;
-      gridState: PlDataTableGridStateCore;
+      gridState: {
+        columnOrder?: {
+          orderedColIds: CanonicalizedJson<PTableColumnSpec>[];
+        };
+        sort?: {
+          sortModel: {
+            colId: CanonicalizedJson<PTableColumnSpec>;
+            sort: 'asc' | 'desc';
+          }[];
+        };
+        columnVisibility?: {
+          hiddenColIds: CanonicalizedJson<PTableColumnSpec>[];
+        };
+      };
       sheetsState: PlDataTableSheetState[];
     }[];
     pTableParams: {
@@ -106,6 +137,29 @@ export type PlDataTableStateV2 =
       filters: PTableRecordFilter[];
       sorting: PTableSorting[];
     };
+  }
+  | {
+    version: 3;
+    stateCache: {
+      sourceId: string;
+      gridState: {
+        columnOrder?: {
+          orderedColIds: CanonicalizedJson<PTableColumnSpec>[];
+        };
+        sort?: {
+          sortModel: {
+            colId: CanonicalizedJson<PTableColumnSpec>;
+            sort: 'asc' | 'desc';
+          }[];
+        };
+        columnVisibility?: {
+          hiddenColIds: CanonicalizedJson<PTableColumnSpec>[];
+        };
+      };
+      sheetsState: PlDataTableSheetState[];
+      filtersState: PlDataTableFilterState[];
+    }[];
+    pTableParams: PTableParamsV2;
   }
   // Normalized state
   | PlDataTableStateV2Normalized;
@@ -139,7 +193,7 @@ export type PTableParamsV2 =
 
 export type PlDataTableStateV2Normalized = {
   /** Version for upgrades */
-  version: 3;
+  version: 4;
   /** Internal states, LRU cache for 5 sourceId-s */
   stateCache: PlDataTableStateV2CacheEntry[];
   /** PTable params derived from the cache state for the current sourceId */
@@ -159,7 +213,7 @@ export function makeDefaultPTableParams(): PTableParamsV2 {
 /** Create default PlDataTableStateV2 */
 export function createPlDataTableStateV2(): PlDataTableStateV2Normalized {
   return {
-    version: 3,
+    version: 4,
     stateCache: [],
     pTableParams: makeDefaultPTableParams(),
   };
@@ -167,10 +221,10 @@ export function createPlDataTableStateV2(): PlDataTableStateV2Normalized {
 
 /** Upgrade PlDataTableStateV2 to the latest version */
 export function upgradePlDataTableStateV2(state: PlDataTableStateV2): PlDataTableStateV2Normalized {
-  // v1
+  // v1 -> v2
   if (!('version' in state)) {
     // Non upgradeable as sourceId calculation algorithm has changed, resetting state to default
-    return createPlDataTableStateV2();
+    state = createPlDataTableStateV2();
   }
   // v2 -> v3
   if (state.version === 2) {
@@ -182,6 +236,11 @@ export function upgradePlDataTableStateV2(state: PlDataTableStateV2): PlDataTabl
       })),
       pTableParams: makeDefaultPTableParams(),
     };
+  }
+  // v3 -> v4
+  if (state.version === 3) {
+    // Non upgradeable as column ids calculation algorithm has changed, resetting state to default
+    state = createPlDataTableStateV2();
   }
   return state;
 }

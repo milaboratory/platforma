@@ -39,9 +39,12 @@ import {
   mapDataInfo,
   isDataInfo,
   ensureError,
+  PFrameDriverError,
+  isAbortError,
+  isPFrameDriverError,
 } from '@platforma-sdk/model';
 import { LRUCache } from 'lru-cache';
-import type { UnrefFn } from './ref_count_pool';
+import type { PollResource } from './ref_count_pool';
 import { RefCountResourcePool } from './ref_count_pool';
 import { allBlobs, makeDataInfoFromPColumnValues, mapBlobs, parseDataInfoResource } from './data';
 import { createHash } from 'node:crypto';
@@ -53,7 +56,7 @@ import * as fsp from 'node:fs/promises';
 import * as path from 'node:path';
 import { getDebugFlags } from '../debug';
 
-export type PColumnDataUniversal = PlTreeNodeAccessor | DataInfo<PlTreeNodeAccessor> | PColumnValues;
+type PColumnDataUniversal = PlTreeNodeAccessor | DataInfo<PlTreeNodeAccessor> | PColumnValues;
 
 function blobKey(res: ResourceInfo): string {
   return String(res.id);
@@ -106,10 +109,72 @@ function migratePTableFilters<T>(
 
 const bigintReplacer = (_: string, v: unknown) => (typeof v === 'bigint' ? v.toString() : v);
 
+class PTableCache {
+  private readonly perFrame = new Map<PFrameHandle, LRUCache<PTableHandle, PollResource<PTableHolder>>>();
+  private readonly global: LRUCache<PTableHandle, PollResource<PTableHolder>>;
+  private readonly disposeListeners = new Map<PTableHandle, () => void>();
+
+  constructor(
+    private readonly logger: MiLogger,
+    private readonly ops: PFrameDriverOps,
+  ) {
+    this.global = new LRUCache<PTableHandle, PollResource<PTableHolder>>({
+      maxSize: this.ops.pFramesCacheMaxSize,
+      dispose: (resource, key, reason) => {
+        if (reason === 'evict') {
+          this.perFrame.get(resource.resource.pFrame)?.delete(key);
+        }
+
+        if (this.perFrame.get(resource.resource.pFrame)?.size === 0) {
+          this.perFrame.delete(resource.resource.pFrame);
+        }
+
+        const disposeListener = this.disposeListeners.get(key)!;
+        this.disposeListeners.delete(key);
+        resource.resource.disposeSignal.removeEventListener('abort', disposeListener);
+
+        resource.unref();
+        if (getDebugFlags().logPFrameRequests) {
+          this.logger.info(`calculateTableData cache - removed PTable ${key}`);
+        }
+      },
+    });
+  }
+
+  public cache(resource: PollResource<PTableHolder>, size: number): void {
+    const key = resource.key as PTableHandle;
+    if (getDebugFlags().logPFrameRequests) {
+      this.logger.info(`calculateTableData cache - added PTable ${key} with size ${size}`);
+    }
+
+    this.global.set(key, resource, { size });
+
+    let perFrame = this.perFrame.get(resource.resource.pFrame);
+    if (!perFrame) {
+      perFrame = new LRUCache<PTableHandle, PollResource<PTableHolder>>({
+        max: this.ops.pFrameCacheMaxCount,
+        dispose: (_resource, key, reason) => {
+          if (reason === 'evict') {
+            this.global.delete(key);
+          }
+        },
+      });
+      this.perFrame.set(resource.resource.pFrame, perFrame);
+    }
+    perFrame.set(key, resource);
+
+    const disposeListener = () => {
+      this.perFrame.get(resource.resource.pFrame)?.delete(key);
+      this.global.delete(key);
+    };
+    this.disposeListeners.set(key, disposeListener);
+    resource.resource.disposeSignal.addEventListener('abort', disposeListener);
+  }
+}
+
 class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
-  public readonly pFrame: PFrameInternal.PFrameV7;
+  public readonly pFrame: PFrameInternal.PFrameV8;
   private readonly abortController = new AbortController();
-  private readonly pTableCache: LRUCache<PTableHandle, UnrefFn>;
   private readonly blobIdToResource = new Map<string, ResourceInfo>();
   private readonly blobHandleComputables = new Map<
     string,
@@ -147,15 +212,10 @@ class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
       }
       this.pFrame = pFrame;
     } catch (err: unknown) {
-      throw new Error(
-        `Rust PFrame creation failed, columns: ${JSON.stringify(distinctСolumns)}, error: ${err as Error}`,
+      throw new PFrameDriverError(
+        `PFrame creation failed, columns: ${JSON.stringify(distinctСolumns)}, error: ${ensureError(err)}`,
       );
     }
-
-    this.pTableCache = new LRUCache<PTableHandle, UnrefFn>({
-      max: 5, // TODO: calculate size on disk, not number of PTables
-      dispose: (unref) => unref(),
-    });
   }
 
   private getOrCreateComputableForBlob(blobId: string) {
@@ -163,7 +223,7 @@ class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
     if (computable !== undefined) return computable;
 
     const blobResource = this.blobIdToResource.get(blobId);
-    if (blobResource === undefined) throw new Error(`Blob with id ${blobId} not found.`);
+    if (blobResource === undefined) throw new PFrameDriverError(`Blob with id ${blobId} not found.`);
 
     // precalculation of value tree will trigger the download proecess right away
     computable = this.blobDriver.getDownloadedBlob(blobResource).withPreCalculatedValueTree();
@@ -175,7 +235,16 @@ class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
 
   public readonly preloadBlob = async (blobIds: string[]): Promise<void> => {
     const computables = blobIds.map((blobId) => this.getOrCreateComputableForBlob(blobId));
-    for (const computable of computables) await computable.awaitStableFullValue(this.disposeSignal);
+    for (const computable of computables) {
+      try {
+        await computable.awaitStableFullValue(this.disposeSignal);
+      } catch (err: unknown) {
+        if (isAbortError(err)) {
+          break; // silence abort errors
+        }
+        throw err;
+      }
+    }
   };
 
   public readonly resolveBlobContent = async (blobId: string): Promise<Uint8Array> => {
@@ -188,13 +257,8 @@ class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
     return this.abortController.signal;
   }
 
-  public cache(handle: PTableHandle, unref: UnrefFn): void {
-    this.pTableCache.set(handle, unref);
-  }
-
   [Symbol.dispose](): void {
     this.abortController.abort();
-    this.pTableCache.clear();
     for (const computable of this.blobHandleComputables.values()) computable.resetState();
     this.pFrame.dispose();
   }
@@ -205,9 +269,10 @@ class PTableHolder implements Disposable {
   private readonly combinedDisposeSignal: AbortSignal;
 
   constructor(
+    public readonly pFrame: PFrameHandle,
     pFrameDisposeSignal: AbortSignal,
-    public readonly pTable: PFrameInternal.PTableV5,
-    private readonly unrefPredecessor?: UnrefFn,
+    public readonly pTable: PFrameInternal.PTableV6,
+    public readonly predecessor?: PollResource<PTableHolder>,
   ) {
     this.combinedDisposeSignal = AbortSignal.any([pFrameDisposeSignal, this.abortController.signal]);
   }
@@ -219,13 +284,26 @@ class PTableHolder implements Disposable {
   [Symbol.dispose](): void {
     this.abortController.abort();
     this.pTable.dispose();
-    this.unrefPredecessor?.();
+    this.predecessor?.unref();
   }
 }
 
 type FullPTableDef = {
   pFrameHandle: PFrameHandle;
   def: PTableDef<PObjectId>;
+};
+
+export type PFrameDriverOps = {
+  // Concurrency limits for `getUniqueValues` and `calculateTableData` requests
+  pFrameConcurrency: number;
+  // Concurrency limits for `getShape` and `getData` requests
+  pTableConcurrency: number;
+  // Maximum number of `calculateTableData` results cached for each PFrame
+  pFrameCacheMaxCount: number;
+  // Maximum size of `calculateTableData` results cached for PFrames overall.
+  // The limit is soft, as the same table could be materialized with other requests and will not be deleted in such case.
+  // Also each table has predeccessors, overlapping predecessors will be counted twice, so the effective limit is smaller.
+  pFramesCacheMaxSize: number;
 };
 
 /**
@@ -294,6 +372,7 @@ export interface InternalPFrameDriver extends SdkPFrameDriver {
 export class PFrameDriver implements InternalPFrameDriver {
   private readonly pFrames: RefCountResourcePool<InternalPFrameData, PFrameHolder>;
   private readonly pTables: RefCountResourcePool<FullPTableDef, PTableHolder>;
+  private readonly pTableCache: PTableCache;
   private readonly frameConcurrencyLimiter: ConcurrencyLimitingExecutor;
   private readonly tableConcurrencyLimiter: ConcurrencyLimitingExecutor;
 
@@ -305,20 +384,24 @@ export class PFrameDriver implements InternalPFrameDriver {
     blobDriver: DownloadDriver,
     logger: MiLogger,
     spillPath: string,
+    ops: PFrameDriverOps,
   ): Promise<PFrameDriver> {
     const resolvedSpillPath = path.resolve(spillPath);
     await emptyDir(resolvedSpillPath);
-    return new PFrameDriver(blobDriver, logger, resolvedSpillPath);
+    return new PFrameDriver(blobDriver, logger, resolvedSpillPath, ops);
   }
 
   private constructor(
     private readonly blobDriver: DownloadDriver,
     private readonly logger: MiLogger,
     private readonly spillPath: string,
+    ops: PFrameDriverOps,
   ) {
-    const concurrencyLimiter = new ConcurrencyLimitingExecutor(1);
+    const concurrencyLimiter = new ConcurrencyLimitingExecutor(ops.pFrameConcurrency);
     this.frameConcurrencyLimiter = concurrencyLimiter;
-    this.tableConcurrencyLimiter = new ConcurrencyLimitingExecutor(1);
+    this.tableConcurrencyLimiter = new ConcurrencyLimitingExecutor(ops.pTableConcurrency);
+
+    this.pTableCache = new PTableCache(this.logger, ops);
 
     this.pFrames = new (class extends RefCountResourcePool<InternalPFrameData, PFrameHolder> {
       constructor(
@@ -327,6 +410,16 @@ export class PFrameDriver implements InternalPFrameDriver {
         private readonly spillPath: string,
       ) {
         super();
+      }
+
+      public acquire(params: InternalPFrameData): PollResource<PFrameHolder> {
+        return super.acquire(params);
+      }
+
+      public getByKey(key: PFrameHandle): PFrameHolder {
+        const resource = super.tryGetByKey(key);
+        if (!resource) throw new PFrameDriverError(`PFrame not found, handle = ${key}`);
+        return resource;
       }
 
       protected createNewResource(params: InternalPFrameData): PFrameHolder {
@@ -338,7 +431,12 @@ export class PFrameDriver implements InternalPFrameDriver {
       }
 
       protected calculateParamsKey(params: InternalPFrameData): string {
-        return stableKeyFromPFrameData(params);
+        try {
+          return stableKeyFromPFrameData(params);
+        } catch (err: unknown) {
+          if (isPFrameDriverError(err)) throw err;
+          throw new PFrameDriverError(`PFrame handle calculation failed, request: ${JSON.stringify(params, bigintReplacer)}, error: ${ensureError(err)}`);
+        }
       }
     })(this.blobDriver, this.logger, this.spillPath);
 
@@ -350,6 +448,12 @@ export class PFrameDriver implements InternalPFrameDriver {
         private readonly pFrames: RefCountResourcePool<InternalPFrameData, PFrameHolder>,
       ) {
         super();
+      }
+
+      public getByKey(key: PTableHandle): PTableHolder {
+        const resource = super.tryGetByKey(key);
+        if (!resource) throw new PFrameDriverError(`PTable not found, handle = ${key}`);
+        return resource;
       }
 
       protected createNewResource(params: FullPTableDef): PTableHolder {
@@ -364,28 +468,30 @@ export class PFrameDriver implements InternalPFrameDriver {
 
         // 3. Sort
         if (params.def.sorting.length > 0) {
-          const { resource: { pTable }, unref } = this.acquire({
+          const predecessor = this.acquire({
             ...params,
             def: {
               ...params.def,
               sorting: [],
             },
           });
+          const { resource: { pTable } } = predecessor;
           const sortedTable = pTable.sort(params.def.sorting);
-          return new PTableHolder(disposeSignal, sortedTable, unref);
+          return new PTableHolder(handle, disposeSignal, sortedTable, predecessor);
         }
 
         // 2. Filter
         if (params.def.filters.length > 0) {
-          const { resource: { pTable }, unref } = this.acquire({
+          const predecessor = this.acquire({
             ...params,
             def: {
               ...params.def,
               filters: [],
             },
           });
+          const { resource: { pTable } } = predecessor;
           const filteredTable = pTable.filter(params.def.filters);
-          return new PTableHolder(disposeSignal, filteredTable, unref);
+          return new PTableHolder(handle, disposeSignal, filteredTable, predecessor);
         }
 
         // 1. Join
@@ -393,11 +499,15 @@ export class PFrameDriver implements InternalPFrameDriver {
           src: joinEntryToInternal(params.def.src),
           filters: params.def.partitionFilters,
         });
-        return new PTableHolder(disposeSignal, table);
+        return new PTableHolder(handle, disposeSignal, table);
       }
 
       protected calculateParamsKey(params: FullPTableDef): string {
-        return stableKeyFromFullPTableDef(params);
+        try {
+          return stableKeyFromFullPTableDef(params);
+        } catch (err: unknown) {
+          throw new PFrameDriverError(`PTable handle calculation failed, request: ${JSON.stringify(params)}, error: ${ensureError(err)}`);
+        }
       }
     })(this.pFrames);
   }
@@ -502,23 +612,35 @@ export class PFrameDriver implements InternalPFrameDriver {
       );
     }
 
-    const { key: pTableHandle, resource: { pTable, disposeSignal }, unref } = this.pTables.acquire({
+    const table = this.pTables.acquire({
       pFrameHandle: handle,
       def: migratePTableFilters(request),
     });
+    const { resource: { pTable, disposeSignal } } = table;
     const combinedSignal = AbortSignal.any([signal, disposeSignal].filter((s) => !!s));
 
     return await this.frameConcurrencyLimiter.run(async () => {
-      this.pFrames.getByKey(handle).cache(pTableHandle as PTableHandle, unref);
-      const spec = pTable.getSpec();
-      const data = await pTable.getData([...spec.keys()], {
-        range,
-        signal: combinedSignal,
-      });
-      return spec.map((spec, i) => ({
-        spec: spec,
-        data: data[i],
-      }));
+      try {
+        const spec = pTable.getSpec();
+        const data = await pTable.getData([...spec.keys()], {
+          range,
+          signal: combinedSignal,
+        });
+
+        const size = await pTable.getFootprint({
+          withPredecessors: true,
+          signal: combinedSignal,
+        });
+        this.pTableCache.cache(table, size);
+
+        return spec.map((spec, i) => ({
+          spec: spec,
+          data: data[i],
+        }));
+      } catch (err: unknown) {
+        table.unref();
+        throw err;
+      }
     });
   }
 
@@ -684,7 +806,7 @@ function stableKeyFromPFrameData(data: PColumn<DataInfo<ResourceInfo>>[]): strin
           };
           break;
         default:
-          throw Error(`unsupported resource type: ${JSON.stringify(type satisfies never)}`);
+          throw new PFrameDriverError(`unsupported resource type: ${JSON.stringify(type satisfies never)}`);
       }
       result.payload.sort((lhs, rhs) => lhs.key.localeCompare(rhs.key));
       return result;

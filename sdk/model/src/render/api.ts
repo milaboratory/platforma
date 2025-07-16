@@ -50,6 +50,7 @@ import { PColumnCollection, type AxisLabelProvider, type ColumnProvider } from '
 import type { LabelDerivationOps } from './util/label';
 import { deriveLabels } from './util/label';
 import type { APColumnSelectorWithSplit } from './util/split_selectors';
+import { patchInSetFilters } from './util/pframe_upgraders';
 
 export type PColumnDataUniversal = TreeNodeAccessor | DataInfo<TreeNodeAccessor> | PColumnValues;
 
@@ -598,10 +599,17 @@ export class RenderCtx<Args, UiState> {
   private patchPTableDef(def: PTableDef<PColumn<PColumnDataUniversal>>): PTableDef<PColumn<PColumnDataUniversal>> {
     if (!this.ctx.featureFlags?.pTablePartitionFiltersSupport) {
       // For old desktop move all partition filters to filters field as it doesn't read partitionFilters field
-      return {
+      def = {
         ...def,
         partitionFilters: [],
         filters: [...def.partitionFilters, ...def.filters],
+      };
+    }
+    if (!this.ctx.featureFlags?.pFrameInSetFilterSupport) {
+      def = {
+        ...def,
+        partitionFilters: patchInSetFilters(def.partitionFilters),
+        filters: patchInSetFilters(def.filters),
       };
     }
     return def;

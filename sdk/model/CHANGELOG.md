@@ -1,5 +1,48 @@
 # @platforma-sdk/model
 
+## 1.40.1
+
+### Patch Changes
+
+- 890240e: PlAgDataTableV2 - support sorting and filtering by label column
+
+## 1.40.0
+
+### Minor Changes
+
+- 30ce5da: MSA settings
+
+## 1.39.18
+
+### Patch Changes
+
+- c12345a: createPFrameForGraphs can be used without block's columns
+- c12345a: createPFrameForGraphs update
+- Updated dependencies [c12345a]
+  - @milaboratories/pl-model-common@1.16.4
+
+## 1.39.8
+
+### Patch Changes
+
+- Updated dependencies [7be8a2b]
+  - @milaboratories/pl-model-common@1.16.3
+
+## 1.39.7
+
+### Patch Changes
+
+- Updated dependencies [dfb0086]
+  - @milaboratories/pl-model-common@1.16.2
+
+## 1.39.6
+
+### Patch Changes
+
+- d525c60: PFrames - support InSet filter
+- Updated dependencies [d525c60]
+  - @milaboratories/pl-model-common@1.16.1
+
 ## 1.39.0
 
 ### Minor Changes
