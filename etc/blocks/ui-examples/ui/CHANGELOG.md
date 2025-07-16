@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.5.9
+
+### Patch Changes
+
+- d6334f9: Adopt PlAgDataTableV2 for v2api in desktop
+- Updated dependencies [d6334f9]
+  - @milaboratories/milaboratories.ui-examples.model@1.2.8
+
 ## 1.5.8
 
 ### Patch Changes
