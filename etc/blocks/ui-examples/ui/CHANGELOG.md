@@ -1,5 +1,14 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.5.10
+
+### Patch Changes
+
+- 5e69d64: Add annotations components and model
+- Updated dependencies [5e69d64]
+  - @platforma-sdk/model@1.40.5
+  - @milaboratories/milaboratories.ui-examples.model@1.2.9
+
 ## 1.5.9
 
 ### Patch Changes

@@ -1,5 +1,14 @@
 # @platforma-sdk/ui-vue
 
+## 1.40.5
+
+### Patch Changes
+
+- 5e69d64: Add annotations components and model
+- Updated dependencies [5e69d64]
+  - @milaboratories/uikit@2.3.14
+  - @platforma-sdk/model@1.40.5
+
 ## 1.40.4
 
 ### Patch Changes

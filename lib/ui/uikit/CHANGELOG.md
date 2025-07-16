@@ -1,5 +1,14 @@
 # @milaboratories/uikit
 
+## 2.3.14
+
+### Patch Changes
+
+- 5e69d64: Add annotations components and model
+- Updated dependencies [5e69d64]
+  - @milaboratories/helpers@1.6.18
+  - @platforma-sdk/model@1.40.5
+
 ## 2.3.13
 
 ### Patch Changes
