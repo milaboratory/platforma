@@ -39,7 +39,6 @@
     "@milaboratories/helpers": "workspace:^",
     "typescript": "catalog:",
     "vite": "catalog:",
-    "vitest": "catalog:",
     "@types/jest": "catalog:",
     "jest": "catalog:",
     "@jest/globals": "catalog:",
