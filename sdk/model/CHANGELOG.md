@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.40.5
+
+### Patch Changes
+
+- 5e69d64: Add annotations components and model
+
 ## 1.40.1
 
 ### Patch Changes

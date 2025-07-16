@@ -1,5 +1,11 @@
 # @milaboratories/helpers
 
+## 1.6.18
+
+### Patch Changes
+
+- 5e69d64: Add annotations components and model
+
 ## 1.6.17
 
 ### Patch Changes
