@@ -34,7 +34,7 @@ export function registerSvg(raw: string, name?: string): SvgMeta {
 
     const openSvgTagMatch = raw.match(/^<svg[^>]*>/i)?.[0];
     const fillMatch = openSvgTagMatch?.match(/fill\s*=\s*"(.*?)"/)?.[1];
-    const strokeMatch = openSvgTag_match?.match(/stroke\s*=\s*"(.*?)"/)?.[1];
+    const strokeMatch = openSvgTagMatch?.match(/stroke\s*=\s*"(.*?)"/)?.[1];
     const widthMatch = openSvgTagMatch?.match(/width\s*=\s*"(\d+)(px)?"/)?.[1];
     const heightMatch = openSvgTagMatch?.match(/height\s*=\s*"(\d+)(px)?"/)?.[1];
     const viewBoxParts = openSvgTagMatch?.match(/viewBox\s*=\s*"[-+]?\d*\.?\d+(?:e[-+]?\d+)?"/);
