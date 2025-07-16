@@ -1,7 +1,5 @@
 <script lang="ts" setup>
-import {
-  isJsonEqual,
-} from '@milaboratories/helpers';
+import { isJsonEqual } from '@milaboratories/helpers';
 import type {
   AxisId,
   AxisSpec,
@@ -12,10 +10,7 @@ import type {
   PTableColumnSpec,
   PTableKey,
 } from '@platforma-sdk/model';
-import {
-  getRawPlatformaInstance,
-  parseJson,
-} from '@platforma-sdk/model';
+import { getRawPlatformaInstance, parseJson } from '@platforma-sdk/model';
 import type {
   CellRendererSelectorFunc,
   ColDef,
@@ -26,47 +21,22 @@ import type {
   ManagedGridOptionKey,
   ManagedGridOptions,
 } from 'ag-grid-enterprise';
-import {
-  AgGridVue,
-} from 'ag-grid-vue3';
-import {
-  computed,
-  ref,
-  shallowRef,
-  toRefs,
-  watch,
-} from 'vue';
-import {
-  AgGridTheme,
-} from '../../aggrid';
+import { AgGridVue } from 'ag-grid-vue3';
+import { computed, ref, shallowRef, toRefs, watch } from 'vue';
+import { AgGridTheme } from '../../aggrid';
 import PlAgCsvExporter from '../PlAgCsvExporter/PlAgCsvExporter.vue';
-import {
-  PlAgGridColumnManager,
-} from '../PlAgGridColumnManager';
+import { PlAgGridColumnManager } from '../PlAgGridColumnManager';
 import type { PlDataTableFiltersSettings } from '../PlTableFilters';
 import PlTableFiltersV2 from '../PlTableFilters/PlTableFiltersV2.vue';
 import PlAgDataTableSheets from './PlAgDataTableSheets.vue';
 import PlOverlayLoading from './PlAgOverlayLoading.vue';
 import PlOverlayNoRows from './PlAgOverlayNoRows.vue';
 import PlAgRowCount from './PlAgRowCount.vue';
-import {
-  focusRow,
-  makeOnceTracker,
-} from './sources/focus-row';
-import {
-  autoSizeRowNumberColumn,
-  PlAgDataTableRowNumberColId,
-} from './sources/row-number';
-import type {
-  PlAgCellButtonAxisParams,
-} from './sources/table-source-v2';
-import {
-  calculateGridOptions,
-  makeRowId,
-} from './sources/table-source-v2';
-import {
-  useTableState,
-} from './sources/table-state-v2';
+import { focusRow, makeOnceTracker } from './sources/focus-row';
+import { autoSizeRowNumberColumn, PlAgDataTableRowNumberColId } from './sources/row-number';
+import type { PlAgCellButtonAxisParams } from './sources/table-source-v2';
+import { calculateGridOptions } from './sources/table-source-v2';
+import { useTableState } from './sources/table-state-v2';
 import type {
   PlAgDataTableV2Controller,
   PlAgDataTableV2Row,
@@ -77,11 +47,6 @@ import type {
   PlTableLabeledSelectionModel,
   PlTableRowIdJson,
 } from './types';
-import {
-  useTableState,
-} from './sources/table-state-v2';
-import type { PlDataTableFiltersSettings } from '../PlTableFilters';
-import PlTableFiltersV2 from '../PlTableFilters/PlTableFiltersV2.vue';
 import { watchCached } from '@milaboratories/uikit';
 
 const tableState = defineModel<PlDataTableStateV2>({
