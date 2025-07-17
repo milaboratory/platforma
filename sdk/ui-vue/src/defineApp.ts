@@ -64,7 +64,7 @@ export function defineApp<
       Please update the desktop app to use the latest API version.`);
     }
 
-    if (platforma.apiVersion === undefined) {
+    if (platforma.apiVersion === undefined || platforma.apiVersion === 1) {
       await platforma
         .loadBlockState()
         .then((state) => {
