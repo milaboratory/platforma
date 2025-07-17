@@ -272,16 +272,16 @@ Short\t1\t10\t11`;
     const expectedOutputSubstrLen = `text\tsub
 HelloWorld\tHello
 AnotherTest\tothe
-Short\tort`;
+Short\thort`;
 
     const expectedOutputSubstrEnd = `text\tsub
 HelloWorld\tHello
 AnotherTest\tothe
-Short\tort`;
+Short\thort`;
 
     const expectedOutputSubstrStatic = `text\tsub
 HelloWorld\tello
-AnotherTest\tnoto
+AnotherTest\tnoth
 Short\thort`;
 
     const result = await helper.renderTemplate(

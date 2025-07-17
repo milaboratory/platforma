@@ -1,16 +1,18 @@
 
 self := import("@platforma-sdk/workflow-tengo:tpl")
 pt := import("@platforma-sdk/workflow-tengo:pt")
+file := import("@platforma-sdk/workflow-tengo:file")
 
-self.defineInputs({
-    inputTsv: "pl.JsonObject"
-})
 self.defineOutputs("out_substr_len", "out_substr_end", "out_substr_static")
 
 self.body(func(inputs) {
-    p := pt.new()
+    tsvInput := inputs.inputTsv
 
-    df := p.readTsv("start", inputs.inputTsv)
+    wf := pt.workflow()
+
+    df := wf.frame(tsvInput, {
+        xsvType: "tsv"
+    })
 
     // Using length
     dfSubstrLen := df.withColumns(
@@ -36,9 +38,15 @@ self.body(func(inputs) {
         "sub"
     )
 
+    dfSubstrLen.save("output_substr_len.tsv")
+    dfSubstrEnd.save("output_substr_end.tsv")
+    dfSubstrStatic.save("output_substr_static.tsv")
+
+    ptablerResult := wf.run()
+
     return {
-        out_substr_len: p.writeTsv(dfSubstrLen),
-        out_substr_end: p.writeTsv(dfSubstrEnd),
-        out_substr_static: p.writeTsv(dfSubstrStatic)
+        out_substr_len: file.exportFile(ptablerResult.getFile("output_substr_len.tsv")),
+        out_substr_end: file.exportFile(ptablerResult.getFile("output_substr_end.tsv")),
+        out_substr_static: file.exportFile(ptablerResult.getFile("output_substr_static.tsv"))
     }
-}) 
+})

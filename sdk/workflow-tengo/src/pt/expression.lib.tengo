@@ -314,36 +314,28 @@ _newExpression = func(expression, currentAlias) {
 
 		/**
 		 * Extracts a substring from this string expression.
-		 * @param start - int - The starting index (0-based).
-		 * @param lengthArgs - int (optional) - The length of the substring. If not provided, slices to the end.
+		 * @param start - int|string|Expr - The starting index (0-based). Can be a literal integer, column name (string), or expression object.
+		 * @param lengthArgs - int|string|Expr (optional) - The length of the substring. Can be a literal integer, column name (string), or expression object. If not provided, slices to the end.
 		 * @returns {object} - A new expression object representing the substring.
 		 */
 		strSlice: func(start, ...lengthArgs) { // Primary method with optional length via varargs
-			ll.assert(is_int(start), "start must be an integer")
 			ll.assert(len(lengthArgs) <= 1, "strSlice expects at most one optional length argument.")
 
-			exprDetails := {type: "substring", value: expression, start: start}
 			if len(lengthArgs) == 1 {
-				lengthVal := lengthArgs[0]
-				ll.assert(is_int(lengthVal), "length, if provided, must be an integer")
-				exprDetails.length = lengthVal
+				return self.substring(start, {length: lengthArgs[0]})
+			} else {
+				return self.substring(start, {})
 			}
-			// If lengthArgs is empty, the PTabler backend should interpret this as slicing to the end.
-			return _newExpression(exprDetails, undefined)
 		},
 
 		/**
 		 * Extracts a substring from this string expression using start and end indices.
-		 * @param start - int - The starting index (0-based).
-		 * @param endIdx - int - The ending index (exclusive).
+		 * @param start - int|string|Expr - The starting index (0-based). Can be a literal integer, column name (string), or expression object.
+		 * @param endIdx - int|string|Expr - The ending index (exclusive). Can be a literal integer, column name (string), or expression object.
 		 * @returns {object} - A new expression object representing the substring.
 		 */
 		strSliceEnd: func(start, endIdx) { // Method with end index
-			ll.assert(is_int(start), "start must be an integer")
-			ll.assert(is_int(endIdx), "endIdx must be an integer")
-
-			exprDetails := {type: "substring", value: expression, start: start, end: endIdx}
-			return _newExpression(exprDetails, undefined)
+			return self.substring(start, {end: endIdx})
 		},
 
 		/**
@@ -584,10 +576,10 @@ _newExpression = func(expression, currentAlias) {
 
 		/**
 		 * Extracts a substring from the string value of this expression.
-		 * @param start - number|object - The starting index (0-based) as a literal or an expression object.
+		 * @param start - int|string|Expr - The starting index (0-based). Can be a literal integer, column name (string), or expression object.
 		 * @param options - map - A map with either a 'length' or 'end' key.
-		 *   - length: number|object - The length of the substring as a literal or an expression object.
-		 *   - end: number|object - The index *before* which to end the substring as a literal or an expression object.
+		 *   - length: int|string|Expr - The length of the substring. Can be a literal integer, column name (string), or expression object.
+		 *   - end: int|string|Expr - The index *before* which to end the substring. Can be a literal integer, column name (string), or expression object.
 		 * @returns {object} - A new expression object representing the substring operation.
 		 */
 		substring: func(start, options) {
@@ -597,16 +589,18 @@ _newExpression = func(expression, currentAlias) {
 			if length != undefined && end != undefined {
 				ll.panic("substring cannot have both 'length' and 'end' options.")
 			}
-			return _newExpression(
-				{
-					type: "substring",
-					value: expression,
-					start: _mapToSingleExpressionStruct(start, "lit"),
-					length: length != undefined ? _mapToSingleExpressionStruct(length, "lit") : undefined,
-					end: end != undefined ? _mapToSingleExpressionStruct(end, "lit") : undefined
-				},
-				undefined
-			)
+			expr := {
+				type: "substring",
+				value: expression,
+				start: _mapToSingleExpressionStruct(start, "col")
+			}
+			if !is_undefined(length) {
+				expr.length = _mapToSingleExpressionStruct(length, "col")
+			}
+			if !is_undefined(end) {
+				expr.end = _mapToSingleExpressionStruct(end, "col")
+			}
+			return _newExpression(expr, undefined)
 		},
 
 		/** Converts the expression to a string. */
