@@ -69,4 +69,4 @@ ds1.addLocalFiles({ r1: "path_to_local_file_2", r2: "...", sampleId: sample1Id }
 
 # Test Assets
 
-To simplify the asset delivery
+- Test framework must be compatile (and even specifically optimizaed) to work with asset functionality explained in 
