@@ -84,9 +84,6 @@ catalogs:
     '@types/json-stringify-safe':
       specifier: ^5.0.3
       version: 5.0.3
-    '@types/lodash':
-      specifier: ^4.17.16
-      version: 4.17.16
     '@types/mime-types':
       specifier: ^2.1.4
       version: 2.1.4
@@ -180,9 +177,6 @@ catalogs:
     json-stringify-safe:
       specifier: ^5.0.1
       version: 5.0.1
-    lodash:
-      specifier: ^4.17.17
-      version: 4.17.21
     long:
       specifier: ^5.3.2
       version: 5.3.2
@@ -2343,18 +2337,12 @@ importers:
       '@types/d3-format':
         specifier: 'catalog:'
         version: 3.0.4
-      '@types/lodash':
-        specifier: 'catalog:'
-        version: 4.17.16
       '@types/node':
         specifier: 'catalog:'
         version: 20.16.15
       '@types/semver':
         specifier: 'catalog:'
         version: 7.7.0
-      '@types/sortablejs':
-        specifier: 'catalog:'
-        version: 1.15.8
       '@vueuse/core':
         specifier: 'catalog:'
         version: 13.3.0(vue@3.5.13(typescript@5.6.3))
@@ -2373,15 +2361,9 @@ importers:
       d3-format:
         specifier: 'catalog:'
         version: 3.1.0
-      lodash:
-        specifier: 'catalog:'
-        version: 4.17.21
       lru-cache:
         specifier: 'catalog:'
         version: 11.1.0
-      sortablejs:
-        specifier: 'catalog:'
-        version: 1.15.6
       vue:
         specifier: 'catalog:'
         version: 3.5.13(typescript@5.6.3)
