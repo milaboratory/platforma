@@ -1,3 +1,5 @@
+import type {
+  PTableColumnSpecColumn } from '@platforma-sdk/model';
 import {
   canonicalizeJson,
   getAxisId,
@@ -15,6 +17,7 @@ import {
   type PlTableColumnId,
   type PlTableColumnIdJson,
   isLabelColumn as isLabelColumnSpec,
+  isColumnHidden,
 } from '@platforma-sdk/model';
 import type {
   CellStyle,
@@ -39,7 +42,7 @@ import { getColumnRenderingSpec } from './value-rendering';
 import type { Ref } from 'vue';
 import { isJsonEqual } from '@milaboratories/helpers';
 
-export function isLabelColumn(column: PTableColumnSpec) {
+export function isLabelColumn(column: PTableColumnSpec): column is PTableColumnSpecColumn {
   return column.type === 'column' && isLabelColumnSpec(column.spec);
 }
 
@@ -118,28 +121,41 @@ export async function calculateGridOptions({
   if (numberOfAxes === -1) numberOfAxes = specs.length;
 
   // column indices in the specs array that we are going to process
-  const indices = [...specs.keys()]
-    .filter(
-      (i) =>
-        !sheets.some(
-          (sheet) =>
-            isJsonEqual(getAxisId(sheet.axis), specs[i].id)
-            || (specs[i].type === 'column'
-              && specs[i].spec.name === 'pl7.app/label'
-              && specs[i].spec.axesSpec.length === 1
-              && isJsonEqual(getAxisId(sheet.axis), getAxisId(specs[i].spec.axesSpec[0]))),
-        ),
-    )
-    .sort((a, b) => {
-      if (specs[a].type !== specs[b].type) return specs[a].type === 'axis' ? -1 : 1;
+  const indices = Array.from(
+    specs.keys()
+      .filter(
+        (i) => {
+          const spec = specs[i];
+          switch (spec.type) {
+            case 'axis':
+            {
+              return !sheets.some(
+                (sheet) => isJsonEqual(getAxisId(sheet.axis), spec.id),
+              );
+            }
+            case 'column':
+            {
+              if (isLabelColumnSpec(spec.spec)) {
+                return !sheets.some(
+                  (sheet) => isJsonEqual(getAxisId(sheet.axis), getAxisId(spec.spec.axesSpec[0])),
+                );
+              } else {
+                return !isColumnHidden(spec.spec);
+              }
+            }
+          }
+        },
+      ),
+  ).sort((a, b) => {
+    if (specs[a].type !== specs[b].type) return specs[a].type === 'axis' ? -1 : 1;
 
-      const aPriority = specs[a].spec.annotations?.['pl7.app/table/orderPriority'];
-      const bPriority = specs[b].spec.annotations?.['pl7.app/table/orderPriority'];
+    const aPriority = specs[a].spec.annotations?.['pl7.app/table/orderPriority'];
+    const bPriority = specs[b].spec.annotations?.['pl7.app/table/orderPriority'];
 
-      if (aPriority === undefined) return bPriority === undefined ? 0 : 1;
-      if (bPriority === undefined) return -1;
-      return Number(bPriority) - Number(aPriority);
-    });
+    if (aPriority === undefined) return bPriority === undefined ? 0 : 1;
+    if (bPriority === undefined) return -1;
+    return Number(bPriority) - Number(aPriority);
+  });
 
   const fields = [...indices];
 
