@@ -5,16 +5,16 @@ export default {
 </script>
 
 <script lang="ts" setup>
-import { useEventListener } from '../../composition/useEventListener';
-import './pl-dialog-modal.scss';
 import { computed, ref } from 'vue';
-import PlCloseModalBtn from '../../utils/PlCloseModalBtn.vue';
+import { useEventListener } from '../../composition/useEventListener';
 import type { Size } from '../../types';
+import PlCloseModalBtn from '../../utils/PlCloseModalBtn.vue';
+import './pl-dialog-modal.scss';
 
 const slots = defineSlots<{
-  title: () => unknown;
-  default: () => unknown;
-  actions: () => unknown;
+  title?: () => unknown;
+  default?: () => unknown;
+  actions?: () => unknown;
 }>();
 
 const emit = defineEmits(['update:modelValue']);
