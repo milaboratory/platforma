@@ -51,7 +51,6 @@ function columns2rows(
   fields: number[],
   columns: PTableVector[],
   axes: number[],
-  labeledAxes: number[],
   resultMapping: number[],
 ): PlAgDataTableV2Row[] {
   const rowData: PlAgDataTableV2Row[] = [];
@@ -61,15 +60,7 @@ function columns2rows(
         pTableValue(columns[resultMapping[iAxis]], iRow),
       );
     });
-    const labeled = labeledAxes.map((iAxis) => {
-      return mapPTableValueToAxisKey(
-        pTableValue(columns[resultMapping[iAxis]], iRow),
-      );
-    });
-    const id = canonicalizeJson<PlTableRowId>({
-      axesKey,
-      labeled,
-    });
+    const id = canonicalizeJson<PlTableRowId>(axesKey);
     const row: PlAgDataTableV2Row = { id, axesKey };
     fields.forEach((field, iCol) => {
       row[field.toString() as `${number}`] = resultMapping[iCol] === -1
@@ -218,13 +209,6 @@ export async function calculateGridOptions({
       }
       return r;
     });
-  const labeledAxes: number[] = fields
-    .reduce((acc, field, index) => {
-      if (specs[field].type === 'axis') {
-        acc.push(allIndices.indexOf(indices[index]));
-      }
-      return acc;
-    }, [] as number[]);
 
   const requestIndices: number[] = [];
   const resultMapping: number[] = [];
@@ -276,7 +260,7 @@ export async function calculateGridOptions({
               length,
             });
             if (stateGeneration !== generation.value || params.api.isDestroyed()) return params.fail();
-            rowData = columns2rows(fields, data, axes, labeledAxes, resultMapping);
+            rowData = columns2rows(fields, data, axes, resultMapping);
           }
         }
 

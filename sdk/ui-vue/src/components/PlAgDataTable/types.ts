@@ -193,14 +193,9 @@ export type PlAgDataTableV2Controller = {
   focusRow: (rowKey: PTableKey) => Promise<void>;
 };
 
-export type PlTableRowId = {
-  /** Axes values */
-  axesKey: PTableKey;
-  /** Axes key where values of labeled axes are resolved to corresponding labels */
-  labeled: PTableKey;
-};
+export type PlTableRowId = PTableKey;
 
-export type PlTableRowIdJson = CanonicalizedJson<PlTableRowId>;
+export type PlTableRowIdJson = CanonicalizedJson<PTableKey>;
 
 /** PlAgDataTableV2 row */
 export type PlAgDataTableV2Row = {
@@ -210,14 +205,6 @@ export type PlAgDataTableV2Row = {
   id: PlTableRowIdJson;
   /** Row values by column; sheet axes and labeled axes are excluded */
   [field: `${number}`]: PTableValue | PTableHidden;
-};
-
-/** PlSelectionModel with labeled axes replaced by label columns */
-export type PlTableLabeledSelectionModel = {
-  /** Specs for valuess in {@link PTableKey} */
-  spec: PTableColumnSpec[];
-  /** Row keys (arrays of axes values) of selected rows */
-  selectedLabeledKeys: PTableKey[];
 };
 
 export type PlAgOverlayLoadingParams = {
