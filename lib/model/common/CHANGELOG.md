@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.16.5
+
+### Patch Changes
+
+- 9bb26ff: PlAgDataTableV2 - linker columns handling fix
+
 ## 1.16.4
 
 ### Patch Changes

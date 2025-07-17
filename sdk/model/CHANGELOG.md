@@ -1,5 +1,13 @@
 # @platforma-sdk/model
 
+## 1.40.6
+
+### Patch Changes
+
+- 9bb26ff: PlAgDataTableV2 - linker columns handling fix
+- Updated dependencies [9bb26ff]
+  - @milaboratories/pl-model-common@1.16.5
+
 ## 1.40.5
 
 ### Patch Changes

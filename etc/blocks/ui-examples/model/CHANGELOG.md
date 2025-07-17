@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.ui-examples.model
 
+## 1.2.10
+
+### Patch Changes
+
+- 9bb26ff: PlAgDataTableV2 - linker columns handling fix
+- Updated dependencies [9bb26ff]
+  - @platforma-sdk/model@1.40.6
+
 ## 1.2.9
 
 ### Patch Changes

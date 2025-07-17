@@ -1,5 +1,13 @@
 # @milaboratories/uikit
 
+## 2.3.15
+
+### Patch Changes
+
+- 9bb26ff: PlAgDataTableV2 - linker columns handling fix
+- Updated dependencies [9bb26ff]
+  - @platforma-sdk/model@1.40.6
+
 ## 2.3.14
 
 ### Patch Changes
