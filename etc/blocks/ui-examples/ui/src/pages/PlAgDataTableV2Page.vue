@@ -10,7 +10,6 @@ import {
   PlBtnGhost,
   PlSlideModal,
   usePlDataTableSettingsV2,
-  type PlTableLabeledSelectionModel,
   type PlAgDataTableV2Controller,
 } from '@platforma-sdk/ui-vue';
 import type { ICellRendererParams } from 'ag-grid-enterprise';
@@ -92,15 +91,6 @@ watch(
   (selection) => console.log(`selection changed`, toValue(selection)),
 );
 
-const selectionLabeled = ref<PlTableLabeledSelectionModel>({
-  spec: [],
-  selectedLabeledKeys: [],
-});
-watch(
-  () => selectionLabeled.value,
-  (selection) => console.log(`selectionLabeled changed`, toValue(selection)),
-);
-
 const reactiveText = ref(false);
 
 const now = ref(new Date());
@@ -154,7 +144,6 @@ watch(
       ref="tableRef"
       v-model="app.model.ui.dataTableV2.state"
       v-model:selection="selection"
-      v-model:selection-labeled="selectionLabeled"
       :settings="tableSettings"
       :cell-renderer-selector="cellRendererSelector"
       v-bind="reactiveTextProps"

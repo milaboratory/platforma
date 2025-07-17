@@ -122,6 +122,7 @@ export const platforma = BlockModel.create('Heavy')
           annotations: {
             'pl7.app/label': 'String column',
             'pl7.app/discreteValues': '["up","down"]',
+            'pl7.app/table/orderPriority': '101',
           },
           axesSpec: [
             {
@@ -158,6 +159,7 @@ export const platforma = BlockModel.create('Heavy')
           annotations: {
             'pl7.app/label': 'Float column',
             'pl7.app/table/visibility': 'optional',
+            'pl7.app/table/orderPriority': '100',
           },
           axesSpec: [
             {
@@ -212,17 +214,16 @@ export const platforma = BlockModel.create('Heavy')
           };
         }),
       },
-    ];
-    for (let j = 3; j < 10; ++j) {
-      columns.push({
-        id: `column${j}` as PObjectId,
+      {
+        id: 'linkerColumn' as PObjectId,
         spec: {
           kind: 'PColumn',
-          valueType: 'String',
-          name: 'value',
+          valueType: 'Int',
+          name: 'linker',
           annotations: {
-            'pl7.app/label': `Alphabetical column ${j - 2}`,
-            'pl7.app/table/visibility': 'optional',
+            'pl7.app/label': 'Index axis linker',
+            'pl7.app/isLinkerColumn': 'true',
+            'pl7.app/table/visibility': 'hidden',
           },
           axesSpec: [
             {
@@ -230,6 +231,44 @@ export const platforma = BlockModel.create('Heavy')
               name: 'index',
               annotations: {
                 'pl7.app/label': 'Int axis',
+              },
+            },
+            {
+              type: 'Int',
+              name: 'linkedIndex',
+              annotations: {
+                'pl7.app/label': 'Linked int axis',
+              },
+            },
+          ],
+        },
+        data: times(rowCount, (i) => {
+          const v = i + 1;
+          return {
+            key: [v, v],
+            val: 1,
+          };
+        }),
+      },
+    ];
+    for (let j = 1; j < 10; ++j) {
+      columns.push({
+        id: `alphabeticalColumn${j}` as PObjectId,
+        spec: {
+          kind: 'PColumn',
+          valueType: 'String',
+          name: 'value',
+          annotations: {
+            'pl7.app/label': `Alphabetical column ${j}`,
+            'pl7.app/table/visibility': 'optional',
+            'pl7.app/table/orderPriority': (10 - j).toString(),
+          },
+          axesSpec: [
+            {
+              type: 'Int',
+              name: 'linkedIndex',
+              annotations: {
+                'pl7.app/label': 'Linked int axis',
               },
             },
           ],

@@ -1,3 +1,5 @@
+import type {
+  PTableColumnSpecColumn } from '@platforma-sdk/model';
 import {
   canonicalizeJson,
   getAxisId,
@@ -15,6 +17,7 @@ import {
   type PlTableColumnId,
   type PlTableColumnIdJson,
   isLabelColumn as isLabelColumnSpec,
+  isColumnHidden,
 } from '@platforma-sdk/model';
 import type {
   CellStyle,
@@ -39,7 +42,7 @@ import { getColumnRenderingSpec } from './value-rendering';
 import type { Ref } from 'vue';
 import { isJsonEqual } from '@milaboratories/helpers';
 
-export function isLabelColumn(column: PTableColumnSpec) {
+export function isLabelColumn(column: PTableColumnSpec): column is PTableColumnSpecColumn {
   return column.type === 'column' && isLabelColumnSpec(column.spec);
 }
 
@@ -48,7 +51,6 @@ function columns2rows(
   fields: number[],
   columns: PTableVector[],
   axes: number[],
-  labeledAxes: number[],
   resultMapping: number[],
 ): PlAgDataTableV2Row[] {
   const rowData: PlAgDataTableV2Row[] = [];
@@ -58,15 +60,7 @@ function columns2rows(
         pTableValue(columns[resultMapping[iAxis]], iRow),
       );
     });
-    const labeled = labeledAxes.map((iAxis) => {
-      return mapPTableValueToAxisKey(
-        pTableValue(columns[resultMapping[iAxis]], iRow),
-      );
-    });
-    const id = canonicalizeJson<PlTableRowId>({
-      axesKey,
-      labeled,
-    });
+    const id = canonicalizeJson<PlTableRowId>(axesKey);
     const row: PlAgDataTableV2Row = { id, axesKey };
     fields.forEach((field, iCol) => {
       row[field.toString() as `${number}`] = resultMapping[iCol] === -1
@@ -118,18 +112,31 @@ export async function calculateGridOptions({
   if (numberOfAxes === -1) numberOfAxes = specs.length;
 
   // column indices in the specs array that we are going to process
-  const indices = [...specs.keys()]
+  const indices = specs.keys()
     .filter(
-      (i) =>
-        !sheets.some(
-          (sheet) =>
-            isJsonEqual(getAxisId(sheet.axis), specs[i].id)
-            || (specs[i].type === 'column'
-              && specs[i].spec.name === 'pl7.app/label'
-              && specs[i].spec.axesSpec.length === 1
-              && isJsonEqual(getAxisId(sheet.axis), getAxisId(specs[i].spec.axesSpec[0]))),
-        ),
+      (i) => {
+        const spec = specs[i];
+        switch (spec.type) {
+          case 'axis':
+          {
+            return !sheets.some(
+              (sheet) => isJsonEqual(getAxisId(sheet.axis), spec.id),
+            );
+          }
+          case 'column':
+          {
+            if (isLabelColumnSpec(spec.spec)) {
+              return !sheets.some(
+                (sheet) => isJsonEqual(getAxisId(sheet.axis), getAxisId(spec.spec.axesSpec[0])),
+              );
+            } else {
+              return !isColumnHidden(spec.spec);
+            }
+          }
+        }
+      },
     )
+    .toArray()
     .sort((a, b) => {
       if (specs[a].type !== specs[b].type) return specs[a].type === 'axis' ? -1 : 1;
 
@@ -202,13 +209,6 @@ export async function calculateGridOptions({
       }
       return r;
     });
-  const labeledAxes: number[] = fields
-    .reduce((acc, field, index) => {
-      if (specs[field].type === 'axis') {
-        acc.push(allIndices.indexOf(indices[index]));
-      }
-      return acc;
-    }, [] as number[]);
 
   const requestIndices: number[] = [];
   const resultMapping: number[] = [];
@@ -260,7 +260,7 @@ export async function calculateGridOptions({
               length,
             });
             if (stateGeneration !== generation.value || params.api.isDestroyed()) return params.fail();
-            rowData = columns2rows(fields, data, axes, labeledAxes, resultMapping);
+            rowData = columns2rows(fields, data, axes, resultMapping);
           }
         }
 
