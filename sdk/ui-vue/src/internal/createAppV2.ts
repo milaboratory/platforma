@@ -114,7 +114,12 @@ export function createAppV2<
   };
 
   (async () => {
-    window.addEventListener('beforeunload', () => closedRef.value = true);
+    window.addEventListener('beforeunload', () => {
+      closedRef.value = true;
+      platforma.dispose().then(unwrapResult).catch((err) => {
+        error('error in dispose', err);
+      });
+    });
 
     while (!closedRef.value) {
       try {
@@ -127,6 +132,11 @@ export function createAppV2<
         debug('data.author', data.author);
 
         uTagRef.value = patches.uTag;
+
+        if (patches.value.length === 0) {
+          await new Promise((resolve) => setTimeout(resolve, patchPoolingDelay));
+          continue;
+        }
 
         const isAuthorChanged = data.author?.authorId !== patches.author?.authorId;
 

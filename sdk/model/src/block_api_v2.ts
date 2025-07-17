@@ -61,4 +61,9 @@ export interface BlockApiV2<
    * Sets block navigation state.
    * */
   setNavigationState(state: NavigationState<Href>): Promise<ResultOrError<void>>;
+
+  /**
+   * Disposes the block API.
+   * */
+  dispose(): Promise<ResultOrError<void>>;
 }
