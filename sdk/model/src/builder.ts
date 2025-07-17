@@ -382,7 +382,7 @@ export class BlockModel<
     );
   }
 
-  public done(): PlatformaV1<
+  public done(apiVersion?: 1): PlatformaV1<
     Args,
     InferOutputsFromConfigs<Args, OutputsCfg, UiState>,
     UiState,
@@ -399,16 +399,17 @@ export class BlockModel<
   /** Renders all provided block settings into a pre-configured platforma API
    * instance, that can be used in frontend to interact with block state, and
    * other features provided by the platforma to the block. */
-  public done(apiVersion?: 2): Platforma<
+  public done(apiVersion?: PlatformaApiVersion): Platforma<
     Args,
     InferOutputsFromConfigs<Args, OutputsCfg, UiState>,
     UiState,
     Href
   > {
+    const requiresUIAPIVersion = apiVersion ?? 1;
     return this.withFeatureFlags({
       ...this._featureFlags,
-      requiresUIAPIVersion: apiVersion ?? 1,
-    })._done(apiVersion ?? 1);
+      requiresUIAPIVersion,
+    })._done(requiresUIAPIVersion);
   }
 
   public _done(apiVersion: PlatformaApiVersion): Platforma<

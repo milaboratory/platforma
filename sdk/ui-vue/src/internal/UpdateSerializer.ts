@@ -8,7 +8,7 @@ export type RetryState = {
 export type OnNext = (e: unknown, state: RetryState) => { delayMs: number };
 
 export class UpdateSerializer {
-  private ongoingRun: Promise<boolean> = Promise.resolve(false);
+  private ongoingRun: Promise<boolean> = Promise.resolve(true);
   private ongoingOperation: Promise<void> = Promise.resolve();
   private counter = 0;
 
@@ -17,9 +17,16 @@ export class UpdateSerializer {
   } = {}) {}
 
   async allSettled(): Promise<void> {
+    await delay(this.options.debounceSpan ?? 0);
     let completed = false;
     do {
-      completed = await this.ongoingRun;
+      await delay(0);
+      completed = await this.ongoingRun.then(() => {
+        return true;
+      }).catch((e) => {
+        console.log('ongoingRun error', e);
+        return false;
+      });
     } while (!completed);
   }
 
@@ -67,10 +74,11 @@ export class UpdateSerializer {
     }
 
     // checking that this update is still the most recent
-    if (this.counter !== myId)
-    // operation was canceled, because another operation was queued
-    // after we started waiting for previous operation to finish
+    if (this.counter !== myId) {
+      // operation was canceled, because another operation was queued
+      // after we started waiting for previous operation to finish
       return false;
+    }
 
     // awaiting previous operation to finish
     try {
@@ -80,10 +88,11 @@ export class UpdateSerializer {
     }
 
     // checking that this update is still the most recent
-    if (this.counter !== myId)
+    if (this.counter !== myId) {
       // operation was canceled, because another operation was queued
       // after we started waiting for previous operation to finish
       return false;
+    }
 
     // asynchronously starting the operation
     const opPromise = this.retry(() => op(), (e) => {

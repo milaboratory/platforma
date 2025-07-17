@@ -50,19 +50,20 @@ export function createAppV2<
 
   const debug = (msg: string, ...rest: unknown[]) => {
     if (settings.debug) {
-      console.log(`%c>>> %c${msg}`, 'color: orange; font-weight: bold', 'color: orange', ...rest);
+      console.log(`%c>>> %c${msg}`, 'color: orange; font-weight: bold', 'color: orange', settings.appId, ...rest);
     }
   };
 
   const error = (msg: string, ...rest: unknown[]) => {
-    console.error(`%c>>> %c${msg}`, 'color: red; font-weight: bold', 'color: red', ...rest);
+    console.error(`%c>>> %c${msg}`, 'color: red; font-weight: bold', 'color: red', settings.appId, ...rest);
   };
 
   const data = {
+    isExternalSnapshot: false,
     author: {
       authorId: uniqueId(),
       localVersion: 0,
-    } as AuthorMarker | undefined,
+    },
   };
 
   const nextAuthorMarker = () => {
@@ -122,15 +123,18 @@ export function createAppV2<
         debug('patches', JSON.stringify(patches, null, 2));
         debug('uTagRef.value', uTagRef.value);
         debug('patches.uTag', patches.uTag);
+        debug('patches.author', patches.author);
+        debug('data.author', data.author);
 
         uTagRef.value = patches.uTag;
 
         const isAuthorChanged = data.author?.authorId !== patches.author?.authorId;
 
         // Immutable behavior, apply external changes to the snapshot
-        if (isAuthorChanged) {
-          debug('got external changes, applying them to the snapshot');
+        if (isAuthorChanged || data.isExternalSnapshot) {
+          debug('got external changes, applying them to the snapshot', JSON.stringify(snapshot.value, null, 2));
           snapshot.value = applyPatch(snapshot.value, patches.value, false, false).newDocument;
+          data.isExternalSnapshot = isAuthorChanged;
         } else {
           // Mutable behavior
           snapshot.value = applyPatch(snapshot.value, patches.value).newDocument;

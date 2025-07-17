@@ -53,6 +53,10 @@ export type RouteParams<Href extends `/${string}` = `/${string}`> = {
 
 export type AppSettings = {
   /**
+   * App ID (just for debugging)
+   */
+  appId?: string;
+  /**
    * Enables some debug logs
    */
   debug?: boolean;
