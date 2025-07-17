@@ -312,30 +312,43 @@ _newExpression = func(expression, currentAlias) {
 		/** Computes the length of this string expression in characters. */
 		strLenChars: func() { return unaryStrOp("str_len")},
 
-		/**
+				/**
 		 * Extracts a substring from this string expression.
 		 * @param start - int|string|Expr - The starting index (0-based). Can be a literal integer, column name (string), or expression object.
-		 * @param lengthArgs - int|string|Expr (optional) - The length of the substring. Can be a literal integer, column name (string), or expression object. If not provided, slices to the end.
+		 * @param args - int|string|Expr|map (optional) - Either:
+		 *   - A length value (integer, column name, or expression object) for the substring length
+		 *   - A map with either 'length' or 'end' key:
+		 *     - length: int|string|Expr - The length of the substring
+		 *     - end: int|string|Expr - The index before which to end the substring (exclusive)
 		 * @returns {object} - A new expression object representing the substring.
 		 */
-		strSlice: func(start, ...lengthArgs) { // Primary method with optional length via varargs
-			ll.assert(len(lengthArgs) <= 1, "strSlice expects at most one optional length argument.")
+		strSlice: func(start, ...args) {
+			ll.assert(len(args) <= 1, "strSlice expects at most one additional argument.")
 
-			if len(lengthArgs) == 1 {
-				return self.substring(start, {length: lengthArgs[0]})
-			} else {
-				return self.substring(start, {})
+			expr := {
+				type: "substring",
+				value: expression,
+				start: _mapToSingleExpressionStruct(start, "col")
 			}
-		},
 
-		/**
-		 * Extracts a substring from this string expression using start and end indices.
-		 * @param start - int|string|Expr - The starting index (0-based). Can be a literal integer, column name (string), or expression object.
-		 * @param endIdx - int|string|Expr - The ending index (exclusive). Can be a literal integer, column name (string), or expression object.
-		 * @returns {object} - A new expression object representing the substring.
-		 */
-		strSliceEnd: func(start, endIdx) { // Method with end index
-			return self.substring(start, {end: endIdx})
+			if len(args) > 0 {
+				arg := args[0]
+				if is_map(arg) {
+					if arg.length != undefined && arg.end != undefined {
+						ll.panic("strSlice cannot have both 'length' and 'end' options.")
+					}
+					if !is_undefined(arg.length) {
+						expr.length = _mapToSingleExpressionStruct(arg.length, "col")
+					}
+					if !is_undefined(arg.end) {
+						expr.end = _mapToSingleExpressionStruct(arg.end, "col")
+					}
+				} else {
+					expr.length = _mapToSingleExpressionStruct(arg, "col")
+				}
+			}
+
+			return _newExpression(expr, undefined)
 		},
 
 		/**
@@ -373,6 +386,23 @@ _newExpression = func(expression, currentAlias) {
 				replaceAll: replaceAllVal,
 				literal: literalVal
 			}, undefined)
+		},
+
+		/**
+		 * Replaces all occurrences of a pattern in this string expression with a replacement string.
+		 * @param pattern - string|object - The pattern (string literal, regex, or an expression object evaluating to a string) to search for.
+		 * @param replacement - string|object - The replacement string (string literal or an expression object evaluating to a string). Can use $n or ${name} for regex capture groups.
+		 * @param options - map (optional) - An optional map with options:
+		 *   - literal (boolean, optional): If true, treat pattern as a literal string. Defaults to false (pattern is regex).
+		 * @returns {object} - A new expression object representing the replacement.
+		 */
+		strReplaceAll: func(pattern, replacement, ...options) {
+			opts := {}
+			if len(options) > 0 {
+				opts = options[0]
+			}
+			opts.replaceAll = true
+			return self.strReplace(pattern, replacement, opts)
 		},
 
 		// Fuzzy string
@@ -565,43 +595,7 @@ _newExpression = func(expression, currentAlias) {
 			}, undefined, undefined)
 		},
 
-		/**
-		 * Replaces all occurrences of a pattern in the string with a replacement.
-		 * @param pattern - string|object - The pattern to search for (can be a literal string or a compiled regex expression).
-		 * @param replacement - string|object - The string to replace with.
-		 * @returns {object} - A new expression object.
-		 */
-		replaceAll: func(pattern, replacement) { return self.replace(pattern, replacement, {all: true}) },
 
-
-		/**
-		 * Extracts a substring from the string value of this expression.
-		 * @param start - int|string|Expr - The starting index (0-based). Can be a literal integer, column name (string), or expression object.
-		 * @param options - map - A map with either a 'length' or 'end' key.
-		 *   - length: int|string|Expr - The length of the substring. Can be a literal integer, column name (string), or expression object.
-		 *   - end: int|string|Expr - The index *before* which to end the substring. Can be a literal integer, column name (string), or expression object.
-		 * @returns {object} - A new expression object representing the substring operation.
-		 */
-		substring: func(start, options) {
-			opts := options || {}
-			length := opts.length
-			end := opts.end
-			if length != undefined && end != undefined {
-				ll.panic("substring cannot have both 'length' and 'end' options.")
-			}
-			expr := {
-				type: "substring",
-				value: expression,
-				start: _mapToSingleExpressionStruct(start, "col")
-			}
-			if !is_undefined(length) {
-				expr.length = _mapToSingleExpressionStruct(length, "col")
-			}
-			if !is_undefined(end) {
-				expr.end = _mapToSingleExpressionStruct(end, "col")
-			}
-			return _newExpression(expr, undefined)
-		},
 
 		/** Converts the expression to a string. */
 		toString: func() {

@@ -14,25 +14,25 @@ self.body(func(inputs) {
         xsvType: "tsv"
     })
 
-    // Using length
+    // Using length with map syntax
     dfSubstrLen := df.withColumns(
-        pt.col("text").substring(pt.col("start"), {length: pt.col("len")}).alias("sub")
+        pt.col("text").strSlice(pt.col("start"), {length: pt.col("len")}).alias("sub")
     ).select(
         "text",
         "sub"
     )
 
-    // Using end
+    // Using end with map syntax
     dfSubstrEnd := df.withColumns(
-        pt.col("text").substring(pt.col("start"), {end: pt.col("end")}).alias("sub")
+        pt.col("text").strSlice(pt.col("start"), {end: pt.col("end")}).alias("sub")
     ).select(
         "text",
         "sub"
     )
 
-    // Using static values
+    // Using static values with direct length parameter
     dfSubstrStatic := df.withColumns(
-        pt.col("text").substring(1, {length: 4}).alias("sub")
+        pt.col("text").strSlice(1, 4).alias("sub")
     ).select(
         "text",
         "sub"
