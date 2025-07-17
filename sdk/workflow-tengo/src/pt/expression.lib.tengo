@@ -571,6 +571,47 @@ _newExpression = func(expression, currentAlias) {
 				partitionBy: [],
 				descending: descendingVal
 			}, undefined, undefined)
+		},
+
+		/**
+		 * Replaces all occurrences of a pattern in the string with a replacement.
+		 * @param pattern - string|object - The pattern to search for (can be a literal string or a compiled regex expression).
+		 * @param replacement - string|object - The string to replace with.
+		 * @returns {object} - A new expression object.
+		 */
+		replaceAll: func(pattern, replacement) { return self.replace(pattern, replacement, {all: true}) },
+
+
+		/**
+		 * Extracts a substring from the string value of this expression.
+		 * @param start - number|object - The starting index (0-based) as a literal or an expression object.
+		 * @param options - map - A map with either a 'length' or 'end' key.
+		 *   - length: number|object - The length of the substring as a literal or an expression object.
+		 *   - end: number|object - The index *before* which to end the substring as a literal or an expression object.
+		 * @returns {object} - A new expression object representing the substring operation.
+		 */
+		substring: func(start, options) {
+			opts := options || {}
+			length := opts.length
+			end := opts.end
+			if length != undefined && end != undefined {
+				ll.panic("substring cannot have both 'length' and 'end' options.")
+			}
+			return _newExpression(
+				{
+					type: "substring",
+					value: expression,
+					start: _mapToSingleExpressionStruct(start, "lit"),
+					length: length != undefined ? _mapToSingleExpressionStruct(length, "lit") : undefined,
+					end: end != undefined ? _mapToSingleExpressionStruct(end, "lit") : undefined
+				},
+				undefined
+			)
+		},
+
+		/** Converts the expression to a string. */
+		toString: func() {
+			return self.cast("string")
 		}
 	})
 	return self

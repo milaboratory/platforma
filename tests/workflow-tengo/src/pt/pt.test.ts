@@ -248,16 +248,74 @@ Banana,Yellow`;
       return [header, ...lines].join('\n');
     };
 
-    const outputInnerJoin = await getFileContentLocal('out_inner_join');
-    expect(normalizeAndSortTsv(outputInnerJoin)).toEqual(normalizeAndSortTsv(expectedOutputInnerJoin));
+    const innerJoinContent = await getFileContentLocal('out_inner_join');
+    const leftJoinOnContent = await getFileContentLocal('out_left_join_on');
+    const fullJoinOnNoCoalesceContent = await getFileContentLocal('out_full_join_on_nocoalesce');
+    const crossJoinContent = await getFileContentLocal('out_cross_join');
 
-    const outputLeftJoinOn = await getFileContentLocal('out_left_join_on');
-    expect(normalizeAndSortTsv(outputLeftJoinOn)).toEqual(normalizeAndSortTsv(expectedOutputLeftJoinOn));
+    expect(normalizeAndSortTsv(innerJoinContent)).toEqual(normalizeAndSortTsv(expectedOutputInnerJoin));
+    expect(normalizeAndSortTsv(leftJoinOnContent)).toEqual(normalizeAndSortTsv(expectedOutputLeftJoinOn));
+    expect(normalizeAndSortTsv(fullJoinOnNoCoalesceContent)).toEqual(normalizeAndSortTsv(expectedOutputFullJoinOnNoCoalesce));
+    expect(normalizeAndSortTsv(crossJoinContent)).toEqual(normalizeAndSortTsv(expectedOutputCrossJoin));
+  },
+);
 
-    const outputFullJoinOnNoCoalesce = await getFileContentLocal('out_full_join_on_nocoalesce');
-    expect(normalizeAndSortTsv(outputFullJoinOnNoCoalesce)).toEqual(normalizeAndSortTsv(expectedOutputFullJoinOnNoCoalesce));
+tplTest(
+  'pt ex4 test - dynamic substring',
+  { timeout: 40000 },
+  async ({ helper, expect, driverKit }) => {
+    const inputTsvData = `text\tstart\tlen\tend
+HelloWorld\t0\t5\t5
+AnotherTest\t2\t4\t6
+Short\t1\t10\t11`;
 
-    const outputCrossJoin = await getFileContentLocal('out_cross_join');
-    expect(normalizeAndSortTsv(outputCrossJoin)).toEqual(normalizeAndSortTsv(expectedOutputCrossJoin));
+    const expectedOutputSubstrLen = `text\tsub
+HelloWorld\tHello
+AnotherTest\tothe
+Short\tort`;
+
+    const expectedOutputSubstrEnd = `text\tsub
+HelloWorld\tHello
+AnotherTest\tothe
+Short\tort`;
+
+    const expectedOutputSubstrStatic = `text\tsub
+HelloWorld\tello
+AnotherTest\tnoto
+Short\thort`;
+
+    const result = await helper.renderTemplate(
+      false,
+      'pt.ex4',
+      ['out_substr_len', 'out_substr_end', 'out_substr_static'],
+      (tx) => ({
+        inputTsv: tx.createValue(Pl.JsonObject, JSON.stringify(inputTsvData)),
+      }),
+    );
+
+    const getFileContent = async (outputName: 'out_substr_len' | 'out_substr_end' | 'out_substr_static') => {
+      const fileHandle = await awaitStableState(
+        result.computeOutput(outputName, (fileHandle, ctx) => {
+          if (!fileHandle) {
+            return undefined;
+          }
+          return driverKit.blobDriver.getOnDemandBlob(fileHandle.persist(), ctx).handle;
+        }),
+        40000,
+      );
+      expect(fileHandle).toBeDefined();
+      return (await driverKit.blobDriver.getContent(fileHandle!)).toString();
+    };
+
+    const normalizeTsv = (str: string) => str.replace(/\r\n/g, '\n').trim();
+
+    const outputSubstrLen = await getFileContent('out_substr_len');
+    expect(normalizeTsv(outputSubstrLen)).toEqual(normalizeTsv(expectedOutputSubstrLen));
+
+    const outputSubstrEnd = await getFileContent('out_substr_end');
+    expect(normalizeTsv(outputSubstrEnd)).toEqual(normalizeTsv(expectedOutputSubstrEnd));
+
+    const outputSubstrStatic = await getFileContent('out_substr_static');
+    expect(normalizeTsv(outputSubstrStatic)).toEqual(normalizeTsv(expectedOutputSubstrStatic));
   },
 );

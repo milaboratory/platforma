@@ -1,0 +1,44 @@
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+pt := import("@platforma-sdk/workflow-tengo:pt")
+
+self.defineInputs({
+    inputTsv: "pl.JsonObject"
+})
+self.defineOutputs("out_substr_len", "out_substr_end", "out_substr_static")
+
+self.body(func(inputs) {
+    p := pt.new()
+
+    df := p.readTsv("start", inputs.inputTsv)
+
+    // Using length
+    dfSubstrLen := df.withColumns(
+        pt.col("text").substring(pt.col("start"), {length: pt.col("len")}).alias("sub")
+    ).select(
+        "text",
+        "sub"
+    )
+
+    // Using end
+    dfSubstrEnd := df.withColumns(
+        pt.col("text").substring(pt.col("start"), {end: pt.col("end")}).alias("sub")
+    ).select(
+        "text",
+        "sub"
+    )
+
+    // Using static values
+    dfSubstrStatic := df.withColumns(
+        pt.col("text").substring(1, {length: 4}).alias("sub")
+    ).select(
+        "text",
+        "sub"
+    )
+
+    return {
+        out_substr_len: p.writeTsv(dfSubstrLen),
+        out_substr_end: p.writeTsv(dfSubstrEnd),
+        out_substr_static: p.writeTsv(dfSubstrStatic)
+    }
+}) 
