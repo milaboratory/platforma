@@ -312,7 +312,7 @@ _newExpression = func(expression, currentAlias) {
 		/** Computes the length of this string expression in characters. */
 		strLenChars: func() { return unaryStrOp("str_len")},
 
-				/**
+		/**
 		 * Extracts a substring from this string expression.
 		 * @param start - int|string|Expr - The starting index (0-based). Can be a literal integer, column name (string), or expression object.
 		 * @param args - int|string|Expr|map (optional) - Either:

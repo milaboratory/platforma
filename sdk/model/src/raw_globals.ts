@@ -2,7 +2,7 @@ import type { ValueOrErrors } from '@milaboratories/pl-model-common';
 import {} from './global';
 import { getPlatformaInstance } from './internal';
 import type { Platforma } from './platforma';
-import { PlatformaSDKVersion } from './version';
+import { PlatformaSDKVersion } from './generated/version';
 
 export function getRawPlatformaInstance<
   Args = unknown,

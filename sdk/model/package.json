@@ -14,8 +14,9 @@
     }
   },
   "scripts": {
-    "type-check": "node ./scripts/save-package-version.cjs && tsc --noEmit --composite false",
-    "build": "node ./scripts/save-package-version.cjs && vite build",
+    "generate-src": "node ./scripts/save-package-version.cjs",
+    "type-check": "tsc --noEmit --composite false",
+    "build": "vite build",
     "watch": "vite build --watch",
     "lint": "eslint .",
     "test": "node ./scripts/save-package-version.cjs && jest",

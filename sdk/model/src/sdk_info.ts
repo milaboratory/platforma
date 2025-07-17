@@ -1,4 +1,4 @@
-import { PlatformaSDKVersion } from './version';
+import { PlatformaSDKVersion } from './generated/version';
 
 export type SdkInfo = {
   readonly sdkVersion: string;
