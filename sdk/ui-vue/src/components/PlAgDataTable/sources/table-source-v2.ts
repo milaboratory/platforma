@@ -112,41 +112,41 @@ export async function calculateGridOptions({
   if (numberOfAxes === -1) numberOfAxes = specs.length;
 
   // column indices in the specs array that we are going to process
-  const indices = Array.from(
-    specs.keys()
-      .filter(
-        (i) => {
-          const spec = specs[i];
-          switch (spec.type) {
-            case 'axis':
-            {
+  const indices = specs.keys()
+    .filter(
+      (i) => {
+        const spec = specs[i];
+        switch (spec.type) {
+          case 'axis':
+          {
+            return !sheets.some(
+              (sheet) => isJsonEqual(getAxisId(sheet.axis), spec.id),
+            );
+          }
+          case 'column':
+          {
+            if (isLabelColumnSpec(spec.spec)) {
               return !sheets.some(
-                (sheet) => isJsonEqual(getAxisId(sheet.axis), spec.id),
+                (sheet) => isJsonEqual(getAxisId(sheet.axis), getAxisId(spec.spec.axesSpec[0])),
               );
-            }
-            case 'column':
-            {
-              if (isLabelColumnSpec(spec.spec)) {
-                return !sheets.some(
-                  (sheet) => isJsonEqual(getAxisId(sheet.axis), getAxisId(spec.spec.axesSpec[0])),
-                );
-              } else {
-                return !isColumnHidden(spec.spec);
-              }
+            } else {
+              return !isColumnHidden(spec.spec);
             }
           }
-        },
-      ),
-  ).sort((a, b) => {
-    if (specs[a].type !== specs[b].type) return specs[a].type === 'axis' ? -1 : 1;
+        }
+      },
+    )
+    .toArray()
+    .sort((a, b) => {
+      if (specs[a].type !== specs[b].type) return specs[a].type === 'axis' ? -1 : 1;
 
-    const aPriority = specs[a].spec.annotations?.['pl7.app/table/orderPriority'];
-    const bPriority = specs[b].spec.annotations?.['pl7.app/table/orderPriority'];
+      const aPriority = specs[a].spec.annotations?.['pl7.app/table/orderPriority'];
+      const bPriority = specs[b].spec.annotations?.['pl7.app/table/orderPriority'];
 
-    if (aPriority === undefined) return bPriority === undefined ? 0 : 1;
-    if (bPriority === undefined) return -1;
-    return Number(bPriority) - Number(aPriority);
-  });
+      if (aPriority === undefined) return bPriority === undefined ? 0 : 1;
+      if (bPriority === undefined) return -1;
+      return Number(bPriority) - Number(aPriority);
+    });
 
   const fields = [...indices];
 
