@@ -121,11 +121,11 @@ catalogs:
       specifier: ^13.3.0
       version: 13.3.0
     ag-grid-enterprise:
-      specifier: ^33.3.2
-      version: 33.3.2
+      specifier: ^34.0.2
+      version: 34.0.2
     ag-grid-vue3:
-      specifier: ^33.3.2
-      version: 33.3.2
+      specifier: ^34.0.2
+      version: 34.0.2
     canonicalize:
       specifier: ~2.1.0
       version: 2.1.0
@@ -1134,10 +1134,10 @@ importers:
         version: 5.2.3(vite@6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0))(vue@3.5.13(typescript@5.6.3))
       ag-grid-enterprise:
         specifier: 'catalog:'
-        version: 33.3.2
+        version: 34.0.2
       ag-grid-vue3:
         specifier: 'catalog:'
-        version: 33.3.2(vue@3.5.13(typescript@5.6.3))
+        version: 34.0.2(vue@3.5.13(typescript@5.6.3))
       rollup-plugin-sourcemaps2:
         specifier: 'catalog:'
         version: 0.5.2(@types/node@22.5.5)(rollup@4.41.1)
@@ -1290,7 +1290,83 @@ importers:
         version: 1.83.4
       vitepress:
         specifier: 'catalog:'
-        version: 1.5.0(@algolia/client-search@4.24.0)(@types/node@22.5.5)(@types/react@18.3.23)(axios@1.8.1)(postcss@8.5.4)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(sass@1.83.4)(search-insights@2.17.2)(sortablejs@1.15.6)(typescript@5.6.3)
+        version: 1.5.0(@algolia/client-search@4.24.0)(@types/node@22.5.5)(axios@1.8.1)(postcss@8.5.4)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(sass@1.83.4)(search-insights@2.17.2)(sortablejs@1.15.6)(typescript@5.6.3)
+
+  etc/ui-vue-playground:
+    dependencies:
+      '@milaboratories/helpers':
+        specifier: workspace:^
+        version: link:../../lib/util/helpers
+      '@milaboratories/uikit':
+        specifier: workspace:^
+        version: link:../../lib/ui/uikit
+      '@platforma-sdk/model':
+        specifier: workspace:^
+        version: link:../../sdk/model
+      '@platforma-sdk/ui-vue':
+        specifier: workspace:^
+        version: link:../../sdk/ui-vue
+      vue:
+        specifier: 'catalog:'
+        version: 3.5.13(typescript@5.6.3)
+      vue-router:
+        specifier: '4'
+        version: 4.5.0(vue@3.5.13(typescript@5.6.3))
+    devDependencies:
+      '@faker-js/faker':
+        specifier: 'catalog:'
+        version: 9.2.0
+      '@milaboratories/build-configs':
+        specifier: workspace:*
+        version: link:../../tools/build-configs
+      '@milaboratories/eslint-config':
+        specifier: workspace:^
+        version: link:../../tools/eslint-config
+      '@milaboratories/ts-configs':
+        specifier: workspace:*
+        version: link:../../tools/ts-configs
+      '@types/node':
+        specifier: 'catalog:'
+        version: 20.16.15
+      '@vitejs/plugin-vue':
+        specifier: 'catalog:'
+        version: 5.2.3(vite@6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0))(vue@3.5.13(typescript@5.6.3))
+      '@vue/test-utils':
+        specifier: 'catalog:'
+        version: 2.4.6
+      '@vueuse/core':
+        specifier: 'catalog:'
+        version: 13.3.0(vue@3.5.13(typescript@5.6.3))
+      ag-grid-enterprise:
+        specifier: 'catalog:'
+        version: 34.0.2
+      ag-grid-vue3:
+        specifier: 'catalog:'
+        version: 34.0.2(vue@3.5.13(typescript@5.6.3))
+      canonicalize:
+        specifier: 'catalog:'
+        version: 2.1.0
+      happy-dom:
+        specifier: 'catalog:'
+        version: 15.11.7
+      resize-observer-polyfill:
+        specifier: 'catalog:'
+        version: 1.5.1
+      sass:
+        specifier: 'catalog:'
+        version: 1.83.4
+      typescript:
+        specifier: 'catalog:'
+        version: 5.6.3
+      vite:
+        specifier: 'catalog:'
+        version: 6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0)
+      vitest:
+        specifier: 'catalog:'
+        version: 2.1.9(@types/node@20.16.15)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4)
+      vue-tsc:
+        specifier: 'catalog:'
+        version: 2.2.10(typescript@5.6.3)
 
   etc/uikit-playground:
     dependencies:
@@ -2351,10 +2427,10 @@ importers:
         version: 13.3.0(axios@1.8.1)(focus-trap@7.6.0)(sortablejs@1.15.6)(vue@3.5.13(typescript@5.6.3))
       ag-grid-enterprise:
         specifier: 'catalog:'
-        version: 33.3.2
+        version: 34.0.2
       ag-grid-vue3:
         specifier: 'catalog:'
-        version: 33.3.2(vue@3.5.13(typescript@5.6.3))
+        version: 34.0.2(vue@3.5.13(typescript@5.6.3))
       canonicalize:
         specifier: 'catalog:'
         version: 2.1.0
@@ -7605,29 +7681,29 @@ packages:
     engines: {node: '>=0.4.0'}
     hasBin: true
 
-  ag-charts-community@11.3.2:
-    resolution: {integrity: sha512-4ZshRqfeCoQKgJ8WNxLfgkKtLszIxEF9WWOSuT2Uvyyy3x0rUUPQbl98+kVh+sRyGGQ6Qj8uoStqHAhwPwgTOQ==}
+  ag-charts-community@12.0.2:
+    resolution: {integrity: sha512-ew6f1FD2ow4X5E3165OZrPz08Yh+pkFvvZOZYXtcABCiZtjzY4mE4zTh7+ZOBQ6utMe7p60T7epI0qlU1ngkmQ==}
 
-  ag-charts-core@11.3.2:
-    resolution: {integrity: sha512-D66lTBVXRDI6vFTcmL91KeBghOx63MmWrgDSJEEhsrK1ioWeYnFcRXStX0msx60D12i+Ba+uhM9xrxgRmqzM5w==}
+  ag-charts-core@12.0.2:
+    resolution: {integrity: sha512-gIZW46N1MSiZoOnrmf0OIO1v1DibGTefntTWadYG68/nHBxeoV8jsPLfTMplUnPhGvzdQXWxXyvB9q9KKYV+0w==}
 
-  ag-charts-enterprise@11.3.2:
-    resolution: {integrity: sha512-5HRfEI2w0IxfyWy6bpu9Db2UVPxPyxYihSHJdlJLmmCCgPNoyUqnghZqr7vnRSrh/mVSeSo2WBzxZuuphr+Wtg==}
+  ag-charts-enterprise@12.0.2:
+    resolution: {integrity: sha512-R/wltmyWlIQdk4C4VVJSkGY7Lb1eVkfIkdaddzY4ehwPCdEbFVMne7l5EkHYp00gY8vYsoTxhjTa/BMG+4TPDQ==}
 
-  ag-charts-locale@11.3.2:
-    resolution: {integrity: sha512-6DrHD53PfdVNqFAlmNkHTnlQ9QY9EzME0vvaiotUpO8boKflGivgqmfx/uNTp6AsvOrsnRBBZW4b4XSg0LKG2w==}
+  ag-charts-locale@12.0.2:
+    resolution: {integrity: sha512-uiMdNQL7aaOSBaIPpyiVKLLddGTo0pT/dRX46Ra3ywglsfPHT9dsM22GAnHl/njVrGD66RewT+N2FGpMZj2rGA==}
 
-  ag-charts-types@11.3.2:
-    resolution: {integrity: sha512-trPGqgGYiTeLgtf9nLuztDYOPOFOLbqHn1g2D99phf7QowcwdX0TPx0wfWG8Hm90LjB8IH+G2s3AZe2vrdAtMQ==}
+  ag-charts-types@12.0.2:
+    resolution: {integrity: sha512-AWM1Y+XW+9VMmV3AbzdVEnreh/I2C9Pmqpc2iLmtId3Xbvmv7O56DqnuDb9EXjK5uPxmyUerTP+utL13UGcztw==}
 
-  ag-grid-community@33.3.2:
-    resolution: {integrity: sha512-9bx0e/+ykOyLvUxHqmdy0cRVANH6JAtv0yZdnBZEXYYqBAwN+G5a4NY+2I1KvoOCYzbk8SnStG7y4hCdVAAWOQ==}
+  ag-grid-community@34.0.2:
+    resolution: {integrity: sha512-hVJp5vrmwHRB10YjfSOVni5YJkO/v+asLjT72S4YnIFSx8lAgyPmByNJgtojk1aJ5h6Up93jTEmGDJeuKiWWLA==}
 
-  ag-grid-enterprise@33.3.2:
-    resolution: {integrity: sha512-wf1JMDdAk9GhWbB0WF5RIOYp4p/y6h7zJoscFsymEeFV7325Zyx0ZBQ/kQQ9R9MqnhIYp5xjpjYJ4r2rpIXH+A==}
+  ag-grid-enterprise@34.0.2:
+    resolution: {integrity: sha512-t8oGNy2VzAYS6cH7VBXFKGau2ANFOhvr1DNgv8VT6HgsOpT5QJRqRHrsZHimY9+JhRUPwCBBoWCNsfRRGbLmYg==}
 
-  ag-grid-vue3@33.3.2:
-    resolution: {integrity: sha512-O1FS0MQNNBdMZTUTGrk/KjdK9nuPPRbmmL+bFQr8jKp7VCmO9wLV4w9taWbLTgQqGN6rQ4BAb6m2RJ78cHM3tQ==}
+  ag-grid-vue3@34.0.2:
+    resolution: {integrity: sha512-FeXVyDCVvN7YOMj5Luek1gAvX1pYxPXzbXgricOHm6XAnYrRjsgI7gVqI3f07BcL5sARC3GUqQ18MJhAr9o/Og==}
     peerDependencies:
       vue: ^3.5.0
 
@@ -17754,43 +17830,43 @@ snapshots:
 
   acorn@8.14.0: {}
 
-  ag-charts-community@11.3.2:
+  ag-charts-community@12.0.2:
     dependencies:
-      ag-charts-core: 11.3.2
-      ag-charts-locale: 11.3.2
-      ag-charts-types: 11.3.2
+      ag-charts-core: 12.0.2
+      ag-charts-locale: 12.0.2
+      ag-charts-types: 12.0.2
     optional: true
 
-  ag-charts-core@11.3.2:
+  ag-charts-core@12.0.2:
     dependencies:
-      ag-charts-types: 11.3.2
+      ag-charts-types: 12.0.2
     optional: true
 
-  ag-charts-enterprise@11.3.2:
+  ag-charts-enterprise@12.0.2:
     dependencies:
-      ag-charts-community: 11.3.2
-      ag-charts-core: 11.3.2
+      ag-charts-community: 12.0.2
+      ag-charts-core: 12.0.2
     optional: true
 
-  ag-charts-locale@11.3.2:
+  ag-charts-locale@12.0.2:
     optional: true
 
-  ag-charts-types@11.3.2: {}
+  ag-charts-types@12.0.2: {}
 
-  ag-grid-community@33.3.2:
+  ag-grid-community@34.0.2:
     dependencies:
-      ag-charts-types: 11.3.2
+      ag-charts-types: 12.0.2
 
-  ag-grid-enterprise@33.3.2:
+  ag-grid-enterprise@34.0.2:
     dependencies:
-      ag-grid-community: 33.3.2
+      ag-grid-community: 34.0.2
     optionalDependencies:
-      ag-charts-community: 11.3.2
-      ag-charts-enterprise: 11.3.2
+      ag-charts-community: 12.0.2
+      ag-charts-enterprise: 12.0.2
 
-  ag-grid-vue3@33.3.2(vue@3.5.13(typescript@5.6.3)):
+  ag-grid-vue3@34.0.2(vue@3.5.13(typescript@5.6.3)):
     dependencies:
-      ag-grid-community: 33.3.2
+      ag-grid-community: 34.0.2
       vue: 3.5.13(typescript@5.6.3)
 
   agent-base@7.1.3: {}

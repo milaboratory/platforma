@@ -1,3 +1,5 @@
+import type {
+  AxesSpec } from '@platforma-sdk/model';
 import {
   type JsonCompatible,
   type AxisId,
@@ -174,8 +176,17 @@ export type PlAgDataTableV2Controller = {
   /**
    * Scroll table to make row with provided key visible
    * Warning: works reliably only in client side mode.
+   * @returns `true` if row was found and focused, `false` otherwise
    */
-  focusRow: (rowKey: PTableKey) => Promise<void>;
+  focusRow: (rowKey: PTableKey) => Promise<boolean>;
+  /**
+   * Update selection in the table.
+   * @param axesIds - axes ids identifying axes key values in `selectedKeys`
+   * @param selectedKeys - axes keys of the rows to select
+   * Warning: update will be ignored if axes ids cannot be correctly resolved
+   * @returns `true` if selection was updated, `false` otherwise
+   */
+  updateSelection: (axesIds: AxisId[], selectedKeys: PTableKey[]) => Promise<boolean>;
 };
 
 export type PlTableRowId = PTableKey;

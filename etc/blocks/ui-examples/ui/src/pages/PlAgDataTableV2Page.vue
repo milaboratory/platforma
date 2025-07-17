@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { isJsonEqual } from '@milaboratories/helpers';
-import { type PlSelectionModel } from '@platforma-sdk/model';
+import type { AxisId, PTableKey } from '@platforma-sdk/model';
+import { createPlSelectionModel, type PlSelectionModel } from '@platforma-sdk/model';
 import {
   PlAgDataTableV2,
   PlBlockPage,
@@ -17,10 +18,10 @@ import {
   computed,
   onWatcherCleanup,
   ref,
-  toValue,
   watch,
   watchEffect,
   useTemplateRef,
+  toRaw,
 } from 'vue';
 import { useApp } from '../app';
 
@@ -82,13 +83,10 @@ const cellRendererSelector = computed(() => {
   };
 });
 
-const selection = ref<PlSelectionModel>({
-  axesSpec: [],
-  selectedKeys: [],
-});
+const selection = ref<PlSelectionModel>(createPlSelectionModel());
 watch(
   () => selection.value,
-  (selection) => console.log(`selection changed`, toValue(selection)),
+  (selection) => console.log(`selection changed`, toRaw(selection)),
 );
 
 const reactiveText = ref(false);
@@ -120,16 +118,25 @@ watchEffect(() => {
 });
 
 const tableRef = useTemplateRef<PlAgDataTableV2Controller>('tableRef');
-watch(
-  () => [tableRef.value, app.model.outputs.ptV2] as const,
-  ([table]) => {
-    if (!table) return;
-    if (selection.value.selectedKeys.length > 0) {
-      table.focusRow(selection.value.selectedKeys[0]);
-    }
-  },
-);
-
+let initialSelectionSet = false;
+const focusFirstSelectedRow = () => {
+  const table = tableRef.value;
+  if (!table) return;
+  if (!initialSelectionSet) {
+    table.updateSelection(
+      [
+        // TODO
+      ] satisfies AxisId[],
+      [
+        // TODO
+      ] satisfies PTableKey[],
+    );
+    initialSelectionSet = true;
+  }
+  if (selection.value.selectedKeys.length > 0) {
+    table.focusRow(selection.value.selectedKeys[0]);
+  }
+};
 </script>
 
 <template>
@@ -142,16 +149,17 @@ watch(
     </template>
     <PlAgDataTableV2
       ref="tableRef"
-      v-model="app.model.ui.dataTableV2.state"
       v-model:selection="selection"
+      v-model="app.model.ui.dataTableV2.state"
       :settings="tableSettings"
       :cell-renderer-selector="cellRendererSelector"
       v-bind="reactiveTextProps"
       show-export-button
+      @new-data-rendered="focusFirstSelectedRow"
     >
       <template #before-sheets>
         <PlDropdown v-model="app.model.ui.dataTableV2.sourceId" :options="sources" clearable />
-        <PlNumberField v-model="app.model.args.tableNumRows" />
+        <PlNumberField v-model="app.model.ui.dataTableV2.numRows" />
       </template>
     </PlAgDataTableV2>
   </PlBlockPage>

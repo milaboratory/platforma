@@ -41,6 +41,7 @@ import { makeRowNumberColDef, PlAgDataTableRowNumberColId } from './row-number';
 import { getColumnRenderingSpec } from './value-rendering';
 import type { Ref } from 'vue';
 import { isJsonEqual } from '@milaboratories/helpers';
+import type { DeferredCircular } from './focus-row';
 
 export function isLabelColumn(column: PTableColumnSpec): column is PTableColumnSpecColumn {
   return column.type === 'column' && isLabelColumnSpec(column.spec);
@@ -78,7 +79,7 @@ export async function calculateGridOptions({
   pfDriver,
   model,
   sheets,
-  track,
+  dataRenderedTracker,
   hiddenColIds,
   cellButtonAxisParams,
 }: {
@@ -86,7 +87,7 @@ export async function calculateGridOptions({
   pfDriver: PFrameDriver;
   model: PlDataTableModel;
   sheets: PlDataTableSheet[];
-  track: (ctx: GridApi<PlAgDataTableV2Row>) => void;
+  dataRenderedTracker: DeferredCircular<GridApi<PlAgDataTableV2Row>>;
   hiddenColIds?: PlTableColumnIdJson[];
   cellButtonAxisParams?: PlAgCellButtonAxisParams;
 }): Promise<Pick<ManagedGridOptions<PlAgDataTableV2Row>, 'columnDefs' | 'serverSideDatasource'>> {
@@ -270,15 +271,12 @@ export async function calculateGridOptions({
             .filter((column) => column.getColId() !== PlAgDataTableRowNumberColId),
         );
         params.api.setGridOption('loading', false);
+        dataRenderedTracker.resolve(params.api);
       } catch (error: unknown) {
         if (stateGeneration !== generation.value || params.api.isDestroyed()) return params.fail();
         params.api.setGridOption('loading', true);
         params.fail();
         console.trace(error);
-      } finally {
-        if (!params.api.isDestroyed()) {
-          track(params.api);
-        }
       }
     },
   };

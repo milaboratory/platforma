@@ -10,7 +10,14 @@ import type {
   PTableColumnSpec,
   PTableKey,
 } from '@platforma-sdk/model';
-import { getRawPlatformaInstance, parseJson } from '@platforma-sdk/model';
+import {
+  getRawPlatformaInstance,
+  parseJson,
+  createPlSelectionModel,
+  matchAxisId,
+  getAxisId,
+  canonicalizeJson,
+} from '@platforma-sdk/model';
 import type {
   CellRendererSelectorFunc,
   ColDef,
@@ -32,7 +39,7 @@ import PlAgDataTableSheets from './PlAgDataTableSheets.vue';
 import PlOverlayLoading from './PlAgOverlayLoading.vue';
 import PlOverlayNoRows from './PlAgOverlayNoRows.vue';
 import PlAgRowCount from './PlAgRowCount.vue';
-import { focusRow, makeOnceTracker } from './sources/focus-row';
+import { focusRow, DeferredCircular } from './sources/focus-row';
 import { autoSizeRowNumberColumn, PlAgDataTableRowNumberColId } from './sources/row-number';
 import type { PlAgCellButtonAxisParams } from './sources/table-source-v2';
 import { calculateGridOptions } from './sources/table-source-v2';
@@ -44,6 +51,7 @@ import type {
   PlAgOverlayNoRowsParams,
   PlDataTableSettingsV2,
   PlDataTableSheetsSettings,
+  PlTableRowId,
   PlTableRowIdJson,
 } from './types';
 import { watchCached } from '@milaboratories/uikit';
@@ -51,6 +59,7 @@ import { watchCached } from '@milaboratories/uikit';
 const tableState = defineModel<PlDataTableStateV2>({
   required: true,
 });
+/** Warning: selection model value updates are ignored, use updateSelection instead */
 const selection = defineModel<PlSelectionModel>('selection');
 const props = defineProps<{
   /** Required component settings */
@@ -113,6 +122,7 @@ const { settings } = toRefs(props);
 const emit = defineEmits<{
   rowDoubleClicked: [key?: PTableKey];
   cellButtonClicked: [key?: PTableKey];
+  newDataRendered: [];
 }>();
 
 const { gridState, sheetsState, filtersState } = useTableState(tableState, settings);
@@ -149,7 +159,7 @@ const filtersSettings = computed<PlDataTableFiltersSettings>(() => {
 });
 
 const gridApi = shallowRef<GridApi<PlAgDataTableV2Row> | null>(null);
-const firstDataRenderedTracker = makeOnceTracker<GridApi<PlAgDataTableV2Row>>();
+const dataRenderedTracker = new DeferredCircular<GridApi<PlAgDataTableV2Row>>();
 const gridOptions = shallowRef<GridOptions<PlAgDataTableV2Row>>({
   animateRows: false,
   suppressColumnMoveAnimation: true,
@@ -170,7 +180,9 @@ const gridOptions = shallowRef<GridOptions<PlAgDataTableV2Row>>({
     if (selection.value) {
       const state = event.api.getServerSideSelectionState();
       const selectedKeys = state?.toggledNodes?.map((nodeId) => parseJson(nodeId as PlTableRowIdJson)) ?? [];
-      selection.value = { ...selection.value, selectedKeys };
+      if (!isJsonEqual(selection.value.selectedKeys, selectedKeys)) {
+        selection.value = { ...selection.value, selectedKeys };
+      }
     }
   },
   onRowDoubleClicked: (event) => {
@@ -333,22 +345,40 @@ watch(
 defineExpose<PlAgDataTableV2Controller>({
   focusRow: (rowKey) => focusRow(
     (row) => isJsonEqual(row.data?.axesKey, rowKey),
-    firstDataRenderedTracker,
+    dataRenderedTracker,
   ),
+  updateSelection: async (axesIds, selectedKeys) => {
+    return dataRenderedTracker.promise.then((gridApi) => {
+      const axes = selection.value?.axesSpec;
+      if (!axes || axes.length !== axesIds.length) return false;
+
+      const mapping = axesIds
+        .map(getAxisId)
+        .map((id) => axes.findIndex((axis) => matchAxisId(axis, id)));
+      const mappingSet = new Set(mapping);
+      if (mappingSet.has(-1) || mappingSet.size !== axesIds.length) return false;
+
+      const selectedNodes = selectedKeys
+        .map((key) => canonicalizeJson<PlTableRowId>(mapping.map((index) => key[index])));
+      gridApi.setServerSideSelectionState({
+        selectAll: false,
+        toggledNodes: selectedNodes,
+      });
+      return true;
+    });
+  },
 });
 
 // Propagate columns for filter component
+const defaultSelection = createPlSelectionModel();
 watchCached(
   () => gridOptions.value.columnDefs,
   (columnDefs) => {
     const sourceId = settings.value.sourceId;
     if (sourceId === null) {
       filterableColumns.value = [];
-      if (selection.value) {
-        selection.value = {
-          axesSpec: [],
-          selectedKeys: [],
-        };
+      if (selection.value && !isJsonEqual(selection.value, defaultSelection)) {
+        selection.value = createPlSelectionModel();
       }
     } else {
       const isColDef = (def: ColDef | ColGroupDef): def is ColDef =>
@@ -369,10 +399,9 @@ watchCached(
             }
             return acc;
           }, [] as AxisSpec[]);
-        selection.value = {
-          ...selection.value,
-          axesSpec,
-        };
+        if (!isJsonEqual(selection.value.axesSpec, axesSpec)) {
+          selection.value = { ...selection.value, axesSpec };
+        }
       }
     }
   },
@@ -393,7 +422,7 @@ watch(
     try {
       // Hide no rows overlay if it is shown, or else loading overlay will not be shown
       gridApi.hideOverlay();
-      firstDataRenderedTracker.reset();
+      dataRenderedTracker.reset();
 
       // No data source selected -> reset state to default
       if (!settings.sourceId) {
@@ -424,7 +453,7 @@ watch(
             notReady: false,
           } satisfies PlAgOverlayLoadingParams,
         });
-        if (selection.value) {
+        if (selection.value && oldSettings?.sourceId) {
           gridApi.setServerSideSelectionState({
             selectAll: false,
             toggledNodes: [],
@@ -455,7 +484,7 @@ watch(
         pfDriver: getRawPlatformaInstance().pFrameDriver,
         model: settings.model,
         sheets: settings.sheets ?? [],
-        track: firstDataRenderedTracker.track,
+        dataRenderedTracker,
         hiddenColIds: gridState.value.columnVisibility?.hiddenColIds,
         cellButtonAxisParams: {
           showCellButtonForAxisId: props.showCellButtonForAxisId,
@@ -477,6 +506,7 @@ watch(
           loading: false,
         });
       });
+      dataRenderedTracker.promise.then(() => emit('newDataRendered'));
     } catch (error: unknown) {
       console.trace(error);
     } finally {
