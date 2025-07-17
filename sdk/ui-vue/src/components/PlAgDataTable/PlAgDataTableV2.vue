@@ -44,7 +44,6 @@ import type {
   PlAgOverlayNoRowsParams,
   PlDataTableSettingsV2,
   PlDataTableSheetsSettings,
-  PlTableLabeledSelectionModel,
   PlTableRowIdJson,
 } from './types';
 import { watchCached } from '@milaboratories/uikit';
@@ -53,7 +52,6 @@ const tableState = defineModel<PlDataTableStateV2>({
   required: true,
 });
 const selection = defineModel<PlSelectionModel>('selection');
-const selectionLabeled = defineModel<PlTableLabeledSelectionModel>('selectionLabeled');
 const props = defineProps<{
   /** Required component settings */
   settings: Readonly<PlDataTableSettingsV2>;
@@ -155,10 +153,10 @@ const firstDataRenderedTracker = makeOnceTracker<GridApi<PlAgDataTableV2Row>>();
 const gridOptions = shallowRef<GridOptions<PlAgDataTableV2Row>>({
   animateRows: false,
   suppressColumnMoveAnimation: true,
-  cellSelection: !selection.value && !selectionLabeled.value,
+  cellSelection: !selection.value,
   initialState: gridState.value,
   autoSizeStrategy: { type: 'fitCellContents' },
-  rowSelection: selection.value || selectionLabeled.value
+  rowSelection: selection.value
     ? {
         mode: 'multiRow',
         selectAll: 'all',
@@ -169,14 +167,10 @@ const gridOptions = shallowRef<GridOptions<PlAgDataTableV2Row>>({
       }
     : undefined,
   onSelectionChanged: (event) => {
-    const state = event.api.getServerSideSelectionState();
     if (selection.value) {
-      const selectedKeys = state?.toggledNodes?.map((nodeId) => parseJson(nodeId as PlTableRowIdJson).axesKey) ?? [];
+      const state = event.api.getServerSideSelectionState();
+      const selectedKeys = state?.toggledNodes?.map((nodeId) => parseJson(nodeId as PlTableRowIdJson)) ?? [];
       selection.value = { ...selection.value, selectedKeys };
-    }
-    if (selectionLabeled.value) {
-      const selectedLabeledKeys = state?.toggledNodes?.map((nodeId) => parseJson(nodeId as PlTableRowIdJson).labeled) ?? [];
-      selectionLabeled.value = { ...selectionLabeled.value, selectedLabeledKeys };
     }
   },
   onRowDoubleClicked: (event) => {
@@ -356,12 +350,6 @@ watchCached(
           selectedKeys: [],
         };
       }
-      if (selectionLabeled.value) {
-        selectionLabeled.value = {
-          spec: [],
-          selectedLabeledKeys: [],
-        };
-      }
     } else {
       const isColDef = (def: ColDef | ColGroupDef): def is ColDef =>
         !('children' in def);
@@ -384,19 +372,6 @@ watchCached(
         selection.value = {
           ...selection.value,
           axesSpec,
-        };
-      }
-      if (selectionLabeled.value) {
-        const spec = columns
-          .reduce((acc, column) => {
-            if (column.source.type === 'axis') {
-              acc.push(column.labeled);
-            }
-            return acc;
-          }, [] as PTableColumnSpec[]);
-        selectionLabeled.value = {
-          ...selectionLabeled.value,
-          spec,
         };
       }
     }
@@ -431,7 +406,7 @@ watch(
           columnDefs: undefined,
           serverSideDatasource: undefined,
         });
-        if (selection.value || selectionLabeled.value) {
+        if (selection.value) {
           gridApi.setServerSideSelectionState({
             selectAll: false,
             toggledNodes: [],
@@ -449,7 +424,7 @@ watch(
             notReady: false,
           } satisfies PlAgOverlayLoadingParams,
         });
-        if (selection.value || selectionLabeled.value) {
+        if (selection.value) {
           gridApi.setServerSideSelectionState({
             selectAll: false,
             toggledNodes: [],
