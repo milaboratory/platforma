@@ -2,7 +2,8 @@
   "version": "1.0.4",
   "name": "@milaboratories/ts-configs",
   "exports": {
-    "./browser": "./src/tsconfig.browser.json"
+    "./browser": "./src/tsconfig.browser.json",
+    "./*": "./src/*"
   },
   "scripts": {},
   "dependencies": {

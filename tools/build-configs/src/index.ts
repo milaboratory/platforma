@@ -1,2 +1,2 @@
-export * from './createViteDevConfig';
-export * from './createViteLibConfig';
+export * from './viteConfigs';
+1
