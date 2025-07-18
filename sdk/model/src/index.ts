@@ -10,6 +10,8 @@ export * from './ref_util';
 export * from './render';
 export * from './sdk_info';
 export * from './raw_globals';
+export * from './block_api_v1';
+export * from './block_api_v2';
 
 // reexporting everything from SDK model
 export * from '@milaboratories/pl-model-common';

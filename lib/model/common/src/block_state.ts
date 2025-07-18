@@ -1,5 +1,6 @@
 import type { BlockOutputsBase } from './common_types';
 import type { NavigationState } from './navigation';
+import type { AuthorMarker } from './author_marker';
 
 /**
  * @template Args    sets type of block arguments passed to the workflow
@@ -27,4 +28,6 @@ export type BlockState<
 
   /** Current navigation state */
   navigationState: NavigationState<Href>;
+
+  readonly author: AuthorMarker | undefined;
 };

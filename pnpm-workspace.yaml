@@ -110,7 +110,6 @@ packages:
 
   # Etc
 
-  - etc/ui-vue-playground
   - etc/uikit-playground
   - etc/ui-vue-docs
 
@@ -188,6 +187,8 @@ catalog:
   'json-stringify-safe': ^5.0.1
 
   'fs-extra': '^11.2.0'
+
+  'fast-json-patch': ^3.1.1
 
   # dont upgrade, ask @dbolotin first
   'zod': ~3.23.8

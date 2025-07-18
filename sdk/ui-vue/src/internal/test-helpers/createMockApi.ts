@@ -1,97 +1,54 @@
-import { delay } from '@milaboratories/helpers';
 import type {
-  BlockOutputsBase,
+  ValueWithUTag,
+  ValueWithUTagAndAuthor,
   BlockState,
-  BlockStatePatch,
-  FileLike,
+  PlatformaV2,
+  BlockOutputsBase,
   ImportFileHandle,
+  FileLike,
   ListFilesResult,
   LocalImportFileHandle,
   NavigationState,
   OpenDialogOps,
   OpenMultipleFilesResponse,
   OpenSingleFileResponse,
-  Platforma,
   StorageHandle,
+  ResultOrError,
+  AuthorMarker,
 } from '@platforma-sdk/model';
-import { getLsFilesResult } from './utils';
 import type { BlockMock } from './BlockMock';
+import type { Operation } from 'fast-json-patch';
+import { delay } from '@milaboratories/helpers';
+import { getLsFilesResult } from './utils';
 
 export function createMockApi<
   Args,
   Outputs extends BlockOutputsBase,
   UiState = unknown,
   Href extends `/${string}` = `/${string}`,
->(block: BlockMock<Args, Outputs, UiState, Href>): Platforma<Args, Outputs, UiState> {
-  type MyPatch = BlockStatePatch<Args, Outputs, UiState, Href>;
-
-  type OnUpdates = (updates: MyPatch[]) => Promise<void>;
-
-  const onUpdateListeners: OnUpdates[] = [];
-
-  const setPatches = async (updates: MyPatch[]) => {
-    await onUpdateListeners.map((cb) => cb(updates));
-  };
-
-  block.onNewState(async (patches) => {
-    await setPatches(patches);
-  });
-
+>(block: BlockMock<Args, Outputs, UiState, Href>): PlatformaV2<Args, Outputs, UiState, Href> {
   return {
+    apiVersion: 2,
     sdkInfo: {
       sdkVersion: 'dev',
     },
-    loadBlockState: async function (): Promise<BlockState<Args, Outputs, UiState>> {
-      return block.getState();
+    loadBlockState: async function (): Promise<ResultOrError<ValueWithUTag<BlockState<Args, Outputs, UiState, Href>>>> {
+      return block.loadBlockState();
     },
-    onStateUpdates(cb: OnUpdates): () => void {
-      onUpdateListeners.push(cb);
-
-      return () => {
-        // do nothing
-      };
+    getPatches: async function (uTag: string): Promise<ResultOrError<ValueWithUTagAndAuthor<Operation[]>>> {
+      return block.getPatches(uTag);
     },
-    async setBlockArgs(value: Args): Promise<void> {
-      await setPatches([
-        {
-          key: 'args',
-          value,
-        },
-      ]);
-
-      await block.setBlockArgs(value);
+    async setBlockArgs(value: Args, author?: AuthorMarker): Promise<ResultOrError<void>> {
+      return block.setBlockArgs(value, author);
     },
-    async setBlockUiState(value: UiState): Promise<void> {
-      await setPatches([
-        {
-          key: 'ui',
-          value,
-        },
-      ]);
-
-      await block.setBlockUiState(value);
+    async setBlockUiState(value: UiState, author?: AuthorMarker): Promise<ResultOrError<void>> {
+      return block.setBlockUiState(value, author);
     },
-    async setBlockArgsAndUiState(args: Args, uiState: UiState): Promise<void> {
-      await setPatches([
-        {
-          key: 'args',
-          value: args,
-        },
-        {
-          key: 'ui',
-          value: uiState,
-        },
-      ]);
-
-      await block.setBlockArgsAndUiState(args, uiState);
+    async setBlockArgsAndUiState(args: Args, uiState: UiState, author?: AuthorMarker): Promise<ResultOrError<void>> {
+      return block.setBlockArgsAndUiState(args, uiState, author);
     },
-    async setNavigationState(navigationState: NavigationState<Href>): Promise<void> {
-      await setPatches([
-        {
-          key: 'navigationState',
-          value: navigationState,
-        },
-      ]);
+    async setNavigationState(navigationState: NavigationState<Href>): Promise<ResultOrError<void>> {
+      return block.setNavigationState(navigationState);
     },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     blobDriver: undefined as any,

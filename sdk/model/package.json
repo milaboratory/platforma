@@ -42,6 +42,7 @@
     "@types/jest": "catalog:",
     "jest": "catalog:",
     "@jest/globals": "catalog:",
-    "ts-jest": "catalog:"
+    "ts-jest": "catalog:",
+    "fast-json-patch": "catalog:"
   }
 }

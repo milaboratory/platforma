@@ -5,7 +5,7 @@ import type { BlockStatePatch } from './block_state_patch';
 export type CancelSubscription = () => void;
 
 /** Defines methods to read and write current block data. */
-export interface BlockApi<
+export interface BlockApiV1<
   Args = unknown,
   Outputs extends BlockOutputsBase = BlockOutputsBase,
   UiState = unknown,
@@ -69,7 +69,7 @@ export interface BlockApi<
   setBlockArgsAndUiState(args: Args, state: UiState): Promise<void>;
 
   /**
-   * Sets block navigatiopn state.
+   * Sets block navigation state.
    * */
   setNavigationState(state: NavigationState<Href>): Promise<void>;
 }

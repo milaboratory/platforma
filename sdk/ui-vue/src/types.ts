@@ -53,9 +53,9 @@ export type RouteParams<Href extends `/${string}` = `/${string}`> = {
 
 export type AppSettings = {
   /**
-   * Deep patch `model.` This parameter affects how you listen to model changes; a deep watcher is required if you use the `source` function.
+   * App ID (just for debugging)
    */
-  deepPatchModel?: boolean;
+  appId?: string;
   /**
    * Enables some debug logs
    */

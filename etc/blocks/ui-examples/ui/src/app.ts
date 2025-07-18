@@ -30,6 +30,7 @@ import RadioPage from './pages/RadioPage.vue';
 import PlFileInputPage from './pages/PlFileInputPage.vue';
 import PlErrorBoundaryPage from './pages/PlErrorBoundaryPage.vue';
 import PlElementListPage from './pages/PlElementListPage.vue';
+import StatePage from './pages/StatePage.vue';
 
 export const sdkPlugin = defineApp(platforma, (app) => {
   // Additional data
@@ -82,6 +83,7 @@ export const sdkPlugin = defineApp(platforma, (app) => {
     },
     routes: {
       '/': () => IconsPage,
+      '/state': () => StatePage,
       '/layout': () => LayoutPage,
       '/log-view': () => LogViewPage,
       '/modals': () => ModalsPage,
@@ -114,7 +116,6 @@ export const sdkPlugin = defineApp(platforma, (app) => {
   };
 }, {
   debug: true,
-  deepPatchModel: true,
 });
 
 export const useApp = sdkPlugin.useApp;

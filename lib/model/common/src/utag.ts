@@ -1,3 +1,5 @@
+import type { AuthorMarker } from './author_marker';
+
 /** Value returned for changing states supporting reactive listening for changes */
 export interface ValueWithUTag<V> {
   /** Value snapshot. */
@@ -11,4 +13,8 @@ export interface ValueWithUTag<V> {
    * generated on underlying data changes.
    * */
   readonly uTag: string;
+}
+
+export interface ValueWithUTagAndAuthor<V> extends ValueWithUTag<V> {
+  readonly author?: AuthorMarker;
 }

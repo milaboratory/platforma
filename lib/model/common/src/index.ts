@@ -13,3 +13,4 @@ export * from './json';
 export * from './errors';
 export * from './flags';
 export * from './bmodel';
+export * from './author_marker';
