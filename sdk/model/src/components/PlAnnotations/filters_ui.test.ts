@@ -1,5 +1,5 @@
-import { describe, expect, it, test } from '@jest/globals';
 import type { SUniversalPColumnId } from '@platforma-sdk/model';
+import { describe, expect, it, test } from 'vitest';
 import type { AnnotationFilter, AnnotationScript, IsNA, NotFilter, NumericalComparisonFilter, PatternFilter, ValueRank } from './filter';
 import { compileAnnotationScript, compileFilter, type FilterUi } from './filters_ui';
 

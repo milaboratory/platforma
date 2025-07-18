@@ -18,7 +18,7 @@
     "build": "vite build",
     "watch": "vite build --watch",
     "lint": "eslint .",
-    "test": "jest",
+    "test": "vitest run",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "files": [
@@ -38,11 +38,8 @@
     "@platforma-sdk/eslint-config": "workspace:*",
     "@milaboratories/helpers": "workspace:^",
     "typescript": "catalog:",
+    "vitest": "catalog:",
     "vite": "catalog:",
-    "@types/jest": "catalog:",
-    "jest": "catalog:",
-    "@jest/globals": "catalog:",
-    "ts-jest": "catalog:",
     "fast-json-patch": "catalog:"
   }
 }
