@@ -2,7 +2,6 @@
 import { isJsonEqual } from '@milaboratories/helpers';
 import type {
   AxisId,
-  AxisSpec,
   PlDataTableGridStateCore,
   PlDataTableStateV2,
   PlSelectionModel,
@@ -347,16 +346,16 @@ defineExpose<PlAgDataTableV2Controller>({
     (row) => isJsonEqual(row.data?.axesKey, rowKey),
     dataRenderedTracker,
   ),
-  updateSelection: async (axesIds, selectedKeys) => {
+  updateSelection: async ({ axesSpec, selectedKeys }) => {
     return dataRenderedTracker.promise.then((gridApi) => {
       const axes = selection.value?.axesSpec;
-      if (!axes || axes.length !== axesIds.length) return false;
+      if (!axes || axes.length !== axesSpec.length) return false;
 
-      const mapping = axesIds
+      const mapping = axesSpec
         .map(getAxisId)
         .map((id) => axes.findIndex((axis) => matchAxisId(axis, id)));
       const mappingSet = new Set(mapping);
-      if (mappingSet.has(-1) || mappingSet.size !== axesIds.length) return false;
+      if (mappingSet.has(-1) || mappingSet.size !== axesSpec.length) return false;
 
       const selectedNodes = selectedKeys
         .map((key) => canonicalizeJson<PlTableRowId>(mapping.map((index) => key[index])));
@@ -370,16 +369,12 @@ defineExpose<PlAgDataTableV2Controller>({
 });
 
 // Propagate columns for filter component
-const defaultSelection = createPlSelectionModel();
 watchCached(
   () => gridOptions.value.columnDefs,
   (columnDefs) => {
     const sourceId = settings.value.sourceId;
     if (sourceId === null) {
       filterableColumns.value = [];
-      if (selection.value && !isJsonEqual(selection.value, defaultSelection)) {
-        selection.value = createPlSelectionModel();
-      }
     } else {
       const isColDef = (def: ColDef | ColGroupDef): def is ColDef =>
         !('children' in def);
@@ -391,24 +386,13 @@ watchCached(
         .map((colId) => parseJson(colId as PlTableColumnIdJson))
         ?? [];
       filterableColumns.value = columns.map((column) => column.labeled);
-      if (selection.value) {
-        const axesSpec = columns
-          .reduce((acc, column) => {
-            if (column.source.type === 'axis') {
-              acc.push(column.source.spec);
-            }
-            return acc;
-          }, [] as AxisSpec[]);
-        if (!isJsonEqual(selection.value.axesSpec, axesSpec)) {
-          selection.value = { ...selection.value, axesSpec };
-        }
-      }
     }
   },
   { immediate: true },
 );
 
 // Update AgGrid when settings change
+const defaultSelection = createPlSelectionModel();
 let oldSettings: PlDataTableSettingsV2 | null = null;
 const generation = ref(0);
 watch(
@@ -436,6 +420,9 @@ watch(
           serverSideDatasource: undefined,
         });
         if (selection.value) {
+          if (selection.value && !isJsonEqual(selection.value, defaultSelection)) {
+            selection.value = createPlSelectionModel();
+          }
           gridApi.setServerSideSelectionState({
             selectAll: false,
             toggledNodes: [],
@@ -454,6 +441,9 @@ watch(
           } satisfies PlAgOverlayLoadingParams,
         });
         if (selection.value && oldSettings?.sourceId) {
+          if (selection.value && !isJsonEqual(selection.value, defaultSelection)) {
+            selection.value = createPlSelectionModel();
+          }
           gridApi.setServerSideSelectionState({
             selectAll: false,
             toggledNodes: [],
@@ -492,11 +482,54 @@ watch(
             props.cellButtonInvokeRowsOnDoubleClick,
           trigger: (key?: PTableKey) => emit('cellButtonClicked', key),
         } satisfies PlAgCellButtonAxisParams,
-      }).then((options) => {
+      }).then((result) => {
         if (gridApi.isDestroyed() || stateGeneration !== generation.value) return;
-        return gridApi.updateGridOptions({
+        const { axesSpec, ...options } = result;
+        gridApi.updateGridOptions({
           ...options,
         });
+        if (selection.value) {
+          // Update selection if axesSpec changed, as order of axes may have changed and so we need to remap selected keys
+          const { axesSpec: oldAxesSpec, selectedKeys: oldSelectedKeys } = selection.value;
+          if (!isJsonEqual(oldAxesSpec, axesSpec)) {
+            if (!oldAxesSpec || axesSpec.length !== oldAxesSpec.length) {
+              const newSelection: PlSelectionModel = { axesSpec, selectedKeys: [] };
+              if (!isJsonEqual(selection.value, newSelection)) {
+                selection.value = newSelection;
+              }
+              return gridApi.setServerSideSelectionState({
+                selectAll: false,
+                toggledNodes: [],
+              });
+            }
+
+            const mapping = oldAxesSpec
+              .map(getAxisId)
+              .map((id) => axesSpec.findIndex((axis) => matchAxisId(axis, id)));
+            const mappingSet = new Set(mapping);
+            if (mappingSet.has(-1) || mappingSet.size !== axesSpec.length) {
+              const newSelection: PlSelectionModel = { axesSpec, selectedKeys: [] };
+              if (!isJsonEqual(selection.value, newSelection)) {
+                selection.value = newSelection;
+              }
+              return gridApi.setServerSideSelectionState({
+                selectAll: false,
+                toggledNodes: [],
+              });
+            }
+
+            const selectedNodes = oldSelectedKeys
+              .map((key) => mapping.map((index) => key[index]));
+            const newSelection: PlSelectionModel = { axesSpec, selectedKeys: selectedNodes };
+            if (!isJsonEqual(selection.value, newSelection)) {
+              selection.value = newSelection;
+            }
+            return gridApi.setServerSideSelectionState({
+              selectAll: false,
+              toggledNodes: selectedNodes.map((key) => canonicalizeJson<PlTableRowId>(key)),
+            });
+          }
+        }
       }).catch((error: unknown) => {
         if (gridApi.isDestroyed() || stateGeneration !== generation.value) return;
         console.trace(error);

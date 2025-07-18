@@ -1290,83 +1290,7 @@ importers:
         version: 1.83.4
       vitepress:
         specifier: 'catalog:'
-        version: 1.5.0(@algolia/client-search@4.24.0)(@types/node@22.5.5)(axios@1.8.1)(postcss@8.5.4)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(sass@1.83.4)(search-insights@2.17.2)(sortablejs@1.15.6)(typescript@5.6.3)
-
-  etc/ui-vue-playground:
-    dependencies:
-      '@milaboratories/helpers':
-        specifier: workspace:^
-        version: link:../../lib/util/helpers
-      '@milaboratories/uikit':
-        specifier: workspace:^
-        version: link:../../lib/ui/uikit
-      '@platforma-sdk/model':
-        specifier: workspace:^
-        version: link:../../sdk/model
-      '@platforma-sdk/ui-vue':
-        specifier: workspace:^
-        version: link:../../sdk/ui-vue
-      vue:
-        specifier: 'catalog:'
-        version: 3.5.13(typescript@5.6.3)
-      vue-router:
-        specifier: '4'
-        version: 4.5.0(vue@3.5.13(typescript@5.6.3))
-    devDependencies:
-      '@faker-js/faker':
-        specifier: 'catalog:'
-        version: 9.2.0
-      '@milaboratories/build-configs':
-        specifier: workspace:*
-        version: link:../../tools/build-configs
-      '@milaboratories/eslint-config':
-        specifier: workspace:^
-        version: link:../../tools/eslint-config
-      '@milaboratories/ts-configs':
-        specifier: workspace:*
-        version: link:../../tools/ts-configs
-      '@types/node':
-        specifier: 'catalog:'
-        version: 20.16.15
-      '@vitejs/plugin-vue':
-        specifier: 'catalog:'
-        version: 5.2.3(vite@6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0))(vue@3.5.13(typescript@5.6.3))
-      '@vue/test-utils':
-        specifier: 'catalog:'
-        version: 2.4.6
-      '@vueuse/core':
-        specifier: 'catalog:'
-        version: 13.3.0(vue@3.5.13(typescript@5.6.3))
-      ag-grid-enterprise:
-        specifier: 'catalog:'
-        version: 34.0.2
-      ag-grid-vue3:
-        specifier: 'catalog:'
-        version: 34.0.2(vue@3.5.13(typescript@5.6.3))
-      canonicalize:
-        specifier: 'catalog:'
-        version: 2.1.0
-      happy-dom:
-        specifier: 'catalog:'
-        version: 15.11.7
-      resize-observer-polyfill:
-        specifier: 'catalog:'
-        version: 1.5.1
-      sass:
-        specifier: 'catalog:'
-        version: 1.83.4
-      typescript:
-        specifier: 'catalog:'
-        version: 5.6.3
-      vite:
-        specifier: 'catalog:'
-        version: 6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0)
-      vitest:
-        specifier: 'catalog:'
-        version: 2.1.9(@types/node@20.16.15)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4)
-      vue-tsc:
-        specifier: 'catalog:'
-        version: 2.2.10(typescript@5.6.3)
+        version: 1.5.0(@algolia/client-search@4.24.0)(@types/node@22.5.5)(@types/react@18.3.23)(axios@1.8.1)(postcss@8.5.4)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(sass@1.83.4)(search-insights@2.17.2)(sortablejs@1.15.6)(typescript@5.6.3)
 
   etc/uikit-playground:
     dependencies:
@@ -7425,13 +7349,6 @@ packages:
 
   '@ungap/structured-clone@1.2.0':
     resolution: {integrity: sha512-zuVdFrMJiuCDQUMCzQaD6KL28MjnqqN8XnAqiEq9PNm/hCPTSGfrXCOfwj1ow4LFb/tNymJPwsNbVePc1xFqrQ==}
-
-  '@vitejs/plugin-vue@5.2.1':
-    resolution: {integrity: sha512-cxh314tzaWwOLqVes2gnnCtvBDcM1UMdn+iFR+UjAn411dPT3tOmqrJjbMd7koZpMAmBM/GqeV4n9ge7JSiJJQ==}
-    engines: {node: ^18.0.0 || >=20.0.0}
-    peerDependencies:
-      vite: ^5.0.0 || ^6.0.0
-      vue: ^3.2.25
 
   '@vitejs/plugin-vue@5.2.3':
     resolution: {integrity: sha512-IYSLEQj4LgZZuoVpdSUCw3dIynTWQgPlaRP6iAvMle4My0HdYwr5g5wQAfwOeHQBmYwEkqF70nRpSilr6PoUDg==}
@@ -17554,7 +17471,7 @@ snapshots:
 
   '@ungap/structured-clone@1.2.0': {}
 
-  '@vitejs/plugin-vue@5.2.1(vite@5.4.11(@types/node@22.5.5)(sass@1.83.4))(vue@3.5.13(typescript@5.6.3))':
+  '@vitejs/plugin-vue@5.2.3(vite@5.4.11(@types/node@22.5.5)(sass@1.83.4))(vue@3.5.13(typescript@5.6.3))':
     dependencies:
       vite: 5.4.11(@types/node@22.5.5)(sass@1.83.4)
       vue: 3.5.13(typescript@5.6.3)
@@ -22166,7 +22083,7 @@ snapshots:
       '@shikijs/transformers': 1.24.0
       '@shikijs/types': 1.24.0
       '@types/markdown-it': 14.1.2
-      '@vitejs/plugin-vue': 5.2.1(vite@5.4.11(@types/node@22.5.5)(sass@1.83.4))(vue@3.5.13(typescript@5.6.3))
+      '@vitejs/plugin-vue': 5.2.3(vite@5.4.11(@types/node@22.5.5)(sass@1.83.4))(vue@3.5.13(typescript@5.6.3))
       '@vue/devtools-api': 7.6.5
       '@vue/shared': 3.5.13
       '@vueuse/core': 11.1.0(vue@3.5.13(typescript@5.6.3))

@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { isJsonEqual } from '@milaboratories/helpers';
-import type { AxisId, PTableKey } from '@platforma-sdk/model';
 import { createPlSelectionModel, type PlSelectionModel } from '@platforma-sdk/model';
 import {
   PlAgDataTableV2,
@@ -123,14 +122,25 @@ const focusFirstSelectedRow = () => {
   const table = tableRef.value;
   if (!table) return;
   if (!initialSelectionSet) {
-    table.updateSelection(
-      [
-        // TODO
-      ] satisfies AxisId[],
-      [
-        // TODO
-      ] satisfies PTableKey[],
-    );
+    table.updateSelection({
+      axesSpec: [
+        {
+          name: 'part',
+          type: 'Int',
+        },
+        {
+          name: 'index',
+          type: 'Int',
+        },
+        {
+          name: 'linkedIndex',
+          type: 'Int',
+        },
+      ],
+      selectedKeys: [
+        [0, 51, 51],
+      ],
+    });
     initialSelectionSet = true;
   }
   if (selection.value.selectedKeys.length > 0) {

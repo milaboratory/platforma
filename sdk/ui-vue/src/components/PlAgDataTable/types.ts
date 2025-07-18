@@ -1,5 +1,3 @@
-import type {
-  AxesSpec } from '@platforma-sdk/model';
 import {
   type JsonCompatible,
   type AxisId,
@@ -186,7 +184,13 @@ export type PlAgDataTableV2Controller = {
    * Warning: update will be ignored if axes ids cannot be correctly resolved
    * @returns `true` if selection was updated, `false` otherwise
    */
-  updateSelection: (axesIds: AxisId[], selectedKeys: PTableKey[]) => Promise<boolean>;
+  updateSelection: ({
+    axesSpec,
+    selectedKeys,
+  }: {
+    axesSpec: AxisId[];
+    selectedKeys: PTableKey[];
+  }) => Promise<boolean>;
 };
 
 export type PlTableRowId = PTableKey;
