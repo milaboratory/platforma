@@ -18,16 +18,16 @@ export function PlViteStdNode(overrideConfig?: UserConfig) {
             format: 'es',
             preserveModules: true,
             preserveModulesRoot: 'src',
-            entryFileNames: '[name].js',
-            chunkFileNames: '[name]-[hash].js',
+            entryFileNames: '[name].mjs',
+            chunkFileNames: '[name]-[hash].mjs',
             assetFileNames: '[name][ext]'
           },
           {
             format: 'cjs',
             preserveModules: true,
             preserveModulesRoot: 'src',
-            entryFileNames: '[name].cjs',
-            chunkFileNames: '[name]-[hash].cjs',
+            entryFileNames: '[name].js',
+            chunkFileNames: '[name]-[hash].js',
             assetFileNames: '[name][ext]'
           }
         ]

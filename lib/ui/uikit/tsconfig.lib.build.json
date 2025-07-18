@@ -1,7 +1,7 @@
 {
   "extends": "./tsconfig.lib.json",
   "compilerOptions": {
-    "customConditions": ["default"],
+    "customConditions": ["import", "default", "require"],
     "noEmit": false,
     "declaration": true,
     "emitDeclarationOnly": true,

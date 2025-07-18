@@ -19,7 +19,6 @@ export const createViteDevConfig = (({ mode, command }: ConfigEnv) => {
       },
     },
     resolve: {
-      conditions: isServe ? ['development'] : ['module', 'require', 'default'],
     },
     define: {
       'import.meta.vitest': 'undefined',
