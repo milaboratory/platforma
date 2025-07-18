@@ -1,5 +1,14 @@
 # @platforma-sdk/ui-vue
 
+## 1.41.6
+
+### Patch Changes
+
+- c29b40f: use uniq custom condition
+- Updated dependencies [c29b40f]
+  - @milaboratories/uikit@2.3.21
+  - @platforma-sdk/model@1.41.6
+
 ## 1.41.4
 
 ### Patch Changes

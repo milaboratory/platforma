@@ -1,5 +1,11 @@
 # @milaboratories/helpers
 
+## 1.6.19
+
+### Patch Changes
+
+- c29b40f: use uniq custom condition
+
 ## 1.6.18
 
 ### Patch Changes

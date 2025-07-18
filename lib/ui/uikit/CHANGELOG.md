@@ -1,5 +1,14 @@
 # @milaboratories/uikit
 
+## 2.3.21
+
+### Patch Changes
+
+- c29b40f: use uniq custom condition
+- Updated dependencies [c29b40f]
+  - @milaboratories/helpers@1.6.19
+  - @platforma-sdk/model@1.41.6
+
 ## 2.3.20
 
 ### Patch Changes
