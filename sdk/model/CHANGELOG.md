@@ -1,5 +1,16 @@
 # @platforma-sdk/model
 
+## 1.41.0
+
+### Minor Changes
+
+- e7c0edb: Platforma API v2 (long pooling) + support v1 api in sdk
+
+### Patch Changes
+
+- Updated dependencies [e7c0edb]
+  - @milaboratories/pl-model-common@1.17.0
+
 ## 1.40.6
 
 ### Patch Changes
