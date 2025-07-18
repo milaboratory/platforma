@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.41.3
+
+### Patch Changes
+
+- d469422: Use package version from json
+
 ## 1.41.2
 
 ### Patch Changes
