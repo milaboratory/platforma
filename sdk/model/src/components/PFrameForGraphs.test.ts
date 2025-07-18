@@ -1,9 +1,3 @@
-import {test, expect, describe} from '@jest/globals';
-import {
-    IS_VIRTUAL_COLUMN,
-    LABEL_ANNOTATION,
-    enrichCompatible, LINKER_COLUMN_ANNOTATION, getAvailableWithLinkersAxes
-} from './PFrameForGraphs';
 import {
     AxisId, CanonicalizedJson,
     canonicalizeJson, DataInfo,
@@ -13,7 +7,15 @@ import {
     PColumnValues,
     PObjectId
 } from "@milaboratories/pl-model-common";
-import {TreeNodeAccessor} from "../render";
+import { describe, expect, test } from 'vitest';
+import { TreeNodeAccessor } from "../render";
+import {
+    enrichCompatible,
+    getAvailableWithLinkersAxes,
+    IS_VIRTUAL_COLUMN,
+    LABEL_ANNOTATION,
+    LINKER_COLUMN_ANNOTATION
+} from './PFrameForGraphs';
 
 function getAllAxesFromSpecs (specs:PColumnSpec[]):Map<CanonicalizedJson<AxisId>, AxisId> {
     const allAxes:Map<CanonicalizedJson<AxisId>, AxisId> = new Map();

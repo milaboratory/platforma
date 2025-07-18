@@ -1,17 +1,12 @@
 {
-  "compilerOptions": {
-    "target": "es2022",
-    "module": "commonjs",
-    "moduleResolution": "node",
-    "esModuleInterop": true,
-    "strict": true,
-    "outDir": "./dist",
-    "rootDir": "./src",
-    "sourceMap": true,
-    "declaration": true,
-    "declarationMap": true
-  },
-  "types": [],
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"]
+  "extends": "@milaboratories/ts-configs/tsconfig.node.json",
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/*.test.ts",
+    "**/*.spec.ts"
+  ]
 }

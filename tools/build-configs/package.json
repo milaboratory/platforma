@@ -2,6 +2,9 @@
   "version": "1.0.5",
   "name": "@milaboratories/build-configs",
   "type": "module",
+  "deprecated": {
+    "tsconfig_lib_bundled.json": "Use @milaboratories/ts-configs instead"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -30,8 +33,14 @@
   },
   "dependencies": {
     "@rollup/plugin-node-resolve": "catalog:",
+    "@rollup/plugin-typescript": "catalog:",
+    "@rollup/plugin-commonjs": "catalog:",
+    "@rollup/plugin-json": "catalog:",
     "rollup-plugin-node-externals": "catalog:",
     "rollup-plugin-sourcemaps2": "catalog:",
+    "rollup-plugin-cleandir": "catalog:",
+    "unplugin-dts": "catalog:",
+    "rollup": "catalog:",
     "vite-plugin-css-injected-by-js": "catalog:",
     "tsup": "catalog:",
     "vite": "catalog:",
