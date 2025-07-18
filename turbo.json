@@ -10,7 +10,6 @@
       "dependsOn": ["^build"]
     },
     "build": {
-      "inputs": ["$TURBO_DEFAULT$"],
       "outputs": ["./dist/**", "./block-pack/**"],
       "passThroughEnv": [
         "GENERATE_TAGS",
