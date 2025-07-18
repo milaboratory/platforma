@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { isJsonEqual } from '@milaboratories/helpers';
-import { createPlSelectionModel, type PlSelectionModel } from '@platforma-sdk/model';
+import { type PlSelectionModel } from '@platforma-sdk/model';
 import {
   PlAgDataTableV2,
   PlBlockPage,
@@ -9,6 +9,7 @@ import {
   PlNumberField,
   PlBtnGhost,
   PlSlideModal,
+  PlBtnSecondary,
   usePlDataTableSettingsV2,
   type PlAgDataTableV2Controller,
 } from '@platforma-sdk/ui-vue';
@@ -82,7 +83,26 @@ const cellRendererSelector = computed(() => {
   };
 });
 
-const selection = ref<PlSelectionModel>(createPlSelectionModel());
+const initialSelection: PlSelectionModel = {
+  axesSpec: [
+    {
+      name: 'part',
+      type: 'Int',
+    },
+    {
+      name: 'index',
+      type: 'Int',
+    },
+    {
+      name: 'linkedIndex',
+      type: 'Int',
+    },
+  ],
+  selectedKeys: [
+    [0, 51, 51],
+  ],
+};
+const selection = ref<PlSelectionModel>(initialSelection);
 watch(
   () => selection.value,
   (selection) => console.log(`selection changed`, toRaw(selection)),
@@ -117,35 +137,14 @@ watchEffect(() => {
 });
 
 const tableRef = useTemplateRef<PlAgDataTableV2Controller>('tableRef');
-let initialSelectionSet = false;
 const focusFirstSelectedRow = () => {
-  const table = tableRef.value;
-  if (!table) return;
-  if (!initialSelectionSet) {
-    table.updateSelection({
-      axesSpec: [
-        {
-          name: 'part',
-          type: 'Int',
-        },
-        {
-          name: 'index',
-          type: 'Int',
-        },
-        {
-          name: 'linkedIndex',
-          type: 'Int',
-        },
-      ],
-      selectedKeys: [
-        [0, 51, 51],
-      ],
-    });
-    initialSelectionSet = true;
-  }
   if (selection.value.selectedKeys.length > 0) {
-    table.focusRow(selection.value.selectedKeys[0]);
+    tableRef.value?.focusRow(selection.value.selectedKeys[0]);
   }
+};
+const resetSelection = async () => {
+  await tableRef.value?.updateSelection(initialSelection);
+  await tableRef.value?.focusRow(selection.value.selectedKeys[0]);
 };
 </script>
 
@@ -159,8 +158,8 @@ const focusFirstSelectedRow = () => {
     </template>
     <PlAgDataTableV2
       ref="tableRef"
-      v-model:selection="selection"
       v-model="app.model.ui.dataTableV2.state"
+      v-model:selection="selection"
       :settings="tableSettings"
       :cell-renderer-selector="cellRendererSelector"
       v-bind="reactiveTextProps"
@@ -178,5 +177,6 @@ const focusFirstSelectedRow = () => {
     <PlCheckbox v-model="verbose">Apply custom cell renderer for numbers</PlCheckbox>
     <PlCheckbox v-model="loading">Display infinite loading</PlCheckbox>
     <PlCheckbox v-model="reactiveText">Show reactive loading message</PlCheckbox>
+    <PlBtnSecondary @click="resetSelection">Reset selection to default</PlBtnSecondary>
   </PlSlideModal>
 </template>

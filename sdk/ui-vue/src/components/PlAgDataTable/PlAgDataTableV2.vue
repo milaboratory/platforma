@@ -28,7 +28,7 @@ import type {
   ManagedGridOptions,
 } from 'ag-grid-enterprise';
 import { AgGridVue } from 'ag-grid-vue3';
-import { computed, ref, shallowRef, toRefs, watch } from 'vue';
+import { computed, effectScope, ref, shallowRef, toRefs, watch } from 'vue';
 import { AgGridTheme } from '../../aggrid';
 import PlAgCsvExporter from '../PlAgCsvExporter/PlAgCsvExporter.vue';
 import { PlAgGridColumnManager } from '../PlAgGridColumnManager';
@@ -347,24 +347,37 @@ defineExpose<PlAgDataTableV2Controller>({
     dataRenderedTracker,
   ),
   updateSelection: async ({ axesSpec, selectedKeys }) => {
-    return dataRenderedTracker.promise.then((gridApi) => {
-      const axes = selection.value?.axesSpec;
-      if (!axes || axes.length !== axesSpec.length) return false;
+    const gridApi = await dataRenderedTracker.promise;
+    if (gridApi.isDestroyed()) return false;
 
-      const mapping = axesSpec
-        .map(getAxisId)
-        .map((id) => axes.findIndex((axis) => matchAxisId(axis, id)));
-      const mappingSet = new Set(mapping);
-      if (mappingSet.has(-1) || mappingSet.size !== axesSpec.length) return false;
+    const axes = selection.value?.axesSpec;
+    if (!axes || axes.length !== axesSpec.length) return false;
 
-      const selectedNodes = selectedKeys
-        .map((key) => canonicalizeJson<PlTableRowId>(mapping.map((index) => key[index])));
+    const mapping = axesSpec
+      .map((spec) => {
+        const id = getAxisId(spec);
+        return axes.findIndex((axis) => matchAxisId(axis, id));
+      });
+    const mappingSet = new Set(mapping);
+    if (mappingSet.has(-1) || mappingSet.size !== axesSpec.length) return false;
+
+    const selectedNodes = selectedKeys
+      .map((key) => canonicalizeJson<PlTableRowId>(mapping.map((index) => key[index])));
+    const oldSelectedKeys = gridApi.getServerSideSelectionState()?.toggledNodes ?? [];
+    if (!isJsonEqual(oldSelectedKeys, selectedNodes)) {
       gridApi.setServerSideSelectionState({
         selectAll: false,
         toggledNodes: selectedNodes,
       });
-      return true;
-    });
+
+      // wait for `onSelectionChanged` to update `selection` model
+      const scope = effectScope();
+      const { resolve, promise } = Promise.withResolvers();
+      scope.run(() => watch(selection, resolve, { once: true }));
+      await promise;
+      scope.stop();
+    }
+    return true;
   },
 });
 

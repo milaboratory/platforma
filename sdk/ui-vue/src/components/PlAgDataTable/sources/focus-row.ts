@@ -62,7 +62,7 @@ export async function focusRow<TData>(
   selector: (row: IRowNode<TData>) => boolean,
   dataRenderedTracker: DeferredCircular<GridApi<TData>>,
 ): Promise<boolean> {
-  return dataRenderedTracker.promise.then((gridApi) => {
-    return ensureNodeVisible(gridApi, selector);
-  });
+  const gridApi = await dataRenderedTracker.promise;
+  if (gridApi.isDestroyed()) return false;
+  return ensureNodeVisible(gridApi, selector);
 }
