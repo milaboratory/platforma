@@ -17,17 +17,18 @@ The Platforma block state system is designed to manage the state and execution o
 The `args` component represents the primary input parameters for a block's computational workflow. This is:
 
 - **A persistent JSON object** stored in the project resource (one per block)
-- **Sent to backend workflows** for both staging (pre-run) and production executions
+- **Used for staging computations** - staging always uses the current `args`
 - **Primary source for dependency tracking** through PlRef objects
 - **Immutable during computation** - changes trigger re-computation
 - **Accessible in model lambdas** for output computations and validation
 
 Key characteristics:
-- Stored in the `currentArgs` field in the project structure
+- Current args stored in the `args` field in the project structure
+- Production args snapshot stored in the `currentArgs` field (captured when user hits "Run")
 - Changes to args reset all downstream block stagings
-- Used to determine if production results are stale (by comparing `currentArgs` vs `prodArgs`)
-- Must be JSON-serializable
+- Block is in **stale mode** when `args` differs from `currentArgs`
 - Can contain PlRef objects that establish block-to-block dependencies
+- Both `args` and `currentArgs` can be accessed in model lambdas
 
 ### 2. UiState
 
@@ -40,13 +41,16 @@ The `uiState` component represents UI-specific persistent state that:
 
 Key characteristics:
 - Stored in the `uiState` field in the project structure
-- Can be undefined/null initially
-- Typically contains view configurations (e.g., `PlDataTableState`)
+- Typically contains things like view configurations (e.g., `PlDataTableState`)
 - Changes don't affect the dependency graph or computation status
 
 ## Initial State Definition
 
-**Important**: Initial values for both `args` and `uiState` must be defined as constants in the block model. They cannot be dynamically derived or computed:
+**Important**: Initial values for both `args` and `uiState` must be defined as constants in the block model. They cannot be dynamically derived or computed.
+
+The `withArgs()` and `withUiState()` methods serve two critical purposes:
+1. **Set initial state values** - providing default values for the block
+2. **Set TypeScript types** - these types are propagated throughout both the model and UI layers
 
 ```typescript
 .withArgs<BlockArgs>({ 
@@ -60,6 +64,8 @@ Key characteristics:
   tableState: createPlDataTableStateV2(),
 })
 ```
+
+The type information defined here becomes available across the entire block ecosystem, ensuring type safety in model lambdas, UI components, and state management operations.
 
 ## State Persistence and Storage
 
@@ -88,8 +94,9 @@ The block model definition (as seen in `platforma/sdk/model/src/builder.ts`) pro
    ```typescript
    .output('someOutput', (ctx) => {
      // Access current args via ctx.args
+     // Access production args via ctx.currentArgs (snapshot from last run)
      // Access current uiState via ctx.uiState
-     // Access production args via ctx.activeArgs
+     // Access production args via ctx.activeArgs (deprecated, use ctx.currentArgs)
    })
    ```
 
@@ -142,9 +149,8 @@ export const PlRef = z.object({
 
 PlRefs embedded in args are automatically detected and used to:
 1. **Build dependency graphs** between blocks
-2. **Determine execution order** for production runs
-3. **Track which blocks need re-computation** when upstreams change
-4. **Enable data flow** between blocks through the result pool
+2. **Track which blocks need re-computation** when upstreams change
+3. **Route data flow** between blocks through the result pool
 
 ### Graph Construction
 
@@ -164,6 +170,7 @@ From `platforma/lib/node/pl-middle-layer/src/model/project_model_util.ts`:
 
 Staging is a lightweight execution mode that:
 - **Runs automatically** when args change
+- **Always uses current `args`** (not `currentArgs`)
 - **Provides quick feedback** for UI updates
 - **Uses simplified dependency model** (linear progression)
 - **Rate-limited execution** (configurable blocks per second)
@@ -173,6 +180,7 @@ Staging is a lightweight execution mode that:
 
 Production is the full execution mode that:
 - **Requires explicit user action** (clicking "Run" when `argsValid` returns true)
+- **Uses `currentArgs`** - a snapshot of `args` captured when user hits "Run"
 - **Executes on backend infrastructure** with full resources
 - **Respects complex dependencies** from PlRefs
 - **Produces final results** for downstream consumption
@@ -183,10 +191,19 @@ Production is the full execution mode that:
 Blocks can be in several states:
 1. **Not rendered**: No staging or production outputs exist
 2. **Staging only**: Quick preview available, no production run
-3. **Stale production**: Production exists but args have changed
-4. **Fresh production**: Production matches current args
+3. **Stale production**: Production exists but `args` differs from `currentArgs`
+4. **Fresh production**: Production matches current args (`args` equals `currentArgs`)
 5. **Limbo**: Production results kept despite upstream changes
 6. **Running**: Currently executing (staging or production)
+
+### Run Button Logic
+
+The "Run" button is enabled when all of the following conditions are met:
+- Block is in **stale mode** (current `args` differ from `currentArgs`) OR has never been run
+- Current `args` are **valid** (as determined by `argsValid` function)
+- All **upstream blocks** are either valid or already calculated
+
+When the run button is clicked, all blocks on the dependency path to the target block (including the target) are executed using their most recent `args` values. The system captures a snapshot of each block's `args` as `currentArgs` at the moment execution begins.
 
 ## Context and Result Pool
 
@@ -194,7 +211,6 @@ The execution context (`resultPool` in models) provides access to:
 - **Upstream block outputs** via PlRef resolution
 - **Block metadata** and specifications
 - **Cross-block data sharing** through the result pool
-- **Lazy loading** of dependencies
 
 Example from `mixcr-clonotyping-2/model/src/index.ts`:
 ```typescript
@@ -210,7 +226,7 @@ Example from `mixcr-clonotyping-2/model/src/index.ts`:
 
 1. **UI modifies reactive model** → `app.model.args.property = value`
 2. **SDK detects changes** → debounced state updates triggered
-3. **Middle layer persists** → args/uiState written to resources
+3. **Middle layer persists** → args/uiState persisted to resources
 4. **Change detection** → downstream blocks marked for re-computation
 5. **Staging refresh** → automatic lightweight re-computation
 6. **User triggers production** → full computation with dependency resolution
@@ -222,6 +238,7 @@ The system tracks authorship of changes for collaborative editing:
 - Author markers stored with state changes
 - Enables conflict resolution in multi-user scenarios
 - Tracked at the block level for args modifications
+
 ## Performance Optimizations
 
 1. **Lazy state loading** (PR #883): Args and uiState loaded on-demand in lambdas
@@ -233,7 +250,6 @@ The system tracks authorship of changes for collaborative editing:
 ## Current Limitations
 
 1. **No unified state object**: Args and uiState are separate concerns
-2. **Limited workflow access**: Only args reach backend computations
 3. **Fixed state structure**: Cannot dynamically extend state components
 4. **Static initial values**: Initial args and uiState must be constants
 5. **No partial state updates**: Full object replacement required
@@ -242,7 +258,8 @@ The system tracks authorship of changes for collaborative editing:
 ## Implementation References
 
 Key files for understanding the implementation:
-- `platforma/sdk/model/src/builder.ts` - Block model definition API
+- `platforma/sdk/model/src/builder.ts` - Block model definition API, `withArgs`/`withUiState` methods, type propagation
+- `platforma/sdk/ui-vue/src/defineApp.ts` - UI app definition and type propagation from model to UI
 - `platforma/lib/node/pl-middle-layer/src/mutator/project.ts` - State persistence
 - `platforma/lib/node/pl-middle-layer/src/middle_layer/block.ts` - State retrieval
 - `platforma/lib/model/common/src/block_state.ts` - Type definitions
