@@ -110,7 +110,6 @@ packages:
 
   # Etc
 
-  - etc/ui-vue-playground
   - etc/uikit-playground
   - etc/ui-vue-docs
 
@@ -189,6 +188,8 @@ catalog:
 
   'fs-extra': '^11.2.0'
 
+  'fast-json-patch': ^3.1.1
+
   # dont upgrade, ask @dbolotin first
   'zod': ~3.23.8
 
@@ -219,7 +220,7 @@ catalog:
   'd3-format': ^3.1.0
   '@types/d3-format': ^3.0.4
 
-  'ag-grid-enterprise': &ag-grid ^33.3.2
+  'ag-grid-enterprise': &ag-grid ^34.0.2
   'ag-grid-vue3': *ag-grid
 
   '@milaboratories/miplots4': ^1.0.123

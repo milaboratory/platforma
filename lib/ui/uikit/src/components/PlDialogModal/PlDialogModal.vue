@@ -12,9 +12,9 @@ import PlCloseModalBtn from '../../utils/PlCloseModalBtn.vue';
 import type { Size } from '../../types';
 
 const slots = defineSlots<{
-  title: () => unknown;
-  default: () => unknown;
-  actions: () => unknown;
+  title?: () => unknown;
+  default?: () => unknown;
+  actions?: () => unknown;
 }>();
 
 const emit = defineEmits(['update:modelValue']);

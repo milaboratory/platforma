@@ -1,5 +1,23 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.8.0
+
+### Minor Changes
+
+- e7c0edb: Platforma API v2 (long pooling) + support v1 api in sdk
+
+### Patch Changes
+
+- Updated dependencies [e7c0edb]
+  - @milaboratories/pl-model-common@1.17.0
+
+## 1.7.52
+
+### Patch Changes
+
+- Updated dependencies [9bb26ff]
+  - @milaboratories/pl-model-common@1.16.5
+
 ## 1.7.51
 
 ### Patch Changes

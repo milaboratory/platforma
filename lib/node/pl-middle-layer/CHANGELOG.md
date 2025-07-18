@@ -1,5 +1,59 @@
 # @milaboratories/pl-middle-layer
 
+## 1.40.4
+
+### Patch Changes
+
+- Updated dependencies [41140f4]
+  - @platforma-sdk/model@1.41.4
+
+## 1.40.3
+
+### Patch Changes
+
+- Updated dependencies [d469422]
+  - @platforma-sdk/model@1.41.3
+
+## 1.40.2
+
+### Patch Changes
+
+- Updated dependencies [28b630f]
+  - @platforma-sdk/model@1.41.2
+
+## 1.40.1
+
+### Patch Changes
+
+- Updated dependencies [e48177a]
+  - @platforma-sdk/model@1.41.1
+
+## 1.40.0
+
+### Minor Changes
+
+- e7c0edb: Platforma API v2 (long pooling) + support v1 api in sdk
+
+### Patch Changes
+
+- Updated dependencies [e7c0edb]
+  - @milaboratories/pl-model-middle-layer@1.8.0
+  - @milaboratories/pl-model-common@1.17.0
+  - @platforma-sdk/model@1.41.0
+  - @platforma-sdk/block-tools@2.5.71
+  - @milaboratories/pl-drivers@1.6.9
+
+## 1.39.18
+
+### Patch Changes
+
+- Updated dependencies [9bb26ff]
+  - @milaboratories/pl-model-common@1.16.5
+  - @platforma-sdk/model@1.40.6
+  - @milaboratories/pl-model-middle-layer@1.7.52
+  - @milaboratories/pl-drivers@1.6.8
+  - @platforma-sdk/block-tools@2.5.70
+
 ## 1.39.17
 
 ### Patch Changes

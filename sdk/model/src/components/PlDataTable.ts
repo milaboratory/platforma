@@ -35,6 +35,7 @@ import {
   PColumnCollection,
   TreeNodeAccessor,
 } from '../render';
+import { isLinkerColumn } from './PFrameForGraphs';
 
 export type PlTableColumnId = {
   /** Original column spec */
@@ -673,7 +674,7 @@ export function createPlDataTableV2<A, U>(
   ops?: CreatePlDataTableOps,
 ): PlDataTableModel | undefined {
   if (inputColumns.length === 0) return undefined;
-  const columns = inputColumns.filter((c) => !isColumnHidden(c.spec));
+  const columns = inputColumns.filter((c) => isLinkerColumn(c.spec) || !isColumnHidden(c.spec));
 
   const tableStateNormalized = upgradePlDataTableStateV2(tableState);
 
@@ -746,7 +747,7 @@ export function createPlDataTableV2<A, U>(
 
   // Preserve linker columns
   columns
-    .filter((c) => c.spec.annotations?.['pl7.app/isLinkerColumn'] === 'true')
+    .filter((c) => isLinkerColumn(c.spec))
     .forEach((c) => hiddenColumns.delete(c.id));
 
   // Preserve core columns as they change the shape of join.

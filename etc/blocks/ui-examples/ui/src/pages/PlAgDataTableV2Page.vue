@@ -9,8 +9,8 @@ import {
   PlNumberField,
   PlBtnGhost,
   PlSlideModal,
+  PlBtnSecondary,
   usePlDataTableSettingsV2,
-  type PlTableLabeledSelectionModel,
   type PlAgDataTableV2Controller,
 } from '@platforma-sdk/ui-vue';
 import type { ICellRendererParams } from 'ag-grid-enterprise';
@@ -18,10 +18,10 @@ import {
   computed,
   onWatcherCleanup,
   ref,
-  toValue,
   watch,
   watchEffect,
   useTemplateRef,
+  toRaw,
 } from 'vue';
 import { useApp } from '../app';
 
@@ -83,22 +83,29 @@ const cellRendererSelector = computed(() => {
   };
 });
 
-const selection = ref<PlSelectionModel>({
-  axesSpec: [],
-  selectedKeys: [],
-});
+const initialSelection: PlSelectionModel = {
+  axesSpec: [
+    {
+      name: 'part',
+      type: 'Int',
+    },
+    {
+      name: 'index',
+      type: 'Int',
+    },
+    {
+      name: 'linkedIndex',
+      type: 'Int',
+    },
+  ],
+  selectedKeys: [
+    [0, 51, 51],
+  ],
+};
+const selection = ref<PlSelectionModel>(initialSelection);
 watch(
   () => selection.value,
-  (selection) => console.log(`selection changed`, toValue(selection)),
-);
-
-const selectionLabeled = ref<PlTableLabeledSelectionModel>({
-  spec: [],
-  selectedLabeledKeys: [],
-});
-watch(
-  () => selectionLabeled.value,
-  (selection) => console.log(`selectionLabeled changed`, toValue(selection)),
+  (selection) => console.log(`selection changed`, toRaw(selection)),
 );
 
 const reactiveText = ref(false);
@@ -130,16 +137,27 @@ watchEffect(() => {
 });
 
 const tableRef = useTemplateRef<PlAgDataTableV2Controller>('tableRef');
-watch(
-  () => [tableRef.value, app.model.outputs.ptV2] as const,
-  ([table]) => {
-    if (!table) return;
-    if (selection.value.selectedKeys.length > 0) {
-      table.focusRow(selection.value.selectedKeys[0]);
+const focusFirstSelectedRow = async () => {
+  if (selection.value.selectedKeys.length > 0) {
+    const key = selection.value.selectedKeys[0];
+    const focused = await tableRef.value?.focusRow(key);
+    if (focused) {
+      const row = await tableRef.value?.getRow(key);
+      console.log(`focused row`, row);
     }
-  },
-);
-
+  }
+};
+const resetSelection = async () => {
+  await tableRef.value?.updateSelection(initialSelection);
+  await tableRef.value?.focusRow(selection.value.selectedKeys[0]);
+};
+const get10thRow = async () => {
+  const rowCount = await tableRef.value?.getRowCount();
+  if (rowCount && rowCount >= 10) {
+    const row = await tableRef.value?.getRow(9);
+    console.log(`total rows: ${rowCount}, 10th row`, row);
+  }
+};
 </script>
 
 <template>
@@ -154,15 +172,15 @@ watch(
       ref="tableRef"
       v-model="app.model.ui.dataTableV2.state"
       v-model:selection="selection"
-      v-model:selection-labeled="selectionLabeled"
       :settings="tableSettings"
       :cell-renderer-selector="cellRendererSelector"
       v-bind="reactiveTextProps"
       show-export-button
+      @new-data-rendered="focusFirstSelectedRow"
     >
       <template #before-sheets>
         <PlDropdown v-model="app.model.ui.dataTableV2.sourceId" :options="sources" clearable />
-        <PlNumberField v-model="app.model.args.tableNumRows" />
+        <PlNumberField v-model="app.model.ui.dataTableV2.numRows" />
       </template>
     </PlAgDataTableV2>
   </PlBlockPage>
@@ -171,5 +189,7 @@ watch(
     <PlCheckbox v-model="verbose">Apply custom cell renderer for numbers</PlCheckbox>
     <PlCheckbox v-model="loading">Display infinite loading</PlCheckbox>
     <PlCheckbox v-model="reactiveText">Show reactive loading message</PlCheckbox>
+    <PlBtnSecondary @click="resetSelection">Reset selection to default</PlBtnSecondary>
+    <PlBtnSecondary @click="get10thRow">Print data of 10th row</PlBtnSecondary>
   </PlSlideModal>
 </template>

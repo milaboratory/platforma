@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/model",
-  "version": "1.40.5",
+  "version": "1.41.4",
   "description": "Platforma.bio SDK / Block Model",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
@@ -14,12 +14,11 @@
     }
   },
   "scripts": {
-    "generate-src": "node ./scripts/save-package-version.cjs",
     "type-check": "tsc --noEmit --composite false",
     "build": "vite build",
     "watch": "vite build --watch",
     "lint": "eslint .",
-    "test": "node ./scripts/save-package-version.cjs && jest",
+    "test": "jest",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "files": [
@@ -43,6 +42,7 @@
     "@types/jest": "catalog:",
     "jest": "catalog:",
     "@jest/globals": "catalog:",
-    "ts-jest": "catalog:"
+    "ts-jest": "catalog:",
+    "fast-json-patch": "catalog:"
   }
 }

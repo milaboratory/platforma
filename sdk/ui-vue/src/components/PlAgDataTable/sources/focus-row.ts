@@ -1,32 +1,44 @@
 import type { GridApi, IRowNode } from 'ag-grid-enterprise';
-import { nextTick, shallowRef, watch } from 'vue';
+import { Deferred } from '@milaboratories/helpers';
 
-export function makeOnceTracker<TContext = undefined>() {
-  const state = shallowRef<[false, undefined] | [true, TContext]>([false, undefined]);
-  const track = (ctx: TContext): void => {
-    state.value = [true, ctx];
-  };
-  const reset = (): void => {
-    state.value = [false, undefined];
-  };
-  const onceTracked = (callback: (ctx: TContext) => void) => {
-    const handle = watch(
-      state,
-      ([tracked, context]) => {
-        if (tracked) {
-          callback(context);
-          nextTick(() => handle.stop());
-        }
-      },
-      { immediate: true },
-    );
-    return handle;
-  };
-  return { track, reset, onceTracked };
+class DeferredTracked<T> extends Deferred<T> {
+  #resolved = false;
+
+  constructor() {
+    super();
+    this.promise.finally(() => {
+      this.#resolved = true;
+    });
+  }
+
+  public get resolved(): boolean {
+    return this.#resolved;
+  }
 }
-export type OnceTracker<TContext = undefined> = ReturnType<typeof makeOnceTracker<TContext>>;
 
-function ensureNodeVisible<TData>(api: GridApi<TData>, selector: (row: IRowNode<TData>) => boolean): void {
+export class DeferredCircular<T> {
+  private deferred = new DeferredTracked<T>();
+
+  public get promise(): Promise<T> {
+    return this.deferred.promise;
+  }
+
+  public resolve(ctx: T): void {
+    this.deferred.resolve(ctx);
+  }
+
+  public get resolved(): boolean {
+    return this.deferred.resolved;
+  }
+
+  public reset(): void {
+    if (this.resolved) {
+      this.deferred = new DeferredTracked<T>();
+    }
+  }
+}
+
+export function ensureNodeVisible<TData>(api: GridApi<TData>, selector: (row: IRowNode<TData>) => boolean): boolean {
   let rowIndex: number | null = null;
   const nodeSelector = (row: IRowNode<TData>): boolean => {
     if (selector(row)) {
@@ -43,16 +55,5 @@ function ensureNodeVisible<TData>(api: GridApi<TData>, selector: (row: IRowNode<
       api.setFocusedCell(rowIndex, columns[0]);
     }
   }
+  return rowIndex !== null;
 };
-
-export async function focusRow<TData>(
-  selector: (row: IRowNode<TData>) => boolean,
-  tracker: OnceTracker<GridApi<TData>>,
-): Promise<void> {
-  return new Promise((resolve) => {
-    nextTick(() => tracker.onceTracked((gridApi) => {
-      ensureNodeVisible(gridApi, selector);
-      resolve();
-    }));
-  });
-}

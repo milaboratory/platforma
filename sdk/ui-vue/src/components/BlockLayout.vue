@@ -43,7 +43,7 @@ const progress = computed(() => app.value?.progress?.());
 <template>
   <div class="block block__layout">
     <BlockLoader :value="progress" />
-    <div v-if="sdk.error">{{ sdk.error }}</div>
+    <div v-if="sdk.error" :class="$style.error">{{ sdk.error }}</div>
     <LoaderPage v-else-if="!sdk.loaded">Loading...</LoaderPage>
     <component :is="CurrentView" v-else-if="CurrentView" :key="href" />
     <NotFound v-else />
@@ -52,3 +52,11 @@ const progress = computed(() => app.value?.progress?.());
   <!-- Plugins -->
   <MonetizationSidebar v-if="CurrentView" />
 </template>
+
+<style module>
+.error {
+  color: red;
+  font-weight: bold;
+  padding: 24px;
+}
+</style>

@@ -42,7 +42,6 @@ export function times<R>(n: number, cb: (i: number) => R): R[] {
 }
 
 export const $BlockArgs = z.object({
-  tableNumRows: z.number().default(100),
   numbers: z.array(z.coerce.number()),
   handles: z.array(ImportFileHandleSchema),
 });
@@ -52,9 +51,14 @@ export type BlockArgs = z.infer<typeof $BlockArgs>;
 export type UiState = {
   dataTableV2: {
     sourceId?: string;
+    numRows: number;
     state: PlDataTableStateV2;
   };
   dynamicSections: {
+    id: string;
+    label: string;
+  }[];
+  datasets: {
     id: string;
     label: string;
   }[];
@@ -62,14 +66,16 @@ export type UiState = {
 
 export const platforma = BlockModel.create('Heavy')
 
-  .withArgs<BlockArgs>({ numbers: [1, 2, 3, 4], tableNumRows: 100, handles: [] })
+  .withArgs<BlockArgs>({ numbers: [1, 2, 3, 4], handles: [] })
 
   .withUiState<UiState>({
     dataTableV2: {
       sourceId: 'source_1',
+      numRows: 200,
       state: createPlDataTableStateV2(),
     },
     dynamicSections: [],
+    datasets: [],
   })
 
   .argsValid((ctx) => {
@@ -89,7 +95,7 @@ export const platforma = BlockModel.create('Heavy')
   })
 
   .output('ptV2Sheets', (ctx) => {
-    const rowCount = ctx.args.tableNumRows ?? 0;
+    const rowCount = ctx.uiState.dataTableV2.numRows ?? 0;
     const sheets = [
       {
         axis: {
@@ -110,7 +116,7 @@ export const platforma = BlockModel.create('Heavy')
   })
 
   .output('ptV2', (ctx) => {
-    const rowCount = ctx.args.tableNumRows ?? 0;
+    const rowCount = ctx.uiState.dataTableV2.numRows ?? 0;
     const makePartitionId = (rowCount: number, i: number) => Math.floor((2 * i) / (rowCount + 1));
     const columns: PColumn<PColumnValues>[] = [
       {
@@ -122,6 +128,7 @@ export const platforma = BlockModel.create('Heavy')
           annotations: {
             'pl7.app/label': 'String column',
             'pl7.app/discreteValues': '["up","down"]',
+            'pl7.app/table/orderPriority': '101',
           },
           axesSpec: [
             {
@@ -158,6 +165,7 @@ export const platforma = BlockModel.create('Heavy')
           annotations: {
             'pl7.app/label': 'Float column',
             'pl7.app/table/visibility': 'optional',
+            'pl7.app/table/orderPriority': '100',
           },
           axesSpec: [
             {
@@ -212,17 +220,16 @@ export const platforma = BlockModel.create('Heavy')
           };
         }),
       },
-    ];
-    for (let j = 3; j < 10; ++j) {
-      columns.push({
-        id: `column${j}` as PObjectId,
+      {
+        id: 'linkerColumn' as PObjectId,
         spec: {
           kind: 'PColumn',
-          valueType: 'String',
-          name: 'value',
+          valueType: 'Int',
+          name: 'linker',
           annotations: {
-            'pl7.app/label': `Alphabetical column ${j - 2}`,
-            'pl7.app/table/visibility': 'optional',
+            'pl7.app/label': 'Index axis linker',
+            'pl7.app/isLinkerColumn': 'true',
+            'pl7.app/table/visibility': 'hidden',
           },
           axesSpec: [
             {
@@ -230,6 +237,44 @@ export const platforma = BlockModel.create('Heavy')
               name: 'index',
               annotations: {
                 'pl7.app/label': 'Int axis',
+              },
+            },
+            {
+              type: 'Int',
+              name: 'linkedIndex',
+              annotations: {
+                'pl7.app/label': 'Linked int axis',
+              },
+            },
+          ],
+        },
+        data: times(rowCount, (i) => {
+          const v = i + 1;
+          return {
+            key: [v, v],
+            val: 1,
+          };
+        }),
+      },
+    ];
+    for (let j = 1; j < 10; ++j) {
+      columns.push({
+        id: `alphabeticalColumn${j}` as PObjectId,
+        spec: {
+          kind: 'PColumn',
+          valueType: 'String',
+          name: 'value',
+          annotations: {
+            'pl7.app/label': `Alphabetical column ${j}`,
+            'pl7.app/table/visibility': 'optional',
+            'pl7.app/table/orderPriority': (10 - j).toString(),
+          },
+          axesSpec: [
+            {
+              type: 'Int',
+              name: 'linkedIndex',
+              annotations: {
+                'pl7.app/label': 'Linked int axis',
               },
             },
           ],
@@ -272,6 +317,7 @@ export const platforma = BlockModel.create('Heavy')
     return [
       { type: 'link', href: '/loaders', label: 'Loaders' },
       { type: 'link', href: '/', label: 'Icons/Masks' },
+      { type: 'link', href: '/state', label: 'State' },
       { type: 'link', href: '/layout', label: 'Layout' },
       { type: 'link', href: '/form-components', label: 'Form Components' },
       { type: 'link', href: '/log-view', label: 'PlLogView' },
@@ -312,7 +358,7 @@ export const platforma = BlockModel.create('Heavy')
     ];
   })
 
-  .done();
+  .done(2); // api version 2
 
 export type BlockOutputs = InferOutputsType<typeof platforma>;
 export type Href = InferHrefType<typeof platforma>;

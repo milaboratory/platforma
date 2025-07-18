@@ -1,5 +1,48 @@
 # @platforma-sdk/model
 
+## 1.41.4
+
+### Patch Changes
+
+- 41140f4: PlAgDataTableV2 - selection & focusRow updated
+
+## 1.41.3
+
+### Patch Changes
+
+- d469422: Use package version from json
+
+## 1.41.2
+
+### Patch Changes
+
+- 28b630f: update isLinkerColumn
+
+## 1.41.1
+
+### Patch Changes
+
+- e48177a: Small fix (remove package self-reference)
+
+## 1.41.0
+
+### Minor Changes
+
+- e7c0edb: Platforma API v2 (long pooling) + support v1 api in sdk
+
+### Patch Changes
+
+- Updated dependencies [e7c0edb]
+  - @milaboratories/pl-model-common@1.17.0
+
+## 1.40.6
+
+### Patch Changes
+
+- 9bb26ff: PlAgDataTableV2 - linker columns handling fix
+- Updated dependencies [9bb26ff]
+  - @milaboratories/pl-model-common@1.16.5
+
 ## 1.40.5
 
 ### Patch Changes

@@ -107,9 +107,9 @@ export type ResultOrError<S, F = Error> = {
   error: F;
 };
 
-export function unwrapResult<T>(result: ResultOrError<T>): T {
+export function unwrapResult<T>(result: ResultOrError<T, Error | SerializedError>): T {
   if (result.error) {
-    throw result.error;
+    throw result.error instanceof Error ? result.error : deserializeError(result.error);
   }
   return result.value;
 }
