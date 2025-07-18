@@ -5,7 +5,7 @@ import { getPlatformaInstance, isInUI, tryRegisterCallback } from './internal';
 import type { Platforma, PlatformaApiVersion, PlatformaV1, PlatformaV2 } from './platforma';
 import type { InferRenderFunctionReturn, RenderFunction } from './render';
 import { RenderCtx } from './render';
-import { PlatformaSDKVersion } from './generated/version';
+import { PlatformaSDKVersion } from './version';
 import type {
   TypedConfigOrConfigLambda,
   ConfigRenderLambda,
