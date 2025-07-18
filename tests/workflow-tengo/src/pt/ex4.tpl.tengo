@@ -1,0 +1,52 @@
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+pt := import("@platforma-sdk/workflow-tengo:pt")
+file := import("@platforma-sdk/workflow-tengo:file")
+
+self.defineOutputs("out_substr_len", "out_substr_end", "out_substr_static")
+
+self.body(func(inputs) {
+    tsvInput := inputs.inputTsv
+
+    wf := pt.workflow()
+
+    df := wf.frame(tsvInput, {
+        xsvType: "tsv"
+    })
+
+    // Using length with map syntax
+    dfSubstrLen := df.withColumns(
+        pt.col("text").strSlice(pt.col("start"), {length: pt.col("len")}).alias("sub")
+    ).select(
+        "text",
+        "sub"
+    )
+
+    // Using end with map syntax
+    dfSubstrEnd := df.withColumns(
+        pt.col("text").strSlice(pt.col("start"), {end: pt.col("end")}).alias("sub")
+    ).select(
+        "text",
+        "sub"
+    )
+
+    // Using static values with direct length parameter
+    dfSubstrStatic := df.withColumns(
+        pt.col("text").strSlice(1, 4).alias("sub")
+    ).select(
+        "text",
+        "sub"
+    )
+
+    dfSubstrLen.save("output_substr_len.tsv")
+    dfSubstrEnd.save("output_substr_end.tsv")
+    dfSubstrStatic.save("output_substr_static.tsv")
+
+    ptablerResult := wf.run()
+
+    return {
+        out_substr_len: file.exportFile(ptablerResult.getFile("output_substr_len.tsv")),
+        out_substr_end: file.exportFile(ptablerResult.getFile("output_substr_end.tsv")),
+        out_substr_static: file.exportFile(ptablerResult.getFile("output_substr_static.tsv"))
+    }
+})

@@ -314,36 +314,41 @@ _newExpression = func(expression, currentAlias) {
 
 		/**
 		 * Extracts a substring from this string expression.
-		 * @param start - int - The starting index (0-based).
-		 * @param lengthArgs - int (optional) - The length of the substring. If not provided, slices to the end.
+		 * @param start - int|string|Expr - The starting index (0-based). Can be a literal integer, column name (string), or expression object.
+		 * @param args - int|string|Expr|map (optional) - Either:
+		 *   - A length value (integer, column name, or expression object) for the substring length
+		 *   - A map with either 'length' or 'end' key:
+		 *     - length: int|string|Expr - The length of the substring
+		 *     - end: int|string|Expr - The index before which to end the substring (exclusive)
 		 * @returns {object} - A new expression object representing the substring.
 		 */
-		strSlice: func(start, ...lengthArgs) { // Primary method with optional length via varargs
-			ll.assert(is_int(start), "start must be an integer")
-			ll.assert(len(lengthArgs) <= 1, "strSlice expects at most one optional length argument.")
+		strSlice: func(start, ...args) {
+			ll.assert(len(args) <= 1, "strSlice expects at most one additional argument.")
 
-			exprDetails := {type: "substring", value: expression, start: start}
-			if len(lengthArgs) == 1 {
-				lengthVal := lengthArgs[0]
-				ll.assert(is_int(lengthVal), "length, if provided, must be an integer")
-				exprDetails.length = lengthVal
+			expr := {
+				type: "substring",
+				value: expression,
+				start: _mapToSingleExpressionStruct(start, "col")
 			}
-			// If lengthArgs is empty, the PTabler backend should interpret this as slicing to the end.
-			return _newExpression(exprDetails, undefined)
-		},
 
-		/**
-		 * Extracts a substring from this string expression using start and end indices.
-		 * @param start - int - The starting index (0-based).
-		 * @param endIdx - int - The ending index (exclusive).
-		 * @returns {object} - A new expression object representing the substring.
-		 */
-		strSliceEnd: func(start, endIdx) { // Method with end index
-			ll.assert(is_int(start), "start must be an integer")
-			ll.assert(is_int(endIdx), "endIdx must be an integer")
+			if len(args) > 0 {
+				arg := args[0]
+				if is_map(arg) {
+					if arg.length != undefined && arg.end != undefined {
+						ll.panic("strSlice cannot have both 'length' and 'end' options.")
+					}
+					if !is_undefined(arg.length) {
+						expr.length = _mapToSingleExpressionStruct(arg.length, "col")
+					}
+					if !is_undefined(arg.end) {
+						expr.end = _mapToSingleExpressionStruct(arg.end, "col")
+					}
+				} else {
+					expr.length = _mapToSingleExpressionStruct(arg, "col")
+				}
+			}
 
-			exprDetails := {type: "substring", value: expression, start: start, end: endIdx}
-			return _newExpression(exprDetails, undefined)
+			return _newExpression(expr, undefined)
 		},
 
 		/**
@@ -381,6 +386,23 @@ _newExpression = func(expression, currentAlias) {
 				replaceAll: replaceAllVal,
 				literal: literalVal
 			}, undefined)
+		},
+
+		/**
+		 * Replaces all occurrences of a pattern in this string expression with a replacement string.
+		 * @param pattern - string|object - The pattern (string literal, regex, or an expression object evaluating to a string) to search for.
+		 * @param replacement - string|object - The replacement string (string literal or an expression object evaluating to a string). Can use $n or ${name} for regex capture groups.
+		 * @param options - map (optional) - An optional map with options:
+		 *   - literal (boolean, optional): If true, treat pattern as a literal string. Defaults to false (pattern is regex).
+		 * @returns {object} - A new expression object representing the replacement.
+		 */
+		strReplaceAll: func(pattern, replacement, ...options) {
+			opts := {}
+			if len(options) > 0 {
+				opts = options[0]
+			}
+			opts.replaceAll = true
+			return self.strReplace(pattern, replacement, opts)
 		},
 
 		// Fuzzy string
@@ -571,6 +593,13 @@ _newExpression = func(expression, currentAlias) {
 				partitionBy: [],
 				descending: descendingVal
 			}, undefined, undefined)
+		},
+
+
+
+		/** Converts the expression to a string. */
+		toString: func() {
+			return self.cast("string")
 		}
 	})
 	return self
