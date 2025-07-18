@@ -385,7 +385,6 @@ defineExpose<PlAgDataTableV2Controller>({
       } finally {
         scope.stop();
       }
-      scope.stop();
     }
     return true;
   },
