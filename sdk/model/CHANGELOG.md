@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.41.4
+
+### Patch Changes
+
+- 41140f4: PlAgDataTableV2 - selection & focusRow updated
+
 ## 1.41.3
 
 ### Patch Changes
