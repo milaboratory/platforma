@@ -49,7 +49,7 @@ function getKeysCombinations(idsLists: AxisId[][]) {
 
 /** Check if column is a linker column */
 export function isLinkerColumn(column: PColumnSpec) {
-  return column.axesSpec.length === 2 && column.annotations?.[LINKER_COLUMN_ANNOTATION] === 'true';
+  return column.annotations?.[LINKER_COLUMN_ANNOTATION] === 'true';
 }
 
 export const IS_VIRTUAL_COLUMN = 'pl7.app/graph/isVirtual'; // annotation for column duplicates with extended domains
