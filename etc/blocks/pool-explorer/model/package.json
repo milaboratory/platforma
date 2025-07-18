@@ -2,7 +2,6 @@
   "name": "@milaboratories/milaboratories.pool-explorer.model",
   "version": "1.0.71",
   "description": "Block model",
-  "type": "module",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",

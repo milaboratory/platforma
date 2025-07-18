@@ -15,6 +15,7 @@ export const createViteLibConfig = ((configEnv: ConfigEnv) => {
     build: {
       lib: {
         fileName: 'lib',
+        formats: ['es'],
       },
       cssCodeSplit: true,
       rollupOptions: {

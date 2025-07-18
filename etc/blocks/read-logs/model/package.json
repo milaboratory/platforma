@@ -3,7 +3,6 @@
   "version": "1.0.34",
   "private": true,
   "description": "Block model",
-  "type": "module",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",

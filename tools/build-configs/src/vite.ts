@@ -9,6 +9,7 @@ export function PlViteStdNode(overrideConfig?: UserConfig) {
       lib: {
         entry: './src/index.ts',
         fileName: 'index',
+        formats: ['es', 'cjs'],
       },
       sourcemap: true,
       rollupOptions: {
