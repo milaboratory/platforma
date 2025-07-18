@@ -1,3 +1,3 @@
-import { PlViteStdNode } from '@milaboratories/build-configs/vite';
+import { createViteBlockModelConfig } from '@milaboratories/build-configs';
 
-export default PlViteStdNode();
+export default createViteBlockModelConfig();
