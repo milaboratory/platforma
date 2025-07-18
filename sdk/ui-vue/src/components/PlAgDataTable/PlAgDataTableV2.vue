@@ -8,6 +8,7 @@ import type {
   PlTableColumnIdJson,
   PTableColumnSpec,
   PTableKey,
+  PTableValue,
 } from '@platforma-sdk/model';
 import {
   getRawPlatformaInstance,
@@ -54,6 +55,7 @@ import type {
   PlTableRowIdJson,
 } from './types';
 import { watchCached } from '@milaboratories/uikit';
+import { isPTableHidden, type PTableHidden } from './sources/common';
 
 const tableState = defineModel<PlDataTableStateV2>({
   required: true,
@@ -379,7 +381,56 @@ defineExpose<PlAgDataTableV2Controller>({
     }
     return true;
   },
+  getRowCount: async () => {
+    const gridApi = await dataRenderedTracker.promise;
+    if (gridApi.isDestroyed()) return;
+
+    return gridApi.getDisplayedRowCount();
+  },
+  getRow: async (index) => {
+    const gridApi = await dataRenderedTracker.promise;
+    if (gridApi.isDestroyed()) return;
+
+    const visibleColumns: {
+      spec: PTableColumnSpec;
+      field: `${number}`;
+    }[] = getDataColDefs(gridApi.getColumnDefs())
+      .filter((def) => !def.hide)
+      .map((def) => ({
+        spec: parseJson(def.colId! satisfies string as PlTableColumnIdJson).labeled,
+        field: def.field! as `${number}`,
+      }));
+
+    const row = Array.isArray(index)
+      ? gridApi.getRowNode(canonicalizeJson<PlTableRowId>(index))
+      : gridApi.getDisplayedRowAtIndex(index);
+    if (!row) return;
+
+    const rowData = row.data;
+    if (!rowData) return;
+
+    const getTableValue = (value: PTableValue | PTableHidden): PTableValue => {
+      if (isPTableHidden(value)) throw new Error('hidden value was not filtered out');
+      return value;
+    };
+
+    const spec: PTableColumnSpec[] = visibleColumns.map((column) => column.spec);
+    const data: PTableValue[] = visibleColumns.map((column) => getTableValue(rowData[column.field]));
+    return { spec, data };
+  },
 });
+
+function getDataColDefs(
+  columnDefs: ColDef<PlAgDataTableV2Row, PTableValue | PTableHidden>[] | null | undefined,
+): ColDef<PlAgDataTableV2Row, PTableValue | PTableHidden>[] {
+  const isColDef = <TData, TValue>(
+    def: ColDef<TData, TValue> | ColGroupDef<TData>,
+  ): def is ColDef<TData, TValue> => !('children' in def);
+  if (!columnDefs) return [];
+  return columnDefs
+    .filter(isColDef)
+    .filter((def) => def.colId && def.colId !== PlAgDataTableRowNumberColId);
+}
 
 // Propagate columns for filter component
 watchCached(
@@ -389,16 +440,9 @@ watchCached(
     if (sourceId === null) {
       filterableColumns.value = [];
     } else {
-      const isColDef = (def: ColDef | ColGroupDef): def is ColDef =>
-        !('children' in def);
-      const colDefs = columnDefs?.filter(isColDef) ?? [];
-      const columns = colDefs
-        .map((def) => def.colId)
-        .filter((colId) => colId !== undefined)
-        .filter((colId) => colId !== PlAgDataTableRowNumberColId)
-        .map((colId) => parseJson(colId as PlTableColumnIdJson))
-        ?? [];
-      filterableColumns.value = columns.map((column) => column.labeled);
+      const dataColumns = getDataColDefs(columnDefs);
+      filterableColumns.value = dataColumns
+        .map((def) => parseJson(def.colId! satisfies string as PlTableColumnIdJson).labeled);
     }
   },
   { immediate: true },

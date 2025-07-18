@@ -2,6 +2,7 @@ import type {
   AxesSpec,
   PTableColumnId,
   PTableColumnSpecColumn,
+  PTableValue,
 } from '@platforma-sdk/model';
 import {
   canonicalizeJson,
@@ -197,7 +198,7 @@ export async function calculateGridOptions({
     }
     return i;
   });
-  const columnDefs: ColDef<PlAgDataTableV2Row>[] = [
+  const columnDefs: ColDef<PlAgDataTableV2Row, PTableValue | PTableHidden>[] = [
     makeRowNumberColDef(),
     ...fields.map((field, index) => makeColDef(field, specs[field], specs[indices[index]], hiddenColIds, cellButtonAxisParams)),
   ];
@@ -306,7 +307,7 @@ export function makeColDef(
   labeledSpec: PTableColumnSpec,
   hiddenColIds: PlTableColumnIdJson[] | undefined,
   cellButtonAxisParams?: PlAgCellButtonAxisParams,
-): ColDef {
+): ColDef<PlAgDataTableV2Row, PTableValue | PTableHidden> {
   const colId = canonicalizeJson<PlTableColumnId>({
     source: spec,
     labeled: labeledSpec,
@@ -326,8 +327,8 @@ export function makeColDef(
     colId,
     mainMenuItems: defaultMainMenuItems,
     context: spec,
-    field: iCol.toString(),
-    headerName: labeledSpec.spec.annotations?.['pl7.app/label']?.trim() ?? 'Unlabeled ' + spec.type + ' ' + iCol.toString(),
+    field: `${iCol}`,
+    headerName: labeledSpec.spec.annotations?.['pl7.app/label']?.trim() ?? `Unlabeled ${spec.type} ${iCol}`,
     lockPosition: spec.type === 'axis',
     hide: hiddenColIds?.includes(colId) ?? isColumnOptional(spec.spec),
     valueFormatter: columnRenderingSpec.valueFormatter,
