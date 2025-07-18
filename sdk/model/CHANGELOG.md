@@ -1,5 +1,13 @@
 # @platforma-sdk/model
 
+## 1.41.6
+
+### Patch Changes
+
+- c29b40f: use uniq custom condition
+  - @milaboratories/pl-model-common@1.17.0
+  - @milaboratories/pl-error-like@1.12.2
+
 ## 1.41.4
 
 ### Patch Changes

@@ -1,5 +1,25 @@
 # @milaboratories/pl-middle-layer
 
+## 1.40.6
+
+### Patch Changes
+
+- Updated dependencies [c29b40f]
+  - @platforma-sdk/model@1.41.6
+  - @milaboratories/pl-model-backend@1.1.2
+  - @milaboratories/pl-model-common@1.17.0
+  - @milaboratories/pl-model-middle-layer@1.8.0
+  - @milaboratories/computable@2.6.0
+  - @milaboratories/pl-client@2.11.4
+  - @milaboratories/pl-config@1.6.1
+  - @milaboratories/pl-deployments@2.4.5
+  - @milaboratories/pl-drivers@1.6.10
+  - @milaboratories/pl-errors@1.1.11
+  - @milaboratories/pl-http@1.1.4
+  - @milaboratories/pl-tree@1.7.2
+  - @milaboratories/ts-helpers@1.4.1
+  - @platforma-sdk/block-tools@2.5.71
+
 ## 1.40.5
 
 ### Patch Changes
