@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.41.2
+
+### Patch Changes
+
+- 28b630f: update isLinkerColumn
+
 ## 1.41.1
 
 ### Patch Changes
