@@ -1,14 +1,13 @@
-import { defineConfig, UserConfig } from 'vite';
-import { resolve } from 'node:path';
-import nodeExternals from 'rollup-plugin-node-externals';
 import nodeResolve from '@rollup/plugin-node-resolve';
+import nodeExternals from 'rollup-plugin-node-externals';
+import { defineConfig, UserConfig } from 'vite';
 import dts from 'vite-plugin-dts';
 
 export function PlViteStdNode(overrideConfig?: UserConfig) {
   return defineConfig({
     build: {
       lib: {
-        entry: resolve('src', 'index.ts'),
+        entry: 'src/index.ts',
         fileName: 'index',
         formats: ['es', 'cjs']
       },

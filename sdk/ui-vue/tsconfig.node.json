@@ -1,13 +1,9 @@
 {
+  "extends": "@milaboratories/ts-configs/tsconfig.node.json",
   "compilerOptions": {
-    "composite": false,
-    "skipLibCheck": true,
-    "module": "ESNext",
-    "moduleResolution": "Bundler",
-    "allowSyntheticDefaultImports": true,
-    "strict": true,
-    "noEmit": true,
-    "types": ["node"]
+    "composite": false
   },
-  "include": ["vite.config.ts"]
+  "include": [
+    "vite.config.ts"
+  ]
 }
