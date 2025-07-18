@@ -2261,18 +2261,9 @@ importers:
       '@platforma-sdk/eslint-config':
         specifier: workspace:*
         version: link:../eslint-config
-      '@types/jest':
-        specifier: 'catalog:'
-        version: 29.5.14
       fast-json-patch:
         specifier: 'catalog:'
         version: 3.1.1
-      jest:
-        specifier: 'catalog:'
-        version: 29.7.0(@types/node@22.5.5)(ts-node@10.9.2(@types/node@22.5.5)(typescript@5.6.3))
-      ts-jest:
-        specifier: 'catalog:'
-        version: 29.2.6(@babel/core@7.25.2)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.25.2))(jest@29.7.0(@types/node@22.5.5)(ts-node@10.9.2(@types/node@22.5.5)(typescript@5.6.3)))(typescript@5.6.3)
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
