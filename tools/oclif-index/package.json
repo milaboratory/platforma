@@ -3,6 +3,8 @@
   "version": "1.1.1",
   "private": true,
   "description": "Small script for building static oclif commands indexes",
+  "type": "module",
+  "main": "./dist/index.mjs",
   "scripts": {
     "build": "vite build",
     "test": "true"
@@ -17,13 +19,11 @@
   ],
   "keywords": [],
   "license": "UNLICENSED",
-  "type": "module",
-  "main": "./dist/index.js",
   "oclif": {
     "bin": "oclif-index",
     "commands": {
       "strategy": "single",
-      "target": "./dist/index.js"
+      "target": "./dist/index.mjs"
     }
   },
   "dependencies": {

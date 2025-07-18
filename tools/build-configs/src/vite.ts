@@ -1,19 +1,37 @@
-import { defineConfig, UserConfig } from 'vite';
-import { resolve } from 'node:path';
-import nodeExternals from 'rollup-plugin-node-externals';
 import nodeResolve from '@rollup/plugin-node-resolve';
+import nodeExternals from 'rollup-plugin-node-externals';
+import { defineConfig, mergeConfig, UserConfig } from 'vite';
 import dts from 'vite-plugin-dts';
 
 export function PlViteStdNode(overrideConfig?: UserConfig) {
-  return defineConfig({
+  return defineConfig(mergeConfig({
     build: {
       lib: {
-        entry: resolve('src', 'index.ts'),
+        entry: './src/index.ts',
         fileName: 'index',
         formats: ['es', 'cjs']
       },
       sourcemap: true,
-      rollupOptions: {}
+      rollupOptions: {
+        output: [
+          {
+            format: 'es',
+            preserveModules: true,
+            preserveModulesRoot: 'src',
+            entryFileNames: '[name].mjs',
+            chunkFileNames: '[name]-[hash].mjs',
+            assetFileNames: '[name][extname]'
+          },
+          {
+            format: 'cjs',
+            preserveModules: true,
+            preserveModulesRoot: 'src',
+            entryFileNames: '[name].js',
+            chunkFileNames: '[name]-[hash].js',
+            assetFileNames: '[name][extname]'
+          }
+        ]
+      }
     },
     plugins: [
       nodeExternals(),
@@ -22,6 +40,5 @@ export function PlViteStdNode(overrideConfig?: UserConfig) {
         staticImport: true
       })
     ],
-    ...(overrideConfig ?? {})
-  });
+  }, overrideConfig ?? {}));
 }
