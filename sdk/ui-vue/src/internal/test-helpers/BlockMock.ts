@@ -58,6 +58,11 @@ export abstract class BlockMock<
     });
   }
 
+  async dispose(): Promise<ResultOrError<void>> {
+    console.log('unused');
+    return { value: undefined };
+  }
+
   get uTag(): string {
     return this.state.uTag;
   }

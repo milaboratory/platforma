@@ -19,6 +19,13 @@ export type PlSelectionModel = {
   selectedKeys: PTableKey[];
 };
 
+export function createPlSelectionModel(): PlSelectionModel {
+  return {
+    axesSpec: [],
+    selectedKeys: [],
+  };
+}
+
 export function mapPTableValueToAxisKey(value: PTableValue): AxisValue {
   if (value === PTableNA) {
     console.error('Axis value can never be N/A');
