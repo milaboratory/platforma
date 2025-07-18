@@ -38,7 +38,7 @@ export class DeferredCircular<T> {
   }
 }
 
-function ensureNodeVisible<TData>(api: GridApi<TData>, selector: (row: IRowNode<TData>) => boolean): boolean {
+export function ensureNodeVisible<TData>(api: GridApi<TData>, selector: (row: IRowNode<TData>) => boolean): boolean {
   let rowIndex: number | null = null;
   const nodeSelector = (row: IRowNode<TData>): boolean => {
     if (selector(row)) {
@@ -57,12 +57,3 @@ function ensureNodeVisible<TData>(api: GridApi<TData>, selector: (row: IRowNode<
   }
   return rowIndex !== null;
 };
-
-export async function focusRow<TData>(
-  selector: (row: IRowNode<TData>) => boolean,
-  dataRenderedTracker: DeferredCircular<GridApi<TData>>,
-): Promise<boolean> {
-  const gridApi = await dataRenderedTracker.promise;
-  if (gridApi.isDestroyed()) return false;
-  return ensureNodeVisible(gridApi, selector);
-}

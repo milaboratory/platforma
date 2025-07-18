@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { isJsonEqual } from '@milaboratories/helpers';
+import { promiseTimeout, isJsonEqual } from '@milaboratories/helpers';
 import type {
   AxisId,
   PlDataTableGridStateCore,
@@ -39,7 +39,7 @@ import PlAgDataTableSheets from './PlAgDataTableSheets.vue';
 import PlOverlayLoading from './PlAgOverlayLoading.vue';
 import PlOverlayNoRows from './PlAgOverlayNoRows.vue';
 import PlAgRowCount from './PlAgRowCount.vue';
-import { focusRow, DeferredCircular } from './sources/focus-row';
+import { DeferredCircular, ensureNodeVisible } from './sources/focus-row';
 import { autoSizeRowNumberColumn, PlAgDataTableRowNumberColId } from './sources/row-number';
 import type { PlAgCellButtonAxisParams } from './sources/table-source-v2';
 import { calculateGridOptions } from './sources/table-source-v2';
@@ -344,10 +344,12 @@ watch(
 );
 
 defineExpose<PlAgDataTableV2Controller>({
-  focusRow: (rowKey) => focusRow(
-    (row) => isJsonEqual(row.data?.axesKey, rowKey),
-    dataRenderedTracker,
-  ),
+  focusRow: async (rowKey) => {
+    const gridApi = await dataRenderedTracker.promise;
+    if (gridApi.isDestroyed()) return false;
+
+    return ensureNodeVisible(gridApi, (row) => isJsonEqual(row.data?.axesKey, rowKey));
+  },
   updateSelection: async ({ axesSpec, selectedKeys }) => {
     const gridApi = await dataRenderedTracker.promise;
     if (gridApi.isDestroyed()) return false;
@@ -376,7 +378,13 @@ defineExpose<PlAgDataTableV2Controller>({
       const scope = effectScope();
       const { resolve, promise } = Promise.withResolvers();
       scope.run(() => watch(selection, resolve, { once: true }));
-      await promise;
+      try {
+        await promiseTimeout(promise, 500);
+      } catch {
+        return false;
+      } finally {
+        scope.stop();
+      }
       scope.stop();
     }
     return true;
