@@ -1,2 +1,2 @@
-declare const PACKAGE_VERSION: string;
-export const PlatformaSDKVersion = PACKAGE_VERSION;
+import { version } from '../package.json';
+export const PlatformaSDKVersion = version;
