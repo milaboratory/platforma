@@ -1,5 +1,17 @@
 # @platforma-sdk/ui-vue
 
+## 1.41.0
+
+### Minor Changes
+
+- e7c0edb: Platforma API v2 (long pooling) + support v1 api in sdk
+
+### Patch Changes
+
+- Updated dependencies [e7c0edb]
+  - @platforma-sdk/model@1.41.0
+  - @milaboratories/uikit@2.3.16
+
 ## 1.40.6
 
 ### Patch Changes
