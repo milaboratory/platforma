@@ -10,7 +10,7 @@ import {
   FrontendFromFolderResourceType,
   FrontendFromUrlResourceType,
 } from '../model';
-import type { PathResult } from '@milaboratories/pl-drivers';
+import type { UrlResult } from '@milaboratories/pl-drivers';
 import { projectFieldName } from '../model/project_model';
 import { BlockPackFrontendField } from '../mutator/block-pack/block_pack';
 import { getBlockPackInfo } from './util';
@@ -19,12 +19,12 @@ import type { FrontendData } from '../model/frontend';
 function kernel(
   frontendRes: PlTreeEntryAccessor,
   env: MiddleLayerEnvironment,
-): undefined | string | ComputableStableDefined<PathResult> {
+): undefined | string | ComputableStableDefined<UrlResult> {
   const node = frontendRes.node();
   if (resourceTypesEqual(node.resourceType, FrontendFromUrlResourceType)) {
     const data = node.getDataAsJson<FrontendFromUrlData>();
     if (data === undefined) throw new Error(`No resource data.`);
-    return env.frontendDownloadDriver.getPath(new URL(data.url)).withStableType();
+    return env.frontendDownloadDriver.getUrl(new URL(data.url)).withStableType();
   } else if (resourceTypesEqual(node.resourceType, FrontendFromFolderResourceType)) {
     const data = node.getDataAsJson<FrontendFromFolderData>();
     if (data === undefined) throw new Error(`No resource data.`);
@@ -39,7 +39,7 @@ function kernel(
   }
 }
 
-function frontendPathComputable(
+function frontendUrlComputable(
   entry: PlTreeEntry | undefined,
   env: MiddleLayerEnvironment,
 ): ComputableStableDefined<string> | undefined {
@@ -53,7 +53,7 @@ function frontendPathComputable(
         if (v === undefined) return undefined;
         if (typeof v === 'string') return v;
         if (v.error !== undefined) throw new Error(v.error);
-        return v.path;
+        return v.url;
       },
     },
   ).withStableType();
@@ -79,7 +79,7 @@ export function frontendData(
         )
         ?.persist();
       return {
-        path: frontendPathComputable(frontendEntry, env),
+        url: frontendUrlComputable(frontendEntry, env),
         sdkVersion: bp?.cfg.sdkVersion,
       };
     },

@@ -2,6 +2,7 @@ import type { TemporalSynchronizedTreeOps } from './types';
 import type {
   DownloadBlobToURLDriverOps,
   DownloadDriverOps,
+  DownloadUrlDriverOps,
   OpenFileDialogCallback,
   VirtualLocalStorageSpec,
 } from '@milaboratories/pl-drivers';
@@ -79,6 +80,13 @@ export type DriverKitOpsSettings = {
   readonly blobDriverOps: DownloadDriverOps;
 
   //
+  // Frontend Driver
+  //
+
+  /** Settings related to the frontend driver that downloads frontends. */
+  readonly frontendDownloadDriverOps: DownloadUrlDriverOps;
+
+  //
   // Blob To URL Driver
   //
 
@@ -128,6 +136,7 @@ export const DefaultDriverKitOpsSettings: Pick<
   DriverKitOpsSettings,
   | 'logger'
   | 'blobDriverOps'
+  | 'frontendDownloadDriverOps'
   | 'downloadBlobToURLDriverOps'
   | 'uploadDriverOps'
   | 'logStreamDriverOps'
@@ -138,6 +147,11 @@ export const DefaultDriverKitOpsSettings: Pick<
     cacheSoftSizeBytes: 8 * 1024 * 1024 * 1024, // 8 GB
     rangesCacheMaxSizeBytes: 8 * 1024 * 1024 * 1024, // 8 GB
     nConcurrentDownloads: 10,
+  },
+  frontendDownloadDriverOps: {
+    cacheSoftSizeBytes: 1 * 1024 * 1024 * 1024, // 1 GB
+    withGunzip: true,
+    nConcurrentDownloads: 50,
   },
   downloadBlobToURLDriverOps: {
     cacheSoftSizeBytes: 1 * 1024 * 1024 * 1024, // 1 GB
