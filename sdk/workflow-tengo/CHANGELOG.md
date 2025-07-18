@@ -1,5 +1,12 @@
 # @platforma-sdk/workflow-tengo
 
+## 4.11.0
+
+### Minor Changes
+
+- a6a91a3: - Support for expressions in pt.slice\* functions
+  - New pt.replaceAll and pt.substring functions
+
 ## 4.10.0
 
 ### Minor Changes
