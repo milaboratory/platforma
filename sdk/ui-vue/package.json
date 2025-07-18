@@ -6,7 +6,7 @@
   "styles": "dist/lib.js",
   "exports": {
     ".": {
-      "development": "./src/lib.ts",
+      "sources": "./src/lib.ts",
       "default": "./dist/lib.js"
     },
     "./styles": "./dist/lib.js"
