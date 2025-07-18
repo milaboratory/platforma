@@ -100,6 +100,14 @@ createBinaryMapResource := undefined
  */
 createBlobMapResource := undefined
 
+/**
+ * Create error resource
+ *
+ * @param error error message
+ * @return resource
+ */
+createErrorResource := undefined
+
 ////////////////// helpers ///////////////////////////
 
 /**
@@ -463,6 +471,21 @@ resource = func(r) {
 				ll.panic("no error set in resource")
 			}
 			return self.getField("resourceError").getError()
+		},
+
+		/**
+		 * Set error for the resource
+		 *
+		 * @param error resource or string
+		 */
+		setError: func(error) {
+			if isResource(error) {
+				tx.setResourceError(id, error.id)
+			} else if is_string(error) {
+				tx.setResourceError(id, createErrorResource(error).id)
+			} else {
+				ll.panic("error should be a resource or a string")
+			}
 		},
 
 		_hasField: func(fieldMapName, fieldName) {
@@ -1530,6 +1553,11 @@ createBinaryMapResource = func(keyToValue) {
 
 createBlobMapResource = func(keyToValue) {
 	return createMapResourceWithType(constants.RTYPE_BLOB_MAP, keyToValue)
+}
+
+createErrorResource = func(error) {
+	ll.assert(is_string(error), "error should be a string")
+	return resource(tx.createError(error))
 }
 
 export ll.toStrict({

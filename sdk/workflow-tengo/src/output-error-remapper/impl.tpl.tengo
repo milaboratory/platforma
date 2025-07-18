@@ -1,0 +1,23 @@
+self := import(":tpl.light")
+maps := import(":maps")
+ll := import(":ll")
+
+self.defineOutputs("result")
+
+self.body(func(inputs) {
+	target := self.rawInputs().target
+
+	targetOutputs := target.outputs()
+
+	for outputKey := range maps.getKeys(targetOutputs) {
+		if !is_undefined(targetOutputs[outputKey].getError()) {
+			// propagating the error backwards from the output to the resource
+			target.setError(targetOutputs[outputKey].getError())
+			break
+		}
+	}
+
+	return {
+		result: target
+	}
+})
