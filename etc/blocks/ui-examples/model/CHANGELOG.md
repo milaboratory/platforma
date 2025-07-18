@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.ui-examples.model
 
+## 1.2.15
+
+### Patch Changes
+
+- 41140f4: PlAgDataTableV2 - selection & focusRow updated
+- Updated dependencies [41140f4]
+  - @platforma-sdk/model@1.41.4
+
 ## 1.2.14
 
 ### Patch Changes

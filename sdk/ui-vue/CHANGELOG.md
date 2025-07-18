@@ -1,5 +1,14 @@
 # @platforma-sdk/ui-vue
 
+## 1.41.4
+
+### Patch Changes
+
+- 41140f4: PlAgDataTableV2 - selection & focusRow updated
+- Updated dependencies [41140f4]
+  - @platforma-sdk/model@1.41.4
+  - @milaboratories/uikit@2.3.20
+
 ## 1.41.3
 
 ### Patch Changes
