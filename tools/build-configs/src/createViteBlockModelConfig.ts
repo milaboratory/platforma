@@ -11,30 +11,23 @@ export function createViteBlockModelConfig(overrideConfig?: UserConfig) {
       sourcemap: true,
       rollupOptions: {
         output: [
-          {
-            format: 'es',
-            // preserveModules: true,
-            // preserveModulesRoot: 'src',
-            // entryFileNames: '[name].mjs',
-            // chunkFileNames: '[name]-[hash].mjs',
-            // assetFileNames: '[name][extname]'
-          },
-          {
-            format: 'cjs',
-            // preserveModules: true,
-            // preserveModulesRoot: 'src',
-            // entryFileNames: '[name].js',
-            // chunkFileNames: '[name]-[hash].js',
-            // assetFileNames: '[name][extname]'
-          },
+          // {
+          //   format: 'es',
+          //   preserveModules: true,
+          //   preserveModulesRoot: 'src',
+          //   entryFileNames: '[name].js',
+          //   chunkFileNames: '[name]-[hash].js',
+          //   assetFileNames: '[name][extname]',
+          // },
           {
             format: 'umd',
             name: 'block-model',
             entryFileNames: 'bundle.js',
           }
         ]
-      }
+      },
+      plugins: [dts({staticImport: true})],
+
     },
-    plugins: [dts({staticImport: true})],
   }, overrideConfig ?? {}));
 }

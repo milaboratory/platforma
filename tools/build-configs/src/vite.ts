@@ -9,26 +9,25 @@ export function PlViteStdNode(overrideConfig?: UserConfig) {
       lib: {
         entry: './src/index.ts',
         fileName: 'index',
-        // formats: ['es', 'cjs'],
       },
       sourcemap: true,
       rollupOptions: {
         output: [
           {
             format: 'es',
-            // preserveModules: true,
-            // preserveModulesRoot: 'src',
-            // entryFileNames: '[name].mjs',
-            // chunkFileNames: '[name]-[hash].mjs',
-            // assetFileNames: '[name][extname]'
+            preserveModules: true,
+            preserveModulesRoot: 'src',
+            entryFileNames: '[name].mjs',
+            chunkFileNames: '[name]-[hash].mjs',
+            assetFileNames: '[name][extname]'
           },
           {
             format: 'cjs',
-            // preserveModules: true,
-            // preserveModulesRoot: 'src',
-            // entryFileNames: '[name].js',
-            // chunkFileNames: '[name]-[hash].js',
-            // assetFileNames: '[name][extname]'
+            preserveModules: true,
+            preserveModulesRoot: 'src',
+            entryFileNames: '[name].js',
+            chunkFileNames: '[name]-[hash].js',
+            assetFileNames: '[name][extname]'
           }
         ]
       }
@@ -36,9 +35,7 @@ export function PlViteStdNode(overrideConfig?: UserConfig) {
     plugins: [
       nodeExternals(),
       nodeResolve(),
-      dts({
-        staticImport: true
-      })
+      dts({staticImport: true})
     ],
   }, overrideConfig ?? {}));
 }

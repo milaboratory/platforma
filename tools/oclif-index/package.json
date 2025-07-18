@@ -5,6 +5,7 @@
   "description": "Small script for building static oclif commands indexes",
   "type": "module",
   "main": "./dist/index.js",
+  "modeul": "./dist/index.mjs",
   "scripts": {
     "build": "vite build",
     "test": "true"
@@ -23,7 +24,7 @@
     "bin": "oclif-index",
     "commands": {
       "strategy": "single",
-      "target": "./dist/index.js"
+      "target": "./dist/index.mjs"
     }
   },
   "dependencies": {
