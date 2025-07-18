@@ -2,15 +2,12 @@
   "$schema": "https://turbo.build/schema.json",
   "globalDependencies": ["tsconfig.json"],
   "tasks": {
-    "generate-src": {
-      "outputs": ["./src/generated/**"]
-    },
     "lint": {
       "outputs": [],
       "inputs": ["$TURBO_DEFAULT$", "eslint.config.*", ".eslintrc.*"]
     },
     "type-check": {
-      "dependsOn": ["generate-src", "^build"]
+      "dependsOn": ["^build"]
     },
     "build": {
       "outputs": ["./dist/**", "./block-pack/**"],
