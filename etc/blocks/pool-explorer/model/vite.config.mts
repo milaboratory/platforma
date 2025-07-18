@@ -1,20 +1,3 @@
-import { defineConfig } from 'vite';
+import { PlViteStdNode } from '@milaboratories/build-configs/vite';
 
-export default defineConfig({
-  build: {
-    emptyOutDir: false,
-    lib: {
-      entry: 'src/index.ts',
-      name: 'model',
-      fileName: (format) => `my-lib.${format}.js`
-    },
-    minify: false,
-    sourcemap: true,
-    rollupOptions: {
-      output: {
-        format: 'iife',
-        entryFileNames: 'bundle.js'
-      }
-    }
-  }
-});
+export default PlViteStdNode();
