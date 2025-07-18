@@ -42,7 +42,6 @@ export function times<R>(n: number, cb: (i: number) => R): R[] {
 }
 
 export const $BlockArgs = z.object({
-  tableNumRows: z.number().default(100),
   numbers: z.array(z.coerce.number()),
   handles: z.array(ImportFileHandleSchema),
 });
@@ -52,6 +51,7 @@ export type BlockArgs = z.infer<typeof $BlockArgs>;
 export type UiState = {
   dataTableV2: {
     sourceId?: string;
+    numRows: number;
     state: PlDataTableStateV2;
   };
   dynamicSections: {
@@ -66,11 +66,12 @@ export type UiState = {
 
 export const platforma = BlockModel.create('Heavy')
 
-  .withArgs<BlockArgs>({ numbers: [1, 2, 3, 4], tableNumRows: 100, handles: [] })
+  .withArgs<BlockArgs>({ numbers: [1, 2, 3, 4], handles: [] })
 
   .withUiState<UiState>({
     dataTableV2: {
       sourceId: 'source_1',
+      numRows: 200,
       state: createPlDataTableStateV2(),
     },
     dynamicSections: [],
@@ -94,7 +95,7 @@ export const platforma = BlockModel.create('Heavy')
   })
 
   .output('ptV2Sheets', (ctx) => {
-    const rowCount = ctx.args.tableNumRows ?? 0;
+    const rowCount = ctx.uiState.dataTableV2.numRows ?? 0;
     const sheets = [
       {
         axis: {
@@ -115,7 +116,7 @@ export const platforma = BlockModel.create('Heavy')
   })
 
   .output('ptV2', (ctx) => {
-    const rowCount = ctx.args.tableNumRows ?? 0;
+    const rowCount = ctx.uiState.dataTableV2.numRows ?? 0;
     const makePartitionId = (rowCount: number, i: number) => Math.floor((2 * i) / (rowCount + 1));
     const columns: PColumn<PColumnValues>[] = [
       {

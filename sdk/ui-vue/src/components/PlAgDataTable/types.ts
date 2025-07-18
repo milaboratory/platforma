@@ -174,8 +174,37 @@ export type PlAgDataTableV2Controller = {
   /**
    * Scroll table to make row with provided key visible
    * Warning: works reliably only in client side mode.
+   * @returns `true` if row was found and focused, `false` otherwise
    */
-  focusRow: (rowKey: PTableKey) => Promise<void>;
+  focusRow: (rowKey: PTableKey) => Promise<boolean>;
+  /**
+   * Update selection in the table.
+   * @param axesIds - axes ids identifying axes key values in `selectedKeys`
+   * @param selectedKeys - axes keys of the rows to select
+   * Warning: update will be ignored if axes ids cannot be correctly resolved
+   * @returns `true` if selection was updated, `false` otherwise
+   */
+  updateSelection: ({
+    axesSpec,
+    selectedKeys,
+  }: {
+    axesSpec: AxisId[];
+    selectedKeys: PTableKey[];
+  }) => Promise<boolean>;
+  /**
+   * Get number of rows in the table.
+   * @returns number of rows
+   */
+  getRowCount: () => Promise<undefined | number>;
+  /**
+   * Get row by index or axes key.
+   * @param index - row index or axes key
+   * @returns row spec and data, `undefined` if row was not loaded
+   */
+  getRow: (index: number | PlTableRowId) => Promise<undefined | {
+    spec: PTableColumnSpec[];
+    data: PTableValue[];
+  }>;
 };
 
 export type PlTableRowId = PTableKey;
