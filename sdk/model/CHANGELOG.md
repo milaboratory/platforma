@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.41.1
+
+### Patch Changes
+
+- e48177a: Small fix (remove package self-reference)
+
 ## 1.41.0
 
 ### Minor Changes
