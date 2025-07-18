@@ -1,6 +1,7 @@
 import { Worker } from 'node:worker_threads';
 import type { Scheme } from './workerApi';
-import path from 'node:path';
+
+declare const WORKER_PATH: string;
 
 export class WorkerManager implements AsyncDisposable {
   private nextMessageId = 0;
@@ -8,13 +9,8 @@ export class WorkerManager implements AsyncDisposable {
   private pendingRequests = new Map<number, { resolve: (value: unknown) => void; reject: (reason?: unknown) => void }>();
 
   constructor() {
-    const workerPath: string | undefined = typeof global !== 'undefined'
-      && '__WORKER_PATH__' in global
-      ? global.__WORKER_PATH__ as string
-      : path.resolve(import.meta.dirname, 'worker.js');
-
     const worker = this.worker = new Worker(
-      workerPath,
+      WORKER_PATH,
       {
         workerData: {},
       },

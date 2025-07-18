@@ -8,8 +8,9 @@ export default PlViteStdNode({
         index: resolve('src', 'index.ts'),
         worker: resolve('src', 'worker/worker.ts'),
       },
-      formats: ['es', 'cjs']
     },
-    sourcemap: true,
+  },
+  define: {
+    WORKER_PATH: JSON.stringify(resolve(__dirname, 'dist/worker.js')),
   },
 });

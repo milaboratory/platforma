@@ -1,16 +1,15 @@
-import { defineConfig } from 'vitest/config';
-import viteCfg from './vite.config.mjs';
-import path from 'node:path';
+import { defineConfig, mergeConfig } from 'vitest/config';
+import viteConfig from './vite.config.mts';
 
-export default defineConfig({
-  ...viteCfg,
-  test: {
-    globals: true,
-    watch: false,
-    testTimeout: 80000,
-    hookTimeout: 80000, 
-  },
-  define: {
-    __WORKER_PATH__: JSON.stringify(path.resolve(__dirname, 'dist/worker.js')),
-  },
-});
+export default defineConfig(
+  mergeConfig(
+    viteConfig, {
+    test: {
+        globals: true,
+        watch: false,
+        testTimeout: 80000,
+        hookTimeout: 80000, 
+      }
+    }
+  )
+);
