@@ -1,14 +1,10 @@
 import type { Expect, Equal } from '@milaboratories/helpers';
 import { z } from 'zod';
-import type { ModelOptions, Model } from './types';
+import type { ModelOptions, Model } from '../types';
 import type { BlockOutputsBase, InferHrefType, InferOutputsType, Platforma, ValueOrErrors } from '@platforma-sdk/model';
-import type { BaseApp, createApp } from './internal/createApp';
-import { type App } from './defineApp';
+import type { BaseAppV1, createAppV1 } from './createAppV1';
+import { type App } from '../defineApp';
 import { computed, type Component } from 'vue';
-
-// declare const __platforma: Platforma<{}, { x: ValueOrErrors<number> }, {}, '/'>;
-
-// const p = defineApp()
 
 declare function __createModel<M, V = unknown>(options: ModelOptions<M, V>): Model<M>;
 
@@ -45,7 +41,7 @@ const __model2 = __createModel({
 type InferArgs<Pl extends Platforma> = Pl extends Platforma<infer Args> ? Args : never;
 type InferUiState<Pl extends Platforma> = Pl extends Platforma<unknown, BlockOutputsBase, infer UiState> ? UiState : never;
 
-export type TestApp<P extends Platforma> = ReturnType<typeof createApp<InferArgs<P>, InferOutputsType<P>, InferUiState<P>, InferHrefType<P>>>;
+export type TestApp<P extends Platforma> = ReturnType<typeof createAppV1<InferArgs<P>, InferOutputsType<P>, InferUiState<P>, InferHrefType<P>>>;
 
 type _Args = {
   x: number;
@@ -60,7 +56,7 @@ type _UiState = {
   flag: boolean;
 };
 
-type _App1 = BaseApp<_Args, _Outputs, _UiState, '/'>;
+type _App1 = BaseAppV1<_Args, _Outputs, _UiState, '/'>;
 type _App2 = TestApp<Platforma<_Args, _Outputs, _UiState, '/'>>;
 
 const _local = () => {

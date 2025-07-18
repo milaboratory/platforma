@@ -58,6 +58,10 @@ export type UiState = {
     id: string;
     label: string;
   }[];
+  datasets: {
+    id: string;
+    label: string;
+  }[];
 };
 
 export const platforma = BlockModel.create('Heavy')
@@ -70,6 +74,7 @@ export const platforma = BlockModel.create('Heavy')
       state: createPlDataTableStateV2(),
     },
     dynamicSections: [],
+    datasets: [],
   })
 
   .argsValid((ctx) => {
@@ -311,6 +316,7 @@ export const platforma = BlockModel.create('Heavy')
     return [
       { type: 'link', href: '/loaders', label: 'Loaders' },
       { type: 'link', href: '/', label: 'Icons/Masks' },
+      { type: 'link', href: '/state', label: 'State' },
       { type: 'link', href: '/layout', label: 'Layout' },
       { type: 'link', href: '/form-components', label: 'Form Components' },
       { type: 'link', href: '/log-view', label: 'PlLogView' },
@@ -351,7 +357,7 @@ export const platforma = BlockModel.create('Heavy')
     ];
   })
 
-  .done();
+  .done(2); // api version 2
 
 export type BlockOutputs = InferOutputsType<typeof platforma>;
 export type Href = InferHrefType<typeof platforma>;

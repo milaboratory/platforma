@@ -1,13 +1,13 @@
 import { reactive, computed, ref, watch, unref, type ComputedRef, type UnwrapNestedRefs } from 'vue';
 import type { ModelOptions, Model, AppSettings } from '../types';
-import { deepClone, deepPatch, isJsonEqual } from '@milaboratories/helpers';
+import { deepClone, isJsonEqual } from '@milaboratories/helpers';
 import { identity, ensureError, isZodError, formatZodError } from '../utils';
 
 export function createAppModel<
   M extends { args: unknown; ui: unknown },
   V = unknown,
   E extends Record<string, ComputedRef<unknown>> = Record<string, ComputedRef<unknown>>,
->(options: ModelOptions<M, V>, extended: E, settings: AppSettings): Model<M & UnwrapNestedRefs<E>> {
+>(options: ModelOptions<M, V>, extended: E, _settings: AppSettings): Model<M & UnwrapNestedRefs<E>> {
   type R = M & UnwrapNestedRefs<E>;
 
   const validate = options.validate ?? identity;
@@ -19,21 +19,10 @@ export function createAppModel<
   const local = ref<{ model: R; readonly stage: symbol }>();
 
   const setSource = (v: M) => {
-    if (settings.deepPatchModel) {
-      // deep patch
-      const model = local.value?.model;
-      const updated = Object.assign(deepClone(v), extended ?? {}) as R;
-      local.value = {
-        model: model ? deepPatch(model, updated) : updated,
-        stage: Symbol(),
-      };
-    } else {
-      // shallow replace
-      local.value = {
-        model: Object.assign(deepClone(v), extended ?? {}) as R,
-        stage: Symbol(),
-      };
-    }
+    local.value = {
+      model: Object.assign(deepClone(v), extended ?? {}) as R,
+      stage: Symbol(),
+    };
   };
 
   watch(
@@ -42,9 +31,7 @@ export function createAppModel<
     { immediate: true },
   );
 
-  const save = () => {
-    options.onSave(validate(deepClone(local.value?.model)));
-  };
+  const save = () => options.onSave(validate(deepClone(local.value?.model)));
 
   const revert = () => {
     setSource(options.get());

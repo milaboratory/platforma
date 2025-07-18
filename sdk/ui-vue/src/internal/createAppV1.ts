@@ -1,6 +1,6 @@
 import { deepClone, isJsonEqual, tap } from '@milaboratories/helpers';
 import type { Mutable } from '@milaboratories/helpers';
-import type { NavigationState, BlockOutputsBase, BlockState, Platforma } from '@platforma-sdk/model';
+import type { NavigationState, BlockOutputsBase, BlockState, PlatformaV1 } from '@platforma-sdk/model';
 import { reactive, nextTick, computed, watch } from 'vue';
 import type { StateModelOptions, UnwrapOutputs, OptionalResult, OutputValues, OutputErrors, AppSettings } from '../types';
 import { createModel } from '../createModel';
@@ -22,12 +22,16 @@ import { useDebounceFn } from '@vueuse/core';
  *
  * @returns A reactive application object with methods, getters, and state.
  */
-export function createApp<
+export function createAppV1<
   Args = unknown,
   Outputs extends BlockOutputsBase = BlockOutputsBase,
   UiState = unknown,
   Href extends `/${string}` = `/${string}`,
->(state: BlockState<Args, Outputs, UiState, Href>, platforma: Platforma<Args, Outputs, UiState, Href>, settings: AppSettings) {
+>(
+  state: BlockState<Args, Outputs, UiState, Href>,
+  platforma: PlatformaV1<Args, Outputs, UiState, Href>,
+  settings: AppSettings,
+) {
   type AppModel = {
     args: Args;
     ui: UiState;
@@ -76,7 +80,7 @@ export function createApp<
     }
   }, debounceSpan, { maxWait });
 
-  platforma.onStateUpdates(async (updates) => {
+  (platforma as unknown as PlatformaV1<Args, Outputs, UiState, Href>).onStateUpdates(async (updates) => {
     updates.forEach((patch) => {
       if (patch.key === 'args' && !isJsonEqual(snapshot.args, patch.value)) {
         snapshot.args = Object.freeze(patch.value);
@@ -269,9 +273,9 @@ export function createApp<
   return reactive(Object.assign(model, methods, getters));
 }
 
-export type BaseApp<
+export type BaseAppV1<
   Args = unknown,
   Outputs extends BlockOutputsBase = BlockOutputsBase,
   UiState = unknown,
   Href extends `/${string}` = `/${string}`,
-> = ReturnType<typeof createApp<Args, Outputs, UiState, Href>>;
+> = ReturnType<typeof createAppV1<Args, Outputs, UiState, Href>>;
