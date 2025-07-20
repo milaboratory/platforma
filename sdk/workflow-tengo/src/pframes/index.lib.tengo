@@ -145,6 +145,10 @@ __primitiveValueTypes := { "Int": true, "Long": true, "Float": true, "Double": t
  *                      traceSteps?: array      // Array of trace steps to add to output specs
  *                                              // Each step should be an object with type, id, importance and label
  *
+ *                      overrideTrace?: boolean // If true, override existing trace annotations in output specs.
+ *                                              // If false, preserve existing trace annotations.
+ *                                              // If not specified, defaults to true when traceSteps is provided, false otherwise.
+ *
  *                      aggregate?: AxisMatcher[],
  *                                              // If specified, selected axes are combined and
  *                                              // passed to each iteration as a group. These axes
@@ -253,6 +257,13 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 	trace := undefined
 	if !is_undefined(opts.traceSteps) || !is_undefined(input.spec.annotations[pSpec.A_TRACE]) {
 		trace = pSpec.makeTrace(input.spec, (opts.traceSteps ? opts.traceSteps : [])...)
+	}
+
+	// Set overrideTrace with smart defaults
+	overrideTrace := opts.overrideTrace
+	if is_undefined(overrideTrace) {
+		// Default to true if traceSteps is provided, false otherwise
+		overrideTrace = !is_undefined(opts.traceSteps)
 	}
 
 	// JSON params passed as a single resource to the template
@@ -379,7 +390,7 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 		if output.type == "Resource" || output.type == "BinaryPartitioned" || output.type == "JsonPartitioned" {
 			spec := maps.merge(output.spec, { axesSpec: iterationAxesSpec + slices.normalize(output.spec.axesSpec) })
 			if !is_undefined(trace) {
-				spec = trace.inject(spec)
+				spec = trace.inject(spec, {override: overrideTrace})
 			}
 			outputSpecs[output.name] = spec
 			processedOutputs = append(processedOutputs, maps.merge(output, {spec: undefined })) // removing spec field
@@ -388,7 +399,7 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 				{ keyLength: len(output.spec.axesSpec), spec: undefined }))
 			spec := maps.merge(output.spec, { axesSpec: iterationAxesSpec + slices.normalize(output.spec.axesSpec) })
 			if !is_undefined(trace) {
-				spec = trace.inject(spec)
+				spec = trace.inject(spec, {override: overrideTrace})
 			}
 			outputSpecs[output.name] = spec
 		} else if output.type == "Xsv" {
@@ -402,7 +413,7 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 			columnsSpec := decomposition.columnsSpec
 			if !is_undefined(trace) {
 				for columnName, spec in columnsSpec {
-					columnsSpec[columnName] = trace.inject(spec)
+					columnsSpec[columnName] = trace.inject(spec, {override: overrideTrace})
 				}
 			}
 			outputSpecs[output.name] = columnsSpec

@@ -258,10 +258,44 @@ makeTrace := func(input, ...steps) {
 	return ll.toStrict({
 		value: currentTrace,
 		valueStr: currentTraceStr,
-		/** Injects trace information into column spec */
-		inject: func(spec) {
+		/**
+		 * Injects trace information into column spec by setting the pl7.app/trace annotation.
+		 *
+		 * By default, existing trace annotations will be overridden with the new trace.
+		 * This behavior can be changed using the override option.
+		 *
+		 * @param spec: ColumnSpec - The column specification to inject trace into
+		 * @param ...opts: map - Optional parameters:
+		 *   - override: boolean - If true (default), override existing trace annotation.
+		 *                         If false, preserve existing trace annotations.
+		 * @returns ColumnSpec - A new column spec with trace annotation injected
+		 */
+		inject: func(spec, ...opts) {
 			validation.assertType(spec, P_COLUMN_SPEC_SCHEMA)
-			return maps.deepMerge(spec, {annotations: {"pl7.app/trace": currentTraceStr}})
+
+			// Process optional parameters following codebase pattern
+			options := {}
+			if len(opts) > 0 {
+				if len(opts) == 1 && is_map(opts[0]) {
+					options = opts[0]
+				} else {
+					ll.panic("inject: optional parameters must be a single map argument, got: %v", opts)
+				}
+			}
+
+			// Extract override option with default value
+			override := options.override
+			if is_undefined(override) {
+				override = true
+			}
+
+			return maps.deepTransform(spec, {annotations: {"pl7.app/trace": func(oldValue) {
+				// if trace is already there and override is false, don't touch it
+				if override || is_undefined(oldValue) {
+					return currentTraceStr
+				}
+				return oldValue
+			}}})
 		}
 	})
 }
