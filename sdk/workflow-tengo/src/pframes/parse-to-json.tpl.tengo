@@ -92,6 +92,7 @@ parseTsvContent := func(content, axes, columns) {
 	}
 
 	columnIndices := {}
+	data := {}
 	for col in columns {
 		if is_undefined(headerMap[col.name]) {
 			ll.panic("Column '%s' not found in TSV headers: %v", col.name, headers)
@@ -100,11 +101,7 @@ parseTsvContent := func(content, axes, columns) {
 			index: headerMap[col.name],
 			type: col.type
 		}
-	}
-
-	data := {}
-	for columnName in columnIndices {
-		data[columnName] = {}
+		data[col.name] = {}
 	}
 
 	for lineIdx := 1; lineIdx < len(lines); lineIdx++ {
