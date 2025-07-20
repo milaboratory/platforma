@@ -196,6 +196,8 @@ The type information defined here becomes available across the entire block ecos
 
 Both state components are persisted in the Platforma resource system as JSON objects. The system handles serialization and storage automatically, ensuring data consistency across sessions.
 
+**Schema Version**: The current persistent project representation uses schema version `2`, as defined by `SchemaVersionCurrent` in the project model. This version identifier ensures backward compatibility and proper data migration when the storage format evolves.
+
 ## State Access Patterns
 
 ### In the Model (Configuration)

@@ -49,4 +49,19 @@ State of blocks using old SDK must be somehow represented in new persistance sch
 
 ## Migration
 
-# Aspects of future development that are important to plan for on on this iteration
+For existing blocks we do the following migration:
+
+```
+newState = {
+    uiState: uiStateFromPersistentSchemaV2,
+    args: argsFromPersistentSchemaV2
+}
+```
+
+In the absence of argsDerivation function (i.e. until requiresModelAPIVersion == 1), default behaviour is to extract args field and put a copy into the args.
+
+# Implementation stages
+
+## Stage 1
+
+Implement all the low level logic, and implement SDK that will for now provide exactly the same API in terms of code, but will be able to use new SDK-only API. We'll have to implement many things, but the thing is that overall focus is in achieving the same code-compatible SDK both in model and in the UI.

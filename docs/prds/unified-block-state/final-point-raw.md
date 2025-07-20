@@ -60,5 +60,7 @@ Current implementation of sections and navigation can be migrated away from curr
 Navigation stae can become just a part of localState. Block code may return a special object describing what to show in the left panel (might be combined with title), which will just provide arguments to be passed to the special on-navigate action.
 In addition to title the object returned here may define absence or presence of run button and text and icon to be printed on it.
 
+## Snippets
 
+### State
 
