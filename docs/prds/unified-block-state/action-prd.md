@@ -1,22 +1,19 @@
 # Block Actions PRD
 
-*Document Date: January 2025*  
-*Related Documents: unified-block-state/current.md, unified-block-state/final-point-raw.md, unified-block-state/prd-raw.md*
-
 ## Overview
 
-Block Actions represent a fundamental architectural shift in how Platforma blocks manage state mutations and inter-block communication. Instead of the current implicit state management system where UI components directly modify block state through reactive assignments, Block Actions introduce explicit, transactional functions that serve as the single entry point for all state modifications.
+Block Actions represent the final piece of the Platforma block state management puzzle, completing the existing system by providing missing functionality and unifying various existing concepts under a single, coherent API. The current implicit state management system (reactive assignments, args derivation, sections, navigation) remains intact and continues to work as before. Block Actions complement this foundation by adding capabilities that were previously difficult or impossible to implement.
 
 A Block Action is a synchronous, transactional lambda function that:
 
-- **Atomically mutates block state** - Both persisted `state` and ephemeral `localState`
-- **Returns structured results** - Can return arbitrary JSON data to callers
-- **Receives caller context** - Knows which block/system initiated the action
-- **Supports access control** - Actions can be private (block-only) or public (cross-block)
-- **Integrates with system events** - Can be triggered by navigation, block lifecycle, or external calls
+- **Extends beyond basic state mutations** - While UI can still use reactive assignments, actions handle complex scenarios requiring coordination
 - **Enables cross-block communication** - Blocks can invoke actions on other blocks with proper permissions
+- **Handles system event integration** - Responds to navigation, block lifecycle, and other system events
+- **Provides structured interaction patterns** - Returns arbitrary JSON data to callers with full caller context
+- **Supports access control** - Actions can be private (block-only) or public (cross-block)
+- **Unifies existing scattered functionality** - Brings together navigation handling, lifecycle management, and inter-block coordination under one concept
 
-This design moves the majority of state management logic from the Platforma runtime into the block code itself, providing greater flexibility while maintaining clear architectural boundaries.
+This design completes the block development experience by filling gaps in the current system while preserving all existing functionality and development patterns.
 
 ## Motivations
 
@@ -40,6 +37,10 @@ Current state updates can be partially applied, leading to inconsistent intermed
 
 ### 6. **Easier Testing and Debugging**
 Actions provide clear entry points for state changes, making it easier to test block behavior, trace state modifications, and debug issues in complex workflows.
+
+## Low-level action API
+
+- Action is represented by the 
 
 ## Use Cases
 
