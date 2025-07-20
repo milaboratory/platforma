@@ -1,5 +1,44 @@
 # @platforma-sdk/workflow-tengo
 
+## 4.13.0
+
+### Minor Changes
+
+- 8ffee22: Added new TsvContent output type and enhanced trace injection:
+
+  **New TsvContent Output Type:**
+
+  - Added `TsvContent` output type to `processColumn()` function for parsing TSV content to JSON PColumn data
+  - Simplified settings schema with `axes` and `columns` arrays containing `column` name and `spec` objects
+  - Automatic transformation from user settings to parse template format
+  - Integration with `parse-to-json.tpl.tengo` template for efficient TSV parsing
+  - Similar to Xsv but simpler: no partitioning, single parse call, direct JSON output
+  - Updated all output methods (`outputSpec`, `outputData`, `output`, etc.) to support TsvContent
+  - Added comprehensive validation using validation library with `TSV_CONTENT_SETTINGS_SCHEMA`
+
+  **Enhanced Trace Injection:**
+
+  - Added `override` option to `makeTrace().inject()` function with default value of `true`
+  - Added `overrideTrace` flag to `processColumn()` function with smart defaults:
+    - Defaults to `true` when `traceSteps` is provided (override existing traces with new steps)
+    - Defaults to `false` when no `traceSteps` are provided (preserve existing traces)
+  - Updated all trace injection calls in `processColumn` to respect the override setting
+
+  **Per-Output Trace Support:**
+
+  - Added per-output `traceSteps` and `overrideTrace` fields to all output types
+  - Output-specific `traceSteps` are appended after global `traceSteps` (global first, then output-specific)
+  - Each output can override the global `overrideTrace` setting independently
+  - Smart defaults for `overrideTrace`: defaults to `true` when any traceSteps (global or per-output) are provided
+  - Used `slices.normalize()` for safe array concatenation regardless of undefined values
+  - Cleaned up trace handling code by removing uninformative comments
+
+  **Code Quality Improvements:**
+
+  - Replaced manual validation checks with `validation.assertType()` for better error messages
+  - Used `slices.map()` for functional array transformations instead of manual loops
+  - Applied defensive copying with `copy()` for all array operations to prevent mutations
+
 ## 4.12.0
 
 ### Minor Changes
