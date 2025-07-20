@@ -12,8 +12,11 @@ builder := import(":pframes.builder")
 removeNullsLib := import(":pframes.remove-nulls")
 text := import("text")
 anonymize := import(":anonymize")
+assets := import(":assets")
 
 json := import("json")
+
+parseToJsonTpl := assets.importTemplate(":pframes.parse-to-json")
 
 self.awaitState("InputsLocked")
 self.awaitState("data", "InputsLocked")
@@ -277,6 +280,12 @@ self.body(func(inputs) {
 				// for xsv output:
 				//   [outputName][columnId][groupKey]
 				outputMaps[output.name] = map
+			} else if output.type == "TsvContent" {
+				// ResourceMap to collect TSV content for later processing
+				outputMaps[output.name] = smart.structBuilder(
+					pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP,
+					json.encode({ keyLength: groupKeyLength })
+				)
 			} else {
 				ll.panic("unknonw output type: %v", output.type)
 			}
@@ -347,6 +356,11 @@ self.body(func(inputs) {
 						data := pf.getFutureInputField({name: id, optional: reultMightBeNull})
 						outputMaps[output.name][id][sGroupKey] = data
 					}
+				} else if output.type == "TsvContent" {
+					// Store TSV content in ResourceMap for later processing
+					applyCache(outputMaps[output.name].
+						createInputField(sGroupKey)).
+						set(ref)
 				} else {
 					applyCache(outputMaps[output.name].
 						createInputField(sGroupKey)).
@@ -448,6 +462,30 @@ self.body(func(inputs) {
 						mapBuilder.add(id, undefined, data)
 					}
 					outputMaps[output.name] = mapBuilder.build()
+				}
+			} else if output.type == "TsvContent" {
+				// Process the collected TSV content with parse-to-json template
+				tsvContentResourceMap := outputMaps[output.name].lockAndBuild()
+
+				parseResult := render.create(parseToJsonTpl, {
+					params: smart.createJsonResource(output.settings),
+					input: tsvContentResourceMap
+				})
+
+				parseResultData := parseResult.output("result")
+
+				// Extract individual column results and store them directly
+				if !is_undefined(output.flattenWithDelimiter) {
+					for column in output.settings.columns {
+						columnId := column.id
+						if is_undefined(columnId) {
+							columnId = column.column
+						}
+						columnData := parseResultData.buildFutureField({ name: columnId })
+						outputMaps[output.name + output.flattenWithDelimiter + columnId] = columnData
+					}
+				} else {
+					outputMaps[output.name] = parseResultData
 				}
 			} else {
 				if resultMightBeNull {

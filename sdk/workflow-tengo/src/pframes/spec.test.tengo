@@ -19,6 +19,46 @@ TestMakeTrace := func() {
 	)
 }
 
+TestMakeTraceInjectOverride := func() {
+	// Create initial trace
+	trace1 := pSpec.makeTrace(undefined, {type: "initial", label: "initial trace"})
+
+	// Create spec with initial trace
+	baseSpec := {
+		kind: "PColumn",
+		valueType: "Int",
+		name: "col1"
+	}
+	specWithTrace := trace1.inject(baseSpec)
+
+	// Verify initial trace was injected
+	test.isTrue(!is_undefined(specWithTrace.annotations))
+	test.isTrue(!is_undefined(specWithTrace.annotations["pl7.app/trace"]))
+
+	// Create new trace
+	trace2 := pSpec.makeTrace(undefined, {type: "new", label: "new trace"})
+
+	// Test 1: Default behavior (override = true by default) - should override existing trace
+	resultDefault := trace2.inject(specWithTrace)
+	test.isEqual(resultDefault.annotations["pl7.app/trace"], trace2.valueStr)
+
+	// Test 2: Explicit override = true - should override existing trace
+	resultOverrideTrue := trace2.inject(specWithTrace, {override: true})
+	test.isEqual(resultOverrideTrue.annotations["pl7.app/trace"], trace2.valueStr)
+
+	// Test 3: override = false - should preserve existing trace
+	resultOverrideFalse := trace2.inject(specWithTrace, {override: false})
+	test.isEqual(resultOverrideFalse.annotations["pl7.app/trace"], trace1.valueStr)
+
+	// Test 4: No existing trace with override = false - should still add trace
+	resultNoExistingTrace := trace2.inject(baseSpec, {override: false})
+	test.isEqual(resultNoExistingTrace.annotations["pl7.app/trace"], trace2.valueStr)
+
+	// Test 5: No existing trace with default behavior - should add trace
+	resultNoExistingDefault := trace2.inject(baseSpec)
+	test.isEqual(resultNoExistingDefault.annotations["pl7.app/trace"], trace2.valueStr)
+}
+
 TestAxisMatcher := func() {
 	axesSpec := [
 		{

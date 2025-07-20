@@ -213,8 +213,14 @@ deepTransform = func(...maps) {
 				} else {
 					res[k] = result
 				}
-			} else if is_map(res[k]) && is_map(v) {
-				res[k] = deepTransform(res[k], v)
+			} else if is_map(v) {
+				if is_map(res[k]) {
+					res[k] = deepTransform(res[k], v)
+				} else {
+					// res[k] is not a map (could be undefined or some other value)
+					// treat it as an empty map and recursively process
+					res[k] = deepTransform({}, v)
+				}
 			} else {
 				res[k] = v
 			}

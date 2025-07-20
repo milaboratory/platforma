@@ -73,6 +73,15 @@ Test_map_DeepTransform := func() {
 		{data: {items: [1, 2, 3], meta: {}}},
 		"unexpected result from maps.deepTransform with undefined return"
 	)
+
+	test.isEqual(
+		maps.deepTransform(
+			{a: {}},
+			{a: {b: {c: func(v) { return is_undefined(v) ? "d" : v + "d" }}}}
+		),
+		{a: {b: {c: "d"}}},
+		"unexpected result from maps.deepTransform with nested structure creation"
+	)
 }
 
 Test_map_ContainsKey := func() {
