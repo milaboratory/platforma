@@ -19,6 +19,29 @@ pColumnData := import(":pframes.data")
 
 llProcessTpl := assets.importTemplate(":pframes.process-pcolumn-data")
 
+// Schema for TsvContent settings validation
+TSV_CONTENT_SETTINGS_SCHEMA := {
+	"axes": [{
+		"column": "string",
+		"spec": {
+			"type": "string,regex=Int|Long|Float|Double|String",
+			"name,?": "string",
+			"domain,?": { "any": "string" },
+			"annotations,?": { "any": "string" }
+		}
+	}],
+	"columns": [{
+		"column": "string",
+		"id,?": "string",
+		"spec": {
+			"valueType": "string,regex=Int|Long|Float|Double|String",
+			"name,?": "string",
+			"domain,?": { "any": "string" },
+			"annotations,?": { "any": "string" }
+		}
+	}]
+}
+
 /**
  * Given a reference to the p-frame, converts all inner resource files into resources that can be
  * downloaded from the UI side.
@@ -109,6 +132,12 @@ __primitiveValueTypes := { "Int": true, "Long": true, "Float": true, "Double": t
  *                       keepNulls?: boolean // Relevant if optional flag is used in path.
  *                                           // If true, keys for which output was not found will be present in the output
  *                                           // with null value. If false or not specified, such keys will not be present.
+ *                       traceSteps?: array  // [Optional] Array of trace steps to add to this output's specs
+ *                                           // These steps will precede any global traceSteps if both are provided
+ *                                           // Each step should be an object with type, id, importance and label
+ *                       overrideTrace?: boolean // [Optional] If true, override existing trace annotations in this output's specs.
+ *                                           // If false, preserve existing trace annotations.
+ *                                           // If not specified, defaults to true when traceSteps (output or global) are provided, false otherwise.
  *                     }
  *
  *                  Available types:
@@ -133,17 +162,41 @@ __primitiveValueTypes := { "Int": true, "Long": true, "Float": true, "Double": t
  *                    | {
  *                        type: "Xsv",          // CSV/TSV formatted text file for xsv conversion
  *						  xsvType: "tsv"|"csv", // Expected file format
- *                        settings: object,      // Xsv conversion specification
- *                        cpu: number,           // Override CPU for this output
- *                        mem: number | string,  // Override MEM for this output
- *                        queue: string          // Override queue for this output
+ *                        settings: object,     // Xsv conversion specification
+ *                        cpu: number,          // Override CPU for this output
+ *                        mem: number | string, // Override MEM for this output
+ *                        queue: string         // Override queue for this output
+ *                      }
+ *                    | {
+ *                        type: "TsvContent",   // TSV content parsed to JSON PColumn data
+ *                        settings: {           // TSV parsing specification
+ *                          axes: [             // Array of axis definitions
+ *                            {
+ *                              column: string, // TSV column name
+ *                              spec: AxisSpec  // Axis specification (type, name, domain, etc.)
+ *                            }
+ *                          ],
+ *                          columns: [          // Array of column definitions
+ *                            {
+ *                              column: string, // TSV column name
+ *                              id?: string,    // Optional column identifier for output map
+ *                              spec: PColumnSpec // Column specification (valueType, name, domain, etc.)
+ *                            }
+ *                          ]
+ *                        }
  *                      }
  *
  * @param opts 			Optional additional settings
  *
  *                    {
  *                      traceSteps?: array      // Array of trace steps to add to output specs
+ *                                              // These are applied to all outputs unless overridden per output
  *                                              // Each step should be an object with type, id, importance and label
+ *
+ *                      overrideTrace?: boolean // If true, override existing trace annotations in output specs.
+ *                                              // If false, preserve existing trace annotations.
+ *                                              // Can be overridden per output. If not specified, defaults to true when
+ *                                              // traceSteps (global or per-output) are provided, false otherwise.
  *
  *                      aggregate?: AxisMatcher[],
  *                                              // If specified, selected axes are combined and
@@ -249,13 +302,26 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 		ll.panic("can't use passAggregationAxesSpec, passAggregationAxesNames or passDistilledAggregationSpec without aggregate")
 	}
 
-	// Initialize trace if traceSteps provided
-	trace := undefined
-	if !is_undefined(opts.traceSteps) || !is_undefined(input.spec.annotations[pSpec.A_TRACE]) {
-		trace = pSpec.makeTrace(input.spec, (opts.traceSteps ? opts.traceSteps : [])...)
+	createOutputTrace := func(output) {
+		hasOutputTrace := !is_undefined(output.traceSteps)
+		hasGlobalTrace := !is_undefined(opts.traceSteps)
+		hasInputTrace := !is_undefined(input.spec.annotations[pSpec.A_TRACE])
+
+		outputTraceSteps := slices.normalize(opts.traceSteps) + slices.normalize(output.traceSteps)
+
+		trace := undefined
+		if len(outputTraceSteps) > 0 || hasInputTrace {
+			trace = pSpec.makeTrace(input.spec, outputTraceSteps...)
+		}
+
+		outputOverrideTrace := output.overrideTrace
+		if is_undefined(outputOverrideTrace) {
+			outputOverrideTrace = hasOutputTrace || hasGlobalTrace
+		}
+
+		return { trace: trace, overrideTrace: outputOverrideTrace }
 	}
 
-	// JSON params passed as a single resource to the template
 	processTemplateParams := {
 		eph: opts.isEphemeral,
 		passKey: opts.passKey
@@ -289,7 +355,7 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 		metaExtra = {}
 	}
 
-	iterationAxesSpec := input.spec.axesSpec
+	iterationAxesSpec := copy(input.spec.axesSpec)
 	// For partitioned data, the underlying template determines key length internally.
 	// For ResourceMap, we pass the expected length based on the spec.
 	if !isPotentiallyPartitioned {
@@ -376,19 +442,20 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 	for output in outputs {
 		// map output name to output settings provided in input
 		outputsMap[output.name] = output
+		traceInfo := createOutputTrace(output)
 		if output.type == "Resource" || output.type == "BinaryPartitioned" || output.type == "JsonPartitioned" {
-			spec := maps.merge(output.spec, { axesSpec: iterationAxesSpec + slices.normalize(output.spec.axesSpec) })
-			if !is_undefined(trace) {
-				spec = trace.inject(spec)
+			spec := maps.merge(output.spec, { axesSpec: copy(iterationAxesSpec) + slices.normalize(output.spec.axesSpec) })
+			if !is_undefined(traceInfo.trace) {
+				spec = traceInfo.trace.inject(spec, {override: traceInfo.overrideTrace})
 			}
 			outputSpecs[output.name] = spec
-			processedOutputs = append(processedOutputs, maps.merge(output, {spec: undefined })) // removing spec field
+			processedOutputs = append(processedOutputs, maps.merge(output, {spec: undefined, traceSteps: undefined, overrideTrace: undefined }))
 		} else if output.type == "ResourceMap" {
 			processedOutputs = append(processedOutputs, maps.merge(output,
-				{ keyLength: len(output.spec.axesSpec), spec: undefined }))
-			spec := maps.merge(output.spec, { axesSpec: iterationAxesSpec + slices.normalize(output.spec.axesSpec) })
-			if !is_undefined(trace) {
-				spec = trace.inject(spec)
+				{ keyLength: len(output.spec.axesSpec), spec: undefined, traceSteps: undefined, overrideTrace: undefined }))
+			spec := maps.merge(output.spec, { axesSpec: copy(iterationAxesSpec) + slices.normalize(output.spec.axesSpec) })
+			if !is_undefined(traceInfo.trace) {
+				spec = traceInfo.trace.inject(spec, {override: traceInfo.overrideTrace})
 			}
 			outputSpecs[output.name] = spec
 		} else if output.type == "Xsv" {
@@ -400,17 +467,68 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 			})
 			purifiedPfconvCfg := decomposition.purifiedCfg
 			columnsSpec := decomposition.columnsSpec
-			if !is_undefined(trace) {
+			if !is_undefined(traceInfo.trace) {
 				for columnName, spec in columnsSpec {
-					columnsSpec[columnName] = trace.inject(spec)
+					columnsSpec[columnName] = traceInfo.trace.inject(spec, {override: traceInfo.overrideTrace})
 				}
 			}
 			outputSpecs[output.name] = columnsSpec
 			processedOutputs = append(processedOutputs, maps.merge(output,
 				{
 					settings: purifiedPfconvCfg,
-					flattenWithDelimiter: "/"
+					flattenWithDelimiter: "/",
+					traceSteps: undefined,
+					overrideTrace: undefined
 				}))
+		} else if output.type == "TsvContent" {
+			validation.assertType(output.settings, TSV_CONTENT_SETTINGS_SCHEMA, "Invalid TsvContent settings")
+
+			// Transform settings to parse template format using slices.map
+			transformedSettings := {
+				axes: slices.map(output.settings.axes, func(axis) {
+					return {
+						name: axis.column,
+						type: axis.spec.type
+					}
+				}),
+				columns: slices.map(output.settings.columns, func(column) {
+					transformedColumn := {
+						name: column.column,
+						type: column.spec.valueType
+					}
+					if !is_undefined(column.id) {
+						transformedColumn.id = column.id
+					}
+					return transformedColumn
+				})
+			}
+
+			// Build output specs for each column
+			columnsSpec := {}
+			axesSpec := copy(iterationAxesSpec)
+			for axis in output.settings.axes {
+				axesSpec = append(axesSpec, axis.spec)
+			}
+
+			for column in output.settings.columns {
+				columnId := column.id
+				if is_undefined(columnId) {
+					columnId = column.column
+				}
+				spec := maps.merge(column.spec, { axesSpec: axesSpec, kind: "PColumn" })
+				if !is_undefined(traceInfo.trace) {
+					spec = traceInfo.trace.inject(spec, {override: traceInfo.overrideTrace})
+				}
+				columnsSpec[columnId] = spec
+			}
+
+			outputSpecs[output.name] = columnsSpec
+			processedOutputs = append(processedOutputs, maps.merge(output, {
+				settings: transformedSettings,
+				flattenWithDelimiter: "/",
+				traceSteps: undefined,
+				overrideTrace: undefined
+			}))
 		} else {
 			ll.panic("unknown output type: " + output.type)
 		}
@@ -442,10 +560,10 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 		 *
 		 * For normal outputs (Resource, ResourceMap, BinaryPartitioned, JsonPartitioned),
 		 * only the output name should be provided.
-		 * For Xsv outputs, both output name and column name should be provided.
+		 * For Xsv and TsvContent outputs, both output name and column name should be provided.
 		 *
 		 * @param name - Name of the output
-		 * @param column - Optional. For Xsv outputs, name of the column
+		 * @param column - Optional. For Xsv and TsvContent outputs, name of the column
 		 * @returns Output spec
 		 */
 		outputSpec: func(name, ...column) {
@@ -455,9 +573,9 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 			}
 
 			spec := outputSpecs[name]
-			if output.type == "Xsv" {
+			if output.type == "Xsv" || output.type == "TsvContent" {
 				if len(column) != 1 {
-					ll.panic("column name must be provided for Xsv output")
+					ll.panic("column name must be provided for " + output.type + " output")
 				}
 				columnName := column[0]
 				spec = spec[columnName]
@@ -467,7 +585,7 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 				return spec
 			} else {
 				if len(column) > 0 {
-					ll.panic("column name should not be provided for non-Xsv output")
+					ll.panic("column name should not be provided for non-Xsv/TsvContent output")
 				}
 				return spec
 			}
@@ -478,10 +596,10 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 		 *
 		 * For normal outputs (Resource, ResourceMap, BinaryPartitioned, JsonPartitioned),
 		 * only the output name should be provided.
-		 * For Xsv outputs, both output name and column name should be provided.
+		 * For Xsv and TsvContent outputs, both output name and column name should be provided.
 		 *
 		 * @param name - Name of the output
-		 * @param column - Optional. For Xsv outputs, name of the column
+		 * @param column - Optional. For Xsv and TsvContent outputs, name of the column
 		 * @returns data resource
 		 */
 		outputData: func(name, ...column) {
@@ -490,14 +608,14 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 				ll.panic("unknown output: " + name)
 			}
 
-			if output.type == "Xsv" {
+			if output.type == "Xsv" || output.type == "TsvContent" {
 				if len(column) != 1 {
-					ll.panic("column name must be provided for Xsv output")
+					ll.panic("column name must be provided for " + output.type + " output")
 				}
 				return renderResult.output(name + "/" + column[0])
 			} else {
 				if len(column) > 0 {
-					ll.panic("column name should not be provided for non-Xsv output")
+					ll.panic("column name should not be provided for non-Xsv/TsvContent output")
 				}
 				return renderResult.output(name)
 			}
@@ -508,10 +626,10 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 		 *
 		 * For normal outputs (Resource, ResourceMap, BinaryPartitioned, JsonPartitioned),
 		 * only the output name should be provided.
-		 * For Xsv outputs, both output name and column name should be provided.
+		 * For Xsv and TsvContent outputs, both output name and column name should be provided.
 		 *
 		 * @param name - Name of the output
-		 * @param column - Optional. For Xsv outputs, name of the column
+		 * @param column - Optional. For Xsv and TsvContent outputs, name of the column
 		 * @returns {data: Resource, spec: PColumnSpec} Object containing both data resource and spec
 		 */
 		output: func(name, ...column) {
@@ -520,9 +638,9 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 				ll.panic("unknown output: " + name)
 			}
 
-			if output.type == "Xsv" {
+			if output.type == "Xsv" || output.type == "TsvContent" {
 				if len(column) != 1 {
-					ll.panic("column name must be provided for Xsv output")
+					ll.panic("column name must be provided for " + output.type + " output")
 				}
 				columnName := column[0]
 				spec := outputSpecs[name][columnName]
@@ -535,7 +653,7 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 				}
 			} else {
 				if len(column) > 0 {
-					ll.panic("column name should not be provided for non-Xsv output")
+					ll.panic("column name should not be provided for non-Xsv/TsvContent output")
 				}
 				return {
 					data: renderResult.output(name),
@@ -545,9 +663,9 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 		},
 
 		/**
-		 * Returns a PFrame containing all columns from an Xsv output
+		 * Returns a PFrame containing all columns from an Xsv or TsvContent output
 		 *
-		 * @param name - Name of the Xsv output
+		 * @param name - Name of the Xsv or TsvContent output
 		 * @returns PFrame containing all columns from the output
 		 */
 		xsvOutputFrame: func(name) {
@@ -556,8 +674,8 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 				ll.panic("unknown output: " + name)
 			}
 
-			if output.type != "Xsv" {
-				ll.panic("outputFrame can only be used with Xsv outputs")
+			if output.type != "Xsv" && output.type != "TsvContent" {
+				ll.panic("outputFrame can only be used with Xsv or TsvContent outputs")
 			}
 
 			builder := builder.pFrameBuilder()
@@ -581,8 +699,8 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 			}
 
 			maps.forEach(outputsMap, func(name, output) {
-				if output.type == "Xsv" {
-					// For Xsv outputs, add each column with name prefixed
+				if output.type == "Xsv" || output.type == "TsvContent" {
+					// For Xsv and TsvContent outputs, add each column with name prefixed
 					for columnName, spec in outputSpecs[name] {
 						builder.add(
 							name + sep + columnName,
@@ -591,7 +709,7 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 						)
 					}
 				} else {
-					// For non-Xsv outputs, add directly
+					// For other outputs, add directly
 					builder.add(
 						name,
 						outputSpecs[name],
@@ -604,9 +722,9 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 		},
 
 		/**
-		 * Returns a PFrame containing all results, flattening Xsv outputs using the provided separator
+		 * Returns a PFrame containing all results, flattening Xsv and TsvContent outputs using the provided separator
 		 *
-		 * @param ...xsvNameSeparator - Optional separator for joining Xsv output and column names, defaults to "."
+		 * @param ...xsvNameSeparator - Optional separator for joining Xsv and TsvContent output and column names, defaults to "."
 		 * @returns PFrame containing all results
 		 */
 		allOutputsFrame: func(...xsvNameSeparator) {
@@ -639,9 +757,9 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 		},
 
 		/**
-		 * Returns sorted list of column names for given Xsv output
+		 * Returns sorted list of column names for given Xsv or TsvContent output
 		 *
-		 * @param name - Xsv output name
+		 * @param name - Xsv or TsvContent output name
 		 * @returns Array of column names
 		 */
 		listXsvColumns: func(name) {
@@ -649,18 +767,18 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 			if is_undefined(output) {
 				ll.panic("unknown output: " + name)
 			}
-			if output.type != "Xsv" {
-				ll.panic("output is not Xsv: " + name)
+			if output.type != "Xsv" && output.type != "TsvContent" {
+				ll.panic("output is not Xsv or TsvContent: " + name)
 			}
 
 			return maps.getKeys(outputSpecs[name])
 		},
 
 		/**
-		 * Adds all columns from an Xsv output to the provided pframe builder with a prefix
+		 * Adds all columns from an Xsv or TsvContent output to the provided pframe builder with a prefix
 		 *
 		 * @param builder - The pframe builder to which columns will be added
-		 * @param outputName - Name of the Xsv output to use
+		 * @param outputName - Name of the Xsv or TsvContent output to use
 		 * @param prefix - Prefix to add to each column name (can be empty string)
 		 * @returns The provided builder for chaining
 		 */
