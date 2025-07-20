@@ -405,6 +405,155 @@ _newExpression = func(expression, currentAlias) {
 			return self.strReplace(pattern, replacement, opts)
 		},
 
+		/**
+		 * Checks if this string expression contains the specified pattern.
+		 * @param pattern - string|object - The pattern (string literal, regex, or an expression object evaluating to a string) to search for.
+		 * @param options - map (optional) - An optional map with options:
+		 *   - literal (boolean, optional): If true, treat pattern as a literal string. Defaults to false (pattern is regex).
+		 *   - strict (boolean, optional): If true, raise error for invalid regex. Defaults to true.
+		 * @returns {object} - A boolean expression object.
+		 */
+		strContains: func(pattern, ...options) {
+			literalVal := false
+			strictVal := true
+
+			if len(options) > 0 {
+				ll.assert(len(options) == 1, "strContains accepts at most one options map argument.")
+				opsMap := options[0]
+				ll.assert(is_map(opsMap), "Second argument to strContains(), if provided, must be an options map.")
+				if !is_undefined(opsMap.literal) {
+					ll.assert(is_bool(opsMap.literal), "literal in options map must be a boolean")
+					literalVal = opsMap.literal
+				}
+				if !is_undefined(opsMap.strict) {
+					ll.assert(is_bool(opsMap.strict), "strict in options map must be a boolean")
+					strictVal = opsMap.strict
+				}
+			}
+
+			return _newExpression({
+				type: "str_contains",
+				value: expression,
+				pattern: _mapToSingleExpressionStruct(pattern, "lit"),
+				literal: literalVal,
+				strict: strictVal
+			}, undefined)
+		},
+
+		/**
+		 * Checks if this string expression contains any of the provided patterns using the Aho-Corasick algorithm.
+		 * @param patterns - array - An array of literal string patterns to search for.
+		 * @param options - map (optional) - An optional map with options:
+		 *   - asciiCaseInsensitive (boolean, optional): Enable ASCII case insensitive matching. Defaults to false.
+		 * @returns {object} - A boolean expression object.
+		 */
+		strContainsAny: func(patterns, ...options) {
+			ll.assert(is_array(patterns), "patterns must be an array of strings")
+			for pattern in patterns {
+				ll.assert(is_string(pattern), "all patterns must be strings")
+			}
+
+			asciiCaseInsensitiveVal := false
+			if len(options) > 0 {
+				ll.assert(len(options) == 1, "strContainsAny accepts at most one options map argument.")
+				opsMap := options[0]
+				ll.assert(is_map(opsMap), "Second argument to strContainsAny(), if provided, must be an options map.")
+				if !is_undefined(opsMap.asciiCaseInsensitive) {
+					ll.assert(is_bool(opsMap.asciiCaseInsensitive), "asciiCaseInsensitive in options map must be a boolean")
+					asciiCaseInsensitiveVal = opsMap.asciiCaseInsensitive
+				}
+			}
+
+			return _newExpression({
+				type: "str_contains_any",
+				value: expression,
+				patterns: patterns,
+				asciiCaseInsensitive: asciiCaseInsensitiveVal
+			}, undefined)
+		},
+
+		/**
+		 * Counts the number of times a pattern occurs in this string expression.
+		 * @param pattern - string|object - The pattern (string literal, regex, or an expression object evaluating to a string) to count.
+		 * @param options - map (optional) - An optional map with options:
+		 *   - literal (boolean, optional): If true, treat pattern as a literal string. Defaults to false (pattern is regex).
+		 * @returns {object} - A numeric expression object.
+		 */
+		strCountMatches: func(pattern, ...options) {
+			literalVal := false
+
+			if len(options) > 0 {
+				ll.assert(len(options) == 1, "strCountMatches accepts at most one options map argument.")
+				opsMap := options[0]
+				ll.assert(is_map(opsMap), "Second argument to strCountMatches(), if provided, must be an options map.")
+				if !is_undefined(opsMap.literal) {
+					ll.assert(is_bool(opsMap.literal), "literal in options map must be a boolean")
+					literalVal = opsMap.literal
+				}
+			}
+
+			return _newExpression({
+				type: "str_count_matches",
+				value: expression,
+				pattern: _mapToSingleExpressionStruct(pattern, "lit"),
+				literal: literalVal
+			}, undefined)
+		},
+
+		/**
+		 * Extracts parts of this string expression using regex patterns and capture groups.
+		 * @param pattern - string|object - The regex pattern (string literal or an expression object evaluating to a string) to extract with.
+		 * @param options - map (optional) - An optional map with options:
+		 *   - groupIndex (int, optional): The capture group index to extract. Group 0 is the entire match. Defaults to 0.
+		 * @returns {object} - A string expression object.
+		 */
+		strExtract: func(pattern, ...options) {
+			groupIndexVal := 0
+
+			if len(options) > 0 {
+				ll.assert(len(options) == 1, "strExtract accepts at most one options map argument.")
+				opsMap := options[0]
+				ll.assert(is_map(opsMap), "Second argument to strExtract(), if provided, must be an options map.")
+				if !is_undefined(opsMap.groupIndex) {
+					ll.assert(is_int(opsMap.groupIndex), "groupIndex in options map must be an integer")
+					groupIndexVal = opsMap.groupIndex
+				}
+			}
+
+			return _newExpression({
+				type: "str_extract",
+				value: expression,
+				pattern: _mapToSingleExpressionStruct(pattern, "lit"),
+				groupIndex: groupIndexVal
+			}, undefined)
+		},
+
+		/**
+		 * Checks if this string expression starts with the specified prefix.
+		 * @param prefix - string|object - The literal prefix (string literal or an expression object evaluating to a string) to check for.
+		 * @returns {object} - A boolean expression object.
+		 */
+		strStartsWith: func(prefix) {
+			return _newExpression({
+				type: "str_starts_with",
+				value: expression,
+				prefix: _mapToSingleExpressionStruct(prefix, "lit")
+			}, undefined)
+		},
+
+		/**
+		 * Checks if this string expression ends with the specified suffix.
+		 * @param suffix - string|object - The literal suffix (string literal or an expression object evaluating to a string) to check for.
+		 * @returns {object} - A boolean expression object.
+		 */
+		strEndsWith: func(suffix) {
+			return _newExpression({
+				type: "str_ends_with",
+				value: expression,
+				suffix: _mapToSingleExpressionStruct(suffix, "lit")
+			}, undefined)
+		},
+
 		// Fuzzy string
 		/**
 		 * Computes the distance or similarity between this string expression and another.

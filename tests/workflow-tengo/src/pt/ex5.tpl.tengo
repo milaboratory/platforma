@@ -1,0 +1,93 @@
+self := import("@platforma-sdk/workflow-tengo:tpl")
+pt := import("@platforma-sdk/workflow-tengo:pt")
+file := import("@platforma-sdk/workflow-tengo:file")
+
+self.defineOutputs("out_string_functions")
+
+self.body(func(inputs) {
+    // Test data with various string patterns for comprehensive testing
+    inputData := `email	filename	content	code
+john.doe@example.com	document.pdf	This contains apple and banana fruits	HELLO123
+jane_smith@test.org	image.jpg	Looking for orange or lemon juice	hello456
+bob@company.co.uk	data.csv	No fruits here just vegetables	GOODBYE789
+alice.wilson@demo.net	readme.txt	Apple pie and cherry tart available	world999
+frank@startup.io	script.py	Banana smoothie with lime juice	test888`
+
+    wf := pt.workflow()
+
+    df := wf.frame(inputData, {
+        xsvType: "tsv"
+    })
+
+    // Comprehensive test of all new string functions
+    dfWithStringFunctions := df.withColumns(
+        // strContains - Check for email pattern (regex)
+        pt.col("email").strContains("\\w+@\\w+\\.\\w+").alias("has_email_pattern"),
+
+        // strContains - Check for literal "apple" (case sensitive)
+        pt.col("content").strContains("apple", {literal: true}).alias("contains_apple_literal"),
+
+        // strContains - Check for "hello" with case insensitive regex
+        pt.col("code").strContains("(?i)hello").alias("contains_hello_ci"),
+
+        // strContainsAny - Check if content contains any citrus fruits
+        pt.col("content").strContainsAny(["orange", "lemon", "lime"]).alias("has_citrus"),
+
+        // strContainsAny - Case insensitive fruit detection
+        pt.col("content").strContainsAny(["apple", "banana", "cherry"], {asciiCaseInsensitive: true}).alias("has_fruits_ci"),
+
+        // strCountMatches - Count occurrences of "a" (literal)
+        pt.col("content").strCountMatches("a", {literal: true}).alias("count_letter_a"),
+
+        // strCountMatches - Count words (regex pattern)
+        pt.col("content").strCountMatches("\\b\\w+\\b").alias("word_count"),
+
+        // strExtract - Extract username from email (capture group 1)
+        pt.col("email").strExtract("^([^@]+)@.*", {groupIndex: 1}).alias("username"),
+
+        // strExtract - Extract domain from email (capture group 1)
+        pt.col("email").strExtract("^[^@]+@(.+)", {groupIndex: 1}).alias("domain"),
+
+        // strExtract - Extract letters from code (group 0 = full match)
+        pt.col("code").strExtract("[A-Za-z]+").alias("code_letters"),
+
+        // strStartsWith - Check if email starts with specific names
+        pt.col("email").strStartsWith("john").alias("starts_with_john"),
+
+        // strStartsWith - Check for file type by prefix
+        pt.col("filename").strStartsWith("data").alias("is_data_file"),
+
+        // strEndsWith - Check file extensions
+        pt.col("filename").strEndsWith(".pdf").alias("is_pdf"),
+
+        // strEndsWith - Check email domain endings
+        pt.col("email").strEndsWith(".com").alias("is_dot_com")
+    ).select(
+        "email",
+        "filename",
+        "content",
+        "code",
+        "has_email_pattern",
+        "contains_apple_literal",
+        "contains_hello_ci",
+        "has_citrus",
+        "has_fruits_ci",
+        "count_letter_a",
+        "word_count",
+        "username",
+        "domain",
+        "code_letters",
+        "starts_with_john",
+        "is_data_file",
+        "is_pdf",
+        "is_dot_com"
+    )
+
+    dfWithStringFunctions.save("output_string_functions.tsv")
+
+    ptablerResult := wf.run()
+
+    return {
+        out_string_functions: file.exportFile(ptablerResult.getFile("output_string_functions.tsv"))
+    }
+})
