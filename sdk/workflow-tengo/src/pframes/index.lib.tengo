@@ -429,7 +429,7 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 		// map output name to output settings provided in input
 		outputsMap[output.name] = output
 		if output.type == "Resource" || output.type == "BinaryPartitioned" || output.type == "JsonPartitioned" {
-			spec := maps.merge(output.spec, { axesSpec: copy(iterationAxesSpec) + copy(output.spec.axesSpec) })
+			spec := maps.merge(output.spec, { axesSpec: copy(iterationAxesSpec) + slices.normalize(output.spec.axesSpec) })
 			if !is_undefined(trace) {
 				spec = trace.inject(spec, {override: overrideTrace})
 			}
@@ -438,7 +438,7 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 		} else if output.type == "ResourceMap" {
 			processedOutputs = append(processedOutputs, maps.merge(output,
 				{ keyLength: len(output.spec.axesSpec), spec: undefined }))
-			spec := maps.merge(output.spec, { axesSpec: copy(iterationAxesSpec) + copy(output.spec.axesSpec) })
+			spec := maps.merge(output.spec, { axesSpec: copy(iterationAxesSpec) + slices.normalize(output.spec.axesSpec) })
 			if !is_undefined(trace) {
 				spec = trace.inject(spec, {override: overrideTrace})
 			}

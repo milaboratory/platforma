@@ -4,7 +4,6 @@ smart := import(":smart")
 json := import("json")
 text := import("text")
 validation := import(":validation")
-constants := import(":constants")
 pConstants := import(":pframes.constants")
 
 self.defineOutputs("result")
