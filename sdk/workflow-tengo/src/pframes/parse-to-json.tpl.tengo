@@ -186,13 +186,13 @@ self.body(func(inputs) {
 			partitionKeyLength = meta.keyLength
 			totalKeyLength = partitionKeyLength + paramsAxesLength
 
-			for resourceKey, resourceRef in input.inputs() {
+			for resourceKey, fieldRef in input.inputs() {
 				partKey := json.decode(resourceKey)
 				if !is_array(partKey) || len(partKey) != partitionKeyLength {
 					ll.panic("Invalid resource key: %s, expected array of length %d", resourceKey, partitionKeyLength)
 				}
 
-				content := string(resourceRef.getData())
+				content := string(fieldRef.getValue().getData())
 				partitionedContent[resourceKey] = content
 			}
 
@@ -213,7 +213,7 @@ self.body(func(inputs) {
 					ll.panic("Invalid super-partition key: %s, expected array of length %d", superPartitionKeyStr, superPartitionKeyLength)
 				}
 
-				for innerKeyStr, resourceRef in innerResourceMapRef.inputs() {
+				for innerKeyStr, fieldRef in innerResourceMapRef.inputs() {
 					innerKey := json.decode(innerKeyStr)
 					if !is_array(innerKey) || len(innerKey) != innerKeyLength {
 						ll.panic("Invalid inner key: %s, expected array of length %d", innerKeyStr, innerKeyLength)
@@ -221,7 +221,7 @@ self.body(func(inputs) {
 
 					combinedKey := copy(superPartitionKey) + innerKey
 					combinedKeyStr := string(json.encode(combinedKey))
-					content := string(resourceRef.getData())
+					content := string(fieldRef.getValue().getData())
 					partitionedContent[combinedKeyStr] = content
 				}
 			}
