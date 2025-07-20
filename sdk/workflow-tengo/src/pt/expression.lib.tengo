@@ -1,6 +1,8 @@
 ll := import(":ll")
 maps := import(":maps")
 slices := import(":slices")
+validation := import(":validation")
+fmt := import("fmt")
 
 
 // Forward declarations
@@ -14,6 +16,24 @@ and := undefined
 or := undefined
 when := undefined
 rank := undefined
+
+
+
+// Helper function to validate options using validation library
+_validateOptions := func(options, schema, functionName) {
+	if len(options) > 1 {
+		ll.panic("%s accepts at most one options map argument.", functionName)
+	}
+	if len(options) == 0 {
+		return {}
+	}
+
+	opsMap := options[0]
+	ll.assert(is_map(opsMap), "Options argument to %s(), if provided, must be an options map.", functionName)
+
+	validation.assertType(opsMap, schema, fmt.sprintf("%s options validation error", functionName))
+	return opsMap
+}
 
 // Helper function to check if an item is a valid expression object
 _isExpression := func(item) {
@@ -266,15 +286,13 @@ _newExpression = func(expression, currentAlias) {
 		 * @returns {object} - A new expression object representing the cast operation.
 		 */
 		cast: func(dtype, ...options) {
+			ops := _validateOptions(options, {
+				"__options__,closed": "",
+				"strict,?": "bool"
+			}, "cast")
 			strictVal := false
-			if len(options) > 0 {
-				ll.assert(len(options) == 1, "cast accepts at most one options map argument.")
-				opsMap := options[0]
-				ll.assert(is_map(opsMap), "Second argument to cast(), if provided, must be an options map.")
-				if !is_undefined(opsMap.strict) {
-					ll.assert(is_bool(opsMap.strict), "strict in options map must be a boolean")
-					strictVal = opsMap.strict
-				}
+			if !is_undefined(ops.strict) {
+				strictVal = ops.strict
 			}
 			return _newExpression(
 				{type: "cast", value: expression, dtype: dtype, strict: strictVal},
@@ -334,14 +352,19 @@ _newExpression = func(expression, currentAlias) {
 			if len(args) > 0 {
 				arg := args[0]
 				if is_map(arg) {
-					if arg.length != undefined && arg.end != undefined {
+					ops := _validateOptions([arg], {
+						"__options__,closed": "",
+						"length,?": "any",
+						"end,?": "any"
+					}, "strSlice")
+					if ops.length != undefined && ops.end != undefined {
 						ll.panic("strSlice cannot have both 'length' and 'end' options.")
 					}
-					if !is_undefined(arg.length) {
-						expr.length = _mapToSingleExpressionStruct(arg.length, "col")
+					if !is_undefined(ops.length) {
+						expr.length = _mapToSingleExpressionStruct(ops.length, "col")
 					}
-					if !is_undefined(arg.end) {
-						expr.end = _mapToSingleExpressionStruct(arg.end, "col")
+					if !is_undefined(ops.end) {
+						expr.end = _mapToSingleExpressionStruct(ops.end, "col")
 					}
 				} else {
 					expr.length = _mapToSingleExpressionStruct(arg, "col")
@@ -361,21 +384,19 @@ _newExpression = func(expression, currentAlias) {
 		 * @returns {object} - A new expression object representing the replacement.
 		 */
 		strReplace: func(pattern, replacement, ...options) {
+			ops := _validateOptions(options, {
+				"__options__,closed": "",
+				"replaceAll,?": "bool",
+				"literal,?": "bool"
+			}, "strReplace")
 			replaceAllVal := false
 			literalVal := false
 
-			if len(options) > 0 {
-				ll.assert(len(options) == 1, "strReplace accepts at most one options map argument.")
-				opsMap := options[0]
-				ll.assert(is_map(opsMap), "Third argument to strReplace(), if provided, must be an options map.")
-				if !is_undefined(opsMap.replaceAll) {
-					ll.assert(is_bool(opsMap.replaceAll), "replaceAll in options map must be a boolean")
-					replaceAllVal = opsMap.replaceAll
-				}
-				if !is_undefined(opsMap.literal) {
-					ll.assert(is_bool(opsMap.literal), "literal in options map must be a boolean")
-					literalVal = opsMap.literal
-				}
+			if !is_undefined(ops.replaceAll) {
+				replaceAllVal = ops.replaceAll
+			}
+			if !is_undefined(ops.literal) {
+				literalVal = ops.literal
 			}
 
 			return _newExpression({
@@ -403,6 +424,147 @@ _newExpression = func(expression, currentAlias) {
 			}
 			opts.replaceAll = true
 			return self.strReplace(pattern, replacement, opts)
+		},
+
+		/**
+		 * Checks if this string expression contains the specified pattern.
+		 * @param pattern - string|object - The pattern (string literal, regex, or an expression object evaluating to a string) to search for.
+		 * @param options - map (optional) - An optional map with options:
+		 *   - literal (boolean, optional): If true, treat pattern as a literal string. Defaults to false (pattern is regex).
+		 *   - strict (boolean, optional): If true, raise error for invalid regex. Defaults to true.
+		 * @returns {object} - A boolean expression object.
+		 */
+		strContains: func(pattern, ...options) {
+			ops := _validateOptions(options, {
+				"__options__,closed": "",
+				"literal,?": "bool",
+				"strict,?": "bool"
+			}, "strContains")
+			literalVal := false
+			strictVal := true
+
+			if !is_undefined(ops.literal) {
+				literalVal = ops.literal
+			}
+			if !is_undefined(ops.strict) {
+				strictVal = ops.strict
+			}
+
+			return _newExpression({
+				type: "str_contains",
+				value: expression,
+				pattern: _mapToSingleExpressionStruct(pattern, "lit"),
+				literal: literalVal,
+				strict: strictVal
+			}, undefined)
+		},
+
+		/**
+		 * Checks if this string expression contains any of the provided patterns using the Aho-Corasick algorithm.
+		 * @param patterns - array - An array of literal string patterns to search for.
+		 * @param options - map (optional) - An optional map with options:
+		 *   - asciiCaseInsensitive (boolean, optional): Enable ASCII case insensitive matching. Defaults to false.
+		 * @returns {object} - A boolean expression object.
+		 */
+		strContainsAny: func(patterns, ...options) {
+			ll.assert(is_array(patterns), "patterns must be an array of strings")
+			for pattern in patterns {
+				ll.assert(is_string(pattern), "all patterns must be strings")
+			}
+
+			ops := _validateOptions(options, {
+				"__options__,closed": "",
+				"asciiCaseInsensitive,?": "bool"
+			}, "strContainsAny")
+			asciiCaseInsensitiveVal := false
+			if !is_undefined(ops.asciiCaseInsensitive) {
+				asciiCaseInsensitiveVal = ops.asciiCaseInsensitive
+			}
+
+			return _newExpression({
+				type: "str_contains_any",
+				value: expression,
+				patterns: patterns,
+				asciiCaseInsensitive: asciiCaseInsensitiveVal
+			}, undefined)
+		},
+
+		/**
+		 * Counts the number of times a pattern occurs in this string expression.
+		 * @param pattern - string|object - The pattern (string literal, regex, or an expression object evaluating to a string) to count.
+		 * @param options - map (optional) - An optional map with options:
+		 *   - literal (boolean, optional): If true, treat pattern as a literal string. Defaults to false (pattern is regex).
+		 * @returns {object} - A numeric expression object.
+		 */
+		strCountMatches: func(pattern, ...options) {
+			ops := _validateOptions(options, {
+				"__options__,closed": "",
+				"literal,?": "bool"
+			}, "strCountMatches")
+			literalVal := false
+
+			if !is_undefined(ops.literal) {
+				literalVal = ops.literal
+			}
+
+			return _newExpression({
+				type: "str_count_matches",
+				value: expression,
+				pattern: _mapToSingleExpressionStruct(pattern, "lit"),
+				literal: literalVal
+			}, undefined)
+		},
+
+		/**
+		 * Extracts parts of this string expression using regex patterns and capture groups.
+		 * @param pattern - string|object - The regex pattern (string literal or an expression object evaluating to a string) to extract with.
+		 * @param options - map (optional) - An optional map with options:
+		 *   - groupIndex (int, optional): The capture group index to extract. Group 0 is the entire match. Defaults to 0.
+		 * @returns {object} - A string expression object.
+		 */
+		strExtract: func(pattern, ...options) {
+			ops := _validateOptions(options, {
+				"__options__,closed": "",
+				"groupIndex,?": "number"
+			}, "strExtract")
+			groupIndexVal := 0
+
+			if !is_undefined(ops.groupIndex) {
+				groupIndexVal = ops.groupIndex
+			}
+
+			return _newExpression({
+				type: "str_extract",
+				value: expression,
+				pattern: _mapToSingleExpressionStruct(pattern, "lit"),
+				groupIndex: groupIndexVal
+			}, undefined)
+		},
+
+		/**
+		 * Checks if this string expression starts with the specified prefix.
+		 * @param prefix - string|object - The literal prefix (string literal or an expression object evaluating to a string) to check for.
+		 * @returns {object} - A boolean expression object.
+		 */
+		strStartsWith: func(prefix) {
+			return _newExpression({
+				type: "str_starts_with",
+				value: expression,
+				prefix: _mapToSingleExpressionStruct(prefix, "lit")
+			}, undefined)
+		},
+
+		/**
+		 * Checks if this string expression ends with the specified suffix.
+		 * @param suffix - string|object - The literal suffix (string literal or an expression object evaluating to a string) to check for.
+		 * @returns {object} - A boolean expression object.
+		 */
+		strEndsWith: func(suffix) {
+			return _newExpression({
+				type: "str_ends_with",
+				value: expression,
+				suffix: _mapToSingleExpressionStruct(suffix, "lit")
+			}, undefined)
 		},
 
 		// Fuzzy string
@@ -561,13 +723,16 @@ _newExpression = func(expression, currentAlias) {
 			actualArgs := args
 
 			if len(args) > 0 && is_map(args[len(args)-1]) && !(_isExpression(args[len(args)-1])) {
-				ops := args[len(args)-1]
+				ops := _validateOptions([args[len(args)-1]], {
+					"__options__,closed": "",
+					"orderBy,?": "any",
+					"descending,?": "bool"
+				}, "cumsum")
 				actualArgs = args[0:len(args)-1]
-				if maps.containsKey(ops, "orderBy") {
+				if !is_undefined(ops.orderBy) {
 					additionalOrderByVal = _mapToExpressionStructList(ops.orderBy, "col")
 				}
-				if maps.containsKey(ops, "descending") {
-					ll.assert(is_bool(ops.descending), "descending in options map must be a boolean")
+				if !is_undefined(ops.descending) {
 					descendingVal = ops.descending
 				}
 			}
@@ -645,15 +810,13 @@ concatStr := func(expressions, ...options) {
 	ll.assert(is_array(expressions), "First argument to concatStr must be an array of expressions")
 	ll.assert(len(expressions) > 0, "Expression array for concatStr cannot be empty")
 
+	ops := _validateOptions(options, {
+		"__options__,closed": "",
+		"delimiter,?": "string"
+	}, "concatStr")
 	delimiterVal := "" // Default to empty string
-	if len(options) > 0 {
-		ll.assert(len(options) == 1, "concatStr accepts at most one options map argument.")
-		opsMap := options[0]
-		ll.assert(is_map(opsMap), "Second argument to concatStr(), if provided, must be an options map.")
-		if !is_undefined(opsMap.delimiter) {
-			ll.assert(is_string(opsMap.delimiter), "delimiter in options map must be a string")
-			delimiterVal = opsMap.delimiter
-		}
+	if !is_undefined(ops.delimiter) {
+		delimiterVal = ops.delimiter
 	}
 
 	return _newExpression({
@@ -800,14 +963,12 @@ rank = func(orderByExpressions, ...options) {
 	orderByVal = _mapToExpressionStructList(orderByExpressions, "col")
 	ll.assert(len(orderByVal) > 0, "rank() 'orderBy' list cannot be empty after processing arguments.")
 
-	if len(options) > 0 {
-		ll.assert(len(options) == 1, "rank() accepts at most one options map argument.")
-		opsMap := options[0]
-		ll.assert(is_map(opsMap), "Second argument to rank(), if provided, must be an options map.")
-		if maps.containsKey(opsMap, "descending") {
-			ll.assert(is_bool(opsMap.descending), "descending in options map must be a boolean")
-			descendingVal = opsMap.descending
-		}
+	ops := _validateOptions(options, {
+		"__options__,closed": "",
+		"descending,?": "bool"
+	}, "rank")
+	if !is_undefined(ops.descending) {
+		descendingVal = ops.descending
 	}
 
 	return _newWindowExpression({

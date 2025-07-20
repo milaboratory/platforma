@@ -319,3 +319,45 @@ Short\thort`;
     expect(normalizeTsv(outputSubstrStatic)).toEqual(normalizeTsv(expectedOutputSubstrStatic));
   },
 );
+
+tplTest(
+  'pt ex5 test - comprehensive string functions',
+  { timeout: 40000 },
+  async ({ helper, expect, driverKit }) => {
+    // No input needed - data is embedded in template
+
+    const expectedOutputStringFunctions = `email\tfilename\tcontent\tcode\thas_email_pattern\tcontains_apple_literal\tcontains_hello_ci\thas_citrus\thas_fruits_ci\tcount_letter_a\tword_count\tusername\tdomain\tcode_letters\tstarts_with_john\tis_data_file\tis_pdf\tis_dot_com
+john.doe@example.com\tdocument.pdf\tThis contains apple and banana fruits\tHELLO123\ttrue\ttrue\ttrue\tfalse\ttrue\t6\t6\tjohn.doe\texample.com\tHELLO\ttrue\tfalse\ttrue\ttrue
+jane_smith@test.org\timage.jpg\tLooking for orange or lemon juice\thello456\ttrue\tfalse\ttrue\ttrue\tfalse\t1\t6\tjane_smith\ttest.org\thello\tfalse\tfalse\tfalse\tfalse
+bob@company.co.uk\tdata.csv\tNo fruits here just vegetables\tGOODBYE789\ttrue\tfalse\tfalse\tfalse\tfalse\t1\t5\tbob\tcompany.co.uk\tGOODBYE\tfalse\ttrue\tfalse\tfalse
+alice.wilson@demo.net\treadme.txt\tApple pie and cherry tart available\tworld999\ttrue\tfalse\tfalse\tfalse\ttrue\t5\t6\talice.wilson\tdemo.net\tworld\tfalse\tfalse\tfalse\tfalse
+frank@startup.io\tscript.py\tBanana smoothie with lime juice\ttest888\ttrue\tfalse\tfalse\ttrue\ttrue\t3\t5\tfrank\tstartup.io\ttest\tfalse\tfalse\tfalse\tfalse`;
+
+    const result = await helper.renderTemplate(
+      false,
+      'pt.ex5',
+      ['out_string_functions'],
+      (_tx) => ({}), // No dynamic inputs needed for this test
+    );
+
+    const getFileContent = async (outputName: 'out_string_functions') => {
+      const fileHandle = await awaitStableState(
+        result.computeOutput(outputName, (fileHandle, ctx) => {
+          if (!fileHandle) {
+            return undefined;
+          }
+          return driverKit.blobDriver.getOnDemandBlob(fileHandle.persist(), ctx).handle;
+        }),
+        40000,
+      );
+      expect(fileHandle).toBeDefined();
+      return (await driverKit.blobDriver.getContent(fileHandle!)).toString();
+    };
+
+    const outputContent = await getFileContent('out_string_functions');
+
+    const normalizeTsv = (str: string) => str.replace(/\r\n/g, '\n').trim();
+
+    expect(normalizeTsv(outputContent)).toEqual(normalizeTsv(expectedOutputStringFunctions));
+  },
+);
