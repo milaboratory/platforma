@@ -140,6 +140,37 @@ TestStringExpressions := func() {
 
     expr4 := name.strSlice(0, 5)
     test.isEqual(getExpr(expr4), {type: "substring", value: {type: "col", name: "name"}, start: {type: "const", value: 0}, length: {type: "const", value: 5}})
+
+    // New string functions tests
+    expr5 := name.strContains("hello")
+    test.isEqual(getExpr(expr5), {type: "str_contains", value: {type: "col", name: "name"}, pattern: {type: "const", value: "hello"}, literal: false, strict: true})
+
+    expr6 := name.strContains("hello", {literal: true, strict: false})
+    test.isEqual(getExpr(expr6), {type: "str_contains", value: {type: "col", name: "name"}, pattern: {type: "const", value: "hello"}, literal: true, strict: false})
+
+    expr7 := name.strContainsAny(["apple", "banana"])
+    test.isEqual(getExpr(expr7), {type: "str_contains_any", value: {type: "col", name: "name"}, patterns: ["apple", "banana"], asciiCaseInsensitive: false})
+
+    expr8 := name.strContainsAny(["apple", "banana"], {asciiCaseInsensitive: true})
+    test.isEqual(getExpr(expr8), {type: "str_contains_any", value: {type: "col", name: "name"}, patterns: ["apple", "banana"], asciiCaseInsensitive: true})
+
+    expr9 := name.strCountMatches("a")
+    test.isEqual(getExpr(expr9), {type: "str_count_matches", value: {type: "col", name: "name"}, pattern: {type: "const", value: "a"}, literal: false})
+
+    expr10 := name.strCountMatches("a", {literal: true})
+    test.isEqual(getExpr(expr10), {type: "str_count_matches", value: {type: "col", name: "name"}, pattern: {type: "const", value: "a"}, literal: true})
+
+    expr11 := name.strExtract("(\\w+)")
+    test.isEqual(getExpr(expr11), {type: "str_extract", value: {type: "col", name: "name"}, pattern: {type: "const", value: "(\\w+)"}, groupIndex: 0})
+
+    expr12 := name.strExtract("(\\w+)@(\\w+)", {groupIndex: 2})
+    test.isEqual(getExpr(expr12), {type: "str_extract", value: {type: "col", name: "name"}, pattern: {type: "const", value: "(\\w+)@(\\w+)"}, groupIndex: 2})
+
+    expr13 := name.strStartsWith("Mr.")
+    test.isEqual(getExpr(expr13), {type: "str_starts_with", value: {type: "col", name: "name"}, prefix: {type: "const", value: "Mr."}})
+
+    expr14 := name.strEndsWith(".com")
+    test.isEqual(getExpr(expr14), {type: "str_ends_with", value: {type: "col", name: "name"}, suffix: {type: "const", value: ".com"}})
 }
 
 TestWindowExpressions := func() {
