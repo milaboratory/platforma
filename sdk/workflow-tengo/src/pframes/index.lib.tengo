@@ -132,6 +132,12 @@ __primitiveValueTypes := { "Int": true, "Long": true, "Float": true, "Double": t
  *                       keepNulls?: boolean // Relevant if optional flag is used in path.
  *                                           // If true, keys for which output was not found will be present in the output
  *                                           // with null value. If false or not specified, such keys will not be present.
+ *                       traceSteps?: array  // [Optional] Array of trace steps to add to this output's specs
+ *                                           // These steps will precede any global traceSteps if both are provided
+ *                                           // Each step should be an object with type, id, importance and label
+ *                       overrideTrace?: boolean // [Optional] If true, override existing trace annotations in this output's specs.
+ *                                           // If false, preserve existing trace annotations.
+ *                                           // If not specified, defaults to true when traceSteps (output or global) are provided, false otherwise.
  *                     }
  *
  *                  Available types:
@@ -184,11 +190,13 @@ __primitiveValueTypes := { "Int": true, "Long": true, "Float": true, "Double": t
  *
  *                    {
  *                      traceSteps?: array      // Array of trace steps to add to output specs
+ *                                              // These are applied to all outputs unless overridden per output
  *                                              // Each step should be an object with type, id, importance and label
  *
  *                      overrideTrace?: boolean // If true, override existing trace annotations in output specs.
  *                                              // If false, preserve existing trace annotations.
- *                                              // If not specified, defaults to true when traceSteps is provided, false otherwise.
+ *                                              // Can be overridden per output. If not specified, defaults to true when
+ *                                              // traceSteps (global or per-output) are provided, false otherwise.
  *
  *                      aggregate?: AxisMatcher[],
  *                                              // If specified, selected axes are combined and
@@ -294,20 +302,26 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 		ll.panic("can't use passAggregationAxesSpec, passAggregationAxesNames or passDistilledAggregationSpec without aggregate")
 	}
 
-	// Initialize trace if traceSteps provided
-	trace := undefined
-	if !is_undefined(opts.traceSteps) || !is_undefined(input.spec.annotations[pSpec.A_TRACE]) {
-		trace = pSpec.makeTrace(input.spec, (opts.traceSteps ? opts.traceSteps : [])...)
+	createOutputTrace := func(output) {
+		hasOutputTrace := !is_undefined(output.traceSteps)
+		hasGlobalTrace := !is_undefined(opts.traceSteps)
+		hasInputTrace := !is_undefined(input.spec.annotations[pSpec.A_TRACE])
+
+		outputTraceSteps := slices.normalize(opts.traceSteps) + slices.normalize(output.traceSteps)
+
+		trace := undefined
+		if len(outputTraceSteps) > 0 || hasInputTrace {
+			trace = pSpec.makeTrace(input.spec, outputTraceSteps...)
+		}
+
+		outputOverrideTrace := output.overrideTrace
+		if is_undefined(outputOverrideTrace) {
+			outputOverrideTrace = hasOutputTrace || hasGlobalTrace
+		}
+
+		return { trace: trace, overrideTrace: outputOverrideTrace }
 	}
 
-	// Set overrideTrace with smart defaults
-	overrideTrace := opts.overrideTrace
-	if is_undefined(overrideTrace) {
-		// Default to true if traceSteps is provided, false otherwise
-		overrideTrace = !is_undefined(opts.traceSteps)
-	}
-
-	// JSON params passed as a single resource to the template
 	processTemplateParams := {
 		eph: opts.isEphemeral,
 		passKey: opts.passKey
@@ -428,19 +442,20 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 	for output in outputs {
 		// map output name to output settings provided in input
 		outputsMap[output.name] = output
+		traceInfo := createOutputTrace(output)
 		if output.type == "Resource" || output.type == "BinaryPartitioned" || output.type == "JsonPartitioned" {
 			spec := maps.merge(output.spec, { axesSpec: copy(iterationAxesSpec) + slices.normalize(output.spec.axesSpec) })
-			if !is_undefined(trace) {
-				spec = trace.inject(spec, {override: overrideTrace})
+			if !is_undefined(traceInfo.trace) {
+				spec = traceInfo.trace.inject(spec, {override: traceInfo.overrideTrace})
 			}
 			outputSpecs[output.name] = spec
-			processedOutputs = append(processedOutputs, maps.merge(output, {spec: undefined })) // removing spec field
+			processedOutputs = append(processedOutputs, maps.merge(output, {spec: undefined, traceSteps: undefined, overrideTrace: undefined }))
 		} else if output.type == "ResourceMap" {
 			processedOutputs = append(processedOutputs, maps.merge(output,
-				{ keyLength: len(output.spec.axesSpec), spec: undefined }))
+				{ keyLength: len(output.spec.axesSpec), spec: undefined, traceSteps: undefined, overrideTrace: undefined }))
 			spec := maps.merge(output.spec, { axesSpec: copy(iterationAxesSpec) + slices.normalize(output.spec.axesSpec) })
-			if !is_undefined(trace) {
-				spec = trace.inject(spec, {override: overrideTrace})
+			if !is_undefined(traceInfo.trace) {
+				spec = traceInfo.trace.inject(spec, {override: traceInfo.overrideTrace})
 			}
 			outputSpecs[output.name] = spec
 		} else if output.type == "Xsv" {
@@ -452,16 +467,18 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 			})
 			purifiedPfconvCfg := decomposition.purifiedCfg
 			columnsSpec := decomposition.columnsSpec
-			if !is_undefined(trace) {
+			if !is_undefined(traceInfo.trace) {
 				for columnName, spec in columnsSpec {
-					columnsSpec[columnName] = trace.inject(spec, {override: overrideTrace})
+					columnsSpec[columnName] = traceInfo.trace.inject(spec, {override: traceInfo.overrideTrace})
 				}
 			}
 			outputSpecs[output.name] = columnsSpec
 			processedOutputs = append(processedOutputs, maps.merge(output,
 				{
 					settings: purifiedPfconvCfg,
-					flattenWithDelimiter: "/"
+					flattenWithDelimiter: "/",
+					traceSteps: undefined,
+					overrideTrace: undefined
 				}))
 		} else if output.type == "TsvContent" {
 			validation.assertType(output.settings, TSV_CONTENT_SETTINGS_SCHEMA, "Invalid TsvContent settings")
@@ -499,8 +516,8 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 					columnId = column.column
 				}
 				spec := maps.merge(column.spec, { axesSpec: axesSpec, kind: "PColumn" })
-				if !is_undefined(trace) {
-					spec = trace.inject(spec, {override: overrideTrace})
+				if !is_undefined(traceInfo.trace) {
+					spec = traceInfo.trace.inject(spec, {override: traceInfo.overrideTrace})
 				}
 				columnsSpec[columnId] = spec
 			}
@@ -508,7 +525,9 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 			outputSpecs[output.name] = columnsSpec
 			processedOutputs = append(processedOutputs, maps.merge(output, {
 				settings: transformedSettings,
-				flattenWithDelimiter: "/"
+				flattenWithDelimiter: "/",
+				traceSteps: undefined,
+				overrideTrace: undefined
 			}))
 		} else {
 			ll.panic("unknown output type: " + output.type)

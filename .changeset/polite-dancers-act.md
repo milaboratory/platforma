@@ -20,6 +20,14 @@ Added new TsvContent output type and enhanced trace injection:
   - Defaults to `false` when no `traceSteps` are provided (preserve existing traces)
 - Updated all trace injection calls in `processColumn` to respect the override setting
 
+**Per-Output Trace Support:**
+- Added per-output `traceSteps` and `overrideTrace` fields to all output types
+- Output-specific `traceSteps` are appended after global `traceSteps` (global first, then output-specific)
+- Each output can override the global `overrideTrace` setting independently
+- Smart defaults for `overrideTrace`: defaults to `true` when any traceSteps (global or per-output) are provided
+- Used `slices.normalize()` for safe array concatenation regardless of undefined values
+- Cleaned up trace handling code by removing uninformative comments
+
 **Code Quality Improvements:**
 - Replaced manual validation checks with `validation.assertType()` for better error messages
 - Used `slices.map()` for functional array transformations instead of manual loops
