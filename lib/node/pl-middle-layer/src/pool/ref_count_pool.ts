@@ -35,7 +35,7 @@ export abstract class RefCountResourcePool<P, R> {
       if (isDisposable(resource)) {
         const _ = this.disposeQueue.then(() => resource[Symbol.dispose]());
       } else if (isAsyncDisposable(resource)) {
-        const _ = this.disposeQueue.then(async () => await resource[Symbol.asyncDispose]());
+        const _ = this.disposeQueue.then(() => resource[Symbol.asyncDispose]());
       }
     }
   }
