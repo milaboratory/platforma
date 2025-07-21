@@ -18,6 +18,26 @@ json := import("json")
 
 parseToJsonTpl := assets.importTemplate(":pframes.parse-to-json")
 
+// Helper function to extract column ID with backward compatibility
+getColumnId := func(column) {
+	kind := column.kind
+	if is_undefined(kind) {
+		kind = "column"
+	}
+
+	if kind == "column" {
+		columnId := column.id
+		if is_undefined(columnId) {
+			columnId = column.column
+		}
+		return columnId
+	} else if kind == "line" || kind == "json-line" {
+		return column.id
+	} else {
+		ll.panic("Unknown column kind: %s", kind)
+	}
+}
+
 self.awaitState("InputsLocked")
 self.awaitState("data", "InputsLocked")
 self.awaitState("params", "ResourceReady")
@@ -92,13 +112,23 @@ self.body(func(inputs) {
 		}
 	}
 
+	// Check for unsupported combinations
+	if !is_undefined(anonymizationIndices) && len(anonymizationIndices) > 0 {
+		// Check if input is PColumnData/Json which doesn't support anonymization
+		isJson := data.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_JSON)
+		if isJson {
+			ll.panic("Anonymization is not supported for PColumnData/Json. Anonymization currently works only with resources.")
+		}
+	}
+
 	// Check supported types
 	isResourceMap := data.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP)
 	isJsonPartitioned := data.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_JSON_PARTITIONED)
 	isBinaryPartitioned := data.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_BINARY_PARTITIONED)
+	isJson := data.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_JSON)
 	isPartitioned := isJsonPartitioned || isBinaryPartitioned
 
-	if isResourceMap || isPartitioned {
+	if isResourceMap || isPartitioned || isJson {
 		meta := data.getDataAsJson()
 
 		inputKeyLength := 0
@@ -107,11 +137,16 @@ self.body(func(inputs) {
 				 ll.panic("Invalid metadata for ResourceMap: %v", meta)
 			}
 			inputKeyLength = meta.keyLength
-		} else { // isPartitioned
+		} else if isPartitioned {
 			if !is_map(meta) || is_undefined(meta.partitionKeyLength) {
 				 ll.panic("Invalid metadata for Partitioned resource: %v", meta)
 			}
 			inputKeyLength = meta.partitionKeyLength
+		} else if isJson {
+			if !is_map(meta) || is_undefined(meta.keyLength) || is_undefined(meta.data) {
+				 ll.panic("Invalid metadata for Json: %v", meta)
+			}
+			inputKeyLength = meta.keyLength
 		}
 
 
@@ -137,8 +172,20 @@ self.body(func(inputs) {
 
 		if mappingMode {
 			groupKeyLength = inputKeyLength
-			for sKey, field in data.inputs() {
-				groups[sKey] = field
+
+			if isJson {
+				// For PColumnData/Json in mapping mode, iterate through embedded data
+				embeddedData := meta.data
+				for sKey, value in embeddedData {
+					// Create a simple JSON resource containing the primitive value
+					valueResource := smart.createJsonResource(value)
+					groups[sKey] = valueResource
+				}
+			} else {
+				// Existing logic for ResourceMap
+				for sKey, field in data.inputs() {
+					groups[sKey] = field
+				}
 			}
 		} else { // <- aggregation mode
 			// Calculate group indices based on inputKeyLength (full key for ResourceMap, partition key for Partitioned)
@@ -148,74 +195,123 @@ self.body(func(inputs) {
 			if groupElementKeyLength < 0 {
 				ll.panic("Group element key length is negative: %v", groupElementKeyLength)
 			}
-			if !isPartitioned {
+			if !isPartitioned && !isJson {
 				ll.assert(groupElementKeyLength == len(aggregationIndices),
 				  "Group element key length is not equal to aggregation indices length: %v != %v",
 				  groupElementKeyLength, len(aggregationIndices))
 			}
 
-			for sKey, field in data.inputs() {
-				sKeyP := sKey
-				suffix := ""
-				if isBinaryPartitioned {
-					dotIdx := text.last_index(sKey, ".")
-					if dotIdx == -1 {
-						ll.panic("BinaryPartitioned key must contain a dot: %v", sKey)
-					}
-					suffix = sKey[dotIdx:]
-					sKeyP = sKey[:(dotIdx)]
-				}
-				key := json.decode(sKeyP) // Key is the resource key (ResourceMap) or partition key (Partitioned)
+			if isJson {
+				// For PColumnData/Json in aggregation mode
+				embeddedData := meta.data
+				for sKey, value in embeddedData {
+					key := json.decode(sKey) // Parse the JSON-encoded key array
 
-				groupKey := []
-				for i in groupIndices {
-					if len(key) <= i {
-						ll.panic("Key length is less than aggregation index: %v, key: %v", i, key)
-					}
-					groupKey = append(groupKey, key[i])
-				}
-
-				inGroupKey := []
-				for i in aggregationIndices {
-					if len(key) <= i {
-						if isJsonPartitioned || isBinaryPartitioned {
-							continue
-						} else {
+					groupKey := []
+					for i in groupIndices {
+						if len(key) <= i {
 							ll.panic("Key length is less than aggregation index: %v, key: %v", i, key)
 						}
+						groupKey = append(groupKey, key[i])
 					}
-					inGroupKey = append(inGroupKey, key[i])
+
+					inGroupKey := []
+					for i in aggregationIndices {
+						if len(key) <= i {
+							ll.panic("Key length is less than aggregation index: %v, key: %v", i, key)
+						}
+						inGroupKey = append(inGroupKey, key[i])
+					}
+
+					sGroupKey := json.encode(groupKey)
+					sInGroupKey := json.encode(inGroupKey)
+
+					group := groups[sGroupKey]
+					if is_undefined(group) {
+						// Create a plain map to collect grouped data
+						group = {}
+						groups[sGroupKey] = group
+					}
+
+					// Add the value directly to the group map
+					group[sInGroupKey] = value
 				}
 
-				sGroupKey := json.encode(groupKey)
-				// This is the key for the element within the intermediate group ResourceMap
-				sInGroupKey := json.encode(inGroupKey)
-
-				group := groups[sGroupKey]
-				if is_undefined(group) {
-					// Create an intermediate resource to hold aggregated elements.
-					// Its type must match the input data type as expected by the body template.
-					intermediateGroupType := undefined
-					intermediateGroupMetadata := undefined
-
-					if isBinaryPartitioned {
-						intermediateGroupType = pConstants.RTYPE_P_COLUMN_DATA_BINARY_PARTITIONED
-						intermediateGroupMetadata = { partitionKeyLength: groupElementKeyLength }
-					} else if isJsonPartitioned {
-						intermediateGroupType = pConstants.RTYPE_P_COLUMN_DATA_JSON_PARTITIONED
-						intermediateGroupMetadata = { partitionKeyLength: groupElementKeyLength }
-					} else { // isResourceMap (this is the only remaining option)
-						intermediateGroupType = pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP
-						intermediateGroupMetadata = { keyLength: groupElementKeyLength }
-					}
-
-					group = smart.structBuilder(
-						intermediateGroupType,
-						json.encode(intermediateGroupMetadata)
+				// After collecting all data, convert maps to PColumnData/Json resources
+				for sGroupKey, groupData in groups {
+					groups[sGroupKey] = smart.structBuilder(
+						pConstants.RTYPE_P_COLUMN_DATA_JSON,
+						json.encode({
+							keyLength: groupElementKeyLength,
+							data: groupData
+						})
 					)
-					groups[sGroupKey] = group
 				}
-				group.createInputField(string(sInGroupKey) + suffix).set(field)
+			} else {
+				// Existing logic for ResourceMap and Partitioned types
+				for sKey, field in data.inputs() {
+					sKeyP := sKey
+					suffix := ""
+					if isBinaryPartitioned {
+						dotIdx := text.last_index(sKey, ".")
+						if dotIdx == -1 {
+							ll.panic("BinaryPartitioned key must contain a dot: %v", sKey)
+						}
+						suffix = sKey[dotIdx:]
+						sKeyP = sKey[:(dotIdx)]
+					}
+					key := json.decode(sKeyP) // Key is the resource key (ResourceMap) or partition key (Partitioned)
+
+					groupKey := []
+					for i in groupIndices {
+						if len(key) <= i {
+							ll.panic("Key length is less than aggregation index: %v, key: %v", i, key)
+						}
+						groupKey = append(groupKey, key[i])
+					}
+
+					inGroupKey := []
+					for i in aggregationIndices {
+						if len(key) <= i {
+							if isJsonPartitioned || isBinaryPartitioned {
+								continue
+							} else {
+								ll.panic("Key length is less than aggregation index: %v, key: %v", i, key)
+							}
+						}
+						inGroupKey = append(inGroupKey, key[i])
+					}
+
+					sGroupKey := json.encode(groupKey)
+					// This is the key for the element within the intermediate group ResourceMap
+					sInGroupKey := json.encode(inGroupKey)
+
+					group := groups[sGroupKey]
+					if is_undefined(group) {
+						// Create an intermediate resource to hold aggregated elements.
+						// Its type must match the input data type as expected by the body template.
+						intermediateGroupType := undefined
+						intermediateGroupMetadata := undefined
+
+						if isBinaryPartitioned {
+							intermediateGroupType = pConstants.RTYPE_P_COLUMN_DATA_BINARY_PARTITIONED
+							intermediateGroupMetadata = { partitionKeyLength: groupElementKeyLength }
+						} else if isJsonPartitioned {
+							intermediateGroupType = pConstants.RTYPE_P_COLUMN_DATA_JSON_PARTITIONED
+							intermediateGroupMetadata = { partitionKeyLength: groupElementKeyLength }
+						} else { // isResourceMap (this is the only remaining option)
+							intermediateGroupType = pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP
+							intermediateGroupMetadata = { keyLength: groupElementKeyLength }
+						}
+
+						group = smart.structBuilder(
+							intermediateGroupType,
+							json.encode(intermediateGroupMetadata)
+						)
+						groups[sGroupKey] = group
+					}
+					group.createInputField(string(sInGroupKey) + suffix).set(field)
+				}
 			}
 		}
 
@@ -477,10 +573,7 @@ self.body(func(inputs) {
 				// Extract individual column results and store them directly
 				if !is_undefined(output.flattenWithDelimiter) {
 					for column in output.settings.columns {
-						columnId := column.id
-						if is_undefined(columnId) {
-							columnId = column.column
-						}
+						columnId := getColumnId(column)
 						columnData := parseResultData.buildFutureField({ name: columnId })
 						outputMaps[output.name + output.flattenWithDelimiter + columnId] = columnData
 					}
