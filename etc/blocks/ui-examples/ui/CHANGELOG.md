@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.5.18
+
+### Patch Changes
+
+- 85b9887: PlAgDataTable - removed API for reading rows data
+
 ## 1.5.17
 
 ### Patch Changes
