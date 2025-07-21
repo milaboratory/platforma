@@ -42,11 +42,6 @@ export function createAppV2<
   platforma: PlatformaV2<Args, Outputs, UiState, Href>,
   settings: AppSettings,
 ) {
-  type AppModel = {
-    args: Args;
-    ui: UiState;
-  };
-
   const debug = (msg: string, ...rest: unknown[]) => {
     if (settings.debug) {
       console.log(`%c>>> %c${msg}`, 'color: orange; font-weight: bold', 'color: orange', settings.appId, ...rest);
@@ -150,7 +145,10 @@ export function createAppV2<
     { deep: true },
   );
 
-  const updateAppModelSilently = (newData: AppModel) => {
+  const updateAppModelSilently = (newData: {
+    args: Args;
+    ui: UiState;
+  }) => {
     debug('updateAppModelSilently', newData);
     appModelWatch.pause();
     appModel.model.args = deepClone(newData.args) as Args;
