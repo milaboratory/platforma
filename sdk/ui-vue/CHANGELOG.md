@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.41.13
+
+### Patch Changes
+
+- d29cbad: Simplify app model for v2 api
+
 ## 1.41.11
 
 ### Patch Changes
