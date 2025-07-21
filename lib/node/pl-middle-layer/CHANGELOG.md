@@ -1,5 +1,22 @@
 # @milaboratories/pl-middle-layer
 
+## 1.40.11
+
+### Patch Changes
+
+- 188ee1e: PFramesDriver - assume setDataInfo will become asynchronous
+- Updated dependencies [188ee1e]
+  - @milaboratories/ts-helpers@1.4.2
+  - @milaboratories/computable@2.6.2
+  - @milaboratories/pl-client@2.11.5
+  - @milaboratories/pl-config@1.6.2
+  - @milaboratories/pl-deployments@2.4.6
+  - @milaboratories/pl-drivers@1.6.12
+  - @milaboratories/pl-errors@1.1.12
+  - @milaboratories/pl-tree@1.7.4
+  - @platforma-sdk/block-tools@2.5.73
+  - @platforma-sdk/workflow-tengo@4.13.0
+
 ## 1.40.10
 
 ### Patch Changes

@@ -1,5 +1,16 @@
 # @platforma-sdk/test
 
+## 1.41.14
+
+### Patch Changes
+
+- Updated dependencies [188ee1e]
+  - @milaboratories/pl-middle-layer@1.40.11
+  - @milaboratories/ts-helpers@1.4.2
+  - @milaboratories/computable@2.6.2
+  - @milaboratories/pl-client@2.11.5
+  - @milaboratories/pl-tree@1.7.4
+
 ## 1.41.12
 
 ### Patch Changes

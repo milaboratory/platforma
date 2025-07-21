@@ -1,5 +1,12 @@
 # @milaboratories/pl-client
 
+## 2.11.5
+
+### Patch Changes
+
+- Updated dependencies [188ee1e]
+  - @milaboratories/ts-helpers@1.4.2
+
 ## 2.11.4
 
 ### Patch Changes
