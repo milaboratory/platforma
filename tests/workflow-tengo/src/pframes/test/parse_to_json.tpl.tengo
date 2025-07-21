@@ -1,0 +1,24 @@
+// parse_to_json test template
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+
+ll := import("@platforma-sdk/workflow-tengo:ll")
+pframes := import("@platforma-sdk/workflow-tengo:pframes")
+
+self.awaitState("InputsLocked")
+self.awaitState("params", "ResourceReady")
+
+self.body(func(inputs) {
+	params := inputs.params
+
+	// Use parseToJson to parse TSV content with all column kinds
+	parseResult := pframes.parseToJson(params.tsvContent, params.settings)
+
+	// Build a result frame with all parsed columns
+	builder := pframes.pFrameBuilder()
+	parseResult.addAllOutputsToBuilder(builder)
+
+	return {
+		result: pframes.exportFrame(builder.build())
+	}
+})

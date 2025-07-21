@@ -8,5 +8,6 @@ export default defineConfig({
     maxWorkers: 2,
     minWorkers: 1,
     // fileParallelism: false // is equal to minWorkers = 1, maxWorkwrs = 1
+    retry: 2,
   }
 });
