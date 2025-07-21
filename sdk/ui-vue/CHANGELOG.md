@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.41.11
+
+### Patch Changes
+
+- 85b9887: PlAgDataTable - removed API for reading rows data
+
 ## 1.41.9
 
 ### Patch Changes
