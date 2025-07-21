@@ -153,8 +153,8 @@ export function createAppV2<
   const updateAppModelSilently = (newData: AppModel) => {
     debug('updateAppModelSilently', newData);
     appModelWatch.pause();
-    appModel.model.args = newData.args as Args;
-    appModel.model.ui = newData.ui as UiState;
+    appModel.model.args = deepClone(newData.args) as Args;
+    appModel.model.ui = deepClone(newData.ui) as UiState;
     appModelWatch.resume();
   };
 
