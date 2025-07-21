@@ -19,6 +19,15 @@ const progress = computed(() => {
   return handle.value;
 })
 
+const strContent = computed(() => {
+  const content = app.snapshot.outputs.content;
+  if (!content || !content.ok) {
+    return undefined;
+  }
+  return new TextDecoder().decode(content.value);
+})
+
+/*
 const onDemandContent = computedAsync(async () => {
   const handle = app.snapshot.outputs.onDemandBlobContent;
   if (!handle) {
@@ -99,7 +108,7 @@ const onDemandRangeContent1 = computedAsync(async () => {
 
   return new TextDecoder().decode(content);
 })
-
+ */
 </script>
 
 <template>
@@ -108,15 +117,15 @@ const onDemandRangeContent1 = computedAsync(async () => {
 
     <PlAlert type="success">
       File content:
-      {{ app.model.outputs.content }}
+      {{ strContent }}
     </PlAlert>
 
-    <PlAlert type="success">
+    <!-- <PlAlert type="success">
       File content as string:
       {{ app.model.outputs.contentAsString }}
-    </PlAlert>
+    </PlAlert> -->
 
-    <PlAlert type="success">
+<!--     <PlAlert type="success">
       File content as string via QuickJS callback:
       {{ app.model.outputs.contentAsString1 }}
     </PlAlert>
@@ -154,9 +163,9 @@ const onDemandRangeContent1 = computedAsync(async () => {
     <PlAlert type="success">
       File content via QuickJS callback:
       {{ app.model.outputs.getFileHandle }}
-    </PlAlert>
+    </PlAlert> -->
 
-    <PlAlert v-if="app.error" type="error">
+<!--     <PlAlert v-if="app.error" type="error">
       {{ app.error }}
     </PlAlert>
     <fieldset>
@@ -179,6 +188,6 @@ const onDemandRangeContent1 = computedAsync(async () => {
     </PlAlert>
     <PlAlert type="error" v-if="app.hasErrors">
       {{ app.model.outputErrors }}
-    </PlAlert>
+    </PlAlert> -->
   </PlBlockPage>
 </template>
