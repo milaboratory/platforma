@@ -221,11 +221,32 @@ __primitiveValueTypes := { "Int": true, "Long": true, "Float": true, "Double": t
  *                              spec: AxisSpec  // Axis specification (type, name, domain, etc.)
  *                            }
  *                          ],
- *                          columns: [          // Array of column definitions
+ *                          columns: [          // Array of column definitions - supports multiple kinds:
+ *                            // Explicit column kind (parses individual TSV fields):
  *                            {
+ *                              kind: "column", // Explicit column kind
  *                              column: string, // TSV column name
  *                              id?: string,    // Optional column identifier for output map
  *                              spec: PColumnSpec // Column specification (valueType, name, domain, etc.)
+ *                            }
+ *                            // OR line kind (exports raw TSV line content as String):
+ *                            | {
+ *                              kind: "line",   // Raw line export kind
+ *                              id: string,     // Required column identifier for output map
+ *                              spec: PColumnSpec // Column specification (must have valueType: "String")
+ *                            }
+ *                            // OR json-line kind (exports JSON-encoded line content as String):
+ *                            | {
+ *                              kind: "json-line", // JSON line export kind
+ *                              id: string,     // Required column identifier for output map
+ *                              spec: PColumnSpec, // Column specification (must have valueType: "String")
+ *                              columns: [      // Field mapping for JSON encoding
+ *                                {
+ *                                  column: string, // TSV column name
+ *                                  id?: string,    // Optional JSON property name (defaults to column name)
+ *                                  type: "Int"|"Long"|"Float"|"Double"|"String" // Field type for parsing
+ *                                }
+ *                              ]
  *                            }
  *                          ]
  *                        }
