@@ -6,7 +6,27 @@ import { BlockPackManifest, overrideManifestVersion } from '@milaboratories/pl-m
 import { storageByUrl } from '../io/storage';
 import { BlockRegistryV2 } from '../v2/registry/registry';
 import path from 'node:path';
-import * as R from 'remeda';
+
+function simpleDeepMerge<T extends Record<string, unknown>>(
+  target: Record<string, unknown>,
+  source: T
+): T {
+  const result = { ...target };
+
+  for (const key in source) {
+    if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
+      if (result[key] && typeof result[key] === 'object' && !Array.isArray(result[key])) {
+        result[key] = simpleDeepMerge(result[key] as Record<string, unknown>, source[key] as Record<string, unknown>);
+      } else {
+        result[key] = source[key];
+      }
+    } else {
+      result[key] = source[key];
+    }
+  }
+
+  return result as T;
+}
 
 export default class Publish extends Command {
   static description =
@@ -45,9 +65,10 @@ export default class Publish extends Command {
     const { flags } = await this.parse(Publish);
 
     const manifestPath = path.resolve(flags.manifest);
-    let manifest = BlockPackManifest.parse(
-      JSON.parse(await fs.promises.readFile(manifestPath, { encoding: 'utf-8' }))
-    );
+    const rawManifest = JSON.parse(await fs.promises.readFile(manifestPath, { encoding: 'utf-8' }));
+    let manifest = BlockPackManifest.parse(rawManifest);
+    // To keep extra fields from the manifest and keep coerced fields
+    manifest = simpleDeepMerge(rawManifest, manifest);
     const manifestRoot = path.dirname(manifestPath);
 
     this.log(`Manifest root = ${manifestRoot}`);
