@@ -1,5 +1,11 @@
 # @platforma-sdk/block-tools
 
+## 2.5.72
+
+### Patch Changes
+
+- 76e485b: Fix stripping block pack manifest fields from newer sdk versions
+
 ## 2.5.71
 
 ### Patch Changes
