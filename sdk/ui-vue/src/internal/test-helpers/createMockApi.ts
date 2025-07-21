@@ -32,6 +32,9 @@ export function createMockApi<
     sdkInfo: {
       sdkVersion: 'dev',
     },
+    async dispose(): Promise<ResultOrError<void>> {
+      return block.dispose();
+    },
     loadBlockState: async function (): Promise<ResultOrError<ValueWithUTag<BlockState<Args, Outputs, UiState, Href>>>> {
       return block.loadBlockState();
     },
