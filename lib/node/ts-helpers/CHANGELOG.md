@@ -1,5 +1,11 @@
 # @milaboratories/ts-helpers
 
+## 1.4.2
+
+### Patch Changes
+
+- 188ee1e: PFramesDriver - assume setDataInfo will become asynchronous
+
 ## 1.4.1
 
 ### Patch Changes

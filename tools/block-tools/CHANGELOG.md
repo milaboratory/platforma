@@ -1,5 +1,13 @@
 # @platforma-sdk/block-tools
 
+## 2.5.73
+
+### Patch Changes
+
+- Updated dependencies [188ee1e]
+  - @milaboratories/ts-helpers@1.4.2
+  - @milaboratories/ts-helpers-oclif@1.1.24
+
 ## 2.5.72
 
 ### Patch Changes
