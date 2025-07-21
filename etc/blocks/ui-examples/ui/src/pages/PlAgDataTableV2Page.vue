@@ -140,23 +140,12 @@ const tableRef = useTemplateRef<PlAgDataTableV2Controller>('tableRef');
 const focusFirstSelectedRow = async () => {
   if (selection.value.selectedKeys.length > 0) {
     const key = selection.value.selectedKeys[0];
-    const focused = await tableRef.value?.focusRow(key);
-    if (focused) {
-      const row = await tableRef.value?.getRow(key);
-      console.log(`focused row`, row);
-    }
+    await tableRef.value?.focusRow(key);
   }
 };
 const resetSelection = async () => {
   await tableRef.value?.updateSelection(initialSelection);
   await tableRef.value?.focusRow(selection.value.selectedKeys[0]);
-};
-const get10thRow = async () => {
-  const rowCount = await tableRef.value?.getRowCount();
-  if (rowCount && rowCount >= 10) {
-    const row = await tableRef.value?.getRow(9);
-    console.log(`total rows: ${rowCount}, 10th row`, row);
-  }
 };
 </script>
 
@@ -190,6 +179,5 @@ const get10thRow = async () => {
     <PlCheckbox v-model="loading">Display infinite loading</PlCheckbox>
     <PlCheckbox v-model="reactiveText">Show reactive loading message</PlCheckbox>
     <PlBtnSecondary @click="resetSelection">Reset selection to default</PlBtnSecondary>
-    <PlBtnSecondary @click="get10thRow">Print data of 10th row</PlBtnSecondary>
   </PlSlideModal>
 </template>
