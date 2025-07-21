@@ -104,7 +104,7 @@ export function usePlDataTableSettingsV2<T>(options: OptionsAdvanced<T> | Option
       }
     : () => ({});
   return computed(() => {
-    const modelValue = toValue(options.model);
+    const modelValue = deepClone(toValue(options.model));
     let settingsBase: PlDataTableSettingsV2Base;
     if ('sourceId' in options) {
       const sourceIdValue = deepClone(toValue(options.sourceId));
@@ -128,7 +128,7 @@ export function usePlDataTableSettingsV2<T>(options: OptionsAdvanced<T> | Option
       }
     } else {
       if (options.sheets) {
-        const sheetsValue = toValue(options.sheets);
+        const sheetsValue = deepClone(toValue(options.sheets));
         settingsBase = sheetsValue
           ? {
               sourceId: canonicalize('static')!,
@@ -191,20 +191,6 @@ export type PlAgDataTableV2Controller = {
     axesSpec: AxisId[];
     selectedKeys: PTableKey[];
   }) => Promise<boolean>;
-  /**
-   * Get number of rows in the table.
-   * @returns number of rows
-   */
-  getRowCount: () => Promise<undefined | number>;
-  /**
-   * Get row by index or axes key.
-   * @param index - row index or axes key
-   * @returns row spec and data, `undefined` if row was not loaded
-   */
-  getRow: (index: number | PlTableRowId) => Promise<undefined | {
-    spec: PTableColumnSpec[];
-    data: PTableValue[];
-  }>;
 };
 
 export type PlTableRowId = PTableKey;
