@@ -6,6 +6,7 @@ text := import("text")
 validation := import(":validation")
 pConstants := import(":pframes.constants")
 maps := import(":maps")
+canonical := import(":canonical")
 
 self.defineOutputs("result")
 
@@ -220,7 +221,7 @@ parseTsvContent := func(content, axes, columns) {
 					colValue := convertValue(values[jsonColInfo.index], jsonColInfo.type)
 					jsonObj[jsonColInfo.id] = colValue
 				})
-				data[columnName][keyStr] = string(json.encode(jsonObj))
+				data[columnName][keyStr] = canonical.encode(jsonObj)
 			}
 		})
 	}
