@@ -1,5 +1,11 @@
 # @milaboratories/computable
 
+## 2.6.1
+
+### Patch Changes
+
+- 07b833e: Return value from get method
+
 ## 2.6.0
 
 ### Minor Changes
