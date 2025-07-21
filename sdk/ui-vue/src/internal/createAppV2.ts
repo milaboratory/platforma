@@ -3,10 +3,9 @@ import type { Mutable } from '@milaboratories/helpers';
 import type { NavigationState, BlockOutputsBase, BlockState, PlatformaV2, ValueWithUTag, AuthorMarker } from '@platforma-sdk/model';
 import { hasAbortError, unwrapResult } from '@platforma-sdk/model';
 import type { Ref } from 'vue';
-import { reactive, computed, ref } from 'vue';
+import { reactive, computed, ref, watch } from 'vue';
 import type { StateModelOptions, UnwrapOutputs, OutputValues, OutputErrors, AppSettings } from '../types';
 import { createModel } from '../createModel';
-import { createAppModel } from './createAppModel';
 import { parseQuery } from '../urls';
 import { MultiError, unwrapValueOrErrors } from '../utils';
 import { applyPatch } from 'fast-json-patch';
@@ -113,6 +112,52 @@ export function createAppV2<
     return platforma.setNavigationState(state);
   };
 
+  const outputs = computed<OutputValues<Outputs>>(() => {
+    const entries = Object.entries(snapshot.value.outputs as Partial<Readonly<Outputs>>).map(([k, vOrErr]) => [k, vOrErr.ok && vOrErr.value !== undefined ? vOrErr.value : undefined]);
+    return Object.fromEntries(entries);
+  });
+
+  const outputErrors = computed<OutputErrors<Outputs>>(() => {
+    const entries = Object.entries(snapshot.value.outputs as Partial<Readonly<Outputs>>).map(([k, vOrErr]) => [k, vOrErr && !vOrErr.ok ? new MultiError(vOrErr.errors) : undefined]);
+    return Object.fromEntries(entries);
+  });
+
+  const appModel = reactive({
+    error: '',
+    model: {
+      args: deepClone(snapshot.value.args) as Args,
+      ui: deepClone(snapshot.value.ui) as UiState,
+      outputs,
+      outputErrors,
+    },
+  }) as {
+    error: string;
+    model: {
+      args: Args;
+      ui: UiState;
+      outputs: OutputValues<Outputs>;
+      outputErrors: OutputErrors<Outputs>;
+    };
+  };
+
+  const appModelWatch = watch(
+    () => appModel.model,
+    (_newData) => {
+      const newData = deepClone(_newData);
+      debug('appModel.model', newData);
+      setArgsAndUiStateQueue.run(() => setBlockArgsAndUiState(newData.args, newData.ui).then(unwrapResult));
+    },
+    { deep: true },
+  );
+
+  const updateAppModelSilently = (newData: AppModel) => {
+    debug('updateAppModelSilently', newData);
+    appModelWatch.pause();
+    appModel.model.args = newData.args as Args;
+    appModel.model.ui = newData.ui as UiState;
+    appModelWatch.resume();
+  };
+
   (async () => {
     window.addEventListener('beforeunload', () => {
       closedRef.value = true;
@@ -125,7 +170,7 @@ export function createAppV2<
       try {
         const patches = await platforma.getPatches(uTagRef.value).then(unwrapResult);
 
-        debug('patches', JSON.stringify(patches, null, 2));
+        debug('patches.length', patches.value.length);
         debug('uTagRef.value', uTagRef.value);
         debug('patches.uTag', patches.uTag);
         debug('patches.author', patches.author);
@@ -144,6 +189,7 @@ export function createAppV2<
         if (isAuthorChanged || data.isExternalSnapshot) {
           debug('got external changes, applying them to the snapshot', JSON.stringify(snapshot.value, null, 2));
           snapshot.value = applyPatch(snapshot.value, patches.value, false, false).newDocument;
+          updateAppModelSilently(snapshot.value);
           data.isExternalSnapshot = isAuthorChanged;
         } else {
           // Mutable behavior
@@ -162,34 +208,6 @@ export function createAppV2<
       }
     }
   })();
-
-  const outputs = computed<OutputValues<Outputs>>(() => {
-    const entries = Object.entries(snapshot.value.outputs as Partial<Readonly<Outputs>>).map(([k, vOrErr]) => [k, vOrErr.ok && vOrErr.value !== undefined ? vOrErr.value : undefined]);
-    return Object.fromEntries(entries);
-  });
-
-  const outputErrors = computed<OutputErrors<Outputs>>(() => {
-    const entries = Object.entries(snapshot.value.outputs as Partial<Readonly<Outputs>>).map(([k, vOrErr]) => [k, vOrErr && !vOrErr.ok ? new MultiError(vOrErr.errors) : undefined]);
-    return Object.fromEntries(entries);
-  });
-
-  const appModel = createAppModel(
-    {
-      get() {
-        return { args: snapshot.value.args, ui: snapshot.value.ui } as AppModel;
-      },
-      autoSave: true,
-      onSave(newData: AppModel) {
-        debug('onSave', newData);
-        setArgsAndUiStateQueue.run(() => setBlockArgsAndUiState(newData.args, newData.ui).then(unwrapResult));
-      },
-    },
-    {
-      outputs,
-      outputErrors,
-    },
-    settings,
-  );
 
   const cloneArgs = () => deepClone(appModel.model.args) as Args;
   const cloneUiState = () => deepClone(appModel.model.ui) as UiState;
