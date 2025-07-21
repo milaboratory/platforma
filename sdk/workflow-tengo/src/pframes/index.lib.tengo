@@ -423,7 +423,7 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 
 	iterationAxesSpec := copy(input.spec.axesSpec)
 	// For partitioned data, the underlying template determines key length internally.
-	// For ResourceMap, we pass the expected length based on the spec.
+	// For ResourceMap and Json, we pass the expected length based on the spec.
 	if !isPotentiallyPartitioned {
 		processTemplateParams.expectedKeyLength = len(input.spec.axesSpec)
 	}

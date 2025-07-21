@@ -1,0 +1,58 @@
+// Body template for testing PColumnData/Json functionality
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+
+ll := import("@platforma-sdk/workflow-tengo:ll")
+constants := import("@platforma-sdk/workflow-tengo:constants")
+pConstants := import("@platforma-sdk/workflow-tengo:pframes.constants")
+
+self.defineOutputs(
+	"result"
+)
+
+self.body(func(inputs) {
+	value := inputs[pConstants.VALUE_FIELD_NAME]
+
+	if is_undefined(value) {
+		ll.panic("value is not defined")
+	}
+
+	result := undefined
+
+	if smart.isResource(value) {
+		// Check if it's a JSON resource (mapping mode) or PColumnData/Json resource (aggregation mode)
+		if value.checkResourceType(constants.RTYPE_JSON) {
+			// Mapping mode: value is a JSON resource containing primitive value
+			primitiveValue := value.getDataAsJson()
+			result = "primitive_" + string(primitiveValue)
+		} else if value.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_JSON) {
+			// Aggregation mode: value is a PColumnData/Json resource containing grouped data
+			meta := value.getDataAsJson()
+			ll.assert(is_map(meta) && !is_undefined(meta.data), "Invalid PColumnData/Json metadata: %v", meta)
+
+			// Process all values in the group and create a summary
+			groupData := meta.data
+			totalSum := 0
+			valueCount := 0
+
+			for sKey, primitiveValue in groupData {
+				if is_int(primitiveValue) || is_float(primitiveValue) {
+					totalSum += primitiveValue
+					valueCount++
+				}
+			}
+
+			result = "group_sum_" + string(totalSum) + "_count_" + string(valueCount)
+		} else {
+			ll.panic("Unexpected resource type: %v", value.info().Type)
+		}
+	} else {
+		// Direct primitive value (shouldn't happen with JSON input but handle for completeness)
+		result = "direct_" + string(value)
+	}
+
+	return {
+		result: result
+	}
+})
