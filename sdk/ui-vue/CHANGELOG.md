@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.41.9
+
+### Patch Changes
+
+- 00cd7f1: Fix missing dispose in the api test helper
+
 ## 1.41.6
 
 ### Patch Changes
