@@ -55,7 +55,7 @@ import type {
   PlTableRowIdJson,
 } from './types';
 import { watchCached } from '@milaboratories/uikit';
-import { isPTableHidden, type PTableHidden } from './sources/common';
+import { type PTableHidden } from './sources/common';
 
 const tableState = defineModel<PlDataTableStateV2>({
   required: true,
@@ -387,43 +387,6 @@ defineExpose<PlAgDataTableV2Controller>({
       }
     }
     return true;
-  },
-  getRowCount: async () => {
-    const gridApi = await dataRenderedTracker.promise;
-    if (gridApi.isDestroyed()) return;
-
-    return gridApi.getDisplayedRowCount();
-  },
-  getRow: async (index) => {
-    const gridApi = await dataRenderedTracker.promise;
-    if (gridApi.isDestroyed()) return;
-
-    const visibleColumns: {
-      spec: PTableColumnSpec;
-      field: `${number}`;
-    }[] = getDataColDefs(gridApi.getColumnDefs())
-      .filter((def) => !def.hide)
-      .map((def) => ({
-        spec: parseJson(def.colId! satisfies string as PlTableColumnIdJson).labeled,
-        field: def.field! as `${number}`,
-      }));
-
-    const row = Array.isArray(index)
-      ? gridApi.getRowNode(canonicalizeJson<PlTableRowId>(index))
-      : gridApi.getDisplayedRowAtIndex(index);
-    if (!row) return;
-
-    const rowData = row.data;
-    if (!rowData) return;
-
-    const getTableValue = (value: PTableValue | PTableHidden): PTableValue => {
-      if (isPTableHidden(value)) throw new Error('hidden value was not filtered out');
-      return value;
-    };
-
-    const spec: PTableColumnSpec[] = visibleColumns.map((column) => column.spec);
-    const data: PTableValue[] = visibleColumns.map((column) => getTableValue(rowData[column.field]));
-    return { spec, data };
   },
 });
 
