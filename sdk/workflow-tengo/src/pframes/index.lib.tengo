@@ -87,6 +87,79 @@ TSV_CONTENT_SETTINGS_SCHEMA := {
 	]]
 }
 
+// Helper function to extract column ID with backward compatibility
+getTsvColumnId := func(column) {
+	kind := column.kind
+	if is_undefined(kind) {
+		kind = "column"
+	}
+
+	if kind == "column" {
+		columnId := column.id
+		if is_undefined(columnId) {
+			columnId = column.column
+		}
+		return columnId
+	} else if kind == "line" || kind == "json-line" {
+		return column.id
+	} else {
+		ll.panic("Unknown column kind: %s", kind)
+	}
+}
+
+// Helper function to transform TSV settings to parse template format
+transformTsvSettings := func(settings) {
+	return {
+		axes: slices.map(settings.axes, func(axis) {
+			return {
+				name: axis.column,
+				type: axis.spec.type
+			}
+		}),
+		columns: slices.map(settings.columns, func(column) {
+			// Add backward compatibility: default kind to "column" if missing
+			kind := column.kind
+			if is_undefined(kind) {
+				kind = "column"
+			}
+
+			if kind == "column" {
+				transformedColumn := {
+					kind: "column",
+					name: column.column,
+					type: column.spec.valueType
+				}
+				if !is_undefined(column.id) {
+					transformedColumn.id = column.id
+				}
+				return transformedColumn
+			} else if kind == "line" {
+				return {
+					kind: "line",
+					id: column.id
+				}
+			} else if kind == "json-line" {
+				return {
+					kind: "json-line",
+					id: column.id,
+					columns: slices.map(column.columns, func(jsonCol) {
+						transformedCol := {
+							name: jsonCol.column,
+							type: jsonCol.type
+						}
+						if !is_undefined(jsonCol.id) {
+							transformedCol.id = jsonCol.id
+						}
+						return transformedCol
+					})
+				}
+			} else {
+				ll.panic("Unknown column kind: %s", kind)
+			}
+		})
+	}
+}
+
 /**
  * Given a reference to the p-frame, converts all inner resource files into resources that can be
  * downloaded from the UI side.
@@ -100,6 +173,181 @@ exportFrame := func(pf) {
  */
 exportColumnData := func(data) {
 	return render.createEphemeral(assets.importTemplate(":pframes.export-single-pcolumn"), { data: data }).output("result")
+}
+
+/**
+ * Parses TSV content to JSON PColumn data using the parse-to-json template.
+ *
+ * @param targetContent - Content to parse, can be:
+ *   - string: Direct TSV content
+ *   - resource reference: Reference to TSV content
+ *   - {data: resourceMapRef, spec: PColumnSpec}: Resource map with spec (similar to processColumn input)
+ *
+ * @param params - Parsing parameters using TSV_CONTENT_SETTINGS_SCHEMA format:
+ *   {
+ *     axes: [             // Array of axis definitions
+ *       {
+ *         column: string, // TSV column name
+ *         spec: AxisSpec  // Axis specification (type, name, domain, etc.)
+ *       }
+ *     ],
+ *     columns: [          // Array of column definitions - supports multiple kinds:
+ *       // Explicit column kind (parses individual TSV fields):
+ *       {
+ *         kind: "column", // Explicit column kind
+ *         column: string, // TSV column name
+ *         id?: string,    // Optional column identifier for output map
+ *         spec: PColumnSpec // Column specification (valueType, name, domain, etc.)
+ *       }
+ *       // OR line kind (exports raw TSV line content as String):
+ *       | {
+ *         kind: "line",   // Raw line export kind
+ *         id: string,     // Required column identifier for output map
+ *         spec: PColumnSpec // Column specification (must have valueType: "String")
+ *       }
+ *       // OR json-line kind (exports JSON-encoded line content as String):
+ *       | {
+ *         kind: "json-line", // JSON line export kind
+ *         id: string,     // Required column identifier for output map
+ *         spec: PColumnSpec, // Column specification (must have valueType: "String")
+ *         columns: [      // Field mapping for JSON encoding
+ *           {
+ *             column: string, // TSV column name
+ *             id?: string,    // Optional JSON property name (defaults to column name)
+ *             type: "Int"|"Long"|"Float"|"Double"|"String" // Field type for parsing
+ *           }
+ *         ]
+ *       }
+ *     ]
+ *   }
+ *
+ * @returns Object with methods for accessing parsing results:
+ *   - output(columnId) - Returns {data: Resource, spec: PColumnSpec}
+ *   - outputData(columnId) - Returns data resource
+ *   - outputSpec(columnId) - Returns column spec
+ *   - listOutputs() - Returns array of column IDs
+ *   - addAllOutputsToBuilder(builder, ...separator) - Adds all outputs to pframe builder
+ */
+parseToJson := func(targetContent, params) {
+	validation.assertType(params, TSV_CONTENT_SETTINGS_SCHEMA, "Invalid TsvContent settings")
+
+	// Transform settings to parse template format
+	transformedSettings := transformTsvSettings(params)
+
+	// Determine input format and base axes spec
+	input := undefined
+	baseAxesSpec := []
+
+	if is_string(targetContent) || smart.isReference(targetContent) {
+		// Direct content or resource reference
+		input = targetContent
+	} else if is_map(targetContent) && !is_undefined(targetContent.data) && !is_undefined(targetContent.spec) {
+		// {data: ..., spec: ...} format
+		input = targetContent.data
+		validation.assertType(targetContent.spec, pSpec.P_COLUMN_SPEC_SCHEMA)
+		baseAxesSpec = slices.normalize(targetContent.spec.axesSpec)
+	} else {
+		ll.panic("targetContent must be a string, resource reference, or {data: resource, spec: PColumnSpec}")
+	}
+
+	// Build axes spec for output columns (base axes + settings axes)
+	axesSpec := copy(baseAxesSpec)
+	for axis in params.axes {
+		axesSpec = append(axesSpec, axis.spec)
+	}
+
+	// Build output specs for each column
+	outputSpecs := {}
+	for column in params.columns {
+		columnId := getTsvColumnId(column)
+		spec := maps.merge(column.spec, { axesSpec: axesSpec, kind: "PColumn" })
+		outputSpecs[columnId] = spec
+	}
+
+	// Render the template
+	parseToJsonTpl := assets.importTemplate(":pframes.parse-to-json")
+	renderResult := render.create(parseToJsonTpl, {
+		params: smart.createJsonResource(transformedSettings),
+		input: input
+	})
+
+	// Create result object
+	self := undefined
+	self = ll.toStrict({
+		/**
+		 * Returns both data resource and spec for the given column ID
+		 *
+		 * @param columnId - ID of the column to retrieve
+		 * @returns {data: Resource, spec: PColumnSpec} Object containing both data resource and spec
+		 */
+		output: func(columnId) {
+			spec := outputSpecs[columnId]
+			if is_undefined(spec) {
+				ll.panic("unknown column: " + columnId)
+			}
+			return {
+				data: renderResult.resolveOutput(["result", columnId]),
+				spec: spec
+			}
+		},
+
+		/**
+		 * Returns data resource for the given column ID
+		 *
+		 * @param columnId - ID of the column to retrieve
+		 * @returns Resource containing the column data
+		 */
+		outputData: func(columnId) {
+			if is_undefined(outputSpecs[columnId]) {
+				ll.panic("unknown column: " + columnId)
+			}
+			return renderResult.resolveOutput(["result", columnId])
+		},
+
+		/**
+		 * Returns spec for the given column ID
+		 *
+		 * @param columnId - ID of the column to retrieve
+		 * @returns PColumnSpec for the column
+		 */
+		outputSpec: func(columnId) {
+			spec := outputSpecs[columnId]
+			if is_undefined(spec) {
+				ll.panic("unknown column: " + columnId)
+			}
+			return spec
+		},
+
+		/**
+		 * Returns sorted list of all available column IDs
+		 *
+		 * @returns Array of column IDs
+		 */
+		listOutputs: func() {
+			return maps.getKeys(outputSpecs)
+		},
+
+		/**
+		 * Adds all outputs to the provided pframe builder
+		 *
+		 * @param builder - The pframe builder to which outputs will be added
+		 * @param ...separator - Optional separator (unused, for compatibility with processColumn interface)
+		 * @returns The provided builder for chaining
+		 */
+		addAllOutputsToBuilder: func(builder, ...separator) {
+			maps.forEach(outputSpecs, func(columnId, spec) {
+				builder.add(
+					columnId,
+					spec,
+					renderResult.resolveOutput(["result", columnId])
+				)
+			})
+
+			return builder
+		}
+	})
+
+	return self
 }
 
 /**
@@ -549,76 +797,8 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 		} else if output.type == "TsvContent" {
 			validation.assertType(output.settings, TSV_CONTENT_SETTINGS_SCHEMA, "Invalid TsvContent settings")
 
-			// Helper function to extract column ID with backward compatibility
-			getColumnId := func(column) {
-				kind := column.kind
-				if is_undefined(kind) {
-					kind = "column"
-				}
-
-				if kind == "column" {
-					columnId := column.id
-					if is_undefined(columnId) {
-						columnId = column.column
-					}
-					return columnId
-				} else if kind == "line" || kind == "json-line" {
-					return column.id
-				} else {
-					ll.panic("Unknown column kind: %s", kind)
-				}
-			}
-
 			// Transform settings to parse template format using slices.map
-			transformedSettings := {
-				axes: slices.map(output.settings.axes, func(axis) {
-					return {
-						name: axis.column,
-						type: axis.spec.type
-					}
-				}),
-				columns: slices.map(output.settings.columns, func(column) {
-					// Add backward compatibility: default kind to "column" if missing
-					kind := column.kind
-					if is_undefined(kind) {
-						kind = "column"
-					}
-
-					if kind == "column" {
-						transformedColumn := {
-							kind: "column",
-							name: column.column,
-							type: column.spec.valueType
-						}
-						if !is_undefined(column.id) {
-							transformedColumn.id = column.id
-						}
-						return transformedColumn
-					} else if kind == "line" {
-						return {
-							kind: "line",
-							id: column.id
-						}
-					} else if kind == "json-line" {
-						return {
-							kind: "json-line",
-							id: column.id,
-							columns: slices.map(column.columns, func(jsonCol) {
-								transformedCol := {
-									name: jsonCol.column,
-									type: jsonCol.type
-								}
-								if !is_undefined(jsonCol.id) {
-									transformedCol.id = jsonCol.id
-								}
-								return transformedCol
-							})
-						}
-					} else {
-						ll.panic("Unknown column kind: %s", kind)
-					}
-				})
-			}
+			transformedSettings := transformTsvSettings(output.settings)
 
 			// Build output specs for each column
 			columnsSpec := {}
@@ -628,7 +808,7 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 			}
 
 			for column in output.settings.columns {
-				columnId := getColumnId(column)
+				columnId := getTsvColumnId(column)
 
 				// Create spec (same for all kinds)
 				spec := maps.merge(column.spec, { axesSpec: axesSpec, kind: "PColumn" })
@@ -924,5 +1104,6 @@ export ll.toStrict({
 	exportColumnData: exportColumnData,
 	pColumnResourceMapDataBuilder: pColumnResourceMapDataBuilder,
 	tsvFileBuilder: func() { return xsvBuilder.xsvFileBuilder("tsv") },
-	csvFileBuilder: func() { return xsvBuilder.xsvFileBuilder("csv") }
+	csvFileBuilder: func() { return xsvBuilder.xsvFileBuilder("csv") },
+	parseToJson: parseToJson
 })
