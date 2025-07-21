@@ -172,8 +172,8 @@ class PTableCache {
   }
 }
 
-class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
-  public readonly pFrame: PFrameInternal.PFrameV8;
+class PFrameHolder implements PFrameInternal.PFrameDataSource, AsyncDisposable {
+  public readonly pFramePromise: Promise<PFrameInternal.PFrameV8>;
   private readonly abortController = new AbortController();
   private readonly blobIdToResource = new Map<string, ResourceInfo>();
   private readonly blobHandleComputables = new Map<
@@ -206,14 +206,23 @@ class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
     try {
       const pFrame = new PFrame(this.spillPath, logFunc);
       pFrame.setDataSource(this);
+      const promises: Promise<void>[] = [];
       for (const column of distinctСolumns) {
         pFrame.addColumnSpec(column.id, column.spec);
-        pFrame.setColumnData(column.id, column.data);
+        promises.push(Promise.resolve(pFrame.setColumnData(column.id, column.data/* , this.disposeSignal */)));
       }
-      this.pFrame = pFrame;
+      this.pFramePromise = Promise.all(promises)
+        .then(() => pFrame)
+        .catch((err) => {
+          this.dispose();
+          pFrame.dispose();
+          throw new PFrameDriverError(
+            `PFrame creation failed asynchronously, columns: ${JSON.stringify(distinctСolumns)}, error: ${ensureError(err)}`,
+          );
+        });
     } catch (err: unknown) {
       throw new PFrameDriverError(
-        `PFrame creation failed, columns: ${JSON.stringify(distinctСolumns)}, error: ${ensureError(err)}`,
+        `PFrame creation failed synchronously, columns: ${JSON.stringify(distinctСolumns)}, error: ${ensureError(err)}`,
       );
     }
   }
@@ -257,21 +266,27 @@ class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
     return this.abortController.signal;
   }
 
-  [Symbol.dispose](): void {
+  private dispose(): void {
     this.abortController.abort();
     for (const computable of this.blobHandleComputables.values()) computable.resetState();
-    this.pFrame.dispose();
+  }
+
+  async [Symbol.asyncDispose](): Promise<void> {
+    this.dispose();
+    await this.pFramePromise
+      .then((pFrame) => pFrame.dispose())
+      .catch(() => { /* mute error */ });
   }
 }
 
-class PTableHolder implements Disposable {
+class PTableHolder implements AsyncDisposable {
   private readonly abortController = new AbortController();
   private readonly combinedDisposeSignal: AbortSignal;
 
   constructor(
     public readonly pFrame: PFrameHandle,
     pFrameDisposeSignal: AbortSignal,
-    public readonly pTable: PFrameInternal.PTableV6,
+    public readonly pTablePromise: Promise<PFrameInternal.PTableV6>,
     public readonly predecessor?: PollResource<PTableHolder>,
   ) {
     this.combinedDisposeSignal = AbortSignal.any([pFrameDisposeSignal, this.abortController.signal]);
@@ -281,9 +296,11 @@ class PTableHolder implements Disposable {
     return this.combinedDisposeSignal;
   }
 
-  [Symbol.dispose](): void {
+  async [Symbol.asyncDispose](): Promise<void> {
     this.abortController.abort();
-    this.pTable.dispose();
+    await this.pTablePromise
+      .then((pTable) => pTable.dispose())
+      .catch(() => { /* mute error */ });
     this.predecessor?.unref();
   }
 }
@@ -464,7 +481,7 @@ export class PFrameDriver implements InternalPFrameDriver {
         }
 
         const handle = params.pFrameHandle;
-        const { pFrame, disposeSignal } = this.pFrames.getByKey(handle);
+        const { pFramePromise, disposeSignal } = this.pFrames.getByKey(handle);
 
         // 3. Sort
         if (params.def.sorting.length > 0) {
@@ -475,8 +492,8 @@ export class PFrameDriver implements InternalPFrameDriver {
               sorting: [],
             },
           });
-          const { resource: { pTable } } = predecessor;
-          const sortedTable = pTable.sort(params.def.sorting);
+          const { resource: { pTablePromise } } = predecessor;
+          const sortedTable = pTablePromise.then((pTable) => pTable.sort(params.def.sorting));
           return new PTableHolder(handle, disposeSignal, sortedTable, predecessor);
         }
 
@@ -489,16 +506,16 @@ export class PFrameDriver implements InternalPFrameDriver {
               filters: [],
             },
           });
-          const { resource: { pTable } } = predecessor;
-          const filteredTable = pTable.filter(params.def.filters);
+          const { resource: { pTablePromise } } = predecessor;
+          const filteredTable = pTablePromise.then((pTable) => pTable.filter(params.def.filters));
           return new PTableHolder(handle, disposeSignal, filteredTable, predecessor);
         }
 
         // 1. Join
-        const table = pFrame.createTable({
+        const table = pFramePromise.then((pFrame) => pFrame.createTable({
           src: joinEntryToInternal(params.def.src),
           filters: params.def.partitionFilters,
-        });
+        }));
         return new PTableHolder(handle, disposeSignal, table);
       }
 
@@ -577,7 +594,8 @@ export class PFrameDriver implements InternalPFrameDriver {
             }]
           : [],
     };
-    const { pFrame } = this.pFrames.getByKey(handle);
+    const { pFramePromise } = this.pFrames.getByKey(handle);
+    const pFrame = await pFramePromise;
     const responce = await pFrame.findColumns(iRequest);
     return {
       hits: responce.hits
@@ -591,12 +609,14 @@ export class PFrameDriver implements InternalPFrameDriver {
   }
 
   public async getColumnSpec(handle: PFrameHandle, columnId: PObjectId): Promise<PColumnSpec> {
-    const { pFrame } = this.pFrames.getByKey(handle);
+    const { pFramePromise } = this.pFrames.getByKey(handle);
+    const pFrame = await pFramePromise;
     return await pFrame.getColumnSpec(columnId);
   }
 
   public async listColumns(handle: PFrameHandle): Promise<PColumnIdAndSpec[]> {
-    const { pFrame } = this.pFrames.getByKey(handle);
+    const { pFramePromise } = this.pFrames.getByKey(handle);
+    const pFrame = await pFramePromise;
     return await pFrame.listColumns();
   }
 
@@ -616,7 +636,8 @@ export class PFrameDriver implements InternalPFrameDriver {
       pFrameHandle: handle,
       def: migratePTableFilters(request),
     });
-    const { resource: { pTable, disposeSignal } } = table;
+    const { resource: { pTablePromise, disposeSignal } } = table;
+    const pTable = await pTablePromise;
     const combinedSignal = AbortSignal.any([signal, disposeSignal].filter((s) => !!s));
 
     return await this.frameConcurrencyLimiter.run(async () => {
@@ -655,7 +676,8 @@ export class PFrameDriver implements InternalPFrameDriver {
       );
     }
 
-    const { pFrame, disposeSignal } = this.pFrames.getByKey(handle);
+    const { pFramePromise, disposeSignal } = this.pFrames.getByKey(handle);
+    const pFrame = await pFramePromise;
     const combinedSignal = AbortSignal.any([signal, disposeSignal].filter((s) => !!s));
 
     return await this.frameConcurrencyLimiter.run(async () => {
@@ -672,18 +694,15 @@ export class PFrameDriver implements InternalPFrameDriver {
   // PTable istance methods
   //
 
-  public getSpec(handle: PTableHandle): Promise<PTableColumnSpec[]> {
-    const { pTable } = this.pTables.getByKey(handle);
-    // TODO: use Promise.try after Electron update
-    try {
-      return Promise.resolve(pTable.getSpec());
-    } catch (err: unknown) {
-      return Promise.reject(ensureError(err));
-    }
+  public async getSpec(handle: PTableHandle): Promise<PTableColumnSpec[]> {
+    const { pTablePromise } = this.pTables.getByKey(handle);
+    const pTable = await pTablePromise;
+    return pTable.getSpec();
   }
 
   public async getShape(handle: PTableHandle, signal?: AbortSignal): Promise<PTableShape> {
-    const { pTable, disposeSignal } = this.pTables.getByKey(handle);
+    const { pTablePromise, disposeSignal } = this.pTables.getByKey(handle);
+    const pTable = await pTablePromise;
     const combinedSignal = AbortSignal.any([signal, disposeSignal].filter((s) => !!s));
 
     return await this.tableConcurrencyLimiter.run(async () => {
@@ -699,7 +718,8 @@ export class PFrameDriver implements InternalPFrameDriver {
     range: TableRange | undefined,
     signal?: AbortSignal,
   ): Promise<PTableVector[]> {
-    const { pTable, disposeSignal } = this.pTables.getByKey(handle);
+    const { pTablePromise, disposeSignal } = this.pTables.getByKey(handle);
+    const pTable = await pTablePromise;
     const combinedSignal = AbortSignal.any([signal, disposeSignal].filter((s) => !!s));
 
     return await this.tableConcurrencyLimiter.run(async () => {

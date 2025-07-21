@@ -287,12 +287,13 @@ export class ErrorRepository {
       return quickJSError;
     }
 
-    if (!('name' in (quickJSError.cause as any))) {
-      console.warn('ErrorRepo: quickJSError.cause is not an Error', stringifyWithResourceId(quickJSError));
+    const cause = quickJSError.cause;
+    if (!(typeof cause === 'object' && cause !== null && ('name' in cause) && typeof cause.name === 'string')) {
+      console.warn('ErrorRepo: quickJSError.cause is not an Error (can be stack limit exceeded)', stringifyWithResourceId(quickJSError));
       return quickJSError;
     }
 
-    const causeName = (quickJSError.cause as any).name;
+    const causeName = cause.name;
     const errorId = causeName.slice(causeName.indexOf('/uuid:') + '/uuid:'.length);
     if (!errorId) {
       throw new Error(`ErrorRepo: quickJSError.cause.name does not contain errorId: ${causeName}, ${stringifyWithResourceId(quickJSError)}`);
