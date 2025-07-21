@@ -14,11 +14,29 @@ AXIS_DESCRIPTION_SCHEMA := {
 	"type": "string,regex=Int|Long|Float|Double|String"
 }
 
-COLUMN_DESCRIPTION_SCHEMA := {
+BASIC_COLUMN_DESCRIPTION_SCHEMA := {
 	"name": "string",
 	"type": "string,regex=Int|Long|Float|Double|String",
 	"id,?": "string"
 }
+
+COLUMN_DESCRIPTION_SCHEMA := ["or",
+	{
+		"kind": "string,regex=column",
+		"name": "string",
+		"type": "string,regex=Int|Long|Float|Double|String",
+		"id,?": "string"
+	},
+	{
+		"kind": "string,regex=line",
+		"id": "string"
+	},
+	{
+		"kind": "string,regex=json-line",
+		"id": "string",
+		"columns": [BASIC_COLUMN_DESCRIPTION_SCHEMA]
+	}
+]
 
 PARAMS_SCHEMA := {
 	"axes": [AXIS_DESCRIPTION_SCHEMA],
@@ -26,11 +44,17 @@ PARAMS_SCHEMA := {
 }
 
 columnId := func(c) {
-	id := c.id
-	if is_undefined(id) {
-		id = c.name
+	if c.kind == "column" {
+		id := c.id
+		if is_undefined(id) {
+			id = c.name
+		}
+		return id
+	} else if c.kind == "line" || c.kind == "json-line" {
+		return c.id
+	} else {
+		ll.panic("Unknown column kind: %s", c.kind)
 	}
-	return id
 }
 
 convertValue := func(valueStr, columnType) {
@@ -81,28 +105,55 @@ parseTsvContent := func(content, axes, columns) {
 		headerMap[text.trim(header, " \t\r\n")] = i
 	}
 
-	axisIndices := {}
+	axisInfos := {}
 	for axis in axes {
 		if is_undefined(headerMap[axis.name]) {
 			ll.panic("Axis '%s' not found in TSV headers: %v", axis.name, headers)
 		}
-		axisIndices[axis.name] = {
+		axisInfos[axis.name] = {
 			index: headerMap[axis.name],
 			type: axis.type
 		}
 	}
 
-	columnIndices := {}
+	columnInfos := {}
 	data := {}
 	for col in columns {
-		if is_undefined(headerMap[col.name]) {
-			ll.panic("Column '%s' not found in TSV headers: %v", col.name, headers)
+		if col.kind == "column" {
+			if is_undefined(headerMap[col.name]) {
+				ll.panic("Column '%s' not found in TSV headers: %v", col.name, headers)
+			}
+			columnInfos[col.name] = {
+				index: headerMap[col.name],
+				type: col.type,
+				kind: "column"
+			}
+			data[col.name] = {}
+		} else if col.kind == "line" {
+			columnInfos[col.id] = {
+				kind: "line"
+			}
+			data[col.id] = {}
+		} else if col.kind == "json-line" {
+			jsonColumnInfos := {}
+			for jsonCol in col.columns {
+				if is_undefined(headerMap[jsonCol.name]) {
+					ll.panic("JSON-line column '%s' not found in TSV headers: %v", jsonCol.name, headers)
+				}
+				jsonColumnInfos[jsonCol.name] = {
+					index: headerMap[jsonCol.name],
+					type: jsonCol.type,
+					id: is_undefined(jsonCol.id) ? jsonCol.name : jsonCol.id
+				}
+			}
+			columnInfos[col.id] = {
+				kind: "json-line",
+				columns: jsonColumnInfos
+			}
+			data[col.id] = {}
+		} else {
+			ll.panic("Unknown column kind: %s", col.kind)
 		}
-		columnIndices[col.name] = {
-			index: headerMap[col.name],
-			type: col.type
-		}
-		data[col.name] = {}
 	}
 
 	for lineIdx := 1; lineIdx < len(lines); lineIdx++ {
@@ -114,14 +165,33 @@ parseTsvContent := func(content, axes, columns) {
 
 		values := text.split(line, "\t")
 
-		if len(values) < len(columnIndices) {
-			for len(values) < len(columnIndices) {
+		// Extend values array if needed for column-type columns
+		maxIndex := 0
+		maps.forEach(columnInfos, func(columnName, columnInfo) {
+			if columnInfo.kind == "column" && columnInfo.index > maxIndex {
+				maxIndex = columnInfo.index
+			} else if columnInfo.kind == "json-line" {
+				maps.forEach(columnInfo.columns, func(_, jsonColInfo) {
+					if jsonColInfo.index > maxIndex {
+						maxIndex = jsonColInfo.index
+					}
+				})
+			}
+		})
+		maps.forEach(axisInfos, func(axisName, axisInfo) {
+			if axisInfo.index > maxIndex {
+				maxIndex = axisInfo.index
+			}
+		})
+
+		if len(values) <= maxIndex {
+			for len(values) <= maxIndex {
 				values = append(values, "")
 			}
 		}
 
 		key := []
-		maps.forEach(axisIndices, func(axisName, axisInfo) {
+		maps.forEach(axisInfos, func(axisName, axisInfo) {
 			if axisInfo.index >= len(values) {
 				ll.panic("Axis '%s' index %d is out of range for values: %v", axisName, axisInfo.index, values)
 			}
@@ -131,13 +201,27 @@ parseTsvContent := func(content, axes, columns) {
 
 		keyStr := string(json.encode(key))
 
-		maps.forEach(columnIndices, func(columnName, columnInfo) {
-			if columnInfo.index >= len(values) {
-				ll.panic("Column '%s' index %d is out of range for values: %v", columnName, columnInfo.index, values)
-			}
+		maps.forEach(columnInfos, func(columnName, columnInfo) {
+			if columnInfo.kind == "column" {
+				if columnInfo.index >= len(values) {
+					ll.panic("Column '%s' index %d is out of range for values: %v", columnName, columnInfo.index, values)
+				}
 
-			colValue := convertValue(values[columnInfo.index], columnInfo.type)
-			data[columnName][keyStr] = colValue
+				colValue := convertValue(values[columnInfo.index], columnInfo.type)
+				data[columnName][keyStr] = colValue
+			} else if columnInfo.kind == "line" {
+				data[columnName][keyStr] = line
+			} else if columnInfo.kind == "json-line" {
+				jsonObj := {}
+				maps.forEach(columnInfo.columns, func(jsonColName, jsonColInfo) {
+					if jsonColInfo.index >= len(values) {
+						ll.panic("JSON-line column '%s' index %d is out of range for values: %v", jsonColName, jsonColInfo.index, values)
+					}
+					colValue := convertValue(values[jsonColInfo.index], jsonColInfo.type)
+					jsonObj[jsonColInfo.id] = colValue
+				})
+				data[columnName][keyStr] = string(json.encode(jsonObj))
+			}
 		})
 	}
 
@@ -232,7 +316,13 @@ self.body(func(inputs) {
 
 	resultData := {}
 	for col in columns {
-		resultData[col.name] = {}
+		if col.kind == "column" {
+			resultData[col.name] = {}
+		} else if col.kind == "line" {
+			resultData[col.id] = {}
+		} else if col.kind == "json-line" {
+			resultData[col.id] = {}
+		}
 	}
 
 	maps.forEach(partitionedContent, func(partitionKeyStr, content) {
@@ -262,11 +352,18 @@ self.body(func(inputs) {
 	finalResult := {}
 	for col in columns {
 		colId := columnId(col)
+		dataKey := ""
+		if col.kind == "column" {
+			dataKey = col.name
+		} else if col.kind == "line" || col.kind == "json-line" {
+			dataKey = col.id
+		}
+
 		finalResult[colId] = smart.createValueResource(
 			pConstants.RTYPE_P_COLUMN_DATA_JSON,
 			json.encode({
 				keyLength: totalKeyLength,
-				data: resultData[col.name]
+				data: resultData[dataKey]
 			})
 		)
 	}

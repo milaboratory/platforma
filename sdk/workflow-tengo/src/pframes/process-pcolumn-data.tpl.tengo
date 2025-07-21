@@ -1,3 +1,23 @@
+// Helper function to extract column ID with backward compatibility
+getColumnId := func(column) {
+	kind := column.kind
+	if is_undefined(kind) {
+		kind = "column"
+	}
+
+	if kind == "column" {
+		columnId := column.id
+		if is_undefined(columnId) {
+			columnId = column.column
+		}
+		return columnId
+	} else if kind == "line" || kind == "json-line" {
+		return column.id
+	} else {
+		ll.panic("Unknown column kind: %s", kind)
+	}
+}
+
 // pframes ll aggregate
 
 self := import(":tpl.light")
@@ -477,10 +497,7 @@ self.body(func(inputs) {
 				// Extract individual column results and store them directly
 				if !is_undefined(output.flattenWithDelimiter) {
 					for column in output.settings.columns {
-						columnId := column.id
-						if is_undefined(columnId) {
-							columnId = column.column
-						}
+						columnId := getColumnId(column)
 						columnData := parseResultData.buildFutureField({ name: columnId })
 						outputMaps[output.name + output.flattenWithDelimiter + columnId] = columnData
 					}
