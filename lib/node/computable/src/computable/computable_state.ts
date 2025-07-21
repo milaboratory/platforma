@@ -1,23 +1,23 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
-import type {
-  ComputableKernel,
-  IntermediateRenderingResult,
-  ComputableCtx,
-  CellRenderingOps,
-} from './kernel';
-import {
-  tryExtractComputableKernel,
-  containComputables,
-} from './kernel';
-import { HierarchicalWatcher } from '../hierarchical_watcher';
-import type { Writable } from 'utility-types';
-import type { ComputableHooks } from './computable_hooks';
-import type { Watcher } from '../watcher';
+import { withTimeout } from '@milaboratories/ts-helpers';
+import * as console from 'node:console';
 import { setImmediate } from 'node:timers';
+import type { Writable } from 'utility-types';
+import { HierarchicalWatcher } from '../hierarchical_watcher';
+import type { Watcher } from '../watcher';
 import type { AccessorProvider, UsageGuard } from './accessor_provider';
 import { AccessorLeakException } from './accessor_provider';
-import * as console from 'node:console';
-import { withTimeout } from '@milaboratories/ts-helpers';
+import type { ComputableHooks } from './computable_hooks';
+import type {
+  CellRenderingOps,
+  ComputableCtx,
+  ComputableKernel,
+  IntermediateRenderingResult,
+} from './kernel';
+import {
+  containComputables,
+  tryExtractComputableKernel,
+} from './kernel';
 
 interface ExecutionError {
   error: unknown;
@@ -89,7 +89,7 @@ class CellComputableContext implements ComputableCtx {
   get(key: string): unknown {
     this.checkForLeak();
     if (this.kv === undefined) return undefined;
-    this.kv.get(key);
+    return this.kv.get(key);
   }
 
   getOrCreate<T>(key: string, initializer: () => T): T {
