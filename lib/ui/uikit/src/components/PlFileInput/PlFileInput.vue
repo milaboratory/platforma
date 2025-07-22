@@ -174,6 +174,7 @@ if (!props.cellStyle) {
       @keyup.enter="openFileDialog"
       @click.stop="openFileDialog"
     >
+      <div :style="progressStyle" class="pl-file-input__progress" />
       <label v-if="!cellStyle && label" ref="label">
         <SvgRequired v-if="required" />
         <span>{{ label }}</span>
@@ -195,7 +196,6 @@ if (!props.cellStyle) {
       <PlMaskIcon24 v-if="modelValue" class="pl-file-input__clear" name="close" @click.stop="clear" />
       <DoubleContour class="pl-file-input__contour" />
     </div>
-    <div :style="progressStyle" class="pl-file-input__progress" />
     <div v-if="hasErrors" class="pl-file-input__error">
       {{ computedErrorMessage }}
     </div>

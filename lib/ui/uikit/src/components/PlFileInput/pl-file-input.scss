@@ -15,7 +15,7 @@
   --icon-color: #000;
 
   position: relative;
-  z-index: 1;
+  z-index: 0;
   width: 100%;
   height: var(--control-height, 40px);
   border-radius: var(--border-radius-control);
@@ -29,7 +29,6 @@
   cursor: pointer;
 
   &__envelope {
-    position: relative;
     font-family: var(--font-family-base);
     display: flex;
     flex-direction: column;
@@ -47,7 +46,7 @@
 
   &__progress {
     position: absolute;
-    z-index: 0;
+    z-index: -1;
     top: 0;
     bottom: 0;
     left: 0;
