@@ -16,6 +16,7 @@
     "@milaboratories/pl-model-middle-layer": "workspace:*",
     "@platforma-sdk/block-tools": "workspace:*",
     "vitest": "catalog:",
-    "@types/node": "catalog:"
+    "@types/node": "catalog:",
+    "@milaboratories/ts-configs": "workspace:*"
   }
 }

@@ -5,19 +5,20 @@
     "node": ">=20.3.0"
   },
   "description": "New TS/JS client for Platform API",
+  "type": "module",
   "types": "./dist/index.d.ts",
-  "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "require": "./dist/index.js",
-      "import": "./dist/index.mjs"
+      "require": "./dist/index.cjs",
+      "import": "./dist/index.js"
     }
   },
   "scripts": {
     "type-check": "tsc --noEmit --composite false",
-    "build": "vite build",
+    "build": "rollup -c",
     "lint": "eslint .",
     "test": "jest --runInBand",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
@@ -52,6 +53,8 @@
     "@types/jest": "catalog:",
     "jest": "catalog:",
     "@jest/globals": "catalog:",
-    "ts-jest": "catalog:"
+    "ts-jest": "catalog:",
+    "rollup": "catalog:",
+    "@milaboratories/ts-configs": "workspace:*"
   }
 }

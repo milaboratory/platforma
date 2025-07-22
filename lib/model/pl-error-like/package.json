@@ -3,18 +3,18 @@
   "version": "1.12.2",
   "description": "Platforma SDK Model",
   "types": "./dist/index.d.ts",
-  "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.js"
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
     }
   },
   "scripts": {
     "type-check": "tsc --noEmit --composite false",
-    "build": "vite build",
+    "build": "rollup -c",
     "lint": "eslint .",
     "test": "vitest",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
@@ -35,6 +35,8 @@
     "eslint": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "rollup": "catalog:",
+    "@milaboratories/ts-configs": "workspace:*"
   }
 }

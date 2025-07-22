@@ -54,6 +54,7 @@
     "vite": "catalog:",
     "vue-tsc": "catalog:",
     "yarpm": "catalog:",
-    "svgo": "catalog:"
+    "svgo": "catalog:",
+    "typescript": "catalog:"
   }
 }

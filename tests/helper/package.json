@@ -22,6 +22,7 @@
     "ts-jest": "catalog:",
     "@types/jest": "catalog:",
     "@types/node": "catalog:",
-    "canonicalize": "catalog:"
+    "canonicalize": "catalog:",
+    "@milaboratories/ts-configs": "workspace:*"
   }
 }

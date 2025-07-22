@@ -11,7 +11,7 @@
   "files": [
     "dist"
   ],
-  "main": "./dist/aioli.umd.js",
+  "main": "./dist/aioli.js",
   "module": "./dist/aioli.mjs",
   "types": "./dist/aioli.d.ts",
   "dependencies": {

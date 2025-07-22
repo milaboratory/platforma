@@ -3,18 +3,18 @@
   "version": "1.41.16",
   "description": "Typescript Block Test Helpers",
   "types": "./dist/index.d.ts",
-  "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "require": "./dist/index.js",
-      "import": "./dist/index.mjs"
+      "require": "./dist/index.cjs",
+      "import": "./dist/index.js"
     }
   },
   "scripts": {
     "type-check": "tsc --noEmit --composite false",
-    "build": "vite build",
+    "build": "rollup -c",
     "test": "vitest",
     "prettier-format": "prettier --config .prettierrc 'src/**/*.ts' --write"
   },
@@ -35,6 +35,8 @@
     "@milaboratories/build-configs": "workspace:*",
     "@types/node": "catalog:",
     "typescript": "catalog:",
-    "vite": "catalog:"
+    "vite": "catalog:",
+    "@milaboratories/ts-configs": "workspace:*",
+    "rollup": "catalog:"
   }
 }

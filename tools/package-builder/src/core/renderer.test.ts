@@ -1,11 +1,12 @@
-import fs from 'fs';
-import path from 'path';
-import os from 'os';
+import { afterAll, beforeAll, beforeEach, describe, expect, test } from '@jest/globals';
 import { randomBytes } from 'crypto';
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
 
-import * as artifacts from './test-artifacts';
 import { PackageInfo } from './package-info';
 import { Renderer, entrypointFilePath, readEntrypointDescriptor } from './renderer';
+import * as artifacts from './test-artifacts';
 import { createLogger } from './util';
 
 describe('Renderer tests', () => {

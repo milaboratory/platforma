@@ -1,0 +1,11 @@
+{
+  "extends": "@milaboratories/ts-configs/tsconfig.node.json",
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "build"
+  ]
+}

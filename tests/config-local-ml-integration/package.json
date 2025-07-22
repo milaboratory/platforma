@@ -5,7 +5,7 @@
   "version": "1.2.117",
   "scripts": {
     "type-check": "tsc --noEmit --composite false",
-    "build": "vite build",
+    "build": "rollup -c",
     "test": "vitest"
   },
   "dependencies": {
@@ -20,6 +20,8 @@
     "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:",
-    "@types/node": "catalog:"
+    "@types/node": "catalog:",
+    "@milaboratories/ts-configs": "workspace:*",
+    "rollup": "catalog:"
   }
 }

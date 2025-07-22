@@ -1,7 +1,8 @@
+import { PlRef } from '@platforma-sdk/model';
+import { describe, expect, test } from 'vitest';
+import { outputRef } from './args';
 import { ProjectStructure } from './project_model';
 import { graphDiff, productionGraph, stagingGraph } from './project_model_util';
-import { outputRef } from './args';
-import { PlRef } from '@platforma-sdk/model';
 
 function toRefs(...ids: string[]): PlRef[] {
   return ids.map((id) => outputRef(id, '', true));

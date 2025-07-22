@@ -5,9 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "watch": "vue-tsc && vite build --watch",
-    "build": "vue-tsc -b && vite build",
-    "preview": "vite preview"
+    "watch": "vite build --watch",
+    "build": "vite build",
+    "preview": "vite preview",
+    "type-check": "vue-tsc -p tsconfig.app.json"
   },
   "dependencies": {
     "@milaboratories/milaboratories.test-read-logs.model": "workspace:*",

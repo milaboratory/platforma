@@ -3,19 +3,19 @@
   "version": "1.6.19",
   "description": "",
   "types": "./dist/index.d.ts",
-  "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
   "exports": {
     ".": {
       "sources": "./src/index.ts",
       "types": "./dist/index.d.ts",
-      "require": "./dist/index.js",
-      "import": "./dist/index.mjs"
+      "require": "./dist/index.cjs",
+      "import": "./dist/index.js"
     }
   },
   "scripts": {
     "type-check": "tsc --noEmit --composite false",
-    "build": "vite build",
+    "build": "rollup -c",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
     "lint": "eslint ."
   },
@@ -30,6 +30,8 @@
     "@milaboratories/eslint-config": "workspace:^",
     "@milaboratories/build-configs": "workspace:*",
     "typescript": "catalog:",
-    "vite": "catalog:"
+    "vite": "catalog:",
+    "@milaboratories/ts-configs": "workspace:*",
+    "rollup": "catalog:"
   }
 }

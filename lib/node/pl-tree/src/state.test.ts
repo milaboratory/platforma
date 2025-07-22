@@ -1,3 +1,6 @@
+import { expect, test } from '@jest/globals';
+import { Computable } from '@milaboratories/computable';
+import { DefaultFinalResourceDataPredicate, NullResourceId, ResourceId } from '@milaboratories/pl-client';
 import { isPlTreeEntry, isPlTreeEntryAccessor, isPlTreeNodeAccessor } from './accessors';
 import { PlTreeState } from './state';
 import {
@@ -6,12 +9,11 @@ import {
   ResourceReady,
   TestDynamicRootId1,
   TestDynamicRootState1,
+  TestErrorResourceState2,
   TestStructuralResourceState1,
-  TestValueResourceState1,
-  TestErrorResourceState2
+  TestValueResourceState1
 } from './test_utils';
-import { Computable } from '@milaboratories/computable';
-import { DefaultFinalResourceDataPredicate, NullResourceId, ResourceId } from '@milaboratories/pl-client';
+
 
 function rid(id: bigint): ResourceId {
   return id as ResourceId;

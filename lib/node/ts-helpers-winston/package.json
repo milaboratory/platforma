@@ -3,17 +3,17 @@
   "version": "1.0.24",
   "description": "Useful helpers for our TS projects (winston-specific)",
   "types": "./dist/index.d.ts",
-  "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "require": "./dist/index.js",
-      "import": "./dist/index.mjs"
+      "require": "./dist/index.cjs",
+      "import": "./dist/index.js"
     }
   },
   "scripts": {
-    "build": "vite build",
+    "build": "rollup -c",
     "lint": "eslint .",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
@@ -28,6 +28,8 @@
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
     "typescript": "catalog:",
-    "vite": "catalog:"
+    "vite": "catalog:",
+    "rollup": "catalog:",
+    "@milaboratories/ts-configs": "workspace:*"
   }
 }

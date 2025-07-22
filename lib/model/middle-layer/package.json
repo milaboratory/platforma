@@ -3,18 +3,18 @@
   "version": "1.8.1",
   "description": "Common model between middle layer and non-block UI code",
   "types": "./dist/index.d.ts",
-  "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.js"
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
     }
   },
   "scripts": {
     "type-check": "tsc --noEmit --composite false",
-    "build": "vite build",
+    "build": "rollup -c",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "files": [
@@ -30,6 +30,8 @@
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
     "typescript": "catalog:",
-    "vite": "catalog:"
+    "vite": "catalog:",
+    "rollup": "catalog:",
+    "@milaboratories/ts-configs": "workspace:*"
   }
 }

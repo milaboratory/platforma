@@ -2,19 +2,20 @@
   "name": "@milaboratories/pl-http",
   "version": "1.1.4",
   "description": "Common HTTP client settings for Platforma.bio libraries",
+  "type": "module",
   "types": "./dist/index.d.ts",
-  "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "require": "./dist/index.js",
-      "import": "./dist/index.mjs"
+      "require": "./dist/index.cjs",
+      "import": "./dist/index.js"
     }
   },
   "scripts": {
     "type-check": "tsc --noEmit --composite false",
-    "build": "vite build",
+    "build": "rollup -c",
     "lint": "eslint .",
     "test": "vitest",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
@@ -33,6 +34,8 @@
     "vite": "catalog:",
     "vitest": "catalog:",
     "@types/node": "catalog:",
-    "@types/http-proxy": "catalog:"
+    "@types/http-proxy": "catalog:",
+    "rollup": "catalog:",
+    "@milaboratories/ts-configs": "workspace:*"
   }
 }

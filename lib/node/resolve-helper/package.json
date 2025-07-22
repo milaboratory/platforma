@@ -15,5 +15,12 @@
   "files": [
     "src/**/*"
   ],
-  "license": "UNLICENSED"
+  "license": "UNLICENSED",
+  "scripts": {},
+  "devDependencies": {
+    "@milaboratories/build-configs": "workspace:*",
+    "@milaboratories/ts-configs": "workspace:*",
+    "rollup": "catalog:",
+    "typescript": "catalog:"
+  }
 }

@@ -3,14 +3,14 @@
   "private": true,
   "version": "1.7.6",
   "description": "Tengo SDK library tests",
+  "type": "module",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "require": "./dist/index.js",
-      "import": "./dist/index.mjs"
+      "require": "./dist/index.cjs",
+      "import": "./dist/index.js"
     }
   },
   "scripts": {
@@ -37,6 +37,7 @@
     "@platforma-sdk/test": "workspace:*",
     "@types/node": "catalog:",
     "vitest": "catalog:",
-    "@milaboratories/eslint-config": "workspace:^"
+    "@milaboratories/eslint-config": "workspace:^",
+    "@milaboratories/ts-configs": "workspace:*"
   }
 }

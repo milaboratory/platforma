@@ -1,5 +1,6 @@
-import * as artifacts from './test-artifacts';
+import { expect, test } from '@jest/globals';
 import { PackageInfo } from './package-info';
+import * as artifacts from './test-artifacts';
 import { createLogger } from './util';
 
 test('PackageInfo loads correctly for multi-package', () => {
