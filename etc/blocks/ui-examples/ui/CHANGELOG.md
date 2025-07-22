@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.5.19
+
+### Patch Changes
+
+- 093dbda: explicit setup z-index
+
 ## 1.5.18
 
 ### Patch Changes
