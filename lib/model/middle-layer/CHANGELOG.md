@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.8.1
+
+### Patch Changes
+
+- ef9f418: Fix PFrames setColumnData method signature
+
 ## 1.8.0
 
 ### Minor Changes
