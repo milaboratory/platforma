@@ -3,6 +3,9 @@ import nodeExternals from 'rollup-plugin-node-externals';
 import { defineConfig, UserConfig } from 'vite';
 import dts from 'vite-plugin-dts';
 
+/**
+ * @deprecated Use `createRollupNodeConfig`.
+ */
 export function PlViteStdNode(overrideConfig?: UserConfig) {
   return defineConfig({
     build: {

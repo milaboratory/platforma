@@ -12,12 +12,12 @@
       "require": "./dist/index.cjs"
     },
     "./tsup": {
-      "types": "./src/tsup.ts",
+      "types": "./src/tsup.d.ts",
       "import": "./dist/tsup.js",
       "require": "./dist/tsup.cjs"
     },
     "./vite": {
-      "types": "./src/vite.ts",
+      "types": "./src/vite.d.ts",
       "import": "./dist/vite.js",
       "require": "./dist/vite.cjs"
     },
