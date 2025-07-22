@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.3.22
+
+### Patch Changes
+
+- 093dbda: explicit setup z-index
+
 ## 2.3.21
 
 ### Patch Changes
