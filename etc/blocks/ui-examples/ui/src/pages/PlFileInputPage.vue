@@ -11,6 +11,12 @@ const props = reactive({
 <template>
   <PlBlockPage style="max-width: 100%">
     <div class="d-flex flex-column gap-16" style="width: 400px">
+      <PlFileInput
+        v-model="props.model"
+        :extensions="['txt']"
+        :progress="{ done: true, isUpload: true, status: { progress: 1, bytesTotal: 1000, bytesProcessed: 1000 }}"
+      />
+
       <h2>Errors</h2>
       <PlFileInput
         v-model="props.model"
