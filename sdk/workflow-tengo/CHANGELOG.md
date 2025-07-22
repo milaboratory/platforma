@@ -1,5 +1,12 @@
 # @platforma-sdk/workflow-tengo
 
+## 4.14.1
+
+### Patch Changes
+
+- 7d7dedd: - Fixes for parseToJson logic, so that it supports raw output of getFileContent
+  - Additional check in anonymization logic
+
 ## 4.14.0
 
 ### Minor Changes
