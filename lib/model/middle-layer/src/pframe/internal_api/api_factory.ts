@@ -48,7 +48,13 @@ export interface PFrameFactoryAPIV2 {
   addColumnSpec(columnId: PObjectId, columnSpec: PColumnSpec): void;
 
   /** Associates data info with cpecific column */
-  setColumnData(columnId: PObjectId, dataInfo: DataInfo<PFrameBlobId>): Promise<void>;
+  setColumnData(
+    columnId: PObjectId,
+    dataInfo: DataInfo<PFrameBlobId>,
+    options?: {
+      signal?: AbortSignal,
+    }
+  ): Promise<void>;
 
   /** Releases all the data previously added to PFrame using methods above,
    * any interactions with disposed PFrame will result in exception */
