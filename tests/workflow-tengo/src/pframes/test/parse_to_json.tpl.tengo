@@ -3,6 +3,7 @@
 self := import("@platforma-sdk/workflow-tengo:tpl")
 
 ll := import("@platforma-sdk/workflow-tengo:ll")
+pt := import("@platforma-sdk/workflow-tengo:pt")
 pframes := import("@platforma-sdk/workflow-tengo:pframes")
 
 self.awaitState("InputsLocked")
@@ -11,10 +12,12 @@ self.awaitState("params", "ResourceReady")
 self.body(func(inputs) {
 	params := inputs.params
 
-	// Use parseToJson to parse TSV content with all column kinds
-	parseResult := pframes.parseToJson(params.tsvContent, params.settings)
+	wf := pt.workflow()
+	wf.frame(params.tsvContent, { xsvType: "tsv", inferSchema: false }).saveContent("table.tsv")
+	tsvContentAsResource := wf.run().getFileContent("table.tsv")
 
-	// Build a result frame with all parsed columns
+	parseResult := pframes.parseToJson(tsvContentAsResource, params.settings)
+
 	builder := pframes.pFrameBuilder()
 	parseResult.addAllOutputsToBuilder(builder)
 
