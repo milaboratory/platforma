@@ -44,6 +44,12 @@ decodePDataField := func(fieldName) {
 		ll.panic("Expected JSON array for pcolumn key, got: %v", keyArray)
 	}
 
+	for i, component in keyArray {
+		if !is_string(component) && !is_int(component) {
+			ll.panic("Key component at index %d must be either string or integer, got: %v (%v)", i, component, keyArray)
+		}
+	}
+
 	return {
 		key: keyArray,
 		suffix: suffix

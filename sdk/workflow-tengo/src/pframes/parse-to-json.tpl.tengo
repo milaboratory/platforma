@@ -257,10 +257,10 @@ self.body(func(inputs) {
 	} else if smart.isReference(input) {
 		validation.assertType(input, validation.resource(), "Input must be a valid resource reference")
 
-		isResourceMap := input.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP)
-		isPartitionedResourceMap := input.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP_PARTITIONED)
-
-		if isResourceMap {
+		if input.checkResourceType({Name: "binary", Version: "1"}) {
+			partitionedContent["[]"] = string(input.getData())
+			totalKeyLength = paramsAxesLength
+		} else if input.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP) {
 			meta := input.getDataAsJson()
 			if !is_map(meta) || is_undefined(meta.keyLength) {
 				ll.panic("Invalid ResourceMap metadata: %v", meta)
@@ -279,7 +279,7 @@ self.body(func(inputs) {
 				partitionedContent[resourceKey] = content
 			})
 
-		} else if isPartitionedResourceMap {
+		} else if input.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP_PARTITIONED) {
 			meta := input.getDataAsJson()
 			if !is_map(meta) || is_undefined(meta.partitionKeyLength) || is_undefined(meta.keyLength) {
 				ll.panic("Invalid Partitioned/ResourceMap metadata: %v", meta)

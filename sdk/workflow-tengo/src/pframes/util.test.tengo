@@ -27,7 +27,7 @@ TestDecomposePfconvCfg := func() {
 	}, {
 		additionalAxesSpec: [
 			{ name: "pl7.app/sampleId", type: "String" }
-			]
+		]
 	})
 	test.isEqual(result, {
 		purifiedCfg: {
