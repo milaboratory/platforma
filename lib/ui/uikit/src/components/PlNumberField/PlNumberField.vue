@@ -69,11 +69,8 @@ const inputValue = computed({
 
     const r = parseNumber(props, nextValue);
 
-    console.log('>>> r', JSON.stringify(r));
-
     if (r.error || props.updateOnEnterOrClickOutside) {
       const clean = cleanInput(nextValue);
-      console.log('>>> clean', clean);
       cachedValue.value = clean;
       inputRef.value!.value = clean;
     } else {

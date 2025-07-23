@@ -17,7 +17,7 @@ const data = reactive({
 
 <template>
   <PlBlockPage>
-    <template #title>PlNumberField 1</template>
+    <template #title>PlNumberField</template>
     <pre>number: {{ data.number }} {{ typeof data.number }}</pre>
     <PlRow>
       <PlCheckbox v-model="data.useIncrementButtons">Use increment buttons</PlCheckbox>
