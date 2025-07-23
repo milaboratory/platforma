@@ -1,6 +1,7 @@
 import commonjs from '@rollup/plugin-commonjs';
 import json from '@rollup/plugin-json';
 import typescript from '@rollup/plugin-typescript';
+import { OutputOptions, RollupOptions } from 'rollup';
 import { cleandir } from 'rollup-plugin-cleandir';
 import nodeExternals from 'rollup-plugin-node-externals';
 import dts from 'unplugin-dts/rollup';
@@ -8,7 +9,7 @@ import dts from 'unplugin-dts/rollup';
 export function createRollupNodeConfig(props?: {
   entry?: string[];
   formats?: ('es' | 'cjs')[]
-} ) {
+}): RollupOptions[] {
   const input = props?.entry || ['./src/index.ts'];
   const formats = props?.formats || ['es', 'cjs'];
   return [
@@ -43,7 +44,7 @@ export function createRollupNodeConfig(props?: {
           assetFileNames: '[name][extname]',
           sourcemap: true
         },
-      ],
+      ].filter((v) => v !== null && typeof v === 'object') as OutputOptions[],
     },
   ];
 }

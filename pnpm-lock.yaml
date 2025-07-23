@@ -367,7 +367,7 @@ importers:
         version: 5.6.3
       unplugin-dts:
         specifier: 'catalog:'
-        version: 1.0.0-beta.4(@microsoft/api-extractor@7.52.2(@types/node@20.16.15))(esbuild@0.25.5)(rollup@4.45.1)(typescript@5.6.3)(vite@6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0))
+        version: 1.0.0-beta.4(@microsoft/api-extractor@7.52.2(@types/node@20.16.15))(@vue/language-core@3.0.3(typescript@5.6.3))(esbuild@0.25.5)(rollup@4.45.1)(typescript@5.6.3)(vite@6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0))
       vite:
         specifier: 'catalog:'
         version: 6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0)
@@ -440,21 +440,15 @@ importers:
       '@milaboratories/helpers':
         specifier: workspace:^
         version: link:../../../../lib/util/helpers
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-builder
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../../tools/ts-configs
-      '@vitejs/plugin-vue':
-        specifier: 'catalog:'
-        version: 5.2.3(vite@6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0))(vue@3.5.13(typescript@5.6.3))
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
-      vite:
-        specifier: 'catalog:'
-        version: 6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0)
-      vue-tsc:
-        specifier: 'catalog:'
-        version: 2.2.10(typescript@5.6.3)
       zod:
         specifier: 'catalog:'
         version: 3.23.8
@@ -534,27 +528,18 @@ importers:
       '@faker-js/faker':
         specifier: 'catalog:'
         version: 9.2.0
-      '@milaboratories/build-configs':
-        specifier: workspace:*
-        version: link:../../../../tools/build-configs
       '@milaboratories/helpers':
         specifier: workspace:^
         version: link:../../../../lib/util/helpers
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-builder
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../../tools/ts-configs
-      '@vitejs/plugin-vue':
-        specifier: 'catalog:'
-        version: 5.2.3(vite@6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0))(vue@3.5.13(typescript@5.6.3))
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
-      vite:
-        specifier: 'catalog:'
-        version: 6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0)
-      vue-tsc:
-        specifier: 'catalog:'
-        version: 2.2.10(typescript@5.6.3)
       zod:
         specifier: 'catalog:'
         version: 3.23.8
@@ -628,27 +613,18 @@ importers:
       '@faker-js/faker':
         specifier: 'catalog:'
         version: 9.2.0
-      '@milaboratories/build-configs':
-        specifier: workspace:*
-        version: link:../../../../tools/build-configs
       '@milaboratories/helpers':
         specifier: workspace:^
         version: link:../../../../lib/util/helpers
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-builder
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../../tools/ts-configs
-      '@vitejs/plugin-vue':
-        specifier: 'catalog:'
-        version: 5.2.3(vite@6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0))(vue@3.5.13(typescript@5.6.3))
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
-      vite:
-        specifier: 'catalog:'
-        version: 6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0)
-      vue-tsc:
-        specifier: 'catalog:'
-        version: 2.2.10(typescript@5.6.3)
       zod:
         specifier: 'catalog:'
         version: 3.23.8
@@ -719,21 +695,15 @@ importers:
       '@milaboratories/build-configs':
         specifier: workspace:*
         version: link:../../../../tools/build-configs
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-builder
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../../tools/ts-configs
-      '@vitejs/plugin-vue':
-        specifier: 'catalog:'
-        version: 5.2.3(vite@6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0))(vue@3.5.13(typescript@5.6.3))
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
-      vite:
-        specifier: 'catalog:'
-        version: 6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0)
-      vue-tsc:
-        specifier: 'catalog:'
-        version: 2.2.10(typescript@5.6.3)
       zod:
         specifier: 'catalog:'
         version: 3.23.8
@@ -807,21 +777,15 @@ importers:
       '@milaboratories/build-configs':
         specifier: workspace:*
         version: link:../../../../tools/build-configs
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-builder
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../../tools/ts-configs
-      '@vitejs/plugin-vue':
-        specifier: 'catalog:'
-        version: 5.2.3(vite@6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0))(vue@3.5.13(typescript@5.6.3))
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
-      vite:
-        specifier: 'catalog:'
-        version: 6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0)
-      vue-tsc:
-        specifier: 'catalog:'
-        version: 2.2.10(typescript@5.6.3)
 
   etc/blocks/monetization-test/workflow:
     dependencies:
@@ -895,21 +859,15 @@ importers:
       '@milaboratories/build-configs':
         specifier: workspace:*
         version: link:../../../../tools/build-configs
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-builder
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../../tools/ts-configs
-      '@vitejs/plugin-vue':
-        specifier: 'catalog:'
-        version: 5.2.3(vite@6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0))(vue@3.5.13(typescript@5.6.3))
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
-      vite:
-        specifier: 'catalog:'
-        version: 6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0)
-      vue-tsc:
-        specifier: 'catalog:'
-        version: 2.2.10(typescript@5.6.3)
       zod:
         specifier: 'catalog:'
         version: 3.23.8
@@ -986,27 +944,18 @@ importers:
       '@faker-js/faker':
         specifier: 'catalog:'
         version: 9.2.0
-      '@milaboratories/build-configs':
-        specifier: workspace:*
-        version: link:../../../../tools/build-configs
       '@milaboratories/helpers':
         specifier: workspace:^
         version: link:../../../../lib/util/helpers
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-builder
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../../tools/ts-configs
-      '@vitejs/plugin-vue':
-        specifier: 'catalog:'
-        version: 5.2.3(vite@6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0))(vue@3.5.13(typescript@5.6.3))
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
-      vite:
-        specifier: 'catalog:'
-        version: 6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0)
-      vue-tsc:
-        specifier: 'catalog:'
-        version: 2.2.10(typescript@5.6.3)
       zod:
         specifier: 'catalog:'
         version: 3.23.8
@@ -1095,21 +1044,15 @@ importers:
       '@milaboratories/helpers':
         specifier: workspace:^
         version: link:../../../../lib/util/helpers
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-builder
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../../tools/ts-configs
-      '@vitejs/plugin-vue':
-        specifier: 'catalog:'
-        version: 5.2.3(vite@6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0))(vue@3.5.13(typescript@5.6.3))
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
-      vite:
-        specifier: 'catalog:'
-        version: 6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0)
-      vue-tsc:
-        specifier: 'catalog:'
-        version: 2.2.10(typescript@5.6.3)
       zod:
         specifier: 'catalog:'
         version: 3.23.8
@@ -1189,6 +1132,9 @@ importers:
       '@milaboratories/helpers':
         specifier: workspace:^
         version: link:../../../../lib/util/helpers
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-builder
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../../tools/ts-configs
@@ -1198,30 +1144,15 @@ importers:
       '@platforma-sdk/ui-vue':
         specifier: workspace:^
         version: link:../../../../sdk/ui-vue
-      '@vitejs/plugin-vue':
-        specifier: 'catalog:'
-        version: 5.2.3(vite@6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0))(vue@3.5.13(typescript@5.6.3))
       ag-grid-enterprise:
         specifier: 'catalog:'
         version: 34.0.2
       ag-grid-vue3:
         specifier: 'catalog:'
         version: 34.0.2(vue@3.5.13(typescript@5.6.3))
-      rollup-plugin-sourcemaps2:
-        specifier: 'catalog:'
-        version: 0.5.2(@types/node@22.5.5)(rollup@4.45.1)
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
-      vite:
-        specifier: 'catalog:'
-        version: 6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0)
-      vitest:
-        specifier: 'catalog:'
-        version: 2.1.9(@types/node@22.5.5)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4)
-      vue-tsc:
-        specifier: 'catalog:'
-        version: 2.2.10(typescript@5.6.3)
       zod:
         specifier: 'catalog:'
         version: 3.23.8
@@ -1304,27 +1235,18 @@ importers:
       '@faker-js/faker':
         specifier: 'catalog:'
         version: 9.2.0
-      '@milaboratories/build-configs':
-        specifier: workspace:*
-        version: link:../../../../tools/build-configs
       '@milaboratories/helpers':
         specifier: workspace:^
         version: link:../../../../lib/util/helpers
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-builder
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../../tools/ts-configs
-      '@vitejs/plugin-vue':
-        specifier: 'catalog:'
-        version: 5.2.3(vite@6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0))(vue@3.5.13(typescript@5.6.3))
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
-      vite:
-        specifier: 'catalog:'
-        version: 6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0)
-      vue-tsc:
-        specifier: 'catalog:'
-        version: 2.2.10(typescript@5.6.3)
       zod:
         specifier: 'catalog:'
         version: 3.23.8
@@ -1477,6 +1399,9 @@ importers:
       '@milaboratories/build-configs':
         specifier: workspace:*
         version: link:../../../tools/build-configs
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../../tools/ts-builder
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../tools/ts-configs
@@ -1486,15 +1411,9 @@ importers:
       eslint:
         specifier: 'catalog:'
         version: 9.25.1
-      rollup:
-        specifier: 'catalog:'
-        version: 4.45.1
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
-      vite:
-        specifier: 'catalog:'
-        version: 6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0)
       vitest:
         specifier: 'catalog:'
         version: 2.1.9(@types/node@22.5.5)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4)
@@ -1591,18 +1510,15 @@ importers:
       '@milaboratories/build-configs':
         specifier: workspace:*
         version: link:../../../tools/build-configs
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../../tools/ts-builder
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../tools/ts-configs
-      rollup:
-        specifier: 'catalog:'
-        version: 4.45.1
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
-      vite:
-        specifier: 'catalog:'
-        version: 6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0)
       vitest:
         specifier: 'catalog:'
         version: 2.1.9(@types/node@20.16.15)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4)
@@ -1612,21 +1528,18 @@ importers:
       '@milaboratories/build-configs':
         specifier: workspace:*
         version: link:../../../tools/build-configs
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../../tools/ts-builder
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../tools/ts-configs
       '@types/node':
         specifier: 'catalog:'
         version: 20.16.15
-      rollup:
-        specifier: 'catalog:'
-        version: 4.45.1
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
-      vite:
-        specifier: 'catalog:'
-        version: 6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0)
 
   lib/node/pl-client:
     dependencies:
@@ -1679,6 +1592,9 @@ importers:
       '@milaboratories/build-configs':
         specifier: workspace:*
         version: link:../../../tools/build-configs
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../../tools/ts-builder
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../tools/ts-configs
@@ -1697,18 +1613,12 @@ importers:
       jest:
         specifier: 'catalog:'
         version: 29.7.0(@types/node@20.16.15)(ts-node@10.9.2(@types/node@20.16.15)(typescript@5.6.3))
-      rollup:
-        specifier: 'catalog:'
-        version: 4.45.1
       ts-jest:
         specifier: 'catalog:'
         version: 29.2.6(@babel/core@7.25.2)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.25.2))(esbuild@0.25.5)(jest@29.7.0(@types/node@20.16.15)(ts-node@10.9.2(@types/node@20.16.15)(typescript@5.6.3)))(typescript@5.6.3)
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
-      vite:
-        specifier: 'catalog:'
-        version: 6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0)
 
   lib/node/pl-config:
     dependencies:
@@ -1734,6 +1644,9 @@ importers:
       '@milaboratories/eslint-config':
         specifier: workspace:^
         version: link:../../../tools/eslint-config
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../../tools/ts-builder
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../tools/ts-configs
@@ -1752,9 +1665,6 @@ importers:
       prettier:
         specifier: 'catalog:'
         version: 3.4.1
-      rollup:
-        specifier: 'catalog:'
-        version: 4.45.1
       ts-jest:
         specifier: 'catalog:'
         version: 29.2.6(@babel/core@7.25.2)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.25.2))(esbuild@0.25.5)(jest@29.7.0(@types/node@20.16.15)(ts-node@10.9.2(@types/node@20.16.15)(typescript@5.6.3)))(typescript@5.6.3)
@@ -1764,9 +1674,6 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
-      vite:
-        specifier: 'catalog:'
-        version: 6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0)
       vitest:
         specifier: 'catalog:'
         version: 2.1.9(@types/node@20.16.15)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4)
@@ -1916,6 +1823,9 @@ importers:
       '@milaboratories/eslint-config':
         specifier: workspace:^
         version: link:../../../tools/eslint-config
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../../tools/ts-builder
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../tools/ts-configs
@@ -1934,15 +1844,9 @@ importers:
       eslint:
         specifier: 'catalog:'
         version: 9.25.1
-      rollup:
-        specifier: 'catalog:'
-        version: 4.45.1
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
-      vite:
-        specifier: 'catalog:'
-        version: 6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0)
       vitest:
         specifier: 'catalog:'
         version: 2.1.9(@types/node@20.16.15)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4)
@@ -1968,18 +1872,15 @@ importers:
       '@milaboratories/pl-error-like':
         specifier: workspace:*
         version: link:../../model/pl-error-like
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../../tools/ts-builder
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../tools/ts-configs
-      rollup:
-        specifier: 'catalog:'
-        version: 4.45.1
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
-      vite:
-        specifier: 'catalog:'
-        version: 6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0)
       vitest:
         specifier: 'catalog:'
         version: 2.1.9(@types/node@22.5.5)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4)
@@ -1996,6 +1897,9 @@ importers:
       '@milaboratories/build-configs':
         specifier: workspace:*
         version: link:../../../tools/build-configs
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../../tools/ts-builder
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../tools/ts-configs
@@ -2005,15 +1909,9 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 20.16.15
-      rollup:
-        specifier: 'catalog:'
-        version: 4.45.1
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
-      vite:
-        specifier: 'catalog:'
-        version: 6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0)
       vitest:
         specifier: 'catalog:'
         version: 2.1.9(@types/node@20.16.15)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4)
@@ -2105,6 +2003,9 @@ importers:
       '@milaboratories/eslint-config':
         specifier: workspace:^
         version: link:../../../tools/eslint-config
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../../tools/ts-builder
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../tools/ts-configs
@@ -2120,9 +2021,6 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
-      vite:
-        specifier: 'catalog:'
-        version: 6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0)
       vitest:
         specifier: 'catalog:'
         version: 2.1.9(@types/node@20.16.15)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4)
@@ -2160,6 +2058,9 @@ importers:
       '@milaboratories/build-configs':
         specifier: workspace:*
         version: link:../../../tools/build-configs
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../../tools/ts-builder
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../tools/ts-configs
@@ -2169,18 +2070,12 @@ importers:
       jest:
         specifier: 'catalog:'
         version: 29.7.0(@types/node@22.5.5)(ts-node@10.9.2(@types/node@22.5.5)(typescript@5.6.3))
-      rollup:
-        specifier: 'catalog:'
-        version: 4.45.1
       ts-jest:
         specifier: 'catalog:'
         version: 29.2.6(@babel/core@7.25.2)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.25.2))(esbuild@0.25.5)(jest@29.7.0(@types/node@22.5.5)(ts-node@10.9.2(@types/node@22.5.5)(typescript@5.6.3)))(typescript@5.6.3)
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
-      vite:
-        specifier: 'catalog:'
-        version: 6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0)
 
   lib/node/resolve-helper:
     devDependencies:
@@ -2212,6 +2107,9 @@ importers:
       '@milaboratories/build-configs':
         specifier: workspace:*
         version: link:../../../tools/build-configs
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../../tools/ts-builder
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../tools/ts-configs
@@ -2224,18 +2122,12 @@ importers:
       jest:
         specifier: 'catalog:'
         version: 29.7.0(@types/node@20.16.15)(ts-node@10.9.2(@types/node@20.16.15)(typescript@5.6.3))
-      rollup:
-        specifier: 'catalog:'
-        version: 4.45.1
       ts-jest:
         specifier: 'catalog:'
         version: 29.2.6(@babel/core@7.25.2)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.25.2))(esbuild@0.25.5)(jest@29.7.0(@types/node@20.16.15)(ts-node@10.9.2(@types/node@20.16.15)(typescript@5.6.3)))(typescript@5.6.3)
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
-      vite:
-        specifier: 'catalog:'
-        version: 6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0)
 
   lib/node/ts-helpers-oclif:
     dependencies:
@@ -2296,12 +2188,15 @@ importers:
         specifier: ^1.2.11
         version: 1.8.0
     devDependencies:
+      '@milaboratories/build-configs':
+        specifier: workspace:*
+        version: link:../../../tools/build-configs
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../../tools/ts-builder
       cypress:
         specifier: ^10.6.0
         version: 10.11.0
-      vite:
-        specifier: 'catalog:'
-        version: 6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0)
       vitest:
         specifier: 'catalog:'
         version: 2.1.9(@types/node@22.5.5)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4)
@@ -2348,12 +2243,12 @@ importers:
       '@milaboratories/eslint-config':
         specifier: workspace:^
         version: link:../../../tools/eslint-config
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../../tools/ts-builder
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../tools/ts-configs
-      '@vitejs/plugin-vue':
-        specifier: 'catalog:'
-        version: 5.2.3(vite@6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0))(vue@3.5.13(typescript@5.6.3))
       jsdom:
         specifier: 'catalog:'
         version: 25.0.1
@@ -2363,15 +2258,9 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
-      vite:
-        specifier: 'catalog:'
-        version: 6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0)
       vitest:
         specifier: 'catalog:'
         version: 2.1.9(@types/node@22.5.5)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4)
-      vue-tsc:
-        specifier: 'catalog:'
-        version: 2.2.10(typescript@5.6.3)
       yarpm:
         specifier: 'catalog:'
         version: 1.2.0
@@ -2384,18 +2273,15 @@ importers:
       '@milaboratories/eslint-config':
         specifier: workspace:^
         version: link:../../../tools/eslint-config
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../../tools/ts-builder
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../tools/ts-configs
-      rollup:
-        specifier: 'catalog:'
-        version: 4.45.1
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
-      vite:
-        specifier: 'catalog:'
-        version: 6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0)
 
   lib/util/sequences:
     devDependencies:
@@ -2466,6 +2352,9 @@ importers:
       '@milaboratories/helpers':
         specifier: workspace:^
         version: link:../../lib/util/helpers
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../tools/ts-builder
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../tools/ts-configs
@@ -2475,15 +2364,9 @@ importers:
       fast-json-patch:
         specifier: 'catalog:'
         version: 3.1.1
-      rollup:
-        specifier: 'catalog:'
-        version: 4.45.1
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
-      vite:
-        specifier: 'catalog:'
-        version: 6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0)
       vitest:
         specifier: 'catalog:'
         version: 2.1.9(@types/node@22.5.5)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4)
@@ -2594,6 +2477,9 @@ importers:
       '@milaboratories/helpers':
         specifier: workspace:^
         version: link:../../lib/util/helpers
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../tools/ts-builder
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../tools/ts-configs
@@ -3058,7 +2944,7 @@ importers:
         version: 5.6.3
       unplugin-dts:
         specifier: 'catalog:'
-        version: 1.0.0-beta.4(@microsoft/api-extractor@7.52.2(@types/node@20.16.15))(esbuild@0.24.0)(rollup@4.45.1)(typescript@5.6.3)(vite@6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0))
+        version: 1.0.0-beta.4(@microsoft/api-extractor@7.52.2(@types/node@20.16.15))(@vue/language-core@3.0.3(typescript@5.6.3))(esbuild@0.24.0)(rollup@4.45.1)(typescript@5.6.3)(vite@6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0))
       vite:
         specifier: 'catalog:'
         version: 6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0)
@@ -3352,6 +3238,33 @@ importers:
       vitest:
         specifier: 'catalog:'
         version: 2.1.9(@types/node@20.16.15)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4)
+
+  tools/ts-builder:
+    dependencies:
+      '@milaboratories/build-configs':
+        specifier: workspace:*
+        version: link:../build-configs
+      '@milaboratories/ts-configs':
+        specifier: workspace:*
+        version: link:../ts-configs
+      commander:
+        specifier: ^12.0.0
+        version: 12.1.0
+      rollup:
+        specifier: 'catalog:'
+        version: 4.45.1
+      rollup-plugin-copy:
+        specifier: ^3.5.0
+        version: 3.5.0
+      typescript:
+        specifier: 'catalog:'
+        version: 5.6.3
+      vite:
+        specifier: 'catalog:'
+        version: 6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0)
+      vue-tsc:
+        specifier: 'catalog:'
+        version: 2.2.10(typescript@5.6.3)
 
   tools/ts-configs: {}
 
@@ -7329,8 +7242,14 @@ packages:
   '@types/estree@1.0.8':
     resolution: {integrity: sha512-dWHzHa2WqEXI/O1E9OjrocMTKJl2mSrEolh1Iomrv6U+JuNwaHXsXx9bLu5gG7BUWFIN0skIQJQ/L1rIex4X6w==}
 
+  '@types/fs-extra@8.1.5':
+    resolution: {integrity: sha512-0dzKcwO+S8s2kuF5Z9oUWatQJj5Uq/iqphEtE3GQJVRRYm/tD1LglU2UnXi2A8jLq5umkGouOXOR9y0n613ZwQ==}
+
   '@types/geojson@7946.0.15':
     resolution: {integrity: sha512-9oSxFzDCT2Rj6DfcHF8G++jxBKS7mBqXl5xrRW+Kbvjry6Uduya2iiwqHPhVXpasAVMBYKkEPGgKhd3+/HZ6xA==}
+
+  '@types/glob@7.2.0':
+    resolution: {integrity: sha512-ZUxbzKl0IfJILTS6t7ip5fQQM/J3TJYubDm3nMbgubNNYS62eXeUpoLUC8/7fJNiFYHTrGPQn7hspDUzIHX3UA==}
 
   '@types/graceful-fs@4.1.9':
     resolution: {integrity: sha512-olP3sd1qOEe5dXTSaFvQG+02VdRXcdytWLAZsAq1PecU8uqQAhkrnbli7DagjtXKW/Bl7YJbUsa8MPcuc8LHEQ==}
@@ -7382,6 +7301,10 @@ packages:
 
   '@types/mime-types@2.1.4':
     resolution: {integrity: sha512-lfU4b34HOri+kAY5UheuFMWPDOI+OPceBSHZKp69gEyTL/mmJ4cnU6Y/rlme3UL3GyOn6Y42hyIEw0/q8sWx5w==}
+
+  '@types/minimatch@6.0.0':
+    resolution: {integrity: sha512-zmPitbQ8+6zNutpwgcQuLcsEpn/Cj54Kbn7L5pX0Os5kdWplB7xPgEh/g+SWOB/qmows2gpuCaPyduq8ZZRnxA==}
+    deprecated: This is a stub types definition. minimatch provides its own type definitions, so you do not need this installed.
 
   '@types/mute-stream@0.0.4':
     resolution: {integrity: sha512-CPM9nzrCPPJHQNA9keH9CVkVI+WR5kMa+7XEs5jcGQ0VoAGnLv242w8lIVgwAEfmE4oufJRaTc9PNLQl0ioAow==}
@@ -7657,6 +7580,14 @@ packages:
       typescript:
         optional: true
 
+  '@vue/language-core@3.0.3':
+    resolution: {integrity: sha512-I9wY0ULMN9tMSua+2C7g+ez1cIziVMUzIHlDYGSl2rtru3Eh4sXj95vZ+4GBuXwwPnEmYfzSApVbXiVbI8V5Gg==}
+    peerDependencies:
+      typescript: '*'
+    peerDependenciesMeta:
+      typescript:
+        optional: true
+
   '@vue/reactivity@3.5.13':
     resolution: {integrity: sha512-NaCwtw8o48B9I6L1zl2p41OHo/2Z4wqYGGIK1Khu5T7yxrn+ATOixn/Udn2m+6kZKB/J7cuT9DbWWhRxqixACg==}
 
@@ -7880,6 +7811,9 @@ packages:
 
   alien-signals@1.0.13:
     resolution: {integrity: sha512-OGj9yyTnJEttvzhTUWuscOvtqxq5vrhF7vL9oS0xJ2mK0ItPYP1/y+vCFebfxoEyAz0++1AIwJ5CMr+Fk3nDmg==}
+
+  alien-signals@2.0.5:
+    resolution: {integrity: sha512-PdJB6+06nUNAClInE3Dweq7/2xVAYM64vvvS1IHVHSJmgeOtEdrAGyp7Z2oJtYm0B342/Exd2NT0uMJaThcjLQ==}
 
   ansi-colors@4.1.3:
     resolution: {integrity: sha512-/6w/C21Pm1A7aZitlI5Ni/2J6FFQN8i1Cvz3kHABAAbw93v/NlvKdVOqz7CCWz/3iv/JplRSEEZ83XION15ovw==}
@@ -8298,6 +8232,9 @@ packages:
   color@3.2.1:
     resolution: {integrity: sha512-aBl7dZI9ENN6fUGC7mWpMTPNHmWUSNan9tuWN6ahh5ZLNk9baLJOnSMlrQkHcrfFgz2/RigjUVAjdx36VcemKA==}
 
+  colorette@1.4.0:
+    resolution: {integrity: sha512-Y2oEozpomLn7Q3HFP7dpww7AtMJplbM9lGZP6RDfHqmbeRjiwRg4n6VM6j4KLmRke85uWEI7JqF17f3pqdRA0g==}
+
   colorette@2.0.20:
     resolution: {integrity: sha512-IfEDxwoWIjkeXL1eXcDiow4UbKjhLdq6/EuSVR9GMN7KVH3r9gQ83e73hsz1Nd1T3ijd5xv1wcWRYO+D6kCI2w==}
 
@@ -8320,6 +8257,10 @@ packages:
   commander@10.0.1:
     resolution: {integrity: sha512-y4Mg2tXshplEbSGzx7amzPwKKOCGuoSRP/CjEdwwk0FOGlUbq6lKuoyDZTNZkmxHdJtp54hdfY/JUrdL7Xfdug==}
     engines: {node: '>=14'}
+
+  commander@12.1.0:
+    resolution: {integrity: sha512-Vw8qHK3bZM9y/P10u3Vib8o/DdkvA2OtPtZvD871QKjy74Wj1WSKFILMPRPSdUSx5RFK1arlJzEtA4PkFgnbuA==}
+    engines: {node: '>=18'}
 
   commander@2.20.3:
     resolution: {integrity: sha512-GpVkmM8vF2vQUkj2LvZmD35JxeJOLCwJ9cUkugyk2nuhbv3+mJvpLYYt+0+USMxE+oj+ey/lJEnhZw75x/OMcQ==}
@@ -9038,14 +8979,6 @@ packages:
   fd-slicer@1.1.0:
     resolution: {integrity: sha512-cE1qsB/VwyQozZ+q1dGxR8LBYNZeofhEdUNGSMbQD3Gw2lAzX9Zb3uIU6Ebc/Fmyjo9AWWfnn0AUCHqtevs/8g==}
 
-  fdir@6.4.2:
-    resolution: {integrity: sha512-KnhMXsKSPZlAhp7+IjUkRZKPb4fUyccpDrdFXbi4QL1qkmFh9kVY09Yox+n4MaOb3lHZ1Tv829C3oaaXoMYPDQ==}
-    peerDependencies:
-      picomatch: ^3 || ^4
-    peerDependenciesMeta:
-      picomatch:
-        optional: true
-
   fdir@6.4.5:
     resolution: {integrity: sha512-4BG7puHpVsIYxZUbiUE3RqGloLaSSwzYie5jvasC4LWuBWzZawynvYouhjbQKw2JuIGYdm0DzIxl8iVidKlUEw==}
     peerDependencies:
@@ -9261,6 +9194,10 @@ packages:
   globals@15.13.0:
     resolution: {integrity: sha512-49TewVEz0UxZjr1WYYsWpPrhyC/B/pA8Bq0fUmet2n+eR7yn0IvNzNaoBwnK6mdkzcN+se7Ez9zUgULTz2QH4g==}
     engines: {node: '>=18'}
+
+  globby@10.0.1:
+    resolution: {integrity: sha512-sSs4inE1FB2YQiymcmTv6NWENryABjUNPeWhOvmn4SjtKybglsyPZxFB3U1/+L1bYi0rNZDqCLlHyLYDl1Pq5A==}
+    engines: {node: '>=8'}
 
   globby@11.1.0:
     resolution: {integrity: sha512-jhIXaOzy1sb8IyocaruWSn1TjmnBVs8Ayhcy83rmxNJ8q2uWKCAj3CnJY+KpGSXCueAPc0i05kVvVKtP1t9S3g==}
@@ -9497,6 +9434,10 @@ packages:
   is-plain-obj@4.1.0:
     resolution: {integrity: sha512-+Pgi+vMuUNkJyExiMBt5IlFoMyKnr5zhJ4Uspz58WOhBF5QoIZkFyNHIbBAtHwzVAgk5RtndVNsDRN61/mmDqg==}
     engines: {node: '>=12'}
+
+  is-plain-object@3.0.1:
+    resolution: {integrity: sha512-Xnpx182SBMrr/aBik8y+GuR4U1L9FqMSojwDQwPMmxyC6bvEqly9UBCxhauBF5vNh2gwWJNX6oDV7O+OM4z34g==}
+    engines: {node: '>=0.10.0'}
 
   is-potential-custom-element-name@1.0.1:
     resolution: {integrity: sha512-bCYeRA2rVibKZd+s2625gGnGF/t7DSqDs4dP7CrLA1m7jKWz6pps0LpYLJN8Q64HtmPKJ1hrN3nzPNKFEKOUiQ==}
@@ -10636,6 +10577,10 @@ packages:
     resolution: {integrity: sha512-+1AlxObWpWechyLVcnpjbxBiYlQg7bXF7vw5fu6P9B0B8R4meQliG7aGCnK8MvtdXzKsjeI0lJc43d0UcQj1fg==}
     peerDependencies:
       rollup: '>=4.0.0'
+
+  rollup-plugin-copy@3.5.0:
+    resolution: {integrity: sha512-wI8D5dvYovRMx/YYKtUNt3Yxaw4ORC9xo6Gt9t22kveWz1enG9QrhVlagzwrxSC455xD1dHMKhIJkbsQ7d48BA==}
+    engines: {node: '>=8.3'}
 
   rollup-plugin-node-externals@8.0.0:
     resolution: {integrity: sha512-2HIOpWsWn5DqBoYl6iCAmB4kd5GoGbF68PR4xKR1YBPvywiqjtYvDEjHFodyqRL51iAMDITP074Zxs0OKs6F+g==}
@@ -17407,7 +17352,16 @@ snapshots:
 
   '@types/estree@1.0.8': {}
 
+  '@types/fs-extra@8.1.5':
+    dependencies:
+      '@types/node': 22.5.5
+
   '@types/geojson@7946.0.15': {}
+
+  '@types/glob@7.2.0':
+    dependencies:
+      '@types/minimatch': 6.0.0
+      '@types/node': 22.5.5
 
   '@types/graceful-fs@4.1.9':
     dependencies:
@@ -17460,6 +17414,10 @@ snapshots:
   '@types/mdurl@2.0.0': {}
 
   '@types/mime-types@2.1.4': {}
+
+  '@types/minimatch@6.0.0':
+    dependencies:
+      minimatch: 10.0.1
 
   '@types/mute-stream@0.0.4':
     dependencies:
@@ -17810,7 +17768,7 @@ snapshots:
 
   '@vue/language-core@2.2.0(typescript@5.6.3)':
     dependencies:
-      '@volar/language-core': 2.4.11
+      '@volar/language-core': 2.4.20
       '@vue/compiler-dom': 3.5.13
       '@vue/compiler-vue2': 2.7.16
       '@vue/shared': 3.5.13
@@ -17833,6 +17791,20 @@ snapshots:
       path-browserify: 1.0.1
     optionalDependencies:
       typescript: 5.6.3
+
+  '@vue/language-core@3.0.3(typescript@5.6.3)':
+    dependencies:
+      '@volar/language-core': 2.4.20
+      '@vue/compiler-dom': 3.5.13
+      '@vue/compiler-vue2': 2.7.16
+      '@vue/shared': 3.5.13
+      alien-signals: 2.0.5
+      muggle-string: 0.4.1
+      path-browserify: 1.0.1
+      picomatch: 4.0.2
+    optionalDependencies:
+      typescript: 5.6.3
+    optional: true
 
   '@vue/reactivity@3.5.13':
     dependencies:
@@ -18034,6 +18006,9 @@ snapshots:
   alien-signals@0.4.14: {}
 
   alien-signals@1.0.13: {}
+
+  alien-signals@2.0.5:
+    optional: true
 
   ansi-colors@4.1.3: {}
 
@@ -18481,6 +18456,8 @@ snapshots:
       color-convert: 1.9.3
       color-string: 1.9.1
 
+  colorette@1.4.0: {}
+
   colorette@2.0.20: {}
 
   colorspace@1.1.4:
@@ -18499,6 +18476,8 @@ snapshots:
   command-exists@1.2.9: {}
 
   commander@10.0.1: {}
+
+  commander@12.1.0: {}
 
   commander@2.20.3: {}
 
@@ -19417,10 +19396,6 @@ snapshots:
     dependencies:
       pend: 1.2.0
 
-  fdir@6.4.2(picomatch@4.0.2):
-    optionalDependencies:
-      picomatch: 4.0.2
-
   fdir@6.4.5(picomatch@4.0.2):
     optionalDependencies:
       picomatch: 4.0.2
@@ -19637,6 +19612,17 @@ snapshots:
   globals@14.0.0: {}
 
   globals@15.13.0: {}
+
+  globby@10.0.1:
+    dependencies:
+      '@types/glob': 7.2.0
+      array-union: 2.1.0
+      dir-glob: 3.0.1
+      fast-glob: 3.3.2
+      glob: 7.2.3
+      ignore: 5.3.2
+      merge2: 1.4.1
+      slash: 3.0.0
 
   globby@11.1.0:
     dependencies:
@@ -19863,6 +19849,8 @@ snapshots:
   is-path-inside@3.0.3: {}
 
   is-plain-obj@4.1.0: {}
+
+  is-plain-object@3.0.1: {}
 
   is-potential-custom-element-name@1.0.1: {}
 
@@ -20704,7 +20692,7 @@ snapshots:
 
   mlly@1.7.4:
     dependencies:
-      acorn: 8.14.0
+      acorn: 8.15.0
       pathe: 2.0.3
       pkg-types: 1.3.1
       ufo: 1.5.4
@@ -21256,6 +21244,14 @@ snapshots:
       '@mstssk/cleandir': 2.0.0
       rollup: 4.45.1
 
+  rollup-plugin-copy@3.5.0:
+    dependencies:
+      '@types/fs-extra': 8.1.5
+      colorette: 1.4.0
+      fs-extra: 8.1.0
+      globby: 10.0.1
+      is-plain-object: 3.0.1
+
   rollup-plugin-node-externals@8.0.0(rollup@4.45.1):
     dependencies:
       rollup: 4.45.1
@@ -21266,13 +21262,6 @@ snapshots:
       rollup: 4.45.1
     optionalDependencies:
       '@types/node': 20.16.15
-
-  rollup-plugin-sourcemaps2@0.5.2(@types/node@22.5.5)(rollup@4.45.1):
-    dependencies:
-      '@rollup/pluginutils': 5.1.4(rollup@4.45.1)
-      rollup: 4.45.1
-    optionalDependencies:
-      '@types/node': 22.5.5
 
   rollup@4.45.1:
     dependencies:
@@ -21751,7 +21740,7 @@ snapshots:
 
   tinyglobby@0.2.10:
     dependencies:
-      fdir: 6.4.2(picomatch@4.0.2)
+      fdir: 6.4.5(picomatch@4.0.2)
       picomatch: 4.0.2
 
   tinyglobby@0.2.14:
@@ -22051,7 +22040,7 @@ snapshots:
 
   universalify@2.0.1: {}
 
-  unplugin-dts@1.0.0-beta.4(@microsoft/api-extractor@7.52.2(@types/node@20.16.15))(esbuild@0.24.0)(rollup@4.45.1)(typescript@5.6.3)(vite@6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0)):
+  unplugin-dts@1.0.0-beta.4(@microsoft/api-extractor@7.52.2(@types/node@20.16.15))(@vue/language-core@3.0.3(typescript@5.6.3))(esbuild@0.24.0)(rollup@4.45.1)(typescript@5.6.3)(vite@6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0)):
     dependencies:
       '@rollup/pluginutils': 5.1.4(rollup@4.45.1)
       '@volar/typescript': 2.4.20
@@ -22064,13 +22053,14 @@ snapshots:
       unplugin: 2.3.5
     optionalDependencies:
       '@microsoft/api-extractor': 7.52.2(@types/node@20.16.15)
+      '@vue/language-core': 3.0.3(typescript@5.6.3)
       esbuild: 0.24.0
       rollup: 4.45.1
       vite: 6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0)
     transitivePeerDependencies:
       - supports-color
 
-  unplugin-dts@1.0.0-beta.4(@microsoft/api-extractor@7.52.2(@types/node@20.16.15))(esbuild@0.25.5)(rollup@4.45.1)(typescript@5.6.3)(vite@6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0)):
+  unplugin-dts@1.0.0-beta.4(@microsoft/api-extractor@7.52.2(@types/node@20.16.15))(@vue/language-core@3.0.3(typescript@5.6.3))(esbuild@0.25.5)(rollup@4.45.1)(typescript@5.6.3)(vite@6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0)):
     dependencies:
       '@rollup/pluginutils': 5.1.4(rollup@4.45.1)
       '@volar/typescript': 2.4.20
@@ -22083,6 +22073,7 @@ snapshots:
       unplugin: 2.3.5
     optionalDependencies:
       '@microsoft/api-extractor': 7.52.2(@types/node@20.16.15)
+      '@vue/language-core': 3.0.3(typescript@5.6.3)
       esbuild: 0.25.5
       rollup: 4.45.1
       vite: 6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0)
@@ -22205,7 +22196,7 @@ snapshots:
     dependencies:
       '@microsoft/api-extractor': 7.52.2(@types/node@20.16.15)
       '@rollup/pluginutils': 5.1.4(rollup@4.45.1)
-      '@volar/typescript': 2.4.11
+      '@volar/typescript': 2.4.20
       '@vue/language-core': 2.2.0(typescript@5.6.3)
       compare-versions: 6.1.1
       debug: 4.4.0(supports-color@8.1.1)

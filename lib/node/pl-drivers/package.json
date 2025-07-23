@@ -16,8 +16,8 @@
     }
   },
   "scripts": {
-    "type-check": "tsc --noEmit --composite false",
-    "build": "rollup -c",
+    "type-check": "ts-builder types --target node",
+    "build": "ts-builder build --target node",
     "test": "vitest run --coverage",
     "lint": "eslint .",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
@@ -50,13 +50,12 @@
     "@types/decompress": "catalog:",
     "@milaboratories/eslint-config": "workspace:^",
     "@milaboratories/build-configs": "workspace:*",
+    "@milaboratories/ts-builder": "workspace:*",
     "typescript": "catalog:",
-    "vite": "catalog:",
     "@types/node": "catalog:",
     "vitest": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "@types/tar-fs": "catalog:",
-    "rollup": "catalog:",
     "@milaboratories/ts-configs": "workspace:*"
   }
 }

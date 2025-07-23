@@ -45,8 +45,8 @@
     "tsup": "catalog:",
     "vite": "catalog:",
     "vite-plugin-dts": "catalog:",
-    "@types/node": "catalog:",
     "@vitejs/plugin-vue": "catalog:",
+    "@types/node": "catalog:",
     "typescript": "catalog:"
   }
 }

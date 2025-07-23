@@ -14,8 +14,9 @@
     }
   },
   "scripts": {
-    "type-check": "tsc --noEmit --composite false",
-    "build": "rollup -c",
+    "type-check": "ts-builder types --target node",
+    "build": "ts-builder build --target node",
+    "watch": "ts-builder build --target node --watch",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
     "lint": "eslint ."
   },
@@ -29,9 +30,8 @@
   "devDependencies": {
     "@milaboratories/eslint-config": "workspace:^",
     "@milaboratories/build-configs": "workspace:*",
+    "@milaboratories/ts-builder": "workspace:*",
     "typescript": "catalog:",
-    "vite": "catalog:",
-    "@milaboratories/ts-configs": "workspace:*",
-    "rollup": "catalog:"
+    "@milaboratories/ts-configs": "workspace:*"
   }
 }
