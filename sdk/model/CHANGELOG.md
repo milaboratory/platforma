@@ -1,5 +1,12 @@
 # @platforma-sdk/model
 
+## 1.42.0
+
+### Patch Changes
+
+- Updated dependencies [3271446]
+  - @milaboratories/pl-model-common@1.18.0
+
 ## 1.41.6
 
 ### Patch Changes
