@@ -121,6 +121,9 @@ export interface LsDriver {
    * components, that handle file Drag&Drop.
    * */
   fileToImportHandle(file: FileLike): Promise<ImportFileHandle>;
+
+  /** Saves currently opened block webview as a PDF. */
+  exportToPdf?(): Promise<void>;
 }
 
 /** Gets a file path from an import handle. */

@@ -29,6 +29,7 @@ const { settings } = defineProps<{
 
 const emit = defineEmits<{
   updateSettings: [Partial<Settings>];
+  export: [];
 }>();
 
 const settingsOpen = ref(false);
@@ -95,7 +96,9 @@ const canResetAlignmentParams = computed(() =>
         <PlBtnGhost icon="settings" @click.stop="settingsOpen = true">
           Settings
         </PlBtnGhost>
-        <PlBtnGhost icon="export">Export</PlBtnGhost>
+        <PlBtnGhost icon="export" @click.stop="$emit('export')">
+          Export
+        </PlBtnGhost>
       </div>
     </div>
     <div :class="$style.line">

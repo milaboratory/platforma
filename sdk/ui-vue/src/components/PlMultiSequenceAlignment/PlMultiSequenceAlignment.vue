@@ -5,15 +5,22 @@ import {
   PlAlert,
   PlSplash,
 } from '@milaboratories/uikit';
-import type {
-  PColumnPredicate,
-  PFrameHandle,
-  PlMultiSequenceAlignmentColorSchemeOption,
-  PlMultiSequenceAlignmentModel,
-  PlMultiSequenceAlignmentSettings,
-  PlSelectionModel,
+import {
+  getRawPlatformaInstance,
+  type PColumnPredicate,
+  type PFrameHandle,
+  type PlMultiSequenceAlignmentColorSchemeOption,
+  type PlMultiSequenceAlignmentModel,
+  type PlMultiSequenceAlignmentSettings,
+  type PlSelectionModel,
 } from '@platforma-sdk/model';
-import { computed, onBeforeMount, reactive, watchEffect } from 'vue';
+import {
+  computed,
+  onBeforeMount,
+  reactive,
+  useTemplateRef,
+  watchEffect,
+} from 'vue';
 import {
   sequenceLimit,
   useLabelColumnsOptions,
@@ -21,7 +28,6 @@ import {
   useMultipleAlignmentData,
   useSequenceColumnsOptions,
 } from './data';
-import Legend from './Legend.vue';
 import { runMigrations } from './migrations';
 import MultiSequenceAlignmentView from './MultiSequenceAlignmentView.vue';
 import { defaultSettings } from './settings';
@@ -71,17 +77,10 @@ const markupColumns = reactive(useMarkupColumnsOptions(() => ({
   sequenceColumnIds: settings.sequenceColumnIds,
 })));
 
-const markupColumnId = computed(() =>
-  settings.colorScheme?.type === 'markup'
-    ? settings.colorScheme.columnId
-    : undefined,
-);
-
 const multipleAlignmentData = reactive(useMultipleAlignmentData(() => ({
   pframe: props.pFrame,
   sequenceColumnIds: settings.sequenceColumnIds,
   labelColumnIds: settings.labelColumnIds,
-  markupColumnId: markupColumnId.value,
   selection: props.selection,
   colorScheme: settings.colorScheme,
   alignmentParams: settings.alignmentParams,
@@ -165,10 +164,15 @@ watchEffect(() => {
   ) {
     settingsToReset.push('labelColumnIds');
   }
+
+  const markupColumnId = settings.colorScheme?.type === 'markup'
+    ? settings.colorScheme.columnId
+    : undefined;
+
   if (
-    markupColumnId.value
+    markupColumnId
     && !markupColumns.data?.some(
-      ({ value }) => isJsonEqual(value, markupColumnId.value),
+      ({ value }) => isJsonEqual(value, markupColumnId),
     )
   ) {
     settingsToReset.push('colorScheme');
@@ -179,6 +183,61 @@ watchEffect(() => {
     ));
   }
 });
+
+const msaEl = useTemplateRef('msa');
+
+async function exportPdf() {
+  const exportToPdf = getRawPlatformaInstance()?.lsDriver
+    ?.exportToPdf;
+  if (!exportToPdf) {
+    return console.error(
+      'API getPlatformaRawInstance().lsDriver.exportToPdf is not available',
+    );
+  }
+  const msaRoot = msaEl.value?.rootEl;
+  if (!msaRoot) {
+    throw new Error('MSA element is not available.');
+  }
+  const printTarget = document.createElement('div');
+  printTarget.id = `print-target-${crypto.randomUUID()}`;
+  const printStyleSheet = new CSSStyleSheet();
+  document.adoptedStyleSheets.push(printStyleSheet);
+  printStyleSheet.insertRule(`
+@media screen {
+  #${printTarget.id} {
+    visibility: hidden;
+    position: fixed;
+  }
+}`);
+  printTarget.replaceChildren(msaRoot.cloneNode(true));
+  document.body.appendChild(printTarget);
+  const { height, width } = printTarget.getBoundingClientRect();
+  const margin = CSS.cm(1);
+  const pageSize = [width, height]
+    .map((value) => CSS.px(value).add(margin.mul(2)))
+    .join(' ');
+  printStyleSheet.insertRule(`
+@media print {
+  @page {
+    size: ${pageSize};
+    margin: ${margin};
+  }
+  body > :not(#${printTarget.id}) {
+    display: none;
+  }
+}`);
+  try {
+    await exportToPdf();
+  } catch (error) {
+    console.error(error);
+  } finally {
+    document.body.removeChild(printTarget);
+    const index = document.adoptedStyleSheets.indexOf(printStyleSheet);
+    if (index >= 0) {
+      document.adoptedStyleSheets.splice(index, 1);
+    }
+  }
+}
 </script>
 
 <template>
@@ -188,15 +247,14 @@ watchEffect(() => {
     :label-column-options="labelColumns.data?.options"
     :color-scheme-options="colorSchemeOptions"
     @update-settings="applySettings"
+    @export="exportPdf"
   />
   <PlAlert v-if="error" type="error">
     {{ error }}
   </PlAlert>
   <PlAlert
-    v-else-if="
-      !multipleAlignmentData.isLoading
-        && (multipleAlignmentData.data?.sequences ?? []).length < 2
-    "
+    v-else-if="!multipleAlignmentData.isLoading
+      && (multipleAlignmentData.data?.sequences ?? []).length < 2"
     type="warn"
     icon
   >
@@ -221,20 +279,13 @@ watchEffect(() => {
     >
       <template v-if="multipleAlignmentData.data?.sequences.length">
         <MultiSequenceAlignmentView
-          :sequence-names="multipleAlignmentData.data.sequenceNames"
+          ref="msa"
           :sequences="multipleAlignmentData.data.sequences"
-          :label-rows="multipleAlignmentData.data.labelsRows"
+          :sequence-names="multipleAlignmentData.data.sequenceNames"
+          :label-rows="multipleAlignmentData.data.labelRows"
           :residue-counts="multipleAlignmentData.data.residueCounts"
-          :highlight-image-blob="multipleAlignmentData.data.highlightImage?.blob"
-          :consensus="settings.widgets?.includes('consensus') ?? false"
-          :seq-logo="settings.widgets?.includes('seqLogo') ?? false"
-        />
-        <Legend
-          v-if="
-            settings.widgets?.includes('legend')
-              && multipleAlignmentData.data.highlightImage?.colorMap
-          "
-          :colors="multipleAlignmentData.data.highlightImage.colorMap"
+          :highlight-image="multipleAlignmentData.data.highlightImage"
+          :widgets="settings.widgets"
         />
       </template>
     </PlSplash>
