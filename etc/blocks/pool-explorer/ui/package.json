@@ -3,11 +3,10 @@
   "version": "1.1.170",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "watch": "vite build --watch",
-    "build": "vite build",
-    "preview": "vite preview",
-    "type-check": "vue-tsc -p tsconfig.app.json"
+    "dev": "ts-builder serve --target browser",
+    "watch": "ts-builder build --target browser --watch",
+    "build": "ts-builder build --target browser",
+    "type-check": "ts-builder types --target browser"
   },
   "dependencies": {
     "@milaboratories/milaboratories.pool-explorer.model": "workspace:*",
@@ -17,12 +16,10 @@
     "@milaboratories/helpers": "workspace:^"
   },
   "devDependencies": {
+    "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
     "@milaboratories/build-configs": "workspace:*",
-    "@vitejs/plugin-vue": "catalog:",
     "typescript": "catalog:",
-    "vite": "catalog:",
-    "vue-tsc": "catalog:",
     "zod": "catalog:"
   }
 }

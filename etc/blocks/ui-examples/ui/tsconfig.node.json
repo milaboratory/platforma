@@ -1,6 +1,0 @@
-{
-  "extends": "@milaboratories/ts-configs/tsconfig.node.json",
-  "include": [
-    "vite.config.ts"
-  ]
-}

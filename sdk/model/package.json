@@ -14,9 +14,9 @@
     }
   },
   "scripts": {
-    "type-check": "tsc --noEmit --composite false",
-    "build": "rollup -c",
-    "watch": "vite build --watch",
+    "type-check": "ts-builder types --target node",
+    "build": "ts-builder build --target node",
+    "watch": "ts-builder build --target node --watch",
     "lint": "eslint .",
     "test": "vitest run",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
@@ -37,11 +37,10 @@
     "@milaboratories/build-configs": "workspace:*",
     "@platforma-sdk/eslint-config": "workspace:*",
     "@milaboratories/helpers": "workspace:^",
+    "@milaboratories/ts-builder": "workspace:*",
     "typescript": "catalog:",
     "vitest": "catalog:",
-    "vite": "catalog:",
     "fast-json-patch": "catalog:",
-    "@milaboratories/ts-configs": "workspace:*",
-    "rollup": "catalog:"
+    "@milaboratories/ts-configs": "workspace:*"
   }
 }
