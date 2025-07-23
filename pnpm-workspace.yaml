@@ -215,8 +215,14 @@ catalog:
   'sass': ~1.83.4
   'vitepress': '1.5.0'
   'highlight.js': '11.10.0'
-  'd3': '^7.9.0'
-  '@types/d3': '^7.4.3'
+  'd3-scale': ^4.0.2
+  '@types/d3-scale': ^4.0.9
+  'd3-selection': ^3.0.0
+  '@types/d3-selection': ^3.0.11
+  'd3-array': ^3.0.0
+  '@types/d3-array': ^3.2.1
+  'd3-axis': ^3.0.0
+  '@types/d3-axis': ^3.0.6
   'd3-format': ^3.1.0
   '@types/d3-format': ^3.0.4
 

@@ -1,5 +1,5 @@
 import type { BinLike, ChartOptions, Scales, SVG } from './types';
-import * as d3 from 'd3';
+import { select } from 'd3-selection';
 
 export function drawBins(
   svg: SVG,
@@ -11,8 +11,7 @@ export function drawBins(
 
   const { x, y } = scales;
 
-  const tooltip = d3
-    .select('body')
+  const tooltip = select('body')
     .append('div')
     .attr('class', 'svg-tooltip')
     .style('position', 'absolute')

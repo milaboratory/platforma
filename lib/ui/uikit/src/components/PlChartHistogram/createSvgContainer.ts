@@ -1,5 +1,5 @@
-import * as d3 from 'd3';
 import type { ChartOptions } from './types';
+import { select } from 'd3-selection';
 
 export function createSvgContainer(el: HTMLElement, options: ChartOptions) {
   const { width, height, margin, compact } = options;
@@ -11,8 +11,7 @@ export function createSvgContainer(el: HTMLElement, options: ChartOptions) {
     el.style.lineHeight = height + 'px';
   }
 
-  const svg = d3
-    .select(el) // Append the SVG element to the body
+  const svg = select(el) // Append the SVG element to the body
     .append('svg')
     .attr('width', width + margin.left + margin.right) // Set the total width
     .attr('height', height + margin.top + margin.bottom) // Set the total height

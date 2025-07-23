@@ -1,3 +1,6 @@
+import type { ScaleLinear, ScaleSymLog } from 'd3-scale';
+import type { Selection } from 'd3-selection';
+
 export type Margin = { top: number; right: number; bottom: number; left: number };
 
 export type ChartOptions = {
@@ -12,11 +15,11 @@ export type ChartOptions = {
 };
 
 export type Scales = {
-  x: d3.ScaleSymLog<number, number, never> | d3.ScaleLinear<number, number>;
-  y: d3.ScaleLinear<number, number, never>;
+  x: ScaleSymLog<number, number, never> | ScaleLinear<number, number>;
+  y: ScaleLinear<number, number, never>;
 };
 
-export type SVG = d3.Selection<SVGGElement, unknown, null, undefined>;
+export type SVG = Selection<SVGGElement, unknown, null, undefined>;
 
 export type CustomBin = {
   from: number;
