@@ -1,8 +1,8 @@
-import type * as d3 from 'd3';
+import type { Selection } from 'd3-selection';
 import type { ChartOptions } from './types';
 
 export function createLabels(
-  svg: d3.Selection<SVGGElement, unknown, null, undefined>,
+  svg: Selection<SVGGElement, unknown, null, undefined>,
   options: ChartOptions,
 ) {
   const { height, width, margin, xAxisLabel, yAxisLabel, compact } = options;
