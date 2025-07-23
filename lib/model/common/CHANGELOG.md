@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.18.0
+
+### Minor Changes
+
+- 3271446: MSA: added export functionality
+
 ## 1.17.0
 
 ### Minor Changes

@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.monetization-test.ui
 
+## 1.1.73
+
+### Patch Changes
+
+- Updated dependencies [3271446]
+  - @platforma-sdk/ui-vue@1.42.0
+  - @platforma-sdk/model@1.42.0
+
 ## 1.1.72
 
 ### Patch Changes

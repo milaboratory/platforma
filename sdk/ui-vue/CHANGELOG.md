@@ -1,5 +1,16 @@
 # @platforma-sdk/ui-vue
 
+## 1.42.0
+
+### Minor Changes
+
+- 3271446: MSA: added export functionality
+
+### Patch Changes
+
+- @platforma-sdk/model@1.42.0
+- @milaboratories/uikit@2.3.24
+
 ## 1.41.19
 
 ### Patch Changes
