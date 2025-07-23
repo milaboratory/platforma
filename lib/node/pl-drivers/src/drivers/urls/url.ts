@@ -15,7 +15,7 @@ export function newBlockUIURL(signer: Signer, saveDir: string, fPath: string): B
   const p = path.relative(saveDir, fPath);
   const sign = signer.sign(p);
 
-  return `block-ui://${sign}.${p}.blob`;
+  return `block-ui://${sign}.${p}.uidir`;
 }
 
 /** Checks the signature and path injections.

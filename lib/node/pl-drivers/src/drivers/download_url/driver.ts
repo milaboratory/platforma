@@ -109,7 +109,7 @@ export class DownloadUrlDriver implements DownloadUrlSyncReader, FrontendDriver 
     const key = url.toString();
     const task = this.urlToDownload.get(key);
 
-    if (task != undefined) {
+    if (task !== undefined) {
       task.attach(w, callerId);
       return task.getUrl();
     }
@@ -135,7 +135,7 @@ export class DownloadUrlDriver implements DownloadUrlSyncReader, FrontendDriver 
   async downloadUrl(task: DownloadByUrlTask, callerId: string) {
     await task.download(this.downloadHelper, this.opts.withGunzip);
     // Might be undefined if a error happened
-    if (task.getUrl()?.url != undefined) this.cache.addCache(task, callerId);
+    if (task.getUrl()?.url !== undefined) this.cache.addCache(task, callerId);
   }
 
   /** Removes a directory and aborts a downloading task when all callers

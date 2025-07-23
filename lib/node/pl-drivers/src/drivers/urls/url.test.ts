@@ -44,19 +44,19 @@ describe('getPathForBlockUIURL', () => {
   };
 
   test('should be ok', () => {
-    const blockUIURL = 'block-ui://signature.subfolder_tgz.blob/path/to/resource.html';
+    const blockUIURL = 'block-ui://signature.blockUIDir.uidir/path/to/resource.html';
 
     const result = getPathForBlockUIURL(signer, blockUIURL, '/test/dir');
 
-    expect(result).toBe(path.join('/test/dir/subfolder_tgz/path/to/resource.html'));
+    expect(result).toBe(path.join('/test/dir/blockUIDir/path/to/resource.html'));
   });
 
   /** The function should decode url-encoded whitespaces. */
   test('should be ok with whitespaces', () => {
-    const blockUIURL = 'block-ui://signature.subfolder_tgz.blob/path/to%20whitespaces%20/resource.html';
+    const blockUIURL = 'block-ui://signature.blockUIDir.uidir/path/to%20whitespaces%20/resource.html';
 
     const result = getPathForBlockUIURL(signer, blockUIURL, '/test/dir');
 
-    expect(result).toBe(path.join('/test/dir/subfolder_tgz/path/to whitespaces /resource.html'));
+    expect(result).toBe(path.join('/test/dir/blockUIDir/path/to whitespaces /resource.html'));
   });
 });
