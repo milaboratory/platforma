@@ -1,9 +1,0 @@
-{
-  "extends": "@milaboratories/ts-configs/tsconfig.node.json",
-  "compilerOptions": {
-    "composite": false
-  },
-  "include": [
-    "vite.config.ts"
-  ]
-}

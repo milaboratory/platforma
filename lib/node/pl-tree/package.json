@@ -16,8 +16,9 @@
     }
   },
   "scripts": {
-    "type-check": "tsc --noEmit --composite false",
-    "build": "rollup -c",
+    "type-check": "ts-builder types --target node",
+    "build": "ts-builder build --target node",
+    "watch": "ts-builder build --target node --watch",
     "lint": "eslint .",
     "test": "jest --runInBand",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
@@ -38,13 +39,12 @@
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
+    "@milaboratories/ts-builder": "workspace:*",
     "typescript": "catalog:",
-    "vite": "catalog:",
     "@types/jest": "catalog:",
     "jest": "catalog:",
     "@jest/globals": "catalog:",
     "ts-jest": "catalog:",
-    "rollup": "catalog:",
     "@milaboratories/ts-configs": "workspace:*"
   }
 }

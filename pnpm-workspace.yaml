@@ -36,6 +36,7 @@ packages:
   - tools/ts-configs
   - tools/build-configs
   - tools/package-builder
+  - tools/ts-builder
   - tools/r-builder
   - tools/pl-bootstrap
   - tools/eslint-config
