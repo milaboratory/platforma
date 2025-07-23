@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.3.23
+
+### Patch Changes
+
+- e2a1629: update dependencies
+
 ## 2.3.22
 
 ### Patch Changes
