@@ -24,20 +24,15 @@ import {
   pTableValue,
 } from '@platforma-sdk/model';
 import { ref, watch } from 'vue';
+import { highlightByChemicalProperties } from './chemical-properties';
 import {
-  chemicalPropertiesColorMap,
-  colorizeSequencesByChemicalProperties,
-} from './chemical-properties';
-import {
-  colorizeSequencesByMarkup,
-  type Markup,
+  highlightByMarkup,
   markupAlignedSequence,
-  markupColors,
   parseMarkup,
 } from './markup';
 import { multiSequenceAlignment } from './multi-sequence-alignment';
 import { getResidueCounts } from './residue-counts';
-import type { ColorMap, ResidueCounts } from './types';
+import type { HighlightLegend, ResidueCounts } from './types';
 
 const getPFrameDriver = () => getRawPlatformaInstance().pFrameDriver;
 
@@ -70,12 +65,13 @@ async function getSequenceColumnsOptions({
 
   const pFrameDriver = getPFrameDriver();
   const columns = await pFrameDriver.listColumns(pFrame);
-  const options = columns
+  const options = columns.values()
     .filter((column) => sequenceColumnPredicate(column))
     .map(({ spec, columnId }) => ({
       label: spec.annotations?.['pl7.app/label'] ?? 'Unlabelled column',
       value: columnId,
-    }));
+    }))
+    .toArray();
   const defaults = options.map(({ value }) => value);
   return { options, defaults };
 }
@@ -93,14 +89,16 @@ async function getLabelColumnsOptions({
   const columns = await pFrameDriver.listColumns(pFrame);
   const optionMap = new Map<CanonicalizedJson<PTableColumnId>, string>();
 
-  const sequenceColumnsAxes = new Map(sequenceColumnIds.flatMap((id) => {
-    const column = columns.find(({ columnId }) => columnId === id);
-    if (!column) {
-      throw new Error(`Couldn't find sequence column (ID: \`${id}\`).`);
-    }
-    return column.spec.axesSpec
-      .map((spec) => [canonicalizeJson(getAxisId(spec)), spec]);
-  }));
+  const sequenceColumnsAxes = new Map(
+    sequenceColumnIds.values().flatMap((id) => {
+      const column = columns.find(({ columnId }) => columnId === id);
+      if (!column) {
+        throw new Error(`Couldn't find sequence column (ID: \`${id}\`).`);
+      }
+      return column.spec.axesSpec.values()
+        .map((spec) => [canonicalizeJson(getAxisId(spec)), spec]);
+    }),
+  );
 
   for (const [axisIdJson, axisSpec] of sequenceColumnsAxes.entries()) {
     const axisId = parseJson(axisIdJson);
@@ -119,10 +117,9 @@ async function getLabelColumnsOptions({
 
   const { hits: compatibleColumns } = await pFrameDriver.findColumns(pFrame, {
     columnFilter: {},
-    compatibleWith: Array.from(
-      sequenceColumnsAxes.keys(),
-      (axisIdJson) => parseJson(axisIdJson),
-    ),
+    compatibleWith: sequenceColumnsAxes.keys()
+      .map((axisIdJson) => parseJson(axisIdJson))
+      .toArray(),
     strictlyCompatible: false,
   });
 
@@ -135,17 +132,18 @@ async function getLabelColumnsOptions({
     );
   }
 
-  const options = Array.from(optionMap).map(
-    ([value, label]) => ({ label, value: parseJson(value) }),
-  );
+  const options = optionMap.entries()
+    .map(([value, label]) => ({ label, value: parseJson(value) }))
+    .toArray();
 
-  const defaults = options
+  const defaults = options.values()
     .filter(({ value }) => {
       if (value.type === 'axis') return true;
       const column = columns.find(({ columnId }) => columnId === value.id);
       return column && isLabelColumn(column.spec);
     })
-    .map(({ value }) => value);
+    .map(({ value }) => value)
+    .toArray();
   return { options, defaults };
 }
 
@@ -168,7 +166,7 @@ async function getMarkupColumnsOptions({
       `Couldn't find sequence column (ID: \`${sequenceColumnIds[0]}\`).`,
     );
   }
-  return columns
+  return columns.values()
     .filter((column) =>
       column.spec.annotations?.['pl7.app/sequence/isAnnotation'] === 'true'
       && isJsonEqual(sequenceColumn.spec.axesSpec, column.spec.axesSpec)
@@ -178,14 +176,14 @@ async function getMarkupColumnsOptions({
     ).map(({ columnId, spec }) => ({
       value: columnId,
       label: spec.annotations?.['pl7.app/label'] ?? 'Unlabelled column',
-    }));
+    }))
+    .toArray();
 }
 
 async function getMultipleAlignmentData({
   pframe,
   sequenceColumnIds,
   labelColumnIds,
-  markupColumnId,
   selection,
   colorScheme,
   alignmentParams,
@@ -193,7 +191,6 @@ async function getMultipleAlignmentData({
   pframe: PFrameHandle | undefined;
   sequenceColumnIds: PObjectId[] | undefined;
   labelColumnIds: PTableColumnId[] | undefined;
-  markupColumnId: PObjectId | undefined;
   selection: PlSelectionModel | undefined;
   colorScheme: PlMultiSequenceAlignmentColorSchemeOption;
   alignmentParams: PlMultiSequenceAlignmentSettings['alignmentParams'];
@@ -249,19 +246,21 @@ async function getMultipleAlignmentData({
     });
 
   // and markup
-  if (markupColumnId) {
-    secondaryEntry.push({ type: 'column', column: markupColumnId });
+  if (colorScheme.type === 'markup') {
+    secondaryEntry.push({ type: 'column', column: colorScheme.columnId });
   }
 
   const sorting: PTableSorting[] = Array.from(
-    new Set(sequenceColumnIds.flatMap((id) => {
-      const column = columns.find(({ columnId }) => columnId === id);
-      if (!column) {
-        throw new Error(`Couldn't find sequence column (ID: ${id})`);
-      }
-      return column.spec.axesSpec
-        .map((spec) => canonicalizeJson(getAxisId(spec)));
-    })),
+    new Set(
+      sequenceColumnIds.values().flatMap((id) => {
+        const column = columns.find(({ columnId }) => columnId === id);
+        if (!column) {
+          throw new Error(`Couldn't find sequence column (ID: ${id})`);
+        }
+        return column.spec.axesSpec
+          .map((spec) => canonicalizeJson(getAxisId(spec)));
+      }),
+    ),
   )
     .sort()
     .map((id) => ({
@@ -320,9 +319,6 @@ async function getMultipleAlignmentData({
     return column;
   });
 
-  const markupColumn = markupColumnId
-    && table.find(({ spec }) => spec.id === markupColumnId);
-
   const alignedSequences = await Promise.all(
     sequenceColumns.map((column) =>
       multiSequenceAlignment(
@@ -360,17 +356,26 @@ async function getMultipleAlignmentData({
   const result: MultipleAlignmentData = {
     sequences: concatenatedSequences,
     sequenceNames,
-    labelsRows: labels,
+    labelRows: labels,
     exceedsLimit,
     residueCounts,
   };
 
-  if (markupColumn) {
-    const labels = JSON.parse(
-      markupColumn.spec.spec.annotations
-        ?.['pl7.app/sequence/annotation/mapping'] ?? '{}',
+  if (colorScheme.type === 'chemical-properties') {
+    result.highlightImage = highlightByChemicalProperties({
+      sequences: concatenatedSequences,
+      residueCounts,
+    });
+  } else if (colorScheme.type === 'markup') {
+    const markupColumn = table.find(({ spec }) =>
+      spec.id === colorScheme.columnId,
     );
-    const data = Array.from(
+    if (!markupColumn) {
+      throw new Error(
+        `Couldn't find markup column (ID: \`${colorScheme.columnId}\`).`,
+      );
+    }
+    const markupRows = Array.from(
       { length: rowCount },
       (_, row) => {
         const markup = parseMarkup(
@@ -381,36 +386,15 @@ async function getMultipleAlignmentData({
         return markupAlignedSequence(sequences[row][0], markup);
       },
     );
-    result.markup = { labels, data };
-  }
-
-  if (colorScheme.type === 'chemical-properties') {
-    const colorMap = chemicalPropertiesColorMap;
-    result.highlightImage = {
-      blob: await colorizeSequencesByChemicalProperties({
-        sequences: concatenatedSequences,
-        residueCounts,
-        colorMap,
-      }),
-      colorMap,
-    };
-  } else if (colorScheme.type === 'markup') {
-    const colorMap = Object.fromEntries(
-      Object.entries(
-        result.markup?.labels ?? {},
-      ).map(([id, label], index) => [
-        id,
-        { label, color: markupColors[index % markupColors.length] },
-      ]),
+    const labels: Record<string, string> = JSON.parse(
+      markupColumn.spec.spec.annotations
+        ?.['pl7.app/sequence/annotation/mapping'] ?? '{}',
     );
-    result.highlightImage = {
-      blob: await colorizeSequencesByMarkup({
-        markupRows: result.markup?.data ?? [],
-        colorMap,
-        columnCount: concatenatedSequences.at(0)?.length ?? 0,
-      }),
-      colorMap,
-    };
+    result.highlightImage = highlightByMarkup({
+      markupRows,
+      columnCount: concatenatedSequences.at(0)?.length ?? 0,
+      labels,
+    });
   }
 
   return result;
@@ -450,15 +434,11 @@ function refreshOnDeepChange<T, P>(cb: (params: P) => Promise<T>) {
 type MultipleAlignmentData = {
   sequences: string[];
   sequenceNames: string[];
-  labelsRows: string[][];
+  labelRows: string[][];
   residueCounts: ResidueCounts;
-  markup?: {
-    labels: Record<string, string>;
-    data: Markup[];
-  };
   highlightImage?: {
     blob: Blob;
-    colorMap: ColorMap;
+    legend: HighlightLegend;
   };
   exceedsLimit: boolean;
 };
