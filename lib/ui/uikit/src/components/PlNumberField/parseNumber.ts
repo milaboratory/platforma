@@ -3,7 +3,7 @@ type ParseResult = {
   value?: number;
 } | {
   error?: undefined;
-  value: number | undefined;
+  value?: number;
 };
 
 const NUMBER_REGEX = /^[-−–+]?(\d+)?[\\.,]?(\d+)?$/; // parseFloat works without errors on strings with multiple dots, or letters in value
