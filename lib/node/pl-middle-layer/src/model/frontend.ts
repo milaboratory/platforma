@@ -2,8 +2,8 @@
  * was unpacked and basic meta information about the enclosed UI
  * (i.e. SDK version). */
 export interface FrontendData {
-  /** Path in local file system where frontend was unpacked */
-  readonly path: string;
+  /** URL of the frontend */
+  readonly url: string;
 
   /** SDK version used by the UI */
   readonly sdkVersion: string;

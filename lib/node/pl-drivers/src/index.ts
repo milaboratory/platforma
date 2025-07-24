@@ -12,7 +12,7 @@ export * from './drivers/upload';
 export * from './drivers/upload_task';
 export * from './drivers/logs_stream';
 export * from './drivers/logs';
-export * from './drivers/download_url';
+export * from './drivers/download_url/driver';
 export * from './drivers/ls';
 export * from './drivers/virtual_storages';
 export * from './drivers/helpers/helpers';

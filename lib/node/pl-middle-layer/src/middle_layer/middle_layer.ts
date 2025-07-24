@@ -34,7 +34,7 @@ import type { MiddleLayerDriverKit } from './driver_kit';
 import { initDriverKit } from './driver_kit';
 import type { DriverKit, SupportedRequirement } from '@platforma-sdk/model';
 import { RuntimeCapabilities } from '@platforma-sdk/model';
-import { DownloadUrlDriver } from '@milaboratories/pl-drivers';
+import type { DownloadUrlDriver } from '@milaboratories/pl-drivers';
 import { V2RegistryProvider } from '../block_registry';
 import type { Dispatcher } from 'undici';
 import { RetryAgent } from 'undici';
@@ -245,7 +245,7 @@ export class MiddleLayer {
 
     const logger = ops.logger;
 
-    const driverKit = await initDriverKit(pl, workdir, ops);
+    const driverKit = await initDriverKit(pl, workdir, ops.frontendDownloadPath, ops);
 
     // passed to components having no own retry logic
     const retryHttpDispatcher = new RetryAgent(pl.httpDispatcher);
@@ -256,12 +256,6 @@ export class MiddleLayer {
       v2RegistryProvider,
       driverKit.signer,
       retryHttpDispatcher,
-    );
-
-    const frontendDownloadDriver = new DownloadUrlDriver(
-      logger,
-      pl.httpDispatcher,
-      ops.frontendDownloadPath,
     );
 
     const quickJs = await getQuickJS();
@@ -280,7 +274,7 @@ export class MiddleLayer {
       retryHttpDispatcher: retryHttpDispatcher,
       ops,
       bpPreparer,
-      frontendDownloadDriver,
+      frontendDownloadDriver: driverKit.frontendDriver,
       driverKit,
       blockUpdateWatcher: new BlockUpdateWatcher(v2RegistryProvider, logger, {
         minDelay: ops.devBlockUpdateRecheckInterval,

@@ -1,9 +1,9 @@
 import path from 'path';
 import { describe, test, expect } from 'vitest';
-import { isFolderURL, getPathForFolderURL } from './url';
+import { getPathForBlockUIURL, getPathForFolderURL } from './url';
 import type { Signer } from '@milaboratories/ts-helpers';
 import { HmacSha256Signer } from '@milaboratories/ts-helpers';
-import { FolderURL } from '@milaboratories/pl-model-common';
+import { FolderURL, isFolderURL } from '@milaboratories/pl-model-common';
 
 describe('isFolderURL', () => {
   test('should return true for a valid URL', () => {
@@ -25,7 +25,6 @@ describe('isFolderURL', () => {
 describe('getPathForFolderURL', () => {
   const signer: Signer = {
     sign: (data: string | Uint8Array) => 'signature',
-
     verify: (data: string | Uint8Array, signature: string, validationErrorMessage?: string) => null,
   };
 
@@ -35,5 +34,29 @@ describe('getPathForFolderURL', () => {
     const result = getPathForFolderURL(signer, folderURL, '/test/dir');
 
     expect(result).toBe(path.join('/test/dir/subfolder_tgz/path/to/resource.html'));
+  });
+});
+
+describe('getPathForBlockUIURL', () => {
+  const signer: Signer = {
+    sign: (data: string | Uint8Array) => 'signature',
+    verify: (data: string | Uint8Array, signature: string, validationErrorMessage?: string) => null,
+  };
+
+  test('should be ok', () => {
+    const blockUIURL = 'block-ui://signature.blockUIDir.uidir/path/to/resource.html';
+
+    const result = getPathForBlockUIURL(signer, blockUIURL, '/test/dir');
+
+    expect(result).toBe(path.join('/test/dir/blockUIDir/path/to/resource.html'));
+  });
+
+  /** The function should decode url-encoded whitespaces. */
+  test('should be ok with whitespaces', () => {
+    const blockUIURL = 'block-ui://signature.blockUIDir.uidir/path/to%20whitespaces%20/resource.html';
+
+    const result = getPathForBlockUIURL(signer, blockUIURL, '/test/dir');
+
+    expect(result).toBe(path.join('/test/dir/blockUIDir/path/to whitespaces /resource.html'));
   });
 });

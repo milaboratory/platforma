@@ -198,7 +198,9 @@ export const tplTest = plTest.extend<{
     await use(new TplTestHelpers(pl, resultMap, resultMapTree));
   },
   driverKit: async ({ pl, tmpFolder }, use) => {
-    const driverKit = await initDriverKit(pl, tmpFolder, {
+    const frontendDownloadPath = path.join(tmpFolder, 'frontend');
+
+    const driverKit = await initDriverKit(pl, tmpFolder, frontendDownloadPath, {
       localSecret: MiddleLayer.generateLocalSecret(),
       localProjections: [], // TODO must be different with local pl
       openFileDialogCallback: () => {

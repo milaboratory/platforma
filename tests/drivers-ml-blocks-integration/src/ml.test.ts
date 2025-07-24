@@ -229,13 +229,13 @@ test('simple project manipulations test', { timeout: 20000 }, async ({ expect })
     });
     // console.dir(overviewSnapshot1, { depth: 5 });
     const block1StableFrontend = await prj.getBlockFrontend(block1Id).awaitStableValue();
-    expect(block1StableFrontend.path).toBeDefined();
+    expect(block1StableFrontend.url).toBeDefined();
     expect(block1StableFrontend.sdkVersion).toBeDefined();
     const block2StableFrontend = await prj.getBlockFrontend(block2Id).awaitStableValue();
-    expect(block2StableFrontend.path).toMatch(/enter-numbers/);
+    expect(block2StableFrontend.url).toMatch(/enter-numbers/);
     expect(block2StableFrontend.sdkVersion).toBeDefined();
     const block3StableFrontend = await prj.getBlockFrontend(block3Id).awaitStableValue();
-    expect(block3StableFrontend.path).toBeDefined();
+    expect(block3StableFrontend.url).toBeDefined();
     expect(block3StableFrontend.sdkVersion).toBeDefined();
     // console.dir({ block1StableFrontend, block2StableFrontend, block3StableFrontend }, { depth: 5 });
 

@@ -12,7 +12,7 @@ import { CallersCounter, createPathAtomically, ensureDirExists, fileExists, notE
 import type { DownloadableBlobSnapshot } from './snapshot';
 import { UnknownStorageError, WrongLocalFileUrl, type ClientDownload } from '../../clients/download';
 import type { ArchiveFormat, FolderURL } from '@milaboratories/pl-model-common';
-import { newFolderURL } from './url';
+import { newFolderURL } from '../urls/url';
 import decompress from 'decompress';
 import { assertNever } from '@protobuf-ts/runtime';
 import { resourceIdToString, stringifyWithResourceId } from '@milaboratories/pl-client';
