@@ -1,11 +1,32 @@
+<script lang="ts">
+/**
+ * Number input field with increment/decrement buttons, validation, and min/max constraints.
+ *
+ * @example
+ * <PlNumberField v-model="price" :step="0.01" :min-value="0" label="Price" />
+ *
+ * @example
+ * <PlNumberField
+ *   v-model="evenNumber"
+ *   :validate="(v) => v % 2 !== 0 ? 'Number must be even' : undefined"
+ *   :update-on-enter-or-click-outside="true"
+ *   label="Even Number"
+ * />
+ */
+export default {
+  name: 'PlNumberField',
+};
+</script>
+
 <script setup lang="ts">
 import './pl-number-field.scss';
 import DoubleContour from '../../utils/DoubleContour.vue';
 import { useLabelNotch } from '../../utils/useLabelNotch';
 import { computed, ref, useSlots, watch } from 'vue';
 import { PlTooltip } from '../PlTooltip';
+import { parseNumber } from './parseNumber';
 
-type NumberInputProps = {
+const props = withDefaults(defineProps<{
   /** Input is disabled if true */
   disabled?: boolean;
   /** Label on the top border of the field, empty by default */
@@ -26,9 +47,7 @@ type NumberInputProps = {
   errorMessage?: string;
   /** Additional validity check for input value that must return an error text if failed */
   validate?: (v: number) => string | undefined;
-};
-
-const props = withDefaults(defineProps<NumberInputProps>(), {
+}>(), {
   step: 1,
   label: undefined,
   placeholder: undefined,
@@ -42,92 +61,70 @@ const props = withDefaults(defineProps<NumberInputProps>(), {
 
 const modelValue = defineModel<number | undefined>({ required: true });
 
-const root = ref<HTMLElement>();
 const slots = useSlots();
-const input = ref<HTMLInputElement>();
 
-useLabelNotch(root);
+const rootRef = ref<HTMLElement>();
+const inputRef = ref<HTMLInputElement>();
+
+useLabelNotch(rootRef);
 
 function modelToString(v: number | undefined) {
   return v === undefined ? '' : String(+v); // (+v) to avoid staying in input non-number values if they are provided in model
 }
 
-function isPartial(v: string) {
-  return v === '.' || v === ',' || v === '-';
-}
-function stringToModel(v: string) {
-  if (v === '') {
-    return undefined;
-  }
-  if (isPartial(v)) {
-    return 0;
-  }
-  let forParsing = v;
-  forParsing = forParsing.replace(',', '.');
-  forParsing = forParsing.replace('−', '-'); // minus, replacing for the case of input the whole copied value
-  forParsing = forParsing.replace('–', '-'); // dash, replacing for the case of input the whole copied value
-  forParsing = forParsing.replace('+', '');
-  return parseFloat(forParsing);
-}
+const parsedResult = computed(() => parseNumber(props, inputValue.value));
 
-const innerTextValue = ref(modelToString(modelValue.value));
-const innerNumberValue = computed(() => stringToModel(innerTextValue.value));
+const cachedValue = ref<string | undefined>(undefined);
 
-watch(() => modelValue.value, (outerValue) => { // update inner value if outer value is changed
-  if (parseFloat(innerTextValue.value) !== outerValue) {
-    innerTextValue.value = modelToString(outerValue);
+const resetCachedValue = () => cachedValue.value = undefined;
+
+watch(modelValue, (n) => {
+  const r = parsedResult.value;
+  if (r.error || n !== r.value) {
+    resetCachedValue();
   }
 });
 
-const NUMBER_REGEX = /^[-−–+]?(\d+)?[\\.,]?(\d+)?$/; // parseFloat works without errors on strings with multiple dots, or letters in value
 const inputValue = computed({
   get() {
-    return innerTextValue.value;
+    return cachedValue.value ?? modelToString(modelValue.value);
   },
   set(nextValue: string) {
-    const parsedValue = stringToModel(nextValue);
-    // we allow to set empty value or valid numeric value, otherwise reset input value to previous valid
-    if (parsedValue === undefined
-      || (nextValue.match(NUMBER_REGEX) && !isNaN(parsedValue))
-    ) {
-      innerTextValue.value = nextValue;
-      if (!props.updateOnEnterOrClickOutside && !isPartial(nextValue)) { // to avoid applying '-' or '.'
-        applyChanges();
-      }
-    } else if (input.value) {
-      input.value.value = innerTextValue.value;
+    const r = parseNumber(props, nextValue);
+
+    cachedValue.value = r.cleanInput;
+
+    if (r.error || props.updateOnEnterOrClickOutside) {
+      inputRef.value!.value = r.cleanInput;
+    } else {
+      modelValue.value = r.value;
     }
   },
 });
+
 const focused = ref(false);
 
 function applyChanges() {
-  if (innerTextValue.value === '') {
-    modelValue.value = undefined;
-    return;
+  if (parsedResult.value.error === undefined) {
+    modelValue.value = parsedResult.value.value;
   }
-  modelValue.value = innerNumberValue.value;
 }
 
 const errors = computed(() => {
   let ers: string[] = [];
+
   if (props.errorMessage) {
     ers.push(props.errorMessage);
   }
-  const parsedValue = innerNumberValue.value;
-  if (parsedValue !== undefined && isNaN(parsedValue)) {
-    ers.push('Value is not a number');
-  } else if (props.validate && parsedValue !== undefined) {
-    const error = props.validate(parsedValue);
+
+  const r = parsedResult.value;
+
+  if (r.error) {
+    ers.push(r.error.message);
+  } else if (props.validate && r.value !== undefined) {
+    const error = props.validate(r.value);
     if (error) {
       ers.push(error);
-    }
-  } else {
-    if (props.minValue !== undefined && parsedValue !== undefined && parsedValue < props.minValue) {
-      ers.push(`Value must be higher than ${props.minValue}`);
-    }
-    if (props.maxValue !== undefined && parsedValue !== undefined && parsedValue > props.maxValue) {
-      ers.push(`Value must be less than ${props.maxValue}`);
     }
   }
 
@@ -137,18 +134,22 @@ const errors = computed(() => {
 });
 
 const isIncrementDisabled = computed(() => {
-  const parsedValue = innerNumberValue.value;
-  if (props.maxValue !== undefined && parsedValue !== undefined) {
-    return parsedValue >= props.maxValue;
+  const r = parsedResult.value;
+
+  if (props.maxValue !== undefined && r.value !== undefined) {
+    return r.value >= props.maxValue;
   }
+
   return false;
 });
 
 const isDecrementDisabled = computed(() => {
-  const parsedValue = innerNumberValue.value;
-  if (props.minValue !== undefined && parsedValue !== undefined) {
-    return parsedValue <= props.minValue;
+  const r = parsedResult.value;
+
+  if (props.minValue !== undefined && r.value !== undefined) {
+    return r.value <= props.minValue;
   }
+
   return false;
 });
 
@@ -157,7 +158,10 @@ const multiplier = computed(() =>
 );
 
 function increment() {
-  const parsedValue = innerNumberValue.value;
+  const r = parsedResult.value;
+
+  const parsedValue = r.value;
+
   if (!isIncrementDisabled.value) {
     let nV;
     if (parsedValue === undefined) {
@@ -172,7 +176,10 @@ function increment() {
 }
 
 function decrement() {
-  const parsedValue = innerNumberValue.value;
+  const r = parsedResult.value;
+
+  const parsedValue = r.value;
+
   if (!isDecrementDisabled.value) {
     let nV;
     if (parsedValue === undefined) {
@@ -189,24 +196,26 @@ function decrement() {
 function handleKeyPress(e: { code: string; preventDefault(): void }) {
   if (props.updateOnEnterOrClickOutside) {
     if (e.code === 'Escape') {
-      innerTextValue.value = modelToString(modelValue.value);
-      input.value?.blur();
+      inputValue.value = modelToString(modelValue.value);
+      inputRef.value?.blur();
     }
     if (e.code === 'Enter') {
-      input.value?.blur();
+      inputRef.value?.blur();
     }
   }
 
   if (e.code === 'Enter') {
-    innerTextValue.value = String(modelValue.value); // to make .1 => 0.1, 10.00 => 10, remove leading zeros etc
+    inputValue.value = String(modelValue.value); // to make .1 => 0.1, 10.00 => 10, remove leading zeros etc
   }
 
   if (['ArrowDown', 'ArrowUp'].includes(e.code)) {
     e.preventDefault();
   }
+
   if (props.useIncrementButtons && e.code === 'ArrowUp') {
     increment();
   }
+
   if (props.useIncrementButtons && e.code === 'ArrowDown') {
     decrement();
   }
@@ -224,15 +233,15 @@ const onMousedown = (ev: MouseEvent) => {
 
 <template>
   <div
-    ref="root"
+    ref="rootRef"
     :class="{ error: !!errors.trim(), disabled: disabled }"
-    class="mi-number-field d-flex-column"
+    class="pl-number-field d-flex-column"
     @keydown="handleKeyPress($event)"
   >
-    <div class="mi-number-field__main-wrapper d-flex">
-      <DoubleContour class="mi-number-field__contour"/>
+    <div class="pl-number-field__main-wrapper d-flex">
+      <DoubleContour class="pl-number-field__contour"/>
       <div
-        class="mi-number-field__wrapper flex-grow d-flex flex-align-center"
+        class="pl-number-field__wrapper flex-grow d-flex flex-align-center"
         :class="{withoutArrows: !useIncrementButtons}"
       >
         <label v-if="label" class="text-description">
@@ -244,7 +253,7 @@ const onMousedown = (ev: MouseEvent) => {
           </PlTooltip>
         </label>
         <input
-          ref="input"
+          ref="inputRef"
           v-model="inputValue"
           :disabled="disabled"
           :placeholder="placeholder"
@@ -253,10 +262,10 @@ const onMousedown = (ev: MouseEvent) => {
           @focusout="focused = false; applyChanges()"
         />
       </div>
-      <div v-if="useIncrementButtons" class="mi-number-field__icons d-flex-column" @mousedown="onMousedown">
+      <div v-if="useIncrementButtons" class="pl-number-field__icons d-flex-column" @mousedown="onMousedown">
         <div
           :class="{ disabled: isIncrementDisabled }"
-          class="mi-number-field__icon d-flex flex-justify-center uc-pointer flex-grow flex-align-center"
+          class="pl-number-field__icon d-flex flex-justify-center uc-pointer flex-grow flex-align-center"
           @click="increment"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -270,7 +279,7 @@ const onMousedown = (ev: MouseEvent) => {
         </div>
         <div
           :class="{ disabled: isDecrementDisabled }"
-          class="mi-number-field__icon d-flex flex-justify-center uc-pointer flex-grow flex-align-center"
+          class="pl-number-field__icon d-flex flex-justify-center uc-pointer flex-grow flex-align-center"
           @click="decrement"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -284,7 +293,7 @@ const onMousedown = (ev: MouseEvent) => {
         </div>
       </div>
     </div>
-    <div v-if="errors.trim()" class="mi-number-field__hint text-description">
+    <div v-if="errors.trim()" class="pl-number-field__error">
       {{ errors }}
     </div>
   </div>
