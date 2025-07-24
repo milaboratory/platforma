@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.19.0
+
+### Minor Changes
+
+- 98b0ded: drivers: frontend: replace path with url with custom protocol and signature
+
 ## 1.18.0
 
 ### Minor Changes

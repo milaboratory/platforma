@@ -1,5 +1,21 @@
 # @milaboratories/pl-middle-layer
 
+## 1.41.0
+
+### Minor Changes
+
+- 98b0ded: drivers: frontend: replace path with url with custom protocol and signature
+
+### Patch Changes
+
+- Updated dependencies [98b0ded]
+- Updated dependencies [98b0ded]
+  - @milaboratories/pl-drivers@1.7.0
+  - @milaboratories/pl-model-common@1.19.0
+  - @milaboratories/pl-model-middle-layer@1.8.3
+  - @platforma-sdk/model@1.42.1
+  - @platforma-sdk/block-tools@2.5.76
+
 ## 1.40.15
 
 ### Patch Changes
