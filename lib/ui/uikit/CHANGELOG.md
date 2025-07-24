@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.3.26
+
+### Patch Changes
+
+- 911f928: Fix PlNumberField min/max constraint
+
 ## 2.3.25
 
 ### Patch Changes
