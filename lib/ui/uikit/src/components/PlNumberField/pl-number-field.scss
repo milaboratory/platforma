@@ -1,4 +1,4 @@
-.mi-number-field {
+.pl-number-field {
   --contour-color: var(--txt-01);
   --contour-border-width: 1px;
   --options-bg: #fff;
@@ -63,6 +63,14 @@
   &__hint {
     margin-top: 3px;
     color: var(--color-hint);
+  }
+
+  &__error {
+    margin-top: 3px;
+    color: var(--txt-error);
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
   }
 
   input {

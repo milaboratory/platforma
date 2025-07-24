@@ -29,7 +29,7 @@ describe('NumberInput.vue', () => {
         step: 2,
       },
     });
-    const incrementButton = wrapper.find('.mi-number-field__icons div:first-child');
+    const incrementButton = wrapper.find('.pl-number-field__icons div:first-child');
     await incrementButton.trigger('click');
     expect(wrapper.vm.modelValue).toEqual(12);
   });
@@ -41,7 +41,7 @@ describe('NumberInput.vue', () => {
         step: 1,
       },
     });
-    const decrementButton = wrapper.find('.mi-number-field__icons div:last-child');
+    const decrementButton = wrapper.find('.pl-number-field__icons div:last-child');
     await decrementButton.trigger('click');
     expect(wrapper.vm.modelValue).toEqual(9);
   });
@@ -53,7 +53,7 @@ describe('NumberInput.vue', () => {
         maxValue: 10,
       },
     });
-    const incrementButton = wrapper.find('.mi-number-field__icons div:first-child');
+    const incrementButton = wrapper.find('.pl-number-field__icons div:first-child');
     expect(incrementButton.classes()).toContain('disabled');
   });
 
@@ -64,7 +64,7 @@ describe('NumberInput.vue', () => {
         minValue: 1,
       },
     });
-    const decrementButton = wrapper.find('.mi-number-field__icons div:last-child');
+    const decrementButton = wrapper.find('.pl-number-field__icons div:last-child');
     expect(decrementButton.classes()).toContain('disabled');
   });
 
@@ -76,8 +76,8 @@ describe('NumberInput.vue', () => {
         errorMessage: 'Custom error message',
       },
     });
-    expect(wrapper.find('.mi-number-field__hint').text()).toContain('Custom error message');
-    expect(wrapper.find('.mi-number-field__hint').text()).toContain('Value must be higher than 10');
+    expect(wrapper.find('.pl-number-field__error').text()).toContain('Custom error message');
+    expect(wrapper.find('.pl-number-field__error').text()).toContain('Value must be higher than 10');
   });
 
   it('validates and updates the computedValue when the user types in the input field', async () => {
@@ -89,7 +89,7 @@ describe('NumberInput.vue', () => {
     const input = wrapper.find('input');
     await input.setValue('1.1.1');
     await input.trigger('focusout');
-    expect(wrapper.vm.modelValue).toEqual(5);
+    expect(wrapper.vm.modelValue).toEqual(1.1);
 
     await input.setValue('15');
     await input.trigger('focusout');
@@ -97,16 +97,46 @@ describe('NumberInput.vue', () => {
 
     await input.setValue('.');
     await input.trigger('focusout');
-    expect(wrapper.vm.modelValue).toEqual(0);
+    expect(wrapper.vm.modelValue).toEqual(15);
+
+    await input.setValue('..');
+    await input.trigger('focusout');
+    expect(wrapper.vm.modelValue).toEqual(15);
+    expect(input.element.value).toEqual('.');
+
+    await input.setValue(',,');
+    await input.trigger('focusout');
+    expect(wrapper.vm.modelValue).toEqual(15);
+    expect(input.element.value).toEqual('.');
+
+    await input.setValue('-');
+    await input.trigger('focusout');
+    expect(wrapper.vm.modelValue).toEqual(15);
+    expect(input.element.value).toEqual('-');
+
+    await input.setValue('-a');
+    await input.trigger('focusout');
+    expect(wrapper.vm.modelValue).toEqual(15);
+    expect(input.element.value).toEqual('-');
+
+    await input.setValue('-1');
+    await input.trigger('focusout');
+    expect(wrapper.vm.modelValue).toEqual(-1);
+    expect(input.element.value).toEqual('-1');
 
     await input.setValue(',');
     await input.trigger('focusout');
-    expect(wrapper.vm.modelValue).toEqual(0);
+    expect(wrapper.vm.modelValue).toEqual(-1);
 
     await input.setValue('1,1');
     await input.trigger('focusout');
     expect(wrapper.vm.modelValue).toEqual(1.1);
     expect(input.element.value).toEqual('1.1');
+
+    await input.setValue('-1.1');
+    await input.trigger('focusout');
+    expect(wrapper.vm.modelValue).toEqual(-1.1);
+    expect(input.element.value).toEqual('-1.1');
   });
 
   it('update model with undefined when input is cleared', async () => {
@@ -119,5 +149,32 @@ describe('NumberInput.vue', () => {
     await input.setValue('');
     await input.trigger('focusout');
     expect(wrapper.vm.modelValue).toEqual(undefined);
+  });
+
+  it('external modelValue change', async () => {
+    const wrapper = mount(PlNumberField, {
+      props: {
+        modelValue: 10,
+      },
+    });
+
+    const input = wrapper.find('input');
+    await input.trigger('focusout');
+    expect(wrapper.vm.modelValue).toEqual(10);
+    expect(input.element.value).toEqual('10');
+
+    await input.setValue('');
+    await input.trigger('focusout');
+    expect(wrapper.vm.modelValue).toEqual(undefined);
+
+    wrapper.setProps({ modelValue: 1 });
+
+    await input.trigger('focusout');
+    expect(wrapper.vm.modelValue).toEqual(1);
+    expect(input.element.value).toEqual('1');
+
+    await input.setValue(10);
+    expect(wrapper.vm.modelValue).toEqual(10);
+    expect(input.element.value).toEqual('10');
   });
 });
