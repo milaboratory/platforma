@@ -30,11 +30,11 @@ function clearInput(v: string): string {
     return v;
   }
 
-  if (/^[-]{2,}/.test(v)) {
+  if (/^-[^0-9.]/.test(v)) {
     return '-';
   }
 
-  const match = v.match(/^(.*)\.[^0-9].*$/);
+  const match = v.match(/^(.*)[.,][^0-9].*$/);
   if (match) {
     return match[1] + '.';
   }
