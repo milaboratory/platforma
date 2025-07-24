@@ -34,8 +34,9 @@ function clearInput(v: string): string {
     return '-';
   }
 
-  if (/[.,]{2,}/.test(v)) {
-    return v.replace(/[.,]{2,}/g, '.');
+  const match = v.match(/^(.*)\.[^0-9].*$/);
+  if (match) {
+    return match[1] + '.';
   }
 
   if (v.match(NUMBER_REGEX)) {
