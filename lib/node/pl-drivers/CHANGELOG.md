@@ -1,5 +1,17 @@
 # @milaboratories/pl-drivers
 
+## 1.7.0
+
+### Minor Changes
+
+- 98b0ded: drivers: frontend: replace path with url with custom protocol and signature
+
+### Patch Changes
+
+- 98b0ded: pl-drivers: refactoring: move url driver to a separate dir
+- Updated dependencies [98b0ded]
+  - @milaboratories/pl-model-common@1.19.0
+
 ## 1.6.13
 
 ### Patch Changes

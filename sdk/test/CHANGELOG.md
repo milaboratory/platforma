@@ -1,5 +1,14 @@
 # @platforma-sdk/test
 
+## 1.42.1
+
+### Patch Changes
+
+- 98b0ded: drivers: frontend: replace path with url with custom protocol and signature
+- Updated dependencies [98b0ded]
+  - @milaboratories/pl-middle-layer@1.41.0
+  - @platforma-sdk/model@1.42.1
+
 ## 1.42.0
 
 ### Patch Changes
