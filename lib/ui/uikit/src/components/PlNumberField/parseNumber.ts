@@ -1,9 +1,7 @@
 type ParseResult = {
-  error: Error;
+  error?: Error;
   value?: number;
-} | {
-  error?: undefined;
-  value?: number;
+  cleanInput: string;
 };
 
 const NUMBER_REGEX = /^[-−–+]?(\d+)?[\\.,]?(\d+)?$/; // parseFloat works without errors on strings with multiple dots, or letters in value
@@ -25,7 +23,7 @@ function stringToNumber(v: string) {
   return parseFloat(clearNumericValue(v));
 }
 
-export function clearInput(v: string): string {
+function clearInput(v: string): string {
   v = v.trim();
 
   if (isPartial(v)) {
@@ -56,21 +54,26 @@ export function parseNumber(props: {
 }, str: string): ParseResult {
   str = str.trim();
 
+  const cleanInput = clearInput(str);
+
   if (str === '') {
     return {
       value: undefined,
+      cleanInput,
     };
   }
 
   if (!str.match(NUMBER_REGEX)) {
     return {
       error: Error('Value is not a number'),
+      cleanInput,
     };
   }
 
   if (isPartial(str)) {
     return {
       error: Error('Enter a number'),
+      cleanInput,
     };
   }
 
@@ -79,6 +82,7 @@ export function parseNumber(props: {
   if (isNaN(value)) {
     return {
       error: Error('Value is not a number'),
+      cleanInput,
     };
   }
 
@@ -86,6 +90,7 @@ export function parseNumber(props: {
     return {
       error: Error(`Value must be higher than ${props.minValue}`),
       value,
+      cleanInput,
     };
   }
 
@@ -93,6 +98,7 @@ export function parseNumber(props: {
     return {
       error: Error(`Value must be less than ${props.maxValue}`),
       value,
+      cleanInput,
     };
   }
 
@@ -102,11 +108,13 @@ export function parseNumber(props: {
       return {
         error: Error(error),
         value,
+        cleanInput,
       };
     }
   }
 
   return {
     value,
+    cleanInput,
   };
 }

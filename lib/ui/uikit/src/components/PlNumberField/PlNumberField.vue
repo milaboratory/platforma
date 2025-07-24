@@ -1,10 +1,30 @@
+<script lang="ts">
+/**
+ * Number input field with increment/decrement buttons, validation, and min/max constraints.
+ *
+ * @example
+ * <PlNumberField v-model="price" :step="0.01" :min-value="0" label="Price" />
+ *
+ * @example
+ * <PlNumberField
+ *   v-model="evenNumber"
+ *   :validate="(v) => v % 2 !== 0 ? 'Number must be even' : undefined"
+ *   :update-on-enter-or-click-outside="true"
+ *   label="Even Number"
+ * />
+ */
+export default {
+  name: 'PlNumberField',
+};
+</script>
+
 <script setup lang="ts">
 import './pl-number-field.scss';
 import DoubleContour from '../../utils/DoubleContour.vue';
 import { useLabelNotch } from '../../utils/useLabelNotch';
 import { computed, ref, useSlots, watch } from 'vue';
 import { PlTooltip } from '../PlTooltip';
-import { parseNumber, clearInput } from './parseNumber';
+import { parseNumber } from './parseNumber';
 
 const props = withDefaults(defineProps<{
   /** Input is disabled if true */
@@ -72,14 +92,12 @@ const inputValue = computed({
   set(nextValue: string) {
     const r = parseNumber(props, nextValue);
 
-    const clean = clearInput(nextValue);
-
     if (r.error || props.updateOnEnterOrClickOutside) {
-      cachedValue.value = clean;
-      inputRef.value!.value = clean;
+      cachedValue.value = r.cleanInput;
+      inputRef.value!.value = r.cleanInput;
     } else {
       modelValue.value = r.value;
-      cachedValue.value = clean;
+      cachedValue.value = r.cleanInput;
     }
   },
 });
