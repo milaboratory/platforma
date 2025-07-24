@@ -4,7 +4,7 @@ type ParseResult = {
   cleanInput: string;
 };
 
-const NUMBER_REGEX = /^[-−–+]?(\d+)?[\\.,]?(\d+)?$/; // parseFloat works without errors on strings with multiple dots, or letters in value
+const NUMBER_REGEX = /^[-−–+]?(\d+)?[.,]?(\d+)?$/; // parseFloat works without errors on strings with multiple dots, or letters in value
 
 function isPartial(v: string) {
   return v === '.' || v === ',' || v === '-';
