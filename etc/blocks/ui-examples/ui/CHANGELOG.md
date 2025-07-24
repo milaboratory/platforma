@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.5.22
+
+### Patch Changes
+
+- 911f928: Fix PlNumberField min/max constraint
+- Updated dependencies [911f928]
+  - @milaboratories/milaboratories.ui-examples.model@1.2.19
+
 ## 1.5.21
 
 ### Patch Changes
