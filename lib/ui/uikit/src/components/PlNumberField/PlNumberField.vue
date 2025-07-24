@@ -4,7 +4,7 @@ import DoubleContour from '../../utils/DoubleContour.vue';
 import { useLabelNotch } from '../../utils/useLabelNotch';
 import { computed, ref, useSlots, watch } from 'vue';
 import { PlTooltip } from '../PlTooltip';
-import { parseNumber, cleanInput } from './parseNumber';
+import { parseNumber, clearInput } from './parseNumber';
 
 const props = withDefaults(defineProps<{
   /** Input is disabled if true */
@@ -58,23 +58,28 @@ const cachedValue = ref<string | undefined>(undefined);
 
 const resetCachedValue = () => cachedValue.value = undefined;
 
-watch(modelValue, resetCachedValue);
+watch(modelValue, (n) => {
+  const r = parsedResult.value;
+  if (r.error || n !== r.value) {
+    resetCachedValue();
+  }
+});
 
 const inputValue = computed({
   get() {
     return cachedValue.value ?? modelToString(modelValue.value);
   },
   set(nextValue: string) {
-    resetCachedValue();
-
     const r = parseNumber(props, nextValue);
 
+    const clean = clearInput(nextValue);
+
     if (r.error || props.updateOnEnterOrClickOutside) {
-      const clean = cleanInput(nextValue);
       cachedValue.value = clean;
       inputRef.value!.value = clean;
     } else {
       modelValue.value = r.value;
+      cachedValue.value = clean;
     }
   },
 });

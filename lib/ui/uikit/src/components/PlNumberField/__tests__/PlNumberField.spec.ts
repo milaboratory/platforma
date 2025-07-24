@@ -97,16 +97,46 @@ describe('NumberInput.vue', () => {
 
     await input.setValue('.');
     await input.trigger('focusout');
-    expect(wrapper.vm.modelValue).toEqual(15); // keep the previous value while partial input
+    expect(wrapper.vm.modelValue).toEqual(15);
+
+    await input.setValue('..');
+    await input.trigger('focusout');
+    expect(wrapper.vm.modelValue).toEqual(15);
+    expect(input.element.value).toEqual('.');
+
+    await input.setValue(',,');
+    await input.trigger('focusout');
+    expect(wrapper.vm.modelValue).toEqual(15);
+    expect(input.element.value).toEqual('.');
+
+    await input.setValue('-');
+    await input.trigger('focusout');
+    expect(wrapper.vm.modelValue).toEqual(15);
+    expect(input.element.value).toEqual('-');
+
+    await input.setValue('-a');
+    await input.trigger('focusout');
+    expect(wrapper.vm.modelValue).toEqual(15);
+    expect(input.element.value).toEqual('-');
+
+    await input.setValue('-1');
+    await input.trigger('focusout');
+    expect(wrapper.vm.modelValue).toEqual(-1);
+    expect(input.element.value).toEqual('-1');
 
     await input.setValue(',');
     await input.trigger('focusout');
-    expect(wrapper.vm.modelValue).toEqual(15); // keep the previous value while partial input
+    expect(wrapper.vm.modelValue).toEqual(-1);
 
     await input.setValue('1,1');
     await input.trigger('focusout');
     expect(wrapper.vm.modelValue).toEqual(1.1);
     expect(input.element.value).toEqual('1.1');
+
+    await input.setValue('-1.1');
+    await input.trigger('focusout');
+    expect(wrapper.vm.modelValue).toEqual(-1.1);
+    expect(input.element.value).toEqual('-1.1');
   });
 
   it('update model with undefined when input is cleared', async () => {
@@ -119,5 +149,32 @@ describe('NumberInput.vue', () => {
     await input.setValue('');
     await input.trigger('focusout');
     expect(wrapper.vm.modelValue).toEqual(undefined);
+  });
+
+  it('external modelValue change', async () => {
+    const wrapper = mount(PlNumberField, {
+      props: {
+        modelValue: 10,
+      },
+    });
+
+    const input = wrapper.find('input');
+    await input.trigger('focusout');
+    expect(wrapper.vm.modelValue).toEqual(10);
+    expect(input.element.value).toEqual('10');
+
+    await input.setValue('');
+    await input.trigger('focusout');
+    expect(wrapper.vm.modelValue).toEqual(undefined);
+
+    wrapper.setProps({ modelValue: 1 });
+
+    await input.trigger('focusout');
+    expect(wrapper.vm.modelValue).toEqual(1);
+    expect(input.element.value).toEqual('1');
+
+    await input.setValue(10);
+    expect(wrapper.vm.modelValue).toEqual(10);
+    expect(input.element.value).toEqual('10');
   });
 });

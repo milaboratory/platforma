@@ -12,30 +12,36 @@ function isPartial(v: string) {
   return v === '.' || v === ',' || v === '-';
 }
 
-function stringToNumber(v: string) {
+function clearNumericValue(v: string) {
   v = v.trim();
-
-  if (isPartial(v)) {
-    return 0;
-  }
-
-  let forParsing = v;
-  forParsing = forParsing.replace(',', '.');
-  forParsing = forParsing.replace('−', '-'); // minus, replacing for the case of input the whole copied value
-  forParsing = forParsing.replace('–', '-'); // dash, replacing for the case of input the whole copied value
-  forParsing = forParsing.replace('+', '');
-  return parseFloat(forParsing);
+  v = v.replace(',', '.');
+  v = v.replace('−', '-'); // minus, replacing for the case of input the whole copied value
+  v = v.replace('–', '-'); // dash, replacing for the case of input the whole copied value
+  v = v.replace('+', '');
+  return v;
 }
 
-export function cleanInput(v: string): string {
+function stringToNumber(v: string) {
+  return parseFloat(clearNumericValue(v));
+}
+
+export function clearInput(v: string): string {
   v = v.trim();
 
   if (isPartial(v)) {
     return v;
+  }
+
+  if (/^[-].*[^0-9.]/.test(v)) {
+    return '-';
+  }
+
+  if (/^[.,].*[^0-9]/.test(v)) {
+    return '.';
   }
 
   if (v.match(NUMBER_REGEX)) {
-    return v;
+    return clearNumericValue(v);
   }
 
   const n = stringToNumber(v);
