@@ -30,12 +30,12 @@ function clearInput(v: string): string {
     return v;
   }
 
-  if (/^[-].*[^0-9.]/.test(v)) {
+  if (/^[-]{2,}/.test(v)) {
     return '-';
   }
 
-  if (/^[.,].*[^0-9]/.test(v)) {
-    return '.';
+  if (/[.,]{2,}/.test(v)) {
+    return v.replace(/[.,]{2,}/g, '.');
   }
 
   if (v.match(NUMBER_REGEX)) {
