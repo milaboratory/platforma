@@ -92,12 +92,12 @@ const inputValue = computed({
   set(nextValue: string) {
     const r = parseNumber(props, nextValue);
 
+    cachedValue.value = r.cleanInput;
+
     if (r.error || props.updateOnEnterOrClickOutside) {
-      cachedValue.value = r.cleanInput;
       inputRef.value!.value = r.cleanInput;
     } else {
       modelValue.value = r.value;
-      cachedValue.value = r.cleanInput;
     }
   },
 });
