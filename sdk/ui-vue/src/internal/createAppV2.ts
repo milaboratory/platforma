@@ -3,13 +3,14 @@ import type { Mutable } from '@milaboratories/helpers';
 import type { NavigationState, BlockOutputsBase, BlockState, PlatformaV2, ValueWithUTag, AuthorMarker } from '@platforma-sdk/model';
 import { hasAbortError, unwrapResult } from '@platforma-sdk/model';
 import type { Ref } from 'vue';
-import { reactive, computed, ref, watch } from 'vue';
+import { reactive, computed, ref } from 'vue';
 import type { StateModelOptions, UnwrapOutputs, OutputValues, OutputErrors, AppSettings } from '../types';
 import { createModel } from '../createModel';
 import { parseQuery } from '../urls';
 import { MultiError, unwrapValueOrErrors } from '../utils';
 import { applyPatch } from 'fast-json-patch';
 import { UpdateSerializer } from './UpdateSerializer';
+import { watchIgnorable } from '@vueuse/core';
 
 export const patchPoolingDelay = 100;
 
@@ -17,6 +18,14 @@ export const createNextAuthorMarker = (marker: AuthorMarker | undefined): Author
   authorId: marker?.authorId ?? uniqueId(),
   localVersion: (marker?.localVersion ?? 0) + 1,
 });
+
+const stringifyForDebug = (v: unknown) => {
+  try {
+    return JSON.stringify(v, null, 2);
+  } catch (err) {
+    return err instanceof Error ? err.message : String(err);
+  }
+};
 
 /**
  * Creates an application instance with reactive state management, outputs, and methods for state updates and navigation.
@@ -44,12 +53,12 @@ export function createAppV2<
 ) {
   const debug = (msg: string, ...rest: unknown[]) => {
     if (settings.debug) {
-      console.log(`%c>>> %c${msg}`, 'color: orange; font-weight: bold', 'color: orange', settings.appId, ...rest);
+      console.log(`%c>>> %c${msg}`, 'color: orange; font-weight: bold', 'color: orange', ...rest.map((r) => stringifyForDebug(r)));
     }
   };
 
   const error = (msg: string, ...rest: unknown[]) => {
-    console.error(`%c>>> %c${msg}`, 'color: red; font-weight: bold', 'color: red', settings.appId, ...rest);
+    console.error(`%c>>> %c${msg}`, 'color: red; font-weight: bold', 'color: red', ...rest.map((r) => stringifyForDebug(r)));
   };
 
   const data = {
@@ -135,25 +144,23 @@ export function createAppV2<
     };
   };
 
-  const appModelWatch = watch(
+  const { ignoreUpdates } = watchIgnorable(
     () => appModel.model,
     (_newData) => {
       const newData = deepClone(_newData);
-      debug('appModel.model', newData);
+      debug('setArgsAndUiStateQueue appModel.model', newData);
       setArgsAndUiStateQueue.run(() => setBlockArgsAndUiState(newData.args, newData.ui).then(unwrapResult));
     },
     { deep: true },
   );
 
-  const updateAppModelSilently = (newData: {
+  const updateAppModel = (newData: {
     args: Args;
     ui: UiState;
   }) => {
-    debug('updateAppModelSilently', newData);
-    appModelWatch.pause();
+    debug('updateAppModel', newData);
     appModel.model.args = deepClone(newData.args) as Args;
     appModel.model.ui = deepClone(newData.ui) as UiState;
-    appModelWatch.resume();
   };
 
   (async () => {
@@ -185,10 +192,12 @@ export function createAppV2<
 
         // Immutable behavior, apply external changes to the snapshot
         if (isAuthorChanged || data.isExternalSnapshot) {
-          debug('got external changes, applying them to the snapshot', JSON.stringify(snapshot.value, null, 2));
-          snapshot.value = applyPatch(snapshot.value, patches.value, false, false).newDocument;
-          updateAppModelSilently(snapshot.value);
-          data.isExternalSnapshot = isAuthorChanged;
+          debug('got external changes, applying them to the snapshot', snapshot.value);
+          ignoreUpdates(() => {
+            snapshot.value = applyPatch(snapshot.value, patches.value, false, false).newDocument;
+            updateAppModel({ args: snapshot.value.args, ui: snapshot.value.ui });
+            data.isExternalSnapshot = isAuthorChanged;
+          });
         } else {
           // Mutable behavior
           snapshot.value = applyPatch(snapshot.value, patches.value).newDocument;
