@@ -6,7 +6,7 @@ import type {
   PColumnSpec,
   PObjectId,
   SUniversalPColumnId,
-  PValue,
+  AxisFilterValue,
   AxisFilterByIdx,
   AnchoredPColumnSelector,
   PartitionedDataInfoEntries,
@@ -80,7 +80,7 @@ export type PColumnEntryUniversal = PColumnEntryWithLabel & {
 type AxisFilterInfo = {
   axisIdx: number;
   axisId: AxisId;
-  value: PValue;
+  value: AxisFilterValue;
   label: string;
 };
 
@@ -354,7 +354,7 @@ export class PColumnCollection {
               const axisId = getAxisId(originalSpec.axesSpec[axisIdx]);
               const axisLabelMap = axesLabels[sAxisIdx];
               const label = axisLabelMap?.[value] ?? String(value);
-              return { axisIdx, axisId, value: value as PValue, label };
+              return { axisIdx, axisId, value: value as AxisFilterValue, label };
             });
 
             intermediateResults.push({

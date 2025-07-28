@@ -1,6 +1,5 @@
 import canonicalize from 'canonicalize';
-import type { PValue } from '../data_types';
-import type { AxisFilter } from './filtered_column';
+import type { AxisFilter, AxisFilterValue } from './filtered_column';
 import type { SUniversalPColumnId, UniversalPColumnId } from './ids';
 import { stringifyColumnId } from './ids';
 import type { AAxisSelector, AnchorAxisRef, AnchorAxisRefByIdx, AnchoredPColumnId, AnchoredPColumnSelector, AxisSelector, PColumnSelector } from './selectors';
@@ -131,7 +130,7 @@ export class AnchoredIdDeriver {
     }
 
     // Process axis filters and create a sliced column ID
-    const resolvedFilters: [number, PValue][] = [];
+    const resolvedFilters: [number, AxisFilterValue][] = [];
 
     for (const filter of axisFilters) {
       const [axisIdOrIndex, value] = filter;
