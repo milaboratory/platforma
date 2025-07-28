@@ -36,7 +36,9 @@ const sequenceLengths = computed(() =>
 <template>
   <div ref="rootRef" :class="$style.root">
     <div :class="['pl-scrollable', $style.table]">
-      <div :class="$style.corner" />
+      <div :class="$style.corner">
+        <div :class="$style['label-scroll-indicator']" />
+      </div>
       <div :class="$style.header">
         <div v-if="sequenceNames.length > 1" :class="$style['sequence-names']">
           <span
@@ -52,15 +54,17 @@ const sequenceLengths = computed(() =>
         <SeqLogo v-if="widgets.includes('seqLogo')" :residue-counts />
       </div>
       <div :class="$style.labels">
-        <template v-for="(labelRow, rowIndex) of labelRows">
-          <div
-            v-for="(label, labelIndex) of labelRow"
-            :key="labelIndex"
-            :style="{ gridRow: rowIndex + 1 }"
-          >
-            {{ label }}
-          </div>
-        </template>
+        <div :class="$style['labels-grid']">
+          <template v-for="(labelRow, rowIndex) of labelRows">
+            <div
+              v-for="(label, labelIndex) of labelRow"
+              :key="labelIndex"
+              :style="{ gridRow: rowIndex + 1 }"
+            >
+              {{ label }}
+            </div>
+          </template>
+        </div>
       </div>
       <div :class="$style.sequences">
         <div
@@ -86,15 +90,25 @@ const sequenceLengths = computed(() =>
   min-block-size: 0;
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
+
+  &[data-pre-print] {
+    .table {
+      container-type: unset;
+    }
+    .labels {
+      max-inline-size: unset;
+    }
+  }
 }
 
 .table {
+  container-type: inline-size;
   display: grid;
   grid-template-areas:
     "corner header"
     "labels sequences";
-  text-wrap: nowrap;
   justify-content: start;
+  timeline-scope: --msa-labels-scroll;
   @media print {
     overflow: visible;
   }
@@ -102,16 +116,28 @@ const sequenceLengths = computed(() =>
 
 .corner {
   grid-area: corner;
-  background-color: white;
+  background-color: #fff;
   position: sticky;
   inset-inline-start: 0;
   inset-block-start: 0;
   z-index: 2;
 }
 
+.label-scroll-indicator {
+  position: absolute;
+  inset-inline-end: 0;
+  block-size: 100cqb;
+  inline-size: 8px;
+  animation-name: hide;
+  animation-timeline: --msa-labels-scroll;
+  visibility: hidden;
+  background: #fff;
+  box-shadow: -4px 0 4px -2px rgba(0, 0, 0, 0.10);
+}
+
 .header {
   grid-area: header;
-  background-color: white;
+  background-color: #fff;
   position: sticky;
   inset-block-start: 0;
   z-index: 1;
@@ -127,16 +153,28 @@ const sequenceLengths = computed(() =>
 
 .labels {
   grid-area: labels;
-  display: grid;
-  grid-auto-flow: dense;
-  column-gap: 12px;
-  background-color: white;
+  background-color: #fff;
   position: sticky;
   inset-inline-start: 0;
   z-index: 1;
-  padding-inline-end: 12px;
+  inline-size: max-content;
+  max-inline-size: 30cqi;
+  overflow: scroll;
+  scrollbar-width: none;
+  overscroll-behavior-inline: none;
+  scroll-timeline: --msa-labels-scroll inline;
+}
+
+.labels-grid {
+  display: grid;
+  grid-auto-flow: dense;
   font-family: Spline Sans Mono;
   line-height: 24px;
+  text-wrap: nowrap;
+
+  > * {
+    padding-inline-end: 12px;
+  }
 }
 
 .sequences {
@@ -152,5 +190,14 @@ const sequenceLengths = computed(() =>
   background-image: v-bind(highlightImageCssUrl);
   background-repeat: no-repeat;
   background-size: calc(100% - 5.8px) 100%;
+}
+
+@keyframes hide {
+  from {
+    visibility: visible;
+  }
+  to {
+    visibility: hidden;
+  }
 }
 </style>
