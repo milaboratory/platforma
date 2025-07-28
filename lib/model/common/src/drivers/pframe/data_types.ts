@@ -1,213 +1,11 @@
 import type { ValueType } from './spec/spec';
 
-export const PValueIntNA = -2147483648;
-export const PValueLongNA = -9007199254740991n;
-export const PValueFloatNA = NaN; // do not change, isNaN is used in other cases
-export const PValueDoubleNA = NaN; // do not change, isNaN is used in other cases
-export const PValueStringNA = null;
-export const PValueBytesNA = null;
-
-export type PValueInt = number;
-export type PValueLong = number | bigint; // use bigint only if extra integer precision is needed
-export type PValueFloat = number;
-export type PValueDouble = number;
-export type PValueString = string | null;
-export type PValueBytes = Uint8Array | null;
-
-export type NotNAPValueInt = number;
-export type NotNAPValueLong = number | bigint; // use bigint only if extra integer precision is needed
-export type NotNAPValueFloat = number;
-export type NotNAPValueDouble = number;
-export type NotNAPValueString = string;
-
-export type NotNAPValue = number | bigint | string;
-
-export type PValue =
-  | PValueInt
-  | PValueLong
-  // Doesn't differ from PValueInt, TODO: branded types for these PValue* types?
-  // | PValueFloat
-  // | PValueDouble
-  | PValueString
-  | PValueBytes;
-
-export function isValueNA(value: unknown, valueType: ValueType): boolean {
-  switch (valueType) {
-    case 'Int':
-      return value === PValueIntNA;
-    case 'Long':
-      return value === Number(PValueLongNA) || value === PValueLongNA;
-    case 'Float':
-      return Number.isNaN(value);
-    case 'Double':
-      return Number.isNaN(value);
-    case 'String':
-      return value === PValueStringNA;
-    case 'Bytes':
-      return value === PValueBytesNA;
-    default:
-      throw Error(`unsupported data type: ${valueType satisfies never}`);
-  }
-}
-
-export function ensureNotNAPValue(value: string): string;
-export function ensureNotNAPValue(value: number): number;
-export function ensureNotNAPValue(value: bigint): bigint;
-export function ensureNotNAPValue(value: unknown): NotNAPValue;
-export function ensureNotNAPValue(value: unknown): NotNAPValue {
-  if (!isNotNAPValue(value)) throw new Error(`Expected not-NA PValue, got ${value}`);
-  return value;
-}
-
-export function isNotNAPValue(value: unknown, valueType: 'Int'): value is number;
-export function isNotNAPValue(value: unknown, valueType: 'Long'): value is number | bigint;
-export function isNotNAPValue(value: unknown, valueType: 'Float'): value is number;
-export function isNotNAPValue(value: unknown, valueType: 'Double'): value is number;
-export function isNotNAPValue(value: unknown, valueType: 'String'): value is string;
-export function isNotNAPValue(value: unknown, valueType: ValueType): value is NotNAPValue;
-export function isNotNAPValue(value: unknown): value is NotNAPValue;
-export function isNotNAPValue(value: unknown, valueType?: ValueType): boolean {
-  if (!valueType)
-    return (
-      typeof value === 'string'
-      || (typeof value === 'number' && isFinite(value))
-      || typeof value === 'bigint'
-    );
-  if (isValueNA(value, valueType)) return false;
-  switch (valueType) {
-    case 'Int':
-      return typeof value === 'number';
-    case 'Long':
-      return typeof value === 'number' || typeof value === 'bigint';
-    case 'Float':
-      return typeof value === 'number';
-    case 'Double':
-      return typeof value === 'number';
-    case 'String':
-      return typeof value === 'string';
-    case 'Bytes':
-      throw Error(`Bytes not yet supported`);
-    default:
-      throw Error(`unsupported data type: ${valueType satisfies never}`);
-  }
-}
-
-export function isPValue(value: unknown, valueType: 'Int'): value is PValueInt;
-export function isPValue(value: unknown, valueType: 'Long'): value is PValueLong;
-export function isPValue(value: unknown, valueType: 'Float'): value is PValueFloat;
-export function isPValue(value: unknown, valueType: 'Double'): value is PValueDouble;
-export function isPValue(value: unknown, valueType: 'String'): value is PValueString;
-export function isPValue(value: unknown, valueType: ValueType): value is PValue;
-export function isPValue(value: unknown): value is PValue;
-export function isPValue(value: unknown, valueType?: ValueType): boolean {
-  if (!valueType)
-    return (
-      value === null
-      || typeof value === 'string'
-      || typeof value === 'number'
-      || typeof value === 'bigint'
-    );
-  if (isValueNA(value, valueType)) return true;
-  switch (valueType) {
-    case 'Int':
-      return typeof value === 'number';
-    case 'Long':
-      return typeof value === 'number' || typeof value === 'bigint';
-    case 'Float':
-      return typeof value === 'number';
-    case 'Double':
-      return typeof value === 'number';
-    case 'String':
-      return typeof value === 'string';
-    case 'Bytes':
-      throw Error(`Bytes not yet supported`);
-    default:
-      throw Error(`unsupported data type: ${valueType satisfies never}`);
-  }
-}
-
-export type PValueLongJsonSafe = { bigint: string };
-export type PValueJsonSafe = number | string | null | PValueLongJsonSafe;
-
-/**
- * Converts PValue to value that can be safely serialized by standard JSON.stringify
- * method. Use {@link safeConvertToPValue} to "deserialize" the value back to runtime
- * PValue representation.
- */
-export function toJsonSafePValue(value: PValue): PValueJsonSafe {
-  if (value === null || typeof value === 'string' || typeof value === 'number') return value;
-  if (typeof value === 'bigint') return { bigint: value.toString() };
-  throw new Error(`Type ${typeof value} (value ${value}) not yet supported.`);
-}
-
-/**
- * Can be used to "deserialize" result of {@link toJsonSafePValue} or to
- * safely cast any unknown value to actual runtime PValue representation.
- */
-export function safeConvertToPValue(value: unknown, checkType?: ValueType): PValue {
-  if (
-    value === null
-    || typeof value === 'string'
-    || typeof value === 'number'
-    || typeof value === 'bigint'
-  ) {
-    if (checkType && !isValueNA(value, checkType) && !isPValue(value, checkType))
-      throw new Error(`Unexpected value type, got ${typeof value}, expected ${checkType}`);
-    return value;
-  }
-
-  if (
-    typeof value === 'object'
-    && value !== null
-    && 'bigint' in value
-    && typeof value.bigint === 'string'
-  ) {
-    if (checkType && checkType !== 'Long')
-      throw new Error(`Unexpected value type, got serialized bigint, expected ${checkType}`);
-
-    return BigInt(value.bigint);
-  }
-
-  throw new Error(`Unsupported type ${typeof value} (value ${value}).`);
-}
-
-export function pValueToStringOrNumber(value: string): string;
-export function pValueToStringOrNumber(value: number | bigint): number;
-export function pValueToStringOrNumber(value: PValue | PValueJsonSafe): string | number;
-export function pValueToStringOrNumber(value: PValue | PValueJsonSafe): string | number {
-  value = pValueToStringOrNumberOrNull(value);
-  if (value === null) throw new Error('Value is null');
-  return value;
-}
-
-export function pValueToStringOrNumberOrNull(value: string | null): string;
-export function pValueToStringOrNumberOrNull(value: number | bigint | null): number;
-export function pValueToStringOrNumberOrNull(
-  value: PValue | PValueJsonSafe
-): string | number | null;
-export function pValueToStringOrNumberOrNull(
-  value: PValue | PValueJsonSafe,
-): string | number | null {
-  value = safeConvertToPValue(value);
-  if (value === null) return null;
-  if (typeof value === 'string') return value;
-  if (typeof value === 'number') {
-    if (!isFinite(value)) throw new Error(`Value is not finite (${value})`);
-    return value;
-  }
-  if (typeof value === 'bigint') {
-    // @TODO add range check
-    return Number(value);
-  }
-  throw new Error(`Unexpected value type: ${typeof value}`);
-}
-
 export type PVectorDataInt = Int32Array;
 export type PVectorDataLong = BigInt64Array;
 export type PVectorDataFloat = Float32Array;
 export type PVectorDataDouble = Float64Array;
-export type PVectorDataString = PValueString[];
-export type PVectorDataBytes = PValueBytes[];
+export type PVectorDataString = (null | string)[];
+export type PVectorDataBytes = (null | Uint8Array)[];
 
 export type PVectorData =
   | PVectorDataInt
@@ -241,47 +39,82 @@ export interface PTableVector {
   readonly absent: Uint8Array;
 }
 
-export function bitSet(bitVector: Uint8Array, offset: number): boolean {
+function isBitSet(bitVector: Uint8Array, offset: number): boolean {
   const chunkIndex = Math.floor(offset / 8);
   const mask = 1 << (7 - (offset % 8));
   return (bitVector[chunkIndex] & mask) > 0;
 }
 
+function isValueAbsent(vector: PTableVector, row: number): boolean {
+  return isBitSet(vector.absent, row);
+}
+
+function isValueNA(vector: PTableVector, row: number): boolean {
+  if (vector.isNA) return isBitSet(vector.isNA, row);
+  // Legacy magic values
+  const value = vector.data[row];
+  const valueType = vector.type;
+  switch (valueType) {
+    case 'Int':
+      return (value as PVectorDataInt[number]) === -2147483648;
+    case 'Long':
+      return (value as PVectorDataLong[number]) === -9007199254740991n;
+    case 'Float':
+      return Number.isNaN((value as PVectorDataFloat[number]));
+    case 'Double':
+      return Number.isNaN((value as PVectorDataDouble[number]));
+    case 'String':
+      return (value as PVectorDataString[number]) === null;
+    case 'Bytes':
+      return (value as PVectorDataBytes[number]) === null;
+    default:
+      throw Error(`unsupported data type: ${valueType satisfies never}`);
+  }
+}
+
 export const PTableAbsent = { type: 'absent' } as const;
 export type PTableAbsent = typeof PTableAbsent;
-export const PTableNA = null;
-export type PTableNA = typeof PTableNA;
 
-/** Decoded PTable value */
-export type PTableValue = PTableAbsent | PTableNA | number | string;
-
-/** Type guard for absent PValue */
+/** Type guard for absent value */
 export function isPTableAbsent(value: PTableValue): value is PTableAbsent {
   return typeof value === 'object' && value !== null && value.type === 'absent';
 }
 
-export type AbsentAndNAFill = {
-  na?: PTableValue;
-  absent?: PTableValue;
+export const PTableNA = null;
+export type PTableNA = typeof PTableNA;
+
+/** Type guard for NA value */
+export function isPTableNA(value: PTableValue): value is PTableNA {
+  return value === PTableNA;
+}
+
+export type PTableValueData = number | string;
+export type PTableValueAxis = PTableAbsent | PTableValueData;
+export type PTableValue = PTableNA | PTableValueAxis;
+
+export function isPTableValueAxis(value: PTableValue): value is PTableValueAxis {
+  return !isPTableNA(value);
+}
+
+export type AbsentAndNAFill<NA, Absent> = {
+  na?: NA;
+  absent?: Absent;
 };
 
 /** Read PTableValue from PTable column at specified row */
-export function pTableValue(
+export function pTableValue<NA = PTableNA, Absent = PTableAbsent>(
   column: PTableVector,
   row: number,
-  fill: AbsentAndNAFill = {},
-): PTableValue {
-  if (bitSet(column.absent, row))
+  fill: AbsentAndNAFill<NA, Absent> = {},
+): Absent | NA | PTableValue {
+  if (isValueAbsent(column, row))
     return fill.absent === undefined ? PTableAbsent : fill.absent;
+
+  if (isValueNA(column, row))
+    return fill.na === undefined ? PTableNA : fill.na;
 
   const value = column.data[row];
   const valueType = column.type;
-  if (column.isNA && bitSet(column.isNA, row))
-    return fill.na === undefined ? PTableNA : fill.na;
-  else if (isValueNA(value, valueType)) {
-    return fill.na === undefined ? PTableNA : fill.na;
-  }
-
   switch (valueType) {
     case 'Int':
       return value as PVectorDataInt[number];
