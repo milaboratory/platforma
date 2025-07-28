@@ -1,5 +1,15 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.8.4
+
+### Patch Changes
+
+- 636088d: Removed PValue type everywhere, use PTableValue for UI operations instead
+- 636088d: PFrames - update PTableVector format
+- Updated dependencies [636088d]
+- Updated dependencies [636088d]
+  - @milaboratories/pl-model-common@1.19.1
+
 ## 1.8.3
 
 ### Patch Changes
