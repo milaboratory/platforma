@@ -1,5 +1,14 @@
 # @platforma-sdk/model
 
+## 1.42.4
+
+### Patch Changes
+
+- 636088d: Removed PValue type everywhere, use PTableValue for UI operations instead
+- Updated dependencies [636088d]
+- Updated dependencies [636088d]
+  - @milaboratories/pl-model-common@1.19.1
+
 ## 1.42.1
 
 ### Patch Changes

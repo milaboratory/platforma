@@ -1,5 +1,14 @@
 # @platforma-sdk/ui-vue
 
+## 1.42.4
+
+### Patch Changes
+
+- 636088d: Removed PValue type everywhere, use PTableValue for UI operations instead
+- Updated dependencies [636088d]
+  - @platforma-sdk/model@1.42.4
+  - @milaboratories/uikit@2.3.27
+
 ## 1.42.3
 
 ### Patch Changes

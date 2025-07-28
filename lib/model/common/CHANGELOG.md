@@ -1,5 +1,12 @@
 # @milaboratories/pl-model-common
 
+## 1.19.1
+
+### Patch Changes
+
+- 636088d: Removed PValue type everywhere, use PTableValue for UI operations instead
+- 636088d: PFrames - update PTableVector format
+
 ## 1.19.0
 
 ### Minor Changes
