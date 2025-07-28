@@ -3,12 +3,12 @@ import type {
   PTableColumnId,
   PTableColumnSpecColumn,
   PTableValue,
+  PTableValueAxis,
 } from '@platforma-sdk/model';
 import {
   canonicalizeJson,
   getAxisId,
   isColumnOptional,
-  mapPTableValueToAxisKey,
   pTableValue,
   type PFrameDriver,
   type PlDataTableSheet,
@@ -22,6 +22,7 @@ import {
   isLabelColumn as isLabelColumnSpec,
   isColumnHidden,
   matchAxisId,
+  isPTableValueAxis,
 } from '@platforma-sdk/model';
 import type {
   CellStyle,
@@ -74,11 +75,13 @@ function columns2rows(
 ): PlAgDataTableV2Row[] {
   const rowData: PlAgDataTableV2Row[] = [];
   for (let iRow = 0; iRow < columns[0].data.length; ++iRow) {
-    const axesKey = axes.map((iAxis) => {
-      return mapPTableValueToAxisKey(
-        pTableValue(columns[resultMapping[iAxis]], iRow),
-      );
-    });
+    const axesKey: PTableValueAxis[] = axes
+      .map((iAxis) => {
+        const value = pTableValue(columns[resultMapping[iAxis]], iRow);
+        if (!isPTableValueAxis(value))
+          throw new Error(`axis value is not a PTableValueAxis: ${JSON.stringify(value)}`);
+        return value;
+      });
     const id = canonicalizeJson<PlTableRowId>(axesKey);
     const row: PlAgDataTableV2Row = { id, axesKey };
     fields.forEach((field, iCol) => {

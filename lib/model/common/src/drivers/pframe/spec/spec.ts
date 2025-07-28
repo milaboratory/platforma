@@ -1,8 +1,21 @@
 import type { PObject, PObjectId, PObjectSpec } from '../../../pool';
 import canonicalize from 'canonicalize';
 
+export type ValueTypeInt = 'Int';
+export type ValueTypeLong = 'Long';
+export type ValueTypeFloat = 'Float';
+export type ValueTypeDouble = 'Double';
+export type ValueTypeString = 'String';
+export type ValueTypeBytes = 'Bytes';
+
 /** PFrame columns and axes within them may store one of these types. */
-export type ValueType = 'Int' | 'Long' | 'Float' | 'Double' | 'String' | 'Bytes';
+export type ValueType =
+  | ValueTypeInt
+  | ValueTypeLong
+  | ValueTypeFloat
+  | ValueTypeDouble
+  | ValueTypeString
+  | ValueTypeBytes;
 
 /**
  * Specification of an individual axis.

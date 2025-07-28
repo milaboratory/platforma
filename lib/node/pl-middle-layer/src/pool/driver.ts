@@ -173,7 +173,7 @@ class PTableCache {
 }
 
 class PFrameHolder implements PFrameInternal.PFrameDataSource, AsyncDisposable {
-  public readonly pFramePromise: Promise<PFrameInternal.PFrameV8>;
+  public readonly pFramePromise: Promise<PFrameInternal.PFrameV9>;
   private readonly abortController = new AbortController();
   private readonly blobIdToResource = new Map<string, ResourceInfo>();
   private readonly blobHandleComputables = new Map<
@@ -209,7 +209,7 @@ class PFrameHolder implements PFrameInternal.PFrameDataSource, AsyncDisposable {
       const promises: Promise<void>[] = [];
       for (const column of distinctСolumns) {
         pFrame.addColumnSpec(column.id, column.spec);
-        promises.push(Promise.resolve(pFrame.setColumnData(column.id, column.data/* , this.disposeSignal */)));
+        promises.push(pFrame.setColumnData(column.id, column.data, { signal: this.disposeSignal }));
       }
       this.pFramePromise = Promise.all(promises)
         .then(() => pFrame)

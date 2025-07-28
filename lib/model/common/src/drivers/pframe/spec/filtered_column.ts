@@ -1,11 +1,13 @@
-import type { PValue } from '../data_types';
 import type { AnchoredPColumnId } from './selectors';
 
+/** Value of an axis filter */
+export type AxisFilterValue = number | string;
+
 /** Axis filter by index */
-export type AxisFilterByIdx = [number, PValue];
+export type AxisFilterByIdx = [number, AxisFilterValue];
 
 /** Axis filter by name */
-export type AxisFilterByName = [string, PValue];
+export type AxisFilterByName = [string, AxisFilterValue];
 
 /** Axis filter */
 export type AxisFilter = AxisFilterByIdx | AxisFilterByName;
