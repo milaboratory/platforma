@@ -51,6 +51,7 @@ function isValueAbsent(vector: PTableVector, row: number): boolean {
 
 function isValueNA(vector: PTableVector, row: number): boolean {
   if (vector.isNA) return isBitSet(vector.isNA, row);
+
   // Legacy magic values
   const value = vector.data[row];
   const valueType = vector.type;
@@ -76,42 +77,80 @@ export const PTableAbsent = { type: 'absent' } as const;
 export type PTableAbsent = typeof PTableAbsent;
 
 /** Type guard for absent value */
-export function isPTableAbsent(value: PTableValue): value is PTableAbsent {
-  return typeof value === 'object' && value !== null && value.type === 'absent';
+export function isPTableAbsent(value: unknown): value is PTableAbsent {
+  return typeof value === 'object' && value !== null && 'type' in value && value.type === 'absent';
 }
 
 export const PTableNA = null;
 export type PTableNA = typeof PTableNA;
 
 /** Type guard for NA value */
-export function isPTableNA(value: PTableValue): value is PTableNA {
+export function isPTableNA(value: unknown): value is PTableNA {
   return value === PTableNA;
 }
 
 export type PTableValueData = number | string;
-export type PTableValueAxis = PTableAbsent | PTableValueData;
-export type PTableValue = PTableNA | PTableValueAxis;
+export type PTableValueAxis<FillAbsent = PTableAbsent> = FillAbsent | PTableValueData;
+export type PTableValue<FillAbsent = PTableAbsent, FillNA = PTableNA> = FillNA | PTableValueAxis<FillAbsent>;
 
-export function isPTableValueAxis(value: PTableValue): value is PTableValueAxis {
-  return !isPTableNA(value);
+export function isPTableValueAxis<FillAbsent = PTableAbsent, FillNA = PTableNA>(
+  value: PTableValue<FillAbsent, FillNA>,
+  isNA: (value: PTableValue<FillAbsent, FillNA>) => value is FillNA,
+): value is PTableValueAxis<FillAbsent>;
+export function isPTableValueAxis<FillAbsent = PTableAbsent>(
+  value: PTableValue<FillAbsent, PTableNA>,
+): value is PTableValueAxis<FillAbsent>;
+export function isPTableValueAxis<FillAbsent = PTableAbsent, FillNA = PTableNA>(
+  value: PTableValue<FillAbsent, FillNA>,
+  isNA?: (value: PTableValue<FillAbsent, FillNA>) => value is FillNA,
+): value is PTableValueAxis<FillAbsent> {
+  return !(isNA ? isNA(value) : isPTableNA(value));
 }
 
-export type AbsentAndNAFill<NA, Absent> = {
-  na?: NA;
-  absent?: Absent;
-};
-
 /** Read PTableValue from PTable column at specified row */
-export function pTableValue<NA = PTableNA, Absent = PTableAbsent>(
+export function pTableValue(
   column: PTableVector,
   row: number,
-  fill: AbsentAndNAFill<NA, Absent> = {},
-): Absent | NA | PTableValue {
-  if (isValueAbsent(column, row))
-    return fill.absent === undefined ? PTableAbsent : fill.absent;
+): PTableValue;
+export function pTableValue<FillAbsent>(
+  column: PTableVector,
+  row: number,
+  fill: {
+    absent: FillAbsent;
+  }
+): PTableValue<FillAbsent, PTableNA>;
+export function pTableValue<FillNA>(
+  column: PTableVector,
+  row: number,
+  fill: {
+    na: FillNA;
+  }
+): PTableValue<PTableAbsent, FillNA>;
+export function pTableValue<FillNA, FillAbsent>(
+  column: PTableVector,
+  row: number,
+  fill: {
+    absent: FillAbsent;
+    na: FillNA;
+  }
+): PTableValue<FillAbsent, FillNA>;
+export function pTableValue<FillAbsent = PTableAbsent, FillNA = PTableNA>(
+  column: PTableVector,
+  row: number,
+  fill?: {
+    absent?: FillAbsent;
+    na?: FillNA;
+  },
+) {
+  if (isValueAbsent(column, row)) {
+    if (fill?.absent !== undefined) return fill.absent;
+    return PTableAbsent;
+  }
 
-  if (isValueNA(column, row))
-    return fill.na === undefined ? PTableNA : fill.na;
+  if (isValueNA(column, row)) {
+    if (fill?.na !== undefined) return fill.na;
+    return PTableNA;
+  }
 
   const value = column.data[row];
   const valueType = column.type;
@@ -125,7 +164,7 @@ export function pTableValue<NA = PTableNA, Absent = PTableAbsent>(
     case 'Double':
       return value as PVectorDataDouble[number];
     case 'String':
-      return value as PVectorDataString[number];
+      return (value as PVectorDataString[number])!;
     case 'Bytes':
       throw Error(`Bytes not yet supported`);
     default:
