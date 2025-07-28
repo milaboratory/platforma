@@ -228,17 +228,23 @@ export interface PTableVector {
   readonly data: PVectorData;
 
   /**
+   * Encoded bit array marking some elements of this vector as NA,
+   * call {@link bitSet} to read the data.
+   * In old desktop versions NA values are encoded as magic values in data array.
+   * */
+  readonly isNA?: Uint8Array;
+
+  /**
    * Encoded bit array marking some elements of this vector as absent,
-   * call {@link isValueAbsent} to read the data.
+   * call {@link bitSet} to read the data.
    * */
   readonly absent: Uint8Array;
 }
 
-/** Used to read bit array with value absence information */
-export function isValueAbsent(absent: Uint8Array, index: number): boolean {
-  const chunkIndex = Math.floor(index / 8);
-  const mask = 1 << (7 - (index % 8));
-  return (absent[chunkIndex] & mask) > 0;
+export function bitSet(bitVector: Uint8Array, offset: number): boolean {
+  const chunkIndex = Math.floor(offset / 8);
+  const mask = 1 << (7 - (offset % 8));
+  return (bitVector[chunkIndex] & mask) > 0;
 }
 
 export const PTableAbsent = { type: 'absent' } as const;
@@ -265,12 +271,16 @@ export function pTableValue(
   row: number,
   fill: AbsentAndNAFill = {},
 ): PTableValue {
-  if (isValueAbsent(column.absent, row))
+  if (bitSet(column.absent, row))
     return fill.absent === undefined ? PTableAbsent : fill.absent;
 
   const value = column.data[row];
   const valueType = column.type;
-  if (isValueNA(value, valueType)) return fill.na === undefined ? PTableNA : fill.na;
+  if (column.isNA && bitSet(column.isNA, row))
+    return fill.na === undefined ? PTableNA : fill.na;
+  else if (isValueNA(value, valueType)) {
+    return fill.na === undefined ? PTableNA : fill.na;
+  }
 
   switch (valueType) {
     case 'Int':
