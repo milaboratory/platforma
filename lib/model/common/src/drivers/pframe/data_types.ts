@@ -163,7 +163,7 @@ function pTableValueImpl<
   }
 
   if (options && 'dataType' in options && options.dataType !== undefined && options.dataType !== valueType) {
-    throw Error(`expected column of type ${valueType}, got ${options.dataType}`);
+    throw Error(`expected column of type ${options.dataType}, got ${valueType}`);
   }
 
   if (isValueAbsent(column, row)) {
