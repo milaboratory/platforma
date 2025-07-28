@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.42.3
+
+### Patch Changes
+
+- 6310c08: Use watch ignorable in createApp2
+
 ## 1.42.2
 
 ### Patch Changes
