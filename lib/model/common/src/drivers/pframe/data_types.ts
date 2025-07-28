@@ -1,12 +1,7 @@
-import type {
-  ValueTypeBytes } from './spec/spec';
+import type { Branded } from '../../branding';
 import {
   type ValueType,
-  type ValueTypeInt,
-  type ValueTypeLong,
-  type ValueTypeFloat,
-  type ValueTypeDouble,
-  type ValueTypeString,
+  type ValueTypeBytes,
 } from './spec/spec';
 
 export type PVectorDataInt = Int32Array;
@@ -103,25 +98,10 @@ export function isPTableNA(value: unknown): value is PTableNA {
 export type ValueTypeSupported = Exclude<ValueType, ValueTypeBytes>;
 
 export type PTableValueInt = number;
-export type PTableValueIntBranded = PTableValueInt & {
-  __ptype: ValueTypeInt;
-};
 export type PTableValueLong = number;
-export type PTableValueLongBranded = PTableValueLong & {
-  __ptype: ValueTypeLong;
-};
 export type PTableValueFloat = number;
-export type PTableValueFloatBranded = PTableValueFloat & {
-  __ptype: ValueTypeFloat;
-};
 export type PTableValueDouble = number;
-export type PTableValueDoubleBranded = PTableValueDouble & {
-  __ptype: ValueTypeDouble;
-};
 export type PTableValueString = string;
-export type PTableValueStringBranded = PTableValueString & {
-  __ptype: ValueTypeString;
-};
 export type PTableValueData<DataType extends ValueTypeSupported> =
   DataType extends 'Int' ? PTableValueInt :
     DataType extends 'Long' ? PTableValueLong :
@@ -129,13 +109,7 @@ export type PTableValueData<DataType extends ValueTypeSupported> =
         DataType extends 'Double' ? PTableValueDouble :
           DataType extends 'String' ? PTableValueString :
             never;
-export type PTableValueDataBranded<DataType extends ValueTypeSupported> =
-  DataType extends 'Int' ? PTableValueIntBranded :
-    DataType extends 'Long' ? PTableValueLongBranded :
-      DataType extends 'Float' ? PTableValueFloatBranded :
-        DataType extends 'Double' ? PTableValueDoubleBranded :
-          DataType extends 'String' ? PTableValueStringBranded :
-            never;
+export type PTableValueDataBranded<DataType extends ValueTypeSupported> = Branded<PTableValueData<DataType>, DataType>;
 export type PTableValue<
   Absent = PTableAbsent,
   NA = PTableNA,
@@ -168,6 +142,51 @@ export function isPTableValueAxis<
   isNA?: (value: PTableValue<Absent, NA, DataType>) => value is NA,
 ): value is PTableValueAxis<Absent, DataType> {
   return !(isNA ? isNA(value) : isPTableNA(value));
+}
+
+function pTableValueImpl<
+  FillAbsent = PTableAbsent,
+  FillNA = PTableNA,
+  DataType extends ValueType = ValueTypeSupported,
+>(
+  column: PTableVectorTyped<ValueType>,
+  row: number,
+  options?: {
+    absent?: FillAbsent;
+    na?: FillNA;
+    dataType?: DataType;
+  },
+) {
+  const valueType: ValueType = column.type;
+  if (valueType === 'Bytes') {
+    throw Error('Bytes not yet supported');
+  }
+
+  if (options && 'dataType' in options && options.dataType !== undefined && options.dataType !== valueType) {
+    throw Error(`expected column of type ${valueType}, got ${options.dataType}`);
+  }
+
+  if (isValueAbsent(column, row)) {
+    return options?.absent !== undefined ? options.absent : PTableAbsent;
+  }
+
+  if (isValueNA(column, row)) {
+    return options?.na !== undefined ? options.na : PTableNA;
+  }
+
+  const value = column.data[row]!;
+  switch (valueType) {
+    case 'Int':
+      return value as PVectorDataInt[number];
+    case 'Long':
+      return Number(value as PVectorDataLong[number]);
+    case 'Float':
+      return value as PVectorDataFloat[number];
+    case 'Double':
+      return value as PVectorDataDouble[number];
+    case 'String':
+      return (value as PVectorDataString[number])!;
+  }
 }
 
 /** Read PTableValue from PTable column at specified row */
@@ -222,31 +241,6 @@ export function pTableValue<FillNA, FillAbsent, DataType extends ValueTypeSuppor
     dataType: DataType;
   }
 ): PTableValue<FillAbsent, FillNA, DataType>;
-export function pTableValue<FillAbsent, DataType extends ValueTypeSupported>(
-  column: PTableVectorTyped<ValueType>,
-  row: number,
-  options: {
-    absent: FillAbsent;
-    dataTypeBrand: DataType;
-  }
-): PTableValueBranded<FillAbsent, PTableNA, DataType>;
-export function pTableValue<FillNA, DataType extends ValueTypeSupported>(
-  column: PTableVectorTyped<ValueType>,
-  row: number,
-  options: {
-    na: FillNA;
-    dataTypeBrand: DataType;
-  }
-): PTableValueBranded<PTableAbsent, FillNA, DataType>;
-export function pTableValue<FillNA, FillAbsent, DataType extends ValueTypeSupported>(
-  column: PTableVectorTyped<ValueType>,
-  row: number,
-  options: {
-    absent: FillAbsent;
-    na: FillNA;
-    dataTypeBrand: DataType;
-  }
-): PTableValueBranded<FillAbsent, FillNA, DataType>;
 export function pTableValue<
   FillAbsent = PTableAbsent,
   FillNA = PTableNA,
@@ -257,48 +251,77 @@ export function pTableValue<
   options?: {
     absent?: FillAbsent;
     na?: FillNA;
-  } & (
-    { dataType?: DataType } | { dataTypeBrand?: DataType }
-  ),
+    dataType?: DataType;
+  },
 ) {
-  const columnType: ValueType = column.type;
-  if (columnType === 'Bytes') {
-    throw Error('Bytes not yet supported');
-  }
+  return pTableValueImpl(column, row, options);
+}
 
-  const dataType: ValueType
-    = options && 'dataType' in options && options.dataType !== undefined
-      ? options.dataType
-      : options && 'dataTypeBrand' in options && options.dataTypeBrand !== undefined
-        ? options.dataTypeBrand
-        : columnType;
-  if (dataType !== columnType) {
-    throw Error(`expected column of type ${dataType}, got ${columnType}`);
+export function pTableValueBranded<DataType extends ValueType>(
+  column: PTableVectorTyped<DataType>,
+  row: number,
+): DataType extends ValueTypeSupported ? PTableValueBranded<PTableAbsent, PTableNA, DataType> : never;
+export function pTableValueBranded<FillAbsent, DataType extends ValueType>(
+  column: PTableVectorTyped<DataType>,
+  row: number,
+  options: {
+    absent: FillAbsent;
   }
-
-  if (isValueAbsent(column, row)) {
-    if (options?.absent !== undefined) return options.absent;
-    return PTableAbsent;
+): DataType extends ValueTypeSupported ? PTableValueBranded<FillAbsent, PTableNA, DataType> : never;
+export function pTableValueBranded<FillNA, DataType extends ValueType>(
+  column: PTableVectorTyped<DataType>,
+  row: number,
+  options: {
+    na: FillNA;
   }
-
-  if (isValueNA(column, row)) {
-    if (options?.na !== undefined) return options.na;
-    return PTableNA;
+): DataType extends ValueTypeSupported ? PTableValueBranded<PTableAbsent, FillNA, DataType> : never;
+export function pTableValueBranded<FillNA, FillAbsent, DataType extends ValueType>(
+  column: PTableVectorTyped<DataType>,
+  row: number,
+  options: {
+    absent: FillAbsent;
+    na: FillNA;
   }
-
-  const value = column.data[row]!;
-  switch (dataType) {
-    case 'Int':
-      return value as PVectorDataInt[number];
-    case 'Long':
-      return Number(value as PVectorDataLong[number]);
-    case 'Float':
-      return value as PVectorDataFloat[number];
-    case 'Double':
-      return value as PVectorDataDouble[number];
-    case 'String':
-      return (value as PVectorDataString[number])!;
+): DataType extends ValueTypeSupported ? PTableValueBranded<FillAbsent, FillNA, DataType> : never;
+export function pTableValueBranded<FillAbsent, DataType extends ValueTypeSupported>(
+  column: PTableVectorTyped<ValueType>,
+  row: number,
+  options: {
+    absent: FillAbsent;
+    dataType: DataType;
   }
+): PTableValueBranded<FillAbsent, PTableNA>;
+export function pTableValueBranded<FillNA, DataType extends ValueTypeSupported>(
+  column: PTableVectorTyped<ValueType>,
+  row: number,
+  options: {
+    na: FillNA;
+    dataType: DataType;
+  }
+): PTableValueBranded<PTableAbsent, FillNA, DataType>;
+export function pTableValueBranded<FillNA, FillAbsent, DataType extends ValueTypeSupported>(
+  column: PTableVectorTyped<ValueType>,
+  row: number,
+  options: {
+    absent: FillAbsent;
+    na: FillNA;
+    dataType: DataType;
+  }
+): PTableValueBranded<FillAbsent, FillNA, DataType>;
+export function pTableValueBranded<
+  FillAbsent = PTableAbsent,
+  FillNA = PTableNA,
+  DataType extends ValueType = ValueTypeSupported,
+>(
+  column: PTableVectorTyped<ValueType>,
+  row: number,
+  options?: {
+    absent?: FillAbsent;
+    na?: FillNA;
+    dataType?: DataType;
+  },
+) {
+  return pTableValueImpl(column, row, options);
 }
 
 /** Used in requests to partially retrieve table's data */
