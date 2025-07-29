@@ -2,6 +2,7 @@ import type { ConfigEnv, UserConfig } from 'vite';
 import { mergeConfig } from 'vite';
 import cssInjectedByJsPlugin from 'vite-plugin-css-injected-by-js';
 import dts from 'vite-plugin-dts';
+import { externalizeDeps } from 'vite-plugin-externalize-deps';
 import { createViteDevConfig } from './createViteDevConfig';
 
 export const createViteLibConfig = ((configEnv: ConfigEnv): UserConfig => {
@@ -10,6 +11,7 @@ export const createViteLibConfig = ((configEnv: ConfigEnv): UserConfig => {
   return mergeConfig(createViteDevConfig(configEnv), {
     plugins: [
       dts(),
+      externalizeDeps(),
       cssInjectedByJsPlugin({ relativeCSSInjection: true }),
     ],
     build: {
