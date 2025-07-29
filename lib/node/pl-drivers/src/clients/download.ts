@@ -11,12 +11,11 @@ import * as path from 'node:path';
 import { Readable } from 'node:stream';
 import type { Dispatcher } from 'undici';
 import type { LocalStorageProjection } from '../drivers/types';
-import type { DownloadResponse } from '../helpers/download';
+import type { DownloadOps, ContentHandler } from '../helpers/download';
 import { RemoteFileDownloader } from '../helpers/download';
 import { validateAbsolute } from '../helpers/validate';
 import type { DownloadAPI_GetDownloadURL_Response } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/downloadapi/protocol';
 import { DownloadClient } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/downloadapi/protocol.client';
-import { toHeadersMap } from './helpers';
 
 /** Gets URLs for downloading from pl-core, parses them and reads or downloads
  * files locally and from the web. */
@@ -44,51 +43,55 @@ export class ClientDownload {
 
   close() {}
 
-  /** Gets a presign URL and downloads the file.
+  /**
+   * Gets a presign URL and downloads the file.
    * An optional range with 2 numbers from what byte and to what byte to download can be provided.
    * @param fromBytes - from byte including this byte
    * @param toBytes - to byte excluding this byte
    */
-  async downloadBlob(
+  async withBlobContent<T>(
     info: ResourceInfo,
-    options?: RpcOptions,
-    signal?: AbortSignal,
-    fromBytes?: number,
-    toBytes?: number,
-  ): Promise<DownloadResponse> {
-    const { downloadUrl, headers } = await this.grpcGetDownloadUrl(info, options, signal);
+    options: RpcOptions | undefined,
+    ops: DownloadOps,
+    handler: ContentHandler<T>,
+  ): Promise<T> {
+    const { downloadUrl, headers } = await this.grpcGetDownloadUrl(info, options, ops.signal);
 
-    const remoteHeaders = toHeadersMap(headers, fromBytes, toBytes);
-    this.logger.info(`download blob ${stringifyWithResourceId(info)} from url ${downloadUrl}, headers: ${JSON.stringify(remoteHeaders)}`);
+    const remoteHeaders = Object.fromEntries(headers.map(({ name, value }) => [name, value]));
+    this.logger.info(`download blob ${stringifyWithResourceId(info)} from url ${downloadUrl}, ops: ${JSON.stringify(ops)}`);
 
     return isLocal(downloadUrl)
-      ? await this.readLocalFile(downloadUrl, fromBytes, toBytes)
-      : await this.remoteFileDownloader.download(downloadUrl, remoteHeaders, signal);
+      ? await this.withLocalFileContent(downloadUrl, ops, handler)
+      : await this.remoteFileDownloader.withContent(downloadUrl, remoteHeaders, ops, handler);
   }
 
-  async readLocalFile(
+  async withLocalFileContent<T>(
     url: string,
-    fromBytes?: number, // including this byte
-    toBytes?: number, // excluding this byte
-  ): Promise<DownloadResponse> {
+    ops: DownloadOps,
+    handler: ContentHandler<T>,
+  ): Promise<T> {
     const { storageId, relativePath } = parseLocalUrl(url);
     const fullPath = getFullPath(storageId, this.localStorageIdsToRoot, relativePath);
 
     return await this.localFileReadLimiter.run(async () => {
-      const ops = { start: fromBytes, end: toBytes !== undefined ? toBytes - 1 : undefined };
+      const readOps = {
+        start: ops.range?.from,
+        end: ops.range?.to !== undefined ? ops.range.to - 1 : undefined,
+      };
       let stream: fs.ReadStream | undefined;
+      let handlerSuccess = false;
 
       try {
         const stat = await fsp.stat(fullPath);
+        stream = fs.createReadStream(fullPath, readOps);
+        const webStream = Readable.toWeb(stream);
 
-        stream = fs.createReadStream(fullPath, ops);
-
-        return {
-          content: Readable.toWeb(stream),
-          size: stat.size,
-        };
+        const result = await handler(webStream, stat.size);
+        handlerSuccess = true;
+        return result;
       } catch (error) {
-        if (stream && !stream.destroyed) {
+        // Cleanup on error (including handler errors)
+        if (!handlerSuccess && stream && !stream.destroyed) {
           stream.destroy();
         }
         throw error;

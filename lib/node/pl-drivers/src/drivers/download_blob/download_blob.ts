@@ -311,15 +311,12 @@ export class DownloadDriver implements BlobDriver {
         return await readFileContent(filePath, range);
       }
 
-      const { content } = await this.clientDownload.downloadBlob(
+      const data = await this.clientDownload.withBlobContent(
         { id: result.info.id, type: result.info.type },
         undefined,
-        undefined,
-        range?.from,
-        range?.to,
+        { range },
+        async (content) => await buffer(content)
       );
-
-      const data = await buffer(content);
       await this.rangesCache.set(key, range ?? { from: 0, to: result.size }, data);
 
       return data;

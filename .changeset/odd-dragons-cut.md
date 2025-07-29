@@ -2,7 +2,11 @@
 '@milaboratories/pl-drivers': minor
 ---
 
-Fixes for drivers:
-  - prevent file descriptor leaks in several places
-  - concurrency limiting to prevent keeting file descriptor number in check
+**BREAKING**: Refactor download methods to lambda-based pattern for better resource management
 
+- `RemoteFileDownloader.download()` → `withContent<T>()`
+- `ClientDownload.downloadBlob()` → `withBlobContent<T>()`  
+- `ClientDownload.readLocalFile()` → `withLocalFileContent<T>()`
+- Replace `fromBytes`/`toBytes` params with unified `RangeBytes` interface
+- Automatic stream cleanup on all error paths including handler errors
+- Centralized error handling prevents resource leaks
