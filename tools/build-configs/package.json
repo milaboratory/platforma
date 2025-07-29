@@ -32,21 +32,22 @@
     "build": "vite build"
   },
   "dependencies": {
-    "@rollup/plugin-node-resolve": "catalog:",
-    "@rollup/plugin-typescript": "catalog:",
     "@rollup/plugin-commonjs": "catalog:",
     "@rollup/plugin-json": "catalog:",
+    "@rollup/plugin-node-resolve": "catalog:",
+    "@rollup/plugin-typescript": "catalog:",
+    "@types/node": "catalog:",
+    "@vitejs/plugin-vue": "catalog:",
+    "rollup": "catalog:",
+    "rollup-plugin-cleandir": "catalog:",
     "rollup-plugin-node-externals": "catalog:",
     "rollup-plugin-sourcemaps2": "catalog:",
-    "rollup-plugin-cleandir": "catalog:",
-    "unplugin-dts": "catalog:",
-    "rollup": "catalog:",
-    "vite-plugin-css-injected-by-js": "catalog:",
     "tsup": "catalog:",
+    "typescript": "catalog:",
+    "unplugin-dts": "catalog:",
     "vite": "catalog:",
+    "vite-plugin-css-injected-by-js": "catalog:",
     "vite-plugin-dts": "catalog:",
-    "@vitejs/plugin-vue": "catalog:",
-    "@types/node": "catalog:",
-    "typescript": "catalog:"
+    "vite-plugin-externalize-deps": "^0.9.0"
   }
 }
