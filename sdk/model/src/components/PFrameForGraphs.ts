@@ -15,9 +15,10 @@ import {
   visitDataInfo,
   getCompositeLinkerMap,
   getColumnIdAndSpec,
-  getAxesGroups,
   searchAvailableAxesKeys,
   getAxesListFromKeysList,
+  arrayFromAxisTree,
+  getAxesTree,
 } from '@milaboratories/pl-model-common';
 import type { PColumnDataUniversal, RenderCtx } from '../render';
 import { PColumnCollection, TreeNodeAccessor } from '../render';
@@ -69,7 +70,8 @@ export function getAvailableWithLinkersAxes(
   const linkerColumnsMap = getCompositeLinkerMap(linkerColumns.map(getColumnIdAndSpec));
   const linkerColumnsMapKeys: AxisSpec[][] = [...linkerColumnsMap.keys()].map(parseJson);
   const startKeys: CanonicalizedJson<AxisSpec[]>[] = [];
-  const blockAxesGrouped = getAxesGroups([...blockAxes.values()].map((v) => v[1]));
+  const blockAxesGrouped = [...blockAxes.values()].map((v) => v[1]).map((axis) => arrayFromAxisTree(getAxesTree(axis)));
+
   for (const axesGroupBlock of blockAxesGrouped) {
     const matched = linkerColumnsMapKeys.find(
       (axesGroupKey) => axesGroupKey.every(
