@@ -88,7 +88,7 @@ app:
     # -- Override command for the container
     command: ""
     # -- Argument list for the command
-    args: []
+    args: ["--config=/etc/platforma/platforma.yaml"]
   # -- Deployment init container
   initContainer:
     name: prestop-hook-check
