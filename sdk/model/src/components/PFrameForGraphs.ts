@@ -19,6 +19,8 @@ import {
   getAxesListFromKeysList,
   arrayFromAxisTree,
   getAxesTree,
+  Annotation,
+  readAnnotation,
 } from '@milaboratories/pl-model-common';
 import type { PColumnDataUniversal, RenderCtx } from '../render';
 import { PColumnCollection, TreeNodeAccessor } from '../render';
@@ -56,12 +58,8 @@ function getKeysCombinations(idsLists: AxisId[][]) {
 
 /** Check if column is a linker column */
 export function isLinkerColumn(column: PColumnSpec) {
-  return column.annotations?.[LINKER_COLUMN_ANNOTATION] === 'true';
+  return readAnnotation(column, Annotation.IsLinkerColumn) === 'true';
 }
-
-export const IS_VIRTUAL_COLUMN = 'pl7.app/graph/isVirtual'; // annotation for column duplicates with extended domains
-export const LABEL_ANNOTATION = 'pl7.app/label';
-export const LINKER_COLUMN_ANNOTATION = 'pl7.app/isLinkerColumn';
 
 export function getAvailableWithLinkersAxes(
   linkerColumns: PColumn<PColumnDataUniversal>[],
@@ -154,19 +152,19 @@ function getAdditionalColumnsForColumn(
   const additionalColumns = secondaryIdsVariants.map((idsList, idx) => {
     const id = colId(column.id, idsList.map((id) => id.domain));
 
-    const label = column.spec.annotations?.[LABEL_ANNOTATION] ?? '';
+    const label = readAnnotation(column.spec, Annotation.Label) ?? '';
     const labelDomainPart = ([...addedByVariantsDomainValues[idx]])
       .filter((str) => addedNotToAllVariantsDomainValues.has(str))
       .sort()
       .map((v) => JSON.parse(v)?.[1]) // use in labels only domain values, but sort them by key to save the same order in all column variants
       .join(' / ');
 
-    const annotations: Record<string, string> = {
+    const annotations: Annotation = {
       ...column.spec.annotations,
-      [IS_VIRTUAL_COLUMN]: 'true',
+      [Annotation.Graph.IsVirtual]: 'true',
     };
     if (label || labelDomainPart) {
-      annotations[LABEL_ANNOTATION] = label && labelDomainPart ? label + ' / ' + labelDomainPart : label + labelDomainPart;
+      annotations[Annotation.Label] = label && labelDomainPart ? label + ' / ' + labelDomainPart : label + labelDomainPart;
     }
 
     return {

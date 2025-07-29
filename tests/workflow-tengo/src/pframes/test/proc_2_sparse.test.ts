@@ -1,5 +1,5 @@
 import type { PColumnSpec, PUniversalColumnSpec } from '@milaboratories/pl-middle-layer';
-import { field, Pl, resourceType } from '@milaboratories/pl-middle-layer';
+import { Annotation, field, Pl, resourceType } from '@milaboratories/pl-middle-layer';
 import { awaitStableState } from '@platforma-sdk/test';
 import { assertBlob, assertJson, assertResource, eTplTest } from './extended_tpl_test';
 
@@ -18,8 +18,8 @@ eTplTest.concurrent(
               domain1: 'value',
             },
             annotations: {
-              'pl7.app/label': 'A',
-            },
+              [Annotation.Label]: 'A',
+            } satisfies Annotation,
           },
         },
       ],
@@ -31,8 +31,8 @@ eTplTest.concurrent(
             valueType: 'Long',
             name: 'b',
             annotations: {
-              'pl7.app/label': 'B',
-            },
+              [Annotation.Label]: 'B',
+            } satisfies Annotation,
           },
         },
       ],
@@ -105,7 +105,7 @@ eTplTest.concurrent(
       xsvSettings.axes[0].spec,
     ]);
     expect(bSpec).toMatchObject(xsvSettings.columns[0].spec);
-    expect(bSpec.annotations).toHaveProperty('pl7.app/trace');
+    expect(bSpec.annotations).toHaveProperty(Annotation.Trace);
   },
 );
 
@@ -124,8 +124,8 @@ eTplTest.concurrent(
               domain1: 'value',
             },
             annotations: {
-              'pl7.app/label': 'A',
-            },
+              [Annotation.Label]: 'A',
+            } satisfies Annotation,
           },
         },
       ],
@@ -137,8 +137,8 @@ eTplTest.concurrent(
             valueType: 'Long',
             name: 'b',
             annotations: {
-              'pl7.app/label': 'B',
-            },
+              [Annotation.Label]: 'B',
+            } satisfies Annotation,
           },
         },
       ],

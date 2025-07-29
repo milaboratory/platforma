@@ -1,16 +1,17 @@
 import {
+    Annotation,
     AxisSpec,
     PColumnIdAndSpec,
+    ValueType,
 } from './spec/index';
 import { PObjectId } from '../../pool';
-import { canonicalizeJson } from '../../json'
+import { stringifyJson } from '../../json'
 import {
     describe,
     expect,
     test,
 } from 'vitest';
 import {
-    PARENTS_ANNOTATION,
     arrayFromAxisTree,
     getAxesGroups,
     getAxesRoots,
@@ -21,35 +22,40 @@ import {
     setFromAxisTree,
 } from './linker_columns';
 
-function makeTestAxis({
-    name,
-    parents,
-}: {
+function makeTestAxis(params: {
     name: string;
     parents?: AxisSpec[];
 }): AxisSpec {
     return {
-        type: 'Int',
-        name,
+        type: ValueType.Int,
+        name: params.name,
         annotations: {
-            'pl7.app/label': `${name} axis`,
-            ...(parents && parents.length > 0 ? { [PARENTS_ANNOTATION]: canonicalizeJson(parents) } : {}),
-        },
+            [Annotation.Label]: `${params.name} axis`,
+            ...(params.parents && params.parents.length > 0
+                ? { [Annotation.Parents]: stringifyJson(params.parents) }
+                : {}
+            ),
+        } satisfies Annotation,
     };
 }
 
-function makeLinkerColumn({
-    name,
-    from,
-    to,
-}: {
+function makeLinkerColumn(params: {
     name: string;
     from: AxisSpec[];
     to: AxisSpec[];
 }): PColumnIdAndSpec {
     return {
-        columnId: name as PObjectId,
-        spec: { kind: 'PColumn', valueType: 'String', name, axesSpec: [...from, ...to] },
+        columnId: params.name as PObjectId,
+        spec: {
+            kind: 'PColumn',
+            valueType: ValueType.String,
+            name: params.name,
+            axesSpec: [...params.from, ...params.to],
+            annotations: {
+                [Annotation.Label]: `${params.name} column`,
+                [Annotation.IsLinkerColumn]: 'true',
+            } satisfies Annotation,
+        },
     };
 }
 

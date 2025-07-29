@@ -2,8 +2,10 @@ import type {
   InferHrefType,
   InferOutputsType } from '@platforma-sdk/model';
 import {
+  Annotation,
   BlockModel,
   PlRef,
+  readAnnotation,
 } from '@platforma-sdk/model';
 import { z } from 'zod';
 
@@ -24,7 +26,7 @@ export const platforma = BlockModel.create('Heavy')
       .getSpecs()
       .entries.filter((spec) => {
         if (spec.obj.annotations === undefined) return false;
-        return spec.obj.annotations['pl7.app/label'] == 'Numbers';
+        return readAnnotation(spec.obj, Annotation.Label) == 'Numbers';
       })
       .map((opt, i) => ({
         label: `numbers_${i}`,
@@ -37,7 +39,7 @@ export const platforma = BlockModel.create('Heavy')
       .getSpecs()
       .entries.filter((spec) => {
         if (spec.obj.annotations === undefined) return false;
-        return spec.obj.annotations['pl7.app/label'] == 'Numbers';
+        return readAnnotation(spec.obj, Annotation.Label) == 'Numbers';
       })
       .map((opt, i) => ({
         label: `numbers_${i}`,

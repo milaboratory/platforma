@@ -23,6 +23,9 @@ import {
   isColumnHidden,
   matchAxisId,
   isPTableValueAxis,
+  readAnnotation,
+  Annotation,
+  ValueType,
 } from '@platforma-sdk/model';
 import type {
   CellStyle,
@@ -180,8 +183,8 @@ export async function calculateGridOptions({
   indices.sort((a, b) => {
     if (specs[a].type !== specs[b].type) return specs[a].type === 'axis' ? -1 : 1;
 
-    const aPriority = specs[a].spec.annotations?.['pl7.app/table/orderPriority'];
-    const bPriority = specs[b].spec.annotations?.['pl7.app/table/orderPriority'];
+    const aPriority = readAnnotation(specs[a].spec, Annotation.Table.OrderPriority);
+    const bPriority = readAnnotation(specs[b].spec, Annotation.Table.OrderPriority);
 
     if (aPriority === undefined) return bPriority === undefined ? 0 : 1;
     if (bPriority === undefined) return -1;
@@ -331,7 +334,7 @@ export function makeColDef(
     mainMenuItems: defaultMainMenuItems,
     context: spec,
     field: `${iCol}`,
-    headerName: labeledSpec.spec.annotations?.['pl7.app/label']?.trim() ?? `Unlabeled ${spec.type} ${iCol}`,
+    headerName: readAnnotation(labeledSpec.spec, Annotation.Label)?.trim() ?? `Unlabeled ${spec.type} ${iCol}`,
     lockPosition: spec.type === 'axis',
     hide: hiddenColIds?.includes(colId) ?? isColumnOptional(spec.spec),
     valueFormatter: columnRenderingSpec.valueFormatter,
@@ -358,13 +361,13 @@ export function makeColDef(
     headerComponentParams: {
       type: ((): PlAgHeaderComponentType => {
         switch (valueType) {
-          case 'Int':
-          case 'Long':
-          case 'Float':
-          case 'Double':
+          case ValueType.Int:
+          case ValueType.Long:
+          case ValueType.Float:
+          case ValueType.Double:
             return 'Number';
-          case 'String':
-          case 'Bytes':
+          case ValueType.String:
+          case ValueType.Bytes:
             return 'Text';
           default:
             throw Error(`unsupported data type: ${valueType}`);
@@ -373,13 +376,13 @@ export function makeColDef(
     } satisfies PlAgHeaderComponentParams,
     cellDataType: (() => {
       switch (valueType) {
-        case 'Int':
-        case 'Long':
-        case 'Float':
-        case 'Double':
+        case ValueType.Int:
+        case ValueType.Long:
+        case ValueType.Float:
+        case ValueType.Double:
           return 'number';
-        case 'String':
-        case 'Bytes':
+        case ValueType.String:
+        case ValueType.Bytes:
           return 'text';
         default:
           throw Error(`unsupported data type: ${valueType}`);

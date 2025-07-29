@@ -3,14 +3,13 @@ import {
   parseJson,
   type CanonicalizedJson,
 } from '../../json';
-import type {
-  AxesSpec } from './spec/spec';
 import {
+  Annotation,
+  readAnnotation,
   type AxisSpec,
+  type AxesSpec,
   type PColumnIdAndSpec,
 } from './spec/spec';
-
-export const PARENTS_ANNOTATION = 'pl7.app/parents';
 
 /** Tree: axis is a root, its parents are children */
 type AxisTree = {
@@ -25,11 +24,16 @@ function makeAxisTree(axis: AxisSpec): AxisTree {
 
 /** Get axes parents list from annotation if exist */
 function getAxisParents(axis: AxisSpec): AxisSpec[] {
-  const parents = axis.annotations?.[PARENTS_ANNOTATION];
-  if (parents === undefined || parents.length === 0) return [];
-  const parentsList = parseJson(parents as CanonicalizedJson<AxisSpec[]>);
+  const parents = readAnnotation(axis, Annotation.Parents);
+  if (parents === undefined) return [];
+  let parentsList: AxisSpec[] = [];
+  try {
+    parentsList = parseJson(parents);
+  } catch {
+    throw new Error(`malformed ${Annotation.Parents} annotation on axis ${JSON.stringify(axis)}: must be a valid JSON array`);
+  }
   if (!Array.isArray(parentsList)) {
-    throw new Error(`malformed axis annotation: ${JSON.stringify(axis)}, parents must be an array`);
+    throw new Error(`malformed ${Annotation.Parents} annotation on axis ${JSON.stringify(axis)}: must be an array`);
   }
   return parentsList;
 }
@@ -155,14 +159,14 @@ export type CompositeLinkerMap = Map<
   Map<AxesKey, PColumnIdAndSpec> // for every axis (possibly in group with parents - available by linkers another axes and corresponding linkers)
 >;
 
-/** Creates graph (CompositeLinkerMap) of linkers connected by axes (single of grouped by parents) */
+/** Creates graph (CompositeLinkerMap) of linkers connected by axes (single or grouped by parents) */
 export function getCompositeLinkerMap(compositeLinkers: PColumnIdAndSpec[]): CompositeLinkerMap {
   const result: CompositeLinkerMap = new Map();
-  for (const linker of compositeLinkers) {
+  for (const linker of compositeLinkers.filter((l) => readAnnotation(l.spec, Annotation.IsLinkerColumn) === 'true')) {
     const groups = getAxesGroups(linker.spec.axesSpec); // split input axes into groups by parent links from annotation
 
     if (groups.length !== 2) {
-      continue;
+      continue; // not a valid linker column
     }
     const [left, right] = groups;
 

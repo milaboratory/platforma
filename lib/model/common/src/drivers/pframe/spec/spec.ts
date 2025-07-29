@@ -1,21 +1,110 @@
-import type { PObject, PObjectId, PObjectSpec } from '../../../pool';
-import canonicalize from 'canonicalize';
+import {
+  canonicalizeJson,
+  type CanonicalizedJson,
+  type StringifiedJson,
+} from '../../../json';
+import type {
+  PObject,
+  PObjectId,
+  PObjectSpec,
+} from '../../../pool';
 
-export type ValueTypeInt = 'Int';
-export type ValueTypeLong = 'Long';
-export type ValueTypeFloat = 'Float';
-export type ValueTypeDouble = 'Double';
-export type ValueTypeString = 'String';
-export type ValueTypeBytes = 'Bytes';
+export const ValueType = {
+  Int: 'Int',
+  Long: 'Long',
+  Float: 'Float',
+  Double: 'Double',
+  String: 'String',
+  Bytes: 'Bytes',
+} as const;
 
 /** PFrame columns and axes within them may store one of these types. */
-export type ValueType =
-  | ValueTypeInt
-  | ValueTypeLong
-  | ValueTypeFloat
-  | ValueTypeDouble
-  | ValueTypeString
-  | ValueTypeBytes;
+export type ValueType = (typeof ValueType)[keyof typeof ValueType];
+
+export type Metadata = Record<string, string>;
+
+export function readMetadata<U extends Metadata, T extends keyof U = keyof U>(
+  metadata: Metadata | undefined,
+  key: T,
+) {
+  return (metadata as U | undefined)?.[key];
+}
+
+/// Well-known domains
+export const Domain = {
+  Alphabet: 'pl7.app/alphabet',
+  BlockId: 'pl7.app/blockId',
+} as const;
+
+export type Domain = Metadata & Partial<{
+  [Domain.Alphabet]: 'nucleotide' | 'aminoacid' | string;
+  [Domain.BlockId]: string;
+}>;
+
+/// Helper function for reading domain values
+/// Warning: always decode the result of this function inside try-catch!
+export function readDomain<T extends keyof Domain>(
+  spec: { domain?: Metadata | undefined } | undefined,
+  key: T,
+) {
+  return readMetadata<Domain, T>(spec?.domain, key);
+}
+
+/// Well-known annotations
+export const Annotation = {
+  Alphabet: 'pl7.app/alphabet',
+  DiscreteValues: 'pl7.app/discreteValues',
+  Format: 'pl7.app/format',
+  Graph: {
+    IsVirtual: 'pl7.app/graph/isVirtual',
+  },
+  HideDataFromUi: 'pl7.app/hideDataFromUi',
+  IsLinkerColumn: 'pl7.app/isLinkerColumn',
+  Label: 'pl7.app/label',
+  Max: 'pl7.app/max',
+  Min: 'pl7.app/min',
+  Parents: 'pl7.app/parents',
+  Sequence: {
+    Annotation: {
+      Mapping: 'pl7.app/sequence/annotation/mapping',
+    },
+    IsAnnotation: 'pl7.app/sequence/isAnnotation',
+  },
+  Table: {
+    FontFamily: 'pl7.app/table/fontFamily',
+    OrderPriority: 'pl7.app/table/orderPriority',
+    Visibility: 'pl7.app/table/visibility',
+  },
+  Trace: 'pl7.app/trace',
+} as const;
+
+export type Annotation = Metadata & Partial<{
+  [Annotation.Alphabet]: 'nucleotide' | 'aminoacid' | string;
+  [Annotation.DiscreteValues]: StringifiedJson<number[]> | StringifiedJson<string[]>;
+  [Annotation.Format]: string;
+  [Annotation.Graph.IsVirtual]: 'true';
+  [Annotation.HideDataFromUi]: 'true';
+  [Annotation.IsLinkerColumn]: 'true';
+  [Annotation.Label]: string;
+  [Annotation.Max]: `${number}`;
+  [Annotation.Min]: `${number}`;
+  [Annotation.Parents]: StringifiedJson<AxisSpec[]>;
+  [Annotation.Sequence.Annotation.Mapping]: StringifiedJson<Record<string, string>>;
+  [Annotation.Sequence.IsAnnotation]: 'true';
+  [Annotation.Table.FontFamily]: string;
+  [Annotation.Table.OrderPriority]: `${number}`;
+  [Annotation.Table.Visibility]: 'hidden' | 'optional' | string;
+  [Annotation.Trace]: StringifiedJson<Record<string, unknown>>;
+}>;
+
+/// Helper function for reading annotation values
+/// Warning: always decode the result of this function inside try-catch!
+export function readAnnotation<T extends keyof Annotation>(
+  spec: { annotations?: Metadata | undefined } | undefined,
+  key: T,
+) {
+  return readMetadata<Annotation, T>(spec?.annotations, key);
+}
 
 /**
  * Specification of an individual axis.
@@ -63,6 +152,14 @@ export interface AxisSpec {
 
 /** Common type representing spec for all the axes in a column */
 export type AxesSpec = AxisSpec[];
+
+/// Well-known column names
+export const PColumnName = {
+  Label: 'pl7.app/label',
+  Table: {
+    RowSelection: 'pl7.app/table/row-selection',
+  },
+} as const;
 
 /**
  * Full column specification including all axes specs and specs of the column
@@ -211,12 +308,9 @@ export function getAxesId(spec: AxesSpec): AxesId {
   return spec.map(getAxisId);
 }
 
-/**
- * Canonicalizes axis id
- * @deprecated Use {@link canonicalizeJson} instead to preserve type
- */
-export function canonicalizeAxisId(id: AxisId): string {
-  return canonicalize(getAxisId(id))!;
+/** Canonicalizes axis id */
+export function canonicalizeAxisId(id: AxisId): CanonicalizedJson<AxisId> {
+  return canonicalizeJson(getAxisId(id));
 }
 
 /** Returns true if all domains from query are found in target */
