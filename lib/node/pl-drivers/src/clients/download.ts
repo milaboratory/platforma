@@ -3,6 +3,7 @@ import type { GrpcClientProvider, GrpcClientProviderFactory } from '@milaborator
 import { addRTypeToMetadata, stringifyWithResourceId } from '@milaboratories/pl-client';
 import type { ResourceInfo } from '@milaboratories/pl-tree';
 import type { MiLogger } from '@milaboratories/ts-helpers';
+import { ConcurrencyLimitingExecutor } from '@milaboratories/ts-helpers';
 import type { RpcOptions } from '@protobuf-ts/runtime-rpc';
 import * as fs from 'node:fs';
 import * as fsp from 'node:fs/promises';
@@ -25,6 +26,9 @@ export class ClientDownload {
 
   /** Helps to find a storage root directory by a storage id from URL scheme. */
   private readonly localStorageIdsToRoot: Map<string, string>;
+
+  /** Concurrency limiter for local file reads - limit to 32 parallel reads */
+  private readonly localFileReadLimiter = new ConcurrencyLimitingExecutor(32);
 
   constructor(
     grpcClientProviderFactory: GrpcClientProviderFactory,
@@ -70,10 +74,26 @@ export class ClientDownload {
     const { storageId, relativePath } = parseLocalUrl(url);
     const fullPath = getFullPath(storageId, this.localStorageIdsToRoot, relativePath);
 
-    return {
-      content: Readable.toWeb(fs.createReadStream(fullPath, { start: fromBytes, end: toBytes !== undefined ? toBytes - 1 : undefined })),
-      size: (await fsp.stat(fullPath)).size,
-    };
+    return await this.localFileReadLimiter.run(async () => {
+      const ops = { start: fromBytes, end: toBytes !== undefined ? toBytes - 1 : undefined };
+      let stream: fs.ReadStream | undefined;
+
+      try {
+        const stat = await fsp.stat(fullPath);
+
+        stream = fs.createReadStream(fullPath, ops);
+
+        return {
+          content: Readable.toWeb(stream),
+          size: stat.size,
+        };
+      } catch (error) {
+        if (stream && !stream.destroyed) {
+          stream.destroy();
+        }
+        throw error;
+      }
+    });
   }
 
   private async grpcGetDownloadUrl(

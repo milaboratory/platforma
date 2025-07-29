@@ -39,10 +39,11 @@ import * as fsp from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import * as readline from 'node:readline/promises';
-import { Readable, Writable } from 'node:stream';
+import { Writable } from 'node:stream';
 import { buffer } from 'node:stream/consumers';
 import type { ClientDownload } from '../../clients/download';
 import type { ClientLogs } from '../../clients/logs';
+import { readFileContent } from '../helpers/read_file';
 import {
   isLocalBlobHandle,
   newLocalHandle,
@@ -298,7 +299,7 @@ export class DownloadDriver implements BlobDriver {
     }
 
     if (isLocalBlobHandle(handle)) {
-      return await read(this.getLocalPath(handle), range);
+      return await readFileContent(this.getLocalPath(handle), range);
     }
 
     if (isRemoteBlobHandle(handle)) {
@@ -307,7 +308,7 @@ export class DownloadDriver implements BlobDriver {
       const key = blobKey(result.info.id);
       const filePath = await this.rangesCache.get(key, range ?? { from: 0, to: result.size });
       if (filePath) {
-        return await read(filePath, range);
+        return await readFileContent(filePath, range);
       }
 
       const { content } = await this.clientDownload.downloadBlob(
@@ -681,18 +682,6 @@ function getLastLines(fPath: string, nLines: number, patternToSearch?: string): 
       resolve(lines.toArray().join(os.EOL) + os.EOL);
     });
   });
-}
-
-async function read(path: string, range?: RangeBytes): Promise<Uint8Array> {
-  const ops: { start?: number; end?: number } = {};
-  if (range) {
-    ops.start = range.from;
-    ops.end = range.to - 1;
-  }
-
-  const stream = fs.createReadStream(path, ops);
-
-  return await buffer(Readable.toWeb(stream));
 }
 
 function validateDownloadableResourceType(methodName: string, rType: ResourceType) {
