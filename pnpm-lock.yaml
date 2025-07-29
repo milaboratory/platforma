@@ -3265,9 +3265,6 @@ importers:
       vite:
         specifier: 'catalog:'
         version: 6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0)
-      vite-plugin-externalize-deps:
-        specifier: ^0.9.0
-        version: 0.9.0(vite@6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0))
       vue-tsc:
         specifier: 'catalog:'
         version: 2.2.10(typescript@5.6.3)
@@ -22225,10 +22222,6 @@ snapshots:
   vite-plugin-externalize-deps@0.9.0(vite@6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0)):
     dependencies:
       vite: 6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0)
-
-  vite-plugin-externalize-deps@0.9.0(vite@6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0)):
-    dependencies:
-      vite: 6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0)
 
   vite@5.4.11(@types/node@20.16.15)(sass@1.83.4):
     dependencies:
