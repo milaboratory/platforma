@@ -1,114 +1,130 @@
-import {AxisSpec, PColumnIdAndSpec} from './spec/index';
-import {PObjectId} from '../../pool';
-import {canonicalizeJson} from '../../json'
-import {describe, expect, test} from 'vitest';
-import {arrayFromAxisTree, getAxesGroups, getAxesRoots, getAxesTree, getCompositeLinkerMap, getLinkerColumnsForAxes, getReachableByLinkersAxesFromAxes, setFromAxisTree} from './linker_columns';
+import {
+    AxisSpec,
+    PColumnIdAndSpec,
+} from './spec/index';
+import { PObjectId } from '../../pool';
+import { canonicalizeJson } from '../../json'
+import {
+    describe,
+    expect,
+    test,
+} from 'vitest';
+import {
+    PARENTS_ANNOTATION,
+    arrayFromAxisTree,
+    getAxesGroups,
+    getAxesRoots,
+    getAxesTree,
+    getCompositeLinkerMap,
+    getLinkerColumnsForAxes,
+    getReachableByLinkersAxesFromAxes,
+    setFromAxisTree,
+} from './linker_columns';
 
-const PARENTS_ANNOTATION = 'pl7.app/parents';
-const axisD: AxisSpec = { type: 'Int', name: 'd', annotations: { 'pl7.app/label': 'D axis' } };
-const axisC: AxisSpec = { type: 'Int', name: 'c', annotations: { 'pl7.app/label': 'C axis' } };
-const axisB: AxisSpec = { type: 'Int', name: 'b', annotations: { 'pl7.app/label': 'B axis' , [PARENTS_ANNOTATION]: canonicalizeJson([axisD]) } };
-const axisA: AxisSpec = { type: 'Int', name: 'a', annotations: { 'pl7.app/label': 'A axis', [PARENTS_ANNOTATION]: canonicalizeJson([axisB, axisC]) } };
-const axisE: AxisSpec = { type: 'Int', name: 'e', annotations: { 'pl7.app/label': 'E axis', [PARENTS_ANNOTATION]: canonicalizeJson([axisB, axisC]) } };
+function makeTestAxis({
+    name,
+    parents,
+}: {
+    name: string;
+    parents?: AxisSpec[];
+}): AxisSpec {
+    return {
+        type: 'Int',
+        name,
+        annotations: {
+            'pl7.app/label': `${name} axis`,
+            ...(parents && parents.length > 0 ? { [PARENTS_ANNOTATION]: canonicalizeJson(parents) } : {}),
+        },
+    };
+}
 
-const axisF: AxisSpec = { type: 'Int', name: 'f', annotations: { 'pl7.app/label': 'F axis' } };
+function makeLinkerColumn({
+    name,
+    from,
+    to,
+}: {
+    name: string;
+    from: AxisSpec[];
+    to: AxisSpec[];
+}): PColumnIdAndSpec {
+    return {
+        columnId: name as PObjectId,
+        spec: { kind: 'PColumn', valueType: 'String', name, axesSpec: [...from, ...to] },
+    };
+}
 
-const axisH: AxisSpec = { type: 'Int', name: 'h', annotations: { 'pl7.app/label': 'H axis' } };
-
-
-const linker1:PColumnIdAndSpec = {
-    columnId: 'id1' as PObjectId, 
-    spec: {
-        kind: 'PColumn',
-        axesSpec: [axisA, axisB, axisC, axisD, axisE, axisF], // left part: [A B C D E], right part: [F]
-        valueType: 'String',
-        name: 'linker1'
-    }
-};
-const linker2:PColumnIdAndSpec = {
-    columnId: 'id2' as PObjectId, 
-    spec: {
-        kind: 'PColumn',
-        axesSpec: [axisF, axisH],
-        valueType: 'String',
-        name: 'linker2'
+/** Returns all permutations of initial array */
+function allPermutations<T>(arr: T[]): T[][] {
+    switch (arr.length) {
+        case 0: return [];
+        case 1: return [arr];
+        case 2: return [arr, [arr[1], arr[0]]];
+        default: return arr.reduce(
+            (acc, item, i) => acc.concat(
+                allPermutations<T>([...arr.slice(0, i), ...arr.slice(i + 1)])
+                    .map(val => [item, ...val])
+            ),
+            [] as T[][],
+        );
     }
 };
 
 describe('Linker columns', () => {
     test('Search in linker columns map', () => {
-        const axis1: AxisSpec = { type: 'Int', name: 'id1'};
-        const axis2: AxisSpec = { type: 'Int', name: 'id2'};
-        const axis3: AxisSpec = { type: 'Int', name: 'id3'};
-        const axis4: AxisSpec = { type: 'Int', name: 'id4'};
-        const axis5: AxisSpec = { type: 'Int', name: 'id5'};
+        const axis1 = makeTestAxis({ name: 'id1' });
+        const axis2 = makeTestAxis({ name: 'id2' });
+        const axis3 = makeTestAxis({ name: 'id3' });
+        const axis4 = makeTestAxis({ name: 'id4' });
+        const axis5 = makeTestAxis({ name: 'id5' });
         const linkerMap = getCompositeLinkerMap([
-            {columnId: 'id12' as PObjectId, spec: {kind: 'PColumn', valueType: 'String', name: 'c12', axesSpec: [axis1, axis2]}},
-            {columnId: 'id13' as PObjectId, spec: {kind: 'PColumn', valueType: 'String', name: 'c13', axesSpec: [axis1, axis3]}},
-            {columnId: 'id45' as PObjectId, spec: {kind: 'PColumn', valueType: 'String', name: 'c45', axesSpec: [axis4, axis5]}}
+            makeLinkerColumn({ name: 'c12', from: [axis1], to: [axis2] }),
+            makeLinkerColumn({ name: 'c13', from: [axis1], to: [axis3] }),
+            makeLinkerColumn({ name: 'c45', from: [axis4], to: [axis5] }),
         ]);
-        const linkers1 = getLinkerColumnsForAxes(linkerMap, [axis2], [axis3]).map(item => item.spec.name);
-        expect(new Set(linkers1)).toEqual(new Set(['c12', 'c13']));
 
-        const linkers2 = getLinkerColumnsForAxes(linkerMap, [axis1], [axis2]);
-        expect(linkers2.length).toBe(1);
-        expect(linkers2[0].spec.name).toBe('c12');
+        let testCase = (params: {
+            from: AxisSpec[];
+            to: AxisSpec[];
+            expected: string[];
+        }) => {
+            const linkers = getLinkerColumnsForAxes({
+                linkerMap,
+                from: params.from,
+                to: params.to,
+                throwWhenNoLinkExists: false,
+            });
+            expect(linkers.map(item => item.spec.name).sort()).toEqual(params.expected);
+        }
 
-        const linkers3 = getLinkerColumnsForAxes(linkerMap, [axis1], [axis4], false);
-        expect(linkers3.length).toBe(0);
+        testCase({ from: [axis2], to: [axis3], expected: ['c12', 'c13'] });
+        testCase({ from: [axis1], to: [axis2], expected: ['c12'] });
+        testCase({ from: [axis1], to: [axis4], expected: []});
     });
 
     test('Axis tree - without parents', () => {
-        const axesInColumn:AxisSpec[] = [{name: 'Axis1', type: 'String'}];
-        const tree = getAxesTree(axesInColumn[0]);
-        const set = setFromAxisTree(tree);
-        const arr = arrayFromAxisTree(tree);
+        const axisA = makeTestAxis({ name: 'a' });
+        const axisB = makeTestAxis({ name: 'b' });
 
-        expect(set.size).toBe(1);
-        expect(arr.length).toBe(1);
+        const tree = getAxesTree(axisA);
+        expect(setFromAxisTree(tree).size).toBe(1);
+        expect(arrayFromAxisTree(tree).length).toBe(1);
 
-
-        const a:AxisSpec[] = [
-            {
-                name: 'a',
-                type: 'Int',
-                annotations: { 'pl7.app/label': 'A axis' }
-            },
-            {
-                name: 'b',
-                type: 'Int',
-                annotations: { 'pl7.app/label': 'B axis' }
-            }
-        ]
-        const groups = getAxesGroups(a);
-
-        expect(groups.length).toBe(2);
+        expect(getAxesGroups([axisA, axisB]).length).toBe(2);
     })
 
     test('Axis tree - with parents', () => {
-        const axisB:AxisSpec = {
-            name: 'b',
-            type: 'Int',
-        }
-        const axisA:AxisSpec = {
-            name: 'a',
-            type: 'Int',
-            annotations: { 'pl7.app/parents': canonicalizeJson([axisB]) }
-        }
-        const axesInColumn:AxisSpec[] = [axisA, axisB];
+        const axisD = makeTestAxis({ name: 'd' });
+        const axisC = makeTestAxis({ name: 'c', parents: [axisD] });
+        const axisB = makeTestAxis({ name: 'b', parents: [axisC] });
+        const axisA = makeTestAxis({ name: 'a', parents: [axisB] });
+
         const tree = getAxesTree(axisA);
+        expect(setFromAxisTree(tree).size).toBe(4);
+        expect(arrayFromAxisTree(tree).length).toBe(4);
 
-        expect(tree).not.toBe(null);
-
-        const set = setFromAxisTree(tree!);
-        const arr = arrayFromAxisTree(tree!);
-
-        expect(set.size).toBe(2);
-        expect(arr.length).toBe(2);
-
-        const groups = getAxesGroups(axesInColumn);
-
-        expect(groups?.length).toBe(1);
+        for (const group of allPermutations([axisA, axisB, axisC, axisD])) {
+            expect(getAxesGroups(group).length).toBe(4);
+        }
     })
 
     test('Generate partial trees', () => {
@@ -131,34 +147,33 @@ describe('Linker columns', () => {
         //    \_ B _ D
         // 2 E - B - D
 
+        const axisD = makeTestAxis({ name: 'd' });
+        const axisC = makeTestAxis({ name: 'c' });
+        const axisB = makeTestAxis({ name: 'b', parents: [axisD] });
+        const axisA = makeTestAxis({ name: 'a', parents: [axisB, axisC] });
+        const axisE = makeTestAxis({ name: 'e', parents: [axisB, axisC] });
+        const axisF = makeTestAxis({ name: 'f' });
+        const axisH = makeTestAxis({ name: 'h' });
 
-        const axesInColumn = [
-            axisA,
-            axisB,
-            axisC,
-            axisD,
-            axisE
-        ];
-        const roots = getAxesRoots(axesInColumn);
+        const group1 = [axisA, axisB, axisC, axisD, axisE];
+        const group2 = [axisF];
+        const group3 = [axisH];
+
+        const linker1 = makeLinkerColumn({ name: 'linker1', from: group1, to: group2 });
+        const linker2 = makeLinkerColumn({ name: 'linker2', from: group2, to: group3 });
+
+        const roots = getAxesRoots(group1);
 
         expect(roots).toEqual([axisA, axisE]);
 
-        const axesInLinker = [
-            axisA,
-            axisB,
-            axisC,
-            axisD,
-            axisE,
-            axisF
-        ];
-        const groups = getAxesGroups(axesInLinker);
+        const groups = getAxesGroups([...group1, ...group2]);
         expect(groups.length).toBe(2);
-        expect(groups[0]).toEqual([axisA, axisB, axisC, axisD, axisE]);
-        expect(groups[1]).toEqual([axisF]);
+        expect(groups[0]).toEqual(group1);
+        expect(groups[1]).toEqual(group2);
 
         const linkersMap = getCompositeLinkerMap([linker1, linker2]);
 
-        expect(getReachableByLinkersAxesFromAxes([axisF], linkersMap)).toEqual([axisA, axisB, axisC, axisD, axisE, axisH]);
+        expect(getReachableByLinkersAxesFromAxes(group2, linkersMap)).toEqual([...group1, ...group3]);
         expect(getReachableByLinkersAxesFromAxes([axisD], linkersMap)).toEqual([]);
         expect(getReachableByLinkersAxesFromAxes([axisB], linkersMap)).toEqual([]);
     });

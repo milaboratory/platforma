@@ -1,6 +1,14 @@
-import type { CanonicalizedJson } from '../../json';
-import { canonicalizeJson } from '../../json';
-import type { AxisSpec, PColumnIdAndSpec } from './spec/spec';
+import {
+  canonicalizeJson,
+  parseJson,
+  type CanonicalizedJson,
+} from '../../json';
+import type {
+  AxesSpec } from './spec/spec';
+import {
+  type AxisSpec,
+  type PColumnIdAndSpec,
+} from './spec/spec';
 
 export const PARENTS_ANNOTATION = 'pl7.app/parents';
 
@@ -11,23 +19,29 @@ type AxisTree = {
   children: AxisTree[]; // parents
 };
 
+function makeAxisTree(axis: AxisSpec): AxisTree {
+  return { axis, id: canonicalizeJson(axis), children: [] };
+}
+
 /** Get axes parents list from annotation if exist */
 function getAxisParents(axis: AxisSpec): AxisSpec[] {
-  if (!axis.annotations || !axis.annotations[PARENTS_ANNOTATION]) {
-    return [];
+  const parents = axis.annotations?.[PARENTS_ANNOTATION];
+  if (parents === undefined || parents.length === 0) return [];
+  const parentsList = parseJson(parents as CanonicalizedJson<AxisSpec[]>);
+  if (!Array.isArray(parentsList)) {
+    throw new Error(`malformed axis annotation: ${JSON.stringify(axis)}, parents must be an array`);
   }
-  return JSON.parse(axis.annotations[PARENTS_ANNOTATION]);
+  return parentsList;
 }
 
 /** Build tree by axis parents annotations */
 export function getAxesTree(rootAxis: AxisSpec): AxisTree {
-  const root: AxisTree = { axis: rootAxis, id: canonicalizeJson(rootAxis), children: [] };
+  const root = makeAxisTree(rootAxis);
   let nodesQ = [root];
   while (nodesQ.length) {
-    const nextNodes = [];
+    const nextNodes: AxisTree[] = [];
     for (const node of nodesQ) {
-      const childrenNodes = getAxisParents(node.axis);
-      node.children = childrenNodes.map((axis) => ({ axis, id: canonicalizeJson(axis), children: [] }));
+      node.children = getAxisParents(node.axis).map(makeAxisTree);
       nextNodes.push(...node.children);
     }
     nodesQ = nextNodes;
@@ -37,7 +51,7 @@ export function getAxesTree(rootAxis: AxisSpec): AxisTree {
 
 /** Get set of canonicalized axisSpecs from axisTree */
 export function setFromAxisTree(tree: AxisTree): Set<CanonicalizedJson<AxisSpec>> {
-  const set: Set<CanonicalizedJson<AxisSpec>> = new Set([canonicalizeJson(tree.axis)]);
+  const set = new Set([tree.id]);
   let nodesQ = [tree];
   while (nodesQ.length) {
     const nextNodes = [];
@@ -54,7 +68,7 @@ export function setFromAxisTree(tree: AxisTree): Set<CanonicalizedJson<AxisSpec>
 
 /** Get array of axisSpecs from axisTree */
 export function arrayFromAxisTree(tree: AxisTree): AxisSpec[] {
-  const res: AxisSpec[] = [tree.axis];
+  const res = [tree.axis];
   let nodesQ = [tree];
   while (nodesQ.length) {
     const nextNodes = [];
@@ -71,30 +85,37 @@ export function arrayFromAxisTree(tree: AxisTree): AxisSpec[] {
 
 /**  Split array of axes into several arrays by parents: axes of one group are parents for each other.
      There are no order inside every group. */
-export function getAxesGroups(axisSpecs: AxisSpec[]): AxisSpec[][] {
-  if (!axisSpecs.length) {
-    return [];
+export function getAxesGroups(axesSpec: AxesSpec): AxisSpec[][] {
+  switch (axesSpec.length) {
+    case 0: return [];
+    case 1: return [[axesSpec[0]]];
+    default: break;
   }
-  if (axisSpecs.length === 1) {
-    return [[axisSpecs[0]]];
-  }
-  const axisKeys = axisSpecs.map(canonicalizeJson);
-  const axisParentsIdxs = axisSpecs.map(
-    (spec) => getAxisParents(spec)
-      .map(canonicalizeJson)
-      .map((el) => axisKeys.indexOf(el)),
+
+  const axisKeys = axesSpec.map(canonicalizeJson);
+  const axisParentsIdxs = axesSpec.map(
+    (spec) => new Set(
+      getAxisParents(spec)
+        .map(canonicalizeJson)
+        .map((el) => {
+          const idx = axisKeys.indexOf(el);
+          if (idx === -1) {
+            throw new Error(`malformed axesSpec: ${JSON.stringify(axesSpec)}, unable to locate parent ${el}`);
+          }
+          return idx;
+        }),
+    ),
   );
 
   const groups: number[][] = []; // groups of axis indexes
-
-  axisSpecs.forEach((spec, idx) => {
+  axesSpec.forEach((_spec, idx) => {
     const parents = axisParentsIdxs[idx];
     let found = false;
 
     for (const group of groups) {
       for (const axisIdx of group) {
         const groupElParents = axisParentsIdxs[axisIdx];
-        if (parents.includes(axisIdx) || groupElParents.includes(idx)) {
+        if (parents.has(axisIdx) || groupElParents.has(idx)) {
           found = true;
           group.push(idx);
           break;
@@ -109,7 +130,7 @@ export function getAxesGroups(axisSpecs: AxisSpec[]): AxisSpec[][] {
     }
   });
 
-  return groups.map((group) => group.map((idx) => axisSpecs[idx]));
+  return groups.map((group) => group.map((idx) => axesSpec[idx]));
 }
 
 type AxesKey = CanonicalizedJson<AxisSpec[]>;
@@ -124,7 +145,7 @@ export function getCompositeLinkerMap(compositeLinkers: PColumnIdAndSpec[]): Com
   for (const linker of compositeLinkers) {
     const groups = getAxesGroups(linker.spec.axesSpec); // split input axes into groups by parent links from annotation
 
-    if (!groups || groups.length !== 2) {
+    if (groups.length !== 2) {
       continue;
     }
     const [left, right] = groups;
@@ -224,12 +245,17 @@ export function searchLinkerPath(
   return [];
 }
 
-export function getLinkerColumnsForAxes(
-  linkerColumnsMap: CompositeLinkerMap,
-  sourceAxes: AxisSpec[],
-  targetAxes: AxisSpec[],
-  throwErrorForNotLinkedTargetAxis = true,
-): PColumnIdAndSpec[] {
+export function getLinkerColumnsForAxes({
+  linkerMap: linkerColumnsMap,
+  from: sourceAxes,
+  to: targetAxes,
+  throwWhenNoLinkExists = true,
+}: {
+  linkerMap: CompositeLinkerMap;
+  from: AxisSpec[];
+  to: AxisSpec[];
+  throwWhenNoLinkExists?: boolean;
+}): PColumnIdAndSpec[] {
   // start keys - all possible keys in linker map using sourceAxes (for example, all axes of block's columns or all axes of columns in data-inputs)
   const startKeys: AxesKey[] = sourceAxes.map((axis) => canonicalizeJson(arrayFromAxisTree(getAxesTree(axis))));
   // target keys contain all axes to be linked; if some of target axes has parents they must be in the key
@@ -250,7 +276,7 @@ export function getLinkerColumnsForAxes(
         break;
       }
     }
-    if (!path.length && throwErrorForNotLinkedTargetAxis) {
+    if (!path.length && throwWhenNoLinkExists) {
       throw Error(`Unable to find linker column for ${targetKey}`);
     }
     for (const linker of path) {
