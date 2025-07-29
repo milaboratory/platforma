@@ -107,28 +107,44 @@ export function getAxesGroups(axesSpec: AxesSpec): AxisSpec[][] {
     ),
   );
 
+  const allIdxs = axesSpec.map((_spec, idx) => idx);
   const groups: number[][] = []; // groups of axis indexes
-  axesSpec.forEach((_spec, idx) => {
-    const parents = axisParentsIdxs[idx];
-    let found = false;
 
-    for (const group of groups) {
-      for (const axisIdx of group) {
-        const groupElParents = axisParentsIdxs[axisIdx];
-        if (parents.has(axisIdx) || groupElParents.has(idx)) {
-          found = true;
-          group.push(idx);
-          break;
-        }
+  let currentGroup = [0];
+  let nextElsOfCurrentGroup = [0];
+  const usedIdxs = new Set([0]);
+
+  while (currentGroup.length) {
+    while (nextElsOfCurrentGroup.length) {
+      const next = new Set<number>();
+      for (const groupIdx of nextElsOfCurrentGroup) {
+        const groupElementParents = axisParentsIdxs[groupIdx];
+        allIdxs.forEach((idx) => {
+          if (idx === groupIdx || usedIdxs.has(idx)) {
+            return;
+          }
+          const parents = axisParentsIdxs[idx];
+          if (parents.has(groupIdx) || groupElementParents.has(idx)) {
+            currentGroup.push(idx);
+            next.add(idx);
+            usedIdxs.add(idx);
+          }
+        });
       }
-      if (found) {
-        break;
-      }
+      nextElsOfCurrentGroup = [...next];
     }
-    if (!found) {
-      groups.push([idx]);
+
+    groups.push([...currentGroup]);
+    const nextFreeEl = allIdxs.find((idx) => !usedIdxs.has(idx));
+    if (nextFreeEl !== undefined) {
+      currentGroup = [nextFreeEl];
+      nextElsOfCurrentGroup = [nextFreeEl];
+      usedIdxs.add(nextFreeEl);
+    } else {
+      currentGroup = [];
+      nextElsOfCurrentGroup = [];
     }
-  });
+  }
 
   return groups.map((group) => group.map((idx) => axesSpec[idx]));
 }

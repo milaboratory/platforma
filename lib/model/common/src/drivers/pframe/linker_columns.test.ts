@@ -123,6 +123,33 @@ describe('Linker columns', () => {
         expect(arrayFromAxisTree(tree).length).toBe(4);
 
         for (const group of allPermutations([axisA, axisB, axisC, axisD])) {
+            expect(getAxesGroups(group).length).toBe(1);
+        }
+
+        const axisD2 = makeTestAxis({ name: 'd' });
+        const axisC2 = makeTestAxis({ name: 'c', parents: [axisD2] });
+        const axisB2 = makeTestAxis({ name: 'b' });
+        const axisA2 = makeTestAxis({ name: 'a', parents: [axisB2] });
+
+        for (const group of allPermutations([axisA2, axisB2, axisC2, axisD2])) {
+            expect(getAxesGroups(group).length).toBe(2);
+        }
+
+        const axisD3 = makeTestAxis({ name: 'd' });
+        const axisC3 = makeTestAxis({ name: 'c' });
+        const axisB3 = makeTestAxis({ name: 'b' });
+        const axisA3 = makeTestAxis({ name: 'a', parents: [axisB3] });
+
+        for (const group of allPermutations([axisA3, axisB3, axisC3, axisD3])) {
+            expect(getAxesGroups(group).length).toBe(3);
+        }
+
+        const axisD4 = makeTestAxis({ name: 'd' });
+        const axisC4 = makeTestAxis({ name: 'c' });
+        const axisB4 = makeTestAxis({ name: 'b' });
+        const axisA4 = makeTestAxis({ name: 'a' });
+
+        for (const group of allPermutations([axisA4, axisB4, axisC4, axisD4])) {
             expect(getAxesGroups(group).length).toBe(4);
         }
     })
