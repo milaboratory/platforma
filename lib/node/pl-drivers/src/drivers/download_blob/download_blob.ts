@@ -658,30 +658,45 @@ class LastLinesGetter {
 
 /** Gets last lines from a file by reading the file from the top and keeping
  * last N lines in a window queue. */
-function getLastLines(fPath: string, nLines: number, patternToSearch?: string): Promise<string> {
-  const inStream = fs.createReadStream(fPath);
-  const outStream = new Writable();
+async function getLastLines(fPath: string, nLines: number, patternToSearch?: string): Promise<string> {
+  let inStream: fs.ReadStream | undefined;
+  let rl: readline.Interface | undefined;
 
-  return new Promise((resolve, reject) => {
-    const rl = readline.createInterface(inStream, outStream);
+  try {
+    inStream = fs.createReadStream(fPath);
+    rl = readline.createInterface({ input: inStream, crlfDelay: Infinity });
 
     const lines = new Denque();
-    rl.on('line', function (line) {
-      if (patternToSearch != undefined && !line.includes(patternToSearch)) return;
+
+    for await (const line of rl) {
+      if (patternToSearch != undefined && !line.includes(patternToSearch)) continue;
 
       lines.push(line);
       if (lines.length > nLines) {
         lines.shift();
       }
-    });
+    }
 
-    rl.on('error', reject);
+    // last EOL is for keeping backward compat with platforma implementation.
+    return lines.toArray().join(os.EOL) + os.EOL;
+  } finally {
+    // Cleanup resources in finally block to ensure they're always cleaned up
+    try {
+      if (rl) {
+        rl.close();
+      }
+    } catch (cleanupError) {
+      console.error('Error closing readline interface:', cleanupError);
+    }
 
-    rl.on('close', function () {
-      // last EOL is for keeping backward compat with platforma implementation.
-      resolve(lines.toArray().join(os.EOL) + os.EOL);
-    });
-  });
+    try {
+      if (inStream && !inStream.destroyed) {
+        inStream.destroy();
+      }
+    } catch (cleanupError) {
+      console.error('Error destroying read stream:', cleanupError);
+    }
+  }
 }
 
 function validateDownloadableResourceType(methodName: string, rType: ResourceType) {
