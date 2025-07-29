@@ -1,4 +1,6 @@
-import {AxisSpec, canonicalizeJson, PColumnIdAndSpec, PObjectId} from '@milaboratories/pl-model-common';
+import {AxisSpec, PColumnIdAndSpec} from './spec/index';
+import {PObjectId} from '../../pool';
+import {canonicalizeJson} from '../../json'
 import {describe, expect, test} from 'vitest';
 import {arrayFromAxisTree, getAxesGroups, getAxesRoots, getAxesTree, getCompositeLinkerMap, getLinkerColumnsForAxes, getReachableByLinkersAxesFromAxes, setFromAxisTree} from './linker_columns';
 

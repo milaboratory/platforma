@@ -1,5 +1,6 @@
-import type { AxisSpec, CanonicalizedJson, PColumnIdAndSpec } from '@milaboratories/pl-model-common';
-import { canonicalizeJson } from '@milaboratories/pl-model-common';
+import type { CanonicalizedJson } from '../../json';
+import { canonicalizeJson } from '../../json';
+import type { AxisSpec, PColumnIdAndSpec } from './spec/spec';
 
 export const PARENTS_ANNOTATION = 'pl7.app/parents';
 
