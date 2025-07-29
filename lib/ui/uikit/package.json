@@ -15,10 +15,10 @@
     "./svg/images/*": "./src/assets/images/*"
   },
   "scripts": {
-    "dev": "ts-builder serve --target browser-lib --build-config ./build.browser-lib.config.js",
-    "build": "ts-builder build --target browser-lib --build-config ./build.browser-lib.config.js",
-    "watch": "ts-builder build --target browser-lib --watch --build-config ./build.browser-lib.config.js",
-    "type-check": "ts-builder types --target browser-lib",
+    "dev": "npx ts-builder serve --target browser-lib --build-config ./build.browser-lib.config.js",
+    "build": "npx ts-builder build --target browser-lib --build-config ./build.browser-lib.config.js",
+    "watch": "npx ts-builder build --target browser-lib --watch --build-config ./build.browser-lib.config.js",
+    "type-check": "npx ts-builder types --target browser-lib",
     "test:unit": "vitest run",
     "test": "vitest run",
     "create-svg-components": "node scripts/create-svg-components.js",

@@ -25,9 +25,9 @@
     "vitest": "catalog:"
   },
   "scripts": {
-    "dev": "ts-builder serve --target browser-lib --build-config ./build.config.mjs",
+    "dev": "npx ts-builder serve --target browser-lib --build-config ./build.config.mjs",
     "do-pack": "rm -f *.tgz && npm run pack && mv *.tgz package.tgz",
-    "build": "ts-builder build --target browser-lib --build-config ./build.config.mjs",
+    "build": "npx ts-builder build --target browser-lib --build-config ./build.config.mjs",
     "test": "exit 0",
     "test-cypress": "npm run build && cypress run",
     "test-open": "npm run build && cypress open"
