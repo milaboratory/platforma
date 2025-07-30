@@ -22,6 +22,8 @@ import {
   Annotation,
   readAnnotation,
   getNormalizedAxesList,
+  stringifyJson,
+  readAnnotationJson,
 } from '@milaboratories/pl-model-common';
 import type { PColumnDataUniversal, RenderCtx } from '../render';
 import { PColumnCollection, TreeNodeAccessor } from '../render';
@@ -58,8 +60,8 @@ function getKeysCombinations(idsLists: AxisId[][]) {
 }
 
 /** Check if column is a linker column */
-export function isLinkerColumn(column: PColumnSpec) {
-  return readAnnotation(column, Annotation.IsLinkerColumn) === 'true';
+export function isLinkerColumn(column: PColumnSpec): boolean {
+  return !!readAnnotationJson(column, Annotation.IsLinkerColumn);
 }
 
 type AxesVault = Map<CanonicalizedJson<AxisId>, AxisSpecNormalized>;
@@ -164,7 +166,7 @@ function getAdditionalColumnsForColumn(
 
     const annotations: Annotation = {
       ...column.spec.annotations,
-      [Annotation.Graph.IsVirtual]: 'true',
+      [Annotation.Graph.IsVirtual]: stringifyJson(true),
     };
     if (label || labelDomainPart) {
       annotations[Annotation.Label] = label && labelDomainPart ? label + ' / ' + labelDomainPart : label + labelDomainPart;

@@ -24,6 +24,7 @@ import {
   pTableValue,
   readAnnotation,
   Annotation,
+  readAnnotationJson,
 } from '@platforma-sdk/model';
 import { ref, watch } from 'vue';
 import { highlightByChemicalProperties } from './chemical-properties';
@@ -126,7 +127,7 @@ async function getLabelColumnsOptions({
   });
 
   for (const { columnId, spec } of compatibleColumns) {
-    const columnIdJson = canonicalizeJson({ type: 'column', id: columnId });
+    const columnIdJson = canonicalizeJson({ type: 'column', id: columnId } satisfies PTableColumnId);
     if (optionMap.has(columnIdJson)) continue;
     optionMap.set(
       columnIdJson,
@@ -170,7 +171,7 @@ async function getMarkupColumnsOptions({
   }
   return columns.values()
     .filter((column) =>
-      readAnnotation(column.spec, Annotation.Sequence.IsAnnotation) === 'true'
+      !!readAnnotationJson(column.spec, Annotation.Sequence.IsAnnotation)
       && isJsonEqual(sequenceColumn.spec.axesSpec, column.spec.axesSpec)
       && Object.entries(sequenceColumn.spec.domain ?? {}).every((
         [key, value],
@@ -388,8 +389,7 @@ async function getMultipleAlignmentData({
         return markupAlignedSequence(sequences[row][0], markup);
       },
     );
-    const labelsAnnotation = readAnnotation(markupColumn.spec.spec, Annotation.Sequence.Annotation.Mapping);
-    const labels: Record<string, string> = labelsAnnotation ? parseJson(labelsAnnotation) : {};
+    const labels = readAnnotationJson(markupColumn.spec.spec, Annotation.Sequence.Annotation.Mapping) ?? {};
     result.highlightImage = highlightByMarkup({
       markupRows,
       columnCount: concatenatedSequences.at(0)?.length ?? 0,

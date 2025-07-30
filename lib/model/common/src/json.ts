@@ -9,14 +9,14 @@ type JsonValue = JsonPrimitive | JsonValue[] | {
 // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
 type NotAssignableToJson = bigint | symbol | Function;
 
-export type JsonCompatible<T> = unknown extends T ? never : {
+export type JsonCompatible<T> = unknown extends T ? unknown : {
   [P in keyof T]:
   T[P] extends JsonValue ? T[P] :
     T[P] extends NotAssignableToJson ? never :
       JsonCompatible<T[P]>;
 };
 
-export type StringifiedJson<T> = JsonCompatible<T> extends never ? never : string & {
+export type StringifiedJson<T = unknown> = JsonCompatible<T> extends never ? never : string & {
   __json_stringified: T;
 };
 
@@ -24,7 +24,7 @@ export function stringifyJson<T>(value: JsonCompatible<T>): StringifiedJson<T> {
   return JSON.stringify(value)! as StringifiedJson<T>;
 }
 
-export type CanonicalizedJson<T> = JsonCompatible<T> extends never ? never : string & {
+export type CanonicalizedJson<T = unknown> = JsonCompatible<T> extends never ? never : string & {
   __json_canonicalized: T;
 };
 

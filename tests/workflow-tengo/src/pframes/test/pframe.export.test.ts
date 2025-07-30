@@ -1,4 +1,4 @@
-import { Annotation, type DriverKit, Pl } from '@milaboratories/pl-middle-layer';
+import { Annotation, type DriverKit, Pl, stringifyJson } from '@milaboratories/pl-middle-layer';
 import { awaitStableState, tplTest } from '@platforma-sdk/test';
 import * as env from '../../test/env';
 
@@ -45,7 +45,7 @@ tplTest('should export files for p-frame without skipExportForUI annotation', { 
 
 tplTest('should not export files for p-frame with hideDataFromUi annotation', { timeout: 40000 },
   async ({ helper, expect, driverKit }) => {
-    const spec = { ...baseSpec, annotations: { [Annotation.HideDataFromUi]: 'true' } satisfies Annotation };
+    const spec = { ...baseSpec, annotations: { [Annotation.HideDataFromUi]: stringifyJson(true) } satisfies Annotation };
     const fileHandle = await importFile(driverKit);
 
     const result = await helper.renderTemplate(

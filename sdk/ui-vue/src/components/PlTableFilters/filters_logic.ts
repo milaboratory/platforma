@@ -17,6 +17,7 @@ import {
   Domain,
   readAnnotation,
   parseJson,
+  readAnnotationJson,
 } from '@platforma-sdk/model';
 import semver from 'semver';
 import type { ListOption } from '@milaboratories/uikit';
@@ -225,18 +226,16 @@ export function parseNumber(column: PTableColumnSpec, value: string): number {
   const type = column.type === 'column' ? column.spec.valueType : column.spec.type;
   if ((type === 'Int' || type === 'Long') && !Number.isInteger(parsed)) throw Error('Model value is not an integer.');
 
-  const min = readAnnotation(column.spec, Annotation.Min);
+  const min = readAnnotationJson(column.spec, Annotation.Min);
   if (min !== undefined) {
-    const minValue = Number(min);
-    if (Number.isFinite(minValue) && parsed < Number(min)) {
+    if (Number.isFinite(min) && parsed < min) {
       throw Error('Model value is too low.');
     }
   }
 
-  const max = readAnnotation(column.spec, Annotation.Max);
+  const max = readAnnotationJson(column.spec, Annotation.Max);
   if (max !== undefined) {
-    const maxValue = Number(max);
-    if (Number.isFinite(maxValue) && parsed > Number(max)) {
+    if (Number.isFinite(max) && parsed > max) {
       throw Error('Model value is too high.');
     }
   }
