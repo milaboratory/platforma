@@ -13,21 +13,21 @@ jobs:
   init:
     runs-on: ubuntu-latest
     steps:
-      - uses: milaboratory/github-ci/actions/context/init@v4
+      - uses: milaboratory/github-ci/actions/context/init@v4-beta
         with:
           version-canonize: false
           branch-versioning: main
   run:
     needs:
       - init
-    uses: milaboratory/github-ci/.github/workflows/node-simple-pnpm.yaml@v4
+    uses: milaboratory/github-ci/.github/workflows/node-simple-pnpm.yaml@v4-beta
     with:
       app-name: Platforma SDK
       app-name-slug: 'platforma-sdk'
       gha-runner-label: 'dev-pl-sdk'
       notify-telegram: true
       node-version: '20.x'
-      team-id: 'ci-010010'
+      team-id: 'ci-docker-010010'
       build-script-name: 'build'
       test: true
       test-script-name: 'test'
