@@ -203,7 +203,7 @@ workflow := func() {
 					ll.panic("format must be 'csv', 'tsv', or 'ndjson'. Got: %v", opts.format)
 				}
 				if !is_undefined(finalFormat) && finalFormat != opts.format {
-					ll.panic("format and xsvType from structural input cannot be used together. Got: %v and %v", opts.format, opts.xsvType)
+					ll.panic("format and xsvType from structural input cannot be used together. Got: %v and %v", opts.format, finalFormat)
 				}
 				finalFormat = opts.format
 			} else if !is_undefined(opts.xsvType) {
@@ -211,7 +211,7 @@ workflow := func() {
 					ll.panic("xsvType must be 'csv' or 'tsv'. Got: %v", opts.xsvType)
 				}
 				if !is_undefined(finalFormat) && finalFormat != opts.xsvType {
-					ll.panic("opts.xsvType and xsvType from structural input cannot be used together. Got: %v and %v", opts.format, opts.xsvType)
+					ll.panic("opts.xsvType and xsvType from structural input cannot be used together. Got: %v and %v", opts.xsvType, finalFormat)
 				}
 				finalFormat = opts.xsvType
 			}
@@ -255,7 +255,7 @@ workflow := func() {
 
 			if !is_undefined(opts.nRows) {
 				if !is_int(opts.nRows) || opts.nRows < 0 {
-					ll.panic("'nRows' option must be a positive integer. Got: %v", opts.nRows)
+					ll.panic("'nRows' option must be a non-negative integer. Got: %v", opts.nRows)
 				}
 				nRowsOpt = opts.nRows
 			}
