@@ -150,6 +150,11 @@ export interface AxisSpec {
   readonly parentAxes?: number[];
 }
 
+/** Parents are specs, not indexes; normalized axis can be used considering its parents independently from column */
+export interface AxisSpecNormalized extends Omit<AxisSpec, 'parentAxes'> {
+  parentAxesSpec: AxisSpecNormalized[];
+}
+
 /** Common type representing spec for all the axes in a column */
 export type AxesSpec = AxisSpec[];
 
