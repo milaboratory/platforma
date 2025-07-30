@@ -1,0 +1,93 @@
+self := import("@platforma-sdk/workflow-tengo:tpl")
+pt := import("@platforma-sdk/workflow-tengo:pt")
+file := import("@platforma-sdk/workflow-tengo:file")
+
+self.defineOutputs("out_ndjson_basic", "out_ndjson_limited", "out_ndjson_to_csv", "out_csv_to_ndjson")
+
+self.body(func(inputs) {
+    // Test data as NDJSON string content
+    ndjsonContent := `{"id": 1, "name": "Alice", "score": 95.5, "active": true}
+{"id": 2, "name": "Bob", "score": 87.2, "active": false}
+{"id": 3, "name": "Charlie", "score": 92.1, "active": true}
+{"id": 4, "name": "Diana", "score": 98.7, "active": true}
+{"id": 5, "name": "Eve", "score": 83.4, "active": false}`
+
+    // CSV test data for conversion testing
+    csvContent := `id,name,score,active
+1,Alice,95.5,true
+2,Bob,87.2,false
+3,Charlie,92.1,true`
+
+    wf := pt.workflow()
+
+    // Test 1: Basic NDJSON reading and writing with explicit format
+    dfNdjsonBasic := wf.frame(ndjsonContent, {
+        format: "ndjson",
+        id: "ndjsonBasic"
+    })
+
+    // Add a computed column and save as NDJSON
+    dfProcessed := dfNdjsonBasic.withColumns(
+        pt.col("score").plus(pt.lit(10)).alias("score_bonus")
+    )
+    dfProcessed.save("output_ndjson_basic.ndjson")
+
+    // Test 2: NDJSON reading with nRows limit and schema override
+    dfNdjsonLimited := wf.frame(ndjsonContent, {
+        format: "ndjson",
+        nRows: 3,
+        schema: [
+            {column: "id", type: "Int64"},
+            {column: "name", type: "String"},
+            {column: "score", type: "Float64"}
+        ],
+        id: "ndjsonLimited"
+    })
+
+    // Filter and save with explicit format override
+    dfFilteredActive := dfNdjsonLimited.filter(
+        pt.col("active").eq(pt.lit(true))
+    )
+    dfFilteredActive.save("output_ndjson_limited.jsonl", {format: "ndjson"})
+
+    // Test 3: Auto-detection - NDJSON to CSV conversion
+    dfNdjsonAuto := wf.frame(ndjsonContent, {
+        fileName: "data.ndjson",  // Auto-detect format from extension
+        id: "ndjsonAuto"
+    })
+
+    // Save as CSV (format conversion)
+    dfSortedByScore := dfNdjsonAuto.sort(
+        [pt.col("score")],
+        {descending: [true]}
+    )
+    dfSortedByScore.save("output_ndjson_to_csv.csv")
+
+    // Test 4: CSV to NDJSON conversion
+    dfCsv := wf.frame(csvContent, {
+        fileName: "input.csv",  // Auto-detect CSV format
+        id: "csvInput"
+    })
+
+    // Add computed columns and save as NDJSON
+    dfEnriched := dfCsv.withColumns(
+        pt.col("score").gt(pt.lit(90)).alias("high_performer"),
+        pt.concatStr([pt.col("name"), " (", pt.col("id"), ")"], {delimiter: ""}).alias("display_name")
+    ).select(
+        "id",
+        "display_name",
+        "score",
+        "active",
+        "high_performer"
+    )
+    dfEnriched.save("output_csv_to_ndjson.ndjson")
+
+    ptablerResult := wf.run()
+
+    return {
+        out_ndjson_basic: file.exportFile(ptablerResult.getFile("output_ndjson_basic.ndjson")),
+        out_ndjson_limited: file.exportFile(ptablerResult.getFile("output_ndjson_limited.jsonl")),
+        out_ndjson_to_csv: file.exportFile(ptablerResult.getFile("output_ndjson_to_csv.csv")),
+        out_csv_to_ndjson: file.exportFile(ptablerResult.getFile("output_csv_to_ndjson.ndjson"))
+    }
+})

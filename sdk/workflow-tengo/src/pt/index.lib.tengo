@@ -50,6 +50,19 @@ _newDataFrameGroupBy := undefined
 
 workflowCounter := 0
 
+
+// Helper function to detect file format from file name extension
+_detectFormatFromFileName := func(fileName) {
+	if text.has_suffix(fileName, ".csv") {
+		return "csv"
+	} else if text.has_suffix(fileName, ".tsv") {
+		return "tsv"
+	} else if text.has_suffix(fileName, ".ndjson") || text.has_suffix(fileName, ".jsonl") {
+		return "ndjson"
+	}
+	return undefined // No format detected
+}
+
 /**
  * Creates a new workflow. Workflow serves as a main object, that allows to build a PTabler pipeline,
  * using convenient Polars DataFrames API.
@@ -103,27 +116,37 @@ workflow := func() {
 		 *
 		 * @param frameInput {object|string} - The input source. Can be:
 		 *   - A resource reference (e.g., `inputs.myFile`).
-		 *   - A string containing the raw content of the file (e.g., "colA\\tcolB\\n1\\t2").
+		 *   - A string containing the raw content of the file (e.g., "colA\\tcolB\\n1\\t2" or NDJSON content).
 		 *   - A map with the following fields (i.e. result of `xsvFileBuilder.buildForPT()`):
 		 *     - `file` {object}: A resource reference to the input file.
 		 *     - `xsvType` {string}: The type of the file, either "csv" or "tsv".
 		 *     - `schema` {map} (optional): A PTabler schema definition for the input file.
 		 * @param ...optionsRaw {map} (optional) - A single map argument for additional options:
-		 *   - `xsvType` {string}: The type of the file ("csv" or "tsv"). Required if `frameInput` is a direct file reference or content,
-		 *                         and cannot be inferred. Overrides `xsvType` from structural input if provided there.
+		 *   - `format` {string}: The file format ("csv", "tsv", or "ndjson"). Takes priority over `xsvType`.
+		 *                        If not provided, auto-detects from file extension or uses `xsvType`.
+		 *   - `xsvType` {string}: The type of the file ("csv" or "tsv"). For backward compatibility.
+		 *                         Required if `frameInput` is direct content/reference and `format` is not provided.
 		 *   - `id` {string} (optional): A specific ID to assign to this DataFrame. If not provided, an anonymous ID is generated.
 		 *   - `fileName` {string} (optional): A specific name for the input file within PTabler. If not provided, an anonymous name is generated.
 		 *   - `inferSchema` {boolean} (optional): Whether to infer the schema from the input file. Defaults to `true`. If `false`,
-		 *                                        type inference is disabled, and types will rely on the `schema` field (if provided
-		 *                                        in a structural input) or PTabler's defaults.
+		 *                                        type inference is disabled, and types will rely on the `schema` field or PTabler's defaults.
+		 *   - `nRows` {int} (optional): Stop reading after this many rows. If not specified, all rows will be read.
+		 *   - `ignoreErrors` {boolean} (optional): Return null if parsing fails due to schema mismatches. Defaults to `false`.
 		 * @returns {object} - A DataFrame object representing the loaded data.
 		 * @example
-		 *   // From a resource reference (assuming TSV)
-		 *   df1 := wf.frame(inputs.myTsvFile, {xsvType: "tsv"})
+		 *   // NDJSON from file reference
+		 *   df := wf.frame(inputs.dataFile, {format: "ndjson"})
+		 *
+		 *   // NDJSON with row limit and schema override
+		 *   df := wf.frame(inputs.largeFile, {
+		 *     format: "ndjson",
+		 *     nRows: 10000,
+		 *     schema: [{column: "id", type: "Int64"}]
+		 *   })
 		 *
 		 *   // From string content (CSV)
 		 *   csvContent := "header1,header2\\nvalue1,value2"
-		 *   df2 := wf.frame(csvContent, {xsvType: "csv", id: "myCsvData"})
+		 *   df2 := wf.frame(csvContent, {format: "csv", id: "myCsvData"})
 		 *
 		 *   // From a structured input (e.g., using output from xsvFileBuilder)
 		 *   // xsvBuilderOutput := xsv.xsvFileBuilder("tsv").add(...).buildForPT()
@@ -145,9 +168,11 @@ workflow := func() {
 			inputXsvType := undefined
 			finalDataFrameId := undefined
 			finalFileName := undefined
-			finalXsvType := undefined
+			finalFormat := undefined
 			inferSchemaOpt := undefined
 			optionsSchema := undefined
+			nRowsOpt := undefined
+			ignoreErrorsOpt := undefined
 
 			isStructuralInput := is_map(frameInput) && !is_undefined(frameInput.file)
 
@@ -162,7 +187,7 @@ workflow := func() {
 					inputSchema = frameInput.schema
 				}
 
-				finalXsvType = inputXsvType
+				finalFormat = inputXsvType
 			} else {
 				if smart.isReference(frameInput) {
 					fileRef = frameInput
@@ -172,14 +197,24 @@ workflow := func() {
 				}
 			}
 
-			ll.assert(is_undefined(finalXsvType) || is_undefined(opts.xsvType), "xsvType option cannot be used with structural input as xsvType is already defined in the input structure")
-
-			if !is_undefined(opts.xsvType) {
-				finalXsvType = opts.xsvType
+			// Format resolution logic: format > xsvType > auto-detection
+			if !is_undefined(opts.format) {
+				if opts.format != "csv" && opts.format != "tsv" && opts.format != "ndjson" {
+					ll.panic("format must be 'csv', 'tsv', or 'ndjson'. Got: %v", opts.format)
+				}
+				if !is_undefined(finalFormat) && finalFormat != opts.format {
+					ll.panic("format and xsvType from structural input cannot be used together. Got: %v and %v", opts.format, opts.xsvType)
+				}
+				finalFormat = opts.format
+			} else if !is_undefined(opts.xsvType) {
+				if opts.xsvType != "csv" && opts.xsvType != "tsv" {
+					ll.panic("xsvType must be 'csv' or 'tsv'. Got: %v", opts.xsvType)
+				}
+				if !is_undefined(finalFormat) && finalFormat != opts.xsvType {
+					ll.panic("opts.xsvType and xsvType from structural input cannot be used together. Got: %v and %v", opts.format, opts.xsvType)
+				}
+				finalFormat = opts.xsvType
 			}
-
-			ll.assert(!is_undefined(finalXsvType), "xsvType option is required for direct file input")
-			ll.assert(finalXsvType == "csv" || finalXsvType == "tsv", "xsvType must be 'csv' or 'tsv'")
 
 			if !is_undefined(opts.id) {
 				finalDataFrameId = opts.id
@@ -189,11 +224,21 @@ workflow := func() {
 
 			if !is_undefined(opts.fileName) {
 				finalFileName = opts.fileName
+				if is_undefined(finalFormat) {
+					detectedFormat := _detectFormatFromFileName(finalFileName)
+					if !is_undefined(detectedFormat) {
+						finalFormat = detectedFormat
+					}
+				}
 			} else {
-				finalFileName = self._newAnonymousFileId(finalXsvType)
+				finalFileName = self._newAnonymousFileId(finalFormat)
 			}
 
-			// Handle inferSchema option
+			// Final validation - format must be determined by now
+			if is_undefined(finalFormat) {
+				ll.panic("Unable to determine file format. Please specify 'format' or 'xsvType' option, or use a fileName with a recognizable extension (.csv, .tsv, .ndjson, .jsonl)")
+			}
+
 			if !is_undefined(opts.inferSchema) {
 				if !is_bool(opts.inferSchema) {
 					ll.panic("'inferSchema' option must be a boolean. Got: %T", opts.inferSchema)
@@ -201,7 +246,6 @@ workflow := func() {
 				inferSchemaOpt = opts.inferSchema
 			}
 
-			// Handle schema option from opts
 			if !is_undefined(opts.schema) {
 				if !is_array(opts.schema) {
 					ll.panic("'schema' option (from options map) must be an array. Got: %T", opts.schema)
@@ -209,6 +253,21 @@ workflow := func() {
 				optionsSchema = opts.schema
 			}
 
+			if !is_undefined(opts.nRows) {
+				if !is_int(opts.nRows) || opts.nRows < 0 {
+					ll.panic("'nRows' option must be a positive integer. Got: %v", opts.nRows)
+				}
+				nRowsOpt = opts.nRows
+			}
+
+			if !is_undefined(opts.ignoreErrors) {
+				if !is_bool(opts.ignoreErrors) {
+					ll.panic("'ignoreErrors' option must be a boolean. Got: %T", opts.ignoreErrors)
+				}
+				ignoreErrorsOpt = opts.ignoreErrors
+			}
+
+			// Validation
 			if !is_undefined(fileRef) && !smart.isReference(fileRef) {
 				ll.panic("frameInput.file (for structural input) or frameInput (for direct reference) must be a valid resource reference. Got: %v", fileRef)
 			} else if !is_undefined(fileContent) && !is_string(fileContent) {
@@ -221,16 +280,26 @@ workflow := func() {
 				inFiles = append(inFiles, { content: fileContent, name: finalFileName })
 			}
 
-			readCsvStep := {
-				type: "read_csv",
-				file: finalFileName,
-				name: finalDataFrameId
-			}
+			// Generate appropriate step based on format
+			step := undefined
+			if finalFormat == "ndjson" {
+				step = {
+					type: "read_ndjson",
+					file: finalFileName,
+					name: finalDataFrameId
+				}
+			} else { // csv or tsv
+				step = {
+					type: "read_csv",
+					file: finalFileName,
+					name: finalDataFrameId
+				}
 
-			if finalXsvType == "csv" {
-				readCsvStep.delimiter = ","
-			} else if finalXsvType == "tsv" {
-				readCsvStep.delimiter = "\t"
+				if finalFormat == "csv" {
+					step.delimiter = ","
+				} else if finalFormat == "tsv" {
+					step.delimiter = "\t"
+				}
 			}
 
 			// Determine final schema for PTabler: optionsSchema (from opts) overrides inputSchema (from structural input)
@@ -241,17 +310,24 @@ workflow := func() {
 				finalSchemaToUse = inputSchema
 			}
 
+			// Add common optional fields to the step
 			if !is_undefined(finalSchemaToUse) {
-				readCsvStep.schema = finalSchemaToUse
+				step.schema = finalSchemaToUse
 			}
 
-			// Only add infer_schema to the step if it's explicitly set to false,
-			// as PTabler defaults to true.
 			if !is_undefined(inferSchemaOpt) && inferSchemaOpt == false {
-				readCsvStep.inferSchema = false
+				step.inferSchema = false
 			}
 
-			self.addRawStep(readCsvStep)
+			if !is_undefined(ignoreErrorsOpt) && ignoreErrorsOpt == true {
+				step.ignoreErrors = true
+			}
+
+			if !is_undefined(nRowsOpt) {
+				step.nRows = nRowsOpt
+			}
+
+			self.addRawStep(step)
 			return _newDataFrame(self, finalDataFrameId)
 		},
 
@@ -465,32 +541,52 @@ _newDataFrame = func(parentWorkflow, dfName) {
 			opts = options[0]
 		}
 
-		delimiter := undefined
-		if text.has_suffix(outputFile, ".csv") {
-			delimiter = ","
-		} else if text.has_suffix(outputFile, ".tsv") {
-			delimiter = "\t"
-		}
+		finalFormat := undefined
 
-		if !is_undefined(opts.xsvType) {
-			if opts.xsvType == "csv" {
-				delimiter = ","
-			} else if opts.xsvType == "tsv" {
-				delimiter = "\t"
-			} else {
-				ll.panic("Unsupported xsvType: %v", opts.xsvType)
+		// Format resolution: explicit format > xsvType > auto-detection from extension
+		if !is_undefined(opts.format) {
+			if opts.format != "csv" && opts.format != "tsv" && opts.format != "ndjson" {
+				ll.panic("format must be 'csv', 'tsv', or 'ndjson'. Got: %v", opts.format)
+			}
+			finalFormat = opts.format
+		} else if !is_undefined(opts.xsvType) {
+			if opts.xsvType != "csv" && opts.xsvType != "tsv" {
+				ll.panic("xsvType must be 'csv' or 'tsv'. Got: %v", opts.xsvType)
+			}
+			finalFormat = opts.xsvType
+		} else {
+			// Auto-detect from file extension
+			detectedFormat := _detectFormatFromFileName(outputFile)
+			if !is_undefined(detectedFormat) {
+				finalFormat = detectedFormat
 			}
 		}
 
-		if is_undefined(delimiter) {
-			ll.panic("Can't infer xsvType from outputFile extension, and xsvType is not specified in options")
+		if is_undefined(finalFormat) {
+			ll.panic("Unable to determine output format from file extension. Please specify 'format' or 'xsvType' option, or use a file name with a recognizable extension (.csv, .tsv, .ndjson, .jsonl)")
 		}
 
-		step := {
-			type: "write_csv",
-			table: dfName,
-			file: outputFile,
-			delimiter: delimiter
+		step := undefined
+		if finalFormat == "ndjson" {
+			step = {
+				type: "write_ndjson",
+				table: dfName,
+				file: outputFile
+			}
+		} else { // csv or tsv
+			delimiter := undefined
+			if finalFormat == "csv" {
+				delimiter = ","
+			} else if finalFormat == "tsv" {
+				delimiter = "\t"
+			}
+
+			step = {
+				type: "write_csv",
+				table: dfName,
+				file: outputFile,
+				delimiter: delimiter
+			}
 		}
 
 		if !is_undefined(opts.columns) {
@@ -586,16 +682,29 @@ _newDataFrame = func(parentWorkflow, dfName) {
 
 		/**
 		 * Saves the DataFrame to a file.
-		 * The file format (CSV/TSV) is inferred from the `outputFile` extension if not specified in options.
+		 * The file format is inferred from the `outputFile` extension if not specified in options.
+		 * Supports CSV, TSV, and NDJSON formats.
 		 *
-		 * @param outputFile {string} - The path/name of the file to save the DataFrame to (e.g., "result.csv", "data/output.tsv").
+		 * @param outputFile {string} - The path/name of the file to save the DataFrame to (e.g., "result.csv", "data/output.tsv", "output.ndjson").
 		 * @param ...options {map} (optional) - A single map argument for additional options:
-		 *   - `xsvType` {string} (optional): Specify "csv" or "tsv". Overrides inference from file extension.
+		 *   - `format` {string} (optional): Specify "csv", "tsv", or "ndjson". Takes priority over `xsvType` and overrides file extension inference.
+		 *   - `xsvType` {string} (optional): Specify "csv" or "tsv". For backward compatibility. Overridden by `format` if both provided.
 		 *   - `columns` {array} (optional): An array of column name strings to include in the output. If not provided, all columns are saved.
 		 * @returns {object} - The same DataFrame object (for chaining).
 		 * @example
+		 *   // Auto-detection from extension
 		 *   df.save("my_data.tsv")
+		 *   df.save("result.ndjson")
+		 *
+		 *   // Explicit format override
+		 *   df.save("data.txt", {format: "ndjson"})
+		 *
+		 *   // Column selection
 		 *   df.save("specific_cols.csv", {columns: ["id", "name", "value"]})
+		 *   df.save("subset.jsonl", {columns: ["id", "score"]})
+		 *
+		 *   // Backward compatibility
+		 *   df.save("legacy.csv", {xsvType: "csv"})
 		 */
 		save: func(outputFile, ...options) {
 			_addSaveStep(outputFile, options...)
@@ -609,16 +718,24 @@ _newDataFrame = func(parentWorkflow, dfName) {
 		 * Saves the DataFrame to a file and registers it to have its content accessible after `wf.run()`.
 		 * Useful when the content of the saved file needs to be read directly in the Tengo script
 		 * after the PTabler execution, rather than just being an output artifact.
-		 * The file format (CSV/TSV) is inferred from the `outputFile` extension if not specified in options.
+		 * The file format is inferred from the `outputFile` extension if not specified in options.
+		 * Supports CSV, TSV, and NDJSON formats.
 		 *
 		 * @param outputFile {string} - The path/name of the file.
 		 * @param ...options {map} (optional) - A single map argument for additional options:
-		 *   - `xsvType` {string} (optional): Specify "csv" or "tsv". Overrides inference from file extension.
+		 *   - `format` {string} (optional): Specify "csv", "tsv", or "ndjson". Takes priority over `xsvType` and overrides file extension inference.
+		 *   - `xsvType` {string} (optional): Specify "csv" or "tsv". For backward compatibility. Overridden by `format` if both provided.
 		 *   - `columns` {array} (optional): An array of column name strings to include.
 		 * @returns {object} - The same DataFrame object (for chaining).
 		 * @example
 		 *   // Content will be available via ptablerResult.getFileContent("report.csv")
 		 *   df.saveContent("report.csv")
+		 *
+		 *   // NDJSON content accessible after execution
+		 *   df.saveContent("data.ndjson")
+		 *
+		 *   // Explicit format override
+		 *   df.saveContent("output.txt", {format: "ndjson"})
 		 */
 		saveContent: func(outputFile, ...options) {
 			_addSaveStep(outputFile, options...)
