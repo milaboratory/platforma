@@ -3,8 +3,9 @@
   "version": "3.5.19",
   "description": "MiLaboratories Platforma Backend bootstrap code: configuration generators, service run wrappers and so on",
   "scripts": {
-    "type-check": "tsc --noEmit --composite false",
-    "build": "oclif-index && rollup -c",
+    "type-check": "ts-builder types --target node",
+    "build": "oclif-index && ts-builder build --target node",
+    "watch": "ts-builder build --target node --watch",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
     "test": "jest --passWithNoTests"
   },
@@ -35,7 +36,7 @@
     "ts-jest": "catalog:",
     "ts-node": "catalog:",
     "typescript": "catalog:",
-    "rollup": "catalog:"
+    "@milaboratories/ts-builder": "workspace:*"
   },
   "dependencies": {
     "@milaboratories/pl-deployments": "workspace:*",

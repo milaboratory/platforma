@@ -7,7 +7,8 @@
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "rollup -c && block-tools build-model"
+    "build": "ts-builder build --target block-model && block-tools build-model",
+    "type-check": "ts-builder types --target block-model"
   },
   "dependencies": {
     "@platforma-sdk/model": "workspace:*",
@@ -17,7 +18,7 @@
     "@platforma-sdk/block-tools": "workspace:*",
     "@milaboratories/build-configs": "workspace:*",
     "typescript": "catalog:",
-    "rollup": "catalog:",
+    "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*"
   }
 }

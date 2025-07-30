@@ -13,8 +13,8 @@
     }
   },
   "scripts": {
-    "type-check": "tsc --noEmit --composite false",
-    "build": "rollup -c",
+    "build": "ts-builder build --target node",
+    "type-check": "ts-builder types --target node",
     "lint": "eslint .",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
@@ -27,10 +27,9 @@
     "@oclif/core": "catalog:"
   },
   "devDependencies": {
+    "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/build-configs": "workspace:*",
     "typescript": "catalog:",
-    "vite": "catalog:",
-    "rollup": "catalog:",
     "@milaboratories/ts-configs": "workspace:*"
   }
 }

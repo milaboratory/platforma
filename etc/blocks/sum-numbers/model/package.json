@@ -8,7 +8,8 @@
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "rollup -c && block-tools build-model",
+    "build": "ts-builder build --target block-model && block-tools build-model",
+    "type-check": "ts-builder types --target block-model",
     "lint": "eslint ."
   },
   "dependencies": {
@@ -19,9 +20,9 @@
     "@platforma-sdk/block-tools": "workspace:*",
     "@platforma-sdk/eslint-config": "workspace:*",
     "@milaboratories/build-configs": "workspace:*",
+    "@milaboratories/ts-builder": "workspace:*",
     "eslint": "catalog:",
     "typescript": "catalog:",
-    "rollup": "catalog:",
     "@milaboratories/ts-configs": "workspace:*"
   }
 }

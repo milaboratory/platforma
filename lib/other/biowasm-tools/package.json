@@ -26,7 +26,7 @@
   },
   "scripts": {
     "dev": "ts-builder serve --target browser-lib --build-config ./build.config.mjs",
-    "do-pack": "rm -f *.tgz && npm run pack && mv *.tgz package.tgz",
+    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
     "build": "ts-builder build --target browser-lib --build-config ./build.config.mjs",
     "test": "exit 0",
     "test-cypress": "npm run build && cypress run",

@@ -55,7 +55,6 @@
     "vite": "catalog:",
     "vitest": "catalog:",
     "@vue/test-utils": "catalog:",
-    "vue-tsc": "catalog:",
     "yarpm": "catalog:",
     "fast-json-patch": "catalog:",
     "@faker-js/faker": "catalog:"

@@ -7,7 +7,9 @@
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "scripts": {
-    "build": "rollup -c",
+    "build": "ts-builder build --target node",
+    "type-check": "ts-builder types --target node",
+    "watch": "ts-builder build --target node --watch",
     "test": "true"
   },
   "bin": {
@@ -33,14 +35,13 @@
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
+    "@milaboratories/ts-builder": "workspace:*",
     "typescript": "catalog:",
-    "vite": "catalog:",
     "@types/jest": "catalog:",
     "@types/node": "catalog:",
     "jest": "catalog:",
     "@jest/globals": "catalog:",
     "ts-jest": "catalog:",
-    "@milaboratories/ts-configs": "workspace:*",
-    "rollup": "catalog:"
+    "@milaboratories/ts-configs": "workspace:*"
   }
 }
