@@ -8,10 +8,10 @@ import {
   UniqueValuesResponse
 } from '@milaboratories/pl-model-common';
 import { CreateTableRequestV3 } from './create_table';
-import { PTableV5 } from './table';
+import { PTableV6 } from './table';
 
 /** Read interface exposed by PFrames library */
-export interface PFrameReadAPIV7 {
+export interface PFrameReadAPIV8 {
   /**
    * Finds columns given filtering criteria on column name, annotations etc.
    * and a set of qualified axes specs to find only columns with compatible
@@ -32,7 +32,7 @@ export interface PFrameReadAPIV7 {
   listColumns(): Promise<PColumnInfo[]>;
 
   /** Calculates data for the table and returns an object to access it */
-  createTable(request: CreateTableRequestV3): PTableV5;
+  createTable(request: CreateTableRequestV3): PTableV6;
 
   /** Calculate set of unique values for a specific axis for the filtered set of records */
   getUniqueValues(

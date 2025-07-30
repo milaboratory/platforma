@@ -9,7 +9,9 @@ import type {
 import {
   canonicalizeJson,
   getAxisId,
+  isDataInfo,
   matchAxisId, parseJson,
+  visitDataInfo,
 } from '@milaboratories/pl-model-common';
 import type { PColumnDataUniversal, RenderCtx } from '../render';
 import { PColumnCollection, TreeNodeAccessor } from '../render';
@@ -47,7 +49,7 @@ function getKeysCombinations(idsLists: AxisId[][]) {
 
 /** Check if column is a linker column */
 export function isLinkerColumn(column: PColumnSpec) {
-  return column.axesSpec.length === 2 && column.annotations?.[LINKER_COLUMN_ANNOTATION] === 'true';
+  return column.annotations?.[LINKER_COLUMN_ANNOTATION] === 'true';
 }
 
 export const IS_VIRTUAL_COLUMN = 'pl7.app/graph/isVirtual'; // annotation for column duplicates with extended domains
@@ -203,6 +205,22 @@ function getAdditionalColumnsForColumn(
   return [column, ...additionalColumns];
 }
 
+export function isColumnReady(c: PColumn<PColumnDataUniversal>) {
+  let ready = true;
+  if (c.data instanceof TreeNodeAccessor) {
+    ready = ready && c.data.getIsReadyOrError();
+  } else if (isDataInfo(c.data)) {
+    visitDataInfo(c.data, (v) => {
+      ready = ready && v.getIsReadyOrError();
+    });
+  }
+  return ready;
+}
+
+export function allColumnsReady(columns: PColumn<PColumnDataUniversal>[]): boolean {
+  return columns.every(isColumnReady);
+}
+
 /**
  The aim of createPFrameForGraphs: to create pframe with block’s columns and all compatible columns from result pool
  (including linker columns and all label columns).
@@ -217,10 +235,37 @@ function getAdditionalColumnsForColumn(
  */
 export function createPFrameForGraphs<A, U>(
   ctx: RenderCtx<A, U>,
-  blockColumns: PColumn<PColumnDataUniversal>[] | undefined,
+  blockColumns?: PColumn<PColumnDataUniversal>[],
 ): PFrameHandle | undefined {
-  if (!blockColumns) return undefined;
+  // if current block doesn't produce own columns then use all columns from result pool
+  if (!blockColumns) {
+    const columns = new PColumnCollection();
+    columns.addColumnProvider(ctx.resultPool);
 
+    const allColumns = columns.getColumns(() => true, { dontWaitAllData: true, overrideLabelAnnotation: false }) ?? [];
+    // if at least one column is not yet ready, we can't show the graph
+    if (!allColumnsReady(allColumns)) {
+      return undefined;
+    }
+
+    const allAxes = new Map(allColumns
+      .flatMap((column) => column.spec.axesSpec)
+      .map((axisSpec) => {
+        const axisId = getAxisId(axisSpec);
+        return [canonicalizeJson(axisId), axisId];
+      }));
+
+    // additional columns are duplicates with extra fields in domains for compatibility if there are ones with partial match
+    const extendedColumns = enrichCompatible(allAxes, allColumns);
+
+    return ctx.createPFrame(extendedColumns);
+  };
+
+  if (!allColumnsReady(blockColumns)) {
+    return undefined;
+  }
+
+  // if current block has its own columns then take from result pool only compatible with them
   const columns = new PColumnCollection();
   columns.addColumnProvider(ctx.resultPool);
   columns.addColumns(blockColumns);
@@ -258,6 +303,11 @@ export function createPFrameForGraphs<A, U>(
     return false;
   }), { dontWaitAllData: true, overrideLabelAnnotation: false }) ?? []).filter((column) => !isLabelColumn(column.spec));
 
+  // if at least one column is not yet ready, we can't show the graph
+  if (!allColumnsReady(compatibleWithoutLabels)) {
+    return undefined;
+  }
+
   // extend axes set for label columns request
   for (const c of compatibleWithoutLabels) {
     for (const id of c.spec.axesSpec) {
@@ -277,18 +327,15 @@ export function createPFrameForGraphs<A, U>(
     return false;
   }), { dontWaitAllData: true, overrideLabelAnnotation: false }) ?? []).filter((column) => isLabelColumn(column.spec));
 
+  // if at least one column is not yet ready, we can't show the graph
+  if (!allColumnsReady(compatibleLabels)) {
+    return undefined;
+  }
+
   const compatible = [...compatibleWithoutLabels, ...compatibleLabels];
 
   // additional columns are duplicates with extra fields in domains for compatibility if there are ones with partial match
   const extendedColumns = enrichCompatible(blockAxes, compatible);
-
-  // if at least one column is not yet ready, we can't show the table
-  if (
-    extendedColumns.some(
-      (a) => a.data instanceof TreeNodeAccessor && !a.data.getIsReadyOrError(),
-    )
-  )
-    return undefined;
 
   return ctx.createPFrame(extendedColumns);
 }

@@ -4,15 +4,12 @@ import type {
   InferOutputsType,
   PColumn,
   PColumnValues,
-  PlDataTableState,
-  PlTableFiltersModel,
   PObjectId,
   PlDataTableStateV2,
   PlDataTableSheet,
 } from '@platforma-sdk/model';
 import {
   BlockModel,
-  createPlDataTable,
   createPlDataTableStateV2,
   createPlDataTableV2,
 } from '@platforma-sdk/model';
@@ -45,27 +42,23 @@ export function times<R>(n: number, cb: (i: number) => R): R[] {
 }
 
 export const $BlockArgs = z.object({
-  tableNumRows: z.number().default(100),
   numbers: z.array(z.coerce.number()),
   handles: z.array(ImportFileHandleSchema),
 });
 
 export type BlockArgs = z.infer<typeof $BlockArgs>;
 
-export type TableState = {
-  tableState: PlDataTableState;
-  filterModel: PlTableFiltersModel;
-};
-
-export type TableStateV2 = {
-  tableState: PlDataTableStateV2;
-  filterModel: PlTableFiltersModel;
-};
-
 export type UiState = {
-  dataTableState: TableState | undefined;
-  dataTableStateV2: TableStateV2;
+  dataTableV2: {
+    sourceId?: string;
+    numRows: number;
+    state: PlDataTableStateV2;
+  };
   dynamicSections: {
+    id: string;
+    label: string;
+  }[];
+  datasets: {
     id: string;
     label: string;
   }[];
@@ -73,15 +66,16 @@ export type UiState = {
 
 export const platforma = BlockModel.create('Heavy')
 
-  .withArgs<BlockArgs>({ numbers: [1, 2, 3, 4], tableNumRows: 100, handles: [] })
+  .withArgs<BlockArgs>({ numbers: [1, 2, 3, 4], handles: [] })
 
   .withUiState<UiState>({
-    dataTableState: undefined,
-    dataTableStateV2: {
-      tableState: createPlDataTableStateV2(),
-      filterModel: {},
+    dataTableV2: {
+      sourceId: 'source_1',
+      numRows: 200,
+      state: createPlDataTableStateV2(),
     },
     dynamicSections: [],
+    datasets: [],
   })
 
   .argsValid((ctx) => {
@@ -100,64 +94,8 @@ export const platforma = BlockModel.create('Heavy')
     return Object.fromEntries(progresses ?? []);
   })
 
-  .output('pt', (ctx) => {
-    if (!ctx.uiState?.dataTableState?.tableState.pTableParams?.filters) return undefined;
-
-    const data = times(ctx.args.tableNumRows ?? 0, (i) => {
-      const v = i + 1;
-      return {
-        key: [v, v + 0.1],
-        val: v.toString(),
-      };
-    });
-
-    return createPlDataTable(
-      ctx,
-      [
-        {
-          id: 'example' as PObjectId,
-          spec: {
-            kind: 'PColumn',
-            valueType: 'String',
-            name: 'example',
-            annotations: {
-              'pl7.app/label': 'String column',
-              'pl7.app/discreteValues': '["up","down"]',
-            },
-            axesSpec: [
-              {
-                type: 'Int',
-                name: 'index',
-                annotations: {
-                  'pl7.app/label': 'Int axis',
-                  'pl7.app/discreteValues': '[1,2]',
-                },
-              },
-              {
-                type: 'Float',
-                name: 'value',
-                annotations: {
-                  'pl7.app/label': 'Float axis',
-                  'pl7.app/table/visibility': 'optional',
-                },
-              },
-            ],
-          },
-          data,
-        } satisfies PColumn<PColumnValues>,
-      ],
-      ctx.uiState.dataTableState.tableState,
-      {
-        filters: [
-          ...(ctx.uiState.dataTableState.tableState.pTableParams?.filters ?? []),
-          ...(ctx.uiState.dataTableState.filterModel?.filters ?? []),
-        ],
-      },
-    );
-  })
-
   .output('ptV2Sheets', (ctx) => {
-    const rowCount = ctx.args.tableNumRows ?? 0;
+    const rowCount = ctx.uiState.dataTableV2.numRows ?? 0;
     const sheets = [
       {
         axis: {
@@ -178,7 +116,7 @@ export const platforma = BlockModel.create('Heavy')
   })
 
   .output('ptV2', (ctx) => {
-    const rowCount = ctx.args.tableNumRows ?? 0;
+    const rowCount = ctx.uiState.dataTableV2.numRows ?? 0;
     const makePartitionId = (rowCount: number, i: number) => Math.floor((2 * i) / (rowCount + 1));
     const columns: PColumn<PColumnValues>[] = [
       {
@@ -190,6 +128,7 @@ export const platforma = BlockModel.create('Heavy')
           annotations: {
             'pl7.app/label': 'String column',
             'pl7.app/discreteValues': '["up","down"]',
+            'pl7.app/table/orderPriority': '101',
           },
           axesSpec: [
             {
@@ -226,6 +165,7 @@ export const platforma = BlockModel.create('Heavy')
           annotations: {
             'pl7.app/label': 'Float column',
             'pl7.app/table/visibility': 'optional',
+            'pl7.app/table/orderPriority': '100',
           },
           axesSpec: [
             {
@@ -253,12 +193,105 @@ export const platforma = BlockModel.create('Heavy')
           };
         }),
       },
+      {
+        id: 'labelColumn' as PObjectId,
+        spec: {
+          kind: 'PColumn',
+          valueType: 'Int',
+          name: 'pl7.app/label',
+          annotations: {
+            'pl7.app/label': 'Int axis labels',
+          },
+          axesSpec: [
+            {
+              type: 'Int',
+              name: 'index',
+              annotations: {
+                'pl7.app/label': 'Int axis',
+              },
+            },
+          ],
+        },
+        data: times(rowCount, (i) => {
+          const v = i + 1;
+          return {
+            key: [v],
+            val: 100000 - v,
+          };
+        }),
+      },
+      {
+        id: 'linkerColumn' as PObjectId,
+        spec: {
+          kind: 'PColumn',
+          valueType: 'Int',
+          name: 'linker',
+          annotations: {
+            'pl7.app/label': 'Index axis linker',
+            'pl7.app/isLinkerColumn': 'true',
+            'pl7.app/table/visibility': 'hidden',
+          },
+          axesSpec: [
+            {
+              type: 'Int',
+              name: 'index',
+              annotations: {
+                'pl7.app/label': 'Int axis',
+              },
+            },
+            {
+              type: 'Int',
+              name: 'linkedIndex',
+              annotations: {
+                'pl7.app/label': 'Linked int axis',
+              },
+            },
+          ],
+        },
+        data: times(rowCount, (i) => {
+          const v = i + 1;
+          return {
+            key: [v, v],
+            val: 1,
+          };
+        }),
+      },
     ];
+    for (let j = 1; j < 10; ++j) {
+      columns.push({
+        id: `alphabeticalColumn${j}` as PObjectId,
+        spec: {
+          kind: 'PColumn',
+          valueType: 'String',
+          name: 'value',
+          annotations: {
+            'pl7.app/label': `Alphabetical column ${j}`,
+            'pl7.app/table/visibility': 'optional',
+            'pl7.app/table/orderPriority': (10 - j).toString(),
+          },
+          axesSpec: [
+            {
+              type: 'Int',
+              name: 'linkedIndex',
+              annotations: {
+                'pl7.app/label': 'Linked int axis',
+              },
+            },
+          ],
+        },
+        data: times(rowCount, (i) => {
+          const v = i + 1;
+          return {
+            key: [v],
+            val: v.toString().repeat(j),
+          };
+        }),
+      });
+    }
     return createPlDataTableV2(
       ctx,
       columns,
-      ctx.uiState.dataTableStateV2.tableState,
-      { filters: ctx.uiState.dataTableStateV2.filterModel?.filters ?? [] },
+      ctx.uiState.dataTableV2.state,
     );
   })
 
@@ -284,6 +317,7 @@ export const platforma = BlockModel.create('Heavy')
     return [
       { type: 'link', href: '/loaders', label: 'Loaders' },
       { type: 'link', href: '/', label: 'Icons/Masks' },
+      { type: 'link', href: '/state', label: 'State' },
       { type: 'link', href: '/layout', label: 'Layout' },
       { type: 'link', href: '/form-components', label: 'Form Components' },
       { type: 'link', href: '/log-view', label: 'PlLogView' },
@@ -294,10 +328,10 @@ export const platforma = BlockModel.create('Heavy')
       { type: 'link', href: '/typography', label: 'Typography' },
       { type: 'link', href: '/ag-grid-vue', label: 'AgGridVue' },
       { type: 'link', href: '/ag-grid-vue-with-builder', label: 'AgGridVue with builder' },
-      { type: 'link', href: '/pl-ag-data-table', label: 'PlAgDataTable' },
       { type: 'link', href: '/pl-ag-data-table-v2', label: 'PlAgDataTableV2' },
       { type: 'link', href: '/pl-splash-page', label: 'PlSplashPage' },
       { type: 'link', href: '/pl-file-input-page', label: 'PlFileInputPage' },
+      { type: 'link', href: '/pl-number-field-page', label: 'PlNumberFieldPage' },
       { type: 'link', href: '/pl-error-boundary-page', label: 'PlErrorBoundaryPage' },
       { type: 'link', href: '/pl-element-list-page', label: 'PlElementList' },
       { type: 'link', href: '/errors', label: 'Errors' },
@@ -325,7 +359,7 @@ export const platforma = BlockModel.create('Heavy')
     ];
   })
 
-  .done();
+  .done(2); // api version 2
 
 export type BlockOutputs = InferOutputsType<typeof platforma>;
 export type Href = InferHrefType<typeof platforma>;

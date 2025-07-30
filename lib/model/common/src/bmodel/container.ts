@@ -1,0 +1,58 @@
+import type { BlockConfigV3Generic } from './block_config';
+import type { Code } from './code';
+import type { BlockRenderingMode } from './types';
+
+/** Container simplifying maintenance of forward and backward compatibility */
+export type BlockConfigContainer = {
+  /** Actual config */
+  readonly v3: Omit<BlockConfigV3Generic, 'code'>;
+
+  /** Config code bundle */
+  readonly code?: Code;
+
+  //
+  // Fields below are used to read previous config versions
+  //
+
+  /**
+   * For backward compatibility
+   * @deprecated
+   */
+  readonly sdkVersion?: string;
+
+  /**
+   * For backward compatibility
+   * @deprecated
+   */
+  readonly renderingMode?: BlockRenderingMode;
+
+  /**
+   * For backward compatibility
+   * @deprecated
+   */
+  readonly initialArgs?: unknown;
+
+  /**
+   * For backward compatibility
+   * @deprecated
+   */
+  readonly canRun?: unknown;
+
+  /**
+   * For backward compatibility
+   * @deprecated
+   */
+  readonly inputsValid?: unknown;
+
+  /**
+   * For backward compatibility
+   * @deprecated
+   */
+  readonly sections?: unknown;
+
+  /**
+   * For backward compatibility
+   * @deprecated
+   */
+  readonly outputs?: Record<string, unknown>;
+};

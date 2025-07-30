@@ -1,14 +1,15 @@
 {
   "name": "@milaboratories/uikit",
-  "version": "2.2.98",
+  "version": "2.3.27",
   "type": "module",
   "main": "dist/index.js",
   "exports": {
     ".": {
-      "development": "./src/index.ts",
+      "sources": "./src/index.ts",
       "default": "./dist/index.js"
     },
     "./styles": "./dist/index.js",
+    "./styles/variables": "./src/assets/variables.scss",
     "./assets/mixins.scss": "./src/assets/mixins.scss",
     "./svg/icons/*": "./src/assets/icons/icon-assets-min/*",
     "./svg/images/*": "./src/assets/images/*"
@@ -31,24 +32,30 @@
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "dependencies": {
+    "@types/d3-scale": "catalog:",
+    "@types/d3-array": "catalog:",
+    "@types/d3-selection": "catalog:",
+    "@types/d3-axis": "catalog:",
+    "@types/sortablejs": "catalog:",
     "@milaboratories/helpers": "workspace:^",
     "@platforma-sdk/model": "workspace:^",
     "@vue/test-utils": "catalog:",
     "@vueuse/integrations": "catalog:",
     "sortablejs": "catalog:",
     "vue": "catalog:",
-    "d3": "catalog:"
+    "@vueuse/core": "catalog:",
+    "d3-scale": "catalog:",
+    "d3-array": "catalog:",
+    "d3-selection": "catalog:",
+    "d3-axis": "catalog:",
+    "resize-observer-polyfill": "catalog:"
   },
   "devDependencies": {
-    "@types/d3": "catalog:",
-    "@types/sortablejs": "catalog:",
     "@milaboratories/ts-configs": "workspace:*",
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/eslint-config": "workspace:^",
-    "@vueuse/core": "catalog:",
-    "jsdom": "catalog:",
-    "resize-observer-polyfill": "catalog:",
     "@vitejs/plugin-vue": "catalog:",
+    "jsdom": "catalog:",
     "vitest": "catalog:",
     "vite": "catalog:",
     "vue-tsc": "catalog:",

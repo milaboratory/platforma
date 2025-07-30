@@ -1,4 +1,4 @@
-import type { ColorMap } from './types';
+import type { HighlightLegend } from './types';
 
 export type Markup = { id: string; start: number; length: number }[];
 
@@ -46,27 +46,59 @@ export function markupAlignedSequence(
   return adjusted;
 }
 
-export function colorizeSequencesByMarkup(
-  { markupRows, columnCount, colorMap }: {
+export function highlightByMarkup(
+  { markupRows, columnCount, labels }: {
     markupRows: Markup[];
     columnCount: number;
-    colorMap: ColorMap;
+    labels: Record<string, string>;
   },
-): Promise<Blob> {
-  const canvas = new OffscreenCanvas(columnCount, markupRows.length);
-  const context = canvas.getContext('2d')!;
-  for (const [rowIndex, markup] of markupRows.entries()) {
-    for (const segment of markup) {
-      const color = colorMap[segment.id]?.color;
-      if (!color) continue;
-      context.fillStyle = color;
-      context.fillRect(segment.start, rowIndex, segment.length, 1);
+): { blob: Blob; legend: HighlightLegend } {
+  const linesById: Map<string, {
+    row: number;
+    start: number;
+    length: number;
+  }[]> = new Map();
+  for (const [row, markup] of markupRows.entries()) {
+    for (const { id, start, length } of markup) {
+      let bucket = linesById.get(id);
+      if (!bucket) linesById.set(id, bucket = []);
+      bucket.push({ row, start, length });
     }
   }
-  return canvas.convertToBlob();
+  const legend: HighlightLegend = Object.fromEntries(
+    Object.entries(labels)
+      .filter(([id]) => linesById.has(id))
+      .map(([id, label], index) => [
+        id,
+        {
+          label,
+          color: markupColors[index % markupColors.length],
+        },
+      ]),
+  );
+  const blob = new Blob(
+    (function*() {
+      const viewBox = `0 0 ${columnCount} ${markupRows.length * 2}`;
+      yield `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${viewBox}" stroke-width="2" preserveAspectRatio="none">`;
+      for (const [id, lines] of linesById) {
+        const { color } = legend[id];
+        yield `<path stroke="${color}" d="`;
+        let x = 0, y = 0;
+        for (const { row, start, length } of lines) {
+          yield `m${start - x},${row * 2 + 1 - y}h${length}`;
+          x = start + length;
+          y = row * 2 + 1;
+        }
+        yield '"/>';
+      }
+      yield '</svg>';
+    })().toArray(),
+    { type: 'image/svg+xml' },
+  );
+  return { blob, legend };
 }
 
-export const markupColors = [
+const markupColors = [
   '#E5F2FF',
   '#FFE8E8',
   '#F0EBFF',

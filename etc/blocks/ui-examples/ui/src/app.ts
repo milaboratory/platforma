@@ -9,7 +9,6 @@ import TypographyPage from './pages/TypographyPage.vue';
 import { AgGridVuePage, AgGridVuePageWithBuilder } from './pages/AgGridVuePage';
 import SelectFilesPage from './pages/SelectFilesPage.vue';
 import ErrorsPage from './pages/ErrorsPage.vue';
-import PlAgDataTablePage from './pages/PlAgDataTablePage.vue';
 import PlAgDataTableV2Page from './pages/PlAgDataTableV2Page.vue';
 import IconsPage from './pages/IconsPage.vue';
 import PlTextFieldPage from './pages/PlTextFieldPage.vue';
@@ -31,6 +30,8 @@ import RadioPage from './pages/RadioPage.vue';
 import PlFileInputPage from './pages/PlFileInputPage.vue';
 import PlErrorBoundaryPage from './pages/PlErrorBoundaryPage.vue';
 import PlElementListPage from './pages/PlElementListPage.vue';
+import StatePage from './pages/StatePage.vue';
+import PlNumberFieldPage from './pages/PlNumberFieldPage.vue';
 
 export const sdkPlugin = defineApp(platforma, (app) => {
   // Additional data
@@ -83,6 +84,7 @@ export const sdkPlugin = defineApp(platforma, (app) => {
     },
     routes: {
       '/': () => IconsPage,
+      '/state': () => StatePage,
       '/layout': () => LayoutPage,
       '/log-view': () => LogViewPage,
       '/modals': () => ModalsPage,
@@ -92,10 +94,10 @@ export const sdkPlugin = defineApp(platforma, (app) => {
       '/typography': () => TypographyPage,
       '/ag-grid-vue': () => AgGridVuePage,
       '/ag-grid-vue-with-builder': () => AgGridVuePageWithBuilder,
-      '/pl-ag-data-table': () => PlAgDataTablePage,
       '/pl-ag-data-table-v2': () => PlAgDataTableV2Page,
       '/pl-splash-page': () => PlSplashPage,
       '/pl-file-input-page': () => PlFileInputPage,
+      '/pl-number-field-page': () => PlNumberFieldPage,
       '/pl-error-boundary-page': () => PlErrorBoundaryPage,
       '/pl-element-list-page': () => PlElementListPage,
       '/select-files': () => SelectFilesPage,
@@ -116,7 +118,6 @@ export const sdkPlugin = defineApp(platforma, (app) => {
   };
 }, {
   debug: true,
-  deepPatchModel: true,
 });
 
 export const useApp = sdkPlugin.useApp;

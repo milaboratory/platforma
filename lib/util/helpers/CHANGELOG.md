@@ -1,5 +1,17 @@
 # @milaboratories/helpers
 
+## 1.6.19
+
+### Patch Changes
+
+- c29b40f: use uniq custom condition
+
+## 1.6.18
+
+### Patch Changes
+
+- 5e69d64: Add annotations components and model
+
 ## 1.6.17
 
 ### Patch Changes

@@ -1,0 +1,172 @@
+self := import(":tpl.light")
+ll := import(":ll")
+fmt := import("fmt")
+json := import("json")
+text := import("text")
+regexp := import(":regexp")
+impl := import(":anonymize.impl")
+slices := import(":slices")
+smart := import(":smart")
+maps := import(":maps")
+util := import(":anonymize.util")
+
+self.defineOutputs("result", "mapping")
+
+/**
+ * Transforms a key array based on the number of indices provided.
+ * - If `pKeyIndices` contains a single index, it replaces the element at that index with `anonymizedName`.
+ * - If `pKeyIndices` contains multiple indices, it removes elements at all specified indices and appends `anonymizedName` as the last element.
+ *
+ * This function assumes `pKeyIndices` is sorted for the multiple-index case and uses an O(N) algorithm for efficiency.
+ *
+ * @param keyArray - The original key array
+ * @param pKeyIndices - Sorted array of indices to either replace or remove
+ * @param anonymizedName - The anonymized name to use for replacement or appending
+ * @returns The transformed key array
+ */
+transformKey := func(keyArray, pKeyIndices, anonymizedName) {
+	if len(pKeyIndices) == 1 {
+		newKeyArray := copy(keyArray)
+		newKeyArray[pKeyIndices[0]] = anonymizedName
+		return newKeyArray
+	}
+
+	newKeyArray := []
+	indexPointer := 0
+
+	for i, element in keyArray {
+		if indexPointer < len(pKeyIndices) && i == pKeyIndices[indexPointer] {
+			indexPointer++
+		} else {
+			newKeyArray = append(newKeyArray, element)
+		}
+	}
+
+	newKeyArray = append(newKeyArray, anonymizedName)
+
+	return newKeyArray
+}
+
+/**
+ * Decodes a pdata field name into its constituent parts.
+ * A pdata field name is expected to be a JSON array string, optionally followed by a suffix.
+ * e.g., '["a",1,"b"].c'
+ *
+ * @param fieldName - The pdata field name string.
+ * @returns An object with `key` (the decoded JSON array) and `suffix`.
+ */
+decodePDataField := func(fieldName) {
+	keyPart := util.removeSuffix(fieldName)
+
+	suffix := ""
+	if len(fieldName) > len(keyPart) {
+		suffix = fieldName[len(keyPart):]
+	}
+
+	keyArray := json.decode(keyPart)
+	if !is_array(keyArray) {
+		ll.panic("Expected JSON array for pcolumn key, got: %v", keyArray)
+	}
+
+	return {
+		key: keyArray,
+		suffix: suffix
+	}
+}
+
+self.body(func(inputs) {
+	targets := {}
+	isSingleTarget := false
+	if !is_undefined(self.rawInputs().target) {
+		targets = { "default": self.rawInputs().target.getValue() }
+		isSingleTarget = true
+	} else {
+		maps.forEach(self.rawInputs(), func(key, value) {
+			if text.has_prefix(key, "target.") {
+				targets[key[7:]] = value.getValue()
+			}
+		})
+	}
+
+	params := inputs.params
+
+	fieldRegex := params.fieldRegex
+	fieldPrefix := params.fieldPrefix
+	pKeyIndices := params.pKeyIndices
+
+	if !is_undefined(pKeyIndices) && (!is_undefined(fieldRegex) || !is_undefined(fieldPrefix)) {
+		ll.panic("pKeyIndices cannot be used together with fieldRegex or fieldPrefix")
+	}
+
+	options := {}
+
+	if !is_undefined(fieldRegex) {
+		compiledRegex := regexp.compile(fieldRegex)
+		options.fieldMatcher = func(fieldName) {
+			return compiledRegex.match(fieldName)
+		}
+	}
+
+	if !is_undefined(fieldPrefix) {
+		options.fieldNameDeriver = func(originalFieldName, anonymizedFieldName) {
+			return fieldPrefix + anonymizedFieldName
+		}
+	}
+
+	if !is_undefined(pKeyIndices) {
+		if !is_array(pKeyIndices) {
+			ll.panic("pKeyIndices must be an array of integers, got: %v", pKeyIndices)
+		}
+
+		for i, idx in pKeyIndices {
+			if !is_int(idx) {
+				ll.panic("pKeyIndices[%d] must be an integer, got: %v", i, idx)
+			}
+		}
+
+		sortedPKeyIndices := slices.quickSort(pKeyIndices)
+
+		options.groupBy = func(fieldName) {
+			decoded := util.decodePDataField(fieldName)
+			if len(pKeyIndices) == 1 {
+				if pKeyIndices[0] >= len(decoded.key) {
+					ll.panic("pKeyIndices[%d] is out of bounds for key: %v", pKeyIndices[0], decoded.key)
+				}
+				return decoded.key[pKeyIndices[0]]
+			}
+			groupKey := []
+			for idx in pKeyIndices {
+				if idx >= len(decoded.key) {
+					ll.panic("pKeyIndices[%d] is out of bounds for key: %v", idx, decoded.key)
+				}
+				groupKey = append(groupKey, decoded.key[idx])
+			}
+			return string(json.encode(groupKey))
+		}
+
+		options.fieldNameDeriver = func(originalFieldName, anonymizedFieldName) {
+			decoded := util.decodePDataField(originalFieldName)
+			newKeyArray := transformKey(decoded.key, sortedPKeyIndices, anonymizedFieldName)
+			return string(json.encode(newKeyArray)) + decoded.suffix
+		}
+	}
+
+	anonymizeResult := impl.anonymizeFields(targets, options)
+
+	if isSingleTarget {
+		return {
+			result: anonymizeResult.result["default"],
+			mapping: smart.createJsonResource(anonymizeResult.mapping)
+		}
+	}
+
+	builder := smart.mapBuilder()
+	maps.forEach(anonymizeResult.result, func(key, value) {
+		builder.add(key, value)
+	})
+
+	return {
+		result: builder.lockAndBuild(),
+		mapping: smart.createJsonResource(anonymizeResult.mapping)
+	}
+})

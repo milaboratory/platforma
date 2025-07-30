@@ -23,7 +23,7 @@ export type PFrameDataSource = {
 
 /** API exposed by PFrames library allowing to create and provide data for
  * PFrame objects */
-export interface PFrameFactoryAPI {
+export interface PFrameFactoryAPIV2 {
   /** Associates data source with this PFrame */
   setDataSource(dataSource: PFrameDataSource): void;
 
@@ -31,7 +31,13 @@ export interface PFrameFactoryAPI {
   addColumnSpec(columnId: PObjectId, columnSpec: PColumnSpec): void;
 
   /** Associates data info with cpecific column */
-  setColumnData(columnId: PObjectId, dataInfo: DataInfo<PFrameBlobId>): void;
+  setColumnData(
+    columnId: PObjectId,
+    dataInfo: DataInfo<PFrameBlobId>,
+    options?: {
+      signal?: AbortSignal,
+    }
+  ): Promise<void>;
 
   /** Releases all the data previously added to PFrame using methods above,
    * any interactions with disposed PFrame will result in exception */

@@ -1,4 +1,3 @@
-import * as d3 from 'd3';
 import { createSvgContainer } from './createSvgContainer';
 import { drawBins } from './drawBins';
 import { createGridlines } from './createGridlines';
@@ -7,23 +6,27 @@ import { createLabels } from './createLabels';
 import type { AnyBin, BinLike, ChartOptions } from './types';
 import { drawThreshold } from './drawThreshold';
 import { normalizeBins } from './normalizeBins';
+import type { Selection } from 'd3-selection';
+import { bin, max as d3max, min as d3min } from 'd3-array';
+import { scaleLinear, scaleSymlog } from 'd3-scale';
+import { axisBottom, axisLeft } from 'd3-axis';
 
-const gx = (svg: d3.Selection<SVGGElement, unknown, null, undefined>, height: number) => {
+const gx = (svg: Selection<SVGGElement, unknown, null, undefined>, height: number) => {
   return svg.append('g')
     .style('font-size', '14px')
     .style('font-weight', '500')
     .attr('transform', `translate(0,${height})`);
 };
 
-const gy = (svg: d3.Selection<SVGGElement, unknown, null, undefined>) => {
+const gy = (svg: Selection<SVGGElement, unknown, null, undefined>) => {
   return svg.append('g')
     .style('font-size', '14px')
     .style('font-weight', '500');
 };
 
 const createYScale = (bins: BinLike[], height: number) => {
-  return d3.scaleLinear()
-    .domain([0, d3.max(bins, (d) => d.length)!]) // Max bin count for the domain
+  return scaleLinear()
+    .domain([0, d3max(bins, (d) => d.length)!]) // Max bin count for the domain
     .range([height, 0]); // Map to chart height (invert to match SVG coordinates)
 };
 
@@ -32,14 +35,14 @@ export function createHistogramLinear(el: HTMLElement, options: ChartOptions, da
 
   const svg = createSvgContainer(el, options);
 
-  const min = d3.min(data) as number;
-  const max = d3.max(data) as number;
+  const min = d3min(data) as number;
+  const max = d3max(data) as number;
 
-  const x = d3.scaleLinear()
+  const x = scaleLinear()
     .domain([min, max])
     .range([0, width]);
 
-  const bins: BinLike[] = normalizeBins(d3.bin()
+  const bins: BinLike[] = normalizeBins(bin()
     .domain(x.domain() as [number, number]) // Set the input domain to match the x-scale
     .thresholds(x.ticks(nBins))(data)); // Apply the data to create bins
 
@@ -51,9 +54,9 @@ export function createHistogramLinear(el: HTMLElement, options: ChartOptions, da
 
   drawThreshold(svg, { x, y }, options);
 
-  gx(svg, height).call(d3.axisBottom(x).tickSize(0));
+  gx(svg, height).call(axisBottom(x).tickSize(0));
 
-  gy(svg).call(d3.axisLeft(y).tickSize(0));
+  gy(svg).call(axisLeft(y).tickSize(0));
 
   createLabels(svg, options);
 }
@@ -63,10 +66,10 @@ export function createHistogramLog(el: HTMLElement, options: ChartOptions, data:
 
   const svg = createSvgContainer(el, options);
 
-  const min = d3.min(data) as number;
-  const max = d3.max(data) as number;
+  const min = d3min(data) as number;
+  const max = d3max(data) as number;
 
-  const x = d3.scaleSymlog()
+  const x = scaleSymlog()
     .domain([min, max]) // Input range (min and max values of the data)
     .range([0, width])
     .nice() // Output range (width of the chart)
@@ -82,7 +85,7 @@ export function createHistogramLog(el: HTMLElement, options: ChartOptions, data:
     return res;
   };
 
-  const bins = normalizeBins(d3.bin()
+  const bins = normalizeBins(bin()
     .domain(x.domain() as [number, number]) // Set the input domain to match the x-scale
     .thresholds(createThresholds(nBins))(data)); // Apply the data to create bins
 
@@ -96,9 +99,9 @@ export function createHistogramLog(el: HTMLElement, options: ChartOptions, data:
 
   drawThreshold(svg, { x, y }, options);
 
-  gx(svg, height).call(d3.axisBottom(x).tickValues(tickValues).tickSize(0));
+  gx(svg, height).call(axisBottom(x).tickValues(tickValues).tickSize(0));
 
-  gy(svg).call(d3.axisLeft(y).tickSize(0));
+  gy(svg).call(axisLeft(y).tickSize(0));
 
   createLabels(svg, options);
 }
@@ -110,10 +113,10 @@ export function createHistogramFromBins(el: HTMLElement, options: ChartOptions, 
 
   const bins = normalizeBins(_bins);
 
-  const min = d3.min(bins, (b) => b.x0) as number;
-  const max = d3.max(bins, (b) => b.x1) as number;
+  const min = d3min(bins, (b) => b.x0) as number;
+  const max = d3max(bins, (b) => b.x1) as number;
 
-  const x = d3.scaleSymlog()
+  const x = scaleSymlog()
     .domain([min, max])
     .range([0, width])
     .nice();
@@ -128,9 +131,9 @@ export function createHistogramFromBins(el: HTMLElement, options: ChartOptions, 
 
   drawThreshold(svg, { x, y }, options);
 
-  gx(svg, height).call(d3.axisBottom(x).tickValues(tickValues).tickSize(0));
+  gx(svg, height).call(axisBottom(x).tickValues(tickValues).tickSize(0));
 
-  gy(svg).call(d3.axisLeft(y).tickSize(0));
+  gy(svg).call(axisLeft(y).tickSize(0));
 
   createLabels(svg, options);
 }

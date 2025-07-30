@@ -1,5 +1,134 @@
 # @platforma-sdk/block-tools
 
+## 2.5.77
+
+### Patch Changes
+
+- Updated dependencies [636088d]
+- Updated dependencies [636088d]
+  - @milaboratories/pl-model-middle-layer@1.8.4
+  - @milaboratories/pl-model-common@1.19.1
+
+## 2.5.76
+
+### Patch Changes
+
+- Updated dependencies [98b0ded]
+  - @milaboratories/pl-model-common@1.19.0
+  - @milaboratories/pl-model-middle-layer@1.8.3
+
+## 2.5.75
+
+### Patch Changes
+
+- Updated dependencies [3271446]
+  - @milaboratories/pl-model-common@1.18.0
+  - @milaboratories/pl-model-middle-layer@1.8.2
+
+## 2.5.74
+
+### Patch Changes
+
+- Updated dependencies [ef9f418]
+  - @milaboratories/pl-model-middle-layer@1.8.1
+
+## 2.5.73
+
+### Patch Changes
+
+- Updated dependencies [188ee1e]
+  - @milaboratories/ts-helpers@1.4.2
+  - @milaboratories/ts-helpers-oclif@1.1.24
+
+## 2.5.72
+
+### Patch Changes
+
+- 76e485b: Fix stripping block pack manifest fields from newer sdk versions
+
+## 2.5.71
+
+### Patch Changes
+
+- Updated dependencies [e7c0edb]
+  - @milaboratories/pl-model-middle-layer@1.8.0
+  - @milaboratories/pl-model-common@1.17.0
+
+## 2.5.70
+
+### Patch Changes
+
+- Updated dependencies [9bb26ff]
+  - @milaboratories/pl-model-common@1.16.5
+  - @milaboratories/pl-model-middle-layer@1.7.52
+
+## 2.5.69
+
+### Patch Changes
+
+- Updated dependencies [c12345a]
+  - @milaboratories/pl-model-common@1.16.4
+  - @milaboratories/pl-model-middle-layer@1.7.51
+
+## 2.5.68
+
+### Patch Changes
+
+- Updated dependencies [7afc448]
+  - @milaboratories/pl-model-middle-layer@1.7.50
+
+## 2.5.67
+
+### Patch Changes
+
+- Updated dependencies [7be8a2b]
+  - @milaboratories/pl-model-common@1.16.3
+  - @milaboratories/pl-model-middle-layer@1.7.49
+
+## 2.5.66
+
+### Patch Changes
+
+- Updated dependencies [dfb0086]
+  - @milaboratories/pl-model-common@1.16.2
+  - @milaboratories/pl-model-middle-layer@1.7.48
+
+## 2.5.65
+
+### Patch Changes
+
+- Updated dependencies [d525c60]
+  - @milaboratories/pl-model-common@1.16.1
+  - @milaboratories/pl-model-middle-layer@1.7.47
+
+## 2.5.64
+
+### Patch Changes
+
+- Updated dependencies [98d48f6]
+  - @milaboratories/pl-model-middle-layer@1.7.46
+
+## 2.5.63
+
+### Patch Changes
+
+- Updated dependencies [a0c607a]
+  - @milaboratories/pl-model-middle-layer@1.7.45
+
+## 2.5.62
+
+### Patch Changes
+
+- Updated dependencies [3b46d33]
+  - @milaboratories/pl-model-common@1.16.0
+  - @milaboratories/pl-model-middle-layer@1.7.44
+
+## 2.5.61
+
+### Patch Changes
+
+- @milaboratories/pl-model-middle-layer@1.7.43
+
 ## 2.5.60
 
 ### Patch Changes

@@ -8,7 +8,7 @@ import {
   Computable,
 } from '@milaboratories/computable';
 import type { ResourceId, ResourceType } from '@milaboratories/pl-client';
-import { stringifyWithResourceId } from '@milaboratories/pl-client';
+import { resourceIdToString, stringifyWithResourceId } from '@milaboratories/pl-client';
 import type {
   AnyLogHandle,
   BlobDriver,
@@ -563,7 +563,7 @@ export class DownloadDriver implements BlobDriver {
 
   private removeTask(task: DownloadBlobTask, reason: string) {
     task.abort(reason);
-    task.change.markChanged();
+    task.change.markChanged(`download task for ${task.path} removed: ${reason}`);
     this.keyToDownload.delete(pathToKey(task.path));
     this.idToLastLines.delete(blobKey(task.rInfo.id));
     this.idToProgressLog.delete(blobKey(task.rInfo.id));
@@ -580,7 +580,7 @@ export class DownloadDriver implements BlobDriver {
 
     this.keyToDownload.forEach((task, key) => {
       this.keyToDownload.delete(key);
-      task.change.markChanged();
+      task.change.markChanged(`task ${resourceIdToString(task.rInfo.id)} released`);
     });
   }
 }
@@ -639,14 +639,14 @@ class LastLinesGetter {
     try {
       const newLogs = await getLastLines(this.path, this.lines, this.patternToSearch);
 
-      if (this.log != newLogs) this.change.markChanged();
+      if (this.log != newLogs) this.change.markChanged(`logs for ${this.path} updated`);
       this.log = newLogs;
     } catch (e: any) {
       if (e.name == 'RpcError' && e.code == 'NOT_FOUND') {
         // No resource
         this.log = '';
         this.error = e;
-        this.change.markChanged();
+        this.change.markChanged(`log update for ${this.path} failed, resource not found`);
         return;
       }
 

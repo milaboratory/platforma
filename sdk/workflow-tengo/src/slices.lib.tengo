@@ -310,7 +310,7 @@ normalize := func(s) {
 	if is_undefined(s) {
 		return []
 	}
-	return s
+	return copy(s)
 }
 
 export ll.toStrict({

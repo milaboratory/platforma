@@ -32,8 +32,9 @@ import type { QuickJSWASMModule } from 'quickjs-emscripten';
 import { getQuickJS } from 'quickjs-emscripten';
 import type { MiddleLayerDriverKit } from './driver_kit';
 import { initDriverKit } from './driver_kit';
-import type { DriverKit } from '@platforma-sdk/model';
-import { DownloadUrlDriver } from '@milaboratories/pl-drivers';
+import type { DriverKit, SupportedRequirement } from '@platforma-sdk/model';
+import { RuntimeCapabilities } from '@platforma-sdk/model';
+import type { DownloadUrlDriver } from '@milaboratories/pl-drivers';
 import { V2RegistryProvider } from '../block_registry';
 import type { Dispatcher } from 'undici';
 import { RetryAgent } from 'undici';
@@ -42,6 +43,7 @@ import { ProjectHelper } from '../model/project_helper';
 
 export interface MiddleLayerEnvironment {
   readonly pl: PlClient;
+  readonly runtimeCapabilities: RuntimeCapabilities;
   readonly logger: MiLogger;
   readonly blockEventDispatcher: BlockEventDispatcher;
   readonly httpDispatcher: Dispatcher;
@@ -86,6 +88,11 @@ export class MiddleLayer {
   ) {
     this.projectList = projectList;
     this.pl = this.env.pl;
+  }
+
+  /** Adds a runtime capability to the middle layer. */
+  public addRuntimeCapability(requirement: SupportedRequirement, value: number | boolean = true): void {
+    this.env.runtimeCapabilities.addSupportedRequirement(requirement, value);
   }
 
   /** Returns extended API driver kit used internally by middle layer. */
@@ -238,7 +245,7 @@ export class MiddleLayer {
 
     const logger = ops.logger;
 
-    const driverKit = await initDriverKit(pl, workdir, ops);
+    const driverKit = await initDriverKit(pl, workdir, ops.frontendDownloadPath, ops);
 
     // passed to components having no own retry logic
     const retryHttpDispatcher = new RetryAgent(pl.httpDispatcher);
@@ -251,13 +258,12 @@ export class MiddleLayer {
       retryHttpDispatcher,
     );
 
-    const frontendDownloadDriver = new DownloadUrlDriver(
-      logger,
-      pl.httpDispatcher,
-      ops.frontendDownloadPath,
-    );
-
     const quickJs = await getQuickJS();
+
+    const runtimeCapabilities = new RuntimeCapabilities();
+    // add runtime capabilities of model here
+    runtimeCapabilities.addSupportedRequirement('requiresModelAPIVersion', 1);
+    // runtime capabilities of the desktop are to be added by the desktop app / test framework
 
     const env: MiddleLayerEnvironment = {
       pl,
@@ -268,13 +274,14 @@ export class MiddleLayer {
       retryHttpDispatcher: retryHttpDispatcher,
       ops,
       bpPreparer,
-      frontendDownloadDriver,
+      frontendDownloadDriver: driverKit.frontendDriver,
       driverKit,
       blockUpdateWatcher: new BlockUpdateWatcher(v2RegistryProvider, logger, {
         minDelay: ops.devBlockUpdateRecheckInterval,
         http: retryHttpDispatcher,
         preferredUpdateChannel: ops.preferredUpdateChannel,
       }),
+      runtimeCapabilities,
       quickJs,
       projectHelper: new ProjectHelper(quickJs),
     };

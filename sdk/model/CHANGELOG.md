@@ -1,5 +1,151 @@
 # @platforma-sdk/model
 
+## 1.42.4
+
+### Patch Changes
+
+- 636088d: Removed PValue type everywhere, use PTableValue for UI operations instead
+- Updated dependencies [636088d]
+- Updated dependencies [636088d]
+  - @milaboratories/pl-model-common@1.19.1
+
+## 1.42.1
+
+### Patch Changes
+
+- Updated dependencies [98b0ded]
+  - @milaboratories/pl-model-common@1.19.0
+
+## 1.42.0
+
+### Patch Changes
+
+- Updated dependencies [3271446]
+  - @milaboratories/pl-model-common@1.18.0
+
+## 1.41.6
+
+### Patch Changes
+
+- c29b40f: use uniq custom condition
+  - @milaboratories/pl-model-common@1.17.0
+  - @milaboratories/pl-error-like@1.12.2
+
+## 1.41.4
+
+### Patch Changes
+
+- 41140f4: PlAgDataTableV2 - selection & focusRow updated
+
+## 1.41.3
+
+### Patch Changes
+
+- d469422: Use package version from json
+
+## 1.41.2
+
+### Patch Changes
+
+- 28b630f: update isLinkerColumn
+
+## 1.41.1
+
+### Patch Changes
+
+- e48177a: Small fix (remove package self-reference)
+
+## 1.41.0
+
+### Minor Changes
+
+- e7c0edb: Platforma API v2 (long pooling) + support v1 api in sdk
+
+### Patch Changes
+
+- Updated dependencies [e7c0edb]
+  - @milaboratories/pl-model-common@1.17.0
+
+## 1.40.6
+
+### Patch Changes
+
+- 9bb26ff: PlAgDataTableV2 - linker columns handling fix
+- Updated dependencies [9bb26ff]
+  - @milaboratories/pl-model-common@1.16.5
+
+## 1.40.5
+
+### Patch Changes
+
+- 5e69d64: Add annotations components and model
+
+## 1.40.1
+
+### Patch Changes
+
+- 890240e: PlAgDataTableV2 - support sorting and filtering by label column
+
+## 1.40.0
+
+### Minor Changes
+
+- 30ce5da: MSA settings
+
+## 1.39.18
+
+### Patch Changes
+
+- c12345a: createPFrameForGraphs can be used without block's columns
+- c12345a: createPFrameForGraphs update
+- Updated dependencies [c12345a]
+  - @milaboratories/pl-model-common@1.16.4
+
+## 1.39.8
+
+### Patch Changes
+
+- Updated dependencies [7be8a2b]
+  - @milaboratories/pl-model-common@1.16.3
+
+## 1.39.7
+
+### Patch Changes
+
+- Updated dependencies [dfb0086]
+  - @milaboratories/pl-model-common@1.16.2
+
+## 1.39.6
+
+### Patch Changes
+
+- d525c60: PFrames - support InSet filter
+- Updated dependencies [d525c60]
+  - @milaboratories/pl-model-common@1.16.1
+
+## 1.39.0
+
+### Minor Changes
+
+- 3b46d33: Refactored block configuration model and introduced a feature flag system. This provides a more robust way to manage different block config versions and check for feature compatibility.
+- 3b46d33: SDK and ML support for lazy retrieval of args and uiState by model outputs
+
+### Patch Changes
+
+- Updated dependencies [3b46d33]
+  - @milaboratories/pl-model-common@1.16.0
+
+## 1.38.0
+
+### Minor Changes
+
+- bd788f9: PlAgDataTable V1 removed, V2 significantly changed
+
+### Patch Changes
+
+- Updated dependencies [bd788f9]
+  - @milaboratories/pl-model-common@1.15.9
+
 ## 1.37.18
 
 ### Patch Changes

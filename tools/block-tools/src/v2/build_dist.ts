@@ -24,9 +24,12 @@ export async function buildBlockPackDist(
       return { name: f, size: bytes.length, sha256 };
     })
   );
+
   const manifest: BlockPackManifest = BlockPackManifest.parse({
     schema: 'v2',
-    description: descriptionRelative,
+    description: {
+      ...descriptionRelative
+    },
     files: filesForManifest,
     timestamp: Date.now()
   } satisfies BlockPackManifest);

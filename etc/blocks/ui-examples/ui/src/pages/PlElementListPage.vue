@@ -88,6 +88,7 @@ const onPinItem = (item: Item) => {
 const enabledDebug = ref(true);
 const enabledSorting = ref(true);
 const enabledDragging = ref(true);
+const enabledExpanding = ref(true);
 const enabledRemoving = ref(true);
 const enabledPinning = ref(true);
 const enabledToggling = ref(true);
@@ -116,6 +117,9 @@ const handleShuffle = () => {
         </button>
         <button :class="$style.button" @click="enabledDragging = !enabledDragging">
           {{ enabledDragging ? 'Enabled' : 'Disabled' }} dragging
+        </button>
+        <button :class="$style.button" @click="enabledExpanding = !enabledExpanding">
+          {{ enabledExpanding ? 'Enabled' : 'Disabled' }} expanding
         </button>
         <button :class="$style.button" @click="enabledRemoving = !enabledRemoving">
           {{ enabledRemoving ? 'Enabled' : 'Disabled' }} removing

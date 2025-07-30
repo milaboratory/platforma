@@ -1,5 +1,145 @@
 # @platforma-sdk/workflow-tengo
 
+## 4.14.1
+
+### Patch Changes
+
+- 7d7dedd: - Fixes for parseToJson logic, so that it supports raw output of getFileContent
+  - Additional check in anonymization logic
+
+## 4.14.0
+
+### Minor Changes
+
+- 0256548: Add support for new column kinds in TsvContent settings and PColumnData/Json processing
+
+  **New Column Kinds:**
+
+  - `kind: "line"` - Exports raw TSV line content as String PColumn
+  - `kind: "json-line"` - Exports JSON-encoded line content as String PColumn with configurable field mapping
+  - `kind: "column"` - Explicit version of existing behavior (backward compatible)
+
+  **New parseToJson Function:**
+
+  - **Direct TSV Parsing**: Added `pframes.parseToJson(targetContent, params)` function as a simplified wrapper around the parse-to-json template
+  - **Flexible Input Support**: Accepts string content, resource references, or `{data: resourceMapRef, spec: PColumnSpec}` format
+  - **TsvContent Settings**: Uses the same `TSV_CONTENT_SETTINGS_SCHEMA` format as `processColumn` for consistency
+  - **All Column Kinds**: Full support for `column`, `line`, and `json-line` parsing modes
+  - **Smart Object Interface**: Returns object with methods:
+    - `output(columnId)` - Returns `{data: Resource, spec: PColumnSpec}`
+    - `outputData(columnId)` - Returns data resource only
+    - `outputSpec(columnId)` - Returns column spec only
+    - `listOutputs()` - Returns array of column IDs
+    - `addAllOutputsToBuilder(builder)` - Adds all outputs to pframe builder
+  - **Pure Template Rendering**: Uses `render.create()` for better caching and deduplication
+  - **Axes Composition**: Automatically combines base axes (from input spec) with settings axes for output specifications
+
+  **PColumnData/Json Support:**
+
+  - **New Resource Type Support**: Added full support for `PColumnData/Json` in `processColumn` function
+  - **Embedded Data Processing**: Supports primitive data embedded directly in resource metadata (unlike partitioned types that reference external resources)
+  - **Dual Mode Operation**:
+    - **Mapping Mode**: Processes individual primitive values directly through automatic unmarshalling
+    - **Aggregation Mode**: Groups embedded data and creates intermediate `PColumnData/Json` resources for body template processing
+  - **Type Detection**: Added proper resource type detection and validation for `PColumnData/Json`
+  - **Metadata Extraction**: Handles `keyLength` and embedded `data` fields from resource metadata
+  - **Anonymization Restriction**: Prevents anonymization with `PColumnData/Json` (only supported for resource-based types)
+
+  **Code Improvements:**
+
+  - **Helper Functions**: Extracted common code into reusable helper functions:
+    - `getTsvColumnId()` - Column ID extraction with backward compatibility
+    - `transformTsvSettings()` - Settings transformation for parse template format
+  - **Path Resolution**: Updated to use `renderResult.resolveOutput(["result", columnId])` instead of string concatenation
+  - **Documentation**: Added comprehensive documentation matching `processColumn` style with detailed column kind explanations
+
+  **Features:**
+
+  - **Backward Compatibility**: Existing TsvContent configurations without `kind` field continue to work unchanged
+  - **Schema Validation**: Added closed validation schemas with proper type enforcement
+  - **String Type Enforcement**: `line` and `json-line` kinds are validated to only accept `String` valueType in specs
+  - **JSON Field Mapping**: `json-line` supports custom field IDs for JSON property names via nested `columns` array
+
+  **Breaking Changes:** None - fully backward compatible
+
+  **Migration:** No migration required. Existing code continues to work. New `kind` field is optional and defaults to `"column"` behavior.
+
+## 4.13.0
+
+### Minor Changes
+
+- 8ffee22: Added new TsvContent output type and enhanced trace injection:
+
+  **New TsvContent Output Type:**
+
+  - Added `TsvContent` output type to `processColumn()` function for parsing TSV content to JSON PColumn data
+  - Simplified settings schema with `axes` and `columns` arrays containing `column` name and `spec` objects
+  - Automatic transformation from user settings to parse template format
+  - Integration with `parse-to-json.tpl.tengo` template for efficient TSV parsing
+  - Similar to Xsv but simpler: no partitioning, single parse call, direct JSON output
+  - Updated all output methods (`outputSpec`, `outputData`, `output`, etc.) to support TsvContent
+  - Added comprehensive validation using validation library with `TSV_CONTENT_SETTINGS_SCHEMA`
+
+  **Enhanced Trace Injection:**
+
+  - Added `override` option to `makeTrace().inject()` function with default value of `true`
+  - Added `overrideTrace` flag to `processColumn()` function with smart defaults:
+    - Defaults to `true` when `traceSteps` is provided (override existing traces with new steps)
+    - Defaults to `false` when no `traceSteps` are provided (preserve existing traces)
+  - Updated all trace injection calls in `processColumn` to respect the override setting
+
+  **Per-Output Trace Support:**
+
+  - Added per-output `traceSteps` and `overrideTrace` fields to all output types
+  - Output-specific `traceSteps` are appended after global `traceSteps` (global first, then output-specific)
+  - Each output can override the global `overrideTrace` setting independently
+  - Smart defaults for `overrideTrace`: defaults to `true` when any traceSteps (global or per-output) are provided
+  - Used `slices.normalize()` for safe array concatenation regardless of undefined values
+  - Cleaned up trace handling code by removing uninformative comments
+
+  **Code Quality Improvements:**
+
+  - Replaced manual validation checks with `validation.assertType()` for better error messages
+  - Used `slices.map()` for functional array transformations instead of manual loops
+  - Applied defensive copying with `copy()` for all array operations to prevent mutations
+
+## 4.12.0
+
+### Minor Changes
+
+- f395ba9: Additional string manipulation functions for pt library:
+
+  - `strContains(pattern, options)` - Check if string contains a pattern (regex or literal mode with strict validation)
+  - `strContainsAny(patterns, options)` - Check if string contains any of multiple literal patterns using Aho-Corasick algorithm with optional case-insensitive matching
+  - `strCountMatches(pattern, options)` - Count occurrences of a pattern in string (regex or literal mode)
+  - `strExtract(pattern, options)` - Extract parts of string using regex patterns with capture group support
+  - `strStartsWith(prefix)` - Check if string starts with a literal prefix
+  - `strEndsWith(suffix)` - Check if string ends with a literal suffix
+
+  All functions accept both string literals and expression objects as parameters and provide comprehensive options for different matching modes.
+
+## 4.11.0
+
+### Minor Changes
+
+- a6a91a3: - Support for expressions in pt.slice\* functions
+  - New pt.replaceAll and pt.substring functions
+
+## 4.10.0
+
+### Minor Changes
+
+- 5d21b36: - Ability to set output cache for pure templates
+  - `stepCache` parameter for `processColumn`, to set caching to allow deduplication and recovery logic to pick up previous results in quick recalculation scenarious
+  - Anonymization and deanonymization logic for resource fields and PColumnKeys allows deduplication for calculation depending on things like sample ids that are different in different project, yet the data is the same
+  - Support of anonymization logic in `processColumns`
+
+## 4.9.3
+
+### Patch Changes
+
+- 9a4b895: improve docs
+
 ## 4.9.2
 
 ### Patch Changes

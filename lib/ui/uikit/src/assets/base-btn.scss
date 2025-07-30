@@ -74,7 +74,8 @@
   }
 
   &:disabled {
-    --color-text: var(--color-dis-00);
+    --color-text: var(--dis-00);
+    --icon-color: var(--dis-00);
 
     * {
       color: var(--color-text);

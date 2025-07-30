@@ -1,5 +1,295 @@
 # @platforma-sdk/ui-vue
 
+## 1.42.5
+
+### Patch Changes
+
+- 13f0f40: MSA: scrollable labels + small fixes
+
+## 1.42.4
+
+### Patch Changes
+
+- 636088d: Removed PValue type everywhere, use PTableValue for UI operations instead
+- Updated dependencies [636088d]
+  - @platforma-sdk/model@1.42.4
+  - @milaboratories/uikit@2.3.27
+
+## 1.42.3
+
+### Patch Changes
+
+- 6310c08: Use watch ignorable in createApp2
+
+## 1.42.2
+
+### Patch Changes
+
+- Updated dependencies [911f928]
+  - @milaboratories/uikit@2.3.26
+
+## 1.42.1
+
+### Patch Changes
+
+- @platforma-sdk/model@1.42.1
+- @milaboratories/uikit@2.3.25
+
+## 1.42.0
+
+### Minor Changes
+
+- 3271446: MSA: added export functionality
+
+### Patch Changes
+
+- @platforma-sdk/model@1.42.0
+- @milaboratories/uikit@2.3.24
+
+## 1.41.19
+
+### Patch Changes
+
+- Updated dependencies [e2a1629]
+  - @milaboratories/uikit@2.3.23
+
+## 1.41.17
+
+### Patch Changes
+
+- Updated dependencies [093dbda]
+  - @milaboratories/uikit@2.3.22
+
+## 1.41.13
+
+### Patch Changes
+
+- d29cbad: Simplify app model for v2 api
+
+## 1.41.11
+
+### Patch Changes
+
+- 85b9887: PlAgDataTable - removed API for reading rows data
+
+## 1.41.9
+
+### Patch Changes
+
+- 00cd7f1: Fix missing dispose in the api test helper
+
+## 1.41.6
+
+### Patch Changes
+
+- c29b40f: use uniq custom condition
+- Updated dependencies [c29b40f]
+  - @milaboratories/uikit@2.3.21
+  - @platforma-sdk/model@1.41.6
+
+## 1.41.4
+
+### Patch Changes
+
+- 41140f4: PlAgDataTableV2 - selection & focusRow updated
+- Updated dependencies [41140f4]
+  - @platforma-sdk/model@1.41.4
+  - @milaboratories/uikit@2.3.20
+
+## 1.41.3
+
+### Patch Changes
+
+- Updated dependencies [d469422]
+  - @platforma-sdk/model@1.41.3
+  - @milaboratories/uikit@2.3.19
+
+## 1.41.2
+
+### Patch Changes
+
+- Updated dependencies [28b630f]
+  - @platforma-sdk/model@1.41.2
+  - @milaboratories/uikit@2.3.18
+
+## 1.41.1
+
+### Patch Changes
+
+- Updated dependencies [e48177a]
+  - @platforma-sdk/model@1.41.1
+  - @milaboratories/uikit@2.3.17
+
+## 1.41.0
+
+### Minor Changes
+
+- e7c0edb: Platforma API v2 (long pooling) + support v1 api in sdk
+
+### Patch Changes
+
+- Updated dependencies [e7c0edb]
+  - @platforma-sdk/model@1.41.0
+  - @milaboratories/uikit@2.3.16
+
+## 1.40.6
+
+### Patch Changes
+
+- 9bb26ff: PlAgDataTableV2 - linker columns handling fix
+- Updated dependencies [9bb26ff]
+  - @milaboratories/uikit@2.3.15
+  - @platforma-sdk/model@1.40.6
+
+## 1.40.5
+
+### Patch Changes
+
+- 5e69d64: Add annotations components and model
+- Updated dependencies [5e69d64]
+  - @milaboratories/uikit@2.3.14
+  - @platforma-sdk/model@1.40.5
+
+## 1.40.4
+
+### Patch Changes
+
+- Updated dependencies [98eded5]
+  - @milaboratories/uikit@2.3.13
+
+## 1.40.3
+
+### Patch Changes
+
+- Updated dependencies [2273454]
+  - @milaboratories/uikit@2.3.12
+
+## 1.40.2
+
+### Patch Changes
+
+- d6334f9: Adopt PlAgDataTableV2 for v2api in desktop
+
+## 1.40.1
+
+### Patch Changes
+
+- 890240e: PlAgDataTableV2 - support sorting and filtering by label column
+- Updated dependencies [890240e]
+  - @platforma-sdk/model@1.40.1
+  - @milaboratories/uikit@2.3.11
+
+## 1.40.0
+
+### Minor Changes
+
+- 30ce5da: MSA settings
+
+### Patch Changes
+
+- Updated dependencies [30ce5da]
+- Updated dependencies [30ce5da]
+  - @milaboratories/uikit@2.3.10
+  - @platforma-sdk/model@1.40.0
+
+## 1.39.20
+
+### Patch Changes
+
+- 986c20c: computedCached moved to uikit, watchCached implemented
+- Updated dependencies [986c20c]
+  - @milaboratories/uikit@2.3.9
+
+## 1.39.19
+
+### Patch Changes
+
+- 21a8c4a: Renamed cachedComputed to computedCached
+
+## 1.39.18
+
+### Patch Changes
+
+- Updated dependencies [c12345a]
+- Updated dependencies [c12345a]
+  - @platforma-sdk/model@1.39.18
+  - @milaboratories/uikit@2.3.8
+
+## 1.39.17
+
+### Patch Changes
+
+- Updated dependencies [bc814d2]
+  - @milaboratories/uikit@2.3.7
+
+## 1.39.16
+
+### Patch Changes
+
+- Updated dependencies [8aec1b5]
+  - @milaboratories/uikit@2.3.6
+
+## 1.39.10
+
+### Patch Changes
+
+- Updated dependencies [66a2689]
+  - @milaboratories/uikit@2.3.5
+
+## 1.39.8
+
+### Patch Changes
+
+- 7be8a2b: Fix PlAgDataTableV2 filters reactivity
+  - @platforma-sdk/model@1.39.8
+  - @milaboratories/uikit@2.3.4
+
+## 1.39.7
+
+### Patch Changes
+
+- @platforma-sdk/model@1.39.7
+- @milaboratories/uikit@2.3.3
+
+## 1.39.6
+
+### Patch Changes
+
+- Updated dependencies [d525c60]
+  - @platforma-sdk/model@1.39.6
+  - @milaboratories/uikit@2.3.2
+
+## 1.39.3
+
+### Patch Changes
+
+- b9a4ca8: Bump miplots4 version
+
+## 1.39.0
+
+### Minor Changes
+
+- 3b46d33: SDK and ML support for lazy retrieval of args and uiState by model outputs
+
+### Patch Changes
+
+- Updated dependencies [3b46d33]
+- Updated dependencies [3b46d33]
+  - @platforma-sdk/model@1.39.0
+  - @milaboratories/uikit@2.3.1
+
+## 1.38.0
+
+### Minor Changes
+
+- bd788f9: PlAgDataTable V1 removed, V2 significantly changed
+
+### Patch Changes
+
+- Updated dependencies [bd788f9]
+  - @milaboratories/uikit@2.3.0
+  - @platforma-sdk/model@1.38.0
+
 ## 1.37.18
 
 ### Patch Changes

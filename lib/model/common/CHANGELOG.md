@@ -1,5 +1,72 @@
 # @milaboratories/pl-model-common
 
+## 1.19.1
+
+### Patch Changes
+
+- 636088d: Removed PValue type everywhere, use PTableValue for UI operations instead
+- 636088d: PFrames - update PTableVector format
+
+## 1.19.0
+
+### Minor Changes
+
+- 98b0ded: drivers: frontend: replace path with url with custom protocol and signature
+
+## 1.18.0
+
+### Minor Changes
+
+- 3271446: MSA: added export functionality
+
+## 1.17.0
+
+### Minor Changes
+
+- e7c0edb: Platforma API v2 (long pooling) + support v1 api in sdk
+
+## 1.16.5
+
+### Patch Changes
+
+- 9bb26ff: PlAgDataTableV2 - linker columns handling fix
+
+## 1.16.4
+
+### Patch Changes
+
+- c12345a: createPFrameForGraphs update
+
+## 1.16.3
+
+### Patch Changes
+
+- 7be8a2b: Adopt PFrameError
+
+## 1.16.2
+
+### Patch Changes
+
+- dfb0086: Intruduced PFrameError
+
+## 1.16.1
+
+### Patch Changes
+
+- d525c60: PFrames - support InSet filter
+
+## 1.16.0
+
+### Minor Changes
+
+- 3b46d33: Refactored block configuration model and introduced a feature flag system. This provides a more robust way to manage different block config versions and check for feature compatibility.
+
+## 1.15.9
+
+### Patch Changes
+
+- bd788f9: PFrames driver - accept partitionFilters separately from all other fields
+
 ## 1.15.8
 
 ### Patch Changes

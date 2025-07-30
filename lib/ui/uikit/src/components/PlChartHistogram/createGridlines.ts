@@ -1,21 +1,25 @@
-import * as d3 from 'd3';
 import type { ChartOptions, Scales } from './types';
+import type { Selection } from 'd3-selection';
+import type { Axis } from 'd3-axis';
+import type { NumberValue } from 'd3-scale';
+import { selectAll } from 'd3-selection';
+import { axisBottom, axisLeft } from 'd3-axis';
 
 export function createGridlines(
-  svg: d3.Selection<SVGGElement, unknown, null, undefined>,
+  svg: Selection<SVGGElement, unknown, null, undefined>,
   options: ChartOptions,
   scales: Scales,
-  xTicks: (d: d3.Axis<d3.NumberValue>) => d3.Axis<d3.NumberValue>,
+  xTicks: (d: Axis<NumberValue>) => Axis<NumberValue>,
 ) {
   const { width, height } = options;
 
   function makeYGridlines() {
-    return d3.axisLeft(scales.y) // Use the y-scale for horizontal gridlines
+    return axisLeft(scales.y) // Use the y-scale for horizontal gridlines
       .ticks(6); // Adjust the number of gridlines
   }
 
   function makeXGridlines() {
-    return xTicks(d3.axisBottom(scales.x));
+    return xTicks(axisBottom(scales.x));
   }
   // Append horizontal gridlines
   svg.append('g')
@@ -35,7 +39,7 @@ export function createGridlines(
       .tickFormat(() => '')); // Remove tick labels
 
   // Style the gridlines using CSS (or inline styles)
-  d3.selectAll('.grid line')
+  selectAll('.grid line')
     .style('stroke', '#E1E3EB') // Light gray gridlines
     // .style('stroke-dasharray', '2,2') // Dashed gridlines
     .style('opacity', 0.7); // Slightly transparent

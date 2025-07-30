@@ -140,6 +140,7 @@ export class RegistryV2Reader {
                     true,
                     data.description.meta
                   ),
+                  featureFlags: data.description.featureFlags,
                   spec: {
                     type: 'from-registry-v2',
                     id: data.description.id,

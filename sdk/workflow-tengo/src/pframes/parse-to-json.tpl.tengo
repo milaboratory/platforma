@@ -1,0 +1,373 @@
+self := import(":tpl")
+ll := import(":ll")
+smart := import(":smart")
+json := import("json")
+text := import("text")
+validation := import(":validation")
+pConstants := import(":pframes.constants")
+maps := import(":maps")
+canonical := import(":canonical")
+
+self.defineOutputs("result")
+
+AXIS_DESCRIPTION_SCHEMA := {
+	"name": "string",
+	"type": "string,regex=Int|Long|Float|Double|String"
+}
+
+BASIC_COLUMN_DESCRIPTION_SCHEMA := {
+	"name": "string",
+	"type": "string,regex=Int|Long|Float|Double|String",
+	"id,?": "string"
+}
+
+COLUMN_DESCRIPTION_SCHEMA := ["or",
+	{
+		"kind": "string,regex=column",
+		"name": "string",
+		"type": "string,regex=Int|Long|Float|Double|String",
+		"id,?": "string"
+	},
+	{
+		"kind": "string,regex=line",
+		"id": "string"
+	},
+	{
+		"kind": "string,regex=json-line",
+		"id": "string",
+		"columns": [BASIC_COLUMN_DESCRIPTION_SCHEMA]
+	}
+]
+
+PARAMS_SCHEMA := {
+	"axes": [AXIS_DESCRIPTION_SCHEMA],
+	"columns": [COLUMN_DESCRIPTION_SCHEMA]
+}
+
+columnId := func(c) {
+	if c.kind == "column" {
+		id := c.id
+		if is_undefined(id) {
+			id = c.name
+		}
+		return id
+	} else if c.kind == "line" || c.kind == "json-line" {
+		return c.id
+	} else {
+		ll.panic("Unknown column kind: %s", c.kind)
+	}
+}
+
+convertValue := func(valueStr, columnType) {
+	trimmed := text.trim(valueStr, " \t\r\n")
+
+	if trimmed == "" {
+		return undefined
+	}
+
+	if columnType == "Int" || columnType == "Long" {
+		return int(trimmed)
+	} else if columnType == "Float" || columnType == "Double" {
+		return float(trimmed)
+	} else if columnType == "String" {
+		return trimmed
+	} else {
+		ll.panic("Unknown column type: %s", columnType)
+	}
+}
+
+parseTsvContent := func(content, axes, columns) {
+	if is_undefined(content) || content == "" {
+		ll.panic("TSV content is empty or undefined")
+	}
+
+	lines := text.split(content, "\n")
+	if len(lines) == 0 {
+		ll.panic("TSV content has no lines")
+	}
+
+	for len(lines) > 0 && text.trim(lines[len(lines)-1], " \t\r\n") == "" {
+		lines = lines[:len(lines)-1]
+	}
+
+	if len(lines) == 0 {
+		ll.panic("TSV content has no non-empty lines")
+	}
+
+	if len(axes) == 0 && len(lines) != 2 {
+		ll.panic("When no axes are specified, expected exactly 2 lines (header + 1 record), got %d lines", len(lines))
+	}
+
+	headerLine := lines[0]
+	headers := text.split(headerLine, "\t")
+
+	headerMap := {}
+	for i, header in headers {
+		headerMap[text.trim(header, " \t\r\n")] = i
+	}
+
+	axisInfos := {}
+	for axis in axes {
+		if is_undefined(headerMap[axis.name]) {
+			ll.panic("Axis '%s' not found in TSV headers: %v", axis.name, headers)
+		}
+		axisInfos[axis.name] = {
+			index: headerMap[axis.name],
+			type: axis.type
+		}
+	}
+
+	columnInfos := {}
+	data := {}
+	for col in columns {
+		if col.kind == "column" {
+			if is_undefined(headerMap[col.name]) {
+				ll.panic("Column '%s' not found in TSV headers: %v", col.name, headers)
+			}
+			columnInfos[col.name] = {
+				index: headerMap[col.name],
+				type: col.type,
+				kind: "column"
+			}
+			data[col.name] = {}
+		} else if col.kind == "line" {
+			columnInfos[col.id] = {
+				kind: "line"
+			}
+			data[col.id] = {}
+		} else if col.kind == "json-line" {
+			jsonColumnInfos := {}
+			for jsonCol in col.columns {
+				if is_undefined(headerMap[jsonCol.name]) {
+					ll.panic("JSON-line column '%s' not found in TSV headers: %v", jsonCol.name, headers)
+				}
+				jsonColumnInfos[jsonCol.name] = {
+					index: headerMap[jsonCol.name],
+					type: jsonCol.type,
+					id: is_undefined(jsonCol.id) ? jsonCol.name : jsonCol.id
+				}
+			}
+			columnInfos[col.id] = {
+				kind: "json-line",
+				columns: jsonColumnInfos
+			}
+			data[col.id] = {}
+		} else {
+			ll.panic("Unknown column kind: %s", col.kind)
+		}
+	}
+
+	for lineIdx := 1; lineIdx < len(lines); lineIdx++ {
+		line := lines[lineIdx]
+
+		if text.trim(line, " \t\r\n") == "" {
+			continue
+		}
+
+		values := text.split(line, "\t")
+
+		// Extend values array if needed for column-type columns
+		maxIndex := 0
+		maps.forEach(columnInfos, func(columnName, columnInfo) {
+			if columnInfo.kind == "column" && columnInfo.index > maxIndex {
+				maxIndex = columnInfo.index
+			} else if columnInfo.kind == "json-line" {
+				maps.forEach(columnInfo.columns, func(_, jsonColInfo) {
+					if jsonColInfo.index > maxIndex {
+						maxIndex = jsonColInfo.index
+					}
+				})
+			}
+		})
+		maps.forEach(axisInfos, func(axisName, axisInfo) {
+			if axisInfo.index > maxIndex {
+				maxIndex = axisInfo.index
+			}
+		})
+
+		if len(values) <= maxIndex {
+			for len(values) <= maxIndex {
+				values = append(values, "")
+			}
+		}
+
+		key := []
+		maps.forEach(axisInfos, func(axisName, axisInfo) {
+			if axisInfo.index >= len(values) {
+				ll.panic("Axis '%s' index %d is out of range for values: %v", axisName, axisInfo.index, values)
+			}
+			axisValue := convertValue(values[axisInfo.index], axisInfo.type)
+			key = append(key, axisValue)
+		})
+
+		keyStr := string(json.encode(key))
+
+		maps.forEach(columnInfos, func(columnName, columnInfo) {
+			if columnInfo.kind == "column" {
+				if columnInfo.index >= len(values) {
+					ll.panic("Column '%s' index %d is out of range for values: %v", columnName, columnInfo.index, values)
+				}
+
+				colValue := convertValue(values[columnInfo.index], columnInfo.type)
+				data[columnName][keyStr] = colValue
+			} else if columnInfo.kind == "line" {
+				data[columnName][keyStr] = line
+			} else if columnInfo.kind == "json-line" {
+				jsonObj := {}
+				maps.forEach(columnInfo.columns, func(jsonColName, jsonColInfo) {
+					if jsonColInfo.index >= len(values) {
+						ll.panic("JSON-line column '%s' index %d is out of range for values: %v", jsonColName, jsonColInfo.index, values)
+					}
+					colValue := convertValue(values[jsonColInfo.index], jsonColInfo.type)
+					jsonObj[jsonColInfo.id] = colValue
+				})
+				data[columnName][keyStr] = canonical.encode(jsonObj)
+			}
+		})
+	}
+
+	return data
+}
+
+self.body(func(inputs) {
+	params := inputs.params
+	input := inputs.input
+
+	if is_undefined(params) {
+		ll.panic("params is required")
+	}
+
+	validation.assertType(params, PARAMS_SCHEMA, "Invalid params structure")
+
+	if len(params.columns) == 0 {
+		ll.panic("At least one column must be specified")
+	}
+
+	axes := params.axes
+	columns := params.columns
+	paramsAxesLength := len(axes)
+
+	partitionedContent := {}
+	partitionKeyLength := 0
+	totalKeyLength := 0
+
+	if is_string(input) {
+		partitionedContent["[]"] = input
+		totalKeyLength = paramsAxesLength
+	} else if smart.isReference(input) {
+		validation.assertType(input, validation.resource(), "Input must be a valid resource reference")
+
+		if input.checkResourceType({Name: "binary", Version: "1"}) {
+			partitionedContent["[]"] = string(input.getData())
+			totalKeyLength = paramsAxesLength
+		} else if input.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP) {
+			meta := input.getDataAsJson()
+			if !is_map(meta) || is_undefined(meta.keyLength) {
+				ll.panic("Invalid ResourceMap metadata: %v", meta)
+			}
+
+			partitionKeyLength = meta.keyLength
+			totalKeyLength = partitionKeyLength + paramsAxesLength
+
+			maps.forEach(input.inputs(), func(resourceKey, fieldRef) {
+				partKey := json.decode(resourceKey)
+				if !is_array(partKey) || len(partKey) != partitionKeyLength {
+					ll.panic("Invalid resource key: %s, expected array of length %d", resourceKey, partitionKeyLength)
+				}
+
+				content := string(fieldRef.getValue().getData())
+				partitionedContent[resourceKey] = content
+			})
+
+		} else if input.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP_PARTITIONED) {
+			meta := input.getDataAsJson()
+			if !is_map(meta) || is_undefined(meta.partitionKeyLength) || is_undefined(meta.keyLength) {
+				ll.panic("Invalid Partitioned/ResourceMap metadata: %v", meta)
+			}
+
+			superPartitionKeyLength := meta.partitionKeyLength
+			innerKeyLength := meta.keyLength
+			partitionKeyLength = superPartitionKeyLength + innerKeyLength
+			totalKeyLength = partitionKeyLength + paramsAxesLength
+
+			maps.forEach(input.inputs(), func(superPartitionKeyStr, innerResourceMapRef) {
+				superPartitionKey := json.decode(superPartitionKeyStr)
+				if !is_array(superPartitionKey) || len(superPartitionKey) != superPartitionKeyLength {
+					ll.panic("Invalid super-partition key: %s, expected array of length %d", superPartitionKeyStr, superPartitionKeyLength)
+				}
+
+				maps.forEach(innerResourceMapRef.inputs(), func(innerKeyStr, fieldRef) {
+					innerKey := json.decode(innerKeyStr)
+					if !is_array(innerKey) || len(innerKey) != innerKeyLength {
+						ll.panic("Invalid inner key: %s, expected array of length %d", innerKeyStr, innerKeyLength)
+					}
+
+					combinedKey := copy(superPartitionKey) + innerKey
+					combinedKeyStr := string(json.encode(combinedKey))
+					content := string(fieldRef.getValue().getData())
+					partitionedContent[combinedKeyStr] = content
+				})
+			})
+		} else {
+			ll.panic("Unsupported input resource type: %v", input.info().Type)
+		}
+	} else {
+		ll.panic("Input must be a string or a resource reference, got: %v", input)
+	}
+
+	resultData := {}
+	for col in columns {
+		if col.kind == "column" {
+			resultData[col.name] = {}
+		} else if col.kind == "line" {
+			resultData[col.id] = {}
+		} else if col.kind == "json-line" {
+			resultData[col.id] = {}
+		}
+	}
+
+	maps.forEach(partitionedContent, func(partitionKeyStr, content) {
+		parsedData := parseTsvContent(content, axes, columns)
+
+		maps.forEach(parsedData, func(columnName, columnData) {
+			if !is_undefined(columnData) {
+				maps.forEach(columnData, func(dataKeyStr, value) {
+					if partitionKeyStr == "[]" {
+						resultData[columnName][dataKeyStr] = value
+					} else {
+						partitionKey := json.decode(partitionKeyStr)
+						dataKey := json.decode(dataKeyStr)
+						if !is_array(dataKey) {
+							dataKey = []
+						}
+
+						combinedKey := copy(partitionKey) + dataKey
+						combinedKeyStr := string(json.encode(combinedKey))
+						resultData[columnName][combinedKeyStr] = value
+					}
+				})
+			}
+		})
+	})
+
+	finalResult := {}
+	for col in columns {
+		colId := columnId(col)
+		dataKey := ""
+		if col.kind == "column" {
+			dataKey = col.name
+		} else if col.kind == "line" || col.kind == "json-line" {
+			dataKey = col.id
+		}
+
+		finalResult[colId] = smart.createValueResource(
+			pConstants.RTYPE_P_COLUMN_DATA_JSON,
+			json.encode({
+				keyLength: totalKeyLength,
+				data: resultData[dataKey]
+			})
+		)
+	}
+
+	return { result: finalResult }
+})

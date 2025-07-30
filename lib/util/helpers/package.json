@@ -1,12 +1,13 @@
 {
   "name": "@milaboratories/helpers",
-  "version": "1.6.17",
+  "version": "1.6.19",
   "description": "",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "exports": {
     ".": {
+      "sources": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "require": "./dist/index.js",
       "import": "./dist/index.mjs"

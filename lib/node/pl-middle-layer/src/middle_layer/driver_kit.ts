@@ -12,6 +12,7 @@ import {
   LogsStreamDriver,
   LsDriver,
   UploadDriver,
+  DownloadUrlDriver,
 } from '@milaboratories/pl-drivers';
 import type * as Sdk from '@milaboratories/pl-model-common';
 import type { Signer } from '@milaboratories/ts-helpers';
@@ -45,6 +46,8 @@ export interface MiddleLayerDriverKit extends Sdk.DriverKit {
   readonly lsDriver: InternalLsDriver;
   // override with wider interface
   readonly pFrameDriver: InternalPFrameDriver;
+  // override with wider interface
+  readonly frontendDriver: DownloadUrlDriver;
 
   /**
    * Signer is initialized from local secret in drivers initialization routine,
@@ -62,6 +65,7 @@ export interface MiddleLayerDriverKit extends Sdk.DriverKit {
 export async function initDriverKit(
   pl: PlClient,
   workdir: string,
+  frontendDownloadPath: string,
   _ops: DriverKitOpsConstructor,
 ): Promise<MiddleLayerDriverKit> {
   const ops: DriverKitOps = {
@@ -117,6 +121,15 @@ export async function initDriverKit(
     blobDriver,
     ops.logger,
     ops.pframesSpillPath,
+    ops.pFrameDriverOps,
+  );
+
+  const frontendDownloadDriver = new DownloadUrlDriver(
+    ops.logger,
+    pl.httpDispatcher,
+    frontendDownloadPath,
+    signer,
+    ops.frontendDownloadDriverOps,
   );
 
   return {
@@ -127,5 +140,6 @@ export async function initDriverKit(
     signer,
     uploadDriver,
     pFrameDriver,
+    frontendDriver: frontendDownloadDriver,
   };
 }

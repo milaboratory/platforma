@@ -1,11 +1,7 @@
-import type { AxesSpec, PTableAbsent, PTableValue } from '@milaboratories/pl-model-common';
-import { PTableNA } from '@milaboratories/pl-model-common';
+import type { AxesSpec, PTableValueAxis } from '@milaboratories/pl-model-common';
 
 /** Key is a set of all axes values, which means it is unique across rows */
-export type PTableKey = AxisValue[];
-
-/** Readable axis value */
-export type AxisValue = string | number | PTableAbsent;
+export type PTableKey = PTableValueAxis[];
 
 /**
  * Information on selected rows.
@@ -19,10 +15,9 @@ export type PlSelectionModel = {
   selectedKeys: PTableKey[];
 };
 
-export function mapPTableValueToAxisKey(value: PTableValue): AxisValue {
-  if (value === PTableNA) {
-    console.error('Axis value can never be N/A');
-    return ''; // @TODO: add proper handling
-  }
-  return value;
+export function createPlSelectionModel(): PlSelectionModel {
+  return {
+    axesSpec: [],
+    selectedKeys: [],
+  };
 }

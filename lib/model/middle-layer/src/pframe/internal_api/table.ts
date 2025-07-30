@@ -14,7 +14,7 @@ import {
  * PTable can be thought as having a composite primary key, consisting of axes,
  * and a set of data columns derived from PColumn values.
  * */
-export interface PTableV5 {
+export interface PTableV6 {
   /**
    * Returns ordered array of table axes specs (primary key "columns" in SQL
    * terms) and data column specs (regular "columns" in SQL terms).
@@ -28,6 +28,15 @@ export interface PTableV5 {
 
   /** Transforms unified column identifiers into unified indices of columns. */
   getColumnIndices(columnIds: PTableColumnId[]): number[];
+
+  /**
+   * Get PTable disk footprint in bytes
+   * Warning: This call materializes the join.
+   */
+  getFootprint(ops?: {
+    withPredecessors?: boolean,
+    signal?: AbortSignal,
+  }): Promise<number>;
 
   /**
    * Unified table shape
@@ -55,10 +64,10 @@ export interface PTableV5 {
   ): Promise<PTableVector[]>;
 
   /** Filters the table and returns new PTable instance */
-  filter(request: PTableRecordFilter[]): PTableV5;
+  filter(request: PTableRecordFilter[]): PTableV6;
 
   /** Sorts the table and returns new PTable instance. */
-  sort(request: PTableSorting[]): PTableV5;
+  sort(request: PTableSorting[]): PTableV6;
 
   /** Deallocates all underlying resources */
   dispose(): void;

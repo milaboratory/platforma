@@ -1,17 +1,17 @@
 <script lang="ts" setup>
-import './pl-file-input.scss';
-import { PlTooltip } from '../PlTooltip';
-import { PlFileDialog } from '../PlFileDialog';
-import type { ImportedFiles } from '../../types';
-import { PlMaskIcon24 } from '../PlMaskIcon24';
-import { computed, reactive, ref, useSlots, watch } from 'vue';
+import { prettyBytes } from '@milaboratories/helpers';
 import type { ImportFileHandle, ImportProgress } from '@platforma-sdk/model';
 import { getFileNameFromHandle, getFilePathFromHandle } from '@platforma-sdk/model';
-import DoubleContour from '../../utils/DoubleContour.vue';
-import { useLabelNotch } from '../../utils/useLabelNotch';
-import { prettyBytes } from '@milaboratories/helpers';
+import { computed, reactive, ref, useSlots, watch } from 'vue';
 import SvgRequired from '../../generated/components/svg/images/SvgRequired.vue';
 import { getErrorMessage } from '../../helpers/error.ts';
+import type { ImportedFiles } from '../../types';
+import DoubleContour from '../../utils/DoubleContour.vue';
+import { useLabelNotch } from '../../utils/useLabelNotch';
+import { PlFileDialog } from '../PlFileDialog';
+import { PlMaskIcon24 } from '../PlMaskIcon24';
+import { PlTooltip } from '../PlTooltip';
+import './pl-file-input.scss';
 
 const data = reactive({
   fileDialogOpen: false,

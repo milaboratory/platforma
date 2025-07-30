@@ -1,128 +1,143 @@
 <script lang="ts" setup>
-import { computedAsync, useObjectUrl } from '@vueuse/core';
-import { computed } from 'vue';
-import {
-  chemicalPropertiesColorMap,
-  colorizeSequencesByChemicalProperties,
-} from './chemical-properties';
+import { useObjectUrl } from '@vueuse/core';
+import { computed, useTemplateRef } from 'vue';
 import Consensus from './Consensus.vue';
-import { colorizeSequencesByMarkup, type Markup } from './markup';
-import { getResidueCounts } from './residue-counts';
+import Legend from './Legend.vue';
 import SeqLogo from './SeqLogo.vue';
-import type { ColorScheme } from './types';
+import type { HighlightLegend, ResidueCounts } from './types';
 
-const { sequenceRows, labelRows, markup, colorScheme } = defineProps<{
+const { sequences, highlightImage } = defineProps<{
+  sequences: string[];
   sequenceNames: string[];
-  sequenceRows: string[][];
   labelRows: string[][];
-  markup: {
-    labels: Record<string, string>;
-    data: Markup[];
+  residueCounts: ResidueCounts;
+  highlightImage: {
+    blob: Blob;
+    legend: HighlightLegend;
   } | undefined;
-  colorScheme: ColorScheme;
-  consensus: boolean;
-  seqLogo: boolean;
+  widgets: ('consensus' | 'seqLogo' | 'legend')[];
 }>();
 
-const concatenatedSequences = computed(() =>
-  sequenceRows.map((row) => row.join(' ')),
+const rootEl = useTemplateRef('rootRef');
+defineExpose({ rootEl });
+
+const highlightImageObjectUrl = useObjectUrl(() => highlightImage?.blob);
+const highlightImageCssUrl = computed(() =>
+  highlightImageObjectUrl.value
+    ? `url('${highlightImageObjectUrl.value}')`
+    : 'none',
 );
 
-const residueCounts = computed(
-  () => getResidueCounts(concatenatedSequences.value),
+const sequenceLengths = computed(() =>
+  sequences.at(0)?.split(' ').map(({ length }) => length),
 );
-
-const highlightImageBlob = computedAsync(() => {
-  switch (colorScheme.type) {
-    case 'no-color':
-      return;
-    case 'chemical-properties':
-      return colorizeSequencesByChemicalProperties({
-        sequences: concatenatedSequences.value,
-        residueCounts: residueCounts.value,
-        colorMap: chemicalPropertiesColorMap,
-      });
-    case 'markup':
-      return colorizeSequencesByMarkup({
-        markupRows: markup?.data ?? [],
-        colorMap: colorScheme.colors,
-        columnCount: concatenatedSequences.value?.[0].length ?? 0,
-      });
-    default:
-      throw new Error(`Unknown color scheme: ${colorScheme.type}`);
-  }
-});
-
-const objectUrl = useObjectUrl(highlightImageBlob);
-
-const highlightImage = computed(
-  () => objectUrl.value ? `url('${objectUrl.value}')` : 'none',
-);
-
-function sequenceLength(index: number) {
-  return sequenceRows.at(0)?.at(index)?.length ?? 0;
-}
 </script>
 
 <template>
-  <div :class="['pl-scrollable', $style.root]">
-    <div :class="$style.corner" />
-    <div :class="$style.header">
-      <div v-if="sequenceNames.length > 1" :class="$style['sequence-names']">
-        <span
-          v-for="(name, index) of sequenceNames"
-          :key="index"
-          :style="{ inlineSize: `calc(${sequenceLength(index)} * 20px)` }"
-        >{{ name }}</span>
+  <div ref="rootRef" :class="$style.root">
+    <div :class="['pl-scrollable', $style.table]">
+      <div :class="$style.corner">
+        <div :class="$style['label-scroll-indicator']" />
       </div>
-      <Consensus v-if="consensus" :residueCounts />
-      <SeqLogo v-if="seqLogo" :residueCounts />
-    </div>
-    <div :class="$style.labels">
-      <template v-for="(labelRow, rowIndex) of labelRows">
-        <div
-          v-for="(label, labelIndex) of labelRow"
-          :key="labelIndex"
-          :style="{ gridRow: rowIndex + 1 }"
-        >
-          {{ label }}
+      <div :class="$style.header">
+        <div v-if="sequenceNames.length > 1" :class="$style['sequence-names']">
+          <span
+            v-for="(name, index) of sequenceNames"
+            :key="index"
+            :style="{
+              inlineSize: ((sequenceLengths?.at(index) ?? 0) * 20)
+                + 'px',
+            }"
+          >{{ name }}</span>
         </div>
-      </template>
-    </div>
-    <div :class="$style.sequences">
-      <div
-        v-for="(sequence, sequenceIndex) of concatenatedSequences"
-        :key="sequenceIndex"
-      >
-        {{ sequence }}
+        <Consensus v-if="widgets.includes('consensus')" :residue-counts />
+        <SeqLogo v-if="widgets.includes('seqLogo')" :residue-counts />
+      </div>
+      <div :class="$style.labels">
+        <div :class="$style['labels-grid']">
+          <template v-for="(labelRow, rowIndex) of labelRows">
+            <div
+              v-for="(label, labelIndex) of labelRow"
+              :key="labelIndex"
+              :style="{ gridRow: rowIndex + 1 }"
+            >
+              {{ label }}
+            </div>
+          </template>
+        </div>
+      </div>
+      <div :class="$style.sequences">
+        <div
+          v-for="(sequence, index) of sequences"
+          :key="index"
+        >
+          {{ sequence }}
+        </div>
       </div>
     </div>
+    <Legend
+      v-if="widgets?.includes('legend') && highlightImage?.legend"
+      :legend="highlightImage.legend"
+    />
   </div>
 </template>
 
 <style module>
 .root {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-block-size: 0;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+
+  &[data-pre-print] {
+    .table {
+      container-type: unset;
+    }
+    .labels {
+      max-inline-size: unset;
+    }
+  }
+}
+
+.table {
+  container-type: inline-size;
   display: grid;
   grid-template-areas:
     "corner header"
     "labels sequences";
-  text-wrap: nowrap;
   justify-content: start;
+  timeline-scope: --msa-labels-scroll;
+  @media print {
+    overflow: visible;
+  }
 }
 
 .corner {
   grid-area: corner;
-  background-color: white;
+  background-color: #fff;
   position: sticky;
   inset-inline-start: 0;
   inset-block-start: 0;
   z-index: 2;
 }
 
+.label-scroll-indicator {
+  position: absolute;
+  inset-inline-end: 0;
+  block-size: 100cqb;
+  inline-size: 8px;
+  animation-name: hide;
+  animation-timeline: --msa-labels-scroll;
+  visibility: hidden;
+  background: #fff;
+  box-shadow: -4px 0 4px -2px rgba(0, 0, 0, 0.10);
+}
+
 .header {
   grid-area: header;
-  padding-inline-end: 6px;
-  background-color: white;
+  background-color: #fff;
   position: sticky;
   inset-block-start: 0;
   z-index: 1;
@@ -138,16 +153,28 @@ function sequenceLength(index: number) {
 
 .labels {
   grid-area: labels;
-  display: grid;
-  grid-auto-flow: dense;
-  column-gap: 12px;
-  background-color: white;
+  background-color: #fff;
   position: sticky;
   inset-inline-start: 0;
   z-index: 1;
-  padding-inline-end: 12px;
+  inline-size: max-content;
+  max-inline-size: 30cqi;
+  overflow: scroll;
+  scrollbar-width: none;
+  overscroll-behavior-inline: none;
+  scroll-timeline: --msa-labels-scroll inline;
+}
+
+.labels-grid {
+  display: grid;
+  grid-auto-flow: dense;
   font-family: Spline Sans Mono;
   line-height: 24px;
+  text-wrap: nowrap;
+
+  > * {
+    padding-inline-end: 12px;
+  }
 }
 
 .sequences {
@@ -159,9 +186,18 @@ function sequenceLength(index: number) {
   line-height: 24px;
   letter-spacing: 11.6px;
   text-indent: 5.8px;
-  background-image: v-bind(highlightImage);
+  margin-inline-end: -5.8px;
+  background-image: v-bind(highlightImageCssUrl);
   background-repeat: no-repeat;
   background-size: calc(100% - 5.8px) 100%;
-  image-rendering: pixelated;
+}
+
+@keyframes hide {
+  from {
+    visibility: visible;
+  }
+  to {
+    visibility: hidden;
+  }
 }
 </style>

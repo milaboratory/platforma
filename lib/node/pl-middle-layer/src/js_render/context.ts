@@ -1,4 +1,6 @@
 import type { ComputableCtx } from '@milaboratories/computable';
+import type {
+  BlockCodeKnownFeatureFlags } from '@platforma-sdk/model';
 import {
   JsRenderInternal,
 } from '@platforma-sdk/model';
@@ -53,6 +55,7 @@ export class JsExecutionContext {
     public readonly scope: Scope,
     public readonly vm: QuickJSContext,
     private readonly deadlineSetter: DeadlineSetter,
+    featureFlags: BlockCodeKnownFeatureFlags | undefined,
     computableEnv?: ComputableEnv,
   ) {
     this.callbackRegistry = this.scope.manage(this.vm.newObject());
@@ -69,7 +72,7 @@ export class JsExecutionContext {
     if (vm.typeof(this.fnJSONParse) !== 'function') throw new Error(`JSON.parse() not found.`);
 
     if (computableEnv !== undefined)
-      this.computableHelper = new ComputableContextHelper(this, computableEnv.blockCtx, computableEnv.mlEnv, computableEnv.computableCtx);
+      this.computableHelper = new ComputableContextHelper(this, computableEnv.blockCtx, computableEnv.mlEnv, featureFlags, computableEnv.computableCtx);
 
     this.injectCtx();
   }
@@ -284,12 +287,13 @@ export class ErrorRepository {
       return quickJSError;
     }
 
-    if (!('name' in (quickJSError.cause as any))) {
-      console.warn('ErrorRepo: quickJSError.cause is not an Error', stringifyWithResourceId(quickJSError));
+    const cause = quickJSError.cause;
+    if (!(typeof cause === 'object' && cause !== null && ('name' in cause) && typeof cause.name === 'string')) {
+      console.warn('ErrorRepo: quickJSError.cause is not an Error (can be stack limit exceeded)', stringifyWithResourceId(quickJSError));
       return quickJSError;
     }
 
-    const causeName = (quickJSError.cause as any).name;
+    const causeName = cause.name;
     const errorId = causeName.slice(causeName.indexOf('/uuid:') + '/uuid:'.length);
     if (!errorId) {
       throw new Error(`ErrorRepo: quickJSError.cause.name does not contain errorId: ${causeName}, ${stringifyWithResourceId(quickJSError)}`);

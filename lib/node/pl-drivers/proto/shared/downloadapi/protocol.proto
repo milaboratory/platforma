@@ -21,6 +21,11 @@ message DownloadAPI {
   message GetDownloadURL {
     message Request {
       uint64 resource_id = 1;
+
+      // Pass `true` here if the blob will be downloaded from internal network,
+      // e.g. controllers could use this if they are trying to download something from internal network.
+      // For backward compatibility, by default pl treats all requests as from external network.
+      bool is_internal_use = 2;
     }
 
     message HTTPHeader {

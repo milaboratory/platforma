@@ -31,6 +31,8 @@
   --btn-sec-press-grey: rgba(155, 171, 204, 0.24);
   --btn-active-select: rgba(99, 224, 36, 0.24);
   --btn-switcher: linear-gradient(180deg, #a1e59c 0%, #d0f5b0 100%);
+
+  --btn-accent-positive-500: #ECFBE5;
   //disable
   --dis-00: #ffffff;
   --dis-01: light-dark(#cfd1db, #3d3d42);
@@ -63,7 +65,8 @@
   --gradient-violet: linear-gradient(180deg, #bca3ff 0%, #e5e5ff 100%);
   --TT-gradient-violet: linear-gradient(180deg, #bca3ff 0%, #e5e5ff 100%);
   --gradient-light-lime: linear-gradient(180deg, #EBFFEB 0%, transparent 100%);
-
+  //box shadow
+  --shadow-l: 0px 8px 16px -4px rgba(15, 36, 77, 0.16), 0px 12px 32px -4px rgba(15, 36, 77, 0.16);
   // Layout
   --main-spacing: 24px;
   --gap-v: 24px;

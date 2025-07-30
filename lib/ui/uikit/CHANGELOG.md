@@ -1,5 +1,200 @@
 # @milaboratories/uikit
 
+## 2.3.27
+
+### Patch Changes
+
+- Updated dependencies [636088d]
+  - @platforma-sdk/model@1.42.4
+
+## 2.3.26
+
+### Patch Changes
+
+- 911f928: Fix PlNumberField min/max constraint
+
+## 2.3.25
+
+### Patch Changes
+
+- @platforma-sdk/model@1.42.1
+
+## 2.3.24
+
+### Patch Changes
+
+- @platforma-sdk/model@1.42.0
+
+## 2.3.23
+
+### Patch Changes
+
+- e2a1629: update dependencies
+
+## 2.3.22
+
+### Patch Changes
+
+- 093dbda: explicit setup z-index
+
+## 2.3.21
+
+### Patch Changes
+
+- c29b40f: use uniq custom condition
+- Updated dependencies [c29b40f]
+  - @milaboratories/helpers@1.6.19
+  - @platforma-sdk/model@1.41.6
+
+## 2.3.20
+
+### Patch Changes
+
+- Updated dependencies [41140f4]
+  - @platforma-sdk/model@1.41.4
+
+## 2.3.19
+
+### Patch Changes
+
+- Updated dependencies [d469422]
+  - @platforma-sdk/model@1.41.3
+
+## 2.3.18
+
+### Patch Changes
+
+- Updated dependencies [28b630f]
+  - @platforma-sdk/model@1.41.2
+
+## 2.3.17
+
+### Patch Changes
+
+- Updated dependencies [e48177a]
+  - @platforma-sdk/model@1.41.1
+
+## 2.3.16
+
+### Patch Changes
+
+- Updated dependencies [e7c0edb]
+  - @platforma-sdk/model@1.41.0
+
+## 2.3.15
+
+### Patch Changes
+
+- 9bb26ff: PlAgDataTableV2 - linker columns handling fix
+- Updated dependencies [9bb26ff]
+  - @platforma-sdk/model@1.40.6
+
+## 2.3.14
+
+### Patch Changes
+
+- 5e69d64: Add annotations components and model
+- Updated dependencies [5e69d64]
+  - @milaboratories/helpers@1.6.18
+  - @platforma-sdk/model@1.40.5
+
+## 2.3.13
+
+### Patch Changes
+
+- 98eded5: Update styles
+
+## 2.3.12
+
+### Patch Changes
+
+- 2273454: Dont use permament svg w/h
+
+## 2.3.11
+
+### Patch Changes
+
+- Updated dependencies [890240e]
+  - @platforma-sdk/model@1.40.1
+
+## 2.3.10
+
+### Patch Changes
+
+- 30ce5da: Updated `PlNumberField` to handle fractional increments/decrements better
+- Updated dependencies [30ce5da]
+  - @platforma-sdk/model@1.40.0
+
+## 2.3.9
+
+### Patch Changes
+
+- 986c20c: computedCached moved to uikit, watchCached implemented
+
+## 2.3.8
+
+### Patch Changes
+
+- Updated dependencies [c12345a]
+- Updated dependencies [c12345a]
+  - @platforma-sdk/model@1.39.18
+
+## 2.3.7
+
+### Patch Changes
+
+- bc814d2: Fix: stop click propagation from FileDialogModal
+
+## 2.3.6
+
+### Patch Changes
+
+- 8aec1b5: add icons
+
+## 2.3.5
+
+### Patch Changes
+
+- 66a2689: update package json deps
+
+## 2.3.4
+
+### Patch Changes
+
+- @platforma-sdk/model@1.39.8
+
+## 2.3.3
+
+### Patch Changes
+
+- @platforma-sdk/model@1.39.7
+
+## 2.3.2
+
+### Patch Changes
+
+- Updated dependencies [d525c60]
+  - @platforma-sdk/model@1.39.6
+
+## 2.3.1
+
+### Patch Changes
+
+- Updated dependencies [3b46d33]
+- Updated dependencies [3b46d33]
+  - @platforma-sdk/model@1.39.0
+
+## 2.3.0
+
+### Minor Changes
+
+- bd788f9: PlAgDataTable V1 removed, V2 significantly changed
+
+### Patch Changes
+
+- Updated dependencies [bd788f9]
+  - @platforma-sdk/model@1.38.0
+
 ## 2.2.98
 
 ### Patch Changes

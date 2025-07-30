@@ -1,42 +1,70 @@
 import type {
-  AxisId,
-  PlDataTableModel,
-  PTableColumnSpec,
-  PTableKey,
+  AxesSpec,
+  PTableColumnId,
+  PTableColumnSpecColumn,
+  PTableValue,
+  PTableValueAxis,
 } from '@platforma-sdk/model';
 import {
   canonicalizeJson,
   getAxisId,
   isColumnOptional,
-  mapPTableValueToAxisKey,
   pTableValue,
-  type PColumnSpec,
   type PFrameDriver,
   type PlDataTableSheet,
   type PTableVector,
+  type AxisId,
+  type PlDataTableModel,
+  type PTableColumnSpec,
+  type PTableKey,
+  type PlTableColumnId,
+  type PlTableColumnIdJson,
+  isLabelColumn as isLabelColumnSpec,
+  isColumnHidden,
+  matchAxisId,
+  isPTableValueAxis,
 } from '@platforma-sdk/model';
 import type {
   CellStyle,
   ColDef,
+  GridApi,
   ICellRendererParams,
   IServerSideDatasource,
   IServerSideGetRowsParams,
   ManagedGridOptions,
 } from 'ag-grid-enterprise';
-import canonicalize from 'canonicalize';
-import * as lodash from 'lodash';
 import type { PlAgHeaderComponentParams, PlAgHeaderComponentType } from '../../PlAgColumnHeader';
 import { PlAgColumnHeader } from '../../PlAgColumnHeader';
 import { PlAgTextAndButtonCell } from '../../PlAgTextAndButtonCell';
-import type { PlAgDataTableV2Row, PTableKeyJson } from '../types';
+import type { PlAgDataTableV2Row, PlTableRowId } from '../types';
 import {
-  isLabelColumn,
   PTableHidden,
 } from './common';
 import { defaultMainMenuItems } from './menu-items';
 import { makeRowNumberColDef, PlAgDataTableRowNumberColId } from './row-number';
 import { getColumnRenderingSpec } from './value-rendering';
 import type { Ref } from 'vue';
+import { isJsonEqual } from '@milaboratories/helpers';
+import type { DeferredCircular } from './focus-row';
+
+export function isLabelColumn(column: PTableColumnSpec): column is PTableColumnSpecColumn {
+  return column.type === 'column' && isLabelColumnSpec(column.spec);
+}
+
+export function getPTableColumnId(spec: PTableColumnSpec): PTableColumnId {
+  switch (spec.type) {
+    case 'axis':
+      return {
+        type: 'axis',
+        id: getAxisId(spec.spec),
+      };
+    case 'column':
+      return {
+        type: 'column',
+        id: spec.id,
+      };
+  }
+}
 
 /** Convert columnar data from the driver to rows, used by ag-grid */
 function columns2rows(
@@ -47,12 +75,15 @@ function columns2rows(
 ): PlAgDataTableV2Row[] {
   const rowData: PlAgDataTableV2Row[] = [];
   for (let iRow = 0; iRow < columns[0].data.length; ++iRow) {
-    const key = axes.map((iAxis) => {
-      return mapPTableValueToAxisKey(
-        pTableValue(columns[resultMapping[iAxis]], iRow),
-      );
-    });
-    const row: PlAgDataTableV2Row = { id: makeRowId(key), key };
+    const axesKey: PTableValueAxis[] = axes
+      .map((iAxis) => {
+        const value = pTableValue(columns[resultMapping[iAxis]], iRow);
+        if (!isPTableValueAxis(value))
+          throw new Error(`axis value is not a PTableValueAxis: ${JSON.stringify(value)}`);
+        return value;
+      });
+    const id = canonicalizeJson<PlTableRowId>(axesKey);
+    const row: PlAgDataTableV2Row = { id, axesKey };
     fields.forEach((field, iCol) => {
       row[field.toString() as `${number}`] = resultMapping[iCol] === -1
         ? PTableHidden
@@ -64,129 +95,133 @@ function columns2rows(
 }
 
 /** Calculate GridOptions for selected p-table data source */
-export async function calculateGridOptions(
-  generation: Ref<number>,
-  pfDriver: PFrameDriver,
-  model: PlDataTableModel,
-  sheets: PlDataTableSheet[],
-  hiddenColIds?: string[],
-  cellButtonAxisParams?: PlAgCellButtonAxisParams,
-): Promise<Pick<ManagedGridOptions<PlAgDataTableV2Row>, 'columnDefs' | 'serverSideDatasource'>> {
-  const pt = model.visibleTableHandle;
+export async function calculateGridOptions({
+  generation,
+  pfDriver,
+  model,
+  sheets,
+  dataRenderedTracker,
+  hiddenColIds,
+  cellButtonAxisParams,
+}: {
+  generation: Ref<number>;
+  pfDriver: PFrameDriver;
+  model: PlDataTableModel;
+  sheets: PlDataTableSheet[];
+  dataRenderedTracker: DeferredCircular<GridApi<PlAgDataTableV2Row>>;
+  hiddenColIds?: PlTableColumnIdJson[];
+  cellButtonAxisParams?: PlAgCellButtonAxisParams;
+}): Promise<Pick<ManagedGridOptions<PlAgDataTableV2Row>, 'columnDefs' | 'serverSideDatasource'> & { axesSpec: AxesSpec }> {
+  const stateGeneration = generation.value;
+  const stateChangedError = new Error('table state generation changed');
+
+  // get specs of the full table
   const specs = await pfDriver.getSpec(model.fullTableHandle);
-  type SpecId = string;
-  const specId = (spec: PTableColumnSpec): SpecId =>
-    spec.type === 'axis' ? canonicalize(getAxisId(spec.spec))! : spec.id;
+  if (stateGeneration !== generation.value) throw stateChangedError;
+
+  // get specs of the visible table (with hidden columns omitted)
+  const pt = model.visibleTableHandle;
   const dataSpecs = await pfDriver.getSpec(pt);
-  const dataSpecsMap = new Map<SpecId, number>();
-  dataSpecs.forEach((spec, i) => {
-    dataSpecsMap.set(specId(spec), i);
-  });
-  const specsToDataSpecsMapping = new Map<number, number>();
-  specs.forEach((spec, i) => {
-    const dataSpecIdx = dataSpecsMap.get(specId(spec));
-    if (dataSpecIdx === undefined && spec.type === 'axis')
-      throw new Error(`axis ${JSON.stringify(spec.spec)} not present in join result`);
-    specsToDataSpecsMapping.set(i, dataSpecIdx ?? -1);
-  });
+  if (stateGeneration !== generation.value) throw stateChangedError;
 
-  let numberOfAxes = specs.findIndex((s) => s.type === 'column');
-  if (numberOfAxes === -1) numberOfAxes = specs.length;
+  // create index mapping from full specs to visible subset (hidden columns would have -1)
+  const specId = (spec: PTableColumnSpec) => canonicalizeJson<PTableColumnId>(getPTableColumnId(spec));
+  const dataSpecsMap = new Map(
+    dataSpecs.entries().map(([i, spec]) => [specId(spec), i]),
+  );
+  const specsToDataSpecsMapping = new Map(
+    specs.entries().map(([i, spec]) => {
+      const dataSpecIdx = dataSpecsMap.get(specId(spec)) ?? -1;
+      if (dataSpecIdx === -1 && spec.type === 'axis')
+        throw new Error(`axis ${JSON.stringify(spec.spec)} not present in join result`);
+      return [i, dataSpecIdx];
+    }),
+  );
 
-  // column indices in the specs array that we are going to process
-  const indices = [...specs.keys()]
-    .filter(
-      (i) =>
-        !lodash.some(
-          sheets,
-          (sheet) =>
-            lodash.isEqual(getAxisId(sheet.axis), specs[i].id)
-            || (specs[i].type === 'column'
-              && specs[i].spec.name === 'pl7.app/label'
-              && specs[i].spec.axesSpec.length === 1
-              && lodash.isEqual(getAxisId(sheet.axis), getAxisId(specs[i].spec.axesSpec[0]))),
-        ),
-    )
-    .sort((a, b) => {
-      if (specs[a].type !== specs[b].type) return specs[a].type === 'axis' ? -1 : 1;
+  // gether indices of columns that would be displayed in the table
 
-      const aPriority = specs[a].spec.annotations?.['pl7.app/table/orderPriority'];
-      const bPriority = specs[b].spec.annotations?.['pl7.app/table/orderPriority'];
+  const sheetAxesIds = sheets.map((sheet) => getAxisId(sheet.axis));
+  const isPartitionedAxis = (axisId: AxisId) => sheetAxesIds.some((id) => matchAxisId(id, axisId));
 
-      if (aPriority === undefined) return bPriority === undefined ? 0 : 1;
-      if (bPriority === undefined) return -1;
-      return Number(bPriority) - Number(aPriority);
-    });
-
-  const fields = [...indices];
-
-  // process label columns
-  const firstColumnIdx = indices.findIndex((i) => specs[i].type === 'column');
-  for (let i = indices.length - 1; i >= firstColumnIdx; --i) {
-    const idx = indices[i];
-    if (!isLabelColumn(specs[idx])) continue;
-
-    // axis of labels
-    const axisId = getAxisId((specs[idx].spec as PColumnSpec).axesSpec[0]);
-    const axisIdx = indices.findIndex((idx) => lodash.isEqual(specs[idx].id, axisId));
-    if (axisIdx !== -1) {
-      indices[axisIdx] = idx;
+  const labelColumns: { axisId: AxisId; labelColumnIdx: number }[] = [];
+  const setLabelColumnIndex = (axisId: AxisId, labelColumnIdx: number) => {
+    if (!labelColumns.some((info) => matchAxisId(info.axisId, axisId))) {
+      labelColumns.push({ axisId, labelColumnIdx });
     } else {
       console.warn(`multiple label columns match axisId: ${JSON.stringify(axisId)}`);
     }
+  };
+  const getLabelColumnIndex = (axisId: AxisId) => {
+    return labelColumns.find((info) => matchAxisId(info.axisId, axisId))?.labelColumnIdx ?? -1;
+  };
 
-    // remove original axis
-    indices.splice(i, 1);
-    fields.splice(i, 1);
-  }
+  // filter out partitioned axes, label columns and hidden columns
+  let indices = specs.entries()
+    .filter(
+      ([i, spec]) => {
+        switch (spec.type) {
+          case 'axis': return !isPartitionedAxis(spec.id);
+          case 'column':
+            if (isLabelColumnSpec(spec.spec)) {
+              const labeledAxisId = getAxisId(spec.spec.axesSpec[0]);
+              if (!isPartitionedAxis(labeledAxisId)) {
+                setLabelColumnIndex(labeledAxisId, i);
+              }
+              return false;
+            }
+            return !isColumnHidden(spec.spec);
+        }
+      },
+    )
+    .map(([i]) => i)
+    .toArray();
 
-  const columnDefs: ColDef<PlAgDataTableV2Row>[] = [
+  // order columns by priority
+  indices.sort((a, b) => {
+    if (specs[a].type !== specs[b].type) return specs[a].type === 'axis' ? -1 : 1;
+
+    const aPriority = specs[a].spec.annotations?.['pl7.app/table/orderPriority'];
+    const bPriority = specs[b].spec.annotations?.['pl7.app/table/orderPriority'];
+
+    if (aPriority === undefined) return bPriority === undefined ? 0 : 1;
+    if (bPriority === undefined) return -1;
+    return Number(bPriority) - Number(aPriority);
+  });
+
+  // fields are indices of columns that would go to columnDefs
+  const fields = [...indices];
+  // replace axes with label columns
+  indices = indices.map((i) => {
+    const spec = specs[i];
+    if (spec.type === 'axis') {
+      const labelColumnIdx = getLabelColumnIndex(spec.id);
+      if (labelColumnIdx !== -1) {
+        return labelColumnIdx;
+      }
+    }
+    return i;
+  });
+  const columnDefs: ColDef<PlAgDataTableV2Row, PTableValue | PTableHidden>[] = [
     makeRowNumberColDef(),
-    ...fields.map((i) => makeColDef(i, specs[i], hiddenColIds, cellButtonAxisParams)),
+    ...fields.map((field, index) => makeColDef(field, specs[field], specs[indices[index]], hiddenColIds, cellButtonAxisParams)),
   ];
 
-  // mixing in axis indices
-
-  const allIndices = [...indices];
-
-  // axisIdx (0..<axesCount) -> idx in allIndices array
-  const axisToFieldIdx = new Map<number, number>();
-  for (let i = 0; i < numberOfAxes; ++i) axisToFieldIdx.set(i, -1);
-
-  allIndices.forEach((idx, i) => {
-    if (axisToFieldIdx.has(idx)) axisToFieldIdx.set(idx, i);
-  });
-  // at this point we have axis indices that are not listed in indices set to -1 in axisToFieldIdx
-
-  // adding those indices at the end of allIndices array, to make sure we have all the axes in our response
-  for (const [key, value] of axisToFieldIdx) {
-    if (value === -1) {
-      axisToFieldIdx.set(key, allIndices.length /* at this index value will be inserted in the next line */);
-      allIndices.push(key);
-    }
-  }
-
-  // Construct the `axes` array for key generation in `columns2rows`.
-  // The key components should be ordered according to the display order of axis columns from the `fields` array.
-  const axes: number[] = fields.filter((idx) => specs[idx].type === 'axis').map((idx) => {
-    const r = allIndices.indexOf(idx);
-    if (r === -1) {
-      console.error(
-        'Key construction error: Original axis spec index from `fields` not found in `allIndices`.',
-        {
-          originalAxisSpecIdx: idx,
-        },
-      );
-      throw new Error(
-        `Assertion failed: Original axis spec index ${idx} (from fields) for key construction not found in allIndices.`,
-      );
-    }
-    return r;
-  });
+  // mix in indices of skipped axes (axes that were partitioned or replaced with label columns)
+  const axesSpec = specs.values().filter((spec) => spec.type === 'axis').map((spec) => spec.spec).toArray();
+  const axes = axesSpec.keys()
+    .map((i) => {
+      let r = indices.indexOf(i);
+      if (r === -1) {
+        r = indices.length;
+        indices.push(i);
+      }
+      return r;
+    })
+    .toArray();
 
   const requestIndices: number[] = [];
   const resultMapping: number[] = [];
-  allIndices.forEach((idx) => {
+  indices.forEach((idx) => {
     const dataSpecIdx = specsToDataSpecsMapping.get(idx)!;
     if (dataSpecIdx !== -1) {
       resultMapping.push(requestIndices.length);
@@ -196,7 +231,6 @@ export async function calculateGridOptions(
     }
   });
 
-  const stateGeneration = generation.value;
   let rowCount = -1;
   let lastParams: IServerSideGetRowsParams | undefined = undefined;
   const serverSideDatasource: IServerSideDatasource<PlAgDataTableV2Row> = {
@@ -205,7 +239,7 @@ export async function calculateGridOptions(
       try {
         if (rowCount === -1) {
           const ptShape = await pfDriver.getShape(pt);
-          if (stateGeneration !== generation.value) return params.fail();
+          if (stateGeneration !== generation.value || params.api.isDestroyed()) return params.fail();
           rowCount = ptShape.rows;
         }
 
@@ -219,7 +253,7 @@ export async function calculateGridOptions(
         }
 
         // If sort has changed - show skeletons instead of data
-        if (lastParams && !lodash.isEqual(lastParams.request.sortModel, params.request.sortModel)) {
+        if (lastParams && !isJsonEqual(lastParams.request.sortModel, params.request.sortModel)) {
           return params.success({ rowData: [], rowCount });
         }
         lastParams = params;
@@ -233,7 +267,7 @@ export async function calculateGridOptions(
               offset: params.request.startRow,
               length,
             });
-            if (stateGeneration !== generation.value) return params.fail();
+            if (stateGeneration !== generation.value || params.api.isDestroyed()) return params.fail();
             rowData = columns2rows(fields, data, axes, resultMapping);
           }
         }
@@ -244,8 +278,9 @@ export async function calculateGridOptions(
             .filter((column) => column.getColId() !== PlAgDataTableRowNumberColId),
         );
         params.api.setGridOption('loading', false);
+        dataRenderedTracker.resolve(params.api);
       } catch (error: unknown) {
-        if (stateGeneration !== generation.value) return params.fail();
+        if (stateGeneration !== generation.value || params.api.isDestroyed()) return params.fail();
         params.api.setGridOption('loading', true);
         params.fail();
         console.trace(error);
@@ -254,6 +289,7 @@ export async function calculateGridOptions(
   };
 
   return {
+    axesSpec,
     columnDefs,
     serverSideDatasource,
   };
@@ -271,10 +307,14 @@ export type PlAgCellButtonAxisParams = {
 export function makeColDef(
   iCol: number,
   spec: PTableColumnSpec,
-  hiddenColIds: string[] | undefined,
+  labeledSpec: PTableColumnSpec,
+  hiddenColIds: PlTableColumnIdJson[] | undefined,
   cellButtonAxisParams?: PlAgCellButtonAxisParams,
-): ColDef {
-  const colId = canonicalizeJson<PTableColumnSpec>(spec);
+): ColDef<PlAgDataTableV2Row, PTableValue | PTableHidden> {
+  const colId = canonicalizeJson<PlTableColumnId>({
+    source: spec,
+    labeled: labeledSpec,
+  });
   const valueType = spec.type === 'axis' ? spec.spec.type : spec.spec.valueType;
   const columnRenderingSpec = getColumnRenderingSpec(spec);
   const cellStyle: CellStyle = {};
@@ -290,8 +330,8 @@ export function makeColDef(
     colId,
     mainMenuItems: defaultMainMenuItems,
     context: spec,
-    field: iCol.toString(),
-    headerName: spec.spec.annotations?.['pl7.app/label']?.trim() ?? 'Unlabeled ' + spec.type + ' ' + iCol.toString(),
+    field: `${iCol}`,
+    headerName: labeledSpec.spec.annotations?.['pl7.app/label']?.trim() ?? `Unlabeled ${spec.type} ${iCol}`,
     lockPosition: spec.type === 'axis',
     hide: hiddenColIds?.includes(colId) ?? isColumnOptional(spec.spec),
     valueFormatter: columnRenderingSpec.valueFormatter,
@@ -301,13 +341,13 @@ export function makeColDef(
           if (spec.type !== 'axis') return;
 
           const axisId = (params.colDef?.context as PTableColumnSpec)?.id as AxisId;
-          if (lodash.isEqual(axisId, cellButtonAxisParams.showCellButtonForAxisId)) {
+          if (isJsonEqual(axisId, cellButtonAxisParams.showCellButtonForAxisId)) {
             return {
               component: PlAgTextAndButtonCell,
               params: {
                 invokeRowsOnDoubleClick: cellButtonAxisParams.cellButtonInvokeRowsOnDoubleClick,
                 onClick: (params: ICellRendererParams<PlAgDataTableV2Row>) => {
-                  cellButtonAxisParams.trigger(params.data?.key);
+                  cellButtonAxisParams.trigger(params.data?.axesKey);
                 },
               },
             };
@@ -346,8 +386,4 @@ export function makeColDef(
       }
     })(),
   };
-}
-
-export function makeRowId(rowKey: PTableKey): PTableKeyJson {
-  return canonicalizeJson(rowKey);
 }

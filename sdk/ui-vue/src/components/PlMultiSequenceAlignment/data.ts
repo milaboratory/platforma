@@ -14,118 +14,45 @@ import {
   matchAxisId,
   parseJson,
   type PColumnIdAndSpec,
-  type PColumnPredicate,
   type PFrameHandle,
+  type PlMultiSequenceAlignmentColorSchemeOption,
+  type PlMultiSequenceAlignmentSettings,
   type PlSelectionModel,
   type PObjectId,
   type PTableColumnId,
   type PTableSorting,
   pTableValue,
 } from '@platforma-sdk/model';
-import { computedAsync } from '@vueuse/core';
-import { type MaybeRefOrGetter, ref, shallowRef, toValue } from 'vue';
-import { type Markup, markupAlignedSequence, parseMarkup } from './markup';
+import { ref, watch } from 'vue';
+import { highlightByChemicalProperties } from './chemical-properties';
+import {
+  highlightByMarkup,
+  markupAlignedSequence,
+  parseMarkup,
+} from './markup';
 import { multiSequenceAlignment } from './multi-sequence-alignment';
+import { getResidueCounts } from './residue-counts';
+import type { HighlightLegend, ResidueCounts } from './types';
 
 const getPFrameDriver = () => getRawPlatformaInstance().pFrameDriver;
 
 export const sequenceLimit = 1000;
 
-export function useSequenceColumnsOptions(
-  params: MaybeRefOrGetter<{
-    pFrame: PFrameHandle | undefined;
-    sequenceColumnPredicate: PColumnPredicate;
-  }>,
-) {
-  const error = shallowRef<Error>();
-  const data = computedAsync<OptionsWithDefaults<PObjectId>>(
-    async () => {
-      try {
-        error.value = undefined;
-        return await getSequenceColumnsOptions(toValue(params));
-      } catch (err) {
-        error.value = ensureError(err);
-        return getEmtpyOptions();
-      }
-    },
-    getEmtpyOptions(),
-  );
-  return { data, error };
-}
+export const useSequenceColumnsOptions = refreshOnDeepChange(
+  getSequenceColumnsOptions,
+);
 
-export function useLabelColumnsOptions(
-  params: MaybeRefOrGetter<{
-    pFrame: PFrameHandle | undefined;
-    sequenceColumnIds: PObjectId[];
-  }>,
-) {
-  const error = shallowRef<Error>();
-  const data = computedAsync<OptionsWithDefaults<PTableColumnId>>(
-    async () => {
-      try {
-        error.value = undefined;
-        return await getLabelColumnsOptions(toValue(params));
-      } catch (err) {
-        console.error(err);
-        error.value = ensureError(err);
-        return getEmtpyOptions();
-      }
-    },
-    getEmtpyOptions(),
-  );
-  return { data, error };
-}
+export const useLabelColumnsOptions = refreshOnDeepChange(
+  getLabelColumnsOptions,
+);
 
-export function useMarkupColumnsOptions(
-  params: MaybeRefOrGetter<{
-    pFrame: PFrameHandle | undefined;
-    sequenceColumnIds: PObjectId[];
-  }>,
-) {
-  const error = shallowRef<Error>();
-  const data = computedAsync<ListOptionNormalized<PObjectId>[]>(
-    async () => {
-      try {
-        error.value = undefined;
-        return await getMarkupColumnsOptions(toValue(params));
-      } catch (err) {
-        console.error(err);
-        error.value = ensureError(err);
-        return [];
-      }
-    },
-    [],
-  );
-  return { data, error };
-}
+export const useMarkupColumnsOptions = refreshOnDeepChange(
+  getMarkupColumnsOptions,
+);
 
-export function useMultipleAlignmentData(
-  params: MaybeRefOrGetter<{
-    pframe: PFrameHandle | undefined;
-    sequenceColumnIds: PObjectId[];
-    labelColumnIds: PTableColumnId[];
-    markupColumnId: PObjectId | undefined;
-    selection: PlSelectionModel | undefined;
-  }>,
-) {
-  const loading = ref(true);
-  const error = shallowRef<Error>();
-  const data = computedAsync<MultipleAlignmentData>(
-    async () => {
-      try {
-        error.value = undefined;
-        return await getMultipleAlignmentData(toValue(params));
-      } catch (err) {
-        console.error(err);
-        error.value = ensureError(err);
-        return getEmtpyMultipleAlignmentData();
-      }
-    },
-    getEmtpyMultipleAlignmentData(),
-    { evaluating: loading },
-  );
-  return { data, error, loading };
-}
+export const useMultipleAlignmentData = refreshOnDeepChange(
+  getMultipleAlignmentData,
+);
 
 async function getSequenceColumnsOptions({
   pFrame,
@@ -133,16 +60,18 @@ async function getSequenceColumnsOptions({
 }: {
   pFrame: PFrameHandle | undefined;
   sequenceColumnPredicate: (column: PColumnIdAndSpec) => boolean;
-}): Promise<OptionsWithDefaults<PObjectId>> {
-  if (!pFrame) return getEmtpyOptions();
+}): Promise<OptionsWithDefaults<PObjectId> | undefined> {
+  if (!pFrame) return;
+
   const pFrameDriver = getPFrameDriver();
   const columns = await pFrameDriver.listColumns(pFrame);
-  const options = columns
+  const options = columns.values()
     .filter((column) => sequenceColumnPredicate(column))
     .map(({ spec, columnId }) => ({
-      label: spec.annotations?.['pl7.app/label'] ?? 'Unlabelled column',
+      label: spec.annotations?.['pl7.app/label'] ?? 'Unlabeled column',
       value: columnId,
-    }));
+    }))
+    .toArray();
   const defaults = options.map(({ value }) => value);
   return { options, defaults };
 }
@@ -152,21 +81,24 @@ async function getLabelColumnsOptions({
   sequenceColumnIds,
 }: {
   pFrame: PFrameHandle | undefined;
-  sequenceColumnIds: PObjectId[];
-}): Promise<OptionsWithDefaults<PTableColumnId>> {
-  if (!pFrame) return getEmtpyOptions();
+  sequenceColumnIds: PObjectId[] | undefined;
+}): Promise<OptionsWithDefaults<PTableColumnId> | undefined> {
+  if (!pFrame || !sequenceColumnIds) return;
+
   const pFrameDriver = getPFrameDriver();
   const columns = await pFrameDriver.listColumns(pFrame);
   const optionMap = new Map<CanonicalizedJson<PTableColumnId>, string>();
 
-  const sequenceColumnsAxes = new Map(sequenceColumnIds.flatMap((id) => {
-    const column = columns.find(({ columnId }) => columnId === id);
-    if (!column) {
-      throw new Error(`Couldn't find sequence column (ID: \`${id}\`).`);
-    }
-    return column.spec.axesSpec
-      .map((spec) => [canonicalizeJson(getAxisId(spec)), spec]);
-  }));
+  const sequenceColumnsAxes = new Map(
+    sequenceColumnIds.values().flatMap((id) => {
+      const column = columns.find(({ columnId }) => columnId === id);
+      if (!column) {
+        throw new Error(`Couldn't find sequence column (ID: \`${id}\`).`);
+      }
+      return column.spec.axesSpec.values()
+        .map((spec) => [canonicalizeJson(getAxisId(spec)), spec]);
+    }),
+  );
 
   for (const [axisIdJson, axisSpec] of sequenceColumnsAxes.entries()) {
     const axisId = parseJson(axisIdJson);
@@ -179,16 +111,15 @@ async function getLabelColumnsOptions({
         : canonicalizeJson({ type: 'axis', id: axisId }),
       labelColumn?.spec.annotations?.['pl7.app/label']
       ?? axisSpec.annotations?.['pl7.app/label']
-      ?? 'Unlabelled axis',
+      ?? 'Unlabeled axis',
     );
   }
 
   const { hits: compatibleColumns } = await pFrameDriver.findColumns(pFrame, {
     columnFilter: {},
-    compatibleWith: Array.from(
-      sequenceColumnsAxes.keys(),
-      (axisIdJson) => parseJson(axisIdJson),
-    ),
+    compatibleWith: sequenceColumnsAxes.keys()
+      .map((axisIdJson) => parseJson(axisIdJson))
+      .toArray(),
     strictlyCompatible: false,
   });
 
@@ -197,21 +128,22 @@ async function getLabelColumnsOptions({
     if (optionMap.has(columnIdJson)) continue;
     optionMap.set(
       columnIdJson,
-      spec.annotations?.['pl7.app/label'] ?? 'Unlabelled column',
+      spec.annotations?.['pl7.app/label'] ?? 'Unlabeled column',
     );
   }
 
-  const options = Array.from(optionMap).map(
-    ([value, label]) => ({ label, value: parseJson(value) }),
-  );
+  const options = optionMap.entries()
+    .map(([value, label]) => ({ label, value: parseJson(value) }))
+    .toArray();
 
-  const defaults = options
+  const defaults = options.values()
     .filter(({ value }) => {
       if (value.type === 'axis') return true;
       const column = columns.find(({ columnId }) => columnId === value.id);
       return column && isLabelColumn(column.spec);
     })
-    .map(({ value }) => value);
+    .map(({ value }) => value)
+    .toArray();
   return { options, defaults };
 }
 
@@ -220,9 +152,10 @@ async function getMarkupColumnsOptions({
   sequenceColumnIds,
 }: {
   pFrame: PFrameHandle | undefined;
-  sequenceColumnIds: PObjectId[];
-}): Promise<ListOptionNormalized<PObjectId>[]> {
-  if (!pFrame || sequenceColumnIds.length !== 1) return [];
+  sequenceColumnIds: PObjectId[] | undefined;
+}): Promise<ListOptionNormalized<PObjectId>[] | undefined> {
+  if (!pFrame || sequenceColumnIds?.length !== 1) return;
+
   const pFrameDriver = getPFrameDriver();
   const columns = await pFrameDriver.listColumns(pFrame);
   const sequenceColumn = columns.find((column) =>
@@ -233,7 +166,7 @@ async function getMarkupColumnsOptions({
       `Couldn't find sequence column (ID: \`${sequenceColumnIds[0]}\`).`,
     );
   }
-  return columns
+  return columns.values()
     .filter((column) =>
       column.spec.annotations?.['pl7.app/sequence/isAnnotation'] === 'true'
       && isJsonEqual(sequenceColumn.spec.axesSpec, column.spec.axesSpec)
@@ -242,29 +175,30 @@ async function getMarkupColumnsOptions({
       ) => column.spec.domain?.[key] === value),
     ).map(({ columnId, spec }) => ({
       value: columnId,
-      label: spec.annotations?.['pl7.app/label'] ?? 'Unlabelled column',
-    }));
+      label: spec.annotations?.['pl7.app/label'] ?? 'Unlabeled column',
+    }))
+    .toArray();
 }
 
 async function getMultipleAlignmentData({
-  pframe,
+  pFrame,
   sequenceColumnIds,
   labelColumnIds,
-  markupColumnId,
   selection,
+  colorScheme,
+  alignmentParams,
 }: {
-  pframe: PFrameHandle | undefined;
-  sequenceColumnIds: PObjectId[];
-  labelColumnIds: PTableColumnId[];
-  markupColumnId: PObjectId | undefined;
+  pFrame: PFrameHandle | undefined;
+  sequenceColumnIds: PObjectId[] | undefined;
+  labelColumnIds: PTableColumnId[] | undefined;
   selection: PlSelectionModel | undefined;
-}): Promise<MultipleAlignmentData> {
-  if (!pframe || sequenceColumnIds.length === 0) {
-    return getEmtpyMultipleAlignmentData();
-  }
+  colorScheme: PlMultiSequenceAlignmentColorSchemeOption;
+  alignmentParams: PlMultiSequenceAlignmentSettings['alignmentParams'];
+}): Promise<MultipleAlignmentData | undefined> {
+  if (!pFrame || !sequenceColumnIds?.length || !labelColumnIds) return;
 
   const pFrameDriver = getPFrameDriver();
-  const columns = await pFrameDriver.listColumns(pframe);
+  const columns = await pFrameDriver.listColumns(pFrame);
   const linkerColumns = columns.filter((column) => isLinkerColumn(column.spec));
 
   const filterColumn = createRowSelectionColumn({ selection });
@@ -312,19 +246,21 @@ async function getMultipleAlignmentData({
     });
 
   // and markup
-  if (markupColumnId) {
-    secondaryEntry.push({ type: 'column', column: markupColumnId });
+  if (colorScheme.type === 'markup') {
+    secondaryEntry.push({ type: 'column', column: colorScheme.columnId });
   }
 
   const sorting: PTableSorting[] = Array.from(
-    new Set(sequenceColumnIds.flatMap((id) => {
-      const column = columns.find(({ columnId }) => columnId === id);
-      if (!column) {
-        throw new Error(`Couldn't find sequence column (ID: ${id})`);
-      }
-      return column.spec.axesSpec
-        .map((spec) => canonicalizeJson(getAxisId(spec)));
-    })),
+    new Set(
+      sequenceColumnIds.values().flatMap((id) => {
+        const column = columns.find(({ columnId }) => columnId === id);
+        if (!column) {
+          throw new Error(`Couldn't find sequence column (ID: ${id})`);
+        }
+        return column.spec.axesSpec
+          .map((spec) => canonicalizeJson(getAxisId(spec)));
+      }),
+    ),
   )
     .sort()
     .map((id) => ({
@@ -344,7 +280,7 @@ async function getMultipleAlignmentData({
   };
 
   const table = await pFrameDriver.calculateTableData(
-    pframe,
+    pFrame,
     JSON.parse(JSON.stringify(request)),
     {
       offset: 0,
@@ -383,17 +319,17 @@ async function getMultipleAlignmentData({
     return column;
   });
 
-  const markupColumn = markupColumnId
-    && table.find(({ spec }) => spec.id === markupColumnId);
-
   const alignedSequences = await Promise.all(
     sequenceColumns.map((column) =>
-      multiSequenceAlignment(Array.from(
-        { length: rowCount },
-        (_, row) =>
-          pTableValue(column.data, row, { na: '', absent: '' })?.toString()
-          ?? '',
-      )),
+      multiSequenceAlignment(
+        Array.from(
+          { length: rowCount },
+          (_, row) =>
+            pTableValue(column.data, row, { na: '', absent: '' })?.toString()
+            ?? '',
+        ),
+        alignmentParams,
+      ),
     ),
   );
 
@@ -403,7 +339,7 @@ async function getMultipleAlignmentData({
   );
 
   const sequenceNames = sequenceColumns.map((column) =>
-    column.spec.spec.annotations?.['pl7.app/label'] ?? 'Unlabelled column',
+    column.spec.spec.annotations?.['pl7.app/label'] ?? 'Unlabeled column',
   );
 
   const labels = Array.from(
@@ -414,19 +350,32 @@ async function getMultipleAlignmentData({
       ),
   );
 
+  const concatenatedSequences = sequences.map((row) => row.join(' '));
+  const residueCounts = getResidueCounts(concatenatedSequences);
+
   const result: MultipleAlignmentData = {
-    sequences,
+    sequences: concatenatedSequences,
     sequenceNames,
-    labels,
+    labelRows: labels,
     exceedsLimit,
+    residueCounts,
   };
 
-  if (markupColumn) {
-    const labels = JSON.parse(
-      markupColumn.spec.spec.annotations
-        ?.['pl7.app/sequence/annotation/mapping'] ?? '{}',
+  if (colorScheme.type === 'chemical-properties') {
+    result.highlightImage = highlightByChemicalProperties({
+      sequences: concatenatedSequences,
+      residueCounts,
+    });
+  } else if (colorScheme.type === 'markup') {
+    const markupColumn = table.find(({ spec }) =>
+      spec.id === colorScheme.columnId,
     );
-    const data = Array.from(
+    if (!markupColumn) {
+      throw new Error(
+        `Couldn't find markup column (ID: \`${colorScheme.columnId}\`).`,
+      );
+    }
+    const markupRows = Array.from(
       { length: rowCount },
       (_, row) => {
         const markup = parseMarkup(
@@ -437,32 +386,59 @@ async function getMultipleAlignmentData({
         return markupAlignedSequence(sequences[row][0], markup);
       },
     );
-    result.markup = { labels, data };
+    const labels: Record<string, string> = JSON.parse(
+      markupColumn.spec.spec.annotations
+        ?.['pl7.app/sequence/annotation/mapping'] ?? '{}',
+    );
+    result.highlightImage = highlightByMarkup({
+      markupRows,
+      columnCount: concatenatedSequences.at(0)?.length ?? 0,
+      labels,
+    });
   }
 
   return result;
 }
 
-function getEmtpyOptions<T>(): OptionsWithDefaults<T> {
-  return { options: [], defaults: [] };
-}
-
-function getEmtpyMultipleAlignmentData(): MultipleAlignmentData {
-  return {
-    sequences: [],
-    sequenceNames: [],
-    labels: [],
-    exceedsLimit: false,
+function refreshOnDeepChange<T, P>(cb: (params: P) => Promise<T>) {
+  const data = ref<T>();
+  const isLoading = ref(true);
+  const error = ref<Error>();
+  let requestId: symbol;
+  return (paramsGetter: () => P) => {
+    watch(paramsGetter, async (params, prevParams) => {
+      if (isJsonEqual(params, prevParams)) return;
+      const currentRequestId = requestId = Symbol();
+      try {
+        error.value = undefined;
+        isLoading.value = true;
+        const result = await cb(params);
+        if (currentRequestId === requestId) {
+          data.value = result;
+        }
+      } catch (err) {
+        console.error(err);
+        if (currentRequestId === requestId) {
+          error.value = ensureError(err);
+        }
+      } finally {
+        if (currentRequestId === requestId) {
+          isLoading.value = false;
+        }
+      }
+    }, { immediate: true });
+    return { data, isLoading, error };
   };
 }
 
 type MultipleAlignmentData = {
-  sequences: string[][];
+  sequences: string[];
   sequenceNames: string[];
-  labels: string[][];
-  markup?: {
-    labels: Record<string, string>;
-    data: Markup[];
+  labelRows: string[][];
+  residueCounts: ResidueCounts;
+  highlightImage?: {
+    blob: Blob;
+    legend: HighlightLegend;
   };
   exceedsLimit: boolean;
 };

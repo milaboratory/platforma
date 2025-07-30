@@ -6,6 +6,7 @@ exec := import(":exec")
 json := import("json")
 text := import("text")
 slices := import(":slices")
+validation := import(":validation")
 execConstants := import(":exec.constants")
 
 /**
@@ -166,6 +167,7 @@ workflow := func() {
 				if smart.isReference(frameInput) {
 					fileRef = frameInput
 				} else {
+					validation.assertType(frameInput, ["or", "string", "bytes"])
 					fileContent = frameInput
 				}
 			}
@@ -434,6 +436,29 @@ _newDataFrame = func(parentWorkflow, dfName) {
 		return cols
 	}
 
+	_mapExprsToStepColsAllowingStrings := func(exprs, methodName) {
+		ll.assert(len(exprs) > 0, methodName + " requires at least one expression argument.")
+		cols := []
+		for expr in exprs {
+			if is_string(expr) {
+				// For strings, interpret as column name
+				colExpr := exp.col(expr)
+				cols = append(cols, {
+					name: colExpr.getAlias(),
+					expression: colExpr.getExpression()
+				})
+			} else if exp._isExpression(expr) {
+				cols = append(cols, {
+					name: expr.getAlias(),
+					expression: expr.getExpression()
+				})
+			} else {
+				ll.panic("Invalid argument to " + methodName + ": Expected an expression object or string column name, got %v", expr)
+			}
+		}
+		return cols
+	}
+
 	_addSaveStep := func(outputFile, ...options) {
 		opts := {}
 		if len(options) > 0 {
@@ -514,17 +539,18 @@ _newDataFrame = func(parentWorkflow, dfName) {
 		 * Selects a subset of columns, potentially transforming them or creating new ones.
 		 * Only the columns resulting from the provided expressions will be present in the new DataFrame.
 		 *
-		 * @param ...expressions {object} - One or more expression objects. Each expression should define an alias
-		 *                                   using `.alias("column_name")` which will be the name of the column in the output.
+		 * @param ...expressions {object|string} - One or more expression objects or string column names.
+		 *                                          Expression objects should define an alias using `.alias("column_name")`.
+		 *                                          String arguments are interpreted as column names.
 		 * @returns {object} - A new DataFrame object containing only the selected/transformed columns.
 		 * @example
 		 *   selectedDf := df.select(
-		 *       pt.col("id"),
-		 *       pt.col("value").plus(pt.lit(10)).alias("value_plus_10")
+		 *       "id",  // String column name
+		 *       pt.col("value").plus(pt.lit(10)).alias("value_plus_10")  // Expression object
 		 *   )
 		 */
 		select: func(...expressions) {
-			stepCols := _mapExprsToStepCols(expressions, "select")
+			stepCols := _mapExprsToStepColsAllowingStrings(expressions, "select")
 			outputDfName := parentWorkflow._newAnonymousDataFrameId()
 			parentWorkflow.addRawStep({
 				type: "select",

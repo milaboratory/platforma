@@ -1,5 +1,151 @@
 # @milaboratories/pl-drivers
 
+## 1.7.1
+
+### Patch Changes
+
+- Updated dependencies [636088d]
+- Updated dependencies [636088d]
+  - @milaboratories/pl-model-common@1.19.1
+
+## 1.7.0
+
+### Minor Changes
+
+- 98b0ded: drivers: frontend: replace path with url with custom protocol and signature
+
+### Patch Changes
+
+- 98b0ded: pl-drivers: refactoring: move url driver to a separate dir
+- Updated dependencies [98b0ded]
+  - @milaboratories/pl-model-common@1.19.0
+
+## 1.6.13
+
+### Patch Changes
+
+- Updated dependencies [3271446]
+  - @milaboratories/pl-model-common@1.18.0
+
+## 1.6.12
+
+### Patch Changes
+
+- Updated dependencies [188ee1e]
+  - @milaboratories/ts-helpers@1.4.2
+  - @milaboratories/computable@2.6.2
+  - @milaboratories/pl-client@2.11.5
+  - @milaboratories/pl-tree@1.7.4
+
+## 1.6.11
+
+### Patch Changes
+
+- Updated dependencies [07b833e]
+  - @milaboratories/computable@2.6.1
+  - @milaboratories/pl-tree@1.7.3
+
+## 1.6.10
+
+### Patch Changes
+
+- Updated dependencies [c29b40f]
+  - @milaboratories/helpers@1.6.19
+  - @milaboratories/pl-model-common@1.17.0
+  - @milaboratories/computable@2.6.0
+  - @milaboratories/pl-client@2.11.4
+  - @milaboratories/pl-tree@1.7.2
+  - @milaboratories/ts-helpers@1.4.1
+
+## 1.6.9
+
+### Patch Changes
+
+- Updated dependencies [e7c0edb]
+  - @milaboratories/pl-model-common@1.17.0
+
+## 1.6.8
+
+### Patch Changes
+
+- Updated dependencies [9bb26ff]
+  - @milaboratories/pl-model-common@1.16.5
+
+## 1.6.7
+
+### Patch Changes
+
+- Updated dependencies [5e69d64]
+  - @milaboratories/helpers@1.6.18
+
+## 1.6.6
+
+### Patch Changes
+
+- Updated dependencies [c12345a]
+  - @milaboratories/pl-model-common@1.16.4
+
+## 1.6.5
+
+### Patch Changes
+
+- 54e22c2: update protofiles twice
+- Updated dependencies [54e22c2]
+  - @milaboratories/pl-client@2.11.4
+  - @milaboratories/pl-tree@1.7.2
+
+## 1.6.4
+
+### Patch Changes
+
+- 4666cae: pl-client and pl-drivers: update proto
+- Updated dependencies [4666cae]
+  - @milaboratories/pl-client@2.11.3
+  - @milaboratories/pl-tree@1.7.1
+
+## 1.6.3
+
+### Patch Changes
+
+- Updated dependencies [7be8a2b]
+  - @milaboratories/pl-model-common@1.16.3
+
+## 1.6.2
+
+### Patch Changes
+
+- Updated dependencies [dfb0086]
+  - @milaboratories/pl-model-common@1.16.2
+
+## 1.6.1
+
+### Patch Changes
+
+- Updated dependencies [d525c60]
+  - @milaboratories/pl-model-common@1.16.1
+
+## 1.6.0
+
+### Minor Changes
+
+- 3b46d33: - Reporting of change marker in computables provided by this module
+
+### Patch Changes
+
+- Updated dependencies [3b46d33]
+- Updated dependencies [3b46d33]
+- Updated dependencies [3b46d33]
+  - @milaboratories/pl-tree@1.7.0
+  - @milaboratories/pl-model-common@1.16.0
+  - @milaboratories/computable@2.6.0
+
+## 1.5.79
+
+### Patch Changes
+
+- Updated dependencies [bd788f9]
+  - @milaboratories/pl-model-common@1.15.9
+
 ## 1.5.78
 
 ### Patch Changes

@@ -1,5 +1,113 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.8.4
+
+### Patch Changes
+
+- 636088d: Removed PValue type everywhere, use PTableValue for UI operations instead
+- 636088d: PFrames - update PTableVector format
+- Updated dependencies [636088d]
+- Updated dependencies [636088d]
+  - @milaboratories/pl-model-common@1.19.1
+
+## 1.8.3
+
+### Patch Changes
+
+- Updated dependencies [98b0ded]
+  - @milaboratories/pl-model-common@1.19.0
+
+## 1.8.2
+
+### Patch Changes
+
+- Updated dependencies [3271446]
+  - @milaboratories/pl-model-common@1.18.0
+
+## 1.8.1
+
+### Patch Changes
+
+- ef9f418: Fix PFrames setColumnData method signature
+
+## 1.8.0
+
+### Minor Changes
+
+- e7c0edb: Platforma API v2 (long pooling) + support v1 api in sdk
+
+### Patch Changes
+
+- Updated dependencies [e7c0edb]
+  - @milaboratories/pl-model-common@1.17.0
+
+## 1.7.52
+
+### Patch Changes
+
+- Updated dependencies [9bb26ff]
+  - @milaboratories/pl-model-common@1.16.5
+
+## 1.7.51
+
+### Patch Changes
+
+- Updated dependencies [c12345a]
+  - @milaboratories/pl-model-common@1.16.4
+
+## 1.7.50
+
+### Patch Changes
+
+- 7afc448: Add optional "deprecated" flag to the block meta
+
+## 1.7.49
+
+### Patch Changes
+
+- Updated dependencies [7be8a2b]
+  - @milaboratories/pl-model-common@1.16.3
+
+## 1.7.48
+
+### Patch Changes
+
+- Updated dependencies [dfb0086]
+  - @milaboratories/pl-model-common@1.16.2
+
+## 1.7.47
+
+### Patch Changes
+
+- Updated dependencies [d525c60]
+  - @milaboratories/pl-model-common@1.16.1
+
+## 1.7.46
+
+### Patch Changes
+
+- 98d48f6: PFrame driver - limit calculateTableData results cache by disk footprint
+
+## 1.7.45
+
+### Patch Changes
+
+- a0c607a: PFrames version bump
+
+## 1.7.44
+
+### Patch Changes
+
+- Updated dependencies [3b46d33]
+  - @milaboratories/pl-model-common@1.16.0
+
+## 1.7.43
+
+### Patch Changes
+
+- Updated dependencies [bd788f9]
+  - @milaboratories/pl-model-common@1.15.9
+
 ## 1.7.42
 
 ### Patch Changes

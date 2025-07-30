@@ -32,9 +32,12 @@ export function registerSvg(raw: string, name?: string): SvgMeta {
   if (!registeredRaw.has(raw)) {
     const id = `svg-${name ? `${name}-` : ''}${uniqueId(16)}`;
 
-    const widthMatch = raw.match(/width="(\d+)(px)?"/)?.[1];
-    const heightMatch = raw.match(/height="(\d+)(px)?"/)?.[1];
-    const viewBoxParts = raw.match(/viewBox="[-+]?\d*\.?\d+(?:e[-+]?\d+)?"/);
+    const openSvgTagMatch = raw.match(/^<svg[^>]*>/i)?.[0];
+    const fillMatch = openSvgTagMatch?.match(/fill\s*=\s*"(.*?)"/)?.[1];
+    const strokeMatch = openSvgTagMatch?.match(/stroke\s*=\s*"(.*?)"/)?.[1];
+    const widthMatch = openSvgTagMatch?.match(/width\s*=\s*"(\d+)(px)?"/)?.[1];
+    const heightMatch = openSvgTagMatch?.match(/height\s*=\s*"(\d+)(px)?"/)?.[1];
+    const viewBoxParts = openSvgTagMatch?.match(/viewBox\s*=\s*"[-+]?\d*\.?\d+(?:e[-+]?\d+)?"/);
     const viewBoxWidthMatch = viewBoxParts?.[2];
     const viewBoxHeightMatch = viewBoxParts?.[3];
     let width = Number(viewBoxWidthMatch ?? widthMatch ?? 16);
@@ -45,11 +48,26 @@ export function registerSvg(raw: string, name?: string): SvgMeta {
 
     let fillIdx = 0;
     let strokeIdx = 0;
+    const fillAttr = fillMatch ? `fill="${fillMatch}"` : '';
+    const strokeAttr = strokeMatch ? `stroke="${strokeMatch}"` : '';
+
     const preparedSvg = raw
-      .replace(/^<svg[^>]*>/, `<svg id="${id}" viewBox="${viewBox}">`)
+      .replace(/^<svg[^>]*>/i, `<svg id="${id}" viewBox="${viewBox}" ${fillAttr} ${strokeAttr}>`)
       .replace(/<\/svg>\s*$/, '</svg>')
-      .replace(/\bfill\s*=\s*(['"])(.*?)\1/gi, (_, q, value) => `fill=${q}var(--svg-fill-${fillIdx++}, ${value})${q}`)
-      .replace(/\bstroke\s*=\s*(['"])(.*?)\1/gi, (_, q, value) => `stroke=${q}var(--svg-stroke-${strokeIdx++}, ${value})${q}`);
+      .replace(
+        /\bfill\s*=\s*(['"])(.*?)\1/gi,
+        (_, q, value) =>
+          /^(none|transparent)$/i.test(value)
+            ? `fill=${q}${value}${q}`
+            : `fill=${q}var(--svg-fill-${fillIdx++}, ${value})${q}`,
+      )
+      .replace(
+        /\bstroke\s*=\s*(['"])(.*?)\1/gi,
+        (_, q, value) =>
+          /^(none|transparent)$/i.test(value)
+            ? `stroke=${q}${value}${q}`
+            : `stroke=${q}var(--svg-stroke-${strokeIdx++}, ${value})${q}`,
+      );
 
     const template = document.createElement('template');
     template.innerHTML = preparedSvg;

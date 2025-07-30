@@ -1,5 +1,50 @@
 # @milaboratories/pl-tree
 
+## 1.7.4
+
+### Patch Changes
+
+- Updated dependencies [188ee1e]
+  - @milaboratories/ts-helpers@1.4.2
+  - @milaboratories/computable@2.6.2
+  - @milaboratories/pl-client@2.11.5
+  - @milaboratories/pl-errors@1.1.12
+
+## 1.7.3
+
+### Patch Changes
+
+- Updated dependencies [07b833e]
+  - @milaboratories/computable@2.6.1
+
+## 1.7.2
+
+### Patch Changes
+
+- Updated dependencies [54e22c2]
+  - @milaboratories/pl-client@2.11.4
+  - @milaboratories/pl-errors@1.1.11
+
+## 1.7.1
+
+### Patch Changes
+
+- Updated dependencies [4666cae]
+  - @milaboratories/pl-client@2.11.3
+  - @milaboratories/pl-errors@1.1.10
+
+## 1.7.0
+
+### Minor Changes
+
+- 3b46d33: - Reporting of change marker in computables provided by this module
+  - Per key reporting of KV changes
+
+### Patch Changes
+
+- Updated dependencies [3b46d33]
+  - @milaboratories/computable@2.6.0
+
 ## 1.6.12
 
 ### Patch Changes

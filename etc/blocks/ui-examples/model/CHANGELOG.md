@@ -1,5 +1,155 @@
 # @milaboratories/milaboratories.ui-examples.model
 
+## 1.2.20
+
+### Patch Changes
+
+- Updated dependencies [636088d]
+  - @platforma-sdk/model@1.42.4
+
+## 1.2.19
+
+### Patch Changes
+
+- 911f928: Fix PlNumberField min/max constraint
+
+## 1.2.18
+
+### Patch Changes
+
+- @platforma-sdk/model@1.42.1
+
+## 1.2.17
+
+### Patch Changes
+
+- @platforma-sdk/model@1.42.0
+
+## 1.2.16
+
+### Patch Changes
+
+- Updated dependencies [c29b40f]
+  - @platforma-sdk/model@1.41.6
+
+## 1.2.15
+
+### Patch Changes
+
+- 41140f4: PlAgDataTableV2 - selection & focusRow updated
+- Updated dependencies [41140f4]
+  - @platforma-sdk/model@1.41.4
+
+## 1.2.14
+
+### Patch Changes
+
+- Updated dependencies [d469422]
+  - @platforma-sdk/model@1.41.3
+
+## 1.2.13
+
+### Patch Changes
+
+- Updated dependencies [28b630f]
+  - @platforma-sdk/model@1.41.2
+
+## 1.2.12
+
+### Patch Changes
+
+- Updated dependencies [e48177a]
+  - @platforma-sdk/model@1.41.1
+
+## 1.2.11
+
+### Patch Changes
+
+- Updated dependencies [e7c0edb]
+  - @platforma-sdk/model@1.41.0
+
+## 1.2.10
+
+### Patch Changes
+
+- 9bb26ff: PlAgDataTableV2 - linker columns handling fix
+- Updated dependencies [9bb26ff]
+  - @platforma-sdk/model@1.40.6
+
+## 1.2.9
+
+### Patch Changes
+
+- Updated dependencies [5e69d64]
+  - @platforma-sdk/model@1.40.5
+
+## 1.2.8
+
+### Patch Changes
+
+- d6334f9: Adopt PlAgDataTableV2 for v2api in desktop
+
+## 1.2.7
+
+### Patch Changes
+
+- 890240e: PlAgDataTableV2 - support sorting and filtering by label column
+- Updated dependencies [890240e]
+  - @platforma-sdk/model@1.40.1
+
+## 1.2.6
+
+### Patch Changes
+
+- Updated dependencies [30ce5da]
+  - @platforma-sdk/model@1.40.0
+
+## 1.2.5
+
+### Patch Changes
+
+- Updated dependencies [c12345a]
+- Updated dependencies [c12345a]
+  - @platforma-sdk/model@1.39.18
+
+## 1.2.4
+
+### Patch Changes
+
+- @platforma-sdk/model@1.39.8
+
+## 1.2.3
+
+### Patch Changes
+
+- @platforma-sdk/model@1.39.7
+
+## 1.2.2
+
+### Patch Changes
+
+- Updated dependencies [d525c60]
+  - @platforma-sdk/model@1.39.6
+
+## 1.2.1
+
+### Patch Changes
+
+- Updated dependencies [3b46d33]
+- Updated dependencies [3b46d33]
+  - @platforma-sdk/model@1.39.0
+
+## 1.2.0
+
+### Minor Changes
+
+- bd788f9: PlAgDataTable V1 removed, V2 significantly changed
+
+### Patch Changes
+
+- Updated dependencies [bd788f9]
+  - @platforma-sdk/model@1.38.0
+
 ## 1.1.79
 
 ### Patch Changes

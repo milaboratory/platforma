@@ -1,5 +1,197 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.5.23
+
+### Patch Changes
+
+- Updated dependencies [636088d]
+  - @platforma-sdk/model@1.42.4
+  - @milaboratories/milaboratories.ui-examples.model@1.2.20
+
+## 1.5.22
+
+### Patch Changes
+
+- 911f928: Fix PlNumberField min/max constraint
+- Updated dependencies [911f928]
+  - @milaboratories/milaboratories.ui-examples.model@1.2.19
+
+## 1.5.21
+
+### Patch Changes
+
+- @platforma-sdk/model@1.42.1
+- @milaboratories/milaboratories.ui-examples.model@1.2.18
+
+## 1.5.20
+
+### Patch Changes
+
+- @platforma-sdk/model@1.42.0
+- @milaboratories/milaboratories.ui-examples.model@1.2.17
+
+## 1.5.19
+
+### Patch Changes
+
+- 093dbda: explicit setup z-index
+
+## 1.5.18
+
+### Patch Changes
+
+- 85b9887: PlAgDataTable - removed API for reading rows data
+
+## 1.5.17
+
+### Patch Changes
+
+- Updated dependencies [c29b40f]
+  - @platforma-sdk/model@1.41.6
+  - @milaboratories/milaboratories.ui-examples.model@1.2.16
+
+## 1.5.16
+
+### Patch Changes
+
+- 41140f4: PlAgDataTableV2 - selection & focusRow updated
+- Updated dependencies [41140f4]
+  - @milaboratories/milaboratories.ui-examples.model@1.2.15
+  - @platforma-sdk/model@1.41.4
+
+## 1.5.15
+
+### Patch Changes
+
+- Updated dependencies [d469422]
+  - @platforma-sdk/model@1.41.3
+  - @milaboratories/milaboratories.ui-examples.model@1.2.14
+
+## 1.5.14
+
+### Patch Changes
+
+- Updated dependencies [28b630f]
+  - @platforma-sdk/model@1.41.2
+  - @milaboratories/milaboratories.ui-examples.model@1.2.13
+
+## 1.5.13
+
+### Patch Changes
+
+- Updated dependencies [e48177a]
+  - @platforma-sdk/model@1.41.1
+  - @milaboratories/milaboratories.ui-examples.model@1.2.12
+
+## 1.5.12
+
+### Patch Changes
+
+- Updated dependencies [e7c0edb]
+  - @platforma-sdk/model@1.41.0
+  - @milaboratories/milaboratories.ui-examples.model@1.2.11
+
+## 1.5.11
+
+### Patch Changes
+
+- 9bb26ff: PlAgDataTableV2 - linker columns handling fix
+- Updated dependencies [9bb26ff]
+  - @milaboratories/milaboratories.ui-examples.model@1.2.10
+  - @platforma-sdk/model@1.40.6
+
+## 1.5.10
+
+### Patch Changes
+
+- 5e69d64: Add annotations components and model
+- Updated dependencies [5e69d64]
+  - @platforma-sdk/model@1.40.5
+  - @milaboratories/milaboratories.ui-examples.model@1.2.9
+
+## 1.5.9
+
+### Patch Changes
+
+- d6334f9: Adopt PlAgDataTableV2 for v2api in desktop
+- Updated dependencies [d6334f9]
+  - @milaboratories/milaboratories.ui-examples.model@1.2.8
+
+## 1.5.8
+
+### Patch Changes
+
+- 890240e: PlAgDataTableV2 - support sorting and filtering by label column
+- Updated dependencies [890240e]
+  - @milaboratories/milaboratories.ui-examples.model@1.2.7
+  - @platforma-sdk/model@1.40.1
+
+## 1.5.7
+
+### Patch Changes
+
+- Updated dependencies [30ce5da]
+  - @platforma-sdk/model@1.40.0
+  - @milaboratories/milaboratories.ui-examples.model@1.2.6
+
+## 1.5.6
+
+### Patch Changes
+
+- Updated dependencies [c12345a]
+- Updated dependencies [c12345a]
+  - @platforma-sdk/model@1.39.18
+  - @milaboratories/milaboratories.ui-examples.model@1.2.5
+
+## 1.5.5
+
+### Patch Changes
+
+- 6540ce2: Add PlAgDataTableV2 reactive text examples
+
+## 1.5.4
+
+### Patch Changes
+
+- @platforma-sdk/model@1.39.8
+- @milaboratories/milaboratories.ui-examples.model@1.2.4
+
+## 1.5.3
+
+### Patch Changes
+
+- @platforma-sdk/model@1.39.7
+- @milaboratories/milaboratories.ui-examples.model@1.2.3
+
+## 1.5.2
+
+### Patch Changes
+
+- Updated dependencies [d525c60]
+  - @platforma-sdk/model@1.39.6
+  - @milaboratories/milaboratories.ui-examples.model@1.2.2
+
+## 1.5.1
+
+### Patch Changes
+
+- Updated dependencies [3b46d33]
+- Updated dependencies [3b46d33]
+  - @platforma-sdk/model@1.39.0
+  - @milaboratories/milaboratories.ui-examples.model@1.2.1
+
+## 1.5.0
+
+### Minor Changes
+
+- bd788f9: PlAgDataTable V1 removed, V2 significantly changed
+
+### Patch Changes
+
+- Updated dependencies [bd788f9]
+  - @milaboratories/milaboratories.ui-examples.model@1.2.0
+  - @platforma-sdk/model@1.38.0
+
 ## 1.4.25
 
 ### Patch Changes

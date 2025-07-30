@@ -1,45 +1,47 @@
 import type { GridApi, IRowNode } from 'ag-grid-enterprise';
-import { nextTick, shallowRef, watchEffect } from 'vue';
+import { Deferred } from '@milaboratories/helpers';
 
-export function makeOnceTracker<TContext = undefined>() {
-  const state = shallowRef<[false, undefined] | [true, TContext]>([false, undefined]);
-  const track = (ctx: TContext) => state.value = [true, ctx];
-  const reset = () => state.value = [false, undefined];
-  const onceTracked = (callback: (ctx: TContext) => void) => {
-    const { stop } = watchEffect(() => {
-      const [tracked, context] = state.value;
-      if (tracked) {
-        callback(context);
-        stop();
-      }
+class DeferredTracked<T> extends Deferred<T> {
+  #resolved = false;
+
+  constructor() {
+    super();
+    this.promise.finally(() => {
+      this.#resolved = true;
     });
-    return stop;
-  };
-  return { track, reset, onceTracked };
-}
-export type OnceTracker<TContext = undefined> = ReturnType<typeof makeOnceTracker<TContext>>;
+  }
 
-export function trackFirstDataRendered(gridApi: GridApi, tracker: OnceTracker<GridApi>): void {
-  gridApi.addEventListener('firstDataRendered', (event) => {
-    if (event.api.getGridOption('rowModelType') === 'clientSide') {
-      tracker.track(event.api);
-    }
-  });
-  gridApi.addEventListener('modelUpdated', (event) => {
-    if (event.api.getGridOption('rowModelType') === 'serverSide') {
-      const groupState = event.api.getServerSideGroupLevelState();
-      if (groupState && groupState.length > 0 && groupState[0].lastRowIndexKnown) {
-        tracker.track(event.api);
-      }
-    }
-  });
-  gridApi.addEventListener('gridPreDestroyed', () => tracker.reset());
+  public get resolved(): boolean {
+    return this.#resolved;
+  }
 }
 
-function ensureNodeVisible(api: GridApi, rowId: string): void {
+export class DeferredCircular<T> {
+  private deferred = new DeferredTracked<T>();
+
+  public get promise(): Promise<T> {
+    return this.deferred.promise;
+  }
+
+  public resolve(ctx: T): void {
+    this.deferred.resolve(ctx);
+  }
+
+  public get resolved(): boolean {
+    return this.deferred.resolved;
+  }
+
+  public reset(): void {
+    if (this.resolved) {
+      this.deferred = new DeferredTracked<T>();
+    }
+  }
+}
+
+export function ensureNodeVisible<TData>(api: GridApi<TData>, selector: (row: IRowNode<TData>) => boolean): boolean {
   let rowIndex: number | null = null;
-  const nodeSelector = (row: IRowNode): boolean => {
-    if (row.id === rowId) {
+  const nodeSelector = (row: IRowNode<TData>): boolean => {
+    if (selector(row)) {
       rowIndex = row.rowIndex;
       return true;
     }
@@ -53,13 +55,5 @@ function ensureNodeVisible(api: GridApi, rowId: string): void {
       api.setFocusedCell(rowIndex, columns[0]);
     }
   }
+  return rowIndex !== null;
 };
-
-export async function focusRow(rowId: string, tracker: OnceTracker<GridApi>): Promise<void> {
-  return new Promise((resolve) => {
-    nextTick(() => tracker.onceTracked((gridApi) => {
-      ensureNodeVisible(gridApi, rowId);
-      resolve();
-    }));
-  });
-}

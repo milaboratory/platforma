@@ -138,6 +138,14 @@ export interface SingleValueEqualPredicate {
   readonly reference: string | number;
 }
 
+export interface SingleValueInSetPredicate {
+  /** Comparison operator */
+  readonly operator: 'InSet';
+
+  /** Reference values, NA values will not match */
+  readonly references: (string | number)[];
+}
+
 export interface SingleValueIEqualPredicate {
   /** Comparison operator (case insensitive) */
   readonly operator: 'IEqual';
@@ -288,6 +296,7 @@ export interface SingleValueOrPredicateV2 {
 export type SingleValuePredicateV2 =
   | SingleValueIsNAPredicate
   | SingleValueEqualPredicate
+  | SingleValueInSetPredicate
   | SingleValueLessPredicate
   | SingleValueLessOrEqualPredicate
   | SingleValueGreaterPredicate
@@ -339,6 +348,9 @@ export interface PTableDef<Col> {
   /** Join tree to populate the PTable */
   readonly src: JoinEntry<Col>;
 
+  /** Partition filters */
+  readonly partitionFilters: PTableRecordFilter[];
+
   /** Record filters */
   readonly filters: PTableRecordFilter[];
 
@@ -347,7 +359,16 @@ export interface PTableDef<Col> {
 }
 
 /** Request to create and retrieve entirety of data of PTable. */
-export type CalculateTableDataRequest<Col> = PTableDef<Col>;
+export type CalculateTableDataRequest<Col> = {
+  /** Join tree to populate the PTable */
+  readonly src: JoinEntry<Col>;
+
+  /** Record filters */
+  readonly filters: PTableRecordFilter[];
+
+  /** Table sorting */
+  readonly sorting: PTableSorting[];
+};
 
 /** Response for {@link CalculateTableDataRequest} */
 export type CalculateTableDataResponse = FullPTableColumnData[];

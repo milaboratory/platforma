@@ -1,3 +1,5 @@
+import { isDisposable, isAsyncDisposable } from '@milaboratories/ts-helpers';
+
 /**
  * Function associated with particular entry from the RefCountResourcePool.
  *
@@ -19,6 +21,7 @@ export interface PollResource<R> {
 
 export abstract class RefCountResourcePool<P, R> {
   private readonly resources = new Map<string, RefCountEnvelop<R>>();
+  private readonly disposeQueue = Promise.resolve();
   protected abstract createNewResource(params: P): R;
   protected abstract calculateParamsKey(params: P): string;
 
@@ -27,15 +30,12 @@ export abstract class RefCountResourcePool<P, R> {
     if (envelop === undefined) throw new Error('Unexpected state.');
     if (envelop.refCount === 0) {
       this.resources.delete(key);
+      const resource = envelop.resource;
 
-      const isDisposable = (obj: unknown): obj is Disposable => {
-        return obj !== undefined && obj !== null
-          && typeof (obj as Disposable)[Symbol.dispose] === 'function';
-      };
-
-      if (isDisposable(envelop.resource)) {
-        // TODO: we can postpone disposal and run it in the background
-        envelop.resource[Symbol.dispose]();
+      if (isDisposable(resource)) {
+        const _ = this.disposeQueue.then(() => resource[Symbol.dispose]());
+      } else if (isAsyncDisposable(resource)) {
+        const _ = this.disposeQueue.then(() => resource[Symbol.asyncDispose]());
       }
     }
   }
@@ -66,8 +66,9 @@ export abstract class RefCountResourcePool<P, R> {
   }
 
   public getByKey(key: string): R {
-    if (!this.resources.has(key)) throw new Error(`resource not found, key = ${key}`);
-    return this.resources.get(key)!.resource;
+    const envelop = this.resources.get(key);
+    if (envelop === undefined) throw new Error(`resource not found, key = ${key}`);
+    return envelop.resource;
   }
 
   public tryGetByKey(key: string): R | undefined {

@@ -12,10 +12,10 @@ import { CallersCounter, createPathAtomically, ensureDirExists, fileExists, notE
 import type { DownloadableBlobSnapshot } from './snapshot';
 import { UnknownStorageError, WrongLocalFileUrl, type ClientDownload } from '../../clients/download';
 import type { ArchiveFormat, FolderURL } from '@milaboratories/pl-model-common';
-import { newFolderURL } from './url';
+import { newFolderURL } from '../urls/url';
 import decompress from 'decompress';
 import { assertNever } from '@protobuf-ts/runtime';
-import { stringifyWithResourceId } from '@milaboratories/pl-client';
+import { resourceIdToString, stringifyWithResourceId } from '@milaboratories/pl-client';
 
 export type URLResult = {
   url?: FolderURL;
@@ -65,7 +65,7 @@ export class DownloadAndUnarchiveTask {
     try {
       const size = await this.downloadAndDecompress(this.signalCtl.signal);
       this.setDone(size);
-      this.change.markChanged();
+      this.change.markChanged(`download and decompress for ${resourceIdToString(this.rInfo.id)} finished`);
 
       this.logger.info(`blob to URL task is done: ${stringifyWithResourceId(this.info())}`);
     } catch (e: any) {
@@ -73,7 +73,7 @@ export class DownloadAndUnarchiveTask {
 
       if (nonRecoverableError(e)) {
         this.setError(e);
-        this.change.markChanged();
+        this.change.markChanged(`download and decompress for ${resourceIdToString(this.rInfo.id)} failed`);
         // Just in case we were half-way extracting an archive.
         await rmRFDir(this.path);
         return;

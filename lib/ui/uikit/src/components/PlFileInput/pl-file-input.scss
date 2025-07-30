@@ -14,9 +14,10 @@
   --contour-offset: 2px;
   --icon-color: #000;
 
+  position: relative;
+  z-index: 0;
   width: 100%;
   height: var(--control-height, 40px);
-  position: relative;
   border-radius: var(--border-radius-control);
   display: flex;
   flex-direction: row;
@@ -45,6 +46,7 @@
 
   &__progress {
     position: absolute;
+    z-index: -1;
     top: 0;
     bottom: 0;
     left: 0;

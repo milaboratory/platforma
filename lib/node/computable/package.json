@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/computable",
-  "version": "2.5.1",
+  "version": "2.6.2",
   "engines": {
     "node": ">=20.3.0"
   },

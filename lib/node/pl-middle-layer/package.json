@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-middle-layer",
-  "version": "1.37.99",
+  "version": "1.41.1",
   "description": "Pl Middle Layer",
   "engines": {
     "node": ">=20.16.0"
@@ -36,11 +36,11 @@
     "@platforma-sdk/block-tools": "workspace:^",
     "@milaboratories/pl-client": "workspace:^",
     "@milaboratories/pl-drivers": "workspace:^",
-    "@milaboratories/pl-model-common": "workspace:^",
-    "@milaboratories/pl-model-middle-layer": "workspace:^",
-    "@milaboratories/pl-model-backend": "workspace:^",
-    "@milaboratories/pl-tree": "workspace:^",
-    "@platforma-sdk/model": "workspace:^",
+    "@milaboratories/pl-model-common": "workspace:~",
+    "@milaboratories/pl-model-middle-layer": "workspace:~",
+    "@milaboratories/pl-model-backend": "workspace:~",
+    "@milaboratories/pl-tree": "workspace:~",
+    "@platforma-sdk/model": "workspace:~",
     "@milaboratories/ts-helpers": "workspace:^",
     "@platforma-sdk/workflow-tengo": "workspace:*",
     "canonicalize": "catalog:",

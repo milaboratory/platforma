@@ -24,13 +24,11 @@
     "ag-grid-enterprise": "catalog:",
     "ag-grid-vue3": "catalog:",
     "@faker-js/faker": "catalog:",
-    "@types/lodash": "catalog:",
     "@types/node": "catalog:",
     "@vitejs/plugin-vue": "catalog:",
     "canonicalize": "catalog:",
     "@milaboratories/eslint-config": "workspace:^",
     "happy-dom": "catalog:",
-    "lodash": "catalog:",
     "sass": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
@@ -38,6 +36,7 @@
     "@vue/test-utils": "catalog:",
     "vue-tsc": "catalog:",
     "resize-observer-polyfill": "catalog:",
-    "@vueuse/core": "catalog:"
+    "@vueuse/core": "catalog:",
+    "fast-json-patch": "catalog:"
   }
 }

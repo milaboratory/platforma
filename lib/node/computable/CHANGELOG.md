@@ -1,5 +1,25 @@
 # @milaboratories/computable
 
+## 2.6.2
+
+### Patch Changes
+
+- Updated dependencies [188ee1e]
+  - @milaboratories/ts-helpers@1.4.2
+
+## 2.6.1
+
+### Patch Changes
+
+- 07b833e: Return value from get method
+
+## 2.6.0
+
+### Minor Changes
+
+- 3b46d33: - Change source marker
+  - Keyed change source for more granular change tracking
+
 ## 2.5.1
 
 ### Patch Changes

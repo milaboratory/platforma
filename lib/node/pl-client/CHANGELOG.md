@@ -1,5 +1,24 @@
 # @milaboratories/pl-client
 
+## 2.11.5
+
+### Patch Changes
+
+- Updated dependencies [188ee1e]
+  - @milaboratories/ts-helpers@1.4.2
+
+## 2.11.4
+
+### Patch Changes
+
+- 54e22c2: update protofiles twice
+
+## 2.11.3
+
+### Patch Changes
+
+- 4666cae: pl-client and pl-drivers: update proto
+
 ## 2.11.2
 
 ### Patch Changes

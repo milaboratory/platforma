@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/block-tools",
-  "version": "2.5.60",
+  "version": "2.5.77",
   "description": "Utility to manipulate Platforma Blocks and Block Registry",
   "types": "./dist/lib.d.ts",
   "main": "./dist/index.js",
@@ -17,7 +17,8 @@
     "oclif:index": "oclif-index --commands-root=./src/cmd/ --index-file=./src/cmd/index.ts",
     "build": "vite build",
     "readme": "oclif readme",
-    "test": "jest"
+    "test": "jest",
+    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "bin": {
     "block-tools": "./bin/run.js"
@@ -33,6 +34,7 @@
     "@aws-sdk/client-s3": "catalog:",
     "@milaboratories/resolve-helper": "workspace:^",
     "@milaboratories/pl-http": "workspace:^",
+    "@milaboratories/pl-model-common": "workspace:^",
     "@milaboratories/pl-model-middle-layer": "workspace:^",
     "@milaboratories/ts-helpers": "workspace:^",
     "@milaboratories/ts-helpers-oclif": "workspace:^",

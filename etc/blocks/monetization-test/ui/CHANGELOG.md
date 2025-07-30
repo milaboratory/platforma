@@ -1,5 +1,157 @@
 # @milaboratories/milaboratories.monetization-test.ui
 
+## 1.1.75
+
+### Patch Changes
+
+- Updated dependencies [636088d]
+  - @platforma-sdk/ui-vue@1.42.4
+  - @platforma-sdk/model@1.42.4
+
+## 1.1.74
+
+### Patch Changes
+
+- @platforma-sdk/model@1.42.1
+- @platforma-sdk/ui-vue@1.42.1
+
+## 1.1.73
+
+### Patch Changes
+
+- Updated dependencies [3271446]
+  - @platforma-sdk/ui-vue@1.42.0
+  - @platforma-sdk/model@1.42.0
+
+## 1.1.72
+
+### Patch Changes
+
+- Updated dependencies [c29b40f]
+  - @platforma-sdk/ui-vue@1.41.6
+  - @platforma-sdk/model@1.41.6
+
+## 1.1.71
+
+### Patch Changes
+
+- Updated dependencies [41140f4]
+  - @platforma-sdk/ui-vue@1.41.4
+  - @platforma-sdk/model@1.41.4
+
+## 1.1.70
+
+### Patch Changes
+
+- Updated dependencies [d469422]
+  - @platforma-sdk/model@1.41.3
+  - @platforma-sdk/ui-vue@1.41.3
+
+## 1.1.69
+
+### Patch Changes
+
+- Updated dependencies [28b630f]
+  - @platforma-sdk/model@1.41.2
+  - @platforma-sdk/ui-vue@1.41.2
+
+## 1.1.68
+
+### Patch Changes
+
+- Updated dependencies [e48177a]
+  - @platforma-sdk/model@1.41.1
+  - @platforma-sdk/ui-vue@1.41.1
+
+## 1.1.67
+
+### Patch Changes
+
+- Updated dependencies [e7c0edb]
+  - @platforma-sdk/ui-vue@1.41.0
+  - @platforma-sdk/model@1.41.0
+
+## 1.1.66
+
+### Patch Changes
+
+- Updated dependencies [9bb26ff]
+  - @platforma-sdk/ui-vue@1.40.6
+  - @platforma-sdk/model@1.40.6
+
+## 1.1.65
+
+### Patch Changes
+
+- Updated dependencies [5e69d64]
+  - @platforma-sdk/ui-vue@1.40.5
+  - @platforma-sdk/model@1.40.5
+
+## 1.1.64
+
+### Patch Changes
+
+- Updated dependencies [890240e]
+  - @platforma-sdk/ui-vue@1.40.1
+  - @platforma-sdk/model@1.40.1
+
+## 1.1.63
+
+### Patch Changes
+
+- Updated dependencies [30ce5da]
+  - @platforma-sdk/ui-vue@1.40.0
+  - @platforma-sdk/model@1.40.0
+
+## 1.1.62
+
+### Patch Changes
+
+- Updated dependencies [c12345a]
+- Updated dependencies [c12345a]
+  - @platforma-sdk/model@1.39.18
+  - @platforma-sdk/ui-vue@1.39.18
+
+## 1.1.61
+
+### Patch Changes
+
+- Updated dependencies [7be8a2b]
+  - @platforma-sdk/ui-vue@1.39.8
+  - @platforma-sdk/model@1.39.8
+
+## 1.1.60
+
+### Patch Changes
+
+- @platforma-sdk/model@1.39.7
+- @platforma-sdk/ui-vue@1.39.7
+
+## 1.1.59
+
+### Patch Changes
+
+- Updated dependencies [d525c60]
+  - @platforma-sdk/model@1.39.6
+  - @platforma-sdk/ui-vue@1.39.6
+
+## 1.1.58
+
+### Patch Changes
+
+- Updated dependencies [3b46d33]
+- Updated dependencies [3b46d33]
+  - @platforma-sdk/model@1.39.0
+  - @platforma-sdk/ui-vue@1.39.0
+
+## 1.1.57
+
+### Patch Changes
+
+- Updated dependencies [bd788f9]
+  - @platforma-sdk/ui-vue@1.38.0
+  - @platforma-sdk/model@1.38.0
+
 ## 1.1.56
 
 ### Patch Changes

@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import type { ColorMap } from './types';
+import type { HighlightLegend } from './types';
 
 defineProps<{
-  colors: ColorMap;
+  legend: HighlightLegend;
 }>();
 </script>
 
 <template>
   <div :class="$style.container">
     <div
-      v-for="([key, { label, color }]) in Object.entries(colors)"
+      v-for="([key, { label, color }]) of Object.entries(legend)"
       :key="key"
       :class="$style.item"
     >
@@ -27,6 +27,7 @@ defineProps<{
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
+  max-inline-size: fit-content;
 }
 
 .item {

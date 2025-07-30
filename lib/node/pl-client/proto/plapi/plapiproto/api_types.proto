@@ -2,12 +2,11 @@ syntax = "proto3";
 
 package MiLaboratories.PL.API;
 
-option go_package = "github.com/milaboratory/pl/plapi/plapiproto;plapiproto";
-
-import "google/protobuf/timestamp.proto";
-
 import "github.com/milaboratory/pl/plapi/plapiproto/base_types.proto";
 import "github.com/milaboratory/pl/plapi/plapiproto/resource_types.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/milaboratory/pl/plapi/plapiproto;plapiproto";
 
 message Tx {
   bool is_valid = 1;
@@ -22,6 +21,7 @@ message Resource {
   }
 
   uint64 id = 2;
+  bytes canonical_id = 17; // could be empty, it depends on resource lifecycle state
   Kind kind = 3;
   Base.ResourceType type = 4;
   bytes data = 5;

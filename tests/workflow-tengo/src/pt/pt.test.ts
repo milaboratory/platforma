@@ -248,16 +248,116 @@ Banana,Yellow`;
       return [header, ...lines].join('\n');
     };
 
-    const outputInnerJoin = await getFileContentLocal('out_inner_join');
-    expect(normalizeAndSortTsv(outputInnerJoin)).toEqual(normalizeAndSortTsv(expectedOutputInnerJoin));
+    const innerJoinContent = await getFileContentLocal('out_inner_join');
+    const leftJoinOnContent = await getFileContentLocal('out_left_join_on');
+    const fullJoinOnNoCoalesceContent = await getFileContentLocal('out_full_join_on_nocoalesce');
+    const crossJoinContent = await getFileContentLocal('out_cross_join');
 
-    const outputLeftJoinOn = await getFileContentLocal('out_left_join_on');
-    expect(normalizeAndSortTsv(outputLeftJoinOn)).toEqual(normalizeAndSortTsv(expectedOutputLeftJoinOn));
+    expect(normalizeAndSortTsv(innerJoinContent)).toEqual(normalizeAndSortTsv(expectedOutputInnerJoin));
+    expect(normalizeAndSortTsv(leftJoinOnContent)).toEqual(normalizeAndSortTsv(expectedOutputLeftJoinOn));
+    expect(normalizeAndSortTsv(fullJoinOnNoCoalesceContent)).toEqual(normalizeAndSortTsv(expectedOutputFullJoinOnNoCoalesce));
+    expect(normalizeAndSortTsv(crossJoinContent)).toEqual(normalizeAndSortTsv(expectedOutputCrossJoin));
+  },
+);
 
-    const outputFullJoinOnNoCoalesce = await getFileContentLocal('out_full_join_on_nocoalesce');
-    expect(normalizeAndSortTsv(outputFullJoinOnNoCoalesce)).toEqual(normalizeAndSortTsv(expectedOutputFullJoinOnNoCoalesce));
+tplTest(
+  'pt ex4 test - dynamic substring',
+  { timeout: 40000 },
+  async ({ helper, expect, driverKit }) => {
+    const inputTsvData = `text\tstart\tlen\tend
+HelloWorld\t0\t5\t5
+AnotherTest\t2\t4\t6
+Short\t1\t10\t11`;
 
-    const outputCrossJoin = await getFileContentLocal('out_cross_join');
-    expect(normalizeAndSortTsv(outputCrossJoin)).toEqual(normalizeAndSortTsv(expectedOutputCrossJoin));
+    const expectedOutputSubstrLen = `text\tsub
+HelloWorld\tHello
+AnotherTest\tothe
+Short\thort`;
+
+    const expectedOutputSubstrEnd = `text\tsub
+HelloWorld\tHello
+AnotherTest\tothe
+Short\thort`;
+
+    const expectedOutputSubstrStatic = `text\tsub
+HelloWorld\tello
+AnotherTest\tnoth
+Short\thort`;
+
+    const result = await helper.renderTemplate(
+      false,
+      'pt.ex4',
+      ['out_substr_len', 'out_substr_end', 'out_substr_static'],
+      (tx) => ({
+        inputTsv: tx.createValue(Pl.JsonObject, JSON.stringify(inputTsvData)),
+      }),
+    );
+
+    const getFileContent = async (outputName: 'out_substr_len' | 'out_substr_end' | 'out_substr_static') => {
+      const fileHandle = await awaitStableState(
+        result.computeOutput(outputName, (fileHandle, ctx) => {
+          if (!fileHandle) {
+            return undefined;
+          }
+          return driverKit.blobDriver.getOnDemandBlob(fileHandle.persist(), ctx).handle;
+        }),
+        40000,
+      );
+      expect(fileHandle).toBeDefined();
+      return (await driverKit.blobDriver.getContent(fileHandle!)).toString();
+    };
+
+    const normalizeTsv = (str: string) => str.replace(/\r\n/g, '\n').trim();
+
+    const outputSubstrLen = await getFileContent('out_substr_len');
+    expect(normalizeTsv(outputSubstrLen)).toEqual(normalizeTsv(expectedOutputSubstrLen));
+
+    const outputSubstrEnd = await getFileContent('out_substr_end');
+    expect(normalizeTsv(outputSubstrEnd)).toEqual(normalizeTsv(expectedOutputSubstrEnd));
+
+    const outputSubstrStatic = await getFileContent('out_substr_static');
+    expect(normalizeTsv(outputSubstrStatic)).toEqual(normalizeTsv(expectedOutputSubstrStatic));
+  },
+);
+
+tplTest(
+  'pt ex5 test - comprehensive string functions',
+  { timeout: 40000 },
+  async ({ helper, expect, driverKit }) => {
+    // No input needed - data is embedded in template
+
+    const expectedOutputStringFunctions = `email\tfilename\tcontent\tcode\thas_email_pattern\tcontains_apple_literal\tcontains_hello_ci\thas_citrus\thas_fruits_ci\tcount_letter_a\tword_count\tusername\tdomain\tcode_letters\tstarts_with_john\tis_data_file\tis_pdf\tis_dot_com
+john.doe@example.com\tdocument.pdf\tThis contains apple and banana fruits\tHELLO123\ttrue\ttrue\ttrue\tfalse\ttrue\t6\t6\tjohn.doe\texample.com\tHELLO\ttrue\tfalse\ttrue\ttrue
+jane_smith@test.org\timage.jpg\tLooking for orange or lemon juice\thello456\ttrue\tfalse\ttrue\ttrue\tfalse\t1\t6\tjane_smith\ttest.org\thello\tfalse\tfalse\tfalse\tfalse
+bob@company.co.uk\tdata.csv\tNo fruits here just vegetables\tGOODBYE789\ttrue\tfalse\tfalse\tfalse\tfalse\t1\t5\tbob\tcompany.co.uk\tGOODBYE\tfalse\ttrue\tfalse\tfalse
+alice.wilson@demo.net\treadme.txt\tApple pie and cherry tart available\tworld999\ttrue\tfalse\tfalse\tfalse\ttrue\t5\t6\talice.wilson\tdemo.net\tworld\tfalse\tfalse\tfalse\tfalse
+frank@startup.io\tscript.py\tBanana smoothie with lime juice\ttest888\ttrue\tfalse\tfalse\ttrue\ttrue\t3\t5\tfrank\tstartup.io\ttest\tfalse\tfalse\tfalse\tfalse`;
+
+    const result = await helper.renderTemplate(
+      false,
+      'pt.ex5',
+      ['out_string_functions'],
+      (_tx) => ({}), // No dynamic inputs needed for this test
+    );
+
+    const getFileContent = async (outputName: 'out_string_functions') => {
+      const fileHandle = await awaitStableState(
+        result.computeOutput(outputName, (fileHandle, ctx) => {
+          if (!fileHandle) {
+            return undefined;
+          }
+          return driverKit.blobDriver.getOnDemandBlob(fileHandle.persist(), ctx).handle;
+        }),
+        40000,
+      );
+      expect(fileHandle).toBeDefined();
+      return (await driverKit.blobDriver.getContent(fileHandle!)).toString();
+    };
+
+    const outputContent = await getFileContent('out_string_functions');
+
+    const normalizeTsv = (str: string) => str.replace(/\r\n/g, '\n').trim();
+
+    expect(normalizeTsv(outputContent)).toEqual(normalizeTsv(expectedOutputStringFunctions));
   },
 );

@@ -1,5 +1,25 @@
 # @milaboratories/pl-local
 
+## 2.4.6
+
+### Patch Changes
+
+- Updated dependencies [188ee1e]
+  - @milaboratories/ts-helpers@1.4.2
+  - @milaboratories/pl-config@1.6.2
+
+## 2.4.5
+
+### Patch Changes
+
+- da5900a: add stderr logs to the error of platforma
+
+## 2.4.4
+
+### Patch Changes
+
+- 01c5e05: deployments: ssh: fix test, add README
+
 ## 2.4.3
 
 ### Patch Changes

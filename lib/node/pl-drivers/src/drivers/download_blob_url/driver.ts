@@ -10,15 +10,15 @@ import { randomUUID } from 'node:crypto';
 import * as path from 'node:path';
 import { FilesCache } from '../helpers/files_cache';
 import type { ResourceId } from '@milaboratories/pl-client';
-import { stringifyWithResourceId } from '@milaboratories/pl-client';
-import type { ArchiveFormat, BlobToURLDriver, FolderURL } from '@milaboratories/pl-model-common';
+import { resourceIdToString, stringifyWithResourceId } from '@milaboratories/pl-client';
+import { type ArchiveFormat, type BlobToURLDriver, type FolderURL, isFolderURL } from '@milaboratories/pl-model-common';
 import type { DownloadableBlobSnapshot } from './snapshot';
 import { makeDownloadableBlobSnapshot } from './snapshot';
 import type { PlTreeEntry } from '@milaboratories/pl-tree';
 import { isPlTreeEntry } from '@milaboratories/pl-tree';
 import { DownloadAndUnarchiveTask, rmRFDir } from './task';
 import type { ClientDownload } from '../../clients/download';
-import { getPathForFolderURL, isFolderURL } from './url';
+import { getPathForFolderURL } from '../urls/url';
 import type { Id } from './driver_id';
 import { newId } from './driver_id';
 import { nonRecoverableError } from '../download_blob/download_blob_task';
@@ -215,7 +215,7 @@ export class DownloadBlobToURLDriver implements BlobToURLDriver {
 
   private removeTask(task: DownloadAndUnarchiveTask, reason: string) {
     task.abort(reason);
-    task.change.markChanged();
+    task.change.markChanged(`task for ${resourceIdToString(task.rInfo.id)} removed: ${reason}`);
     this.idToDownload.delete(newId(task.rInfo.id, task.format));
   }
 

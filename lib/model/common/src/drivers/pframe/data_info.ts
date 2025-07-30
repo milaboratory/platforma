@@ -189,6 +189,37 @@ export function mapDataInfo<B1, B2>(
   }
 }
 
+/**
+ * @param dataInfo - The source DataInfo object
+ * @param cb - Callback, function that have access to every blob to visit them all
+ * @returns Nothing
+ */
+export function visitDataInfo<B>(
+  dataInfo: DataInfo<B>,
+  cb: (blob: B) => void,
+): void {
+  switch (dataInfo.type) {
+    case 'Json':
+      // Json type doesn't contain blobs, so return as is
+      break;
+    case 'JsonPartitioned': {
+      // Visit each blob in parts
+      for (const [_, blob] of Object.entries(dataInfo.parts)) {
+        cb(blob);
+      }
+      break;
+    }
+    case 'BinaryPartitioned': {
+      // Visit each index and values blob in parts
+      for (const [_, chunk] of Object.entries(dataInfo.parts)) {
+        cb(chunk.index);
+        cb(chunk.values);
+      }
+      break;
+    }
+  }
+}
+
 //
 // Lightway representation for ExplicitJsonData
 //

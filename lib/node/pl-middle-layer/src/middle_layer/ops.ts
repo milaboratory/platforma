@@ -2,6 +2,7 @@ import type { TemporalSynchronizedTreeOps } from './types';
 import type {
   DownloadBlobToURLDriverOps,
   DownloadDriverOps,
+  DownloadUrlDriverOps,
   OpenFileDialogCallback,
   VirtualLocalStorageSpec,
 } from '@milaboratories/pl-drivers';
@@ -11,6 +12,7 @@ import type { MiLogger } from '@milaboratories/ts-helpers';
 import { ConsoleLoggerAdapter } from '@milaboratories/ts-helpers';
 import type { LocalStorageProjection } from '@milaboratories/pl-drivers';
 import path from 'node:path';
+import type { PFrameDriverOps } from '../pool/driver';
 
 /** Paths part of {@link DriverKitOps}. */
 export type DriverKitOpsPaths = {
@@ -78,6 +80,13 @@ export type DriverKitOpsSettings = {
   readonly blobDriverOps: DownloadDriverOps;
 
   //
+  // Frontend Driver
+  //
+
+  /** Settings related to the frontend driver that downloads frontends. */
+  readonly frontendDownloadDriverOps: DownloadUrlDriverOps;
+
+  //
   // Blob To URL Driver
   //
 
@@ -111,6 +120,13 @@ export type DriverKitOpsSettings = {
    * calls from the UI.
    */
   readonly openFileDialogCallback: OpenFileDialogCallback;
+
+  //
+  // PFrame Driver
+  //
+
+  /** Settings related to the PFrame driver */
+  readonly pFrameDriverOps: PFrameDriverOps;
 };
 
 export type DriverKitOps = DriverKitOpsPaths & DriverKitOpsSettings;
@@ -120,15 +136,22 @@ export const DefaultDriverKitOpsSettings: Pick<
   DriverKitOpsSettings,
   | 'logger'
   | 'blobDriverOps'
+  | 'frontendDownloadDriverOps'
   | 'downloadBlobToURLDriverOps'
   | 'uploadDriverOps'
   | 'logStreamDriverOps'
+  | 'pFrameDriverOps'
 > = {
   logger: new ConsoleLoggerAdapter(),
   blobDriverOps: {
     cacheSoftSizeBytes: 8 * 1024 * 1024 * 1024, // 8 GB
     rangesCacheMaxSizeBytes: 8 * 1024 * 1024 * 1024, // 8 GB
     nConcurrentDownloads: 10,
+  },
+  frontendDownloadDriverOps: {
+    cacheSoftSizeBytes: 1 * 1024 * 1024 * 1024, // 1 GB
+    withGunzip: true,
+    nConcurrentDownloads: 50,
   },
   downloadBlobToURLDriverOps: {
     cacheSoftSizeBytes: 1 * 1024 * 1024 * 1024, // 1 GB
@@ -144,6 +167,12 @@ export const DefaultDriverKitOpsSettings: Pick<
     nConcurrentGetLogs: 10,
     pollingInterval: 1000,
     stopPollingDelay: 1000,
+  },
+  pFrameDriverOps: {
+    pFrameConcurrency: 1,
+    pTableConcurrency: 1,
+    pFrameCacheMaxCount: 18, // SHM trees create 3 PTables per graphic, we want to cache 6 graphics per PFrame
+    pFramesCacheMaxSize: 8 * 1024 * 1024 * 1024, // 8 GB
   },
 };
 
