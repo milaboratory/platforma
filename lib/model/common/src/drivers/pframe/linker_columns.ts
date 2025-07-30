@@ -1,14 +1,13 @@
 import {
   canonicalizeJson,
-  parseJson,
   type CanonicalizedJson,
 } from '../../json';
 import {
   Annotation,
-  readAnnotation,
   type AxisSpec,
   type AxesSpec,
   type PColumnIdAndSpec,
+  readAnnotationJson,
 } from './spec/spec';
 
 /** Tree: axis is a root, its parents are children */
@@ -24,18 +23,7 @@ function makeAxisTree(axis: AxisSpec): AxisTree {
 
 /** Get axes parents list from annotation if exist */
 function getAxisParents(axis: AxisSpec): AxisSpec[] {
-  const parents = readAnnotation(axis, Annotation.Parents);
-  if (parents === undefined) return [];
-  let parentsList: AxisSpec[] = [];
-  try {
-    parentsList = parseJson(parents);
-  } catch {
-    throw new Error(`malformed ${Annotation.Parents} annotation on axis ${JSON.stringify(axis)}: must be a valid JSON array`);
-  }
-  if (!Array.isArray(parentsList)) {
-    throw new Error(`malformed ${Annotation.Parents} annotation on axis ${JSON.stringify(axis)}: must be an array`);
-  }
-  return parentsList;
+  return readAnnotationJson(axis, Annotation.Parents) ?? [];
 }
 
 /** Build tree by axis parents annotations */
@@ -162,7 +150,7 @@ export type CompositeLinkerMap = Map<
 /** Creates graph (CompositeLinkerMap) of linkers connected by axes (single or grouped by parents) */
 export function getCompositeLinkerMap(compositeLinkers: PColumnIdAndSpec[]): CompositeLinkerMap {
   const result: CompositeLinkerMap = new Map();
-  for (const linker of compositeLinkers.filter((l) => readAnnotation(l.spec, Annotation.IsLinkerColumn) === 'true')) {
+  for (const linker of compositeLinkers.filter((l) => !!readAnnotationJson(l.spec, Annotation.IsLinkerColumn))) {
     const groups = getAxesGroups(linker.spec.axesSpec); // split input axes into groups by parent links from annotation
 
     if (groups.length !== 2) {

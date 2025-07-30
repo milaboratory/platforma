@@ -53,7 +53,7 @@ function makeLinkerColumn(params: {
             axesSpec: [...params.from, ...params.to],
             annotations: {
                 [Annotation.Label]: `${params.name} column`,
-                [Annotation.IsLinkerColumn]: 'true',
+                [Annotation.IsLinkerColumn]: stringifyJson(true),
             } satisfies Annotation,
         },
     };

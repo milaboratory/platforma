@@ -8,6 +8,11 @@ import type {
   PObjectId,
   PObjectSpec,
 } from '../../../pool';
+import { z } from 'zod';
+
+type Expect<T extends true> = T;
+type Equal<X, Y> =
+  (<T>() => T extends X ? 1 : 2) extends (<T>() => T extends Y ? 1 : 2) ? true : false;
 
 export const ValueType = {
   Int: 'Int',
@@ -26,8 +31,31 @@ export type Metadata = Record<string, string>;
 export function readMetadata<U extends Metadata, T extends keyof U = keyof U>(
   metadata: Metadata | undefined,
   key: T,
-) {
+): U[T] | undefined {
   return (metadata as U | undefined)?.[key];
+}
+
+type MetadataJsonImpl<M> = {
+  [P in keyof M as (M[P] extends StringifiedJson ? P : never)]: M[P] extends StringifiedJson<infer U> ? z.ZodType<U> : never;
+};
+export type MetadataJson<M> = MetadataJsonImpl<Required<M>>;
+
+export function readMetadataJson<M extends Metadata, T extends keyof MetadataJson<M>>(
+  metadata: Metadata | undefined,
+  metadataJson: MetadataJson<M>,
+  key: T,
+): z.infer<MetadataJson<M>[T]> | undefined {
+  const json = readMetadata<M, T>(metadata, key);
+  if (json === undefined) return undefined;
+
+  const schema = metadataJson[key];
+  try {
+    const value = JSON.parse(json);
+    return schema.parse(value);
+  } catch {
+    // invalid values are treated as unset
+    return undefined;
+  }
 }
 
 /// Well-known domains
@@ -41,13 +69,23 @@ export type Domain = Metadata & Partial<{
   [Domain.BlockId]: string;
 }>;
 
-/// Helper function for reading domain values
-/// Warning: always decode the result of this function inside try-catch!
+export type DomainJson = MetadataJson<Domain>;
+export const DomainJson: DomainJson = {};
+
+/// Helper function for reading plain domain values
 export function readDomain<T extends keyof Domain>(
   spec: { domain?: Metadata | undefined } | undefined,
   key: T,
-) {
+): Domain[T] | undefined {
   return readMetadata<Domain, T>(spec?.domain, key);
+}
+
+/// Helper function for reading json-encoded domain values
+export function readDomainJson<T extends keyof DomainJson>(
+  spec: { domain?: Metadata | undefined } | undefined,
+  key: T,
+): z.infer<DomainJson[T]> | undefined {
+  return readMetadataJson<Domain, T>(spec?.domain, DomainJson, key);
 }
 
 /// Well-known annotations
@@ -82,28 +120,62 @@ export type Annotation = Metadata & Partial<{
   [Annotation.Alphabet]: 'nucleotide' | 'aminoacid' | string;
   [Annotation.DiscreteValues]: StringifiedJson<number[]> | StringifiedJson<string[]>;
   [Annotation.Format]: string;
-  [Annotation.Graph.IsVirtual]: 'true';
-  [Annotation.HideDataFromUi]: 'true';
-  [Annotation.IsLinkerColumn]: 'true';
+  [Annotation.Graph.IsVirtual]: StringifiedJson<boolean>;
+  [Annotation.HideDataFromUi]: StringifiedJson<boolean>;
+  [Annotation.IsLinkerColumn]: StringifiedJson<boolean>;
   [Annotation.Label]: string;
-  [Annotation.Max]: `${number}`;
-  [Annotation.Min]: `${number}`;
+  [Annotation.Max]: StringifiedJson<number>;
+  [Annotation.Min]: StringifiedJson<number>;
   [Annotation.Parents]: StringifiedJson<AxisSpec[]>;
   [Annotation.Sequence.Annotation.Mapping]: StringifiedJson<Record<string, string>>;
-  [Annotation.Sequence.IsAnnotation]: 'true';
+  [Annotation.Sequence.IsAnnotation]: StringifiedJson<boolean>;
   [Annotation.Table.FontFamily]: string;
-  [Annotation.Table.OrderPriority]: `${number}`;
+  [Annotation.Table.OrderPriority]: StringifiedJson<number>;
   [Annotation.Table.Visibility]: 'hidden' | 'optional' | string;
   [Annotation.Trace]: StringifiedJson<Record<string, unknown>>;
 }>;
 
-/// Helper function for reading annotation values
-/// Warning: always decode the result of this function inside try-catch!
+export const AxisSpec = z.object({
+  type: z.nativeEnum(ValueType),
+  name: z.string(),
+  domain: z.record(z.string(), z.string()).optional(),
+  annotations: z.record(z.string(), z.string()).optional(),
+  parentAxes: z.array(z.number()).optional(),
+}).passthrough();
+type _test = Expect<Equal<
+  Readonly<z.infer<typeof AxisSpec>>,
+  Readonly<AxisSpec & Record<string, unknown>>
+>>;
+
+export type AnnotationJson = MetadataJson<Annotation>;
+export const AnnotationJson: AnnotationJson = {
+  [Annotation.DiscreteValues]: z.array(z.string()).or(z.array(z.number())),
+  [Annotation.Graph.IsVirtual]: z.boolean(),
+  [Annotation.HideDataFromUi]: z.boolean(),
+  [Annotation.IsLinkerColumn]: z.boolean(),
+  [Annotation.Max]: z.number(),
+  [Annotation.Min]: z.number(),
+  [Annotation.Parents]: z.array(AxisSpec),
+  [Annotation.Sequence.Annotation.Mapping]: z.record(z.string(), z.string()),
+  [Annotation.Sequence.IsAnnotation]: z.boolean(),
+  [Annotation.Table.OrderPriority]: z.number(),
+  [Annotation.Trace]: z.record(z.string(), z.unknown()),
+};
+
+/// Helper function for reading plain annotation values
 export function readAnnotation<T extends keyof Annotation>(
   spec: { annotations?: Metadata | undefined } | undefined,
   key: T,
-) {
+): Annotation[T] | undefined {
   return readMetadata<Annotation, T>(spec?.annotations, key);
+}
+
+/// Helper function for reading json-encoded annotation values
+export function readAnnotationJson<T extends keyof AnnotationJson>(
+  spec: { annotations?: Metadata | undefined } | undefined,
+  key: T,
+): z.infer<AnnotationJson[T]> | undefined {
+  return readMetadataJson<Annotation, T>(spec?.annotations, AnnotationJson, key);
 }
 
 /**

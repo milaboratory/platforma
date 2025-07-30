@@ -21,6 +21,8 @@ import {
   getAxesTree,
   Annotation,
   readAnnotation,
+  stringifyJson,
+  readAnnotationJson,
 } from '@milaboratories/pl-model-common';
 import type { PColumnDataUniversal, RenderCtx } from '../render';
 import { PColumnCollection, TreeNodeAccessor } from '../render';
@@ -57,8 +59,8 @@ function getKeysCombinations(idsLists: AxisId[][]) {
 }
 
 /** Check if column is a linker column */
-export function isLinkerColumn(column: PColumnSpec) {
-  return readAnnotation(column, Annotation.IsLinkerColumn) === 'true';
+export function isLinkerColumn(column: PColumnSpec): boolean {
+  return !!readAnnotationJson(column, Annotation.IsLinkerColumn);
 }
 
 export function getAvailableWithLinkersAxes(
@@ -161,7 +163,7 @@ function getAdditionalColumnsForColumn(
 
     const annotations: Annotation = {
       ...column.spec.annotations,
-      [Annotation.Graph.IsVirtual]: 'true',
+      [Annotation.Graph.IsVirtual]: stringifyJson(true),
     };
     if (label || labelDomainPart) {
       annotations[Annotation.Label] = label && labelDomainPart ? label + ' / ' + labelDomainPart : label + labelDomainPart;

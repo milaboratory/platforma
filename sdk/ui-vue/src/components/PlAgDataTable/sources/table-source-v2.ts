@@ -26,6 +26,7 @@ import {
   readAnnotation,
   Annotation,
   ValueType,
+  readAnnotationJson,
 } from '@platforma-sdk/model';
 import type {
   CellStyle,
@@ -183,12 +184,12 @@ export async function calculateGridOptions({
   indices.sort((a, b) => {
     if (specs[a].type !== specs[b].type) return specs[a].type === 'axis' ? -1 : 1;
 
-    const aPriority = readAnnotation(specs[a].spec, Annotation.Table.OrderPriority);
-    const bPriority = readAnnotation(specs[b].spec, Annotation.Table.OrderPriority);
+    const aPriority = readAnnotationJson(specs[a].spec, Annotation.Table.OrderPriority);
+    const bPriority = readAnnotationJson(specs[b].spec, Annotation.Table.OrderPriority);
 
     if (aPriority === undefined) return bPriority === undefined ? 0 : 1;
     if (bPriority === undefined) return -1;
-    return Number(bPriority) - Number(aPriority);
+    return bPriority - aPriority;
   });
 
   // fields are indices of columns that would go to columnDefs

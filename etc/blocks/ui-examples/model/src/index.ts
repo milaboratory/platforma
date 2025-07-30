@@ -132,7 +132,7 @@ export const platforma = BlockModel.create('Heavy')
           annotations: {
             [Annotation.Label]: 'String column',
             [Annotation.DiscreteValues]: stringifyJson(['up', 'down']),
-            [Annotation.Table.OrderPriority]: '101',
+            [Annotation.Table.OrderPriority]: stringifyJson(101),
           } satisfies Annotation,
           axesSpec: [
             {
@@ -169,7 +169,7 @@ export const platforma = BlockModel.create('Heavy')
           annotations: {
             [Annotation.Label]: 'Float column',
             [Annotation.Table.Visibility]: 'optional',
-            [Annotation.Table.OrderPriority]: '100',
+            [Annotation.Table.OrderPriority]: stringifyJson(100),
           } satisfies Annotation,
           axesSpec: [
             {
@@ -232,7 +232,7 @@ export const platforma = BlockModel.create('Heavy')
           name: 'linker',
           annotations: {
             [Annotation.Label]: 'Index axis linker',
-            [Annotation.IsLinkerColumn]: 'true',
+            [Annotation.IsLinkerColumn]: stringifyJson(true),
             [Annotation.Table.Visibility]: 'hidden',
           } satisfies Annotation,
           axesSpec: [
@@ -271,7 +271,7 @@ export const platforma = BlockModel.create('Heavy')
           annotations: {
             [Annotation.Label]: `Alphabetical column ${j}`,
             [Annotation.Table.Visibility]: 'optional',
-            [Annotation.Table.OrderPriority]: `${10 - j}`,
+            [Annotation.Table.OrderPriority]: stringifyJson(10 - j),
           } satisfies Annotation,
           axesSpec: [
             {
