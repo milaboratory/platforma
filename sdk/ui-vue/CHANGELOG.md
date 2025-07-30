@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.42.5
+
+### Patch Changes
+
+- 13f0f40: MSA: scrollable labels + small fixes
+
 ## 1.42.4
 
 ### Patch Changes
