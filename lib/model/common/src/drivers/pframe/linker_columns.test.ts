@@ -210,4 +210,18 @@ describe('Linker columns', () => {
         expect(getReachableByLinkersAxesFromAxes([axisD], linkersMap)).toEqual([]);
         expect(getReachableByLinkersAxesFromAxes([axisB], linkersMap)).toEqual([]);
     });
+
+    test('Order of parents should not matter', () => {
+        const axisA = makeTestAxis({ name: 'a' });
+        const axisB = makeTestAxis({ name: 'b' });
+        const axisC1 = makeTestAxis({ name: 'c', parents: [axisA, axisB] });
+        const axisC2 = makeTestAxis({ name: 'c', parents: [axisB, axisA] });
+        const axisD = makeTestAxis({ name: 'd' });
+
+        const linkerMap = getCompositeLinkerMap([
+            makeLinkerColumn({ name: 'linker1', from: [axisC1], to: [axisD] }),
+        ]);
+
+        expect(getReachableByLinkersAxesFromAxes([axisC2], linkerMap)).not.toHaveLength(0);
+    })
 });
