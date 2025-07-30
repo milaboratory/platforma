@@ -1,10 +1,12 @@
 {
     "name": "@milaboratories/ts-builder",
     "version": "1.0.0",
+    "description": "TS build tool for the milaboratories packages",
     "type": "module",
-    "description": "TS build tool for the monorepo packages",
+    "main": "./dist/index.js",
+    "module": "./dist/index.js",
     "bin": {
-        "ts-builder": "./dist/cli.js"
+        "ts-builder": "./bin/ts-builder"
     },
     "scripts": {
         "build": "rollup -c",
@@ -22,6 +24,6 @@
     },
     "files": [
         "dist",
-        "templates"
+        "bin"
     ]
 }
