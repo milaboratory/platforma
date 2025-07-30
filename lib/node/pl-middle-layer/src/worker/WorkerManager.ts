@@ -2,8 +2,6 @@ import path from 'node:path';
 import { Worker } from 'node:worker_threads';
 import type { Scheme } from './workerApi';
 
-declare const WORKER_PATH: undefined | string;
-
 export class WorkerManager implements AsyncDisposable {
   private nextMessageId = 0;
   private worker: Worker;
@@ -15,7 +13,7 @@ export class WorkerManager implements AsyncDisposable {
       ? global.__WORKER_PATH__ as string
       : path.resolve(
         import.meta.dirname,
-        `worker.${typeof module !== 'undefined' ? 'cjs' : 'js'}`
+        `worker.${typeof module !== 'undefined' ? 'cjs' : 'js'}`,
       );
 
     const worker = this.worker = new Worker(workerPath, { workerData: {} });

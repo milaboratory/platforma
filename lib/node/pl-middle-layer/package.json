@@ -11,8 +11,8 @@
   "module": "./dist/index.js",
   "scripts": {
     "type-check": "ts-builder types --target node",
-    "build": "ts-builder build --target node --build-config ./build.node.config.js",
-    "watch": "ts-builder build --target node --build-config ./build.node.config.js --watch",
+    "build": "ts-builder build --target node --build-config ./build.node.config.mjs",
+    "watch": "ts-builder build --target node --build-config ./build.node.config.mjs --watch",
     "lint": "eslint .",
     "test": "vitest",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
