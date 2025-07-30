@@ -13,15 +13,8 @@ import {
     test,
 } from 'vitest';
 import {
-    getArrayFromAxisTree,
-    getAxesGroups,
-    getAxesRoots,
-    getAxesTree,
-    getCompositeLinkerMap,
-    getLinkerColumnsForAxes,
     getNormalizedAxesList,
-    getReachableByLinkersAxesFromAxes,
-    getSetFromAxisTree,
+    LinkerMap
 } from './linker_columns';
 
 function makeTestAxis(params: {
@@ -86,7 +79,7 @@ describe('Linker columns', () => {
             makeTestAxis({ name: 'id4' }),
             makeTestAxis({ name: 'id5' })
         ]);
-        const linkerMap = getCompositeLinkerMap([
+        const linkerMap = LinkerMap.fromColumns([
             makeLinkerColumn({ name: 'c12', from: [axis1], to: [axis2] }),
             makeLinkerColumn({ name: 'c13', from: [axis1], to: [axis3] }),
             makeLinkerColumn({ name: 'c45', from: [axis4], to: [axis5] }),
@@ -97,8 +90,7 @@ describe('Linker columns', () => {
             to: AxisSpecNormalized[];
             expected: string[];
         }) => {
-            const linkers = getLinkerColumnsForAxes({
-                linkerMap,
+            const linkers = linkerMap.getLinkerColumnsForAxes({
                 from: params.from,
                 to: params.to,
                 throwWhenNoLinkExists: false,
@@ -116,11 +108,11 @@ describe('Linker columns', () => {
             makeTestAxis({ name: 'a' }),
             makeTestAxis({ name: 'b' })
         ]);
-        const tree = getAxesTree(axisA);
-        expect(getSetFromAxisTree(tree).size).toBe(1);
-        expect(getArrayFromAxisTree(tree).length).toBe(1);
+        const tree = LinkerMap.getAxesTree(axisA);
+        expect(LinkerMap.getSetFromAxisTree(tree).size).toBe(1);
+        expect(LinkerMap.getArrayFromAxisTree(tree).length).toBe(1);
 
-        expect(getAxesGroups([axisA, axisB]).length).toBe(2);
+        expect(LinkerMap.getAxesGroups([axisA, axisB]).length).toBe(2);
     })
 
     test('Axis tree - with parents', () => {
@@ -130,12 +122,12 @@ describe('Linker columns', () => {
         const axisA = makeTestAxis({ name: 'a', parents: [axisB] });
         const [axisDn, axisCn, axisBn, axisAn] = getNormalizedAxesList([axisD, axisC, axisB, axisA])
 
-        const tree = getAxesTree(axisAn);
-        expect(getSetFromAxisTree(tree).size).toBe(4);
-        expect(getArrayFromAxisTree(tree).length).toBe(4);
+        const tree = LinkerMap.getAxesTree(axisAn);
+        expect(LinkerMap.getSetFromAxisTree(tree).size).toBe(4);
+        expect(LinkerMap.getArrayFromAxisTree(tree).length).toBe(4);
 
         for (const group of allPermutations([axisAn, axisBn, axisCn, axisDn])) {
-            expect(getAxesGroups(group).length).toBe(1);
+            expect(LinkerMap.getAxesGroups(group).length).toBe(1);
         }
 
         const axisD2 = makeTestAxis({ name: 'd' });
@@ -145,7 +137,7 @@ describe('Linker columns', () => {
         const normalized2 = getNormalizedAxesList([axisD2, axisC2, axisB2, axisA2])
 
         for (const group of allPermutations(normalized2)) {
-            expect(getAxesGroups(group).length).toBe(2);
+            expect(LinkerMap.getAxesGroups(group).length).toBe(2);
         }
 
         const axisD3 = makeTestAxis({ name: 'd' });
@@ -155,7 +147,7 @@ describe('Linker columns', () => {
         const normalized3 = getNormalizedAxesList([axisD3, axisC3, axisB3, axisA3])
 
         for (const group of allPermutations(normalized3)) {
-            expect(getAxesGroups(group).length).toBe(3);
+            expect(LinkerMap.getAxesGroups(group).length).toBe(3);
         }
 
         const axisD4 = makeTestAxis({ name: 'd' });
@@ -165,7 +157,7 @@ describe('Linker columns', () => {
         const normalized4 = getNormalizedAxesList([axisD4, axisC4, axisB4, axisA4])
 
         for (const group of allPermutations(normalized4)) {
-            expect(getAxesGroups(group).length).toBe(4);
+            expect(LinkerMap.getAxesGroups(group).length).toBe(4);
         }
     })
 
@@ -197,32 +189,35 @@ describe('Linker columns', () => {
         const axisF = makeTestAxis({ name: 'f' });
         const axisH = makeTestAxis({ name: 'h' });
 
-        const group1 = getNormalizedAxesList([axisA, axisB, axisC, axisD, axisE]);
-        const [axisAn, axisBn, axisCn, axisDn, axisEn] = group1;
-        const group2 = getNormalizedAxesList([axisF]);
-        const group3 = getNormalizedAxesList([axisH]);
+        const group1 = [axisA, axisB, axisC, axisD, axisE];
+        const group2 = [axisF];
+        const group3 = [axisH];
+        const group1Normalized = getNormalizedAxesList(group1);
+        const group2Normalized = getNormalizedAxesList(group2);
+        const group3Normalized = getNormalizedAxesList(group3);
+        const [axisAn, axisBn, axisCn, axisDn, axisEn] = group1Normalized;
 
         const linker1 = makeLinkerColumn({ name: 'linker1', from: group1, to: group2 });
         const linker2 = makeLinkerColumn({ name: 'linker2', from: group2, to: group3 });
 
-        const roots = getAxesRoots(group1);
+        const roots = LinkerMap.getAxesRoots(group1Normalized);
 
         expect(roots).toEqual([axisAn, axisEn]);
 
-        const groups = getAxesGroups([...group1, ...group2]);
+        const groups = LinkerMap.getAxesGroups([...group1Normalized, ...group2Normalized]);
         expect(groups.length).toBe(2);
-        expect(groups[0]).toEqual(group1);
-        expect(groups[1]).toEqual(group2);
+        expect(groups[0]).toEqual(group1Normalized);
+        expect(groups[1]).toEqual(group2Normalized);
 
-        const linkersMap = getCompositeLinkerMap([linker1, linker2]);
+        const linkersMap = LinkerMap.fromColumns([linker1, linker2]);
 
         expect(
-            new Set(getReachableByLinkersAxesFromAxes(group2, linkersMap).map(a => a.name))
+            new Set(linkersMap.getReachableByLinkersAxesFromAxes(group2Normalized).map(a => a.name))
         ).toEqual(
             new Set(([...group1, ...group3]).map(a => a.name))
         );
-        expect(getReachableByLinkersAxesFromAxes([axisDn], linkersMap)).toEqual([]);
-        expect(getReachableByLinkersAxesFromAxes([axisBn], linkersMap)).toEqual([]);
+        expect(linkersMap.getReachableByLinkersAxesFromAxes([axisDn])).toEqual([]);
+        expect(linkersMap.getReachableByLinkersAxesFromAxes([axisBn])).toEqual([]);
     });
 
     test('Order of parents should not matter', () => {
@@ -232,10 +227,12 @@ describe('Linker columns', () => {
         const axisC2 = makeTestAxis({ name: 'c', parents: [axisB, axisA] });
         const axisD = makeTestAxis({ name: 'd' });
 
-        const linkerMap = getCompositeLinkerMap([
-            makeLinkerColumn({ name: 'linker1', from: [axisC1], to: [axisD] }),
+        const [a, b, c1, c2, d] = getNormalizedAxesList([axisA, axisB, axisC1, axisC2, axisD]);
+        const linkerMap = LinkerMap.fromColumns([
+            makeLinkerColumn({ name: 'linker1', from: [axisA, axisB, axisC1], to: [axisD] })
         ]);
 
-        expect(getReachableByLinkersAxesFromAxes([axisC2], linkerMap)).not.toHaveLength(0);
+        expect(linkerMap.getReachableByLinkersAxesFromAxes([c2])).not.toHaveLength(0);
+        expect(linkerMap.getReachableByLinkersAxesFromAxes([c1])).not.toHaveLength(0);
     })
 });

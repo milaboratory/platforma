@@ -13,17 +13,13 @@ import {
   isDataInfo,
   matchAxisId,
   visitDataInfo,
-  getCompositeLinkerMap,
   getColumnIdAndSpec,
-  searchAvailableAxesKeys,
-  getAxesListFromKeysList,
-  getArrayFromAxisTree,
-  getAxesTree,
   Annotation,
   readAnnotation,
   getNormalizedAxesList,
   stringifyJson,
   readAnnotationJson,
+  LinkerMap,
 } from '@milaboratories/pl-model-common';
 import type { PColumnDataUniversal, RenderCtx } from '../render';
 import { PColumnCollection, TreeNodeAccessor } from '../render';
@@ -70,10 +66,10 @@ export function getAvailableWithLinkersAxes(
   linkerColumns: PColumn<PColumnDataUniversal>[],
   blockAxes: AxesVault,
 ): AxesVault {
-  const linkerColumnsMap = getCompositeLinkerMap(linkerColumns.map(getColumnIdAndSpec));
-  const linkerColumnsMapKeySources: AxisId[][] = [...linkerColumnsMap.values()].map((v) => v.spec.map(getAxisId));
+  const linkerMap = LinkerMap.fromColumns(linkerColumns.map(getColumnIdAndSpec));
+  const linkerColumnsMapKeySources: AxisId[][] = [...linkerMap.data.values()].map((v) => v.spec.map(getAxisId));
   const startKeys: CanonicalizedJson<AxisId[]>[] = [];
-  const blockAxesGrouped: AxisId[][] = [...blockAxes.values()].map((axis) => getArrayFromAxisTree(getAxesTree(axis)).map(getAxisId));
+  const blockAxesGrouped: AxisId[][] = [...blockAxes.values()].map((axis) => LinkerMap.getArrayFromAxisTree(LinkerMap.getAxesTree(axis)).map(getAxisId));
 
   for (const axesGroupBlock of blockAxesGrouped) {
     const matched = linkerColumnsMapKeySources.find(
@@ -86,8 +82,8 @@ export function getAvailableWithLinkersAxes(
     }
   }
 
-  const availableKeys = searchAvailableAxesKeys(startKeys, linkerColumnsMap);
-  const availableAxes = getAxesListFromKeysList([...availableKeys], linkerColumnsMap);
+  const availableKeys = linkerMap.searchAvailableAxesKeys(startKeys);
+  const availableAxes = linkerMap.getAxesListFromKeysList([...availableKeys]);
 
   return new Map(availableAxes.map((axisSpec) => {
     const id = getAxisId(axisSpec);
