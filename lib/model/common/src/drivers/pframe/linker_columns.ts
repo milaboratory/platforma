@@ -2,6 +2,7 @@ import {
   canonicalizeJson,
   parseJson,
   type CanonicalizedJson,
+  type StringifiedJson,
 } from '../../json';
 import {
   Annotation,
@@ -49,7 +50,7 @@ function parseParentsFromAnnotations(axis: AxisSpec) {
   if (parents === undefined) return [];
   let parentsList: AxisSpec[] = [];
   try {
-    parentsList = parseJson(parents);
+    parentsList = parseJson(parents as StringifiedJson<AxisSpec[]>);
     parentsList.sort(normalizingAxesComparator);
   } catch {
     throw new Error(`malformed ${Annotation.Parents} annotation on axis ${JSON.stringify(axis)}: must be a valid JSON array`);
