@@ -1,5 +1,5 @@
 import type {
-  ResourceId
+  ResourceId,
 } from '@milaboratories/pl-middle-layer';
 import {
   Pl,
