@@ -4,10 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "npx ts-builder serve --target browser",
-    "watch": "npx ts-builder build --target browser --watch",
-    "build": "npx ts-builder build --target browser",
-    "type-check": "npx ts-builder types --target browser"
+    "dev": "ts-builder serve --target browser",
+    "watch": "ts-builder build --target browser --watch",
+    "build": "ts-builder build --target browser",
+    "type-check": "ts-builder types --target browser"
   },
   "dependencies": {
     "@milaboratories/milaboratories.test-block-model.model": "workspace:*",

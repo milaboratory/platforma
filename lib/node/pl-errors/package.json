@@ -13,9 +13,9 @@
     }
   },
   "scripts": {
-    "type-check": "npx ts-builder types --target node",
-    "build": "npx ts-builder build --target node",
-    "build:watch": "npx ts-builder build --target node --watch",
+    "type-check": "ts-builder types --target node",
+    "build": "ts-builder build --target node",
+    "build:watch": "ts-builder build --target node --watch",
     "lint": "eslint .",
     "test": "vitest run",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
