@@ -361,3 +361,101 @@ frank@startup.io\tscript.py\tBanana smoothie with lime juice\ttest888\ttrue\tfal
     expect(normalizeTsv(outputContent)).toEqual(normalizeTsv(expectedOutputStringFunctions));
   },
 );
+
+tplTest(
+  'pt ndjson test - comprehensive NDJSON format support',
+  { timeout: 40000 },
+  async ({ helper, expect, driverKit }) => {
+    // No input needed - data is embedded in template
+
+    // Expected NDJSON output with computed score_bonus column
+    const expectedOutputNdjsonBasic = `{"id":1,"name":"Alice","score":95.5,"active":true,"score_bonus":105.5}
+{"id":2,"name":"Bob","score":87.2,"active":false,"score_bonus":97.2}
+{"id":3,"name":"Charlie","score":92.1,"active":true,"score_bonus":102.1}
+{"id":4,"name":"Diana","score":98.7,"active":true,"score_bonus":108.7}
+{"id":5,"name":"Eve","score":83.4,"active":false,"score_bonus":93.4}`;
+
+    // Expected NDJSON output with nRows=3 and filtered for active=true
+    // Note: Only first 3 rows are read due to nRows limit, then filtered for active=true
+    const expectedOutputNdjsonLimited = `{"id":1,"name":"Alice","score":95.5,"active":true}
+{"id":3,"name":"Charlie","score":92.1,"active":true}`;
+
+    // Expected CSV output sorted by score (descending)
+    const expectedOutputNdjsonToCsv = `id,name,score,active
+4,Diana,98.7,true
+1,Alice,95.5,true
+3,Charlie,92.1,true
+2,Bob,87.2,false
+5,Eve,83.4,false`;
+
+    // Expected NDJSON output from CSV input with enriched columns
+    const expectedOutputCsvToNdjson = `{"id":1,"display_name":"Alice (1)","score":95.5,"active":true,"high_performer":true}
+{"id":2,"display_name":"Bob (2)","score":87.2,"active":false,"high_performer":false}
+{"id":3,"display_name":"Charlie (3)","score":92.1,"active":true,"high_performer":true}`;
+
+    const result = await helper.renderTemplate(
+      false,
+      'pt.ndjson',
+      [
+        'out_ndjson_basic',
+        'out_ndjson_limited',
+        'out_ndjson_to_csv',
+        'out_csv_to_ndjson',
+      ],
+      (_tx) => ({}), // No dynamic inputs needed for this test
+    );
+
+    const getFileContent = async (
+      outputName:
+        | 'out_ndjson_basic'
+        | 'out_ndjson_limited'
+        | 'out_ndjson_to_csv'
+        | 'out_csv_to_ndjson',
+    ) => {
+      const fileHandle = await awaitStableState(
+        result.computeOutput(outputName, (fileHandle, ctx) => {
+          if (!fileHandle) {
+            return undefined;
+          }
+          return driverKit.blobDriver.getOnDemandBlob(fileHandle.persist(), ctx).handle;
+        }),
+        40000,
+      );
+      expect(fileHandle).toBeDefined();
+      return (await driverKit.blobDriver.getContent(fileHandle!)).toString();
+    };
+
+    // Helper functions for normalization
+    const normalizeNdjson = (str: string) => {
+      return str
+        .replace(/\r\n/g, '\n')
+        .trim()
+        .split('\n')
+        .map((line) => {
+          // Parse and re-stringify to normalize JSON formatting
+          try {
+            return JSON.stringify(JSON.parse(line));
+          } catch {
+            return line; // Return as-is if not valid JSON
+          }
+        })
+        .sort() // Sort lines for consistent comparison
+        .join('\n');
+    };
+
+    const normalizeCsv = (str: string) => str.replace(/\r\n/g, '\n').trim();
+
+    // Test all outputs
+    const ndjsonBasicContent = await getFileContent('out_ndjson_basic');
+    expect(normalizeNdjson(ndjsonBasicContent)).toEqual(normalizeNdjson(expectedOutputNdjsonBasic));
+
+    const ndjsonLimitedContent = await getFileContent('out_ndjson_limited');
+    expect(normalizeNdjson(ndjsonLimitedContent)).toEqual(normalizeNdjson(expectedOutputNdjsonLimited));
+
+    const ndjsonToCsvContent = await getFileContent('out_ndjson_to_csv');
+    expect(normalizeCsv(ndjsonToCsvContent)).toEqual(normalizeCsv(expectedOutputNdjsonToCsv));
+
+    const csvToNdjsonContent = await getFileContent('out_csv_to_ndjson');
+    expect(normalizeNdjson(csvToNdjsonContent)).toEqual(normalizeNdjson(expectedOutputCsvToNdjson));
+  },
+);
