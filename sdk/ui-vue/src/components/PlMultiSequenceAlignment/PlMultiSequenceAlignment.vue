@@ -78,7 +78,7 @@ const markupColumns = reactive(useMarkupColumnsOptions(() => ({
 })));
 
 const multipleAlignmentData = reactive(useMultipleAlignmentData(() => ({
-  pframe: props.pFrame,
+  pFrame: props.pFrame,
   sequenceColumnIds: settings.sequenceColumnIds,
   labelColumnIds: settings.labelColumnIds,
   selection: props.selection,
@@ -147,18 +147,20 @@ watchEffect(() => {
 watchEffect(() => {
   const settingsToReset: (keyof PlMultiSequenceAlignmentSettings)[] = [];
   if (
-    settings.sequenceColumnIds?.some((id) =>
-      !sequenceColumns.data?.options.some(
-        ({ value }) => isJsonEqual(value, id),
+    !sequenceColumns.isLoading
+    && settings.sequenceColumnIds?.some((id) =>
+      (sequenceColumns.data?.options ?? []).every(
+        ({ value }) => !isJsonEqual(value, id),
       ),
     )
   ) {
     settingsToReset.push('sequenceColumnIds');
   }
   if (
-    settings.labelColumnIds?.some((id) =>
-      !labelColumns.data?.options.some(
-        ({ value }) => isJsonEqual(value, id),
+    !labelColumns.isLoading
+    && settings.labelColumnIds?.some((id) =>
+      (labelColumns.data?.options ?? []).every(
+        ({ value }) => !isJsonEqual(value, id),
       ),
     )
   ) {
@@ -170,9 +172,10 @@ watchEffect(() => {
     : undefined;
 
   if (
-    markupColumnId
-    && !markupColumns.data?.some(
-      ({ value }) => isJsonEqual(value, markupColumnId),
+    !markupColumns.isLoading
+    && markupColumnId
+    && (markupColumns.data ?? []).every(
+      ({ value }) => !isJsonEqual(value, markupColumnId),
     )
   ) {
     settingsToReset.push('colorScheme');
@@ -209,7 +212,9 @@ async function exportPdf() {
     position: fixed;
   }
 }`);
-  printTarget.replaceChildren(msaRoot.cloneNode(true));
+  const msaClone = msaRoot.cloneNode(true) as HTMLElement;
+  msaClone.dataset.prePrint = '';
+  printTarget.replaceChildren(msaClone);
   document.body.appendChild(printTarget);
   const { height, width } = printTarget.getBoundingClientRect();
   const margin = CSS.cm(1);
