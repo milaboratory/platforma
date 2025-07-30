@@ -1,4 +1,12 @@
-import { isPTableAbsent, PTableNA, type PTableColumnSpec, type PTableValue } from '@platforma-sdk/model';
+import {
+  Annotation,
+  isPTableAbsent,
+  PTableNA,
+  readAnnotation,
+  ValueType,
+  type PTableColumnSpec,
+  type PTableValue,
+} from '@platforma-sdk/model';
 import type { ValueFormatterFunc } from 'ag-grid-enterprise';
 import type { PTableHidden } from './common';
 import { isPTableHidden } from './common';
@@ -26,11 +34,11 @@ export function getColumnRenderingSpec(spec: PTableColumnSpec): ColumnRenderingS
   const valueType = spec.type === 'axis' ? spec.spec.type : spec.spec.valueType;
   let renderSpec: ColumnRenderingSpec;
   switch (valueType) {
-    case 'Int':
-    case 'Long':
-    case 'Float':
-    case 'Double': {
-      const format = spec.spec.annotations?.['pl7.app/format'];
+    case ValueType.Int:
+    case ValueType.Long:
+    case ValueType.Float:
+    case ValueType.Double: {
+      const format = readAnnotation(spec.spec, Annotation.Format);
       const formatFn = format ? d3.format(format) : undefined;
       renderSpec = {
         valueFormatter: (params) => {
@@ -51,7 +59,7 @@ export function getColumnRenderingSpec(spec: PTableColumnSpec): ColumnRenderingS
       };
       break;
   }
-  const fontFamily = spec.spec.annotations?.['pl7.app/table/fontFamily'];
+  const fontFamily = readAnnotation(spec.spec, Annotation.Table.FontFamily);
   if (fontFamily) renderSpec.fontFamily = fontFamily;
   return renderSpec;
 }

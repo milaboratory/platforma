@@ -1,5 +1,5 @@
 import type { AnyRef } from '@milaboratories/pl-middle-layer';
-import { Pl, field, resourceType } from '@milaboratories/pl-middle-layer';
+import { Annotation, Pl, field, resourceType } from '@milaboratories/pl-middle-layer';
 import { awaitStableState, tplTest } from '@platforma-sdk/test';
 import { assertBlob, assertResource, eTplTest } from './extended_tpl_test';
 
@@ -121,8 +121,8 @@ eTplTest(
             name: 'a',
             type: 'Long',
             annotations: {
-              'pl7.app/label': 'A',
-            },
+              [Annotation.Label]: 'A',
+            } satisfies Annotation,
           },
         },
       ],
@@ -134,8 +134,8 @@ eTplTest(
             valueType: 'Long',
             name: 'b',
             annotations: {
-              'pl7.app/label': 'B',
-            },
+              [Annotation.Label]: 'B',
+            } satisfies Annotation,
           },
         },
       ],

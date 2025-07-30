@@ -5,7 +5,7 @@ import {
     enrichCompatible, LINKER_COLUMN_ANNOTATION, getAvailableWithLinkersAxes
 } from './PFrameForGraphs';
 import {
-    AxisId, CanonicalizedJson,
+    AxisId, AxisSpec, CanonicalizedJson,
     canonicalizeJson, DataInfo,
     getAxisId,
     PColumn,
@@ -15,12 +15,12 @@ import {
 } from "@milaboratories/pl-model-common";
 import {TreeNodeAccessor} from "../render";
 
-function getAllAxesFromSpecs (specs:PColumnSpec[]):Map<CanonicalizedJson<AxisId>, AxisId> {
-    const allAxes:Map<CanonicalizedJson<AxisId>, AxisId> = new Map();
+function getAllAxesFromSpecs (specs:PColumnSpec[]):Map<CanonicalizedJson<AxisId>, [AxisId, AxisSpec]> {
+    const allAxes:Map<CanonicalizedJson<AxisId>, [AxisId, AxisSpec]> = new Map();
     for (const spec of specs) {
         for (const id of spec.axesSpec) {
             const aid = getAxisId(id);
-            allAxes.set(canonicalizeJson(aid), aid);
+            allAxes.set(canonicalizeJson(aid), [aid, id]);
         }
     }
     return allAxes
@@ -219,7 +219,7 @@ describe('PFrameForGraph', () => {
             linkerColumns,
             getAllAxesFromSpecs([columnSpec1])
         );
-        expect([...availableAxes.values()].map(id => id.name)).toEqual(['axis3'])
+        expect([...availableAxes.values()].map(([id]) => id.name)).toEqual(['axis3'])
     })
 
     test('Linker columns add available axes by chains', () => {
@@ -269,6 +269,6 @@ describe('PFrameForGraph', () => {
             linkerColumns,
             getAllAxesFromSpecs([columnSpec1])
         );
-        expect([...availableAxes.values()].map(id => id.name)).toEqual(['axis2', 'axis3', 'axis4'])
+        expect([...availableAxes.values()].map(([id]) => id.name)).toEqual(['axis2', 'axis3', 'axis4'])
     })
 })

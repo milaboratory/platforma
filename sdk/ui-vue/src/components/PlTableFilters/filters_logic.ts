@@ -12,6 +12,11 @@ import {
   type PlTableFilter,
   type PTableColumnSpec,
   getRawPlatformaInstance,
+  readDomain,
+  Annotation,
+  Domain,
+  readAnnotation,
+  parseJson,
 } from '@platforma-sdk/model';
 import semver from 'semver';
 import type { ListOption } from '@milaboratories/uikit';
@@ -127,7 +132,7 @@ export const isFilterDiscrete = (filter: PlTableFilter): filter is PlTableFilter
 };
 
 export function getColumnName(column: PTableColumnSpec, index: string | number) {
-  return column.spec.annotations?.['pl7.app/label']?.trim() ?? 'Unlabeled ' + column.type + ' ' + index.toString();
+  return readAnnotation(column.spec, Annotation.Label)?.trim() ?? 'Unlabeled ' + column.type + ' ' + index.toString();
 }
 
 export function getFilterReference(filter: PlTableFilter): undefined | number | string {
@@ -220,7 +225,7 @@ export function parseNumber(column: PTableColumnSpec, value: string): number {
   const type = column.type === 'column' ? column.spec.valueType : column.spec.type;
   if ((type === 'Int' || type === 'Long') && !Number.isInteger(parsed)) throw Error('Model value is not an integer.');
 
-  const min = column.spec.annotations?.['pl7.app/min'];
+  const min = readAnnotation(column.spec, Annotation.Min);
   if (min !== undefined) {
     const minValue = Number(min);
     if (Number.isFinite(minValue) && parsed < Number(min)) {
@@ -228,7 +233,7 @@ export function parseNumber(column: PTableColumnSpec, value: string): number {
     }
   }
 
-  const max = column.spec.annotations?.['pl7.app/max'];
+  const max = readAnnotation(column.spec, Annotation.Max);
   if (max !== undefined) {
     const maxValue = Number(max);
     if (Number.isFinite(maxValue) && parsed > Number(max)) {
@@ -240,7 +245,7 @@ export function parseNumber(column: PTableColumnSpec, value: string): number {
 }
 
 export function parseString(column: PTableColumnSpec, value: string): string {
-  const alphabet = column.spec.domain?.['pl7.app/alphabet'] ?? column.spec.annotations?.['pl7.app/alphabet'];
+  const alphabet = readDomain(column.spec, Domain.Alphabet) ?? readAnnotation(column.spec, Annotation.Alphabet);
   if (alphabet === 'nucleotide' && !/^[AaTtGgCcNn]+$/.test(value)) throw Error('Model value is not a nucleotide.');
   if (alphabet === 'aminoacid' && !/^[AaCcDdEeFfGgHhIiKkLlMmNnPpQqRrSsTtVvWwYyXx*_]+$/.test(value)) throw Error('Model value is not an aminoacid.');
   return value;
@@ -260,8 +265,7 @@ export function makeWildcardOptions(
   column: PTableColumnSpec,
   reference: string,
 ): ListOption<string>[] {
-  const alphabet = column.spec.domain?.['pl7.app/alphabet']
-    ?? column.spec.annotations?.['pl7.app/alphabet'];
+  const alphabet = readDomain(column.spec, Domain.Alphabet) ?? readAnnotation(column.spec, Annotation.Alphabet);
   if (alphabet === 'nucleotide') {
     return [{
       label: 'N',
@@ -283,17 +287,17 @@ export function makeWildcardOptions(
 }
 
 export function makeDiscreteOptions(column: PTableColumnSpec): ListOption<number | string>[] {
-  const discreteValuesAnnotation = column.spec.annotations?.['pl7.app/discreteValues'];
+  const discreteValuesAnnotation = readAnnotation(column.spec, Annotation.DiscreteValues);
   if (!discreteValuesAnnotation) return [];
 
   try {
-    const discreteValues: (string | number)[] = JSON.parse(discreteValuesAnnotation);
+    const discreteValues = parseJson<number[] | string[]>(discreteValuesAnnotation);
     return discreteValues.map((v) => ({
-      label: v.toString(),
+      label: `${v}`,
       value: v,
     }));
   } catch (err: unknown) {
-    console.error(`Column ${column.id} has invalid 'pl7.app/discreteValues' annotation: '${discreteValuesAnnotation}'`, err);
+    console.error(`Column ${column.id} has invalid '${Annotation.DiscreteValues}' annotation: '${discreteValuesAnnotation}'`, err);
     return [];
   }
 }
@@ -301,7 +305,7 @@ export function makeDiscreteOptions(column: PTableColumnSpec): ListOption<number
 export function isAlphabetic(column: PTableColumnSpec): boolean {
   return semver.gt(getRawPlatformaInstance().sdkInfo.sdkVersion, '1.14.0')
     && (column.type === 'column' ? column.spec.valueType : column.spec.type) === 'String'
-    && (column.spec.domain?.['pl7.app/alphabet'] ?? column.spec.annotations?.['pl7.app/alphabet']) !== undefined;
+    && (readDomain(column.spec, Domain.Alphabet) ?? readAnnotation(column.spec, Annotation.Alphabet)) !== undefined;
 }
 
 export function makePredicate(alphabetic: boolean, filter: PlTableFilter): SingleValuePredicateV2 {
