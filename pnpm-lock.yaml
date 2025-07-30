@@ -424,15 +424,15 @@ importers:
       '@milaboratories/build-configs':
         specifier: workspace:*
         version: link:../../../../tools/build-configs
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-builder
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../../tools/ts-configs
       '@platforma-sdk/block-tools':
         specifier: workspace:*
         version: link:../../../../tools/block-tools
-      rollup:
-        specifier: 'catalog:'
-        version: 4.45.1
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
@@ -512,15 +512,15 @@ importers:
       '@milaboratories/build-configs':
         specifier: workspace:*
         version: link:../../../../tools/build-configs
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-builder
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../../tools/ts-configs
       '@platforma-sdk/block-tools':
         specifier: workspace:*
         version: link:../../../../tools/block-tools
-      rollup:
-        specifier: 'catalog:'
-        version: 4.45.1
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
@@ -603,15 +603,15 @@ importers:
       '@milaboratories/build-configs':
         specifier: workspace:*
         version: link:../../../../tools/build-configs
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-builder
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../../tools/ts-configs
       '@platforma-sdk/block-tools':
         specifier: workspace:*
         version: link:../../../../tools/block-tools
-      rollup:
-        specifier: 'catalog:'
-        version: 4.45.1
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
@@ -685,15 +685,15 @@ importers:
       '@milaboratories/build-configs':
         specifier: workspace:*
         version: link:../../../../tools/build-configs
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-builder
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../../tools/ts-configs
       '@platforma-sdk/block-tools':
         specifier: workspace:*
         version: link:../../../../tools/block-tools
-      rollup:
-        specifier: 'catalog:'
-        version: 4.45.1
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
@@ -761,15 +761,15 @@ importers:
       '@milaboratories/build-configs':
         specifier: 'workspace:'
         version: link:../../../../tools/build-configs
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-builder
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../../tools/ts-configs
       '@platforma-sdk/block-tools':
         specifier: 'workspace:'
         version: link:../../../../tools/block-tools
-      rollup:
-        specifier: 'catalog:'
-        version: 4.45.1
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
@@ -843,15 +843,15 @@ importers:
       '@milaboratories/build-configs':
         specifier: workspace:*
         version: link:../../../../tools/build-configs
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-builder
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../../tools/ts-configs
       '@platforma-sdk/block-tools':
         specifier: workspace:*
         version: link:../../../../tools/block-tools
-      rollup:
-        specifier: 'catalog:'
-        version: 4.45.1
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
@@ -931,15 +931,15 @@ importers:
       '@milaboratories/build-configs':
         specifier: workspace:*
         version: link:../../../../tools/build-configs
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-builder
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../../tools/ts-configs
       '@platforma-sdk/block-tools':
         specifier: workspace:*
         version: link:../../../../tools/block-tools
-      rollup:
-        specifier: 'catalog:'
-        version: 4.45.1
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
@@ -1022,6 +1022,9 @@ importers:
       '@milaboratories/build-configs':
         specifier: workspace:*
         version: link:../../../../tools/build-configs
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-builder
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../../tools/ts-configs
@@ -1034,9 +1037,6 @@ importers:
       eslint:
         specifier: 'catalog:'
         version: 9.25.1
-      rollup:
-        specifier: 'catalog:'
-        version: 4.45.1
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
@@ -1116,15 +1116,15 @@ importers:
       '@milaboratories/build-configs':
         specifier: workspace:*
         version: link:../../../../tools/build-configs
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-builder
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../../tools/ts-configs
       '@platforma-sdk/block-tools':
         specifier: workspace:*
         version: link:../../../../tools/block-tools
-      rollup:
-        specifier: 'catalog:'
-        version: 4.45.1
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
@@ -1225,15 +1225,15 @@ importers:
       '@milaboratories/build-configs':
         specifier: workspace:*
         version: link:../../../../tools/build-configs
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-builder
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../../tools/ts-configs
       '@platforma-sdk/block-tools':
         specifier: workspace:*
         version: link:../../../../tools/block-tools
-      rollup:
-        specifier: 'catalog:'
-        version: 4.45.1
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
@@ -1364,9 +1364,6 @@ importers:
       vue-router:
         specifier: '4'
         version: 4.5.0(vue@3.5.13(typescript@5.6.3))
-      vue-tsc:
-        specifier: 'catalog:'
-        version: 2.2.10(typescript@5.6.3)
 
   lib/model/backend:
     dependencies:
@@ -1386,21 +1383,24 @@ importers:
       '@milaboratories/eslint-config':
         specifier: workspace:^
         version: link:../../../tools/eslint-config
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../../tools/ts-builder
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../tools/ts-configs
       '@types/node':
         specifier: 'catalog:'
         version: 20.16.15
-      rollup:
-        specifier: 'catalog:'
-        version: 4.45.1
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
+<<<<<<< HEAD
       vite:
         specifier: 'catalog:'
         version: 6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
+=======
+>>>>>>> cd3e35c48 (update lock file)
 
   lib/model/common:
     dependencies:
@@ -1454,18 +1454,21 @@ importers:
       '@milaboratories/build-configs':
         specifier: workspace:*
         version: link:../../../tools/build-configs
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../../tools/ts-builder
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../tools/ts-configs
-      rollup:
-        specifier: 'catalog:'
-        version: 4.45.1
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
+<<<<<<< HEAD
       vite:
         specifier: 'catalog:'
         version: 6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
+=======
+>>>>>>> cd3e35c48 (update lock file)
 
   lib/model/pl-error-like:
     dependencies:
@@ -1485,6 +1488,9 @@ importers:
       '@milaboratories/eslint-config':
         specifier: workspace:*
         version: link:../../../tools/eslint-config
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../../tools/ts-builder
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../tools/ts-configs
@@ -1494,15 +1500,15 @@ importers:
       eslint:
         specifier: 'catalog:'
         version: 9.25.1
-      rollup:
-        specifier: 'catalog:'
-        version: 4.45.1
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
+<<<<<<< HEAD
       vite:
         specifier: 'catalog:'
         version: 6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
+=======
+>>>>>>> cd3e35c48 (update lock file)
       vitest:
         specifier: 'catalog:'
         version: 2.1.9(@types/node@22.5.5)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4)
@@ -1732,6 +1738,9 @@ importers:
       '@milaboratories/eslint-config':
         specifier: workspace:^
         version: link:../../../tools/eslint-config
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../../tools/ts-builder
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../tools/ts-configs
@@ -1756,9 +1765,6 @@ importers:
       prettier:
         specifier: 'catalog:'
         version: 3.4.1
-      rollup:
-        specifier: 'catalog:'
-        version: 4.45.1
       testcontainers:
         specifier: 'catalog:'
         version: 10.18.0
@@ -1774,9 +1780,12 @@ importers:
       utility-types:
         specifier: 'catalog:'
         version: 3.11.0
+<<<<<<< HEAD
       vite:
         specifier: 'catalog:'
         version: 6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
+=======
+>>>>>>> cd3e35c48 (update lock file)
       vitest:
         specifier: 'catalog:'
         version: 2.1.9(@types/node@20.16.15)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4)
@@ -2103,9 +2112,6 @@ importers:
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../tools/ts-configs
-      rollup:
-        specifier: 'catalog:'
-        version: 4.45.1
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
@@ -2165,15 +2171,15 @@ importers:
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../tools/ts-configs
-      rollup:
-        specifier: 'catalog:'
-        version: 4.45.1
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
+<<<<<<< HEAD
       vite:
         specifier: 'catalog:'
         version: 6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
+=======
+>>>>>>> cd3e35c48 (update lock file)
 
   lib/node/ts-helpers-winston:
     dependencies:
@@ -2193,15 +2199,15 @@ importers:
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../tools/ts-configs
-      rollup:
-        specifier: 'catalog:'
-        version: 4.45.1
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
+<<<<<<< HEAD
       vite:
         specifier: 'catalog:'
         version: 6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
+=======
+>>>>>>> cd3e35c48 (update lock file)
 
   lib/other/biowasm-tools:
     dependencies:
@@ -2357,18 +2363,21 @@ importers:
       '@milaboratories/build-configs':
         specifier: workspace:*
         version: link:../../../tools/build-configs
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../../tools/ts-builder
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../tools/ts-configs
-      rollup:
-        specifier: 'catalog:'
-        version: 4.45.1
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
+<<<<<<< HEAD
       vite:
         specifier: 'catalog:'
         version: 6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
+=======
+>>>>>>> cd3e35c48 (update lock file)
 
   sdk/eslint-config:
     dependencies:
@@ -2467,21 +2476,24 @@ importers:
       '@milaboratories/build-configs':
         specifier: workspace:*
         version: link:../../tools/build-configs
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../tools/ts-builder
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../tools/ts-configs
       '@types/node':
         specifier: 'catalog:'
         version: 20.16.15
-      rollup:
-        specifier: 'catalog:'
-        version: 4.45.1
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
+<<<<<<< HEAD
       vite:
         specifier: 'catalog:'
         version: 6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
+=======
+>>>>>>> cd3e35c48 (update lock file)
 
   sdk/ui-vue:
     dependencies:
@@ -2582,9 +2594,6 @@ importers:
       vitest:
         specifier: 'catalog:'
         version: 2.1.9(@types/node@20.16.15)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4)
-      vue-tsc:
-        specifier: 'catalog:'
-        version: 2.2.10(typescript@5.6.3)
       yarpm:
         specifier: 'catalog:'
         version: 1.2.0
@@ -2653,21 +2662,24 @@ importers:
       '@milaboratories/build-configs':
         specifier: workspace:*
         version: link:../../tools/build-configs
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../tools/ts-builder
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../tools/ts-configs
       '@types/node':
         specifier: 'catalog:'
         version: 20.16.15
-      rollup:
-        specifier: 'catalog:'
-        version: 4.45.1
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
+<<<<<<< HEAD
       vite:
         specifier: 'catalog:'
         version: 6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
+=======
+>>>>>>> cd3e35c48 (update lock file)
       vitest:
         specifier: 'catalog:'
         version: 2.1.9(@types/node@20.16.15)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4)
@@ -2729,21 +2741,24 @@ importers:
       '@milaboratories/build-configs':
         specifier: workspace:*
         version: link:../../tools/build-configs
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../tools/ts-builder
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../tools/ts-configs
       '@types/node':
         specifier: 'catalog:'
         version: 20.16.15
-      rollup:
-        specifier: 'catalog:'
-        version: 4.45.1
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
+<<<<<<< HEAD
       vite:
         specifier: 'catalog:'
         version: 6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
+=======
+>>>>>>> cd3e35c48 (update lock file)
       vitest:
         specifier: 'catalog:'
         version: 2.1.9(@types/node@20.16.15)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4)
@@ -3069,6 +3084,9 @@ importers:
       '@milaboratories/build-configs':
         specifier: workspace:*
         version: link:../build-configs
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../ts-builder
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../ts-configs
@@ -3081,18 +3099,18 @@ importers:
       jest:
         specifier: 'catalog:'
         version: 29.7.0(@types/node@20.16.15)(ts-node@10.9.2(@types/node@20.16.15)(typescript@5.6.3))
-      rollup:
-        specifier: 'catalog:'
-        version: 4.45.1
       ts-jest:
         specifier: 'catalog:'
         version: 29.2.6(@babel/core@7.25.2)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.25.2))(esbuild@0.25.5)(jest@29.7.0(@types/node@20.16.15)(ts-node@10.9.2(@types/node@20.16.15)(typescript@5.6.3)))(typescript@5.6.3)
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
+<<<<<<< HEAD
       vite:
         specifier: 'catalog:'
         version: 6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
+=======
+>>>>>>> cd3e35c48 (update lock file)
 
   tools/package-builder:
     dependencies:
@@ -3136,6 +3154,9 @@ importers:
       '@milaboratories/oclif-index':
         specifier: workspace:*
         version: link:../oclif-index
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../ts-builder
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../ts-configs
@@ -3154,18 +3175,18 @@ importers:
       jest:
         specifier: 'catalog:'
         version: 29.7.0(@types/node@20.16.15)(ts-node@10.9.2(@types/node@20.16.15)(typescript@5.6.3))
-      rollup:
-        specifier: 'catalog:'
-        version: 4.45.1
       ts-jest:
         specifier: 'catalog:'
         version: 29.2.6(@babel/core@7.25.2)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.25.2))(esbuild@0.25.5)(jest@29.7.0(@types/node@20.16.15)(ts-node@10.9.2(@types/node@20.16.15)(typescript@5.6.3)))(typescript@5.6.3)
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
+<<<<<<< HEAD
       vite:
         specifier: 'catalog:'
         version: 6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
+=======
+>>>>>>> cd3e35c48 (update lock file)
 
   tools/pl-bootstrap:
     dependencies:
@@ -3206,6 +3227,9 @@ importers:
       '@milaboratories/oclif-index':
         specifier: workspace:*
         version: link:../oclif-index
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../ts-builder
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../ts-configs
@@ -3227,9 +3251,6 @@ importers:
       prettier:
         specifier: 'catalog:'
         version: 3.4.1
-      rollup:
-        specifier: 'catalog:'
-        version: 4.45.1
       ts-jest:
         specifier: 'catalog:'
         version: 29.2.6(@babel/core@7.25.2)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.25.2))(esbuild@0.25.5)(jest@29.7.0(@types/node@20.16.15)(ts-node@10.9.2(@types/node@20.16.15)(typescript@5.6.3)))(typescript@5.6.3)
@@ -3292,21 +3313,24 @@ importers:
       '@milaboratories/oclif-index':
         specifier: workspace:*
         version: link:../oclif-index
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../ts-builder
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../ts-configs
       '@types/node':
         specifier: 'catalog:'
         version: 20.16.15
-      rollup:
-        specifier: 'catalog:'
-        version: 4.45.1
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
+<<<<<<< HEAD
       vite:
         specifier: 'catalog:'
         version: 6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
+=======
+>>>>>>> cd3e35c48 (update lock file)
       vitest:
         specifier: 'catalog:'
         version: 2.1.9(@types/node@20.16.15)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4)
