@@ -20,7 +20,6 @@
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
-    "rollup": "catalog:",
     "typescript": "catalog:"
   }
 }

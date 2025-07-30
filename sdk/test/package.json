@@ -13,8 +13,9 @@
     }
   },
   "scripts": {
-    "type-check": "tsc --noEmit --composite false",
-    "build": "rollup -c",
+    "type-check": "ts-builder types --target node",
+    "build": "ts-builder build --target node",
+    "watch": "ts-builder build --target node --watch",
     "test": "vitest",
     "prettier-format": "prettier --config .prettierrc 'src/**/*.ts' --write"
   },
@@ -33,10 +34,9 @@
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
+    "@milaboratories/ts-builder": "workspace:*",
     "@types/node": "catalog:",
     "typescript": "catalog:",
-    "vite": "catalog:",
-    "@milaboratories/ts-configs": "workspace:*",
-    "rollup": "catalog:"
+    "@milaboratories/ts-configs": "workspace:*"
   }
 }

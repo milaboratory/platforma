@@ -17,8 +17,9 @@
     }
   },
   "scripts": {
-    "type-check": "tsc --noEmit --composite false",
-    "build": "rollup -c",
+    "type-check": "ts-builder types --target node",
+    "build": "ts-builder build --target node",
+    "watch": "ts-builder build --target node --watch",
     "lint": "eslint .",
     "test": "vitest",
     "do-pack": "rm -rf src/.test && rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
@@ -53,9 +54,8 @@
     "tsconfig-paths": "catalog:",
     "typescript": "catalog:",
     "utility-types": "catalog:",
-    "vite": "catalog:",
     "vitest": "catalog:",
-    "rollup": "catalog:"
+    "@milaboratories/ts-builder": "workspace:*"
   },
   "dependencies": {
     "@milaboratories/pl-config": "workspace:^",

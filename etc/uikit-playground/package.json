@@ -18,7 +18,6 @@
     "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:",
-    "vue-tsc": "catalog:",
     "vue": "catalog:",
     "@vitejs/plugin-vue": "catalog:",
     "@milaboratories/helpers": "workspace:^",

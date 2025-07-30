@@ -2141,6 +2141,9 @@ importers:
       '@milaboratories/build-configs':
         specifier: workspace:*
         version: link:../../../tools/build-configs
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../../tools/ts-builder
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../tools/ts-configs
@@ -2166,6 +2169,9 @@ importers:
       '@milaboratories/build-configs':
         specifier: workspace:*
         version: link:../../../tools/build-configs
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../../tools/ts-builder
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../tools/ts-configs
