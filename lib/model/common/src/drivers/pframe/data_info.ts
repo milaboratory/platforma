@@ -85,6 +85,70 @@ export type BinaryPartitionedDataInfo<Blob> = {
   parts: Record<string, BinaryChunk<Blob>>;
 };
 
+type ParquetPartitionInfoMappingAxis = {
+  /** Data type (matches PColumn axis types) */
+  type: 'Int' | 'Long' | 'String';
+
+  /** Field name in the Parquet file */
+  id: string;
+};
+
+type ParquetPartitionInfoMappingColumn = {
+  /** Data type (matches PColumn value type) */
+  type: 'Int' | 'Long' | 'Float' | 'Double' | 'String';
+
+  /** Field name in the Parquet file */
+  id: string;
+};
+
+type ParquetPartitionInfoMapping = {
+  /** Axes mappings - Parquet file is sorted by these fields in this order */
+  axes: ParquetPartitionInfoMappingAxis[];
+
+  /** Column mapping */
+  column: ParquetPartitionInfoMappingColumn;
+};
+
+type ParquetPartitionInfoData<Blob> = {
+  /** Parquet file (PTable) containing column data */
+  data: Blob;
+
+  /** Content hash calculated for the specific axes and data this partition represents */
+  dataDigest?: string;
+
+  /** Pre-computed statistics for optimization without blob download */
+  stats?: {
+    /** Number of rows in the column */
+    numberOfRows?: number;
+    /** Byte size information for storage optimization and query planning */
+    numberOfBytes?: {
+      /** Byte sizes for each axis column in the same order as axes mapping */
+      axes: number[];
+      /** Byte size for the data column */
+      column: number;
+    };
+  };
+};
+
+export type ParquetChunk<Blob> = {
+  /** Mapping of column names to their data */
+  mapping: ParquetPartitionInfoMapping;
+
+  /** Data for this partition */
+  data: ParquetPartitionInfoData<Blob>;
+};
+
+export type ParquetPartitionedDataInfo<Blob> = {
+  /** Identifier for this data format ('ParquetPartitioned') */
+  type: 'ParquetPartitioned';
+
+  /** Number of leading axes used for partitioning */
+  partitionKeyLength: number;
+
+  /** Map of stringified partition keys to parquet files */
+  parts: Record<string, ParquetChunk<Blob>>;
+};
+
 /**
  * Union type representing all possible data storage formats for PColumn data.
  * The specific format used depends on data size, access patterns, and performance requirements.
