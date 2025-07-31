@@ -95,59 +95,64 @@ export class DownloadAndUnarchiveTask {
       return await dirSize(this.path);
     }
 
-    const { content, size } = await this.clientDownload.downloadBlob(
-      this.rInfo, {}, signal,
-    );
-    this.state.downloaded = true;
+    const size = await this.clientDownload.withBlobContent(
+      this.rInfo, 
+      {}, 
+      { signal },
+      async (content, size) => {
+        this.state!.downloaded = true;
 
-    await createPathAtomically(this.logger, this.path, async (fPath: string) => {
-      this.state!.tempPath = fPath;
-      this.state!.archiveFormat = this.format;
+        await createPathAtomically(this.logger, this.path, async (fPath: string) => {
+          this.state!.tempPath = fPath;
+          this.state!.archiveFormat = this.format;
 
-      switch (this.format) {
-        case 'tar':
-          await fsp.mkdir(fPath); // throws if a directory already exists.
-          const simpleUntar = Writable.toWeb(tar.extract(fPath));
-          await content.pipeTo(simpleUntar, { signal });
-          return;
+          switch (this.format) {
+            case 'tar':
+              await fsp.mkdir(fPath); // throws if a directory already exists.
+              const simpleUntar = Writable.toWeb(tar.extract(fPath));
+              await content.pipeTo(simpleUntar, { signal });
+              return;
 
-        case 'tgz':
-          await fsp.mkdir(fPath); // throws if a directory already exists.
-          const gunzip = Transform.toWeb(zlib.createGunzip());
-          const untar = Writable.toWeb(tar.extract(fPath));
+            case 'tgz':
+              await fsp.mkdir(fPath); // throws if a directory already exists.
+              const gunzip = Transform.toWeb(zlib.createGunzip());
+              const untar = Writable.toWeb(tar.extract(fPath));
 
-          await content
-            .pipeThrough(gunzip, { signal })
-            .pipeTo(untar, { signal });
-          return;
+              await content
+                .pipeThrough(gunzip, { signal })
+                .pipeTo(untar, { signal });
+              return;
 
-        case 'zip':
-          this.state!.zipPath = this.path + '.zip';
+            case 'zip':
+              this.state!.zipPath = this.path + '.zip';
 
-          const f = Writable.toWeb(fs.createWriteStream(this.state!.zipPath));
-          await content.pipeTo(f, { signal });
-          this.state!.zipPathCreated = true;
+              const f = Writable.toWeb(fs.createWriteStream(this.state!.zipPath));
+              await content.pipeTo(f, { signal });
+              this.state!.zipPathCreated = true;
 
-          // Without this filter it fails with
-          // "EISDIR: illegal operation on a directory".
-          // The workaround is from
-          // https://github.com/kevva/decompress/issues/46#issuecomment-525048104
-          await decompress(this.state!.zipPath, fPath, {
-            filter: file => !file.path.endsWith('/'),
-          });
-          this.state!.zipDecompressed = true;
+              // Without this filter it fails with
+              // "EISDIR: illegal operation on a directory".
+              // The workaround is from
+              // https://github.com/kevva/decompress/issues/46#issuecomment-525048104
+              await decompress(this.state!.zipPath, fPath, {
+                filter: file => !file.path.endsWith('/'),
+              });
+              this.state!.zipDecompressed = true;
 
-          await fs.promises.rm(this.state!.zipPath);
-          this.state!.zipPathDeleted = true;
+              await fs.promises.rm(this.state!.zipPath);
+              this.state!.zipPathDeleted = true;
 
-          return;
+              return;
 
-        default:
-          assertNever(this.format);
+            default:
+              assertNever(this.format);
+          }
+        });
+
+        this.state!.pathCreated = true;
+        return size;
       }
-    });
-
-    this.state.pathCreated = true;
+    );
 
     return size;
   }

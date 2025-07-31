@@ -8,7 +8,7 @@ import type { Dispatcher } from 'undici';
 import { request } from 'undici';
 import type { uploadapi_GetPartURL_Response } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/uploadapi/protocol';
 import { UploadClient } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/uploadapi/protocol.client';
-import { toHeadersMap } from './helpers';
+
 import type { IncomingHttpHeaders } from 'undici/types/header';
 
 export class MTimeError extends Error {
@@ -90,7 +90,7 @@ export class ClientUpload {
         // that's why we got big timeout here.
         headersTimeout: 60000,
         bodyTimeout: 60000,
-        headers: toHeadersMap(info.headers),
+        headers: Object.fromEntries(info.headers.map(({ name, value }) => [name, value])),
         method: info.method.toUpperCase() as Dispatcher.HttpMethod,
       });
 

@@ -20,7 +20,7 @@ class FileContentData {
   private _str: string | undefined = undefined;
   private _rawJson: unknown | undefined = undefined;
   private _zodSchema: ZodSchema | undefined = undefined;
-  private _validatedJson: unknown | undefined = undefined;
+  private _validatedJson: Zod.SafeParseReturnType<unknown, unknown> | undefined = undefined;
 
   constructor(public readonly bytes: Uint8Array) {}
 
@@ -34,12 +34,12 @@ class FileContentData {
     return this._rawJson;
   }
 
-  public validatedJson<T>(schema: ZodSchema<T>): T {
+  public validatedJson<T>(schema: ZodSchema<T>): T | undefined {
     if (this._zodSchema !== schema) {
-      this._validatedJson = schema.parse(this.rawJson);
+      this._validatedJson = schema.safeParse(this.rawJson);
       this._zodSchema = schema;
     }
-    return this._validatedJson as T;
+    return this._validatedJson?.success ? (this._validatedJson.data as T) : undefined;
   }
 }
 
@@ -67,11 +67,23 @@ export class ReactiveFileContent {
 
     // Initiating actual fetch from the cache, that will in turn initiate upload
     (async () => {
-      try {
-        const data = await this.fileDataCache.fetch(handle);
-        newRef.value = data;
-      } catch (err: unknown) {
-        console.error(err);
+      const maxRetries = 4;
+      const retryDelay = 1000; // 1 second
+
+      for (let attempt = 0; attempt < maxRetries; attempt++) {
+        try {
+          const data = await this.fileDataCache.fetch(handle);
+          newRef.value = data;
+          return;
+        } catch (err: unknown) {
+          console.error(`File download attempt ${attempt + 1}/${maxRetries} failed:`, err);
+
+          if (attempt < maxRetries - 1) {
+            await new Promise((resolve) => setTimeout(resolve, retryDelay));
+          } else {
+            console.error(`Failed to download file after ${maxRetries} attempts`);
+          }
+        }
       }
     })();
 

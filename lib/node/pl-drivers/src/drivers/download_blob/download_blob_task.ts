@@ -94,23 +94,26 @@ export class DownloadBlobTask {
       return this.state.fileSize;
     }
 
-    const { content, size } = await this.clientDownload.downloadBlob(
+    const fileSize = await this.clientDownload.withBlobContent(
       this.rInfo,
       {},
-      this.signalCtl.signal,
+      { signal: this.signalCtl.signal },
+      async (content, size) => {
+        this.state.fileSize = size;
+        this.state.downloaded = true;
+
+        await createPathAtomically(this.logger, this.state.filePath!, async (fPath: string) => {
+          const f = Writable.toWeb(fs.createWriteStream(fPath, { flags: 'wx' }));
+          await content.pipeTo(f, { signal: this.signalCtl.signal });
+          this.state.tempWritten = true;
+        });
+
+        this.state.done = true;
+        return size;
+      }
     );
-    this.state.fileSize = size;
-    this.state.downloaded = true;
 
-    await createPathAtomically(this.logger, this.state.filePath, async (fPath: string) => {
-      const f = Writable.toWeb(fs.createWriteStream(fPath, { flags: 'wx' }));
-      await content.pipeTo(f, { signal: this.signalCtl.signal });
-      this.state.tempWritten = true;
-    });
-
-    this.state.done = true;
-
-    return size;
+    return fileSize;
   }
 
   public abort(reason: string) {
