@@ -1,4 +1,12 @@
-import { DataInfo, PColumnSpec, PObjectId } from '@milaboratories/pl-model-common';
+import {
+  BinaryPartitionedDataInfo,
+  JsonDataInfo,
+  JsonPartitionedDataInfo,
+  ParquetChunk,
+  ParquetPartitionedDataInfo,
+  PColumnSpec,
+  PObjectId,
+} from '@milaboratories/pl-model-common';
 
 /** Abstract identifier of a data blob that can be requested from the storage backend */
 export type PFrameBlobId = string;
@@ -20,6 +28,18 @@ export type PFrameDataSource = {
   /** Returns raw blob data given the blob id from {@link DataInfo}. */
   resolveBlobContent(blobId: PFrameBlobId): Promise<Uint8Array>;
 };
+
+/**
+ * Union type representing all possible data storage formats for PColumn data.
+ * The specific format used depends on data size, access patterns, and performance requirements.
+ *
+ * @template Blob - Type parameter representing the storage reference type (could be ResourceInfo, PFrameBlobId, etc.)
+ */
+export type DataInfo<Blob> =
+  | JsonDataInfo
+  | JsonPartitionedDataInfo<Blob>
+  | BinaryPartitionedDataInfo<Blob>
+  | ParquetPartitionedDataInfo<ParquetChunk<Blob>>;
 
 /** API exposed by PFrames library allowing to create and provide data for
  * PFrame objects */
