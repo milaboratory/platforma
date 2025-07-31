@@ -85,7 +85,7 @@ export type BinaryPartitionedDataInfo<Blob> = {
   parts: Record<string, BinaryChunk<Blob>>;
 };
 
-type ParquetPartitionInfoMappingAxis = {
+type ParquetChunkMappingAxis = {
   /** Data type (matches PColumn axis types) */
   type: 'Int' | 'Long' | 'String';
 
@@ -93,7 +93,7 @@ type ParquetPartitionInfoMappingAxis = {
   id: string;
 };
 
-type ParquetPartitionInfoMappingColumn = {
+type ParquetChunkMappingColumn = {
   /** Data type (matches PColumn value type) */
   type: 'Int' | 'Long' | 'Float' | 'Double' | 'String';
 
@@ -101,41 +101,33 @@ type ParquetPartitionInfoMappingColumn = {
   id: string;
 };
 
-type ParquetPartitionInfoMapping = {
-  /** Axes mappings - Parquet file is sorted by these fields in this order */
-  axes: ParquetPartitionInfoMappingAxis[];
-
-  /** Column mapping */
-  column: ParquetPartitionInfoMappingColumn;
-};
-
-type ParquetPartitionInfoData<Blob> = {
-  /** Parquet file (PTable) containing column data */
-  data: Blob;
-
-  /** Content hash calculated for the specific axes and data this partition represents */
-  dataDigest?: string;
-
-  /** Pre-computed statistics for optimization without blob download */
-  stats?: {
-    /** Number of rows in the column */
-    numberOfRows?: number;
-    /** Byte size information for storage optimization and query planning */
-    numberOfBytes?: {
-      /** Byte sizes for each axis column in the same order as axes mapping */
-      axes: number[];
-      /** Byte size for the data column */
-      column: number;
-    };
+type ParquetChunkStats = {
+  /** Number of rows in the chunk */
+  numberOfRows?: number;
+  /** Byte size information for storage optimization and query planning */
+  size?: {
+    /** Byte sizes for each axis column in the same order as axes mapping */
+    axes: number[];
+    /** Byte size for the data column */
+    column: number;
   };
 };
 
 export type ParquetChunk<Blob> = {
-  /** Mapping of column names to their data */
-  mapping: ParquetPartitionInfoMapping;
+  /** Parquet file (PTable) containing column data */
+  data: Blob;
 
-  /** Data for this partition */
-  data: ParquetPartitionInfoData<Blob>;
+  /** Content hash calculated for the specific axes and data this chunk represents */
+  dataDigest?: string;
+
+  /** Axes mappings - Parquet file is sorted by these fields in this order */
+  axes: ParquetChunkMappingAxis[];
+
+  /** Column mapping */
+  column: ParquetChunkMappingColumn;
+
+  /** Pre-computed statistics for optimization without blob download */
+  stats?: ParquetChunkStats;
 };
 
 export type ParquetPartitionedDataInfo<Blob> = {
