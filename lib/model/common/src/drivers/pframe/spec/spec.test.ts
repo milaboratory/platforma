@@ -176,7 +176,7 @@ describe('Linker columns', () => {
 
         const [a, b, c] = normalized;
         expect(a.parentAxesSpec.length).toBe(0);
-        expect(b.parentAxesSpec.length).not.toBe(0);
-        expect(c.parentAxesSpec.length).not.toBe(0);
+        expect(b.parentAxesSpec.length).toBe(0);
+        expect(c.parentAxesSpec.length).toBe(0);
     })
 });

@@ -411,12 +411,16 @@ export function getNormalizedAxesList(axes: AxisSpec[]): AxisSpecNormalized[] {
     }
   });
 
-  modifiedAxes.forEach((axis) => {
-    if (hasCycleOfParents(axis)) {
-      axis.parentAxesSpec = []; // Axes list is broken
-    }
-    sortParentsDeep(axis);
-  });
+  if (modifiedAxes.some(hasCycleOfParents)) { // Axes list is broken
+    modifiedAxes.forEach((axis) => {
+      axis.parentAxesSpec = [];
+    });
+  } else {
+    modifiedAxes.forEach((axis) => {
+      sortParentsDeep(axis);
+    });
+  }
+
   return modifiedAxes;
 }
 
