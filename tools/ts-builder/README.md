@@ -17,7 +17,7 @@ JS Builder provides a unified interface for building different types of projects
 pnpm install ts-builder
 
 # Basic usage
-npx builder --target <type> <command>
+ts-builder --target <type> <command>
 ```
 
 ## Commands
@@ -27,13 +27,13 @@ Build the project.
 
 ```bash
 # Regular build
-npx builder --target node build
+ts-builder --target node build
 
 # Build in watch mode
-npx builder --target browser build --watch
+ts-builder --target browser build --watch
 
 # Using custom configuration
-npx builder --target browser --build-config custom.config.js build
+ts-builder --target browser --build-config custom.config.js build
 ```
 
 ### serve
@@ -41,13 +41,13 @@ Start dev server (only for browser/browser-lib projects).
 
 ```bash
 # Start with default settings
-npx builder --target browser serve
+ts-builder --target browser serve
 
 # Custom port and host
-npx builder --target browser serve --port 8080 --host 0.0.0.0
+ts-builder --target browser serve --port 8080 --host 0.0.0.0
 
 # Using custom configuration
-npx builder --target browser --serve-config custom.serve.js serve
+ts-builder --target browser --serve-config custom.serve.js serve
 ```
 
 ### types
@@ -55,17 +55,17 @@ TypeScript type checking.
 
 ```bash
 # Check with default tsconfig.json
-npx builder --target node types
+ts-builder --target node types
 
 # Using custom tsconfig
-npx builder --target browser types --project ./custom.tsconfig.json
+ts-builder --target browser types --project ./custom.tsconfig.json
 ```
 
 ### init-build-config
 Create build configuration file.
 
 ```bash
-npx builder --target node init-build-config
+ts-builder --target node init-build-config
 # Creates build.node.config.js
 ```
 
@@ -73,7 +73,7 @@ npx builder --target node init-build-config
 Create dev server configuration file.
 
 ```bash
-npx builder init-serve-config
+ts-builder init-serve-config
 # Creates serve.config.js
 ```
 
@@ -81,7 +81,7 @@ npx builder init-serve-config
 Create tsconfig.json file.
 
 ```bash
-npx builder --target browser init-tsconfig
+ts-builder --target browser init-tsconfig
 # Creates tsconfig.json for browser projects
 ```
 
@@ -102,15 +102,15 @@ npx builder --target browser init-tsconfig
 
 ```bash
 # Example: build Node.js package
-npx builder --target node build
+ts-builder --target node build
 
 # Example: dev server for browser application
-npx builder --target browser serve --port 8080
+ts-builder --target browser serve --port 8080
 
 # Example: type checking for library
-npx builder --target browser-lib types
+ts-builder --target browser-lib types
 
 # Example: initialize all configs for new project
-npx builder --target node init-tsconfig
-npx builder --target node init-build-config
+ts-builder --target node init-tsconfig
+ts-builder --target node init-build-config
 ```
