@@ -1,5 +1,26 @@
 # @milaboratories/pl-drivers
 
+## 1.8.0
+
+### Minor Changes
+
+- ff4a709: **BREAKING**: Refactor download methods to lambda-based pattern for better resource management
+
+  - `RemoteFileDownloader.download()` → `withContent<T>()`
+  - `ClientDownload.downloadBlob()` → `withBlobContent<T>()`
+  - `ClientDownload.readLocalFile()` → `withLocalFileContent<T>()`
+  - Replace `fromBytes`/`toBytes` params with unified `RangeBytes` interface
+  - Automatic stream cleanup on all error paths including handler errors
+  - Centralized error handling prevents resource leaks
+
+### Patch Changes
+
+- Updated dependencies [ff4a709]
+  - @milaboratories/ts-helpers@1.4.3
+  - @milaboratories/computable@2.6.3
+  - @milaboratories/pl-client@2.11.6
+  - @milaboratories/pl-tree@1.7.5
+
 ## 1.7.1
 
 ### Patch Changes
