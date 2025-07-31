@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.19.3
+
+### Patch Changes
+
+- 6d6c4ba: Updated ParquetPartitionedDataInfo specification
+
 ## 1.19.2
 
 ### Patch Changes
