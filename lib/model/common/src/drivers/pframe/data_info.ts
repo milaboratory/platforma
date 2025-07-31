@@ -150,7 +150,8 @@ export type ParquetPartitionedDataInfo<Blob> = {
 export type DataInfo<Blob> =
   | JsonDataInfo
   | JsonPartitionedDataInfo<Blob>
-  | BinaryPartitionedDataInfo<Blob>;
+  | BinaryPartitionedDataInfo<Blob>
+  | ParquetPartitionedDataInfo<Blob>;
 
 /**
  * Type guard function that checks if the given value is a valid DataInfo.
@@ -182,6 +183,12 @@ export function isDataInfo<Blob>(value: unknown): value is DataInfo<Blob> {
         && typeof data.parts === 'object'
       );
     case 'BinaryPartitioned':
+      return (
+        typeof data.partitionKeyLength === 'number'
+        && data.parts !== undefined
+        && typeof data.parts === 'object'
+      );
+    case 'ParquetPartitioned':
       return (
         typeof data.partitionKeyLength === 'number'
         && data.parts !== undefined
@@ -242,6 +249,20 @@ export function mapDataInfo<B1, B2>(
         parts: newParts,
       };
     }
+    case 'ParquetPartitioned': {
+      // Map each chunk in parts
+      const newParts: Record<string, ParquetChunk<B2>> = {};
+      for (const [key, chunk] of Object.entries(dataInfo.parts)) {
+        newParts[key] = {
+          ...chunk,
+          data: mapFn(chunk.data),
+        };
+      }
+      return {
+        ...dataInfo,
+        parts: newParts,
+      };
+    }
   }
 }
 
@@ -270,6 +291,13 @@ export function visitDataInfo<B>(
       for (const [_, chunk] of Object.entries(dataInfo.parts)) {
         cb(chunk.index);
         cb(chunk.values);
+      }
+      break;
+    }
+    case 'ParquetPartitioned': {
+      // Visit each chunk in parts
+      for (const [_, chunk] of Object.entries(dataInfo.parts)) {
+        cb(chunk.data);
       }
       break;
     }
@@ -323,18 +351,28 @@ export interface BinaryPartitionedDataInfoEntries<Blob> {
 }
 
 /**
+ * Entry-based representation of ParquetPartitionedDataInfo
+ */
+export interface ParquetPartitionedDataInfoEntries<Blob> {
+  type: 'ParquetPartitioned';
+  partitionKeyLength: number;
+  parts: PColumnDataEntry<ParquetChunk<Blob>>[];
+}
+/**
  * Union type representing all possible entry-based partitioned data storage formats
  */
 export type PartitionedDataInfoEntries<Blob> =
   | JsonPartitionedDataInfoEntries<Blob>
-  | BinaryPartitionedDataInfoEntries<Blob>;
+  | BinaryPartitionedDataInfoEntries<Blob>
+  | ParquetPartitionedDataInfoEntries<Blob>;
 
 /**
  * Union type representing all possible entry-based data storage formats
  */
 export type DataInfoEntries<Blob> =
   | JsonDataInfoEntries
-  | PartitionedDataInfoEntries<Blob>;
+  | PartitionedDataInfoEntries<Blob>
+  | ParquetPartitionedDataInfoEntries<Blob>;
 
 /**
  * Type guard function that checks if the given value is a valid DataInfoEntries.
@@ -368,6 +406,11 @@ export function isDataInfoEntries<Blob>(value: unknown): value is DataInfoEntrie
         typeof data.partitionKeyLength === 'number'
         && Array.isArray(data.parts)
       );
+    case 'ParquetPartitioned':
+      return (
+        typeof data.partitionKeyLength === 'number'
+        && Array.isArray(data.parts)
+      );
     default:
       return false;
   }
@@ -382,7 +425,7 @@ export function isDataInfoEntries<Blob>(value: unknown): value is DataInfoEntrie
  */
 export function isPartitionedDataInfoEntries<Blob>(value: unknown): value is PartitionedDataInfoEntries<Blob> {
   if (!isDataInfoEntries(value)) return false;
-  return value.type === 'JsonPartitioned' || value.type === 'BinaryPartitioned';
+  return value.type === 'JsonPartitioned' || value.type === 'BinaryPartitioned' || value.type === 'ParquetPartitioned';
 }
 
 /**
@@ -425,6 +468,18 @@ export function dataInfoToEntries<Blob>(dataInfo: DataInfo<Blob>): DataInfoEntri
 
       return {
         type: 'BinaryPartitioned',
+        partitionKeyLength: dataInfo.partitionKeyLength,
+        parts,
+      };
+    }
+    case 'ParquetPartitioned': {
+      const parts: PColumnDataEntry<ParquetChunk<Blob>>[] = Object.entries(dataInfo.parts).map(([keyStr, chunk]) => {
+        const key = JSON.parse(keyStr) as PColumnKey;
+        return { key, value: chunk };
+      });
+
+      return {
+        type: 'ParquetPartitioned',
         partitionKeyLength: dataInfo.partitionKeyLength,
         parts,
       };
@@ -476,6 +531,18 @@ export function entriesToDataInfo<Blob>(dataInfoEntries: DataInfoEntries<Blob>):
         parts,
       };
     }
+    case 'ParquetPartitioned': {
+      const parts: Record<string, ParquetChunk<Blob>> = {};
+      for (const entry of dataInfoEntries.parts) {
+        parts[JSON.stringify(entry.key)] = entry.value;
+      }
+
+      return {
+        type: 'ParquetPartitioned',
+        partitionKeyLength: dataInfoEntries.partitionKeyLength,
+        parts,
+      };
+    }
   }
 }
 
@@ -523,6 +590,21 @@ export function mapDataInfoEntries<B1, B2>(
         value: {
           index: mapFn(entry.value.index),
           values: mapFn(entry.value.values),
+        },
+      }));
+
+      return {
+        ...dataInfoEntries,
+        parts: newParts,
+      };
+    }
+    case 'ParquetPartitioned': {
+      // Map each chunk in parts
+      const newParts = dataInfoEntries.parts.map((entry) => ({
+        key: entry.key,
+        value: {
+          ...entry.value,
+          data: mapFn(entry.value.data),
         },
       }));
 
