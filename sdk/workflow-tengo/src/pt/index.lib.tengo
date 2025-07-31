@@ -1195,9 +1195,92 @@ concat := func(dataframes, ...optionsRaw) {
 	return _newDataFrame(parentWorkflow, outputDfName)
 }
 
+/**
+ * Joins multiple DataFrames in a tree-like pattern using the specified join column.
+ * The algorithm pairs DataFrames and joins them recursively until only one DataFrame remains.
+ * This is particularly useful for joining many DataFrames on a common key where you want
+ * to preserve all rows (full outer join with coalescing).
+ *
+ * Join tree structure example (for 6 DataFrames):
+ * P0 ──┐
+ *      ├─ J01 ──┐
+ * P1 ──┘        │
+ * P2 ──┐        ├─ J0123 ──┐
+ *      ├─ J23 ──┘          │
+ * P3 ──┘                   │
+ * P4 ──┐                   ├─ J0123456 (Final Result)
+ *      ├─ J45 ──┐          │
+ * P5 ──┘        ├─ J456 ───┘
+ * P6 ───────────┘
+ *
+ * @param dataframes {array} - An array of DataFrame objects to join in tree fashion.
+ * @param opts {map} - Options map with required fields:
+ *   - `on` {string}: The column name to join on (must exist in all DataFrames).
+ * @returns {object} - A new DataFrame object representing the tree-joined result.
+ * @example
+ *   // Join multiple DataFrames on 'sample_id' column
+ *   joinedDf := pt.treeJoin([df1, df2, df3, df4], {on: "sample_id"})
+ *
+ *   // With many DataFrames, this creates a balanced tree of joins
+ *   result := pt.treeJoin(manyDataFrames, {on: "id"})
+ */
+treeJoin := func(dataframes, opts) {
+	ll.assert(is_array(dataframes), "First argument to treeJoin must be an array of DataFrame objects.")
+	ll.assert(len(dataframes) > 0, "DataFrame array for treeJoin cannot be empty.")
+
+	if !is_map(opts) || is_undefined(opts.on) {
+		ll.panic("treeJoin requires options with 'on' field")
+	}
+	if !is_string(opts.on) {
+		ll.panic("'on' option must be a string")
+	}
+
+	// Single DataFrame case - just return it
+	if len(dataframes) == 1 {
+		return dataframes[0]
+	}
+
+	// Validate all DataFrames belong to the same workflow
+	parentWorkflow := undefined
+	for i, df in dataframes {
+		if is_undefined(df) || is_undefined(df._getDfName) || is_undefined(df._getWorkflow) {
+			ll.panic("Argument at index %d in dataframes array is not a valid DataFrame object.", i)
+		}
+		currentWorkflow := df._getWorkflow()
+		if is_undefined(parentWorkflow) {
+			parentWorkflow = currentWorkflow
+		} else if currentWorkflow._wfId != parentWorkflow._wfId {
+			ll.panic("All DataFrames in a treeJoin operation must belong to the same workflow.")
+		}
+	}
+
+	pfs := dataframes
+
+	// Tree joining algorithm: pair up DataFrames and join until only one remains
+	for len(pfs) > 1 {
+		nextPfs := []
+		// Join consecutive pairs
+		for i := 1; i < len(pfs); i += 2 {
+			pf1 := pfs[i - 1]
+			pf2 := pfs[i]
+			joined := pf1.join(pf2, { on: opts.on, how: "full", coalesce: true })
+			nextPfs = append(nextPfs, joined)
+		}
+		// If odd number of DataFrames, carry the last one to next iteration
+		if len(pfs) % 2 == 1 {
+			nextPfs = append(nextPfs, pfs[len(pfs) - 1])
+		}
+		pfs = nextPfs
+	}
+
+	ll.assert(len(pfs) == 1, "Expected exactly one data frame, got " + string(len(pfs)))
+	return pfs[0]
+}
+
 export ll.toStrict({
 	workflow: workflow,
 	concat: concat,
+	treeJoin: treeJoin,
 
 	col: exp.col,
 	lit: exp.lit,
