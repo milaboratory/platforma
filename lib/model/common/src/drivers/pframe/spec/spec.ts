@@ -1,3 +1,4 @@
+import { ensureError } from '../../../errors';
 import {
   canonicalizeJson,
   type CanonicalizedJson,
@@ -40,10 +41,11 @@ type MetadataJsonImpl<M> = {
 };
 export type MetadataJson<M> = MetadataJsonImpl<Required<M>>;
 
-export function readMetadataJson<M extends Metadata, T extends keyof MetadataJson<M>>(
+export function readMetadataJsonOrThrow<M extends Metadata, T extends keyof MetadataJson<M>>(
   metadata: Metadata | undefined,
   metadataJson: MetadataJson<M>,
   key: T,
+  methodNameInError: string = 'readMetadataJsonOrThrow',
 ): z.infer<MetadataJson<M>[T]> | undefined {
   const json = readMetadata<M, T>(metadata, key);
   if (json === undefined) return undefined;
@@ -52,9 +54,25 @@ export function readMetadataJson<M extends Metadata, T extends keyof MetadataJso
   try {
     const value = JSON.parse(json);
     return schema.parse(value);
+  } catch (error: unknown) {
+    throw new Error(
+      `${methodNameInError} failed, `
+      + `key: ${String(key)}, `
+      + `value: ${json}, `
+      + `error: ${ensureError(error)}`,
+    );
+  }
+}
+
+export function readMetadataJson<M extends Metadata, T extends keyof MetadataJson<M>>(
+  metadata: Metadata | undefined,
+  metadataJson: MetadataJson<M>,
+  key: T,
+): z.infer<MetadataJson<M>[T]> | undefined {
+  try {
+    return readMetadataJsonOrThrow(metadata, metadataJson, key);
   } catch {
-    // invalid values are treated as unset
-    return undefined;
+    return undefined; // treat invalid values as unset
   }
 }
 
@@ -80,7 +98,15 @@ export function readDomain<T extends keyof Domain>(
   return readMetadata<Domain, T>(spec?.domain, key);
 }
 
-/// Helper function for reading json-encoded domain values
+/// Helper function for reading json-encoded domain values, throws on JSON parsing error
+export function readDomainJsonOrThrow<T extends keyof DomainJson>(
+  spec: { domain?: Metadata | undefined } | undefined,
+  key: T,
+): z.infer<DomainJson[T]> | undefined {
+  return readMetadataJsonOrThrow<Domain, T>(spec?.domain, DomainJson, key, 'readDomainJsonOrThrow');
+}
+
+/// Helper function for reading json-encoded domain values, returns undefined on JSON parsing error
 export function readDomainJson<T extends keyof DomainJson>(
   spec: { domain?: Metadata | undefined } | undefined,
   key: T,
@@ -170,7 +196,15 @@ export function readAnnotation<T extends keyof Annotation>(
   return readMetadata<Annotation, T>(spec?.annotations, key);
 }
 
-/// Helper function for reading json-encoded annotation values
+/// Helper function for reading json-encoded annotation values, throws on JSON parsing error
+export function readAnnotationJsonOrThrow<T extends keyof AnnotationJson>(
+  spec: { annotations?: Metadata | undefined } | undefined,
+  key: T,
+): z.infer<AnnotationJson[T]> | undefined {
+  return readMetadataJsonOrThrow<Annotation, T>(spec?.annotations, AnnotationJson, key, 'readAnnotationJsonOrThrow');
+}
+
+/// Helper function for reading json-encoded annotation values, returns undefined on JSON parsing error
 export function readAnnotationJson<T extends keyof AnnotationJson>(
   spec: { annotations?: Metadata | undefined } | undefined,
   key: T,
@@ -247,13 +281,8 @@ function normalizingAxesComparator(axis1: AxisSpec, axis2: AxisSpec): 1 | -1 | 0
   return 0;
 }
 
-function parseParentsFromAnnotations(axis: AxisSpec) {
-  const parentsList = readAnnotationJson(axis, Annotation.Parents);
-  if (parentsList === undefined) {
-    return [];
-  }
-  parentsList.sort(normalizingAxesComparator);
-  return parentsList;
+function parseParentsFromAnnotations(axis: AxisSpec): AxisSpec[] {
+  return (readAnnotationJson(axis, Annotation.Parents) ?? []).sort(normalizingAxesComparator);
 }
 
 /** Create list of normalized axisSpec (parents are in array of specs, not indexes) */
@@ -262,7 +291,7 @@ export function getNormalizedAxesList(axes: AxisSpec[]): AxisSpecNormalized[] {
     return [];
   }
   const modifiedAxes: AxisSpecNormalized[] = axes.map((axis) => {
-    const { parentAxes, ...copiedRest } = axis;
+    const { parentAxes: _, ...copiedRest } = axis;
     return { ...copiedRest, parentAxesSpec: [] };
   });
 
@@ -282,7 +311,7 @@ export function getDenormalizedAxesList(axesSpec: AxisSpecNormalized[]): AxisSpe
   return axesSpec.map((axisSpec) => {
     const parentsIds = axisSpec.parentAxesSpec.map((axisSpec) => canonicalizeJson(getAxisId(axisSpec)));
     const parentIdxs = parentsIds.map((id) => idsList.indexOf(id));
-    const { parentAxesSpec, ...copiedRest } = axisSpec;
+    const { parentAxesSpec: _, ...copiedRest } = axisSpec;
     if (parentIdxs.length) {
       return { ...copiedRest, parentAxes: parentIdxs } as AxisSpec;
     }
