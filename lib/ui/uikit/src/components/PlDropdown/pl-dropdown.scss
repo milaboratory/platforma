@@ -1,4 +1,4 @@
-@use "../../assets/mixins.scss" as *;
+@use '../../assets/mixins.scss' as *;
 
 .pl-dropdown__options {
   --option-hover-bg: var(--btn-sec-hover-grey);
@@ -41,7 +41,7 @@
       @include abs-center-y();
     }
 
-    >span {
+    > span {
       display: block;
       overflow: hidden;
       white-space: nowrap;
@@ -187,10 +187,8 @@
     gap: 6px;
     margin-left: auto;
 
-    
     .mask-16,
     .mask-24 {
-      --icon-color: var(--control-mask-fill);
       cursor: pointer;
     }
 
@@ -214,11 +212,9 @@
   .arrow-icon {
     cursor: pointer;
 
-    // Default "arrow" icon (16x16) 
+    // Default "arrow" icon (16x16)
     &.arrow-icon-default {
-      transition: transform .2s;
-      background-color: var(--control-mask-fill);
-      @include mask(url('../../assets/images/16_chevron-down.svg'), 16px);
+      transition: transform 0.2s;
     }
   }
 
@@ -239,7 +235,6 @@
 
     .arrow-icon {
       &.arrow-icon-default {
-        background-color: var(--control-mask-fill);
         transform: rotate(-180deg);
       }
     }
@@ -268,7 +263,7 @@
 
   &.disabled {
     --contour-color: var(--color-dis-01);
-    --control-mask-fill: var(--color-dis-01);
+    --icon-color: var(--color-dis-01);
     --label-color: var(--color-dis-01);
     cursor: not-allowed;
     pointer-events: none;

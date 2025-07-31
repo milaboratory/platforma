@@ -7,10 +7,10 @@ export default {
 };
 </script>
 
-<script lang="ts" setup>
-import type { ModelRef, RefOption } from '../../types';
-import { PlDropdown } from '../PlDropdown';
+<script lang="ts" setup generic="M = ModelRef">
 import { computed, useSlots } from 'vue';
+import type { ListOption, ModelRef, RefOption } from '../../types';
+import { PlDropdown } from '../PlDropdown';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const slots: any = useSlots();
@@ -19,7 +19,7 @@ defineEmits<{
   /**
    * Emitted when the model value is updated.
    */
-  (e: 'update:modelValue', value: ModelRef | undefined): void;
+  (e: 'update:modelValue', value: M | undefined): void;
 }>();
 
 const props = withDefaults(
@@ -27,7 +27,7 @@ const props = withDefaults(
     /**
      * The current selected ref of the dropdown.
      */
-    modelValue: ModelRef | undefined;
+    modelValue: M | undefined;
     /**
      * The label text for the dropdown field (optional)
      */
@@ -35,7 +35,7 @@ const props = withDefaults(
     /**
      * List of available ref options for the dropdown
      */
-    options?: Readonly<RefOption[]>;
+    options?: Readonly<RefOption[] | ListOption<M>[]>;
     /**
      * A helper text displayed below the dropdown when there are no errors (optional).
      */
@@ -85,14 +85,16 @@ const props = withDefaults(
 );
 
 const options = computed(() =>
-  props.options?.map((opt) => ({
-    label: opt.label,
-    value: opt.ref,
-    group: opt.group,
-  })),
+  props.options?.map((opt) =>
+    'ref' in opt
+      ? {
+          label: opt.label,
+          value: opt.ref,
+          group: opt.group,
+        } as ListOption<M>
+      : opt,
+  ),
 );
-
-const arrowIcon = computed(() => (props.disabled ? 'icon-link-disabled' : 'icon-link'));
 </script>
 
 <template>
@@ -100,7 +102,7 @@ const arrowIcon = computed(() => (props.disabled ? 'icon-link-disabled' : 'icon-
     v-bind="props"
     :options="options"
     :loading-options-helper="loadingOptionsHelper"
-    :arrow-icon-large="arrowIcon"
+    :arrow-icon-large="disabled ? 'link-disabled' : 'link'"
     @update:model-value="$emit('update:modelValue', $event)"
   >
     <template v-if="slots.tooltip" #tooltip>
