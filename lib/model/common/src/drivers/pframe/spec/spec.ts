@@ -227,7 +227,7 @@ export interface AxisSpecNormalized extends Omit<AxisSpec, 'parentAxes'> {
   parentAxesSpec: AxisSpecNormalized[];
 }
 
-function normalizingAxesComparator(axis1: AxisSpec, axis2: AxisSpec): 1 | -1 | 0 {
+function normalizingAxesComparator(axis1: AxisSpecNormalized, axis2: AxisSpecNormalized): 1 | -1 | 0 {
   if (axis1.name !== axis2.name) {
     return axis1.name < axis2.name ? 1 : -1;
   }
@@ -239,10 +239,11 @@ function normalizingAxesComparator(axis1: AxisSpec, axis2: AxisSpec): 1 | -1 | 0
   if (domain1 !== domain2) {
     return domain1 < domain2 ? 1 : -1;
   }
-  const annotations1 = canonicalizeJson(axis1.annotations ?? {});
-  const annotations2 = canonicalizeJson(axis2.annotations ?? {});
-  if (annotations1 !== annotations2) {
-    return annotations1 < annotations2 ? 1 : -1;
+
+  const parents1 = canonicalizeJson(axis1.parentAxesSpec.map(getAxisId));
+  const parents2 = canonicalizeJson(axis2.parentAxesSpec.map(getAxisId));
+  if (parents1 !== parents2) {
+    return parents1 < parents2 ? 1 : -1;
   }
   return 0;
 }
@@ -252,7 +253,6 @@ function parseParentsFromAnnotations(axis: AxisSpec) {
   if (parentsList === undefined) {
     return [];
   }
-  parentsList.sort(normalizingAxesComparator);
   return parentsList;
 }
 
@@ -272,6 +272,7 @@ export function getNormalizedAxesList(axes: AxisSpec[]): AxisSpecNormalized[] {
     } else { // else try to parse from annotation and normalize recursively
       modifiedAxes[idx].parentAxesSpec = getNormalizedAxesList(parseParentsFromAnnotations(axis));
     }
+    modifiedAxes[idx].parentAxesSpec.sort(normalizingAxesComparator);
   });
   return modifiedAxes;
 }
