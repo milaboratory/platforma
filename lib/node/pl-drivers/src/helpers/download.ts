@@ -5,11 +5,14 @@ import { request } from 'undici';
 import { Readable } from 'node:stream';
 import type { ReadableStream } from 'node:stream/web';
 import { text } from 'node:stream/consumers';
+import type { RangeBytes } from '@milaboratories/pl-model-common';
 
-export interface DownloadResponse {
-  content: ReadableStream;
-  size: number;
+export interface DownloadOps {
+  signal?: AbortSignal;
+  range?: RangeBytes;
 }
+
+export type ContentHandler<T> = (content: ReadableStream, size: number) => Promise<T>;
 
 /** Throws when a status code of the downloading URL was in range [400, 500). */
 export class NetworkError400 extends Error {
@@ -19,24 +22,45 @@ export class NetworkError400 extends Error {
 export class RemoteFileDownloader {
   constructor(public readonly httpClient: Dispatcher) {}
 
-  async download(
+  async withContent<T>(
     url: string,
     reqHeaders: Record<string, string>,
-    signal?: AbortSignal,
-  ): Promise<DownloadResponse> {
-    const { statusCode, body, headers } = await request(url, {
+    ops: DownloadOps,
+    handler: ContentHandler<T>,
+  ): Promise<T> {
+    const headers = { ...reqHeaders };
+
+    // Add range header if specified
+    if (ops.range) {
+      headers['Range'] = `bytes=${ops.range.from}-${ops.range.to - 1}`;
+    }
+
+    const { statusCode, body, headers: responseHeaders } = await request(url, {
       dispatcher: this.httpClient,
-      headers: reqHeaders,
-      signal,
+      headers,
+      signal: ops.signal,
     });
 
     const webBody = Readable.toWeb(body);
-    await checkStatusCodeOk(statusCode, webBody, url);
+    let handlerSuccess = false;
 
-    return {
-      content: webBody,
-      size: Number(headers['content-length']),
-    };
+    try {
+      await checkStatusCodeOk(statusCode, webBody, url);
+      const size = Number(responseHeaders['content-length']);
+      const result = await handler(webBody, size);
+      handlerSuccess = true;
+      return result;
+    } catch (error) {
+      // Cleanup on error (including handler errors)
+      if (!handlerSuccess && !webBody.locked) {
+        try {
+          await webBody.cancel();
+        } catch {
+          // Ignore cleanup errors
+        }
+      }
+      throw error;
+    }
   }
 }
 

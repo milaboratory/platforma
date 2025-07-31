@@ -82,21 +82,28 @@ export class DownloadByUrlTask {
       return await dirSize(this.path);
     }
 
-    const resp = await clientDownload.download(this.url.toString(), {}, signal);
+    const size = await clientDownload.withContent(
+      this.url.toString(), 
+      {}, 
+      { signal },
+      async (content, size) => {
+        let processedContent = content;
+        if (withGunzip) {
+          const gunzip = Transform.toWeb(zlib.createGunzip());
+          processedContent = content.pipeThrough(gunzip, { signal });
+        }
 
-    let content = resp.content;
-    if (withGunzip) {
-      const gunzip = Transform.toWeb(zlib.createGunzip());
-      content = content.pipeThrough(gunzip, { signal });
-    }
+        await createPathAtomically(this.logger, this.path, async (fPath: string) => {
+          await fsp.mkdir(fPath); // throws if a directory already exists.
+          const untar = Writable.toWeb(tar.extract(fPath));
+          await processedContent.pipeTo(untar, { signal });
+        });
 
-    await createPathAtomically(this.logger, this.path, async (fPath: string) => {
-      await fsp.mkdir(fPath); // throws if a directory already exists.
-      const untar = Writable.toWeb(tar.extract(fPath));
-      await content.pipeTo(untar, { signal });
-    });
+        return size;
+      }
+    );
 
-    return resp.size;
+    return size;
   }
 
   getUrl(): UrlResult | undefined {

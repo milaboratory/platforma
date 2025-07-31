@@ -45,10 +45,19 @@ test('client download from a local file', async () => {
         ]),
     });
 
-    const localFile = await clientDownload.readLocalFile(`storage://tmp/${fName}`);
+    const result = await clientDownload.withLocalFileContent(
+      `storage://tmp/${fName}`,
+      {},
+      async (content, size) => {
+        expect(size).toBe(2);
+        const textContent = await text(content);
+        expect(textContent).toBe('42');
+        return { size, textContent };
+      }
+    );
 
-    expect(localFile.size).toBe(2);
-    expect(await text(localFile.content)).toBe('42');
+    expect(result.size).toBe(2);
+    expect(result.textContent).toBe('42');
 
     await fs.rm(fPath);
   });
