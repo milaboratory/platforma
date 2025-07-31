@@ -227,6 +227,69 @@ export interface AxisSpecNormalized extends Omit<AxisSpec, 'parentAxes'> {
   parentAxesSpec: AxisSpecNormalized[];
 }
 
+/** Tree: axis is a root, its parents are children */
+export type AxisTree = {
+  axis: AxisSpecNormalized;
+  children: AxisTree[]; // parents
+};
+
+function makeAxisTree(axis: AxisSpecNormalized): AxisTree {
+  return { axis, children: [] };
+}
+
+/** Build tree by axis parents annotations */
+export function getAxesTree(rootAxis: AxisSpecNormalized): AxisTree {
+  const root = makeAxisTree(rootAxis);
+  let nodesQ = [root];
+  while (nodesQ.length) {
+    const nextNodes: AxisTree[] = [];
+    for (const node of nodesQ) {
+      node.children = node.axis.parentAxesSpec.map(makeAxisTree);
+      nextNodes.push(...node.children);
+    }
+    nodesQ = nextNodes;
+  }
+  return root;
+}
+
+/** Get set of canonicalized axisIds from axisTree */
+export function getSetFromAxisTree(tree: AxisTree): Set<CanonicalizedJson<AxisId>> {
+  const set = new Set([canonicalizeJson(getAxisId(tree.axis))]);
+  let nodesQ = [tree];
+  while (nodesQ.length) {
+    const nextNodes = [];
+    for (const node of nodesQ) {
+      for (const parent of node.children) {
+        set.add(canonicalizeJson(getAxisId(parent.axis)));
+        nextNodes.push(parent);
+      }
+    }
+    nodesQ = nextNodes;
+  }
+  return set;
+}
+
+/** Get array of axisSpecs from axisTree */
+export function getArrayFromAxisTree(tree: AxisTree): AxisSpecNormalized[] {
+  const res = [tree.axis];
+  let nodesQ = [tree];
+  while (nodesQ.length) {
+    const nextNodes = [];
+    for (const node of nodesQ) {
+      for (const parent of node.children) {
+        res.push(parent.axis);
+        nextNodes.push(parent);
+      }
+    }
+    nodesQ = nextNodes;
+  }
+  return res;
+}
+
+export function canonicalizeAxisWithParents(axis: AxisSpecNormalized) {
+  return canonicalizeJson(getArrayFromAxisTree(getAxesTree(axis)).map(getAxisId));
+}
+
 function normalizingAxesComparator(axis1: AxisSpecNormalized, axis2: AxisSpecNormalized): 1 | -1 | 0 {
   if (axis1.name !== axis2.name) {
     return axis1.name < axis2.name ? 1 : -1;
@@ -240,10 +303,17 @@ function normalizingAxesComparator(axis1: AxisSpecNormalized, axis2: AxisSpecNor
     return domain1 < domain2 ? 1 : -1;
   }
 
-  const parents1 = canonicalizeJson(axis1.parentAxesSpec.map(getAxisId));
-  const parents2 = canonicalizeJson(axis2.parentAxesSpec.map(getAxisId));
+  const parents1 = canonicalizeAxisWithParents(axis1);
+  const parents2 = canonicalizeAxisWithParents(axis2);
+
   if (parents1 !== parents2) {
     return parents1 < parents2 ? 1 : -1;
+  }
+
+  const annotation1 = canonicalizeJson(axis1.annotations ?? {});
+  const annotation2 = canonicalizeJson(axis2.annotations ?? {});
+  if (annotation1 !== annotation2) {
+    return annotation1 < annotation2 ? 1 : -1;
   }
   return 0;
 }
@@ -256,6 +326,11 @@ function parseParentsFromAnnotations(axis: AxisSpec) {
   return parentsList;
 }
 
+function sortParentsDeep(axisSpec: AxisSpecNormalized) {
+  axisSpec.parentAxesSpec.forEach(sortParentsDeep);
+  axisSpec.parentAxesSpec.sort(normalizingAxesComparator);
+}
+
 /** Create list of normalized axisSpec (parents are in array of specs, not indexes) */
 export function getNormalizedAxesList(axes: AxisSpec[]): AxisSpecNormalized[] {
   if (!axes.length) {
@@ -263,17 +338,20 @@ export function getNormalizedAxesList(axes: AxisSpec[]): AxisSpecNormalized[] {
   }
   const modifiedAxes: AxisSpecNormalized[] = axes.map((axis) => {
     const { parentAxes, ...copiedRest } = axis;
-    return { ...copiedRest, parentAxesSpec: [] };
+    return { ...copiedRest, annotations: { ...copiedRest.annotations }, parentAxesSpec: [] };
   });
 
   axes.forEach((axis, idx) => {
+    const modifiedAxis = modifiedAxes[idx];
     if (axis.parentAxes) { // if we have parents by indexes then take from the list
-      modifiedAxes[idx].parentAxesSpec = axis.parentAxes.map((idx) => modifiedAxes[idx]);
+      modifiedAxis.parentAxesSpec = axis.parentAxes.map((idx) => modifiedAxes[idx]);
     } else { // else try to parse from annotation and normalize recursively
-      modifiedAxes[idx].parentAxesSpec = getNormalizedAxesList(parseParentsFromAnnotations(axis));
+      modifiedAxis.parentAxesSpec = getNormalizedAxesList(parseParentsFromAnnotations(axis));
+      delete modifiedAxis.annotations?.[Annotation.Parents];
     }
-    modifiedAxes[idx].parentAxesSpec.sort(normalizingAxesComparator);
   });
+
+  modifiedAxes.forEach(sortParentsDeep);
   return modifiedAxes;
 }
 

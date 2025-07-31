@@ -20,6 +20,8 @@ import {
   stringifyJson,
   readAnnotationJson,
   LinkerMap,
+  getArrayFromAxisTree,
+  getAxesTree,
 } from '@milaboratories/pl-model-common';
 import type { PColumnDataUniversal, RenderCtx } from '../render';
 import { PColumnCollection, TreeNodeAccessor } from '../render';
@@ -68,7 +70,7 @@ export function getAvailableWithLinkersAxes(
 ): AxesVault {
   const linkerMap = LinkerMap.fromColumns(linkerColumns.map(getColumnIdAndSpec));
   const startKeys: CanonicalizedJson<AxisId[]>[] = [];
-  const blockAxesGrouped: AxisId[][] = [...blockAxes.values()].map((axis) => LinkerMap.getArrayFromAxisTree(LinkerMap.getAxesTree(axis)).map(getAxisId));
+  const blockAxesGrouped: AxisId[][] = [...blockAxes.values()].map((axis) => getArrayFromAxisTree(getAxesTree(axis)).map(getAxisId));
 
   for (const axesGroupBlock of blockAxesGrouped) {
     const matched = linkerMap.keyAxesIds.find(

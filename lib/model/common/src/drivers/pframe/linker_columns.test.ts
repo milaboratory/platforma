@@ -2,7 +2,10 @@ import {
     Annotation,
     AxisSpec,
     AxisSpecNormalized,
+    getArrayFromAxisTree,
+    getAxesTree,
     getNormalizedAxesList,
+    getSetFromAxisTree,
     PColumnIdAndSpec,
     ValueType,
 } from './spec/index';
@@ -106,9 +109,9 @@ describe('Linker columns', () => {
             makeTestAxis({ name: 'a' }),
             makeTestAxis({ name: 'b' })
         ]);
-        const tree = LinkerMap.getAxesTree(axisA);
-        expect(LinkerMap.getSetFromAxisTree(tree).size).toBe(1);
-        expect(LinkerMap.getArrayFromAxisTree(tree).length).toBe(1);
+        const tree = getAxesTree(axisA);
+        expect(getSetFromAxisTree(tree).size).toBe(1);
+        expect(getArrayFromAxisTree(tree).length).toBe(1);
 
         expect(LinkerMap.getAxesGroups([axisA, axisB]).length).toBe(2);
     })
@@ -120,9 +123,9 @@ describe('Linker columns', () => {
         const axisA = makeTestAxis({ name: 'a', parents: [axisB] });
         const [axisDn, axisCn, axisBn, axisAn] = getNormalizedAxesList([axisD, axisC, axisB, axisA])
 
-        const tree = LinkerMap.getAxesTree(axisAn);
-        expect(LinkerMap.getSetFromAxisTree(tree).size).toBe(4);
-        expect(LinkerMap.getArrayFromAxisTree(tree).length).toBe(4);
+        const tree = getAxesTree(axisAn);
+        expect(getSetFromAxisTree(tree).size).toBe(4);
+        expect(getArrayFromAxisTree(tree).length).toBe(4);
 
         for (const group of allPermutations([axisAn, axisBn, axisCn, axisDn])) {
             expect(LinkerMap.getAxesGroups(group).length).toBe(1);

@@ -6,6 +6,7 @@ import {
     ValueType,
     getDenormalizedAxesList,
     getNormalizedAxesList,
+    canonicalizeAxisWithParents,
 } from './spec';
 import { canonicalizeJson, stringifyJson } from '../../../json'
 import {
@@ -107,6 +108,42 @@ describe('Linker columns', () => {
         const normalized6 = getNormalizedAxesList([axisE3, axisD3, axisC3, axisB3, axisA3]);
         
         compareAxesLists(normalized5, normalized6);
+    })
+
+    test('Sort parents during normalization - idxs', () => {
+        const sourceAxesList1 = [
+            makeTestAxisWithParentIdxs({ name: 'a', parents: [2, 3] }),
+            makeTestAxisWithParentIdxs({ name: 'a', parents: [3, 2] }),
+            makeTestAxisWithParentIdxs({ name: 'b', parents: [4] }),
+            makeTestAxisWithParentIdxs({ name: 'b', parents: [5] }),
+            makeTestAxisWithParentIdxs({ name: 'c1' }),
+            makeTestAxisWithParentIdxs({ name: 'c2' }),
+        ];
+        const normalized1 = getNormalizedAxesList(sourceAxesList1);
+        const a1 = normalized1[0];
+        const a2 = normalized1[1];
+        expect(canonicalizeAxisWithParents(a1)).toEqual(canonicalizeAxisWithParents(a2));
+
+
+        const axisC1 = makeTestAxis({ name: 'c1' });
+        const axisC2 = makeTestAxis({ name: 'c2' });
+        const axisB1 = makeTestAxis({ name: 'b', parents: [axisC1] });
+        const axisB2 = makeTestAxis({ name: 'b', parents: [axisC2] });
+        const sourceAxesList2 = [
+            makeTestAxis({ name: 'a', parents: [axisB1, axisB2] }),
+            makeTestAxis({ name: 'a', parents: [axisB2, axisB1] }),
+            axisB1,
+            axisB2,
+            axisC1,
+            axisC2
+        ];
+        const normalized2 = getNormalizedAxesList(sourceAxesList2);
+        const a3 = normalized2[0];
+        const a4 = normalized2[1];
+        expect(canonicalizeAxisWithParents(a3)).toEqual(canonicalizeAxisWithParents(a4));
+
+        expect(canonicalizeAxisWithParents(a1)).toEqual(canonicalizeAxisWithParents(a3));
+        expect(canonicalizeAxisWithParents(a1)).toEqual(canonicalizeAxisWithParents(a4));
     })
 
     test('Denormalization of axes list', () => {

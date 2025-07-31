@@ -12,17 +12,9 @@ import {
   type AxisId,
   getAxisId,
   getNormalizedAxesList,
+  getArrayFromAxisTree,
+  getAxesTree,
 } from './spec/spec';
-
-/** Tree: axis is a root, its parents are children */
-type AxisTree = {
-  axis: AxisSpecNormalized;
-  children: AxisTree[]; // parents
-};
-
-function makeAxisTree(axis: AxisSpecNormalized): AxisTree {
-  return { axis, children: [] };
-}
 
 type LinkerKey = CanonicalizedJson<AxisId[]>;
 export type CompositeLinkerMap = Map<
@@ -72,12 +64,12 @@ export class LinkerMap implements LinkersData {
       // and
       // E - B - D
       const leftKeyVariants: [LinkerKey, AxisSpecNormalized[]][] = LinkerMap.getAxesRoots(left).map((axis) => {
-        const axes = LinkerMap.getArrayFromAxisTree(LinkerMap.getAxesTree(axis));
+        const axes = getArrayFromAxisTree(getAxesTree(axis));
         const key = canonicalizeJson(axes.map(getAxisId));
         return [key, axes];
       });
       const rightKeyVariants: [LinkerKey, AxisSpecNormalized[]][] = LinkerMap.getAxesRoots(right).map((axis) => {
-        const axes = LinkerMap.getArrayFromAxisTree(LinkerMap.getAxesTree(axis));
+        const axes = getArrayFromAxisTree(getAxesTree(axis));
         const key = canonicalizeJson(axes.map(getAxisId));
         return [key, axes];
       });
@@ -221,56 +213,7 @@ export class LinkerMap implements LinkersData {
   }
 
   static getLinkerKeyFromAxisSpec(axis: AxisSpecNormalized): LinkerKey {
-    return canonicalizeJson(LinkerMap.getArrayFromAxisTree(LinkerMap.getAxesTree(axis)).map(getAxisId));
-  }
-
-  /** Build tree by axis parents annotations */
-  static getAxesTree(rootAxis: AxisSpecNormalized): AxisTree {
-    const root = makeAxisTree(rootAxis);
-    let nodesQ = [root];
-    while (nodesQ.length) {
-      const nextNodes: AxisTree[] = [];
-      for (const node of nodesQ) {
-        node.children = node.axis.parentAxesSpec.map(makeAxisTree);
-        nextNodes.push(...node.children);
-      }
-      nodesQ = nextNodes;
-    }
-    return root;
-  }
-
-  /** Get set of canonicalized axisIds from axisTree */
-  static getSetFromAxisTree(tree: AxisTree): Set<CanonicalizedJson<AxisId>> {
-    const set = new Set([canonicalizeJson(getAxisId(tree.axis))]);
-    let nodesQ = [tree];
-    while (nodesQ.length) {
-      const nextNodes = [];
-      for (const node of nodesQ) {
-        for (const parent of node.children) {
-          set.add(canonicalizeJson(getAxisId(parent.axis)));
-          nextNodes.push(parent);
-        }
-      }
-      nodesQ = nextNodes;
-    }
-    return set;
-  }
-
-  /** Get array of axisSpecs from axisTree */
-  static getArrayFromAxisTree(tree: AxisTree): AxisSpecNormalized[] {
-    const res = [tree.axis];
-    let nodesQ = [tree];
-    while (nodesQ.length) {
-      const nextNodes = [];
-      for (const node of nodesQ) {
-        for (const parent of node.children) {
-          res.push(parent.axis);
-          nextNodes.push(parent);
-        }
-      }
-      nodesQ = nextNodes;
-    }
-    return res;
+    return canonicalizeJson(getArrayFromAxisTree(getAxesTree(axis)).map(getAxisId));
   }
 
   /**  Split array of axes into several arrays by parents: axes of one group are parents for each other.

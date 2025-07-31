@@ -218,7 +218,6 @@ describe('PFrameForGraph', () => {
             linkerColumns,
             getAllAxesFromSpecs([columnSpec1])
         );
-        console.log('lkjlkj', getAllAxesFromSpecs([columnSpec1]))
         expect([...availableAxes.values()].map((id) => id.name)).toEqual(['axis3'])
     })
 
