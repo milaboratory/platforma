@@ -74,7 +74,13 @@ useElementPosition(rootRef, (pos) => {
 
 <template>
   <Teleport to="body">
-    <div ref="listRef" v-bind="$attrs" :style="optionsStyle" tabindex="-1">
+    <div
+      ref="listRef"
+      v-bind="$attrs"
+      :style="optionsStyle"
+      tabindex="-1"
+      @click.stop
+    >
       <slot ref="list" />
     </div>
   </Teleport>

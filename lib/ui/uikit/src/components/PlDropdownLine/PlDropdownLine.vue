@@ -273,7 +273,15 @@ useElementPosition(container, (pos) => {
       <div v-show="canShowClearBtn" class="pl-line-dropdown__icon-clear" @click="clearModel" />
     </div>
     <Teleport v-if="data.isOpen" to="body">
-      <div v-if="props.mode === 'list'" ref="list" :style="optionsStyle" tabindex="-1" class="pl-line-dropdown__items" @focusout="onFocusOut">
+      <div
+        v-if="props.mode === 'list'"
+        ref="list"
+        :style="optionsStyle"
+        tabindex="-1"
+        class="pl-line-dropdown__items"
+        @focusout="onFocusOut"
+        @click.stop
+      >
         <template v-for="(item, index) in options" :key="index">
           <slot
             name="item"
@@ -305,6 +313,7 @@ useElementPosition(container, (pos) => {
         tabindex="-1"
         class="pl-line-dropdown__items-tabs"
         @focusout="onFocusOut"
+        @click.stop
       >
         <template v-for="(item, index) in options" :key="index">
           <slot name="item" :item="item" :is-selected="isItemSelected(item)" :is-hovered="data.activeOption == index" @click.stop="selectItem(item)">
