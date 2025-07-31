@@ -1,4 +1,4 @@
-import type { BinaryChunk, DataInfo, JsonDataInfo, PColumnSpec, PColumnValue, PColumnValues, PlRef, PObjectId, PObjectSpec } from '@platforma-sdk/model';
+import type { BinaryChunk, DataInfo, JsonDataInfo, ParquetChunk, PColumnSpec, PColumnValue, PColumnValues, PlRef, PObjectId, PObjectSpec } from '@platforma-sdk/model';
 import type { PlTreeNodeAccessor, ResourceInfo } from '@milaboratories/pl-tree';
 import { assertNever } from '@milaboratories/ts-helpers';
 import canonicalize from 'canonicalize';
@@ -23,6 +23,9 @@ export function* allBlobs<B>(data: DataInfo<B>): Generator<B> {
         yield index;
         yield values;
       }
+      return;
+    case 'ParquetPartitioned':
+      for (const [, { data: blob }] of Object.entries(data.parts)) yield blob;
       return;
     default:
       assertNever(data);
@@ -56,6 +59,14 @@ export function mapBlobs<B1, B2>(
           values: mapping(v.values),
         })),
       };
+    case 'ParquetPartitioned':
+      return {
+        ...data,
+        parts: mapValues(data.parts, (v) => ({
+          ...v,
+          data: mapping(v.data),
+        })),
+      };
     default:
       assertNever(data);
   }
@@ -71,7 +82,55 @@ export const PColumnDataBinarySuperPartitioned = resourceType(
   'PColumnData/Partitioned/BinaryPartitioned',
   '1',
 );
+export const PColumnDataParquetPartitioned = resourceType('PColumnData/ParquetPartitioned', '1');
+export const PColumnDataParquetSuperPartitioned = resourceType(
+  'PColumnData/Partitioned/ParquetPartitioned',
+  '1',
+);
 export const PColumnDataJson = resourceType('PColumnData/Json', '1');
+
+type ParquetPartitionInfoData = {
+  /** Content hash calculated for the specific axes and data this partition represents */
+  dataDigest: string;
+
+  /** Pre-computed statistics for optimization without blob access */
+  stats: {
+    /** Number of rows in the column */
+    numberOfRows: number;
+    /** Byte size information for storage optimization and query planning */
+    numberOfBytes: {
+      /** Byte sizes for each axis column in the same order as axes mapping */
+      axes: number[];
+      /** Byte size for the data column, including *.isNA column */
+      column: number;
+    };
+    /** Add more statistics like max string length, other things... */
+  };
+};
+
+type ParquetPartitionInfoMapping = {
+  /** Axis column mappings - Parquet file is sorted by these columns in this order */
+  axes: AxisMapping[];
+
+  /** Data column mapping */
+  column: ColumnMapping;
+};
+
+type AxisMapping = {
+  /** Data type (matches PColumn axis types) */
+  type: 'Int' | 'Long' | 'String';
+
+  /** Column name in the Parquet file */
+  id: string;
+};
+
+type ColumnMapping = {
+  /** Data type (matches PColumn value type) */
+  type: 'Int' | 'Long' | 'Float' | 'Double' | 'String';
+
+  /** Column name in the Parquet file */
+  id: string;
+};
 
 export type PColumnDataJsonResourceValue = {
   keyLength: number;
@@ -231,6 +290,60 @@ export function parseDataInfoResource(
       type: 'BinaryPartitioned',
       partitionKeyLength: meta.superPartitionKeyLength + meta.partitionKeyLength,
       parts: parts as Record<string, BinaryChunk<ResourceInfo>>,
+    };
+  } else if (resourceTypesEqual(data.resourceType, PColumnDataParquetPartitioned)) {
+    const meta = resourceData as PColumnDataPartitionedResourceValue;
+
+    const parts: Record<string, ParquetChunk<ResourceInfo>> = {};
+    for (const key of data.listInputFields()) {
+      const resource = data.traverse({ field: key, errorIfFieldNotSet: true });
+      const partInfo = resource.getDataAsJson() as ParquetPartitionInfoData;
+
+      const blobResource = resource.getField({ field: 'blob', assertFieldType: 'Service', errorIfFieldNotSet: true });
+      if (blobResource === undefined) throw new Error(`${PColumnDataParquetPartitioned.name} resource does not have a 'blob' field`);
+      const blobResourceValue = blobResource.value;
+      if (blobResourceValue === undefined) throw new Error(`failed to get ${PColumnDataParquetPartitioned.name} resource field 'blob'`);
+      const blob = blobResourceValue.resourceInfo;
+
+      const mappingResource = resource.getField({ field: 'mapping', assertFieldType: 'Service', errorIfFieldNotSet: true });
+      if (mappingResource === undefined) throw new Error(`${PColumnDataParquetPartitioned.name} resource does not have a 'mapping' field`);
+      const mappingResourceValue = mappingResource.value;
+      if (mappingResourceValue === undefined) throw new Error(`failed to get ${PColumnDataParquetPartitioned.name} resource field 'mapping'`);
+      const mapping = mappingResourceValue.getDataAsJson() as ParquetPartitionInfoMapping;
+
+      parts[key] = {
+        data: blob,
+        ...partInfo,
+        ...mapping,
+      };
+    }
+
+    return {
+      type: 'ParquetPartitioned',
+      partitionKeyLength: meta.partitionKeyLength,
+      parts,
+    };
+  } else if (resourceTypesEqual(data.resourceType, PColumnDataParquetSuperPartitioned)) {
+    const meta = resourceData as PColumnDataSuperPartitionedResourceValue;
+
+    const parts: Record<string, ResourceInfo> = {};
+    for (const superKey of data.listInputFields()) {
+      const superPart = data.traverse({ field: superKey, errorIfFieldNotSet: true });
+      const keys = superPart.listInputFields();
+      if (keys === undefined) throw new Error(`no partition keys for super key ${superKey}`);
+
+      for (const key of keys) {
+        const partKey = JSON.stringify([
+          ...JSON.parse(superKey) as PColumnValue[],
+          ...JSON.parse(key) as PColumnValue[]]);
+        parts[partKey] = superPart.traverse({ field: key, errorIfFieldNotSet: true }).resourceInfo;
+      }
+    }
+
+    return {
+      type: 'JsonPartitioned',
+      partitionKeyLength: meta.superPartitionKeyLength + meta.partitionKeyLength,
+      parts,
     };
   }
 

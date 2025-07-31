@@ -209,6 +209,11 @@ class PFrameHolder implements PFrameInternal.PFrameDataSource, AsyncDisposable {
       const promises: Promise<void>[] = [];
       for (const column of distinctСolumns) {
         pFrame.addColumnSpec(column.id, column.spec);
+        if (column.data.type === 'ParquetPartitioned') { // TODO: remove
+          throw new PFrameDriverError(
+            `ParquetPartitioned data is not supported yet, column: ${JSON.stringify(column)}, data: ${JSON.stringify(column.data)}`,
+          );
+        }
         promises.push(pFrame.setColumnData(column.id, column.data, { signal: this.disposeSignal }));
       }
       this.pFramePromise = Promise.all(promises)
@@ -822,6 +827,19 @@ function stableKeyFromPFrameData(data: PColumn<DataInfo<ResourceInfo>>[]): strin
             payload: Object.entries(r.parts).map(([part, info]) => ({
               key: part,
               value: [blobKey(info.index), blobKey(info.values)] as const,
+            })),
+          };
+          break;
+        case 'ParquetPartitioned':
+          result = {
+            type: r.type,
+            keyLength: r.partitionKeyLength,
+            payload: Object.entries(r.parts).map(([part, info]) => ({
+              key: part,
+              value: info.dataDigest || [
+                blobKey(info.data),
+                JSON.stringify({ axes: info.axes, column: info.column }),
+              ] as const,
             })),
           };
           break;
