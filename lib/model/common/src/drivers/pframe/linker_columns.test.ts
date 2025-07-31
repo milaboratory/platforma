@@ -2,6 +2,7 @@ import {
     Annotation,
     AxisSpec,
     AxisSpecNormalized,
+    getNormalizedAxesList,
     PColumnIdAndSpec,
     ValueType,
 } from './spec/index';
@@ -12,10 +13,7 @@ import {
     expect,
     test,
 } from 'vitest';
-import {
-    getNormalizedAxesList,
-    LinkerMap
-} from './linker_columns';
+import { LinkerMap } from './linker_columns';
 
 function makeTestAxis(params: {
     name: string;

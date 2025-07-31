@@ -10,6 +10,7 @@ import {
   type AxisSpecNormalized,
   type AxisId,
   getAxisId,
+  getNormalizedAxesList,
 } from './spec/spec';
 
 /** Tree: axis is a root, its parents are children */
@@ -20,67 +21,6 @@ type AxisTree = {
 
 function makeAxisTree(axis: AxisSpecNormalized): AxisTree {
   return { axis, children: [] };
-}
-
-function normalizingAxesComparator(axis1: AxisSpec, axis2: AxisSpec): 1 | -1 | 0 {
-  if (axis1.name !== axis2.name) {
-    return axis1.name < axis2.name ? 1 : -1;
-  }
-  if (axis1.type !== axis2.type) {
-    return axis1.type < axis2.type ? 1 : -1;
-  }
-  const domain1 = canonicalizeJson(axis1.domain ?? {});
-  const domain2 = canonicalizeJson(axis2.domain ?? {});
-  if (domain1 !== domain2) {
-    return domain1 < domain2 ? 1 : -1;
-  }
-  const annotations1 = canonicalizeJson(axis1.annotations ?? {});
-  const annotations2 = canonicalizeJson(axis2.annotations ?? {});
-  if (annotations1 !== annotations2) {
-    return annotations1 < annotations2 ? 1 : -1;
-  }
-  return 0;
-}
-
-function parseParentsFromAnnotations(axis: AxisSpec) {
-  const parentsList = readAnnotationJson(axis, Annotation.Parents);
-  if (parentsList === undefined) {
-    return [];
-  }
-  parentsList.sort(normalizingAxesComparator);
-  return parentsList;
-}
-
-export function getNormalizedAxesList(axes: AxisSpec[]): AxisSpecNormalized[] {
-  if (!axes.length) {
-    return [];
-  }
-  const modifiedAxes: AxisSpecNormalized[] = axes.map((axis) => {
-    const { parentAxes, ...copiedRest } = axis;
-    return { ...copiedRest, parentAxesSpec: [] };
-  });
-
-  axes.forEach((axis, idx) => {
-    if (axis.parentAxes) { // if we have parents by indexes then take from the list
-      modifiedAxes[idx].parentAxesSpec = axis.parentAxes.map((idx) => modifiedAxes[idx]);
-    } else { // else try to parse from annotation and normalize recursively
-      modifiedAxes[idx].parentAxesSpec = getNormalizedAxesList(parseParentsFromAnnotations(axis));
-    }
-  });
-  return modifiedAxes;
-}
-
-export function getDenormalizedAxesList(axesSpec: AxisSpecNormalized[]): AxisSpec[] {
-  const idsList = axesSpec.map((axisSpec) => canonicalizeJson(getAxisId(axisSpec)));
-  return axesSpec.map((axisSpec) => {
-    const parentsIds = axisSpec.parentAxesSpec.map((axisSpec) => canonicalizeJson(getAxisId(axisSpec)));
-    const parentIdxs = parentsIds.map((id) => idsList.indexOf(id));
-    const { parentAxesSpec, ...copiedRest } = axisSpec;
-    if (parentIdxs.length) {
-      return { ...copiedRest, parentAxes: parentIdxs } as AxisSpec;
-    }
-    return copiedRest;
-  });
 }
 
 type LinkerKey = CanonicalizedJson<AxisId[]>;
