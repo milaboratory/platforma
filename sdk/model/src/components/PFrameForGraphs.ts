@@ -67,13 +67,12 @@ export function getAvailableWithLinkersAxes(
   blockAxes: AxesVault,
 ): AxesVault {
   const linkerMap = LinkerMap.fromColumns(linkerColumns.map(getColumnIdAndSpec));
-  const linkerColumnsMapKeySources: AxisId[][] = [...linkerMap.data.values()].map((v) => v.spec.map(getAxisId));
   const startKeys: CanonicalizedJson<AxisId[]>[] = [];
   const blockAxesGrouped: AxisId[][] = [...blockAxes.values()].map((axis) => LinkerMap.getArrayFromAxisTree(LinkerMap.getAxesTree(axis)).map(getAxisId));
 
   for (const axesGroupBlock of blockAxesGrouped) {
-    const matched = linkerColumnsMapKeySources.find(
-      (keySourceAxes: AxisId[]) => keySourceAxes.every(
+    const matched = linkerMap.keyAxesIds.find(
+      (keyIds: AxisId[]) => keyIds.every(
         (keySourceAxis) => axesGroupBlock.find((axisSpecFromBlock) => matchAxisId(axisSpecFromBlock, keySourceAxis)),
       ),
     );

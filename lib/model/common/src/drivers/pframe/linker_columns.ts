@@ -1,5 +1,6 @@
 import {
   canonicalizeJson,
+  parseJson,
   type CanonicalizedJson,
 } from '../../json';
 import {
@@ -27,7 +28,7 @@ type LinkerKey = CanonicalizedJson<AxisId[]>;
 export type CompositeLinkerMap = Map<
   LinkerKey,
   {
-    spec: AxisSpecNormalized[]; // axis specs - source for the key
+    keyAxesSpec: AxisSpecNormalized[]; // axis specs - source for the key
     linkWith: Map<LinkerKey, PColumnIdAndSpec>; // for every axis (possibly in group with parents - available by linkers another axes and corresponding linkers)
   }
 >;
@@ -37,10 +38,18 @@ interface LinkersData {
 }
 export class LinkerMap implements LinkersData {
   /** Graph of linkers connected by axes (single or grouped by parents) */
-  data: CompositeLinkerMap;
+  readonly data: CompositeLinkerMap;
 
   constructor(linkerMap: CompositeLinkerMap) {
     this.data = linkerMap;
+  }
+
+  get keys() {
+    return this.data.keys();
+  }
+
+  get keyAxesIds() {
+    return [...this.data.keys()].map(parseJson);
   }
 
   static fromColumns(columns: PColumnIdAndSpec[]) {
@@ -75,12 +84,12 @@ export class LinkerMap implements LinkersData {
 
       for (const [keyLeft, spec] of leftKeyVariants) {
         if (!result.has(keyLeft)) {
-          result.set(keyLeft, { spec, linkWith: new Map() });
+          result.set(keyLeft, { keyAxesSpec: spec, linkWith: new Map() });
         }
       }
       for (const [keyRight, spec] of rightKeyVariants) {
         if (!result.has(keyRight)) {
-          result.set(keyRight, { spec, linkWith: new Map() });
+          result.set(keyRight, { keyAxesSpec: spec, linkWith: new Map() });
         }
       }
       for (const [keyLeft] of leftKeyVariants) {
@@ -182,7 +191,7 @@ export class LinkerMap implements LinkersData {
   getAxesListFromKeysList(keys: LinkerKey[]): AxisSpecNormalized[] {
     return Array.from(
       new Map(
-        keys.flatMap((key) => this.data.get(key)?.spec ?? [])
+        keys.flatMap((key) => this.data.get(key)?.keyAxesSpec ?? [])
           .map((axis) => [canonicalizeJson(getAxisId(axis)), axis]),
       ).values(),
     );
