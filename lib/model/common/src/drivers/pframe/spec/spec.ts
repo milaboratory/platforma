@@ -365,6 +365,32 @@ function sortParentsDeep(axisSpec: AxisSpecNormalized) {
   axisSpec.parentAxesSpec.sort(normalizingAxesComparator);
 }
 
+function hasCycleOfParents(axisSpec: AxisSpecNormalized) {
+  const root = makeAxisTree(axisSpec);
+  let nodesQ = [root];
+  const ancestors = new Set(canonicalizeJson(getAxisId(axisSpec)));
+  while (nodesQ.length) {
+    const nextNodes: AxisTree[] = [];
+    const levelIds = new Set<CanonicalizedJson<AxisId>>();
+    for (const node of nodesQ) {
+      node.children = node.axis.parentAxesSpec.map(makeAxisTree);
+      for (const child of node.children) {
+        const childId = canonicalizeJson(getAxisId(child.axis));
+        if (!levelIds.has(childId)) {
+          nextNodes.push(child);
+          levelIds.add(childId);
+          if (ancestors.has(childId)) {
+            return true;
+          }
+          ancestors.add(childId);
+        }
+      }
+    }
+    nodesQ = nextNodes;
+  }
+  return false;
+}
+
 /** Create list of normalized axisSpec (parents are in array of specs, not indexes) */
 export function getNormalizedAxesList(axes: AxisSpec[]): AxisSpecNormalized[] {
   if (!axes.length) {
@@ -385,7 +411,12 @@ export function getNormalizedAxesList(axes: AxisSpec[]): AxisSpecNormalized[] {
     }
   });
 
-  modifiedAxes.forEach(sortParentsDeep);
+  modifiedAxes.forEach((axis) => {
+    if (hasCycleOfParents(axis)) {
+      axis.parentAxesSpec = []; // Axes list is broken
+    }
+    sortParentsDeep(axis);
+  });
   return modifiedAxes;
 }
 

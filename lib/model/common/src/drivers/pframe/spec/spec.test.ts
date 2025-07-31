@@ -165,4 +165,18 @@ describe('Linker columns', () => {
             expect(el1.parentAxes).toEqual(el2.parentAxes);
         });
     })
+
+    test('Remove parent cycles from normalized axes', () => {
+        const sourceAxesList = [
+            makeTestAxisWithParentIdxs({ name: 'a', parents: [1] }),
+            makeTestAxisWithParentIdxs({ name: 'b', parents: [2] }),
+            makeTestAxisWithParentIdxs({ name: 'c', parents: [0] })
+        ];
+        const normalized = getNormalizedAxesList(sourceAxesList);
+
+        const [a, b, c] = normalized;
+        expect(a.parentAxesSpec.length).toBe(0);
+        expect(b.parentAxesSpec.length).not.toBe(0);
+        expect(c.parentAxesSpec.length).not.toBe(0);
+    })
 });
