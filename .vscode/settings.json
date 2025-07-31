@@ -22,6 +22,5 @@
     "editor.defaultFormatter": "dbaeumer.vscode-eslint"
   },
   "typescript.tsdk": "./node_modules/typescript/lib",
-  "eslint.format.enable": true,
-  "vitest.disableWorkspaceWarning": true
+  "eslint.format.enable": true
 }
