@@ -47,6 +47,7 @@ message uploadapi {
       // The parts count is calculated from the planned size of the upload, controller
       // configuration and underlying storage restrictions.
       uint64 parts_count = 1;
+      uint64 part_size = 3;
 
       // List of IDs of parts that were already uploaded by client.
       // Helps client to recover upload and skip already done parts
@@ -98,6 +99,9 @@ message uploadapi {
       // Controllers could use this if they are trying to download something from internal network.
       // For backward compatibility, by default pl backend will presign external urls.
       bool is_internal_use = 4;
+
+      // Base64-encoded CRC32C checksum of the part data.  
+      string part_checksum = 5;
     }
 
     message HTTPHeader {
