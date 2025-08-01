@@ -326,35 +326,71 @@ _newExpression = func(expression, currentAlias) {
 		/**
 		 * Extracts field(s) from this struct expression, supporting nested path access.
 		 * Used for accessing nested data structures like JSON objects.
-		 * @param ...fieldNames - varargs - One or more field names to extract. Multiple names create a nested path.
+		 * @param fieldPath - string|array - A single field name (string) or an array of field names for nested path access.
+		 * @param options - map (optional) - An optional map with options:
+		 *   - default (string|number|boolean|null, optional): Default value to return if field is missing/null.
+		 *   - dtype (string, optional): Target data type for type casting. Supported: 'Int8', 'Int16', 'Int32', 'Int64', 'UInt8', 'UInt16', 'UInt32', 'UInt64', 'Float32', 'Float64', 'Boolean', 'String', 'Date', 'Datetime', 'Time', 'Int', 'Long', 'Float', 'Double'.
 		 * @returns {object} - A new expression object representing the extracted field(s).
 		 * @example
 		 *   // Extract 'country' field from location struct
 		 *   col("location").structField("country")
 		 *
-		 *   // Access deeply nested field: location.coordinates.lat
-		 *   col("location").structField("coordinates", "lat")
+		 *   // Access deeply nested field using array path: location.coordinates.lat
+		 *   col("location").structField(["coordinates", "lat"])
 		 *
-		 *   // Equivalent to chaining (but more concise):
-		 *   col("location").structField("coordinates").structField("lat")
+		 *   // With default value for missing fields
+		 *   col("location").structField("elevation", {default: 0})
+		 *
+		 *   // With type casting and default
+		 *   col("metadata").structField("timestamp", {default: "2023-01-01T00:00:00Z", dtype: "String"})
+		 *
+		 *   // Nested path with default and type casting
+		 *   col("location").structField(["coordinates", "altitude"], {default: 100.0, dtype: "Float64"})
 		 */
-		structField: func(...fieldNames) {
-			ll.assert(len(fieldNames) > 0, "structField expects at least one field name")
-			for fieldName in fieldNames {
-				ll.assert(is_string(fieldName), "All field names must be strings, got: %T", fieldName)
-			}
+		structField: func(fieldPath, ...options) {
+			// Validate fieldPath
+			ll.assert(!is_undefined(fieldPath), "structField expects a field path (string or array of strings)")
 
-			// Build nested struct field access by chaining expressions
-			currentExpr := expression
-			for fieldName in fieldNames {
-				currentExpr = {
-					type: "struct_field",
-					struct: currentExpr,
-					fields: fieldName
+			fields := undefined
+			if is_string(fieldPath) {
+				fields = fieldPath
+			} else if is_array(fieldPath) {
+				ll.assert(len(fieldPath) > 0, "structField field path array cannot be empty")
+				for fieldName in fieldPath {
+					ll.assert(is_string(fieldName), "All field names in path must be strings, got: %T", fieldName)
 				}
+				if len(fieldPath) == 1 {
+					fields = fieldPath[0]
+				} else {
+					fields = fieldPath
+				}
+			} else {
+				ll.panic("structField fieldPath must be a string or array of strings, got: %T", fieldPath)
 			}
 
-			return _newExpression(currentExpr, undefined)
+			// Validate and process options
+			ops := _validateOptions(options, {
+				"__options__,closed": "",
+				"default,?": "any",
+				"dtype,?": "string"
+			}, "structField")
+
+			// Build the struct field expression with new features
+			structExpr := {
+				type: "struct_field",
+				struct: expression,
+				fields: fields
+			}
+
+			// Add optional parameters if provided
+			if !is_undefined(ops.default) {
+				structExpr.default = ops.default
+			}
+			if !is_undefined(ops.dtype) {
+				structExpr.dtype = ops.dtype
+			}
+
+			return _newExpression(structExpr, undefined)
 		},
 
 		// String operations
