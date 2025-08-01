@@ -43,8 +43,8 @@ catalogs:
       specifier: ^4.0.37
       version: 4.0.37
     '@platforma-open/milaboratories.software-ptabler':
-      specifier: 1.9.0
-      version: 1.9.0
+      specifier: 1.11.0
+      version: 1.11.0
     '@platforma-open/milaboratories.software-small-binaries':
       specifier: ^1.15.21
       version: 1.15.21
@@ -2466,7 +2466,7 @@ importers:
         version: 2.2.2
       '@platforma-open/milaboratories.software-ptabler':
         specifier: 'catalog:'
-        version: 1.9.0
+        version: 1.11.0
       '@platforma-open/milaboratories.software-small-binaries':
         specifier: 'catalog:'
         version: 1.15.21
@@ -4855,8 +4855,8 @@ packages:
     resolution: {integrity: sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==}
     engines: {node: '>=14'}
 
-  '@platforma-open/milaboratories.software-ptabler@1.9.0':
-    resolution: {integrity: sha512-0y/TZeoAD+9GJY5EqgRO3Z1Evq8uz3yZhKEL9ucJie0OYGPx9JmZtqOhKUDzCaPFxM0g73C/Su1h5bt5FPJ1LQ==}
+  '@platforma-open/milaboratories.software-ptabler@1.11.0':
+    resolution: {integrity: sha512-DE2vUpmSaS0GFUwMzZhNfBe1pFwoWOluJxc33Djr66a5kjpgJulySAYegOTDl6BrOJ1NaOr3OzG3qmtzYDAW5w==}
 
   '@platforma-open/milaboratories.software-small-binaries.guided-command@1.0.4':
     resolution: {integrity: sha512-LD8XQDnR+L9oRD7JXE0VWGmv1/0cm+J71flrwBUWeIbuaenPC8Nsza8oy7JjLJ8AX+bm8XAyyJALuqBBqkL95Q==}
@@ -13975,7 +13975,7 @@ snapshots:
   '@pkgjs/parseargs@0.11.0':
     optional: true
 
-  '@platforma-open/milaboratories.software-ptabler@1.9.0': {}
+  '@platforma-open/milaboratories.software-ptabler@1.11.0': {}
 
   '@platforma-open/milaboratories.software-small-binaries.guided-command@1.0.4': {}
 

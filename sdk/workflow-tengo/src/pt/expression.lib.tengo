@@ -322,6 +322,41 @@ _newExpression = func(expression, currentAlias) {
 		/** Checks if this expression is not null. */
 		isNotNull: func() { return unaryOp("is_not_na") }, // Polars: is_not_null(), TS: is_not_na
 
+		// Struct operations
+		/**
+		 * Extracts field(s) from this struct expression, supporting nested path access.
+		 * Used for accessing nested data structures like JSON objects.
+		 * @param ...fieldNames - varargs - One or more field names to extract. Multiple names create a nested path.
+		 * @returns {object} - A new expression object representing the extracted field(s).
+		 * @example
+		 *   // Extract 'country' field from location struct
+		 *   col("location").structField("country")
+		 *
+		 *   // Access deeply nested field: location.coordinates.lat
+		 *   col("location").structField("coordinates", "lat")
+		 *
+		 *   // Equivalent to chaining (but more concise):
+		 *   col("location").structField("coordinates").structField("lat")
+		 */
+		structField: func(...fieldNames) {
+			ll.assert(len(fieldNames) > 0, "structField expects at least one field name")
+			for fieldName in fieldNames {
+				ll.assert(is_string(fieldName), "All field names must be strings, got: %T", fieldName)
+			}
+
+			// Build nested struct field access by chaining expressions
+			currentExpr := expression
+			for fieldName in fieldNames {
+				currentExpr = {
+					type: "struct_field",
+					struct: currentExpr,
+					fields: fieldName
+				}
+			}
+
+			return _newExpression(currentExpr, undefined)
+		},
+
 		// String operations
 		/** Converts this string expression to uppercase. */
 		strToUpper: func() { return unaryStrOp("to_upper") },
