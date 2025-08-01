@@ -6,6 +6,7 @@ import type { RpcOptions } from '@protobuf-ts/runtime-rpc';
 import * as fs from 'node:fs/promises';
 import type { Dispatcher } from 'undici';
 import { request } from 'undici';
+import { crc32c } from '@node-rs/crc32';
 import type { uploadapi_GetPartURL_Response } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/uploadapi/protocol';
 import { UploadClient } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/uploadapi/protocol.client';
 
@@ -76,6 +77,18 @@ export class ClientUpload {
     const chunk = await readFileChunk(path, info.chunkStart, info.chunkEnd);
     await checkExpectedMTime(path, expectedMTimeUnix);
 
+    const crc32cChecksum = calculateCrc32cChecksum(chunk);
+
+    const requestHeaders = Object.fromEntries(info.headers.map(({ name, value }) => {
+      // backend can control necessary headers, so we need to override them
+      // For GCS some headers have to be signed. In this case we should rewrite logic here
+      // and calculate checksum before receiving the URL for uploading.
+      if (name === 'X-Amz-Checksum-Crc32c') {
+        return [name, crc32cChecksum];
+      }
+      return [name, value];
+    }));
+
     try {
       const {
         body: rawBody,
@@ -90,7 +103,7 @@ export class ClientUpload {
         // that's why we got big timeout here.
         headersTimeout: 60000,
         bodyTimeout: 60000,
-        headers: Object.fromEntries(info.headers.map(({ name, value }) => [name, value])),
+        headers: requestHeaders,
         method: info.method.toUpperCase() as Dispatcher.HttpMethod,
       });
 
@@ -135,8 +148,9 @@ export class ClientUpload {
     uploadedPartSize: bigint,
     options?: RpcOptions,
   ) {
+    // partChecksum isn't used for now but protoc requires it to be set
     return await this.grpcClient.get().getPartURL(
-      { resourceId: id, partNumber, uploadedPartSize, isInternalUse: false },
+      { resourceId: id, partNumber, uploadedPartSize, isInternalUse: false, partChecksum: '' },
       addRTypeToMetadata(type, options),
     ).response;
   }
@@ -218,4 +232,13 @@ function checkStatusCodeOk(
       + ` body: ${body}, headers: ${JSON.stringify(headers)}, url: ${info.uploadUrl}`,
     );
   }
+}
+
+/** Calculate CRC32C checksum of a buffer and return as base64 string */
+function calculateCrc32cChecksum(data: Buffer): string {
+  const checksum = crc32c(data);
+  // Convert to unsigned 32-bit integer and then to base64
+  const buffer = Buffer.alloc(4);
+  buffer.writeUInt32BE(checksum, 0);
+  return buffer.toString('base64');
 }
