@@ -152,6 +152,42 @@ reduce := func(slice, fn, ...init) {
 	return result
 }
 
+/**
+ * Flattens a nested array/slice.
+ * By default, flattens only one level. Use opts.deep = true for recursive flattening.
+ * Throws an error if any element is not an array.
+ *
+ * @param slice: [][]any - a slice that must contain only nested arrays
+ * @param opts: {deep: bool} - optional parameters. Set deep=true for recursive flattening
+ * @return flattened slice: []any - a flattened array
+ */
+flatten := func(slice, ...opts) {
+	if is_undefined(slice) {
+		return []
+	}
+
+	deep := false
+	if len(opts) > 0 && !is_undefined(opts[0]) && !is_undefined(opts[0].deep) {
+		deep = opts[0].deep
+	}
+
+	result := []
+	for _, elem in slice {
+		if is_array(elem) {
+			if deep {
+				flattened := flatten(elem, {deep: true})
+				result = append(result, flattened...)
+			} else {
+				result = append(result, elem...)
+			}
+		} else {
+			ll.panic("flatten: expected array element but got %s", type_name(elem))
+		}
+	}
+
+	return result
+}
+
 /** Returns true if the function applied to every element returns true. */
 every := func(slice, fn) {
 	for _, elem in slice {
@@ -322,6 +358,7 @@ export ll.toStrict({
 	filter: filter,
 	map: map,
 	reduce: reduce,
+	flatten: flatten,
 	every: every,
 	quickSortInPlace: quickSortInPlace,
 	quickSort: quickSort,
