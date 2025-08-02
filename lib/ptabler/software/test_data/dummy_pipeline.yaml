@@ -1,0 +1,8 @@
+workflow:
+  - type: read_csv
+    file: test_data_1.tsv
+    name: input_table_from_tsv
+    delimiter: "\t"
+  - type: write_csv
+    table: input_table_from_tsv
+    file: outputs/output_simple_test.csv
