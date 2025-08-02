@@ -1,0 +1,76 @@
+workflow:
+  - type: read_csv
+    file: "test_data_1.tsv"
+    name: "data_table"
+    delimiter: "\t"
+    schema:
+      - { column: "id", type: "String", nullValue: "" }
+      - { column: "name", type: "String", nullValue: "" }
+      - { column: "category", type: "String" }
+      - { column: "value1", type: "Float64", nullValue: "" }
+      - { column: "value2", type: "Int64" }
+      - { column: "is_active", type: "Boolean", nullValue: "" }
+      - { column: "description", type: "String", nullValue: "" }
+      - { column: "group_key", type: "String" }
+      - { column: "join_id", type: "String" }
+      - { column: "dna_sequence", type: "String" }
+      - { column: "aa_sequence", type: "String" }
+
+  - type: filter
+    inputTable: "data_table"
+    outputTable: "filtered_table"
+    condition:
+      type: "eq"
+      lhs: { type: "col", name: "is_active" }
+      rhs: { type: "const", value: true }
+
+  - type: add_columns
+    table: "filtered_table" # Modifies filtered_table in-place
+    columns:
+      - name: "value1_doubled"
+        expression:
+          type: "multiply"
+          lhs: { type: "col", name: "value1" }
+          rhs: { type: "const", value: 2 }
+
+  - type: read_csv # New auxiliary step for join data
+    file: "test_data_join.tsv"
+    name: "join_reference_table"
+    delimiter: "\t"
+    schema:
+      - { column: "join_id", type: "String" }
+      - { column: "reference_info", type: "String" }
+
+  - type: aggregate # New step 1: Aggregation with max_by
+    inputTable: "filtered_table"
+    outputTable: "max_by_table"
+    groupBy: ["group_key"]
+    aggregations:
+      - name: "name_with_max_value1"
+        aggregation: "max_by"
+        expression: { type: "col", name: "name" }
+        by: [{ type: "col", name: "value1" }]
+      - name: "max_value1_itself"
+        aggregation: "max"
+        expression: { type: "col", name: "value1" }
+
+  - type: join # New step 2: Join filtered data with reference data
+    leftTable: "filtered_table"
+    rightTable: "join_reference_table"
+    outputTable: "first_joined_table"
+    leftOn: ["join_id"]
+    rightOn: ["join_id"]
+    how: "inner"
+
+  - type: join # New step 3: Join aggregated data with the first joined data
+    leftTable: "max_by_table"
+    rightTable: "first_joined_table"
+    outputTable: "final_aggregated_joined_table"
+    leftOn: ["group_key"]
+    rightOn: ["group_key"]
+    how: "left"
+
+  - type: write_csv # Modified final step
+    table: "final_aggregated_joined_table"
+    file: "outputs/output_aggregated_joined_pipeline.tsv"
+    delimiter: "\t"

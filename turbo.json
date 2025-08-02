@@ -4,7 +4,8 @@
   "tasks": {
     "lint": {
       "outputs": [],
-      "inputs": ["$TURBO_DEFAULT$", "eslint.config.*", ".eslintrc.*"]
+      "inputs": ["$TURBO_DEFAULT$", "eslint.config.*", ".eslintrc.*"],
+      "env": ["PL_PKG_DEV"]
     },
     "type-check": {
       "dependsOn": ["^build"]
@@ -16,6 +17,7 @@
         "TAGS_ADDITIONAL_ARGS",
         "TAGS_FILE"
       ],
+      "env": ["PL_PKG_DEV"],
       "dependsOn": ["type-check", "^build"]
     },
     "test": {

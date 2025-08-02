@@ -24,3 +24,7 @@ tmp/
 dev/
 work/
 *.tsbuildinfo
+
+# Python
+.venv
+__pycache__/
