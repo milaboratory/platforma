@@ -1,0 +1,33 @@
+{
+  "name": "@platforma-open/milaboratories.software-ptabler.schema",
+  "version": "1.11.0",
+  "description": "Type definitions for PTabler",
+  "types": "./dist/index.d.ts",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "type-check": "tsc --noEmit --composite false",
+    "build": "vite build",
+    "lint": "eslint .",
+    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
+  },
+  "files": [
+    "./dist/**/*",
+    "./src/**/*"
+  ],
+  "dependencies": {},
+  "devDependencies": {
+    "@platforma-sdk/eslint-config": "workspace:",
+    "vite-plugin-dts": "catalog:",
+    "eslint": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:"
+  }
+}
