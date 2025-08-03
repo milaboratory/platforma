@@ -519,7 +519,10 @@ export interface WindowExpression {
 /**
  * Represents a struct field access operation.
  * This operation retrieves a single field from a struct (nested data structure).
- * It corresponds to Polars' struct.field() functionality.
+ *
+ * Uses native Polars struct.field() functionality when possible for optimal performance,
+ * but falls back to Python UDF (map_elements) when dtype casting or default values
+ * are specified, trading performance for robust handling of missing fields and null structs.
  *
  * When fields is an array, the operation performs recursive field access,
  * where each element in the array represents a level in the nested structure.

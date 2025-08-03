@@ -1,22 +1,6 @@
 import type { Expression, AggregationType } from './expressions';
 
 /**
- * Defines standard aggregation functions that operate on a single expression.
- */
-export type StandardAggregationType =
-  | 'sum'
-  | 'mean'
-  | 'median'
-  | 'min'
-  | 'max'
-  | 'std'
-  | 'var'
-  | 'count'
-  | 'first'
-  | 'last'
-  | 'n_unique';
-
-/**
  * Defines aggregation functions that select a value from one expression based on the min/max of another expression.
  */
 export type ByClauseAggregationType =

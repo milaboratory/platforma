@@ -43,15 +43,8 @@ export interface SortStep {
    * An array of sort directives defining the columns and their respective sort orders.
    * The table is sorted by the first directive in the array, then by the second
    * for any ties, and so on.
+   *
+   * Note: Sorting is always stable (maintains relative order of equivalent rows).
    */
   by: SortDirective[];
-
-  /**
-   * Optional. If true, maintains the stability of the sort. This means that if
-   * two rows are equivalent according to the sorting criteria, their relative order
-   * from the input table is preserved in the output.
-   * Corresponds to `maintain_order=True` in Polars `DataFrame.sort()`.
-   * Defaults to false.
-   */
-  stable?: boolean;
 }

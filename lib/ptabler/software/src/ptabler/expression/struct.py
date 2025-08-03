@@ -12,7 +12,10 @@ class StructFieldExpression(Expression, tag='struct_field'):
     Represents a struct field access operation for nested data structures.
     Extracts one or more fields from a struct expression, commonly used for JSON data.
     Corresponds to the StructFieldExpression in TypeScript definitions.
-    Uses Polars' struct.field functionality for accessing nested fields.
+    
+    Uses native Polars struct.field functionality when possible for optimal performance,
+    but falls back to map_elements (Python UDF) when dtype casting or default values
+    are needed, trading performance for robust handling of missing fields and null structs.
     
     When fields is a list, performs recursive field access where each element
     represents a level in the nested structure.
@@ -39,10 +42,16 @@ class StructFieldExpression(Expression, tag='struct_field'):
 
     def to_polars(self) -> pl.Expr:
         """
-        Converts the expression to a Polars struct.field expression.
+        Converts the expression to a Polars expression for struct field extraction.
         
-        Uses native Polars struct.field when dtype and default are not specified for better performance.
-        Falls back to UDF when dtype casting or default values are needed.
+        Performance characteristics:
+        - Uses native Polars struct.field() when both dtype and default are None for optimal performance
+        - Falls back to map_elements() (Python UDF) when dtype casting or default values are needed,
+          providing robust handling of inconsistent schemas and missing fields at the cost of performance
+        
+        The map_elements approach processes each row individually in Python, which is significantly
+        slower than native Polars operations but provides better error handling for real-world data
+        with missing or inconsistent struct fields.
         
         Supports both single field access and recursive field access for nested structures.
         Applies optional dtype casting and default values as specified.
@@ -80,7 +89,7 @@ class StructFieldExpression(Expression, tag='struct_field'):
                 if self.dtype == "String":
                     return str(value)
                 elif self.dtype in ["Int64", "Int32", "Int", "Long"]:
-                    return int(float(value)) if value is not None else None
+                    return int(round(float(value))) if value is not None else None
                 elif self.dtype in ["Float64", "Float32", "Float", "Double"]:
                     return float(value)
                 elif self.dtype == "Boolean":

@@ -1,4 +1,4 @@
-from cmath import log
+from math import log
 import typing
 import operator
 import polars as pl

@@ -809,6 +809,7 @@ _newDataFrame = func(parentWorkflow, dfName) {
 
 		/**
 		 * Sorts the DataFrame by one or more columns or expressions.
+		 * Sorting is always stable (maintains relative order of equivalent rows).
 		 *
 		 * @param by {array} - An array of sort keys. Each key can be a column name (string) or an expression object.
 		 * @param ...optionsRaw {map} (optional) - A single map argument for additional options:
@@ -816,8 +817,6 @@ _newDataFrame = func(parentWorkflow, dfName) {
 		 *     it must match the length of `by` and specifies descending order for each key individually. Defaults to false (ascending).
 		 *   - `nulls_last` {boolean|array} (optional): If a boolean, applies to all sort keys. If an array of booleans,
 		 *     it must match the length of `by`. If true, nulls are placed after non-nulls; if false, before. PTabler's default may vary.
-		 *   - `maintain_order` {boolean} (optional): If true, maintains the original order of rows that have equal sort key values (stable sort).
-		 *     Defaults to false (which might be faster but not stable). Corresponds to 'stable' in PTabler.
 		 * @returns {object} - A new DataFrame object with sorted rows.
 		 * @example
 		 *   // Sort by 'score' descending, then 'name' ascending
@@ -826,10 +825,10 @@ _newDataFrame = func(parentWorkflow, dfName) {
 		 *       {descending: [true, false]}
 		 *   )
 		 *
-		 *   // Sort by 'date', nulls first, maintaining original order for ties
-		 *   stableSortedDf := df.sort(
+		 *   // Sort by 'date', nulls first (always stable)
+		 *   sortedDf := df.sort(
 		 *       ["date"],
-		 *       {nulls_last: false, maintain_order: true}
+		 *       {nulls_last: false}
 		 *   )
 		 */
 		sort: func(by, ...optionsRaw) {
@@ -847,7 +846,6 @@ _newDataFrame = func(parentWorkflow, dfName) {
 
 			descendingOpt := opts.descending
 			nullsLastOpt := opts.nulls_last
-			maintainOrderOpt := opts.maintain_order // Corresponds to 'stable' in PTabler SortStep
 
 			if !is_undefined(descendingOpt) && !is_bool(descendingOpt) && !is_array(descendingOpt) {
 				ll.panic("sort 'descending' option must be a boolean or an array of booleans. Got: %T", descendingOpt)
@@ -863,9 +861,7 @@ _newDataFrame = func(parentWorkflow, dfName) {
 				ll.panic("sort 'nulls_last' array length (%d) must match the number of sort keys (%d).", len(nullsLastOpt), len(by))
 			}
 
-			if !is_undefined(maintainOrderOpt) && !is_bool(maintainOrderOpt) {
-				ll.panic("sort 'maintain_order' option must be a boolean. Got: %T", maintainOrderOpt)
-			}
+
 
 			sortDirectives := []
 			for i, item in by {
@@ -916,10 +912,6 @@ _newDataFrame = func(parentWorkflow, dfName) {
 				inputTable: dfName,
 				outputTable: outputDfName,
 				by: sortDirectives
-			}
-
-			if !is_undefined(maintainOrderOpt) && maintainOrderOpt == true {
-				sortStep.stable = true // PTabler 'stable' maps to Polars 'maintain_order'
 			}
 
 			parentWorkflow.addRawStep(sortStep)
