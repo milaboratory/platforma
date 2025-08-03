@@ -142,7 +142,7 @@ self.body(func(inputs) {
 
                         // Checking anchor spec was properly unmarshalled
                         if smart.isReference(anchors[anchorId]) {
-                            if smart.isFieldReference(anchors[anchorId]) {
+                            if smart.isField(anchors[anchorId]) {
                                 ll.panic("Anchor '%s' is not unmarshalled. Is a field ref.", anchorId)
                             }
                             ll.panic("Anchor '%s' is not unmarshalled. Is aresource ref, type: %v", anchorId, anchors[anchorId].info().Type)
