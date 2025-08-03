@@ -1,5 +1,11 @@
 # @platforma-open/software-ptabler.types
 
+## 1.11.1
+
+### Patch Changes
+
+- bcde71e: Moved to platforma repository
+
 ## 1.11.0
 
 ### Minor Changes
