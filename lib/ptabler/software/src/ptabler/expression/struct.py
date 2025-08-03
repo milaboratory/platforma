@@ -1,5 +1,4 @@
 import polars as pl
-import polars.selectors as cs
 from typing import Union, Optional, List
 
 from ptabler.common import PType, toPolarsType
@@ -42,8 +41,8 @@ class StructFieldExpression(Expression, tag='struct_field'):
         """
         Converts the expression to a Polars struct.field expression.
         
-        Gracefully handles null struct values using conditional logic to avoid
-        schema mismatch issues that can occur with fill_null approaches.
+        Uses native Polars struct.field when dtype and default are not specified for better performance.
+        Falls back to UDF when dtype casting or default values are needed.
         
         Supports both single field access and recursive field access for nested structures.
         Applies optional dtype casting and default values as specified.
@@ -54,10 +53,23 @@ class StructFieldExpression(Expression, tag='struct_field'):
         """
         polars_struct = self.struct.to_polars()
         
+        # Use native struct.field when no dtype conversion or default value is needed
+        if self.dtype is None and self.default is None:
+            if isinstance(self.fields, str):
+                return polars_struct.struct.field(self.fields)
+            else:
+                # For nested fields, chain multiple struct.field calls
+                result_expr = polars_struct
+                for field in self.fields:
+                    result_expr = result_expr.struct.field(field)
+                return result_expr
+        
+        # Fall back to UDF when dtype or default are specified
         kwargs = {}
+
         if self.dtype is not None:
             kwargs['return_dtype'] = toPolarsType(self.dtype)
-
+        
         def convert_value(value):
             if value is None:
                 return None
