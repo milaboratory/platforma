@@ -1,5 +1,13 @@
 # @platforma-sdk/workflow-tengo
 
+## 4.17.1
+
+### Patch Changes
+
+- bcde71e: Now uses ptabler form workspace
+- Updated dependencies [bcde71e]
+  - @platforma-open/milaboratories.software-ptabler@1.11.1
+
 ## 4.17.0
 
 ### Minor Changes
