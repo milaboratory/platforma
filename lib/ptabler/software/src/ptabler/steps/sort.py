@@ -22,6 +22,10 @@ class Sort(PStep, tag="sort"):
     PStep to sort a table based on one or more column directives.
     The operation reads from an input table and writes the sorted result
     to an output table.
+    
+    Sorting is always stable (maintains relative order of equivalent rows)
+    for consistent, reproducible results.
+    
     Corresponds to the SortStep defined in the TypeScript type definitions.
     """
     input_table: str
@@ -78,7 +82,7 @@ class Sort(PStep, tag="sort"):
             by=sort_by_expressions,
             descending=descending_flags,
             nulls_last=nulls_last_flags,
-            maintain_order=True
+            maintain_order=True  # Always use stable sorting for consistent results
         )
 
         updated_table_space = table_space.copy()
