@@ -6,7 +6,7 @@ import type { AsyncPoolController, MiLogger, Signer } from '@milaboratories/ts-h
 import { asyncPool, CallersCounter } from '@milaboratories/ts-helpers';
 import type { ClientProgress, ProgressStatus } from '../clients/progress';
 import type { ClientUpload } from '../clients/upload';
-import { MTimeError, NoFileForUploading, UnexpectedEOF } from '../clients/upload';
+import { BadRequestError, MTimeError, NoFileForUploading, UnexpectedEOF } from '../clients/upload';
 import type { ImportResourceSnapshot } from './types';
 import { ImportFileHandleUploadData } from './types';
 import assert from 'node:assert';
@@ -80,9 +80,9 @@ export class UploadTask {
       );
       this.change.markChanged(`blob upload for ${resourceIdToString(this.res.id)} finished`);
     } catch (e: any) {
-      this.setRetriableError(e);
 
       if (isResourceWasDeletedError(e)) {
+        this.setRetriableError(e);
         this.logger.warn(`resource was deleted while uploading a blob: ${e}`);
         this.change.markChanged(`blob upload for ${resourceIdToString(this.res.id)} aborted, resource was deleted`);
         this.setDone(true);
@@ -97,6 +97,8 @@ export class UploadTask {
         this.setTerminalError(e);
         return;
       }
+
+      this.setRetriableError(e);
 
       if (isHeadersTimeoutError(e)) {
         // we probably have a slow internet, we need to slow things a bit.
@@ -339,7 +341,10 @@ export function isResourceWasDeletedError(e: any) {
 }
 
 export function nonRecoverableError(e: any) {
-  return e instanceof MTimeError || e instanceof UnexpectedEOF || e instanceof NoFileForUploading;
+  return e instanceof MTimeError ||
+    e instanceof UnexpectedEOF ||
+    e instanceof NoFileForUploading ||
+    e instanceof BadRequestError;
 }
 
 function isHeadersTimeoutError(e: any) {

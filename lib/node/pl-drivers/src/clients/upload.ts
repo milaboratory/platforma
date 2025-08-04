@@ -29,6 +29,10 @@ export class NoFileForUploading extends Error {
   name = 'NoFileForUploading';
 }
 
+export class BadRequestError extends Error {
+  name = 'BadRequestError';
+}
+
 /** Low-level client for grpc uploadapi.
  * The user should pass here a concrete BlobUpload/<storageId> resource,
  * it can be got from handle field of BlobUpload. */
@@ -124,6 +128,9 @@ export class ClientUpload {
       checkStatusCodeOk(statusCode, body, responseHeaders, info);
     } catch (e: unknown) {
       if (e instanceof NetworkError)
+        throw e;
+
+      if (e instanceof BadRequestError)
         throw e;
 
       throw new Error(`partUpload: error ${JSON.stringify(e)} happened while trying to do part upload to the url ${info.uploadUrl}, headers: ${JSON.stringify(info.headers)}`);
@@ -238,6 +245,11 @@ function checkStatusCodeOk(
   headers: IncomingHttpHeaders,
   info: uploadapi_GetPartURL_Response,
 ) {
+  if (statusCode == 400) {
+    throw new BadRequestError(`response is not ok, status code: ${statusCode},`
+      + ` body: ${body}, headers: ${JSON.stringify(headers)}, url: ${info.uploadUrl}`);
+  }
+
   if (statusCode != 200) {
     throw new NetworkError(
       `response is not ok, status code: ${statusCode},`
