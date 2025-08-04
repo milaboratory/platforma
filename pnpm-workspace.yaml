@@ -25,6 +25,9 @@ packages:
   - lib/node/pl-deployments
   - lib/node/pl-config
 
+  - lib/ptabler/schema
+  - lib/ptabler/software
+
   - lib/ui/uikit
 
   - tools/tengo-builder
@@ -131,9 +134,9 @@ catalog:
   # Build util / linters
 
   'prettier': ^3.4.1
-  '@protobuf-ts/plugin': &protobuf-ts 2.11.0
+  '@protobuf-ts/plugin': &protobuf-ts 2.11.1
 
-  '@changesets/cli': ^2.29.4
+  '@changesets/cli': ^2.29.5
 
   'eslint': ^9.25.1
   '@eslint/js': ^9.16.0
@@ -158,13 +161,13 @@ catalog:
 
   # Net
 
-  'undici': ~7.10.0
+  'undici': ~7.13.0
   '@grpc/grpc-js': ~1.13.4
   '@protobuf-ts/grpc-transport': *protobuf-ts
   '@protobuf-ts/runtime': *protobuf-ts
   '@protobuf-ts/runtime-rpc': *protobuf-ts
   'https-proxy-agent': ^7.0.6
-  '@aws-sdk/client-s3': &aws-sdk-version 3.826.0
+  '@aws-sdk/client-s3': &aws-sdk-version 3.859.0
   '@aws-sdk/lib-storage': *aws-sdk-version
 
   # Util & other libs
@@ -193,16 +196,16 @@ catalog:
   # dont upgrade, ask @dbolotin first
   'zod': ~3.23.8
 
-  'yaml': ^2.7.0
+  'yaml': ^2.8.0
 
   '@oclif/core': ^4.0.37
 
   'winston': ^3.17.0
 
   '@milaboratories/tengo-tester': ^1.6.2
-  '@milaboratories/pframes-rs-node': &pframes-rs-version 1.0.54
+  '@milaboratories/pframes-rs-node': &pframes-rs-version 1.0.55
 
-  'remeda': ^2.22.6
+  'remeda': ^2.28.0
 
   'quickjs-emscripten': 0.31.0
 
@@ -240,8 +243,9 @@ catalog:
 
   '@milaboratories/software-pframes-conv': &pframes-version 2.2.2
   '@platforma-open/milaboratories.software-small-binaries': ^1.15.21
-  '@platforma-open/milaboratories.software-ptabler': 1.9.0
   '@biowasm/aioli': ~3.2.1
+
+  '@platforma-open/milaboratories.runenv-python-3': 1.1.15
 
   # Test
 

@@ -1,5 +1,20 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.8.7
+
+### Patch Changes
+
+- b8105fb: PFrames - Different public and internal types for ParquetDataInfo
+- Updated dependencies [b8105fb]
+  - @milaboratories/pl-model-common@1.19.4
+
+## 1.8.6
+
+### Patch Changes
+
+- Updated dependencies [6d6c4ba]
+  - @milaboratories/pl-model-common@1.19.3
+
 ## 1.8.5
 
 ### Patch Changes

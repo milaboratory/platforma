@@ -1,0 +1,9 @@
+id	name	category	value1	value2	is_active	description	group_key	join_id	dna_sequence	aa_sequence
+1	Alice	A	10.5	100	true	First item: apple	G1	1	ATGCGTAGCATCGATCG	MDRSTVLAGK
+2	alice	B	20.0	200	false	Second item with orange details	G2	2	CGTAAACTGCTAGCNNN	MDRSTVLAGX
+3	Alicia	A		150	true	Item #3, a banana	G1	1	ATGCGTACGATCGATCG	MDRSTVLXRK
+4	Bob	C	10.5	100	true		G1	3	GATTACAGATTACA	FPTTKTY
+5		B	-5.0	300	false	Last one, special chars: !@#$%^&*() grapes	G2	2	TTTTCCCCGGGGAAAA	FPTTKTXY
+6	Charlie Brown	A	100.0	50	true	Another item for group A, kiwi	G1	4	ATGCTGTGCTAGCTAGC	LVQRPA
+7	David	D	7.77	77		Description with NULL boolean	G3	5	ACGTACGTACGT	LVQRPAAAA
+8	Eve	B	20.0	250	false	Duplicate value1 and join_id with row 2 for testing aggregations	G2	2	CGTAAACTGCTAGCTAA	MDRSTVLAGG

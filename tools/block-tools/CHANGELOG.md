@@ -1,5 +1,21 @@
 # @platforma-sdk/block-tools
 
+## 2.5.81
+
+### Patch Changes
+
+- Updated dependencies [b8105fb]
+  - @milaboratories/pl-model-middle-layer@1.8.7
+  - @milaboratories/pl-model-common@1.19.4
+
+## 2.5.80
+
+### Patch Changes
+
+- Updated dependencies [6d6c4ba]
+  - @milaboratories/pl-model-common@1.19.3
+  - @milaboratories/pl-model-middle-layer@1.8.6
+
 ## 2.5.79
 
 ### Patch Changes

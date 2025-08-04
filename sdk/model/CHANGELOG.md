@@ -1,5 +1,20 @@
 # @platforma-sdk/model
 
+## 1.42.15
+
+### Patch Changes
+
+- b8105fb: PFrames - Different public and internal types for ParquetDataInfo
+- Updated dependencies [b8105fb]
+  - @milaboratories/pl-model-common@1.19.4
+
+## 1.42.10
+
+### Patch Changes
+
+- Updated dependencies [6d6c4ba]
+  - @milaboratories/pl-model-common@1.19.3
+
 ## 1.42.8
 
 ### Patch Changes
