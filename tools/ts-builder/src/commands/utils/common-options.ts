@@ -1,7 +1,8 @@
 import { Command } from 'commander';
+import { TargetType } from './config-manager';
 
 export interface GlobalOptions {
-  target: string;
+  target: TargetType;
   buildConfig?: string;
   serveConfig?: string;
 }
@@ -29,7 +30,7 @@ export function getTarget(options: CommandOptions, globalOpts: GlobalOptions): s
   return target;
 }
 
-export function validateTargetForBrowser(target: string): void {
+export function validateTargetForBrowser(target: TargetType): void {
   if (target !== 'browser' && target !== 'browser-lib') {
     console.error(`This command only works with browser/browser-lib projects. Current target: ${target}`);
     process.exit(1);

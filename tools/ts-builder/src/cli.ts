@@ -1,4 +1,5 @@
 import { Command } from 'commander';
+import { version } from '../package.json' with { type: 'json' };
 import { buildCommand } from './commands/build';
 import { initBuildConfigCommand } from './commands/init-build-config';
 import { initServeConfigCommand } from './commands/init-serve-config';
@@ -11,7 +12,7 @@ const program = new Command();
 program
   .name('builder')
   .description('Universal build tool for the monorepo packages')
-  .version('1.0.0');
+  .version(version);
 
 program
   .requiredOption('--target <target>', 'Project target type (node|browser|browser-lib|block-model)')

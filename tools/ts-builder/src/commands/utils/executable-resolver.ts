@@ -1,5 +1,6 @@
 import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
+import { TargetType } from './config-manager';
 
 /**
  * Resolves the path to an executable in the ts-builder's node_modules/.bin directory
@@ -16,7 +17,7 @@ export function resolveExecutable(executableName: string): string {
 /**
  * Resolves the appropriate type checker executable based on target
  */
-export function resolveTypeChecker(target: string): string {
+export function resolveTypeChecker(target: TargetType): string {
   const commandName = (target === 'browser' || target === 'browser-lib') ? 'vue-tsc' : 'tsc';
   return resolveExecutable(commandName);
 }
