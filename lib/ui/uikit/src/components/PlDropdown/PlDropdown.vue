@@ -14,12 +14,12 @@ import { tap } from '../../helpers/functions';
 import { PlTooltip } from '../PlTooltip';
 import DoubleContour from '../../utils/DoubleContour.vue';
 import { useLabelNotch } from '../../utils/useLabelNotch';
-import type { ListOption, ListOptionNormalized } from '../../types';
+import type { ListOption, ListOptionNormalized, MaskIconName16, MaskIconName24 } from '../../types';
 import { deepEqual } from '../../helpers/objects';
 import LongText from '../LongText.vue';
 import { normalizeListOptions } from '../../helpers/utils';
 import { PlIcon16 } from '../PlIcon16';
-import { PlMaskIcon24 } from '../PlMaskIcon24';
+import { PlIcon24 } from '../PlIcon24';
 import SvgRequired from '../../generated/components/svg/images/SvgRequired.vue';
 import { getErrorMessage } from '../../helpers/error.ts';
 import OptionList from './OptionList.vue';
@@ -78,11 +78,11 @@ const props = withDefaults(
     /**
      * Custom icon (16px) class for the dropdown arrow (optional)
      */
-    arrowIcon?: string;
+    arrowIcon?: MaskIconName16;
     /**
      * Custom icon (24px) class for the dropdown arrow (optional)
      */
-    arrowIconLarge?: string;
+    arrowIconLarge?: MaskIconName24;
     /**
      * Option list item size
      */
@@ -103,10 +103,6 @@ const props = withDefaults(
     options: undefined,
   },
 );
-
-const slots = defineSlots<{
-  [key: string]: unknown;
-}>();
 
 const rootRef = ref<HTMLElement | undefined>();
 const input = ref<HTMLInputElement | undefined>();
@@ -342,20 +338,20 @@ watchPostEffect(() => {
           </div>
 
           <div class="pl-dropdown__controls">
-            <PlMaskIcon24 v-if="isLoadingOptions" name="loading" />
+            <PlIcon24 v-if="isLoadingOptions" name="loading" />
             <PlIcon16 v-if="clearable && hasValue" class="clear" name="delete-clear" @click.stop="clear" />
             <slot name="append" />
             <div class="pl-dropdown__arrow-wrapper" @click.stop="toggleOpen">
-              <div v-if="arrowIconLarge" class="arrow-icon" :class="[`icon-24 ${arrowIconLarge}`]" />
-              <div v-else-if="arrowIcon" class="arrow-icon" :class="[`icon-16 ${arrowIcon}`]" />
-              <div v-else class="arrow-icon arrow-icon-default" />
+              <PlIcon24 v-if="arrowIconLarge" :name="arrowIconLarge" class="arrow-icon" />
+              <PlIcon16 v-else-if="arrowIcon" :name="arrowIcon" class="arrow-icon" />
+              <PlIcon16 v-else name="chevron-down" class="arrow-icon arrow-icon-default" />
             </div>
           </div>
         </div>
         <label v-if="label">
           <SvgRequired v-if="required" />
           <span>{{ label }}</span>
-          <PlTooltip v-if="slots.tooltip" class="info" position="top">
+          <PlTooltip v-if="$slots.tooltip" class="info" position="top">
             <template #tooltip>
               <slot name="tooltip" />
             </template>
