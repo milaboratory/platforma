@@ -1,5 +1,12 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.5.26
+
+### Patch Changes
+
+- 5c49322: Allow any key types in PlDropdownRef
+- 68776f8: Prevent Teleport-using components from triggering outside click
+
 ## 1.5.25
 
 ### Patch Changes

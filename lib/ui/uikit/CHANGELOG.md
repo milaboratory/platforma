@@ -1,5 +1,15 @@
 # @milaboratories/uikit
 
+## 2.4.0
+
+### Minor Changes
+
+- 5c49322: Allow any key types in PlDropdownRef
+
+### Patch Changes
+
+- 68776f8: Prevent Teleport-using components from triggering outside click
+
 ## 2.3.29
 
 ### Patch Changes
