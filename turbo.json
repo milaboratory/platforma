@@ -33,7 +33,8 @@
     },
     "do-pack": {
       "dependsOn": ["build"],
-      "outputs": ["package.tgz"]
+      "outputs": ["package.tgz"],
+      "env": ["PL_PKG_DEV"]
     },
     "publish-to-local-registry": {
       "dependsOn": ["build"],
