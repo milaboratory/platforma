@@ -1,7 +1,6 @@
 import {
   PFrameDriverError,
   type BinaryChunk,
-  type DataInfo,
   type JsonDataInfo,
   type ParquetChunk,
   type ParquetChunkMapping,
@@ -24,22 +23,23 @@ import {
 } from '@milaboratories/pl-client';
 import type { Writable } from 'utility-types';
 import { createHash } from 'node:crypto';
+import type { PFrameInternal } from '@milaboratories/pl-model-middle-layer';
 
-export function* allBlobs<B>(data: DataInfo<B>): Generator<B> {
+export function* allBlobs<B>(data: PFrameInternal.DataInfo<B>): Generator<B> {
   switch (data.type) {
     case 'Json':
       return;
     case 'JsonPartitioned':
-      for (const [, blob] of Object.entries(data.parts)) yield blob;
+      for (const blob of Object.values(data.parts)) yield blob;
       return;
     case 'BinaryPartitioned':
-      for (const [, { index, values }] of Object.entries(data.parts)) {
+      for (const { index, values } of Object.values(data.parts)) {
         yield index;
         yield values;
       }
       return;
     case 'ParquetPartitioned':
-      for (const [, blob] of Object.entries(data.parts)) yield blob;
+      for (const { data: blob } of Object.values(data.parts)) yield blob;
       return;
     default:
       assertNever(data);
@@ -57,9 +57,9 @@ function mapValues<T extends object, TResult>(
 }
 
 export function mapBlobs<B1, B2>(
-  data: DataInfo<B1>,
+  data: PFrameInternal.DataInfo<B1>,
   mapping: (blob: B1) => B2,
-): DataInfo<B2> {
+): PFrameInternal.DataInfo<B2> {
   switch (data.type) {
     case 'Json':
       return { ...data };
@@ -79,7 +79,10 @@ export function mapBlobs<B1, B2>(
     case 'ParquetPartitioned':
       return {
         ...data,
-        parts: mapValues(data.parts, mapping),
+        parts: mapValues(data.parts, (v) => ({
+          ...v,
+          data: mapping(v.data),
+        })),
       };
     default:
       assertNever(data);
@@ -119,7 +122,7 @@ export type PColumnDataSuperPartitionedResourceValue = {
 
 export function parseDataInfoResource(
   data: PlTreeNodeAccessor,
-): DataInfo<ResourceInfo> { // TODO: PFrameInternal.DataInfo<ResourceInfo>
+): PFrameInternal.DataInfo<ResourceInfo> {
   if (!data.getIsReadyOrError()) throw new PFrameDriverError('Data not ready.');
 
   const resourceData = data.getDataAsJson();
@@ -269,25 +272,13 @@ export function parseDataInfoResource(
     for (const key of data.listInputFields()) {
       const resource = data.traverse({ field: key, assertFieldType: 'Input', errorIfFieldNotSet: true });
 
-      const blob = resource.traverse(
-        { field: 'blob', assertFieldType: 'Service', errorIfFieldNotSet: true },
-      ).resourceInfo;
-      const partInfo = resource.getDataAsJson() as ParquetChunkMetadata;
-      const mapping = resource.traverse(
-        { field: 'mapping', assertFieldType: 'Service', errorIfFieldNotSet: true },
-      ).getDataAsJson() as ParquetChunkMapping;
-
-      parts[key] = {
-        data: blob,
-        ...partInfo,
-        ...mapping,
-      };
+      parts[key] = traverseParquetPartitionedResource(resource);
     }
 
     return {
       type: 'ParquetPartitioned',
       partitionKeyLength: meta.partitionKeyLength,
-      parts: parts as unknown as Record<string, ResourceInfo>, // TODO: remove cast
+      parts,
     };
   } else if (resourceTypesEqual(data.resourceType, PColumnDataParquetSuperPartitioned)) {
     const meta = resourceData as PColumnDataSuperPartitionedResourceValue;
@@ -301,34 +292,38 @@ export function parseDataInfoResource(
       for (const key of keys) {
         const resource = data.traverse({ field: key, errorIfFieldNotSet: true });
 
-        const blob = resource.traverse(
-          { field: 'blob', assertFieldType: 'Service', errorIfFieldNotSet: true },
-        ).resourceInfo;
-        const partInfo = resource.getDataAsJson() as ParquetChunkMetadata;
-        const mapping = resource.traverse(
-          { field: 'mapping', assertFieldType: 'Service', errorIfFieldNotSet: true },
-        ).getDataAsJson() as ParquetChunkMapping;
-
         const partKey = JSON.stringify([
           ...JSON.parse(superKey) as PColumnValue[],
           ...JSON.parse(key) as PColumnValue[],
         ]);
-        parts[partKey] = {
-          data: blob,
-          ...partInfo,
-          ...mapping,
-        };
+        parts[partKey] = traverseParquetPartitionedResource(resource);
       }
     }
 
     return {
       type: 'ParquetPartitioned',
       partitionKeyLength: meta.superPartitionKeyLength + meta.partitionKeyLength,
-      parts: parts as unknown as Record<string, ResourceInfo>, // TODO: remove cast
+      parts,
     };
   }
 
   throw new PFrameDriverError(`unsupported resource type: ${resourceTypeToString(data.resourceType)}`);
+}
+
+export function traverseParquetPartitionedResource(resource: PlTreeNodeAccessor): ParquetChunk<ResourceInfo> {
+  const blob = resource.traverse(
+    { field: 'blob', assertFieldType: 'Service', errorIfFieldNotSet: true },
+  ).resourceInfo;
+  const partInfo = resource.getDataAsJson() as ParquetChunkMetadata;
+  const mapping = resource.traverse(
+    { field: 'mapping', assertFieldType: 'Service', errorIfFieldNotSet: true },
+  ).getDataAsJson() as ParquetChunkMapping;
+
+  return {
+    data: blob,
+    ...partInfo,
+    ...mapping,
+  };
 }
 
 export function makeDataInfoFromPColumnValues(
