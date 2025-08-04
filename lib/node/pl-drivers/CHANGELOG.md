@@ -1,5 +1,21 @@
 # @milaboratories/pl-drivers
 
+## 1.9.0
+
+### Minor Changes
+
+- 4306ff2: Fix file corruption issue in upload client by preventing connection reuse
+
+  - **CRITICAL**: Add `reset: true` to prevent connection reuse and fix data corruption where HTTP/1.1 protocol lines were being included in uploaded file content with backend's built-in S3 implementation
+  - Validate existing Content-Length header values match expected chunk size
+  - Add assertion to verify read chunk size matches expected content length
+
+### Patch Changes
+
+- 4306ff2: Network libraries upgrade: Undici, gRPC ann S3 libraries upgraded to the latest versions
+- Updated dependencies [4306ff2]
+  - @milaboratories/pl-client@2.11.7
+
 ## 1.8.3
 
 ### Patch Changes
