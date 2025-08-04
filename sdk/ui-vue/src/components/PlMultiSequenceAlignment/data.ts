@@ -71,7 +71,7 @@ async function getSequenceColumnsOptions({
   const options = columns.values()
     .filter((column) => sequenceColumnPredicate(column))
     .map(({ spec, columnId }) => ({
-      label: readAnnotation(spec, Annotation.Label) ?? 'Unlabelled column',
+      label: readAnnotation(spec, Annotation.Label) ?? 'Unlabeled column',
       value: columnId,
     }))
     .toArray();
@@ -114,7 +114,7 @@ async function getLabelColumnsOptions({
         : canonicalizeJson({ type: 'axis', id: axisId }),
       readAnnotation(labelColumn?.spec, Annotation.Label)
       ?? readAnnotation(axisSpec, Annotation.Label)
-      ?? 'Unlabelled axis',
+      ?? 'Unlabeled axis',
     );
   }
 
@@ -131,7 +131,7 @@ async function getLabelColumnsOptions({
     if (optionMap.has(columnIdJson)) continue;
     optionMap.set(
       columnIdJson,
-      readAnnotation(spec, Annotation.Label) ?? 'Unlabelled column',
+      readAnnotation(spec, Annotation.Label) ?? 'Unlabeled column',
     );
   }
 
@@ -178,30 +178,30 @@ async function getMarkupColumnsOptions({
       ) => column.spec.domain?.[key] === value),
     ).map(({ columnId, spec }) => ({
       value: columnId,
-      label: readAnnotation(spec, Annotation.Label) ?? 'Unlabelled column',
+      label: readAnnotation(spec, Annotation.Label) ?? 'Unlabeled column',
     }))
     .toArray();
 }
 
 async function getMultipleAlignmentData({
-  pframe,
+  pFrame,
   sequenceColumnIds,
   labelColumnIds,
   selection,
   colorScheme,
   alignmentParams,
 }: {
-  pframe: PFrameHandle | undefined;
+  pFrame: PFrameHandle | undefined;
   sequenceColumnIds: PObjectId[] | undefined;
   labelColumnIds: PTableColumnId[] | undefined;
   selection: PlSelectionModel | undefined;
   colorScheme: PlMultiSequenceAlignmentColorSchemeOption;
   alignmentParams: PlMultiSequenceAlignmentSettings['alignmentParams'];
 }): Promise<MultipleAlignmentData | undefined> {
-  if (!pframe || !sequenceColumnIds?.length || !labelColumnIds) return;
+  if (!pFrame || !sequenceColumnIds?.length || !labelColumnIds) return;
 
   const pFrameDriver = getPFrameDriver();
-  const columns = await pFrameDriver.listColumns(pframe);
+  const columns = await pFrameDriver.listColumns(pFrame);
   const linkerColumns = columns.filter((column) => isLinkerColumn(column.spec));
 
   const filterColumn = createRowSelectionColumn({ selection });
@@ -283,7 +283,7 @@ async function getMultipleAlignmentData({
   };
 
   const table = await pFrameDriver.calculateTableData(
-    pframe,
+    pFrame,
     JSON.parse(JSON.stringify(request)),
     {
       offset: 0,
@@ -342,7 +342,7 @@ async function getMultipleAlignmentData({
   );
 
   const sequenceNames = sequenceColumns.map((column) =>
-    readAnnotation(column.spec.spec, Annotation.Label) ?? 'Unlabelled column',
+    readAnnotation(column.spec.spec, Annotation.Label) ?? 'Unlabeled column',
   );
 
   const labels = Array.from(

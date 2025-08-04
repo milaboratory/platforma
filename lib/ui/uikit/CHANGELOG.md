@@ -1,5 +1,34 @@
 # @milaboratories/uikit
 
+## 2.4.1
+
+### Patch Changes
+
+- Updated dependencies [b8105fb]
+  - @platforma-sdk/model@1.42.15
+
+## 2.4.0
+
+### Minor Changes
+
+- 5c49322: Allow any key types in PlDropdownRef
+
+### Patch Changes
+
+- 68776f8: Prevent Teleport-using components from triggering outside click
+
+## 2.3.29
+
+### Patch Changes
+
+- @platforma-sdk/model@1.42.10
+
+## 2.3.28
+
+### Patch Changes
+
+- @platforma-sdk/model@1.42.8
+
 ## 2.3.27
 
 ### Patch Changes

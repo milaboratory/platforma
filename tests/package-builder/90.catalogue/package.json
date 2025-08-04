@@ -1,12 +1,12 @@
 {
   "name": "@milaboratories/example-pl-package-catalogue-1",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "The software description example",
   "scripts": {
     "cleanup": "rm -rf ./dist/ && rm -f ./pkg-*.tgz",
     "reset": "npm run cleanup && rm -rf ./node_modules/",
-    "build:descriptor": "pl-pkg build descriptors",
-    "build": "rm -rf dist && pl-pkg build"
+    "build:descriptor": "env -u PL_PKG_DEV pl-pkg build descriptors",
+    "build": "rm -rf dist && env -u PL_PKG_DEV pl-pkg build"
   },
   "block-software": {
     "entrypoints": {

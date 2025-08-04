@@ -590,6 +590,9 @@ export function allColumnsComputed(
           case 'BinaryPartitioned':
             return Object.values(d.parts)
               .every((p) => p.index.getIsReadyOrError() && p.values.getIsReadyOrError());
+          case 'ParquetPartitioned':
+            return Object.values(d.parts)
+              .every((p) => p.getIsReadyOrError());
         }
       } else {
         // eslint-disable-next-line @typescript-eslint/restrict-template-expressions

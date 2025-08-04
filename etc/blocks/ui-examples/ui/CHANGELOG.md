@@ -1,5 +1,34 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.5.27
+
+### Patch Changes
+
+- Updated dependencies [b8105fb]
+  - @platforma-sdk/model@1.42.15
+  - @milaboratories/milaboratories.ui-examples.model@1.2.23
+
+## 1.5.26
+
+### Patch Changes
+
+- 5c49322: Allow any key types in PlDropdownRef
+- 68776f8: Prevent Teleport-using components from triggering outside click
+
+## 1.5.25
+
+### Patch Changes
+
+- @platforma-sdk/model@1.42.10
+- @milaboratories/milaboratories.ui-examples.model@1.2.22
+
+## 1.5.24
+
+### Patch Changes
+
+- @platforma-sdk/model@1.42.8
+- @milaboratories/milaboratories.ui-examples.model@1.2.21
+
 ## 1.5.23
 
 ### Patch Changes

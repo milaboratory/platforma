@@ -1,5 +1,23 @@
 # @milaboratories/pl-model-common
 
+## 1.19.4
+
+### Patch Changes
+
+- b8105fb: PFrames - Different public and internal types for ParquetDataInfo
+
+## 1.19.3
+
+### Patch Changes
+
+- 6d6c4ba: Updated ParquetPartitionedDataInfo specification
+
+## 1.19.2
+
+### Patch Changes
+
+- 017a888: ParquetPartitionedDataInfo specification
+
 ## 1.19.1
 
 ### Patch Changes

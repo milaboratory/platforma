@@ -39,10 +39,11 @@ import * as fsp from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import * as readline from 'node:readline/promises';
-import { Readable, Writable } from 'node:stream';
+import { Writable } from 'node:stream';
 import { buffer } from 'node:stream/consumers';
 import type { ClientDownload } from '../../clients/download';
 import type { ClientLogs } from '../../clients/logs';
+import { readFileContent } from '../helpers/read_file';
 import {
   isLocalBlobHandle,
   newLocalHandle,
@@ -298,7 +299,7 @@ export class DownloadDriver implements BlobDriver {
     }
 
     if (isLocalBlobHandle(handle)) {
-      return await read(this.getLocalPath(handle), range);
+      return await readFileContent(this.getLocalPath(handle), range);
     }
 
     if (isRemoteBlobHandle(handle)) {
@@ -307,18 +308,15 @@ export class DownloadDriver implements BlobDriver {
       const key = blobKey(result.info.id);
       const filePath = await this.rangesCache.get(key, range ?? { from: 0, to: result.size });
       if (filePath) {
-        return await read(filePath, range);
+        return await readFileContent(filePath, range);
       }
 
-      const { content } = await this.clientDownload.downloadBlob(
+      const data = await this.clientDownload.withBlobContent(
         { id: result.info.id, type: result.info.type },
         undefined,
-        undefined,
-        range?.from,
-        range?.to,
+        { range },
+        async (content) => await buffer(content)
       );
-
-      const data = await buffer(content);
       await this.rangesCache.set(key, range ?? { from: 0, to: result.size }, data);
 
       return data;
@@ -657,42 +655,45 @@ class LastLinesGetter {
 
 /** Gets last lines from a file by reading the file from the top and keeping
  * last N lines in a window queue. */
-function getLastLines(fPath: string, nLines: number, patternToSearch?: string): Promise<string> {
-  const inStream = fs.createReadStream(fPath);
-  const outStream = new Writable();
+async function getLastLines(fPath: string, nLines: number, patternToSearch?: string): Promise<string> {
+  let inStream: fs.ReadStream | undefined;
+  let rl: readline.Interface | undefined;
 
-  return new Promise((resolve, reject) => {
-    const rl = readline.createInterface(inStream, outStream);
+  try {
+    inStream = fs.createReadStream(fPath);
+    rl = readline.createInterface({ input: inStream, crlfDelay: Infinity });
 
     const lines = new Denque();
-    rl.on('line', function (line) {
-      if (patternToSearch != undefined && !line.includes(patternToSearch)) return;
+
+    for await (const line of rl) {
+      if (patternToSearch != undefined && !line.includes(patternToSearch)) continue;
 
       lines.push(line);
       if (lines.length > nLines) {
         lines.shift();
       }
-    });
+    }
 
-    rl.on('error', reject);
+    // last EOL is for keeping backward compat with platforma implementation.
+    return lines.toArray().join(os.EOL) + os.EOL;
+  } finally {
+    // Cleanup resources in finally block to ensure they're always cleaned up
+    try {
+      if (rl) {
+        rl.close();
+      }
+    } catch (cleanupError) {
+      console.error('Error closing readline interface:', cleanupError);
+    }
 
-    rl.on('close', function () {
-      // last EOL is for keeping backward compat with platforma implementation.
-      resolve(lines.toArray().join(os.EOL) + os.EOL);
-    });
-  });
-}
-
-async function read(path: string, range?: RangeBytes): Promise<Uint8Array> {
-  const ops: { start?: number; end?: number } = {};
-  if (range) {
-    ops.start = range.from;
-    ops.end = range.to - 1;
+    try {
+      if (inStream && !inStream.destroyed) {
+        inStream.destroy();
+      }
+    } catch (cleanupError) {
+      console.error('Error destroying read stream:', cleanupError);
+    }
   }
-
-  const stream = fs.createReadStream(path, ops);
-
-  return await buffer(Readable.toWeb(stream));
 }
 
 function validateDownloadableResourceType(methodName: string, rType: ResourceType) {

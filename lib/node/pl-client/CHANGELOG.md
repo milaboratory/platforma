@@ -1,5 +1,20 @@
 # @milaboratories/pl-client
 
+## 2.11.7
+
+### Patch Changes
+
+- 4306ff2: Network libraries upgrade: Undici, gRPC ann S3 libraries upgraded to the latest versions
+- Updated dependencies [4306ff2]
+  - @milaboratories/pl-http@1.1.5
+
+## 2.11.6
+
+### Patch Changes
+
+- Updated dependencies [ff4a709]
+  - @milaboratories/ts-helpers@1.4.3
+
 ## 2.11.5
 
 ### Patch Changes

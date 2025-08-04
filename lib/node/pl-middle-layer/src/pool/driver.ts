@@ -46,7 +46,7 @@ import {
 import { LRUCache } from 'lru-cache';
 import type { PollResource } from './ref_count_pool';
 import { RefCountResourcePool } from './ref_count_pool';
-import { allBlobs, makeDataInfoFromPColumnValues, mapBlobs, parseDataInfoResource } from './data';
+import { allBlobs, makeDataInfoFromPColumnValues, mapBlobs, parseDataInfoResource, traverseParquetPartitionedResource } from './data';
 import { createHash } from 'node:crypto';
 import type { MiLogger } from '@milaboratories/ts-helpers';
 import { assertNever, emptyDir, ConcurrencyLimitingExecutor } from '@milaboratories/ts-helpers';
@@ -62,7 +62,7 @@ function blobKey(res: ResourceInfo): string {
   return String(res.id);
 }
 
-type InternalPFrameData = PFrameDef<DataInfo<ResourceInfo>>;
+type InternalPFrameData = PFrameDef<PFrameInternal.DataInfo<ResourceInfo>>;
 
 const valueTypes: ValueType[] = ['Int', 'Long', 'Float', 'Double', 'String', 'Bytes'] as const;
 
@@ -537,14 +537,16 @@ export class PFrameDriver implements InternalPFrameDriver {
     def: PFrameDef<PColumnDataUniversal>,
     ctx: ComputableCtx,
   ): PFrameHandle {
-    const internalData = def
+    const internalData: InternalPFrameData = def
       .filter((c) => valueTypes.find((t) => t === c.spec.valueType))
       .map((c) =>
         mapPObjectData(c, (d) =>
           isPlTreeNodeAccessor(d)
             ? parseDataInfoResource(d)
             : isDataInfo(d)
-              ? mapDataInfo(d, (a) => a.resourceInfo)
+              ? d.type === 'ParquetPartitioned'
+                ? mapDataInfo(d, (a) => traverseParquetPartitionedResource(a))
+                : mapDataInfo(d, (a) => a.resourceInfo)
               : makeDataInfoFromPColumnValues(c.spec, d),
         ),
       );
@@ -782,7 +784,7 @@ function stableKeyFromFullPTableDef(data: FullPTableDef): string {
   return hash.digest().toString('hex');
 }
 
-function stableKeyFromPFrameData(data: PColumn<DataInfo<ResourceInfo>>[]): string {
+function stableKeyFromPFrameData(data: PColumn<PFrameInternal.DataInfo<ResourceInfo>>[]): string {
   const orderedData = [...data].map((column) =>
     mapPObjectData(column, (r) => {
       let result: {
@@ -822,6 +824,19 @@ function stableKeyFromPFrameData(data: PColumn<DataInfo<ResourceInfo>>[]): strin
             payload: Object.entries(r.parts).map(([part, info]) => ({
               key: part,
               value: [blobKey(info.index), blobKey(info.values)] as const,
+            })),
+          };
+          break;
+        case 'ParquetPartitioned':
+          result = {
+            type: r.type,
+            keyLength: r.partitionKeyLength,
+            payload: Object.entries(r.parts).map(([part, info]) => ({
+              key: part,
+              value: info.dataDigest || [
+                blobKey(info.data),
+                JSON.stringify({ axes: info.axes, column: info.column }),
+              ] as const,
             })),
           };
           break;

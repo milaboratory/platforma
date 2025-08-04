@@ -1,5 +1,41 @@
 # @platforma-sdk/ui-vue
 
+## 1.42.15
+
+### Patch Changes
+
+- Updated dependencies [b8105fb]
+  - @platforma-sdk/model@1.42.15
+  - @milaboratories/uikit@2.4.1
+
+## 1.42.14
+
+### Patch Changes
+
+- Updated dependencies [5c49322]
+- Updated dependencies [68776f8]
+  - @milaboratories/uikit@2.4.0
+
+## 1.42.10
+
+### Patch Changes
+
+- @platforma-sdk/model@1.42.10
+- @milaboratories/uikit@2.3.29
+
+## 1.42.8
+
+### Patch Changes
+
+- @platforma-sdk/model@1.42.8
+- @milaboratories/uikit@2.3.28
+
+## 1.42.5
+
+### Patch Changes
+
+- 13f0f40: MSA: scrollable labels + small fixes
+
 ## 1.42.4
 
 ### Patch Changes

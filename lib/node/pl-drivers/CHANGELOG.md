@@ -1,5 +1,63 @@
 # @milaboratories/pl-drivers
 
+## 1.9.0
+
+### Minor Changes
+
+- 4306ff2: Fix file corruption issue in upload client by preventing connection reuse
+
+  - **CRITICAL**: Add `reset: true` to prevent connection reuse and fix data corruption where HTTP/1.1 protocol lines were being included in uploaded file content with backend's built-in S3 implementation
+  - Validate existing Content-Length header values match expected chunk size
+  - Add assertion to verify read chunk size matches expected content length
+
+### Patch Changes
+
+- 4306ff2: Network libraries upgrade: Undici, gRPC ann S3 libraries upgraded to the latest versions
+- Updated dependencies [4306ff2]
+  - @milaboratories/pl-client@2.11.7
+
+## 1.8.3
+
+### Patch Changes
+
+- Updated dependencies [b8105fb]
+  - @milaboratories/pl-model-common@1.19.4
+
+## 1.8.2
+
+### Patch Changes
+
+- Updated dependencies [6d6c4ba]
+  - @milaboratories/pl-model-common@1.19.3
+
+## 1.8.1
+
+### Patch Changes
+
+- Updated dependencies [017a888]
+  - @milaboratories/pl-model-common@1.19.2
+
+## 1.8.0
+
+### Minor Changes
+
+- ff4a709: **BREAKING**: Refactor download methods to lambda-based pattern for better resource management
+
+  - `RemoteFileDownloader.download()` → `withContent<T>()`
+  - `ClientDownload.downloadBlob()` → `withBlobContent<T>()`
+  - `ClientDownload.readLocalFile()` → `withLocalFileContent<T>()`
+  - Replace `fromBytes`/`toBytes` params with unified `RangeBytes` interface
+  - Automatic stream cleanup on all error paths including handler errors
+  - Centralized error handling prevents resource leaks
+
+### Patch Changes
+
+- Updated dependencies [ff4a709]
+  - @milaboratories/ts-helpers@1.4.3
+  - @milaboratories/computable@2.6.3
+  - @milaboratories/pl-client@2.11.6
+  - @milaboratories/pl-tree@1.7.5
+
 ## 1.7.1
 
 ### Patch Changes

@@ -4,27 +4,37 @@
   "tasks": {
     "lint": {
       "outputs": [],
-      "inputs": ["$TURBO_DEFAULT$", "eslint.config.*", ".eslintrc.*"]
+      "inputs": ["$TURBO_DEFAULT$", "eslint.config.*", ".eslintrc.*"],
+      "env": ["PL_PKG_DEV"]
     },
     "type-check": {
       "dependsOn": ["^build"]
     },
     "build": {
-      "outputs": ["./dist/**", "./block-pack/**"],
+      "outputs": ["./dist/**", "./block-pack/**", "./pkg-*.tgz"],
       "passThroughEnv": [
         "GENERATE_TAGS",
         "TAGS_ADDITIONAL_ARGS",
         "TAGS_FILE"
       ],
+      "env": ["PL_PKG_DEV"],
       "dependsOn": ["type-check", "^build"]
     },
     "test": {
       "dependsOn": ["build"],
-      "passThroughEnv": ["PL_ADDRESS", "PL_TEST_PASSWORD", "PL_TEST_USER", "PL_TEST_PROXY", "DEBUG"]
+      "passThroughEnv": [
+        "PL_ADDRESS",
+        "PL_TEST_PASSWORD",
+        "PL_TEST_USER",
+        "PL_TEST_PROXY",
+        "DEBUG",
+        "MI_LICENSE"
+      ]
     },
     "do-pack": {
       "dependsOn": ["build"],
-      "outputs": ["package.tgz"]
+      "outputs": ["package.tgz"],
+      "env": ["PL_PKG_DEV"]
     },
     "publish-to-local-registry": {
       "dependsOn": ["build"],
