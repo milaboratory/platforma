@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.19.5
+
+### Patch Changes
+
+- 4b67e4f: PFrames driver - integrated parquet data info handling
+
 ## 1.19.4
 
 ### Patch Changes

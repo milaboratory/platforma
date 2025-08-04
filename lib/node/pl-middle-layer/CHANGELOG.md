@@ -1,5 +1,13 @@
 # @milaboratories/pl-middle-layer
 
+## 1.41.11
+
+### Patch Changes
+
+- 4b67e4f: PFrames driver - integrated parquet data info handling
+- Updated dependencies [4b67e4f]
+  - @milaboratories/pl-model-common@1.19.5
+
 ## 1.41.10
 
 ### Patch Changes
