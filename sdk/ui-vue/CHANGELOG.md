@@ -1,5 +1,13 @@
 # @platforma-sdk/ui-vue
 
+## 1.42.15
+
+### Patch Changes
+
+- Updated dependencies [b8105fb]
+  - @platforma-sdk/model@1.42.15
+  - @milaboratories/uikit@2.4.1
+
 ## 1.42.14
 
 ### Patch Changes
