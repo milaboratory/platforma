@@ -11,7 +11,7 @@
       "dependsOn": ["^build"]
     },
     "build": {
-      "outputs": ["./dist/**", "./block-pack/**"],
+      "outputs": ["./dist/**", "./block-pack/**", "./pkg-*.tgz"],
       "passThroughEnv": [
         "GENERATE_TAGS",
         "TAGS_ADDITIONAL_ARGS",
