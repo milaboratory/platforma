@@ -76,11 +76,32 @@ export class ClientUpload {
     const chunk = await readFileChunk(path, info.chunkStart, info.chunkEnd);
     await checkExpectedMTime(path, expectedMTimeUnix);
 
+    const contentLength = Number(info.chunkEnd - info.chunkStart);
+    if (chunk.length !== contentLength) {
+      throw new Error(
+        `Chunk size mismatch: expected ${contentLength} bytes, but read ${chunk.length} bytes from file`,
+      );
+    }
+
+    const headers = Object.fromEntries(info.headers.map(({ name, value }) => [name, value]));
+
+    const contentLengthKey = Object.keys(headers).find((key) => key.toLowerCase() === 'content-length');
+    if (contentLengthKey) {
+      const existingContentLength = Number(headers[contentLengthKey]);
+      if (existingContentLength !== contentLength) {
+        throw new Error(
+          `Content-Length mismatch: expected ${contentLength}, but got ${existingContentLength} in headers`,
+        );
+      }
+    }
+
+    // content length will be automatically added by undici, so we don't need to set it here
+
     try {
       const {
         body: rawBody,
         statusCode,
-        headers,
+        headers: responseHeaders,
       } = await request(info.uploadUrl, {
         dispatcher: this.httpClient,
         body: chunk,
@@ -90,13 +111,17 @@ export class ClientUpload {
         // that's why we got big timeout here.
         headersTimeout: 60000,
         bodyTimeout: 60000,
-        headers: Object.fromEntries(info.headers.map(({ name, value }) => [name, value])),
+        // Prevent connection reuse by setting "Connection: close" header.
+        // This works around an issue with the backend's built-in S3 implementation
+        // that caused HTTP/1.1 protocol lines to be included in the uploaded file content.
+        reset: true,
+        headers,
         method: info.method.toUpperCase() as Dispatcher.HttpMethod,
       });
 
       // always read the body for resources to be garbage collected.
       const body = await rawBody.text();
-      checkStatusCodeOk(statusCode, body, headers, info);
+      checkStatusCodeOk(statusCode, body, responseHeaders, info);
     } catch (e: unknown) {
       if (e instanceof NetworkError)
         throw e;
