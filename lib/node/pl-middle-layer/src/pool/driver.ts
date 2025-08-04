@@ -62,7 +62,7 @@ function blobKey(res: ResourceInfo): string {
   return String(res.id);
 }
 
-type InternalPFrameData = PFrameDef<DataInfo<ResourceInfo>>;
+type InternalPFrameData = PFrameDef<DataInfo<ResourceInfo>>; // TODO: PFrameInternal.DataInfo<ResourceInfo>
 
 const valueTypes: ValueType[] = ['Int', 'Long', 'Float', 'Double', 'String', 'Bytes'] as const;
 
@@ -209,6 +209,11 @@ class PFrameHolder implements PFrameInternal.PFrameDataSource, AsyncDisposable {
       const promises: Promise<void>[] = [];
       for (const column of distinctСolumns) {
         pFrame.addColumnSpec(column.id, column.spec);
+        if (column.data.type === 'ParquetPartitioned') { // TODO: remove
+          throw new PFrameDriverError(
+            `ParquetPartitioned data is not supported yet, column: ${JSON.stringify(column)}, data: ${JSON.stringify(column.data)}`,
+          );
+        }
         promises.push(pFrame.setColumnData(column.id, column.data, { signal: this.disposeSignal }));
       }
       this.pFramePromise = Promise.all(promises)
@@ -782,7 +787,7 @@ function stableKeyFromFullPTableDef(data: FullPTableDef): string {
   return hash.digest().toString('hex');
 }
 
-function stableKeyFromPFrameData(data: PColumn<DataInfo<ResourceInfo>>[]): string {
+function stableKeyFromPFrameData(data: PColumn<DataInfo<ResourceInfo>>[]): string { // TODO: PFrameInternal.DataInfo<ResourceInfo>
   const orderedData = [...data].map((column) =>
     mapPObjectData(column, (r) => {
       let result: {
@@ -825,6 +830,20 @@ function stableKeyFromPFrameData(data: PColumn<DataInfo<ResourceInfo>>[]): strin
             })),
           };
           break;
+        case 'ParquetPartitioned':
+          throw new PFrameDriverError(`unsupported resource type: ${JSON.stringify(type)}`); // TODO: remove
+          // result = {
+          //   type: r.type,
+          //   keyLength: r.partitionKeyLength,
+          //   payload: Object.entries(r.parts).map(([part, info]) => ({
+          //     key: part,
+          //     value: info.dataDigest || [
+          //       blobKey(info.data),
+          //       JSON.stringify({ axes: info.axes, column: info.column }),
+          //     ] as const,
+          //   })),
+          // };
+          // break;
         default:
           throw new PFrameDriverError(`unsupported resource type: ${JSON.stringify(type satisfies never)}`);
       }
