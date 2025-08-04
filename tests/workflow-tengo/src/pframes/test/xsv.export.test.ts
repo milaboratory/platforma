@@ -1,4 +1,4 @@
-import { field, Pl } from '@milaboratories/pl-middle-layer';
+import { Annotation, field, Pl } from '@milaboratories/pl-middle-layer';
 import { awaitStableState, tplTest } from '@platforma-sdk/test';
 
 // dummy csv data
@@ -16,8 +16,8 @@ const baseSpec = {
         name: 'ax1',
         type: 'String',
         annotations: {
-          'pl7.app/label': 'ax1',
-        },
+          [Annotation.Label]: 'ax1',
+        } satisfies Annotation,
       },
     },
     {
@@ -26,8 +26,8 @@ const baseSpec = {
         name: 'ax2',
         type: 'String',
         annotations: {
-          'pl7.app/label': 'ax2',
-        },
+          [Annotation.Label]: 'ax2',
+        } satisfies Annotation,
       },
     },
     {
@@ -36,8 +36,8 @@ const baseSpec = {
         name: 'ax3',
         type: 'String',
         annotations: {
-          'pl7.app/label': 'ax3',
-        },
+          [Annotation.Label]: 'ax3',
+        } satisfies Annotation,
       },
     },
   ],
@@ -49,8 +49,8 @@ const baseSpec = {
         valueType: 'String',
         name: 'col1',
         annotations: {
-          'pl7.app/label': 'col1',
-        },
+          [Annotation.Label]: 'col1',
+        } satisfies Annotation,
       },
     },
     {
@@ -60,8 +60,8 @@ const baseSpec = {
         valueType: 'String',
         name: 'col2',
         annotations: {
-          'pl7.app/label': 'col2',
-        },
+          [Annotation.Label]: 'col2',
+        } satisfies Annotation,
       },
     },
   ],

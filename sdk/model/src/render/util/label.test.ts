@@ -1,6 +1,6 @@
 import { test, expect } from '@jest/globals';
-import { deriveLabels, PAnnotationLabel, PAnnotationTrace, Trace } from './label';
-import { PColumnSpec } from '@milaboratories/pl-model-common';
+import { deriveLabels, Trace } from './label';
+import { Annotation, PColumnSpec } from '@milaboratories/pl-model-common';
 
 function tracesToSpecs(traces: Trace[]) {
   return traces.map(
@@ -10,8 +10,8 @@ function tracesToSpecs(traces: Trace[]) {
         name: 'name',
         valueType: 'Int',
         annotations: {
-          [PAnnotationTrace]: JSON.stringify(t),
-          [PAnnotationLabel]: 'Label'
+          [Annotation.Trace]: JSON.stringify(t),
+          [Annotation.Label]: 'Label'
         },
         axesSpec: []
       }) satisfies PColumnSpec
