@@ -33,6 +33,11 @@ service Upload {
 }
 
 message uploadapi {
+  enum ChecksumAlgorithm {
+    CHECKSUM_ALGORITHM_UNSPECIFIED = 0;
+    CHECKSUM_ALGORITHM_CRC32C = 1;
+  }
+
   message Init {
     message Request {
       // Id of upload resource
@@ -48,6 +53,12 @@ message uploadapi {
       // configuration and underlying storage restrictions.
       uint64 parts_count = 1;
       uint64 part_size = 3;
+
+      // Checksum algorithm to use for the part upload.
+      ChecksumAlgorithm checksum_algorithm = 4;
+
+      // Header name to use for the checksum.
+      string checksum_header = 5;
 
       // List of IDs of parts that were already uploaded by client.
       // Helps client to recover upload and skip already done parts
@@ -100,7 +111,8 @@ message uploadapi {
       // For backward compatibility, by default pl backend will presign external urls.
       bool is_internal_use = 4;
 
-      // Base64-encoded CRC32C checksum of the part data.  
+      // Checksum is not used for now, but it is here for case
+      // where signing checksum header is required.
       string part_checksum = 5;
     }
 

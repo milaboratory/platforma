@@ -7,7 +7,7 @@ import * as fs from 'node:fs/promises';
 import type { Dispatcher } from 'undici';
 import { request } from 'undici';
 import { crc32c } from '@node-rs/crc32';
-import type { uploadapi_GetPartURL_Response } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/uploadapi/protocol';
+import { uploadapi_ChecksumAlgorithm, type uploadapi_GetPartURL_Response } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/uploadapi/protocol';
 import { UploadClient } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/uploadapi/protocol.client';
 
 import type { IncomingHttpHeaders } from 'undici/types/header';
@@ -52,11 +52,15 @@ export class ClientUpload {
   ): Promise<{
       overall: bigint;
       toUpload: bigint[];
+      checksumAlgorithm: uploadapi_ChecksumAlgorithm;
+      checksumHeader: string;
     }> {
     const init = await this.grpcInit(id, type, options);
     return {
       overall: init.partsCount,
       toUpload: this.partsToUpload(init.partsCount, init.uploadedParts),
+      checksumAlgorithm: init.checksumAlgorithm,
+      checksumHeader: init.checksumHeader,
     };
   }
 
@@ -65,6 +69,8 @@ export class ClientUpload {
     path: string,
     expectedMTimeUnix: bigint,
     partNumber: bigint,
+    checksumAlgorithm: uploadapi_ChecksumAlgorithm,
+    checksumHeader: string,
     options?: RpcOptions,
   ) {
     const info = await this.grpcGetPartUrl(
@@ -78,16 +84,11 @@ export class ClientUpload {
     await checkExpectedMTime(path, expectedMTimeUnix);
 
     const crc32cChecksum = calculateCrc32cChecksum(chunk);
+    if (checksumAlgorithm === uploadapi_ChecksumAlgorithm.CRC32C) {
+      info.headers.push({ name: checksumHeader, value: crc32cChecksum });
+    }
 
-    const requestHeaders = Object.fromEntries(info.headers.map(({ name, value }) => {
-      // backend can control necessary headers, so we need to override them
-      // For GCS some headers have to be signed. In this case we should rewrite logic here
-      // and calculate checksum before receiving the URL for uploading.
-      if (name === 'X-Amz-Checksum-Crc32c') {
-        return [name, crc32cChecksum];
-      }
-      return [name, value];
-    }));
+    const requestHeaders = Object.fromEntries(info.headers.map(({ name, value }) => [name, value]));
 
     try {
       const {

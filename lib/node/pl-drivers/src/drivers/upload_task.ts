@@ -216,6 +216,8 @@ export async function uploadBlob(
       uploadData.localPath,
       BigInt(uploadData.modificationTime),
       part,
+      parts.checksumAlgorithm,
+      parts.checksumHeader,
       { timeout }
     );
     logger.info(`uploaded chunk ${part}/${parts.overall} of resource: ${res.id}`);
