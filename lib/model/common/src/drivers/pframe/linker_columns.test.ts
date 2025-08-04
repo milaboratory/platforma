@@ -195,7 +195,6 @@ describe('Linker columns', () => {
         const group3 = [axisH];
         const group1Normalized = getNormalizedAxesList(group1);
         const group2Normalized = getNormalizedAxesList(group2);
-        const group3Normalized = getNormalizedAxesList(group3);
         const [axisAn, axisBn, axisCn, axisDn, axisEn] = group1Normalized;
 
         const linker1 = makeLinkerColumn({ name: 'linker1', from: group1, to: group2 });

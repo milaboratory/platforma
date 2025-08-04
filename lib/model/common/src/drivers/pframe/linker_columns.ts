@@ -205,8 +205,7 @@ export class LinkerMap implements LinkersData {
   }
 
   /** Get all axes that can be connected to sourceAxes by linkers */
-  getReachableByLinkersAxesFromAxes(
-    sourceAxes: AxisSpecNormalized[]): AxisSpec[] {
+  getReachableByLinkersAxesFromAxes(sourceAxes: AxisSpecNormalized[]): AxisSpec[] {
     const startKeys = sourceAxes.map(LinkerMap.getLinkerKeyFromAxisSpec);
     const availableKeys = this.searchAvailableAxesKeys(startKeys);
     return this.getAxesListFromKeysList([...availableKeys]);
