@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { faker } from '@faker-js/faker';
 import { listToOptions } from '@milaboratories/helpers';
-import type {
-  Size } from '@platforma-sdk/ui-vue';
+import type { Size } from '@platforma-sdk/ui-vue';
 import {
   PlBlockPage,
   PlTextField,
@@ -20,12 +19,15 @@ import {
   PlBtnDanger,
   PlBtnGroup,
   PlAccordionSection,
+  PlDropdownMulti,
+  PlDropdownLine,
 } from '@platforma-sdk/ui-vue';
 import { computed, reactive } from 'vue';
 
 const dialogData = reactive({
   text: '',
   item: '',
+  items: [],
   dialogModal: false,
   title: true,
   actions: true,
@@ -95,7 +97,11 @@ const sizeOptions = [{
             Open PlDialogModal
           </PlBtnPrimary>
         </PlRow>
-        <PlDropdown v-model="dialogData.size" label="Size (Takes precedence over (min | max)(width | height) properties)" :options="sizeOptions" />
+        <PlDropdown
+          v-model="dialogData.size"
+          label="Size (Takes precedence over (min | max)(width | height) properties)"
+          :options="sizeOptions"
+        />
         <PlNumberField
           v-model="dialogData.dialogWidth"
           label="Dialog width in px (without gutters)"
@@ -239,9 +245,19 @@ const sizeOptions = [{
         v-model="dialogData.item"
         :options="listToOptions(['Item 1', 'Item 2', 'Item 3'])"
       />
-      <PlDropdown
+      <PlDropdownLine
         v-model="dialogData.item"
-        label="Select item"
+        :mode="'list'"
+        :options="listToOptions(['Item 1', 'Item 2', 'Item 3'])"
+      />
+      <PlDropdownLine
+        v-model="dialogData.item"
+        :mode="'tabs'"
+        :options="listToOptions(['Item 1', 'Item 2', 'Item 3'])"
+      />
+      <PlDropdownMulti
+        v-model="dialogData.items"
+        label="Select items"
         :options="listToOptions(['Item 1', 'Item 2', 'Item 3'])"
       />
       <PlCheckbox v-model="slideData.slideModal">Also closes the modal window</PlCheckbox>
