@@ -1,21 +1,216 @@
-import type { PObject, PObjectId, PObjectSpec } from '../../../pool';
-import canonicalize from 'canonicalize';
+import { ensureError } from '../../../errors';
+import {
+  canonicalizeJson,
+  type CanonicalizedJson,
+  type StringifiedJson,
+} from '../../../json';
+import type {
+  PObject,
+  PObjectId,
+  PObjectSpec,
+} from '../../../pool';
+import { z } from 'zod';
 
-export type ValueTypeInt = 'Int';
-export type ValueTypeLong = 'Long';
-export type ValueTypeFloat = 'Float';
-export type ValueTypeDouble = 'Double';
-export type ValueTypeString = 'String';
-export type ValueTypeBytes = 'Bytes';
+type Expect<T extends true> = T;
+type Equal<X, Y> =
+  (<T>() => T extends X ? 1 : 2) extends (<T>() => T extends Y ? 1 : 2) ? true : false;
+
+export const ValueType = {
+  Int: 'Int',
+  Long: 'Long',
+  Float: 'Float',
+  Double: 'Double',
+  String: 'String',
+  Bytes: 'Bytes',
+} as const;
 
 /** PFrame columns and axes within them may store one of these types. */
-export type ValueType =
-  | ValueTypeInt
-  | ValueTypeLong
-  | ValueTypeFloat
-  | ValueTypeDouble
-  | ValueTypeString
-  | ValueTypeBytes;
+export type ValueType = (typeof ValueType)[keyof typeof ValueType];
+
+export type Metadata = Record<string, string>;
+
+export function readMetadata<U extends Metadata, T extends keyof U = keyof U>(
+  metadata: Metadata | undefined,
+  key: T,
+): U[T] | undefined {
+  return (metadata as U | undefined)?.[key];
+}
+
+type MetadataJsonImpl<M> = {
+  [P in keyof M as (M[P] extends StringifiedJson ? P : never)]: M[P] extends StringifiedJson<infer U> ? z.ZodType<U> : never;
+};
+export type MetadataJson<M> = MetadataJsonImpl<Required<M>>;
+
+export function readMetadataJsonOrThrow<M extends Metadata, T extends keyof MetadataJson<M>>(
+  metadata: Metadata | undefined,
+  metadataJson: MetadataJson<M>,
+  key: T,
+  methodNameInError: string = 'readMetadataJsonOrThrow',
+): z.infer<MetadataJson<M>[T]> | undefined {
+  const json = readMetadata<M, T>(metadata, key);
+  if (json === undefined) return undefined;
+
+  const schema = metadataJson[key];
+  try {
+    const value = JSON.parse(json);
+    return schema.parse(value);
+  } catch (error: unknown) {
+    throw new Error(
+      `${methodNameInError} failed, `
+      + `key: ${String(key)}, `
+      + `value: ${json}, `
+      + `error: ${ensureError(error)}`,
+    );
+  }
+}
+
+export function readMetadataJson<M extends Metadata, T extends keyof MetadataJson<M>>(
+  metadata: Metadata | undefined,
+  metadataJson: MetadataJson<M>,
+  key: T,
+): z.infer<MetadataJson<M>[T]> | undefined {
+  try {
+    return readMetadataJsonOrThrow(metadata, metadataJson, key);
+  } catch {
+    return undefined; // treat invalid values as unset
+  }
+}
+
+/// Well-known domains
+export const Domain = {
+  Alphabet: 'pl7.app/alphabet',
+  BlockId: 'pl7.app/blockId',
+} as const;
+
+export type Domain = Metadata & Partial<{
+  [Domain.Alphabet]: 'nucleotide' | 'aminoacid' | string;
+  [Domain.BlockId]: string;
+}>;
+
+export type DomainJson = MetadataJson<Domain>;
+export const DomainJson: DomainJson = {};
+
+/// Helper function for reading plain domain values
+export function readDomain<T extends keyof Domain>(
+  spec: { domain?: Metadata | undefined } | undefined,
+  key: T,
+): Domain[T] | undefined {
+  return readMetadata<Domain, T>(spec?.domain, key);
+}
+
+/// Helper function for reading json-encoded domain values, throws on JSON parsing error
+export function readDomainJsonOrThrow<T extends keyof DomainJson>(
+  spec: { domain?: Metadata | undefined } | undefined,
+  key: T,
+): z.infer<DomainJson[T]> | undefined {
+  return readMetadataJsonOrThrow<Domain, T>(spec?.domain, DomainJson, key, 'readDomainJsonOrThrow');
+}
+
+/// Helper function for reading json-encoded domain values, returns undefined on JSON parsing error
+export function readDomainJson<T extends keyof DomainJson>(
+  spec: { domain?: Metadata | undefined } | undefined,
+  key: T,
+): z.infer<DomainJson[T]> | undefined {
+  return readMetadataJson<Domain, T>(spec?.domain, DomainJson, key);
+}
+
+/// Well-known annotations
+export const Annotation = {
+  Alphabet: 'pl7.app/alphabet',
+  DiscreteValues: 'pl7.app/discreteValues',
+  Format: 'pl7.app/format',
+  Graph: {
+    IsVirtual: 'pl7.app/graph/isVirtual',
+  },
+  HideDataFromUi: 'pl7.app/hideDataFromUi',
+  IsLinkerColumn: 'pl7.app/isLinkerColumn',
+  Label: 'pl7.app/label',
+  Max: 'pl7.app/max',
+  Min: 'pl7.app/min',
+  Parents: 'pl7.app/parents',
+  Sequence: {
+    Annotation: {
+      Mapping: 'pl7.app/sequence/annotation/mapping',
+    },
+    IsAnnotation: 'pl7.app/sequence/isAnnotation',
+  },
+  Table: {
+    FontFamily: 'pl7.app/table/fontFamily',
+    OrderPriority: 'pl7.app/table/orderPriority',
+    Visibility: 'pl7.app/table/visibility',
+  },
+  Trace: 'pl7.app/trace',
+} as const;
+
+export type Annotation = Metadata & Partial<{
+  [Annotation.Alphabet]: 'nucleotide' | 'aminoacid' | string;
+  [Annotation.DiscreteValues]: StringifiedJson<number[]> | StringifiedJson<string[]>;
+  [Annotation.Format]: string;
+  [Annotation.Graph.IsVirtual]: StringifiedJson<boolean>;
+  [Annotation.HideDataFromUi]: StringifiedJson<boolean>;
+  [Annotation.IsLinkerColumn]: StringifiedJson<boolean>;
+  [Annotation.Label]: string;
+  [Annotation.Max]: StringifiedJson<number>;
+  [Annotation.Min]: StringifiedJson<number>;
+  [Annotation.Parents]: StringifiedJson<AxisSpec[]>;
+  [Annotation.Sequence.Annotation.Mapping]: StringifiedJson<Record<string, string>>;
+  [Annotation.Sequence.IsAnnotation]: StringifiedJson<boolean>;
+  [Annotation.Table.FontFamily]: string;
+  [Annotation.Table.OrderPriority]: StringifiedJson<number>;
+  [Annotation.Table.Visibility]: 'hidden' | 'optional' | string;
+  [Annotation.Trace]: StringifiedJson<Record<string, unknown>>;
+}>;
+
+export const AxisSpec = z.object({
+  type: z.nativeEnum(ValueType),
+  name: z.string(),
+  domain: z.record(z.string(), z.string()).optional(),
+  annotations: z.record(z.string(), z.string()).optional(),
+  parentAxes: z.array(z.number()).optional(),
+}).passthrough();
+type _test = Expect<Equal<
+  Readonly<z.infer<typeof AxisSpec>>,
+  Readonly<AxisSpec & Record<string, unknown>>
+>>;
+
+export type AnnotationJson = MetadataJson<Annotation>;
+export const AnnotationJson: AnnotationJson = {
+  [Annotation.DiscreteValues]: z.array(z.string()).or(z.array(z.number())),
+  [Annotation.Graph.IsVirtual]: z.boolean(),
+  [Annotation.HideDataFromUi]: z.boolean(),
+  [Annotation.IsLinkerColumn]: z.boolean(),
+  [Annotation.Max]: z.number(),
+  [Annotation.Min]: z.number(),
+  [Annotation.Parents]: z.array(AxisSpec),
+  [Annotation.Sequence.Annotation.Mapping]: z.record(z.string(), z.string()),
+  [Annotation.Sequence.IsAnnotation]: z.boolean(),
+  [Annotation.Table.OrderPriority]: z.number(),
+  [Annotation.Trace]: z.record(z.string(), z.unknown()),
+};
+
+/// Helper function for reading plain annotation values
+export function readAnnotation<T extends keyof Annotation>(
+  spec: { annotations?: Metadata | undefined } | undefined,
+  key: T,
+): Annotation[T] | undefined {
+  return readMetadata<Annotation, T>(spec?.annotations, key);
+}
+
+/// Helper function for reading json-encoded annotation values, throws on JSON parsing error
+export function readAnnotationJsonOrThrow<T extends keyof AnnotationJson>(
+  spec: { annotations?: Metadata | undefined } | undefined,
+  key: T,
+): z.infer<AnnotationJson[T]> | undefined {
+  return readMetadataJsonOrThrow<Annotation, T>(spec?.annotations, AnnotationJson, key, 'readAnnotationJsonOrThrow');
+}
+
+/// Helper function for reading json-encoded annotation values, returns undefined on JSON parsing error
+export function readAnnotationJson<T extends keyof AnnotationJson>(
+  spec: { annotations?: Metadata | undefined } | undefined,
+  key: T,
+): z.infer<AnnotationJson[T]> | undefined {
+  return readMetadataJson<Annotation, T>(spec?.annotations, AnnotationJson, key);
+}
 
 /**
  * Specification of an individual axis.
@@ -61,8 +256,198 @@ export interface AxisSpec {
   readonly parentAxes?: number[];
 }
 
+/** Parents are specs, not indexes; normalized axis can be used considering its parents independently from column */
+export interface AxisSpecNormalized extends Omit<AxisSpec, 'parentAxes'> {
+  parentAxesSpec: AxisSpecNormalized[];
+}
+
+/** Tree: axis is a root, its parents are children */
+export type AxisTree = {
+  axis: AxisSpecNormalized;
+  children: AxisTree[]; // parents
+};
+
+function makeAxisTree(axis: AxisSpecNormalized): AxisTree {
+  return { axis, children: [] };
+}
+
+/** Build tree by axis parents annotations */
+export function getAxesTree(rootAxis: AxisSpecNormalized): AxisTree {
+  const root = makeAxisTree(rootAxis);
+  let nodesQ = [root];
+  while (nodesQ.length) {
+    const nextNodes: AxisTree[] = [];
+    for (const node of nodesQ) {
+      node.children = node.axis.parentAxesSpec.map(makeAxisTree);
+      nextNodes.push(...node.children);
+    }
+    nodesQ = nextNodes;
+  }
+  return root;
+}
+
+/** Get set of canonicalized axisIds from axisTree */
+export function getSetFromAxisTree(tree: AxisTree): Set<CanonicalizedJson<AxisId>> {
+  const set = new Set([canonicalizeJson(getAxisId(tree.axis))]);
+  let nodesQ = [tree];
+  while (nodesQ.length) {
+    const nextNodes = [];
+    for (const node of nodesQ) {
+      for (const parent of node.children) {
+        set.add(canonicalizeJson(getAxisId(parent.axis)));
+        nextNodes.push(parent);
+      }
+    }
+    nodesQ = nextNodes;
+  }
+  return set;
+}
+
+/** Get array of axisSpecs from axisTree */
+export function getArrayFromAxisTree(tree: AxisTree): AxisSpecNormalized[] {
+  const res = [tree.axis];
+  let nodesQ = [tree];
+  while (nodesQ.length) {
+    const nextNodes = [];
+    for (const node of nodesQ) {
+      for (const parent of node.children) {
+        res.push(parent.axis);
+        nextNodes.push(parent);
+      }
+    }
+    nodesQ = nextNodes;
+  }
+  return res;
+}
+
+export function canonicalizeAxisWithParents(axis: AxisSpecNormalized) {
+  return canonicalizeJson(getArrayFromAxisTree(getAxesTree(axis)).map(getAxisId));
+}
+
+function normalizingAxesComparator(axis1: AxisSpecNormalized, axis2: AxisSpecNormalized): 1 | -1 | 0 {
+  if (axis1.name !== axis2.name) {
+    return axis1.name < axis2.name ? 1 : -1;
+  }
+  if (axis1.type !== axis2.type) {
+    return axis1.type < axis2.type ? 1 : -1;
+  }
+  const domain1 = canonicalizeJson(axis1.domain ?? {});
+  const domain2 = canonicalizeJson(axis2.domain ?? {});
+  if (domain1 !== domain2) {
+    return domain1 < domain2 ? 1 : -1;
+  }
+
+  const parents1 = canonicalizeAxisWithParents(axis1);
+  const parents2 = canonicalizeAxisWithParents(axis2);
+
+  if (parents1 !== parents2) {
+    return parents1 < parents2 ? 1 : -1;
+  }
+
+  const annotation1 = canonicalizeJson(axis1.annotations ?? {});
+  const annotation2 = canonicalizeJson(axis2.annotations ?? {});
+  if (annotation1 !== annotation2) {
+    return annotation1 < annotation2 ? 1 : -1;
+  }
+  return 0;
+}
+
+function parseParentsFromAnnotations(axis: AxisSpec) {
+  const parentsList = readAnnotationJson(axis, Annotation.Parents);
+  if (parentsList === undefined) {
+    return [];
+  }
+  return parentsList;
+}
+
+function sortParentsDeep(axisSpec: AxisSpecNormalized) {
+  axisSpec.parentAxesSpec.forEach(sortParentsDeep);
+  axisSpec.parentAxesSpec.sort(normalizingAxesComparator);
+}
+
+function hasCycleOfParents(axisSpec: AxisSpecNormalized) {
+  const root = makeAxisTree(axisSpec);
+  let nodesQ = [root];
+  const ancestors = new Set(canonicalizeJson(getAxisId(axisSpec)));
+  while (nodesQ.length) {
+    const nextNodes: AxisTree[] = [];
+    const levelIds = new Set<CanonicalizedJson<AxisId>>();
+    for (const node of nodesQ) {
+      node.children = node.axis.parentAxesSpec.map(makeAxisTree);
+      for (const child of node.children) {
+        const childId = canonicalizeJson(getAxisId(child.axis));
+        if (!levelIds.has(childId)) {
+          nextNodes.push(child);
+          levelIds.add(childId);
+          if (ancestors.has(childId)) {
+            return true;
+          }
+          ancestors.add(childId);
+        }
+      }
+    }
+    nodesQ = nextNodes;
+  }
+  return false;
+}
+
+/** Create list of normalized axisSpec (parents are in array of specs, not indexes) */
+export function getNormalizedAxesList(axes: AxisSpec[]): AxisSpecNormalized[] {
+  if (!axes.length) {
+    return [];
+  }
+  const modifiedAxes: AxisSpecNormalized[] = axes.map((axis) => {
+    const { parentAxes: _, ...copiedRest } = axis;
+    return { ...copiedRest, annotations: { ...copiedRest.annotations }, parentAxesSpec: [] };
+  });
+
+  axes.forEach((axis, idx) => {
+    const modifiedAxis = modifiedAxes[idx];
+    if (axis.parentAxes) { // if we have parents by indexes then take from the list
+      modifiedAxis.parentAxesSpec = axis.parentAxes.map((idx) => modifiedAxes[idx]);
+    } else { // else try to parse from annotation and normalize recursively
+      modifiedAxis.parentAxesSpec = getNormalizedAxesList(parseParentsFromAnnotations(axis));
+      delete modifiedAxis.annotations?.[Annotation.Parents];
+    }
+  });
+
+  if (modifiedAxes.some(hasCycleOfParents)) { // Axes list is broken
+    modifiedAxes.forEach((axis) => {
+      axis.parentAxesSpec = [];
+    });
+  } else {
+    modifiedAxes.forEach((axis) => {
+      sortParentsDeep(axis);
+    });
+  }
+
+  return modifiedAxes;
+}
+
+/** Create list of regular axisSpec from normalized (parents are indexes, inside of current axes list) */
+export function getDenormalizedAxesList(axesSpec: AxisSpecNormalized[]): AxisSpec[] {
+  const idsList = axesSpec.map((axisSpec) => canonicalizeJson(getAxisId(axisSpec)));
+  return axesSpec.map((axisSpec) => {
+    const parentsIds = axisSpec.parentAxesSpec.map((axisSpec) => canonicalizeJson(getAxisId(axisSpec)));
+    const parentIdxs = parentsIds.map((id) => idsList.indexOf(id));
+    const { parentAxesSpec: _, ...copiedRest } = axisSpec;
+    if (parentIdxs.length) {
+      return { ...copiedRest, parentAxes: parentIdxs } as AxisSpec;
+    }
+    return copiedRest;
+  });
+}
+
 /** Common type representing spec for all the axes in a column */
 export type AxesSpec = AxisSpec[];
+
+/// Well-known column names
+export const PColumnName = {
+  Label: 'pl7.app/label',
+  Table: {
+    RowSelection: 'pl7.app/table/row-selection',
+  },
+} as const;
 
 /**
  * Full column specification including all axes specs and specs of the column
@@ -211,12 +596,9 @@ export function getAxesId(spec: AxesSpec): AxesId {
   return spec.map(getAxisId);
 }
 
-/**
- * Canonicalizes axis id
- * @deprecated Use {@link canonicalizeJson} instead to preserve type
- */
-export function canonicalizeAxisId(id: AxisId): string {
-  return canonicalize(getAxisId(id))!;
+/** Canonicalizes axis id */
+export function canonicalizeAxisId(id: AxisId): CanonicalizedJson<AxisId> {
+  return canonicalizeJson(getAxisId(id));
 }
 
 /** Returns true if all domains from query are found in target */

@@ -22,6 +22,9 @@ import {
   type PTableColumnId,
   type PTableSorting,
   pTableValue,
+  readAnnotation,
+  Annotation,
+  readAnnotationJson,
 } from '@platforma-sdk/model';
 import { ref, watch } from 'vue';
 import { highlightByChemicalProperties } from './chemical-properties';
@@ -68,7 +71,7 @@ async function getSequenceColumnsOptions({
   const options = columns.values()
     .filter((column) => sequenceColumnPredicate(column))
     .map(({ spec, columnId }) => ({
-      label: spec.annotations?.['pl7.app/label'] ?? 'Unlabeled column',
+      label: readAnnotation(spec, Annotation.Label) ?? 'Unlabeled column',
       value: columnId,
     }))
     .toArray();
@@ -109,8 +112,8 @@ async function getLabelColumnsOptions({
       labelColumn
         ? canonicalizeJson({ type: 'column', id: labelColumn.columnId })
         : canonicalizeJson({ type: 'axis', id: axisId }),
-      labelColumn?.spec.annotations?.['pl7.app/label']
-      ?? axisSpec.annotations?.['pl7.app/label']
+      readAnnotation(labelColumn?.spec, Annotation.Label)
+      ?? readAnnotation(axisSpec, Annotation.Label)
       ?? 'Unlabeled axis',
     );
   }
@@ -124,11 +127,11 @@ async function getLabelColumnsOptions({
   });
 
   for (const { columnId, spec } of compatibleColumns) {
-    const columnIdJson = canonicalizeJson({ type: 'column', id: columnId });
+    const columnIdJson = canonicalizeJson({ type: 'column', id: columnId } satisfies PTableColumnId);
     if (optionMap.has(columnIdJson)) continue;
     optionMap.set(
       columnIdJson,
-      spec.annotations?.['pl7.app/label'] ?? 'Unlabeled column',
+      readAnnotation(spec, Annotation.Label) ?? 'Unlabeled column',
     );
   }
 
@@ -168,14 +171,14 @@ async function getMarkupColumnsOptions({
   }
   return columns.values()
     .filter((column) =>
-      column.spec.annotations?.['pl7.app/sequence/isAnnotation'] === 'true'
+      !!readAnnotationJson(column.spec, Annotation.Sequence.IsAnnotation)
       && isJsonEqual(sequenceColumn.spec.axesSpec, column.spec.axesSpec)
       && Object.entries(sequenceColumn.spec.domain ?? {}).every((
         [key, value],
       ) => column.spec.domain?.[key] === value),
     ).map(({ columnId, spec }) => ({
       value: columnId,
-      label: spec.annotations?.['pl7.app/label'] ?? 'Unlabeled column',
+      label: readAnnotation(spec, Annotation.Label) ?? 'Unlabeled column',
     }))
     .toArray();
 }
@@ -339,7 +342,7 @@ async function getMultipleAlignmentData({
   );
 
   const sequenceNames = sequenceColumns.map((column) =>
-    column.spec.spec.annotations?.['pl7.app/label'] ?? 'Unlabeled column',
+    readAnnotation(column.spec.spec, Annotation.Label) ?? 'Unlabeled column',
   );
 
   const labels = Array.from(
@@ -386,10 +389,7 @@ async function getMultipleAlignmentData({
         return markupAlignedSequence(sequences[row][0], markup);
       },
     );
-    const labels: Record<string, string> = JSON.parse(
-      markupColumn.spec.spec.annotations
-        ?.['pl7.app/sequence/annotation/mapping'] ?? '{}',
-    );
+    const labels = readAnnotationJson(markupColumn.spec.spec, Annotation.Sequence.Annotation.Mapping) ?? {};
     result.highlightImage = highlightByMarkup({
       markupRows,
       columnCount: concatenatedSequences.at(0)?.length ?? 0,

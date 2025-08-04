@@ -20,10 +20,13 @@ import type {
   PTableSorting,
 } from '@milaboratories/pl-model-common';
 import {
+  Annotation,
   canonicalizeJson,
   getAxisId,
   getColumnIdAndSpec,
   matchAxisId,
+  PColumnName,
+  readAnnotation,
 } from '@milaboratories/pl-model-common';
 import type {
   AxisLabelProvider,
@@ -468,7 +471,7 @@ export type CreatePlDataTableOps = {
 
 /** Check if column is a label column */
 export function isLabelColumn(column: PColumnSpec) {
-  return column.axesSpec.length === 1 && column.name === 'pl7.app/label';
+  return column.axesSpec.length === 1 && column.name === PColumnName.Label;
 }
 
 /** Get all label columns from the result pool */
@@ -479,7 +482,7 @@ export function getAllLabelColumns(
     .addAxisLabelProvider(resultPool)
     .addColumnProvider(resultPool)
     .getColumns({
-      name: 'pl7.app/label',
+      name: PColumnName.Label,
       axes: [{}], // exactly one axis
     }, { dontWaitAllData: true });
 }
@@ -645,13 +648,13 @@ export type PlDataTableModel = {
 };
 
 /** Check if column should be omitted from the table */
-export function isColumnHidden(spec: { annotations?: Record<string, string> }): boolean {
-  return spec.annotations?.['pl7.app/table/visibility'] === 'hidden';
+export function isColumnHidden(spec: { annotations?: Annotation }): boolean {
+  return readAnnotation(spec, Annotation.Table.Visibility) === 'hidden';
 }
 
 /** Check if column is hidden by default */
-export function isColumnOptional(spec: { annotations?: Record<string, string> }): boolean {
-  return spec.annotations?.['pl7.app/table/visibility'] === 'optional';
+export function isColumnOptional(spec: { annotations?: Annotation }): boolean {
+  return readAnnotation(spec, Annotation.Table.Visibility) === 'optional';
 }
 
 /**

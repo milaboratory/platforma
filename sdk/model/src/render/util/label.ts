@@ -1,8 +1,5 @@
-import type { PObjectSpec } from '@milaboratories/pl-model-common';
+import { Annotation, parseJson, readAnnotation, type PObjectSpec } from '@milaboratories/pl-model-common';
 import { z } from 'zod';
-
-export const PAnnotationLabel = 'pl7.app/label';
-export const PAnnotationTrace = 'pl7.app/trace';
 
 export type RecordsWithLabel<T> = {
   value: T;
@@ -76,9 +73,9 @@ export function deriveLabels<T>(
       spec = extractorResult as PObjectSpec;
     }
 
-    const label = spec.annotations?.[PAnnotationLabel];
-    const traceStr = spec.annotations?.[PAnnotationTrace];
-    const baseTrace = (traceStr ? Trace.safeParse(JSON.parse(traceStr)).data : undefined) ?? [];
+    const label = readAnnotation(spec, Annotation.Label);
+    const traceStr = readAnnotation(spec, Annotation.Trace);
+    const baseTrace = (traceStr ? Trace.safeParse(parseJson(traceStr)).data : undefined) ?? [];
 
     const trace = [
       ...(prefixTrace ?? []),

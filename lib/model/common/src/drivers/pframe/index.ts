@@ -12,3 +12,5 @@ export * from './unique_values';
 export * from './spec';
 
 export * from './driver';
+
+export * from './linker_columns';

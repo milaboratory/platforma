@@ -1,4 +1,4 @@
-import type { PColumnSpec } from '@milaboratories/pl-middle-layer';
+import { Annotation, type PColumnSpec } from '@milaboratories/pl-middle-layer';
 import { Pl } from '@milaboratories/pl-middle-layer';
 import { awaitStableState } from '@platforma-sdk/test';
 import { assertJson, assertResource, eTplTest } from './extended_tpl_test';
@@ -19,8 +19,8 @@ eTplTest.concurrent(
             type: 'String',
             name: 'personName',
             annotations: {
-              'pl7.app/label': 'Person Name',
-            },
+              [Annotation.Label]: 'Person Name',
+            } satisfies Annotation,
           },
         },
       ],
@@ -34,8 +34,8 @@ eTplTest.concurrent(
             valueType: 'Int',
             name: 'age',
             annotations: {
-              'pl7.app/label': 'Age',
-            },
+              [Annotation.Label]: 'Age',
+            } satisfies Annotation,
           },
         },
         {
@@ -46,8 +46,8 @@ eTplTest.concurrent(
             valueType: 'String',
             name: 'city',
             annotations: {
-              'pl7.app/label': 'City',
-            },
+              [Annotation.Label]: 'City',
+            } satisfies Annotation,
           },
         },
         // Line kind - exports raw TSV line content
@@ -58,8 +58,8 @@ eTplTest.concurrent(
             valueType: 'String',
             name: 'fullLine',
             annotations: {
-              'pl7.app/label': 'Full Line',
-            },
+              [Annotation.Label]: 'Full Line',
+            } satisfies Annotation,
           },
         },
         // JSON-line kind - exports JSON-encoded line content
@@ -70,8 +70,8 @@ eTplTest.concurrent(
             valueType: 'String',
             name: 'personData',
             annotations: {
-              'pl7.app/label': 'Person Data JSON',
-            },
+              [Annotation.Label]: 'Person Data JSON',
+            } satisfies Annotation,
           },
           columns: [
             {
