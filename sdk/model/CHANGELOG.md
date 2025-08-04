@@ -1,5 +1,13 @@
 # @platforma-sdk/model
 
+## 1.42.16
+
+### Patch Changes
+
+- 4468f99: add composite linker columns
+- Updated dependencies [4468f99]
+  - @milaboratories/pl-model-common@1.19.6
+
 ## 1.42.15
 
 ### Patch Changes

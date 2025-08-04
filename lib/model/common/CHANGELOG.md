@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.19.6
+
+### Patch Changes
+
+- 4468f99: add composite linker columns
+
 ## 1.19.5
 
 ### Patch Changes
