@@ -97,18 +97,6 @@ export class ClientUpload {
 
     const headers = Object.fromEntries(info.headers.map(({ name, value }) => [name, value]));
 
-    const contentLengthKey = Object.keys(headers).find((key) => key.toLowerCase() === 'content-length');
-    if (contentLengthKey) {
-      const existingContentLength = Number(headers[contentLengthKey]);
-      if (existingContentLength !== contentLength) {
-        throw new Error(
-          `Content-Length mismatch: expected ${contentLength}, but got ${existingContentLength} in headers`,
-        );
-      }
-    }
-
-    // content length will be automatically added by undici, so we don't need to set it here
-
     try {
       const {
         body: rawBody,
