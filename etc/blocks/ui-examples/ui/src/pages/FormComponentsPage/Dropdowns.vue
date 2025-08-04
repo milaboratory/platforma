@@ -8,8 +8,8 @@ import {
   PlDropdownMulti,
   PlDropdownMultiRef,
   PlDropdownRef,
+  PlIcon16,
   PlRow,
-  PlMaskIcon16,
 } from '@platforma-sdk/ui-vue';
 import { computed, reactive, ref } from 'vue';
 import type { ListOption } from '@platforma-sdk/ui-vue';
@@ -169,7 +169,7 @@ const showOptionsLoading = () => {
           :options="simpleOptions"
         >
           <template #append>
-            <PlMaskIcon16 name="settings" />
+            <PlIcon16 name="settings" />
           </template>
         </PlDropdown>
         <PlDropdown
@@ -180,10 +180,17 @@ const showOptionsLoading = () => {
           :options="simpleOptions"
         />
         <PlDropdownRef
+          v-model="data.model"
+          :disabled="data.disabled"
+          :clearable="data.clearable"
+          label="PlDropdownRef (with regular options)"
+          :options="simpleOptions"
+        />
+        <PlDropdownRef
           v-model="data.ref"
           :disabled="data.disabled"
           :clearable="data.clearable"
-          label="PlDropdownRef"
+          label="PlDropdownRef (with ref options)"
           :options="refOptions"
         />
 
@@ -201,7 +208,7 @@ const showOptionsLoading = () => {
           label="PlDropdownMulti"
         >
           <template #append>
-            <PlMaskIcon16 name="settings" />
+            <PlIcon16 name="settings" />
           </template>
         </PlDropdownMulti>
 
