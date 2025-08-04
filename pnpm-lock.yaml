@@ -1395,12 +1395,6 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
-<<<<<<< HEAD
-      vite:
-        specifier: 'catalog:'
-        version: 6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
-=======
->>>>>>> cd3e35c48 (update lock file)
 
   lib/model/common:
     dependencies:
@@ -1463,12 +1457,6 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
-<<<<<<< HEAD
-      vite:
-        specifier: 'catalog:'
-        version: 6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
-=======
->>>>>>> cd3e35c48 (update lock file)
 
   lib/model/pl-error-like:
     dependencies:
@@ -1503,12 +1491,6 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
-<<<<<<< HEAD
-      vite:
-        specifier: 'catalog:'
-        version: 6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
-=======
->>>>>>> cd3e35c48 (update lock file)
       vitest:
         specifier: 'catalog:'
         version: 2.1.9(@types/node@22.5.5)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4)
@@ -1780,12 +1762,6 @@ importers:
       utility-types:
         specifier: 'catalog:'
         version: 3.11.0
-<<<<<<< HEAD
-      vite:
-        specifier: 'catalog:'
-        version: 6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
-=======
->>>>>>> cd3e35c48 (update lock file)
       vitest:
         specifier: 'catalog:'
         version: 2.1.9(@types/node@20.16.15)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4)
@@ -2174,12 +2150,6 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
-<<<<<<< HEAD
-      vite:
-        specifier: 'catalog:'
-        version: 6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
-=======
->>>>>>> cd3e35c48 (update lock file)
 
   lib/node/ts-helpers-winston:
     dependencies:
@@ -2202,12 +2172,6 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
-<<<<<<< HEAD
-      vite:
-        specifier: 'catalog:'
-        version: 6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
-=======
->>>>>>> cd3e35c48 (update lock file)
 
   lib/other/biowasm-tools:
     dependencies:
@@ -2372,12 +2336,6 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
-<<<<<<< HEAD
-      vite:
-        specifier: 'catalog:'
-        version: 6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
-=======
->>>>>>> cd3e35c48 (update lock file)
 
   sdk/eslint-config:
     dependencies:
@@ -2488,12 +2446,6 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
-<<<<<<< HEAD
-      vite:
-        specifier: 'catalog:'
-        version: 6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
-=======
->>>>>>> cd3e35c48 (update lock file)
 
   sdk/ui-vue:
     dependencies:
@@ -2674,12 +2626,6 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
-<<<<<<< HEAD
-      vite:
-        specifier: 'catalog:'
-        version: 6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
-=======
->>>>>>> cd3e35c48 (update lock file)
       vitest:
         specifier: 'catalog:'
         version: 2.1.9(@types/node@20.16.15)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4)
@@ -2753,12 +2699,6 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
-<<<<<<< HEAD
-      vite:
-        specifier: 'catalog:'
-        version: 6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
-=======
->>>>>>> cd3e35c48 (update lock file)
       vitest:
         specifier: 'catalog:'
         version: 2.1.9(@types/node@20.16.15)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4)
@@ -3105,12 +3045,6 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
-<<<<<<< HEAD
-      vite:
-        specifier: 'catalog:'
-        version: 6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
-=======
->>>>>>> cd3e35c48 (update lock file)
 
   tools/package-builder:
     dependencies:
@@ -3181,12 +3115,6 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
-<<<<<<< HEAD
-      vite:
-        specifier: 'catalog:'
-        version: 6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
-=======
->>>>>>> cd3e35c48 (update lock file)
 
   tools/pl-bootstrap:
     dependencies:
@@ -3325,12 +3253,6 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
-<<<<<<< HEAD
-      vite:
-        specifier: 'catalog:'
-        version: 6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
-=======
->>>>>>> cd3e35c48 (update lock file)
       vitest:
         specifier: 'catalog:'
         version: 2.1.9(@types/node@20.16.15)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4)
@@ -3357,11 +3279,7 @@ importers:
         version: 5.6.3
       vite:
         specifier: 'catalog:'
-<<<<<<< HEAD
         version: 6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
-=======
-        version: 6.3.5(@types/node@22.5.5)(sass@1.83.4)(tsx@4.19.1)(yaml@2.7.0)
->>>>>>> b12da4f8c (update lock file)
       vue-tsc:
         specifier: 'catalog:'
         version: 2.2.10(typescript@5.6.3)
@@ -22039,13 +21957,10 @@ snapshots:
       - rollup
       - supports-color
 
-<<<<<<< HEAD
   vite-plugin-externalize-deps@0.9.0(vite@6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)):
     dependencies:
       vite: 6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
 
-=======
->>>>>>> b12da4f8c (update lock file)
   vite@5.4.11(@types/node@20.16.15)(sass@1.83.4):
     dependencies:
       esbuild: 0.21.5
