@@ -7,6 +7,8 @@ import type {
   JsonDataInfoEntries,
   JsonPartitionedDataInfoEntries,
   BinaryPartitionedDataInfoEntries,
+  ParquetPartitionedDataInfoEntries,
+  PartitionedDataInfoEntries,
 } from '@milaboratories/pl-model-common';
 import type { AxisFilterByIdx } from '@milaboratories/pl-model-common';
 
@@ -19,6 +21,10 @@ import type { AxisFilterByIdx } from '@milaboratories/pl-model-common';
  * @throws Error if any filter axis is outside the partitioning axes or data axes for Json data
  */
 export function filterDataInfoEntries<Blob>(
+  dataInfoEntries: ParquetPartitionedDataInfoEntries<Blob>,
+  axisFilters: AxisFilterByIdx[],
+): ParquetPartitionedDataInfoEntries<Blob>;
+export function filterDataInfoEntries<Blob>(
   dataInfoEntries: BinaryPartitionedDataInfoEntries<Blob>,
   axisFilters: AxisFilterByIdx[],
 ): BinaryPartitionedDataInfoEntries<Blob>;
@@ -27,9 +33,9 @@ export function filterDataInfoEntries<Blob>(
   axisFilters: AxisFilterByIdx[],
 ): JsonPartitionedDataInfoEntries<Blob>;
 export function filterDataInfoEntries<Blob>(
-  dataInfoEntries: BinaryPartitionedDataInfoEntries<Blob> | JsonPartitionedDataInfoEntries<Blob>,
+  dataInfoEntries: PartitionedDataInfoEntries<Blob>,
   axisFilters: AxisFilterByIdx[],
-): BinaryPartitionedDataInfoEntries<Blob> | JsonPartitionedDataInfoEntries<Blob>;
+): PartitionedDataInfoEntries<Blob>;
 export function filterDataInfoEntries(
   dataInfoEntries: JsonDataInfoEntries,
   axisFilters: AxisFilterByIdx[],
@@ -42,16 +48,27 @@ export function filterDataInfoEntries<Blob>(
   const sortedFilters = [...axisFilters].sort((a, b) => b[0] - a[0]);
 
   // Check for invalid filter axes
-  if (dataInfoEntries.type === 'JsonPartitioned' || dataInfoEntries.type === 'BinaryPartitioned') {
-    const { partitionKeyLength } = dataInfoEntries;
-    for (const [axisIdx] of axisFilters)
-      if (axisIdx >= partitionKeyLength)
-        throw new Error(`Can't filter on non-partitioned axis ${axisIdx}. Must be >= ${partitionKeyLength}`);
-  } else if (dataInfoEntries.type === 'Json') {
-    const { keyLength } = dataInfoEntries;
-    for (const [axisIdx] of axisFilters)
-      if (axisIdx >= keyLength)
-        throw new Error(`Can't filter on non-data axis ${axisIdx}. Must be >= ${keyLength}`);
+  const { type } = dataInfoEntries;
+  switch (type) {
+    case 'Json': {
+      const { keyLength } = dataInfoEntries;
+      for (const [axisIdx] of axisFilters)
+        if (axisIdx >= keyLength)
+          throw new Error(`Can't filter on non-data axis ${axisIdx}. Must be >= ${keyLength}`);
+      break;
+    }
+    case 'JsonPartitioned':
+    case 'BinaryPartitioned':
+    case 'ParquetPartitioned': {
+      const { partitionKeyLength } = dataInfoEntries;
+      for (const [axisIdx] of axisFilters)
+        if (axisIdx >= partitionKeyLength)
+          throw new Error(`Can't filter on non-partitioned axis ${axisIdx}. Must be >= ${partitionKeyLength}`);
+      break;
+    }
+    default:
+      // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+      throw new Error(`Unsupported data info type: ${type satisfies never}`);
   }
 
   const keyMatchesFilters = (key: PColumnKey): boolean => {
@@ -72,49 +89,45 @@ export function filterDataInfoEntries<Blob>(
   };
 
   switch (dataInfoEntries.type) {
-    case 'Json': {
-      const filteredData: PColumnDataEntry<PColumnValue>[] = dataInfoEntries.data
-        .filter((entry: PColumnDataEntry<PColumnValue>) => keyMatchesFilters(entry.key))
-        .map((entry: PColumnDataEntry<PColumnValue>) => ({
+    case 'Json': return {
+      type: 'Json',
+      keyLength: dataInfoEntries.keyLength - axisFilters.length,
+      data: dataInfoEntries.data
+        .filter((entry) => keyMatchesFilters(entry.key))
+        .map((entry) => ({
           key: removeFilteredAxes(entry.key),
           value: entry.value,
-        }));
-
-      return {
-        type: 'Json',
-        keyLength: dataInfoEntries.keyLength - axisFilters.length,
-        data: filteredData,
-      };
-    }
-
-    case 'JsonPartitioned': {
-      const filteredParts = dataInfoEntries.parts
-        .filter((entry: PColumnDataEntry<Blob>) => keyMatchesFilters(entry.key))
-        .map((entry: PColumnDataEntry<Blob>) => ({
+        } satisfies PColumnDataEntry<PColumnValue>)),
+    };
+    case 'JsonPartitioned': return {
+      type: 'JsonPartitioned',
+      partitionKeyLength: dataInfoEntries.partitionKeyLength - axisFilters.length,
+      parts: dataInfoEntries.parts
+        .filter((entry) => keyMatchesFilters(entry.key))
+        .map((entry) => ({
           key: removeFilteredAxes(entry.key),
           value: entry.value,
-        }));
-
-      return {
-        type: 'JsonPartitioned',
-        partitionKeyLength: dataInfoEntries.partitionKeyLength - axisFilters.length,
-        parts: filteredParts,
-      };
-    }
-
-    case 'BinaryPartitioned': {
-      const filteredParts = dataInfoEntries.parts
-        .filter((entry: PColumnDataEntry<BinaryChunk<Blob>>) => keyMatchesFilters(entry.key))
-        .map((entry: PColumnDataEntry<BinaryChunk<Blob>>) => ({
+        } satisfies PColumnDataEntry<Blob>)),
+    };
+    case 'BinaryPartitioned': return {
+      type: 'BinaryPartitioned',
+      partitionKeyLength: dataInfoEntries.partitionKeyLength - axisFilters.length,
+      parts: dataInfoEntries.parts
+        .filter((entry) => keyMatchesFilters(entry.key))
+        .map((entry) => ({
           key: removeFilteredAxes(entry.key),
           value: entry.value,
-        }));
-
-      return {
-        type: 'BinaryPartitioned',
-        partitionKeyLength: dataInfoEntries.partitionKeyLength - axisFilters.length,
-        parts: filteredParts,
-      };
-    }
+        } satisfies PColumnDataEntry<BinaryChunk<Blob>>)),
+    };
+    case 'ParquetPartitioned': return {
+      type: 'ParquetPartitioned',
+      partitionKeyLength: dataInfoEntries.partitionKeyLength - axisFilters.length,
+      parts: dataInfoEntries.parts
+        .filter((entry) => keyMatchesFilters(entry.key))
+        .map((entry) => ({
+          key: removeFilteredAxes(entry.key),
+          value: entry.value,
+        } satisfies PColumnDataEntry<Blob>)),
+    };
   }
 }

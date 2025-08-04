@@ -1,3 +1,5 @@
+import { assertNever } from '../../util';
+
 /**
  * Represents a JavaScript representation of a value in a PColumn. Can be null, a number, or a string.
  * These are the primitive types that can be stored directly in PColumns.
@@ -85,7 +87,7 @@ export type BinaryPartitionedDataInfo<Blob> = {
   parts: Record<string, BinaryChunk<Blob>>;
 };
 
-type ParquetChunkMappingAxis = {
+export type ParquetChunkMappingAxis = {
   /** Data type (matches PColumn axis types) */
   type: 'Int' | 'Long' | 'String';
 
@@ -93,7 +95,7 @@ type ParquetChunkMappingAxis = {
   id: string;
 };
 
-type ParquetChunkMappingColumn = {
+export type ParquetChunkMappingColumn = {
   /** Data type (matches PColumn value type) */
   type: 'Int' | 'Long' | 'Float' | 'Double' | 'String';
 
@@ -101,11 +103,19 @@ type ParquetChunkMappingColumn = {
   id: string;
 };
 
-type ParquetChunkStats = {
+export type ParquetChunkMapping = {
+  /** Axes mappings - Parquet file is sorted by these fields in this order */
+  axes: ParquetChunkMappingAxis[];
+
+  /** Column mapping */
+  column: ParquetChunkMappingColumn;
+};
+
+export type ParquetChunkStats = {
   /** Number of rows in the chunk */
-  numberOfRows?: number;
+  numberOfRows: number;
   /** Byte size information for storage optimization and query planning */
-  size?: {
+  size: {
     /** Byte sizes for each axis column in the same order as axes mapping */
     axes: number[];
     /** Byte size for the data column */
@@ -113,22 +123,18 @@ type ParquetChunkStats = {
   };
 };
 
+export type ParquetChunkMetadata = {
+  /** Content hash calculated for the specific axes and data this chunk represents */
+  dataDigest: string;
+
+  /** Pre-computed statistics for optimization without blob download */
+  stats: Partial<ParquetChunkStats>;
+};
+
 export type ParquetChunk<Blob> = {
   /** Parquet file (PTable) containing column data */
   data: Blob;
-
-  /** Content hash calculated for the specific axes and data this chunk represents */
-  dataDigest?: string;
-
-  /** Axes mappings - Parquet file is sorted by these fields in this order */
-  axes: ParquetChunkMappingAxis[];
-
-  /** Column mapping */
-  column: ParquetChunkMappingColumn;
-
-  /** Pre-computed statistics for optimization without blob download */
-  stats?: ParquetChunkStats;
-};
+} & ParquetChunkMapping & Partial<ParquetChunkMetadata>;
 
 export type ParquetPartitionedDataInfo<Blob> = {
   /** Identifier for this data format ('ParquetPartitioned') */
@@ -138,7 +144,7 @@ export type ParquetPartitionedDataInfo<Blob> = {
   partitionKeyLength: number;
 
   /** Map of stringified partition keys to parquet files */
-  parts: Record<string, ParquetChunk<Blob>>;
+  parts: Record<string, Blob>;
 };
 
 /**
@@ -150,7 +156,8 @@ export type ParquetPartitionedDataInfo<Blob> = {
 export type DataInfo<Blob> =
   | JsonDataInfo
   | JsonPartitionedDataInfo<Blob>
-  | BinaryPartitionedDataInfo<Blob>;
+  | BinaryPartitionedDataInfo<Blob>
+  | ParquetPartitionedDataInfo<Blob>;
 
 /**
  * Type guard function that checks if the given value is a valid DataInfo.
@@ -176,12 +183,8 @@ export function isDataInfo<Blob>(value: unknown): value is DataInfo<Blob> {
         && typeof data.data === 'object'
       );
     case 'JsonPartitioned':
-      return (
-        typeof data.partitionKeyLength === 'number'
-        && data.parts !== undefined
-        && typeof data.parts === 'object'
-      );
     case 'BinaryPartitioned':
+    case 'ParquetPartitioned':
       return (
         typeof data.partitionKeyLength === 'number'
         && data.parts !== undefined
@@ -242,6 +245,17 @@ export function mapDataInfo<B1, B2>(
         parts: newParts,
       };
     }
+    case 'ParquetPartitioned': {
+      // Map each blob in parts
+      const newParts: Record<string, B2> = {};
+      for (const [key, blob] of Object.entries(dataInfo.parts)) {
+        newParts[key] = mapFn(blob);
+      }
+      return {
+        ...dataInfo,
+        parts: newParts,
+      };
+    }
   }
 }
 
@@ -260,17 +274,20 @@ export function visitDataInfo<B>(
       break;
     case 'JsonPartitioned': {
       // Visit each blob in parts
-      for (const [_, blob] of Object.entries(dataInfo.parts)) {
-        cb(blob);
-      }
+      Object.values(dataInfo.parts).forEach(cb);
       break;
     }
     case 'BinaryPartitioned': {
       // Visit each index and values blob in parts
-      for (const [_, chunk] of Object.entries(dataInfo.parts)) {
+      Object.values(dataInfo.parts).forEach((chunk) => {
         cb(chunk.index);
         cb(chunk.values);
-      }
+      });
+      break;
+    }
+    case 'ParquetPartitioned': {
+      // Visit each blob in parts
+      Object.values(dataInfo.parts).forEach(cb);
       break;
     }
   }
@@ -323,11 +340,20 @@ export interface BinaryPartitionedDataInfoEntries<Blob> {
 }
 
 /**
+ * Entry-based representation of ParquetPartitionedDataInfo
+ */
+export interface ParquetPartitionedDataInfoEntries<Blob> {
+  type: 'ParquetPartitioned';
+  partitionKeyLength: number;
+  parts: PColumnDataEntry<Blob>[];
+}
+/**
  * Union type representing all possible entry-based partitioned data storage formats
  */
 export type PartitionedDataInfoEntries<Blob> =
   | JsonPartitionedDataInfoEntries<Blob>
-  | BinaryPartitionedDataInfoEntries<Blob>;
+  | BinaryPartitionedDataInfoEntries<Blob>
+  | ParquetPartitionedDataInfoEntries<Blob>;
 
 /**
  * Union type representing all possible entry-based data storage formats
@@ -359,11 +385,8 @@ export function isDataInfoEntries<Blob>(value: unknown): value is DataInfoEntrie
         && Array.isArray(data.data)
       );
     case 'JsonPartitioned':
-      return (
-        typeof data.partitionKeyLength === 'number'
-        && Array.isArray(data.parts)
-      );
     case 'BinaryPartitioned':
+    case 'ParquetPartitioned':
       return (
         typeof data.partitionKeyLength === 'number'
         && Array.isArray(data.parts)
@@ -382,7 +405,14 @@ export function isDataInfoEntries<Blob>(value: unknown): value is DataInfoEntrie
  */
 export function isPartitionedDataInfoEntries<Blob>(value: unknown): value is PartitionedDataInfoEntries<Blob> {
   if (!isDataInfoEntries(value)) return false;
-  return value.type === 'JsonPartitioned' || value.type === 'BinaryPartitioned';
+  switch (value.type) {
+    case 'JsonPartitioned':
+    case 'BinaryPartitioned':
+    case 'ParquetPartitioned':
+      return true;
+    default:
+      return false;
+  }
 }
 
 /**
@@ -393,42 +423,40 @@ export function isPartitionedDataInfoEntries<Blob>(value: unknown): value is Par
  */
 export function dataInfoToEntries<Blob>(dataInfo: DataInfo<Blob>): DataInfoEntries<Blob> {
   switch (dataInfo.type) {
-    case 'Json': {
-      const entries: PColumnDataEntry<PColumnValue>[] = Object.entries(dataInfo.data).map(([keyStr, value]) => {
+    case 'Json': return {
+      type: 'Json',
+      keyLength: dataInfo.keyLength,
+      data: Object.entries(dataInfo.data).map(([keyStr, value]) => {
         const key = JSON.parse(keyStr) as PColumnKey;
-        return { key, value };
-      });
-
-      return {
-        type: 'Json',
-        keyLength: dataInfo.keyLength,
-        data: entries,
-      };
-    }
-    case 'JsonPartitioned': {
-      const parts: PColumnDataEntry<Blob>[] = Object.entries(dataInfo.parts).map(([keyStr, blob]) => {
+        return { key, value } as PColumnDataEntry<PColumnValue>;
+      }),
+    };
+    case 'JsonPartitioned': return {
+      type: 'JsonPartitioned',
+      partitionKeyLength: dataInfo.partitionKeyLength,
+      parts: Object.entries(dataInfo.parts).map(([keyStr, blob]) => {
         const key = JSON.parse(keyStr) as PColumnKey;
-        return { key, value: blob };
-      });
-
-      return {
-        type: 'JsonPartitioned',
-        partitionKeyLength: dataInfo.partitionKeyLength,
-        parts,
-      };
-    }
-    case 'BinaryPartitioned': {
-      const parts: PColumnDataEntry<BinaryChunk<Blob>>[] = Object.entries(dataInfo.parts).map(([keyStr, chunk]) => {
+        return { key, value: blob } as PColumnDataEntry<Blob>;
+      }),
+    };
+    case 'BinaryPartitioned': return {
+      type: 'BinaryPartitioned',
+      partitionKeyLength: dataInfo.partitionKeyLength,
+      parts: Object.entries(dataInfo.parts).map(([keyStr, chunk]) => {
         const key = JSON.parse(keyStr) as PColumnKey;
-        return { key, value: chunk };
-      });
-
-      return {
-        type: 'BinaryPartitioned',
-        partitionKeyLength: dataInfo.partitionKeyLength,
-        parts,
-      };
-    }
+        return { key, value: chunk } as PColumnDataEntry<BinaryChunk<Blob>>;
+      }),
+    };
+    case 'ParquetPartitioned': return {
+      type: 'ParquetPartitioned',
+      partitionKeyLength: dataInfo.partitionKeyLength,
+      parts: Object.entries(dataInfo.parts).map(([keyStr, blob]) => {
+        const key = JSON.parse(keyStr) as PColumnKey;
+        return { key, value: blob } as PColumnDataEntry<Blob>;
+      }),
+    };
+    default:
+      assertNever(dataInfo);
   }
 }
 
@@ -440,42 +468,36 @@ export function dataInfoToEntries<Blob>(dataInfo: DataInfo<Blob>): DataInfoEntri
  */
 export function entriesToDataInfo<Blob>(dataInfoEntries: DataInfoEntries<Blob>): DataInfo<Blob> {
   switch (dataInfoEntries.type) {
-    case 'Json': {
-      const data: Record<string, PColumnValue> = {};
-      for (const entry of dataInfoEntries.data) {
-        data[JSON.stringify(entry.key)] = entry.value;
-      }
-
-      return {
-        type: 'Json',
-        keyLength: dataInfoEntries.keyLength,
-        data,
-      };
-    }
-    case 'JsonPartitioned': {
-      const parts: Record<string, Blob> = {};
-      for (const entry of dataInfoEntries.parts) {
-        parts[JSON.stringify(entry.key)] = entry.value;
-      }
-
-      return {
-        type: 'JsonPartitioned',
-        partitionKeyLength: dataInfoEntries.partitionKeyLength,
-        parts,
-      };
-    }
-    case 'BinaryPartitioned': {
-      const parts: Record<string, BinaryChunk<Blob>> = {};
-      for (const entry of dataInfoEntries.parts) {
-        parts[JSON.stringify(entry.key)] = entry.value;
-      }
-
-      return {
-        type: 'BinaryPartitioned',
-        partitionKeyLength: dataInfoEntries.partitionKeyLength,
-        parts,
-      };
-    }
+    case 'Json': return {
+      type: 'Json',
+      keyLength: dataInfoEntries.keyLength,
+      data: Object.fromEntries(
+        dataInfoEntries.data.map(({ key, value }) => [JSON.stringify(key), value]),
+      ),
+    };
+    case 'JsonPartitioned': return {
+      type: 'JsonPartitioned',
+      partitionKeyLength: dataInfoEntries.partitionKeyLength,
+      parts: Object.fromEntries(
+        dataInfoEntries.parts.map(({ key, value }) => [JSON.stringify(key), value]),
+      ),
+    };
+    case 'BinaryPartitioned': return {
+      type: 'BinaryPartitioned',
+      partitionKeyLength: dataInfoEntries.partitionKeyLength,
+      parts: Object.fromEntries(
+        dataInfoEntries.parts.map(({ key, value }) => [JSON.stringify(key), value]),
+      ),
+    };
+    case 'ParquetPartitioned': return {
+      type: 'ParquetPartitioned',
+      partitionKeyLength: dataInfoEntries.partitionKeyLength,
+      parts: Object.fromEntries(
+        dataInfoEntries.parts.map(({ key, value }) => [JSON.stringify(key), value]),
+      ),
+    };
+    default:
+      assertNever(dataInfoEntries);
   }
 }
 
@@ -504,32 +526,29 @@ export function mapDataInfoEntries<B1, B2>(
     case 'Json':
       // Json type doesn't contain blobs, so return as is
       return dataInfoEntries;
-    case 'JsonPartitioned': {
-      // Map each blob in parts
-      const newParts = dataInfoEntries.parts.map((entry) => ({
+    case 'JsonPartitioned': return {
+      ...dataInfoEntries,
+      parts: dataInfoEntries.parts.map((entry) => ({
         key: entry.key,
         value: mapFn(entry.value),
-      }));
-
-      return {
-        ...dataInfoEntries,
-        parts: newParts,
-      };
-    }
-    case 'BinaryPartitioned': {
-      // Map each index and values blob in parts
-      const newParts = dataInfoEntries.parts.map((entry) => ({
+      })),
+    };
+    case 'BinaryPartitioned': return {
+      ...dataInfoEntries,
+      parts: dataInfoEntries.parts.map((entry) => ({
         key: entry.key,
         value: {
           index: mapFn(entry.value.index),
           values: mapFn(entry.value.values),
         },
-      }));
-
-      return {
-        ...dataInfoEntries,
-        parts: newParts,
-      };
-    }
+      })),
+    };
+    case 'ParquetPartitioned': return {
+      ...dataInfoEntries,
+      parts: dataInfoEntries.parts.map((entry) => ({
+        key: entry.key,
+        value: mapFn(entry.value),
+      })),
+    };
   }
 }
