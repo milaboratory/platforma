@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.19.4
+
+### Patch Changes
+
+- b8105fb: PFrames - Different public and internal types for ParquetDataInfo
+
 ## 1.19.3
 
 ### Patch Changes
