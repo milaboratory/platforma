@@ -1,7 +1,7 @@
 import unittest
 import polars as pl
 from polars.testing import assert_frame_equal
-import math # Added for math.ceil in expected value generation logic
+import math  # Added for math.ceil in expected value generation logic
 
 from ptabler.workflow import PWorkflow
 from ptabler.steps import GlobalSettings, AddColumns, Filter, TableSpace
@@ -17,7 +17,7 @@ from ptabler.expression import (
     StringReplaceExpression,
     StringContainsExpression, StringContainsAnyExpression, StringCountMatchesExpression,
     StringExtractExpression, StringStartsWithExpression, StringEndsWithExpression,
-    FillNaExpression,
+    FillNaNExpression, FillNullExpression,
     UnaryMinusExpression,
 )
 
@@ -348,7 +348,7 @@ class StepTests(unittest.TestCase):
                             ColumnReferenceExpression("s1"),
                             ColumnReferenceExpression("s2")
                         ], "_"))),
-                        start=ConstantValueExpression(value=0), 
+                        start=ConstantValueExpression(value=0),
                         length=ConstantValueExpression(value=10)
                     ),
                 )
@@ -414,13 +414,13 @@ class StepTests(unittest.TestCase):
                         value=ColumnReferenceExpression(name="text"), bits=30)
                 ),
                 ColumnDefinition(
-                    name="sha256_b64_alnum_full", # No bits, full length after filter
+                    name="sha256_b64_alnum_full",  # No bits, full length after filter
                     expression=HashExpression(
                         hash_type='sha256', encoding='base64_alphanumeric',
                         value=ColumnReferenceExpression(name="text"))
                 ),
                 ColumnDefinition(
-                    name="wyhash_hex_20b", # wyhash produces 64 bits
+                    name="wyhash_hex_20b",  # wyhash produces 64 bits
                     expression=HashExpression(
                         hash_type='wyhash', encoding='hex',
                         value=ColumnReferenceExpression(name="text"), bits=20)
@@ -432,7 +432,8 @@ class StepTests(unittest.TestCase):
                         value=ColumnReferenceExpression(name="text"), bits=40)
                 ),
                 ColumnDefinition(
-                    name="sha256_hex_bits_gt_max", # bits > 256, should use full hash (256 bits for sha256)
+                    # bits > 256, should use full hash (256 bits for sha256)
+                    name="sha256_hex_bits_gt_max",
                     expression=HashExpression(
                         hash_type='sha256', encoding='hex',
                         value=ColumnReferenceExpression(name="text"), bits=300)
@@ -454,7 +455,8 @@ class StepTests(unittest.TestCase):
             "id": [1, 2],
             "text": ["hello_world", "another_test"],
         })
-        assert_frame_equal(result_df.select(["id", "text"]), expected_base_df, check_dtypes=True)
+        assert_frame_equal(result_df.select(
+            ["id", "text"]), expected_base_df, check_dtypes=True)
 
         # 2. Define expected lengths for hash columns
         # For clarity, _HASH_OUTPUT_BITS from hash.py relevant values:
@@ -462,20 +464,24 @@ class StepTests(unittest.TestCase):
         expected_lengths = {
             "sha256_hex_16b": math.ceil(16 / 4),
             "sha256_b64_24b": math.ceil(24 / 6),
-            "sha256_b64_alnum_30b": math.ceil(30 / 5.95), # Truncation based on original 6 bits/char of Base64
-            "sha256_b64_alnum_upper_30b": math.ceil(30 / 5.15), # Same as above
+            # Truncation based on original 6 bits/char of Base64
+            "sha256_b64_alnum_30b": math.ceil(30 / 5.95),
+            # Same as above
+            "sha256_b64_alnum_upper_30b": math.ceil(30 / 5.15),
             # For sha256_b64_alnum_full (bits=None): uses full 256 bits.
             # SHA256 (32 bytes) -> Base64 (44 chars with padding) -> filter non-alnum.
             # Common length is 43 (e.g. if one padding char and no internal +/-).
             "sha256_b64_alnum_full": 42,
             "wyhash_hex_20b": math.ceil(20 / 4),
             "wyhash_b64_alnum_upper_40b": math.ceil(40 / 5.15),
-            "sha256_hex_bits_gt_max": math.ceil(256 / 4), # bits=300 capped to 256 for sha256
+            # bits=300 capped to 256 for sha256
+            "sha256_hex_bits_gt_max": math.ceil(256 / 4),
         }
 
         # 3. Assert lengths for hash columns
         for col_name, expected_len in expected_lengths.items():
-            self.assertTrue(col_name in result_df.columns, f"Column {col_name} missing from results.")
+            self.assertTrue(col_name in result_df.columns,
+                            f"Column {col_name} missing from results.")
             actual_lengths = result_df[col_name].str.len_chars()
             self.assertTrue(
                 actual_lengths.eq(expected_len).all(),
@@ -485,7 +491,8 @@ class StepTests(unittest.TestCase):
             )
 
         # 4. Check all expected columns are present
-        expected_col_names = sorted(expected_base_df.columns + list(expected_lengths.keys()))
+        expected_col_names = sorted(
+            expected_base_df.columns + list(expected_lengths.keys()))
         self.assertListEqual(sorted(result_df.columns), expected_col_names,
                              msg="Final column list does not match expected.")
 
@@ -651,9 +658,9 @@ class StepTests(unittest.TestCase):
 
         assert_frame_equal(result_df, expected_df, check_dtypes=True)
 
-    def test_add_columns_with_fillna_expression(self):
+    def test_add_columns_with_fillnull_expression(self):
         """
-        Tests AddColumns step with a FillNaExpression.
+        Tests AddColumns step with a FillNullExpression.
         Fills null values in 'col_with_nulls' with values from 'fallback_col'.
         Also tests filling with a constant value.
         """
@@ -670,14 +677,15 @@ class StepTests(unittest.TestCase):
             columns=[
                 ColumnDefinition(
                     name="filled_with_col",
-                    expression=FillNaExpression(
+                    expression=FillNullExpression(
                         input=ColumnReferenceExpression(name="col_with_nulls"),
-                        fill_value=ColumnReferenceExpression(name="fallback_col")
+                        fill_value=ColumnReferenceExpression(
+                            name="fallback_col")
                     )
                 ),
                 ColumnDefinition(
                     name="filled_with_const",
-                    expression=FillNaExpression(
+                    expression=FillNullExpression(
                         input=ColumnReferenceExpression(name="col_with_nulls"),
                         fill_value=ConstantValueExpression(value=-1)
                     )
@@ -726,8 +734,10 @@ class StepTests(unittest.TestCase):
             "id": [1, 2, 3, 4, 5, 6],
             "category": ["A", "A", "B", "A", "B", "B"],
             "value": [10, 20, 100, 30, 200, 300],
-            "order_for_first": [1,2,1,3,2,3] # To make first() predictable within category
-        }).lazy().sort(["category", "order_for_first"]) # Sort for predictable first()
+            # To make first() predictable within category
+            "order_for_first": [1, 2, 1, 3, 2, 3]
+            # Sort for predictable first()
+        }).lazy().sort(["category", "order_for_first"])
 
         initial_table_space: TableSpace = {"data_table": initial_df}
 
@@ -739,7 +749,8 @@ class StepTests(unittest.TestCase):
                     expression=WindowExpression(
                         aggregation='sum',
                         value=ColumnReferenceExpression(name="value"),
-                        partition_by=[ColumnReferenceExpression(name="category")]
+                        partition_by=[
+                            ColumnReferenceExpression(name="category")]
                     )
                 ),
                 ColumnDefinition(
@@ -747,23 +758,25 @@ class StepTests(unittest.TestCase):
                     expression=WindowExpression(
                         aggregation='mean',
                         value=ColumnReferenceExpression(name="value"),
-                        partition_by=[ColumnReferenceExpression(name="category")]
+                        partition_by=[
+                            ColumnReferenceExpression(name="category")]
                     )
                 ),
                 ColumnDefinition(
-                    name="total_count", # Count all IDs over the whole frame
+                    name="total_count",  # Count all IDs over the whole frame
                     expression=WindowExpression(
                         aggregation='count',
                         value=ColumnReferenceExpression(name="id"),
-                        partition_by=[] # Empty partition_by for whole frame window
+                        partition_by=[]  # Empty partition_by for whole frame window
                     )
                 ),
-                 ColumnDefinition(
+                ColumnDefinition(
                     name="min_val_by_cat",
                     expression=WindowExpression(
                         aggregation='min',
                         value=ColumnReferenceExpression(name="value"),
-                        partition_by=[ColumnReferenceExpression(name="category")]
+                        partition_by=[
+                            ColumnReferenceExpression(name="category")]
                     )
                 ),
                 ColumnDefinition(
@@ -771,7 +784,8 @@ class StepTests(unittest.TestCase):
                     expression=WindowExpression(
                         aggregation='first',
                         value=ColumnReferenceExpression(name="value"),
-                        partition_by=[ColumnReferenceExpression(name="category")]
+                        partition_by=[
+                            ColumnReferenceExpression(name="category")]
                     )
                 )
             ]
@@ -790,10 +804,10 @@ class StepTests(unittest.TestCase):
         # Total count: 6
 
         expected_df = pl.DataFrame({
-            "id": [1, 2, 4, 3, 5, 6], # Based on initial sort
+            "id": [1, 2, 4, 3, 5, 6],  # Based on initial sort
             "category": ["A", "A", "A", "B", "B", "B"],
             "value": [10, 20, 30, 100, 200, 300],
-            "order_for_first": [1,2,3,1,2,3],
+            "order_for_first": [1, 2, 3, 1, 2, 3],
             "sum_val_by_cat": [60, 60, 60, 600, 600, 600],
             "mean_val_by_cat": [20.0, 20.0, 20.0, 200.0, 200.0, 200.0],
             "total_count": [6, 6, 6, 6, 6, 6],
@@ -803,8 +817,8 @@ class StepTests(unittest.TestCase):
 
         result_df = final_table_space["data_table"].collect()
         # Sort result by the same keys as expected_df if not already guaranteed by processing
-        result_df = result_df.sort(["category", "order_for_first"]) 
-        
+        result_df = result_df.sort(["category", "order_for_first"])
+
         assert_frame_equal(result_df, expected_df, check_dtypes=True)
 
     def test_add_columns_unary_minus(self):
@@ -883,7 +897,8 @@ class StepTests(unittest.TestCase):
         expected_df = pl.DataFrame({
             "id": [1, 2, 3, 4],
             "text": ["hello world", "HELLO world", "goodbye", "world hello"],
-            "contains_hello_literal": [True, False, False, True]  # Case sensitive literal
+            # Case sensitive literal
+            "contains_hello_literal": [True, False, False, True]
         })
 
         result_df = final_table_space["test_data"].collect()
@@ -907,7 +922,9 @@ class StepTests(unittest.TestCase):
                     name="contains_hello_digits",
                     expression=StringContainsExpression(
                         value=ColumnReferenceExpression(name="text"),
-                        pattern=ConstantValueExpression(value=r"(?i)hello\d+"),  # Case insensitive + digits
+                        pattern=ConstantValueExpression(
+                            # Case insensitive + digits
+                            value=r"(?i)hello\d+"),
                         literal=False
                     )
                 )
@@ -965,7 +982,8 @@ class StepTests(unittest.TestCase):
         expected_df = pl.DataFrame({
             "id": [1, 2, 3, 4, 5],
             "text": ["apple pie", "banana split", "orange juice", "grape soda", "watermelon"],
-            "contains_citrus": [False, False, True, False, False]  # Only "orange juice" matches
+            # Only "orange juice" matches
+            "contains_citrus": [False, False, True, False, False]
         })
 
         result_df = final_table_space["test_data"].collect()
@@ -998,7 +1016,8 @@ class StepTests(unittest.TestCase):
                     name="count_a_regex",
                     expression=StringCountMatchesExpression(
                         value=ColumnReferenceExpression(name="text"),
-                        pattern=ConstantValueExpression(value="a+"),  # One or more 'a'
+                        pattern=ConstantValueExpression(
+                            value="a+"),  # One or more 'a'
                         literal=False
                     )
                 )
@@ -1015,8 +1034,10 @@ class StepTests(unittest.TestCase):
         expected_df = pl.DataFrame({
             "id": [1, 2, 3, 4],
             "text": ["ababab", "abcabc", "xyz", "aaa"],
-            "count_ab_literal": [3, 2, 0, 0],  # "ababab" has 3 overlapping "ab", "abcabc" has 2
-            "count_a_regex": [3, 2, 0, 1]     # "ababab" has 3 'a', "abcabc" has 2, "aaa" has 1 match of "a+"
+            # "ababab" has 3 overlapping "ab", "abcabc" has 2
+            "count_ab_literal": [3, 2, 0, 0],
+            # "ababab" has 3 'a', "abcabc" has 2, "aaa" has 1 match of "a+"
+            "count_a_regex": [3, 2, 0, 1]
         }, schema_overrides={"count_ab_literal": pl.UInt32, "count_a_regex": pl.UInt32})
 
         result_df = final_table_space["test_data"].collect()
@@ -1042,7 +1063,8 @@ class StepTests(unittest.TestCase):
                     expression=StringExtractExpression(
                         value=ColumnReferenceExpression(name="email"),
                         pattern=ConstantValueExpression(value=r"^([^@]+)@.*"),
-                        group_index=1  # Extract the first capture group (username part)
+                        # Extract the first capture group (username part)
+                        group_index=1
                     )
                 ),
                 ColumnDefinition(
@@ -1066,7 +1088,8 @@ class StepTests(unittest.TestCase):
         expected_df = pl.DataFrame({
             "id": [1, 2, 3, 4],
             "email": ["john.doe@example.com", "jane_smith@test.org", "invalid-email", "bob@company.co.uk"],
-            "username": ["john.doe", "jane_smith", None, "bob"],  # None for invalid email
+            # None for invalid email
+            "username": ["john.doe", "jane_smith", None, "bob"],
             "domain": ["example.com", "test.org", None, "company.co.uk"]
         })
 
@@ -1115,7 +1138,8 @@ class StepTests(unittest.TestCase):
         expected_df = pl.DataFrame({
             "id": [1, 2, 3, 4, 5],
             "filename": ["document.pdf", "image.jpg", "data.csv", "Document.PDF", "script.py"],
-            "starts_with_doc": [True, False, False, False, False],  # Case sensitive
+            # Case sensitive
+            "starts_with_doc": [True, False, False, False, False],
             "starts_with_data": [False, False, True, False, False]
         })
 
@@ -1206,7 +1230,8 @@ class StepTests(unittest.TestCase):
         expected_df = pl.DataFrame({
             "id": [1, 2, 3, 4],
             "text": ["Apple", "BANANA", "orange", "GRAPE"],
-            "contains_fruit_ci": [True, True, False, False]  # Case insensitive matching
+            # Case insensitive matching
+            "contains_fruit_ci": [True, True, False, False]
         })
 
         result_df = final_table_space["test_data"].collect()
