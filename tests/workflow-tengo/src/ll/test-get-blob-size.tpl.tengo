@@ -1,0 +1,22 @@
+self := import("@platforma-sdk/workflow-tengo:tpl")
+plapi := import("plapi")
+file := import("@platforma-sdk/workflow-tengo:file")
+
+self.prepare(func(inputs) {
+    importResult := file.importFile(inputs.file)
+    return {
+        blobID: importResult.file
+    }
+})
+
+// Define outputs
+self.defineOutputs("size", "error")
+
+self.body(func(inputs) {
+    blobID := self.rawInputs()["blobID"]
+    size := plapi.getBlobSize(blobID)
+
+    return {
+        size: size
+    }
+}) 
