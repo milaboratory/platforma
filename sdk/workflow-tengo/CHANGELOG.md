@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 4.18.0
+
+### Minor Changes
+
+- d407d12: installing cursor extension during ctag building
+
 ## 4.17.1
 
 ### Patch Changes
