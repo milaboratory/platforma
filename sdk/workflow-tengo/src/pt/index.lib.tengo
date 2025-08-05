@@ -417,6 +417,7 @@ workflow := func() {
 				printErrStreamToStdout().
 				dontSaveStdoutOrStderr().
 				software(ptablerSw).
+				envExpr("POLARS_MAX_THREADS", "{system.cpu}").
 				arg("workflow_sc.json").
 				writeFile("workflow_sc.json", json.encode({
 					workflow: steps
