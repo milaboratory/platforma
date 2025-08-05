@@ -3,7 +3,6 @@
  */
 
 ll := import(":ll")
-feats := import(":feats")
 validation := import(":validation")
 
 assets := import(":assets")
