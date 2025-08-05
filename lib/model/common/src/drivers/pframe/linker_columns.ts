@@ -167,7 +167,7 @@ export class LinkerMap implements LinkersData {
           .flatMap((targetKey) => {
             const linkers = startKeys
               .map((startKey) => this.searchLinkerPath(startKey, targetKey))
-              .reduce((shortestPath, path) => shortestPath.length && shortestPath.length < path.length ? shortestPath : path,
+              .reduce((shortestPath, path) => (shortestPath.length && shortestPath.length < path.length) || !path.length ? shortestPath : path,
                 [] as PColumnIdAndSpec[])
               .map((linker) => [linker.columnId, linker] as const);
             if (!linkers.length && throwWhenNoLinkExists) {
@@ -196,12 +196,19 @@ export class LinkerMap implements LinkersData {
   ): AxisSpecNormalized[] {
     const startKeys = sourceAxes.map(LinkerMap.getLinkerKeyFromAxisSpec);
     // target keys contain all axes to be linked; if some of target axes has parents they must be in the key
-    const missedTargetKeys = LinkerMap.getAxesRoots(targetAxes)
-      .map(LinkerMap.getLinkerKeyFromAxisSpec)
-      .filter((targetKey) =>
-        !startKeys.some((startKey) => this.searchLinkerPath(startKey, targetKey).length),
-      );
-    return this.getAxesListFromKeysList(missedTargetKeys);
+    const targetKeys = targetAxes.map(LinkerMap.getLinkerKeyFromAxisSpec);
+
+    const axes = Array.from(
+      new Map(
+        targetAxes
+          .filter((_targetAxis, idx) => {
+            const targetKey = targetKeys[idx];
+            return !startKeys.some((startKey) => this.searchLinkerPath(startKey, targetKey).length);
+          })
+          .flatMap((axis) => getArrayFromAxisTree(getAxesTree(axis)).map((axis) => [canonicalizeJson(getAxisId(axis)), axis])),
+      ).values(),
+    );
+    return axes;
   }
 
   /** Get all axes that can be connected to sourceAxes by linkers */
