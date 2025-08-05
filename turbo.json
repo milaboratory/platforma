@@ -27,6 +27,7 @@
         "PL_TEST_PASSWORD",
         "PL_TEST_USER",
         "PL_TEST_PROXY",
+        "PL_TEST_STORAGE_ID",
         "DEBUG",
         "MI_LICENSE"
       ]
