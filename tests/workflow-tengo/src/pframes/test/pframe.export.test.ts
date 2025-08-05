@@ -76,7 +76,7 @@ tplTest('should not export files for p-frame with hideDataFromUi annotation', { 
 async function importFile(driverKit: DriverKit) {
   const storages = await driverKit.lsDriver.getStorageList();
   const library = storages.find((s) => s.name == env.libraryStorage);
-  if (library === undefined) throw new Error('Library not found');
+  if (library === undefined) throw new Error(`Library '${env.libraryStorage}' not found`);
   const files = await driverKit.lsDriver.listFiles(library!.handle, '');
   const ourFile = files.entries.find(
     (f) => f.name == 'answer_to_the_ultimate_question.txt',
