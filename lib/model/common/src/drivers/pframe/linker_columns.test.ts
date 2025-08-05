@@ -104,6 +104,31 @@ describe('Linker columns', () => {
         testCase({ from: [axis1], to: [axis4], expected: []});
     });
 
+    test('Search in linker columns map with parents', () => {
+        const axisC = makeTestAxis({ name: 'c' });
+        const axisB = makeTestAxis({ name: 'b' });
+        const axisA = makeTestAxis({ name: 'a', parents: [axisB]});
+
+        const linkerMap = LinkerMap.fromColumns([
+            makeLinkerColumn({ name: 'abc', from: [axisA, axisB], to: [axisC] })
+        ]);
+
+        let testCase = (params: {
+            from: AxisSpecNormalized[];
+            to: AxisSpecNormalized[];
+            expected: string[];
+        }) => {
+            const linkers = linkerMap.getLinkerColumnsForAxes({
+                from: params.from,
+                to: params.to,
+                throwWhenNoLinkExists: false,
+            });
+            expect(linkers.map(item => item.spec.name).sort()).toEqual(params.expected);
+        }
+
+        testCase({ from: getNormalizedAxesList([axisA, axisB]), to: getNormalizedAxesList([axisC]), expected: ['abc'] });        
+    })
+
     test('Axis tree - without parents', () => {
         const [axisA, axisB] = getNormalizedAxesList([
             makeTestAxis({ name: 'a' }),
@@ -234,5 +259,28 @@ describe('Linker columns', () => {
 
         expect(linkerMap.getReachableByLinkersAxesFromAxes([c2])).not.toHaveLength(0);
         expect(linkerMap.getReachableByLinkersAxesFromAxes([c1])).not.toHaveLength(0);
+    })
+
+    test('Non-linkable axes', () => {
+        const axisA = makeTestAxis({ name: 'a' });
+        const axisB = makeTestAxis({ name: 'b' });
+        const axisC = makeTestAxis({ name: 'c', parents: [axisA, axisB] });
+        const axisD = makeTestAxis({ name: 'd' });
+        const axisE = makeTestAxis({ name: 'e' });
+
+        const axesList = getNormalizedAxesList([axisA, axisB, axisC, axisD, axisE]);
+        const linkerMap = LinkerMap.fromColumns([
+            makeLinkerColumn({ name: 'linker1', from: [axisA, axisB, axisC], to: [axisD] })
+        ]);
+
+        expect(linkerMap.getNonLinkableAxes(
+            getNormalizedAxesList([axisA, axisB, axisC, axisD]),
+            getNormalizedAxesList([axisC, axisE])
+        ).map(v => v.name)).toEqual(['e']);
+
+        expect(linkerMap.getNonLinkableAxes(
+            [],
+            getNormalizedAxesList([axisA, axisB, axisC, axisE])
+        ).map(v => v.name)).toEqual(['a', 'b', 'c', 'e']);
     })
 });
