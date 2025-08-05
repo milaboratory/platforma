@@ -27,7 +27,8 @@ export type Expression =
   | StringCountMatchesExpression
   | StringExtractExpression
   | MinMaxExpression
-  | FillNaExpression
+  | FillNullExpression
+  | FillNaNExpression
   | WindowExpression
   | StructFieldExpression;
 
@@ -470,18 +471,34 @@ export interface MinMaxExpression {
 }
 
 /**
- * Represents a fill NA (null) operation.
+ * Represents a fill null operation.
  * If the 'input' expression evaluates to null, the 'fillValue' expression is used.
  * Otherwise, the 'input' expression's value is used.
  * This is a convenience shortcut for a common pattern often implemented with
- * conditional expressions (e.g., when(is_na(input), fillValue).otherwise(input)).
+ * conditional expressions (e.g., when(is_null(input), fillValue).otherwise(input)).
  */
-export interface FillNaExpression {
-  /** The type of operation, always 'fill_na'. */
-  type: 'fill_na';
+export interface FillNullExpression {
+  /** The type of operation, always 'fill_null'. */
+  type: 'fill_null';
   /** The primary expression to evaluate. */
   input: Expression;
   /** The expression whose value is used if 'input' is null. */
+  fillValue: Expression;
+}
+
+/**
+ * Represents a fill NaN operation.
+ * If the 'input' expression evaluates to NaN, the 'fillValue' expression is used.
+ * Otherwise, the 'input' expression's value is used.
+ * This is a convenience shortcut for a common pattern often implemented with
+ * conditional expressions (e.g., when(is_nan(input), fillValue).otherwise(input)).
+ */
+export interface FillNaNExpression {
+  /** The type of operation, always 'fill_nan'. */
+  type: 'fill_nan';
+  /** The primary expression to evaluate. */
+  input: Expression;
+  /** The expression whose value is used if 'input' is NaN. */
   fillValue: Expression;
 }
 
