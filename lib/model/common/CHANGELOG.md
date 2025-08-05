@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.19.7
+
+### Patch Changes
+
+- 078efc1: fix for linker columns
+
 ## 1.19.6
 
 ### Patch Changes
