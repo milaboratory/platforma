@@ -18,6 +18,7 @@ import { RelativeContentReader, relativeToExplicitBytes, relativeToExplicitStrin
 export const MainPrefix = 'v2/';
 
 export const GlobalOverviewFileName = 'overview.json';
+export const GlobalOverviewGzFileName = 'overview.json.gz';
 export const PackageOverviewFileName = 'overview.json';
 export const ManifestFileName = 'manifest.json';
 
@@ -72,6 +73,7 @@ export const PackageManifestPattern =
   /(?<packageKeyWithoutVersion>(?<organization>[^\/]+)\/(?<name>[^\/]+))\/(?<version>[^\/]+)\/manifest\.json$/;
 
 export const GlobalOverviewPath = `${MainPrefix}${GlobalOverviewFileName}`;
+export const GlobalOverviewGzPath = `${MainPrefix}${GlobalOverviewGzFileName}`;
 
 export function GlobalOverviewEntry<const Description extends z.ZodTypeAny>(
   descriptionType: Description

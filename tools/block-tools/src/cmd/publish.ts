@@ -2,7 +2,7 @@ import { Command, Flags } from '@oclif/core';
 import fs from 'node:fs';
 import { OclifLoggerAdapter } from '@milaboratories/ts-helpers-oclif';
 import { ManifestFileName } from '../v2/registry/schema_public';
-import { BlockPackManifest, overrideManifestVersion } from '@milaboratories/pl-model-middle-layer';
+import { BlockPackManifest, overrideManifestVersion, StableChannel } from '@milaboratories/pl-model-middle-layer';
 import { storageByUrl } from '../io/storage';
 import { BlockRegistryV2 } from '../v2/registry/registry';
 import path from 'node:path';
@@ -58,6 +58,12 @@ export default class Publish extends Command {
       default: true,
       allowNo: true,
       env: 'PL_REGISTRY_REFRESH'
+    }),
+
+    unstable: Flags.boolean({
+      summary: 'do not add the published package to stable channel',
+      default: false,
+      env: 'PL_PUBLISH_UNSTABLE'
     })
   };
 
@@ -82,6 +88,11 @@ export default class Publish extends Command {
     await registry.publishPackage(manifest, async (file) =>
       Buffer.from(await fs.promises.readFile(path.resolve(manifestRoot, file)))
     );
+
+    if (!flags.unstable) {
+      this.log(`Adding package to ${StableChannel} channel...`);
+      await registry.addPackageToChannel(manifest.description.id, StableChannel);
+    }
 
     if (flags.refresh) await registry.updateIfNeeded();
   }

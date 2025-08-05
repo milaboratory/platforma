@@ -3,7 +3,6 @@
  */
 
 ll := import(":ll")
-feats := import(":feats")
 validation := import(":validation")
 
 assets := import(":assets")
@@ -140,23 +139,46 @@ builder := func() {
 		},
 
 		/**
-		 * @deprecated: remove ARG_TYPE_VAR and this check after 15 Mar 2025
-		 * Adds an argument that will be evaluated as expression in the command.
+		 * Adds an argument with expression evaluation.
 		 *
-		 * @param arg: string - e.g. -Xms{system.memory_mb * 80 / 100}m
+		 * Expressions are evaluated using the expr-lang syntax (https://expr-lang.org/docs/language-definition).
+		 * Available variables in expressions:
+		 *
+		 * - `secrets.SECRET_NAME` - Access to secrets (e.g., `{secrets.API_KEY}`)
+		 * - `env.ENV_NAME` - Access to environment variables (automatically converted to appropriate types)
+		 * - `system.cpu` - Number of CPU cores allocated
+		 * - `system.ram.bytes`, `system.ram.b` - RAM in bytes
+		 * - `system.ram.kb`, `system.ram.mb`, `system.ram.gb` - RAM in metric units (base-10)
+		 * - `system.ram.kib`, `system.ram.mib`, `system.ram.gib` - RAM in binary units (base-2)
+		 * - Custom substitution variables defined by substitution rules
+		 *
+		 * Expression examples:
+		 * - `--memory={system.ram.mb * 80 / 100}` - Calculate 80% of available RAM in MB
+		 * - `--java-home={env.JAVA_HOME}` - Use environment variable
+		 * - `--threads={system.cpu}` - Use number of CPU cores
+		 * - `--config={secrets.CONFIG_PATH}` - Access secret value
+		 *
+		 * @param arg: string - argument with expressions, e.g., "-Xms{system.ram.mb * 80 / 100}m"
 		 */
-		argWithVar: func(arg) {
-			ll.assert(is_string(arg), "exec.argWithVar(): argument with var must be a string, got: %v", arg)
-
-			// deprecated: remove ARG_TYPE_VAR and this check after 15 Mar 2025
-			t := feats.commandExpressions ? execConstants.ARG_TYPE_EXPRESSION : execConstants.ARG_TYPE_VAR
+		argExpr: func(arg) {
+			ll.assert(is_string(arg), "exec.argExpr(): argument must be a string, got: %v", arg)
 			argsTyped = append(argsTyped, {
-				type: t,
+				type: execConstants.ARG_TYPE_EXPRESSION,
 				value: arg
 			})
 			typedArgSet = true
 
 			return self
+		},
+
+		/**
+		 * @deprecated: use argExpr() instead. This method will be removed after 15 Mar 2025.
+		 * Adds an argument with expression evaluation.
+		 *
+		 * @param arg: string - argument with expressions, e.g., "-Xms{system.ram.mb * 80 / 100}m"
+		 */
+		argWithVar: func(arg) {
+			return self.argExpr(arg)
 		},
 
 		/**
@@ -176,24 +198,48 @@ builder := func() {
 		},
 
 		/**
-		 * @deprecated: remove ARG_TYPE_VAR and this check after 15 Mar 2025
-		 * Sets an environment variable.
+		 * Sets an environment variable with expression evaluation.
+		 *
+		 * Expressions are evaluated using the expr-lang syntax (https://expr-lang.org/docs/language-definition).
+		 * Available variables in expressions:
+		 *
+		 * - `secrets.SECRET_NAME` - Access to secrets (e.g., `{secrets.API_KEY}`)
+		 * - `env.ENV_NAME` - Access to environment variables (automatically converted to appropriate types)
+		 * - `system.cpu` - Number of CPU cores allocated
+		 * - `system.ram.bytes`, `system.ram.b` - RAM in bytes
+		 * - `system.ram.kb`, `system.ram.mb`, `system.ram.gb` - RAM in metric units (base-10)
+		 * - `system.ram.kib`, `system.ram.mib`, `system.ram.gib` - RAM in binary units (base-2)
+		 * - Custom substitution variables defined by substitution rules
+		 *
+		 * Expression examples:
+		 * - `{env.JAVA_HOME}/bin/java` - Use environment variable
+		 * - `{system.ram.mb * 80 / 100}` - Calculate 80% of available RAM in MB
+		 * - `{secrets.DATABASE_URL}` - Access secret value
+		 * - `{system.cpu}` - Use number of CPU cores
 		 *
 		 * @param name: string - the name of the environment variable.
-		 * @param value: string - the value of the environment variable.
+		 * @param value: string - the value with expressions, e.g., "-Xms{system.ram.mb * 80 / 100}m"
 		 */
-		envWithVar: func(name, value) {
+		envExpr: func(name, value) {
 			validation.assertType([name, value], ["string"])
-
-			// deprecated: remove ARG_TYPE_VAR and this check after 15 Mar 2025
-			t := feats.commandExpressions ? execConstants.ARG_TYPE_EXPRESSION : execConstants.ARG_TYPE_VAR
 			envsTyped[name] = {
-				type: t,
+				type: execConstants.ARG_TYPE_EXPRESSION,
 				value: value
 			}
 			typedEnvSet = true
 
 			return self
+		},
+
+		/**
+		 * @deprecated: use envExpr() instead. This method will be removed after 15 Mar 2025.
+		 * Sets an environment variable with expression evaluation.
+		 *
+		 * @param name: string - the name of the environment variable.
+		 * @param value: string - the value with expressions, e.g., "-Xms{system.ram.mb * 80 / 100}m"
+		 */
+		envWithVar: func(name, value) {
+			return self.envExpr(name, value)
 		},
 
 		/**
