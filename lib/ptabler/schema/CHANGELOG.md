@@ -1,5 +1,11 @@
 # @platforma-open/software-ptabler.types
 
+## 1.11.2
+
+### Patch Changes
+
+- a716ccd: Fix fill null behaviour to fill null and added fill NaN to fill NaNs
+
 ## 1.11.1
 
 ### Patch Changes
