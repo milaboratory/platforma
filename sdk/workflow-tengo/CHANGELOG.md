@@ -1,5 +1,13 @@
 # @platforma-sdk/workflow-tengo
 
+## 4.18.1
+
+### Patch Changes
+
+- a716ccd: Fix fill null behaviour to fill null and added fill NaN to fill NaNs
+- Updated dependencies [a716ccd]
+  - @platforma-open/milaboratories.software-ptabler@1.11.2
+
 ## 4.18.0
 
 ### Minor Changes
