@@ -5,6 +5,7 @@ import type {
   ResourceId,
 } from '@milaboratories/pl-client';
 import {
+  DefaultRetryOptions,
   ensureResourceIdNotNull,
   field,
   isNotFoundError,
@@ -178,6 +179,10 @@ export class Project {
         },
         before,
       ),
+    { retryOptions: {
+      ...DefaultRetryOptions,
+      backoffMultiplier: DefaultRetryOptions.backoffMultiplier * 1.3,
+    } },
     );
     await this.projectTree.refreshState();
 
