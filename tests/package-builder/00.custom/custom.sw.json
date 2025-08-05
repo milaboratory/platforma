@@ -1,0 +1,14 @@
+{
+    "name": "@milaboratories/example-pl-package-custom-content:custom",
+    "binary": {
+        "type": "binary",
+        "registry": "platforma-open",
+        "package": "@milaboratories/example-pl-package-custom-content/custom/1.0.0.tgz",
+        "cmd": [ "echo", "Hello, world!" ]
+    },
+    "docker": {
+        "image": "docker.io/grycap/cowsay:latest",
+        "entrypoint": ["/usr/games/cowsay"],
+        "cmd": ["Hello, world!"]
+    }
+}
