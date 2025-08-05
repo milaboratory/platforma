@@ -181,7 +181,7 @@ export class Project {
       ),
     { retryOptions: {
       ...DefaultRetryOptions,
-      backoffMultiplier: DefaultRetryOptions.backoffMultiplier * 1.3,
+      backoffMultiplier: DefaultRetryOptions.backoffMultiplier * 1.1,
     } },
     );
     await this.projectTree.refreshState();
