@@ -97,7 +97,7 @@ self.prepare(func(inputs) {
 	ll.panic("python dependencies toolset %q is not supported by current version of workflow-sdk", toolset)
 })
 
-// We split the template into prepare and body to install dependencies into venv vefore returning it to the caller
+// We split the template into prepare and body to install dependencies into venv before returning it to the caller
 self.body(func(inputs) {
 	return {
 		runEnv: inputs.runEnv

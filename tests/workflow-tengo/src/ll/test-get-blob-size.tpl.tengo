@@ -1,0 +1,20 @@
+self := import("@platforma-sdk/workflow-tengo:tpl")
+ll := import("@platforma-sdk/workflow-tengo:ll")
+file := import("@platforma-sdk/workflow-tengo:file")
+
+// Define outputs
+self.defineOutputs("size")
+
+self.prepare(func(inputs) {
+    result := file.importFile(inputs.file)
+    return {
+        blob: result.file
+    }
+})
+
+self.body(func(inputs) {
+    size := ll.getBlobSize(inputs.blob.id)
+    return {
+        size: size
+    }
+})
