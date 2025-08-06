@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.4.2
+
+### Patch Changes
+
+- 604827a: [desktop] add button to save block error log to file
+
 ## 2.4.1
 
 ### Patch Changes
