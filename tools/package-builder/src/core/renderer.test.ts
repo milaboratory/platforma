@@ -7,14 +7,16 @@ import * as artifacts from './test-artifacts';
 import { PackageInfo } from './package-info';
 import { Renderer, entrypointFilePath, readEntrypointDescriptor } from './renderer';
 import { createLogger } from './util';
+import { describe, test, expect, beforeAll, beforeEach, afterAll } from 'vitest';
 
+const testDockerfileFolder = path.join(__dirname, '..', '__test__');
 describe('Renderer tests', () => {
   let tempDir: string;
   let i: PackageInfo;
   const l = createLogger('error');
 
   beforeAll(() => {
-    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'jest-temp-dir-'));
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'vitest-temp-dir-'));
   });
 
   beforeEach(() => {
@@ -95,5 +97,22 @@ describe('Renderer tests', () => {
     expect(descriptor.binary!.package).toEqual(
       `${artifacts.PackageNameNoAt}/pEnvDep/${artifacts.PackageVersion}.tgz`
     );
+  });
+
+  test('render docker', () => {
+    const epName = artifacts.EPNameDocker;
+
+    fs.mkdirSync(path.join(i.packageRoot, i.packageRoot), { recursive: true });
+    fs.writeFileSync(path.join(i.packageRoot, 'Dockerfile'), "FROM scratch", )
+    fs.writeFileSync(path.join(i.packageRoot, 'package.json'), artifacts.PackageJson);
+
+    const sw = new Renderer(l, i.packageName, i.packageRoot);
+    const eps = new Map([[epName, i.getEntrypoint(epName)]]);
+    const descriptor = sw.renderSoftwareEntrypoints('release', eps).get(epName)!;
+
+    const expectedTag = new RegExp('quora\\.io/the-software\\.test-docker\\.(?<hash>.*):1\\.2\\.3');
+    expect(descriptor.docker!.tag).toMatch(expectedTag);
+    expect(descriptor.docker!.cmd).toEqual(['echo', 'hello']);
+    expect(descriptor.docker!.entrypoint).toEqual(['/usr/bin/env', 'printf']);
   });
 });

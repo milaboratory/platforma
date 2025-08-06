@@ -1,5 +1,5 @@
-import * as fs from 'node:fs';
 import * as path from 'node:path';
+import * as fs from 'node:fs';
 import type winston from 'winston';
 
 import { z } from 'zod';
@@ -81,13 +81,25 @@ export interface RPackage extends artifacts.rPackageConfig, PackageArchiveInfo {
   crossplatform: boolean;
 
   isMultiroot: boolean;
+  fullName: (platform: util.PlatformType) => string; // full package name inside registry (common/corretto/21.2.0.4.1-linux-x64.tgz)
   contentRoot(platform: util.PlatformType): string;
 }
-export interface CondaPackage extends artifacts.condaPackageConfig, PackageArchiveInfo {
-  registry: artifacts.registry;
+// export interface CondaPackage extends artifacts.condaPackageConfig, PackageArchiveInfo {
+//   registry: artifacts.registry;
+//   name: string;
+//   version: string;
+//   crossplatform: boolean;
+// }
+export interface DockerPackage extends artifacts.dockerPackageConfig{
+  registry: artifacts.registry; // TODO: delete this field
   name: string;
   version: string;
   crossplatform: boolean;
+
+  fullName: (platform: util.PlatformType) => string; // full package name inside registry (common/corretto/21.2.0.4.1-linux-x64.tgz)
+  namePattern: string; // address to put into sw.json (common/corretto/21.2.0.4.1-{os}-{arch}.tgz)
+
+  contentRoot(platform: util.PlatformType): string;
 }
 
 export type BuildablePackage =
@@ -96,7 +108,8 @@ export type BuildablePackage =
   | BinaryPackage
   | JavaPackage
   | PythonPackage
-  | RPackage;
+  | RPackage
+  | DockerPackage
 // CondaPackage
 
 export type PackageConfig = BuildablePackage & {
@@ -135,8 +148,9 @@ export interface EnvironmentEntrypoint {
   env: string[];
 }
 
-export type PackageEntrypoint = AssetEntrypoint | SoftwareEntrypoint | EnvironmentEntrypoint;
-export type Entrypoint = ReferenceEntrypoint | PackageEntrypoint;
+
+export type PackageEntrypoint = AssetEntrypoint | SoftwareEntrypoint | EnvironmentEntrypoint 
+export type Entrypoint = ReferenceEntrypoint | PackageEntrypoint
 export type EntrypointType = Extract<Entrypoint, { type: string }>['type'];
 
 const storagePresetSchema = z.object({
@@ -229,7 +243,7 @@ export class PackageInfo {
       try {
         this.logger.debug(`  - loading '${pkgJsonPath}'`);
         if (!fs.existsSync(pkgJsonPath)) {
-          this.logger.error(`no '${util.packageJsonName}' file found at '${this.packageRoot}'`);
+          this.logger.error(`no '${packageJsonSchema}' file found at '${this.packageRoot}'`);
           throw new Error('not a platform software package directory');
         }
 
@@ -295,6 +309,18 @@ export class PackageInfo {
           type: 'asset',
           name: epName,
           package: this.getPackage(packageID),
+        });
+        continue;
+      }
+
+      if (ep.docker) {
+        const packageID = typeof ep.docker.artifact === 'string' ? ep.docker.artifact : epName;
+        list.set(epName, {
+          type: 'software',
+          name: epName,
+          package: this.getPackage(packageID),
+          cmd: ep.docker.cmd ?? [],
+          env: ep.docker.envVars ?? [],
         });
         continue;
       }
@@ -433,7 +459,7 @@ export class PackageInfo {
       };
     }
 
-    const idOrArtifact = ep.asset ?? ep.environment?.artifact ?? ep.binary!.artifact;
+    const idOrArtifact = ep.asset ?? ep.environment?.artifact ?? ep.docker?.artifact ?? ep.binary!.artifact ;
 
     if (typeof idOrArtifact !== 'string') {
       return idOrArtifact;

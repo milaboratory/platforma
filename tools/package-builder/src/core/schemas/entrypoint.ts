@@ -2,7 +2,7 @@ import { z } from 'zod';
 import * as artifacts from './artifacts';
 import { toInt } from '../util';
 
-const artifactOrRef = z.union([z.string(), artifacts.configSchema]);
+const artifactOrRef = z.union([z.string(), artifacts.configSchema, artifacts.dockerPackageSchema]);
 
 const envVarsSchema = z.array(
   z
@@ -44,20 +44,36 @@ export const environmentOptionsSchema = z.strictObject({
     .describe('list of environment variables to be set for any command inside this run environment'),
 });
 
+export const dockerOptionsSchema = z.strictObject({
+  artifact: artifactOrRef,
+  cmd: z
+    .array(z.string())
+    .describe(
+      'command to run for this entrypoint. This command will be appended by <args> set inside workflow',
+    ),
+});
+
 export const infoSchema = z
   .strictObject({
     reference: referenceSchema.optional(),
     asset: z.union([z.string(), artifacts.assetPackageSchema]).optional(),
     binary: softwareOptionsSchema.optional(),
     environment: environmentOptionsSchema.optional(),
+    docker: softwareOptionsSchema.optional(),
   })
   .refine(
-    (data) =>
-      toInt(data.reference) + toInt(data.asset) + toInt(data.binary) + toInt(data.environment) == 1,
+    (data) => {
+      const n = toInt(data.reference)
+        + toInt(data.asset)
+        + toInt(data.binary)
+        + toInt(data.environment)
+        + toInt(data.docker);
+      return n === 1;
+    },
     {
       message:
-        'entrypoint cannot point to several packages at once: choose \'reference\', \'asset\', \'binary\' or \'environment\'',
-      path: ['reference | asset | binary | environment'],
+        "entrypoint cannot point to several packages at once: choose 'reference', 'asset', 'binary', 'environment' or 'docker'",
+      path: ['reference | asset | binary | environment | docker'],
     },
   );
 

@@ -1,6 +1,7 @@
 import * as artifacts from './test-artifacts';
 import { PackageInfo } from './package-info';
 import { createLogger } from './util';
+import { test, expect } from 'vitest';
 
 test('PackageInfo loads correctly for multi-package', () => {
   const l = createLogger('error');
@@ -8,6 +9,7 @@ test('PackageInfo loads correctly for multi-package', () => {
   const i = new PackageInfo(l, {
     pkgJsonData: artifacts.PackageJson
   });
+
 
   var pkg = i.getPackage('pAsset');
   expect(pkg.registry.name).toEqual(artifacts.BinaryRegistry);

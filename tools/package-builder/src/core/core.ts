@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import type winston from 'winston';
-import type { PackageConfig, Entrypoint } from './package-info';
+import type { PackageConfig, Entrypoint, DockerPackage } from './package-info';
 import { PackageInfo } from './package-info';
 import {
   Renderer,
@@ -12,6 +12,7 @@ import {
 import * as util from './util';
 import * as archive from './archive';
 import * as storage from './storage';
+import { contentHash, dockerTag } from './docker';
 
 export class Core {
   private readonly logger: winston.Logger;
@@ -138,7 +139,6 @@ export class Core {
     }
 
     const infos = this.renderer.renderSoftwareEntrypoints(this.buildMode, new Map(entrypoints), {
-      sources: options?.sources,
       fullDirHash: this.fullDirHash,
     });
 
@@ -216,6 +216,11 @@ export class Core {
       throw new Error('not a buildable artifact');
     }
 
+    if (pkg.type === 'docker') {
+      await this.buildDockerImage(pkg.id, pkg);
+      return;
+    }
+
     const contentRoot = options?.contentRoot ?? pkg.contentRoot(platform);
 
     if (pkg.type === 'asset') {
@@ -236,6 +241,60 @@ export class Core {
     await this.createPackageArchive('software', pkg, archivePath, contentRoot, os, arch);
   }
 
+  public async buildDockerImages(
+    options?: {
+      ids?: string[];
+    },
+  ) {
+    const packagesToBuild = options?.ids ?? Array.from(this.buildablePackages.keys());
+
+    for (const pkgID of packagesToBuild) {
+      const pkg = this.getPackage(pkgID);
+      if (pkg.type !== 'docker') {
+        continue
+      }
+
+      await this.buildDockerImage(pkgID, pkg);
+    }
+  }
+
+  private async buildDockerImage(pkgID: string, buildParams: DockerPackage) {
+    const packageName = this.pkg.packageName.split('/').pop() ?? '';
+    const dockerfile = path.resolve(this.pkg.packageRoot, buildParams.dockerfile ?? 'Dockerfile');
+    const context = path.resolve(this.pkg.packageRoot, buildParams.context ?? '.');
+    const entrypoint = buildParams.entrypoint ?? [];
+
+    if (!fs.existsSync(dockerfile)) {
+      throw new Error(`Dockerfile '${dockerfile}' not found`);
+    }
+
+    if (!fs.existsSync(context)) {
+      throw new Error(`Context '${context}' not found`);
+    }
+
+    const hash = contentHash(context, dockerfile);
+    const pkg = this.getPackage(pkgID);
+    const tag = dockerTag(packageName, pkgID, pkg.version, hash);
+
+    this.logger.info(`Building docker image:
+      dockerfile: "${dockerfile}"
+      context: "${context}"
+      tag: "${tag}"
+      entrypoint: "${entrypoint.join(' ')}"
+    `);
+
+    const result = spawnSync('docker', ['build', '-t', tag, '-f', dockerfile, context], { stdio: 'inherit' });
+    if (result.error) {
+      throw result.error;
+    }
+
+    if (result.status !== 0) {
+      throw new Error(`docker build failed with status ${result.status}`);
+    }
+
+    this.logger.info(`Docker image '${tag}' was built successfully`);
+  }
+
   private async createPackageArchive(
     packageContentType: string,
     pkg: PackageConfig,
@@ -247,10 +306,12 @@ export class Core {
     this.logger.debug(
       `  rendering 'package.sw.json' to be embedded into ${packageContentType} archive`,
     );
-    const swJson = this.renderer.renderPackageDescriptor(this.buildMode, pkg);
 
-    const swJsonPath = path.join(contentRoot, 'package.sw.json');
-    fs.writeFileSync(swJsonPath, JSON.stringify(swJson));
+    if (pkg.type === 'docker') {
+      this.logger.debug(
+        `  rendering 'package.sw.json' to be embedded into ${packageContentType} archive`,
+      );
+    }
 
     this.logger.info(`  packing ${packageContentType} into a package`);
     if (pkg.crossplatform) {
@@ -353,6 +414,10 @@ export class Core {
       forceReupload?: boolean;
     },
   ) {
+    if (pkg.type === 'docker') {
+      throw new Error('should call publishDocker instead')  
+    }
+
     const { os, arch } = util.splitPlatform(platform);
 
     const storageURL = options?.storageURL ?? pkg.registry.storageURL;

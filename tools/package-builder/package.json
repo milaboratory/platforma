@@ -5,7 +5,7 @@
   "scripts": {
     "type-check": "tsc --noEmit --composite false",
     "build": "oclif-index && vite build",
-    "test": "jest && node ../../tests/package-builder/test.js",
+    "test": "vitest run",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "bin": {
@@ -41,7 +41,8 @@
     "jest": "catalog:",
     "ts-jest": "catalog:",
     "typescript": "catalog:",
-    "vite": "catalog:"
+    "vite": "catalog:",
+    "vitest": "catalog:"
   },
   "oclif": {
     "bin": "pl-pkg",

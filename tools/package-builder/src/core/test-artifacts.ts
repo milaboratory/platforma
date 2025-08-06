@@ -11,6 +11,7 @@ export const EPNameAsset: string = 'asset';
 export const EPNameCustomName: string = 'custom-name';
 export const EPNameJavaEnvironment: string = 'java-test-entrypoint';
 export const EPNameJavaDependency: string = 'java-dep';
+export const EPNameDocker: string = 'docker-test-entrypoint';
 
 export const PackageJsonNoSoftware = `{
     "name": "${PackageName}",
@@ -55,6 +56,13 @@ export const EnvironmentPackage = `{
   "binDir": "."
 }`;
 
+export const DockerAsset = `{
+  "type": "docker",
+  "tag": "some-docker-tag",
+  "entrypoint": ["/usr/bin/env", "printf"],
+  "cmd": ["Hello, world!"]
+}`;
+
 export const PackageJson = `{
     "name": "${PackageName}",
     "version": "${PackageVersion}",
@@ -86,6 +94,18 @@ export const PackageJson = `{
           "binary": {
             "artifact": "pEnvDep",
             "cmd": ["aaaa"]
+          }
+        },
+        "${EPNameDocker}": {
+          "docker": {
+            "artifact": {
+              "type": "docker",
+              "registry": "quora.io",
+              "dockerfile": "Dockerfile",
+              "context": ".",
+              "entrypoint": ["/usr/bin/env", "printf"]
+            },
+            "cmd": ["echo", "hello"]
           }
         }
       }

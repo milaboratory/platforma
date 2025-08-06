@@ -1,0 +1,19 @@
+{
+  "name": "@platforma-open/docker-build-test",
+  "version": "0.0.1",
+  "block-software": {
+      "entrypoints": {
+        "test-docker": {
+          "docker": {
+            "artifact": {
+              "type": "docker",
+              "registry": "quora.io",
+              "dockerfile": "Dockerfile",
+              "context": "."
+            },
+            "cmd": ["echo", "hello"]
+          }
+        }
+      }
+  }
+}
