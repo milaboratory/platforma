@@ -29,7 +29,12 @@ DEFAULT_ALLOCATION_RAM := "1GiB"
 DEFAULT_ALLOCATION_CPU := 1
 
 get := func(registryName, pkgName) {
-	res := smart.structBuilder(_RTYPE_PACKAGE_GET)
+	res := smart.structBuilder(_RTYPE_PACKAGE_GET).lockAndBuild()
+
+	res.kvSet(META_KEY_DESCRIPTOR, json.encode({
+		registry: registryName,
+		package: pkgName
+	}))
 
 	res.getField(_INPUT_REGISTRY).setRefOrJson(registryName)
 	res.getField(_INPUT_PACKAGE_NAME).setRefOrJson(pkgName)
