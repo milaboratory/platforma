@@ -13,7 +13,7 @@ self.prepare(func(inputs) {
 })
 
 self.body(func(inputs) {
-    size := plapi.getBlobSize(inputs.blob)
+    size := plapi.getBlobSize(inputs.blob.id)
     return {
         size: size
     }

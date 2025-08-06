@@ -14,7 +14,7 @@ tplTest.concurrent(
     );
     expect(ourFile).toBeDefined();
     expect(ourFile?.type).toBe('file');
-    const expectedSize = 2; // our file has 2 bytes
+    const expectedSize = 3; // our file has 3 bytes
 
     const result = await helper.renderTemplate(
       false, // ephemeral
@@ -29,10 +29,7 @@ tplTest.concurrent(
       }),
     );
 
-    const sizeResult = result.computeOutput('size', (a) => {
-      const value = a?.getDataAsString(); // getDataAsJson();
-      return value;
-    });
+    const sizeResult = result.computeOutput('size', (a) => a?.getDataAsJson());
 
     const size = await sizeResult.awaitStableValue();
     expect(size).toBe(expectedSize);
