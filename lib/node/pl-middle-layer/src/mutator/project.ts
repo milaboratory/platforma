@@ -4,8 +4,8 @@ import type {
   BasicResourceData,
   PlTransaction,
   ResourceData,
-  ResourceId, 
-  TxOps} from '@milaboratories/pl-client';
+  ResourceId,
+  TxOps } from '@milaboratories/pl-client';
 import {
   ensureResourceIdNotNull,
   field,
