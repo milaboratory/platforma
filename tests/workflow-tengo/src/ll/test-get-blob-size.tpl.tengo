@@ -1,5 +1,5 @@
 self := import("@platforma-sdk/workflow-tengo:tpl")
-plapi := import("plapi")
+ll := import("@platforma-sdk/workflow-tengo:ll")
 file := import("@platforma-sdk/workflow-tengo:file")
 
 // Define outputs
@@ -13,7 +13,7 @@ self.prepare(func(inputs) {
 })
 
 self.body(func(inputs) {
-    size := plapi.getBlobSize(inputs.blob.id)
+    size := ll.getBlobSize(inputs.blob.id)
     return {
         size: size
     }

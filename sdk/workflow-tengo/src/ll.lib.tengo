@@ -422,9 +422,9 @@ base32HexDecode := func(s) {
 /**
  * Returns the size of the blob in bytes.
  */
-getBlobSize := func(rID) {
+getBlobSize := func(resourceID) {
 	assert(methodExists(plapi, "getBlobSize"), "ll.getBlobSize: method does not exists in this backend instance.")
-	return plapi.getBlobSize(rID)
+	return plapi.getBlobSize(resourceID)
 }
 
 export toStrict({
