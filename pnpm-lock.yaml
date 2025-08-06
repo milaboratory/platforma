@@ -37,7 +37,7 @@ catalogs:
       specifier: 2.2.2
       version: 2.2.2
     '@milaboratories/tengo-tester':
-      specifier: 1.6.3
+      specifier: ^1.6.3
       version: 1.6.3
     '@oclif/core':
       specifier: ^4.0.37
