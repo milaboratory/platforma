@@ -43,44 +43,12 @@ tplTest.concurrent('pkg-file-is-exported', async ({ helper, expect, driverKit })
 
   const assetFile = await assetFileOutput.awaitStableValue();
 
-  const assetData = JSON.parse(Buffer.from(
+  const assetData = Buffer.from(
     await driverKit.blobDriver.getContent(assetFile!),
-  ).toString('utf-8'));
+  ).toString('utf-8');
 
-  expect(assetContent).toHaveProperty('binary');
-  expect(assetData).toHaveProperty('binary');
-  expect(assetContent).toEqual(assetData);
-});
-
-tplTest.concurrent('pkg-file-is-exported', async ({ helper, expect, driverKit }) => {
-  const result = await helper.renderTemplate(
-    false,
-    'exec.test.pkg.pkg-export',
-    ['pkgFileContent', 'pkgFile'],
-    (tx) => ({}),
-  );
-
-  // Wait for asset content
-  const assetContentOutput = result.computeOutput('pkgFileContent', (a) => a?.getDataAsJson());
-  const assetContent = await assetContentOutput.awaitStableValue();
-
-  // Wait for asset file and download it's data
-  const assetFileOutput = result.computeOutput('pkgFile', (a, ctx) => {
-    if (a === undefined) {
-      return a;
-    }
-
-    return driverKit.blobDriver.getOnDemandBlob(a.persist(), ctx).handle;
-  });
-
-  const assetFile = await assetFileOutput.awaitStableValue();
-
-  const assetData = JSON.parse(Buffer.from(
-    await driverKit.blobDriver.getContent(assetFile!),
-  ).toString('utf-8'));
-
-  expect(assetContent).toHaveProperty('binary');
-  expect(assetData).toHaveProperty('binary');
+  expect(assetContent).toContain('Hello');
+  expect(assetData).toContain('Hello');
   expect(assetContent).toEqual(assetData);
 });
 
