@@ -128,6 +128,6 @@ Test_ll_sha256Encode_and_base32Encode := func() {
 	)
 }
 
-// Test_ll_getBlobSize := func() {
-// 	test.isTrue(ll.methodExists(plapi, "getBlobSize"), "wrong result from 'methodExists' check for plapi.getBlobSize")
-// }
+Test_ll_getBlobSize := func() {
+	test.isTrue(ll.methodExists(plapi, "getBlobSize"), "wrong result from 'methodExists' check for plapi.getBlobSize")
+}
