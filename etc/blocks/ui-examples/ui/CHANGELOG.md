@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.5.29
+
+### Patch Changes
+
+- 604827a: [desktop] add button to save block error log to file
+- Updated dependencies [604827a]
+  - @milaboratories/milaboratories.ui-examples.model@1.2.25
+
 ## 1.5.28
 
 ### Patch Changes

@@ -1,5 +1,13 @@
 # @platforma-sdk/ui-vue
 
+## 1.42.18
+
+### Patch Changes
+
+- 604827a: [desktop] add button to save block error log to file
+- Updated dependencies [604827a]
+  - @milaboratories/uikit@2.4.2
+
 ## 1.42.15
 
 ### Patch Changes
