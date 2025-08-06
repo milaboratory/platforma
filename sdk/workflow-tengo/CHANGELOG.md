@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.0.0
+
+### Major Changes
+
+- 1831f6d: Add `ll.getBlobSize` function to retrieve blob size.
+
 ## 4.18.2
 
 ### Patch Changes
