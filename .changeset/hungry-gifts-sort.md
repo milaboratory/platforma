@@ -2,4 +2,4 @@
 '@platforma-sdk/workflow-tengo': major
 ---
 
-getBlobSize test
+Add `ll.getBlobSize` function to retrieve blob size.
