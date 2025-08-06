@@ -1,5 +1,23 @@
 # @milaboratories/pl-middle-layer
 
+## 1.42.0
+
+### Minor Changes
+
+- d1b00dc: Increase backoff multiplier in add block method to minimize effect of transaction conflicts
+
+### Patch Changes
+
+- ca79a4e: Fix eslint errors
+- Updated dependencies [d1b00dc]
+- Updated dependencies [d1b00dc]
+- Updated dependencies [d1b00dc]
+- Updated dependencies [ca79a4e]
+  - @platforma-sdk/block-tools@2.5.82
+  - @milaboratories/pl-client@2.11.8
+  - @platforma-sdk/workflow-tengo@4.18.2
+  - @milaboratories/pl-errors@1.1.15
+
 ## 1.41.13
 
 ### Patch Changes

@@ -1,5 +1,12 @@
 # @milaboratories/pl-client
 
+## 2.11.8
+
+### Patch Changes
+
+- d1b00dc: Export DefaultRetryOptions
+- ca79a4e: Fix eslint errors
+
 ## 2.11.7
 
 ### Patch Changes
