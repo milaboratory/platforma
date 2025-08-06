@@ -1,5 +1,4 @@
 import type { ExponentialBackoffRetryOptions } from '@milaboratories/ts-helpers';
-import { RetryOptions } from '@milaboratories/ts-helpers';
 
 /** Base configuration structure for PL client */
 export interface PlClientConfig {
