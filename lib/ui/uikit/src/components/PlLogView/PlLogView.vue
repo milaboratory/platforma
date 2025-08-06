@@ -17,6 +17,8 @@ import { useLogHandle } from './useLogHandle';
 import { useLabelNotch } from '../../utils/useLabelNotch';
 import DoubleContour from '../../utils/DoubleContour.vue';
 import { PlTooltip } from '../PlTooltip';
+import { PlIcon24 } from '../PlIcon24';
+import { downloadContent } from '../../helpers/dom';
 
 const getOutputError = <T>(o?: ValueOrErrors<T>) => {
   if (o && o.ok === false) {
@@ -67,6 +69,10 @@ const props = defineProps<{
    * Do not scroll to bottom on content change. Default is false (scroll to bottom).
    */
   disableAutoScroll?: boolean;
+  /**
+   * If provided, a download icon will be shown and the content will be downloaded when clicked.
+   */
+  downloadFilename?: string;
 }>();
 
 const logState = useLogHandle(props);
@@ -81,6 +87,16 @@ const computedError = computed(() => logState.value?.error ?? props.error ?? get
 
 const computedValue = computed(() => logState.value?.lines ?? props.value ?? okOptional(props.output));
 
+const computedValueToCopy = computed(() => {
+  if (props.valueToCopy) {
+    return props.valueToCopy;
+  }
+  if (computedValue.value && typeof computedValue.value === 'string') {
+    return computedValue.value;
+  }
+  return undefined;
+});
+
 const copyActive = ref(false);
 
 useLabelNotch(root);
@@ -93,15 +109,18 @@ const onClickCopy = () => {
     copyActive.value = false;
   }, 1200);
 
-  let toCopy: string | undefined = undefined;
-  if (props.valueToCopy) {
-    toCopy = props.valueToCopy;
-  } else if (computedValue.value && typeof computedValue.value === 'string') {
-    toCopy = computedValue.value;
-  }
+  const toCopy = computedValueToCopy.value;
 
   if (toCopy !== undefined) {
     navigator.clipboard.writeText(toCopy);
+  }
+};
+
+const onClickDownload = (filename: string) => {
+  const toDownload = computedValueToCopy.value;
+
+  if (toDownload !== undefined) {
+    downloadContent([toDownload, 'text/plain'], filename);
   }
 };
 
@@ -148,6 +167,10 @@ const onContentScroll = (ev: Event) => {
       <PlTooltip :close-delay="800" position="top">
         <PlMaskIcon24 title="Copy content" :name="iconName" @click="onClickCopy" />
         <template #tooltip>{{ copyActive ? 'copied' : 'copy' }}</template>
+      </PlTooltip>
+      <PlTooltip v-if="downloadFilename" :close-delay="800" position="top">
+        <PlIcon24 name="download" @click="() => onClickDownload(downloadFilename!)" />
+        <template #tooltip>download</template>
       </PlTooltip>
     </div>
     <div v-if="computedError" class="pl-log-view__error">{{ computedError }}</div>

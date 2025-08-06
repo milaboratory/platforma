@@ -40,6 +40,7 @@ watch(
             <PlLogView
               :value="item[1]?.message"
               :valueToCopy="'fullMessage' in (item[1] ?? {}) ? (item[1] as unknown as FullMessage).fullMessage : item[1]?.message"
+              :download-filename="`output-${item[0]}-error.txt`"
             />
           </div>
         </template>
