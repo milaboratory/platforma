@@ -1,5 +1,7 @@
 import { animate, makeEaseOut } from './utils';
 
+export { downloadContent } from './downloadContent';
+
 export function isElementVisible(parent: HTMLElement, el: HTMLElement) {
   const scrollTop = parent.scrollTop;
   const parentHeight = parent.getBoundingClientRect().height;
