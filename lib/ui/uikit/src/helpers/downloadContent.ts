@@ -51,7 +51,7 @@ export const downloadContent = (content: DownloadableContent, filename: string) 
     } else if (data instanceof Blob) {
       blob = new Blob([data], { type: mimeType });
     } else {
-      blob = new Blob([String(data)], { type: mimeType });
+      throw new Error(`Unsupported data type for download. Received data of type ${typeof data}.`);
     }
   } else {
     throw new Error('Invalid content type. Content must be a Blob, File, or [data, mimeType] tuple.');
@@ -68,7 +68,7 @@ export const downloadContent = (content: DownloadableContent, filename: string) 
     link.click();
     document.body.removeChild(link);
   } catch (error) {
-    throw new Error(`Failed to download ${filename}: ${error}`);
+    throw new Error(`Failed to download ${filename}`, { cause: error });
   } finally {
     URL.revokeObjectURL(objectUrl);
   }
