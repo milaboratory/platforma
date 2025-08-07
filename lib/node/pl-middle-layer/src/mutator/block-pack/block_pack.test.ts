@@ -1,10 +1,11 @@
 import { isNullResourceId, poll, TestHelpers, toGlobalResourceId } from '@milaboratories/pl-client';
-import { BlockPackPreparer, createBlockPack } from './block_pack';
-import { BlockPackSpecAny } from '../../model';
-import path from 'node:path';
-import { HmacSha256Signer } from '@milaboratories/ts-helpers';
-import { V2RegistryProvider } from '../../block_registry/registry-v2-provider';
 import { defaultHttpDispatcher } from '@milaboratories/pl-http';
+import { HmacSha256Signer } from '@milaboratories/ts-helpers';
+import path from 'node:path';
+import { expect, test } from 'vitest';
+import { V2RegistryProvider } from '../../block_registry/registry-v2-provider';
+import { BlockPackSpecAny } from '../../model';
+import { BlockPackPreparer, createBlockPack } from './block_pack';
 
 const preparation = new BlockPackPreparer(
   new V2RegistryProvider(defaultHttpDispatcher()),

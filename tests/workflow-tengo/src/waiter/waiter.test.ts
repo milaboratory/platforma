@@ -1,6 +1,7 @@
 import type {
   AnyFieldRef,
-  ResourceId } from '@milaboratories/pl-middle-layer';
+  ResourceId,
+} from '@milaboratories/pl-middle-layer';
 import {
   Pl,
   field,

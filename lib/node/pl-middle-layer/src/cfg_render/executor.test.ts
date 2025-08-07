@@ -1,3 +1,6 @@
+import { Computable } from '@milaboratories/computable';
+import { field, Pl, TestHelpers } from '@milaboratories/pl-client';
+import { SynchronizedTreeState } from '@milaboratories/pl-tree';
 import {
   Args,
   BlockConfigGeneric,
@@ -14,11 +17,9 @@ import {
   PlResourceEntry,
   TypedConfig
 } from '@platforma-sdk/model';
-import { computableFromCfg, computableFromCfgUnsafe } from './executor';
-import { field, Pl, TestHelpers } from '@milaboratories/pl-client';
-import { SynchronizedTreeState } from '@milaboratories/pl-tree';
-import { Computable } from '@milaboratories/computable';
+import { expect, test } from 'vitest';
 import { MiddleLayerDriverKit } from '../middle_layer/driver_kit';
+import { computableFromCfgUnsafe } from './executor';
 
 test('local cfg test (no pl)', async () => {
   const args = {

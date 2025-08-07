@@ -2,21 +2,21 @@
   "name": "@platforma-sdk/ui-vue",
   "version": "1.42.19",
   "type": "module",
-  "main": "dist/lib.js",
-  "styles": "dist/lib.js",
+  "main": "dist/index.js",
+  "styles": "dist/index.js",
   "exports": {
     ".": {
-      "sources": "./src/lib.ts",
-      "default": "./dist/lib.js"
+      "sources": "./src/index.ts",
+      "default": "./dist/index.js"
     },
-    "./styles": "./dist/lib.js"
+    "./styles": "./dist/index.js"
   },
   "scripts": {
     "test": "vitest run --passWithNoTests",
-    "dev": "vite",
-    "build": "vite build",
-    "watch": "vite build --watch",
-    "type-check": "vue-tsc --noEmit --project ./tsconfig.json",
+    "dev": "ts-builder serve --target browser-lib",
+    "build": "ts-builder build --target browser-lib",
+    "watch": "ts-builder build --target browser-lib --watch",
+    "type-check": "ts-builder types --target browser-lib",
     "preview": "vite preview",
     "lint": "eslint .",
     "check": "yarpm type-check && yarpm lint && yarpm test",
@@ -45,6 +45,7 @@
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/eslint-config": "workspace:^",
     "@milaboratories/helpers": "workspace:^",
+    "@milaboratories/ts-builder": "workspace:*",
     "happy-dom": "catalog:",
     "@vitejs/plugin-vue": "catalog:",
     "rollup-plugin-sourcemaps2": "catalog:",
@@ -54,7 +55,6 @@
     "vite": "catalog:",
     "vitest": "catalog:",
     "@vue/test-utils": "catalog:",
-    "vue-tsc": "catalog:",
     "yarpm": "catalog:",
     "fast-json-patch": "catalog:",
     "@faker-js/faker": "catalog:"

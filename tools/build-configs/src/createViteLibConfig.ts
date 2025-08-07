@@ -1,25 +1,29 @@
-import type { ConfigEnv } from 'vite';
+import type { ConfigEnv, UserConfig } from 'vite';
 import { mergeConfig } from 'vite';
-import cssInjectedByJsPlugin from 'vite-plugin-css-injected-by-js'
+import cssInjectedByJsPlugin from 'vite-plugin-css-injected-by-js';
 import dts from 'vite-plugin-dts';
+import { externalizeDeps } from 'vite-plugin-externalize-deps';
 import { createViteDevConfig } from './createViteDevConfig';
 
-export const createViteLibConfig = ((configEnv: ConfigEnv) => {
+export const createViteLibConfig = ((configEnv: ConfigEnv): UserConfig => {
   const isProd = configEnv.mode === 'production';
 
   return mergeConfig(createViteDevConfig(configEnv), {
     plugins: [
-      dts({ tsconfigPath: isProd ? 'tsconfig.lib.build.json' : undefined }),
+      dts(),
+      externalizeDeps(),
       cssInjectedByJsPlugin({ relativeCSSInjection: true }),
     ],
     build: {
       lib: {
         fileName: 'lib',
         formats: ['es'],
+        entry: 'src/index.ts',
       },
       cssCodeSplit: true,
       rollupOptions: {
         output: {
+          format: 'es',
           preserveModules: true,
           preserveModulesRoot: 'src',
           inlineDynamicImports: false,

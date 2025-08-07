@@ -1,0 +1,29 @@
+{
+    "name": "@milaboratories/ts-builder",
+    "version": "1.0.0",
+    "description": "TS build tool for the milaboratories packages",
+    "type": "module",
+    "main": "./dist/index.js",
+    "module": "./dist/index.js",
+    "bin": {
+        "ts-builder": "./bin/ts-builder"
+    },
+    "scripts": {
+        "build": "rollup -c",
+        "watch": "rollup -c --watch"
+    },
+    "dependencies": {
+        "@milaboratories/build-configs": "workspace:*",
+        "@milaboratories/ts-configs": "workspace:*",
+        "commander": "^12.0.0",
+        "rollup": "catalog:",
+        "rollup-plugin-copy": "^3.5.0",
+        "typescript": "catalog:",
+        "vue-tsc": "catalog:",
+        "vite": "catalog:"
+    },
+    "files": [
+        "dist",
+        "bin"
+    ]
+}

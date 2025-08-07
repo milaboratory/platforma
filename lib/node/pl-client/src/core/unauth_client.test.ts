@@ -1,6 +1,7 @@
 import { UnauthenticatedPlClient } from './unauth_client';
 import { getTestConfig } from '../test/test_config';
 import { UnauthenticatedError } from './errors';
+import { test, expect } from '@jest/globals';
 
 test('ping test', async () => {
   const client = new UnauthenticatedPlClient(getTestConfig().address);

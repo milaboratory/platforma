@@ -1,4 +1,4 @@
-import {test, expect, describe} from '@jest/globals';
+import { describe, expect, test } from 'vitest';
 import {enrichCompatible, getAvailableWithLinkersAxes} from './PFrameForGraphs';
 import {
     AxisId, CanonicalizedJson,
@@ -12,7 +12,7 @@ import {
     AxisSpecNormalized,
     getNormalizedAxesList,
 } from "@milaboratories/pl-model-common";
-import {TreeNodeAccessor} from "../render";
+import { TreeNodeAccessor } from "../render";
 
 function getAllAxesFromSpecs (specs:PColumnSpec[]):Map<CanonicalizedJson<AxisId>, AxisSpecNormalized> {
     const allAxes:Map<CanonicalizedJson<AxisId>, AxisSpecNormalized> = new Map();

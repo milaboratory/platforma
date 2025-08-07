@@ -1,5 +1,9 @@
+import { expect, test } from '@jest/globals';
+import { Computable } from '@milaboratories/computable';
+import { DefaultFinalResourceDataPredicate, ResourceId } from '@milaboratories/pl-client';
 import { z } from 'zod';
 import { InferSnapshot, makeResourceSnapshot, rsSchema } from './snapshot';
+import { PlTreeState } from './state';
 import {
   TestDynamicRootId1,
   TestDynamicRootState1,
@@ -9,9 +13,6 @@ import {
   dField,
   iField
 } from './test_utils';
-import { PlTreeState } from './state';
-import { Computable } from '@milaboratories/computable';
-import { DefaultFinalResourceDataPredicate, ResourceId } from '@milaboratories/pl-client';
 
 // schema definition
 const MyTestResourceState = rsSchema({

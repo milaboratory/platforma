@@ -3,11 +3,10 @@
   "version": "1.5.29",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "watch": "vue-tsc && vite build --watch",
-    "build": "vite build && pnpm run build:types",
-    "build:types": "vue-tsc -p tsconfig.app.build.json",
-    "preview": "vite preview",
+    "dev": "ts-builder serve --target browser",
+    "watch": "ts-builder build --target browser --watch",
+    "build": "ts-builder build --target browser",
+    "type-check": "ts-builder types --target browser",
     "lint": "eslint ."
   },
   "dependencies": {
@@ -20,16 +19,12 @@
     "@milaboratories/build-configs": "workspace:*",
     "@platforma-sdk/ui-vue": "workspace:^",
     "@milaboratories/uikit": "workspace:^",
-    "@vitejs/plugin-vue": "catalog:",
+    "@milaboratories/ts-builder": "workspace:*",
     "typescript": "catalog:",
-    "vite": "catalog:",
-    "vitest": "catalog:",
-    "vue-tsc": "catalog:",
     "@faker-js/faker": "catalog:",
     "@milaboratories/helpers": "workspace:^",
     "zod": "catalog:",
     "ag-grid-enterprise": "catalog:",
-    "ag-grid-vue3": "catalog:",
-    "rollup-plugin-sourcemaps2": "catalog:"
+    "ag-grid-vue3": "catalog:"
   }
 }
