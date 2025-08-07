@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import * as util from '../util';
 
-export const artifactTypes = ['environment', 'binary', 'java', 'python', 'R', 'conda', 'asset', 'docker'] as const;
+export const artifactTypes = ['environment', 'binary', 'java', 'python', 'R', 'asset', 'docker'] as const;
 export type artifactType = (typeof artifactTypes)[number];
 
 export const buildableTypes: artifactType[] = [
@@ -10,7 +10,6 @@ export const buildableTypes: artifactType[] = [
   'java',
   'python',
   'R',
-  'conda',
   'asset',
   'docker',
 ] as const;
@@ -24,7 +23,7 @@ export function isCrossPlatform(aType: artifactType): boolean {
   return crossplatformTypes.includes(aType);
 }
 
-export const runEnvironmentTypes = ['java', 'python', 'R', 'conda'] as const;
+export const runEnvironmentTypes = ['java', 'python', 'R'] as const;
 export type runEnvironmentType = (typeof runEnvironmentTypes)[number];
 
 export const pythonToolsets = ['pip'] as const;
@@ -129,12 +128,12 @@ export const rPackageSchema = archiveRulesSchema.extend({
 });
 export type rPackageConfig = z.infer<typeof rPackageSchema>;
 
-// export const condaPackageSchema = archiveRulesSchema.extend({
-//   type: z.literal('conda'),
-//   environment: artifactIDSchema,
-//   lockFile: z.string().describe('path to \'renv.lock\' file inside package archive'),
-// });
-// export type condaPackageConfig = z.infer<typeof condaPackageSchema>;
+export const condaPackageSchema = archiveRulesSchema.extend({
+  type: z.literal('conda'),
+  environment: artifactIDSchema,
+  lockFile: z.string().describe('path to \'renv.lock\' file inside package archive'),
+});
+export type condaPackageConfig = z.infer<typeof condaPackageSchema>;
 
 
 export const dockerPackageSchema = archiveRulesSchema.extend({

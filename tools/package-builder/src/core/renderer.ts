@@ -752,7 +752,6 @@ export class Renderer {
   private resolveRunEnvironment(envName: string, requireType: 'java'): runDependencyJava;
   private resolveRunEnvironment(envName: string, requireType: 'python'): runDependencyPython;
   private resolveRunEnvironment(envName: string, requireType: 'R'): runDependencyR;
-  private resolveRunEnvironment(envName: string, requireType: 'conda'): runDependencyConda;
   private resolveRunEnvironment(
     envName: string,
     requireType: artifacts.runEnvironmentType,
