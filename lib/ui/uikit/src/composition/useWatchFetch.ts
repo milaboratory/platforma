@@ -1,6 +1,6 @@
-import type { WatchSource, WatchOptions } from 'vue';
-import { reactive, watch, ref, computed } from 'vue';
-import { exclusiveRequest } from '@milaboratories/helpers';
+import type { WatchSource, WatchOptions, MaybeRef } from 'vue';
+import { reactive, watch, ref, computed, unref } from 'vue';
+import { delay, exclusiveRequest } from '@milaboratories/helpers';
 
 export type FetchResult<V, E = unknown> = {
   loading: boolean;
@@ -30,7 +30,15 @@ export type FetchResult<V, E = unknown> = {
  * </template>
  * ```
  */
-export function useWatchFetch<S, V>(watchSource: WatchSource<S>, doFetch: (s: S) => Promise<V>, watchOptions?: WatchOptions): FetchResult<V> {
+export function useWatchFetch<S, V>(
+  watchSource: WatchSource<S>,
+  doFetch: (s: S) => Promise<V>,
+  settings?: {
+    watchOptions?: WatchOptions;
+    debounce?: MaybeRef<number>; // debounce time in ms
+    filterWatchResult?: (s: S) => boolean; // prevents fetching if false
+  },
+): FetchResult<V> {
   const loadingRef = ref(0);
 
   const data = reactive({
@@ -40,11 +48,20 @@ export function useWatchFetch<S, V>(watchSource: WatchSource<S>, doFetch: (s: S)
     error: undefined,
   }) as FetchResult<V>;
 
-  const exclusive = exclusiveRequest(doFetch);
+  const exclusive = exclusiveRequest(async (s: S) => {
+    if (settings?.debounce) {
+      await delay(unref(settings.debounce));
+    }
+    return doFetch(s);
+  });
 
   watch(
     watchSource,
     async (s) => {
+      if (settings?.filterWatchResult && !settings.filterWatchResult(s)) {
+        return;
+      }
+
       data.error = undefined;
       loadingRef.value++;
       exclusive(s)
@@ -61,7 +78,7 @@ export function useWatchFetch<S, V>(watchSource: WatchSource<S>, doFetch: (s: S)
           loadingRef.value--;
         });
     },
-    Object.assign({ immediate: true, deep: true }, watchOptions ?? {}),
+    Object.assign({ immediate: true, deep: true }, settings?.watchOptions ?? {}),
   );
 
   return data;

@@ -26,12 +26,14 @@ import { HistogramPage } from './pages/HistogramPage';
 import { StackedBarPage } from './pages/StackedBarPage';
 import PlSplashPage from './pages/PlSplashPage.vue';
 import PlAutocompletePage from './pages/PlAutocompletePage.vue';
+import PlAutocompleteMultiPage from './pages/PlAutocompleteMultiPage/index.vue';
 import RadioPage from './pages/RadioPage.vue';
 import PlFileInputPage from './pages/PlFileInputPage.vue';
 import PlErrorBoundaryPage from './pages/PlErrorBoundaryPage.vue';
 import PlElementListPage from './pages/PlElementListPage.vue';
 import StatePage from './pages/StatePage.vue';
 import PlNumberFieldPage from './pages/PlNumberFieldPage.vue';
+import DownloadsPage from './pages/DownloadsPage.vue';
 
 export const sdkPlugin = defineApp(platforma, (app) => {
   // Additional data
@@ -101,13 +103,15 @@ export const sdkPlugin = defineApp(platforma, (app) => {
       '/pl-error-boundary-page': () => PlErrorBoundaryPage,
       '/pl-element-list-page': () => PlElementListPage,
       '/select-files': () => SelectFilesPage,
-      '/errors': () => ErrorsPage,
       '/text-fields': () => PlTextFieldPage,
       '/tabs': () => PlTabsPage,
       '/drafts': () => DraftsPage,
       '/pl-autocomplete': () => PlAutocompletePage,
+      '/pl-autocomplete-multi': () => PlAutocompleteMultiPage,
       '/buttons': () => ButtonsPage,
       '/notifications': () => NotificationsPage,
+      '/errors': () => ErrorsPage,
+      '/downloads': () => DownloadsPage,
       '/stacked-bar': () => StackedBarPage,
       '/histogram': () => HistogramPage,
       '/loaders': () => LoadersPage,
@@ -117,7 +121,7 @@ export const sdkPlugin = defineApp(platforma, (app) => {
     },
   };
 }, {
-  debug: true,
+  debug: false,
 });
 
 export const useApp = sdkPlugin.useApp;

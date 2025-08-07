@@ -1,10 +1,12 @@
 {
   "name": "@platforma-sdk/package-builder",
-  "version": "2.16.2",
+  "version": "2.16.3",
   "description": "MiLaboratories Platforma Package builder",
+  "type": "module",
   "scripts": {
-    "type-check": "tsc --noEmit --composite false",
-    "build": "oclif-index && vite build",
+    "type-check": "ts-builder types --target node",
+    "build": "oclif-index && ts-builder build --target node",
+    "watch": "ts-builder build --target node --watch",
     "test": "jest && node ../../tests/package-builder/test.js",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
@@ -41,7 +43,8 @@
     "jest": "catalog:",
     "ts-jest": "catalog:",
     "typescript": "catalog:",
-    "vite": "catalog:"
+    "@milaboratories/ts-builder": "workspace:*",
+    "@milaboratories/ts-configs": "workspace:*"
   },
   "oclif": {
     "bin": "pl-pkg",

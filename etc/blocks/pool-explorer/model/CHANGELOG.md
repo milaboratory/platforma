@@ -1,5 +1,20 @@
 # @milaboratories/milaboratories.pool-explorer.model
 
+## 1.0.84
+
+### Patch Changes
+
+- 3f93434: Packages configuration normalization
+- Updated dependencies [3f93434]
+  - @platforma-sdk/model@1.42.20
+
+## 1.0.83
+
+### Patch Changes
+
+- Updated dependencies [4468f99]
+  - @platforma-sdk/model@1.42.16
+
 ## 1.0.82
 
 ### Patch Changes

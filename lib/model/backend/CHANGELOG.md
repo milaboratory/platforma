@@ -1,5 +1,13 @@
 # @milaboratories/pl-model-backend
 
+## 1.1.3
+
+### Patch Changes
+
+- 3f93434: Packages configuration normalization
+- Updated dependencies [3f93434]
+  - @milaboratories/pl-client@2.11.9
+
 ## 1.1.2
 
 ### Patch Changes

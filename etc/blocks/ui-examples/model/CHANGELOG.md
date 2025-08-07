@@ -1,5 +1,27 @@
 # @milaboratories/milaboratories.ui-examples.model
 
+## 1.2.26
+
+### Patch Changes
+
+- 56b404b: Add PlAutocompleteMulti component
+- 3f93434: Packages configuration normalization
+- Updated dependencies [3f93434]
+  - @platforma-sdk/model@1.42.20
+
+## 1.2.25
+
+### Patch Changes
+
+- 604827a: [desktop] add button to save block error log to file
+
+## 1.2.24
+
+### Patch Changes
+
+- Updated dependencies [4468f99]
+  - @platforma-sdk/model@1.42.16
+
 ## 1.2.23
 
 ### Patch Changes

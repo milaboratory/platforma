@@ -36,6 +36,8 @@ import {
   mapPObjectData,
   mapPTableDef,
   mapValueInVOE,
+  PColumnName,
+  readAnnotation,
   selectorsToPredicate,
   withEnrichments,
 } from '@milaboratories/pl-model-common';
@@ -427,7 +429,7 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
 
       const spec = column.obj.spec;
       if (
-        spec.name === 'pl7.app/label'
+        spec.name === PColumnName.Label
         && spec.axesSpec.length === 1
         && spec.axesSpec[0].name === axis.name
         && spec.axesSpec[0].type === axis.type
@@ -497,7 +499,7 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
   public findLabelsForColumnAxis(column: PColumnSpec, axisIdx: number): Record<string | number, string> | undefined {
     const labels = this.findLabels(column.axesSpec[axisIdx]);
     if (!labels) return undefined;
-    const axisKeys = column.annotations?.['pl7.app/axisKeys/' + axisIdx];
+    const axisKeys = readAnnotation(column, `pl7.app/axisKeys/${axisIdx}`);
     if (axisKeys !== undefined) {
       const keys = JSON.parse(axisKeys) as string[];
       return Object.fromEntries(keys.map((key) => {

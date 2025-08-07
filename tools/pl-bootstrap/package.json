@@ -1,10 +1,11 @@
 {
   "name": "@platforma-sdk/bootstrap",
-  "version": "3.5.19",
+  "version": "3.5.20",
   "description": "MiLaboratories Platforma Backend bootstrap code: configuration generators, service run wrappers and so on",
   "scripts": {
-    "type-check": "tsc --noEmit --composite false",
-    "build": "oclif-index && vite build",
+    "type-check": "ts-builder types --target node",
+    "build": "oclif-index && ts-builder build --target node",
+    "watch": "ts-builder build --target node --watch",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
     "test": "jest --passWithNoTests"
   },
@@ -25,6 +26,7 @@
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/oclif-index": "workspace:*",
     "@milaboratories/eslint-config": "workspace:^",
+    "@milaboratories/ts-configs": "workspace:*",
     "@types/decompress": "catalog:",
     "@types/jest": "catalog:",
     "@types/node": "catalog:",
@@ -33,13 +35,8 @@
     "prettier": "catalog:",
     "ts-jest": "catalog:",
     "ts-node": "catalog:",
-    "tsconfig-paths": "catalog:",
     "typescript": "catalog:",
-    "vite": "catalog:",
-    "tsup": "catalog:",
-    "rollup-plugin-node-externals": "catalog:",
-    "@rollup/plugin-node-resolve": "catalog:",
-    "vite-plugin-dts": "catalog:"
+    "@milaboratories/ts-builder": "workspace:*"
   },
   "dependencies": {
     "@milaboratories/pl-deployments": "workspace:*",

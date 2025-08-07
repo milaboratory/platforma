@@ -1,8 +1,5 @@
 import type { Branded } from '../../branding';
-import {
-  type ValueType,
-  type ValueTypeBytes,
-} from './spec/spec';
+import { ValueType } from './spec/spec';
 
 export type PVectorDataInt = Int32Array;
 export type PVectorDataLong = BigInt64Array;
@@ -11,12 +8,12 @@ export type PVectorDataDouble = Float64Array;
 export type PVectorDataString = (null | string)[];
 export type PVectorDataBytes = (null | Uint8Array)[];
 export type PVectorDataTyped<DataType extends ValueType> =
-  DataType extends 'Int' ? PVectorDataInt :
-    DataType extends 'Long' ? PVectorDataLong :
-      DataType extends 'Float' ? PVectorDataFloat :
-        DataType extends 'Double' ? PVectorDataDouble :
-          DataType extends 'String' ? PVectorDataString :
-            DataType extends 'Bytes' ? PVectorDataBytes :
+  DataType extends typeof ValueType.Int ? PVectorDataInt :
+    DataType extends typeof ValueType.Long ? PVectorDataLong :
+      DataType extends typeof ValueType.Float ? PVectorDataFloat :
+        DataType extends typeof ValueType.Double ? PVectorDataDouble :
+          DataType extends typeof ValueType.String ? PVectorDataString :
+            DataType extends typeof ValueType.Bytes ? PVectorDataBytes :
               never;
 export type PVectorData = PVectorDataTyped<ValueType>;
 
@@ -62,17 +59,17 @@ function isValueNA(vector: PTableVector, row: number): boolean {
   const valueType = vector.type;
   const value = vector.data[row];
   switch (valueType) {
-    case 'Int':
+    case ValueType.Int:
       return (value as PVectorDataInt[number]) === -2147483648;
-    case 'Long':
+    case ValueType.Long:
       return (value as PVectorDataLong[number]) === -9007199254740991n;
-    case 'Float':
+    case ValueType.Float:
       return Number.isNaN((value as PVectorDataFloat[number]));
-    case 'Double':
+    case ValueType.Double:
       return Number.isNaN((value as PVectorDataDouble[number]));
-    case 'String':
+    case ValueType.String:
       return (value as PVectorDataString[number]) === null;
-    case 'Bytes':
+    case ValueType.Bytes:
       return (value as PVectorDataBytes[number]) === null;
     default:
       throw Error(`unsupported data type: ${valueType satisfies never}`);
@@ -95,7 +92,7 @@ export function isPTableNA(value: unknown): value is PTableNA {
   return value === PTableNA;
 }
 
-export type ValueTypeSupported = Exclude<ValueType, ValueTypeBytes>;
+export type ValueTypeSupported = Exclude<ValueType, typeof ValueType.Bytes>;
 
 export type PTableValueInt = number;
 export type PTableValueLong = number;
@@ -103,11 +100,11 @@ export type PTableValueFloat = number;
 export type PTableValueDouble = number;
 export type PTableValueString = string;
 export type PTableValueData<DataType extends ValueTypeSupported> =
-  DataType extends 'Int' ? PTableValueInt :
-    DataType extends 'Long' ? PTableValueLong :
-      DataType extends 'Float' ? PTableValueFloat :
-        DataType extends 'Double' ? PTableValueDouble :
-          DataType extends 'String' ? PTableValueString :
+  DataType extends typeof ValueType.Int ? PTableValueInt :
+    DataType extends typeof ValueType.Long ? PTableValueLong :
+      DataType extends typeof ValueType.Float ? PTableValueFloat :
+        DataType extends typeof ValueType.Double ? PTableValueDouble :
+          DataType extends typeof ValueType.String ? PTableValueString :
             never;
 export type PTableValueDataBranded<DataType extends ValueTypeSupported> = Branded<PTableValueData<DataType>, DataType>;
 export type PTableValue<
@@ -157,8 +154,8 @@ function pTableValueImpl<
     dataType?: DataType;
   },
 ) {
-  const valueType: ValueType = column.type;
-  if (valueType === 'Bytes') {
+  const valueType = column.type;
+  if (valueType === ValueType.Bytes) {
     throw Error('Bytes not yet supported');
   }
 
@@ -176,15 +173,15 @@ function pTableValueImpl<
 
   const value = column.data[row]!;
   switch (valueType) {
-    case 'Int':
+    case ValueType.Int:
       return value as PVectorDataInt[number];
-    case 'Long':
+    case ValueType.Long:
       return Number(value as PVectorDataLong[number]);
-    case 'Float':
+    case ValueType.Float:
       return value as PVectorDataFloat[number];
-    case 'Double':
+    case ValueType.Double:
       return value as PVectorDataDouble[number];
-    case 'String':
+    case ValueType.String:
       return (value as PVectorDataString[number])!;
   }
 }

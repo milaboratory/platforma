@@ -1,5 +1,49 @@
 # @milaboratories/milaboratories.pool-explorer.workflow
 
+## 1.1.55
+
+### Patch Changes
+
+- 3f93434: Packages configuration normalization
+- Updated dependencies [3f93434]
+  - @platforma-sdk/workflow-tengo@5.0.2
+
+## 1.1.54
+
+### Patch Changes
+
+- Updated dependencies [2c0d624]
+- Updated dependencies [3da120c]
+  - @platforma-sdk/workflow-tengo@5.0.1
+
+## 1.1.53
+
+### Patch Changes
+
+- Updated dependencies [1831f6d]
+  - @platforma-sdk/workflow-tengo@5.0.0
+
+## 1.1.52
+
+### Patch Changes
+
+- Updated dependencies [d1b00dc]
+  - @platforma-sdk/workflow-tengo@4.18.2
+
+## 1.1.51
+
+### Patch Changes
+
+- Updated dependencies [a716ccd]
+  - @platforma-sdk/workflow-tengo@4.18.1
+
+## 1.1.50
+
+### Patch Changes
+
+- Updated dependencies [d407d12]
+  - @platforma-sdk/workflow-tengo@4.18.0
+
 ## 1.1.49
 
 ### Patch Changes

@@ -1,20 +1,21 @@
 {
   "name": "@milaboratories/pl-model-middle-layer",
-  "version": "1.8.7",
+  "version": "1.8.8",
   "description": "Common model between middle layer and non-block UI code",
   "types": "./dist/index.d.ts",
-  "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.js"
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
     }
   },
   "scripts": {
-    "type-check": "tsc --noEmit --composite false",
-    "build": "vite build",
+    "type-check": "ts-builder types --target node",
+    "build": "ts-builder build --target node",
+    "watch": "ts-builder build --target node --watch",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "files": [
@@ -29,7 +30,8 @@
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
+    "@milaboratories/ts-builder": "workspace:*",
     "typescript": "catalog:",
-    "vite": "catalog:"
+    "@milaboratories/ts-configs": "workspace:*"
   }
 }

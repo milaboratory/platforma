@@ -23,6 +23,7 @@ import {
   isPartitionedDataInfoEntries,
   entriesToDataInfo,
   deriveNativeId,
+  Annotation,
 } from '@milaboratories/pl-model-common';
 import type { TreeNodeAccessor } from '../accessor';
 import type { LabelDerivationOps, TraceEntry } from './label';
@@ -407,8 +408,8 @@ export class PColumnCollection {
           ...finalSpec,
           annotations: {
             ...(finalSpec.annotations ?? {}),
-            'pl7.app/label': label,
-          },
+            [Annotation.Label]: label,
+          } satisfies Annotation,
         };
       }
 

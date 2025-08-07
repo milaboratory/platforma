@@ -127,3 +127,7 @@ Test_ll_sha256Encode_and_base32Encode := func() {
 		"wrong sha256 hash base32 encoding"
 	)
 }
+
+Test_plapi_supports_getBlobSize := func() {
+	test.isTrue(ll.methodExists(plapi, "getBlobSize"), "wrong result from 'methodExists' check for plapi.getBlobSize")
+}

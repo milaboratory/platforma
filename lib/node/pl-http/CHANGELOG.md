@@ -1,5 +1,17 @@
 # @milaboratories/pl-http
 
+## 1.1.6
+
+### Patch Changes
+
+- 3f93434: Packages configuration normalization
+
+## 1.1.5
+
+### Patch Changes
+
+- 4306ff2: Network libraries upgrade: Undici, gRPC ann S3 libraries upgraded to the latest versions
+
 ## 1.1.4
 
 ### Patch Changes

@@ -1,5 +1,15 @@
 # @platforma-sdk/tengo-builder
 
+## 2.1.15
+
+### Patch Changes
+
+- 3f93434: Packages configuration normalization
+- Updated dependencies [3f93434]
+  - @milaboratories/resolve-helper@1.1.1
+  - @milaboratories/ts-helpers@1.4.4
+  - @milaboratories/pl-model-backend@1.1.3
+
 ## 2.1.14
 
 ### Patch Changes

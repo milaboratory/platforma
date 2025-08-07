@@ -205,6 +205,14 @@ export function isDataInfo<Blob>(value: unknown): value is DataInfo<Blob> {
  * @returns A new DataInfo object with transformed blob references
  */
 export function mapDataInfo<B1, B2>(
+  dataInfo: ParquetPartitionedDataInfo<B1>,
+  mapFn: (blob: B1) => B2,
+): ParquetPartitionedDataInfo<B2>;
+export function mapDataInfo<B1, B2>(
+  dataInfo: Exclude<DataInfo<B1>, ParquetPartitionedDataInfo<B1>>,
+  mapFn: (blob: B1) => B2,
+): Exclude<DataInfo<B2>, ParquetPartitionedDataInfo<B2>>;
+export function mapDataInfo<B1, B2>(
   dataInfo: DataInfo<B1>,
   mapFn: (blob: B1) => B2,
 ): DataInfo<B2>;

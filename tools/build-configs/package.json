@@ -1,7 +1,10 @@
 {
-  "version": "1.0.5",
+  "version": "1.0.6",
   "name": "@milaboratories/build-configs",
   "type": "module",
+  "deprecated": {
+    "tsconfig_lib_bundled.json": "Use @milaboratories/ts-configs instead"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -9,12 +12,12 @@
       "require": "./dist/index.cjs"
     },
     "./tsup": {
-      "types": "./src/tsup.ts",
+      "types": "./src/tsup.d.ts",
       "import": "./dist/tsup.js",
       "require": "./dist/tsup.cjs"
     },
     "./vite": {
-      "types": "./src/vite.ts",
+      "types": "./src/vite.d.ts",
       "import": "./dist/vite.js",
       "require": "./dist/vite.cjs"
     },
@@ -29,15 +32,22 @@
     "build": "vite build"
   },
   "dependencies": {
+    "@rollup/plugin-commonjs": "catalog:",
+    "@rollup/plugin-json": "catalog:",
     "@rollup/plugin-node-resolve": "catalog:",
-    "rollup-plugin-node-externals": "catalog:",
-    "rollup-plugin-sourcemaps2": "catalog:",
-    "vite-plugin-css-injected-by-js": "catalog:",
-    "tsup": "catalog:",
-    "vite": "catalog:",
-    "vite-plugin-dts": "catalog:",
+    "@rollup/plugin-typescript": "catalog:",
     "@types/node": "catalog:",
     "@vitejs/plugin-vue": "catalog:",
-    "typescript": "catalog:"
+    "rollup": "catalog:",
+    "rollup-plugin-cleandir": "catalog:",
+    "rollup-plugin-node-externals": "catalog:",
+    "rollup-plugin-sourcemaps2": "catalog:",
+    "tsup": "catalog:",
+    "typescript": "catalog:",
+    "unplugin-dts": "catalog:",
+    "vite": "catalog:",
+    "vite-plugin-css-injected-by-js": "catalog:",
+    "vite-plugin-dts": "catalog:",
+    "vite-plugin-externalize-deps": "^0.9.0"
   }
 }

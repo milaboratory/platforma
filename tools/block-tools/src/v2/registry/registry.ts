@@ -1,5 +1,7 @@
 import { ConsoleLoggerAdapter, MiLogger } from '@milaboratories/ts-helpers';
 import { compare as compareSemver, satisfies } from 'semver';
+import { gzip } from 'node:zlib';
+import { promisify } from 'node:util';
 import { RegistryStorage } from '../../io/storage';
 import {
   AnyChannel,
@@ -18,6 +20,7 @@ import {
 import {
   GlobalOverviewReg,
   GlobalOverviewPath,
+  GlobalOverviewGzPath,
   ManifestSuffix,
   packageContentPrefix,
   PackageOverview,
@@ -39,6 +42,8 @@ type PackageUpdateInfo = {
 };
 
 export class BlockRegistryV2 {
+  private readonly gzipAsync = promisify(gzip);
+
   constructor(
     private readonly storage: RegistryStorage,
     private readonly logger: MiLogger = new ConsoleLoggerAdapter()
@@ -207,13 +212,17 @@ export class BlockRegistryV2 {
     }
 
     // writing global overview
-    if (mode !== 'dry-run')
-      await this.storage.putFile(
-        GlobalOverviewPath,
-        Buffer.from(
-          JSON.stringify({ schema: 'v2', packages: overviewPackages } satisfies GlobalOverviewReg)
-        )
-      );
+    if (mode !== 'dry-run') {
+      const overviewData = JSON.stringify({ schema: 'v2', packages: overviewPackages } satisfies GlobalOverviewReg);
+      const overviewBuffer = Buffer.from(overviewData);
+      
+      // Write regular overview file
+      await this.storage.putFile(GlobalOverviewPath, overviewBuffer);
+      
+      // Write gzipped overview file
+      const gzippedBuffer = await this.gzipAsync(overviewData);
+      await this.storage.putFile(GlobalOverviewGzPath, Buffer.from(gzippedBuffer));
+    }
     this.logger.info(`Global overview updated (${overviewPackages.length} records)`);
 
     // deleting seeds

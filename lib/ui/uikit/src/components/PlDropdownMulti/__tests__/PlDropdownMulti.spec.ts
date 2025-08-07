@@ -23,8 +23,6 @@ describe('PlDropdownMulti', () => {
 
     const options = getOptions();
 
-    console.log('options', options);
-
     expect(options.length).toBe(2);
 
     options[1].click();

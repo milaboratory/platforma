@@ -1,5 +1,31 @@
 # @milaboratories/pl-model-common
 
+## 1.19.8
+
+### Patch Changes
+
+- 3f93434: Packages configuration normalization
+- Updated dependencies [3f93434]
+  - @milaboratories/pl-error-like@1.12.3
+
+## 1.19.7
+
+### Patch Changes
+
+- 078efc1: fix for linker columns
+
+## 1.19.6
+
+### Patch Changes
+
+- 4468f99: add composite linker columns
+
+## 1.19.5
+
+### Patch Changes
+
+- 4b67e4f: PFrames driver - integrated parquet data info handling
+
 ## 1.19.4
 
 ### Patch Changes
