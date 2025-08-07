@@ -4,7 +4,7 @@ import * as util from './util';
 import * as fs from 'fs';
 import * as path from 'path';
 
-const defaultDockerRegistry = 'quora.io';
+export const defaultDockerRegistry = 'quora.io';
 
 export function dockerPush(tag: string) {
   const result = spawnSync('docker', ['push', tag], { stdio: 'inherit' });
@@ -26,14 +26,14 @@ export function dockerBuild(context: string, dockerfile: string, tag: string) {
   }
 }
 
-export function dockerTagFromPackage(packageRoot: string, pkgID: string, pkg: DockerPackage): string {
+export function dockerTagFromPackage(packageRoot: string, pkg: DockerPackage): string {
   if (pkg.type !== 'docker') {
-    throw new Error(`package '${pkgID}' is not a docker package`);
+    throw new Error(`package '${pkg.name}' is not a docker package`);
   }
   const dockerfile = dockerfileFullPath(packageRoot, pkg);
   const context = contextFullPath(packageRoot, pkg);
   const hash = contentHash(context, dockerfile);
-  const tag = dockerTag(pkg.name, pkgID, pkg.version, hash);
+  const tag = dockerTag(pkg.name,  pkg.version, hash);
   return tag;
 }
 
@@ -62,7 +62,7 @@ function contentHash(contextFullPath: string, dockerfileFullPath: string): strin
   return contextHash.digest('hex').slice(0, 8);
 }
 
-function dockerTag(packageName: string, pkgID: string, version: string, contentHash: string): string {
+function dockerTag(packageName: string, version: string, contentHash: string): string {
   const dockerRegistry = process.env.PL_DOCKER_REGISTRY ?? defaultDockerRegistry;
-  return `${dockerRegistry}/${packageName}.${pkgID}.${contentHash}:${version}`;
+  return `${dockerRegistry}/${packageName}.${contentHash}:${version}`;
 }

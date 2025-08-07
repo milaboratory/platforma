@@ -731,7 +731,7 @@ export class Renderer {
       throw new Error(`could not render docker entrypoint '${entrypointName}': could not determine block name from npm package name '${this.npmPackageName}'`);
     }
 
-    const tag = dockerTagFromPackage(this.npmPackageRoot, entrypointName, pkg);
+    const tag = dockerTagFromPackage(this.npmPackageRoot, pkg);
 
     return {
       tag: tag,

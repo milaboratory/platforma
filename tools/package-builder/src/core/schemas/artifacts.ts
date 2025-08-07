@@ -139,6 +139,7 @@ export type rPackageConfig = z.infer<typeof rPackageSchema>;
 
 export const dockerPackageSchema = archiveRulesSchema.extend({
   type: z.literal('docker'),
+  registry: registryOrRef.optional(),
 
   // build from custom Dockerfile
   context: z.string().describe('relative path to context directory from folder where command is executed or absolute path to context folder'),

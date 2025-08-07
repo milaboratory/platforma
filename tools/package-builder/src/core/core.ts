@@ -272,7 +272,7 @@ export class Core {
       throw new Error(`Context '${context}' not found`);
     }
 
-    const tag = dockerTagFromPackage(this.pkg.packageRoot, pkgID, buildParams);
+    const tag = dockerTagFromPackage(this.pkg.packageRoot, buildParams);
 
     this.logger.info(`Building docker image:
       dockerfile: "${dockerfile}"
@@ -508,7 +508,7 @@ export class Core {
       throw new Error(`package '${pkg.id}' is not a docker package`);
     }
 
-    const tag = dockerTagFromPackage(this.pkg.packageRoot, pkg.id, pkg);
+    const tag = dockerTagFromPackage(this.pkg.packageRoot, pkg);
     dockerPush(tag);
 
     this.logger.info(`Publishing docker image '${tag}' into registry '${pkg.registry.name}'`);

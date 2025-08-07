@@ -1,5 +1,5 @@
 export const PackageVersion: string = '1.2.3';
-export const PackageNameNoAt: string = 'some-company/the-software';
+export const PackageNameNoAt: string = 'the-software';
 export const PackageName: string = '@' + PackageNameNoAt;
 
 export const BinaryRegistry: string = 'some-binary-registry';
@@ -100,7 +100,6 @@ export const PackageJson = `{
           "docker": {
             "artifact": {
               "type": "docker",
-              "registry": "quora.io",
               "dockerfile": "Dockerfile",
               "context": ".",
               "entrypoint": ["/usr/bin/env", "printf"]

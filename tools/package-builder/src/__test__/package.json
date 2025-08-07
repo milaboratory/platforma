@@ -7,7 +7,6 @@
           "docker": {
             "artifact": {
               "type": "docker",
-              "registry": "quora.io",
               "dockerfile": "Dockerfile",
               "context": "."
             },
