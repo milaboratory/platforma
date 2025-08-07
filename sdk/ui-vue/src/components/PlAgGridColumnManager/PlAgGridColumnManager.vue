@@ -1,8 +1,9 @@
 <script setup lang="ts">
+import { PlBtnGhost, PlElementList, PlSearchField, PlSlideModal, usePlBlockPageTitleTeleportTarget } from '@milaboratories/uikit';
 import { type Column, type DisplayedColumnsChangedEvent, type GridApi } from 'ag-grid-enterprise';
-import { PlBtnGhost, PlSlideModal, PlElementList, usePlBlockPageTitleTeleportTarget } from '@milaboratories/uikit';
-import { ref, toRefs, watch, computed } from 'vue';
+import { computed, ref, toRefs, watch } from 'vue';
 import { PlAgDataTableRowNumberColId } from '../PlAgDataTable/sources/row-number';
+import { useFilteredItems } from './useFilteredItems';
 
 const props = defineProps<{
   /**
@@ -46,8 +47,16 @@ const items = computed(() => {
   }));
 });
 
+const query = ref('');
+
 const slideModal = ref(false);
 const teleportTarget = usePlBlockPageTitleTeleportTarget('PlAgGridColumnManager');
+
+const { filteredItems, segments } = useFilteredItems(() => ({
+  items: items.value,
+  query: query.value,
+  getStrings: (item) => [item.label],
+}));
 </script>
 
 <template>
@@ -60,8 +69,9 @@ const teleportTarget = usePlBlockPageTitleTeleportTarget('PlAgGridColumnManager'
 
     <PlSlideModal v-model="slideModal" :width="width" close-on-outside-click>
       <template #title>Manage Columns</template>
+      <PlSearchField v-model="query" clearable />
       <PlElementList
-        :items="items"
+        :items="filteredItems"
         :get-item-key="(item) => item.id"
         :is-draggable="(item) => !item.column.getColDef().lockPosition"
         :on-sort="(fromIndex, toIndex) => {
@@ -80,12 +90,26 @@ const teleportTarget = usePlBlockPageTitleTeleportTarget('PlAgGridColumnManager'
         :is-toggable="(item) => item.id !== PlAgDataTableRowNumberColId"
         :is-pinned="(item) => !!item.column.getColDef().lockPosition"
         :is-pinnable="() => false"
+        :disable-dragging="query.length > 0"
         disable-removing
       >
         <template #item-title="{ item }">
-          {{ item.label }}
+          <span>
+            <span
+              v-for="(segment, i) of segments.get(item.label)"
+              :key="i"
+              :class="{ [$style.match]: segment.match }"
+            >{{ segment.value }}</span>
+          </span>
         </template>
       </PlElementList>
     </PlSlideModal>
   </div>
 </template>
+
+<style module>
+.match {
+  background-color: var(--color-active-select);
+  border-radius: 2px;
+}
+</style>
