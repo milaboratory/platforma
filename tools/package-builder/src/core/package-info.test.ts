@@ -10,7 +10,6 @@ test('PackageInfo loads correctly for multi-package', () => {
     pkgJsonData: artifacts.PackageJson
   });
 
-
   var pkg = i.getPackage(artifacts.EPNameAsset);
   expect(pkg.registry.name).toEqual(artifacts.BinaryRegistry);
   expect(pkg.name).toEqual(artifacts.PackageNameNoAt + '/pAsset');
