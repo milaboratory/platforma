@@ -54,11 +54,16 @@ export const infoSchema = z
   })
   .refine(
     (data) => {
+      if (toInt(data.docker) + toInt(data.binary) > 1) {
+        return true;
+      }
+
       const n = toInt(data.reference)
         + toInt(data.asset)
         + toInt(data.binary)
-        + toInt(data.environment);
-      return n === 1 || data.docker !== undefined;
+        + toInt(data.environment)
+        + toInt(data.docker);
+      return n === 1;
     },
     {
       message:
