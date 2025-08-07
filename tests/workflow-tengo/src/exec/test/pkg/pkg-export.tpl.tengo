@@ -2,7 +2,6 @@ assets := import("@platforma-sdk/workflow-tengo:assets")
 self := import("@platforma-sdk/workflow-tengo:tpl")
 pkg := import("@platforma-sdk/workflow-tengo:exec.package")
 file := import("@platforma-sdk/workflow-tengo:file")
-ll := import("@platforma-sdk/workflow-tengo:ll")
 
 sw := assets.importSoftware(":exec.test.pkg.hello-py")
 
