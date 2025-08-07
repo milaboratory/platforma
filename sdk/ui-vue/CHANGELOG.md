@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.42.19
+
+### Patch Changes
+
+- 77103d0: PlAgDataTable: search field in columns manager
+
 ## 1.42.18
 
 ### Patch Changes
