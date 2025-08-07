@@ -34,7 +34,7 @@ export function dockerTagFromPackage(packageRoot: string, pkg: DockerPackage): s
   const dockerfile = dockerfileFullPath(packageRoot, pkg);
   const context = contextFullPath(packageRoot, pkg);
   const hash = contentHash(context, dockerfile);
-  const tag = dockerTag(pkg.name,  pkg.version, hash);
+  const tag = dockerTag(pkg.name, hash);
   return tag;
 }
 
@@ -60,10 +60,10 @@ function contentHash(contextFullPath: string, dockerfileFullPath: string): strin
   const fileInfo = `${dockerfileFullPath}:${statInfo.size}:${statInfo.mtimeMs}`;
   contextHash.update(fileInfo);
 
-  return contextHash.digest('hex').slice(0, 8);
+  return contextHash.digest('hex').slice(0, 12);
 }
 
-function dockerTag(packageName: string, version: string, contentHash: string): string {
+function dockerTag(packageName: string, contentHash: string): string {
   const dockerRegistry = process.env[PL_DOCKER_REGISTRY] ?? defaultDockerRegistry;
-  return `${dockerRegistry}/${packageName}.${contentHash}:${version}`;
+  return `${dockerRegistry}/${packageName}:${contentHash}`;
 }
