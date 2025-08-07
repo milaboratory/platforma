@@ -90,7 +90,6 @@ const props = withDefaults(
   }>(),
   {
     modelValue: () => [],
-    modelSearch: undefined,
     label: undefined,
     helper: undefined,
     error: undefined,
