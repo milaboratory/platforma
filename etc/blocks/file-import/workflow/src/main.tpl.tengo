@@ -1,0 +1,17 @@
+wf := import("@platforma-sdk/workflow-tengo:workflow")
+file := import("@platforma-sdk/workflow-tengo:file")
+xsv := import("@platforma-sdk/workflow-tengo:pframes.xsv")
+
+wf.body(func(args) {
+	fImport := file.importFile(args.fileHandle);
+	pFrame := xsv.importFile(fImport.file, args.fileExt, args.spec);
+
+	return {
+		outputs: {
+			fileUploadProgress: fImport.handle
+		},
+		exports: {
+			pFrame: pFrame
+		}
+	}
+})

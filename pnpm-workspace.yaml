@@ -99,6 +99,11 @@ packages:
   - etc/blocks/pool-explorer/ui
   - etc/blocks/pool-explorer/block
 
+  - etc/blocks/file-import/workflow
+  - etc/blocks/file-import/model
+  - etc/blocks/file-import/ui
+  - etc/blocks/file-import/block
+
   # Tests
 
   - tests/workflow-tengo

@@ -1,0 +1,36 @@
+{
+  "name": "@milaboratories/milaboratories.file-import-block",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "rm -rf ./block-pack && block-tools pack"
+  },
+  "files": [
+    "index.d.ts",
+    "index.js"
+  ],
+  "dependencies": {
+    "@platforma-sdk/model": "workspace:*",
+    "@milaboratories/milaboratories.file-import-block.workflow": "workspace:*",
+    "@milaboratories/milaboratories.file-import-block.model": "workspace:*",
+    "@milaboratories/milaboratories.file-import-block.ui": "workspace:*"
+  },
+  "devDependencies": {
+    "@platforma-sdk/block-tools": "workspace:*"
+  },
+  "block": {
+    "components": {
+      "workflow": "@milaboratories/milaboratories.file-import-block.workflow/dist/tengo/tpl/main.plj.gz",
+      "model": "@milaboratories/milaboratories.file-import-block.model/dist/model.json",
+      "ui": "@milaboratories/milaboratories.file-import-block.ui/dist"
+    },
+    "meta": {
+      "title": "File Import Block",
+      "description": "Block for importing files",
+      "organization": {
+        "name": "MiLaboratories Inc",
+        "url": "https://milaboratories.com/"
+      },
+      "marketplaceRanking": 10
+    }
+  }
+}
