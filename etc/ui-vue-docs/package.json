@@ -14,7 +14,11 @@
   "devDependencies": {
     "sass": "catalog:",
     "vitepress": "catalog:",
-    "@milaboratories/eslint-config": "workspace:^"
+    "@milaboratories/eslint-config": "workspace:^",
+    "@milaboratories/build-configs": "workspace:*",
+    "vite": "catalog:",
+    "typescript": "catalog:",
+    "@milaboratories/ts-configs": "workspace:*"
   },
   "dependencies": {
     "@faker-js/faker": "catalog:",

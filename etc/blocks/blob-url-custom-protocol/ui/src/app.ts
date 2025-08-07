@@ -1,8 +1,8 @@
-import { platforma } from '@milaboratories/milaboratories.test-blob-url-custom-protocol.model';
-import MainPage from './MainPage.vue';
-import { defineApp } from '@platforma-sdk/ui-vue';
-import { Component, computed, reactive } from 'vue';
 import { Equal, Expect } from '@milaboratories/helpers';
+import { platforma } from '@milaboratories/milaboratories.test-blob-url-custom-protocol.model';
+import { defineApp } from '@platforma-sdk/ui-vue';
+import { computed, reactive } from 'vue';
+import MainPage from './MainPage.vue';
 
 export const sdkPlugin = defineApp(platforma, (base) => {
   // Additional data

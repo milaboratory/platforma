@@ -1,4 +1,5 @@
 {
+  "// DEPRECATED": "This config is deprecated. Use @milaboratories/ts-configs instead.",
   "compilerOptions": {
     "target": "es2022",
     "module": "es2022",

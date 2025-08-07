@@ -1,8 +1,8 @@
+import archiver from 'archiver';
 import fs from 'node:fs';
 import path from 'node:path';
 import type * as winston from 'winston';
 import type * as util from './util';
-import * as archiver from 'archiver';
 
 const tarArchiveType = 'tgz';
 const zipArchiveType = 'zip';

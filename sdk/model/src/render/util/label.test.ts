@@ -1,6 +1,6 @@
-import { test, expect } from '@jest/globals';
-import { deriveLabels, Trace } from './label';
 import { Annotation, PColumnSpec } from '@milaboratories/pl-model-common';
+import { expect, test } from 'vitest';
+import { deriveLabels, Trace } from './label';
 
 function tracesToSpecs(traces: Trace[]) {
   return traces.map(

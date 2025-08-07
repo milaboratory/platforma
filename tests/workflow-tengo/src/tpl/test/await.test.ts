@@ -1,5 +1,6 @@
 import type {
-  ResourceId } from '@milaboratories/pl-middle-layer';
+  ResourceId,
+} from '@milaboratories/pl-middle-layer';
 import {
   Pl,
   field,
@@ -7,8 +8,8 @@ import {
   toGlobalResourceId,
 } from '@milaboratories/pl-middle-layer';
 import { tplTest } from '@platforma-sdk/test';
-import { Templates } from '../../..';
 import crypto from 'crypto';
+import { Templates } from '../../..';
 
 tplTest.concurrent.for([
   { isEph: true, name: 'ephemeral' },

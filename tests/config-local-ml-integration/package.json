@@ -4,8 +4,9 @@
   "description": "Tests for block registry reader",
   "version": "1.2.117",
   "scripts": {
-    "type-check": "tsc --noEmit --composite false",
-    "build": "vite build",
+    "type-check": "ts-builder types --target node",
+    "build": "ts-builder build --target node",
+    "watch": "ts-builder build --target node --watch",
     "test": "vitest"
   },
   "dependencies": {
@@ -17,9 +18,10 @@
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
+    "@milaboratories/ts-builder": "workspace:*",
     "typescript": "catalog:",
-    "vite": "catalog:",
     "vitest": "catalog:",
-    "@types/node": "catalog:"
+    "@types/node": "catalog:",
+    "@milaboratories/ts-configs": "workspace:*"
   }
 }

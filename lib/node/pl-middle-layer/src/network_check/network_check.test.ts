@@ -1,3 +1,4 @@
+import { test } from 'vitest';
 import { checkNetwork } from './network_check';
 import { testCredentials } from './test_utils';
 

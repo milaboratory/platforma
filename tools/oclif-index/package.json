@@ -3,8 +3,13 @@
   "version": "1.1.1",
   "private": true,
   "description": "Small script for building static oclif commands indexes",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
   "scripts": {
-    "build": "vite build",
+    "build": "ts-builder build --target node",
+    "type-check": "ts-builder types --target node",
+    "watch": "ts-builder build --target node --watch",
     "test": "true"
   },
   "bin": {
@@ -17,8 +22,6 @@
   ],
   "keywords": [],
   "license": "UNLICENSED",
-  "type": "module",
-  "main": "./dist/index.js",
   "oclif": {
     "bin": "oclif-index",
     "commands": {
@@ -32,12 +35,13 @@
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
+    "@milaboratories/ts-builder": "workspace:*",
     "typescript": "catalog:",
-    "vite": "catalog:",
     "@types/jest": "catalog:",
     "@types/node": "catalog:",
     "jest": "catalog:",
     "@jest/globals": "catalog:",
-    "ts-jest": "catalog:"
+    "ts-jest": "catalog:",
+    "@milaboratories/ts-configs": "workspace:*"
   }
 }

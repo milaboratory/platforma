@@ -3,18 +3,19 @@
   "version": "1.6.3",
   "description": "MiLaboratories Platforma Backend and Middle Layer config generator",
   "types": "./dist/index.d.ts",
-  "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "require": "./dist/index.js",
-      "import": "./dist/index.mjs"
+      "require": "./dist/index.cjs",
+      "import": "./dist/index.js"
     }
   },
   "scripts": {
-    "type-check": "tsc --noEmit --composite false",
-    "build": "vite build",
+    "type-check": "ts-builder types --target node",
+    "build": "ts-builder build --target node",
+    "watch": "ts-builder build --target node --watch",
     "lint": "eslint .",
     "test": "vitest run",
     "do-pack": "rm -rf src/.test && rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
@@ -35,7 +36,7 @@
     "eslint": "catalog:",
     "@milaboratories/eslint-config": "workspace:^",
     "@milaboratories/build-configs": "workspace:*",
-    "vite": "catalog:",
+    "@milaboratories/ts-builder": "workspace:*",
     "vitest": "catalog:",
     "@types/jest": "catalog:",
     "@types/node": "catalog:",
@@ -43,7 +44,8 @@
     "ts-jest": "catalog:",
     "jest": "catalog:",
     "tsconfig-paths": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "@milaboratories/ts-configs": "workspace:*"
   },
   "dependencies": {
     "undici": "catalog:",

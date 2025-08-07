@@ -5,8 +5,8 @@ import type {
   PColumn,
   PColumnValues,
   PObjectId,
-  PlDataTableStateV2,
   PlDataTableSheet,
+  PlDataTableStateV2,
 } from '@platforma-sdk/model';
 import {
   Annotation,
@@ -364,7 +364,7 @@ export const platforma = BlockModel.create('Heavy')
     ];
   })
 
-  .done(2); // api version 2
+  .done(); // api version 2
 
 export type BlockOutputs = InferOutputsType<typeof platforma>;
 export type Href = InferHrefType<typeof platforma>;

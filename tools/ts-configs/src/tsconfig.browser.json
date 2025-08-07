@@ -1,6 +1,6 @@
 {
+  "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    "customConditions": ["sources"],
     "target": "ESNext",
     "module": "ESNext",
     "useDefineForClassFields": true,
@@ -9,20 +9,10 @@
       "DOM",
       "DOM.Iterable"
     ],
-    "skipLibCheck": true,
-    /* Bundler mode */
     "moduleResolution": "Bundler",
     "allowImportingTsExtensions": true,
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "moduleDetection": "force",
-    "declaration": true,
-    "declarationMap": true,
     "noEmit": true,
     "jsx": "preserve",
-    /* Linting */
-    "strict": true,
-    "noFallthroughCasesInSwitch": true,
     "types": [
       "vite/client",
       "vitest/importMeta"

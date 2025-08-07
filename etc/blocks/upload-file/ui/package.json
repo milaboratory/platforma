@@ -4,10 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "watch": "vue-tsc && vite build --watch",
-    "build": "vue-tsc -b && vite build",
-    "preview": "vite preview"
+    "dev": "ts-builder serve --target browser",
+    "watch": "ts-builder build --target browser --watch",
+    "build": "ts-builder build --target browser",
+    "type-check": "ts-builder types --target browser"
   },
   "dependencies": {
     "@milaboratories/milaboratories.test-upload-file.model": "workspace:*",
@@ -16,11 +16,8 @@
   },
   "devDependencies": {
     "@milaboratories/ts-configs": "workspace:*",
-    "@milaboratories/build-configs": "workspace:*",
-    "@vitejs/plugin-vue": "catalog:",
+    "@milaboratories/ts-builder": "workspace:*",
     "typescript": "catalog:",
-    "vite": "catalog:",
-    "vue-tsc": "catalog:",
     "@faker-js/faker": "catalog:",
     "@milaboratories/helpers": "workspace:^",
     "zod": "catalog:"

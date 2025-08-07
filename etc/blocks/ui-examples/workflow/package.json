@@ -10,6 +10,9 @@
     "@platforma-sdk/workflow-tengo": "workspace:*"
   },
   "devDependencies": {
-    "@platforma-sdk/tengo-builder": "workspace:*"
+    "@platforma-sdk/tengo-builder": "workspace:*",
+    "@milaboratories/build-configs": "workspace:*",
+    "vite": "catalog:",
+    "typescript": "catalog:"
   }
 }

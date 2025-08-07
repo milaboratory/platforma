@@ -30,11 +30,23 @@ export function extractExtension(fileName: string) {
   return fileName.replace(/^.*?[.]/, '');
 }
 
+function hasDataTransfer(e: unknown): e is { dataTransfer: { items: { kind: string; getAsFile(): unknown }[] } } {
+  return (
+    typeof e === 'object'
+    && e !== null
+    && 'dataTransfer' in e
+    && typeof e.dataTransfer === 'object'
+    && e.dataTransfer !== null
+    && 'items' in e.dataTransfer
+    && Array.isArray(e.dataTransfer.items)
+  );
+}
+
 // @TODO move from here
-export function extractPaths(e: DragEvent, extensions?: string[]) {
+export function extractPaths(e: unknown, extensions?: string[]) {
   const paths: string[] = [];
 
-  if (e.dataTransfer) {
+  if (hasDataTransfer(e)) {
     for (let i = 0; i < e.dataTransfer.items.length; i++) {
       if (e.dataTransfer.items[i].kind !== 'file') {
         continue;

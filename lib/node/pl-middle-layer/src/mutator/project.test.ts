@@ -1,6 +1,8 @@
 import { field, poll, TestHelpers, toGlobalResourceId } from '@milaboratories/pl-client';
-import { createProject, ProjectMutator, withProject } from './project';
+import { getQuickJS } from 'quickjs-emscripten';
+import { expect, test } from 'vitest';
 import { outputRef } from '../model/args';
+import { ProjectHelper } from '../model/project_helper';
 import {
   BlockRenderingStateKey,
   projectFieldName,
@@ -11,9 +13,7 @@ import {
   BPSpecSumV042NotPrepared,
   TestBPPreparer
 } from '../test/block_packs';
-import { getQuickJS } from 'quickjs-emscripten';
-import { ProjectHelper } from '../model/project_helper';
-import { cachedDeserialize } from '@milaboratories/ts-helpers';
+import { createProject, ProjectMutator } from './project';
 
 test('simple test #1', async () => {
   const quickJs = await getQuickJS();

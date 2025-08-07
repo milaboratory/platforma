@@ -1,3 +1,5 @@
+import { test } from '@jest/globals';
+
 // type TestType1 = string;
 // type TestType2 = string | number | { a: number };
 //

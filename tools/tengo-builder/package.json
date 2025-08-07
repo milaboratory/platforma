@@ -2,10 +2,12 @@
   "name": "@platforma-sdk/tengo-builder",
   "version": "2.1.14",
   "description": "Pl Tengo Template Builder",
+  "type": "module",
   "scripts": {
     "lint": "eslint .",
-    "type-check": "tsc --noEmit --composite false",
-    "build": "oclif-index && vite build",
+    "type-check": "ts-builder types --target node",
+    "build": "oclif-index && ts-builder build --target node",
+    "watch": "ts-builder build --target node --watch",
     "test": "vitest",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
@@ -34,10 +36,11 @@
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/eslint-config": "workspace:^",
     "@milaboratories/oclif-index": "workspace:*",
+    "@milaboratories/ts-builder": "workspace:*",
     "typescript": "catalog:",
-    "vite": "catalog:",
     "vitest": "catalog:",
-    "@types/node": "catalog:"
+    "@types/node": "catalog:",
+    "@milaboratories/ts-configs": "workspace:*"
   },
   "oclif": {
     "bin": "pl-tengo",

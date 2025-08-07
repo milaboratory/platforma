@@ -1,5 +1,5 @@
 {
-  "extends": "@milaboratories/build-configs/tsconfig_lib_bundled.json",
+  "extends": "@milaboratories/ts-configs/tsconfig.node.json",
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": "./src",

@@ -64,7 +64,8 @@
     "jest": "catalog:",
     "@jest/globals": "catalog:",
     "oclif": "catalog:",
-    "ts-jest": "catalog:"
+    "ts-jest": "catalog:",
+    "@milaboratories/ts-configs": "workspace:*"
   },
   "oclif": {
     "bin": "block-tools",

@@ -1,8 +1,14 @@
 {
-  "extends": "@milaboratories/build-configs/tsconfig_lib_bundled.json",
+  "extends": "@milaboratories/ts-configs/tsconfig.node.json",
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": "./src"
   },
-  "include": ["src"]
+  "include": [
+    "src"
+  ],
+  "exclude": [
+    "**/*.test.ts",
+    "**/*.spec.ts"
+  ]
 }

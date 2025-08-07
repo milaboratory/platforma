@@ -3,6 +3,7 @@ import { getTestConfig, getTestLLClient, getTestClientConf } from '../test/test_
 import { TxAPI_Open_Request_WritableTx } from '../proto/github.com/milaboratory/pl/plapi/plapiproto/api';
 import { request } from 'undici';
 import * as tp from 'node:timers/promises';
+import { test, expect } from '@jest/globals';
 
 import { UnauthenticatedError } from './errors';
 

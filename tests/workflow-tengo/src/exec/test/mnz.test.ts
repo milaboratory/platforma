@@ -1,5 +1,5 @@
-import { Pl } from '@milaboratories/pl-middle-layer';
 import type { PlTransaction } from '@milaboratories/pl-middle-layer';
+import { Pl } from '@milaboratories/pl-middle-layer';
 import { tplTest } from '@platforma-sdk/test';
 
 /** The test should:
