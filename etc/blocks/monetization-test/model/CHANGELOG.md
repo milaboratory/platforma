@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.monetization-test.model
 
+## 1.0.6
+
+### Patch Changes
+
+- 3f93434: Packages configuration normalization
+- Updated dependencies [3f93434]
+  - @platforma-sdk/model@1.42.20
+
 ## 1.0.5
 
 ### Patch Changes

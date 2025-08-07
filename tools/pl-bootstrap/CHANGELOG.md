@@ -1,5 +1,13 @@
 # @platforma-sdk/bootstrap
 
+## 3.5.20
+
+### Patch Changes
+
+- 3f93434: Packages configuration normalization
+- Updated dependencies [3f93434]
+  - @milaboratories/pl-deployments@2.4.8
+
 ## 3.5.19
 
 ### Patch Changes

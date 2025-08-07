@@ -1,5 +1,16 @@
 # @milaboratories/milaboratories.monetization-test.ui
 
+## 1.1.80
+
+### Patch Changes
+
+- 3f93434: Packages configuration normalization
+- Updated dependencies [56b404b]
+- Updated dependencies [3f93434]
+  - @platforma-sdk/ui-vue@1.42.20
+  - @milaboratories/milaboratories.monetization-test.model@1.0.6
+  - @platforma-sdk/model@1.42.20
+
 ## 1.1.79
 
 ### Patch Changes

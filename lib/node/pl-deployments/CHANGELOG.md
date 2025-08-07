@@ -1,5 +1,14 @@
 # @milaboratories/pl-local
 
+## 2.4.8
+
+### Patch Changes
+
+- 3f93434: Packages configuration normalization
+- Updated dependencies [3f93434]
+  - @milaboratories/ts-helpers@1.4.4
+  - @milaboratories/pl-config@1.6.4
+
 ## 2.4.7
 
 ### Patch Changes

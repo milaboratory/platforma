@@ -1,5 +1,11 @@
 # @milaboratories/helpers
 
+## 1.6.20
+
+### Patch Changes
+
+- 3f93434: Packages configuration normalization
+
 ## 1.6.19
 
 ### Patch Changes

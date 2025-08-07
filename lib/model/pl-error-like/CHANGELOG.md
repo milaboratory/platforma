@@ -1,5 +1,11 @@
 # @milaboratories/pl-error-like
 
+## 1.12.3
+
+### Patch Changes
+
+- 3f93434: Packages configuration normalization
+
 ## 1.12.2
 
 ### Patch Changes

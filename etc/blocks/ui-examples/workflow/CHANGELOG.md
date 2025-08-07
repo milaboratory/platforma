@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.ui-examples.workflow
 
+## 1.1.55
+
+### Patch Changes
+
+- 3f93434: Packages configuration normalization
+- Updated dependencies [3f93434]
+  - @platforma-sdk/workflow-tengo@5.0.2
+
 ## 1.1.54
 
 ### Patch Changes

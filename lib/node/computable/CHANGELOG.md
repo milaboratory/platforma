@@ -1,5 +1,14 @@
 # @milaboratories/computable
 
+## 2.6.4
+
+### Patch Changes
+
+- 3f93434: Packages configuration normalization
+- Updated dependencies [3f93434]
+  - @milaboratories/pl-error-like@1.12.3
+  - @milaboratories/ts-helpers@1.4.4
+
 ## 2.6.3
 
 ### Patch Changes

@@ -1,5 +1,13 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.8.8
+
+### Patch Changes
+
+- 3f93434: Packages configuration normalization
+- Updated dependencies [3f93434]
+  - @milaboratories/pl-model-common@1.19.8
+
 ## 1.8.7
 
 ### Patch Changes

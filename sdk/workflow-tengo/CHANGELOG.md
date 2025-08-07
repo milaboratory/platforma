@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.0.2
+
+### Patch Changes
+
+- 3f93434: Packages configuration normalization
+
 ## 5.0.1
 
 ### Patch Changes

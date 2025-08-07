@@ -1,5 +1,11 @@
 # @milaboratories/sequences
 
+## 1.1.5
+
+### Patch Changes
+
+- 3f93434: Packages configuration normalization
+
 ## 1.1.4
 
 ### Patch Changes

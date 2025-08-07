@@ -1,5 +1,17 @@
 # @platforma-sdk/ui-vue
 
+## 1.42.20
+
+### Patch Changes
+
+- 56b404b: Add PlAutocompleteMulti component
+- 3f93434: Packages configuration normalization
+- Updated dependencies [56b404b]
+- Updated dependencies [3f93434]
+  - @milaboratories/uikit@2.4.3
+  - @milaboratories/biowasm-tools@1.1.1
+  - @platforma-sdk/model@1.42.20
+
 ## 1.42.19
 
 ### Patch Changes

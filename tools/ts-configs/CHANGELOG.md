@@ -1,5 +1,11 @@
 # @milaboratories/ts-configs
 
+## 1.0.6
+
+### Patch Changes
+
+- 3f93434: Packages configuration normalization
+
 ## 1.0.5
 
 ### Patch Changes

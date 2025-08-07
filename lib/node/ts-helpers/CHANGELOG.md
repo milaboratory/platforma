@@ -1,5 +1,11 @@
 # @milaboratories/ts-helpers
 
+## 1.4.4
+
+### Patch Changes
+
+- 3f93434: Packages configuration normalization
+
 ## 1.4.3
 
 ### Patch Changes
