@@ -149,10 +149,7 @@ const isDisabled = computed(() => {
 const tabindex = computed(() => (isDisabled.value ? undefined : '0'));
 
 const updateActiveOption = () => {
-  data.activeOption = tap(
-    filteredOptionsRef.value.findIndex((o) => deepEqual(o.value, props.modelValue)),
-    (v) => (v < 0 ? 0 : v),
-  );
+  data.activeOption = 0;
 };
 
 const selectOption = (v: M) => {
