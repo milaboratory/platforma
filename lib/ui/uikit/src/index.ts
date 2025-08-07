@@ -36,6 +36,7 @@ export * from './components/PlErrorBoundary';
 export * from './components/PlAccordion';
 export * from './components/PlAlert';
 export * from './components/PlAutocomplete';
+export * from './components/PlAutocompleteMulti';
 export * from './components/PlBtnAccent';
 export * from './components/PlBtnDanger';
 export * from './components/PlBtnGhost';

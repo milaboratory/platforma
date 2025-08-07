@@ -26,6 +26,7 @@ import { HistogramPage } from './pages/HistogramPage';
 import { StackedBarPage } from './pages/StackedBarPage';
 import PlSplashPage from './pages/PlSplashPage.vue';
 import PlAutocompletePage from './pages/PlAutocompletePage.vue';
+import PlAutocompleteMultiPage from './pages/PlAutocompleteMultiPage/index.vue';
 import RadioPage from './pages/RadioPage.vue';
 import PlFileInputPage from './pages/PlFileInputPage.vue';
 import PlErrorBoundaryPage from './pages/PlErrorBoundaryPage.vue';
@@ -106,6 +107,7 @@ export const sdkPlugin = defineApp(platforma, (app) => {
       '/tabs': () => PlTabsPage,
       '/drafts': () => DraftsPage,
       '/pl-autocomplete': () => PlAutocompletePage,
+      '/pl-autocomplete-multi': () => PlAutocompleteMultiPage,
       '/buttons': () => ButtonsPage,
       '/notifications': () => NotificationsPage,
       '/errors': () => ErrorsPage,
@@ -119,7 +121,7 @@ export const sdkPlugin = defineApp(platforma, (app) => {
     },
   };
 }, {
-  debug: true,
+  debug: false,
 });
 
 export const useApp = sdkPlugin.useApp;

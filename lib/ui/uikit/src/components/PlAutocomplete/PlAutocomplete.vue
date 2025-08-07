@@ -26,6 +26,7 @@ import { refDebounced } from '@vueuse/core';
 import { useWatchFetch } from '../../composition/useWatchFetch.ts';
 import SvgRequired from '../../generated/components/svg/images/SvgRequired.vue';
 import { getErrorMessage } from '../../helpers/error.ts';
+import type { ListOptionBase } from '@platforma-sdk/model';
 
 /**
  * The current selected value.
@@ -140,7 +141,7 @@ const renderedOptionsRef = computed(() => {
     index,
     isSelected: index === selectedIndex.value,
     isActive: index === data.activeIndex,
-  }));
+  })) as (ListOptionBase<M> & { index: number; isSelected: boolean; isActive: boolean })[];
 });
 const isLoadingOptions = ref<boolean>(true);
 const isLoadingError = ref<boolean>(false);
@@ -192,7 +193,7 @@ const hasValue = computed(() => {
 
 const tabindex = computed(() => (isDisabled.value ? undefined : '0'));
 
-const selectOption = (v: ListOptionNormalized<M> | undefined) => {
+const selectOption = (v: ListOptionBase<M> & { index: number } | undefined) => {
   model.value = v?.value as M;
   modelOptionRef.value = v;
   search.value = null;

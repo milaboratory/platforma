@@ -6,6 +6,8 @@ export { default as PlAgOverlayLoading } from './components/PlAgDataTable/PlAgOv
 export { default as PlAgOverlayNoRows } from './components/PlAgDataTable/PlAgOverlayNoRows.vue';
 export { default as ValueOrErrorsComponent } from './components/ValueOrErrorsComponent.vue';
 
+export type { ListOptionBase } from '@platforma-sdk/model';
+
 export * from './AgGridVue';
 
 export * from './components/PlAgColumnHeader';

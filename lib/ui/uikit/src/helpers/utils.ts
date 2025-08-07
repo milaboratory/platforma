@@ -1,3 +1,4 @@
+import type { ListOptionBase } from '@platforma-sdk/model';
 import type { ListOption } from '../types';
 
 export function call<R>(f: () => R): R {
@@ -122,7 +123,7 @@ export function listToOptions<T>(list: T[] | readonly T[]): ListOption<T>[] {
   return list.map((value) => ({ text: String(value), value }));
 }
 
-export function normalizeListOptions<V = unknown>(options: Readonly<ListOption<V>[]>) {
+export function normalizeListOptions<V = unknown>(options: Readonly<ListOption<V>[]>): Readonly<ListOptionBase<V>[]> {
   if (!Array.isArray(options)) {
     throw Error('Invalid component options: ' + String(options));
   }
