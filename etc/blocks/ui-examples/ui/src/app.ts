@@ -33,6 +33,7 @@ import PlErrorBoundaryPage from './pages/PlErrorBoundaryPage.vue';
 import PlElementListPage from './pages/PlElementListPage.vue';
 import StatePage from './pages/StatePage.vue';
 import PlNumberFieldPage from './pages/PlNumberFieldPage.vue';
+import DownloadsPage from './pages/DownloadsPage.vue';
 
 export const sdkPlugin = defineApp(platforma, (app) => {
   // Additional data
@@ -102,7 +103,6 @@ export const sdkPlugin = defineApp(platforma, (app) => {
       '/pl-error-boundary-page': () => PlErrorBoundaryPage,
       '/pl-element-list-page': () => PlElementListPage,
       '/select-files': () => SelectFilesPage,
-      '/errors': () => ErrorsPage,
       '/text-fields': () => PlTextFieldPage,
       '/tabs': () => PlTabsPage,
       '/drafts': () => DraftsPage,
@@ -110,6 +110,8 @@ export const sdkPlugin = defineApp(platforma, (app) => {
       '/pl-autocomplete-multi': () => PlAutocompleteMultiPage,
       '/buttons': () => ButtonsPage,
       '/notifications': () => NotificationsPage,
+      '/errors': () => ErrorsPage,
+      '/downloads': () => DownloadsPage,
       '/stacked-bar': () => StackedBarPage,
       '/histogram': () => HistogramPage,
       '/loaders': () => LoadersPage,
