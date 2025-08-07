@@ -12,7 +12,7 @@ import {
 import * as util from './util';
 import * as archive from './archive';
 import * as storage from './storage';
-import { contentHash, dockerTag } from './docker';
+import { dockerBuild, dockerPush, dockerTagFromPackage } from './docker';
 
 export class Core {
   private readonly logger: winston.Logger;
@@ -272,9 +272,7 @@ export class Core {
       throw new Error(`Context '${context}' not found`);
     }
 
-    const hash = contentHash(context, dockerfile);
-    const pkg = this.getPackage(pkgID);
-    const tag = dockerTag(packageName, pkgID, pkg.version, hash);
+    const tag = dockerTagFromPackage(this.pkg.packageRoot, pkgID, buildParams);
 
     this.logger.info(`Building docker image:
       dockerfile: "${dockerfile}"
@@ -283,14 +281,7 @@ export class Core {
       entrypoint: "${entrypoint.join(' ')}"
     `);
 
-    const result = spawnSync('docker', ['build', '-t', tag, '-f', dockerfile, context], { stdio: 'inherit' });
-    if (result.error) {
-      throw result.error;
-    }
-
-    if (result.status !== 0) {
-      throw new Error(`docker build failed with status ${result.status}`);
-    }
+    dockerBuild(context, dockerfile, tag);
 
     this.logger.info(`Docker image '${tag}' was built successfully`);
   }
@@ -403,7 +394,7 @@ export class Core {
     return Promise.all(uploads);
   }
 
-  public async publishPackage(
+  private async publishPackage(
     pkg: PackageConfig,
     platform: util.PlatformType,
     options?: {
@@ -415,9 +406,19 @@ export class Core {
     },
   ) {
     if (pkg.type === 'docker') {
-      throw new Error('should call publishDocker instead')  
+      await this.publishDockerImage(pkg);
+      return;
     }
 
+    await this.publishArchive(pkg, platform, options);
+  }
+
+  private async publishArchive(pkg: PackageConfig, platform: util.PlatformType, options?: {
+    archivePath?: string;
+    storageURL?: string;
+    failExisting?: boolean;
+    forceReupload?: boolean;
+  }) {
     const { os, arch } = util.splitPlatform(platform);
 
     const storageURL = options?.storageURL ?? pkg.registry.storageURL;
@@ -487,6 +488,32 @@ export class Core {
     });
   }
 
+  public async publishDockerImages(options?: {
+    ids?: string[];
+  }) {
+    const packagesToPublish = options?.ids ?? Array.from(this.buildablePackages.keys());
+
+    for (const pkgID of packagesToPublish) {
+      const pkg = this.getPackage(pkgID);
+      if (pkg.type !== 'docker') {
+        continue
+      }
+
+      await this.publishDockerImage(pkg);
+    }
+  }
+
+  private async publishDockerImage(pkg: PackageConfig) {
+    if (pkg.type !== 'docker') {
+      throw new Error(`package '${pkg.id}' is not a docker package`);
+    }
+
+    const tag = dockerTagFromPackage(this.pkg.packageRoot, pkg.id, pkg);
+    dockerPush(tag);
+
+    this.logger.info(`Publishing docker image '${tag}' into registry '${pkg.registry.name}'`);
+  }
+
   public signPackages(options?: {
     ids?: string[];
 
@@ -521,7 +548,7 @@ export class Core {
     return Promise.all(uploads);
   }
 
-  public signPackage(
+  private signPackage(
     pkg: PackageConfig,
     platform: util.PlatformType,
     options?: {

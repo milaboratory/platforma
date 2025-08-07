@@ -5,7 +5,7 @@ import { z } from 'zod';
 import type { Entrypoint, EntrypointType, PackageConfig, PackageEntrypoint } from './package-info';
 import * as artifacts from './schemas/artifacts';
 import * as util from './util';
-import { contentHash as contentHash, dockerTag } from './docker';
+import { dockerTagFromPackage } from './docker';
 
 const externalPackageLocationSchema = z.object({
   registry: z.string().describe('name of the registry to use for package download'),
@@ -731,19 +731,7 @@ export class Renderer {
       throw new Error(`could not render docker entrypoint '${entrypointName}': could not determine block name from npm package name '${this.npmPackageName}'`);
     }
 
-    const dockerfile = path.resolve(this.npmPackageRoot, pkg.dockerfile ?? 'Dockerfile');
-    const context = path.resolve(this.npmPackageRoot, pkg.context ?? '.');
-    const hash = contentHash(context, dockerfile);
-    const tag = dockerTag(blockName, entrypointName, pkg.version, hash);
-
-    if (!fs.existsSync(dockerfile)) {
-      throw new Error(`Dockerfile '${dockerfile}' not found`);
-    }
-
-    if (!fs.existsSync(context)) {
-      throw new Error(`Context '${context}' not found`);
-    }
-
+    const tag = dockerTagFromPackage(this.npmPackageRoot, entrypointName, pkg);
 
     return {
       tag: tag,
