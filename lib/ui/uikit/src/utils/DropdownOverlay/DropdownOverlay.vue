@@ -79,6 +79,7 @@ useElementPosition(rootRef, (pos) => {
       v-bind="$attrs"
       :style="optionsStyle"
       tabindex="-1"
+      @mousedown.prevent
       @click.stop
     >
       <slot ref="list" />

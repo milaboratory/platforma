@@ -1,25 +1,38 @@
 import { describe, it, expect } from 'vitest';
 
 import { mount } from '@vue/test-utils';
-import PlDropdown from '../PlDropdownMulti.vue';
+import PlAutocompleteMulti from '../PlAutocompleteMulti.vue';
 import { delay } from '@milaboratories/helpers';
 
-describe('PlDropdownMulti', () => {
+describe('PlAutocompleteMulti', () => {
   it('modelValue', async () => {
-    const wrapper = mount(PlDropdown, {
+    const wrapper = mount(PlAutocompleteMulti, {
       props: {
         'modelValue': [1],
         'onUpdate:modelValue': (e) => wrapper.setProps({ modelValue: e }),
-        'options': [
-          { text: 'Option 1', value: 1 },
-          { text: 'Option 2', value: 2 },
-        ],
+        'debounce': 0,
+        'modelSearch': async (values) => {
+          return [
+            { label: 'Option 1', value: 1 },
+            { label: 'Option 2', value: 2 },
+          ].filter((v) => values.includes(v.value));
+        },
+        'optionsSearch': async () => {
+          return [
+            { label: 'Option 1', value: 1 },
+            { label: 'Option 2', value: 2 },
+          ];
+        },
       },
     });
 
+    await delay(10);
+    await wrapper.find('.pl-autocomplete-multi__envelope').trigger('click');
     await wrapper.find('input').trigger('focus');
 
     const getOptions = () => [...document.body.querySelectorAll('.dropdown-list-item')] as HTMLElement[];
+
+    await delay(1);
 
     const options = getOptions();
 

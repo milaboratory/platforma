@@ -48,7 +48,8 @@
     "d3-array": "catalog:",
     "d3-selection": "catalog:",
     "d3-axis": "catalog:",
-    "resize-observer-polyfill": "catalog:"
+    "resize-observer-polyfill": "catalog:",
+    "canonicalize": "catalog:"
   },
   "devDependencies": {
     "@milaboratories/ts-configs": "workspace:*",
