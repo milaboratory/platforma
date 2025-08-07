@@ -35,6 +35,7 @@
     "@milaboratories/oclif-index": "workspace:*",
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/eslint-config": "workspace:^",
+    "@platforma-open/milaboratories.runenv-python-3": "catalog:",
     "@types/archiver": "^6.0.3",
     "@types/jest": "catalog:",
     "@types/node": "catalog:",
