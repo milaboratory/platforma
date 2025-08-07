@@ -1,5 +1,14 @@
 # @milaboratories/pl-client
 
+## 2.11.9
+
+### Patch Changes
+
+- 3f93434: Packages configuration normalization
+- Updated dependencies [3f93434]
+  - @milaboratories/ts-helpers@1.4.4
+  - @milaboratories/pl-http@1.1.6
+
 ## 2.11.8
 
 ### Patch Changes

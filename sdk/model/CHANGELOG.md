@@ -1,5 +1,14 @@
 # @platforma-sdk/model
 
+## 1.42.20
+
+### Patch Changes
+
+- 3f93434: Packages configuration normalization
+- Updated dependencies [3f93434]
+  - @milaboratories/pl-error-like@1.12.3
+  - @milaboratories/pl-model-common@1.19.8
+
 ## 1.42.16
 
 ### Patch Changes
