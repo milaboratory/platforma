@@ -217,7 +217,7 @@ export class Core {
     }
 
     if (pkg.type === 'docker') {
-      await this.buildDockerImage(pkg.id, pkg);
+      await this.buildDockerImage(pkg);
       return;
     }
 
@@ -254,12 +254,11 @@ export class Core {
         continue
       }
 
-      await this.buildDockerImage(pkgID, pkg);
+      await this.buildDockerImage(pkg);
     }
   }
 
-  private async buildDockerImage(pkgID: string, buildParams: DockerPackage) {
-    const packageName = this.pkg.packageName.split('/').pop() ?? '';
+  private async buildDockerImage(buildParams: DockerPackage) {
     const dockerfile = path.resolve(this.pkg.packageRoot, buildParams.dockerfile ?? 'Dockerfile');
     const context = path.resolve(this.pkg.packageRoot, buildParams.context ?? '.');
     const entrypoint = buildParams.entrypoint ?? [];
@@ -294,15 +293,13 @@ export class Core {
     os: string,
     arch: string,
   ) {
-    this.logger.debug(
+  this.logger.debug(
       `  rendering 'package.sw.json' to be embedded into ${packageContentType} archive`,
     );
+    const swJson = this.renderer.renderPackageDescriptor(this.buildMode, pkg);
 
-    if (pkg.type === 'docker') {
-      this.logger.debug(
-        `  rendering 'package.sw.json' to be embedded into ${packageContentType} archive`,
-      );
-    }
+    const swJsonPath = path.join(contentRoot, 'package.sw.json');
+    fs.writeFileSync(swJsonPath, JSON.stringify(swJson));
 
     this.logger.info(`  packing ${packageContentType} into a package`);
     if (pkg.crossplatform) {

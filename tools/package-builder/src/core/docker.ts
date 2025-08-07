@@ -3,6 +3,7 @@ import { DockerPackage, PackageConfig } from "./package-info";
 import * as util from './util';
 import * as fs from 'fs';
 import * as path from 'path';
+import { PL_DOCKER_REGISTRY } from "./envs";
 
 export const defaultDockerRegistry = 'quora.io';
 
@@ -63,6 +64,6 @@ function contentHash(contextFullPath: string, dockerfileFullPath: string): strin
 }
 
 function dockerTag(packageName: string, version: string, contentHash: string): string {
-  const dockerRegistry = process.env.PL_DOCKER_REGISTRY ?? defaultDockerRegistry;
+  const dockerRegistry = process.env[PL_DOCKER_REGISTRY] ?? defaultDockerRegistry;
   return `${dockerRegistry}/${packageName}.${contentHash}:${version}`;
 }

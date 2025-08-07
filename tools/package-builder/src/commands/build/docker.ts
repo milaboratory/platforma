@@ -21,7 +21,7 @@ export default class Docker extends Command {
     core.buildMode = cmdOpts.modeFromFlag(flags.dev as cmdOpts.devModeName);
     core.pkg.version = flags.version;
 
-    core.buildDockerImages({
+    await core.buildDockerImages({
         ids: flags['package-id'],
     });
   }

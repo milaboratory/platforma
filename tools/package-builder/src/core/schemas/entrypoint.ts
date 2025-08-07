@@ -44,14 +44,6 @@ export const environmentOptionsSchema = z.strictObject({
     .describe('list of environment variables to be set for any command inside this run environment'),
 });
 
-export const dockerOptionsSchema = z.strictObject({
-  artifact: artifactOrRef,
-  cmd: z
-    .array(z.string())
-    .describe(
-      'command to run for this entrypoint. This command will be appended by <args> set inside workflow',
-    ),
-});
 
 export const infoSchema = z
   .strictObject({
