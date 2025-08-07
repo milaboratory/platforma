@@ -8,6 +8,7 @@ import * as envs from './envs';
 import * as artifacts from './schemas/artifacts';
 import * as entrypoint from './schemas/entrypoint';
 import { tryResolve } from '@milaboratories/resolve-helper';
+import { dockerEntrypointName } from './docker';
 
 export interface PackageArchiveInfo extends artifacts.archiveRules {
   name: string;
@@ -243,14 +244,14 @@ export class PackageInfo {
       try {
         this.logger.debug(`  - loading '${pkgJsonPath}'`);
         if (!fs.existsSync(pkgJsonPath)) {
-          this.logger.error(`no '${packageJsonSchema}' file found at '${this.packageRoot}'`);
+          this.logger.error(`no '${util.packageJsonName}' file found at '${this.packageRoot}'`);
           throw new Error('not a platform software package directory');
         }
 
         this.pkgJson = readPackageJson(pkgJsonPath);
         this.logger.debug('    ' + JSON.stringify(this.pkgJson));
       } catch (e) {
-        this.logger.error(`Failed to read and parse '${pkgJsonPath}': `, e);
+        this.logger.error(`Failed to read and parse '${util.packageJsonName}': `, e);
         throw e;
       }
     }
@@ -270,6 +271,20 @@ export class PackageInfo {
     const list = new Map<string, Entrypoint>();
 
     for (const [epName, ep] of Object.entries(this.pkgJson['block-software'].entrypoints)) {
+      if (ep.docker) {
+        const packageID = typeof ep.docker.artifact === 'string' ? ep.docker.artifact : epName;
+        const pkg = this.getPackage(packageID, 'docker');
+        // will mix docker to separate entrypoint
+        // render function have to merge 
+        list.set(dockerEntrypointName(epName), {
+          type: 'software',
+          name: epName,
+          package: pkg,
+          cmd: ep.docker.cmd ?? [],
+          env: ep.docker.envVars ?? [],
+        });
+      }
+
       if (ep.reference) {
         list.set(epName, {
           type: 'reference',
@@ -313,28 +328,25 @@ export class PackageInfo {
         continue;
       }
 
-      if (ep.docker) {
-        const packageID = typeof ep.docker.artifact === 'string' ? ep.docker.artifact : epName;
-        list.set(epName, {
-          type: 'software',
-          name: epName,
-          package: this.getPackage(packageID),
-          cmd: ep.docker.cmd ?? [],
-          env: ep.docker.envVars ?? [],
-        });
-        continue;
+      if (list.size === 0) {
+        throw new Error(
+          `entrypoint '${epName}' type is not supported by current platforma package builder`,
+        );
       }
-
-      throw new Error(
-        `entrypoint '${epName}' type is not supported by current platforma package builder`,
-      );
     }
 
     return list;
   }
 
-  public getEntrypoint(name: string): Entrypoint {
-    return this.entrypoints.get(name)!;
+  // Get not docker entrypoint if exists. 
+  // If only docker entrypoint exists, return it.
+  public getMainEntrypoint(name: string): Entrypoint {
+    const ep = this.entrypoints.get(name)
+    if (ep) {
+      return ep;
+    }
+
+    return this.entrypoints.get(dockerEntrypointName(name))!;
   }
 
   /**
@@ -379,9 +391,9 @@ export class PackageInfo {
     return result;
   }
 
-  public getPackage(id: string): PackageConfig {
+  public getPackage(id: string, type?: string): PackageConfig {
     const pkgRoot = this.packageRoot;
-    const artifact = this.getArtifact(id);
+    const artifact = this.getArtifact(id, type);
 
     const crossplatform
       = artifact.roots !== undefined ? false : artifacts.isCrossPlatform(artifact.type);
@@ -437,7 +449,7 @@ export class PackageInfo {
     };
   }
 
-  private getArtifact(id: string): artifacts.config {
+  private getArtifact(id: string, type?: string): artifacts.config {
     const artifacts = this.pkgJson['block-software'].artifacts ?? {};
     const entrypoints = this.pkgJson['block-software'].entrypoints;
 
@@ -459,7 +471,14 @@ export class PackageInfo {
       };
     }
 
-    const idOrArtifact = ep.asset ?? ep.environment?.artifact ?? ep.docker?.artifact ?? ep.binary!.artifact ;
+    switch (type) {
+      case 'docker':
+        return ep.docker!.artifact;
+      default:
+        break;
+    }
+
+    const idOrArtifact = ep.asset ?? ep.environment?.artifact ?? ep.binary!.artifact ;
 
     if (typeof idOrArtifact !== 'string') {
       return idOrArtifact;

@@ -7,6 +7,18 @@ import { PL_DOCKER_REGISTRY } from "./envs";
 
 export const defaultDockerRegistry = 'quora.io';
 
+export function dockerEntrypointName(name: string): string {
+  return name + ":docker";
+}
+
+export function dockerEntrypointNameToOrigin(name: string): string {
+  const suffixIndex = name.indexOf(":docker")
+  if (suffixIndex === -1) {
+    return name;
+  }
+  return name.substring(0, suffixIndex);
+}
+
 export function dockerPush(tag: string) {
   const result = spawnSync('docker', ['push', tag], { stdio: 'inherit' });
   if (result.error) {

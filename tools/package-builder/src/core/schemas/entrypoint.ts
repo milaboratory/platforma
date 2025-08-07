@@ -2,7 +2,7 @@ import { z } from 'zod';
 import * as artifacts from './artifacts';
 import { toInt } from '../util';
 
-const artifactOrRef = z.union([z.string(), artifacts.configSchema, artifacts.dockerPackageSchema]);
+const artifactOrRef = artifacts.configSchema;
 
 const envVarsSchema = z.array(
   z
@@ -59,8 +59,7 @@ export const infoSchema = z
         + toInt(data.asset)
         + toInt(data.binary)
         + toInt(data.environment)
-        + toInt(data.docker);
-      return n === 1;
+      return n === 1 || data.docker !== undefined;
     },
     {
       message:

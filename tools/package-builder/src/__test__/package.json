@@ -1,9 +1,25 @@
 {
   "name": "@platforma-open/docker-build-test",
   "version": "0.0.1",
+  "dependencies": {
+    "@platforma-open/milaboratories.runenv-python-3": "catalog:"
+  },
   "block-software": {
       "entrypoints": {
         "test-docker": {
+          "binary": {
+          "artifact": {
+            "type": "python",
+            "registry": "platforma-open",
+            "environment": "@platforma-open/milaboratories.runenv-python-3:3.12.6",
+            "dependencies": {
+              "toolset": "pip",
+              "requirements": "requirements.txt"
+            },
+            "root": "./python-example"
+          },
+            "cmd": ["aaaa"]
+          },
           "docker": {
             "artifact": {
               "type": "docker",
@@ -15,4 +31,6 @@
         }
       }
   }
+
+
 }

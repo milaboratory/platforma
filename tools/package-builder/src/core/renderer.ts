@@ -5,7 +5,7 @@ import { z } from 'zod';
 import type { Entrypoint, EntrypointType, PackageConfig, PackageEntrypoint } from './package-info';
 import * as artifacts from './schemas/artifacts';
 import * as util from './util';
-import { dockerTagFromPackage } from './docker';
+import { dockerEntrypointNameToOrigin, dockerTagFromPackage } from './docker';
 
 const externalPackageLocationSchema = z.object({
   registry: z.string().describe('name of the registry to use for package download'),
@@ -287,7 +287,6 @@ export class Renderer {
 
     const fullDirHash = options?.fullDirHash ?? false;
 
-
     this.logger.info(`Rendering entrypoint descriptors...`);
     this.logger.debug('  entrypoints: ' + JSON.stringify(entrypoints));
 
@@ -300,30 +299,35 @@ export class Renderer {
 
       this.logger.debug(`Rendering entrypoint descriptor '${epName}'...`);
 
-      const info: entrypointSwJson = {
+      // In docker case we should merge docker info and other info
+      //
+      const originEpName = dockerEntrypointNameToOrigin(epName);
+      const info = result.has(originEpName) ? result.get(originEpName) : {
         id: {
           package: this.npmPackageName,
-          name: epName,
+          name: originEpName,
         },
       };
+      if (!info) {
+        throw new Error(`Entrypoint ${epName} not found in result`);
+      }
 
       if (mode !== 'release') {
         info.isDev = true;
       }
 
       const pkg = ep.package;
-
       if (mode === 'dev-local') {
         switch (pkg.type) {
           case 'docker':
-            this.logger.debug('  rendering \'docker\' source...');
             info.docker = this.renderDockerInfo(epName, ep);
             break;
           default:
             this.logger.debug('  rendering \'local\' source...');
             info.local = this.renderLocalInfo(epName, ep, fullDirHash);
         }
-        result.set(epName, info);
+
+        result.set(originEpName, info);
         continue;
       }
 
@@ -355,7 +359,7 @@ export class Renderer {
           throw new Error(`renderer logic error: renderSoftwareEntrypoints does not cover all package types`);
       }
 
-      result.set(epName, info);
+      result.set(originEpName, info);
     }
 
     if (result.size === 0 && !hasReferences) {

@@ -11,7 +11,7 @@ test('PackageInfo loads correctly for multi-package', () => {
   });
 
 
-  var pkg = i.getPackage('pAsset');
+  var pkg = i.getPackage(artifacts.EPNameAsset);
   expect(pkg.registry.name).toEqual(artifacts.BinaryRegistry);
   expect(pkg.name).toEqual(artifacts.PackageNameNoAt + '/pAsset');
   expect(pkg.version).toEqual(artifacts.PackageVersion);
@@ -22,9 +22,9 @@ test('PackageInfo loads correctly for multi-package', () => {
   expect(pkg.name).toEqual(artifacts.BinaryCustomName1);
   expect(pkg.version).toEqual(artifacts.BinaryCustomVersion);
 
-  var pkg = i.getPackage('pEnv');
+  var pkg = i.getPackage(artifacts.EPNameJavaEnvironment);
   expect(pkg.registry.name).toEqual(artifacts.BinaryRegistry);
-  expect(pkg.name).toEqual(artifacts.PackageNameNoAt + '/pEnv');
+  expect(pkg.name).toEqual(artifacts.PackageNameNoAt + '/' + artifacts.EPNameJavaEnvironment);
   expect(pkg.version).toEqual(artifacts.PackageVersion);
 });
 
@@ -44,9 +44,9 @@ test('PackageInfo considers version override', () => {
   var pkg = i.getPackage(artifacts.EPNameCustomName);
   expect(pkg.version).toEqual(customVersion);
 
-  var pkg = i.getPackage('pEnv');
+  var pkg = i.getPackage(artifacts.EPNameJavaEnvironment);
   expect(pkg.version).toEqual(customVersion);
 
-  var pkg = i.getPackage('pEnvDep');
+  var pkg = i.getPackage(artifacts.EPNameJavaDependency);
   expect(pkg.version).toEqual(customVersion);
 });

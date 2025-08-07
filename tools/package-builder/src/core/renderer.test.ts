@@ -32,7 +32,7 @@ describe('Renderer tests', () => {
   test('render asset', () => {
     const epName = artifacts.EPNameAsset;
     const sw = new Renderer(l, i.packageName, i.packageRoot);
-    const eps = new Map([[epName, i.getEntrypoint(epName)]]);
+    const eps = new Map([[epName, i.getMainEntrypoint(epName)]]);
     const descriptor = sw.renderSoftwareEntrypoints('release', eps).get(epName)!;
 
     const url = descriptor.asset!.url;
@@ -43,7 +43,7 @@ describe('Renderer tests', () => {
   test('render os-dependant', () => {
     const epName = artifacts.EPNameCustomName;
     const sw = new Renderer(l, i.packageName, i.packageRoot);
-    const eps = new Map([[epName, i.getEntrypoint(epName)]]);
+    const eps = new Map([[epName, i.getMainEntrypoint(epName)]]);
     const descriptor = sw.renderSoftwareEntrypoints('release', eps).get(epName)!;
 
     expect(descriptor.binary!.package).toEqual(
@@ -54,11 +54,11 @@ describe('Renderer tests', () => {
   test('render environment', () => {
     const epName = artifacts.EPNameJavaEnvironment;
     const sw = new Renderer(l, i.packageName, i.packageRoot);
-    const eps = new Map([[epName, i.getEntrypoint(epName)]]);
+    const eps = new Map([[epName, i.entrypoints.get(epName)!]]);
     const descriptor = sw.renderSoftwareEntrypoints('release', eps).get(epName)!;
 
     expect(descriptor.runEnv!.package).toEqual(
-      `${artifacts.PackageNameNoAt}/pEnv/${artifacts.PackageVersion}-{os}-{arch}.tgz`
+      `${artifacts.PackageNameNoAt}/${artifacts.EPNameJavaEnvironment}/${artifacts.PackageVersion}-{os}-{arch}.tgz`
     );
     expect(descriptor.runEnv!.type).toEqual('java');
     expect(descriptor.runEnv!.binDir).toEqual('.');
@@ -67,7 +67,7 @@ describe('Renderer tests', () => {
   test('read descriptor after render', () => {
     const epName = artifacts.EPNameCustomName;
     const sw = new Renderer(l, i.packageName, i.packageRoot);
-    const eps = new Map([[epName, i.getEntrypoint(epName)]]);
+    const eps = new Map([[epName, i.getMainEntrypoint(epName)]]);
     const renderedDescriptor = sw.renderSoftwareEntrypoints('release', eps).get(epName)!;
 
     sw.writeEntrypointDescriptor(renderedDescriptor);
@@ -87,31 +87,36 @@ describe('Renderer tests', () => {
     const epName = artifacts.EPNameJavaDependency;
 
     const renderer = new Renderer(l, i.packageName, i.packageRoot);
-    const envEps = new Map([[envEpName, i.getEntrypoint(envEpName)]]);
+    const envEps = new Map([[envEpName, i.getMainEntrypoint(envEpName)]]);
 
     const envDescriptor = renderer.renderSoftwareEntrypoints('release', envEps).get(envEpName)!;
     renderer.writeEntrypointDescriptor(envDescriptor);
 
-    const eps = new Map([[epName, i.getEntrypoint(epName)]]);
+    const eps = new Map([[epName, i.getMainEntrypoint(epName)]]);
 
     const descriptor = renderer.renderSoftwareEntrypoints('release', eps).get(epName)!;
     expect(descriptor.binary!.package).toEqual(
-      `${artifacts.PackageNameNoAt}/pEnvDep/${artifacts.PackageVersion}.tgz`
+      `${artifacts.PackageNameNoAt}/${artifacts.EPNameJavaDependency}/${artifacts.PackageVersion}.tgz`
     );
   });
 
   test('render docker', () => {
     const epName = artifacts.EPNameDocker;
+    const envEpName = artifacts.EPNameJavaEnvironment;
 
     fs.mkdirSync(path.join(i.packageRoot, i.packageRoot), { recursive: true });
     fs.writeFileSync(path.join(i.packageRoot, 'Dockerfile'), "FROM scratch", )
     fs.writeFileSync(path.join(i.packageRoot, 'package.json'), artifacts.PackageJson);
 
-    const sw = new Renderer(l, i.packageName, i.packageRoot);
-    const eps = new Map([[epName, i.getEntrypoint(epName)]]);
-    const descriptor = sw.renderSoftwareEntrypoints('release', eps).get(epName)!;
+    const render = new Renderer(l, i.packageName, i.packageRoot);
+    const envEps = new Map([[envEpName, i.getMainEntrypoint(envEpName)]]);
+    const envDescriptor = render.renderSoftwareEntrypoints('release', envEps).get(envEpName)!;
+    render.writeEntrypointDescriptor(envDescriptor);
 
-    const expectedTag = new RegExp(`${defaultDockerRegistry}/${artifacts.PackageNameNoAt}\\/${artifacts.EPNameDocker}\\.(?<hash>.*):1\\.2\\.3`);
+    const descriptor = render.renderSoftwareEntrypoints('release', i.entrypoints).get(epName)!;
+
+    const expectedTag = new RegExp(`${defaultDockerRegistry}/${artifacts.PackageNameNoAt}\\/${artifacts.EPNameDocker}:(?<hash>.*)`);
+    expect(descriptor.docker).toBeDefined();
     expect(descriptor.docker!.tag).toMatch(expectedTag);
     expect(descriptor.docker!.cmd).toEqual(['echo', 'hello']);
     expect(descriptor.docker!.entrypoint).toEqual(['/usr/bin/env', 'printf']);
