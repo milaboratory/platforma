@@ -2254,6 +2254,9 @@ importers:
       '@vueuse/integrations':
         specifier: 'catalog:'
         version: 13.3.0(axios@1.8.1)(focus-trap@7.6.0)(sortablejs@1.15.6)(vue@3.5.13(typescript@5.6.3))
+      canonicalize:
+        specifier: 'catalog:'
+        version: 2.1.0
       d3-array:
         specifier: 'catalog:'
         version: 3.2.4

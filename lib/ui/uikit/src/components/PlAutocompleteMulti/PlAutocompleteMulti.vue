@@ -3,26 +3,27 @@
  * A component for selecting multiple values from a list of options
  */
 export default {
-  name: 'PlDropdownMulti',
+  name: 'PlAutocompleteMulti',
 };
 </script>
 
 <script lang="ts" setup generic="M = unknown">
-import './pl-dropdown-multi.scss';
-import { computed, reactive, ref, unref, useSlots, useTemplateRef, watch, watchPostEffect } from 'vue';
+import './pl-autocomplete-multi.scss';
+import { computed, reactive, ref, unref, useSlots, useTemplateRef, watch, toRef } from 'vue';
 import { tap } from '../../helpers/functions';
 import { PlTooltip } from '../PlTooltip';
 import { PlChip } from '../PlChip';
 import DoubleContour from '../../utils/DoubleContour.vue';
 import { useLabelNotch } from '../../utils/useLabelNotch';
-import type { ListOption } from '../../types';
 import DropdownListItem from '../DropdownListItem.vue';
 import { deepEqual, deepIncludes } from '../../helpers/objects';
-import { normalizeListOptions } from '../../helpers/utils';
 import DropdownOverlay from '../../utils/DropdownOverlay/DropdownOverlay.vue';
 import { PlMaskIcon24 } from '../PlMaskIcon24';
 import SvgRequired from '../../generated/components/svg/images/SvgRequired.vue';
 import { getErrorMessage } from '../../helpers/error.ts';
+import { useWatchFetch } from '../../composition/useWatchFetch.ts';
+import canonicalize from 'canonicalize';
+import type { ListOptionBase } from '@platforma-sdk/model';
 
 const emit = defineEmits<{
   (e: 'update:modelValue', v: M[]): void;
@@ -39,13 +40,21 @@ const props = withDefaults(
      */
     modelValue: M[];
     /**
+     * Lambda for requesting of available options for the dropdown by search string.
+     */
+    optionsSearch: (s: string) => Promise<Readonly<ListOptionBase<M>[]>>;
+    /**
+     * Lambda for requesting options that correspond to the current model values.
+     */
+    modelSearch: (values: M[]) => Promise<Readonly<ListOptionBase<M>[]>>;
+    /**
+     * Unique identifier for the source of the options, changing it will invalidate the options cache.
+     */
+    sourceId?: string;
+    /**
      * The label text for the dropdown field (optional)
      */
     label?: string;
-    /**
-     * List of available options for the dropdown
-     */
-    options?: Readonly<ListOption<M>[]>;
     /**
      * A helper text displayed below the dropdown when there are no errors (optional).
      */
@@ -66,6 +75,18 @@ const props = withDefaults(
      * If `true`, the dropdown component is disabled and cannot be interacted with.
      */
     disabled?: boolean;
+    /**
+     * Debounce time in ms for the options search.
+     */
+    debounce?: number;
+    /**
+     * If `true`, the search input is reset and focus is set on it when the new option is selected.
+     */
+    resetSearchOnSelect?: boolean;
+    /**
+     * The text to display when no options are found.
+     */
+    emptyOptionsText?: string;
   }>(),
   {
     modelValue: () => [],
@@ -75,12 +96,14 @@ const props = withDefaults(
     placeholder: '...',
     required: false,
     disabled: false,
-    options: undefined,
+    debounce: 300,
+    emptyOptionsText: 'Nothing found',
+    sourceId: undefined,
   },
 );
 
 const rootRef = ref<HTMLElement | undefined>();
-const input = ref<HTMLInputElement | undefined>();
+const inputRef = ref<HTMLInputElement | undefined>();
 
 const overlay = useTemplateRef('overlay');
 
@@ -90,6 +113,12 @@ const data = reactive({
   open: false,
   optionsHeight: 0,
 });
+
+watch(() => data.open, (v) => {
+  if (!v) {
+    data.search = '';
+  }
+}, { flush: 'sync' });
 
 const selectedValuesRef = computed(() => (Array.isArray(props.modelValue) ? props.modelValue : []));
 
@@ -101,45 +130,65 @@ const placeholderRef = computed(() => {
   return props.modelValue.length > 0 ? '' : props.placeholder;
 });
 
-const normalizedOptionsRef = computed(() => normalizeListOptions(props.options ?? []));
+const debounce = toRef(props, 'debounce');
+
+const searchOptionsRef = useWatchFetch(() => [data.search, data.open, props.sourceId] as const, async ([search, _open]) => {
+  return props.optionsSearch(search);
+}, {
+  filterWatchResult: ([_search, open]) => open,
+  debounce,
+});
+
+const modelOptionsRef = useWatchFetch(() => [props.modelValue, props.sourceId] as const, async ([v]) => {
+  return props.modelSearch(v);
+}, {
+  debounce,
+});
+
+const allOptionsRef = computed(() => {
+  const modelOptions = modelOptionsRef.value ?? [];
+  const searchOptions = searchOptionsRef.value ?? [];
+
+  const seenValues = new Set<string | undefined>();
+  const result = [] as ListOptionBase<M>[];
+
+  const addOptions = (options: Readonly<ListOptionBase<M>[]>) => {
+    for (const option of options) {
+      const canonicalValue = canonicalize(option.value);
+      if (!seenValues.has(canonicalValue)) {
+        seenValues.add(canonicalValue);
+        result.push(option);
+      }
+    }
+  };
+
+  addOptions(modelOptions);
+  addOptions(searchOptions);
+
+  return result;
+});
 
 const selectedOptionsRef = computed(() => {
-  return selectedValuesRef.value.map((v) => normalizedOptionsRef.value.find((opt) => deepEqual(opt.value, v))).filter((v) => v !== undefined);
+  return selectedValuesRef.value.map((v) =>
+    allOptionsRef.value.find((opt) => deepEqual(opt.value, v))).filter((v) => v !== undefined,
+  );
 });
 
 const filteredOptionsRef = computed(() => {
   const selectedValues = unref(selectedValuesRef);
 
-  const options = unref(normalizedOptionsRef);
+  const options = searchOptionsRef.value ?? [];
 
-  return (
-    data.search
-      ? options.filter((opt) => {
-        const search = data.search.toLowerCase();
-
-        if (opt.label.toLowerCase().includes(search)) {
-          return true;
-        }
-
-        if (typeof opt.value === 'string') {
-          return opt.value.toLowerCase().includes(search);
-        }
-
-        return opt.value === data.search;
-      })
-      : [...options]
-  ).map((opt) => ({
+  return [...options].map((opt) => ({
     ...opt,
     selected: deepIncludes(selectedValues, opt.value),
   }));
 });
 
-const isLoadingOptions = computed(() => {
-  return props.options === undefined;
-});
+const isOptionsLoading = computed(() => searchOptionsRef.loading || modelOptionsRef.loading);
 
 const isDisabled = computed(() => {
-  if (isLoadingOptions.value) {
+  if (modelOptionsRef.value === undefined) {
     return true;
   }
 
@@ -155,26 +204,22 @@ const updateActiveOption = () => {
 const selectOption = (v: M) => {
   const values = unref(selectedValuesRef);
   emitModel(deepIncludes(values, v) ? values.filter((it) => !deepEqual(it, v)) : [...values, v]);
-  data.search = '';
-  rootRef?.value?.focus();
+  if (props.resetSearchOnSelect) {
+    data.search = '';
+  }
+  inputRef.value?.focus();
 };
 
 const unselectOption = (d: M) => emitModel(unref(selectedValuesRef).filter((v) => !deepEqual(v, d)));
 
-const setFocusOnInput = () => input.value?.focus();
+const setFocusOnInput = () => inputRef.value?.focus();
 
-const toggleModel = () => {
-  data.open = !data.open;
-  if (!data.open) {
-    data.search = '';
-  }
-};
+const toggleOpen = () => data.open = !data.open;
 
 const onFocusOut = (event: FocusEvent) => {
   const relatedTarget = event.relatedTarget as Node | null;
 
   if (!rootRef.value?.contains(relatedTarget) && !overlay.value?.listRef?.contains(relatedTarget)) {
-    data.search = '';
     data.open = false;
   }
 };
@@ -191,7 +236,7 @@ const handleKeydown = (e: { code: string; preventDefault(): void }) => {
 
   if (e.code === 'Escape') {
     data.open = false;
-    rootRef.value?.focus();
+    inputRef.value?.focus();
   }
 
   const filteredOptions = unref(filteredOptionsRef);
@@ -225,30 +270,45 @@ watch(
   { immediate: true },
 );
 
-watchPostEffect(() => {
-  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-  data.search;
-
-  if (data.open) {
-    overlay.value?.scrollIntoActive();
+const computedError = computed(() => {
+  if (isOptionsLoading.value) {
+    return undefined;
   }
+
+  if (searchOptionsRef.error) {
+    return getErrorMessage(searchOptionsRef.error);
+  }
+
+  if (modelOptionsRef.error) {
+    return getErrorMessage(modelOptionsRef.error);
+  }
+
+  if (props.error) {
+    return getErrorMessage(props.error);
+  }
+
+  if (props.modelValue.length && selectedOptionsRef.value.length !== props.modelValue.length) {
+    return 'The selected values are not one of the options';
+  }
+
+  return undefined;
 });
 </script>
 
 <template>
-  <div class="pl-dropdown-multi__envelope" @click="setFocusOnInput">
+  <div class="pl-autocomplete-multi__envelope" @click="setFocusOnInput">
     <div
       ref="rootRef"
       :tabindex="tabindex"
-      class="pl-dropdown-multi"
-      :class="{ open: data.open, error, disabled: isDisabled }"
+      class="pl-autocomplete-multi"
+      :class="{ open: data.open, error: Boolean(computedError), disabled: isDisabled }"
       @keydown="handleKeydown"
       @focusout="onFocusOut"
     >
-      <div class="pl-dropdown-multi__container">
-        <div class="pl-dropdown-multi__field">
+      <div class="pl-autocomplete-multi__container">
+        <div class="pl-autocomplete-multi__field">
           <input
-            ref="input"
+            ref="inputRef"
             v-model="data.search"
             type="text"
             tabindex="-1"
@@ -264,10 +324,10 @@ watchPostEffect(() => {
             </PlChip>
           </div>
 
-          <div class="pl-dropdown-multi__controls">
-            <PlMaskIcon24 v-if="isLoadingOptions" name="loading" />
+          <div class="pl-autocomplete-multi__controls">
+            <PlMaskIcon24 v-if="isOptionsLoading" name="loading" />
             <slot name="append" />
-            <div class="pl-dropdown-multi__arrow-wrapper" @click.stop="toggleModel">
+            <div class="pl-autocomplete-multi__arrow-wrapper" @click.stop="toggleOpen">
               <div class="arrow-icon arrow-icon-default" />
             </div>
           </div>
@@ -285,13 +345,19 @@ watchPostEffect(() => {
           v-if="data.open"
           ref="overlay"
           :root="rootRef"
-          class="pl-dropdown-multi__options"
+          class="pl-autocomplete-multi__options"
           :gap="5"
           tabindex="-1"
           @focusout="onFocusOut"
         >
-          <div class="pl-dropdown-multi__open-chips-container">
-            <PlChip v-for="(opt, i) in selectedOptionsRef" :key="i" closeable small @close="unselectOption(opt.value)">
+          <div class="pl-autocomplete-multi__open-chips-container">
+            <PlChip
+              v-for="(opt, i) in selectedOptionsRef"
+              :key="i"
+              closeable
+              small
+              @close="unselectOption(opt.value)"
+            >
               {{ opt.label || opt.value }}
             </PlChip>
           </div>
@@ -306,12 +372,12 @@ watchPostEffect(() => {
             use-checkbox
             @click.stop="selectOption(item.value)"
           />
-          <div v-if="!filteredOptionsRef.length" class="nothing-found">Nothing found</div>
+          <div v-if="!filteredOptionsRef.length && !isOptionsLoading" class="nothing-found">{{ emptyOptionsText }}</div>
         </DropdownOverlay>
-        <DoubleContour class="pl-dropdown-multi__contour" />
+        <DoubleContour class="pl-autocomplete-multi__contour" />
       </div>
     </div>
-    <div v-if="error" class="pl-dropdown-multi__error">{{ getErrorMessage(error) }}</div>
-    <div v-else-if="helper" class="pl-dropdown-multi__helper">{{ helper }}</div>
+    <div v-if="computedError" class="pl-autocomplete-multi__error">{{ computedError }}</div>
+    <div v-else-if="helper" class="pl-autocomplete-multi__helper">{{ helper }}</div>
   </div>
 </template>
