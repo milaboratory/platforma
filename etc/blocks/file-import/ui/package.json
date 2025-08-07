@@ -1,0 +1,26 @@
+{
+  "name": "@milaboratories/milaboratories.file-import-block.ui",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "watch": "vue-tsc && vite build --watch",
+    "build": "vue-tsc -b && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@milaboratories/milaboratories.file-import-block.model": "workspace:*",
+    "@platforma-sdk/ui-vue": "workspace:^",
+    "vue": "catalog:"
+  },
+  "devDependencies": {
+    "@milaboratories/ts-configs": "workspace:*",
+    "@milaboratories/build-configs": "workspace:*",
+    "@vitejs/plugin-vue": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vue-tsc": "catalog:",
+    "zod": "catalog:"
+  }
+}

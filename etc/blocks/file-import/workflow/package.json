@@ -1,0 +1,16 @@
+{
+  "name": "@milaboratories/milaboratories.file-import-block.workflow",
+  "private": true,
+  "version": "1.0.14",
+  "type": "module",
+  "description": "Tengo-based template",
+  "scripts": {
+    "build": "rm -rf dist && pl-tengo check && pl-tengo build"
+  },
+  "dependencies": {
+    "@platforma-sdk/workflow-tengo": "workspace:*"
+  },
+  "devDependencies": {
+    "@platforma-sdk/tengo-builder": "workspace:*"
+  }
+}
