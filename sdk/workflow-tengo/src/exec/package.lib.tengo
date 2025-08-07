@@ -31,7 +31,7 @@ DEFAULT_ALLOCATION_CPU := 1
 get := func(registryName, pkgName) {
 	res := smart.structBuilder(_RTYPE_PACKAGE_GET).lockAndBuild()
 
-	// TODO: remove this hack and all mentions of META_KEY_DESCRIPTOR after 2026-02-01
+	// TODO: remove this hack and all mentions of META_KEY_DESCRIPTOR after 2026-02-01 (backend v1.42.0 was released long ago)
 	res.kvSet(META_KEY_DESCRIPTOR, json.encode({
 		binary: {
 			registry: registryName,
