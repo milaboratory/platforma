@@ -1,18 +1,18 @@
-import { spawnSync } from "child_process";
-import { DockerPackage, PackageConfig } from "./package-info";
+import { spawnSync } from 'node:child_process';
+import type { DockerPackage } from './package-info';
 import * as util from './util';
-import * as fs from 'fs';
-import * as path from 'path';
-import { PL_DOCKER_REGISTRY } from "./envs";
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import { PL_DOCKER_REGISTRY } from './envs';
 
 export const defaultDockerRegistry = 'quora.io';
 
 export function dockerEntrypointName(name: string): string {
-  return name + ":docker";
+  return name + ':docker';
 }
 
 export function dockerEntrypointNameToOrigin(name: string): string {
-  const suffixIndex = name.indexOf(":docker")
+  const suffixIndex = name.indexOf(':docker');
   if (suffixIndex === -1) {
     return name;
   }

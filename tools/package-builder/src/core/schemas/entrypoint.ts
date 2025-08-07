@@ -44,7 +44,6 @@ export const environmentOptionsSchema = z.strictObject({
     .describe('list of environment variables to be set for any command inside this run environment'),
 });
 
-
 export const infoSchema = z
   .strictObject({
     reference: referenceSchema.optional(),
@@ -58,12 +57,12 @@ export const infoSchema = z
       const n = toInt(data.reference)
         + toInt(data.asset)
         + toInt(data.binary)
-        + toInt(data.environment)
+        + toInt(data.environment);
       return n === 1 || data.docker !== undefined;
     },
     {
       message:
-        "entrypoint cannot point to several packages at once: choose 'reference', 'asset', 'binary', 'environment' or 'docker'",
+        'entrypoint cannot point to several packages at once: choose \'reference\', \'asset\', \'binary\', \'environment\' or \'docker\'',
       path: ['reference | asset | binary | environment | docker'],
     },
   );

@@ -91,7 +91,7 @@ export interface RPackage extends artifacts.rPackageConfig, PackageArchiveInfo {
 //   version: string;
 //   crossplatform: boolean;
 // }
-export interface DockerPackage extends artifacts.dockerPackageConfig{
+export interface DockerPackage extends artifacts.dockerPackageConfig {
   registry: artifacts.registry; // TODO: delete this field
   name: string;
   version: string;
@@ -110,7 +110,7 @@ export type BuildablePackage =
   | JavaPackage
   | PythonPackage
   | RPackage
-  | DockerPackage
+  | DockerPackage;
 // CondaPackage
 
 export type PackageConfig = BuildablePackage & {
@@ -149,9 +149,8 @@ export interface EnvironmentEntrypoint {
   env: string[];
 }
 
-
-export type PackageEntrypoint = AssetEntrypoint | SoftwareEntrypoint | EnvironmentEntrypoint 
-export type Entrypoint = ReferenceEntrypoint | PackageEntrypoint
+export type PackageEntrypoint = AssetEntrypoint | SoftwareEntrypoint | EnvironmentEntrypoint;
+export type Entrypoint = ReferenceEntrypoint | PackageEntrypoint;
 export type EntrypointType = Extract<Entrypoint, { type: string }>['type'];
 
 const storagePresetSchema = z.object({
@@ -275,7 +274,7 @@ export class PackageInfo {
         const packageID = typeof ep.docker.artifact === 'string' ? ep.docker.artifact : epName;
         const pkg = this.getPackage(packageID, 'docker');
         // will mix docker to separate entrypoint
-        // render function have to merge 
+        // render function have to merge
         list.set(dockerEntrypointName(epName), {
           type: 'software',
           name: epName,
@@ -338,10 +337,10 @@ export class PackageInfo {
     return list;
   }
 
-  // Get not docker entrypoint if exists. 
+  // Get not docker entrypoint if exists.
   // If only docker entrypoint exists, return it.
   public getMainEntrypoint(name: string): Entrypoint {
-    const ep = this.entrypoints.get(name)
+    const ep = this.entrypoints.get(name);
     if (ep) {
       return ep;
     }
@@ -478,7 +477,7 @@ export class PackageInfo {
         break;
     }
 
-    const idOrArtifact = ep.asset ?? ep.environment?.artifact ?? ep.binary!.artifact ;
+    const idOrArtifact = ep.asset ?? ep.environment?.artifact ?? ep.binary!.artifact;
 
     if (typeof idOrArtifact !== 'string') {
       return idOrArtifact;

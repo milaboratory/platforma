@@ -302,12 +302,14 @@ export class Renderer {
       // In docker case we should merge docker info and other info
       //
       const originEpName = dockerEntrypointNameToOrigin(epName);
-      const info = result.has(originEpName) ? result.get(originEpName) : {
-        id: {
-          package: this.npmPackageName,
-          name: originEpName,
-        },
-      };
+      const info = result.has(originEpName)
+        ? result.get(originEpName)
+        : {
+            id: {
+              package: this.npmPackageName,
+              name: originEpName,
+            },
+          };
       if (!info) {
         throw new Error(`Entrypoint ${epName} not found in result`);
       }
@@ -372,7 +374,7 @@ export class Renderer {
 
   public renderPackageDescriptor(mode: util.BuildMode, pkg: PackageConfig): packageSwJson {
     if (pkg.type === 'docker') {
-      throw new Error('should call renderDockerDescriptor instead')  
+      throw new Error('should call renderDockerDescriptor instead');
     }
 
     return {

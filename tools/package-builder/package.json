@@ -6,7 +6,8 @@
     "type-check": "tsc --noEmit --composite false",
     "build": "oclif-index && vite build",
     "test": "vitest run",
-    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
+    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
+    "lint": "eslint ."
   },
   "bin": {
     "pl-pkg": "./bin/run.mjs"

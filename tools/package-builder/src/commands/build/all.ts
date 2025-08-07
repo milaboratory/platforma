@@ -29,7 +29,6 @@ export default class BuildAll extends Command {
     const { flags } = await this.parse(BuildAll);
     const logger = util.createLogger(flags['log-level']);
 
-
     try {
       const core = new Core(logger, { packageRoot: flags['package-root'] });
 

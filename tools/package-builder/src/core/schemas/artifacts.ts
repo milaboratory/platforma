@@ -135,7 +135,6 @@ export const condaPackageSchema = archiveRulesSchema.extend({
 });
 export type condaPackageConfig = z.infer<typeof condaPackageSchema>;
 
-
 export const dockerPackageSchema = archiveRulesSchema.extend({
   type: z.literal('docker'),
   registry: registryOrRef.optional(),

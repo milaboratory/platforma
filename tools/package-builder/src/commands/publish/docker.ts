@@ -27,7 +27,7 @@ export default class Docker extends Command {
     const core = new Core(logger, { packageRoot: flags['package-root'] });
     core.pkg.version = flags.version;
 
-    await core.publishDockerImages({
+    core.publishDockerImages({
       ids: flags['package-id'],
     });
   }

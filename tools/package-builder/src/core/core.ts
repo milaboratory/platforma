@@ -217,7 +217,7 @@ export class Core {
     }
 
     if (pkg.type === 'docker') {
-      await this.buildDockerImage(pkg);
+      this.buildDockerImage(pkg);
       return;
     }
 
@@ -241,7 +241,7 @@ export class Core {
     await this.createPackageArchive('software', pkg, archivePath, contentRoot, os, arch);
   }
 
-  public async buildDockerImages(
+  public buildDockerImages(
     options?: {
       ids?: string[];
     },
@@ -251,14 +251,14 @@ export class Core {
     for (const pkgID of packagesToBuild) {
       const pkg = this.getPackage(pkgID);
       if (pkg.type !== 'docker') {
-        continue
+        continue;
       }
 
-      await this.buildDockerImage(pkg);
+      this.buildDockerImage(pkg);
     }
   }
 
-  private async buildDockerImage(buildParams: DockerPackage) {
+  private buildDockerImage(buildParams: DockerPackage) {
     const dockerfile = path.resolve(this.pkg.packageRoot, buildParams.dockerfile ?? 'Dockerfile');
     const context = path.resolve(this.pkg.packageRoot, buildParams.context ?? '.');
     const entrypoint = buildParams.entrypoint ?? [];
@@ -293,7 +293,7 @@ export class Core {
     os: string,
     arch: string,
   ) {
-  this.logger.debug(
+    this.logger.debug(
       `  rendering 'package.sw.json' to be embedded into ${packageContentType} archive`,
     );
     const swJson = this.renderer.renderPackageDescriptor(this.buildMode, pkg);
@@ -403,7 +403,7 @@ export class Core {
     },
   ) {
     if (pkg.type === 'docker') {
-      await this.publishDockerImage(pkg);
+      this.publishDockerImage(pkg);
       return;
     }
 
@@ -485,7 +485,7 @@ export class Core {
     });
   }
 
-  public async publishDockerImages(options?: {
+  public publishDockerImages(options?: {
     ids?: string[];
   }) {
     const packagesToPublish = options?.ids ?? Array.from(this.buildablePackages.keys());
@@ -493,14 +493,14 @@ export class Core {
     for (const pkgID of packagesToPublish) {
       const pkg = this.getPackage(pkgID);
       if (pkg.type !== 'docker') {
-        continue
+        continue;
       }
 
-      await this.publishDockerImage(pkg);
+      this.publishDockerImage(pkg);
     }
   }
 
-  private async publishDockerImage(pkg: PackageConfig) {
+  private publishDockerImage(pkg: PackageConfig) {
     if (pkg.type !== 'docker') {
       throw new Error(`package '${pkg.id}' is not a docker package`);
     }

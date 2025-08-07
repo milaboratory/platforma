@@ -1,7 +1,7 @@
-import fs from 'fs';
-import path from 'path';
-import os from 'os';
-import { randomBytes } from 'crypto';
+import fs from 'node:fs';
+import path from 'node:path';
+import os from 'node:os';
+import { randomBytes } from 'node:crypto';
 
 import * as artifacts from './test-artifacts';
 import { PackageInfo } from './package-info';
@@ -10,7 +10,6 @@ import { createLogger } from './util';
 import { describe, test, expect, beforeAll, beforeEach, afterAll } from 'vitest';
 import { defaultDockerRegistry } from './docker';
 
-const testDockerfileFolder = path.join(__dirname, '..', '__test__');
 describe('Renderer tests', () => {
   let tempDir: string;
   let i: PackageInfo;
@@ -47,7 +46,7 @@ describe('Renderer tests', () => {
     const descriptor = sw.renderSoftwareEntrypoints('release', eps).get(epName)!;
 
     expect(descriptor.binary!.package).toEqual(
-      `${artifacts.BinaryCustomName1}/${artifacts.BinaryCustomVersion}-{os}-{arch}.tgz`
+      `${artifacts.BinaryCustomName1}/${artifacts.BinaryCustomVersion}-{os}-{arch}.tgz`,
     );
   });
 
@@ -58,7 +57,7 @@ describe('Renderer tests', () => {
     const descriptor = sw.renderSoftwareEntrypoints('release', eps).get(epName)!;
 
     expect(descriptor.runEnv!.package).toEqual(
-      `${artifacts.PackageNameNoAt}/${artifacts.EPNameJavaEnvironment}/${artifacts.PackageVersion}-{os}-{arch}.tgz`
+      `${artifacts.PackageNameNoAt}/${artifacts.EPNameJavaEnvironment}/${artifacts.PackageVersion}-{os}-{arch}.tgz`,
     );
     expect(descriptor.runEnv!.type).toEqual('java');
     expect(descriptor.runEnv!.binDir).toEqual('.');
@@ -75,7 +74,7 @@ describe('Renderer tests', () => {
     const epPath = entrypointFilePath(
       i.packageRoot,
       renderedDescriptor.asset ? 'asset' : 'software',
-      epName
+      epName,
     );
     const parsedDescriptor = readEntrypointDescriptor(i.packageName, epName, epPath);
 
@@ -96,7 +95,7 @@ describe('Renderer tests', () => {
 
     const descriptor = renderer.renderSoftwareEntrypoints('release', eps).get(epName)!;
     expect(descriptor.binary!.package).toEqual(
-      `${artifacts.PackageNameNoAt}/${artifacts.EPNameJavaDependency}/${artifacts.PackageVersion}.tgz`
+      `${artifacts.PackageNameNoAt}/${artifacts.EPNameJavaDependency}/${artifacts.PackageVersion}.tgz`,
     );
   });
 
@@ -105,7 +104,7 @@ describe('Renderer tests', () => {
     const envEpName = artifacts.EPNameJavaEnvironment;
 
     fs.mkdirSync(path.join(i.packageRoot, i.packageRoot), { recursive: true });
-    fs.writeFileSync(path.join(i.packageRoot, 'Dockerfile'), "FROM scratch", )
+    fs.writeFileSync(path.join(i.packageRoot, 'Dockerfile'), 'FROM scratch');
     fs.writeFileSync(path.join(i.packageRoot, 'package.json'), artifacts.PackageJson);
 
     const render = new Renderer(l, i.packageName, i.packageRoot);
