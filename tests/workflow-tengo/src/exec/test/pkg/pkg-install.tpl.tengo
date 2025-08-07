@@ -5,29 +5,22 @@ maps := import("@platforma-sdk/workflow-tengo:maps")
 
 sw := assets.importSoftware(":exec.test.pkg.sleep")
 
-self.defineOutputs(["installed", "descriptor"])
+self.defineOutputs(["installed"])
 
-self.body(func(inputs) {
-	if (maps.containsKey(inputs, "software")) {
-		software := inputs["software"]
-
-		return {
-			installed: software.kvGetAsJson("ctl/runner/package/installation"),
-			descriptor: software.kvGetAsJson(pkg.META_KEY_DESCRIPTOR)
-		}
-	}
-
+self.prepare(func(inputs) {
 	binaryDescriptor := sw.descriptor.binary
 
 	archive := pkg.get(binaryDescriptor.registry, binaryDescriptor.package).archive()
 
-	self.delegate(
-		self.template(),
-		{
-			software: pkg.install(archive).package()
-		},
-		["installed", "descriptor"]
-	)
+	return {
+		software: pkg.install(archive).package()
+	}
+})
 
-	return {}
+self.body(func(inputs) {
+	software := inputs["software"]
+
+	return {
+		installed: software.kvGetAsJson("ctl/runner/package/installation")
+	}
 })
