@@ -1,59 +1,42 @@
 <script setup lang="ts">
-import { Spec } from '@milaboratories/milaboratories.file-import-block.model';
+import { ColumnSpecParamUI } from '@milaboratories/milaboratories.file-import-block.model';
 import {
   PlBtnPrimary,
   PlCheckbox,
   PlDropdown,
+  PlElementList,
   PlTextArea,
   PlTextField
 } from '@platforma-sdk/ui-vue';
-import { ref, watch } from 'vue';
 import { useJsonField } from '../composables/useJsonField';
 import { VALUE_TYPE_OPTIONS } from '../types/spec';
-import SpecItem from './SpecItem.vue';
 
-type ColumnSpecParam = Spec['columns'][number];
-const props = defineProps<{
-  modelValue: ColumnSpecParam[];
-}>();
-
-const emit = defineEmits<{
-  'update:modelValue': [value: ColumnSpecParam[]];
-}>();
+const columnsSpecParamsUI = defineModel<ColumnSpecParamUI[]>({
+  required: true,
+});
 
 const { jsonToString, stringToJson } = useJsonField();
 
-const localValue = ref<ColumnSpecParam[]>([...props.modelValue]);
-
-// Watch for changes and emit
-watch(localValue, (newValue) => {
-  emit('update:modelValue', newValue);
-}, { deep: true });
-
-// Watch for prop changes
-watch(() => props.modelValue, (newValue) => {
-  localValue.value = [...newValue];
-}, { deep: true });
-
 const addColumn = () => {
-  localValue.value.push({
-    column: '',
-    spec: {
-      valueType: 'String',
+  columnsSpecParamsUI.value.push({
+    id: Date.now().toString(),
+    expanded: true,
+    disabled: false,
+    payload: {
+      column: '',
+      spec: {
+        valueType: 'String',
+      }
     }
   });
 };
 
-const removeColumn = (index: number) => {
-  localValue.value.splice(index, 1);
-};
-
 const updateColumnDomain = (index: number, value: string) => {
-  localValue.value[index].spec.domain = stringToJson(value);
+  columnsSpecParamsUI.value[index].payload.spec.domain = stringToJson(value);
 };
 
 const updateColumnAnnotations = (index: number, value: string) => {
-  localValue.value[index].spec.annotations = stringToJson(value);
+  columnsSpecParamsUI.value[index].payload.spec.annotations = stringToJson(value);
 };
 </script>
 
@@ -64,53 +47,70 @@ const updateColumnAnnotations = (index: number, value: string) => {
       <PlBtnPrimary @click="addColumn">Add Column</PlBtnPrimary>
     </div>
 
-    <div v-if="localValue.length === 0" :class="$style.emptyState">
+    <div v-if="columnsSpecParamsUI.length === 0" :class="$style.emptyState">
       No columns configured. Click "Add Column" to add your first column.
     </div>
 
-    <SpecItem v-for="(column, index) in localValue" :key="index" :title="`Column ${index + 1}`"
-      @remove="removeColumn(index)">
-      <div :class="$style.formRow">
-        <PlTextField v-model="column.column" label="Column" placeholder="Column label from XSV file" required />
+    <PlElementList v-if="columnsSpecParamsUI.length > 0" v-model:items="columnsSpecParamsUI"
+      :get-item-key="(item) => item.id" :is-expanded="(item) => item.expanded"
+      :on-expand="(item) => item.expanded = !item.expanded" :is-toggled="(item) => item.disabled"
+      :on-toggle="(item) => item.disabled = !item.disabled">
+      <template #item-title="{ item: column, index }">
+        <strong>Column {{ index + 1 }}</strong>
+        <span v-if="column.payload.column" :class="$style.columnLabel">{{ column.payload.column }}</span>
+      </template>
 
-        <PlTextField :model-value="column.filterOutRegex || ''"
-          @update:model-value="column.filterOutRegex = $event || undefined" label="Filter Out Regex"
-          placeholder="Regex to filter out rows (optional)" />
-      </div>
-
-      <div :class="$style.formRow">
-        <PlTextField :model-value="column.naRegex || ''" @update:model-value="column.naRegex = $event || undefined"
-          label="NA Regex" placeholder="Regex to identify N/A values (optional)" />
-
-        <PlCheckbox :model-value="column.allowNA || false" @update:model-value="column.allowNA = $event">Allow NA Values
-        </PlCheckbox>
-      </div>
-
-      <div :class="$style.formRow">
-        <PlTextField :model-value="column.id || ''" @update:model-value="column.id = $event || undefined" label="ID"
-          placeholder="Column ID (defaults to sanitized column label)" />
-      </div>
-
-      <!-- Column Spec -->
-      <div :class="$style.nestedSection">
-        <h5>Column Specification</h5>
-
+      <template #item-content="{ item: column, index }">
         <div :class="$style.formRow">
-          <PlTextField :model-value="column.spec.name || ''"
-            @update:model-value="column.spec.name = $event || undefined" label="Name" :placeholder="column.column" />
+          <PlTextField v-model="column.payload.column" label="Column" placeholder="Column label from XSV file"
+            required />
 
-          <PlDropdown v-model="column.spec.valueType" :options="VALUE_TYPE_OPTIONS" label="Value Type" required />
+          <PlTextField :model-value="column.payload.filterOutRegex || ''"
+            @update:model-value="column.payload.filterOutRegex = $event || undefined" label="Filter Out Regex"
+            placeholder="Regex to filter out rows (optional)" />
         </div>
 
         <div :class="$style.formRow">
-          <PlTextArea :model-value="jsonToString(column.spec.domain)"
-            @update:model-value="updateColumnDomain(index, $event)" label="Domain (JSON)" placeholder="{}" />
+          <PlTextField :model-value="column.payload.naRegex || ''"
+            @update:model-value="column.payload.naRegex = $event || undefined" label="NA Regex"
+            placeholder="Regex to identify N/A values (optional)" />
 
-          <PlTextArea :model-value="jsonToString(column.spec.annotations)"
-            @update:model-value="updateColumnAnnotations(index, $event)" label="Annotations (JSON)" placeholder="{}" />
+          <PlCheckbox :model-value="column.payload.allowNA || false"
+            @update:model-value="column.payload.allowNA = $event">
+            Allow NA Values
+          </PlCheckbox>
         </div>
-      </div>
-    </SpecItem>
+
+        <div :class="$style.formRow">
+          <PlTextField :model-value="column.payload.id || ''"
+            @update:model-value="column.payload.id = $event || undefined" label="ID"
+            placeholder="Column ID (defaults to sanitized column label)" />
+        </div>
+
+        <!-- Column Spec -->
+        <div :class="$style.nestedSection">
+          <h5>Column Specification</h5>
+
+          <div :class="$style.formRow">
+            <PlTextField :model-value="column.payload.spec.name || ''"
+              @update:model-value="column.payload.spec.name = $event || undefined" label="Name"
+              :placeholder="column.payload.column" />
+
+            <PlDropdown v-model="column.payload.spec.valueType" :options="VALUE_TYPE_OPTIONS" label="Value Type"
+              required />
+          </div>
+
+          <div :class="$style.formRow">
+            <PlTextArea :model-value="jsonToString(column.payload.spec.domain)"
+              @update:model-value="updateColumnDomain(index, $event)" label="Domain (JSON)" placeholder="{}" />
+
+            <PlTextArea :model-value="jsonToString(column.payload.spec.annotations)"
+              @update:model-value="updateColumnAnnotations(index, $event)" label="Annotations (JSON)"
+              placeholder="{}" />
+          </div>
+        </div>
+      </template>
+    </PlElementList>
   </div>
 </template>
 
@@ -129,6 +129,13 @@ const updateColumnAnnotations = (index: number, value: string) => {
 .sectionHeader h3 {
   margin: 0;
   color: var(--txt-01);
+}
+
+.columnLabel {
+  margin-left: 8px;
+  color: var(--txt-03);
+  font-size: 14px;
+  font-style: italic;
 }
 
 .formRow {

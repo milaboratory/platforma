@@ -1,5 +1,5 @@
 import { BlockModel, ImportFileHandle, InferHrefType, InferOutputsType } from '@platforma-sdk/model';
-import type { Spec } from './types';
+import type { Spec, SpecUI } from './types';
 
 export type BlockArgs = {
   fileHandle?: ImportFileHandle;
@@ -7,9 +7,15 @@ export type BlockArgs = {
   spec?: Spec;
 };
 
+export type BlockUiState = {
+  spec?: SpecUI;
+};
+
 export const platforma = BlockModel.create('Heavy')
 
-  .withArgs<BlockArgs>({ fileHandle: undefined })
+  .withUiState<BlockUiState>({})
+  
+  .withArgs<BlockArgs>({})
 
   .output('fileUploadProgress', (ctx) => ctx.outputs?.resolve('fileUploadProgress')?.getImportProgress())
 
@@ -20,5 +26,5 @@ export const platforma = BlockModel.create('Heavy')
 export type BlockOutputs = InferOutputsType<typeof platforma>;
 export type Href = InferHrefType<typeof platforma>;
 
-export type { AxisSpecParam, ColumnSpecParam, Spec, ValueType } from './types';
+export * from './types';
 
