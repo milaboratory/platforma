@@ -12,7 +12,7 @@ import {
 import * as util from './util';
 import * as archive from './archive';
 import * as storage from './storage';
-import { dockerBuild, dockerPush, dockerTagFromPackage } from './docker';
+import { dockerBuild, dockerEntrypointName, dockerPush, dockerTagFromPackage } from './docker';
 
 export class Core {
   private readonly logger: winston.Logger;
@@ -101,11 +101,17 @@ export class Core {
 
   public getPackage(id: string): PackageConfig {
     const pkg = this.packages.get(id);
-    if (!pkg) {
-      this.logger.error(`package with id '${id}' not found in ${util.softwareConfigName} file`);
-      throw new Error(`no package with id '${id}'`);
+    if (pkg) {
+      return pkg;
     }
-    return pkg;
+
+    const dockerPkg = this.packages.get(dockerEntrypointName(id));
+    if (dockerPkg) {
+      return dockerPkg;
+    }
+
+    this.logger.error(`package with id '${id}' not found in ${util.softwareConfigName} file`);
+    throw new Error(`no package with id '${id}'`);
   }
 
   /** Parses entrypoints from a package.json
@@ -361,6 +367,8 @@ export class Core {
     forceReupload?: boolean;
   }) {
     const packagesToPublish = options?.ids ?? Array.from(this.buildablePackages.keys());
+    this.logger.info(`Publishing packages: ${packagesToPublish.join(', ')}`);
+    this.logger.info(`Publishable packages: ${Array.from(this.packages.keys()).join(', ')}`);
 
     if (packagesToPublish.length > 1 && options?.archivePath && !options.ignoreArchiveOverlap) {
       this.logger.error(
@@ -385,6 +393,17 @@ export class Core {
         }
       } else {
         uploads.push(this.publishPackage(pkg, util.currentPlatform(), options));
+      }
+
+      if (pkg.type !== 'docker') {
+        // will check that docker package exists in the same package.sw.json file for entrypoints with
+        // different artifact types
+        const dockerPkg = this.packages.get(dockerEntrypointName(pkg.id));
+        if (!dockerPkg) {
+          continue;
+        }
+
+        this.publishDockerImage(dockerPkg);
       }
     }
 
