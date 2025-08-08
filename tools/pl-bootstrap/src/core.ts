@@ -217,7 +217,7 @@ export default class Core {
 
     const instance = this.createLocal(instanceName, {
       ...options,
-      primaryURL: options?.primaryURL ?? `s3e://testuser:testpassword@localhost:${minioPort}/main-bucket/?region=no-region`,
+      primaryURL: options?.primaryURL ?? `s3e://testuser:testpassword@localhost:${minioPort}/platforma-primary-bucket/?region=no-region`,
       libraryURL: options?.libraryURL ?? `s3e://testuser:testpassword@localhost:${minioPort}/library-bucket/?region=no-region`,
     });
 
@@ -368,7 +368,7 @@ export default class Core {
     const presignHost = options?.presignHost ?? 'localhost';
     const presignPort = options?.s3Port ?? 9000;
 
-    const primary = plCfg.storageSettingsFromURL(`s3e://testuser:testpassword@minio:${presignPort}/main-bucket`);
+    const primary = plCfg.storageSettingsFromURL(`s3e://testuser:testpassword@minio:${presignPort}/platforma-primary-bucket`);
     if (primary.type !== 'S3') {
       throw new Error('primary storage must have \'S3\' type in \'docker s3\' configuration');
     } else {
