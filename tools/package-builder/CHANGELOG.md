@@ -1,5 +1,11 @@
 # @platforma-sdk/package-builder
 
+## 2.17.0
+
+### Minor Changes
+
+- f55c7ff: add docker artifact support
+
 ## 2.16.4
 
 ### Patch Changes
