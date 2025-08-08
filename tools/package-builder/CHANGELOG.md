@@ -1,5 +1,11 @@
 # @platforma-sdk/package-builder
 
+## 2.16.4
+
+### Patch Changes
+
+- 7b5943b: Correct deps list
+
 ## 2.16.3
 
 ### Patch Changes
