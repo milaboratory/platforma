@@ -1,8 +1,8 @@
-import { tplTest } from '@platforma-sdk/test';
-import * as env from '../../test/env';
 import {
   Pl,
 } from '@milaboratories/pl-middle-layer';
+import { tplTest } from '@platforma-sdk/test';
+import * as env from '../../test/env';
 
 const unarchiveCases: TestInput[] = [
   {
@@ -23,7 +23,7 @@ tplTest.for(unarchiveCases)(
     const importHandle = async (driverKit) => {
       const storages = await driverKit.lsDriver.getStorageList();
       const library = storages.find((s) => s.name == env.libraryStorage);
-      if (library === undefined) throw new Error('Library not found');
+      if (library === undefined) throw new Error(`Library '${env.libraryStorage}' not found`);
       const files = await driverKit.lsDriver.listFiles(library!.handle, '');
       const ourFile = files.entries.find((f) => f.name == 'archive.zip');
       if (ourFile === undefined) throw new Error('Test archive not found in the library');

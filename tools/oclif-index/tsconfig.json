@@ -1,8 +1,5 @@
 {
-  "extends": "@milaboratories/build-configs/tsconfig_lib_bundled.json",
-  "lib": ["es2022"],
-  "moduleResolution": "node",
-  "resolveJsonModule": true,
+  "extends": "@milaboratories/ts-configs/tsconfig.node.json",
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": "./src"

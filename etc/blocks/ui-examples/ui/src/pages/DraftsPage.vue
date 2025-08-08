@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import {
-  PlBlockPage,
-  PlContainer,
-  PlEditableTitle,
-  PlRow,
-  PlBtnPrimary,
-  PlCloseModalBtn,
-  PlDropdownLine,
-  PlTextField,
-  PlBtnGhost,
   Color,
   multiSequenceAlignment,
+  PlBlockPage,
+  PlBtnGhost,
+  PlBtnPrimary,
+  PlCloseModalBtn,
+  PlContainer,
+  PlDropdownLine,
+  PlEditableTitle,
+  PlRow,
+  PlTextField,
 } from '@platforma-sdk/ui-vue';
 import { computed, onMounted, reactive, ref } from 'vue';
 
@@ -34,7 +34,7 @@ const onDrop = (ev: DragEvent) => {
   [...(ev.dataTransfer?.files ?? [])].forEach((file, i) => {
     if (file) {
       console.log(`… file[${i}].name = ${file?.name}`);
-      window.platforma?.lsDriver?.fileToImportHandle(file).then((handle) => {
+      window.platforma?.lsDriver?.fileToImportHandle(file).then((handle: unknown) => {
         data.importHandles.push(handle);
       });
     }

@@ -1,5 +1,5 @@
-import * as artifacts from './test-artifacts';
 import { PackageInfo } from './package-info';
+import * as artifacts from './test-artifacts';
 import { createLogger } from './util';
 import { test, expect } from 'vitest';
 

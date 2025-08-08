@@ -1,5 +1,16 @@
 # @milaboratories/milaboratories.pool-explorer.ui
 
+## 1.1.183
+
+### Patch Changes
+
+- 3f93434: Packages configuration normalization
+- Updated dependencies [56b404b]
+- Updated dependencies [3f93434]
+  - @platforma-sdk/ui-vue@1.42.20
+  - @milaboratories/milaboratories.pool-explorer.model@1.0.84
+  - @milaboratories/helpers@1.6.20
+
 ## 1.1.182
 
 ### Patch Changes

@@ -1,24 +1,24 @@
 {
   "name": "@platforma-sdk/model",
-  "version": "1.42.16",
+  "version": "1.42.20",
   "description": "Platforma.bio SDK / Block Model",
   "types": "./dist/index.d.ts",
-  "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
   "exports": {
     ".": {
       "sources": "./src/index.ts",
       "types": "./dist/index.d.ts",
-      "require": "./dist/index.js",
-      "import": "./dist/index.mjs"
+      "require": "./dist/index.cjs",
+      "import": "./dist/index.js"
     }
   },
   "scripts": {
-    "type-check": "tsc --noEmit --composite false",
-    "build": "vite build",
-    "watch": "vite build --watch",
+    "type-check": "ts-builder types --target node",
+    "build": "ts-builder build --target node",
+    "watch": "ts-builder build --target node --watch",
     "lint": "eslint .",
-    "test": "jest",
+    "test": "vitest run",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "files": [
@@ -37,12 +37,10 @@
     "@milaboratories/build-configs": "workspace:*",
     "@platforma-sdk/eslint-config": "workspace:*",
     "@milaboratories/helpers": "workspace:^",
+    "@milaboratories/ts-builder": "workspace:*",
     "typescript": "catalog:",
-    "vite": "catalog:",
-    "@types/jest": "catalog:",
-    "jest": "catalog:",
-    "@jest/globals": "catalog:",
-    "ts-jest": "catalog:",
-    "fast-json-patch": "catalog:"
+    "vitest": "catalog:",
+    "fast-json-patch": "catalog:",
+    "@milaboratories/ts-configs": "workspace:*"
   }
 }

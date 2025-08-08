@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/biowasm-tools",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "A framework for building WebAssembly-based genomics tools",
   "repository": {
     "type": "git",
@@ -11,7 +11,7 @@
   "files": [
     "dist"
   ],
-  "main": "./dist/aioli.umd.js",
+  "main": "./dist/aioli.js",
   "module": "./dist/aioli.mjs",
   "types": "./dist/aioli.d.ts",
   "dependencies": {
@@ -20,15 +20,16 @@
   },
   "devDependencies": {
     "cypress": "^10.6.0",
-    "vite": "catalog:",
+    "@milaboratories/ts-builder": "workspace:*",
+    "@milaboratories/build-configs": "workspace:*",
     "vitest": "catalog:"
   },
   "scripts": {
-    "dev": "vite build --sourcemap true --minify false && vite",
+    "dev": "ts-builder serve --target browser-lib --build-config ./build.config.mjs",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
-    "build": "vite build",
+    "build": "ts-builder build --target browser-lib --build-config ./build.config.mjs",
     "test": "exit 0",
-    "test-cypress": "vite build && cypress run",
-    "test-open": "vite build && cypress open"
+    "test-cypress": "npm run build && cypress run",
+    "test-open": "npm run build && cypress open"
   }
 }

@@ -48,14 +48,10 @@
     right: 12px;
     cursor: pointer;
 
-    .mask-24 {
-      --icon-color: var(--ic-02);
-    }
+    --icon-color: var(--ic-02);
 
-    &:hover {
-      .mask-24 {
-        --icon-color: var(--txt-01);
-      }
+    > *:hover {
+      --icon-color: var(--txt-01);
     }
   }
 

@@ -1,5 +1,38 @@
 # @platforma-sdk/ui-vue
 
+## 1.42.21
+
+### Patch Changes
+
+- Updated dependencies [6b9828a]
+  - @milaboratories/uikit@2.4.4
+
+## 1.42.20
+
+### Patch Changes
+
+- 56b404b: Add PlAutocompleteMulti component
+- 3f93434: Packages configuration normalization
+- Updated dependencies [56b404b]
+- Updated dependencies [3f93434]
+  - @milaboratories/uikit@2.4.3
+  - @milaboratories/biowasm-tools@1.1.1
+  - @platforma-sdk/model@1.42.20
+
+## 1.42.19
+
+### Patch Changes
+
+- 77103d0: PlAgDataTable: search field in columns manager
+
+## 1.42.18
+
+### Patch Changes
+
+- 604827a: [desktop] add button to save block error log to file
+- Updated dependencies [604827a]
+  - @milaboratories/uikit@2.4.2
+
 ## 1.42.15
 
 ### Patch Changes

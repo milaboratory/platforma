@@ -3,9 +3,9 @@ import path from 'node:path';
 import os from 'node:os';
 import { randomBytes } from 'node:crypto';
 
-import * as artifacts from './test-artifacts';
 import { PackageInfo } from './package-info';
 import { Renderer, entrypointFilePath, readEntrypointDescriptor } from './renderer';
+import * as artifacts from './test-artifacts';
 import { createLogger } from './util';
 import { describe, test, expect, beforeAll, beforeEach, afterAll } from 'vitest';
 import { defaultDockerRegistry } from './docker';

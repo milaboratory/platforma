@@ -1,0 +1,270 @@
+@use "../../assets/mixins.scss" as *;
+
+.pl-autocomplete-multi {
+  $root: &;
+
+  --contour-color: var(--txt-01);
+  --contour-border-width: 1px;
+  --options-bg: #fff;
+  --option-hover-bg: var(--btn-sec-hover-grey);
+
+  --label-offset-left-x: 8px;
+  --label-offset-right-x: 8px;
+  --label-color: var(--txt-01);
+
+  position: relative;
+  outline: none;
+  min-height: var(--control-height);
+  border-radius: 6px;
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weigh-base);
+
+  [data-theme="dark"] & {
+    --options-bg: #1B1B1F;
+  }
+
+  &__envelope {
+    font-family: var(--control-font-family);
+    min-width: 160px;
+  }
+
+  label {
+    @include outlined-control-label();
+  }
+
+  &__container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    border-radius: 6px;
+    min-height: var(--control-height);
+    padding: 1px;
+    color: var(--txt-01);
+  }
+
+  &__contour {
+    border-radius: var(--border-radius-control);
+    border: var(--contour-border-width) solid var(--contour-color);
+    box-shadow: var(--contour-box-shadow);
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  &__options {
+    position: absolute;
+    top: 0;
+    z-index: var(--z-dropdown-options);
+    border: 1px solid var(--border-color-div-grey);
+    background-color: var(--pl-dropdown-options-bg);
+    border-radius: 6px;
+    max-height: 244px;
+    box-shadow: 0px 4px 12px -2px rgba(15, 36, 77, 0.08), 0px 6px 24px -2px rgba(15, 36, 77, 0.08);
+    @include scrollbar;
+
+    .nothing-found {
+      padding: 0 10px;
+      height: var(--control-height);
+      line-height: 20px;
+      background-color: #fff;
+      opacity: 0.5;
+      font-style: italic;
+    }
+  }
+
+  &__field {
+    position: relative;
+    border-radius: 6px;
+    overflow: hidden;
+    background: transparent;
+    padding-left: 11px;
+
+    min-height: var(--control-height);
+    line-height: 20px;
+    cursor: pointer;
+
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+
+    .chips-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      right: 30px;
+      overflow: hidden;
+      padding: 0 60px 0 11px;
+      line-height: 20px;
+      color: var(--contour-color);
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    input {
+      min-height: calc(var(--control-height) - 2px);
+      line-height: 20px;
+      font-family: inherit;
+      font-size: inherit;
+      background-color: transparent;
+      border: none;
+      padding: 0;
+      width: calc(100% - 20px);
+      color: var(--txt-01);
+      caret-color: var(--border-color-focus);
+
+      &:focus {
+        outline: none;
+      }
+
+      &:placeholder-shown {
+        text-overflow: ellipsis;
+      }
+
+      &::placeholder {
+        color: var(--color-placeholder);
+      }
+    }
+
+    &:hover {
+      .clear {
+        display: block;
+      }
+    }
+  }
+
+  &__controls {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
+
+    .mask-16,
+    .mask-24 {
+      --icon-color: var(--control-mask-fill);
+      cursor: pointer;
+    }
+
+    .mask-loading {
+      --icon-color: var(--ic-accent);
+      animation: spin 2.5s linear infinite;
+    }
+  }
+
+  &__arrow-wrapper {
+    display: flex;
+    align-items: center;
+    min-height: var(--control-height);
+    padding-right: 11px;
+  }
+
+  .arrow-icon {
+    cursor: pointer;
+
+    // Default "arrow" icon (16x16) 
+    &.arrow-icon-default {
+      transition: transform .2s;
+      background-color: var(--control-mask-fill);
+      @include mask(url('../../assets/images/16_chevron-down.svg'), 16px);
+    }
+  }
+
+  &__helper {
+    @include field-helper();
+  }
+
+  &__error {
+    @include field-error();
+  }
+
+  &.open {
+    .arrow-icon {
+      &.arrow-icon-default {
+        background-color: var(--control-mask-fill);
+        transform: rotate(-180deg);
+      }
+    }
+  }
+
+  .clear {
+    display: none;
+    position: absolute;
+    @include abs-center-y;
+    right: 36px;
+    z-index: 1;
+    @include icon(url("../../assets/images/16_clear.svg"), 16px); // @todo mask-image
+    cursor: pointer;
+  }
+
+  &.open,
+  &:focus-within {
+    z-index: 1;
+
+    #{$root}__container {
+      .label {
+        color: var(--txt-focus);
+      }
+    }
+  }
+
+  &.open {
+    #{$root}__container {
+      z-index: 1000;
+    }
+
+    #{$root}__field {
+      border-radius: 6px 6px 0 0;
+    }
+
+    .arrow {
+      background-color: var(--control-mask-fill);
+      @include mask(url(../../assets/images/16_chevron-up.svg), 16px);
+    }
+  }
+
+  &:hover {
+    --contour-color: var(--control-hover-color);
+  }
+
+  &:focus-within:not(.error) {
+    --label-color: var(--txt-focus);
+    --contour-color: var(--border-color-focus);
+    --contour-border-width: 2px;
+    --contour-box-shadow: 0 0 0 4px var(--border-color-focus-shadow);
+  }
+
+  &:focus-within.error {
+    --contour-border-width: 2px;
+    --contour-box-shadow: 0 0 0 4px var(--color-error-shadow);
+  }
+
+  &.error {
+    --contour-color: var(--txt-error);
+    --label-color: var(--txt-error);
+  }
+
+  &.disabled {
+    --contour-color: var(--color-dis-01);
+    --control-mask-fill: var(--color-dis-01);
+    --label-color: var(--color-dis-01);
+    cursor: not-allowed;
+    pointer-events: none;
+
+    .mask-loading {
+      animation: spin 2.5s linear infinite;
+      --icon-color: var(--ic-accent);
+    }
+  }
+
+  &__open-chips-container {
+    padding: 12px;
+
+    .pl-chip {
+      margin-right: 4px;
+      margin-bottom: 4px;
+    }
+  }
+}

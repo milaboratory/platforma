@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/block-tools",
-  "version": "2.5.81",
+  "version": "2.5.83",
   "description": "Utility to manipulate Platforma Blocks and Block Registry",
   "types": "./dist/lib.d.ts",
   "main": "./dist/index.js",
@@ -64,7 +64,8 @@
     "jest": "catalog:",
     "@jest/globals": "catalog:",
     "oclif": "catalog:",
-    "ts-jest": "catalog:"
+    "ts-jest": "catalog:",
+    "@milaboratories/ts-configs": "workspace:*"
   },
   "oclif": {
     "bin": "block-tools",

@@ -1,5 +1,6 @@
-declare const PL_VERSION: string;
+import packageJson from '../../package.json';
 
 export function getDefaultPlVersion(): string {
-  return PL_VERSION;
+  // drop build error if pl-version is not defined
+  return packageJson['pl-version'];
 }

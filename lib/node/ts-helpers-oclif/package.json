@@ -1,20 +1,20 @@
 {
   "name": "@milaboratories/ts-helpers-oclif",
-  "version": "1.1.25",
+  "version": "1.1.26",
   "description": "Useful helpers for our TS projects (oclif-specific)",
   "types": "./dist/index.d.ts",
-  "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "require": "./dist/index.js",
-      "import": "./dist/index.mjs"
+      "require": "./dist/index.cjs",
+      "import": "./dist/index.js"
     }
   },
   "scripts": {
-    "type-check": "tsc --noEmit --composite false",
-    "build": "vite build",
+    "build": "ts-builder build --target node",
+    "type-check": "ts-builder types --target node",
     "lint": "eslint .",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
@@ -27,8 +27,9 @@
     "@oclif/core": "catalog:"
   },
   "devDependencies": {
+    "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/build-configs": "workspace:*",
     "typescript": "catalog:",
-    "vite": "catalog:"
+    "@milaboratories/ts-configs": "workspace:*"
   }
 }

@@ -1,5 +1,50 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.0.3
+
+### Patch Changes
+
+- 60489e9: Make blocks to forcefully re-create venv when they update workflow-sdk dependency (ptabler polars dependencies issue)
+
+## 5.0.2
+
+### Patch Changes
+
+- 3f93434: Packages configuration normalization
+
+## 5.0.1
+
+### Patch Changes
+
+- 2c0d624: Ensure pip installs Python dependencies from local sources only by adding the `--no-index` flag. This prevents any attempts to connect to the public PyPI repository, making dependency installation more secure and reliable in isolated environments.
+- 3da120c: Attach fake software descriptor to packag get requests to support packages without .sw.json inside
+
+## 5.0.0
+
+### Major Changes
+
+- 1831f6d: Add `ll.getBlobSize` function to retrieve blob size.
+
+## 4.18.2
+
+### Patch Changes
+
+- d1b00dc: Added expression-based argument and environment variable methods to exec builder with comprehensive documentation of available system variables (cpu, memory, secrets, env). Added argExpr() and envExpr() methods, deprecated argWithVar() and envWithVar(). Updated pt library to pass allocated CPUs to polars-based-ptabler.
+
+## 4.18.1
+
+### Patch Changes
+
+- a716ccd: Fix fill null behaviour to fill null and added fill NaN to fill NaNs
+- Updated dependencies [a716ccd]
+  - @platforma-open/milaboratories.software-ptabler@1.11.2
+
+## 4.18.0
+
+### Minor Changes
+
+- d407d12: installing cursor extension during ctag building
+
 ## 4.17.1
 
 ### Patch Changes

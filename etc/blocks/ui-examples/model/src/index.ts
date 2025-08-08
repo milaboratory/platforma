@@ -5,8 +5,8 @@ import type {
   PColumn,
   PColumnValues,
   PObjectId,
-  PlDataTableStateV2,
   PlDataTableSheet,
+  PlDataTableStateV2,
 } from '@platforma-sdk/model';
 import {
   Annotation,
@@ -338,15 +338,19 @@ export const platforma = BlockModel.create('Heavy')
       { type: 'link', href: '/pl-number-field-page', label: 'PlNumberFieldPage' },
       { type: 'link', href: '/pl-error-boundary-page', label: 'PlErrorBoundaryPage' },
       { type: 'link', href: '/pl-element-list-page', label: 'PlElementList' },
-      { type: 'link', href: '/errors', label: 'Errors' },
       { type: 'link', href: '/text-fields', label: 'PlTextField' },
       { type: 'link', href: '/tabs', label: 'PlTabs' },
+      { type: 'link', href: '/pl-autocomplete', label: 'PlAutocomplete' },
+      { type: 'link', href: '/radio', label: 'PlRadio' },
       { type: 'link', href: '/stacked-bar', label: 'PlChartStackedBar' },
       { type: 'link', href: '/histogram', label: 'PlChartHistogram' },
       { type: 'link', href: '/buttons', label: 'ButtonsPage' },
+      { type: 'link', href: '/errors', label: 'Errors' },
+      { type: 'link', href: '/downloads', label: 'Downloads' },
       { type: 'link', href: '/notifications', label: 'Notifications' },
       { type: 'link', href: '/drafts', label: 'Drafts' },
       { type: 'link', href: '/pl-autocomplete', label: 'PlAutocomplete' },
+      { type: 'link', href: '/pl-autocomplete-multi', label: 'PlAutocompleteMulti' },
       { type: 'link', href: '/radio', label: 'PlRadio' },
       ...(dynamicSections.length
         ? [
@@ -363,7 +367,7 @@ export const platforma = BlockModel.create('Heavy')
     ];
   })
 
-  .done(2); // api version 2
+  .done(); // api version 2
 
 export type BlockOutputs = InferOutputsType<typeof platforma>;
 export type Href = InferHrefType<typeof platforma>;

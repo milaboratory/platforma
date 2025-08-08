@@ -1,5 +1,82 @@
 # @milaboratories/pl-middle-layer
 
+## 1.42.4
+
+### Patch Changes
+
+- Updated dependencies [60489e9]
+  - @platforma-sdk/workflow-tengo@5.0.3
+
+## 1.42.3
+
+### Patch Changes
+
+- 3f93434: Packages configuration normalization
+- Updated dependencies [3f93434]
+  - @milaboratories/pl-deployments@2.4.8
+  - @milaboratories/resolve-helper@1.1.1
+  - @milaboratories/pl-model-middle-layer@1.8.8
+  - @milaboratories/computable@2.6.4
+  - @milaboratories/pl-drivers@1.9.1
+  - @milaboratories/ts-helpers@1.4.4
+  - @milaboratories/pl-client@2.11.9
+  - @milaboratories/pl-config@1.6.4
+  - @milaboratories/pl-errors@1.1.16
+  - @platforma-sdk/workflow-tengo@5.0.2
+  - @milaboratories/pl-model-backend@1.1.3
+  - @platforma-sdk/block-tools@2.5.83
+  - @milaboratories/pl-model-common@1.19.8
+  - @milaboratories/pl-http@1.1.6
+  - @milaboratories/pl-tree@1.7.6
+  - @platforma-sdk/model@1.42.20
+
+## 1.42.2
+
+### Patch Changes
+
+- Updated dependencies [2c0d624]
+- Updated dependencies [3da120c]
+  - @platforma-sdk/workflow-tengo@5.0.1
+
+## 1.42.1
+
+### Patch Changes
+
+- Updated dependencies [1831f6d]
+  - @platforma-sdk/workflow-tengo@5.0.0
+
+## 1.42.0
+
+### Minor Changes
+
+- d1b00dc: Increase backoff multiplier in add block method to minimize effect of transaction conflicts
+
+### Patch Changes
+
+- ca79a4e: Fix eslint errors
+- Updated dependencies [d1b00dc]
+- Updated dependencies [d1b00dc]
+- Updated dependencies [d1b00dc]
+- Updated dependencies [ca79a4e]
+  - @platforma-sdk/block-tools@2.5.82
+  - @milaboratories/pl-client@2.11.8
+  - @platforma-sdk/workflow-tengo@4.18.2
+  - @milaboratories/pl-errors@1.1.15
+
+## 1.41.13
+
+### Patch Changes
+
+- Updated dependencies [a716ccd]
+  - @platforma-sdk/workflow-tengo@4.18.1
+
+## 1.41.12
+
+### Patch Changes
+
+- Updated dependencies [d407d12]
+  - @platforma-sdk/workflow-tengo@4.18.0
+
 ## 1.41.11
 
 ### Patch Changes

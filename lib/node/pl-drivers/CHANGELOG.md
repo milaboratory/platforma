@@ -1,5 +1,18 @@
 # @milaboratories/pl-drivers
 
+## 1.9.1
+
+### Patch Changes
+
+- 3f93434: Packages configuration normalization
+- Updated dependencies [3f93434]
+  - @milaboratories/computable@2.6.4
+  - @milaboratories/ts-helpers@1.4.4
+  - @milaboratories/pl-client@2.11.9
+  - @milaboratories/pl-model-common@1.19.8
+  - @milaboratories/pl-tree@1.7.6
+  - @milaboratories/helpers@1.6.20
+
 ## 1.9.0
 
 ### Minor Changes

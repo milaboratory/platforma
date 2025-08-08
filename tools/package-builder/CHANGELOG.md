@@ -1,5 +1,19 @@
 # @platforma-sdk/package-builder
 
+## 2.16.4
+
+### Patch Changes
+
+- 7b5943b: Correct deps list
+
+## 2.16.3
+
+### Patch Changes
+
+- 3f93434: Packages configuration normalization
+- Updated dependencies [3f93434]
+  - @milaboratories/resolve-helper@1.1.1
+
 ## 2.16.2
 
 ### Patch Changes

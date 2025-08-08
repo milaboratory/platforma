@@ -728,7 +728,19 @@ _newExpression = func(expression, currentAlias) {
 		 */
 		fillNull: func(fillValueExpr) {
 			return _newExpression(
-				{type: "fill_na", input: expression, fillValue: _mapToSingleExpressionStruct(fillValueExpr, "lit")},
+				{type: "fill_null", input: expression, fillValue: _mapToSingleExpressionStruct(fillValueExpr, "lit")},
+				undefined
+			)
+		},
+
+		/**
+		 * Fills NaN values in this expression with a specified value.
+		 * @param fillValueExpr - object - An expression object whose value is used if this expression is NaN.
+		 * @returns {object} - A new expression object.
+		 */
+		fillNaN: func(fillValueExpr) {
+			return _newExpression(
+				{type: "fill_nan", input: expression, fillValue: _mapToSingleExpressionStruct(fillValueExpr, "lit")},
 				undefined
 			)
 		},

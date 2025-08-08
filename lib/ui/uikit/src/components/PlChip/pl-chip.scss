@@ -20,6 +20,7 @@
   font-family: var(--font-family-base);
   font-size: var(--font-size-base);
   font-weight: var(--font-weigh-base);
+  line-height: calc(var(--line-height-base) + 2px);
   letter-spacing: -0.2px;
   color: var(--chip-color);
 

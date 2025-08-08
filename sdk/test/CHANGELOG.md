@@ -1,5 +1,28 @@
 # @platforma-sdk/test
 
+## 1.42.20
+
+### Patch Changes
+
+- 3f93434: Packages configuration normalization
+- Updated dependencies [3f93434]
+  - @milaboratories/pl-middle-layer@1.42.3
+  - @milaboratories/computable@2.6.4
+  - @milaboratories/ts-helpers@1.4.4
+  - @milaboratories/pl-client@2.11.9
+  - @milaboratories/pl-tree@1.7.6
+  - @platforma-sdk/model@1.42.20
+
+## 1.42.17
+
+### Patch Changes
+
+- Updated dependencies [d1b00dc]
+- Updated dependencies [d1b00dc]
+- Updated dependencies [ca79a4e]
+  - @milaboratories/pl-client@2.11.8
+  - @milaboratories/pl-middle-layer@1.42.0
+
 ## 1.42.15
 
 ### Patch Changes
