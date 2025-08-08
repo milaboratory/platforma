@@ -1,5 +1,11 @@
 # @milaboratories/ts-builder
 
+## 1.0.2
+
+### Patch Changes
+
+- 69ed569: update resolver to bin commands
+
 ## 1.0.1
 
 ### Patch Changes
