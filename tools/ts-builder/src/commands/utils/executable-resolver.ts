@@ -8,16 +8,22 @@ import { TargetType } from './config-manager';
  * This ensures that ts-builder is self-contained and can work outside of monorepo
  */
 export function resolveExecutable(executableName: string): string {
-  const from = dirname(import.meta.url);
+  const from = process.cwd();
   const req = createRequire(join(from, 'package.json'));
   const pkgJsonPath = req.resolve(`${executableName}/package.json`);
+  console.log(pkgJsonPath);
+  
   const meta = JSON.parse(readFileSync(pkgJsonPath, 'utf8'));
+  console.log(meta);
+  
   const binField = meta.bin;
   const rel = typeof binField === 'string'
     ? binField
     : binField?.[executableName] ?? Object.values(binField ?? {})[0];
 
   if (!rel) throw new Error(`Cannot find "bin" for ${executableName}`);
+  console.log(rel);
+  
 
   return join(dirname(pkgJsonPath), rel);
 }
