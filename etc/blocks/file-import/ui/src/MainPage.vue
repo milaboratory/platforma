@@ -11,12 +11,11 @@ app.model.args.fileExt = 'csv';
 
 <template>
   <PlBlockPage>
-    <PlFileInput
-      label="File csv/tsv"
-      v-model="app.model.args.fileHandle"
-      :extensions="['.csv','.tsv']"
-      :progress="app.model.outputs.fileUploadProgress"
-    />
+    <h2>File Import Specification</h2>
+
+    <PlFileInput label="File csv/tsv" v-model="app.model.args.fileHandle" :extensions="['.csv', '.tsv']"
+      :progress="app.model.outputs.fileUploadProgress" />
+
     <Spec />
   </PlBlockPage>
 </template>

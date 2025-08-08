@@ -1,351 +1,85 @@
 <script setup lang="tsx">
 import type { Spec } from '@milaboratories/milaboratories.file-import-block.model';
 import {
-    PlBtnPrimary,
-    PlBtnSecondary,
-    PlCheckbox,
-    PlDropdown,
-    PlTextArea,
-    PlTextField
+  PlTextField
 } from '@platforma-sdk/ui-vue';
-import { isEmpty } from 'es-toolkit/compat';
 import { ref, watch } from 'vue';
 import { useApp } from './app';
+import AxesConfiguration from './components/AxesConfiguration.vue';
+import ColumnsConfiguration from './components/ColumnsConfiguration.vue';
+import { prepareSpec } from './utils/spec';
 
 const app = useApp();
-type MySpec = Pick<Spec, 'axes' | 'columns'>;
-
-// Define types inline for now
-type ValueType = 'Int' | 'Long' | 'Float' | 'Double' | 'String';
+type MySpec = Pick<Spec, 'axes' | 'columns' | 'separator' | 'commentLinePrefix' | 'skipEmptyLines'>;
 
 // Initialize reactive data
 const formData = ref<MySpec>({
+  separator: ',',
+  commentLinePrefix: undefined,
+  skipEmptyLines: false,
   axes: [],
   columns: []
 });
 
-// Value type options for dropdowns
-const valueTypeOptions = [
-  { label: 'Int', value: 'Int' as ValueType },
-  { label: 'Long', value: 'Long' as ValueType },
-  { label: 'Float', value: 'Float' as ValueType },
-  { label: 'Double', value: 'Double' as ValueType },
-  { label: 'String', value: 'String' as ValueType }
-];
-
-function withoutEmptyFields<T extends Record<string, any>>(obj: T): T {
-  return Object.fromEntries(Object.entries(obj).filter(([_, value]) => !isEmpty(value))) as T;
-}
 
 // Watch for changes and update app.model.args.spec
 watch(formData, (newValue) => {
-  const value = withoutEmptyFields(newValue);
-  
-  app.model.args.spec = {
-    ...value,
-    axes: newValue.axes.map(withoutEmptyFields),
-    columns: newValue.columns.map(withoutEmptyFields)
-  };
+  app.model.args.spec = prepareSpec(newValue);
 }, { deep: true });
 
 // Initialize from existing spec if available
 if (app.model.args.spec) {
   formData.value = {
+    separator: app.model.args.spec.separator || ',',
+    commentLinePrefix: app.model.args.spec.commentLinePrefix,
+    skipEmptyLines: app.model.args.spec.skipEmptyLines || false,
     axes: app.model.args.spec.axes || [],
     columns: app.model.args.spec.columns || []
   };
 }
-
-// Functions to add/remove axes and columns
-const addAxis = () => {
-  formData.value.axes.push({
-    column: '',
-    allowNA: false,
-    spec: {
-      type: 'String',
-    }
-  });
-};
-
-const removeAxis = (index: number) => {
-  formData.value.axes.splice(index, 1);
-};
-
-const addColumn = () => {
-  formData.value.columns.push({
-    column: '',
-    spec: {
-      valueType: 'String',
-    }
-  });
-};
-
-const removeColumn = (index: number) => {
-  formData.value.columns.splice(index, 1);
-};
-
-const jsonToString = (obj: Record<string, string> | undefined): string => {
-  if (!obj || Object.keys(obj).length === 0) return '';
-  return JSON.stringify(obj, null, 2);
-};
-
-const stringToJson = (value: string): Record<string, string> => {
-  if (!value.trim()) return {};
-  try {
-    return JSON.parse(value);
-  } catch {
-    return {};
-  }
-};
-
-// Update functions for JSON fields
-const updateAxisDomain = (index: number, value: string) => {
-  formData.value.axes[index].spec.domain = stringToJson(value);
-};
-
-const updateAxisAnnotations = (index: number, value: string) => {
-  formData.value.axes[index].spec.annotations = stringToJson(value);
-};
-
-const updateColumnDomain = (index: number, value: string) => {
-  formData.value.columns[index].spec.domain = stringToJson(value);
-};
-
-const updateColumnAnnotations = (index: number, value: string) => {
-  formData.value.columns[index].spec.annotations = stringToJson(value);
-};
 </script>
 
 <template>
   <div :class="$style.specForm">
-    <h2>File Import Specification</h2>
-    
-    <!-- Axes Section -->
-    <div :class="$style.section">
-      <div :class="$style.sectionHeader">
-        <h3>Axes Configuration</h3>
-        <PlBtnPrimary @click="addAxis">Add Axis</PlBtnPrimary>
-      </div>
-      
-      <div v-if="formData.axes.length === 0" :class="$style.emptyState">
-        No axes configured. Click "Add Axis" to add your first axis.
-      </div>
-      
-      <div v-for="(axis, index) in formData.axes" :key="index" :class="$style.formGroup">
-        <div :class="$style.itemHeader">
-          <h4>Axis {{ index + 1 }}</h4>
-          <PlBtnSecondary @click="removeAxis(index)">Remove</PlBtnSecondary>
-        </div>
-        
+    <div :class="$style.sectionCol">
+      <div :class="$style.sectionRow">
+        <h3>Basic Settings</h3>
         <div :class="$style.formRow">
-          <PlTextField 
-            v-model="axis.column" 
-            label="Column" 
-            placeholder="Column label from XSV file"
-            required
-          />
-          
-          <PlTextField 
-            :model-value="axis.filterOutRegex || ''"
-            @update:model-value="axis.filterOutRegex = $event || undefined"
-            label="Filter Out Regex" 
-            placeholder="Regex to filter out rows (optional)"
-          />
-        </div>
-        
-        <div :class="$style.formRow">
-          <PlTextField 
-            :model-value="axis.naRegex || ''"
-            @update:model-value="axis.naRegex = $event || undefined"
-            label="NA Regex" 
-            placeholder="Regex to identify N/A values (optional)"
-          />
-          
-          <PlCheckbox 
-            :model-value="axis.allowNA || false"
-            @update:model-value="axis.allowNA = $event"
-          >Allow NA Values</PlCheckbox>
-        </div>
-        
-        <!-- Axis Spec -->
-        <div :class="$style.nestedSection">
-          <h5>Axis Specification</h5>
-          
-          <div :class="$style.formRow">
-            <PlTextField 
-              :model-value="axis.spec.name || ''"
-              @update:model-value="axis.spec.name = $event || undefined"
-              label="Name" 
-              placeholder="Axis name (defaults to column label)"
-            />
-            
-            <PlDropdown 
-              v-model="axis.spec.type" 
-              :options="valueTypeOptions"
-              label="Type"
-              required
-            />
-          </div>
-          
-          <div :class="$style.formRow">
-            <PlTextArea 
-              :model-value="jsonToString(axis.spec.domain)"
-              @update:model-value="updateAxisDomain(index, $event)"
-              label="Domain (JSON)" 
-              placeholder="{}"
-            />
-            
-            <PlTextArea 
-              :model-value="jsonToString(axis.spec.annotations)"
-              @update:model-value="updateAxisAnnotations(index, $event)"
-              label="Annotations (JSON)" 
-              placeholder="{}"
-            />
-          </div>
+          <PlTextField :model-value="formData.separator || ''"
+            @update:model-value="formData.separator = $event || undefined" label="Separator" placeholder="," />
+          <PlTextField :model-value="formData.commentLinePrefix || ''"
+            @update:model-value="formData.commentLinePrefix = $event || undefined" label="Comment Line Prefix"
+            placeholder="#" />
         </div>
       </div>
     </div>
 
-    <!-- Columns Section -->
-    <div :class="$style.section">
-      <div :class="$style.sectionHeader">
-        <h3>Columns Configuration</h3>
-        <PlBtnPrimary @click="addColumn">Add Column</PlBtnPrimary>
-      </div>
-      
-      <div v-if="formData.columns.length === 0" :class="$style.emptyState">
-        No columns configured. Click "Add Column" to add your first column.
-      </div>
-      
-      <div v-for="(column, index) in formData.columns" :key="index" :class="$style.formGroup">
-        <div :class="$style.itemHeader">
-          <h4>Column {{ index + 1 }}</h4>
-          <PlBtnSecondary @click="removeColumn(index)">Remove</PlBtnSecondary>
-        </div>
-        
-        <div :class="$style.formRow">
-          <PlTextField 
-            v-model="column.column" 
-            label="Column" 
-            placeholder="Column label from XSV file"
-            required
-          />
-          
-          <PlTextField 
-            :model-value="column.filterOutRegex || ''"
-            @update:model-value="column.filterOutRegex = $event || undefined"
-            label="Filter Out Regex" 
-            placeholder="Regex to filter out rows (optional)"
-          />
-        </div>
-        
-        <div :class="$style.formRow">
-          <PlTextField 
-            :model-value="column.naRegex || ''"
-            @update:model-value="column.naRegex = $event || undefined"
-            label="NA Regex" 
-            placeholder="Regex to identify N/A values (optional)"
-          />
-          
-          <PlCheckbox 
-            :model-value="column.allowNA || false"
-            @update:model-value="column.allowNA = $event"
-          >Allow NA Values</PlCheckbox>
-        </div>
-        
-        <div :class="$style.formRow">
-          <PlTextField 
-            :model-value="column.id || ''"
-            @update:model-value="column.id = $event || undefined"
-            label="ID" 
-            placeholder="Column ID (defaults to sanitized column label)"
-          />
-        </div>
-        
-        <!-- Column Spec -->
-        <div :class="$style.nestedSection">
-          <h5>Column Specification</h5>
-          
-          <div :class="$style.formRow">
-            <PlTextField 
-              :model-value="column.spec.name || ''"
-              @update:model-value="column.spec.name = $event || undefined"
-              label="Name" 
-              placeholder="Column name (defaults to column label)"
-            />
-            
-            <PlDropdown 
-              v-model="column.spec.valueType" 
-              :options="valueTypeOptions"
-              label="Value Type"
-              required
-            />
-          </div>
-          
-          <div :class="$style.formRow">
-            <PlTextArea 
-              :model-value="jsonToString(column.spec.domain)"
-              @update:model-value="updateColumnDomain(index, $event)"
-              label="Domain (JSON)" 
-              placeholder="{}"
-            />
-            
-            <PlTextArea 
-              :model-value="jsonToString(column.spec.annotations)"
-              @update:model-value="updateColumnAnnotations(index, $event)"
-              label="Annotations (JSON)" 
-              placeholder="{}"
-            />
-          </div>
-        </div>
-      </div>
+    <div :class="$style.sectionCol">
+      <AxesConfiguration v-model="formData.axes" />
+      <ColumnsConfiguration v-model="formData.columns" />
     </div>
   </div>
 </template>
 
 <style module>
 .specForm {
-  padding: 20px;
-  max-width: 1200px;
-  margin: 0 auto;
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
 }
 
-.section {
+.sectionRow {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
   margin-bottom: 40px;
 }
 
-.sectionHeader {
+.sectionCol {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-.sectionHeader h3 {
-  margin: 0;
-  color: var(--txt-01);
-}
-
-.formGroup {
-  border: 1px solid var(--border-color-div-grey);
-  border-radius: 8px;
-  padding: 20px;
-  margin-bottom: 20px;
-  background-color: var(--bg-elevated-01);
-}
-
-.itemHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--border-color-div-grey);
-}
-
-.itemHeader h4 {
-  margin: 0;
-  color: var(--txt-01);
+  flex-direction: column;
+  flex: 1 1 0;
+  gap: 12px;
 }
 
 .formRow {
@@ -353,53 +87,5 @@ const updateColumnAnnotations = (index: number, value: string) => {
   grid-template-columns: 1fr 1fr;
   gap: 16px;
   margin-bottom: 16px;
-}
-
-.nestedSection {
-  margin-top: 20px;
-  padding: 16px;
-  background-color: var(--bg-base);
-  border-radius: 6px;
-  border: 1px solid var(--border-color-div-grey);
-}
-
-.nestedSection h5 {
-  margin: 0 0 16px 0;
-  color: var(--txt-01);
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.emptyState {
-  text-align: center;
-  padding: 40px;
-  color: var(--txt-03);
-  font-style: italic;
-  background-color: var(--bg-elevated-01);
-  border-radius: 8px;
-  border: 1px dashed var(--border-color-div-grey);
-}
-
-h2 {
-  color: var(--txt-01);
-  margin-bottom: 30px;
-}
-
-@media (max-width: 768px) {
-  .formRow {
-    grid-template-columns: 1fr;
-  }
-  
-  .sectionHeader {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
-  }
-  
-  .itemHeader {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
-  }
 }
 </style>
