@@ -4,8 +4,9 @@
   "description": "MiLaboratories Platforma Package builder",
   "type": "module",
   "scripts": {
-    "type-check": "tsc --noEmit --composite false",
-    "build": "oclif-index && vite build",
+    "type-check": "ts-builder types --target node",
+    "build": "oclif-index && ts-builder build --target node",
+    "watch": "ts-builder build --target node --watch",
     "test": "vitest run",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
     "lint": "eslint ."
@@ -37,6 +38,7 @@
   "devDependencies": {
     "@jest/globals": "catalog:",
     "@milaboratories/ts-configs": "workspace:*",
+    "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/oclif-index": "workspace:*",
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/eslint-config": "workspace:^",

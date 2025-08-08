@@ -3100,6 +3100,9 @@ importers:
       '@milaboratories/oclif-index':
         specifier: workspace:*
         version: link:../oclif-index
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../ts-builder
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../ts-configs
