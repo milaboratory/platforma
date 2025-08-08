@@ -1,17 +1,7 @@
-import { dirname, resolve } from 'path';
-import { fileURLToPath } from 'url';
 import { TargetType } from './config-manager';
 
-/**
- * Resolves the path to an executable in the ts-builder's node_modules/.bin directory
- * This ensures that ts-builder is self-contained and can work outside of monorepo
- */
 export function resolveExecutable(executableName: string): string {
-  const __filename = fileURLToPath(import.meta.url);
-  const __dirname = dirname(__filename);
-  // Navigate to ts-builder root from tools/ts-builder/dist/commands/utils/
-  const jsBuilderRoot = resolve(__dirname, '../../../');
-  return resolve(jsBuilderRoot, 'node_modules/.bin', executableName);
+  return `npx ${executableName}`;
 }
 
 /**

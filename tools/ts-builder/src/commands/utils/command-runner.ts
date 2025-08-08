@@ -2,6 +2,7 @@ import { spawn } from 'child_process';
 
 export function runCommand(command: string, args: string[]): Promise<void> {
   return new Promise((resolve, reject) => {
+    console.log(`↳ ${command} ${args.join(' ')}`);
     const child = spawn(command, args, {
       stdio: 'inherit',
       shell: true

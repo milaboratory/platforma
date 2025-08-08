@@ -52,9 +52,7 @@ export function getValidatedConfigPath(customConfig: string | undefined, default
     return customConfig;
   }
   
-  const defaultConfig = getConfigPath(defaultConfigFilename);
-  console.log(`Using default config: ${defaultConfig}`);
-  return defaultConfig;
+  return getConfigPath(defaultConfigFilename);
 }
 
 export function createConfigFile(target: TargetType, outputPath?: string): void {
