@@ -10,8 +10,6 @@ export const typesCommand = new Command('types')
     const target = globalOpts.target as TargetType;
     const tsconfigPath = options.project;
 
-    console.log(`Type checking with ${tsconfigPath}...`);
-
     if (!existsSync(tsconfigPath)) {
       console.error(`TypeScript config not found: ${tsconfigPath}`);
       process.exit(1);
