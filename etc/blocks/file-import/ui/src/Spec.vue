@@ -1,22 +1,25 @@
 <script setup lang="tsx">
 import type { Spec } from '@milaboratories/milaboratories.file-import-block.model';
-import {
-  PlTextField
-} from '@platforma-sdk/ui-vue';
 import { ref, watch } from 'vue';
 import { useApp } from './app';
 import AxesConfiguration from './components/AxesConfiguration.vue';
+import BasicSettings from './components/BasicSettings.vue';
 import ColumnsConfiguration from './components/ColumnsConfiguration.vue';
 import { prepareSpec } from './utils/spec';
 
 const app = useApp();
-type MySpec = Pick<Spec, 'axes' | 'columns' | 'separator' | 'commentLinePrefix' | 'skipEmptyLines'>;
 
 // Initialize reactive data
-const formData = ref<MySpec>({
+const formData = ref<Spec>({
   separator: ',',
   commentLinePrefix: undefined,
   skipEmptyLines: false,
+  allowColumnLabelDuplicates: true,
+  allowArtificialColumns: false,
+  columnNamePrefix: undefined,
+  storageFormat: 'Binary',
+  partitionKeyLength: 0,
+  index: undefined,
   axes: [],
   columns: []
 });
@@ -33,6 +36,12 @@ if (app.model.args.spec) {
     separator: app.model.args.spec.separator || ',',
     commentLinePrefix: app.model.args.spec.commentLinePrefix,
     skipEmptyLines: app.model.args.spec.skipEmptyLines || false,
+    allowColumnLabelDuplicates: app.model.args.spec.allowColumnLabelDuplicates !== false,
+    allowArtificialColumns: app.model.args.spec.allowArtificialColumns || false,
+    columnNamePrefix: app.model.args.spec.columnNamePrefix,
+    storageFormat: app.model.args.spec.storageFormat || 'Binary',
+    partitionKeyLength: app.model.args.spec.partitionKeyLength || 0,
+    index: app.model.args.spec.index,
     axes: app.model.args.spec.axes || [],
     columns: app.model.args.spec.columns || []
   };
@@ -41,20 +50,9 @@ if (app.model.args.spec) {
 
 <template>
   <div :class="$style.specForm">
-    <div :class="$style.sectionCol">
-      <div :class="$style.sectionRow">
-        <h3>Basic Settings</h3>
-        <div :class="$style.formRow">
-          <PlTextField :model-value="formData.separator || ''"
-            @update:model-value="formData.separator = $event || undefined" label="Separator" placeholder="," />
-          <PlTextField :model-value="formData.commentLinePrefix || ''"
-            @update:model-value="formData.commentLinePrefix = $event || undefined" label="Comment Line Prefix"
-            placeholder="#" />
-        </div>
-      </div>
-    </div>
+    <BasicSettings v-model="formData" />
 
-    <div :class="$style.sectionCol">
+    <div>
       <AxesConfiguration v-model="formData.axes" />
       <ColumnsConfiguration v-model="formData.columns" />
     </div>
@@ -64,28 +62,7 @@ if (app.model.args.spec) {
 <style module>
 .specForm {
   display: flex;
-  flex-direction: row;
-  gap: 12px;
-}
-
-.sectionRow {
-  display: flex;
   flex-direction: column;
   gap: 12px;
-  margin-bottom: 40px;
-}
-
-.sectionCol {
-  display: flex;
-  flex-direction: column;
-  flex: 1 1 0;
-  gap: 12px;
-}
-
-.formRow {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  margin-bottom: 16px;
 }
 </style>
