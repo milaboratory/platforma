@@ -437,7 +437,6 @@ export default class Core {
       ...this.configureDockerStorage('library', library),
     };
 
-    // Updated environment variable names to match compose-backend.yaml
     if (options?.grpcAddr) {
       const addrParts = options.grpcAddr.split(':');
       if (addrParts.length === 2) {
