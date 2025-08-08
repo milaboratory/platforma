@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.4.4
+
+### Patch Changes
+
+- 6b9828a: Remove unused styles, fix lint warnings, update comments
+
 ## 2.4.3
 
 ### Patch Changes
