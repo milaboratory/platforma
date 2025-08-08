@@ -893,9 +893,9 @@ You can obtain the license from "https://licensing.milaboratories.com".`);
       case 'S3':
         if (storageID === 'PRIMARY') {
           // Construct the S3 URL for primary storage
-          const endpoint = storage.endpoint || 'http://minio:9000';
-          const bucketName = storage.bucketName || 'platforma-primary-bucket';
-          envs['PL_PRIMARY_STORAGE_S3'] = `${endpoint}/${bucketName}`;
+          const endpoint = storage.endpoint || 'http://minio:9000/';
+          const bucketName = storage.bucketName || 'main-bucket';
+          envs['PL_PRIMARY_STORAGE_S3'] = `${endpoint}${bucketName}`;
           if (storage.endpoint) envs['PL_PRIMARY_STORAGE_S3_ENDPOINT'] = storage.endpoint;
           if (storage.presignEndpoint) envs['PL_PRIMARY_STORAGE_S3_EXTERNAL_ENDPOINT'] = storage.presignEndpoint;
           if (storage.region) envs['PL_PRIMARY_STORAGE_S3_REGION'] = storage.region;
