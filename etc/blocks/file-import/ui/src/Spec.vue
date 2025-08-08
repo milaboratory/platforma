@@ -117,27 +117,27 @@ const updateColumnAnnotations = (index: number, value: string) => {
 </script>
 
 <template>
-  <div class="spec-form">
+  <div :class="$style.specForm">
     <h2>File Import Specification</h2>
     
     <!-- Axes Section -->
-    <div class="section">
-      <div class="section-header">
+    <div :class="$style.section">
+      <div :class="$style.sectionHeader">
         <h3>Axes Configuration</h3>
         <PlBtnPrimary @click="addAxis">Add Axis</PlBtnPrimary>
       </div>
       
-      <div v-if="formData.axes.length === 0" class="empty-state">
+      <div v-if="formData.axes.length === 0" :class="$style.emptyState">
         No axes configured. Click "Add Axis" to add your first axis.
       </div>
       
-      <div v-for="(axis, index) in formData.axes" :key="index" class="form-group">
-        <div class="item-header">
+      <div v-for="(axis, index) in formData.axes" :key="index" :class="$style.formGroup">
+        <div :class="$style.itemHeader">
           <h4>Axis {{ index + 1 }}</h4>
           <PlBtnSecondary @click="removeAxis(index)">Remove</PlBtnSecondary>
         </div>
         
-        <div class="form-row">
+        <div :class="$style.formRow">
           <PlTextField 
             v-model="axis.column" 
             label="Column" 
@@ -153,7 +153,7 @@ const updateColumnAnnotations = (index: number, value: string) => {
           />
         </div>
         
-        <div class="form-row">
+        <div :class="$style.formRow">
           <PlTextField 
             :model-value="axis.naRegex || ''"
             @update:model-value="axis.naRegex = $event || undefined"
@@ -168,10 +168,10 @@ const updateColumnAnnotations = (index: number, value: string) => {
         </div>
         
         <!-- Axis Spec -->
-        <div class="nested-section">
+        <div :class="$style.nestedSection">
           <h5>Axis Specification</h5>
           
-          <div class="form-row">
+          <div :class="$style.formRow">
             <PlTextField 
               :model-value="axis.spec.name || ''"
               @update:model-value="axis.spec.name = $event || undefined"
@@ -187,7 +187,7 @@ const updateColumnAnnotations = (index: number, value: string) => {
             />
           </div>
           
-          <div class="form-row">
+          <div :class="$style.formRow">
             <PlTextArea 
               :model-value="jsonToString(axis.spec.domain)"
               @update:model-value="updateAxisDomain(index, $event)"
@@ -207,23 +207,23 @@ const updateColumnAnnotations = (index: number, value: string) => {
     </div>
 
     <!-- Columns Section -->
-    <div class="section">
-      <div class="section-header">
+    <div :class="$style.section">
+      <div :class="$style.sectionHeader">
         <h3>Columns Configuration</h3>
         <PlBtnPrimary @click="addColumn">Add Column</PlBtnPrimary>
       </div>
       
-      <div v-if="formData.columns.length === 0" class="empty-state">
+      <div v-if="formData.columns.length === 0" :class="$style.emptyState">
         No columns configured. Click "Add Column" to add your first column.
       </div>
       
-      <div v-for="(column, index) in formData.columns" :key="index" class="form-group">
-        <div class="item-header">
+      <div v-for="(column, index) in formData.columns" :key="index" :class="$style.formGroup">
+        <div :class="$style.itemHeader">
           <h4>Column {{ index + 1 }}</h4>
           <PlBtnSecondary @click="removeColumn(index)">Remove</PlBtnSecondary>
         </div>
         
-        <div class="form-row">
+        <div :class="$style.formRow">
           <PlTextField 
             v-model="column.column" 
             label="Column" 
@@ -239,7 +239,7 @@ const updateColumnAnnotations = (index: number, value: string) => {
           />
         </div>
         
-        <div class="form-row">
+        <div :class="$style.formRow">
           <PlTextField 
             :model-value="column.naRegex || ''"
             @update:model-value="column.naRegex = $event || undefined"
@@ -253,7 +253,7 @@ const updateColumnAnnotations = (index: number, value: string) => {
           >Allow NA Values</PlCheckbox>
         </div>
         
-        <div class="form-row">
+        <div :class="$style.formRow">
           <PlTextField 
             :model-value="column.id || ''"
             @update:model-value="column.id = $event || undefined"
@@ -263,10 +263,10 @@ const updateColumnAnnotations = (index: number, value: string) => {
         </div>
         
         <!-- Column Spec -->
-        <div class="nested-section">
+        <div :class="$style.nestedSection">
           <h5>Column Specification</h5>
           
-          <div class="form-row">
+          <div :class="$style.formRow">
             <PlTextField 
               :model-value="column.spec.name || ''"
               @update:model-value="column.spec.name = $event || undefined"
@@ -282,7 +282,7 @@ const updateColumnAnnotations = (index: number, value: string) => {
             />
           </div>
           
-          <div class="form-row">
+          <div :class="$style.formRow">
             <PlTextArea 
               :model-value="jsonToString(column.spec.domain)"
               @update:model-value="updateColumnDomain(index, $event)"
@@ -303,8 +303,8 @@ const updateColumnAnnotations = (index: number, value: string) => {
   </div>
 </template>
 
-<style scoped>
-.spec-form {
+<style module>
+.specForm {
   padding: 20px;
   max-width: 1200px;
   margin: 0 auto;
@@ -314,19 +314,19 @@ const updateColumnAnnotations = (index: number, value: string) => {
   margin-bottom: 40px;
 }
 
-.section-header {
+.sectionHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
 }
 
-.section-header h3 {
+.sectionHeader h3 {
   margin: 0;
   color: var(--txt-01);
 }
 
-.form-group {
+.formGroup {
   border: 1px solid var(--border-color-div-grey);
   border-radius: 8px;
   padding: 20px;
@@ -334,7 +334,7 @@ const updateColumnAnnotations = (index: number, value: string) => {
   background-color: var(--bg-elevated-01);
 }
 
-.item-header {
+.itemHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -343,19 +343,19 @@ const updateColumnAnnotations = (index: number, value: string) => {
   border-bottom: 1px solid var(--border-color-div-grey);
 }
 
-.item-header h4 {
+.itemHeader h4 {
   margin: 0;
   color: var(--txt-01);
 }
 
-.form-row {
+.formRow {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
   margin-bottom: 16px;
 }
 
-.nested-section {
+.nestedSection {
   margin-top: 20px;
   padding: 16px;
   background-color: var(--bg-base);
@@ -363,14 +363,14 @@ const updateColumnAnnotations = (index: number, value: string) => {
   border: 1px solid var(--border-color-div-grey);
 }
 
-.nested-section h5 {
+.nestedSection h5 {
   margin: 0 0 16px 0;
   color: var(--txt-01);
   font-size: 14px;
   font-weight: 600;
 }
 
-.empty-state {
+.emptyState {
   text-align: center;
   padding: 40px;
   color: var(--txt-03);
@@ -386,17 +386,17 @@ h2 {
 }
 
 @media (max-width: 768px) {
-  .form-row {
+  .formRow {
     grid-template-columns: 1fr;
   }
   
-  .section-header {
+  .sectionHeader {
     flex-direction: column;
     align-items: stretch;
     gap: 12px;
   }
   
-  .item-header {
+  .itemHeader {
     flex-direction: column;
     align-items: stretch;
     gap: 12px;
