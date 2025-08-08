@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import * as util from '../util';
 
-export const artifactTypes = ['environment', 'binary', 'java', 'python', 'R', 'asset'] as const;
+export const artifactTypes = ['environment', 'binary', 'java', 'python', 'R', 'asset', 'docker'] as const;
 export type artifactType = (typeof artifactTypes)[number];
 
 export const buildableTypes: artifactType[] = [
@@ -11,6 +11,7 @@ export const buildableTypes: artifactType[] = [
   'python',
   'R',
   'asset',
+  'docker',
 ] as const;
 export const crossplatformTypes: artifactType[] = ['asset', 'java', 'python', 'R'] as const;
 
@@ -38,6 +39,7 @@ export type registry = z.infer<typeof registrySchema>;
 export const registryOrRef = z.union([z.string(), registrySchema]);
 
 // common fields for all buildable artifacts
+// TODO: create new type for binary packages
 const archiveRulesSchema = z.object({
   registry: registryOrRef,
   name: z.string().optional(),
@@ -133,6 +135,20 @@ export const condaPackageSchema = archiveRulesSchema.extend({
 });
 export type condaPackageConfig = z.infer<typeof condaPackageSchema>;
 
+export const dockerPackageSchema = archiveRulesSchema.extend({
+  type: z.literal('docker'),
+  registry: registryOrRef.optional(),
+
+  // build from custom Dockerfile
+  context: z.string().describe('relative path to context directory from folder where command is executed or absolute path to context folder'),
+  dockerfile: z.string().optional().describe('relative path to \'Dockerfile\' file from folder where command is executed or absolute path to the file'),
+
+  // build from existing image. not used yet
+  tag: z.string().optional().describe('name of the image to be built instead of custom one'),
+  entrypoint: z.array(z.string()).optional().describe('entrypoint command to be run in the container'),
+});
+export type dockerPackageConfig = z.infer<typeof dockerPackageSchema>;
+
 export const configSchema = z.discriminatedUnion('type', [
   typedAssetPackageSchema,
   environmentPackageSchema,
@@ -140,6 +156,7 @@ export const configSchema = z.discriminatedUnion('type', [
   javaPackageSchema,
   pythonPackageSchema,
   rPackageSchema,
+  dockerPackageSchema,
   // condaPackageSchema,
 ]);
 

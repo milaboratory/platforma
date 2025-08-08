@@ -284,7 +284,7 @@ export function currentPlatform(): PlatformType {
   return `${currentOS()}-${currentArch()}`;
 }
 
-export const AllSoftwareSources = ['archive'] as const; // add 'image', '<whatever>' here when supported
+export const AllSoftwareSources = ['archive', 'docker'] as const; // add 'image', '<whatever>' here when supported
 export type SoftwareSource = (typeof AllSoftwareSources)[number];
 
 export type BuildMode = 'dev-local' | 'release';
