@@ -5,7 +5,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { PL_DOCKER_REGISTRY } from './envs';
 
-export const defaultDockerRegistry = 'quora.io';
+export const defaultDockerRegistry = 'containers.pl-open.science';
 
 export function dockerEntrypointName(name: string): string {
   return name + ':docker';
