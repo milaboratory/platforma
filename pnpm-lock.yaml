@@ -3063,6 +3063,15 @@ importers:
       '@oclif/core':
         specifier: 'catalog:'
         version: 4.0.37
+      '@types/archiver':
+        specifier: ^6.0.3
+        version: 6.0.3
+      '@types/node':
+        specifier: 'catalog:'
+        version: 20.16.15
+      archiver:
+        specifier: ^7.0.1
+        version: 7.0.1
       canonicalize:
         specifier: 'catalog:'
         version: 2.1.0
@@ -3097,18 +3106,9 @@ importers:
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../ts-configs
-      '@types/archiver':
-        specifier: ^6.0.3
-        version: 6.0.3
       '@types/jest':
         specifier: 'catalog:'
         version: 29.5.14
-      '@types/node':
-        specifier: 'catalog:'
-        version: 20.16.15
-      archiver:
-        specifier: ^7.0.1
-        version: 7.0.1
       jest:
         specifier: 'catalog:'
         version: 29.7.0(@types/node@20.16.15)(ts-node@10.9.2(@types/node@20.16.15)(typescript@5.6.3))
