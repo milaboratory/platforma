@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Spec } from '@milaboratories/milaboratories.file-import-block.model';
 import {
   PlBtnPrimary,
   PlCheckbox,
@@ -8,10 +9,10 @@ import {
 } from '@platforma-sdk/ui-vue';
 import { ref, watch } from 'vue';
 import { useJsonField } from '../composables/useJsonField';
-import type { ColumnSpecParam } from '../types/spec';
 import { VALUE_TYPE_OPTIONS } from '../types/spec';
 import SpecItem from './SpecItem.vue';
 
+type ColumnSpecParam = Spec['columns'][number];
 const props = defineProps<{
   modelValue: ColumnSpecParam[];
 }>();

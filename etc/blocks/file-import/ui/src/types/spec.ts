@@ -1,33 +1,10 @@
-export type ValueType = 'Int' | 'Long' | 'Float' | 'Double' | 'String';
+import type { Spec, ValueType } from "@milaboratories/milaboratories.file-import-block.model";
 
-export interface AxisSpecParam {
-  column: string;
-  filterOutRegex?: string;
-  naRegex?: string;
-  allowNA?: boolean;
-  spec: {
-    type: ValueType;
-    name?: string;
-    domain?: Record<string, string>;
-    annotations?: Record<string, string>;
-    parentAxes?: number[];
-  };
-}
+export type IndexParam = Spec['index'];
 
-export interface ColumnSpecParam {
-  column: string;
-  filterOutRegex?: string;
-  naRegex?: string;
-  allowNA?: boolean;
-  id?: string;
-  spec: {
-    valueType: ValueType;
-    name?: string;
-    domain?: Record<string, string>;
-    annotations?: Record<string, string>;
-    parentAxes?: number[];
-  };
-}
+export type AxisSpecParam =  Spec['axes'][number];
+
+export type ColumnSpecParam =  Spec['columns'][number];
 
 export const VALUE_TYPE_OPTIONS = [
   { label: 'Int', value: 'Int' as ValueType },
@@ -36,3 +13,5 @@ export const VALUE_TYPE_OPTIONS = [
   { label: 'Double', value: 'Double' as ValueType },
   { label: 'String', value: 'String' as ValueType }
 ];
+
+export { ValueType };
