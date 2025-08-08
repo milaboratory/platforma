@@ -43,7 +43,8 @@
     "tar-fs": "catalog:",
     "undici": "catalog:",
     "zod": "catalog:",
-    "upath": "catalog:"
+    "upath": "catalog:",
+    "@node-rs/crc32": "^1.10.6"
   },
   "devDependencies": {
     "eslint": "catalog:",
