@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import type winston from 'winston';
-import type { PackageConfig, Entrypoint } from './package-info';
+import type { PackageConfig, Entrypoint, DockerPackage } from './package-info';
 import { PackageInfo } from './package-info';
 import {
   Renderer,
@@ -12,6 +12,7 @@ import {
 import * as util from './util';
 import * as archive from './archive';
 import * as storage from './storage';
+import { dockerBuild, dockerEntrypointName, dockerPush, dockerTagFromPackage } from './docker';
 
 export class Core {
   private readonly logger: winston.Logger;
@@ -100,11 +101,17 @@ export class Core {
 
   public getPackage(id: string): PackageConfig {
     const pkg = this.packages.get(id);
-    if (!pkg) {
-      this.logger.error(`package with id '${id}' not found in ${util.softwareConfigName} file`);
-      throw new Error(`no package with id '${id}'`);
+    if (pkg) {
+      return pkg;
     }
-    return pkg;
+
+    const dockerPkg = this.packages.get(dockerEntrypointName(id));
+    if (dockerPkg) {
+      return dockerPkg;
+    }
+
+    this.logger.error(`package with id '${id}' not found in ${util.softwareConfigName} file`);
+    throw new Error(`no package with id '${id}'`);
   }
 
   /** Parses entrypoints from a package.json
@@ -138,7 +145,6 @@ export class Core {
     }
 
     const infos = this.renderer.renderSoftwareEntrypoints(this.buildMode, new Map(entrypoints), {
-      sources: options?.sources,
       fullDirHash: this.fullDirHash,
     });
 
@@ -216,6 +222,11 @@ export class Core {
       throw new Error('not a buildable artifact');
     }
 
+    if (pkg.type === 'docker') {
+      this.buildDockerImage(pkg);
+      return;
+    }
+
     const contentRoot = options?.contentRoot ?? pkg.contentRoot(platform);
 
     if (pkg.type === 'asset') {
@@ -234,6 +245,50 @@ export class Core {
     const archivePath = options?.archivePath ?? this.binArchivePath(pkg, os, arch);
 
     await this.createPackageArchive('software', pkg, archivePath, contentRoot, os, arch);
+  }
+
+  public buildDockerImages(
+    options?: {
+      ids?: string[];
+    },
+  ) {
+    const packagesToBuild = options?.ids ?? Array.from(this.buildablePackages.keys());
+
+    for (const pkgID of packagesToBuild) {
+      const pkg = this.getPackage(pkgID);
+      if (pkg.type !== 'docker') {
+        continue;
+      }
+
+      this.buildDockerImage(pkg);
+    }
+  }
+
+  private buildDockerImage(buildParams: DockerPackage) {
+    const dockerfile = path.resolve(this.pkg.packageRoot, buildParams.dockerfile ?? 'Dockerfile');
+    const context = path.resolve(this.pkg.packageRoot, buildParams.context ?? '.');
+    const entrypoint = buildParams.entrypoint ?? [];
+
+    if (!fs.existsSync(dockerfile)) {
+      throw new Error(`Dockerfile '${dockerfile}' not found`);
+    }
+
+    if (!fs.existsSync(context)) {
+      throw new Error(`Context '${context}' not found`);
+    }
+
+    const tag = dockerTagFromPackage(this.pkg.packageRoot, buildParams);
+
+    this.logger.info(`Building docker image:
+      dockerfile: "${dockerfile}"
+      context: "${context}"
+      tag: "${tag}"
+      entrypoint: "${entrypoint.join(' ')}"
+    `);
+
+    dockerBuild(context, dockerfile, tag);
+
+    this.logger.info(`Docker image '${tag}' was built successfully`);
   }
 
   private async createPackageArchive(
@@ -312,6 +367,8 @@ export class Core {
     forceReupload?: boolean;
   }) {
     const packagesToPublish = options?.ids ?? Array.from(this.buildablePackages.keys());
+    this.logger.info(`Publishing packages: ${packagesToPublish.join(', ')}`);
+    this.logger.info(`Publishable packages: ${Array.from(this.packages.keys()).join(', ')}`);
 
     if (packagesToPublish.length > 1 && options?.archivePath && !options.ignoreArchiveOverlap) {
       this.logger.error(
@@ -337,12 +394,23 @@ export class Core {
       } else {
         uploads.push(this.publishPackage(pkg, util.currentPlatform(), options));
       }
+
+      if (pkg.type !== 'docker') {
+        // will check that docker package exists in the same package.sw.json file for entrypoints with
+        // different artifact types
+        const dockerPkg = this.packages.get(dockerEntrypointName(pkg.id));
+        if (!dockerPkg) {
+          continue;
+        }
+
+        this.publishDockerImage(dockerPkg);
+      }
     }
 
     return Promise.all(uploads);
   }
 
-  public async publishPackage(
+  private async publishPackage(
     pkg: PackageConfig,
     platform: util.PlatformType,
     options?: {
@@ -353,6 +421,20 @@ export class Core {
       forceReupload?: boolean;
     },
   ) {
+    if (pkg.type === 'docker') {
+      this.publishDockerImage(pkg);
+      return;
+    }
+
+    await this.publishArchive(pkg, platform, options);
+  }
+
+  private async publishArchive(pkg: PackageConfig, platform: util.PlatformType, options?: {
+    archivePath?: string;
+    storageURL?: string;
+    failExisting?: boolean;
+    forceReupload?: boolean;
+  }) {
     const { os, arch } = util.splitPlatform(platform);
 
     const storageURL = options?.storageURL ?? pkg.registry.storageURL;
@@ -422,6 +504,32 @@ export class Core {
     });
   }
 
+  public publishDockerImages(options?: {
+    ids?: string[];
+  }) {
+    const packagesToPublish = options?.ids ?? Array.from(this.buildablePackages.keys());
+
+    for (const pkgID of packagesToPublish) {
+      const pkg = this.getPackage(pkgID);
+      if (pkg.type !== 'docker') {
+        continue;
+      }
+
+      this.publishDockerImage(pkg);
+    }
+  }
+
+  private publishDockerImage(pkg: PackageConfig) {
+    if (pkg.type !== 'docker') {
+      throw new Error(`package '${pkg.id}' is not a docker package`);
+    }
+
+    const tag = dockerTagFromPackage(this.pkg.packageRoot, pkg);
+    dockerPush(tag);
+
+    this.logger.info(`Publishing docker image '${tag}' into registry '${pkg.registry.name}'`);
+  }
+
   public signPackages(options?: {
     ids?: string[];
 
@@ -456,7 +564,7 @@ export class Core {
     return Promise.all(uploads);
   }
 
-  public signPackage(
+  private signPackage(
     pkg: PackageConfig,
     platform: util.PlatformType,
     options?: {

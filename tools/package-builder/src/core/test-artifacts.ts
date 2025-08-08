@@ -1,5 +1,5 @@
 export const PackageVersion: string = '1.2.3';
-export const PackageNameNoAt: string = 'some-company/the-software';
+export const PackageNameNoAt: string = 'the-software';
 export const PackageName: string = '@' + PackageNameNoAt;
 
 export const BinaryRegistry: string = 'some-binary-registry';
@@ -7,10 +7,11 @@ export const BinaryRegistryURL: string = 'http://example.com/registry';
 export const BinaryCustomName1: string = 'custom-package-name-1';
 export const BinaryCustomVersion: string = '4.4.4';
 
-export const EPNameAsset: string = 'asset';
+export const EPNameAsset: string = 'pAsset';
 export const EPNameCustomName: string = 'custom-name';
 export const EPNameJavaEnvironment: string = 'java-test-entrypoint';
 export const EPNameJavaDependency: string = 'java-dep';
+export const EPNameDocker: string = 'docker-test-entrypoint';
 
 export const PackageJsonNoSoftware = `{
     "name": "${PackageName}",
@@ -55,6 +56,13 @@ export const EnvironmentPackage = `{
   "binDir": "."
 }`;
 
+export const DockerAsset = `{
+  "type": "docker",
+  "tag": "some-docker-tag",
+  "entrypoint": ["/usr/bin/env", "printf"],
+  "cmd": ["Hello, world!"]
+}`;
+
 export const PackageJson = `{
     "name": "${PackageName}",
     "version": "${PackageVersion}",
@@ -64,14 +72,9 @@ export const PackageJson = `{
           "${BinaryRegistry}": {"downloadURL": "${BinaryRegistryURL}"}
         }
       },
-      "artifacts": {
-        "pAsset": ${AssetArtifact},
-        "pEnv": ${EnvironmentPackage},
-        "pEnvDep": ${EnvironmentDependencyPackage}
-      },
       "entrypoints": {
         "${EPNameAsset}": {
-          "asset": "pAsset"
+          "asset": ${AssetArtifact}
         },
         "${EPNameCustomName}": {
           "binary": {
@@ -80,12 +83,32 @@ export const PackageJson = `{
           }
         },
         "${EPNameJavaEnvironment}": {
-          "environment": { "artifact": "pEnv" }
+          "environment": { "artifact": ${EnvironmentPackage} }
         },
         "${EPNameJavaDependency}": {
           "binary": {
-            "artifact": "pEnvDep",
+            "artifact": ${EnvironmentDependencyPackage},
             "cmd": ["aaaa"]
+          },
+          "docker": {
+            "artifact": {
+              "type": "docker",
+              "dockerfile": "Dockerfile",
+              "context": ".",
+              "entrypoint": ["/usr/bin/env", "printf"]
+            },
+            "cmd": ["echo", "hello"]
+          }
+        },
+        "${EPNameDocker}": {
+          "docker": {
+            "artifact": {
+              "type": "docker",
+              "dockerfile": "Dockerfile",
+              "context": ".",
+              "entrypoint": ["/usr/bin/env", "printf"]
+            },
+            "cmd": ["echo", "hello"]
           }
         }
       }

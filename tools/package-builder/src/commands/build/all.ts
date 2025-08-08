@@ -29,10 +29,6 @@ export default class BuildAll extends Command {
     const { flags } = await this.parse(BuildAll);
     const logger = util.createLogger(flags['log-level']);
 
-    const sources: util.SoftwareSource[] = flags.source
-      ? (flags.source as util.SoftwareSource[])
-      : [...util.AllSoftwareSources]; // we need to iterate over the list to build all targets
-
     try {
       const core = new Core(logger, { packageRoot: flags['package-root'] });
 
@@ -48,27 +44,14 @@ export default class BuildAll extends Command {
         sources: flags.source ? (flags.source as util.SoftwareSource[]) : undefined,
       });
 
-      for (const source of sources) {
-        switch (source) {
-          case 'archive':
-            await core.buildPackages({
-              ids: flags['package-id'],
-              forceBuild: flags.force,
+      await core.buildPackages({
+        ids: flags['package-id'],
+        forceBuild: flags.force,
 
-              archivePath: flags.archive,
-              contentRoot: flags['content-root'],
-              skipIfEmpty: flags['package-id'] ? false : true, // do not skip 'non-binary' packages if their IDs were set as args
-            });
-            break;
-
-            // case 'docker':
-            //     core.buildDocker()
-            //     break
-
-          default:
-            util.assertNever(source);
-        }
-      }
+        archivePath: flags.archive,
+        contentRoot: flags['content-root'],
+        skipIfEmpty: flags['package-id'] ? false : true, // do not skip 'non-binary' packages if their IDs were set as args
+      });
     } catch (e) {
       logger.debug(e);
       if (e instanceof Error) {

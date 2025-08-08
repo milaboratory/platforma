@@ -7,8 +7,9 @@
     "type-check": "ts-builder types --target node",
     "build": "oclif-index && ts-builder build --target node",
     "watch": "ts-builder build --target node --watch",
-    "test": "jest && node ../../tests/package-builder/test.js",
-    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
+    "test": "vitest run",
+    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
+    "lint": "eslint ."
   },
   "bin": {
     "pl-pkg": "./bin/run.mjs"
@@ -36,15 +37,19 @@
   },
   "devDependencies": {
     "@jest/globals": "catalog:",
+    "@milaboratories/ts-configs": "workspace:*",
+    "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/oclif-index": "workspace:*",
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/eslint-config": "workspace:^",
+    "@platforma-open/milaboratories.runenv-python-3": "catalog:",
+    "@types/archiver": "^6.0.3",
     "@types/jest": "catalog:",
     "jest": "catalog:",
     "ts-jest": "catalog:",
     "typescript": "catalog:",
-    "@milaboratories/ts-builder": "workspace:*",
-    "@milaboratories/ts-configs": "workspace:*"
+    "vite": "catalog:",
+    "vitest": "catalog:"
   },
   "oclif": {
     "bin": "pl-pkg",

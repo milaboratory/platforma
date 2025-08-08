@@ -3106,6 +3106,9 @@ importers:
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../ts-configs
+      '@platforma-open/milaboratories.runenv-python-3':
+        specifier: 'catalog:'
+        version: 1.1.15
       '@types/jest':
         specifier: 'catalog:'
         version: 29.5.14
@@ -3118,6 +3121,12 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
+      vite:
+        specifier: 'catalog:'
+        version: 6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
+      vitest:
+        specifier: 'catalog:'
+        version: 2.1.9(@types/node@20.16.15)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4)
 
   tools/pl-bootstrap:
     dependencies:
