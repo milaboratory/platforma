@@ -1,6 +1,36 @@
 <script lang="ts">
 /**
- * A component for selecting multiple values from a list of options
+ * A multi-select autocomplete component that allows users to search and select multiple values from a list of options.
+ * Supports async data fetching, keyboard navigation, and displays selected items as removable chips.
+ *
+ * @example
+ * Basic usage:
+ * <PlAutocompleteMulti
+ *   v-model="selectedUsers"
+ *   :options-search="searchUsers"
+ *   :model-search="getUsersByIds"
+ *   label="Select Users"
+ *   placeholder="Search for users..."
+ *   required
+ *   :debounce="300"
+ *   helper="Choose one or more users from the list"
+ * />
+ *
+ * With async functions:
+ * const selectedUsers = ref([])
+ *
+ * const searchUsers = async (searchTerm) => {
+ *   const response = await fetch('/api/users/search?q=' + searchTerm)
+ *   const users = await response.json()
+ *   return users.map(user => ({ value: user.id, label: user.name }))
+ * }
+ *
+ * const getUsersByIds = async (userIds) => {
+ *   if (!userIds.length) return []
+ *   const response = await fetch('/api/users?ids=' + userIds.join(','))
+ *   const users = await response.json()
+ *   return users.map(user => ({ value: user.id, label: user.name }))
+ * }
  */
 export default {
   name: 'PlAutocompleteMulti',
@@ -10,7 +40,6 @@ export default {
 <script lang="ts" setup generic="M = unknown">
 import './pl-autocomplete-multi.scss';
 import { computed, reactive, ref, unref, useSlots, useTemplateRef, watch, toRef } from 'vue';
-import { tap } from '../../helpers/functions';
 import { PlTooltip } from '../PlTooltip';
 import { PlChip } from '../PlChip';
 import DoubleContour from '../../utils/DoubleContour.vue';

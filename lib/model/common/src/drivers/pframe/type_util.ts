@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 export type AddParameters<
   TParameters extends [...args: any],
   TFunction extends (...args: any) => any,
