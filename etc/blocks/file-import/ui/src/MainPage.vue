@@ -5,6 +5,8 @@ import Spec from './Spec.vue';
 
 const app = useApp();
 
+app.model.args.fileExt = 'csv';
+
 </script>
 
 <template>

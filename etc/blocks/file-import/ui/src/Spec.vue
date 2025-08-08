@@ -8,6 +8,7 @@ import {
     PlTextArea,
     PlTextField
 } from '@platforma-sdk/ui-vue';
+import { isEmpty } from 'es-toolkit/compat';
 import { ref, watch } from 'vue';
 import { useApp } from './app';
 
@@ -32,9 +33,19 @@ const valueTypeOptions = [
   { label: 'String', value: 'String' as ValueType }
 ];
 
+function withoutEmptyFields<T extends Record<string, any>>(obj: T): T {
+  return Object.fromEntries(Object.entries(obj).filter(([_, value]) => !isEmpty(value))) as T;
+}
+
 // Watch for changes and update app.model.args.spec
 watch(formData, (newValue) => {
-  app.model.args.spec = newValue;
+  const value = withoutEmptyFields(newValue);
+  
+  app.model.args.spec = {
+    ...value,
+    axes: newValue.axes.map(withoutEmptyFields),
+    columns: newValue.columns.map(withoutEmptyFields)
+  };
 }, { deep: true });
 
 // Initialize from existing spec if available
@@ -49,15 +60,9 @@ if (app.model.args.spec) {
 const addAxis = () => {
   formData.value.axes.push({
     column: '',
-    filterOutRegex: undefined,
-    naRegex: undefined,
     allowNA: false,
     spec: {
       type: 'String',
-      name: undefined,
-      domain: {},
-      annotations: {},
-      parentAxes: []
     }
   });
 };
@@ -69,33 +74,14 @@ const removeAxis = (index: number) => {
 const addColumn = () => {
   formData.value.columns.push({
     column: '',
-    filterOutRegex: undefined,
-    naRegex: undefined,
-    allowNA: true,
-    id: undefined,
     spec: {
       valueType: 'String',
-      name: undefined,
-      domain: {},
-      annotations: {},
-      parentAxes: []
     }
   });
 };
 
 const removeColumn = (index: number) => {
   formData.value.columns.splice(index, 1);
-};
-
-// Helper functions for JSON fields
-const isValidJSON = (value: string): boolean => {
-  if (!value.trim()) return true;
-  try {
-    JSON.parse(value);
-    return true;
-  } catch {
-    return false;
-  }
 };
 
 const jsonToString = (obj: Record<string, string> | undefined): string => {
@@ -178,8 +164,7 @@ const updateColumnAnnotations = (index: number, value: string) => {
           <PlCheckbox 
             :model-value="axis.allowNA || false"
             @update:model-value="axis.allowNA = $event"
-            label="Allow NA Values"
-          />
+          >Allow NA Values</PlCheckbox>
         </div>
         
         <!-- Axis Spec -->
@@ -208,7 +193,6 @@ const updateColumnAnnotations = (index: number, value: string) => {
               @update:model-value="updateAxisDomain(index, $event)"
               label="Domain (JSON)" 
               placeholder="{}"
-              :rules="[(v: string) => isValidJSON(v) || 'Invalid JSON format']"
             />
             
             <PlTextArea 
@@ -216,7 +200,6 @@ const updateColumnAnnotations = (index: number, value: string) => {
               @update:model-value="updateAxisAnnotations(index, $event)"
               label="Annotations (JSON)" 
               placeholder="{}"
-              :rules="[(v: string) => isValidJSON(v) || 'Invalid JSON format']"
             />
           </div>
         </div>
@@ -267,8 +250,7 @@ const updateColumnAnnotations = (index: number, value: string) => {
           <PlCheckbox 
             :model-value="column.allowNA || false"
             @update:model-value="column.allowNA = $event"
-            label="Allow NA Values"
-          />
+          >Allow NA Values</PlCheckbox>
         </div>
         
         <div class="form-row">
@@ -306,7 +288,6 @@ const updateColumnAnnotations = (index: number, value: string) => {
               @update:model-value="updateColumnDomain(index, $event)"
               label="Domain (JSON)" 
               placeholder="{}"
-              :rules="[(v: string) => isValidJSON(v) || 'Invalid JSON format']"
             />
             
             <PlTextArea 
@@ -314,7 +295,6 @@ const updateColumnAnnotations = (index: number, value: string) => {
               @update:model-value="updateColumnAnnotations(index, $event)"
               label="Annotations (JSON)" 
               placeholder="{}"
-              :rules="[(v: string) => isValidJSON(v) || 'Invalid JSON format']"
             />
           </div>
         </div>

@@ -4,14 +4,32 @@ xsv := import("@platforma-sdk/workflow-tengo:pframes.xsv")
 
 wf.body(func(args) {
 	fImport := file.importFile(args.fileHandle);
-	pFrame := xsv.importFile(fImport.file, args.fileExt, args.spec);
+	pf := xsv.importFile(fImport.file, args.fileExt, args.spec, { splitDataAndSpec: true });
+
+	// pf := pframes.pFrameBuilder();
+	// for id, v in result {
+	// 	if id != "sampleId" {
+	// 		downsampling := json.decode(v.spec.domain["pl7.app/downsampling"])
+			
+	// 		trace := pSpec.makeTrace(
+	// 			abundanceSpec,
+	// 			{
+	// 				type: "milaboratories.differential-repertoire-diversity",
+	// 				id: blockId,
+	// 				importance: 55, 
+	// 				label: getDownsamplingLabel(downsampling)
+	// 			}
+	// 		)
+			
+	// 		pf.add(id, trace.inject(v.spec), v.data)
+	// 	}
+	// }
+	// pf = pf.build()
 
 	return {
 		outputs: {
 			fileUploadProgress: fImport.handle
 		},
-		exports: {
-			pFrame: pFrame
-		}
+		exports: pf
 	}
 })

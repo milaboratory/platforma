@@ -12,6 +12,7 @@
   "dependencies": {
     "@milaboratories/milaboratories.file-import-block.model": "workspace:*",
     "@platforma-sdk/ui-vue": "workspace:^",
+    "es-toolkit": "catalog:",
     "vue": "catalog:"
   },
   "devDependencies": {
