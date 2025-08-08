@@ -63,6 +63,13 @@ export type PreProcessStep =
       pattern: string;
     };
 
+interface ItemUI<T> {
+  id: string;
+  disabled: boolean;
+  expanded: boolean;
+  payload: T;
+}
+
 export interface AxisSpecParam {
   /** Column label from XSV */
   column: string;
@@ -122,6 +129,8 @@ export interface AxisSpecParam {
     parentAxes?: number[];
   };
 }
+
+export type AxisSpecParamUI = ItemUI<AxisSpecParam>;
 
 export interface ColumnSpecParam {
   /** Column label from XSV */
@@ -188,6 +197,8 @@ export interface ColumnSpecParam {
     parentAxes?: number[];
   };
 }
+
+export type ColumnSpecParamUI = ItemUI<ColumnSpecParam>;
 
 export interface IndexParam {
   /** Name of the axis */
@@ -276,4 +287,9 @@ export interface Spec {
    * @default 0 (single partition)
    */
   partitionKeyLength?: number;
+}
+
+export type SpecUI = Omit<Spec, 'axes' | 'columns'> & {
+  axes: AxisSpecParamUI[];
+  columns: ColumnSpecParamUI[];
 }
