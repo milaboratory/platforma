@@ -20,7 +20,7 @@ services:
     image: ${PL_IMAGE}
     ports:
       - "${PL_LISTEN_ADDRESS:-127.0.0.1}:${PL_LISTEN_PORT:-6345}:6345"
-      - "${PL_LISTEN_HTTP_PORT:-6347}:6347"
+      - "${PL_LISTEN_ADDRESS:-127.0.0.1}:${PL_LISTEN_HTTP_PORT:-6347}:6347"
       - "${PL_MONITORING_IP:-127.0.0.1}:${PL_MONITORING_PORT:-9090}:9090"
       - "${PL_DEBUG_IP:-127.0.0.1}:${PL_DEBUG_PORT:-9091}:9091"
     tmpfs: [ /tmp ]
@@ -69,7 +69,7 @@ services:
       - "PL_DEBUG_IP=0.0.0.0"
 
       # Logging configuration
-      - "PL_LOG_DESTINATION=dir:///storage/log"
+      - "PL_LOG_DESTINATION=${PL_LOG_DIR:+dir://${PL_LOG_DIR}}"
 
       - "PL_LOG_LEVEL=${PL_LOG_LEVEL:-warn}"
       - "PL_LOG_ROTATION_SIZE=${PL_LOG_ROTATION_SIZE:-20MiB}"
