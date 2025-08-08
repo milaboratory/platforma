@@ -3,7 +3,7 @@ import type { Spec } from './types';
 
 export type BlockArgs = {
   fileHandle?: ImportFileHandle;
-  fileExt?: '.csv' | '.tsv';
+  fileExt?: 'csv' | 'tsv';
   spec?: Spec;
 };
 
@@ -20,5 +20,5 @@ export const platforma = BlockModel.create('Heavy')
 export type BlockOutputs = InferOutputsType<typeof platforma>;
 export type Href = InferHrefType<typeof platforma>;
 
-export { AxisSpecParam, ColumnSpecParam, Spec, ValueType } from './types';
+export type { AxisSpecParam, ColumnSpecParam, Spec, ValueType } from './types';
 
