@@ -32,6 +32,9 @@ services:
         max-file: "4"
 
     environment:
+      # Make docker container to write final configuration to stdout at start
+      - "PL_DUMP_CONFIG_BEFORE_RUN=true"
+
       # License settings
       - "PL_LICENSE=${PL_LICENSE:-}"
       - "PL_LICENSE_FILE=${PL_LICENSE_FILE:+/storage/mi.license}"
@@ -68,7 +71,7 @@ services:
       # Logging configuration
       - "PL_LOG_DESTINATION=dir:///storage/log"
 
-      - "PL_LOG_LEVEL=${PL_LOG_LEVEL:-info}"
+      - "PL_LOG_LEVEL=${PL_LOG_LEVEL:-warn}"
       - "PL_LOG_ROTATION_SIZE=${PL_LOG_ROTATION_SIZE:-20MiB}"
       - "PL_LOG_ROTATION_BACKUPS=${PL_LOG_ROTATION_BACKUPS:-20}"
       - "PL_NO_LOG_ROTATION=${PL_NO_LOG_ROTATION:-false}"
@@ -114,7 +117,7 @@ services:
       - "PL_DATA_LIBRARY_GCS_JSON_FILE_PATH=${PL_DATA_LIBRARY_GCS_JSON_FILE_PATH:-}"
 
       # Runner configuration
-      - "PL_RUNNER_LOCAL_CPU=${PL_RUNNER_LOCAL_CPU:-0}"
+      - "PL_RUNNER_LOCAL_CPU=${PL_RUNNER_LOCAL_CPU:-1}"
       - "PL_RUNNER_LOCAL_RAM=${PL_RUNNER_LOCAL_RAM:-95%}"
       - "PL_RUNNER_GOOGLE_BATCH_SHARED_STORAGE=${PL_RUNNER_GOOGLE_BATCH_SHARED_STORAGE:-}"
       - "PL_RUNNER_GOOGLE_BATCH_PROJECT=${PL_RUNNER_GOOGLE_BATCH_PROJECT:-}"
@@ -142,8 +145,6 @@ services:
       - "PL_KEEP_FAULTY_WORKDIRS=${PL_KEEP_FAULTY_WORKDIRS:-1h}"
       - "PL_FEAT_TX_STATS=${PL_FEAT_TX_STATS:-false}"
       - "PL_FEAT_EXPENSIVE_ASSERTIONS=${PL_FEAT_EXPENSIVE_ASSERTIONS:-false}"
-
-
 
       # Hidden behavior options
       - "PL_LISTEN_COMPRESSION=${PL_LISTEN_COMPRESSION:-gzip}"
