@@ -1,6 +1,6 @@
 {
     "name": "@milaboratories/ts-builder",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "description": "TS build tool for the milaboratories packages",
     "type": "module",
     "main": "./dist/index.js",
