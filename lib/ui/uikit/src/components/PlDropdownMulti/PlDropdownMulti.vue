@@ -10,7 +10,6 @@ export default {
 <script lang="ts" setup generic="M = unknown">
 import './pl-dropdown-multi.scss';
 import { computed, reactive, ref, unref, useSlots, useTemplateRef, watch, watchPostEffect } from 'vue';
-import { tap } from '../../helpers/functions';
 import { PlTooltip } from '../PlTooltip';
 import { PlChip } from '../PlChip';
 import DoubleContour from '../../utils/DoubleContour.vue';
