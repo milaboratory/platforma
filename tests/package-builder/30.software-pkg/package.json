@@ -1,77 +1,141 @@
 {
-    "name": "@the-software",
-    "version": "1.2.3",
-    "block-software": {
-      "entrypoints": {
-        "pAsset": {
-          "asset": {
-            "type": "asset",
-              "registry": {
-                  "downloadURL": "http://example.com/registry"
-              },
+  "name": "@milaboratories/example-pl-package-integration-1",
+  "version": "1.1.0",
+  "description": "The software description example",
+  "scripts": {
+    "cleanup": "rm -rf ./dist/ && rm -f ./pkg-*.tgz",
+    "reset": "npm run cleanup && rm -rf ./node_modules/",
+    "build:descriptor": "env -u PL_PKG_DEV pl-pkg build descriptors",
+    "build": "rm -rf dist && env -u PL_PKG_DEV pl-pkg build"
+  },
+  "block-software": {
+    "registries": {
+      "binary": {
+        "milaboratories": {
+          "storageURL": "s3://registry-bucket-name/?region=eu-central-1"
+        },
+        "custom": {
+          "storageURL": "s3://other-registry-bucket-name/pub/?region=eu-central-1"
+        }
+      }
+    },
+   
+    "entrypoints": {
+      "hello": {
+        "binary": {
+          "artifact": {
+        "registry": "custom",
+        "type": "java",
+        "root": "./src",
+        "environment": "@milaboratories/example-pl-package-runenv-1:java"
+      },
+          "cmd": [
+            "python",
+            "{pkg}/script1.py",
+            "Hello from python!"
+          ],
+          "envVars": [
+            "MYVAR=1"
+          ]
+        }
+      },
+      "goodbye": {
+        "binary": {
+          "artifact": {
+        "registry": "custom",
+        "type": "python",
+        "root": "./src",
+        "environment": "@milaboratories/example-pl-package-runenv-1:python",
+        "dependencies": {
+          "toolset": "pip",
+          "requirements": "./requirements.txt"
+        }
+      },
+          "cmd": [
+            "python",
+            "{pkg}/script1.py",
+            "Have a nice day!"
+          ],
+          "envVars": [
+            "MYVAR=2"
+          ]
+        }
+      },
+      "yes-java": {
+        "binary": {
+          "artifact": {
+        "registry": "custom",
+        "type": "java",
+        "root": "./src",
+        "environment": "@milaboratories/example-pl-package-runenv-1:java"
+      },
+          "cmd": [
+            "java",
+            "--version"
+          ]
+        }
+      },
+      "yes-r": {
+        "binary": {
+          "artifact": {
+        "registry": "custom",
+        "type": "R",
+        "root": "./src",
+        "environment": "@milaboratories/example-pl-package-runenv-1:r",
+        "dependencies": {
+          "toolset": "renv",
+          "lockFile": "./renv.lock"
+        }
+      },
+          "cmd": [
+            "R",
+            "--version"
+          ]
+        }
+      },
+      "hello2": {
+        "binary": {
+          "artifact": {
+            "type": "binary",
+            "registry": "milaboratories",
             "root": "./src"
-          }
-        },
-        "custom-name": {
-          "binary": {
-            "artifact": {
-              "registry": {
-                  "downloadURL": "http://example.com/registry"
-              },
-              "name": "custom-package-name-1",
-              "version": "4.4.4",
-              "type": "binary",
-              "root": "./src"
-            },
-            "cmd": ["aaaa"]
-          }
-        },
-        "java-test-entrypoint": {
-          "environment": { 
-            "artifact": {
-              "registry": {
-                 "downloadURL": "http://example.com/registry"
-              },
-              "type": "environment",
-              "runtime": "java",
-              "root": "./src",
-              "binDir": "."
-            }
-          }
-        },
-        "java-dep": {
-          "binary": {
-            "artifact": {
-              "registry": {
-                  "downloadURL": "http://example.com/registry"
-              },
-              "root": "./src",
-              "type": "java",
-              "environment": ":java-test-entrypoint"
-            },
-            "cmd": ["aaaa"]
           },
-          "docker": {
-            "artifact": {
-              "type": "docker",
-              "dockerfile": "Dockerfile",
-              "context": ".",
-              "entrypoint": ["/usr/bin/env", "printf"]
-            },
-            "cmd": ["echo", "hello"]
-          }
+          "cmd": [
+            "printf",
+            "Hello from binary!\n"
+          ]
+        }
+      },
+      "starter": {
+        "binary": {
+          "artifact": {
+        "type": "binary",
+        "registry": {
+          "name": "custom2",
+          "storageURL": "s3e://minio.local/bucket"
         },
-        "docker-test-entrypoint": {
-          "docker": {
-            "artifact": {
-              "type": "docker",
-              "dockerfile": "Dockerfile",
-              "context": ".",
-              "entrypoint": ["/usr/bin/env", "printf"]
-            },
-            "cmd": ["echo", "hello"]
-          }
+        "roots": {
+          "linux-x64": "./x64/",
+          "linux-aarch64": "./x64/",
+          "macosx-x64": "./x64/",
+          "macosx-aarch64": "./arm64/",
+          "windows-x64": "./x64/"
+        }
+      },
+          "cmd": [
+            "true"
+          ]
         }
       }
     }
+  },
+  "files": [
+    "dist/"
+  ],
+  "license": "UNLICENSED",
+  "dependencies": {},
+  "devDependencies": {
+    "@platforma-sdk/package-builder": "workspace:",
+    "@milaboratories/example-pl-package-runenv-1": "workspace:"
+  }
 }
