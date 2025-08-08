@@ -1,0 +1,23 @@
+{
+  "name": "@milaboratories/example-pl-package-custom-content",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Fully custom and hand-written .sw.json to parallel development of docker feature",
+  "// comment": [
+    "This package is initially created to unlock parallel development of docker support in backend",
+    "Until package builder allows real docker support, we need an artifact to use in tengo to",
+    "develop thing from tengo side without waiting for both backend and package-builder."
+  ],
+  "scripts": {
+    "build": "mkdir -p ./dist/tengo/software && cp ./custom.sw.json ./dist/tengo/software/custom.sw.json",
+    "do-pack": "pnpm pack && mv milaboratories-*.tgz package.tgz"
+  },
+  "files": [
+    "dist/"
+  ],
+  "license": "UNLICENSED",
+  "dependencies": {},
+  "devDependencies": {
+    "@platforma-sdk/package-builder": "workspace:"
+  }
+}
