@@ -139,7 +139,8 @@ pythonVenvBuilder := func() {
 				dependencies: depsMap,
 				// software: softwareRef,
 				pythonDescriptor: pythonDescriptor,
-				python: pythonPkg
+				python: pythonPkg,
+				forceRecreate: 1 // increment to force venv re-creation in blocks
 			}
 
 			validation.assertType(pyVenvInputs, internal.pythonVenvInputSchema, "incomplete python runenv configuration")
