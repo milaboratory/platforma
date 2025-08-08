@@ -260,9 +260,11 @@ function checkStatusCodeOk(
 
 /** Calculate CRC32C checksum of a buffer and return as base64 string */
 function calculateCrc32cChecksum(data: Buffer): string {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
   const checksum = crc32c(data);
   // Convert to unsigned 32-bit integer and then to base64
   const buffer = Buffer.alloc(4);
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
   buffer.writeUInt32BE(checksum, 0);
   return buffer.toString('base64');
 }
