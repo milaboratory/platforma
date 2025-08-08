@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.0.3
+
+### Patch Changes
+
+- 60489e9: Make blocks to forcefully re-create venv when they update workflow-sdk dependency (ptabler polars dependencies issue)
+
 ## 5.0.2
 
 ### Patch Changes
