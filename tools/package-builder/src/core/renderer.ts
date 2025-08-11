@@ -2,7 +2,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import type winston from 'winston';
 import { z } from 'zod';
-import type { Entrypoint, EntrypointType, PackageConfig, PackageEntrypoint } from './package-info';
+import type { Entrypoint, EntrypointType, PackageEntrypoint } from './package-info';
 import * as artifacts from './schemas/artifacts';
 import * as util from './util';
 import { dockerEntrypointNameToOrigin, dockerTagFromPackage } from './docker';
@@ -13,7 +13,6 @@ const externalPackageLocationSchema = z.object({
     .string()
     .describe('full package path in registry, e.g. \'common/jdk/21.0.2.13.1-{os}-{arch}.tgz'),
 });
-type packageSwJson = z.infer<typeof externalPackageLocationSchema>;
 
 const assetSchema = z.object({
   ...externalPackageLocationSchema.shape,
@@ -370,17 +369,6 @@ export class Renderer {
     }
 
     return result;
-  }
-
-  public renderPackageDescriptor(mode: util.BuildMode, pkg: PackageConfig): packageSwJson {
-    if (pkg.type === 'docker') {
-      throw new Error('should call renderDockerDescriptor instead');
-    }
-
-    return {
-      registry: pkg.registry.name,
-      package: pkg.namePattern,
-    };
   }
 
   public writeEntrypointDescriptor(info: entrypointSwJson, dstFile?: string) {
