@@ -6,7 +6,7 @@ import {
   generatePythonDockerfile,
   buildPythonDockerImage,
   getPythonVersionFromEnvironment,
-  getDefaultPythonDependencies,
+  getDefaultPythonDockerOptions,
   type PythonDockerOptions,
 } from '../python-docker';
 import type { PythonPackage } from '../package-info';
@@ -47,7 +47,7 @@ const mockPythonPackage: PythonPackage = {
   namePattern: 'test-python-package-1.0.0-{os}-{arch}',
   dependencies: {
     toolset: 'pip',
-    requirements: 'requirements.txt',
+    requirementsFile: 'requirements.txt',
   },
 };
 
@@ -95,7 +95,7 @@ describe('Python Docker Functions', () => {
       const options: PythonDockerOptions = {
         pythonVersion: '3.11.0',
         requirementsFile: customRequirementsFile,
-        _toolset: 'pip',
+        toolset: 'pip',
       };
 
       const dockerfile = generatePythonDockerfile(testPackageRoot, mockPythonPackage, options);
@@ -130,13 +130,14 @@ describe('Python Docker Functions', () => {
     });
   });
 
-  describe('getDefaultPythonDependencies', () => {
-    it('should return correct default dependencies', () => {
-      const dependencies = getDefaultPythonDependencies(mockPythonPackage);
+  describe('getDefaultPythonDockerOptions', () => {
+    it('should return correct default options', () => {
+      const options = getDefaultPythonDockerOptions();
 
-      expect(dependencies).toEqual({
+      expect(options).toEqual({
+        pythonVersion: '3.12.6',
         toolset: 'pip',
-        requirements: 'requirements.txt',
+        requirementsFile: 'requirements.txt',
       });
     });
   });

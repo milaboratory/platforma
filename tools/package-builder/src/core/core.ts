@@ -13,7 +13,7 @@ import * as util from './util';
 import * as archive from './archive';
 import * as storage from './storage';
 import { dockerBuild, dockerEntrypointName, dockerPush, dockerTagFromPackage } from './docker';
-import { buildPythonDockerImage, getPythonVersionFromEnvironment, getDefaultPythonDependencies, type PythonDockerImageInfo } from './python-docker';
+import { buildPythonDockerImage, getPythonVersionFromEnvironment, getDefaultPythonDockerOptions, type PythonDockerImageInfo } from './python-docker';
 
 export class Core {
   private readonly logger: winston.Logger;
@@ -309,13 +309,14 @@ export class Core {
   }
 
   private buildPythonDockerImage(pkg: PythonPackage) {
-    const pythonVersion = getPythonVersionFromEnvironment(pkg.environment) || '3.12.6';
-    const dependencies = pkg.dependencies || getDefaultPythonDependencies(pkg);
+    const defaultOptions = getDefaultPythonDockerOptions();
+    const pythonVersion = getPythonVersionFromEnvironment(pkg.environment) || defaultOptions.pythonVersion;
+    const dependencies = pkg.dependencies || defaultOptions;
 
     const options = {
       pythonVersion,
-      requirementsFile: dependencies.requirements,
-      toolset: dependencies.toolset,
+      requirementsFile: dependencies.requirementsFile || defaultOptions.requirementsFile,
+      toolset: dependencies.toolset || defaultOptions.toolset,
     };
 
     this.logger.info(`Building Python Docker image for package '${pkg.name}' with Python ${pythonVersion}`);
