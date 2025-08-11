@@ -111,10 +111,28 @@ Test_monetization_addOptionalArg := func() {
 		"size": 1024
 	})
 	monetization.addOptionalArg(mnz, "abc.txt", {"mnz": {"arg": "cba", "metrics": ["size"]}})
-
 	test.isEqual([{"abc.txt": {
 		"arg": "cba",
 		"metrics": ["size"]
+	}}],
+	mnz.runs
+	)
+}
+
+Test_monetization_addOptionalArg_empty_opts := func() {
+	mnz := monetization.init()
+	monetization.enable(mnz, "test_product")
+	monetization.appendRun(mnz)
+	monetization.addArgToLastRun(mnz, "abc.txt", {
+		"arg": "abc",
+		"metrics": ["lines", "sha256"],
+		"size": 1024
+	})
+	monetization.addOptionalArg(mnz, "abc.txt", {})
+	test.isEqual([{"abc.txt": {
+		"arg": "abc",
+		"metrics": ["lines", "sha256"],
+		"size": 1024
 	}}],
 	mnz.runs
 	)
