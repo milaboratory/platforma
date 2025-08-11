@@ -3,11 +3,11 @@ FROM python:${PYTHON_VERSION}-slim
 
 WORKDIR /app
 
+# Install dependencies to leverage Docker cache
+${PYTHON_INSTALL_DEPS}
+
 # Copy package source
 COPY . /app/
-
-# Install dependencies if requirements.txt exists
-${PYTHON_INSTALL_DEPS}
 
 # Set Python path
 ENV PYTHONPATH=/app

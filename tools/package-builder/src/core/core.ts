@@ -231,6 +231,7 @@ export class Core {
 
     if (pkg.type === 'python') {
       this.buildPythonDockerImage(pkg);
+      return;
     }
 
     const contentRoot = options?.contentRoot ?? pkg.contentRoot(platform);
