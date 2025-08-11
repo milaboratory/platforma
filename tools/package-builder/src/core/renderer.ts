@@ -6,6 +6,7 @@ import type { Entrypoint, EntrypointType, PackageConfig, PackageEntrypoint } fro
 import * as artifacts from './schemas/artifacts';
 import * as util from './util';
 import { dockerEntrypointNameToOrigin, dockerTagFromPackage } from './docker';
+import { getDefaultPythonDockerOptions } from './python-docker';
 
 const externalPackageLocationSchema = z.object({
   registry: z.string().describe('name of the registry to use for package download'),
@@ -473,9 +474,10 @@ export class Renderer {
             };
           }
           case 'python': {
-            // Handle optional dependencies - default to pip and requirements.txt if not specified
-            const toolset = pkg.dependencies?.toolset || 'pip';
-            const requirementsFile = pkg.dependencies?.requirementsFile || 'requirements.txt';
+            // Handle optional dependencies - use defaults from configuration if not specified
+            const defaultOptions = getDefaultPythonDockerOptions();
+            const toolset = pkg.dependencies?.toolset || defaultOptions.toolset;
+            const requirementsFile = pkg.dependencies?.requirementsFile || defaultOptions.requirementsFile;
 
             return {
               type: 'python',
@@ -605,9 +607,10 @@ export class Renderer {
             };
           }
           case 'python': {
-            // Handle optional dependencies - default to pip and requirements.txt if not specified
-            const toolset = pkg.dependencies?.toolset || 'pip';
-            const requirementsFile = pkg.dependencies?.requirementsFile || 'requirements.txt';
+            // Handle optional dependencies - use defaults from configuration if not specified
+            const defaultOptions = getDefaultPythonDockerOptions();
+            const toolset = pkg.dependencies?.toolset || defaultOptions.toolset;
+            const requirementsFile = pkg.dependencies?.requirementsFile || defaultOptions.requirementsFile;
 
             return {
               type: 'python',

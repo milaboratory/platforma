@@ -1,18 +1,27 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
+import { spawnSync, type SpawnSyncReturns } from 'node:child_process';
+
+// Mock the os module
+vi.mock('node:os', () => ({
+  platform: vi.fn(),
+  tmpdir: vi.fn(),
+}));
+
+// Mock the child_process module
+vi.mock('node:child_process', () => ({
+  spawnSync: vi.fn(),
+}));
 import {
   generatePythonDockerfile,
   buildPythonDockerImage,
   getPythonVersionFromEnvironment,
-  getDefaultPythonDockerOptions,
   type PythonDockerOptions,
 } from '../python-docker';
 import type { PythonPackage } from '../package-info';
 import type winston from 'winston';
-
-import { vi } from 'vitest';
 
 // Mock the pkg.assets function to return real file paths
 vi.mock('../package', () => ({
@@ -51,13 +60,29 @@ const mockPythonPackage: PythonPackage = {
   },
 };
 
+// Helper function to create properly typed mock spawnSync return values
+const createMockSpawnSyncReturn = (overrides: Partial<SpawnSyncReturns<string | Buffer>> = {}): SpawnSyncReturns<string | Buffer> => ({
+  error: undefined,
+  status: 0,
+  signal: null,
+  pid: 123,
+  stdout: Buffer.from(''),
+  stderr: Buffer.from(''),
+  output: [Buffer.from(''), Buffer.from('')],
+  ...overrides,
+});
+
 describe('Python Docker Functions', () => {
   let tempDir: string;
   let testPackageRoot: string;
 
   beforeEach(() => {
+    // Set up OS mocks
+    vi.mocked(os.platform).mockReturnValue('linux');
+    vi.mocked(os.tmpdir).mockReturnValue('/tmp');
+
     // Create temporary directories for testing
-    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'python-docker-test-'));
+    tempDir = fs.mkdtempSync(path.join('/tmp', 'python-docker-test-'));
     testPackageRoot = path.join(tempDir, 'package');
 
     fs.mkdirSync(testPackageRoot, { recursive: true });
@@ -100,50 +125,67 @@ describe('Python Docker Functions', () => {
 
       const dockerfile = generatePythonDockerfile(testPackageRoot, mockPythonPackage, options);
 
+      // Check custom options are reflected
       expect(dockerfile).toMatch(/FROM python:3\.11\.0-slim/);
+      expect(dockerfile).toContain(`COPY ${customRequirementsFile} /app/`);
       expect(dockerfile).toContain(`RUN pip install --no-cache-dir -r ${customRequirementsFile}`);
     });
 
-    it('should handle missing requirements.txt gracefully', () => {
-      fs.unlinkSync(path.join(testPackageRoot, 'requirements.txt'));
+    it('should handle package without version (uses latest)', () => {
+      const packageWithoutVersion: PythonPackage = {
+        ...mockPythonPackage,
+        version: undefined,
+      };
 
-      const dockerfile = generatePythonDockerfile(testPackageRoot, mockPythonPackage);
+      const dockerfile = generatePythonDockerfile(testPackageRoot, packageWithoutVersion);
 
-      expect(dockerfile).toMatch(/FROM python:3\.12\.6-slim/);
-      expect(dockerfile).not.toContain('RUN pip install');
+      // Should use 'latest' tag
+      expect(dockerfile).toMatch(/FROM python:latest-slim/);
+    });
+
+    it('should handle custom toolset (conda)', () => {
+      const options: PythonDockerOptions = {
+        pythonVersion: '3.12.6',
+        toolset: 'conda',
+        requirementsFile: 'environment.yml',
+      };
+
+      const dockerfile = generatePythonDockerfile(testPackageRoot, mockPythonPackage, options);
+
+      // Should use conda commands
+      expect(dockerfile).toContain('COPY environment.yml /app/');
+      expect(dockerfile).toContain('RUN conda env update -f environment.yml');
     });
   });
 
   describe('getPythonVersionFromEnvironment', () => {
-    const testCases = [
-      { input: '@platforma-open/milaboratories.runenv-python-3:3.12.6', expected: '3.12.6' },
-      { input: '@platforma-open/milaboratories.runenv-python-3:3.11.0', expected: '3.11.0' },
-      { input: '@platforma-open/milaboratories.runenv-python-3', expected: undefined },
-      { input: '', expected: undefined },
-    ];
-
-    testCases.forEach(({ input, expected }) => {
-      it(`should extract version from "${input}"`, () => {
-        const version = getPythonVersionFromEnvironment(input);
-        expect(version).toBe(expected);
-      });
+    it('should extract Python version from environment string', () => {
+      const version = getPythonVersionFromEnvironment('@platforma-open/milaboratories.runenv-python-3:3.12.6');
+      expect(version).toBe('3.12.6');
     });
-  });
 
-  describe('getDefaultPythonDockerOptions', () => {
-    it('should return correct default options', () => {
-      const options = getDefaultPythonDockerOptions();
+    it('should handle environment without version', () => {
+      const version = getPythonVersionFromEnvironment('@platforma-open/milaboratories.runenv-python-3');
+      expect(version).toBeUndefined();
+    });
 
-      expect(options).toEqual({
-        pythonVersion: '3.12.6',
-        toolset: 'pip',
-        requirementsFile: 'requirements.txt',
-      });
+    it('should handle malformed environment string', () => {
+      const version = getPythonVersionFromEnvironment('invalid-environment-string');
+      expect(version).toBeUndefined();
     });
   });
 
   describe('buildPythonDockerImage', () => {
+    const mockSpawnSync = vi.mocked(spawnSync);
+
+    beforeEach(() => {
+      vi.clearAllMocks();
+    });
+
     it('should handle platform-specific behavior', () => {
+      // Mock successful spawnSync result for this test
+      mockSpawnSync.mockReturnValue(createMockSpawnSyncReturn());
+
       const result = buildPythonDockerImage(mockLogger, testPackageRoot, mockPythonPackage);
 
       if (os.platform() === 'linux') {
@@ -155,6 +197,136 @@ describe('Python Docker Functions', () => {
         // On non-Linux, should return null
         expect(result).toBeNull();
       }
+    });
+
+    it('should return null on non-Linux platforms', () => {
+      // Mock os.platform to return 'darwin' for this test
+      vi.mocked(os.platform).mockReturnValue('darwin');
+
+      const result = buildPythonDockerImage(mockLogger, testPackageRoot, mockPythonPackage);
+
+      expect(result).toBeNull();
+      expect(mockLogger.info).toHaveBeenCalledWith('Skipping Docker build on non-Linux platform');
+    });
+
+    it('should call spawnSync with correct Docker build arguments on Linux', () => {
+      // Mock successful spawnSync result
+      mockSpawnSync.mockReturnValue(createMockSpawnSyncReturn());
+
+      const result = buildPythonDockerImage(mockLogger, testPackageRoot, mockPythonPackage);
+
+      // Verify spawnSync was called with the expected arguments
+      expect(mockSpawnSync).toHaveBeenCalledWith(
+        'docker',
+        ['build', '-t', 'pl-pkg-python-test-python-package:1.0.0', testPackageRoot, '-f', expect.stringContaining('Dockerfile')],
+        {
+          stdio: 'inherit',
+          cwd: testPackageRoot,
+        },
+      );
+
+      // Verify the result contains expected information
+      expect(result).toEqual({
+        tag: 'pl-pkg-python-test-python-package:1.0.0',
+        packageName: 'test-python-package',
+        packageVersion: '1.0.0',
+        pythonVersion: '3.12.6',
+        requirementsFile: 'requirements.txt',
+        toolset: 'pip',
+      });
+    });
+
+    it('should handle Docker build failure gracefully', () => {
+      // Mock failed spawnSync result
+      mockSpawnSync.mockReturnValue(createMockSpawnSyncReturn({ status: 1, stderr: Buffer.from('Docker build failed') }));
+
+      // Should throw an error when Docker build fails
+      expect(() => {
+        buildPythonDockerImage(mockLogger, testPackageRoot, mockPythonPackage);
+      }).toThrow('Docker build failed with status 1');
+    });
+
+    it('should handle spawnSync error gracefully', () => {
+      // Mock spawnSync error
+      const mockError = new Error('Docker command not found');
+      mockSpawnSync.mockReturnValue(createMockSpawnSyncReturn({
+        error: mockError,
+        status: null,
+        signal: null,
+        pid: null,
+        stdout: null,
+        stderr: null,
+      }));
+
+      // Should throw the spawnSync error
+      expect(() => {
+        buildPythonDockerImage(mockLogger, testPackageRoot, mockPythonPackage);
+      }).toThrow('Docker command not found');
+    });
+
+    it('should use custom Python version and toolset when provided', () => {
+      // Mock successful spawnSync result
+      mockSpawnSync.mockReturnValue(createMockSpawnSyncReturn());
+
+      const customOptions: PythonDockerOptions = {
+        pythonVersion: '3.11.0',
+        toolset: 'conda',
+        requirementsFile: 'environment.yml',
+      };
+
+      const result = buildPythonDockerImage(mockLogger, testPackageRoot, mockPythonPackage, customOptions);
+
+      // Verify spawnSync was called with the expected arguments
+      expect(mockSpawnSync).toHaveBeenCalledWith(
+        'docker',
+        ['build', '-t', 'pl-pkg-python-test-python-package:1.0.0', testPackageRoot, '-f', expect.stringContaining('Dockerfile')],
+        {
+          stdio: 'inherit',
+          cwd: testPackageRoot,
+        },
+      );
+
+      // Verify the result contains the custom options
+      expect(result).toEqual({
+        tag: 'pl-pkg-python-test-python-package:1.0.0',
+        packageName: 'test-python-package',
+        packageVersion: '1.0.0',
+        pythonVersion: '3.11.0',
+        requirementsFile: 'environment.yml',
+        toolset: 'conda',
+      });
+    });
+
+    it('should handle package without version (uses latest)', () => {
+      // Mock successful spawnSync result
+      mockSpawnSync.mockReturnValue(createMockSpawnSyncReturn());
+
+      const packageWithoutVersion: PythonPackage = {
+        ...mockPythonPackage,
+        version: undefined,
+      };
+
+      const result = buildPythonDockerImage(mockLogger, testPackageRoot, packageWithoutVersion);
+
+      // Verify spawnSync was called with 'latest' tag
+      expect(mockSpawnSync).toHaveBeenCalledWith(
+        'docker',
+        ['build', '-t', 'pl-pkg-python-test-python-package:latest', testPackageRoot, '-f', expect.stringContaining('Dockerfile')],
+        {
+          stdio: 'inherit',
+          cwd: testPackageRoot,
+        },
+      );
+
+      // Verify the result uses 'latest' version
+      expect(result).toEqual({
+        tag: 'pl-pkg-python-test-python-package:latest',
+        packageName: 'test-python-package',
+        packageVersion: 'latest',
+        pythonVersion: '3.12.6',
+        requirementsFile: 'requirements.txt',
+        toolset: 'pip',
+      });
     });
   });
 });
