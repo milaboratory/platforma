@@ -7,9 +7,9 @@ import type winston from 'winston';
 import * as pkg from './package';
 
 export interface PythonDockerOptions {
-  pythonVersion?: string;
-  requirementsFile?: string;
-  toolset?: string;
+  pythonVersion: string;
+  requirementsFile: string;
+  toolset: string;
 }
 
 export function generatePythonDockerfile(
