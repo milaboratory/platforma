@@ -1,0 +1,16 @@
+# Auto-generated Dockerfile for Python package
+FROM python:${PYTHON_VERSION}-slim
+
+WORKDIR /app
+
+# Copy package source
+COPY . /app/
+
+# Install dependencies if requirements.txt exists
+${PYTHON_INSTALL_DEPS}
+
+# Set Python path
+ENV PYTHONPATH=/app
+
+# Default command (will be overridden by entrypoint)
+CMD ["python", "--version"]

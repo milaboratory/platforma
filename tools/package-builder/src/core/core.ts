@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import type winston from 'winston';
-import type { PackageConfig, Entrypoint, DockerPackage } from './package-info';
+import type { PackageConfig, Entrypoint, DockerPackage, PythonPackage } from './package-info';
 import { PackageInfo } from './package-info';
 import {
   Renderer,
@@ -13,11 +13,13 @@ import * as util from './util';
 import * as archive from './archive';
 import * as storage from './storage';
 import { dockerBuild, dockerEntrypointName, dockerPush, dockerTagFromPackage } from './docker';
+import { buildPythonDockerImage, getPythonVersionFromEnvironment, getDefaultPythonDependencies, type PythonDockerImageInfo } from './python-docker';
 
 export class Core {
   private readonly logger: winston.Logger;
   private _entrypoints: Map<string, Entrypoint> | undefined;
   private _renderer: Renderer | undefined;
+  private _pythonDockerImages: Map<string, PythonDockerImageInfo> = new Map();
 
   public readonly pkg: PackageInfo;
   public buildMode: util.BuildMode;
@@ -237,6 +239,10 @@ export class Core {
       return;
     }
 
+    if (pkg.type === 'python') {
+      this.buildPythonDockerImage(pkg);
+    }
+
     const contentRoot = options?.contentRoot ?? pkg.contentRoot(platform);
 
     if (pkg.type === 'asset') {
@@ -301,6 +307,29 @@ export class Core {
     this.logger.info(`Docker image '${tag}' was built successfully`);
   }
 
+  private buildPythonDockerImage(pkg: PythonPackage) {
+    const pythonVersion = getPythonVersionFromEnvironment(pkg.environment) || '3.12.6';
+    const dependencies = pkg.dependencies || getDefaultPythonDependencies(pkg);
+
+    const options = {
+      pythonVersion,
+      requirementsFile: dependencies.requirements,
+      toolset: dependencies.toolset,
+    };
+
+    this.logger.info(`Building Python Docker image for package '${pkg.name}' with Python ${pythonVersion}`);
+
+    try {
+      const imageInfo = buildPythonDockerImage(this.logger, this.pkg.packageRoot, pkg, options);
+      if (imageInfo) {
+        this.logger.info(`Python Docker image built successfully with tag: ${imageInfo.tag}`);
+        this._pythonDockerImages.set(pkg.name, imageInfo);
+      }
+    } catch (error) {
+      this.logger.warn(`Failed to build Python Docker image: ${String(error)}`);
+    }
+  }
+
   private async createPackageArchive(
     packageContentType: string,
     pkg: PackageConfig,
@@ -315,7 +344,7 @@ export class Core {
     } else {
       this.logger.info(`    generating package for os='${os}', arch='${arch}'`);
     }
-    this.logger.debug(`    package content root: '${contentRoot} '`);
+    this.logger.debug(`    package content root: '${contentRoot}'`);
     this.logger.debug(`    package destination archive: '${archivePath}'`);
 
     await archive.create(this.logger, contentRoot, archivePath);
@@ -513,11 +542,12 @@ export class Core {
 
     for (const pkgID of packagesToPublish) {
       const pkg = this.getPackage(pkgID);
-      if (pkg.type !== 'docker') {
-        continue;
+      if (pkg.type === 'docker') {
+        this.publishDockerImage(pkg);
+      } else if (pkg.type === 'python') {
+        // TODO(rfiskov)[MILAB-3163]: add python docker image publishing here ?
+        this.logger.info(`Skipping Docker publish for Python package '${pkg.name}' - temporary image only`);
       }
-
-      this.publishDockerImage(pkg);
     }
   }
 

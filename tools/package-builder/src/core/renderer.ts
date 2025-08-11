@@ -459,7 +459,9 @@ export class Renderer {
             };
           }
           case 'python': {
-            const { toolset, ...deps } = pkg.dependencies;
+            // Handle optional dependencies - default to pip and requirements.txt if not specified
+            const toolset = pkg.dependencies?.toolset || 'pip';
+            const requirements = pkg.dependencies?.requirements || 'requirements.txt';
 
             return {
               type: 'python',
@@ -469,7 +471,7 @@ export class Renderer {
               envVars: ep.env,
               runEnv: this.resolveRunEnvironment(pkg.environment, pkg.type),
               toolset: toolset,
-              dependencies: deps,
+              dependencies: { requirements },
             };
           }
           case 'R': {
@@ -589,7 +591,9 @@ export class Renderer {
             };
           }
           case 'python': {
-            const { toolset, ...deps } = pkg.dependencies;
+            // Handle optional dependencies - default to pip and requirements.txt if not specified
+            const toolset = pkg.dependencies?.toolset || 'pip';
+            const requirements = pkg.dependencies?.requirements || 'requirements.txt';
 
             return {
               type: 'python',
@@ -600,7 +604,7 @@ export class Renderer {
               envVars: ep.env,
               runEnv: this.resolveRunEnvironment(pkg.environment, pkg.type),
               toolset: toolset,
-              dependencies: deps,
+              dependencies: { requirements },
             };
           }
           case 'R': {

@@ -118,7 +118,7 @@ export const pythonToolsetSchema = z.discriminatedUnion('toolset', [pipToolsetSc
 export const pythonPackageSchema = archiveRulesSchema.extend({
   type: z.literal('python'),
   environment: artifactIDSchema,
-  dependencies: pythonToolsetSchema,
+  dependencies: pythonToolsetSchema.optional(),
 });
 export type pythonPackageConfig = z.infer<typeof pythonPackageSchema>;
 
