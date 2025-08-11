@@ -14,8 +14,6 @@ export default class Local extends Command {
 
   static override examples = ['<%= config.bin %> <%= command.id %>'];
 
-  static strict = false;
-
   static override flags = {
     ...cmdOpts.GlobalFlags,
     ...cmdOpts.VersionFlag,
@@ -38,15 +36,70 @@ export default class Local extends Command {
     ...cmdOpts.AuthFlags,
   };
 
-  static override args = {
+  static args = {
     name: Args.string({ required: true }),
   };
 
   public async run(): Promise<void> {
-    const { flags, args, argv } = await this.parse(Local);
+    // Extract instance name from argv
+    const nameIndex = this.argv.findIndex(arg => !arg.startsWith('-'));
+    if (nameIndex === -1) {
+      throw new Error('Instance name is required');
+    }
+    const instanceName = this.argv[nameIndex];
 
-    const instanceName = args.name;
-
+    // Parse known flags manually from argv
+    const flags: any = {};
+    for (const arg of this.argv) {
+      if (arg.startsWith('--log-level=')) {
+        flags['log-level'] = arg.split('=')[1];
+      } else if (arg.startsWith('--grpc-port=')) {
+        flags['grpc-port'] = parseInt(arg.split('=')[1]);
+      } else if (arg.startsWith('--grpc-listen=')) {
+        flags['grpc-listen'] = arg.split('=')[1];
+      } else if (arg.startsWith('--monitoring-port=')) {
+        flags['monitoring-port'] = parseInt(arg.split('=')[1]);
+      } else if (arg.startsWith('--monitoring-listen=')) {
+        flags['monitoring-listen'] = arg.split('=')[1];
+      } else if (arg.startsWith('--debug-port=')) {
+        flags['debug-port'] = parseInt(arg.split('=')[1]);
+      } else if (arg.startsWith('--debug-listen=')) {
+        flags['debug-listen'] = arg.split('=')[1];
+      } else if (arg.startsWith('--version=')) {
+        flags.version = arg.split('=')[1];
+      } else if (arg.startsWith('--pl-binary=')) {
+        flags['pl-binary'] = arg.split('=')[1];
+      } else if (arg.startsWith('--pl-sources=')) {
+        flags['pl-sources'] = arg.split('=')[1];
+      } else if (arg.startsWith('--config=')) {
+        flags.config = arg.split('=')[1];
+      } else if (arg.startsWith('--license=')) {
+        flags.license = arg.split('=')[1];
+      } else if (arg.startsWith('--license-file=')) {
+        flags['license-file'] = arg.split('=')[1];
+      } else if (arg.startsWith('--storage=')) {
+        flags.storage = arg.split('=')[1];
+      } else if (arg.startsWith('--storage-primary=')) {
+        flags['storage-primary'] = arg.split('=')[1];
+      } else if (arg.startsWith('--storage-work=')) {
+        flags['storage-work'] = arg.split('=')[1];
+      } else if (arg.startsWith('--storage-library=')) {
+        flags['storage-library'] = arg.split('=')[1];
+      } else if (arg.startsWith('--pl-log-file=')) {
+        flags['pl-log-file'] = arg.split('=')[1];
+      } else if (arg.startsWith('--pl-workdir=')) {
+        flags['pl-workdir'] = arg.split('=')[1];
+      } else if (arg === '--auth-enabled') {
+        flags['auth-enabled'] = true;
+      } else if (arg.startsWith('--auth-htpasswd-file=')) {
+        flags['auth-htpasswd-file'] = arg.split('=')[1];
+      } else if (arg.startsWith('--auth-ldap-server=')) {
+        flags['auth-ldap-server'] = arg.split('=')[1];
+      } else if (arg.startsWith('--auth-ldap-default-dn=')) {
+        flags['auth-ldap-default-dn'] = arg.split('=')[1];
+      }
+    }
+    
     // Set default values for flags that weren't specified
     if (!flags['log-level']) flags['log-level'] = 'info';
     if (!flags['grpc-port']) flags['grpc-port'] = 6345;
@@ -74,8 +127,25 @@ export default class Local extends Command {
     for (const p of flags.mount ?? []) {
       mounts.push({ hostPath: p });
     }
+
+    // Collect all unknown flags as backend commands
+    // Get all known flags from the command definition
+    const knownFlagNames = new Set(Object.keys(Local.flags));
     
-    const backendCommands = argv.filter((arg): arg is string => typeof arg === 'string' && arg.startsWith('--'));
+    const backendCommands: string[] = [];
+    for (const arg of this.argv) {
+      if (arg.startsWith('--') && !arg.includes('=')) {
+        const flagName = arg.substring(2);
+        if (!knownFlagNames.has(flagName)) {
+          backendCommands.push(arg);
+        }
+      } else if (arg.startsWith('--') && arg.includes('=')) {
+        const flagName = arg.substring(2, arg.indexOf('='));
+        if (!knownFlagNames.has(flagName)) {
+          backendCommands.push(arg);
+        }
+      }
+    }
 
     const createOptions: createLocalOptions = {
       sourcesPath: flags['pl-sources'],

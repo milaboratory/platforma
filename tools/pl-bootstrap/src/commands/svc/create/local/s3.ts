@@ -13,8 +13,6 @@ export default class Local extends Command {
 
   static override examples = ['<%= config.bin %> <%= command.id %>'];
 
-  static strict = false;
-
   static override flags = {
     ...cmdOpts.GlobalFlags,
     ...cmdOpts.VersionFlag,
@@ -38,12 +36,12 @@ export default class Local extends Command {
     ...cmdOpts.AuthFlags,
   };
 
-  static override args = {
+  static args = {
     name: Args.string({ required: true }),
   };
 
   public async run(): Promise<void> {
-    const { flags, args, argv } = await this.parse(Local);
+    const { flags, args } = await this.parse(Local);
 
     const logger = util.createLogger(flags['log-level']);
     const core = new Core(logger);
@@ -70,8 +68,6 @@ export default class Local extends Command {
     if (flags['debug-listen']) listenDbg = flags['debug-listen'];
     else if (flags['debug-port']) listenDbg = `127.0.0.1:${flags['debug-port']}`;
 
-    const backendCommands = argv.filter((arg): arg is string => typeof arg === 'string' && arg.startsWith('--'));
-
     const createOptions: createLocalS3Options = {
       sourcesPath: flags['pl-sources'],
       binaryPath: flags['pl-binary'],
@@ -85,8 +81,6 @@ export default class Local extends Command {
 
       minioPort: flags['s3-port'],
       minioConsolePort: flags['s3-console-port'],
-
-      backendCommands: backendCommands,
 
       configOptions: {
         grpc: { listen: listenGrpc },
