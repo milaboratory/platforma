@@ -1,5 +1,11 @@
 # @platforma-sdk/package-builder
 
+## 2.17.1
+
+### Patch Changes
+
+- 18b393a: Do not generate package.sw.json in software root
+
 ## 2.17.0
 
 ### Minor Changes
