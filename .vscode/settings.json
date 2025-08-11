@@ -13,7 +13,7 @@
     "ptable"
   ],
   "[typescript]": {
-    "editor.defaultFormatter": "dbaeumer.vscode-eslint"
+    "editor.defaultFormatter": "vscode.typescript-language-features"
   },
   "[vue]": {
     "editor.defaultFormatter": "Vue.volar"

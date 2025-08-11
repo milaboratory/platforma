@@ -1,157 +1,166 @@
 <script setup lang="ts">
 import type { Spec } from '@milaboratories/milaboratories.file-import-block.model';
-import {
-    PlCheckbox,
-    PlDropdown,
-    PlTextArea,
-    PlTextField
-} from '@platforma-sdk/ui-vue';
+import { PlCheckbox, PlDropdown, PlTextArea, PlTextField } from '@platforma-sdk/ui-vue';
 import { ref, watch } from 'vue';
-import { useJsonField } from '../composables/useJsonField';
+import { jsonToString, stringToJson } from '../utils/json';
 
 // Type for basic settings (all Spec fields except axes and columns)
 type BasicSettingsData = Omit<Spec, 'axes' | 'columns'>;
 
 const props = defineProps<{
-    modelValue: BasicSettingsData;
+  modelValue: BasicSettingsData;
 }>();
 
 const emit = defineEmits<{
-    'update:modelValue': [value: BasicSettingsData];
+  'update:modelValue': [value: BasicSettingsData];
 }>();
-
-const { jsonToString, stringToJson } = useJsonField();
 
 const localValue = ref<BasicSettingsData>({ ...props.modelValue });
 
 // Storage format options
 const storageFormatOptions = [
-    { label: 'Binary', value: 'Binary' as const },
-    { label: 'Json', value: 'Json' as const }
+  { label: 'Binary', value: 'Binary' as const },
+  { label: 'Json', value: 'Json' as const },
 ];
-
 // Watch for changes and emit
 watch(localValue, (newValue) => {
-    emit('update:modelValue', newValue);
+  emit('update:modelValue', newValue);
 }, { deep: true });
 
 // Watch for prop changes
 watch(() => props.modelValue, (newValue) => {
-    localValue.value = { ...newValue };
+  localValue.value = { ...newValue };
 }, { deep: true });
 
 // Helper functions for index configuration
 const updateIndexDomain = (value: string) => {
-    if (!localValue.value.index) {
-        localValue.value.index = { name: '' };
-    }
-    localValue.value.index.domain = stringToJson(value);
+  if (!localValue.value.index) {
+    localValue.value.index = { name: '' };
+  }
+  localValue.value.index.domain = stringToJson(value);
 };
 
 const updateIndexAnnotations = (value: string) => {
-    if (!localValue.value.index) {
-        localValue.value.index = { name: '' };
-    }
-    localValue.value.index.annotations = stringToJson(value);
+  if (!localValue.value.index) {
+    localValue.value.index = { name: '' };
+  }
+  localValue.value.index.annotations = stringToJson(value);
 };
 
 const removeIndex = () => {
-    localValue.value.index = undefined;
+  localValue.value.index = undefined;
 };
 
 const addIndex = () => {
-    localValue.value.index = { name: 'Index' };
+  localValue.value.index = { name: 'Index' };
 };
 </script>
 
 <template>
-    <div :class="$style.basicSettings">
-        <div :class="$style.sectionHeader">
-            <h3>Basic Settings</h3>
-        </div>
-
-        <!-- File Format Settings -->
-        <div :class="$style.formGroup">
-            <h4>File Format</h4>
-            <div :class="$style.formRow">
-                <PlTextField :model-value="localValue.separator || ''"
-                    @update:model-value="localValue.separator = $event || undefined" label="Separator"
-                    placeholder="," />
-                <PlTextField :model-value="localValue.commentLinePrefix || ''"
-                    @update:model-value="localValue.commentLinePrefix = $event || undefined" label="Comment Line Prefix"
-                    placeholder="#" />
-            </div>
-
-            <div :class="$style.formRow">
-                <PlCheckbox :model-value="localValue.skipEmptyLines || false"
-                    @update:model-value="localValue.skipEmptyLines = $event">
-                    Skip Empty Lines
-                </PlCheckbox>
-
-                <PlCheckbox :model-value="localValue.allowColumnLabelDuplicates !== false"
-                    @update:model-value="localValue.allowColumnLabelDuplicates = $event">
-                    Allow Column Label Duplicates
-                </PlCheckbox>
-            </div>
-        </div>
-
-        <!-- Column Settings -->
-        <div :class="$style.formGroup">
-            <h4>Column Settings</h4>
-            <div :class="$style.formRow">
-                <PlTextField :model-value="localValue.columnNamePrefix || ''"
-                    @update:model-value="localValue.columnNamePrefix = $event || undefined" label="Column Name Prefix"
-                    placeholder="Optional prefix for all columns" />
-
-                <PlCheckbox :model-value="localValue.allowArtificialColumns || false"
-                    @update:model-value="localValue.allowArtificialColumns = $event">
-                    Allow Artificial Columns
-                </PlCheckbox>
-            </div>
-        </div>
-
-        <!-- Storage Settings -->
-        <div :class="$style.formGroup">
-            <h4>Storage Settings</h4>
-            <div :class="$style.formRow">
-                <PlDropdown :model-value="localValue.storageFormat || 'Binary'"
-                    @update:model-value="localValue.storageFormat = $event" :options="storageFormatOptions"
-                    label="Storage Format" />
-
-                <PlTextField :model-value="String(localValue.partitionKeyLength || 0)"
-                    @update:model-value="localValue.partitionKeyLength = parseInt($event) || 0"
-                    label="Partition Key Length" placeholder="0" />
-            </div>
-        </div>
-
-        <!-- Index Configuration -->
-        <div :class="$style.formGroup">
-            <div :class="$style.subsectionHeader">
-                <h4>Row Index Configuration</h4>
-                <div :class="$style.indexControls">
-                    <PlCheckbox :model-value="!!localValue.index"
-                        @update:model-value="$event ? addIndex() : removeIndex()">
-                        Enable Row Index
-                    </PlCheckbox>
-                </div>
-            </div>
-
-            <div v-if="localValue.index" :class="$style.indexSection">
-                <div :class="$style.formRow">
-                    <PlTextField v-model="localValue.index.name" label="Index Name" placeholder="Index" required />
-                </div>
-
-                <div :class="$style.formRow">
-                    <PlTextArea :model-value="jsonToString(localValue.index.domain)"
-                        @update:model-value="updateIndexDomain($event)" label="Domain (JSON)" placeholder="{}" />
-
-                    <PlTextArea :model-value="jsonToString(localValue.index.annotations)"
-                        @update:model-value="updateIndexAnnotations($event)" label="Annotations (JSON)"
-                        placeholder="{}" />
-                </div>
-            </div>
-        </div>
+  <div :class="$style.basicSettings">
+    <div :class="$style.sectionHeader">
+      <h3>Basic Settings</h3>
     </div>
+
+    <!-- File Format Settings -->
+    <div :class="$style.formGroup">
+      <h4>File Format</h4>
+      <div :class="$style.formRow">
+        <PlTextField
+          :model-value="localValue.separator || ''" label="Separator" placeholder=","
+          @update:model-value="localValue.separator = $event || undefined"
+        />
+        <PlTextField
+          :model-value="localValue.commentLinePrefix || ''" label="Comment Line Prefix"
+          placeholder="#" @update:model-value="localValue.commentLinePrefix = $event || undefined"
+        />
+      </div>
+
+      <div :class="$style.formRow">
+        <PlCheckbox
+          :model-value="localValue.skipEmptyLines || false"
+          @update:model-value="localValue.skipEmptyLines = $event"
+        >
+          Skip Empty Lines
+        </PlCheckbox>
+
+        <PlCheckbox
+          :model-value="localValue.allowColumnLabelDuplicates !== false"
+          @update:model-value="localValue.allowColumnLabelDuplicates = $event"
+        >
+          Allow Column Label Duplicates
+        </PlCheckbox>
+      </div>
+    </div>
+
+    <!-- Column Settings -->
+    <div :class="$style.formGroup">
+      <h4>Column Settings</h4>
+      <div :class="$style.formRow">
+        <PlTextField
+          :model-value="localValue.columnNamePrefix || ''" label="Column Name Prefix"
+          placeholder="Optional prefix for all columns"
+          @update:model-value="localValue.columnNamePrefix = $event || undefined"
+        />
+
+        <PlCheckbox
+          :model-value="localValue.allowArtificialColumns || false"
+          @update:model-value="localValue.allowArtificialColumns = $event"
+        >
+          Allow Artificial Columns
+        </PlCheckbox>
+      </div>
+    </div>
+
+    <!-- Storage Settings -->
+    <div :class="$style.formGroup">
+      <h4>Storage Settings</h4>
+      <div :class="$style.formRow">
+        <PlDropdown
+          :model-value="localValue.storageFormat || 'Binary'" :options="storageFormatOptions"
+          label="Storage Format" @update:model-value="localValue.storageFormat = $event"
+        />
+
+        <PlTextField
+          :model-value="String(localValue.partitionKeyLength || 0)" label="Partition Key Length"
+          placeholder="0" @update:model-value="localValue.partitionKeyLength = parseInt($event) || 0"
+        />
+      </div>
+    </div>
+
+    <!-- Index Configuration -->
+    <div :class="$style.formGroup">
+      <div :class="$style.subsectionHeader">
+        <h4>Row Index Configuration</h4>
+        <div :class="$style.indexControls">
+          <PlCheckbox
+            :model-value="!!localValue.index"
+            @update:model-value="$event ? addIndex() : removeIndex()"
+          >
+            Enable Row Index
+          </PlCheckbox>
+        </div>
+      </div>
+
+      <div v-if="localValue.index" :class="$style.indexSection">
+        <div :class="$style.formRow">
+          <PlTextField v-model="localValue.index.name" label="Index Name" placeholder="Index" required />
+        </div>
+
+        <div :class="$style.formRow">
+          <PlTextArea
+            :model-value="jsonToString(localValue.index.domain)" label="Domain (JSON)"
+            placeholder="{}" @update:model-value="updateIndexDomain($event)"
+          />
+
+          <PlTextArea
+            :model-value="jsonToString(localValue.index.annotations)" label="Annotations (JSON)"
+            placeholder="{}" @update:model-value="updateIndexAnnotations($event)"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <style module>

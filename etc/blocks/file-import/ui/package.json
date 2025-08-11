@@ -16,6 +16,7 @@
     "vue": "catalog:"
   },
   "devDependencies": {
+    "@milaboratories/eslint-config": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
     "@milaboratories/build-configs": "workspace:*",
     "@vitejs/plugin-vue": "catalog:",

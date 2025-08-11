@@ -716,6 +716,9 @@ importers:
       '@milaboratories/build-configs':
         specifier: workspace:*
         version: link:../../../../tools/build-configs
+      '@milaboratories/eslint-config':
+        specifier: workspace:*
+        version: link:../../../../tools/eslint-config
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../../tools/ts-configs

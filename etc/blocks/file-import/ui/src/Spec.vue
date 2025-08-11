@@ -21,7 +21,7 @@ if (app.model.ui.spec === undefined) {
     partitionKeyLength: 0,
     index: undefined,
     axes: [],
-    columns: []
+    columns: [],
   } satisfies SpecUI;
 }
 

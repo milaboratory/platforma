@@ -1,21 +1,19 @@
 <script setup lang="ts">
-import { AxisSpecParamUI } from '@milaboratories/milaboratories.file-import-block.model';
+import type { AxisSpecParamUI } from '@milaboratories/milaboratories.file-import-block.model';
 import {
   PlBtnPrimary,
   PlCheckbox,
   PlDropdown,
   PlElementList,
   PlTextArea,
-  PlTextField
+  PlTextField,
 } from '@platforma-sdk/ui-vue';
-import { useJsonField } from '../composables/useJsonField';
 import { VALUE_TYPE_OPTIONS } from '../types/spec';
+import { jsonToString, stringToJson } from '../utils/json';
 
 const axesSpecParamsUI = defineModel<AxisSpecParamUI[]>({
   required: true,
 });
-
-const { jsonToString, stringToJson } = useJsonField();
 
 const addAxis = () => {
   axesSpecParamsUI.value.push({
@@ -27,8 +25,8 @@ const addAxis = () => {
       allowNA: false,
       spec: {
         type: 'String',
-      }
-    }
+      },
+    },
   } satisfies AxisSpecParamUI);
 };
 
@@ -53,9 +51,11 @@ const updateAxisAnnotations = (index: number, value: string) => {
       No axes configured. Click "Add Axis" to add your first axis.
     </div>
 
-    <PlElementList v-if="axesSpecParamsUI.length > 0" v-model:items="axesSpecParamsUI" :get-item-key="(item) => item.id"
+    <PlElementList
+      v-if="axesSpecParamsUI.length > 0" v-model:items="axesSpecParamsUI" :get-item-key="(item) => item.id"
       :is-expanded="(item) => item.expanded" :on-expand="(item) => item.expanded = !item.expanded"
-      :is-toggled="(item) => item.disabled" :on-toggle="(item) => item.disabled = !item.disabled">
+      :is-toggled="(item) => item.disabled" :on-toggle="(item) => item.disabled = !item.disabled"
+    >
       <template #item-title="{ item: axis, index }">
         <strong>Axis {{ index + 1 }}</strong>
         <span v-if="axis.payload.column" :class="$style.axisLabel">{{ axis.payload.column }}</span>
@@ -65,15 +65,19 @@ const updateAxisAnnotations = (index: number, value: string) => {
         <div :class="$style.formRow">
           <PlTextField v-model="axis.payload.column" label="Column" placeholder="Column label from XSV file" required />
 
-          <PlTextField :model-value="axis.payload.filterOutRegex || ''"
-            @update:model-value="axis.payload.filterOutRegex = $event || undefined" label="Filter Out Regex"
-            placeholder="Regex to filter out rows (optional)" />
+          <PlTextField
+            :model-value="axis.payload.filterOutRegex || ''" label="Filter Out Regex"
+            placeholder="Regex to filter out rows (optional)"
+            @update:model-value="axis.payload.filterOutRegex = $event || undefined"
+          />
         </div>
 
         <div :class="$style.formRow">
-          <PlTextField :model-value="axis.payload.naRegex || ''"
-            @update:model-value="axis.payload.naRegex = $event || undefined" label="NA Regex"
-            placeholder="Regex to identify N/A values (optional)" />
+          <PlTextField
+            :model-value="axis.payload.naRegex || ''" label="NA Regex"
+            placeholder="Regex to identify N/A values (optional)"
+            @update:model-value="axis.payload.naRegex = $event || undefined"
+          />
 
           <PlCheckbox :model-value="axis.payload.allowNA || false" @update:model-value="axis.payload.allowNA = $event">
             Allow NA Values
@@ -85,19 +89,24 @@ const updateAxisAnnotations = (index: number, value: string) => {
           <h5>Axis Specification</h5>
 
           <div :class="$style.formRow">
-            <PlTextField :model-value="axis.payload.spec.name || ''"
-              @update:model-value="axis.payload.spec.name = $event || undefined" label="Name"
-              :placeholder="axis.payload.column" />
+            <PlTextField
+              :model-value="axis.payload.spec.name || ''" label="Name" :placeholder="axis.payload.column"
+              @update:model-value="axis.payload.spec.name = $event || undefined"
+            />
 
             <PlDropdown v-model="axis.payload.spec.type" :options="VALUE_TYPE_OPTIONS" label="Type" required />
           </div>
 
           <div :class="$style.formRow">
-            <PlTextArea :model-value="jsonToString(axis.payload.spec.domain)"
-              @update:model-value="updateAxisDomain(index, $event)" label="Domain (JSON)" placeholder="{}" />
+            <PlTextArea
+              :model-value="jsonToString(axis.payload.spec.domain)" label="Domain (JSON)" placeholder="{}"
+              @update:model-value="updateAxisDomain(index, $event)"
+            />
 
-            <PlTextArea :model-value="jsonToString(axis.payload.spec.annotations)"
-              @update:model-value="updateAxisAnnotations(index, $event)" label="Annotations (JSON)" placeholder="{}" />
+            <PlTextArea
+              :model-value="jsonToString(axis.payload.spec.annotations)" label="Annotations (JSON)"
+              placeholder="{}" @update:model-value="updateAxisAnnotations(index, $event)"
+            />
           </div>
         </div>
       </template>
