@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Spec } from '@milaboratories/milaboratories.file-import-block.model';
 import { PlCheckbox, PlDropdown, PlTextArea, PlTextField } from '@platforma-sdk/ui-vue';
+import { isNil } from 'es-toolkit';
 import { ref, watch } from 'vue';
 import { jsonToString, stringToJson } from '../utils/json';
 
@@ -134,7 +135,7 @@ const addIndex = () => {
         <h4>Row Index Configuration</h4>
         <div :class="$style.indexControls">
           <PlCheckbox
-            :model-value="!!localValue.index"
+            :model-value="!isNil(localValue.index)"
             @update:model-value="$event ? addIndex() : removeIndex()"
           >
             Enable Row Index

@@ -6,8 +6,13 @@ import type { MaybeRefOrGetter } from 'vue';
 import { toValue } from 'vue';
 import type { ValueType } from '../types/spec';
 
+export type XsvMetadata = {
+  header: string[];
+  types: Record<string, ValueType>;
+};
+
 export function useMetadataXsv(fileHandle: MaybeRefOrGetter<undefined | LocalImportFileHandle>, separator: MaybeRefOrGetter<undefined | string>) {
-  return computedAsync(async () => {
+  return computedAsync(async (): Promise<XsvMetadata> => {
     fileHandle = toValue(fileHandle) as LocalImportFileHandle;
     separator = toValue(separator);
 

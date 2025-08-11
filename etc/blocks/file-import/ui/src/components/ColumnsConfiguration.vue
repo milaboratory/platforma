@@ -1,8 +1,6 @@
 <script setup lang="ts">
-import type { ColumnSpecParamUI } from '@milaboratories/milaboratories.file-import-block.model';
-import type { ImportFileHandle, LocalImportFileHandle } from '@milaboratories/pl-model-common';
+import type { ColumnSpecParamUI, ValueType } from '@milaboratories/milaboratories.file-import-block.model';
 import {
-  PlBtnPrimary,
   PlBtnSecondary,
   PlCheckbox,
   PlDropdown,
@@ -10,69 +8,57 @@ import {
   PlTextArea,
   PlTextField,
 } from '@platforma-sdk/ui-vue';
-import { computed, ref, watch } from 'vue';
-import { useMetadataXsv } from '../hooks/useMetadataXsv';
+import type { XsvMetadata } from '../hooks/useMetadataXsv';
 import { VALUE_TYPE_OPTIONS } from '../types/spec';
 import { jsonToString, stringToJson } from '../utils/json';
+import AddColumn from './AddColumn.vue';
 
 const columnsSpecParamsUI = defineModel<ColumnSpecParamUI[]>({
   required: true,
 });
 
 const props = defineProps<{
-  fileHandle?: ImportFileHandle;
-  separator?: string;
+  metadata: XsvMetadata;
 }>();
 
-const selectedMetadataColumn = ref<string>('');
-
-const metadata = useMetadataXsv(() => props.fileHandle as LocalImportFileHandle, () => props.separator);
-const hasMetadata = computed(() => metadata.value.header.length > 0);
-const metadataColumnOptions = computed(() =>
-  metadata.value.header.map((column) => ({
-    label: column,
-    value: column,
-  })),
-);
-
-watch(() => metadata, () => {
-  console.log('Metadata updated:', metadata.value);
-}, { immediate: true });
-
-const addColumn = () => {
+const addColumn = (column: undefined | string, valueType: undefined | ValueType) => {
   columnsSpecParamsUI.value.push({
     id: Date.now().toString(),
     expanded: true,
     disabled: false,
     payload: {
-      column: '',
+      column: column ?? '',
       spec: {
-        valueType: 'String',
+        valueType: valueType ?? 'String',
+        name: column ?? '',
       },
     },
   });
 };
 
-const addColumnFromMetadata = () => {
-  if (!selectedMetadataColumn.value) return;
+const handleCreateAll = () => {
+  props.metadata.header.forEach((column) => {
+    if (columnsSpecParamsUI.value.some((c) => c.payload.column === column)) {
+      return; // Skip if column already exists
+    }
 
-  const column = selectedMetadataColumn.value;
-  const valueType = metadata.value.types[column] || 'String';
-
-  columnsSpecParamsUI.value.push({
-    id: Date.now().toString(),
-    expanded: true,
-    disabled: false,
-    payload: {
-      column,
-      spec: {
-        valueType,
-        name: column,
+    columnsSpecParamsUI.value.push({
+      id: Date.now().toString(),
+      expanded: false,
+      disabled: false,
+      payload: {
+        column,
+        spec: {
+          valueType: props.metadata.types[column] ?? 'String',
+          name: column,
+        },
       },
-    },
+    });
   });
+};
 
-  selectedMetadataColumn.value = '';
+const handleRemoveAll = () => {
+  columnsSpecParamsUI.value.length = 0;
 };
 
 const updateColumnDomain = (index: number, value: string) => {
@@ -89,21 +75,13 @@ const updateColumnAnnotations = (index: number, value: string) => {
     <div :class="$style.sectionHeader">
       <h3>Columns Configuration</h3>
       <div :class="$style.headerActions">
-        <div v-if="hasMetadata" :class="$style.metadataActions">
-          <PlDropdown
-            v-model="selectedMetadataColumn"
-            :options="metadataColumnOptions"
-            placeholder="Select metadata column"
-            :class="$style.metadataDropdown"
-          />
-          <PlBtnSecondary
-            :disabled="!selectedMetadataColumn"
-            @click="addColumnFromMetadata"
-          >
-            Add from Metadata
-          </PlBtnSecondary>
-        </div>
-        <PlBtnPrimary @click="addColumn">Add Column</PlBtnPrimary>
+        <PlBtnSecondary :class="$style.headerBtn" @click="handleCreateAll">
+          Create All
+        </PlBtnSecondary>
+        <PlBtnSecondary :class="$style.headerBtn" @click="handleRemoveAll">
+          Remove All
+        </PlBtnSecondary>
+        <AddColumn :metadata="props.metadata" @add="addColumn"/>
       </div>
     </div>
 
@@ -213,18 +191,13 @@ const updateColumnAnnotations = (index: number, value: string) => {
 
 .headerActions {
   display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.metadataActions {
-  display: flex;
-  align-items: center;
+  flex-direction: row;
+  justify-content: flex-end;
   gap: 8px;
 }
 
-.metadataDropdown {
-  min-width: 200px;
+.headerBtn {
+  min-width: 80px;
 }
 
 .columnLabel {
@@ -266,30 +239,4 @@ const updateColumnAnnotations = (index: number, value: string) => {
   border: 1px dashed var(--border-color-div-grey);
 }
 
-@media (max-width: 768px) {
-  .formRow {
-    grid-template-columns: 1fr;
-  }
-
-  .sectionHeader {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
-  }
-
-  .headerActions {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
-  }
-
-  .metadataActions {
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .metadataDropdown {
-    min-width: unset;
-  }
-}
 </style>

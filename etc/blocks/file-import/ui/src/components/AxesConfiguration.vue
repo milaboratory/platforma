@@ -1,30 +1,36 @@
 <script setup lang="ts">
-import type { AxisSpecParamUI } from '@milaboratories/milaboratories.file-import-block.model';
+import type { AxisSpecParamUI, ValueType } from '@milaboratories/milaboratories.file-import-block.model';
 import {
-  PlBtnPrimary,
   PlCheckbox,
   PlDropdown,
   PlElementList,
   PlTextArea,
   PlTextField,
 } from '@platforma-sdk/ui-vue';
+import type { XsvMetadata } from '../hooks/useMetadataXsv';
 import { VALUE_TYPE_OPTIONS } from '../types/spec';
 import { jsonToString, stringToJson } from '../utils/json';
+import AddColumn from './AddColumn.vue';
 
 const axesSpecParamsUI = defineModel<AxisSpecParamUI[]>({
   required: true,
 });
 
-const addAxis = () => {
+const props = defineProps<{
+  metadata: XsvMetadata;
+}>();
+
+const addAxis = (column: undefined | string, type: undefined | ValueType) => {
   axesSpecParamsUI.value.push({
     id: Date.now().toString(),
     expanded: true,
     disabled: false,
     payload: {
-      column: '',
+      column: column ?? '',
       allowNA: false,
       spec: {
-        type: 'String',
+        type: type ?? 'String',
+        name: column,
       },
     },
   } satisfies AxisSpecParamUI);
@@ -44,7 +50,9 @@ const updateAxisAnnotations = (index: number, value: string) => {
   <div :class="$style.section">
     <div :class="$style.sectionHeader">
       <h3>Axes Configuration</h3>
-      <PlBtnPrimary @click="addAxis">Add Axis</PlBtnPrimary>
+      <div :class="$style.headerActions">
+        <AddColumn :class="$style.headerActions" :metadata="props.metadata" @add="addAxis"/>
+      </div>
     </div>
 
     <div v-if="axesSpecParamsUI.length === 0" :class="$style.emptyState">
@@ -131,6 +139,17 @@ const updateAxisAnnotations = (index: number, value: string) => {
   color: var(--txt-01);
 }
 
+.headerActions {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.headerBtn {
+  min-width: 80px;
+}
+
 .axisLabel {
   margin-left: 8px;
   color: var(--txt-03);
@@ -179,6 +198,12 @@ const updateAxisAnnotations = (index: number, value: string) => {
     flex-direction: column;
     align-items: stretch;
     gap: 12px;
+  }
+
+  .headerActions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
   }
 }
 </style>
