@@ -1,44 +1,39 @@
 import type { LocalImportFileHandle } from '@milaboratories/pl-model-common';
 import { getRawPlatformaInstance } from '@platforma-sdk/model';
+import { computedAsync } from '@vueuse/core';
 import { parse } from 'csv-parse/browser/esm';
 import type { MaybeRefOrGetter } from 'vue';
-import { shallowRef, toValue, watch } from 'vue';
+import { toValue } from 'vue';
 import type { ValueType } from '../types/spec';
 
-export async function useMetadataXsv(fileHandle: MaybeRefOrGetter<undefined | LocalImportFileHandle>, delimiter: MaybeRefOrGetter<undefined | string>) {
-  const ref = shallowRef({
-    header: [] as string[],
-    types: {} as Record<string, ValueType>,
-  });
+export function useMetadataXsv(fileHandle: MaybeRefOrGetter<undefined | LocalImportFileHandle>, separator: MaybeRefOrGetter<undefined | string>) {
+  return computedAsync(async () => {
+    fileHandle = toValue(fileHandle) as LocalImportFileHandle;
+    separator = toValue(separator);
 
-  watch([fileHandle, delimiter], async ([_fileHandle, _delimiter]) => {
-    ref.value = {
-      header: [],
-      types: {},
-    };
-
-    const fileHandle = toValue(_fileHandle) as LocalImportFileHandle;
-    const delimiter = toValue(_delimiter);
-
-    if (!fileHandle || !delimiter) {
-      return;
+    if (!fileHandle || !separator) {
+      return {
+        header: [],
+        types: {},
+      };
     }
 
-    const { header, rows } = await parseLocalXsvFile({ fileHandle, delimiter, linesLimit: 30 });
+    const { header, rows } = await parseLocalXsvFile({ fileHandle, separator, linesLimit: 30 });
     const types = getColumnTypes(header, rows);
 
-    ref.value = {
+    return {
       header,
       types,
     };
+  }, {
+    header: [],
+    types: {},
   });
-
-  return ref;
 }
 
-export async function parseLocalXsvFile<T extends object>({ fileHandle, delimiter, linesLimit, batchSizeReading }: {
+export async function parseLocalXsvFile<T extends object>({ fileHandle, separator, linesLimit, batchSizeReading }: {
   fileHandle: LocalImportFileHandle;
-  delimiter: string;
+  separator: string;
   linesLimit: number;
   batchSizeReading?: number;
 }) {
@@ -46,7 +41,7 @@ export async function parseLocalXsvFile<T extends object>({ fileHandle, delimite
     const driver = getRawPlatformaInstance().lsDriver;
     const parser = parse({
       columns: true,
-      delimiter,
+      separator,
       autoParse: true,
     });
     const rows: T[] = [];
@@ -77,7 +72,7 @@ export async function parseLocalXsvFile<T extends object>({ fileHandle, delimite
         return Promise.resolve();
       }
 
-      return driver.getLocalFileContent(fileHandle, { offset: iteration, length: chunkSize }).then(
+      return driver.getLocalFileContent(fileHandle, { offset: iteration * chunkSize, length: chunkSize }).then(
         (fileBuffer) => {
           if (fileBuffer.length === 0) {
             return reading(true, iteration + 1);

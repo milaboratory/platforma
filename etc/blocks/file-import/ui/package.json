@@ -16,6 +16,7 @@
     "@platforma-sdk/model": "workspace:*",
     "es-toolkit": "catalog:",
     "csv-parse": "catalog:",
+    "@vueuse/core": "catalog:",
     "vue": "catalog:"
   },
   "devDependencies": {

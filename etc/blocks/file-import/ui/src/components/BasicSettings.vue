@@ -32,7 +32,7 @@ watch(() => props.modelValue, (newValue) => {
   localValue.value = { ...newValue };
 }, { deep: true });
 
-// Helper functions for index configuration
+// Helper functions for index configuration2
 const updateIndexDomain = (value: string) => {
   if (!localValue.value.index) {
     localValue.value.index = { name: '' };

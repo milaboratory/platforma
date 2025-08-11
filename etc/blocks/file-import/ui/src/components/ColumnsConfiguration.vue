@@ -3,12 +3,14 @@ import type { ColumnSpecParamUI } from '@milaboratories/milaboratories.file-impo
 import type { ImportFileHandle, LocalImportFileHandle } from '@milaboratories/pl-model-common';
 import {
   PlBtnPrimary,
+  PlBtnSecondary,
   PlCheckbox,
   PlDropdown,
   PlElementList,
   PlTextArea,
   PlTextField,
 } from '@platforma-sdk/ui-vue';
+import { computed, ref, watch } from 'vue';
 import { useMetadataXsv } from '../hooks/useMetadataXsv';
 import { VALUE_TYPE_OPTIONS } from '../types/spec';
 import { jsonToString, stringToJson } from '../utils/json';
@@ -19,9 +21,23 @@ const columnsSpecParamsUI = defineModel<ColumnSpecParamUI[]>({
 
 const props = defineProps<{
   fileHandle?: ImportFileHandle;
-  delimiter?: string;
+  separator?: string;
 }>();
-const metadata = useMetadataXsv(props.fileHandle as LocalImportFileHandle, props.delimiter);
+
+const selectedMetadataColumn = ref<string>('');
+
+const metadata = useMetadataXsv(() => props.fileHandle as LocalImportFileHandle, () => props.separator);
+const hasMetadata = computed(() => metadata.value.header.length > 0);
+const metadataColumnOptions = computed(() =>
+  metadata.value.header.map((column) => ({
+    label: column,
+    value: column,
+  })),
+);
+
+watch(() => metadata, () => {
+  console.log('Metadata updated:', metadata.value);
+}, { immediate: true });
 
 const addColumn = () => {
   columnsSpecParamsUI.value.push({
@@ -37,6 +53,28 @@ const addColumn = () => {
   });
 };
 
+const addColumnFromMetadata = () => {
+  if (!selectedMetadataColumn.value) return;
+
+  const column = selectedMetadataColumn.value;
+  const valueType = metadata.value.types[column] || 'String';
+
+  columnsSpecParamsUI.value.push({
+    id: Date.now().toString(),
+    expanded: true,
+    disabled: false,
+    payload: {
+      column,
+      spec: {
+        valueType,
+        name: column,
+      },
+    },
+  });
+
+  selectedMetadataColumn.value = '';
+};
+
 const updateColumnDomain = (index: number, value: string) => {
   columnsSpecParamsUI.value[index].payload.spec.domain = stringToJson(value);
 };
@@ -50,7 +88,23 @@ const updateColumnAnnotations = (index: number, value: string) => {
   <div :class="$style.section">
     <div :class="$style.sectionHeader">
       <h3>Columns Configuration</h3>
-      <PlBtnPrimary @click="addColumn">Add Column</PlBtnPrimary>
+      <div :class="$style.headerActions">
+        <div v-if="hasMetadata" :class="$style.metadataActions">
+          <PlDropdown
+            v-model="selectedMetadataColumn"
+            :options="metadataColumnOptions"
+            placeholder="Select metadata column"
+            :class="$style.metadataDropdown"
+          />
+          <PlBtnSecondary
+            :disabled="!selectedMetadataColumn"
+            @click="addColumnFromMetadata"
+          >
+            Add from Metadata
+          </PlBtnSecondary>
+        </div>
+        <PlBtnPrimary @click="addColumn">Add Column</PlBtnPrimary>
+      </div>
     </div>
 
     <div v-if="columnsSpecParamsUI.length === 0" :class="$style.emptyState">
@@ -157,6 +211,22 @@ const updateColumnAnnotations = (index: number, value: string) => {
   color: var(--txt-01);
 }
 
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.metadataActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.metadataDropdown {
+  min-width: 200px;
+}
+
 .columnLabel {
   margin-left: 8px;
   color: var(--txt-03);
@@ -205,6 +275,21 @@ const updateColumnAnnotations = (index: number, value: string) => {
     flex-direction: column;
     align-items: stretch;
     gap: 12px;
+  }
+
+  .headerActions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .metadataActions {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .metadataDropdown {
+    min-width: unset;
   }
 }
 </style>

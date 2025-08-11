@@ -25,11 +25,11 @@ if (app.model.ui.spec === undefined) {
   } satisfies SpecUI;
 }
 
+const args = app.model.args;
 const state = app.model.ui.spec;
 
 // Watch for changes and update app.model.args.spec
 watch(state, (newValue) => {
-  // app.model.ui.spec = newValue;
   app.model.args.spec = prepareSpec(newValue);
 }, { deep: true });
 
@@ -41,7 +41,7 @@ watch(state, (newValue) => {
 
     <div>
       <AxesConfiguration v-model="state.axes" />
-      <ColumnsConfiguration v-model="state.columns" />
+      <ColumnsConfiguration v-model="state.columns" :file-handle="args.fileHandle" :separator="state.separator" />
     </div>
   </div>
 </template>

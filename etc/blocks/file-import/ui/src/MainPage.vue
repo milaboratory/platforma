@@ -18,7 +18,7 @@ watch([() => app.model.args.fileHandle, () => app.model.ui.spec], () => {
 
   parseLocalXsvFile({
     fileHandle: handle as LocalImportFileHandle,
-    delimiter: spec.separator ?? ',',
+    separator: spec.separator ?? ',',
   });
 }, { immediate: true });
 
