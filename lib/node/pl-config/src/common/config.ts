@@ -47,6 +47,11 @@ export function newDefaultPlConfig(
       db: { path: dbPath },
     },
     controllers: {
+      common: {
+        timeouts: {
+          stop: '10s',
+        },
+      },
       workflows: {},
       packageLoader: packageLoaderConfig,
       runner: {

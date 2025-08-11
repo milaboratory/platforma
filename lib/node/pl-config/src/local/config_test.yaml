@@ -39,6 +39,9 @@ core:
     path: 'db'
 
 controllers:
+  common:
+    timeouts:
+      stop: '10s'
   data:
     main:
       storages:
