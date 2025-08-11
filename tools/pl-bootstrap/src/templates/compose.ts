@@ -10,6 +10,7 @@ export type ServiceOptions = {
   platform?: string;
   envs?: NodeJS.ProcessEnv;
   mounts?: VolumeMountOption[];
+  commands?: string[];
 };
 
 type ComposeYamlSpec = {
@@ -18,6 +19,7 @@ type ComposeYamlSpec = {
     platform?: string;
     environment?: string[];
     volumes?: string[];
+    command?: string[];
   }>;
 
   volumes?: unknown;
@@ -92,6 +94,10 @@ export function render(
       for (const mount of options.mounts) {
         svcSpec.volumes.push(`${mount.hostPath}:${mount.containerPath}`);
       }
+    }
+
+    if (options.commands) {
+      svcSpec.command = options.commands;
     }
   }
 

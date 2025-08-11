@@ -189,6 +189,30 @@ export default class Core {
       };
     }
 
+    // Process additional environment variables from CLI options
+    if (options?.backendCommands) {
+      if (!runBinary.runOpts.env) {
+        runBinary.runOpts.env = {};
+      }
+      for (const cmd of options.backendCommands) {
+        const equalIndex = cmd.indexOf('=');
+        if (equalIndex > 0) {
+          const key = cmd.substring(0, equalIndex);
+          const value = cmd.substring(equalIndex + 1);
+          runBinary.runOpts.env[key] = value;
+        } else {
+          this.logger.warn(`Invalid environment variable format: ${cmd}. Expected format: KEY=VALUE`);
+        }
+      }
+    }
+
+    // Process additional backend commands
+    if (options?.backendCommands && options.backendCommands.length > 0) {
+      this.logger.debug(`Adding backend commands: ${options.backendCommands.join(' ')}`);
+      // Add commands as arguments to the binary
+      runBinary.args = [...runBinary.args, ...options.backendCommands];
+    }
+
     upCommands.push(runBinary);
 
     state.setInstanceInfo(instanceName, {
@@ -343,6 +367,8 @@ export default class Core {
       s3ConsolePort?: number;
 
       customMounts?: { hostPath: string; containerPath?: string }[];
+
+      backendCommands?: string[];
     },
   ): instanceInfo {
     this.logger.debug('creating platforma instance in \'docker s3\' mode...');
@@ -406,6 +432,7 @@ export default class Core {
       ['backend', {
         platform: options?.platformOverride,
         mounts: backendMounts,
+        commands: options?.backendCommands,
       }],
     ]));
 
@@ -493,6 +520,11 @@ export default class Core {
       }
     }
 
+    // Process additional backend commands
+    if (options?.backendCommands && options.backendCommands.length > 0) {
+      this.logger.debug(`Adding backend commands: ${options.backendCommands.join(' ')}`);
+    }
+
     state.setInstanceInfo(instanceName, {
       type: 'docker',
       upCommands: [{
@@ -554,6 +586,8 @@ export default class Core {
 
       debugPort?: number;
       debugAddr?: string;
+
+      backendCommands?: string[];
     },
   ): instanceInfo {
     this.logger.debug('creating platforma instance in \'docker\' mode...');
@@ -602,6 +636,7 @@ export default class Core {
       ['backend', {
         platform: options?.platformOverride,
         mounts: backendMounts,
+        commands: options?.backendCommands,
       }],
     ]));
 
@@ -681,6 +716,11 @@ export default class Core {
         }
         envs['PL_AUTH_DRIVERS'] = JSON.stringify(options.auth.drivers);
       }
+    }
+
+    // Process additional backend commands
+    if (options?.backendCommands && options.backendCommands.length > 0) {
+      this.logger.debug(`Adding backend commands: ${options.backendCommands.join(' ')}`);
     }
 
     state.setInstanceInfo(instanceName, {
@@ -1047,6 +1087,8 @@ export type createLocalOptions = {
 
   primaryURL?: string;
   libraryURL?: string;
+
+  backendCommands?: string[];
 };
 
 export type createLocalFSOptions = createLocalOptions;

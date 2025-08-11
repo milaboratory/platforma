@@ -33,13 +33,49 @@ export default class S3 extends Command {
   };
 
   public async run(): Promise<void> {
-    const { flags, args } = await this.parse(S3);
+    // Extract instance name from argv
+    const nameIndex = this.argv.findIndex(arg => !arg.startsWith('-'));
+    if (nameIndex === -1) {
+      throw new Error('Instance name is required');
+    }
+    const instanceName = this.argv[nameIndex];
 
-    const logger = util.createLogger(flags['log-level']);
+    // Parse known flags manually from argv
+    const flags: any = {};
+    for (const arg of this.argv) {
+      if (arg.startsWith('--log-level=')) {
+        flags['log-level'] = arg.split('=')[1];
+      } else if (arg.startsWith('--version=')) {
+        flags.version = arg.split('=')[1];
+      } else if (arg.startsWith('--image=')) {
+        flags.image = arg.split('=')[1];
+      } else if (arg.startsWith('--arch=')) {
+        flags.arch = arg.split('=')[1];
+      } else if (arg === '--auth-enabled') {
+        flags['auth-enabled'] = true;
+      } else if (arg.startsWith('--license=')) {
+        flags.license = arg.split('=')[1];
+      } else if (arg.startsWith('--license-file=')) {
+        flags['license-file'] = arg.split('=')[1];
+      } else if (arg.startsWith('--storage=')) {
+        flags.storage = arg.split('=')[1];
+      } else if (arg.startsWith('--s3-port=')) {
+        flags['s3-port'] = parseInt(arg.split('=')[1]);
+      } else if (arg.startsWith('--s3-console-port=')) {
+        flags['s3-console-port'] = parseInt(arg.split('=')[1]);
+      } else if (arg === '--minio-presign-host') {
+        flags['minio-presign-host'] = true;
+      }
+    }
+    
+    // Set default values for flags that weren't specified
+    if (!flags['log-level']) flags['log-level'] = 'info';
+    if (!flags['s3-port']) flags['s3-port'] = 9000;
+    if (!flags['s3-console-port']) flags['s3-console-port'] = 9001;
+
+    const logger = util.createLogger(flags['log-level'] || 'info');
     const core = new Core(logger);
     core.mergeLicenseEnvs(flags);
-
-    const instanceName = args.name;
 
     const authEnabled = flags['auth-enabled'];
     const authOptions: types.authOptions | undefined = authEnabled
@@ -58,6 +94,25 @@ export default class S3 extends Command {
 
     const platformOverride = flags.arch ? `linux/${flags.arch}` : undefined;
     const presignHost = flags['minio-presign-host'] ? 'minio' : 'localhost';
+
+    // Collect all unknown flags as backend commands
+    // Get all known flags from the command definition
+    const knownFlagNames = new Set(Object.keys(S3.flags));
+    
+    const backendCommands: string[] = [];
+    for (const arg of this.argv) {
+      if (arg.startsWith('--') && !arg.includes('=')) {
+        const flagName = arg.substring(2);
+        if (!knownFlagNames.has(flagName)) {
+          backendCommands.push(arg);
+        }
+      } else if (arg.startsWith('--') && arg.includes('=')) {
+        const flagName = arg.substring(2, arg.indexOf('='));
+        if (!knownFlagNames.has(flagName)) {
+          backendCommands.push(arg);
+        }
+      }
+    }
 
     core.createDockerS3(instanceName, storage, {
       image: flags.image,
@@ -84,6 +139,8 @@ export default class S3 extends Command {
       s3ConsolePort: flags['s3-console-port'],
 
       presignHost: presignHost,
+
+      backendCommands: backendCommands,
     });
 
     logger.info(`Instance '${instanceName}' was created. To start it run 'up' command`);

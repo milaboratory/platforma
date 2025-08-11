@@ -34,13 +34,71 @@ export default class Docker extends Command {
   };
 
   public async run(): Promise<void> {
-    const { flags, args } = await this.parse(Docker);
+    // Extract instance name from argv
+    const nameIndex = this.argv.findIndex(arg => !arg.startsWith('-'));
+    if (nameIndex === -1) {
+      throw new Error('Instance name is required');
+    }
+    const instanceName = this.argv[nameIndex];
 
-    const logger = util.createLogger(flags['log-level']);
+    // Parse known flags manually from argv
+    const flags: any = {};
+    for (const arg of this.argv) {
+      if (arg.startsWith('--log-level=')) {
+        flags['log-level'] = arg.split('=')[1];
+      } else if (arg.startsWith('--grpc-port=')) {
+        flags['grpc-port'] = parseInt(arg.split('=')[1]);
+      } else if (arg.startsWith('--grpc-listen=')) {
+        flags['grpc-listen'] = arg.split('=')[1];
+      } else if (arg.startsWith('--monitoring-port=')) {
+        flags['monitoring-port'] = parseInt(arg.split('=')[1]);
+      } else if (arg.startsWith('--monitoring-listen=')) {
+        flags['monitoring-listen'] = arg.split('=')[1];
+      } else if (arg.startsWith('--debug-port=')) {
+        flags['debug-port'] = parseInt(arg.split('=')[1]);
+      } else if (arg.startsWith('--debug-listen=')) {
+        flags['debug-listen'] = arg.split('=')[1];
+      } else if (arg.startsWith('--image=')) {
+        flags.image = arg.split('=')[1];
+      } else if (arg.startsWith('--version=')) {
+        flags.version = arg.split('=')[1];
+      } else if (arg.startsWith('--arch=')) {
+        flags.arch = arg.split('=')[1];
+      } else if (arg === '--auth-enabled') {
+        flags['auth-enabled'] = true;
+      } else if (arg.startsWith('--auth-htpasswd-file=')) {
+        flags['auth-htpasswd-file'] = arg.split('=')[1];
+      } else if (arg.startsWith('--auth-ldap-server=')) {
+        flags['auth-ldap-server'] = arg.split('=')[1];
+      } else if (arg.startsWith('--auth-ldap-default-dn=')) {
+        flags['auth-ldap-default-dn'] = arg.split('=')[1];
+      } else if (arg.startsWith('--license=')) {
+        flags.license = arg.split('=')[1];
+      } else if (arg.startsWith('--license-file=')) {
+        flags['license-file'] = arg.split('=')[1];
+      } else if (arg.startsWith('--storage=')) {
+        flags.storage = arg.split('=')[1];
+      } else if (arg.startsWith('--storage-primary=')) {
+        flags['storage-primary'] = arg.split('=')[1];
+      } else if (arg.startsWith('--storage-work=')) {
+        flags['storage-work'] = arg.split('=')[1];
+      } else if (arg.startsWith('--storage-library=')) {
+        flags['storage-library'] = arg.split('=')[1];
+      }
+    }
+    
+    // Set default values for flags that weren't specified
+    if (!flags['log-level']) flags['log-level'] = 'info';
+    if (!flags['grpc-port']) flags['grpc-port'] = 6345;
+    if (!flags['grpc-listen']) flags['grpc-listen'] = '127.0.0.1:6345';
+    if (!flags['monitoring-port']) flags['monitoring-port'] = 9090;
+    if (!flags['monitoring-listen']) flags['monitoring-listen'] = '127.0.0.1:9090';
+    if (!flags['debug-port']) flags['debug-port'] = 9091;
+    if (!flags['debug-listen']) flags['debug-listen'] = '127.0.0.1:9091';
+
+    const logger = util.createLogger(flags['log-level'] || 'info');
     const core = new Core(logger);
     core.mergeLicenseEnvs(flags);
-
-    const instanceName = args.name;
 
     const authEnabled = flags['auth-enabled'];
     const authOptions: types.authOptions | undefined = authEnabled
@@ -58,6 +116,25 @@ export default class Docker extends Command {
     }
 
     const platformOverride = flags.arch ? `linux/${flags.arch}` : undefined;
+
+    // Collect all unknown flags as backend commands
+    // Get all known flags from the command definition
+    const knownFlagNames = new Set(Object.keys(Docker.flags));
+    
+    const backendCommands: string[] = [];
+    for (const arg of this.argv) {
+      if (arg.startsWith('--') && !arg.includes('=')) {
+        const flagName = arg.substring(2);
+        if (!knownFlagNames.has(flagName)) {
+          backendCommands.push(arg);
+        }
+      } else if (arg.startsWith('--') && arg.includes('=')) {
+        const flagName = arg.substring(2, arg.indexOf('='));
+        if (!knownFlagNames.has(flagName)) {
+          backendCommands.push(arg);
+        }
+      }
+    }
 
     core.createDocker(instanceName, storage, {
       primaryStorageURL: flags['storage-primary'],
@@ -83,6 +160,8 @@ export default class Docker extends Command {
 
       debugAddr: flags['debug-listen'],
       debugPort: flags['debug-port'],
+
+      backendCommands: backendCommands,
     });
 
     logger.info(`Instance '${instanceName}' was created. To start it run 'up' command`);
