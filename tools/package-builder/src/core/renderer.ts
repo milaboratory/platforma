@@ -107,7 +107,9 @@ const pythonPackageSettingsSchema = z.object({
 
   toolset: z.string(),
   dependencies: z
-    .record(z.string(), z.string())
+    .object({
+      requirementsFile: z.string().describe('path to requirements.txt file for pip toolset'),
+    })
     .describe(
       'paths of files that describe dependencies for given toolset: say, requirements.txt for \'pip\'',
     ),
@@ -473,7 +475,7 @@ export class Renderer {
           case 'python': {
             // Handle optional dependencies - default to pip and requirements.txt if not specified
             const toolset = pkg.dependencies?.toolset || 'pip';
-            const requirements = pkg.dependencies?.requirements || 'requirements.txt';
+            const requirementsFile = pkg.dependencies?.requirementsFile || 'requirements.txt';
 
             return {
               type: 'python',
@@ -483,7 +485,7 @@ export class Renderer {
               envVars: ep.env,
               runEnv: this.resolveRunEnvironment(pkg.environment, pkg.type),
               toolset: toolset,
-              dependencies: { requirements },
+              dependencies: { requirementsFile },
             };
           }
           case 'R': {
@@ -605,7 +607,7 @@ export class Renderer {
           case 'python': {
             // Handle optional dependencies - default to pip and requirements.txt if not specified
             const toolset = pkg.dependencies?.toolset || 'pip';
-            const requirements = pkg.dependencies?.requirements || 'requirements.txt';
+            const requirementsFile = pkg.dependencies?.requirementsFile || 'requirements.txt';
 
             return {
               type: 'python',
@@ -616,7 +618,7 @@ export class Renderer {
               envVars: ep.env,
               runEnv: this.resolveRunEnvironment(pkg.environment, pkg.type),
               toolset: toolset,
-              dependencies: { requirements },
+              dependencies: { requirementsFile },
             };
           }
           case 'R': {

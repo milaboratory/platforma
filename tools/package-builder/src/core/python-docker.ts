@@ -14,17 +14,11 @@ export interface PythonDockerOptions {
 
 export function generatePythonDockerfile(
   packageRoot: string,
-  _pythonPkg: PythonPackage,
-  options: PythonDockerOptions = {},
+  pythonPkg: PythonPackage,
+  options: PythonDockerOptions = getDefaultPythonDockerOptions(),
 ): string {
-  const {
-    pythonVersion = '3.12.6',
-    requirementsFile = 'requirements.txt',
-    toolset = 'pip',
-  } = options;
-
   // Check if requirements.txt exists in the package root
-  const requirementsPath = path.join(packageRoot, requirementsFile);
+  const requirementsPath = path.join(packageRoot, options.requirementsFile);
   const hasRequirements = fs.existsSync(requirementsPath);
 
   // Read template from assets
@@ -33,10 +27,10 @@ export function generatePythonDockerfile(
 
   // Simple variable substitution
   const installDeps = hasRequirements
-    ? `COPY ${requirementsFile} .\nRUN ${toolset} install --no-cache-dir -r ${requirementsFile}`
+    ? `COPY ${options.requirementsFile} .\nRUN ${options.toolset} install --no-cache-dir -r ${options.requirementsFile}`
     : '';
   const dockerfile = templateContent
-    .replace(/\$\{PYTHON_VERSION\}/g, pythonVersion)
+    .replace(/\$\{PYTHON_VERSION\}/g, options.pythonVersion)
     .replace(/\$\{PYTHON_INSTALL_DEPS\}/g, installDeps);
 
   return dockerfile;
@@ -55,7 +49,7 @@ export function buildPythonDockerImage(
   logger: winston.Logger,
   packageRoot: string,
   pythonPkg: PythonPackage,
-  options: PythonDockerOptions = {},
+  options: PythonDockerOptions = getDefaultPythonDockerOptions(),
 ): PythonDockerImageInfo | null {
   if (os.platform() !== 'linux') {
     logger.info('Skipping Docker build on non-Linux platform');
@@ -101,8 +95,8 @@ export function buildPythonDockerImage(
       packageName: pythonPkg.name,
       packageVersion: pythonPkg.version || 'latest',
       pythonVersion: options.pythonVersion || '3.12.6',
-      requirementsFile: options.requirementsFile || 'requirements.txt',
-      toolset: options.toolset || 'pip',
+      requirementsFile: options.requirementsFile,
+      toolset: options.toolset,
     };
   } finally {
     cleanup();
@@ -115,9 +109,10 @@ export function getPythonVersionFromEnvironment(environmentId: string): string |
   return versionMatch ? versionMatch[1] : undefined;
 }
 
-export function getDefaultPythonDependencies(_pythonPkg: PythonPackage): { toolset: 'pip'; requirements: string } {
+export function getDefaultPythonDockerOptions(): PythonDockerOptions {
   return {
+    pythonVersion: '3.12.6',
     toolset: 'pip',
-    requirements: 'requirements.txt',
+    requirementsFile: 'requirements.txt',
   };
 }

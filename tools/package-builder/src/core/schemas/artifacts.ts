@@ -110,7 +110,7 @@ export type javaPackageConfig = z.infer<typeof javaPackageSchema>;
 
 const pipToolsetSchema = z.strictObject({
   toolset: z.literal('pip'),
-  requirements: z.string().describe('path to requrements.txt inside package archive'),
+  requirementsFile: z.string().describe('path to requirements.txt inside package archive'),
 });
 
 export const pythonToolsetSchema = z.discriminatedUnion('toolset', [pipToolsetSchema]);
