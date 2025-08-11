@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { ColumnSpecParamUI } from '@milaboratories/milaboratories.file-import-block.model';
+import type { ImportFileHandle, LocalImportFileHandle } from '@milaboratories/pl-model-common';
 import {
   PlBtnPrimary,
   PlCheckbox,
@@ -8,12 +9,19 @@ import {
   PlTextArea,
   PlTextField,
 } from '@platforma-sdk/ui-vue';
+import { useMetadataXsv } from '../hooks/useMetadataXsv';
 import { VALUE_TYPE_OPTIONS } from '../types/spec';
 import { jsonToString, stringToJson } from '../utils/json';
 
 const columnsSpecParamsUI = defineModel<ColumnSpecParamUI[]>({
   required: true,
 });
+
+const props = defineProps<{
+  fileHandle?: ImportFileHandle;
+  delimiter?: string;
+}>();
+const metadata = useMetadataXsv(props.fileHandle as LocalImportFileHandle, props.delimiter);
 
 const addColumn = () => {
   columnsSpecParamsUI.value.push({

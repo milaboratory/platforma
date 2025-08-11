@@ -1,6 +1,5 @@
 import type { PlClient, ResourceData, ResourceId } from '@milaboratories/pl-client';
 import { isNotNullResourceId } from '@milaboratories/pl-client';
-import type { MiLogger, Signer } from '@milaboratories/ts-helpers';
 import type * as sdk from '@milaboratories/pl-model-common';
 import type {
   LocalImportFileHandle,
@@ -13,9 +12,12 @@ import type {
 import {
   isImportFileHandleIndex,
 } from '@milaboratories/pl-model-common';
-import type { ClientLs } from '../clients/ls_api';
-import * as path from 'node:path';
+import type { MiLogger, Signer } from '@milaboratories/ts-helpers';
 import * as fsp from 'node:fs/promises';
+import * as path from 'node:path';
+import { createLsFilesClient } from '../clients/constructors';
+import type { ClientLs } from '../clients/ls_api';
+import { validateAbsolute } from '../helpers/validate';
 import {
   createIndexImportHandle,
   createUploadImportHandle,
@@ -28,9 +30,7 @@ import {
   parseStorageHandle,
 } from './helpers/ls_storage_entry';
 import type { LocalStorageProjection, VirtualLocalStorageSpec } from './types';
-import { validateAbsolute } from '../helpers/validate';
 import { DefaultVirtualLocalStorages } from './virtual_storages';
-import { createLsFilesClient } from '../clients/constructors';
 
 /**
  * Extends public and safe SDK's driver API with methods used internally in the middle
@@ -79,7 +79,18 @@ export class LsDriver implements InternalLsDriver {
     range?: TableRange,
   ): Promise<Uint8Array> {
     const localPath = await this.tryResolveLocalFileHandle(file);
-    if (range) throw new Error('Range request not yet supported.');
+    
+    if (range) {
+      const fileHandle = await fsp.open(localPath, 'r');
+      try {
+        const buffer = Buffer.alloc(range.length);
+        const { bytesRead } = await fileHandle.read(buffer, 0, range.length, range.offset);
+        return new Uint8Array(buffer.subarray(0, bytesRead));
+      } finally {
+        await fileHandle.close();
+      }
+    }
+    
     return await fsp.readFile(localPath);
   }
 

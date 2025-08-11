@@ -1,11 +1,11 @@
 <script setup lang="tsx">
 import type { SpecUI } from '@milaboratories/milaboratories.file-import-block.model';
 import { watch } from 'vue';
-import { useApp } from './app';
-import AxesConfiguration from './components/AxesConfiguration.vue';
-import BasicSettings from './components/BasicSettings.vue';
-import ColumnsConfiguration from './components/ColumnsConfiguration.vue';
-import { prepareSpec } from './utils/spec';
+import { useApp } from '../app';
+import { prepareSpec } from '../utils/spec';
+import AxesConfiguration from './AxesConfiguration.vue';
+import BasicSettings from './BasicSettings.vue';
+import ColumnsConfiguration from './ColumnsConfiguration.vue';
 
 const app = useApp();
 

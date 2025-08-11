@@ -252,6 +252,8 @@ catalog:
   'sortablejs': ^1.15.6
   '@types/sortablejs': ^1.15.6
 
+  'csv-parse': ^6.1.0
+
   # SW
 
   '@milaboratories/software-pframes-conv': &pframes-version 2.2.2

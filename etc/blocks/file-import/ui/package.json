@@ -11,8 +11,11 @@
   },
   "dependencies": {
     "@milaboratories/milaboratories.file-import-block.model": "workspace:*",
-    "@platforma-sdk/ui-vue": "workspace:^",
+    "@milaboratories/pl-model-common": "workspace:*",
+    "@platforma-sdk/ui-vue": "workspace:*",
+    "@platforma-sdk/model": "workspace:*",
     "es-toolkit": "catalog:",
+    "csv-parse": "catalog:",
     "vue": "catalog:"
   },
   "devDependencies": {
