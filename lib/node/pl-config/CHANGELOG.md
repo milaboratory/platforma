@@ -1,5 +1,11 @@
 # @milaboratories/pl-config
 
+## 1.7.0
+
+### Minor Changes
+
+- b43e778: Allow to control common timeouts for all controllers (init/stop/request)
+
 ## 1.6.4
 
 ### Patch Changes

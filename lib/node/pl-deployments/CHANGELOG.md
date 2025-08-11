@@ -1,5 +1,13 @@
 # @milaboratories/pl-local
 
+## 2.4.9
+
+### Patch Changes
+
+- b43e778: Force stop backend process if it exceeeds timeout after gentle stop signal
+- Updated dependencies [b43e778]
+  - @milaboratories/pl-config@1.7.0
+
 ## 2.4.8
 
 ### Patch Changes
