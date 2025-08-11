@@ -5,6 +5,7 @@ import Core from '../../../../core';
 import * as cmdOpts from '../../../../cmd-opts';
 import * as util from '../../../../util';
 import state from '../../../../state';
+import { ArgParser } from '../arg-parser';
 
 export default class S3 extends Command {
   static override description = 'Run Platforma Backend service as docker container on current host with MinIO as local S3 storage';
@@ -28,48 +29,26 @@ export default class S3 extends Command {
     ...cmdOpts.MinioPresignHostFlag,
   };
 
-  static args = {
+  static override args = {
     name: Args.string({ required: true }),
   };
 
   public async run(): Promise<void> {
-    // Extract instance name from argv
-    const nameIndex = this.argv.findIndex(arg => !arg.startsWith('-'));
-    if (nameIndex === -1) {
-      throw new Error('Instance name is required');
-    }
-    const instanceName = this.argv[nameIndex];
+    // Use custom parser instead of OCLIF parse
+    const parser = new ArgParser(S3.flags);
+    const parsed = parser.parse(this.argv);
 
-    // Parse known flags manually from argv
-    const flags: any = {};
-    for (const arg of this.argv) {
-      if (arg.startsWith('--log-level=')) {
-        flags['log-level'] = arg.split('=')[1];
-      } else if (arg.startsWith('--version=')) {
-        flags.version = arg.split('=')[1];
-      } else if (arg.startsWith('--image=')) {
-        flags.image = arg.split('=')[1];
-      } else if (arg.startsWith('--arch=')) {
-        flags.arch = arg.split('=')[1];
-      } else if (arg === '--auth-enabled') {
-        flags['auth-enabled'] = true;
-      } else if (arg.startsWith('--license=')) {
-        flags.license = arg.split('=')[1];
-      } else if (arg.startsWith('--license-file=')) {
-        flags['license-file'] = arg.split('=')[1];
-      } else if (arg.startsWith('--storage=')) {
-        flags.storage = arg.split('=')[1];
-      } else if (arg.startsWith('--s3-port=')) {
-        flags['s3-port'] = parseInt(arg.split('=')[1]);
-      } else if (arg.startsWith('--s3-console-port=')) {
-        flags['s3-console-port'] = parseInt(arg.split('=')[1]);
-      } else if (arg === '--minio-presign-host') {
-        flags['minio-presign-host'] = true;
-      }
+    // Validate required flags
+    const errors = parser.validateRequired(parsed.knownFlags);
+    if (errors.length > 0) {
+      throw new Error(`Validation errors:\n${errors.join('\n')}`);
     }
+
+    const instanceName = parsed.instanceName;
+    const flags = parsed.knownFlags;
+    const backendCommands = parsed.unknownFlags;
     
-    // Set default values for flags that weren't specified
-    if (!flags['log-level']) flags['log-level'] = 'info';
+    // Set default values for S3-specific flags
     if (!flags['s3-port']) flags['s3-port'] = 9000;
     if (!flags['s3-console-port']) flags['s3-console-port'] = 9001;
 
@@ -94,25 +73,6 @@ export default class S3 extends Command {
 
     const platformOverride = flags.arch ? `linux/${flags.arch}` : undefined;
     const presignHost = flags['minio-presign-host'] ? 'minio' : 'localhost';
-
-    // Collect all unknown flags as backend commands
-    // Get all known flags from the command definition
-    const knownFlagNames = new Set(Object.keys(S3.flags));
-    
-    const backendCommands: string[] = [];
-    for (const arg of this.argv) {
-      if (arg.startsWith('--') && !arg.includes('=')) {
-        const flagName = arg.substring(2);
-        if (!knownFlagNames.has(flagName)) {
-          backendCommands.push(arg);
-        }
-      } else if (arg.startsWith('--') && arg.includes('=')) {
-        const flagName = arg.substring(2, arg.indexOf('='));
-        if (!knownFlagNames.has(flagName)) {
-          backendCommands.push(arg);
-        }
-      }
-    }
 
     core.createDockerS3(instanceName, storage, {
       image: flags.image,
@@ -146,6 +106,11 @@ export default class S3 extends Command {
     logger.info(`Instance '${instanceName}' was created. To start it run 'up' command`);
     if (flags['minio-presign-host']) {
       logger.info('  NOTE: make sure you have \'minio\' host in your hosts file as 127.0.0.1 address');
+    }
+
+    // Log unknown flags that will be passed to backend
+    if (backendCommands.length > 0) {
+      logger.info(`Unknown flags will be passed to backend: ${backendCommands.join(' ')}`);
     }
   }
 }
