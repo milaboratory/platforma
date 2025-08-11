@@ -81,6 +81,7 @@ const updateColumnAnnotations = (index: number, value: string) => {
         <PlBtnSecondary :class="$style.headerBtn" @click="handleRemoveAll">
           Remove All
         </PlBtnSecondary>
+        <div :class="$style.headerSeparator" />
         <AddColumn :metadata="props.metadata" @add="addColumn"/>
       </div>
     </div>
@@ -198,6 +199,12 @@ const updateColumnAnnotations = (index: number, value: string) => {
 
 .headerBtn {
   min-width: 80px;
+}
+
+.headerSeparator {
+  width: 1px;
+  background-color: var(--border-color-div-grey);
+  margin: 0 8px;
 }
 
 .columnLabel {

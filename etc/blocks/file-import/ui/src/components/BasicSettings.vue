@@ -67,13 +67,27 @@ const addIndex = () => {
     <div :class="$style.formGroup">
       <h4>File Format</h4>
       <div :class="$style.formRow">
-        <PlTextField
-          :model-value="localValue.separator || ''" label="Separator" placeholder=","
+        <PlDropdown
+          label="Separator"
+          :options="[
+            { label: 'Comma (,)', value: ',' },
+            { label: 'Tab (\\t)', value: '\\t' },
+            { label: 'Semicolon (;)', value: ';' },
+            { label: 'Space ( )', value: ' ' },
+          ]"
+          :model-value="localValue.separator || ''"
           @update:model-value="localValue.separator = $event || undefined"
         />
-        <PlTextField
-          :model-value="localValue.commentLinePrefix || ''" label="Comment Line Prefix"
-          placeholder="#" @update:model-value="localValue.commentLinePrefix = $event || undefined"
+
+        <PlDropdown
+          label="Comment Line Prefix"
+          :options="[
+            { label: 'Hash (#)', value: '#' },
+            { label: 'Double Slash (//)', value: '//' },
+            { label: 'Semicolon (;)', value: ';' },
+          ]"
+          :model-value="localValue.commentLinePrefix || '#'"
+          @update:model-value="localValue.commentLinePrefix = $event || undefined"
         />
       </div>
 
