@@ -12,22 +12,27 @@ import {
 import type { PythonPackage } from '../package-info';
 import type winston from 'winston';
 
-// Mock the pkg.assets function
 import { vi } from 'vitest';
 
+// Mock the pkg.assets function to return real file paths
 vi.mock('../package', () => ({
-  assets: (file: string) => `/tmp/mock-assets/${file}`,
+  assets: (file: string) => {
+    if (file === 'python-dockerfile.template') {
+      return path.join(__dirname, '../../../assets/python-dockerfile.template');
+    }
+    return `/tmp/mock-assets/${file}`;
+  },
 }));
 
-// Mock winston logger
+// Mock winston logger - simplified
 const mockLogger = {
-  info: () => {},
-  warn: () => {},
-  debug: () => {},
-  error: () => {},
+  info: vi.fn(),
+  warn: vi.fn(),
+  debug: vi.fn(),
+  error: vi.fn(),
 } as unknown as winston.Logger;
 
-// Mock Python package for testing
+// Mock Python package for testing - simplified
 const mockPythonPackage: PythonPackage = {
   name: 'test-python-package',
   version: '1.0.0',
@@ -54,13 +59,8 @@ describe('Python Docker Functions', () => {
     // Create temporary directories for testing
     tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'python-docker-test-'));
     testPackageRoot = path.join(tempDir, 'package');
-    fs.mkdirSync(testPackageRoot, { recursive: true });
 
-    // Create mock assets directory
-    const mockAssetsDir = '/tmp/mock-assets';
-    fs.mkdirSync(mockAssetsDir, { recursive: true });
-    fs.writeFileSync(path.join(mockAssetsDir, 'python-dockerfile.template'),
-      '# Auto-generated Dockerfile for Python package\nFROM python:${PYTHON_VERSION}-slim\n\nWORKDIR /app\n\n# Copy package source\nCOPY . /app/\n\n# Install dependencies if requirements.txt exists\n${PYTHON_INSTALL_DEPS}\n\n# Set Python path\nENV PYTHONPATH=/app\n\n# Default command (will be overridden by entrypoint)\nCMD ["python", "--version"]\n');
+    fs.mkdirSync(testPackageRoot, { recursive: true });
 
     // Create a mock requirements.txt file
     fs.writeFileSync(path.join(testPackageRoot, 'requirements.txt'), 'requests>=2.25.0\n');
@@ -70,7 +70,7 @@ describe('Python Docker Functions', () => {
     // Clean up temporary directories
     try {
       fs.rmSync(tempDir, { recursive: true, force: true });
-    } catch (_error) {
+    } catch {
       // Ignore cleanup errors
     }
   });
@@ -79,7 +79,8 @@ describe('Python Docker Functions', () => {
     it('should generate Dockerfile with default options', () => {
       const dockerfile = generatePythonDockerfile(testPackageRoot, mockPythonPackage);
 
-      expect(dockerfile).toContain('FROM python:3.12.6-slim');
+      // Check essential Dockerfile components
+      expect(dockerfile).toMatch(/FROM python:3\.12\.6-slim/);
       expect(dockerfile).toContain('WORKDIR /app');
       expect(dockerfile).toContain('COPY . /app/');
       expect(dockerfile).toContain('RUN pip install --no-cache-dir -r requirements.txt');
@@ -88,84 +89,71 @@ describe('Python Docker Functions', () => {
     });
 
     it('should generate Dockerfile with custom options', () => {
+      const customRequirementsFile = 'custom-requirements.txt';
+      fs.writeFileSync(path.join(testPackageRoot, customRequirementsFile), 'numpy>=1.20.0\n');
+
       const options: PythonDockerOptions = {
         pythonVersion: '3.11.0',
-        requirementsFile: 'custom-requirements.txt',
+        requirementsFile: customRequirementsFile,
         _toolset: 'pip',
       };
 
-      // Create custom requirements file for this test
-      fs.writeFileSync(path.join(testPackageRoot, 'custom-requirements.txt'), 'numpy>=1.20.0\n');
-
       const dockerfile = generatePythonDockerfile(testPackageRoot, mockPythonPackage, options);
 
-      expect(dockerfile).toContain('FROM python:3.11.0-slim');
-      expect(dockerfile).toContain('RUN pip install --no-cache-dir -r custom-requirements.txt');
+      expect(dockerfile).toMatch(/FROM python:3\.11\.0-slim/);
+      expect(dockerfile).toContain(`RUN pip install --no-cache-dir -r ${customRequirementsFile}`);
     });
 
     it('should handle missing requirements.txt gracefully', () => {
-      // Remove requirements.txt
       fs.unlinkSync(path.join(testPackageRoot, 'requirements.txt'));
 
       const dockerfile = generatePythonDockerfile(testPackageRoot, mockPythonPackage);
 
-      expect(dockerfile).toContain('FROM python:3.12.6-slim');
+      expect(dockerfile).toMatch(/FROM python:3\.12\.6-slim/);
       expect(dockerfile).not.toContain('RUN pip install');
     });
   });
 
   describe('getPythonVersionFromEnvironment', () => {
-    it('should extract version from environment ID', () => {
-      const version = getPythonVersionFromEnvironment('@platforma-open/milaboratories.runenv-python-3:3.12.6');
-      expect(version).toBe('3.12.6');
-    });
+    const testCases = [
+      { input: '@platforma-open/milaboratories.runenv-python-3:3.12.6', expected: '3.12.6' },
+      { input: '@platforma-open/milaboratories.runenv-python-3:3.11.0', expected: '3.11.0' },
+      { input: '@platforma-open/milaboratories.runenv-python-3', expected: undefined },
+      { input: '', expected: undefined },
+    ];
 
-    it('should extract version from environment ID with different format', () => {
-      const version = getPythonVersionFromEnvironment('@platforma-open/milaboratories.runenv-python-3:3.11.0');
-      expect(version).toBe('3.11.0');
-    });
-
-    it('should return undefined for environment ID without version', () => {
-      const version = getPythonVersionFromEnvironment('@platforma-open/milaboratories.runenv-python-3');
-      expect(version).toBeUndefined();
-    });
-
-    it('should return undefined for empty environment ID', () => {
-      const version = getPythonVersionFromEnvironment('');
-      expect(version).toBeUndefined();
+    testCases.forEach(({ input, expected }) => {
+      it(`should extract version from "${input}"`, () => {
+        const version = getPythonVersionFromEnvironment(input);
+        expect(version).toBe(expected);
+      });
     });
   });
 
   describe('getDefaultPythonDependencies', () => {
-    it('should return default dependencies', () => {
+    it('should return correct default dependencies', () => {
       const dependencies = getDefaultPythonDependencies(mockPythonPackage);
 
-      expect(dependencies.toolset).toBe('pip');
-      expect(dependencies.requirements).toBe('requirements.txt');
+      expect(dependencies).toEqual({
+        toolset: 'pip',
+        requirements: 'requirements.txt',
+      });
     });
   });
 
   describe('buildPythonDockerImage', () => {
-    it('should skip Docker build on non-Linux platforms', () => {
-      // Skip this test on non-Linux platforms since we can't easily mock os.platform
+    it('should handle platform-specific behavior', () => {
+      const result = buildPythonDockerImage(mockLogger, testPackageRoot, mockPythonPackage);
+
       if (os.platform() === 'linux') {
-        // On Linux, this should not be null (though we can't test the full Docker build)
+        // On Linux, function should not throw and may return a value
         expect(() => {
           buildPythonDockerImage(mockLogger, testPackageRoot, mockPythonPackage);
         }).not.toThrow();
       } else {
-        // On non-Linux, this should return null
-        const result = buildPythonDockerImage(mockLogger, testPackageRoot, mockPythonPackage);
+        // On non-Linux, should return null
         expect(result).toBeNull();
       }
-    });
-
-    it('should build Docker image on Linux platforms', () => {
-      // This test would need more complex mocking to fully test Docker build
-      // For now, we just verify the function doesn't crash when called
-      expect(() => {
-        buildPythonDockerImage(mockLogger, testPackageRoot, mockPythonPackage);
-      }).not.toThrow();
     });
   });
 });
