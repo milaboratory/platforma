@@ -299,14 +299,6 @@ export class Core {
     os: string,
     arch: string,
   ) {
-    this.logger.debug(
-      `  rendering 'package.sw.json' to be embedded into ${packageContentType} archive`,
-    );
-    const swJson = this.renderer.renderPackageDescriptor(this.buildMode, pkg);
-
-    const swJsonPath = path.join(contentRoot, 'package.sw.json');
-    fs.writeFileSync(swJsonPath, JSON.stringify(swJson));
-
     this.logger.info(`  packing ${packageContentType} into a package`);
     if (pkg.crossplatform) {
       this.logger.info(`    generating cross-platform package`);
