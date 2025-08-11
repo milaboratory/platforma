@@ -9,7 +9,7 @@ import * as pkg from './package';
 export interface PythonDockerOptions {
   pythonVersion?: string;
   requirementsFile?: string;
-  _toolset?: 'pip';
+  toolset?: string;
 }
 
 export function generatePythonDockerfile(
@@ -20,7 +20,7 @@ export function generatePythonDockerfile(
   const {
     pythonVersion = '3.12.6',
     requirementsFile = 'requirements.txt',
-    _toolset = 'pip',
+    toolset = 'pip',
   } = options;
 
   // Check if requirements.txt exists in the package root
@@ -32,10 +32,12 @@ export function generatePythonDockerfile(
   const templateContent = fs.readFileSync(templatePath, 'utf-8');
 
   // Simple variable substitution
+  const installDeps = hasRequirements
+    ? `COPY ${requirementsFile} .\nRUN ${toolset} install --no-cache-dir -r ${requirementsFile}`
+    : '';
   const dockerfile = templateContent
     .replace(/\$\{PYTHON_VERSION\}/g, pythonVersion)
-    .replace(/\$\{PYTHON_INSTALL_DEPS\}/g,
-      hasRequirements ? `RUN pip install --no-cache-dir -r ${requirementsFile}` : '');
+    .replace(/\$\{PYTHON_INSTALL_DEPS\}/g, installDeps);
 
   return dockerfile;
 }
@@ -100,7 +102,7 @@ export function buildPythonDockerImage(
       packageVersion: pythonPkg.version || 'latest',
       pythonVersion: options.pythonVersion || '3.12.6',
       requirementsFile: options.requirementsFile || 'requirements.txt',
-      toolset: options._toolset || 'pip',
+      toolset: options.toolset || 'pip',
     };
   } finally {
     cleanup();
