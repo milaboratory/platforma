@@ -1,5 +1,11 @@
 # @milaboratories/build-configs
 
+## 1.0.7
+
+### Patch Changes
+
+- ee5f3ad: configurable output dit
+
 ## 1.0.6
 
 ### Patch Changes
