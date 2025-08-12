@@ -1,9 +1,9 @@
-import { resolve, join } from 'path';
-import fs from 'fs';
+import { resolve } from 'path';
+import * as fs from 'fs';
 import { getDefaultPlVersion } from '@milaboratories/pl-deployments';
 
 export function path(...p: string[]): string {
-  return resolve(__dirname, '..', ...p);
+  return resolve(process.cwd(), '..', ...p);
 }
 
 export function dist(...p: string[]): string {
