@@ -19,6 +19,9 @@ test(
     const logger = new ConsoleLoggerAdapter();
     const config = await readTestConfig();
 
+
+    logger.info('Config:\n' + yaml.stringify(config));
+
     const dir = await prepareDirForTestConfig();
 
     const pl = await localPlatformaInit(logger, {
@@ -107,7 +110,6 @@ test(
 async function readTestConfig() {
   const testConfig = upath.join(__dirname, 'config.test.yaml');
   const config = (await fs.readFile(testConfig)).toString();
-
 
   const parsed = yaml.parse(config);
   parsed.license.value = process.env.MI_LICENSE;
