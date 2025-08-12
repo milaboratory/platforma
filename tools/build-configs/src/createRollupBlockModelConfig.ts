@@ -4,12 +4,17 @@ import typescript from '@rollup/plugin-typescript';
 import { RollupOptions } from 'rollup';
 import { createRollupNodeConfig } from './createRollupNodeConfig';
 
-export function createRollupBlockModelConfig(): RollupOptions[] {
-  const input = './src/index.ts';
+export function createRollupBlockModelConfig(props?: {
+  entry?: string[];
+  output?: string;
+  formats?: ('es' | 'cjs')[]
+}): RollupOptions[] {
+  const base = createRollupNodeConfig(props);
+  
   return [
-    ...createRollupNodeConfig(),
+    ...base,
     {
-      input,
+      input: props?.entry ?? ['./src/index.ts'],
       plugins: [
         typescript(),
         resolve(),
@@ -17,7 +22,7 @@ export function createRollupBlockModelConfig(): RollupOptions[] {
       ],
       output: [
         {
-          dir: 'dist',
+          dir: props?.output ?? 'dist',
           name: 'block-model',
           format: 'umd',
           entryFileNames: 'bundle.js',
