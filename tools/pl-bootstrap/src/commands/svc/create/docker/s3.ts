@@ -46,8 +46,12 @@ export default class S3 extends Command {
 
     const instanceName = parsed.instanceName;
     const flags = parsed.knownFlags;
+
     const backendCommands = parsed.unknownFlags;
-    
+    if (flags['log-level']){
+      backendCommands.push(`--log-level=${flags['log-level']}`);
+    }
+
     // Set default values for S3-specific flags
     if (!flags['s3-port']) flags['s3-port'] = 9000;
     if (!flags['s3-console-port']) flags['s3-console-port'] = 9001;
