@@ -8,15 +8,17 @@ import dts from 'unplugin-dts/rollup';
 
 export function createRollupNodeConfig(props?: {
   entry?: string[];
+  output?: string;
   formats?: ('es' | 'cjs')[]
 }): RollupOptions[] {
-  const input = props?.entry || ['./src/index.ts'];
-  const formats = props?.formats || ['es', 'cjs'];
+  const input = props?.entry ?? ['./src/index.ts'];
+  const output = props?.output ?? 'dist';
+  const formats = props?.formats ?? ['es', 'cjs'];
   return [
     {
       input,
       plugins: [
-        cleandir('dist'),
+        cleandir(output),
         typescript(),
         dts({ entryRoot: 'src'}),
         json(),
@@ -25,7 +27,7 @@ export function createRollupNodeConfig(props?: {
       ],
       output: [
         formats.includes('es') && {
-          dir: 'dist',
+          dir: output,
           format: 'es',
           preserveModules: true,
           preserveModulesRoot: 'src',
@@ -35,7 +37,7 @@ export function createRollupNodeConfig(props?: {
           sourcemap: true
         },
         formats.includes('cjs') && {
-          dir: 'dist',
+          dir: output,
           format: 'cjs',
           preserveModules: true,
           preserveModulesRoot: 'src',
