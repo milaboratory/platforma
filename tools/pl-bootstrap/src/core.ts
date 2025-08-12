@@ -931,46 +931,45 @@ You can obtain the license from "https://licensing.milaboratories.com".`);
 
     switch (sType) {
       case 'S3':
-        if (storageID === 'PRIMARY') {
-          // Construct the S3 URL for primary storage
-          const endpoint = storage.endpoint || 'http://minio:9000/';
-          const bucketName = storage.bucketName || 'platforma-primary-bucket';
-          envs['PL_PRIMARY_STORAGE_S3'] = `${endpoint}${bucketName}`;
-          if (storage.endpoint) envs['PL_PRIMARY_STORAGE_S3_ENDPOINT'] = storage.endpoint;
-          if (storage.presignEndpoint) envs['PL_PRIMARY_STORAGE_S3_EXTERNAL_ENDPOINT'] = storage.presignEndpoint;
-          if (storage.region) envs['PL_PRIMARY_STORAGE_S3_REGION'] = storage.region;
-          // if (storage.key) envs['PL_PRIMARY_STORAGE_S3_KEY'] = storage.key;
-          // if (storage.secret) envs['PL_PRIMARY_STORAGE_S3_SECRET'] = storage.secret;
-        } else if (storageID === 'LIBRARY') {
-          // Construct the S3 URL for library storage
-          const endpoint = storage.endpoint || 'http://minio:9000';
-          const bucketName = storage.bucketName || 'platforma-library-bucket';
-          envs['PL_DATA_LIBRARY_S3_URL'] = `${endpoint}/${bucketName}`;
-          if (storage.endpoint) envs['PL_DATA_LIBRARY_S3_ENDPOINT'] = storage.endpoint;
-          if (storage.presignEndpoint) envs['PL_DATA_LIBRARY_S3_EXTERNAL_ENDPOINT'] = storage.presignEndpoint;
-          if (storage.region) envs['PL_DATA_LIBRARY_S3_REGION'] = storage.region;
-          if (storage.key) envs['PL_DATA_LIBRARY_S3_KEY'] = storage.key;
-          if (storage.secret) envs['PL_DATA_LIBRARY_S3_SECRET'] = storage.secret;
-        } else {
-          // Fallback to old format for other storage types
-          envs[`PL_DATA_${storageID}_TYPE`] = 'S3';
-          envs[`PL_DATA_${storageID}_S3_BUCKET`] = storage.bucketName!;
-          if (storage.endpoint) envs[`PL_DATA_${storageID}_S3_ENDPOINT`] = storage.endpoint;
-          if (storage.presignEndpoint) envs[`PL_DATA_${storageID}_S3_PRESIGN_ENDPOINT`] = storage.presignEndpoint;
-          if (storage.region) envs[`PL_DATA_${storageID}_S3_REGION`] = storage.region;
-          if (storage.key) envs[`PL_DATA_${storageID}_S3_KEY`] = storage.key;
-          if (storage.secret) envs[`PL_DATA_${storageID}_S3_SECRET`] = storage.secret;
+        switch (storageID) {
+          case 'PRIMARY': {
+            // Construct the S3 URL for primary storage
+            const endpoint = storage.endpoint || 'http://minio:9000/';
+            const bucketName = storage.bucketName || 'platforma-primary-bucket';
+            envs['PL_PRIMARY_STORAGE_S3'] = `${endpoint}${bucketName}`;
+            if (storage.endpoint) envs['PL_PRIMARY_STORAGE_S3_ENDPOINT'] = storage.endpoint;
+            if (storage.presignEndpoint) envs['PL_PRIMARY_STORAGE_S3_EXTERNAL_ENDPOINT'] = storage.presignEndpoint;
+            if (storage.region) envs['PL_PRIMARY_STORAGE_S3_REGION'] = storage.region;
+            if (storage.key) envs['PL_PRIMARY_STORAGE_S3_KEY'] = storage.key;
+            if (storage.secret) envs['PL_PRIMARY_STORAGE_S3_SECRET'] = storage.secret;
+            break;
+          }
+          case 'LIBRARY': {
+            // Construct the S3 URL for library storage
+            const endpoint = storage.endpoint || 'http://minio:9000';
+            const bucketName = storage.bucketName || 'platforma-library-bucket';
+            envs['PL_DATA_LIBRARY_S3_URL'] = `${endpoint}${bucketName}`;
+            if (storage.endpoint) envs['PL_DATA_LIBRARY_S3_ENDPOINT'] = storage.endpoint;
+            if (storage.presignEndpoint) envs['PL_DATA_LIBRARY_S3_EXTERNAL_ENDPOINT'] = storage.presignEndpoint;
+            if (storage.region) envs['PL_DATA_LIBRARY_S3_REGION'] = storage.region;
+            if (storage.key) envs['PL_DATA_LIBRARY_S3_KEY'] = storage.key;
+            if (storage.secret) envs['PL_DATA_LIBRARY_S3_SECRET'] = storage.secret;
+            break;
+          }
+          default:
+            throw new Error(`Unknown storage ID: ${storageID}`);
         }
         return envs;
-
       case 'FS':
-        if (storageID === 'PRIMARY') {
-          if (storage.rootPath) envs['PL_PRIMARY_STORAGE_FS'] = storage.rootPath;
-        } else if (storageID === 'LIBRARY') {
-          if (storage.rootPath) envs['PL_DATA_LIBRARY_FS_PATH'] = `host=${storage.rootPath}`;
-        } else {
-          // Fallback to old format for other storage types
-          envs[`PL_DATA_${storageID}_TYPE`] = 'FS';
+        switch (storageID) {
+          case 'PRIMARY':
+            if (storage.rootPath) envs['PL_PRIMARY_STORAGE_FS'] = storage.rootPath;
+            break;
+          case 'LIBRARY':
+            if (storage.rootPath) envs['PL_DATA_LIBRARY_FS_PATH'] = `host=${storage.rootPath}`;
+            break;
+          default:
+            throw new Error(`Unknown storage ID: ${storageID}`);
         }
         return envs;
 
