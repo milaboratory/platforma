@@ -5,13 +5,13 @@ import Spec from './components/Spec.vue';
 
 const app = useApp();
 
-app.model.args.fileExt = 'csv';
-
 </script>
 
 <template>
   <PlBlockPage>
-    <h2>File Import Specification</h2>
+    <template #title>
+      File Import
+    </template>
 
     <PlFileInput
       v-model="app.model.args.fileHandle"
