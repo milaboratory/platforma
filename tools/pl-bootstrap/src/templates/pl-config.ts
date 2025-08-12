@@ -109,7 +109,7 @@ export function loadDefaults(jwtKey: string, options?: types.plOptions): types.p
   const primary = defaultStorageSettings(
     'main',
     `${localRoot}/storages/main`,
-    'main-bucket',
+    'platforma-primary-bucket',
     options?.storages?.primary,
   );
 
@@ -130,7 +130,7 @@ export function loadDefaults(jwtKey: string, options?: types.plOptions): types.p
   const library = defaultStorageSettings(
     'library',
     `${localRoot}/storages/library`,
-    'library-bucket',
+    'platforma-library-bucket',
     options?.storages?.library,
   );
 

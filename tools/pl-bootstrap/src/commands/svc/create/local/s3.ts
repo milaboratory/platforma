@@ -7,6 +7,7 @@ import * as util from '../../../../util';
 import state from '../../../../state';
 import * as platforma from '../../../../platforma';
 import * as os from 'node:os';
+import { ArgParser } from '../arg-parser';
 
 export default class Local extends Command {
   static override description = 'Run Platforma Backend service as local process on current host (no docker container)';
@@ -36,18 +37,31 @@ export default class Local extends Command {
     ...cmdOpts.AuthFlags,
   };
 
-  static args = {
+  static override args = {
     name: Args.string({ required: true }),
   };
 
   public async run(): Promise<void> {
-    const { flags, args } = await this.parse(Local);
+    // Use custom parser instead of OCLIF parse
+    const parser = new ArgParser(Local.flags);
+    const parsed = parser.parse(this.argv);
 
-    const logger = util.createLogger(flags['log-level']);
+    // Validate required flags
+    const errors = parser.validateRequired(parsed.knownFlags);
+    if (errors.length > 0) {
+      throw new Error(`Validation errors:\n${errors.join('\n')}`);
+    }
+
+    const instanceName = parsed.instanceName;
+    const flags = parsed.knownFlags;
+    const backendCommands = parsed.unknownFlags;
+    if (flags['log-level']){
+      backendCommands.push(`--log-level=${flags['log-level']}`);
+    }
+
+    const logger = util.createLogger(flags['log-level'] || 'info');
     const core = new Core(logger);
     core.mergeLicenseEnvs(flags);
-
-    const instanceName = args.name;
 
     const workdir = flags['pl-workdir'] ?? '.';
     const storage = flags.storage ? path.join(workdir, flags.storage) : state.instanceDir(instanceName);
@@ -82,6 +96,8 @@ export default class Local extends Command {
       minioPort: flags['s3-port'],
       minioConsolePort: flags['s3-console-port'],
 
+      backendCommands: backendCommands,
+
       configOptions: {
         grpc: { listen: listenGrpc },
         monitoring: { listen: listenMon },
@@ -115,5 +131,10 @@ export default class Local extends Command {
       .catch(function (err: Error) {
         logger.error(err.message);
       });
+
+    // Log unknown flags that will be passed to backend
+    if (backendCommands.length > 0) {
+      logger.info(`Unknown flags will be passed to backend: ${backendCommands.join(' ')}`);
+    }
   }
 }
