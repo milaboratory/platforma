@@ -3,6 +3,7 @@ import type { DockerPackage } from './package-info';
 import * as util from './util';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import * as os from 'node:os';
 import { PL_DOCKER_REGISTRY } from './envs';
 
 export const defaultDockerRegistry = 'containers.pl-open.science/milaboratories/pl-containers';
@@ -20,7 +21,13 @@ export function dockerEntrypointNameToOrigin(name: string): string {
 }
 
 export function dockerPush(tag: string) {
-  const result = spawnSync('docker', ['push', tag], { stdio: 'inherit' });
+  const result = spawnSync('docker', ['push', tag], {
+    stdio: 'inherit',
+    env: {
+      ...process.env, // Inherit all environment variables from the parent process
+      HOME: process.env.HOME || os.homedir(), // Ensure HOME is set
+    },
+  });
   if (result.error) {
     throw result.error;
   }
@@ -30,7 +37,13 @@ export function dockerPush(tag: string) {
 }
 
 export function dockerBuild(context: string, dockerfile: string, tag: string) {
-  const result = spawnSync('docker', ['build', '-t', tag, context, '-f', dockerfile], { stdio: 'inherit' });
+  const result = spawnSync('docker', ['build', '-t', tag, context, '-f', dockerfile], {
+    stdio: 'inherit',
+    env: {
+      ...process.env, // Inherit all environment variables from the parent process
+      HOME: process.env.HOME || os.homedir(), // Ensure HOME is set
+    },
+  });
   if (result.error) {
     throw result.error;
   }
@@ -77,5 +90,5 @@ function contentHash(contextFullPath: string, dockerfileFullPath: string): strin
 
 function dockerTag(packageName: string, contentHash: string): string {
   const dockerRegistry = process.env[PL_DOCKER_REGISTRY] ?? defaultDockerRegistry;
-  return `${dockerRegistry}:${packageName.replace('/', '.')}.${contentHash}`;
+  return `${dockerRegistry}:${packageName.replaceAll('/', '.')}.${contentHash}`;
 }
