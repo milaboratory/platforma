@@ -947,13 +947,13 @@ You can obtain the license from "https://licensing.milaboratories.com".`);
           case 'LIBRARY': {
             // Construct the S3 URL for library storage
             if (storage.endpoint && storage.bucketName) {
-              envs['PL_DATA_LIBRARY_S3_URL'] = `raw-data=${storage.endpoint}${storage.bucketName}`;
+              envs['PL_DATA_LIBRARY_S3_URL'] = `library=${storage.endpoint}${storage.bucketName}`;
             }
-            if (storage.endpoint) envs['PL_DATA_LIBRARY_S3_ENDPOINT'] = `raw-data=${storage.endpoint}`;
-            if (storage.presignEndpoint) envs['PL_DATA_LIBRARY_S3_EXTERNAL_ENDPOINT'] = `raw-data=${storage.presignEndpoint}`;
-            if (storage.region) envs['PL_DATA_LIBRARY_S3_REGION'] = `raw-data=${storage.region}`;
-            if (storage.key) envs['PL_DATA_LIBRARY_S3_KEY'] = `raw-data=${storage.key}`;
-            if (storage.secret) envs['PL_DATA_LIBRARY_S3_SECRET'] = `raw-data=${storage.secret}`;
+            if (storage.endpoint) envs['PL_DATA_LIBRARY_S3_ENDPOINT'] = `library=${storage.endpoint}`;
+            if (storage.presignEndpoint) envs['PL_DATA_LIBRARY_S3_EXTERNAL_ENDPOINT'] = `library=${storage.presignEndpoint}`;
+            if (storage.region) envs['PL_DATA_LIBRARY_S3_REGION'] = `library=${storage.region}`;
+            if (storage.key) envs['PL_DATA_LIBRARY_S3_KEY'] = `library=${storage.key}`;
+            if (storage.secret) envs['PL_DATA_LIBRARY_S3_SECRET'] = `library=${storage.secret}`;
             break;
           }
           default:

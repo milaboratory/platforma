@@ -106,11 +106,11 @@ services:
       - "PL_NO_HOST_DATA_LIBRARY=${PL_NO_HOST_DATA_LIBRARY:-false}"
       - "PL_DATA_LIBRARY_FS_PATH=host=/storage/library"
       # S3 data library - only set if explicitly provided
-      - "PL_DATA_LIBRARY_S3_URL=${PL_DATA_LIBRARY_S3_URL:-raw-data=http://minio:9000/platforma-library-bucket}"
-      - "PL_DATA_LIBRARY_S3_REGION=${PL_DATA_LIBRARY_S3_REGION:-raw-data=eu-central-1}"
-      - "PL_DATA_LIBRARY_S3_KEY=${PL_DATA_LIBRARY_S3_KEY:-raw-data=testuser}"
-      - "PL_DATA_LIBRARY_S3_SECRET=${PL_DATA_LIBRARY_S3_SECRET:-raw-data=testpassword}"
-      - "PL_DATA_LIBRARY_S3_EXTERNAL_ENDPOINT=${PL_DATA_LIBRARY_S3_EXTERNAL_ENDPOINT:-raw-data=http://0.0.0.0:9000}"
+      - "PL_DATA_LIBRARY_S3_URL=${PL_DATA_LIBRARY_S3_URL:-library=http://minio:9000/platforma-library-bucket}"
+      - "PL_DATA_LIBRARY_S3_REGION=${PL_DATA_LIBRARY_S3_REGION:-library=eu-central-1}"
+      - "PL_DATA_LIBRARY_S3_KEY=${PL_DATA_LIBRARY_S3_KEY:-library=testuser}"
+      - "PL_DATA_LIBRARY_S3_SECRET=${PL_DATA_LIBRARY_S3_SECRET:-library=testpassword}"
+      - "PL_DATA_LIBRARY_S3_EXTERNAL_ENDPOINT=${PL_DATA_LIBRARY_S3_EXTERNAL_ENDPOINT:-library=http://0.0.0.0:9000}"
       # - "PL_DATA_LIBRARY_S3_NO_DATA_INTEGRITY=${PL_DATA_LIBRARY_S3_NO_DATA_INTEGRITY:-raw-data=false}"
       # GCS data library - only set if explicitly provided
       # - "PL_DATA_LIBRARY_GCS_URL=${PL_DATA_LIBRARY_GCS_URL:-}"
