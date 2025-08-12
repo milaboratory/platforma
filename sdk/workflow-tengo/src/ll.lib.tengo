@@ -213,7 +213,7 @@ isInitializing := func() {
 /**
  * Get the list of executors available in current Platforma installation.
  *
- * @return executors: []string - list of executors, say ['executor', 'docker', ...]
+ * @return executors: []string - list of executors, say ['executor', 'batch', ...]
  */
 getExecutorsList := func() {
 	return plapi.getExecutors()
