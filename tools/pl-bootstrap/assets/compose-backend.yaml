@@ -89,12 +89,12 @@ services:
       # - "PL_AUTH_LDAP_ROOT_CAS=${PL_AUTH_LDAP_ROOT_CAS:-}"
 
       # Primary storage configurationq
-      - "PL_PRIMARY_STORAGE_S3=${PL_PRIMARY_STORAGE_S3:-http://minio:9000/platforma-primary-bucket}"
-      - "PL_PRIMARY_STORAGE_S3_REGION=${PL_PRIMARY_STORAGE_S3_REGION:-eu-central-1}"
-      - "PL_PRIMARY_STORAGE_S3_KEY=${PL_PRIMARY_STORAGE_S3_KEY:-static:testuser}"
-      - "PL_PRIMARY_STORAGE_S3_SECRET=${PL_PRIMARY_STORAGE_S3_SECRET:-static:testpassword}"
-      - "PL_PRIMARY_STORAGE_S3_EXTERNAL_ENDPOINT=${PL_PRIMARY_STORAGE_S3_EXTERNAL_ENDPOINT:-http://0.0.0.0:9000}"
-      - "PL_PRIMARY_STORAGE_S3_NO_DATA_INTEGRITY=${PL_PRIMARY_STORAGE_S3_NO_DATA_INTEGRITY:-false}"
+      # - "PL_PRIMARY_STORAGE_S3=${PL_PRIMARY_STORAGE_S3:-http://minio:9000/platforma-primary-bucket}"
+      # - "PL_PRIMARY_STORAGE_S3_REGION=${PL_PRIMARY_STORAGE_S3_REGION:-eu-central-1}"
+      # - "PL_PRIMARY_STORAGE_S3_KEY=${PL_PRIMARY_STORAGE_S3_KEY:-static:testuser}"
+      # - "PL_PRIMARY_STORAGE_S3_SECRET=${PL_PRIMARY_STORAGE_S3_SECRET:-static:testpassword}"
+      # - "PL_PRIMARY_STORAGE_S3_EXTERNAL_ENDPOINT=${PL_PRIMARY_STORAGE_S3_EXTERNAL_ENDPOINT:-http://0.0.0.0:9000}"
+      # - "PL_PRIMARY_STORAGE_S3_NO_DATA_INTEGRITY=${PL_PRIMARY_STORAGE_S3_NO_DATA_INTEGRITY:-false}"
       # - "PL_PRIMARY_STORAGE_GCS=${PL_PRIMARY_STORAGE_GCS:-}"
       # - "PL_PRIMARY_STORAGE_GCS_PROJECT_ID=${PL_PRIMARY_STORAGE_GCS_PROJECT_ID:-}"
       # - "PL_PRIMARY_STORAGE_GCS_SERVICE_ACCOUNT=${PL_PRIMARY_STORAGE_GCS_SERVICE_ACCOUNT:-}"
@@ -103,14 +103,14 @@ services:
       # - "PL_PRIMARY_STORAGE_FS_URL=${PL_PRIMARY_STORAGE_FS_URL:-}"
 
       # Data library configuration
-      - "PL_NO_HOST_DATA_LIBRARY=${PL_NO_HOST_DATA_LIBRARY:-false}"
+      # - "PL_NO_HOST_DATA_LIBRARY=${PL_NO_HOST_DATA_LIBRARY:-false}"
       - "PL_DATA_LIBRARY_FS_PATH=host=/storage/library"
-      # S3 data library - only set if explicitly provided
-      - "PL_DATA_LIBRARY_S3_URL=${PL_DATA_LIBRARY_S3_URL:-library=http://minio:9000/platforma-library-bucket}"
-      - "PL_DATA_LIBRARY_S3_REGION=${PL_DATA_LIBRARY_S3_REGION:-library=eu-central-1}"
-      - "PL_DATA_LIBRARY_S3_KEY=${PL_DATA_LIBRARY_S3_KEY:-library=testuser}"
-      - "PL_DATA_LIBRARY_S3_SECRET=${PL_DATA_LIBRARY_S3_SECRET:-library=testpassword}"
-      - "PL_DATA_LIBRARY_S3_EXTERNAL_ENDPOINT=${PL_DATA_LIBRARY_S3_EXTERNAL_ENDPOINT:-library=http://0.0.0.0:9000}"
+      # # S3 data library - only set if explicitly provided
+      # - "PL_DATA_LIBRARY_S3_URL=${PL_DATA_LIBRARY_S3_URL:-library=http://minio:9000/platforma-library-bucket}"
+      # - "PL_DATA_LIBRARY_S3_REGION=${PL_DATA_LIBRARY_S3_REGION:-library=eu-central-1}"
+      # - "PL_DATA_LIBRARY_S3_KEY=${PL_DATA_LIBRARY_S3_KEY:-library=testuser}"
+      # - "PL_DATA_LIBRARY_S3_SECRET=${PL_DATA_LIBRARY_S3_SECRET:-library=testpassword}"
+      # - "PL_DATA_LIBRARY_S3_EXTERNAL_ENDPOINT=${PL_DATA_LIBRARY_S3_EXTERNAL_ENDPOINT:-library=http://0.0.0.0:9000}"
       # - "PL_DATA_LIBRARY_S3_NO_DATA_INTEGRITY=${PL_DATA_LIBRARY_S3_NO_DATA_INTEGRITY:-raw-data=false}"
       # GCS data library - only set if explicitly provided
       # - "PL_DATA_LIBRARY_GCS_URL=${PL_DATA_LIBRARY_GCS_URL:-}"
