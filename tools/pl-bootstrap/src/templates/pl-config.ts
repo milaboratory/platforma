@@ -130,7 +130,7 @@ export function loadDefaults(jwtKey: string, options?: types.plOptions): types.p
   const library = defaultStorageSettings(
     'library',
     `${localRoot}/storages/library`,
-    'library-bucket',
+    'platforma-library-bucket',
     options?.storages?.library,
   );
 

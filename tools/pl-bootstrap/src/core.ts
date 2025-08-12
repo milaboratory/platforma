@@ -242,7 +242,7 @@ export default class Core {
     const instance = this.createLocal(instanceName, {
       ...options,
       primaryURL: options?.primaryURL ?? `s3e://testuser:testpassword@localhost:${minioPort}/platforma-primary-bucket/?region=no-region`,
-      libraryURL: options?.libraryURL ?? `s3e://testuser:testpassword@localhost:${minioPort}/library-bucket/?region=no-region`,
+      libraryURL: options?.libraryURL ?? `s3e://testuser:testpassword@localhost:${minioPort}/platforma-library-bucket/?region=no-region`,
     });
 
     const localRoot = options?.configOptions?.localRoot;
@@ -401,7 +401,7 @@ export default class Core {
       primary.presignEndpoint = `http://${presignHost}:${presignPort}`;
     }
 
-    const library = plCfg.storageSettingsFromURL(`s3e://testuser:testpassword@minio:${presignPort}/library-bucket`);
+    const library = plCfg.storageSettingsFromURL(`s3e://testuser:testpassword@minio:${presignPort}/platforma-library-bucket`);
     if (library.type !== 'S3') {
       throw new Error(`${library.type} storage type is not supported for library storage`);
     } else {
@@ -934,9 +934,9 @@ You can obtain the license from "https://licensing.milaboratories.com".`);
         switch (storageID) {
           case 'PRIMARY': {
             // Construct the S3 URL for primary storage
-            const endpoint = storage.endpoint || 'http://minio:9000/';
-            const bucketName = storage.bucketName || 'platforma-primary-bucket';
-            envs['PL_PRIMARY_STORAGE_S3'] = `${endpoint}${bucketName}`;
+            if (storage.endpoint && storage.bucketName) {
+              envs['PL_DATA_LIBRARY_S3_URL'] = `${storage.endpoint}${storage.bucketName}`;
+            }
             if (storage.endpoint) envs['PL_PRIMARY_STORAGE_S3_ENDPOINT'] = storage.endpoint;
             if (storage.presignEndpoint) envs['PL_PRIMARY_STORAGE_S3_EXTERNAL_ENDPOINT'] = storage.presignEndpoint;
             if (storage.region) envs['PL_PRIMARY_STORAGE_S3_REGION'] = storage.region;
@@ -946,14 +946,14 @@ You can obtain the license from "https://licensing.milaboratories.com".`);
           }
           case 'LIBRARY': {
             // Construct the S3 URL for library storage
-            const endpoint = storage.endpoint || 'http://minio:9000';
-            const bucketName = storage.bucketName || 'platforma-library-bucket';
-            envs['PL_DATA_LIBRARY_S3_URL'] = `${endpoint}${bucketName}`;
-            if (storage.endpoint) envs['PL_DATA_LIBRARY_S3_ENDPOINT'] = storage.endpoint;
-            if (storage.presignEndpoint) envs['PL_DATA_LIBRARY_S3_EXTERNAL_ENDPOINT'] = storage.presignEndpoint;
-            if (storage.region) envs['PL_DATA_LIBRARY_S3_REGION'] = storage.region;
-            if (storage.key) envs['PL_DATA_LIBRARY_S3_KEY'] = storage.key;
-            if (storage.secret) envs['PL_DATA_LIBRARY_S3_SECRET'] = storage.secret;
+            if (storage.endpoint && storage.bucketName) {
+              envs['PL_DATA_LIBRARY_S3_URL'] = `raw-data=${storage.endpoint}${storage.bucketName}`;
+            }
+            if (storage.endpoint) envs['PL_DATA_LIBRARY_S3_ENDPOINT'] = `raw-data=${storage.endpoint}`;
+            if (storage.presignEndpoint) envs['PL_DATA_LIBRARY_S3_EXTERNAL_ENDPOINT'] = `raw-data=${storage.presignEndpoint}`;
+            if (storage.region) envs['PL_DATA_LIBRARY_S3_REGION'] = `raw-data=${storage.region}`;
+            if (storage.key) envs['PL_DATA_LIBRARY_S3_KEY'] = `raw-data=${storage.key}`;
+            if (storage.secret) envs['PL_DATA_LIBRARY_S3_SECRET'] = `raw-data=${storage.secret}`;
             break;
           }
           default:
@@ -966,7 +966,7 @@ You can obtain the license from "https://licensing.milaboratories.com".`);
             if (storage.rootPath) envs['PL_PRIMARY_STORAGE_FS'] = storage.rootPath;
             break;
           case 'LIBRARY':
-            if (storage.rootPath) envs['PL_DATA_LIBRARY_FS_PATH'] = `host=${storage.rootPath}`;
+            if (storage.rootPath) envs['PL_DATA_LIBRARY_FS_PATH'] = storage.rootPath;
             break;
           default:
             throw new Error(`Unknown storage ID: ${storageID}`);
