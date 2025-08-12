@@ -22,6 +22,9 @@ core:
     listen: '127.0.0.1:11234'
     tlsEnabled: false
 
+  http:
+    listen: '127.0.0.1:11233'
+
   authEnabled: false
   auth: []
   db:
