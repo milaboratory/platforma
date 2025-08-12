@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.5.31
+
+### Patch Changes
+
+- ee5f3ad: configurable output dit
+  - @milaboratories/milaboratories.ui-examples.model@1.2.26
+  - @platforma-sdk/model@1.42.20
+
 ## 1.5.30
 
 ### Patch Changes

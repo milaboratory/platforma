@@ -1,5 +1,12 @@
 # @milaboratories/ts-builder
 
+## 1.0.3
+
+### Patch Changes
+
+- Updated dependencies [ee5f3ad]
+  - @milaboratories/build-configs@1.0.7
+
 ## 1.0.2
 
 ### Patch Changes
