@@ -1,5 +1,11 @@
 # @platforma-sdk/bootstrap
 
+## 5.0.0
+
+### Major Changes
+
+- 3ae3e32: Fix issue with \_\_dirname
+
 ## 4.0.0
 
 ### Major Changes
