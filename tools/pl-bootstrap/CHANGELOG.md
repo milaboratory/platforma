@@ -1,5 +1,11 @@
 # @platforma-sdk/bootstrap
 
+## 5.1.0
+
+### Minor Changes
+
+- 8916717: Fixed the bug related to the path to assets.
+
 ## 5.0.0
 
 ### Major Changes
