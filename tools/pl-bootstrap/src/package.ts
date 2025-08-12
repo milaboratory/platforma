@@ -1,9 +1,13 @@
 import { resolve } from 'path';
 import * as fs from 'fs';
 import { getDefaultPlVersion } from '@milaboratories/pl-deployments';
+import { dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+    
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export function path(...p: string[]): string {
-  return resolve(process.cwd(), '..', ...p);
+  return resolve(__dirname, '..', ...p);
 }
 
 export function dist(...p: string[]): string {
