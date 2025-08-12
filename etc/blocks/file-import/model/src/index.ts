@@ -22,7 +22,7 @@ export const platforma = BlockModel.create('Heavy')
   
   .withArgs<BlockArgs>({})
 
-  .output('fileUploadProgress', (ctx) => ctx.outputs?.resolve('fileUploadProgress')?.getImportProgress())
+  .output('fileUploader', (ctx) => ctx.outputs?.resolve('fileUploader')?.getImportProgress())
   
   .output('filePFrame', (ctx) => {
     const pCols = ctx.outputs?.resolve('filePFrame')?.getPColumns();

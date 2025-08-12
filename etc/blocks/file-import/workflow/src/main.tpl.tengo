@@ -16,7 +16,7 @@ wf.body(func(args) {
 
 	return {
 		outputs: {
-			fileUploadProgress: fileUploader.handle,
+			fileUploader: fileUploader.handle,
 			filePFrame: pframes.exportFrame(outputPf)
 		},
 		exports: {

@@ -17,7 +17,7 @@ const app = useApp();
       v-model="app.model.args.fileHandle"
       label="File csv/tsv"
       :extensions="['.csv', '.tsv']"
-      :progress="app.model.outputs.fileUploadProgress"
+      :progress="app.model.outputs.fileUploader"
     />
 
     <Spec />
