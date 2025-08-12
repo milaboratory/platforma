@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import { getDefaultPlVersion } from '@milaboratories/pl-deployments';
 
 export function path(...p: string[]): string {
-  return resolve(process.cwd(), 'assets', ...p);
+  return resolve(process.cwd(), '..', ...p);
 }
 
 export function dist(...p: string[]): string {
@@ -11,7 +11,7 @@ export function dist(...p: string[]): string {
 }
 
 export function assets(...p: string[]): string {
-  return resolve(process.cwd(), 'assets', ...p);
+  return path('assets', ...p);
 }
 
 export function composeFiles(): string[] {
