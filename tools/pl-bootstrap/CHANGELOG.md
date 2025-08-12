@@ -1,5 +1,11 @@
 # @platforma-sdk/bootstrap
 
+## 4.0.0
+
+### Major Changes
+
+- 6ad2e30: Update the backend platform launch configuration in accordance with the new options.
+
 ## 3.5.21
 
 ### Patch Changes
