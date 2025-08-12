@@ -1,5 +1,23 @@
 # @platforma-sdk/package-builder
 
+## 2.17.1
+
+### Patch Changes
+
+- 18b393a: Do not generate package.sw.json in software root
+
+## 2.17.0
+
+### Minor Changes
+
+- f55c7ff: add docker artifact support
+
+## 2.16.4
+
+### Patch Changes
+
+- 7b5943b: Correct deps list
+
 ## 2.16.3
 
 ### Patch Changes

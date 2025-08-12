@@ -1,5 +1,18 @@
 # @platforma-sdk/bootstrap
 
+## 4.0.0
+
+### Major Changes
+
+- 6ad2e30: Update the backend platform launch configuration in accordance with the new options.
+
+## 3.5.21
+
+### Patch Changes
+
+- Updated dependencies [b43e778]
+  - @milaboratories/pl-deployments@2.4.9
+
 ## 3.5.20
 
 ### Patch Changes

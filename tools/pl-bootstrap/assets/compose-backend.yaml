@@ -10,8 +10,8 @@ services:
       - "${MINIO_CONSOLE_PORT:-9001}:9001"
     
     environment:
-      MINIO_ROOT_USER: testuser
-      MINIO_ROOT_PASSWORD: testpassword
+      MINIO_ROOT_USER: static:testuser
+      MINIO_ROOT_PASSWORD: static:testpassword
 
     volumes:
       - "${MINIO_STORAGE}:/data"
@@ -19,9 +19,10 @@ services:
   backend:
     image: ${PL_IMAGE}
     ports:
-      - "${PL_GRPC_ADDR:-127.0.0.1:${PL_GRPC_PORT:-6345}}:6345"
-      - "${PL_MONITORING_ADDR:-127.0.0.1:${PL_MONITORING_PORT:-9090}}:9090"
-      - "${PL_DEBUG_ADDR:-127.0.0.1:${PL_DEBUG_PORT:-9091}}:9091"
+      - "${PL_LISTEN_ADDRESS:-127.0.0.1}:${PL_LISTEN_PORT:-6345}:6345"
+      - "${PL_LISTEN_ADDRESS:-127.0.0.1}:${PL_LISTEN_HTTP_PORT:-6347}:6347"
+      - "${PL_MONITORING_IP:-127.0.0.1}:${PL_MONITORING_PORT:-9090}:9090"
+      - "${PL_DEBUG_IP:-127.0.0.1}:${PL_DEBUG_PORT:-9091}:9091"
     tmpfs: [ /tmp ]
 
     logging:
@@ -34,58 +35,127 @@ services:
       # Make docker container to write final configuration to stdout at start
       - "PL_DUMP_CONFIG_BEFORE_RUN=true"
 
-      # License settings. You have to have license to start platforma
+      # License settings
       - "PL_LICENSE=${PL_LICENSE:-}"
       - "PL_LICENSE_FILE=${PL_LICENSE_FILE:+/storage/mi.license}"
 
-      # Network: listen ports for services
-      - "PL_API_ADDR=0.0.0.0:6345"
-      - "PL_MONITORING_ENABLED=${PL_MONITORING_ENABLED:-true}"
-      - "PL_MONITORING_ADDR=0.0.0.0:9090"
+      # Main storage configuration
+      - "PL_MAIN_ROOT=/storage"
+      - "PL_DB_DIR=/storage/rocksdb"
+      - "PL_WORK_DIR=/storage/work"
+      - "PL_PACKAGES_DIR=/storage/packages"
+
+      # Listen configuration
+      - "PL_LISTEN_ADDRESS=0.0.0.0"
+      - "PL_LISTEN_PORT=6345"
+      - "PL_LISTEN_HTTP_PORT=6347"
+      # - "PL_LISTEN_TLS=${PL_LISTEN_TLS:-}"
+      # - "PL_LISTEN_TLS_ORG=${PL_LISTEN_TLS_ORG:-}" # Platforma
+      # - "PL_LISTEN_TLS_DOMAINS=${PL_LISTEN_TLS_DOMAINS:-}"
+      # - "PL_LISTEN_TLS_IPS=${PL_LISTEN_TLS_IPS:-}"
+
+      # Monitoring configuration
+      - "PL_NO_MONITORING=${PL_NO_MONITORING:-false}"
+      - "PL_MONITORING_PORT=9090"
+      - "PL_MONITORING_IP=0.0.0.0"
+      - "PL_NO_MONITORING_DUMPS=${PL_NO_MONITORING_DUMPS:-false}"
+      - "PL_MONITORING_DUMP_DIR=/storage/metrics"
+      - "PL_MONITORING_DUMP_RETENTION=${PL_MONITORING_DUMP_RETENTION:-48h}"
+      - "PL_MONITORING_DUMP_INTERVAL=${PL_MONITORING_DUMP_INTERVAL:-20s}"
+
+      # Debug configuration
       - "PL_DEBUG_ENABLED=${PL_DEBUG_ENABLED:-true}"
-      - "PL_DEBUG_ADDR=0.0.0.0:9091"
+      - "PL_DEBUG_PORT=9091"
+      - "PL_DEBUG_IP=0.0.0.0"
 
-      # Logging
+      # Logging configuration
+      - "PL_LOG_DESTINATION=${PL_LOG_DIR:+dir://${PL_LOG_DIR}}"
+
       - "PL_LOG_LEVEL=${PL_LOG_LEVEL:-warn}"
-      - "PL_LOG_DESTINATION=${PL_LOG_DIR:+/storage/log/platforma.log}"
-      - "PL_LOG_ROTATION_ENABLED=${PL_LOG_ROTATION_ENABLED:-false}"
-      - "PL_LOG_COMMIT_SUMMARY=${PL_LOG_COMMIT_SUMMARY:-false}"
-      - "PL_LOG_RESOURCE_DATA=${PL_LOG_RESOURCE_DATA:-false}"
+      - "PL_LOG_ROTATION_SIZE=${PL_LOG_ROTATION_SIZE:-20MiB}"
+      - "PL_LOG_ROTATION_BACKUPS=${PL_LOG_ROTATION_BACKUPS:-20}"
+      - "PL_NO_LOG_ROTATION=${PL_NO_LOG_ROTATION:-false}"
+      - "PL_NO_LOG_COMPRESSION=${PL_NO_LOG_COMPRESSION:-false}"
+      - "PL_LOG_EXTENDED=${PL_LOG_EXTENDED:-false}"
 
-      - "PL_AUTH_ENABLED=${PL_AUTH_ENABLED:-false}"
-      - "PL_AUTH_HTPASSWD_PATH=${PL_AUTH_HTPASSWD_PATH:+/etc/platforma/users.htpasswd}"
+      # Authentication configuration
+      - "PL_NO_AUTH=${PL_NO_AUTH:-false}"
+      - "PL_AUTH_HTPASSWD=${PL_AUTH_HTPASSWD:+/etc/platforma/users.htpasswd}"
+      # - "PL_AUTH_LDAP_SERVER=${PL_AUTH_LDAP_SERVER:-}"
+      # - "PL_AUTH_LDAP_DN=${PL_AUTH_LDAP_DN:-}"
+      - "PL_AUTH_LDAP_START_TLS=${PL_AUTH_LDAP_START_TLS:-false}"
+      # - "PL_AUTH_LDAP_TLS=${PL_AUTH_LDAP_TLS:-}"
+      # - "PL_AUTH_LDAP_CLIENT_CAS=${PL_AUTH_LDAP_CLIENT_CAS:-}"
+      # - "PL_AUTH_LDAP_ROOT_CAS=${PL_AUTH_LDAP_ROOT_CAS:-}"
 
-      - "PL_RUNNER_WD_CACHE_ON_SUCCESS=${PL_RUNNER_WD_CACHE_ON_SUCCESS:-20m}"
-      - "PL_RUNNER_WD_CACHE_ON_FAILURE=${PL_RUNNER_WD_CACHE_ON_FAILURE:-1h}"
+      # Primary storage configurationq
+      # - "PL_PRIMARY_STORAGE_S3=${PL_PRIMARY_STORAGE_S3:-http://minio:9000/platforma-primary-bucket}"
+      # - "PL_PRIMARY_STORAGE_S3_REGION=${PL_PRIMARY_STORAGE_S3_REGION:-eu-central-1}"
+      # - "PL_PRIMARY_STORAGE_S3_KEY=${PL_PRIMARY_STORAGE_S3_KEY:-static:testuser}"
+      # - "PL_PRIMARY_STORAGE_S3_SECRET=${PL_PRIMARY_STORAGE_S3_SECRET:-static:testpassword}"
+      # - "PL_PRIMARY_STORAGE_S3_EXTERNAL_ENDPOINT=${PL_PRIMARY_STORAGE_S3_EXTERNAL_ENDPOINT:-http://0.0.0.0:9000}"
+      # - "PL_PRIMARY_STORAGE_S3_NO_DATA_INTEGRITY=${PL_PRIMARY_STORAGE_S3_NO_DATA_INTEGRITY:-false}"
+      # - "PL_PRIMARY_STORAGE_GCS=${PL_PRIMARY_STORAGE_GCS:-}"
+      # - "PL_PRIMARY_STORAGE_GCS_PROJECT_ID=${PL_PRIMARY_STORAGE_GCS_PROJECT_ID:-}"
+      # - "PL_PRIMARY_STORAGE_GCS_SERVICE_ACCOUNT=${PL_PRIMARY_STORAGE_GCS_SERVICE_ACCOUNT:-}"
+      # - "PL_PRIMARY_STORAGE_GCS_JSON_FILE_PATH=${PL_PRIMARY_STORAGE_GCS_JSON_FILE_PATH:-}"
+      # - "PL_PRIMARY_STORAGE_FS=${PL_PRIMARY_STORAGE_FS:-}"
+      # - "PL_PRIMARY_STORAGE_FS_URL=${PL_PRIMARY_STORAGE_FS_URL:-}"
 
-      - "PL_WORKFLOW_ENABLE_ALL_FEATURES=true"
+      # Data library configuration
+      # - "PL_NO_HOST_DATA_LIBRARY=${PL_NO_HOST_DATA_LIBRARY:-false}"
+      - "PL_DATA_LIBRARY_FS_PATH=host=/storage/library"
+      # # S3 data library - only set if explicitly provided
+      # - "PL_DATA_LIBRARY_S3_URL=${PL_DATA_LIBRARY_S3_URL:-library=http://minio:9000/platforma-library-bucket}"
+      # - "PL_DATA_LIBRARY_S3_REGION=${PL_DATA_LIBRARY_S3_REGION:-library=eu-central-1}"
+      # - "PL_DATA_LIBRARY_S3_KEY=${PL_DATA_LIBRARY_S3_KEY:-library=testuser}"
+      # - "PL_DATA_LIBRARY_S3_SECRET=${PL_DATA_LIBRARY_S3_SECRET:-library=testpassword}"
+      # - "PL_DATA_LIBRARY_S3_EXTERNAL_ENDPOINT=${PL_DATA_LIBRARY_S3_EXTERNAL_ENDPOINT:-library=http://0.0.0.0:9000}"
+      # - "PL_DATA_LIBRARY_S3_NO_DATA_INTEGRITY=${PL_DATA_LIBRARY_S3_NO_DATA_INTEGRITY:-raw-data=false}"
+      # GCS data library - only set if explicitly provided
+      # - "PL_DATA_LIBRARY_GCS_URL=${PL_DATA_LIBRARY_GCS_URL:-}"
+      # - "PL_DATA_LIBRARY_GCS_PROJECT_ID=${PL_DATA_LIBRARY_GCS_PROJECT_ID:-}"
+      # - "PL_DATA_LIBRARY_GCS_SERVICE_ACCOUNT=${PL_DATA_LIBRARY_GCS_SERVICE_ACCOUNT:-}"
+      # - "PL_DATA_LIBRARY_GCS_JSON_FILE_PATH=${PL_DATA_LIBRARY_GCS_JSON_FILE_PATH:-}"
 
-      # Data Controller: general settings
-      - "PL_DATA_CREATE_BUCKET=true" # try to automatically create buckets for storages if they not exist
-      - "PL_DATA_HARDLINK_MODE=auto" # wether to use hardlinks when copying data between storages and within storage.
+      # Runner configuration
+      - "PL_RUNNER_LOCAL_CPU=${PL_RUNNER_LOCAL_CPU:-1}"
+      - "PL_RUNNER_LOCAL_RAM=${PL_RUNNER_LOCAL_RAM:-95%}"
+      # - "PL_RUNNER_GOOGLE_BATCH_SHARED_STORAGE=${PL_RUNNER_GOOGLE_BATCH_SHARED_STORAGE:-}"
+      # - "PL_RUNNER_GOOGLE_BATCH_PROJECT=${PL_RUNNER_GOOGLE_BATCH_PROJECT:-}"
+      # - "PL_RUNNER_GOOGLE_BATCH_REGION=${PL_RUNNER_GOOGLE_BATCH_REGION:-}"
+      - "PL_RUNNER_GOOGLE_BATCH_JOB_NAME_PREFIX=${PL_RUNNER_GOOGLE_BATCH_JOB_NAME_PREFIX:-pl-cmd}"
+      # - "PL_RUNNER_GOOGLE_BATCH_JOB_IMAGE=${PL_RUNNER_GOOGLE_BATCH_JOB_IMAGE:-}"
+      # - "PL_RUNNER_GOOGLE_BATCH_NETWORK=${PL_RUNNER_GOOGLE_BATCH_NETWORK:-}"
+      # - "PL_RUNNER_GOOGLE_BATCH_SUBNETWORK=${PL_RUNNER_GOOGLE_BATCH_SUBNETWORK:-}"
+      - "PL_RUNNER_GOOGLE_BATCH_PROVISIONING=${PL_RUNNER_GOOGLE_BATCH_PROVISIONING:-STANDARD}"
+      # - "PL_RUNNER_GOOGLE_BATCH_SERVICE_ACCOUNT=${PL_RUNNER_GOOGLE_BATCH_SERVICE_ACCOUNT:-}"
+      # - "PL_RUNNER_EMERGENCY_BOOTSTRAP_FILE=${PL_RUNNER_EMERGENCY_BOOTSTRAP_FILE:-}"
+      - "PL_RUNNER_EMERGENCY_BOOTSTRAP_SKIP_AUTO_DETECT=${PL_RUNNER_EMERGENCY_BOOTSTRAP_SKIP_AUTO_DETECT:-false}"
 
-      # Data Controller: primary storage
-      - "PL_DATA_PRIMARY_TYPE=${PL_DATA_PRIMARY_TYPE:-S3}"
-      - "PL_DATA_PRIMARY_S3_ENDPOINT=${PL_DATA_PRIMARY_S3_ENDPOINT:-http://minio:9000/}"
-      - "PL_DATA_PRIMARY_S3_PRESIGN_ENDPOINT=${PL_DATA_PRIMARY_S3_PRESIGN_ENDPOINT:-${PL_DATA_PRIMARY_S3_ENDPOINT:-http://localhost:9000/}}"
-      - "PL_DATA_PRIMARY_S3_KEY_PREFIX=${PL_DATA_PRIMARY_S3_KEY_PREFIX:-}"
-      - "PL_DATA_PRIMARY_S3_REGION=${PL_DATA_PRIMARY_S3_REGION:-eu-central-1}"
-      - "PL_DATA_PRIMARY_S3_BUCKET=${PL_DATA_PRIMARY_S3_BUCKET:-platforma-primary-bucket}"
-      - "PL_DATA_PRIMARY_S3_KEY=${PL_DATA_PRIMARY_S3_KEY:-static:testuser}"
-      - "PL_DATA_PRIMARY_S3_SECRET=${PL_DATA_PRIMARY_S3_SECRET:-static:testpassword}"
+      # Workflow configuration
+      - "PL_WORKFLOW_MAX_CONCURRENCY=${PL_WORKFLOW_MAX_CONCURRENCY:-1}"
+      - "PL_WORKFLOW_COMPILATION_CACHE_SIZE=${PL_WORKFLOW_COMPILATION_CACHE_SIZE:-2000}"
 
-      # Data Controller: library storage
-      - "PL_DATA_LIBRARY_TYPE=${PL_DATA_LIBRARY_TYPE:-FS}" # change it to 'S3' to use library located in S3 bucket
-      - "PL_DATA_LIBRARY_S3_ENDPOINT=${PL_DATA_LIBRARY_S3_ENDPOINT:-http://minio:9000/}"
-      - "PL_DATA_LIBRARY_S3_PRESIGN_ENDPOINT=${PL_DATA_LIBRARY_S3_PRESIGN_ENDPOINT:-${PL_DATA_LIBRARY_S3_ENDPOINT:-http://localhost:9000/}}"
-      - "PL_DATA_LIBRARY_S3_KEY_PREFIX=${PL_DATA_LIBRARY_S3_KEY_PREFIX:-}"
-      - "PL_DATA_LIBRARY_S3_REGION=${PL_DATA_LIBRARY_S3_REGION:-eu-central-1}"
-      - "PL_DATA_LIBRARY_S3_BUCKET=${PL_DATA_LIBRARY_S3_BUCKET:-platforma-library-bucket}"
-      - "PL_DATA_LIBRARY_S3_KEY=${PL_DATA_PRIMARY_S3_KEY:-static:testuser}"
-      - "PL_DATA_LIBRARY_S3_SECRET=${PL_DATA_PRIMARY_S3_SECRET:-static:testpassword}"
+      # Special options
+      - "PL_USE_RESTRICTED_NETWORK_MODE=${PL_USE_RESTRICTED_NETWORK_MODE:-false}"
+      - "PL_SKIP_EXTENDED_SELF_CHECK=${PL_SKIP_EXTENDED_SELF_CHECK:-false}"
+
+      # Behavior options
+      - "PL_KEEP_WORKDIRS=${PL_KEEP_WORKDIRS:-0s}"
+      - "PL_KEEP_GOOD_WORKDIRS=${PL_KEEP_GOOD_WORKDIRS:-20m}"
+      - "PL_KEEP_FAULTY_WORKDIRS=${PL_KEEP_FAULTY_WORKDIRS:-1h}"
+      - "PL_FEAT_TX_STATS=${PL_FEAT_TX_STATS:-false}"
+      - "PL_FEAT_EXPENSIVE_ASSERTIONS=${PL_FEAT_EXPENSIVE_ASSERTIONS:-false}"
+
+      # Hidden behavior options
+      - "PL_LISTEN_COMPRESSION=${PL_LISTEN_COMPRESSION:-gzip}"
+      - "PL_ENABLE_GRPC_REFLECTION=${PL_ENABLE_GRPC_REFLECTION:-false}"
+      - "PL_RUNNER_GOOGLE_BATCH_JOB_DEBUG_SCRIPT=${PL_RUNNER_GOOGLE_BATCH_JOB_DEBUG_SCRIPT:-false}"
+      # - "PL_RUNNER_GOOGLE_BATCH_JOB_DUMP_CONFIGS=${PL_RUNNER_GOOGLE_BATCH_JOB_DUMP_CONFIGS:-}"
 
     volumes:
-      - ${PL_AUTH_HTPASSWD_PATH-/dev/null}:/etc/platforma/users.htpasswd
+      - ${PL_AUTH_HTPASSWD:-/dev/null}:/etc/platforma/users.htpasswd
       - ${PL_LICENSE_FILE:-/dev/null}:/storage/mi.license
       - ${PL_LOG_DIR:-/dev/null}:/storage/log/
       - ${PL_DATA_DB_ROOT:-storage-db}:/storage/rocksdb

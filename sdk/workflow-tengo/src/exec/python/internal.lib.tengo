@@ -3,12 +3,14 @@ validation := import(":validation")
 desc := import(":exec.descriptor")
 
 pythonVenvInputSchema := {
-	toolset: "string",
-	dependencies: {"any": validation.reference},
+	"toolset": "string",
+	"dependencies": {"any": validation.reference},
 	// software: validation.reference,
 
-	pythonDescriptor: desc.runEnvScheme,
-	python: validation.reference
+	"pythonDescriptor": desc.runEnvScheme,
+	"python": validation.reference,
+
+	"forceRecreate,?": "number"
 }
 
 export ll.toStrict({

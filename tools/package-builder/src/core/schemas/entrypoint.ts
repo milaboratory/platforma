@@ -2,7 +2,7 @@ import { z } from 'zod';
 import * as artifacts from './artifacts';
 import { toInt } from '../util';
 
-const artifactOrRef = z.union([z.string(), artifacts.configSchema]);
+const artifactOrRef = artifacts.configSchema;
 
 const envVarsSchema = z.array(
   z
@@ -50,14 +50,25 @@ export const infoSchema = z
     asset: z.union([z.string(), artifacts.assetPackageSchema]).optional(),
     binary: softwareOptionsSchema.optional(),
     environment: environmentOptionsSchema.optional(),
+    docker: softwareOptionsSchema.optional(),
   })
   .refine(
-    (data) =>
-      toInt(data.reference) + toInt(data.asset) + toInt(data.binary) + toInt(data.environment) == 1,
+    (data) => {
+      if (toInt(data.docker) + toInt(data.binary) > 1) {
+        return true;
+      }
+
+      const n = toInt(data.reference)
+        + toInt(data.asset)
+        + toInt(data.binary)
+        + toInt(data.environment)
+        + toInt(data.docker);
+      return n === 1;
+    },
     {
       message:
-        'entrypoint cannot point to several packages at once: choose \'reference\', \'asset\', \'binary\' or \'environment\'',
-      path: ['reference | asset | binary | environment'],
+        'entrypoint cannot point to several packages at once: choose \'reference\', \'asset\', \'binary\', \'environment\' or \'docker\'',
+      path: ['reference | asset | binary | environment | docker'],
     },
   );
 

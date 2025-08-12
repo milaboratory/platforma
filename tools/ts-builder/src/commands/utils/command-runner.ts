@@ -2,6 +2,15 @@ import { spawn } from 'child_process';
 
 export function runCommand(command: string, args: string[]): Promise<void> {
   return new Promise((resolve, reject) => {
+    const prettyeCommand = command.includes('/bin/') ? command.split('/bin/')[1] : command;
+    const prettyArgs = args.map(arg => {
+      if (arg.includes('/tools/ts-builder/dist/')) {
+        return arg.split('/tools/ts-builder/dist/')[1];
+      }
+      return arg;
+    });
+    console.log(`↳ ${prettyeCommand} ${prettyArgs.join(' ')}`);
+
     const child = spawn(command, args, {
       stdio: 'inherit',
       shell: true

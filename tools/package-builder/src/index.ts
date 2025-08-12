@@ -5,14 +5,16 @@ import Cmd1 from './commands/publish';
 import Cmd2 from './commands/sign';
 import Cmd3 from './commands/build/all';
 import Cmd4 from './commands/build/descriptors';
-import Cmd5 from './commands/build/packages';
-import Cmd6 from './commands/publish/all';
-import Cmd7 from './commands/publish/descriptors';
-import Cmd8 from './commands/publish/packages';
-import Cmd9 from './commands/sign/packages';
-import Cmd10 from './commands/get/package/name';
-import Cmd11 from './commands/get/package/path';
-import Cmd12 from './commands/get/package/version';
+import Cmd5 from './commands/build/docker';
+import Cmd6 from './commands/build/packages';
+import Cmd7 from './commands/publish/all';
+import Cmd8 from './commands/publish/descriptors';
+import Cmd9 from './commands/publish/docker';
+import Cmd10 from './commands/publish/packages';
+import Cmd11 from './commands/sign/packages';
+import Cmd12 from './commands/get/package/name';
+import Cmd13 from './commands/get/package/path';
+import Cmd14 from './commands/get/package/version';
 
 // prettier-ignore
 export const COMMANDS = {
@@ -21,12 +23,14 @@ export const COMMANDS = {
   'sign': Cmd2,
   'build:all': Cmd3,
   'build:descriptors': Cmd4,
-  'build:packages': Cmd5,
-  'publish:all': Cmd6,
-  'publish:descriptors': Cmd7,
-  'publish:packages': Cmd8,
-  'sign:packages': Cmd9,
-  'get:package:name': Cmd10,
-  'get:package:path': Cmd11,
-  'get:package:version': Cmd12,
+  'build:docker': Cmd5,
+  'build:packages': Cmd6,
+  'publish:all': Cmd7,
+  'publish:descriptors': Cmd8,
+  'publish:docker': Cmd9,
+  'publish:packages': Cmd10,
+  'sign:packages': Cmd11,
+  'get:package:name': Cmd12,
+  'get:package:path': Cmd13,
+  'get:package:version': Cmd14,
 };

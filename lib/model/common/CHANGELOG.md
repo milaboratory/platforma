@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.19.9
+
+### Patch Changes
+
+- 6b9828a: Remove unused styles, fix lint warnings, update comments
+
 ## 1.19.8
 
 ### Patch Changes
