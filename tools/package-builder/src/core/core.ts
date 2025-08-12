@@ -70,11 +70,8 @@ export class Core {
         continue;
       }
 
-      if (ep.package.type === 'docker') {
-        pkgs.set(dockerEntrypointName(ep.package.id), ep.package);
-      } else {
-        pkgs.set(ep.package.id, ep.package);
-      }
+      const key = ep.package.type === 'docker' ? dockerEntrypointName(ep.package.id) : ep.package.id;
+      pkgs.set(key, ep.package);
     }
 
     return pkgs;
@@ -100,8 +97,7 @@ export class Core {
   }
 
   public get buildablePackages(): Map<string, PackageConfig> {
-    const r = new Map(Array.from(this.packages.entries()).filter(([, value]) => value.isBuildable));
-    return r;
+    return new Map(Array.from(this.packages.entries()).filter(([, value]) => value.isBuildable));
   }
 
   public getPackage(id: string): PackageConfig {

@@ -5,7 +5,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { PL_DOCKER_REGISTRY } from './envs';
 
-export const defaultDockerRegistry = 'containers.pl-open.science';
+export const defaultDockerRegistry = 'containers.pl-open.science/milaboratories/pl-containers';
 
 export function dockerEntrypointName(name: string): string {
   return name + ':docker';
@@ -77,5 +77,5 @@ function contentHash(contextFullPath: string, dockerfileFullPath: string): strin
 
 function dockerTag(packageName: string, contentHash: string): string {
   const dockerRegistry = process.env[PL_DOCKER_REGISTRY] ?? defaultDockerRegistry;
-  return `${dockerRegistry}/${packageName}:${contentHash}`;
+  return `${dockerRegistry}:${packageName.replace('/', '.')}.${contentHash}`;
 }
