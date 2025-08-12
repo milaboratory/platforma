@@ -2,58 +2,40 @@
 import type { Spec } from '@milaboratories/milaboratories.file-import-block.model';
 import { PlCheckbox, PlDropdown, PlTextArea, PlTextField } from '@platforma-sdk/ui-vue';
 import { isNil } from 'es-toolkit';
-import { ref, watch } from 'vue';
 import { jsonToString, stringToJson } from '../utils/json';
 
 // Type for basic settings (all Spec fields except axes and columns)
 type BasicSettingsData = Omit<Spec, 'axes' | 'columns'>;
 
-const props = defineProps<{
-  modelValue: BasicSettingsData;
-}>();
-
-const emit = defineEmits<{
-  'update:modelValue': [value: BasicSettingsData];
-}>();
-
-const localValue = ref<BasicSettingsData>({ ...props.modelValue });
+const settings = defineModel<BasicSettingsData>({ required: true });
 
 // Storage format options
 const storageFormatOptions = [
   { label: 'Binary', value: 'Binary' as const },
   { label: 'Json', value: 'Json' as const },
 ];
-// Watch for changes and emit
-watch(localValue, (newValue) => {
-  emit('update:modelValue', newValue);
-}, { deep: true });
-
-// Watch for prop changes
-watch(() => props.modelValue, (newValue) => {
-  localValue.value = { ...newValue };
-}, { deep: true });
 
 // Helper functions for index configuration2
 const updateIndexDomain = (value: string) => {
-  if (!localValue.value.index) {
-    localValue.value.index = { name: '' };
+  if (!settings.value.index) {
+    settings.value.index = { name: '' };
   }
-  localValue.value.index.domain = stringToJson(value);
+  settings.value.index.domain = stringToJson(value);
 };
 
 const updateIndexAnnotations = (value: string) => {
-  if (!localValue.value.index) {
-    localValue.value.index = { name: '' };
+  if (!settings.value.index) {
+    settings.value.index = { name: '' };
   }
-  localValue.value.index.annotations = stringToJson(value);
+  settings.value.index.annotations = stringToJson(value);
 };
 
 const removeIndex = () => {
-  localValue.value.index = undefined;
+  settings.value.index = undefined;
 };
 
 const addIndex = () => {
-  localValue.value.index = { name: 'Index' };
+  settings.value.index = { name: 'Index' };
 };
 </script>
 
@@ -75,8 +57,8 @@ const addIndex = () => {
             { label: 'Semicolon (;)', value: ';' },
             { label: 'Space ( )', value: ' ' },
           ]"
-          :model-value="localValue.separator || ''"
-          @update:model-value="localValue.separator = $event || undefined"
+          :model-value="settings.separator || ''"
+          @update:model-value="settings.separator = $event || undefined"
         />
 
         <PlDropdown
@@ -86,22 +68,22 @@ const addIndex = () => {
             { label: 'Double Slash (//)', value: '//' },
             { label: 'Semicolon (;)', value: ';' },
           ]"
-          :model-value="localValue.commentLinePrefix || '#'"
-          @update:model-value="localValue.commentLinePrefix = $event || undefined"
+          :model-value="settings.commentLinePrefix || '#'"
+          @update:model-value="settings.commentLinePrefix = $event || undefined"
         />
       </div>
 
       <div :class="$style.formRow">
         <PlCheckbox
-          :model-value="localValue.skipEmptyLines || false"
-          @update:model-value="localValue.skipEmptyLines = $event"
+          :model-value="settings.skipEmptyLines || false"
+          @update:model-value="settings.skipEmptyLines = $event"
         >
           Skip Empty Lines
         </PlCheckbox>
 
         <PlCheckbox
-          :model-value="localValue.allowColumnLabelDuplicates !== false"
-          @update:model-value="localValue.allowColumnLabelDuplicates = $event"
+          :model-value="settings.allowColumnLabelDuplicates !== false"
+          @update:model-value="settings.allowColumnLabelDuplicates = $event"
         >
           Allow Column Label Duplicates
         </PlCheckbox>
@@ -113,14 +95,14 @@ const addIndex = () => {
       <h4>Column Settings</h4>
       <div :class="$style.formRow">
         <PlTextField
-          :model-value="localValue.columnNamePrefix || ''" label="Column Name Prefix"
+          :model-value="settings.columnNamePrefix || ''" label="Column Name Prefix"
           placeholder="Optional prefix for all columns"
-          @update:model-value="localValue.columnNamePrefix = $event || undefined"
+          @update:model-value="settings.columnNamePrefix = $event || undefined"
         />
 
         <PlCheckbox
-          :model-value="localValue.allowArtificialColumns || false"
-          @update:model-value="localValue.allowArtificialColumns = $event"
+          :model-value="settings.allowArtificialColumns || false"
+          @update:model-value="settings.allowArtificialColumns = $event"
         >
           Allow Artificial Columns
         </PlCheckbox>
@@ -132,13 +114,13 @@ const addIndex = () => {
       <h4>Storage Settings</h4>
       <div :class="$style.formRow">
         <PlDropdown
-          :model-value="localValue.storageFormat || 'Binary'" :options="storageFormatOptions"
-          label="Storage Format" @update:model-value="localValue.storageFormat = $event"
+          :model-value="settings.storageFormat || 'Binary'" :options="storageFormatOptions"
+          label="Storage Format" @update:model-value="settings.storageFormat = $event"
         />
 
         <PlTextField
-          :model-value="String(localValue.partitionKeyLength || 0)" label="Partition Key Length"
-          placeholder="0" @update:model-value="localValue.partitionKeyLength = parseInt($event) || 0"
+          :model-value="String(settings.partitionKeyLength || 0)" label="Partition Key Length"
+          placeholder="0" @update:model-value="settings.partitionKeyLength = parseInt($event) || 0"
         />
       </div>
     </div>
@@ -149,7 +131,7 @@ const addIndex = () => {
         <h4>Row Index Configuration</h4>
         <div :class="$style.indexControls">
           <PlCheckbox
-            :model-value="!isNil(localValue.index)"
+            :model-value="!isNil(settings.index)"
             @update:model-value="$event ? addIndex() : removeIndex()"
           >
             Enable Row Index
@@ -157,19 +139,19 @@ const addIndex = () => {
         </div>
       </div>
 
-      <div v-if="localValue.index" :class="$style.indexSection">
+      <div v-if="settings.index" :class="$style.indexSection">
         <div :class="$style.formRow">
-          <PlTextField v-model="localValue.index.name" label="Index Name" placeholder="Index" required />
+          <PlTextField v-model="settings.index.name" label="Index Name" placeholder="Index" required />
         </div>
 
         <div :class="$style.formRow">
           <PlTextArea
-            :model-value="jsonToString(localValue.index.domain)" label="Domain (JSON)"
+            :model-value="jsonToString(settings.index.domain)" label="Domain (JSON)"
             placeholder="{}" @update:model-value="updateIndexDomain($event)"
           />
 
           <PlTextArea
-            :model-value="jsonToString(localValue.index.annotations)" label="Annotations (JSON)"
+            :model-value="jsonToString(settings.index.annotations)" label="Annotations (JSON)"
             placeholder="{}" @update:model-value="updateIndexAnnotations($event)"
           />
         </div>

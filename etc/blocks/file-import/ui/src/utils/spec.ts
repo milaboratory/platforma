@@ -1,5 +1,5 @@
 import type { AxisSpecParam, Spec, SpecUI } from '@milaboratories/milaboratories.file-import-block.model';
-import { isEmpty } from 'es-toolkit/compat';
+import { isEmpty, isNil } from 'es-toolkit/compat';
 import type { ColumnSpecParam } from '../types/spec';
 
 export function prepareSpec(spec: SpecUI): Spec {
@@ -11,7 +11,12 @@ export function prepareSpec(spec: SpecUI): Spec {
 }
 
 function withoutEmptyFields<T extends object>(obj: T): T {
-  return Object.fromEntries(Object.entries(obj).filter(([_, value]) => !isEmpty(value))) as T;
+  return Object
+    .fromEntries(
+      Object
+        .entries(obj)
+        .filter(([_, value]) => typeof value === 'object' ? !isEmpty(value) : !isNil(value)),
+    ) as T;
 }
 
 function propogationNames<T extends AxisSpecParam | ColumnSpecParam>(axisSpec: T): T {

@@ -2,25 +2,33 @@ import { BlockModel, createPlDataTableStateV2, createPlDataTableV2, ImportFileHa
 import type { Spec, SpecUI } from './types';
 
 export type BlockArgs = {
-  fileHandle?: ImportFileHandle;
-  fileExt?: 'csv' | 'tsv';
   spec?: Spec;
+  fileExt?: 'csv' | 'tsv';
+  fileHandle?: ImportFileHandle;
 };
 
 export type BlockUiState = {
-  tab?: 'spec' | 'data';
   spec?: SpecUI;
+  fileExt?: 'csv' | 'tsv';
+  fileHandle?: ImportFileHandle;
   tableState: PlDataTableStateV2;
 };
 
 export const platforma = BlockModel.create('Heavy')
 
   .withUiState<BlockUiState>({
-    tab: 'spec',
     tableState: createPlDataTableStateV2(),
   })
   
   .withArgs<BlockArgs>({})
+
+  .argsValid((ctx) => {
+    return ctx.args.spec != null 
+      && Array.isArray(ctx.args.spec.axes)
+      && ctx.args.spec.axes.length > 0
+      && ctx.args.fileHandle != null 
+      && ctx.args.fileExt != null;
+  })
 
   .output('fileUploader', (ctx) => ctx.outputs?.resolve('fileUploader')?.getImportProgress())
   

@@ -14,7 +14,7 @@ const app = useApp();
     </template>
 
     <PlFileInput
-      v-model="app.model.args.fileHandle"
+      v-model="app.model.ui.fileHandle"
       label="File csv/tsv"
       :extensions="['.csv', '.tsv']"
       :progress="app.model.outputs.fileUploader"
