@@ -11,43 +11,46 @@ file := import("@platforma-sdk/workflow-tengo:file")
 
 self.setPreRun(assets.importTemplate(":pre-run"))
 
-self.body(func(inputs) {
-	if inputs.shouldAddRunPerFile {
-		tokens := {}
-		progresses := {}
-		for _, handle in inputs.inputHandles {
-			result := file.importFile(handle.handle)
-			progresses[handle.fileName] = result.handle
+runPerFile := func(inputs) {
+	tokens := {}
+	progresses := {}
+	for _, handle in inputs.inputHandles {
+		result := file.importFile(handle.handle)
+		progresses[handle.fileName] = result.handle
 
-			// TODO: it should be changed to software that prints an env.
-			builder := exec.builder().
-				cpu(1).ram("50Mi").
-				cmd("/usr/bin/env").
-				arg("bash").
-				arg("-c").
-				arg("echo -n $PLATFORMA_MNZ_JWT").
-				enableMnz(inputs.productKey).
-				saveStdoutContent()
+		// TODO: it should be changed to software that prints an env.
+		builder := exec.builder().
+			cpu(1).ram("50Mi").
+			cmd("/usr/bin/env").
+			arg("bash").
+			arg("-c").
+			arg("echo -n $PLATFORMA_MNZ_JWT").
+			enableMnz(inputs.productKey).
+			saveStdoutContent()
 
-			builder.addFile(handle.fileName, result.file, {mnz: {
-				arg: handle.argName,
-				metrics: handle.options
-			}})
+		ll.print("__THE_LOG__ handle: " + json.encode(handle))
+		ll.print("__THE_LOG__ result: " + json.encode(result))
 
-			run := builder.run()
+		builder.addFile(handle.fileName, result.file, {mnz: {
+			arg: "arg_0",
+			metrics: handle.options
+		}})
 
-			tokens[handle.fileName] = run.getStdoutFileContent()
-		}
+		run := builder.run()
 
-		return {
-			outputs: {
-				token: tokens,
-				progresses: progresses
-			},
-			exports: {}
-		}
+		tokens[handle.fileName] = run.getStdoutFileContent()
 	}
 
+	return {
+		outputs: {
+			token: tokens,
+			progresses: progresses
+		},
+		exports: {}
+	}
+}
+
+runSingle := func(inputs) {
 	// TODO: it should be changed to software that prints an env.
 	builder := exec.builder().
 		cpu(1).ram("50Mi").
@@ -78,4 +81,12 @@ self.body(func(inputs) {
 		},
 		exports: {}
 	}
+}
+
+self.body(func(inputs) {
+	if inputs.shouldAddRunPerFile {
+		return runPerFile(inputs)
+	}
+
+	return runSingle(inputs)
 })
