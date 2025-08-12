@@ -17,7 +17,7 @@ const axesSpecParamsUI = defineModel<AxisSpecParamUI[]>({
 });
 
 const props = defineProps<{
-  metadata: XsvMetadata;
+  metadata?: XsvMetadata;
 }>();
 
 const addAxis = (column: undefined | string, type: undefined | ValueType) => {

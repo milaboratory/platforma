@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import type { Spec } from '@milaboratories/milaboratories.file-import-block.model';
+import type { SpecUI } from '@milaboratories/milaboratories.file-import-block.model';
 import { PlCheckbox, PlDropdown, PlTextArea, PlTextField } from '@platforma-sdk/ui-vue';
 import { isNil } from 'es-toolkit';
 import { jsonToString, stringToJson } from '../utils/json';
 
 // Type for basic settings (all Spec fields except axes and columns)
-type BasicSettingsData = Omit<Spec, 'axes' | 'columns'>;
+type BasicSettingsData = Omit<SpecUI, 'axes' | 'columns'>;
 
 const settings = defineModel<BasicSettingsData>({ required: true });
 

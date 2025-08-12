@@ -12,15 +12,12 @@ export type XsvMetadata = {
 };
 
 export function useMetadataXsv(fileHandle: MaybeRefOrGetter<undefined | LocalImportFileHandle>, separator: MaybeRefOrGetter<undefined | string>) {
-  return computedAsync(async (): Promise<XsvMetadata> => {
+  return computedAsync(async (): Promise<undefined | XsvMetadata> => {
     fileHandle = toValue(fileHandle) as LocalImportFileHandle;
     separator = toValue(separator);
 
     if (!fileHandle || !separator) {
-      return {
-        header: [],
-        types: {},
-      };
+      return undefined;
     }
 
     const { header, rows } = await parseLocalXsvFile({ fileHandle, separator, linesLimit: 30 });
@@ -30,10 +27,7 @@ export function useMetadataXsv(fileHandle: MaybeRefOrGetter<undefined | LocalImp
       header,
       types,
     };
-  }, {
-    header: [],
-    types: {},
-  });
+  }, undefined);
 }
 
 export async function parseLocalXsvFile<T extends object>({ fileHandle, separator, linesLimit, batchSizeReading }: {

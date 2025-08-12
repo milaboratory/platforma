@@ -9,7 +9,7 @@ import { computed, ref } from 'vue';
 import type { XsvMetadata } from '../hooks/useMetadataXsv';
 
 const props = defineProps<{
-  metadata: XsvMetadata;
+  metadata?: XsvMetadata;
 }>();
 
 const emit = defineEmits<{
@@ -18,7 +18,7 @@ const emit = defineEmits<{
 
 const selectedMetadataColumn = ref<undefined | string>(undefined);
 
-const hasMetadata = computed(() => props.metadata.header.length > 0);
+const hasMetadata = computed(() => props.metadata && props.metadata.header.length > 0);
 const metadataColumnOptions = computed(() =>
   props.metadata?.header.map((column) => ({
     label: column,
@@ -28,7 +28,7 @@ const metadataColumnOptions = computed(() =>
 
 const handleAdd = () => {
   const column = selectedMetadataColumn.value;
-  const valueType = (isNil(column) ? undefined : props.metadata.types[column]);
+  const valueType = (isNil(column) ? undefined : props.metadata?.types[column]);
 
   emit('add', column, valueType);
 };

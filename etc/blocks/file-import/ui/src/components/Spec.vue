@@ -1,43 +1,21 @@
 <script setup lang="tsx">
 import type { SpecUI } from '@milaboratories/milaboratories.file-import-block.model';
-import type { LocalImportFileHandle } from '@milaboratories/pl-model-common';
-import { useApp } from '../app';
-import { useMetadataXsv } from '../hooks/useMetadataXsv';
+import type { XsvMetadata } from '../hooks/useMetadataXsv';
 import AxesConfiguration from './AxesConfiguration.vue';
 import BasicSettings from './BasicSettings.vue';
 import ColumnsConfiguration from './ColumnsConfiguration.vue';
 
-const app = useApp();
-
-if (app.model.ui.spec === undefined) {
-  app.model.ui.spec = {
-    separator: ',',
-    commentLinePrefix: undefined,
-    skipEmptyLines: false,
-    allowColumnLabelDuplicates: true,
-    allowArtificialColumns: false,
-    columnNamePrefix: undefined,
-    storageFormat: 'Binary',
-    partitionKeyLength: 0,
-    index: undefined,
-    axes: [],
-    columns: [],
-  } satisfies SpecUI;
-}
-
-const state = app.model.ui as typeof app.model.ui & {
-  spec: SpecUI;
-};
-const metadata = useMetadataXsv(() => state.fileHandle as LocalImportFileHandle, () => state.spec.separator);
+const spec = defineModel<SpecUI>({ required: true });
+const props = defineProps<{ metadata?: XsvMetadata }>();
 </script>
 
 <template>
   <div :class="$style.specForm">
-    <BasicSettings v-model="state.spec" />
+    <BasicSettings v-model="spec" />
 
     <div>
-      <AxesConfiguration v-model="state.spec.axes" :metadata="metadata" />
-      <ColumnsConfiguration v-model="state.spec.columns" :metadata="metadata" />
+      <AxesConfiguration v-model="spec.axes" :metadata="props.metadata" />
+      <ColumnsConfiguration v-model="spec.columns" :metadata="props.metadata" />
     </div>
   </div>
 </template>

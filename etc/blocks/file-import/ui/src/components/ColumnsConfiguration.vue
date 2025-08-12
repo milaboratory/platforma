@@ -11,6 +11,7 @@ import {
 import type { XsvMetadata } from '../hooks/useMetadataXsv';
 import { VALUE_TYPE_OPTIONS } from '../types/spec';
 import { jsonToString, stringToJson } from '../utils/json';
+import { addAllColumns } from '../utils/spec';
 import AddColumn from './AddColumn.vue';
 
 const columnsSpecParamsUI = defineModel<ColumnSpecParamUI[]>({
@@ -18,7 +19,7 @@ const columnsSpecParamsUI = defineModel<ColumnSpecParamUI[]>({
 });
 
 const props = defineProps<{
-  metadata: XsvMetadata;
+  metadata?: XsvMetadata;
 }>();
 
 const addColumn = (column: undefined | string, valueType: undefined | ValueType) => {
@@ -37,24 +38,9 @@ const addColumn = (column: undefined | string, valueType: undefined | ValueType)
 };
 
 const handleCreateAll = () => {
-  props.metadata.header.forEach((column) => {
-    if (columnsSpecParamsUI.value.some((c) => c.payload.column === column)) {
-      return; // Skip if column already exists
-    }
-
-    columnsSpecParamsUI.value.push({
-      id: Date.now().toString(),
-      expanded: false,
-      disabled: false,
-      payload: {
-        column,
-        spec: {
-          valueType: props.metadata.types[column] ?? 'String',
-          name: column,
-        },
-      },
-    });
-  });
+  if (props.metadata) {
+    addAllColumns(props.metadata, columnsSpecParamsUI.value);
+  }
 };
 
 const handleRemoveAll = () => {
@@ -75,7 +61,7 @@ const updateColumnAnnotations = (index: number, value: string) => {
     <div :class="$style.sectionHeader">
       <h3>Columns Configuration</h3>
       <div :class="$style.headerActions">
-        <PlBtnSecondary :class="$style.headerBtn" @click="handleCreateAll">
+        <PlBtnSecondary v-if="props.metadata" :class="$style.headerBtn" @click="handleCreateAll">
           Create All
         </PlBtnSecondary>
         <PlBtnSecondary :class="$style.headerBtn" @click="handleRemoveAll">

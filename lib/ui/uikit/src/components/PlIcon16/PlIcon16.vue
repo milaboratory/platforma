@@ -1,7 +1,7 @@
 <script lang="ts" setup>
+import { computed } from 'vue';
 import type { MaskIconName16, Size } from '../../types';
 import { PlSvg } from '../PlSvg';
-import { computed } from 'vue';
 
 const props = defineProps<{
   name: MaskIconName16;
@@ -37,6 +37,17 @@ const size = computed(() => {
   --svg-fill-0: var(--icon-color, var(--mask-icon-bg-color));
   --svg-fill-1: var(--icon-color, var(--mask-icon-bg-color));
   --svg-fill-2: var(--icon-color, var(--mask-icon-bg-color));
+  --svg-fill-3: var(--icon-color, var(--mask-icon-bg-color));
+  --svg-fill-4: var(--icon-color, var(--mask-icon-bg-color));
+  --svg-fill-5: var(--icon-color, var(--mask-icon-bg-color));
+  --svg-fill-6: var(--icon-color, var(--mask-icon-bg-color));
+  --svg-stroke-0: var(--icon-color, var(--mask-icon-bg-color));
+  --svg-stroke-1: var(--icon-color, var(--mask-icon-bg-color));
+  --svg-stroke-2: var(--icon-color, var(--mask-icon-bg-color));
+  --svg-stroke-3: var(--icon-color, var(--mask-icon-bg-color));
+  --svg-stroke-4: var(--icon-color, var(--mask-icon-bg-color));
+  --svg-stroke-5: var(--icon-color, var(--mask-icon-bg-color));
+  --svg-stroke-6: var(--icon-color, var(--mask-icon-bg-color));
   display: inline-block;
 }
 </style>
