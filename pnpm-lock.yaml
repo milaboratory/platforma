@@ -2972,9 +2972,6 @@ importers:
       vite-plugin-css-injected-by-js:
         specifier: 'catalog:'
         version: 3.5.2(vite@6.3.5(@types/node@20.16.15)(sass@1.83.4)(yaml@2.8.1))
-      vite-plugin-dts:
-        specifier: 'catalog:'
-        version: 4.5.4(@types/node@20.16.15)(rollup@4.46.2)(typescript@5.6.3)(vite@6.3.5(@types/node@20.16.15)(sass@1.83.4)(yaml@2.8.1))
       vite-plugin-externalize-deps:
         specifier: ^0.9.0
         version: 0.9.0(vite@6.3.5(@types/node@20.16.15)(sass@1.83.4)(yaml@2.8.1))
