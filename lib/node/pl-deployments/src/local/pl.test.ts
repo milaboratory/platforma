@@ -10,6 +10,7 @@ import { mergeDefaultOps } from './pl';
 import type { LocalPlOptions, LocalPlOptionsFull } from './pl';
 import { plProcessOps } from './pl';
 import { describe, it, beforeEach, afterEach } from 'vitest';
+import { getPorts } from '@milaboratories/pl-config';
 
 test(
   'should start and stop platforma of the current version with hardcoded config',
@@ -17,6 +18,9 @@ test(
   async ({ expect }) => {
     const logger = new ConsoleLoggerAdapter();
     const config = await readTestConfig();
+
+
+    logger.info('Config:\n' + yaml.stringify(config));
 
     const dir = await prepareDirForTestConfig();
 
@@ -115,6 +119,10 @@ async function readTestConfig() {
       parsed.license.file = upath.join(os.homedir(), '.pl.license');
     }
   }
+
+  const freePort = await getPorts({ type: 'pickFree' });
+  parsed.core.grpc.listen = `127.0.0.1:${freePort.grpc}`;
+  parsed.core.http.listen = `127.0.0.1:${freePort.http}`;
 
   return yaml.stringify(parsed);
 }
