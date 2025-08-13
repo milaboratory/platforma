@@ -1,5 +1,11 @@
 # @milaboratories/pl-local
 
+## 2.5.0
+
+### Minor Changes
+
+- d942bc0: Release 1.41.3 to builtin and ssh modes
+
 ## 2.4.9
 
 ### Patch Changes
