@@ -24,8 +24,8 @@
       "ui": "@milaboratories/milaboratories.file-import-block.ui/dist"
     },
     "meta": {
-      "title": "File Import Block",
-      "description": "Block for importing files",
+      "title": "CSV/TSV Import Block",
+      "description": "Block for importing CSV or TSV files",
       "organization": {
         "name": "MiLaboratories Inc",
         "url": "https://milaboratories.com/"
