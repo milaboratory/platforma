@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.42.22
+
+### Patch Changes
+
+- 8e45911: update sdk-model
+
 ## 1.42.20
 
 ### Patch Changes
