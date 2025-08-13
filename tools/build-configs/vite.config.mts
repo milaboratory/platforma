@@ -1,7 +1,7 @@
-import { defineConfig } from 'vite';
+import nodeResolve from '@rollup/plugin-node-resolve';
 import { resolve } from 'node:path';
 import nodeExternals from 'rollup-plugin-node-externals';
-import nodeResolve from '@rollup/plugin-node-resolve';
+import { defineConfig } from 'vite';
 import dts from 'vite-plugin-dts';
 
 export default defineConfig({
@@ -12,10 +12,10 @@ export default defineConfig({
         tsup: resolve('src', 'tsup.ts'),
         vite: resolve('src', 'vite.ts')
       },
-      formats: ['es', 'cjs']
+      formats: ['es', 'cjs'],
     },
+    minify: false,
     sourcemap: true,
-    rollupOptions: {}
   },
   plugins: [nodeExternals(), nodeResolve(), dts()]
 });
