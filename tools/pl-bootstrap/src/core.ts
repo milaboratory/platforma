@@ -241,8 +241,8 @@ export default class Core {
 
     const instance = this.createLocal(instanceName, {
       ...options,
-      primaryURL: options?.primaryURL ?? `s3e://testuser:testpassword@localhost:${minioPort}/platforma-primary-bucket/?region=no-region`,
-      libraryURL: options?.libraryURL ?? `s3e://testuser:testpassword@localhost:${minioPort}/platforma-library-bucket/?region=no-region`,
+      primaryURL: options?.primaryURL ?? `s3e://static:testuser:static:testpassword@localhost:${minioPort}/platforma-primary-bucket/?region=no-region`,
+      libraryURL: options?.libraryURL ?? `s3e://static:testuser:static:testpassword@localhost:${minioPort}/platforma-library-bucket/?region=no-region`,
     });
 
     const localRoot = options?.configOptions?.localRoot;
