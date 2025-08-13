@@ -4,7 +4,6 @@ import typescript from '@rollup/plugin-typescript';
 import { OutputOptions, RollupOptions } from 'rollup';
 import { cleandir } from 'rollup-plugin-cleandir';
 import nodeExternals from 'rollup-plugin-node-externals';
-import dts from 'unplugin-dts/rollup';
 
 export function createRollupNodeConfig(props?: {
   entry?: string[];
@@ -19,8 +18,7 @@ export function createRollupNodeConfig(props?: {
       input,
       plugins: [
         cleandir(output),
-        typescript(),
-        dts({ entryRoot: 'src'}),
+        typescript({ declaration: true, declarationMap: true, declarationDir: output }),
         json(),
         commonjs(),
         nodeExternals()

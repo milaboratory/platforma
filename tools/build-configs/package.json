@@ -44,10 +44,8 @@
     "rollup-plugin-sourcemaps2": "catalog:",
     "tsup": "catalog:",
     "typescript": "catalog:",
-    "unplugin-dts": "catalog:",
     "vite": "catalog:",
     "vite-plugin-css-injected-by-js": "catalog:",
-    "vite-plugin-dts": "catalog:",
     "vite-plugin-externalize-deps": "^0.9.0"
   }
 }
