@@ -48,6 +48,22 @@ export interface uploadapi_Init_Response {
      */
     partsCount: bigint;
     /**
+     * @generated from protobuf field: uint64 part_size = 3
+     */
+    partSize: bigint;
+    /**
+     * Checksum algorithm to use for the part upload.
+     *
+     * @generated from protobuf field: MiLaboratories.Controller.Shared.uploadapi.ChecksumAlgorithm checksum_algorithm = 4
+     */
+    checksumAlgorithm: uploadapi_ChecksumAlgorithm;
+    /**
+     * Header name to use for the checksum.
+     *
+     * @generated from protobuf field: string checksum_header = 5
+     */
+    checksumHeader: string;
+    /**
      * List of IDs of parts that were already uploaded by client.
      * Helps client to recover upload and skip already done parts
      * after being interrupted in the middle of the upload
@@ -134,6 +150,13 @@ export interface uploadapi_GetPartURL_Request {
      * @generated from protobuf field: bool is_internal_use = 4
      */
     isInternalUse: boolean;
+    /**
+     * Checksum is not used for now, but it is here for case
+     * where signing checksum header is required.
+     *
+     * @generated from protobuf field: string part_checksum = 5
+     */
+    partChecksum: string;
 }
 /**
  * @generated from protobuf message MiLaboratories.Controller.Shared.uploadapi.GetPartURL.HTTPHeader
@@ -207,6 +230,19 @@ export interface uploadapi_Finalize_Request {
  * @generated from protobuf message MiLaboratories.Controller.Shared.uploadapi.Finalize.Response
  */
 export interface uploadapi_Finalize_Response {
+}
+/**
+ * @generated from protobuf enum MiLaboratories.Controller.Shared.uploadapi.ChecksumAlgorithm
+ */
+export enum uploadapi_ChecksumAlgorithm {
+    /**
+     * @generated from protobuf enum value: CHECKSUM_ALGORITHM_UNSPECIFIED = 0;
+     */
+    UNSPECIFIED = 0,
+    /**
+     * @generated from protobuf enum value: CHECKSUM_ALGORITHM_CRC32C = 1;
+     */
+    CRC32C = 1
 }
 // @generated message type with reflection information, may provide speed optimized methods
 class uploadapi$Type extends MessageType<uploadapi> {
@@ -336,12 +372,18 @@ class uploadapi_Init_Response$Type extends MessageType<uploadapi_Init_Response> 
     constructor() {
         super("MiLaboratories.Controller.Shared.uploadapi.Init.Response", [
             { no: 1, name: "parts_count", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
+            { no: 3, name: "part_size", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
+            { no: 4, name: "checksum_algorithm", kind: "enum", T: () => ["MiLaboratories.Controller.Shared.uploadapi.ChecksumAlgorithm", uploadapi_ChecksumAlgorithm, "CHECKSUM_ALGORITHM_"] },
+            { no: 5, name: "checksum_header", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
             { no: 2, name: "uploaded_parts", kind: "scalar", repeat: 1 /*RepeatType.PACKED*/, T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ }
         ]);
     }
     create(value?: PartialMessage<uploadapi_Init_Response>): uploadapi_Init_Response {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.partsCount = 0n;
+        message.partSize = 0n;
+        message.checksumAlgorithm = 0;
+        message.checksumHeader = "";
         message.uploadedParts = [];
         if (value !== undefined)
             reflectionMergePartial<uploadapi_Init_Response>(this, message, value);
@@ -354,6 +396,15 @@ class uploadapi_Init_Response$Type extends MessageType<uploadapi_Init_Response> 
             switch (fieldNo) {
                 case /* uint64 parts_count */ 1:
                     message.partsCount = reader.uint64().toBigInt();
+                    break;
+                case /* uint64 part_size */ 3:
+                    message.partSize = reader.uint64().toBigInt();
+                    break;
+                case /* MiLaboratories.Controller.Shared.uploadapi.ChecksumAlgorithm checksum_algorithm */ 4:
+                    message.checksumAlgorithm = reader.int32();
+                    break;
+                case /* string checksum_header */ 5:
+                    message.checksumHeader = reader.string();
                     break;
                 case /* repeated uint64 uploaded_parts */ 2:
                     if (wireType === WireType.LengthDelimited)
@@ -384,6 +435,15 @@ class uploadapi_Init_Response$Type extends MessageType<uploadapi_Init_Response> 
                 writer.uint64(message.uploadedParts[i]);
             writer.join();
         }
+        /* uint64 part_size = 3; */
+        if (message.partSize !== 0n)
+            writer.tag(3, WireType.Varint).uint64(message.partSize);
+        /* MiLaboratories.Controller.Shared.uploadapi.ChecksumAlgorithm checksum_algorithm = 4; */
+        if (message.checksumAlgorithm !== 0)
+            writer.tag(4, WireType.Varint).int32(message.checksumAlgorithm);
+        /* string checksum_header = 5; */
+        if (message.checksumHeader !== "")
+            writer.tag(5, WireType.LengthDelimited).string(message.checksumHeader);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -570,7 +630,8 @@ class uploadapi_GetPartURL_Request$Type extends MessageType<uploadapi_GetPartURL
             { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
             { no: 2, name: "part_number", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
             { no: 3, name: "uploaded_part_size", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
-            { no: 4, name: "is_internal_use", kind: "scalar", T: 8 /*ScalarType.BOOL*/ }
+            { no: 4, name: "is_internal_use", kind: "scalar", T: 8 /*ScalarType.BOOL*/ },
+            { no: 5, name: "part_checksum", kind: "scalar", T: 9 /*ScalarType.STRING*/ }
         ]);
     }
     create(value?: PartialMessage<uploadapi_GetPartURL_Request>): uploadapi_GetPartURL_Request {
@@ -579,6 +640,7 @@ class uploadapi_GetPartURL_Request$Type extends MessageType<uploadapi_GetPartURL
         message.partNumber = 0n;
         message.uploadedPartSize = 0n;
         message.isInternalUse = false;
+        message.partChecksum = "";
         if (value !== undefined)
             reflectionMergePartial<uploadapi_GetPartURL_Request>(this, message, value);
         return message;
@@ -599,6 +661,9 @@ class uploadapi_GetPartURL_Request$Type extends MessageType<uploadapi_GetPartURL
                     break;
                 case /* bool is_internal_use */ 4:
                     message.isInternalUse = reader.bool();
+                    break;
+                case /* string part_checksum */ 5:
+                    message.partChecksum = reader.string();
                     break;
                 default:
                     let u = options.readUnknownField;
@@ -624,6 +689,9 @@ class uploadapi_GetPartURL_Request$Type extends MessageType<uploadapi_GetPartURL
         /* bool is_internal_use = 4; */
         if (message.isInternalUse !== false)
             writer.tag(4, WireType.Varint).bool(message.isInternalUse);
+        /* string part_checksum = 5; */
+        if (message.partChecksum !== "")
+            writer.tag(5, WireType.LengthDelimited).string(message.partChecksum);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
