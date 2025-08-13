@@ -2,6 +2,7 @@
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
     "customConditions": ["sources"],
+    "target": "esnext",
     "module": "preserve",
     "moduleResolution": "bundler",
     "lib": [
