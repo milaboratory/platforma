@@ -1,17 +1,16 @@
 {
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    "target": "ESNext",
-    "module": "ESNext",
-    "useDefineForClassFields": true,
+    "customConditions": ["sources"],
+    "module": "preserve",
+    "moduleResolution": "bundler",
     "lib": [
       "ESNext",
       "DOM",
       "DOM.Iterable"
     ],
-    "moduleResolution": "Bundler",
+    "useDefineForClassFields": true,
     "allowImportingTsExtensions": true,
-    "noEmit": true,
     "jsx": "preserve",
     "types": [
       "vite/client",
