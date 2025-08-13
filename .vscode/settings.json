@@ -12,11 +12,11 @@
     "platforma",
     "ptable"
   ],
-  "[typescript]": {
-    "editor.defaultFormatter": "vscode.typescript-language-features"
+   "[typescript]": {
+    "editor.defaultFormatter": "dbaeumer.vscode-eslint"
   },
   "[vue]": {
-    "editor.defaultFormatter": "Vue.volar"
+    "editor.defaultFormatter": "dbaeumer.vscode-eslint"
   },
   "[javascript]": {
     "editor.defaultFormatter": "dbaeumer.vscode-eslint"
