@@ -71,7 +71,6 @@ describe('Linker columns', () => {
         const axisB1 = makeTestAxis({ name: 'b' });
         const axisA1 = makeTestAxis({ name: 'a', parents: [axisB1] });
         const normalized2 = getNormalizedAxesList([axisD1, axisC1, axisB1, axisA1]);
-        console.log(makeTestAxis({ name: 'c', parents: [axisD1] }))
 
         compareAxesLists(normalized1, normalized2);
 
