@@ -1,5 +1,11 @@
 # @platforma-sdk/bootstrap
 
+## 5.2.0
+
+### Minor Changes
+
+- 5818d24: The authorization error in the "pl-dev svc create local s3" utility has been fixed.
+
 ## 5.1.0
 
 ### Minor Changes
