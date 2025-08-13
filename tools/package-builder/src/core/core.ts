@@ -70,7 +70,8 @@ export class Core {
         continue;
       }
 
-      pkgs.set(ep.package.id, ep.package);
+      const key = ep.package.type === 'docker' ? dockerEntrypointName(ep.package.id) : ep.package.id;
+      pkgs.set(key, ep.package);
     }
 
     return pkgs;
@@ -196,6 +197,15 @@ export class Core {
         }
       } else {
         await this.buildPackage(pkg, util.currentPlatform(), options);
+      }
+
+      const dockerPkg = this.packages.get(dockerEntrypointName(pkg.id));
+      if (!dockerPkg) {
+        continue;
+      }
+
+      if (dockerPkg.type === 'docker') {
+        this.buildDockerImage(dockerPkg);
       }
     }
   }

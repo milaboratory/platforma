@@ -437,7 +437,7 @@ export class PackageInfo {
       },
 
       get platforms(): util.PlatformType[] {
-        if (artifact?.root) return [util.currentPlatform()];
+        if (artifact?.root || artifact?.type === 'docker') return [util.currentPlatform()];
         if (artifact?.roots) return Object.keys(artifact.roots) as util.PlatformType[];
 
         throw new Error(
