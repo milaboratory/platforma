@@ -1,10 +1,9 @@
 import commonjs from '@rollup/plugin-commonjs';
 import json from '@rollup/plugin-json';
 import typescript from '@rollup/plugin-typescript';
-import { OutputOptions, RollupOptions } from 'rollup';
+import { OutputOptions, PreRenderedChunk, RollupOptions } from 'rollup';
 import { cleandir } from 'rollup-plugin-cleandir';
 import nodeExternals from 'rollup-plugin-node-externals';
-import dts from 'unplugin-dts/rollup';
 
 export function createRollupNodeConfig(props?: {
   entry?: string[];
@@ -19,11 +18,10 @@ export function createRollupNodeConfig(props?: {
       input,
       plugins: [
         cleandir(output),
-        typescript(),
-        dts({ entryRoot: 'src'}),
-        json(),
+        typescript({ declaration: true, declarationMap: true, declarationDir: output }),
         commonjs(),
-        nodeExternals()
+        json(),
+        nodeExternals(),
       ],
       output: [
         formats.includes('es') && {
@@ -31,9 +29,7 @@ export function createRollupNodeConfig(props?: {
           format: 'es',
           preserveModules: true,
           preserveModulesRoot: 'src',
-          entryFileNames: '[name].js',
-          chunkFileNames: '[name]-[hash].js',
-          assetFileNames: '[name][extname]',
+          entryFileNames: createEntryFileNames('.js'),
           sourcemap: true
         },
         formats.includes('cjs') && {
@@ -41,12 +37,19 @@ export function createRollupNodeConfig(props?: {
           format: 'cjs',
           preserveModules: true,
           preserveModulesRoot: 'src',
-          entryFileNames: '[name].cjs',
-          chunkFileNames: '[name]-[hash].cjs',
-          assetFileNames: '[name][extname]',
+          entryFileNames: createEntryFileNames('.cjs'),
           sourcemap: true
         },
       ].filter((v) => v !== null && typeof v === 'object') as OutputOptions[],
     },
   ];
+}
+
+function createEntryFileNames(ext: string) {
+  return (chunkInfo: PreRenderedChunk) => {
+    if (chunkInfo.name.includes('node_modules')) {
+      return chunkInfo.name.replace(/node_modules/g, '__external') + ext;
+    }
+    return `[name]${ext}`;
+  };
 }

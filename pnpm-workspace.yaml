@@ -129,7 +129,6 @@ catalog:
   '@rollup/plugin-commonjs': ^28.0.6
   'rollup-plugin-cleandir': ^3.0.0
   '@rollup/plugin-json': ^6.1.0
-  'unplugin-dts': ^1.0.0-beta.4
   'rollup-plugin-node-externals': ^8.0.0
   'rollup-plugin-sourcemaps2': ^0.5.2
   'vite-plugin-dts': ^4.5.3
