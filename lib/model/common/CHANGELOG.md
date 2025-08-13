@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.19.10
+
+### Patch Changes
+
+- e3e69bd: fix axes normalizaion
+
 ## 1.19.9
 
 ### Patch Changes
