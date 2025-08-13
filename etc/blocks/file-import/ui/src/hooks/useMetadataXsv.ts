@@ -40,7 +40,7 @@ export async function parseLocalXsvFile<T extends object>({ fileHandle, separato
     const driver = getRawPlatformaInstance().lsDriver;
     const parser = parse({
       columns: true,
-      separator,
+      delimiter: separator,
       autoParse: true,
     });
     const rows: T[] = [];
