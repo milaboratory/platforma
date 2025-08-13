@@ -10,8 +10,8 @@ services:
       - "${MINIO_CONSOLE_PORT:-9001}:9001"
     
     environment:
-      MINIO_ROOT_USER: static:testuser
-      MINIO_ROOT_PASSWORD: static:testpassword
+      MINIO_ROOT_USER: testuser
+      MINIO_ROOT_PASSWORD: testpassword
 
     volumes:
       - "${MINIO_STORAGE}:/data"
