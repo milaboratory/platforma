@@ -1,5 +1,11 @@
 # @platforma-sdk/package-builder
 
+## 2.17.2
+
+### Patch Changes
+
+- d2ddb35: docker isn't built when pnpm build for a block was called
+
 ## 2.17.1
 
 ### Patch Changes
