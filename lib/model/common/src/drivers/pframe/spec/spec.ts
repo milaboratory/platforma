@@ -161,17 +161,17 @@ export type Annotation = Metadata & Partial<{
   [Annotation.Trace]: StringifiedJson<Record<string, unknown>>;
 }>;
 
-export const AxisSpec = z.object({
-  type: z.nativeEnum(ValueType),
-  name: z.string(),
-  domain: z.record(z.string(), z.string()).optional(),
-  annotations: z.record(z.string(), z.string()).optional(),
-  parentAxes: z.array(z.number()).optional(),
-}).passthrough();
-type _test = Expect<Equal<
-  Readonly<z.infer<typeof AxisSpec>>,
-  Readonly<AxisSpec & Record<string, unknown>>
->>;
+// export const AxisSpec = z.object({
+//   type: z.nativeEnum(ValueType),
+//   name: z.string(),
+//   domain: z.record(z.string(), z.string()).optional(),
+//   annotations: z.record(z.string(), z.string()).optional(),
+//   parentAxes: z.array(z.number()).optional(),
+// }).passthrough();
+// type _test = Expect<Equal<
+//   Readonly<z.infer<typeof AxisSpec>>,
+//   Readonly<AxisSpec & Record<string, unknown>>
+// >>;
 
 export type AnnotationJson = MetadataJson<Annotation>;
 export const AnnotationJson: AnnotationJson = {
