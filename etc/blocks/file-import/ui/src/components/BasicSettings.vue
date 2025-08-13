@@ -53,7 +53,7 @@ const addIndex = () => {
           label="Separator"
           :options="[
             { label: 'Comma (,)', value: ',' },
-            { label: 'Tab (\\t)', value: '\\t' },
+            { label: 'Tab (\\t)', value: '\t' },
             { label: 'Semicolon (;)', value: ';' },
             { label: 'Space ( )', value: ' ' },
           ]"
