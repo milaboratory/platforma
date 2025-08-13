@@ -935,7 +935,7 @@ You can obtain the license from "https://licensing.milaboratories.com".`);
           case 'PRIMARY': {
             // Construct the S3 URL for primary storage
             if (storage.endpoint && storage.bucketName) {
-              envs['PL_DATA_LIBRARY_S3_URL'] = `${storage.endpoint}${storage.bucketName}`;
+              envs['PL_PRIMARY_STORAGE_S3'] = `${storage.endpoint}${storage.bucketName}`;
             }
             if (storage.endpoint) envs['PL_PRIMARY_STORAGE_S3_ENDPOINT'] = storage.endpoint;
             if (storage.presignEndpoint) envs['PL_PRIMARY_STORAGE_S3_EXTERNAL_ENDPOINT'] = storage.presignEndpoint;
