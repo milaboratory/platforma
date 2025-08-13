@@ -1,7 +1,6 @@
 wf := import("@platforma-sdk/workflow-tengo:workflow")
 file := import("@platforma-sdk/workflow-tengo:file")
 xsv := import("@platforma-sdk/workflow-tengo:pframes.xsv")
-pSpec := import("@platforma-sdk/workflow-tengo:pframes.spec")
 pframes := import("@platforma-sdk/workflow-tengo:pframes");
 
 wf.body(func(args) {

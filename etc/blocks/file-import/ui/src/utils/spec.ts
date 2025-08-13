@@ -6,8 +6,8 @@ import type { ColumnSpecParam } from '../types/spec';
 export function prepareSpec(spec: SpecUI): Spec {
   return withoutEmptyFields({
     ...spec,
-    axes: spec.axes.filter((v) => !v.disabled).map((v) => v.payload).map(withoutEmptyFields).map(propogationNames),
-    columns: spec.columns.filter((v) => !v.disabled).map((v) => v.payload).map(withoutEmptyFields).map(propogationNames),
+    axes: spec.axes.filter((v) => !v.disabled).map((v) => v.payload).map(withoutEmptyFields).map(propagationNames),
+    columns: spec.columns.filter((v) => !v.disabled).map((v) => v.payload).map(withoutEmptyFields).map(propagationNames),
   });
 }
 
@@ -20,7 +20,7 @@ function withoutEmptyFields<T extends object>(obj: T): T {
     ) as T;
 }
 
-function propogationNames<T extends AxisSpecParam | ColumnSpecParam>(axisSpec: T): T {
+function propagationNames<T extends AxisSpecParam | ColumnSpecParam>(axisSpec: T): T {
   return {
     ...axisSpec,
     spec: {
