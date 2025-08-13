@@ -4,7 +4,7 @@
     "target": "es2022",
     "module": "preserve",
     "moduleResolution": "bundler",
-    "lib": ["esnext", "esnext.disposable"],
+    "lib": ["esnext"],
     "types": ["node"],
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true
