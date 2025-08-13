@@ -28,7 +28,7 @@ function makeTestAxis(params: {
         annotations: {
             [Annotation.Label]: `${params.name} axis`,
             ...(params.parents && params.parents.length > 0
-                ? { [Annotation.Parents]: stringifyJson(params.parents) }
+                ? { [Annotation.Parents]: stringifyJson(params.parents.map(p => p.name)) }
                 : {}
             ),
         } satisfies Annotation,
@@ -275,8 +275,8 @@ describe('Linker columns', () => {
 
         expect(linkerMap.getNonLinkableAxes(
             getNormalizedAxesList([axisA, axisB, axisC, axisD]),
-            getNormalizedAxesList([axisC, axisE])
-        ).map(v => v.name)).toEqual(['e']);
+            getNormalizedAxesList([axisA, axisB, axisC, axisE])
+        ).map(v => v.name)).toEqual(['a', 'b', 'e']);
 
         expect(linkerMap.getNonLinkableAxes(
             [],
