@@ -114,7 +114,7 @@ describe('Renderer tests', () => {
 
     const descriptor = render.renderSoftwareEntrypoints('release', i.entrypoints).get(epName)!;
 
-    const expectedTag = new RegExp(`${defaultDockerRegistry}/${artifacts.PackageNameNoAt}\\/${artifacts.EPNameDocker}:(?<hash>.*)`);
+    const expectedTag = new RegExp(`${defaultDockerRegistry}:${artifacts.PackageNameNoAt}\\.${artifacts.EPNameDocker}\\.(?<hash>.*)`);
     expect(descriptor.docker).toBeDefined();
     expect(descriptor.docker!.tag).toMatch(expectedTag);
     expect(descriptor.docker!.cmd).toEqual(['echo', 'hello']);
