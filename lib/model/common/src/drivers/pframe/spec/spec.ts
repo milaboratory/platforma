@@ -152,7 +152,7 @@ export type Annotation = Metadata & Partial<{
   [Annotation.Label]: string;
   [Annotation.Max]: StringifiedJson<number>;
   [Annotation.Min]: StringifiedJson<number>;
-  [Annotation.Parents]: StringifiedJson<AxisSpec[]>;
+  [Annotation.Parents]: StringifiedJson<AxisSpec['name'][]>;
   [Annotation.Sequence.Annotation.Mapping]: StringifiedJson<Record<string, string>>;
   [Annotation.Sequence.IsAnnotation]: StringifiedJson<boolean>;
   [Annotation.Table.FontFamily]: string;
@@ -181,7 +181,7 @@ export const AnnotationJson: AnnotationJson = {
   [Annotation.IsLinkerColumn]: z.boolean(),
   [Annotation.Max]: z.number(),
   [Annotation.Min]: z.number(),
-  [Annotation.Parents]: z.array(AxisSpec),
+  [Annotation.Parents]: z.array(z.string()),
   [Annotation.Sequence.Annotation.Mapping]: z.record(z.string(), z.string()),
   [Annotation.Sequence.IsAnnotation]: z.boolean(),
   [Annotation.Table.OrderPriority]: z.number(),
@@ -405,8 +405,10 @@ export function getNormalizedAxesList(axes: AxisSpec[]): AxisSpecNormalized[] {
     const modifiedAxis = modifiedAxes[idx];
     if (axis.parentAxes) { // if we have parents by indexes then take from the list
       modifiedAxis.parentAxesSpec = axis.parentAxes.map((idx) => modifiedAxes[idx]);
-    } else { // else try to parse from annotation and normalize recursively
-      modifiedAxis.parentAxesSpec = getNormalizedAxesList(parseParentsFromAnnotations(axis));
+    } else { // else try to parse from annotation name
+      const parents = parseParentsFromAnnotations(axis).map((name) => modifiedAxes.find((axis) => axis.name === name));
+      modifiedAxis.parentAxesSpec = parents.some((p) => p === undefined) ? [] : parents as AxisSpecNormalized[];
+
       delete modifiedAxis.annotations?.[Annotation.Parents];
     }
   });
