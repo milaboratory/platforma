@@ -1,5 +1,11 @@
 # @milaboratories/pl-drivers
 
+## 1.10.0
+
+### Minor Changes
+
+- 521f7be: send checksum to upload if backend is allowed
+
 ## 1.9.1
 
 ### Patch Changes
