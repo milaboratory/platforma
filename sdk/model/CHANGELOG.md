@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.42.25
+
+### Patch Changes
+
+- c432f9a: createPlDataTableV2 fix
+
 ## 1.42.23
 
 ### Patch Changes
