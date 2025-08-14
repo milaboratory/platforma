@@ -1,5 +1,14 @@
 # @milaboratories/computable
 
+## 2.6.5
+
+### Patch Changes
+
+- b14b2fb: update dist builder
+- Updated dependencies [b14b2fb]
+  - @milaboratories/pl-error-like@1.12.4
+  - @milaboratories/ts-helpers@1.4.5
+
 ## 2.6.4
 
 ### Patch Changes

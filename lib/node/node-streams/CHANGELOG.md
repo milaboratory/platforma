@@ -1,5 +1,11 @@
 # @milaboratories/node-streams
 
+## 1.0.7
+
+### Patch Changes
+
+- b14b2fb: update dist builder
+
 ## 1.0.6
 
 ### Patch Changes

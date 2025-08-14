@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/biowasm-tools",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "A framework for building WebAssembly-based genomics tools",
   "repository": {
     "type": "git",

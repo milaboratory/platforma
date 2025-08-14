@@ -1,5 +1,14 @@
 # @milaboratories/uikit
 
+## 2.4.5
+
+### Patch Changes
+
+- b14b2fb: update dist builder
+- Updated dependencies [b14b2fb]
+  - @milaboratories/helpers@1.6.21
+  - @platforma-sdk/model@1.42.23
+
 ## 2.4.4
 
 ### Patch Changes

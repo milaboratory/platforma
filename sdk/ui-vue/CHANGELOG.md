@@ -1,5 +1,15 @@
 # @platforma-sdk/ui-vue
 
+## 1.42.23
+
+### Patch Changes
+
+- b14b2fb: update dist builder
+- Updated dependencies [b14b2fb]
+  - @milaboratories/biowasm-tools@1.1.2
+  - @milaboratories/uikit@2.4.5
+  - @platforma-sdk/model@1.42.23
+
 ## 1.42.21
 
 ### Patch Changes

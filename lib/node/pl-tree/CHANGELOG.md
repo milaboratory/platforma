@@ -1,5 +1,17 @@
 # @milaboratories/pl-tree
 
+## 1.7.7
+
+### Patch Changes
+
+- b14b2fb: update dist builder
+- Updated dependencies [b14b2fb]
+  - @milaboratories/pl-error-like@1.12.4
+  - @milaboratories/computable@2.6.5
+  - @milaboratories/pl-client@2.11.10
+  - @milaboratories/pl-errors@1.1.17
+  - @milaboratories/ts-helpers@1.4.5
+
 ## 1.7.6
 
 ### Patch Changes

@@ -1,5 +1,13 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.8.10
+
+### Patch Changes
+
+- b14b2fb: update dist builder
+- Updated dependencies [b14b2fb]
+  - @milaboratories/pl-model-common@1.19.11
+
 ## 1.8.9
 
 ### Patch Changes

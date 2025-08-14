@@ -1,5 +1,14 @@
 # @milaboratories/pl-client
 
+## 2.11.10
+
+### Patch Changes
+
+- b14b2fb: update dist builder
+- Updated dependencies [b14b2fb]
+  - @milaboratories/pl-http@1.1.7
+  - @milaboratories/ts-helpers@1.4.5
+
 ## 2.11.9
 
 ### Patch Changes

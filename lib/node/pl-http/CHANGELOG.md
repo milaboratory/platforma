@@ -1,5 +1,11 @@
 # @milaboratories/pl-http
 
+## 1.1.7
+
+### Patch Changes
+
+- b14b2fb: update dist builder
+
 ## 1.1.6
 
 ### Patch Changes

@@ -1,5 +1,13 @@
 # @milaboratories/pl-model-common
 
+## 1.19.11
+
+### Patch Changes
+
+- b14b2fb: update dist builder
+- Updated dependencies [b14b2fb]
+  - @milaboratories/pl-error-like@1.12.4
+
 ## 1.19.10
 
 ### Patch Changes

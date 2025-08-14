@@ -1,5 +1,13 @@
 # @milaboratories/pl-config
 
+## 1.7.1
+
+### Patch Changes
+
+- b14b2fb: update dist builder
+- Updated dependencies [b14b2fb]
+  - @milaboratories/ts-helpers@1.4.5
+
 ## 1.7.0
 
 ### Minor Changes
