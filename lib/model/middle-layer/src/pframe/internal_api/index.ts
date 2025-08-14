@@ -7,3 +7,4 @@ export * from './find_columns';
 export * from './table';
 
 export * from './pframe';
+export * from './http_helpers';
