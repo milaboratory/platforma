@@ -1,5 +1,11 @@
 # @milaboratories/pl-client
 
+## 2.11.11
+
+### Patch Changes
+
+- d1ad23e: Update pl-client protobuf
+
 ## 2.11.10
 
 ### Patch Changes
