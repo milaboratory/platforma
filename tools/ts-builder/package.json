@@ -6,7 +6,7 @@
     "main": "./dist/index.js",
     "module": "./dist/index.js",
     "bin": {
-        "ts-builder": "./bin/ts-builder"
+        "ts-builder": "./bin/ts-builder.js"
     },
     "scripts": {
         "build": "rollup -c",
