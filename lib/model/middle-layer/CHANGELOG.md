@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.8.11
+
+### Patch Changes
+
+- 26a9471: PFrames HttpHelpers interface update
+
 ## 1.8.10
 
 ### Patch Changes
