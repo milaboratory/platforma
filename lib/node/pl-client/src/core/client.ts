@@ -10,7 +10,7 @@ import { ClientRoot } from '../helpers/pl';
 import type { RetryOptions } from '@milaboratories/ts-helpers';
 import { assertNever, createRetryState, nextRetryStateOrError } from '@milaboratories/ts-helpers';
 import type { PlDriver, PlDriverDefinition } from './driver';
-import type { MaintenanceAPI_Ping_Response } from '../proto/github.com/milaboratory/pl/plapi/plapiproto/api';
+import type { MaintenanceAPI_Ping_Response, MaintenanceAPI_License_Response } from '../proto/github.com/milaboratory/pl/plapi/plapiproto/api';
 import { MaintenanceAPI_Ping_Response_Compression } from '../proto/github.com/milaboratory/pl/plapi/plapiproto/api';
 import * as tp from 'node:timers/promises';
 import type { Dispatcher } from 'undici';
@@ -143,6 +143,10 @@ export class PlClient {
 
   public async ping(): Promise<MaintenanceAPI_Ping_Response> {
     return (await this._ll.grpcPl.get().ping({})).response;
+  }
+
+  public async license(): Promise<MaintenanceAPI_License_Response> {
+    return (await this._ll.grpcPl.get().license({})).response;
   }
 
   public get conf(): PlClientConfig {

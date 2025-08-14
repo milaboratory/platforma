@@ -1,9 +1,9 @@
 Syncing 'main' proto version...
-  Cloning 'git@github.com:milaboratory/pl.git' into tmp directory /home/snyssfx/prog/mi/platforma/lib/node/pl-client/proto/plapi/tmp-repo
-    Cloning into '/home/snyssfx/prog/mi/platforma/lib/node/pl-client/proto/plapi/tmp-repo'...
+  Cloning 'git@github.com:milaboratory/pl.git' into tmp directory /Users/gramkin/Work/platforma-main/lib/node/pl-client/proto/plapi/tmp-repo
+    Cloning into '/Users/gramkin/Work/platforma-main/lib/node/pl-client/proto/plapi/tmp-repo'...
   Syncing proto files from 'plapi'
     - 'plapiproto/'
-      sending incremental file list
+      building file list ... done
       ./
       api.proto
       api_types.proto
@@ -11,75 +11,75 @@ Syncing 'main' proto version...
       import.proto
       resource_types.proto
       
-      sent 41,920 bytes  received 114 bytes  84,068.00 bytes/sec
-      total size is 41,506  speedup is 0.99
+      sent 43520 bytes  received 136 bytes  87312.00 bytes/sec
+      total size is 43100  speedup is 0.99
 
     - 'plapi/'
-      sending incremental file list
+      building file list ... done
       ./
       
-      sent 62 bytes  received 19 bytes  162.00 bytes/sec
+      sent 80 bytes  received 26 bytes  212.00 bytes/sec
       total size is 0  speedup is 0.00
 
     - 'protodep.toml'
-      sending incremental file list
+      building file list ... done
       protodep.toml
       
-      sent 256 bytes  received 35 bytes  582.00 bytes/sec
-      total size is 138  speedup is 0.47
+      sent 270 bytes  received 42 bytes  624.00 bytes/sec
+      total size is 138  speedup is 0.44
 
     - 'protodep.lock'
-      sending incremental file list
+      building file list ... done
       protodep.lock
       
-      sent 354 bytes  received 35 bytes  778.00 bytes/sec
-      total size is 236  speedup is 0.61
+      sent 368 bytes  received 42 bytes  820.00 bytes/sec
+      total size is 236  speedup is 0.58
 
   Syncing shared proto files from 'controllers/shared/grpc'
     - 'progressapi/'
-      sending incremental file list
+      building file list ... done
       ./
       protocol.proto
       
-      sent 1,358 bytes  received 38 bytes  2,792.00 bytes/sec
-      total size is 1,220  speedup is 0.87
+      sent 1370 bytes  received 48 bytes  2836.00 bytes/sec
+      total size is 1220  speedup is 0.86
 
     - 'streamingapi/'
-      sending incremental file list
+      building file list ... done
       ./
       protocol.proto
       
-      sent 9,035 bytes  received 38 bytes  18,146.00 bytes/sec
-      total size is 8,897  speedup is 0.98
+      sent 9047 bytes  received 48 bytes  18190.00 bytes/sec
+      total size is 8897  speedup is 0.98
 
     - 'downloadapi/'
-      sending incremental file list
+      building file list ... done
       ./
       protocol.proto
       
-      sent 1,256 bytes  received 38 bytes  2,588.00 bytes/sec
-      total size is 1,118  speedup is 0.86
+      sent 1268 bytes  received 48 bytes  2632.00 bytes/sec
+      total size is 1118  speedup is 0.85
 
     - 'lsapi/'
-      sending incremental file list
+      building file list ... done
       ./
       protocol.proto
       
-      sent 4,998 bytes  received 38 bytes  10,072.00 bytes/sec
-      total size is 4,860  speedup is 0.97
+      sent 5010 bytes  received 48 bytes  10116.00 bytes/sec
+      total size is 4860  speedup is 0.96
 
     - 'protodep.toml'
-      sending incremental file list
+      building file list ... done
       protodep.toml
       
-      sent 226 bytes  received 35 bytes  522.00 bytes/sec
-      total size is 108  speedup is 0.41
+      sent 240 bytes  received 42 bytes  564.00 bytes/sec
+      total size is 108  speedup is 0.38
 
     - 'protodep.lock'
-      sending incremental file list
+      building file list ... done
       protodep.lock
       
-      sent 324 bytes  received 35 bytes  718.00 bytes/sec
-      total size is 206  speedup is 0.57
+      sent 338 bytes  received 42 bytes  760.00 bytes/sec
+      total size is 206  speedup is 0.54
 
 Updating dependencies...

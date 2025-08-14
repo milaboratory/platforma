@@ -4,6 +4,8 @@
 import type { RpcTransport } from "@protobuf-ts/runtime-rpc";
 import type { ServiceInfo } from "@protobuf-ts/runtime-rpc";
 import { Platform } from "./api";
+import type { MaintenanceAPI_License_Response } from "./api";
+import type { MaintenanceAPI_License_Request } from "./api";
 import type { MaintenanceAPI_Ping_Response } from "./api";
 import type { MaintenanceAPI_Ping_Request } from "./api";
 import type { MiscAPI_ListResourceTypes_Response } from "./api";
@@ -190,6 +192,10 @@ export interface IPlatformClient {
      * @generated from protobuf rpc: Ping
      */
     ping(input: MaintenanceAPI_Ping_Request, options?: RpcOptions): UnaryCall<MaintenanceAPI_Ping_Request, MaintenanceAPI_Ping_Response>;
+    /**
+     * @generated from protobuf rpc: License
+     */
+    license(input: MaintenanceAPI_License_Request, options?: RpcOptions): UnaryCall<MaintenanceAPI_License_Request, MaintenanceAPI_License_Response>;
 }
 /**
  * @generated from protobuf service MiLaboratories.PL.API.Platform
@@ -402,5 +408,12 @@ export class PlatformClient implements IPlatformClient, ServiceInfo {
     ping(input: MaintenanceAPI_Ping_Request, options?: RpcOptions): UnaryCall<MaintenanceAPI_Ping_Request, MaintenanceAPI_Ping_Response> {
         const method = this.methods[24], opt = this._transport.mergeOptions(options);
         return stackIntercept<MaintenanceAPI_Ping_Request, MaintenanceAPI_Ping_Response>("unary", this._transport, method, opt, input);
+    }
+    /**
+     * @generated from protobuf rpc: License
+     */
+    license(input: MaintenanceAPI_License_Request, options?: RpcOptions): UnaryCall<MaintenanceAPI_License_Request, MaintenanceAPI_License_Response> {
+        const method = this.methods[25], opt = this._transport.mergeOptions(options);
+        return stackIntercept<MaintenanceAPI_License_Request, MaintenanceAPI_License_Response>("unary", this._transport, method, opt, input);
     }
 }

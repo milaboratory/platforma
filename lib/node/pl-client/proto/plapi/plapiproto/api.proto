@@ -63,6 +63,7 @@ service Platform {
   // Various service requests
   //
   rpc Ping(MaintenanceAPI.Ping.Request) returns (MaintenanceAPI.Ping.Response) {}
+  rpc License(MaintenanceAPI.License.Request) returns (MaintenanceAPI.License.Response) {}
 }
 
 // Platform transactions on API level are implemented as bidirectional
@@ -239,6 +240,9 @@ message TxAPI {
       ControllerKVAPI.Set.Request controller_key_value_set = 250; // set a value to a controller's key-value store.
       ControllerKVAPI.Get.Request controller_key_value_get = 251; // get a value from a controller's key-value store.
       ControllerKVAPI.GetIfExists.Request controller_key_value_get_if_exists = 252; // get a value from a KV if the value exists.
+      ControllerKVAPI.SetFlag.Request controller_key_value_set_flag = 253; // set a bool to a controller's key-value store.
+      ControllerKVAPI.GetFlag.Request controller_key_value_get_flag = 254; // get a bool from a controller's key-value store.
+      ControllerKVAPI.GetFlagIfExists.Request controller_key_value_get_flag_if_exists = 255; // get a bool from a controller's key-value store, return false if key is not found.
 
       CacheAPI.SetToField.Request cache_set_to_field = 300; // store the topology info and results of the field.
       CacheAPI.DeleteExpiredRecords.Request cache_delete_expired_records = 301; // iterate through all records and delete expired.
@@ -332,6 +336,9 @@ message TxAPI {
       ControllerKVAPI.Set.Response controller_key_value_set = 250;
       ControllerKVAPI.Get.Response controller_key_value_get = 251;
       ControllerKVAPI.GetIfExists.Response controller_key_value_get_if_exists = 252;
+      ControllerKVAPI.SetFlag.Response controller_key_value_set_flag = 253;
+      ControllerKVAPI.GetFlag.Response controller_key_value_get_flag = 254;
+      ControllerKVAPI.GetFlagIfExists.Response controller_key_value_get_flag_if_exists = 255;
 
       CacheAPI.SetToField.Response cache_set_to_field = 300;
       CacheAPI.DeleteExpiredRecords.Response cache_delete_expired_records = 301;
@@ -1088,6 +1095,39 @@ message ControllerKVAPI {
       bool exists = 2;
     }
   }
+
+  message SetFlag {
+    message Request {
+      string controller_type = 1;
+      string key = 2;
+      bool value = 3;
+    }
+
+    message Response {}
+  }
+
+  message GetFlag {
+    message Request {
+      string controller_type = 1;
+      string key = 2;
+    }
+
+    message Response {
+      bool value = 1;
+    }
+  }
+
+  message GetFlagIfExists {
+    message Request {
+      string controller_type = 1;
+      string key = 2;
+    }
+
+    message Response {
+      bool value = 1;
+      bool exists = 2;
+    }
+  }
 }
 
 message CacheAPI {
@@ -1198,6 +1238,18 @@ message MaintenanceAPI {
       // without instanceID we are not sure if it's the same state or not,
       // and UI can't detect it and clear its state (e.g. caches of drivers).
       string instance_id = 5;
+    }
+  }
+
+  message License {
+    message Request {}
+
+    message Response {
+      int32 status = 1; // HTTP status code of the last valid response from license server.
+      bool is_ok = 2; // true if status is 200
+
+      // Raw response body as it was received from the license server.
+      bytes response_body = 3;
     }
   }
 }

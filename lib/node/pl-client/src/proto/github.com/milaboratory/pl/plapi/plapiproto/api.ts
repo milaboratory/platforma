@@ -454,6 +454,24 @@ export interface TxAPI_ClientMessage {
          */
         controllerKeyValueGetIfExists: ControllerKVAPI_GetIfExists_Request; // get a value from a KV if the value exists.
     } | {
+        oneofKind: "controllerKeyValueSetFlag";
+        /**
+         * @generated from protobuf field: MiLaboratories.PL.API.ControllerKVAPI.SetFlag.Request controller_key_value_set_flag = 253
+         */
+        controllerKeyValueSetFlag: ControllerKVAPI_SetFlag_Request; // set a bool to a controller's key-value store.
+    } | {
+        oneofKind: "controllerKeyValueGetFlag";
+        /**
+         * @generated from protobuf field: MiLaboratories.PL.API.ControllerKVAPI.GetFlag.Request controller_key_value_get_flag = 254
+         */
+        controllerKeyValueGetFlag: ControllerKVAPI_GetFlag_Request; // get a bool from a controller's key-value store.
+    } | {
+        oneofKind: "controllerKeyValueGetFlagIfExists";
+        /**
+         * @generated from protobuf field: MiLaboratories.PL.API.ControllerKVAPI.GetFlagIfExists.Request controller_key_value_get_flag_if_exists = 255
+         */
+        controllerKeyValueGetFlagIfExists: ControllerKVAPI_GetFlagIfExists_Request; // get a bool from a controller's key-value store, return false if key is not found.
+    } | {
         oneofKind: "cacheSetToField";
         /**
          * @generated from protobuf field: MiLaboratories.PL.API.CacheAPI.SetToField.Request cache_set_to_field = 300
@@ -799,6 +817,24 @@ export interface TxAPI_ServerMessage {
          * @generated from protobuf field: MiLaboratories.PL.API.ControllerKVAPI.GetIfExists.Response controller_key_value_get_if_exists = 252
          */
         controllerKeyValueGetIfExists: ControllerKVAPI_GetIfExists_Response;
+    } | {
+        oneofKind: "controllerKeyValueSetFlag";
+        /**
+         * @generated from protobuf field: MiLaboratories.PL.API.ControllerKVAPI.SetFlag.Response controller_key_value_set_flag = 253
+         */
+        controllerKeyValueSetFlag: ControllerKVAPI_SetFlag_Response;
+    } | {
+        oneofKind: "controllerKeyValueGetFlag";
+        /**
+         * @generated from protobuf field: MiLaboratories.PL.API.ControllerKVAPI.GetFlag.Response controller_key_value_get_flag = 254
+         */
+        controllerKeyValueGetFlag: ControllerKVAPI_GetFlag_Response;
+    } | {
+        oneofKind: "controllerKeyValueGetFlagIfExists";
+        /**
+         * @generated from protobuf field: MiLaboratories.PL.API.ControllerKVAPI.GetFlagIfExists.Response controller_key_value_get_flag_if_exists = 255
+         */
+        controllerKeyValueGetFlagIfExists: ControllerKVAPI_GetFlagIfExists_Response;
     } | {
         oneofKind: "cacheSetToField";
         /**
@@ -2657,6 +2693,91 @@ export interface ControllerKVAPI_GetIfExists_Response {
     exists: boolean;
 }
 /**
+ * @generated from protobuf message MiLaboratories.PL.API.ControllerKVAPI.SetFlag
+ */
+export interface ControllerKVAPI_SetFlag {
+}
+/**
+ * @generated from protobuf message MiLaboratories.PL.API.ControllerKVAPI.SetFlag.Request
+ */
+export interface ControllerKVAPI_SetFlag_Request {
+    /**
+     * @generated from protobuf field: string controller_type = 1
+     */
+    controllerType: string;
+    /**
+     * @generated from protobuf field: string key = 2
+     */
+    key: string;
+    /**
+     * @generated from protobuf field: bool value = 3
+     */
+    value: boolean;
+}
+/**
+ * @generated from protobuf message MiLaboratories.PL.API.ControllerKVAPI.SetFlag.Response
+ */
+export interface ControllerKVAPI_SetFlag_Response {
+}
+/**
+ * @generated from protobuf message MiLaboratories.PL.API.ControllerKVAPI.GetFlag
+ */
+export interface ControllerKVAPI_GetFlag {
+}
+/**
+ * @generated from protobuf message MiLaboratories.PL.API.ControllerKVAPI.GetFlag.Request
+ */
+export interface ControllerKVAPI_GetFlag_Request {
+    /**
+     * @generated from protobuf field: string controller_type = 1
+     */
+    controllerType: string;
+    /**
+     * @generated from protobuf field: string key = 2
+     */
+    key: string;
+}
+/**
+ * @generated from protobuf message MiLaboratories.PL.API.ControllerKVAPI.GetFlag.Response
+ */
+export interface ControllerKVAPI_GetFlag_Response {
+    /**
+     * @generated from protobuf field: bool value = 1
+     */
+    value: boolean;
+}
+/**
+ * @generated from protobuf message MiLaboratories.PL.API.ControllerKVAPI.GetFlagIfExists
+ */
+export interface ControllerKVAPI_GetFlagIfExists {
+}
+/**
+ * @generated from protobuf message MiLaboratories.PL.API.ControllerKVAPI.GetFlagIfExists.Request
+ */
+export interface ControllerKVAPI_GetFlagIfExists_Request {
+    /**
+     * @generated from protobuf field: string controller_type = 1
+     */
+    controllerType: string;
+    /**
+     * @generated from protobuf field: string key = 2
+     */
+    key: string;
+}
+/**
+ * @generated from protobuf message MiLaboratories.PL.API.ControllerKVAPI.GetFlagIfExists.Response
+ */
+export interface ControllerKVAPI_GetFlagIfExists_Response {
+    /**
+     * @generated from protobuf field: bool value = 1
+     */
+    value: boolean;
+    /**
+     * @generated from protobuf field: bool exists = 2
+     */
+    exists: boolean;
+}
+/**
  * @generated from protobuf message MiLaboratories.PL.API.CacheAPI
  */
 export interface CacheAPI {
@@ -2944,6 +3065,35 @@ export enum MaintenanceAPI_Ping_Response_Compression {
      */
     GZIP = 1
 }
+/**
+ * @generated from protobuf message MiLaboratories.PL.API.MaintenanceAPI.License
+ */
+export interface MaintenanceAPI_License {
+}
+/**
+ * @generated from protobuf message MiLaboratories.PL.API.MaintenanceAPI.License.Request
+ */
+export interface MaintenanceAPI_License_Request {
+}
+/**
+ * @generated from protobuf message MiLaboratories.PL.API.MaintenanceAPI.License.Response
+ */
+export interface MaintenanceAPI_License_Response {
+    /**
+     * @generated from protobuf field: int32 status = 1
+     */
+    status: number; // HTTP status code of the last valid response from license server.
+    /**
+     * @generated from protobuf field: bool is_ok = 2
+     */
+    isOk: boolean; // true if status is 200
+    /**
+     * Raw response body as it was received from the license server.
+     *
+     * @generated from protobuf field: bytes response_body = 3
+     */
+    responseBody: Uint8Array;
+}
 // @generated message type with reflection information, may provide speed optimized methods
 class TxAPI$Type extends MessageType<TxAPI> {
     constructor() {
@@ -3037,6 +3187,9 @@ class TxAPI_ClientMessage$Type extends MessageType<TxAPI_ClientMessage> {
             { no: 250, name: "controller_key_value_set", kind: "message", oneof: "request", T: () => ControllerKVAPI_Set_Request },
             { no: 251, name: "controller_key_value_get", kind: "message", oneof: "request", T: () => ControllerKVAPI_Get_Request },
             { no: 252, name: "controller_key_value_get_if_exists", kind: "message", oneof: "request", T: () => ControllerKVAPI_GetIfExists_Request },
+            { no: 253, name: "controller_key_value_set_flag", kind: "message", oneof: "request", T: () => ControllerKVAPI_SetFlag_Request },
+            { no: 254, name: "controller_key_value_get_flag", kind: "message", oneof: "request", T: () => ControllerKVAPI_GetFlag_Request },
+            { no: 255, name: "controller_key_value_get_flag_if_exists", kind: "message", oneof: "request", T: () => ControllerKVAPI_GetFlagIfExists_Request },
             { no: 300, name: "cache_set_to_field", kind: "message", oneof: "request", T: () => CacheAPI_SetToField_Request },
             { no: 301, name: "cache_delete_expired_records", kind: "message", oneof: "request", T: () => CacheAPI_DeleteExpiredRecords_Request },
             { no: 350, name: "controller_features_set", kind: "message", oneof: "request", T: () => ControllerAPI_SetFeatures_Request },
@@ -3359,6 +3512,24 @@ class TxAPI_ClientMessage$Type extends MessageType<TxAPI_ClientMessage> {
                         controllerKeyValueGetIfExists: ControllerKVAPI_GetIfExists_Request.internalBinaryRead(reader, reader.uint32(), options, (message.request as any).controllerKeyValueGetIfExists)
                     };
                     break;
+                case /* MiLaboratories.PL.API.ControllerKVAPI.SetFlag.Request controller_key_value_set_flag */ 253:
+                    message.request = {
+                        oneofKind: "controllerKeyValueSetFlag",
+                        controllerKeyValueSetFlag: ControllerKVAPI_SetFlag_Request.internalBinaryRead(reader, reader.uint32(), options, (message.request as any).controllerKeyValueSetFlag)
+                    };
+                    break;
+                case /* MiLaboratories.PL.API.ControllerKVAPI.GetFlag.Request controller_key_value_get_flag */ 254:
+                    message.request = {
+                        oneofKind: "controllerKeyValueGetFlag",
+                        controllerKeyValueGetFlag: ControllerKVAPI_GetFlag_Request.internalBinaryRead(reader, reader.uint32(), options, (message.request as any).controllerKeyValueGetFlag)
+                    };
+                    break;
+                case /* MiLaboratories.PL.API.ControllerKVAPI.GetFlagIfExists.Request controller_key_value_get_flag_if_exists */ 255:
+                    message.request = {
+                        oneofKind: "controllerKeyValueGetFlagIfExists",
+                        controllerKeyValueGetFlagIfExists: ControllerKVAPI_GetFlagIfExists_Request.internalBinaryRead(reader, reader.uint32(), options, (message.request as any).controllerKeyValueGetFlagIfExists)
+                    };
+                    break;
                 case /* MiLaboratories.PL.API.CacheAPI.SetToField.Request cache_set_to_field */ 300:
                     message.request = {
                         oneofKind: "cacheSetToField",
@@ -3548,6 +3719,15 @@ class TxAPI_ClientMessage$Type extends MessageType<TxAPI_ClientMessage> {
         /* MiLaboratories.PL.API.ControllerKVAPI.GetIfExists.Request controller_key_value_get_if_exists = 252; */
         if (message.request.oneofKind === "controllerKeyValueGetIfExists")
             ControllerKVAPI_GetIfExists_Request.internalBinaryWrite(message.request.controllerKeyValueGetIfExists, writer.tag(252, WireType.LengthDelimited).fork(), options).join();
+        /* MiLaboratories.PL.API.ControllerKVAPI.SetFlag.Request controller_key_value_set_flag = 253; */
+        if (message.request.oneofKind === "controllerKeyValueSetFlag")
+            ControllerKVAPI_SetFlag_Request.internalBinaryWrite(message.request.controllerKeyValueSetFlag, writer.tag(253, WireType.LengthDelimited).fork(), options).join();
+        /* MiLaboratories.PL.API.ControllerKVAPI.GetFlag.Request controller_key_value_get_flag = 254; */
+        if (message.request.oneofKind === "controllerKeyValueGetFlag")
+            ControllerKVAPI_GetFlag_Request.internalBinaryWrite(message.request.controllerKeyValueGetFlag, writer.tag(254, WireType.LengthDelimited).fork(), options).join();
+        /* MiLaboratories.PL.API.ControllerKVAPI.GetFlagIfExists.Request controller_key_value_get_flag_if_exists = 255; */
+        if (message.request.oneofKind === "controllerKeyValueGetFlagIfExists")
+            ControllerKVAPI_GetFlagIfExists_Request.internalBinaryWrite(message.request.controllerKeyValueGetFlagIfExists, writer.tag(255, WireType.LengthDelimited).fork(), options).join();
         /* MiLaboratories.PL.API.CacheAPI.SetToField.Request cache_set_to_field = 300; */
         if (message.request.oneofKind === "cacheSetToField")
             CacheAPI_SetToField_Request.internalBinaryWrite(message.request.cacheSetToField, writer.tag(300, WireType.LengthDelimited).fork(), options).join();
@@ -3626,6 +3806,9 @@ class TxAPI_ServerMessage$Type extends MessageType<TxAPI_ServerMessage> {
             { no: 250, name: "controller_key_value_set", kind: "message", oneof: "response", T: () => ControllerKVAPI_Set_Response },
             { no: 251, name: "controller_key_value_get", kind: "message", oneof: "response", T: () => ControllerKVAPI_Get_Response },
             { no: 252, name: "controller_key_value_get_if_exists", kind: "message", oneof: "response", T: () => ControllerKVAPI_GetIfExists_Response },
+            { no: 253, name: "controller_key_value_set_flag", kind: "message", oneof: "response", T: () => ControllerKVAPI_SetFlag_Response },
+            { no: 254, name: "controller_key_value_get_flag", kind: "message", oneof: "response", T: () => ControllerKVAPI_GetFlag_Response },
+            { no: 255, name: "controller_key_value_get_flag_if_exists", kind: "message", oneof: "response", T: () => ControllerKVAPI_GetFlagIfExists_Response },
             { no: 300, name: "cache_set_to_field", kind: "message", oneof: "response", T: () => CacheAPI_SetToField_Response },
             { no: 301, name: "cache_delete_expired_records", kind: "message", oneof: "response", T: () => CacheAPI_DeleteExpiredRecords_Response },
             { no: 350, name: "controller_features_set", kind: "message", oneof: "response", T: () => ControllerAPI_SetFeatures_Response },
@@ -3952,6 +4135,24 @@ class TxAPI_ServerMessage$Type extends MessageType<TxAPI_ServerMessage> {
                         controllerKeyValueGetIfExists: ControllerKVAPI_GetIfExists_Response.internalBinaryRead(reader, reader.uint32(), options, (message.response as any).controllerKeyValueGetIfExists)
                     };
                     break;
+                case /* MiLaboratories.PL.API.ControllerKVAPI.SetFlag.Response controller_key_value_set_flag */ 253:
+                    message.response = {
+                        oneofKind: "controllerKeyValueSetFlag",
+                        controllerKeyValueSetFlag: ControllerKVAPI_SetFlag_Response.internalBinaryRead(reader, reader.uint32(), options, (message.response as any).controllerKeyValueSetFlag)
+                    };
+                    break;
+                case /* MiLaboratories.PL.API.ControllerKVAPI.GetFlag.Response controller_key_value_get_flag */ 254:
+                    message.response = {
+                        oneofKind: "controllerKeyValueGetFlag",
+                        controllerKeyValueGetFlag: ControllerKVAPI_GetFlag_Response.internalBinaryRead(reader, reader.uint32(), options, (message.response as any).controllerKeyValueGetFlag)
+                    };
+                    break;
+                case /* MiLaboratories.PL.API.ControllerKVAPI.GetFlagIfExists.Response controller_key_value_get_flag_if_exists */ 255:
+                    message.response = {
+                        oneofKind: "controllerKeyValueGetFlagIfExists",
+                        controllerKeyValueGetFlagIfExists: ControllerKVAPI_GetFlagIfExists_Response.internalBinaryRead(reader, reader.uint32(), options, (message.response as any).controllerKeyValueGetFlagIfExists)
+                    };
+                    break;
                 case /* MiLaboratories.PL.API.CacheAPI.SetToField.Response cache_set_to_field */ 300:
                     message.response = {
                         oneofKind: "cacheSetToField",
@@ -4150,6 +4351,15 @@ class TxAPI_ServerMessage$Type extends MessageType<TxAPI_ServerMessage> {
         /* MiLaboratories.PL.API.ControllerKVAPI.GetIfExists.Response controller_key_value_get_if_exists = 252; */
         if (message.response.oneofKind === "controllerKeyValueGetIfExists")
             ControllerKVAPI_GetIfExists_Response.internalBinaryWrite(message.response.controllerKeyValueGetIfExists, writer.tag(252, WireType.LengthDelimited).fork(), options).join();
+        /* MiLaboratories.PL.API.ControllerKVAPI.SetFlag.Response controller_key_value_set_flag = 253; */
+        if (message.response.oneofKind === "controllerKeyValueSetFlag")
+            ControllerKVAPI_SetFlag_Response.internalBinaryWrite(message.response.controllerKeyValueSetFlag, writer.tag(253, WireType.LengthDelimited).fork(), options).join();
+        /* MiLaboratories.PL.API.ControllerKVAPI.GetFlag.Response controller_key_value_get_flag = 254; */
+        if (message.response.oneofKind === "controllerKeyValueGetFlag")
+            ControllerKVAPI_GetFlag_Response.internalBinaryWrite(message.response.controllerKeyValueGetFlag, writer.tag(254, WireType.LengthDelimited).fork(), options).join();
+        /* MiLaboratories.PL.API.ControllerKVAPI.GetFlagIfExists.Response controller_key_value_get_flag_if_exists = 255; */
+        if (message.response.oneofKind === "controllerKeyValueGetFlagIfExists")
+            ControllerKVAPI_GetFlagIfExists_Response.internalBinaryWrite(message.response.controllerKeyValueGetFlagIfExists, writer.tag(255, WireType.LengthDelimited).fork(), options).join();
         /* MiLaboratories.PL.API.CacheAPI.SetToField.Response cache_set_to_field = 300; */
         if (message.response.oneofKind === "cacheSetToField")
             CacheAPI_SetToField_Response.internalBinaryWrite(message.response.cacheSetToField, writer.tag(300, WireType.LengthDelimited).fork(), options).join();
@@ -13449,6 +13659,433 @@ class ControllerKVAPI_GetIfExists_Response$Type extends MessageType<ControllerKV
  */
 export const ControllerKVAPI_GetIfExists_Response = new ControllerKVAPI_GetIfExists_Response$Type();
 // @generated message type with reflection information, may provide speed optimized methods
+class ControllerKVAPI_SetFlag$Type extends MessageType<ControllerKVAPI_SetFlag> {
+    constructor() {
+        super("MiLaboratories.PL.API.ControllerKVAPI.SetFlag", []);
+    }
+    create(value?: PartialMessage<ControllerKVAPI_SetFlag>): ControllerKVAPI_SetFlag {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        if (value !== undefined)
+            reflectionMergePartial<ControllerKVAPI_SetFlag>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ControllerKVAPI_SetFlag): ControllerKVAPI_SetFlag {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: ControllerKVAPI_SetFlag, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.ControllerKVAPI.SetFlag
+ */
+export const ControllerKVAPI_SetFlag = new ControllerKVAPI_SetFlag$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class ControllerKVAPI_SetFlag_Request$Type extends MessageType<ControllerKVAPI_SetFlag_Request> {
+    constructor() {
+        super("MiLaboratories.PL.API.ControllerKVAPI.SetFlag.Request", [
+            { no: 1, name: "controller_type", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
+            { no: 2, name: "key", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
+            { no: 3, name: "value", kind: "scalar", T: 8 /*ScalarType.BOOL*/ }
+        ]);
+    }
+    create(value?: PartialMessage<ControllerKVAPI_SetFlag_Request>): ControllerKVAPI_SetFlag_Request {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        message.controllerType = "";
+        message.key = "";
+        message.value = false;
+        if (value !== undefined)
+            reflectionMergePartial<ControllerKVAPI_SetFlag_Request>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ControllerKVAPI_SetFlag_Request): ControllerKVAPI_SetFlag_Request {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* string controller_type */ 1:
+                    message.controllerType = reader.string();
+                    break;
+                case /* string key */ 2:
+                    message.key = reader.string();
+                    break;
+                case /* bool value */ 3:
+                    message.value = reader.bool();
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: ControllerKVAPI_SetFlag_Request, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* string controller_type = 1; */
+        if (message.controllerType !== "")
+            writer.tag(1, WireType.LengthDelimited).string(message.controllerType);
+        /* string key = 2; */
+        if (message.key !== "")
+            writer.tag(2, WireType.LengthDelimited).string(message.key);
+        /* bool value = 3; */
+        if (message.value !== false)
+            writer.tag(3, WireType.Varint).bool(message.value);
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.ControllerKVAPI.SetFlag.Request
+ */
+export const ControllerKVAPI_SetFlag_Request = new ControllerKVAPI_SetFlag_Request$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class ControllerKVAPI_SetFlag_Response$Type extends MessageType<ControllerKVAPI_SetFlag_Response> {
+    constructor() {
+        super("MiLaboratories.PL.API.ControllerKVAPI.SetFlag.Response", []);
+    }
+    create(value?: PartialMessage<ControllerKVAPI_SetFlag_Response>): ControllerKVAPI_SetFlag_Response {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        if (value !== undefined)
+            reflectionMergePartial<ControllerKVAPI_SetFlag_Response>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ControllerKVAPI_SetFlag_Response): ControllerKVAPI_SetFlag_Response {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: ControllerKVAPI_SetFlag_Response, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.ControllerKVAPI.SetFlag.Response
+ */
+export const ControllerKVAPI_SetFlag_Response = new ControllerKVAPI_SetFlag_Response$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class ControllerKVAPI_GetFlag$Type extends MessageType<ControllerKVAPI_GetFlag> {
+    constructor() {
+        super("MiLaboratories.PL.API.ControllerKVAPI.GetFlag", []);
+    }
+    create(value?: PartialMessage<ControllerKVAPI_GetFlag>): ControllerKVAPI_GetFlag {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        if (value !== undefined)
+            reflectionMergePartial<ControllerKVAPI_GetFlag>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ControllerKVAPI_GetFlag): ControllerKVAPI_GetFlag {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: ControllerKVAPI_GetFlag, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.ControllerKVAPI.GetFlag
+ */
+export const ControllerKVAPI_GetFlag = new ControllerKVAPI_GetFlag$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class ControllerKVAPI_GetFlag_Request$Type extends MessageType<ControllerKVAPI_GetFlag_Request> {
+    constructor() {
+        super("MiLaboratories.PL.API.ControllerKVAPI.GetFlag.Request", [
+            { no: 1, name: "controller_type", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
+            { no: 2, name: "key", kind: "scalar", T: 9 /*ScalarType.STRING*/ }
+        ]);
+    }
+    create(value?: PartialMessage<ControllerKVAPI_GetFlag_Request>): ControllerKVAPI_GetFlag_Request {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        message.controllerType = "";
+        message.key = "";
+        if (value !== undefined)
+            reflectionMergePartial<ControllerKVAPI_GetFlag_Request>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ControllerKVAPI_GetFlag_Request): ControllerKVAPI_GetFlag_Request {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* string controller_type */ 1:
+                    message.controllerType = reader.string();
+                    break;
+                case /* string key */ 2:
+                    message.key = reader.string();
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: ControllerKVAPI_GetFlag_Request, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* string controller_type = 1; */
+        if (message.controllerType !== "")
+            writer.tag(1, WireType.LengthDelimited).string(message.controllerType);
+        /* string key = 2; */
+        if (message.key !== "")
+            writer.tag(2, WireType.LengthDelimited).string(message.key);
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.ControllerKVAPI.GetFlag.Request
+ */
+export const ControllerKVAPI_GetFlag_Request = new ControllerKVAPI_GetFlag_Request$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class ControllerKVAPI_GetFlag_Response$Type extends MessageType<ControllerKVAPI_GetFlag_Response> {
+    constructor() {
+        super("MiLaboratories.PL.API.ControllerKVAPI.GetFlag.Response", [
+            { no: 1, name: "value", kind: "scalar", T: 8 /*ScalarType.BOOL*/ }
+        ]);
+    }
+    create(value?: PartialMessage<ControllerKVAPI_GetFlag_Response>): ControllerKVAPI_GetFlag_Response {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        message.value = false;
+        if (value !== undefined)
+            reflectionMergePartial<ControllerKVAPI_GetFlag_Response>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ControllerKVAPI_GetFlag_Response): ControllerKVAPI_GetFlag_Response {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* bool value */ 1:
+                    message.value = reader.bool();
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: ControllerKVAPI_GetFlag_Response, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* bool value = 1; */
+        if (message.value !== false)
+            writer.tag(1, WireType.Varint).bool(message.value);
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.ControllerKVAPI.GetFlag.Response
+ */
+export const ControllerKVAPI_GetFlag_Response = new ControllerKVAPI_GetFlag_Response$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class ControllerKVAPI_GetFlagIfExists$Type extends MessageType<ControllerKVAPI_GetFlagIfExists> {
+    constructor() {
+        super("MiLaboratories.PL.API.ControllerKVAPI.GetFlagIfExists", []);
+    }
+    create(value?: PartialMessage<ControllerKVAPI_GetFlagIfExists>): ControllerKVAPI_GetFlagIfExists {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        if (value !== undefined)
+            reflectionMergePartial<ControllerKVAPI_GetFlagIfExists>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ControllerKVAPI_GetFlagIfExists): ControllerKVAPI_GetFlagIfExists {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: ControllerKVAPI_GetFlagIfExists, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.ControllerKVAPI.GetFlagIfExists
+ */
+export const ControllerKVAPI_GetFlagIfExists = new ControllerKVAPI_GetFlagIfExists$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class ControllerKVAPI_GetFlagIfExists_Request$Type extends MessageType<ControllerKVAPI_GetFlagIfExists_Request> {
+    constructor() {
+        super("MiLaboratories.PL.API.ControllerKVAPI.GetFlagIfExists.Request", [
+            { no: 1, name: "controller_type", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
+            { no: 2, name: "key", kind: "scalar", T: 9 /*ScalarType.STRING*/ }
+        ]);
+    }
+    create(value?: PartialMessage<ControllerKVAPI_GetFlagIfExists_Request>): ControllerKVAPI_GetFlagIfExists_Request {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        message.controllerType = "";
+        message.key = "";
+        if (value !== undefined)
+            reflectionMergePartial<ControllerKVAPI_GetFlagIfExists_Request>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ControllerKVAPI_GetFlagIfExists_Request): ControllerKVAPI_GetFlagIfExists_Request {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* string controller_type */ 1:
+                    message.controllerType = reader.string();
+                    break;
+                case /* string key */ 2:
+                    message.key = reader.string();
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: ControllerKVAPI_GetFlagIfExists_Request, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* string controller_type = 1; */
+        if (message.controllerType !== "")
+            writer.tag(1, WireType.LengthDelimited).string(message.controllerType);
+        /* string key = 2; */
+        if (message.key !== "")
+            writer.tag(2, WireType.LengthDelimited).string(message.key);
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.ControllerKVAPI.GetFlagIfExists.Request
+ */
+export const ControllerKVAPI_GetFlagIfExists_Request = new ControllerKVAPI_GetFlagIfExists_Request$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class ControllerKVAPI_GetFlagIfExists_Response$Type extends MessageType<ControllerKVAPI_GetFlagIfExists_Response> {
+    constructor() {
+        super("MiLaboratories.PL.API.ControllerKVAPI.GetFlagIfExists.Response", [
+            { no: 1, name: "value", kind: "scalar", T: 8 /*ScalarType.BOOL*/ },
+            { no: 2, name: "exists", kind: "scalar", T: 8 /*ScalarType.BOOL*/ }
+        ]);
+    }
+    create(value?: PartialMessage<ControllerKVAPI_GetFlagIfExists_Response>): ControllerKVAPI_GetFlagIfExists_Response {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        message.value = false;
+        message.exists = false;
+        if (value !== undefined)
+            reflectionMergePartial<ControllerKVAPI_GetFlagIfExists_Response>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ControllerKVAPI_GetFlagIfExists_Response): ControllerKVAPI_GetFlagIfExists_Response {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* bool value */ 1:
+                    message.value = reader.bool();
+                    break;
+                case /* bool exists */ 2:
+                    message.exists = reader.bool();
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: ControllerKVAPI_GetFlagIfExists_Response, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* bool value = 1; */
+        if (message.value !== false)
+            writer.tag(1, WireType.Varint).bool(message.value);
+        /* bool exists = 2; */
+        if (message.exists !== false)
+            writer.tag(2, WireType.Varint).bool(message.exists);
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.ControllerKVAPI.GetFlagIfExists.Response
+ */
+export const ControllerKVAPI_GetFlagIfExists_Response = new ControllerKVAPI_GetFlagIfExists_Response$Type();
+// @generated message type with reflection information, may provide speed optimized methods
 class CacheAPI$Type extends MessageType<CacheAPI> {
     constructor() {
         super("MiLaboratories.PL.API.CacheAPI", []);
@@ -14954,6 +15591,145 @@ class MaintenanceAPI_Ping_Response$Type extends MessageType<MaintenanceAPI_Ping_
  * @generated MessageType for protobuf message MiLaboratories.PL.API.MaintenanceAPI.Ping.Response
  */
 export const MaintenanceAPI_Ping_Response = new MaintenanceAPI_Ping_Response$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class MaintenanceAPI_License$Type extends MessageType<MaintenanceAPI_License> {
+    constructor() {
+        super("MiLaboratories.PL.API.MaintenanceAPI.License", []);
+    }
+    create(value?: PartialMessage<MaintenanceAPI_License>): MaintenanceAPI_License {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        if (value !== undefined)
+            reflectionMergePartial<MaintenanceAPI_License>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: MaintenanceAPI_License): MaintenanceAPI_License {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: MaintenanceAPI_License, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.MaintenanceAPI.License
+ */
+export const MaintenanceAPI_License = new MaintenanceAPI_License$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class MaintenanceAPI_License_Request$Type extends MessageType<MaintenanceAPI_License_Request> {
+    constructor() {
+        super("MiLaboratories.PL.API.MaintenanceAPI.License.Request", []);
+    }
+    create(value?: PartialMessage<MaintenanceAPI_License_Request>): MaintenanceAPI_License_Request {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        if (value !== undefined)
+            reflectionMergePartial<MaintenanceAPI_License_Request>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: MaintenanceAPI_License_Request): MaintenanceAPI_License_Request {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: MaintenanceAPI_License_Request, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.MaintenanceAPI.License.Request
+ */
+export const MaintenanceAPI_License_Request = new MaintenanceAPI_License_Request$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class MaintenanceAPI_License_Response$Type extends MessageType<MaintenanceAPI_License_Response> {
+    constructor() {
+        super("MiLaboratories.PL.API.MaintenanceAPI.License.Response", [
+            { no: 1, name: "status", kind: "scalar", T: 5 /*ScalarType.INT32*/ },
+            { no: 2, name: "is_ok", kind: "scalar", T: 8 /*ScalarType.BOOL*/ },
+            { no: 3, name: "response_body", kind: "scalar", T: 12 /*ScalarType.BYTES*/ }
+        ]);
+    }
+    create(value?: PartialMessage<MaintenanceAPI_License_Response>): MaintenanceAPI_License_Response {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        message.status = 0;
+        message.isOk = false;
+        message.responseBody = new Uint8Array(0);
+        if (value !== undefined)
+            reflectionMergePartial<MaintenanceAPI_License_Response>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: MaintenanceAPI_License_Response): MaintenanceAPI_License_Response {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* int32 status */ 1:
+                    message.status = reader.int32();
+                    break;
+                case /* bool is_ok */ 2:
+                    message.isOk = reader.bool();
+                    break;
+                case /* bytes response_body */ 3:
+                    message.responseBody = reader.bytes();
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: MaintenanceAPI_License_Response, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* int32 status = 1; */
+        if (message.status !== 0)
+            writer.tag(1, WireType.Varint).int32(message.status);
+        /* bool is_ok = 2; */
+        if (message.isOk !== false)
+            writer.tag(2, WireType.Varint).bool(message.isOk);
+        /* bytes response_body = 3; */
+        if (message.responseBody.length)
+            writer.tag(3, WireType.LengthDelimited).bytes(message.responseBody);
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.MaintenanceAPI.License.Response
+ */
+export const MaintenanceAPI_License_Response = new MaintenanceAPI_License_Response$Type();
 /**
  * @generated ServiceType for protobuf service MiLaboratories.PL.API.Platform
  */
@@ -14982,5 +15758,6 @@ export const Platform = new ServiceType("MiLaboratories.PL.API.Platform", [
     { name: "AuthMethods", options: {}, I: AuthAPI_ListMethods_Request, O: AuthAPI_ListMethods_Response },
     { name: "GetJWTToken", options: {}, I: AuthAPI_GetJWTToken_Request, O: AuthAPI_GetJWTToken_Response },
     { name: "ListResourceTypes", options: {}, I: MiscAPI_ListResourceTypes_Request, O: MiscAPI_ListResourceTypes_Response },
-    { name: "Ping", options: {}, I: MaintenanceAPI_Ping_Request, O: MaintenanceAPI_Ping_Response }
+    { name: "Ping", options: {}, I: MaintenanceAPI_Ping_Request, O: MaintenanceAPI_Ping_Response },
+    { name: "License", options: {}, I: MaintenanceAPI_License_Request, O: MaintenanceAPI_License_Response }
 ]);
