@@ -120,17 +120,17 @@ export type HttpServerOptions = {
   host?: string;
   /** Port to bind to (defaults to 0 for auto-assignment) */
   port?: number;
-  /** AbortSignal to stop the server */
-  signal: AbortSignal;
 };
 
 /** Result of the server start operation */
-export type HttpServerStartResult = {
+export interface HttpServer {
   /** Server address info */
-  address: AddressInfo;
+  get address(): AddressInfo;
   /** Promise that resolves when the server is stopped */
-  stopped: Promise<void>;
-};
+  get stopped(): Promise<void>;
+  /** Stop the server */
+  stop(): Promise<void>;
+}
 
 export interface HttpHelpers {
   /**
@@ -159,7 +159,6 @@ export interface HttpHelpers {
    *
    * @example
    * ```ts
-   * const abortController = new AbortController();
    * const rootDir = '/path/to/directory/with/parquet/files';
    * const port = 3000;
    *
@@ -167,19 +166,17 @@ export interface HttpHelpers {
    *   throw new Error(`Failed to create file store for ${rootDir} - ${ensureError(err)}`);
    * });
    *
-   * const { address: serverAddress, stopped: serverStopped } = await HttpHelpers.serve({
+   * const server = await HttpHelpers.createHttpServer({
    *   handler: HttpHelpers.createRequestHandler(store),
    *   port,
-   *   signal: abortController.signal
    * }).catch((err: unknown) => {
    *   throw new Error(`Failed to start http server on port ${port} - ${ensureError(err)}`);
    * });
    *
-   * const _ = HttpHelpers.createObjectStoreUrl(serverAddress);
+   * const _ = HttpHelpers.createObjectStoreUrl(server.address);
    *
-   * abortController.abort();
-   * await serverStopped;
+   * await server.stop();
    * ```
    */
-  serve(options: HttpServerOptions): Promise<HttpServerStartResult>;
+  createHttpServer(options: HttpServerOptions): Promise<HttpServer>;
 }
