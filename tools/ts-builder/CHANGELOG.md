@@ -1,5 +1,11 @@
 # @milaboratories/ts-builder
 
+## 1.0.5
+
+### Patch Changes
+
+- 6f85a52: windows friendly runner
+
 ## 1.0.4
 
 ### Patch Changes
