@@ -92,8 +92,6 @@ const getFilterValues = (filter: FilterUi) => {
           </PlBtnSecondary>
         </div>
 
-        <span :class="$style.tip">Lower annotations override the ones above. Rearrange them by dragging.</span>
-
         <PlElementList
           v-model:items="step.filter.filters"
           :get-item-key="(item) => item.id!"
@@ -134,10 +132,5 @@ const getFilterValues = (filter: FilterUi) => {
   display: flex;
   flex-direction: row;
   gap: 12px;
-}
-
-.tip {
-  margin-top: 12px;
-  color: var(--txt-03);
 }
 </style>
