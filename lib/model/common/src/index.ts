@@ -1,6 +1,7 @@
 export * from './author_marker';
 export * from './block_state';
 export * from './bmodel';
+export * from './branding';
 export * from './common_types';
 export * from './driver_kit';
 export * from './drivers';
