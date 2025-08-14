@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.42.24
+
+### Patch Changes
+
+- 448a0c6: remove wrong ui tip
+
 ## 1.42.23
 
 ### Patch Changes
