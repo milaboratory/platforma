@@ -389,6 +389,16 @@ _createAbstractRunCommandPlan := func(state, returnSelfFn) {
 				state.options.substRules[k] = v
 			}
 			return returnSelfFn()
+		},
+
+		dockerTag: func(tag) {
+			state.options.dockerTag = tag
+			return returnSelfFn()
+		},
+
+		dockerEntrypoint: func(entrypoint) {
+			state.options.dockerEntrypoint = entrypoint
+			return returnSelfFn()
 		}
 	})
 
@@ -403,7 +413,9 @@ createRunCommandPlan := func(...initialState) {
 			args: [],
 			envs: {},
 			substRules: {},
-			customPaths: []
+			customPaths: [],
+			dockerTag: undefined,
+            dockerEntrypoint: []
 		}
 	}
 
@@ -448,7 +460,9 @@ builder := func(workdir, ...initialState) {
 			args: [],
 			envs: {},
 			substRules: {},
-			customPaths: []
+			customPaths: [],
+			dockerImageTag: "",
+			dockerEntrypoint: []
 		}
 	}
 
@@ -666,7 +680,9 @@ builder := func(workdir, ...initialState) {
 				redirectStderr: stderr,
 				env: options.envs,
 				additionalPaths: options.customPaths,
-				substitutions: options.substRules
+				substitutions: options.substRules,
+				dockerImageTag: options.dockerTag,
+				dockerEntrypoint: options.dockerEntrypoint
 			}
 
 			optionsRes := smart.createValueResource(_RTYPE_RUN_COMMAND_OPTIONS, json.encode(buildOptions))
