@@ -1,5 +1,11 @@
 # @milaboratories/biowasm-tools
 
+## 1.1.2
+
+### Patch Changes
+
+- b14b2fb: update dist builder
+
 ## 1.1.1
 
 ### Patch Changes

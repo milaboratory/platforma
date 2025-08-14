@@ -1,5 +1,11 @@
 # @milaboratories/pl-error-like
 
+## 1.12.4
+
+### Patch Changes
+
+- b14b2fb: update dist builder
+
 ## 1.12.3
 
 ### Patch Changes

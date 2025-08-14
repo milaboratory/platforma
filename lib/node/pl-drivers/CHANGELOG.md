@@ -1,5 +1,19 @@
 # @milaboratories/pl-drivers
 
+## 1.10.1
+
+### Patch Changes
+
+- b14b2fb: update dist builder
+- 922f14b: Add support range options for getLocalFileContent
+- Updated dependencies [b14b2fb]
+  - @milaboratories/pl-model-common@1.19.11
+  - @milaboratories/computable@2.6.5
+  - @milaboratories/pl-client@2.11.10
+  - @milaboratories/pl-tree@1.7.7
+  - @milaboratories/ts-helpers@1.4.5
+  - @milaboratories/helpers@1.6.21
+
 ## 1.10.0
 
 ### Minor Changes

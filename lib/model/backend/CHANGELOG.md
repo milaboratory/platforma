@@ -1,5 +1,13 @@
 # @milaboratories/pl-model-backend
 
+## 1.1.4
+
+### Patch Changes
+
+- b14b2fb: update dist builder
+- Updated dependencies [b14b2fb]
+  - @milaboratories/pl-client@2.11.10
+
 ## 1.1.3
 
 ### Patch Changes

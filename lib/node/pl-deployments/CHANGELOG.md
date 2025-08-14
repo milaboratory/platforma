@@ -1,5 +1,14 @@
 # @milaboratories/pl-local
 
+## 2.5.1
+
+### Patch Changes
+
+- b14b2fb: update dist builder
+- Updated dependencies [b14b2fb]
+  - @milaboratories/pl-config@1.7.1
+  - @milaboratories/ts-helpers@1.4.5
+
 ## 2.5.0
 
 ### Minor Changes

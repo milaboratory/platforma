@@ -1,5 +1,11 @@
 # @milaboratories/ts-helpers
 
+## 1.4.5
+
+### Patch Changes
+
+- b14b2fb: update dist builder
+
 ## 1.4.4
 
 ### Patch Changes

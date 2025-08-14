@@ -1,5 +1,26 @@
 # @milaboratories/pl-middle-layer
 
+## 1.42.5
+
+### Patch Changes
+
+- b14b2fb: update dist builder
+- Updated dependencies [b14b2fb]
+- Updated dependencies [922f14b]
+  - @milaboratories/pl-model-backend@1.1.4
+  - @milaboratories/pl-model-common@1.19.11
+  - @milaboratories/pl-model-middle-layer@1.8.10
+  - @milaboratories/computable@2.6.5
+  - @milaboratories/pl-client@2.11.10
+  - @milaboratories/pl-config@1.7.1
+  - @milaboratories/pl-deployments@2.5.1
+  - @milaboratories/pl-drivers@1.10.1
+  - @milaboratories/pl-errors@1.1.17
+  - @milaboratories/pl-http@1.1.7
+  - @milaboratories/pl-tree@1.7.7
+  - @milaboratories/ts-helpers@1.4.5
+  - @platforma-sdk/model@1.42.23
+
 ## 1.42.4
 
 ### Patch Changes

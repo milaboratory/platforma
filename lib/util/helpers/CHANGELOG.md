@@ -1,5 +1,11 @@
 # @milaboratories/helpers
 
+## 1.6.21
+
+### Patch Changes
+
+- b14b2fb: update dist builder
+
 ## 1.6.20
 
 ### Patch Changes

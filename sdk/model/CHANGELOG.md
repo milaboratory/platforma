@@ -1,5 +1,14 @@
 # @platforma-sdk/model
 
+## 1.42.23
+
+### Patch Changes
+
+- b14b2fb: update dist builder
+- Updated dependencies [b14b2fb]
+  - @milaboratories/pl-model-common@1.19.11
+  - @milaboratories/pl-error-like@1.12.4
+
 ## 1.42.22
 
 ### Patch Changes

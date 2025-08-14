@@ -1,5 +1,14 @@
 # @milaboratories/pl-errors
 
+## 1.1.17
+
+### Patch Changes
+
+- b14b2fb: update dist builder
+- Updated dependencies [b14b2fb]
+  - @milaboratories/pl-client@2.11.10
+  - @milaboratories/ts-helpers@1.4.5
+
 ## 1.1.16
 
 ### Patch Changes
