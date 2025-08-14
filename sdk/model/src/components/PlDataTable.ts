@@ -224,7 +224,11 @@ export function createPlDataTableStateV2(): PlDataTableStateV2Normalized {
 }
 
 /** Upgrade PlDataTableStateV2 to the latest version */
-export function upgradePlDataTableStateV2(state: PlDataTableStateV2): PlDataTableStateV2Normalized {
+export function upgradePlDataTableStateV2(state: PlDataTableStateV2 | undefined): PlDataTableStateV2Normalized {
+  // Block just added, had no state, model started earlier than the UI
+  if (!state) {
+    return createPlDataTableStateV2();
+  }
   // v1 -> v2
   if (!('version' in state)) {
     // Non upgradeable as sourceId calculation algorithm has changed, resetting state to default
@@ -676,7 +680,7 @@ export function uniqueBy<T>(array: T[], makeId: (entry: T) => string): T[] {
 export function createPlDataTableV2<A, U>(
   ctx: RenderCtx<A, U>,
   inputColumns: PColumn<TreeNodeAccessor | PColumnValues | DataInfo<TreeNodeAccessor>>[],
-  tableState: PlDataTableStateV2,
+  tableState: PlDataTableStateV2 | undefined,
   ops?: CreatePlDataTableOps,
 ): PlDataTableModel | undefined {
   if (inputColumns.length === 0) return undefined;
