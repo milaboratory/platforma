@@ -1,12 +1,12 @@
 {
   "compilerOptions": {
     "customConditions": ["sources"],
+    "strict": true,
+    "noEmit": true,
     "skipLibCheck": true,
-    "resolveJsonModule": true,
     "isolatedModules": true,
     "moduleDetection": "force",
-    "emitDeclarationOnly": false,
-    "strict": true,
+    "resolveJsonModule": true,
     "noImplicitReturns": false,
     "noFallthroughCasesInSwitch": true
   },
