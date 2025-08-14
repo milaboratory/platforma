@@ -65,7 +65,7 @@ const statusText = computed(() => {
     case 'awaiting':
       return 'Waiting for monetization information';
     default:
-      return 'Unknown status: ' + status.value;
+      return '';
   }
 });
 
@@ -83,7 +83,7 @@ const btnIcon = computed(() => {
       </div>
     </template>
     <PlDropdown label="Product" readonly :model-value="productName" :options="options" />
-    <RunStatus :can-run="canRun" :status-text="statusText">
+    <RunStatus :can-run="canRun" :is-loading="isLoading" :status-text="statusText">
       <PlBtnSecondary
         title="Refresh status"
         round
@@ -97,7 +97,7 @@ const btnIcon = computed(() => {
     <PlAlert v-if="error" type="error">
       {{ error }}
     </PlAlert>
-    <UserCabinetCard v-if="userCabinetUrl" :user-cabinet-url="userCabinetUrl" />
+    <UserCabinetCard v-if="userCabinetUrl" :email="customerEmail" :user-cabinet-url="userCabinetUrl" />
     <EndOfPeriod v-if="endOfBillingPeriod" :end-of-period="endOfBillingPeriod" />
     <template v-if="limits">
       <LimitCard

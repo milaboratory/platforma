@@ -14,12 +14,29 @@ import {
   PlFileInput,
   PlRow,
   PlTextField,
+  PlDropdown,
+  PlContainer,
 } from '@platforma-sdk/ui-vue';
 import { useApp } from '../app';
 import { reactive, ref, watch } from 'vue';
 import { parseToken, verify } from '../tokens';
 
 const app = useApp();
+
+const PRODUCT_KEY_PREFIX = 'PRODUCT:';
+const PRODUCT_KEY_LENGTH = 48;
+
+function extractProductKey(key: string) {
+  if (key.startsWith(PRODUCT_KEY_PREFIX)) {
+    key = key.slice(PRODUCT_KEY_PREFIX.length);
+  }
+
+  if (key.length !== PRODUCT_KEY_LENGTH) {
+    throw new Error('Invalid product key');
+  }
+
+  return key;
+}
 
 const dropdownOptions: ListOption<string>[] = [
   {
@@ -73,18 +90,36 @@ watch(() => app.model.outputs.tokens, async (tokens) => {
     return `token: ${t.value}\nresult: ${result}\n${JSON.stringify(parseToken(t.value), null, 2)}\n\n`;
   }) ?? [])).join('\n') ?? '';
 });
+
+const productOptions = [{
+  label: 'Rabbit (no limits)',
+  value: 'PRODUCT:YAGRKKGRBYLCGDLCDVYINUSHYWGYWXWHGIINXYBQBZKMSIRC',
+}, {
+  label: 'Crow (limit 10GB monthly)',
+  value: 'PRODUCT:JLVOZAOIOBZMLCIWQKUYZWLBAEPDHUJPHRHYAOBPDGWPVTJC',
+}, {
+  label: 'Behemoth (1000 runs, 100GB monthly)',
+  value: 'PRODUCT:ZHJBTZESZONNVEFPGWWPDYESVYGXQOOSHYVUBWDXUHSILLDH',
+}];
 </script>
 
 <template>
   <PlBlockPage>
     <template #title>
-      Monetization example
+      Monetization test
     </template>
 
-    <PlTextField
-      v-model="app.model.args.productKey"
-      label="Enter product key" clearable
-    />
+    <PlRow>
+      <PlContainer width="400px">
+        <PlDropdown v-model="app.model.args.productKey" label="Select product" :options="productOptions" />
+        <PlTextField
+          v-model="app.model.args.productKey"
+          label="or enter product key"
+          clearable
+          :parse="extractProductKey"
+        />
+      </PlContainer>
+    </PlRow>
 
     <PlCheckbox v-model="app.model.args.shouldAddRunPerFile"> Add run per file </PlCheckbox>
 

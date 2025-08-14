@@ -8,7 +8,8 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "ts-builder build --target block-model && block-tools build-model",
-    "type-check": "ts-builder types --target block-model"
+    "type-check": "ts-builder types --target block-model",
+    "build2": "tsc --project tsconfig.json"
   },
   "dependencies": {
     "@platforma-sdk/model": "workspace:"

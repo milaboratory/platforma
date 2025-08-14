@@ -10,6 +10,11 @@ const props = defineProps<{
   unit?: string;
 }>();
 
+const availableNow = computed(() => {
+  if (props.available === null) return null;
+  return props.available + props.toSpend;
+});
+
 const toSpendPercentage = computed(() => {
   if (props.available === null) return 0;
   return (props.toSpend / props.available) * 100;
@@ -39,6 +44,10 @@ const formatUnit = (v: number) => {
   if (props.type === 'volume_limit') return toGB(v);
   return v;
 };
+
+const showBar = (n: number) => {
+  return Number(n.toFixed(2)) > 0;
+};
 </script>
 
 <template>
@@ -46,24 +55,30 @@ const formatUnit = (v: number) => {
     <span :class="$style.label">{{ computedLabel }}</span>
     <div :class="$style.content">
       <div :class="$style.contentAvailable">
-        Available:
-        <div style="flex: 1" />
-        <span v-if="available !== null"><strong>{{ formatUnit(available) }}</strong> / {{ formatUnit(available + toSpend + used) }}</span>
-        <span v-else>Unlimited</span>
-      </div>
-      <div :class="$style.progressBar">
-        <span :class="$style.progressBarAvailable" :style="{ width: `${availablePercentage}%` }" />
-        <span :class="$style.progressBarToSpend" :style="{ width: `${toSpendPercentage}%` }" />
-        <span :class="$style.progressBarUsed" :style="{ width: `${usedPercentage}%` }" />
+        <div>
+          Available:
+          <div style="flex: 1" />
+          <span v-if="availableNow !== null"><strong>{{ formatUnit(availableNow) }}</strong> / {{ formatUnit(available! + toSpend + used) }}</span>
+          <span v-else>Unlimited</span>
+        </div>
+        <div :class="$style.afterRun">
+          <span>After run:</span>
+          <span v-if="available !== null">{{ formatUnit(available) }} / {{ formatUnit(available + toSpend + used) }}</span>
+        </div>
+        <div :class="$style.progressBar">
+          <span v-if="showBar(availablePercentage)" :class="$style.progressBarAvailable" :style="{ width: `${availablePercentage.toFixed(2)}%` }" />
+          <span v-if="showBar(toSpendPercentage)" :class="$style.progressBarToSpend" :style="{ width: `${toSpendPercentage.toFixed(2)}%` }" />
+          <span v-if="showBar(usedPercentage)" :class="$style.progressBarUsed" :style="{ width: `${usedPercentage.toFixed(2)}%` }" />
+        </div>
       </div>
       <div :class="$style.legends">
-        <div :class="$style.usedLegend">
-          <span/>
-          Used: {{ formatUnit(used) }}
-        </div>
         <div :class="$style.toSpendLegend">
           <span/>
           To spend: {{ formatUnit(toSpend) }}
+        </div>
+        <div :class="$style.usedLegend">
+          <span/>
+          Used: {{ formatUnit(used) }}
         </div>
       </div>
     </div>
@@ -74,7 +89,6 @@ const formatUnit = (v: number) => {
 .container {
   display: flex;
   flex-direction: column;
-  gap: 8px;
   background-color: var(--bg-base-light);
   border-radius: 6px;
   padding: 10px 12px 16px 12px;
@@ -87,7 +101,8 @@ const formatUnit = (v: number) => {
 
 .label {
   display: block;
-  margin-bottom: 30px;
+  min-height: 36px;
+  margin-bottom: 8px;
   color: var(--txt-01);
   font-size: 14px;
   font-weight: 600;
@@ -97,64 +112,77 @@ const formatUnit = (v: number) => {
 .content {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
 }
 
 .contentAvailable {
   display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  strong {
-    font-size: 28px;
-    font-weight: 500;
-    line-height: 36px; /* 128.571% */
-    letter-spacing: -0.56px;
+  flex-direction: column;
+  gap: 6px;
+  > div {
+    display: flex;
+    align-items: flex-start;
   }
+  >div:first-child {
+    gap: 8px;
+    strong {
+      font-size: 28px;
+      font-weight: 500;
+      line-height: 36px; /* 128.571% */
+      letter-spacing: -0.56px;
+    }
+  }
+}
+
+.afterRun {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: 16px;
+  color: var(--txt-03);
 }
 
 .progressBar {
   width: 100%;
-  height: 8px;
+  height: 12px;
   background-color: #E0E0E0;
-  border-radius: 4px;
   display: flex;
   align-items: center;
   border: 1px solid var(--border-color-default);
   > span {
     display: block;
     height: 100%;
+    outline: 1px solid var(--border-color-default);
   }
 }
 
 .progressBarAvailable {
-  background-color: #49CC49;
-  border-radius: 4px;
+  background: linear-gradient(270deg, #A1E59C 0%, #D0F5B0 98.81%);
 }
 
 .progressBarUsed {
   background-color: #FFCECC;
-  border-radius: 4px;
 }
 
 .progressBarToSpend {
   background-color: #FAF5AA;
-  border-radius: 4px;
 }
 
 .legends {
   display: flex;
+  justify-content: space-between;
   gap: 8px;
-
-  > div {
-    flex: 1;
-  }
 
   span {
     display: block;
     border-radius: 1px;
     border: 1px solid var(--border-color-default);
-    width: 16px;
-    height: 16px;
+    width: 12px;
+    height: 12px;
   }
 }
 
