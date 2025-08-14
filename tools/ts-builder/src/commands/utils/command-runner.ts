@@ -1,31 +1,26 @@
 import { spawn } from 'child_process';
+import { join } from 'path';
 
 export function runCommand(command: string, args: string[]): Promise<void> {
   return new Promise((resolve, reject) => {
     const prettyeCommand = command.includes('/bin/') ? command.split('/bin/')[1] : command;
     const prettyArgs = args.map(arg => {
-      if (arg.includes('/tools/ts-builder/dist/')) {
-        return arg.split('/tools/ts-builder/dist/')[1];
+      if (arg.includes(join('tools', 'ts-builder', 'dist'))) {
+        return arg.split(join('tools', 'ts-builder', 'dist'))[1];
       }
       return arg;
     });
     console.log(`↳ ${prettyeCommand} ${prettyArgs.join(' ')}`);
 
-    const child = spawn(command, args, {
-      stdio: 'inherit',
-      shell: true
+    // @TODO: correct parse command file if you want spawn not only Nodejs commands
+    const child = spawn(process.execPath, [command, ...args], {
+      stdio: 'inherit'
     });
 
+    child.on('error', reject);
     child.on('close', (code) => {
-      if (code === 0) {
-        resolve();
-      } else {
-        reject(new Error(`Command failed with exit code ${code}`));
-      }
-    });
-
-    child.on('error', (error) => {
-      reject(error);
+      if (code === 0) resolve();
+      else reject(new Error(`Command failed with exit code ${code}`));
     });
   });
 }
