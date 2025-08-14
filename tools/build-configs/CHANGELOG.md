@@ -1,5 +1,11 @@
 # @milaboratories/build-configs
 
+## 1.0.8
+
+### Patch Changes
+
+- 215c50b: avoid nested node_modules
+
 ## 1.0.7
 
 ### Patch Changes
