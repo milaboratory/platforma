@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 1.42.6
+
+### Patch Changes
+
+- a4479a5: [Test fix] Bump ml version
+
 ## 1.42.5
 
 ### Patch Changes
