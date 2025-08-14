@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.19.12
+
+### Patch Changes
+
+- 2589dec: Export Branded type from model-common
+
 ## 1.19.11
 
 ### Patch Changes
