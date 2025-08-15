@@ -1,0 +1,16 @@
+# Auto-generated Dockerfile for Python package
+FROM python:${PYTHON_VERSION}-slim
+
+WORKDIR /app
+
+# Install dependencies to leverage Docker cache
+${PYTHON_INSTALL_DEPS}
+
+# Copy package source
+COPY . /app/
+
+# Set Python path
+ENV PYTHONPATH=/app
+
+# Default command (will be overridden by entrypoint)
+CMD ["python", "--version"]

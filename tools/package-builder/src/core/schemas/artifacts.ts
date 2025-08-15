@@ -110,7 +110,7 @@ export type javaPackageConfig = z.infer<typeof javaPackageSchema>;
 
 const pipToolsetSchema = z.strictObject({
   toolset: z.literal('pip'),
-  requirements: z.string().describe('path to requrements.txt inside package archive'),
+  requirementsFile: z.string().describe('path to requirements.txt inside package archive'),
 });
 
 export const pythonToolsetSchema = z.discriminatedUnion('toolset', [pipToolsetSchema]);
@@ -118,7 +118,7 @@ export const pythonToolsetSchema = z.discriminatedUnion('toolset', [pipToolsetSc
 export const pythonPackageSchema = archiveRulesSchema.extend({
   type: z.literal('python'),
   environment: artifactIDSchema,
-  dependencies: pythonToolsetSchema,
+  dependencies: pythonToolsetSchema.optional(),
 });
 export type pythonPackageConfig = z.infer<typeof pythonPackageSchema>;
 
