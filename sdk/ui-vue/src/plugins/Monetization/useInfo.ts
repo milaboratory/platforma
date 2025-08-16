@@ -38,7 +38,7 @@ export function useInfo() {
 
   const canRun = computed(() => !!result.value?.canRun);
 
-  const status = computed(() => currentInfo.value ? result.value?.status : 'awaiting');
+  const status = computed(() => currentInfo.value ? result.value?.status : '');
 
   const customerEmail = computed(() => result.value?.customerEmail);
 

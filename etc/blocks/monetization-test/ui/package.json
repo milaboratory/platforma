@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "ts-builder serve --target browser",
+    "lint": "eslint .",
     "watch": "ts-builder build --target browser --watch",
     "build": "ts-builder build --target browser",
     "type-check": "ts-builder types --target browser"

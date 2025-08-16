@@ -4,6 +4,7 @@ import { PlTooltip, PlMaskIcon24 } from '@milaboratories/uikit';
 
 const props = defineProps<{
   userCabinetUrl: string;
+  email?: string;
 }>();
 
 const copiedMessage = ref('');
@@ -41,6 +42,10 @@ const copyToClipboard = () => {
           <template #tooltip>{{ copiedMessage ? copiedMessage : 'Copy' }}</template>
         </PlTooltip>
       </div>
+      <div v-if="email" :class="$style.email">
+        <span>License owner:</span>
+        <span>{{ email }}</span>
+      </div>
     </div>
     <div :class="$style.hint">
       * Copy and paste the link into your browser
@@ -57,6 +62,22 @@ const copyToClipboard = () => {
   line-height: 16px;
 }
 
+.email {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--txt-03);
+
+  > span:last-child {
+    max-width: 200px;
+    text-overflow: ellipsis;
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+}
+
 .copyIcon {
   cursor: pointer;
 }
@@ -66,8 +87,9 @@ const copyToClipboard = () => {
   flex-direction: column;
   gap: 8px;
   padding: 12px;
-  background-color: #f0f0f0;
+  background-color: #F7F8FA;
   border-radius: 6px;
+  border: 1px solid #E1E3EB;
 }
 
 .urlLabel {
