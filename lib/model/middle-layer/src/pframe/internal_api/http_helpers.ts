@@ -1,15 +1,7 @@
 import type { Readable } from 'node:stream';
 import type { RequestListener } from 'node:http';
-import type { AddressInfo } from 'node:net';
 import type { Branded } from '@milaboratories/pl-model-common';
-
-/** File statistics */
-export type FileStats = {
-  /** File size in bytes */
-  size: number;
-  /** File modification time if available */
-  mtime?: Date;
-};
+import { SecureContextOptions } from 'node:tls';
 
 /** File range specification */
 export type FileRange = {
@@ -27,36 +19,15 @@ export type FileRange = {
  */
 export interface ObjectStore {
   /**
-   * Check if file exists
+   * Get file size, rejects if file does not exist.
    *
    * @example
    * ```ts
-   * async fileExists(filename: string): Promise<boolean> {
+   * async getFileSize(filename: string): Promise<number> {
    *   const filePath = this.resolve(filename);
    *   try {
-   *     await fs.access(filePath, constants.F_OK);
-   *     return true;
-   *   } catch {
-   *     return false;
-   *   }
-   * }
-   * ```
-   */
-  fileExists(filename: string): Promise<boolean>;
-
-  /**
-   * Get file statistics
-   *
-   * @example
-   * ```ts
-   * async getFileStats(filename: string): Promise<FileStats> {
-   *   const filePath = this.resolve(filename);
-   *   try {
-   *     const stats = await fs.stat(filePath);
-   *     return {
-   *       size: stats.size,
-   *       mtime: stats.mtime
-   *     };
+   *     const { size } = await fs.stat(filePath);
+   *     return { size };
    *   } catch (err: unknown) {
    *     throw new Error(
    *       `Failed to get file statistics for: ${filename} - ${ensureError(err)}`
@@ -65,7 +36,7 @@ export interface ObjectStore {
    * }
    * ```
    */
-  getFileStats(filename: string): Promise<FileStats>;
+  getFileSize(filename: string): Promise<number>;
 
   /**
    * Execute action with readable stream.
@@ -92,13 +63,7 @@ export interface ObjectStore {
    *     );
    *   }
    *
-   *   try {
-   *     await action(stream);
-   *   } finally {
-   *     if (!stream.destroyed) {
-   *       stream.destroy();
-   *     }
-   *   }
+   *   return await action(stream);
    * }
    * ```
    */
@@ -112,6 +77,10 @@ export interface ObjectStore {
 /** Object store base URL in format accepted by Apache DataFusion and DuckDB */
 export type ObjectStoreUrl = Branded<string, 'PFrameInternal.ObjectStoreUrl'>;
 
+/** TLS options for HTTP server */
+export type TlsOptions = Required<Pick<SecureContextOptions, 'cert' | 'key'>> &
+  Pick<SecureContextOptions, 'ca'>; // set `ca` for self-signed certificates
+
 /** Server configuration options */
 export type HttpServerOptions = {
   /** HTTP request handler function */
@@ -120,15 +89,17 @@ export type HttpServerOptions = {
   host?: string;
   /** Port to bind to (defaults to 0 for auto-assignment) */
   port?: number;
+  /** TLS options, when provided will start HTTPS server instead of HTTP */
+  tls?: TlsOptions;
 };
 
 /** Result of the server start operation */
 export interface HttpServer {
-  /** Server address info */
-  get address(): AddressInfo;
+  /** Server address info in format accepted by Apache DataFusion and DuckDB */
+  get address(): ObjectStoreUrl;
   /** Promise that resolves when the server is stopped */
   get stopped(): Promise<void>;
-  /** Stop the server */
+  /** Request server stop, returns the same promise as @see HttpServer.stopped */
   stop(): Promise<void>;
 }
 
@@ -144,14 +115,9 @@ export interface HttpHelpers {
    * Create an HTTP request handler for serving files from an object store.
    * Accepts only paths of the form `/<filename>.parquet`, returns 404 otherwise.
    * Assumes that files are immutable (and sets cache headers accordingly).
+   * Enforces authentication using Bearer scheme if @param authToken is provided.
    */
-  createRequestHandler(store: ObjectStore): RequestListener;
-
-  /**
-   * Create an object store URL from the server address info.
-   * Result of this function is intended to be passed to PFrames as data source parquet prefix.
-   */
-  createObjectStoreUrl(info: AddressInfo): ObjectStoreUrl;
+  createRequestHandler(store: ObjectStore, authToken?: string): RequestListener;
 
   /**
    * Serve HTTP requests using the provided handler on the given host and port.
@@ -160,6 +126,7 @@ export interface HttpHelpers {
    * @example
    * ```ts
    * const rootDir = '/path/to/directory/with/parquet/files';
+   * const authToken = randomUUID();
    * const port = 3000;
    *
    * let store = await HttpHelpers.createFsStore(rootDir).catch((err: unknown) => {
@@ -167,13 +134,13 @@ export interface HttpHelpers {
    * });
    *
    * const server = await HttpHelpers.createHttpServer({
-   *   handler: HttpHelpers.createRequestHandler(store),
+   *   handler: HttpHelpers.createRequestHandler(store, authToken),
    *   port,
    * }).catch((err: unknown) => {
    *   throw new Error(`Failed to start http server on port ${port} - ${ensureError(err)}`);
    * });
    *
-   * const _ = HttpHelpers.createObjectStoreUrl(server.address);
+   * const _ = server.address;
    *
    * await server.stop();
    * ```
