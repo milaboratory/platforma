@@ -62,8 +62,6 @@ const statusText = computed(() => {
       return 'Select a subscription plan in the Scientist Cabinet.';
     case 'inactive':
       return 'Not found billing period.';
-    case 'awaiting':
-      return 'Waiting for monetization information';
     default:
       return '';
   }

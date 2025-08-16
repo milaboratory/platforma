@@ -41,13 +41,13 @@ export const model = BlockModel.create()
   .output('progresses', (ctx) => {
     const m = ctx.prerun?.resolve('progresses');
     const progresses = m?.mapFields((name, val) => [name, val?.getImportProgress()])
-    return Object.fromEntries(progresses ?? []) as Record<string, ImportProgress>;
+    return Object.fromEntries(progresses ?? []);
   })
 
   .output('mainProgresses', (ctx) => {
     const m = ctx.outputs?.resolve('progresses');
     const progresses = m?.mapFields((name, val) => [name, val?.getImportProgress()])
-    return Object.fromEntries(progresses ?? []) as Record<string, ImportProgress>;
+    return Object.fromEntries(progresses ?? []);
   })
 
   .sections((_) => [{ type: 'link', href: '/', label: 'Main' }])

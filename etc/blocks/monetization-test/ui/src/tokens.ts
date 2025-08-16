@@ -1,9 +1,14 @@
 const publicKey = 'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAECGShTw8Plag1uMuCg9OMYVHCF+wzjvXKr3cihyO77jEe9CrF6RP9tfnCd2XjM7XqQ0QH3i41rz5ohCB9fDDBbQ==';
 
-export const parseToken = (token: string) => {
+const splitAndValidateToken = (token: string): [string, string, string] => {
   const [base64Header, base64Payload, signature] = token.split('.');
   if (!base64Header || typeof base64Payload !== 'string' || typeof signature !== 'string')
     throw new Error('Invalid token body');
+  return [base64Header, base64Payload, signature];
+};
+
+export const parseToken = (token: string) => {
+  const [, base64Payload] = splitAndValidateToken(token);
   return JSON.parse(atob(base64Payload));
 };
 
@@ -16,9 +21,7 @@ export async function verify(token: string) {
     ['verify'],
   );
 
-  const [base64Header, base64Payload, signature] = token.split('.');
-  if (!base64Header || typeof base64Payload !== 'string' || typeof signature !== 'string')
-    throw new Error('Invalid token body');
+  const [base64Header, base64Payload, signature] = splitAndValidateToken(token);
 
   const signatureBinary = Uint8Array.from(
     atob(signature.replace(/-/g, '+').replace(/_/g, '/')),
