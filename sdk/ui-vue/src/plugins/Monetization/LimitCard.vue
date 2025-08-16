@@ -10,24 +10,42 @@ const props = defineProps<{
   unit?: string;
 }>();
 
+const total = computed(() => {
+  if (props.available === null) return null;
+  return props.available + props.toSpend + props.used;
+});
+
+const exceeded = computed(() => {
+  if (props.available === null) return false;
+  return props.available < 0;
+});
+
 const availableNow = computed(() => {
   if (props.available === null) return null;
   return props.available + props.toSpend;
 });
 
+const clampPercentage = (n: number) => Math.max(0, Math.min(100, n));
+
 const toSpendPercentage = computed(() => {
-  if (props.available === null) return 0;
-  return (props.toSpend / props.available) * 100;
+  if (total.value === null) return 0;
+  if (total.value === 0) return 0;
+  if (exceeded.value) return 0;
+  return clampPercentage((props.toSpend / total.value) * 100);
 });
 
 const usedPercentage = computed(() => {
-  if (props.available === null) return 0;
-  return (props.used / props.available) * 100;
+  if (total.value === null) return 0;
+  if (total.value === 0) return 0;
+  return clampPercentage((props.used / total.value) * 100);
 });
 
 const availablePercentage = computed(() => {
   if (props.available === null) return 100;
-  return 100 - usedPercentage.value - toSpendPercentage.value;
+  if (total.value === null) return 100;
+  if (total.value === 0) return 100;
+  if (exceeded.value) return 0;
+  return clampPercentage(props.available / total.value * 100);
 });
 
 const computedLabel = computed(() => {
@@ -61,11 +79,13 @@ const showBar = (n: number) => {
           <span v-if="availableNow !== null"><strong>{{ formatUnit(availableNow) }}</strong> / {{ formatUnit(available! + toSpend + used) }}</span>
           <span v-else>Unlimited</span>
         </div>
-        <div :class="$style.afterRun">
+        <div :class="[$style.afterRun, { [$style.exceeded]: exceeded }]">
+          <span v-if="exceeded">Too many files selected</span>
+          <span style="flex: 1" />
           <span>After run:</span>
           <span v-if="available !== null">{{ formatUnit(available) }} / {{ formatUnit(available + toSpend + used) }}</span>
         </div>
-        <div :class="$style.progressBar">
+        <div :class="[$style.progressBar, { [$style.exceeded]: exceeded }]">
           <span v-if="showBar(availablePercentage)" :class="$style.progressBarAvailable" :style="{ width: `${availablePercentage.toFixed(2)}%` }" />
           <span v-if="showBar(toSpendPercentage)" :class="$style.progressBarToSpend" :style="{ width: `${toSpendPercentage.toFixed(2)}%` }" />
           <span v-if="showBar(usedPercentage)" :class="$style.progressBarUsed" :style="{ width: `${usedPercentage.toFixed(2)}%` }" />
@@ -144,6 +164,9 @@ const showBar = (n: number) => {
   font-weight: 500;
   line-height: 16px;
   color: var(--txt-03);
+  &.exceeded {
+    color: var(--txt-error);
+  }
 }
 
 .progressBar {
@@ -157,6 +180,9 @@ const showBar = (n: number) => {
     display: block;
     height: 100%;
     outline: 1px solid var(--border-color-default);
+  }
+  &.exceeded {
+    opacity: 0.2;
   }
 }
 

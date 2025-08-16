@@ -100,6 +100,9 @@ const productOptions = [{
 }, {
   label: 'Behemoth (1000 runs, 100GB monthly)',
   value: 'PRODUCT:ZHJBTZESZONNVEFPGWWPDYESVYGXQOOSHYVUBWDXUHSILLDH',
+}, {
+  label: 'Kolibri (100 runs)',
+  value: 'PRODUCT:EBVGZXPBYZLGKQHLFDVCCVFRLKTZZTJSWMNJGXNHVTMKNSPA',
 }];
 </script>
 
