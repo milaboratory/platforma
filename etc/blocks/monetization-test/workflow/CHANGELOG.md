@@ -1,5 +1,12 @@
 # @milaboratories/milaboratories.monetization-test.workflow
 
+## 1.1.2
+
+### Patch Changes
+
+- 5714f79: Fix Monetization sidebar appearance
+- 5714f79: Fix "Run per file mode"
+
 ## 1.1.1
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.42.26
+
+### Patch Changes
+
+- 5714f79: Fix Monetization sidebar appearance
+
 ## 1.42.24
 
 ### Patch Changes

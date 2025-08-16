@@ -1,5 +1,16 @@
 # @milaboratories/milaboratories.monetization-test.ui
 
+## 1.1.84
+
+### Patch Changes
+
+- 5714f79: Fix Monetization sidebar appearance
+- 5714f79: Fix "Run per file mode"
+- Updated dependencies [5714f79]
+- Updated dependencies [5714f79]
+  - @milaboratories/milaboratories.monetization-test.model@1.0.7
+  - @platforma-sdk/ui-vue@1.42.26
+
 ## 1.1.83
 
 ### Patch Changes
