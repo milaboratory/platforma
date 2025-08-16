@@ -35,9 +35,6 @@ export const model = BlockModel.create()
     return {
       name: field,
       value: ctx.outputs?.resolve('token', field)?.getDataAsString()
-    } as {
-      name: string,
-      value: string
     }
   }))
 

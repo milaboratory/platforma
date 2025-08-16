@@ -86,6 +86,10 @@ const tokensResult = ref<string>('');
 
 watch(() => app.model.outputs.tokens, async (tokens) => {
   tokensResult.value = (await Promise.all(tokens?.map(async (t) => {
+    if (!t.value) {
+      return 'token is empty';
+    }
+
     const result = await verify(t.value);
     return `token: ${t.value}\nresult: ${result}\n${JSON.stringify(parseToken(t.value), null, 2)}\n\n`;
   }) ?? [])).join('\n') ?? '';
