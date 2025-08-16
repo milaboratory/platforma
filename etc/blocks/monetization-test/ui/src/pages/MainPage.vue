@@ -1,17 +1,47 @@
 <script setup lang="ts">
 import type { ImportFileHandle } from '@platforma-sdk/model';
+import { getFileNameFromHandle } from '@platforma-sdk/model';
 import type { ImportedFiles, ListOption } from '@platforma-sdk/ui-vue';
-
-import { PlCheckbox, PlAlert, PlBlockPage, PlContainer, PlRow, PlTextField, PlBtnPrimary, PlFileDialog, PlFileInput, PlDropdownMulti } from '@platforma-sdk/ui-vue';
+import {
+  PlDialogModal,
+  PlLogView,
+  PlAlert,
+  PlBlockPage,
+  PlBtnPrimary,
+  PlCheckbox,
+  PlDropdownMulti,
+  PlFileDialog,
+  PlFileInput,
+  PlRow,
+  PlTextField,
+  PlDropdown,
+  PlContainer,
+} from '@platforma-sdk/ui-vue';
 import { useApp } from '../app';
-import { computed, reactive, ref } from 'vue';
+import { reactive, ref, watch } from 'vue';
+import { parseToken, verify } from '../tokens';
 
 const app = useApp();
+
+const PRODUCT_KEY_PREFIX = 'PRODUCT:';
+const PRODUCT_KEY_LENGTH = 48;
+
+function extractProductKey(key: string) {
+  if (key.startsWith(PRODUCT_KEY_PREFIX)) {
+    key = key.slice(PRODUCT_KEY_PREFIX.length);
+  }
+
+  if (key.length !== PRODUCT_KEY_LENGTH) {
+    throw new Error('Invalid product key');
+  }
+
+  return key;
+}
 
 const dropdownOptions: ListOption<string>[] = [
   {
     text: 'sha256',
-    value: 'sha256'
+    value: 'sha256',
   },
   {
     text: 'lines (only in .zip files)',
@@ -19,15 +49,15 @@ const dropdownOptions: ListOption<string>[] = [
   },
   {
     text: 'size',
-    value: 'size'
-  }
+    value: 'size',
+  },
 ];
 
 const files = reactive<{
   isMultiDialogFileOpen: boolean;
 }>({
   isMultiDialogFileOpen: false,
-})
+});
 
 const updateHandle = (v: ImportFileHandle | undefined, i: number) => {
   if (v) {
@@ -40,108 +70,113 @@ const updateHandle = (v: ImportFileHandle | undefined, i: number) => {
 const onImport = (imported: ImportedFiles) => {
   app.model.args.inputHandles = imported.files.map((h, i) => ({
     handle: h,
-    fileName: `test${i}.txt`,
+    fileName: getFileNameFromHandle(h),
     argName: `arg_${i}`,
-    options: ['size', 'sha256']
+    options: ['size', 'sha256'],
   }));
 };
 
-const parsedToken = computed({
-  get: () => {
-    const splitted = app.model.outputs.token?.split('.') ?? [];
-    const data = splitted[1];
-    return JSON.parse(atob(data));
-  },
-  set: () => {}
-})
-
 const verificationResult = ref('');
 
-const publicKey = 'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAECGShTw8Plag1uMuCg9OMYVHCF+wzjvXKr3cihyO77jEe9CrF6RP9tfnCd2XjM7XqQ0QH3i41rz5ohCB9fDDBbQ==';
+const isDialogFileOpen = ref(false);
 
-async function verify(token: string) {
-  const cryptoPublicKey = await crypto.subtle.importKey(
-    'spki',
-    Uint8Array.from(atob(publicKey), c => c.charCodeAt(0)).buffer,
-    { name: 'ECDSA', namedCurve: 'P-256' },
-    true,
-    ['verify']
-  );
+const isTokenDialogOpen = ref(false);
 
-  const [base64Header, base64Payload, signature] = token.split('.');
-  if (!base64Header || typeof base64Payload !== 'string' || typeof signature !== 'string')
-    throw new Error('Invalid token body');
+const tokensResult = ref<string>('');
 
-  const signatureBinary = Uint8Array.from(
-    atob(signature.replace(/-/g, '+').replace(/_/g, '/')),
-    c => c.charCodeAt(0)
-  );
+watch(() => app.model.outputs.tokens, async (tokens) => {
+  tokensResult.value = (await Promise.all(tokens?.map(async (t) => {
+    if (!t.value) {
+      return 'token is empty';
+    }
 
-  try {
-    const result = await crypto.subtle.verify(
-      { name: 'ECDSA', hash: { name: 'SHA-256' } },
-      cryptoPublicKey,
-      signatureBinary,
-      new TextEncoder().encode(`${base64Header}.${base64Payload}`)
-    );
+    const result = await verify(t.value);
+    return `token: ${t.value}\nresult: ${result}\n${JSON.stringify(parseToken(t.value), null, 2)}\n\n`;
+  }) ?? [])).join('\n') ?? '';
+});
 
-    if (result)
-      verificationResult.value = "Signature is correct";
-    else
-      verificationResult.value = "Signature is incorrect";
-  } catch (e: unknown) {
-    verificationResult.value = "Verification failed";
-  }
-}
-
-
+const productOptions = [{
+  label: 'Rabbit (no limits)',
+  value: 'PRODUCT:YAGRKKGRBYLCGDLCDVYINUSHYWGYWXWHGIINXYBQBZKMSIRC',
+}, {
+  label: 'Crow (limit 10GB monthly)',
+  value: 'PRODUCT:JLVOZAOIOBZMLCIWQKUYZWLBAEPDHUJPHRHYAOBPDGWPVTJC',
+}, {
+  label: 'Behemoth (1000 runs, 100GB monthly)',
+  value: 'PRODUCT:ZHJBTZESZONNVEFPGWWPDYESVYGXQOOSHYVUBWDXUHSILLDH',
+}, {
+  label: 'Kolibri (100 runs)',
+  value: 'PRODUCT:EBVGZXPBYZLGKQHLFDVCCVFRLKTZZTJSWMNJGXNHVTMKNSPA',
+}];
 </script>
 
 <template>
   <PlBlockPage>
-
     <template #title>
-      Monetization example
+      Monetization test
     </template>
 
-    <PlTextField v-model="app.model.args.productKey"
-      label="Enter product key (keep MIFAKEMIFAKEMIFAKE for fake product)" clearable />
+    <PlRow>
+      <PlContainer width="400px">
+        <PlDropdown v-model="app.model.args.productKey" label="Select product" :options="productOptions" />
+        <PlTextField
+          v-model="app.model.args.productKey"
+          label="or enter product key"
+          clearable
+          :parse="extractProductKey"
+        />
+      </PlContainer>
+    </PlRow>
 
-    <PlCheckbox v-model="app.model.args.shouldAddRunPerFile" > Add run per file </PlCheckbox>
+    <PlCheckbox v-model="app.model.args.shouldAddRunPerFile"> Add run per file </PlCheckbox>
 
-    <PlContainer width="400px">
+    <PlRow width="400px">
       <PlBtnPrimary @click="files.isMultiDialogFileOpen = true">
         Open multiple files to monetize
       </PlBtnPrimary>
-    </PlContainer>
+      <PlBtnPrimary :disabled="!app.model.outputs['__mnzInfo']" @click="isDialogFileOpen = true">
+        Show mnz info
+      </PlBtnPrimary>
+    </PlRow>
     <template v-for="({ handle }, i) of app.model.args.inputHandles" :key="i">
       <PlRow>
         <PlTextField v-model="app.model.args.inputHandles[i].fileName" label="Type file name" />
         <PlTextField v-model="app.model.args.inputHandles[i].argName" label="Type argument name" />
-        <PlFileInput :model-value="handle"
-          @update:model-value="(v: ImportFileHandle | undefined) => updateHandle(v, i)" />
-        <PlDropdownMulti label="Metrics to monetize" v-model="app.model.args.inputHandles[i].options"
-          :options="dropdownOptions" />
+        <PlFileInput
+          :model-value="handle"
+          @update:model-value="(v: ImportFileHandle | undefined) => updateHandle(v, i)"
+        />
+        <PlDropdownMulti
+          v-model="app.model.args.inputHandles[i].options" label="Metrics to monetize"
+          :options="dropdownOptions"
+        />
       </PlRow>
     </template>
-    <PlFileDialog v-model="files.isMultiDialogFileOpen" multi @import:files="onImport" />
 
-    <PlContainer />
+    <PlRow>
+      <PlBtnPrimary @click="isTokenDialogOpen = true">
+        Show tokens
+      </PlBtnPrimary>
+    </PlRow>
 
-    <pre> {{ app.model.outputs['__mnzInfo'] }} </pre>
-
-    <PlAlert label="token" v-if="app.model.outputs.token"> {{ app.model.outputs.token }}
-    </PlAlert>
-
-    <PlBtnPrimary v-if="app.model.outputs.token" @click="verify(app.model.outputs.token)">
-      Verify</PlBtnPrimary>
-
-    <PlAlert label="token verification" v-if="verificationResult"> {{ verificationResult }}
-    </PlAlert>
-
-    <PlAlert label="trying to parse a token" v-if="app.model.outputs.token">
-      <pre> {{ JSON.stringify(parsedToken, null, 2) }} </pre>
-    </PlAlert>
-
+    <PlAlert v-if="verificationResult" label="token verification"> {{ verificationResult }}</PlAlert>
   </PlBlockPage>
+
+  <PlFileDialog v-model="files.isMultiDialogFileOpen" multi @import:files="onImport" />
+
+  <PlDialogModal v-model="isDialogFileOpen" size="medium">
+    <template #title>
+      Monetization info
+    </template>
+    <PlLogView :value="JSON.stringify(app.model.outputs['__mnzInfo'], null, 2)" />
+  </PlDialogModal>
+
+  <PlDialogModal v-model="isTokenDialogOpen" size="medium">
+    <template #title>
+      Tokens
+    </template>
+    <PlLogView
+      :value="tokensResult"
+    />
+  </PlDialogModal>
 </template>
