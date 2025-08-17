@@ -19,20 +19,17 @@ export type FileRange = {
  */
 export interface ObjectStore {
   /**
-   * Get file size, rejects if file does not exist.
+   * @returns file size in bytes or `-1` if file does not exist or permissions do not allow access.
+   * @throws on network errors
    *
    * @example
    * ```ts
    * async getFileSize(filename: string): Promise<number> {
    *   const filePath = this.resolve(filename);
-   *   try {
-   *     const { size } = await fs.stat(filePath);
-   *     return { size };
-   *   } catch (err: unknown) {
-   *     throw new Error(
-   *       `Failed to get file statistics for: ${filename} - ${ensureError(err)}`
-   *     );
-   *   }
+   *   return await fs
+   *     .stat(filePath)
+   *     .then((stat) => ({ size: stat.isFile() ? stat.size : -1 }))
+   *     .catch(() => ({ size: -1 }));
    * }
    * ```
    */
@@ -40,15 +37,19 @@ export interface ObjectStore {
 
   /**
    * Execute action with readable stream.
-   * Action resolves when stream is closed eigher by handler
-   * @see HttpHelpers.createRequestHandler or the store itself.
-   * Returned promise resolves after the action is completed.
+   * Action resolves when stream is closed by handler @see HttpHelpers.createRequestHandler
+   * 
+   * @param filename - existing file name (for which @see ObjectStore.getFileSize returned non-negative value)
+   * @param range - valid range of bytes to read from the file (store may skip validation)
+   * @param action - function to execute with the stream, responsible for closing the stream
+   * @returns promise that resolves after the action is completed
+   * @throws on network errors
    *
    * @example
    * ```ts
    * async withReadStream(params: {
    *   filename: string;
-   *   range?: FileRange;
+   *   range: FileRange;
    *   action: (stream: Readable) => Promise<void>;
    * }): Promise<void> {
    *   const { filename, range, action } = params;
@@ -69,8 +70,8 @@ export interface ObjectStore {
    */
   withReadStream(params: {
     filename: string;
+    range: FileRange;
     action: (stream: Readable) => Promise<void>;
-    range?: FileRange;
   }): Promise<void>;
 }
 
