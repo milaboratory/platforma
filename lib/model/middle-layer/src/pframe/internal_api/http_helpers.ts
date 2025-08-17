@@ -1,7 +1,6 @@
 import type { Readable } from 'node:stream';
 import type { RequestListener } from 'node:http';
 import type { Branded } from '@milaboratories/pl-model-common';
-import { SecureContextOptions } from 'node:tls';
 
 /** File range specification */
 export type FileRange = {
@@ -78,10 +77,6 @@ export interface ObjectStore {
 /** Object store base URL in format accepted by Apache DataFusion and DuckDB */
 export type ObjectStoreUrl = Branded<string, 'PFrameInternal.ObjectStoreUrl'>;
 
-/** TLS options for HTTP server */
-export type TlsOptions = Required<Pick<SecureContextOptions, 'cert' | 'key'>> &
-  Pick<SecureContextOptions, 'ca'>; // set `ca` for self-signed certificates
-
 /** Server configuration options */
 export type HttpServerOptions = {
   /** HTTP request handler function */
@@ -90,14 +85,16 @@ export type HttpServerOptions = {
   host?: string;
   /** Port to bind to (defaults to 0 for auto-assignment) */
   port?: number;
-  /** TLS options, when provided will start HTTPS server instead of HTTP */
-  tls?: TlsOptions;
+  /** Starts HTTPS server instead of HTTP */
+  https?: true;
 };
 
 /** Result of the server start operation */
 export interface HttpServer {
   /** Server address info in format accepted by Apache DataFusion and DuckDB */
   get address(): ObjectStoreUrl;
+  /** Base64-encoded root certificate, defined when @see HttpServerOptions.https flag is set */
+  get certificate(): string | undefined;
   /** Promise that resolves when the server is stopped */
   get stopped(): Promise<void>;
   /** Request server stop, returns the same promise as @see HttpServer.stopped */
