@@ -1,5 +1,11 @@
 # @milaboratories/helpers
 
+## 1.6.22
+
+### Patch Changes
+
+- c792469: Set type to module for packages used by PFrames
+
 ## 1.6.21
 
 ### Patch Changes

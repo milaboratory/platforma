@@ -1,5 +1,14 @@
 # @milaboratories/pl-drivers
 
+## 1.10.2
+
+### Patch Changes
+
+- c792469: Set type to module
+- Updated dependencies [c792469]
+  - @milaboratories/pl-model-common@1.19.13
+  - @milaboratories/helpers@1.6.22
+
 ## 1.10.1
 
 ### Patch Changes

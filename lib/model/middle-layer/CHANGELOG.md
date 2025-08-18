@@ -1,5 +1,14 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.8.12
+
+### Patch Changes
+
+- c792469: Set type to module for packages used by PFrames
+- c792469: PFrames HttpHelpers interface update
+- Updated dependencies [c792469]
+  - @milaboratories/pl-model-common@1.19.13
+
 ## 1.8.11
 
 ### Patch Changes
