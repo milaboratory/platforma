@@ -89,7 +89,7 @@ export class ClientUpload {
 
     const crc32cChecksum = calculateCrc32cChecksum(chunk);
     if (checksumAlgorithm === uploadapi_ChecksumAlgorithm.CRC32C) {
-      info.headers.push({ name: checksumHeader, value: String(crc32cChecksum) });
+      info.headers.push({ name: checksumHeader, value: crc32cChecksum });
     }
 
     const contentLength = Number(info.chunkEnd - info.chunkStart);
