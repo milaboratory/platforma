@@ -2574,7 +2574,7 @@ importers:
         specifier: workspace:*
         version: link:../../lib/ptabler/software
       '@platforma-open/milaboratories.software-ptexter':
-        specifier: 'workspace:'
+        specifier: workspace:*
         version: link:../../lib/ptexter
       '@platforma-open/milaboratories.software-small-binaries':
         specifier: 'catalog:'
