@@ -37,7 +37,9 @@ RUN_CMD_PLAN_OPTIONS_SCHEMA := {
 	"args": [ARG_SCHEMA],
 	"envs": { "any": ARG_SCHEMA },
 	"substRules": { "any": "string" },
-	"customPaths": [ARG_SCHEMA]
+	"customPaths": [ARG_SCHEMA],
+	"dockerImageTag,?": "string",
+	"dockerEntrypoint,?": ["string"]
 }
 
 RUN_CMD_PLAN_SCHEMA := {
@@ -54,6 +56,8 @@ _initStateFromPlan := func(state, initState, context) {
 	state.options.envs = maps.clone(initOptions.envs)
 	state.options.substRules = maps.clone(initOptions.substRules)
 	state.options.customPaths = maps.clone(initOptions.customPaths)
+	state.options.dockerImageTag = initOptions.dockerImageTag
+	state.options.dockerEntrypoint = maps.clone(initOptions.dockerEntrypoint)
 
 	for k, v in initState.refs {
 		state.refs[k] = v
@@ -391,13 +395,23 @@ _createAbstractRunCommandPlan := func(state, returnSelfFn) {
 			return returnSelfFn()
 		},
 
-		dockerTag: func(tag) {
-			state.options.dockerTag = tag
+		/**
+		 * Sets the docker tag for the command.
+		 *
+		 * @param tag: string - the docker tag.
+		 */
+		dockerImageTag: func(tag) {
+			state.options.dockerImageTag = tag
 			return returnSelfFn()
 		},
 
+		/**
+		 * Sets the docker entrypoint for the command.
+		 *
+		 * @param entrypoint: string[] - the docker entrypoint.
+		 */
 		dockerEntrypoint: func(entrypoint) {
-			state.options.dockerEntrypoint = entrypoint
+			state.options.dockerEntrypoint = maps.clone(entrypoint)
 			return returnSelfFn()
 		}
 	})
@@ -414,8 +428,8 @@ createRunCommandPlan := func(...initialState) {
 			envs: {},
 			substRules: {},
 			customPaths: [],
-			dockerTag: undefined,
-            dockerEntrypoint: []
+			dockerImageTag: undefined,
+			dockerEntrypoint: []
 		}
 	}
 
@@ -681,7 +695,7 @@ builder := func(workdir, ...initialState) {
 				env: options.envs,
 				additionalPaths: options.customPaths,
 				substitutions: options.substRules,
-				dockerImageTag: options.dockerTag,
+				dockerImageTag: options.dockerImageTag,
 				dockerEntrypoint: options.dockerEntrypoint
 			}
 

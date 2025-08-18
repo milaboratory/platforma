@@ -224,21 +224,23 @@ _remotePackageCallOptions := func(softwareName, binaryDescriptor) {
 	return _binPackageCallOptions("remote", softwareName, variables, binaryDescriptor, softPackage)
 }
 
-_dockerCallOptions := func(softwareName, descriptor) {
+_dockerCallOptions := func(softwareName, dockerDescriptor) {
 	ll.assert(
-		len(descriptor.cmd) != 0,
+		len(dockerDescriptor.cmd) != 0,
 		"cannot render final command for software: empty 'cmd' and 'command' in software descriptor")
 
 	plan := runcmd.createRunCommandPlan()
 
-	plan.cmdExpression(descriptor.cmd[0])
+	plan.cmdExpression(dockerDescriptor.cmd[0])
 
-	for arg in splice(descriptor.cmd, 1) {
+    // FIXME: expression ref???
+	for arg in splice(dockerDescriptor.cmd, 1) {
 		plan.argExpression(arg)
 	}
 
-	plan.dockerTag(descriptor.docker.tag)
-	plan.dockerEntrypoint(descriptor.docker.entrypoint)
+	plan.
+		dockerImageTag(dockerDescriptor.tag).
+		dockerEntrypoint(dockerDescriptor.entrypoint)
 
 	return ll.toStrict({
 		runEnvType: "docker",
@@ -265,6 +267,7 @@ swToRuncmdPlan := func(softwareName, softwareVersion, softwareDescriptor) {
 		"exec.internal.swToRunCmdOptions: descriptor does not fit schema")
 
 	result := undefined
+
 	if feats.isDockerAvailable && maps.containsKey(softwareDescriptor, "docker") {
 		result = _dockerCallOptions(softwareName, softwareDescriptor.docker)
 	} else if maps.containsKey(softwareDescriptor, "local") {
