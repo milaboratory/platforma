@@ -195,6 +195,9 @@ catalogs:
     https-proxy-agent:
       specifier: ^7.0.6
       version: 7.0.6
+    husky:
+      specifier: ^9.1.7
+      version: 9.1.7
     jest:
       specifier: ^29.7.0
       version: 29.7.0
@@ -360,7 +363,7 @@ importers:
         specifier: 'catalog:'
         version: 20.16.15
       husky:
-        specifier: ^9.1.7
+        specifier: 'catalog:'
         version: 9.1.7
       prettier:
         specifier: 'catalog:'
@@ -2222,6 +2225,15 @@ importers:
         specifier: workspace:*
         version: link:../../../tools/package-builder
 
+  lib/ptexter:
+    devDependencies:
+      '@platforma-open/milaboratories.runenv-python-3':
+        specifier: 'catalog:'
+        version: 1.1.15
+      '@platforma-sdk/package-builder':
+        specifier: 'workspace:'
+        version: link:../../tools/package-builder
+
   lib/ui/uikit:
     dependencies:
       '@milaboratories/helpers':
@@ -2561,6 +2573,9 @@ importers:
       '@platforma-open/milaboratories.software-ptabler':
         specifier: workspace:*
         version: link:../../lib/ptabler/software
+      '@platforma-open/milaboratories.software-ptexter':
+        specifier: workspace:*
+        version: link:../../lib/ptexter
       '@platforma-open/milaboratories.software-small-binaries':
         specifier: 'catalog:'
         version: 1.15.21

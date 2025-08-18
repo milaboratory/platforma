@@ -1,0 +1,70 @@
+ll := import(":ll")
+smart := import(":smart")
+assets := import(":assets")
+exec := import(":exec")
+
+/**
+ * Extracts the first N lines from a text file with optional byte limit safety check.
+ *
+ * @param fileRef {resource} - Resource reference to the input text file
+ * @param opts {map} - Options map with required field:
+ *   - lines {number}: Number of lines to extract (required)
+ *   - maxBytes {number} (optional): Maximum bytes allowed as safety limit.
+ *                                   Errors if lines would exceed this limit.
+ *                                   Defaults to 32768 (32KB) if not specified.
+ * @returns {resource} - Reference to the content of the extracted file
+ * @example
+ *   // Extract first 10 lines
+ *   result := txt.head(inputs.myFile, {lines: 10})
+ *
+ *   // Extract first 5 lines with 500 byte safety limit
+ *   result := txt.head(inputs.myFile, {lines: 5, maxBytes: 500})
+ *
+ *   // Use default 32KB safety limit
+ *   result := txt.head(inputs.largeFile, {lines: 100})
+ */
+head := func(fileRef, opts) {
+    if !smart.isReference(fileRef) {
+        ll.panic("fileRef must be a valid resource reference. Got: %T", fileRef)
+    }
+
+    if !is_map(opts) {
+        ll.panic("opts must be a map. Got: %T", opts)
+    }
+
+    if is_undefined(opts.lines) {
+        ll.panic("opts.lines is required")
+    }
+
+    if !is_int(opts.lines) || opts.lines < 0 {
+        ll.panic("opts.lines must be a non-negative integer. Got: %v", opts.lines)
+    }
+
+    maxBytes := 32768  // Default 32KB
+    if !is_undefined(opts.maxBytes) {
+        if !is_int(opts.maxBytes) || opts.maxBytes < 0 {
+            ll.panic("opts.maxBytes must be a non-negative integer. Got: %v", opts.maxBytes)
+        }
+        maxBytes = opts.maxBytes
+    }
+
+    ptexterSw := assets.importSoftware("@platforma-open/milaboratories.software-ptexter:phead-lines")
+
+    cmdBuilder := exec.builder().
+        software(ptexterSw).
+        arg("--lines").
+        arg(string(opts.lines)).
+        arg("--max-bytes").
+        arg(string(maxBytes)).
+        arg("input.txt").
+        arg("output.txt").
+        addFile("input.txt", fileRef).
+        saveFileContent("output.txt")
+
+    result := cmdBuilder.run()
+    return result.getFileContent("output.txt")
+}
+
+export ll.toStrict({
+    head: head
+})
