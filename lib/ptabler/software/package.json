@@ -13,7 +13,7 @@
   ],
   "dependencies": {},
   "devDependencies": {
-    "@platforma-sdk/package-builder": "workspace:",
+    "@platforma-sdk/package-builder": "workspace:*",
     "@platforma-open/milaboratories.runenv-python-3": "catalog:"
   },
   "block-software": {

@@ -24,12 +24,12 @@
   ],
   "license": "UNLICENSED",
   "dependencies": {
-    "@milaboratories/pl-middle-layer": "workspace:~",
-    "@platforma-sdk/model": "workspace:~",
-    "@milaboratories/pl-client": "workspace:~",
-    "@milaboratories/pl-tree": "workspace:^",
-    "@milaboratories/computable": "workspace:^",
-    "@milaboratories/ts-helpers": "workspace:^",
+    "@milaboratories/pl-middle-layer": "workspace:*",
+    "@platforma-sdk/model": "workspace:*",
+    "@milaboratories/pl-client": "workspace:*",
+    "@milaboratories/pl-tree": "workspace:*",
+    "@milaboratories/computable": "workspace:*",
+    "@milaboratories/ts-helpers": "workspace:*",
     "vitest": "catalog:"
   },
   "devDependencies": {

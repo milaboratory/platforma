@@ -27,8 +27,8 @@
     "README.md"
   ],
   "dependencies": {
-    "@milaboratories/pl-model-common": "workspace:^",
-    "@milaboratories/pl-error-like": "workspace:^",
+    "@milaboratories/pl-model-common": "workspace:*",
+    "@milaboratories/pl-error-like": "workspace:*",
     "utility-types": "catalog:",
     "canonicalize": "catalog:",
     "zod": "catalog:"
@@ -36,7 +36,7 @@
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
     "@platforma-sdk/eslint-config": "workspace:*",
-    "@milaboratories/helpers": "workspace:^",
+    "@milaboratories/helpers": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
     "typescript": "catalog:",
     "vitest": "catalog:",

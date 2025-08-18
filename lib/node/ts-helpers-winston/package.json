@@ -23,7 +23,7 @@
     "src/**/*"
   ],
   "dependencies": {
-    "@milaboratories/ts-helpers": "workspace:^",
+    "@milaboratories/ts-helpers": "workspace:*",
     "winston": "catalog:"
   },
   "devDependencies": {

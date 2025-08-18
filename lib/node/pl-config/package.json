@@ -34,7 +34,7 @@
   "license": "UNLICENSED",
   "devDependencies": {
     "eslint": "catalog:",
-    "@milaboratories/eslint-config": "workspace:^",
+    "@milaboratories/eslint-config": "workspace:*",
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
     "vitest": "catalog:",
@@ -49,7 +49,7 @@
   },
   "dependencies": {
     "undici": "catalog:",
-    "@milaboratories/ts-helpers": "workspace:^",
+    "@milaboratories/ts-helpers": "workspace:*",
     "yaml": "catalog:",
     "zod": "catalog:",
     "upath": "catalog:"

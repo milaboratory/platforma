@@ -12,7 +12,7 @@
   "dependencies": {
     "@milaboratories/milaboratories.test-blob-url-custom-protocol.model": "workspace:*",
     "vue": "catalog:",
-    "@platforma-sdk/ui-vue": "workspace:^"
+    "@platforma-sdk/ui-vue": "workspace:*"
   },
   "devDependencies": {
     "@milaboratories/ts-builder": "workspace:*",
@@ -20,7 +20,7 @@
     "@milaboratories/build-configs": "workspace:*",
     "typescript": "catalog:",
     "@faker-js/faker": "catalog:",
-    "@milaboratories/helpers": "workspace:^",
+    "@milaboratories/helpers": "workspace:*",
     "zod": "catalog:"
   }
 }

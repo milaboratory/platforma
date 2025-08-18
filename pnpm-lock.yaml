@@ -437,7 +437,7 @@ importers:
         specifier: workspace:*
         version: link:../model
       '@platforma-sdk/ui-vue':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../../../sdk/ui-vue
       vue:
         specifier: 'catalog:'
@@ -450,7 +450,7 @@ importers:
         specifier: workspace:*
         version: link:../../../../tools/build-configs
       '@milaboratories/helpers':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../../../lib/util/helpers
       '@milaboratories/ts-builder':
         specifier: workspace:*
@@ -525,10 +525,10 @@ importers:
         specifier: workspace:*
         version: link:../model
       '@platforma-sdk/model':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../../../sdk/model
       '@platforma-sdk/ui-vue':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../../../sdk/ui-vue
       '@vueuse/core':
         specifier: 'catalog:'
@@ -541,7 +541,7 @@ importers:
         specifier: 'catalog:'
         version: 9.2.0
       '@milaboratories/helpers':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../../../lib/util/helpers
       '@milaboratories/ts-builder':
         specifier: workspace:*
@@ -616,7 +616,7 @@ importers:
         specifier: workspace:*
         version: link:../model
       '@platforma-sdk/ui-vue':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../../../sdk/ui-vue
       vue:
         specifier: 'catalog:'
@@ -626,7 +626,7 @@ importers:
         specifier: 'catalog:'
         version: 9.2.0
       '@milaboratories/helpers':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../../../lib/util/helpers
       '@milaboratories/ts-builder':
         specifier: workspace:*
@@ -698,7 +698,7 @@ importers:
         specifier: workspace:*
         version: link:../model
       '@platforma-sdk/ui-vue':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../../../sdk/ui-vue
       vue:
         specifier: 'catalog:'
@@ -743,17 +743,17 @@ importers:
         version: link:../workflow
     devDependencies:
       '@platforma-sdk/block-tools':
-        specifier: 'workspace:'
+        specifier: workspace:*
         version: link:../../../../tools/block-tools
 
   etc/blocks/monetization-test/model:
     dependencies:
       '@platforma-sdk/model':
-        specifier: 'workspace:'
+        specifier: workspace:*
         version: link:../../../../sdk/model
     devDependencies:
       '@milaboratories/build-configs':
-        specifier: 'workspace:'
+        specifier: workspace:*
         version: link:../../../../tools/build-configs
       '@milaboratories/ts-builder':
         specifier: workspace:*
@@ -762,7 +762,7 @@ importers:
         specifier: workspace:*
         version: link:../../../../tools/ts-configs
       '@platforma-sdk/block-tools':
-        specifier: 'workspace:'
+        specifier: workspace:*
         version: link:../../../../tools/block-tools
       typescript:
         specifier: 'catalog:'
@@ -777,7 +777,7 @@ importers:
         specifier: workspace:*
         version: link:../../../../sdk/model
       '@platforma-sdk/ui-vue':
-        specifier: 'workspace:'
+        specifier: workspace:*
         version: link:../../../../sdk/ui-vue
       vue:
         specifier: 'catalog:'
@@ -802,11 +802,11 @@ importers:
   etc/blocks/monetization-test/workflow:
     dependencies:
       '@platforma-sdk/workflow-tengo':
-        specifier: 'workspace:'
+        specifier: workspace:*
         version: link:../../../../sdk/workflow-tengo
     devDependencies:
       '@platforma-sdk/tengo-builder':
-        specifier: 'workspace:'
+        specifier: workspace:*
         version: link:../../../../tools/tengo-builder
 
   etc/blocks/pool-explorer/block:
@@ -853,13 +853,13 @@ importers:
   etc/blocks/pool-explorer/ui:
     dependencies:
       '@milaboratories/helpers':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../../../lib/util/helpers
       '@milaboratories/milaboratories.pool-explorer.model':
         specifier: workspace:*
         version: link:../model
       '@platforma-sdk/ui-vue':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../../../sdk/ui-vue
       monaco-editor:
         specifier: 'catalog:'
@@ -947,7 +947,7 @@ importers:
         specifier: workspace:*
         version: link:../../../../sdk/model
       '@platforma-sdk/ui-vue':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../../../sdk/ui-vue
       vue:
         specifier: 'catalog:'
@@ -957,7 +957,7 @@ importers:
         specifier: 'catalog:'
         version: 9.2.0
       '@milaboratories/helpers':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../../../lib/util/helpers
       '@milaboratories/ts-builder':
         specifier: workspace:*
@@ -1041,7 +1041,7 @@ importers:
         specifier: workspace:*
         version: link:../model
       '@platforma-sdk/ui-vue':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../../../sdk/ui-vue
       vue:
         specifier: 'catalog:'
@@ -1054,7 +1054,7 @@ importers:
         specifier: workspace:*
         version: link:../../../../tools/build-configs
       '@milaboratories/helpers':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../../../lib/util/helpers
       '@milaboratories/ts-builder':
         specifier: workspace:*
@@ -1129,7 +1129,7 @@ importers:
         specifier: workspace:*
         version: link:../model
       '@platforma-sdk/model':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../../../sdk/model
       vue:
         specifier: 'catalog:'
@@ -1142,7 +1142,7 @@ importers:
         specifier: workspace:*
         version: link:../../../../tools/build-configs
       '@milaboratories/helpers':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../../../lib/util/helpers
       '@milaboratories/ts-builder':
         specifier: workspace:*
@@ -1151,10 +1151,10 @@ importers:
         specifier: workspace:*
         version: link:../../../../tools/ts-configs
       '@milaboratories/uikit':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../../../lib/ui/uikit
       '@platforma-sdk/ui-vue':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../../../sdk/ui-vue
       ag-grid-enterprise:
         specifier: 'catalog:'
@@ -1238,7 +1238,7 @@ importers:
         specifier: workspace:*
         version: link:../model
       '@platforma-sdk/ui-vue':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../../../sdk/ui-vue
       vue:
         specifier: 'catalog:'
@@ -1248,7 +1248,7 @@ importers:
         specifier: 'catalog:'
         version: 9.2.0
       '@milaboratories/helpers':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../../../lib/util/helpers
       '@milaboratories/ts-builder':
         specifier: workspace:*
@@ -1279,16 +1279,16 @@ importers:
         specifier: 'catalog:'
         version: 9.2.0
       '@milaboratories/helpers':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../lib/util/helpers
       '@milaboratories/uikit':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../lib/ui/uikit
       '@platforma-sdk/model':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../sdk/model
       '@platforma-sdk/ui-vue':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../sdk/ui-vue
       highlight.js:
         specifier: 'catalog:'
@@ -1301,7 +1301,7 @@ importers:
         specifier: workspace:*
         version: link:../../tools/build-configs
       '@milaboratories/eslint-config':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../tools/eslint-config
       '@milaboratories/ts-configs':
         specifier: workspace:*
@@ -1332,10 +1332,10 @@ importers:
         specifier: workspace:*
         version: link:../../tools/build-configs
       '@milaboratories/eslint-config':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../tools/eslint-config
       '@milaboratories/helpers':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../lib/util/helpers
       '@milaboratories/ts-configs':
         specifier: workspace:*
@@ -1362,7 +1362,7 @@ importers:
   lib/model/backend:
     dependencies:
       '@milaboratories/pl-client':
-        specifier: 'workspace:'
+        specifier: workspace:*
         version: link:../../node/pl-client
       canonicalize:
         specifier: 'catalog:'
@@ -1375,7 +1375,7 @@ importers:
         specifier: workspace:*
         version: link:../../../tools/build-configs
       '@milaboratories/eslint-config':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../../tools/eslint-config
       '@milaboratories/ts-builder':
         specifier: workspace:*
@@ -1427,7 +1427,7 @@ importers:
   lib/model/middle-layer:
     dependencies:
       '@milaboratories/pl-model-common':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../common
       remeda:
         specifier: 'catalog:'
@@ -1492,10 +1492,10 @@ importers:
   lib/node/computable:
     dependencies:
       '@milaboratories/pl-error-like':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../model/pl-error-like
       '@milaboratories/ts-helpers':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../ts-helpers
       '@types/node':
         specifier: 'catalog:'
@@ -1547,10 +1547,10 @@ importers:
         specifier: 'catalog:'
         version: 1.13.4
       '@milaboratories/pl-http':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../pl-http
       '@milaboratories/ts-helpers':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../ts-helpers
       '@protobuf-ts/grpc-transport':
         specifier: 'catalog:'
@@ -1623,7 +1623,7 @@ importers:
   lib/node/pl-config:
     dependencies:
       '@milaboratories/ts-helpers':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../ts-helpers
       undici:
         specifier: 'catalog:'
@@ -1642,7 +1642,7 @@ importers:
         specifier: workspace:*
         version: link:../../../tools/build-configs
       '@milaboratories/eslint-config':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../../tools/eslint-config
       '@milaboratories/ts-builder':
         specifier: workspace:*
@@ -1681,10 +1681,10 @@ importers:
   lib/node/pl-deployments:
     dependencies:
       '@milaboratories/pl-config':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../pl-config
       '@milaboratories/ts-helpers':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../ts-helpers
       decompress:
         specifier: 'catalog:'
@@ -1712,7 +1712,7 @@ importers:
         specifier: workspace:*
         version: link:../../../tools/build-configs
       '@milaboratories/eslint-config':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../../tools/eslint-config
       '@milaboratories/ts-builder':
         specifier: workspace:*
@@ -1766,22 +1766,22 @@ importers:
         specifier: 'catalog:'
         version: 1.13.4
       '@milaboratories/computable':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../computable
       '@milaboratories/helpers':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../util/helpers
       '@milaboratories/pl-client':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../pl-client
       '@milaboratories/pl-model-common':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../model/common
       '@milaboratories/pl-tree':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../pl-tree
       '@milaboratories/ts-helpers':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../ts-helpers
       '@node-rs/crc32':
         specifier: ^1.10.6
@@ -1821,7 +1821,7 @@ importers:
         specifier: workspace:*
         version: link:../../../tools/build-configs
       '@milaboratories/eslint-config':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../../tools/eslint-config
       '@milaboratories/ts-builder':
         specifier: workspace:*
@@ -1867,7 +1867,7 @@ importers:
         specifier: workspace:*
         version: link:../../../tools/build-configs
       '@milaboratories/eslint-config':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../../tools/eslint-config
       '@milaboratories/pl-error-like':
         specifier: workspace:*
@@ -1919,52 +1919,52 @@ importers:
   lib/node/pl-middle-layer:
     dependencies:
       '@milaboratories/computable':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../computable
       '@milaboratories/pframes-rs-node':
         specifier: 'catalog:'
         version: 1.0.57(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)
       '@milaboratories/pl-client':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../pl-client
       '@milaboratories/pl-config':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../pl-config
       '@milaboratories/pl-deployments':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../pl-deployments
       '@milaboratories/pl-drivers':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../pl-drivers
       '@milaboratories/pl-errors':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../pl-errors
       '@milaboratories/pl-http':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../pl-http
       '@milaboratories/pl-model-backend':
-        specifier: workspace:~
+        specifier: workspace:*
         version: link:../../model/backend
       '@milaboratories/pl-model-common':
-        specifier: workspace:~
+        specifier: workspace:*
         version: link:../../model/common
       '@milaboratories/pl-model-middle-layer':
-        specifier: workspace:~
+        specifier: workspace:*
         version: link:../../model/middle-layer
       '@milaboratories/pl-tree':
-        specifier: workspace:~
+        specifier: workspace:*
         version: link:../pl-tree
       '@milaboratories/resolve-helper':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../resolve-helper
       '@milaboratories/ts-helpers':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../ts-helpers
       '@platforma-sdk/block-tools':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../../tools/block-tools
       '@platforma-sdk/model':
-        specifier: workspace:~
+        specifier: workspace:*
         version: link:../../../sdk/model
       '@platforma-sdk/workflow-tengo':
         specifier: workspace:*
@@ -2001,7 +2001,7 @@ importers:
         specifier: workspace:*
         version: link:../../../tools/build-configs
       '@milaboratories/eslint-config':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../../tools/eslint-config
       '@milaboratories/ts-builder':
         specifier: workspace:*
@@ -2028,19 +2028,19 @@ importers:
   lib/node/pl-tree:
     dependencies:
       '@milaboratories/computable':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../computable
       '@milaboratories/pl-client':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../pl-client
       '@milaboratories/pl-error-like':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../model/pl-error-like
       '@milaboratories/pl-errors':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../pl-errors
       '@milaboratories/ts-helpers':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../ts-helpers
       denque:
         specifier: 'catalog:'
@@ -2129,7 +2129,7 @@ importers:
   lib/node/ts-helpers-oclif:
     dependencies:
       '@milaboratories/ts-helpers':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../ts-helpers
       '@oclif/core':
         specifier: 'catalog:'
@@ -2151,7 +2151,7 @@ importers:
   lib/node/ts-helpers-winston:
     dependencies:
       '@milaboratories/ts-helpers':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../ts-helpers
       winston:
         specifier: 'catalog:'
@@ -2195,7 +2195,7 @@ importers:
   lib/ptabler/schema:
     devDependencies:
       '@platforma-sdk/eslint-config':
-        specifier: 'workspace:'
+        specifier: workspace:*
         version: link:../../../sdk/eslint-config
       eslint:
         specifier: 'catalog:'
@@ -2216,16 +2216,16 @@ importers:
         specifier: 'catalog:'
         version: 1.1.15
       '@platforma-sdk/package-builder':
-        specifier: 'workspace:'
+        specifier: workspace:*
         version: link:../../../tools/package-builder
 
   lib/ui/uikit:
     dependencies:
       '@milaboratories/helpers':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../util/helpers
       '@platforma-sdk/model':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../../sdk/model
       '@types/d3-array':
         specifier: 'catalog:'
@@ -2280,7 +2280,7 @@ importers:
         specifier: workspace:*
         version: link:../../../tools/build-configs
       '@milaboratories/eslint-config':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../../tools/eslint-config
       '@milaboratories/ts-builder':
         specifier: workspace:*
@@ -2310,7 +2310,7 @@ importers:
         specifier: workspace:*
         version: link:../../../tools/build-configs
       '@milaboratories/eslint-config':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../../tools/eslint-config
       '@milaboratories/ts-builder':
         specifier: workspace:*
@@ -2367,10 +2367,10 @@ importers:
   sdk/model:
     dependencies:
       '@milaboratories/pl-error-like':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../lib/model/pl-error-like
       '@milaboratories/pl-model-common':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../lib/model/common
       canonicalize:
         specifier: 'catalog:'
@@ -2386,7 +2386,7 @@ importers:
         specifier: workspace:*
         version: link:../../tools/build-configs
       '@milaboratories/helpers':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../lib/util/helpers
       '@milaboratories/ts-builder':
         specifier: workspace:*
@@ -2410,22 +2410,22 @@ importers:
   sdk/test:
     dependencies:
       '@milaboratories/computable':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../lib/node/computable
       '@milaboratories/pl-client':
-        specifier: workspace:~
+        specifier: workspace:*
         version: link:../../lib/node/pl-client
       '@milaboratories/pl-middle-layer':
-        specifier: workspace:~
+        specifier: workspace:*
         version: link:../../lib/node/pl-middle-layer
       '@milaboratories/pl-tree':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../lib/node/pl-tree
       '@milaboratories/ts-helpers':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../lib/node/ts-helpers
       '@platforma-sdk/model':
-        specifier: workspace:~
+        specifier: workspace:*
         version: link:../model
       vitest:
         specifier: 'catalog:'
@@ -2450,7 +2450,7 @@ importers:
   sdk/ui-vue:
     dependencies:
       '@milaboratories/biowasm-tools':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../lib/other/biowasm-tools
       '@milaboratories/miplots4':
         specifier: 'catalog:'
@@ -2459,7 +2459,7 @@ importers:
         specifier: workspace:*
         version: link:../../lib/ui/uikit
       '@platforma-sdk/model':
-        specifier: workspace:~
+        specifier: workspace:*
         version: link:../model
       '@types/d3-format':
         specifier: 'catalog:'
@@ -2505,10 +2505,10 @@ importers:
         specifier: workspace:*
         version: link:../../tools/build-configs
       '@milaboratories/eslint-config':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../tools/eslint-config
       '@milaboratories/helpers':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../lib/util/helpers
       '@milaboratories/ts-builder':
         specifier: workspace:*
@@ -2556,14 +2556,14 @@ importers:
         specifier: 'catalog:'
         version: 2.2.2
       '@platforma-open/milaboratories.software-ptabler':
-        specifier: 'workspace:'
+        specifier: workspace:*
         version: link:../../lib/ptabler/software
       '@platforma-open/milaboratories.software-small-binaries':
         specifier: 'catalog:'
         version: 1.15.21
     devDependencies:
       '@platforma-sdk/tengo-builder':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../tools/tengo-builder
 
   tests/block-repo:
@@ -2749,37 +2749,37 @@ importers:
   tests/package-builder/10.asset:
     devDependencies:
       '@platforma-sdk/package-builder':
-        specifier: 'workspace:'
+        specifier: workspace:*
         version: link:../../../tools/package-builder
 
   tests/package-builder/20.runenv:
     devDependencies:
       '@platforma-sdk/package-builder':
-        specifier: 'workspace:'
+        specifier: workspace:*
         version: link:../../../tools/package-builder
 
   tests/package-builder/30.software-pkg:
     devDependencies:
       '@milaboratories/example-pl-package-runenv-1':
-        specifier: 'workspace:'
+        specifier: workspace:*
         version: link:../20.runenv
       '@platforma-sdk/package-builder':
-        specifier: 'workspace:'
+        specifier: workspace:*
         version: link:../../../tools/package-builder
 
   tests/package-builder/90.catalogue:
     devDependencies:
       '@milaboratories/example-pl-package-asset-1':
-        specifier: 'workspace:'
+        specifier: workspace:*
         version: link:../10.asset
       '@milaboratories/example-pl-package-integration-1':
-        specifier: 'workspace:'
+        specifier: workspace:*
         version: link:../30.software-pkg
       '@milaboratories/example-pl-package-runenv-1':
-        specifier: 'workspace:'
+        specifier: workspace:*
         version: link:../20.runenv
       '@platforma-sdk/package-builder':
-        specifier: 'workspace:'
+        specifier: workspace:*
         version: link:../../../tools/package-builder
 
   tests/workflow-tengo:
@@ -2795,7 +2795,7 @@ importers:
         specifier: workspace:*
         version: link:../../lib/node/computable
       '@milaboratories/eslint-config':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../tools/eslint-config
       '@milaboratories/pl-drivers':
         specifier: workspace:*
@@ -2831,22 +2831,22 @@ importers:
         specifier: 'catalog:'
         version: 3.859.0
       '@milaboratories/pl-http':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../lib/node/pl-http
       '@milaboratories/pl-model-common':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../lib/model/common
       '@milaboratories/pl-model-middle-layer':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../lib/model/middle-layer
       '@milaboratories/resolve-helper':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../lib/node/resolve-helper
       '@milaboratories/ts-helpers':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../lib/node/ts-helpers
       '@milaboratories/ts-helpers-oclif':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../lib/node/ts-helpers-oclif
       '@oclif/core':
         specifier: 'catalog:'
@@ -3052,7 +3052,7 @@ importers:
         specifier: 'catalog:'
         version: 3.859.0(@aws-sdk/client-s3@3.859.0)
       '@milaboratories/resolve-helper':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../lib/node/resolve-helper
       '@oclif/core':
         specifier: 'catalog:'
@@ -3089,7 +3089,7 @@ importers:
         specifier: workspace:*
         version: link:../build-configs
       '@milaboratories/eslint-config':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../eslint-config
       '@milaboratories/oclif-index':
         specifier: workspace:*
@@ -3156,7 +3156,7 @@ importers:
         specifier: workspace:*
         version: link:../build-configs
       '@milaboratories/eslint-config':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../eslint-config
       '@milaboratories/oclif-index':
         specifier: workspace:*
@@ -3211,13 +3211,13 @@ importers:
         version: 3.17.0
     devDependencies:
       '@milaboratories/eslint-config':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../eslint-config
 
   tools/tengo-builder:
     dependencies:
       '@milaboratories/pl-model-backend':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../lib/model/backend
       '@milaboratories/resolve-helper':
         specifier: workspace:*
@@ -3242,7 +3242,7 @@ importers:
         specifier: workspace:*
         version: link:../build-configs
       '@milaboratories/eslint-config':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../eslint-config
       '@milaboratories/oclif-index':
         specifier: workspace:*
