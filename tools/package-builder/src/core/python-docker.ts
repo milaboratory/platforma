@@ -28,7 +28,7 @@ export function generatePythonDockerfile(
   // Simple variable substitution
   const installDeps = hasRequirements
     ? `COPY ${options.requirementsFile} .\nRUN ${options.toolset} install --no-cache-dir -r ${options.requirementsFile}`
-    : '';
+    : `# No '${options.requirementsFile}' file found, skipping dependency installation`;
   const dockerfile = templateContent
     .replace(/\$\{PYTHON_VERSION\}/g, options.pythonVersion)
     .replace(/\$\{PYTHON_INSTALL_DEPS\}/g, installDeps);
@@ -75,6 +75,7 @@ export function buildPythonDockerImage(
 
     logger.info(`Building Python Docker image with tag: ${tag}`);
     logger.info(`Using temporary Dockerfile at: ${dockerfilePath}`);
+    logger.info(`Python version: '${options.pythonVersion}', Toolset: '${options.toolset}', Requirements: '${options.requirementsFile}'`);
 
     const result = spawnSync('docker', ['build', '-t', tag, packageRoot, '-f', dockerfilePath], {
       stdio: 'inherit',
@@ -94,7 +95,7 @@ export function buildPythonDockerImage(
       tag,
       packageName: pythonPkg.name,
       packageVersion: pythonPkg.version || 'latest',
-      pythonVersion: options.pythonVersion || '3.12.6',
+      pythonVersion: options.pythonVersion,
       requirementsFile: options.requirementsFile,
       toolset: options.toolset,
     };

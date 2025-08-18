@@ -273,11 +273,17 @@ export class Core {
 
     for (const pkgID of packagesToBuild) {
       const pkg = this.getPackage(pkgID);
-      if (pkg.type !== 'docker') {
-        continue;
+      switch (pkg.type) {
+        case 'docker':
+          this.buildDockerImage(pkg);
+          break;
+        case 'python':
+          this.buildPythonDockerImage(pkg);
+          break;
+        default:
+          this.logger.warn(`Package '${pkg.id}' is not a 'docker' or 'python' package type, skipping build docker image`);
+          break;
       }
-
-      this.buildDockerImage(pkg);
     }
   }
 
@@ -311,15 +317,16 @@ export class Core {
   private buildPythonDockerImage(pkg: PythonPackage) {
     const defaultOptions = getDefaultPythonDockerOptions();
     const pythonVersion = getPythonVersionFromEnvironment(pkg.environment) || defaultOptions.pythonVersion;
-    const dependencies = pkg.dependencies || defaultOptions;
 
+    // Use default options if dependencies are not specified
     const options = {
       pythonVersion,
-      requirementsFile: dependencies.requirementsFile || defaultOptions.requirementsFile,
-      toolset: dependencies.toolset || defaultOptions.toolset,
+      requirementsFile: pkg.dependencies?.requirementsFile || defaultOptions.requirementsFile,
+      toolset: pkg.dependencies?.toolset || defaultOptions.toolset,
     };
 
     this.logger.info(`Building Python Docker image for package '${pkg.name}' with Python ${pythonVersion}`);
+    this.logger.info(`Using toolset: '${options.toolset}', requirements file: '${options.requirementsFile}'`);
 
     try {
       const imageInfo = buildPythonDockerImage(this.logger, this.pkg.packageRoot, pkg, options);
@@ -433,6 +440,19 @@ export class Core {
         // different artifact types
         const dockerPkg = this.packages.get(dockerEntrypointName(pkg.id));
         if (!dockerPkg) {
+          // For Python packages without custom docker config, publish the auto-generated Docker image
+          if (pkg.type === 'python') {
+            const imageInfo = this._pythonDockerImages.get(pkg.name);
+            if (imageInfo) {
+              this.logger.info(`Publishing auto-generated Python Docker image '${imageInfo.tag}' for package '${pkg.name}'`);
+              try {
+                dockerPush(imageInfo.tag);
+                this.logger.info(`Python Docker image '${imageInfo.tag}' published successfully`);
+              } catch (error) {
+                this.logger.warn(`Failed to publish Python Docker image '${imageInfo.tag}': ${String(error)}`);
+              }
+            }
+          }
           continue;
         }
 
@@ -544,11 +564,16 @@ export class Core {
 
     for (const pkgID of packagesToPublish) {
       const pkg = this.getPackage(pkgID);
-      if (pkg.type === 'docker') {
-        this.publishDockerImage(pkg);
-      } else if (pkg.type === 'python') {
-        // TODO(rfiskov)[MILAB-3163]: add python docker image publishing here ?
-        this.logger.info(`Skipping Docker publish for Python package '${pkg.name}' - temporary image only`);
+      switch (pkg.type) {
+        case 'docker':
+          this.publishDockerImage(pkg);
+          break;
+        case 'python':
+          this.publishPythonDockerImage(pkg);
+          break;
+        default:
+          this.logger.warn(`Package '${pkg.id}' is not a 'docker' or 'python' package type, skipping publish docker image`);
+          break;
       }
     }
   }
@@ -562,6 +587,25 @@ export class Core {
     dockerPush(tag);
 
     this.logger.info(`Publishing docker image '${tag}' into registry '${pkg.registry.name}'`);
+  }
+
+  private publishPythonDockerImage(pkg: PackageConfig) {
+    if (pkg.type !== 'python') {
+      throw new Error(`package '${pkg.id}' is not a python package`);
+    }
+    // Publish Python Docker images that were built during the build process
+    const imageInfo = this._pythonDockerImages.get(pkg.name);
+    if (!imageInfo) {
+      throw new Error(`Python Docker image not found for package '${pkg.name}'`);
+    }
+
+    this.logger.info(`Publishing Python Docker image '${imageInfo.tag}' for package '${pkg.name}'`);
+    try {
+      dockerPush(imageInfo.tag);
+      this.logger.info(`Python Docker image '${imageInfo.tag}' published successfully`);
+    } catch (error) {
+      this.logger.warn(`Failed to publish Python Docker image '${imageInfo.tag}': ${String(error)}`);
+    }
   }
 
   public signPackages(options?: {

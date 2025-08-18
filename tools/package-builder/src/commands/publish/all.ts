@@ -43,6 +43,9 @@ export default class PublishAll extends Command {
 
     core.publishDescriptors();
 
-    // TODO: don't forget to add docker here, when we support it
+    // Publish Docker images, including auto-generated Python Docker images
+    core.publishDockerImages({
+      ids: flags['package-id'],
+    });
   }
 }

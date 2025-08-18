@@ -105,11 +105,12 @@ const pythonPackageSettingsSchema = z.object({
   ...anyPackageSettingsSchema.shape,
   runEnv: runDependencyPythonSchema,
 
-  toolset: z.string(),
+  toolset: z.string().optional(),
   dependencies: z
     .object({
       requirementsFile: z.string().describe('path to requirements.txt file for pip toolset'),
     })
+    .optional()
     .describe(
       'paths of files that describe dependencies for given toolset: say, requirements.txt for \'pip\'',
     ),
