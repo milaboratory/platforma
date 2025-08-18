@@ -63,3 +63,26 @@ export interface PFrameFactoryAPIV2 {
    * any interactions with disposed PFrame will result in exception */
   dispose(): void;
 }
+
+/** API exposed by PFrames library allowing to create and provide data for
+ * PFrame objects */
+export interface PFrameFactoryAPIV3 extends Disposable {
+  /** Associates data source with this PFrame */
+  setDataSource(dataSource: PFrameDataSource): void;
+
+  /** Adds PColumn without spec */
+  addColumnSpec(columnId: PObjectId, columnSpec: PColumnSpec): void;
+
+  /** Associates data info with cpecific column */
+  setColumnData(
+    columnId: PObjectId,
+    dataInfo: DataInfo<PFrameBlobId>,
+    options?: {
+      signal?: AbortSignal,
+    }
+  ): Promise<void>;
+
+  /** Releases all the data previously added to PFrame using methods above,
+   * any interactions with disposed PFrame will result in exception */
+  dispose(): void;
+}
