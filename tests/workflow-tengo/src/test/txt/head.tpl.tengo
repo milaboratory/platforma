@@ -1,0 +1,19 @@
+// txt head function test template
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+file := import("@platforma-sdk/workflow-tengo:file")
+txt := import("@platforma-sdk/workflow-tengo:txt")
+
+self.defineOutputs(["result", "progress"])
+
+self.body(func(inputs) {
+    importResult := file.importFile(inputs.importHandle)
+
+    // Apply txt.head function with the specified options
+    headResult := txt.head(importResult.file, inputs.headOptions)
+
+    return {
+        result: headResult,
+        progress: importResult.handle
+    }
+})
