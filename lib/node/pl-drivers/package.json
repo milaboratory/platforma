@@ -48,13 +48,11 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "eslint": "catalog:",
     "@types/decompress": "catalog:",
     "@milaboratories/eslint-config": "workspace:*",
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
-    "@types/decompress": "catalog:",
     "@types/node": "catalog:",
     "@types/tar-fs": "catalog:",
     "@vitest/coverage-v8": "catalog:",
