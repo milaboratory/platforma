@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 1.42.7
+
+### Patch Changes
+
+- ad8037d: up version
+
 ## 1.42.6
 
 ### Patch Changes
