@@ -39,7 +39,7 @@ class BaseReadLogic(PStep):
     def execute(self, table_space: TableSpace, global_settings: GlobalSettings) -> tuple[TableSpace, list[pl.LazyFrame]]:
         """
         Common execution logic for reading steps.
-        Processes schema, builds scan kwargs, calls _do_scan, and updates table space.
+        Processes schema, builds scan kwargs, calls _do_scan, applies post-scan casting, and updates table space.
         """
         scan_kwargs: Dict[str, Any] = {}
 
@@ -55,8 +55,8 @@ class BaseReadLogic(PStep):
                 if col_spec.null_value is not None:
                     defined_null_values[col_spec.column] = col_spec.null_value
 
-        if defined_column_types:
-            scan_kwargs["schema_overrides"] = defined_column_types
+        # Note: We no longer pass schema_overrides to scan commands
+        # Instead, we collect type information for post-scan casting
         
         if defined_null_values:
             scan_kwargs["null_values"] = defined_null_values
@@ -72,6 +72,20 @@ class BaseReadLogic(PStep):
 
         file_path = os.path.join(global_settings.root_folder, normalize_path(self.file))
         lazy_frame = self._do_scan(file_path, scan_kwargs)
+        
+        # Apply post-scan casting if column types are defined
+        if defined_column_types:
+            # Determine casting strictness based on ignore_errors flag
+            # If ignore_errors is True, use non-strict casting (strict=False)
+            # If ignore_errors is False or None, use strict casting (strict=True)
+            strict_casting = not (self.ignore_errors is True)
+            
+            # Apply casting using with_columns and cast expressions
+            cast_expressions = [
+                pl.col(col).cast(dtype, strict=strict_casting)
+                for col, dtype in defined_column_types.items()
+            ]
+            lazy_frame = lazy_frame.with_columns(cast_expressions)
         
         updated_table_space = table_space.copy()
         updated_table_space[self.name] = lazy_frame
