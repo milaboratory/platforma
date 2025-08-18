@@ -83,15 +83,19 @@ export type HttpServerOptions = {
   handler: RequestListener;
   /** Port to bind to (@default 0 for auto-assignment) */
   port?: number;
-  /** Starts HTTPS server instead of HTTP */
-  https?: true;
+  /** Do not apply authorization middleware to @param handler */
+  noAuth?: true;
+  /** Downgrade default HTTPS server to plain HTTP, @warning use only for testing */
+  http?: true;
 };
 
 /** Result of the server start operation */
 export interface HttpServer {
-  /** Server address info in format accepted by Apache DataFusion and DuckDB */
+  /** Server address info formatted as `http{s}://<host>:<port>/` */
   get address(): ObjectStoreUrl;
-  /** Base64-encoded CA certificate in PEM format, defined when @see HttpServerOptions.https flag is set */
+  /** Authorization token for Bearer scheme, undefined when @see HttpServerOptions.noAuth flag is set */
+  get authToken(): string | undefined;
+  /** Base64-encoded CA certificate in PEM format, undefined when @see HttpServerOptions.http flag is set */
   get certificate(): string | undefined;
   /** Promise that resolves when the server is stopped */
   get stopped(): Promise<void>;
@@ -111,10 +115,8 @@ export interface HttpHelpers {
    * Create an HTTP request handler for serving files from an object store.
    * Accepts only paths of the form `/<filename>.parquet`, returns 410 otherwise.
    * Assumes that files are immutable (and sets cache headers accordingly).
-   * Enforces authentication using Bearer scheme if @param authToken is provided.
-   * @warning Always use @param authToken with HTTPS, otherwise anyone can steal the token.
    */
-  createRequestHandler(store: ObjectStore, authToken?: string): RequestListener;
+  createRequestHandler(store: ObjectStore): RequestListener;
 
   /**
    * Serve HTTP requests using the provided handler on localhost port.
@@ -123,20 +125,18 @@ export interface HttpHelpers {
    * @example
    * ```ts
    * const rootDir = '/path/to/directory/with/parquet/files';
-   * const authToken = randomUUID();
    *
    * let store = await HttpHelpers.createFsStore(rootDir).catch((err: unknown) => {
    *   throw new Error(`Failed to create file store for ${rootDir} - ${ensureError(err)}`);
    * });
    *
    * const server = await HttpHelpers.createHttpServer({
-   *   handler: HttpHelpers.createRequestHandler(store, authToken),
-   *   https: true,
+   *   handler: HttpHelpers.createRequestHandler(store),
    * }).catch((err: unknown) => {
    *   throw new Error(`Failed to start HTTP server - ${ensureError(err)}`);
    * });
    *
-   * const _ = server.address;
+   * const { address, authToken, certificate } = server;
    *
    * await server.stop();
    * ```
