@@ -1,3 +1,5 @@
+catalogMode: strict
+
 packages:
   - lib/util/helpers
   - lib/util/sequences
@@ -27,6 +29,8 @@ packages:
 
   - lib/ptabler/schema
   - lib/ptabler/software
+
+  - lib/ptexter
 
   - lib/ui/uikit
 
@@ -158,6 +162,8 @@ catalog:
   'oclif': ^4.16.2
 
   'turbo': 2.5.3
+
+  'husky': ^9.1.7
 
   '@vitejs/plugin-vue': ^5.2.3
 
