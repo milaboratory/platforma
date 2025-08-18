@@ -10,15 +10,20 @@ export interface PFrameV9 extends PFrameFactoryAPIV2, PFrameReadAPIV8 {}
 
 export interface PFrameV10 extends PFrameFactoryAPIV3, PFrameReadAPIV9 {}
 
+export type PFrameOptions = {
+  /** Path to directory where PFrame can create temporary files */
+  spillPath: string;
+  /** Logger instance, no logging is performed when not provided */
+  logger?: Logger;
+}
+
 /** List of PFrame management functions exposed by PFrame module */
 export interface PFrameFactory {
   /**
    * Create a new PFrame instance.
-   * @param spillPath - path to directory where PFrame can create temporary files
-   * @param logger - logger instance, no logging is performed when not provided
    * @warning Use concurrency limiting to avoid OOM crashes when multiple instances are simultaneously in use.
    */
-  createPFrame(spillPath: string, logger?: Logger): PFrameV10;
+  createPFrame(options: PFrameOptions): PFrameV10;
 
   /**
    * Dump active allocations from all PFrames instances in pprof format.
