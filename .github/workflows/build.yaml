@@ -27,7 +27,7 @@ jobs:
       gha-runner-label: 'dev-pl-sdk'
       notify-telegram: true
       node-version: '20.x'
-      team-id: 'ci-010010'
+      team-id: 'ci-010011'
       build-script-name: 'build'
       test: true
       test-script-name: 'test'

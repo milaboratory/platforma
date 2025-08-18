@@ -1,0 +1,57 @@
+---
+'@milaboratories/milaboratories.monetization-test': major
+'@milaboratories/milaboratories.monetization-test.model': major
+'@milaboratories/milaboratories.monetization-test.ui': major
+'@milaboratories/milaboratories.monetization-test.workflow': major
+'@milaboratories/milaboratories.pool-explorer': major
+'@milaboratories/milaboratories.pool-explorer.model': major
+'@milaboratories/milaboratories.pool-explorer.ui': major
+'@milaboratories/milaboratories.pool-explorer.workflow': major
+'@milaboratories/milaboratories.ui-examples': major
+'@milaboratories/milaboratories.ui-examples.model': major
+'@milaboratories/milaboratories.ui-examples.ui': major
+'@milaboratories/milaboratories.ui-examples.workflow': major
+'@milaboratories/pl-model-backend': major
+'@milaboratories/pl-model-common': major
+'@milaboratories/pl-model-middle-layer': major
+'@milaboratories/pl-error-like': major
+'@milaboratories/computable': major
+'@milaboratories/node-streams': major
+'@milaboratories/pl-client': major
+'@milaboratories/pl-config': major
+'@milaboratories/pl-deployments': major
+'@milaboratories/pl-drivers': major
+'@milaboratories/pl-errors': major
+'@milaboratories/pl-http': major
+'@milaboratories/pl-middle-layer': major
+'@milaboratories/pl-tree': major
+'@milaboratories/resolve-helper': major
+'@milaboratories/ts-helpers': major
+'@milaboratories/ts-helpers-oclif': major
+'@milaboratories/ts-helpers-winston': major
+'@milaboratories/biowasm-tools': major
+'@platforma-open/milaboratories.software-ptabler.schema': major
+'@platforma-open/milaboratories.software-ptabler': major
+'@milaboratories/uikit': major
+'@milaboratories/helpers': major
+'@milaboratories/sequences': major
+'@platforma-sdk/eslint-config': major
+'@platforma-sdk/model': major
+'@platforma-sdk/test': major
+'@platforma-sdk/ui-vue': major
+'@platforma-sdk/workflow-tengo': major
+'@milaboratories/example-pl-package-asset-1': major
+'@milaboratories/example-pl-package-runenv-1': major
+'@milaboratories/example-pl-package-integration-1': major
+'@milaboratories/example-pl-package-catalogue-1': major
+'@platforma-sdk/block-tools': major
+'@milaboratories/build-configs': major
+'@platforma-sdk/package-builder': major
+'@platforma-sdk/bootstrap': major
+'@platforma-sdk/r-builder': major
+'@platforma-sdk/tengo-builder': major
+'@milaboratories/ts-builder': major
+'@milaboratories/ts-configs': major
+---
+
+correct types hoisting

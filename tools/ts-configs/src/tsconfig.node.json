@@ -1,10 +1,10 @@
 {
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    "target": "ES2022",
-    "module": "ESNext",
-    "lib": ["ESNext"],
-    "moduleResolution": "Bundler",
+    "target": "es2022",
+    "module": "preserve",
+    "moduleResolution": "bundler",
+    "lib": ["esnext"],
     "types": ["node"],
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true
