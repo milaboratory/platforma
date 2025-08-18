@@ -63,3 +63,29 @@ export interface PFrameFactoryAPIV2 {
    * any interactions with disposed PFrame will result in exception */
   dispose(): void;
 }
+
+/** API exposed by PFrames library allowing to create and provide data for
+ * PFrame objects */
+export interface PFrameFactoryAPIV3 extends Disposable {
+  /** Associates data source with this PFrame */
+  setDataSource(dataSource: PFrameDataSource): void;
+
+  /** Adds PColumn without data info */
+  addColumnSpec(columnId: PObjectId, columnSpec: PColumnSpec): void;
+
+  /**
+   * Assign data info to the specified PColumn.
+   * For parquet data info, schema resolution via network is performed during this call.
+   */
+  setColumnData(
+    columnId: PObjectId,
+    dataInfo: DataInfo<PFrameBlobId>,
+    options?: {
+      signal?: AbortSignal,
+    }
+  ): Promise<void>;
+
+  /** Releases all the data previously added to PFrame using methods above,
+   * any interactions with disposed PFrame will result in exception */
+  dispose(): void;
+}
