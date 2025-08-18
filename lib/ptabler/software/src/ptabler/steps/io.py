@@ -78,7 +78,7 @@ class BaseReadLogic(PStep):
             # Determine casting strictness based on ignore_errors flag
             # If ignore_errors is True, use non-strict casting (strict=False)
             # If ignore_errors is False or None, use strict casting (strict=True)
-            strict_casting = not (self.ignore_errors is True)
+            strict_casting = self.ignore_errors is not True
             
             # Apply casting using with_columns and cast expressions
             cast_expressions = [
