@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-phead.py - Extract first N lines or N bytes from a text file
+phead-lines.py - Extract first N lines or N bytes from a text file
 
 Similar to Unix head command, but with both line and byte limits.
 Stops processing when either limit is reached (whichever comes first).
