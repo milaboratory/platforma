@@ -1,15 +1,6 @@
 import type { Readable } from 'node:stream';
 import type { RequestListener } from 'node:http';
-import type { AddressInfo } from 'node:net';
-import type { Branded } from '@milaboratories/pl-model-common';
-
-/** File statistics */
-export type FileStats = {
-  /** File size in bytes */
-  size: number;
-  /** File modification time if available */
-  mtime?: Date;
-};
+import type { Branded, Base64Encoded } from '@milaboratories/pl-model-common';
 
 /** File range specification */
 export type FileRange = {
@@ -27,140 +18,140 @@ export type FileRange = {
  */
 export interface ObjectStore {
   /**
-   * Check if file exists
+   * @returns file size in bytes or `-1` if file does not exist or permissions do not allow access.
+   * @throws if file can become accessible after retry (e.g. on network error)
    *
    * @example
    * ```ts
-   * async fileExists(filename: string): Promise<boolean> {
+   * async getFileSize(filename: string): Promise<number> {
    *   const filePath = this.resolve(filename);
-   *   try {
-   *     await fs.access(filePath, constants.F_OK);
-   *     return true;
-   *   } catch {
-   *     return false;
-   *   }
+   *   return await fs
+   *     .stat(filePath)
+   *     .then((stat) => ({ size: stat.isFile() ? stat.size : -1 }))
+   *     .catch(() => ({ size: -1 }));
    * }
    * ```
    */
-  fileExists(filename: string): Promise<boolean>;
+  getFileSize(filename: string): Promise<number>;
 
   /**
-   * Get file statistics
-   *
-   * @example
-   * ```ts
-   * async getFileStats(filename: string): Promise<FileStats> {
-   *   const filePath = this.resolve(filename);
-   *   try {
-   *     const stats = await fs.stat(filePath);
-   *     return {
-   *       size: stats.size,
-   *       mtime: stats.mtime
-   *     };
-   *   } catch (err: unknown) {
-   *     throw new Error(
-   *       `Failed to get file statistics for: ${filename} - ${ensureError(err)}`
-   *     );
-   *   }
-   * }
-   * ```
-   */
-  getFileStats(filename: string): Promise<FileStats>;
-
-  /**
-   * Execute action with readable stream.
-   * Action resolves when stream is closed eigher by handler
-   * @see HttpHelpers.createRequestHandler or the store itself.
-   * Returned promise resolves after the action is completed.
+   * Execute action with readable stream (actions can be concurrency limited by the store).
+   * Action resolves when stream is closed by handler @see HttpHelpers.createRequestHandler
+   * 
+   * @param filename - existing file name (for which @see ObjectStore.getFileSize returned non-negative value)
+   * @param range - valid range of bytes to read from the file (store may skip validation)
+   * @param action - function to execute with the stream, responsible for closing the stream
+   * @returns promise that resolves after the action is completed
    *
    * @example
    * ```ts
    * async withReadStream(params: {
    *   filename: string;
-   *   range?: FileRange;
+   *   range: FileRange;
    *   action: (stream: Readable) => Promise<void>;
    * }): Promise<void> {
    *   const { filename, range, action } = params;
    *   const filePath = this.resolve(filename);
    *
-   *   let stream: Readable;
    *   try {
-   *     stream = createReadStream(filePath, range);
+   *     const stream = createReadStream(filePath, range);
+   *     return await action(stream);
    *   } catch (err: unknown) {
-   *     throw new Error(
-   *       `Failed to create read stream for: ${filename} - ${ensureError(err)}`
-   *     );
-   *   }
-   *
-   *   try {
-   *     await action(stream);
-   *   } finally {
-   *     if (!stream.destroyed) {
-   *       stream.destroy();
-   *     }
+   *     console.error(`failed to create read stream for ${filename} - ${ensureError(err)}`);
+   *     throw;
    *   }
    * }
    * ```
    */
   withReadStream(params: {
     filename: string;
+    range: FileRange;
     action: (stream: Readable) => Promise<void>;
-    range?: FileRange;
   }): Promise<void>;
 }
 
 /** Object store base URL in format accepted by Apache DataFusion and DuckDB */
 export type ObjectStoreUrl = Branded<string, 'PFrameInternal.ObjectStoreUrl'>;
 
+/** HTTP(S) request handler creation options */
+export type RequestHandlerOptions = {
+  /** Object store to serve files from, @see HttpHelpers.createFsStore */
+  store: ObjectStore;
+  /** Here will go caching options... */
+}
+
 /** Server configuration options */
 export type HttpServerOptions = {
-  /** HTTP request handler function */
+  /** HTTP(S) request handler function, @see HttpHelpers.createRequestHandler */
   handler: RequestListener;
-  /** Host to bind to (defaults to '127.0.0.1') */
-  host?: string;
-  /** Port to bind to (defaults to 0 for auto-assignment) */
+  /** Port to bind to (@default 0 for auto-assignment) */
   port?: number;
+  /** Do not apply authorization middleware to @param handler */
+  noAuth?: true;
+  /** Downgrade default HTTPS server to plain HTTP, @warning use only for testing */
+  http?: true;
 };
 
-/** Result of the server start operation */
+/**
+ * Long unique opaque string for use in Bearer authorization header
+ * 
+ * @example
+ * ```ts
+ * request.setHeader('Authorization', `Bearer ${authToken}`);
+ * ```
+ */
+export type HttpAuthorizationToken = Branded<string, 'PFrameInternal.HttpAuthorizationToken'>;
+
+/**
+ * TLS certificate in PEM format
+ * 
+ * @example
+ * ```txt
+ * -----BEGIN CERTIFICATE-----
+ * MIIC2zCCAcOgAwIBAgIJaVW7...
+ * ...
+ * ...Yf9CRK8fgnukKM7TJ
+ * -----END CERTIFICATE-----
+ * ```
+ */
+export type PemCertificate = Branded<string, 'PFrameInternal.PemCertificate'>;
+
+/** HTTP(S) server information and controls, @see HttpHelpers.createHttpServer */
 export interface HttpServer {
-  /** Server address info */
-  get address(): AddressInfo;
+  /** Server address info formatted as `http{s}://<host>:<port>/` */
+  get address(): ObjectStoreUrl;
+  /** Authorization token for Bearer scheme, undefined when @see HttpServerOptions.noAuth flag is set */
+  get authToken(): HttpAuthorizationToken | undefined;
+  /** Base64-encoded CA certificate in PEM format, undefined when @see HttpServerOptions.http flag is set */
+  get encodedCaCert(): Base64Encoded<PemCertificate> | undefined;
   /** Promise that resolves when the server is stopped */
   get stopped(): Promise<void>;
-  /** Stop the server */
+  /** Request server stop, returns the same promise as @see HttpServer.stopped */
   stop(): Promise<void>;
 }
 
+/** List of HTTP(S) related helper functions exposed by PFrame module */
 export interface HttpHelpers {
   /**
    * Create an object store for serving files from a local directory.
    * Rejects if the provided path does not exist or is not a directory.
-   * Intended for testing purposes, you will probably want to implement a different store.
    */
   createFsStore(rootDir: string): Promise<ObjectStore>;
 
   /**
    * Create an HTTP request handler for serving files from an object store.
-   * Accepts only paths of the form `/<filename>.parquet`, returns 404 otherwise.
+   * Accepts only paths of the form `/<filename>.parquet`, returns 410 otherwise.
    * Assumes that files are immutable (and sets cache headers accordingly).
    */
-  createRequestHandler(store: ObjectStore): RequestListener;
+  createRequestHandler(options: RequestHandlerOptions): RequestListener;
 
   /**
-   * Create an object store URL from the server address info.
-   * Result of this function is intended to be passed to PFrames as data source parquet prefix.
-   */
-  createObjectStoreUrl(info: AddressInfo): ObjectStoreUrl;
-
-  /**
-   * Serve HTTP requests using the provided handler on the given host and port.
-   * Returns a promise that resolves when the server is stopped.
+   * Serve HTTP(S) requests using the provided handler on localhost port.
+   * @returns promise that resolves when the server has stopped.
    *
    * @example
    * ```ts
    * const rootDir = '/path/to/directory/with/parquet/files';
-   * const port = 3000;
    *
    * let store = await HttpHelpers.createFsStore(rootDir).catch((err: unknown) => {
    *   throw new Error(`Failed to create file store for ${rootDir} - ${ensureError(err)}`);
@@ -168,12 +159,11 @@ export interface HttpHelpers {
    *
    * const server = await HttpHelpers.createHttpServer({
    *   handler: HttpHelpers.createRequestHandler(store),
-   *   port,
    * }).catch((err: unknown) => {
-   *   throw new Error(`Failed to start http server on port ${port} - ${ensureError(err)}`);
+   *   throw new Error(`Failed to start HTTP server - ${ensureError(err)}`);
    * });
    *
-   * const _ = HttpHelpers.createObjectStoreUrl(server.address);
+   * const { address, authToken, base64EncodedCaCert } = server;
    *
    * await server.stop();
    * ```
