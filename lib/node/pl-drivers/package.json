@@ -5,9 +5,9 @@
     "node": ">=20"
   },
   "description": "Drivers and a low-level clients for log streaming, downloading and uploading files from and to pl",
+  "type": "module",
   "types": "./dist/index.d.ts",
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
+  "main": "./dist/index.js",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
