@@ -1,6 +1,6 @@
 {
   "name": "@platforma-open/milaboratories.software-ptexter",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Text processing utilities for platforma",
   "scripts": {
     "build": "pl-pkg build",

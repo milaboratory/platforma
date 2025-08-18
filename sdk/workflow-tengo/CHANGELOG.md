@@ -1,5 +1,16 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.1.0
+
+### Minor Changes
+
+- a5a0559: Added library for text file manipulation (txt), now contains one function head, allowing to retrieve specific number of lines from the file
+
+### Patch Changes
+
+- Updated dependencies [a5a0559]
+  - @platforma-open/milaboratories.software-ptexter@1.0.1
+
 ## 5.0.3
 
 ### Patch Changes
