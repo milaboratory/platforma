@@ -66,9 +66,9 @@ def phead(input_file: str, output_file: str, num_lines: int, max_bytes: int = No
         return lines_written, bytes_written
         
     except UnicodeDecodeError as e:
-        raise ValueError(f"Failed to decode input file as UTF-8: {e}")
+        raise ValueError(f"Failed to decode input file as UTF-8: {e}") from e
     except IOError as e:
-        raise IOError(f"File I/O error: {e}")
+        raise IOError(f"File I/O error: {e}") from e
 
 
 def main():
