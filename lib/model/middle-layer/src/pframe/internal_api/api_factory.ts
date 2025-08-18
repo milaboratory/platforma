@@ -70,10 +70,13 @@ export interface PFrameFactoryAPIV3 extends Disposable {
   /** Associates data source with this PFrame */
   setDataSource(dataSource: PFrameDataSource): void;
 
-  /** Adds PColumn without spec */
+  /** Adds PColumn without data info */
   addColumnSpec(columnId: PObjectId, columnSpec: PColumnSpec): void;
 
-  /** Associates data info with cpecific column */
+  /**
+   * Assign data info to the specified PColumn.
+   * For parquet data info, schema resolution via network is performed during this call.
+   */
   setColumnData(
     columnId: PObjectId,
     dataInfo: DataInfo<PFrameBlobId>,

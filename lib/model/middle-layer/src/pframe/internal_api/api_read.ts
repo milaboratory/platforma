@@ -55,7 +55,10 @@ export interface PFrameReadAPIV9 {
    * */
   findColumns(request: FindColumnsRequest): Promise<FindColumnsResponse>;
 
-  /** To be reviewed in the future */
+  /**
+   * Construct new axes integration with some entry removed but integration qualificaitons preserved.
+   * Removes more then one entry in case the removal will create several disjoint sets of axes.
+   */
   deleteColumn(request: DeleteColumnFromColumnsRequest): Promise<DeleteColumnFromColumnsResponse>;
 
   /** Retrieve single column spec */
