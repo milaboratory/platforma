@@ -1,13 +1,13 @@
 {
   "name": "@milaboratories/pl-drivers",
-  "version": "1.10.1",
+  "version": "1.10.3",
   "engines": {
     "node": ">=20"
   },
   "description": "Drivers and a low-level clients for log streaming, downloading and uploading files from and to pl",
+  "type": "module",
   "types": "./dist/index.d.ts",
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
+  "main": "./dist/index.js",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -27,36 +27,37 @@
     "src/**/*"
   ],
   "dependencies": {
-    "decompress": "catalog:",
     "@grpc/grpc-js": "catalog:",
-    "@milaboratories/ts-helpers": "workspace:^",
-    "@milaboratories/helpers": "workspace:^",
-    "@milaboratories/computable": "workspace:^",
-    "@milaboratories/pl-client": "workspace:^",
-    "@milaboratories/pl-tree": "workspace:^",
-    "@milaboratories/pl-model-common": "workspace:^",
+    "@milaboratories/ts-helpers": "workspace:*",
+    "@milaboratories/helpers": "workspace:*",
+    "@milaboratories/computable": "workspace:*",
+    "@milaboratories/pl-client": "workspace:*",
+    "@milaboratories/pl-tree": "workspace:*",
+    "@milaboratories/pl-model-common": "workspace:*",
     "@protobuf-ts/grpc-transport": "catalog:",
+    "@protobuf-ts/plugin": "catalog:",
     "@protobuf-ts/runtime": "catalog:",
     "@protobuf-ts/runtime-rpc": "catalog:",
-    "@protobuf-ts/plugin": "catalog:",
+    "@types/fast-crc32c": "^2.0.2",
+    "decompress": "catalog:",
     "denque": "catalog:",
+    "fast-crc32c": "^2.0.0",
     "tar-fs": "catalog:",
     "undici": "catalog:",
-    "zod": "catalog:",
     "upath": "catalog:",
-    "@node-rs/crc32": "^1.10.6"
+    "zod": "catalog:"
   },
   "devDependencies": {
-    "eslint": "catalog:",
     "@types/decompress": "catalog:",
-    "@milaboratories/eslint-config": "workspace:^",
+    "@milaboratories/eslint-config": "workspace:*",
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
-    "typescript": "catalog:",
+    "@milaboratories/ts-configs": "workspace:*",
     "@types/node": "catalog:",
-    "vitest": "catalog:",
-    "@vitest/coverage-v8": "catalog:",
     "@types/tar-fs": "catalog:",
-    "@milaboratories/ts-configs": "workspace:*"
+    "@vitest/coverage-v8": "catalog:",
+    "eslint": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }

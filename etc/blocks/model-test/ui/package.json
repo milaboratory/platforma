@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@milaboratories/milaboratories.test-block-model.model": "workspace:*",
-    "@platforma-sdk/ui-vue": "workspace:^",
+    "@platforma-sdk/ui-vue": "workspace:*",
     "vue": "catalog:"
   },
   "devDependencies": {

@@ -10,10 +10,10 @@
   },
   "dependencies": {
     "@milaboratories/milaboratories.pool-explorer.model": "workspace:*",
-    "@platforma-sdk/ui-vue": "workspace:^",
+    "@platforma-sdk/ui-vue": "workspace:*",
     "vue": "catalog:",
     "monaco-editor": "catalog:",
-    "@milaboratories/helpers": "workspace:^"
+    "@milaboratories/helpers": "workspace:*"
   },
   "devDependencies": {
     "@milaboratories/ts-builder": "workspace:*",

@@ -28,8 +28,8 @@
     "./src/**/*"
   ],
   "dependencies": {
-    "@milaboratories/ts-helpers": "workspace:^",
-    "@milaboratories/pl-error-like": "workspace:^",
+    "@milaboratories/ts-helpers": "workspace:*",
+    "@milaboratories/pl-error-like": "workspace:*",
     "@types/node": "catalog:",
     "utility-types": "catalog:",
     "zod": "catalog:"
