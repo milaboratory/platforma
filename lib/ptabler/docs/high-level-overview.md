@@ -94,13 +94,13 @@ A structured way to define computations within steps (e.g., for `add_columns`, `
 
 The definitive structure of the workflow, steps, and expressions will be formally documented using `TypeScript` type definitions.
 
-**📁 For detailed schemas, see:** `platforma/lib/ptabler/schema/src/` - contains `expressions.ts`, `basic_steps.ts`, `aggregate.ts`, `join.ts`, and other schema definition files.
+**📁 For detailed schemas, see:** `lib/ptabler/schema/src/` - contains `expressions.ts`, `basic_steps.ts`, `aggregate.ts`, `join.ts`, and other schema definition files.
 
 ### **7. Current Implementation and Usage**
 
 PTabler is currently the primary and only implementation of this workflow-driven table manipulation approach within the Platforma ecosystem. The main consumer of the PTabler API is the **Tengo `pt` library**, which provides a high-level, Polars-inspired API for Platforma block developers.
 
-**📁 For implementation details, see:** `platforma/sdk/workflow-tengo/src/pt/` - contains the complete pt library implementation.
+**📁 For implementation details, see:** `sdk/workflow-tengo/src/pt/` - contains the complete pt library implementation.
 
 #### **7.1 Tengo PT Library Architecture**
 
@@ -120,7 +120,7 @@ The `pt` library consists of several key components:
 
 * **`expression.test.tengo`**: Comprehensive test suite for the expression system
 
-**📁 For API usage examples, see:** `platforma/sdk/workflow-tengo/src/pt/expression.test.tengo` - contains extensive examples of expression usage patterns.
+**📁 For API usage examples, see:** `sdk/workflow-tengo/src/pt/expression.test.tengo` - contains extensive examples of expression usage patterns.
 
 #### **7.2 Developer Experience**
 
@@ -156,7 +156,7 @@ ptablerResult := wf.run()
 
 Behind the scenes, this generates a PTabler JSON workflow that gets executed by the Python backend.
 
-**📁 For Python backend implementation, see:** `platforma/lib/ptabler/software/src/ptabler/` - contains the complete Python implementation with `expression/`, `steps/`, and `workflow/` modules.
+**📁 For Python backend implementation, see:** `lib/ptabler/software/src/ptabler/` - contains the complete Python implementation with `expression/`, `steps/`, and `workflow/` modules.
 
 #### **7.3 Software Integration**
 
@@ -174,7 +174,7 @@ Implementing new features in PTabler follows a structured 5-step process that ma
 
 Start by defining the new feature in the TypeScript schema:
 
-**📁 Schema files:** `platforma/lib/ptabler/schema/src/` - examine existing patterns in `expressions.ts`, `basic_steps.ts`, etc.
+**📁 Schema files:** `lib/ptabler/schema/src/` - examine existing patterns in `expressions.ts`, `basic_steps.ts`, etc.
 
 **For Expression Types:** Add to `expressions.ts`
 ```typescript
@@ -199,7 +199,7 @@ export interface MyNewStep {
 
 Implement the corresponding Python classes in the Python backend:
 
-**📁 Python source:** `platforma/lib/ptabler/software/src/ptabler/` - study existing implementations in `expression/basics.py`, `steps/basics.py`, etc.
+**📁 Python source:** `lib/ptabler/software/src/ptabler/` - study existing implementations in `expression/basics.py`, `steps/basics.py`, etc.
 
 **For Expressions:** Add to `expression/` directory
 ```python
@@ -228,9 +228,9 @@ class MyNewStep(PStep, tag="my_new_step"):
 
 Add tests in the Python test suite:
 
-**📁 Python tests:** `platforma/lib/ptabler/software/src/test/` - follow patterns from `expression_tests.py`, `basic_test.py`, `aggregation_test.py`, etc.
+**📁 Python tests:** `lib/ptabler/software/src/test/` - follow patterns from `expression_tests.py`, `basic_test.py`, `aggregation_test.py`, etc.
 
-**📁 Quick commands:** `platforma/lib/ptabler/docs/development-experiment-guide.md` - contains commands for running individual tests and development workflows.
+**📁 Quick commands:** `lib/ptabler/docs/development-experiment-guide.md` - contains commands for running individual tests and development workflows.
 
 **For Major Features:** Create dedicated test files (e.g., `my_new_feature_test.py`)
 ```python
@@ -244,7 +244,7 @@ class MyNewFeatureTests(unittest.TestCase):
 
 Run tests using:
 ```bash
-cd platforma/lib/ptabler/software
+cd lib/ptabler/software
 ../.venv/bin/python -m unittest discover --verbose -s src -p '*test*.py'
 ```
 
@@ -252,7 +252,7 @@ cd platforma/lib/ptabler/software
 
 Implement the developer-facing API in the Tengo pt library:
 
-**📁 Tengo implementation:** `platforma/sdk/workflow-tengo/src/pt/` - follow existing patterns in `expression.lib.tengo` and `index.lib.tengo`.
+**📁 Tengo implementation:** `sdk/workflow-tengo/src/pt/` - follow existing patterns in `expression.lib.tengo` and `index.lib.tengo`.
 
 **For Expressions:** Add methods to `expression.lib.tengo`
 ```tengo
@@ -283,7 +283,7 @@ myNewStep: func(configuration) {
 
 Add comprehensive tests in the Tengo test suite:
 
-**📁 Unit tests:** `platforma/sdk/workflow-tengo/src/pt/expression.test.tengo` - for testing expression serialization and API correctness.
+**📁 Unit tests:** `sdk/workflow-tengo/src/pt/expression.test.tengo` - for testing expression serialization and API correctness.
 
 **For Major Features:** Create dedicated test functions in `expression.test.tengo` or add new test files
 ```tengo
@@ -299,13 +299,13 @@ TestMyNewFeature := func() {
 
 **For Integration Tests:** Add comprehensive workflow tests that verify the complete pipeline from Tengo API through PTabler execution.
 
-**📁 Integration tests:** `platforma/tests/workflow-tengo/src/pt/` - contains `pt.test.ts` (TypeScript orchestration) and various `.tpl.tengo` templates (workflow logic).
+**📁 Integration tests:** `tests/workflow-tengo/src/pt/` - contains `pt.test.ts` (TypeScript orchestration) and various `.tpl.tengo` templates (workflow logic).
 
 #### **Step 5.1: Integration Test Structure**
 
 The integration tests use a sophisticated dual-language approach combining **TypeScript test orchestration** with **Tengo workflow templates**:
 
-**📁 See implementation:** `platforma/tests/workflow-tengo/src/pt/pt.test.ts` and accompanying `.tpl.tengo` files for complete examples.
+**📁 See implementation:** `tests/workflow-tengo/src/pt/pt.test.ts` and accompanying `.tpl.tengo` files for complete examples.
 
 **TypeScript Test File (`pt.test.ts`):**
 - Orchestrates the test execution using Platforma's test framework
