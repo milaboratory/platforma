@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.19.13
+
+### Patch Changes
+
+- c792469: Set type to module for packages used by PFrames
+
 ## 1.19.12
 
 ### Patch Changes

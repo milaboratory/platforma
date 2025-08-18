@@ -1,5 +1,11 @@
 # @milaboratories/pl-local
 
+## 2.5.2
+
+### Patch Changes
+
+- a3b618d: update backend version to 1.41.8: fix block endless execution after backend restart
+
 ## 2.5.1
 
 ### Patch Changes

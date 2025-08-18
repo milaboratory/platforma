@@ -1,5 +1,18 @@
 # @milaboratories/pl-middle-layer
 
+## 1.42.8
+
+### Patch Changes
+
+- Updated dependencies [770cb8d]
+  - @milaboratories/pl-drivers@1.10.3
+
+## 1.42.7
+
+### Patch Changes
+
+- ad8037d: up version
+
 ## 1.42.6
 
 ### Patch Changes

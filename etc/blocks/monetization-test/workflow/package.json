@@ -8,9 +8,9 @@
     "format": "/usr/bin/env emacs --script ./format.el"
   },
   "dependencies": {
-    "@platforma-sdk/workflow-tengo": "workspace:"
+    "@platforma-sdk/workflow-tengo": "workspace:*"
   },
   "devDependencies": {
-    "@platforma-sdk/tengo-builder": "workspace:"
+    "@platforma-sdk/tengo-builder": "workspace:*"
   }
 }

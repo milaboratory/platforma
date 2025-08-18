@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/test",
-  "version": "1.42.20",
+  "version": "1.42.27",
   "description": "Typescript Block Test Helpers",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.cjs",
@@ -24,12 +24,12 @@
   ],
   "license": "UNLICENSED",
   "dependencies": {
-    "@milaboratories/pl-middle-layer": "workspace:~",
-    "@platforma-sdk/model": "workspace:~",
-    "@milaboratories/pl-client": "workspace:~",
-    "@milaboratories/pl-tree": "workspace:^",
-    "@milaboratories/computable": "workspace:^",
-    "@milaboratories/ts-helpers": "workspace:^",
+    "@milaboratories/pl-middle-layer": "workspace:*",
+    "@platforma-sdk/model": "workspace:*",
+    "@milaboratories/pl-client": "workspace:*",
+    "@milaboratories/pl-tree": "workspace:*",
+    "@milaboratories/computable": "workspace:*",
+    "@milaboratories/ts-helpers": "workspace:*",
     "vitest": "catalog:"
   },
   "devDependencies": {

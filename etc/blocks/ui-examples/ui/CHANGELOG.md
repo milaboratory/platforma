@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.5.35
+
+### Patch Changes
+
+- 214eac5: Silen update deps strictness fixation
+
 ## 1.5.34
 
 ### Patch Changes

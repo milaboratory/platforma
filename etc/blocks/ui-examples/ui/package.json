@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/milaboratories.ui-examples.ui",
-  "version": "1.5.34",
+  "version": "1.5.35",
   "type": "module",
   "scripts": {
     "dev": "ts-builder serve --target browser",
@@ -12,17 +12,17 @@
   "dependencies": {
     "@milaboratories/milaboratories.ui-examples.model": "workspace:*",
     "vue": "catalog:",
-    "@platforma-sdk/model": "workspace:^"
+    "@platforma-sdk/model": "workspace:*"
   },
   "devDependencies": {
     "@milaboratories/ts-configs": "workspace:*",
     "@milaboratories/build-configs": "workspace:*",
-    "@platforma-sdk/ui-vue": "workspace:^",
-    "@milaboratories/uikit": "workspace:^",
+    "@platforma-sdk/ui-vue": "workspace:*",
+    "@milaboratories/uikit": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
     "typescript": "catalog:",
     "@faker-js/faker": "catalog:",
-    "@milaboratories/helpers": "workspace:^",
+    "@milaboratories/helpers": "workspace:*",
     "zod": "catalog:",
     "ag-grid-enterprise": "catalog:",
     "ag-grid-vue3": "catalog:"

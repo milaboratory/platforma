@@ -37,7 +37,7 @@
     "@platforma-sdk/test": "workspace:*",
     "@types/node": "catalog:",
     "vitest": "catalog:",
-    "@milaboratories/eslint-config": "workspace:^",
+    "@milaboratories/eslint-config": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*"
   }
 }
