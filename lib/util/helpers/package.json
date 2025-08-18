@@ -28,7 +28,7 @@
     "node": ">=20"
   },
   "devDependencies": {
-    "@milaboratories/eslint-config": "workspace:^",
+    "@milaboratories/eslint-config": "workspace:*",
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
     "typescript": "catalog:",

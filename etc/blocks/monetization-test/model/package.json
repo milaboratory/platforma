@@ -11,11 +11,11 @@
     "type-check": "ts-builder types --target block-model"
   },
   "dependencies": {
-    "@platforma-sdk/model": "workspace:"
+    "@platforma-sdk/model": "workspace:*"
   },
   "devDependencies": {
-    "@platforma-sdk/block-tools": "workspace:",
-    "@milaboratories/build-configs": "workspace:",
+    "@platforma-sdk/block-tools": "workspace:*",
+    "@milaboratories/build-configs": "workspace:*",
     "typescript": "catalog:",
     "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*"

@@ -27,10 +27,10 @@
   "dependencies": {
     "zod": "catalog:",
     "canonicalize": "catalog:",
-    "@milaboratories/pl-client": "workspace:"
+    "@milaboratories/pl-client": "workspace:*"
   },
   "devDependencies": {
-    "@milaboratories/eslint-config": "workspace:^",
+    "@milaboratories/eslint-config": "workspace:*",
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
     "@types/node": "catalog:",

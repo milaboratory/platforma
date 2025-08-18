@@ -39,7 +39,7 @@
     }
   },
   "devDependencies": {
-    "@platforma-sdk/block-tools": "workspace:"
+    "@platforma-sdk/block-tools": "workspace:*"
   },
   "packageManager": "pnpm@9.12.0"
 }

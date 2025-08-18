@@ -23,7 +23,7 @@
     "./src/**/*"
   ],
   "dependencies": {
-    "@milaboratories/pl-model-common": "workspace:^",
+    "@milaboratories/pl-model-common": "workspace:*",
     "remeda": "catalog:",
     "zod": "catalog:",
     "utility-types": "catalog:"
