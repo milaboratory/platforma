@@ -2,9 +2,9 @@
   "name": "@milaboratories/pl-model-common",
   "version": "1.19.12",
   "description": "Platforma SDK Model",
+  "type": "module",
   "types": "./dist/index.d.ts",
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
+  "main": "./dist/index.js",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
