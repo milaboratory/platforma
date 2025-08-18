@@ -1,5 +1,11 @@
 # @milaboratories/pl-drivers
 
+## 1.10.3
+
+### Patch Changes
+
+- 770cb8d: use js impl crc32
+
 ## 1.10.2
 
 ### Patch Changes
