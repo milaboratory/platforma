@@ -24,7 +24,7 @@
   ],
   "dependencies": {},
   "devDependencies": {
-    "@platforma-sdk/eslint-config": "workspace:",
+    "@platforma-sdk/eslint-config": "workspace:*",
     "vite-plugin-dts": "catalog:",
     "eslint": "catalog:",
     "typescript": "catalog:",

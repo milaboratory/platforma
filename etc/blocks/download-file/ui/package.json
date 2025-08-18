@@ -13,15 +13,15 @@
     "@milaboratories/milaboratories.test-download-file.model": "workspace:*",
     "vue": "catalog:",
     "@vueuse/core": "catalog:",
-    "@platforma-sdk/ui-vue": "workspace:^",
-    "@platforma-sdk/model": "workspace:^"
+    "@platforma-sdk/ui-vue": "workspace:*",
+    "@platforma-sdk/model": "workspace:*"
   },
   "devDependencies": {
     "@milaboratories/ts-configs": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
     "typescript": "catalog:",
     "@faker-js/faker": "catalog:",
-    "@milaboratories/helpers": "workspace:^",
+    "@milaboratories/helpers": "workspace:*",
     "zod": "catalog:"
   }
 }

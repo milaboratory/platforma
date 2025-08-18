@@ -39,7 +39,7 @@
   "keywords": [],
   "license": "UNLICENSED",
   "devDependencies": {
-    "@milaboratories/eslint-config": "workspace:^",
+    "@milaboratories/eslint-config": "workspace:*",
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
     "@types/decompress": "catalog:",
@@ -58,8 +58,8 @@
     "@milaboratories/ts-builder": "workspace:*"
   },
   "dependencies": {
-    "@milaboratories/pl-config": "workspace:^",
-    "@milaboratories/ts-helpers": "workspace:^",
+    "@milaboratories/pl-config": "workspace:*",
+    "@milaboratories/ts-helpers": "workspace:*",
     "decompress": "catalog:",
     "upath": "catalog:",
     "ssh2": "catalog:",

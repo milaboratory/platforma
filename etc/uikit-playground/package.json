@@ -14,13 +14,13 @@
   "devDependencies": {
     "@milaboratories/ts-configs": "workspace:*",
     "@milaboratories/build-configs": "workspace:*",
-    "@milaboratories/eslint-config": "workspace:^",
+    "@milaboratories/eslint-config": "workspace:*",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:",
     "vue": "catalog:",
     "@vitejs/plugin-vue": "catalog:",
-    "@milaboratories/helpers": "workspace:^",
+    "@milaboratories/helpers": "workspace:*",
     "@faker-js/faker": "catalog:",
     "vue-router": "4"
   }

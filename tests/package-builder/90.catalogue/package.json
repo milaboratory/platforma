@@ -48,9 +48,9 @@
   "license": "UNLICENSED",
   "dependencies": {},
   "devDependencies": {
-    "@platforma-sdk/package-builder": "workspace:",
-    "@milaboratories/example-pl-package-asset-1": "workspace:",
-    "@milaboratories/example-pl-package-runenv-1": "workspace:",
-    "@milaboratories/example-pl-package-integration-1": "workspace:"
+    "@platforma-sdk/package-builder": "workspace:*",
+    "@milaboratories/example-pl-package-asset-1": "workspace:*",
+    "@milaboratories/example-pl-package-runenv-1": "workspace:*",
+    "@milaboratories/example-pl-package-integration-1": "workspace:*"
   }
 }

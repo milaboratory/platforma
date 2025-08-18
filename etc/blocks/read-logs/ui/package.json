@@ -11,14 +11,14 @@
   },
   "dependencies": {
     "@milaboratories/milaboratories.test-read-logs.model": "workspace:*",
-    "@platforma-sdk/ui-vue": "workspace:^",
+    "@platforma-sdk/ui-vue": "workspace:*",
     "@platforma-sdk/model": "workspace:*",
     "vue": "catalog:"
   },
   "devDependencies": {
     "@milaboratories/ts-configs": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
-    "@milaboratories/helpers": "workspace:^",
+    "@milaboratories/helpers": "workspace:*",
     "typescript": "catalog:",
     "@faker-js/faker": "catalog:",
     "zod": "catalog:"
