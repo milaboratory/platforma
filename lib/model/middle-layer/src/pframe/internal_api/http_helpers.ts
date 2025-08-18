@@ -1,6 +1,6 @@
 import type { Readable } from 'node:stream';
 import type { RequestListener } from 'node:http';
-import type { Branded } from '@milaboratories/pl-model-common';
+import type { Branded, Base64Encoded } from '@milaboratories/pl-model-common';
 
 /** File range specification */
 export type FileRange = {
@@ -92,14 +92,38 @@ export type HttpServerOptions = {
   http?: true;
 };
 
+/**
+ * Long unique opaque string for use in Bearer authorization header
+ * 
+ * @example
+ * ```ts
+ * request.setHeader('Authorization', `Bearer ${authToken}`);
+ * ```
+ */
+export type HttpAuthorizationToken = Branded<string, 'PFrameInternal.HttpAuthorizationToken'>;
+
+/**
+ * TLS certificate in PEM format
+ * 
+ * @example
+ * ```txt
+ * -----BEGIN CERTIFICATE-----
+ * MIIC2zCCAcOgAwIBAgIJaVW7...
+ * ...
+ * ...Yf9CRK8fgnukKM7TJ
+ * -----END CERTIFICATE-----
+ * ```
+ */
+export type PemCertificate = Branded<string, 'PFrameInternal.PemCertificate'>;
+
 /** HTTP(S) server information and controls, @see HttpHelpers.createHttpServer */
 export interface HttpServer {
   /** Server address info formatted as `http{s}://<host>:<port>/` */
   get address(): ObjectStoreUrl;
   /** Authorization token for Bearer scheme, undefined when @see HttpServerOptions.noAuth flag is set */
-  get authToken(): string | undefined;
+  get authToken(): HttpAuthorizationToken | undefined;
   /** Base64-encoded CA certificate in PEM format, undefined when @see HttpServerOptions.http flag is set */
-  get base64EncodedCaCert(): string | undefined;
+  get encodedCaCert(): Base64Encoded<PemCertificate> | undefined;
   /** Promise that resolves when the server is stopped */
   get stopped(): Promise<void>;
   /** Request server stop, returns the same promise as @see HttpServer.stopped */
