@@ -55,11 +55,6 @@ export function buildPythonDockerImage(
   pythonPkg: PythonPackage,
   options: PythonDockerOptions = getDefaultPythonDockerOptions(),
 ): PythonDockerImageInfo | null {
-  if (os.platform() !== 'linux') {
-    logger.info('Skipping Docker build on non-Linux platform');
-    return null;
-  }
-
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pl-pkg-python-'));
   // Cleanup function for temporary directory
   const cleanup = () => {
@@ -115,35 +110,35 @@ export function preparePythonDockerOptions(packageRoot: string, buildParams: Pyt
     options.pythonVersion = pythonVersion;
   }
 
-  if (buildParams.context) {
-    options.context = path.resolve(packageRoot, buildParams.context);
+  if (buildParams.docker?.context) {
+    options.context = path.resolve(packageRoot, buildParams.docker.context);
   }
 
-  if (buildParams.dockerfile) {
-    options.dockerfile = path.resolve(packageRoot, buildParams.dockerfile);
+  if (buildParams.docker?.dockerfile) {
+    options.dockerfile = path.resolve(packageRoot, buildParams.docker.dockerfile);
   } else {
     // TODO: generate if not exist; Don't forget to add cleanup tmp dir to destructor
   }
 
-  if (buildParams.tag) {
-    options.tag = buildParams.tag;
+  if (buildParams.docker?.tag) {
+    options.tag = buildParams.docker.tag;
   }
 
-  if (buildParams.entrypoint) {
-    options.entrypoint = buildParams.entrypoint.join(' ');
+  if (buildParams.docker?.entrypoint) {
+    options.entrypoint = buildParams.docker.entrypoint.join(' ');
   }
 
   verifyPythonDockerOptions(options);
   return options;
 }
 
-export function getPythonVersionFromEnvironment(environmentId: string): string | undefined {
+function getPythonVersionFromEnvironment(environmentId: string): string | undefined {
   // Extract version from environment ID like "@platforma-open/milaboratories.runenv-python-3:3.12.6"
   const versionMatch = environmentId.match(/:([^:]+)$/);
   return versionMatch ? versionMatch[1] : undefined;
 }
 
-export function getDefaultPythonDockerOptions(): PythonDockerOptions {
+function getDefaultPythonDockerOptions(): PythonDockerOptions {
   return {
     pythonVersion: '3.12.6',
     toolset: 'pip',
