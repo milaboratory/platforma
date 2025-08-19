@@ -1,6 +1,7 @@
 import type { Readable } from 'node:stream';
 import type { RequestListener } from 'node:http';
 import type { Branded, Base64Encoded } from '@milaboratories/pl-model-common';
+import type { Logger } from './common';
 
 /** File range specification */
 export type FileRange = {
@@ -9,6 +10,18 @@ export type FileRange = {
   /** End byte position (inclusive) */
   end: number;
 };
+
+/** Common options for object store creation */
+export interface ObjectStoreOptions {
+  /** Logger instance, no logging is performed when not provided */
+  logger?: Logger;
+}
+
+/** Options for file system object store creation */
+export interface FsStoreOptions extends ObjectStoreOptions {
+  /** Local directory to serve files from */
+  rootDir: string;
+}
 
 /**
  * File system abstraction for request handler factory,
@@ -54,10 +67,11 @@ export interface ObjectStore {
    *   const filePath = this.resolve(filename);
    *
    *   try {
+   *     this.logger('info', `Store withReadStream called for ${filename}[${range.start}..=${range.end}]`);
    *     const stream = createReadStream(filePath, range);
    *     return await action(stream);
    *   } catch (err: unknown) {
-   *     console.error(`failed to create read stream for ${filename} - ${ensureError(err)}`);
+   *     this.logger('error', `Store failed to create read stream for ${filename}[${range.start}..=${range.end}] - ${ensureError(err)}`);
    *     throw;
    *   }
    * }
@@ -136,7 +150,7 @@ export interface HttpHelpers {
    * Create an object store for serving files from a local directory.
    * Rejects if the provided path does not exist or is not a directory.
    */
-  createFsStore(rootDir: string): Promise<ObjectStore>;
+  createFsStore(options: FsStoreOptions): Promise<ObjectStore>;
 
   /**
    * Create an HTTP request handler for serving files from an object store.
