@@ -1,10 +1,6 @@
 import type { PFrameFactoryAPIV2, PFrameFactoryAPIV3 } from './api_factory';
 import type { PFrameReadAPIV8, PFrameReadAPIV9 } from './api_read';
-
-export type Logger = (
-  level: 'info' | 'warn' | 'error',
-  message: string
-) => void;
+import type { Logger } from './common';
 
 export interface PFrameV9 extends PFrameFactoryAPIV2, PFrameReadAPIV8 {}
 
