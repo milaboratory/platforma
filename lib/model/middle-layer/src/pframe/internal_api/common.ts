@@ -1,4 +1,9 @@
-import { AxisId, AxisSpec, ValueType } from '@milaboratories/pl-model-common';
+import { AxisSpec, ValueType } from '@milaboratories/pl-model-common';
+
+export type Logger = (
+  level: 'info' | 'warn' | 'error',
+  message: string
+) => void;
 
 export interface SingleAxisSelector {
   name: string;
