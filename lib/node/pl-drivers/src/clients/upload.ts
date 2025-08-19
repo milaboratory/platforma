@@ -3,7 +3,7 @@ import { addRTypeToMetadata } from '@milaboratories/pl-client';
 import type { ResourceInfo } from '@milaboratories/pl-tree';
 import type { MiLogger } from '@milaboratories/ts-helpers';
 import type { RpcOptions } from '@protobuf-ts/runtime-rpc';
-import { calculate as crc32c } from 'fast-crc32c';
+import crc32c from 'fast-crc32c';
 import * as fs from 'node:fs/promises';
 import type { Dispatcher } from 'undici';
 import { request } from 'undici';
@@ -260,7 +260,7 @@ function checkStatusCodeOk(
 
 /** Calculate CRC32C checksum of a buffer and return as base64 string */
 function calculateCrc32cChecksum(data: Buffer): string {
-  const checksum = crc32c(data);
+  const checksum = crc32c.calculate(data);
   // Convert to unsigned 32-bit integer and then to base64
   const buffer = Buffer.alloc(4);
 
