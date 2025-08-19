@@ -6,7 +6,6 @@ import type { Entrypoint, EntrypointType, PackageEntrypoint } from './package-in
 import * as artifacts from './schemas/artifacts';
 import * as util from './util';
 import { dockerEntrypointNameToOrigin, dockerTagFromPackage } from './docker';
-import { getDefaultPythonDockerOptions } from './python-docker';
 
 const externalPackageLocationSchema = z.object({
   registry: z.string().describe('name of the registry to use for package download'),
@@ -104,16 +103,6 @@ const pythonPackageSettingsSchema = z.object({
 
   ...anyPackageSettingsSchema.shape,
   runEnv: runDependencyPythonSchema,
-
-  toolset: z.string().optional(),
-  dependencies: z
-    .object({
-      requirementsFile: z.string().describe('path to requirements.txt file for pip toolset'),
-    })
-    .optional()
-    .describe(
-      'paths of files that describe dependencies for given toolset: say, requirements.txt for \'pip\'',
-    ),
 });
 
 const rPackageSettingsSchema = z.object({
@@ -463,11 +452,6 @@ export class Renderer {
             };
           }
           case 'python': {
-            // Handle optional dependencies - use defaults from configuration if not specified
-            const defaultOptions = getDefaultPythonDockerOptions();
-            const toolset = pkg.dependencies?.toolset || defaultOptions.toolset;
-            const requirementsFile = pkg.dependencies?.requirementsFile || defaultOptions.requirementsFile;
-
             return {
               type: 'python',
               hash: hash.digest().toString('hex'),
@@ -475,8 +459,6 @@ export class Renderer {
               cmd: ep.cmd,
               envVars: ep.env,
               runEnv: this.resolveRunEnvironment(pkg.environment, pkg.type),
-              toolset: toolset,
-              dependencies: { requirementsFile },
             };
           }
           case 'R': {
@@ -596,11 +578,6 @@ export class Renderer {
             };
           }
           case 'python': {
-            // Handle optional dependencies - use defaults from configuration if not specified
-            const defaultOptions = getDefaultPythonDockerOptions();
-            const toolset = pkg.dependencies?.toolset || defaultOptions.toolset;
-            const requirementsFile = pkg.dependencies?.requirementsFile || defaultOptions.requirementsFile;
-
             return {
               type: 'python',
               registry: pkg.registry.name,
@@ -609,8 +586,6 @@ export class Renderer {
               cmd: ep.cmd,
               envVars: ep.env,
               runEnv: this.resolveRunEnvironment(pkg.environment, pkg.type),
-              toolset: toolset,
-              dependencies: { requirementsFile },
             };
           }
           case 'R': {

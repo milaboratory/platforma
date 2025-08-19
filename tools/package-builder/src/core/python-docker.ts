@@ -8,6 +8,19 @@ import * as pkg from './package';
 
 export interface PythonDockerOptions {
   pythonVersion: string;
+  toolset: string;
+  requirementsFile: string;
+  context: string;
+  dockerfile: string;
+  tag: string;
+  entrypoint: string;
+}
+
+export interface PythonDockerImageInfo {
+  tag: string;
+  packageName: string;
+  packageVersion: string;
+  pythonVersion: string;
   requirementsFile: string;
   toolset: string;
 }
@@ -34,15 +47,6 @@ export function generatePythonDockerfile(
     .replace(/\$\{PYTHON_INSTALL_DEPS\}/g, installDeps);
 
   return dockerfile;
-}
-
-export interface PythonDockerImageInfo {
-  tag: string;
-  packageName: string;
-  packageVersion: string;
-  pythonVersion: string;
-  requirementsFile: string;
-  toolset: string;
 }
 
 export function buildPythonDockerImage(
@@ -104,6 +108,35 @@ export function buildPythonDockerImage(
   }
 }
 
+export function preparePythonDockerOptions(packageRoot: string, buildParams: PythonPackage): PythonDockerOptions {
+  const options = getDefaultPythonDockerOptions();
+  const pythonVersion = getPythonVersionFromEnvironment(buildParams.environment);
+  if (pythonVersion) {
+    options.pythonVersion = pythonVersion;
+  }
+
+  if (buildParams.context) {
+    options.context = path.resolve(packageRoot, buildParams.context);
+  }
+
+  if (buildParams.dockerfile) {
+    options.dockerfile = path.resolve(packageRoot, buildParams.dockerfile);
+  } else {
+    // TODO: generate if not exist; Don't forget to add cleanup tmp dir to destructor
+  }
+
+  if (buildParams.tag) {
+    options.tag = buildParams.tag;
+  }
+
+  if (buildParams.entrypoint) {
+    options.entrypoint = buildParams.entrypoint.join(' ');
+  }
+
+  verifyPythonDockerOptions(options);
+  return options;
+}
+
 export function getPythonVersionFromEnvironment(environmentId: string): string | undefined {
   // Extract version from environment ID like "@platforma-open/milaboratories.runenv-python-3:3.12.6"
   const versionMatch = environmentId.match(/:([^:]+)$/);
@@ -115,5 +148,19 @@ export function getDefaultPythonDockerOptions(): PythonDockerOptions {
     pythonVersion: '3.12.6',
     toolset: 'pip',
     requirementsFile: 'requirements.txt',
+    context: '.',
+    dockerfile: 'Dockerfile',
+    tag: 'latest',
+    entrypoint: '',
   };
+}
+
+function verifyPythonDockerOptions(options: PythonDockerOptions) {
+  if (!fs.existsSync(options.dockerfile)) {
+    throw new Error(`Dockerfile '${options.dockerfile}' not found`);
+  }
+
+  if (!fs.existsSync(options.context)) {
+    throw new Error(`Context '${options.context}' not found`);
+  }
 }

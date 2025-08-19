@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import * as os from 'node:os';
 import { spawnSync } from 'node:child_process';
 import type winston from 'winston';
 import type { PackageConfig, Entrypoint, DockerPackage, PythonPackage } from './package-info';
@@ -12,8 +13,8 @@ import {
 import * as util from './util';
 import * as archive from './archive';
 import * as storage from './storage';
-import { dockerBuild, dockerEntrypointName, dockerPush, dockerTagFromPackage } from './docker';
-import { buildPythonDockerImage, getPythonVersionFromEnvironment, getDefaultPythonDockerOptions, type PythonDockerImageInfo } from './python-docker';
+import { contextFullPath, dockerBuild, dockerEntrypointName, dockerfileFullPath, dockerPush, dockerTagFromPackage } from './docker';
+import { buildPythonDockerImage, type PythonDockerImageInfo, preparePythonDockerOptions } from './python-docker';
 
 export class Core {
   private readonly logger: winston.Logger;
@@ -281,15 +282,15 @@ export class Core {
           this.buildPythonDockerImage(pkg);
           break;
         default:
-          this.logger.warn(`Package '${pkg.id}' is not a 'docker' or 'python' package type, skipping build docker image`);
+          this.logger.debug(`Package '${pkg.id}' is not a 'docker' or 'python' package type, skipping build docker image`);
           break;
       }
     }
   }
 
   private buildDockerImage(buildParams: DockerPackage) {
-    const dockerfile = path.resolve(this.pkg.packageRoot, buildParams.dockerfile ?? 'Dockerfile');
-    const context = path.resolve(this.pkg.packageRoot, buildParams.context ?? '.');
+    const dockerfile = dockerfileFullPath(this.pkg.packageRoot, buildParams);
+    const context = contextFullPath(this.pkg.packageRoot, buildParams);
     const entrypoint = buildParams.entrypoint ?? [];
 
     if (!fs.existsSync(dockerfile)) {
@@ -314,29 +315,31 @@ export class Core {
     this.logger.info(`Docker image '${tag}' was built successfully`);
   }
 
-  private buildPythonDockerImage(pkg: PythonPackage) {
-    const defaultOptions = getDefaultPythonDockerOptions();
-    const pythonVersion = getPythonVersionFromEnvironment(pkg.environment) || defaultOptions.pythonVersion;
-
-    // Use default options if dependencies are not specified
-    const options = {
-      pythonVersion,
-      requirementsFile: pkg.dependencies?.requirementsFile || defaultOptions.requirementsFile,
-      toolset: pkg.dependencies?.toolset || defaultOptions.toolset,
-    };
-
-    this.logger.info(`Building Python Docker image for package '${pkg.name}' with Python ${pythonVersion}`);
-    this.logger.info(`Using toolset: '${options.toolset}', requirements file: '${options.requirementsFile}'`);
-
-    try {
-      const imageInfo = buildPythonDockerImage(this.logger, this.pkg.packageRoot, pkg, options);
-      if (imageInfo) {
-        this.logger.info(`Python Docker image built successfully with tag: ${imageInfo.tag}`);
-        this._pythonDockerImages.set(pkg.name, imageInfo);
-      }
-    } catch (error) {
-      this.logger.warn(`Failed to build Python Docker image: ${String(error)}`);
+  private buildPythonDockerImage(buildParams: PythonPackage) {
+    if (os.platform() !== 'linux') {
+      this.logger.info('Skipping Python Docker build on non-Linux platform');
+      return;
     }
+
+    const options = preparePythonDockerOptions(this.pkg.packageRoot, buildParams);
+
+    this.logger.info(`Building Python Docker image for package '${buildParams.name}' with options: 
+      ${Object.entries(options).map(([key, value]) => `  ${key}: '${value}'`).join('\n')}`,
+    );
+
+    // try {
+    const _ = buildPythonDockerImage(this.logger, this.pkg.packageRoot, buildParams, options);
+    //   // if (imageInfo) {
+    //   //   this.logger.info(`Python Docker image built successfully with tag: ${imageInfo.tag}`);
+    //   //   this._pythonDockerImages.set(buildParams.name, imageInfo);
+    //   // }
+
+    // } catch (error) {
+    //   this.logger.warn(`Failed to build Python Docker image: ${String(error)}`);
+    // }
+    dockerBuild(options.context, options.dockerfile, options.tag);
+
+    this.logger.info(`Python Docker image '${options.tag}' was built successfully`);
   }
 
   private async createPackageArchive(
