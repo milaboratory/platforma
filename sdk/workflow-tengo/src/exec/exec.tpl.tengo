@@ -57,7 +57,9 @@ self.validateInputs({
 		stdout: "string",
 		stderr: "string",
 		nErrorLines: "number",
-		"monetization,?": monetization.schema
+		"monetization,?": monetization.schema,
+		"dockerImageTag,?": "string",
+		"dockerEntrypoint,?": ["string"]
 	},
 	"filesToSave,?": ["string"],
 	"filesContentToSave,?": ["string"],
