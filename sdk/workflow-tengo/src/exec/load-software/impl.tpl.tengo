@@ -10,6 +10,7 @@ python := import(":exec.python")
 R := import(":exec.R")
 desc := import(":exec.descriptor")
 validation := import(":validation")
+feats := import(":feats")
 
 //
 // Variables, substituted in command arguments and environment variable values.
@@ -223,6 +224,30 @@ _remotePackageCallOptions := func(softwareName, binaryDescriptor) {
 	return _binPackageCallOptions("remote", softwareName, variables, binaryDescriptor, softPackage)
 }
 
+_dockerCallOptions := func(softwareName, dockerDescriptor) {
+	ll.assert(
+		len(dockerDescriptor.cmd) != 0,
+		"cannot render final command for software: empty 'cmd' and 'command' in software descriptor")
+
+	plan := runcmd.createRunCommandPlan()
+
+	plan.cmdExpression(dockerDescriptor.cmd[0])
+
+    // FIXME: expression ref???
+	for arg in splice(dockerDescriptor.cmd, 1) {
+		plan.argExpression(arg)
+	}
+
+	plan.
+		dockerImageTag(dockerDescriptor.tag).
+		dockerEntrypoint(dockerDescriptor.entrypoint)
+
+	return ll.toStrict({
+		runEnvType: "docker",
+		plan:       plan
+	})
+}
+
 /**
  * Turns a given software to a list of options that needs to be passed to run cmd builder.
  * Creates resources to install a software and runs R or Python env builder templates
@@ -242,7 +267,10 @@ swToRuncmdPlan := func(softwareName, softwareVersion, softwareDescriptor) {
 		"exec.internal.swToRunCmdOptions: descriptor does not fit schema")
 
 	result := undefined
-	if maps.containsKey(softwareDescriptor, "local") {
+
+	if feats.isDockerAvailable && maps.containsKey(softwareDescriptor, "docker") {
+		result = _dockerCallOptions(softwareName, softwareDescriptor.docker)
+	} else if maps.containsKey(softwareDescriptor, "local") {
 		result = _devLocalPackageCallOptions(softwareName, softwareDescriptor.local)
 	} else if maps.containsKey(softwareDescriptor, "binary") {
 		result = _remotePackageCallOptions(softwareName, softwareDescriptor.binary)

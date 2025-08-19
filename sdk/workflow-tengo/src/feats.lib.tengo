@@ -53,5 +53,8 @@ export ll.toStrict({
 	fullFeaturedApi:        _isEnabled("fullFeaturedAPI"),
 
 	// true when backend supports blob size retrieval via ll.getBlobSize()
-	hasBlobSize:            ll.methodExists(plapi, "getBlobSize")
+	hasBlobSize:            ll.methodExists(plapi, "getBlobSize"),
+
+	// true when backend supports docker packages
+	isDockerAvailable:        _isEnabled("dockerSupport")
 })
