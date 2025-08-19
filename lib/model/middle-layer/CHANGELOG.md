@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.8.14
+
+### Patch Changes
+
+- dc289eb: Require to accept logger parameter in PFrame ObjectStore
+
 ## 1.8.13
 
 ### Patch Changes
