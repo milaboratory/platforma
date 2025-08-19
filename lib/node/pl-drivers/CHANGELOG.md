@@ -1,5 +1,11 @@
 # @milaboratories/pl-drivers
 
+## 1.10.4
+
+### Patch Changes
+
+- 61d381c: Switch from deprecated RunCommand/\*:1 to :2
+
 ## 1.10.3
 
 ### Patch Changes
