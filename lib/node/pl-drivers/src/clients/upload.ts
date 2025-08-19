@@ -3,12 +3,12 @@ import { addRTypeToMetadata } from '@milaboratories/pl-client';
 import type { ResourceInfo } from '@milaboratories/pl-tree';
 import type { MiLogger } from '@milaboratories/ts-helpers';
 import type { RpcOptions } from '@protobuf-ts/runtime-rpc';
-import crc32c from 'fast-crc32c';
 import * as fs from 'node:fs/promises';
 import type { Dispatcher } from 'undici';
 import { request } from 'undici';
 import { uploadapi_ChecksumAlgorithm, type uploadapi_GetPartURL_Response } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/uploadapi/protocol';
 import { UploadClient } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/uploadapi/protocol.client';
+import { crc32c } from './crc32c';
 
 import type { IncomingHttpHeaders } from 'undici/types/header';
 
@@ -260,7 +260,7 @@ function checkStatusCodeOk(
 
 /** Calculate CRC32C checksum of a buffer and return as base64 string */
 function calculateCrc32cChecksum(data: Buffer): string {
-  const checksum = crc32c.calculate(data);
+  const checksum = crc32c(data);
   // Convert to unsigned 32-bit integer and then to base64
   const buffer = Buffer.alloc(4);
 
