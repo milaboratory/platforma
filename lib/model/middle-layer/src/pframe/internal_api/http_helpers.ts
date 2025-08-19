@@ -3,13 +3,83 @@ import type { RequestListener } from 'node:http';
 import type { Branded, Base64Encoded } from '@milaboratories/pl-model-common';
 import type { Logger } from './common';
 
-/** File range specification */
-export type FileRange = {
-  /** Start byte position (inclusive) */
-  start: number;
-  /** End byte position (inclusive) */
-  end: number;
-};
+/** Parquet file name */
+export type ParquetFileName = Branded<`${string}.parquet`, 'PFrameInternal.ParquetFileName'>;
+
+/** HTTP range as of RFC 9110 <https://datatracker.ietf.org/doc/html/rfc9110#name-range> */
+export type HttpRange =
+  | {
+      /**
+       * Get file content in the specified byte range
+       * 
+       * @example
+       * ```
+       * GET /file.parquet HTTP/1.1
+       * Range: bytes=0-1023
+       * ```
+       */
+      type: 'bounded';
+      /** Start byte position (inclusive) */
+      start: number;
+      /** End byte position (inclusive) */
+      end: number;
+    }
+  | {
+      /**
+       * Get byte range starting from the specified offset
+       * 
+       * @example
+       * ```
+       * GET /file.parquet HTTP/1.1
+       * Range: bytes=1024-
+       * ```
+       */
+      type: 'offset';
+      /** Start byte position (inclusive) */
+      offset: number;
+    }
+  | {
+      /**
+       * Get byte range starting from the specified suffix
+       * 
+       * @example
+       * ```
+       * GET /file.parquet HTTP/1.1
+       * Range: bytes=-1024
+       * ```
+       */
+      type: 'suffix';
+      /** End byte position (inclusive) */
+      suffix: number;
+    };
+
+/** HTTP method passed to object store */
+export type HttpMethod = 'GET' | 'HEAD';
+
+/** HTTP response from object store */
+export type ObjectStoreResponse<Method extends HttpMethod = HttpMethod> =
+  | {
+      /** Will be translated to 500 Internal Server Error by the handler */
+      type: 'InternalError';
+    }
+  | {
+      /** Will be translated to 404 Not Found by the handler */
+      type: 'NotFound';
+    }
+  | {
+      /** Will be translated to 416 Range Not Satisfiable by the handler */
+      type: 'RangeNotSatisfiable';
+      /** Total file size in bytes */
+      size: number;
+    }
+  | {
+      /** Will be translated to 200 OK or 206 Partial Content by the handler */
+      type: 'Ok';
+      /** Total file size in bytes */
+      size: number;
+      /** Stream of file content, undefined for HEAD requests */
+      data: Method extends 'HEAD' ? undefined : Readable;
+    }
 
 /** Common options for object store creation */
 export interface ObjectStoreOptions {
@@ -23,65 +93,22 @@ export interface FsStoreOptions extends ObjectStoreOptions {
   rootDir: string;
 }
 
-/**
- * File system abstraction for request handler factory,
- * @see HttpHelpers.createRequestHandler.
- * Assumes that it is working with flat directory structure.
- * Accepts filenames with extension as input (e.g. `file.parquet`).
- */
+/** File system abstraction for request handler factory, @see HttpHelpers.createRequestHandler */
 export interface ObjectStore {
   /**
-   * @returns file size in bytes or `-1` if file does not exist or permissions do not allow access.
-   * @throws if file can become accessible after retry (e.g. on network error)
-   *
-   * @example
-   * ```ts
-   * async getFileSize(filename: string): Promise<number> {
-   *   const filePath = this.resolve(filename);
-   *   return await fs
-   *     .stat(filePath)
-   *     .then((stat) => ({ size: stat.isFile() ? stat.size : -1 }))
-   *     .catch(() => ({ size: -1 }));
-   * }
-   * ```
+   * Proxy HTTP(S) request for parquet file to object store.
+   * Callback promise resolves when stream is closed by handler @see HttpHelpers.createRequestHandler
+   * Callback API is used so that ObjectStore can limit the number of concurrent requests.
    */
-  getFileSize(filename: string): Promise<number>;
-
-  /**
-   * Execute action with readable stream (actions can be concurrency limited by the store).
-   * Action resolves when stream is closed by handler @see HttpHelpers.createRequestHandler
-   * 
-   * @param filename - existing file name (for which @see ObjectStore.getFileSize returned non-negative value)
-   * @param range - valid range of bytes to read from the file (store may skip validation)
-   * @param action - function to execute with the stream, responsible for closing the stream
-   * @returns promise that resolves after the action is completed
-   *
-   * @example
-   * ```ts
-   * async withReadStream(params: {
-   *   filename: string;
-   *   range: FileRange;
-   *   action: (stream: Readable) => Promise<void>;
-   * }): Promise<void> {
-   *   const { filename, range, action } = params;
-   *   const filePath = this.resolve(filename);
-   *
-   *   try {
-   *     this.logger('info', `Store withReadStream called for ${filename}[${range.start}..=${range.end}]`);
-   *     const stream = createReadStream(filePath, range);
-   *     return await action(stream);
-   *   } catch (err: unknown) {
-   *     this.logger('error', `Store failed to create read stream for ${filename}[${range.start}..=${range.end}] - ${ensureError(err)}`);
-   *     throw;
-   *   }
-   * }
-   * ```
-   */
-  withReadStream(params: {
-    filename: string;
-    range: FileRange;
-    action: (stream: Readable) => Promise<void>;
-  }): Promise<void>;
+  request<Method extends HttpMethod = 'GET'>(
+    filename: ParquetFileName,
+    params: {
+      method?: Method;
+      range?: HttpRange;
+      signal?: AbortSignal;
+      callback: (response: ObjectStoreResponse<Method>) => Promise<void>;
+    }
+  ): void;
 }
 
 /** Object store base URL in format accepted by Apache DataFusion and DuckDB */
@@ -167,7 +194,7 @@ export interface HttpHelpers {
    * ```ts
    * const rootDir = '/path/to/directory/with/parquet/files';
    *
-   * let store = await HttpHelpers.createFsStore(rootDir).catch((err: unknown) => {
+   * let store = await HttpHelpers.createFsStore({ rootDir }).catch((err: unknown) => {
    *   throw new Error(`Failed to create file store for ${rootDir} - ${ensureError(err)}`);
    * });
    *
