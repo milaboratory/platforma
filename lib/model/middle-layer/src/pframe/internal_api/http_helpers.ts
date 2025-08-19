@@ -100,10 +100,10 @@ export interface ObjectStore {
    * Callback promise resolves when stream is closed by handler @see HttpHelpers.createRequestHandler
    * Callback API is used so that ObjectStore can limit the number of concurrent requests.
    */
-  request<Method extends HttpMethod = 'GET'>(
+  request<Method extends HttpMethod>(
     filename: ParquetFileName,
     params: {
-      method?: Method;
+      method: Method;
       range?: HttpRange;
       signal?: AbortSignal;
       callback: (response: ObjectStoreResponse<Method>) => Promise<void>;
