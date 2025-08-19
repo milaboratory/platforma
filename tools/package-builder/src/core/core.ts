@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import * as os from 'node:os';
+// import * as os from 'node:os';
 import { spawnSync } from 'node:child_process';
 import type winston from 'winston';
 import type { PackageConfig, Entrypoint, DockerPackage, PythonPackage } from './package-info';
@@ -14,13 +14,12 @@ import * as util from './util';
 import * as archive from './archive';
 import * as storage from './storage';
 import { contextFullPath, dockerBuild, dockerEntrypointName, dockerfileFullPath, dockerPush, dockerTagFromPackage } from './docker';
-import { buildPythonDockerImage, type PythonDockerImageInfo, preparePythonDockerOptions } from './python-docker';
+import { preparePythonDockerOptions } from './python-docker';
 
 export class Core {
   private readonly logger: winston.Logger;
   private _entrypoints: Map<string, Entrypoint> | undefined;
   private _renderer: Renderer | undefined;
-  private _pythonDockerImages: Map<string, PythonDockerImageInfo> = new Map();
 
   public readonly pkg: PackageInfo;
   public buildMode: util.BuildMode;
@@ -316,28 +315,19 @@ export class Core {
   }
 
   private buildPythonDockerImage(buildParams: PythonPackage) {
-    if (os.platform() !== 'linux') {
-      this.logger.info('Skipping Python Docker build on non-Linux platform');
-      return;
-    }
+    // if (os.platform() !== 'linux') {
+    //   this.logger.info('Skipping Python Docker build on non-Linux platform');
+    //   return;
+    // }
 
-    const options = preparePythonDockerOptions(this.pkg.packageRoot, buildParams);
+    const options = preparePythonDockerOptions(this.logger, this.pkg.packageRoot, buildParams);
 
     this.logger.info(`Building Python Docker image for package '${buildParams.name}' with options: 
       ${Object.entries(options).map(([key, value]) => `  ${key}: '${value}'`).join('\n')}`,
     );
 
-    // try {
-    const _ = buildPythonDockerImage(this.logger, this.pkg.packageRoot, buildParams, options);
-    //   // if (imageInfo) {
-    //   //   this.logger.info(`Python Docker image built successfully with tag: ${imageInfo.tag}`);
-    //   //   this._pythonDockerImages.set(buildParams.name, imageInfo);
-    //   // }
-
-    // } catch (error) {
-    //   this.logger.warn(`Failed to build Python Docker image: ${String(error)}`);
-    // }
     dockerBuild(options.context, options.dockerfile, options.tag);
+    options.cleanup();
 
     this.logger.info(`Python Docker image '${options.tag}' was built successfully`);
   }
@@ -443,21 +433,24 @@ export class Core {
         // different artifact types
         const dockerPkg = this.packages.get(dockerEntrypointName(pkg.id));
         if (!dockerPkg) {
-          // For Python packages without custom docker config, publish the auto-generated Docker image
-          if (pkg.type === 'python') {
-            const imageInfo = this._pythonDockerImages.get(pkg.name);
-            if (imageInfo) {
-              this.logger.info(`Publishing auto-generated Python Docker image '${imageInfo.tag}' for package '${pkg.name}'`);
-              try {
-                dockerPush(imageInfo.tag);
-                this.logger.info(`Python Docker image '${imageInfo.tag}' published successfully`);
-              } catch (error) {
-                this.logger.warn(`Failed to publish Python Docker image '${imageInfo.tag}': ${String(error)}`);
-              }
-            }
-          }
           continue;
         }
+        // if (!dockerPkg) {
+        //   // For Python packages without custom docker config, publish the auto-generated Docker image
+        //   if (pkg.type === 'python') {
+        //     const imageInfo = this._pythonDockerImages.get(pkg.name);
+        //     if (imageInfo) {
+        //       this.logger.info(`Publishing auto-generated Python Docker image '${imageInfo.tag}' for package '${pkg.name}'`);
+        //       try {
+        //         dockerPush(imageInfo.tag);
+        //         this.logger.info(`Python Docker image '${imageInfo.tag}' published successfully`);
+        //       } catch (error) {
+        //         this.logger.warn(`Failed to publish Python Docker image '${imageInfo.tag}': ${String(error)}`);
+        //       }
+        //     }
+        //   }
+        //   continue;
+        // }
 
         this.publishDockerImage(dockerPkg);
       }
@@ -596,19 +589,19 @@ export class Core {
     if (pkg.type !== 'python') {
       throw new Error(`package '${pkg.id}' is not a python package`);
     }
-    // Publish Python Docker images that were built during the build process
-    const imageInfo = this._pythonDockerImages.get(pkg.name);
-    if (!imageInfo) {
-      throw new Error(`Python Docker image not found for package '${pkg.name}'`);
-    }
+    // // Publish Python Docker images that were built during the build process
+    // const imageInfo = this._pythonDockerImages.get(pkg.name);
+    // if (!imageInfo) {
+    //   throw new Error(`Python Docker image not found for package '${pkg.name}'`);
+    // }
 
-    this.logger.info(`Publishing Python Docker image '${imageInfo.tag}' for package '${pkg.name}'`);
-    try {
-      dockerPush(imageInfo.tag);
-      this.logger.info(`Python Docker image '${imageInfo.tag}' published successfully`);
-    } catch (error) {
-      this.logger.warn(`Failed to publish Python Docker image '${imageInfo.tag}': ${String(error)}`);
-    }
+    // this.logger.info(`Publishing Python Docker image '${imageInfo.tag}' for package '${pkg.name}'`);
+    // try {
+    //   dockerPush(imageInfo.tag);
+    //   this.logger.info(`Python Docker image '${imageInfo.tag}' published successfully`);
+    // } catch (error) {
+    //   this.logger.warn(`Failed to publish Python Docker image '${imageInfo.tag}': ${String(error)}`);
+    // }
   }
 
   public signPackages(options?: {
