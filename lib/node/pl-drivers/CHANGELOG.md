@@ -1,5 +1,11 @@
 # @milaboratories/pl-drivers
 
+## 1.10.5
+
+### Patch Changes
+
+- 7cba53f: package doesn't build with npm
+
 ## 1.10.4
 
 ### Patch Changes
