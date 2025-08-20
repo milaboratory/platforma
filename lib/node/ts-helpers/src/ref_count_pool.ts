@@ -1,4 +1,4 @@
-import { isDisposable, isAsyncDisposable } from '@milaboratories/ts-helpers';
+import { isAsyncDisposable, isDisposable } from './obj';
 
 /**
  * Function associated with particular entry from the RefCountResourcePool.
