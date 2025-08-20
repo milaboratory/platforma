@@ -5,8 +5,7 @@
   "scripts": {
     "cleanup": "rm -rf ./dist/ && rm -f ./pkg-*.tgz",
     "reset": "npm run cleanup && rm -rf ./node_modules/",
-    "build:descriptor": "env -u PL_PKG_DEV pl-pkg build descriptors",
-    "build": "rm -rf dist && env -u PL_PKG_DEV pl-pkg build"
+    "test": "rm -rf dist && env -u PL_PKG_DEV pl-pkg build"
   },
   "block-software": {
     "registries": {
