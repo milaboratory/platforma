@@ -51,10 +51,14 @@ export const infoSchema = z
     binary: softwareOptionsSchema.optional(),
     environment: environmentOptionsSchema.optional(),
     docker: softwareOptionsSchema.optional(),
+    python: softwareOptionsSchema.optional(),
   })
   .refine(
     (data) => {
-      if (toInt(data.docker) + toInt(data.binary) > 1) {
+      const isBinaryDocker = toInt(data.binary) + toInt(data.docker) > 1;
+      const isPythonDocker = toInt(data.python) + toInt(data.docker) > 1;
+
+      if (isBinaryDocker || isPythonDocker) {
         return true;
       }
 
@@ -62,7 +66,8 @@ export const infoSchema = z
         + toInt(data.asset)
         + toInt(data.binary)
         + toInt(data.environment)
-        + toInt(data.docker);
+        + toInt(data.docker)
+        + toInt(data.python);
       return n === 1;
     },
     {

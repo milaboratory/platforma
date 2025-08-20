@@ -282,6 +282,12 @@ export class PackageInfo {
           cmd: ep.docker.cmd ?? [],
           env: ep.docker.envVars ?? [],
         });
+        continue;
+      }
+
+      if (ep.python) {
+        list.set(dockerEntrypointName(epName), this.prepareDockerEntrypoint(epName, ep));
+        continue;
       }
 
       if (ep.reference) {
@@ -448,6 +454,13 @@ export class PackageInfo {
         );
       },
     };
+  }
+
+  private prepareDockerEntrypoint(epName: string, ep: entrypoint.info): Entrypoint {
+    const packageID = typeof ep.python.artifact === 'string' ? ep.python.artifact : epName;
+    const pkg = this.getPackage(packageID, 'python');
+
+    
   }
 
   private getArtifact(id: string, type?: string): artifacts.config {
@@ -627,6 +640,30 @@ export class PackageInfo {
       }
 
       // TODO: add docker validation here
+
+      // TODO(rfiskov)[MILAB-3163]: add python validation here
+      // if (ep.docker) {
+      //   const artifactName = typeof ep.docker.artifact === 'string' ? ep.docker.artifact : epName;
+      //   const artifact = this.getArtifact(artifactName);
+
+      //   if (!artifact) {
+      //     this.logger.error(
+      //       `entrypoint '${epName}' refers to artifact '${artifactName}' which is not defined in '${util.softwareConfigName}'`,
+      //     );
+      //     hasErrors = true;
+      //   }
+
+      //   if (!this.validateArtifact(artifactName, artifact)) {
+      //     hasErrors = true;
+      //   }
+
+      //   if (artifact.type !== 'docker') {
+      //     this.logger.error(
+      //       `entrypoint '${epName}' with 'docker' settings should refer to 'docker' artifact type`,
+      //     );
+      //     hasErrors = true;
+      //   }
+      // }
     }
 
     const uniquePackageNames = new Set<string>();
