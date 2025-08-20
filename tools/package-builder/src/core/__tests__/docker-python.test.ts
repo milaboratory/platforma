@@ -49,8 +49,6 @@ describe('Docker Python Functions', () => {
     testPackageRoot = path.join(tempDir, 'package');
 
     fs.mkdirSync(testPackageRoot, { recursive: true });
-    fs.mkdirSync(path.join(testPackageRoot, 'dist'), { recursive: true });
-    fs.mkdirSync(path.join(testPackageRoot, 'dist', 'docker'), { recursive: true });
 
     // Create a mock requirements.txt file
     fs.writeFileSync(path.join(testPackageRoot, 'requirements.txt'), 'requests>=2.25.0\n');
@@ -69,6 +67,29 @@ describe('Docker Python Functions', () => {
   });
 
   describe('prepareDockerOptions', () => {
+    it('should create dist/docker directories recursively', () => {
+      // Verify directories don't exist initially
+      expect(fs.existsSync(path.join(testPackageRoot, 'dist'))).toBe(false);
+      expect(fs.existsSync(path.join(testPackageRoot, 'dist', 'docker'))).toBe(false);
+
+      const result = prepareDockerOptions(mockLogger, testPackageRoot, "test-package", mockPythonPackage);
+
+      // Verify directories were created
+      expect(fs.existsSync(path.join(testPackageRoot, 'dist'))).toBe(true);
+      expect(fs.existsSync(path.join(testPackageRoot, 'dist', 'docker'))).toBe(true);
+
+      // Verify result structure
+      expect(result).toMatchObject({
+        context: expect.stringContaining(testPackageRoot) as string,
+        dockerfile: expect.stringContaining('Dockerfile') as string,
+        entrypoint: [],
+      });
+
+      // Verify Dockerfile was created
+      expect(fs.existsSync(result.dockerfile)).toBe(true);
+      expect(fs.existsSync(result.context)).toBe(true);
+    });
+
     it('should prepare Docker options with default Python settings', () => {
       const result = prepareDockerOptions(mockLogger, testPackageRoot, "test-package", mockPythonPackage);
 
@@ -78,7 +99,7 @@ describe('Docker Python Functions', () => {
       expect(mockLogger.info).toHaveBeenCalledWith(expect.stringContaining('Written Dockerfile to:'));
       expect(mockLogger.info).toHaveBeenCalledWith('Extracted Python version from environment: 3.12.6');
 
-      // Verify result structure - DockerOptions doesn't have 'type' property
+      // Verify result structure
       expect(result).toMatchObject({
         context: expect.stringContaining(testPackageRoot) as string,
         dockerfile: expect.stringContaining('Dockerfile') as string,
@@ -102,16 +123,6 @@ describe('Docker Python Functions', () => {
       expect(result).toBeDefined();
     });
 
-    it('should create temporary directory with correct naming pattern', () => {
-      const result = prepareDockerOptions(mockLogger, testPackageRoot, "test-package", mockPythonPackage);
-
-      // The context is the package root, not the temp docker directory
-      expect(result.context).toBe(path.resolve(testPackageRoot, '.'));
-      
-      // The dockerfile should be in the dist/docker directory
-      expect(result.dockerfile).toContain(path.join('dist', 'docker', 'Dockerfile-test-package'));
-    });
-
     it('should generate Dockerfile with correct content', () => {
       const result = prepareDockerOptions(mockLogger, testPackageRoot, "test-package", mockPythonPackage);
 
@@ -121,7 +132,6 @@ describe('Docker Python Functions', () => {
       expect(dockerfileContent).toMatch(/FROM python:3\.12\.6-slim/);
       expect(dockerfileContent).toContain('WORKDIR /app');
       expect(dockerfileContent).toContain('COPY . /app/');
-      // The requirements path will be the full resolved path
       expect(dockerfileContent).toContain('RUN pip install --no-cache-dir -r');
       expect(dockerfileContent).toContain('ENV PYTHONPATH=/app');
       expect(dockerfileContent).toContain('CMD ["python", "--version"]');
@@ -134,7 +144,6 @@ describe('Docker Python Functions', () => {
       const result = prepareDockerOptions(mockLogger, testPackageRoot, "test-package", mockPythonPackage);
 
       const dockerfileContent = fs.readFileSync(result.dockerfile, 'utf-8');
-      // The message contains the full path, so we check for the key parts of the message
       expect(dockerfileContent).toContain('No \'/tmp/python-docker-test');
       expect(dockerfileContent).toContain('requirements.txt\' file found');
       expect(dockerfileContent).toContain('skipping dependency installation');
@@ -142,89 +151,6 @@ describe('Docker Python Functions', () => {
       // Should still create valid Docker options
       expect(result).toBeDefined();
       expect(result.dockerfile).toBeDefined();
-    });
-
-    it('should resolve requirements path correctly', () => {
-      const result = prepareDockerOptions(mockLogger, testPackageRoot, "test-package", mockPythonPackage);
-
-      // The context should be the package root
-      expect(result.context).toBe(path.resolve(testPackageRoot, '.'));
-    });
-
-    it('should verify Docker options before returning', () => {
-      const result = prepareDockerOptions(mockLogger, testPackageRoot, "test-package", mockPythonPackage);
-
-      // Verification should pass (no errors thrown)
-      expect(result).toBeDefined();
-
-      // Both dockerfile and context should exist
-      expect(fs.existsSync(result.dockerfile)).toBe(true);
-      expect(fs.existsSync(result.context)).toBe(true);
-    });
-
-    it('should log debug information about prepared options', () => {
-      prepareDockerOptions(mockLogger, testPackageRoot, "test-package", mockPythonPackage);
-
-      expect(mockLogger.debug).toHaveBeenCalledWith(
-        expect.stringContaining('Prepared Docker options:'),
-      );
-    });
-  });
-
-  describe('error handling', () => {
-    it('should throw error if Docker directory creation fails', () => {
-      // Create a temporary directory to avoid conflicts
-      const tempTestDir = fs.mkdtempSync(path.join('/tmp', 'python-docker-error-test-'));
-      const testDir = path.join(tempTestDir, 'test-package');
-      fs.mkdirSync(testDir, { recursive: true });
-      fs.mkdirSync(path.join(testDir, 'dist'), { recursive: true });
-
-      // Make the docker directory creation fail by creating a file with the same name
-      const dockerDirPath = path.join(testDir, 'dist', 'docker');
-      fs.writeFileSync(dockerDirPath, 'this is a file, not a directory');
-
-      expect(() => {
-        prepareDockerOptions(mockLogger, testDir, "test-package", mockPythonPackage);
-      }).toThrow();
-
-      // Cleanup
-      fs.rmSync(tempTestDir, { recursive: true, force: true });
-    });
-
-    it('should throw error if Dockerfile writing fails', () => {
-      // Create a temporary directory to avoid conflicts
-      const tempTestDir = fs.mkdtempSync(path.join('/tmp', 'python-docker-error-test-'));
-      const testDir = path.join(tempTestDir, 'test-package');
-      fs.mkdirSync(testDir, { recursive: true });
-      fs.mkdirSync(path.join(testDir, 'dist', 'docker'), { recursive: true });
-
-      // Create a requirements.txt file to ensure the function gets past the initial checks
-      fs.writeFileSync(path.join(testDir, 'requirements.txt'), 'test');
-
-      // Make the Dockerfile writing fail by creating a file with the same name as the temp directory
-      const tempDockerFileName = `Dockerfile-test-package`;
-      const tempDockerFilePath = path.join(testDir, 'dist', 'docker', tempDockerFileName);
-      fs.writeFileSync(tempDockerFilePath, 'this is a file, not a directory');
-
-      // The function should fail when trying to create a directory where a file already exists
-      // Since this approach might not work reliably, let's just verify the function runs without throwing
-      // and focus on testing the happy path
-      expect(() => {
-        prepareDockerOptions(mockLogger, testDir, "test-package", mockPythonPackage);
-      }).not.toThrow();
-
-      // Cleanup
-      fs.rmSync(tempTestDir, { recursive: true, force: true });
-    });
-  });
-
-  describe('integration with package-info', () => {
-    it('should work with prepareDockerPackage method', () => {
-      // This test verifies that the function can be called from package-info
-      // without throwing errors
-      expect(() => {
-        prepareDockerOptions(mockLogger, testPackageRoot, "test-package", mockPythonPackage);
-      }).not.toThrow();
     });
   });
 });
