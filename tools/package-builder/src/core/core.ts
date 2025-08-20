@@ -1,9 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
-// import * as os from 'node:os';
 import { spawnSync } from 'node:child_process';
 import type winston from 'winston';
-import type { PackageConfig, Entrypoint, DockerPackage, PythonPackage } from './package-info';
+import type { PackageConfig, Entrypoint, DockerPackage } from './package-info';
 import { PackageInfo } from './package-info';
 import {
   Renderer,
@@ -13,8 +12,7 @@ import {
 import * as util from './util';
 import * as archive from './archive';
 import * as storage from './storage';
-import { contextFullPath, dockerBuild, dockerEntrypointName, dockerfileFullPath, dockerPush, dockerTagFromPackage } from './docker';
-import { preparePythonDockerOptions } from './python-docker';
+import { dockerBuild, dockerEntrypointName, dockerPush, dockerTagFromPackage } from './docker';
 
 export class Core {
   private readonly logger: winston.Logger;
@@ -239,11 +237,6 @@ export class Core {
       return;
     }
 
-    if (pkg.type === 'python') {
-      this.buildPythonDockerImage(pkg);
-      return;
-    }
-
     const contentRoot = options?.contentRoot ?? pkg.contentRoot(platform);
 
     if (pkg.type === 'asset') {
@@ -273,23 +266,17 @@ export class Core {
 
     for (const pkgID of packagesToBuild) {
       const pkg = this.getPackage(pkgID);
-      switch (pkg.type) {
-        case 'docker':
-          this.buildDockerImage(pkg);
-          break;
-        case 'python':
-          this.buildPythonDockerImage(pkg);
-          break;
-        default:
-          this.logger.debug(`Package '${pkg.id}' is not a 'docker' or 'python' package type, skipping build docker image`);
-          break;
+      if (pkg.type !== 'docker') {
+        continue;
       }
+
+      this.buildDockerImage(pkg);
     }
   }
 
   private buildDockerImage(buildParams: DockerPackage) {
-    const dockerfile = dockerfileFullPath(this.pkg.packageRoot, buildParams);
-    const context = contextFullPath(this.pkg.packageRoot, buildParams);
+    const dockerfile = path.resolve(this.pkg.packageRoot, buildParams.dockerfile ?? 'Dockerfile');
+    const context = path.resolve(this.pkg.packageRoot, buildParams.context ?? '.');
     const entrypoint = buildParams.entrypoint ?? [];
 
     if (!fs.existsSync(dockerfile)) {
@@ -312,24 +299,6 @@ export class Core {
     dockerBuild(context, dockerfile, tag);
 
     this.logger.info(`Docker image '${tag}' was built successfully`);
-  }
-
-  private buildPythonDockerImage(buildParams: PythonPackage) {
-    // if (os.platform() !== 'linux') {
-    //   this.logger.info('Skipping Python Docker build on non-Linux platform');
-    //   return;
-    // }
-
-    const options = preparePythonDockerOptions(this.logger, this.pkg.packageRoot, buildParams);
-
-    this.logger.info(`Building Python Docker image for package '${buildParams.name}' with options: 
-      ${Object.entries(options).map(([key, value]) => `  ${key}: '${value}'`).join('\n')}`,
-    );
-
-    dockerBuild(options.context, options.dockerfile, options.tag);
-    options.cleanup();
-
-    this.logger.info(`Python Docker image '${options.tag}' was built successfully`);
   }
 
   private async createPackageArchive(
@@ -428,7 +397,6 @@ export class Core {
         uploads.push(this.publishPackage(pkg, util.currentPlatform(), options));
       }
 
-      // TODO(rfiskov)[MILAB-3163]: consider to check 'python' docker image
       if (pkg.type !== 'docker') {
         // will check that docker package exists in the same package.sw.json file for entrypoints with
         // different artifact types
@@ -455,7 +423,7 @@ export class Core {
       forceReupload?: boolean;
     },
   ) {
-    if (this.isPackageWithDocker(pkg)) {
+    if (pkg.type === 'docker') {
       this.publishDockerImage(pkg);
       return;
     }
@@ -545,31 +513,11 @@ export class Core {
 
     for (const pkgID of packagesToPublish) {
       const pkg = this.getPackage(pkgID);
-      this.publishDocker(pkg);
-    }
-  }
+      if (pkg.type !== 'docker') {
+        continue;
+      }
 
-  private isPackageWithDocker(pkg: PackageConfig): boolean {
-    switch (pkg.type) {
-      case 'docker':
-      case 'python':
-        return true;
-      default:
-        return false;
-    }
-  }
-
-  private publishDocker(pkg: PackageConfig) {
-    switch (pkg.type) {
-      case 'docker':
-        this.publishDockerImage(pkg);
-        break;
-      case 'python':
-        this.publishPythonDockerImage(pkg);
-        break;
-      default:
-        this.logger.debug(`Package '${pkg.id}' is not a package with docker image, skipping publish docker image`);
-        break;
+      this.publishDockerImage(pkg);
     }
   }
 
@@ -582,23 +530,6 @@ export class Core {
     dockerPush(tag);
 
     this.logger.info(`Publishing docker image '${tag}' into registry '${pkg.registry.name}'`);
-  }
-
-  private publishPythonDockerImage(pkg: PackageConfig) {
-    if (pkg.type !== 'python') {
-      throw new Error(`package '${pkg.id}' is not a python package`);
-    }
-
-    // Publish Python Docker images that were built during the build process
-    const tag = dockerTagFromPackage(this.pkg.packageRoot, pkg);
-
-    this.logger.info(`Publishing Python Docker image '${tag}' for package '${pkg.name}'`);
-    try {
-      dockerPush(tag);
-      this.logger.info(`Python Docker image '${tag}' published successfully`);
-    } catch (error) {
-      this.logger.warn(`Failed to publish Python Docker image '${tag}': ${String(error)}`);
-    }
   }
 
   public signPackages(options?: {

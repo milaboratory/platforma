@@ -63,11 +63,11 @@ export function dockerTagFromPackage(packageRoot: string, pkg: DockerPackage): s
   return tag;
 }
 
-export function dockerfileFullPath(packageRoot: string, pkg: DockerPackage): string {
+function dockerfileFullPath(packageRoot: string, pkg: DockerPackage): string {
   return path.resolve(packageRoot, pkg.dockerfile ?? 'Dockerfile');
 }
 
-export function contextFullPath(packageRoot: string, pkg: DockerPackage): string {
+function contextFullPath(packageRoot: string, pkg: DockerPackage): string {
   return path.resolve(packageRoot, pkg.context ?? '.');
 }
 
