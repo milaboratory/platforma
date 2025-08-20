@@ -48,8 +48,6 @@ describe('Docker Entrypoint Generation', () => {
     // Create a mock requirements.txt file
     fs.writeFileSync(path.join(testPackageRoot, 'requirements.txt'), 'requests>=2.25.0\n');
 
-
-
     // Clear all mocks
     vi.clearAllMocks();
   });

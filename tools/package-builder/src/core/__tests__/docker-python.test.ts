@@ -45,7 +45,7 @@ describe('Docker Python Functions', () => {
     vi.mocked(os.tmpdir).mockReturnValue('/tmp');
 
     // Create temporary directories for testing
-    tempDir = fs.mkdtempSync(path.join('/tmp', 'python-docker-test-'));
+    tempDir = fs.mkdtempSync(path.join('/tmp', 'python-docker-test'));
     testPackageRoot = path.join(tempDir, 'package');
 
     fs.mkdirSync(testPackageRoot, { recursive: true });
@@ -131,7 +131,7 @@ describe('Docker Python Functions', () => {
 
       const dockerfileContent = fs.readFileSync(result.dockerfile, 'utf-8');
       // The message contains the full path, so we check for the key parts of the message
-      expect(dockerfileContent).toContain('No \'/tmp/python-docker-test-');
+      expect(dockerfileContent).toContain('No \'/tmp/python-docker-test');
       expect(dockerfileContent).toContain('requirements.txt\' file found');
       expect(dockerfileContent).toContain('skipping dependency installation');
 
