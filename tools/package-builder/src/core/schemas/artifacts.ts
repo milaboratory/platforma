@@ -108,22 +108,9 @@ export const javaPackageSchema = archiveRulesSchema.extend({
 });
 export type javaPackageConfig = z.infer<typeof javaPackageSchema>;
 
-const dockerToolsetSchema = z.strictObject({
-  toolset: z.literal('docker'),
-
-  context: z.string().optional().describe('Path to the Docker build context directory, either relative to the current working directory or as an absolute path'),
-  dockerfile: z.string().optional().describe('Path to the Dockerfile used for building the image. Can be relative to the current working directory or an absolute path.'),
-  tag: z.string().optional().describe('Custom Docker image tag to assign to the built image. If specified, this will override the default tag.'),
-  entrypoint: z.array(z.string()).optional().describe('Command to use as the container entrypoint (overrides default ENTRYPOINT)'),
-});
-export const pythonDockerToolsetSchema = z.discriminatedUnion('toolset', [dockerToolsetSchema]);
-
 export const pythonPackageSchema = archiveRulesSchema.extend({
   type: z.literal('python'),
   environment: artifactIDSchema,
-
-  // TODO(rfiskov)[MILAB-3136]: Consider whether custom Docker settings belong in this schema or should be relocated.
-  docker: pythonDockerToolsetSchema.optional(),
 });
 export type pythonPackageConfig = z.infer<typeof pythonPackageSchema>;
 
@@ -148,8 +135,6 @@ export const dockerPackageSchema = archiveRulesSchema.extend({
   context: z.string().describe('relative path to context directory from folder where command is executed or absolute path to context folder'),
   dockerfile: z.string().optional().describe('relative path to \'Dockerfile\' file from folder where command is executed or absolute path to the file'),
 
-  // build from existing image. not used yet
-  tag: z.string().optional().describe('name of the image to be built instead of custom one'),
   entrypoint: z.array(z.string()).optional().describe('entrypoint command to be run in the container'),
 });
 export type dockerPackageConfig = z.infer<typeof dockerPackageSchema>;
