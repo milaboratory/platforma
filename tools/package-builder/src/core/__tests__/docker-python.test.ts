@@ -72,7 +72,7 @@ describe('Docker Python Functions', () => {
       expect(fs.existsSync(path.join(testPackageRoot, 'dist'))).toBe(false);
       expect(fs.existsSync(path.join(testPackageRoot, 'dist', 'docker'))).toBe(false);
 
-      const result = prepareDockerOptions(mockLogger, testPackageRoot, "test-package", mockPythonPackage);
+      const result = prepareDockerOptions(mockLogger, testPackageRoot, 'test-package', mockPythonPackage);
 
       // Verify directories were created
       expect(fs.existsSync(path.join(testPackageRoot, 'dist'))).toBe(true);
@@ -91,7 +91,7 @@ describe('Docker Python Functions', () => {
     });
 
     it('should prepare Docker options with default Python settings', () => {
-      const result = prepareDockerOptions(mockLogger, testPackageRoot, "test-package", mockPythonPackage);
+      const result = prepareDockerOptions(mockLogger, testPackageRoot, 'test-package', mockPythonPackage);
 
       // Verify logger calls
       expect(mockLogger.info).toHaveBeenCalledWith('Preparing Docker options for Python package: test-python-package');
@@ -117,14 +117,14 @@ describe('Docker Python Functions', () => {
         environment: '@platforma-open/milaboratories.runenv-python-3',
       };
 
-      const result = prepareDockerOptions(mockLogger, testPackageRoot, "test-package", packageWithoutVersion);
+      const result = prepareDockerOptions(mockLogger, testPackageRoot, 'test-package', packageWithoutVersion);
 
       expect(mockLogger.debug).toHaveBeenCalledWith('No Python version found in environment, using default: 3.12.6');
       expect(result).toBeDefined();
     });
 
     it('should generate Dockerfile with correct content', () => {
-      const result = prepareDockerOptions(mockLogger, testPackageRoot, "test-package", mockPythonPackage);
+      const result = prepareDockerOptions(mockLogger, testPackageRoot, 'test-package', mockPythonPackage);
 
       const dockerfileContent = fs.readFileSync(result.dockerfile, 'utf-8');
 
@@ -141,7 +141,7 @@ describe('Docker Python Functions', () => {
       // Remove requirements.txt
       fs.unlinkSync(path.join(testPackageRoot, 'requirements.txt'));
 
-      const result = prepareDockerOptions(mockLogger, testPackageRoot, "test-package", mockPythonPackage);
+      const result = prepareDockerOptions(mockLogger, testPackageRoot, 'test-package', mockPythonPackage);
 
       const dockerfileContent = fs.readFileSync(result.dockerfile, 'utf-8');
       expect(dockerfileContent).toContain('No \'/tmp/python-docker-test');
