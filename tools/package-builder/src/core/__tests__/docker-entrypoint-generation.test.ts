@@ -43,7 +43,8 @@ describe('Docker Entrypoint Generation', () => {
     testPackageRoot = path.join(tempDir, 'package');
 
     fs.mkdirSync(testPackageRoot, { recursive: true });
-    fs.mkdirSync(path.join(testPackageRoot, 'docker'), { recursive: true });
+    fs.mkdirSync(path.join(testPackageRoot, 'dist'), { recursive: true });
+    fs.mkdirSync(path.join(testPackageRoot, 'dist', 'docker'), { recursive: true });
 
     // Create a mock requirements.txt file
     fs.writeFileSync(path.join(testPackageRoot, 'requirements.txt'), 'requests>=2.25.0\n');

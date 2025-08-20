@@ -36,7 +36,7 @@ function generatePythonDockerfileContent(options: PythonOptions): string {
   return dockerfile;
 }
 
-export function prepareDockerOptions(logger: winston.Logger, packageRoot: string, buildParams: PythonPackage): DockerOptions {
+export function prepareDockerOptions(logger: winston.Logger, packageRoot: string, pacakgeId: string, buildParams: PythonPackage): DockerOptions {
   logger.info(`Preparing Docker options for Python package: ${buildParams.name}`);
 
   const options = getDefaultPythonOptions();
@@ -51,12 +51,13 @@ export function prepareDockerOptions(logger: winston.Logger, packageRoot: string
   }
 
   // Generate a temporary directory for the Dockerfile
-  const tmpDir = fs.mkdtempSync(path.join(packageRoot, 'docker', `pl-pkg-python-${buildParams.name}`));
+  const tmpDir = path.join(packageRoot, 'dist', 'docker');
+  fs.mkdirSync(tmpDir, { recursive: true });
   logger.info(`Created temporary Docker directory: ${tmpDir}`);
 
   const dockerfile = {
     content: generatePythonDockerfileContent(options),
-    path: path.join(tmpDir, 'Dockerfile'),
+    path: path.resolve(tmpDir, `Dockerfile-${pacakgeId}`),
   };
 
   fs.writeFileSync(dockerfile.path, dockerfile.content);

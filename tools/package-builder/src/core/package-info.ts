@@ -472,7 +472,7 @@ export class PackageInfo {
       throw new Error(`Auto Docker entrypoint only supported for Python, got '${pkg.type}'.`);
     }
 
-    const options = prepareDockerOptions(this.logger, this.packageRoot, pkg);
+    const options = prepareDockerOptions(this.logger, this.packageRoot, pkg.id, pkg);
     const artifact: artifacts.dockerPackageConfig = {
       type: 'docker',
       ...options,
