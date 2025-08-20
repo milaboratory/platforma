@@ -6,6 +6,13 @@ import type { Logger } from './common';
 /** Parquet file name */
 export type ParquetFileName = Branded<`${string}.parquet`, 'PFrameInternal.ParquetFileName'>;
 
+export type FileRange = {
+  /** Start byte position (inclusive) */
+  start: number;
+  /** End byte position (inclusive) */
+  end: number;
+}
+
 /** HTTP range as of RFC 9110 <https://datatracker.ietf.org/doc/html/rfc9110#name-range> */
 export type HttpRange =
   | {
@@ -57,7 +64,7 @@ export type HttpRange =
 export type HttpMethod = 'GET' | 'HEAD';
 
 /** HTTP response from object store */
-export type ObjectStoreResponse<Method extends HttpMethod = HttpMethod> =
+export type ObjectStoreResponse =
   | {
       /** Will be translated to 500 Internal Server Error by the handler */
       type: 'InternalError';
@@ -77,8 +84,10 @@ export type ObjectStoreResponse<Method extends HttpMethod = HttpMethod> =
       type: 'Ok';
       /** Total file size in bytes */
       size: number;
+      /** File range translated from HTTP range */
+      range: FileRange;
       /** Stream of file content, undefined for HEAD requests */
-      data: Method extends 'HEAD' ? undefined : Readable;
+      data?: Readable;
     }
 
 /** Common options for object store creation */
@@ -94,19 +103,41 @@ export interface FsStoreOptions extends ObjectStoreOptions {
 }
 
 /** File system abstraction for request handler factory, @see HttpHelpers.createRequestHandler */
-export interface ObjectStore {
+export abstract class ObjectStore {
+  protected readonly logger: Logger;
+
+  constructor(options: ObjectStoreOptions) {
+    this.logger = options.logger ?? (() => {});
+  }
+
+  /** Translate HTTP range to file range, @returns null if the range is not satisfiable */
+  protected translate(fileSize: number, range?: HttpRange): FileRange | null {
+    if (!range) return { start: 0, end: fileSize - 1 };
+    switch (range.type) {
+      case 'bounded':
+        if (range.end >= fileSize) return null;
+        return { start: range.start, end: range.end };
+      case 'offset':
+        if (range.offset >= fileSize) return null;
+        return { start: range.offset, end: fileSize - 1 };
+      case 'suffix':
+        if (range.suffix > fileSize) return null;
+        return { start: fileSize - range.suffix, end: fileSize - 1 };
+    }
+  }
+
   /**
    * Proxy HTTP(S) request for parquet file to object store.
    * Callback promise resolves when stream is closed by handler @see HttpHelpers.createRequestHandler
    * Callback API is used so that ObjectStore can limit the number of concurrent requests.
    */
-  request<Method extends HttpMethod>(
+  abstract request(
     filename: ParquetFileName,
     params: {
-      method: Method;
+      method: HttpMethod;
       range?: HttpRange;
-      signal?: AbortSignal;
-      callback: (response: ObjectStoreResponse<Method>) => Promise<void>;
+      signal: AbortSignal;
+      callback: (response: ObjectStoreResponse) => Promise<void>;
     }
   ): void;
 }
@@ -125,7 +156,7 @@ export type RequestHandlerOptions = {
 export type HttpServerOptions = {
   /** HTTP(S) request handler function, @see HttpHelpers.createRequestHandler */
   handler: RequestListener;
-  /** Port to bind to (@default 0 for auto-assignment) */
+  /** Port to bind to, @default 0 for auto-assignment */
   port?: number;
   /** Do not apply authorization middleware to @param handler */
   noAuth?: true;
