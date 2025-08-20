@@ -5,21 +5,22 @@ import type { PythonPackage } from './package-info';
 import type winston from 'winston';
 import * as pkg from './package';
 
-export interface PythonDockerOptions {
+export interface PythonOptions {
   pythonVersion: string;
   toolset: string;
-  requirementsFile: string;
-  context: string;
-  dockerfile: string;
-  tag: string;
-  entrypoint: string;
-  cleanup: () => void;
+  requirements: string;
 }
 
-function generatePythonDockerfileContent(packageRoot: string, options: PythonDockerOptions): string {
-  // Check if requirements.txt exists in the package root
-  const requirementsPath = path.join(packageRoot, options.requirementsFile);
-  const hasRequirements = fs.existsSync(requirementsPath);
+export interface DockerOptions {
+  context: string;
+  dockerfile: string;
+  entrypoint: string[];
+}
+
+export interface PythonDockerOptions extends PythonOptions, DockerOptions {}
+
+function generatePythonDockerfileContent(packageRoot: string, options: PythonOptions): string {
+  const hasRequirements = fs.existsSync(options.requirements);
 
   // Read template from assets
   const templatePath = pkg.assets('python-dockerfile.template');
@@ -27,8 +28,8 @@ function generatePythonDockerfileContent(packageRoot: string, options: PythonDoc
 
   // Simple variable substitution
   const installDeps = hasRequirements
-    ? `COPY ${options.requirementsFile} .\nRUN ${options.toolset} install --no-cache-dir -r ${options.requirementsFile}`
-    : `# No '${options.requirementsFile}' file found, skipping dependency installation`;
+    ? `COPY ${options.requirements} .\nRUN ${options.toolset} install --no-cache-dir -r ${options.requirements}`
+    : `# No '${options.requirements}' file found, skipping dependency installation`;
   const dockerfile = templateContent
     .replace(/\$\{PYTHON_VERSION\}/g, options.pythonVersion)
     .replace(/\$\{PYTHON_INSTALL_DEPS\}/g, installDeps);
@@ -36,53 +37,40 @@ function generatePythonDockerfileContent(packageRoot: string, options: PythonDoc
   return dockerfile;
 }
 
-export function preparePythonDockerOptions(logger: winston.Logger, packageRoot: string, buildParams: PythonPackage): PythonDockerOptions {
-  const options = getDefaultPythonDockerOptions();
+export function prepareDockerOptions(logger: winston.Logger, packageRoot: string, buildParams: PythonPackage): DockerOptions {
+  logger.info(`Preparing Docker options for Python package: ${buildParams.name}`);
+  
+  const options = getDefaultPythonOptions();
+  options.requirements = path.resolve(packageRoot, options.requirements);
 
   const pythonVersion = getPythonVersionFromEnvironment(buildParams.environment);
   if (pythonVersion) {
+    logger.info(`Extracted Python version from environment: ${pythonVersion}`);
     options.pythonVersion = pythonVersion;
-  }
-
-  options.context = path.resolve(packageRoot, buildParams.docker?.context ?? options.context);
-
-  if (buildParams.docker?.dockerfile) {
-    options.dockerfile = path.resolve(packageRoot, buildParams.docker.dockerfile);
   } else {
-    const date = new Date(Date.now()).toISOString();
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), `pl-pkg-python-${buildParams.name}-${date}`));
-
-    // Cleanup function for temporary directory
-    const cleanup = () => {
-      try {
-        fs.rmSync(tmpDir, { recursive: true, force: true });
-      } catch (error) {
-        logger.warn(`Failed to clean up temporary directory ${tmpDir}: ${String(error)}`);
-      }
-    };
-
-    try {
-      const content = generatePythonDockerfileContent(packageRoot, options);
-      const dockerfilePath = path.join(tmpDir, 'Dockerfile');
-      fs.writeFileSync(dockerfilePath, content);
-      options.dockerfile = path.resolve(dockerfilePath);
-    } catch (error) {
-      cleanup();
-      logger.error(`Failed to generate Dockerfile: ${String(error)}`);
-    }
-    options.cleanup = cleanup;
+    logger.debug(`No Python version found in environment, using default: ${options.pythonVersion}`);
   }
 
-  if (buildParams.docker?.tag) {
-    options.tag = buildParams.docker.tag;
-  }
+  const tmpDir = fs.mkdtempSync(path.join(packageRoot, 'docker', `pl-pkg-python-${buildParams.name}`));
+  logger.info(`Created temporary Docker directory: ${tmpDir}`);
+  
+  const dockerfile = {
+    content: generatePythonDockerfileContent(packageRoot, options),
+    path: path.join(tmpDir, 'Dockerfile'),
+  };
+  
+  fs.writeFileSync(dockerfile.path, dockerfile.content);
+  logger.info(`Written Dockerfile to: ${dockerfile.path}`);
 
-  if (buildParams.docker?.entrypoint) {
-    options.entrypoint = buildParams.docker.entrypoint.join(' ');
-  }
-
-  verifyPythonDockerOptions(options);
-  return options;
+  const result: DockerOptions = {
+    dockerfile: dockerfile.path,
+    context: path.resolve(packageRoot, '.'),
+    entrypoint: [],
+  };
+  
+  logger.debug(`Prepared Docker options: ${JSON.stringify(result)}`);
+  verifyDockerOptions(result);
+  return result;
 }
 
 function getPythonVersionFromEnvironment(environmentId: string): string | undefined {
@@ -91,20 +79,15 @@ function getPythonVersionFromEnvironment(environmentId: string): string | undefi
   return versionMatch ? versionMatch[1] : undefined;
 }
 
-function getDefaultPythonDockerOptions(): PythonDockerOptions {
+function getDefaultPythonOptions(): PythonOptions {
   return {
     pythonVersion: '3.12.6',
     toolset: 'pip',
-    requirementsFile: 'requirements.txt',
-    context: '.',
-    dockerfile: 'Dockerfile',
-    tag: 'latest',
-    entrypoint: '',
-    cleanup: () => {},
+    requirements: 'requirements.txt',
   };
 }
 
-function verifyPythonDockerOptions(options: PythonDockerOptions) {
+function verifyDockerOptions(options: DockerOptions) {
   if (!fs.existsSync(options.dockerfile)) {
     throw new Error(`Dockerfile '${options.dockerfile}' not found`);
   }

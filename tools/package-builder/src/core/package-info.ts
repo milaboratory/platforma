@@ -9,6 +9,7 @@ import * as artifacts from './schemas/artifacts';
 import * as entrypoint from './schemas/entrypoint';
 import { tryResolve } from '@milaboratories/resolve-helper';
 import { dockerEntrypointName } from './docker';
+import { prepareDockerOptions } from './python-docker';
 
 export interface PackageArchiveInfo extends artifacts.archiveRules {
   name: string;
@@ -282,12 +283,6 @@ export class PackageInfo {
           cmd: ep.docker.cmd ?? [],
           env: ep.docker.envVars ?? [],
         });
-        continue;
-      }
-
-      if (ep.python) {
-        list.set(dockerEntrypointName(epName), this.prepareDockerEntrypoint(epName, ep));
-        continue;
       }
 
       if (ep.reference) {
@@ -301,13 +296,25 @@ export class PackageInfo {
 
       if (ep.binary) {
         const packageID = typeof ep.binary.artifact === 'string' ? ep.binary.artifact : epName;
+        const pkg = this.getPackage(packageID);
         list.set(epName, {
           type: 'software',
           name: epName,
-          package: this.getPackage(packageID),
+          package: pkg,
           cmd: ep.binary.cmd,
           env: ep.binary.envVars ?? [],
         });
+
+        const shouldGenerateDockerEntrypoint = !ep.docker && artifacts.isDockerRequired(pkg.type);
+        if (shouldGenerateDockerEntrypoint) {
+          list.set(dockerEntrypointName(epName), {
+            type: 'software',
+            name: epName,
+            package: this.prepareDockerPackage(pkg),
+            cmd: ep.binary.cmd ?? [],
+            env: ep.binary.envVars ?? [],
+          });
+        }
         continue;
       }
 
@@ -397,9 +404,13 @@ export class PackageInfo {
   }
 
   public getPackage(id: string, type?: string): PackageConfig {
-    const pkgRoot = this.packageRoot;
     const artifact = this.getArtifact(id, type);
+    return this.makePackageConfig(id, artifact);
+  }
 
+  private makePackageConfig(id: string, artifact: artifacts.config): PackageConfig {
+    const pkgRoot = this.packageRoot;
+    
     const crossplatform
       = artifact.roots !== undefined ? false : artifacts.isCrossPlatform(artifact.type);
 
@@ -456,11 +467,18 @@ export class PackageInfo {
     };
   }
 
-  private prepareDockerEntrypoint(epName: string, ep: entrypoint.info): Entrypoint {
-    const packageID = typeof ep.python.artifact === 'string' ? ep.python.artifact : epName;
-    const pkg = this.getPackage(packageID, 'python');
+  private prepareDockerPackage(pkg: PackageConfig): PackageConfig {
+    if (pkg.type !== 'python') {
+      throw new Error(`Auto Docker entrypoint only supported for Python, got '${pkg.type}'.`);
+    }
 
+    const options = prepareDockerOptions(this.logger, this.packageRoot, pkg);
+    const artifact: artifacts.dockerPackageConfig = {
+      type: 'docker',
+      ...options,
+    };
     
+    return this.makePackageConfig(pkg.id, artifact);
   }
 
   private getArtifact(id: string, type?: string): artifacts.config {

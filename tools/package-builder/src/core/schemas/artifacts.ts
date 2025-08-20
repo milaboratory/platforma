@@ -15,12 +15,18 @@ export const buildableTypes: artifactType[] = [
 ] as const;
 export const crossplatformTypes: artifactType[] = ['asset', 'java', 'python', 'R'] as const;
 
+export const dockerRequiredTypes: artifactType[] = ['python'] as const;
+
 export function isBuildable(aType: artifactType): boolean {
   return buildableTypes.includes(aType);
 }
 
 export function isCrossPlatform(aType: artifactType): boolean {
   return crossplatformTypes.includes(aType);
+}
+
+export function isDockerRequired(aType: artifactType): boolean {
+  return dockerRequiredTypes.includes(aType);
 }
 
 export const runEnvironmentTypes = ['java', 'python', 'R'] as const;
