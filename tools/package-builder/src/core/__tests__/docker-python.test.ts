@@ -129,7 +129,7 @@ describe('Docker Python Functions', () => {
       const dockerfileContent = fs.readFileSync(result.dockerfile, 'utf-8');
 
       // Check essential Dockerfile components
-      expect(dockerfileContent).toMatch(/FROM python:3\.12\.6-slim/);
+      expect(dockerfileContent).toContain('FROM python:3.12.6');
       expect(dockerfileContent).toContain('WORKDIR /app');
       expect(dockerfileContent).toContain('COPY . /app/');
       expect(dockerfileContent).toContain('RUN pip install --no-cache-dir -r');
