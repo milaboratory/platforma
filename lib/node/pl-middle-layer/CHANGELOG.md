@@ -1,5 +1,25 @@
 # @milaboratories/pl-middle-layer
 
+## 1.42.14
+
+### Patch Changes
+
+- 10a5439: Ref counting pool moved to ts-helpers
+- Updated dependencies [10a5439]
+- Updated dependencies [10a5439]
+  - @milaboratories/pl-model-middle-layer@1.8.15
+  - @milaboratories/ts-helpers@1.4.6
+  - @platforma-sdk/block-tools@2.5.86
+  - @milaboratories/computable@2.6.6
+  - @milaboratories/pl-client@2.11.12
+  - @milaboratories/pl-config@1.7.2
+  - @milaboratories/pl-deployments@2.5.3
+  - @milaboratories/pl-drivers@1.10.6
+  - @milaboratories/pl-errors@1.1.19
+  - @milaboratories/pl-tree@1.7.8
+  - @milaboratories/pl-model-backend@1.1.5
+  - @platforma-sdk/workflow-tengo@5.1.1
+
 ## 1.42.13
 
 ### Patch Changes
