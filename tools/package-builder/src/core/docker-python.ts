@@ -18,7 +18,7 @@ export interface DockerOptions {
 
 export interface PythonDockerOptions extends PythonOptions, DockerOptions {}
 
-function generatePythonDockerfileContent(packageRoot: string, options: PythonOptions): string {
+function generatePythonDockerfileContent(options: PythonOptions): string {
   const hasRequirements = fs.existsSync(options.requirements);
 
   // Read template from assets
@@ -50,11 +50,12 @@ export function prepareDockerOptions(logger: winston.Logger, packageRoot: string
     logger.debug(`No Python version found in environment, using default: ${options.pythonVersion}`);
   }
 
+  // Generate a temporary directory for the Dockerfile
   const tmpDir = fs.mkdtempSync(path.join(packageRoot, 'docker', `pl-pkg-python-${buildParams.name}`));
   logger.info(`Created temporary Docker directory: ${tmpDir}`);
 
   const dockerfile = {
-    content: generatePythonDockerfileContent(packageRoot, options),
+    content: generatePythonDockerfileContent(options),
     path: path.join(tmpDir, 'Dockerfile'),
   };
 
@@ -63,7 +64,7 @@ export function prepareDockerOptions(logger: winston.Logger, packageRoot: string
 
   const result: DockerOptions = {
     dockerfile: dockerfile.path,
-    context: path.resolve(packageRoot, '.'),
+    context: path.resolve(packageRoot),
     entrypoint: [],
   };
 

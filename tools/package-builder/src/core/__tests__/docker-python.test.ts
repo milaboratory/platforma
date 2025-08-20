@@ -12,16 +12,6 @@ vi.mock('node:os', () => ({
   tmpdir: vi.fn(),
 }));
 
-// Mock the pkg.assets function to return real file paths
-vi.mock('../package', () => ({
-  assets: (file: string) => {
-    if (file === 'python-dockerfile.template') {
-      return path.join(__dirname, '../../../assets/python-dockerfile.template');
-    }
-    return `/tmp/mock-assets/${file}`;
-  },
-}));
-
 // Mock winston logger
 const mockLogger = {
   info: vi.fn(),
@@ -63,19 +53,6 @@ describe('Docker Python Functions', () => {
 
     // Create a mock requirements.txt file
     fs.writeFileSync(path.join(testPackageRoot, 'requirements.txt'), 'requests>=2.25.0\n');
-
-    // Create a mock Dockerfile template
-    const templateDir = path.dirname(path.join(__dirname, '../../../assets/python-dockerfile.template'));
-    fs.mkdirSync(templateDir, { recursive: true });
-    fs.writeFileSync(
-      path.join(templateDir, 'python-dockerfile.template'),
-      `FROM python:\${PYTHON_VERSION}-slim
-WORKDIR /app
-\${PYTHON_INSTALL_DEPS}
-COPY . /app/
-ENV PYTHONPATH=/app
-CMD ["python", "--version"]`,
-    );
 
     // Clear all mocks
     vi.clearAllMocks();

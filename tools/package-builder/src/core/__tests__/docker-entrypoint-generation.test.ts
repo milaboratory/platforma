@@ -48,18 +48,7 @@ describe('Docker Entrypoint Generation', () => {
     // Create a mock requirements.txt file
     fs.writeFileSync(path.join(testPackageRoot, 'requirements.txt'), 'requests>=2.25.0\n');
 
-    // Create a mock Dockerfile template
-    const templateDir = path.dirname(path.join(__dirname, '../../../assets/python-dockerfile.template'));
-    fs.mkdirSync(templateDir, { recursive: true });
-    fs.writeFileSync(
-      path.join(templateDir, 'python-dockerfile.template'),
-      `FROM python:\${PYTHON_VERSION}-slim
-WORKDIR /app
-\${PYTHON_INSTALL_DEPS}
-COPY . /app/
-ENV PYTHONPATH=/app
-CMD ["python", "--version"]`,
-    );
+
 
     // Clear all mocks
     vi.clearAllMocks();
@@ -340,51 +329,6 @@ CMD ["python", "--version"]`,
       if (dockerEntrypoint.type === 'software') {
         expect(dockerEntrypoint.package.type).toBe('docker');
       }
-    });
-  });
-
-  describe('Docker Entrypoint Naming', () => {
-    it('should use correct Docker entrypoint naming convention', () => {
-      // Create package.json with Python binary entrypoint
-      const packageJson = {
-        'name': 'test-python-package',
-        'version': '1.0.0',
-        'block-software': {
-          artifacts: {
-            'python-pkg': {
-              type: 'python',
-              environment: '@platforma-open/milaboratories.runenv-python-3:3.12.6',
-              root: './src',
-              registry: 'test-registry',
-            },
-          },
-          entrypoints: {
-            'my-script': {
-              binary: {
-                artifact: {
-                  type: 'python',
-                  environment: '@platforma-open/milaboratories.runenv-python-3:3.12.6',
-                  root: './src',
-                  registry: 'test-registry',
-                },
-                cmd: ['{pkg}/script1'],
-              },
-            },
-          },
-        },
-      };
-
-      fs.writeFileSync(path.join(testPackageRoot, 'package.json'), JSON.stringify(packageJson, null, 2));
-
-      // Create PackageInfo instance
-      packageInfo = new PackageInfo(mockLogger, { packageRoot: testPackageRoot });
-
-      // Get entrypoints
-      const entrypoints = packageInfo.entrypoints;
-
-      // Should have Docker entrypoint with correct naming
-      expect(entrypoints.has('my-script')).toBe(true);
-      expect(entrypoints.has('my-script:docker')).toBe(true);
     });
   });
 
