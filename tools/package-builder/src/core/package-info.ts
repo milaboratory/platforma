@@ -9,7 +9,7 @@ import * as artifacts from './schemas/artifacts';
 import * as entrypoint from './schemas/entrypoint';
 import { tryResolve } from '@milaboratories/resolve-helper';
 import { dockerEntrypointName } from './docker';
-import { prepareDockerOptions } from './python-docker';
+import { prepareDockerOptions } from './docker-python';
 
 export interface PackageArchiveInfo extends artifacts.archiveRules {
   name: string;
