@@ -410,7 +410,7 @@ export class PackageInfo {
 
   private makePackageConfig(id: string, artifact: artifacts.config): PackageConfig {
     const pkgRoot = this.packageRoot;
-    
+
     const crossplatform
       = artifact.roots !== undefined ? false : artifacts.isCrossPlatform(artifact.type);
 
@@ -477,7 +477,7 @@ export class PackageInfo {
       type: 'docker',
       ...options,
     };
-    
+
     return this.makePackageConfig(pkg.id, artifact);
   }
 

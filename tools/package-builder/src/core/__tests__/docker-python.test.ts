@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
-import { prepareDockerOptions, type DockerOptions } from '../docker-python';
+import { prepareDockerOptions } from '../docker-python';
 import type { PythonPackage } from '../package-info';
 import type winston from 'winston';
 
@@ -74,7 +74,7 @@ WORKDIR /app
 \${PYTHON_INSTALL_DEPS}
 COPY . /app/
 ENV PYTHONPATH=/app
-CMD ["python", "--version"]`
+CMD ["python", "--version"]`,
     );
 
     // Clear all mocks
@@ -102,8 +102,8 @@ CMD ["python", "--version"]`
 
       // Verify result structure - DockerOptions doesn't have 'type' property
       expect(result).toMatchObject({
-        context: expect.stringContaining(testPackageRoot),
-        dockerfile: expect.stringContaining('Dockerfile'),
+        context: expect.stringContaining(testPackageRoot) as string,
+        dockerfile: expect.stringContaining('Dockerfile') as string,
         entrypoint: [],
       });
 
@@ -135,7 +135,7 @@ CMD ["python", "--version"]`
       const result = prepareDockerOptions(mockLogger, testPackageRoot, mockPythonPackage);
 
       const dockerfileContent = fs.readFileSync(result.dockerfile, 'utf-8');
-      
+
       // Check essential Dockerfile components
       expect(dockerfileContent).toMatch(/FROM python:3\.12\.6-slim/);
       expect(dockerfileContent).toContain('WORKDIR /app');
@@ -157,7 +157,7 @@ CMD ["python", "--version"]`
       expect(dockerfileContent).toContain('No \'/tmp/python-docker-test-');
       expect(dockerfileContent).toContain('requirements.txt\' file found');
       expect(dockerfileContent).toContain('skipping dependency installation');
-      
+
       // Should still create valid Docker options
       expect(result).toBeDefined();
       expect(result.dockerfile).toBeDefined();
@@ -175,17 +175,17 @@ CMD ["python", "--version"]`
 
       // Verification should pass (no errors thrown)
       expect(result).toBeDefined();
-      
+
       // Both dockerfile and context should exist
       expect(fs.existsSync(result.dockerfile)).toBe(true);
       expect(fs.existsSync(result.context)).toBe(true);
     });
 
     it('should log debug information about prepared options', () => {
-      const result = prepareDockerOptions(mockLogger, testPackageRoot, mockPythonPackage);
+      prepareDockerOptions(mockLogger, testPackageRoot, mockPythonPackage);
 
       expect(mockLogger.debug).toHaveBeenCalledWith(
-        expect.stringContaining('Prepared Docker options:')
+        expect.stringContaining('Prepared Docker options:'),
       );
     });
   });
@@ -196,15 +196,15 @@ CMD ["python", "--version"]`
       const tempTestDir = fs.mkdtempSync(path.join('/tmp', 'python-docker-error-test-'));
       const testDir = path.join(tempTestDir, 'test-package');
       fs.mkdirSync(testDir, { recursive: true });
-      
+
       // Make the docker directory creation fail by creating a file with the same name
       const dockerDirPath = path.join(testDir, 'docker');
       fs.writeFileSync(dockerDirPath, 'this is a file, not a directory');
-      
+
       expect(() => {
         prepareDockerOptions(mockLogger, testDir, mockPythonPackage);
       }).toThrow();
-      
+
       // Cleanup
       fs.rmSync(tempTestDir, { recursive: true, force: true });
     });
@@ -215,29 +215,29 @@ CMD ["python", "--version"]`
       const testDir = path.join(tempTestDir, 'test-package');
       fs.mkdirSync(testDir, { recursive: true });
       fs.mkdirSync(path.join(testDir, 'docker'), { recursive: true });
-      
+
       // Create a requirements.txt file to ensure the function gets past the initial checks
       fs.writeFileSync(path.join(testDir, 'requirements.txt'), 'test');
-      
+
       // Make the Dockerfile writing fail by creating a file with the same name as the temp directory
       const tempDockerDirName = `pl-pkg-python-${mockPythonPackage.name}`;
       const tempDockerDirPath = path.join(testDir, 'docker', tempDockerDirName);
       fs.writeFileSync(tempDockerDirPath, 'this is a file, not a directory');
-      
+
       // The function should fail when trying to create a directory where a file already exists
       // Since this approach might not work reliably, let's just verify the function runs without throwing
       // and focus on testing the happy path
       expect(() => {
         prepareDockerOptions(mockLogger, testDir, mockPythonPackage);
       }).not.toThrow();
-      
+
       // Cleanup
       fs.rmSync(tempTestDir, { recursive: true, force: true });
     });
   });
 
   describe('integration with package-info', () => {
-    it('should work with prepareDockerPackage method', async () => {
+    it('should work with prepareDockerPackage method', () => {
       // This test verifies that the function can be called from package-info
       // without throwing errors
       expect(() => {

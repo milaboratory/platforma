@@ -58,7 +58,7 @@ WORKDIR /app
 \${PYTHON_INSTALL_DEPS}
 COPY . /app/
 ENV PYTHONPATH=/app
-CMD ["python", "--version"]`
+CMD ["python", "--version"]`,
     );
 
     // Clear all mocks
@@ -78,8 +78,8 @@ CMD ["python", "--version"]`
     it('should generate Docker entrypoint for Python binary entrypoint without docker config', () => {
       // Create package.json with Python binary entrypoint
       const packageJson = {
-        name: 'test-python-package',
-        version: '1.0.0',
+        'name': 'test-python-package',
+        'version': '1.0.0',
         'block-software': {
           artifacts: {
             'python-pkg': {
@@ -90,7 +90,7 @@ CMD ["python", "--version"]`
             },
           },
           entrypoints: {
-            'script1': {
+            script1: {
               binary: {
                 artifact: {
                   type: 'python',
@@ -137,8 +137,8 @@ CMD ["python", "--version"]`
     it('should not generate Docker entrypoint when docker config already exists', () => {
       // Create package.json with Python binary entrypoint that already has docker config
       const packageJson = {
-        name: 'test-python-package',
-        version: '1.0.0',
+        'name': 'test-python-package',
+        'version': '1.0.0',
         'block-software': {
           artifacts: {
             'python-pkg': {
@@ -149,7 +149,7 @@ CMD ["python", "--version"]`
             },
           },
           entrypoints: {
-            'script1': {
+            script1: {
               binary: {
                 artifact: {
                   type: 'python',
@@ -204,8 +204,8 @@ CMD ["python", "--version"]`
     it('should not generate Docker entrypoint for non-Python packages', () => {
       // Create package.json with binary entrypoint (not Python)
       const packageJson = {
-        name: 'test-binary-package',
-        version: '1.0.0',
+        'name': 'test-binary-package',
+        'version': '1.0.0',
         'block-software': {
           artifacts: {
             'binary-pkg': {
@@ -215,7 +215,7 @@ CMD ["python", "--version"]`
             },
           },
           entrypoints: {
-            'script1': {
+            script1: {
               binary: {
                 artifact: {
                   type: 'binary',
@@ -252,8 +252,8 @@ CMD ["python", "--version"]`
     it('should generate Docker entrypoint with correct command and environment variables', () => {
       // Create package.json with Python binary entrypoint and environment variables
       const packageJson = {
-        name: 'test-python-package',
-        version: '1.0.0',
+        'name': 'test-python-package',
+        'version': '1.0.0',
         'block-software': {
           artifacts: {
             'python-pkg': {
@@ -264,7 +264,7 @@ CMD ["python", "--version"]`
             },
           },
           entrypoints: {
-            'script1': {
+            script1: {
               binary: {
                 artifact: {
                   type: 'python',
@@ -300,11 +300,11 @@ CMD ["python", "--version"]`
     it('should handle entrypoint with object artifact reference', () => {
       // Create package.json with object artifact reference
       const packageJson = {
-        name: 'test-python-package',
-        version: '1.0.0',
+        'name': 'test-python-package',
+        'version': '1.0.0',
         'block-software': {
           entrypoints: {
-            'script1': {
+            script1: {
               binary: {
                 artifact: {
                   type: 'python',
@@ -347,8 +347,8 @@ CMD ["python", "--version"]`
     it('should use correct Docker entrypoint naming convention', () => {
       // Create package.json with Python binary entrypoint
       const packageJson = {
-        name: 'test-python-package',
-        version: '1.0.0',
+        'name': 'test-python-package',
+        'version': '1.0.0',
         'block-software': {
           artifacts: {
             'python-pkg': {
@@ -392,8 +392,8 @@ CMD ["python", "--version"]`
     it('should call prepareDockerPackage for Python packages', () => {
       // Create package.json with Python binary entrypoint
       const packageJson = {
-        name: 'test-python-package',
-        version: '1.0.0',
+        'name': 'test-python-package',
+        'version': '1.0.0',
         'block-software': {
           artifacts: {
             'python-pkg': {
@@ -404,7 +404,7 @@ CMD ["python", "--version"]`
             },
           },
           entrypoints: {
-            'script1': {
+            script1: {
               binary: {
                 artifact: {
                   type: 'python',

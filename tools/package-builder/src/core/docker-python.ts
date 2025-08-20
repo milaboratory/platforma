@@ -1,6 +1,5 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import * as os from 'node:os';
 import type { PythonPackage } from './package-info';
 import type winston from 'winston';
 import * as pkg from './package';
@@ -39,7 +38,7 @@ function generatePythonDockerfileContent(packageRoot: string, options: PythonOpt
 
 export function prepareDockerOptions(logger: winston.Logger, packageRoot: string, buildParams: PythonPackage): DockerOptions {
   logger.info(`Preparing Docker options for Python package: ${buildParams.name}`);
-  
+
   const options = getDefaultPythonOptions();
   options.requirements = path.resolve(packageRoot, options.requirements);
 
@@ -53,12 +52,12 @@ export function prepareDockerOptions(logger: winston.Logger, packageRoot: string
 
   const tmpDir = fs.mkdtempSync(path.join(packageRoot, 'docker', `pl-pkg-python-${buildParams.name}`));
   logger.info(`Created temporary Docker directory: ${tmpDir}`);
-  
+
   const dockerfile = {
     content: generatePythonDockerfileContent(packageRoot, options),
     path: path.join(tmpDir, 'Dockerfile'),
   };
-  
+
   fs.writeFileSync(dockerfile.path, dockerfile.content);
   logger.info(`Written Dockerfile to: ${dockerfile.path}`);
 
@@ -67,7 +66,7 @@ export function prepareDockerOptions(logger: winston.Logger, packageRoot: string
     context: path.resolve(packageRoot, '.'),
     entrypoint: [],
   };
-  
+
   logger.debug(`Prepared Docker options: ${JSON.stringify(result)}`);
   verifyDockerOptions(result);
   return result;
