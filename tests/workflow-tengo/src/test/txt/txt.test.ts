@@ -167,3 +167,85 @@ tplTest(
     ).rejects.toThrow(/would exceed.*byte limit/);
   },
 );
+
+// Test countLines function
+type CountLinesTestInput = {
+  name: string;
+  fileName: string;
+  countOptions?: { ignorePattern?: string };
+  expectedCount: number;
+  handleProvider: (
+    driverKit: MiddleLayerDriverKit
+  ) => Promise<ImportFileHandle>;
+};
+
+const countLinesCases: CountLinesTestInput[] = [
+  {
+    name: 'count-all-lines-basic',
+    fileName: 'maybe_the_number_of_lines_is_the_answer.txt',
+    countOptions: undefined, // No options - count all lines
+    expectedCount: 42, // Assuming the file has 42 lines
+    handleProvider: async (driverKit) => {
+      return await driverKit.lsDriver.getLocalFileHandle(
+        path.resolve('../../assets/maybe_the_number_of_lines_is_the_answer.txt'),
+      );
+    },
+  },
+  {
+    name: 'count-lines-with-comment-filter',
+    fileName: 'maybe_the_number_of_lines_is_the_answer.txt',
+    countOptions: { ignorePattern: '^#' }, // Ignore lines starting with #
+    expectedCount: 42, // Assuming no comment lines in this file, same count
+    handleProvider: async (driverKit) => {
+      return await driverKit.lsDriver.getLocalFileHandle(
+        path.resolve('../../assets/maybe_the_number_of_lines_is_the_answer.txt'),
+      );
+    },
+  },
+];
+
+tplTest.for(countLinesCases)(
+  'txt.countLines test: $name',
+  async ({ handleProvider, countOptions, expectedCount }, { helper, expect, driverKit }) => {
+    const importHandle = await handleProvider(driverKit);
+    const result = await helper.renderTemplate(
+      false,
+      'test.txt.countLines',
+      ['result', 'progress'],
+      (tx) => ({
+        importHandle: tx.createValue(
+          Pl.JsonObject,
+          JSON.stringify(importHandle),
+        ),
+        countOptions: countOptions
+          ? tx.createValue(
+            Pl.JsonObject,
+            JSON.stringify(countOptions),
+          )
+          : tx.createValue(Pl.JsonObject, 'false'),
+      }),
+    );
+
+    const progress = result
+      .computeOutput('progress', (a, ctx) => {
+        if (a === undefined) return undefined;
+        return driverKit.uploadDriver.getProgressId(a.persist(), ctx);
+      })
+      .withPreCalculatedValueTree();
+
+    const countResult = result
+      .computeOutput('result', (a) => {
+        if (a === undefined) return undefined;
+        return parseInt(a.getDataAsString()!); // countLines returns an integer
+      })
+      .withPreCalculatedValueTree();
+
+    const progressStableValue = await progress.awaitStableValue();
+    expect(progressStableValue).toBeDefined();
+    expect(progressStableValue).toMatchObject({ done: true });
+
+    const countStableValue = await countResult.awaitStableValue();
+    expect(countStableValue).toBeDefined();
+    expect(countStableValue).toEqual(expectedCount);
+  },
+);
