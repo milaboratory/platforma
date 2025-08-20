@@ -44,12 +44,16 @@ import {
   isPFrameDriverError,
 } from '@platforma-sdk/model';
 import { LRUCache } from 'lru-cache';
-import type { PollResource } from './ref_count_pool';
-import { RefCountResourcePool } from './ref_count_pool';
 import { allBlobs, makeDataInfoFromPColumnValues, mapBlobs, parseDataInfoResource, traverseParquetPartitionedResource } from './data';
 import { createHash } from 'node:crypto';
 import type { MiLogger } from '@milaboratories/ts-helpers';
-import { assertNever, emptyDir, ConcurrencyLimitingExecutor } from '@milaboratories/ts-helpers';
+import {
+  assertNever,
+  emptyDir,
+  ConcurrencyLimitingExecutor,
+  RefCountResourcePool,
+  type PollResource,
+} from '@milaboratories/ts-helpers';
 import canonicalize from 'canonicalize';
 import { PFrame } from '@milaboratories/pframes-rs-node';
 import * as fsp from 'node:fs/promises';
