@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
-import { prepareDockerOptions } from '../docker-python';
+import { getPythonVersionFromEnvironment, prepareDockerOptions } from '../docker-python';
 import type { PythonPackage } from '../package-info';
 import type winston from 'winston';
 
@@ -94,7 +94,7 @@ describe('Docker Python Functions', () => {
       const result = prepareDockerOptions(mockLogger, testPackageRoot, 'test-package', mockPythonPackage);
 
       // Verify logger calls
-      expect(mockLogger.info).toHaveBeenCalledWith('Preparing Docker options for Python package: test-python-package');
+      expect(mockLogger.info).toHaveBeenCalledWith('Preparing Docker options for Python package: test-python-package (id: test-package)');
       expect(mockLogger.info).toHaveBeenCalledWith(expect.stringContaining('Created temporary Docker directory:'));
       expect(mockLogger.info).toHaveBeenCalledWith(expect.stringContaining('Written Dockerfile to:'));
       expect(mockLogger.info).toHaveBeenCalledWith('Extracted Python version from environment: 3.12.6');
@@ -119,7 +119,7 @@ describe('Docker Python Functions', () => {
 
       const result = prepareDockerOptions(mockLogger, testPackageRoot, 'test-package', packageWithoutVersion);
 
-      expect(mockLogger.debug).toHaveBeenCalledWith('No Python version found in environment, using default: 3.12.6');
+      expect(mockLogger.debug).toHaveBeenCalledWith('No Python version found in environment, using default: 3.12.6-slim');
       expect(result).toBeDefined();
     });
 
@@ -151,6 +151,74 @@ describe('Docker Python Functions', () => {
       // Should still create valid Docker options
       expect(result).toBeDefined();
       expect(result.dockerfile).toBeDefined();
+    });
+  });
+});
+
+describe('getPythonVersionFromEnvironment', () => {
+  const rawCases: [string, string][] = [
+    // Standard versions
+    ['@platforma-open/milaboratories.runenv-python-3:3.12.6', '3.12.6'],
+    ['@platforma-open/milaboratories.runenv-python-3:3.11.0', '3.11.0'],
+
+    // Pre-releases
+    ['@platforma-open/milaboratories.runenv-python-3:3.12.6-rc1', '3.12.6-rc1'],
+    ['@platforma-open/milaboratories.runenv-python-3:3.13.0a1', '3.13.0a1'],
+    ['@platforma-open/milaboratories.runenv-python-3:3.13.0b2', '3.13.0b2'],
+
+    // With tags/suffixes
+    ['@platforma-open/milaboratories.runenv-python-3:3.12.6:latest', '3.12.6:latest'],
+    ['@platforma-open/milaboratories.runenv-python-3:3.12.6+dev', '3.12.6+dev'],
+    ['@platforma-open/milaboratories.runenv-python-3:3.12.6_dev', '3.12.6_dev'],
+  ];
+
+  const dockerSafeCases: [string, string][] = [
+    // Second ":" is stripped
+    ['@platforma-open/milaboratories.runenv-python-3:3.12.6:latest', '3.12.6'],
+    // Digest is stripped
+    ['@platforma-open/milaboratories.runenv-python-3:3.12.6@sha256:deadbeef', '3.12.6'],
+    // Pre-release should remain valid
+    ['@platforma-open/milaboratories.runenv-python-3:3.13.0b2@sha256:123', '3.13.0b2'],
+    //
+    ['@platforma-open/milaboratories.runenv-python-3:3.14.0rc2-bookworm', '3.14.0rc2-bookworm'],
+    ['@platforma-open/milaboratories.runenv-python-3:3.9.23-alpine3.22', '3.9.23-alpine3.22'],
+    ['@platforma-open/milaboratories.runenv-python-3:3.12.6-slim', '3.12.6-slim'],
+    ['@platforma-open/milaboratories.runenv-python-3:3.13.7-windowsservercore-ltsc2025', '3.13.7-windowsservercore-ltsc2025'],
+  ];
+
+  const undefinedCases: string[] = [
+    '@platforma-open/milaboratories.runenv-python-3',
+    '@platforma-open/milaboratories.runenv-python-3:',
+    '@milaboratories/example-pl-package-runenv-1:python',
+    '',
+    'not-even-a-valid-string',
+  ];
+
+  describe('without normalizeForDocker', () => {
+    rawCases.forEach(([input, expected]) => {
+      it(`should extract "${expected}" from "${input}"`, () => {
+        expect(getPythonVersionFromEnvironment(input, { normalizeForDocker: false })).toBe(expected);
+      });
+    });
+
+    undefinedCases.forEach((input) => {
+      it(`should return undefined for "${input}"`, () => {
+        expect(getPythonVersionFromEnvironment(input, { normalizeForDocker: false })).toBeUndefined();
+      });
+    });
+  });
+
+  describe('with normalizeForDocker = true', () => {
+    dockerSafeCases.forEach(([input, expected]) => {
+      it(`should extract docker-safe "${expected}" from "${input}"`, () => {
+        expect(getPythonVersionFromEnvironment(input)).toBe(expected);
+      });
+    });
+
+    undefinedCases.forEach((input) => {
+      it(`should return undefined for "${input}"`, () => {
+        expect(getPythonVersionFromEnvironment(input)).toBeUndefined();
+      });
     });
   });
 });

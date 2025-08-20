@@ -1,5 +1,5 @@
 # Auto-generated Dockerfile for Python package
-FROM python:${PYTHON_VERSION}-slim
+FROM python:${PYTHON_VERSION}
 
 WORKDIR /app
 

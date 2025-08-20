@@ -4,6 +4,16 @@ import type { PythonPackage } from './package-info';
 import type winston from 'winston';
 import * as pkg from './package';
 
+const PYTHON_VERSION_PATTERNS = {
+  PY3_PREFIX: /^3\./,
+  VERSION_FORMAT: /^3\.\d+(?:\.\d+)?(?:[-+_][a-zA-Z0-9]+|(?:a|b|rc)\d+|[a-zA-Z]+\d+(?:\.[a-zA-Z0-9]+)*)*$/,
+  DOCKER_SEPARATOR: /@.*$/,
+  DOCKER_UNSAFE_CHARS: /[^A-Za-z0-9_.-]+/g,
+  MULTIPLE_SEPARATORS: /[-.]{2,}/g,
+  EDGE_SEPARATORS: /^[-.]+|[-.]+$/g,
+  DOCKER_TAG_FORMAT: /^[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}$/,
+};
+
 export interface PythonOptions {
   pythonVersion: string;
   toolset: string;
@@ -37,7 +47,7 @@ function generatePythonDockerfileContent(options: PythonOptions): string {
 }
 
 export function prepareDockerOptions(logger: winston.Logger, packageRoot: string, pacakgeId: string, buildParams: PythonPackage): DockerOptions {
-  logger.info(`Preparing Docker options for Python package: ${buildParams.name}`);
+  logger.info(`Preparing Docker options for Python package: ${buildParams.name} (id: ${pacakgeId})`);
 
   const options = getDefaultPythonOptions();
   options.requirements = path.resolve(packageRoot, options.requirements);
@@ -74,15 +84,79 @@ export function prepareDockerOptions(logger: winston.Logger, packageRoot: string
   return result;
 }
 
-function getPythonVersionFromEnvironment(environmentId: string): string | undefined {
-  // Extract version from environment ID like "@platforma-open/milaboratories.runenv-python-3:3.12.6"
-  const versionMatch = environmentId.match(/:([^:]+)$/);
-  return versionMatch ? versionMatch[1] : undefined;
+function normalizeDockerTag(candidate: string): string | undefined {
+  if (!candidate || typeof candidate !== 'string') {
+    return undefined;
+  }
+
+  // First remove Docker-specific parts like @sha256:...
+  let normalized = candidate.replace(PYTHON_VERSION_PATTERNS.DOCKER_SEPARATOR, '');
+
+  // For cases like "3.12.6:latest", extract only the version part
+  if (normalized.includes(':')) {
+    normalized = normalized.split(':')[0];
+  }
+
+  // Clean up any remaining unsafe characters
+  normalized = normalized
+    .replace(PYTHON_VERSION_PATTERNS.DOCKER_UNSAFE_CHARS, '-')
+    .replace(PYTHON_VERSION_PATTERNS.MULTIPLE_SEPARATORS, '-')
+    .replace(PYTHON_VERSION_PATTERNS.EDGE_SEPARATORS, '');
+
+  return normalized || undefined;
+}
+
+function isValidPythonVersion(version: string): boolean {
+  return PYTHON_VERSION_PATTERNS.PY3_PREFIX.test(version)
+    && PYTHON_VERSION_PATTERNS.VERSION_FORMAT.test(version);
+}
+
+function isValidDockerTag(tag: string): boolean {
+  return PYTHON_VERSION_PATTERNS.DOCKER_TAG_FORMAT.test(tag);
+}
+
+export function getPythonVersionFromEnvironment(
+  environmentId: string,
+  { normalizeForDocker = true }: { normalizeForDocker?: boolean } = {},
+): string | undefined {
+  if (!environmentId) {
+    return undefined;
+  }
+
+  const trimmedInput = environmentId.trim();
+  if (!trimmedInput) {
+    return undefined;
+  }
+
+  const colonIndex = trimmedInput.indexOf(':');
+  if (colonIndex === -1 || colonIndex === trimmedInput.length - 1) {
+    return undefined;
+  }
+
+  const versionTag = trimmedInput.slice(colonIndex + 1);
+  if (versionTag.startsWith('python')) {
+    return undefined;
+  }
+
+  if (!normalizeForDocker) {
+    return versionTag;
+  }
+
+  const normalizedTag = normalizeDockerTag(versionTag);
+  if (!normalizedTag) {
+    return undefined;
+  }
+
+  if (!isValidPythonVersion(normalizedTag) || !isValidDockerTag(normalizedTag)) {
+    return undefined;
+  }
+
+  return normalizedTag;
 }
 
 function getDefaultPythonOptions(): PythonOptions {
   return {
-    pythonVersion: '3.12.6',
+    pythonVersion: '3.12.6-slim',
     toolset: 'pip',
     requirements: 'requirements.txt',
   };
