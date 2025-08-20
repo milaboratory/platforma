@@ -35,7 +35,7 @@ describe('Renderer tests', () => {
     const descriptor = sw.renderSoftwareEntrypoints('release', eps).get(epName)!;
 
     const url = descriptor.asset!.url;
-    const expectedPath = `${artifacts.BinaryRegistryURL}/${artifacts.PackageNameNoAt}/pAsset/${artifacts.PackageVersion}.zip`;
+    const expectedPath = `${artifacts.BinaryRegistryURL}/assets/${artifacts.PackageNameNoAt}/pAsset/${artifacts.PackageVersion}.zip`;
     expect(url).toEqual(expectedPath);
   });
 
@@ -46,7 +46,7 @@ describe('Renderer tests', () => {
     const descriptor = sw.renderSoftwareEntrypoints('release', eps).get(epName)!;
 
     expect(descriptor.binary!.package).toEqual(
-      `${artifacts.BinaryCustomName1}/${artifacts.BinaryCustomVersion}-{os}-{arch}.tgz`,
+      `software/${artifacts.BinaryCustomName1}/${artifacts.BinaryCustomVersion}-{os}-{arch}.tgz`,
     );
   });
 
@@ -57,7 +57,7 @@ describe('Renderer tests', () => {
     const descriptor = sw.renderSoftwareEntrypoints('release', eps).get(epName)!;
 
     expect(descriptor.runEnv!.package).toEqual(
-      `${artifacts.PackageNameNoAt}/${artifacts.EPNameJavaEnvironment}/${artifacts.PackageVersion}-{os}-{arch}.tgz`,
+      `software/${artifacts.PackageNameNoAt}/${artifacts.EPNameJavaEnvironment}/${artifacts.PackageVersion}-{os}-{arch}.tgz`,
     );
     expect(descriptor.runEnv!.type).toEqual('java');
     expect(descriptor.runEnv!.binDir).toEqual('.');
@@ -95,7 +95,7 @@ describe('Renderer tests', () => {
 
     const descriptor = renderer.renderSoftwareEntrypoints('release', eps).get(epName)!;
     expect(descriptor.binary!.package).toEqual(
-      `${artifacts.PackageNameNoAt}/${artifacts.EPNameJavaDependency}/${artifacts.PackageVersion}.tgz`,
+      `software/${artifacts.PackageNameNoAt}/${artifacts.EPNameJavaDependency}/${artifacts.PackageVersion}.tgz`,
     );
   });
 
