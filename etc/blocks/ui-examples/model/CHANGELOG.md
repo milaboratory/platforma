@@ -1,5 +1,12 @@
 # @milaboratories/milaboratories.ui-examples.model
 
+## 1.2.31
+
+### Patch Changes
+
+- 2a21be5: PlAgDataTableV2: added tooltips to column headers
+  - @platforma-sdk/model@1.42.36
+
 ## 1.2.30
 
 ### Patch Changes

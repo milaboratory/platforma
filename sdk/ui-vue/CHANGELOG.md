@@ -1,5 +1,13 @@
 # @platforma-sdk/ui-vue
 
+## 1.42.36
+
+### Patch Changes
+
+- 2a21be5: PlAgDataTableV2: added tooltips to column headers
+  - @platforma-sdk/model@1.42.36
+  - @milaboratories/uikit@2.4.8
+
 ## 1.42.35
 
 ### Patch Changes
