@@ -18,6 +18,7 @@ export interface PythonOptions {
   pythonVersion: string;
   toolset: string;
   requirements: string;
+  workdir: string;
 }
 
 export interface DockerOptions {
@@ -38,7 +39,8 @@ function generatePythonDockerfileContent(options: PythonOptions): string {
     .replace(/\$\{PYTHON_VERSION\}/g, options.pythonVersion)
     .replace(/\$\{REQUIREMENTS_PATH\}/g, options.requirements)
     .replace(/\$\{REQUIREMENTS_FILENAME\}/g, path.basename(options.requirements))
-    .replace(/\$\{TOOLSET\}/g, options.toolset);
+    .replace(/\$\{TOOLSET\}/g, options.toolset)
+    .replace(/\$\{WORKDIR\}/g, options.workdir);
 }
 
 export function prepareDockerOptions(logger: winston.Logger, packageRoot: string, pacakgeId: string, buildParams: PythonPackage): DockerOptions {
@@ -58,6 +60,11 @@ export function prepareDockerOptions(logger: winston.Logger, packageRoot: string
     options.toolset = buildParams.dependencies.toolset;
     options.requirements = buildParams.dependencies.requirements;
   }
+
+  if (buildParams.workdir) {
+    options.workdir = buildParams.workdir;
+  }
+
   options.requirements = path.resolve(packageRoot, options.requirements);
 
   // Generate a temporary directory for the Dockerfile
@@ -172,6 +179,7 @@ function getDefaultPythonOptions(): PythonOptions {
     pythonVersion: '3.12.6-slim',
     toolset: 'pip',
     requirements: 'requirements.txt',
+    workdir: '/app/',
   };
 }
 

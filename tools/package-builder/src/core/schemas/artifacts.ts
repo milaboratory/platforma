@@ -125,6 +125,7 @@ export const pythonPackageSchema = archiveRulesSchema.extend({
   type: z.literal('python'),
   environment: artifactIDSchema,
   dependencies: pythonToolsetSchema.optional(),
+  workdir: z.string().optional().describe('custom working directory in Docker container (default: /app/)'),
 });
 export type pythonPackageConfig = z.infer<typeof pythonPackageSchema>;
 
