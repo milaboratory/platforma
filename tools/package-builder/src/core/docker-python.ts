@@ -18,14 +18,14 @@ export interface PythonOptions {
   pythonVersion: string;
   toolset: string;
   requirements: string;
-  workdir: string;
+  pkg: string;
 }
 
 export interface DockerOptions {
   context: string;
   dockerfile: string;
   entrypoint: string[];
-  workdir: string;
+  pkg: string;
 }
 
 export interface PythonDockerOptions extends PythonOptions, DockerOptions {}
@@ -41,7 +41,7 @@ function generatePythonDockerfileContent(options: PythonOptions): string {
     .replace(/\$\{REQUIREMENTS_PATH\}/g, options.requirements)
     .replace(/\$\{REQUIREMENTS_FILENAME\}/g, path.basename(options.requirements))
     .replace(/\$\{TOOLSET\}/g, options.toolset)
-    .replace(/\$\{WORKDIR\}/g, options.workdir);
+    .replace(/\$\{PKG\}/g, options.pkg);
 }
 
 export function prepareDockerOptions(logger: winston.Logger, packageRoot: string, pacakgeId: string, buildParams: PythonPackage): DockerOptions {
@@ -62,8 +62,8 @@ export function prepareDockerOptions(logger: winston.Logger, packageRoot: string
     options.requirements = buildParams.dependencies.requirements;
   }
 
-  if (buildParams.workdir) {
-    options.workdir = buildParams.workdir;
+  if (buildParams.pkg) {
+    options.pkg = buildParams.pkg;
   }
 
   // Generate a temporary directory for the Dockerfile
@@ -101,7 +101,7 @@ export function prepareDockerOptions(logger: winston.Logger, packageRoot: string
     dockerfile: dockerfile.path,
     context: path.resolve(packageRoot),
     entrypoint: [],
-    workdir: options.workdir,
+    pkg: options.pkg,
   };
 
   logger.debug(`Prepared Docker options: ${JSON.stringify(result)}`);
@@ -184,7 +184,7 @@ function getDefaultPythonOptions(): PythonOptions {
     pythonVersion: '3.12.6-slim',
     toolset: 'pip',
     requirements: 'requirements.txt',
-    workdir: '/app/',
+    pkg: '/app/',
   };
 }
 

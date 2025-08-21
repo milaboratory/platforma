@@ -125,7 +125,7 @@ export const pythonPackageSchema = archiveRulesSchema.extend({
   type: z.literal('python'),
   environment: artifactIDSchema,
   dependencies: pythonToolsetSchema.optional(),
-  workdir: z.string().optional().describe('custom working directory in Docker container (default: /app/)'),
+  pkg: z.string().optional().describe('custom working directory in Docker container (default: /app/)'),
 });
 export type pythonPackageConfig = z.infer<typeof pythonPackageSchema>;
 
@@ -151,7 +151,7 @@ export const dockerPackageSchema = archiveRulesSchema.extend({
   dockerfile: z.string().optional().describe('relative path to \'Dockerfile\' file from folder where command is executed or absolute path to the file'),
 
   entrypoint: z.array(z.string()).optional().describe('entrypoint command to be run in the container'),
-  workdir: z.string().optional().describe('custom working directory in Docker container (only for Python packages)'),
+  pkg: z.string().optional().describe('custom working directory in Docker container (only for Python packages)'),
 });
 export type dockerPackageConfig = z.infer<typeof dockerPackageSchema>;
 

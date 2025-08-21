@@ -1,17 +1,17 @@
 # Auto-generated Dockerfile for Python package
 FROM python:${PYTHON_VERSION}
 
-WORKDIR ${WORKDIR}
+WORKDIR ${PKG}
 
 # Install dependencies to leverage Docker cache
 COPY ${REQUIREMENTS_PATH} .
 RUN ${TOOLSET} install --no-cache-dir -r ${REQUIREMENTS_FILENAME}
 
 # Copy package source
-COPY . ${WORKDIR}
+COPY . ${PKG}
 
 # Set Python path
-ENV PYTHONPATH=${WORKDIR}
+ENV PYTHONPATH=${PKG}
 
 # Default command (will be overridden by entrypoint)
 CMD ["bash"]
