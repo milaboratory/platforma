@@ -65,7 +65,7 @@ export function prepareDockerOptions(logger: winston.Logger, packageRoot: string
     options.workdir = buildParams.workdir;
   }
 
-  options.requirements = path.resolve(packageRoot, options.requirements);
+  options.requirements = path.join(packageRoot, options.requirements);
 
   // Generate a temporary directory for the Dockerfile
   const tmpDir = path.join(packageRoot, 'dist', 'docker');
