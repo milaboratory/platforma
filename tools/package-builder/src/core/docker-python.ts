@@ -79,7 +79,7 @@ export function prepareDockerOptions(logger: winston.Logger, packageRoot: string
     options.requirements = path.relative(packageRoot, options.requirements);
   } else {
     // If requirements.txt doesn't exist, create an empty one
-    const emptyRequirementsPath = path.join(tmpDir, 'requirements.txt');
+    const emptyRequirementsPath = path.join(packageRoot, 'requirements.txt');
     if (!fs.existsSync(emptyRequirementsPath)) {
       fs.writeFileSync(emptyRequirementsPath, '# No dependencies specified\n');
       logger.info(`Created empty requirements.txt at: ${emptyRequirementsPath}`);
