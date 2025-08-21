@@ -730,18 +730,12 @@ export class Renderer {
 
     const tag = dockerTagFromPackage(this.npmPackageRoot, pkg);
 
-    const result: any = {
+    return {
       tag: tag,
       entrypoint: pkg.entrypoint ?? [],
       cmd: ep.cmd,
+      workdir: pkg.workdir,
     };
-
-    // Add workdir for Python packages (when they are converted to docker)
-    if (pkg.workdir) {
-      result.workdir = pkg.workdir;
-    }
-
-    return result;
   }
 
   private resolveDependency(npmPackageName: string, entrypointName: string): entrypointSwJson {
