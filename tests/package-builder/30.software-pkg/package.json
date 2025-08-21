@@ -18,16 +18,15 @@
         }
       }
     },
-   
     "entrypoints": {
       "hello": {
         "binary": {
           "artifact": {
-        "registry": "custom",
-        "type": "java",
-        "root": "./src",
-        "environment": "@milaboratories/example-pl-package-runenv-1:java"
-      },
+            "registry": "custom",
+            "type": "java",
+            "root": "./src",
+            "environment": "@milaboratories/example-pl-package-runenv-1:java"
+          },
           "cmd": [
             "python",
             "{pkg}/script1.py",
@@ -41,15 +40,15 @@
       "goodbye": {
         "binary": {
           "artifact": {
-        "registry": "custom",
-        "type": "python",
-        "root": "./src",
-        "environment": "@milaboratories/example-pl-package-runenv-1:python",
-        "dependencies": {
-          "toolset": "pip",
-          "requirements": "./requirements.txt"
-        }
-      },
+            "registry": "custom",
+            "type": "python",
+            "root": "./src",
+            "environment": "@milaboratories/example-pl-package-runenv-1:python",
+            "dependencies": {
+              "toolset": "pip",
+              "requirements": "./requirements.txt"
+            }
+          },
           "cmd": [
             "python",
             "{pkg}/script1.py",
@@ -63,11 +62,11 @@
       "yes-java": {
         "binary": {
           "artifact": {
-        "registry": "custom",
-        "type": "java",
-        "root": "./src",
-        "environment": "@milaboratories/example-pl-package-runenv-1:java"
-      },
+            "registry": "custom",
+            "type": "java",
+            "root": "./src",
+            "environment": "@milaboratories/example-pl-package-runenv-1:java"
+          },
           "cmd": [
             "java",
             "--version"
@@ -77,15 +76,15 @@
       "yes-r": {
         "binary": {
           "artifact": {
-        "registry": "custom",
-        "type": "R",
-        "root": "./src",
-        "environment": "@milaboratories/example-pl-package-runenv-1:r",
-        "dependencies": {
-          "toolset": "renv",
-          "lockFile": "./renv.lock"
-        }
-      },
+            "registry": "custom",
+            "type": "R",
+            "root": "./src",
+            "environment": "@milaboratories/example-pl-package-runenv-1:r",
+            "dependencies": {
+              "toolset": "renv",
+              "lockFile": "./renv.lock"
+            }
+          },
           "cmd": [
             "R",
             "--version"
@@ -108,19 +107,19 @@
       "starter": {
         "binary": {
           "artifact": {
-        "type": "binary",
-        "registry": {
-          "name": "custom2",
-          "storageURL": "s3e://minio.local/bucket"
-        },
-        "roots": {
-          "linux-x64": "./x64/",
-          "linux-aarch64": "./x64/",
-          "macosx-x64": "./x64/",
-          "macosx-aarch64": "./arm64/",
-          "windows-x64": "./x64/"
-        }
-      },
+            "type": "binary",
+            "registry": {
+              "name": "custom2",
+              "storageURL": "s3e://minio.local/bucket"
+            },
+            "roots": {
+              "linux-x64": "./x64/",
+              "linux-aarch64": "./x64/",
+              "macosx-x64": "./x64/",
+              "macosx-aarch64": "./arm64/",
+              "windows-x64": "./x64/"
+            }
+          },
           "cmd": [
             "true"
           ]
