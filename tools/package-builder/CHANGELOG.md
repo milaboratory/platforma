@@ -1,5 +1,11 @@
 # @platforma-sdk/package-builder
 
+## 2.18.0
+
+### Minor Changes
+
+- 6a2e072: Put assets and software into different path prefixes
+
 ## 2.17.2
 
 ### Patch Changes
