@@ -4,7 +4,8 @@ FROM python:${PYTHON_VERSION}
 WORKDIR /app
 
 # Install dependencies to leverage Docker cache
-${PYTHON_INSTALL_DEPS}
+COPY ${REQUIREMENTS_PATH} .
+RUN ${TOOLSET} install --no-cache-dir -r ${REQUIREMENTS_FILENAME}
 
 # Copy package source
 COPY . /app/

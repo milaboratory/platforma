@@ -132,7 +132,8 @@ describe('Docker Python Functions', () => {
       expect(dockerfileContent).toContain('FROM python:3.12.6');
       expect(dockerfileContent).toContain('WORKDIR /app');
       expect(dockerfileContent).toContain('COPY . /app/');
-      expect(dockerfileContent).toContain('RUN pip install --no-cache-dir -r');
+      expect(dockerfileContent).toContain('COPY');
+      expect(dockerfileContent).toContain('RUN pip install --no-cache-dir -r requirements.txt');
       expect(dockerfileContent).toContain('ENV PYTHONPATH=/app');
       expect(dockerfileContent).toContain('CMD ["bash"]');
     });
@@ -144,9 +145,14 @@ describe('Docker Python Functions', () => {
       const result = prepareDockerOptions(mockLogger, testPackageRoot, 'test-package', mockPythonPackage);
 
       const dockerfileContent = fs.readFileSync(result.dockerfile, 'utf-8');
-      expect(dockerfileContent).toContain('No \'/tmp/python-docker-test');
-      expect(dockerfileContent).toContain('requirements.txt\' file found');
-      expect(dockerfileContent).toContain('skipping dependency installation');
+      expect(dockerfileContent).toContain('COPY');
+      expect(dockerfileContent).toContain('RUN pip install --no-cache-dir -r requirements.txt');
+
+      // Check that empty requirements.txt was created in dist/docker directory
+      const emptyRequirementsPath = path.join(testPackageRoot, 'dist', 'docker', 'requirements.txt');
+      expect(fs.existsSync(emptyRequirementsPath)).toBe(true);
+      const emptyRequirementsContent = fs.readFileSync(emptyRequirementsPath, 'utf-8');
+      expect(emptyRequirementsContent).toContain('# No dependencies specified');
 
       // Should still create valid Docker options
       expect(result).toBeDefined();

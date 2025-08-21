@@ -29,21 +29,16 @@ export interface DockerOptions {
 export interface PythonDockerOptions extends PythonOptions, DockerOptions {}
 
 function generatePythonDockerfileContent(options: PythonOptions): string {
-  const hasRequirements = fs.existsSync(options.requirements);
-
   // Read template from assets
   const templatePath = pkg.assets('python-dockerfile.template');
   const templateContent = fs.readFileSync(templatePath, 'utf-8');
 
-  // Simple variable substitution
-  const installDeps = hasRequirements
-    ? `COPY ${options.requirements} .\nRUN ${options.toolset} install --no-cache-dir -r ${options.requirements}`
-    : `# No '${options.requirements}' file found, skipping dependency installation`;
-  const dockerfile = templateContent
+  // Generate Dockerfile with dependencies
+  return templateContent
     .replace(/\$\{PYTHON_VERSION\}/g, options.pythonVersion)
-    .replace(/\$\{PYTHON_INSTALL_DEPS\}/g, installDeps);
-
-  return dockerfile;
+    .replace(/\$\{REQUIREMENTS_PATH\}/g, options.requirements)
+    .replace(/\$\{REQUIREMENTS_FILENAME\}/g, path.basename(options.requirements))
+    .replace(/\$\{TOOLSET\}/g, options.toolset);
 }
 
 export function prepareDockerOptions(logger: winston.Logger, packageRoot: string, pacakgeId: string, buildParams: PythonPackage): DockerOptions {
@@ -69,6 +64,19 @@ export function prepareDockerOptions(logger: winston.Logger, packageRoot: string
   const tmpDir = path.join(packageRoot, 'dist', 'docker');
   fs.mkdirSync(tmpDir, { recursive: true });
   logger.info(`Created temporary Docker directory: ${tmpDir}`);
+
+  const hasRequirements = fs.existsSync(options.requirements);
+  // If requirements.txt doesn't exist, create an empty one
+  if (!hasRequirements) {
+    const emptyRequirementsPath = path.join(tmpDir, 'requirements.txt');
+    if (!fs.existsSync(emptyRequirementsPath)) {
+      fs.writeFileSync(emptyRequirementsPath, '# No dependencies specified\n');
+      logger.info(`Created empty requirements.txt at: ${emptyRequirementsPath}`);
+    }
+
+    // Update the requirements path to point to the created file
+    options.requirements = emptyRequirementsPath;
+  }
 
   const dockerfile = {
     content: generatePythonDockerfileContent(options),
