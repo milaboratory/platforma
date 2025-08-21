@@ -1,0 +1,24 @@
+// txt countLines function test template
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+file := import("@platforma-sdk/workflow-tengo:file")
+txt := import("@platforma-sdk/workflow-tengo:txt")
+
+self.defineOutputs(["result", "progress"])
+
+self.body(func(inputs) {
+    importResult := file.importFile(inputs.importHandle)
+
+    // Apply txt.countLines function with the specified options
+    countResult := undefined
+    if inputs.countOptions == false {
+        countResult = txt.countLines(importResult.file)
+    } else {
+        countResult = txt.countLines(importResult.file, inputs.countOptions)
+    }
+
+    return {
+        result: countResult,
+        progress: importResult.handle
+    }
+})

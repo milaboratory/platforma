@@ -1,0 +1,1 @@
+# No external dependencies for head endpoint - uses only Python standard library

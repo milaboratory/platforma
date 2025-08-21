@@ -25,13 +25,31 @@
             "environment": "@platforma-open/milaboratories.runenv-python-3:3.12.6",
             "dependencies": {
               "toolset": "pip",
-              "requirements": "requirements.txt"
+              "requirements": "requirements-head.txt"
             },
             "root": "./src"
           },
           "cmd": [
             "python",
             "{pkg}/phead-lines.py"
+          ]
+        }
+      },
+      "wc-l": {
+        "binary": {
+          "artifact": {
+            "type": "python",
+            "registry": "platforma-open",
+            "environment": "@platforma-open/milaboratories.runenv-python-3:3.12.6",
+            "dependencies": {
+              "toolset": "pip",
+              "requirements": "requirements-wc-l.txt"
+            },
+            "root": "./src"
+          },
+          "cmd": [
+            "python",
+            "{pkg}/wc-l.py"
           ]
         }
       }
