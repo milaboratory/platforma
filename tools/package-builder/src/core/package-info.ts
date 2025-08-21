@@ -701,6 +701,26 @@ export class PackageInfo {
 
         return false;
       }
+
+      // Validate that root is not equal to package root
+      if (artifact.root && (artifact.type === 'python' || artifact.type === 'binary')) {
+        // Check relative paths
+        if (artifact.root === '.' || artifact.root === './') {
+          this.logger.error(
+            `Invalid configuration: '${artifact.type}' artifact '${artifactName}' has 'root' set to the package root, which is not allowed`,
+          );
+          return false;
+        }
+
+        // Check if path resolves to package root
+        const resolvedRoot = path.resolve(this.packageRoot, artifact.root);
+        if (resolvedRoot === this.packageRoot) {
+          this.logger.error(
+            `Invalid configuration: '${artifact.type}' artifact '${artifactName}' has 'root' set to the package root, which is not allowed`,
+          );
+          return false;
+        }
+      }
     }
 
     return true;

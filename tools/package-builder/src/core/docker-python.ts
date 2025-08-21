@@ -99,7 +99,7 @@ export function prepareDockerOptions(logger: winston.Logger, packageRoot: string
 
   const result: DockerOptions = {
     dockerfile: dockerfile.path,
-    context: path.resolve(packageRoot),
+    context: path.resolve(buildParams.root ?? packageRoot),
     entrypoint: [],
     pkg: options.pkg,
   };
