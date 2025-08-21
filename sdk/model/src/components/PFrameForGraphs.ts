@@ -276,12 +276,7 @@ export function createPFrameForGraphs<A, U>(
   // all compatible with block columns but without label columns
   let compatibleWithoutLabels = (columns.getColumns((spec) => spec.axesSpec.some((axisSpec) => {
     const axisId = getAxisId(axisSpec);
-    for (const selectorAxisSpec of blockAxes.values()) {
-      if (matchAxisId(getAxisId(selectorAxisSpec), axisId)) {
-        return true;
-      }
-    }
-    return false;
+    return Array.from(blockAxes.values()).some((selectorAxisSpec) => matchAxisId(getAxisId(selectorAxisSpec), axisId));
   }), { dontWaitAllData: true, overrideLabelAnnotation: false }) ?? []).filter((column) => !isLabelColumn(column.spec));
 
   // if at least one column is not yet ready, we can't show the graph
@@ -300,12 +295,7 @@ export function createPFrameForGraphs<A, U>(
   // extend allowed columns - add columns thad doesn't have axes from block, but have all axes in 'allAxes' list (that means all axes from linkers or from 'hanging' of other selected columns)
   compatibleWithoutLabels = (columns.getColumns((spec) => spec.axesSpec.every((axisSpec) => {
     const axisId = getAxisId(axisSpec);
-    for (const selectorAxisSpec of allAxes.values()) {
-      if (matchAxisId(getAxisId(selectorAxisSpec), axisId)) {
-        return true;
-      }
-    }
-    return false;
+    return Array.from(allAxes.values()).some((selectorAxisSpec) => matchAxisId(getAxisId(selectorAxisSpec), axisId));
   }), { dontWaitAllData: true, overrideLabelAnnotation: false }) ?? []).filter((column) => !isLabelColumn(column.spec));
 
   // label columns must be compatible with full set of axes - block axes and axes from compatible columns from result pool
