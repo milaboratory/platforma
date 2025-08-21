@@ -134,7 +134,7 @@ describe('Docker Python Functions', () => {
       expect(dockerfileContent).toContain('COPY . /app/');
       expect(dockerfileContent).toContain('RUN pip install --no-cache-dir -r');
       expect(dockerfileContent).toContain('ENV PYTHONPATH=/app');
-      expect(dockerfileContent).toContain('CMD ["python", "--version"]');
+      expect(dockerfileContent).toContain('CMD ["bash"]');
     });
 
     it('should handle missing requirements.txt gracefully', () => {

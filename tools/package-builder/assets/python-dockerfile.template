@@ -13,4 +13,4 @@ COPY . /app/
 ENV PYTHONPATH=/app
 
 # Default command (will be overridden by entrypoint)
-CMD ["python", "--version"]
+CMD ["bash"]
