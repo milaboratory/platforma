@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.19.14
+
+### Patch Changes
+
+- 2a21be5: Added `pl7.app/description` to well-known annotations list
+
 ## 1.19.13
 
 ### Patch Changes
