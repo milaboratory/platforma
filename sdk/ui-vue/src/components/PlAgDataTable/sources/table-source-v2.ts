@@ -374,6 +374,7 @@ export function makeColDef(
             throw Error(`unsupported data type: ${valueType}`);
         }
       })(),
+      tooltip: readAnnotation(labeledSpec.spec, Annotation.Description)?.trim(),
     } satisfies PlAgHeaderComponentParams,
     cellDataType: (() => {
       switch (valueType) {
