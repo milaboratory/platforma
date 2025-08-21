@@ -65,16 +65,19 @@ export function prepareDockerOptions(logger: winston.Logger, packageRoot: string
     options.workdir = buildParams.workdir;
   }
 
-  options.requirements = path.join(packageRoot, options.requirements);
-
   // Generate a temporary directory for the Dockerfile
   const tmpDir = path.join(packageRoot, 'dist', 'docker');
   fs.mkdirSync(tmpDir, { recursive: true });
   logger.info(`Created temporary Docker directory: ${tmpDir}`);
 
+  options.requirements = path.join(packageRoot, options.requirements);
   const hasRequirements = fs.existsSync(options.requirements);
-  // If requirements.txt doesn't exist, create an empty one
-  if (!hasRequirements) {
+
+  // If requirements.txt exists, use relative path for Docker COPY command
+  if (hasRequirements) {
+    options.requirements = path.relative(packageRoot, options.requirements);
+  } else {
+    // If requirements.txt doesn't exist, create an empty one
     const emptyRequirementsPath = path.join(tmpDir, 'requirements.txt');
     if (!fs.existsSync(emptyRequirementsPath)) {
       fs.writeFileSync(emptyRequirementsPath, '# No dependencies specified\n');
