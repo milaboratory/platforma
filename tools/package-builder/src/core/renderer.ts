@@ -103,6 +103,13 @@ const pythonPackageSettingsSchema = z.object({
 
   ...anyPackageSettingsSchema.shape,
   runEnv: runDependencyPythonSchema,
+
+  toolset: z.string(),
+  dependencies: z
+    .record(z.string(), z.string())
+    .describe(
+      'paths of files that describe dependencies for given toolset: say, requirements.txt for \'pip\'',
+    ),
 });
 
 const rPackageSettingsSchema = z.object({
@@ -452,6 +459,8 @@ export class Renderer {
             };
           }
           case 'python': {
+            const { toolset, ...deps } = pkg.dependencies ?? {};
+
             return {
               type: 'python',
               hash: hash.digest().toString('hex'),
@@ -459,6 +468,8 @@ export class Renderer {
               cmd: ep.cmd,
               envVars: ep.env,
               runEnv: this.resolveRunEnvironment(pkg.environment, pkg.type),
+              toolset: toolset ?? 'pip',
+              dependencies: deps,
             };
           }
           case 'R': {
@@ -578,6 +589,8 @@ export class Renderer {
             };
           }
           case 'python': {
+            const { toolset, ...deps } = pkg.dependencies ?? {};
+
             return {
               type: 'python',
               registry: pkg.registry.name,
@@ -586,6 +599,8 @@ export class Renderer {
               cmd: ep.cmd,
               envVars: ep.env,
               runEnv: this.resolveRunEnvironment(pkg.environment, pkg.type),
+              toolset: toolset ?? 'pip',
+              dependencies: deps,
             };
           }
           case 'R': {

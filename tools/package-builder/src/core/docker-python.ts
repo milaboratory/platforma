@@ -50,7 +50,6 @@ export function prepareDockerOptions(logger: winston.Logger, packageRoot: string
   logger.info(`Preparing Docker options for Python package: ${buildParams.name} (id: ${pacakgeId})`);
 
   const options = getDefaultPythonOptions();
-  options.requirements = path.resolve(packageRoot, options.requirements);
 
   const pythonVersion = getPythonVersionFromEnvironment(buildParams.environment);
   if (pythonVersion) {
@@ -59,6 +58,12 @@ export function prepareDockerOptions(logger: winston.Logger, packageRoot: string
   } else {
     logger.debug(`No Python version found in environment, using default: ${options.pythonVersion}`);
   }
+
+  if (buildParams.dependencies) {
+    options.toolset = buildParams.dependencies.toolset;
+    options.requirements = buildParams.dependencies.requirements;
+  }
+  options.requirements = path.resolve(packageRoot, options.requirements);
 
   // Generate a temporary directory for the Dockerfile
   const tmpDir = path.join(packageRoot, 'dist', 'docker');

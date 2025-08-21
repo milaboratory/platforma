@@ -114,9 +114,17 @@ export const javaPackageSchema = archiveRulesSchema.extend({
 });
 export type javaPackageConfig = z.infer<typeof javaPackageSchema>;
 
+const pipToolsetSchema = z.strictObject({
+  toolset: z.literal('pip'),
+  requirements: z.string().describe('path to requrements.txt inside package archive'),
+});
+
+export const pythonToolsetSchema = z.discriminatedUnion('toolset', [pipToolsetSchema]);
+
 export const pythonPackageSchema = archiveRulesSchema.extend({
   type: z.literal('python'),
   environment: artifactIDSchema,
+  dependencies: pythonToolsetSchema.optional(),
 });
 export type pythonPackageConfig = z.infer<typeof pythonPackageSchema>;
 
