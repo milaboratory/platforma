@@ -85,8 +85,8 @@ export function prepareDockerOptions(logger: winston.Logger, packageRoot: string
       logger.info(`Created empty requirements.txt at: ${emptyRequirementsPath}`);
     }
 
-    // Update the requirements path to point to the created file
-    options.requirements = emptyRequirementsPath;
+    // Use relative path to empty requirements.txt for Docker COPY command
+    options.requirements = path.relative(packageRoot, emptyRequirementsPath);
   }
 
   const dockerfile = {
