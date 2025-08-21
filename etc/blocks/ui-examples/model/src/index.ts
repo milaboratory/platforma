@@ -133,6 +133,7 @@ export const platforma = BlockModel.create('Heavy')
             [Annotation.Label]: 'String column',
             [Annotation.DiscreteValues]: stringifyJson(['up', 'down']),
             [Annotation.Table.OrderPriority]: stringifyJson(101),
+            [Annotation.Description]: 'String column description',
           } satisfies Annotation,
           axesSpec: [
             {
@@ -170,6 +171,7 @@ export const platforma = BlockModel.create('Heavy')
             [Annotation.Label]: 'Float column',
             [Annotation.Table.Visibility]: 'optional',
             [Annotation.Table.OrderPriority]: stringifyJson(100),
+            [Annotation.Description]: 'Float column description',
           } satisfies Annotation,
           axesSpec: [
             {
@@ -356,7 +358,8 @@ export const platforma = BlockModel.create('Heavy')
         ? [
             { type: 'delimiter' },
             ...dynamicSections,
-            { type: 'delimiter' }] as const
+            { type: 'delimiter' },
+          ] as const
         : []),
       {
         type: 'link',
