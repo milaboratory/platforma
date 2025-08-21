@@ -90,7 +90,7 @@ const binaryPackageSettingsSchema = z.object({
   ...anyPackageSettingsSchema.shape,
 
   runEnv: z.undefined(),
-  workdir: z.string().optional().describe('custom working directory in Docker container (default: /app)'),
+  pkg: z.string().optional().describe('custom working directory in Docker container (default: /app)'),
 });
 
 const javaPackageSettingsSchema = z.object({
