@@ -89,6 +89,7 @@ const binaryPackageSettingsSchema = z.object({
   ...anyPackageSettingsSchema.shape,
 
   runEnv: z.undefined(),
+  workdir: z.string().optional().describe('custom working directory in Docker container (default: /app)'),
 });
 
 const javaPackageSettingsSchema = z.object({
@@ -110,6 +111,7 @@ const pythonPackageSettingsSchema = z.object({
     .describe(
       'paths of files that describe dependencies for given toolset: say, requirements.txt for \'pip\'',
     ),
+  workdir: z.string().optional().describe('custom working directory in Docker container (default: /app)'),
 });
 
 const rPackageSettingsSchema = z.object({
