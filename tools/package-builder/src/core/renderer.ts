@@ -463,7 +463,7 @@ export class Renderer {
           case 'python': {
             const { toolset, ...deps } = pkg.dependencies ?? {};
 
-            return {
+            const result: any = {
               type: 'python',
               hash: hash.digest().toString('hex'),
               path: rootDir,
@@ -473,6 +473,12 @@ export class Renderer {
               toolset: toolset ?? 'pip',
               dependencies: deps,
             };
+
+            if (pkg.workdir) {
+              result.workdir = pkg.workdir;
+            }
+
+            return result;
           }
           case 'R': {
             return {
@@ -593,7 +599,7 @@ export class Renderer {
           case 'python': {
             const { toolset, ...deps } = pkg.dependencies ?? {};
 
-            return {
+            const result: any = {
               type: 'python',
               registry: pkg.registry.name,
               package: pkg.namePattern,
@@ -604,6 +610,12 @@ export class Renderer {
               toolset: toolset ?? 'pip',
               dependencies: deps,
             };
+
+            if (pkg.workdir) {
+              result.workdir = pkg.workdir;
+            }
+
+            return result;
           }
           case 'R': {
             return {
