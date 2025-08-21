@@ -11,10 +11,6 @@ import type {
 } from '../../../pool';
 import { z } from 'zod';
 
-type Expect<T extends true> = T;
-type Equal<X, Y> =
-  (<T>() => T extends X ? 1 : 2) extends (<T>() => T extends Y ? 1 : 2) ? true : false;
-
 export const ValueType = {
   Int: 'Int',
   Long: 'Long',
@@ -117,6 +113,7 @@ export function readDomainJson<T extends keyof DomainJson>(
 /// Well-known annotations
 export const Annotation = {
   Alphabet: 'pl7.app/alphabet',
+  Description: 'pl7.app/description',
   DiscreteValues: 'pl7.app/discreteValues',
   Format: 'pl7.app/format',
   Graph: {
@@ -144,6 +141,7 @@ export const Annotation = {
 
 export type Annotation = Metadata & Partial<{
   [Annotation.Alphabet]: 'nucleotide' | 'aminoacid' | string;
+  [Annotation.Description]: string;
   [Annotation.DiscreteValues]: StringifiedJson<number[]> | StringifiedJson<string[]>;
   [Annotation.Format]: string;
   [Annotation.Graph.IsVirtual]: StringifiedJson<boolean>;
@@ -168,6 +166,11 @@ export type Annotation = Metadata & Partial<{
 //   annotations: z.record(z.string(), z.string()).optional(),
 //   parentAxes: z.array(z.number()).optional(),
 // }).passthrough();
+//
+// type Expect<T extends true> = T;
+// type Equal<X, Y> =
+// (<T>() => T extends X ? 1 : 2) extends (<T>() => T extends Y ? 1 : 2) ? true : false;
+//
 // type _test = Expect<Equal<
 //   Readonly<z.infer<typeof AxisSpec>>,
 //   Readonly<AxisSpec & Record<string, unknown>>
@@ -219,7 +222,7 @@ export function readAnnotationJson<T extends keyof AnnotationJson>(
  *
  * Each record inside a PColumn is addressed by a unique tuple of values set for
  * all the axes specified in the column spec.
- * */
+ */
 export interface AxisSpec {
   /** Type of the axis value. Should not use non-key types like float or double. */
   readonly type: ValueType;
@@ -461,7 +464,7 @@ export const PColumnName = {
  * (axis1Value1, axis2Value1, ...) -> columnValue
  *
  * Each element in tuple correspond to the axis having the same index in axesSpec.
- * */
+ */
 export interface PUniversalColumnSpec extends PObjectSpec {
   /** Defines specific type of BObject, the most generic type of unit of
    * information in Platforma Project. */

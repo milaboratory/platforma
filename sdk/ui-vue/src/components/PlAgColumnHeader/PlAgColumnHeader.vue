@@ -1,16 +1,15 @@
 <script setup lang="ts">
 import type { IHeaderParams, SortDirection } from 'ag-grid-enterprise';
 import type { MaskIconName16 } from '@milaboratories/uikit';
-import { PlMaskIcon16 } from '@milaboratories/uikit';
+import { PlMaskIcon16, PlTooltip } from '@milaboratories/uikit';
 import { computed, onMounted, ref } from 'vue';
 import './pl-ag-column-header.scss';
 import type { PlAgHeaderComponentParams } from './types';
 
-const props = defineProps<{ params: IHeaderParams & PlAgHeaderComponentParams }>();
+const { params } = defineProps<{ params: IHeaderParams & PlAgHeaderComponentParams }>();
 
 const icon = computed<MaskIconName16>(() => {
-  const type = (props.params.column.getUserProvidedColDef()?.headerComponentParams as PlAgHeaderComponentParams)?.type;
-  switch (type) {
+  switch (params.type) {
     case undefined:
     case 'Text':
       return 'cell-type-txt';
@@ -25,16 +24,16 @@ const icon = computed<MaskIconName16>(() => {
     case 'Progress':
       return 'progress';
     default:
-      throw Error(`unsupported data type: ${type satisfies never} for PlAgColumnHeader component. Column ${props.params.column.getColId()}`);
+      throw Error(`unsupported data type: ${params.type satisfies never} for PlAgColumnHeader component. Column ${params.column.getColId()}`);
   }
 });
 
 const sortDirection = ref<SortDirection>(null);
-const refreshSortDirection = () => (sortDirection.value = props.params.column.getSort() ?? null);
+const refreshSortDirection = () => (sortDirection.value = params.column.getSort() ?? null);
 onMounted(() => refreshSortDirection());
 function onSortRequested() {
-  if (props.params.column.isSortable()) {
-    props.params.progressSort();
+  if (params.column.isSortable()) {
+    params.progressSort();
     refreshSortDirection();
   }
 }
@@ -48,24 +47,27 @@ const sortIcon = computed<MaskIconName16 | null>(() => {
     case null:
       return null;
     default:
-      throw Error(`unsupported sort direction: ${direction satisfies never}. Column ${props.params.column.getColId()}`);
+      throw Error(`unsupported sort direction: ${direction satisfies never}. Column ${params.column.getColId()}`);
   }
 });
 
 const menuActivatorBtn = ref<HTMLElement>();
 function showMenu() {
   const menuActivatorBtnValue = menuActivatorBtn.value;
-  if (menuActivatorBtnValue) props.params.showColumnMenu(menuActivatorBtnValue);
+  if (menuActivatorBtnValue) params.showColumnMenu(menuActivatorBtnValue);
 }
 </script>
 
 <template>
   <div class="pl-ag-column-header d-flex align-center gap-6" @click="onSortRequested">
-    <div class="pl-ag-column-header__title d-flex align-center gap-6 flex-grow-1">
-      <PlMaskIcon16 :name="icon" class="pl-ag-column-header__type-icon" />
-      <span>{{ params.displayName }}</span>
-      <PlMaskIcon16 v-if="sortIcon" :name="sortIcon" />
-    </div>
+    <PlTooltip>
+      <template v-if="params.tooltip" #tooltip>{{ params.tooltip }}</template>
+      <div class="pl-ag-column-header__title d-flex align-center gap-6 flex-grow-1">
+        <PlMaskIcon16 :name="icon" class="pl-ag-column-header__type-icon" />
+        <span>{{ params.displayName }}</span>
+        <PlMaskIcon16 v-if="sortIcon" :name="sortIcon" />
+      </div>
+    </PlTooltip>
     <div v-if="params.enableMenu" ref="menuActivatorBtn" class="pl-ag-column-header__menu-icon" @click.stop="showMenu">
       <PlMaskIcon16 name="more" />
     </div>
