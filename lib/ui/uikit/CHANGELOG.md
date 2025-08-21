@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.4.6
+
+### Patch Changes
+
+- e8f0e58: Added 2 new icons: analytics and file-logs
+
 ## 2.4.5
 
 ### Patch Changes
