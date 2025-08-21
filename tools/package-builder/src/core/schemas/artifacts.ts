@@ -151,6 +151,7 @@ export const dockerPackageSchema = archiveRulesSchema.extend({
   dockerfile: z.string().optional().describe('relative path to \'Dockerfile\' file from folder where command is executed or absolute path to the file'),
 
   entrypoint: z.array(z.string()).optional().describe('entrypoint command to be run in the container'),
+  workdir: z.string().optional().describe('custom working directory in Docker container (only for Python packages)'),
 });
 export type dockerPackageConfig = z.infer<typeof dockerPackageSchema>;
 

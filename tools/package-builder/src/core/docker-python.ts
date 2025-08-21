@@ -25,6 +25,7 @@ export interface DockerOptions {
   context: string;
   dockerfile: string;
   entrypoint: string[];
+  workdir: string;
 }
 
 export interface PythonDockerOptions extends PythonOptions, DockerOptions {}
@@ -100,6 +101,7 @@ export function prepareDockerOptions(logger: winston.Logger, packageRoot: string
     dockerfile: dockerfile.path,
     context: path.resolve(packageRoot),
     entrypoint: [],
+    workdir: options.workdir,
   };
 
   logger.debug(`Prepared Docker options: ${JSON.stringify(result)}`);

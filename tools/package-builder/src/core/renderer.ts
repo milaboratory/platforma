@@ -24,6 +24,7 @@ const dockerSchema = z.object({
   tag: z.string().describe('name of the image to be built instead of custom one'),
   entrypoint: z.array(z.string()).describe('entrypoint command to be run in the container'),
   cmd: z.array(z.string()).describe('command to be run in the container'),
+  workdir: z.string().optional().describe('custom working directory in Docker container (only for Python packages)'),
 });
 type dockerInfo = z.infer<typeof dockerSchema>;
 
@@ -463,7 +464,7 @@ export class Renderer {
           case 'python': {
             const { toolset, ...deps } = pkg.dependencies ?? {};
 
-            const result: any = {
+            return {
               type: 'python',
               hash: hash.digest().toString('hex'),
               path: rootDir,
@@ -473,12 +474,6 @@ export class Renderer {
               toolset: toolset ?? 'pip',
               dependencies: deps,
             };
-
-            if (pkg.workdir) {
-              result.workdir = pkg.workdir;
-            }
-
-            return result;
           }
           case 'R': {
             return {
@@ -599,7 +594,7 @@ export class Renderer {
           case 'python': {
             const { toolset, ...deps } = pkg.dependencies ?? {};
 
-            const result: any = {
+            return {
               type: 'python',
               registry: pkg.registry.name,
               package: pkg.namePattern,
@@ -610,12 +605,6 @@ export class Renderer {
               toolset: toolset ?? 'pip',
               dependencies: deps,
             };
-
-            if (pkg.workdir) {
-              result.workdir = pkg.workdir;
-            }
-
-            return result;
           }
           case 'R': {
             return {
@@ -741,11 +730,18 @@ export class Renderer {
 
     const tag = dockerTagFromPackage(this.npmPackageRoot, pkg);
 
-    return {
+    const result: any = {
       tag: tag,
       entrypoint: pkg.entrypoint ?? [],
       cmd: ep.cmd,
     };
+
+    // Add workdir for Python packages (when they are converted to docker)
+    if (pkg.workdir) {
+      result.workdir = pkg.workdir;
+    }
+
+    return result;
   }
 
   private resolveDependency(npmPackageName: string, entrypointName: string): entrypointSwJson {
