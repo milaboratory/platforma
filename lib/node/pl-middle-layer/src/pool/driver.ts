@@ -55,7 +55,7 @@ import {
   type PollResource,
 } from '@milaboratories/ts-helpers';
 import canonicalize from 'canonicalize';
-import { PFrame } from '@milaboratories/pframes-rs-node';
+import { PFrameFactory } from '@milaboratories/pframes-rs-node';
 import * as fsp from 'node:fs/promises';
 import * as path from 'node:path';
 import { getDebugFlags } from '../debug';
@@ -177,7 +177,7 @@ class PTableCache {
 }
 
 class PFrameHolder implements PFrameInternal.PFrameDataSource, AsyncDisposable {
-  public readonly pFramePromise: Promise<PFrameInternal.PFrameV9>;
+  public readonly pFramePromise: Promise<PFrameInternal.PFrameV10>;
   private readonly abortController = new AbortController();
   private readonly blobIdToResource = new Map<string, ResourceInfo>();
   private readonly blobHandleComputables = new Map<
@@ -208,7 +208,7 @@ class PFrameHolder implements PFrameInternal.PFrameDataSource, AsyncDisposable {
     ];
 
     try {
-      const pFrame = new PFrame(this.spillPath, logFunc);
+      const pFrame = PFrameFactory.createPFrame({ spillPath: this.spillPath, logger: logFunc });
       pFrame.setDataSource(this);
       const promises: Promise<void>[] = [];
       for (const column of distinctСolumns) {
@@ -266,6 +266,10 @@ class PFrameHolder implements PFrameInternal.PFrameDataSource, AsyncDisposable {
     return await fsp.readFile(path);
   };
 
+  public get parquetServer(): PFrameInternal.ParquetServerConfig | undefined {
+    return undefined;
+  }
+
   public get disposeSignal(): AbortSignal {
     return this.abortController.signal;
   }
@@ -290,7 +294,7 @@ class PTableHolder implements AsyncDisposable {
   constructor(
     public readonly pFrame: PFrameHandle,
     pFrameDisposeSignal: AbortSignal,
-    public readonly pTablePromise: Promise<PFrameInternal.PTableV6>,
+    public readonly pTablePromise: Promise<PFrameInternal.PTableV7>,
     public readonly predecessor?: PollResource<PTableHolder>,
   ) {
     this.combinedDisposeSignal = AbortSignal.any([pFrameDisposeSignal, this.abortController.signal]);
@@ -398,7 +402,7 @@ export class PFrameDriver implements InternalPFrameDriver {
   private readonly tableConcurrencyLimiter: ConcurrencyLimitingExecutor;
 
   public async pprofDump(): Promise<Uint8Array> {
-    return await PFrame.pprofDump();
+    return await PFrameFactory.pprofDump();
   }
 
   public static async init(
