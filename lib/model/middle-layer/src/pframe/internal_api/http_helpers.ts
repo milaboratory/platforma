@@ -161,7 +161,7 @@ export type HttpServerOptions = {
   /** Do not apply authorization middleware to @param handler */
   noAuth?: true;
   /** Downgrade default HTTPS server to plain HTTP, @warning use only for testing */
-  http?: true;
+  noHttps?: true;
 };
 
 /**
@@ -188,14 +188,20 @@ export type HttpAuthorizationToken = Branded<string, 'PFrameInternal.HttpAuthori
  */
 export type PemCertificate = Branded<string, 'PFrameInternal.PemCertificate'>;
 
+/** Parquet HTTP(S) server connection settings, {@link HttpHelpers.createHttpServer} */
+export type ParquetServerInfo = {
+  /** URL of the parquet HTTP(S) server formatted as `http{s}://<host>:<port>/` */
+  url: ObjectStoreUrl;
+  /** Authorization token for Bearer scheme, undefined when @see HttpServerOptions.noAuth flag is set */
+  authToken?: HttpAuthorizationToken;
+  /** Encoded CA certificate of HTTPS server, undefined when @see HttpServerOptions.noHttps flag is set */
+  encodedCaCert?: Base64Encoded<PemCertificate>;
+};
+
 /** HTTP(S) server information and controls, @see HttpHelpers.createHttpServer */
 export interface HttpServer {
-  /** Server address info formatted as `http{s}://<host>:<port>/` */
-  get address(): ObjectStoreUrl;
-  /** Authorization token for Bearer scheme, undefined when @see HttpServerOptions.noAuth flag is set */
-  get authToken(): HttpAuthorizationToken | undefined;
-  /** Base64-encoded CA certificate in PEM format, undefined when @see HttpServerOptions.http flag is set */
-  get encodedCaCert(): Base64Encoded<PemCertificate> | undefined;
+  /** Server configuration information for initiating connections from clients */
+  get info(): ParquetServerInfo;
   /** Promise that resolves when the server is stopped */
   get stopped(): Promise<void>;
   /** Request server stop, returns the same promise as @see HttpServer.stopped */
@@ -230,12 +236,12 @@ export interface HttpHelpers {
    * });
    *
    * const server = await HttpHelpers.createHttpServer({
-   *   handler: HttpHelpers.createRequestHandler(store),
+   *   handler: HttpHelpers.createRequestHandler({ store }),
    * }).catch((err: unknown) => {
-   *   throw new Error(`Failed to start HTTP server - ${ensureError(err)}`);
+   *   throw new Error(`Failed to start HTTPS server - ${ensureError(err)}`);
    * });
    *
-   * const { address, authToken, base64EncodedCaCert } = server;
+   * const { url, authToken, encodedCaCert } = server.info;
    *
    * await server.stop();
    * ```
