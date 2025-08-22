@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.8.17
+
+### Patch Changes
+
+- ef18158: PFrames version bump
+
 ## 1.8.16
 
 ### Patch Changes
