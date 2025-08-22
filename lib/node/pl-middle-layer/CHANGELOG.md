@@ -1,5 +1,14 @@
 # @milaboratories/pl-middle-layer
 
+## 1.42.18
+
+### Patch Changes
+
+- 9acf386: PFrames version bump
+- Updated dependencies [9acf386]
+  - @milaboratories/pl-model-middle-layer@1.8.18
+  - @platforma-sdk/block-tools@2.5.89
+
 ## 1.42.17
 
 ### Patch Changes
