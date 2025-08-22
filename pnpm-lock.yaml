@@ -31,8 +31,8 @@ catalogs:
       specifier: ^1.0.123
       version: 1.0.127
     '@milaboratories/pframes-rs-node':
-      specifier: 1.0.66
-      version: 1.0.66
+      specifier: 1.0.68
+      version: 1.0.68
     '@milaboratories/software-pframes-conv':
       specifier: 2.2.2
       version: 2.2.2
@@ -1923,7 +1923,7 @@ importers:
         version: link:../computable
       '@milaboratories/pframes-rs-node':
         specifier: 'catalog:'
-        version: 1.0.66(encoding@0.1.13)
+        version: 1.0.68(encoding@0.1.13)
       '@milaboratories/pl-client':
         specifier: workspace:*
         version: link:../pl-client
@@ -4882,11 +4882,11 @@ packages:
   '@milaboratories/miplots4@1.0.127':
     resolution: {integrity: sha512-+mDFaEbb9zUpt1xY5SwbAxQ++8VfqtixoTe9bD2xLh8pXyTt5Pu+/KhSa0ws4xOSXoHhaI2JX/R9S7PUJEFmcA==}
 
-  '@milaboratories/pframes-rs-node@1.0.66':
-    resolution: {integrity: sha512-O3hPqtpFlalZur3gh9HX0POCz17mCVqC4/DHe7TMD08q2jcRvD1QttMfe6ShrxwohleSm3AkEXkxY4zzCvwD2Q==}
+  '@milaboratories/pframes-rs-node@1.0.68':
+    resolution: {integrity: sha512-oj/d+DvsUQOPK1Nk1zM0KM+mpCxBV8Pxuej4vs0OWm7BaovW9usYCdL3s3IS7wEEumTynDntfhIQhxwdMftabg==}
 
-  '@milaboratories/pframes-rs-serv@1.0.66':
-    resolution: {integrity: sha512-ezf+EvFxBfHeaxv0mLlX1GhXVEV20FWJPCyH//r/whFXNRNZWiibkT1kHAkKWhkfzEQhxC+JvpkvNmrypTUeYw==}
+  '@milaboratories/pframes-rs-serv@1.0.68':
+    resolution: {integrity: sha512-y5x7qTIbCiP+R9sG7wS5mmybYjjJCT5dgYLXCQrne82ygaaNGchbt7Fbgj6Thi5OKnPE8Cfo+KaOuOQlcIMlGQ==}
     hasBin: true
 
   '@milaboratories/pl-error-like@1.12.4':
@@ -4895,8 +4895,8 @@ packages:
   '@milaboratories/pl-model-common@1.19.14':
     resolution: {integrity: sha512-KKeUGR9wPdX7BqgSik6y64twzOJPtoqxnHJ3tM8Ip37aLFjm5Fy0YAT8RznNwfvHZFcsShVxIaR/1tHQIOvHgw==}
 
-  '@milaboratories/pl-model-middle-layer@1.8.16':
-    resolution: {integrity: sha512-tcK08kKqyPjWzlZZ7JgT7hSUMWAemn+1aI86dA4mVkwAqMld7y6co86wLXFVv7vwcFBy9lTsVjTGHsktJS4dnQ==}
+  '@milaboratories/pl-model-middle-layer@1.8.17':
+    resolution: {integrity: sha512-x9bwT0mZIC+8lgmxMc75IHiBXPdYhiNLRidvnDNBkNbLkCTID0x81ebehjWK+cQK8treVNy5gdMnCL/DQfKAmw==}
 
   '@milaboratories/software-pframes-conv@2.2.2':
     resolution: {integrity: sha512-eJIp1YGi6g83peviw8SYlr5N4KV2SmDi3Mhz2FjrS4d/WaKOhoTD9+YvRpOTCQ0KyT44FNRF+nCoN/idKT3SzA==}
@@ -13954,10 +13954,10 @@ snapshots:
       - d3-scale-chromatic
       - supports-color
 
-  '@milaboratories/pframes-rs-node@1.0.66(encoding@0.1.13)':
+  '@milaboratories/pframes-rs-node@1.0.68(encoding@0.1.13)':
     dependencies:
       '@mapbox/node-pre-gyp': 2.0.0(encoding@0.1.13)
-      '@milaboratories/pframes-rs-serv': 1.0.66
+      '@milaboratories/pframes-rs-serv': 1.0.68
       '@milaboratories/pl-model-common': 1.19.14
       humanize-duration: 3.33.0
       ulid: 3.0.1
@@ -13965,11 +13965,11 @@ snapshots:
       - encoding
       - supports-color
 
-  '@milaboratories/pframes-rs-serv@1.0.66':
+  '@milaboratories/pframes-rs-serv@1.0.68':
     dependencies:
       '@milaboratories/helpers': 1.6.22
       '@milaboratories/pl-model-common': 1.19.14
-      '@milaboratories/pl-model-middle-layer': 1.8.16
+      '@milaboratories/pl-model-middle-layer': 1.8.17
       commander: 14.0.0
       selfsigned: 3.0.1
 
@@ -13985,7 +13985,7 @@ snapshots:
       canonicalize: 2.1.0
       zod: 3.23.8
 
-  '@milaboratories/pl-model-middle-layer@1.8.16':
+  '@milaboratories/pl-model-middle-layer@1.8.17':
     dependencies:
       '@milaboratories/pl-model-common': 1.19.14
       remeda: 2.28.0
