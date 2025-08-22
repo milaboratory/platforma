@@ -176,8 +176,8 @@ class PTableCache {
   }
 }
 
-class PFrameHolder implements PFrameInternal.PFrameDataSource, AsyncDisposable {
-  public readonly pFramePromise: Promise<PFrameInternal.PFrameV10>;
+class PFrameHolder implements PFrameInternal.PFrameDataSourceV2, AsyncDisposable {
+  public readonly pFramePromise: Promise<PFrameInternal.PFrameV11>;
   private readonly abortController = new AbortController();
   private readonly blobIdToResource = new Map<string, ResourceInfo>();
   private readonly blobHandleComputables = new Map<
