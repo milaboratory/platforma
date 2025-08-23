@@ -266,7 +266,7 @@ class PFrameHolder implements PFrameInternal.PFrameDataSourceV2, AsyncDisposable
     return await fsp.readFile(path);
   };
 
-  public get parquetServer(): PFrameInternal.ParquetServerConfig | undefined {
+  public get parquetServer(): undefined {
     return undefined;
   }
 
