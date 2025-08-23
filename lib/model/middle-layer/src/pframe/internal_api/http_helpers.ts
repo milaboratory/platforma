@@ -188,9 +188,9 @@ export type HttpAuthorizationToken = Branded<string, 'PFrameInternal.HttpAuthori
  */
 export type PemCertificate = Branded<string, 'PFrameInternal.PemCertificate'>;
 
-/** Parquet HTTP(S) server connection settings, {@link HttpHelpers.createHttpServer} */
-export type ParquetServerInfo = {
-  /** URL of the parquet HTTP(S) server formatted as `http{s}://<host>:<port>/` */
+/** HTTP(S) server connection settings, {@link HttpHelpers.createHttpServer} */
+export type HttpServerInfo = {
+  /** URL of the HTTP(S) server formatted as `http{s}://<host>:<port>/` */
   url: ObjectStoreUrl;
   /** Authorization token for Bearer scheme, undefined when @see HttpServerOptions.noAuth flag is set */
   authToken?: HttpAuthorizationToken;
@@ -201,7 +201,7 @@ export type ParquetServerInfo = {
 /** HTTP(S) server information and controls, @see HttpHelpers.createHttpServer */
 export interface HttpServer {
   /** Server configuration information for initiating connections from clients */
-  get info(): ParquetServerInfo;
+  get info(): HttpServerInfo;
   /** Promise that resolves when the server is stopped */
   get stopped(): Promise<void>;
   /** Request server stop, returns the same promise as @see HttpServer.stopped */
