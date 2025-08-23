@@ -10,9 +10,7 @@ import {
 } from '@milaboratories/pl-model-common';
 import {
   HttpHelpers,
-  HttpAuthorizationToken,
-  ObjectStoreUrl,
-  PemCertificate,
+  ParquetServerInfo,
 } from './http_helpers';
 
 /** Abstract identifier of a data blob that can be requested from the storage backend */
@@ -22,18 +20,6 @@ export type PFrameBlobId = string;
 /** Path of the file containing requested data (blob). This path is returned by
  * {@link BlobPathResolver} as soon as blob materialized in the file system. */
 export type FilePath = string;
-
-/** Parquet HTTP(S) server connection settings, {@link HttpHelpers.createHttpServer} */
-export type ParquetServerConfig = {
-  /** URL of the parquet HTTP(S) server */
-  url: ObjectStoreUrl;
-
-  /** Authorization token for Bearer scheme */
-  authToken?: HttpAuthorizationToken;
-
-  /** CA certificate of HTTPS server */
-  caCert?: Base64Encoded<PemCertificate>;
-};
 
 /** Data source allows PFrame to retrieve the data blobs for columns with assigned data info. */
 export interface PFrameDataSourceV2 {
@@ -51,7 +37,7 @@ export interface PFrameDataSourceV2 {
    * Parquet HTTP(S) server connection settings, {@link HttpHelpers.createHttpServer}
    * When not provided, parquet BlobIds would be treated as local file paths.
    */
-  parquetServer?: ParquetServerConfig;
+  parquetServer?: ParquetServerInfo;
 }
 
 /**
