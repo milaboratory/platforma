@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.8.19
+
+### Patch Changes
+
+- f5bcdbe: Improved PFrames HttpServer interface
+
 ## 1.8.18
 
 ### Patch Changes
