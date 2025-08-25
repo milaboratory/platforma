@@ -66,28 +66,26 @@ export function prepareDockerOptions(logger: winston.Logger, packageRoot: string
     options.pkg = buildParams.pkg;
   }
 
+  if (!buildParams.root) {
+    throw new Error('Cannot prepare Docker options: package root directory is not specified. Please ensure the "root" property is set in the build parameters.');
+  }
+  const contextDir = path.resolve(buildParams.root ?? packageRoot);
+
+  options.requirements = path.join(contextDir, options.requirements);
+  const hasRequirements = fs.existsSync(options.requirements);
+
+  if (!hasRequirements) {
+    // If requirements.txt doesn't exist, create an empty one
+    fs.writeFileSync(options.requirements, '# No dependencies specified\n');
+    logger.info(`Created empty requirements.txt at: ${options.requirements}`);
+  }
+  // If requirements.txt exists, use relative path for Docker COPY command
+  options.requirements = path.relative(contextDir, options.requirements);
+
   // Generate a temporary directory for the Dockerfile
   const tmpDir = path.join(packageRoot, 'dist', 'docker');
   fs.mkdirSync(tmpDir, { recursive: true });
   logger.info(`Created temporary Docker directory: ${tmpDir}`);
-
-  options.requirements = path.join(packageRoot, options.requirements);
-  const hasRequirements = fs.existsSync(options.requirements);
-
-  // If requirements.txt exists, use relative path for Docker COPY command
-  if (hasRequirements) {
-    options.requirements = path.relative(packageRoot, options.requirements);
-  } else {
-    // If requirements.txt doesn't exist, create an empty one
-    const emptyRequirementsPath = path.join(packageRoot, 'requirements.txt');
-    if (!fs.existsSync(emptyRequirementsPath)) {
-      fs.writeFileSync(emptyRequirementsPath, '# No dependencies specified\n');
-      logger.info(`Created empty requirements.txt at: ${emptyRequirementsPath}`);
-    }
-
-    // Use relative path to empty requirements.txt for Docker COPY command
-    options.requirements = path.relative(packageRoot, emptyRequirementsPath);
-  }
 
   const dockerfile = {
     content: generatePythonDockerfileContent(options),
@@ -99,7 +97,7 @@ export function prepareDockerOptions(logger: winston.Logger, packageRoot: string
 
   const result: DockerOptions = {
     dockerfile: dockerfile.path,
-    context: path.resolve(buildParams.root ?? packageRoot),
+    context: contextDir,
     entrypoint: [],
     pkg: options.pkg,
   };
