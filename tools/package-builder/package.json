@@ -17,7 +17,8 @@
   "files": [
     "bin/run.cmd",
     "bin/run.mjs",
-    "dist"
+    "dist",
+    "assets"
   ],
   "keywords": [],
   "license": "UNLICENSED",
