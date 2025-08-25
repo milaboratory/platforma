@@ -68,6 +68,9 @@ function dockerfileFullPath(packageRoot: string, pkg: DockerPackage): string {
 }
 
 function contextFullPath(packageRoot: string, pkg: DockerPackage): string {
+  if (pkg.context === './' || pkg.context === '.') {
+    throw new Error(`Invalid Docker context: "${pkg.context}". Context cannot be "./" or "." - use absolute path or relative path without "./" prefix`);
+  }
   return path.resolve(packageRoot, pkg.context ?? '.');
 }
 
@@ -81,9 +84,8 @@ function contentHash(contextFullPath: string, dockerfileFullPath: string): strin
   }
 
   const contextHash = util.hashDirMetaSync(contextFullPath);
-  const statInfo = fs.statSync(dockerfileFullPath);
-  const fileInfo = `${dockerfileFullPath}:${statInfo.size}:${statInfo.mtimeMs}`;
-  contextHash.update(fileInfo);
+  const dockerfileContent = fs.readFileSync(dockerfileFullPath, 'utf8');
+  contextHash.update(dockerfileContent);
 
   return contextHash.digest('hex').slice(0, 12);
 }

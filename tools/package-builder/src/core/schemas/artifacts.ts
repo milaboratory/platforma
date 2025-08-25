@@ -15,12 +15,18 @@ export const buildableTypes: artifactType[] = [
 ] as const;
 export const crossplatformTypes: artifactType[] = ['asset', 'java', 'python', 'R'] as const;
 
+export const dockerRequiredTypes: artifactType[] = ['python'] as const;
+
 export function isBuildable(aType: artifactType): boolean {
   return buildableTypes.includes(aType);
 }
 
 export function isCrossPlatform(aType: artifactType): boolean {
   return crossplatformTypes.includes(aType);
+}
+
+export function isDockerRequired(aType: artifactType): boolean {
+  return dockerRequiredTypes.includes(aType);
 }
 
 export const runEnvironmentTypes = ['java', 'python', 'R'] as const;
@@ -118,7 +124,8 @@ export const pythonToolsetSchema = z.discriminatedUnion('toolset', [pipToolsetSc
 export const pythonPackageSchema = archiveRulesSchema.extend({
   type: z.literal('python'),
   environment: artifactIDSchema,
-  dependencies: pythonToolsetSchema,
+  dependencies: pythonToolsetSchema.optional(),
+  pkg: z.string().optional().describe('custom working directory in Docker container (default: /app/)'),
 });
 export type pythonPackageConfig = z.infer<typeof pythonPackageSchema>;
 
@@ -140,12 +147,15 @@ export const dockerPackageSchema = archiveRulesSchema.extend({
   registry: registryOrRef.optional(),
 
   // build from custom Dockerfile
-  context: z.string().describe('relative path to context directory from folder where command is executed or absolute path to context folder'),
+  context: z.string()
+    .refine((val) => val !== './' && val !== '.', {
+      message: 'Context cannot be "./" or "." - use absolute path or relative path without "./" prefix',
+    })
+    .describe('relative path to context directory from folder where command is executed or absolute path to context folder (cannot be "./" or ".")'),
   dockerfile: z.string().optional().describe('relative path to \'Dockerfile\' file from folder where command is executed or absolute path to the file'),
 
-  // build from existing image. not used yet
-  tag: z.string().optional().describe('name of the image to be built instead of custom one'),
   entrypoint: z.array(z.string()).optional().describe('entrypoint command to be run in the container'),
+  pkg: z.string().optional().describe('custom working directory in Docker container (only for Python packages)'),
 });
 export type dockerPackageConfig = z.infer<typeof dockerPackageSchema>;
 

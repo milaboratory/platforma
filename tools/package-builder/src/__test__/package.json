@@ -24,7 +24,7 @@
             "artifact": {
               "type": "docker",
               "dockerfile": "Dockerfile",
-              "context": "."
+              "context": "docker-context"
             },
             "cmd": ["echo", "hello"]
           }
