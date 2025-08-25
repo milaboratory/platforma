@@ -198,15 +198,6 @@ export class Core {
       } else {
         await this.buildPackage(pkg, util.currentPlatform(), options);
       }
-
-      const dockerPkg = this.packages.get(dockerEntrypointName(pkg.id));
-      if (!dockerPkg) {
-        continue;
-      }
-
-      if (dockerPkg.type === 'docker') {
-        this.buildDockerImage(dockerPkg);
-      }
     }
   }
 
