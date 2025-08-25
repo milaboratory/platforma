@@ -10,7 +10,7 @@ import {
 } from '@milaboratories/pl-model-common';
 import {
   HttpHelpers,
-  ParquetServerInfo,
+  HttpServerInfo,
 } from './http_helpers';
 
 /** Abstract identifier of a data blob that can be requested from the storage backend */
@@ -37,7 +37,7 @@ export interface PFrameDataSourceV2 {
    * Parquet HTTP(S) server connection settings, {@link HttpHelpers.createHttpServer}
    * When not provided, parquet BlobIds would be treated as local file paths.
    */
-  parquetServer?: ParquetServerInfo;
+  parquetServer?: HttpServerInfo;
 }
 
 /**
