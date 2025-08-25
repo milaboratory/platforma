@@ -1,5 +1,11 @@
 # @platforma-sdk/package-builder
 
+## 3.0.1
+
+### Patch Changes
+
+- ae004b6: fix: docker build multiple times
+
 ## 3.0.0
 
 ### Major Changes
