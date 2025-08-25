@@ -1,5 +1,11 @@
 # @platforma-sdk/package-builder
 
+## 3.0.0
+
+### Major Changes
+
+- c48db40: support python docker container
+
 ## 2.18.0
 
 ### Minor Changes
