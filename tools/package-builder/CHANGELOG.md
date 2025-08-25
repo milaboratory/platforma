@@ -1,5 +1,11 @@
 # @platforma-sdk/package-builder
 
+## 3.0.2
+
+### Patch Changes
+
+- ea71001: Add lost 'assets' dir to package-builder npm package
+
 ## 3.0.1
 
 ### Patch Changes
