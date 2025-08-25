@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.8.21
+
+### Patch Changes
+
+- f848ca0: PFrames http object store - documentation for abort response
+
 ## 1.8.20
 
 ### Patch Changes
