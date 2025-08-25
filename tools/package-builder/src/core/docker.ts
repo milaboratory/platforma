@@ -68,6 +68,9 @@ function dockerfileFullPath(packageRoot: string, pkg: DockerPackage): string {
 }
 
 function contextFullPath(packageRoot: string, pkg: DockerPackage): string {
+  if (pkg.context === './' || pkg.context === '.') {
+    throw new Error(`Invalid Docker context: "${pkg.context}". Context cannot be "./" or "." - use absolute path or relative path without "./" prefix`);
+  }
   return path.resolve(packageRoot, pkg.context ?? '.');
 }
 

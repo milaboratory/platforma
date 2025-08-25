@@ -147,7 +147,11 @@ export const dockerPackageSchema = archiveRulesSchema.extend({
   registry: registryOrRef.optional(),
 
   // build from custom Dockerfile
-  context: z.string().describe('relative path to context directory from folder where command is executed or absolute path to context folder'),
+  context: z.string()
+    .refine((val) => val !== './' && val !== '.', {
+      message: 'Context cannot be "./" or "." - use absolute path or relative path without "./" prefix',
+    })
+    .describe('relative path to context directory from folder where command is executed or absolute path to context folder (cannot be "./" or ".")'),
   dockerfile: z.string().optional().describe('relative path to \'Dockerfile\' file from folder where command is executed or absolute path to the file'),
 
   entrypoint: z.array(z.string()).optional().describe('entrypoint command to be run in the container'),
