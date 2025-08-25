@@ -20,20 +20,8 @@ const mockLogger = {
   error: vi.fn(),
 } as unknown as winston.Logger;
 
-// Mock Python package for testing
-const mockPythonPackage: PythonPackage = {
-  name: 'test-python-package',
-  version: '1.0.0',
-  type: 'python',
-  environment: '@platforma-open/milaboratories.runenv-python-3:3.12.6',
-  registry: { name: 'test' },
-  root: undefined, // Remove the root property to use packageRoot as fallback
-  contentRoot: () => './src',
-  crossplatform: false,
-  isMultiroot: false,
-  fullName: () => 'test-python-package-1.0.0',
-  namePattern: 'test-python-package-1.0.0-{os}-{arch}',
-};
+// Mock Python package for testing - will be set in beforeEach
+let mockPythonPackage: PythonPackage;
 
 describe('Docker Python Functions', () => {
   let tempDir: string;
@@ -50,8 +38,26 @@ describe('Docker Python Functions', () => {
 
     fs.mkdirSync(testPackageRoot, { recursive: true });
 
+    // Create src directory for the root property
+    fs.mkdirSync(path.join(testPackageRoot, 'src'), { recursive: true });
+
     // Create a mock requirements.txt file
     fs.writeFileSync(path.join(testPackageRoot, 'requirements.txt'), 'requests>=2.25.0\n');
+
+    // Initialize mockPythonPackage with absolute path
+    mockPythonPackage = {
+      name: 'test-python-package',
+      version: '1.0.0',
+      type: 'python',
+      environment: '@platforma-open/milaboratories.runenv-python-3:3.12.6',
+      registry: { name: 'test' },
+      root: path.join(testPackageRoot, 'src'), // Use absolute path
+      contentRoot: () => './src',
+      crossplatform: false,
+      isMultiroot: false,
+      fullName: () => 'test-python-package-1.0.0',
+      namePattern: 'test-python-package-1.0.0-{os}-{arch}',
+    };
 
     // Clear all mocks
     vi.clearAllMocks();
@@ -115,6 +121,7 @@ describe('Docker Python Functions', () => {
       const packageWithoutVersion: PythonPackage = {
         ...mockPythonPackage,
         environment: '@platforma-open/milaboratories.runenv-python-3',
+        root: path.join(testPackageRoot, 'src'), // Use absolute path
       };
 
       const result = prepareDockerOptions(mockLogger, testPackageRoot, 'test-package', packageWithoutVersion);
@@ -148,8 +155,8 @@ describe('Docker Python Functions', () => {
       expect(dockerfileContent).toContain('COPY');
       expect(dockerfileContent).toContain('RUN pip install --no-cache-dir -r requirements.txt');
 
-      // Check that empty requirements.txt was created in package root (not in dist/docker)
-      const emptyRequirementsPath = path.join(testPackageRoot, 'requirements.txt');
+      // Check that empty requirements.txt was created in context directory (src)
+      const emptyRequirementsPath = path.join(testPackageRoot, 'src', 'requirements.txt');
       expect(fs.existsSync(emptyRequirementsPath)).toBe(true);
       const emptyRequirementsContent = fs.readFileSync(emptyRequirementsPath, 'utf-8');
       expect(emptyRequirementsContent).toContain('# No dependencies specified');
