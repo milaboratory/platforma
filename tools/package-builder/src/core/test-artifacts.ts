@@ -94,7 +94,7 @@ export const PackageJson = `{
             "artifact": {
               "type": "docker",
               "dockerfile": "Dockerfile",
-              "context": ".",
+              "context": "docker-context",
               "entrypoint": ["/usr/bin/env", "printf"]
             },
             "cmd": ["echo", "hello"]
@@ -105,7 +105,7 @@ export const PackageJson = `{
             "artifact": {
               "type": "docker",
               "dockerfile": "Dockerfile",
-              "context": ".",
+              "context": "docker-context",
               "entrypoint": ["/usr/bin/env", "printf"]
             },
             "cmd": ["echo", "hello"]

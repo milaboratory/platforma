@@ -104,6 +104,7 @@ describe('Renderer tests', () => {
     const envEpName = artifacts.EPNameJavaEnvironment;
 
     fs.mkdirSync(path.join(i.packageRoot, i.packageRoot), { recursive: true });
+    fs.mkdirSync(path.join(i.packageRoot, 'docker-context'), { recursive: true });
     fs.writeFileSync(path.join(i.packageRoot, 'Dockerfile'), 'FROM scratch');
     fs.writeFileSync(path.join(i.packageRoot, 'package.json'), artifacts.PackageJson);
 

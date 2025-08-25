@@ -24,6 +24,7 @@ const dockerSchema = z.object({
   tag: z.string().describe('name of the image to be built instead of custom one'),
   entrypoint: z.array(z.string()).describe('entrypoint command to be run in the container'),
   cmd: z.array(z.string()).describe('command to be run in the container'),
+  pkg: z.string().optional().describe('custom working directory in Docker container (only for Python packages)'),
 });
 type dockerInfo = z.infer<typeof dockerSchema>;
 
@@ -89,6 +90,7 @@ const binaryPackageSettingsSchema = z.object({
   ...anyPackageSettingsSchema.shape,
 
   runEnv: z.undefined(),
+  pkg: z.string().optional().describe('custom working directory in Docker container (default: /app)'),
 });
 
 const javaPackageSettingsSchema = z.object({
@@ -110,6 +112,7 @@ const pythonPackageSettingsSchema = z.object({
     .describe(
       'paths of files that describe dependencies for given toolset: say, requirements.txt for \'pip\'',
     ),
+  pkg: z.string().optional().describe('custom working directory in Docker container (default: /app)'),
 });
 
 const rPackageSettingsSchema = z.object({
@@ -459,7 +462,7 @@ export class Renderer {
             };
           }
           case 'python': {
-            const { toolset, ...deps } = pkg.dependencies;
+            const { toolset, ...deps } = pkg.dependencies ?? {};
 
             return {
               type: 'python',
@@ -468,7 +471,7 @@ export class Renderer {
               cmd: ep.cmd,
               envVars: ep.env,
               runEnv: this.resolveRunEnvironment(pkg.environment, pkg.type),
-              toolset: toolset,
+              toolset: toolset ?? 'pip',
               dependencies: deps,
             };
           }
@@ -589,7 +592,7 @@ export class Renderer {
             };
           }
           case 'python': {
-            const { toolset, ...deps } = pkg.dependencies;
+            const { toolset, ...deps } = pkg.dependencies ?? {};
 
             return {
               type: 'python',
@@ -599,7 +602,7 @@ export class Renderer {
               cmd: ep.cmd,
               envVars: ep.env,
               runEnv: this.resolveRunEnvironment(pkg.environment, pkg.type),
-              toolset: toolset,
+              toolset: toolset ?? 'pip',
               dependencies: deps,
             };
           }
@@ -731,6 +734,7 @@ export class Renderer {
       tag: tag,
       entrypoint: pkg.entrypoint ?? [],
       cmd: ep.cmd,
+      pkg: pkg.pkg,
     };
   }
 

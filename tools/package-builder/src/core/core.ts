@@ -315,7 +315,7 @@ export class Core {
     } else {
       this.logger.info(`    generating package for os='${os}', arch='${arch}'`);
     }
-    this.logger.debug(`    package content root: '${contentRoot} '`);
+    this.logger.debug(`    package content root: '${contentRoot}'`);
     this.logger.debug(`    package destination archive: '${archivePath}'`);
 
     await archive.create(this.logger, contentRoot, archivePath);
