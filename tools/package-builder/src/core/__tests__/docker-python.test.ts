@@ -27,7 +27,7 @@ const mockPythonPackage: PythonPackage = {
   type: 'python',
   environment: '@platforma-open/milaboratories.runenv-python-3:3.12.6',
   registry: { name: 'test' },
-  root: './src',
+  root: undefined, // Remove the root property to use packageRoot as fallback
   contentRoot: () => './src',
   crossplatform: false,
   isMultiroot: false,
@@ -148,8 +148,8 @@ describe('Docker Python Functions', () => {
       expect(dockerfileContent).toContain('COPY');
       expect(dockerfileContent).toContain('RUN pip install --no-cache-dir -r requirements.txt');
 
-      // Check that empty requirements.txt was created in dist/docker directory
-      const emptyRequirementsPath = path.join(testPackageRoot, 'dist', 'docker', 'requirements.txt');
+      // Check that empty requirements.txt was created in package root (not in dist/docker)
+      const emptyRequirementsPath = path.join(testPackageRoot, 'requirements.txt');
       expect(fs.existsSync(emptyRequirementsPath)).toBe(true);
       const emptyRequirementsContent = fs.readFileSync(emptyRequirementsPath, 'utf-8');
       expect(emptyRequirementsContent).toContain('# No dependencies specified');
