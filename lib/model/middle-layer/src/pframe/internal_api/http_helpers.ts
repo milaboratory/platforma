@@ -66,7 +66,10 @@ export type HttpMethod = 'GET' | 'HEAD';
 /** HTTP response from object store */
 export type ObjectStoreResponse =
   | {
-      /** Will be translated to 500 Internal Server Error by the handler */
+      /**
+       * Will be translated to 500 Internal Server Error by the handler
+       * or 408 Request Timeout if the request was aborted
+       */
       type: 'InternalError';
     }
   | {
