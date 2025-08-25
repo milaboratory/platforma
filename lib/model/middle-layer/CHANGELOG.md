@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.8.20
+
+### Patch Changes
+
+- a14b8c8: PFrame http helpers interface update
+
 ## 1.8.19
 
 ### Patch Changes
