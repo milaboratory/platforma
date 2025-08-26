@@ -9,3 +9,9 @@ export const PL_PKG_STORAGE_URL = 'PL_PKG_STORAGE_URL';
 export const PL_PKG_DEV = 'PL_PKG_DEV';
 export const PL_PKG_FULL_HASH = 'PL_PKG_FULL_HASH';
 export const PL_DOCKER_REGISTRY = 'PL_DOCKER_REGISTRY';
+
+export const CI = 'CI';
+
+export function IsCI(): boolean {
+  return process.env[CI] === 'true';
+}

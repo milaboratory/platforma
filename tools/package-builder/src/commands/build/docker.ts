@@ -2,6 +2,7 @@ import { Command } from '@oclif/core';
 import * as cmdOpts from '../../core/cmd-opts';
 import * as util from '../../core/util';
 import { Core } from '../../core/core';
+import * as env from '../../core/envs';
 
 export default class Docker extends Command {
   static override description = 'build docker images';
@@ -25,5 +26,11 @@ export default class Docker extends Command {
     core.buildDockerImages({
       ids: flags['package-id'],
     });
+
+    if (env.IsCI()) {
+      core.publishDockerImages({
+        ids: flags['package-id'],
+      });
+    }
   }
 }
