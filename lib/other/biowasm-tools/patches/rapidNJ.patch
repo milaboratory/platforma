@@ -1,0 +1,268 @@
+diff --git Makefile Makefile
+index 4ef7ec4..2a5ceac 100644
+--- Makefile
++++ Makefile
+@@ -12,13 +12,13 @@ LINKER_COMMANDS =-out:
+ LIBRARIES = pthreadVC2S.lib
+ INCLUDES= -Isrc/distanceCalculation -Isrc/ -Ilib/includes
+ else
+-CC = g++
+-LINK = g++
++CC = em++
++LINK = em++
+ OPTIMIZATION_LEVEL=-O3 -msse2
+ DEBUG= #-Wall #-g #-pg
+ OBJECTFLAG =-o
+ COMPILEFLAG =-c
+-LIBRARIES =-lpthread
++LIBRARIES =
+ SWITCHES =
+ LINK_OPTIONS = $(SWITCHES)
+ LINKER_COMMANDS =-o 
+@@ -45,7 +45,7 @@ all: rapidnj
+ 64 : all
+ 
+ rapidnj: $(objects)
+-	$(LINK) $(DEBUG) $(LINK_OPTIONS) $(LINKER_COMMANDS) $(BINPATH)/$@ $+ $(LIBRARIES)
++	$(LINK) $(DEBUG) $(LINK_OPTIONS) $(LINKER_COMMANDS) $(BINPATH)/$@.js $+ $(LIBRARIES)
+ 
+ # compile to objectfiles
+ $(OBJPATH)/%.o: $(SRCPATH)/%.cpp
+diff --git src/diskMatrix.h src/diskMatrix.h
+index 97e4d1b..642caeb 100644
+--- src/diskMatrix.h
++++ src/diskMatrix.h
+@@ -31,7 +31,6 @@ class diskMatrix {
+   string* file_names;
+   int rowsPerFile;
+   int numberOfFiles;  
+-  pthread_t thread;
+ };
+ 
+ #endif
+diff --git src/distanceCalculation/JCdistance.cpp src/distanceCalculation/JCdistance.cpp
+index 099ed9f..d5f332f 100644
+--- src/distanceCalculation/JCdistance.cpp
++++ src/distanceCalculation/JCdistance.cpp
+@@ -2,7 +2,6 @@
+ #include <math.h>
+ #include <fstream>
+ #include <math.h>
+-#include <pthread.h>
+ #include <sched.h>
+ #include "simpleDistanceCalculator.hpp"
+ #include "bitDistanceGap.hpp"
+@@ -91,7 +90,6 @@ DistanceEstimate* JCdistance::getDistanceEstimateInstance(dataloader* loader) {
+ 
+ void JCdistance::computeDistanceMatrixMT(int numThreads) {   
+   // Start threads
+-  pthread_t* threads = new pthread_t[numThreads];
+   threadStateJC** threadStates = new threadStateJC*[numThreads];
+   //start threads
+   for (int i = 0; i < numThreads; i++) {
+@@ -105,12 +103,8 @@ void JCdistance::computeDistanceMatrixMT(int numThreads) {
+     threadStates[i]->dm = dm;
+     threadStates[i]->availableBuffers = THREAD_ROW_BUFFER_COUNT;
+     threadStates[i]->estimator = getDistanceEstimateInstance(loader); 
+-    if(pthread_mutex_init(&threadStates[i]->mutex, NULL)) {
+-      cerr << "Could not create mutex" << endl;
+-      exit(1);
+-  }    
+     //ret = pthread_create(&threads[i], &thread_attr, JCdistance::distJCThread, (void*)threadStates[i]);
+-    pthread_create(&threads[i], NULL, JCdistance::distJCThread, (void*)threadStates[i]);
++    JCdistance::distJCThread(threadStates[i]);
+   }
+   if(dm != NULL) {
+     for(int i = 0; i < seqCount; i++) {
+@@ -118,28 +112,23 @@ void JCdistance::computeDistanceMatrixMT(int numThreads) {
+       while(threadStates[threadIdx]->availableBuffers == THREAD_ROW_BUFFER_COUNT) {
+         //busy wait
+       }      
+-      pthread_mutex_lock(&threadStates[threadIdx]->mutex);
+       int bufIdx = i % (numThreads * THREAD_ROW_BUFFER_COUNT);
+       //write data
+       dm->writeArray(jcDistMatrix[bufIdx], i, seqCount);
+       threadStates[threadIdx]->availableBuffers++;
+-      pthread_mutex_unlock(&threadStates[threadIdx]->mutex);
+     }
+   }
+   for (int i = 0; i < numThreads; i++) {
+-    pthread_join(threads[i], NULL);
+     if(maxDistance < threadStates[i]->maxDistance){
+       maxDistance = threadStates[i]->maxDistance;
+     }    
+   }
+ 
+   for (int i = 0; i < numThreads; i++) {
+-    pthread_mutex_destroy(&threadStates[i]->mutex);
+     delete threadStates[i]->estimator;
+     delete threadStates[i];    
+   }
+   delete[] threadStates;
+-  delete[] threads;
+   
+   postProcessDistanceMatrix();
+ }
+@@ -187,9 +176,7 @@ void* JCdistance::distJCThread(void* ptr) {
+       jcDistMatrix[bufIdx][j] = distance;	  
+     }	
+     if(state->dm != NULL) {
+-      pthread_mutex_lock(&state->mutex);
+       state->availableBuffers--;
+-      pthread_mutex_unlock(&state->mutex);
+     }
+   }
+   state->maxDistance = maxDistance;
+diff --git src/distanceCalculation/JCdistance.hpp src/distanceCalculation/JCdistance.hpp
+index f1761c4..4001de2 100644
+--- src/distanceCalculation/JCdistance.hpp
++++ src/distanceCalculation/JCdistance.hpp
+@@ -47,6 +47,5 @@ struct threadStateJC{
+   diskMatrix* dm;
+   volatile int availableBuffers;
+   DistanceEstimate* estimator;
+-  pthread_mutex_t mutex;
+ };
+ #endif
+diff --git src/distanceCalculation/KimuraDistance.cpp src/distanceCalculation/KimuraDistance.cpp
+index 86f6c53..e03c46c 100644
+--- src/distanceCalculation/KimuraDistance.cpp
++++ src/distanceCalculation/KimuraDistance.cpp
+@@ -3,7 +3,6 @@
+ #include <math.h>
+ #include <fstream>
+ #include <math.h>
+-#include <pthread.h>
+ #include <sched.h>
+ #include <errno.h>
+ #include "bitDistanceGap.hpp"
+@@ -243,7 +242,6 @@ void KimuraDistance::computeDistanceMatrixMT(int numThreads) {
+   */
+ 
+   // Start threads
+-  pthread_t* threads = new pthread_t[numThreads];
+   threadStateKimura** threadStates = new threadStateKimura*[numThreads];
+   //start threads
+   for (int i = 0; i < numThreads; i++) {
+@@ -256,12 +254,8 @@ void KimuraDistance::computeDistanceMatrixMT(int numThreads) {
+     threadStates[i]->distanceCalculator = getDistanceEstimateInstance(loader);
+     threadStates[i]->availableBuffers = THREAD_ROW_BUFFER_COUNT;
+     threadStates[i]->dm = dm;
+-    if(pthread_mutex_init(&threadStates[i]->mutex, NULL)) {
+-    cerr << "Could not create mutex" << endl;
+-    exit(1);
+-  }
+    
+-    pthread_create(&threads[i], NULL, KimuraDistance::distThread, (void*)threadStates[i]);
++    KimuraDistance::distThread(threadStates[i]);
+   }
+ 
+   if(dm != NULL) {    
+@@ -271,16 +265,13 @@ void KimuraDistance::computeDistanceMatrixMT(int numThreads) {
+         //busy wait
+       }
+       //cerr << threadIdx << " " << i << ": " << threadStates[threadIdx]->availableBuffers << endl;
+-      pthread_mutex_lock(&threadStates[threadIdx]->mutex);
+       int bufIdx = i % (numThreads * THREAD_ROW_BUFFER_COUNT);
+       //write data
+       dm->writeArray(distMatrix[bufIdx], i, seqCount);      
+       threadStates[threadIdx]->availableBuffers++;
+-      pthread_mutex_unlock(&threadStates[threadIdx]->mutex);
+     }   
+   }
+   for (int i = 0; i < numThreads; i++) {
+-    pthread_join(threads[i], NULL);
+     if(maxDistance < threadStates[i]->maxDistance){
+       maxDistance = threadStates[i]->maxDistance;
+     }    
+@@ -288,12 +279,10 @@ void KimuraDistance::computeDistanceMatrixMT(int numThreads) {
+   postProcessDistanceMatrix();
+   
+   for (int i = 0; i < numThreads; i++) {
+-    pthread_mutex_destroy(&threadStates[i]->mutex);
+     delete threadStates[i]->distanceCalculator;
+     delete threadStates[i];    
+   }
+   delete[] threadStates;
+-  delete[] threads;  
+ }
+ 
+ // thread entry point
+@@ -353,9 +342,7 @@ void* KimuraDistance::distThread(void* ptr) {
+       distMatrix[bufIdx][j] = distance;
+     }
+     if(state->dm != NULL) {
+-      pthread_mutex_lock(&state->mutex);
+       state->availableBuffers--;
+-      pthread_mutex_unlock(&state->mutex);
+     }
+ 
+   }
+diff --git src/distanceCalculation/KimuraDistance.hpp src/distanceCalculation/KimuraDistance.hpp
+index 60b7cc5..3de7794 100644
+--- src/distanceCalculation/KimuraDistance.hpp
++++ src/distanceCalculation/KimuraDistance.hpp
+@@ -50,6 +50,5 @@ struct threadStateKimura{
+   DistanceEstimate* distanceCalculator;
+   volatile int availableBuffers;
+   diskMatrix* dm;
+-  pthread_mutex_t mutex;
+ };
+ #endif
+diff --git src/distanceCalculation/bitDistanceGap.cpp src/distanceCalculation/bitDistanceGap.cpp
+index 40b8c93..b86adde 100644
+--- src/distanceCalculation/bitDistanceGap.cpp
++++ src/distanceCalculation/bitDistanceGap.cpp
+@@ -1,6 +1,5 @@
+ #include "bitDistanceGap.hpp"
+ #include <math.h>
+-#include <pthread.h>
+ #include "bitStringUtils.hpp"
+ 
+ v4ui bitDistanceGap::mask1 = _mm_set_epi32(0x55555555,0x55555555,0x55555555,0x55555555);
+diff --git src/stdinclude.h src/stdinclude.h
+index 2b8f6d3..dd84160 100644
+--- src/stdinclude.h
++++ src/stdinclude.h
+@@ -8,7 +8,6 @@
+ #include <cstring>
+ #include <emmintrin.h>
+ #include <vector>
+-#include "pthread.h"
+ #include "ProgressBar.hpp"
+ 
+ #if defined _WIN32 || defined _WIN64
+diff --git src/threadedNJ.cpp src/threadedNJ.cpp
+index 55ab30b..ada1f81 100644
+--- src/threadedNJ.cpp
++++ src/threadedNJ.cpp
+@@ -2,7 +2,6 @@
+ 
+ #include "stdinclude.h"
+ #include "threadedNJ.h"
+-#include <pthread.h>
+ #include <sched.h>
+ #include "minFinder.h"
+ #include "float.h"
+@@ -17,7 +16,6 @@ int matrixSize;
+ int clusterCount;
+ threadState * state1;
+ threadState * state2;
+-pthread_attr_t attrib1;
+ sched_param s_param;
+ 
+ threadedNJ::threadedNJ(datareader* reader) {
+@@ -133,11 +131,8 @@ void threadedNJ::mergeMinNodes(){
+ }
+ 
+ void threadedNJ::findMin() {
+-  pthread_t thread1, thread2;
+-  pthread_create( &thread1, NULL, threadedNJ::njThread, (void*) state1);
+-  pthread_create( &thread2, NULL, threadedNJ::njThread, (void*) state2);  
+-  pthread_join(thread1, NULL);
+-  pthread_join(thread2, NULL);
++  threadedNJ::njThread(state1);
++  threadedNJ::njThread(state2);  
+   if(state1->min < state2->min){
+     min1 = state1->min1;
+     min2 = state1->min2;
