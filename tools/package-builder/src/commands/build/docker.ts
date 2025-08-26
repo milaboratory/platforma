@@ -2,7 +2,6 @@ import { Command } from '@oclif/core';
 import * as cmdOpts from '../../core/cmd-opts';
 import * as util from '../../core/util';
 import { Core } from '../../core/core';
-import * as env from '../../core/envs';
 
 export default class Docker extends Command {
   static override description = 'build docker images';
@@ -12,6 +11,7 @@ export default class Docker extends Command {
     ...cmdOpts.BuildFlags,
     ...cmdOpts.VersionFlag,
     ...cmdOpts.PackageIDFlag,
+    ...cmdOpts.DockerFlags,
   };
 
   public async run(): Promise<void> {
@@ -27,7 +27,7 @@ export default class Docker extends Command {
       ids: flags['package-id'],
     });
 
-    if (env.IsCI()) {
+    if (!flags['no-docker-push']) {
       core.publishDockerImages({
         ids: flags['package-id'],
       });

@@ -2,7 +2,6 @@ import { Command } from '@oclif/core';
 import * as cmdOpts from '../../core/cmd-opts';
 import * as util from '../../core/util';
 import { Core } from '../../core/core';
-import * as env from '../../core/envs';
 
 export default class BuildAll extends Command {
   static override description
@@ -17,6 +16,7 @@ export default class BuildAll extends Command {
     ...cmdOpts.BuildFlags,
     ...cmdOpts.PlatformFlags,
     ...cmdOpts.VersionFlag,
+    ...cmdOpts.DockerFlags,
 
     ...cmdOpts.EntrypointNameFlag,
     ...cmdOpts.PackageIDFlag,
@@ -54,7 +54,7 @@ export default class BuildAll extends Command {
         skipIfEmpty: flags['package-id'] ? false : true, // do not skip 'non-binary' packages if their IDs were set as args
       });
 
-      if (env.IsCI()) {
+      if (!flags['no-docker-push']) {
         // TODO: as we do not create content-addressable archives for binary packages, we should not upload them
         //       for each build to not spoil release process with dev archives cached by CDN.
         //       once we support content-addressable archives, we can switch this to all packages publishing.
