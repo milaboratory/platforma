@@ -18,7 +18,7 @@ import type {
   PTableColumnId,
 } from '@platforma-sdk/model';
 import { computed, ref, watchEffect } from 'vue';
-import { defaultAlignmentParams } from './multi-sequence-alignment';
+import { defaultSettings } from './settings';
 
 const { settings } = defineProps<{
   settings: Settings;
@@ -42,7 +42,7 @@ function updateSetting<K extends keyof Settings>(
 }
 
 function toggleWidget(
-  widget: 'seqLogo' | 'consensus' | 'legend',
+  widget: 'seqLogo' | 'consensus' | 'tree' | 'legend',
   checked: boolean,
 ) {
   updateSetting(
@@ -63,7 +63,7 @@ const alignmentParamsChangesPending = computed(() =>
 );
 
 const canResetAlignmentParams = computed(() =>
-  !isJsonEqual(settings.alignmentParams, defaultAlignmentParams),
+  !isJsonEqual(settings.alignmentParams, defaultSettings.alignmentParams),
 );
 </script>
 
@@ -116,7 +116,12 @@ const canResetAlignmentParams = computed(() =>
           Consensus
         </PlCheckbox>
         <PlCheckbox :model-value="false" disabled>Navigator</PlCheckbox>
-        <PlCheckbox :model-value="false" disabled>Tree</PlCheckbox>
+        <PlCheckbox
+          :model-value="settings.widgets.includes('tree')"
+          @update:model-value="toggleWidget('tree', $event)"
+        >
+          Tree
+        </PlCheckbox>
         <PlCheckbox
           :model-value="settings.widgets.includes('legend')"
           :disabled="settings.colorScheme.type === 'no-color'"

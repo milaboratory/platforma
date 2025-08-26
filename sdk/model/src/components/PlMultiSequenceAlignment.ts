@@ -20,7 +20,7 @@ export interface PlMultiSequenceAlignmentSettings {
   sequenceColumnIds?: PObjectId[];
   labelColumnIds?: PTableColumnId[];
   colorScheme: PlMultiSequenceAlignmentColorSchemeOption;
-  widgets: ('consensus' | 'seqLogo' | 'legend')[];
+  widgets: ('consensus' | 'seqLogo' | 'tree' | 'legend')[];
   alignmentParams: {
     gpo: number;
     gpe: number;
@@ -36,7 +36,7 @@ export interface PlMultiSequenceAlignmentModel
 export type PlMultiSequenceAlignmentColorSchemeOption =
   | { type: 'no-color' }
   | { type: 'chemical-properties' }
-  | { type: 'markup'; columnId: PObjectId };
+  | { type: 'markup'; columnIds: PObjectId[] };
 
 export function createRowSelectionColumn({
   selection,

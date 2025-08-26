@@ -12,6 +12,7 @@ import {
   useTemplateRef,
   watchEffect,
 } from 'vue';
+import { cellSize } from './cell-size';
 import type { ResidueCounts } from './types';
 import { useMiPlots } from './useMiPlots';
 
@@ -67,7 +68,7 @@ const settings = computed<Settings | undefined>(() => {
       show: false,
     },
     size: {
-      width: residueCounts.length * 20,
+      width: residueCounts.length * cellSize.inline,
       height: 80,
       innerOffset: 0,
       outerOffset: 0,

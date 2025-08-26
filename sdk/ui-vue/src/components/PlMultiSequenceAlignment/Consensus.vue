@@ -12,11 +12,13 @@ import {
   useTemplateRef,
   watchEffect,
 } from 'vue';
+import { cellSize } from './cell-size';
 import type { ResidueCounts } from './types';
 import { useMiPlots } from './useMiPlots';
 
 const { residueCounts } = defineProps<{
   residueCounts: ResidueCounts;
+  labelsClass: string;
 }>();
 
 const plotEl = useTemplateRef('plotEl');
@@ -39,7 +41,7 @@ const columns = computed(() => {
 });
 
 const settings = computed<Settings | undefined>(() => {
-  const width = residueCounts.length * 20;
+  const width = residueCounts.length * cellSize.inline;
   return ({
     type: 'discrete',
     y: {
@@ -105,7 +107,7 @@ const data = computed<DataByColumns>(
     for (const [columnIndex, column] of residueCounts.entries()) {
       for (const [residue, count] of Object.entries(column)) {
         if (residue === '-') continue;
-        countKey.push(residue === ' ' ? 0 : count);
+        countKey.push(count);
         columnKey.push(columnIndex);
       }
     }
@@ -141,7 +143,7 @@ onBeforeUnmount(() => {
     {{ error.message }}
   </PlAlert>
   <div v-else :class="$style.container">
-    <div :class="$style.labels">
+    <div :class="labelsClass">
       {{ columns.map(column => column.label).join('') }}
     </div>
     <div ref="plotEl" />
@@ -153,14 +155,5 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   gap: 4px;
-}
-
-.labels {
-  font-family: Spline Sans Mono;
-  font-weight: 600;
-  line-height: 24px;
-  letter-spacing: 11.6px;
-  text-indent: 5.8px;
-  margin-inline-end: -5.8px;
 }
 </style>

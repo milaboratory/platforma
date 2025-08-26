@@ -1,0 +1,36 @@
+diff --git lib/src/bisectingKmeans.c lib/src/bisectingKmeans.c
+index 704d625..540bc8d 100644
+--- lib/src/bisectingKmeans.c
++++ lib/src/bisectingKmeans.c
+@@ -26,7 +26,6 @@
+ 
+ #ifdef HAVE_AVX2
+ #include <xmmintrin.h>
+-#include <mm_malloc.h>
+ #endif
+ 
+ 
+diff --git lib/src/euclidean_dist.c lib/src/euclidean_dist.c
+index 75efb03..a8d71ba 100644
+--- lib/src/euclidean_dist.c
++++ lib/src/euclidean_dist.c
+@@ -23,7 +23,6 @@
+ #ifdef HAVE_AVX2
+ #include <xmmintrin.h>
+ #include <immintrin.h>
+-#include <mm_malloc.h>
+ #endif
+ 
+ #include "float.h"
+diff --git lib/src/sequence_distance.c lib/src/sequence_distance.c
+index 7d5196b..8773d28 100644
+--- lib/src/sequence_distance.c
++++ lib/src/sequence_distance.c
+@@ -25,7 +25,6 @@
+ #include <stdint.h>
+ #ifdef HAVE_AVX2
+ #include <xmmintrin.h>
+-#include <mm_malloc.h>
+ #endif
+ 
+ #include "msa_struct.h"
