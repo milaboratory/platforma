@@ -1,6 +1,7 @@
 import { isJsonEqual } from '@milaboratories/helpers';
 import type { ListOptionNormalized } from '@milaboratories/uikit';
 import {
+  Annotation,
   type CalculateTableDataRequest,
   type CanonicalizedJson,
   canonicalizeJson,
@@ -23,7 +24,6 @@ import {
   type PTableSorting,
   pTableValue,
   readAnnotation,
-  Annotation,
   readAnnotationJson,
 } from '@platforma-sdk/model';
 import { ref, watch } from 'vue';
@@ -33,7 +33,7 @@ import {
   markupAlignedSequence,
   parseMarkup,
 } from './markup';
-import { multiSequenceAlignment } from './multi-sequence-alignment';
+// import { multiSequenceAlignment } from './multi-sequence-alignment';
 import { getResidueCounts } from './residue-counts';
 import type { HighlightLegend, ResidueCounts } from './types';
 
@@ -127,7 +127,9 @@ async function getLabelColumnsOptions({
   });
 
   for (const { columnId, spec } of compatibleColumns) {
-    const columnIdJson = canonicalizeJson({ type: 'column', id: columnId } satisfies PTableColumnId);
+    const columnIdJson = canonicalizeJson(
+      { type: 'column', id: columnId } satisfies PTableColumnId,
+    );
     if (optionMap.has(columnIdJson)) continue;
     optionMap.set(
       columnIdJson,
@@ -323,17 +325,28 @@ async function getMultipleAlignmentData({
   });
 
   const alignedSequences = await Promise.all(
-    sequenceColumns.map((column) =>
-      multiSequenceAlignment(
-        Array.from(
-          { length: rowCount },
-          (_, row) =>
-            pTableValue(column.data, row, { na: '', absent: '' })?.toString()
-            ?? '',
-        ),
-        alignmentParams,
-      ),
-    ),
+    sequenceColumns.map((column) => {
+      const msaWorker = new Worker(
+        new URL('./multi-sequence-alignment.worker.ts', import.meta.url),
+        { type: 'module' },
+      );
+      const sequences = Array.from(
+        { length: rowCount },
+        (_, row) =>
+          pTableValue(column.data, row, { na: '', absent: '' })?.toString()
+          ?? '',
+      );
+      const { promise, resolve } = Promise.withResolvers<string[]>();
+      msaWorker.addEventListener(
+        'message',
+        ({ data }: MessageEvent<string[]>) => {
+          resolve(data);
+          msaWorker.terminate();
+        },
+      );
+      msaWorker.postMessage({ sequences });
+      return promise;
+    }),
   );
 
   const sequences = Array.from(
@@ -389,7 +402,10 @@ async function getMultipleAlignmentData({
         return markupAlignedSequence(sequences[row][0], markup);
       },
     );
-    const labels = readAnnotationJson(markupColumn.spec.spec, Annotation.Sequence.Annotation.Mapping) ?? {};
+    const labels = readAnnotationJson(
+      markupColumn.spec.spec,
+      Annotation.Sequence.Annotation.Mapping,
+    ) ?? {};
     result.highlightImage = highlightByMarkup({
       markupRows,
       columnCount: concatenatedSequences.at(0)?.length ?? 0,
