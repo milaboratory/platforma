@@ -22,7 +22,7 @@ export function entrypointNameToOrigin(name: string): string {
 
 export function localImageExists(tag: string): boolean {
   const result = spawnSync('docker', ['image', 'ls', '--filter=reference=' + tag, '--format=\'{{.ID}}\''], {
-    stdio: 'inherit',
+    stdio: 'pipe',
     env: {
       ...process.env, // Inherit all environment variables from the parent process
       HOME: process.env.HOME || os.homedir(), // Ensure HOME is set
@@ -33,12 +33,12 @@ export function localImageExists(tag: string): boolean {
     throw result.error;
   }
   if (result.status !== 0) {
-    throw new Error(`docker push failed with status ${result.status}`);
+    throw new Error(`local docker image check failed with status ${result.status}`);
   }
 
   const output = result.stdout.toString().trim();
   if (output.split('\n').length > 1) {
-    throw new Error(`package builder internal logic error: more than one image found by exact tag match: ${output}`);
+    throw new Error(`package-builder internal logic error: more than one image found by exact tag match: ${output}`);
   }
 
   return output !== '';
@@ -46,7 +46,7 @@ export function localImageExists(tag: string): boolean {
 
 export function remoteImageExists(tag: string): boolean {
   const result = spawnSync('docker', ['manifest', 'inspect', tag], {
-    stdio: 'inherit',
+    stdio: 'pipe',
     env: {
       ...process.env, // Inherit all environment variables from the parent process
       HOME: process.env.HOME || os.homedir(), // Ensure HOME is set
@@ -58,22 +58,6 @@ export function remoteImageExists(tag: string): boolean {
   }
 
   return true;
-}
-
-export function pull(tag: string) {
-  const result = spawnSync('docker', ['pull', tag], {
-    stdio: 'inherit',
-    env: {
-      ...process.env, // Inherit all environment variables from the parent process
-      HOME: process.env.HOME || os.homedir(), // Ensure HOME is set
-    },
-  });
-  if (result.error) {
-    throw result.error;
-  }
-  if (result.status !== 0) {
-    throw new Error(`docker push failed with status ${result.status}`);
-  }
 }
 
 export function push(tag: string) {
