@@ -1,35 +1,35 @@
 <script lang="ts" setup>
 import { useObjectUrl } from '@vueuse/core';
-import { computed, useTemplateRef } from 'vue';
+import { computed, useTemplateRef, watchEffect } from 'vue';
 import Consensus from './Consensus.vue';
 import Legend from './Legend.vue';
 import SeqLogo from './SeqLogo.vue';
 import type { HighlightLegend, ResidueCounts } from './types';
 
-const { sequences, highlightImage } = defineProps<{
-  sequences: string[];
-  sequenceNames: string[];
-  labelRows: string[][];
-  residueCounts: ResidueCounts;
-  highlightImage: {
-    blob: Blob;
-    legend: HighlightLegend;
-  } | undefined;
+const { sequences } = defineProps<{
+  sequences: {
+    name: string;
+    rows: string[];
+    residueCounts: ResidueCounts;
+    highlightImage?: Blob;
+  }[];
+  labels: string[][];
+  highlightLegend?: HighlightLegend;
   widgets: ('consensus' | 'seqLogo' | 'legend')[];
 }>();
 
 const rootEl = useTemplateRef('rootRef');
 defineExpose({ rootEl });
 
-const highlightImageObjectUrl = useObjectUrl(() => highlightImage?.blob);
-const highlightImageCssUrl = computed(() =>
-  highlightImageObjectUrl.value
-    ? `url('${highlightImageObjectUrl.value}')`
-    : 'none',
-);
+// const highlightImageObjectUrl = useObjectUrl(() => highlightImage?.blob);
+// const highlightImageCssUrl = computed(() =>
+//   highlightImageObjectUrl.value
+//     ? `url('${highlightImageObjectUrl.value}')`
+//     : 'none',
+// );
 
 const sequenceLengths = computed(() =>
-  sequences.at(0)?.split(' ').map(({ length }) => length),
+  sequences.map(({ rows }) => rows.at(0)?.length),
 );
 </script>
 
@@ -40,9 +40,9 @@ const sequenceLengths = computed(() =>
         <div :class="$style['label-scroll-indicator']" />
       </div>
       <div :class="$style.header">
-        <div v-if="sequenceNames.length > 1" :class="$style['sequence-names']">
+        <div v-if="sequences.length > 1" :class="$style['sequence-names']">
           <span
-            v-for="(name, index) of sequenceNames"
+            v-for="({ name }, index) of sequences"
             :key="index"
             :style="{
               inlineSize: ((sequenceLengths?.at(index) ?? 0) * 20)
@@ -50,12 +50,12 @@ const sequenceLengths = computed(() =>
             }"
           >{{ name }}</span>
         </div>
-        <Consensus v-if="widgets.includes('consensus')" :residue-counts />
-        <SeqLogo v-if="widgets.includes('seqLogo')" :residue-counts />
+        <!-- <Consensus v-if="widgets.includes('consensus')" :residue-counts />
+        <SeqLogo v-if="widgets.includes('seqLogo')" :residue-counts /> -->
       </div>
       <div :class="$style.labels">
         <div :class="$style['labels-grid']">
-          <template v-for="(labelRow, rowIndex) of labelRows">
+          <template v-for="(labelRow, rowIndex) of labels">
             <div
               v-for="(label, labelIndex) of labelRow"
               :key="labelIndex"
@@ -75,10 +75,10 @@ const sequenceLengths = computed(() =>
         </div>
       </div>
     </div>
-    <Legend
+    <!-- <Legend
       v-if="widgets?.includes('legend') && highlightImage?.legend"
       :legend="highlightImage.legend"
-    />
+    /> -->
   </div>
 </template>
 
@@ -105,8 +105,8 @@ const sequenceLengths = computed(() =>
   container-type: inline-size;
   display: grid;
   grid-template-areas:
-    "corner header"
-    "labels sequences";
+    'corner header'
+    'labels sequences';
   justify-content: start;
   timeline-scope: --msa-labels-scroll;
   @media print {
@@ -187,7 +187,7 @@ const sequenceLengths = computed(() =>
   letter-spacing: 11.6px;
   text-indent: 5.8px;
   margin-inline-end: -5.8px;
-  background-image: v-bind(highlightImageCssUrl);
+  /*background-image: v-bind(highlightImageCssUrl);*/
   background-repeat: no-repeat;
   background-size: calc(100% - 5.8px) 100%;
 }

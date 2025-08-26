@@ -18,7 +18,7 @@ import type {
   PTableColumnId,
 } from '@platforma-sdk/model';
 import { computed, ref, watchEffect } from 'vue';
-import { defaultAlignmentParams } from './multi-sequence-alignment';
+import { defaultSettings } from './settings';
 
 const { settings } = defineProps<{
   settings: Settings;
@@ -63,7 +63,7 @@ const alignmentParamsChangesPending = computed(() =>
 );
 
 const canResetAlignmentParams = computed(() =>
-  !isJsonEqual(settings.alignmentParams, defaultAlignmentParams),
+  !isJsonEqual(settings.alignmentParams, defaultSettings.alignmentParams),
 );
 </script>
 

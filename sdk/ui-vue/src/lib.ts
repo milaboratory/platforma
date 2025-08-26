@@ -15,8 +15,8 @@ export * from './components/PlAgColumnHeader';
 export * from './components/PlAgCellFile';
 export * from './components/PlAgCellProgress';
 export * from './components/PlAgCellStatusTag';
-export * from './components/PlAgChartStackedBarCell';
 export * from './components/PlAgChartHistogramCell';
+export * from './components/PlAgChartStackedBarCell';
 
 export * from './components/PlAgDataTable';
 
@@ -49,8 +49,6 @@ export * from './objectHash';
 export * from './computedResult';
 
 export * from './composition/fileContent';
-
-export { multiSequenceAlignment } from './components/PlMultiSequenceAlignment/multi-sequence-alignment';
 
 export * from '@milaboratories/uikit';
 

@@ -1,6 +1,11 @@
 import { isJsonEqual } from '@milaboratories/helpers';
 import type { ListOptionNormalized } from '@milaboratories/uikit';
+import type {
+  CalculateTableDataResponse,
+  FullPTableColumnData,
+} from '@platforma-sdk/model';
 import {
+  Annotation,
   type CalculateTableDataRequest,
   type CanonicalizedJson,
   canonicalizeJson,
@@ -23,7 +28,6 @@ import {
   type PTableSorting,
   pTableValue,
   readAnnotation,
-  Annotation,
   readAnnotationJson,
 } from '@platforma-sdk/model';
 import { ref, watch } from 'vue';
@@ -33,13 +37,14 @@ import {
   markupAlignedSequence,
   parseMarkup,
 } from './markup';
-import { multiSequenceAlignment } from './multi-sequence-alignment';
+// import { multiSequenceAlignment } from './multi-sequence-alignment';
+import { objectHash } from '../../objectHash';
 import { getResidueCounts } from './residue-counts';
 import type { HighlightLegend, ResidueCounts } from './types';
 
 const getPFrameDriver = () => getRawPlatformaInstance().pFrameDriver;
 
-export const sequenceLimit = 1000;
+export const sequenceLimit = 1000000;
 
 export const useSequenceColumnsOptions = refreshOnDeepChange(
   getSequenceColumnsOptions,
@@ -127,7 +132,9 @@ async function getLabelColumnsOptions({
   });
 
   for (const { columnId, spec } of compatibleColumns) {
-    const columnIdJson = canonicalizeJson({ type: 'column', id: columnId } satisfies PTableColumnId);
+    const columnIdJson = canonicalizeJson(
+      { type: 'column', id: columnId } satisfies PTableColumnId,
+    );
     if (optionMap.has(columnIdJson)) continue;
     optionMap.set(
       columnIdJson,
@@ -200,6 +207,37 @@ async function getMultipleAlignmentData({
 }): Promise<MultipleAlignmentData | undefined> {
   if (!pFrame || !sequenceColumnIds?.length || !labelColumnIds) return;
 
+  const table = await getTableData({
+    pFrame,
+    sequenceColumnIds,
+    labelColumnIds,
+    selection,
+    colorScheme,
+  });
+
+  const result = processTableData({
+    table,
+    sequenceColumnIds,
+    labelColumnIds,
+    alignmentParams,
+  });
+
+  return result;
+}
+
+async function getTableData({
+  pFrame,
+  sequenceColumnIds,
+  labelColumnIds,
+  selection,
+  colorScheme,
+}: {
+  pFrame: PFrameHandle;
+  sequenceColumnIds: PObjectId[];
+  labelColumnIds: PTableColumnId[];
+  selection: PlSelectionModel | undefined;
+  colorScheme: PlMultiSequenceAlignmentColorSchemeOption;
+}): Promise<CalculateTableDataResponse> {
   const pFrameDriver = getPFrameDriver();
   const columns = await pFrameDriver.listColumns(pFrame);
   const linkerColumns = columns.filter((column) => isLinkerColumn(column.spec));
@@ -282,7 +320,7 @@ async function getMultipleAlignmentData({
     sorting,
   };
 
-  const table = await pFrameDriver.calculateTableData(
+  return pFrameDriver.calculateTableData(
     pFrame,
     JSON.parse(JSON.stringify(request)),
     {
@@ -291,7 +329,19 @@ async function getMultipleAlignmentData({
       length: sequenceLimit + 1,
     },
   );
+}
 
+async function processTableData({
+  table,
+  sequenceColumnIds,
+  labelColumnIds,
+  alignmentParams,
+}: {
+  table: CalculateTableDataResponse;
+  sequenceColumnIds: PObjectId[];
+  labelColumnIds: PTableColumnId[];
+  alignmentParams: PlMultiSequenceAlignmentSettings['alignmentParams'];
+}): Promise<MultipleAlignmentData> {
   let rowCount = table?.[0].data.data.length ?? 0;
   let exceedsLimit = false;
   if (rowCount > sequenceLimit) {
@@ -322,27 +372,14 @@ async function getMultipleAlignmentData({
     return column;
   });
 
-  const alignedSequences = await Promise.all(
-    sequenceColumns.map((column) =>
-      multiSequenceAlignment(
-        Array.from(
-          { length: rowCount },
-          (_, row) =>
-            pTableValue(column.data, row, { na: '', absent: '' })?.toString()
-            ?? '',
-        ),
-        alignmentParams,
-      ),
-    ),
-  );
-
-  const sequences = Array.from(
-    { length: rowCount },
-    (_, row) => alignedSequences.map((column) => column[row]),
-  );
-
-  const sequenceNames = sequenceColumns.map((column) =>
-    readAnnotation(column.spec.spec, Annotation.Label) ?? 'Unlabeled column',
+  const sequences = await Promise.all(
+    sequenceColumns.map(async (column) => {
+      const name = readAnnotation(column.spec.spec, Annotation.Label)
+        ?? 'Unlabeled column';
+      const rows = await alignSequences({ column, rowCount, alignmentParams });
+      const residueCounts = getResidueCounts(rows);
+      return { name, rows, residueCounts };
+    }),
   );
 
   const labels = Array.from(
@@ -353,52 +390,85 @@ async function getMultipleAlignmentData({
       ),
   );
 
-  const concatenatedSequences = sequences.map((row) => row.join(' '));
-  const residueCounts = getResidueCounts(concatenatedSequences);
+  return { sequences, labels, exceedsLimit };
+}
 
-  const result: MultipleAlignmentData = {
-    sequences: concatenatedSequences,
-    sequenceNames,
-    labelRows: labels,
-    exceedsLimit,
-    residueCounts,
-  };
-
-  if (colorScheme.type === 'chemical-properties') {
-    result.highlightImage = highlightByChemicalProperties({
-      sequences: concatenatedSequences,
-      residueCounts,
-    });
-  } else if (colorScheme.type === 'markup') {
-    const markupColumn = table.find(({ spec }) =>
-      spec.id === colorScheme.columnId,
-    );
-    if (!markupColumn) {
-      throw new Error(
-        `Couldn't find markup column (ID: \`${colorScheme.columnId}\`).`,
-      );
-    }
-    const markupRows = Array.from(
-      { length: rowCount },
-      (_, row) => {
-        const markup = parseMarkup(
-          pTableValue(markupColumn.data, row, { na: '', absent: '' })
-            ?.toString()
-            ?? '',
-        );
-        return markupAlignedSequence(sequences[row][0], markup);
-      },
-    );
-    const labels = readAnnotationJson(markupColumn.spec.spec, Annotation.Sequence.Annotation.Mapping) ?? {};
-    result.highlightImage = highlightByMarkup({
-      markupRows,
-      columnCount: concatenatedSequences.at(0)?.length ?? 0,
-      labels,
-    });
-  }
-
+async function alignSequences(
+  { column, rowCount, alignmentParams }: {
+    column: FullPTableColumnData;
+    rowCount: number;
+    alignmentParams: PlMultiSequenceAlignmentSettings['alignmentParams'];
+  },
+) {
+  const sequences = Array.from(
+    { length: rowCount },
+    (_, row) =>
+      pTableValue(column.data, row, { na: '', absent: '' })?.toString()
+      ?? '',
+  );
+  const hash = await objectHash([sequences, alignmentParams]);
+  let result = msaCache.get(hash);
+  if (result) return result;
+  const msaWorker = new Worker(
+    new URL('./multi-sequence-alignment.worker.ts', import.meta.url),
+    { type: 'module' },
+  );
+  const { promise, resolve } = Promise.withResolvers<string[]>();
+  msaWorker.addEventListener(
+    'message',
+    ({ data }: MessageEvent<string[]>) => {
+      resolve(data);
+      msaWorker.terminate();
+    },
+  );
+  msaWorker.postMessage({ sequences });
+  result = await promise;
+  msaCache.set(hash, result);
   return result;
 }
+
+// function withHighlight(
+//   result: MultipleAlignmentData,
+//   colorScheme: PlMultiSequenceAlignmentColorSchemeOption,
+//   table: CalculateTableDataResponse,
+//   rowCount: number,
+// ) {
+//   if (colorScheme.type === 'chemical-properties') {
+//     result.highlightImage = highlightByChemicalProperties({
+//       sequences: concatenatedSequences,
+//       residueCounts,
+//     });
+//   } else if (colorScheme.type === 'markup') {
+//     const markupColumn = table.find(({ spec }) =>
+//       spec.id === colorScheme.columnId,
+//     );
+//     if (!markupColumn) {
+//       throw new Error(
+//         `Couldn't find markup column (ID: \`${colorScheme.columnId}\`).`,
+//       );
+//     }
+//     const markupRows = Array.from(
+//       { length: rowCount },
+//       (_, row) => {
+//         const markup = parseMarkup(
+//           pTableValue(markupColumn.data, row, { na: '', absent: '' })
+//             ?.toString()
+//             ?? '',
+//         );
+//         return markupAlignedSequence(sequences[row][0], markup);
+//       },
+//     );
+//     const labels = readAnnotationJson(
+//       markupColumn.spec.spec,
+//       Annotation.Sequence.Annotation.Mapping,
+//     ) ?? {};
+//     result.highlightImage = highlightByMarkup({
+//       markupRows,
+//       columnCount: concatenatedSequences.at(0)?.length ?? 0,
+//       labels,
+//     });
+//   }
+// }
 
 function refreshOnDeepChange<T, P>(cb: (params: P) => Promise<T>) {
   const data = ref<T>();
@@ -432,14 +502,14 @@ function refreshOnDeepChange<T, P>(cb: (params: P) => Promise<T>) {
 }
 
 type MultipleAlignmentData = {
-  sequences: string[];
-  sequenceNames: string[];
-  labelRows: string[][];
-  residueCounts: ResidueCounts;
-  highlightImage?: {
-    blob: Blob;
-    legend: HighlightLegend;
-  };
+  sequences: {
+    name: string;
+    rows: string[];
+    residueCounts: ResidueCounts;
+    highlightImage?: Blob;
+  }[];
+  labels: string[][];
+  highlightLegend?: HighlightLegend;
   exceedsLimit: boolean;
 };
 
@@ -447,3 +517,5 @@ type OptionsWithDefaults<T> = {
   options: ListOptionNormalized<T>[];
   defaults: T[];
 };
+
+const msaCache = new Map<string, string[]>();

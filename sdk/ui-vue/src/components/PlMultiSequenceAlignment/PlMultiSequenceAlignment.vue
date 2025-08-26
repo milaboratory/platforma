@@ -243,6 +243,10 @@ async function exportPdf() {
     }
   }
 }
+
+watchEffect(() => {
+  console.log(JSON.parse(JSON.stringify(multipleAlignmentData)));
+});
 </script>
 
 <template>
@@ -259,7 +263,7 @@ async function exportPdf() {
   </PlAlert>
   <PlAlert
     v-else-if="!multipleAlignmentData.isLoading
-      && (multipleAlignmentData.data?.sequences ?? []).length < 2"
+      && !multipleAlignmentData.data?.sequences.length"
     type="warn"
     icon
   >
@@ -286,10 +290,8 @@ async function exportPdf() {
         <MultiSequenceAlignmentView
           ref="msa"
           :sequences="multipleAlignmentData.data.sequences"
-          :sequence-names="multipleAlignmentData.data.sequenceNames"
-          :label-rows="multipleAlignmentData.data.labelRows"
-          :residue-counts="multipleAlignmentData.data.residueCounts"
-          :highlight-image="multipleAlignmentData.data.highlightImage"
+          :labels="multipleAlignmentData.data.labels"
+          :highlight-legend="multipleAlignmentData.data.highlightLegend"
           :widgets="settings.widgets"
         />
       </template>
