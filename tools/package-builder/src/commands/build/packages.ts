@@ -45,7 +45,7 @@ export default class Packages extends Command {
 
     if (env.IsCI()) {
       // TODO: as we do not create content-addressable archives for binary packages, we should not upload them
-      //       for each build to not spoild release process with dev archives cached by CDN.
+      //       for each build to not spoil release process with dev archives cached by CDN.
       //       once we support content-addressable archives, we can switch this to all packages publishing.
       core.publishDockerImages({
         ids: flags['package-id'],
