@@ -1,5 +1,11 @@
 # @platforma-sdk/package-builder
 
+## 3.1.0
+
+### Minor Changes
+
+- 7d7df12: Automatically publish all docker images from CI after build
+
 ## 3.0.2
 
 ### Patch Changes
