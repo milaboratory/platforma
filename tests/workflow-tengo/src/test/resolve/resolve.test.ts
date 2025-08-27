@@ -1,7 +1,7 @@
 import { Pl } from '@milaboratories/pl-middle-layer';
 import { tplTest } from '@platforma-sdk/test';
 
-tplTest(
+tplTest.concurrent(
   'test resolve in pure template', async ({ helper, expect }) => {
     const result = await helper.renderTemplate(
       false,
@@ -18,7 +18,7 @@ tplTest(
   },
 );
 
-tplTest(
+tplTest.concurrent(
   'test resolve in ephemeral template',
   /* {timeout: 10000}, */ async ({ helper, expect }) => {
     const result = await helper.renderTemplate(
@@ -36,7 +36,7 @@ tplTest(
   },
 );
 
-tplTest(
+tplTest.concurrent(
   'test resolve in workflow',
   /* {timeout: 10000}, */ async ({ helper, expect }) => {
     const result = await helper.renderWorkflow('test.resolve.wf', false, {
@@ -50,7 +50,7 @@ tplTest(
   },
 );
 
-tplTest('should return undefined on no result in resolve', async ({ helper, expect }) => {
+tplTest.concurrent('should return undefined on no result in resolve', async ({ helper, expect }) => {
   const result = await helper.renderWorkflow('test.resolve.wf_no_res', false, {
     errIfMissing: false,
   });
