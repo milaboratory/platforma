@@ -1,125 +1,126 @@
 catalogMode: strict
 
 packages:
-  - lib/util/helpers
-  - lib/util/sequences
+- lib/util/helpers
+- lib/util/sequences
 
-  - lib/other/biowasm-tools
+- lib/other/biowasm-tools
 
-  - lib/model/common
-  - lib/model/middle-layer
-  - lib/model/backend
+- lib/model/common
+- lib/model/middle-layer
+- lib/model/backend
 
-  - lib/node/ts-helpers
-  - lib/node/ts-helpers-oclif
-  - lib/node/ts-helpers-winston
-  - lib/node/pl-http
-  - lib/node/pl-errors
-  - lib/model/pl-error-like
+- lib/node/ts-helpers
+- lib/node/ts-helpers-oclif
+- lib/node/ts-helpers-winston
+- lib/node/pl-http
+- lib/node/pl-errors
+- lib/model/pl-error-like
 
-  - lib/node/resolve-helper
-  - lib/node/node-streams
-  - lib/node/computable
-  - lib/node/pl-client
-  - lib/node/pl-tree
-  - lib/node/pl-drivers
-  - lib/node/pl-middle-layer
-  - lib/node/pl-deployments
-  - lib/node/pl-config
+- lib/node/resolve-helper
+- lib/node/node-streams
+- lib/node/computable
+- lib/node/pl-client
+- lib/node/pl-tree
+- lib/node/pl-drivers
+- lib/node/pl-middle-layer
+- lib/node/pl-deployments
+- lib/node/pl-config
 
-  - lib/ptabler/schema
-  - lib/ptabler/software
+- lib/ptabler/schema
+- lib/ptabler/software
 
-  - lib/ptexter
+- lib/ptexter
 
-  - lib/ui/uikit
+- lib/ui/uikit
 
-  - tools/tengo-builder
-  - tools/oclif-index
-  - tools/block-tools
-  - tools/ts-configs
-  - tools/build-configs
-  - tools/package-builder
-  - tools/ts-builder
-  - tools/r-builder
-  - tools/pl-bootstrap
-  - tools/eslint-config
+- tools/tengo-builder
+- tools/oclif-index
+- tools/block-tools
+- tools/ts-configs
+- tools/build-configs
+- tools/package-builder
+- tools/ts-builder
+- tools/r-builder
+- tools/pl-bootstrap
+- tools/eslint-config
+- tools/blocks-deps-updater
 
-  - sdk/model
-  - sdk/workflow-tengo
-  - sdk/test
-  - sdk/ui-vue
-  - sdk/eslint-config
+- sdk/model
+- sdk/workflow-tengo
+- sdk/test
+- sdk/ui-vue
+- sdk/eslint-config
 
-  # Test blocks
+# Test blocks
 
-  - etc/blocks/enter-numbers/workflow
-  - etc/blocks/enter-numbers/model
-  - etc/blocks/enter-numbers/ui
-  - etc/blocks/enter-numbers/block
+- etc/blocks/enter-numbers/workflow
+- etc/blocks/enter-numbers/model
+- etc/blocks/enter-numbers/ui
+- etc/blocks/enter-numbers/block
 
-  - etc/blocks/sum-numbers/workflow
-  - etc/blocks/sum-numbers/model
-  - etc/blocks/sum-numbers/ui
-  - etc/blocks/sum-numbers/block
+- etc/blocks/sum-numbers/workflow
+- etc/blocks/sum-numbers/model
+- etc/blocks/sum-numbers/ui
+- etc/blocks/sum-numbers/block
 
-  - etc/blocks/upload-file/workflow
-  - etc/blocks/upload-file/model
-  - etc/blocks/upload-file/ui
-  - etc/blocks/upload-file/block
+- etc/blocks/upload-file/workflow
+- etc/blocks/upload-file/model
+- etc/blocks/upload-file/ui
+- etc/blocks/upload-file/block
 
-  - etc/blocks/blob-url-custom-protocol/workflow
-  - etc/blocks/blob-url-custom-protocol/model
-  - etc/blocks/blob-url-custom-protocol/ui
-  - etc/blocks/blob-url-custom-protocol/block
+- etc/blocks/blob-url-custom-protocol/workflow
+- etc/blocks/blob-url-custom-protocol/model
+- etc/blocks/blob-url-custom-protocol/ui
+- etc/blocks/blob-url-custom-protocol/block
 
-  - etc/blocks/monetization-test/workflow
-  - etc/blocks/monetization-test/model
-  - etc/blocks/monetization-test/ui
-  - etc/blocks/monetization-test/block
+- etc/blocks/monetization-test/workflow
+- etc/blocks/monetization-test/model
+- etc/blocks/monetization-test/ui
+- etc/blocks/monetization-test/block
 
-  - etc/blocks/download-file/workflow
-  - etc/blocks/download-file/model
-  - etc/blocks/download-file/ui
-  - etc/blocks/download-file/block
+- etc/blocks/download-file/workflow
+- etc/blocks/download-file/model
+- etc/blocks/download-file/ui
+- etc/blocks/download-file/block
 
-  - etc/blocks/read-logs/workflow
-  - etc/blocks/read-logs/model
-  - etc/blocks/read-logs/ui
-  - etc/blocks/read-logs/block
+- etc/blocks/read-logs/workflow
+- etc/blocks/read-logs/model
+- etc/blocks/read-logs/ui
+- etc/blocks/read-logs/block
 
-  - etc/blocks/ui-examples/workflow
-  - etc/blocks/ui-examples/model
-  - etc/blocks/ui-examples/ui
-  - etc/blocks/ui-examples/block
+- etc/blocks/ui-examples/workflow
+- etc/blocks/ui-examples/model
+- etc/blocks/ui-examples/ui
+- etc/blocks/ui-examples/block
 
-  - etc/blocks/model-test/workflow
-  - etc/blocks/model-test/model
-  - etc/blocks/model-test/ui
-  - etc/blocks/model-test/block
+- etc/blocks/model-test/workflow
+- etc/blocks/model-test/model
+- etc/blocks/model-test/ui
+- etc/blocks/model-test/block
 
-  - etc/blocks/pool-explorer/workflow
-  - etc/blocks/pool-explorer/model
-  - etc/blocks/pool-explorer/ui
-  - etc/blocks/pool-explorer/block
+- etc/blocks/pool-explorer/workflow
+- etc/blocks/pool-explorer/model
+- etc/blocks/pool-explorer/ui
+- etc/blocks/pool-explorer/block
 
-  # Tests
+# Tests
 
-  - tests/workflow-tengo
-  - tests/helper
-  - tests/block-repo
-  - tests/config-local-ml-integration
-  - tests/drivers-ml-blocks-integration
+- tests/workflow-tengo
+- tests/helper
+- tests/block-repo
+- tests/config-local-ml-integration
+- tests/drivers-ml-blocks-integration
 
-  - tests/package-builder/10.asset
-  - tests/package-builder/20.runenv
-  - tests/package-builder/30.software-pkg
-  - tests/package-builder/90.catalogue
+- tests/package-builder/10.asset
+- tests/package-builder/20.runenv
+- tests/package-builder/30.software-pkg
+- tests/package-builder/90.catalogue
 
-  # Etc
+# Etc
 
-  - etc/uikit-playground
-  - etc/ui-vue-docs
+- etc/uikit-playground
+- etc/ui-vue-docs
 
 catalog:
   # Build
