@@ -3,7 +3,7 @@ import { tplTest } from '@platforma-sdk/test';
 
 tplTest.concurrent(
   'test import template in pure template',
-  /* {timeout: 10000}, */ async ({ helper, expect }) => {
+  async ({ helper, expect }) => {
     const result = await helper.renderTemplate(
       false,
       'test.import-template.pure-template',
@@ -28,7 +28,7 @@ tplTest.concurrent(
 
 tplTest.concurrent(
   'test import template in workflow',
-  /* {timeout: 10000}, */ async ({ helper, expect }) => {
+  async ({ helper, expect }) => {
     const wf = await helper.renderWorkflow(
       'test.import-template.workflow',
       false,

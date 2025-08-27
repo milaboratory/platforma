@@ -20,7 +20,7 @@ tplTest.concurrent(
 
 tplTest.concurrent(
   'test resolve in ephemeral template',
-  /* {timeout: 10000}, */ async ({ helper, expect }) => {
+  async ({ helper, expect }) => {
     const result = await helper.renderTemplate(
       true,
       'test.resolve.eph-template',
@@ -38,7 +38,7 @@ tplTest.concurrent(
 
 tplTest.concurrent(
   'test resolve in workflow',
-  /* {timeout: 10000}, */ async ({ helper, expect }) => {
+  async ({ helper, expect }) => {
     const result = await helper.renderWorkflow('test.resolve.wf', false, {
       a: 'A',
       b: 'B',
