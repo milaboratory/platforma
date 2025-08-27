@@ -2809,6 +2809,9 @@ importers:
       '@milaboratories/eslint-config':
         specifier: workspace:*
         version: link:../../tools/eslint-config
+      '@milaboratories/helpers':
+        specifier: workspace:*
+        version: link:../../lib/util/helpers
       '@milaboratories/pl-drivers':
         specifier: workspace:*
         version: link:../../lib/node/pl-drivers
