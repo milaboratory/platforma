@@ -11,6 +11,7 @@ export default class Docker extends Command {
     ...cmdOpts.BuildFlags,
     ...cmdOpts.VersionFlag,
     ...cmdOpts.PackageIDFlag,
+    ...cmdOpts.DockerFlags,
   };
 
   public async run(): Promise<void> {
@@ -25,5 +26,11 @@ export default class Docker extends Command {
     core.buildDockerImages({
       ids: flags['package-id'],
     });
+
+    if (!flags['no-docker-push']) {
+      core.publishDockerImages({
+        ids: flags['package-id'],
+      });
+    }
   }
 }

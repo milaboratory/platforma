@@ -43,6 +43,15 @@ export const BuildFlags = {
   }),
 };
 
+export const DockerFlags = {
+  'no-docker-push': Flags.boolean({
+    env: envs.PL_DOCKER_NOPUSH,
+    description: 'do not push docker images to registry after build',
+    default: false,
+    required: false,
+  }),
+};
+
 export const DirHashFlag = {
   'full-dir-hash': Flags.boolean({
     env: envs.PL_PKG_FULL_HASH,

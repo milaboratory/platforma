@@ -13,6 +13,7 @@ export default class Packages extends Command {
     ...cmdOpts.GlobalFlags,
     ...cmdOpts.BuildFlags,
     ...cmdOpts.PlatformFlags,
+    ...cmdOpts.DockerFlags,
 
     ...cmdOpts.VersionFlag,
     ...cmdOpts.ArchiveFlag,
@@ -41,5 +42,14 @@ export default class Packages extends Command {
       contentRoot: flags['content-root'],
       skipIfEmpty: flags['package-id'] ? false : true, // do not skip 'non-binary' packages if their IDs were set as args
     });
+
+    if (!flags['no-docker-push']) {
+      // TODO: as we do not create content-addressable archives for binary packages, we should not upload them
+      //       for each build to not spoil release process with dev archives cached by CDN.
+      //       once we support content-addressable archives, we can switch this to all packages publishing.
+      core.publishDockerImages({
+        ids: flags['package-id'],
+      });
+    }
   }
 }
