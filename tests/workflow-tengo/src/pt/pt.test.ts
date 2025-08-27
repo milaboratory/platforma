@@ -1,7 +1,7 @@
 import { Pl } from '@milaboratories/pl-middle-layer';
 import { awaitStableState, tplTest } from '@platforma-sdk/test';
 
-tplTest(
+tplTest.concurrent(
   'pt simple test',
   { timeout: 40000 },
   async ({ helper, expect, driverKit }) => {
@@ -37,7 +37,7 @@ tplTest(
   },
 );
 
-tplTest(
+tplTest.concurrent(
   'pt ex1 test - window and groupBy operations',
   { timeout: 40000 }, // Increased timeout for potentially more complex operations
   async ({ helper, expect, driverKit }) => {
@@ -100,7 +100,7 @@ C\t50\t300.0`;
   },
 );
 
-tplTest(
+tplTest.concurrent(
   'pt ex2 test - filter and sort operations',
   { timeout: 40000 },
   async ({ helper, expect, driverKit }) => {
@@ -168,7 +168,7 @@ B\tuser7\t190\t110`;
   },
 );
 
-tplTest(
+tplTest.concurrent(
   'pt ex3 test - join operations',
   { timeout: 40000 }, // Increased timeout for multiple PTabler steps
   async ({ helper, expect, driverKit }) => {
@@ -260,7 +260,7 @@ Banana,Yellow`;
   },
 );
 
-tplTest(
+tplTest.concurrent(
   'pt ex4 test - dynamic substring',
   { timeout: 40000 },
   async ({ helper, expect, driverKit }) => {
@@ -320,7 +320,7 @@ Short\thort`;
   },
 );
 
-tplTest(
+tplTest.concurrent(
   'pt ex5 test - comprehensive string functions',
   { timeout: 40000 },
   async ({ helper, expect, driverKit }) => {
@@ -362,7 +362,7 @@ frank@startup.io\tscript.py\tBanana smoothie with lime juice\ttest888\ttrue\tfal
   },
 );
 
-tplTest(
+tplTest.concurrent(
   'pt ndjson test - comprehensive NDJSON format support',
   { timeout: 40000 },
   async ({ helper, expect, driverKit }) => {
