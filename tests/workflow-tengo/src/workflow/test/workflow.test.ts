@@ -1,6 +1,6 @@
 import { tplTest } from '@platforma-sdk/test';
 
-tplTest(
+tplTest.concurrent(
   'should return results when run body of the workflow',
   async ({ helper, expect }) => {
     const prod = await helper.renderWorkflow('workflow.test.wf1', false, {
@@ -15,7 +15,7 @@ tplTest(
   },
 );
 
-tplTest(
+tplTest.concurrent(
   'should return results when pre run of the workflow',
   async ({ helper, expect }) => {
     const prerun = await helper.renderWorkflow('workflow.test.wf1', true, {
@@ -30,7 +30,7 @@ tplTest(
   },
 );
 
-tplTest(
+tplTest.concurrent(
   'should return dummy result and ctx for staging if pre-run template not specified',
   async ({ helper, expect }) => {
     const prerun = await helper.renderWorkflow('workflow.test.wf2', true, {
