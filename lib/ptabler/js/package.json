@@ -1,0 +1,38 @@
+{
+  "name": "@milaboratories/ptabler-js",
+  "version": "1.0.0",
+  "description": "JavaScript/TypeScript implementation of PTabler expression system",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "./dist/**/*",
+    "./src/**/*"
+  ],
+  "scripts": {
+    "build": "ts-builder build --target node",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "type-check": "ts-builder types --target node",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@platforma-open/milaboratories.software-ptabler.schema": "workspace:*"
+  },
+  "devDependencies": {
+    "@milaboratories/eslint-config": "workspace:*",
+    "@milaboratories/ts-configs": "workspace:*",
+    "@milaboratories/ts-builder": "workspace:*",
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:",
+    "eslint": "catalog:"
+  }
+}

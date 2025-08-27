@@ -48,7 +48,14 @@ export type PTablerWorkflow = {
 };
 
 // Re-export base interfaces for potential external use
-export type { BaseFileReadStep, BaseFileWriteStep };
+export type {
+  AddColumnsStep, AggregateStep,
+  AnyJoinStep, BaseFileReadStep,
+  BaseFileWriteStep, ConcatenateStep, FilterStep, ReadCsvStep,
+  ReadNdjsonStep, SelectStep, SortStep, WithColumnsStep,
+  WithoutColumnsStep, WriteCsvStep,
+  WriteNdjsonStep,
+};
 
 // Re-export expression types for external use
-export type { Expression, StructFieldExpression } from './expressions';
+export type * from './expressions';
