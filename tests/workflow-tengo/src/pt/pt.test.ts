@@ -4,6 +4,7 @@ import { expect } from 'vitest';
 
 const TIMEOUT = 40000;
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 const getFileContent = async (
   result: any,
   outputName: string,
