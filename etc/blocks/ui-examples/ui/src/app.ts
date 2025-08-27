@@ -34,6 +34,7 @@ import { StackedBarPage } from './pages/StackedBarPage';
 import StatePage from './pages/StatePage.vue';
 import TypographyPage from './pages/TypographyPage.vue';
 import UseWatchFetchPage from './pages/UseWatchFetchPage.vue';
+import PlAnnotationPage from './pages/PlAnnotationPage.vue';
 
 export const sdkPlugin = defineApp(platforma, (app) => {
   // Additional data
@@ -96,6 +97,7 @@ export const sdkPlugin = defineApp(platforma, (app) => {
       '/typography': () => TypographyPage,
       '/ag-grid-vue': () => AgGridVuePage,
       '/ag-grid-vue-with-builder': () => AgGridVuePageWithBuilder,
+      '/pl-annotations': () => PlAnnotationPage,
       '/pl-ag-data-table-v2': () => PlAgDataTableV2Page,
       '/pl-splash-page': () => PlSplashPage,
       '/pl-file-input-page': () => PlFileInputPage,
@@ -118,6 +120,7 @@ export const sdkPlugin = defineApp(platforma, (app) => {
       '/add-section': () => AddSectionPage,
       '/section': () => SectionPage,
       '/radio': () => RadioPage,
+      '/pl-annotations': () => PlAnnotationPage,
     },
   };
 }, {
