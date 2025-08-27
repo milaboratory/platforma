@@ -1,16 +1,19 @@
 import { Pl } from '@milaboratories/pl-middle-layer';
 import { awaitStableState, tplTest } from '@platforma-sdk/test';
 import { expect } from 'vitest';
+import type { TestRenderResults } from '@platforma-sdk/test';
+import type { MiddleLayerDriverKit } from '@milaboratories/pl-middle-layer';
+import type { PlTreeNodeAccessor } from '@milaboratories/pl-tree';
+import type { ComputableCtx } from '@milaboratories/computable';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 const getFileContent = async (
-  result: any,
+  result: TestRenderResults<string>,
   outputName: string,
-  driverKit: any,
+  driverKit: MiddleLayerDriverKit,
   timeout?: number,
 ): Promise<string> => {
   const handle = await awaitStableState(
-    result.computeOutput(outputName, (fileHandle: any, ctx: any) => {
+    result.computeOutput(outputName, (fileHandle: PlTreeNodeAccessor | undefined, ctx: ComputableCtx) => {
       if (!fileHandle) return undefined;
       return driverKit.blobDriver.getOnDemandBlob(fileHandle.persist(), ctx).handle;
     }),
