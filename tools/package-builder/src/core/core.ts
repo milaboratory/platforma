@@ -12,7 +12,7 @@ import {
 import * as util from './util';
 import * as archive from './archive';
 import * as storage from './storage';
-import { dockerBuild, dockerEntrypointName, dockerPush, dockerTagFromPackage } from './docker';
+import * as docker from './docker';
 
 export class Core {
   private readonly logger: winston.Logger;
@@ -70,7 +70,7 @@ export class Core {
         continue;
       }
 
-      const key = ep.package.type === 'docker' ? dockerEntrypointName(ep.package.id) : ep.package.id;
+      const key = ep.package.type === 'docker' ? docker.entrypointName(ep.package.id) : ep.package.id;
       pkgs.set(key, ep.package);
     }
 
@@ -106,7 +106,7 @@ export class Core {
       return pkg;
     }
 
-    const dockerPkg = this.packages.get(dockerEntrypointName(id));
+    const dockerPkg = this.packages.get(docker.entrypointName(id));
     if (dockerPkg) {
       return dockerPkg;
     }
@@ -278,7 +278,7 @@ export class Core {
       throw new Error(`Context '${context}' not found`);
     }
 
-    const tag = dockerTagFromPackage(this.pkg.packageRoot, buildParams);
+    const tag = docker.tagFromPackage(this.pkg.packageRoot, buildParams);
 
     this.logger.info(`Building docker image:
       dockerfile: "${dockerfile}"
@@ -287,7 +287,7 @@ export class Core {
       entrypoint: "${entrypoint.join(' ')}"
     `);
 
-    dockerBuild(context, dockerfile, tag);
+    docker.build(context, dockerfile, tag);
 
     this.logger.info(`Docker image '${tag}' was built successfully`);
   }
@@ -391,7 +391,7 @@ export class Core {
       if (pkg.type !== 'docker') {
         // will check that docker package exists in the same package.sw.json file for entrypoints with
         // different artifact types
-        const dockerPkg = this.packages.get(dockerEntrypointName(pkg.id));
+        const dockerPkg = this.packages.get(docker.entrypointName(pkg.id));
         if (!dockerPkg) {
           continue;
         }
@@ -517,10 +517,25 @@ export class Core {
       throw new Error(`package '${pkg.id}' is not a docker package`);
     }
 
-    const tag = dockerTagFromPackage(this.pkg.packageRoot, pkg);
-    dockerPush(tag);
+    const tag = docker.tagFromPackage(this.pkg.packageRoot, pkg);
+
+    // Because of turbo caching, we may face situation when no real docker build was executed on CI agent,
+    // but image is already in remote registry. We should not fail in such scenarios, calmly skipping docker push step.
+
+    const localImageExists = docker.localImageExists(tag);
+    if (!localImageExists) {
+      const remoteImageExists = docker.remoteImageExists(tag);
+
+      if (remoteImageExists) {
+        this.logger.info(`Docker image '${tag}' not exists locally but is already in remote registry. Skipping push...`);
+        return;
+      }
+
+      throw new Error(`Docker image '${tag}' not exists locally and is not found in remote registry. Publication failed.`);
+    }
 
     this.logger.info(`Publishing docker image '${tag}' into registry '${pkg.registry.name}'`);
+    docker.push(tag);
   }
 
   public signPackages(options?: {
