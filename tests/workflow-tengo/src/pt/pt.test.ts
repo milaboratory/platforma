@@ -10,7 +10,7 @@ const getFileContent = async (
   result: TestRenderResults<string>,
   outputName: string,
   driverKit: MiddleLayerDriverKit,
-  timeout?: number,
+  timeout = 40000,
 ): Promise<string> => {
   const handle = await awaitStableState(
     result.computeOutput(outputName, (fileHandle: PlTreeNodeAccessor | undefined, ctx: ComputableCtx) => {
