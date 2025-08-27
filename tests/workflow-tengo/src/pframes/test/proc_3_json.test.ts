@@ -5,7 +5,6 @@ import { assertJson, assertResource, eTplTest } from './extended_tpl_test';
 
 eTplTest.concurrent(
   'should correctly execute pframes.processColumn with PColumnData/Json in mapping mode',
-  { timeout: 15000 },
   async ({ helper, expect, stHelper }) => {
     const inputSpec = {
       kind: 'PColumn',
@@ -82,7 +81,6 @@ eTplTest.concurrent(
 
 eTplTest.concurrent(
   'should correctly execute pframes.processColumn with PColumnData/Json in aggregation mode',
-  { timeout: 15000 },
   async ({ helper, expect, stHelper }) => {
     const inputSpec = {
       kind: 'PColumn',
@@ -153,7 +151,6 @@ eTplTest.concurrent(
 
 eTplTest.concurrent(
   'should correctly execute pframes.processColumn with PColumnData/Json in aggregation mode by second axis',
-  { timeout: 15000 },
   async ({ helper, expect, stHelper }) => {
     const inputSpec = {
       kind: 'PColumn',

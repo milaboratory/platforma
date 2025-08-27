@@ -11,7 +11,7 @@ const baseSpec = {
   annotations: {},
 };
 
-tplTest.concurrent('should export files for p-frame without skipExportForUI annotation', { timeout: 40000 },
+tplTest.concurrent('should export files for p-frame without skipExportForUI annotation',
   async ({ helper, expect, driverKit }) => {
     const spec = baseSpec;
     const fileHandle = await importFile(driverKit);
@@ -43,7 +43,7 @@ tplTest.concurrent('should export files for p-frame without skipExportForUI anno
   },
 );
 
-tplTest.concurrent('should not export files for p-frame with hideDataFromUi annotation', { timeout: 40000 },
+tplTest.concurrent('should not export files for p-frame with hideDataFromUi annotation',
   async ({ helper, expect, driverKit }) => {
     const spec = { ...baseSpec, annotations: { [Annotation.HideDataFromUi]: stringifyJson(true) } satisfies Annotation };
     const fileHandle = await importFile(driverKit);

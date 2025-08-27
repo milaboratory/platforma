@@ -5,7 +5,6 @@ import { assertJson, assertResource, eTplTest } from './extended_tpl_test';
 
 eTplTest.concurrent(
   'should correctly parse TSV string content using parseToJson with all column kinds',
-  { timeout: 15000 },
   async ({ helper, expect, stHelper }) => {
     // Sample TSV content with header and data rows
     const tsvContent = 'name\tage\tcity\tdata1\tdata2\nJohn\t25\tNYC\t100\tA\nJane\t30\tLA\t200\tB\n';
