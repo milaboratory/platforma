@@ -2,6 +2,7 @@ import { Command } from '@oclif/core';
 import * as cmdOpts from '../../core/cmd-opts';
 import * as util from '../../core/util';
 import { Core } from '../../core/core';
+import * as envs from '../../core/envs';
 
 export default class Docker extends Command {
   static override description = 'build docker images';
@@ -27,7 +28,8 @@ export default class Docker extends Command {
       ids: flags['package-id'],
     });
 
-    if (!flags['skip-docker-push'] && core.buildMode === 'release') {
+    const autopush = flags['docker-autopush'] || (envs.isCI() && core.buildMode === 'release');
+    if (autopush) {
       core.publishDockerImages({
         ids: flags['package-id'],
       });

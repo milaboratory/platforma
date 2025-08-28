@@ -9,8 +9,8 @@ export const PL_PKG_STORAGE_URL = 'PL_PKG_STORAGE_URL';
 export const PL_PKG_DEV = 'PL_PKG_DEV';
 export const PL_PKG_FULL_HASH = 'PL_PKG_FULL_HASH';
 export const PL_DOCKER_REGISTRY = 'PL_DOCKER_REGISTRY';
-export const PL_DOCKER_SKIP_PUSH = 'PL_DOCKER_SKIP_PUSH';
 export const PL_DOCKER_SKIP_BUILD = 'PL_DOCKER_SKIP_BUILD';
+export const PL_DOCKER_AUTOPUSH = 'PL_DOCKER_AUTOPUSH';
 
 export const CI = 'CI';
 

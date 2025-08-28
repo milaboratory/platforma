@@ -2,6 +2,7 @@ import { Command } from '@oclif/core';
 import * as cmdOpts from '../../core/cmd-opts';
 import * as util from '../../core/util';
 import { Core } from '../../core/core';
+import * as envs from '../../core/envs';
 
 export default class BuildAll extends Command {
   static override description
@@ -58,7 +59,8 @@ export default class BuildAll extends Command {
         packageIds: flags['package-id'] ? flags['package-id'] : undefined,
       });
 
-      if (!flags['skip-docker-build'] && !flags['skip-docker-push'] && core.buildMode === 'release') {
+      const autopush = flags['docker-autopush'] || (envs.isCI() && core.buildMode === 'release');
+      if (!flags['skip-docker-build'] && autopush) {
         // TODO: as we do not create content-addressable archives for binary packages, we should not upload them
         //       for each build to not spoil release process with dev archives cached by CDN.
         //       once we support content-addressable archives, we can publish everything here (not just docker).

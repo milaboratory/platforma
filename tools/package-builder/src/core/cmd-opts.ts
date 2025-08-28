@@ -51,8 +51,8 @@ export const DockerFlags = {
     required: false,
   }),
 
-  'skip-docker-push': Flags.boolean({
-    env: envs.PL_DOCKER_SKIP_PUSH,
+  'docker-autopush': Flags.boolean({
+    env: envs.PL_DOCKER_AUTOPUSH,
     description: 'do not push docker images to registry after build',
     default: false,
     required: false,
