@@ -408,7 +408,9 @@ export class PackageInfo {
     return this.makePackageConfig(id, artifact);
   }
 
-  public artifactInfoLocation(pkgID: string, artifactType: 'archive' | 'docker', platform?: util.PlatformType): string {
+  public artifactInfoLocation(pkgID: string, artifactType: 'docker', platform: util.ArchType): string;
+  public artifactInfoLocation(pkgID: string, artifactType: 'archive', platform?: util.PlatformType): string;
+  public artifactInfoLocation(pkgID: string, artifactType: 'archive' | 'docker', platform?: util.PlatformType | util.ArchType): string {
     const platformPart = platform ? `_${platform}` : '';
     return path.resolve(this.packageRoot, 'dist', 'artifacts', pkgID, `${artifactType}${platformPart}.json`);
   }

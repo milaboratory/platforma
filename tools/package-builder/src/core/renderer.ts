@@ -752,7 +752,7 @@ export class Renderer {
       throw new Error(`could not render docker entrypoint '${epName}': not 'software' artifact`);
     }
 
-    const artInfoPath = this.pkgInfo.artifactInfoLocation(dockerPkg.id, 'docker', util.currentPlatform());
+    const artInfoPath = this.pkgInfo.artifactInfoLocation(dockerPkg.id, 'docker', util.currentArch());
     const artInfo = readArtifactInfoIfExists(artInfoPath, epName, requireArtifactInfo);
     if (!artInfo) {
       return undefined;

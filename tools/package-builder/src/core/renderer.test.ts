@@ -183,8 +183,14 @@ function writeTestArtifactInfo(
   artifactType: 'docker' | 'archive',
   pkg: PackageConfig,
 ) {
-  const platform = (artifactType === 'archive' && pkg.crossplatform) ? undefined : util.currentPlatform();
-  const artInfoPath = i.artifactInfoLocation(pkg.id, artifactType, platform);
+  let artInfoPath: string;
+  if (artifactType === 'docker') {
+    artInfoPath = i.artifactInfoLocation(pkg.id, 'docker', util.currentArch());
+  } else if (pkg.crossplatform) {
+    artInfoPath = i.artifactInfoLocation(pkg.id, 'archive', undefined);
+  } else {
+    artInfoPath = i.artifactInfoLocation(pkg.id, 'archive', util.currentPlatform());
+  }
 
   writeBuiltArtifactInfo(artInfoPath, {
     type: pkg.type,

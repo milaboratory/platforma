@@ -306,7 +306,7 @@ entrypoint: '${entrypoint.join('\', \'')}'
     docker.addTag(localTag, dstTag);
     docker.removeTag(localTag);
 
-    const artInfoPath = this.pkgInfo.artifactInfoLocation(pkgID, 'docker', util.currentPlatform());
+    const artInfoPath = this.pkgInfo.artifactInfoLocation(pkgID, 'docker', util.currentArch());
     writeBuiltArtifactInfo(artInfoPath, {
       type: 'docker',
       platform: util.currentPlatform(),
@@ -421,7 +421,7 @@ entrypoint: '${entrypoint.join('\', \'')}'
 
     const archivePath = options?.archivePath ?? this.archivePath(pkg, os, arch);
 
-    const artInfoPath = this.pkgInfo.artifactInfoLocation(pkg.id, 'archive', util.joinPlatform(os, arch));
+    const artInfoPath = this.pkgInfo.artifactInfoLocation(pkg.id, 'archive', pkg.crossplatform ? undefined : util.joinPlatform(os, arch));
     const artInfo = readBuiltArtifactInfo(artInfoPath);
     const dstName = artInfo.uploadPath ?? artInfo.remoteArtifactLocation;
 
@@ -506,7 +506,7 @@ entrypoint: '${entrypoint.join('\', \'')}'
       throw new Error(`package '${pkg.id}' is not a docker package`);
     }
 
-    const artInfoPath = this.pkgInfo.artifactInfoLocation(pkg.id, 'docker', util.currentPlatform());
+    const artInfoPath = this.pkgInfo.artifactInfoLocation(pkg.id, 'docker', util.currentArch());
     const artInfo = readBuiltArtifactInfo(artInfoPath);
     const tag = artInfo.remoteArtifactLocation;
 
