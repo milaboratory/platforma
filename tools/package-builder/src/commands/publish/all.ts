@@ -41,8 +41,6 @@ export default class PublishAll extends Command {
       forceReupload: flags.force,
     });
 
-    core.publishDescriptors();
-
     core.publishDockerImages({
       ids: flags['package-id'],
     });

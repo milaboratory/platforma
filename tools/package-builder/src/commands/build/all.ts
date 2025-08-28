@@ -65,6 +65,8 @@ export default class BuildAll extends Command {
       }
 
       if (!envs.isCI()) {
+        // CI environment may prebuild packages on different agents in parallel.
+        // In that case we should assemble all built artifacts info sw.json in one step before publishing package, not after each partial build.
         core.buildDescriptors({
           packageIds: flags['package-id'] ? flags['package-id'] : undefined,
         });

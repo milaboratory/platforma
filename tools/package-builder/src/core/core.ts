@@ -6,8 +6,6 @@ import type { PackageConfig, Entrypoint, DockerPackage } from './package-info';
 import { PackageInfo } from './package-info';
 import {
   Renderer,
-  listPackageEntrypoints,
-  readDescriptorFile,
   readBuiltArtifactInfo,
   writeBuiltArtifactInfo,
 } from './renderer';
@@ -354,41 +352,6 @@ entrypoint: '${entrypoint.join('\', \'')}'
     this.logger.info(`${packageContentType} archive is built:
   archive: '${archivePath}'
   location file: '${artInfoPath}'`);
-  }
-
-  public publishDescriptors(options?: { npmPublishArgs?: string[] }) {
-    const names = listPackageEntrypoints(this.pkgInfo.packageRoot);
-
-    if (names.length === 0) {
-      throw new Error(
-        `No software entrypoints found in package during 'publish descriptors' action. Nothing to publish`,
-      );
-    }
-
-    for (const epInfo of names) {
-      const epDescr = readDescriptorFile(this.pkgInfo.packageName, epInfo.name, epInfo.path);
-      if (epDescr.isDev) {
-        this.logger.error(
-          'You are trying to publish entrypoint descriptor generated in \'dev\' mode. This software would not be accepted for execution by any production environment.',
-        );
-        throw new Error('attempt to publish \'dev\' entrypoint descriptor');
-      }
-    }
-
-    this.logger.info('Running \'npm publish\' to publish NPM package with entrypoint descriptors...');
-
-    const args = ['publish'];
-    if (options?.npmPublishArgs) {
-      args.push(...options.npmPublishArgs);
-    }
-
-    const result = spawnSync('npm', args, { stdio: 'inherit', cwd: this.pkgInfo.packageRoot });
-    if (result.error) {
-      throw result.error;
-    }
-    if (result.status !== 0) {
-      throw new Error('\'npm publish\' failed with non-zero exit code');
-    }
   }
 
   public async publishPackages(options?: {
