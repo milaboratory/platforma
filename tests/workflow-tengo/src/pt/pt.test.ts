@@ -5,8 +5,9 @@ import type { TestRenderResults } from '@platforma-sdk/test';
 import type { MiddleLayerDriverKit } from '@milaboratories/pl-middle-layer';
 import type { PlTreeNodeAccessor } from '@milaboratories/pl-tree';
 import type { ComputableCtx } from '@milaboratories/computable';
+import { getTestTimeout } from '@milaboratories/helpers';
 
-const TIMEOUT = 40000;
+const TIMEOUT = getTestTimeout(40_000);
 
 const getFileContent = async (
   result: TestRenderResults<string>,

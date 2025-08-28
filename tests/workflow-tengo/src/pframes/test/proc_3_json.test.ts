@@ -4,8 +4,9 @@ import { awaitStableState } from '@platforma-sdk/test';
 import { assertJson, assertResource, eTplTest } from './extended_tpl_test';
 import { expect } from 'vitest';
 import type { Computable } from '@milaboratories/computable';
+import { getTestTimeout } from '@milaboratories/helpers';
 
-const TIMEOUT = 15_000;
+const TIMEOUT = getTestTimeout(15_000);
 
 const INPUT_SPEC: PUniversalColumnSpec = {
   kind: 'PColumn',

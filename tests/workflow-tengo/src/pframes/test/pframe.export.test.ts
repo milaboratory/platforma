@@ -1,8 +1,9 @@
 import { Annotation, type DriverKit, Pl, stringifyJson } from '@milaboratories/pl-middle-layer';
 import { awaitStableState, tplTest } from '@platforma-sdk/test';
 import * as env from '../../test/env';
+import { getTestTimeout } from '@milaboratories/helpers';
 
-const TIMEOUT = 40_000;
+const TIMEOUT = getTestTimeout(40_000);
 
 // pfconv spec
 const baseSpec = {

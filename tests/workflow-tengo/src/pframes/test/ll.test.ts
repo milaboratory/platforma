@@ -2,8 +2,9 @@ import type { AnyRef } from '@milaboratories/pl-middle-layer';
 import { Annotation, Pl, field, resourceType } from '@milaboratories/pl-middle-layer';
 import { awaitStableState, tplTest } from '@platforma-sdk/test';
 import { assertBlob, assertResource, eTplTest } from './extended_tpl_test';
+import { getTestTimeout } from '@milaboratories/helpers';
 
-const TIMEOUT = 10_000;
+const TIMEOUT = getTestTimeout(10_000);
 
 const jsonFromBlob = (b: { content: Uint8Array }) =>
   JSON.parse(Buffer.from(b.content).toString());

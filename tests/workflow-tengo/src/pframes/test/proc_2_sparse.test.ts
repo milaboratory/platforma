@@ -2,8 +2,9 @@ import type { PColumnSpec, PUniversalColumnSpec } from '@milaboratories/pl-middl
 import { Annotation, field, Pl, resourceType } from '@milaboratories/pl-middle-layer';
 import { awaitStableState } from '@platforma-sdk/test';
 import { assertBlob, assertJson, assertResource, eTplTest } from './extended_tpl_test';
+import { getTestTimeout } from '@milaboratories/helpers';
 
-const TIMEOUT = 40_000;
+const TIMEOUT = getTestTimeout(40_000);
 
 const xsvSettings = {
   axes: [
