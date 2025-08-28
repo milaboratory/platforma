@@ -10,3 +10,7 @@ export function path(...p: string[]): string {
 export function assets(...p: string[]): string {
   return path('assets', ...p);
 }
+
+export function dist(...p: string[]): string {
+  return path('dist', ...p);
+}

@@ -408,6 +408,11 @@ export class PackageInfo {
     return this.makePackageConfig(id, artifact);
   }
 
+  public artifactInfoLocation(pkgID: string, artifactType: 'archive' | 'docker', platform?: util.PlatformType): string {
+    const platformPart = platform ? `_${platform}` : '';
+    return path.resolve(this.packageRoot, 'dist', 'artifacts', pkgID, `${artifactType}${platformPart}.json`);
+  }
+
   private makePackageConfig(id: string, artifact: artifacts.config): PackageConfig {
     const pkgRoot = this.packageRoot;
 

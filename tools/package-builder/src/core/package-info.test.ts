@@ -46,6 +46,6 @@ test('PackageInfo considers version override', () => {
   pkg = i.getPackage(artifacts.EPNameJavaEnvironment);
   expect(pkg.version).toEqual(customVersion);
 
-  pkg = i.getPackage(artifacts.EPNameJavaDependency);
+  pkg = i.getPackage(artifacts.EPNameJava);
   expect(pkg.version).toEqual(customVersion);
 });

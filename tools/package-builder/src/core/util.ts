@@ -276,6 +276,10 @@ export function splitPlatform(platform: PlatformType): { os: OSType; arch: ArchT
   };
 }
 
+export function joinPlatform(os: OSType, arch: ArchType): PlatformType {
+  return `${os}-${arch}`;
+}
+
 export function isPlatformSupported(os: OSType, arch: ArchType): boolean {
   return AllPlatforms.includes(`${os}-${arch}`);
 }

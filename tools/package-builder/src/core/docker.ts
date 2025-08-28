@@ -1,8 +1,5 @@
 import { spawnSync } from 'node:child_process';
 import type { DockerPackage } from './package-info';
-import * as util from './util';
-import * as fs from 'node:fs';
-import * as path from 'node:path';
 import * as os from 'node:os';
 import { PL_DOCKER_REGISTRY } from './envs';
 
@@ -20,13 +17,9 @@ export function entrypointNameToOrigin(name: string): string {
   return name.substring(0, suffixIndex);
 }
 
-export function localImageExists(tag: string): boolean {
-  const result = spawnSync('docker', ['image', 'ls', '--filter=reference=' + tag, '--format=\'{{.ID}}\''], {
+export function getImageID(tag: string): string {
+  const result = spawnSync('docker', ['image', 'ls', '--filter=reference=' + tag, '--format={{.ID}}'], {
     stdio: 'pipe',
-    env: {
-      ...process.env, // Inherit all environment variables from the parent process
-      HOME: process.env.HOME || os.homedir(), // Ensure HOME is set
-    },
   });
 
   if (result.error) {
@@ -41,7 +34,11 @@ export function localImageExists(tag: string): boolean {
     throw new Error(`package-builder internal logic error: more than one image found by exact tag match: ${output}`);
   }
 
-  return output !== '';
+  return output;
+}
+
+export function localImageExists(tag: string): boolean {
+  return getImageID(tag) !== '';
 }
 
 export function remoteImageExists(tag: string): boolean {
@@ -92,45 +89,23 @@ export function build(context: string, dockerfile: string, tag: string) {
   }
 }
 
-export function tagFromPackage(packageRoot: string, pkg: DockerPackage): string {
+export function addTag(imageIdOrTag: string, newTag: string) {
+  const result = spawnSync('docker', ['image', 'tag', imageIdOrTag, newTag], {
+    stdio: 'inherit',
+  });
+  if (result.error) {
+    throw result.error;
+  }
+  if (result.status !== 0) {
+    throw new Error(`docker build failed with status ${result.status}`);
+  }
+}
+
+export function generateDstTagName(pkg: DockerPackage, imageID: string): string {
   if (pkg.type !== 'docker') {
     throw new Error(`package '${pkg.name}' is not a docker package`);
   }
-  const dockerfile = dockerfileFullPath(packageRoot, pkg);
-  const context = contextFullPath(packageRoot, pkg);
-  const hash = contentHash(context, dockerfile);
-  const tag = dockerTag(pkg.name, hash);
-  return tag;
-}
 
-function dockerfileFullPath(packageRoot: string, pkg: DockerPackage): string {
-  return path.resolve(packageRoot, pkg.dockerfile ?? 'Dockerfile');
-}
-
-function contextFullPath(packageRoot: string, pkg: DockerPackage): string {
-  if (pkg.context === './' || pkg.context === '.') {
-    throw new Error(`Invalid Docker context: "${pkg.context}". Context cannot be "./" or "." - use absolute path or relative path without "./" prefix`);
-  }
-  return path.resolve(packageRoot, pkg.context ?? '.');
-}
-
-function contentHash(contextFullPath: string, dockerfileFullPath: string): string {
-  if (!fs.existsSync(dockerfileFullPath)) {
-    throw new Error(`Dockerfile '${dockerfileFullPath}' not found`);
-  }
-
-  if (!fs.existsSync(contextFullPath)) {
-    throw new Error(`Context '${contextFullPath}' not found`);
-  }
-
-  const contextHash = util.hashDirMetaSync(contextFullPath);
-  const dockerfileContent = fs.readFileSync(dockerfileFullPath, 'utf8');
-  contextHash.update(dockerfileContent);
-
-  return contextHash.digest('hex').slice(0, 12);
-}
-
-function dockerTag(packageName: string, contentHash: string): string {
   const dockerRegistry = process.env[PL_DOCKER_REGISTRY] ?? defaultDockerRegistry;
-  return `${dockerRegistry}:${packageName.replaceAll('/', '.')}.${contentHash}`;
+  return `${dockerRegistry}:${pkg.name.replaceAll('/', '.')}.${imageID}`;
 }

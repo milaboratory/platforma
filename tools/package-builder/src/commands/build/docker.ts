@@ -2,6 +2,7 @@ import { Command } from '@oclif/core';
 import * as cmdOpts from '../../core/cmd-opts';
 import * as util from '../../core/util';
 import { Core } from '../../core/core';
+import * as envs from '../../core/envs';
 
 export default class Docker extends Command {
   static override description = 'build docker images';
@@ -21,15 +22,21 @@ export default class Docker extends Command {
     const core = new Core(logger, { packageRoot: flags['package-root'] });
     core.buildMode = cmdOpts.modeFromFlag(flags.dev as cmdOpts.devModeName);
 
-    core.pkg.version = flags.version;
+    core.pkgInfo.version = flags.version;
 
     core.buildDockerImages({
       ids: flags['package-id'],
     });
 
-    if (!flags['no-docker-push']) {
+    if (!flags['skip-docker-push']) {
       core.publishDockerImages({
         ids: flags['package-id'],
+      });
+    }
+
+    if (!envs.isCI()) {
+      core.buildDescriptors({
+        packageIds: flags['package-id'] ? flags['package-id'] : undefined,
       });
     }
   }
