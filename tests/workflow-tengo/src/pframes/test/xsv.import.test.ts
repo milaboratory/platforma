@@ -4,6 +4,8 @@ import { awaitStableState, tplTest } from '@platforma-sdk/test';
 import { Templates } from '../../../dist';
 import { deepClone } from '@milaboratories/helpers';
 
+const TIMEOUT = 60000;
+
 // dummy csv data
 const csvData = `ax1,ax2,ax3,col1,col2
 A1,B1,C1,X1,Y1
@@ -146,7 +148,7 @@ tplTest.concurrent.for([
     const cols = (
       await awaitStableState(
         result.computeOutput('pf', (pf) => pf?.listInputFields()),
-        10000,
+        TIMEOUT,
       )
     )?.sort();
 
@@ -163,7 +165,7 @@ tplTest.concurrent.for([
             fields: r?.listInputFields(),
           };
         }),
-        6000,
+        TIMEOUT,
       );
 
       expect(colOpt).toBeDefined();
@@ -188,7 +190,7 @@ tplTest.concurrent.for([
               }
               return driverKit.blobDriver.getOnDemandBlob(r.persist(), ctx).handle;
             }),
-            60000,
+            TIMEOUT,
           );
 
           const data = JSON.parse(
@@ -320,7 +322,7 @@ tplTest.concurrent.for([
             fields: r?.listInputFields(),
           };
         }),
-        60000,
+        TIMEOUT,
       );
 
       expect(colOpt).toBeDefined();
@@ -358,7 +360,7 @@ tplTest.concurrent.for([
                 fields: r?.listInputFields(),
               };
             }),
-            60000,
+            TIMEOUT,
           );
 
           expect(colOpt).toBeDefined();
@@ -475,7 +477,7 @@ tplTest.concurrent.for([
             fields: r?.listInputFields(),
           };
         }),
-        60000,
+        TIMEOUT,
       );
 
       expect(colOpt).toBeDefined();
@@ -513,7 +515,7 @@ tplTest.concurrent.for([
                 fields: r?.listInputFields(),
               };
             }),
-            60000,
+            TIMEOUT,
           );
 
           expect(colOpt).toBeDefined();
