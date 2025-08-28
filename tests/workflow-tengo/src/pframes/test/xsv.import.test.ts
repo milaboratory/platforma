@@ -2,9 +2,9 @@
 import { field, Pl } from '@milaboratories/pl-middle-layer';
 import { awaitStableState, tplTest } from '@platforma-sdk/test';
 import { Templates } from '../../../dist';
-import { deepClone } from '@milaboratories/helpers';
+import { deepClone, getTestTimeout } from '@milaboratories/helpers';
 
-const TIMEOUT = 60000;
+const TIMEOUT = getTestTimeout(60_000);
 
 // dummy csv data
 const csvData = `ax1,ax2,ax3,col1,col2
