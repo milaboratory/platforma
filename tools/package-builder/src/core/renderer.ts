@@ -595,7 +595,7 @@ export class Renderer {
             return {
               type: 'binary',
               registry: artInfo.registryName,
-              package: artInfo.pathForSwJson,
+              package: artInfo.remoteArtifactLocation,
 
               cmd: ep.cmd,
               envVars: ep.env,
@@ -605,7 +605,7 @@ export class Renderer {
             return {
               type: 'java',
               registry: artInfo.registryName,
-              package: artInfo.pathForSwJson,
+              package: artInfo.remoteArtifactLocation,
 
               cmd: ep.cmd,
               envVars: ep.env,
@@ -618,7 +618,7 @@ export class Renderer {
             return {
               type: 'python',
               registry: artInfo.registryName,
-              package: artInfo.pathForSwJson,
+              package: artInfo.remoteArtifactLocation,
 
               cmd: ep.cmd,
               envVars: ep.env,
@@ -631,7 +631,7 @@ export class Renderer {
             return {
               type: 'R',
               registry: artInfo.registryName,
-              package: artInfo.pathForSwJson,
+              package: artInfo.remoteArtifactLocation,
 
               cmd: ep.cmd,
               envVars: ep.env,
@@ -706,7 +706,7 @@ export class Renderer {
     return {
       type: envPkg.runtime,
       registry: artInfo.registryName!,
-      package: artInfo.pathForSwJson,
+      package: artInfo.remoteArtifactLocation,
       binDir: envPkg.binDir,
     };
   }
@@ -746,8 +746,8 @@ export class Renderer {
 
     return {
       registry: artInfo.registryName!,
-      package: artInfo.pathForSwJson,
-      url: util.urlJoin(artInfo.registryURL, artInfo.pathForSwJson),
+      package: artInfo.remoteArtifactLocation,
+      url: util.urlJoin(artInfo.registryURL, artInfo.remoteArtifactLocation),
     };
   }
 
@@ -771,7 +771,7 @@ export class Renderer {
     const artInfo = readBuiltArtifactInfo(artInfoPath);
 
     return {
-      tag: artInfo.pathForSwJson,
+      tag: artInfo.remoteArtifactLocation,
       entrypoint: dockerPkg.entrypoint ?? [],
       cmd: ep.cmd,
       pkg: dockerPkg.pkg,
@@ -852,7 +852,7 @@ export type builtArtifactInfo = {
   platform: util.PlatformType;
   registryURL?: string; // registry public URL (for assets)
   registryName?: string; // name of registry (for binary and asset archives)
-  pathForSwJson: string; // path to put into sw.json or as.json file
+  remoteArtifactLocation: string; // path to put into sw.json or as.json file
   uploadPath?: string; // custom upload path if it does not match pathForSwJson
 };
 

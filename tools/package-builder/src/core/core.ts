@@ -310,7 +310,7 @@ entrypoint: '${entrypoint.join('\', \'')}'
     writeBuiltArtifactInfo(artInfoPath, {
       type: 'docker',
       platform: util.currentPlatform(),
-      pathForSwJson: dstTag,
+      remoteArtifactLocation: dstTag,
     });
 
     this.logger.info(`Docker image is built:
@@ -348,7 +348,7 @@ entrypoint: '${entrypoint.join('\', \'')}'
       platform: util.joinPlatform(os, arch),
       registryURL: pkg.registry.downloadURL,
       registryName: pkg.registry.name,
-      pathForSwJson: pkg.namePattern,
+      remoteArtifactLocation: pkg.namePattern,
       uploadPath: pkg.fullName(util.joinPlatform(os, arch)),
     });
 
@@ -423,7 +423,7 @@ entrypoint: '${entrypoint.join('\', \'')}'
 
     const artInfoPath = this.pkgInfo.artifactInfoLocation(pkg.id, 'archive', util.joinPlatform(os, arch));
     const artInfo = readBuiltArtifactInfo(artInfoPath);
-    const dstName = artInfo.uploadPath ?? artInfo.pathForSwJson;
+    const dstName = artInfo.uploadPath ?? artInfo.remoteArtifactLocation;
 
     if (!storageURL) {
       const regNameUpper = pkg.registry.name.toUpperCase().replaceAll(/[^A-Z0-9_]/g, '_');
@@ -508,7 +508,7 @@ entrypoint: '${entrypoint.join('\', \'')}'
 
     const artInfoPath = this.pkgInfo.artifactInfoLocation(pkg.id, 'docker', util.currentPlatform());
     const artInfo = readBuiltArtifactInfo(artInfoPath);
-    const tag = artInfo.pathForSwJson;
+    const tag = artInfo.remoteArtifactLocation;
 
     // Because of turbo caching, we may face situation when no real docker build was executed on CI agent,
     // but image is already in remote registry. We should not fail in such scenarios, calmly skipping docker push step.
