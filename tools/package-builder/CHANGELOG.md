@@ -1,5 +1,11 @@
 # @platforma-sdk/package-builder
 
+## 3.2.1
+
+### Patch Changes
+
+- 70bf87c: allow 'id-or-ref' back (BLAST example :) )
+
 ## 3.2.0
 
 ### Minor Changes
