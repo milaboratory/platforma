@@ -6,11 +6,13 @@ import type { MiddleLayerDriverKit } from '@milaboratories/pl-middle-layer';
 import type { PlTreeNodeAccessor } from '@milaboratories/pl-tree';
 import type { ComputableCtx } from '@milaboratories/computable';
 
+const TIMEOUT = 40000;
+
 const getFileContent = async (
   result: TestRenderResults<string>,
   outputName: string,
   driverKit: MiddleLayerDriverKit,
-  timeout = 40000,
+  timeout = TIMEOUT,
 ): Promise<string> => {
   const handle = await awaitStableState(
     result.computeOutput(outputName, (fileHandle: PlTreeNodeAccessor | undefined, ctx: ComputableCtx) => {
@@ -50,6 +52,7 @@ const normalizeNdjson = (str: string) =>
 
 tplTest.concurrent(
   'pt simple test',
+  { timeout: TIMEOUT },
   async ({ helper, expect, driverKit }) => {
     const inputTsvData = 'a\tb\n1\tX\n4\tY\n9\tZ';
     const expectedOutputTsvData = 'a\ta_sqrt\n1\t1.0\n4\t2.0\n9\t3.0';
@@ -71,6 +74,7 @@ tplTest.concurrent(
 
 tplTest.concurrent(
   'pt ex1 test - window and groupBy operations',
+  { timeout: TIMEOUT },
   async ({ helper, expect, driverKit }) => {
     const inputTsvData = `category\tuser_id\tscore\tvalue
 A\tuser1\t100\t10
@@ -118,6 +122,7 @@ C\t50\t300.0`;
 
 tplTest.concurrent(
   'pt ex2 test - filter and sort operations',
+  { timeout: TIMEOUT },
   async ({ helper, expect, driverKit }) => {
     const inputTsvData = `category\tuser_id\tscore\tvalue
 A\tuser1\t100\t10
@@ -161,6 +166,7 @@ B\tuser7\t190\t110`;
 
 tplTest.concurrent(
   'pt ex3 test - join operations',
+  { timeout: TIMEOUT },
   async ({ helper, expect, driverKit }) => {
     // No input files needed as data is defined in the template as strings
 
@@ -239,6 +245,7 @@ Banana,Yellow`;
 
 tplTest.concurrent(
   'pt ex4 test - dynamic substring',
+  { timeout: TIMEOUT },
   async ({ helper, expect, driverKit }) => {
     const inputTsvData = `text\tstart\tlen\tend
 HelloWorld\t0\t5\t5
@@ -283,6 +290,7 @@ Short\thort`;
 
 tplTest.concurrent(
   'pt ex5 test - comprehensive string functions',
+  { timeout: TIMEOUT },
   async ({ helper, expect, driverKit }) => {
     // No input needed - data is embedded in template
 
@@ -308,6 +316,7 @@ frank@startup.io\tscript.py\tBanana smoothie with lime juice\ttest888\ttrue\tfal
 
 tplTest.concurrent(
   'pt ndjson test - comprehensive NDJSON format support',
+  { timeout: TIMEOUT },
   async ({ helper, expect, driverKit }) => {
     // No input needed - data is embedded in template
 
