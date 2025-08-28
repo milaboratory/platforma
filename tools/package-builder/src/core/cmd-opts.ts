@@ -53,7 +53,7 @@ export const DockerFlags = {
 
   'docker-autopush': Flags.boolean({
     env: envs.PL_DOCKER_AUTOPUSH,
-    description: 'do not push docker images to registry after build',
+    description: 'push docker images to registry after build. Enabled by default in CI builds.',
     default: false,
     required: false,
   }),

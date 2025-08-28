@@ -24,6 +24,7 @@ export function getImageHash(tag: string): string {
   const result = spawnSync('docker', ['image', 'ls', '--filter=reference=' + tag, '--format={{.ID}}'], {
     stdio: 'pipe',
     env: {
+      ...process.env, // PATH variable from parent process affects execution
       HOME: process.env.HOME || os.homedir(), // Ensure HOME is set
     },
   });
@@ -51,7 +52,7 @@ export function remoteImageExists(tag: string): boolean {
   const result = spawnSync('docker', ['manifest', 'inspect', tag], {
     stdio: 'pipe',
     env: {
-      ...process.env, // Inherit all environment variables from the parent process
+      ...process.env, // PATH variable from parent process affects execution
       HOME: process.env.HOME || os.homedir(), // Ensure HOME is set
     },
   });
@@ -67,7 +68,7 @@ export function push(tag: string) {
   const result = spawnSync('docker', ['push', tag], {
     stdio: 'inherit',
     env: {
-      ...process.env, // Inherit all environment variables from the parent process
+      ...process.env, // PATH variable from parent process affects execution
       HOME: process.env.HOME || os.homedir(), // Ensure HOME is set
     },
   });
@@ -83,7 +84,7 @@ export function build(context: string, dockerfile: string, tag: string) {
   const result = spawnSync('docker', ['build', '-t', tag, context, '-f', dockerfile], {
     stdio: 'inherit',
     env: {
-      ...process.env, // Inherit all environment variables from the parent process
+      ...process.env, // PATH variable from parent process affects execution
       HOME: process.env.HOME || os.homedir(), // Ensure HOME is set
     },
   });
@@ -99,6 +100,7 @@ export function addTag(imageIdOrTag: string, newTag: string) {
   const result = spawnSync('docker', ['image', 'tag', imageIdOrTag, newTag], {
     stdio: 'inherit',
     env: {
+      ...process.env, // PATH variable from parent process affects execution
       HOME: process.env.HOME || os.homedir(), // Ensure HOME is set
     },
   });
@@ -114,6 +116,7 @@ export function removeTag(imageTag: string) {
   const result = spawnSync('docker', ['image', 'rm', imageTag], {
     stdio: 'inherit',
     env: {
+      ...process.env, // PATH variable from parent process affects execution
       HOME: process.env.HOME || os.homedir(), // Ensure HOME is set
     },
   });
@@ -142,7 +145,7 @@ export function generateLocalTagName(packageRoot: string, pkg: DockerPackage): s
   const context = contextFullPath(packageRoot, pkg);
   const hash = contentHash(context, dockerfile);
 
-  return dockerTag(pkg.name, hash);
+  return dockerTag('local-image', hash);
 }
 
 function dockerfileFullPath(packageRoot: string, pkg: DockerPackage): string {
