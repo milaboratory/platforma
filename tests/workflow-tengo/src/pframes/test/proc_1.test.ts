@@ -3,50 +3,55 @@ import { Annotation, field, Pl, resourceType } from '@milaboratories/pl-middle-l
 import { awaitStableState } from '@platforma-sdk/test';
 import { assertBlob, assertJson, assertResource, eTplTest } from './extended_tpl_test';
 
+const TIMEOUT = 15_000;
+
+const xsvSettings = {
+  axes: [
+    {
+      column: 'a',
+      spec: {
+        name: 'a',
+        type: 'Long',
+        domain: {
+          domain1: 'value',
+        },
+        annotations: {
+          [Annotation.Label]: 'A',
+        } satisfies Annotation,
+      },
+    },
+  ],
+  columns: [
+    {
+      column: 'b',
+      id: 'b',
+      spec: {
+        valueType: 'Long',
+        name: 'b',
+        annotations: {
+          [Annotation.Label]: 'B',
+        } satisfies Annotation,
+      },
+    },
+  ],
+  storageFormat: 'Json',
+  partitionKeyLength: 0,
+} as const;
+
+const inputSpec: PUniversalColumnSpec = {
+  kind: 'PColumn',
+  name: 'inputColumn',
+  valueType: 'File',
+  axesSpec: [
+    { name: 'inputAxis1', type: 'Long' },
+    { name: 'inputAxis2', type: 'Int', domain: { domain3: 'd3' } },
+  ],
+};
+
 eTplTest.concurrent(
   'should correctly execute pframes.processColumn without aggregation',
+  { timeout: TIMEOUT },
   async ({ helper, expect, stHelper }) => {
-    const xsvSettings = {
-      axes: [
-        {
-          column: 'a',
-          spec: {
-            name: 'a',
-            type: 'Long',
-            domain: {
-              domain1: 'value',
-            },
-            annotations: {
-              [Annotation.Label]: 'A',
-            } satisfies Annotation,
-          },
-        },
-      ],
-      columns: [
-        {
-          column: 'b',
-          id: 'b',
-          spec: {
-            valueType: 'Long',
-            name: 'b',
-            annotations: {
-              [Annotation.Label]: 'B',
-            } satisfies Annotation,
-          },
-        },
-      ],
-      storageFormat: 'Json',
-      partitionKeyLength: 0,
-    };
-    const inputSpec = {
-      kind: 'PColumn',
-      name: 'inputColumn',
-      valueType: 'File',
-      axesSpec: [
-        { name: 'inputAxis1', type: 'Long' },
-        { name: 'inputAxis2', type: 'Int', domain: { domain3: 'd3' } },
-      ],
-    } satisfies PUniversalColumnSpec;
     const result = await helper.renderTemplate(
       true,
       'pframes.test.proc_1',
@@ -82,7 +87,7 @@ eTplTest.concurrent(
       },
     );
     const r = stHelper.tree(result.resultEntry);
-    const finalResult = await awaitStableState(r, 10000);
+    const finalResult = await awaitStableState(r, TIMEOUT);
     // console.dir(finalResult, { depth: null });
     assertResource(finalResult);
     const theResult = finalResult.inputs['result'];
@@ -113,48 +118,8 @@ eTplTest.concurrent(
 
 eTplTest.concurrent(
   'should correctly execute pframes.processColumn with aggregation 1',
+  { timeout: TIMEOUT },
   async ({ helper, expect, stHelper }) => {
-    const xsvSettings = {
-      axes: [
-        {
-          column: 'a',
-          spec: {
-            name: 'a',
-            type: 'Long',
-            domain: {
-              domain1: 'value',
-            },
-            annotations: {
-              [Annotation.Label]: 'A',
-            } satisfies Annotation,
-          },
-        },
-      ],
-      columns: [
-        {
-          column: 'b',
-          id: 'b',
-          spec: {
-            valueType: 'Long',
-            name: 'b',
-            annotations: {
-              [Annotation.Label]: 'B',
-            } satisfies Annotation,
-          },
-        },
-      ],
-      storageFormat: 'Json',
-      partitionKeyLength: 0,
-    };
-    const inputSpec = {
-      kind: 'PColumn',
-      name: 'inputColumn',
-      valueType: 'File',
-      axesSpec: [
-        { name: 'inputAxis1', type: 'Long' },
-        { name: 'inputAxis2', type: 'Int', domain: { domain3: 'd3' } },
-      ],
-    } satisfies PUniversalColumnSpec;
     const result = await helper.renderTemplate(
       true,
       'pframes.test.proc_1',
@@ -191,7 +156,7 @@ eTplTest.concurrent(
       },
     );
     const r = stHelper.tree(result.resultEntry);
-    const finalResult = await awaitStableState(r, 10000);
+    const finalResult = await awaitStableState(r, TIMEOUT);
     // console.dir(finalResult, { depth: null });
     assertResource(finalResult);
     const theResult = finalResult.inputs['result'];
@@ -222,48 +187,8 @@ eTplTest.concurrent(
 
 eTplTest.concurrent(
   'should correctly execute pframes.processColumn with aggregation 2',
+  { timeout: TIMEOUT },
   async ({ helper, expect, stHelper }) => {
-    const xsvSettings = {
-      axes: [
-        {
-          column: 'a',
-          spec: {
-            name: 'a',
-            type: 'Long',
-            domain: {
-              domain1: 'value',
-            },
-            annotations: {
-              [Annotation.Label]: 'A',
-            } satisfies Annotation,
-          },
-        },
-      ],
-      columns: [
-        {
-          column: 'b',
-          id: 'b',
-          spec: {
-            valueType: 'Long',
-            name: 'b',
-            annotations: {
-              [Annotation.Label]: 'B',
-            } satisfies Annotation,
-          },
-        },
-      ],
-      storageFormat: 'Json',
-      partitionKeyLength: 0,
-    };
-    const inputSpec = {
-      kind: 'PColumn',
-      name: 'inputColumn',
-      valueType: 'File',
-      axesSpec: [
-        { name: 'inputAxis1', type: 'Long' },
-        { name: 'inputAxis2', type: 'Int', domain: { domain3: 'd3' } },
-      ],
-    } satisfies PUniversalColumnSpec;
     const result = await helper.renderTemplate(
       true,
       'pframes.test.proc_1',
@@ -300,7 +225,7 @@ eTplTest.concurrent(
       },
     );
     const r = stHelper.tree(result.resultEntry);
-    const finalResult = await awaitStableState(r, 10000);
+    const finalResult = await awaitStableState(r, TIMEOUT);
     // console.dir(finalResult, { depth: null });
     assertResource(finalResult);
     const theResult = finalResult.inputs['result'];
