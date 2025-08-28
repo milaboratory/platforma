@@ -2,7 +2,7 @@ import { z } from 'zod';
 import * as artifacts from './artifacts';
 import { toInt } from '../util';
 
-const artifactOrRef = artifacts.configSchema;
+const artifactOrRef = z.union([z.string(), artifacts.configSchema]);
 
 const envVarsSchema = z.array(
   z
