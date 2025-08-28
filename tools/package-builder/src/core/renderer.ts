@@ -546,13 +546,10 @@ export class Renderer {
       binPkg.id, 'archive',
       binPkg.crossplatform ? undefined : util.currentPlatform(),
     );
-    if (!fs.existsSync(artInfoPath)) {
-      if (requireArtifactInfo) {
-        throw new Error(`could not render binary entrypoint '${epName}': artifact info file '${artInfoPath}' does not exist`);
-      }
+    const artInfo = readArtifactInfoIfExists(artInfoPath, epName, requireArtifactInfo);
+    if (!artInfo) {
       return undefined;
     }
-    const artInfo = readBuiltArtifactInfo(artInfoPath);
 
     if (!artInfo.registryName) {
       throw new Error(
@@ -695,13 +692,10 @@ export class Renderer {
 
     // TODO: we need to collect artifact info for all platforms
     const artInfoPath = this.pkgInfo.artifactInfoLocation(envPkg.id, 'archive', util.currentPlatform());
-    if (!fs.existsSync(artInfoPath)) {
-      if (requireArtifactInfo) {
-        throw new Error(`could not render run environment entrypoint '${epName}': artifact info file '${artInfoPath}' does not exist`);
-      }
+    const artInfo = readArtifactInfoIfExists(artInfoPath, epName, requireArtifactInfo);
+    if (!artInfo) {
       return undefined;
     }
-    const artInfo = readBuiltArtifactInfo(artInfoPath);
 
     return {
       type: envPkg.runtime,
@@ -730,13 +724,10 @@ export class Renderer {
     }
 
     const artInfoPath = this.pkgInfo.artifactInfoLocation(assetPkg.id, 'archive', undefined);
-    if (!fs.existsSync(artInfoPath)) {
-      if (requireArtifactInfo) {
-        throw new Error(`could not render asset '${epName}': artifact info file '${artInfoPath}' does not exist`);
-      }
+    const artInfo = readArtifactInfoIfExists(artInfoPath, epName, requireArtifactInfo);
+    if (!artInfo) {
       return undefined;
     }
-    const artInfo = readBuiltArtifactInfo(artInfoPath);
 
     if (!artInfo.registryURL) {
       throw new Error(
@@ -762,13 +753,10 @@ export class Renderer {
     }
 
     const artInfoPath = this.pkgInfo.artifactInfoLocation(dockerPkg.id, 'docker', util.currentPlatform());
-    if (!fs.existsSync(artInfoPath)) {
-      if (requireArtifactInfo) {
-        throw new Error(`could not render docker entrypoint '${epName}': artifact info file '${artInfoPath}' does not exist`);
-      }
+    const artInfo = readArtifactInfoIfExists(artInfoPath, epName, requireArtifactInfo);
+    if (!artInfo) {
       return undefined;
     }
-    const artInfo = readBuiltArtifactInfo(artInfoPath);
 
     return {
       tag: artInfo.remoteArtifactLocation,
@@ -868,4 +856,16 @@ export function readBuiltArtifactInfo(
 ): builtArtifactInfo {
   const data = fs.readFileSync(location, 'utf8');
   return JSON.parse(data) as builtArtifactInfo;
+}
+
+function readArtifactInfoIfExists(location: string, epName: string, requireExisting?: boolean): builtArtifactInfo | undefined {
+  if (fs.existsSync(location)) {
+    return readBuiltArtifactInfo(location);
+  }
+
+  if (requireExisting) {
+    throw new Error(`could not render docker entrypoint '${epName}': artifact info file '${location}' does not exist`);
+  }
+
+  return undefined;
 }
