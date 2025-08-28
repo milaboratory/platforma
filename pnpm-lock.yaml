@@ -31,8 +31,8 @@ catalogs:
       specifier: ^1.0.123
       version: 1.0.127
     '@milaboratories/pframes-rs-node':
-      specifier: 1.0.69
-      version: 1.0.69
+      specifier: 1.0.70
+      version: 1.0.70
     '@milaboratories/software-pframes-conv':
       specifier: 2.2.2
       version: 2.2.2
@@ -1923,7 +1923,7 @@ importers:
         version: link:../computable
       '@milaboratories/pframes-rs-node':
         specifier: 'catalog:'
-        version: 1.0.69(encoding@0.1.13)
+        version: 1.0.70(encoding@0.1.13)
       '@milaboratories/pl-client':
         specifier: workspace:*
         version: link:../pl-client
@@ -4892,11 +4892,11 @@ packages:
   '@milaboratories/miplots4@1.0.127':
     resolution: {integrity: sha512-+mDFaEbb9zUpt1xY5SwbAxQ++8VfqtixoTe9bD2xLh8pXyTt5Pu+/KhSa0ws4xOSXoHhaI2JX/R9S7PUJEFmcA==}
 
-  '@milaboratories/pframes-rs-node@1.0.69':
-    resolution: {integrity: sha512-/neM+w62cdR69ZD9h/braKjRpnT6x9ZKholRKyzLWuBy1DBu9aXj9S9PGR0sv8YBqjJJzD1fRzZO2S5pZe26Zw==}
+  '@milaboratories/pframes-rs-node@1.0.70':
+    resolution: {integrity: sha512-1bXhoyvKQ64MC6ZFBOBZQGVwVR+3NEzicrNC9GTX8GaSvjxY3p6R41ebp53wp7K0zm/av2a8QgeZ5jwifJ23ug==}
 
-  '@milaboratories/pframes-rs-serv@1.0.69':
-    resolution: {integrity: sha512-jCYqICQaed+D1OFp80I2I75Bwr8toJsWCMtbQboLnSDkctXxVvAQo294XfdSqpa2cPqIDa150a5KZtXi6eLLIA==}
+  '@milaboratories/pframes-rs-serv@1.0.70':
+    resolution: {integrity: sha512-WoVjQndyFRnjdfIzf6k7JcaH6d6dLCrkjHim1vtlRriEXbzNo7/7qOe6zSIBj7ZOqi4DO8N7z/weuWpg3KGOLA==}
     hasBin: true
 
   '@milaboratories/pl-error-like@1.12.4':
@@ -13964,10 +13964,10 @@ snapshots:
       - d3-scale-chromatic
       - supports-color
 
-  '@milaboratories/pframes-rs-node@1.0.69(encoding@0.1.13)':
+  '@milaboratories/pframes-rs-node@1.0.70(encoding@0.1.13)':
     dependencies:
       '@mapbox/node-pre-gyp': 2.0.0(encoding@0.1.13)
-      '@milaboratories/pframes-rs-serv': 1.0.69
+      '@milaboratories/pframes-rs-serv': 1.0.70
       '@milaboratories/pl-model-common': 1.19.14
       humanize-duration: 3.33.0
       ulid: 3.0.1
@@ -13975,7 +13975,7 @@ snapshots:
       - encoding
       - supports-color
 
-  '@milaboratories/pframes-rs-serv@1.0.69':
+  '@milaboratories/pframes-rs-serv@1.0.70':
     dependencies:
       '@milaboratories/helpers': 1.6.22
       '@milaboratories/pl-model-common': 1.19.14
