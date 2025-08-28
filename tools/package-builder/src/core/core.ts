@@ -286,7 +286,7 @@ export class Core {
       throw new Error(`Context '${context}' not found`);
     }
 
-    const localTag = `pl.pkg.${pkg.name}.${util.currentArch()}:local`;
+    const localTag = docker.generateLocalTagName(this.pkgInfo.packageRoot, pkg);
 
     this.logger.info(`Building docker image...`);
     this.logger.debug(`dockerfile: '${dockerfile}'
@@ -297,13 +297,14 @@ entrypoint: '${entrypoint.join('\', \'')}'
 
     docker.build(context, dockerfile, localTag);
 
-    const imageID = docker.getImageID(localTag);
-    const dstTag = docker.generateDstTagName(pkg, imageID);
+    const imageHash = docker.getImageHash(localTag);
+    const dstTag = docker.generateRemoteTagName(pkg, imageHash);
 
     this.logger.debug(`Adding destination tag to docker image:
       dstTag: "${dstTag}"
     `);
-    docker.addTag(imageID, dstTag);
+    docker.addTag(localTag, dstTag);
+    docker.removeTag(localTag);
 
     const artInfoPath = this.pkgInfo.artifactInfoLocation(pkgID, 'docker', util.currentPlatform());
     writeBuiltArtifactInfo(artInfoPath, {

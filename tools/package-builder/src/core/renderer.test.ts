@@ -191,7 +191,7 @@ function writeTestArtifactInfo(
     platform: util.currentPlatform(),
     registryURL: pkg.type === 'asset' ? pkg.registry.downloadURL : undefined,
     registryName: pkg.registry.name,
-    pathForSwJson: artifactType === 'docker' ? docker.generateDstTagName(pkg as DockerPackage, 'beefface') : pkg.namePattern,
-    uploadPath: artifactType === 'docker' ? docker.generateDstTagName(pkg as DockerPackage, 'beefface') : pkg.fullName(util.currentPlatform()),
+    pathForSwJson: artifactType === 'docker' ? docker.generateRemoteTagName(pkg as DockerPackage, 'beefface') : pkg.namePattern,
+    uploadPath: artifactType === 'docker' ? undefined : pkg.fullName(util.currentPlatform()),
   });
 }
