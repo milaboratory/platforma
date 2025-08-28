@@ -3,7 +3,7 @@
   "version": "1.0.1",
   "description": "Text processing utilities for platforma",
   "scripts": {
-    "build": "pl-pkg build",
+    "build": "rm -rf ./dist && pl-pkg build",
     "prepublishOnly": "pl-pkg prepublish",
     "do-pack": "rm -f *.tgz && pl-pkg build && pnpm pack && mv *.tgz package.tgz"
   },
