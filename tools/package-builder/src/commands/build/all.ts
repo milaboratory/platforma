@@ -55,7 +55,7 @@ export default class BuildAll extends Command {
         skipIfEmpty: flags['package-id'] ? false : true, // do not skip 'non-binary' packages if their IDs were set as args
       });
 
-      if (!flags['skip-docker-build'] && !flags['skip-docker-push']) {
+      if (!flags['skip-docker-build'] && !flags['skip-docker-push'] && core.buildMode === 'release') {
         // TODO: as we do not create content-addressable archives for binary packages, we should not upload them
         //       for each build to not spoil release process with dev archives cached by CDN.
         //       once we support content-addressable archives, we can switch this to all packages publishing.

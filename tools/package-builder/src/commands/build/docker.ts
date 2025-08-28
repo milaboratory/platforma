@@ -28,7 +28,7 @@ export default class Docker extends Command {
       ids: flags['package-id'],
     });
 
-    if (!flags['skip-docker-push']) {
+    if (!flags['skip-docker-push'] && core.buildMode === 'release') {
       core.publishDockerImages({
         ids: flags['package-id'],
       });
