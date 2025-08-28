@@ -511,8 +511,14 @@ export class PackageInfo {
     switch (type) {
       case 'docker':
         if (typeof ep.docker!.artifact === 'string') {
-          return artifacts[ep.docker!.artifact];
+          if (artifacts[ep.docker!.artifact]) {
+            return artifacts[ep.docker!.artifact];
+          }
+          throw new Error(
+            `entrypoint '${id}' points to artifact '${ep.docker!.artifact}' which does not exist in 'artifacts'`,
+          );
         }
+
         return ep.docker!.artifact;
       default:
         break;
