@@ -44,6 +44,7 @@ packages:
   - tools/r-builder
   - tools/pl-bootstrap
   - tools/eslint-config
+  - tools/blocks-deps-updater
 
   - sdk/model
   - sdk/workflow-tengo
