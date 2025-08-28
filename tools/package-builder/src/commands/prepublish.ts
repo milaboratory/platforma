@@ -27,6 +27,7 @@ export default class Prepublish extends Command {
     core.buildMode = cmdOpts.modeFromFlag(flags.dev as cmdOpts.devModeName);
     core.pkgInfo.version = flags.version;
     core.fullDirHash = flags['full-dir-hash'];
+    core.allPlatforms = true;
 
     core.buildDescriptors({
       requireAllArtifacts: true,
@@ -37,7 +38,6 @@ export default class Prepublish extends Command {
       failExisting: flags['fail-existing-packages'],
 
       storageURL: flags['storage-url'],
-
     });
 
     core.publishDockerImages();
