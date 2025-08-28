@@ -40,7 +40,7 @@ export default class BuildAll extends Command {
       core.allPlatforms = flags['all-platforms'];
       core.fullDirHash = flags['full-dir-hash'];
 
-      if (!flags['skip-docker-build']) {
+      if (!flags['skip-docker-build'] && core.buildMode !== 'dev-local') {
         core.buildDockerImages({
           ids: flags['package-id'],
         });
