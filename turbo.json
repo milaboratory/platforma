@@ -15,7 +15,9 @@
       "passThroughEnv": [
         "GENERATE_TAGS",
         "TAGS_ADDITIONAL_ARGS",
-        "TAGS_FILE"
+        "TAGS_FILE",
+        "PL_DOCKER_SKIP_BUILD",
+        "PL_DOCKER_SKIP_PUSH"
       ],
       "env": ["PL_PKG_DEV"],
       "dependsOn": ["type-check", "^build"]
