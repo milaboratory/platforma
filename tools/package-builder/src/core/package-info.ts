@@ -510,6 +510,9 @@ export class PackageInfo {
 
     switch (type) {
       case 'docker':
+        if (typeof ep.docker!.artifact === 'string') {
+          return artifacts[ep.docker!.artifact];
+        }
         return ep.docker!.artifact;
       default:
         break;
