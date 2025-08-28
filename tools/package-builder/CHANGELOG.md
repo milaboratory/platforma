@@ -1,5 +1,11 @@
 # @platforma-sdk/package-builder
 
+## 3.2.0
+
+### Minor Changes
+
+- b20daba: Do read content-addressable docker tags and store intermediate build results in dist for correct pre-compilation
+
 ## 3.1.0
 
 ### Minor Changes
