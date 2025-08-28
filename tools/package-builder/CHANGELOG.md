@@ -1,5 +1,11 @@
 # @platforma-sdk/package-builder
 
+## 3.2.3
+
+### Patch Changes
+
+- 7923343: Use arch-independent artifact info file when working with crossplatform package
+
 ## 3.2.2
 
 ### Patch Changes
