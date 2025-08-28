@@ -1,5 +1,11 @@
 # @platforma-sdk/package-builder
 
+## 3.2.2
+
+### Patch Changes
+
+- 2a43498: Handle wrong ref name in docker entrypoint
+
 ## 3.2.1
 
 ### Patch Changes
