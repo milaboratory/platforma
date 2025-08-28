@@ -2,25 +2,23 @@
 
 import Cmd0 from './commands/build';
 import Cmd1 from './commands/prepublish';
-import Cmd2 from './commands/publish';
-import Cmd3 from './commands/sign';
-import Cmd4 from './commands/build/all';
-import Cmd5 from './commands/build/docker';
-import Cmd6 from './commands/build/packages';
-import Cmd7 from './commands/publish/all';
-import Cmd8 from './commands/publish/docker';
-import Cmd9 from './commands/publish/packages';
+import Cmd2 from './commands/sign';
+import Cmd3 from './commands/build/all';
+import Cmd4 from './commands/build/docker';
+import Cmd5 from './commands/build/packages';
+import Cmd6 from './commands/publish/all';
+import Cmd7 from './commands/publish/docker';
+import Cmd8 from './commands/publish/packages';
 
 // prettier-ignore
 export const COMMANDS = {
   'build': Cmd0,
   'prepublish': Cmd1,
-  'publish': Cmd2,
-  'sign': Cmd3,
-  'build:all': Cmd4,
-  'build:docker': Cmd5,
-  'build:packages': Cmd6,
-  'publish:all': Cmd7,
-  'publish:docker': Cmd8,
-  'publish:packages': Cmd9,
+  'sign': Cmd2,
+  'build:all': Cmd3,
+  'build:docker': Cmd4,
+  'build:packages': Cmd5,
+  'publish:all': Cmd6,
+  'publish:docker': Cmd7,
+  'publish:packages': Cmd8,
 };

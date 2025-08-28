@@ -3,8 +3,8 @@
   "version": "1.11.2",
   "scripts": {
     "init-python": "[ -d ../.venv ] || (cd src && python -m venv ../../.venv && ../../.venv/bin/pip install -r requirements.txt)",
-    "build": "pl-pkg build",
-    "prepublishOnly": "pl-pkg publish packages",
+    "build": "rm -r ./dist && pl-pkg build",
+    "prepublishOnly": "pl-pkg prepublish",
     "test": "[ ! -d ../.venv ] || (../.venv/bin/python -m unittest discover --verbose -s src -p '*.py')",
     "do-pack": "rm -f *.tgz && pl-pkg build && pnpm pack && mv *.tgz package.tgz"
   },

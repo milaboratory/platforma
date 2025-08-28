@@ -4,7 +4,7 @@
   "description": "Text processing utilities for platforma",
   "scripts": {
     "build": "pl-pkg build",
-    "prepublishOnly": "pl-pkg publish packages",
+    "prepublishOnly": "pl-pkg prepublish",
     "do-pack": "rm -f *.tgz && pl-pkg build && pnpm pack && mv *.tgz package.tgz"
   },
   "files": [

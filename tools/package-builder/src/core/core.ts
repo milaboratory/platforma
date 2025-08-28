@@ -123,6 +123,7 @@ export class Core {
     packageIds?: string[];
     entrypoints?: string[];
     sources?: util.SoftwareSource[];
+    requireAllArtifacts?: boolean;
   }) {
     const index = this.packageEntrypointsIndex;
 
@@ -146,6 +147,7 @@ export class Core {
     }
 
     const infos = this.renderer.renderSoftwareEntrypoints(this.buildMode, new Map(entrypoints), {
+      requireAllArtifacts: options?.requireAllArtifacts,
       fullDirHash: this.fullDirHash,
     });
 
@@ -356,26 +358,16 @@ entrypoint: '${entrypoint.join('\', \'')}'
 
   public async publishPackages(options?: {
     ids?: string[];
-    ignoreArchiveOverlap?: boolean;
 
     archivePath?: string;
     storageURL?: string;
 
-    failExisting?: boolean;
-    forceReupload?: boolean;
+    failExisting?: boolean; // do not warn if package already exists in storage, fail with error instead.
+    forceReupload?: boolean; // re-upload packages even if they already exist in storage
   }) {
     const packagesToPublish = options?.ids ?? Array.from(this.buildablePackages.keys());
     this.logger.info(`Publishing packages: ${packagesToPublish.join(', ')}`);
     this.logger.info(`Publishable packages: ${Array.from(this.packages.keys()).join(', ')}`);
-
-    if (packagesToPublish.length > 1 && options?.archivePath && !options.ignoreArchiveOverlap) {
-      this.logger.error(
-        'Attempt to publish several pacakges using single package archive. This will upload the same archive under several different names. If you know what you are doing, add \'--force\' flag',
-      );
-      throw new Error(
-        'attempt to publish several packages using the same software package archive',
-      );
-    }
 
     const uploads: Promise<void>[] = [];
     for (const pkgID of packagesToPublish) {
@@ -391,17 +383,6 @@ entrypoint: '${entrypoint.join('\', \'')}'
         }
       } else {
         uploads.push(this.publishPackage(pkg, util.currentPlatform(), options));
-      }
-
-      if (pkg.type !== 'docker') {
-        // will check that docker package exists in the same package.sw.json file for entrypoints with
-        // different artifact types
-        const dockerPkg = this.packages.get(docker.entrypointName(pkg.id));
-        if (!dockerPkg) {
-          continue;
-        }
-
-        this.publishDockerImage(dockerPkg);
       }
     }
 

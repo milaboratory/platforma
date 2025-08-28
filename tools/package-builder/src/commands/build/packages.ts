@@ -2,7 +2,6 @@ import { Command } from '@oclif/core';
 import * as cmdOpts from '../../core/cmd-opts';
 import * as util from '../../core/util';
 import { Core } from '../../core/core';
-import * as envs from '../../core/envs';
 export default class Packages extends Command {
   static override description
     = 'Pack software into platforma package (.tgz archive for binary registry)';
@@ -52,18 +51,14 @@ export default class Packages extends Command {
     if (!flags['skip-docker-build'] && !flags['skip-docker-push'] && core.buildMode === 'release') {
       // TODO: as we do not create content-addressable archives for binary packages, we should not upload them
       //       for each build to not spoil release process with dev archives cached by CDN.
-      //       once we support content-addressable archives, we can switch this to all packages publishing.
+      //       once we support content-addressable archives, we can publish everything here (not just docker).
       core.publishDockerImages({
         ids: flags['package-id'],
       });
     }
 
-    if (!envs.isCI()) {
-      // CI environment may prebuild packages on different agents in parallel.
-      // In that case we should assemble all built artifacts info sw.json in one step before publishing package, not after each partial build.
-      core.buildDescriptors({
-        packageIds: flags['package-id'] ? flags['package-id'] : undefined,
-      });
-    }
+    core.buildDescriptors({
+      packageIds: flags['package-id'] ? flags['package-id'] : undefined,
+    });
   }
 }

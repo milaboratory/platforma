@@ -34,7 +34,6 @@ export default class Packages extends Command {
 
     await core.publishPackages({
       ids: flags['package-id'],
-      ignoreArchiveOverlap: flags.force,
 
       archivePath: flags.archive,
       storageURL: flags['storage-url'],

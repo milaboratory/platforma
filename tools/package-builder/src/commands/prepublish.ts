@@ -10,10 +10,13 @@ export default class Prepublish extends Command {
 
   static override flags = {
     ...cmdOpts.GlobalFlags,
-    ...cmdOpts.BuildFlags,
+    ...cmdOpts.ForceFlag,
 
     ...cmdOpts.DirHashFlag,
     ...cmdOpts.VersionFlag,
+
+    ...cmdOpts.StorageURLFlag,
+    ...cmdOpts.FailExistingPackagesFlag,
   };
 
   public async run(): Promise<void> {
@@ -25,6 +28,18 @@ export default class Prepublish extends Command {
     core.pkgInfo.version = flags.version;
     core.fullDirHash = flags['full-dir-hash'];
 
-    core.buildDescriptors();
+    core.buildDescriptors({
+      requireAllArtifacts: true,
+    });
+
+    await core.publishPackages({
+      forceReupload: flags.force,
+      failExisting: flags['fail-existing-packages'],
+
+      storageURL: flags['storage-url'],
+
+    });
+
+    core.publishDockerImages();
   }
 }
