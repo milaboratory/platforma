@@ -2940,6 +2940,16 @@ importers:
         specifier: 'catalog:'
         version: 4.5.3(@types/node@20.16.15)(rollup@4.45.1)(typescript@5.6.3)(vite@6.3.5(@types/node@20.16.15)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
 
+  tools/blocks-deps-updater:
+    dependencies:
+      yaml:
+        specifier: 'catalog:'
+        version: 2.8.0
+    devDependencies:
+      '@milaboratories/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
+
   tools/build-configs:
     dependencies:
       '@rollup/plugin-commonjs':
