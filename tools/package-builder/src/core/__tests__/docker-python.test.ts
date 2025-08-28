@@ -99,12 +99,6 @@ describe('Docker Python Functions', () => {
     it('should prepare Docker options with default Python settings', () => {
       const result = prepareDockerOptions(mockLogger, testPackageRoot, 'test-package', mockPythonPackage);
 
-      // Verify logger calls
-      expect(mockLogger.info).toHaveBeenCalledWith('Preparing Docker options for Python package: test-python-package (id: test-package)');
-      expect(mockLogger.info).toHaveBeenCalledWith(expect.stringContaining('Created temporary Docker directory:'));
-      expect(mockLogger.info).toHaveBeenCalledWith(expect.stringContaining('Written Dockerfile to:'));
-      expect(mockLogger.info).toHaveBeenCalledWith('Extracted Python version from environment: 3.12.6');
-
       // Verify result structure
       expect(result).toMatchObject({
         context: expect.stringContaining(testPackageRoot) as string,

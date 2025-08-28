@@ -6,8 +6,8 @@ import type { PackageConfig, Entrypoint, DockerPackage } from './package-info';
 import { PackageInfo } from './package-info';
 import {
   Renderer,
-  listPackageEntrypoints,
-  readEntrypointDescriptor,
+  readBuiltArtifactInfo,
+  writeBuiltArtifactInfo,
 } from './renderer';
 import * as util from './util';
 import * as archive from './archive';
@@ -19,7 +19,7 @@ export class Core {
   private _entrypoints: Map<string, Entrypoint> | undefined;
   private _renderer: Renderer | undefined;
 
-  public readonly pkg: PackageInfo;
+  public readonly pkgInfo: PackageInfo;
   public buildMode: util.BuildMode;
   public targetPlatform: util.PlatformType | undefined;
   public allPlatforms: boolean = false;
@@ -30,7 +30,7 @@ export class Core {
     packageRoot?: string;
   }) {
     this.logger = logger;
-    this.pkg = opts?.pkgInfo ?? new PackageInfo(logger, { packageRoot: opts?.packageRoot });
+    this.pkgInfo = opts?.pkgInfo ?? new PackageInfo(logger, { packageRoot: opts?.packageRoot });
 
     this.buildMode = 'release';
 
@@ -55,7 +55,7 @@ export class Core {
 
   public get entrypoints(): Map<string, Entrypoint> {
     if (!this._entrypoints) {
-      this._entrypoints = this.pkg.entrypoints;
+      this._entrypoints = this.pkgInfo.entrypoints;
     }
 
     return this._entrypoints;
@@ -123,6 +123,7 @@ export class Core {
     packageIds?: string[];
     entrypoints?: string[];
     sources?: util.SoftwareSource[];
+    requireAllArtifacts?: boolean;
   }) {
     const index = this.packageEntrypointsIndex;
 
@@ -146,6 +147,7 @@ export class Core {
     }
 
     const infos = this.renderer.renderSoftwareEntrypoints(this.buildMode, new Map(entrypoints), {
+      requireAllArtifacts: options?.requireAllArtifacts,
       fullDirHash: this.fullDirHash,
     });
 
@@ -155,7 +157,7 @@ export class Core {
 
     for (const [epName, ep] of entrypoints) {
       if (ep.type === 'reference') {
-        const srcPath = this.pkg.resolveReference(epName, ep);
+        const srcPath = this.pkgInfo.resolveReference(epName, ep);
         this.renderer.copyEntrypointDescriptor(epName, srcPath);
       }
     }
@@ -181,6 +183,10 @@ export class Core {
     for (const pkgID of packagesToBuild) {
       const pkg = this.getPackage(pkgID);
 
+      if (pkg.type === 'docker') {
+        continue;
+      }
+
       if (pkg.crossplatform) {
         await this.buildPackage(pkg, util.currentPlatform(), options);
       } else if (this.targetPlatform) {
@@ -201,6 +207,13 @@ export class Core {
     }
   }
 
+  // NOTE: each package build produces 2 artifacts:
+  // - package itself in any shape (archive, docker image, etc)
+  // - package location file, that contains address of the package in registry (docker tag, archive path and so on)
+  //
+  // package archive can be uploaded to the registry after build, when location is content-addressable
+  //  (when unique content of archive produces unique location, i.e. hash of archive)
+  // package location files are used to build entrypoint descriptor (sw.json file)
   public async buildPackage(
     pkg: PackageConfig,
     platform: util.PlatformType,
@@ -221,11 +234,6 @@ export class Core {
         `  not buildable: artifact '${pkg.id}' archive build is impossible for configuration inside '${util.softwareConfigName}'`,
       );
       throw new Error('not a buildable artifact');
-    }
-
-    if (pkg.type === 'docker') {
-      this.buildDockerImage(pkg);
-      return;
     }
 
     const contentRoot = options?.contentRoot ?? pkg.contentRoot(platform);
@@ -261,14 +269,14 @@ export class Core {
         continue;
       }
 
-      this.buildDockerImage(pkg);
+      this.buildDockerImage(pkg.id, pkg);
     }
   }
 
-  private buildDockerImage(buildParams: DockerPackage) {
-    const dockerfile = path.resolve(this.pkg.packageRoot, buildParams.dockerfile ?? 'Dockerfile');
-    const context = path.resolve(this.pkg.packageRoot, buildParams.context ?? '.');
-    const entrypoint = buildParams.entrypoint ?? [];
+  private buildDockerImage(pkgID: string, pkg: DockerPackage) {
+    const dockerfile = path.resolve(this.pkgInfo.packageRoot, pkg.dockerfile ?? 'Dockerfile');
+    const context = path.resolve(this.pkgInfo.packageRoot, pkg.context ?? '.');
+    const entrypoint = pkg.entrypoint ?? [];
 
     if (!fs.existsSync(dockerfile)) {
       throw new Error(`Dockerfile '${dockerfile}' not found`);
@@ -278,18 +286,36 @@ export class Core {
       throw new Error(`Context '${context}' not found`);
     }
 
-    const tag = docker.tagFromPackage(this.pkg.packageRoot, buildParams);
+    const localTag = docker.generateLocalTagName(this.pkgInfo.packageRoot, pkg);
 
-    this.logger.info(`Building docker image:
-      dockerfile: "${dockerfile}"
-      context: "${context}"
-      tag: "${tag}"
-      entrypoint: "${entrypoint.join(' ')}"
+    this.logger.info(`Building docker image...`);
+    this.logger.debug(`dockerfile: '${dockerfile}'
+context: '${context}'
+localTag: '${localTag}'
+entrypoint: '${entrypoint.join('\', \'')}'
     `);
 
-    docker.build(context, dockerfile, tag);
+    docker.build(context, dockerfile, localTag);
 
-    this.logger.info(`Docker image '${tag}' was built successfully`);
+    const imageHash = docker.getImageHash(localTag);
+    const dstTag = docker.generateRemoteTagName(pkg, imageHash);
+
+    this.logger.debug(`Adding destination tag to docker image:
+      dstTag: "${dstTag}"
+    `);
+    docker.addTag(localTag, dstTag);
+    docker.removeTag(localTag);
+
+    const artInfoPath = this.pkgInfo.artifactInfoLocation(pkgID, 'docker', util.currentPlatform());
+    writeBuiltArtifactInfo(artInfoPath, {
+      type: 'docker',
+      platform: util.currentPlatform(),
+      remoteArtifactLocation: dstTag,
+    });
+
+    this.logger.info(`Docker image is built:
+  tag: '${dstTag}'
+  location file: '${artInfoPath}'`);
   }
 
   private async createPackageArchive(
@@ -297,80 +323,52 @@ export class Core {
     pkg: PackageConfig,
     archivePath: string,
     contentRoot: string,
-    os: string,
-    arch: string,
+    os: util.OSType,
+    arch: util.ArchType,
   ) {
-    this.logger.info(`  packing ${packageContentType} into a package`);
+    this.logger.debug(`  packing ${packageContentType} into a package`);
     if (pkg.crossplatform) {
-      this.logger.info(`    generating cross-platform package`);
+      this.logger.debug(`    generating cross-platform package`);
     } else {
-      this.logger.info(`    generating package for os='${os}', arch='${arch}'`);
+      this.logger.debug(`    generating package for os='${os}', arch='${arch}'`);
     }
     this.logger.debug(`    package content root: '${contentRoot}'`);
     this.logger.debug(`    package destination archive: '${archivePath}'`);
 
     await archive.create(this.logger, contentRoot, archivePath);
 
-    this.logger.info(`  ${packageContentType} package was written to '${archivePath}'`);
-  }
+    const artInfoPath = this.pkgInfo.artifactInfoLocation(
+      pkg.id,
+      'archive',
+      pkg.crossplatform ? undefined : util.joinPlatform(os, arch),
+    );
 
-  public publishDescriptors(options?: { npmPublishArgs?: string[] }) {
-    const names = listPackageEntrypoints(this.pkg.packageRoot);
+    writeBuiltArtifactInfo(artInfoPath, {
+      type: pkg.type,
+      platform: util.joinPlatform(os, arch),
+      registryURL: pkg.registry.downloadURL,
+      registryName: pkg.registry.name,
+      remoteArtifactLocation: pkg.namePattern,
+      uploadPath: pkg.fullName(util.joinPlatform(os, arch)),
+    });
 
-    if (names.length === 0) {
-      throw new Error(
-        `No software entrypoints found in package during 'publish descriptors' action. Nothing to publish`,
-      );
-    }
-
-    for (const epInfo of names) {
-      const epDescr = readEntrypointDescriptor(this.pkg.packageName, epInfo.name, epInfo.path);
-      if (epDescr.isDev) {
-        this.logger.error(
-          'You are trying to publish entrypoint descriptor generated in \'dev\' mode. This software would not be accepted for execution by any production environment.',
-        );
-        throw new Error('attempt to publish \'dev\' entrypoint descriptor');
-      }
-    }
-
-    this.logger.info('Running \'npm publish\' to publish NPM package with entrypoint descriptors...');
-
-    const args = ['publish'];
-    if (options?.npmPublishArgs) {
-      args.push(...options.npmPublishArgs);
-    }
-
-    const result = spawnSync('npm', args, { stdio: 'inherit', cwd: this.pkg.packageRoot });
-    if (result.error) {
-      throw result.error;
-    }
-    if (result.status !== 0) {
-      throw new Error('\'npm publish\' failed with non-zero exit code');
-    }
+    this.logger.info(`${packageContentType} archive is built:
+  archive: '${archivePath}'
+  location file: '${artInfoPath}'`);
   }
 
   public async publishPackages(options?: {
     ids?: string[];
-    ignoreArchiveOverlap?: boolean;
 
     archivePath?: string;
     storageURL?: string;
 
-    failExisting?: boolean;
-    forceReupload?: boolean;
+    failExisting?: boolean; // do not warn if package already exists in storage, fail with error instead.
+    forceReupload?: boolean; // re-upload packages even if they already exist in storage
   }) {
     const packagesToPublish = options?.ids ?? Array.from(this.buildablePackages.keys());
     this.logger.info(`Publishing packages: ${packagesToPublish.join(', ')}`);
     this.logger.info(`Publishable packages: ${Array.from(this.packages.keys()).join(', ')}`);
-
-    if (packagesToPublish.length > 1 && options?.archivePath && !options.ignoreArchiveOverlap) {
-      this.logger.error(
-        'Attempt to publish several pacakges using single package archive. This will upload the same archive under several different names. If you know what you are doing, add \'--force\' flag',
-      );
-      throw new Error(
-        'attempt to publish several packages using the same software package archive',
-      );
-    }
 
     const uploads: Promise<void>[] = [];
     for (const pkgID of packagesToPublish) {
@@ -386,17 +384,6 @@ export class Core {
         }
       } else {
         uploads.push(this.publishPackage(pkg, util.currentPlatform(), options));
-      }
-
-      if (pkg.type !== 'docker') {
-        // will check that docker package exists in the same package.sw.json file for entrypoints with
-        // different artifact types
-        const dockerPkg = this.packages.get(docker.entrypointName(pkg.id));
-        if (!dockerPkg) {
-          continue;
-        }
-
-        this.publishDockerImage(dockerPkg);
       }
     }
 
@@ -434,7 +421,9 @@ export class Core {
 
     const archivePath = options?.archivePath ?? this.archivePath(pkg, os, arch);
 
-    const dstName = pkg.fullName(platform);
+    const artInfoPath = this.pkgInfo.artifactInfoLocation(pkg.id, 'archive', util.joinPlatform(os, arch));
+    const artInfo = readBuiltArtifactInfo(artInfoPath);
+    const dstName = artInfo.uploadPath ?? artInfo.remoteArtifactLocation;
 
     if (!storageURL) {
       const regNameUpper = pkg.registry.name.toUpperCase().replaceAll(/[^A-Z0-9_]/g, '_');
@@ -455,7 +444,7 @@ export class Core {
       this.logger.debug(`  detected signatures: ${signatureSuffixes.join(', ')}`);
     this.logger.debug(`  target package name: '${dstName}'`);
 
-    const s = await storage.initByUrl(storageURL, this.pkg.packageRoot);
+    const s = await storage.initByUrl(storageURL, this.pkgInfo.packageRoot);
 
     const exists = await s.exists(dstName);
     if (exists && !options?.forceReupload) {
@@ -517,7 +506,9 @@ export class Core {
       throw new Error(`package '${pkg.id}' is not a docker package`);
     }
 
-    const tag = docker.tagFromPackage(this.pkg.packageRoot, pkg);
+    const artInfoPath = this.pkgInfo.artifactInfoLocation(pkg.id, 'docker', util.currentPlatform());
+    const artInfo = readBuiltArtifactInfo(artInfoPath);
+    const tag = artInfo.remoteArtifactLocation;
 
     // Because of turbo caching, we may face situation when no real docker build was executed on CI agent,
     // but image is already in remote registry. We should not fail in such scenarios, calmly skipping docker push step.
@@ -605,7 +596,7 @@ export class Core {
 
     const result = spawnSync(toExecute[0], toExecute.slice(1), {
       stdio: 'inherit',
-      cwd: this.pkg.packageRoot,
+      cwd: this.pkgInfo.packageRoot,
     });
     if (result.error) {
       throw result.error;
@@ -638,7 +629,7 @@ export class Core {
 
   private get renderer(): Renderer {
     if (!this._renderer) {
-      this._renderer = new Renderer(this.logger, this.pkg.packageName, this.pkg.packageRoot);
+      this._renderer = new Renderer(this.logger, this.pkgInfo);
     }
 
     return this._renderer;
@@ -651,7 +642,7 @@ export class Core {
     archiveType: archive.archiveType,
   ): archive.archiveOptions {
     return {
-      packageRoot: this.pkg.packageRoot,
+      packageRoot: this.pkgInfo.packageRoot,
       packageName: pkg.name,
       packageVersion: pkg.version,
 
