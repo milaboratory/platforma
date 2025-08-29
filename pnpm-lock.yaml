@@ -2210,7 +2210,35 @@ importers:
         version: 4.5.3(@types/node@24.5.2)(rollup@4.52.4)(typescript@5.6.3)(vite@6.3.5(@types/node@24.5.2)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
       vitest:
         specifier: 'catalog:'
-        version: 2.1.9(@types/node@24.5.2)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4)
+        version: 2.1.9(@types/node@22.5.5)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4)
+
+  lib/ptabler/js:
+    dependencies:
+      '@platforma-open/milaboratories.software-ptabler.schema':
+        specifier: workspace:*
+        version: link:../schema
+    devDependencies:
+      '@milaboratories/eslint-config':
+        specifier: workspace:*
+        version: link:../../../tools/eslint-config
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../../tools/ts-builder
+      '@milaboratories/ts-configs':
+        specifier: workspace:*
+        version: link:../../../tools/ts-configs
+      '@types/node':
+        specifier: 'catalog:'
+        version: 20.16.15
+      eslint:
+        specifier: 'catalog:'
+        version: 9.25.1
+      typescript:
+        specifier: 'catalog:'
+        version: 5.6.3
+      vitest:
+        specifier: 'catalog:'
+        version: 2.1.9(@types/node@20.16.15)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.83.4)
 
   lib/ptabler/schema:
     dependencies:
@@ -2433,6 +2461,9 @@ importers:
       '@milaboratories/pl-model-common':
         specifier: workspace:*
         version: link:../../lib/model/common
+      '@milaboratories/ptabler-js':
+        specifier: workspace:*
+        version: link:../../lib/ptabler/js
       canonicalize:
         specifier: 'catalog:'
         version: 2.1.0
@@ -2515,7 +2546,10 @@ importers:
         version: link:../../lib/other/biowasm-tools
       '@milaboratories/miplots4':
         specifier: 'catalog:'
-        version: 1.0.145(d3-dispatch@3.0.1)(d3-path@3.1.0)(d3-scale-chromatic@3.1.0)
+        version: 1.0.127(d3-dispatch@3.0.1)(d3-path@3.1.0)(d3-scale-chromatic@3.1.0)
+      '@milaboratories/ptabler-js':
+        specifier: workspace:*
+        version: link:../../lib/ptabler/js
       '@milaboratories/uikit':
         specifier: workspace:*
         version: link:../../lib/ui/uikit

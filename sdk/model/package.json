@@ -27,6 +27,7 @@
     "README.md"
   ],
   "dependencies": {
+    "@milaboratories/ptabler-js": "workspace:*",
     "@milaboratories/pl-model-common": "workspace:*",
     "@milaboratories/pl-error-like": "workspace:*",
     "utility-types": "catalog:",

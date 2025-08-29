@@ -1,4 +1,4 @@
-import type { AnnotationScriptUi, FilterUi, TypeFieldRecord } from '@platforma-sdk/model';
+import type { AnnotationScriptUi, FiltersUi, TypeFieldRecord } from '@platforma-sdk/model';
 
 export function getDefaultAnnotationScript(): AnnotationScriptUi {
   return {
@@ -9,7 +9,7 @@ export function getDefaultAnnotationScript(): AnnotationScriptUi {
   };
 }
 
-export function createDefaultFilterMetadata<T extends Extract<FilterUi, { column: unknown }>>(): TypeFieldRecord<T> {
+export function createDefaultFilterMetadata<T extends Extract<FiltersUi, { column: unknown }>>(): TypeFieldRecord<T> {
   return {
     column: {
       label: 'Column',
