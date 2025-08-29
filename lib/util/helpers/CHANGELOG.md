@@ -1,5 +1,11 @@
 # @milaboratories/helpers
 
+## 1.7.0
+
+### Minor Changes
+
+- b2e7c82: - Introduce `getTestTimeout(fallback = 60_000)` that reads `TEST_TIMEOUT` from env.
+
 ## 1.6.22
 
 ### Patch Changes

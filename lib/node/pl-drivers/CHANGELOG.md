@@ -1,5 +1,12 @@
 # @milaboratories/pl-drivers
 
+## 1.10.8
+
+### Patch Changes
+
+- Updated dependencies [b2e7c82]
+  - @milaboratories/helpers@1.7.0
+
 ## 1.10.7
 
 ### Patch Changes
