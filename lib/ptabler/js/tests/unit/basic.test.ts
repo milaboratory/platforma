@@ -3,20 +3,19 @@
  */
 
 import { describe, expect, test } from 'vitest';
-import { col, lit } from '../../src/functions';
-import { ColumnExpression, LiteralExpression } from '../../src/index';
+import { col, ColumnExpressionImpl, lit, LiteralExpressionImpl } from '../../src';
 
 describe('Factory Functions', () => {
   test('col() creates ColumnExpression', () => {
     const expr = col('age');
-    expect(expr).toBeInstanceOf(ColumnExpression);
+    expect(expr).toBeInstanceOf(ColumnExpressionImpl);
     expect(expr.getColumnName()).toBe('age');
     expect(expr.getAlias()).toBe('age');
   });
 
   test('lit() creates LiteralExpression', () => {
     const numExpr = lit(42);
-    expect(numExpr).toBeInstanceOf(LiteralExpression);
+    expect(numExpr).toBeInstanceOf(LiteralExpressionImpl);
     expect(numExpr.getValue()).toBe(42);
     expect(numExpr.getAlias()).toBe('42');
 
