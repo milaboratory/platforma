@@ -1,25 +1,25 @@
 import type { FiltersUi, FiltersUiOfType, FiltersUiType, SimplifiedPColumnSpec, SUniversalPColumnId } from '@platforma-sdk/model';
 
 export type FiltersUiTypeField<V> = {
-  fieldType: TypeToLiteral<V>;
+  fieldType: FiltersUiTypeToLiteral<V>;
   label: string;
   defaultValue: () => V | undefined;
 };
 
-export type FormField<T extends FiltersUi> = {
+export type FiltersUiFormField<T extends FiltersUi> = {
   [K in Exclude<keyof T, 'id' | 'name' | 'isExpanded'>]: FiltersUiTypeField<T[K]>
 };
 
-export type CreateFilterUiMetadataMap<T extends FiltersUiType> = {
+export type FiltersUiMetadataRecord<T extends FiltersUiType> = {
   [P in T]: {
     label: string;
     labelNot?: string;
-    form: FormField<FiltersUiOfType<P>>;
+    form: FiltersUiFormField<FiltersUiOfType<P>>;
     supportedFor: (spec1: SimplifiedPColumnSpec, spec2: SimplifiedPColumnSpec | undefined) => boolean;
   }
 };
 
-export type TypeToLiteral<T> =
+export type FiltersUiTypeToLiteral<T> =
     [T] extends [FiltersUiType] ? 'FilterUiType' :
         [T] extends [SUniversalPColumnId] ? 'SUniversalPColumnId' :
             [T] extends [number] ? 'number' :

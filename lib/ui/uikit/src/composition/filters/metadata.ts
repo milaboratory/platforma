@@ -1,7 +1,7 @@
 import type { FiltersUiType, SimplifiedPColumnSpec } from '@platforma-sdk/model';
-import type { CreateFilterUiMetadataMap } from './types';
+import type { FiltersUiMetadataRecord } from './types';
 
-export const filterUiMetadata = {
+export const filtersUiMetadata = {
   lessThan: {
     label: 'Col < X (Less Than)',
     form: {
@@ -348,21 +348,21 @@ export const filterUiMetadata = {
     },
     supportedFor: () => false,
   },
-} satisfies CreateFilterUiMetadataMap<FiltersUiType>;
+} satisfies FiltersUiMetadataRecord<FiltersUiType>;
 
-export function getFilterUiTypeOptions(columnSpec?: SimplifiedPColumnSpec) {
+export function getFiltersUiTypeOptions(columnSpec?: SimplifiedPColumnSpec) {
   if (!columnSpec) {
     return [];
   }
 
-  return Object.entries(filterUiMetadata).filter(([_, metadata]) => metadata.supportedFor(columnSpec)).map(([type, metadata]) => ({
+  return Object.entries(filtersUiMetadata).filter(([_, metadata]) => metadata.supportedFor(columnSpec)).map(([type, metadata]) => ({
     label: metadata.label,
     value: type,
   }));
 }
 
-export function getFilterUiMetadata(type: FiltersUiType) {
-  return filterUiMetadata[type];
+export function getFiltersUiMetadata(type: FiltersUiType) {
+  return filtersUiMetadata[type];
 }
 
 function isNumericValueType(spec: SimplifiedPColumnSpec): boolean {
