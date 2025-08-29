@@ -11,7 +11,7 @@ import {
 import { tplTest } from '@platforma-sdk/test';
 import { Templates } from '../..';
 
-tplTest('test waiter 1', async ({ pl, helper, expect }) => {
+tplTest.concurrent('test waiter 1', async ({ pl, helper, expect }) => {
   let waitResource: ResourceId = 0n as ResourceId; // hack
   let passResource: ResourceId = 0n as ResourceId; // hack
   const result = await helper.renderTemplate(
@@ -64,7 +64,7 @@ tplTest('test waiter 1', async ({ pl, helper, expect }) => {
   expect(await outputResult.awaitStableValue()).eq(passResource);
 });
 
-tplTest('test waiter 2', async ({ pl, helper, expect }) => {
+tplTest.concurrent('test waiter 2', async ({ pl, helper, expect }) => {
   let passField: AnyFieldRef;
   const result = await helper.renderTemplate(
     true,
