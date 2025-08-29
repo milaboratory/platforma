@@ -295,7 +295,7 @@ localTag: '${localTag}'
 entrypoint: '${entrypoint.join('\', \'')}'
     `);
 
-    docker.build(context, dockerfile, localTag);
+    docker.build(context, dockerfile, localTag, pkg.name);
 
     const imageHash = docker.getImageHash(localTag);
     const dstTag = docker.generateRemoteTagName(pkg, imageHash);
