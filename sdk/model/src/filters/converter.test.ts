@@ -3,55 +3,6 @@ import { describe, expect, it } from 'vitest';
 import { convertFiltersUiToExpressions } from './converter';
 import { FiltersUi } from './types';
 
-// describe('compileAnnotationScript', () => {
-//   test('should compile an empty annotation script', () => {
-//     const script = compileAnnotationScript({ title: 'My Annotation', mode: 'byClonotype', steps: [] });
-//     expect(script).toEqual({ title: 'My Annotation', mode: 'byClonotype', steps: [] });
-//   });
-
-//   test('should compile an annotation script with steps', () => {
-//     // Helper type for testing, refine if needed
-//     type AnnotationStepUi = {
-//       label: string;
-//       filter: Extract<FilterUi, { type: 'and' | 'or' }>;
-//     };
-//     const uiScript: { title: string; mode: 'byClonotype'; steps: AnnotationStepUi[] } = {
-//       title: 'My Annotation',
-//       mode: 'byClonotype',
-//       steps: [
-//         {
-//           label: 'Step 1',
-//           filter: {
-//             type: 'and',
-//             filters: [
-//               { type: 'isNA', column: 'colA' as unknown as SUniversalPColumnId },
-//               { type: 'patternEquals', column: 'colB' as unknown as SUniversalPColumnId, value: 'abc' },
-//             ],
-//           },
-//         },
-//       ],
-//     };
-//     const expectedScript: AnnotationScript = {
-//       title: 'My Annotation',
-//       mode: 'byClonotype',
-//       steps: [
-//         {
-//           label: 'Step 1',
-//           expression: {
-//             type: 'and',
-//             operands: [
-//               { type: 'is_na', value: { type: 'col', name: 'colA' } },
-//               { type: 'eq', lhs: { type: 'col', name: 'colB' }, rhs: { type: 'const', value: 'abc' } },
-//             ],
-//           }, // Use any to avoid complex type assertions in expected result
-//         },
-//       ],
-//     };
-//     const script = compileAnnotationScript(uiScript);
-//     expect(script).toEqual(expectedScript);
-//   });
-// });
-
 describe('convertFiltersUiToExpressions', () => {
   it('should compile "or" filter to ptabler expression', () => {
     const uiFilter: FiltersUi = {
