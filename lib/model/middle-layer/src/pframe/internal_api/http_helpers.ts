@@ -3,6 +3,9 @@ import type { RequestListener } from 'node:http';
 import type { Branded, Base64Encoded } from '@milaboratories/pl-model-common';
 import type { Logger } from './common';
 
+/** Parquet file extension */
+export const ParquetExtension = '.parquet' as const;
+
 /** Parquet file name */
 export type ParquetFileName = Branded<`${string}.parquet`, 'PFrameInternal.ParquetFileName'>;
 

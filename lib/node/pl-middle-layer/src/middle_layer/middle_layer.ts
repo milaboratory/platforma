@@ -41,7 +41,7 @@ import { RetryAgent } from 'undici';
 import { getDebugFlags } from '../debug';
 import { ProjectHelper } from '../model/project_helper';
 
-export interface MiddleLayerEnvironment {
+export interface MiddleLayerEnvironment extends AsyncDisposable {
   readonly pl: PlClient;
   readonly runtimeCapabilities: RuntimeCapabilities;
   readonly logger: MiLogger;
@@ -189,7 +189,7 @@ export class MiddleLayer {
     await Promise.all([...this.openedProjectsByRid.values()].map((prj) => prj.destroy()));
     // this.env.quickJs;
     await this.projectListTree.terminate();
-    await this.env.retryHttpDispatcher.destroy();
+    await this.env[Symbol.asyncDispose]();
     await this.pl.close();
   }
 
@@ -271,7 +271,7 @@ export class MiddleLayer {
       signer: driverKit.signer,
       logger,
       httpDispatcher: pl.httpDispatcher,
-      retryHttpDispatcher: retryHttpDispatcher,
+      retryHttpDispatcher,
       ops,
       bpPreparer,
       frontendDownloadDriver: driverKit.frontendDriver,
@@ -284,6 +284,10 @@ export class MiddleLayer {
       runtimeCapabilities,
       quickJs,
       projectHelper: new ProjectHelper(quickJs),
+      async [Symbol.asyncDispose]() {
+        await retryHttpDispatcher.destroy();
+        await driverKit[Symbol.asyncDispose]();
+      },
     };
 
     const openedProjects = new WatchableValue<ResourceId[]>([]);

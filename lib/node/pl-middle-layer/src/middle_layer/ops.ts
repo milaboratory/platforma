@@ -169,10 +169,11 @@ export const DefaultDriverKitOpsSettings: Pick<
     stopPollingDelay: 1000,
   },
   pFrameDriverOps: {
-    pFrameConcurrency: 1,
-    pTableConcurrency: 1,
+    parquetServerPort: 0, // 0 means that some unused port will be assigned by the OS
+    pFrameConcurrency: 1, // 1 join is executed in parallel and utilize all RAM and CPU cores
+    pTableConcurrency: 1, // 1 joined table is read from disk at a time, which matches 1 table the user can view in the UI
     pFrameCacheMaxCount: 18, // SHM trees create 3 PTables per graphic, we want to cache 6 graphics per PFrame
-    pFramesCacheMaxSize: 8 * 1024 * 1024 * 1024, // 8 GB
+    pFramesCacheMaxSize: 8 * 1024 * 1024 * 1024, // 8 GB, same as blob driver cache
   },
 };
 

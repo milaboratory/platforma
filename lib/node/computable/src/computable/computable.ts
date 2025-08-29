@@ -461,6 +461,10 @@ export class Computable<T, StableT extends T = T> {
     this.uTag = '';
   }
 
+  [Symbol.dispose](): void {
+    this.resetState();
+  }
+
   private static ephKeyCounter = 1;
 
   private static nextEphemeralKey(): string {
