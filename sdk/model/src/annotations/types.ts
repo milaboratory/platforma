@@ -1,5 +1,5 @@
 import type { Expression } from '@milaboratories/ptabler-js';
-import type { FiltersUi } from '../filters';
+import type { FilterUi } from '../filters';
 
 export type AnnotationSpec<T extends Expression = Expression> = {
   label: string;
@@ -9,5 +9,5 @@ export type AnnotationSpec<T extends Expression = Expression> = {
 export type AnnotationSpecUi = {
   id?: number;
   label: string;
-  filter: Extract<FiltersUi, { type: 'and' | 'or' }>;
+  filter: Extract<FilterUi, { type: 'and' | 'or' }>;
 };
