@@ -1,29 +1,26 @@
 import { convertFiltersUiToExpressions } from '../filters/converter';
-import type { AnnotationScript, AnnotationScriptUI, AnnotationStep } from './types';
+import type { AnnotationSpec, AnnotationSpecUi } from './types';
 
-export function convertAnnotationScript(uiScript: AnnotationScriptUI): AnnotationScript {
-  return {
-    title: uiScript.title,
-    steps: uiScript.steps
-      .filter((step) => {
-        // No need to convert empty steps
-        if (step.filter.type == null) {
-          return false;
-        }
-
-        if (step.filter.type === 'or') {
-          return step.filter.filters.length > 0;
-        }
-
-        if (step.filter.type === 'and') {
-          return step.filter.filters.length > 0;
-        }
-
+export function convertAnnotations(annotationsUI: AnnotationSpecUi[]): AnnotationSpec[] {
+  return annotationsUI
+    .filter((annotation) => {
+      // No need to convert empty steps
+      if (annotation.filter.type == null) {
         return false;
-      })
-      .map((step): AnnotationStep => ({
-        label: step.label.trim(),
-        expression: convertFiltersUiToExpressions(step.filter),
-      })),
-  };
+      }
+
+      if (annotation.filter.type === 'or') {
+        return annotation.filter.filters.length > 0;
+      }
+
+      if (annotation.filter.type === 'and') {
+        return annotation.filter.filters.length > 0;
+      }
+
+      return false;
+    })
+    .map((step): AnnotationSpec => ({
+      label: step.label.trim(),
+      expression: convertFiltersUiToExpressions(step.filter),
+    }));
 }
