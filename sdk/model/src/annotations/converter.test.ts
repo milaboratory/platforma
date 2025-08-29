@@ -1,25 +1,16 @@
 import type { SUniversalPColumnId } from '@milaboratories/pl-model-common';
 import { describe, expect, test } from 'vitest';
-import { FiltersUi } from '../filters';
-import { convertAnnotationScript } from './converter';
-import { AnnotationScript } from './types';
+import { convertAnnotations } from './converter';
+import { AnnotationSpec, AnnotationSpecUi } from './types';
 
-describe('convertAnnotationScript', () => {
+describe('convertAnnotations', () => {
   test('should compile an empty annotation script', () => {
-    const script = convertAnnotationScript({ title: 'My Annotation',  steps: [] });
-    expect(script).toEqual({ title: 'My Annotation', steps: [] });
+    const script = convertAnnotations([]);
+    expect(script).toEqual([]);
   });
 
   test('should compile an annotation script with steps', () => {
-    // Helper type for testing, refine if needed
-    type AnnotationStepUi = {
-      label: string;
-      filter: Extract<FiltersUi, { type: 'and' | 'or' }>;
-    };
-    const uiScript: { title: string;  steps: AnnotationStepUi[] } = {
-      title: 'My Annotation',
-      
-      steps: [
+    const annotationsUI: AnnotationSpecUi[] = [
         {
           label: 'Step 1',
           filter: {
@@ -30,11 +21,8 @@ describe('convertAnnotationScript', () => {
             ],
           },
         },
-      ],
-    };
-    const expectedScript: AnnotationScript = {
-      title: 'My Annotation',
-      steps: [
+      ];
+    const expectedAnnotations: AnnotationSpec[] = [
         {
           label: 'Step 1',
           expression: {
@@ -45,9 +33,8 @@ describe('convertAnnotationScript', () => {
             ],
           }, // Use any to avoid complex type assertions in expected result
         },
-      ],
-    };
-    const script = convertAnnotationScript(uiScript);
-    expect(script).toEqual(expectedScript);
+      ];
+    const script = convertAnnotations(annotationsUI);
+    expect(script).toEqual(expectedAnnotations);
   });
 });
