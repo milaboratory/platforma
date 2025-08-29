@@ -1,7 +1,12 @@
 import type { SUniversalPColumnId } from '@milaboratories/pl-model-common';
+import type { AnnotationSpecUi } from '../../annotations';
+import type { FilterUi, FilterUiOfType, FilterUiType } from '../../filters';
 import type { AnnotationFilter, AnnotationMode, AnnotationScript, IsNA, NotFilter, NumericalComparisonFilter, PatternFilter, PatternPredicate, ValueRank } from './filter';
 import type { SimplifiedPColumnSpec } from './types';
 
+export type { FilterUi, FilterUiOfType, FilterUiType };
+
+// DEPRECATED - use lib/ui/uikit/src/composition/filters
 export function unreachable(x: never): never {
   // eslint-disable-next-line @typescript-eslint/restrict-plus-operands
   throw new Error('Unexpected object: ' + x);
@@ -14,32 +19,6 @@ function isNumericValueType(spec: SimplifiedPColumnSpec): boolean {
 function isStringValueType(spec: SimplifiedPColumnSpec): boolean {
   return spec.valueType === 'String';
 }
-
-// Define recursive type explicitly
-export type FilterUi = { id?: number; name?: string; isExpanded?: boolean }
-  & ({ type: undefined }
-    | { type: 'or'; filters: FilterUi[] }
-    | { type: 'and'; filters: FilterUi[] }
-    | { type: 'not'; filter: FilterUi }
-    | { type: 'isNA'; column: SUniversalPColumnId }
-    | { type: 'isNotNA'; column: SUniversalPColumnId }
-    | { type: 'patternEquals'; column: SUniversalPColumnId; value: string }
-    | { type: 'patternNotEquals'; column: SUniversalPColumnId; value: string }
-    | { type: 'patternContainSubsequence'; column: SUniversalPColumnId; value: string }
-    | { type: 'patternNotContainSubsequence'; column: SUniversalPColumnId; value: string }
-    | { type: 'topN'; column: SUniversalPColumnId; n: number }
-    | { type: 'bottomN'; column: SUniversalPColumnId; n: number }
-    | { type: 'lessThan'; column: SUniversalPColumnId; x: number }
-    | { type: 'greaterThan'; column: SUniversalPColumnId; x: number }
-    | { type: 'lessThanOrEqual'; column: SUniversalPColumnId; x: number }
-    | { type: 'greaterThanOrEqual'; column: SUniversalPColumnId; x: number }
-    | { type: 'lessThanColumn'; column: SUniversalPColumnId; rhs: SUniversalPColumnId; minDiff?: number }
-    | { type: 'lessThanColumnOrEqual'; column: SUniversalPColumnId; rhs: SUniversalPColumnId; minDiff?: number });
-
-export type FilterUiType = Exclude<FilterUi, { type: undefined }>['type'];
-
-export type FilterUiOfType<T extends FilterUiType> = Extract<FilterUi, { type: T }>;
-
 export type TypeToLiteral<T> =
 [T] extends [FilterUiType] ? 'FilterUiType' :
     [T] extends [SUniversalPColumnId] ? 'SUniversalPColumnId' :
@@ -637,11 +616,7 @@ export function compileFilters(uiFilters: FilterUi[]): AnnotationFilter[] {
   return uiFilters.filter((f) => f.type !== undefined).map(compileFilter);
 }
 
-export type AnnotationStepUi = {
-  id?: number;
-  label: string;
-  filter: Extract<FilterUi, { type: 'and' | 'or' }>;
-};
+export type AnnotationStepUi = AnnotationSpecUi;
 
 export type AnnotationScriptUi = {
   isCreated?: boolean;

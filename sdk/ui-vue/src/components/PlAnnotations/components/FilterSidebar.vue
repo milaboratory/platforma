@@ -6,7 +6,7 @@ import {
   PlElementList,
   PlSidebarItem,
 } from '@milaboratories/uikit';
-import type { AnnotationStepUi, FiltersUi, PObjectId, SUniversalPColumnId } from '@platforma-sdk/model';
+import type { AnnotationStepUi, FilterUi, PObjectId, SUniversalPColumnId } from '@platforma-sdk/model';
 import { getFilterUiMetadata } from '@platforma-sdk/model';
 import type { SimplifiedUniversalPColumnEntry } from '../types';
 import { createDefaultFilterMetadata } from '../utils';
@@ -50,18 +50,18 @@ async function addFilterFromSelected() {
 }
 
 // Getters
-const getColumnLabel = (filter: FiltersUi) => {
+const getColumnLabel = (filter: FilterUi) => {
   if (!isNil(filter.name)) return filter.name;
   return props.columns
     .find((c) => 'column' in filter ? c.id === filter.column : false)?.label
     ?? filter.type;
 };
 
-const getFormMetadata = (filter: FiltersUi) => {
+const getFormMetadata = (filter: FilterUi) => {
   return !isNil(filter.type) ? getFilterUiMetadata(filter.type).form : createDefaultFilterMetadata();
 };
 
-const getFilterValues = (filter: FiltersUi) => {
+const getFilterValues = (filter: FilterUi) => {
   if (filter.type === 'or' || filter.type === 'and') {
     return filter.filters.map((f) => 'value' in f && !isNil(f.value) ? f.value : null).filter((v) => !isNil(v)).join (', ');
   }

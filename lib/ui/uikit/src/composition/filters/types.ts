@@ -1,26 +1,26 @@
-import type { FiltersUi, FiltersUiOfType, FiltersUiType, SimplifiedPColumnSpec, SUniversalPColumnId } from '@platforma-sdk/model';
+import type { FilterUi, FilterUiOfType, FilterUiType, SimplifiedPColumnSpec, SUniversalPColumnId } from '@platforma-sdk/model';
 
-export type FiltersUiTypeField<V> = {
-  fieldType: FiltersUiTypeToLiteral<V>;
+export type FilterUiTypeField<V> = {
+  fieldType: FilterUiTypeToLiteral<V>;
   label: string;
   defaultValue: () => V | undefined;
 };
 
-export type FiltersUiFormField<T extends FiltersUi> = {
-  [K in Exclude<keyof T, 'id' | 'name' | 'isExpanded'>]: FiltersUiTypeField<T[K]>
+export type FilterUiFormField<T extends FilterUi> = {
+  [K in Exclude<keyof T, 'id' | 'name' | 'isExpanded'>]: FilterUiTypeField<T[K]>
 };
 
-export type FiltersUiMetadataRecord<T extends FiltersUiType> = {
+export type FilterUiMetadataRecord<T extends FilterUiType> = {
   [P in T]: {
     label: string;
     labelNot?: string;
-    form: FiltersUiFormField<FiltersUiOfType<P>>;
+    form: FilterUiFormField<FilterUiOfType<P>>;
     supportedFor: (spec1: SimplifiedPColumnSpec, spec2: SimplifiedPColumnSpec | undefined) => boolean;
   }
 };
 
-export type FiltersUiTypeToLiteral<T> =
-    [T] extends [FiltersUiType] ? 'FilterUiType' :
+export type FilterUiTypeToLiteral<T> =
+    [T] extends [FilterUiType] ? 'FilterUiType' :
         [T] extends [SUniversalPColumnId] ? 'SUniversalPColumnId' :
             [T] extends [number] ? 'number' :
                 [T] extends [number | undefined] ? 'number?' :
