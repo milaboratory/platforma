@@ -6,18 +6,6 @@
  */
 
 // Export core expression classes
-export { Expression } from './expressions/base';
-export { ColumnExpression } from './expressions/column';
-export { LiteralExpression } from './expressions/literal';
-
-// Export factory functions
-export {
-  allHorizontal, and, anyHorizontal, col,
-  lit, or, rank, RankBuilder, RankExpression, when, WhenThenBuilder, WhenThenOtherwiseExpression,
-} from './functions';
-
-// Re-export all expression classes for advanced usage
-export {
-  ArithmeticExpression, coerceToExpression, ComparisonExpression,
-  LogicalExpression, NullCheckExpression, UnaryArithmeticExpression,
-} from './expressions/base';
+export * from './expressions';
+export * from './functions';
+export * from './types';
