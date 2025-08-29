@@ -1,7 +1,7 @@
-import type { FiltersUiType, SimplifiedPColumnSpec } from '@platforma-sdk/model';
-import type { FiltersUiMetadataRecord } from './types';
+import type { FilterUiType, SimplifiedPColumnSpec } from '@platforma-sdk/model';
+import type { FilterUiMetadataRecord } from './types';
 
-export const filtersUiMetadata = {
+export const filterUiMetadata = {
   lessThan: {
     label: 'Col < X (Less Than)',
     form: {
@@ -310,7 +310,7 @@ export const filtersUiMetadata = {
       },
       filters: {
         fieldType: 'unknown[]',
-        label: 'Filters',
+        label: 'Filter',
         defaultValue: () => [],
       },
     },
@@ -326,7 +326,7 @@ export const filtersUiMetadata = {
       },
       filters: {
         fieldType: 'unknown[]',
-        label: 'Filters',
+        label: 'Filter',
         defaultValue: () => [],
       },
     },
@@ -348,21 +348,21 @@ export const filtersUiMetadata = {
     },
     supportedFor: () => false,
   },
-} satisfies FiltersUiMetadataRecord<FiltersUiType>;
+} satisfies FilterUiMetadataRecord<FilterUiType>;
 
-export function getFiltersUiTypeOptions(columnSpec?: SimplifiedPColumnSpec) {
+export function getFilterUiTypeOptions(columnSpec?: SimplifiedPColumnSpec) {
   if (!columnSpec) {
     return [];
   }
 
-  return Object.entries(filtersUiMetadata).filter(([_, metadata]) => metadata.supportedFor(columnSpec)).map(([type, metadata]) => ({
+  return Object.entries(filterUiMetadata).filter(([_, metadata]) => metadata.supportedFor(columnSpec)).map(([type, metadata]) => ({
     label: metadata.label,
     value: type,
   }));
 }
 
-export function getFiltersUiMetadata(type: FiltersUiType) {
-  return filtersUiMetadata[type];
+export function getFilterUiMetadata(type: FilterUiType) {
+  return filterUiMetadata[type];
 }
 
 function isNumericValueType(spec: SimplifiedPColumnSpec): boolean {

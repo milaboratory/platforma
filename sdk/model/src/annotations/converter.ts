@@ -1,4 +1,4 @@
-import { convertFiltersUiToExpressions } from '../filters/converter';
+import { convertFilterUiToExpressions } from '../filters/converter';
 import type { AnnotationSpec, AnnotationSpecUi } from './types';
 
 export function convertAnnotations(annotationsUI: AnnotationSpecUi[]): AnnotationSpec[] {
@@ -21,6 +21,6 @@ export function convertAnnotations(annotationsUI: AnnotationSpecUi[]): Annotatio
     })
     .map((step): AnnotationSpec => ({
       label: step.label.trim(),
-      expression: convertFiltersUiToExpressions(step.filter),
+      expression: convertFilterUiToExpressions(step.filter),
     }));
 }
