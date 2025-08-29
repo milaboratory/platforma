@@ -1,7 +1,7 @@
-<script setup lang="ts" generic="T extends FiltersUi = FiltersUi">
+<script setup lang="ts" generic="T extends FilterUi = FilterUi">
 import { isNil } from '@milaboratories/helpers';
 import { PlCheckbox, PlDropdown, PlNumberField, PlTextField } from '@milaboratories/uikit';
-import type { FiltersUi, FiltersUiType, SUniversalPColumnId, TypeFieldRecord } from '@platforma-sdk/model';
+import type { FilterUi, FilterUiType, SUniversalPColumnId, TypeFieldRecord } from '@platforma-sdk/model';
 import { getFilterUiMetadata, getFilterUiTypeOptions } from '@platforma-sdk/model';
 import { computed, watch } from 'vue';
 import type { SimplifiedUniversalPColumnEntry } from '../types';
@@ -82,7 +82,7 @@ watch(() => props.formMetadata, (newForm) => {
       </template>
       <template v-else-if="field.fieldType === 'FilterUiType'">
         <PlDropdown
-          :model-value="formData[fieldName] as FiltersUiType"
+          :model-value="formData[fieldName] as FilterUiType"
           :label="field.label ?? fieldName"
           :options="filterUiTypeOptions"
           @update:model-value="setFieldValue(fieldName, $event as T[keyof T])"

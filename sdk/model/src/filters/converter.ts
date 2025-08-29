@@ -1,9 +1,9 @@
 import { and, col, lit, or, rank, type Expression, type ExpressionImpl } from '@milaboratories/ptabler-js';
-import type { FiltersUi } from '../filters';
+import type { FilterUi } from '../filters';
 
-export function convertFiltersUiToExpressionImpl(ui: FiltersUi): ExpressionImpl {
+export function convertFilterUiToExpressionImpl(ui: FilterUi): ExpressionImpl {
   if (ui.type === 'or') {
-    const expressions = ui.filters.filter((f) => f.type !== undefined).map(convertFiltersUiToExpressionImpl);
+    const expressions = ui.filters.filter((f) => f.type !== undefined).map(convertFilterUiToExpressionImpl);
     if (expressions.length === 0) {
       throw new Error('OR filter requires at least one operand');
     }
@@ -11,7 +11,7 @@ export function convertFiltersUiToExpressionImpl(ui: FiltersUi): ExpressionImpl 
   }
 
   if (ui.type === 'and') {
-    const expressions = ui.filters.filter((f) => f.type !== undefined).map(convertFiltersUiToExpressionImpl);
+    const expressions = ui.filters.filter((f) => f.type !== undefined).map(convertFilterUiToExpressionImpl);
     if (expressions.length === 0) {
       throw new Error('AND filter requires at least one operand');
     }
@@ -19,7 +19,7 @@ export function convertFiltersUiToExpressionImpl(ui: FiltersUi): ExpressionImpl 
   }
 
   if (ui.type === 'not') {
-    return convertFiltersUiToExpressionImpl(ui.filter).not();
+    return convertFilterUiToExpressionImpl(ui.filter).not();
   }
 
   if (ui.type === 'isNA') {
@@ -91,6 +91,6 @@ export function convertFiltersUiToExpressionImpl(ui: FiltersUi): ExpressionImpl 
   throw new Error('Unhandled filter type');
 }
 
-export function convertFiltersUiToExpressions(ui: FiltersUi): Expression {
-  return convertFiltersUiToExpressionImpl(ui).toJSON();
+export function convertFilterUiToExpressions(ui: FilterUi): Expression {
+  return convertFilterUiToExpressionImpl(ui).toJSON();
 }

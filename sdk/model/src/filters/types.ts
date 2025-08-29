@@ -3,11 +3,11 @@ import type { PColumnSpec, SUniversalPColumnId } from '@milaboratories/pl-model-
 export type SimplifiedPColumnSpec = Pick<PColumnSpec, 'valueType' | 'annotations'>;
 
 // Define recursive type explicitl
-export type FiltersUi = { id?: number; name?: string; isExpanded?: boolean }
+export type FilterUi = { id?: number; name?: string; isExpanded?: boolean }
   & ({ type: undefined }
-    | { type: 'or'; filters: FiltersUi[] }
-    | { type: 'and'; filters: FiltersUi[] }
-    | { type: 'not'; filter: FiltersUi }
+    | { type: 'or'; filters: FilterUi[] }
+    | { type: 'and'; filters: FilterUi[] }
+    | { type: 'not'; filter: FilterUi }
     | { type: 'isNA'; column: SUniversalPColumnId }
     | { type: 'isNotNA'; column: SUniversalPColumnId }
     | { type: 'patternEquals'; column: SUniversalPColumnId; value: string }
@@ -23,6 +23,6 @@ export type FiltersUi = { id?: number; name?: string; isExpanded?: boolean }
     | { type: 'lessThanColumn'; column: SUniversalPColumnId; rhs: SUniversalPColumnId; minDiff?: number }
     | { type: 'lessThanColumnOrEqual'; column: SUniversalPColumnId; rhs: SUniversalPColumnId; minDiff?: number });
 
-export type FiltersUiType = Exclude<FiltersUi, { type: undefined }>['type'];
+export type FilterUiType = Exclude<FilterUi, { type: undefined }>['type'];
 
-export type FiltersUiOfType<T extends FiltersUiType> = Extract<FiltersUi, { type: T }>;
+export type FilterUiOfType<T extends FilterUiType> = Extract<FilterUi, { type: T }>;

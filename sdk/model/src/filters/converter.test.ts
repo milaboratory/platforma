@@ -1,18 +1,18 @@
 import type { SUniversalPColumnId } from '@milaboratories/pl-model-common';
 import { describe, expect, it } from 'vitest';
-import { convertFiltersUiToExpressions } from './converter';
-import { FiltersUi } from './types';
+import { convertFilterUiToExpressions } from './converter';
+import { FilterUi } from './types';
 
-describe('convertFiltersUiToExpressions', () => {
+describe('convertFilterUiToExpressions', () => {
   it('should compile "or" filter to ptabler expression', () => {
-    const uiFilter: FiltersUi = {
+    const uiFilter: FilterUi = {
       type: 'or',
       filters: [
         { type: 'isNA', column: 'colA' as unknown as SUniversalPColumnId },
         { type: 'patternEquals', column: 'colB' as unknown as SUniversalPColumnId, value: 'test' },
       ],
     };
-    const result = convertFiltersUiToExpressions(uiFilter);
+    const result = convertFilterUiToExpressions(uiFilter);
     expect(result.type).toBe('or');
     expect((result as any).operands).toHaveLength(2);
     expect((result as any).operands[0].type).toBe('is_na');
@@ -20,14 +20,14 @@ describe('convertFiltersUiToExpressions', () => {
   });
 
   it('should compile "and" filter to ptabler expression', () => {
-    const uiFilter: FiltersUi = {
+    const uiFilter: FilterUi = {
       type: 'and',
       filters: [
         { type: 'isNA', column: 'colA' as unknown as SUniversalPColumnId },
         { type: 'greaterThan', column: 'colNum' as unknown as SUniversalPColumnId, x: 10 },
       ],
     };
-    const result = convertFiltersUiToExpressions(uiFilter);
+    const result = convertFilterUiToExpressions(uiFilter);
     expect(result.type).toBe('and');
     expect((result as any).operands).toHaveLength(2);
     expect((result as any).operands[0].type).toBe('is_na');
@@ -35,11 +35,11 @@ describe('convertFiltersUiToExpressions', () => {
   });
 
   it('should compile "not" filter to ptabler expression', () => {
-    const uiFilter: FiltersUi = {
+    const uiFilter: FilterUi = {
       type: 'not',
       filter: { type: 'isNA', column: 'colA' as unknown as SUniversalPColumnId },
     };
-    const result = convertFiltersUiToExpressions(uiFilter);
+    const result = convertFilterUiToExpressions(uiFilter);
     expect(result.type).toBe('not');
     expect((result as any).value.type).toBe('is_na');
     expect((result as any).value.value.type).toBe('col');
@@ -47,8 +47,8 @@ describe('convertFiltersUiToExpressions', () => {
   });
 
   it('should compile "isNA" filter to ptabler expression', () => {
-    const uiFilter: FiltersUi = { type: 'isNA', column: 'colA' as unknown as SUniversalPColumnId };
-    const result = convertFiltersUiToExpressions(uiFilter);
+    const uiFilter: FilterUi = { type: 'isNA', column: 'colA' as unknown as SUniversalPColumnId };
+    const result = convertFilterUiToExpressions(uiFilter);
     expect(result as any).toEqual({
       type: 'is_na',
       value: { type: 'col', name: 'colA' },
@@ -56,8 +56,8 @@ describe('convertFiltersUiToExpressions', () => {
   });
 
   it('should compile "isNotNA" filter to ptabler expression', () => {
-    const uiFilter: FiltersUi = { type: 'isNotNA', column: 'colA' as unknown as SUniversalPColumnId };
-    const result = convertFiltersUiToExpressions(uiFilter);
+    const uiFilter: FilterUi = { type: 'isNotNA', column: 'colA' as unknown as SUniversalPColumnId };
+    const result = convertFilterUiToExpressions(uiFilter);
     expect(result as any).toEqual({
       type: 'is_not_na',
       value: { type: 'col', name: 'colA' },
@@ -65,8 +65,8 @@ describe('convertFiltersUiToExpressions', () => {
   });
 
   it('should compile "patternEquals" filter to ptabler expression', () => {
-    const uiFilter: FiltersUi = { type: 'patternEquals', column: 'colB' as unknown as SUniversalPColumnId, value: 'abc' };
-    const result = convertFiltersUiToExpressions(uiFilter);
+    const uiFilter: FilterUi = { type: 'patternEquals', column: 'colB' as unknown as SUniversalPColumnId, value: 'abc' };
+    const result = convertFilterUiToExpressions(uiFilter);
     expect(result as any).toEqual({
       type: 'eq',
       lhs: { type: 'col', name: 'colB' },
@@ -75,8 +75,8 @@ describe('convertFiltersUiToExpressions', () => {
   });
 
   it('should compile "patternNotEquals" filter to ptabler expression', () => {
-    const uiFilter: FiltersUi = { type: 'patternNotEquals', column: 'colB' as unknown as SUniversalPColumnId, value: 'abc' };
-    const result = convertFiltersUiToExpressions(uiFilter);
+    const uiFilter: FilterUi = { type: 'patternNotEquals', column: 'colB' as unknown as SUniversalPColumnId, value: 'abc' };
+    const result = convertFilterUiToExpressions(uiFilter);
     expect(result as any).toEqual({
       type: 'neq',
       lhs: { type: 'col', name: 'colB' },
@@ -85,16 +85,16 @@ describe('convertFiltersUiToExpressions', () => {
   });
 
   it('should compile "patternContainSubsequence" filter to ptabler expression', () => {
-    const uiFilter: FiltersUi = { type: 'patternContainSubsequence', column: 'colC' as unknown as SUniversalPColumnId, value: 'sub' };
-    const result = convertFiltersUiToExpressions(uiFilter);
+    const uiFilter: FilterUi = { type: 'patternContainSubsequence', column: 'colC' as unknown as SUniversalPColumnId, value: 'sub' };
+    const result = convertFilterUiToExpressions(uiFilter);
     expect(result.type).toBe('str_contains');
     expect((result as any).value).toEqual({ type: 'col', name: 'colC' });
     expect((result as any).pattern).toEqual({ type: 'const', value: 'sub' });
   });
 
   it('should compile "patternNotContainSubsequence" filter to ptabler expression', () => {
-    const uiFilter: FiltersUi = { type: 'patternNotContainSubsequence', column: 'colC' as unknown as SUniversalPColumnId, value: 'sub' };
-    const result = convertFiltersUiToExpressions(uiFilter);
+    const uiFilter: FilterUi = { type: 'patternNotContainSubsequence', column: 'colC' as unknown as SUniversalPColumnId, value: 'sub' };
+    const result = convertFilterUiToExpressions(uiFilter);
     expect(result.type).toBe('not');
     expect((result as any).value.type).toBe('str_contains');
     expect((result as any).value.value).toEqual({ type: 'col', name: 'colC' });
@@ -110,8 +110,8 @@ describe('convertFiltersUiToExpressions', () => {
     ];
 
     testCases.forEach(({ type, expected }) => {
-      const uiFilter: FiltersUi = { type, column: 'colNum' as unknown as SUniversalPColumnId, x: 10 };
-      const result = convertFiltersUiToExpressions(uiFilter);
+      const uiFilter: FilterUi = { type, column: 'colNum' as unknown as SUniversalPColumnId, x: 10 };
+      const result = convertFilterUiToExpressions(uiFilter);
       expect(result as any).toEqual({
         type: expected,
         lhs: { type: 'col', name: 'colNum' },
@@ -121,12 +121,12 @@ describe('convertFiltersUiToExpressions', () => {
   });
 
   it('should compile "lessThanColumn" filter to ptabler expression', () => {
-    const uiFilter: FiltersUi = {
+    const uiFilter: FilterUi = {
       type: 'lessThanColumn',
       column: 'colNum1' as unknown as SUniversalPColumnId,
       rhs: 'colNum2' as unknown as SUniversalPColumnId,
     };
-    const result = convertFiltersUiToExpressions(uiFilter);
+    const result = convertFilterUiToExpressions(uiFilter);
     expect(result as any).toEqual({
       type: 'lt',
       lhs: { type: 'col', name: 'colNum1' },
@@ -135,13 +135,13 @@ describe('convertFiltersUiToExpressions', () => {
   });
 
   it('should compile "lessThanColumn" filter with minDiff to ptabler expression', () => {
-    const uiFilter: FiltersUi = {
+    const uiFilter: FilterUi = {
       type: 'lessThanColumn',
       column: 'colNum1' as unknown as SUniversalPColumnId,
       rhs: 'colNum2' as unknown as SUniversalPColumnId,
       minDiff: 5,
     };
-    const result = convertFiltersUiToExpressions(uiFilter);
+    const result = convertFilterUiToExpressions(uiFilter);
     expect(result as any).toEqual({
       type: 'lt',
       lhs: {
@@ -154,12 +154,12 @@ describe('convertFiltersUiToExpressions', () => {
   });
 
   it('should compile "lessThanColumnOrEqual" filter to ptabler expression', () => {
-    const uiFilter: FiltersUi = {
+    const uiFilter: FilterUi = {
       type: 'lessThanColumnOrEqual',
       column: 'colNum1' as unknown as SUniversalPColumnId,
       rhs: 'colNum2' as unknown as SUniversalPColumnId,
     };
-    const result = convertFiltersUiToExpressions(uiFilter);
+    const result = convertFilterUiToExpressions(uiFilter);
     expect(result as any).toEqual({
       type: 'le',
       lhs: { type: 'col', name: 'colNum1' },
@@ -168,13 +168,13 @@ describe('convertFiltersUiToExpressions', () => {
   });
 
   it('should compile "lessThanColumnOrEqual" filter with minDiff to ptabler expression', () => {
-    const uiFilter: FiltersUi = {
+    const uiFilter: FilterUi = {
       type: 'lessThanColumnOrEqual',
       column: 'colNum1' as unknown as SUniversalPColumnId,
       rhs: 'colNum2' as unknown as SUniversalPColumnId,
       minDiff: 3,
     };
-    const result = convertFiltersUiToExpressions(uiFilter);
+    const result = convertFilterUiToExpressions(uiFilter);
     expect(result as any).toEqual({
       type: 'le',
       lhs: {
@@ -187,8 +187,8 @@ describe('convertFiltersUiToExpressions', () => {
   });
 
   it('should compile "topN" filter to ptabler expression', () => {
-    const uiFilter: FiltersUi = { type: 'topN', column: 'colNum' as unknown as SUniversalPColumnId, n: 5 };
-    const result = convertFiltersUiToExpressions(uiFilter);
+    const uiFilter: FilterUi = { type: 'topN', column: 'colNum' as unknown as SUniversalPColumnId, n: 5 };
+    const result = convertFilterUiToExpressions(uiFilter);
     expect(result as any).toEqual({
       type: 'le',
       lhs: {
@@ -202,8 +202,8 @@ describe('convertFiltersUiToExpressions', () => {
   });
 
   it('should compile "bottomN" filter to ptabler expression', () => {
-    const uiFilter: FiltersUi = { type: 'bottomN', column: 'colNum' as unknown as SUniversalPColumnId, n: 3 };
-    const result = convertFiltersUiToExpressions(uiFilter);
+    const uiFilter: FilterUi = { type: 'bottomN', column: 'colNum' as unknown as SUniversalPColumnId, n: 3 };
+    const result = convertFilterUiToExpressions(uiFilter);
     expect(result as any).toEqual({
       type: 'le',
       lhs: {
@@ -217,7 +217,7 @@ describe('convertFiltersUiToExpressions', () => {
   });
 
   it('should compile nested filters to ptabler expressions', () => {
-    const uiFilter: FiltersUi = {
+    const uiFilter: FilterUi = {
       type: 'and',
       filters: [
         {
@@ -230,7 +230,7 @@ describe('convertFiltersUiToExpressions', () => {
         { type: 'greaterThan', column: 'colNum' as unknown as SUniversalPColumnId, x: 10 },
       ],
     };
-    const result = convertFiltersUiToExpressions(uiFilter);
+    const result = convertFilterUiToExpressions(uiFilter);
     expect(result.type).toBe('and');
     expect((result as any).operands).toHaveLength(2);
     expect((result as any).operands[0].type).toBe('or');
@@ -239,17 +239,17 @@ describe('convertFiltersUiToExpressions', () => {
   });
 
   it('should throw error for OR filter with no operands', () => {
-    const uiFilter: FiltersUi = { type: 'or', filters: [] };
-    expect(() => convertFiltersUiToExpressions(uiFilter)).toThrow('OR filter requires at least one operand');
+    const uiFilter: FilterUi = { type: 'or', filters: [] };
+    expect(() => convertFilterUiToExpressions(uiFilter)).toThrow('OR filter requires at least one operand');
   });
 
   it('should throw error for AND filter with no operands', () => {
-    const uiFilter: FiltersUi = { type: 'and', filters: [] };
-    expect(() => convertFiltersUiToExpressions(uiFilter)).toThrow('AND filter requires at least one operand');
+    const uiFilter: FilterUi = { type: 'and', filters: [] };
+    expect(() => convertFilterUiToExpressions(uiFilter)).toThrow('AND filter requires at least one operand');
   });
 
   it('should throw error for undefined filter type', () => {
-    const uiFilter: FiltersUi = { type: undefined };
-    expect(() => convertFiltersUiToExpressions(uiFilter)).toThrow('Filter type is undefined, this should not happen');
+    const uiFilter: FilterUi = { type: undefined };
+    expect(() => convertFilterUiToExpressions(uiFilter)).toThrow('Filter type is undefined, this should not happen');
   });
 });
