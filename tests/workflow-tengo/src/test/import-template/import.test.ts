@@ -1,9 +1,9 @@
 import { Pl } from '@milaboratories/pl-middle-layer';
 import { tplTest } from '@platforma-sdk/test';
 
-tplTest(
+tplTest.concurrent(
   'test import template in pure template',
-  /* {timeout: 10000}, */ async ({ helper, expect }) => {
+  async ({ helper, expect }) => {
     const result = await helper.renderTemplate(
       false,
       'test.import-template.pure-template',
@@ -26,9 +26,9 @@ tplTest(
   },
 );
 
-tplTest(
+tplTest.concurrent(
   'test import template in workflow',
-  /* {timeout: 10000}, */ async ({ helper, expect }) => {
+  async ({ helper, expect }) => {
     const wf = await helper.renderWorkflow(
       'test.import-template.workflow',
       false,

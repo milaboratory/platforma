@@ -17,7 +17,7 @@ const unarchiveCases: TestInput[] = [
   },
 ];
 
-tplTest.for(unarchiveCases)(
+tplTest.concurrent.for(unarchiveCases)(
   'archive extract test: $name',
   async ({ filesToUnpack, expectedValue }, { helper, expect, driverKit }) => {
     const importHandle = async (driverKit) => {

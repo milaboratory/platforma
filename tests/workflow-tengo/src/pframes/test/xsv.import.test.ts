@@ -2,6 +2,9 @@
 import { field, Pl } from '@milaboratories/pl-middle-layer';
 import { awaitStableState, tplTest } from '@platforma-sdk/test';
 import { Templates } from '../../../dist';
+import { deepClone, getTestTimeout } from '@milaboratories/helpers';
+
+const TIMEOUT = getTestTimeout(60_000);
 
 // dummy csv data
 const csvData = `ax1,ax2,ax3,col1,col2
@@ -87,7 +90,7 @@ const baseSpec = {
 
 // partition keys values as Json encoded strings
 const expectedPartitionKeys = function (spec: typeof baseSpec) {
-  const r = [] as string[];
+  const r: string[] = [];
   if (spec.partitionKeyLength == 0) {
     r.push(JSON.stringify([]));
     return r;
@@ -106,12 +109,44 @@ const expectedPartitionKeys = function (spec: typeof baseSpec) {
 };
 
 // key name as written in the resource without 'index'/'values' suffix
-function partitionKeyJson(str: string): any {
+function partitionKeyJson(str: string): string {
   // double conversion for assertion
   return JSON.stringify(JSON.parse(str.replace('.index', '').replace('.values', '')));
 }
 
-tplTest.for([
+const keysOf = (fields?: string[]) => [...new Set((fields ?? []).map(partitionKeyJson))].sort();
+
+const expectedColMeta = (superLen: number, partLen: number, storageFormat: string) => {
+  if (superLen > 0 && partLen > 0) {
+    return {
+      type: `PColumnData/Partitioned/${storageFormat}Partitioned`,
+      data: { superPartitionKeyLength: superLen, partitionKeyLength: partLen },
+    };
+  }
+  return {
+    type: `PColumnData/${storageFormat}Partitioned`,
+    data: { partitionKeyLength: Math.max(superLen, partLen) },
+  };
+};
+
+const getColMeta = async (result: any, colName: string, timeout = TIMEOUT) =>
+  await awaitStableState(
+    result.computeOutput('pf', (pf: any, ctx: any) => {
+      const r = pf?.traverse(colName + '.data');
+      if (!r || !r.getIsReadyOrError()) {
+        ctx.markUnstable('not_ready');
+        return undefined;
+      }
+      return {
+        type: r.resourceType.name,
+        data: r.getDataAsJson(),
+        fields: r.listInputFields(),
+      };
+    }),
+    timeout,
+  );
+
+tplTest.concurrent.for([
   { partitionKeyLength: 0, storageFormat: 'Binary' },
   { partitionKeyLength: 1, storageFormat: 'Binary' },
   { partitionKeyLength: 2, storageFormat: 'Binary' },
@@ -126,12 +161,12 @@ tplTest.for([
   // Also, because of tests execution nature in CI (when we several parallel test threads each creating large resource tree)
   // it shares Platforma Backend performance with other massive parallel tests, making overall test time large even when actual
   // execution takes 1-2 seconds at most.
-  { timeout: 30000 },
+  { timeout: TIMEOUT },
   async ({ partitionKeyLength, storageFormat }, { helper, expect, driverKit }) => {
-    const spec = baseSpec;
+    const spec = deepClone(baseSpec);
     spec.partitionKeyLength = partitionKeyLength;
     spec.storageFormat = storageFormat;
-    const expectedPKeys = [...expectedPartitionKeys(spec)].sort();
+    const expectedPKeys = expectedPartitionKeys(spec).sort();
 
     const result = await helper.renderTemplate(
       false,
@@ -144,51 +179,32 @@ tplTest.for([
     );
 
     const cols = (
-      await awaitStableState(
-        result.computeOutput('pf', (pf) => pf?.listInputFields()),
-        10000,
-      )
+      await awaitStableState(result.computeOutput('pf', (pf) => pf?.listInputFields()), TIMEOUT)
     )?.sort();
 
     const expected = ['col1.data', 'col1.spec', 'col2.data', 'col2.spec'].sort();
     expect(cols).toStrictEqual(expected);
 
-    for (const colName of ['col1', 'col2']) {
-      const colOpt = await awaitStableState(
-        result.computeOutput('pf', (pf) => {
-          const r = pf?.traverse(colName + '.data');
-          return {
-            type: r?.resourceType.name,
-            data: r?.getDataAsJson(),
-            fields: r?.listInputFields(),
-          };
-        }),
-        6000,
-      );
+    await Promise.all(
+      ['col1', 'col2'].map(async (colName) => {
+        const col = await getColMeta(result, colName);
 
-      expect(colOpt).toBeDefined();
+        expect(col.type).toEqual(`PColumnData/${spec.storageFormat}Partitioned`);
+        expect(col.data).toEqual({ partitionKeyLength: spec.partitionKeyLength });
 
-      const col = colOpt!;
+        expect(keysOf(col.fields)).toEqual(expectedPKeys);
 
-      expect(col.type).toEqual('PColumnData/' + spec.storageFormat + 'Partitioned');
-
-      expect(col.data).toEqual({ partitionKeyLength: spec.partitionKeyLength });
-
-      const keys = [...new Set(col?.fields?.map(partitionKeyJson))].sort();
-
-      expect(keys).toEqual(expectedPKeys);
-
-      if (storageFormat == 'Json') {
-        if (partitionKeyLength == 0) {
+        if (storageFormat == 'Json' && partitionKeyLength == 0) {
           const dataOpt = await awaitStableState(
             result.computeOutput('pf', (pf, ctx) => {
               const r = pf?.traverse(colName + '.data', JSON.stringify([]));
-              if (r === undefined) {
-                return r;
+              if (!r) {
+                ctx.markUnstable('no_partition');
+                return undefined;
               }
               return driverKit.blobDriver.getOnDemandBlob(r.persist(), ctx).handle;
             }),
-            60000,
+            TIMEOUT,
           );
 
           const data = JSON.parse(
@@ -200,13 +216,12 @@ tplTest.for([
             .sort();
 
           const expectedPValues = csvDataMap.get(colName)!.sort();
-
           expect(values).toEqual(expectedPValues);
+        } else {
+          // @TODO test
         }
-      } else {
-        // @TODO test
-      }
-    }
+      }),
+    );
   },
 );
 
@@ -228,7 +243,7 @@ function superPartitionKeys(keyLen: number): string[] {
   return r;
 }
 
-tplTest.for([
+tplTest.concurrent.for([
   {
     superPartitionKeyLength: 0,
     partitionKeyLength: 0,
@@ -281,14 +296,14 @@ tplTest.for([
   { superPartitionKeyLength: 1, partitionKeyLength: 1, storageFormat: 'Json' },
 ])(
   'should read super-partitioned p-frame from csv files map- superPartitionKeyLength: $superPartitionKeyLength, partitionKeyLength: $partitionKeyLength',
-  { timeout: 30000 },
+  { timeout: TIMEOUT },
   async ({ superPartitionKeyLength, partitionKeyLength, storageFormat }, { helper, expect }) => {
     const supKeys = superPartitionKeys(superPartitionKeyLength).sort();
-    const spec = baseSpec;
+    const spec = deepClone(baseSpec);
     spec.partitionKeyLength = partitionKeyLength;
     spec.storageFormat = storageFormat;
     // inner keys
-    const expectedPKeys = [...expectedPartitionKeys(spec)].sort();
+    const expectedPKeys = expectedPartitionKeys(spec).sort();
 
     const result = await helper.renderTemplate(
       false,
@@ -311,89 +326,70 @@ tplTest.for([
       },
     );
 
-    for (const colName of ['col1', 'col2']) {
-      const colOpt = await awaitStableState(
-        result.computeOutput('pf', (pf) => {
-          const r = pf?.traverse(colName + '.data');
-          return {
-            type: r?.resourceType.name,
-            data: r?.getDataAsJson(),
-            fields: r?.listInputFields(),
-          };
-        }),
-        60000,
-      );
+    await Promise.all(
+      ['col1', 'col2'].map(async (colName) => {
+        const col = await awaitStableState(
+          result.computeOutput('pf', (pf, ctx) => {
+            const r = pf?.traverse(colName + '.data');
+            if (!r || !r.getIsReadyOrError()) {
+              ctx.markUnstable('not_ready');
+              return undefined;
+            }
+            return {
+              type: r.resourceType.name,
+              data: r.getDataAsJson(),
+              fields: r.listInputFields(),
+            };
+          }),
+          TIMEOUT,
+        );
 
-      expect(colOpt).toBeDefined();
+        const exp = expectedColMeta(superPartitionKeyLength, partitionKeyLength, spec.storageFormat);
+        expect(col.type).toEqual(exp.type);
+        expect(col.data).toEqual(exp.data);
 
-      const col = colOpt!;
+        const keys = keysOf(col.fields);
+        if (superPartitionKeyLength > 0 && partitionKeyLength > 0) {
+          expect(keys).toEqual(supKeys);
 
-      let expectedResourceType: string;
-      let expectedData: object;
-      if (superPartitionKeyLength > 0 && partitionKeyLength > 0) {
-        expectedResourceType = 'PColumnData/Partitioned/' + spec.storageFormat + 'Partitioned';
-        expectedData = {
-          superPartitionKeyLength: superPartitionKeyLength,
-          partitionKeyLength: partitionKeyLength,
-        };
-      } else {
-        expectedResourceType = 'PColumnData/' + spec.storageFormat + 'Partitioned';
-        expectedData = {
-          partitionKeyLength: Math.max(superPartitionKeyLength, partitionKeyLength),
-        };
-      }
+          await Promise.all(
+            supKeys.map(async (sk) => {
+              const inner = await awaitStableState(
+                result.computeOutput('pf', (pf, ctx) => {
+                  const r = pf?.traverse(colName + '.data', sk);
+                  if (!r || !r.getIsReadyOrError()) {
+                    ctx.markUnstable('not_ready');
+                    return undefined;
+                  }
+                  return {
+                    type: r.resourceType.name,
+                    data: r.getDataAsJson(),
+                    fields: r.listInputFields(),
+                  };
+                }),
+                TIMEOUT,
+              );
 
-      expect(col.type).toEqual(expectedResourceType);
-      expect(col.data).toEqual(expectedData);
+              expect(inner.type).toEqual(`PColumnData/${spec.storageFormat}Partitioned`);
+              expect(inner.data).toEqual({ partitionKeyLength: spec.partitionKeyLength });
+              expect(keysOf(inner.fields)).toEqual(expectedPKeys);
 
-      const keys = [...new Set(col?.fields?.map(partitionKeyJson))].sort();
-      if (superPartitionKeyLength > 0 && partitionKeyLength > 0) {
-        expect(keys).toEqual(supKeys);
-        for (const sk of supKeys) {
-          const colOpt = await awaitStableState(
-            result.computeOutput('pf', (pf) => {
-              const r = pf?.traverse(colName + '.data', sk);
-              return {
-                type: r?.resourceType.name,
-                data: r?.getDataAsJson(),
-                fields: r?.listInputFields(),
-              };
+              if (storageFormat == 'Json') {
+                // @TODO test data
+              }
             }),
-            60000,
           );
-
-          expect(colOpt).toBeDefined();
-
-          const col = colOpt!;
-
-          expect(col.type).toEqual('PColumnData/' + spec.storageFormat + 'Partitioned');
-
-          expect(col.data).toEqual({
-            partitionKeyLength: spec.partitionKeyLength,
-          });
-
-          const keys = [...new Set(col?.fields?.map(partitionKeyJson))].sort();
-
+        } else if (superPartitionKeyLength == 0) {
           expect(keys).toEqual(expectedPKeys);
-
-          if (storageFormat == 'Json') {
-            // @TODO test data
-          }
+        } else if (partitionKeyLength == 0) {
+          expect(keys).toEqual(supKeys);
         }
-      } else if (superPartitionKeyLength == 0) {
-        const keys = [...new Set(col?.fields?.map(partitionKeyJson))].sort();
-
-        expect(keys).toEqual(expectedPKeys);
-      } else if (partitionKeyLength == 0) {
-        const keys = [...new Set(col?.fields?.map(partitionKeyJson))].sort();
-
-        expect(keys).toEqual(supKeys);
-      }
-    }
+      }),
+    );
   },
 );
 
-tplTest.for([
+tplTest.concurrent.for([
   {
     superPartitionKeyLength: 0,
     partitionKeyLength: 0,
@@ -446,14 +442,13 @@ tplTest.for([
   { superPartitionKeyLength: 1, partitionKeyLength: 1, storageFormat: 'Json' },
 ])(
   '[in workflow] should read super-partitioned p-frame from csv files map- superPartitionKeyLength: $superPartitionKeyLength, partitionKeyLength: $partitionKeyLength',
-  { timeout: 30000 },
+  { timeout: TIMEOUT },
   async ({ superPartitionKeyLength, partitionKeyLength, storageFormat }, { helper, expect }) => {
     const supKeys = superPartitionKeys(superPartitionKeyLength).sort();
-    const spec = baseSpec;
+    const spec = deepClone(baseSpec);
     spec.partitionKeyLength = partitionKeyLength;
     spec.storageFormat = storageFormat;
-    // inner keys
-    const expectedPKeys = [...expectedPartitionKeys(spec)].sort();
+    const expectedPKeys = expectedPartitionKeys(spec).sort();
 
     const csvMap = Object.fromEntries(supKeys.map((supKey) => [supKey, csvData]));
 
@@ -468,83 +463,58 @@ tplTest.for([
       { exportProcessor: Templates['pframes.export-pframe'] },
     );
 
-    for (const colName of ['col1', 'col2']) {
-      const colOpt = await awaitStableState(
-        result.export(`${colName}.data`, (r) => {
-          return {
-            type: r?.resourceType.name,
-            data: r?.getDataAsJson(),
-            fields: r?.listInputFields(),
-          };
-        }),
-        60000,
-      );
+    await Promise.all(
+      ['col1', 'col2'].map(async (colName) => {
+        const col = await awaitStableState(
+          result.export(`${colName}.data`, (r) => {
+            if (!r || !r.getIsReadyOrError()) return undefined;
+            return {
+              type: r.resourceType.name,
+              data: r.getDataAsJson(),
+              fields: r.listInputFields(),
+            };
+          }),
+          TIMEOUT,
+        );
 
-      expect(colOpt).toBeDefined();
+        const exp = expectedColMeta(superPartitionKeyLength, partitionKeyLength, spec.storageFormat);
+        expect(col.type).toEqual(exp.type);
+        expect(col.data).toEqual(exp.data);
 
-      const col = colOpt!;
+        const keys = keysOf(col.fields);
+        if (superPartitionKeyLength > 0 && partitionKeyLength > 0) {
+          expect(keys).toEqual(supKeys);
 
-      let expectedResourceType: string;
-      let expectedData: object;
-      if (superPartitionKeyLength > 0 && partitionKeyLength > 0) {
-        expectedResourceType = 'PColumnData/Partitioned/' + spec.storageFormat + 'Partitioned';
-        expectedData = {
-          superPartitionKeyLength: superPartitionKeyLength,
-          partitionKeyLength: partitionKeyLength,
-        };
-      } else {
-        expectedResourceType = 'PColumnData/' + spec.storageFormat + 'Partitioned';
-        expectedData = {
-          partitionKeyLength: Math.max(superPartitionKeyLength, partitionKeyLength),
-        };
-      }
+          await Promise.all(
+            supKeys.map(async (sk) => {
+              const inner = await awaitStableState(
+                result.export(`${colName}.data`, (pc) => {
+                  const r = pc?.traverse(sk);
+                  if (!r || !r.getIsReadyOrError()) return undefined;
+                  return {
+                    type: r.resourceType.name,
+                    data: r.getDataAsJson(),
+                    fields: r.listInputFields(),
+                  };
+                }),
+                TIMEOUT,
+              );
 
-      expect(col.type).toEqual(expectedResourceType);
-      expect(col.data).toEqual(expectedData);
+              expect(inner.type).toEqual(`PColumnData/${spec.storageFormat}Partitioned`);
+              expect(inner.data).toEqual({ partitionKeyLength: spec.partitionKeyLength });
+              expect(keysOf(inner.fields)).toEqual(expectedPKeys);
 
-      const keys = [...new Set(col?.fields?.map(partitionKeyJson))].sort();
-      if (superPartitionKeyLength > 0 && partitionKeyLength > 0) {
-        expect(keys).toEqual(supKeys);
-        for (const sk of supKeys) {
-          const colOpt = await awaitStableState(
-            result.export(`${colName}.data`, (pc) => {
-              const r = pc?.traverse(sk);
-              return {
-                type: r?.resourceType.name,
-                data: r?.getDataAsJson(),
-                fields: r?.listInputFields(),
-              };
+              if (storageFormat == 'Json') {
+                // @TODO test data
+              }
             }),
-            60000,
           );
-
-          expect(colOpt).toBeDefined();
-
-          const col = colOpt!;
-
-          expect(col.type).toEqual('PColumnData/' + spec.storageFormat + 'Partitioned');
-
-          expect(col.data).toEqual({
-            partitionKeyLength: spec.partitionKeyLength,
-          });
-
-          const keys = [...new Set(col?.fields?.map(partitionKeyJson))].sort();
-
+        } else if (superPartitionKeyLength == 0) {
           expect(keys).toEqual(expectedPKeys);
-
-          if (storageFormat == 'Json') {
-            // @TODO test data
-          }
+        } else if (partitionKeyLength == 0) {
+          expect(keys).toEqual(supKeys);
         }
-      } else if (superPartitionKeyLength == 0) {
-        const keys = [...new Set(col?.fields?.map(partitionKeyJson))].sort();
-
-        expect(keys).toEqual(expectedPKeys);
-      } else if (partitionKeyLength == 0) {
-        const keys = [...new Set(col?.fields?.map(partitionKeyJson))].sort();
-
-        expect(keys).toEqual(supKeys);
-      }
-    }
+      }),
+    );
   },
 );
