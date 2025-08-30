@@ -24,27 +24,27 @@ export async function withFileContent<T>({
 }): Promise<T> {
   return await fileReadLimiter.run(async () => {
     const readOps = {
-        start: range?.from,
-        end: range?.to !== undefined ? range.to - 1 : undefined,
-        signal: signal,
-      };
-      let stream: fs.ReadStream | undefined;
-      let handlerSuccess = false;
+      start: range?.from,
+      end: range?.to !== undefined ? range.to - 1 : undefined,
+      signal: signal,
+    };
+    let stream: fs.ReadStream | undefined;
+    let handlerSuccess = false;
 
-      try {
-        const stat = await fsp.stat(path);
-        stream = fs.createReadStream(path, readOps);
-        const webStream = Readable.toWeb(stream);
+    try {
+      const stat = await fsp.stat(path);
+      stream = fs.createReadStream(path, readOps);
+      const webStream = Readable.toWeb(stream);
 
-        const result = await handler(webStream, stat.size);
-        handlerSuccess = true;
-        return result;
-      } catch (error) {
-        // Cleanup on error (including handler errors)
-        if (!handlerSuccess && stream && !stream.destroyed) {
-          stream.destroy();
-        }
-        throw error;
+      const result = await handler(webStream, stat.size);
+      handlerSuccess = true;
+      return result;
+    } catch (error) {
+      // Cleanup on error (including handler errors)
+      if (!handlerSuccess && stream && !stream.destroyed) {
+        stream.destroy();
       }
+      throw error;
+    }
   });
 }
