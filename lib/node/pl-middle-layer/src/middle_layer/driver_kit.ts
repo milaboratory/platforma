@@ -35,7 +35,7 @@ import {
  * This intertface is basically a version of the DriverKit from
  * UI SDK with extended API.
  * */
-export interface MiddleLayerDriverKit extends Sdk.DriverKit {
+export interface MiddleLayerDriverKit extends Sdk.DriverKit, AsyncDisposable {
   // override with wider interface
   readonly blobDriver: DownloadDriver;
   // override with wider interface
@@ -141,5 +141,8 @@ export async function initDriverKit(
     uploadDriver,
     pFrameDriver,
     frontendDriver: frontendDownloadDriver,
+    async [Symbol.asyncDispose]() {
+      return await pFrameDriver[Symbol.asyncDispose]();
+    },
   };
 }

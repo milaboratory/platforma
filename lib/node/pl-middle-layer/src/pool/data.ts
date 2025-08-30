@@ -12,8 +12,7 @@ import {
   type PObjectId,
   type PObjectSpec,
 } from '@platforma-sdk/model';
-import type { PlTreeNodeAccessor, ResourceInfo } from '@milaboratories/pl-tree';
-import { assertNever } from '@milaboratories/ts-helpers';
+import type { PlTreeEntry, PlTreeNodeAccessor } from '@milaboratories/pl-tree';
 import canonicalize from 'canonicalize';
 import {
   isNullResourceId,
@@ -24,70 +23,6 @@ import {
 import type { Writable } from 'utility-types';
 import { createHash } from 'node:crypto';
 import type { PFrameInternal } from '@milaboratories/pl-model-middle-layer';
-
-export function* allBlobs<B>(data: PFrameInternal.DataInfo<B>): Generator<B> {
-  switch (data.type) {
-    case 'Json':
-      return;
-    case 'JsonPartitioned':
-      for (const blob of Object.values(data.parts)) yield blob;
-      return;
-    case 'BinaryPartitioned':
-      for (const { index, values } of Object.values(data.parts)) {
-        yield index;
-        yield values;
-      }
-      return;
-    case 'ParquetPartitioned':
-      for (const { data: blob } of Object.values(data.parts)) yield blob;
-      return;
-    default:
-      assertNever(data);
-  }
-}
-
-function mapValues<T extends object, TResult>(
-  obj: T,
-  callback: (v: T[keyof T], key: keyof T) => TResult,
-): { [K in keyof T]: TResult } {
-  return Object.fromEntries(
-    (Object.entries(obj) as { [K in keyof T]: [K, T[K]]; }[keyof T][])
-      .map(([key, value]) => [key, callback(value, key)]),
-  ) as { [K in keyof T]: TResult };
-}
-
-export function mapBlobs<B1, B2>(
-  data: PFrameInternal.DataInfo<B1>,
-  mapping: (blob: B1) => B2,
-): PFrameInternal.DataInfo<B2> {
-  switch (data.type) {
-    case 'Json':
-      return { ...data };
-    case 'JsonPartitioned':
-      return {
-        ...data,
-        parts: mapValues(data.parts, mapping),
-      };
-    case 'BinaryPartitioned':
-      return {
-        ...data,
-        parts: mapValues(data.parts, (v) => ({
-          index: mapping(v.index),
-          values: mapping(v.values),
-        })),
-      };
-    case 'ParquetPartitioned':
-      return {
-        ...data,
-        parts: mapValues(data.parts, (v) => ({
-          ...v,
-          data: mapping(v.data),
-        })),
-      };
-    default:
-      assertNever(data);
-  }
-}
 
 export const PColumnDataJsonPartitioned = resourceType('PColumnData/JsonPartitioned', '1');
 export const PColumnDataJsonSuperPartitioned = resourceType(
@@ -122,7 +57,7 @@ export type PColumnDataSuperPartitionedResourceValue = {
 
 export function parseDataInfoResource(
   data: PlTreeNodeAccessor,
-): PFrameInternal.DataInfo<ResourceInfo> {
+): PFrameInternal.DataInfo<PlTreeEntry> {
   if (!data.getIsReadyOrError()) throw new PFrameDriverError('Data not ready.');
 
   const resourceData = data.getDataAsJson();
@@ -143,7 +78,7 @@ export function parseDataInfoResource(
     const parts = Object.fromEntries(
       data
         .listInputFields()
-        .map((field) => [field, data.traverse({ field, errorIfFieldNotSet: true }).resourceInfo]),
+        .map((field) => [field, data.traverse({ field, errorIfFieldNotSet: true }).persist()]),
     );
 
     return {
@@ -154,7 +89,7 @@ export function parseDataInfoResource(
   } else if (resourceTypesEqual(data.resourceType, PColumnDataJsonSuperPartitioned)) {
     const meta = resourceData as PColumnDataSuperPartitionedResourceValue;
 
-    const parts: Record<string, ResourceInfo> = {};
+    const parts: Record<string, PlTreeEntry> = {};
     for (const superKey of data.listInputFields()) {
       const superPart = data.traverse({ field: superKey, errorIfFieldNotSet: true });
       const keys = superPart.listInputFields();
@@ -164,7 +99,7 @@ export function parseDataInfoResource(
         const partKey = JSON.stringify([
           ...JSON.parse(superKey) as PColumnValue[],
           ...JSON.parse(key) as PColumnValue[]]);
-        parts[partKey] = superPart.traverse({ field: key, errorIfFieldNotSet: true }).resourceInfo;
+        parts[partKey] = superPart.traverse({ field: key, errorIfFieldNotSet: true }).persist();
       }
     }
 
@@ -178,7 +113,7 @@ export function parseDataInfoResource(
 
     const parts: Record<
       string,
-      Partial<Writable<BinaryChunk<ResourceInfo>>>
+      Partial<Writable<BinaryChunk<PlTreeEntry>>>
     > = {};
 
     // parsing the structure
@@ -190,7 +125,7 @@ export function parseDataInfoResource(
           part = {};
           parts[partKey] = part;
         }
-        part.index = data.traverse({ field, errorIfFieldNotSet: true }).resourceInfo;
+        part.index = data.traverse({ field, errorIfFieldNotSet: true }).persist();
       } else if (field.endsWith('.values')) {
         const partKey = field.slice(0, field.length - 7);
         let part = parts[partKey];
@@ -198,7 +133,7 @@ export function parseDataInfoResource(
           part = {};
           parts[partKey] = part;
         }
-        part.values = data.traverse({ field, errorIfFieldNotSet: true }).resourceInfo;
+        part.values = data.traverse({ field, errorIfFieldNotSet: true }).persist();
       } else throw new PFrameDriverError(`unrecognized part field name: ${field}`);
     }
 
@@ -211,14 +146,14 @@ export function parseDataInfoResource(
     return {
       type: 'BinaryPartitioned',
       partitionKeyLength: meta.partitionKeyLength,
-      parts: parts as Record<string, BinaryChunk<ResourceInfo>>,
+      parts: parts as Record<string, BinaryChunk<PlTreeEntry>>,
     };
   } else if (resourceTypesEqual(data.resourceType, PColumnDataBinarySuperPartitioned)) {
     const meta = resourceData as PColumnDataSuperPartitionedResourceValue;
 
     const parts: Record<
       string,
-      Partial<Writable<BinaryChunk<ResourceInfo>>>
+      Partial<Writable<BinaryChunk<PlTreeEntry>>>
     > = {};
     for (const superKey of data.listInputFields()) {
       const superData = data.traverse({ field: superKey, errorIfFieldNotSet: true });
@@ -240,7 +175,7 @@ export function parseDataInfoResource(
           parts[partKey].index = superData.traverse({
             field,
             errorIfFieldNotSet: true,
-          }).resourceInfo;
+          }).persist();
         } else if (field.endsWith('.values')) {
           const key = field.slice(0, field.length - 7);
 
@@ -255,7 +190,7 @@ export function parseDataInfoResource(
           parts[partKey].values = superData.traverse({
             field,
             errorIfFieldNotSet: true,
-          }).resourceInfo;
+          }).persist();
         } else throw new PFrameDriverError(`unrecognized part field name: ${field}`);
       }
     }
@@ -263,12 +198,12 @@ export function parseDataInfoResource(
     return {
       type: 'BinaryPartitioned',
       partitionKeyLength: meta.superPartitionKeyLength + meta.partitionKeyLength,
-      parts: parts as Record<string, BinaryChunk<ResourceInfo>>,
+      parts: parts as Record<string, BinaryChunk<PlTreeEntry>>,
     };
   } else if (resourceTypesEqual(data.resourceType, PColumnDataParquetPartitioned)) {
     const meta = resourceData as PColumnDataPartitionedResourceValue;
 
-    const parts: Record<string, ParquetChunk<ResourceInfo>> = {};
+    const parts: Record<string, ParquetChunk<PlTreeEntry>> = {};
     for (const key of data.listInputFields()) {
       const resource = data.traverse({ field: key, assertFieldType: 'Input', errorIfFieldNotSet: true });
 
@@ -283,7 +218,7 @@ export function parseDataInfoResource(
   } else if (resourceTypesEqual(data.resourceType, PColumnDataParquetSuperPartitioned)) {
     const meta = resourceData as PColumnDataSuperPartitionedResourceValue;
 
-    const parts: Record<string, ParquetChunk<ResourceInfo>> = {};
+    const parts: Record<string, ParquetChunk<PlTreeEntry>> = {};
     for (const superKey of data.listInputFields()) {
       const superPart = data.traverse({ field: superKey, errorIfFieldNotSet: true });
       const keys = superPart.listInputFields();
@@ -310,10 +245,10 @@ export function parseDataInfoResource(
   throw new PFrameDriverError(`unsupported resource type: ${resourceTypeToString(data.resourceType)}`);
 }
 
-export function traverseParquetPartitionedResource(resource: PlTreeNodeAccessor): ParquetChunk<ResourceInfo> {
+export function traverseParquetPartitionedResource(resource: PlTreeNodeAccessor): ParquetChunk<PlTreeEntry> {
   const blob = resource.traverse(
     { field: 'blob', assertFieldType: 'Service', errorIfFieldNotSet: true },
-  ).resourceInfo;
+  ).persist();
   const partInfo = resource.getDataAsJson() as ParquetChunkMetadata;
   const mapping = resource.traverse(
     { field: 'mapping', assertFieldType: 'Service', errorIfFieldNotSet: true },

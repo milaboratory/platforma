@@ -1,6 +1,8 @@
-# Pl URL
+# Developer Guide
 
-```
+## Pl URL
+
+```txt
 http(s)://address:port/?...parameters...
 ```
 
@@ -14,19 +16,19 @@ Parameters:
 
 Example:
 
-```
+```txt
 http(s)://address:port/alternative-root=tmproot&request-timeout=10000
 ```
 
-# How to pull and build proto files
+## How to pull and build proto files
 
 Dependencies:
 
 - `protoc`
-    - `brew install protobuf`
+  - `brew install protobuf`
 - you don't need `protoc-gen-js`, just run `npm install`
 - `protodep`
-    - `go install github.com/milaboratory/protodep@v0.1.7-milab`
+  - `go install github.com/milaboratory/protodep@v0.1.7-milab`
 
       check that you have `${HOME}/go/bin` in `PATH`
 - `rsync`
@@ -35,25 +37,27 @@ Dependencies:
 ./sync-proto.sh
 ```
 
-# Running tests
+## Running tests
 
 Unauthenticated
 
-```
-PL_ADDRESS="http://127.0.0.1:6345" npm run test
+```bash
+PL_ADDRESS="http://127.0.0.1:6345" pnpm run test
 ```
 
 Authenticated
 
-```
-PL_ADDRESS="http://127.0.0.1:6345" PL_TEST_USER="test-user" PL_TEST_PASSWORD="test-password" npm run test
+```bash
+PL_ADDRESS="http://127.0.0.1:6345" PL_TEST_USER="test-user" PL_TEST_PASSWORD="test-password" pnpm run test
 ```
 
 Authentication information (token) cached in git-ignored `.test_auth.json` file.
 
-# FAQ
+## FAQ
 
-## mapfile
-Default bash version on MacOS is 3. mapfile apprears only from 4. To fix issue with `command not found: mapfile` you should install and redeclare bash: 
+### mapfile
+
+Default bash version on MacOS is 3. mapfile apprears only from 4. To fix issue with `command not found: mapfile` you should install and redeclare bash:
+
 1. install bash with brew, it will install version 5
-2. ln -s $(brew --prefix)/bin/bash /usr/local/bin/bash   
+2. `ln -s $(brew --prefix)/bin/bash /usr/local/bin/bash`
