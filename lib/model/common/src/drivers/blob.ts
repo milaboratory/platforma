@@ -92,16 +92,4 @@ export interface BlobDriver {
     handle: LocalBlobHandle | RemoteBlobHandle,
     optionsOrRange?: GetContentOptions | RangeBytes,
   ): Promise<Uint8Array>;
-
-  /**
-   * Given the blob handle call handler with content stream.
-   * Depending on the handle type, content will be served from locally downloaded file,
-   * or directly from remote platforma storage.
-   */
-  withContent<T>(
-    handle: LocalBlobHandle | RemoteBlobHandle,
-    options: GetContentOptions & {
-      handler: ContentHandler<T>;
-    },
-  ): Promise<T>;
 }
