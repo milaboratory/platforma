@@ -108,8 +108,25 @@ export interface FsStoreOptions extends ObjectStoreOptions {
   rootDir: string;
 }
 
+export interface ObjectStore {
+  /**
+   * Proxy HTTP(S) request for parquet file to object store.
+   * Callback promise resolves when stream is closed by handler @see HttpHelpers.createRequestHandler
+   * Callback API is used so that ObjectStore can limit the number of concurrent requests.
+   */
+  request(
+    filename: ParquetFileName,
+    params: {
+      method: HttpMethod;
+      range?: HttpRange;
+      signal: AbortSignal;
+      callback: (response: ObjectStoreResponse) => Promise<void>;
+    }
+  ): void;
+}
+
 /** File system abstraction for request handler factory, @see HttpHelpers.createRequestHandler */
-export abstract class ObjectStore {
+export abstract class BaseObjectStore implements ObjectStore {
   protected readonly logger: Logger;
 
   constructor(options: ObjectStoreOptions) {
@@ -145,7 +162,7 @@ export abstract class ObjectStore {
       signal: AbortSignal;
       callback: (response: ObjectStoreResponse) => Promise<void>;
     }
-  ): void;
+  ): Promise<void>;
 }
 
 /** Object store base URL in format accepted by Apache DataFusion and DuckDB */

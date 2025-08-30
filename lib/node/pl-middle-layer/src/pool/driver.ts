@@ -156,7 +156,7 @@ interface BlobStoreOptions extends PFrameInternal.ObjectStoreOptions {
   remoteBlobPool: RemoteBlobPool;
 };
 
-class BlobStore extends PFrameInternal.ObjectStore {
+class BlobStore extends PFrameInternal.BaseObjectStore {
   private readonly remoteBlobPool: RemoteBlobPool;
 
   constructor(options: BlobStoreOptions) {
@@ -164,7 +164,6 @@ class BlobStore extends PFrameInternal.ObjectStore {
     this.remoteBlobPool = options.remoteBlobPool;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-misused-promises
   public override async request(
     filename: PFrameInternal.ParquetFileName,
     params: {
@@ -175,7 +174,7 @@ class BlobStore extends PFrameInternal.ObjectStore {
     },
   ): Promise<void> {
     const blobId = filename.slice(0, -PFrameInternal.ParquetExtension.length);
-    const respond = async (response: PFrameInternal.ObjectStoreResponse) => {
+    const respond = async (response: PFrameInternal.ObjectStoreResponse): Promise<void> => {
       try {
         await params.callback(response);
       } catch (error: unknown) {
@@ -604,7 +603,7 @@ export class PFrameDriver implements InternalPFrameDriver {
     const remoteBlobPool = new RemoteBlobPool(blobDriver);
 
     const store = new BlobStore({ remoteBlobPool, logger });
-    const handler = HttpHelpers.createRequestHandler({ store });
+    const handler = HttpHelpers.createRequestHandler({ store: store as any }); // TODO: remove after PFrames update
     const server = await HttpHelpers.createHttpServer({ handler, port: ops.parquetServerPort });
 
     return new PFrameDriver(logger, server, localBlobPool, remoteBlobPool, resolvedSpillPath, ops);
