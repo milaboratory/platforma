@@ -37,6 +37,7 @@ import type {
   PColumnValue,
   RemoteBlobHandleAndSize,
   RemoteBlobHandle,
+  ContentHandler,
 } from '@platforma-sdk/model';
 import {
   mapPObjectData,
@@ -132,20 +133,22 @@ class RemoteBlobPool
     return this.blobDriver.getOnDemandBlob(params);
   }
 
-  public async getContentStream(
+  public async withContent<T>(
     handle: RemoteBlobHandle,
     options: {
       range: PFrameInternal.FileRange;
       signal: AbortSignal;
+      handler: ContentHandler<T>;
     },
-  ): Promise<Readable> {
-    return Readable.from(await this.blobDriver.getContent(handle, {
+  ): Promise<T> {
+    return await this.blobDriver.withContent(handle, {
       range: {
         from: options.range.start,
         to: options.range.end + 1,
       },
       signal: options.signal,
-    }));
+      handler: options.handler,
+    });
   }
 }
 
@@ -178,7 +181,7 @@ class BlobStore extends PFrameInternal.ObjectStore {
       } catch (error: unknown) {
         this.logger(
           'warn',
-          `PFrames blob store received unexpected rejection from HTTP handler callback: ${ensureError(error)}`,
+          `PFrames blob store received unhandled rejection from HTTP handler: ${ensureError(error)}`,
         );
       }
     };
@@ -215,30 +218,22 @@ class BlobStore extends PFrameInternal.ObjectStore {
         });
       }
 
-      let data: Readable;
-      try {
-        data = await this.remoteBlobPool.getContentStream(blob.handle, {
-          range: translatedRange,
-          signal: params.signal,
-        });
-      } catch (error: unknown) {
-        if (!isAbortError(error)) {
-          this.logger(
-            'error',
-            `PFrames blob store failed to get blob content for `
-            + `blobId ${blobId}, range [${translatedRange.start}..${translatedRange.end + 1}): `
-            + `${ensureError(error)}`,
-          );
-        }
-        return await respond({ type: 'InternalError' });
-      }
-      params.signal.throwIfAborted();
-
-      return await respond({
-        type: 'Ok',
-        size: blob.size,
+      this.logger(
+        'info',
+        `PFrames blob store requesting content for ${blobId}, range [${translatedRange.start}..=${translatedRange.end}]`,
+      );
+      return await this.remoteBlobPool.withContent(blob.handle, {
         range: translatedRange,
-        data,
+        signal: params.signal,
+        handler: async (data) => {
+          return await respond({
+            type: 'Ok',
+            size: blob.size,
+            range: translatedRange,
+            // eslint-disable-next-line n/no-unsupported-features/node-builtins
+            data: Readable.fromWeb(data),
+          });
+        },
       });
     } catch (error: unknown) {
       if (!isAbortError(error)) {
