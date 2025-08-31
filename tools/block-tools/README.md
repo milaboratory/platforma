@@ -22,10 +22,12 @@ USAGE
 <!-- commands -->
 * [`block-tools build-meta`](#block-tools-build-meta)
 * [`block-tools build-model`](#block-tools-build-model)
+* [`block-tools list-overview-snapshots`](#block-tools-list-overview-snapshots)
 * [`block-tools mark-stable`](#block-tools-mark-stable)
 * [`block-tools pack`](#block-tools-pack)
 * [`block-tools publish`](#block-tools-publish)
 * [`block-tools refresh-registry`](#block-tools-refresh-registry)
+* [`block-tools restore-overview-from-snapshot`](#block-tools-restore-overview-from-snapshot)
 * [`block-tools upload-package-v1`](#block-tools-upload-package-v1)
 
 ## `block-tools build-meta`
@@ -61,6 +63,22 @@ FLAGS
 
 DESCRIPTION
   Extracts and outputs block model JSON from pre-built block model module
+```
+
+## `block-tools list-overview-snapshots`
+
+List all available global overview snapshots in the registry
+
+```
+USAGE
+  $ block-tools list-overview-snapshots -r <address> [--json]
+
+FLAGS
+  -r, --registry=<address>  (required) full address of the registry
+      --json                output in JSON format
+
+DESCRIPTION
+  List all available global overview snapshots in the registry
 ```
 
 ## `block-tools mark-stable`
@@ -132,6 +150,23 @@ FLAGS
 
 DESCRIPTION
   Refresh overview files based on published but not proecessed artefacts
+```
+
+## `block-tools restore-overview-from-snapshot`
+
+Restore global overview from a snapshot
+
+```
+USAGE
+  $ block-tools restore-overview-from-snapshot -r <address> -s <timestamp> [--skip-confirmation]
+
+FLAGS
+  -r, --registry=<address>    (required) full address of the registry
+  -s, --snapshot=<timestamp>  (required) snapshot timestamp ID to restore from
+      --skip-confirmation     skip confirmation prompt (use with caution)
+
+DESCRIPTION
+  Restore global overview from a snapshot
 ```
 
 ## `block-tools upload-package-v1`
