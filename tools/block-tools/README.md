@@ -10,7 +10,7 @@ $ npm install -g @platforma-sdk/block-tools
 $ block-tools COMMAND
 running command...
 $ block-tools (--version)
-@platforma-sdk/block-tools/2.4.1 darwin-arm64 node-v20.15.0
+@platforma-sdk/block-tools/2.5.92 darwin-arm64 node-v20.19.4
 $ block-tools --help [COMMAND]
 USAGE
   $ block-tools COMMAND
@@ -105,13 +105,14 @@ Publishes the block package and refreshes the registry (for v2 block-pack schema
 
 ```
 USAGE
-  $ block-tools publish -r <address> [-m <value>] [-v <value>] [--refresh]
+  $ block-tools publish -r <address> [-m <value>] [-v <value>] [--refresh] [--unstable]
 
 FLAGS
   -m, --manifest=<value>          [default: ./block-pack/manifest.json] manifest file path
   -r, --registry=<address>        (required) full address of the registry
   -v, --version-override=<value>  override package version
       --[no-]refresh              refresh repository after adding the package
+      --unstable                  do not add the published package to stable channel
 
 DESCRIPTION
   Publishes the block package and refreshes the registry (for v2 block-pack schema)
