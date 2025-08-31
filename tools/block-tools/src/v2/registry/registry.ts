@@ -72,6 +72,12 @@ export class BlockRegistryV2 {
     return `${timestamp}-${randomSuffix}`;
   }
 
+  private generatePreWriteTimestamp(): string {
+    const timestamp = new Date().toISOString().replace(/:/g, '-').replace(/\.(\d{3})Z$/, '.$1Z');
+    const randomSuffix = Math.random().toString(36).substring(2, 6);
+    return `${timestamp}-prewrite-${randomSuffix}`;
+  }
+
   private async createGlobalOverviewSnapshot(overviewData: string, timestamp: string): Promise<void> {
     if (this.settings.skipSnapshotCreation) return;
     
@@ -150,24 +156,41 @@ export class BlockRegistryV2 {
 
     // loading global overview
     const overviewContent = await this.storage.getFile(GlobalOverviewPath);
-    const overview: GlobalOverviewReg =
-      overviewContent === undefined
+    
+    // Create pre-write snapshot in force mode if overview exists
+    if (mode === 'force' && overviewContent !== undefined) {
+      const preWriteTimestamp = this.generatePreWriteTimestamp();
+      await this.createGlobalOverviewSnapshot(overviewContent.toString(), preWriteTimestamp);
+    }
+    
+    const overview: GlobalOverviewReg = mode === 'force'
+      ? { schema: 'v2', packages: [] }
+      : overviewContent === undefined
         ? { schema: 'v2', packages: [] }
         : GlobalOverviewReg.parse(JSON.parse(overviewContent.toString()));
     let overviewPackages = overview.packages;
-    this.logger.info(`Global overview loaded, ${overviewPackages.length} records`);
+    this.logger.info(`Global overview ${mode === 'force' ? 'starting empty (force mode)' : 'loaded'}, ${overviewPackages.length} records`);
 
     // updating packages
     for (const [, packageInfo] of packagesToUpdate.entries()) {
       // reading existing overview
       const overviewFile = packageOverviewPath(packageInfo.package);
       const pOverviewContent = await this.storage.getFile(overviewFile);
-      const packageOverview: PackageOverview =
-        pOverviewContent === undefined
+      
+      // Create pre-write snapshot in force mode if package overview exists
+      if (mode === 'force' && pOverviewContent !== undefined) {
+        const preWriteTimestamp = this.generatePreWriteTimestamp();
+        const existingOverview = PackageOverview.parse(JSON.parse(pOverviewContent.toString()));
+        await this.createPackageOverviewSnapshot(packageInfo.package, existingOverview, preWriteTimestamp);
+      }
+      
+      const packageOverview: PackageOverview = mode === 'force'
+        ? { schema: 'v2', versions: [] }
+        : pOverviewContent === undefined
           ? { schema: 'v2', versions: [] }
           : PackageOverview.parse(JSON.parse(pOverviewContent.toString()));
       this.logger.info(
-        `Updating ${packageInfo.package.organization}:${packageInfo.package.name} overview, ${packageOverview.versions.length} records`
+        `Updating ${packageInfo.package.organization}:${packageInfo.package.name} overview${mode === 'force' ? ' (starting empty in force mode)' : ''}, ${packageOverview.versions.length} records`
       );
 
       // removing versions that we will update
