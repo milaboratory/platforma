@@ -8,7 +8,8 @@ import {
   BlockPackOverview,
   UpdateSuggestions,
   SingleBlockPackOverview,
-  AnyChannel
+  AnyChannel,
+  BlockPackOverviewNoRegistryId
 } from '@milaboratories/pl-model-middle-layer';
 import { FolderReader } from '../../io';
 import canonicalize from 'canonicalize';
@@ -25,8 +26,6 @@ import { LRUCache } from 'lru-cache';
 import semver from 'semver';
 import { calculateSha256 } from '../../util';
 import { retry, Retry2TimesWithDelay } from '@milaboratories/ts-helpers';
-
-export type BlockPackOverviewNoRegLabel = Omit<BlockPackOverview, 'registryId'>;
 
 export type RegistryV2ReaderOps = {
   /** Number of milliseconds to cache retrieved block list for */
@@ -110,9 +109,9 @@ export class RegistryV2Reader {
   }
 
   private listCacheTimestamp: number = 0;
-  private listCache: BlockPackOverviewNoRegLabel[] | undefined = undefined;
+  private listCache: BlockPackOverviewNoRegistryId[] | undefined = undefined;
 
-  public async listBlockPacks(): Promise<BlockPackOverviewNoRegLabel[]> {
+  public async listBlockPacks(): Promise<BlockPackOverviewNoRegistryId[]> {
     if (
       this.listCache !== undefined &&
       Date.now() - this.listCacheTimestamp <= this.ops.cacheBlockListFor
@@ -154,7 +153,7 @@ export class RegistryV2Reader {
               id: p.id,
               latestByChannel: Object.fromEntries(byChannelEntries),
               allVersions: p.allVersionsWithChannels
-            } satisfies BlockPackOverviewNoRegLabel;
+            } satisfies BlockPackOverviewNoRegistryId;
           })
         );
 
