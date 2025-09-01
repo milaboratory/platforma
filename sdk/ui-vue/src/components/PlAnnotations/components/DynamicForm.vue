@@ -1,10 +1,9 @@
 <script setup lang="ts" generic="T extends FilterUi = FilterUi">
 import { isNil } from '@milaboratories/helpers';
 import { PlCheckbox, PlDropdown, PlNumberField, PlTextField } from '@milaboratories/uikit';
-import type { FilterUi, FilterUiType, SUniversalPColumnId, TypeFieldRecord } from '@platforma-sdk/model';
+import type { FilterUi, FilterUiType, SimplifiedUniversalPColumnEntry, SUniversalPColumnId, TypeFieldRecord } from '@platforma-sdk/model';
 import { getFilterUiMetadata, getFilterUiTypeOptions } from '@platforma-sdk/model';
 import { computed, watch } from 'vue';
-import type { SimplifiedUniversalPColumnEntry } from '../types';
 
 type ObjectEntries<T, K extends keyof T = keyof T> = [K, T[K]][];
 

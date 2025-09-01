@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { isNil } from '@milaboratories/helpers';
 import { PlPureSlideModal, PlSidebarGroup, useConfirm } from '@milaboratories/uikit';
-import type { AnnotationScriptUi, PObjectId } from '@platforma-sdk/model';
+import type { AnnotationScriptUi, PObjectId, SimplifiedUniversalPColumnEntry } from '@platforma-sdk/model';
 import { computed, effect, shallowRef } from 'vue';
-import type { SimplifiedUniversalPColumnEntry } from '../types';
 import { getDefaultAnnotationScript } from '../utils';
 import AnnotationsSidebar from './AnnotationsSidebar.vue';
 import FilterSidebar from './FilterSidebar.vue';
