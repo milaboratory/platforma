@@ -1,11 +1,11 @@
 import type { SUniversalPColumnId } from '@milaboratories/pl-model-common';
 import { describe, expect, test } from 'vitest';
-import { convertAnnotations } from './converter';
+import { convertAnnotationSpecs } from './converter';
 import { AnnotationSpec, AnnotationSpecUi } from './types';
 
-describe('convertAnnotations', () => {
+describe('convertAnnotationSpecs', () => {
   test('should compile an empty annotation script', () => {
-    const script = convertAnnotations([]);
+    const script = convertAnnotationSpecs([]);
     expect(script).toEqual([]);
   });
 
@@ -34,7 +34,7 @@ describe('convertAnnotations', () => {
           }, // Use any to avoid complex type assertions in expected result
         },
       ];
-    const script = convertAnnotations(annotationsUI);
+    const script = convertAnnotationSpecs(annotationsUI);
     expect(script).toEqual(expectedAnnotations);
   });
 });
