@@ -1,5 +1,11 @@
 # @platforma-sdk/eslint-config
 
+## 1.1.0
+
+### Minor Changes
+
+- a6014a1: Typescript version upgrade
+
 ## 1.0.3
 
 ### Patch Changes
