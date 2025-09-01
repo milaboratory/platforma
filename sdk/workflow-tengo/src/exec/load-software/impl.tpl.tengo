@@ -2,6 +2,7 @@ self := import(":tpl.light")
 
 ll := import(":ll")
 json := import("json")
+text := import("text")
 maps := import(":maps")
 path := import(":path")
 pkg := import(":exec.package")
@@ -241,6 +242,13 @@ _dockerCallOptions := func(softwareName, dockerDescriptor) {
 	plan.
 		dockerImageTag(dockerDescriptor.tag).
 		dockerEntrypoint(dockerDescriptor.entrypoint)
+
+	if !is_undefined(dockerDescriptor.pkg) {
+		// Auto-generated docker images have 'pkg' field in descriptor that points to the software location
+		// inside docker image. This helps to avoid unnecessary 'cmd' parameter hacking that was initially created by
+		// block developer for binary packages.
+		plan.refVar(_ARG_VAR_PKG, softwareName, smart.createJsonResource(text.trim_right(dockerDescriptor.pkg, "/")))
+	}
 
 	return ll.toStrict({
 		runEnvType: "docker",
