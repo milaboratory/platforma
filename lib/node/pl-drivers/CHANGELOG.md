@@ -1,5 +1,17 @@
 # @milaboratories/pl-drivers
 
+## 1.10.10
+
+### Patch Changes
+
+- 3d9638e: PFramesDriver run HTTP parquet server
+- Updated dependencies [3d9638e]
+  - @milaboratories/computable@2.6.8
+  - @milaboratories/ts-helpers@1.4.7
+  - @milaboratories/pl-client@2.11.13
+  - @milaboratories/pl-model-common@1.19.16
+  - @milaboratories/pl-tree@1.7.10
+
 ## 1.10.9
 
 ### Patch Changes

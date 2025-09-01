@@ -1,5 +1,13 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.8.23
+
+### Patch Changes
+
+- 3d9638e: PFramesDriver run HTTP parquet server
+- Updated dependencies [3d9638e]
+  - @milaboratories/pl-model-common@1.19.16
+
 ## 1.8.22
 
 ### Patch Changes

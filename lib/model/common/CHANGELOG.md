@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.19.16
+
+### Patch Changes
+
+- 3d9638e: PFramesDriver run HTTP parquet server
+
 ## 1.19.15
 
 ### Patch Changes

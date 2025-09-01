@@ -1,5 +1,26 @@
 # @milaboratories/pl-middle-layer
 
+## 1.42.27
+
+### Patch Changes
+
+- 3d9638e: PFramesDriver run HTTP parquet server
+- Updated dependencies [3d9638e]
+  - @milaboratories/pl-model-middle-layer@1.8.23
+  - @milaboratories/computable@2.6.8
+  - @milaboratories/pl-drivers@1.10.10
+  - @milaboratories/ts-helpers@1.4.7
+  - @milaboratories/pl-client@2.11.13
+  - @milaboratories/pl-model-common@1.19.16
+  - @platforma-sdk/model@1.42.47
+  - @platforma-sdk/block-tools@2.6.1
+  - @milaboratories/pl-tree@1.7.10
+  - @milaboratories/pl-config@1.7.3
+  - @milaboratories/pl-deployments@2.5.5
+  - @milaboratories/pl-errors@1.1.21
+  - @milaboratories/pl-model-backend@1.1.6
+  - @platforma-sdk/workflow-tengo@5.1.2
+
 ## 1.42.26
 
 ### Patch Changes
