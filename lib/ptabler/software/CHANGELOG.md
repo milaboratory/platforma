@@ -1,5 +1,11 @@
 # @platforma-open/software-ptabler
 
+## 1.12.1
+
+### Patch Changes
+
+- 69c33c1: Re-release ptabler once again to check CI issues
+
 ## 1.12.0
 
 ### Minor Changes
