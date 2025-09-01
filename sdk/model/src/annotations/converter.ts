@@ -1,7 +1,7 @@
 import { convertFilterUiToExpressions } from '../filters/converter';
 import type { AnnotationSpec, AnnotationSpecUi } from './types';
 
-export function convertAnnotations(annotationsUI: AnnotationSpecUi[]): AnnotationSpec[] {
+export function convertAnnotationSpecs(annotationsUI: AnnotationSpecUi[]): AnnotationSpec[] {
   return annotationsUI
     .filter((annotation) => {
       // No need to convert empty steps
