@@ -247,7 +247,7 @@ _dockerCallOptions := func(softwareName, dockerDescriptor) {
 		// Auto-generated docker images have 'pkg' field in descriptor that points to the software location
 		// inside docker image. This helps to avoid unnecessary 'cmd' parameter hacking that was initially created by
 		// block developer for binary packages.
-		plan.refVar(_ARG_VAR_PKG, softwareName, smart.createJsonResource(text.trim_right(dockerDescriptor.pkg, "/")))
+		plan.refVar(_ARG_VAR_PKG, softwareName, text.trim_right(dockerDescriptor.pkg, "/"))
 	}
 
 	return ll.toStrict({

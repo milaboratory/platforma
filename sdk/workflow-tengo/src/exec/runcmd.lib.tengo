@@ -241,7 +241,12 @@ _createAbstractRunCommandPlan := func(state, returnSelfFn) {
 		 * @param refKey: string - the name of the ref
 		 * @param ref: reference - a reference to the valid field or resource
 		 */
-		ref: func(refKey, ref) {
+		ref: func(refKey, refOrStr) {
+			ref := refOrStr
+			if is_string(refOrStr) {
+				ref = smart.createJsonResource(refOrStr)
+			}
+
 			ll.assert(smart.isReference(ref),
 				"runcmd.plan.ref() must be a reference (valid field or resource) %s", refKey)
 
