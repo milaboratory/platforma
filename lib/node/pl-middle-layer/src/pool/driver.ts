@@ -607,7 +607,7 @@ export class PFrameDriver implements InternalPFrameDriver {
     const remoteBlobPool = new RemoteBlobPool(blobDriver);
 
     const store = new BlobStore({ remoteBlobPool, logger });
-    const handler = HttpHelpers.createRequestHandler({ store: store as any }); // TODO: remove after PFrames update
+    const handler = HttpHelpers.createRequestHandler({ store: store });
     const server = await HttpHelpers.createHttpServer({ handler, port: ops.parquetServerPort });
 
     return new PFrameDriver(logger, server, localBlobPool, remoteBlobPool, resolvedSpillPath, ops);

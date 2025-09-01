@@ -140,21 +140,21 @@ test('should get on demand blob without downloading a blob range', async () => {
     const blob = await c.getValue();
     expect(blob).toBeDefined();
     expect(blob.size).toEqual(3);
-    const content = await driver.getContent(blob!.handle, { from: 1, to: 2 });
+    const content = await driver.getContent(blob!.handle, { range: { from: 1, to: 2 } });
     expect(content?.toString()).toStrictEqual('2');
 
     const c2 = driver.getOnDemandBlob(downloadable, undefined);
     const blob2 = await c2.getValue();
     expect(blob2).toBeDefined();
     expect(blob2.size).toEqual(3);
-    const content2 = await driver.getContent(blob2!.handle, { from: 0, to: 1 });
+    const content2 = await driver.getContent(blob2!.handle, { range: { from: 0, to: 1 } });
     expect(content2?.toString()).toStrictEqual('4');
 
     const c3 = driver.getOnDemandBlob(downloadable);
     const blob3 = await c3.getValue();
     expect(blob3).toBeDefined();
     expect(blob3.size).toEqual(3);
-    const content3 = await driver.getContent(blob3!.handle, { from: 1, to: 3 });
+    const content3 = await driver.getContent(blob3!.handle, { range: { from: 1, to: 3 } });
     expect(content3?.toString()).toStrictEqual('2\n');
   });
 });
@@ -216,7 +216,7 @@ test('should get undefined when releasing a blob from a small cache and the blob
     const blob2 = await c.getValue();
     expect(blob2).toBeDefined();
     expect(blob2!.size).toBe(3);
-    expect((await driver.getContent(blob2!.handle, { from: 1, to: 3 }))?.toString()).toBe('2\n');
+    expect((await driver.getContent(blob2!.handle, { range: { from: 1, to: 3 } }))?.toString()).toBe('2\n');
 
     // The blob is removed from a cache since the size is too big.
     c.resetState();
