@@ -1,5 +1,14 @@
 # @milaboratories/pl-tree
 
+## 1.7.9
+
+### Patch Changes
+
+- Updated dependencies [0ff2a1b]
+  - @milaboratories/pl-error-like@1.12.5
+  - @milaboratories/pl-errors@1.1.20
+  - @milaboratories/computable@2.6.7
+
 ## 1.7.8
 
 ### Patch Changes

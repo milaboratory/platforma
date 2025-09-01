@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/milaboratories.monetization-test.model",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "description": "Block model",
   "type": "module",
   "main": "dist/index.cjs",

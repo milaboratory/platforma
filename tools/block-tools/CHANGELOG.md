@@ -1,5 +1,50 @@
 # @platforma-sdk/block-tools
 
+## 2.6.0
+
+### Minor Changes
+
+- 0ff2a1b: **Enhanced force mode to support complete package and version removal**
+
+  Force mode in the registry now properly handles complete removal of manually deleted packages and versions:
+
+  - **Complete rebuild**: Force mode now starts with empty overviews instead of loading existing ones, ensuring overviews exactly match storage contents
+  - **Automatic cleanup**: Manually deleted packages/versions are automatically removed from registry overviews during force mode refresh
+  - **Pre-write snapshots**: Added safety feature that creates backup snapshots with `-prewrite-` suffix before making any changes in force mode
+  - **Comprehensive testing**: Added extensive test coverage for deletion scenarios
+
+  **Breaking changes**: None - this enhancement only affects force mode behavior and maintains backward compatibility for normal mode operations.
+
+  **Use case**: This resolves the issue where manually deleted packages would persist in registry overviews because the previous force mode only updated packages found in storage. Now force mode performs a complete rebuild, guaranteeing consistency between storage and overviews.
+
+- 0ff2a1b: **Registry Overview Snapshots & Enhanced Schema Backward Compatibility**
+
+  Added comprehensive snapshot functionality for registry overviews and improved Zod schema compatibility across the entire codebase.
+
+  ## Registry Snapshots (minor)
+
+  - **Automatic backup creation**: Overview files are automatically backed up during every registry update with gzipped compression
+  - **Organized storage structure**: Snapshots stored in `_overview_snapshots_v2/global/` and `per_package/` folders mirroring main hierarchy
+  - **Security features**: Millisecond timestamps with random suffixes prevent CDN retrieval attacks
+  - **CLI management tools**: Added `list-overview-snapshots` and `restore-overview-from-snapshot` commands with safety confirmations
+  - **Configurable behavior**: `skipSnapshotCreation` setting allows disabling snapshots when needed
+  - **Comprehensive testing**: Full test coverage ensures reliability
+
+  ## Schema Backward Compatibility (patch)
+
+  - **Strategic schema improvements**: Enhanced Zod schemas to prevent data loss during version transitions
+  - **Smart classification**: Applied `.passthrough()` to evolving data structures (overviews, manifests, registries, errors) while maintaining `.strict()` for closed types (content types, identifiers)
+  - **Wide compatibility coverage**: Updated schemas across block metadata, registry specifications, error structures, and deployment configurations
+  - **Forward compatibility**: Older versions will now preserve unknown fields instead of stripping them during parsing
+
+  These improvements ensure robust registry management with automatic backup capabilities and seamless schema evolution without breaking changes.
+
+### Patch Changes
+
+- Updated dependencies [0ff2a1b]
+  - @milaboratories/pl-model-middle-layer@1.8.22
+  - @milaboratories/pl-model-common@1.19.15
+
 ## 2.5.92
 
 ### Patch Changes
