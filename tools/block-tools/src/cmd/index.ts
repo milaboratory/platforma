@@ -2,19 +2,23 @@
 
 import Cmd0 from './build-meta';
 import Cmd1 from './build-model';
-import Cmd3 from './mark-stable';
-import Cmd4 from './pack';
-import Cmd5 from './publish';
-import Cmd6 from './refresh-registry';
-import Cmd7 from './upload-package-v1';
+import Cmd3 from './list-overview-snapshots';
+import Cmd4 from './mark-stable';
+import Cmd5 from './pack';
+import Cmd6 from './publish';
+import Cmd7 from './refresh-registry';
+import Cmd8 from './restore-overview-from-snapshot';
+import Cmd9 from './upload-package-v1';
 
 // prettier-ignore
 export const COMMANDS = {
   'build-meta': Cmd0,
   'build-model': Cmd1,
-  'mark-stable': Cmd3,
-  'pack': Cmd4,
-  'publish': Cmd5,
-  'refresh-registry': Cmd6,
-  'upload-package-v1': Cmd7
+  'list-overview-snapshots': Cmd3,
+  'mark-stable': Cmd4,
+  'pack': Cmd5,
+  'publish': Cmd6,
+  'refresh-registry': Cmd7,
+  'restore-overview-from-snapshot': Cmd8,
+  'upload-package-v1': Cmd9,
 };
