@@ -143,6 +143,8 @@ test('should get on demand blob without downloading a blob range', async () => {
     const content = await driver.getContent(blob!.handle, { range: { from: 1, to: 2 } });
     expect(content?.toString()).toStrictEqual('2');
 
+    expect(false).toBe(true);
+
     const c2 = driver.getOnDemandBlob(downloadable, undefined);
     const blob2 = await c2.getValue();
     expect(blob2).toBeDefined();
