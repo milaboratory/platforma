@@ -2,13 +2,29 @@ import { Annotation, type PColumnSpec } from '@milaboratories/pl-middle-layer';
 import { Pl } from '@milaboratories/pl-middle-layer';
 import { awaitStableState } from '@platforma-sdk/test';
 import { assertJson, assertResource, eTplTest } from './extended_tpl_test';
+import { getTestTimeout } from '@milaboratories/helpers';
+
+const TIMEOUT = getTestTimeout(15_000);
+
+type ResWithData = { data?: Uint8Array | string };
+type JsonNode = { content: unknown };
+const parseResJson = (res: unknown) => {
+  assertResource(res);
+  const r = res as ResWithData;
+  return JSON.parse(Buffer.from(r.data as Uint8Array | string).toString());
+};
+const getSpec = (node: unknown) => {
+  assertJson(node);
+  return (node as JsonNode).content as PColumnSpec;
+};
 
 eTplTest.concurrent(
   'should correctly parse TSV string content using parseToJson with all column kinds',
-  { timeout: 15000 },
+  { timeout: TIMEOUT },
   async ({ helper, expect, stHelper }) => {
     // Sample TSV content with header and data rows
-    const tsvContent = 'name\tage\tcity\tdata1\tdata2\nJohn\t25\tNYC\t100\tA\nJane\t30\tLA\t200\tB\n';
+    const tsvContent
+      = 'name\tage\tcity\tdata1\tdata2\nJohn\t25\tNYC\t100\tA\nJane\t30\tLA\t200\tB\n';
 
     // Settings using all three column kinds
     const settings = {
@@ -107,7 +123,7 @@ eTplTest.concurrent(
     );
 
     const r = stHelper.tree(result.resultEntry);
-    const finalResult = await awaitStableState(r, 10000);
+    const finalResult = await awaitStableState(r, TIMEOUT);
 
     assertResource(finalResult);
     const theResult = finalResult.inputs['result'];
@@ -121,15 +137,14 @@ eTplTest.concurrent(
 
     // Access the JSON data content directly from the resource
     assertResource(ageData);
-    const ageDataContent = JSON.parse(Buffer.from(ageData.data!).toString());
+    const ageDataContent = parseResJson(ageData);
     expect(ageDataContent.data).toEqual({
       '["John"]': 25,
       '["Jane"]': 30,
     });
 
     const ageSpec = theResult.inputs['person_age.spec'];
-    assertJson(ageSpec);
-    const ageSpecContent = ageSpec.content as PColumnSpec;
+    const ageSpecContent = getSpec(ageSpec);
     expect(ageSpecContent.valueType).toBe('Int');
     expect(ageSpecContent.name).toBe('age');
     expect(ageSpecContent.axesSpec).toHaveLength(1);
@@ -139,7 +154,7 @@ eTplTest.concurrent(
     // Validate column kind results (person_city)
     const cityData = theResult.inputs['person_city.data'];
     assertResource(cityData);
-    const cityDataContent = JSON.parse(Buffer.from(cityData.data!).toString());
+    const cityDataContent = parseResJson(cityData);
     expect(cityDataContent.data).toEqual({
       '["John"]': 'NYC',
       '["Jane"]': 'LA',
@@ -148,30 +163,28 @@ eTplTest.concurrent(
     // Validate line kind results (full_line)
     const lineData = theResult.inputs['full_line.data'];
     assertResource(lineData);
-    const lineDataContent = JSON.parse(Buffer.from(lineData.data!).toString());
+    const lineDataContent = parseResJson(lineData);
     expect(lineDataContent.data).toEqual({
       '["John"]': 'John\t25\tNYC\t100\tA',
       '["Jane"]': 'Jane\t30\tLA\t200\tB',
     });
 
     const lineSpec = theResult.inputs['full_line.spec'];
-    assertJson(lineSpec);
-    const lineSpecContent = lineSpec.content as PColumnSpec;
+    const lineSpecContent = getSpec(lineSpec);
     expect(lineSpecContent.valueType).toBe('String');
     expect(lineSpecContent.name).toBe('fullLine');
 
     // Validate json-line kind results (person_data)
     const jsonData = theResult.inputs['person_data.data'];
     assertResource(jsonData);
-    const jsonDataContent = JSON.parse(Buffer.from(jsonData.data!).toString());
+    const jsonDataContent = parseResJson(jsonData);
     expect(jsonDataContent.data).toEqual({
       '["John"]': '{"numeric_data":100,"string_data":"A"}',
       '["Jane"]': '{"numeric_data":200,"string_data":"B"}',
     });
 
     const jsonSpec = theResult.inputs['person_data.spec'];
-    assertJson(jsonSpec);
-    const jsonSpecContent = jsonSpec.content as PColumnSpec;
+    const jsonSpecContent = getSpec(jsonSpec);
     expect(jsonSpecContent.valueType).toBe('String');
     expect(jsonSpecContent.name).toBe('personData');
   },

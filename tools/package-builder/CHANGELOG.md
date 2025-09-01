@@ -1,5 +1,35 @@
 # @platforma-sdk/package-builder
 
+## 3.2.3
+
+### Patch Changes
+
+- 7923343: Use arch-independent artifact info file when working with crossplatform package
+
+## 3.2.2
+
+### Patch Changes
+
+- 2a43498: Handle wrong ref name in docker entrypoint
+
+## 3.2.1
+
+### Patch Changes
+
+- 70bf87c: allow 'id-or-ref' back (BLAST example :) )
+
+## 3.2.0
+
+### Minor Changes
+
+- b20daba: Do read content-addressable docker tags and store intermediate build results in dist for correct pre-compilation
+
+## 3.1.0
+
+### Minor Changes
+
+- 7d7df12: Automatically publish all docker images from CI after build
+
 ## 3.0.2
 
 ### Patch Changes

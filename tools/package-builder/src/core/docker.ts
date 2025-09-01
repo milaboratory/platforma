@@ -8,11 +8,11 @@ import { PL_DOCKER_REGISTRY } from './envs';
 
 export const defaultDockerRegistry = 'containers.pl-open.science/milaboratories/pl-containers';
 
-export function dockerEntrypointName(name: string): string {
+export function entrypointName(name: string): string {
   return name + ':docker';
 }
 
-export function dockerEntrypointNameToOrigin(name: string): string {
+export function entrypointNameToOrigin(name: string): string {
   const suffixIndex = name.indexOf(':docker');
   if (suffixIndex === -1) {
     return name;
@@ -20,11 +20,55 @@ export function dockerEntrypointNameToOrigin(name: string): string {
   return name.substring(0, suffixIndex);
 }
 
-export function dockerPush(tag: string) {
+export function getImageHash(tag: string): string {
+  const result = spawnSync('docker', ['image', 'ls', '--filter=reference=' + tag, '--format={{.ID}}'], {
+    stdio: 'pipe',
+    env: {
+      ...process.env, // PATH variable from parent process affects execution
+      HOME: process.env.HOME || os.homedir(), // Ensure HOME is set
+    },
+  });
+
+  if (result.error) {
+    throw result.error;
+  }
+  if (result.status !== 0) {
+    throw new Error(`local docker image check failed with status ${result.status}`);
+  }
+
+  const output = result.stdout.toString().trim();
+  if (output.split('\n').length > 1) {
+    throw new Error(`package-builder internal logic error: more than one image found by exact tag match: ${output}`);
+  }
+
+  return output;
+}
+
+export function localImageExists(tag: string): boolean {
+  return getImageHash(tag) !== '';
+}
+
+export function remoteImageExists(tag: string): boolean {
+  const result = spawnSync('docker', ['manifest', 'inspect', tag], {
+    stdio: 'pipe',
+    env: {
+      ...process.env, // PATH variable from parent process affects execution
+      HOME: process.env.HOME || os.homedir(), // Ensure HOME is set
+    },
+  });
+
+  if (result.error || result.status !== 0) {
+    return false;
+  }
+
+  return true;
+}
+
+export function push(tag: string) {
   const result = spawnSync('docker', ['push', tag], {
     stdio: 'inherit',
     env: {
-      ...process.env, // Inherit all environment variables from the parent process
+      ...process.env, // PATH variable from parent process affects execution
       HOME: process.env.HOME || os.homedir(), // Ensure HOME is set
     },
   });
@@ -36,11 +80,11 @@ export function dockerPush(tag: string) {
   }
 }
 
-export function dockerBuild(context: string, dockerfile: string, tag: string) {
+export function build(context: string, dockerfile: string, tag: string) {
   const result = spawnSync('docker', ['build', '-t', tag, context, '-f', dockerfile], {
     stdio: 'inherit',
     env: {
-      ...process.env, // Inherit all environment variables from the parent process
+      ...process.env, // PATH variable from parent process affects execution
       HOME: process.env.HOME || os.homedir(), // Ensure HOME is set
     },
   });
@@ -52,15 +96,56 @@ export function dockerBuild(context: string, dockerfile: string, tag: string) {
   }
 }
 
-export function dockerTagFromPackage(packageRoot: string, pkg: DockerPackage): string {
+export function addTag(imageIdOrTag: string, newTag: string) {
+  const result = spawnSync('docker', ['image', 'tag', imageIdOrTag, newTag], {
+    stdio: 'inherit',
+    env: {
+      ...process.env, // PATH variable from parent process affects execution
+      HOME: process.env.HOME || os.homedir(), // Ensure HOME is set
+    },
+  });
+  if (result.error) {
+    throw result.error;
+  }
+  if (result.status !== 0) {
+    throw new Error(`docker build failed with status ${result.status}`);
+  }
+}
+
+export function removeTag(imageTag: string) {
+  const result = spawnSync('docker', ['image', 'rm', imageTag], {
+    stdio: 'inherit',
+    env: {
+      ...process.env, // PATH variable from parent process affects execution
+      HOME: process.env.HOME || os.homedir(), // Ensure HOME is set
+    },
+  });
+  if (result.error) {
+    throw result.error;
+  }
+  if (result.status !== 0) {
+    throw new Error(`docker build failed with status ${result.status}`);
+  }
+}
+
+export function generateRemoteTagName(pkg: DockerPackage, imageID: string): string {
   if (pkg.type !== 'docker') {
     throw new Error(`package '${pkg.name}' is not a docker package`);
   }
+
+  return dockerTag(pkg.name, imageID);
+}
+
+export function generateLocalTagName(packageRoot: string, pkg: DockerPackage): string {
+  if (pkg.type !== 'docker') {
+    throw new Error(`package '${pkg.name}' is not a docker package`);
+  }
+
   const dockerfile = dockerfileFullPath(packageRoot, pkg);
   const context = contextFullPath(packageRoot, pkg);
   const hash = contentHash(context, dockerfile);
-  const tag = dockerTag(pkg.name, hash);
-  return tag;
+
+  return dockerTag('local-image', hash);
 }
 
 function dockerfileFullPath(packageRoot: string, pkg: DockerPackage): string {

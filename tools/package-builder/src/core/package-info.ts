@@ -8,7 +8,7 @@ import * as envs from './envs';
 import * as artifacts from './schemas/artifacts';
 import * as entrypoint from './schemas/entrypoint';
 import { tryResolve } from '@milaboratories/resolve-helper';
-import { dockerEntrypointName } from './docker';
+import * as docker from './docker';
 import { prepareDockerOptions } from './docker-python';
 
 export interface PackageArchiveInfo extends artifacts.archiveRules {
@@ -276,7 +276,7 @@ export class PackageInfo {
         const pkg = this.getPackage(packageID, 'docker');
         // will mix docker to separate entrypoint
         // render function have to merge
-        list.set(dockerEntrypointName(epName), {
+        list.set(docker.entrypointName(epName), {
           type: 'software',
           name: epName,
           package: pkg,
@@ -307,7 +307,7 @@ export class PackageInfo {
 
         const shouldGenerateDockerEntrypoint = !ep.docker && artifacts.isDockerRequired(pkg.type);
         if (shouldGenerateDockerEntrypoint) {
-          list.set(dockerEntrypointName(epName), {
+          list.set(docker.entrypointName(epName), {
             type: 'software',
             name: epName,
             package: this.prepareDockerPackage(pkg),
@@ -358,7 +358,7 @@ export class PackageInfo {
       return ep;
     }
 
-    return this.entrypoints.get(dockerEntrypointName(name))!;
+    return this.entrypoints.get(docker.entrypointName(name))!;
   }
 
   /**
@@ -406,6 +406,13 @@ export class PackageInfo {
   public getPackage(id: string, type?: string): PackageConfig {
     const artifact = this.getArtifact(id, type);
     return this.makePackageConfig(id, artifact);
+  }
+
+  public artifactInfoLocation(pkgID: string, artifactType: 'docker', platform: util.ArchType): string;
+  public artifactInfoLocation(pkgID: string, artifactType: 'archive', platform?: util.PlatformType): string;
+  public artifactInfoLocation(pkgID: string, artifactType: 'archive' | 'docker', platform?: util.PlatformType | util.ArchType): string {
+    const platformPart = platform ? `_${platform}` : '';
+    return path.resolve(this.packageRoot, 'dist', 'artifacts', pkgID, `${artifactType}${platformPart}.json`);
   }
 
   private makePackageConfig(id: string, artifact: artifacts.config): PackageConfig {
@@ -505,6 +512,15 @@ export class PackageInfo {
 
     switch (type) {
       case 'docker':
+        if (typeof ep.docker!.artifact === 'string') {
+          if (artifacts[ep.docker!.artifact]) {
+            return artifacts[ep.docker!.artifact];
+          }
+          throw new Error(
+            `entrypoint '${id}' points to artifact '${ep.docker!.artifact}' which does not exist in 'artifacts'`,
+          );
+        }
+
         return ep.docker!.artifact;
       default:
         break;

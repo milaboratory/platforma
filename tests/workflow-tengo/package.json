@@ -29,6 +29,7 @@
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/computable": "workspace:*",
+    "@milaboratories/helpers": "workspace:*",
     "@milaboratories/pl-drivers": "workspace:*",
     "@milaboratories/pl-tree": "workspace:*",
     "@milaboratories/ts-helpers": "workspace:*",

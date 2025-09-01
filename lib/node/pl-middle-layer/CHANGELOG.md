@@ -1,5 +1,24 @@
 # @milaboratories/pl-middle-layer
 
+## 1.42.24
+
+### Patch Changes
+
+- @milaboratories/pl-drivers@1.10.8
+- @platforma-sdk/model@1.42.36
+
+## 1.42.23
+
+### Patch Changes
+
+- d758587: PFrames version bump
+
+## 1.42.22
+
+### Patch Changes
+
+- b80a619: PFrames version update
+
 ## 1.42.21
 
 ### Patch Changes

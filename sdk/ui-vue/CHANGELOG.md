@@ -1,5 +1,18 @@
 # @platforma-sdk/ui-vue
 
+## 1.42.44
+
+### Patch Changes
+
+- @milaboratories/uikit@2.4.9
+- @platforma-sdk/model@1.42.36
+
+## 1.42.42
+
+### Patch Changes
+
+- b80a619: AgGrid version update
+
 ## 1.42.36
 
 ### Patch Changes

@@ -9,8 +9,8 @@ export const BinaryCustomVersion: string = '4.4.4';
 
 export const EPNameAsset: string = 'pAsset';
 export const EPNameCustomName: string = 'custom-name';
-export const EPNameJavaEnvironment: string = 'java-test-entrypoint';
-export const EPNameJavaDependency: string = 'java-dep';
+export const EPNameJavaEnvironment: string = 'java-environment';
+export const EPNameJava: string = 'java-package';
 export const EPNameDocker: string = 'docker-test-entrypoint';
 
 export const PackageJsonNoSoftware = `{
@@ -35,7 +35,7 @@ export const CustomVersionArtifact = `{
   "root": "./src"
 }`;
 
-export const EnvironmentDependencyPackage = `{
+export const JavaPackage = `{
   "registry": {
     "name": "${BinaryRegistry}"
   },
@@ -45,7 +45,7 @@ export const EnvironmentDependencyPackage = `{
   "environment": ":${EPNameJavaEnvironment}"
 }`;
 
-export const EnvironmentPackage = `{
+export const JavaEnvironmentPackage = `{
   "registry": {
     "name": "${BinaryRegistry}"
   },
@@ -83,11 +83,11 @@ export const PackageJson = `{
           }
         },
         "${EPNameJavaEnvironment}": {
-          "environment": { "artifact": ${EnvironmentPackage} }
+          "environment": { "artifact": ${JavaEnvironmentPackage} }
         },
-        "${EPNameJavaDependency}": {
+        "${EPNameJava}": {
           "binary": {
-            "artifact": ${EnvironmentDependencyPackage},
+            "artifact": ${JavaPackage},
             "cmd": ["aaaa"]
           },
           "docker": {

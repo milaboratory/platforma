@@ -3,6 +3,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type * as winston from 'winston';
 import type * as util from './util';
+import type { Hash } from 'node:crypto';
+import { createHash } from 'node:crypto';
 
 const tarArchiveType = 'tgz';
 const zipArchiveType = 'zip';
@@ -40,7 +42,8 @@ export async function create(
   logger: winston.Logger,
   contentRoot: string,
   dstArchivePath: string,
-): Promise<void> {
+  hasher?: Hash,
+): Promise<Hash> {
   const compressionLevel = 9;
 
   let format = '';
@@ -58,6 +61,8 @@ export async function create(
   }
 
   const output = fs.createWriteStream(dstArchivePath);
+  const hash = hasher ? hasher : createHash('sha256');
+
   const a = archiver.create(format, {
     gzip: true,
     gzipOptions: { level: compressionLevel },
@@ -68,12 +73,21 @@ export async function create(
     // Waits for the output stream to be closed.
     output.on('close', function () {
       logger.debug(`archive created. Total data processed: ${a.pointer()} bytes`);
-      resolve();
+      resolve(hash);
+    });
+
+    output.on('error', function (err) {
+      reject(err);
     });
 
     // Catch errors
     a.on('error', function (err) {
       reject(err);
+    });
+
+    // Update hash with every chunk of data written to the archive
+    a.on('data', function (chunk) {
+      hash.update(chunk);
     });
 
     // Pipe archive data to the file
