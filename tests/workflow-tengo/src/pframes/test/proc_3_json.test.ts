@@ -5,8 +5,13 @@ import { assertJson, assertResource, eTplTest } from './extended_tpl_test';
 import { expect } from 'vitest';
 import type { Computable } from '@milaboratories/computable';
 import { getTestTimeout } from '@milaboratories/helpers';
+import { vi } from 'vitest';
 
 const TIMEOUT = getTestTimeout(15_000);
+
+vi.setConfig({
+  testTimeout: TIMEOUT,
+});
 
 const INPUT_SPEC: PUniversalColumnSpec = {
   kind: 'PColumn',
@@ -34,7 +39,6 @@ async function waitForResultMap(
 
 eTplTest.concurrent(
   'should correctly execute pframes.processColumn with PColumnData/Json in mapping mode',
-  { timeout: TIMEOUT },
   async ({ helper, expect, stHelper }) => {
     const inputSpec = INPUT_SPEC;
 
@@ -92,7 +96,6 @@ eTplTest.concurrent(
 
 eTplTest.concurrent(
   'should correctly execute pframes.processColumn with PColumnData/Json in aggregation mode',
-  { timeout: TIMEOUT },
   async ({ helper, expect, stHelper }) => {
     const inputSpec = INPUT_SPEC;
 
@@ -149,7 +152,6 @@ eTplTest.concurrent(
 
 eTplTest.concurrent(
   'should correctly execute pframes.processColumn with PColumnData/Json in aggregation mode by second axis',
-  { timeout: TIMEOUT },
   async ({ helper, expect, stHelper }) => {
     const inputSpec = INPUT_SPEC;
 
