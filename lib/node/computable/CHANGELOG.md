@@ -1,5 +1,13 @@
 # @milaboratories/computable
 
+## 2.6.8
+
+### Patch Changes
+
+- 3d9638e: PFramesDriver run HTTP parquet server
+- Updated dependencies [3d9638e]
+  - @milaboratories/ts-helpers@1.4.7
+
 ## 2.6.7
 
 ### Patch Changes

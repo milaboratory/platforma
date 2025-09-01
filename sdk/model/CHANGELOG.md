@@ -1,5 +1,13 @@
 # @platforma-sdk/model
 
+## 1.42.47
+
+### Patch Changes
+
+- 3d9638e: PFramesDriver run HTTP parquet server
+- Updated dependencies [3d9638e]
+  - @milaboratories/pl-model-common@1.19.16
+
 ## 1.42.46
 
 ### Patch Changes
