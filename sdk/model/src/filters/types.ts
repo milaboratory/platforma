@@ -2,6 +2,12 @@ import type { PColumnSpec, SUniversalPColumnId } from '@milaboratories/pl-model-
 
 export type SimplifiedPColumnSpec = Pick<PColumnSpec, 'valueType' | 'annotations'>;
 
+export type SimplifiedUniversalPColumnEntry = {
+  id: SUniversalPColumnId;
+  label: string;
+  obj: SimplifiedPColumnSpec;
+};
+
 // Define recursive type explicitl
 export type FilterUi = { id?: number; name?: string; isExpanded?: boolean }
   & ({ type: undefined }

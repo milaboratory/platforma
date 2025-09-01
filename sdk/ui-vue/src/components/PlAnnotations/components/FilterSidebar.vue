@@ -6,9 +6,8 @@ import {
   PlElementList,
   PlSidebarItem,
 } from '@milaboratories/uikit';
-import type { AnnotationStepUi, FilterUi, PObjectId, SUniversalPColumnId } from '@platforma-sdk/model';
+import type { AnnotationStepUi, FilterUi, PObjectId, SimplifiedUniversalPColumnEntry, SUniversalPColumnId } from '@platforma-sdk/model';
 import { getFilterUiMetadata } from '@platforma-sdk/model';
-import type { SimplifiedUniversalPColumnEntry } from '../types';
 import { createDefaultFilterMetadata } from '../utils';
 import DynamicForm from './DynamicForm.vue';
 

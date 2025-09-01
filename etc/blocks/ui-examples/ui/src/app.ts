@@ -18,6 +18,7 @@ import LogViewPage from './pages/LogViewPage.vue';
 import ModalsPage from './pages/ModalsPage.vue';
 import NotificationsPage from './pages/NotificationsPage.vue';
 import PlAgDataTableV2Page from './pages/PlAgDataTableV2Page.vue';
+import PlAnnotationPage from './pages/PlAnnotationPage.vue';
 import PlAutocompleteMultiPage from './pages/PlAutocompleteMultiPage/index.vue';
 import PlAutocompletePage from './pages/PlAutocompletePage.vue';
 import PlElementListPage from './pages/PlElementListPage.vue';
@@ -34,7 +35,6 @@ import { StackedBarPage } from './pages/StackedBarPage';
 import StatePage from './pages/StatePage.vue';
 import TypographyPage from './pages/TypographyPage.vue';
 import UseWatchFetchPage from './pages/UseWatchFetchPage.vue';
-import PlAnnotationPage from './pages/PlAnnotationPage.vue';
 
 export const sdkPlugin = defineApp(platforma, (app) => {
   // Additional data
@@ -120,7 +120,6 @@ export const sdkPlugin = defineApp(platforma, (app) => {
       '/add-section': () => AddSectionPage,
       '/section': () => SectionPage,
       '/radio': () => RadioPage,
-      '/pl-annotations': () => PlAnnotationPage,
     },
   };
 }, {

@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import type { AnnotationScriptUi, PObjectId, SUniversalPColumnId } from '@platforma-sdk/model';
+import type { AnnotationScriptUi, PObjectId, SimplifiedUniversalPColumnEntry, SUniversalPColumnId } from '@platforma-sdk/model';
 import { PlAnnotationsModal } from '@platforma-sdk/ui-vue';
 import { ref, watch } from 'vue';
-import type { SimplifiedUniversalPColumnEntry } from '../../../../../../sdk/ui-vue/src/components/PlAnnotations/types';
 
 const showModal = ref(true);
 watch(showModal, (value) => {
