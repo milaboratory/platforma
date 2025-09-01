@@ -1,6 +1,6 @@
 import { ConsoleLoggerAdapter, MiLogger } from '@milaboratories/ts-helpers';
 import { compare as compareSemver, satisfies } from 'semver';
-import { gzip } from 'node:zlib';
+import { gzip, gunzip } from 'node:zlib';
 import { promisify } from 'node:util';
 import { RegistryStorage } from '../../io/storage';
 import {
@@ -15,7 +15,13 @@ import {
   GlobalUpdateSeedOutFile,
   PackageUpdatePattern,
   packageUpdateSeedPath,
-  VersionUpdatesPrefix
+  VersionUpdatesPrefix,
+  GlobalOverviewSnapshotPattern,
+  OverviewSnapshotsPrefix,
+  GlobalSnapshotsPrefix,
+  PackageSnapshotsPrefix,
+  globalOverviewSnapshotPath,
+  packageOverviewSnapshotPath
 } from './schema_internal';
 import {
   GlobalOverviewReg,
@@ -36,6 +42,15 @@ import { BlockPackDescriptionManifestAddRelativePathPrefix, RelativeContentReade
 import { randomUUID } from 'node:crypto';
 import { calculateSha256 } from '../../util';
 
+export interface BlockRegistrySettings {
+  skipSnapshotCreation?: boolean;
+}
+
+export interface GlobalOverviewBackupDescription {
+  timestamp: string;
+  path: string;
+}
+
 type PackageUpdateInfo = {
   package: BlockPackIdNoVersion;
   versions: Set<String>;
@@ -43,14 +58,58 @@ type PackageUpdateInfo = {
 
 export class BlockRegistryV2 {
   private readonly gzipAsync = promisify(gzip);
+  private readonly gunzipAsync = promisify(gunzip);
 
   constructor(
     private readonly storage: RegistryStorage,
-    private readonly logger: MiLogger = new ConsoleLoggerAdapter()
+    private readonly logger: MiLogger = new ConsoleLoggerAdapter(),
+    private readonly settings: BlockRegistrySettings = {}
   ) {}
+
+  private generateTimestamp(): string {
+    const timestamp = new Date().toISOString().replace(/:/g, '-').replace(/\.(\d{3})Z$/, '.$1Z');
+    const randomSuffix = Math.random().toString(36).substring(2, 6);
+    return `${timestamp}-${randomSuffix}`;
+  }
+
+  private generatePreWriteTimestamp(): string {
+    const timestamp = new Date().toISOString().replace(/:/g, '-').replace(/\.(\d{3})Z$/, '.$1Z');
+    const randomSuffix = Math.random().toString(36).substring(2, 6);
+    return `${timestamp}-prewrite-${randomSuffix}`;
+  }
+
+  private async createGlobalOverviewSnapshot(overviewData: string, timestamp: string): Promise<void> {
+    if (this.settings.skipSnapshotCreation) return;
+    
+    try {
+      const gzippedData = await this.gzipAsync(overviewData);
+      const snapshotPath = globalOverviewSnapshotPath(timestamp);
+      await this.storage.putFile(snapshotPath, Buffer.from(gzippedData));
+      this.logger.info(`Global overview snapshot created at ${snapshotPath}`);
+    } catch (error) {
+      this.logger.warn(`Failed to create global overview snapshot: ${error}`);
+    }
+  }
+
+  private async createPackageOverviewSnapshot(pkg: BlockPackIdNoVersion, overview: PackageOverview, timestamp: string): Promise<void> {
+    if (this.settings.skipSnapshotCreation) return;
+    
+    try {
+      const overviewData = JSON.stringify(overview);
+      const gzippedData = await this.gzipAsync(overviewData);
+      const snapshotPath = packageOverviewSnapshotPath(pkg, timestamp);
+      await this.storage.putFile(snapshotPath, Buffer.from(gzippedData));
+      this.logger.info(`Package overview snapshot created at ${snapshotPath} for ${pkg.organization}:${pkg.name}`);
+    } catch (error) {
+      this.logger.warn(`Failed to create package overview snapshot for ${pkg.organization}:${pkg.name}: ${error}`);
+    }
+  }
 
   private async updateRegistry(mode: 'force' | 'normal' | 'dry-run' = 'normal') {
     this.logger.info('Initiating registry refresh...');
+
+    // Generate timestamp for all snapshots in this run
+    const snapshotTimestamp = this.generateTimestamp();
 
     // reading update requests
     const packagesToUpdate = new Map<string, PackageUpdateInfo>();
@@ -97,24 +156,41 @@ export class BlockRegistryV2 {
 
     // loading global overview
     const overviewContent = await this.storage.getFile(GlobalOverviewPath);
-    const overview: GlobalOverviewReg =
-      overviewContent === undefined
+    
+    // Create pre-write snapshot in force mode if overview exists
+    if (mode === 'force' && overviewContent !== undefined) {
+      const preWriteTimestamp = this.generatePreWriteTimestamp();
+      await this.createGlobalOverviewSnapshot(overviewContent.toString(), preWriteTimestamp);
+    }
+    
+    const overview: GlobalOverviewReg = mode === 'force'
+      ? { schema: 'v2', packages: [] }
+      : overviewContent === undefined
         ? { schema: 'v2', packages: [] }
         : GlobalOverviewReg.parse(JSON.parse(overviewContent.toString()));
     let overviewPackages = overview.packages;
-    this.logger.info(`Global overview loaded, ${overviewPackages.length} records`);
+    this.logger.info(`Global overview ${mode === 'force' ? 'starting empty (force mode)' : 'loaded'}, ${overviewPackages.length} records`);
 
     // updating packages
     for (const [, packageInfo] of packagesToUpdate.entries()) {
       // reading existing overview
       const overviewFile = packageOverviewPath(packageInfo.package);
       const pOverviewContent = await this.storage.getFile(overviewFile);
-      const packageOverview: PackageOverview =
-        pOverviewContent === undefined
+      
+      // Create pre-write snapshot in force mode if package overview exists
+      if (mode === 'force' && pOverviewContent !== undefined) {
+        const preWriteTimestamp = this.generatePreWriteTimestamp();
+        const existingOverview = PackageOverview.parse(JSON.parse(pOverviewContent.toString()));
+        await this.createPackageOverviewSnapshot(packageInfo.package, existingOverview, preWriteTimestamp);
+      }
+      
+      const packageOverview: PackageOverview = mode === 'force'
+        ? { schema: 'v2', versions: [] }
+        : pOverviewContent === undefined
           ? { schema: 'v2', versions: [] }
           : PackageOverview.parse(JSON.parse(pOverviewContent.toString()));
       this.logger.info(
-        `Updating ${packageInfo.package.organization}:${packageInfo.package.name} overview, ${packageOverview.versions.length} records`
+        `Updating ${packageInfo.package.organization}:${packageInfo.package.name} overview${mode === 'force' ? ' (starting empty in force mode)' : ''}, ${packageOverview.versions.length} records`
       );
 
       // removing versions that we will update
@@ -158,13 +234,16 @@ export class BlockRegistryV2 {
       );
 
       // write package overview back
-      if (mode !== 'dry-run')
+      const packageOverviewData = { schema: 'v2', versions: newVersions } satisfies PackageOverview;
+      if (mode !== 'dry-run') {
         await this.storage.putFile(
           overviewFile,
-          Buffer.from(
-            JSON.stringify({ schema: 'v2', versions: newVersions } satisfies PackageOverview)
-          )
+          Buffer.from(JSON.stringify(packageOverviewData))
         );
+        
+        // Create snapshot after successful write
+        await this.createPackageOverviewSnapshot(packageInfo.package, packageOverviewData, snapshotTimestamp);
+      }
       this.logger.info(`Done (${newVersions.length} records)`);
 
       // calculating all channels
@@ -222,6 +301,9 @@ export class BlockRegistryV2 {
       // Write gzipped overview file
       const gzippedBuffer = await this.gzipAsync(overviewData);
       await this.storage.putFile(GlobalOverviewGzPath, Buffer.from(gzippedBuffer));
+      
+      // Create snapshot after successful writes
+      await this.createGlobalOverviewSnapshot(overviewData, snapshotTimestamp);
     }
     this.logger.info(`Global overview updated (${overviewPackages.length} records)`);
 
@@ -308,6 +390,57 @@ export class BlockRegistryV2 {
     await this.storage.deleteFiles(`${prefix}/${ChannelsFolder}/${channel}`);
     // marking as changed
     await this.marchChanged(id);
+  }
+
+  public async listGlobalOverviewSnapshots(): Promise<GlobalOverviewBackupDescription[]> {
+    const snapshotPaths = await this.storage.listFiles(GlobalSnapshotsPrefix);
+    const snapshots: GlobalOverviewBackupDescription[] = [];
+    
+    for (const path of snapshotPaths) {
+      // Extract filename from path
+      const filename = path.indexOf('/') === -1 ? path : path.substring(path.lastIndexOf('/') + 1);
+      
+      const match = filename.match(GlobalOverviewSnapshotPattern);
+      if (match) {
+        snapshots.push({
+          timestamp: match.groups!.timestamp,
+          path: GlobalSnapshotsPrefix + filename
+        });
+      }
+    }
+    
+    // Sort by timestamp descending (newest first)
+    snapshots.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+    return snapshots;
+  }
+
+  public async restoreGlobalOverviewFromSnapshot(backupId: string): Promise<void> {
+    const snapshotPath = globalOverviewSnapshotPath(backupId);
+    
+    // Read and decompress the snapshot
+    const snapshotData = await this.storage.getFile(snapshotPath);
+    if (!snapshotData) {
+      throw new Error(`Snapshot ${backupId} not found at ${snapshotPath}`);
+    }
+    
+    const decompressedData = await this.gunzipAsync(snapshotData);
+    const overviewData = decompressedData.toString('utf8');
+    
+    // Validate the data
+    try {
+      GlobalOverviewReg.parse(JSON.parse(overviewData));
+    } catch (error) {
+      throw new Error(`Invalid snapshot data in ${backupId}: ${error}`);
+    }
+    
+    // Write both regular and gzipped versions
+    const overviewBuffer = Buffer.from(overviewData);
+    await this.storage.putFile(GlobalOverviewPath, overviewBuffer);
+    
+    const gzippedBuffer = await this.gzipAsync(overviewData);
+    await this.storage.putFile(GlobalOverviewGzPath, Buffer.from(gzippedBuffer));
+    
+    this.logger.info(`Global overview restored from snapshot ${backupId}`);
   }
 
   public async publishPackage(

@@ -37,7 +37,7 @@ export const BlockPackManifest = z.object({
   description: BlockPackDescriptionManifest,
   timestamp: z.number().optional(),
   files: z.array(ManifestFileInfo)
-});
+}).passthrough();
 export type BlockPackManifest = z.infer<typeof BlockPackManifest>;
 
 export const BlockPackManifestFile = 'manifest.json';
