@@ -27,6 +27,7 @@ import {
   matchAxisId,
   PColumnName,
   readAnnotation,
+  uniqueBy,
 } from '@milaboratories/pl-model-common';
 import type {
   AxisLabelProvider,
@@ -659,14 +660,6 @@ export function isColumnHidden(spec: { annotations?: Annotation }): boolean {
 /** Check if column is hidden by default */
 export function isColumnOptional(spec: { annotations?: Annotation }): boolean {
   return readAnnotation(spec, Annotation.Table.Visibility) === 'optional';
-}
-
-/**
- * Return unique entries of the array by the provided id
- * For each id, the last entry is kept
- */
-export function uniqueBy<T>(array: T[], makeId: (entry: T) => string): T[] {
-  return [...new Map(array.map((e) => [makeId(e), e])).values()];
 }
 
 /**

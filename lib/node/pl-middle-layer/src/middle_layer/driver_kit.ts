@@ -16,7 +16,7 @@ import {
 } from '@milaboratories/pl-drivers';
 import type * as Sdk from '@milaboratories/pl-model-common';
 import type { Signer } from '@milaboratories/ts-helpers';
-import { HmacSha256Signer } from '@milaboratories/ts-helpers';
+import { HmacSha256Signer, isAsyncDisposable } from '@milaboratories/ts-helpers';
 import type { InternalPFrameDriver } from '../pool';
 import { PFrameDriver } from '../pool';
 import type {
@@ -35,7 +35,10 @@ import {
  * This intertface is basically a version of the DriverKit from
  * UI SDK with extended API.
  * */
-export interface MiddleLayerDriverKit extends Sdk.DriverKit {
+export interface MiddleLayerDriverKit extends Sdk.DriverKit, AsyncDisposable {
+  /** Dispose the driver kit and all its resources. */
+  dispose(): Promise<void>;
+
   // override with wider interface
   readonly blobDriver: DownloadDriver;
   // override with wider interface
@@ -132,7 +135,7 @@ export async function initDriverKit(
     ops.frontendDownloadDriverOps,
   );
 
-  return {
+  const driverKit = {
     blobDriver,
     blobToURLDriver: blobToURLDriver,
     logDriver,
@@ -141,5 +144,17 @@ export async function initDriverKit(
     uploadDriver,
     pFrameDriver,
     frontendDriver: frontendDownloadDriver,
+  };
+
+  const dispose = async () => {
+    const disposePromises = Object.values(driverKit)
+      .flatMap((driver) => isAsyncDisposable(driver) ? [driver[Symbol.asyncDispose]] : []);
+    await Promise.all(disposePromises);
+  };
+
+  return {
+    ...driverKit,
+    dispose,
+    [Symbol.asyncDispose]: dispose,
   };
 }

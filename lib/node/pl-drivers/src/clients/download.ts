@@ -11,11 +11,11 @@ import * as path from 'node:path';
 import { Readable } from 'node:stream';
 import type { Dispatcher } from 'undici';
 import type { LocalStorageProjection } from '../drivers/types';
-import type { DownloadOps, ContentHandler } from '../helpers/download';
-import { RemoteFileDownloader } from '../helpers/download';
+import { type ContentHandler, RemoteFileDownloader } from '../helpers/download';
 import { validateAbsolute } from '../helpers/validate';
 import type { DownloadAPI_GetDownloadURL_Response } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/downloadapi/protocol';
 import { DownloadClient } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/downloadapi/protocol.client';
+import { type GetContentOptions } from '@milaboratories/pl-model-common';
 
 /** Gets URLs for downloading from pl-core, parses them and reads or downloads
  * files locally and from the web. */
@@ -52,7 +52,7 @@ export class ClientDownload {
   async withBlobContent<T>(
     info: ResourceInfo,
     options: RpcOptions | undefined,
-    ops: DownloadOps,
+    ops: GetContentOptions,
     handler: ContentHandler<T>,
   ): Promise<T> {
     const { downloadUrl, headers } = await this.grpcGetDownloadUrl(info, options, ops.signal);
@@ -67,7 +67,7 @@ export class ClientDownload {
 
   async withLocalFileContent<T>(
     url: string,
-    ops: DownloadOps,
+    ops: GetContentOptions,
     handler: ContentHandler<T>,
   ): Promise<T> {
     const { storageId, relativePath } = parseLocalUrl(url);
@@ -77,6 +77,7 @@ export class ClientDownload {
       const readOps = {
         start: ops.range?.from,
         end: ops.range?.to !== undefined ? ops.range.to - 1 : undefined,
+        signal: ops.signal,
       };
       let stream: fs.ReadStream | undefined;
       let handlerSuccess = false;

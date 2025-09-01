@@ -12,6 +12,8 @@ import { resourceIdToString, stringifyWithResourceId } from '@milaboratories/pl-
 import type {
   AnyLogHandle,
   BlobDriver,
+  ContentHandler,
+  GetContentOptions,
   LocalBlobHandle,
   LocalBlobHandleAndSize,
   ReadyLogHandle,
@@ -39,11 +41,11 @@ import * as fsp from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import * as readline from 'node:readline/promises';
-import { Writable } from 'node:stream';
 import { buffer } from 'node:stream/consumers';
+import { Readable } from 'node:stream';
 import type { ClientDownload } from '../../clients/download';
 import type { ClientLogs } from '../../clients/logs';
-import { readFileContent } from '../helpers/read_file';
+import { withFileContent } from '../helpers/read_file';
 import {
   isLocalBlobHandle,
   newLocalHandle,
@@ -293,13 +295,55 @@ export class DownloadDriver implements BlobDriver {
   }
 
   /** Gets a content of a blob by a handle. */
-  public async getContent(handle: LocalBlobHandle | RemoteBlobHandle, range?: RangeBytes): Promise<Uint8Array> {
-    if (range) {
-      validateRangeBytes(range, `getContent`);
+  public async getContent(handle: LocalBlobHandle | RemoteBlobHandle): Promise<Uint8Array>;
+  public async getContent(
+    handle: LocalBlobHandle | RemoteBlobHandle,
+    options?: GetContentOptions,
+  ): Promise<Uint8Array>;
+  /** @deprecated Use {@link getContent} with {@link GetContentOptions} instead */
+  public async getContent(
+    handle: LocalBlobHandle | RemoteBlobHandle,
+    range?: RangeBytes,
+  ): Promise<Uint8Array>;
+  public async getContent(
+    handle: LocalBlobHandle | RemoteBlobHandle,
+    optionsOrRange?: GetContentOptions | RangeBytes,
+  ): Promise<Uint8Array> {
+    let options: GetContentOptions = {};
+    if (typeof optionsOrRange === 'object' && optionsOrRange !== null) {
+      if ('range' in optionsOrRange) {
+        options = optionsOrRange;
+      } else {
+        const range = optionsOrRange as RangeBytes;
+        validateRangeBytes(range, `getContent`);
+        options = { range };
+      }
     }
 
+    return await this.withContent(handle, {
+      ...options,
+      handler: async (content) => {
+        const chunks: Uint8Array[] = [];
+        for await (const chunk of content) {
+          options.signal?.throwIfAborted();
+          chunks.push(chunk);
+        }
+        return Buffer.concat(chunks);
+      }
+    });
+  }
+
+  /** Gets a content stream of a blob by a handle and calls handler with it. */
+  public async withContent<T>(
+    handle: LocalBlobHandle | RemoteBlobHandle,
+    options: GetContentOptions & {
+      handler: ContentHandler<T>;
+    },
+  ): Promise<T> {
+    const { range, signal, handler } = options;
+
     if (isLocalBlobHandle(handle)) {
-      return await readFileContent(this.getLocalPath(handle), range);
+      return await withFileContent({ path: this.getLocalPath(handle), range, signal, handler });
     }
 
     if (isRemoteBlobHandle(handle)) {
@@ -307,19 +351,24 @@ export class DownloadDriver implements BlobDriver {
 
       const key = blobKey(result.info.id);
       const filePath = await this.rangesCache.get(key, range ?? { from: 0, to: result.size });
-      if (filePath) {
-        return await readFileContent(filePath, range);
-      }
+      signal?.throwIfAborted();
 
-      const data = await this.clientDownload.withBlobContent(
-        { id: result.info.id, type: result.info.type },
-        undefined,
-        { range },
-        async (content) => await buffer(content)
+      if (filePath) return await withFileContent({ path: filePath, range, signal, handler });
+
+      return await this.clientDownload.withBlobContent(
+        result.info,
+        { signal },
+        options,
+        async (content, size) => {
+          const [handlerStream, cacheStream] = content.tee();
+          
+          const handlerPromise = handler(handlerStream, size);
+          const _cachePromise = buffer(cacheStream)
+            .then((data) => this.rangesCache.set(key, range ?? { from: 0, to: result.size }, data));
+
+          return await handlerPromise;
+        }
       );
-      await this.rangesCache.set(key, range ?? { from: 0, to: result.size }, data);
-
-      return data;
     }
 
     throw new Error('Malformed remote handle');
@@ -339,7 +388,7 @@ export class DownloadDriver implements BlobDriver {
 
     return Computable.make((ctx) =>
       this.getDownloadedBlob(res, ctx), {
-      postprocessValue: (v) => v ? this.getContent(v.handle, range) : undefined
+      postprocessValue: (v) => v ? this.getContent(v.handle, { range }) : undefined
     }
     ).withStableType()
   }
