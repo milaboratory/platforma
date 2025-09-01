@@ -80,8 +80,13 @@ export function push(tag: string) {
   }
 }
 
-export function build(context: string, dockerfile: string, tag: string) {
-  const result = spawnSync('docker', ['build', '-t', tag, context, '-f', dockerfile], {
+export function build(context: string, dockerfile: string, tag: string, softwarePackage: string, softwareVersion: string | undefined) {
+  const result = spawnSync('docker', [
+    'build', '-t', tag, context, '-f', dockerfile,
+    '--label', 'com.milaboratories.package-builder.software=true',
+    '--label', 'com.milaboratories.package-builder.software.package=' + softwarePackage,
+    '--label', 'com.milaboratories.package-builder.software.version=' + softwareVersion,
+  ], {
     stdio: 'inherit',
     env: {
       ...process.env, // PATH variable from parent process affects execution
