@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 1.42.28
+
+### Patch Changes
+
+- 61a492c: PFrames update
+
 ## 1.42.27
 
 ### Patch Changes
