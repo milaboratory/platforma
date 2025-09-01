@@ -9,5 +9,15 @@ export default defineConfig({
     minWorkers: 1,
     // fileParallelism: false // is equal to minWorkers = 1, maxWorkwrs = 1
     retry: 2,
+
+
+    reporters: ['verbose'],
+    
+    // --- Order / Sharding
+    sequence: {
+      shuffle: { files: true, tests: true }, // randomize order of files and tests to smoke out hidden coupling
+      seed: Number(process.env.VITEST_SEED ?? Date.now()),
+      concurrent: false, // run tests per-file sequentially by default
+    },
   }
 });
