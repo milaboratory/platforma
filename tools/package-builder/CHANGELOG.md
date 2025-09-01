@@ -1,5 +1,11 @@
 # @platforma-sdk/package-builder
 
+## 3.2.4
+
+### Patch Changes
+
+- 2b6f35f: add label for images
+
 ## 3.2.3
 
 ### Patch Changes
