@@ -363,11 +363,10 @@ export class DownloadDriver implements BlobDriver {
           const [handlerStream, cacheStream] = content.tee();
           
           const handlerPromise = handler(handlerStream, size);
-          const cachePromise = buffer(cacheStream)
+          const _cachePromise = buffer(cacheStream)
             .then((data) => this.rangesCache.set(key, range ?? { from: 0, to: result.size }, data));
 
-          const [handlerResult,] = await Promise.all([handlerPromise, cachePromise]);
-          return handlerResult;
+          return await handlerPromise;
         }
       );
     }

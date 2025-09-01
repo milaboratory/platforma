@@ -41,7 +41,8 @@ import { RetryAgent } from 'undici';
 import { getDebugFlags } from '../debug';
 import { ProjectHelper } from '../model/project_helper';
 
-export interface MiddleLayerEnvironment extends AsyncDisposable {
+export interface MiddleLayerEnvironment {
+  dispose(): Promise<void>;
   readonly pl: PlClient;
   readonly runtimeCapabilities: RuntimeCapabilities;
   readonly logger: MiLogger;
@@ -182,14 +183,16 @@ export class MiddleLayer {
     return prj;
   }
 
-  /** Deallocates all runtime resources consumed by this object and awaits
+  /**
+   * Deallocates all runtime resources consumed by this object and awaits
    * actual termination of event loops and other processes associated with
-   * them. */
+   * them.
+   */
   public async close() {
     await Promise.all([...this.openedProjectsByRid.values()].map((prj) => prj.destroy()));
     // this.env.quickJs;
     await this.projectListTree.terminate();
-    await this.env[Symbol.asyncDispose]();
+    await this.env.dispose();
     await this.pl.close();
   }
 
@@ -284,9 +287,9 @@ export class MiddleLayer {
       runtimeCapabilities,
       quickJs,
       projectHelper: new ProjectHelper(quickJs),
-      async [Symbol.asyncDispose]() {
+      dispose: async () => {
         await retryHttpDispatcher.destroy();
-        await driverKit[Symbol.asyncDispose]();
+        await driverKit.dispose();
       },
     };
 

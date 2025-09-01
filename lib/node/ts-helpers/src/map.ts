@@ -18,13 +18,3 @@ export function mapFromEntries<K, V>(m: [K, V][]): Map<K, V> {
   m.forEach(([k, v]) => result.set(k, v));
   return result;
 }
-
-export function mapObjectValues<T extends object, TResult>(
-  obj: T,
-  callback: (v: T[keyof T], key: keyof T) => TResult,
-): { [K in keyof T]: TResult } {
-  return Object.fromEntries(
-    (Object.entries(obj) as { [K in keyof T]: [K, T[K]]; }[keyof T][])
-      .map(([key, value]) => [key, callback(value, key)]),
-  ) as { [K in keyof T]: TResult };
-}

@@ -58,7 +58,8 @@ import {
   traverseParquetPartitionedResource,
 } from './data';
 import { createHash } from 'node:crypto';
-import { mapObjectValues, type MiLogger } from '@milaboratories/ts-helpers';
+import { type MiLogger } from '@milaboratories/ts-helpers';
+import { mapValues } from 'es-toolkit';
 import {
   assertNever,
   emptyDir,
@@ -389,12 +390,12 @@ class PFrameHolder implements PFrameInternal.PFrameDataSourceV2, AsyncDisposable
         case 'JsonPartitioned':
           return {
             ...data,
-            parts: mapObjectValues(data.parts, makeLocalBlobId),
+            parts: mapValues(data.parts, makeLocalBlobId),
           };
         case 'BinaryPartitioned':
           return {
             ...data,
-            parts: mapObjectValues(data.parts, (v) => ({
+            parts: mapValues(data.parts, (v) => ({
               index: makeLocalBlobId(v.index),
               values: makeLocalBlobId(v.values),
             })),
@@ -402,7 +403,7 @@ class PFrameHolder implements PFrameInternal.PFrameDataSourceV2, AsyncDisposable
         case 'ParquetPartitioned':
           return {
             ...data,
-            parts: mapObjectValues(data.parts, (v) => ({
+            parts: mapValues(data.parts, (v) => ({
               ...v,
               data: makeRemoteBlobId(v.data),
             })),
@@ -520,6 +521,9 @@ export type PFrameDriverOps = {
  * layer and in tests.
  */
 export interface InternalPFrameDriver extends SdkPFrameDriver, AsyncDisposable {
+  /** Dispose the driver and all its resources. */
+  dispose(): Promise<void>;
+
   /**
    * Dump active PFrames allocations in pprof format.
    * The result of this function should be saved as `profile.pb.gz`.
@@ -735,8 +739,12 @@ export class PFrameDriver implements InternalPFrameDriver {
     })(this.pFrames, logger);
   }
 
-  async [Symbol.asyncDispose]() {
+  async dispose(): Promise<void> {
     return await this.server.stop();
+  }
+
+  async [Symbol.asyncDispose](): Promise<void> {
+    return await this.dispose();
   }
 
   //
