@@ -5,12 +5,7 @@ import { request } from 'undici';
 import { Readable } from 'node:stream';
 import type { ReadableStream } from 'node:stream/web';
 import { text } from 'node:stream/consumers';
-import type { RangeBytes } from '@milaboratories/pl-model-common';
-
-export interface DownloadOps {
-  signal?: AbortSignal;
-  range?: RangeBytes;
-}
+import type { GetContentOptions } from '@milaboratories/pl-model-common';
 
 export type ContentHandler<T> = (content: ReadableStream, size: number) => Promise<T>;
 
@@ -25,7 +20,7 @@ export class RemoteFileDownloader {
   async withContent<T>(
     url: string,
     reqHeaders: Record<string, string>,
-    ops: DownloadOps,
+    ops: GetContentOptions,
     handler: ContentHandler<T>,
   ): Promise<T> {
     const headers = { ...reqHeaders };
@@ -40,14 +35,19 @@ export class RemoteFileDownloader {
       headers,
       signal: ops.signal,
     });
+    ops.signal?.throwIfAborted();
 
     const webBody = Readable.toWeb(body);
     let handlerSuccess = false;
 
     try {
       await checkStatusCodeOk(statusCode, webBody, url);
+      ops.signal?.throwIfAborted();
+
       const size = Number(responseHeaders['content-length']);
       const result = await handler(webBody, size);
+      ops.signal?.throwIfAborted();
+
       handlerSuccess = true;
       return result;
     } catch (error) {

@@ -1,12 +1,3 @@
-import {
-  BasicResourceData,
-  getField,
-  isNullResourceId,
-  PlClient,
-  ResourceId,
-  valErr,
-} from '@milaboratories/pl-client';
-
 /** Throws when a driver gets a resource with a wrong resource type. */
 export class WrongResourceTypeError extends Error {
   name = 'WrongResourceTypeError';
