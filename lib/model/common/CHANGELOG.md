@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.19.17
+
+### Patch Changes
+
+- 6bc20d1: add hidden for graphs columns
+
 ## 1.19.16
 
 ### Patch Changes
