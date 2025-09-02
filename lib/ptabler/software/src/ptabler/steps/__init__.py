@@ -1,5 +1,5 @@
 from .base import PStep, GlobalSettings, TableSpace
-from .io import ReadCsv, ReadNdjson, WriteCsv, WriteNdjson
+from .io import ReadCsv, ReadNdjson, ReadParquet, WriteCsv, WriteNdjson, WriteParquet
 from .basics import AddColumns, Select, WithColumns, WithoutColumns
 from .filter import Filter
 from .join import Join
@@ -12,8 +12,10 @@ from typing import Union
 type AnyPStep = Union[
     ReadCsv,
     ReadNdjson,
+    ReadParquet,
     WriteCsv,
     WriteNdjson,
+    WriteParquet,
     AddColumns,
     Select,
     WithColumns,
@@ -28,8 +30,10 @@ type AnyPStep = Union[
 __all__ = [
     "ReadCsv",
     "ReadNdjson",
+    "ReadParquet",
     "WriteCsv",
     "WriteNdjson",
+    "WriteParquet",
     "AddColumns",
     "Select",
     "WithColumns",
