@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.1.4
+
+### Patch Changes
+
+- 06b7746: Pass 'pkg' path to command renderer when it is available in docker descriptor
+
 ## 5.1.3
 
 ### Patch Changes
