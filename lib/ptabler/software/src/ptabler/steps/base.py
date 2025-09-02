@@ -1,4 +1,3 @@
-from typing import Optional
 import msgspec
 import polars as pl
 import dataclasses

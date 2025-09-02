@@ -17,7 +17,7 @@ from ptabler.expression import (
     StringReplaceExpression,
     StringContainsExpression, StringContainsAnyExpression, StringCountMatchesExpression,
     StringExtractExpression, StringStartsWithExpression, StringEndsWithExpression,
-    FillNaNExpression, FillNullExpression,
+    FillNullExpression,
     UnaryMinusExpression,
 )
 

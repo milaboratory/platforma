@@ -6,7 +6,7 @@ from ptabler.workflow import PWorkflow
 from ptabler.steps import GlobalSettings, Aggregate, TableSpace
 # Assuming MaxBy is imported from here
 from ptabler.steps.aggregate import Sum, MaxBy
-from ptabler.expression import ColumnReferenceExpression, ConstantValueExpression
+from ptabler.expression import ColumnReferenceExpression
 
 # Minimal global_settings for tests
 global_settings = GlobalSettings(root_folder=".")

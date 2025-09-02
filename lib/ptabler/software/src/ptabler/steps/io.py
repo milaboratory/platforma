@@ -1,6 +1,6 @@
 import polars as pl
 import os
-from typing import List, Optional, Dict, Mapping, Any 
+from typing import List, Optional, Dict, Any 
 import msgspec
 
 from ptabler.common import toPolarsType, PType
@@ -120,6 +120,25 @@ class ReadNdjson(BaseReadLogic, tag="read_ndjson"):
         """
         return pl.scan_ndjson(file_path, **scan_kwargs)
 
+class ReadParquet(BaseReadLogic, tag="read_parquet"):
+    """
+    PStep to read data from an Apache Parquet file into the tablespace.
+    Corresponds to the ReadParquetStep in the TypeScript definitions.
+    """
+    file: str  # Path to the Parquet file
+    name: str  # Name to assign to the loaded DataFrame in the tablespace
+
+    schema: Optional[List[ColumnSchema]] = None
+    infer_schema: Optional[bool] = None
+    ignore_errors: Optional[bool] = None
+    n_rows: Optional[int] = None
+
+    def _do_scan(self, file_path: str, scan_kwargs: Dict[str, Any]) -> pl.LazyFrame:
+        """
+        Prepares a Polars scan plan to read the Apache Parquet file.
+        """
+        return pl.scan_parquet(file_path, **scan_kwargs)
+
 class BaseWriteLogic(PStep):
     """
     Abstract base class for PSteps that write tables to files.
@@ -225,3 +244,19 @@ class WriteNdjson(BaseWriteLogic, tag="write_ndjson"):
         Prepares a Polars plan to write the selected LazyFrame to an NDJSON file.
         """
         return selected_lf.sink_ndjson(path=output_path, lazy=True)
+
+class WriteParquet(BaseWriteLogic, tag="write_parquet"):
+    """
+    PStep to write a table from the tablespace to an Apache Parquet file.
+    Uses Polars' sink_parquet for lazy writing.
+    Corresponds to the WriteParquetStep in TypeScript definitions.
+    """
+    table: str  # Name of the table in the tablespace to write
+    file: str   # Path to the output Parquet file
+    columns: Optional[List[str]] = None  # Optional: List of column names to write
+
+    def _do_sink(self, selected_lf: pl.LazyFrame, output_path: str) -> pl.LazyFrame:
+        """
+        Prepares a Polars plan to write the selected LazyFrame to an Apache Parquet file.
+        """
+        return selected_lf.sink_parquet(path=output_path, lazy=True)

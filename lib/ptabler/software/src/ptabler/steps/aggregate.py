@@ -102,7 +102,7 @@ class ByClauseBaseAggregation(BaseAggregationOperation):
     def _get_by_polars_expr_list(self) -> list[pl.Expr]:
         if not self.by:
             raise ValueError(
-                f"'by_expression' list resolved to empty, which is invalid.")
+                "'by_expression' list resolved to empty, which is invalid.")
         # if len(self.by) == 1:
         #     return self.by[0].to_polars()
         # else:

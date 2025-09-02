@@ -1,5 +1,4 @@
 import polars as pl
-import msgspec
 from typing import List, Optional
 
 from .base import GlobalSettings, PStep, TableSpace
