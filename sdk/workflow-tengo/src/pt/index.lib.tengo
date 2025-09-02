@@ -59,6 +59,8 @@ _detectFormatFromFileName := func(fileName) {
 		return "tsv"
 	} else if text.has_suffix(fileName, ".ndjson") || text.has_suffix(fileName, ".jsonl") {
 		return "ndjson"
+	} else if text.has_suffix(fileName, ".parquet") {
+		return "parquet"
 	}
 	return undefined // No format detected
 }
@@ -282,7 +284,13 @@ workflow := func() {
 
 			// Generate appropriate step based on format
 			step := undefined
-			if finalFormat == "ndjson" {
+			if finalFormat == "parquet" {
+				step = {
+					type: "read_parquet",
+					file: finalFileName,
+					name: finalDataFrameId
+				}
+			} else if finalFormat == "ndjson" {
 				step = {
 					type: "read_ndjson",
 					file: finalFileName,
