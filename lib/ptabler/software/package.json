@@ -2,11 +2,11 @@
   "name": "@platforma-open/milaboratories.software-ptabler",
   "version": "1.12.2",
   "scripts": {
-    "preinit-python": "pyenv exec python -m venv --clear ../.venv",
-    "init-python": "../.venv/bin/pip install --quiet --disable-pip-version-check -r src/requirements.txt",
+    "preinit-python": "pyenv exec python -m venv --clear .venv",
+    "init-python": ".venv/bin/pip install --quiet --disable-pip-version-check -r src/requirements.txt",
     "build": "rm -rf ./dist && pl-pkg build",
     "prepublishOnly": "pl-pkg prepublish",
-    "test": "[ ! -d ../.venv ] || (../.venv/bin/python -m unittest discover --verbose -s src -p '*.py')",
+    "test": "[ ! -d .venv ] || (.venv/bin/python -m unittest discover --verbose -s src -p '*.py')",
     "do-pack": "rm -f *.tgz && pl-pkg build && pnpm pack && mv *.tgz package.tgz"
   },
   "files": [
