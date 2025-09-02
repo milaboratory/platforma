@@ -1,5 +1,13 @@
 # @platforma-sdk/model
 
+## 1.42.51
+
+### Patch Changes
+
+- 6bc20d1: add hidden for graphs columns
+- Updated dependencies [6bc20d1]
+  - @milaboratories/pl-model-common@1.19.17
+
 ## 1.42.47
 
 ### Patch Changes
