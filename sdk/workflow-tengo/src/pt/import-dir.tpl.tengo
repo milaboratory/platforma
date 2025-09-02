@@ -1,0 +1,124 @@
+//
+// read p-frame from the directory
+//
+
+text := import("text")
+ll := import(":ll")
+path := import(":path")
+validation := import(":validation")
+smart := import(":smart")
+constants := import(":pframes.constants")
+objects := import(":objects")
+json := import("json")
+
+// json schema of .datainfo file
+_DATA_INFO_SCHEMA := {
+    `type`: `string,regex=ParquetPartitioned`,
+    `partitionKeyLength`: `number`,
+    `parts`: {
+        any: {
+            `data`: `string,regex=\.parquet$`,
+            `dataDigest,?`: `string`,
+            `stats,?`: {
+                `numberOfRows,?`: `number`,
+                `numberOfBytes,?`: {
+                    `axes`: [`number`],
+                    `column`: `number`
+                }
+            },
+            `axes`: [
+                {
+                    `id`: `string`,
+                    `type`: `string,regex=Int|Long|String`
+                }
+            ],
+            `column`: {
+                `id`: `string`,
+                `type`: `string,regex=Int|Long|Float|Double|String`
+            }
+        }
+    }
+}
+
+self := import(":workdir.proc")
+
+self.readFiles(func(inputs) {
+    frameName := inputs.args.frameName
+    columnIds := inputs.args.columnIds
+
+    dataInfos := {}
+
+    framePrefix := frameName + path.separator
+	for filePath in inputs.files {
+        if !text.has_prefix(filePath, framePrefix) {
+            continue
+        }
+        fileName := text.trim_prefix(filePath, framePrefix)
+		if text.has_suffix(fileName, ".datainfo") {
+            columnId := text.trim_suffix(fileName, ".datainfo")
+			dataInfos[columnId] = filePath
+		}
+	}
+
+    for columnId in columnIds {
+        ll.assert(
+            dataInfos[columnId] != undefined,
+            "no data info file found for column '%s'",
+            columnId
+        )
+    }
+
+	return dataInfos
+})
+
+self.body(func(inputs) {
+    frameName := inputs.args.frameName
+    columnIds := inputs.args.columnIds
+
+    outputs := {}
+
+    for columnId in columnIds {
+        dataInfo := inputs[columnId].getDataAsJson()
+        validation.assertType(dataInfo, _DATA_INFO_SCHEMA)
+
+        resourceData := { partitionKeyLength: dataInfo.partitionKeyLength }
+        resourceBuilder := smart.structBuilder(
+            constants.RTYPE_P_COLUMN_DATA_PARQUET_PARTITIONED,
+            json.encode(resourceData)
+        )
+
+        for encodedAxisKey, parquetChunk in dataInfo.parts {
+            // Gather all the data
+
+            parquetChunkData := self.saveFile(path.join(frameName, dataInfo.data))
+
+            parquetChunkMetadata := {
+                dataDigest: parquetChunk.dataDigest,
+                stats: parquetChunk.stats
+            }
+            objects.deleteUndefined(parquetChunkMetadata)
+
+            parquetChunkMapping := {
+                axes: parquetChunk.axes,
+                column: parquetChunk.column
+            }
+
+            // Create field structure
+
+            parquetChunkResource := smart.structBuilder(
+                constants.RTYPE_PARQUET_CHUNK,
+                json.encode(parquetChunkMetadata)
+            )
+
+            parquetChunkResource.createMetaField("blob").set(parquetChunkData)
+            parquetChunkResource.createMetaField("mapping").setJson(parquetChunkMapping)
+            
+            resourceBuilder.createInputField(encodedAxisKey).
+                set(parquetChunkResource.lockAndBuild())
+        }
+
+        outputs[columnId] = resourceBuilder.lockAndBuild()
+    }
+
+    return outputs
+})
