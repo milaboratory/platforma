@@ -10,7 +10,7 @@ from ptabler.steps.join import ColumnMapping
 global_settings = GlobalSettings(root_folder=".")
 
 
-class JoinStepTests(unittest.TestCase):
+class JoinTests(unittest.TestCase):
 
     def setUp(self):
         """Setup common data for join tests."""

@@ -10,7 +10,7 @@ from ptabler.steps import GlobalSettings, Concatenate, TableSpace
 global_settings = GlobalSettings(root_folder=".")
 
 
-class ConcatenateStepTests(unittest.TestCase):
+class ConcatenateTests(unittest.TestCase):
 
     def setUp(self):
         """Setup common data for concatenation tests."""
