@@ -120,6 +120,7 @@ export const Annotation = {
     IsVirtual: 'pl7.app/graph/isVirtual',
   },
   HideDataFromUi: 'pl7.app/hideDataFromUi',
+  HideDataFromGraphs: 'pl7.app/hideDataFromGraphs',
   IsLinkerColumn: 'pl7.app/isLinkerColumn',
   Label: 'pl7.app/label',
   Max: 'pl7.app/max',
@@ -146,6 +147,7 @@ export type Annotation = Metadata & Partial<{
   [Annotation.Format]: string;
   [Annotation.Graph.IsVirtual]: StringifiedJson<boolean>;
   [Annotation.HideDataFromUi]: StringifiedJson<boolean>;
+  [Annotation.HideDataFromGraphs]: StringifiedJson<boolean>;
   [Annotation.IsLinkerColumn]: StringifiedJson<boolean>;
   [Annotation.Label]: string;
   [Annotation.Max]: StringifiedJson<number>;
@@ -181,6 +183,7 @@ export const AnnotationJson: AnnotationJson = {
   [Annotation.DiscreteValues]: z.array(z.string()).or(z.array(z.number())),
   [Annotation.Graph.IsVirtual]: z.boolean(),
   [Annotation.HideDataFromUi]: z.boolean(),
+  [Annotation.HideDataFromGraphs]: z.boolean(),
   [Annotation.IsLinkerColumn]: z.boolean(),
   [Annotation.Max]: z.number(),
   [Annotation.Min]: z.number(),
