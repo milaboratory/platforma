@@ -1,0 +1,173 @@
+ll := import(":ll")
+constants := import(":pframes.constants")
+validation := import(":validation")
+
+_AXIS_SCHEMA := {
+	// Column reference in DataFrame
+	`column`: `string`,
+	// Specification of the axis
+	`spec`: {
+		// Type of axis values
+		`type`: `string,regex=Int|Long|String`,
+		// Name of the axis to be used in spec
+		`name`: `string`,
+		// Auxiliary information to the axis name, type and parents to form a unique identifier
+		`domain,?`: { any: `string` },
+		// Any additional information attached to the axis that does not affect its identifier
+		`annotations,?`: { any: `string` },
+		// A list of zero-based indices of parent axes in the overall axes specification
+		`parentAxes,?`: [`number`]
+	}
+}
+
+_COLUMN_SCHEMA := {
+	// Column reference in DataFrame
+	`column`: `string`,
+	// Specification of the column
+	`spec`: {
+		// Type of column values
+		`valueType`: `string,regex=Int|Long|Float|Double|String`,
+		// Name of the column to be used in spec
+		`name`: `string`,
+		// Auxiliary information to the column name, type and parents to form a unique identifier
+		`domain,?`: { any: `string` },
+		// Any additional information attached to the axis that does not affect its identifier
+		`annotations,?`: { any: `string` },
+		// A list of zero-based indices of parent axes in the overall axes specification
+		`parentAxes,?`: [ `number` ]
+	}
+}
+
+_PARAMS_SCHEMA := {
+	// DataFrame columns to use as PColumn axes, order of axes in resulting columns
+	// would match the order of spec entries provided here
+	`axes`: [_AXIS_SCHEMA],
+	// DataFrame columns to use as PColumn values, each exported individually
+	`columns`: [_COLUMN_SCHEMA],
+	// Partitioning key length
+	// default: 0
+	`partitionKeyLength,?` : `number`
+}
+
+validateParams := func(params) {
+	validation.assertType(params, _PARAMS_SCHEMA, "Invalid params structure")
+
+    for entry in params.axes {
+        if !is_undefined(entry.spec.parentAxes) && len(entry.spec.parentAxes) > 0 {
+            for index in entry.spec.parentAxes {
+                ll.assert(
+                    index < len(params.axes),
+                    "Axis parent (%d) must be strictly less than the number of axes (%d)",
+                    index,
+                    len(params.axes)
+                )
+            }
+        }
+    }
+    for entry in params.columns {
+        if !is_undefined(entry.spec.parentAxes) && len(entry.spec.parentAxes) > 0 {
+            for index in entry.spec.parentAxes {
+                ll.assert(
+                    index < len(params.axes),
+                    "Column parent (%d) must be strictly less than the number of axes (%d)",
+                    index,
+                    len(params.axes)
+                )
+            }
+        }
+    }
+
+    // Check that partitionKeyLength is strictly less than the number of axes
+    ll.assert(
+        params.partitionKeyLength == undefined || params.partitionKeyLength < len(params.axes),
+        "partitionKeyLength (%d) must be strictly less than the number of axes (%d)",
+        params.partitionKeyLength,
+        len(params.axes)
+    )
+}
+
+unique := func(list) {
+    uniqueMap := {}
+    for _, item in list {
+        uniqueMap[item] = item
+    }
+    uniqueList := []
+    for _, item in uniqueMap {
+        uniqueList = append(uniqueList, item)
+    }
+    return uniqueList
+}
+
+makeFrameSpecs := func(params) {
+	axes := []
+    for entry in params.axes {
+        spec := {
+            type: entry.spec.type,
+            name: entry.spec.name
+        }
+        if !is_undefined(entry.spec.domain) && len(entry.spec.domain) > 0 {
+            spec.domain = entry.spec.domain
+        }
+        if !is_undefined(entry.spec.annotations) && len(entry.spec.annotations) > 0 {
+            spec.annotations = entry.spec.annotations
+        }
+        if !is_undefined(entry.spec.parentAxes) && len(entry.spec.parentAxes) > 0 {
+            spec.parentAxes = unique(entry.spec.parentAxes)
+        }
+        axes = append(axes, spec)
+    }
+    columns := {}
+    for entry in params.columns {
+        spec := {
+            kind: constants.KIND_P_COLUMN,
+            axesSpec: axes,
+            valueType: entry.spec.valueType,
+            name: entry.spec.name
+        }
+        if !is_undefined(entry.spec.domain) && len(entry.spec.domain) > 0 {
+            spec.domain = entry.spec.domain
+        }
+        if !is_undefined(entry.spec.annotations) && len(entry.spec.annotations) > 0 {
+            spec.annotations = entry.spec.annotations
+        }
+        if !is_undefined(entry.spec.parentAxes) && len(entry.spec.parentAxes) > 0 {
+            spec.parentAxes = unique(entry.spec.parentAxes)
+        }
+        columns[entry.column] = spec
+    }
+    return columns
+}
+
+makeWriteFrameStep := func(frameName, params) {
+	step := {
+        type: "write_frame",
+        name: frameName,
+        axes: [],
+        columns: [],
+        partitionKeyLength: 0
+    }
+    for entry in params.axes {
+        axis := {
+            column: entry.column,
+            type: entry.spec.type
+        }
+        step.axes = append(step.axes, axis)
+    }
+    for entry in params.columns {
+        column := {
+            column: entry.column,
+            type: entry.spec.valueType
+        }
+        step.columns = append(step.columns, column)
+    }
+    if !is_undefined(params.partitionKeyLength) {
+        step.partitionKeyLength = params.partitionKeyLength
+    }
+    return step
+}
+
+export ll.toStrict({
+	validateParams: validateParams,
+    makeFrameSpecs: makeFrameSpecs,
+    makeWriteFrameStep: makeWriteFrameStep
+})

@@ -55,7 +55,7 @@ import { LRUCache } from 'lru-cache';
 import {
   makeDataInfoFromPColumnValues,
   parseDataInfoResource,
-  traverseParquetPartitionedResource,
+  traverseParquetChunkResource,
 } from './data';
 import { createHash } from 'node:crypto';
 import { type MiLogger } from '@milaboratories/ts-helpers';
@@ -765,7 +765,7 @@ export class PFrameDriver implements InternalPFrameDriver {
             ? parseDataInfoResource(d)
             : isDataInfo(d)
               ? d.type === 'ParquetPartitioned'
-                ? mapDataInfo(d, (a) => traverseParquetPartitionedResource(a))
+                ? mapDataInfo(d, (a) => traverseParquetChunkResource(a))
                 : mapDataInfo(d, (a) => a.persist())
               : makeDataInfoFromPColumnValues(c.spec, d),
         ),

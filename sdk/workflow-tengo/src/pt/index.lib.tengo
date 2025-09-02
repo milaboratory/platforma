@@ -1,5 +1,6 @@
 ll := import(":ll")
 exp := import(":pt.expression")
+util := import(":pt.util")
 assets := import(":assets")
 smart := import(":smart")
 exec := import(":exec")
@@ -8,6 +9,11 @@ text := import("text")
 slices := import(":slices")
 validation := import(":validation")
 execConstants := import(":exec.constants")
+oop := import(":oop")
+pframes := import(":pframes")
+
+// import p-frame from directory tpl
+importDirTpl := assets.importTemplate(":pt.import-dir")
 
 /**
  * This library provides a high-level API, inspired by Polars DataFrames, for building and executing
@@ -59,6 +65,8 @@ _detectFormatFromFileName := func(fileName) {
 		return "tsv"
 	} else if text.has_suffix(fileName, ".ndjson") || text.has_suffix(fileName, ".jsonl") {
 		return "ndjson"
+	} else if text.has_suffix(fileName, ".parquet") {
+		return "parquet"
 	}
 	return undefined // No format detected
 }
@@ -78,6 +86,8 @@ workflow := func() {
 	outFiles := []
 	// string[]
 	outContentFiles := []
+	// { [frameName]: { [pColumnId]: pColumnSpec } }
+	outFramesSpecs := {}
 
 	anonymousFilesCounter := 0
 	anonymousDFCounter := 0
@@ -282,7 +292,13 @@ workflow := func() {
 
 			// Generate appropriate step based on format
 			step := undefined
-			if finalFormat == "ndjson" {
+			if finalFormat == "parquet" {
+				step = {
+					type: "read_parquet",
+					file: finalFileName,
+					name: finalDataFrameId
+				}
+			} else if finalFormat == "ndjson" {
 				step = {
 					type: "read_ndjson",
 					file: finalFileName,
@@ -344,6 +360,14 @@ workflow := func() {
 		},
 		_saveFileContent: func(name) {
 			outContentFiles = append(outContentFiles, name)
+		},
+		_saveFrameSpecs: func(name, specs) {
+			ll.assert(
+				outFramesSpecs[name] == undefined,
+				"frame with name '%s' already saved, please pick a different name",
+				name
+			)
+			outFramesSpecs[name] = specs
 		},
 
 		/**
@@ -447,7 +471,40 @@ workflow := func() {
 				ptablerCmdBuilder.saveFileContent(outContentFile)
 			}
 
-			return ptablerCmdBuilder.run()
+			for frameName, specsById in outFramesSpecs {
+				columnIds := []
+				for columnId, _ in specsById {
+					columnIds = append(columnIds, columnId)
+				}
+				tplArgs := {
+					frameName: frameName,
+					columnIds: columnIds
+				}
+				ptablerCmdBuilder.processWorkdir(frameName, importDirTpl, tplArgs)
+			}
+
+			execResult := ptablerCmdBuilder.run()
+
+			self := undefined
+			self = ll.toStrict(oop.inherit(execResult, {
+				/**
+				 * Retrieves exported frame.
+				 *
+				 * @param frameName: string - name of the frame to retrieve
+				 * @return frame constructed with `pframes.pFrameBuilder()`
+				 */
+				getFrameDirect: func(frameName) {
+					frame := execResult.getProcessorResult(frameName)
+					specs := outFramesSpecs[frameName]
+
+					pf := pframes.pFrameBuilder()
+					for pColumnId, pColumnSpec in specs {
+						pf.add(pColumnId, pColumnSpec, frame.getFutureInputField(pColumnId))
+					}
+					return pf.build()
+				}
+			}))
+			return self
 		}
 	}
 
@@ -568,7 +625,13 @@ _newDataFrame = func(parentWorkflow, dfName) {
 		}
 
 		step := undefined
-		if finalFormat == "ndjson" {
+		if finalFormat == "parquet" {
+			step = {
+				type: "write_parquet",
+				table: dfName,
+				file: outputFile
+			}
+		} else if finalFormat == "ndjson" {
 			step = {
 				type: "write_ndjson",
 				table: dfName,
@@ -744,6 +807,31 @@ _newDataFrame = func(parentWorkflow, dfName) {
 			parentWorkflow._saveFileContent(outputFile)
 
 			return self
+		},
+
+		/**
+		 * Saves the DataFrame as a PFrame and registers it to have its content accessible after `wf.run()`.
+		 * 
+		 * @param frameName {string} - The name of the PFrame.
+		 * @param params {object} - PFrame creation parameters.
+		 * @returns {void} - No other operation could be chained after this call.
+		 * @example
+		 *   // Save DataFrame as a PFrame with name "output_frame" and first axis partitioned
+		 *   df.saveFrameDirect("output_frame", {
+		 *     axes: [{name: "clusterId", type: "Long"}, {name: "name", type: "String"}],
+		 *     columns: [{name: "value", type: "Double"}],
+		 *     partitionKeyLength: 1
+		 *   })
+		 */
+		saveFrameDirect: func(frameName, params) {
+			ll.assert(len(frameName) > 0, "frameName must be a non-empty string")
+			util.validateParams(params)
+
+			specs := util.makeFrameSpecs(params)
+			parentWorkflow._saveFrameSpecs(frameName, specs)
+
+			step := util.makeWriteFrameStep(frameName, params)
+			parentWorkflow.addRawStep(step)
 		},
 
 		/**
