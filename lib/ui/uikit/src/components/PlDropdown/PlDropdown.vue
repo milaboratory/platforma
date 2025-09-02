@@ -61,6 +61,10 @@ const props = withDefaults(
      */
     error?: unknown;
     /**
+     * If false there is only red border with non-empty error field, without a message
+     */
+    showErrorMessage?: boolean;
+    /**
      * Placeholder text shown when no value is selected.
      */
     placeholder?: string;
@@ -94,6 +98,7 @@ const props = withDefaults(
     helper: undefined,
     loadingOptionsHelper: undefined,
     error: undefined,
+    showErrorMessage: true,
     placeholder: '...',
     clearable: false,
     required: false,
@@ -142,6 +147,10 @@ const selectedIndex = computed(() => {
 });
 
 const computedError = computed(() => {
+  if (!props.showErrorMessage) {
+    return undefined;
+  }
+
   if (isLoadingOptions.value) {
     return undefined;
   }
