@@ -239,7 +239,7 @@ _createAbstractRunCommandPlan := func(state, returnSelfFn) {
 		 * Adds a reference for using it in expressions next.
 		 *
 		 * @param refKey: string - the name of the ref
-		 * @param ref: reference - a reference to the valid field or resource
+		 * @param refOrStr: reference | string - a reference or static string
 		 */
 		ref: func(refKey, refOrStr) {
 			ref := refOrStr
@@ -260,13 +260,14 @@ _createAbstractRunCommandPlan := func(state, returnSelfFn) {
 		/**
 		 * A shortcut for .ref() and .substitutionRule() pair.
 		 *
-		 * @param varName: string - variable to be substituted in arg value ("var1" would be
+		 * @param varName: string - variable to be substituted in arg ("var1" would be
 		 *                          substituted in place of {var1} of arg value)
 		 * @param refKey: string - key of ref (added with .ref()) that points to installed software.
-		 * @param ref: reference - a reference to the valid field or resource
+		 * @param refOrStr: reference | string - a reference or static string to be available for
+		 *                                       substitution in expression.
 		 */
-		refVar: func(varName, refKey, ref) {
-			self.ref(refKey, ref)
+		refVar: func(varName, refKey, refOrStr) {
+			self.ref(refKey, refOrStr)
 			self.substitutionRule(varName, refKey)
 			return returnSelfFn()
 		},
