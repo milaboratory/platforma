@@ -11,7 +11,7 @@ from ptabler.expression import ColumnReferenceExpression
 global_settings = GlobalSettings(root_folder=".")
 
 
-class SortStepTests(unittest.TestCase):
+class SortTests(unittest.TestCase):
 
     def setUp(self):
         """Setup common data for sort tests."""

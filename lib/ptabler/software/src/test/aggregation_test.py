@@ -12,7 +12,7 @@ from ptabler.expression import ColumnReferenceExpression
 global_settings = GlobalSettings(root_folder=".")
 
 
-class AggregationStepTests(unittest.TestCase):
+class AggregationTests(unittest.TestCase):
 
     def test_simple_aggregation_sum(self):
         """
