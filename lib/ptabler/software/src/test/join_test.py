@@ -5,7 +5,6 @@ from polars.testing import assert_frame_equal
 from ptabler.workflow import PWorkflow
 from ptabler.steps import GlobalSettings, Join, TableSpace
 from ptabler.steps.join import ColumnMapping
-from ptabler.expression import ColumnReferenceExpression
 
 # Minimal global_settings for tests
 global_settings = GlobalSettings(root_folder=".")

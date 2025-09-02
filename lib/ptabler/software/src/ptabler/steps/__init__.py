@@ -9,8 +9,40 @@ from .sort import Sort
 
 from typing import Union
 
-type AnyPStep = Union[ReadCsv, ReadNdjson, WriteCsv,
-                      WriteNdjson, AddColumns, Select, WithColumns, Filter, Join, Aggregate, Concatenate, Sort, WithoutColumns]
+type AnyPStep = Union[
+    ReadCsv,
+    ReadNdjson,
+    WriteCsv,
+    WriteNdjson,
+    AddColumns,
+    Select,
+    WithColumns,
+    WithoutColumns,
+    Filter,
+    Join,
+    Aggregate,
+    Concatenate,
+    Sort,
+]
 
-__all__ = ["PStep", "ReadCsv", "ReadNdjson", "WriteCsv", "WriteNdjson", "AddColumns", "Select", "WithColumns", "WithoutColumns",
-           "Filter", "Join", "Aggregate", "Concatenate", "Sort", "GlobalSettings", "TableSpace", "AnyPStep"]
+__all__ = [
+    "ReadCsv",
+    "ReadNdjson",
+    "WriteCsv",
+    "WriteNdjson",
+    "AddColumns",
+    "Select",
+    "WithColumns",
+    "WithoutColumns",
+    "Filter",
+    "Join",
+    "Aggregate",
+    "Concatenate",
+    "Sort",
+
+    "PStep",
+    "GlobalSettings",
+    "TableSpace",
+
+    "AnyPStep",
+]

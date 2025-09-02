@@ -171,7 +171,7 @@ export interface HashExpression {
   /** The encoding for the output hash string. */
   encoding: HashEncoding;
   /** The expression whose value will be hashed. */
-  value: Expression;
+  value: ColumnReferenceExpression | StringJoinExpression;
   /** Optional. Minimal number of entropy bits required. Affects encoding, truncating the result to the shortest string with the requested entropy. No error if bits exceed what the hash offers. */
   bits?: number;
 }

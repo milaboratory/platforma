@@ -1,5 +1,6 @@
 import typing
 import polars as pl
+import polars_hash as plh
 
 from .base import Expression
 
@@ -16,10 +17,10 @@ class StringJoinExpression(Expression, tag='str_join'):
     delimiter: typing.Optional[str] = None
     """An optional delimiter string to insert between joined elements."""
 
-    def to_polars(self) -> pl.Expr:
+    def to_polars(self) -> plh.HExpr:
         """Converts the expression to a Polars concat_str expression."""
         polars_operands = [op.to_polars() for op in self.operands]
-        return pl.concat_str(polars_operands, separator=self.delimiter or "")
+        return plh.concat_str(polars_operands, separator=self.delimiter or "")
 
 
 class ToUpperExpression(Expression, tag='to_upper'):

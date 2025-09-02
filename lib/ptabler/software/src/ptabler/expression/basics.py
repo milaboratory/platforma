@@ -1,7 +1,7 @@
 from math import log
 import typing
-import operator
 import polars as pl
+import polars_hash as plh
 
 from ptabler.common import PType, toPolarsType
 
@@ -189,8 +189,8 @@ class IsNotNaExpression(Expression, tag='is_not_na'):
 class ColumnReferenceExpression(Expression, tag='col'):
     name: str
 
-    def to_polars(self) -> pl.Expr:
-        return pl.col(self.name)
+    def to_polars(self) -> plh.HExpr:
+        return plh.col(self.name)
 
 
 # Constant Value Expression

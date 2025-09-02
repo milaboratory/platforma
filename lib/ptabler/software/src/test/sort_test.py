@@ -1,7 +1,6 @@
 import unittest
 import polars as pl
 from polars.testing import assert_frame_equal
-from typing import Optional
 
 from ptabler.workflow import PWorkflow
 from ptabler.steps import GlobalSettings, TableSpace, Sort
