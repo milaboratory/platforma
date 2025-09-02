@@ -1,5 +1,20 @@
-import type { ReadCsvStep, ReadNdjsonStep, WriteCsvStep, WriteNdjsonStep, BaseFileReadStep, BaseFileWriteStep } from './io';
-import type { AddColumnsStep, FilterStep, SelectStep, WithColumnsStep, WithoutColumnsStep } from './basic_steps';
+import type {
+  ReadCsvStep,
+  ReadNdjsonStep,
+  WriteCsvStep,
+  WriteNdjsonStep,
+  BaseFileReadStep,
+  BaseFileWriteStep,
+  WriteParquetStep,
+  ReadParquetStep,
+} from './io';
+import type {
+  AddColumnsStep,
+  FilterStep,
+  SelectStep,
+  WithColumnsStep,
+  WithoutColumnsStep,
+} from './basic_steps';
 import type { AggregateStep } from './aggregate';
 import type { AnyJoinStep } from './join';
 import type { ConcatenateStep } from './concatenate';
@@ -8,8 +23,10 @@ import type { SortStep } from './sort';
 export type PTablerStep =
   | ReadCsvStep
   | ReadNdjsonStep
+  | ReadParquetStep
   | WriteCsvStep
   | WriteNdjsonStep
+  | WriteParquetStep
   | AddColumnsStep
   | FilterStep
   | AggregateStep
