@@ -63,6 +63,20 @@ export const DockerAsset = `{
   "cmd": ["Hello, world!"]
 }`;
 
+export const EPNameMultiRootBinary = 'multi-root-bin';
+
+export const MultiRootBinary = `{
+  "type": "binary",
+  "registry": {
+    "name": "${BinaryRegistry}"
+  },
+
+  "roots": {
+    "linux-x64": "./linux-x64/",
+    "macosx-aarch64": "./macosx-aarch64/"
+  }
+}`;
+
 export const PackageJson = `{
     "name": "${PackageName}",
     "version": "${PackageVersion}",
@@ -80,6 +94,12 @@ export const PackageJson = `{
           "binary": {
             "artifact": ${CustomVersionArtifact},
             "cmd": ["aaaa"]
+          }
+        },
+        "${EPNameMultiRootBinary}": {
+          "binary": {
+            "artifact": ${MultiRootBinary},
+            "cmd": ["bbb"]
           }
         },
         "${EPNameJavaEnvironment}": {

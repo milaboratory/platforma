@@ -49,7 +49,7 @@ describe('Docker Python Functions', () => {
       name: 'test-python-package',
       version: '1.0.0',
       type: 'python',
-      environment: '@platforma-open/milaboratories.runenv-python-3:3.12.6',
+      environment: '@platforma-open/milaboratories.runenv-python-3:3.12.10',
       registry: { name: 'test' },
       root: path.join(testPackageRoot, 'src'), // Use absolute path
       contentRoot: () => './src',
@@ -130,7 +130,7 @@ describe('Docker Python Functions', () => {
       const dockerfileContent = fs.readFileSync(result.dockerfile, 'utf-8');
 
       // Check essential Dockerfile components
-      expect(dockerfileContent).toContain('FROM python:3.12.6');
+      expect(dockerfileContent).toContain('FROM python:3.12.10');
       expect(dockerfileContent).toContain('WORKDIR /app/');
       expect(dockerfileContent).toContain('COPY . /app/');
       expect(dockerfileContent).toContain('COPY');

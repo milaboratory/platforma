@@ -53,7 +53,7 @@ describe('Docker Entrypoint Generation', () => {
             binary: {
               artifact: {
                 type: 'python',
-                environment: '@platforma-open/milaboratories.runenv-python-3:3.12.6',
+                environment: '@platforma-open/milaboratories.runenv-python-3:3.12.10',
                 root: './src',
                 registry: 'test-registry',
               },
