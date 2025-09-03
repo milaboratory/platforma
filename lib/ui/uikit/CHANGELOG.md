@@ -1,5 +1,13 @@
 # @milaboratories/uikit
 
+## 2.4.13
+
+### Patch Changes
+
+- Updated dependencies [fc0eb68]
+  - @milaboratories/helpers@1.8.0
+  - @platforma-sdk/model@1.42.51
+
 ## 2.4.12
 
 ### Patch Changes
