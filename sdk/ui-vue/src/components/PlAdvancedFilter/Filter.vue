@@ -1,34 +1,29 @@
 <script lang="ts" setup>
-import type { ListOption } from '@milaboratories/uikit';
-import type { Filter, FilterType, Operand, SourceOptionsInfo } from './types';
+import type { Filter, FilterType, Operand, SourceOptionsInfo, UniqueValuesInfo } from './types';
 import { PlIcon16, PlDropdown, PlDropdownMulti, PlAutocomplete, PlAutocompleteMulti, PlTextField, PlNumberField, Slider, PlToggleSwitch } from '@milaboratories/uikit';
-import { computed, watch } from 'vue';
-import { DEFAULT_FILTER_TYPE, DEFAULT_FILTERS, FILTER_TYPE_OPTIONS } from './constants';
-import { type ListOptionBase } from '@platforma-sdk/model';
+import { computed } from 'vue';
+import { ALL_FILTER_TYPES, DEFAULT_FILTER_TYPE, DEFAULT_FILTERS } from './constants';
+import { Annotation, Domain, readAnnotation, readDomain, type ListOptionBase } from '@platforma-sdk/model';
 import OperandButton from './OperandButton.vue';
+import { getFilterInfo, getNormalizedSpec, isNumericValueType, isStringValueType } from './utils';
 
 const props = defineProps<{
   operand: Operand;
-  info: SourceOptionsInfo;
   sourceIds: string[];
   dndMode: boolean;
-  preloadedOptions: ListOption<string | number>[] | null;
+  last: boolean;
+  sourceInfoBySourceId: SourceOptionsInfo;
+  uniqueValuesBySourceId: UniqueValuesInfo;
   searchOptions: (id: string, str: string) => Promise<ListOptionBase<string | number>[]>;
   searchModel: (id: string, str: string) => Promise<ListOptionBase<string | number>>;
 }>();
 
 const model = defineModel<Filter>({ required: true });
 
-watch(() => model.value, (m) => {
-  console.log('model', m);
-});
-
 defineEmits<{
   (e: 'delete', id: string): void;
   (e: 'changeOperand', op: Operand): void;
 }>();
-
-const filterTypes = computed(() => FILTER_TYPE_OPTIONS.map((v) => ({ value: v.value, label: v.label })));
 
 async function modelSearchMulti(id: string, v: string[]) {
   return Promise.all(v.map((v) => props.searchModel(id, v)));
@@ -38,23 +33,36 @@ function changeFilterType(newFilterType?: FilterType) {
   if (!newFilterType) {
     return;
   }
-  model.value = {
-    ...DEFAULT_FILTERS[newFilterType],
-    sourceId: model.value.sourceId,
-  };
+  const nextFilterInfo = getFilterInfo(newFilterType);
+  if (currentSpec.value && nextFilterInfo.supportedFor(currentSpec.value) && isNumericValueType(currentInfo.value.spec)) {
+    model.value = {
+      ...model.value,
+      sourceId: model.value.sourceId,
+    };
+  } else if (
+    currentSpec.value && nextFilterInfo.supportedFor(currentSpec.value) && 'substring' in model.value && 'substring' in DEFAULT_FILTERS[newFilterType]
+  ) {
+    model.value = {
+      ...model.value,
+      sourceId: model.value.sourceId,
+    };
+  } else {
+    model.value = {
+      ...DEFAULT_FILTERS[newFilterType],
+      sourceId: model.value.sourceId,
+    };
+  }
 }
 
 function changeSourceId(newSourceId?: string) {
   if (!newSourceId) {
     return;
   }
-  if (props.info[newSourceId].type === props.info[model.value.sourceId].type
-    || FILTER_TYPE_OPTIONS.find((op) => op.value === model.value.type)?.valueType === 'any') {
-    model.value = {
-      ...model.value,
-      sourceId: model.value.sourceId,
-    };
-  } else {
+  const filterInfo = getFilterInfo(model.value.type);
+  const newSourceSpec = getNormalizedSpec(props.sourceInfoBySourceId[newSourceId]?.spec);
+  if (filterInfo.supportedFor(newSourceSpec)) { // don't do anything except update source id
+    return;
+  } else { // new source id doesn't fit current filter by type (string/number), reset to default filter
     model.value = {
       ...DEFAULT_FILTERS[DEFAULT_FILTER_TYPE],
       sourceId: model.value.sourceId,
@@ -64,26 +72,39 @@ function changeSourceId(newSourceId?: string) {
 
 const inconsistentSourceSelected = computed(() => !props.sourceIds.includes(model.value.sourceId));
 const sourceOptions = computed(() => {
-  const options = props.sourceIds.map((v) => ({ value: v, label: props.info[v]?.label ?? v }));
+  const options = props.sourceIds.map((v) => ({ value: v, label: props.sourceInfoBySourceId[v]?.label ?? v }));
   if (inconsistentSourceSelected.value) {
     options.unshift({ value: model.value.sourceId, label: 'Inconsistent value' });
   }
   return options;
 });
 
-const currentInfo = computed(() => props.info[model.value.sourceId]);
-const currentType = computed(() => currentInfo.value?.type ?? 'String');
+const currentInfo = computed(() => props.sourceInfoBySourceId[model.value.sourceId]);
+const currentSpec = computed(() => currentInfo.value?.spec ? getNormalizedSpec(currentInfo.value.spec) : null);
+const currentType = computed(() => currentSpec.value?.valueType);
 const currentError = computed(() => currentInfo.value?.error || inconsistentSourceSelected.value);
 
+const filterTypesOptions = computed(() => [...ALL_FILTER_TYPES].filter((v) =>
+  model.value.type === v || (currentSpec.value ? getFilterInfo(v).supportedFor(currentSpec.value) : true),
+).map((v) => ({ value: v, label: getFilterInfo(v).label })),
+);
+
 const wildcardOptions = computed(() => {
-  if (model.value.type === 'StringContainsFuzzy') {
-    return [...new Set(model.value.reference.split(''))].map((v) => ({ value: v, label: v }));
+  if (model.value.type === 'patternFuzzyContainSubsequence') {
+    const alphabet = currentSpec.value ? readDomain(currentSpec.value, Domain.Alphabet) ?? readAnnotation(currentSpec.value, Annotation.Alphabet) : null;
+    if (alphabet === 'nucleotide') {
+      return [{ label: 'N', value: 'N' }];
+    }
+    if (alphabet === 'aminoacid') {
+      return [{ label: 'X', value: 'X' }];
+    }
+    return [...new Set(model.value.reference.split(''))].sort().map((v) => ({ value: v, label: v }));
   }
   return [];
 });
 
 const stringMatchesError = computed(() => {
-  if (model.value.type !== 'StringMatches') {
+  if (model.value.type !== 'patternMatchesRegularExpression') {
     return false;
   }
   try {
@@ -94,14 +115,25 @@ const stringMatchesError = computed(() => {
   }
 });
 
+const preloadedOptions = computed(() => {
+  if (!isStringValueType(props.sourceInfoBySourceId[model.value.sourceId]?.spec)) {
+    return null;
+  }
+  if (model.value.type !== 'patternEquals' && model.value.type !== 'patternNotEquals' && model.value.type !== 'InSet' && model.value.type !== 'NotInSet') {
+    return null;
+  }
+  const uniqueValues = props.uniqueValuesBySourceId[model.value.sourceId] ?? null;
+  return inconsistentSourceSelected.value ? null : uniqueValues;
+});
+
 </script>
 <template>
   <div :class="$style.filter_wrapper">
-    <!-- top element - column selector / column label -->
-    <div v-if="dndMode" :class="[$style.top, $style.column_chip]">
+    <!-- top element - column selector / column label - for all filter types-->
+    <div v-if="dndMode" :class="[$style.top, $style.column_chip, {[$style.error]: currentError}]">
       <div :class="[$style.typeIcon, {[$style.error]: currentError}]">
         <PlIcon16 v-if="currentError" name="warning"/>
-        <PlIcon16 v-else :name="currentType === 'String' ? 'cell-type-txt' : 'cell-type-num'"/>
+        <PlIcon16 v-else :name="currentType === 'String' || currentType === undefined? 'cell-type-txt' : 'cell-type-num'"/>
       </div>
       <div :class="$style.title_wrapper" :title="currentInfo?.label ?? ''">
         <div :class="$style.title">
@@ -126,17 +158,17 @@ const stringMatchesError = computed(() => {
       </div>
     </div>
 
-    <!-- middle - filter type selector -->
-    <div :class="model.type === 'IsNA' || model.type === 'IsNotNA' ? $style.bottom : $style.middle">
+    <!-- middle - filter type selector -  for all filter types -->
+    <div :class="model.type === 'isNA' || model.type === 'isNotNA' ? $style.bottom : $style.middle">
       <PlDropdown
         v-model="model.type"
-        :options="filterTypes"
+        :options="filterTypesOptions"
         @update:model-value="changeFilterType"
       />
     </div>
 
     <!-- middle - for fuzzy contains filter -->
-    <template v-if="model.type === 'StringContainsFuzzy'">
+    <template v-if="model.type === 'patternFuzzyContainSubsequence'">
       <div :class="$style.middle">
         <PlTextField
           v-model="model.reference"
@@ -156,46 +188,61 @@ const stringMatchesError = computed(() => {
       </div>
     </template>
 
-    <!-- bottom element -->
+    <!-- bottom element - individual settings for every filter type -->
     <div :class="$style.bottom">
-      <template v-if="(model.type === 'Equal' || model.type === 'NotEqual') && currentType === 'String'" >
-        <PlDropdown v-if="preloadedOptions !== null" v-model="model.reference" :options="preloadedOptions" />
+      <template v-if="model.type === 'patternEquals' || model.type === 'patternNotEquals'" >
+        <PlDropdown
+          v-if="preloadedOptions !== null"
+          v-model="model.reference"
+          :options="preloadedOptions"
+          :disabled="inconsistentSourceSelected"
+        />
         <PlAutocomplete
           v-else
           v-model="model.reference"
           :options-search="(str) => searchOptions(model.sourceId, str)"
           :model-search="(v) => searchModel(model.sourceId, v as string)"
+          :disabled="inconsistentSourceSelected"
         />
       </template>
-      <template v-if="(model.type === 'InSet' || model.type === 'NotInSet') && currentType === 'String'" >
-        <PlDropdownMulti v-if="preloadedOptions !== null" v-model="model.reference" :options="preloadedOptions" />
+      <template v-if="model.type === 'InSet' || model.type === 'NotInSet'" >
+        <PlDropdownMulti
+          v-if="preloadedOptions !== null"
+          v-model="model.reference"
+          :options="preloadedOptions"
+          :disabled="inconsistentSourceSelected"
+        />
         <PlAutocompleteMulti
           v-else
           v-model="model.reference"
           :options-search="(str) => searchOptions(model.sourceId, str)"
           :model-search="(v) => modelSearchMulti(model.sourceId, v as string[])"
+          :disabled="inconsistentSourceSelected"
         />
       </template>
       <PlNumberField
-        v-if="
-          (model.type === 'Equal' || model.type === 'NotEqual') && currentType !== 'String' ||
-            (model.type === 'Less' || model.type === 'Greater' || model.type === 'GreaterOrEqual' || model.type === 'LessOrEqual')
+        v-if="model.type === 'numberEquals'
+          || model.type === 'numberNotEquals'
+          || model.type === 'lessThan'
+          || model.type === 'lessThanOrEqual'
+          || model.type === 'greaterThan'
+          || model.type === 'greaterThanOrEqual'
         "
         v-model="model.reference as number"
       />
       <PlTextField
-        v-if="model.type === 'StringContains' || model.type === 'StringNotContains'"
+        v-if="model.type === 'patternContainSubsequence' || model.type === 'patternNotContainSubsequence'"
         v-model="model.substring"
         placeholder="Substring"
       />
       <PlTextField
-        v-if="model.type === 'StringMatches'"
+        v-if="model.type === 'patternMatchesRegularExpression'"
         v-model="model.reference"
         :error="stringMatchesError ? 'Regular expression is not valid' : undefined"
         placeholder="Regular expression"
       />
       <PlDropdown
-        v-if="model.type === 'StringContainsFuzzy'"
+        v-if="model.type === 'patternFuzzyContainSubsequence'"
         v-model="model.wildcard"
         clearable
         placeholder="Wildcard value"
@@ -206,7 +253,7 @@ const stringMatchesError = computed(() => {
   <div :class="$style.button_wrapper">
     <OperandButton
       :active="operand"
-      :disabled="false"
+      :disabled="last"
       @select="(v) => $emit('changeOperand', v)"
     />
   </div>
@@ -214,7 +261,7 @@ const stringMatchesError = computed(() => {
 
 <style lang="scss" module>
 .filter_wrapper {
-  $errorColor: #FF5C5C;
+  --errorColor: #FF5C5C;
 
   position: relative;
   display: flex;
@@ -223,12 +270,6 @@ const stringMatchesError = computed(() => {
   width: 100%;
   background: #FFF;
   cursor: default;
-
-  &.error {
-    * {
-      border-color: var(--errorColor);
-    }
-  }
 }
 
 .typeIcon {
@@ -270,6 +311,10 @@ const stringMatchesError = computed(() => {
   border: 1px solid var(--txt-01);
   border-bottom-right-radius: 0;
   border-bottom-left-radius: 0;
+
+  &.error {
+    border-color: var(--errorColor);
+  }
 }
 
 .innerSection {

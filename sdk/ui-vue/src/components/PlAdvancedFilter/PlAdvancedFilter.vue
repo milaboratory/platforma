@@ -1,125 +1,79 @@
 <script lang="ts" setup>
 import FilterComponent from './Filter.vue';
 import { PlBtnSecondary, PlElementList, PlCheckbox, PlIcon16 } from '@milaboratories/uikit';
-import type { ComplexFilter, SourceOptionsInfo } from './types';
-import { computed, reactive, ref } from 'vue';
+import type { PlAdvancedFilterUI, SourceOptionsInfo, UniqueValuesInfo } from './types';
+import { computed, reactive, ref, watch } from 'vue';
 import OperandButton from './OperandButton.vue';
-import { DEFAULT_FILTERS, FILTER_TYPE_OPTIONS } from './constants';
+import { DEFAULT_FILTER_TYPE, DEFAULT_FILTERS } from './constants';
+import type { FilterUi, ListOptionBase } from '@platforma-sdk/model';
+import { createNewGroup, toInnerModel, toOuterModel } from './utils';
 
 const props = withDefaults(defineProps<{
-  info: SourceOptionsInfo;
+  /** List of ids of sources (columns, axes) that can be selected in filters */
   sourceIds: string[];
-  draggedId?: string;
+  /** If true - new filter can be added by droppind element into filter group; else new column is added by button click */
   dndMode?: boolean;
+  /** If dnd mode on - used for column adding */
+  draggedId?: string;
+  /** Contains info about every source id to render: type (string/int...), label, error */
+  sourceInfoBySourceId: SourceOptionsInfo;
+  /** List of unique values of source (column, axis) for Equal/InSet filters.
+   * If sourceId missed here values PlAutocomplete component used */
+  uniqueValuesBySourceId: UniqueValuesInfo;
+  /** Loading function for unique values for Equal/InSet filters. Used if there are not ready list of unique values in uniqueValuesBySourceId */
+  searchOptions: (id: string, str: string) => Promise<ListOptionBase<string | number>[]>;
+  /** Loading function for label of selected value for Equal/InSet filters. Used if there are not ready list of unique values in uniqueValuesBySourceId */
+  searchModel: (id: string, str: string) => Promise<ListOptionBase<string | number>>;
 }>(), {
   dndMode: false,
   draggedId: undefined,
 });
 
-let groupIdCounter = 0;
-function getNewGroupId() {
-  groupIdCounter++;
-  return String(groupIdCounter);
-}
+const model = defineModel<FilterUi>({ required: true });
 
-const innerTestModel = ref<ComplexFilter>({
-  groups: [
-    {
-      id: getNewGroupId(),
-      not: false,
-      operand: 'and',
-      childIdxs: [0, 1],
-      filters: [
-        {
-          type: 'Equal',
-          sourceId: 'someColumn',
-          reference: 'A',
-        },
-        {
-          type: 'InSet',
-          sourceId: 'someColumn',
-          reference: ['A'],
-        },
-      ],
-    },
-    {
-      id: getNewGroupId(),
-      not: false,
-      operand: 'and',
-      childIdxs: [0, 1],
-      filters: [
-        {
-          type: 'IsNA',
-          sourceId: 'someColumn',
-        },
-        {
-          type: 'IsNotNA',
-          sourceId: 'someColumn',
-        },
-      ],
-    },
-    {
-      id: getNewGroupId(),
-      not: false,
-      operand: 'and',
-      childIdxs: [0, 1],
-      filters: [
-        {
-          type: 'StringContains',
-          sourceId: 'someColumn',
-          substring: 'someString',
-        },
-      ],
-    },
-  ],
-  operand: 'or',
-});
+const innerModel = ref<PlAdvancedFilterUI>(toInnerModel(model.value));
+function updateOuterModelValue(v: PlAdvancedFilterUI) {
+  model.value = toOuterModel(v);
+}
+watch(() => innerModel.value, (v: PlAdvancedFilterUI) => {
+  updateOuterModelValue(v);
+}, { deep: true });
 
 const defaultColumnId = computed(() => props.sourceIds[0]);
 const emptyGroup = [{
   id: 'empty',
   not: false,
   operand: 'and',
-  childIdxs: [],
   filters: [],
 }];
 
-const expanded = reactive<Record<string, boolean>>(innerTestModel.value.groups.reduce((res, group) => {
+const expanded = reactive<Record<string, boolean>>(innerModel.value.groups.reduce((res, group) => {
   res[group.id] = true;
   return res;
 }, {} as Record<string, boolean>));
 
 function addColumnToGroup(groupIdx: number, selectedSourceId: string) {
-  innerTestModel.value.groups[groupIdx].filters.push({
-    ...DEFAULT_FILTERS[FILTER_TYPE_OPTIONS[0].value],
+  innerModel.value.groups[groupIdx].filters.push({
+    ...DEFAULT_FILTERS[DEFAULT_FILTER_TYPE],
     sourceId: selectedSourceId,
   });
 }
 
 function removeFilterFromGroup(groupIdx: number, filterIdx: number) {
-  if (innerTestModel.value.groups[groupIdx].filters.length === 1 && filterIdx === 0) {
+  if (innerModel.value.groups[groupIdx].filters.length === 1 && filterIdx === 0) {
     removeGroup(groupIdx);
   } else {
-    innerTestModel.value.groups[groupIdx].filters = innerTestModel.value.groups[groupIdx].filters.filter((v, idx) => idx !== filterIdx);
+    innerModel.value.groups[groupIdx].filters = innerModel.value.groups[groupIdx].filters.filter((_v, idx) => idx !== filterIdx);
   }
 }
 
 function removeGroup(groupIdx: number) {
-  innerTestModel.value.groups = innerTestModel.value.groups.filter((v, idx) => idx !== groupIdx);
+  innerModel.value.groups = innerModel.value.groups.filter((v, idx) => idx !== groupIdx);
 }
 function addGroup(selectedSourceId: string) {
-  const newGroup = {
-    id: getNewGroupId(),
-    not: false,
-    operand: 'and' as const,
-    childIdxs: [0],
-    filters: [{
-      ...DEFAULT_FILTERS[FILTER_TYPE_OPTIONS[0].value],
-      sourceId: selectedSourceId,
-    }],
-  };
+  const newGroup = createNewGroup(selectedSourceId);
   expanded[newGroup.id] = true;
-  innerTestModel.value.groups.push(newGroup);
+  innerModel.value.groups.push(newGroup);
 }
 
 function handleDropToExistingGroup(groupIdx: number) {
@@ -132,9 +86,6 @@ function handleDropToNewGroup() {
     addGroup(props.draggedId);
   }
 }
-function dragEnter(event: DragEvent) {
-  event.preventDefault();
-}
 function dragOver(event: DragEvent) {
   event.preventDefault();
 }
@@ -142,7 +93,7 @@ function dragOver(event: DragEvent) {
 <template>
   <div>
     <PlElementList
-      v-model:items="innerTestModel.groups"
+      v-model:items="innerModel.groups"
       :get-item-key="(group) => group.id"
 
       :item-class="$style.filterGroup"
@@ -160,34 +111,32 @@ function dragOver(event: DragEvent) {
 
       @expand="(group) => {expanded[group.id] = !expanded[group.id]}"
     >
-      <template #item-title="{ item }">
-        Filter group {{ item.id }}
+      <template #item-title>
+        Filter group
       </template>
       <template #item-content="{ item, index }">
-        <div :class="$style.groupContent">
+        <div
+          :class="$style.groupContent" dropzone="true"
+          @drop="() => handleDropToExistingGroup(index)"
+          @dragover="dragOver"
+        >
           <PlCheckbox v-model="item.not">NOT</PlCheckbox>
           <FilterComponent
             v-for="filterIdx of new Array(item.filters.length).fill(0).map((_v, idx)=> idx)"
             :key="filterIdx"
             v-model="item.filters[filterIdx]"
             :operand="item.operand"
-            :info="info"
+            :source-info-by-source-id="sourceInfoBySourceId"
+            :unique-values-by-source-id="uniqueValuesBySourceId"
             :source-ids="sourceIds"
-            :preloadedOptions="[{value: 'someColumn', label: 'Label'}, {value: 'someColumn2', label: 'Label2'}]"
-            :search-model="async () => ({value: 'someColumn', label: 'Label'})"
-            :search-options="async () => [{value: 'someColumn', label: 'Label'}]"
+            :search-model="searchModel"
+            :search-options="searchOptions"
             :dnd-mode="dndMode"
+            :last="filterIdx === item.filters.length - 1"
             @change-operand="(v) => item.operand = v"
             @delete="() => removeFilterFromGroup(index, filterIdx)"
           />
-          <div
-            v-if="dndMode"
-            :class="$style.dropzone"
-            dropzone="true"
-            @drop="() => handleDropToExistingGroup(index)"
-            @dragenter="dragEnter"
-            @dragover="dragOver"
-          >
+          <div v-if="dndMode" :class="$style.dropzone">
             <div>Drop dimensions here</div>
           </div>
           <PlBtnSecondary v-else @click="addColumnToGroup(index, defaultColumnId)">
@@ -195,18 +144,18 @@ function dragOver(event: DragEvent) {
           </PlBtnSecondary>
         </div>
       </template>
-      <template #item-after>
+      <template #item-after="{ index }">
         <div :class="$style.button_wrapper">
           <OperandButton
-            :active="innerTestModel.operand"
-            :disabled="false"
-            @select="(v) => innerTestModel.operand = v"
+            :active="innerModel.operand"
+            :disabled="index === innerModel.groups.length - 1"
+            @select="(v) => innerModel.operand = v"
           />
         </div>
       </template>
     </PlElementList>
 
-    <!-- Last group - aleays exists, always empty, for adding new groups -->
+    <!-- Last group - always exists, always empty, just for adding new groups -->
     <PlElementList
       v-model:items="emptyGroup"
       :get-item-key="(group) => group.id"
@@ -222,7 +171,6 @@ function dragOver(event: DragEvent) {
       :disablePinning="true"
       dropzone="true"
       @drop="handleDropToNewGroup"
-      @dragenter="dragEnter"
       @dragover="dragOver"
     >
       <template #item-title>Filter group</template>
@@ -264,8 +212,8 @@ function dragOver(event: DragEvent) {
   }
   .dropzone {
     border-radius: 6px;
-    border: 1.5px dashed #E1E3EB;
-    color: #9D9EAE;
+    border: 1.5px dashed var(--color-div-grey);
+    color: var(--txt-03);
     font-family: Manrope;
     font-size: 14px;
     font-style: normal;

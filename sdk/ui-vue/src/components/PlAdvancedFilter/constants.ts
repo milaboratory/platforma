@@ -1,41 +1,54 @@
-import type { Filter, FilterType } from './types';
+import type { Filter, FilterType, SupportedFilterTypes } from './types';
+import type { NormalizedSpecData } from './utils';
 
-export const FILTER_TYPE_OPTIONS: {
-  value: FilterType;
-  label: string;
-  valueType: 'string' | 'number' | 'any';
-}[] = [
-  { value: 'IsNA', label: 'Is NA', valueType: 'any' },
-  { value: 'IsNotNA', label: 'Is not NA', valueType: 'any' },
-  { value: 'Less', label: 'Less than', valueType: 'number' },
-  { value: 'LessOrEqual', label: 'Less or equal', valueType: 'number' },
-  { value: 'Equal', label: 'Equal', valueType: 'any' },
-  { value: 'NotEqual', label: 'Not equal', valueType: 'any' },
-  { value: 'InSet', label: 'In set', valueType: 'string' },
-  { value: 'NotInSet', label: 'Not in set', valueType: 'string' },
-  { value: 'Greater', label: 'Greater than', valueType: 'number' },
-  { value: 'GreaterOrEqual', label: 'Greater or equal', valueType: 'number' },
-  { value: 'StringContains', label: 'Contains', valueType: 'string' },
-  { value: 'StringNotContains', label: 'Not contains', valueType: 'string' },
-  { value: 'StringContainsFuzzy', label: 'Fuzzy contains', valueType: 'string' },
-  { value: 'StringMatches', label: 'Matches', valueType: 'string' },
-];
+export const SUPPORTED_FILTER_TYPES = new Set<SupportedFilterTypes>([
+  'isNA',
+  'isNotNA',
+  'greaterThan',
+  'greaterThanOrEqual',
+  'lessThan',
+  'lessThanOrEqual',
+  'patternEquals',
+  'patternNotEquals',
+  'patternContainSubsequence',
+  'patternNotContainSubsequence',
+  'numberEquals',
+  'numberNotEquals',
+  'patternFuzzyContainSubsequence',
+  'patternMatchesRegularExpression',
+]);
 
-export const DEFAULT_FILTER_TYPE: FilterType = 'IsNA';
+const LOCAL_FILTER_TYPES: FilterType[] = ['InSet', 'NotInSet'];
+export const ALL_FILTER_TYPES = new Set<FilterType>([...SUPPORTED_FILTER_TYPES, ...LOCAL_FILTER_TYPES]);
+
+export const LOCAL_FILTERS_METADATA: Record<'InSet' | 'NotInSet', { label: string; supportedFor: (spec: NormalizedSpecData) => boolean }> = {
+  InSet: {
+    label: 'In set',
+    supportedFor: (spec) => spec.valueType === 'String',
+  },
+  NotInSet: {
+    label: 'Not in set',
+    supportedFor: (spec) => spec.valueType === 'String',
+  },
+};
+
+export const DEFAULT_FILTER_TYPE: FilterType = 'isNA';
 
 export const DEFAULT_FILTERS: Record<FilterType, Filter> = {
-  IsNA: { type: 'IsNA', sourceId: '' },
-  IsNotNA: { type: 'IsNotNA', sourceId: '' },
-  Less: { type: 'Less', sourceId: '', reference: undefined },
-  LessOrEqual: { type: 'LessOrEqual', sourceId: '', reference: undefined },
-  Equal: { type: 'Equal', sourceId: '', reference: undefined },
-  NotEqual: { type: 'NotEqual', sourceId: '', reference: undefined },
+  isNA: { type: 'isNA', sourceId: '' },
+  isNotNA: { type: 'isNotNA', sourceId: '' },
+  lessThan: { type: 'lessThan', sourceId: '', reference: undefined },
+  lessThanOrEqual: { type: 'lessThanOrEqual', sourceId: '', reference: undefined },
+  patternEquals: { type: 'patternEquals', sourceId: '', reference: undefined },
+  patternNotEquals: { type: 'patternNotEquals', sourceId: '', reference: undefined },
+  greaterThan: { type: 'greaterThan', sourceId: '', reference: undefined },
+  greaterThanOrEqual: { type: 'greaterThanOrEqual', sourceId: '', reference: undefined },
+  patternContainSubsequence: { type: 'patternContainSubsequence', sourceId: '', substring: '' },
+  patternNotContainSubsequence: { type: 'patternNotContainSubsequence', sourceId: '', substring: '' },
+  patternFuzzyContainSubsequence: { type: 'patternFuzzyContainSubsequence', sourceId: '', maxEdits: 2, substitutionsOnly: false, wildcard: undefined, reference: '' },
+  patternMatchesRegularExpression: { type: 'patternMatchesRegularExpression', sourceId: '', reference: '' },
+  numberEquals: { type: 'numberEquals', sourceId: '', reference: undefined },
+  numberNotEquals: { type: 'numberNotEquals', sourceId: '', reference: undefined },
   InSet: { type: 'InSet', sourceId: '', reference: [] },
   NotInSet: { type: 'InSet', sourceId: '', reference: [] },
-  Greater: { type: 'Greater', sourceId: '', reference: undefined },
-  GreaterOrEqual: { type: 'GreaterOrEqual', sourceId: '', reference: undefined },
-  StringContains: { type: 'StringContains', sourceId: '', substring: '' },
-  StringNotContains: { type: 'StringNotContains', sourceId: '', substring: '' },
-  StringContainsFuzzy: { type: 'StringContainsFuzzy', sourceId: '', maxEdits: 2, substitutionsOnly: false, wildcard: undefined, reference: '' },
-  StringMatches: { type: 'StringMatches', sourceId: '', reference: '' },
 };
