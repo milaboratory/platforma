@@ -3,7 +3,7 @@ import { platforma } from '@milaboratories/milaboratories.ui-examples.model';
 import { animate, defineApp, makeEaseOut } from '@platforma-sdk/ui-vue';
 import { computed, reactive, ref } from 'vue';
 import AddSectionPage from './pages/AddSectionPage.vue';
-import AdvancedFilterPage from './pages/AdvancedFilterPage.vue';
+import AdvancedFilterPage from './pages/PlAdvancedFilterPage.vue';
 import { AgGridVuePage, AgGridVuePageWithBuilder } from './pages/AgGridVuePage';
 import ButtonsPage from './pages/ButtonsPage.vue';
 import DownloadsPage from './pages/DownloadsPage.vue';

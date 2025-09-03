@@ -1,22 +1,10 @@
-import type { AxisSpec, PColumnSpec, ValueType } from '@platforma-sdk/model';
+import type { AxisSpec, FilterUi, ListOptionBase, PColumnSpec } from '@platforma-sdk/model';
 
-export type ModeOfEditing = 'drag-n-drop' | 'select';
+// Not supported: topN, bottomN, lessThanColumn, lessThanColumnOrEqual
+// or, and, not - in groups
+export type SupportedFilterTypes = Exclude<FilterUi['type'], 'topN' | 'bottomN' | 'lessThanColumn' | 'lessThanColumnOrEqual' | 'or' | 'and' | 'not' | undefined>;
 
-export type FilterType =
-  'IsNA'
-  | 'IsNotNA'
-  | 'Equal'
-  | 'NotEqual'
-  | 'InSet'
-  | 'NotInSet'
-  | 'Greater'
-  | 'GreaterOrEqual'
-  | 'Less'
-  | 'LessOrEqual'
-  | 'StringContains'
-  | 'StringNotContains'
-  | 'StringContainsFuzzy'
-  | 'StringMatches';
+export type FilterType = SupportedFilterTypes | 'InSet' | 'NotInSet';
 
 export type Operand = 'or' | 'and';
 
@@ -25,91 +13,96 @@ interface FilterBase {
   sourceId: string;
 }
 export interface IsNAFilter extends FilterBase {
-  type: 'IsNA';
+  type: 'isNA';
 };
 export interface IsNotNAFilter extends FilterBase {
-  type: 'IsNotNA';
+  type: 'isNotNA';
 };
-export interface EqualFilter extends FilterBase {
-  type: 'Equal';
-  reference?: string | number;
+export interface StringEqualsFilter extends FilterBase {
+  type: 'patternEquals';
+  reference?: string;
 };
-export interface NotEqualFilter extends FilterBase {
-  type: 'NotEqual';
-  reference?: string | number;
+export interface StringNotEqualsFilter extends FilterBase {
+  type: 'patternNotEquals';
+  reference?: string;
 };
 export interface InSetFilter extends FilterBase {
   type: 'InSet';
-  reference: (string | number)[];
+  reference: string[];
 }
 export interface NotInSetFilter extends FilterBase {
   type: 'NotInSet';
-  reference: (string | number)[];
+  reference: string[];
 }
 export interface GreaterFilter extends FilterBase {
-  type: 'Greater';
+  type: 'greaterThan';
   reference?: number;
 };
 export interface GreaterOrEqualFilter extends FilterBase {
-  type: 'GreaterOrEqual';
+  type: 'greaterThanOrEqual';
   reference?: number;
 };
 export interface LessFilter extends FilterBase {
-  type: 'Less';
+  type: 'lessThan';
   reference?: number;
 };
 export interface LessOrEqualFilter extends FilterBase {
-  type: 'LessOrEqual';
+  type: 'lessThanOrEqual';
   reference?: number;
 };
 export interface StringContainsFilter extends FilterBase {
-  type: 'StringContains';
+  type: 'patternContainSubsequence';
   substring: string;
 }
 export interface StringNotContainsFilter extends FilterBase {
-  type: 'StringNotContains';
+  type: 'patternNotContainSubsequence';
   substring: string;
 }
+export interface NumberEqualsFilter extends FilterBase {
+  type: 'numberEquals';
+  reference?: number;
+};
+export interface NumberNotEqualsFilter extends FilterBase {
+  type: 'numberNotEquals';
+  reference?: number;
+};
 export interface StringContainsFuzzyFilter extends FilterBase {
-  type: 'StringContainsFuzzy';
+  type: 'patternFuzzyContainSubsequence';
   reference: string;
   maxEdits: number;
   substitutionsOnly: boolean;
   wildcard?: string;
 }
 export interface StringMatches extends FilterBase {
-  type: 'StringMatches';
+  type: 'patternMatchesRegularExpression';
   reference: string;
 }
 
 export type Filter =
-  IsNAFilter
-  | IsNotNAFilter
-  | EqualFilter
-  | NotEqualFilter
-  | InSetFilter
-  | NotInSetFilter
-  | GreaterFilter
-  | GreaterOrEqualFilter
-  | LessFilter
-  | LessOrEqualFilter
-  | StringContainsFilter
-  | StringNotContainsFilter
+  IsNAFilter | IsNotNAFilter
+  | StringEqualsFilter | StringNotEqualsFilter
+  | NumberEqualsFilter | NumberNotEqualsFilter
+  | InSetFilter | NotInSetFilter
+  | GreaterFilter | GreaterOrEqualFilter
+  | LessFilter | LessOrEqualFilter
+  | StringContainsFilter | StringNotContainsFilter
   | StringContainsFuzzyFilter
   | StringMatches;
 
 export type Group = {
   id: string;
   not: boolean;
-  childIdxs: number[];
   filters: Filter[];
   operand: Operand;
 };
 
-export type ComplexFilter = {
+export type PlAdvancedFilterUI = {
   groups: Group[];
   operand: Operand;
 };
 
-export type OptionInfo = { error: boolean; label: string; type: ValueType; spec?: PColumnSpec | AxisSpec };
+export type OptionInfo = { error: boolean; label: string; spec: PColumnSpec | AxisSpec };
 export type SourceOptionsInfo = Record<string, OptionInfo>;
+
+export type UniqueValuesList = ListOptionBase<string | number>[];
+export type UniqueValuesInfo = Record<string, UniqueValuesList>;
