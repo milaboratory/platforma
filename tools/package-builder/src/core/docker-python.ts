@@ -179,7 +179,7 @@ export function getPythonVersionFromEnvironment(
 
 function getDefaultPythonOptions(): PythonOptions {
   return {
-    pythonVersion: '3.12.6-slim',
+    pythonVersion: '3.12.10-slim',
     toolset: 'pip',
     requirements: 'requirements.txt',
     pkg: '/app/',
