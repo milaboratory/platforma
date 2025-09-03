@@ -31,6 +31,8 @@ jobs:
       pnpm-test-command: '--filter="@platforma-sdk/workflow-tengo-tests" -- --maxConcurrency=5 --minWorkers=50 --maxWorkers=50 --testTimeout=300000'
       helm-release-name: 'pl-dev-gcp'
       helm-chart-values-file: 'helm/gcp/values.yaml'
+      helm-chart-debug: true
+      notify-slack: true
       namespace: 'dev-gke'
       npmrc-config: |
         {
