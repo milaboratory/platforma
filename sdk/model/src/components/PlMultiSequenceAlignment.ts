@@ -1,12 +1,16 @@
 import {
+  Annotation,
   isPTableAbsent,
   type PColumn,
   type PColumnIdAndSpec,
   type PColumnKey,
+  PColumnName,
   type PColumnValues,
   type PObjectId,
   type PTableColumnId,
+  stringifyJson,
   uniquePlId,
+  ValueType,
 } from '@milaboratories/pl-model-common';
 import { type PlSelectionModel } from './PlSelectionModel';
 
@@ -58,14 +62,14 @@ export function createRowSelectionColumn({
     id: columnId,
     spec: {
       kind: 'PColumn',
-      valueType: 'Int',
-      name: 'pl7.app/table/row-selection',
+      valueType: ValueType.Int,
+      name: PColumnName.Table.RowSelection,
       axesSpec: selection.axesSpec,
       ...(domain && Object.keys(domain).length && { domain }),
       annotations: {
-        'pl7.app/label': label,
-        'pl7.app/discreteValues': '[1]',
-      },
+        [Annotation.Label]: label,
+        [Annotation.DiscreteValues]: stringifyJson([1]),
+      } satisfies Annotation,
     },
     data,
   };

@@ -12,6 +12,8 @@ import { resourceIdToString, stringifyWithResourceId } from '@milaboratories/pl-
 import type {
   AnyLogHandle,
   BlobDriver,
+  ContentHandler,
+  GetContentOptions,
   LocalBlobHandle,
   LocalBlobHandleAndSize,
   ReadyLogHandle,
@@ -39,10 +41,11 @@ import * as fsp from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import * as readline from 'node:readline/promises';
-import { Readable, Writable } from 'node:stream';
 import { buffer } from 'node:stream/consumers';
+import { Readable } from 'node:stream';
 import type { ClientDownload } from '../../clients/download';
 import type { ClientLogs } from '../../clients/logs';
+import { withFileContent } from '../helpers/read_file';
 import {
   isLocalBlobHandle,
   newLocalHandle,
@@ -292,13 +295,55 @@ export class DownloadDriver implements BlobDriver {
   }
 
   /** Gets a content of a blob by a handle. */
-  public async getContent(handle: LocalBlobHandle | RemoteBlobHandle, range?: RangeBytes): Promise<Uint8Array> {
-    if (range) {
-      validateRangeBytes(range, `getContent`);
+  public async getContent(handle: LocalBlobHandle | RemoteBlobHandle): Promise<Uint8Array>;
+  public async getContent(
+    handle: LocalBlobHandle | RemoteBlobHandle,
+    options?: GetContentOptions,
+  ): Promise<Uint8Array>;
+  /** @deprecated Use {@link getContent} with {@link GetContentOptions} instead */
+  public async getContent(
+    handle: LocalBlobHandle | RemoteBlobHandle,
+    range?: RangeBytes,
+  ): Promise<Uint8Array>;
+  public async getContent(
+    handle: LocalBlobHandle | RemoteBlobHandle,
+    optionsOrRange?: GetContentOptions | RangeBytes,
+  ): Promise<Uint8Array> {
+    let options: GetContentOptions = {};
+    if (typeof optionsOrRange === 'object' && optionsOrRange !== null) {
+      if ('range' in optionsOrRange) {
+        options = optionsOrRange;
+      } else {
+        const range = optionsOrRange as RangeBytes;
+        validateRangeBytes(range, `getContent`);
+        options = { range };
+      }
     }
 
+    return await this.withContent(handle, {
+      ...options,
+      handler: async (content) => {
+        const chunks: Uint8Array[] = [];
+        for await (const chunk of content) {
+          options.signal?.throwIfAborted();
+          chunks.push(chunk);
+        }
+        return Buffer.concat(chunks);
+      }
+    });
+  }
+
+  /** Gets a content stream of a blob by a handle and calls handler with it. */
+  public async withContent<T>(
+    handle: LocalBlobHandle | RemoteBlobHandle,
+    options: GetContentOptions & {
+      handler: ContentHandler<T>;
+    },
+  ): Promise<T> {
+    const { range, signal, handler } = options;
+
     if (isLocalBlobHandle(handle)) {
-      return await read(this.getLocalPath(handle), range);
+      return await withFileContent({ path: this.getLocalPath(handle), range, signal, handler });
     }
 
     if (isRemoteBlobHandle(handle)) {
@@ -306,22 +351,24 @@ export class DownloadDriver implements BlobDriver {
 
       const key = blobKey(result.info.id);
       const filePath = await this.rangesCache.get(key, range ?? { from: 0, to: result.size });
-      if (filePath) {
-        return await read(filePath, range);
-      }
+      signal?.throwIfAborted();
 
-      const { content } = await this.clientDownload.downloadBlob(
-        { id: result.info.id, type: result.info.type },
-        undefined,
-        undefined,
-        range?.from,
-        range?.to,
+      if (filePath) return await withFileContent({ path: filePath, range, signal, handler });
+
+      return await this.clientDownload.withBlobContent(
+        result.info,
+        { signal },
+        options,
+        async (content, size) => {
+          const [handlerStream, cacheStream] = content.tee();
+          
+          const handlerPromise = handler(handlerStream, size);
+          const _cachePromise = buffer(cacheStream)
+            .then((data) => this.rangesCache.set(key, range ?? { from: 0, to: result.size }, data));
+
+          return await handlerPromise;
+        }
       );
-
-      const data = await buffer(content);
-      await this.rangesCache.set(key, range ?? { from: 0, to: result.size }, data);
-
-      return data;
     }
 
     throw new Error('Malformed remote handle');
@@ -341,7 +388,7 @@ export class DownloadDriver implements BlobDriver {
 
     return Computable.make((ctx) =>
       this.getDownloadedBlob(res, ctx), {
-      postprocessValue: (v) => v ? this.getContent(v.handle, range) : undefined
+      postprocessValue: (v) => v ? this.getContent(v.handle, { range }) : undefined
     }
     ).withStableType()
   }
@@ -657,42 +704,45 @@ class LastLinesGetter {
 
 /** Gets last lines from a file by reading the file from the top and keeping
  * last N lines in a window queue. */
-function getLastLines(fPath: string, nLines: number, patternToSearch?: string): Promise<string> {
-  const inStream = fs.createReadStream(fPath);
-  const outStream = new Writable();
+async function getLastLines(fPath: string, nLines: number, patternToSearch?: string): Promise<string> {
+  let inStream: fs.ReadStream | undefined;
+  let rl: readline.Interface | undefined;
 
-  return new Promise((resolve, reject) => {
-    const rl = readline.createInterface(inStream, outStream);
+  try {
+    inStream = fs.createReadStream(fPath);
+    rl = readline.createInterface({ input: inStream, crlfDelay: Infinity });
 
     const lines = new Denque();
-    rl.on('line', function (line) {
-      if (patternToSearch != undefined && !line.includes(patternToSearch)) return;
+
+    for await (const line of rl) {
+      if (patternToSearch != undefined && !line.includes(patternToSearch)) continue;
 
       lines.push(line);
       if (lines.length > nLines) {
         lines.shift();
       }
-    });
+    }
 
-    rl.on('error', reject);
+    // last EOL is for keeping backward compat with platforma implementation.
+    return lines.toArray().join(os.EOL) + os.EOL;
+  } finally {
+    // Cleanup resources in finally block to ensure they're always cleaned up
+    try {
+      if (rl) {
+        rl.close();
+      }
+    } catch (cleanupError) {
+      console.error('Error closing readline interface:', cleanupError);
+    }
 
-    rl.on('close', function () {
-      // last EOL is for keeping backward compat with platforma implementation.
-      resolve(lines.toArray().join(os.EOL) + os.EOL);
-    });
-  });
-}
-
-async function read(path: string, range?: RangeBytes): Promise<Uint8Array> {
-  const ops: { start?: number; end?: number } = {};
-  if (range) {
-    ops.start = range.from;
-    ops.end = range.to - 1;
+    try {
+      if (inStream && !inStream.destroyed) {
+        inStream.destroy();
+      }
+    } catch (cleanupError) {
+      console.error('Error destroying read stream:', cleanupError);
+    }
   }
-
-  const stream = fs.createReadStream(path, ops);
-
-  return await buffer(Readable.toWeb(stream));
 }
 
 function validateDownloadableResourceType(methodName: string, rType: ResourceType) {

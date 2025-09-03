@@ -6,9 +6,10 @@ import type { RpcOptions } from '@protobuf-ts/runtime-rpc';
 import * as fs from 'node:fs/promises';
 import type { Dispatcher } from 'undici';
 import { request } from 'undici';
-import type { uploadapi_GetPartURL_Response } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/uploadapi/protocol';
+import { uploadapi_ChecksumAlgorithm, type uploadapi_GetPartURL_Response } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/uploadapi/protocol';
 import { UploadClient } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/uploadapi/protocol.client';
-import { toHeadersMap } from './helpers';
+import { crc32c } from './crc32c';
+
 import type { IncomingHttpHeaders } from 'undici/types/header';
 
 export class MTimeError extends Error {
@@ -26,6 +27,10 @@ export class NetworkError extends Error {
 /** Happens when the file doesn't exist */
 export class NoFileForUploading extends Error {
   name = 'NoFileForUploading';
+}
+
+export class BadRequestError extends Error {
+  name = 'BadRequestError';
 }
 
 /** Low-level client for grpc uploadapi.
@@ -51,11 +56,15 @@ export class ClientUpload {
   ): Promise<{
       overall: bigint;
       toUpload: bigint[];
+      checksumAlgorithm: uploadapi_ChecksumAlgorithm;
+      checksumHeader: string;
     }> {
     const init = await this.grpcInit(id, type, options);
     return {
       overall: init.partsCount,
       toUpload: this.partsToUpload(init.partsCount, init.uploadedParts),
+      checksumAlgorithm: init.checksumAlgorithm,
+      checksumHeader: init.checksumHeader,
     };
   }
 
@@ -64,6 +73,8 @@ export class ClientUpload {
     path: string,
     expectedMTimeUnix: bigint,
     partNumber: bigint,
+    checksumAlgorithm: uploadapi_ChecksumAlgorithm,
+    checksumHeader: string,
     options?: RpcOptions,
   ) {
     const info = await this.grpcGetPartUrl(
@@ -76,11 +87,25 @@ export class ClientUpload {
     const chunk = await readFileChunk(path, info.chunkStart, info.chunkEnd);
     await checkExpectedMTime(path, expectedMTimeUnix);
 
+    const crc32cChecksum = calculateCrc32cChecksum(chunk);
+    if (checksumAlgorithm === uploadapi_ChecksumAlgorithm.CRC32C) {
+      info.headers.push({ name: checksumHeader, value: crc32cChecksum });
+    }
+
+    const contentLength = Number(info.chunkEnd - info.chunkStart);
+    if (chunk.length !== contentLength) {
+      throw new Error(
+        `Chunk size mismatch: expected ${contentLength} bytes, but read ${chunk.length} bytes from file`,
+      );
+    }
+
+    const headers = Object.fromEntries(info.headers.map(({ name, value }) => [name, value]));
+
     try {
       const {
         body: rawBody,
         statusCode,
-        headers,
+        headers: responseHeaders,
       } = await request(info.uploadUrl, {
         dispatcher: this.httpClient,
         body: chunk,
@@ -90,15 +115,22 @@ export class ClientUpload {
         // that's why we got big timeout here.
         headersTimeout: 60000,
         bodyTimeout: 60000,
-        headers: toHeadersMap(info.headers),
+        // Prevent connection reuse by setting "Connection: close" header.
+        // This works around an issue with the backend's built-in S3 implementation
+        // that caused HTTP/1.1 protocol lines to be included in the uploaded file content.
+        reset: true,
+        headers,
         method: info.method.toUpperCase() as Dispatcher.HttpMethod,
       });
 
       // always read the body for resources to be garbage collected.
       const body = await rawBody.text();
-      checkStatusCodeOk(statusCode, body, headers, info);
+      checkStatusCodeOk(statusCode, body, responseHeaders, info);
     } catch (e: unknown) {
       if (e instanceof NetworkError)
+        throw e;
+
+      if (e instanceof BadRequestError)
         throw e;
 
       throw new Error(`partUpload: error ${JSON.stringify(e)} happened while trying to do part upload to the url ${info.uploadUrl}, headers: ${JSON.stringify(info.headers)}`);
@@ -135,8 +167,9 @@ export class ClientUpload {
     uploadedPartSize: bigint,
     options?: RpcOptions,
   ) {
+    // partChecksum isn't used for now but protoc requires it to be set
     return await this.grpcClient.get().getPartURL(
-      { resourceId: id, partNumber, uploadedPartSize, isInternalUse: false },
+      { resourceId: id, partNumber, uploadedPartSize, isInternalUse: false, partChecksum: '' },
       addRTypeToMetadata(type, options),
     ).response;
   }
@@ -212,10 +245,25 @@ function checkStatusCodeOk(
   headers: IncomingHttpHeaders,
   info: uploadapi_GetPartURL_Response,
 ) {
+  if (statusCode == 400) {
+    throw new BadRequestError(`response is not ok, status code: ${statusCode},`
+      + ` body: ${body}, headers: ${JSON.stringify(headers)}, url: ${info.uploadUrl}`);
+  }
+
   if (statusCode != 200) {
     throw new NetworkError(
       `response is not ok, status code: ${statusCode},`
       + ` body: ${body}, headers: ${JSON.stringify(headers)}, url: ${info.uploadUrl}`,
     );
   }
+}
+
+/** Calculate CRC32C checksum of a buffer and return as base64 string */
+function calculateCrc32cChecksum(data: Buffer): string {
+  const checksum = crc32c(data);
+  // Convert to unsigned 32-bit integer and then to base64
+  const buffer = Buffer.alloc(4);
+
+  buffer.writeUInt32BE(checksum, 0);
+  return buffer.toString('base64');
 }

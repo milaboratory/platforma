@@ -18,6 +18,7 @@ import { RelativeContentReader, relativeToExplicitBytes, relativeToExplicitStrin
 export const MainPrefix = 'v2/';
 
 export const GlobalOverviewFileName = 'overview.json';
+export const GlobalOverviewGzFileName = 'overview.json.gz';
 export const PackageOverviewFileName = 'overview.json';
 export const ManifestFileName = 'manifest.json';
 
@@ -43,13 +44,13 @@ export const PackageOverviewVersionEntry = z.object({
   description: BlockPackDescriptionManifest,
   channels: z.array(z.string()).default(() => []),
   manifestSha256: Sha256Schema
-});
+}).passthrough();
 export type PackageOverviewVersionEntry = z.infer<typeof PackageOverviewVersionEntry>;
 
 export const PackageOverview = z.object({
   schema: z.literal('v2'),
   versions: z.array(PackageOverviewVersionEntry)
-});
+}).passthrough();
 export type PackageOverview = z.infer<typeof PackageOverview>;
 
 export function packageOverviewPathInsideV2(bp: BlockPackIdNoVersion): string {
@@ -72,6 +73,7 @@ export const PackageManifestPattern =
   /(?<packageKeyWithoutVersion>(?<organization>[^\/]+)\/(?<name>[^\/]+))\/(?<version>[^\/]+)\/manifest\.json$/;
 
 export const GlobalOverviewPath = `${MainPrefix}${GlobalOverviewFileName}`;
+export const GlobalOverviewGzPath = `${MainPrefix}${GlobalOverviewGzFileName}`;
 
 export function GlobalOverviewEntry<const Description extends z.ZodTypeAny>(
   descriptionType: Description
@@ -91,10 +93,10 @@ export function GlobalOverviewEntry<const Description extends z.ZodTypeAny>(
         z.object({
           description: descriptionType,
           manifestSha256: Sha256Schema
-        })
+        }).passthrough()
       )
       .default({})
-  });
+  }).passthrough();
   return (
     universalSchema
       .transform((o) => {
@@ -129,7 +131,7 @@ export function GlobalOverview<const Description extends z.ZodTypeAny>(
   return z.object({
     schema: z.literal('v2'),
     packages: z.array(GlobalOverviewEntry(descriptionType))
-  });
+  }).passthrough();
 }
 
 export const GlobalOverviewReg = GlobalOverview(BlockPackDescriptionManifest);

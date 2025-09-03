@@ -189,6 +189,30 @@ export default class Core {
       };
     }
 
+    // Process additional environment variables from CLI options
+    if (options?.backendCommands) {
+      if (!runBinary.runOpts.env) {
+        runBinary.runOpts.env = {};
+      }
+      for (const cmd of options.backendCommands) {
+        const equalIndex = cmd.indexOf('=');
+        if (equalIndex > 0) {
+          const key = cmd.substring(0, equalIndex);
+          const value = cmd.substring(equalIndex + 1);
+          runBinary.runOpts.env[key] = value;
+        } else {
+          this.logger.warn(`Invalid environment variable format: ${cmd}. Expected format: KEY=VALUE`);
+        }
+      }
+    }
+
+    // Process additional backend commands
+    if (options?.backendCommands && options.backendCommands.length > 0) {
+      this.logger.debug(`Adding backend commands: ${options.backendCommands.join(' ')}`);
+      // Add commands as arguments to the binary
+      runBinary.args = [...runBinary.args, ...options.backendCommands];
+    }
+
     upCommands.push(runBinary);
 
     state.setInstanceInfo(instanceName, {
@@ -217,8 +241,8 @@ export default class Core {
 
     const instance = this.createLocal(instanceName, {
       ...options,
-      primaryURL: options?.primaryURL ?? `s3e://testuser:testpassword@localhost:${minioPort}/main-bucket/?region=no-region`,
-      libraryURL: options?.libraryURL ?? `s3e://testuser:testpassword@localhost:${minioPort}/library-bucket/?region=no-region`,
+      primaryURL: options?.primaryURL ?? `s3e://testuser:testpassword@localhost:${minioPort}/platforma-primary-bucket/?region=no-region`,
+      libraryURL: options?.libraryURL ?? `s3e://testuser:testpassword@localhost:${minioPort}/platforma-library-bucket/?region=no-region`,
     });
 
     const localRoot = options?.configOptions?.localRoot;
@@ -343,6 +367,8 @@ export default class Core {
       s3ConsolePort?: number;
 
       customMounts?: { hostPath: string; containerPath?: string }[];
+
+      backendCommands?: string[];
     },
   ): instanceInfo {
     this.logger.debug('creating platforma instance in \'docker s3\' mode...');
@@ -368,14 +394,14 @@ export default class Core {
     const presignHost = options?.presignHost ?? 'localhost';
     const presignPort = options?.s3Port ?? 9000;
 
-    const primary = plCfg.storageSettingsFromURL(`s3e://testuser:testpassword@minio:${presignPort}/main-bucket`);
+    const primary = plCfg.storageSettingsFromURL(`s3e://testuser:testpassword@minio:${presignPort}/platforma-primary-bucket`);
     if (primary.type !== 'S3') {
       throw new Error('primary storage must have \'S3\' type in \'docker s3\' configuration');
     } else {
       primary.presignEndpoint = `http://${presignHost}:${presignPort}`;
     }
 
-    const library = plCfg.storageSettingsFromURL(`s3e://testuser:testpassword@minio:${presignPort}/library-bucket`);
+    const library = plCfg.storageSettingsFromURL(`s3e://testuser:testpassword@minio:${presignPort}/platforma-library-bucket`);
     if (library.type !== 'S3') {
       throw new Error(`${library.type} storage type is not supported for library storage`);
     } else {
@@ -406,6 +432,7 @@ export default class Core {
       ['backend', {
         platform: options?.platformOverride,
         mounts: backendMounts,
+        commands: options?.backendCommands,
       }],
     ]));
 
@@ -415,7 +442,7 @@ export default class Core {
 
       PL_IMAGE: image,
 
-      PL_AUTH_HTPASSWD_PATH: usersFSPath,
+      PL_AUTH_HTPASSWD: usersFSPath,
       PL_LICENSE: options?.license,
       PL_LICENSE_FILE: options?.licenseFile,
 
@@ -437,29 +464,65 @@ export default class Core {
       ...this.configureDockerStorage('library', library),
     };
 
-    if (options?.grpcAddr) envs.PL_GRPC_ADDR = options.grpcAddr;
-    if (options?.grpcPort) envs.PL_GRPC_PORT = options.grpcPort.toString();
-    if (options?.monitoringAddr) envs.PL_MONITORING_ADDR = options.monitoringAddr;
-    if (options?.monitoringPort) envs.PL_MONITORING_PORT = options.monitoringPort.toString();
-    if (options?.debugAddr) envs.PL_DEBUG_ADDR = options.debugAddr;
-    if (options?.debugPort) envs.PL_DEBUG_PORT = options.debugPort.toString();
+    if (options?.grpcAddr) {
+      const addrParts = options.grpcAddr.split(':');
+      if (addrParts.length === 2) {
+        envs.PL_LISTEN_ADDRESS = addrParts[0];
+        envs.PL_LISTEN_PORT = addrParts[1];
+      } else {
+        envs.PL_LISTEN_ADDRESS = options.grpcAddr;
+      }
+    } else if (options?.grpcPort) {
+      envs.PL_LISTEN_PORT = options.grpcPort.toString();
+    }
+
+    if (options?.monitoringAddr) {
+      const addrParts = options.monitoringAddr.split(':');
+      if (addrParts.length === 2) {
+        envs.PL_MONITORING_IP = addrParts[0];
+        envs.PL_MONITORING_PORT = addrParts[1];
+      } else {
+        envs.PL_MONITORING_IP = options.monitoringAddr;
+      }
+    } else if (options?.monitoringPort) {
+      envs.PL_MONITORING_PORT = options.monitoringPort.toString();
+    }
+
+    if (options?.debugAddr) {
+      const addrParts = options.debugAddr.split(':');
+      if (addrParts.length === 2) {
+        envs.PL_DEBUG_IP = addrParts[0];
+        envs.PL_DEBUG_PORT = addrParts[1];
+      } else {
+        envs.PL_DEBUG_IP = options.debugAddr;
+      }
+    } else if (options?.debugPort) {
+      envs.PL_DEBUG_PORT = options.debugPort.toString();
+    }
 
     if (options?.s3Port) envs.MINIO_PORT = options.s3Port.toString();
     if (options?.s3ConsolePort) envs.MINIO_CONSOLE_PORT = options.s3ConsolePort.toString();
 
     if (options?.auth) {
       if (options.auth.enabled) {
-        envs['PL_AUTH_ENABLED'] = 'true';
+        envs['PL_NO_AUTH'] = 'false';
+      } else {
+        envs['PL_NO_AUTH'] = 'true';
       }
       if (options.auth.drivers) {
         for (const drv of options.auth.drivers) {
           if (drv.driver === 'htpasswd') {
-            envs['PL_AUTH_HTPASSWD_PATH'] = path.resolve(drv.path);
+            envs['PL_AUTH_HTPASSWD'] = path.resolve(drv.path);
             drv.path = '/etc/platforma/users.htpasswd';
           }
         }
         envs['PL_AUTH_DRIVERS'] = JSON.stringify(options.auth.drivers);
       }
+    }
+
+    // Process additional backend commands
+    if (options?.backendCommands && options.backendCommands.length > 0) {
+      this.logger.debug(`Adding backend commands: ${options.backendCommands.join(' ')}`);
     }
 
     state.setInstanceInfo(instanceName, {
@@ -523,6 +586,8 @@ export default class Core {
 
       debugPort?: number;
       debugAddr?: string;
+
+      backendCommands?: string[];
     },
   ): instanceInfo {
     this.logger.debug('creating platforma instance in \'docker\' mode...');
@@ -571,6 +636,7 @@ export default class Core {
       ['backend', {
         platform: options?.platformOverride,
         mounts: backendMounts,
+        commands: options?.backendCommands,
       }],
     ]));
 
@@ -579,11 +645,11 @@ export default class Core {
 
     const envs: NodeJS.ProcessEnv = {
       PL_IMAGE: image,
-      PL_AUTH_HTPASSWD_PATH: usersFSPath,
+      PL_AUTH_HTPASSWD: usersFSPath,
       PL_LICENSE: options?.license,
       PL_LICENSE_FILE: options?.licenseFile,
 
-      PL_LOG_LEVEL: 'info',
+      PL_LOG_LEVEL: options?.logLevel ?? 'info',
       PL_LOG_DIR: path.dirname(logFilePath),
       PL_LOG_ROTATION_ENABLED: 'true',
 
@@ -599,26 +665,62 @@ export default class Core {
       ...this.configureDockerStorage('library', library),
     };
 
-    if (options?.grpcAddr) envs.PL_GRPC_ADDR = options.grpcAddr;
-    if (options?.grpcPort) envs.PL_GRPC_PORT = options.grpcPort.toString();
-    if (options?.monitoringAddr) envs.PL_MONITORING_ADDR = options.monitoringAddr;
-    if (options?.monitoringPort) envs.PL_MONITORING_PORT = options.monitoringPort.toString();
-    if (options?.debugAddr) envs.PL_DEBUG_ADDR = options.debugAddr;
-    if (options?.debugPort) envs.PL_DEBUG_PORT = options.debugPort.toString();
+    if (options?.grpcAddr) {
+      const addrParts = options.grpcAddr.split(':');
+      if (addrParts.length === 2) {
+        envs.PL_LISTEN_ADDRESS = addrParts[0];
+        envs.PL_LISTEN_PORT = addrParts[1];
+      } else {
+        envs.PL_LISTEN_ADDRESS = options.grpcAddr;
+      }
+    } else if (options?.grpcPort) {
+      envs.PL_LISTEN_PORT = options.grpcPort.toString();
+    }
+
+    if (options?.monitoringAddr) {
+      const addrParts = options.monitoringAddr.split(':');
+      if (addrParts.length === 2) {
+        envs.PL_MONITORING_IP = addrParts[0];
+        envs.PL_MONITORING_PORT = addrParts[1];
+      } else {
+        envs.PL_MONITORING_IP = options.monitoringAddr;
+      }
+    } else if (options?.monitoringPort) {
+      envs.PL_MONITORING_PORT = options.monitoringPort.toString();
+    }
+
+    if (options?.debugAddr) {
+      const addrParts = options.debugAddr.split(':');
+      if (addrParts.length === 2) {
+        envs.PL_DEBUG_IP = addrParts[0];
+        envs.PL_DEBUG_PORT = addrParts[1];
+      } else {
+        envs.PL_DEBUG_IP = options.debugAddr;
+      }
+    } else if (options?.debugPort) {
+      envs.PL_DEBUG_PORT = options.debugPort.toString();
+    }
 
     if (options?.auth) {
       if (options.auth.enabled) {
-        envs['PL_AUTH_ENABLED'] = 'true';
+        envs['PL_NO_AUTH'] = 'false';
+      } else {
+        envs['PL_NO_AUTH'] = 'true';
       }
       if (options.auth.drivers) {
         for (const drv of options.auth.drivers) {
           if (drv.driver === 'htpasswd') {
-            envs['PL_AUTH_HTPASSWD_PATH'] = path.resolve(drv.path);
+            envs['PL_AUTH_HTPASSWD'] = path.resolve(drv.path);
             drv.path = '/etc/platforma/users.htpasswd';
           }
         }
         envs['PL_AUTH_DRIVERS'] = JSON.stringify(options.auth.drivers);
       }
+    }
+
+    // Process additional backend commands
+    if (options?.backendCommands && options.backendCommands.length > 0) {
+      this.logger.debug(`Adding backend commands: ${options.backendCommands.join(' ')}`);
     }
 
     state.setInstanceInfo(instanceName, {
@@ -829,20 +931,46 @@ You can obtain the license from "https://licensing.milaboratories.com".`);
 
     switch (sType) {
       case 'S3':
-        envs[`PL_DATA_${storageID}_TYPE`] = 'S3';
-        envs[`PL_DATA_${storageID}_S3_BUCKET`] = storage.bucketName!;
-
-        if (storage.endpoint) envs[`PL_DATA_${storageID}_S3_ENDPOINT`] = storage.endpoint;
-        if (storage.presignEndpoint) envs[`PL_DATA_${storageID}_S3_PRESIGN_ENDPOINT`] = storage.presignEndpoint;
-        if (storage.region) envs[`PL_DATA_${storageID}_S3_REGION`] = storage.region;
-        if (storage.key) envs[`PL_DATA_${storageID}_S3_KEY`] = storage.key;
-        if (storage.secret) envs[`PL_DATA_${storageID}_S3_SECRET`] = storage.secret;
-
+        switch (storageID) {
+          case 'PRIMARY': {
+            // Construct the S3 URL for primary storage
+            if (storage.endpoint && storage.bucketName) {
+              envs['PL_PRIMARY_STORAGE_S3'] = `${storage.endpoint}${storage.bucketName}`;
+            }
+            if (storage.endpoint) envs['PL_PRIMARY_STORAGE_S3_ENDPOINT'] = storage.endpoint;
+            if (storage.presignEndpoint) envs['PL_PRIMARY_STORAGE_S3_EXTERNAL_ENDPOINT'] = storage.presignEndpoint;
+            if (storage.region) envs['PL_PRIMARY_STORAGE_S3_REGION'] = storage.region;
+            if (storage.key) envs['PL_PRIMARY_STORAGE_S3_KEY'] = storage.key;
+            if (storage.secret) envs['PL_PRIMARY_STORAGE_S3_SECRET'] = storage.secret;
+            break;
+          }
+          case 'LIBRARY': {
+            // Construct the S3 URL for library storage
+            if (storage.endpoint && storage.bucketName) {
+              envs['PL_DATA_LIBRARY_S3_URL'] = `library=${storage.endpoint}${storage.bucketName}`;
+            }
+            if (storage.endpoint) envs['PL_DATA_LIBRARY_S3_ENDPOINT'] = `library=${storage.endpoint}`;
+            if (storage.presignEndpoint) envs['PL_DATA_LIBRARY_S3_EXTERNAL_ENDPOINT'] = `library=${storage.presignEndpoint}`;
+            if (storage.region) envs['PL_DATA_LIBRARY_S3_REGION'] = `library=${storage.region}`;
+            if (storage.key) envs['PL_DATA_LIBRARY_S3_KEY'] = `library=${storage.key}`;
+            if (storage.secret) envs['PL_DATA_LIBRARY_S3_SECRET'] = `library=${storage.secret}`;
+            break;
+          }
+          default:
+            throw new Error(`Unknown storage ID: ${storageID}`);
+        }
         return envs;
-
       case 'FS':
-        envs[`PL_DATA_${storageID}_TYPE`] = 'FS';
-
+        switch (storageID) {
+          case 'PRIMARY':
+            if (storage.rootPath) envs['PL_PRIMARY_STORAGE_FS'] = storage.rootPath;
+            break;
+          case 'LIBRARY':
+            if (storage.rootPath) envs['PL_DATA_LIBRARY_FS_PATH'] = storage.rootPath;
+            break;
+          default:
+            throw new Error(`Unknown storage ID: ${storageID}`);
+        }
         return envs;
 
       default:
@@ -958,6 +1086,8 @@ export type createLocalOptions = {
 
   primaryURL?: string;
   libraryURL?: string;
+
+  backendCommands?: string[];
 };
 
 export type createLocalFSOptions = createLocalOptions;

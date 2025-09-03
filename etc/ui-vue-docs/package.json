@@ -14,14 +14,18 @@
   "devDependencies": {
     "sass": "catalog:",
     "vitepress": "catalog:",
-    "@milaboratories/eslint-config": "workspace:^"
+    "@milaboratories/eslint-config": "workspace:*",
+    "@milaboratories/build-configs": "workspace:*",
+    "vite": "catalog:",
+    "typescript": "catalog:",
+    "@milaboratories/ts-configs": "workspace:*"
   },
   "dependencies": {
     "@faker-js/faker": "catalog:",
-    "@milaboratories/helpers": "workspace:^",
-    "@milaboratories/uikit": "workspace:^",
-    "@platforma-sdk/model": "workspace:^",
-    "@platforma-sdk/ui-vue": "workspace:^",
+    "@milaboratories/helpers": "workspace:*",
+    "@milaboratories/uikit": "workspace:*",
+    "@platforma-sdk/model": "workspace:*",
+    "@platforma-sdk/ui-vue": "workspace:*",
     "highlight.js": "catalog:",
     "vue": "catalog:"
   }

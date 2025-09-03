@@ -14,7 +14,7 @@ import {
  * PTable can be thought as having a composite primary key, consisting of axes,
  * and a set of data columns derived from PColumn values.
  * */
-export interface PTableV6 {
+export interface PTableV7 extends Disposable {
   /**
    * Returns ordered array of table axes specs (primary key "columns" in SQL
    * terms) and data column specs (regular "columns" in SQL terms).
@@ -64,10 +64,10 @@ export interface PTableV6 {
   ): Promise<PTableVector[]>;
 
   /** Filters the table and returns new PTable instance */
-  filter(request: PTableRecordFilter[]): PTableV6;
+  filter(request: PTableRecordFilter[]): PTableV7;
 
   /** Sorts the table and returns new PTable instance. */
-  sort(request: PTableSorting[]): PTableV6;
+  sort(request: PTableSorting[]): PTableV7;
 
   /** Deallocates all underlying resources */
   dispose(): void;

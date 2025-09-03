@@ -1,3 +1,5 @@
+catalogMode: strict
+
 packages:
   - lib/util/helpers
   - lib/util/sequences
@@ -25,6 +27,11 @@ packages:
   - lib/node/pl-deployments
   - lib/node/pl-config
 
+  - lib/ptabler/schema
+  - lib/ptabler/software
+
+  - lib/ptexter
+
   - lib/ui/uikit
 
   - tools/tengo-builder
@@ -33,9 +40,11 @@ packages:
   - tools/ts-configs
   - tools/build-configs
   - tools/package-builder
+  - tools/ts-builder
   - tools/r-builder
   - tools/pl-bootstrap
   - tools/eslint-config
+  - tools/blocks-deps-updater
 
   - sdk/model
   - sdk/workflow-tengo
@@ -119,8 +128,13 @@ catalog:
   'tsconfig-paths': ^4.2.0
   'tsup': ~8.3.5
   'vite': ^6.3.5
-  'rollup-plugin-node-externals': ^8.0.0
+  'rollup': ^4.45.1
   '@rollup/plugin-node-resolve': ^16.0.1
+  '@rollup/plugin-typescript': ^12.1.4
+  '@rollup/plugin-commonjs': ^28.0.6
+  'rollup-plugin-cleandir': ^3.0.0
+  '@rollup/plugin-json': ^6.1.0
+  'rollup-plugin-node-externals': ^8.0.0
   'rollup-plugin-sourcemaps2': ^0.5.2
   'vite-plugin-dts': ^4.5.3
   'vite-plugin-css-injected-by-js': ^3.5.2
@@ -131,9 +145,9 @@ catalog:
   # Build util / linters
 
   'prettier': ^3.4.1
-  '@protobuf-ts/plugin': &protobuf-ts 2.11.0
+  '@protobuf-ts/plugin': &protobuf-ts 2.11.1
 
-  '@changesets/cli': ^2.29.4
+  '@changesets/cli': ^2.29.5
 
   'eslint': ^9.25.1
   '@eslint/js': ^9.16.0
@@ -150,6 +164,8 @@ catalog:
 
   'turbo': 2.5.3
 
+  'husky': ^9.1.7
+
   '@vitejs/plugin-vue': ^5.2.3
 
   'svgo': ^3.3.2
@@ -158,13 +174,13 @@ catalog:
 
   # Net
 
-  'undici': ~7.10.0
+  'undici': ~7.13.0
   '@grpc/grpc-js': ~1.13.4
   '@protobuf-ts/grpc-transport': *protobuf-ts
   '@protobuf-ts/runtime': *protobuf-ts
   '@protobuf-ts/runtime-rpc': *protobuf-ts
   'https-proxy-agent': ^7.0.6
-  '@aws-sdk/client-s3': &aws-sdk-version 3.826.0
+  '@aws-sdk/client-s3': &aws-sdk-version 3.859.0
   '@aws-sdk/lib-storage': *aws-sdk-version
 
   # Util & other libs
@@ -190,19 +206,21 @@ catalog:
 
   'fast-json-patch': ^3.1.1
 
+  'es-toolkit': ^1.39.10
+
   # dont upgrade, ask @dbolotin first
   'zod': ~3.23.8
 
-  'yaml': ^2.7.0
+  'yaml': ^2.8.0
 
   '@oclif/core': ^4.0.37
 
   'winston': ^3.17.0
 
-  '@milaboratories/tengo-tester': ^1.6.2
-  '@milaboratories/pframes-rs-node': &pframes-rs-version 1.0.54
+  '@milaboratories/tengo-tester': ^1.6.3
+  '@milaboratories/pframes-rs-node': &pframes-rs-version 1.0.72
 
-  'remeda': ^2.22.6
+  'remeda': ^2.28.0
 
   'quickjs-emscripten': 0.31.0
 
@@ -226,7 +244,7 @@ catalog:
   'd3-format': ^3.1.0
   '@types/d3-format': ^3.0.4
 
-  'ag-grid-enterprise': &ag-grid ^34.0.2
+  'ag-grid-enterprise': &ag-grid ^34.1.2
   'ag-grid-vue3': *ag-grid
 
   '@milaboratories/miplots4': ^1.0.123
@@ -240,8 +258,9 @@ catalog:
 
   '@milaboratories/software-pframes-conv': &pframes-version 2.2.2
   '@platforma-open/milaboratories.software-small-binaries': ^1.15.21
-  '@platforma-open/milaboratories.software-ptabler': 1.8.0
   '@biowasm/aioli': ~3.2.1
+
+  '@platforma-open/milaboratories.runenv-python-3': 1.1.15
 
   # Test
 
@@ -269,4 +288,3 @@ catalog:
   '@types/mime-types': ^2.1.4
   '@types/tar-fs': ^2.0.4
   '@types/ssh2': ^1.15.5
-

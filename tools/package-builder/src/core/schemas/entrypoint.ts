@@ -50,14 +50,20 @@ export const infoSchema = z
     asset: z.union([z.string(), artifacts.assetPackageSchema]).optional(),
     binary: softwareOptionsSchema.optional(),
     environment: environmentOptionsSchema.optional(),
+    docker: softwareOptionsSchema.optional(),
   })
   .refine(
-    (data) =>
-      toInt(data.reference) + toInt(data.asset) + toInt(data.binary) + toInt(data.environment) == 1,
+    (data) => {
+      const n = toInt(data.reference)
+        + toInt(data.asset)
+        + toInt(data.binary || data.docker) // allow both docker and binary to be set in single entrypoint
+        + toInt(data.environment);
+      return n === 1;
+    },
     {
       message:
-        'entrypoint cannot point to several packages at once: choose \'reference\', \'asset\', \'binary\' or \'environment\'',
-      path: ['reference | asset | binary | environment'],
+        'entrypoint cannot point to several packages at once: choose \'reference\', \'asset\', \'binary\', \'environment\' or \'docker\'',
+      path: ['reference | asset | binary | environment | docker'],
     },
   );
 

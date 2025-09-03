@@ -1,5 +1,432 @@
 # @milaboratories/pl-middle-layer
 
+## 1.42.32
+
+### Patch Changes
+
+- 10bd227: PFrames update
+
+## 1.42.31
+
+### Patch Changes
+
+- Updated dependencies [6bc20d1]
+  - @milaboratories/pl-model-common@1.19.17
+  - @platforma-sdk/model@1.42.51
+  - @milaboratories/pl-model-middle-layer@1.8.24
+  - @milaboratories/pl-drivers@1.10.11
+  - @platforma-sdk/block-tools@2.6.2
+
+## 1.42.30
+
+### Patch Changes
+
+- Updated dependencies [06b7746]
+  - @platforma-sdk/workflow-tengo@5.1.4
+
+## 1.42.29
+
+### Patch Changes
+
+- @platforma-sdk/workflow-tengo@5.1.3
+
+## 1.42.28
+
+### Patch Changes
+
+- 61a492c: PFrames update
+
+## 1.42.27
+
+### Patch Changes
+
+- 3d9638e: PFramesDriver run HTTP parquet server
+- Updated dependencies [3d9638e]
+  - @milaboratories/pl-model-middle-layer@1.8.23
+  - @milaboratories/computable@2.6.8
+  - @milaboratories/pl-drivers@1.10.10
+  - @milaboratories/ts-helpers@1.4.7
+  - @milaboratories/pl-client@2.11.13
+  - @milaboratories/pl-model-common@1.19.16
+  - @platforma-sdk/model@1.42.47
+  - @platforma-sdk/block-tools@2.6.1
+  - @milaboratories/pl-tree@1.7.10
+  - @milaboratories/pl-config@1.7.3
+  - @milaboratories/pl-deployments@2.5.5
+  - @milaboratories/pl-errors@1.1.21
+  - @milaboratories/pl-model-backend@1.1.6
+  - @platforma-sdk/workflow-tengo@5.1.2
+
+## 1.42.26
+
+### Patch Changes
+
+- Updated dependencies [0ff2a1b]
+- Updated dependencies [0ff2a1b]
+  - @platforma-sdk/block-tools@2.6.0
+  - @milaboratories/pl-model-middle-layer@1.8.22
+  - @milaboratories/pl-errors@1.1.20
+  - @milaboratories/pl-deployments@2.5.4
+  - @milaboratories/pl-model-common@1.19.15
+  - @milaboratories/computable@2.6.7
+  - @milaboratories/pl-tree@1.7.9
+  - @platforma-sdk/model@1.42.46
+  - @milaboratories/pl-drivers@1.10.9
+
+## 1.42.25
+
+### Patch Changes
+
+- @platforma-sdk/workflow-tengo@5.1.2
+
+## 1.42.24
+
+### Patch Changes
+
+- @milaboratories/pl-drivers@1.10.8
+- @platforma-sdk/model@1.42.36
+
+## 1.42.23
+
+### Patch Changes
+
+- d758587: PFrames version bump
+
+## 1.42.22
+
+### Patch Changes
+
+- b80a619: PFrames version update
+
+## 1.42.21
+
+### Patch Changes
+
+- Updated dependencies [f848ca0]
+  - @milaboratories/pl-model-middle-layer@1.8.21
+  - @platforma-sdk/block-tools@2.5.92
+
+## 1.42.20
+
+### Patch Changes
+
+- Updated dependencies [a14b8c8]
+  - @milaboratories/pl-model-middle-layer@1.8.20
+  - @platforma-sdk/block-tools@2.5.91
+
+## 1.42.19
+
+### Patch Changes
+
+- Updated dependencies [f5bcdbe]
+  - @milaboratories/pl-model-middle-layer@1.8.19
+  - @platforma-sdk/block-tools@2.5.90
+
+## 1.42.18
+
+### Patch Changes
+
+- 9acf386: PFrames version bump
+- Updated dependencies [9acf386]
+  - @milaboratories/pl-model-middle-layer@1.8.18
+  - @platforma-sdk/block-tools@2.5.89
+
+## 1.42.17
+
+### Patch Changes
+
+- ef18158: PFrames version bump
+- Updated dependencies [ef18158]
+  - @milaboratories/pl-model-middle-layer@1.8.17
+  - @platforma-sdk/block-tools@2.5.88
+
+## 1.42.16
+
+### Patch Changes
+
+- Updated dependencies [2a21be5]
+  - @milaboratories/pl-model-common@1.19.14
+  - @milaboratories/pl-model-middle-layer@1.8.16
+  - @milaboratories/pl-drivers@1.10.7
+  - @platforma-sdk/model@1.42.36
+  - @platforma-sdk/block-tools@2.5.87
+
+## 1.42.15
+
+### Patch Changes
+
+- Updated dependencies [27c258f]
+  - @platforma-sdk/model@1.42.35
+
+## 1.42.14
+
+### Patch Changes
+
+- 10a5439: Ref counting pool moved to ts-helpers
+- Updated dependencies [10a5439]
+- Updated dependencies [10a5439]
+  - @milaboratories/pl-model-middle-layer@1.8.15
+  - @milaboratories/ts-helpers@1.4.6
+  - @platforma-sdk/block-tools@2.5.86
+  - @milaboratories/computable@2.6.6
+  - @milaboratories/pl-client@2.11.12
+  - @milaboratories/pl-config@1.7.2
+  - @milaboratories/pl-deployments@2.5.3
+  - @milaboratories/pl-drivers@1.10.6
+  - @milaboratories/pl-errors@1.1.19
+  - @milaboratories/pl-tree@1.7.8
+  - @milaboratories/pl-model-backend@1.1.5
+  - @platforma-sdk/workflow-tengo@5.1.1
+
+## 1.42.13
+
+### Patch Changes
+
+- Updated dependencies [dc289eb]
+  - @milaboratories/pl-model-middle-layer@1.8.14
+  - @platforma-sdk/block-tools@2.5.85
+
+## 1.42.12
+
+### Patch Changes
+
+- Updated dependencies [05d5bac]
+- Updated dependencies [7cba53f]
+  - @platforma-sdk/workflow-tengo@5.1.1
+  - @milaboratories/pl-drivers@1.10.5
+
+## 1.42.11
+
+### Patch Changes
+
+- Updated dependencies [61d381c]
+  - @milaboratories/pl-drivers@1.10.4
+
+## 1.42.10
+
+### Patch Changes
+
+- Updated dependencies [a5a0559]
+  - @platforma-sdk/workflow-tengo@5.1.0
+
+## 1.42.9
+
+### Patch Changes
+
+- Updated dependencies [9508f78]
+  - @milaboratories/pl-model-middle-layer@1.8.13
+  - @platforma-sdk/block-tools@2.5.84
+
+## 1.42.8
+
+### Patch Changes
+
+- Updated dependencies [770cb8d]
+  - @milaboratories/pl-drivers@1.10.3
+
+## 1.42.7
+
+### Patch Changes
+
+- ad8037d: up version
+
+## 1.42.6
+
+### Patch Changes
+
+- a4479a5: [Test fix] Bump ml version
+
+## 1.42.5
+
+### Patch Changes
+
+- b14b2fb: update dist builder
+- Updated dependencies [b14b2fb]
+- Updated dependencies [922f14b]
+  - @milaboratories/pl-model-backend@1.1.4
+  - @milaboratories/pl-model-common@1.19.11
+  - @milaboratories/pl-model-middle-layer@1.8.10
+  - @milaboratories/computable@2.6.5
+  - @milaboratories/pl-client@2.11.10
+  - @milaboratories/pl-config@1.7.1
+  - @milaboratories/pl-deployments@2.5.1
+  - @milaboratories/pl-drivers@1.10.1
+  - @milaboratories/pl-errors@1.1.17
+  - @milaboratories/pl-http@1.1.7
+  - @milaboratories/pl-tree@1.7.7
+  - @milaboratories/ts-helpers@1.4.5
+  - @platforma-sdk/model@1.42.23
+
+## 1.42.4
+
+### Patch Changes
+
+- Updated dependencies [60489e9]
+  - @platforma-sdk/workflow-tengo@5.0.3
+
+## 1.42.3
+
+### Patch Changes
+
+- 3f93434: Packages configuration normalization
+- Updated dependencies [3f93434]
+  - @milaboratories/pl-deployments@2.4.8
+  - @milaboratories/resolve-helper@1.1.1
+  - @milaboratories/pl-model-middle-layer@1.8.8
+  - @milaboratories/computable@2.6.4
+  - @milaboratories/pl-drivers@1.9.1
+  - @milaboratories/ts-helpers@1.4.4
+  - @milaboratories/pl-client@2.11.9
+  - @milaboratories/pl-config@1.6.4
+  - @milaboratories/pl-errors@1.1.16
+  - @platforma-sdk/workflow-tengo@5.0.2
+  - @milaboratories/pl-model-backend@1.1.3
+  - @platforma-sdk/block-tools@2.5.83
+  - @milaboratories/pl-model-common@1.19.8
+  - @milaboratories/pl-http@1.1.6
+  - @milaboratories/pl-tree@1.7.6
+  - @platforma-sdk/model@1.42.20
+
+## 1.42.2
+
+### Patch Changes
+
+- Updated dependencies [2c0d624]
+- Updated dependencies [3da120c]
+  - @platforma-sdk/workflow-tengo@5.0.1
+
+## 1.42.1
+
+### Patch Changes
+
+- Updated dependencies [1831f6d]
+  - @platforma-sdk/workflow-tengo@5.0.0
+
+## 1.42.0
+
+### Minor Changes
+
+- d1b00dc: Increase backoff multiplier in add block method to minimize effect of transaction conflicts
+
+### Patch Changes
+
+- ca79a4e: Fix eslint errors
+- Updated dependencies [d1b00dc]
+- Updated dependencies [d1b00dc]
+- Updated dependencies [d1b00dc]
+- Updated dependencies [ca79a4e]
+  - @platforma-sdk/block-tools@2.5.82
+  - @milaboratories/pl-client@2.11.8
+  - @platforma-sdk/workflow-tengo@4.18.2
+  - @milaboratories/pl-errors@1.1.15
+
+## 1.41.13
+
+### Patch Changes
+
+- Updated dependencies [a716ccd]
+  - @platforma-sdk/workflow-tengo@4.18.1
+
+## 1.41.12
+
+### Patch Changes
+
+- Updated dependencies [d407d12]
+  - @platforma-sdk/workflow-tengo@4.18.0
+
+## 1.41.11
+
+### Patch Changes
+
+- 4b67e4f: PFrames driver - integrated parquet data info handling
+- Updated dependencies [4b67e4f]
+  - @milaboratories/pl-model-common@1.19.5
+
+## 1.41.10
+
+### Patch Changes
+
+- b8105fb: PFrames - Different public and internal types for ParquetDataInfo
+- Updated dependencies [b8105fb]
+  - @milaboratories/pl-model-middle-layer@1.8.7
+  - @milaboratories/pl-model-common@1.19.4
+  - @platforma-sdk/model@1.42.15
+  - @platforma-sdk/block-tools@2.5.81
+  - @milaboratories/pl-drivers@1.8.3
+
+## 1.41.9
+
+### Patch Changes
+
+- Updated dependencies [bcde71e]
+  - @platforma-sdk/workflow-tengo@4.17.1
+
+## 1.41.8
+
+### Patch Changes
+
+- Updated dependencies [b74b887]
+  - @platforma-sdk/workflow-tengo@4.17.0
+
+## 1.41.7
+
+### Patch Changes
+
+- Updated dependencies [4ca3d94]
+  - @platforma-sdk/workflow-tengo@4.16.0
+
+## 1.41.6
+
+### Patch Changes
+
+- Updated dependencies [6d6c4ba]
+  - @milaboratories/pl-model-common@1.19.3
+  - @milaboratories/pl-model-middle-layer@1.8.6
+  - @milaboratories/pl-drivers@1.8.2
+  - @platforma-sdk/model@1.42.10
+  - @platforma-sdk/block-tools@2.5.80
+
+## 1.41.5
+
+### Patch Changes
+
+- 5b4919d: PFrames version bump
+
+## 1.41.4
+
+### Patch Changes
+
+- Updated dependencies [017a888]
+  - @milaboratories/pl-model-common@1.19.2
+  - @milaboratories/pl-model-middle-layer@1.8.5
+  - @milaboratories/pl-drivers@1.8.1
+  - @platforma-sdk/model@1.42.8
+  - @platforma-sdk/block-tools@2.5.79
+
+## 1.41.3
+
+### Patch Changes
+
+- Updated dependencies [ff4a709]
+- Updated dependencies [ff4a709]
+  - @milaboratories/ts-helpers@1.4.3
+  - @milaboratories/pl-drivers@1.8.0
+  - @milaboratories/computable@2.6.3
+  - @milaboratories/pl-client@2.11.6
+  - @milaboratories/pl-config@1.6.3
+  - @milaboratories/pl-deployments@2.4.7
+  - @milaboratories/pl-errors@1.1.13
+  - @milaboratories/pl-tree@1.7.5
+  - @platforma-sdk/block-tools@2.5.78
+  - @platforma-sdk/workflow-tengo@4.15.0
+
+## 1.41.2
+
+### Patch Changes
+
+- Updated dependencies [7cc3e1c]
+  - @platforma-sdk/workflow-tengo@4.15.0
+
 ## 1.41.1
 
 ### Patch Changes

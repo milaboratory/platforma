@@ -13,6 +13,7 @@ export default class Packages extends Command {
     ...cmdOpts.GlobalFlags,
     ...cmdOpts.BuildFlags,
     ...cmdOpts.PlatformFlags,
+    ...cmdOpts.DockerFlags,
 
     ...cmdOpts.VersionFlag,
     ...cmdOpts.ArchiveFlag,
@@ -27,7 +28,7 @@ export default class Packages extends Command {
 
     const core = new Core(logger, { packageRoot: flags['package-root'] });
 
-    core.pkg.version = flags.version;
+    core.pkgInfo.version = flags.version;
     core.buildMode = cmdOpts.modeFromFlag(flags.dev as cmdOpts.devModeName);
     core.targetPlatform = flags.platform as util.PlatformType;
     core.allPlatforms = flags['all-platforms'];
@@ -40,6 +41,10 @@ export default class Packages extends Command {
       archivePath: flags.archive,
       contentRoot: flags['content-root'],
       skipIfEmpty: flags['package-id'] ? false : true, // do not skip 'non-binary' packages if their IDs were set as args
+    });
+
+    core.buildDescriptors({
+      packageIds: flags['package-id'] ? flags['package-id'] : undefined,
     });
   }
 }

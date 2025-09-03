@@ -102,10 +102,19 @@ export type PlTlsAuthMode =
   | 'RequireValidCert';
 
 export type PlControllersSettings = {
+  common?: PlControllerCommonSettings;
   data: PlControllerDataSettings;
   runner: PlControllerRunnerSettings;
   packageLoader: PlControllerPackageLoaderSettings;
   workflows: PlControllerWorkflowsSettings;
+};
+
+export type PlControllerCommonSettings = {
+  timeouts: {
+    init?: string;
+    stop?: string;
+    request?: string;
+  };
 };
 
 export type PlControllerDataSettings = {

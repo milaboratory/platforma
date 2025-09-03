@@ -1,23 +1,18 @@
 {
   "name": "@milaboratories/pl-middle-layer",
-  "version": "1.41.1",
+  "version": "1.42.32",
   "description": "Pl Middle Layer",
   "engines": {
     "node": ">=20.16.0"
   },
+  "type": "module",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "require": "./dist/index.js",
-      "import": "./dist/index.mjs"
-    }
-  },
+  "module": "./dist/index.js",
   "scripts": {
-    "type-check": "tsc --noEmit --composite false",
-    "build": "vite build",
+    "type-check": "ts-builder types --target node",
+    "build": "ts-builder build --target node --build-config ./build.node.config.mjs",
+    "watch": "ts-builder build --target node --build-config ./build.node.config.mjs --watch",
     "lint": "eslint .",
     "test": "vitest",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
@@ -29,19 +24,19 @@
   "keywords": [],
   "license": "UNLICENSED",
   "dependencies": {
-    "@milaboratories/pl-http": "workspace:^",
-    "@milaboratories/computable": "workspace:^",
+    "@milaboratories/pl-http": "workspace:*",
+    "@milaboratories/computable": "workspace:*",
     "@milaboratories/pframes-rs-node": "catalog:",
-    "@milaboratories/resolve-helper": "workspace:^",
-    "@platforma-sdk/block-tools": "workspace:^",
-    "@milaboratories/pl-client": "workspace:^",
-    "@milaboratories/pl-drivers": "workspace:^",
-    "@milaboratories/pl-model-common": "workspace:~",
-    "@milaboratories/pl-model-middle-layer": "workspace:~",
-    "@milaboratories/pl-model-backend": "workspace:~",
-    "@milaboratories/pl-tree": "workspace:~",
-    "@platforma-sdk/model": "workspace:~",
-    "@milaboratories/ts-helpers": "workspace:^",
+    "@milaboratories/resolve-helper": "workspace:*",
+    "@platforma-sdk/block-tools": "workspace:*",
+    "@milaboratories/pl-client": "workspace:*",
+    "@milaboratories/pl-drivers": "workspace:*",
+    "@milaboratories/pl-model-common": "workspace:*",
+    "@milaboratories/pl-model-middle-layer": "workspace:*",
+    "@milaboratories/pl-model-backend": "workspace:*",
+    "@milaboratories/pl-tree": "workspace:*",
+    "@platforma-sdk/model": "workspace:*",
+    "@milaboratories/ts-helpers": "workspace:*",
     "@platforma-sdk/workflow-tengo": "workspace:*",
     "canonicalize": "catalog:",
     "denque": "catalog:",
@@ -52,22 +47,20 @@
     "yaml": "catalog:",
     "zod": "catalog:",
     "remeda": "catalog:",
-    "@milaboratories/pl-config": "workspace:^",
-    "@milaboratories/pl-errors": "workspace:^",
-    "@milaboratories/pl-deployments": "workspace:^"
+    "@milaboratories/pl-config": "workspace:*",
+    "@milaboratories/pl-errors": "workspace:*",
+    "@milaboratories/pl-deployments": "workspace:*",
+    "es-toolkit": "catalog:"
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
-    "@milaboratories/eslint-config": "workspace:^",
+    "@milaboratories/ts-builder": "workspace:*",
+    "@milaboratories/eslint-config": "workspace:*",
     "semver": "catalog:",
     "@types/semver": "catalog:",
     "typescript": "catalog:",
-    "vite": "catalog:",
     "vitest": "catalog:",
-    "@types/jest": "catalog:",
     "@types/node": "catalog:",
-    "jest": "catalog:",
-    "@jest/globals": "catalog:",
-    "ts-jest": "catalog:"
+    "@milaboratories/ts-configs": "workspace:*"
   }
 }

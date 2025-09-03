@@ -1,5 +1,90 @@
 # @platforma-sdk/bootstrap
 
+## 5.2.6
+
+### Patch Changes
+
+- @milaboratories/pl-deployments@2.5.5
+
+## 5.2.5
+
+### Patch Changes
+
+- Updated dependencies [0ff2a1b]
+  - @milaboratories/pl-deployments@2.5.4
+
+## 5.2.4
+
+### Patch Changes
+
+- @milaboratories/pl-deployments@2.5.3
+
+## 5.2.3
+
+### Patch Changes
+
+- Updated dependencies [a3b618d]
+  - @milaboratories/pl-deployments@2.5.2
+
+## 5.2.2
+
+### Patch Changes
+
+- Updated dependencies [b14b2fb]
+  - @milaboratories/pl-deployments@2.5.1
+
+## 5.2.1
+
+### Patch Changes
+
+- Updated dependencies [d942bc0]
+  - @milaboratories/pl-deployments@2.5.0
+
+## 5.2.0
+
+### Minor Changes
+
+- 5818d24: The authorization error in the "pl-dev svc create local s3" utility has been fixed.
+
+## 5.1.0
+
+### Minor Changes
+
+- 8916717: Fixed the bug related to the path to assets.
+
+## 5.0.0
+
+### Major Changes
+
+- 3ae3e32: Fix issue with \_\_dirname
+
+## 4.0.0
+
+### Major Changes
+
+- 6ad2e30: Update the backend platform launch configuration in accordance with the new options.
+
+## 3.5.21
+
+### Patch Changes
+
+- Updated dependencies [b43e778]
+  - @milaboratories/pl-deployments@2.4.9
+
+## 3.5.20
+
+### Patch Changes
+
+- 3f93434: Packages configuration normalization
+- Updated dependencies [3f93434]
+  - @milaboratories/pl-deployments@2.4.8
+
+## 3.5.19
+
+### Patch Changes
+
+- @milaboratories/pl-deployments@2.4.7
+
 ## 3.5.18
 
 ### Patch Changes

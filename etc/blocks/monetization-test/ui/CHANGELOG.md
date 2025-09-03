@@ -1,5 +1,142 @@
 # @milaboratories/milaboratories.monetization-test.ui
 
+## 1.1.92
+
+### Patch Changes
+
+- Updated dependencies [6bc20d1]
+  - @platforma-sdk/model@1.42.51
+  - @milaboratories/milaboratories.monetization-test.model@1.0.12
+  - @platforma-sdk/ui-vue@1.42.51
+
+## 1.1.91
+
+### Patch Changes
+
+- Updated dependencies [3d9638e]
+  - @platforma-sdk/model@1.42.47
+  - @milaboratories/milaboratories.monetization-test.model@1.0.11
+  - @platforma-sdk/ui-vue@1.42.47
+
+## 1.1.90
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.model@1.0.10
+- @platforma-sdk/model@1.42.46
+- @platforma-sdk/ui-vue@1.42.46
+
+## 1.1.89
+
+### Patch Changes
+
+- @platforma-sdk/model@1.42.36
+- @platforma-sdk/ui-vue@1.42.44
+
+## 1.1.88
+
+### Patch Changes
+
+- Updated dependencies [b80a619]
+  - @platforma-sdk/ui-vue@1.42.42
+
+## 1.1.87
+
+### Patch Changes
+
+- Updated dependencies [2a21be5]
+  - @platforma-sdk/ui-vue@1.42.36
+  - @platforma-sdk/model@1.42.36
+  - @milaboratories/milaboratories.monetization-test.model@1.0.9
+
+## 1.1.86
+
+### Patch Changes
+
+- Updated dependencies [27c258f]
+  - @platforma-sdk/model@1.42.35
+  - @milaboratories/milaboratories.monetization-test.model@1.0.8
+  - @platforma-sdk/ui-vue@1.42.35
+
+## 1.1.85
+
+### Patch Changes
+
+- @platforma-sdk/ui-vue@1.42.34
+
+## 1.1.84
+
+### Patch Changes
+
+- 5714f79: Fix Monetization sidebar appearance
+- 5714f79: Fix "Run per file mode"
+- Updated dependencies [5714f79]
+- Updated dependencies [5714f79]
+  - @milaboratories/milaboratories.monetization-test.model@1.0.7
+  - @platforma-sdk/ui-vue@1.42.26
+
+## 1.1.83
+
+### Patch Changes
+
+- Updated dependencies [c432f9a]
+  - @platforma-sdk/model@1.42.25
+
+## 1.1.82
+
+### Patch Changes
+
+- Updated dependencies [b14b2fb]
+  - @platforma-sdk/model@1.42.23
+  - @platforma-sdk/ui-vue@1.42.23
+
+## 1.1.81
+
+### Patch Changes
+
+- Updated dependencies [8e45911]
+  - @platforma-sdk/model@1.42.22
+
+## 1.1.80
+
+### Patch Changes
+
+- 3f93434: Packages configuration normalization
+- Updated dependencies [56b404b]
+- Updated dependencies [3f93434]
+  - @platforma-sdk/ui-vue@1.42.20
+  - @milaboratories/milaboratories.monetization-test.model@1.0.6
+  - @platforma-sdk/model@1.42.20
+
+## 1.1.79
+
+### Patch Changes
+
+- Updated dependencies [4468f99]
+  - @platforma-sdk/model@1.42.16
+
+## 1.1.78
+
+### Patch Changes
+
+- Updated dependencies [b8105fb]
+  - @platforma-sdk/model@1.42.15
+  - @platforma-sdk/ui-vue@1.42.15
+
+## 1.1.77
+
+### Patch Changes
+
+- @platforma-sdk/model@1.42.10
+- @platforma-sdk/ui-vue@1.42.10
+
+## 1.1.76
+
+### Patch Changes
+
+- @platforma-sdk/model@1.42.8
+- @platforma-sdk/ui-vue@1.42.8
+
 ## 1.1.75
 
 ### Patch Changes

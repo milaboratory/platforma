@@ -8,10 +8,10 @@ import {
   UniqueValuesResponse
 } from '@milaboratories/pl-model-common';
 import { CreateTableRequestV3 } from './create_table';
-import { PTableV6 } from './table';
+import { PTableV7 } from './table';
 
 /** Read interface exposed by PFrames library */
-export interface PFrameReadAPIV8 {
+export interface PFrameReadAPIV9 {
   /**
    * Finds columns given filtering criteria on column name, annotations etc.
    * and a set of qualified axes specs to find only columns with compatible
@@ -22,7 +22,10 @@ export interface PFrameReadAPIV8 {
    * */
   findColumns(request: FindColumnsRequest): Promise<FindColumnsResponse>;
 
-  /** To be reviewed in the future */
+  /**
+   * Construct new axes integration with some entry removed but integration qualificaitons preserved.
+   * Removes more then one entry in case the removal will create several disjoint sets of axes.
+   */
   deleteColumn(request: DeleteColumnFromColumnsRequest): Promise<DeleteColumnFromColumnsResponse>;
 
   /** Retrieve single column spec */
@@ -32,7 +35,7 @@ export interface PFrameReadAPIV8 {
   listColumns(): Promise<PColumnInfo[]>;
 
   /** Calculates data for the table and returns an object to access it */
-  createTable(request: CreateTableRequestV3): PTableV6;
+  createTable(request: CreateTableRequestV3): PTableV7;
 
   /** Calculate set of unique values for a specific axis for the filtered set of records */
   getUniqueValues(

@@ -3,6 +3,7 @@ import type { GrpcClientProvider, GrpcClientProviderFactory } from '@milaborator
 import { addRTypeToMetadata, stringifyWithResourceId } from '@milaboratories/pl-client';
 import type { ResourceInfo } from '@milaboratories/pl-tree';
 import type { MiLogger } from '@milaboratories/ts-helpers';
+import { ConcurrencyLimitingExecutor } from '@milaboratories/ts-helpers';
 import type { RpcOptions } from '@protobuf-ts/runtime-rpc';
 import * as fs from 'node:fs';
 import * as fsp from 'node:fs/promises';
@@ -10,12 +11,11 @@ import * as path from 'node:path';
 import { Readable } from 'node:stream';
 import type { Dispatcher } from 'undici';
 import type { LocalStorageProjection } from '../drivers/types';
-import type { DownloadResponse } from '../helpers/download';
-import { RemoteFileDownloader } from '../helpers/download';
+import { type ContentHandler, RemoteFileDownloader } from '../helpers/download';
 import { validateAbsolute } from '../helpers/validate';
 import type { DownloadAPI_GetDownloadURL_Response } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/downloadapi/protocol';
 import { DownloadClient } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/downloadapi/protocol.client';
-import { toHeadersMap } from './helpers';
+import { type GetContentOptions } from '@milaboratories/pl-model-common';
 
 /** Gets URLs for downloading from pl-core, parses them and reads or downloads
  * files locally and from the web. */
@@ -25,6 +25,9 @@ export class ClientDownload {
 
   /** Helps to find a storage root directory by a storage id from URL scheme. */
   private readonly localStorageIdsToRoot: Map<string, string>;
+
+  /** Concurrency limiter for local file reads - limit to 32 parallel reads */
+  private readonly localFileReadLimiter = new ConcurrencyLimitingExecutor(32);
 
   constructor(
     grpcClientProviderFactory: GrpcClientProviderFactory,
@@ -40,40 +43,61 @@ export class ClientDownload {
 
   close() {}
 
-  /** Gets a presign URL and downloads the file.
+  /**
+   * Gets a presign URL and downloads the file.
    * An optional range with 2 numbers from what byte and to what byte to download can be provided.
    * @param fromBytes - from byte including this byte
    * @param toBytes - to byte excluding this byte
    */
-  async downloadBlob(
+  async withBlobContent<T>(
     info: ResourceInfo,
-    options?: RpcOptions,
-    signal?: AbortSignal,
-    fromBytes?: number,
-    toBytes?: number,
-  ): Promise<DownloadResponse> {
-    const { downloadUrl, headers } = await this.grpcGetDownloadUrl(info, options, signal);
+    options: RpcOptions | undefined,
+    ops: GetContentOptions,
+    handler: ContentHandler<T>,
+  ): Promise<T> {
+    const { downloadUrl, headers } = await this.grpcGetDownloadUrl(info, options, ops.signal);
 
-    const remoteHeaders = toHeadersMap(headers, fromBytes, toBytes);
-    this.logger.info(`download blob ${stringifyWithResourceId(info)} from url ${downloadUrl}, headers: ${JSON.stringify(remoteHeaders)}`);
+    const remoteHeaders = Object.fromEntries(headers.map(({ name, value }) => [name, value]));
+    this.logger.info(`download blob ${stringifyWithResourceId(info)} from url ${downloadUrl}, ops: ${JSON.stringify(ops)}`);
 
     return isLocal(downloadUrl)
-      ? await this.readLocalFile(downloadUrl, fromBytes, toBytes)
-      : await this.remoteFileDownloader.download(downloadUrl, remoteHeaders, signal);
+      ? await this.withLocalFileContent(downloadUrl, ops, handler)
+      : await this.remoteFileDownloader.withContent(downloadUrl, remoteHeaders, ops, handler);
   }
 
-  async readLocalFile(
+  async withLocalFileContent<T>(
     url: string,
-    fromBytes?: number, // including this byte
-    toBytes?: number, // excluding this byte
-  ): Promise<DownloadResponse> {
+    ops: GetContentOptions,
+    handler: ContentHandler<T>,
+  ): Promise<T> {
     const { storageId, relativePath } = parseLocalUrl(url);
     const fullPath = getFullPath(storageId, this.localStorageIdsToRoot, relativePath);
 
-    return {
-      content: Readable.toWeb(fs.createReadStream(fullPath, { start: fromBytes, end: toBytes !== undefined ? toBytes - 1 : undefined })),
-      size: (await fsp.stat(fullPath)).size,
-    };
+    return await this.localFileReadLimiter.run(async () => {
+      const readOps = {
+        start: ops.range?.from,
+        end: ops.range?.to !== undefined ? ops.range.to - 1 : undefined,
+        signal: ops.signal,
+      };
+      let stream: fs.ReadStream | undefined;
+      let handlerSuccess = false;
+
+      try {
+        const stat = await fsp.stat(fullPath);
+        stream = fs.createReadStream(fullPath, readOps);
+        const webStream = Readable.toWeb(stream);
+
+        const result = await handler(webStream, stat.size);
+        handlerSuccess = true;
+        return result;
+      } catch (error) {
+        // Cleanup on error (including handler errors)
+        if (!handlerSuccess && stream && !stream.destroyed) {
+          stream.destroy();
+        }
+        throw error;
+      }
+    });
   }
 
   private async grpcGetDownloadUrl(

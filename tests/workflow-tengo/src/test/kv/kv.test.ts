@@ -1,7 +1,7 @@
 import { resourceType } from '@milaboratories/pl-middle-layer';
 import { tplTest } from '@platforma-sdk/test';
 
-tplTest('test reading kv existing', async ({ helper, expect }) => {
+tplTest.concurrent('test reading kv existing', async ({ helper, expect }) => {
   const result = await helper.renderTemplate(
     true,
     'test.kv.kv',
@@ -19,7 +19,7 @@ tplTest('test reading kv existing', async ({ helper, expect }) => {
   expect(await mainResult.awaitStableValue()).eq('Truman Show');
 });
 
-tplTest('test reading kv absent', async ({ helper, expect }) => {
+tplTest.concurrent('test reading kv absent', async ({ helper, expect }) => {
   const result = await helper.renderTemplate(
     true,
     'test.kv.kv',
@@ -36,7 +36,7 @@ tplTest('test reading kv absent', async ({ helper, expect }) => {
   expect(await mainResult.awaitStableValue()).eq('undefined');
 });
 
-tplTest('test reading kv absent', async ({ helper, expect }) => {
+tplTest.concurrent('test reading kv absent', async ({ helper, expect }) => {
   const result = await helper.renderTemplate(
     true,
     'test.kv.kv',
@@ -53,7 +53,7 @@ tplTest('test reading kv absent', async ({ helper, expect }) => {
   expect(await mainResult.awaitStableValue()).eq('undefined');
 });
 
-tplTest('test writing kv', async ({ helper, expect }) => {
+tplTest.concurrent('test writing kv', async ({ helper, expect }) => {
   const result = await helper.renderTemplate(
     true,
     'test.kv.kv',

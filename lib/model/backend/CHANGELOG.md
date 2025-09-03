@@ -1,5 +1,34 @@
 # @milaboratories/pl-model-backend
 
+## 1.1.6
+
+### Patch Changes
+
+- Updated dependencies [3d9638e]
+  - @milaboratories/pl-client@2.11.13
+
+## 1.1.5
+
+### Patch Changes
+
+- @milaboratories/pl-client@2.11.12
+
+## 1.1.4
+
+### Patch Changes
+
+- b14b2fb: update dist builder
+- Updated dependencies [b14b2fb]
+  - @milaboratories/pl-client@2.11.10
+
+## 1.1.3
+
+### Patch Changes
+
+- 3f93434: Packages configuration normalization
+- Updated dependencies [3f93434]
+  - @milaboratories/pl-client@2.11.9
+
 ## 1.1.2
 
 ### Patch Changes

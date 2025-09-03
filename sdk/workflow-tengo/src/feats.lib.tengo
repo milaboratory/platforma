@@ -50,5 +50,11 @@ export ll.toStrict({
 	// - hashing funcs: sha256Encode, gzipEncode, gzipDecode, base32Encode, base32HexEncode, base32Decode, base32HexDecode
 	// - execution context: not persistent context for global variables.
 	// - missing tx methods.
-	fullFeaturedApi:        _isEnabled("fullFeaturedAPI")
+	fullFeaturedApi:        _isEnabled("fullFeaturedAPI"),
+
+	// true when backend supports blob size retrieval via ll.getBlobSize()
+	hasBlobSize:            ll.methodExists(plapi, "getBlobSize"),
+
+	// true when backend supports docker packages
+	isDockerAvailable:        _isEnabled("dockerSupport")
 })

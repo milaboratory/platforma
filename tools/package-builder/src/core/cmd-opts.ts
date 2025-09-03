@@ -43,6 +43,22 @@ export const BuildFlags = {
   }),
 };
 
+export const DockerFlags = {
+  'skip-docker-build': Flags.boolean({
+    env: envs.PL_DOCKER_SKIP_BUILD,
+    description: 'do not build docker images',
+    default: false,
+    required: false,
+  }),
+
+  'docker-autopush': Flags.boolean({
+    env: envs.PL_DOCKER_AUTOPUSH,
+    description: 'push docker images to registry after build. Enabled by default in CI builds.',
+    default: false,
+    required: false,
+  }),
+};
+
 export const DirHashFlag = {
   'full-dir-hash': Flags.boolean({
     env: envs.PL_PKG_FULL_HASH,
@@ -131,7 +147,8 @@ export const SourceFlag = {
   source: Flags.string({
     description:
       'add only selected sources to software entrypoint descriptor (*.sw.json file).\n'
-      + '  - \'archive\': artifacts that are buildable into archive: assets, binary software, run environments.\n',
+      + '  - \'archive\': artifacts that are buildable into archive: assets, binary software, run environments.\n'
+      + '  - \'docker\': artifacts that are buildable into docker image',
     options: util.AllSoftwareSources as unknown as string[],
     multiple: true,
     required: false,

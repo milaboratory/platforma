@@ -37,7 +37,9 @@ RUN_CMD_PLAN_OPTIONS_SCHEMA := {
 	"args": [ARG_SCHEMA],
 	"envs": { "any": ARG_SCHEMA },
 	"substRules": { "any": "string" },
-	"customPaths": [ARG_SCHEMA]
+	"customPaths": [ARG_SCHEMA],
+	"dockerImageTag,?": "string",
+	"dockerEntrypoint,?": ["string"]
 }
 
 RUN_CMD_PLAN_SCHEMA := {
@@ -54,6 +56,8 @@ _initStateFromPlan := func(state, initState, context) {
 	state.options.envs = maps.clone(initOptions.envs)
 	state.options.substRules = maps.clone(initOptions.substRules)
 	state.options.customPaths = maps.clone(initOptions.customPaths)
+	state.options.dockerImageTag = initOptions.dockerImageTag
+	state.options.dockerEntrypoint = maps.clone(initOptions.dockerEntrypoint)
 
 	for k, v in initState.refs {
 		state.refs[k] = v
@@ -235,9 +239,14 @@ _createAbstractRunCommandPlan := func(state, returnSelfFn) {
 		 * Adds a reference for using it in expressions next.
 		 *
 		 * @param refKey: string - the name of the ref
-		 * @param ref: reference - a reference to the valid field or resource
+		 * @param refOrStr: reference | string - a reference or static string
 		 */
-		ref: func(refKey, ref) {
+		ref: func(refKey, refOrStr) {
+			ref := refOrStr
+			if is_string(refOrStr) {
+				ref = smart.createJsonResource(refOrStr)
+			}
+
 			ll.assert(smart.isReference(ref),
 				"runcmd.plan.ref() must be a reference (valid field or resource) %s", refKey)
 
@@ -251,13 +260,14 @@ _createAbstractRunCommandPlan := func(state, returnSelfFn) {
 		/**
 		 * A shortcut for .ref() and .substitutionRule() pair.
 		 *
-		 * @param varName: string - variable to be substituted in arg value ("var1" would be
+		 * @param varName: string - variable to be substituted in arg ("var1" would be
 		 *                          substituted in place of {var1} of arg value)
 		 * @param refKey: string - key of ref (added with .ref()) that points to installed software.
-		 * @param ref: reference - a reference to the valid field or resource
+		 * @param refOrStr: reference | string - a reference or static string to be available for
+		 *                                       substitution in expression.
 		 */
-		refVar: func(varName, refKey, ref) {
-			self.ref(refKey, ref)
+		refVar: func(varName, refKey, refOrStr) {
+			self.ref(refKey, refOrStr)
 			self.substitutionRule(varName, refKey)
 			return returnSelfFn()
 		},
@@ -389,6 +399,26 @@ _createAbstractRunCommandPlan := func(state, returnSelfFn) {
 				state.options.substRules[k] = v
 			}
 			return returnSelfFn()
+		},
+
+		/**
+		 * Sets the docker tag for the command.
+		 *
+		 * @param tag: string - the docker tag.
+		 */
+		dockerImageTag: func(tag) {
+			state.options.dockerImageTag = tag
+			return returnSelfFn()
+		},
+
+		/**
+		 * Sets the docker entrypoint for the command.
+		 *
+		 * @param entrypoint: string[] - the docker entrypoint.
+		 */
+		dockerEntrypoint: func(entrypoint) {
+			state.options.dockerEntrypoint = maps.clone(entrypoint)
+			return returnSelfFn()
 		}
 	})
 
@@ -403,7 +433,9 @@ createRunCommandPlan := func(...initialState) {
 			args: [],
 			envs: {},
 			substRules: {},
-			customPaths: []
+			customPaths: [],
+			dockerImageTag: undefined,
+			dockerEntrypoint: []
 		}
 	}
 
@@ -448,7 +480,9 @@ builder := func(workdir, ...initialState) {
 			args: [],
 			envs: {},
 			substRules: {},
-			customPaths: []
+			customPaths: [],
+			dockerImageTag: "",
+			dockerEntrypoint: []
 		}
 	}
 
@@ -666,7 +700,9 @@ builder := func(workdir, ...initialState) {
 				redirectStderr: stderr,
 				env: options.envs,
 				additionalPaths: options.customPaths,
-				substitutions: options.substRules
+				substitutions: options.substRules,
+				dockerImageTag: options.dockerImageTag,
+				dockerEntrypoint: options.dockerEntrypoint
 			}
 
 			optionsRes := smart.createValueResource(_RTYPE_RUN_COMMAND_OPTIONS, json.encode(buildOptions))

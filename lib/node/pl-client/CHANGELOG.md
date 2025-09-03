@@ -1,5 +1,66 @@
 # @milaboratories/pl-client
 
+## 2.11.13
+
+### Patch Changes
+
+- 3d9638e: PFramesDriver run HTTP parquet server
+- Updated dependencies [3d9638e]
+  - @milaboratories/ts-helpers@1.4.7
+
+## 2.11.12
+
+### Patch Changes
+
+- Updated dependencies [10a5439]
+  - @milaboratories/ts-helpers@1.4.6
+
+## 2.11.11
+
+### Patch Changes
+
+- d1ad23e: Update pl-client protobuf
+
+## 2.11.10
+
+### Patch Changes
+
+- b14b2fb: update dist builder
+- Updated dependencies [b14b2fb]
+  - @milaboratories/pl-http@1.1.7
+  - @milaboratories/ts-helpers@1.4.5
+
+## 2.11.9
+
+### Patch Changes
+
+- 3f93434: Packages configuration normalization
+- Updated dependencies [3f93434]
+  - @milaboratories/ts-helpers@1.4.4
+  - @milaboratories/pl-http@1.1.6
+
+## 2.11.8
+
+### Patch Changes
+
+- d1b00dc: Export DefaultRetryOptions
+- ca79a4e: Fix eslint errors
+
+## 2.11.7
+
+### Patch Changes
+
+- 4306ff2: Network libraries upgrade: Undici, gRPC ann S3 libraries upgraded to the latest versions
+- Updated dependencies [4306ff2]
+  - @milaboratories/pl-http@1.1.5
+
+## 2.11.6
+
+### Patch Changes
+
+- Updated dependencies [ff4a709]
+  - @milaboratories/ts-helpers@1.4.3
+
 ## 2.11.5
 
 ### Patch Changes

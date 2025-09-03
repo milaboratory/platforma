@@ -20,10 +20,14 @@ import type {
   PTableSorting,
 } from '@milaboratories/pl-model-common';
 import {
+  Annotation,
   canonicalizeJson,
   getAxisId,
   getColumnIdAndSpec,
   matchAxisId,
+  PColumnName,
+  readAnnotation,
+  uniqueBy,
 } from '@milaboratories/pl-model-common';
 import type {
   AxisLabelProvider,
@@ -221,7 +225,11 @@ export function createPlDataTableStateV2(): PlDataTableStateV2Normalized {
 }
 
 /** Upgrade PlDataTableStateV2 to the latest version */
-export function upgradePlDataTableStateV2(state: PlDataTableStateV2): PlDataTableStateV2Normalized {
+export function upgradePlDataTableStateV2(state: PlDataTableStateV2 | undefined): PlDataTableStateV2Normalized {
+  // Block just added, had no state, model started earlier than the UI
+  if (!state) {
+    return createPlDataTableStateV2();
+  }
   // v1 -> v2
   if (!('version' in state)) {
     // Non upgradeable as sourceId calculation algorithm has changed, resetting state to default
@@ -468,7 +476,7 @@ export type CreatePlDataTableOps = {
 
 /** Check if column is a label column */
 export function isLabelColumn(column: PColumnSpec) {
-  return column.axesSpec.length === 1 && column.name === 'pl7.app/label';
+  return column.axesSpec.length === 1 && column.name === PColumnName.Label;
 }
 
 /** Get all label columns from the result pool */
@@ -479,7 +487,7 @@ export function getAllLabelColumns(
     .addAxisLabelProvider(resultPool)
     .addColumnProvider(resultPool)
     .getColumns({
-      name: 'pl7.app/label',
+      name: PColumnName.Label,
       axes: [{}], // exactly one axis
     }, { dontWaitAllData: true });
 }
@@ -587,6 +595,9 @@ export function allColumnsComputed(
           case 'BinaryPartitioned':
             return Object.values(d.parts)
               .every((p) => p.index.getIsReadyOrError() && p.values.getIsReadyOrError());
+          case 'ParquetPartitioned':
+            return Object.values(d.parts)
+              .every((p) => p.getIsReadyOrError());
         }
       } else {
         // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
@@ -642,21 +653,13 @@ export type PlDataTableModel = {
 };
 
 /** Check if column should be omitted from the table */
-export function isColumnHidden(spec: { annotations?: Record<string, string> }): boolean {
-  return spec.annotations?.['pl7.app/table/visibility'] === 'hidden';
+export function isColumnHidden(spec: { annotations?: Annotation }): boolean {
+  return readAnnotation(spec, Annotation.Table.Visibility) === 'hidden';
 }
 
 /** Check if column is hidden by default */
-export function isColumnOptional(spec: { annotations?: Record<string, string> }): boolean {
-  return spec.annotations?.['pl7.app/table/visibility'] === 'optional';
-}
-
-/**
- * Return unique entries of the array by the provided id
- * For each id, the last entry is kept
- */
-export function uniqueBy<T>(array: T[], makeId: (entry: T) => string): T[] {
-  return [...new Map(array.map((e) => [makeId(e), e])).values()];
+export function isColumnOptional(spec: { annotations?: Annotation }): boolean {
+  return readAnnotation(spec, Annotation.Table.Visibility) === 'optional';
 }
 
 /**
@@ -670,7 +673,7 @@ export function uniqueBy<T>(array: T[], makeId: (entry: T) => string): T[] {
 export function createPlDataTableV2<A, U>(
   ctx: RenderCtx<A, U>,
   inputColumns: PColumn<TreeNodeAccessor | PColumnValues | DataInfo<TreeNodeAccessor>>[],
-  tableState: PlDataTableStateV2,
+  tableState: PlDataTableStateV2 | undefined,
   ops?: CreatePlDataTableOps,
 ): PlDataTableModel | undefined {
   if (inputColumns.length === 0) return undefined;

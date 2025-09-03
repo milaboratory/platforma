@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/milaboratories.monetization-test",
-  "version": "1.0.81",
+  "version": "1.0.103",
   "scripts": {
     "build": "rm -rf block-pack/* && block-tools pack"
   },
@@ -39,7 +39,7 @@
     }
   },
   "devDependencies": {
-    "@platforma-sdk/block-tools": "workspace:"
+    "@platforma-sdk/block-tools": "workspace:*"
   },
   "packageManager": "pnpm@9.12.0"
 }

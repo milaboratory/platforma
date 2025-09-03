@@ -25,7 +25,7 @@ export function CreateBlockPackDescriptionSchema<
     components,
     meta,
     featureFlags: FeatureFlags.optional()
-  });
+  }).passthrough();
 }
 
 export const BlockPackDescriptionRaw = CreateBlockPackDescriptionSchema(

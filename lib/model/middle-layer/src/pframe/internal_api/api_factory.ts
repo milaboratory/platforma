@@ -1,4 +1,17 @@
-import { DataInfo, PColumnSpec, PObjectId } from '@milaboratories/pl-model-common';
+import {
+  Base64Encoded,
+  BinaryPartitionedDataInfo,
+  JsonDataInfo,
+  JsonPartitionedDataInfo,
+  ParquetChunk,
+  ParquetPartitionedDataInfo,
+  PColumnSpec,
+  PObjectId,
+} from '@milaboratories/pl-model-common';
+import {
+  HttpHelpers,
+  HttpServerInfo,
+} from './http_helpers';
 
 /** Abstract identifier of a data blob that can be requested from the storage backend */
 export type PFrameBlobId = string;
@@ -9,7 +22,7 @@ export type PFrameBlobId = string;
 export type FilePath = string;
 
 /** Data source allows PFrame to retrieve the data blobs for columns with assigned data info. */
-export type PFrameDataSource = {
+export interface PFrameDataSourceV2 {
   /**
    * PFrame may notify storage backend about its plans to use particular blobs in the future.
    * Storage backend will do its best to preload specified blob so the subsequent
@@ -19,18 +32,39 @@ export type PFrameDataSource = {
 
   /** Returns raw blob data given the blob id from {@link DataInfo}. */
   resolveBlobContent(blobId: PFrameBlobId): Promise<Uint8Array>;
-};
+
+  /**
+   * Parquet HTTP(S) server connection settings, {@link HttpHelpers.createHttpServer}
+   * When not provided, parquet BlobIds would be treated as local file paths.
+   */
+  parquetServer?: HttpServerInfo;
+}
+
+/**
+ * Union type representing all possible data storage formats for PColumn data.
+ * The specific format used depends on data size, access patterns, and performance requirements.
+ *
+ * @template Blob - Type parameter representing the storage reference type (could be ResourceInfo, PFrameBlobId, etc.)
+ */
+export type DataInfo<Blob> =
+  | JsonDataInfo
+  | JsonPartitionedDataInfo<Blob>
+  | BinaryPartitionedDataInfo<Blob>
+  | ParquetPartitionedDataInfo<ParquetChunk<Blob>>;
 
 /** API exposed by PFrames library allowing to create and provide data for
  * PFrame objects */
-export interface PFrameFactoryAPIV2 {
+export interface PFrameFactoryAPIV4 extends Disposable {
   /** Associates data source with this PFrame */
-  setDataSource(dataSource: PFrameDataSource): void;
+  setDataSource(dataSource: PFrameDataSourceV2): void;
 
-  /** Adds PColumn without spec */
+  /** Adds PColumn without data info */
   addColumnSpec(columnId: PObjectId, columnSpec: PColumnSpec): void;
 
-  /** Associates data info with cpecific column */
+  /**
+   * Assign data info to the specified PColumn.
+   * For parquet data info, schema resolution via network is performed during this call.
+   */
   setColumnData(
     columnId: PObjectId,
     dataInfo: DataInfo<PFrameBlobId>,

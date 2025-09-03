@@ -1,24 +1,25 @@
 {
   "name": "@milaboratories/pl-deployments",
-  "version": "2.4.6",
-  "pl-version": "1.35.2",
+  "version": "2.5.5",
+  "pl-version": "1.41.8",
   "description": "MiLaboratories Platforma Backend code service run wrapper",
   "engines": {
     "node": ">=20.16.0"
   },
   "types": "./dist/index.d.ts",
-  "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "require": "./dist/index.js",
-      "import": "./dist/index.mjs"
+      "require": "./dist/index.cjs",
+      "import": "./dist/index.js"
     }
   },
   "scripts": {
-    "type-check": "tsc --noEmit --composite false",
-    "build": "vite build",
+    "type-check": "ts-builder types --target node",
+    "build": "ts-builder build --target node",
+    "watch": "ts-builder build --target node --watch",
     "lint": "eslint .",
     "test": "vitest",
     "do-pack": "rm -rf src/.test && rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
@@ -38,8 +39,9 @@
   "keywords": [],
   "license": "UNLICENSED",
   "devDependencies": {
-    "@milaboratories/eslint-config": "workspace:^",
+    "@milaboratories/eslint-config": "workspace:*",
     "@milaboratories/build-configs": "workspace:*",
+    "@milaboratories/ts-configs": "workspace:*",
     "@types/decompress": "catalog:",
     "@types/jest": "catalog:",
     "@types/node": "catalog:",
@@ -52,12 +54,12 @@
     "tsconfig-paths": "catalog:",
     "typescript": "catalog:",
     "utility-types": "catalog:",
-    "vite": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "@milaboratories/ts-builder": "workspace:*"
   },
   "dependencies": {
-    "@milaboratories/pl-config": "workspace:^",
-    "@milaboratories/ts-helpers": "workspace:^",
+    "@milaboratories/pl-config": "workspace:*",
+    "@milaboratories/ts-helpers": "workspace:*",
     "decompress": "catalog:",
     "upath": "catalog:",
     "ssh2": "catalog:",

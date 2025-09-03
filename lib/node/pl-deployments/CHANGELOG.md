@@ -1,5 +1,93 @@
 # @milaboratories/pl-local
 
+## 2.5.5
+
+### Patch Changes
+
+- Updated dependencies [3d9638e]
+  - @milaboratories/ts-helpers@1.4.7
+  - @milaboratories/pl-config@1.7.3
+
+## 2.5.4
+
+### Patch Changes
+
+- 0ff2a1b: **Registry Overview Snapshots & Enhanced Schema Backward Compatibility**
+
+  Added comprehensive snapshot functionality for registry overviews and improved Zod schema compatibility across the entire codebase.
+
+  ## Registry Snapshots (minor)
+
+  - **Automatic backup creation**: Overview files are automatically backed up during every registry update with gzipped compression
+  - **Organized storage structure**: Snapshots stored in `_overview_snapshots_v2/global/` and `per_package/` folders mirroring main hierarchy
+  - **Security features**: Millisecond timestamps with random suffixes prevent CDN retrieval attacks
+  - **CLI management tools**: Added `list-overview-snapshots` and `restore-overview-from-snapshot` commands with safety confirmations
+  - **Configurable behavior**: `skipSnapshotCreation` setting allows disabling snapshots when needed
+  - **Comprehensive testing**: Full test coverage ensures reliability
+
+  ## Schema Backward Compatibility (patch)
+
+  - **Strategic schema improvements**: Enhanced Zod schemas to prevent data loss during version transitions
+  - **Smart classification**: Applied `.passthrough()` to evolving data structures (overviews, manifests, registries, errors) while maintaining `.strict()` for closed types (content types, identifiers)
+  - **Wide compatibility coverage**: Updated schemas across block metadata, registry specifications, error structures, and deployment configurations
+  - **Forward compatibility**: Older versions will now preserve unknown fields instead of stripping them during parsing
+
+  These improvements ensure robust registry management with automatic backup capabilities and seamless schema evolution without breaking changes.
+
+## 2.5.3
+
+### Patch Changes
+
+- Updated dependencies [10a5439]
+  - @milaboratories/ts-helpers@1.4.6
+  - @milaboratories/pl-config@1.7.2
+
+## 2.5.2
+
+### Patch Changes
+
+- a3b618d: update backend version to 1.41.8: fix block endless execution after backend restart
+
+## 2.5.1
+
+### Patch Changes
+
+- b14b2fb: update dist builder
+- Updated dependencies [b14b2fb]
+  - @milaboratories/pl-config@1.7.1
+  - @milaboratories/ts-helpers@1.4.5
+
+## 2.5.0
+
+### Minor Changes
+
+- d942bc0: Release 1.41.3 to builtin and ssh modes
+
+## 2.4.9
+
+### Patch Changes
+
+- b43e778: Force stop backend process if it exceeeds timeout after gentle stop signal
+- Updated dependencies [b43e778]
+  - @milaboratories/pl-config@1.7.0
+
+## 2.4.8
+
+### Patch Changes
+
+- 3f93434: Packages configuration normalization
+- Updated dependencies [3f93434]
+  - @milaboratories/ts-helpers@1.4.4
+  - @milaboratories/pl-config@1.6.4
+
+## 2.4.7
+
+### Patch Changes
+
+- Updated dependencies [ff4a709]
+  - @milaboratories/ts-helpers@1.4.3
+  - @milaboratories/pl-config@1.6.3
+
 ## 2.4.6
 
 ### Patch Changes

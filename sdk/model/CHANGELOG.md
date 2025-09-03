@@ -1,5 +1,102 @@
 # @platforma-sdk/model
 
+## 1.42.51
+
+### Patch Changes
+
+- 6bc20d1: add hidden for graphs columns
+- Updated dependencies [6bc20d1]
+  - @milaboratories/pl-model-common@1.19.17
+
+## 1.42.47
+
+### Patch Changes
+
+- 3d9638e: PFramesDriver run HTTP parquet server
+- Updated dependencies [3d9638e]
+  - @milaboratories/pl-model-common@1.19.16
+
+## 1.42.46
+
+### Patch Changes
+
+- Updated dependencies [0ff2a1b]
+  - @milaboratories/pl-error-like@1.12.5
+  - @milaboratories/pl-model-common@1.19.15
+
+## 1.42.36
+
+### Patch Changes
+
+- Updated dependencies [2a21be5]
+  - @milaboratories/pl-model-common@1.19.14
+
+## 1.42.35
+
+### Patch Changes
+
+- 27c258f: update createPFrameForGraphs
+
+## 1.42.25
+
+### Patch Changes
+
+- c432f9a: createPlDataTableV2 fix
+
+## 1.42.23
+
+### Patch Changes
+
+- b14b2fb: update dist builder
+- Updated dependencies [b14b2fb]
+  - @milaboratories/pl-model-common@1.19.11
+  - @milaboratories/pl-error-like@1.12.4
+
+## 1.42.22
+
+### Patch Changes
+
+- 8e45911: update sdk-model
+
+## 1.42.20
+
+### Patch Changes
+
+- 3f93434: Packages configuration normalization
+- Updated dependencies [3f93434]
+  - @milaboratories/pl-error-like@1.12.3
+  - @milaboratories/pl-model-common@1.19.8
+
+## 1.42.16
+
+### Patch Changes
+
+- 4468f99: add composite linker columns
+- Updated dependencies [4468f99]
+  - @milaboratories/pl-model-common@1.19.6
+
+## 1.42.15
+
+### Patch Changes
+
+- b8105fb: PFrames - Different public and internal types for ParquetDataInfo
+- Updated dependencies [b8105fb]
+  - @milaboratories/pl-model-common@1.19.4
+
+## 1.42.10
+
+### Patch Changes
+
+- Updated dependencies [6d6c4ba]
+  - @milaboratories/pl-model-common@1.19.3
+
+## 1.42.8
+
+### Patch Changes
+
+- Updated dependencies [017a888]
+  - @milaboratories/pl-model-common@1.19.2
+
 ## 1.42.4
 
 ### Patch Changes

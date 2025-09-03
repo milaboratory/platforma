@@ -5,13 +5,17 @@ import type {
   PColumn,
   PColumnValues,
   PObjectId,
-  PlDataTableStateV2,
   PlDataTableSheet,
+  PlDataTableStateV2,
 } from '@platforma-sdk/model';
 import {
+  Annotation,
   BlockModel,
   createPlDataTableStateV2,
   createPlDataTableV2,
+  PColumnName,
+  stringifyJson,
+  ValueType,
 } from '@platforma-sdk/model';
 import { z } from 'zod';
 
@@ -99,12 +103,12 @@ export const platforma = BlockModel.create('Heavy')
     const sheets = [
       {
         axis: {
-          type: 'Int',
+          type: ValueType.Int,
           name: 'part',
           annotations: {
-            'pl7.app/label': 'Partitioned axis',
-            'pl7.app/discreteValues': '[0,1]',
-          },
+            [Annotation.Label]: 'Partitioned axis',
+            [Annotation.DiscreteValues]: stringifyJson([0, 1]),
+          } satisfies Annotation,
         },
         options: [
           { value: 0, label: 'Partition 1' },
@@ -123,28 +127,29 @@ export const platforma = BlockModel.create('Heavy')
         id: 'column1' as PObjectId,
         spec: {
           kind: 'PColumn',
-          valueType: 'String',
+          valueType: ValueType.String,
           name: 'example',
           annotations: {
-            'pl7.app/label': 'String column',
-            'pl7.app/discreteValues': '["up","down"]',
-            'pl7.app/table/orderPriority': '101',
-          },
+            [Annotation.Label]: 'String column',
+            [Annotation.DiscreteValues]: stringifyJson(['up', 'down']),
+            [Annotation.Table.OrderPriority]: stringifyJson(101),
+            [Annotation.Description]: 'String column description',
+          } satisfies Annotation,
           axesSpec: [
             {
-              type: 'Int',
+              type: ValueType.Int,
               name: 'part',
               annotations: {
-                'pl7.app/label': 'Partitioned axis',
-                'pl7.app/discreteValues': '[0,1]',
-              },
+                [Annotation.Label]: 'Partitioned axis',
+                [Annotation.DiscreteValues]: stringifyJson([0, 1]),
+              } satisfies Annotation,
             },
             {
-              type: 'Int',
+              type: ValueType.Int,
               name: 'index',
               annotations: {
-                'pl7.app/label': 'Int axis',
-              },
+                [Annotation.Label]: 'Int axis',
+              } satisfies Annotation,
             },
           ],
         },
@@ -160,28 +165,29 @@ export const platforma = BlockModel.create('Heavy')
         id: 'column2' as PObjectId,
         spec: {
           kind: 'PColumn',
-          valueType: 'Float',
+          valueType: ValueType.Float,
           name: 'value',
           annotations: {
-            'pl7.app/label': 'Float column',
-            'pl7.app/table/visibility': 'optional',
-            'pl7.app/table/orderPriority': '100',
-          },
+            [Annotation.Label]: 'Float column',
+            [Annotation.Table.Visibility]: 'optional',
+            [Annotation.Table.OrderPriority]: stringifyJson(100),
+            [Annotation.Description]: 'Float column description',
+          } satisfies Annotation,
           axesSpec: [
             {
-              type: 'Int',
+              type: ValueType.Int,
               name: 'part',
               annotations: {
-                'pl7.app/label': 'Partitioned axis',
-                'pl7.app/discreteValues': '[0,1]',
-              },
+                [Annotation.Label]: 'Partitioned axis',
+                [Annotation.DiscreteValues]: stringifyJson([0, 1]),
+              } satisfies Annotation,
             },
             {
-              type: 'Int',
+              type: ValueType.Int,
               name: 'index',
               annotations: {
-                'pl7.app/label': 'Int axis',
-              },
+                [Annotation.Label]: 'Int axis',
+              } satisfies Annotation,
             },
           ],
         },
@@ -197,18 +203,18 @@ export const platforma = BlockModel.create('Heavy')
         id: 'labelColumn' as PObjectId,
         spec: {
           kind: 'PColumn',
-          valueType: 'Int',
-          name: 'pl7.app/label',
+          valueType: ValueType.Int,
+          name: PColumnName.Label,
           annotations: {
-            'pl7.app/label': 'Int axis labels',
-          },
+            [Annotation.Label]: 'Int axis labels',
+          } satisfies Annotation,
           axesSpec: [
             {
-              type: 'Int',
+              type: ValueType.Int,
               name: 'index',
               annotations: {
-                'pl7.app/label': 'Int axis',
-              },
+                [Annotation.Label]: 'Int axis',
+              } satisfies Annotation,
             },
           ],
         },
@@ -224,27 +230,27 @@ export const platforma = BlockModel.create('Heavy')
         id: 'linkerColumn' as PObjectId,
         spec: {
           kind: 'PColumn',
-          valueType: 'Int',
+          valueType: ValueType.Int,
           name: 'linker',
           annotations: {
-            'pl7.app/label': 'Index axis linker',
-            'pl7.app/isLinkerColumn': 'true',
-            'pl7.app/table/visibility': 'hidden',
-          },
+            [Annotation.Label]: 'Index axis linker',
+            [Annotation.IsLinkerColumn]: stringifyJson(true),
+            [Annotation.Table.Visibility]: 'hidden',
+          } satisfies Annotation,
           axesSpec: [
             {
-              type: 'Int',
+              type: ValueType.Int,
               name: 'index',
               annotations: {
-                'pl7.app/label': 'Int axis',
-              },
+                [Annotation.Label]: 'Int axis',
+              } satisfies Annotation,
             },
             {
-              type: 'Int',
+              type: ValueType.Int,
               name: 'linkedIndex',
               annotations: {
-                'pl7.app/label': 'Linked int axis',
-              },
+                [Annotation.Label]: 'Linked int axis',
+              } satisfies Annotation,
             },
           ],
         },
@@ -262,20 +268,20 @@ export const platforma = BlockModel.create('Heavy')
         id: `alphabeticalColumn${j}` as PObjectId,
         spec: {
           kind: 'PColumn',
-          valueType: 'String',
+          valueType: ValueType.String,
           name: 'value',
           annotations: {
-            'pl7.app/label': `Alphabetical column ${j}`,
-            'pl7.app/table/visibility': 'optional',
-            'pl7.app/table/orderPriority': (10 - j).toString(),
-          },
+            [Annotation.Label]: `Alphabetical column ${j}`,
+            [Annotation.Table.Visibility]: 'optional',
+            [Annotation.Table.OrderPriority]: stringifyJson(10 - j),
+          } satisfies Annotation,
           axesSpec: [
             {
-              type: 'Int',
+              type: ValueType.Int,
               name: 'linkedIndex',
               annotations: {
-                'pl7.app/label': 'Linked int axis',
-              },
+                [Annotation.Label]: 'Linked int axis',
+              } satisfies Annotation,
             },
           ],
         },
@@ -334,21 +340,26 @@ export const platforma = BlockModel.create('Heavy')
       { type: 'link', href: '/pl-number-field-page', label: 'PlNumberFieldPage' },
       { type: 'link', href: '/pl-error-boundary-page', label: 'PlErrorBoundaryPage' },
       { type: 'link', href: '/pl-element-list-page', label: 'PlElementList' },
-      { type: 'link', href: '/errors', label: 'Errors' },
       { type: 'link', href: '/text-fields', label: 'PlTextField' },
       { type: 'link', href: '/tabs', label: 'PlTabs' },
+      { type: 'link', href: '/pl-autocomplete', label: 'PlAutocomplete' },
+      { type: 'link', href: '/radio', label: 'PlRadio' },
       { type: 'link', href: '/stacked-bar', label: 'PlChartStackedBar' },
       { type: 'link', href: '/histogram', label: 'PlChartHistogram' },
       { type: 'link', href: '/buttons', label: 'ButtonsPage' },
+      { type: 'link', href: '/errors', label: 'Errors' },
+      { type: 'link', href: '/downloads', label: 'Downloads' },
       { type: 'link', href: '/notifications', label: 'Notifications' },
       { type: 'link', href: '/drafts', label: 'Drafts' },
       { type: 'link', href: '/pl-autocomplete', label: 'PlAutocomplete' },
+      { type: 'link', href: '/pl-autocomplete-multi', label: 'PlAutocompleteMulti' },
       { type: 'link', href: '/radio', label: 'PlRadio' },
       ...(dynamicSections.length
         ? [
             { type: 'delimiter' },
             ...dynamicSections,
-            { type: 'delimiter' }] as const
+            { type: 'delimiter' },
+          ] as const
         : []),
       {
         type: 'link',
@@ -359,7 +370,7 @@ export const platforma = BlockModel.create('Heavy')
     ];
   })
 
-  .done(2); // api version 2
+  .done(); // api version 2
 
 export type BlockOutputs = InferOutputsType<typeof platforma>;
 export type Href = InferHrefType<typeof platforma>;

@@ -1,5 +1,117 @@
 # @milaboratories/milaboratories.ui-examples.workflow
 
+## 1.1.61
+
+### Patch Changes
+
+- Updated dependencies [06b7746]
+  - @platforma-sdk/workflow-tengo@5.1.4
+
+## 1.1.60
+
+### Patch Changes
+
+- @platforma-sdk/workflow-tengo@5.1.3
+
+## 1.1.59
+
+### Patch Changes
+
+- @platforma-sdk/workflow-tengo@5.1.2
+
+## 1.1.58
+
+### Patch Changes
+
+- Updated dependencies [05d5bac]
+  - @platforma-sdk/workflow-tengo@5.1.1
+
+## 1.1.57
+
+### Patch Changes
+
+- Updated dependencies [a5a0559]
+  - @platforma-sdk/workflow-tengo@5.1.0
+
+## 1.1.56
+
+### Patch Changes
+
+- Updated dependencies [60489e9]
+  - @platforma-sdk/workflow-tengo@5.0.3
+
+## 1.1.55
+
+### Patch Changes
+
+- 3f93434: Packages configuration normalization
+- Updated dependencies [3f93434]
+  - @platforma-sdk/workflow-tengo@5.0.2
+
+## 1.1.54
+
+### Patch Changes
+
+- Updated dependencies [2c0d624]
+- Updated dependencies [3da120c]
+  - @platforma-sdk/workflow-tengo@5.0.1
+
+## 1.1.53
+
+### Patch Changes
+
+- Updated dependencies [1831f6d]
+  - @platforma-sdk/workflow-tengo@5.0.0
+
+## 1.1.52
+
+### Patch Changes
+
+- Updated dependencies [d1b00dc]
+  - @platforma-sdk/workflow-tengo@4.18.2
+
+## 1.1.51
+
+### Patch Changes
+
+- Updated dependencies [a716ccd]
+  - @platforma-sdk/workflow-tengo@4.18.1
+
+## 1.1.50
+
+### Patch Changes
+
+- Updated dependencies [d407d12]
+  - @platforma-sdk/workflow-tengo@4.18.0
+
+## 1.1.49
+
+### Patch Changes
+
+- Updated dependencies [bcde71e]
+  - @platforma-sdk/workflow-tengo@4.17.1
+
+## 1.1.48
+
+### Patch Changes
+
+- Updated dependencies [b74b887]
+  - @platforma-sdk/workflow-tengo@4.17.0
+
+## 1.1.47
+
+### Patch Changes
+
+- Updated dependencies [4ca3d94]
+  - @platforma-sdk/workflow-tengo@4.16.0
+
+## 1.1.46
+
+### Patch Changes
+
+- Updated dependencies [7cc3e1c]
+  - @platforma-sdk/workflow-tengo@4.15.0
+
 ## 1.1.45
 
 ### Patch Changes

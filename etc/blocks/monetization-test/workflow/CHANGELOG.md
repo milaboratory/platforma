@@ -1,5 +1,53 @@
 # @milaboratories/milaboratories.monetization-test.workflow
 
+## 1.1.7
+
+### Patch Changes
+
+- Updated dependencies [06b7746]
+  - @platforma-sdk/workflow-tengo@5.1.4
+
+## 1.1.6
+
+### Patch Changes
+
+- @platforma-sdk/workflow-tengo@5.1.3
+
+## 1.1.5
+
+### Patch Changes
+
+- @platforma-sdk/workflow-tengo@5.1.2
+
+## 1.1.4
+
+### Patch Changes
+
+- Updated dependencies [05d5bac]
+  - @platforma-sdk/workflow-tengo@5.1.1
+
+## 1.1.3
+
+### Patch Changes
+
+- Updated dependencies [a5a0559]
+  - @platforma-sdk/workflow-tengo@5.1.0
+
+## 1.1.2
+
+### Patch Changes
+
+- 5714f79: Fix Monetization sidebar appearance
+- 5714f79: Fix "Run per file mode"
+
+## 1.1.1
+
+### Patch Changes
+
+- 3f93434: Packages configuration normalization
+- Updated dependencies [3f93434]
+  - @platforma-sdk/workflow-tengo@5.0.2
+
 ## 1.1.0
 
 ### Minor Changes

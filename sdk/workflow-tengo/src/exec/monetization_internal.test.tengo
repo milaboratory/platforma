@@ -13,15 +13,42 @@ Test_monetization_addArgToLastRun := func() {
 	mnz := monetization.init()
 	monetization.enable(mnz, "test_product")
 	monetization.appendRun(mnz)
+	monetization.appendRun(mnz)
 	monetization.addArgToLastRun(mnz, "abc.txt", {
 		"arg": "abc",
-		"metrics": ["lines", "sha256"]
+		"metrics": ["lines", "sha256"],
+		"size": 1024
 	})
 
-	test.isEqual(mnz.runs, [{"abc.txt": {
+	test.isEqual([{}, {"abc.txt": {
 		"arg": "abc",
-		"metrics": ["lines", "sha256"]
-	}}])
+		"metrics": ["lines", "sha256"],
+		"size": 1024
+		}}],
+		mnz.runs
+	)
+}
+
+Test_monetization_addArgToLastRun_rewrites_arg := func() {
+	mnz := monetization.init()
+	monetization.enable(mnz, "test_product")
+	monetization.appendRun(mnz)
+	monetization.addArgToLastRun(mnz, "abc.txt", {
+		"arg": "first",
+		"metrics": ["lines", "sha256"],
+		"size": 1024
+	})
+	monetization.addArgToLastRun(mnz, "abc.txt", {
+		"arg": "second",
+		"metrics": ["lines", "size"]
+	})
+
+	test.isEqual([{"abc.txt": {
+		"arg": "second",
+		"metrics": ["lines", "size"]
+	}}],
+	mnz.runs
+	)
 }
 
 Test_monetization_shouldRun := func() {
@@ -30,8 +57,83 @@ Test_monetization_shouldRun := func() {
 	monetization.appendRun(mnz)
 	monetization.addArgToLastRun(mnz, "abc.txt", {
 		"arg": "abc",
-		"metrics": ["lines", "sha256"]
+		"metrics": ["lines", "sha256"],
+		"size": 1024
 	})
 
 	test.isTrue(monetization.shouldRun(mnz))
+}
+
+Test_monetization_appendRun_call_several_times := func() {
+	numberOfRuns := 3
+	mnz := monetization.init()
+	monetization.enable(mnz, "test_product")
+	for i := 0; i < numberOfRuns; i++ {
+		monetization.appendRun(mnz)
+	}
+	test.isEqual(numberOfRuns, len(mnz.runs))
+}
+
+Test_monetization_setDryRun := func() {
+	mnz := monetization.init()
+	monetization.enable(mnz, "test_product")
+	monetization.setDryRun(mnz, true)
+	test.isTrue(mnz.isDryRun)
+	monetization.setDryRun(mnz, false)
+	test.isFalse(mnz.isDryRun)
+}
+
+Test_monetization_setUrl := func() {
+	urlAddress := "https://milaboratories.com/"
+	mnz := monetization.init()
+	monetization.enable(mnz, "test_product")
+	monetization.setUrl(mnz, urlAddress)
+	test.isEqual(urlAddress, mnz.url)
+}
+
+Test_monetization_argNameForLastRun := func() {
+	expectedFileName := "newName"
+	mnz := monetization.init()
+	monetization.enable(mnz, "test_product")
+	monetization.appendRun(mnz)
+	monetization.appendRun(mnz)
+
+	test.isEqual(expectedFileName + "_1", monetization.argNameForLastRun(mnz, expectedFileName))
+}
+
+Test_monetization_addOptionalArg := func() {
+	mnz := monetization.init()
+	monetization.enable(mnz, "test_product")
+	monetization.appendRun(mnz)
+	monetization.addArgToLastRun(mnz, "abc.txt", {
+		"arg": "abc",
+		"metrics": ["lines", "sha256"],
+		"size": 1024
+	})
+	monetization.addOptionalArg(mnz, "abc.txt", {"mnz": {"arg": "cba", "metrics": ["size"]}})
+	test.isEqual([{"abc.txt": {
+		"arg": "cba",
+		"metrics": ["size"]
+	}}],
+	mnz.runs
+	)
+}
+
+Test_monetization_addOptionalArg_empty_opts := func() {
+	mnz := monetization.init()
+	monetization.enable(mnz, "test_product")
+	monetization.appendRun(mnz)
+	monetization.addArgToLastRun(mnz, "abc.txt", {
+		"arg": "abc",
+		"metrics": ["lines", "sha256"],
+		"size": 1024
+	})
+	monetization.addOptionalArg(mnz, "abc.txt", {})
+	test.isEqual([{"abc.txt": {
+		"arg": "abc",
+		"metrics": ["lines", "sha256"],
+		"size": 1024
+	}}],
+	mnz.runs
+	)
 }

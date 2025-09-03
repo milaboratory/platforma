@@ -1,5 +1,112 @@
 # @milaboratories/uikit
 
+## 2.4.12
+
+### Patch Changes
+
+- Updated dependencies [6bc20d1]
+  - @platforma-sdk/model@1.42.51
+
+## 2.4.11
+
+### Patch Changes
+
+- Updated dependencies [3d9638e]
+  - @platforma-sdk/model@1.42.47
+
+## 2.4.10
+
+### Patch Changes
+
+- @platforma-sdk/model@1.42.46
+
+## 2.4.9
+
+### Patch Changes
+
+- Updated dependencies [b2e7c82]
+  - @milaboratories/helpers@1.7.0
+  - @platforma-sdk/model@1.42.36
+
+## 2.4.8
+
+### Patch Changes
+
+- @platforma-sdk/model@1.42.36
+
+## 2.4.7
+
+### Patch Changes
+
+- Updated dependencies [27c258f]
+  - @platforma-sdk/model@1.42.35
+
+## 2.4.6
+
+### Patch Changes
+
+- e8f0e58: Added 2 new icons: analytics and file-logs
+
+## 2.4.5
+
+### Patch Changes
+
+- b14b2fb: update dist builder
+- Updated dependencies [b14b2fb]
+  - @milaboratories/helpers@1.6.21
+  - @platforma-sdk/model@1.42.23
+
+## 2.4.4
+
+### Patch Changes
+
+- 6b9828a: Remove unused styles, fix lint warnings, update comments
+
+## 2.4.3
+
+### Patch Changes
+
+- 56b404b: Add PlAutocompleteMulti component
+- 3f93434: Packages configuration normalization
+- Updated dependencies [3f93434]
+  - @milaboratories/helpers@1.6.20
+  - @platforma-sdk/model@1.42.20
+
+## 2.4.2
+
+### Patch Changes
+
+- 604827a: [desktop] add button to save block error log to file
+
+## 2.4.1
+
+### Patch Changes
+
+- Updated dependencies [b8105fb]
+  - @platforma-sdk/model@1.42.15
+
+## 2.4.0
+
+### Minor Changes
+
+- 5c49322: Allow any key types in PlDropdownRef
+
+### Patch Changes
+
+- 68776f8: Prevent Teleport-using components from triggering outside click
+
+## 2.3.29
+
+### Patch Changes
+
+- @platforma-sdk/model@1.42.10
+
+## 2.3.28
+
+### Patch Changes
+
+- @platforma-sdk/model@1.42.8
+
 ## 2.3.27
 
 ### Patch Changes

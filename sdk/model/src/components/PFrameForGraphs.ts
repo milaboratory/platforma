@@ -1,5 +1,6 @@
 import type {
   AxisId,
+  AxisSpecNormalized,
   CanonicalizedJson,
   PColumn,
   PColumnSpec,
@@ -10,8 +11,17 @@ import {
   canonicalizeJson,
   getAxisId,
   isDataInfo,
-  matchAxisId, parseJson,
+  matchAxisId,
   visitDataInfo,
+  getColumnIdAndSpec,
+  Annotation,
+  readAnnotation,
+  getNormalizedAxesList,
+  stringifyJson,
+  readAnnotationJson,
+  LinkerMap,
+  getArrayFromAxisTree,
+  getAxesTree,
 } from '@milaboratories/pl-model-common';
 import type { PColumnDataUniversal, RenderCtx } from '../render';
 import { PColumnCollection, TreeNodeAccessor } from '../render';
@@ -48,70 +58,45 @@ function getKeysCombinations(idsLists: AxisId[][]) {
 }
 
 /** Check if column is a linker column */
-export function isLinkerColumn(column: PColumnSpec) {
-  return column.annotations?.[LINKER_COLUMN_ANNOTATION] === 'true';
+export function isLinkerColumn(column: PColumnSpec): boolean {
+  return !!readAnnotationJson(column, Annotation.IsLinkerColumn);
 }
 
-export const IS_VIRTUAL_COLUMN = 'pl7.app/graph/isVirtual'; // annotation for column duplicates with extended domains
-export const LABEL_ANNOTATION = 'pl7.app/label';
-export const LINKER_COLUMN_ANNOTATION = 'pl7.app/isLinkerColumn';
-
-export type LinkerColumnsMap = Map<CanonicalizedJson<AxisId>, Set<CanonicalizedJson<AxisId>>>;
-export function getLinkerColumnsMap(linkerColumns: PColumn<PColumnDataUniversal>[]) {
-  const resultMap: LinkerColumnsMap = new Map();
-  for (const { spec } of linkerColumns) {
-    const axisIds = spec.axesSpec.map(getAxisId).map(canonicalizeJson);
-    axisIds.forEach((id) => {
-      if (!resultMap.has(id)) {
-        resultMap.set(id, new Set());
-      }
-    });
-    for (let i = 0; i < axisIds.length - 1; i++) {
-      for (let j = i + 1; j < axisIds.length; j++) {
-        const id1 = axisIds[i];
-        const id2 = axisIds[j];
-        resultMap.get(id1)?.add(id2);
-        resultMap.get(id2)?.add(id1);
-      }
-    }
-  }
-  return resultMap;
+function isHiddenFromGraphColumn(column: PColumnSpec): boolean {
+  return !!readAnnotationJson(column, Annotation.HideDataFromGraphs);
 }
+
+type AxesVault = Map<CanonicalizedJson<AxisId>, AxisSpecNormalized>;
 
 export function getAvailableWithLinkersAxes(
   linkerColumns: PColumn<PColumnDataUniversal>[],
-  blockAxes: Map<CanonicalizedJson<AxisId>, AxisId>,
-): Map<CanonicalizedJson<AxisId>, AxisId> {
-  const linkerColumnsMap = getLinkerColumnsMap(linkerColumns);
-  const linkerColumnsMapIds = [...linkerColumnsMap.keys()].map(parseJson);
-  const startKeys: CanonicalizedJson<AxisId>[] = [];
-  for (const startId of blockAxes.values()) {
-    const matched = linkerColumnsMapIds.find((id) => matchAxisId(startId, id));
+  blockAxes: AxesVault,
+): AxesVault {
+  const linkerMap = LinkerMap.fromColumns(linkerColumns.map(getColumnIdAndSpec));
+  const startKeys: CanonicalizedJson<AxisId[]>[] = [];
+  const blockAxesGrouped: AxisId[][] = [...blockAxes.values()].map((axis) => getArrayFromAxisTree(getAxesTree(axis)).map(getAxisId));
+
+  for (const axesGroupBlock of blockAxesGrouped) {
+    const matched = linkerMap.keyAxesIds.find(
+      (keyIds: AxisId[]) => keyIds.every(
+        (keySourceAxis) => axesGroupBlock.find((axisSpecFromBlock) => matchAxisId(axisSpecFromBlock, keySourceAxis)),
+      ),
+    );
     if (matched) {
       startKeys.push(canonicalizeJson(matched)); // linker column can contain fewer domains than in block's columns, it's fixed on next step in enrichCompatible
     }
   }
-  const visited: Set<CanonicalizedJson<AxisId>> = new Set(startKeys);
-  const addedAvailableAxes: Map<CanonicalizedJson<AxisId>, AxisId> = new Map();
-  let nextKeys = [...startKeys];
 
-  while (nextKeys.length) {
-    const next: CanonicalizedJson<AxisId>[] = [];
-    for (const nextKey of nextKeys) {
-      for (const availableKey of linkerColumnsMap.get(nextKey) ?? []) {
-        if (!visited.has(availableKey)) {
-          next.push(availableKey);
-          visited.add(availableKey);
-          addedAvailableAxes.set(availableKey, parseJson(availableKey));
-        }
-      }
-    }
-    nextKeys = next;
-  }
-  return addedAvailableAxes;
+  const availableKeys = linkerMap.searchAvailableAxesKeys(startKeys);
+  const availableAxes = linkerMap.getAxesListFromKeysList([...availableKeys]);
+
+  return new Map(availableAxes.map((axisSpec) => {
+    const id = getAxisId(axisSpec);
+    return [canonicalizeJson(id), axisSpec];
+  }));
 }
 /** Add columns with fully compatible axes created from partial compatible ones */
-export function enrichCompatible(blockAxes: Map<string, AxisId>, columns: PColumn<PColumnDataUniversal>[]) {
+export function enrichCompatible(blockAxes: AxesVault, columns: PColumn<PColumnDataUniversal>[]) {
   const result: PColumn<PColumnDataUniversal>[] = [];
   columns.forEach((column) => {
     result.push(...getAdditionalColumnsForColumn(blockAxes, column));
@@ -120,7 +105,7 @@ export function enrichCompatible(blockAxes: Map<string, AxisId>, columns: PColum
 }
 
 function getAdditionalColumnsForColumn(
-  blockAxes: Map<string, AxisId>,
+  blockAxes: AxesVault,
   column: PColumn<PColumnDataUniversal>,
 ): PColumn<PColumnDataUniversal>[] {
   const columnAxesIds = column.spec.axesSpec.map(getAxisId);
@@ -173,19 +158,19 @@ function getAdditionalColumnsForColumn(
   const additionalColumns = secondaryIdsVariants.map((idsList, idx) => {
     const id = colId(column.id, idsList.map((id) => id.domain));
 
-    const label = column.spec.annotations?.[LABEL_ANNOTATION] ?? '';
+    const label = readAnnotation(column.spec, Annotation.Label) ?? '';
     const labelDomainPart = ([...addedByVariantsDomainValues[idx]])
       .filter((str) => addedNotToAllVariantsDomainValues.has(str))
       .sort()
       .map((v) => JSON.parse(v)?.[1]) // use in labels only domain values, but sort them by key to save the same order in all column variants
       .join(' / ');
 
-    const annotations: Record<string, string> = {
+    const annotations: Annotation = {
       ...column.spec.annotations,
-      [IS_VIRTUAL_COLUMN]: 'true',
+      [Annotation.Graph.IsVirtual]: stringifyJson(true),
     };
     if (label || labelDomainPart) {
-      annotations[LABEL_ANNOTATION] = label && labelDomainPart ? label + ' / ' + labelDomainPart : label + labelDomainPart;
+      annotations[Annotation.Label] = label && labelDomainPart ? label + ' / ' + labelDomainPart : label + labelDomainPart;
     }
 
     return {
@@ -248,11 +233,11 @@ export function createPFrameForGraphs<A, U>(
       return undefined;
     }
 
-    const allAxes = new Map(allColumns
-      .flatMap((column) => column.spec.axesSpec)
+    const allAxes: AxesVault = new Map(allColumns
+      .flatMap((column) => getNormalizedAxesList(column.spec.axesSpec))
       .map((axisSpec) => {
         const axisId = getAxisId(axisSpec);
-        return [canonicalizeJson(axisId), axisId];
+        return [canonicalizeJson(axisId), axisSpec];
       }));
 
     // additional columns are duplicates with extra fields in domains for compatibility if there are ones with partial match
@@ -271,14 +256,14 @@ export function createPFrameForGraphs<A, U>(
   columns.addColumns(blockColumns);
 
   // all possible axes from block columns
-  const blockAxes = new Map<CanonicalizedJson<AxisId>, AxisId>();
+  const blockAxes: AxesVault = new Map();
   // axes from block columns and compatible result pool columns
-  const allAxes = new Map<CanonicalizedJson<AxisId>, AxisId>();
+  const allAxes: AxesVault = new Map();
   for (const c of blockColumns) {
-    for (const id of c.spec.axesSpec) {
-      const aid = getAxisId(id);
-      blockAxes.set(canonicalizeJson(aid), aid);
-      allAxes.set(canonicalizeJson(aid), aid);
+    for (const spec of getNormalizedAxesList(c.spec.axesSpec)) {
+      const aid = getAxisId(spec);
+      blockAxes.set(canonicalizeJson(aid), spec);
+      allAxes.set(canonicalizeJson(aid), spec);
     }
   }
 
@@ -293,14 +278,9 @@ export function createPFrameForGraphs<A, U>(
   }
 
   // all compatible with block columns but without label columns
-  const compatibleWithoutLabels = (columns.getColumns((spec) => spec.axesSpec.some((axisSpec) => {
+  let compatibleWithoutLabels = (columns.getColumns((spec) => !isHiddenFromGraphColumn(spec) && spec.axesSpec.some((axisSpec) => {
     const axisId = getAxisId(axisSpec);
-    for (const selectorAxisId of blockAxes.values()) {
-      if (matchAxisId(selectorAxisId, axisId)) {
-        return true;
-      }
-    }
-    return false;
+    return Array.from(blockAxes.values()).some((selectorAxisSpec) => matchAxisId(getAxisId(selectorAxisSpec), axisId));
   }), { dontWaitAllData: true, overrideLabelAnnotation: false }) ?? []).filter((column) => !isLabelColumn(column.spec));
 
   // if at least one column is not yet ready, we can't show the graph
@@ -310,21 +290,22 @@ export function createPFrameForGraphs<A, U>(
 
   // extend axes set for label columns request
   for (const c of compatibleWithoutLabels) {
-    for (const id of c.spec.axesSpec) {
-      const aid = getAxisId(id);
-      allAxes.set(canonicalizeJson(aid), aid);
+    for (const spec of getNormalizedAxesList(c.spec.axesSpec)) {
+      const aid = getAxisId(spec);
+      allAxes.set(canonicalizeJson(aid), spec);
     }
   }
 
-  // label columns must be compatible with full set of axes - block axes and axes from compatible columns from result pool
-  const compatibleLabels = (columns.getColumns((spec) => spec.axesSpec.some((axisSpec) => {
+  // extend allowed columns - add columns thad doesn't have axes from block, but have all axes in 'allAxes' list (that means all axes from linkers or from 'hanging' of other selected columns)
+  compatibleWithoutLabels = (columns.getColumns((spec) => !isHiddenFromGraphColumn(spec) && spec.axesSpec.every((axisSpec) => {
     const axisId = getAxisId(axisSpec);
-    for (const selectorAxisId of allAxes.values()) {
-      if (matchAxisId(selectorAxisId, axisId)) {
-        return true;
-      }
-    }
-    return false;
+    return Array.from(allAxes.values()).some((selectorAxisSpec) => matchAxisId(getAxisId(selectorAxisSpec), axisId));
+  }), { dontWaitAllData: true, overrideLabelAnnotation: false }) ?? []).filter((column) => !isLabelColumn(column.spec));
+
+  // label columns must be compatible with full set of axes - block axes and axes from compatible columns from result pool
+  const compatibleLabels = (columns.getColumns((spec) => !isHiddenFromGraphColumn(spec) && spec.axesSpec.some((axisSpec) => {
+    const axisId = getAxisId(axisSpec);
+    return Array.from(allAxes.values()).some((selectorAxisSpec) => matchAxisId(getAxisId(selectorAxisSpec), axisId));
   }), { dontWaitAllData: true, overrideLabelAnnotation: false }) ?? []).filter((column) => isLabelColumn(column.spec));
 
   // if at least one column is not yet ready, we can't show the graph

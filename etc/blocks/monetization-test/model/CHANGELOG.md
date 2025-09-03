@@ -1,5 +1,53 @@
 # @milaboratories/milaboratories.monetization-test.model
 
+## 1.0.12
+
+### Patch Changes
+
+- Updated dependencies [6bc20d1]
+  - @platforma-sdk/model@1.42.51
+
+## 1.0.11
+
+### Patch Changes
+
+- Updated dependencies [3d9638e]
+  - @platforma-sdk/model@1.42.47
+
+## 1.0.10
+
+### Patch Changes
+
+- @platforma-sdk/model@1.42.46
+
+## 1.0.9
+
+### Patch Changes
+
+- @platforma-sdk/model@1.42.36
+
+## 1.0.8
+
+### Patch Changes
+
+- Updated dependencies [27c258f]
+  - @platforma-sdk/model@1.42.35
+
+## 1.0.7
+
+### Patch Changes
+
+- 5714f79: Fix Monetization sidebar appearance
+- 5714f79: Fix "Run per file mode"
+
+## 1.0.6
+
+### Patch Changes
+
+- 3f93434: Packages configuration normalization
+- Updated dependencies [3f93434]
+  - @platforma-sdk/model@1.42.20
+
 ## 1.0.5
 
 ### Patch Changes

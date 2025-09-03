@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import * as util from '../util';
 
-export const artifactTypes = ['environment', 'binary', 'java', 'python', 'R', 'asset'] as const;
+export const artifactTypes = ['environment', 'binary', 'java', 'python', 'R', 'asset', 'docker'] as const;
 export type artifactType = (typeof artifactTypes)[number];
 
 export const buildableTypes: artifactType[] = [
@@ -11,8 +11,11 @@ export const buildableTypes: artifactType[] = [
   'python',
   'R',
   'asset',
+  'docker',
 ] as const;
 export const crossplatformTypes: artifactType[] = ['asset', 'java', 'python', 'R'] as const;
+
+export const dockerRequiredTypes: artifactType[] = ['python'] as const;
 
 export function isBuildable(aType: artifactType): boolean {
   return buildableTypes.includes(aType);
@@ -20,6 +23,10 @@ export function isBuildable(aType: artifactType): boolean {
 
 export function isCrossPlatform(aType: artifactType): boolean {
   return crossplatformTypes.includes(aType);
+}
+
+export function isDockerRequired(aType: artifactType): boolean {
+  return dockerRequiredTypes.includes(aType);
 }
 
 export const runEnvironmentTypes = ['java', 'python', 'R'] as const;
@@ -38,6 +45,7 @@ export type registry = z.infer<typeof registrySchema>;
 export const registryOrRef = z.union([z.string(), registrySchema]);
 
 // common fields for all buildable artifacts
+// TODO: create new type for binary packages
 const archiveRulesSchema = z.object({
   registry: registryOrRef,
   name: z.string().optional(),
@@ -116,7 +124,8 @@ export const pythonToolsetSchema = z.discriminatedUnion('toolset', [pipToolsetSc
 export const pythonPackageSchema = archiveRulesSchema.extend({
   type: z.literal('python'),
   environment: artifactIDSchema,
-  dependencies: pythonToolsetSchema,
+  dependencies: pythonToolsetSchema.optional(),
+  pkg: z.string().optional().describe('custom working directory in Docker container (default: /app/)'),
 });
 export type pythonPackageConfig = z.infer<typeof pythonPackageSchema>;
 
@@ -133,6 +142,23 @@ export const condaPackageSchema = archiveRulesSchema.extend({
 });
 export type condaPackageConfig = z.infer<typeof condaPackageSchema>;
 
+export const dockerPackageSchema = archiveRulesSchema.extend({
+  type: z.literal('docker'),
+  registry: registryOrRef.optional(),
+
+  // build from custom Dockerfile
+  context: z.string()
+    .refine((val) => val !== './' && val !== '.', {
+      message: 'Context cannot be "./" or "." - use absolute path or relative path without "./" prefix',
+    })
+    .describe('relative path to context directory from folder where command is executed or absolute path to context folder (cannot be "./" or ".")'),
+  dockerfile: z.string().optional().describe('relative path to \'Dockerfile\' file from folder where command is executed or absolute path to the file'),
+
+  entrypoint: z.array(z.string()).optional().describe('replace image\'s ENTRYPOINT with this value when running container'),
+  pkg: z.string().optional().describe('{pkg} placeholder value to be used in "cmd" and arguments'),
+});
+export type dockerPackageConfig = z.infer<typeof dockerPackageSchema>;
+
 export const configSchema = z.discriminatedUnion('type', [
   typedAssetPackageSchema,
   environmentPackageSchema,
@@ -140,6 +166,7 @@ export const configSchema = z.discriminatedUnion('type', [
   javaPackageSchema,
   pythonPackageSchema,
   rPackageSchema,
+  dockerPackageSchema,
   // condaPackageSchema,
 ]);
 

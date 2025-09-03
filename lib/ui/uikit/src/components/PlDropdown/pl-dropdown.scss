@@ -1,4 +1,4 @@
-@use "../../assets/mixins.scss" as *;
+@use '../../assets/mixins.scss' as *;
 
 .pl-dropdown__options {
   --option-hover-bg: var(--btn-sec-hover-grey);
@@ -24,46 +24,6 @@
 
   .group-container {
     padding: 4px 0;
-  }
-
-  .option {
-    position: relative;
-    padding: 0 30px 0 10px;
-    height: var(--control-height);
-    line-height: var(--control-height);
-    cursor: pointer;
-    user-select: none;
-
-    .checkmark {
-      position: absolute;
-      display: none;
-      right: 10px;
-      @include abs-center-y();
-    }
-
-    >span {
-      display: block;
-      overflow: hidden;
-      white-space: nowrap;
-      max-width: 100%;
-      text-overflow: ellipsis;
-    }
-
-    &.selected {
-      background-color: var(--color-active-select);
-
-      .checkmark {
-        display: block;
-      }
-    }
-
-    &.active:not(.selected) {
-      background-color: var(--option-hover-bg);
-    }
-
-    &:hover {
-      background-color: var(--option-hover-bg);
-    }
   }
 }
 
@@ -187,10 +147,8 @@
     gap: 6px;
     margin-left: auto;
 
-    
     .mask-16,
     .mask-24 {
-      --icon-color: var(--control-mask-fill);
       cursor: pointer;
     }
 
@@ -214,11 +172,9 @@
   .arrow-icon {
     cursor: pointer;
 
-    // Default "arrow" icon (16x16) 
+    // Default "arrow" icon (16x16)
     &.arrow-icon-default {
-      transition: transform .2s;
-      background-color: var(--control-mask-fill);
-      @include mask(url('../../assets/images/16_chevron-down.svg'), 16px);
+      transition: transform 0.2s;
     }
   }
 
@@ -239,7 +195,6 @@
 
     .arrow-icon {
       &.arrow-icon-default {
-        background-color: var(--control-mask-fill);
         transform: rotate(-180deg);
       }
     }
@@ -268,7 +223,7 @@
 
   &.disabled {
     --contour-color: var(--color-dis-01);
-    --control-mask-fill: var(--color-dis-01);
+    --icon-color: var(--color-dis-01);
     --label-color: var(--color-dis-01);
     cursor: not-allowed;
     pointer-events: none;

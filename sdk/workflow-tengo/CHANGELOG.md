@@ -1,5 +1,149 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.1.4
+
+### Patch Changes
+
+- 06b7746: Pass 'pkg' path to command renderer when it is available in docker descriptor
+
+## 5.1.3
+
+### Patch Changes
+
+- Updated dependencies [69c33c1]
+  - @platforma-open/milaboratories.software-ptabler@1.12.1
+
+## 5.1.2
+
+### Patch Changes
+
+- Updated dependencies [c11e4aa]
+  - @platforma-open/milaboratories.software-ptabler@1.12.0
+  - @platforma-open/milaboratories.software-ptexter@1.1.0
+
+## 5.1.1
+
+### Patch Changes
+
+- 05d5bac: docker tag is empty on backend
+
+## 5.1.0
+
+### Minor Changes
+
+- a5a0559: Added library for text file manipulation (txt), now contains one function head, allowing to retrieve specific number of lines from the file
+
+### Patch Changes
+
+- Updated dependencies [a5a0559]
+  - @platforma-open/milaboratories.software-ptexter@1.0.1
+
+## 5.0.3
+
+### Patch Changes
+
+- 60489e9: Make blocks to forcefully re-create venv when they update workflow-sdk dependency (ptabler polars dependencies issue)
+
+## 5.0.2
+
+### Patch Changes
+
+- 3f93434: Packages configuration normalization
+
+## 5.0.1
+
+### Patch Changes
+
+- 2c0d624: Ensure pip installs Python dependencies from local sources only by adding the `--no-index` flag. This prevents any attempts to connect to the public PyPI repository, making dependency installation more secure and reliable in isolated environments.
+- 3da120c: Attach fake software descriptor to packag get requests to support packages without .sw.json inside
+
+## 5.0.0
+
+### Major Changes
+
+- 1831f6d: Add `ll.getBlobSize` function to retrieve blob size.
+
+## 4.18.2
+
+### Patch Changes
+
+- d1b00dc: Added expression-based argument and environment variable methods to exec builder with comprehensive documentation of available system variables (cpu, memory, secrets, env). Added argExpr() and envExpr() methods, deprecated argWithVar() and envWithVar(). Updated pt library to pass allocated CPUs to polars-based-ptabler.
+
+## 4.18.1
+
+### Patch Changes
+
+- a716ccd: Fix fill null behaviour to fill null and added fill NaN to fill NaNs
+- Updated dependencies [a716ccd]
+  - @platforma-open/milaboratories.software-ptabler@1.11.2
+
+## 4.18.0
+
+### Minor Changes
+
+- d407d12: installing cursor extension during ctag building
+
+## 4.17.1
+
+### Patch Changes
+
+- bcde71e: Now uses ptabler form workspace
+- Updated dependencies [bcde71e]
+  - @platforma-open/milaboratories.software-ptabler@1.11.1
+
+## 4.17.0
+
+### Minor Changes
+
+- b74b887: Enhanced structField expression API with native array path support and advanced options
+
+  - Replace varargs field chaining with native array-based field paths: `structField(["coordinates", "lat"])`
+  - Add optional `default` parameter for fallback values when fields are missing
+  - Add optional `dtype` parameter for automatic type casting of extracted values
+  - Maintain backward compatibility with single field string access
+  - Improve performance by using native recursive field access instead of expression chaining
+
+## 4.16.0
+
+### Minor Changes
+
+- 4ca3d94: - Fixed data parsing logic for `RTYPE_P_COLUMN_DATA_RESOURCE_MAP_PARTITIONED` by correctly handling both `partitionKeyLength` and `keyLength` properties
+  - Fixed incorrect resource type reference in `flatten` method for resource map partitioned data
+  - Added `treeJoin` function to pt module for joining multiple DataFrames in a tree-like pattern using recursive pairwise joins
+  - Added `flatten` function to slices module for flattening nested arrays with support for both shallow and deep flattening modes
+  - Added comprehensive JSDoc-style documentation to all PColumnData methods including parameter descriptions, return types, and usage examples
+  - Added `structField` method to expression API for accessing nested data structures with support for single field extraction and nested path resolution using varargs (e.g., `col("location").structField("coordinates", "lat")`)
+    - Implements robust error handling using `map_elements` with Python's dict `.get()` method for graceful handling of both null structs and missing fields
+    - Supports deeply nested field access with automatic null propagation when intermediate structures are missing
+    - Compatible with JSON import workflows where nested structures may have inconsistent schemas across records
+
+## 4.15.0
+
+### Minor Changes
+
+- 7cc3e1c: Add NDJSON support to pt (PTabler) API
+
+  Introduces NDJSON (Newline Delimited JSON) reading and writing support alongside existing CSV/TSV functionality.
+
+  **New Features:**
+
+  - `format` parameter in `wf.frame()` supporting "csv", "tsv", "ndjson"
+  - Auto-detection from file extensions (.csv, .tsv, .ndjson, .jsonl)
+  - Enhanced reading with `nRows` and `ignoreErrors` parameters
+  - NDJSON writing with auto-detection and explicit format override
+  - Full backward compatibility with existing `xsvType` parameter
+
+  **Usage:**
+
+  ```javascript
+  // Reading NDJSON
+  wf.frame(content, { format: 'ndjson', nRows: 100 });
+
+  // Writing NDJSON
+  df.save('output.jsonl');
+  df.save('data.txt', { format: 'ndjson' });
+  ```
+
 ## 4.14.1
 
 ### Patch Changes

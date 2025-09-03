@@ -1,5 +1,188 @@
 # @platforma-sdk/block-tools
 
+## 2.6.2
+
+### Patch Changes
+
+- Updated dependencies [6bc20d1]
+  - @milaboratories/pl-model-common@1.19.17
+  - @milaboratories/pl-model-middle-layer@1.8.24
+
+## 2.6.1
+
+### Patch Changes
+
+- Updated dependencies [3d9638e]
+  - @milaboratories/pl-model-middle-layer@1.8.23
+  - @milaboratories/ts-helpers@1.4.7
+  - @milaboratories/pl-model-common@1.19.16
+  - @milaboratories/ts-helpers-oclif@1.1.28
+
+## 2.6.0
+
+### Minor Changes
+
+- 0ff2a1b: **Enhanced force mode to support complete package and version removal**
+
+  Force mode in the registry now properly handles complete removal of manually deleted packages and versions:
+
+  - **Complete rebuild**: Force mode now starts with empty overviews instead of loading existing ones, ensuring overviews exactly match storage contents
+  - **Automatic cleanup**: Manually deleted packages/versions are automatically removed from registry overviews during force mode refresh
+  - **Pre-write snapshots**: Added safety feature that creates backup snapshots with `-prewrite-` suffix before making any changes in force mode
+  - **Comprehensive testing**: Added extensive test coverage for deletion scenarios
+
+  **Breaking changes**: None - this enhancement only affects force mode behavior and maintains backward compatibility for normal mode operations.
+
+  **Use case**: This resolves the issue where manually deleted packages would persist in registry overviews because the previous force mode only updated packages found in storage. Now force mode performs a complete rebuild, guaranteeing consistency between storage and overviews.
+
+- 0ff2a1b: **Registry Overview Snapshots & Enhanced Schema Backward Compatibility**
+
+  Added comprehensive snapshot functionality for registry overviews and improved Zod schema compatibility across the entire codebase.
+
+  ## Registry Snapshots (minor)
+
+  - **Automatic backup creation**: Overview files are automatically backed up during every registry update with gzipped compression
+  - **Organized storage structure**: Snapshots stored in `_overview_snapshots_v2/global/` and `per_package/` folders mirroring main hierarchy
+  - **Security features**: Millisecond timestamps with random suffixes prevent CDN retrieval attacks
+  - **CLI management tools**: Added `list-overview-snapshots` and `restore-overview-from-snapshot` commands with safety confirmations
+  - **Configurable behavior**: `skipSnapshotCreation` setting allows disabling snapshots when needed
+  - **Comprehensive testing**: Full test coverage ensures reliability
+
+  ## Schema Backward Compatibility (patch)
+
+  - **Strategic schema improvements**: Enhanced Zod schemas to prevent data loss during version transitions
+  - **Smart classification**: Applied `.passthrough()` to evolving data structures (overviews, manifests, registries, errors) while maintaining `.strict()` for closed types (content types, identifiers)
+  - **Wide compatibility coverage**: Updated schemas across block metadata, registry specifications, error structures, and deployment configurations
+  - **Forward compatibility**: Older versions will now preserve unknown fields instead of stripping them during parsing
+
+  These improvements ensure robust registry management with automatic backup capabilities and seamless schema evolution without breaking changes.
+
+### Patch Changes
+
+- Updated dependencies [0ff2a1b]
+  - @milaboratories/pl-model-middle-layer@1.8.22
+  - @milaboratories/pl-model-common@1.19.15
+
+## 2.5.92
+
+### Patch Changes
+
+- Updated dependencies [f848ca0]
+  - @milaboratories/pl-model-middle-layer@1.8.21
+
+## 2.5.91
+
+### Patch Changes
+
+- Updated dependencies [a14b8c8]
+  - @milaboratories/pl-model-middle-layer@1.8.20
+
+## 2.5.90
+
+### Patch Changes
+
+- Updated dependencies [f5bcdbe]
+  - @milaboratories/pl-model-middle-layer@1.8.19
+
+## 2.5.89
+
+### Patch Changes
+
+- Updated dependencies [9acf386]
+  - @milaboratories/pl-model-middle-layer@1.8.18
+
+## 2.5.88
+
+### Patch Changes
+
+- Updated dependencies [ef18158]
+  - @milaboratories/pl-model-middle-layer@1.8.17
+
+## 2.5.87
+
+### Patch Changes
+
+- Updated dependencies [2a21be5]
+  - @milaboratories/pl-model-common@1.19.14
+  - @milaboratories/pl-model-middle-layer@1.8.16
+
+## 2.5.86
+
+### Patch Changes
+
+- Updated dependencies [10a5439]
+- Updated dependencies [10a5439]
+  - @milaboratories/pl-model-middle-layer@1.8.15
+  - @milaboratories/ts-helpers@1.4.6
+  - @milaboratories/ts-helpers-oclif@1.1.27
+
+## 2.5.85
+
+### Patch Changes
+
+- Updated dependencies [dc289eb]
+  - @milaboratories/pl-model-middle-layer@1.8.14
+
+## 2.5.84
+
+### Patch Changes
+
+- Updated dependencies [9508f78]
+  - @milaboratories/pl-model-middle-layer@1.8.13
+
+## 2.5.83
+
+### Patch Changes
+
+- 3f93434: Packages configuration normalization
+- Updated dependencies [3f93434]
+  - @milaboratories/ts-helpers-oclif@1.1.26
+  - @milaboratories/resolve-helper@1.1.1
+  - @milaboratories/pl-model-middle-layer@1.8.8
+  - @milaboratories/ts-helpers@1.4.4
+  - @milaboratories/pl-model-common@1.19.8
+  - @milaboratories/pl-http@1.1.6
+
+## 2.5.82
+
+### Patch Changes
+
+- d1b00dc: Added --unstable flag to publish command to control stable channel assignment. When --unstable flag is not set (default behavior), published packages are automatically added to the stable channel. When --unstable flag is set, packages are published without being added to the stable channel. Also added PL_PUBLISH_UNSTABLE environment variable support.
+
+  Added gzipped version of global overview file. The registry now creates both the regular overview.json file and a compressed overview.json.gz file with identical content to improve download performance.
+
+## 2.5.81
+
+### Patch Changes
+
+- Updated dependencies [b8105fb]
+  - @milaboratories/pl-model-middle-layer@1.8.7
+  - @milaboratories/pl-model-common@1.19.4
+
+## 2.5.80
+
+### Patch Changes
+
+- Updated dependencies [6d6c4ba]
+  - @milaboratories/pl-model-common@1.19.3
+  - @milaboratories/pl-model-middle-layer@1.8.6
+
+## 2.5.79
+
+### Patch Changes
+
+- Updated dependencies [017a888]
+  - @milaboratories/pl-model-common@1.19.2
+  - @milaboratories/pl-model-middle-layer@1.8.5
+
+## 2.5.78
+
+### Patch Changes
+
+- Updated dependencies [ff4a709]
+  - @milaboratories/ts-helpers@1.4.3
+  - @milaboratories/ts-helpers-oclif@1.1.25
+
 ## 2.5.77
 
 ### Patch Changes

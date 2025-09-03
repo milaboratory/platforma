@@ -1,5 +1,38 @@
-import { field, Pl } from '@milaboratories/pl-middle-layer';
+import { Annotation, field, Pl } from '@milaboratories/pl-middle-layer';
 import { awaitStableState, tplTest } from '@platforma-sdk/test';
+import { deepClone, getTestTimeout } from '@milaboratories/helpers';
+import { expect } from 'vitest';
+import type { TestRenderResults } from '@platforma-sdk/test';
+import type { MiddleLayerDriverKit } from '@milaboratories/pl-middle-layer';
+import type { PlTreeNodeAccessor } from '@milaboratories/pl-tree';
+import type { ComputableCtx } from '@milaboratories/computable';
+
+const TIMEOUT = getTestTimeout(30_000);
+
+async function getCsvHandle(
+  result: TestRenderResults<string>,
+  driverKit: MiddleLayerDriverKit,
+  outputName: string,
+  timeout = TIMEOUT,
+) {
+  const handle = await awaitStableState(
+    result.computeOutput(outputName, (f: PlTreeNodeAccessor | undefined, ctx: ComputableCtx) => {
+      if (!f) {
+        return undefined;
+      }
+      return driverKit.blobDriver.getOnDemandBlob(f.persist(), ctx).handle;
+    }),
+    timeout,
+  );
+  expect(handle).toBeDefined();
+  return handle!;
+}
+
+type BlobHandle = ReturnType<MiddleLayerDriverKit['blobDriver']['getOnDemandBlob']>['handle'];
+
+async function readBlobAsString(driverKit: MiddleLayerDriverKit, handle: BlobHandle) {
+  return (await driverKit.blobDriver.getContent(handle)).toString();
+}
 
 // dummy csv data
 const csvData = `ax1,ax2,ax3,col1,col2
@@ -16,8 +49,8 @@ const baseSpec = {
         name: 'ax1',
         type: 'String',
         annotations: {
-          'pl7.app/label': 'ax1',
-        },
+          [Annotation.Label]: 'ax1',
+        } satisfies Annotation,
       },
     },
     {
@@ -26,8 +59,8 @@ const baseSpec = {
         name: 'ax2',
         type: 'String',
         annotations: {
-          'pl7.app/label': 'ax2',
-        },
+          [Annotation.Label]: 'ax2',
+        } satisfies Annotation,
       },
     },
     {
@@ -36,8 +69,8 @@ const baseSpec = {
         name: 'ax3',
         type: 'String',
         annotations: {
-          'pl7.app/label': 'ax3',
-        },
+          [Annotation.Label]: 'ax3',
+        } satisfies Annotation,
       },
     },
   ],
@@ -49,8 +82,8 @@ const baseSpec = {
         valueType: 'String',
         name: 'col1',
         annotations: {
-          'pl7.app/label': 'col1',
-        },
+          [Annotation.Label]: 'col1',
+        } satisfies Annotation,
       },
     },
     {
@@ -60,8 +93,8 @@ const baseSpec = {
         valueType: 'String',
         name: 'col2',
         annotations: {
-          'pl7.app/label': 'col2',
-        },
+          [Annotation.Label]: 'col2',
+        } satisfies Annotation,
       },
     },
   ],
@@ -71,7 +104,7 @@ const baseSpec = {
   partitionKeyLength: 2,
 };
 
-tplTest.for([
+tplTest.concurrent.for([
   { partitionKeyLength: 0, storageFormat: 'Binary' },
   { partitionKeyLength: 1, storageFormat: 'Binary' },
   { partitionKeyLength: 2, storageFormat: 'Binary' },
@@ -80,15 +113,15 @@ tplTest.for([
   { partitionKeyLength: 2, storageFormat: 'Json' },
 ])(
   'should export p-frame to csv file for partitionKeyLength = $partitionKeyLength ( $storageFormat )',
+  { timeout: TIMEOUT },
   // This timeout has additional 10 seconds due to very slow performance of Platforma on large transactions,
   // where thousands of fields and resources are created.
   // The test itself is not large, but first test in a batch also loads 'pframes' binary from network.
   // Also, because of tests execution nature in CI (when we several parallel test threads each creating large resource tree)
   // it shares Platforma Backend performance with other massive parallel tests, making overall test time large even when actual
   // execution takes 1-2 seconds at most.
-  { timeout: 30000 },
   async ({ partitionKeyLength, storageFormat }, { helper, expect, driverKit }) => {
-    const spec = baseSpec;
+    const spec = deepClone(baseSpec);
     spec.partitionKeyLength = partitionKeyLength;
     spec.storageFormat = storageFormat;
 
@@ -102,18 +135,9 @@ tplTest.for([
       }),
     );
 
-    const csv = await awaitStableState(
-      result.computeOutput('csvFile', (f, ctx) => {
-        if (!f) {
-          return undefined;
-        }
-        const h = driverKit.blobDriver.getOnDemandBlob(f.persist(), ctx);
+    const csvHandle = await getCsvHandle(result, driverKit, 'csvFile');
 
-        return h.handle;
-      }), 10000,
-    );
-
-    const csvContent = (await driverKit.blobDriver.getContent(csv!)).toString();
+    const csvContent = await readBlobAsString(driverKit, csvHandle);
 
     // @TODO remove \" replacement after pfconv update
     const actual = csvContent.replaceAll('"', '').replaceAll('\n', '').split('').sort();
@@ -125,26 +149,26 @@ tplTest.for([
     // console.log(csvContent);
     // console.log(csvData);
 
-    expect(actual).toEqual(expected);
+    expect(actual).toStrictEqual(expected);
   },
 );
 
-tplTest.for([
+tplTest.concurrent.for([
   { partitionKeyLength: 1, storageFormat: 'Binary' },
   { partitionKeyLength: 2, storageFormat: 'Binary' },
   { partitionKeyLength: 1, storageFormat: 'Json' },
   { partitionKeyLength: 2, storageFormat: 'Json' },
 ])(
   'should export filtered p-frame to csv file for partitionKeyLength = $partitionKeyLength ( $storageFormat )',
+  { timeout: TIMEOUT },
   // This timeout has additional 10 seconds due to very slow performance of Platforma on large transactions,
   // where thousands of fields and resources are created.
   // The test itself is not large, but first test in a batch also loads 'pframes' binary from network.
   // Also, because of tests execution nature in CI (when we several parallel test threads each creating large resource tree)
   // it shares Platforma Backend performance with other massive parallel tests, making overall test time large even when actual
   // execution takes 1-2 seconds at most.
-  { timeout: 30000 },
   async ({ partitionKeyLength, storageFormat }, { helper, expect, driverKit }) => {
-    const spec = baseSpec;
+    const spec = deepClone(baseSpec);
     spec.partitionKeyLength = partitionKeyLength;
     spec.storageFormat = storageFormat;
 
@@ -159,24 +183,15 @@ tplTest.for([
       }),
     );
 
-    const csv = await awaitStableState(
-      result.computeOutput('csvFile', (f, ctx) => {
-        if (!f) {
-          return undefined;
-        }
-        const h = driverKit.blobDriver.getOnDemandBlob(f.persist(), ctx);
+    const csvHandle = await getCsvHandle(result, driverKit, 'csvFile');
 
-        return h.handle;
-      }), 10000,
-    );
-
-    const csvContent = (await driverKit.blobDriver.getContent(csv!)).toString();
+    const csvContent = await readBlobAsString(driverKit, csvHandle);
 
     // @TODO remove \" replacement after pfconv update
     const actual = csvContent.replaceAll('"', '').replaceAll('\n', '').split('').sort();
     const expected = csvData.split('\n').filter((l, i) => i == 0 || l.includes('A2')).join('').split('').sort();
 
-    expect(actual).toEqual(expected);
+    expect(actual).toStrictEqual(expected);
   },
 );
 
@@ -198,7 +213,7 @@ function superPartitionKeys(keyLen: number): string[] {
   return r;
 }
 
-tplTest.for([
+tplTest.concurrent.for([
   {
     superPartitionKeyLength: 0,
     partitionKeyLength: 0,
@@ -251,13 +266,13 @@ tplTest.for([
   { superPartitionKeyLength: 1, partitionKeyLength: 1, storageFormat: 'Json' },
 ])(
   'should export super-partitioned p-frame to csv file - superPartitionKeyLength: $superPartitionKeyLength, partitionKeyLength: $partitionKeyLength',
-  { timeout: 30000 },
+  { timeout: TIMEOUT },
   async (
     { superPartitionKeyLength, partitionKeyLength, storageFormat },
     { helper, expect, driverKit },
   ) => {
     const supKeys = superPartitionKeys(superPartitionKeyLength).sort();
-    const spec = baseSpec;
+    const spec = deepClone(baseSpec);
     spec.partitionKeyLength = partitionKeyLength;
     spec.storageFormat = storageFormat;
 
@@ -282,18 +297,9 @@ tplTest.for([
       },
     );
 
-    const csv = await awaitStableState(
-      result.computeOutput('csvFile', (f, ctx) => {
-        if (!f) {
-          return undefined;
-        }
-        const h = driverKit.blobDriver.getOnDemandBlob(f.persist(), ctx);
+    const csvHandle = await getCsvHandle(result, driverKit, 'csvFile');
 
-        return h.handle;
-      }), 10000,
-    );
-
-    const csvContent = (await driverKit.blobDriver.getContent(csv!)).toString();
+    const csvContent = await readBlobAsString(driverKit, csvHandle);
 
     // @TODO remove \" replacement after pfconv update
     const actual = csvContent.replaceAll('"', '').replaceAll('\n', '').split('').sort();
@@ -305,6 +311,6 @@ tplTest.for([
     // console.log(csvContent);
     // console.log(csvData);
 
-    if (superPartitionKeyLength === 0) expect(actual).toEqual(expected);
+    if (superPartitionKeyLength === 0) expect(actual).toStrictEqual(expected);
   },
 );

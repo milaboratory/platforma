@@ -1,3 +1,5 @@
+import type { ExponentialBackoffRetryOptions } from '@milaboratories/ts-helpers';
+
 /** Base configuration structure for PL client */
 export interface PlClientConfig {
   /** Port and host of remote pl server */
@@ -92,6 +94,14 @@ export const DEFAULT_RETRY_INITIAL_DELAY = 14; // 14 ms * <jitter> of sleep afte
 export const DEFAULT_RETRY_EXPONENTIAL_BACKOFF_MULTIPLIER = 1.5; // + 50% on each round
 export const DEFAULT_RETRY_LINEAR_BACKOFF_STEP = 50; // + 50 ms
 export const DEFAULT_RETRY_JITTER = 0.3; // 30%
+
+export const DefaultRetryOptions: ExponentialBackoffRetryOptions = {
+  type: 'exponentialBackoff',
+  maxAttempts: DEFAULT_RETRY_MAX_ATTEMPTS,
+  initialDelay: DEFAULT_RETRY_INITIAL_DELAY,
+  backoffMultiplier: DEFAULT_RETRY_EXPONENTIAL_BACKOFF_MULTIPLIER,
+  jitter: DEFAULT_RETRY_JITTER,
+};
 
 type PlConfigOverrides = Partial<
   Pick<

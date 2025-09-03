@@ -1,5 +1,34 @@
 # @milaboratories/ts-helpers-winston
 
+## 1.0.28
+
+### Patch Changes
+
+- Updated dependencies [3d9638e]
+  - @milaboratories/ts-helpers@1.4.7
+
+## 1.0.27
+
+### Patch Changes
+
+- Updated dependencies [10a5439]
+  - @milaboratories/ts-helpers@1.4.6
+
+## 1.0.26
+
+### Patch Changes
+
+- 3f93434: Packages configuration normalization
+- Updated dependencies [3f93434]
+  - @milaboratories/ts-helpers@1.4.4
+
+## 1.0.25
+
+### Patch Changes
+
+- Updated dependencies [ff4a709]
+  - @milaboratories/ts-helpers@1.4.3
+
 ## 1.0.24
 
 ### Patch Changes

@@ -223,6 +223,20 @@ function createWd(tx: PlTransaction): FieldRef {
   return { resourceId: wd, fieldName: 'workdir' };
 }
 
+function requestComputeAllocation(tx: PlTransaction, queue: string, cpu: number, memory: string): FieldRef {
+  const quotaID = tx.createEphemeral({ name: 'Quota', version: '1' }, JSON.stringify({
+    queue: queue,
+    cpuCores: cpu,
+    memory: memory,
+  }));
+
+  const reqID = tx.createEphemeral({ name: 'ComputeRequest/executor', version: '1' });
+
+  tx.setField({ resourceId: reqID, fieldName: 'request' }, quotaID);
+
+  return { resourceId: reqID, fieldName: 'allocation' };
+}
+
 function createRunCommand(
   tx: PlTransaction,
   wdFId: FieldRef,
@@ -230,6 +244,7 @@ function createRunCommand(
   args: string[],
 ): FieldRef {
   const refsId = tx.createStruct({ name: 'RunCommandRefs', version: '1' });
+  const allocation = requestComputeAllocation(tx, 'heavy', 1, '1');
   tx.lock(refsId);
   const cmdData = {
     type: 'string',
@@ -242,14 +257,13 @@ function createRunCommand(
     };
   });
   const optsData = {
-    queueName: 'heavy',
     errorLines: 200,
     redirectStdout: 'logs.txt',
     redirectStderr: 'logs.txt',
     envs: [],
   };
 
-  const runCmdId = tx.createEphemeral({ name: 'RunCommand/executor', version: '1' });
+  const runCmdId = tx.createEphemeral({ name: 'RunCommand/executor', version: '2' });
 
   const setInputValue = (fName: string, rType: ResourceType, data: unknown) => {
     const valResId = tx.createValue(rType, jsonToData(data));
@@ -258,6 +272,7 @@ function createRunCommand(
 
   tx.setField({ resourceId: runCmdId, fieldName: 'workdirIn' }, wdFId);
   tx.setField({ resourceId: runCmdId, fieldName: 'refs' }, refsId);
+  tx.setField({ resourceId: runCmdId, fieldName: 'allocation' }, allocation);
   setInputValue('cmd', { name: 'RunCommandCmd', version: '1' }, cmdData);
   setInputValue('args', { name: 'RunCommandArgs', version: '1' }, argsData);
   setInputValue('options', { name: 'run-command/options', version: '1' }, optsData);

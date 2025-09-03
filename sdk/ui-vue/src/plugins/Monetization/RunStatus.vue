@@ -1,21 +1,17 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { PlIcon24, PlTooltip } from '@milaboratories/uikit';
 
 const props = defineProps<{
   canRun: boolean | undefined;
   statusText: string | undefined;
+  isLoading?: boolean;
 }>();
 
-const tooltipText = computed(() => {
-  if (props.canRun) {
-    return 'Can run';
+const badgeText = computed(() => {
+  if (props.isLoading) {
+    return 'Updating...';
   }
 
-  return 'Cannot run: check your monetization settings';
-});
-
-const badgeText = computed(() => {
   if (props.canRun) {
     return 'Ready to run';
   }
@@ -26,7 +22,7 @@ const badgeText = computed(() => {
 
 <template>
   <div>
-    <div :class="[{ [$style['can-run']]: canRun }, $style.container]">
+    <div :class="[{ [$style['can-run']]: canRun, [$style.loading]: isLoading }, $style.container]">
       <div :class="$style.badge">
         <i :class="$style.blob">
           <span>
@@ -35,12 +31,6 @@ const badgeText = computed(() => {
         </i>
         <span>{{ badgeText }}</span>
       </div>
-      <PlTooltip v-if="false">
-        <template #tooltip>
-          {{ tooltipText }}
-        </template>
-        <PlIcon24 name="info" />
-      </PlTooltip>
       <slot />
     </div>
     <div v-if="statusText" :class="$style.statusText">{{ statusText }}</div>
@@ -54,9 +44,15 @@ const badgeText = computed(() => {
   gap: 8px;
   --blob-color: #FF5C5C;
   --badge-background: rgba(255, 92, 92, 0.12);
+
   &.can-run {
     --blob-color: #49CC49;
     --badge-background: rgba(99, 224, 36, 0.12);
+  }
+
+  &.loading {
+    --blob-color: #FFAD0A;
+    --badge-background: rgba(255, 173, 10, 0.12);
   }
 }
 

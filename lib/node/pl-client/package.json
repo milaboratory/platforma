@@ -1,23 +1,25 @@
 {
   "name": "@milaboratories/pl-client",
-  "version": "2.11.5",
+  "version": "2.11.13",
   "engines": {
     "node": ">=20.3.0"
   },
   "description": "New TS/JS client for Platform API",
+  "type": "module",
   "types": "./dist/index.d.ts",
-  "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "require": "./dist/index.js",
-      "import": "./dist/index.mjs"
+      "require": "./dist/index.cjs",
+      "import": "./dist/index.js"
     }
   },
   "scripts": {
-    "type-check": "tsc --noEmit --composite false",
-    "build": "vite build",
+    "type-check": "ts-builder types --target node",
+    "build": "ts-builder build --target node",
+    "watch": "ts-builder build --target node --watch",
     "lint": "eslint .",
     "test": "jest --runInBand",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
@@ -27,8 +29,8 @@
     "./src/**/*"
   ],
   "dependencies": {
-    "@milaboratories/pl-http": "workspace:^",
-    "@milaboratories/ts-helpers": "workspace:^",
+    "@milaboratories/pl-http": "workspace:*",
+    "@milaboratories/ts-helpers": "workspace:*",
     "@grpc/grpc-js": "catalog:",
     "@protobuf-ts/grpc-transport": "catalog:",
     "@protobuf-ts/runtime": "catalog:",
@@ -44,14 +46,15 @@
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
+    "@milaboratories/ts-builder": "workspace:*",
     "typescript": "catalog:",
-    "vite": "catalog:",
     "@types/node": "catalog:",
     "@protobuf-ts/plugin": "catalog:",
     "@types/http-proxy": "catalog:",
     "@types/jest": "catalog:",
     "jest": "catalog:",
     "@jest/globals": "catalog:",
-    "ts-jest": "catalog:"
+    "ts-jest": "catalog:",
+    "@milaboratories/ts-configs": "workspace:*"
   }
 }

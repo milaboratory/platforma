@@ -1,5 +1,95 @@
 # @milaboratories/pl-errors
 
+## 1.1.21
+
+### Patch Changes
+
+- Updated dependencies [3d9638e]
+  - @milaboratories/ts-helpers@1.4.7
+  - @milaboratories/pl-client@2.11.13
+
+## 1.1.20
+
+### Patch Changes
+
+- 0ff2a1b: **Registry Overview Snapshots & Enhanced Schema Backward Compatibility**
+
+  Added comprehensive snapshot functionality for registry overviews and improved Zod schema compatibility across the entire codebase.
+
+  ## Registry Snapshots (minor)
+
+  - **Automatic backup creation**: Overview files are automatically backed up during every registry update with gzipped compression
+  - **Organized storage structure**: Snapshots stored in `_overview_snapshots_v2/global/` and `per_package/` folders mirroring main hierarchy
+  - **Security features**: Millisecond timestamps with random suffixes prevent CDN retrieval attacks
+  - **CLI management tools**: Added `list-overview-snapshots` and `restore-overview-from-snapshot` commands with safety confirmations
+  - **Configurable behavior**: `skipSnapshotCreation` setting allows disabling snapshots when needed
+  - **Comprehensive testing**: Full test coverage ensures reliability
+
+  ## Schema Backward Compatibility (patch)
+
+  - **Strategic schema improvements**: Enhanced Zod schemas to prevent data loss during version transitions
+  - **Smart classification**: Applied `.passthrough()` to evolving data structures (overviews, manifests, registries, errors) while maintaining `.strict()` for closed types (content types, identifiers)
+  - **Wide compatibility coverage**: Updated schemas across block metadata, registry specifications, error structures, and deployment configurations
+  - **Forward compatibility**: Older versions will now preserve unknown fields instead of stripping them during parsing
+
+  These improvements ensure robust registry management with automatic backup capabilities and seamless schema evolution without breaking changes.
+
+## 1.1.19
+
+### Patch Changes
+
+- Updated dependencies [10a5439]
+  - @milaboratories/ts-helpers@1.4.6
+  - @milaboratories/pl-client@2.11.12
+
+## 1.1.18
+
+### Patch Changes
+
+- Updated dependencies [d1ad23e]
+  - @milaboratories/pl-client@2.11.11
+
+## 1.1.17
+
+### Patch Changes
+
+- b14b2fb: update dist builder
+- Updated dependencies [b14b2fb]
+  - @milaboratories/pl-client@2.11.10
+  - @milaboratories/ts-helpers@1.4.5
+
+## 1.1.16
+
+### Patch Changes
+
+- 3f93434: Packages configuration normalization
+- Updated dependencies [3f93434]
+  - @milaboratories/ts-helpers@1.4.4
+  - @milaboratories/pl-client@2.11.9
+
+## 1.1.15
+
+### Patch Changes
+
+- Updated dependencies [d1b00dc]
+- Updated dependencies [ca79a4e]
+  - @milaboratories/pl-client@2.11.8
+
+## 1.1.14
+
+### Patch Changes
+
+- Updated dependencies [4306ff2]
+  - @milaboratories/pl-client@2.11.7
+
+## 1.1.13
+
+### Patch Changes
+
+- Updated dependencies [ff4a709]
+  - @milaboratories/ts-helpers@1.4.3
+  - @milaboratories/pl-client@2.11.6
+
 ## 1.1.12
 
 ### Patch Changes

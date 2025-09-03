@@ -1,5 +1,68 @@
 # @milaboratories/pl-tree
 
+## 1.7.10
+
+### Patch Changes
+
+- Updated dependencies [3d9638e]
+  - @milaboratories/computable@2.6.8
+  - @milaboratories/ts-helpers@1.4.7
+  - @milaboratories/pl-client@2.11.13
+  - @milaboratories/pl-errors@1.1.21
+
+## 1.7.9
+
+### Patch Changes
+
+- Updated dependencies [0ff2a1b]
+  - @milaboratories/pl-error-like@1.12.5
+  - @milaboratories/pl-errors@1.1.20
+  - @milaboratories/computable@2.6.7
+
+## 1.7.8
+
+### Patch Changes
+
+- Updated dependencies [10a5439]
+  - @milaboratories/ts-helpers@1.4.6
+  - @milaboratories/computable@2.6.6
+  - @milaboratories/pl-client@2.11.12
+  - @milaboratories/pl-errors@1.1.19
+
+## 1.7.7
+
+### Patch Changes
+
+- b14b2fb: update dist builder
+- Updated dependencies [b14b2fb]
+  - @milaboratories/pl-error-like@1.12.4
+  - @milaboratories/computable@2.6.5
+  - @milaboratories/pl-client@2.11.10
+  - @milaboratories/pl-errors@1.1.17
+  - @milaboratories/ts-helpers@1.4.5
+
+## 1.7.6
+
+### Patch Changes
+
+- 3f93434: Packages configuration normalization
+- Updated dependencies [3f93434]
+  - @milaboratories/pl-error-like@1.12.3
+  - @milaboratories/computable@2.6.4
+  - @milaboratories/ts-helpers@1.4.4
+  - @milaboratories/pl-client@2.11.9
+  - @milaboratories/pl-errors@1.1.16
+
+## 1.7.5
+
+### Patch Changes
+
+- Updated dependencies [ff4a709]
+  - @milaboratories/ts-helpers@1.4.3
+  - @milaboratories/computable@2.6.3
+  - @milaboratories/pl-client@2.11.6
+  - @milaboratories/pl-errors@1.1.13
+
 ## 1.7.4
 
 ### Patch Changes

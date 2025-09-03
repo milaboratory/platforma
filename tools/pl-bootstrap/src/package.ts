@@ -1,6 +1,10 @@
-import { resolve, join } from 'path';
-import fs from 'fs';
+import { resolve } from 'path';
+import * as fs from 'fs';
 import { getDefaultPlVersion } from '@milaboratories/pl-deployments';
+import { dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export function path(...p: string[]): string {
   return resolve(__dirname, '..', ...p);

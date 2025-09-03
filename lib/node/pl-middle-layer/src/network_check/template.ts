@@ -188,9 +188,13 @@ export async function runDownloadFile(
     );
 
     const fileInfo = await getFieldValue(pl, outputs.file);
-    const { content } = await downloadClient.downloadBlob(fileInfo);
 
-    return await text(content);
+    return await downloadClient.withBlobContent(
+      fileInfo,
+      {},
+      {},
+      async (content) => await text(content),
+    );
   } finally {
     await deleteFields(pl, Object.values(outputs));
   }

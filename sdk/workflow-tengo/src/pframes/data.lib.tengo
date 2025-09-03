@@ -98,9 +98,12 @@ parseData := func(inputParam, ...optsRaw) {
         state.keyLength = resourceData.keyLength
         state.relevantTopLayerKeyLength = state.keyLength
     } else if state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_JSON_PARTITIONED ||
-              state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_BINARY_PARTITIONED ||
-              state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP_PARTITIONED {
+              state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_BINARY_PARTITIONED {
         state.partitionKeyLength = resourceData.partitionKeyLength
+        state.relevantTopLayerKeyLength = state.partitionKeyLength
+    } else if state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP_PARTITIONED {
+        state.partitionKeyLength = resourceData.partitionKeyLength
+        state.keyLength = resourceData.keyLength
         state.relevantTopLayerKeyLength = state.partitionKeyLength
     } else if state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_JSON_SUPER_PARTITIONED ||
               state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_BINARY_SUPER_PARTITIONED {
@@ -188,26 +191,86 @@ _createPColumnDataInstance = func(state) {
     self := undefined
 
     self = ll.toStrict({
+        /**
+         * The underlying Platforma resource that this PColumnData instance wraps.
+         * This can be a resource of various types (PColumnData/Json, PColumnData/JsonPartitioned, etc.)
+         * or undefined if the instance was created without an original resource.
+         */
         resource: state.resource,
 
+        /**
+         * Boolean flag indicating whether this PColumnData instance has been parsed and its data
+         * structure populated. When false, most methods will panic if called, except basic property access.
+         */
         parsed: state.parsed,
 
+        /**
+         * Retrieves the PColumnSpec associated with this PColumnData instance.
+         * The spec defines the column's metadata including value type, axes specifications,
+         * name, domain, and annotations.
+         *
+         * @returns {object|undefined} The PColumnSpec object, or undefined if no spec was provided
+         */
         getSpec: func() {
             return state.spec
         },
 
+        /**
+         * Gets the resource type of the underlying PColumnData resource.
+         *
+         * @returns {object} Resource type object with Name and Version fields (e.g., {Name: "PColumnData/Json", Version: "1"})
+         */
         getResourceType: func() {
             return state.resourceType
         },
 
+        /**
+         * The total number of elements in each PColumnKey for non-partitioned types like
+         * PColumnData/Json and PColumnData/ResourceMap. Undefined for partitioned types.
+         */
         keyLength: state.keyLength,
+
+        /**
+         * The number of key elements used for partitioning in partitioned types.
+         * For super-partitioned types, this refers to the nested partition key length.
+         * Undefined for non-partitioned types.
+         */
         partitionKeyLength: state.partitionKeyLength,
+
+        /**
+         * The number of key elements used for super-partitioning in super-partitioned types
+         * (e.g., PColumnData/Partitioned/JsonPartitioned). Undefined for non-super-partitioned types.
+         */
         superPartitionKeyLength: state.superPartitionKeyLength,
 
+        /**
+         * The main data store containing the actual column data. Structure varies by resource type:
+         * - For Json: map[stringKey] -> value
+         * - For ResourceMap: map[stringKey] -> ResourceRef
+         * - For Partitioned: map[stringKey] -> ResourceRef or {index: ResourceRef, values: ResourceRef} for binary
+         * - For Super-partitioned: map[stringKey] -> PColumnDataInstance
+         * Keys are JSON-encoded arrays representing PColumnKeys.
+         */
         data: state.data,
 
+        /**
+         * Function factory for creating key string decoders with a specific expected length.
+         * Returns a function that decodes JSON-encoded key strings into arrays and validates their length.
+         *
+         * @param {number} expectedLength The expected length of decoded key arrays
+         * @returns {function} Decoder function that takes a key string and returns a key array
+         */
         parseKey: _createDecodeKeyString,
 
+        /**
+         * Extracts all unique values for a specific axis across all keys in the data.
+         * Useful for understanding the value domain of a particular axis or for creating
+         * filtering options in UI components.
+         *
+         * @param {number} axisIdx Zero-based index of the axis to extract values from
+         * @returns {array} Array of unique values found at the specified axis position
+         * @throws Panics if resource is not parsed, axisIdx is invalid, or out of bounds
+         */
         uniqueKeyValues: func(axisIdx) {
             if !state.parsed {
                 ll.panic("uniqueKeyValues: resource is not parsed.")
@@ -224,6 +287,17 @@ _createPColumnDataInstance = func(state) {
             return maps.values(uniqueValsMap)
         },
 
+        /**
+         * Creates a new Platforma resource from this PColumnData instance's current state.
+         * If an original resource exists and the data hasn't been modified, returns the original.
+         * Otherwise, constructs a new resource of the appropriate type containing the current data.
+         *
+         * This method is essential for persisting changes made through filtering, partitioning,
+         * or other transformations back into the Platforma resource system.
+         *
+         * @returns {object} A locked and built Platforma resource ready for use in workflows
+         * @throws Panics if resource is not parsed and no original resource exists, or for unsupported resource types
+         */
         createDataResource: func() {
             if !is_undefined(state.resource) {
                 // if possible, just return the original resource
@@ -271,6 +345,27 @@ _createPColumnDataInstance = func(state) {
             return builder.lockAndBuild()
         },
 
+        /**
+         * Filters the PColumnData by fixing specific axis values, effectively slicing the data
+         * to include only entries where the specified axes have the given values.
+         *
+         * The filtering reduces the dimensionality of the data by removing the specified axes
+         * from the key structure and only keeping data entries that match the filter criteria.
+         * For super-partitioned data, the method can unwrap layers when all super-partition
+         * dimensions are filtered away.
+         *
+         * @param {array} slicingParams Array of [axisIdx, value] tuples specifying which axes to fix.
+         *                              Each tuple contains:
+         *                              - axisIdx (number): Zero-based index of the axis to filter on
+         *                              - value: The specific value to match for that axis
+         *                              Example: [[0, "sample1"], [2, "treatment"]] filters axis 0 to "sample1" and axis 2 to "treatment"
+         * @returns {object} A new PColumnData instance with the filtered data and reduced key structure.
+         *                   If no slicing params provided, returns self unchanged.
+         *                   For super-partitioned data where all super-partition axes are filtered,
+         *                   may return a non-super-partitioned instance or empty instance.
+         * @throws Panics if resource is not parsed, slicing params are invalid, axis indices are out of bounds,
+         *         duplicate axis indices are provided, or internal consistency errors occur
+         */
         filter: func(slicingParams) {
             if len(slicingParams) == 0 {
                 return self
@@ -466,6 +561,26 @@ _createPColumnDataInstance = func(state) {
             }
         },
 
+        /**
+         * Partitions the PColumnData into separate groups based on the unique combinations
+         * of values found at the specified axes. Each partition contains only the data entries
+         * that share the same values for the partitioning axes.
+         *
+         * This method is useful for grouping data by certain dimensions, such as partitioning
+         * experimental data by sample ID or treatment group. Each resulting partition is a
+         * filtered PColumnData instance with the partitioning axes removed from its key structure.
+         *
+         * @param {...number} axesToPartitionBy Variable number of axis indices to partition by.
+         *                                      Each must be a non-negative integer within bounds
+         *                                      of the current key structure. Order matters for
+         *                                      partition key generation.
+         *                                      Example: partition(0, 2) partitions by axes 0 and 2
+         * @returns {object} Map where keys are JSON-encoded arrays of the partition values and
+         *                   values are PColumnData instances containing the filtered data for that partition.
+         *                   Example result: {"[\"sample1\",\"treatment\"]": filteredPColumnDataInstance}
+         * @throws Panics if resource is not parsed, no axes provided, axis indices are invalid,
+         *         out of bounds, or duplicate axis indices are provided
+         */
         partition: func(...axesToPartitionBy) {
             if !state.parsed {
                 ll.panic("partition: resource is not parsed.")
@@ -511,6 +626,20 @@ _createPColumnDataInstance = func(state) {
             return resultPartitions
         },
 
+        /**
+         * Iterates over all data entries in the PColumnData, calling the provided callback function
+         * for each entry with the decoded key array and corresponding value.
+         *
+         * This method provides a convenient way to process all data entries without needing to
+         * manually decode JSON-encoded key strings. The callback receives the key as an array
+         * of values corresponding to the axes specification.
+         *
+         * @param {function} userCallback Function to call for each data entry. Receives two parameters:
+         *                                - decodedKey (array): The PColumnKey as an array of axis values
+         *                                - value: The data value or resource reference for this key
+         *                                Example: func(key, value) { ll.printf("Key: %v, Value: %v", key, value) }
+         * @throws Panics if resource is not parsed or userCallback is not a function
+         */
         forEach: func(userCallback) {
             if !state.parsed {
                 ll.panic("forEach: resource is not parsed.")
@@ -525,6 +654,61 @@ _createPColumnDataInstance = func(state) {
             })
         },
 
+        /**
+         * Iterates over partitions of the PColumnData based on specified axes, calling the provided
+         * callback function for each partition with the decoded partition key and the filtered PColumnData instance.
+         *
+         * This method first partitions the data using the specified axes, then iterates over each partition.
+         * Each partition contains data entries that share the same values for the partitioning axes,
+         * with those axes removed from their key structure.
+         *
+         * @param {array} axesToPartitionBy Array of axis indices to partition by. Each must be a non-negative
+         *                                  integer within bounds of the current key structure.
+         *                                  Example: [0, 2] partitions by axes 0 and 2
+         * @param {function} userCallback Function to call for each partition. Receives two parameters:
+         *                                - partitionKey (array): The partition key as an array of axis values
+         *                                - partitionData (object): PColumnData instance containing the filtered data for this partition
+         *                                Example: func(partKey, partData) { ll.printf("Partition: %v, Data: %v", partKey, partData) }
+         * @throws Panics if resource is not parsed, axesToPartitionBy is not an array, userCallback is not a function,
+         *         or any validation errors from the underlying partition method
+         */
+        forEachPartition: func(axesToPartitionBy, userCallback) {
+            if !state.parsed {
+                ll.panic("forEachPartition: resource is not parsed.")
+            }
+            if !is_array(axesToPartitionBy) {
+                ll.panic("forEachPartition: first argument must be an array of axis indices.")
+            }
+            if !is_callable(userCallback) {
+                ll.panic("forEachPartition: second argument must be a function.")
+            }
+
+            partitions := self.partition(axesToPartitionBy...)
+
+            maps.forEach(partitions, func(partitionKeyStr, partitionPColumnData) {
+                decodedPartitionKey := json.decode(partitionKeyStr)
+                userCallback(decodedPartitionKey, partitionPColumnData)
+            })
+        },
+
+        /**
+         * Flattens super-partitioned PColumnData by combining the super-partition keys with
+         * the nested partition keys to create a single-level partitioned structure.
+         *
+         * This method is only applicable to super-partitioned resource types:
+         * - PColumnData/Partitioned/JsonPartitioned -> PColumnData/JsonPartitioned
+         * - PColumnData/Partitioned/BinaryPartitioned -> PColumnData/BinaryPartitioned
+         * - PColumnData/Partitioned/ResourceMap -> PColumnData/ResourceMap
+         *
+         * The resulting structure has a combined key length equal to the sum of the
+         * super-partition key length and the nested partition/key length. Each entry's
+         * key becomes the concatenation of its super-partition key and nested key.
+         *
+         * @returns {object} A new PColumnData instance with flattened structure, or self if
+         *                   the resource type doesn't support flattening
+         * @throws Panics if resource is not parsed, nested instances are not properly structured,
+         *         or key length validation fails during flattening
+         */
         flatten: func() {
             if !state.parsed {
                 ll.panic("flatten: resource is not parsed.")
@@ -532,7 +716,7 @@ _createPColumnDataInstance = func(state) {
 
             isJsonSuper := state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_JSON_SUPER_PARTITIONED
             isBinarySuper := state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_BINARY_SUPER_PARTITIONED
-            isResourceMapSuper := state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP_SUPER_PARTITIONED
+            isResourceMapSuper := state.resourceType == pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP_PARTITIONED
 
             if !(isJsonSuper || isBinarySuper || isResourceMapSuper) {
                 return self // Not a type that can be flattened

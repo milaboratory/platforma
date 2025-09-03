@@ -2,6 +2,7 @@ import { Command } from '@oclif/core';
 import * as cmdOpts from '../../core/cmd-opts';
 import * as util from '../../core/util';
 import { Core } from '../../core/core';
+import * as envs from '../../core/envs';
 
 export default class BuildAll extends Command {
   static override description
@@ -16,6 +17,7 @@ export default class BuildAll extends Command {
     ...cmdOpts.BuildFlags,
     ...cmdOpts.PlatformFlags,
     ...cmdOpts.VersionFlag,
+    ...cmdOpts.DockerFlags,
 
     ...cmdOpts.EntrypointNameFlag,
     ...cmdOpts.PackageIDFlag,
@@ -29,45 +31,42 @@ export default class BuildAll extends Command {
     const { flags } = await this.parse(BuildAll);
     const logger = util.createLogger(flags['log-level']);
 
-    const sources: util.SoftwareSource[] = flags.source
-      ? (flags.source as util.SoftwareSource[])
-      : [...util.AllSoftwareSources]; // we need to iterate over the list to build all targets
-
     try {
       const core = new Core(logger, { packageRoot: flags['package-root'] });
 
       core.buildMode = cmdOpts.modeFromFlag(flags.dev as cmdOpts.devModeName);
-      core.pkg.version = flags.version;
+      core.pkgInfo.version = flags.version;
       core.targetPlatform = flags.platform as util.PlatformType;
       core.allPlatforms = flags['all-platforms'];
       core.fullDirHash = flags['full-dir-hash'];
 
-      core.buildDescriptors({
-        packageIds: flags['package-id'] ? flags['package-id'] : undefined,
-        entrypoints: flags.entrypoint ? flags.entrypoint : undefined,
-        sources: flags.source ? (flags.source as util.SoftwareSource[]) : undefined,
+      if (!flags['skip-docker-build'] && core.buildMode !== 'dev-local') {
+        core.buildDockerImages({
+          ids: flags['package-id'],
+        });
+      }
+
+      await core.buildPackages({
+        ids: flags['package-id'],
+        forceBuild: flags.force,
+
+        archivePath: flags.archive,
+        contentRoot: flags['content-root'],
+        skipIfEmpty: flags['package-id'] ? false : true, // do not skip 'non-binary' packages if their IDs were set as args
       });
 
-      for (const source of sources) {
-        switch (source) {
-          case 'archive':
-            await core.buildPackages({
-              ids: flags['package-id'],
-              forceBuild: flags.force,
+      core.buildDescriptors({
+        packageIds: flags['package-id'] ? flags['package-id'] : undefined,
+      });
 
-              archivePath: flags.archive,
-              contentRoot: flags['content-root'],
-              skipIfEmpty: flags['package-id'] ? false : true, // do not skip 'non-binary' packages if their IDs were set as args
-            });
-            break;
-
-            // case 'docker':
-            //     core.buildDocker()
-            //     break
-
-          default:
-            util.assertNever(source);
-        }
+      const autopush = flags['docker-autopush'] || (envs.isCI() && core.buildMode === 'release');
+      if (!flags['skip-docker-build'] && autopush) {
+        // TODO: as we do not create content-addressable archives for binary packages, we should not upload them
+        //       for each build to not spoil release process with dev archives cached by CDN.
+        //       once we support content-addressable archives, we can publish everything here (not just docker).
+        core.publishDockerImages({
+          ids: flags['package-id'],
+        });
       }
     } catch (e) {
       logger.debug(e);

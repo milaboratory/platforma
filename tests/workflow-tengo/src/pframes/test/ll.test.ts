@@ -1,7 +1,13 @@
 import type { AnyRef } from '@milaboratories/pl-middle-layer';
-import { Pl, field, resourceType } from '@milaboratories/pl-middle-layer';
+import { Annotation, Pl, field, resourceType } from '@milaboratories/pl-middle-layer';
 import { awaitStableState, tplTest } from '@platforma-sdk/test';
 import { assertBlob, assertResource, eTplTest } from './extended_tpl_test';
+import { getTestTimeout } from '@milaboratories/helpers';
+
+const TIMEOUT = getTestTimeout(10_000);
+
+const jsonFromBlob = (b: { content: Uint8Array }) =>
+  JSON.parse(Buffer.from(b.content).toString());
 
 tplTest.concurrent.for([
   {
@@ -58,6 +64,7 @@ tplTest.concurrent.for([
   },
 ])(
   'should correctly execute low level aggregation routine $name',
+  { timeout: TIMEOUT },
   async ({ indices, expectedResult, nested, base }, { helper, expect }) => {
     const result = await helper.renderTemplate(
       true,
@@ -85,11 +92,11 @@ tplTest.concurrent.for([
             }),
           ),
           nested: tx.createValue(Pl.JsonObject, JSON.stringify(nested)),
-          data: data,
+          data,
         };
 
         if (base !== undefined) {
-          inputs['base'] = tx.createValue(Pl.JsonObject, JSON.stringify(base));
+          inputs.base = tx.createValue(Pl.JsonObject, JSON.stringify(base));
         }
 
         return inputs;
@@ -105,13 +112,14 @@ tplTest.concurrent.for([
         a.listInputFields().map((f) => [f, a.traverse(f)!.getDataAsJson()]),
       );
     });
-    const finalResult = await awaitStableState(r, 10000);
+    const finalResult = await awaitStableState(r, TIMEOUT);
     expect(finalResult).toStrictEqual(expectedResult);
   },
 );
 
-eTplTest(
+eTplTest.concurrent(
   'should correctly execute low level aggregation routine with xsv parsing',
+  { timeout: TIMEOUT },
   async ({ helper, expect, stHelper }) => {
     const xsvSettings = {
       axes: [
@@ -121,8 +129,8 @@ eTplTest(
             name: 'a',
             type: 'Long',
             annotations: {
-              'pl7.app/label': 'A',
-            },
+              [Annotation.Label]: 'A',
+            } satisfies Annotation,
           },
         },
       ],
@@ -134,8 +142,8 @@ eTplTest(
             valueType: 'Long',
             name: 'b',
             annotations: {
-              'pl7.app/label': 'B',
-            },
+              [Annotation.Label]: 'B',
+            } satisfies Annotation,
           },
         },
       ],
@@ -168,12 +176,12 @@ eTplTest(
               eph: false,
             }),
           ),
-          data: data,
+          data,
         };
       },
     );
     const r = stHelper.tree(result.resultEntry);
-    const finalResult = await awaitStableState(r, 10000);
+    const finalResult = await awaitStableState(r, TIMEOUT);
     assertResource(finalResult);
     const theResult = finalResult.inputs['result'];
     assertResource(theResult);
@@ -182,10 +190,10 @@ eTplTest(
     expect(bData.resourceType.name).toEqual('PColumnData/JsonPartitioned');
     const b11 = bData.inputs['[1,1]'];
     assertBlob(b11);
-    const b11Content = JSON.parse(Buffer.from(b11.content).toString());
+    const b11Content = jsonFromBlob(b11);
     const b12 = bData.inputs['[1,2]'];
     assertBlob(b12);
-    const b12Content = JSON.parse(Buffer.from(b12.content).toString());
+    const b12Content = jsonFromBlob(b12);
     expect(b11Content).toStrictEqual({ '[1]': 2, '[2]': 1 });
     expect(b12Content).toStrictEqual({ '[1]': 3, '[3]': 2 });
   },

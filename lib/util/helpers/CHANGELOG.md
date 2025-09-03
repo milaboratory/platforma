@@ -1,5 +1,29 @@
 # @milaboratories/helpers
 
+## 1.7.0
+
+### Minor Changes
+
+- b2e7c82: - Introduce `getTestTimeout(fallback = 60_000)` that reads `TEST_TIMEOUT` from env.
+
+## 1.6.22
+
+### Patch Changes
+
+- c792469: Set type to module for packages used by PFrames
+
+## 1.6.21
+
+### Patch Changes
+
+- b14b2fb: update dist builder
+
+## 1.6.20
+
+### Patch Changes
+
+- 3f93434: Packages configuration normalization
+
 ## 1.6.19
 
 ### Patch Changes

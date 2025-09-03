@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/block-tools",
-  "version": "2.5.77",
+  "version": "2.6.2",
   "description": "Utility to manipulate Platforma Blocks and Block Registry",
   "types": "./dist/lib.d.ts",
   "main": "./dist/index.js",
@@ -32,12 +32,12 @@
   "license": "UNLICENSED",
   "dependencies": {
     "@aws-sdk/client-s3": "catalog:",
-    "@milaboratories/resolve-helper": "workspace:^",
-    "@milaboratories/pl-http": "workspace:^",
-    "@milaboratories/pl-model-common": "workspace:^",
-    "@milaboratories/pl-model-middle-layer": "workspace:^",
-    "@milaboratories/ts-helpers": "workspace:^",
-    "@milaboratories/ts-helpers-oclif": "workspace:^",
+    "@milaboratories/resolve-helper": "workspace:*",
+    "@milaboratories/pl-http": "workspace:*",
+    "@milaboratories/pl-model-common": "workspace:*",
+    "@milaboratories/pl-model-middle-layer": "workspace:*",
+    "@milaboratories/ts-helpers": "workspace:*",
+    "@milaboratories/ts-helpers-oclif": "workspace:*",
     "remeda": "catalog:",
     "@oclif/core": "catalog:",
     "canonicalize": "catalog:",
@@ -64,7 +64,8 @@
     "jest": "catalog:",
     "@jest/globals": "catalog:",
     "oclif": "catalog:",
-    "ts-jest": "catalog:"
+    "ts-jest": "catalog:",
+    "@milaboratories/ts-configs": "workspace:*"
   },
   "oclif": {
     "bin": "block-tools",

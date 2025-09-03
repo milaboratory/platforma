@@ -1,5 +1,174 @@
 # @milaboratories/pl-drivers
 
+## 1.10.11
+
+### Patch Changes
+
+- Updated dependencies [6bc20d1]
+  - @milaboratories/pl-model-common@1.19.17
+
+## 1.10.10
+
+### Patch Changes
+
+- 3d9638e: PFramesDriver run HTTP parquet server
+- Updated dependencies [3d9638e]
+  - @milaboratories/computable@2.6.8
+  - @milaboratories/ts-helpers@1.4.7
+  - @milaboratories/pl-client@2.11.13
+  - @milaboratories/pl-model-common@1.19.16
+  - @milaboratories/pl-tree@1.7.10
+
+## 1.10.9
+
+### Patch Changes
+
+- @milaboratories/pl-model-common@1.19.15
+- @milaboratories/computable@2.6.7
+- @milaboratories/pl-tree@1.7.9
+
+## 1.10.8
+
+### Patch Changes
+
+- Updated dependencies [b2e7c82]
+  - @milaboratories/helpers@1.7.0
+
+## 1.10.7
+
+### Patch Changes
+
+- Updated dependencies [2a21be5]
+  - @milaboratories/pl-model-common@1.19.14
+
+## 1.10.6
+
+### Patch Changes
+
+- Updated dependencies [10a5439]
+  - @milaboratories/ts-helpers@1.4.6
+  - @milaboratories/computable@2.6.6
+  - @milaboratories/pl-client@2.11.12
+  - @milaboratories/pl-tree@1.7.8
+
+## 1.10.5
+
+### Patch Changes
+
+- 7cba53f: package doesn't build with npm
+
+## 1.10.4
+
+### Patch Changes
+
+- 61d381c: Switch from deprecated RunCommand/\*:1 to :2
+
+## 1.10.3
+
+### Patch Changes
+
+- 770cb8d: use js impl crc32
+
+## 1.10.2
+
+### Patch Changes
+
+- c792469: Set type to module
+- Updated dependencies [c792469]
+  - @milaboratories/pl-model-common@1.19.13
+  - @milaboratories/helpers@1.6.22
+
+## 1.10.1
+
+### Patch Changes
+
+- b14b2fb: update dist builder
+- 922f14b: Add support range options for getLocalFileContent
+- Updated dependencies [b14b2fb]
+  - @milaboratories/pl-model-common@1.19.11
+  - @milaboratories/computable@2.6.5
+  - @milaboratories/pl-client@2.11.10
+  - @milaboratories/pl-tree@1.7.7
+  - @milaboratories/ts-helpers@1.4.5
+  - @milaboratories/helpers@1.6.21
+
+## 1.10.0
+
+### Minor Changes
+
+- 521f7be: send checksum to upload if backend is allowed
+
+## 1.9.1
+
+### Patch Changes
+
+- 3f93434: Packages configuration normalization
+- Updated dependencies [3f93434]
+  - @milaboratories/computable@2.6.4
+  - @milaboratories/ts-helpers@1.4.4
+  - @milaboratories/pl-client@2.11.9
+  - @milaboratories/pl-model-common@1.19.8
+  - @milaboratories/pl-tree@1.7.6
+  - @milaboratories/helpers@1.6.20
+
+## 1.9.0
+
+### Minor Changes
+
+- 4306ff2: Fix file corruption issue in upload client by preventing connection reuse
+
+  - **CRITICAL**: Add `reset: true` to prevent connection reuse and fix data corruption where HTTP/1.1 protocol lines were being included in uploaded file content with backend's built-in S3 implementation
+  - Validate existing Content-Length header values match expected chunk size
+  - Add assertion to verify read chunk size matches expected content length
+
+### Patch Changes
+
+- 4306ff2: Network libraries upgrade: Undici, gRPC ann S3 libraries upgraded to the latest versions
+- Updated dependencies [4306ff2]
+  - @milaboratories/pl-client@2.11.7
+
+## 1.8.3
+
+### Patch Changes
+
+- Updated dependencies [b8105fb]
+  - @milaboratories/pl-model-common@1.19.4
+
+## 1.8.2
+
+### Patch Changes
+
+- Updated dependencies [6d6c4ba]
+  - @milaboratories/pl-model-common@1.19.3
+
+## 1.8.1
+
+### Patch Changes
+
+- Updated dependencies [017a888]
+  - @milaboratories/pl-model-common@1.19.2
+
+## 1.8.0
+
+### Minor Changes
+
+- ff4a709: **BREAKING**: Refactor download methods to lambda-based pattern for better resource management
+
+  - `RemoteFileDownloader.download()` → `withContent<T>()`
+  - `ClientDownload.downloadBlob()` → `withBlobContent<T>()`
+  - `ClientDownload.readLocalFile()` → `withLocalFileContent<T>()`
+  - Replace `fromBytes`/`toBytes` params with unified `RangeBytes` interface
+  - Automatic stream cleanup on all error paths including handler errors
+  - Centralized error handling prevents resource leaks
+
+### Patch Changes
+
+- Updated dependencies [ff4a709]
+  - @milaboratories/ts-helpers@1.4.3
+  - @milaboratories/computable@2.6.3
+  - @milaboratories/pl-client@2.11.6
+  - @milaboratories/pl-tree@1.7.5
+
 ## 1.7.1
 
 ### Patch Changes

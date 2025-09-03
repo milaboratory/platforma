@@ -1,5 +1,5 @@
-import * as fs from 'node:fs';
 import * as path from 'node:path';
+import * as fs from 'node:fs';
 import type winston from 'winston';
 
 import { z } from 'zod';
@@ -8,6 +8,8 @@ import * as envs from './envs';
 import * as artifacts from './schemas/artifacts';
 import * as entrypoint from './schemas/entrypoint';
 import { tryResolve } from '@milaboratories/resolve-helper';
+import * as docker from './docker';
+import { prepareDockerOptions } from './docker-python';
 
 export interface PackageArchiveInfo extends artifacts.archiveRules {
   name: string;
@@ -81,13 +83,25 @@ export interface RPackage extends artifacts.rPackageConfig, PackageArchiveInfo {
   crossplatform: boolean;
 
   isMultiroot: boolean;
+  fullName: (platform: util.PlatformType) => string; // full package name inside registry (common/corretto/21.2.0.4.1-linux-x64.tgz)
   contentRoot(platform: util.PlatformType): string;
 }
-export interface CondaPackage extends artifacts.condaPackageConfig, PackageArchiveInfo {
-  registry: artifacts.registry;
+// export interface CondaPackage extends artifacts.condaPackageConfig, PackageArchiveInfo {
+//   registry: artifacts.registry;
+//   name: string;
+//   version: string;
+//   crossplatform: boolean;
+// }
+export interface DockerPackage extends artifacts.dockerPackageConfig {
+  registry: artifacts.registry; // TODO: delete this field
   name: string;
   version: string;
   crossplatform: boolean;
+
+  fullName: (platform: util.PlatformType) => string; // full package name inside registry (common/corretto/21.2.0.4.1-linux-x64.tgz)
+  namePattern: string; // address to put into sw.json (common/corretto/21.2.0.4.1-{os}-{arch}.tgz)
+
+  contentRoot(platform: util.PlatformType): string;
 }
 
 export type BuildablePackage =
@@ -96,7 +110,8 @@ export type BuildablePackage =
   | BinaryPackage
   | JavaPackage
   | PythonPackage
-  | RPackage;
+  | RPackage
+  | DockerPackage;
 // CondaPackage
 
 export type PackageConfig = BuildablePackage & {
@@ -236,7 +251,7 @@ export class PackageInfo {
         this.pkgJson = readPackageJson(pkgJsonPath);
         this.logger.debug('    ' + JSON.stringify(this.pkgJson));
       } catch (e) {
-        this.logger.error(`Failed to read and parse '${pkgJsonPath}': `, e);
+        this.logger.error(`Failed to read and parse '${util.packageJsonName}': `, e);
         throw e;
       }
     }
@@ -256,6 +271,20 @@ export class PackageInfo {
     const list = new Map<string, Entrypoint>();
 
     for (const [epName, ep] of Object.entries(this.pkgJson['block-software'].entrypoints)) {
+      if (ep.docker) {
+        const packageID = typeof ep.docker.artifact === 'string' ? ep.docker.artifact : epName;
+        const pkg = this.getPackage(packageID, 'docker');
+        // will mix docker to separate entrypoint
+        // render function have to merge
+        list.set(docker.entrypointName(epName), {
+          type: 'software',
+          name: epName,
+          package: pkg,
+          cmd: ep.docker.cmd ?? [],
+          env: ep.docker.envVars ?? [],
+        });
+      }
+
       if (ep.reference) {
         list.set(epName, {
           type: 'reference',
@@ -267,13 +296,25 @@ export class PackageInfo {
 
       if (ep.binary) {
         const packageID = typeof ep.binary.artifact === 'string' ? ep.binary.artifact : epName;
+        const pkg = this.getPackage(packageID);
         list.set(epName, {
           type: 'software',
           name: epName,
-          package: this.getPackage(packageID),
+          package: pkg,
           cmd: ep.binary.cmd,
           env: ep.binary.envVars ?? [],
         });
+
+        const shouldGenerateDockerEntrypoint = !ep.docker && artifacts.isDockerRequired(pkg.type);
+        if (shouldGenerateDockerEntrypoint) {
+          list.set(docker.entrypointName(epName), {
+            type: 'software',
+            name: epName,
+            package: this.prepareDockerPackage(pkg),
+            cmd: ep.binary.cmd ?? [],
+            env: ep.binary.envVars ?? [],
+          });
+        }
         continue;
       }
 
@@ -299,16 +340,25 @@ export class PackageInfo {
         continue;
       }
 
-      throw new Error(
-        `entrypoint '${epName}' type is not supported by current platforma package builder`,
-      );
+      if (list.size === 0) {
+        throw new Error(
+          `entrypoint '${epName}' type is not supported by current platforma package builder`,
+        );
+      }
     }
 
     return list;
   }
 
-  public getEntrypoint(name: string): Entrypoint {
-    return this.entrypoints.get(name)!;
+  // Get not docker entrypoint if exists.
+  // If only docker entrypoint exists, return it.
+  public getMainEntrypoint(name: string): Entrypoint {
+    const ep = this.entrypoints.get(name);
+    if (ep) {
+      return ep;
+    }
+
+    return this.entrypoints.get(docker.entrypointName(name))!;
   }
 
   /**
@@ -353,9 +403,20 @@ export class PackageInfo {
     return result;
   }
 
-  public getPackage(id: string): PackageConfig {
+  public getPackage(id: string, type?: string): PackageConfig {
+    const artifact = this.getArtifact(id, type);
+    return this.makePackageConfig(id, artifact);
+  }
+
+  public artifactInfoLocation(pkgID: string, artifactType: 'docker', platform: util.ArchType): string;
+  public artifactInfoLocation(pkgID: string, artifactType: 'archive', platform?: util.PlatformType): string;
+  public artifactInfoLocation(pkgID: string, artifactType: 'archive' | 'docker', platform?: util.PlatformType | util.ArchType): string {
+    const platformPart = platform ? `_${platform}` : '';
+    return path.resolve(this.packageRoot, 'dist', 'artifacts', pkgID, `${artifactType}${platformPart}.json`);
+  }
+
+  private makePackageConfig(id: string, artifact: artifacts.config): PackageConfig {
     const pkgRoot = this.packageRoot;
-    const artifact = this.getArtifact(id);
 
     const crossplatform
       = artifact.roots !== undefined ? false : artifacts.isCrossPlatform(artifact.type);
@@ -372,12 +433,14 @@ export class PackageInfo {
 
       fullName(platform: util.PlatformType): string {
         const ext = artifact.type === 'asset' ? 'zip' : 'tgz';
-        return archiveFullName(crossplatform, this.name, this.version, platform, ext);
+        const grp = artifact.type === 'asset' ? 'assets' : 'software';
+        return archiveFullName(grp, crossplatform, this.name, this.version, platform, ext);
       },
 
       get namePattern(): string {
         const ext = artifact.type === 'asset' ? 'zip' : 'tgz';
-        return archiveAddressPattern(crossplatform, this.name, this.version, ext);
+        const grp = artifact.type === 'asset' ? 'assets' : 'software';
+        return archiveAddressPattern(grp, crossplatform, this.name, this.version, ext);
       },
 
       get isBuildable(): boolean {
@@ -400,7 +463,7 @@ export class PackageInfo {
       },
 
       get platforms(): util.PlatformType[] {
-        if (artifact?.root) return [util.currentPlatform()];
+        if (artifact?.root || artifact?.type === 'docker') return [util.currentPlatform()];
         if (artifact?.roots) return Object.keys(artifact.roots) as util.PlatformType[];
 
         throw new Error(
@@ -411,7 +474,21 @@ export class PackageInfo {
     };
   }
 
-  private getArtifact(id: string): artifacts.config {
+  private prepareDockerPackage(pkg: PackageConfig): PackageConfig {
+    if (pkg.type !== 'python') {
+      throw new Error(`Auto Docker entrypoint only supported for Python, got '${pkg.type}'.`);
+    }
+
+    const options = prepareDockerOptions(this.logger, this.packageRoot, pkg.id, pkg);
+    const artifact: artifacts.dockerPackageConfig = {
+      type: 'docker',
+      ...options,
+    };
+
+    return this.makePackageConfig(pkg.id, artifact);
+  }
+
+  private getArtifact(id: string, type?: string): artifacts.config {
     const artifacts = this.pkgJson['block-software'].artifacts ?? {};
     const entrypoints = this.pkgJson['block-software'].entrypoints;
 
@@ -431,6 +508,22 @@ export class PackageInfo {
         type: 'asset',
         ...ep.asset,
       };
+    }
+
+    switch (type) {
+      case 'docker':
+        if (typeof ep.docker!.artifact === 'string') {
+          if (artifacts[ep.docker!.artifact]) {
+            return artifacts[ep.docker!.artifact];
+          }
+          throw new Error(
+            `entrypoint '${id}' points to artifact '${ep.docker!.artifact}' which does not exist in 'artifacts'`,
+          );
+        }
+
+        return ep.docker!.artifact;
+      default:
+        break;
     }
 
     const idOrArtifact = ep.asset ?? ep.environment?.artifact ?? ep.binary!.artifact;
@@ -581,6 +674,7 @@ export class PackageInfo {
       }
 
       // TODO: add docker validation here
+      // TODO(rfiskov)[MILAB-3163]: Carefully handle docker artifacts, as some (e.g., for Python) may be autogenerated dynamically rather than explicitly defined.
     }
 
     const uniquePackageNames = new Set<string>();
@@ -623,6 +717,26 @@ export class PackageInfo {
 
         return false;
       }
+
+      // Validate that root is not equal to package root
+      if (artifact.root && (artifact.type === 'python' || artifact.type === 'binary')) {
+        // Check relative paths
+        if (artifact.root === '.' || artifact.root === './') {
+          this.logger.error(
+            `Invalid configuration: '${artifact.type}' artifact '${artifactName}' has 'root' set to the package root, which is not allowed`,
+          );
+          return false;
+        }
+
+        // Check if path resolves to package root
+        const resolvedRoot = path.resolve(this.packageRoot, artifact.root);
+        if (resolvedRoot === this.packageRoot) {
+          this.logger.error(
+            `Invalid configuration: '${artifact.type}' artifact '${artifactName}' has 'root' set to the package root, which is not allowed`,
+          );
+          return false;
+        }
+      }
     }
 
     return true;
@@ -645,6 +759,7 @@ function parsePackageJson(data: string) {
 }
 
 function archiveFullName(
+  group: 'assets' | 'software',
   crossplatform: boolean,
   name: string,
   version: string,
@@ -652,22 +767,23 @@ function archiveFullName(
   extension: string,
 ): string {
   if (crossplatform) {
-    return `${name}/${version}.${extension}`;
+    return `${group}/${name}/${version}.${extension}`;
   }
 
   const { os, arch } = util.splitPlatform(platform);
-  return `${name}/${version}-${os}-${arch}.${extension}`;
+  return `${group}/${name}/${version}-${os}-${arch}.${extension}`;
 }
 
 function archiveAddressPattern(
+  group: 'assets' | 'software',
   crossplatform: boolean,
   name: string,
   version: string,
   extension: string,
 ): string {
   if (crossplatform) {
-    return `${name}/${version}.${extension}`;
+    return `${group}/${name}/${version}.${extension}`;
   }
 
-  return `${name}/${version}-{os}-{arch}.${extension}`;
+  return `${group}/${name}/${version}-{os}-{arch}.${extension}`;
 }

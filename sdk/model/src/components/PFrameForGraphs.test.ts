@@ -1,9 +1,5 @@
-import {test, expect, describe} from '@jest/globals';
-import {
-    IS_VIRTUAL_COLUMN,
-    LABEL_ANNOTATION,
-    enrichCompatible, LINKER_COLUMN_ANNOTATION, getAvailableWithLinkersAxes
-} from './PFrameForGraphs';
+import { describe, expect, test } from 'vitest';
+import {enrichCompatible, getAvailableWithLinkersAxes} from './PFrameForGraphs';
 import {
     AxisId, CanonicalizedJson,
     canonicalizeJson, DataInfo,
@@ -11,16 +7,19 @@ import {
     PColumn,
     PColumnSpec,
     PColumnValues,
-    PObjectId
+    PObjectId,
+    Annotation,
+    AxisSpecNormalized,
+    getNormalizedAxesList,
 } from "@milaboratories/pl-model-common";
-import {TreeNodeAccessor} from "../render";
+import { TreeNodeAccessor } from "../render";
 
-function getAllAxesFromSpecs (specs:PColumnSpec[]):Map<CanonicalizedJson<AxisId>, AxisId> {
-    const allAxes:Map<CanonicalizedJson<AxisId>, AxisId> = new Map();
+function getAllAxesFromSpecs (specs:PColumnSpec[]):Map<CanonicalizedJson<AxisId>, AxisSpecNormalized> {
+    const allAxes:Map<CanonicalizedJson<AxisId>, AxisSpecNormalized> = new Map();
     for (const spec of specs) {
-        for (const id of spec.axesSpec) {
+        for (const id of getNormalizedAxesList(spec.axesSpec)) {
             const aid = getAxisId(id);
-            allAxes.set(canonicalizeJson(aid), aid);
+            allAxes.set(canonicalizeJson(aid), id);
         }
     }
     return allAxes
@@ -84,8 +83,8 @@ describe('PFrameForGraph', () => {
             kind: 'PColumn',
             name: 'column2',
             valueType: 'Int',
-            axesSpec: [{type: 'String', name: 'axis1', domain: {key1: 'a'}}],
-            annotations: {[IS_VIRTUAL_COLUMN]: 'true'}
+            axesSpec: [{type: 'String', name: 'axis1', domain: {key1: 'a'}, parentAxesSpec: []}],
+            annotations: {[Annotation.Graph.IsVirtual]: 'true'}
         });
     });
     test('columns are not compatible, additional columns are impossible', () => {
@@ -179,7 +178,7 @@ describe('PFrameForGraph', () => {
             kind: 'PColumn',
             name: 'column2',
             valueType: 'Int',
-            annotations: {[LABEL_ANNOTATION]: 'Label of column2'},
+            annotations: {[Annotation.Label]: 'Label of column2'},
             axesSpec: [{type: 'String', name: 'axis1', domain: {key0: 'commonDomain'}}]
         }
         const allAxes = getAllAxesFromSpecs([columnSpec1]);
@@ -189,8 +188,8 @@ describe('PFrameForGraph', () => {
         ] as PColumn<PColumnValues>[]
 
         const resultColumns = enrichCompatible(allAxes, columns);
-        expect(resultColumns[2].spec.annotations?.[LABEL_ANNOTATION]).toEqual('Label of column2 / a');
-        expect(resultColumns[3].spec.annotations?.[LABEL_ANNOTATION]).toEqual('Label of column2 / b');
+        expect(resultColumns[2].spec.annotations?.[Annotation.Label]).toEqual('Label of column2 / a');
+        expect(resultColumns[3].spec.annotations?.[Annotation.Label]).toEqual('Label of column2 / b');
     })
 
     test('Linker column adds available axis', () => {
@@ -207,7 +206,7 @@ describe('PFrameForGraph', () => {
             kind: 'PColumn',
             name: 'linker13',
             valueType: 'String',
-            annotations: {[LINKER_COLUMN_ANNOTATION]: 'true'},
+            annotations: {[Annotation.IsLinkerColumn]: 'true'},
             axesSpec: [
                 {type: 'String', name: 'axis1'},
                 {type: 'String', name: 'axis3'}
@@ -219,7 +218,7 @@ describe('PFrameForGraph', () => {
             linkerColumns,
             getAllAxesFromSpecs([columnSpec1])
         );
-        expect([...availableAxes.values()].map(id => id.name)).toEqual(['axis3'])
+        expect([...availableAxes.values()].map((id) => id.name)).toEqual(['axis3'])
     })
 
     test('Linker columns add available axes by chains', () => {
@@ -233,7 +232,7 @@ describe('PFrameForGraph', () => {
             kind: 'PColumn',
             name: 'linker12',
             valueType: 'String',
-            annotations: {[LINKER_COLUMN_ANNOTATION]: 'true'},
+            annotations: {[Annotation.IsLinkerColumn]: 'true'},
             axesSpec: [
                 {type: 'String', name: 'axis1'},
                 {type: 'String', name: 'axis2'}
@@ -243,7 +242,7 @@ describe('PFrameForGraph', () => {
             kind: 'PColumn',
             name: 'linker23',
             valueType: 'String',
-            annotations: {[LINKER_COLUMN_ANNOTATION]: 'true'},
+            annotations: {[Annotation.IsLinkerColumn]: 'true'},
             axesSpec: [
                 {type: 'String', name: 'axis2'},
                 {type: 'String', name: 'axis3'}
@@ -253,7 +252,7 @@ describe('PFrameForGraph', () => {
             kind: 'PColumn',
             name: 'linker34',
             valueType: 'String',
-            annotations: {[LINKER_COLUMN_ANNOTATION]: 'true'},
+            annotations: {[Annotation.IsLinkerColumn]: 'true'},
             axesSpec: [
                 {type: 'String', name: 'axis3'},
                 {type: 'String', name: 'axis4'}
@@ -269,6 +268,6 @@ describe('PFrameForGraph', () => {
             linkerColumns,
             getAllAxesFromSpecs([columnSpec1])
         );
-        expect([...availableAxes.values()].map(id => id.name)).toEqual(['axis2', 'axis3', 'axis4'])
+        expect([...availableAxes.values()].map((id) => id.name)).toEqual(['axis2', 'axis3', 'axis4'])
     })
 })

@@ -1,5 +1,40 @@
 # @milaboratories/ts-helpers
 
+## 1.4.7
+
+### Patch Changes
+
+- 3d9638e: PFramesDriver run HTTP parquet server
+
+## 1.4.6
+
+### Patch Changes
+
+- 10a5439: Ref counting pool moved to ts-helpers
+
+## 1.4.5
+
+### Patch Changes
+
+- b14b2fb: update dist builder
+
+## 1.4.4
+
+### Patch Changes
+
+- 3f93434: Packages configuration normalization
+
+## 1.4.3
+
+### Patch Changes
+
+- ff4a709: Improve atomic file creation with random suffixes
+
+  - Enhanced `createPathAtomically()` to use random suffixes for temporary files
+  - Prevents race conditions when multiple processes create files concurrently
+  - Added proper cleanup of temporary files on errors
+  - Uses crypto.randomBytes() for unique temporary file names
+
 ## 1.4.2
 
 ### Patch Changes

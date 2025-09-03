@@ -1,5 +1,52 @@
 # @milaboratories/computable
 
+## 2.6.8
+
+### Patch Changes
+
+- 3d9638e: PFramesDriver run HTTP parquet server
+- Updated dependencies [3d9638e]
+  - @milaboratories/ts-helpers@1.4.7
+
+## 2.6.7
+
+### Patch Changes
+
+- Updated dependencies [0ff2a1b]
+  - @milaboratories/pl-error-like@1.12.5
+
+## 2.6.6
+
+### Patch Changes
+
+- Updated dependencies [10a5439]
+  - @milaboratories/ts-helpers@1.4.6
+
+## 2.6.5
+
+### Patch Changes
+
+- b14b2fb: update dist builder
+- Updated dependencies [b14b2fb]
+  - @milaboratories/pl-error-like@1.12.4
+  - @milaboratories/ts-helpers@1.4.5
+
+## 2.6.4
+
+### Patch Changes
+
+- 3f93434: Packages configuration normalization
+- Updated dependencies [3f93434]
+  - @milaboratories/pl-error-like@1.12.3
+  - @milaboratories/ts-helpers@1.4.4
+
+## 2.6.3
+
+### Patch Changes
+
+- Updated dependencies [ff4a709]
+  - @milaboratories/ts-helpers@1.4.3
+
 ## 2.6.2
 
 ### Patch Changes

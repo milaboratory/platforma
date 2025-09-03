@@ -1,5 +1,48 @@
 # @milaboratories/pl-config
 
+## 1.7.3
+
+### Patch Changes
+
+- Updated dependencies [3d9638e]
+  - @milaboratories/ts-helpers@1.4.7
+
+## 1.7.2
+
+### Patch Changes
+
+- Updated dependencies [10a5439]
+  - @milaboratories/ts-helpers@1.4.6
+
+## 1.7.1
+
+### Patch Changes
+
+- b14b2fb: update dist builder
+- Updated dependencies [b14b2fb]
+  - @milaboratories/ts-helpers@1.4.5
+
+## 1.7.0
+
+### Minor Changes
+
+- b43e778: Allow to control common timeouts for all controllers (init/stop/request)
+
+## 1.6.4
+
+### Patch Changes
+
+- 3f93434: Packages configuration normalization
+- Updated dependencies [3f93434]
+  - @milaboratories/ts-helpers@1.4.4
+
+## 1.6.3
+
+### Patch Changes
+
+- Updated dependencies [ff4a709]
+  - @milaboratories/ts-helpers@1.4.3
+
 ## 1.6.2
 
 ### Patch Changes

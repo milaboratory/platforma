@@ -1,5 +1,138 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.5.40
+
+### Patch Changes
+
+- Updated dependencies [6bc20d1]
+  - @platforma-sdk/model@1.42.51
+  - @milaboratories/milaboratories.ui-examples.model@1.2.34
+
+## 1.5.39
+
+### Patch Changes
+
+- Updated dependencies [3d9638e]
+  - @platforma-sdk/model@1.42.47
+  - @milaboratories/milaboratories.ui-examples.model@1.2.33
+
+## 1.5.38
+
+### Patch Changes
+
+- @milaboratories/milaboratories.ui-examples.model@1.2.32
+- @platforma-sdk/model@1.42.46
+
+## 1.5.37
+
+### Patch Changes
+
+- Updated dependencies [2a21be5]
+  - @milaboratories/milaboratories.ui-examples.model@1.2.31
+  - @platforma-sdk/model@1.42.36
+
+## 1.5.36
+
+### Patch Changes
+
+- Updated dependencies [27c258f]
+  - @platforma-sdk/model@1.42.35
+  - @milaboratories/milaboratories.ui-examples.model@1.2.30
+
+## 1.5.35
+
+### Patch Changes
+
+- 214eac5: Silen update deps strictness fixation
+
+## 1.5.34
+
+### Patch Changes
+
+- Updated dependencies [c432f9a]
+  - @platforma-sdk/model@1.42.25
+  - @milaboratories/milaboratories.ui-examples.model@1.2.29
+
+## 1.5.33
+
+### Patch Changes
+
+- Updated dependencies [b14b2fb]
+  - @platforma-sdk/model@1.42.23
+  - @milaboratories/milaboratories.ui-examples.model@1.2.28
+
+## 1.5.32
+
+### Patch Changes
+
+- Updated dependencies [8e45911]
+  - @platforma-sdk/model@1.42.22
+  - @milaboratories/milaboratories.ui-examples.model@1.2.27
+
+## 1.5.31
+
+### Patch Changes
+
+- ee5f3ad: configurable output dit
+  - @milaboratories/milaboratories.ui-examples.model@1.2.26
+  - @platforma-sdk/model@1.42.20
+
+## 1.5.30
+
+### Patch Changes
+
+- 56b404b: Add PlAutocompleteMulti component
+- 3f93434: Packages configuration normalization
+- Updated dependencies [56b404b]
+- Updated dependencies [3f93434]
+  - @milaboratories/milaboratories.ui-examples.model@1.2.26
+  - @platforma-sdk/model@1.42.20
+
+## 1.5.29
+
+### Patch Changes
+
+- 604827a: [desktop] add button to save block error log to file
+- Updated dependencies [604827a]
+  - @milaboratories/milaboratories.ui-examples.model@1.2.25
+
+## 1.5.28
+
+### Patch Changes
+
+- Updated dependencies [4468f99]
+  - @platforma-sdk/model@1.42.16
+  - @milaboratories/milaboratories.ui-examples.model@1.2.24
+
+## 1.5.27
+
+### Patch Changes
+
+- Updated dependencies [b8105fb]
+  - @platforma-sdk/model@1.42.15
+  - @milaboratories/milaboratories.ui-examples.model@1.2.23
+
+## 1.5.26
+
+### Patch Changes
+
+- 5c49322: Allow any key types in PlDropdownRef
+- 68776f8: Prevent Teleport-using components from triggering outside click
+
+## 1.5.25
+
+### Patch Changes
+
+- @platforma-sdk/model@1.42.10
+- @milaboratories/milaboratories.ui-examples.model@1.2.22
+
+## 1.5.24
+
+### Patch Changes
+
+- @platforma-sdk/model@1.42.8
+- @milaboratories/milaboratories.ui-examples.model@1.2.21
+
 ## 1.5.23
 
 ### Patch Changes

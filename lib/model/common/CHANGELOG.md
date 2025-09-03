@@ -1,5 +1,106 @@
 # @milaboratories/pl-model-common
 
+## 1.19.17
+
+### Patch Changes
+
+- 6bc20d1: add hidden for graphs columns
+
+## 1.19.16
+
+### Patch Changes
+
+- 3d9638e: PFramesDriver run HTTP parquet server
+
+## 1.19.15
+
+### Patch Changes
+
+- Updated dependencies [0ff2a1b]
+  - @milaboratories/pl-error-like@1.12.5
+
+## 1.19.14
+
+### Patch Changes
+
+- 2a21be5: Added `pl7.app/description` to well-known annotations list
+
+## 1.19.13
+
+### Patch Changes
+
+- c792469: Set type to module for packages used by PFrames
+
+## 1.19.12
+
+### Patch Changes
+
+- 2589dec: Export Branded type from model-common
+
+## 1.19.11
+
+### Patch Changes
+
+- b14b2fb: update dist builder
+- Updated dependencies [b14b2fb]
+  - @milaboratories/pl-error-like@1.12.4
+
+## 1.19.10
+
+### Patch Changes
+
+- e3e69bd: fix axes normalizaion
+
+## 1.19.9
+
+### Patch Changes
+
+- 6b9828a: Remove unused styles, fix lint warnings, update comments
+
+## 1.19.8
+
+### Patch Changes
+
+- 3f93434: Packages configuration normalization
+- Updated dependencies [3f93434]
+  - @milaboratories/pl-error-like@1.12.3
+
+## 1.19.7
+
+### Patch Changes
+
+- 078efc1: fix for linker columns
+
+## 1.19.6
+
+### Patch Changes
+
+- 4468f99: add composite linker columns
+
+## 1.19.5
+
+### Patch Changes
+
+- 4b67e4f: PFrames driver - integrated parquet data info handling
+
+## 1.19.4
+
+### Patch Changes
+
+- b8105fb: PFrames - Different public and internal types for ParquetDataInfo
+
+## 1.19.3
+
+### Patch Changes
+
+- 6d6c4ba: Updated ParquetPartitionedDataInfo specification
+
+## 1.19.2
+
+### Patch Changes
+
+- 017a888: ParquetPartitionedDataInfo specification
+
 ## 1.19.1
 
 ### Patch Changes

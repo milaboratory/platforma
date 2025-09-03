@@ -386,3 +386,95 @@ TestSelectWithStrings := func() {
     // If we could access the internal mapping function, we would test it directly
     // For now, we ensure that the select operations can be constructed without errors
 }
+
+TestNdjsonReading := func() {
+    wf := pt.workflow()
+
+    // Test NDJSON string content
+    ndjsonContent := `{"id": 1, "name": "Alice"}
+{"id": 2, "name": "Bob"}`
+    df := wf.frame(ndjsonContent, {format: "ndjson", id: "testNdjson"})
+
+    // Test with nRows limit
+    dfLimited := wf.frame(ndjsonContent, {format: "ndjson", nRows: 1, id: "testNdjsonLimited"})
+
+    // Test with ignoreErrors
+    dfIgnoreErrors := wf.frame(ndjsonContent, {format: "ndjson", ignoreErrors: true, id: "testNdjsonIgnoreErrors"})
+
+    // Test with schema override
+    dfWithSchema := wf.frame(ndjsonContent, {
+        format: "ndjson",
+        schema: [{column: "id", type: "Int64"}],
+        id: "testNdjsonWithSchema"
+    })
+}
+
+TestNdjsonAutoDetection := func() {
+    wf := pt.workflow()
+
+    // Test auto-detection from fileName with content
+    ndjsonContent := `{"id": 1, "name": "Alice"}`
+
+    // Test auto-detection from .ndjson extension
+    dfNdjson := wf.frame(ndjsonContent, {fileName: "test.ndjson", id: "autoDetectNdjson"})
+
+    // Test auto-detection from .jsonl extension
+    dfJsonl := wf.frame(ndjsonContent, {fileName: "test.jsonl", id: "autoDetectJsonl"})
+
+    // Test CSV auto-detection still works
+    csvContent := "col1,col2\n1,2"
+    dfCsv := wf.frame(csvContent, {fileName: "data.csv", id: "autoDetectCsv"})
+}
+
+TestFormatBackwardCompatibility := func() {
+    wf := pt.workflow()
+
+    // Old xsvType should still work
+    df1 := wf.frame("data.csv", {xsvType: "csv", id: "backwardCsv"})
+
+    // New format should work
+    df2 := wf.frame("data.csv", {format: "csv", id: "newFormatCsv"})
+
+    // format overrides xsvType
+    df3 := wf.frame("data.json", {xsvType: "csv", format: "ndjson", id: "formatOverrides"})
+
+    // Test that both parameters work together correctly
+    df4 := wf.frame("test_content", {xsvType: "tsv", fileName: "test.tsv", id: "bothParams"})
+}
+
+TestNdjsonWriting := func() {
+    wf := pt.workflow()
+    df := wf.frame("col1,col2\n1,2", {format: "csv", id: "testData"})
+
+    // Test auto-detection for NDJSON writing
+    df.save("output.ndjson")
+    df.save("output.jsonl")
+
+    // Test explicit format parameter
+    df.save("data.txt", {format: "ndjson"})
+
+    // Test format overriding extension
+    df.save("data.csv", {format: "ndjson"})
+
+    // Test backward compatibility for writing
+    df.save("legacy.csv", {xsvType: "csv"})
+
+    // Test column selection with NDJSON
+    df.save("subset.ndjson", {columns: ["col1"]})
+
+    // Test saveContent with NDJSON
+    df.saveContent("content.ndjson")
+}
+
+TestNdjsonParameterValidation := func() {
+    wf := pt.workflow()
+
+    // These should work without error
+    df1 := wf.frame("test", {format: "ndjson", id: "valid1"})
+    df2 := wf.frame("test", {format: "csv", nRows: 100, id: "valid2"})
+    df3 := wf.frame("test", {format: "tsv", ignoreErrors: false, id: "valid3"})
+
+    // Test that the new parameters are properly validated
+    // Note: In a real test environment, we would test that invalid parameters cause panics
+    // For now, we just ensure valid parameters don't cause issues
+}

@@ -1,23 +1,23 @@
 {
   "name": "@milaboratories/pl-drivers",
-  "version": "1.7.1",
+  "version": "1.10.11",
   "engines": {
     "node": ">=20"
   },
   "description": "Drivers and a low-level clients for log streaming, downloading and uploading files from and to pl",
+  "type": "module",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "require": "./dist/index.js",
-      "import": "./dist/index.mjs"
+      "require": "./dist/index.cjs",
+      "import": "./dist/index.js"
     }
   },
   "scripts": {
-    "type-check": "tsc --noEmit --composite false",
-    "build": "vite build",
+    "type-check": "ts-builder types --target node",
+    "build": "ts-builder build --target node",
     "test": "vitest run --coverage",
     "lint": "eslint .",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
@@ -27,34 +27,35 @@
     "src/**/*"
   ],
   "dependencies": {
-    "decompress": "catalog:",
     "@grpc/grpc-js": "catalog:",
-    "@milaboratories/ts-helpers": "workspace:^",
-    "@milaboratories/helpers": "workspace:^",
-    "@milaboratories/computable": "workspace:^",
-    "@milaboratories/pl-client": "workspace:^",
-    "@milaboratories/pl-tree": "workspace:^",
-    "@milaboratories/pl-model-common": "workspace:^",
+    "@milaboratories/ts-helpers": "workspace:*",
+    "@milaboratories/helpers": "workspace:*",
+    "@milaboratories/computable": "workspace:*",
+    "@milaboratories/pl-client": "workspace:*",
+    "@milaboratories/pl-tree": "workspace:*",
+    "@milaboratories/pl-model-common": "workspace:*",
     "@protobuf-ts/grpc-transport": "catalog:",
+    "@protobuf-ts/plugin": "catalog:",
     "@protobuf-ts/runtime": "catalog:",
     "@protobuf-ts/runtime-rpc": "catalog:",
-    "@protobuf-ts/plugin": "catalog:",
+    "decompress": "catalog:",
     "denque": "catalog:",
     "tar-fs": "catalog:",
     "undici": "catalog:",
-    "zod": "catalog:",
-    "upath": "catalog:"
+    "upath": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
-    "eslint": "catalog:",
     "@types/decompress": "catalog:",
-    "@milaboratories/eslint-config": "workspace:^",
+    "@milaboratories/eslint-config": "workspace:*",
     "@milaboratories/build-configs": "workspace:*",
-    "typescript": "catalog:",
-    "vite": "catalog:",
+    "@milaboratories/ts-builder": "workspace:*",
+    "@milaboratories/ts-configs": "workspace:*",
     "@types/node": "catalog:",
-    "vitest": "catalog:",
+    "@types/tar-fs": "catalog:",
     "@vitest/coverage-v8": "catalog:",
-    "@types/tar-fs": "catalog:"
+    "eslint": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }

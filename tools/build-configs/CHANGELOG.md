@@ -1,5 +1,23 @@
 # @milaboratories/build-configs
 
+## 1.0.8
+
+### Patch Changes
+
+- 215c50b: avoid nested node_modules
+
+## 1.0.7
+
+### Patch Changes
+
+- ee5f3ad: configurable output dit
+
+## 1.0.6
+
+### Patch Changes
+
+- 3f93434: Packages configuration normalization
+
 ## 1.0.5
 
 ### Patch Changes

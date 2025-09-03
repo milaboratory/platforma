@@ -1,5 +1,162 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.8.24
+
+### Patch Changes
+
+- Updated dependencies [6bc20d1]
+  - @milaboratories/pl-model-common@1.19.17
+
+## 1.8.23
+
+### Patch Changes
+
+- 3d9638e: PFramesDriver run HTTP parquet server
+- Updated dependencies [3d9638e]
+  - @milaboratories/pl-model-common@1.19.16
+
+## 1.8.22
+
+### Patch Changes
+
+- 0ff2a1b: **Registry Overview Snapshots & Enhanced Schema Backward Compatibility**
+
+  Added comprehensive snapshot functionality for registry overviews and improved Zod schema compatibility across the entire codebase.
+
+  ## Registry Snapshots (minor)
+
+  - **Automatic backup creation**: Overview files are automatically backed up during every registry update with gzipped compression
+  - **Organized storage structure**: Snapshots stored in `_overview_snapshots_v2/global/` and `per_package/` folders mirroring main hierarchy
+  - **Security features**: Millisecond timestamps with random suffixes prevent CDN retrieval attacks
+  - **CLI management tools**: Added `list-overview-snapshots` and `restore-overview-from-snapshot` commands with safety confirmations
+  - **Configurable behavior**: `skipSnapshotCreation` setting allows disabling snapshots when needed
+  - **Comprehensive testing**: Full test coverage ensures reliability
+
+  ## Schema Backward Compatibility (patch)
+
+  - **Strategic schema improvements**: Enhanced Zod schemas to prevent data loss during version transitions
+  - **Smart classification**: Applied `.passthrough()` to evolving data structures (overviews, manifests, registries, errors) while maintaining `.strict()` for closed types (content types, identifiers)
+  - **Wide compatibility coverage**: Updated schemas across block metadata, registry specifications, error structures, and deployment configurations
+  - **Forward compatibility**: Older versions will now preserve unknown fields instead of stripping them during parsing
+
+  These improvements ensure robust registry management with automatic backup capabilities and seamless schema evolution without breaking changes.
+
+  - @milaboratories/pl-model-common@1.19.15
+
+## 1.8.21
+
+### Patch Changes
+
+- f848ca0: PFrames http object store - documentation for abort response
+
+## 1.8.20
+
+### Patch Changes
+
+- a14b8c8: PFrame http helpers interface update
+
+## 1.8.19
+
+### Patch Changes
+
+- f5bcdbe: Improved PFrames HttpServer interface
+
+## 1.8.18
+
+### Patch Changes
+
+- 9acf386: PFrames version bump
+
+## 1.8.17
+
+### Patch Changes
+
+- ef18158: PFrames version bump
+
+## 1.8.16
+
+### Patch Changes
+
+- Updated dependencies [2a21be5]
+  - @milaboratories/pl-model-common@1.19.14
+
+## 1.8.15
+
+### Patch Changes
+
+- 10a5439: PFrame HttpHelpers interface updated
+
+## 1.8.14
+
+### Patch Changes
+
+- dc289eb: Require to accept logger parameter in PFrame ObjectStore
+
+## 1.8.13
+
+### Patch Changes
+
+- 9508f78: PFrames module interface declared
+
+## 1.8.12
+
+### Patch Changes
+
+- c792469: Set type to module for packages used by PFrames
+- c792469: PFrames HttpHelpers interface update
+- Updated dependencies [c792469]
+  - @milaboratories/pl-model-common@1.19.13
+
+## 1.8.11
+
+### Patch Changes
+
+- 26a9471: PFrames HttpHelpers interface update
+
+## 1.8.10
+
+### Patch Changes
+
+- b14b2fb: update dist builder
+- Updated dependencies [b14b2fb]
+  - @milaboratories/pl-model-common@1.19.11
+
+## 1.8.9
+
+### Patch Changes
+
+- ee2f5ad: PFrames HttpHelpers interface
+
+## 1.8.8
+
+### Patch Changes
+
+- 3f93434: Packages configuration normalization
+- Updated dependencies [3f93434]
+  - @milaboratories/pl-model-common@1.19.8
+
+## 1.8.7
+
+### Patch Changes
+
+- b8105fb: PFrames - Different public and internal types for ParquetDataInfo
+- Updated dependencies [b8105fb]
+  - @milaboratories/pl-model-common@1.19.4
+
+## 1.8.6
+
+### Patch Changes
+
+- Updated dependencies [6d6c4ba]
+  - @milaboratories/pl-model-common@1.19.3
+
+## 1.8.5
+
+### Patch Changes
+
+- Updated dependencies [017a888]
+  - @milaboratories/pl-model-common@1.19.2
+
 ## 1.8.4
 
 ### Patch Changes

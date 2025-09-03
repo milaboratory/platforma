@@ -10,7 +10,6 @@ export default {
 <script lang="ts" setup generic="M = unknown">
 import './pl-dropdown-multi.scss';
 import { computed, reactive, ref, unref, useSlots, useTemplateRef, watch, watchPostEffect } from 'vue';
-import { tap } from '../../helpers/functions';
 import { PlTooltip } from '../PlTooltip';
 import { PlChip } from '../PlChip';
 import DoubleContour from '../../utils/DoubleContour.vue';
@@ -149,10 +148,7 @@ const isDisabled = computed(() => {
 const tabindex = computed(() => (isDisabled.value ? undefined : '0'));
 
 const updateActiveOption = () => {
-  data.activeOption = tap(
-    filteredOptionsRef.value.findIndex((o) => deepEqual(o.value, props.modelValue)),
-    (v) => (v < 0 ? 0 : v),
-  );
+  data.activeOption = 0;
 };
 
 const selectOption = (v: M) => {

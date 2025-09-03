@@ -22,12 +22,12 @@ export interface BlobHandleAndSize<
   readonly size: number;
 }
 
-/** Range in bytes, from should be less or equal than to. */
+/** Range in bytes, from should be less than to. */
 export const RangeBytes = z.object({
   /** Included left border. */
-  from: z.number(),
+  from: z.number().min(0),
   /** Excluded right border. */
-  to: z.number(),
+  to: z.number().min(1),
 });
 
 export type RangeBytes = z.infer<typeof RangeBytes>;
@@ -37,11 +37,14 @@ export function newRangeBytesOpt(from?: number, to?: number): RangeBytes | undef
     return undefined;
   }
 
-  return { from, to };
+  const range = { from, to };
+  validateRangeBytes(range, 'newRangeBytesOpt');
+
+  return range;
 }
 
 export function validateRangeBytes(range: RangeBytes, errMsg: string) {
-  if (range.from < 0 || range.to < 0 || range.from >= range.to) {
+  if (range.from < 0 || range.from >= range.to) {
     throw new Error(`${errMsg}: invalid bytes range: ${range}`);
   }
 }
@@ -57,10 +60,36 @@ export type LocalBlobHandleAndSize = BlobHandleAndSize<LocalBlobHandle>;
  * is created as soon as remote blob becomes available. */
 export type RemoteBlobHandleAndSize = BlobHandleAndSize<RemoteBlobHandle>;
 
+export type GetContentOptions = {
+  /** Byte range in [from, to) format. */
+  range?: RangeBytes;
+  /** Signal to abort the operation early. */
+  signal?: AbortSignal;
+};
+
+export type ContentHandler<T> = (content: ReadableStream, size: number) => Promise<T>;
+
 /** Defines API of blob driver as it is seen from the block UI code. */
 export interface BlobDriver {
-  /** Given the blob handle returns its content. Depending on the handle type,
-   * content will be served from locally downloaded file, or directly from
-   * remote platforma storage. */
-  getContent(handle: LocalBlobHandle | RemoteBlobHandle, range?: RangeBytes): Promise<Uint8Array>;
+  /**
+   * Given the blob handle returns its content.
+   * Depending on the handle type, content will be served from locally downloaded file,
+   * or directly from remote platforma storage.
+   */
+  getContent(
+    handle: LocalBlobHandle | RemoteBlobHandle,
+  ): Promise<Uint8Array>;
+  getContent(
+    handle: LocalBlobHandle | RemoteBlobHandle,
+    options?: GetContentOptions,
+  ): Promise<Uint8Array>;
+  /** @deprecated Use {@link getContent} with {@link GetContentOptions} instead */
+  getContent(
+    handle: LocalBlobHandle | RemoteBlobHandle,
+    range?: RangeBytes,
+  ): Promise<Uint8Array>;
+  getContent(
+    handle: LocalBlobHandle | RemoteBlobHandle,
+    optionsOrRange?: GetContentOptions | RangeBytes,
+  ): Promise<Uint8Array>;
 }

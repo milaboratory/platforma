@@ -1,5 +1,149 @@
 # @platforma-sdk/ui-vue
 
+## 1.42.51
+
+### Patch Changes
+
+- Updated dependencies [6bc20d1]
+  - @platforma-sdk/model@1.42.51
+  - @milaboratories/uikit@2.4.12
+
+## 1.42.47
+
+### Patch Changes
+
+- Updated dependencies [3d9638e]
+  - @platforma-sdk/model@1.42.47
+  - @milaboratories/uikit@2.4.11
+
+## 1.42.46
+
+### Patch Changes
+
+- @platforma-sdk/model@1.42.46
+- @milaboratories/uikit@2.4.10
+
+## 1.42.44
+
+### Patch Changes
+
+- @milaboratories/uikit@2.4.9
+- @platforma-sdk/model@1.42.36
+
+## 1.42.42
+
+### Patch Changes
+
+- b80a619: AgGrid version update
+
+## 1.42.36
+
+### Patch Changes
+
+- 2a21be5: PlAgDataTableV2: added tooltips to column headers
+  - @platforma-sdk/model@1.42.36
+  - @milaboratories/uikit@2.4.8
+
+## 1.42.35
+
+### Patch Changes
+
+- Updated dependencies [27c258f]
+  - @platforma-sdk/model@1.42.35
+  - @milaboratories/uikit@2.4.7
+
+## 1.42.34
+
+### Patch Changes
+
+- Updated dependencies [e8f0e58]
+  - @milaboratories/uikit@2.4.6
+
+## 1.42.26
+
+### Patch Changes
+
+- 5714f79: Fix Monetization sidebar appearance
+
+## 1.42.24
+
+### Patch Changes
+
+- 448a0c6: remove wrong ui tip
+
+## 1.42.23
+
+### Patch Changes
+
+- b14b2fb: update dist builder
+- Updated dependencies [b14b2fb]
+  - @milaboratories/biowasm-tools@1.1.2
+  - @milaboratories/uikit@2.4.5
+  - @platforma-sdk/model@1.42.23
+
+## 1.42.21
+
+### Patch Changes
+
+- Updated dependencies [6b9828a]
+  - @milaboratories/uikit@2.4.4
+
+## 1.42.20
+
+### Patch Changes
+
+- 56b404b: Add PlAutocompleteMulti component
+- 3f93434: Packages configuration normalization
+- Updated dependencies [56b404b]
+- Updated dependencies [3f93434]
+  - @milaboratories/uikit@2.4.3
+  - @milaboratories/biowasm-tools@1.1.1
+  - @platforma-sdk/model@1.42.20
+
+## 1.42.19
+
+### Patch Changes
+
+- 77103d0: PlAgDataTable: search field in columns manager
+
+## 1.42.18
+
+### Patch Changes
+
+- 604827a: [desktop] add button to save block error log to file
+- Updated dependencies [604827a]
+  - @milaboratories/uikit@2.4.2
+
+## 1.42.15
+
+### Patch Changes
+
+- Updated dependencies [b8105fb]
+  - @platforma-sdk/model@1.42.15
+  - @milaboratories/uikit@2.4.1
+
+## 1.42.14
+
+### Patch Changes
+
+- Updated dependencies [5c49322]
+- Updated dependencies [68776f8]
+  - @milaboratories/uikit@2.4.0
+
+## 1.42.10
+
+### Patch Changes
+
+- @platforma-sdk/model@1.42.10
+- @milaboratories/uikit@2.3.29
+
+## 1.42.8
+
+### Patch Changes
+
+- @platforma-sdk/model@1.42.8
+- @milaboratories/uikit@2.3.28
+
 ## 1.42.5
 
 ### Patch Changes

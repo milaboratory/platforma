@@ -1,9 +1,59 @@
 import { Pl } from '@milaboratories/pl-middle-layer';
 import { awaitStableState, tplTest } from '@platforma-sdk/test';
+import { expect } from 'vitest';
+import type { TestRenderResults } from '@platforma-sdk/test';
+import type { MiddleLayerDriverKit } from '@milaboratories/pl-middle-layer';
+import type { PlTreeNodeAccessor } from '@milaboratories/pl-tree';
+import type { ComputableCtx } from '@milaboratories/computable';
+import { getTestTimeout } from '@milaboratories/helpers';
 
-tplTest(
+const TIMEOUT = getTestTimeout(40_000);
+
+const getFileContent = async (
+  result: TestRenderResults<string>,
+  outputName: string,
+  driverKit: MiddleLayerDriverKit,
+  timeout = TIMEOUT,
+): Promise<string> => {
+  const handle = await awaitStableState(
+    result.computeOutput(outputName, (fileHandle: PlTreeNodeAccessor | undefined, ctx: ComputableCtx) => {
+      if (!fileHandle) return undefined;
+      return driverKit.blobDriver.getOnDemandBlob(fileHandle.persist(), ctx).handle;
+    }),
+    timeout,
+  );
+  expect(handle).toBeDefined();
+  return (await driverKit.blobDriver.getContent(handle!)).toString();
+};
+
+const normalizeTsv = (str: string) => str.replace(/\r\n/g, '\n').trim();
+
+const normalizeAndSortTsv = (str: string) => {
+  const lines = str.replace(/\r\n/g, '\n').trim().split('\n');
+  const header = lines.shift();
+  lines.sort();
+  return [header, ...lines].join('\n');
+};
+
+const normalizeNdjson = (str: string) =>
+  str
+    .replace(/\r\n/g, '\n')
+    .trim()
+    .split('\n')
+    .map((line) => {
+      // Parse and re-stringify to normalize JSON formatting
+      try {
+        return JSON.stringify(JSON.parse(line));
+      } catch {
+        return line; // Return as-is if not valid JSON
+      }
+    })
+    .sort() // Sort lines for consistent comparison
+    .join('\n');
+
+tplTest.concurrent(
   'pt simple test',
-  { timeout: 40000 },
+  { timeout: TIMEOUT },
   async ({ helper, expect, driverKit }) => {
     const inputTsvData = 'a\tb\n1\tX\n4\tY\n9\tZ';
     const expectedOutputTsvData = 'a\ta_sqrt\n1\t1.0\n4\t2.0\n9\t3.0';
@@ -17,29 +67,15 @@ tplTest(
       }),
     );
 
-    const outputFileHandle = await awaitStableState(
-      result.computeOutput('out', (fileHandle, ctx) => {
-        if (!fileHandle) {
-          return undefined;
-        }
-        return driverKit.blobDriver.getOnDemandBlob(fileHandle.persist(), ctx).handle;
-      }),
-      40000,
-    );
-
-    expect(outputFileHandle).toBeDefined();
-
-    const outputTsvContent = (await driverKit.blobDriver.getContent(outputFileHandle!)).toString();
-
-    const normalizeTsv = (str: string) => str.replace(/\r\n/g, '\n').trim();
+    const outputTsvContent = await getFileContent(result, 'out', driverKit);
 
     expect(normalizeTsv(outputTsvContent)).toEqual(normalizeTsv(expectedOutputTsvData));
   },
 );
 
-tplTest(
+tplTest.concurrent(
   'pt ex1 test - window and groupBy operations',
-  { timeout: 40000 }, // Increased timeout for potentially more complex operations
+  { timeout: TIMEOUT },
   async ({ helper, expect, driverKit }) => {
     const inputTsvData = `category\tuser_id\tscore\tvalue
 A\tuser1\t100\t10
@@ -71,38 +107,23 @@ C\t50\t300.0`;
       }),
     );
 
-    const getFileContent = async (outputName: 'out_windows' | 'out_grouped') => {
-      const fileHandle = await awaitStableState(
-        result.computeOutput(outputName, (fileHandle, ctx) => {
-          if (!fileHandle) {
-            return undefined;
-          }
-          return driverKit.blobDriver.getOnDemandBlob(fileHandle.persist(), ctx).handle;
-        }),
-        40000,
-      );
-      expect(fileHandle).toBeDefined();
-      return (await driverKit.blobDriver.getContent(fileHandle!)).toString();
-    };
+    const [outputWindowsContent, outputGroupedContent] = await Promise.all([
+      getFileContent(result, 'out_windows', driverKit),
+      getFileContent(result, 'out_grouped', driverKit),
+    ]);
 
-    const outputWindowsContent = await getFileContent('out_windows');
-    const outputGroupedContent = await getFileContent('out_grouped');
-
-    const normalizeAndSortTsv = (str: string) => {
-      const lines = str.replace(/\r\n/g, '\n').trim().split('\n');
-      const header = lines.shift();
-      lines.sort();
-      return [header, ...lines].join('\n');
-    };
-
-    expect(normalizeAndSortTsv(outputWindowsContent)).toEqual(normalizeAndSortTsv(expectedOutputWindowsTsvData));
-    expect(normalizeAndSortTsv(outputGroupedContent)).toEqual(normalizeAndSortTsv(expectedOutputGroupedTsvData));
+    expect(normalizeAndSortTsv(outputWindowsContent)).toEqual(
+      normalizeAndSortTsv(expectedOutputWindowsTsvData),
+    );
+    expect(normalizeAndSortTsv(outputGroupedContent)).toEqual(
+      normalizeAndSortTsv(expectedOutputGroupedTsvData),
+    );
   },
 );
 
-tplTest(
+tplTest.concurrent(
   'pt ex2 test - filter and sort operations',
-  { timeout: 40000 },
+  { timeout: TIMEOUT },
   async ({ helper, expect, driverKit }) => {
     const inputTsvData = `category\tuser_id\tscore\tvalue
 A\tuser1\t100\t10
@@ -138,39 +159,15 @@ B\tuser7\t190\t110`;
       }),
     );
 
-    const getFileContent = async (outputName: 'out_filtered_sorted') => {
-      const fileHandle = await awaitStableState(
-        result.computeOutput(outputName, (fileHandle, ctx) => {
-          if (!fileHandle) {
-            return undefined;
-          }
-          return driverKit.blobDriver.getOnDemandBlob(fileHandle.persist(), ctx).handle;
-        }),
-        40000,
-      );
-      expect(fileHandle).toBeDefined();
-      return (await driverKit.blobDriver.getContent(fileHandle!)).toString();
-    };
-
-    const outputContent = await getFileContent('out_filtered_sorted');
-
-    // TODO: unused
-    const _normalizeAndSortTsv = (str: string) => {
-      const lines = str.replace(/\r\n/g, '\n').trim().split('\n');
-      const header = lines.shift();
-      // Data is already sorted by the template, so just join
-      return [header, ...lines].join('\n');
-    };
-
-    const normalizeTsv = (str: string) => str.replace(/\r\n/g, '\n').trim();
+    const outputContent = await getFileContent(result, 'out_filtered_sorted', driverKit);
 
     expect(normalizeTsv(outputContent)).toEqual(normalizeTsv(expectedOutputTsvData));
   },
 );
 
-tplTest(
+tplTest.concurrent(
   'pt ex3 test - join operations',
-  { timeout: 40000 }, // Increased timeout for multiple PTabler steps
+  { timeout: TIMEOUT },
   async ({ helper, expect, driverKit }) => {
     // No input files needed as data is defined in the template as strings
 
@@ -220,49 +217,36 @@ Banana,Yellow`;
       (_tx) => ({}), // No dynamic inputs needed for this test
     );
 
-    const getFileContentLocal = async (
-      outputName:
-        | 'out_inner_join'
-        | 'out_left_join_on'
-        | 'out_full_join_on_nocoalesce'
-        | 'out_cross_join',
-    ) => {
-      const fileHandle = await awaitStableState(
-        result.computeOutput(outputName, (fileHandle, ctx) => {
-          if (!fileHandle) {
-            return undefined;
-          }
-          return driverKit.blobDriver.getOnDemandBlob(fileHandle.persist(), ctx).handle;
-        }),
-        40000, // Allow more time for ptabler execution with multiple joins
-      );
-      expect(fileHandle).toBeDefined();
-      return (await driverKit.blobDriver.getContent(fileHandle!)).toString();
-    };
-    // TODO: unused
-    const _normalizeTsv = (str: string) => str.replace(/\r\n/g, '\n').trim();
-    const normalizeAndSortTsv = (str: string) => {
-      const lines = str.replace(/\r\n/g, '\n').trim().split('\n');
-      const header = lines.shift();
-      lines.sort(); // Sort data lines for consistent comparison
-      return [header, ...lines].join('\n');
-    };
+    const [
+      innerJoinContent,
+      leftJoinOnContent,
+      fullJoinOnNoCoalesceContent,
+      crossJoinContent,
+    ] = await Promise.all([
+      getFileContent(result, 'out_inner_join', driverKit),
+      getFileContent(result, 'out_left_join_on', driverKit),
+      getFileContent(result, 'out_full_join_on_nocoalesce', driverKit),
+      getFileContent(result, 'out_cross_join', driverKit),
+    ]);
 
-    const innerJoinContent = await getFileContentLocal('out_inner_join');
-    const leftJoinOnContent = await getFileContentLocal('out_left_join_on');
-    const fullJoinOnNoCoalesceContent = await getFileContentLocal('out_full_join_on_nocoalesce');
-    const crossJoinContent = await getFileContentLocal('out_cross_join');
-
-    expect(normalizeAndSortTsv(innerJoinContent)).toEqual(normalizeAndSortTsv(expectedOutputInnerJoin));
-    expect(normalizeAndSortTsv(leftJoinOnContent)).toEqual(normalizeAndSortTsv(expectedOutputLeftJoinOn));
-    expect(normalizeAndSortTsv(fullJoinOnNoCoalesceContent)).toEqual(normalizeAndSortTsv(expectedOutputFullJoinOnNoCoalesce));
-    expect(normalizeAndSortTsv(crossJoinContent)).toEqual(normalizeAndSortTsv(expectedOutputCrossJoin));
+    expect(normalizeAndSortTsv(innerJoinContent)).toEqual(
+      normalizeAndSortTsv(expectedOutputInnerJoin),
+    );
+    expect(normalizeAndSortTsv(leftJoinOnContent)).toEqual(
+      normalizeAndSortTsv(expectedOutputLeftJoinOn),
+    );
+    expect(normalizeAndSortTsv(fullJoinOnNoCoalesceContent)).toEqual(
+      normalizeAndSortTsv(expectedOutputFullJoinOnNoCoalesce),
+    );
+    expect(normalizeAndSortTsv(crossJoinContent)).toEqual(
+      normalizeAndSortTsv(expectedOutputCrossJoin),
+    );
   },
 );
 
-tplTest(
+tplTest.concurrent(
   'pt ex4 test - dynamic substring',
-  { timeout: 40000 },
+  { timeout: TIMEOUT },
   async ({ helper, expect, driverKit }) => {
     const inputTsvData = `text\tstart\tlen\tend
 HelloWorld\t0\t5\t5
@@ -293,36 +277,21 @@ Short\thort`;
       }),
     );
 
-    const getFileContent = async (outputName: 'out_substr_len' | 'out_substr_end' | 'out_substr_static') => {
-      const fileHandle = await awaitStableState(
-        result.computeOutput(outputName, (fileHandle, ctx) => {
-          if (!fileHandle) {
-            return undefined;
-          }
-          return driverKit.blobDriver.getOnDemandBlob(fileHandle.persist(), ctx).handle;
-        }),
-        40000,
-      );
-      expect(fileHandle).toBeDefined();
-      return (await driverKit.blobDriver.getContent(fileHandle!)).toString();
-    };
+    const [outputSubstrLen, outputSubstrEnd, outputSubstrStatic] = await Promise.all([
+      getFileContent(result, 'out_substr_len', driverKit),
+      getFileContent(result, 'out_substr_end', driverKit),
+      getFileContent(result, 'out_substr_static', driverKit),
+    ]);
 
-    const normalizeTsv = (str: string) => str.replace(/\r\n/g, '\n').trim();
-
-    const outputSubstrLen = await getFileContent('out_substr_len');
     expect(normalizeTsv(outputSubstrLen)).toEqual(normalizeTsv(expectedOutputSubstrLen));
-
-    const outputSubstrEnd = await getFileContent('out_substr_end');
     expect(normalizeTsv(outputSubstrEnd)).toEqual(normalizeTsv(expectedOutputSubstrEnd));
-
-    const outputSubstrStatic = await getFileContent('out_substr_static');
     expect(normalizeTsv(outputSubstrStatic)).toEqual(normalizeTsv(expectedOutputSubstrStatic));
   },
 );
 
-tplTest(
+tplTest.concurrent(
   'pt ex5 test - comprehensive string functions',
-  { timeout: 40000 },
+  { timeout: TIMEOUT },
   async ({ helper, expect, driverKit }) => {
     // No input needed - data is embedded in template
 
@@ -340,24 +309,82 @@ frank@startup.io\tscript.py\tBanana smoothie with lime juice\ttest888\ttrue\tfal
       (_tx) => ({}), // No dynamic inputs needed for this test
     );
 
-    const getFileContent = async (outputName: 'out_string_functions') => {
-      const fileHandle = await awaitStableState(
-        result.computeOutput(outputName, (fileHandle, ctx) => {
-          if (!fileHandle) {
-            return undefined;
-          }
-          return driverKit.blobDriver.getOnDemandBlob(fileHandle.persist(), ctx).handle;
-        }),
-        40000,
-      );
-      expect(fileHandle).toBeDefined();
-      return (await driverKit.blobDriver.getContent(fileHandle!)).toString();
-    };
-
-    const outputContent = await getFileContent('out_string_functions');
-
-    const normalizeTsv = (str: string) => str.replace(/\r\n/g, '\n').trim();
+    const outputContent = await getFileContent(result, 'out_string_functions', driverKit);
 
     expect(normalizeTsv(outputContent)).toEqual(normalizeTsv(expectedOutputStringFunctions));
+  },
+);
+
+tplTest.concurrent(
+  'pt ndjson test - comprehensive NDJSON format support',
+  { timeout: TIMEOUT },
+  async ({ helper, expect, driverKit }) => {
+    // No input needed - data is embedded in template
+
+    // Expected NDJSON output with computed score_bonus column
+    const expectedOutputNdjsonBasic = `{"id":1,"name":"Alice","score":95.5,"active":true,"score_bonus":105.5}
+{"id":2,"name":"Bob","score":87.2,"active":false,"score_bonus":97.2}
+{"id":3,"name":"Charlie","score":92.1,"active":true,"score_bonus":102.1}
+{"id":4,"name":"Diana","score":98.7,"active":true,"score_bonus":108.7}
+{"id":5,"name":"Eve","score":83.4,"active":false,"score_bonus":93.4}`;
+
+    // Expected NDJSON output with nRows=3 and filtered for active=true
+    // Note: Only first 3 rows are read due to nRows limit, then filtered for active=true
+    const expectedOutputNdjsonLimited = `{"id":1,"name":"Alice","score":95.5,"active":true}
+{"id":3,"name":"Charlie","score":92.1,"active":true}`;
+
+    // Expected CSV output sorted by score (descending)
+    const expectedOutputNdjsonToCsv = `id,name,score,active
+4,Diana,98.7,true
+1,Alice,95.5,true
+3,Charlie,92.1,true
+2,Bob,87.2,false
+5,Eve,83.4,false`;
+
+    // Expected NDJSON output from CSV input with enriched columns
+    const expectedOutputCsvToNdjson = `{"id":1,"display_name":"Alice (1)","score":95.5,"active":true,"high_performer":true}
+{"id":2,"display_name":"Bob (2)","score":87.2,"active":false,"high_performer":false}
+{"id":3,"display_name":"Charlie (3)","score":92.1,"active":true,"high_performer":true}`;
+
+    const result = await helper.renderTemplate(
+      false,
+      'pt.ndjson',
+      [
+        'out_ndjson_basic',
+        'out_ndjson_limited',
+        'out_ndjson_to_csv',
+        'out_csv_to_ndjson',
+      ],
+      (_tx) => ({}), // No dynamic inputs needed for this test
+    );
+
+    const [
+      ndjsonBasicContent,
+      ndjsonLimitedContent,
+      ndjsonToCsvContent,
+      csvToNdjsonContent,
+    ] = await Promise.all([
+      getFileContent(result, 'out_ndjson_basic', driverKit),
+      getFileContent(result, 'out_ndjson_limited', driverKit),
+      getFileContent(result, 'out_ndjson_to_csv', driverKit),
+      getFileContent(result, 'out_csv_to_ndjson', driverKit),
+    ]);
+
+    // Helper functions for normalization
+    const normalizeCsv = (str: string) => str.replace(/\r\n/g, '\n').trim();
+
+    // Test all outputs
+    expect(normalizeNdjson(ndjsonBasicContent)).toEqual(
+      normalizeNdjson(expectedOutputNdjsonBasic),
+    );
+    expect(normalizeNdjson(ndjsonLimitedContent)).toEqual(
+      normalizeNdjson(expectedOutputNdjsonLimited),
+    );
+    expect(normalizeCsv(ndjsonToCsvContent)).toEqual(
+      normalizeCsv(expectedOutputNdjsonToCsv),
+    );
+    expect(normalizeNdjson(csvToNdjsonContent)).toEqual(
+      normalizeNdjson(expectedOutputCsvToNdjson),
+    );
   },
 );
