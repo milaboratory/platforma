@@ -1,5 +1,11 @@
 # @platforma-open/software-ptabler
 
+## 1.12.2
+
+### Patch Changes
+
+- d58f182: Use fresh python run environment with bugfix for pip on windows
+
 ## 1.12.1
 
 ### Patch Changes

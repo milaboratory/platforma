@@ -1,5 +1,11 @@
 # @milaboratories/helpers
 
+## 1.8.0
+
+### Minor Changes
+
+- fc0eb68: Vitest Worker Jitter
+
 ## 1.7.0
 
 ### Minor Changes

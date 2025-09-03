@@ -1,5 +1,11 @@
 # @milaboratories/pl-client
 
+## 2.12.0
+
+### Minor Changes
+
+- fc0eb68: Default jitter settings for transactions have been increased.
+
 ## 2.11.13
 
 ### Patch Changes
