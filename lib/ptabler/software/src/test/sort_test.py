@@ -1,7 +1,6 @@
 import unittest
 import polars as pl
 from polars.testing import assert_frame_equal
-from typing import Optional
 
 from ptabler.workflow import PWorkflow
 from ptabler.steps import GlobalSettings, TableSpace, Sort
@@ -12,7 +11,7 @@ from ptabler.expression import ColumnReferenceExpression
 global_settings = GlobalSettings(root_folder=".")
 
 
-class SortStepTests(unittest.TestCase):
+class SortTests(unittest.TestCase):
 
     def setUp(self):
         """Setup common data for sort tests."""

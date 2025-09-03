@@ -17,7 +17,7 @@ from ptabler.expression import (
     StringReplaceExpression,
     StringContainsExpression, StringContainsAnyExpression, StringCountMatchesExpression,
     StringExtractExpression, StringStartsWithExpression, StringEndsWithExpression,
-    FillNaNExpression, FillNullExpression,
+    FillNullExpression,
     UnaryMinusExpression,
 )
 
@@ -25,7 +25,7 @@ from ptabler.expression import (
 global_settings = GlobalSettings(root_folder=".")
 
 
-class StepTests(unittest.TestCase):
+class ExpressionTests(unittest.TestCase):
 
     def test_add_columns_arithmetic(self):
         """
