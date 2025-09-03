@@ -3,8 +3,13 @@ import { Pl } from '@milaboratories/pl-middle-layer';
 import { awaitStableState } from '@platforma-sdk/test';
 import { assertJson, assertResource, eTplTest } from './extended_tpl_test';
 import { getTestTimeout } from '@milaboratories/helpers';
+import { vi } from 'vitest';
 
 const TIMEOUT = getTestTimeout(15_000);
+
+vi.setConfig({
+  testTimeout: TIMEOUT,
+});
 
 type ResWithData = { data?: Uint8Array | string };
 type JsonNode = { content: unknown };
@@ -20,7 +25,6 @@ const getSpec = (node: unknown) => {
 
 eTplTest.concurrent(
   'should correctly parse TSV string content using parseToJson with all column kinds',
-  { timeout: TIMEOUT },
   async ({ helper, expect, stHelper }) => {
     // Sample TSV content with header and data rows
     const tsvContent
