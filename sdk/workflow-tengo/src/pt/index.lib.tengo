@@ -1,5 +1,6 @@
 ll := import(":ll")
 exp := import(":pt.expression")
+util := import(":pt.util")
 assets := import(":assets")
 smart := import(":smart")
 exec := import(":exec")
@@ -80,6 +81,8 @@ workflow := func() {
 	outFiles := []
 	// string[]
 	outContentFiles := []
+	// { [frameName]: { [pColumnId]: pColumnSpec } }
+	outFramesSpecs := {}
 
 	anonymousFilesCounter := 0
 	anonymousDFCounter := 0
@@ -353,6 +356,9 @@ workflow := func() {
 		_saveFileContent: func(name) {
 			outContentFiles = append(outContentFiles, name)
 		},
+		_saveFrameSpecs: func(name, specs) {
+			outFramesSpecs[name] = specs
+		},
 
 		/**
 		 * Execute pt in the 'heavy' queue.
@@ -576,7 +582,13 @@ _newDataFrame = func(parentWorkflow, dfName) {
 		}
 
 		step := undefined
-		if finalFormat == "ndjson" {
+		if finalFormat == "parquet" {
+			step = {
+				type: "write_parquet",
+				table: dfName,
+				file: outputFile
+			}
+		} else if finalFormat == "ndjson" {
 			step = {
 				type: "write_ndjson",
 				table: dfName,
@@ -752,6 +764,32 @@ _newDataFrame = func(parentWorkflow, dfName) {
 			parentWorkflow._saveFileContent(outputFile)
 
 			return self
+		},
+
+		/**
+		 * Saves the DataFrame as a PFrame and registers it to have its content accessible after `wf.run()`.
+		 * 
+		 * @param frameName {string} - The name of the PFrame.
+		 * @param params {object} - PFrame creation parameters.
+		 * @returns {void} - No other operation could be chained after this call.
+		 * @example
+		 *   // Save DataFrame as a PFrame with name "output_frame" and first axis partitioned
+		 *   df.saveFrameDirect("output_frame", {
+		 *     axes: [{name: "clusterId", type: "Long"}, {name: "name", type: "String"}],
+		 *     columns: [{name: "value", type: "Double"}],
+		 *     partitionKeyLength: 1
+		 *   })
+		 */
+		saveFrameDirect: func(frameName, params) {
+			ll.assert(len(frameName) > 0, "frameName must be a non-empty string")
+			util.validateParams(params)
+
+			specs := util.makeFrameSpecs(params)
+			parentWorkflow._saveFrameSpecs(frameName, specs)
+
+			// Extract types from provided axes and columns specs
+			step := util.makeWriteFrameStep(params)
+			parentWorkflow.addRawStep(step)
 		},
 
 		/**
