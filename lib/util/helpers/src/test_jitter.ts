@@ -10,14 +10,12 @@
 
 import { parseBool, parseDurationMs, parseInt } from './parse';
 
-export type JitterDistribution = 'uniform' | 'exponential';
 export type JitterSeed = string | number | undefined;
 
 export interface WorkerJitterOptions {
   enabled?: boolean; /** Master on/off switch (default: true) */
   minMs?: number; /** Lower bound in ms (default: 0) */
   maxMs?: number; /** Upper bound in ms (default: 500) */
-  distribution?: JitterDistribution; /** Delay distribution (default: 'uniform') */
   seed?: JitterSeed; /** Determines RNG seed; can be string or number (default: undefined -> non-deterministic fallback) */
   log?: boolean; /** Log the applied delay to console (default: false) */
 }
@@ -27,11 +25,10 @@ function normalizeOptions(opts?: WorkerJitterOptions): Required<WorkerJitterOpti
   const enabled = o.enabled ?? true;
   const minMs = Math.max(0, parseInt(o.minMs ?? 0, 0));
   const maxMs = Math.max(minMs, parseInt(o.maxMs ?? 500, 500)); // ensure max >= min
-  const distribution: JitterDistribution = (o.distribution ?? 'uniform');
   const seed = (o.seed ?? Date.now());
   const log = o.log ?? false;
 
-  return { enabled, minMs, maxMs, distribution, seed, log };
+  return { enabled, minMs, maxMs, seed, log };
 }
 
 /** Build options from process.env */
@@ -40,7 +37,6 @@ export function envOptionsFromProcess(env: NodeJS.ProcessEnv = process.env): Wor
     enabled: parseBool(env.VITEST_WORKER_JITTER_ENABLED, true),
     minMs: parseDurationMs(env.VITEST_WORKER_JITTER_MIN_MS, 0),
     maxMs: parseDurationMs(env.VITEST_WORKER_JITTER_MS ?? env.VITEST_WORKER_JITTER_MAX_MS, 500),
-    distribution: (env.VITEST_WORKER_JITTER_DISTRIBUTION as JitterDistribution) || 'uniform',
     seed: env.VITEST_WORKER_JITTER_SEED,
     log: parseBool(env.VITEST_WORKER_JITTER_LOG, false),
   };
@@ -90,21 +86,10 @@ function pickDelayMs(
   rng: () => number,
   minMs: number,
   maxMs: number,
-  distribution: JitterDistribution,
 ): number {
   if (maxMs <= minMs) return minMs;
 
   const span = maxMs - minMs;
-
-  if (distribution === 'exponential') {
-    // Memoryless bias towards shorter delays: inverse-transform sampling.
-    // lambda calibrated so that 95th percentile ~ maxMs.
-    const u = Math.min(1 - Number.EPSILON, Math.max(Number.EPSILON, rng()));
-    const lambda = Math.log(20) / span; // 95% ~ span
-    const x = Math.floor(-Math.log(1 - u) / lambda); // ~[0,infinity)
-    return minMs + Math.min(x, span);
-  }
-
   // Default: uniform
   return minMs + Math.floor(rng() * (span + 1));
 }
@@ -122,13 +107,13 @@ export async function applyWorkerJitter(options?: WorkerJitterOptions): Promise<
 
   const workerId = deriveWorkerId();
   const rng = makeRng(cfg.seed, workerId);
-  const delay = pickDelayMs(rng, cfg.minMs, cfg.maxMs, cfg.distribution);
+  const delay = pickDelayMs(rng, cfg.minMs, cfg.maxMs);
 
   if (cfg.log) {
     // Example: [vitest-jitter] workerId=7 delayMs=183 dist=uniform seed=abc
 
     console.log(
-      `[vitest-jitter] workerId=${workerId} delayMs=${delay} dist=${cfg.distribution}`
+      `[vitest-jitter] workerId=${workerId} delayMs=${delay}`
       + (cfg.seed !== undefined ? ` seed="${String(cfg.seed)}"` : ''),
     );
   }
