@@ -2,8 +2,13 @@ import { Annotation, type DriverKit, Pl, stringifyJson } from '@milaboratories/p
 import { awaitStableState, tplTest } from '@platforma-sdk/test';
 import * as env from '../../test/env';
 import { getTestTimeout } from '@milaboratories/helpers';
+import { vi } from 'vitest';
 
 const TIMEOUT = getTestTimeout(40_000);
+
+vi.setConfig({
+  testTimeout: TIMEOUT,
+});
 
 // pfconv spec
 const baseSpec = {
@@ -16,7 +21,6 @@ const baseSpec = {
 
 tplTest.concurrent(
   'should export files for p-frame without skipExportForUI annotation',
-  { timeout: TIMEOUT },
   async ({ helper, expect, driverKit }) => {
     const spec = baseSpec;
     const fileHandle = await importFile(driverKit);
@@ -50,7 +54,6 @@ tplTest.concurrent(
 
 tplTest.concurrent(
   'should not export files for p-frame with hideDataFromUi annotation',
-  { timeout: TIMEOUT },
   async ({ helper, expect, driverKit }) => {
     const spec = { ...baseSpec, annotations: { [Annotation.HideDataFromUi]: stringifyJson(true) } satisfies Annotation };
     const fileHandle = await importFile(driverKit);

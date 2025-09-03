@@ -3,8 +3,13 @@ import { Annotation, Pl, field, resourceType } from '@milaboratories/pl-middle-l
 import { awaitStableState, tplTest } from '@platforma-sdk/test';
 import { assertBlob, assertResource, eTplTest } from './extended_tpl_test';
 import { getTestTimeout } from '@milaboratories/helpers';
+import { vi } from 'vitest';
 
 const TIMEOUT = getTestTimeout(10_000);
+
+vi.setConfig({
+  testTimeout: TIMEOUT,
+});
 
 const jsonFromBlob = (b: { content: Uint8Array }) =>
   JSON.parse(Buffer.from(b.content).toString());
@@ -64,7 +69,6 @@ tplTest.concurrent.for([
   },
 ])(
   'should correctly execute low level aggregation routine $name',
-  { timeout: TIMEOUT },
   async ({ indices, expectedResult, nested, base }, { helper, expect }) => {
     const result = await helper.renderTemplate(
       true,
@@ -119,7 +123,6 @@ tplTest.concurrent.for([
 
 eTplTest.concurrent(
   'should correctly execute low level aggregation routine with xsv parsing',
-  { timeout: TIMEOUT },
   async ({ helper, expect, stHelper }) => {
     const xsvSettings = {
       axes: [

@@ -3,8 +3,13 @@ import { field, Pl } from '@milaboratories/pl-middle-layer';
 import { awaitStableState, tplTest } from '@platforma-sdk/test';
 import { Templates } from '../../../dist';
 import { deepClone, getTestTimeout } from '@milaboratories/helpers';
+import { vi } from 'vitest';
 
 const TIMEOUT = getTestTimeout(60_000);
+
+vi.setConfig({
+  testTimeout: TIMEOUT,
+});
 
 // dummy csv data
 const csvData = `ax1,ax2,ax3,col1,col2
@@ -161,7 +166,6 @@ tplTest.concurrent.for([
   // Also, because of tests execution nature in CI (when we several parallel test threads each creating large resource tree)
   // it shares Platforma Backend performance with other massive parallel tests, making overall test time large even when actual
   // execution takes 1-2 seconds at most.
-  { timeout: TIMEOUT },
   async ({ partitionKeyLength, storageFormat }, { helper, expect, driverKit }) => {
     const spec = deepClone(baseSpec);
     spec.partitionKeyLength = partitionKeyLength;
@@ -296,7 +300,6 @@ tplTest.concurrent.for([
   { superPartitionKeyLength: 1, partitionKeyLength: 1, storageFormat: 'Json' },
 ])(
   'should read super-partitioned p-frame from csv files map- superPartitionKeyLength: $superPartitionKeyLength, partitionKeyLength: $partitionKeyLength',
-  { timeout: TIMEOUT },
   async ({ superPartitionKeyLength, partitionKeyLength, storageFormat }, { helper, expect }) => {
     const supKeys = superPartitionKeys(superPartitionKeyLength).sort();
     const spec = deepClone(baseSpec);
@@ -442,7 +445,6 @@ tplTest.concurrent.for([
   { superPartitionKeyLength: 1, partitionKeyLength: 1, storageFormat: 'Json' },
 ])(
   '[in workflow] should read super-partitioned p-frame from csv files map- superPartitionKeyLength: $superPartitionKeyLength, partitionKeyLength: $partitionKeyLength',
-  { timeout: TIMEOUT },
   async ({ superPartitionKeyLength, partitionKeyLength, storageFormat }, { helper, expect }) => {
     const supKeys = superPartitionKeys(superPartitionKeyLength).sort();
     const spec = deepClone(baseSpec);

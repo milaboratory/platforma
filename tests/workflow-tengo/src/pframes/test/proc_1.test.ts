@@ -3,8 +3,13 @@ import { Annotation, field, Pl, resourceType } from '@milaboratories/pl-middle-l
 import { awaitStableState } from '@platforma-sdk/test';
 import { assertBlob, assertJson, assertResource, eTplTest } from './extended_tpl_test';
 import { getTestTimeout } from '@milaboratories/helpers';
+import { vi } from 'vitest';
 
 const TIMEOUT = getTestTimeout(15_000);
+
+vi.setConfig({
+  testTimeout: TIMEOUT,
+});
 
 const xsvSettings = {
   axes: [
@@ -51,7 +56,6 @@ const inputSpec: PUniversalColumnSpec = {
 
 eTplTest.concurrent(
   'should correctly execute pframes.processColumn without aggregation',
-  { timeout: TIMEOUT },
   async ({ helper, expect, stHelper }) => {
     const result = await helper.renderTemplate(
       true,
@@ -119,7 +123,6 @@ eTplTest.concurrent(
 
 eTplTest.concurrent(
   'should correctly execute pframes.processColumn with aggregation 1',
-  { timeout: TIMEOUT },
   async ({ helper, expect, stHelper }) => {
     const result = await helper.renderTemplate(
       true,
@@ -188,7 +191,6 @@ eTplTest.concurrent(
 
 eTplTest.concurrent(
   'should correctly execute pframes.processColumn with aggregation 2',
-  { timeout: TIMEOUT },
   async ({ helper, expect, stHelper }) => {
     const result = await helper.renderTemplate(
       true,
