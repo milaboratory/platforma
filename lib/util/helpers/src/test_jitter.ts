@@ -8,8 +8,6 @@
 //   - Uniform or exponential distributions
 //   - Safe bounds, input sanitation, optional logging
 
-import { setTimeout as sleep } from 'node:timers/promises';
-import { threadId as _threadId } from 'node:worker_threads';
 import { parseBool, parseDurationMs, parseInt } from './parse';
 
 export type JitterDistribution = 'uniform' | 'exponential';
@@ -50,10 +48,15 @@ export function envOptionsFromProcess(env: NodeJS.ProcessEnv = process.env): Wor
 
 /** Try to derive a per-worker identifier across pools ('threads' and 'forks'). */
 export function deriveWorkerId(): number {
-  // In threads pool: threadId is >0 per worker. In main thread it's 0.
-  // In forks pool: different processes; use process.pid.
-  const tid = typeof _threadId === 'number' ? _threadId : 0;
-  return tid > 0 ? tid : process.pid ?? 0;
+  // 1) Vitest sets this per worker (string like "1", "2", ...)
+  const envId = typeof process !== 'undefined' ? process.env?.VITEST_WORKER_ID : undefined;
+  if (envId && /^\d+$/.test(envId)) return Number(envId);
+
+  // 2) Forked workers / Node: unique per process
+  if (typeof process !== 'undefined' && typeof process.pid === 'number') return process.pid;
+
+  // 3) Browser build or unknown env
+  return 1;
 }
 
 /** Simple non-cryptographic seeded PRNG: mulberry32 */
@@ -106,6 +109,8 @@ function pickDelayMs(
   return minMs + Math.floor(rng() * (span + 1));
 }
 
+const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
 /** Public API: apply jitter once at worker start. Safe to call multiple times; only delays once. */
 let _applied = false;
 export async function applyWorkerJitter(options?: WorkerJitterOptions): Promise<void> {
@@ -124,7 +129,7 @@ export async function applyWorkerJitter(options?: WorkerJitterOptions): Promise<
 
     console.log(
       `[vitest-jitter] workerId=${workerId} delayMs=${delay} dist=${cfg.distribution}`
-      + (cfg.seed !== undefined ? ` seed=${String(cfg.seed)}` : ''),
+      + (cfg.seed !== undefined ? ` seed="${String(cfg.seed)}"` : ''),
     );
   }
 
