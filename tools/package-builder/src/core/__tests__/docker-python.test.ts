@@ -120,7 +120,7 @@ describe('Docker Python Functions', () => {
 
       const result = prepareDockerOptions(mockLogger, testPackageRoot, 'test-package', packageWithoutVersion);
 
-      expect(mockLogger.debug).toHaveBeenCalledWith('No Python version found in environment, using default: 3.12.6-slim');
+      expect(mockLogger.debug).toHaveBeenCalledWith('No Python version found in environment, using default: 3.12.10-slim');
       expect(result).toBeDefined();
     });
 
